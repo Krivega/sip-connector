@@ -1,0 +1,12 @@
+**/node_modules/**
+**/dist/**
+**/coverage/**
+**/build/**
+**/.git/**
+**/public/**
+!.eslintrc.js
+package.json
+package-lock.json
+jsconfig.json
+manifest.json
+**/CHANGELOG.md

@@ -1,0 +1,2 @@
+# this loads nvm.sh and sets the correct PATH before running hook
+. ~/.nvm/nvm.sh

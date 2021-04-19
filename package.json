@@ -1,0 +1,81 @@
+{
+  "name": "sip-connector",
+  "version": "0.0.1",
+  "description": "Module for connect to Vinteo server",
+  "keywords": [
+    "webrtc",
+    "Vinteo"
+  ],
+  "bugs": {
+    "url": "https://github.com/Krivega/sip-connector/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Krivega/sip-connector.git"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Krivega Dmitriy",
+    "email": "mr.krivega@gmail.com",
+    "url": "https://krivega.com"
+  },
+  "main": "dist/index.umd.js",
+  "module": "dist/index.es5.js",
+  "typings": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "prebuild": "rimraf dist",
+    "build": "yarn build:ts && yarn build:js",
+    "build:js": "NODE_ENV=production rollup --config",
+    "build:ts": "tsc --build tsconfig.build.json",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "lint": "eslint src/. --ext .ts",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run lint && CI=true npm test",
+    "release": "standard-version",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@krivega/cancelable-promise": "^0.1.9",
+    "@krivega/jssip": "3.12.0",
+    "events-constructor": "^1.1.3",
+    "promise-delay": "^2.1.0",
+    "webrtc-mock": "^0.0.2"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^12.1.1",
+    "@commitlint/config-conventional": "^12.1.1",
+    "@rollup/plugin-commonjs": "^18.0.0",
+    "@rollup/plugin-node-resolve": "^11.2.1",
+    "@types/jest": "^26.0.22",
+    "@types/lodash": "^4.14.168",
+    "@typescript-eslint/eslint-plugin": "^4.22.0",
+    "@typescript-eslint/parser": "^4.22.0",
+    "eslint": "^7.24.0",
+    "eslint-config-prettier": "^8.2.0",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-jest": "^24.3.5",
+    "eslint-plugin-prettier": "^3.4.0",
+    "husky": "^6.0.0",
+    "jest": "26.6.3",
+    "lint-staged": "^10.5.4",
+    "prettier": "^2.2.1",
+    "promise-delay": "^2.1.0",
+    "rollup": "^2.45.2",
+    "rollup-plugin-terser": "^7.0.2",
+    "rollup-plugin-typescript2": "0.30.0",
+    "standard-version": "^9.2.0",
+    "ts-jest": "^26.5.5",
+    "typescript": "^4.2.4"
+  },
+  "main:src": "src/index.ts",
+  "standard-version": {
+    "scripts": {
+      "prerelease": "npm run lint && CI=true npm test",
+      "postchangelog": "prettier --write \"CHANGELOG.md\""
+    }
+  }
+}
