@@ -23,7 +23,6 @@ describe('sip-connector', () => {
 
     const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
 
-    // @ts-ignore
     expect(ua.configuration).toEqual(uaConfigurationWithAuthorization);
   });
 
@@ -40,7 +39,6 @@ describe('sip-connector', () => {
       sipServerUrl: sipServerUrlChanged,
     });
 
-    // @ts-ignore
     expect(ua.configuration).toEqual({ ...uaConfigurationWithAuthorization, uri: uriChanged });
   });
 
@@ -65,7 +63,6 @@ describe('sip-connector', () => {
     expect(connectionConfiguration.password).toBe(
       dataForConnectionWithAuthorizationWithDisplayName.password
     );
-    // @ts-ignore
     expect(ua.configuration).toEqual(uaConfigurationWithAuthorizationWithDisplayName);
   });
 
@@ -73,7 +70,6 @@ describe('sip-connector', () => {
     expect.assertions(6);
 
     const ua = await sipConnector.connect(dataForConnectionWithoutAuthorization);
-    // @ts-ignore
     const { uri, ...configuration } = ua.configuration;
     const connectionConfiguration = sipConnector.getConnectionConfiguration();
 
@@ -94,7 +90,6 @@ describe('sip-connector', () => {
     expect.assertions(6);
 
     const ua = await sipConnector.connect(dataForConnectionWithoutAuthorizationWithoutDisplayName);
-    // @ts-ignore
     const { uri, ...configuration } = ua.configuration;
     const connectionConfiguration = sipConnector.getConnectionConfiguration();
 
@@ -152,7 +147,6 @@ describe('sip-connector', () => {
     expect(sipConnector.getConnectionConfiguration().password).toBe(
       dataForConnectionWithAuthorizationWithDisplayName.password
     );
-    // @ts-ignore
     expect(sipConnector.ua!.configuration).toEqual(uaConfigurationWithAuthorizationWithDisplayName);
   });
 

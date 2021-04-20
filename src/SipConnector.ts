@@ -113,15 +113,9 @@ type TParametersConnection = {
   sipWebSocketServerURL?: string;
 };
 
-type TConnect = (
-  parameters: TParametersConnection,
-  options?: TOptionsExtraHeaders
-) => Promise<UA | undefined>;
-
-type TCreateUa = (parameters: TParametersConnection) => Promise<UA | undefined>;
-
-type TStart = (options: TOptionsExtraHeaders) => Promise<UA | undefined>;
-
+type TConnect = (parameters: TParametersConnection, options?: TOptionsExtraHeaders) => Promise<UA>;
+type TCreateUa = (parameters: TParametersConnection) => Promise<UA>;
+type TStart = (options: TOptionsExtraHeaders) => Promise<UA>;
 type TSet = ({
   displayName,
   password,
@@ -682,7 +676,7 @@ export default class SipConnector {
     return new Promise((resolve, reject) => {
       const resolveUa = () => {
         removeEventListeners();
-        resolve(this.ua);
+        resolve(this.ua as UA);
       };
       const rejectError = (error) => {
         removeEventListeners();
