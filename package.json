@@ -42,7 +42,9 @@
     "@krivega/cancelable-promise": "^0.1.9",
     "@krivega/jssip": "^3.12.1",
     "events-constructor": "^1.1.3",
+    "lodash": "^4.17.21",
     "promise-delay": "^2.1.0",
+    "stack-promises": "^0.0.4",
     "webrtc-mock": "^0.0.2"
   },
   "devDependencies": {

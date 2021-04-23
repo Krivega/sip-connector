@@ -16,7 +16,7 @@ describe('call', () => {
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },
     });
-    mockFn = jest.fn((track: RTCTrackEvent) => {
+    mockFn = jest.fn(() => {
       return undefined;
     });
   });

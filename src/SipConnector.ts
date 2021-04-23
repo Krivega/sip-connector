@@ -444,7 +444,7 @@ export default class SipConnector {
     });
   }
 
-  handleNewRTCSession = ({ originator, session, request }) => {
+  handleNewRTCSession = ({ originator, session }) => {
     if (originator === ORIGINATOR_REMOTE) {
       this.incomingSession = session;
 
@@ -516,17 +516,23 @@ export default class SipConnector {
   }
 
   getRemoteStreams() {
-    if (!this.session) {
+    if (!this.connection) {
       return undefined;
     }
 
-    const receivers = this.session.connection.getReceivers();
+    const receivers = this.connection.getReceivers();
     const remoteTracks = receivers.map(({ track }) => {
       return track;
     });
     const mainRemoteStreams = this._generateStreams(remoteTracks);
 
     return [...mainRemoteStreams];
+  }
+
+  get connection(): RTCPeerConnection | undefined {
+    const connection = this?.session?.connection;
+
+    return connection;
   }
 
   get remoteCallerData() {
@@ -757,7 +763,7 @@ export default class SipConnector {
   _disconnect = async () => {
     this.off('newRTCSession', this.handleNewRTCSession);
 
-    const disconnectedPromise = new Promise<void>((resolve, reject) => {
+    const disconnectedPromise = new Promise<void>((resolve) => {
       this.once('disconnected', () => {
         delete this.ua;
         resolve();
