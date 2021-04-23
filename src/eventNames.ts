@@ -28,6 +28,7 @@ const SESSION_SYNTHETICS_EVENT_NAMES = [
   'peerconnection:ontrack',
   'channels',
   'ended:fromserver',
+  'main-cam-control',
 ] as const;
 
 export const SESSION_JSSIP_EVENT_NAMES = [

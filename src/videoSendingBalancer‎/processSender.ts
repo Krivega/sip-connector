@@ -1,10 +1,5 @@
 import createStackPromises from 'stack-promises';
-
-export enum MainCAM {
-  PAUSE_MAIN_CAM = 'PAUSEMAINCAM',
-  RESUME_MAIN_CAM = 'RESUMEMAINCAM',
-  MAX_MAIN_CAM_RESOLUTION = 'MAXMAINCAMRESOLUTION',
-}
+import { MainCAM } from '../SipConnector';
 
 const stackPromises = createStackPromises();
 

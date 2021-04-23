@@ -1,12 +1,6 @@
 import debounce from 'lodash/debounce';
-import type { IncomingInfoEvent } from '@krivega/jssip/lib/RTCSession';
-import type SipConnector from '..';
-import {
-  HEADER_CONTENT_TYPE_MAIN_CAM,
-  HEADER_MAIN_CAM,
-  HEADER_MAIN_CAM_RESOLUTION,
-} from '../headers';
-import type { MainCAM } from './processSender';
+import type SipConnector from '../SipConnector';
+import type { MainCAM } from '../SipConnector';
 import processSender from './processSender';
 
 const processSenderDebounced = debounce(processSender, 100);
@@ -18,8 +12,8 @@ const findSenderVideo = (senders: RTCRtpSender[]): RTCRtpSender | undefined => {
 };
 
 const resolveVideoSendingBalancer = (sipConnector: SipConnector) => {
-  let mainCam: MainCAM;
-  let resolutionMainCam: string;
+  let mainCam: MainCAM | undefined;
+  let resolutionMainCam: string | undefined;
 
   const balance = () => {
     const { connection } = sipConnector;
@@ -31,22 +25,20 @@ const resolveVideoSendingBalancer = (sipConnector: SipConnector) => {
     const senders = connection.getSenders();
     const sender = findSenderVideo(senders);
 
-    if (sender) {
+    if (sender && mainCam !== undefined && resolutionMainCam !== undefined) {
       processSenderDebounced({ mainCam, resolutionMainCam, sender });
     }
   };
 
-  sipConnector.onSession('newInfo', (event: IncomingInfoEvent) => {
-    const { info, request } = event;
-    const { contentType } = info;
+  sipConnector.onSession(
+    'main-cam-control',
+    (headers: { mainCam: MainCAM; resolutionMainCam: string }) => {
+      mainCam = headers.mainCam;
+      resolutionMainCam = headers.resolutionMainCam;
 
-    mainCam = request.getHeader(HEADER_MAIN_CAM) as MainCAM;
-    resolutionMainCam = request.getHeader(HEADER_MAIN_CAM_RESOLUTION);
-
-    if (contentType === HEADER_CONTENT_TYPE_MAIN_CAM) {
       balance();
     }
-  });
+  );
 
   return balance;
 };

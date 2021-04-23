@@ -30,6 +30,9 @@ import {
   HEADER_OUTPUT_CHANNELS,
   HEADER_START_PRESENTATION,
   HEADER_STOP_PRESENTATION,
+  HEADER_CONTENT_TYPE_MAIN_CAM,
+  HEADER_MAIN_CAM,
+  HEADER_MAIN_CAM_RESOLUTION,
 } from './headers';
 
 function resolveSipUrl(serverUrl: string): (string) => string {
@@ -65,6 +68,12 @@ const BUSY_HERE_STATUS_CODE = 486;
 const REQUEST_TERMINATED_STATUS_CODE = 487;
 const ORIGINATOR_LOCAL = 'local';
 const ORIGINATOR_REMOTE = 'remote';
+
+export enum MainCAM {
+  PAUSE_MAIN_CAM = 'PAUSEMAINCAM',
+  RESUME_MAIN_CAM = 'RESUMEMAINCAM',
+  MAX_MAIN_CAM_RESOLUTION = 'MAXMAINCAMRESOLUTION',
+}
 
 interface ICustomError extends Error {
   originator?: string;
@@ -1038,6 +1047,16 @@ export default class SipConnector {
     this._uaEvents.trigger('shareState', eventName);
   };
 
+  _triggerMainCamControl = (request: IncomingRequest) => {
+    const mainCam = request.getHeader(HEADER_MAIN_CAM) as MainCAM;
+    const resolutionMainCam = request.getHeader(HEADER_MAIN_CAM_RESOLUTION);
+
+    this._sessionEvents.trigger('main-cam-control', {
+      mainCam,
+      resolutionMainCam,
+    });
+  };
+
   _handleNewInfo = (info: IncomingInfoEvent | OutgoingInfoEvent) => {
     const { originator } = info;
 
@@ -1056,6 +1075,9 @@ export default class SipConnector {
           break;
         case CONTENT_TYPE_SHARE_STATE:
           this._triggerShareState(request);
+          break;
+        case HEADER_CONTENT_TYPE_MAIN_CAM:
+          this._triggerMainCamControl(request);
           break;
 
         default:
