@@ -68,6 +68,7 @@ const BUSY_HERE_STATUS_CODE = 486;
 const REQUEST_TERMINATED_STATUS_CODE = 487;
 const ORIGINATOR_LOCAL = 'local';
 const ORIGINATOR_REMOTE = 'remote';
+const KIND_VIDEO_REMOTE_TRACK = 'video';
 
 export enum MainCAM {
   PAUSE_MAIN_CAM = 'PAUSEMAINCAM',
@@ -83,6 +84,16 @@ interface ICustomError extends Error {
   url?: string;
   code?: string;
 }
+
+const hasVideoTracks = (remoteTracks: MediaStreamTrack[]): boolean => {
+  const isVideoTracksExists = remoteTracks.some((remoteTrack: MediaStreamTrack): boolean => {
+    const { kind } = remoteTrack;
+
+    return kind === KIND_VIDEO_REMOTE_TRACK;
+  });
+
+  return isVideoTracksExists;
+};
 
 export const hasCanceledCallError = (error: ICustomError = new Error()) => {
   const { originator, cause } = error;
@@ -524,7 +535,7 @@ export default class SipConnector {
     return { ...this._connectionConfiguration };
   }
 
-  getRemoteStreams() {
+  getRemoteStreams(): MediaStream[] | undefined {
     if (!this.connection) {
       return undefined;
     }
@@ -533,9 +544,12 @@ export default class SipConnector {
     const remoteTracks = receivers.map(({ track }) => {
       return track;
     });
-    const mainRemoteStreams = this._generateStreams(remoteTracks);
 
-    return [...mainRemoteStreams];
+    if (hasVideoTracks(remoteTracks)) {
+      return this._generateStreams(remoteTracks);
+    }
+
+    return this._generateAudioStreams(remoteTracks);
   }
 
   get connection(): RTCPeerConnection | undefined {
@@ -937,21 +951,35 @@ export default class SipConnector {
     });
   };
 
-  _generateStream(videoTrack, audioTrack) {
-    const { id } = videoTrack;
+  _generateStream({
+    videoTrack,
+    audioTrack,
+  }: {
+    videoTrack?: MediaStreamTrack;
+    audioTrack?: MediaStreamTrack;
+  }): MediaStream | undefined {
+    const id = videoTrack?.id || audioTrack?.id;
+
+    if (!id) {
+      return undefined;
+    }
+
     const remoteStream = this._remoteStreams[id] || new MediaStream();
 
     if (audioTrack) {
       remoteStream.addTrack(audioTrack);
     }
 
-    remoteStream.addTrack(videoTrack);
+    if (videoTrack) {
+      remoteStream.addTrack(videoTrack);
+    }
+
     this._remoteStreams[id] = remoteStream;
 
     return remoteStream;
   }
 
-  _generateStreams(remoteTracks) {
+  _generateStreams(remoteTracks: MediaStreamTrack[]): MediaStream[] {
     const remoteStreams: MediaStream[] = [];
 
     remoteTracks.forEach((track, index) => {
@@ -967,9 +995,25 @@ export default class SipConnector {
         audioTrack = prevTrack;
       }
 
-      const remoteStream = this._generateStream(videoTrack, audioTrack);
+      const remoteStream = this._generateStream({ videoTrack, audioTrack });
 
-      remoteStreams.push(remoteStream);
+      if (remoteStream) {
+        remoteStreams.push(remoteStream);
+      }
+    }, []);
+
+    return remoteStreams;
+  }
+
+  _generateAudioStreams(remoteTracks: MediaStreamTrack[]): MediaStream[] {
+    const remoteStreams: MediaStream[] = [];
+
+    remoteTracks.forEach((audioTrack) => {
+      const remoteStream = this._generateStream({ audioTrack });
+
+      if (remoteStream) {
+        remoteStreams.push(remoteStream);
+      }
     }, []);
 
     return remoteStreams;
