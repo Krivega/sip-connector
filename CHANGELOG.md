@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.4](https://github.com/Krivega/sip-connector/compare/v0.1.3...v0.1.4) (2021-04-26)
+
+### Features
+
+- **sip-connector:** add only-audio-mode support + module test ([cece1a0](https://github.com/Krivega/sip-connector/commit/cece1a001bae7956306391fb567c477474bb52f2))
+
 ### [0.1.3](https://github.com/Krivega/sip-connector/compare/v0.1.2...v0.1.3) (2021-04-26)
 
 ### Bug Fixes
