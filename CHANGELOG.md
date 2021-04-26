@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.3](https://github.com/Krivega/sip-connector/compare/v0.1.2...v0.1.3) (2021-04-26)
+
+### Bug Fixes
+
+- race condition vdeoSendingBalancer after disconnect ([e8db447](https://github.com/Krivega/sip-connector/commit/e8db447c756fb46f4769da677fe938f40f107edd))
+
 ### [0.1.2](https://github.com/Krivega/sip-connector/compare/v0.1.1...v0.1.2) (2021-04-23)
 
 ### Bug Fixes
