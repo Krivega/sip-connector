@@ -953,7 +953,7 @@ export default class SipConnector {
   _generateStream(videoTrack: MediaStreamTrack, audioTrack?: MediaStreamTrack): MediaStream {
     const id = videoTrack.id;
 
-    const remoteStream = this._remoteStreams[id] || new MediaStream();
+    const remoteStream: MediaStream = this._remoteStreams[id] || new MediaStream();
 
     if (audioTrack) {
       remoteStream.addTrack(audioTrack);
@@ -1002,13 +1002,7 @@ export default class SipConnector {
   }
 
   _generateAudioStreams(remoteTracks: MediaStreamTrack[]): MediaStream[] {
-    const remoteStreams: MediaStream[] = [];
-
-    remoteTracks.forEach((audioTrack) => {
-      const remoteStream = this._generateAudioStream(audioTrack);
-
-      remoteStreams.push(remoteStream);
-    });
+    const remoteStreams: MediaStream[] = remoteTracks.map(this._generateAudioStream);
 
     return remoteStreams;
   }
