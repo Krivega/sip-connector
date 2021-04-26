@@ -950,15 +950,8 @@ export default class SipConnector {
     });
   };
 
-  _generateStream(
-    videoTrack: MediaStreamTrack,
-    audioTrack?: MediaStreamTrack
-  ): MediaStream | undefined {
-    const id = videoTrack?.id;
-
-    if (!id) {
-      return undefined;
-    }
+  _generateStream(videoTrack: MediaStreamTrack, audioTrack?: MediaStreamTrack): MediaStream {
+    const id = videoTrack.id;
 
     const remoteStream = this._remoteStreams[id] || new MediaStream();
 
@@ -1002,9 +995,7 @@ export default class SipConnector {
 
       const remoteStream = this._generateStream(videoTrack, audioTrack);
 
-      if (remoteStream) {
-        remoteStreams.push(remoteStream);
-      }
+      remoteStreams.push(remoteStream);
     }, []);
 
     return remoteStreams;
