@@ -68,7 +68,6 @@ const BUSY_HERE_STATUS_CODE = 486;
 const REQUEST_TERMINATED_STATUS_CODE = 487;
 const ORIGINATOR_LOCAL = 'local';
 const ORIGINATOR_REMOTE = 'remote';
-const KIND_VIDEO_REMOTE_TRACK = 'video';
 
 export enum MainCAM {
   PAUSE_MAIN_CAM = 'PAUSEMAINCAM',
@@ -89,7 +88,7 @@ const hasVideoTracks = (remoteTracks: MediaStreamTrack[]): boolean => {
   const isVideoTracksExists = remoteTracks.some((remoteTrack: MediaStreamTrack): boolean => {
     const { kind } = remoteTrack;
 
-    return kind === KIND_VIDEO_REMOTE_TRACK;
+    return kind === 'video';
   });
 
   return isVideoTracksExists;
@@ -951,14 +950,11 @@ export default class SipConnector {
     });
   };
 
-  _generateStream({
-    videoTrack,
-    audioTrack,
-  }: {
-    videoTrack?: MediaStreamTrack;
-    audioTrack?: MediaStreamTrack;
-  }): MediaStream | undefined {
-    const id = videoTrack?.id || audioTrack?.id;
+  _generateStream(
+    videoTrack: MediaStreamTrack,
+    audioTrack?: MediaStreamTrack
+  ): MediaStream | undefined {
+    const id = videoTrack?.id;
 
     if (!id) {
       return undefined;
@@ -970,9 +966,18 @@ export default class SipConnector {
       remoteStream.addTrack(audioTrack);
     }
 
-    if (videoTrack) {
-      remoteStream.addTrack(videoTrack);
-    }
+    remoteStream.addTrack(videoTrack);
+    this._remoteStreams[id] = remoteStream;
+
+    return remoteStream;
+  }
+
+  _generateAudioStream(audioTrack: MediaStreamTrack): MediaStream {
+    const id = audioTrack.id;
+
+    const remoteStream = this._remoteStreams[id] || new MediaStream();
+
+    remoteStream.addTrack(audioTrack);
 
     this._remoteStreams[id] = remoteStream;
 
@@ -995,7 +1000,7 @@ export default class SipConnector {
         audioTrack = prevTrack;
       }
 
-      const remoteStream = this._generateStream({ videoTrack, audioTrack });
+      const remoteStream = this._generateStream(videoTrack, audioTrack);
 
       if (remoteStream) {
         remoteStreams.push(remoteStream);
@@ -1009,12 +1014,10 @@ export default class SipConnector {
     const remoteStreams: MediaStream[] = [];
 
     remoteTracks.forEach((audioTrack) => {
-      const remoteStream = this._generateStream({ audioTrack });
+      const remoteStream = this._generateAudioStream(audioTrack);
 
-      if (remoteStream) {
-        remoteStreams.push(remoteStream);
-      }
-    }, []);
+      remoteStreams.push(remoteStream);
+    });
 
     return remoteStreams;
   }
