@@ -21,7 +21,7 @@ const scaleResolutionDownBySender = (
 ): Promise<any> => {
   const parameters: RTCRtpSendParameters = sender.getParameters();
 
-  if (!parameters.encodings) {
+  if (!parameters.encodings || parameters.encodings.length === 0) {
     parameters.encodings = [{}];
   }
 
