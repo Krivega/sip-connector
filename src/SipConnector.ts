@@ -84,6 +84,16 @@ interface ICustomError extends Error {
   code?: string;
 }
 
+const hasVideoTracks = (remoteTracks: MediaStreamTrack[]): boolean => {
+  const isVideoTracksExists = remoteTracks.some((remoteTrack: MediaStreamTrack): boolean => {
+    const { kind } = remoteTrack;
+
+    return kind === 'video';
+  });
+
+  return isVideoTracksExists;
+};
+
 export const hasCanceledCallError = (error: ICustomError = new Error()) => {
   const { originator, cause } = error;
 
@@ -524,7 +534,7 @@ export default class SipConnector {
     return { ...this._connectionConfiguration };
   }
 
-  getRemoteStreams() {
+  getRemoteStreams(): MediaStream[] | undefined {
     if (!this.connection) {
       return undefined;
     }
@@ -533,9 +543,12 @@ export default class SipConnector {
     const remoteTracks = receivers.map(({ track }) => {
       return track;
     });
-    const mainRemoteStreams = this._generateStreams(remoteTracks);
 
-    return [...mainRemoteStreams];
+    if (hasVideoTracks(remoteTracks)) {
+      return this._generateStreams(remoteTracks);
+    }
+
+    return this._generateAudioStreams(remoteTracks);
   }
 
   get connection(): RTCPeerConnection | undefined {
@@ -937,9 +950,10 @@ export default class SipConnector {
     });
   };
 
-  _generateStream(videoTrack, audioTrack) {
-    const { id } = videoTrack;
-    const remoteStream = this._remoteStreams[id] || new MediaStream();
+  _generateStream(videoTrack: MediaStreamTrack, audioTrack?: MediaStreamTrack): MediaStream {
+    const id = videoTrack.id;
+
+    const remoteStream: MediaStream = this._remoteStreams[id] || new MediaStream();
 
     if (audioTrack) {
       remoteStream.addTrack(audioTrack);
@@ -951,7 +965,19 @@ export default class SipConnector {
     return remoteStream;
   }
 
-  _generateStreams(remoteTracks) {
+  _generateAudioStream(audioTrack: MediaStreamTrack): MediaStream {
+    const id = audioTrack.id;
+
+    const remoteStream = this._remoteStreams[id] || new MediaStream();
+
+    remoteStream.addTrack(audioTrack);
+
+    this._remoteStreams[id] = remoteStream;
+
+    return remoteStream;
+  }
+
+  _generateStreams(remoteTracks: MediaStreamTrack[]): MediaStream[] {
     const remoteStreams: MediaStream[] = [];
 
     remoteTracks.forEach((track, index) => {
@@ -971,6 +997,12 @@ export default class SipConnector {
 
       remoteStreams.push(remoteStream);
     }, []);
+
+    return remoteStreams;
+  }
+
+  _generateAudioStreams(remoteTracks: MediaStreamTrack[]): MediaStream[] {
+    const remoteStreams: MediaStream[] = remoteTracks.map(this._generateAudioStream);
 
     return remoteStreams;
   }
