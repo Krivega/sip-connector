@@ -8,6 +8,7 @@ import {
   uaConfigurationWithoutAuthorization,
   uaConfigurationWithAuthorizationWithDisplayName,
   uaConfigurationWithoutAuthorizationWithoutDisplayName,
+  extraHeadersBase,
 } from '../__mocks__';
 import type SipConnector from '../SipConnector';
 
@@ -180,5 +181,25 @@ describe('sip-connector', () => {
     });
 
     expect(sipConnector.getConnectionConfiguration().displayName).toBe(anotherDisplayName);
+  });
+
+  it('send base extraHeaders', async () => {
+    expect.assertions(1);
+
+    const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
+
+    // @ts-ignore
+    expect(ua.registrator().extraHeaders).toEqual(extraHeadersBase);
+  });
+
+  it('send extended extraHeaders', async () => {
+    expect.assertions(1);
+
+    const extraHeaders = ['test'];
+
+    const ua = await sipConnector.connect({ ...dataForConnectionWithAuthorization, extraHeaders });
+
+    // @ts-ignore
+    expect(ua.registrator().extraHeaders).toEqual([...extraHeadersBase, ...extraHeaders]);
   });
 });

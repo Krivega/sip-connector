@@ -34,6 +34,7 @@ import {
   HEADER_MAIN_CAM,
   HEADER_MAIN_CAM_RESOLUTION,
 } from './headers';
+import getExtraHeadersRegistration from './getExtraHeadersRegistration';
 
 function resolveSipUrl(serverUrl: string): (string) => string {
   return (id: string): string => {
@@ -130,11 +131,11 @@ type TParametersConnection = {
   register?: boolean;
   sipServerUrl?: string;
   sipWebSocketServerURL?: string;
-};
+} & TOptionsExtraHeaders;
 
-type TConnect = (parameters: TParametersConnection, options?: TOptionsExtraHeaders) => Promise<UA>;
+type TConnect = (parameters: TParametersConnection) => Promise<UA>;
 type TCreateUa = (parameters: TParametersConnection) => Promise<UA>;
-type TStart = (options: TOptionsExtraHeaders) => Promise<UA>;
+type TStart = () => Promise<UA>;
 type TSet = ({
   displayName,
   password,
@@ -200,8 +201,6 @@ export default class SipConnector {
 
   private _cancelableCreateUa: any;
 
-  private _cancelableStart: any;
-
   private _cancelableDisconnect: any;
 
   private _cancelableSet: any;
@@ -248,7 +247,6 @@ export default class SipConnector {
       moduleName,
       () => {
         this._cancelableCreateUa.cancelRequest();
-        this._cancelableStart.cancelRequest();
         this._cancelableDisconnect.cancelRequest();
       }
     );
@@ -257,11 +255,6 @@ export default class SipConnector {
       Parameters<TCreateUa>[0],
       ReturnType<TCreateUa>
     >(this._createUa, moduleName);
-
-    this._cancelableStart = new CancelableRequest<Parameters<TStart>[0], ReturnType<TStart>>(
-      this._start,
-      moduleName
-    );
 
     this._cancelableDisconnect = new CancelableRequest<void, ReturnType<TDisconnect>>(
       this._disconnect,
@@ -306,10 +299,6 @@ export default class SipConnector {
 
   createUa: TCreateUa = (data) => {
     return this._cancelableCreateUa.request(data);
-  };
-
-  start: TStart = (data) => {
-    return this._cancelableStart.request(data);
   };
 
   set: TSet = (data) => {
@@ -573,7 +562,6 @@ export default class SipConnector {
     return (
       this._cancelableConnect.requested ||
       this._cancelableCreateUa.requested ||
-      this._cancelableStart.requested ||
       this._cancelableCall.requested ||
       this._cancelableAnswer.requested
     );
@@ -599,10 +587,15 @@ export default class SipConnector {
     return !!this.incomingSession;
   }
 
-  _connect: TConnect = (
-    { displayName = '', register = false, user, password, sipServerUrl, sipWebSocketServerURL },
-    optionsExtraHeaders = {}
-  ) => {
+  _connect: TConnect = ({
+    displayName = '',
+    register = false,
+    user,
+    password,
+    sipServerUrl,
+    sipWebSocketServerURL,
+    extraHeaders,
+  }) => {
     return this.createUa({
       displayName,
       user,
@@ -610,8 +603,9 @@ export default class SipConnector {
       register,
       sipServerUrl,
       sipWebSocketServerURL,
+      extraHeaders,
     }).then(() => {
-      return this._start(optionsExtraHeaders);
+      return this._start();
     });
   };
 
@@ -622,6 +616,7 @@ export default class SipConnector {
     register,
     sipServerUrl,
     sipWebSocketServerURL,
+    extraHeaders = [],
   }) => {
     if (!sipServerUrl) {
       throw new Error('sipServerUrl is required');
@@ -692,6 +687,11 @@ export default class SipConnector {
       }
     });
 
+    const extraHeadersRegistration = getExtraHeadersRegistration(sipServerUrl);
+    const extraHeadersBase = [...extraHeadersRegistration, ...extraHeaders];
+
+    this.ua!.registrator().setExtraHeaders(extraHeadersBase);
+
     return this.ua;
   };
 
@@ -700,7 +700,7 @@ export default class SipConnector {
     this.socket = new this.JsSIP.WebSocketInterface(sipWebSocketServerURL);
   }
 
-  _start: TStart = ({ extraHeaders }) => {
+  _start: TStart = () => {
     return new Promise((resolve, reject) => {
       const resolveUa = () => {
         removeEventListeners();
@@ -738,10 +738,6 @@ export default class SipConnector {
 
       addEventListeners();
       this.on('newRTCSession', this.handleNewRTCSession);
-
-      if (extraHeaders) {
-        this.ua!.registrator().setExtraHeaders(extraHeaders);
-      }
 
       this.ua!.start();
     });
