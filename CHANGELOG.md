@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.0.1](https://github.com/Krivega/sip-connector/compare/v1.0.0...v1.0.1) (2021-04-27)
+
+### Bug Fixes
+
+- send remoteAddress in headers ([684387a](https://github.com/Krivega/sip-connector/commit/684387aee65798009acf376b8e4884daa28f98ec))
+
 ## [1.0.0](https://github.com/Krivega/sip-connector/compare/v0.1.4...v1.0.0) (2021-04-27)
 
 ### ⚠ BREAKING CHANGES
