@@ -43,35 +43,13 @@ import {
   HEADER_MAIN_CAM_RESOLUTION,
 } from './headers';
 import getExtraHeadersRemoteAddress from './getExtraHeadersRemoteAddress';
-
-function resolveSipUrl(serverUrl: string): (string) => string {
-  return (id: string): string => {
-    return `sip:${id}@${serverUrl}`;
-  };
-}
-
-const resolveRandomInt = (min, max) => {
-  return () => {
-    return Math.floor(Math.random() * (max - min)) + min;
-  };
-};
-const parseDisplayName = (displayName) => {
-  return displayName.trim().replace(/ /g, '_');
-};
-const generateUserId = resolveRandomInt(100000, 99999999);
-
-const prepareMediaStream = (mediaStream: MediaStream): MediaStream => {
-  const audioTracks = mediaStream.getAudioTracks();
-  const videoTracks = mediaStream.getVideoTracks();
-  const tracks = [...audioTracks, ...videoTracks];
-  const newStream = new MediaStream(tracks);
-
-  newStream.getTracks = () => {
-    return [...newStream.getAudioTracks(), ...newStream.getVideoTracks()]; // for garante audio first order
-  };
-
-  return newStream;
-};
+import {
+  generateUserId,
+  hasVideoTracks,
+  parseDisplayName,
+  prepareMediaStream,
+  resolveSipUrl,
+} from './utils';
 
 const BUSY_HERE_STATUS_CODE = 486;
 const REQUEST_TERMINATED_STATUS_CODE = 487;
@@ -92,16 +70,6 @@ interface ICustomError extends Error {
   url?: string;
   code?: string;
 }
-
-const hasVideoTracks = (remoteTracks: MediaStreamTrack[]): boolean => {
-  const isVideoTracksExists = remoteTracks.some((remoteTrack: MediaStreamTrack): boolean => {
-    const { kind } = remoteTrack;
-
-    return kind === 'video';
-  });
-
-  return isVideoTracksExists;
-};
 
 export const hasCanceledCallError = (error: ICustomError = new Error()) => {
   const { originator, cause } = error;
@@ -624,7 +592,7 @@ export default class SipConnector {
   };
 
   _createUa: TCreateUa = async ({
-    displayName,
+    displayName = '',
     user,
     password,
     register,
