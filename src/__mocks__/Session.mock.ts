@@ -7,6 +7,10 @@ const CONNECTION_DELAY = 400; // more 300 for test cancel requests with debounce
 
 export const FAILED_CONFERENCE_NUMBER = '777';
 
+const hasVideoTracks = (mediaStream: MediaStream): boolean => {
+  return !!mediaStream.getVideoTracks().length;
+}
+
 /* eslint-disable class-methods-use-this */
 
 class Session extends BaseSession {
@@ -54,12 +58,20 @@ class Session extends BaseSession {
 
   createPeerconnection(sendedStream: any) {
     const audioTrack = createAudioMediaStreamTrackMock();
-    const videoTrack = createVideoMediaStreamTrackMock();
-
     audioTrack.id = 'mainaudio1';
-    videoTrack.id = 'mainvideo1';
 
-    this._connection = new RTCPeerConnectionMock([audioTrack, videoTrack]);
+    const tracks = [audioTrack];
+
+    const isVideoStream = hasVideoTracks(sendedStream);
+
+    if (isVideoStream) {
+      const videoTrack = createVideoMediaStreamTrackMock();
+      videoTrack.id = 'mainvideo1';
+
+      tracks.push(videoTrack);
+    }
+
+    this._connection = new RTCPeerConnectionMock(tracks);
 
     this._addStream(sendedStream);
 
