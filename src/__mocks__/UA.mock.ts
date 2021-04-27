@@ -1,7 +1,10 @@
+import type { UA as IUA } from '@krivega/jssip';
+import type { UAConfiguration } from '@krivega/jssip/lib/UA';
 import Events from 'events-constructor';
 import { UA_EVENT_NAMES } from '../eventNames';
 import type { TEventUA } from '../eventNames';
 import Session from './Session.mock';
+import Registrator from './Registrator.mock';
 
 export const PASSWORD_CORRECT = 'PASSWORD_CORRECT';
 export const PASSWORD_CORRECT_2 = 'PASSWORD_CORRECT_2';
@@ -11,14 +14,12 @@ const CONNECTION_DELAY = 400; // more 300 for test cancel requests with debounce
 
 /* eslint-disable class-methods-use-this */
 
-class UA {
+class UA implements IUA {
   _events: Events<typeof UA_EVENT_NAMES>;
 
   _startedTimeout?: ReturnType<typeof setTimeout>;
 
   _stopedTimeout?: ReturnType<typeof setTimeout>;
-
-  configuration?: { [key: string]: any };
 
   session?: Session;
 
@@ -26,9 +27,13 @@ class UA {
 
   _isConnected?: boolean;
 
-  constructor(configuration) {
+  configuration: UAConfiguration;
+  _registrator: Registrator;
+
+  constructor(configuration: UAConfiguration) {
     this._events = new Events<typeof UA_EVENT_NAMES>(UA_EVENT_NAMES);
     this.configuration = configuration;
+    this._registrator = new Registrator();
   }
 
   /**
@@ -55,7 +60,6 @@ class UA {
     }
 
     this.unregister();
-    delete this.configuration;
 
     if (this.isStarted()) {
       this._stopedTimeout = setTimeout(() => {
@@ -66,14 +70,18 @@ class UA {
     }
   }
 
-  call(url, { mediaStream, eventHandlers }) {
+  //@ts-ignore
+  call(url: string, { mediaStream, eventHandlers }): Session {
     this.session = new Session({ url, mediaStream, eventHandlers, originator: 'local' });
 
     return this.session;
   }
 
+  //@ts-ignore
   on(eventName: TEventUA, handler) {
     this._events.on(eventName, handler);
+
+    return this;
   }
 
   trigger(eventName: TEventUA, data?: any) {
@@ -174,6 +182,10 @@ class UA {
       ((this.configuration.register && !!this._isRegistered) ||
         (!this.configuration.register && !!this._isConnected))
     );
+  }
+
+  registrator() {
+    return this._registrator;
   }
 }
 

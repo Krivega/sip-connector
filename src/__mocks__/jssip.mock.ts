@@ -24,7 +24,8 @@ const triggerIncomingSession = (
   const originator = 'remote';
   const session = new Session({ originator });
 
-  session.remote_identity = { display_name: displayName, uri: { host, user: incomingNumber } };
+  //@ts-ignore
+  session._remote_identity = { display_name: displayName, uri: { host, user: incomingNumber } };
 
   ua.trigger('newRTCSession', { originator, session });
 };

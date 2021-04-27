@@ -12,11 +12,7 @@ export const FAILED_CONFERENCE_NUMBER = '777';
 class Session extends BaseSession {
   url: string;
 
-  status_code?: string;
-
-  connection?: RTCPeerConnectionMock;
-
-  remote_identity?: any;
+  status_code?: number;
 
   constructor({
     url = '',
@@ -63,7 +59,7 @@ class Session extends BaseSession {
     audioTrack.id = 'mainaudio1';
     videoTrack.id = 'mainvideo1';
 
-    this.connection = new RTCPeerConnectionMock([audioTrack, videoTrack]);
+    this._connection = new RTCPeerConnectionMock([audioTrack, videoTrack]);
 
     this._addStream(sendedStream);
 
@@ -93,7 +89,7 @@ class Session extends BaseSession {
   }
 
   // eslint-disable-next-line camelcase
-  terminate({ status_code }: { status_code?: string } = {}) {
+  terminate({ status_code }: { status_code?: number } = {}) {
     // eslint-disable-next-line camelcase
     this.status_code = status_code;
 
@@ -103,7 +99,7 @@ class Session extends BaseSession {
   }
 
   // eslint-disable-next-line camelcase
-  terminateRemote({ status_code }: { status_code?: string } = {}) {
+  terminateRemote({ status_code }: { status_code?: number } = {}) {
     // eslint-disable-next-line camelcase
     this.status_code = status_code;
 
