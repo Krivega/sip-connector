@@ -60,7 +60,7 @@ describe('call with no video tracks', () => {
     await sipConnector.call({ number, mediaStream, ontrack: mockFn });
 
     const remoteStreams = sipConnector.getRemoteStreams();
-    
+
     const videoTrack = remoteStreams![0].getVideoTracks();
 
     expect(videoTrack.length).toBe(0);

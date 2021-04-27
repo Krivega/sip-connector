@@ -9,7 +9,7 @@ export const FAILED_CONFERENCE_NUMBER = '777';
 
 const hasVideoTracks = (mediaStream: MediaStream): boolean => {
   return !!mediaStream.getVideoTracks().length;
-}
+};
 
 /* eslint-disable class-methods-use-this */
 
@@ -58,6 +58,7 @@ class Session extends BaseSession {
 
   createPeerconnection(sendedStream: any) {
     const audioTrack = createAudioMediaStreamTrackMock();
+
     audioTrack.id = 'mainaudio1';
 
     const tracks = [audioTrack];
@@ -66,6 +67,7 @@ class Session extends BaseSession {
 
     if (isVideoStream) {
       const videoTrack = createVideoMediaStreamTrackMock();
+
       videoTrack.id = 'mainvideo1';
 
       tracks.push(videoTrack);
