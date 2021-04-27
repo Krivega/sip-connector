@@ -52,14 +52,26 @@ class Session extends BaseSession {
     return true;
   }
 
+  hasVideoTracks(mediaStream: MediaStream): boolean {
+    return !!mediaStream.getVideoTracks().length;
+  }
+
   createPeerconnection(sendedStream: any) {
     const audioTrack = createAudioMediaStreamTrackMock();
-    const videoTrack = createVideoMediaStreamTrackMock();
-
     audioTrack.id = 'mainaudio1';
-    videoTrack.id = 'mainvideo1';
 
-    this._connection = new RTCPeerConnectionMock([audioTrack, videoTrack]);
+    const tracks = [audioTrack];
+
+    const isVideoStream = this.hasVideoTracks(sendedStream);
+
+    if (isVideoStream) {
+      const videoTrack = createVideoMediaStreamTrackMock();
+      videoTrack.id = 'mainvideo1';
+
+      tracks.push(videoTrack);
+    }
+
+    this._connection = new RTCPeerConnectionMock(tracks);
 
     this._addStream(sendedStream);
 

@@ -1002,7 +1002,9 @@ export default class SipConnector {
   }
 
   _generateAudioStreams(remoteTracks: MediaStreamTrack[]): MediaStream[] {
-    const remoteStreams: MediaStream[] = remoteTracks.map(this._generateAudioStream);
+    const remoteStreams: MediaStream[] = remoteTracks.map((remoteTrack) => {
+      return this._generateAudioStream(remoteTrack); 
+    });
 
     return remoteStreams;
   }
