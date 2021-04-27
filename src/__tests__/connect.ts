@@ -8,7 +8,8 @@ import {
   uaConfigurationWithoutAuthorization,
   uaConfigurationWithAuthorizationWithDisplayName,
   uaConfigurationWithoutAuthorizationWithoutDisplayName,
-  extraHeadersBase,
+  remoteAddress,
+  extraHeadersRemoteAddress,
 } from '../__mocks__';
 import type SipConnector from '../SipConnector';
 
@@ -189,7 +190,16 @@ describe('sip-connector', () => {
     const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
 
     // @ts-ignore
-    expect(ua.registrator().extraHeaders).toEqual(extraHeadersBase);
+    expect(ua.registrator().extraHeaders).toEqual([]);
+  });
+
+  it('send extraHeaders with remoteAddress', async () => {
+    expect.assertions(1);
+
+    const ua = await sipConnector.connect({ ...dataForConnectionWithAuthorization, remoteAddress });
+
+    // @ts-ignore
+    expect(ua.registrator().extraHeaders).toEqual(extraHeadersRemoteAddress);
   });
 
   it('send extended extraHeaders', async () => {
@@ -200,6 +210,21 @@ describe('sip-connector', () => {
     const ua = await sipConnector.connect({ ...dataForConnectionWithAuthorization, extraHeaders });
 
     // @ts-ignore
-    expect(ua.registrator().extraHeaders).toEqual([...extraHeadersBase, ...extraHeaders]);
+    expect(ua.registrator().extraHeaders).toEqual(extraHeaders);
+  });
+
+  it('send extended extraHeaders with remoteAddress', async () => {
+    expect.assertions(1);
+
+    const extraHeaders = ['test'];
+
+    const ua = await sipConnector.connect({
+      ...dataForConnectionWithAuthorization,
+      remoteAddress,
+      extraHeaders,
+    });
+
+    // @ts-ignore
+    expect(ua.registrator().extraHeaders).toEqual([...extraHeadersRemoteAddress, ...extraHeaders]);
   });
 });

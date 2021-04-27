@@ -63,6 +63,6 @@ export const uaConfigurationWithoutAuthorizationWithoutDisplayName = {
   register: false,
 };
 
-export const extraHeadersBase = [
-  `X-Vinteo-Remote: ${dataForConnectionWithAuthorization.sipServerUrl}`,
-];
+export const remoteAddress = '10.10.10.10';
+
+export const extraHeadersRemoteAddress = [`X-Vinteo-Remote: ${remoteAddress}`];

@@ -42,7 +42,7 @@ import {
   HEADER_MAIN_CAM,
   HEADER_MAIN_CAM_RESOLUTION,
 } from './headers';
-import getExtraHeadersRegistration from './getExtraHeadersRegistration';
+import getExtraHeadersRemoteAddress from './getExtraHeadersRemoteAddress';
 
 function resolveSipUrl(serverUrl: string): (string) => string {
   return (id: string): string => {
@@ -137,8 +137,9 @@ type TParametersConnection = {
   user?: string;
   password?: string;
   register?: boolean;
-  sipServerUrl?: string;
-  sipWebSocketServerURL?: string;
+  sipServerUrl: string;
+  sipWebSocketServerURL: string;
+  remoteAddress?: string;
 } & TOptionsExtraHeaders;
 
 type TConnect = (parameters: TParametersConnection) => Promise<UA>;
@@ -605,6 +606,7 @@ export default class SipConnector {
     password,
     sipServerUrl,
     sipWebSocketServerURL,
+    remoteAddress,
     extraHeaders,
   }) => {
     return this.createUa({
@@ -614,6 +616,7 @@ export default class SipConnector {
       register,
       sipServerUrl,
       sipWebSocketServerURL,
+      remoteAddress,
       extraHeaders,
     }).then(() => {
       return this._start();
@@ -627,6 +630,7 @@ export default class SipConnector {
     register,
     sipServerUrl,
     sipWebSocketServerURL,
+    remoteAddress,
     extraHeaders = [],
   }) => {
     if (!sipServerUrl) {
@@ -698,8 +702,8 @@ export default class SipConnector {
       }
     });
 
-    const extraHeadersRegistration = getExtraHeadersRegistration(sipServerUrl);
-    const extraHeadersBase = [...extraHeadersRegistration, ...extraHeaders];
+    const extraHeadersRemoteAddress = getExtraHeadersRemoteAddress(remoteAddress);
+    const extraHeadersBase = [...extraHeadersRemoteAddress, ...extraHeaders];
 
     this.ua!.registrator().setExtraHeaders(extraHeadersBase);
 
