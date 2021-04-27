@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.0.0](https://github.com/Krivega/sip-connector/compare/v0.1.4...v1.0.0) (2021-04-27)
+
+### ⚠ BREAKING CHANGES
+
+- remove public method start
+
+### Bug Fixes
+
+- **sip-connector:** set correct context for generate audio stream method ([#4](https://github.com/Krivega/sip-connector/issues/4)) ([4463ec5](https://github.com/Krivega/sip-connector/commit/4463ec5a240227feaea68ca69015e2c499572505))
+- send extraheaders when connect ([d0c88ec](https://github.com/Krivega/sip-connector/commit/d0c88ec6a9904caa1c210847f8cf7c19d6fff270))
+
 ### [0.1.4](https://github.com/Krivega/sip-connector/compare/v0.1.3...v0.1.4) (2021-04-26)
 
 ### Features
