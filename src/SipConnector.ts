@@ -1,7 +1,15 @@
 import type { UA, WebSocketInterface } from '@krivega/jssip';
 import type { IncomingRequest } from '@krivega/jssip/lib/SIPMessage';
-import type { IncomingInfoEvent, OutgoingInfoEvent } from '@krivega/jssip/lib/RTCSession';
-import type { RegisteredEvent, UnRegisteredEvent } from '@krivega/jssip/lib/UA';
+import type {
+  IncomingInfoEvent,
+  OutgoingInfoEvent,
+  RTCSession,
+} from '@krivega/jssip/lib/RTCSession';
+import type {
+  IncomingRTCSessionEvent,
+  RegisteredEvent,
+  UnRegisteredEvent,
+} from '@krivega/jssip/lib/UA';
 import CancelableRequest, {
   isCanceledError,
 } from '@krivega/cancelable-promise/dist/CancelableRequest';
@@ -52,7 +60,7 @@ const parseDisplayName = (displayName) => {
 };
 const generateUserId = resolveRandomInt(100000, 99999999);
 
-const prepareMediaStream = (mediaStream: MediaStream) => {
+const prepareMediaStream = (mediaStream: MediaStream): MediaStream => {
   const audioTracks = mediaStream.getAudioTracks();
   const videoTracks = mediaStream.getVideoTracks();
   const tracks = [...audioTracks, ...videoTracks];
@@ -197,21 +205,24 @@ export default class SipConnector {
 
   private _uaEvents: Events<typeof UA_EVENT_NAMES>;
 
-  private _cancelableConnect: any;
+  private _cancelableConnect: CancelableRequest<Parameters<TConnect>[0], ReturnType<TConnect>>;
 
-  private _cancelableCreateUa: any;
+  private _cancelableCreateUa: CancelableRequest<Parameters<TCreateUa>[0], ReturnType<TCreateUa>>;
 
-  private _cancelableDisconnect: any;
+  private _cancelableDisconnect: CancelableRequest<void, ReturnType<TDisconnect>>;
 
-  private _cancelableSet: any;
+  private _cancelableSet: CancelableRequest<Parameters<TSet>[0], ReturnType<TSet>>;
 
   private _cancelableCall: CancelableRequest<Parameters<TCall>[0], ReturnType<TCall>>;
 
-  private _cancelableAnswer: any;
+  private _cancelableAnswer: CancelableRequest<
+    Parameters<TAnswerToIncomingCall>[0],
+    ReturnType<TAnswerToIncomingCall>
+  >;
 
-  private _cancelableSendDTMF: any;
+  private _cancelableSendDTMF: CancelableRequest<Parameters<TSendDTMF>[0], ReturnType<TSendDTMF>>;
 
-  private _cancelableRestoreSession: any;
+  private _cancelableRestoreSession: CancelableRequest<void, ReturnType<TRestoreSession>>;
 
   private getSipServerUrl: (id: string) => string = (id: string) => {
     return id;
@@ -221,13 +232,13 @@ export default class SipConnector {
 
   ua?: UA;
 
-  session?: ReturnType<UA['call']>;
+  session?: RTCSession;
 
-  incomingSession: any;
+  incomingSession?: RTCSession;
 
-  _streamPresentationCurrent: any;
+  _streamPresentationCurrent?: MediaStream;
 
-  socket: any;
+  socket?: WebSocketInterface;
 
   constructor({
     JsSIP,
@@ -384,7 +395,7 @@ export default class SipConnector {
         return undefined;
       }
 
-      const { incomingSession } = this;
+      const incomingSession = this!.incomingSession as RTCSession;
       const callerData = this.remoteCallerData;
 
       this._cancelableCall.cancelRequest();
@@ -435,7 +446,7 @@ export default class SipConnector {
     const streamPresentationPrev = this._streamPresentationCurrent;
     let result: Promise<void> | Promise<MediaStream> = Promise.resolve();
 
-    if (this.isEstablishedSession && streamPresentationPrev) {
+    if (this.isEstablishedSession && this._streamPresentationCurrent) {
       result = this.session!.stopPresentation(this._streamPresentationCurrent, [
         HEADER_STOP_PRESENTATION,
       ]);
@@ -452,7 +463,7 @@ export default class SipConnector {
     });
   }
 
-  handleNewRTCSession = ({ originator, session }) => {
+  handleNewRTCSession = ({ originator, session }: IncomingRTCSessionEvent) => {
     if (originator === ORIGINATOR_REMOTE) {
       this.incomingSession = session;
 
@@ -664,7 +675,7 @@ export default class SipConnector {
       display_name: parseDisplayName(displayName),
       user_agent: userAgent,
       sdp_semantics: this._sdpSemantics,
-      sockets: [this.socket],
+      sockets: [this.socket as WebSocketInterface],
       uri: this.getSipServerUrl(authorizationUser),
       session_timers: false,
       register_expires: 60 * 5, // 5 minutes in sec
