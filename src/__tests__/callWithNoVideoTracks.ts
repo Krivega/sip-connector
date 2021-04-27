@@ -65,4 +65,18 @@ describe('call with no video tracks', () => {
 
     expect(videoTrack.length).toBe(0);
   });
+
+  it('tracks on senders', async () => {
+    expect.assertions(2);
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+
+    const number = `10000`;
+    const peerconnection = await sipConnector.call({ number, mediaStream, ontrack: mockFn });
+
+    // @ts-ignore
+    expect(peerconnection._senders[0].track.kind).toBe('audio');
+    // @ts-ignore
+    expect(peerconnection._senders[1]).toBe(undefined);
+  });
 });
