@@ -7,11 +7,7 @@ export const SIP_WEB_SOCKET_SERVER_URL = 'SIP_WEB_SOCKET_SERVER_URL';
 
 const socket = new JsSIP.WebSocketInterface(SIP_WEB_SOCKET_SERVER_URL);
 
-const fetchIpSipServer = (sipServerUrl) => {
-  return Promise.resolve(sipServerUrl);
-};
 const baseDataForConnection = {
-  fetchIpSipServer,
   sipServerUrl: SIP_SERVER_URL,
   sipWebSocketServerURL: SIP_WEB_SOCKET_SERVER_URL,
 };
@@ -66,3 +62,7 @@ export const uaConfigurationWithoutAuthorizationWithoutDisplayName = {
   display_name: '',
   register: false,
 };
+
+export const extraHeadersBase = [
+  `X-Vinteo-Remote: ${dataForConnectionWithAuthorization.sipServerUrl}`,
+];
