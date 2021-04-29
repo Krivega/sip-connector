@@ -25,7 +25,7 @@ const resolveVideoSendingBalancer = (sipConnector: SipConnector) => {
     const senders = connection.getSenders();
     const sender = findSenderVideo(senders);
 
-    if (sender && mainCam !== undefined && resolutionMainCam !== undefined) {
+    if (sender && sender.track && mainCam !== undefined && resolutionMainCam !== undefined) {
       processSenderDebounced({ mainCam, resolutionMainCam, sender });
     }
   };
