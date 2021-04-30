@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0](https://github.com/Krivega/sip-connector/compare/v1.0.1...v2.0.0) (2021-04-30)
+
+### ⚠ BREAKING CHANGES
+
+- sdpSemantics removed from constructor
+
+### Features
+
+- move param sdpSemantics to connect ([e12214f](https://github.com/Krivega/sip-connector/commit/e12214f1cb806733b733ebf66897fff1407c5bb2))
+
 ### [1.0.1](https://github.com/Krivega/sip-connector/compare/v1.0.0...v1.0.1) (2021-04-27)
 
 ### Bug Fixes
