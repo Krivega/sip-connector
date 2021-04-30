@@ -66,10 +66,17 @@ const resetScaleResolutionSender = (sender: RTCRtpSender): void => {
   addToStackScaleResolutionDownBySender(sender, scaleResolutionDownByTarget);
 };
 
-const setResolutionSender = (sender: RTCRtpSender, resolutionTarget: string): void => {
+const setResolutionSender = ({
+  sender,
+  track,
+  resolutionTarget,
+}: {
+  sender: RTCRtpSender;
+  track: MediaStreamTrack;
+  resolutionTarget: string;
+}): void => {
   const [widthTarget, heightTarget] = resolutionTarget.split('x');
 
-  const track = sender.track!;
   const settings = track.getSettings();
   const widthCurrent = settings.width!;
   const heightCurrent = settings.height!;
@@ -87,10 +94,12 @@ const processSender = ({
   mainCam,
   resolutionMainCam,
   sender,
+  track,
 }: {
   mainCam: MainCAM;
   resolutionMainCam: string;
   sender: RTCRtpSender;
+  track: MediaStreamTrack;
 }): void => {
   switch (mainCam) {
     case MainCAM.PAUSE_MAIN_CAM:
@@ -100,7 +109,7 @@ const processSender = ({
       resetScaleResolutionSender(sender);
       break;
     case MainCAM.MAX_MAIN_CAM_RESOLUTION:
-      setResolutionSender(sender, resolutionMainCam);
+      setResolutionSender({ sender, track, resolutionTarget: resolutionMainCam });
       break;
   }
 };
