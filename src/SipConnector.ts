@@ -108,6 +108,7 @@ type TParametersConnection = {
   sipServerUrl: string;
   sipWebSocketServerURL: string;
   remoteAddress?: string;
+  sdpSemantics?: 'plan-b' | 'unified-plan';
 } & TOptionsExtraHeaders;
 
 type TConnect = (parameters: TParametersConnection) => Promise<UA>;
@@ -168,8 +169,6 @@ export default class SipConnector {
 
   private JsSIP: TJsSIP;
 
-  private _sdpSemantics: string;
-
   private _sessionEvents: Events<typeof SESSION_EVENT_NAMES>;
 
   private _uaEvents: Events<typeof UA_EVENT_NAMES>;
@@ -209,15 +208,8 @@ export default class SipConnector {
 
   socket?: WebSocketInterface;
 
-  constructor({
-    JsSIP,
-    sdpSemantics = 'plan-b',
-  }: {
-    JsSIP: TJsSIP;
-    sdpSemantics?: 'plan-b' | 'unified-plan';
-  }) {
+  constructor({ JsSIP }: { JsSIP: TJsSIP }) {
     this.JsSIP = JsSIP;
-    this._sdpSemantics = sdpSemantics;
 
     this._sessionEvents = new Events<typeof SESSION_EVENT_NAMES>(SESSION_EVENT_NAMES);
     this._uaEvents = new Events<typeof UA_EVENT_NAMES>(UA_EVENT_NAMES);
@@ -576,6 +568,7 @@ export default class SipConnector {
     sipWebSocketServerURL,
     remoteAddress,
     extraHeaders,
+    sdpSemantics,
   }) => {
     return this.createUa({
       displayName,
@@ -586,6 +579,7 @@ export default class SipConnector {
       sipWebSocketServerURL,
       remoteAddress,
       extraHeaders,
+      sdpSemantics,
     }).then(() => {
       return this._start();
     });
@@ -600,6 +594,7 @@ export default class SipConnector {
     sipWebSocketServerURL,
     remoteAddress,
     extraHeaders = [],
+    sdpSemantics = 'plan-b',
   }) => {
     if (!sipServerUrl) {
       throw new Error('sipServerUrl is required');
@@ -637,7 +632,7 @@ export default class SipConnector {
 
     let userAgent = 'Chrome';
 
-    if (this._sdpSemantics === 'unified-plan') {
+    if (sdpSemantics === 'unified-plan') {
       userAgent = 'ChromeNew';
     }
 
@@ -646,7 +641,7 @@ export default class SipConnector {
       register,
       display_name: parseDisplayName(displayName),
       user_agent: userAgent,
-      sdp_semantics: this._sdpSemantics,
+      sdp_semantics: sdpSemantics,
       sockets: [this.socket as WebSocketInterface],
       uri: this.getSipServerUrl(authorizationUser),
       session_timers: false,
