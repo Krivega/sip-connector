@@ -1,5 +1,3 @@
-export const FAILED_TO_FETCH = 'Failed to fetch';
-
 // Generic error causes.
 export const CONNECTION_ERROR = 'Connection Error';
 export const REQUEST_TIMEOUT = 'Request Timeout';
