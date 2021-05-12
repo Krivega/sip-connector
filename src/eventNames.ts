@@ -27,6 +27,7 @@ const SESSION_SYNTHETICS_EVENT_NAMES = [
   'peerconnection:confirmed',
   'peerconnection:ontrack',
   'channels',
+  'channels-notify',
   'ended:fromserver',
   'main-cam-control',
 ] as const;

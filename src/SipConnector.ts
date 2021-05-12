@@ -41,6 +41,8 @@ import {
   HEADER_CONTENT_TYPE_MAIN_CAM,
   HEADER_MAIN_CAM,
   HEADER_MAIN_CAM_RESOLUTION,
+  CONTENT_TYPE_CHANNELS_NOTIFY,
+  HEADER_CHANNELS_NOTIFY,
 } from './headers';
 import getExtraHeadersRemoteAddress from './getExtraHeadersRemoteAddress';
 import {
@@ -261,6 +263,7 @@ export default class SipConnector {
     this.on('shareState', this._handleShareState);
 
     this.onSession('newInfo', this._handleNewInfo);
+    this.on('sipEvent', this._handleSipEventNotify);
   }
 
   connect: TConnect = (data) => {
@@ -1043,6 +1046,21 @@ export default class SipConnector {
     }
   };
 
+  _maybeTriggerChannelsNotify = (request: IncomingRequest) => {
+    const channelsInfo = JSON.parse(request.getHeader(HEADER_CHANNELS_NOTIFY));
+    const inputChannels = channelsInfo?.input;
+    const outputChannels = channelsInfo?.output;
+
+    if (channelsInfo?.cmd === 'channels') {
+      const headersChannels: TChannels = {
+        inputChannels,
+        outputChannels,
+      };
+
+      this._sessionEvents.trigger('channels-notify', headersChannels);
+    }
+  };
+
   _triggerEnterRoom = (request: IncomingRequest) => {
     const room = request.getHeader(HEADER_CONTENT_ENTER_ROOM);
 
@@ -1081,6 +1099,9 @@ export default class SipConnector {
           this._triggerEnterRoom(request);
           this._maybeTriggerChannels(request);
           break;
+        case CONTENT_TYPE_CHANNELS_NOTIFY:
+          this._maybeTriggerChannelsNotify(request);
+          break;
         case CONTENT_TYPE_SHARE_STATE:
           this._triggerShareState(request);
           break;
@@ -1092,6 +1113,10 @@ export default class SipConnector {
           break;
       }
     }
+  };
+
+  _handleSipEventNotify = ({ request }: { request: IncomingRequest }) => {
+    return this._maybeTriggerChannelsNotify(request);
   };
 
   waitChannels(): Promise<TChannels> {
