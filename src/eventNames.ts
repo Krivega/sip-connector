@@ -7,6 +7,7 @@ const UA_SYNTHETICS_EVENT_NAMES = [
   'mustStopPresentation',
   'shareState',
   'enterRoom',
+  'channels-notify',
 ] as const;
 
 export const UA_JSSIP_EVENT_NAMES = [

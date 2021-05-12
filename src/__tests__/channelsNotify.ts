@@ -1,6 +1,9 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 import createSipConnector from '../__mocks__/doMock';
-import { dataForConnectionWithAuthorization } from '../__mocks__';
+import {
+  dataForConnectionWithAuthorization,
+  dataForConnectionWithoutAuthorization,
+} from '../__mocks__';
 import { channelsHeaders, channelsData } from '../__mocks__/channelsNotify';
 import JsSIP from '../__mocks__/jssip.mock';
 import SipConnector from '../SipConnector';
@@ -19,7 +22,7 @@ describe('channels notify', () => {
     });
   });
 
-  it('wait channels notify event', async () => {
+  it('wait channels notify event authorized', async () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
@@ -35,6 +38,21 @@ describe('channels notify', () => {
       if (session) {
         JsSIP.triggerNewInfo(session, channelsHeaders);
       }
+    });
+  });
+
+  it('wait channels notify event unauthorized', async () => {
+    const ua = await sipConnector.connect(dataForConnectionWithoutAuthorization);
+
+    return new Promise<void>((resolve) => {
+      sipConnector.on('channels-notify', async (channels) => {
+        expect(channels).toEqual(channelsData);
+
+        resolve();
+      });
+
+      // @ts-ignore
+      JsSIP.triggerNewSipEvent(ua, channelsHeaders);
     });
   });
 });

@@ -1057,7 +1057,11 @@ export default class SipConnector {
         outputChannels,
       };
 
-      this._sessionEvents.trigger('channels-notify', headersChannels);
+      if (this.session) {
+        return this._sessionEvents.trigger('channels-notify', headersChannels);
+      }
+
+      return this._uaEvents.trigger('channels-notify', headersChannels);
     }
   };
 

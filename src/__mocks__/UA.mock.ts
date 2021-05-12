@@ -1,6 +1,7 @@
 import type { UA as IUA } from '@krivega/jssip';
 import type { UAConfiguration } from '@krivega/jssip/lib/UA';
 import Events from 'events-constructor';
+import type { IncomingRequest } from '@krivega/jssip/lib/SIPMessage';
 import { UA_EVENT_NAMES } from '../eventNames';
 import type { TEventUA } from '../eventNames';
 import Session from './Session.mock';
@@ -186,6 +187,10 @@ class UA implements IUA {
 
   registrator() {
     return this._registrator;
+  }
+
+  newSipEvent(data: { request: IncomingRequest }) {
+    this.trigger('sipEvent', data);
   }
 }
 

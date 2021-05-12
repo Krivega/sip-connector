@@ -13,8 +13,15 @@ const triggerNewInfo = (session: RTCSession, extraHeaders: string[][]) => {
   session.newInfo(incomingInfoEvent);
 };
 
+const triggerNewSipEvent = (ua: UA, extraHeaders: string[][]) => {
+  const request = new Request(extraHeaders);
+  const incomingInfoEvent = { request };
+
+  ua.newSipEvent(incomingInfoEvent);
+};
+
 const triggerIncomingSession = (
-  ua,
+  ua: UA,
   {
     incomingNumber = '1234',
     displayName,
@@ -40,6 +47,7 @@ const jssip = {
   WebSocketInterface,
   UA,
   triggerNewInfo,
+  triggerNewSipEvent,
   triggerIncomingSession,
   triggerFailIncomingSession,
   C: {
