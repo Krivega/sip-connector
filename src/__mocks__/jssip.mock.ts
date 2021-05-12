@@ -15,9 +15,9 @@ const triggerNewInfo = (session: RTCSession, extraHeaders: string[][]) => {
 
 const triggerNewSipEvent = (ua: UA, extraHeaders: string[][]) => {
   const request = new Request(extraHeaders);
-  const incomingInfoEvent = { request };
+  const incomingSipEvent = { request };
 
-  ua.newSipEvent(incomingInfoEvent);
+  ua.newSipEvent(incomingSipEvent);
 };
 
 const triggerIncomingSession = (
