@@ -7,7 +7,6 @@ const UA_SYNTHETICS_EVENT_NAMES = [
   'mustStopPresentation',
   'shareState',
   'enterRoom',
-  'channels-notify',
 ] as const;
 
 export const UA_JSSIP_EVENT_NAMES = [
@@ -28,7 +27,7 @@ const SESSION_SYNTHETICS_EVENT_NAMES = [
   'peerconnection:confirmed',
   'peerconnection:ontrack',
   'channels',
-  'channels-notify',
+  'channels:notify',
   'ended:fromserver',
   'main-cam-control',
 ] as const;

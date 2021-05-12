@@ -27,7 +27,7 @@ describe('channels notify', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onSession('channels-notify', async (channels) => {
+      sipConnector.onSession('channels:notify', async (channels) => {
         expect(channels).toEqual(channelsData);
 
         resolve();
@@ -44,15 +44,21 @@ describe('channels notify', () => {
   it('wait channels notify event unauthorized', async () => {
     const ua = await sipConnector.connect(dataForConnectionWithoutAuthorization);
 
+    await sipConnector.call({ number, mediaStream });
+
     return new Promise<void>((resolve) => {
-      sipConnector.on('channels-notify', async (channels) => {
+      sipConnector.onSession('channels:notify', async (channels) => {
         expect(channels).toEqual(channelsData);
 
         resolve();
       });
 
-      // @ts-ignore
-      JsSIP.triggerNewSipEvent(ua, channelsHeaders);
+      const { session } = sipConnector;
+
+      if (session) {
+        // @ts-ignore
+        JsSIP.triggerNewSipEvent(ua, channelsHeaders);
+      }
     });
   });
 });

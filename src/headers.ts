@@ -13,5 +13,5 @@ export const HEADER_STOP_PRESENTATION = 'X-WEBRTC-SHARE-STATE: STOPPRESENTATION'
 export const HEADER_MAIN_CAM = 'X-WEBRTC-MAINCAM';
 export const HEADER_MAIN_CAM_RESOLUTION = 'X-WEBRTC-MAINCAM-RESOLUTION';
 
-export const CONTENT_TYPE_CHANNELS_NOTIFY = 'application/vinteo.webrtc.notify';
-export const HEADER_CHANNELS_NOTIFY = 'X-VINTEO-NOTIFY';
+export const CONTENT_TYPE_NOTIFY = 'application/vinteo.webrtc.notify';
+export const HEADER_NOTIFY = 'X-VINTEO-NOTIFY';
