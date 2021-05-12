@@ -352,8 +352,14 @@ export default class SipConnector {
       });
   };
 
-  replaceMediaStream(mediaStream: MediaStream): Promise<void> {
-    return this.session!.replaceMediaStream(mediaStream);
+  replaceMediaStream(
+    mediaStream: MediaStream,
+    options?: {
+      deleteExisting: boolean;
+      addMissing: boolean;
+    }
+  ): Promise<void> {
+    return this.session!.replaceMediaStream(mediaStream, options);
   }
 
   declineToIncomingCall = ({ statusCode = REQUEST_TERMINATED_STATUS_CODE } = {}) => {
