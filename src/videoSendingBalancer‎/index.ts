@@ -5,7 +5,7 @@ import processSender from './processSender';
 
 const processSenderDebounced = debounce(processSender, 100);
 
-const findSenderVideo = (senders: RTCRtpSender[]): RTCRtpSender | undefined => {
+const findVideoSender = (senders: RTCRtpSender[]): RTCRtpSender | undefined => {
   return senders.find((sender) => {
     return sender?.track?.kind === 'video';
   });
@@ -23,7 +23,7 @@ const resolveVideoSendingBalancer = (sipConnector: SipConnector) => {
     }
 
     const senders = connection.getSenders();
-    const sender = findSenderVideo(senders);
+    const sender = findVideoSender(senders);
 
     if (sender && sender.track && mainCam !== undefined && resolutionMainCam !== undefined) {
       processSenderDebounced({ mainCam, resolutionMainCam, sender, track: sender.track });

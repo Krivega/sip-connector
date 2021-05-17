@@ -1,5 +1,6 @@
 import createStackPromises from 'stack-promises';
 import { MainCAM } from '../SipConnector';
+import setEncodingsToSender from './setEncodingsToSender';
 
 const stackPromises = createStackPromises();
 
@@ -15,42 +16,12 @@ const run = (action: () => Promise<any>) => {
   runStackPromises();
 };
 
-const scaleResolutionDownBySender = (
-  sender: RTCRtpSender,
-  scaleResolutionDownByTarget: number
-): Promise<any> => {
-  const parameters: RTCRtpSendParameters = sender.getParameters();
-
-  if (!parameters.encodings || parameters.encodings.length === 0) {
-    parameters.encodings = [{}];
-  }
-
-  const scaleResolutionDownByCurrent = parameters.encodings[0].scaleResolutionDownBy;
-  const scaleResolutionDownByTargetParsed = Math.max(scaleResolutionDownByTarget, 1);
-
-  const isChangedDefaultScale =
-    scaleResolutionDownByCurrent === undefined && scaleResolutionDownByTargetParsed !== 1;
-  const isChangedPrevScale =
-    scaleResolutionDownByCurrent !== undefined &&
-    scaleResolutionDownByTargetParsed !== scaleResolutionDownByCurrent;
-
-  const isNeedToChange = isChangedPrevScale || isChangedDefaultScale;
-
-  if (isNeedToChange) {
-    parameters.encodings[0].scaleResolutionDownBy = scaleResolutionDownByTargetParsed;
-
-    return sender.setParameters(parameters);
-  }
-
-  return Promise.resolve();
-};
-
 const addToStackScaleResolutionDownBySender = (
   sender: RTCRtpSender,
   scaleResolutionDownByTarget: number
 ) => {
   run(() => {
-    return scaleResolutionDownBySender(sender, scaleResolutionDownByTarget);
+    return setEncodingsToSender(sender, { scaleResolutionDownBy: scaleResolutionDownByTarget });
   });
 };
 
