@@ -14,6 +14,7 @@ import CancelableRequest, {
   isCanceledError,
 } from '@krivega/cancelable-promise/dist/CancelableRequest';
 import Events from 'events-constructor';
+import scaleBitrate from './videoSendingBalancer‎/scaleBitrate';
 import {
   UA_EVENT_NAMES,
   UA_JSSIP_EVENT_NAMES,
@@ -352,8 +353,14 @@ export default class SipConnector {
       });
   };
 
-  replaceMediaStream(mediaStream: MediaStream): Promise<void> {
-    return this.session!.replaceMediaStream(mediaStream);
+  replaceMediaStream(
+    mediaStream: MediaStream,
+    options?: {
+      deleteExisting: boolean;
+      addMissing: boolean;
+    }
+  ): Promise<void> {
+    return this.session!.replaceMediaStream(mediaStream, options);
   }
 
   declineToIncomingCall = ({ statusCode = REQUEST_TERMINATED_STATUS_CODE } = {}) => {
@@ -388,20 +395,35 @@ export default class SipConnector {
 
   startPresentation(
     stream: MediaStream,
-    isNeedReinvite = true
-  ): Promise<void> | Promise<MediaStream> {
+    isNeedReinvite = true,
+    maxBitrate?: number
+  ): Promise<void | MediaStream> {
     this.isPendingPresentation = true;
 
     this._streamPresentationCurrent = prepareMediaStream(stream);
 
-    let result: Promise<void> | Promise<MediaStream> = Promise.resolve();
+    let result: Promise<void | MediaStream> = Promise.resolve();
 
     if (this.isEstablishedSession && this._streamPresentationCurrent) {
       result = this.session!.startPresentation(
         this._streamPresentationCurrent,
         [HEADER_START_PRESENTATION],
         isNeedReinvite
-      );
+      )
+        .then(() => {
+          const { connection } = this;
+
+          if (!connection || maxBitrate === undefined) {
+            return undefined;
+          }
+
+          const senders = connection.getSenders();
+
+          return scaleBitrate(senders, stream, maxBitrate);
+        })
+        .then(() => {
+          return stream;
+        });
     }
 
     return result.finally(() => {

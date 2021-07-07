@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.2.0](https://github.com/Krivega/sip-connector/compare/v2.1.0...v2.2.0) (2021-05-17)
+
+### Features
+
+- add maxBitrate to startPresentation ([bbafd3d](https://github.com/Krivega/sip-connector/commit/bbafd3de8b1d1bb49ef7271aa6b0a04d8a2d5132))
+
+## [2.1.0](https://github.com/Krivega/sip-connector/compare/v2.0.0...v2.1.0) (2021-05-12)
+
+### Features
+
+- **sip-connector:** listen info and notify messages for channels ([#6](https://github.com/Krivega/sip-connector/issues/6)) ([b43692d](https://github.com/Krivega/sip-connector/commit/b43692d8e6f12ab1540c3d9757a389c1cc992b78))
+
+### Bug Fixes
+
+- add options to replaceMediaStream ([6f3be97](https://github.com/Krivega/sip-connector/commit/6f3be97fd40858667c04e02f45d6a947fbd10cd6))
+
 ## [2.0.0](https://github.com/Krivega/sip-connector/compare/v1.0.1...v2.0.0) (2021-04-30)
 
 ### ⚠ BREAKING CHANGES

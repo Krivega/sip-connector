@@ -12,6 +12,7 @@ describe('validateAPI', () => {
   it('not full data: sipServerUrl', () => {
     expect.assertions(1);
 
+    //@ts-ignore
     return sipConnector.connect({}).catch((error) => {
       expect(error.message).toBe('sipServerUrl is required');
     });
@@ -23,6 +24,7 @@ describe('validateAPI', () => {
     return sipConnector
       .connect({
         ...dataForConnectionWithAuthorizationWithDisplayName,
+        //@ts-ignore
         sipWebSocketServerURL: undefined,
       })
       .catch((error) => {

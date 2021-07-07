@@ -67,6 +67,7 @@ describe('incoming call', () => {
         resolve();
       });
 
+      // @ts-ignore
       JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
     });
   });
@@ -86,6 +87,7 @@ describe('incoming call', () => {
         resolve();
       });
 
+      // @ts-ignore
       JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
     });
   });
@@ -112,6 +114,7 @@ describe('incoming call', () => {
         resolve();
       });
 
+      // @ts-ignore
       JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
     });
   });
@@ -140,6 +143,7 @@ describe('incoming call', () => {
         resolve();
       });
 
+      // @ts-ignore
       JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
     });
   });
@@ -154,6 +158,7 @@ describe('incoming call', () => {
         return delayPromise(100).then(resolve);
       }); // wait for to decline incoming call);
 
+      // @ts-ignore
       JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
     })
       .then(() => {
@@ -187,6 +192,7 @@ describe('incoming call', () => {
         return delayPromise(100).then(resolve);
       }); // wait for to decline incoming call);
 
+      // @ts-ignore
       JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
     })
       .then(() => {

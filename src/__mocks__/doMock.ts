@@ -4,7 +4,7 @@ import SIPconnector from '../SipConnector';
 
 const doMock = () => {
   return new SIPconnector({
-    JsSIP: (JsSIP as unknown) as TJsSIP,
+    JsSIP: JsSIP as unknown as TJsSIP,
   });
 };
 
