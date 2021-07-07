@@ -33,7 +33,6 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
   onicegatheringstatechange!: ((this: RTCPeerConnection, ev: Event) => any) | null;
   onnegotiationneeded!: ((this: RTCPeerConnection, ev: Event) => any) | null;
   onsignalingstatechange!: ((this: RTCPeerConnection, ev: Event) => any) | null;
-  onstatsended!: ((this: RTCPeerConnection, ev: RTCStatsEvent) => any) | null;
   ontrack!: ((this: RTCPeerConnection, ev: RTCTrackEvent) => any) | null;
   peerIdentity!: Promise<RTCIdentityAssertion>;
   pendingLocalDescription!: RTCSessionDescription | null;
@@ -51,6 +50,9 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
     throw new Error('Method not implemented.');
   }
   close(): void {
+    throw new Error('Method not implemented.');
+  }
+  restartIce(): void {
     throw new Error('Method not implemented.');
   }
   createAnswer(options?: RTCOfferOptions): Promise<RTCSessionDescriptionInit> {
