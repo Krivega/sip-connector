@@ -18,6 +18,8 @@ class Session extends BaseSession {
 
   status_code?: number;
 
+  private _isEnded = false;
+
   constructor({
     url = '',
     mediaStream,
@@ -108,6 +110,8 @@ class Session extends BaseSession {
     this.status_code = status_code;
 
     this.trigger('ended', { status_code });
+
+    this._isEnded = false;
 
     return this;
   }
@@ -206,6 +210,10 @@ class Session extends BaseSession {
 
   sendInfo() {
     return undefined;
+  }
+
+  isEnded() {
+    return this._isEnded;
   }
 
   newInfo(data: IncomingInfoEvent) {

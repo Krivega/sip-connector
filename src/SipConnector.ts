@@ -1015,9 +1015,13 @@ export default class SipConnector {
 
   _hangUpWithoutCancelRequests: THangUp = async () => {
     if (this.ua && this.session) {
+      const { session } = this;
+
       await this.restoreSession();
 
-      this.ua.terminateSessions();
+      if (!session.isEnded()) {
+        session.terminate();
+      }
     }
   };
 
