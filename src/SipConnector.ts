@@ -1019,7 +1019,9 @@ export default class SipConnector {
 
       await this.restoreSession();
 
-      session.terminate();
+      if (!session.isEnded()) {
+        session.terminate();
+      }
     }
   };
 

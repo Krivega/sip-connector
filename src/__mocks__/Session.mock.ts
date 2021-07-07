@@ -208,6 +208,10 @@ class Session extends BaseSession {
     return undefined;
   }
 
+  isEnded() {
+    return false;
+  }
+
   newInfo(data: IncomingInfoEvent) {
     this.trigger('newInfo', data);
   }
