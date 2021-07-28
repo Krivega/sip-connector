@@ -1,7 +1,12 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 import createSipConnector from '../__mocks__/doMock';
 import { dataForConnectionWithAuthorization } from '../__mocks__';
-import { addedToListModeratorsHeaders, addedToListModeratorsData, removedFromListModeratorsHeaders, removedFromListModeratorsData } from '../__mocks__/participantNotify';
+import {
+  addedToListModeratorsHeaders,
+  addedToListModeratorsData,
+  removedFromListModeratorsHeaders,
+  removedFromListModeratorsData,
+} from '../__mocks__/participantNotify';
 import JsSIP from '../__mocks__/jssip.mock';
 import SipConnector from '../SipConnector';
 
