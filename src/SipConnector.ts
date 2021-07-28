@@ -105,10 +105,19 @@ const CMD_CHANNELS = 'channels' as const;
 const CMD_ADDED_TO_LIST_MODERATORS = 'addedToListModerators' as const;
 const CMD_REMOVED_FROM_LIST_MODERATORS = 'removedFromListModerators' as const;
 
-type TAddedToListModeratorsInfoNotify = { cmd: typeof CMD_ADDED_TO_LIST_MODERATORS; conference: string };
-type TRemovedFromListModeratorsInfoNotify = { cmd: typeof CMD_REMOVED_FROM_LIST_MODERATORS; conference: string };
+type TAddedToListModeratorsInfoNotify = {
+  cmd: typeof CMD_ADDED_TO_LIST_MODERATORS;
+  conference: string;
+};
+type TRemovedFromListModeratorsInfoNotify = {
+  cmd: typeof CMD_REMOVED_FROM_LIST_MODERATORS;
+  conference: string;
+};
 type TChannelsInfoNotify = { cmd: typeof CMD_CHANNELS; input: string; output: string };
-type TInfoNotify = Omit<TChannelsInfoNotify | TAddedToListModeratorsInfoNotify | TRemovedFromListModeratorsInfoNotify, 'cmd'> & { cmd: string };
+type TInfoNotify = Omit<
+  TChannelsInfoNotify | TAddedToListModeratorsInfoNotify | TRemovedFromListModeratorsInfoNotify,
+  'cmd'
+> & { cmd: string };
 
 type TOptionsExtraHeaders = {
   extraHeaders?: string[];
@@ -1086,33 +1095,36 @@ export default class SipConnector {
   };
 
   _handleNotify = (header: TInfoNotify) => {
-    if (header.cmd === CMD_CHANNELS) {
-      const channelsInfo = header as TChannelsInfoNotify;
+    switch (header.cmd) {
+      case CMD_CHANNELS:
+        const channelsInfo = header as TChannelsInfoNotify;
 
-      this._maybeTriggerChannelsNotify(channelsInfo);
-    }
+        this._maybeTriggerChannelsNotify(channelsInfo);
+        break;
+      case CMD_ADDED_TO_LIST_MODERATORS:
+        const addedToListModeratorsInfo = header as TAddedToListModeratorsInfoNotify;
 
-    if (header.cmd === CMD_ADDED_TO_LIST_MODERATORS) {
-      const addedToListModeratorsInfo = header as TAddedToListModeratorsInfoNotify;
+        this._maybeTriggerAddedToListModeratorsNotify(addedToListModeratorsInfo);
+        break;
+      case CMD_REMOVED_FROM_LIST_MODERATORS:
+        const removedFromListModeratorsInfo = header as TRemovedFromListModeratorsInfoNotify;
 
-      this._maybeTriggerAddedToListModeratorsNotify(addedToListModeratorsInfo);
-    }
-
-    if (header.cmd === CMD_REMOVED_FROM_LIST_MODERATORS) {
-      const addedToListModeratorsInfo = header as TAddedToListModeratorsInfoNotify;
-
-      this._maybeTriggerRemovedFromListModeratorsNotify(addedToListModeratorsInfo);
+        this._maybeTriggerRemovedFromListModeratorsNotify(removedFromListModeratorsInfo);
+        break;
     }
   };
 
-  _maybeTriggerRemovedFromListModeratorsNotify = ({ conference }: TAddedToListModeratorsInfoNotify) => {
+  _maybeTriggerRemovedFromListModeratorsNotify = ({
+    conference,
+  }: TRemovedFromListModeratorsInfoNotify) => {
     const headersParametersModeratorsList: TParametersModeratorsList = {
       conference,
     };
 
-    if (this.session) {
-      this._sessionEvents.trigger('participant:removed-from-list-moderators', headersParametersModeratorsList);
-    }
+    this._sessionEvents.trigger(
+      'participant:removed-from-list-moderators',
+      headersParametersModeratorsList
+    );
   };
 
   _maybeTriggerAddedToListModeratorsNotify = ({ conference }: TAddedToListModeratorsInfoNotify) => {
@@ -1120,9 +1132,10 @@ export default class SipConnector {
       conference,
     };
 
-    if (this.session) {
-      this._sessionEvents.trigger('participant:added-to-list-moderators', headersParametersModeratorsList);
-    }
+    this._sessionEvents.trigger(
+      'participant:added-to-list-moderators',
+      headersParametersModeratorsList
+    );
   };
 
   _maybeTriggerChannelsNotify = (channelsInfo: TChannelsInfoNotify) => {
