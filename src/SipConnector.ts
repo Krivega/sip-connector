@@ -1095,22 +1095,18 @@ export default class SipConnector {
   };
 
   _handleNotify = (header: TInfoNotify) => {
-    switch (header.cmd) {
-      case CMD_CHANNELS:
-        const channelsInfo = header as TChannelsInfoNotify;
+    if (header.cmd === CMD_CHANNELS) {
+      const channelsInfo = header as TChannelsInfoNotify;
 
-        this._maybeTriggerChannelsNotify(channelsInfo);
-        break;
-      case CMD_ADDED_TO_LIST_MODERATORS:
-        const addedToListModeratorsInfo = header as TAddedToListModeratorsInfoNotify;
+      this._maybeTriggerChannelsNotify(channelsInfo);
+    } else if (header.cmd === CMD_ADDED_TO_LIST_MODERATORS) {
+      const addedToListModeratorsInfo = header as TAddedToListModeratorsInfoNotify;
 
-        this._maybeTriggerAddedToListModeratorsNotify(addedToListModeratorsInfo);
-        break;
-      case CMD_REMOVED_FROM_LIST_MODERATORS:
-        const removedFromListModeratorsInfo = header as TRemovedFromListModeratorsInfoNotify;
+      this._maybeTriggerAddedToListModeratorsNotify(addedToListModeratorsInfo);
+    } else if (header.cmd === CMD_REMOVED_FROM_LIST_MODERATORS) {
+      const removedFromListModeratorsInfo = header as TRemovedFromListModeratorsInfoNotify;
 
-        this._maybeTriggerRemovedFromListModeratorsNotify(removedFromListModeratorsInfo);
-        break;
+      this._maybeTriggerRemovedFromListModeratorsNotify(removedFromListModeratorsInfo);
     }
   };
 

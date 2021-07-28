@@ -29,7 +29,7 @@ describe('participant notify', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onSession('participant:added-to-list-moderators', async (data) => {
+      sipConnector.onSession('participant:added-to-list-moderators', (data) => {
         expect(data).toEqual(addedToListModeratorsData);
 
         resolve();
@@ -48,7 +48,7 @@ describe('participant notify', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onSession('participant:removed-from-list-moderators', async (data) => {
+      sipConnector.onSession('participant:removed-from-list-moderators', (data) => {
         expect(data).toEqual(removedFromListModeratorsData);
 
         resolve();
