@@ -152,11 +152,13 @@ type TCall = ({
   mediaStream,
   extraHeaders,
   ontrack,
+  iceServers,
 }: {
   number: string;
   mediaStream: MediaStream;
   extraHeaders?: TOptionsExtraHeaders['extraHeaders'];
   ontrack?: TOntrack;
+  iceServers?: RTCIceServer[];
 }) => Promise<RTCPeerConnection>;
 
 type TDisconnect = () => Promise<void>;
@@ -165,6 +167,7 @@ type TParametersAnswerToIncomingCall = {
   mediaStream: MediaStream;
   extraHeaders?: TOptionsExtraHeaders['extraHeaders'];
   ontrack?: TOntrack;
+  iceServers?: RTCIceServer[];
 };
 
 type TAnswerToIncomingCall = (
@@ -828,7 +831,7 @@ export default class SipConnector {
     return disconnectedPromise;
   };
 
-  _call: TCall = ({ number, mediaStream, extraHeaders = [], ontrack }) => {
+  _call: TCall = ({ number, mediaStream, extraHeaders = [], ontrack, iceServers }) => {
     return new Promise((resolve, reject) => {
       this._connectionConfiguration.number = number;
       this._connectionConfiguration.answer = false;
@@ -838,6 +841,9 @@ export default class SipConnector {
         extraHeaders,
         mediaStream: prepareMediaStream(mediaStream),
         eventHandlers: this._sessionEvents.triggers,
+        pcConfig: {
+          iceServers,
+        },
       });
     });
   };
@@ -846,6 +852,7 @@ export default class SipConnector {
     mediaStream,
     ontrack,
     extraHeaders = [],
+    iceServers,
   }): Promise<RTCPeerConnection> => {
     return new Promise((resolve, reject) => {
       if (!this.isAvailableIncomingCall) {
@@ -876,6 +883,9 @@ export default class SipConnector {
       this.session!.answer({
         extraHeaders,
         mediaStream: preparedMediaStream,
+        pcConfig: {
+          iceServers,
+        },
       });
 
       return undefined;
