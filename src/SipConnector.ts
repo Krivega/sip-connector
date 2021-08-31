@@ -104,6 +104,8 @@ type TParametersModeratorsList = {
 const CMD_CHANNELS = 'channels' as const;
 const CMD_ADDED_TO_LIST_MODERATORS = 'addedToListModerators' as const;
 const CMD_REMOVED_FROM_LIST_MODERATORS = 'removedFromListModerators' as const;
+const CMD_MOVE_REQUEST_TO_CONFERENCE = 'WebcastParticipationAccepted' as const;
+const CMD_MOVE_REQUEST_TO_STREAM = 'ParticipantMovedToWebcast' as const;
 
 type TAddedToListModeratorsInfoNotify = {
   cmd: typeof CMD_ADDED_TO_LIST_MODERATORS;
@@ -111,6 +113,14 @@ type TAddedToListModeratorsInfoNotify = {
 };
 type TRemovedFromListModeratorsInfoNotify = {
   cmd: typeof CMD_REMOVED_FROM_LIST_MODERATORS;
+  conference: string;
+};
+type TMoveRequestToConferenceInfoNotify = {
+  cmd: typeof CMD_MOVE_REQUEST_TO_CONFERENCE;
+  conference: string;
+};
+type TMoveRequestToStreamInfoNotify = {
+  cmd: typeof CMD_MOVE_REQUEST_TO_STREAM;
   conference: string;
 };
 type TChannelsInfoNotify = { cmd: typeof CMD_CHANNELS; input: string; output: string };
@@ -1117,6 +1127,14 @@ export default class SipConnector {
       const removedFromListModeratorsInfo = header as TRemovedFromListModeratorsInfoNotify;
 
       this._maybeTriggerRemovedFromListModeratorsNotify(removedFromListModeratorsInfo);
+    } else if (header.cmd === CMD_MOVE_REQUEST_TO_CONFERENCE) {
+      const moveRequestToConferenceInfo = header as TMoveRequestToConferenceInfoNotify;
+
+      this._maybeTriggerParticipantMoveRequestToConference(moveRequestToConferenceInfo);
+    } else if (header.cmd === CMD_MOVE_REQUEST_TO_STREAM) {
+      const moveRequestToStreamInfo = header as TMoveRequestToStreamInfoNotify;
+
+      this._maybeTriggerParticipantMoveRequestToStream(moveRequestToStreamInfo);
     }
   };
 
@@ -1148,14 +1166,34 @@ export default class SipConnector {
     const inputChannels = channelsInfo.input;
     const outputChannels = channelsInfo.output;
 
-    const headersChannels: TChannels = {
+    const data: TChannels = {
       inputChannels,
       outputChannels,
     };
 
     if (this.session) {
-      this._sessionEvents.trigger('channels:notify', headersChannels);
+      this._sessionEvents.trigger('channels:notify', data);
     }
+  };
+
+  _maybeTriggerParticipantMoveRequestToConference = ({
+    conference,
+  }: TMoveRequestToConferenceInfoNotify) => {
+    const data: TParametersModeratorsList = {
+      conference,
+    };
+
+    this._sessionEvents.trigger('participant:move-request-to-conference', data);
+  };
+
+  _maybeTriggerParticipantMoveRequestToStream = ({
+    conference,
+  }: TMoveRequestToStreamInfoNotify) => {
+    const data: TParametersModeratorsList = {
+      conference,
+    };
+
+    this._sessionEvents.trigger('participant:move-request-to-stream', data);
   };
 
   _triggerEnterRoom = (request: IncomingRequest) => {

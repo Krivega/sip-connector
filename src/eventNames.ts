@@ -32,6 +32,8 @@ const SESSION_SYNTHETICS_EVENT_NAMES = [
   'main-cam-control',
   'participant:added-to-list-moderators',
   'participant:removed-from-list-moderators',
+  'participant:move-request-to-conference',
+  'participant:move-request-to-stream',
 ] as const;
 
 export const SESSION_JSSIP_EVENT_NAMES = [
