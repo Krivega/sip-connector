@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.4.0](https://github.com/Krivega/sip-connector/compare/v2.3.3...v2.4.0) (2021-08-31)
+
+### Features
+
+- add events for handle reqests to move participant ([91d4022](https://github.com/Krivega/sip-connector/commit/91d40220f2124677314bba79ea67b686d25d84c1))
+
 ### [2.3.3](https://github.com/Krivega/sip-connector/compare/v2.3.2...v2.3.3) (2021-08-27)
 
 ### [2.3.2](https://github.com/Krivega/sip-connector/compare/v2.3.1...v2.3.2) (2021-08-20)
