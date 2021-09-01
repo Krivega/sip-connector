@@ -34,6 +34,7 @@ const SESSION_SYNTHETICS_EVENT_NAMES = [
   'participant:removed-from-list-moderators',
   'participant:move-request-to-conference',
   'participant:move-request-to-stream',
+  'participant:canceling-word-request',
 ] as const;
 
 export const SESSION_JSSIP_EVENT_NAMES = [

@@ -105,6 +105,7 @@ const CMD_CHANNELS = 'channels' as const;
 const CMD_ADDED_TO_LIST_MODERATORS = 'addedToListModerators' as const;
 const CMD_REMOVED_FROM_LIST_MODERATORS = 'removedFromListModerators' as const;
 const CMD_MOVE_REQUEST_TO_CONFERENCE = 'WebcastParticipationAccepted' as const;
+const CMD_CANCELLING_WORD_REQUEST = 'WebcastParticipationRejected' as const;
 const CMD_MOVE_REQUEST_TO_STREAM = 'ParticipantMovedToWebcast' as const;
 
 type TAddedToListModeratorsInfoNotify = {
@@ -117,6 +118,10 @@ type TRemovedFromListModeratorsInfoNotify = {
 };
 type TMoveRequestToConferenceInfoNotify = {
   cmd: typeof CMD_MOVE_REQUEST_TO_CONFERENCE;
+  body: { conference: string };
+};
+type TCancelingWordRequestInfoNotify = {
+  cmd: typeof CMD_CANCELLING_WORD_REQUEST;
   body: { conference: string };
 };
 type TMoveRequestToStreamInfoNotify = {
@@ -1120,21 +1125,25 @@ export default class SipConnector {
 
       this._maybeTriggerChannelsNotify(channelsInfo);
     } else if (header.cmd === CMD_ADDED_TO_LIST_MODERATORS) {
-      const addedToListModeratorsInfo = header as TAddedToListModeratorsInfoNotify;
+      const data = header as TAddedToListModeratorsInfoNotify;
 
-      this._maybeTriggerAddedToListModeratorsNotify(addedToListModeratorsInfo);
+      this._maybeTriggerAddedToListModeratorsNotify(data);
     } else if (header.cmd === CMD_REMOVED_FROM_LIST_MODERATORS) {
-      const removedFromListModeratorsInfo = header as TRemovedFromListModeratorsInfoNotify;
+      const data = header as TRemovedFromListModeratorsInfoNotify;
 
-      this._maybeTriggerRemovedFromListModeratorsNotify(removedFromListModeratorsInfo);
+      this._maybeTriggerRemovedFromListModeratorsNotify(data);
     } else if (header.cmd === CMD_MOVE_REQUEST_TO_CONFERENCE) {
-      const moveRequestToConferenceInfo = header as TMoveRequestToConferenceInfoNotify;
+      const data = header as TMoveRequestToConferenceInfoNotify;
 
-      this._maybeTriggerParticipantMoveRequestToConference(moveRequestToConferenceInfo);
+      this._maybeTriggerParticipantMoveRequestToConference(data);
+    } else if (header.cmd === CMD_CANCELLING_WORD_REQUEST) {
+      const data = header as TCancelingWordRequestInfoNotify;
+
+      this._maybeTriggerParticipantCancelingWordRequest(data);
     } else if (header.cmd === CMD_MOVE_REQUEST_TO_STREAM) {
-      const moveRequestToStreamInfo = header as TMoveRequestToStreamInfoNotify;
+      const data = header as TMoveRequestToStreamInfoNotify;
 
-      this._maybeTriggerParticipantMoveRequestToStream(moveRequestToStreamInfo);
+      this._maybeTriggerParticipantMoveRequestToStream(data);
     }
   };
 
@@ -1184,6 +1193,16 @@ export default class SipConnector {
     };
 
     this._sessionEvents.trigger('participant:move-request-to-conference', data);
+  };
+
+  _maybeTriggerParticipantCancelingWordRequest = ({
+    body: { conference },
+  }: TCancelingWordRequestInfoNotify) => {
+    const data: TParametersModeratorsList = {
+      conference,
+    };
+
+    this._sessionEvents.trigger('participant:canceling-word-request', data);
   };
 
   _maybeTriggerParticipantMoveRequestToStream = ({

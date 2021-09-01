@@ -4,6 +4,8 @@ import { dataForConnectionWithAuthorization } from '../__mocks__';
 import {
   moveRequestToConferenceHeaders,
   moveRequestToConferenceData,
+  cancelingWordRequestHeaders,
+  cancelingWordRequestData,
   moveRequestToStreamHeaders,
   moveRequestToStreamData,
 } from '../__mocks__/participantMoveRequests';
@@ -38,6 +40,25 @@ describe('participants moveRequests', () => {
 
       if (session) {
         JsSIP.triggerNewInfo(session, moveRequestToConferenceHeaders);
+      }
+    });
+  });
+
+  it('event participant:canceling-word-request', async () => {
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    return new Promise<void>((resolve) => {
+      sipConnector.onSession('participant:canceling-word-request', (data) => {
+        expect(data).toEqual(cancelingWordRequestData);
+
+        resolve();
+      });
+
+      const { session } = sipConnector;
+
+      if (session) {
+        JsSIP.triggerNewInfo(session, cancelingWordRequestHeaders);
       }
     });
   });
