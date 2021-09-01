@@ -2,7 +2,7 @@ import { HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_NOTIFY, HEADER_NOTIFY } from '..
 
 const moveRequestToConference = {
   cmd: 'WebcastParticipationAccepted',
-  conference: '111',
+  body: { conference: '111' },
 };
 
 export const moveRequestToConferenceHeaders = [
@@ -11,12 +11,12 @@ export const moveRequestToConferenceHeaders = [
 ];
 
 export const moveRequestToConferenceData = {
-  conference: moveRequestToConference.conference,
+  conference: moveRequestToConference.body.conference,
 };
 
 const moveRequestToStream = {
   cmd: 'ParticipantMovedToWebcast',
-  conference: '111',
+  body: { conference: '111' },
 };
 
 export const moveRequestToStreamHeaders = [
@@ -25,5 +25,5 @@ export const moveRequestToStreamHeaders = [
 ];
 
 export const moveRequestToStreamData = {
-  conference: moveRequestToStream.conference,
+  conference: moveRequestToStream.body.conference,
 };

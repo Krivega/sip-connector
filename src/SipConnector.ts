@@ -117,11 +117,11 @@ type TRemovedFromListModeratorsInfoNotify = {
 };
 type TMoveRequestToConferenceInfoNotify = {
   cmd: typeof CMD_MOVE_REQUEST_TO_CONFERENCE;
-  conference: string;
+  body: { conference: string };
 };
 type TMoveRequestToStreamInfoNotify = {
   cmd: typeof CMD_MOVE_REQUEST_TO_STREAM;
-  conference: string;
+  body: { conference: string };
 };
 type TChannelsInfoNotify = { cmd: typeof CMD_CHANNELS; input: string; output: string };
 type TInfoNotify = Omit<
@@ -1177,7 +1177,7 @@ export default class SipConnector {
   };
 
   _maybeTriggerParticipantMoveRequestToConference = ({
-    conference,
+    body: { conference },
   }: TMoveRequestToConferenceInfoNotify) => {
     const data: TParametersModeratorsList = {
       conference,
@@ -1187,7 +1187,7 @@ export default class SipConnector {
   };
 
   _maybeTriggerParticipantMoveRequestToStream = ({
-    conference,
+    body: { conference },
   }: TMoveRequestToStreamInfoNotify) => {
     const data: TParametersModeratorsList = {
       conference,
