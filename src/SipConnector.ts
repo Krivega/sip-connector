@@ -753,15 +753,6 @@ export default class SipConnector {
         removeEventListeners();
         reject(error);
       };
-      const handleDisconnected = (data) => {
-        let error = data;
-
-        if (data && data.error) {
-          error = data.error;
-        }
-
-        rejectError(error);
-      };
       const addEventListeners = () => {
         if (this.isRegisterConfig) {
           this.on('registered', resolveUa);
@@ -770,13 +761,13 @@ export default class SipConnector {
           this.on('connected', resolveUa);
         }
 
-        this.on('disconnected', handleDisconnected);
+        this.on('disconnected', rejectError);
       };
       const removeEventListeners = () => {
         this.off('registered', resolveUa);
         this.off('registrationFailed', rejectError);
         this.off('connected', resolveUa);
-        this.off('disconnected', handleDisconnected);
+        this.off('disconnected', rejectError);
       };
 
       addEventListeners();
