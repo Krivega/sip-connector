@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.5.1](https://github.com/Krivega/sip-connector/compare/v2.5.0...v2.5.1) (2021-09-09)
+
+### Bug Fixes
+
+- handle disconnect error ([63cf844](https://github.com/Krivega/sip-connector/commit/63cf844e28d3a89f02565eeeb0101c547e0c15b9))
+
 ## [2.5.0](https://github.com/Krivega/sip-connector/compare/v2.4.1...v2.5.0) (2021-09-01)
 
 ### Features
