@@ -2,6 +2,46 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.5.0](https://github.com/Krivega/sip-connector/compare/v2.4.1...v2.5.0) (2021-09-01)
+
+### Features
+
+- add event participant:canceling-word-request ([676e0b2](https://github.com/Krivega/sip-connector/commit/676e0b21444259caa4dd21431e6f1db975a3bd07))
+
+### [2.4.1](https://github.com/Krivega/sip-connector/compare/v2.4.0...v2.4.1) (2021-09-01)
+
+### Bug Fixes
+
+- conference for reqests to move participant ([31ccba7](https://github.com/Krivega/sip-connector/commit/31ccba7cb49f5230fd62b174a8ff559218d9a12b))
+
+## [2.4.0](https://github.com/Krivega/sip-connector/compare/v2.3.3...v2.4.0) (2021-08-31)
+
+### Features
+
+- add events for handle reqests to move participant ([91d4022](https://github.com/Krivega/sip-connector/commit/91d40220f2124677314bba79ea67b686d25d84c1))
+
+### [2.3.3](https://github.com/Krivega/sip-connector/compare/v2.3.2...v2.3.3) (2021-08-27)
+
+### [2.3.2](https://github.com/Krivega/sip-connector/compare/v2.3.1...v2.3.2) (2021-08-20)
+
+### [2.3.1](https://github.com/Krivega/sip-connector/compare/v2.3.0...v2.3.1) (2021-07-28)
+
+### Bug Fixes
+
+- notify ([8e0f7d0](https://github.com/Krivega/sip-connector/commit/8e0f7d0b4b865f14649754a8584bec8764f9ea9d))
+
+## [2.3.0](https://github.com/Krivega/sip-connector/compare/v2.2.1...v2.3.0) (2021-07-28)
+
+### Features
+
+- **sip-connector:** add participant events listeners ([#9](https://github.com/Krivega/sip-connector/issues/9)) ([14f7647](https://github.com/Krivega/sip-connector/commit/14f7647f7df2d6f2190439bafb94747ce0266f0f))
+
+### [2.2.1](https://github.com/Krivega/sip-connector/compare/v2.2.0...v2.2.1) (2021-07-07)
+
+### Bug Fixes
+
+- hangUp for only active session ([#8](https://github.com/Krivega/sip-connector/issues/8)) ([60c53a6](https://github.com/Krivega/sip-connector/commit/60c53a6d227161cd6ea75c19fe5b026f9811d2be))
+
 ## [2.2.0](https://github.com/Krivega/sip-connector/compare/v2.1.0...v2.2.0) (2021-05-17)
 
 ### Features

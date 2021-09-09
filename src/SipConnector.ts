@@ -97,10 +97,42 @@ type TChannels = {
   outputChannels: string;
 };
 
-const CMD_CHANNELS = 'channels' as const;
+type TParametersModeratorsList = {
+  conference: string;
+};
 
+const CMD_CHANNELS = 'channels' as const;
+const CMD_ADDED_TO_LIST_MODERATORS = 'addedToListModerators' as const;
+const CMD_REMOVED_FROM_LIST_MODERATORS = 'removedFromListModerators' as const;
+const CMD_MOVE_REQUEST_TO_CONFERENCE = 'WebcastParticipationAccepted' as const;
+const CMD_CANCELLING_WORD_REQUEST = 'WebcastParticipationRejected' as const;
+const CMD_MOVE_REQUEST_TO_STREAM = 'ParticipantMovedToWebcast' as const;
+
+type TAddedToListModeratorsInfoNotify = {
+  cmd: typeof CMD_ADDED_TO_LIST_MODERATORS;
+  conference: string;
+};
+type TRemovedFromListModeratorsInfoNotify = {
+  cmd: typeof CMD_REMOVED_FROM_LIST_MODERATORS;
+  conference: string;
+};
+type TMoveRequestToConferenceInfoNotify = {
+  cmd: typeof CMD_MOVE_REQUEST_TO_CONFERENCE;
+  body: { conference: string };
+};
+type TCancelingWordRequestInfoNotify = {
+  cmd: typeof CMD_CANCELLING_WORD_REQUEST;
+  body: { conference: string };
+};
+type TMoveRequestToStreamInfoNotify = {
+  cmd: typeof CMD_MOVE_REQUEST_TO_STREAM;
+  body: { conference: string };
+};
 type TChannelsInfoNotify = { cmd: typeof CMD_CHANNELS; input: string; output: string };
-type TInfoNotify = Omit<TChannelsInfoNotify, 'cmd'> & { cmd: string };
+type TInfoNotify = Omit<
+  TChannelsInfoNotify | TAddedToListModeratorsInfoNotify | TRemovedFromListModeratorsInfoNotify,
+  'cmd'
+> & { cmd: string };
 
 type TOptionsExtraHeaders = {
   extraHeaders?: string[];
@@ -135,11 +167,13 @@ type TCall = ({
   mediaStream,
   extraHeaders,
   ontrack,
+  iceServers,
 }: {
   number: string;
   mediaStream: MediaStream;
   extraHeaders?: TOptionsExtraHeaders['extraHeaders'];
   ontrack?: TOntrack;
+  iceServers?: RTCIceServer[];
 }) => Promise<RTCPeerConnection>;
 
 type TDisconnect = () => Promise<void>;
@@ -148,6 +182,7 @@ type TParametersAnswerToIncomingCall = {
   mediaStream: MediaStream;
   extraHeaders?: TOptionsExtraHeaders['extraHeaders'];
   ontrack?: TOntrack;
+  iceServers?: RTCIceServer[];
 };
 
 type TAnswerToIncomingCall = (
@@ -811,7 +846,7 @@ export default class SipConnector {
     return disconnectedPromise;
   };
 
-  _call: TCall = ({ number, mediaStream, extraHeaders = [], ontrack }) => {
+  _call: TCall = ({ number, mediaStream, extraHeaders = [], ontrack, iceServers }) => {
     return new Promise((resolve, reject) => {
       this._connectionConfiguration.number = number;
       this._connectionConfiguration.answer = false;
@@ -821,6 +856,9 @@ export default class SipConnector {
         extraHeaders,
         mediaStream: prepareMediaStream(mediaStream),
         eventHandlers: this._sessionEvents.triggers,
+        pcConfig: {
+          iceServers,
+        },
       });
     });
   };
@@ -829,6 +867,7 @@ export default class SipConnector {
     mediaStream,
     ontrack,
     extraHeaders = [],
+    iceServers,
   }): Promise<RTCPeerConnection> => {
     return new Promise((resolve, reject) => {
       if (!this.isAvailableIncomingCall) {
@@ -859,6 +898,9 @@ export default class SipConnector {
       this.session!.answer({
         extraHeaders,
         mediaStream: preparedMediaStream,
+        pcConfig: {
+          iceServers,
+        },
       });
 
       return undefined;
@@ -1082,21 +1124,95 @@ export default class SipConnector {
       const channelsInfo = header as TChannelsInfoNotify;
 
       this._maybeTriggerChannelsNotify(channelsInfo);
+    } else if (header.cmd === CMD_ADDED_TO_LIST_MODERATORS) {
+      const data = header as TAddedToListModeratorsInfoNotify;
+
+      this._maybeTriggerAddedToListModeratorsNotify(data);
+    } else if (header.cmd === CMD_REMOVED_FROM_LIST_MODERATORS) {
+      const data = header as TRemovedFromListModeratorsInfoNotify;
+
+      this._maybeTriggerRemovedFromListModeratorsNotify(data);
+    } else if (header.cmd === CMD_MOVE_REQUEST_TO_CONFERENCE) {
+      const data = header as TMoveRequestToConferenceInfoNotify;
+
+      this._maybeTriggerParticipantMoveRequestToConference(data);
+    } else if (header.cmd === CMD_CANCELLING_WORD_REQUEST) {
+      const data = header as TCancelingWordRequestInfoNotify;
+
+      this._maybeTriggerParticipantCancelingWordRequest(data);
+    } else if (header.cmd === CMD_MOVE_REQUEST_TO_STREAM) {
+      const data = header as TMoveRequestToStreamInfoNotify;
+
+      this._maybeTriggerParticipantMoveRequestToStream(data);
     }
+  };
+
+  _maybeTriggerRemovedFromListModeratorsNotify = ({
+    conference,
+  }: TRemovedFromListModeratorsInfoNotify) => {
+    const headersParametersModeratorsList: TParametersModeratorsList = {
+      conference,
+    };
+
+    this._sessionEvents.trigger(
+      'participant:removed-from-list-moderators',
+      headersParametersModeratorsList
+    );
+  };
+
+  _maybeTriggerAddedToListModeratorsNotify = ({ conference }: TAddedToListModeratorsInfoNotify) => {
+    const headersParametersModeratorsList: TParametersModeratorsList = {
+      conference,
+    };
+
+    this._sessionEvents.trigger(
+      'participant:added-to-list-moderators',
+      headersParametersModeratorsList
+    );
   };
 
   _maybeTriggerChannelsNotify = (channelsInfo: TChannelsInfoNotify) => {
     const inputChannels = channelsInfo.input;
     const outputChannels = channelsInfo.output;
 
-    const headersChannels: TChannels = {
+    const data: TChannels = {
       inputChannels,
       outputChannels,
     };
 
     if (this.session) {
-      this._sessionEvents.trigger('channels:notify', headersChannels);
+      this._sessionEvents.trigger('channels:notify', data);
     }
+  };
+
+  _maybeTriggerParticipantMoveRequestToConference = ({
+    body: { conference },
+  }: TMoveRequestToConferenceInfoNotify) => {
+    const data: TParametersModeratorsList = {
+      conference,
+    };
+
+    this._sessionEvents.trigger('participant:move-request-to-conference', data);
+  };
+
+  _maybeTriggerParticipantCancelingWordRequest = ({
+    body: { conference },
+  }: TCancelingWordRequestInfoNotify) => {
+    const data: TParametersModeratorsList = {
+      conference,
+    };
+
+    this._sessionEvents.trigger('participant:canceling-word-request', data);
+  };
+
+  _maybeTriggerParticipantMoveRequestToStream = ({
+    body: { conference },
+  }: TMoveRequestToStreamInfoNotify) => {
+    const data: TParametersModeratorsList = {
+      conference,
+    };
+
+    this._sessionEvents.trigger('participant:move-request-to-stream', data);
   };
 
   _triggerEnterRoom = (request: IncomingRequest) => {

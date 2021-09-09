@@ -26,21 +26,20 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
   onconnectionstatechange!: ((this: RTCPeerConnection, ev: Event) => any) | null;
   ondatachannel!: ((this: RTCPeerConnection, ev: RTCDataChannelEvent) => any) | null;
   onicecandidate!: ((this: RTCPeerConnection, ev: RTCPeerConnectionIceEvent) => any) | null;
-  onicecandidateerror!:
-    | ((this: RTCPeerConnection, ev: RTCPeerConnectionIceErrorEvent) => any)
-    | null;
+
+  onicecandidateerror: ((this: RTCPeerConnection, ev: Event) => any) | null = null;
   oniceconnectionstatechange!: ((this: RTCPeerConnection, ev: Event) => any) | null;
   onicegatheringstatechange!: ((this: RTCPeerConnection, ev: Event) => any) | null;
   onnegotiationneeded!: ((this: RTCPeerConnection, ev: Event) => any) | null;
   onsignalingstatechange!: ((this: RTCPeerConnection, ev: Event) => any) | null;
-  onstatsended!: ((this: RTCPeerConnection, ev: RTCStatsEvent) => any) | null;
   ontrack!: ((this: RTCPeerConnection, ev: RTCTrackEvent) => any) | null;
-  peerIdentity!: Promise<RTCIdentityAssertion>;
+  peerIdentity = undefined;
   pendingLocalDescription!: RTCSessionDescription | null;
   pendingRemoteDescription!: RTCSessionDescription | null;
   remoteDescription!: RTCSessionDescription | null;
-  sctp!: RTCSctpTransport | null;
+  sctp = null;
   signalingState!: RTCSignalingState;
+
   addIceCandidate(candidate: RTCIceCandidateInit | RTCIceCandidate): Promise<void> {
     throw new Error('Method not implemented.');
   }
@@ -53,13 +52,34 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
   close(): void {
     throw new Error('Method not implemented.');
   }
-  createAnswer(options?: RTCOfferOptions): Promise<RTCSessionDescriptionInit> {
+  restartIce(): void {
+    throw new Error('Method not implemented.');
+  }
+  createAnswer(options?: RTCAnswerOptions): Promise<RTCSessionDescriptionInit>;
+  createAnswer(
+    successCallback: RTCSessionDescriptionCallback,
+    failureCallback: RTCPeerConnectionErrorCallback
+  ): Promise<void>;
+  createAnswer(
+    successCallback?: any,
+    failureCallback?: any
+  ): Promise<void> | Promise<RTCSessionDescriptionInit> {
     throw new Error('Method not implemented.');
   }
   createDataChannel(label: string, dataChannelDict?: RTCDataChannelInit): RTCDataChannel {
     throw new Error('Method not implemented.');
   }
-  createOffer(options?: RTCOfferOptions): Promise<RTCSessionDescriptionInit> {
+  createOffer(options?: RTCOfferOptions): Promise<RTCSessionDescriptionInit>;
+  createOffer(
+    successCallback: RTCSessionDescriptionCallback,
+    failureCallback: RTCPeerConnectionErrorCallback,
+    options?: RTCOfferOptions
+  ): Promise<void>;
+  createOffer(
+    successCallback?: any,
+    failureCallback?: any,
+    options?: any
+  ): Promise<void> | Promise<RTCSessionDescriptionInit> {
     throw new Error('Method not implemented.');
   }
   getConfiguration(): RTCConfiguration {
@@ -78,9 +98,6 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
     throw new Error('Method not implemented.');
   }
   setConfiguration(configuration: RTCConfiguration): void {
-    throw new Error('Method not implemented.');
-  }
-  setIdentityProvider(provider: string, options?: RTCIdentityProviderOptions): void {
     throw new Error('Method not implemented.');
   }
   setLocalDescription(description: RTCSessionDescriptionInit): Promise<void> {
