@@ -59,7 +59,7 @@ const REQUEST_TERMINATED_STATUS_CODE = 487;
 const ORIGINATOR_LOCAL = 'local';
 const ORIGINATOR_REMOTE = 'remote';
 
-export enum MainCAM {
+export enum EEventsMainCAM {
   PAUSE_MAIN_CAM = 'PAUSEMAINCAM',
   RESUME_MAIN_CAM = 'RESUMEMAINCAM',
   MAX_MAIN_CAM_RESOLUTION = 'MAXMAINCAMRESOLUTION',
@@ -1219,7 +1219,7 @@ export default class SipConnector {
   };
 
   _triggerMainCamControl = (request: IncomingRequest) => {
-    const mainCam = request.getHeader(HEADER_MAIN_CAM) as MainCAM;
+    const mainCam = request.getHeader(HEADER_MAIN_CAM) as EEventsMainCAM;
     const resolutionMainCam = request.getHeader(HEADER_MAIN_CAM_RESOLUTION);
 
     this._sessionEvents.trigger('main-cam-control', {

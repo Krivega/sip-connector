@@ -1,6 +1,6 @@
 import debounce from 'lodash/debounce';
 import type SipConnector from '../SipConnector';
-import type { MainCAM } from '../SipConnector';
+import type { EEventsMainCAM } from '../SipConnector';
 import processSender from './processSender';
 
 const processSenderDebounced = debounce(processSender, 100);
@@ -12,7 +12,7 @@ const findVideoSender = (senders: RTCRtpSender[]): RTCRtpSender | undefined => {
 };
 
 const resolveVideoSendingBalancer = (sipConnector: SipConnector) => {
-  let mainCam: MainCAM | undefined;
+  let mainCam: EEventsMainCAM | undefined;
   let resolutionMainCam: string | undefined;
 
   const balance = () => {
@@ -32,7 +32,7 @@ const resolveVideoSendingBalancer = (sipConnector: SipConnector) => {
 
   sipConnector.onSession(
     'main-cam-control',
-    (headers: { mainCam: MainCAM; resolutionMainCam: string }) => {
+    (headers: { mainCam: EEventsMainCAM; resolutionMainCam: string }) => {
       mainCam = headers.mainCam;
       resolutionMainCam = headers.resolutionMainCam;
 

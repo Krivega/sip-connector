@@ -2,7 +2,7 @@ import { createMediaStreamMock } from 'webrtc-mock';
 import createSipConnector from '../__mocks__/doMock';
 import { dataForConnectionWithAuthorization } from '../__mocks__';
 import JsSIP from '../__mocks__/jssip.mock';
-import SipConnector, { MainCAM } from '../SipConnector';
+import SipConnector, { EEventsMainCAM } from '../SipConnector';
 import {
   HEADER_CONTENT_TYPE_NAME,
   HEADER_CONTENT_TYPE_MAIN_CAM,
@@ -12,7 +12,7 @@ import {
 
 const headersMainCamControl = [
   [HEADER_CONTENT_TYPE_NAME, HEADER_CONTENT_TYPE_MAIN_CAM],
-  [HEADER_MAIN_CAM, MainCAM.MAX_MAIN_CAM_RESOLUTION],
+  [HEADER_MAIN_CAM, EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION],
   [HEADER_MAIN_CAM_RESOLUTION, '720'],
 ];
 
@@ -34,9 +34,11 @@ describe('main cam control', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    const promise = new Promise<{ mainCam: MainCAM; resolutionMainCam: string }>((resolve) => {
-      return sipConnector.onSession('main-cam-control', resolve);
-    });
+    const promise = new Promise<{ mainCam: EEventsMainCAM; resolutionMainCam: string }>(
+      (resolve) => {
+        return sipConnector.onSession('main-cam-control', resolve);
+      }
+    );
     const { session } = sipConnector;
 
     if (session) {
@@ -44,7 +46,7 @@ describe('main cam control', () => {
     }
 
     return promise.then(({ mainCam, resolutionMainCam }) => {
-      expect(mainCam).toBe(MainCAM.MAX_MAIN_CAM_RESOLUTION);
+      expect(mainCam).toBe(EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION);
       expect(resolutionMainCam).toBe('720');
     });
   });
