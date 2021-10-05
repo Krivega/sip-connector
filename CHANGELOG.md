@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.6.0](https://github.com/Krivega/sip-connector/compare/v2.5.1...v2.6.0) (2021-10-05)
+
+### Features
+
+- add control bitrate to videoSendingBalancer‎ ([2ee9a7a](https://github.com/Krivega/sip-connector/commit/2ee9a7a748b90db97f2cc09e686524ad6233b648))
+
 ### [2.5.1](https://github.com/Krivega/sip-connector/compare/v2.5.0...v2.5.1) (2021-09-09)
 
 ### Bug Fixes
