@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.6.1](https://github.com/Krivega/sip-connector/compare/v2.6.0...v2.6.1) (2021-10-06)
+
+### Bug Fixes
+
+- set max bitrate ([1e7cefd](https://github.com/Krivega/sip-connector/commit/1e7cefddd743160588c9eac907efefb8688e5aad))
+
 ## [2.6.0](https://github.com/Krivega/sip-connector/compare/v2.5.1...v2.6.0) (2021-10-05)
 
 ### Features
