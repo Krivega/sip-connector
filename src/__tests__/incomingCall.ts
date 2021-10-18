@@ -30,14 +30,14 @@ describe('incoming call', () => {
     try {
       await sipConnector.answerToIncomingCall({ mediaStream });
     } catch (e) {
-      // eslint-disable-next-line jest/no-conditional-expect,jest/no-try-expect
+      // eslint-disable-next-line jest/no-conditional-expect
       expect(true).toBe(true);
     }
 
     try {
       await sipConnector.declineToIncomingCall();
     } catch (e) {
-      // eslint-disable-next-line jest/no-conditional-expect,jest/no-try-expect
+      // eslint-disable-next-line jest/no-conditional-expect
       expect(true).toBe(true);
     }
   });
