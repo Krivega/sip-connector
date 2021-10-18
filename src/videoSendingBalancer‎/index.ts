@@ -11,7 +11,7 @@ const findVideoSender = (senders: RTCRtpSender[]): RTCRtpSender | undefined => {
   });
 };
 
-const resolveVideoSendingBalancer = (sipConnector: SipConnector) => {
+const resolveVideoSendingBalancer = (sipConnector: SipConnector, autoSubscription = true) => {
   let mainCam: EEventsMainCAM | undefined;
   let resolutionMainCam: string | undefined;
 
@@ -30,17 +30,29 @@ const resolveVideoSendingBalancer = (sipConnector: SipConnector) => {
     }
   };
 
-  sipConnector.onSession(
-    'main-cam-control',
-    (headers: { mainCam: EEventsMainCAM; resolutionMainCam: string }) => {
-      mainCam = headers.mainCam;
-      resolutionMainCam = headers.resolutionMainCam;
+  const handleMainCamControl = (headers: {
+    mainCam: EEventsMainCAM;
+    resolutionMainCam: string;
+  }) => {
+    mainCam = headers.mainCam;
+    resolutionMainCam = headers.resolutionMainCam;
 
-      balance();
-    }
-  );
+    balance();
+  };
 
-  return balance;
+  const subscribe = () => {
+    sipConnector.onSession('main-cam-control', handleMainCamControl);
+  };
+
+  const unsubscribe = () => {
+    sipConnector.offSession('main-cam-control', handleMainCamControl);
+  };
+
+  if (autoSubscription === true) {
+    subscribe();
+  }
+
+  return { balance, subscribe, unsubscribe };
 };
 
 export default resolveVideoSendingBalancer;
