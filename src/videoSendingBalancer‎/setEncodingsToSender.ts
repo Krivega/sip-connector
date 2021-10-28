@@ -1,3 +1,5 @@
+export type TOnSetParameters = (parameters: RTCRtpSendParameters) => void;
+
 const resolveHasNeedToUpdateItemEncoding = (defaultValue: number | undefined) => {
   return (itemEncodingTarget: typeof defaultValue, itemEncodingCurrent?: number): boolean => {
     const isChangedDefaultScale =
@@ -46,7 +48,8 @@ const performUpdateMaxBitrate = (
 
 const setEncodingsToSender = (
   sender: RTCRtpSender,
-  encodingsTarget: { scaleResolutionDownBy?: number; maxBitrate?: number }
+  encodingsTarget: { scaleResolutionDownBy?: number; maxBitrate?: number },
+  onSetParameters?: TOnSetParameters
 ): Promise<void> => {
   const parameters: RTCRtpSendParameters = sender.getParameters();
 
@@ -78,6 +81,10 @@ const setEncodingsToSender = (
   }
 
   if (isChanged) {
+    if (onSetParameters) {
+      onSetParameters(parameters);
+    }
+
     return sender.setParameters(parameters);
   }
 
