@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.8.0](https://github.com/Krivega/sip-connector/compare/v2.7.0...v2.8.0) (2021-10-28)
+
+### Features
+
+- add onSetParameters to VideoSendingBalancer ([d5624db](https://github.com/Krivega/sip-connector/commit/d5624db42fe395a94a8c8935c6f7c93f6bbdfd6a))
+
 ## [2.7.0](https://github.com/Krivega/sip-connector/compare/v2.6.1...v2.7.0) (2021-10-18)
 
 ### Features
