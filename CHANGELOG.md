@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.9.0](https://github.com/Krivega/sip-connector/compare/v2.8.0...v2.9.0) (2021-10-29)
+
+### Features
+
+- set optional send headers for presentation ([c1a2332](https://github.com/Krivega/sip-connector/commit/c1a23324618b71103c6b88734cf3b5c6b594e81b))
+
 ## [2.8.0](https://github.com/Krivega/sip-connector/compare/v2.7.0...v2.8.0) (2021-10-28)
 
 ### Features
