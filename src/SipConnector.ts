@@ -430,8 +430,15 @@ export default class SipConnector {
 
   startPresentation(
     stream: MediaStream,
-    isNeedReinvite = true,
-    maxBitrate?: number
+    {
+      isNeedReinvite = true,
+      isNeedSendPreparatoryHeaders = true,
+      maxBitrate,
+    }: {
+      isNeedReinvite?: boolean;
+      isNeedSendPreparatoryHeaders?: boolean;
+      maxBitrate?: number;
+    } = {}
   ): Promise<void | MediaStream> {
     this.isPendingPresentation = true;
 
@@ -439,10 +446,14 @@ export default class SipConnector {
 
     let result: Promise<void | MediaStream> = Promise.resolve();
 
+    const preparatoryHeaders = isNeedSendPreparatoryHeaders
+      ? [HEADER_START_PRESENTATION]
+      : undefined;
+
     if (this.isEstablishedSession && this._streamPresentationCurrent) {
       result = this.session!.startPresentation(
         this._streamPresentationCurrent,
-        [HEADER_START_PRESENTATION],
+        preparatoryHeaders,
         isNeedReinvite
       )
         .then(() => {
@@ -466,16 +477,22 @@ export default class SipConnector {
     });
   }
 
-  stopPresentation(): Promise<void> | Promise<MediaStream> {
+  stopPresentation({
+    isNeedSendPreparatoryHeaders = true,
+  }: {
+    isNeedSendPreparatoryHeaders?: boolean;
+  } = {}): Promise<void> | Promise<MediaStream> {
     this.isPendingPresentation = true;
 
     const streamPresentationPrev = this._streamPresentationCurrent;
     let result: Promise<void> | Promise<MediaStream> = Promise.resolve();
 
+    const preparatoryHeaders = isNeedSendPreparatoryHeaders
+      ? [HEADER_STOP_PRESENTATION]
+      : undefined;
+
     if (this.isEstablishedSession && this._streamPresentationCurrent) {
-      result = this.session!.stopPresentation(this._streamPresentationCurrent, [
-        HEADER_STOP_PRESENTATION,
-      ]);
+      result = this.session!.stopPresentation(this._streamPresentationCurrent, preparatoryHeaders);
     }
 
     if (!this.isEstablishedSession && streamPresentationPrev) {
