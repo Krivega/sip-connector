@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0](https://github.com/Krivega/sip-connector/compare/v2.9.0...v3.0.0) (2021-11-01)
+
+### ⚠ BREAKING CHANGES
+
+- start/end presentation for p2p
+
+### Features
+
+- start/end presentation for p2p ([95db761](https://github.com/Krivega/sip-connector/commit/95db7612588a205ea5baeaccee1d730807be7c30))
+
 ## [2.9.0](https://github.com/Krivega/sip-connector/compare/v2.8.0...v2.9.0) (2021-10-29)
 
 ### Features
