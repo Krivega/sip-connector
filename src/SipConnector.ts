@@ -24,11 +24,6 @@ import {
 import type { TEventUA, TEventSession } from './eventNames';
 import { REQUEST_TIMEOUT, REJECTED, BYE, CANCELED } from './causes';
 import {
-  AVAILABLE_SECOND_REMOTE_STREAM,
-  NOT_AVAILABLE_SECOND_REMOTE_STREAM,
-  MUST_STOP_PRESENTATION,
-} from './eventNamesShareState';
-import {
   HEADER_CONTENT_SHARE_STATE,
   HEADER_CONTENT_ENTER_ROOM,
   HEADER_CONTENT_TYPE_NAME,
@@ -44,6 +39,11 @@ import {
   HEADER_MAIN_CAM_RESOLUTION,
   CONTENT_TYPE_NOTIFY,
   HEADER_NOTIFY,
+  AVAILABLE_SECOND_REMOTE_STREAM,
+  NOT_AVAILABLE_SECOND_REMOTE_STREAM,
+  MUST_STOP_PRESENTATION,
+  HEADER_START_PRESENTATION_P2P,
+  HEADER_STOP_PRESENTATION_P2P,
 } from './headers';
 import getExtraHeadersRemoteAddress from './getExtraHeadersRemoteAddress';
 import {
@@ -432,30 +432,33 @@ export default class SipConnector {
     stream: MediaStream,
     {
       isNeedReinvite = true,
-      isNeedSendPreparatoryHeaders = true,
+      isP2P = false,
       maxBitrate,
     }: {
       isNeedReinvite?: boolean;
-      isNeedSendPreparatoryHeaders?: boolean;
+      isP2P?: boolean;
       maxBitrate?: number;
     } = {}
   ): Promise<void | MediaStream> {
     this.isPendingPresentation = true;
 
-    this._streamPresentationCurrent = prepareMediaStream(stream);
+    const streamPresentationCurrent = prepareMediaStream(stream);
+
+    this._streamPresentationCurrent = streamPresentationCurrent;
 
     let result: Promise<void | MediaStream> = Promise.resolve();
 
-    const preparatoryHeaders = isNeedSendPreparatoryHeaders
-      ? [HEADER_START_PRESENTATION]
-      : undefined;
+    const preparatoryHeaders = isP2P
+      ? [HEADER_START_PRESENTATION_P2P]
+      : [HEADER_START_PRESENTATION];
 
-    if (this.isEstablishedSession && this._streamPresentationCurrent) {
-      result = this.session!.startPresentation(
-        this._streamPresentationCurrent,
-        preparatoryHeaders,
-        isNeedReinvite
-      )
+    if (this.isEstablishedSession) {
+      result = this.session!.sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
+        extraHeaders: preparatoryHeaders,
+      })
+        .then(() => {
+          return this.session!.startPresentation(streamPresentationCurrent, isNeedReinvite);
+        })
         .then(() => {
           const { connection } = this;
 
@@ -469,6 +472,11 @@ export default class SipConnector {
         })
         .then(() => {
           return stream;
+        })
+        .catch((error) => {
+          this._sessionEvents.trigger('presentation:failed', error);
+
+          throw error;
         });
     }
 
@@ -478,21 +486,29 @@ export default class SipConnector {
   }
 
   stopPresentation({
-    isNeedSendPreparatoryHeaders = true,
+    isP2P = false,
   }: {
-    isNeedSendPreparatoryHeaders?: boolean;
-  } = {}): Promise<void> | Promise<MediaStream> {
+    isP2P?: boolean;
+  } = {}): Promise<MediaStream | void> {
     this.isPendingPresentation = true;
 
     const streamPresentationPrev = this._streamPresentationCurrent;
-    let result: Promise<void> | Promise<MediaStream> = Promise.resolve();
+    let result: Promise<MediaStream | void> = Promise.resolve();
 
-    const preparatoryHeaders = isNeedSendPreparatoryHeaders
-      ? [HEADER_STOP_PRESENTATION]
-      : undefined;
+    const preparatoryHeaders = isP2P ? [HEADER_STOP_PRESENTATION_P2P] : [HEADER_STOP_PRESENTATION];
 
-    if (this.isEstablishedSession && this._streamPresentationCurrent) {
-      result = this.session!.stopPresentation(this._streamPresentationCurrent, preparatoryHeaders);
+    if (this.isEstablishedSession && streamPresentationPrev) {
+      result = this.session!.sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
+        extraHeaders: preparatoryHeaders,
+      })
+        .then(() => {
+          return this.session!.stopPresentation(streamPresentationPrev);
+        })
+        .catch((error) => {
+          this._sessionEvents.trigger('presentation:failed', error);
+
+          throw error;
+        });
     }
 
     if (!this.isEstablishedSession && streamPresentationPrev) {

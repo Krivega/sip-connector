@@ -209,7 +209,7 @@ class Session extends BaseSession {
   }
 
   sendInfo() {
-    return undefined;
+    return Promise.resolve();
   }
 
   isEnded() {
