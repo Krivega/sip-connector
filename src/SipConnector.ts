@@ -661,28 +661,8 @@ export default class SipConnector {
     return !!this.incomingSession;
   }
 
-  _connect: TConnect = ({
-    displayName = '',
-    register = false,
-    user,
-    password,
-    sipServerUrl,
-    sipWebSocketServerURL,
-    remoteAddress,
-    extraHeaders,
-    sdpSemantics,
-  }) => {
-    return this.createUa({
-      displayName,
-      user,
-      password,
-      register,
-      sipServerUrl,
-      sipWebSocketServerURL,
-      remoteAddress,
-      extraHeaders,
-      sdpSemantics,
-    }).then(() => {
+  _connect: TConnect = (params) => {
+    return this.createUa(params).then(() => {
       return this._start();
     });
   };
@@ -691,7 +671,7 @@ export default class SipConnector {
     displayName = '',
     user,
     password,
-    register,
+    register = false,
     sipServerUrl,
     sipWebSocketServerURL,
     remoteAddress,
