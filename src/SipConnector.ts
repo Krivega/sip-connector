@@ -149,6 +149,10 @@ type TParametersConnection = {
   sipWebSocketServerURL: string;
   remoteAddress?: string;
   sdpSemantics?: 'plan-b' | 'unified-plan';
+  sessionTimers?: boolean;
+  registerExpires?: number;
+  connectionRecoveryMinInterval?: number;
+  connectionRecoveryMaxInterval?: number;
 } & TOptionsExtraHeaders;
 
 type TConnect = (parameters: TParametersConnection) => Promise<UA>;
@@ -693,6 +697,10 @@ export default class SipConnector {
     remoteAddress,
     extraHeaders = [],
     sdpSemantics = 'plan-b',
+    sessionTimers = false,
+    registerExpires = 60 * 5, // 5 minutes in sec
+    connectionRecoveryMinInterval = 2,
+    connectionRecoveryMaxInterval = 6,
   }) => {
     if (!sipServerUrl) {
       throw new Error('sipServerUrl is required');
@@ -742,8 +750,11 @@ export default class SipConnector {
       sdp_semantics: sdpSemantics,
       sockets: [this.socket as WebSocketInterface],
       uri: this.getSipServerUrl(authorizationUser),
-      session_timers: false,
-      register_expires: 60 * 5, // 5 minutes in sec
+      session_timers: sessionTimers,
+      register_expires: registerExpires,
+
+      connection_recovery_min_interval: connectionRecoveryMinInterval,
+      connection_recovery_max_interval: connectionRecoveryMaxInterval,
     };
 
     if (this.ua) {
