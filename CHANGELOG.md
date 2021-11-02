@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.1.1](https://github.com/Krivega/sip-connector/compare/v3.1.0...v3.1.1) (2021-11-02)
+
+### Bug Fixes
+
+- add params to connect ([0916ebb](https://github.com/Krivega/sip-connector/commit/0916ebb4f385ed2cb284f80ee8dd052aa688dec5))
+
 ## [3.1.0](https://github.com/Krivega/sip-connector/compare/v3.0.0...v3.1.0) (2021-11-02)
 
 ### Features
