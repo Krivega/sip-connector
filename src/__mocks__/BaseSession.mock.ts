@@ -95,7 +95,7 @@ class BaseSession implements RTCSession {
   terminate(options?: TerminateOptions): void {
     throw new Error('Method not implemented.');
   }
-  sendInfo(contentType: string, body?: string, options?: ExtraHeaders): void {
+  sendInfo(contentType: string, body?: string, options?: ExtraHeaders): Promise<void> {
     throw new Error('Method not implemented.');
   }
   hold(options?: HoldOptions, done?: VoidFunction): boolean {

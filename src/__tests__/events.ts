@@ -2,16 +2,14 @@ import { createMediaStreamMock } from 'webrtc-mock';
 import createSipConnector from '../__mocks__/doMock';
 import { dataForConnectionWithAuthorization } from '../__mocks__';
 import JsSIP from '../__mocks__/jssip.mock';
-import {
-  AVAILABLE_SECOND_REMOTE_STREAM,
-  NOT_AVAILABLE_SECOND_REMOTE_STREAM,
-  MUST_STOP_PRESENTATION,
-} from '../eventNamesShareState';
 import type SipConnector from '../SipConnector';
 import {
   HEADER_CONTENT_SHARE_STATE,
   HEADER_CONTENT_TYPE_NAME,
   CONTENT_TYPE_SHARE_STATE,
+  AVAILABLE_SECOND_REMOTE_STREAM,
+  NOT_AVAILABLE_SECOND_REMOTE_STREAM,
+  MUST_STOP_PRESENTATION,
 } from '../headers';
 
 describe('events', () => {
@@ -32,7 +30,7 @@ describe('events', () => {
     expect.assertions(1);
 
     const promise = new Promise((resolve) => {
-      sipConnector.on('availableSecondRemoteStream', resolve);
+      sipConnector.onSession('availableSecondRemoteStream', resolve);
     });
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -55,7 +53,7 @@ describe('events', () => {
     expect.assertions(1);
 
     const promise = new Promise((resolve) => {
-      sipConnector.on('notAvailableSecondRemoteStream', resolve);
+      sipConnector.onSession('notAvailableSecondRemoteStream', resolve);
     });
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -78,7 +76,7 @@ describe('events', () => {
     expect.assertions(1);
 
     const promise = new Promise((resolve) => {
-      sipConnector.on('mustStopPresentation', resolve);
+      sipConnector.onSession('mustStopPresentation', resolve);
     });
 
     await sipConnector.connect(dataForConnectionWithAuthorization);

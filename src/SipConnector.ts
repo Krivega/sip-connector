@@ -24,11 +24,6 @@ import {
 import type { TEventUA, TEventSession } from './eventNames';
 import { REQUEST_TIMEOUT, REJECTED, BYE, CANCELED } from './causes';
 import {
-  AVAILABLE_SECOND_REMOTE_STREAM,
-  NOT_AVAILABLE_SECOND_REMOTE_STREAM,
-  MUST_STOP_PRESENTATION,
-} from './eventNamesShareState';
-import {
   HEADER_CONTENT_SHARE_STATE,
   HEADER_CONTENT_ENTER_ROOM,
   HEADER_CONTENT_TYPE_NAME,
@@ -44,6 +39,11 @@ import {
   HEADER_MAIN_CAM_RESOLUTION,
   CONTENT_TYPE_NOTIFY,
   HEADER_NOTIFY,
+  AVAILABLE_SECOND_REMOTE_STREAM,
+  NOT_AVAILABLE_SECOND_REMOTE_STREAM,
+  MUST_STOP_PRESENTATION,
+  HEADER_START_PRESENTATION_P2P,
+  HEADER_STOP_PRESENTATION_P2P,
 } from './headers';
 import getExtraHeadersRemoteAddress from './getExtraHeadersRemoteAddress';
 import {
@@ -59,7 +59,7 @@ const REQUEST_TERMINATED_STATUS_CODE = 487;
 const ORIGINATOR_LOCAL = 'local';
 const ORIGINATOR_REMOTE = 'remote';
 
-export enum MainCAM {
+export enum EEventsMainCAM {
   PAUSE_MAIN_CAM = 'PAUSEMAINCAM',
   RESUME_MAIN_CAM = 'RESUMEMAINCAM',
   MAX_MAIN_CAM_RESOLUTION = 'MAXMAINCAMRESOLUTION',
@@ -149,6 +149,10 @@ type TParametersConnection = {
   sipWebSocketServerURL: string;
   remoteAddress?: string;
   sdpSemantics?: 'plan-b' | 'unified-plan';
+  sessionTimers?: boolean;
+  registerExpires?: number;
+  connectionRecoveryMinInterval?: number;
+  connectionRecoveryMaxInterval?: number;
 } & TOptionsExtraHeaders;
 
 type TConnect = (parameters: TParametersConnection) => Promise<UA>;
@@ -301,8 +305,7 @@ export default class SipConnector {
       moduleName
     );
 
-    this.on('shareState', this._handleShareState);
-
+    this.onSession('shareState', this._handleShareState);
     this.onSession('newInfo', this._handleNewInfo);
     this.on('sipEvent', this._handleSipEvent);
   }
@@ -430,21 +433,35 @@ export default class SipConnector {
 
   startPresentation(
     stream: MediaStream,
-    isNeedReinvite = true,
-    maxBitrate?: number
+    {
+      isNeedReinvite = true,
+      isP2P = false,
+      maxBitrate,
+    }: {
+      isNeedReinvite?: boolean;
+      isP2P?: boolean;
+      maxBitrate?: number;
+    } = {}
   ): Promise<void | MediaStream> {
     this.isPendingPresentation = true;
 
-    this._streamPresentationCurrent = prepareMediaStream(stream);
+    const streamPresentationCurrent = prepareMediaStream(stream);
+
+    this._streamPresentationCurrent = streamPresentationCurrent;
 
     let result: Promise<void | MediaStream> = Promise.resolve();
 
-    if (this.isEstablishedSession && this._streamPresentationCurrent) {
-      result = this.session!.startPresentation(
-        this._streamPresentationCurrent,
-        [HEADER_START_PRESENTATION],
-        isNeedReinvite
-      )
+    const preparatoryHeaders = isP2P
+      ? [HEADER_START_PRESENTATION_P2P]
+      : [HEADER_START_PRESENTATION];
+
+    if (this.isEstablishedSession) {
+      result = this.session!.sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
+        extraHeaders: preparatoryHeaders,
+      })
+        .then(() => {
+          return this.session!.startPresentation(streamPresentationCurrent, isNeedReinvite);
+        })
         .then(() => {
           const { connection } = this;
 
@@ -458,6 +475,11 @@ export default class SipConnector {
         })
         .then(() => {
           return stream;
+        })
+        .catch((error) => {
+          this._sessionEvents.trigger('presentation:failed', error);
+
+          throw error;
         });
     }
 
@@ -466,16 +488,30 @@ export default class SipConnector {
     });
   }
 
-  stopPresentation(): Promise<void> | Promise<MediaStream> {
+  stopPresentation({
+    isP2P = false,
+  }: {
+    isP2P?: boolean;
+  } = {}): Promise<MediaStream | void> {
     this.isPendingPresentation = true;
 
     const streamPresentationPrev = this._streamPresentationCurrent;
-    let result: Promise<void> | Promise<MediaStream> = Promise.resolve();
+    let result: Promise<MediaStream | void> = Promise.resolve();
 
-    if (this.isEstablishedSession && this._streamPresentationCurrent) {
-      result = this.session!.stopPresentation(this._streamPresentationCurrent, [
-        HEADER_STOP_PRESENTATION,
-      ]);
+    const preparatoryHeaders = isP2P ? [HEADER_STOP_PRESENTATION_P2P] : [HEADER_STOP_PRESENTATION];
+
+    if (this.isEstablishedSession && streamPresentationPrev) {
+      result = this.session!.sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
+        extraHeaders: preparatoryHeaders,
+      })
+        .then(() => {
+          return this.session!.stopPresentation(streamPresentationPrev);
+        })
+        .catch((error) => {
+          this._sessionEvents.trigger('presentation:failed', error);
+
+          throw error;
+        });
     }
 
     if (!this.isEstablishedSession && streamPresentationPrev) {
@@ -624,28 +660,8 @@ export default class SipConnector {
     return !!this.incomingSession;
   }
 
-  _connect: TConnect = ({
-    displayName = '',
-    register = false,
-    user,
-    password,
-    sipServerUrl,
-    sipWebSocketServerURL,
-    remoteAddress,
-    extraHeaders,
-    sdpSemantics,
-  }) => {
-    return this.createUa({
-      displayName,
-      user,
-      password,
-      register,
-      sipServerUrl,
-      sipWebSocketServerURL,
-      remoteAddress,
-      extraHeaders,
-      sdpSemantics,
-    }).then(() => {
+  _connect: TConnect = (params) => {
+    return this.createUa(params).then(() => {
       return this._start();
     });
   };
@@ -654,12 +670,16 @@ export default class SipConnector {
     displayName = '',
     user,
     password,
-    register,
+    register = false,
     sipServerUrl,
     sipWebSocketServerURL,
     remoteAddress,
     extraHeaders = [],
     sdpSemantics = 'plan-b',
+    sessionTimers = false,
+    registerExpires = 60 * 5, // 5 minutes in sec
+    connectionRecoveryMinInterval = 2,
+    connectionRecoveryMaxInterval = 6,
   }) => {
     if (!sipServerUrl) {
       throw new Error('sipServerUrl is required');
@@ -709,8 +729,11 @@ export default class SipConnector {
       sdp_semantics: sdpSemantics,
       sockets: [this.socket as WebSocketInterface],
       uri: this.getSipServerUrl(authorizationUser),
-      session_timers: false,
-      register_expires: 60 * 5, // 5 minutes in sec
+      session_timers: sessionTimers,
+      register_expires: registerExpires,
+
+      connection_recovery_min_interval: connectionRecoveryMinInterval,
+      connection_recovery_max_interval: connectionRecoveryMaxInterval,
     };
 
     if (this.ua) {
@@ -753,15 +776,6 @@ export default class SipConnector {
         removeEventListeners();
         reject(error);
       };
-      const handleDisconnected = (data) => {
-        let error = data;
-
-        if (data && data.error) {
-          error = data.error;
-        }
-
-        rejectError(error);
-      };
       const addEventListeners = () => {
         if (this.isRegisterConfig) {
           this.on('registered', resolveUa);
@@ -770,13 +784,13 @@ export default class SipConnector {
           this.on('connected', resolveUa);
         }
 
-        this.on('disconnected', handleDisconnected);
+        this.on('disconnected', rejectError);
       };
       const removeEventListeners = () => {
         this.off('registered', resolveUa);
         this.off('registrationFailed', rejectError);
         this.off('connected', resolveUa);
-        this.off('disconnected', handleDisconnected);
+        this.off('disconnected', rejectError);
       };
 
       addEventListeners();
@@ -1091,13 +1105,13 @@ export default class SipConnector {
   _handleShareState = (eventName) => {
     switch (eventName) {
       case AVAILABLE_SECOND_REMOTE_STREAM:
-        this._uaEvents.trigger('availableSecondRemoteStream', undefined);
+        this._sessionEvents.trigger('availableSecondRemoteStream', undefined);
         break;
       case NOT_AVAILABLE_SECOND_REMOTE_STREAM:
-        this._uaEvents.trigger('notAvailableSecondRemoteStream', undefined);
+        this._sessionEvents.trigger('notAvailableSecondRemoteStream', undefined);
         break;
       case MUST_STOP_PRESENTATION:
-        this._uaEvents.trigger('mustStopPresentation', undefined);
+        this._sessionEvents.trigger('mustStopPresentation', undefined);
         break;
 
       default:
@@ -1218,17 +1232,17 @@ export default class SipConnector {
   _triggerEnterRoom = (request: IncomingRequest) => {
     const room = request.getHeader(HEADER_CONTENT_ENTER_ROOM);
 
-    this._uaEvents.trigger('enterRoom', room);
+    this._sessionEvents.trigger('enterRoom', room);
   };
 
   _triggerShareState = (request: IncomingRequest) => {
     const eventName = request.getHeader(HEADER_CONTENT_SHARE_STATE);
 
-    this._uaEvents.trigger('shareState', eventName);
+    this._sessionEvents.trigger('shareState', eventName);
   };
 
   _triggerMainCamControl = (request: IncomingRequest) => {
-    const mainCam = request.getHeader(HEADER_MAIN_CAM) as MainCAM;
+    const mainCam = request.getHeader(HEADER_MAIN_CAM) as EEventsMainCAM;
     const resolutionMainCam = request.getHeader(HEADER_MAIN_CAM_RESOLUTION);
 
     this._sessionEvents.trigger('main-cam-control', {

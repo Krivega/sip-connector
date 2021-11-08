@@ -1,6 +1,8 @@
 import createStackPromises from 'stack-promises';
-import { MainCAM } from '../SipConnector';
+import { EEventsMainCAM } from '../SipConnector';
 import setEncodingsToSender from './setEncodingsToSender';
+import type { TOnSetParameters } from './setEncodingsToSender';
+import getMaxBitrateByWidth, { MINIMUM_BITRATE, MAXIMUM_BITRATE } from './getMaxBitrateByWidth';
 
 const stackPromises = createStackPromises();
 
@@ -18,39 +20,60 @@ const run = (action: () => Promise<any>) => {
 
 const addToStackScaleResolutionDownBySender = (
   sender: RTCRtpSender,
-  scaleResolutionDownByTarget: number
+  scaleResolutionDownBy: number,
+  maxBitrate: number,
+  onSetParameters?: TOnSetParameters
 ) => {
   run(() => {
-    return setEncodingsToSender(sender, { scaleResolutionDownBy: scaleResolutionDownByTarget });
+    return setEncodingsToSender(sender, { scaleResolutionDownBy, maxBitrate }, onSetParameters);
   });
 };
 
-const downgradeResolutionSender = (sender: RTCRtpSender): void => {
+const downgradeResolutionSender = (
+  sender: RTCRtpSender,
+  onSetParameters?: TOnSetParameters
+): void => {
   const scaleResolutionDownByTarget = 200;
+  const maxBitrate = MINIMUM_BITRATE;
 
-  addToStackScaleResolutionDownBySender(sender, scaleResolutionDownByTarget);
+  addToStackScaleResolutionDownBySender(
+    sender,
+    scaleResolutionDownByTarget,
+    maxBitrate,
+    onSetParameters
+  );
 };
 
-const resetScaleResolutionSender = (sender: RTCRtpSender): void => {
+const resetScaleResolutionSender = (
+  sender: RTCRtpSender,
+  onSetParameters?: TOnSetParameters
+): void => {
   const scaleResolutionDownByTarget = 1;
+  const maxBitrate = MAXIMUM_BITRATE;
 
-  addToStackScaleResolutionDownBySender(sender, scaleResolutionDownByTarget);
+  addToStackScaleResolutionDownBySender(
+    sender,
+    scaleResolutionDownByTarget,
+    maxBitrate,
+    onSetParameters
+  );
 };
 
-const setResolutionSender = ({
-  sender,
-  track,
-  resolution,
-}: {
-  sender: RTCRtpSender;
-  track: MediaStreamTrack;
-  resolution: string;
-}): void => {
-  const [widthTarget, heightTarget] = resolution.split('x');
-
+const setResolutionSender = (
+  sender: RTCRtpSender,
+  {
+    track,
+    resolution,
+  }: {
+    track: MediaStreamTrack;
+    resolution: string;
+  },
+  onSetParameters?: TOnSetParameters
+): void => {
   const settings = track.getSettings();
   const widthCurrent = settings.width!;
   const heightCurrent = settings.height!;
+  const [widthTarget, heightTarget] = resolution.split('x');
 
   const scaleByWidth = widthCurrent / +widthTarget;
   const scaleByHeight = heightCurrent / +heightTarget!;
@@ -58,29 +81,39 @@ const setResolutionSender = ({
 
   const scaleResolutionDownByTarget = Math.max(scaleByWidth, scaleByHeight, SCALE_MIN);
 
-  addToStackScaleResolutionDownBySender(sender, scaleResolutionDownByTarget);
+  const maxBitrate = getMaxBitrateByWidth(+widthTarget);
+
+  addToStackScaleResolutionDownBySender(
+    sender,
+    scaleResolutionDownByTarget,
+    maxBitrate,
+    onSetParameters
+  );
 };
 
-const processSender = ({
-  mainCam,
-  resolutionMainCam,
-  sender,
-  track,
-}: {
-  mainCam: MainCAM;
-  resolutionMainCam: string;
-  sender: RTCRtpSender;
-  track: MediaStreamTrack;
-}): void => {
+const processSender = (
+  {
+    mainCam,
+    resolutionMainCam,
+    sender,
+    track,
+  }: {
+    mainCam: EEventsMainCAM;
+    resolutionMainCam: string;
+    sender: RTCRtpSender;
+    track: MediaStreamTrack;
+  },
+  onSetParameters?: TOnSetParameters
+): void => {
   switch (mainCam) {
-    case MainCAM.PAUSE_MAIN_CAM:
-      downgradeResolutionSender(sender);
+    case EEventsMainCAM.PAUSE_MAIN_CAM:
+      downgradeResolutionSender(sender, onSetParameters);
       break;
-    case MainCAM.RESUME_MAIN_CAM:
-      resetScaleResolutionSender(sender);
+    case EEventsMainCAM.RESUME_MAIN_CAM:
+      resetScaleResolutionSender(sender, onSetParameters);
       break;
-    case MainCAM.MAX_MAIN_CAM_RESOLUTION:
-      setResolutionSender({ sender, track, resolution: resolutionMainCam });
+    case EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION:
+      setResolutionSender(sender, { track, resolution: resolutionMainCam }, onSetParameters);
       break;
   }
 };

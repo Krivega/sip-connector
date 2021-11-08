@@ -2,6 +2,74 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.0.0](https://github.com/Krivega/sip-connector/compare/v3.1.1...v4.0.0) (2021-11-08)
+
+### ⚠ BREAKING CHANGES
+
+- move some events to session
+
+### Bug Fixes
+
+- move some events to session ([c635045](https://github.com/Krivega/sip-connector/commit/c6350453f967805eab721961ec58202efc13d46e))
+
+### [3.1.1](https://github.com/Krivega/sip-connector/compare/v3.1.0...v3.1.1) (2021-11-02)
+
+### Bug Fixes
+
+- add params to connect ([0916ebb](https://github.com/Krivega/sip-connector/commit/0916ebb4f385ed2cb284f80ee8dd052aa688dec5))
+
+## [3.1.0](https://github.com/Krivega/sip-connector/compare/v3.0.0...v3.1.0) (2021-11-02)
+
+### Features
+
+- add params to connect ([64830cc](https://github.com/Krivega/sip-connector/commit/64830cc16a230168c331e7ff07533e9ff7413ec7))
+
+## [3.0.0](https://github.com/Krivega/sip-connector/compare/v2.9.0...v3.0.0) (2021-11-01)
+
+### ⚠ BREAKING CHANGES
+
+- start/end presentation for p2p
+
+### Features
+
+- start/end presentation for p2p ([95db761](https://github.com/Krivega/sip-connector/commit/95db7612588a205ea5baeaccee1d730807be7c30))
+
+## [2.9.0](https://github.com/Krivega/sip-connector/compare/v2.8.0...v2.9.0) (2021-10-29)
+
+### Features
+
+- set optional send headers for presentation ([c1a2332](https://github.com/Krivega/sip-connector/commit/c1a23324618b71103c6b88734cf3b5c6b594e81b))
+
+## [2.8.0](https://github.com/Krivega/sip-connector/compare/v2.7.0...v2.8.0) (2021-10-28)
+
+### Features
+
+- add onSetParameters to VideoSendingBalancer ([d5624db](https://github.com/Krivega/sip-connector/commit/d5624db42fe395a94a8c8935c6f7c93f6bbdfd6a))
+
+## [2.7.0](https://github.com/Krivega/sip-connector/compare/v2.6.1...v2.7.0) (2021-10-18)
+
+### Features
+
+- add subscribe, unsubscribe to resolveVideoSendingBalancer ([f3cb8d5](https://github.com/Krivega/sip-connector/commit/f3cb8d59ded5f7fca16a34cdc7583d567e02629d))
+
+### [2.6.1](https://github.com/Krivega/sip-connector/compare/v2.6.0...v2.6.1) (2021-10-06)
+
+### Bug Fixes
+
+- set max bitrate ([1e7cefd](https://github.com/Krivega/sip-connector/commit/1e7cefddd743160588c9eac907efefb8688e5aad))
+
+## [2.6.0](https://github.com/Krivega/sip-connector/compare/v2.5.1...v2.6.0) (2021-10-05)
+
+### Features
+
+- add control bitrate to videoSendingBalancer‎ ([2ee9a7a](https://github.com/Krivega/sip-connector/commit/2ee9a7a748b90db97f2cc09e686524ad6233b648))
+
+### [2.5.1](https://github.com/Krivega/sip-connector/compare/v2.5.0...v2.5.1) (2021-09-09)
+
+### Bug Fixes
+
+- handle disconnect error ([63cf844](https://github.com/Krivega/sip-connector/commit/63cf844e28d3a89f02565eeeb0101c547e0c15b9))
+
 ## [2.5.0](https://github.com/Krivega/sip-connector/compare/v2.4.1...v2.5.0) (2021-09-01)
 
 ### Features

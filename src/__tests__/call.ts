@@ -167,11 +167,17 @@ describe('call', () => {
     });
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
-    sipConnector.call({ number, mediaStream, ontrack: mockFn }).catch((error) => {
-      expect(error).toBeDefined();
-    });
 
-    return expect(disconnectPromise).resolves.toBeUndefined();
+    const promiseCall = sipConnector.call({ number, mediaStream, ontrack: mockFn });
+
+    return Promise.all([
+      promiseCall.catch((error) => {
+        expect(error).toBeDefined();
+      }),
+      disconnectPromise.then((result) => {
+        expect(result).toBeUndefined();
+      }),
+    ]);
   });
 
   it('Clean up remoteStreams after end call from server', async () => {

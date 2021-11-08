@@ -37,6 +37,8 @@ const baseUaConfiguration = {
   user_agent: 'Chrome',
   sdp_semantics: 'plan-b',
   register_expires: 300,
+  connection_recovery_max_interval: 6,
+  connection_recovery_min_interval: 2,
 };
 export const uaConfigurationWithAuthorization = {
   ...baseUaConfiguration,

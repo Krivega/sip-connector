@@ -1,9 +1,10 @@
-import debounce from 'lodash/debounce';
+import throttle from 'lodash/throttle';
 import type SipConnector from '../SipConnector';
-import type { MainCAM } from '../SipConnector';
+import type { EEventsMainCAM } from '../SipConnector';
 import processSender from './processSender';
+import type { TOnSetParameters } from './setEncodingsToSender';
 
-const processSenderDebounced = debounce(processSender, 100);
+const processSenderThrottled = throttle(processSender, 100, { leading: false, trailing: true });
 
 const findVideoSender = (senders: RTCRtpSender[]): RTCRtpSender | undefined => {
   return senders.find((sender) => {
@@ -11,11 +12,15 @@ const findVideoSender = (senders: RTCRtpSender[]): RTCRtpSender | undefined => {
   });
 };
 
-const resolveVideoSendingBalancer = (sipConnector: SipConnector) => {
-  let mainCam: MainCAM | undefined;
+const resolveVideoSendingBalancer = (
+  sipConnector: SipConnector,
+  autoSubscription = true,
+  onSetParameters?: TOnSetParameters
+) => {
+  let mainCam: EEventsMainCAM | undefined;
   let resolutionMainCam: string | undefined;
 
-  const balance = () => {
+  const balance = (onSetParameters?: TOnSetParameters) => {
     const { connection } = sipConnector;
 
     if (!connection) {
@@ -26,21 +31,36 @@ const resolveVideoSendingBalancer = (sipConnector: SipConnector) => {
     const sender = findVideoSender(senders);
 
     if (sender && sender.track && mainCam !== undefined && resolutionMainCam !== undefined) {
-      processSenderDebounced({ mainCam, resolutionMainCam, sender, track: sender.track });
+      processSenderThrottled(
+        { mainCam, resolutionMainCam, sender, track: sender.track },
+        onSetParameters
+      );
     }
   };
 
-  sipConnector.onSession(
-    'main-cam-control',
-    (headers: { mainCam: MainCAM; resolutionMainCam: string }) => {
-      mainCam = headers.mainCam;
-      resolutionMainCam = headers.resolutionMainCam;
+  const handleMainCamControl = (headers: {
+    mainCam: EEventsMainCAM;
+    resolutionMainCam: string;
+  }) => {
+    mainCam = headers.mainCam;
+    resolutionMainCam = headers.resolutionMainCam;
 
-      balance();
-    }
-  );
+    balance(onSetParameters);
+  };
 
-  return balance;
+  const subscribe = () => {
+    sipConnector.onSession('main-cam-control', handleMainCamControl);
+  };
+
+  const unsubscribe = () => {
+    sipConnector.offSession('main-cam-control', handleMainCamControl);
+  };
+
+  if (autoSubscription === true) {
+    subscribe();
+  }
+
+  return { balance, subscribe, unsubscribe };
 };
 
 export default resolveVideoSendingBalancer;

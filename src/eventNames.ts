@@ -2,11 +2,6 @@ const UA_SYNTHETICS_EVENT_NAMES = [
   'incomingCall',
   'declinedIncomingCall',
   'failedIncomingCall',
-  'availableSecondRemoteStream',
-  'notAvailableSecondRemoteStream',
-  'mustStopPresentation',
-  'shareState',
-  'enterRoom',
 ] as const;
 
 export const UA_JSSIP_EVENT_NAMES = [
@@ -24,6 +19,11 @@ export const UA_JSSIP_EVENT_NAMES = [
 export const UA_EVENT_NAMES = [...UA_JSSIP_EVENT_NAMES, ...UA_SYNTHETICS_EVENT_NAMES] as const;
 
 const SESSION_SYNTHETICS_EVENT_NAMES = [
+  'availableSecondRemoteStream',
+  'notAvailableSecondRemoteStream',
+  'mustStopPresentation',
+  'shareState',
+  'enterRoom',
   'peerconnection:confirmed',
   'peerconnection:ontrack',
   'channels',
