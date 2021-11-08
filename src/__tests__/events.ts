@@ -30,7 +30,7 @@ describe('events', () => {
     expect.assertions(1);
 
     const promise = new Promise((resolve) => {
-      sipConnector.on('availableSecondRemoteStream', resolve);
+      sipConnector.onSession('availableSecondRemoteStream', resolve);
     });
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -53,7 +53,7 @@ describe('events', () => {
     expect.assertions(1);
 
     const promise = new Promise((resolve) => {
-      sipConnector.on('notAvailableSecondRemoteStream', resolve);
+      sipConnector.onSession('notAvailableSecondRemoteStream', resolve);
     });
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -76,7 +76,7 @@ describe('events', () => {
     expect.assertions(1);
 
     const promise = new Promise((resolve) => {
-      sipConnector.on('mustStopPresentation', resolve);
+      sipConnector.onSession('mustStopPresentation', resolve);
     });
 
     await sipConnector.connect(dataForConnectionWithAuthorization);

@@ -305,8 +305,7 @@ export default class SipConnector {
       moduleName
     );
 
-    this.on('shareState', this._handleShareState);
-
+    this.onSession('shareState', this._handleShareState);
     this.onSession('newInfo', this._handleNewInfo);
     this.on('sipEvent', this._handleSipEvent);
   }
@@ -1106,13 +1105,13 @@ export default class SipConnector {
   _handleShareState = (eventName) => {
     switch (eventName) {
       case AVAILABLE_SECOND_REMOTE_STREAM:
-        this._uaEvents.trigger('availableSecondRemoteStream', undefined);
+        this._sessionEvents.trigger('availableSecondRemoteStream', undefined);
         break;
       case NOT_AVAILABLE_SECOND_REMOTE_STREAM:
-        this._uaEvents.trigger('notAvailableSecondRemoteStream', undefined);
+        this._sessionEvents.trigger('notAvailableSecondRemoteStream', undefined);
         break;
       case MUST_STOP_PRESENTATION:
-        this._uaEvents.trigger('mustStopPresentation', undefined);
+        this._sessionEvents.trigger('mustStopPresentation', undefined);
         break;
 
       default:
@@ -1233,13 +1232,13 @@ export default class SipConnector {
   _triggerEnterRoom = (request: IncomingRequest) => {
     const room = request.getHeader(HEADER_CONTENT_ENTER_ROOM);
 
-    this._uaEvents.trigger('enterRoom', room);
+    this._sessionEvents.trigger('enterRoom', room);
   };
 
   _triggerShareState = (request: IncomingRequest) => {
     const eventName = request.getHeader(HEADER_CONTENT_SHARE_STATE);
 
-    this._uaEvents.trigger('shareState', eventName);
+    this._sessionEvents.trigger('shareState', eventName);
   };
 
   _triggerMainCamControl = (request: IncomingRequest) => {
