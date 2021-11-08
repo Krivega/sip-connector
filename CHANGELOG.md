@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.0.0](https://github.com/Krivega/sip-connector/compare/v3.1.1...v4.0.0) (2021-11-08)
+
+### ⚠ BREAKING CHANGES
+
+- move some events to session
+
+### Bug Fixes
+
+- move some events to session ([c635045](https://github.com/Krivega/sip-connector/commit/c6350453f967805eab721961ec58202efc13d46e))
+
 ### [3.1.1](https://github.com/Krivega/sip-connector/compare/v3.1.0...v3.1.1) (2021-11-02)
 
 ### Bug Fixes
