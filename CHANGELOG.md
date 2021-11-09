@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [4.0.1](https://github.com/Krivega/sip-connector/compare/v4.0.0...v4.0.1) (2021-11-09)
+
+### Bug Fixes
+
+- remove throttle from VideoSendingBalancer ([eed38a3](https://github.com/Krivega/sip-connector/commit/eed38a38a6e77b56080d8226f3b659a10804e0f1))
+
 ## [4.0.0](https://github.com/Krivega/sip-connector/compare/v3.1.1...v4.0.0) (2021-11-08)
 
 ### ⚠ BREAKING CHANGES
