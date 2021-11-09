@@ -1,10 +1,7 @@
-import throttle from 'lodash/throttle';
 import type SipConnector from '../SipConnector';
 import type { EEventsMainCAM } from '../SipConnector';
 import processSender from './processSender';
 import type { TOnSetParameters } from './setEncodingsToSender';
-
-const processSenderThrottled = throttle(processSender, 100, { leading: false, trailing: true });
 
 const findVideoSender = (senders: RTCRtpSender[]): RTCRtpSender | undefined => {
   return senders.find((sender) => {
@@ -31,10 +28,7 @@ const resolveVideoSendingBalancer = (
     const sender = findVideoSender(senders);
 
     if (sender && sender.track && mainCam !== undefined && resolutionMainCam !== undefined) {
-      processSenderThrottled(
-        { mainCam, resolutionMainCam, sender, track: sender.track },
-        onSetParameters
-      );
+      processSender({ mainCam, resolutionMainCam, sender, track: sender.track }, onSetParameters);
     }
   };
 
