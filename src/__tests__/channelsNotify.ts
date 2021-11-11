@@ -23,6 +23,8 @@ describe('channels notify', () => {
   });
 
   it('wait channels notify event authorized', async () => {
+    expect.assertions(1);
+
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
@@ -42,6 +44,8 @@ describe('channels notify', () => {
   });
 
   it('wait channels notify event unauthorized', async () => {
+    expect.assertions(1);
+
     const ua = await sipConnector.connect(dataForConnectionWithoutAuthorization);
 
     await sipConnector.call({ number, mediaStream });

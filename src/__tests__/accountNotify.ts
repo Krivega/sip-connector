@@ -18,13 +18,16 @@ describe('account notify', () => {
       video: { deviceId: { exact: 'videoDeviceId' } },
     });
   });
+
   it('event account:changed', async () => {
+    expect.assertions(1);
+
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
       sipConnector.onSession('account:changed', (data) => {
-        expect(data).toEqual({});
+        expect(data).toBe(undefined);
 
         resolve();
       });
@@ -38,12 +41,14 @@ describe('account notify', () => {
   });
 
   it('event account:deleted', async () => {
+    expect.assertions(1);
+
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
       sipConnector.onSession('account:deleted', (data) => {
-        expect(data).toEqual({});
+        expect(data).toBe(undefined);
 
         resolve();
       });
