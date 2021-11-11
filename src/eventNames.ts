@@ -36,6 +36,7 @@ const SESSION_SYNTHETICS_EVENT_NAMES = [
   'participant:move-request-to-stream',
   'participant:canceling-word-request',
   'webcast:started',
+  'webcast:stopped',
 ] as const;
 
 export const SESSION_JSSIP_EVENT_NAMES = [

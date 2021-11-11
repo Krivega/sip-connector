@@ -101,13 +101,14 @@ type TParametersModeratorsList = {
   conference: string;
 };
 
-type TParametersWebcastStarted = {
+type TParametersWebcast = {
   conference: string;
   type: string;
 };
 
 const CMD_CHANNELS = 'channels' as const;
 const CMD_WEBCAST_STARTED = 'WebcastStarted' as const;
+const CMD_WEBCAST_STOPPED = 'WebcastStopped' as const;
 const CMD_ADDED_TO_LIST_MODERATORS = 'addedToListModerators' as const;
 const CMD_REMOVED_FROM_LIST_MODERATORS = 'removedFromListModerators' as const;
 const CMD_MOVE_REQUEST_TO_CONFERENCE = 'WebcastParticipationAccepted' as const;
@@ -134,7 +135,7 @@ type TMoveRequestToStreamInfoNotify = {
   cmd: typeof CMD_MOVE_REQUEST_TO_STREAM;
   body: { conference: string };
 };
-type TWebcastStartedInfoNotify = {
+type TWebcastInfoNotify = {
   cmd: typeof CMD_WEBCAST_STARTED;
   body: { conference: string; type: string };
 };
@@ -1149,9 +1150,13 @@ export default class SipConnector {
 
       this._maybeTriggerChannelsNotify(channelsInfo);
     } else if (header.cmd === CMD_WEBCAST_STARTED) {
-      const webcastInfo = header as TWebcastStartedInfoNotify;
+      const webcastInfo = header as TWebcastInfoNotify;
 
       this._maybeTriggerWebcastStartedNotify(webcastInfo);
+    } else if (header.cmd === CMD_WEBCAST_STOPPED) {
+      const webcastInfo = header as TWebcastInfoNotify;
+
+      this._maybeTriggerWebcastStoppedNotify(webcastInfo);
     } else if (header.cmd === CMD_ADDED_TO_LIST_MODERATORS) {
       const data = header as TAddedToListModeratorsInfoNotify;
 
@@ -1199,15 +1204,22 @@ export default class SipConnector {
     );
   };
 
-  _maybeTriggerWebcastStartedNotify = ({
-    body: { conference, type },
-  }: TWebcastStartedInfoNotify) => {
-    const headersParametersWebcastStarted: TParametersWebcastStarted = {
+  _maybeTriggerWebcastStartedNotify = ({ body: { conference, type } }: TWebcastInfoNotify) => {
+    const headersParametersWebcast: TParametersWebcast = {
       conference,
       type,
     };
 
-    this._sessionEvents.trigger('webcast:started', headersParametersWebcastStarted);
+    this._sessionEvents.trigger('webcast:started', headersParametersWebcast);
+  };
+
+  _maybeTriggerWebcastStoppedNotify = ({ body: { conference, type } }: TWebcastInfoNotify) => {
+    const headersParametersWebcast: TParametersWebcast = {
+      conference,
+      type,
+    };
+
+    this._sessionEvents.trigger('webcast:stopped', headersParametersWebcast);
   };
 
   _maybeTriggerChannelsNotify = (channelsInfo: TChannelsInfoNotify) => {
