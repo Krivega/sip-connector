@@ -109,6 +109,8 @@ type TParametersWebcast = {
 const CMD_CHANNELS = 'channels' as const;
 const CMD_WEBCAST_STARTED = 'WebcastStarted' as const;
 const CMD_WEBCAST_STOPPED = 'WebcastStopped' as const;
+const CMD_ACCOUNT_CHANGED = 'accountChanged' as const;
+const CMD_ACCOUNT_DELETED = 'accountDeleted' as const;
 const CMD_ADDED_TO_LIST_MODERATORS = 'addedToListModerators' as const;
 const CMD_REMOVED_FROM_LIST_MODERATORS = 'removedFromListModerators' as const;
 const CMD_MOVE_REQUEST_TO_CONFERENCE = 'WebcastParticipationAccepted' as const;
@@ -1177,6 +1179,10 @@ export default class SipConnector {
       const data = header as TMoveRequestToStreamInfoNotify;
 
       this._maybeTriggerParticipantMoveRequestToStream(data);
+    } else if (header.cmd === CMD_ACCOUNT_CHANGED) {
+      this._maybeTriggerAccountChangedNotify();
+    } else if (header.cmd === CMD_ACCOUNT_DELETED) {
+      this._maybeTriggerAccountDeletedNotify();
     }
   };
 
@@ -1220,6 +1226,14 @@ export default class SipConnector {
     };
 
     this._sessionEvents.trigger('webcast:stopped', headersParametersWebcast);
+  };
+
+  _maybeTriggerAccountChangedNotify = () => {
+    this._sessionEvents.trigger('account:changed', {});
+  };
+
+  _maybeTriggerAccountDeletedNotify = () => {
+    this._sessionEvents.trigger('account:deleted', {});
   };
 
   _maybeTriggerChannelsNotify = (channelsInfo: TChannelsInfoNotify) => {

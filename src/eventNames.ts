@@ -37,6 +37,8 @@ const SESSION_SYNTHETICS_EVENT_NAMES = [
   'participant:canceling-word-request',
   'webcast:started',
   'webcast:stopped',
+  'account:changed',
+  'account:deleted',
 ] as const;
 
 export const SESSION_JSSIP_EVENT_NAMES = [
