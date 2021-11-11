@@ -101,7 +101,16 @@ type TParametersModeratorsList = {
   conference: string;
 };
 
+type TParametersWebcast = {
+  conference: string;
+  type: string;
+};
+
 const CMD_CHANNELS = 'channels' as const;
+const CMD_WEBCAST_STARTED = 'WebcastStarted' as const;
+const CMD_WEBCAST_STOPPED = 'WebcastStopped' as const;
+const CMD_ACCOUNT_CHANGED = 'accountChanged' as const;
+const CMD_ACCOUNT_DELETED = 'accountDeleted' as const;
 const CMD_ADDED_TO_LIST_MODERATORS = 'addedToListModerators' as const;
 const CMD_REMOVED_FROM_LIST_MODERATORS = 'removedFromListModerators' as const;
 const CMD_MOVE_REQUEST_TO_CONFERENCE = 'WebcastParticipationAccepted' as const;
@@ -127,6 +136,10 @@ type TCancelingWordRequestInfoNotify = {
 type TMoveRequestToStreamInfoNotify = {
   cmd: typeof CMD_MOVE_REQUEST_TO_STREAM;
   body: { conference: string };
+};
+type TWebcastInfoNotify = {
+  cmd: typeof CMD_WEBCAST_STARTED;
+  body: { conference: string; type: string };
 };
 type TChannelsInfoNotify = { cmd: typeof CMD_CHANNELS; input: string; output: string };
 type TInfoNotify = Omit<
@@ -1138,6 +1151,14 @@ export default class SipConnector {
       const channelsInfo = header as TChannelsInfoNotify;
 
       this._maybeTriggerChannelsNotify(channelsInfo);
+    } else if (header.cmd === CMD_WEBCAST_STARTED) {
+      const webcastInfo = header as TWebcastInfoNotify;
+
+      this._maybeTriggerWebcastStartedNotify(webcastInfo);
+    } else if (header.cmd === CMD_WEBCAST_STOPPED) {
+      const webcastInfo = header as TWebcastInfoNotify;
+
+      this._maybeTriggerWebcastStoppedNotify(webcastInfo);
     } else if (header.cmd === CMD_ADDED_TO_LIST_MODERATORS) {
       const data = header as TAddedToListModeratorsInfoNotify;
 
@@ -1158,6 +1179,10 @@ export default class SipConnector {
       const data = header as TMoveRequestToStreamInfoNotify;
 
       this._maybeTriggerParticipantMoveRequestToStream(data);
+    } else if (header.cmd === CMD_ACCOUNT_CHANGED) {
+      this._maybeTriggerAccountChangedNotify();
+    } else if (header.cmd === CMD_ACCOUNT_DELETED) {
+      this._maybeTriggerAccountDeletedNotify();
     }
   };
 
@@ -1183,6 +1208,32 @@ export default class SipConnector {
       'participant:added-to-list-moderators',
       headersParametersModeratorsList
     );
+  };
+
+  _maybeTriggerWebcastStartedNotify = ({ body: { conference, type } }: TWebcastInfoNotify) => {
+    const headersParametersWebcast: TParametersWebcast = {
+      conference,
+      type,
+    };
+
+    this._sessionEvents.trigger('webcast:started', headersParametersWebcast);
+  };
+
+  _maybeTriggerWebcastStoppedNotify = ({ body: { conference, type } }: TWebcastInfoNotify) => {
+    const headersParametersWebcast: TParametersWebcast = {
+      conference,
+      type,
+    };
+
+    this._sessionEvents.trigger('webcast:stopped', headersParametersWebcast);
+  };
+
+  _maybeTriggerAccountChangedNotify = () => {
+    this._sessionEvents.trigger('account:changed', {});
+  };
+
+  _maybeTriggerAccountDeletedNotify = () => {
+    this._sessionEvents.trigger('account:deleted', {});
   };
 
   _maybeTriggerChannelsNotify = (channelsInfo: TChannelsInfoNotify) => {
