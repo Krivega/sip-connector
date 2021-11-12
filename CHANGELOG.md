@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [5.0.1](https://github.com/Krivega/sip-connector/compare/v5.0.0...v5.0.1) (2021-11-12)
+
+### Bug Fixes
+
+- check codec in videoSendingBalance ([b7a66a8](https://github.com/Krivega/sip-connector/commit/b7a66a88d9681913eabcccde281d2ed3e72c2d71))
+
 ## [5.0.0](https://github.com/Krivega/sip-connector/compare/v4.1.0...v5.0.0) (2021-11-12)
 
 ### ⚠ BREAKING CHANGES
