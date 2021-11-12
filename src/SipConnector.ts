@@ -1229,11 +1229,11 @@ export default class SipConnector {
   };
 
   _maybeTriggerAccountChangedNotify = () => {
-    this._sessionEvents.trigger('account:changed', {});
+    this._sessionEvents.trigger('account:changed', undefined);
   };
 
   _maybeTriggerAccountDeletedNotify = () => {
-    this._sessionEvents.trigger('account:deleted', {});
+    this._sessionEvents.trigger('account:deleted', undefined);
   };
 
   _maybeTriggerChannelsNotify = (channelsInfo: TChannelsInfoNotify) => {

@@ -24,6 +24,8 @@ describe('webcast notify', () => {
     });
   });
   it('event webcast:started', async () => {
+    expect.assertions(1);
+
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
@@ -43,6 +45,8 @@ describe('webcast notify', () => {
   });
 
   it('event webcast:stopped', async () => {
+    expect.assertions(1);
+
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 

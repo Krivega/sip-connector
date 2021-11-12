@@ -22,6 +22,8 @@ describe('channels', () => {
   });
 
   it('waitChannels', async () => {
+    expect.assertions(1);
+
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
@@ -38,6 +40,8 @@ describe('channels', () => {
   });
 
   it('sendChannels', async () => {
+    expect.assertions(1);
+
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
