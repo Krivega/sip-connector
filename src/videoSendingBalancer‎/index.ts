@@ -1,23 +1,19 @@
 import type SipConnector from '../SipConnector';
 import type { EEventsMainCAM } from '../SipConnector';
 import processSender from './processSender';
+import { getCodecFromSender, findVideoSender } from './utils/index';
 import type { TOnSetParameters } from './setEncodingsToSender';
-
-const findVideoSender = (senders: RTCRtpSender[]): RTCRtpSender | undefined => {
-  return senders.find((sender) => {
-    return sender?.track?.kind === 'video';
-  });
-};
 
 const resolveVideoSendingBalancer = (
   sipConnector: SipConnector,
   autoSubscription = true,
+  ignoreForCodec?: string,
   onSetParameters?: TOnSetParameters
 ) => {
   let mainCam: EEventsMainCAM | undefined;
   let resolutionMainCam: string | undefined;
 
-  const balance = (onSetParameters?: TOnSetParameters) => {
+  const balance = async (onSetParameters?: TOnSetParameters) => {
     const { connection } = sipConnector;
 
     if (!connection) {
@@ -26,8 +22,19 @@ const resolveVideoSendingBalancer = (
 
     const senders = connection.getSenders();
     const sender = findVideoSender(senders);
+    let codec: string | undefined;
 
-    if (sender && sender.track && mainCam !== undefined && resolutionMainCam !== undefined) {
+    if (sender) {
+      codec = await getCodecFromSender(sender);
+    }
+
+    if (
+      sender &&
+      sender.track &&
+      mainCam !== undefined &&
+      resolutionMainCam !== undefined &&
+      codec !== ignoreForCodec
+    ) {
       processSender({ mainCam, resolutionMainCam, sender, track: sender.track }, onSetParameters);
     }
   };
