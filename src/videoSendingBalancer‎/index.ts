@@ -1,7 +1,7 @@
 import type SipConnector from '../SipConnector';
 import type { EEventsMainCAM } from '../SipConnector';
 import processSender from './processSender';
-import { hasBalanceVideo, findVideoSender } from './utils/index';
+import { getCodecFromSender, findVideoSender } from './utils/index';
 import type { TOnSetParameters } from './setEncodingsToSender';
 
 const resolveVideoSendingBalancer = (
@@ -16,16 +16,25 @@ const resolveVideoSendingBalancer = (
   const balance = async (onSetParameters?: TOnSetParameters) => {
     const { connection } = sipConnector;
 
-    const isBalanceVideo = await hasBalanceVideo(connection, ignoreForCodec);
-
-    if (!isBalanceVideo) {
+    if (!connection) {
       return;
     }
 
-    const senders = connection?.getSenders();
+    const senders = connection.getSenders();
     const sender = findVideoSender(senders);
+    let codec: string | undefined;
 
-    if (sender && sender.track && mainCam !== undefined && resolutionMainCam !== undefined) {
+    if (sender) {
+      codec = await getCodecFromSender(sender);
+    }
+
+    if (
+      sender &&
+      sender.track &&
+      mainCam !== undefined &&
+      resolutionMainCam !== undefined &&
+      codec !== ignoreForCodec
+    ) {
       processSender({ mainCam, resolutionMainCam, sender, track: sender.track }, onSetParameters);
     }
   };

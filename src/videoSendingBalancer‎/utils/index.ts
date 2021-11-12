@@ -1,11 +1,7 @@
-export const findVideoSender = (senders?: RTCRtpSender[]): RTCRtpSender | undefined => {
-  if (senders) {
-    return senders.find((sender) => {
-      return sender?.track?.kind === 'video';
-    });
-  }
-
-  return undefined;
+export const findVideoSender = (senders: RTCRtpSender[]): RTCRtpSender | undefined => {
+  return senders.find((sender) => {
+    return sender?.track?.kind === 'video';
+  });
 };
 
 const statsReportToArray = (results: RTCStatsReport) => {
@@ -20,36 +16,10 @@ const findInResultByType = (results: RTCStatsReport, type: string) => {
   });
 };
 
-const getCodecFromPeerConnection = (
-  senders?: RTCRtpSender[]
-): Promise<string | undefined> | Promise<void> => {
-  if (senders) {
-    const sender = findVideoSender(senders);
+export const getCodecFromSender = (sender: RTCRtpSender): Promise<string | undefined> => {
+  return sender.getStats().then((stats: RTCStatsReport) => {
+    const codec = findInResultByType(stats, 'codec');
 
-    if (!sender) {
-      return Promise.resolve(undefined);
-    }
-
-    return sender?.getStats().then((stats: RTCStatsReport) => {
-      const codec = findInResultByType(stats, 'codec');
-
-      return codec?.mimeType;
-    });
-  }
-
-  return Promise.resolve();
-};
-
-export const hasBalanceVideo = async (
-  connection?: RTCPeerConnection,
-  ignoreForCodec?: string
-): Promise<boolean> => {
-  if (!ignoreForCodec) {
-    return !!connection;
-  }
-
-  const senders = connection?.getSenders();
-  const codec = await getCodecFromPeerConnection(senders);
-
-  return !!(connection && codec && codec !== ignoreForCodec);
+    return codec?.mimeType;
+  });
 };
