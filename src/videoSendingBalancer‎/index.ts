@@ -12,6 +12,7 @@ const findVideoSender = (senders: RTCRtpSender[]): RTCRtpSender | undefined => {
 const resolveVideoSendingBalancer = (
   sipConnector: SipConnector,
   autoSubscription = true,
+  ignoreForCodecs?: string,
   onSetParameters?: TOnSetParameters
 ) => {
   let mainCam: EEventsMainCAM | undefined;
