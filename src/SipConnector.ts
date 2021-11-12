@@ -14,7 +14,7 @@ import CancelableRequest, {
   isCanceledError,
 } from '@krivega/cancelable-promise/dist/CancelableRequest';
 import Events from 'events-constructor';
-import scaleBitrate from './videoSendingBalancer‎/scaleBitrate';
+import scaleBitrate from './videoSendingBalancer/scaleBitrate';
 import {
   UA_EVENT_NAMES,
   UA_JSSIP_EVENT_NAMES,

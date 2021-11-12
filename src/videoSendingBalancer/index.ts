@@ -1,14 +1,21 @@
 import type SipConnector from '../SipConnector';
 import type { EEventsMainCAM } from '../SipConnector';
+import findVideoSender from '../utils/findVideoSender';
+import getCodecFromSender from '../utils/getCodecFromSender';
 import processSender from './processSender';
-import { getCodecFromSender, findVideoSender } from './utils/index';
 import type { TOnSetParameters } from './setEncodingsToSender';
 
 const resolveVideoSendingBalancer = (
   sipConnector: SipConnector,
-  autoSubscription = true,
-  ignoreForCodec?: string,
-  onSetParameters?: TOnSetParameters
+  {
+    autoSubscription = true,
+    ignoreForCodec,
+    onSetParameters,
+  }: {
+    autoSubscription?: boolean;
+    ignoreForCodec?: string;
+    onSetParameters?: TOnSetParameters;
+  } = {}
 ) => {
   let mainCam: EEventsMainCAM | undefined;
   let resolutionMainCam: string | undefined;
@@ -16,27 +23,26 @@ const resolveVideoSendingBalancer = (
   const balance = async (onSetParameters?: TOnSetParameters) => {
     const { connection } = sipConnector;
 
-    if (!connection) {
+    if (!connection || mainCam === undefined || resolutionMainCam === undefined) {
       return;
     }
 
     const senders = connection.getSenders();
     const sender = findVideoSender(senders);
-    let codec: string | undefined;
 
-    if (sender) {
-      codec = await getCodecFromSender(sender);
+    if (!sender || !sender.track) {
+      return;
     }
 
-    if (
-      sender &&
-      sender.track &&
-      mainCam !== undefined &&
-      resolutionMainCam !== undefined &&
-      codec !== ignoreForCodec
-    ) {
-      processSender({ mainCam, resolutionMainCam, sender, track: sender.track }, onSetParameters);
+    if (ignoreForCodec) {
+      const codec = await getCodecFromSender(sender);
+
+      if (codec === ignoreForCodec) {
+        return;
+      }
     }
+
+    processSender({ mainCam, resolutionMainCam, sender, track: sender.track }, onSetParameters);
   };
 
   const handleMainCamControl = (headers: {

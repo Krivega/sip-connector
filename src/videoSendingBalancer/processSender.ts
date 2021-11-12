@@ -1,8 +1,8 @@
 import createStackPromises from 'stack-promises';
 import { EEventsMainCAM } from '../SipConnector';
+import getMaxBitrateByWidth, { MINIMUM_BITRATE, MAXIMUM_BITRATE } from './getMaxBitrateByWidth';
 import setEncodingsToSender from './setEncodingsToSender';
 import type { TOnSetParameters } from './setEncodingsToSender';
-import getMaxBitrateByWidth, { MINIMUM_BITRATE, MAXIMUM_BITRATE } from './getMaxBitrateByWidth';
 
 const stackPromises = createStackPromises();
 

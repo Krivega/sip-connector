@@ -1,5 +1,5 @@
+import findSenderByStream from '../utils/findSenderByStream';
 import setEncodingsToSender from './setEncodingsToSender';
-import findSenderByStream from './findSenderByStream';
 
 const scaleMaxBitrateBySender = (
   senders: RTCRtpSender[],
