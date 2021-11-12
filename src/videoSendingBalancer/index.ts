@@ -5,6 +5,10 @@ import getCodecFromSender from '../utils/getCodecFromSender';
 import processSender from './processSender';
 import type { TOnSetParameters } from './setEncodingsToSender';
 
+const hasIncludesString = (source?: string, target?: string): boolean => {
+  return !!source && !!target && source.toLowerCase().includes(target.toLowerCase());
+};
+
 const resolveVideoSendingBalancer = (
   sipConnector: SipConnector,
   {
@@ -37,7 +41,7 @@ const resolveVideoSendingBalancer = (
     if (ignoreForCodec) {
       const codec = await getCodecFromSender(sender);
 
-      if (codec === ignoreForCodec) {
+      if (hasIncludesString(codec, ignoreForCodec)) {
         return;
       }
     }
