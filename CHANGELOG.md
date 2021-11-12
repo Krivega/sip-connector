@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.0.0](https://github.com/Krivega/sip-connector/compare/v4.1.0...v5.0.0) (2021-11-12)
+
+### ⚠ BREAKING CHANGES
+
+- change params for videoSendingBalancer
+
+### Features
+
+- add ignore codec for balancer ([#13](https://github.com/Krivega/sip-connector/issues/13)) ([d4dd76d](https://github.com/Krivega/sip-connector/commit/d4dd76d35912337484449aa3c97e960ec047696b))
+
+- change params for videoSendingBalancer ([77b4a7b](https://github.com/Krivega/sip-connector/commit/77b4a7bd594b61b7d5bcc49c2033be524a6cfd6a))
+
 ## [4.1.0](https://github.com/Krivega/sip-connector/compare/v4.0.1...v4.1.0) (2021-11-11)
 
 ### Features
