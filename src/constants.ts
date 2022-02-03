@@ -53,11 +53,12 @@ export const ICE_CANDIDATE = 'icecandidate';
 export const GET_USER_MEDIA_FAILED = 'getusermediafailed';
 export const PEER_CONNECTION_CREATE_OFFER_FAILED = 'peerconnection:createofferfailed';
 export const PEER_CONNECTION_CREATE_ANSWER_FAILED = 'peerconnection:createanswerfailed';
-export const PEER_CONNECTION_SET_LOCAL_DESCRIPTION_FAILED = 'peerconnection:setlocaldescriptionfailed';
-export const PEER_CONNECTION_SET_REMOTE_DESCRIPTION_FAILED = 'peerconnection:setremotedescriptionfailed';
+export const PEER_CONNECTION_SET_LOCAL_DESCRIPTION_FAILED =
+  'peerconnection:setlocaldescriptionfailed';
+export const PEER_CONNECTION_SET_REMOTE_DESCRIPTION_FAILED =
+  'peerconnection:setremotedescriptionfailed';
 export const PRESENTATION_START = 'presentation:start';
 export const PRESENTATION_STARTED = 'presentation:started';
 export const PRESENTATION_END = 'presentation:end';
 export const PRESENTATION_ENDED = 'presentation:ended';
 export const PRESENTATION_FAILED = 'presentation:failed';
-

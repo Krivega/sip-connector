@@ -94,7 +94,7 @@ import {
   NEW_INFO,
   PRESENTATION_ENDED,
   PRESENTATION_FAILED,
-} from './constants'
+} from './constants';
 
 const BUSY_HERE_STATUS_CODE = 486;
 const REQUEST_TERMINATED_STATUS_CODE = 487;
@@ -189,7 +189,7 @@ type TMoveRequestToStreamInfoNotify = {
 
 type TConferenceParticipantTokenIssued = {
   cmd: typeof CMD_CONFERENCE_PARTICIPANT_TOKEN_ISSUED;
-  body: { conference: string; participant: string; jwt: string; };
+  body: { conference: string; participant: string; jwt: string };
 };
 
 type TWebcastInfoNotify = {
@@ -1238,13 +1238,11 @@ export default class SipConnector {
       this._maybeTriggerAccountChangedNotify();
     } else if (header.cmd === CMD_ACCOUNT_DELETED) {
       this._maybeTriggerAccountDeletedNotify();
-    }
-    else if (header.cmd === CMD_CONFERENCE_PARTICIPANT_TOKEN_ISSUED) {
+    } else if (header.cmd === CMD_CONFERENCE_PARTICIPANT_TOKEN_ISSUED) {
       const data = header as TConferenceParticipantTokenIssued;
 
       this._maybeTriggerConferenceParticipantTokenIssued(data);
     }
-
   };
 
   _maybeTriggerRemovedFromListModeratorsNotify = ({
@@ -1297,13 +1295,19 @@ export default class SipConnector {
     this._sessionEvents.trigger(ACCOUNT_DELETED, undefined);
   };
 
-  _maybeTriggerConferenceParticipantTokenIssued = ({ body: { conference, participant, jwt } }: TConferenceParticipantTokenIssued) => {
+  _maybeTriggerConferenceParticipantTokenIssued = ({
+    body: { conference, participant, jwt },
+  }: TConferenceParticipantTokenIssued) => {
     const headersConferenceParticipantTokenIssued: TParametersConferenceParticipantTokenIssued = {
       conference,
       participant,
       jwt,
     };
-    this._sessionEvents.trigger(CONFERENCE_PARTICIPANT_TOKEN_ISSUED, headersConferenceParticipantTokenIssued);
+
+    this._sessionEvents.trigger(
+      CONFERENCE_PARTICIPANT_TOKEN_ISSUED,
+      headersConferenceParticipantTokenIssued
+    );
   };
 
   _maybeTriggerChannelsNotify = (channelsInfo: TChannelsInfoNotify) => {
