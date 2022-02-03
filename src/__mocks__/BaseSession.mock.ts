@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import Events from 'events-constructor';
 import type {
   AnswerOptions,
   ExtraHeaders,
@@ -13,11 +14,10 @@ import type {
   SessionStatus,
   TerminateOptions,
 } from '@krivega/jssip/lib/RTCSession';
-import Events from 'events-constructor';
+import { causes } from '@krivega/jssip/lib/Constants';
+import { NameAddrHeader, URI } from '@krivega/jssip';
 import { SESSION_EVENT_NAMES } from '../eventNames';
 import type { TEventSession } from '../eventNames';
-import { NameAddrHeader, URI } from '@krivega/jssip';
-import { causes } from '@krivega/jssip/lib/Constants';
 
 /* eslint-disable class-methods-use-this */
 
