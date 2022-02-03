@@ -18,7 +18,6 @@ import { causes } from '@krivega/jssip/lib/Constants';
 import { NameAddrHeader, URI } from '@krivega/jssip';
 import { SESSION_EVENT_NAMES } from '../eventNames';
 import type { TEventSession } from '../eventNames';
-import { SessionJSSIPEventNames } from '../events';
 
 /* eslint-disable class-methods-use-this */
 
@@ -206,7 +205,7 @@ class BaseSession implements RTCSession {
    * @returns {undefined}
    */
   sendDTMF() {
-    this.trigger(SessionJSSIPEventNames.newDTMF, { originator: this.originator });
+    this.trigger('newDTMF', { originator: this.originator });
   }
 
   startPresentation(stream) {

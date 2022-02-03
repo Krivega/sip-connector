@@ -4,7 +4,6 @@ import createSipConnector from '../__mocks__/doMock';
 import { dataForConnectionWithAuthorization } from '../__mocks__';
 import JsSIP from '../__mocks__/jssip.mock';
 import remoteCallerData from '../__mocks__/remoteCallerData';
-import { EUaSyntheticsEventNames } from '../events'
 import type SipConnector from '../SipConnector';
 
 describe('incoming call', () => {
@@ -49,7 +48,7 @@ describe('incoming call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      sipConnector.on(EUaSyntheticsEventNames.incomingCall, async ({ displayName, host, incomingNumber }) => {
+      sipConnector.on('incomingCall', async ({ displayName, host, incomingNumber }) => {
         expect(sipConnector.isAvailableIncomingCall).toBe(true);
         expect(displayName).toBe(remoteCallerData.displayName);
         expect(host).toBe(remoteCallerData.host);
@@ -79,7 +78,7 @@ describe('incoming call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      sipConnector.on(EUaSyntheticsEventNames.incomingCall, async () => {
+      sipConnector.on('incomingCall', async () => {
         expect(sipConnector.isAvailableIncomingCall).toBe(true);
         expect(sipConnector.remoteCallerData.incomingNumber).toBe(remoteCallerData.incomingNumber);
         expect(sipConnector.remoteCallerData.host).toBe(remoteCallerData.host);
@@ -99,7 +98,7 @@ describe('incoming call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      sipConnector.on(EUaSyntheticsEventNames.incomingCall, async () => {
+      sipConnector.on('incomingCall', async () => {
         await delayPromise(100); // wait for to decline incoming call
 
         const peerconnection = await sipConnector.answerToIncomingCall({
@@ -126,7 +125,7 @@ describe('incoming call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      sipConnector.on(EUaSyntheticsEventNames.incomingCall, async () => {
+      sipConnector.on('incomingCall', async () => {
         await delayPromise(100); // wait for to decline incoming call
 
         mediaStream.tracks.reverse();
@@ -155,7 +154,7 @@ describe('incoming call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise((resolve) => {
-      sipConnector.on(EUaSyntheticsEventNames.incomingCall, () => {
+      sipConnector.on('incomingCall', () => {
         return delayPromise(100).then(resolve);
       }); // wait for to decline incoming call);
 
@@ -169,7 +168,7 @@ describe('incoming call', () => {
             host: string;
             incomingNumber: string;
           }>((resolve) => {
-            sipConnector.on(EUaSyntheticsEventNames.declinedIncomingCall, resolve);
+            sipConnector.on('declinedIncomingCall', resolve);
           }),
           sipConnector.declineToIncomingCall(),
         ]);
@@ -189,7 +188,7 @@ describe('incoming call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise((resolve) => {
-      sipConnector.on(EUaSyntheticsEventNames.incomingCall, () => {
+      sipConnector.on('incomingCall', () => {
         return delayPromise(100).then(resolve);
       }); // wait for to decline incoming call);
 
@@ -202,7 +201,7 @@ describe('incoming call', () => {
           host: string;
           incomingNumber: string;
         }>((resolve) => {
-          sipConnector.on(EUaSyntheticsEventNames.failedIncomingCall, resolve);
+          sipConnector.on('failedIncomingCall', resolve);
 
           JsSIP.triggerFailIncomingSession(sipConnector.incomingSession);
         });

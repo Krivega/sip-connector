@@ -1,6 +1,5 @@
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
 import type { IncomingInfoEvent } from '@krivega/jssip/lib/RTCSession';
-import { SessionJSSIPEventNames } from '../events';
 import RTCPeerConnectionMock from './RTCPeerConnectionMock';
 import BaseSession from './BaseSession.mock';
 
@@ -46,13 +45,13 @@ class Session extends BaseSession {
 
     setTimeout(() => {
       if (this.url.includes(FAILED_CONFERENCE_NUMBER)) {
-        this.trigger(SessionJSSIPEventNames.failed, {
+        this.trigger('failed', {
           originator: 'remote',
           message: 'IncomingResponse',
           cause: 'Rejected',
         });
       } else {
-        this.trigger(SessionJSSIPEventNames.confirmed);
+        this.trigger('confirmed');
       }
     }, CONNECTION_DELAY);
 
@@ -81,7 +80,7 @@ class Session extends BaseSession {
     this._addStream(sendedStream);
 
     setTimeout(() => {
-      this.trigger(SessionJSSIPEventNames.peerconnection, { peerconnection: this.connection });
+      this.trigger('peerconnection', { peerconnection: this.connection });
     }, CONNECTION_DELAY);
   }
 
@@ -110,7 +109,7 @@ class Session extends BaseSession {
     // eslint-disable-next-line camelcase
     this.status_code = status_code;
 
-    this.trigger(SessionJSSIPEventNames.ended, { status_code });
+    this.trigger('ended', { status_code });
 
     this._isEnded = false;
 
@@ -122,7 +121,7 @@ class Session extends BaseSession {
     // eslint-disable-next-line camelcase
     this.status_code = status_code;
 
-    this.trigger(SessionJSSIPEventNames.ended, { status_code, originator: 'remote' });
+    this.trigger('ended', { status_code, originator: 'remote' });
 
     return this;
   }
@@ -191,7 +190,7 @@ class Session extends BaseSession {
       this._mutedOptions.video = false;
     }
 
-    this.trigger(SessionJSSIPEventNames.unmuted, options);
+    this.trigger('unmuted', options);
   }
 
   isMuted() {
@@ -203,7 +202,7 @@ class Session extends BaseSession {
   }
 
   _onmute({ audio, video }: { audio: boolean; video: boolean }) {
-    this.trigger(SessionJSSIPEventNames.muted, {
+    this.trigger('muted', {
       audio,
       video,
     });
@@ -218,7 +217,7 @@ class Session extends BaseSession {
   }
 
   newInfo(data: IncomingInfoEvent) {
-    this.trigger(SessionJSSIPEventNames.newInfo, data);
+    this.trigger('newInfo', data);
   }
   /* eslint-enable no-param-reassign */
 }

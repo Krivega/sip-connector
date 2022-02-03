@@ -8,7 +8,6 @@ import {
   removedFromListModeratorsData,
 } from '../__mocks__/participantNotify';
 import JsSIP from '../__mocks__/jssip.mock';
-import { ESessionSyntheticsEventNames } from '../events';
 import SipConnector from '../SipConnector';
 
 describe('participant notify', () => {
@@ -32,7 +31,7 @@ describe('participant notify', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onSession(ESessionSyntheticsEventNames.participantAddedToListModerators, (data) => {
+      sipConnector.onSession('participant:added-to-list-moderators', (data) => {
         expect(data).toEqual(addedToListModeratorsData);
 
         resolve();
@@ -53,7 +52,7 @@ describe('participant notify', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onSession(ESessionSyntheticsEventNames.participantRemovedFromListModerators, (data) => {
+      sipConnector.onSession('participant:removed-from-list-moderators', (data) => {
         expect(data).toEqual(removedFromListModeratorsData);
 
         resolve();

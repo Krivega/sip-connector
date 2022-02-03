@@ -6,7 +6,6 @@ import {
   conferenceParticipantTokenIssuedData,
 } from '../__mocks__/conferenceParticipantTokenIssuedNotify';
 import JsSIP from '../__mocks__/jssip.mock';
-import { ESessionSyntheticsEventNames } from '../events';
 import SipConnector from '../SipConnector';
 
 describe('conference participant token issued notify', () => {
@@ -29,7 +28,7 @@ describe('conference participant token issued notify', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onSession(ESessionSyntheticsEventNames.conferenceParticipantTokenIssued, (data) => {
+      sipConnector.onSession('conference:participant-token-issued', (data) => {
         expect(data).toEqual(conferenceParticipantTokenIssuedData);
 
         resolve();

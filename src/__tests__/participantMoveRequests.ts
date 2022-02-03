@@ -10,7 +10,6 @@ import {
   moveRequestToStreamData,
 } from '../__mocks__/participantMoveRequests';
 import JsSIP from '../__mocks__/jssip.mock';
-import { ESessionSyntheticsEventNames } from '../events';
 import SipConnector from '../SipConnector';
 
 describe('participants moveRequests', () => {
@@ -31,7 +30,7 @@ describe('participants moveRequests', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onSession(ESessionSyntheticsEventNames.participantMoveRequestToConference, (data) => {
+      sipConnector.onSession('participant:move-request-to-conference', (data) => {
         expect(data).toEqual(moveRequestToConferenceData);
 
         resolve();
@@ -50,7 +49,7 @@ describe('participants moveRequests', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onSession(ESessionSyntheticsEventNames.participantCancelingWordRequest, (data) => {
+      sipConnector.onSession('participant:canceling-word-request', (data) => {
         expect(data).toEqual(cancelingWordRequestData);
 
         resolve();
@@ -69,7 +68,7 @@ describe('participants moveRequests', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onSession(ESessionSyntheticsEventNames.participantMoveRequestToStream, (data) => {
+      sipConnector.onSession('participant:move-request-to-stream', (data) => {
         expect(data).toEqual(moveRequestToStreamData);
 
         resolve();
