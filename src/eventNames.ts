@@ -143,7 +143,7 @@ export const UA_EVENT_NAMES = [...UA_JSSIP_EVENT_NAMES, ...UA_SYNTHETICS_EVENT_N
 export const SESSION_EVENT_NAMES = [
   ...SESSION_JSSIP_EVENT_NAMES,
   ...SESSION_SYNTHETICS_EVENT_NAMES,
-];
+] as const;
 
 export type TEventUA = typeof UA_EVENT_NAMES[number];
 
