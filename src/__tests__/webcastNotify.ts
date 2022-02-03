@@ -8,6 +8,7 @@ import {
   webcastStoppedData,
 } from '../__mocks__/webcastNotify';
 import JsSIP from '../__mocks__/jssip.mock';
+import { ESessionSyntheticsEventNames } from '../events';
 import SipConnector from '../SipConnector';
 
 describe('webcast notify', () => {
@@ -30,7 +31,7 @@ describe('webcast notify', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onSession('webcast:started', (data) => {
+      sipConnector.onSession(ESessionSyntheticsEventNames.webcastStarted, (data) => {
         expect(data).toEqual(webcastStartedData);
 
         resolve();
@@ -51,7 +52,7 @@ describe('webcast notify', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onSession('webcast:stopped', (data) => {
+      sipConnector.onSession(ESessionSyntheticsEventNames.webcastStopped, (data) => {
         expect(data).toEqual(webcastStoppedData);
 
         resolve();

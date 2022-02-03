@@ -1,4 +1,5 @@
 import type { RTCSession } from '@krivega/jssip/lib/RTCSession';
+import { EUaJSSIPEventNames, SessionJSSIPEventNames } from '../events';
 import WebSocketInterface from './WebSocketInterface.mock';
 import UA, { PASSWORD_CORRECT, PASSWORD_CORRECT_2, NAME_INCORRECT } from './UA.mock';
 import Session, { FAILED_CONFERENCE_NUMBER } from './Session.mock';
@@ -34,11 +35,11 @@ const triggerIncomingSession = (
   //@ts-ignore
   session._remote_identity = { display_name: displayName, uri: { host, user: incomingNumber } };
 
-  ua.trigger('newRTCSession', { originator, session });
+  ua.trigger(EUaJSSIPEventNames.newRTCSession, { originator, session });
 };
 
 const triggerFailIncomingSession = (incomingSession) => {
-  incomingSession.trigger('failed', incomingSession);
+  incomingSession.trigger(SessionJSSIPEventNames.failed, incomingSession);
 };
 
 export { PASSWORD_CORRECT, PASSWORD_CORRECT_2, NAME_INCORRECT, FAILED_CONFERENCE_NUMBER };

@@ -3,6 +3,7 @@ import createSipConnector from '../__mocks__/doMock';
 import { dataForConnectionWithAuthorization } from '../__mocks__';
 import { accountChangedHeaders, accountDeletedHeaders } from '../__mocks__/accountNotify';
 import JsSIP from '../__mocks__/jssip.mock';
+import { ESessionSyntheticsEventNames } from '../events'
 import SipConnector from '../SipConnector';
 
 describe('account notify', () => {
@@ -26,7 +27,7 @@ describe('account notify', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onSession('account:changed', (data) => {
+      sipConnector.onSession(ESessionSyntheticsEventNames.accountChanged, (data) => {
         expect(data).toBe(undefined);
 
         resolve();
@@ -47,7 +48,7 @@ describe('account notify', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onSession('account:deleted', (data) => {
+      sipConnector.onSession(ESessionSyntheticsEventNames.accountDeleted, (data) => {
         expect(data).toBe(undefined);
 
         resolve();

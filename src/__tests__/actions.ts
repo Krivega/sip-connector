@@ -1,5 +1,6 @@
 import createSipConnector from '../__mocks__/doMock';
 import { dataForConnectionWithAuthorization } from '../__mocks__';
+import { EUaJSSIPEventNames } from '../events'
 import type SipConnector from '../SipConnector';
 
 describe('actions', () => {
@@ -15,7 +16,7 @@ describe('actions', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     const unregistered = new Promise((resolve) => {
-      sipConnector.once('unregistered', resolve);
+      sipConnector.once(EUaJSSIPEventNames.unregistered, resolve);
     });
 
     sipConnector.unregister();
@@ -26,9 +27,9 @@ describe('actions', () => {
   it('tryRegister', async () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
-    sipConnector.on('unregistered', mockFn);
-    sipConnector.on('connecting', mockFn);
-    sipConnector.on('connected', mockFn);
+    sipConnector.on(EUaJSSIPEventNames.unregistered, mockFn);
+    sipConnector.on(EUaJSSIPEventNames.connecting, mockFn);
+    sipConnector.on(EUaJSSIPEventNames.connected, mockFn);
 
     return sipConnector.tryRegister().then(() => {
       expect(mockFn).toHaveBeenCalledTimes(3);

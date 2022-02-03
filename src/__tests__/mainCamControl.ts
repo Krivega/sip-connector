@@ -2,6 +2,7 @@ import { createMediaStreamMock } from 'webrtc-mock';
 import createSipConnector from '../__mocks__/doMock';
 import { dataForConnectionWithAuthorization } from '../__mocks__';
 import JsSIP from '../__mocks__/jssip.mock';
+import { ESessionSyntheticsEventNames } from '../events';
 import SipConnector, { EEventsMainCAM } from '../SipConnector';
 import {
   HEADER_CONTENT_TYPE_NAME,
@@ -36,7 +37,7 @@ describe('main cam control', () => {
 
     const promise = new Promise<{ mainCam: EEventsMainCAM; resolutionMainCam: string }>(
       (resolve) => {
-        return sipConnector.onSession('main-cam-control', resolve);
+        return sipConnector.onSession(ESessionSyntheticsEventNames.mainCamControl, resolve);
       }
     );
     const { session } = sipConnector;

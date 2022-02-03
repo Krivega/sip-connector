@@ -6,6 +6,7 @@ import {
 } from '../__mocks__';
 import { channelsHeaders, channelsData } from '../__mocks__/channelsNotify';
 import JsSIP from '../__mocks__/jssip.mock';
+import { ESessionSyntheticsEventNames } from '../events'
 import SipConnector from '../SipConnector';
 
 describe('channels notify', () => {
@@ -29,7 +30,7 @@ describe('channels notify', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onSession('channels:notify', async (channels) => {
+      sipConnector.onSession(ESessionSyntheticsEventNames.channelsNotify, async (channels) => {
         expect(channels).toEqual(channelsData);
 
         resolve();
@@ -51,7 +52,7 @@ describe('channels notify', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onSession('channels:notify', async (channels) => {
+      sipConnector.onSession(ESessionSyntheticsEventNames.channelsNotify, async (channels) => {
         expect(channels).toEqual(channelsData);
 
         resolve();

@@ -4,6 +4,7 @@ import Events from 'events-constructor';
 import type { IncomingRequest } from '@krivega/jssip/lib/SIPMessage';
 import { UA_EVENT_NAMES } from '../eventNames';
 import type { TEventUA } from '../eventNames';
+import { EUaJSSIPEventNames } from '../events';
 import Session from './Session.mock';
 import Registrator from './Registrator.mock';
 
@@ -64,10 +65,10 @@ class UA implements IUA {
 
     if (this.isStarted()) {
       this._stopedTimeout = setTimeout(() => {
-        this.trigger('disconnected', { error: new Error('stoped') });
+        this.trigger(EUaJSSIPEventNames.disconnected, { error: new Error('stoped') });
       }, CONNECTION_DELAY);
     } else {
-      this.trigger('disconnected', { error: new Error('stoped') });
+      this.trigger(EUaJSSIPEventNames.disconnected, { error: new Error('stoped') });
     }
   }
 
@@ -128,7 +129,7 @@ class UA implements IUA {
       this._isRegistered = false;
       this._isConnected = false;
       this._startedTimeout = setTimeout(() => {
-        this.trigger('registrationFailed', { response: null, cause: 'Request Timeout' });
+        this.trigger(EUaJSSIPEventNames.registrationFailed, { response: null, cause: 'Request Timeout' });
       }, CONNECTION_DELAY);
     } else if (
       !this._isRegistered &&
@@ -137,17 +138,17 @@ class UA implements IUA {
     ) {
       this._isRegistered = true;
       this._startedTimeout = setTimeout(() => {
-        this.trigger('registered');
+        this.trigger(EUaJSSIPEventNames.registered);
       }, CONNECTION_DELAY);
     } else if (register && password !== PASSWORD_CORRECT && password !== PASSWORD_CORRECT_2) {
       this._isRegistered = false;
       this._isConnected = false;
       this._startedTimeout = setTimeout(() => {
-        this.trigger('registrationFailed');
+        this.trigger(EUaJSSIPEventNames.registrationFailed);
       }, CONNECTION_DELAY);
     }
 
-    this.trigger('connected');
+    this.trigger(EUaJSSIPEventNames.connected);
     this._isConnected = true;
   }
 
@@ -160,7 +161,7 @@ class UA implements IUA {
     this._isRegistered = false;
     this._isConnected = false;
 
-    this.trigger('unregistered');
+    this.trigger(EUaJSSIPEventNames.unregistered);
   }
 
   /**
@@ -190,7 +191,7 @@ class UA implements IUA {
   }
 
   newSipEvent(data: { request: IncomingRequest }) {
-    this.trigger('sipEvent', data);
+    this.trigger(EUaJSSIPEventNames.sipEvent, data);
   }
 }
 

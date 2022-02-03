@@ -3,6 +3,7 @@ import { createMediaStreamMock } from 'webrtc-mock';
 import createSipConnector from '../__mocks__/doMock';
 import { FAILED_CONFERENCE_NUMBER } from '../__mocks__/jssip.mock';
 import { dataForConnectionWithAuthorization } from '../__mocks__';
+import { SessionJSSIPEventNames, ESessionSyntheticsEventNames } from '../events'
 import type SipConnector from '../SipConnector';
 
 describe('call', () => {
@@ -119,7 +120,7 @@ describe('call', () => {
     const number = `10000`;
 
     const endedPromise = new Promise((resolve) => {
-      sipConnector.onceSession('ended', resolve);
+      sipConnector.onceSession(SessionJSSIPEventNames.ended, resolve);
     });
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -139,7 +140,7 @@ describe('call', () => {
 
     const number = `10000`;
     const disconnectPromise = new Promise((resolve, reject) => {
-      sipConnector.onceSession('ended', () => {
+      sipConnector.onceSession(SessionJSSIPEventNames.ended, () => {
         // order is important!!!
         sipConnector.disconnect().then(resolve).catch(reject);
       });
@@ -160,7 +161,7 @@ describe('call', () => {
 
     // order is important!!!
     const disconnectPromise = new Promise((resolve, reject) => {
-      sipConnector.onceSession('failed', () => {
+      sipConnector.onceSession(SessionJSSIPEventNames.failed, () => {
         // order is important!!!
         sipConnector.disconnect().then(resolve).catch(reject);
       });
@@ -190,7 +191,7 @@ describe('call', () => {
     await sipConnector.call({ number, mediaStream, ontrack: mockFn });
 
     const disconnectPromise = new Promise<void>((resolve) => {
-      sipConnector.onceSession('ended', () => {
+      sipConnector.onceSession(SessionJSSIPEventNames.ended, () => {
         resolve();
       });
     });
@@ -215,7 +216,7 @@ describe('call', () => {
     await sipConnector.call({ number, mediaStream, ontrack: mockFn });
 
     const endedFromServer = new Promise((resolve) => {
-      sipConnector.onSession('ended:fromserver', resolve);
+      sipConnector.onSession(ESessionSyntheticsEventNames.endedFromserver, resolve);
     });
 
     // @ts-ignore
