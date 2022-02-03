@@ -382,8 +382,8 @@ export default class SipConnector {
   register(): Promise<RegisteredEvent> {
     return new Promise((resolve, reject) => {
       if (this.isRegisterConfig) {
-        this.ua!.on('registered', resolve);
-        this.ua!.on('registrationFailed', reject);
+        this.ua!.on(EUaJSSIPEventNames.registered, resolve);
+        this.ua!.on(EUaJSSIPEventNames.registrationFailed, reject);
         this.ua!.register();
       } else {
         reject(new Error('Config is not registered'));
@@ -394,7 +394,7 @@ export default class SipConnector {
   unregister(): Promise<UnRegisteredEvent> {
     return new Promise((resolve, reject) => {
       if (this.isRegistered) {
-        this.ua!.on('unregistered', resolve);
+        this.ua!.on(EUaJSSIPEventNames.unregistered, resolve);
         this.ua!.unregister();
       } else {
         reject(new Error('ua is not registered'));
@@ -558,7 +558,7 @@ export default class SipConnector {
 
       const callerData = this.remoteCallerData;
 
-      this.incomingSession.on('failed', () => {
+      this.incomingSession.on(SessionJSSIPEventNames.failed, () => {
         this.removeIncomingSession();
         this._uaEvents.trigger(EUaSyntheticsEventNames.failedIncomingCall, callerData);
       });
