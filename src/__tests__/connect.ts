@@ -13,6 +13,8 @@ import {
 } from '../__mocks__';
 import type SipConnector from '../SipConnector';
 
+const wrongPassword = 'wrongPassword';
+
 describe('connect', () => {
   let sipConnector: SipConnector;
 
@@ -26,6 +28,19 @@ describe('connect', () => {
     const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
 
     expect(ua.configuration).toEqual(uaConfigurationWithAuthorization);
+  });
+
+  it('authorization user with wrong password', () => {
+    expect.assertions(1);
+
+    return sipConnector
+      .connect({
+        ...dataForConnectionWithAuthorizationWithDisplayName,
+        password: wrongPassword,
+      })
+      .catch((error) => {
+        expect(error).toEqual({ response: null, cause: 'Wrong credentials' });
+      });
   });
 
   it('and change sipServerUrl', async () => {
@@ -127,8 +142,6 @@ describe('connect', () => {
 
   it('set password after with authorization', async () => {
     expect.assertions(3);
-
-    const wrongPassword = 'wrongPassword';
 
     try {
       await sipConnector.connect({
