@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.1.0](https://github.com/Krivega/sip-connector/compare/v5.0.1...v5.1.0) (2022-02-07)
+
+### Features
+
+- participant token issued notify ([#14](https://github.com/Krivega/sip-connector/issues/14)) ([d9426ee](https://github.com/Krivega/sip-connector/commit/d9426ee63370d5dab108dba966c579601eae6eca))
+
 ### [5.0.1](https://github.com/Krivega/sip-connector/compare/v5.0.0...v5.0.1) (2021-11-12)
 
 ### Bug Fixes
