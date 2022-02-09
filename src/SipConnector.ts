@@ -10,9 +10,7 @@ import type {
   RegisteredEvent,
   UnRegisteredEvent,
 } from '@krivega/jssip/lib/UA';
-import CancelableRequest, {
-  isCanceledError,
-} from '@krivega/cancelable-promise/dist/CancelableRequest';
+import { CancelableRequest, isCanceledError } from '@krivega/cancelable-promise';
 import Events from 'events-constructor';
 import scaleBitrate from './videoSendingBalancer/scaleBitrate';
 import {
