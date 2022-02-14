@@ -1129,7 +1129,11 @@ export default class SipConnector {
     if (this.ua && this.session) {
       const { session } = this;
 
-      await this._restoreSession();
+      if (this._streamPresentationCurrent) {
+        await this.stopPresentation();
+      }
+
+      this._restoreSession();
 
       if (!session.isEnded()) {
         session.terminate();
