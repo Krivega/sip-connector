@@ -3,6 +3,7 @@ import { createMediaStreamMock } from 'webrtc-mock';
 import createSipConnector from '../__mocks__/doMock';
 import { FAILED_CONFERENCE_NUMBER } from '../__mocks__/jssip.mock';
 import { dataForConnectionWithAuthorization } from '../__mocks__';
+import { hasCanceledCallError } from '../SipConnector';
 import type SipConnector from '../SipConnector';
 
 describe('call', () => {
@@ -153,7 +154,7 @@ describe('call', () => {
     return expect(disconnectPromise).resolves.toBeUndefined();
   });
 
-  it('disconnect after decline call from server', async () => {
+  it('disconnect after decline call from server: wait to decline', async () => {
     expect.assertions(2);
 
     const number = FAILED_CONFERENCE_NUMBER;
@@ -172,12 +173,74 @@ describe('call', () => {
 
     return Promise.all([
       promiseCall.catch((error) => {
-        expect(error).toBeDefined();
+        expect(hasCanceledCallError(error)).toBeTruthy();
       }),
       disconnectPromise.then((result) => {
         expect(result).toBeUndefined();
       }),
     ]);
+  });
+
+  it('disconnect after decline call from server: dont wait to decline', async () => {
+    expect.assertions(2);
+
+    const number = FAILED_CONFERENCE_NUMBER;
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+
+    const promiseCall = sipConnector.call({ number, mediaStream, ontrack: mockFn });
+
+    const disconnectPromise = new Promise((resolve, reject) => {
+      sipConnector.disconnect().then(resolve).catch(reject);
+    });
+
+    return Promise.all([
+      promiseCall.catch((error) => {
+        expect(hasCanceledCallError(error)).toBeTruthy();
+      }),
+      disconnectPromise.then((result) => {
+        expect(result).toBeUndefined();
+      }),
+    ]);
+  });
+
+  it('disconnect after confirm call from server: dont wait to confirm', async () => {
+    expect.assertions(2);
+
+    const number = `10000`;
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+
+    const promiseCall = sipConnector.call({ number, mediaStream, ontrack: mockFn });
+
+    const disconnectPromise = new Promise((resolve, reject) => {
+      sipConnector.disconnect().then(resolve).catch(reject);
+    });
+
+    return Promise.all([
+      promiseCall.catch((error) => {
+        expect(hasCanceledCallError(error)).toBeTruthy();
+      }),
+      disconnectPromise.then((result) => {
+        expect(result).toBeUndefined();
+      }),
+    ]);
+  });
+
+  it('disconnect after confirm call from server: wait to confirm', async () => {
+    expect.assertions(1);
+
+    const number = `10000`;
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+
+    await sipConnector.call({ number, mediaStream, ontrack: mockFn });
+
+    sipConnector.session!.terminate(); // end call from server
+
+    return sipConnector.disconnect().then((result) => {
+      expect(result).toBeUndefined();
+    });
   });
 
   it('Clean up remoteStreams after end call from server', async () => {
@@ -198,8 +261,7 @@ describe('call', () => {
     sipConnector.getRemoteStreams(); // for fill media streams in sipConnector._remoteStreams
     sipConnector.session!.terminate(); // end call from server
 
-    return disconnectPromise.then(async () => {
-      await delayPromise(50); // wait for call async restoreSession
+    return disconnectPromise.then(() => {
       // @ts-ignore
       expect(sipConnector!._remoteStreams).toEqual(remoteStreams);
     });
