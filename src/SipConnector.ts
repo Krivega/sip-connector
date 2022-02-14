@@ -107,22 +107,29 @@ export enum EEventsMainCAM {
 
 interface ICustomError extends Error {
   originator?: string;
-  cause?: string;
+  cause?: Error;
   message: any;
   socket?: any;
   url?: string;
   code?: string;
 }
 
-export const hasCanceledCallError = (error: ICustomError = new Error()) => {
+export const hasCanceledCallError = (error: ICustomError = new Error()): boolean => {
   const { originator, cause } = error;
 
-  return (
-    isCanceledError(error) ||
-    cause === REQUEST_TIMEOUT ||
-    cause === REJECTED ||
-    (originator === ORIGINATOR_LOCAL && (cause === CANCELED || cause === BYE))
-  );
+  if (isCanceledError(error)) {
+    return true;
+  }
+
+  if (typeof cause === 'string') {
+    return (
+      cause === REQUEST_TIMEOUT ||
+      cause === REJECTED ||
+      (originator === ORIGINATOR_LOCAL && (cause === CANCELED || cause === BYE))
+    );
+  }
+
+  return false;
 };
 
 const moduleName = 'SipConnector';
