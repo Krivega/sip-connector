@@ -303,8 +303,6 @@ export default class SipConnector {
 
   private _cancelableSendDTMF: CancelableRequest<Parameters<TSendDTMF>[0], ReturnType<TSendDTMF>>;
 
-  private _cancelableRestoreSession: CancelableRequest<void, ReturnType<TRestoreSession>>;
-
   private getSipServerUrl: (id: string) => string = (id: string) => {
     return id;
   };
@@ -366,11 +364,6 @@ export default class SipConnector {
       ReturnType<TSendDTMF>
     >(this._sendDTMF, moduleName);
 
-    this._cancelableRestoreSession = new CancelableRequest<void, ReturnType<TRestoreSession>>(
-      this._restoreSession,
-      moduleName
-    );
-
     this.onSession(SHARE_STATE, this._handleShareState);
     this.onSession(NEW_INFO, this._handleNewInfo);
     this.on(SIP_EVENT, this._handleSipEvent);
@@ -412,10 +405,6 @@ export default class SipConnector {
     this._cancelRequests();
 
     return this._hangUpWithoutCancelRequests();
-  };
-
-  restoreSession: TRestoreSession = () => {
-    return this._cancelableRestoreSession.request();
   };
 
   register(): Promise<RegisteredEvent> {
@@ -1012,8 +1001,8 @@ export default class SipConnector {
           this._sessionEvents.trigger(ENDED_FROM_SERVER, data);
         }
 
-        if (this.session && !this._cancelableRestoreSession.requested) {
-          this.restoreSession();
+        if (this.session) {
+          this._restoreSession();
         }
 
         removeStartedEventListeners();
@@ -1139,7 +1128,7 @@ export default class SipConnector {
     if (this.ua && this.session) {
       const { session } = this;
 
-      await this.restoreSession();
+      await this._restoreSession();
 
       if (!session.isEnded()) {
         session.terminate();
@@ -1160,7 +1149,6 @@ export default class SipConnector {
   _cancelCallRequests() {
     this._cancelableCall.cancelRequest();
     this._cancelableAnswer.cancelRequest();
-    this._cancelableRestoreSession.cancelRequest();
   }
 
   _cancelActionsRequests() {
