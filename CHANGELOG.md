@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [5.1.3](https://github.com/Krivega/sip-connector/compare/v5.1.2...v5.1.3) (2022-02-14)
+
+### Bug Fixes
+
+- restore session after terminate from server ([ff3de59](https://github.com/Krivega/sip-connector/commit/ff3de591db0b5d50b02edc90e384f5a4d54959e9))
+
 ### [5.1.2](https://github.com/Krivega/sip-connector/compare/v5.1.1...v5.1.2) (2022-02-09)
 
 ### [5.1.1](https://github.com/Krivega/sip-connector/compare/v5.1.0...v5.1.1) (2022-02-07)
