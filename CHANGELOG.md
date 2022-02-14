@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [5.1.4](https://github.com/Krivega/sip-connector/compare/v5.1.3...v5.1.4) (2022-02-14)
+
+### Bug Fixes
+
+- stopPresentation before hengUp ([627753f](https://github.com/Krivega/sip-connector/commit/627753ff8a44aad28826d59716e430166005945d))
+
 ### [5.1.3](https://github.com/Krivega/sip-connector/compare/v5.1.2...v5.1.3) (2022-02-14)
 
 ### Bug Fixes
