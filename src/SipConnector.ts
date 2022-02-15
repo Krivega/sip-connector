@@ -107,22 +107,29 @@ export enum EEventsMainCAM {
 
 interface ICustomError extends Error {
   originator?: string;
-  cause?: string;
+  cause?: Error;
   message: any;
   socket?: any;
   url?: string;
   code?: string;
 }
 
-export const hasCanceledCallError = (error: ICustomError = new Error()) => {
+export const hasCanceledCallError = (error: ICustomError = new Error()): boolean => {
   const { originator, cause } = error;
 
-  return (
-    isCanceledError(error) ||
-    cause === REQUEST_TIMEOUT ||
-    cause === REJECTED ||
-    (originator === ORIGINATOR_LOCAL && (cause === CANCELED || cause === BYE))
-  );
+  if (isCanceledError(error)) {
+    return true;
+  }
+
+  if (typeof cause === 'string') {
+    return (
+      cause === REQUEST_TIMEOUT ||
+      cause === REJECTED ||
+      (originator === ORIGINATOR_LOCAL && (cause === CANCELED || cause === BYE))
+    );
+  }
+
+  return false;
 };
 
 const moduleName = 'SipConnector';
@@ -263,8 +270,6 @@ type TSendDTMF = (tone: number | string) => Promise<void>;
 
 type THangUp = () => Promise<void>;
 
-type TRestoreSession = () => Promise<void>;
-
 export default class SipConnector {
   private _isRegisterConfig = false;
 
@@ -367,6 +372,9 @@ export default class SipConnector {
     this.onSession(SHARE_STATE, this._handleShareState);
     this.onSession(NEW_INFO, this._handleNewInfo);
     this.on(SIP_EVENT, this._handleSipEvent);
+
+    this.onSession(FAILED, this._handleEnded);
+    this.onSession(ENDED, this._handleEnded);
   }
 
   connect: TConnect = (data) => {
@@ -574,10 +582,14 @@ export default class SipConnector {
     }
 
     return result.finally(() => {
-      delete this._streamPresentationCurrent;
-
-      this.isPendingPresentation = false;
+      this._resetPresentation();
     });
+  }
+
+  _resetPresentation(): void {
+    delete this._streamPresentationCurrent;
+
+    this.isPendingPresentation = false;
   }
 
   handleNewRTCSession = ({ originator, session }: IncomingRTCSessionEvent) => {
@@ -994,20 +1006,11 @@ export default class SipConnector {
         this.offSession(FAILED, handleEnded);
         this.offSession(ENDED, handleEnded);
       };
-      const handleEnded = (data) => {
-        const { originator } = data;
-
-        if (originator === ORIGINATOR_REMOTE) {
-          this._sessionEvents.trigger(ENDED_FROM_SERVER, data);
-        }
-
-        if (this.session) {
-          this._restoreSession();
-        }
-
+      
+      const handleEnded = (error: ICustomError) => {
         removeStartedEventListeners();
         removeEndedEventListeners();
-        reject(data);
+        reject(error);
       };
 
       let savedPeerconnection: RTCPeerConnection;
@@ -1029,6 +1032,7 @@ export default class SipConnector {
         }
 
         removeStartedEventListeners();
+        removeEndedEventListeners();
         resolve(savedPeerconnection);
       };
 
@@ -1037,10 +1041,8 @@ export default class SipConnector {
     });
   };
 
-  _restoreSession: TRestoreSession = async () => {
-    if (this._streamPresentationCurrent) {
-      await this.stopPresentation();
-    }
+  _restoreSession: () => void = () => {
+    this._resetPresentation();
 
     delete this._connectionConfiguration.number;
     delete this.session;
@@ -1128,7 +1130,9 @@ export default class SipConnector {
     if (this.ua && this.session) {
       const { session } = this;
 
-      await this._restoreSession();
+      if (this._streamPresentationCurrent) {
+        await this.stopPresentation();
+      }
 
       if (!session.isEnded()) {
         session.terminate();
@@ -1422,4 +1426,14 @@ export default class SipConnector {
 
     this.session!.sendInfo(CONTENT_TYPE_CHANNELS, undefined, { extraHeaders });
   }
+
+  _handleEnded = (error: ICustomError) => {
+    const { originator } = error;
+
+    if (originator === ORIGINATOR_REMOTE) {
+      this._sessionEvents.trigger(ENDED_FROM_SERVER, error);
+    }
+
+    this._restoreSession();
+  };
 }
