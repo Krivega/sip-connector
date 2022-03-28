@@ -373,14 +373,8 @@ export default class SipConnector {
     this.onSession(NEW_INFO, this._handleNewInfo);
     this.on(SIP_EVENT, this._handleSipEvent);
 
-<<<<<<< HEAD
-    this.onSession(SHARE_STATE, this._handleShareState);
-    this.onSession(NEW_INFO, this._handleNewInfo);
-    this.on(SIP_EVENT, this._handleSipEvent);
-=======
     this.onSession(FAILED, this._handleEnded);
     this.onSession(ENDED, this._handleEnded);
->>>>>>> upstream/master
   }
 
   connect: TConnect = (data) => {
