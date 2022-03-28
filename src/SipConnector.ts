@@ -1012,21 +1012,7 @@ export default class SipConnector {
         this.offSession(FAILED, handleEnded);
         this.offSession(ENDED, handleEnded);
       };
-<<<<<<< HEAD
-      const handleEnded = (data) => {
-        const { originator } = data;
-
-        if (originator === ORIGINATOR_REMOTE) {
-          this._sessionEvents.trigger(ENDED_FROM_SERVER, data);
-        }
-
-        if (this.session && !this._cancelableRestoreSession.requested) {
-          this.restoreSession();
-        }
-
-=======
       const handleEnded = (error: ICustomError) => {
->>>>>>> upstream/master
         removeStartedEventListeners();
         removeEndedEventListeners();
         reject(error);
