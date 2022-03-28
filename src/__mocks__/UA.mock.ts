@@ -143,7 +143,7 @@ class UA implements IUA {
       this._isRegistered = false;
       this._isConnected = false;
       this._startedTimeout = setTimeout(() => {
-        this.trigger('registrationFailed');
+        this.trigger('registrationFailed', { response: null, cause: 'Wrong credentials' });
       }, CONNECTION_DELAY);
     }
 

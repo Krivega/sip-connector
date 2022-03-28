@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [5.1.7](https://github.com/Krivega/sip-connector/compare/v5.1.6...v5.1.7) (2022-03-24)
+
+### [5.1.6](https://github.com/Krivega/sip-connector/compare/v5.1.5...v5.1.6) (2022-03-11)
+
+### Bug Fixes
+
+- correct value max bitrate ([47c9926](https://github.com/Krivega/sip-connector/commit/47c992694fb60f22e8f1edbf939276cefb123610))
+
+### [5.1.5](https://github.com/Krivega/sip-connector/compare/v5.1.4...v5.1.5) (2022-03-03)
+
+### [5.1.4](https://github.com/Krivega/sip-connector/compare/v5.1.3...v5.1.4) (2022-02-14)
+
+### Bug Fixes
+
+- stopPresentation before hengUp ([627753f](https://github.com/Krivega/sip-connector/commit/627753ff8a44aad28826d59716e430166005945d))
+
+### [5.1.3](https://github.com/Krivega/sip-connector/compare/v5.1.2...v5.1.3) (2022-02-14)
+
+### Bug Fixes
+
+- restore session after terminate from server ([ff3de59](https://github.com/Krivega/sip-connector/commit/ff3de591db0b5d50b02edc90e384f5a4d54959e9))
+
+### [5.1.2](https://github.com/Krivega/sip-connector/compare/v5.1.1...v5.1.2) (2022-02-09)
+
+### [5.1.1](https://github.com/Krivega/sip-connector/compare/v5.1.0...v5.1.1) (2022-02-07)
+
+## [5.1.0](https://github.com/Krivega/sip-connector/compare/v5.0.1...v5.1.0) (2022-02-07)
+
+### Features
+
+- participant token issued notify ([#14](https://github.com/Krivega/sip-connector/issues/14)) ([d9426ee](https://github.com/Krivega/sip-connector/commit/d9426ee63370d5dab108dba966c579601eae6eca))
+
 ### [5.0.1](https://github.com/Krivega/sip-connector/compare/v5.0.0...v5.0.1) (2021-11-12)
 
 ### Bug Fixes

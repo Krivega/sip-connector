@@ -13,14 +13,16 @@ import {
 } from '../__mocks__';
 import type SipConnector from '../SipConnector';
 
-describe('sip-connector', () => {
+const wrongPassword = 'wrongPassword';
+
+describe('connect', () => {
   let sipConnector: SipConnector;
 
   beforeEach(() => {
     sipConnector = createSipConnector();
   });
 
-  it('connect authorization user', async () => {
+  it('authorization user', async () => {
     expect.assertions(1);
 
     const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -28,7 +30,20 @@ describe('sip-connector', () => {
     expect(ua.configuration).toEqual(uaConfigurationWithAuthorization);
   });
 
-  it('connect and change sipServerUrl', async () => {
+  it('authorization user with wrong password', () => {
+    expect.assertions(1);
+
+    return sipConnector
+      .connect({
+        ...dataForConnectionWithAuthorizationWithDisplayName,
+        password: wrongPassword,
+      })
+      .catch((error) => {
+        expect(error).toEqual({ response: null, cause: 'Wrong credentials' });
+      });
+  });
+
+  it('and change sipServerUrl', async () => {
     expect.assertions(1);
 
     const sipServerUrlChanged = `${dataForConnectionWithAuthorization.sipServerUrl}Changed`;
@@ -44,7 +59,7 @@ describe('sip-connector', () => {
     expect(ua.configuration).toEqual({ ...uaConfigurationWithAuthorization, uri: uriChanged });
   });
 
-  it('connect authorization user with displayName', async () => {
+  it('authorization user with displayName', async () => {
     expect.assertions(6);
 
     const ua = await sipConnector.connect(dataForConnectionWithAuthorizationWithDisplayName);
@@ -68,7 +83,7 @@ describe('sip-connector', () => {
     expect(ua.configuration).toEqual(uaConfigurationWithAuthorizationWithDisplayName);
   });
 
-  it('connect without authorization', async () => {
+  it('without authorization', async () => {
     expect.assertions(6);
 
     const ua = await sipConnector.connect(dataForConnectionWithoutAuthorization);
@@ -88,7 +103,7 @@ describe('sip-connector', () => {
     expect(configuration).toEqual(uaConfigurationWithoutAuthorization);
   });
 
-  it('connect without authorization without displayName', async () => {
+  it('without authorization without displayName', async () => {
     expect.assertions(6);
 
     const ua = await sipConnector.connect(dataForConnectionWithoutAuthorizationWithoutDisplayName);
@@ -125,10 +140,8 @@ describe('sip-connector', () => {
     return connectPromise;
   });
 
-  it('set password after connect with authorization', async () => {
+  it('set password after with authorization', async () => {
     expect.assertions(3);
-
-    const wrongPassword = 'wrongPassword';
 
     try {
       await sipConnector.connect({
@@ -152,7 +165,7 @@ describe('sip-connector', () => {
     expect(sipConnector.ua!.configuration).toEqual(uaConfigurationWithAuthorizationWithDisplayName);
   });
 
-  it('set same password after connect with authorization', async () => {
+  it('set same password after with authorization', async () => {
     expect.assertions(3);
 
     await sipConnector.connect(dataForConnectionWithAuthorizationWithDisplayName);
@@ -173,7 +186,7 @@ describe('sip-connector', () => {
       });
   });
 
-  it('set displayName after connect with authorization', async () => {
+  it('set displayName after with authorization', async () => {
     const anotherDisplayName = 'anotherDisplayName';
 
     await sipConnector.connect(dataForConnectionWithAuthorizationWithDisplayName);

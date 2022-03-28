@@ -10,9 +10,7 @@ import type {
   RegisteredEvent,
   UnRegisteredEvent,
 } from '@krivega/jssip/lib/UA';
-import CancelableRequest, {
-  isCanceledError,
-} from '@krivega/cancelable-promise/dist/CancelableRequest';
+import { CancelableRequest, isCanceledError } from '@krivega/cancelable-promise';
 import Events from 'events-constructor';
 import scaleBitrate from './videoSendingBalancer/scaleBitrate';
 import {
@@ -109,22 +107,29 @@ export enum EEventsMainCAM {
 
 interface ICustomError extends Error {
   originator?: string;
-  cause?: string;
+  cause?: Error;
   message: any;
   socket?: any;
   url?: string;
   code?: string;
 }
 
-export const hasCanceledCallError = (error: ICustomError = new Error()) => {
+export const hasCanceledCallError = (error: ICustomError = new Error()): boolean => {
   const { originator, cause } = error;
 
-  return (
-    isCanceledError(error) ||
-    cause === REQUEST_TIMEOUT ||
-    cause === REJECTED ||
-    (originator === ORIGINATOR_LOCAL && (cause === CANCELED || cause === BYE))
-  );
+  if (isCanceledError(error)) {
+    return true;
+  }
+
+  if (typeof cause === 'string') {
+    return (
+      cause === REQUEST_TIMEOUT ||
+      cause === REJECTED ||
+      (originator === ORIGINATOR_LOCAL && (cause === CANCELED || cause === BYE))
+    );
+  }
+
+  return false;
 };
 
 const moduleName = 'SipConnector';
@@ -265,8 +270,6 @@ type TSendDTMF = (tone: number | string) => Promise<void>;
 
 type THangUp = () => Promise<void>;
 
-type TRestoreSession = () => Promise<void>;
-
 export default class SipConnector {
   private _isRegisterConfig = false;
 
@@ -304,8 +307,6 @@ export default class SipConnector {
   >;
 
   private _cancelableSendDTMF: CancelableRequest<Parameters<TSendDTMF>[0], ReturnType<TSendDTMF>>;
-
-  private _cancelableRestoreSession: CancelableRequest<void, ReturnType<TRestoreSession>>;
 
   private getSipServerUrl: (id: string) => string = (id: string) => {
     return id;
@@ -368,14 +369,18 @@ export default class SipConnector {
       ReturnType<TSendDTMF>
     >(this._sendDTMF, moduleName);
 
-    this._cancelableRestoreSession = new CancelableRequest<void, ReturnType<TRestoreSession>>(
-      this._restoreSession,
-      moduleName
-    );
-
     this.onSession(SHARE_STATE, this._handleShareState);
     this.onSession(NEW_INFO, this._handleNewInfo);
     this.on(SIP_EVENT, this._handleSipEvent);
+
+<<<<<<< HEAD
+    this.onSession(SHARE_STATE, this._handleShareState);
+    this.onSession(NEW_INFO, this._handleNewInfo);
+    this.on(SIP_EVENT, this._handleSipEvent);
+=======
+    this.onSession(FAILED, this._handleEnded);
+    this.onSession(ENDED, this._handleEnded);
+>>>>>>> upstream/master
   }
 
   connect: TConnect = (data) => {
@@ -414,10 +419,6 @@ export default class SipConnector {
     this._cancelRequests();
 
     return this._hangUpWithoutCancelRequests();
-  };
-
-  restoreSession: TRestoreSession = () => {
-    return this._cancelableRestoreSession.request();
   };
 
   register(): Promise<RegisteredEvent> {
@@ -587,10 +588,14 @@ export default class SipConnector {
     }
 
     return result.finally(() => {
-      delete this._streamPresentationCurrent;
-
-      this.isPendingPresentation = false;
+      this._resetPresentation();
     });
+  }
+
+  _resetPresentation(): void {
+    delete this._streamPresentationCurrent;
+
+    this.isPendingPresentation = false;
   }
 
   handleNewRTCSession = ({ originator, session }: IncomingRTCSessionEvent) => {
@@ -1007,6 +1012,7 @@ export default class SipConnector {
         this.offSession(FAILED, handleEnded);
         this.offSession(ENDED, handleEnded);
       };
+<<<<<<< HEAD
       const handleEnded = (data) => {
         const { originator } = data;
 
@@ -1018,9 +1024,12 @@ export default class SipConnector {
           this.restoreSession();
         }
 
+=======
+      const handleEnded = (error: ICustomError) => {
+>>>>>>> upstream/master
         removeStartedEventListeners();
         removeEndedEventListeners();
-        reject(data);
+        reject(error);
       };
 
       let savedPeerconnection: RTCPeerConnection;
@@ -1042,6 +1051,7 @@ export default class SipConnector {
         }
 
         removeStartedEventListeners();
+        removeEndedEventListeners();
         resolve(savedPeerconnection);
       };
 
@@ -1050,10 +1060,8 @@ export default class SipConnector {
     });
   };
 
-  _restoreSession: TRestoreSession = async () => {
-    if (this._streamPresentationCurrent) {
-      await this.stopPresentation();
-    }
+  _restoreSession: () => void = () => {
+    this._resetPresentation();
 
     delete this._connectionConfiguration.number;
     delete this.session;
@@ -1141,7 +1149,11 @@ export default class SipConnector {
     if (this.ua && this.session) {
       const { session } = this;
 
-      await this.restoreSession();
+      if (this._streamPresentationCurrent) {
+        await this.stopPresentation();
+      }
+
+      this._restoreSession();
 
       if (!session.isEnded()) {
         session.terminate();
@@ -1162,7 +1174,6 @@ export default class SipConnector {
   _cancelCallRequests() {
     this._cancelableCall.cancelRequest();
     this._cancelableAnswer.cancelRequest();
-    this._cancelableRestoreSession.cancelRequest();
   }
 
   _cancelActionsRequests() {
@@ -1436,4 +1447,14 @@ export default class SipConnector {
 
     this.session!.sendInfo(CONTENT_TYPE_CHANNELS, undefined, { extraHeaders });
   }
+
+  _handleEnded = (error: ICustomError) => {
+    const { originator } = error;
+
+    if (originator === ORIGINATOR_REMOTE) {
+      this._sessionEvents.trigger(ENDED_FROM_SERVER, error);
+    }
+
+    this._restoreSession();
+  };
 }
