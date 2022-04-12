@@ -5183,10 +5183,10 @@ webidl-conversions@^6.1.0:
   resolved "https://registry.yarnpkg.com/webidl-conversions/-/webidl-conversions-6.1.0.tgz#9111b4d7ea80acd40f5270d666621afa78b69514"
   integrity sha512-qBIvFLGiBpLjfwmYAaHPXsn+ho5xZnGvyGvsarywGNc8VyQJUMHJ8OBKGGrPER0okBeMDaan4mNBlgBROxuI8w==
 
-webrtc-mock@^0.0.9:
-  version "0.0.9"
-  resolved "https://registry.yarnpkg.com/webrtc-mock/-/webrtc-mock-0.0.9.tgz#d59c8443e2a0a839d2067ed419788e1e7b5c041d"
-  integrity sha512-ahAe8CBuVKkCtCQ/5H8no5Be6+7Bq+Jza6EE9C7z3qrbII/zmld+kFXMM7PSh/u3vrQ+4PkmEkwXiu5vnkwkeg==
+webrtc-mock@^0.0.10:
+  version "0.0.10"
+  resolved "https://registry.yarnpkg.com/webrtc-mock/-/webrtc-mock-0.0.10.tgz#e52a681752879474ab676faf5a3062e9c562d445"
+  integrity sha512-s29O/f6TXNQquA1VXubMpGSLZHU9iRb8u5BUXbfYHmKnViH3LjDCqmjxTBx4WUgwnlgWEzQXj2D45P9jvYFPdQ==
   dependencies:
     events-constructor "^1.1.4"
     lodash "^4.17.21"

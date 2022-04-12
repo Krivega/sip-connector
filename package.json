@@ -44,7 +44,7 @@
     "events-constructor": "^1.1.4",
     "promise-delay": "^2.1.0",
     "stack-promises": "^0.0.8",
-    "webrtc-mock": "^0.0.9"
+    "webrtc-mock": "^0.0.10"
   },
   "devDependencies": {
     "@commitlint/cli": "^16.2.3",

@@ -28,8 +28,12 @@ import {
   CONTENT_TYPE_SHARE_STATE,
   CONTENT_TYPE_ENTER_ROOM,
   CONTENT_TYPE_CHANNELS,
+  CONTENT_TYPE_MEDIA_STATE,
   HEADER_INPUT_CHANNELS,
   HEADER_OUTPUT_CHANNELS,
+  HEADER_MEDIA_STATE,
+  HEADER_MAIN_CAM_STATE,
+  HEADER_MIC_STATE,
   HEADER_START_PRESENTATION,
   HEADER_STOP_PRESENTATION,
   HEADER_CONTENT_TYPE_MAIN_CAM,
@@ -142,6 +146,11 @@ export type TJsSIP = {
 type TChannels = {
   inputChannels: string;
   outputChannels: string;
+};
+
+type TMediaState = {
+  mainCam: '0' | '1';
+  mic: '0' | '1';
 };
 
 type TParametersModeratorsList = {
@@ -1426,6 +1435,19 @@ export default class SipConnector {
     ];
 
     this.session!.sendInfo(CONTENT_TYPE_CHANNELS, undefined, { extraHeaders });
+  }
+
+  sendMediaState({ mainCam, mic }: TMediaState) {
+    const headerMediaState = `${HEADER_MEDIA_STATE}: currentstate`;
+    const headerMainCam = `${HEADER_MAIN_CAM_STATE}: ${mainCam}`;
+    const headerMic = `${HEADER_MIC_STATE}: ${mic}`;
+    const extraHeaders: TOptionsExtraHeaders['extraHeaders'] = [
+      headerMediaState,
+      headerMainCam,
+      headerMic,
+    ];
+
+    this.session!.sendInfo(CONTENT_TYPE_MEDIA_STATE, undefined, { extraHeaders });
   }
 
   _handleEnded = (error: ICustomError) => {
