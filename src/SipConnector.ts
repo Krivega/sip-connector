@@ -34,6 +34,8 @@ import {
   HEADER_MEDIA_STATE,
   HEADER_MAIN_CAM_STATE,
   HEADER_MIC_STATE,
+  HEADER_ENABLE_MAIN_CAM,
+  HEADER_ENABLE_MIC,
   HEADER_START_PRESENTATION,
   HEADER_STOP_PRESENTATION,
   HEADER_CONTENT_TYPE_MAIN_CAM,
@@ -502,6 +504,22 @@ export default class SipConnector {
   removeIncomingSession = () => {
     delete this.incomingSession;
   };
+
+  enableMainCam(): Promise<void> {
+    const extraHeaders = [HEADER_ENABLE_MAIN_CAM];
+
+    return this.session!.sendInfo(CONTENT_TYPE_MEDIA_STATE, undefined, {
+      extraHeaders,
+    });
+  }
+
+  enableMic(): Promise<void> {
+    const extraHeaders = [HEADER_ENABLE_MIC];
+
+    return this.session!.sendInfo(CONTENT_TYPE_MEDIA_STATE, undefined, {
+      extraHeaders,
+    });
+  }
 
   startPresentation(
     stream: MediaStream,
