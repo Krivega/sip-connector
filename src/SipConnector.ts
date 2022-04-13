@@ -29,6 +29,8 @@ import {
   CONTENT_TYPE_ENTER_ROOM,
   CONTENT_TYPE_CHANNELS,
   CONTENT_TYPE_MEDIA_STATE,
+  CONTENT_TYPE_MAIN_CAM,
+  CONTENT_TYPE_MIC,
   HEADER_INPUT_CHANNELS,
   HEADER_OUTPUT_CHANNELS,
   HEADER_MEDIA_STATE,
@@ -508,7 +510,7 @@ export default class SipConnector {
   enableMainCam(): Promise<void> {
     const extraHeaders = [HEADER_ENABLE_MAIN_CAM];
 
-    return this.session!.sendInfo(CONTENT_TYPE_MEDIA_STATE, undefined, {
+    return this.session!.sendInfo(CONTENT_TYPE_MAIN_CAM, undefined, {
       extraHeaders,
     });
   }
@@ -516,7 +518,7 @@ export default class SipConnector {
   enableMic(): Promise<void> {
     const extraHeaders = [HEADER_ENABLE_MIC];
 
-    return this.session!.sendInfo(CONTENT_TYPE_MEDIA_STATE, undefined, {
+    return this.session!.sendInfo(CONTENT_TYPE_MIC, undefined, {
       extraHeaders,
     });
   }
