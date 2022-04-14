@@ -20,7 +20,7 @@ describe('media state', () => {
     });
   });
 
-  it('sendChannels', async () => {
+  it('sendMediaState', async () => {
     expect.assertions(1);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);

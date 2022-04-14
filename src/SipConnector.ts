@@ -153,8 +153,8 @@ type TChannels = {
 };
 
 type TMediaState = {
-  mainCam: '0' | '1';
-  mic: '0' | '1';
+  cam: boolean;
+  mic: boolean;
 };
 
 type TParametersModeratorsList = {
@@ -507,7 +507,7 @@ export default class SipConnector {
     delete this.incomingSession;
   };
 
-  enableMainCam(): Promise<void> {
+  askPermissionToEnableCam(): Promise<void> {
     const extraHeaders = [HEADER_ENABLE_MAIN_CAM];
 
     return this.session!.sendInfo(CONTENT_TYPE_MAIN_CAM, undefined, {
@@ -515,7 +515,7 @@ export default class SipConnector {
     });
   }
 
-  enableMic(): Promise<void> {
+  askPermissionToEnableMic(): Promise<void> {
     const extraHeaders = [HEADER_ENABLE_MIC];
 
     return this.session!.sendInfo(CONTENT_TYPE_MIC, undefined, {
@@ -1457,13 +1457,13 @@ export default class SipConnector {
     this.session!.sendInfo(CONTENT_TYPE_CHANNELS, undefined, { extraHeaders });
   }
 
-  sendMediaState({ mainCam, mic }: TMediaState) {
+  sendMediaState({ cam, mic }: TMediaState) {
     const headerMediaState = `${HEADER_MEDIA_STATE}: currentstate`;
-    const headerMainCam = `${HEADER_MAIN_CAM_STATE}: ${mainCam}`;
-    const headerMic = `${HEADER_MIC_STATE}: ${mic}`;
+    const headerCam = `${HEADER_MAIN_CAM_STATE}: ${+cam}`;
+    const headerMic = `${HEADER_MIC_STATE}: ${+mic}`;
     const extraHeaders: TOptionsExtraHeaders['extraHeaders'] = [
       headerMediaState,
-      headerMainCam,
+      headerCam,
       headerMic,
     ];
 
