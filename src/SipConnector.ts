@@ -28,8 +28,16 @@ import {
   CONTENT_TYPE_SHARE_STATE,
   CONTENT_TYPE_ENTER_ROOM,
   CONTENT_TYPE_CHANNELS,
+  CONTENT_TYPE_MEDIA_STATE,
+  CONTENT_TYPE_MAIN_CAM,
+  CONTENT_TYPE_MIC,
   HEADER_INPUT_CHANNELS,
   HEADER_OUTPUT_CHANNELS,
+  HEADER_MEDIA_STATE,
+  HEADER_MAIN_CAM_STATE,
+  HEADER_MIC_STATE,
+  HEADER_ENABLE_MAIN_CAM,
+  HEADER_ENABLE_MIC,
   HEADER_START_PRESENTATION,
   HEADER_STOP_PRESENTATION,
   HEADER_CONTENT_TYPE_MAIN_CAM,
@@ -142,6 +150,11 @@ export type TJsSIP = {
 type TChannels = {
   inputChannels: string;
   outputChannels: string;
+};
+
+type TMediaState = {
+  cam: boolean;
+  mic: boolean;
 };
 
 type TParametersModeratorsList = {
@@ -493,6 +506,22 @@ export default class SipConnector {
   removeIncomingSession = () => {
     delete this.incomingSession;
   };
+
+  askPermissionToEnableCam(): Promise<void> {
+    const extraHeaders = [HEADER_ENABLE_MAIN_CAM];
+
+    return this.session!.sendInfo(CONTENT_TYPE_MAIN_CAM, undefined, {
+      extraHeaders,
+    });
+  }
+
+  askPermissionToEnableMic(): Promise<void> {
+    const extraHeaders = [HEADER_ENABLE_MIC];
+
+    return this.session!.sendInfo(CONTENT_TYPE_MIC, undefined, {
+      extraHeaders,
+    });
+  }
 
   startPresentation(
     stream: MediaStream,
@@ -1426,6 +1455,19 @@ export default class SipConnector {
     ];
 
     this.session!.sendInfo(CONTENT_TYPE_CHANNELS, undefined, { extraHeaders });
+  }
+
+  sendMediaState({ cam, mic }: TMediaState) {
+    const headerMediaState = `${HEADER_MEDIA_STATE}: currentstate`;
+    const headerCam = `${HEADER_MAIN_CAM_STATE}: ${+cam}`;
+    const headerMic = `${HEADER_MIC_STATE}: ${+mic}`;
+    const extraHeaders: TOptionsExtraHeaders['extraHeaders'] = [
+      headerMediaState,
+      headerCam,
+      headerMic,
+    ];
+
+    this.session!.sendInfo(CONTENT_TYPE_MEDIA_STATE, undefined, { extraHeaders });
   }
 
   _handleEnded = (error: ICustomError) => {
