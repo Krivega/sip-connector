@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.2.0](https://github.com/Krivega/sip-connector/compare/v5.1.7...v5.2.0) (2022-04-14)
+
+### Features
+
+- added info messages and requests to enable cam and mic ([#16](https://github.com/Krivega/sip-connector/issues/16)) ([9242579](https://github.com/Krivega/sip-connector/commit/92425798140be6e7913d3d49ddac3f4c452e030a))
+
 ### [5.1.7](https://github.com/Krivega/sip-connector/compare/v5.1.6...v5.1.7) (2022-03-24)
 
 ### [5.1.6](https://github.com/Krivega/sip-connector/compare/v5.1.5...v5.1.6) (2022-03-11)
