@@ -59,6 +59,7 @@ import {
   prepareMediaStream,
   resolveSipUrl,
 } from './utils';
+import { hasDeclineResponseFromServer } from './utils/errors';
 import {
   AVAILABLE_SECOND_REMOTE_STREAM_EVENT,
   NOT_AVAILABLE_SECOND_REMOTE_STREAM_EVENT,
@@ -512,6 +513,12 @@ export default class SipConnector {
 
     return this.session!.sendInfo(CONTENT_TYPE_MAIN_CAM, undefined, {
       extraHeaders,
+    }).catch((error) => {
+      if (hasDeclineResponseFromServer(error)) {
+        throw error;
+      }
+
+      return;
     });
   }
 
@@ -520,6 +527,12 @@ export default class SipConnector {
 
     return this.session!.sendInfo(CONTENT_TYPE_MIC, undefined, {
       extraHeaders,
+    }).catch((error) => {
+      if (hasDeclineResponseFromServer(error)) {
+        throw error;
+      }
+
+      return;
     });
   }
 
@@ -666,22 +679,6 @@ export default class SipConnector {
 
   offSession(eventName: TEventSession, handler) {
     this._sessionEvents.off(eventName, handler);
-  }
-
-  isMutedVideo() {
-    if (!this.session) {
-      return undefined;
-    }
-
-    return this.session.isMuted().video;
-  }
-
-  isMutedAudio() {
-    if (!this.session) {
-      return undefined;
-    }
-
-    return this.session.isMuted().audio;
   }
 
   isConfigured() {
