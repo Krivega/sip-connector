@@ -475,7 +475,11 @@ export default class SipConnector {
       addMissing: boolean;
     }
   ): Promise<void> {
-    return this.session!.replaceMediaStream(mediaStream, options);
+    if (this.session) {
+      return this.session.replaceMediaStream(mediaStream, options);
+    }
+
+    return Promise.resolve();
   }
 
   declineToIncomingCall = ({ statusCode = REQUEST_TERMINATED_STATUS_CODE } = {}) => {
@@ -511,29 +515,41 @@ export default class SipConnector {
   askPermissionToEnableCam(): Promise<void> {
     const extraHeaders = [HEADER_ENABLE_MAIN_CAM];
 
-    return this.session!.sendInfo(CONTENT_TYPE_MAIN_CAM, undefined, {
-      extraHeaders,
-    }).catch((error) => {
-      if (hasDeclineResponseFromServer(error)) {
-        throw error;
-      }
+    if (this.session) {
+      return this.session
+        .sendInfo(CONTENT_TYPE_MAIN_CAM, undefined, {
+          extraHeaders,
+        })
+        .catch((error) => {
+          if (hasDeclineResponseFromServer(error)) {
+            throw error;
+          }
 
-      return;
-    });
+          return;
+        });
+    }
+
+    return Promise.resolve();
   }
 
   askPermissionToEnableMic(): Promise<void> {
     const extraHeaders = [HEADER_ENABLE_MIC];
 
-    return this.session!.sendInfo(CONTENT_TYPE_MIC, undefined, {
-      extraHeaders,
-    }).catch((error) => {
-      if (hasDeclineResponseFromServer(error)) {
-        throw error;
-      }
+    if (this.session) {
+      return this.session
+        .sendInfo(CONTENT_TYPE_MIC, undefined, {
+          extraHeaders,
+        })
+        .catch((error) => {
+          if (hasDeclineResponseFromServer(error)) {
+            throw error;
+          }
 
-      return;
-    });
+          return;
+        });
+    }
+
+    return Promise.resolve();
   }
 
   startPresentation(
@@ -560,12 +576,15 @@ export default class SipConnector {
       ? [HEADER_START_PRESENTATION_P2P]
       : [HEADER_START_PRESENTATION];
 
-    if (this.isEstablishedSession) {
-      result = this.session!.sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
-        extraHeaders: preparatoryHeaders,
-      })
+    if (this.isEstablishedSession && this.session) {
+      result = this.session
+        .sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
+          extraHeaders: preparatoryHeaders,
+        })
         .then(() => {
-          return this.session!.startPresentation(streamPresentationCurrent, isNeedReinvite);
+          if (this.session) {
+            return this.session.startPresentation(streamPresentationCurrent, isNeedReinvite);
+          }
         })
         .then(() => {
           const { connection } = this;
@@ -605,12 +624,15 @@ export default class SipConnector {
 
     const preparatoryHeaders = isP2P ? [HEADER_STOP_PRESENTATION_P2P] : [HEADER_STOP_PRESENTATION];
 
-    if (this.isEstablishedSession && streamPresentationPrev) {
-      result = this.session!.sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
-        extraHeaders: preparatoryHeaders,
-      })
+    if (this.isEstablishedSession && streamPresentationPrev && this.session) {
+      result = this.session
+        .sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
+          extraHeaders: preparatoryHeaders,
+        })
         .then(() => {
-          return this.session!.stopPresentation(streamPresentationPrev);
+          if (this.session) {
+            return this.session.stopPresentation(streamPresentationPrev);
+          }
         })
         .catch((error) => {
           this._sessionEvents.trigger(PRESENTATION_FAILED, error);
@@ -991,24 +1013,26 @@ export default class SipConnector {
           return jsSipEvent === eventName;
         });
 
-        if (sessionJsSipEvent) {
-          this.session!.on(sessionJsSipEvent, trigger);
+        if (sessionJsSipEvent && this.session) {
+          this.session.on(sessionJsSipEvent, trigger);
         }
       });
 
       this._connectionConfiguration.answer = true;
-      this._connectionConfiguration.number = this.session!.remote_identity.uri.user;
+      this._connectionConfiguration.number = this.session && this.session.remote_identity.uri.user;
       this._handleCall({ ontrack }).then(resolve).catch(reject);
 
       const preparedMediaStream = mediaStream ? prepareMediaStream(mediaStream) : undefined;
 
-      this.session!.answer({
-        extraHeaders,
-        mediaStream: preparedMediaStream,
-        pcConfig: {
-          iceServers,
-        },
-      });
+      if (this.session) {
+        this.session.answer({
+          extraHeaders,
+          mediaStream: preparedMediaStream,
+          pcConfig: {
+            iceServers,
+          },
+        });
+      }
 
       return undefined;
     });
@@ -1451,7 +1475,9 @@ export default class SipConnector {
       headerOutputChannels,
     ];
 
-    this.session!.sendInfo(CONTENT_TYPE_CHANNELS, undefined, { extraHeaders });
+    if (this.session) {
+      this.session.sendInfo(CONTENT_TYPE_CHANNELS, undefined, { extraHeaders });
+    }
   }
 
   sendMediaState({ cam, mic }: TMediaState) {
@@ -1464,7 +1490,9 @@ export default class SipConnector {
       headerMic,
     ];
 
-    this.session!.sendInfo(CONTENT_TYPE_MEDIA_STATE, undefined, { extraHeaders });
+    if (this.session) {
+      this.session.sendInfo(CONTENT_TYPE_MEDIA_STATE, undefined, { extraHeaders });
+    }
   }
 
   _handleEnded = (error: ICustomError) => {
