@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.3.0](https://github.com/Krivega/sip-connector/compare/v5.2.0...v5.3.0) (2022-04-22)
+
+### Features
+
+- process decline unmute in askPermission function ([#17](https://github.com/Krivega/sip-connector/issues/17)) ([863538d](https://github.com/Krivega/sip-connector/commit/863538dd8893dae502f48856acee28ad0051307d))
+
 ## [5.2.0](https://github.com/Krivega/sip-connector/compare/v5.1.7...v5.2.0) (2022-04-14)
 
 ### Features
