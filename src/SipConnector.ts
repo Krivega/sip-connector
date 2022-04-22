@@ -173,6 +173,10 @@ type TParametersConferenceParticipantTokenIssued = {
   jwt: string;
 };
 
+type TOptionsInfoMediaState = {
+  rejectWithoutTermination: boolean;
+};
+
 const CMD_CHANNELS = 'channels' as const;
 const CMD_WEBCAST_STARTED = 'WebcastStarted' as const;
 const CMD_WEBCAST_STOPPED = 'WebcastStopped' as const;
@@ -512,12 +516,15 @@ export default class SipConnector {
     delete this.incomingSession;
   };
 
-  askPermissionToEnableCam(): Promise<void> {
+  askPermissionToEnableCam(
+    options: TOptionsInfoMediaState = { rejectWithoutTermination: true }
+  ): Promise<void> {
     const extraHeaders = [HEADER_ENABLE_MAIN_CAM];
 
     if (this.session) {
       return this.session
         .sendInfo(CONTENT_TYPE_MAIN_CAM, undefined, {
+          ...options,
           extraHeaders,
         })
         .catch((error) => {
@@ -532,12 +539,15 @@ export default class SipConnector {
     return Promise.resolve();
   }
 
-  askPermissionToEnableMic(): Promise<void> {
+  askPermissionToEnableMic(
+    options: TOptionsInfoMediaState = { rejectWithoutTermination: true }
+  ): Promise<void> {
     const extraHeaders = [HEADER_ENABLE_MIC];
 
     if (this.session) {
       return this.session
         .sendInfo(CONTENT_TYPE_MIC, undefined, {
+          ...options,
           extraHeaders,
         })
         .catch((error) => {
@@ -1480,7 +1490,10 @@ export default class SipConnector {
     }
   }
 
-  sendMediaState({ cam, mic }: TMediaState) {
+  sendMediaState(
+    { cam, mic }: TMediaState,
+    options: TOptionsInfoMediaState = { rejectWithoutTermination: true }
+  ) {
     const headerMediaState = `${HEADER_MEDIA_STATE}: currentstate`;
     const headerCam = `${HEADER_MAIN_CAM_STATE}: ${+cam}`;
     const headerMic = `${HEADER_MIC_STATE}: ${+mic}`;
@@ -1491,7 +1504,7 @@ export default class SipConnector {
     ];
 
     if (this.session) {
-      this.session.sendInfo(CONTENT_TYPE_MEDIA_STATE, undefined, { extraHeaders });
+      this.session.sendInfo(CONTENT_TYPE_MEDIA_STATE, undefined, { ...options, extraHeaders });
     }
   }
 
