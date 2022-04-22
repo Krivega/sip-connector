@@ -480,7 +480,7 @@ export default class SipConnector {
     }
   ): Promise<void> {
     if (!this.session) {
-      throw new Error('No session esteblished');
+      throw new Error('No session established');
     }
 
     return this.session.replaceMediaStream(mediaStream, options);
@@ -520,7 +520,7 @@ export default class SipConnector {
     options: TOptionsInfoMediaState = { noTerminateWhenError: true }
   ): Promise<void> {
     if (!this.session) {
-      throw new Error('No session esteblished');
+      throw new Error('No session established');
     }
 
     const extraHeaders = [HEADER_ENABLE_MAIN_CAM];
@@ -543,7 +543,7 @@ export default class SipConnector {
     options: TOptionsInfoMediaState = { noTerminateWhenError: true }
   ): Promise<void> {
     if (!this.session) {
-      throw new Error('No session esteblished');
+      throw new Error('No session established');
     }
 
     const extraHeaders = [HEADER_ENABLE_MIC];
@@ -576,6 +576,12 @@ export default class SipConnector {
       maxBitrate?: number;
     } = {}
   ): Promise<void | MediaStream> {
+    const session = this.establishedSession;
+
+    if (!session) {
+      return Promise.reject(new Error('No session established'));
+    }
+
     this.isPendingPresentation = true;
 
     const streamPresentationCurrent = prepareMediaStream(stream);
@@ -587,12 +593,6 @@ export default class SipConnector {
     const preparatoryHeaders = isP2P
       ? [HEADER_START_PRESENTATION_P2P]
       : [HEADER_START_PRESENTATION];
-
-    const session = this.establishedSession;
-
-    if (!session) {
-      throw new Error('No session esteblished');
-    }
 
     result = session
       .sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
@@ -1025,7 +1025,7 @@ export default class SipConnector {
       const session = this.session;
 
       if (!session) {
-        reject(new Error('no session esteblished'));
+        reject(new Error('No session established'));
 
         return;
       }
@@ -1035,7 +1035,7 @@ export default class SipConnector {
           return jsSipEvent === eventName;
         });
 
-        if (sessionJsSipEvent && this.session) {
+        if (sessionJsSipEvent && session) {
           session.on(sessionJsSipEvent, trigger);
         }
       });
@@ -1123,7 +1123,7 @@ export default class SipConnector {
       const session = this.session;
 
       if (!session) {
-        reject(new Error('no session esteblished'));
+        reject(new Error('No session established'));
 
         return;
       }
@@ -1378,7 +1378,7 @@ export default class SipConnector {
 
   _maybeTriggerChannelsNotify = (channelsInfo: TChannelsInfoNotify) => {
     if (!this.session) {
-      throw new Error('No session esteblished');
+      throw new Error('No session established');
     }
 
     const inputChannels = channelsInfo.input;
@@ -1496,7 +1496,7 @@ export default class SipConnector {
 
   sendChannels({ inputChannels, outputChannels }: TChannels) {
     if (!this.session) {
-      throw new Error('No session esteblished');
+      throw new Error('No session established');
     }
 
     const headerInputChannels = `${HEADER_INPUT_CHANNELS}: ${inputChannels}`;
@@ -1514,7 +1514,7 @@ export default class SipConnector {
     options: TOptionsInfoMediaState = { noTerminateWhenError: true }
   ) {
     if (!this.session) {
-      throw new Error('No session esteblished');
+      throw new Error('No session established');
     }
 
     const headerMediaState = `${HEADER_MEDIA_STATE}: currentstate`;
