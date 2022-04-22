@@ -1035,7 +1035,7 @@ export default class SipConnector {
           return jsSipEvent === eventName;
         });
 
-        if (sessionJsSipEvent && session) {
+        if (sessionJsSipEvent) {
           session.on(sessionJsSipEvent, trigger);
         }
       });
