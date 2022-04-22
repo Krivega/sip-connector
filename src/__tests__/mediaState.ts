@@ -35,6 +35,9 @@ describe('media state', () => {
 
     sipConnector.sendMediaState(mediaStateData);
 
-    expect(mockFn).toHaveBeenCalledWith(CONTENT_TYPE_MEDIA_STATE, undefined, extraHeaders);
+    expect(mockFn).toHaveBeenCalledWith(CONTENT_TYPE_MEDIA_STATE, undefined, {
+      ...extraHeaders,
+      noTerminateWhenError: true,
+    });
   });
 });
