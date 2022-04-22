@@ -174,7 +174,7 @@ type TParametersConferenceParticipantTokenIssued = {
 };
 
 type TOptionsInfoMediaState = {
-  rejectWithoutTermination: boolean;
+  noTerminateWhenError: boolean;
 };
 
 const CMD_CHANNELS = 'channels' as const;
@@ -479,11 +479,11 @@ export default class SipConnector {
       addMissing: boolean;
     }
   ): Promise<void> {
-    if (this.session) {
-      return this.session.replaceMediaStream(mediaStream, options);
+    if (!this.session) {
+      throw new Error('No session esteblished');
     }
 
-    return Promise.resolve();
+    return this.session.replaceMediaStream(mediaStream, options);
   }
 
   declineToIncomingCall = ({ statusCode = REQUEST_TERMINATED_STATUS_CODE } = {}) => {
@@ -517,47 +517,49 @@ export default class SipConnector {
   };
 
   askPermissionToEnableCam(
-    options: TOptionsInfoMediaState = { rejectWithoutTermination: true }
+    options: TOptionsInfoMediaState = { noTerminateWhenError: true }
   ): Promise<void> {
-    const extraHeaders = [HEADER_ENABLE_MAIN_CAM];
-
-    if (this.session) {
-      return this.session
-        .sendInfo(CONTENT_TYPE_MAIN_CAM, undefined, {
-          ...options,
-          extraHeaders,
-        })
-        .catch((error) => {
-          if (hasDeclineResponseFromServer(error)) {
-            throw error;
-          }
-
-          return;
-        });
+    if (!this.session) {
+      throw new Error('No session esteblished');
     }
 
-    return Promise.resolve();
+    const extraHeaders = [HEADER_ENABLE_MAIN_CAM];
+
+    return this.session
+      .sendInfo(CONTENT_TYPE_MAIN_CAM, undefined, {
+        ...options,
+        extraHeaders,
+      })
+      .catch((error) => {
+        if (hasDeclineResponseFromServer(error)) {
+          throw error;
+        }
+
+        return;
+      });
   }
 
   askPermissionToEnableMic(
-    options: TOptionsInfoMediaState = { rejectWithoutTermination: true }
+    options: TOptionsInfoMediaState = { noTerminateWhenError: true }
   ): Promise<void> {
+    if (!this.session) {
+      throw new Error('No session esteblished');
+    }
+
     const extraHeaders = [HEADER_ENABLE_MIC];
 
-    if (this.session) {
-      return this.session
-        .sendInfo(CONTENT_TYPE_MIC, undefined, {
-          ...options,
-          extraHeaders,
-        })
-        .catch((error) => {
-          if (hasDeclineResponseFromServer(error)) {
-            throw error;
-          }
+    return this.session
+      .sendInfo(CONTENT_TYPE_MIC, undefined, {
+        ...options,
+        extraHeaders,
+      })
+      .catch((error) => {
+        if (hasDeclineResponseFromServer(error)) {
+          throw error;
+        }
 
-          return;
-        });
-    }
+        return;
+      });
 
     return Promise.resolve();
   }
@@ -586,36 +588,38 @@ export default class SipConnector {
       ? [HEADER_START_PRESENTATION_P2P]
       : [HEADER_START_PRESENTATION];
 
-    if (this.isEstablishedSession && this.session) {
-      result = this.session
-        .sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
-          extraHeaders: preparatoryHeaders,
-        })
-        .then(() => {
-          if (this.session) {
-            return this.session.startPresentation(streamPresentationCurrent, isNeedReinvite);
-          }
-        })
-        .then(() => {
-          const { connection } = this;
+    const session = this.establishedSession;
 
-          if (!connection || maxBitrate === undefined) {
-            return undefined;
-          }
-
-          const senders = connection.getSenders();
-
-          return scaleBitrate(senders, stream, maxBitrate);
-        })
-        .then(() => {
-          return stream;
-        })
-        .catch((error) => {
-          this._sessionEvents.trigger(PRESENTATION_FAILED, error);
-
-          throw error;
-        });
+    if (!session) {
+      throw new Error('No session esteblished');
     }
+
+    result = session
+      .sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
+        extraHeaders: preparatoryHeaders,
+      })
+      .then(() => {
+        return session.startPresentation(streamPresentationCurrent, isNeedReinvite);
+      })
+      .then(() => {
+        const { connection } = this;
+
+        if (!connection || maxBitrate === undefined) {
+          return undefined;
+        }
+
+        const senders = connection.getSenders();
+
+        return scaleBitrate(senders, stream, maxBitrate);
+      })
+      .then(() => {
+        return stream;
+      })
+      .catch((error) => {
+        this._sessionEvents.trigger(PRESENTATION_FAILED, error);
+
+        throw error;
+      });
 
     return result.finally(() => {
       this.isPendingPresentation = false;
@@ -634,15 +638,15 @@ export default class SipConnector {
 
     const preparatoryHeaders = isP2P ? [HEADER_STOP_PRESENTATION_P2P] : [HEADER_STOP_PRESENTATION];
 
-    if (this.isEstablishedSession && streamPresentationPrev && this.session) {
-      result = this.session
+    const session = this.establishedSession;
+
+    if (session && streamPresentationPrev) {
+      result = session
         .sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
           extraHeaders: preparatoryHeaders,
         })
         .then(() => {
-          if (this.session) {
-            return this.session.stopPresentation(streamPresentationPrev);
-          }
+          return session.stopPresentation(streamPresentationPrev);
         })
         .catch((error) => {
           this._sessionEvents.trigger(PRESENTATION_FAILED, error);
@@ -651,7 +655,7 @@ export default class SipConnector {
         });
     }
 
-    if (!this.isEstablishedSession && streamPresentationPrev) {
+    if (!session && streamPresentationPrev) {
       this._sessionEvents.trigger(PRESENTATION_ENDED, streamPresentationPrev);
     }
 
@@ -765,8 +769,8 @@ export default class SipConnector {
     );
   }
 
-  get isEstablishedSession() {
-    return this.session && this.session.isEstablished();
+  get establishedSession(): RTCSession | undefined {
+    return this.session && this.session.isEstablished() ? this.session : undefined;
   }
 
   get isRegistered() {
@@ -1018,31 +1022,37 @@ export default class SipConnector {
       this.session = this.incomingSession;
       this.removeIncomingSession();
 
+      const session = this.session;
+
+      if (!session) {
+        reject(new Error('no session esteblished'));
+
+        return;
+      }
+
       this._sessionEvents.eachTriggers((trigger, eventName) => {
         const sessionJsSipEvent = SESSION_JSSIP_EVENT_NAMES.find((jsSipEvent) => {
           return jsSipEvent === eventName;
         });
 
         if (sessionJsSipEvent && this.session) {
-          this.session.on(sessionJsSipEvent, trigger);
+          session.on(sessionJsSipEvent, trigger);
         }
       });
 
       this._connectionConfiguration.answer = true;
-      this._connectionConfiguration.number = this.session && this.session.remote_identity.uri.user;
+      this._connectionConfiguration.number = session.remote_identity.uri.user;
       this._handleCall({ ontrack }).then(resolve).catch(reject);
 
       const preparedMediaStream = mediaStream ? prepareMediaStream(mediaStream) : undefined;
 
-      if (this.session) {
-        this.session.answer({
-          extraHeaders,
-          mediaStream: preparedMediaStream,
-          pcConfig: {
-            iceServers,
-          },
-        });
-      }
+      session.answer({
+        extraHeaders,
+        mediaStream: preparedMediaStream,
+        pcConfig: {
+          iceServers,
+        },
+      });
 
       return undefined;
     });
@@ -1110,19 +1120,24 @@ export default class SipConnector {
 
   _sendDTMF: TSendDTMF = (tone) => {
     return new Promise<void>((resolve, reject) => {
-      if (this.session) {
-        this.onceSession(NEW_DTMF, ({ originator }) => {
-          if (originator === ORIGINATOR_LOCAL) {
-            resolve();
-          }
-        });
-        this.session.sendDTMF(tone, {
-          duration: 120,
-          interToneGap: 600,
-        });
-      } else {
-        reject();
+      const session = this.session;
+
+      if (!session) {
+        reject(new Error('no session esteblished'));
+
+        return;
       }
+
+      this.onceSession(NEW_DTMF, ({ originator }) => {
+        if (originator === ORIGINATOR_LOCAL) {
+          resolve();
+        }
+      });
+
+      session.sendDTMF(tone, {
+        duration: 120,
+        interToneGap: 600,
+      });
     });
   };
 
@@ -1362,6 +1377,10 @@ export default class SipConnector {
   };
 
   _maybeTriggerChannelsNotify = (channelsInfo: TChannelsInfoNotify) => {
+    if (!this.session) {
+      throw new Error('No session esteblished');
+    }
+
     const inputChannels = channelsInfo.input;
     const outputChannels = channelsInfo.output;
 
@@ -1370,9 +1389,7 @@ export default class SipConnector {
       outputChannels,
     };
 
-    if (this.session) {
-      this._sessionEvents.trigger(CHANNELS_NOTIFY, data);
-    }
+    this._sessionEvents.trigger(CHANNELS_NOTIFY, data);
   };
 
   _maybeTriggerParticipantMoveRequestToConference = ({
@@ -1478,6 +1495,10 @@ export default class SipConnector {
   }
 
   sendChannels({ inputChannels, outputChannels }: TChannels) {
+    if (!this.session) {
+      throw new Error('No session esteblished');
+    }
+
     const headerInputChannels = `${HEADER_INPUT_CHANNELS}: ${inputChannels}`;
     const headerOutputChannels = `${HEADER_OUTPUT_CHANNELS}: ${outputChannels}`;
     const extraHeaders: TOptionsExtraHeaders['extraHeaders'] = [
@@ -1485,15 +1506,17 @@ export default class SipConnector {
       headerOutputChannels,
     ];
 
-    if (this.session) {
-      this.session.sendInfo(CONTENT_TYPE_CHANNELS, undefined, { extraHeaders });
-    }
+    this.session.sendInfo(CONTENT_TYPE_CHANNELS, undefined, { extraHeaders });
   }
 
   sendMediaState(
     { cam, mic }: TMediaState,
-    options: TOptionsInfoMediaState = { rejectWithoutTermination: true }
+    options: TOptionsInfoMediaState = { noTerminateWhenError: true }
   ) {
+    if (!this.session) {
+      throw new Error('No session esteblished');
+    }
+
     const headerMediaState = `${HEADER_MEDIA_STATE}: currentstate`;
     const headerCam = `${HEADER_MAIN_CAM_STATE}: ${+cam}`;
     const headerMic = `${HEADER_MIC_STATE}: ${+mic}`;
@@ -1503,9 +1526,7 @@ export default class SipConnector {
       headerMic,
     ];
 
-    if (this.session) {
-      this.session.sendInfo(CONTENT_TYPE_MEDIA_STATE, undefined, { ...options, extraHeaders });
-    }
+    this.session.sendInfo(CONTENT_TYPE_MEDIA_STATE, undefined, { ...options, extraHeaders });
   }
 
   _handleEnded = (error: ICustomError) => {
