@@ -41,7 +41,9 @@ import {
   HEADER_START_PRESENTATION,
   HEADER_STOP_PRESENTATION,
   HEADER_CONTENT_TYPE_MAIN_CAM,
+  HEADER_CONTENT_TYPE_MIC,
   HEADER_MAIN_CAM,
+  HEADER_MIC,
   HEADER_MAIN_CAM_RESOLUTION,
   CONTENT_TYPE_NOTIFY,
   HEADER_NOTIFY,
@@ -83,6 +85,8 @@ import {
   CHANNELS_NOTIFY,
   ENDED_FROM_SERVER,
   MAIN_CAM_CONTROL,
+  MAIN_CAM_REMOTE_CONTROL,
+  MIC_REMOTE_CONTROL,
   PARTICIPANT_ADDED_TO_LIST_MODERATORS,
   PARTICIPANT_REMOVED_FROM_LIST_MODERATORS,
   PARTICIPANT_MOVE_REQUEST_TO_CONFERENCE,
@@ -112,6 +116,13 @@ export enum EEventsMainCAM {
   PAUSE_MAIN_CAM = 'PAUSEMAINCAM',
   RESUME_MAIN_CAM = 'RESUMEMAINCAM',
   MAX_MAIN_CAM_RESOLUTION = 'MAXMAINCAMRESOLUTION',
+  ADMIN_STOP_MAIN_CAM = 'ADMINSTOPMAINCAM',
+  ADMIN_START_MAIN_CAM = 'ADMINSTARTMAINCAM',
+}
+
+export enum EEventsMic {
+  ADMIN_STOP_MIC = 'ADMINSTOPMIC',
+  ADMIN_START_MIC = 'ADMINSTARTMIC',
 }
 
 interface ICustomError extends Error {
@@ -1444,6 +1455,29 @@ export default class SipConnector {
     });
   };
 
+  _maybeTriggerMainCamRemoteControl = (request: IncomingRequest) => {
+    const mainCam = request.getHeader(HEADER_MAIN_CAM);
+
+    if (
+      mainCam === EEventsMainCAM.ADMIN_START_MAIN_CAM ||
+      mainCam === EEventsMainCAM.ADMIN_STOP_MAIN_CAM
+    ) {
+      this._sessionEvents.trigger(MAIN_CAM_REMOTE_CONTROL, {
+        mainCam,
+      });
+    }
+  };
+
+  _maybeTriggerMicRemoteControl = (request: IncomingRequest) => {
+    const mic = request.getHeader(HEADER_MIC);
+
+    if (mic === EEventsMic.ADMIN_START_MIC || mic === EEventsMic.ADMIN_STOP_MIC) {
+      this._sessionEvents.trigger(MIC_REMOTE_CONTROL, {
+        mic,
+      });
+    }
+  };
+
   _handleNewInfo = (info: IncomingInfoEvent | OutgoingInfoEvent) => {
     const { originator } = info;
 
@@ -1468,6 +1502,10 @@ export default class SipConnector {
           break;
         case HEADER_CONTENT_TYPE_MAIN_CAM:
           this._triggerMainCamControl(request);
+          this._maybeTriggerMainCamRemoteControl(request);
+          break;
+        case HEADER_CONTENT_TYPE_MIC:
+          this._maybeTriggerMicRemoteControl(request);
           break;
 
         default:
