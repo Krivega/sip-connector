@@ -5,13 +5,13 @@ import JsSIP from '../__mocks__/jssip.mock';
 import SipConnector, { EEventsMainCAM } from '../SipConnector';
 import {
   HEADER_CONTENT_TYPE_NAME,
-  HEADER_CONTENT_TYPE_MAIN_CAM,
+  CONTENT_TYPE_MAIN_CAM,
   HEADER_MAIN_CAM,
   HEADER_MAIN_CAM_RESOLUTION,
 } from '../headers';
 
 const headersMainCamControl = [
-  [HEADER_CONTENT_TYPE_NAME, HEADER_CONTENT_TYPE_MAIN_CAM],
+  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
   [HEADER_MAIN_CAM, EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION],
   [HEADER_MAIN_CAM_RESOLUTION, '720'],
 ];

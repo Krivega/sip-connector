@@ -3,14 +3,10 @@ import createSipConnector from '../__mocks__/doMock';
 import { dataForConnectionWithAuthorization } from '../__mocks__';
 import JsSIP from '../__mocks__/jssip.mock';
 import SipConnector, { EEventsMainCAM } from '../SipConnector';
-import {
-  HEADER_CONTENT_TYPE_NAME,
-  HEADER_CONTENT_TYPE_MAIN_CAM,
-  HEADER_MAIN_CAM,
-} from '../headers';
+import { HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM, HEADER_MAIN_CAM } from '../headers';
 
 const headersMainCamControl = [
-  [HEADER_CONTENT_TYPE_NAME, HEADER_CONTENT_TYPE_MAIN_CAM],
+  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
   [HEADER_MAIN_CAM, EEventsMainCAM.ADMIN_STOP_MAIN_CAM],
 ];
 

@@ -30,18 +30,15 @@ import {
   CONTENT_TYPE_CHANNELS,
   CONTENT_TYPE_MEDIA_STATE,
   CONTENT_TYPE_MAIN_CAM,
-  CONTENT_TYPE_MIC,
   HEADER_INPUT_CHANNELS,
   HEADER_OUTPUT_CHANNELS,
   HEADER_MEDIA_STATE,
   HEADER_MAIN_CAM_STATE,
   HEADER_MIC_STATE,
   HEADER_ENABLE_MAIN_CAM,
-  HEADER_ENABLE_MIC,
   HEADER_START_PRESENTATION,
   HEADER_STOP_PRESENTATION,
-  HEADER_CONTENT_TYPE_MAIN_CAM,
-  HEADER_CONTENT_TYPE_MIC,
+  CONTENT_TYPE_MIC,
   HEADER_MAIN_CAM,
   HEADER_MIC,
   HEADER_MAIN_CAM_RESOLUTION,
@@ -1475,11 +1472,11 @@ export default class SipConnector {
         case CONTENT_TYPE_SHARE_STATE:
           this._triggerShareState(request);
           break;
-        case HEADER_CONTENT_TYPE_MAIN_CAM:
+        case CONTENT_TYPE_MAIN_CAM:
           this._triggerMainCamControl(request);
           this._maybeTriggerMainCamRemoteControl(request);
           break;
-        case HEADER_CONTENT_TYPE_MIC:
+        case CONTENT_TYPE_MIC:
           this._maybeTriggerMicRemoteControl(request);
           break;
 

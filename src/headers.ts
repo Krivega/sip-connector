@@ -1,6 +1,4 @@
 export const HEADER_CONTENT_TYPE_NAME = 'content-type';
-export const HEADER_CONTENT_TYPE_MAIN_CAM = 'application/vinteo.webrtc.maincam';
-export const HEADER_CONTENT_TYPE_MIC = 'application/vinteo.webrtc.mic';
 
 export const HEADER_CONTENT_ENTER_ROOM = 'x-webrtc-enter-room';
 export const CONTENT_TYPE_SHARE_STATE = 'application/vinteo.webrtc.sharedesktop';
@@ -32,4 +30,3 @@ export const HEADER_STOP_PRESENTATION_P2P = `${HEADER_CONTENT_SHARE_STATE}: ${NO
 
 export const HEADER_CONTENT_ENABLE_MEDIA_DEVICE = 'X-WEBRTC-REQUEST-ENABLE-MEDIA-DEVICE';
 export const HEADER_ENABLE_MAIN_CAM = `${HEADER_CONTENT_ENABLE_MEDIA_DEVICE}: LETMESTARTMAINCAM`;
-export const HEADER_ENABLE_MIC = `${HEADER_CONTENT_ENABLE_MEDIA_DEVICE}: LETMESTARTMIC`;
