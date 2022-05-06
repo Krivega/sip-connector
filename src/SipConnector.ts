@@ -561,7 +561,6 @@ export default class SipConnector {
         return;
       });
 
-    return Promise.resolve();
   }
 
   startPresentation(
@@ -1271,97 +1270,97 @@ export default class SipConnector {
     if (header.cmd === CMD_CHANNELS) {
       const channelsInfo = header as TChannelsInfoNotify;
 
-      this._maybeTriggerChannelsNotify(channelsInfo);
+      this._triggerChannelsNotify(channelsInfo);
     } else if (header.cmd === CMD_WEBCAST_STARTED) {
       const webcastInfo = header as TWebcastInfoNotify;
 
-      this._maybeTriggerWebcastStartedNotify(webcastInfo);
+      this._triggerWebcastStartedNotify(webcastInfo);
     } else if (header.cmd === CMD_WEBCAST_STOPPED) {
       const webcastInfo = header as TWebcastInfoNotify;
 
-      this._maybeTriggerWebcastStoppedNotify(webcastInfo);
+      this._triggerWebcastStoppedNotify(webcastInfo);
     } else if (header.cmd === CMD_ADDED_TO_LIST_MODERATORS) {
       const data = header as TAddedToListModeratorsInfoNotify;
 
-      this._maybeTriggerAddedToListModeratorsNotify(data);
+      this._triggerAddedToListModeratorsNotify(data);
     } else if (header.cmd === CMD_REMOVED_FROM_LIST_MODERATORS) {
       const data = header as TRemovedFromListModeratorsInfoNotify;
 
-      this._maybeTriggerRemovedFromListModeratorsNotify(data);
+      this._triggerRemovedFromListModeratorsNotify(data);
     } else if (header.cmd === CMD_MOVE_REQUEST_TO_CONFERENCE) {
       const data = header as TMoveRequestToConferenceInfoNotify;
 
-      this._maybeTriggerParticipantMoveRequestToConference(data);
+      this._triggerParticipantMoveRequestToConference(data);
     } else if (header.cmd === CMD_CANCELLING_WORD_REQUEST) {
       const data = header as TCancelingWordRequestInfoNotify;
 
-      this._maybeTriggerParticipantCancelingWordRequest(data);
+      this._triggerParticipantCancelingWordRequest(data);
     } else if (header.cmd === CMD_MOVE_REQUEST_TO_STREAM) {
       const data = header as TMoveRequestToStreamInfoNotify;
 
-      this._maybeTriggerParticipantMoveRequestToStream(data);
+      this._triggerParticipantMoveRequestToStream(data);
     } else if (header.cmd === CMD_ACCOUNT_CHANGED) {
-      this._maybeTriggerAccountChangedNotify();
+      this._triggerAccountChangedNotify();
     } else if (header.cmd === CMD_ACCOUNT_DELETED) {
-      this._maybeTriggerAccountDeletedNotify();
+      this._triggerAccountDeletedNotify();
     } else if (header.cmd === CMD_CONFERENCE_PARTICIPANT_TOKEN_ISSUED) {
       const data = header as TConferenceParticipantTokenIssued;
 
-      this._maybeTriggerConferenceParticipantTokenIssued(data);
+      this._triggerConferenceParticipantTokenIssued(data);
     }
   };
 
-  _maybeTriggerRemovedFromListModeratorsNotify = ({
+  _triggerRemovedFromListModeratorsNotify = ({
     conference,
   }: TRemovedFromListModeratorsInfoNotify) => {
     const headersParametersModeratorsList: TParametersModeratorsList = {
       conference,
     };
 
-    this._sessionEvents.trigger(
+    this._uaEvents.trigger(
       PARTICIPANT_REMOVED_FROM_LIST_MODERATORS,
       headersParametersModeratorsList
     );
   };
 
-  _maybeTriggerAddedToListModeratorsNotify = ({ conference }: TAddedToListModeratorsInfoNotify) => {
+  _triggerAddedToListModeratorsNotify = ({ conference }: TAddedToListModeratorsInfoNotify) => {
     const headersParametersModeratorsList: TParametersModeratorsList = {
       conference,
     };
 
-    this._sessionEvents.trigger(
+    this._uaEvents.trigger(
       PARTICIPANT_ADDED_TO_LIST_MODERATORS,
       headersParametersModeratorsList
     );
   };
 
-  _maybeTriggerWebcastStartedNotify = ({ body: { conference, type } }: TWebcastInfoNotify) => {
+  _triggerWebcastStartedNotify = ({ body: { conference, type } }: TWebcastInfoNotify) => {
     const headersParametersWebcast: TParametersWebcast = {
       conference,
       type,
     };
 
-    this._sessionEvents.trigger(WEBCAST_STARTED, headersParametersWebcast);
+    this._uaEvents.trigger(WEBCAST_STARTED, headersParametersWebcast);
   };
 
-  _maybeTriggerWebcastStoppedNotify = ({ body: { conference, type } }: TWebcastInfoNotify) => {
+  _triggerWebcastStoppedNotify = ({ body: { conference, type } }: TWebcastInfoNotify) => {
     const headersParametersWebcast: TParametersWebcast = {
       conference,
       type,
     };
 
-    this._sessionEvents.trigger(WEBCAST_STOPPED, headersParametersWebcast);
+    this._uaEvents.trigger(WEBCAST_STOPPED, headersParametersWebcast);
   };
 
-  _maybeTriggerAccountChangedNotify = () => {
-    this._sessionEvents.trigger(ACCOUNT_CHANGED, undefined);
+  _triggerAccountChangedNotify = () => {
+    this._uaEvents.trigger(ACCOUNT_CHANGED, undefined);
   };
 
-  _maybeTriggerAccountDeletedNotify = () => {
-    this._sessionEvents.trigger(ACCOUNT_DELETED, undefined);
+  _triggerAccountDeletedNotify = () => {
+    this._uaEvents.trigger(ACCOUNT_DELETED, undefined);
   };
 
-  _maybeTriggerConferenceParticipantTokenIssued = ({
+  _triggerConferenceParticipantTokenIssued = ({
     body: { conference, participant, jwt },
   }: TConferenceParticipantTokenIssued) => {
     const headersConferenceParticipantTokenIssued: TParametersConferenceParticipantTokenIssued = {
@@ -1370,17 +1369,13 @@ export default class SipConnector {
       jwt,
     };
 
-    this._sessionEvents.trigger(
+    this._uaEvents.trigger(
       CONFERENCE_PARTICIPANT_TOKEN_ISSUED,
       headersConferenceParticipantTokenIssued
     );
   };
 
-  _maybeTriggerChannelsNotify = (channelsInfo: TChannelsInfoNotify) => {
-    if (!this.session) {
-      throw new Error('No session established');
-    }
-
+  _triggerChannelsNotify = (channelsInfo: TChannelsInfoNotify) => {
     const inputChannels = channelsInfo.input;
     const outputChannels = channelsInfo.output;
 
@@ -1389,37 +1384,37 @@ export default class SipConnector {
       outputChannels,
     };
 
-    this._sessionEvents.trigger(CHANNELS_NOTIFY, data);
+    this._uaEvents.trigger(CHANNELS_NOTIFY, data);
   };
 
-  _maybeTriggerParticipantMoveRequestToConference = ({
+  _triggerParticipantMoveRequestToConference = ({
     body: { conference },
   }: TMoveRequestToConferenceInfoNotify) => {
     const data: TParametersModeratorsList = {
       conference,
     };
 
-    this._sessionEvents.trigger(PARTICIPANT_MOVE_REQUEST_TO_CONFERENCE, data);
+    this._uaEvents.trigger(PARTICIPANT_MOVE_REQUEST_TO_CONFERENCE, data);
   };
 
-  _maybeTriggerParticipantCancelingWordRequest = ({
+  _triggerParticipantCancelingWordRequest = ({
     body: { conference },
   }: TCancelingWordRequestInfoNotify) => {
     const data: TParametersModeratorsList = {
       conference,
     };
 
-    this._sessionEvents.trigger(PARTICIPANT_CANCELLING_WORD_REQUEST, data);
+    this._uaEvents.trigger(PARTICIPANT_CANCELLING_WORD_REQUEST, data);
   };
 
-  _maybeTriggerParticipantMoveRequestToStream = ({
+  _triggerParticipantMoveRequestToStream = ({
     body: { conference },
   }: TMoveRequestToStreamInfoNotify) => {
     const data: TParametersModeratorsList = {
       conference,
     };
 
-    this._sessionEvents.trigger(PARTICIPANT_MOVE_REQUEST_TO_STREAM, data);
+    this._uaEvents.trigger(PARTICIPANT_MOVE_REQUEST_TO_STREAM, data);
   };
 
   _triggerEnterRoom = (request: IncomingRequest) => {

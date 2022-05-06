@@ -26,59 +26,50 @@ describe('participants moveRequests', () => {
     });
   });
   it('event participant:move-request-to-conference', async () => {
-    await sipConnector.connect(dataForConnectionWithAuthorization);
+    const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
+
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onSession('participant:move-request-to-conference', (data) => {
+      sipConnector.on('participant:move-request-to-conference', (data) => {
         expect(data).toEqual(moveRequestToConferenceData);
 
         resolve();
       });
 
-      const { session } = sipConnector;
-
-      if (session) {
-        JsSIP.triggerNewInfo(session, moveRequestToConferenceHeaders);
-      }
+      JsSIP.triggerNewSipEvent(ua, moveRequestToConferenceHeaders);
     });
   });
 
   it('event participant:canceling-word-request', async () => {
-    await sipConnector.connect(dataForConnectionWithAuthorization);
+    const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
+
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onSession('participant:canceling-word-request', (data) => {
+      sipConnector.on('participant:canceling-word-request', (data) => {
         expect(data).toEqual(cancelingWordRequestData);
 
         resolve();
       });
 
-      const { session } = sipConnector;
-
-      if (session) {
-        JsSIP.triggerNewInfo(session, cancelingWordRequestHeaders);
-      }
+      JsSIP.triggerNewSipEvent(ua, cancelingWordRequestHeaders);
     });
   });
 
   it('event participant:move-request-to-stream', async () => {
-    await sipConnector.connect(dataForConnectionWithAuthorization);
+    const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
+
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onSession('participant:move-request-to-stream', (data) => {
+      sipConnector.on('participant:move-request-to-stream', (data) => {
         expect(data).toEqual(moveRequestToStreamData);
 
         resolve();
       });
 
-      const { session } = sipConnector;
-
-      if (session) {
-        JsSIP.triggerNewInfo(session, moveRequestToStreamHeaders);
-      }
+      JsSIP.triggerNewSipEvent(ua, moveRequestToStreamHeaders);
     });
   });
 });
