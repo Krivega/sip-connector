@@ -560,7 +560,6 @@ export default class SipConnector {
 
         return;
       });
-
   }
 
   startPresentation(
@@ -1328,10 +1327,7 @@ export default class SipConnector {
       conference,
     };
 
-    this._uaEvents.trigger(
-      PARTICIPANT_ADDED_TO_LIST_MODERATORS,
-      headersParametersModeratorsList
-    );
+    this._uaEvents.trigger(PARTICIPANT_ADDED_TO_LIST_MODERATORS, headersParametersModeratorsList);
   };
 
   _triggerWebcastStartedNotify = ({ body: { conference, type } }: TWebcastInfoNotify) => {
