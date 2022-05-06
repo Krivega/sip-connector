@@ -57,12 +57,7 @@ describe('channels notify', () => {
         resolve();
       });
 
-      const { session } = sipConnector;
-
-      if (session) {
-        // @ts-ignore
-        JsSIP.triggerNewSipEvent(ua, channelsHeaders);
-      }
+      JsSIP.triggerNewSipEvent(ua, channelsHeaders);
     });
   });
 });
