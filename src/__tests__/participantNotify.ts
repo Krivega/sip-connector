@@ -27,42 +27,38 @@ describe('participant notify', () => {
   it('wait participant notify event added-to-list-moderators', async () => {
     expect.assertions(1);
 
-    await sipConnector.connect(dataForConnectionWithAuthorization);
+    const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
+
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onSession('participant:added-to-list-moderators', (data) => {
+      sipConnector.on('participant:added-to-list-moderators', (data) => {
         expect(data).toEqual(addedToListModeratorsData);
 
         resolve();
       });
 
-      const { session } = sipConnector;
-
-      if (session) {
-        JsSIP.triggerNewInfo(session, addedToListModeratorsHeaders);
-      }
+      // @ts-ignore
+      JsSIP.triggerNewSipEvent(ua, addedToListModeratorsHeaders);
     });
   });
 
   it('wait participant notify event removed-from-list-moderators', async () => {
     expect.assertions(1);
 
-    await sipConnector.connect(dataForConnectionWithAuthorization);
+    const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
+
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onSession('participant:removed-from-list-moderators', (data) => {
+      sipConnector.on('participant:removed-from-list-moderators', (data) => {
         expect(data).toEqual(removedFromListModeratorsData);
 
         resolve();
       });
 
-      const { session } = sipConnector;
-
-      if (session) {
-        JsSIP.triggerNewInfo(session, removedFromListModeratorsHeaders);
-      }
+      // @ts-ignore
+      JsSIP.triggerNewSipEvent(ua, removedFromListModeratorsHeaders);
     });
   });
 });
