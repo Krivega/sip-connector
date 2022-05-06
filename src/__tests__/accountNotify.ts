@@ -33,7 +33,6 @@ describe('account notify', () => {
         resolve();
       });
 
-      // @ts-ignore
       JsSIP.triggerNewSipEvent(ua, accountChangedHeaders);
     });
   });
@@ -52,7 +51,6 @@ describe('account notify', () => {
         resolve();
       });
 
-      // @ts-ignore
       JsSIP.triggerNewSipEvent(ua, accountDeletedHeaders);
     });
   });

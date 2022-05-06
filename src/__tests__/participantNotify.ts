@@ -38,7 +38,6 @@ describe('participant notify', () => {
         resolve();
       });
 
-      // @ts-ignore
       JsSIP.triggerNewSipEvent(ua, addedToListModeratorsHeaders);
     });
   });
@@ -57,7 +56,6 @@ describe('participant notify', () => {
         resolve();
       });
 
-      // @ts-ignore
       JsSIP.triggerNewSipEvent(ua, removedFromListModeratorsHeaders);
     });
   });

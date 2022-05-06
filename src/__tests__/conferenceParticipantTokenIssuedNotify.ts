@@ -35,7 +35,6 @@ describe('conference participant token issued notify', () => {
         resolve();
       });
 
-      // @ts-ignore
       JsSIP.triggerNewSipEvent(ua, conferenceParticipantTokenIssuedHeaders);
     });
   });

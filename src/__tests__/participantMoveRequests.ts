@@ -37,7 +37,6 @@ describe('participants moveRequests', () => {
         resolve();
       });
 
-      // @ts-ignore
       JsSIP.triggerNewSipEvent(ua, moveRequestToConferenceHeaders);
     });
   });
@@ -54,7 +53,6 @@ describe('participants moveRequests', () => {
         resolve();
       });
 
-      // @ts-ignore
       JsSIP.triggerNewSipEvent(ua, cancelingWordRequestHeaders);
     });
   });
@@ -71,7 +69,6 @@ describe('participants moveRequests', () => {
         resolve();
       });
 
-      // @ts-ignore
       JsSIP.triggerNewSipEvent(ua, moveRequestToStreamHeaders);
     });
   });

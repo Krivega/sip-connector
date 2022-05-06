@@ -37,7 +37,6 @@ describe('webcast notify', () => {
         resolve();
       });
 
-      // @ts-ignore
       JsSIP.triggerNewSipEvent(ua, webcastStartedHeaders);
     });
   });
@@ -56,7 +55,6 @@ describe('webcast notify', () => {
         resolve();
       });
 
-      // @ts-ignore
       JsSIP.triggerNewSipEvent(ua, webcastStoppedHeaders);
     });
   });

@@ -36,7 +36,6 @@ describe('channels notify', () => {
         resolve();
       });
 
-      // @ts-ignore
       JsSIP.triggerNewSipEvent(ua, channelsHeaders);
     });
   });
