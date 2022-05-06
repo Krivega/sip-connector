@@ -550,31 +550,6 @@ export default class SipConnector {
       });
   }
 
-  askPermissionToEnableMic(
-    options: TOptionsInfoMediaState = { noTerminateWhenError: true }
-  ): Promise<void> {
-    if (!this.session) {
-      throw new Error('No session established');
-    }
-
-    const extraHeaders = [HEADER_ENABLE_MIC];
-
-    return this.session
-      .sendInfo(CONTENT_TYPE_MIC, undefined, {
-        ...options,
-        extraHeaders,
-      })
-      .catch((error) => {
-        if (hasDeclineResponseFromServer(error)) {
-          throw error;
-        }
-
-        return;
-      });
-
-    return Promise.resolve();
-  }
-
   startPresentation(
     stream: MediaStream,
     {
