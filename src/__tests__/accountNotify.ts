@@ -22,42 +22,36 @@ describe('account notify', () => {
   it('event account:changed', async () => {
     expect.assertions(1);
 
-    await sipConnector.connect(dataForConnectionWithAuthorization);
+    const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
+
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onSession('account:changed', (data) => {
+      sipConnector.on('account:changed', (data) => {
         expect(data).toBe(undefined);
 
         resolve();
       });
 
-      const { session } = sipConnector;
-
-      if (session) {
-        JsSIP.triggerNewInfo(session, accountChangedHeaders);
-      }
+      JsSIP.triggerNewSipEvent(ua, accountChangedHeaders);
     });
   });
 
   it('event account:deleted', async () => {
     expect.assertions(1);
 
-    await sipConnector.connect(dataForConnectionWithAuthorization);
+    const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
+
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onSession('account:deleted', (data) => {
+      sipConnector.on('account:deleted', (data) => {
         expect(data).toBe(undefined);
 
         resolve();
       });
 
-      const { session } = sipConnector;
-
-      if (session) {
-        JsSIP.triggerNewInfo(session, accountDeletedHeaders);
-      }
+      JsSIP.triggerNewSipEvent(ua, accountDeletedHeaders);
     });
   });
 });

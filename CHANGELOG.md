@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [5.3.1](https://github.com/Krivega/sip-connector/compare/v5.3.0...v5.3.1) (2022-05-06)
+
+### Bug Fixes
+
+- move some session events into ua events ([#19](https://github.com/Krivega/sip-connector/issues/19)) ([f17daaf](https://github.com/Krivega/sip-connector/commit/f17daaf832f35c441d6da3c84b21c16e2e10325d))
+
 ## [5.3.0](https://github.com/Krivega/sip-connector/compare/v5.2.0...v5.3.0) (2022-04-22)
 
 ### Features

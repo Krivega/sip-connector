@@ -26,42 +26,36 @@ describe('webcast notify', () => {
   it('event webcast:started', async () => {
     expect.assertions(1);
 
-    await sipConnector.connect(dataForConnectionWithAuthorization);
+    const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
+
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onSession('webcast:started', (data) => {
+      sipConnector.on('webcast:started', (data) => {
         expect(data).toEqual(webcastStartedData);
 
         resolve();
       });
 
-      const { session } = sipConnector;
-
-      if (session) {
-        JsSIP.triggerNewInfo(session, webcastStartedHeaders);
-      }
+      JsSIP.triggerNewSipEvent(ua, webcastStartedHeaders);
     });
   });
 
   it('event webcast:stopped', async () => {
     expect.assertions(1);
 
-    await sipConnector.connect(dataForConnectionWithAuthorization);
+    const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
+
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onSession('webcast:stopped', (data) => {
+      sipConnector.on('webcast:stopped', (data) => {
         expect(data).toEqual(webcastStoppedData);
 
         resolve();
       });
 
-      const { session } = sipConnector;
-
-      if (session) {
-        JsSIP.triggerNewInfo(session, webcastStoppedHeaders);
-      }
+      JsSIP.triggerNewSipEvent(ua, webcastStoppedHeaders);
     });
   });
 });

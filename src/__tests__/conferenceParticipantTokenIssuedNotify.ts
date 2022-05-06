@@ -24,21 +24,18 @@ describe('conference participant token issued notify', () => {
   it('event conference:participant-token-issued', async () => {
     expect.assertions(1);
 
-    await sipConnector.connect(dataForConnectionWithoutAuthorization);
+    const ua = await sipConnector.connect(dataForConnectionWithoutAuthorization);
+
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onSession('conference:participant-token-issued', (data) => {
+      sipConnector.on('conference:participant-token-issued', (data) => {
         expect(data).toEqual(conferenceParticipantTokenIssuedData);
 
         resolve();
       });
 
-      const { session } = sipConnector;
-
-      if (session) {
-        JsSIP.triggerNewInfo(session, conferenceParticipantTokenIssuedHeaders);
-      }
+      JsSIP.triggerNewSipEvent(ua, conferenceParticipantTokenIssuedHeaders);
     });
   });
 });
