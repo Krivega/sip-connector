@@ -1,10 +1,7 @@
 import type { UA, WebSocketInterface } from '@krivega/jssip';
 import type { IncomingRequest } from '@krivega/jssip/lib/SIPMessage';
-import type {
-  IncomingInfoEvent,
-  OutgoingInfoEvent,
-  RTCSession,
-} from '@krivega/jssip/lib/RTCSession';
+import type RTCSession from '@krivega/jssip/lib/RTCSession';
+import type { IncomingInfoEvent, OutgoingInfoEvent } from '@krivega/jssip/lib/RTCSession';
 import type {
   IncomingRTCSessionEvent,
   RegisteredEvent,
@@ -477,6 +474,7 @@ export default class SipConnector {
     options?: {
       deleteExisting: boolean;
       addMissing: boolean;
+      forceRenegotiation: boolean;
     }
   ): Promise<void> {
     if (!this.session) {
@@ -674,7 +672,7 @@ export default class SipConnector {
 
       const callerData = this.remoteCallerData;
 
-      this.incomingSession.on(FAILED, () => {
+      session.on(FAILED, () => {
         this.removeIncomingSession();
         this._uaEvents.trigger(FAILED_INCOMING_CALL, callerData);
       });
