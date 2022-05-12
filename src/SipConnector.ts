@@ -82,8 +82,10 @@ import {
   CHANNELS_NOTIFY,
   ENDED_FROM_SERVER,
   MAIN_CAM_CONTROL,
-  MAIN_CAM_REMOTE_CONTROL,
-  MIC_REMOTE_CONTROL,
+  ADMIN_START_MAIN_CAM,
+  ADMIN_STOP_MAIN_CAM,
+  ADMIN_STOP_MIC,
+  ADMIN_START_MIC,
   PARTICIPANT_ADDED_TO_LIST_MODERATORS,
   PARTICIPANT_REMOVED_FROM_LIST_MODERATORS,
   PARTICIPANT_MOVE_REQUEST_TO_CONFERENCE,
@@ -1412,34 +1414,28 @@ export default class SipConnector {
 
   _triggerMainCamControl = (request: IncomingRequest) => {
     const mainCam = request.getHeader(HEADER_MAIN_CAM) as EEventsMainCAM;
-    const resolutionMainCam = request.getHeader(HEADER_MAIN_CAM_RESOLUTION);
 
-    this._sessionEvents.trigger(MAIN_CAM_CONTROL, {
-      mainCam,
-      resolutionMainCam,
-    });
-  };
+    if (mainCam === EEventsMainCAM.ADMIN_START_MAIN_CAM) {
+      this._sessionEvents.trigger(ADMIN_START_MAIN_CAM, undefined);
+    } else if (mainCam === EEventsMainCAM.ADMIN_STOP_MAIN_CAM) {
+      this._sessionEvents.trigger(ADMIN_STOP_MAIN_CAM, undefined);
+    } else {
+      const resolutionMainCam = request.getHeader(HEADER_MAIN_CAM_RESOLUTION);
 
-  _maybeTriggerMainCamRemoteControl = (request: IncomingRequest) => {
-    const mainCam = request.getHeader(HEADER_MAIN_CAM);
-
-    if (
-      mainCam === EEventsMainCAM.ADMIN_START_MAIN_CAM ||
-      mainCam === EEventsMainCAM.ADMIN_STOP_MAIN_CAM
-    ) {
-      this._sessionEvents.trigger(MAIN_CAM_REMOTE_CONTROL, {
+      this._sessionEvents.trigger(MAIN_CAM_CONTROL, {
         mainCam,
+        resolutionMainCam,
       });
     }
   };
 
-  _maybeTriggerMicRemoteControl = (request: IncomingRequest) => {
+  _triggerMicControl = (request: IncomingRequest) => {
     const mic = request.getHeader(HEADER_MIC);
 
-    if (mic === EEventsMic.ADMIN_START_MIC || mic === EEventsMic.ADMIN_STOP_MIC) {
-      this._sessionEvents.trigger(MIC_REMOTE_CONTROL, {
-        mic,
-      });
+    if (mic === EEventsMic.ADMIN_START_MIC) {
+      this._sessionEvents.trigger(ADMIN_START_MIC, undefined);
+    } else if (mic === EEventsMic.ADMIN_STOP_MIC) {
+      this._sessionEvents.trigger(ADMIN_STOP_MIC, undefined);
     }
   };
 
@@ -1467,10 +1463,9 @@ export default class SipConnector {
           break;
         case CONTENT_TYPE_MAIN_CAM:
           this._triggerMainCamControl(request);
-          this._maybeTriggerMainCamRemoteControl(request);
           break;
         case CONTENT_TYPE_MIC:
-          this._maybeTriggerMicRemoteControl(request);
+          this._triggerMicControl(request);
           break;
 
         default:

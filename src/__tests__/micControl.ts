@@ -5,12 +5,17 @@ import JsSIP from '../__mocks__/jssip.mock';
 import SipConnector, { EEventsMic } from '../SipConnector';
 import { HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MIC, HEADER_MIC } from '../headers';
 
-const headersMicControl = [
+const headersAdminStartMic = [
+  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MIC],
+  [HEADER_MIC, EEventsMic.ADMIN_START_MIC],
+];
+
+const headersAdminStopMic = [
   [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MIC],
   [HEADER_MIC, EEventsMic.ADMIN_STOP_MIC],
 ];
 
-describe('mic remote control', () => {
+describe('mic control', () => {
   const number = '111';
 
   let sipConnector: SipConnector;
@@ -24,21 +29,39 @@ describe('mic remote control', () => {
     });
   });
 
-  it('event', async () => {
+  it('admin start mic', async () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<{ mic: EEventsMic }>((resolve) => {
-      return sipConnector.onSession('mic-remote-control', resolve);
+      return sipConnector.onSession('admin-start-mic', resolve);
     });
     const { session } = sipConnector;
 
     if (session) {
-      JsSIP.triggerNewInfo(session, headersMicControl);
+      JsSIP.triggerNewInfo(session, headersAdminStartMic);
     }
 
-    return promise.then(({ mic }) => {
-      expect(mic).toBe(EEventsMic.ADMIN_STOP_MIC);
+    return promise.then((data) => {
+      expect(data).toBe(undefined);
+    });
+  });
+
+  it('admin stop mic', async () => {
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    const promise = new Promise<{ mic: EEventsMic }>((resolve) => {
+      return sipConnector.onSession('admin-stop-mic', resolve);
+    });
+    const { session } = sipConnector;
+
+    if (session) {
+      JsSIP.triggerNewInfo(session, headersAdminStopMic);
+    }
+
+    return promise.then((data) => {
+      expect(data).toBe(undefined);
     });
   });
 });

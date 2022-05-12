@@ -16,6 +16,16 @@ const headersMainCamControl = [
   [HEADER_MAIN_CAM_RESOLUTION, '720'],
 ];
 
+const headersAdminStartMainCam = [
+  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
+  [HEADER_MAIN_CAM, EEventsMainCAM.ADMIN_START_MAIN_CAM],
+];
+
+const headersAdminStopMainCam = [
+  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
+  [HEADER_MAIN_CAM, EEventsMainCAM.ADMIN_STOP_MAIN_CAM],
+];
+
 describe('main cam control', () => {
   const number = '111';
 
@@ -48,6 +58,42 @@ describe('main cam control', () => {
     return promise.then(({ mainCam, resolutionMainCam }) => {
       expect(mainCam).toBe(EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION);
       expect(resolutionMainCam).toBe('720');
+    });
+  });
+
+  it('admin start main cam', async () => {
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    const promise = new Promise<{ mainCam: EEventsMainCAM }>((resolve) => {
+      return sipConnector.onSession('admin-start-main-cam', resolve);
+    });
+    const { session } = sipConnector;
+
+    if (session) {
+      JsSIP.triggerNewInfo(session, headersAdminStartMainCam);
+    }
+
+    return promise.then((data) => {
+      expect(data).toBe(undefined);
+    });
+  });
+
+  it('admin stop main cam', async () => {
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    const promise = new Promise<{ mainCam: EEventsMainCAM }>((resolve) => {
+      return sipConnector.onSession('admin-stop-main-cam', resolve);
+    });
+    const { session } = sipConnector;
+
+    if (session) {
+      JsSIP.triggerNewInfo(session, headersAdminStopMainCam);
+    }
+
+    return promise.then((data) => {
+      expect(data).toBe(undefined);
     });
   });
 });
