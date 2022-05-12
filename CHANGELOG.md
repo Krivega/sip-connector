@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.4.0](https://github.com/Krivega/sip-connector/compare/v5.3.1...v5.4.0) (2022-05-11)
+
+### Features
+
+- add option forceRenegotiation to replaceMediaStream ([4409d4c](https://github.com/Krivega/sip-connector/commit/4409d4ccd2992ec7f512c4af8ffb9821ad5ab603))
+
 ### [5.3.1](https://github.com/Krivega/sip-connector/compare/v5.3.0...v5.3.1) (2022-05-06)
 
 ### Bug Fixes

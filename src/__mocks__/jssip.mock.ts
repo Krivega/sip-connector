@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
-import type { RTCSession, IncomingInfoEvent } from '@krivega/jssip/lib/RTCSession';
+import type RTCSession from '@krivega/jssip/lib/RTCSession';
+import type { IncomingInfoEvent } from '@krivega/jssip/lib/RTCSession';
 import { Originator } from '@krivega/jssip/lib/RTCSession';
 import NameAddrHeader from '@krivega/jssip/lib/NameAddrHeader';
 import URI from '@krivega/jssip/lib/URI';
@@ -52,10 +53,8 @@ const triggerIncomingSession = (
   }: { incomingNumber?: string; displayName: string; host: string }
 ) => {
   const session = new Session({ originator: originatorRemote });
-  // @ts-ignore
   const uri = new URI('sip', incomingNumber, host);
 
-  // @ts-ignore
   session._remote_identity = new NameAddrHeader(uri, displayName);
 
   ua.trigger('newRTCSession', { originator: originatorRemote, session });

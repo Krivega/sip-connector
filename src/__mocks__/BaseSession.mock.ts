@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import Events from 'events-constructor';
+import type RTCSession from '@krivega/jssip/lib/RTCSession';
 import type {
   AnswerOptions,
   ExtraHeaders,
@@ -9,7 +10,6 @@ import type {
   ReferOptions,
   RenegotiateOptions,
   RTCPeerConnectionDeprecated,
-  RTCSession,
   SessionDirection,
   SessionStatus,
   TerminateOptions,
