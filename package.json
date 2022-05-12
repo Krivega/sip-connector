@@ -40,7 +40,7 @@
   },
   "dependencies": {
     "@krivega/cancelable-promise": "^0.3.0",
-    "@krivega/jssip": "^3.16.0",
+    "@krivega/jssip": "^3.17.0",
     "events-constructor": "^1.1.4",
     "promise-delay": "^2.1.0",
     "stack-promises": "^0.0.8",
