@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.5.0](https://github.com/Krivega/sip-connector/compare/v5.4.0...v5.5.0) (2022-05-12)
+
+### Features
+
+- **sip-connector:** added remote control media state info handlers ([#18](https://github.com/Krivega/sip-connector/issues/18)) ([bcbeff3](https://github.com/Krivega/sip-connector/commit/bcbeff3bdb3215ba7ac2a200fd5be6992e64091f))
+
 ## [5.4.0](https://github.com/Krivega/sip-connector/compare/v5.3.1...v5.4.0) (2022-05-11)
 
 ### Features
