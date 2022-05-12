@@ -863,17 +863,10 @@
   resolved "https://registry.yarnpkg.com/@krivega/cancelable-promise/-/cancelable-promise-0.3.0.tgz#bcbf318c2682f6d03ca2424ad5739e5af24f53f9"
   integrity sha512-kIh2X/76Knbj36bfAoiQ9hebhhVOXf3WKYbcOPxGIZDRmbozTtzkTfJTkbrsD6wmws/ogQ9icxJlRQo14dsPhw==
 
-<<<<<<< HEAD
 "@krivega/jssip@^3.17.0":
   version "3.17.0"
   resolved "https://registry.yarnpkg.com/@krivega/jssip/-/jssip-3.17.0.tgz#5776866a991fb95623a49060d0fc40dbea64361c"
   integrity sha512-YSorXReO8surlXMAbM91RXe5P/QHMHSEaTuARo+0lDVcpp+xwe9rHTUw6dmEDELqV6qTYht2JyGbprZxJTZb7A==
-=======
-"@krivega/jssip@^3.16.0":
-  version "3.16.0"
-  resolved "https://registry.yarnpkg.com/@krivega/jssip/-/jssip-3.16.0.tgz#51ee4c08d2dba5fba9e9e6184c66701fe73e78c3"
-  integrity sha512-SD/twADUwwQT0tnLPGHJ/KH02UgwW1s7Sdlnrw0ktX7qwDiOz/yhSUjYOWgR8qRT/xIp6xzjqtiumaNn/Oaohg==
->>>>>>> upstream/master
   dependencies:
     "@types/debug" "^4.1.7"
     "@types/node" "^17.0.32"
@@ -1105,11 +1098,6 @@
   version "17.0.18"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-17.0.18.tgz#3b4fed5cfb58010e3a2be4b6e74615e4847f1074"
   integrity sha512-eKj4f/BsN/qcculZiRSujogjvp5O/k4lOW5m35NopjZM/QwLOR075a8pJW5hD+Rtdm2DaCVPENS6KtSQnUD6BA==
-
-"@types/node@^17.0.32":
-  version "17.0.32"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-17.0.32.tgz#51d59d7a90ef2d0ae961791e0900cad2393a0149"
-  integrity sha512-eAIcfAvhf/BkHcf4pkLJ7ECpBAhh9kcxRBpip9cTiO+hf+aJrsxYxBeS6OXvOd9WqNAJmavXVpZvY1rBjNsXmw==
 
 "@types/node@^17.0.32":
   version "17.0.32"
