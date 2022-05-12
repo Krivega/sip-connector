@@ -1,5 +1,5 @@
-const DECLINED_RESPONSE = '603';
+const DECLINE_RESPONSE_CODE = '603';
 
 export const hasDeclineResponseFromServer = (error: Error): boolean => {
-  return error.message.includes(DECLINED_RESPONSE) || error.name.includes(DECLINED_RESPONSE);
+  return error.message.includes(DECLINE_RESPONSE_CODE);
 };
