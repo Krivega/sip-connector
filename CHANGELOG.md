@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.6.0](https://github.com/Krivega/sip-connector/compare/v5.5.2...v5.6.0) (2022-05-17)
+
+### Features
+
+- add onceRace, onceRaceSession ([f056c76](https://github.com/Krivega/sip-connector/commit/f056c760727bf3b4be1ea9070d22efe770172069))
+
 ### [5.5.2](https://github.com/Krivega/sip-connector/compare/v5.5.1...v5.5.2) (2022-05-13)
 
 ### [5.5.1](https://github.com/Krivega/sip-connector/compare/v5.5.0...v5.5.1) (2022-05-13)
