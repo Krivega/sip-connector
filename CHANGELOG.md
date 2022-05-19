@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [5.6.1](https://github.com/Krivega/sip-connector/compare/v5.6.0...v5.6.1) (2022-05-19)
+
+### Bug Fixes
+
+- return promise from sendMediaState method for handling reject ([#20](https://github.com/Krivega/sip-connector/issues/20)) ([1c44f2a](https://github.com/Krivega/sip-connector/commit/1c44f2a4f707ee3f5d0009b1d9e2c11157ec0f14))
+
 ## [5.6.0](https://github.com/Krivega/sip-connector/compare/v5.5.2...v5.6.0) (2022-05-17)
 
 ### Features
