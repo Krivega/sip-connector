@@ -40,4 +40,22 @@ describe('media state', () => {
       noTerminateWhenError: true,
     });
   });
+
+  it('sendMediaState rejected', async () => {
+    expect.assertions(1);
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    const ERROR_RESPONSE = 'Error response';
+
+    // @ts-ignore
+    sipConnector.session.sendInfo = () => {
+      return Promise.reject(new Error(ERROR_RESPONSE));
+    };
+
+    await sipConnector.sendMediaState(mediaStateData).catch((error) => {
+      expect(error.message).toBe(ERROR_RESPONSE);
+    });
+  });
 });
