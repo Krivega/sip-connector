@@ -1516,7 +1516,7 @@ export default class SipConnector {
   sendMediaState(
     { cam, mic }: TMediaState,
     options: TOptionsInfoMediaState = { noTerminateWhenError: true }
-  ) {
+  ): Promise<void> {
     if (!this.session) {
       throw new Error('No session established');
     }
@@ -1530,7 +1530,7 @@ export default class SipConnector {
       headerMic,
     ];
 
-    this.session.sendInfo(CONTENT_TYPE_MEDIA_STATE, undefined, { ...options, extraHeaders });
+    return this.session.sendInfo(CONTENT_TYPE_MEDIA_STATE, undefined, { ...options, extraHeaders });
   }
 
   _handleEnded = (error: ICustomError) => {
