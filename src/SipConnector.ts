@@ -669,11 +669,15 @@ export default class SipConnector {
   };
 
   on(eventName: TEventUA, handler) {
-    this._uaEvents.on(eventName, handler);
+    return this._uaEvents.on(eventName, handler);
   }
 
   once(eventName: TEventUA, handler) {
-    this._uaEvents.once(eventName, handler);
+    return this._uaEvents.once(eventName, handler);
+  }
+
+  onceRace(eventNames: TEventUA[], handler) {
+    return this._uaEvents.onceRace(eventNames, handler);
   }
 
   wait(eventName: TEventUA): Promise<any> {
@@ -685,11 +689,15 @@ export default class SipConnector {
   }
 
   onSession(eventName: TEventSession, handler) {
-    this._sessionEvents.on(eventName, handler);
+    return this._sessionEvents.on(eventName, handler);
   }
 
   onceSession(eventName: TEventSession, handler) {
-    this._sessionEvents.once(eventName, handler);
+    return this._sessionEvents.once(eventName, handler);
+  }
+
+  onceRaceSession(eventNames: TEventSession[], handler) {
+    return this._sessionEvents.onceRace(eventNames, handler);
   }
 
   waitSession(eventName: TEventSession): Promise<any> {
@@ -1508,7 +1516,7 @@ export default class SipConnector {
   sendMediaState(
     { cam, mic }: TMediaState,
     options: TOptionsInfoMediaState = { noTerminateWhenError: true }
-  ) {
+  ): Promise<void> {
     if (!this.session) {
       throw new Error('No session established');
     }
@@ -1522,7 +1530,7 @@ export default class SipConnector {
       headerMic,
     ];
 
-    this.session.sendInfo(CONTENT_TYPE_MEDIA_STATE, undefined, { ...options, extraHeaders });
+    return this.session.sendInfo(CONTENT_TYPE_MEDIA_STATE, undefined, { ...options, extraHeaders });
   }
 
   _handleEnded = (error: ICustomError) => {
