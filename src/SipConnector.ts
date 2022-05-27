@@ -584,6 +584,7 @@ export default class SipConnector {
       .then(() => {
         return session.startPresentation(streamPresentationCurrent, isNeedReinvite);
       })
+      // @ts-ignore
       .then(() => {
         const { connection } = this;
 
