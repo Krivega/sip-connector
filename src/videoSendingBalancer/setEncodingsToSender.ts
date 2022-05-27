@@ -1,5 +1,7 @@
 export type TOnSetParameters = (parameters: RTCRtpSendParameters) => void;
+export type TResult = { parameters: RTCRtpSendParameters; isChanged: boolean };
 
+const MIN_SCALE_RESOLUTION_DOWN_BY = 1;
 const resolveHasNeedToUpdateItemEncoding = (defaultValue: number | undefined) => {
   return (itemEncodingTarget: typeof defaultValue, itemEncodingCurrent?: number): boolean => {
     const isChangedDefaultScale =
@@ -13,13 +15,17 @@ const resolveHasNeedToUpdateItemEncoding = (defaultValue: number | undefined) =>
   };
 };
 
-const hasNeedToUpdateScaleResolutionDownBy = resolveHasNeedToUpdateItemEncoding(1);
+const hasNeedToUpdateScaleResolutionDownBy = resolveHasNeedToUpdateItemEncoding(
+  MIN_SCALE_RESOLUTION_DOWN_BY
+);
 const performUpdateScaleResolutionDownBy = (
   scaleResolutionDownByTarget?: number,
   scaleResolutionDownByCurrent?: number
 ): number | undefined => {
   const scaleResolutionDownByTargetParsed: number | null =
-    scaleResolutionDownByTarget !== undefined ? Math.max(scaleResolutionDownByTarget, 1) : null;
+    scaleResolutionDownByTarget !== undefined
+      ? Math.max(scaleResolutionDownByTarget, MIN_SCALE_RESOLUTION_DOWN_BY)
+      : null;
 
   if (
     scaleResolutionDownByTargetParsed !== null &&
@@ -50,7 +56,7 @@ const setEncodingsToSender = (
   sender: RTCRtpSender,
   encodingsTarget: { scaleResolutionDownBy?: number; maxBitrate?: number },
   onSetParameters?: TOnSetParameters
-): Promise<void> => {
+): Promise<TResult> => {
   const parameters: RTCRtpSendParameters = sender.getParameters();
 
   if (!parameters.encodings || parameters.encodings.length === 0) {
@@ -58,7 +64,6 @@ const setEncodingsToSender = (
   }
 
   const [encoding] = parameters.encodings;
-
   const scaleResolutionDownByCurrent = encoding.scaleResolutionDownBy;
   const scaleResolutionDownByTarget = performUpdateScaleResolutionDownBy(
     encodingsTarget.scaleResolutionDownBy,
@@ -85,10 +90,12 @@ const setEncodingsToSender = (
       onSetParameters(parameters);
     }
 
-    return sender.setParameters(parameters);
+    return sender.setParameters(parameters).then(() => {
+      return { parameters, isChanged };
+    });
   }
 
-  return Promise.resolve();
+  return Promise.resolve({ parameters, isChanged });
 };
 
 export default setEncodingsToSender;
