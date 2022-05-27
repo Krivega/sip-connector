@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.0.0](https://github.com/Krivega/sip-connector/compare/v5.6.1...v6.0.0) (2022-05-27)
+
+### ⚠ BREAKING CHANGES
+
+- disable autoSubscription
+
+- feat!(videoSendingBalancer): add reBalance ([a40c96e](https://github.com/Krivega/sip-connector/commit/a40c96e3f0b5d3a20f0f923ade8c65e8029df722))
+
 ### [5.6.1](https://github.com/Krivega/sip-connector/compare/v5.6.0...v5.6.1) (2022-05-19)
 
 ### Bug Fixes
