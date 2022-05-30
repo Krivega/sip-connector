@@ -3,6 +3,10 @@ import RTCRtpSenderMock from '../../__mocks__/RTCRtpSenderMock';
 import { EEventsMainCAM } from '../../SipConnector';
 import processSender from '../processSender';
 
+const MAX_BITRATE_MAX_MAIN_CAM_RESOLUTION = 320000;
+const MAX_BITRATE_PAUSE_MAIN_CAM = 60000;
+const MAX_BITRATE_RESUME_MAIN_CAM = 4000000;
+
 describe('processSender', () => {
   let sender: RTCRtpSender;
   let trackWith1024: MediaStreamTrack;
@@ -30,7 +34,7 @@ describe('processSender', () => {
       expect(parameters.encodings).toEqual([
         {
           scaleResolutionDownBy: targetScaleResolutionDownBy,
-          maxBitrate: 320000,
+          maxBitrate: MAX_BITRATE_MAX_MAIN_CAM_RESOLUTION,
         },
       ]);
     });
@@ -49,7 +53,7 @@ describe('processSender', () => {
       expect(parameters.encodings).toEqual([
         {
           scaleResolutionDownBy: 200,
-          maxBitrate: 60000,
+          maxBitrate: MAX_BITRATE_PAUSE_MAIN_CAM,
         },
       ]);
     });
@@ -78,7 +82,36 @@ describe('processSender', () => {
       expect(parameters.encodings).toEqual([
         {
           scaleResolutionDownBy: 1,
-          maxBitrate: 4000000,
+          maxBitrate: MAX_BITRATE_RESUME_MAIN_CAM,
+        },
+      ]);
+    });
+  });
+
+  it('RESUME_MAIN_CAM_WITH_OTHER_TARGET', () => {
+    expect.assertions(2);
+
+    const targetWidth = 896;
+    const targeHight = 504;
+
+    processSender({
+      sender,
+      mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
+      resolutionMainCam: `${targetWidth}x${targeHight}`,
+      track: trackWith1024,
+    });
+
+    return processSender({
+      sender,
+      mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
+      resolutionMainCam: ``,
+      track: trackWith1024,
+    }).then(({ parameters, isChanged }) => {
+      expect(isChanged).toBe(true);
+      expect(parameters.encodings).toEqual([
+        {
+          scaleResolutionDownBy: 1,
+          maxBitrate: MAX_BITRATE_RESUME_MAIN_CAM,
         },
       ]);
     });
