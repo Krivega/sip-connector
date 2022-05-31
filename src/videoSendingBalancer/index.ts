@@ -17,13 +17,13 @@ const resolveVideoSendingBalancer = (
   let reBalance = () => {};
   const handleMainCamControl = (headers: {
     mainCam: EEventsMainCAM;
-    resolutionMainCam: string;
+    resolutionMainCam?: string;
   }) => {
     reBalance = () => {
       const { mainCam, resolutionMainCam } = headers;
       const { connection } = sipConnector;
 
-      if (!connection || mainCam === undefined || resolutionMainCam === undefined) {
+      if (!connection || mainCam === undefined) {
         return;
       }
 

@@ -106,7 +106,7 @@ const processSender = (
     track,
   }: {
     mainCam: EEventsMainCAM;
-    resolutionMainCam: string;
+    resolutionMainCam?: string;
     sender: RTCRtpSender;
     track: MediaStreamTrack;
   },
@@ -118,7 +118,13 @@ const processSender = (
     case EEventsMainCAM.RESUME_MAIN_CAM:
       return resetScaleResolutionSender(sender, onSetParameters);
     case EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION:
-      return setResolutionSender(sender, { track, resolution: resolutionMainCam }, onSetParameters);
+      if (resolutionMainCam) {
+        return setResolutionSender(
+          sender,
+          { track, resolution: resolutionMainCam },
+          onSetParameters
+        );
+      }
   }
 
   return Promise.resolve({
