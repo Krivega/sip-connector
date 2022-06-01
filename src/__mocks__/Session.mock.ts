@@ -84,6 +84,27 @@ class Session extends BaseSession {
     }, CONNECTION_DELAY);
   }
 
+  connect(target, { mediaStream, eventHandlers }) {
+    this.initEvents(eventHandlers);
+    this.initPeerconnection(mediaStream);
+
+    setTimeout(() => {
+      this.trigger('connecting');
+    }, CONNECTION_DELAY);
+
+    setTimeout(() => {
+      this.trigger('enterRoom', { room: target });
+    }, CONNECTION_DELAY + 100);
+
+    setTimeout(() => {
+      this.trigger('accepted');
+    }, CONNECTION_DELAY + 200);
+
+    setTimeout(() => {
+      this.trigger('confirmed', { room: target });
+    }, CONNECTION_DELAY + 300);
+  }
+
   /**
      * answer
      *
