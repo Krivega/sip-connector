@@ -4,6 +4,16 @@ export function resolveSipUrl(serverUrl: string): (string) => string {
   };
 }
 
+export function getRoomFromSipUrl(sipUrl: string): string {
+  const matches = sipUrl.match(/[\d.]+/g);
+
+  if (!matches) {
+    throw new Error('wrong sip url');
+  }
+
+  return matches[0];
+}
+
 const resolveRandomInt = (min: number, max: number) => {
   return () => {
     return Math.floor(Math.random() * (max - min)) + min;

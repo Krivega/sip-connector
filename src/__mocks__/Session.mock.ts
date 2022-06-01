@@ -1,5 +1,6 @@
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
 import type { IncomingInfoEvent } from '@krivega/jssip/lib/RTCSession';
+import { getRoomFromSipUrl } from '../utils';
 import RTCPeerConnectionMock from './RTCPeerConnectionMock';
 import BaseSession from './BaseSession.mock';
 
@@ -88,12 +89,14 @@ class Session extends BaseSession {
     this.initEvents(eventHandlers);
     this.initPeerconnection(mediaStream);
 
+    const room = getRoomFromSipUrl(target);
+
     setTimeout(() => {
       this.trigger('connecting');
     }, CONNECTION_DELAY);
 
     setTimeout(() => {
-      this.trigger('enterRoom', { room: target });
+      this.trigger('enterRoom', room);
     }, CONNECTION_DELAY + 100);
 
     setTimeout(() => {
@@ -101,7 +104,7 @@ class Session extends BaseSession {
     }, CONNECTION_DELAY + 200);
 
     setTimeout(() => {
-      this.trigger('confirmed', { room: target });
+      this.trigger('confirmed', room);
     }, CONNECTION_DELAY + 300);
   }
 
