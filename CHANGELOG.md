@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [6.0.1](https://github.com/Krivega/sip-connector/compare/v6.0.0...v6.0.1) (2022-05-31)
+
+### Bug Fixes
+
+- **videoSendingBalancer:** call MAX_MAIN_CAM_RESOLUTION, PAUSE_MAIN_CAM ([00a96e0](https://github.com/Krivega/sip-connector/commit/00a96e08540785da212141db03e1f037fc322ca9))
+
+## [6.0.0](https://github.com/Krivega/sip-connector/compare/v5.6.1...v6.0.0) (2022-05-27)
+
+### ⚠ BREAKING CHANGES
+
+- disable autoSubscription
+
+- feat!(videoSendingBalancer): add reBalance ([a40c96e](https://github.com/Krivega/sip-connector/commit/a40c96e3f0b5d3a20f0f923ade8c65e8029df722))
+
+### [5.6.1](https://github.com/Krivega/sip-connector/compare/v5.6.0...v5.6.1) (2022-05-19)
+
+### Bug Fixes
+
+- return promise from sendMediaState method for handling reject ([#20](https://github.com/Krivega/sip-connector/issues/20)) ([1c44f2a](https://github.com/Krivega/sip-connector/commit/1c44f2a4f707ee3f5d0009b1d9e2c11157ec0f14))
+
 ## [5.6.0](https://github.com/Krivega/sip-connector/compare/v5.5.2...v5.6.0) (2022-05-17)
 
 ### Features
