@@ -104,7 +104,7 @@ class Session extends BaseSession {
     }, CONNECTION_DELAY + 200);
 
     setTimeout(() => {
-      this.trigger('confirmed', room);
+      this.trigger('confirmed');
     }, CONNECTION_DELAY + 300);
   }
 
