@@ -75,7 +75,7 @@ class UA implements IUA {
   call(url: string, { mediaStream, eventHandlers }): Session {
     this.session = new Session({ url, mediaStream, eventHandlers, originator: 'local' });
 
-    this.session.connect(url, { mediaStream, eventHandlers });
+    this.session.connect(url);
 
     return this.session;
   }

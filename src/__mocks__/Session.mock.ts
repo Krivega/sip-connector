@@ -1,10 +1,14 @@
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
+import { REJECTED } from '../causes';
 import type { IncomingInfoEvent } from '@krivega/jssip/lib/RTCSession';
-import { getRoomFromSipUrl } from '../utils';
+import { getRoomFromSipUrl } from './utils';
 import RTCPeerConnectionMock from './RTCPeerConnectionMock';
 import BaseSession from './BaseSession.mock';
 
 const CONNECTION_DELAY = 400; // more 300 for test cancel requests with debounced
+const TIMEOUT_ENTER_ROOM = CONNECTION_DELAY + 100;
+const TIMEOUT_ACCEPTED = TIMEOUT_ENTER_ROOM + 200;
+const TIMEOUT_CONFIRMED = TIMEOUT_ENTER_ROOM + 300;
 
 export const FAILED_CONFERENCE_NUMBER = '777';
 
@@ -44,18 +48,6 @@ class Session extends BaseSession {
 
     this.createPeerconnection(mediaStream);
 
-    setTimeout(() => {
-      if (this.url.includes(FAILED_CONFERENCE_NUMBER)) {
-        this.trigger('failed', {
-          originator: 'remote',
-          message: 'IncomingResponse',
-          cause: 'Rejected',
-        });
-      } else {
-        this.trigger('confirmed');
-      }
-    }, CONNECTION_DELAY);
-
     return true;
   }
 
@@ -85,27 +77,32 @@ class Session extends BaseSession {
     }, CONNECTION_DELAY);
   }
 
-  connect(target, { mediaStream, eventHandlers }) {
-    this.initEvents(eventHandlers);
-    this.initPeerconnection(mediaStream);
-
+  connect(target) {
     const room = getRoomFromSipUrl(target);
 
     setTimeout(() => {
-      this.trigger('connecting');
+      if (this.url.includes(FAILED_CONFERENCE_NUMBER)) {
+        this.trigger('failed', {
+          originator: 'remote',
+          message: 'IncomingResponse',
+          cause: REJECTED,
+        });
+      } else {
+        this.trigger('connecting');
+
+        setTimeout(() => {
+          this.trigger('enterRoom', room);
+        }, TIMEOUT_ENTER_ROOM);
+
+        setTimeout(() => {
+          this.trigger('accepted');
+        }, TIMEOUT_ACCEPTED);
+
+        setTimeout(() => {
+          this.trigger('confirmed');
+        }, TIMEOUT_CONFIRMED);
+      }
     }, CONNECTION_DELAY);
-
-    setTimeout(() => {
-      this.trigger('enterRoom', room);
-    }, CONNECTION_DELAY + 100);
-
-    setTimeout(() => {
-      this.trigger('accepted');
-    }, CONNECTION_DELAY + 200);
-
-    setTimeout(() => {
-      this.trigger('confirmed');
-    }, CONNECTION_DELAY + 300);
   }
 
   /**
@@ -123,6 +120,10 @@ class Session extends BaseSession {
 
       throw error;
     }
+
+    setTimeout(() => {
+      this.trigger('confirmed');
+    }, TIMEOUT_CONFIRMED);
 
     this.initEvents(eventHandlers);
     this.initPeerconnection(mediaStream);
