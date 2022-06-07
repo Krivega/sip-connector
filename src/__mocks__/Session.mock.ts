@@ -6,9 +6,6 @@ import RTCPeerConnectionMock from './RTCPeerConnectionMock';
 import BaseSession from './BaseSession.mock';
 
 const CONNECTION_DELAY = 400; // more 300 for test cancel requests with debounced
-const TIMEOUT_ENTER_ROOM = CONNECTION_DELAY + 100;
-const TIMEOUT_ACCEPTED = TIMEOUT_ENTER_ROOM + 200;
-const TIMEOUT_CONFIRMED = TIMEOUT_ENTER_ROOM + 300;
 
 export const FAILED_CONFERENCE_NUMBER = '777';
 
@@ -92,15 +89,15 @@ class Session extends BaseSession {
 
         setTimeout(() => {
           this.trigger('enterRoom', room);
-        }, TIMEOUT_ENTER_ROOM);
+        }, 100);
 
         setTimeout(() => {
           this.trigger('accepted');
-        }, TIMEOUT_ACCEPTED);
+        }, 200);
 
         setTimeout(() => {
           this.trigger('confirmed');
-        }, TIMEOUT_CONFIRMED);
+        }, 300);
       }
     }, CONNECTION_DELAY);
   }
@@ -114,19 +111,26 @@ class Session extends BaseSession {
 
  * @returns {undefined}
      */
-  answer({ mediaStream, eventHandlers }) {
+  answer({ mediaStream }) {
     if (this.originator !== 'remote') {
       const error = new Error('answer available only for remote sessions');
 
       throw error;
     }
 
-    setTimeout(() => {
-      this.trigger('confirmed');
-    }, TIMEOUT_CONFIRMED);
-
-    this.initEvents(eventHandlers);
     this.initPeerconnection(mediaStream);
+
+    setTimeout(() => {
+      this.trigger('connecting');
+
+      setTimeout(() => {
+        this.trigger('accepted');
+      }, 100);
+
+      setTimeout(() => {
+        this.trigger('confirmed');
+      }, 200);
+    }, CONNECTION_DELAY);
   }
 
   // eslint-disable-next-line camelcase
