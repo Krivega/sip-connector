@@ -357,42 +357,43 @@ export default class SipConnector {
 
     this._cancelableConnect = new CancelableRequest<Parameters<TConnect>[0], ReturnType<TConnect>>(
       this._connect,
-      moduleName,
-      () => {
-        this._cancelableCreateUa.cancelRequest();
-        this._cancelableDisconnect.cancelRequest();
+      {
+        moduleName,
+        afterCancelRequest: () => {
+          this._cancelableCreateUa.cancelRequest();
+          this._cancelableDisconnect.cancelRequest();
+        },
       }
     );
 
     this._cancelableCreateUa = new CancelableRequest<
       Parameters<TCreateUa>[0],
       ReturnType<TCreateUa>
-    >(this._createUa, moduleName);
+    >(this._createUa, { moduleName });
 
     this._cancelableDisconnect = new CancelableRequest<void, ReturnType<TDisconnect>>(
       this._disconnect,
-      moduleName
+      { moduleName }
     );
 
-    this._cancelableSet = new CancelableRequest<Parameters<TSet>[0], ReturnType<TSet>>(
-      this._set,
-      moduleName
-    );
+    this._cancelableSet = new CancelableRequest<Parameters<TSet>[0], ReturnType<TSet>>(this._set, {
+      moduleName,
+    });
 
     this._cancelableCall = new CancelableRequest<Parameters<TCall>[0], ReturnType<TCall>>(
       this._call,
-      moduleName
+      { moduleName }
     );
 
     this._cancelableAnswer = new CancelableRequest<
       Parameters<TAnswerToIncomingCall>[0],
       ReturnType<TAnswerToIncomingCall>
-    >(this._answer, moduleName);
+    >(this._answer, { moduleName });
 
     this._cancelableSendDTMF = new CancelableRequest<
       Parameters<TSendDTMF>[0],
       ReturnType<TSendDTMF>
-    >(this._sendDTMF, moduleName);
+    >(this._sendDTMF, { moduleName });
 
     this.onSession(SHARE_STATE, this._handleShareState);
     this.onSession(NEW_INFO, this._handleNewInfo);
