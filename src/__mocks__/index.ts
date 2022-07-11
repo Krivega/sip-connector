@@ -8,6 +8,7 @@ export const SIP_WEB_SOCKET_SERVER_URL = 'SIP_WEB_SOCKET_SERVER_URL';
 const socket = new JsSIP.WebSocketInterface(SIP_WEB_SOCKET_SERVER_URL);
 
 const baseDataForConnection = {
+  userAgent: 'Chrome',
   sipServerUrl: SIP_SERVER_URL,
   sipWebSocketServerURL: SIP_WEB_SOCKET_SERVER_URL,
 };
