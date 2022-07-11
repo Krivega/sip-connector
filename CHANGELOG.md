@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.1.0](https://github.com/Krivega/sip-connector/compare/v6.0.2...v6.1.0) (2022-07-11)
+
+### Features
+
+- move userAgent to params of connect ([#23](https://github.com/Krivega/sip-connector/issues/23)) ([12093af](https://github.com/Krivega/sip-connector/commit/12093af714f896cfed91596875146baf64236efd))
+
 ### [6.0.2](https://github.com/Krivega/sip-connector/compare/v6.0.1...v6.0.2) (2022-06-07)
 
 ### [6.0.1](https://github.com/Krivega/sip-connector/compare/v6.0.0...v6.0.1) (2022-05-31)
