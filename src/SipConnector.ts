@@ -251,6 +251,7 @@ type TParametersConnection = {
   registerExpires?: number;
   connectionRecoveryMinInterval?: number;
   connectionRecoveryMaxInterval?: number;
+  userAgent?: string;
 } & TOptionsExtraHeaders;
 
 type TConnect = (parameters: TParametersConnection) => Promise<UA>;
@@ -801,6 +802,7 @@ export default class SipConnector {
     registerExpires = 60 * 5, // 5 minutes in sec
     connectionRecoveryMinInterval = 2,
     connectionRecoveryMaxInterval = 6,
+    userAgent,
   }) => {
     if (!sipServerUrl) {
       throw new Error('sipServerUrl is required');
@@ -834,12 +836,6 @@ export default class SipConnector {
       authorizationUser = user.trim();
     } else {
       authorizationUser = generateUserId();
-    }
-
-    let userAgent = 'Chrome';
-
-    if (sdpSemantics === 'unified-plan') {
-      userAgent = 'ChromeNew';
     }
 
     const configuration = {
