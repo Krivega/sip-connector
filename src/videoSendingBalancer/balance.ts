@@ -16,7 +16,7 @@ const balance = async ({
   ignoreForCodec,
 }: {
   mainCam: EEventsMainCAM;
-  resolutionMainCam: string;
+  resolutionMainCam?: string;
   connection: RTCPeerConnection;
   onSetParameters?: TOnSetParameters;
   ignoreForCodec?: string;

@@ -1,5 +1,7 @@
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
+import { REJECTED } from '../causes';
 import type { IncomingInfoEvent } from '@krivega/jssip/lib/RTCSession';
+import { getRoomFromSipUrl } from './utils';
 import RTCPeerConnectionMock from './RTCPeerConnectionMock';
 import BaseSession from './BaseSession.mock';
 
@@ -43,18 +45,6 @@ class Session extends BaseSession {
 
     this.createPeerconnection(mediaStream);
 
-    setTimeout(() => {
-      if (this.url.includes(FAILED_CONFERENCE_NUMBER)) {
-        this.trigger('failed', {
-          originator: 'remote',
-          message: 'IncomingResponse',
-          cause: 'Rejected',
-        });
-      } else {
-        this.trigger('confirmed');
-      }
-    }, CONNECTION_DELAY);
-
     return true;
   }
 
@@ -84,6 +74,34 @@ class Session extends BaseSession {
     }, CONNECTION_DELAY);
   }
 
+  connect(target) {
+    const room = getRoomFromSipUrl(target);
+
+    setTimeout(() => {
+      if (this.url.includes(FAILED_CONFERENCE_NUMBER)) {
+        this.trigger('failed', {
+          originator: 'remote',
+          message: 'IncomingResponse',
+          cause: REJECTED,
+        });
+      } else {
+        this.trigger('connecting');
+
+        setTimeout(() => {
+          this.trigger('enterRoom', room);
+        }, 100);
+
+        setTimeout(() => {
+          this.trigger('accepted');
+        }, 200);
+
+        setTimeout(() => {
+          this.trigger('confirmed');
+        }, 300);
+      }
+    }, CONNECTION_DELAY);
+  }
+
   /**
      * answer
      *
@@ -93,15 +111,26 @@ class Session extends BaseSession {
 
  * @returns {undefined}
      */
-  answer({ mediaStream, eventHandlers }) {
+  answer({ mediaStream }) {
     if (this.originator !== 'remote') {
       const error = new Error('answer available only for remote sessions');
 
       throw error;
     }
 
-    this.initEvents(eventHandlers);
     this.initPeerconnection(mediaStream);
+
+    setTimeout(() => {
+      this.trigger('connecting');
+
+      setTimeout(() => {
+        this.trigger('accepted');
+      }, 100);
+
+      setTimeout(() => {
+        this.trigger('confirmed');
+      }, 200);
+    }, CONNECTION_DELAY);
   }
 
   // eslint-disable-next-line camelcase
