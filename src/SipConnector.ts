@@ -277,6 +277,8 @@ type TCall = ({
   extraHeaders?: TOptionsExtraHeaders['extraHeaders'];
   ontrack?: TOntrack;
   iceServers?: RTCIceServer[];
+  videoMode?: 'sendrecv' | 'sendonly' | 'recvonly';
+  audioMode?: 'sendrecv' | 'sendonly' | 'recvonly';
 }) => Promise<RTCPeerConnection>;
 
 type TDisconnect = () => Promise<void>;
@@ -978,7 +980,15 @@ export default class SipConnector {
     return disconnectedPromise;
   };
 
-  _call: TCall = ({ number, mediaStream, extraHeaders = [], ontrack, iceServers }) => {
+  _call: TCall = ({
+    number,
+    mediaStream,
+    extraHeaders = [],
+    ontrack,
+    iceServers,
+    videoMode,
+    audioMode,
+  }) => {
     return new Promise((resolve, reject) => {
       this._connectionConfiguration.number = number;
       this._connectionConfiguration.answer = false;
@@ -988,6 +998,8 @@ export default class SipConnector {
         extraHeaders,
         mediaStream: prepareMediaStream(mediaStream),
         eventHandlers: this._sessionEvents.triggers,
+        videoMode,
+        audioMode,
         pcConfig: {
           iceServers,
         },
