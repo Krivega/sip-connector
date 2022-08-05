@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.2.0](https://github.com/Krivega/sip-connector/compare/v6.1.0...v6.2.0) (2022-08-05)
+
+### Features
+
+- add videoMode, audioMode options to call ([0b9d3db](https://github.com/Krivega/sip-connector/commit/0b9d3db2ad92641f508a83e4d4945c172e7d3a29))
+
 ## [6.1.0](https://github.com/Krivega/sip-connector/compare/v6.0.2...v6.1.0) (2022-07-11)
 
 ### Features
