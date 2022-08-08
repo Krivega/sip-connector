@@ -72,13 +72,15 @@ class UA implements IUA {
   }
 
   //@ts-ignore
-  call(url: string, { mediaStream, eventHandlers }): Session {
+  call = jest.fn((url: string, params): Session => {
+    const { mediaStream, eventHandlers } = params;
+
     this.session = new Session({ url, mediaStream, eventHandlers, originator: 'local' });
 
     this.session.connect(url);
 
     return this.session;
-  }
+  });
 
   //@ts-ignore
   on(eventName: TEventUA, handler) {

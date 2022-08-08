@@ -23,7 +23,7 @@ describe('call', () => {
   });
 
   it('base call', async () => {
-    expect.assertions(1);
+    expect.assertions(3);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
@@ -31,6 +31,8 @@ describe('call', () => {
     const peerconnection = await sipConnector.call({ number, mediaStream, ontrack: mockFn });
 
     expect(!!peerconnection).toBe(true);
+    expect(sipConnector.ua.call.mock.calls.length).toBe(1);
+    expect(sipConnector.ua.call.mock.calls[0][0]).toBe('sip:10000@SIP_SERVER_URL');
   });
 
   it('connectionConfiguration after call', async () => {
@@ -284,5 +286,78 @@ describe('call', () => {
     sipConnector.session!.terminateRemote();
 
     return expect(endedFromServer).resolves.toEqual(data);
+  });
+
+  it('calls without videoMode and audioMode', async () => {
+    expect.assertions(4);
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+
+    const number = `10000`;
+
+    await sipConnector.call({ number, mediaStream, ontrack: mockFn });
+
+    const params = sipConnector.ua.call.mock.calls[0][1];
+
+    expect(params.videoMode).toBe(undefined);
+    expect(params.audioMode).toBe(undefined);
+    expect(params.mediaStream.getVideoTracks().length).toBe(1);
+    expect(params.mediaStream.getAudioTracks().length).toBe(1);
+  });
+
+  it('calls with videoMode=recvonly', async () => {
+    expect.assertions(4);
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+
+    const number = `10000`;
+
+    await sipConnector.call({ number, mediaStream, videoMode: 'recvonly', ontrack: mockFn });
+
+    const params = sipConnector.ua.call.mock.calls[0][1];
+
+    expect(params.videoMode).toBe('recvonly');
+    expect(params.audioMode).toBe(undefined);
+    expect(params.mediaStream.getVideoTracks().length).toBe(0);
+    expect(params.mediaStream.getAudioTracks().length).toBe(1);
+  });
+
+  it('calls with audioMode=recvonly', async () => {
+    expect.assertions(4);
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+
+    const number = `10000`;
+
+    await sipConnector.call({ number, mediaStream, audioMode: 'recvonly', ontrack: mockFn });
+
+    const params = sipConnector.ua.call.mock.calls[0][1];
+
+    expect(params.videoMode).toBe(undefined);
+    expect(params.audioMode).toBe('recvonly');
+    expect(params.mediaStream.getVideoTracks().length).toBe(1);
+    expect(params.mediaStream.getAudioTracks().length).toBe(0);
+  });
+
+  it('calls with videoMode=recvonly audioMode=recvonly', async () => {
+    expect.assertions(3);
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+
+    const number = `10000`;
+
+    await sipConnector.call({
+      number,
+      mediaStream,
+      videoMode: 'recvonly',
+      audioMode: 'recvonly',
+      ontrack: mockFn,
+    });
+
+    const params = sipConnector.ua.call.mock.calls[0][1];
+
+    expect(params.videoMode).toBe('recvonly');
+    expect(params.audioMode).toBe('recvonly');
+    expect(params.mediaStream).toBe(undefined);
   });
 });

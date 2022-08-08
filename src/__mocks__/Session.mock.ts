@@ -111,7 +111,7 @@ class Session extends BaseSession {
 
  * @returns {undefined}
      */
-  answer({ mediaStream }) {
+  answer = jest.fn(({ mediaStream }) => {
     if (this.originator !== 'remote') {
       const error = new Error('answer available only for remote sessions');
 
@@ -131,7 +131,7 @@ class Session extends BaseSession {
         this.trigger('confirmed');
       }, 200);
     }, CONNECTION_DELAY);
-  }
+  });
 
   // eslint-disable-next-line camelcase
   terminate({ status_code }: { status_code?: number } = {}) {

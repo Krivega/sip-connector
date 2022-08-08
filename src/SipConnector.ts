@@ -273,7 +273,7 @@ type TCall = ({
   iceServers,
 }: {
   number: string;
-  mediaStream: MediaStream;
+  mediaStream?: MediaStream;
   extraHeaders?: TOptionsExtraHeaders['extraHeaders'];
   ontrack?: TOntrack;
   iceServers?: RTCIceServer[];
@@ -288,6 +288,8 @@ type TParametersAnswerToIncomingCall = {
   extraHeaders?: TOptionsExtraHeaders['extraHeaders'];
   ontrack?: TOntrack;
   iceServers?: RTCIceServer[];
+  videoMode?: 'sendrecv' | 'sendonly' | 'recvonly';
+  audioMode?: 'sendrecv' | 'sendonly' | 'recvonly';
 };
 
 type TAnswerToIncomingCall = (
@@ -571,7 +573,7 @@ export default class SipConnector {
 
     this.isPendingPresentation = true;
 
-    const streamPresentationCurrent = prepareMediaStream(stream);
+    const streamPresentationCurrent = prepareMediaStream(stream) as MediaStream;
 
     this._streamPresentationCurrent = streamPresentationCurrent;
 
@@ -996,7 +998,10 @@ export default class SipConnector {
 
       this.session = this.ua!.call(this.getSipServerUrl(number), {
         extraHeaders,
-        mediaStream: prepareMediaStream(mediaStream),
+        mediaStream: prepareMediaStream(mediaStream, {
+          videoMode,
+          audioMode,
+        }),
         eventHandlers: this._sessionEvents.triggers,
         videoMode,
         audioMode,
@@ -1012,6 +1017,8 @@ export default class SipConnector {
     ontrack,
     extraHeaders = [],
     iceServers,
+    videoMode,
+    audioMode,
   }): Promise<RTCPeerConnection> => {
     return new Promise((resolve, reject) => {
       if (!this.isAvailableIncomingCall) {
@@ -1045,10 +1052,15 @@ export default class SipConnector {
       this._connectionConfiguration.number = session.remote_identity.uri.user;
       this._handleCall({ ontrack }).then(resolve).catch(reject);
 
-      const preparedMediaStream = mediaStream ? prepareMediaStream(mediaStream) : undefined;
+      const preparedMediaStream = prepareMediaStream(mediaStream, {
+        videoMode,
+        audioMode,
+      });
 
       session.answer({
         extraHeaders,
+        videoMode,
+        audioMode,
         mediaStream: preparedMediaStream,
         pcConfig: {
           iceServers,

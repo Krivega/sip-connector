@@ -14,9 +14,22 @@ export const parseDisplayName = (displayName: string) => {
 };
 export const generateUserId = resolveRandomInt(100000, 99999999);
 
-export const prepareMediaStream = (mediaStream: MediaStream): MediaStream => {
-  const audioTracks = mediaStream.getAudioTracks();
-  const videoTracks = mediaStream.getVideoTracks();
+export const prepareMediaStream = (
+  mediaStream?: MediaStream,
+  {
+    videoMode,
+    audioMode,
+  }: {
+    videoMode?: 'sendrecv' | 'sendonly' | 'recvonly';
+    audioMode?: 'sendrecv' | 'sendonly' | 'recvonly';
+  } = {}
+): MediaStream | undefined => {
+  if (!mediaStream || (videoMode === 'recvonly' && audioMode === 'recvonly')) {
+    return undefined;
+  }
+
+  const audioTracks = audioMode === 'recvonly' ? [] : mediaStream.getAudioTracks();
+  const videoTracks = videoMode === 'recvonly' ? [] : mediaStream.getVideoTracks();
   const tracks = [...audioTracks, ...videoTracks];
   const newStream = new MediaStream(tracks);
 

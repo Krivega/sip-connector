@@ -40,7 +40,7 @@
   },
   "dependencies": {
     "@krivega/cancelable-promise": "^0.4.0",
-    "@krivega/jssip": "^3.18.0",
+    "@krivega/jssip": "^3.19.0",
     "events-constructor": "^1.2.0",
     "promise-delay": "^2.1.0",
     "stack-promises": "^0.0.8",
@@ -58,7 +58,7 @@
     "eslint": "^8.21.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-jest": "^26.7.0",
+    "eslint-plugin-jest": "^26.8.0",
     "eslint-plugin-prettier": "^4.2.1",
     "husky": "^8.0.1",
     "jest": "28.1.3",
