@@ -1008,6 +1008,10 @@ export default class SipConnector {
         pcConfig: {
           iceServers,
         },
+        rtcOfferConstraints: {
+          offerToReceiveAudio: true,
+          offerToReceiveVideo: true,
+        },
       });
     });
   };
