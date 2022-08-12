@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [6.3.2](https://github.com/Krivega/sip-connector/compare/v6.3.1...v6.3.2) (2022-08-12)
+
+### Bug Fixes
+
+- calls without mics or cams ([113d8ff](https://github.com/Krivega/sip-connector/commit/113d8ff18ee2be318fc11aa0f78fdea361b38836))
+
 ### [6.3.1](https://github.com/Krivega/sip-connector/compare/v6.3.0...v6.3.1) (2022-08-08)
 
 ## [6.3.0](https://github.com/Krivega/sip-connector/compare/v6.2.0...v6.3.0) (2022-08-08)
