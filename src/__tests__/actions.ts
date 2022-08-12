@@ -11,7 +11,7 @@ describe('actions', () => {
     mockFn = jest.fn();
   });
 
-  it.only('unregister', async () => {
+  it('unregister', async () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     const unregistered = new Promise((resolve) => {
