@@ -12,7 +12,7 @@ const removedFromListModeratorsStringified = JSON.stringify({
 });
 const removedFromListModeratorsParsed = JSON.parse(removedFromListModeratorsStringified);
 
-export const removedFromListModeratorsHeaders = [
+export const removedFromListModeratorsHeaders: [string, string][] = [
   [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_NOTIFY],
   [HEADER_NOTIFY, removedFromListModeratorsStringified],
 ];
@@ -21,7 +21,7 @@ export const removedFromListModeratorsData = {
   conference: removedFromListModeratorsParsed.conference,
 };
 
-export const addedToListModeratorsHeaders = [
+export const addedToListModeratorsHeaders: [string, string][] = [
   [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_NOTIFY],
   [HEADER_NOTIFY, addedToListModeratorsStringified],
 ];

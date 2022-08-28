@@ -36,7 +36,7 @@ describe('events', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    const extraHeaders = [
+    const extraHeaders: [string, string][] = [
       [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_SHARE_STATE],
       [HEADER_CONTENT_SHARE_STATE, AVAILABLE_SECOND_REMOTE_STREAM],
     ];
@@ -59,7 +59,7 @@ describe('events', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    const extraHeaders = [
+    const extraHeaders: [string, string][] = [
       [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_SHARE_STATE],
       [HEADER_CONTENT_SHARE_STATE, NOT_AVAILABLE_SECOND_REMOTE_STREAM],
     ];
@@ -82,7 +82,7 @@ describe('events', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    const extraHeaders = [
+    const extraHeaders: [string, string][] = [
       [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_SHARE_STATE],
       [HEADER_CONTENT_SHARE_STATE, MUST_STOP_PRESENTATION],
     ];

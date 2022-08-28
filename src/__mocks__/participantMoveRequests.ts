@@ -5,7 +5,7 @@ const moveRequestToConference = {
   body: { conference: '111' },
 };
 
-export const moveRequestToConferenceHeaders = [
+export const moveRequestToConferenceHeaders: [string, string][] = [
   [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_NOTIFY],
   [HEADER_NOTIFY, JSON.stringify(moveRequestToConference)],
 ];
@@ -19,7 +19,7 @@ const cancelingWordRequest = {
   body: { conference: '111' },
 };
 
-export const cancelingWordRequestHeaders = [
+export const cancelingWordRequestHeaders: [string, string][] = [
   [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_NOTIFY],
   [HEADER_NOTIFY, JSON.stringify(cancelingWordRequest)],
 ];
@@ -33,7 +33,7 @@ const moveRequestToStream = {
   body: { conference: '111' },
 };
 
-export const moveRequestToStreamHeaders = [
+export const moveRequestToStreamHeaders: [string, string][] = [
   [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_NOTIFY],
   [HEADER_NOTIFY, JSON.stringify(moveRequestToStream)],
 ];

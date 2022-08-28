@@ -121,9 +121,9 @@ export enum EEventsMic {
   ADMIN_START_MIC = 'ADMINSTARTMIC',
 }
 
-interface ICustomError extends Error {
+export interface ICustomError extends Error {
   originator?: string;
-  cause?: Error;
+  cause?: unknown;
   message: any;
   socket?: any;
   url?: string;
