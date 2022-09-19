@@ -9,7 +9,7 @@ const conferenceParticipantTokenIssued = {
   },
 };
 
-export const conferenceParticipantTokenIssuedHeaders = [
+export const conferenceParticipantTokenIssuedHeaders: [string, string][] = [
   [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_NOTIFY],
   [HEADER_NOTIFY, JSON.stringify(conferenceParticipantTokenIssued)],
 ];

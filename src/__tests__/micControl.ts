@@ -5,12 +5,12 @@ import JsSIP from '../__mocks__/jssip.mock';
 import SipConnector, { EEventsMic } from '../SipConnector';
 import { HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MIC, HEADER_MIC } from '../headers';
 
-const headersAdminStartMic = [
+const headersAdminStartMic: [string, string][] = [
   [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MIC],
   [HEADER_MIC, EEventsMic.ADMIN_START_MIC],
 ];
 
-const headersAdminStopMic = [
+const headersAdminStopMic: [string, string][] = [
   [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MIC],
   [HEADER_MIC, EEventsMic.ADMIN_STOP_MIC],
 ];

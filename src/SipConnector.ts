@@ -121,9 +121,9 @@ export enum EEventsMic {
   ADMIN_START_MIC = 'ADMINSTARTMIC',
 }
 
-interface ICustomError extends Error {
+export interface ICustomError extends Error {
   originator?: string;
-  cause?: Error;
+  cause?: unknown;
   message: any;
   socket?: any;
   url?: string;
@@ -251,6 +251,7 @@ type TParametersConnection = {
   registerExpires?: number;
   connectionRecoveryMinInterval?: number;
   connectionRecoveryMaxInterval?: number;
+  userAgent?: string;
 } & TOptionsExtraHeaders;
 
 type TConnect = (parameters: TParametersConnection) => Promise<UA>;
@@ -272,10 +273,12 @@ type TCall = ({
   iceServers,
 }: {
   number: string;
-  mediaStream: MediaStream;
+  mediaStream?: MediaStream;
   extraHeaders?: TOptionsExtraHeaders['extraHeaders'];
   ontrack?: TOntrack;
   iceServers?: RTCIceServer[];
+  videoMode?: 'sendrecv' | 'sendonly' | 'recvonly';
+  audioMode?: 'sendrecv' | 'sendonly' | 'recvonly';
 }) => Promise<RTCPeerConnection>;
 
 type TDisconnect = () => Promise<void>;
@@ -285,6 +288,8 @@ type TParametersAnswerToIncomingCall = {
   extraHeaders?: TOptionsExtraHeaders['extraHeaders'];
   ontrack?: TOntrack;
   iceServers?: RTCIceServer[];
+  videoMode?: 'sendrecv' | 'sendonly' | 'recvonly';
+  audioMode?: 'sendrecv' | 'sendonly' | 'recvonly';
 };
 
 type TAnswerToIncomingCall = (
@@ -357,42 +362,43 @@ export default class SipConnector {
 
     this._cancelableConnect = new CancelableRequest<Parameters<TConnect>[0], ReturnType<TConnect>>(
       this._connect,
-      moduleName,
-      () => {
-        this._cancelableCreateUa.cancelRequest();
-        this._cancelableDisconnect.cancelRequest();
+      {
+        moduleName,
+        afterCancelRequest: () => {
+          this._cancelableCreateUa.cancelRequest();
+          this._cancelableDisconnect.cancelRequest();
+        },
       }
     );
 
     this._cancelableCreateUa = new CancelableRequest<
       Parameters<TCreateUa>[0],
       ReturnType<TCreateUa>
-    >(this._createUa, moduleName);
+    >(this._createUa, { moduleName });
 
     this._cancelableDisconnect = new CancelableRequest<void, ReturnType<TDisconnect>>(
       this._disconnect,
-      moduleName
+      { moduleName }
     );
 
-    this._cancelableSet = new CancelableRequest<Parameters<TSet>[0], ReturnType<TSet>>(
-      this._set,
-      moduleName
-    );
+    this._cancelableSet = new CancelableRequest<Parameters<TSet>[0], ReturnType<TSet>>(this._set, {
+      moduleName,
+    });
 
     this._cancelableCall = new CancelableRequest<Parameters<TCall>[0], ReturnType<TCall>>(
       this._call,
-      moduleName
+      { moduleName }
     );
 
     this._cancelableAnswer = new CancelableRequest<
       Parameters<TAnswerToIncomingCall>[0],
       ReturnType<TAnswerToIncomingCall>
-    >(this._answer, moduleName);
+    >(this._answer, { moduleName });
 
     this._cancelableSendDTMF = new CancelableRequest<
       Parameters<TSendDTMF>[0],
       ReturnType<TSendDTMF>
-    >(this._sendDTMF, moduleName);
+    >(this._sendDTMF, { moduleName });
 
     this.onSession(SHARE_STATE, this._handleShareState);
     this.onSession(NEW_INFO, this._handleNewInfo);
@@ -567,7 +573,7 @@ export default class SipConnector {
 
     this.isPendingPresentation = true;
 
-    const streamPresentationCurrent = prepareMediaStream(stream);
+    const streamPresentationCurrent = prepareMediaStream(stream) as MediaStream;
 
     this._streamPresentationCurrent = streamPresentationCurrent;
 
@@ -801,6 +807,7 @@ export default class SipConnector {
     registerExpires = 60 * 5, // 5 minutes in sec
     connectionRecoveryMinInterval = 2,
     connectionRecoveryMaxInterval = 6,
+    userAgent,
   }) => {
     if (!sipServerUrl) {
       throw new Error('sipServerUrl is required');
@@ -834,12 +841,6 @@ export default class SipConnector {
       authorizationUser = user.trim();
     } else {
       authorizationUser = generateUserId();
-    }
-
-    let userAgent = 'Chrome';
-
-    if (sdpSemantics === 'unified-plan') {
-      userAgent = 'ChromeNew';
     }
 
     const configuration = {
@@ -981,7 +982,15 @@ export default class SipConnector {
     return disconnectedPromise;
   };
 
-  _call: TCall = ({ number, mediaStream, extraHeaders = [], ontrack, iceServers }) => {
+  _call: TCall = ({
+    number,
+    mediaStream,
+    extraHeaders = [],
+    ontrack,
+    iceServers,
+    videoMode,
+    audioMode,
+  }) => {
     return new Promise((resolve, reject) => {
       this._connectionConfiguration.number = number;
       this._connectionConfiguration.answer = false;
@@ -989,10 +998,19 @@ export default class SipConnector {
 
       this.session = this.ua!.call(this.getSipServerUrl(number), {
         extraHeaders,
-        mediaStream: prepareMediaStream(mediaStream),
+        mediaStream: prepareMediaStream(mediaStream, {
+          videoMode,
+          audioMode,
+        }),
         eventHandlers: this._sessionEvents.triggers,
+        videoMode,
+        audioMode,
         pcConfig: {
           iceServers,
+        },
+        rtcOfferConstraints: {
+          offerToReceiveAudio: true,
+          offerToReceiveVideo: true,
         },
       });
     });
@@ -1003,6 +1021,8 @@ export default class SipConnector {
     ontrack,
     extraHeaders = [],
     iceServers,
+    videoMode,
+    audioMode,
   }): Promise<RTCPeerConnection> => {
     return new Promise((resolve, reject) => {
       if (!this.isAvailableIncomingCall) {
@@ -1036,10 +1056,15 @@ export default class SipConnector {
       this._connectionConfiguration.number = session.remote_identity.uri.user;
       this._handleCall({ ontrack }).then(resolve).catch(reject);
 
-      const preparedMediaStream = mediaStream ? prepareMediaStream(mediaStream) : undefined;
+      const preparedMediaStream = prepareMediaStream(mediaStream, {
+        videoMode,
+        audioMode,
+      });
 
       session.answer({
         extraHeaders,
+        videoMode,
+        audioMode,
         mediaStream: preparedMediaStream,
         pcConfig: {
           iceServers,

@@ -23,7 +23,7 @@ class Info extends EventEmitter {
 
 const originatorRemote: Originator.REMOTE = 'remote' as Originator.REMOTE;
 
-const triggerNewInfo = (session: RTCSession, extraHeaders: string[][]) => {
+const triggerNewInfo = (session: RTCSession, extraHeaders: [string, string][]) => {
   const request = new Request(extraHeaders);
   const incomingInfoEvent: IncomingInfoEvent = {
     originator: originatorRemote,
@@ -36,7 +36,7 @@ const triggerNewInfo = (session: RTCSession, extraHeaders: string[][]) => {
   sessionMock.newInfo(incomingInfoEvent);
 };
 
-const triggerNewSipEvent = (ua: UA, extraHeaders: string[][]) => {
+const triggerNewSipEvent = (ua: UA, extraHeaders: [string, string][]) => {
   const request = new Request(extraHeaders);
   const incomingSipEvent = { request };
   const uaMock = ua as unknown as UAmock;

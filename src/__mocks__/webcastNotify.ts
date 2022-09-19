@@ -5,7 +5,7 @@ const webcastStarted = {
   body: { conference: '111', type: 'hls' },
 };
 
-export const webcastStartedHeaders = [
+export const webcastStartedHeaders: [string, string][] = [
   [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_NOTIFY],
   [HEADER_NOTIFY, JSON.stringify(webcastStarted)],
 ];
@@ -20,7 +20,7 @@ const webcastStopped = {
   body: { conference: '222', type: 'hls' },
 };
 
-export const webcastStoppedHeaders = [
+export const webcastStoppedHeaders: [string, string][] = [
   [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_NOTIFY],
   [HEADER_NOTIFY, JSON.stringify(webcastStopped)],
 ];

@@ -1,6 +1,6 @@
 import { IncomingRequest } from '@krivega/jssip/lib/SIPMessage';
 
-type TExtraHeaders = string[][];
+type TExtraHeaders = [string, string][];
 
 class Request extends IncomingRequest {
   private headers: Headers;

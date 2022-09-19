@@ -10,18 +10,18 @@ import {
   HEADER_MAIN_CAM_RESOLUTION,
 } from '../headers';
 
-const headersMainCamControl = [
+const headersMainCamControl: [string, string][] = [
   [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
   [HEADER_MAIN_CAM, EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION],
   [HEADER_MAIN_CAM_RESOLUTION, '720'],
 ];
 
-const headersAdminStartMainCam = [
+const headersAdminStartMainCam: [string, string][] = [
   [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
   [HEADER_MAIN_CAM, EEventsMainCAM.ADMIN_START_MAIN_CAM],
 ];
 
-const headersAdminStopMainCam = [
+const headersAdminStopMainCam: [string, string][] = [
   [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
   [HEADER_MAIN_CAM, EEventsMainCAM.ADMIN_STOP_MAIN_CAM],
 ];

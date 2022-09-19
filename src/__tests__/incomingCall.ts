@@ -43,7 +43,7 @@ describe('incoming call', () => {
   });
 
   it('answer', async () => {
-    expect.assertions(6);
+    expect.assertions(7);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
@@ -63,6 +63,8 @@ describe('incoming call', () => {
 
         expect(sipConnector.getConnectionConfiguration().answer).toBe(true);
         expect(!!peerconnection).toBe(true);
+        //@ts-ignore
+        expect(sipConnector.session.answer.mock.calls.length).toBe(1);
 
         resolve();
       });
@@ -211,5 +213,124 @@ describe('incoming call', () => {
         expect(host).toBe(remoteCallerData.host);
         expect(displayName).toBe(remoteCallerData.displayName);
       });
+  });
+
+  it('answer without videoMode and audioMode', async () => {
+    expect.assertions(4);
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+
+    return new Promise<void>((resolve) => {
+      sipConnector.on('incomingCall', async () => {
+        await delayPromise(100); // wait for to decline incoming call
+        await sipConnector.answerToIncomingCall({
+          mediaStream,
+          ontrack: mockFn,
+        });
+
+        //@ts-ignore
+        const params = sipConnector.session.answer.mock.calls[0][0];
+
+        expect(params.videoMode).toBe(undefined);
+        expect(params.audioMode).toBe(undefined);
+        expect(params.mediaStream.getVideoTracks().length).toBe(1);
+        expect(params.mediaStream.getAudioTracks().length).toBe(1);
+
+        resolve();
+      });
+
+      // @ts-ignore
+      JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
+    });
+  });
+
+  it('answer with videoMode=recvonly', async () => {
+    expect.assertions(4);
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+
+    return new Promise<void>((resolve) => {
+      sipConnector.on('incomingCall', async () => {
+        await delayPromise(100); // wait for to decline incoming call
+        await sipConnector.answerToIncomingCall({
+          mediaStream,
+          videoMode: 'recvonly',
+          ontrack: mockFn,
+        });
+
+        //@ts-ignore
+        const params = sipConnector.session.answer.mock.calls[0][0];
+
+        expect(params.videoMode).toBe('recvonly');
+        expect(params.audioMode).toBe(undefined);
+        expect(params.mediaStream.getVideoTracks().length).toBe(0);
+        expect(params.mediaStream.getAudioTracks().length).toBe(1);
+
+        resolve();
+      });
+
+      // @ts-ignore
+      JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
+    });
+  });
+
+  it('answer with audioMode=recvonly', async () => {
+    expect.assertions(4);
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+
+    return new Promise<void>((resolve) => {
+      sipConnector.on('incomingCall', async () => {
+        await delayPromise(100); // wait for to decline incoming call
+        await sipConnector.answerToIncomingCall({
+          mediaStream,
+          audioMode: 'recvonly',
+          ontrack: mockFn,
+        });
+
+        //@ts-ignore
+        const params = sipConnector.session.answer.mock.calls[0][0];
+
+        expect(params.videoMode).toBe(undefined);
+        expect(params.audioMode).toBe('recvonly');
+        expect(params.mediaStream.getVideoTracks().length).toBe(1);
+        expect(params.mediaStream.getAudioTracks().length).toBe(0);
+
+        resolve();
+      });
+
+      // @ts-ignore
+      JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
+    });
+  });
+
+  it('answer with videoMode=recvonly audioMode=recvonly', async () => {
+    expect.assertions(3);
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+
+    return new Promise<void>((resolve) => {
+      sipConnector.on('incomingCall', async () => {
+        await delayPromise(100); // wait for to decline incoming call
+        await sipConnector.answerToIncomingCall({
+          mediaStream,
+          videoMode: 'recvonly',
+          audioMode: 'recvonly',
+          ontrack: mockFn,
+        });
+
+        //@ts-ignore
+        const params = sipConnector.session.answer.mock.calls[0][0];
+
+        expect(params.videoMode).toBe('recvonly');
+        expect(params.audioMode).toBe('recvonly');
+        expect(params.mediaStream).toBe(undefined);
+
+        resolve();
+      });
+
+      // @ts-ignore
+      JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
+    });
   });
 });
