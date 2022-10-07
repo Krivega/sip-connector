@@ -65,10 +65,10 @@ describe('call statuses', () => {
     return promiseCallStatuses.then(() => {
       expect(conference).toBe(number);
       expect(sipConnector.isCallActive).toBe(true);
-      expect(mockFnConnecting).toBeCalledTimes(1);
-      expect(mockFnEnterRoom).toBeCalledTimes(1);
-      expect(mockFnAccepted).toBeCalledTimes(1);
-      expect(mockFnConfirmed).toBeCalledTimes(1);
+      expect(mockFnConnecting).toHaveBeenCalledTimes(1);
+      expect(mockFnEnterRoom).toHaveBeenCalledTimes(1);
+      expect(mockFnAccepted).toHaveBeenCalledTimes(1);
+      expect(mockFnConfirmed).toHaveBeenCalledTimes(1);
     });
   });
 });

@@ -265,6 +265,7 @@ type TSet = ({
   password?: string;
 }) => Promise<boolean>;
 
+type TDegradationPreference = 'maintain-framerate' | 'maintain-resolution' | 'balanced';
 type TCall = ({
   number,
   mediaStream,
@@ -279,6 +280,7 @@ type TCall = ({
   iceServers?: RTCIceServer[];
   videoMode?: 'sendrecv' | 'sendonly' | 'recvonly';
   audioMode?: 'sendrecv' | 'sendonly' | 'recvonly';
+  degradationPreference?: TDegradationPreference;
 }) => Promise<RTCPeerConnection>;
 
 type TDisconnect = () => Promise<void>;
@@ -290,6 +292,7 @@ type TParametersAnswerToIncomingCall = {
   iceServers?: RTCIceServer[];
   videoMode?: 'sendrecv' | 'sendonly' | 'recvonly';
   audioMode?: 'sendrecv' | 'sendonly' | 'recvonly';
+  degradationPreference?: TDegradationPreference;
 };
 
 type TAnswerToIncomingCall = (
@@ -559,10 +562,12 @@ export default class SipConnector {
       isNeedReinvite = true,
       isP2P = false,
       maxBitrate,
+      degradationPreference,
     }: {
       isNeedReinvite?: boolean;
       isP2P?: boolean;
       maxBitrate?: number;
+      degradationPreference?: TDegradationPreference;
     } = {}
   ): Promise<void | MediaStream> {
     const session = this.establishedSession;
@@ -588,7 +593,11 @@ export default class SipConnector {
         extraHeaders: preparatoryHeaders,
       })
       .then(() => {
-        return session.startPresentation(streamPresentationCurrent, isNeedReinvite);
+        return session.startPresentation(
+          streamPresentationCurrent,
+          isNeedReinvite,
+          degradationPreference
+        );
       })
       // @ts-ignore
       .then(() => {
@@ -990,6 +999,7 @@ export default class SipConnector {
     iceServers,
     videoMode,
     audioMode,
+    degradationPreference,
   }) => {
     return new Promise((resolve, reject) => {
       this._connectionConfiguration.number = number;
@@ -1005,6 +1015,7 @@ export default class SipConnector {
         eventHandlers: this._sessionEvents.triggers,
         videoMode,
         audioMode,
+        degradationPreference,
         pcConfig: {
           iceServers,
         },
@@ -1023,6 +1034,7 @@ export default class SipConnector {
     iceServers,
     videoMode,
     audioMode,
+    degradationPreference,
   }): Promise<RTCPeerConnection> => {
     return new Promise((resolve, reject) => {
       if (!this.isAvailableIncomingCall) {
@@ -1065,6 +1077,7 @@ export default class SipConnector {
         extraHeaders,
         videoMode,
         audioMode,
+        degradationPreference,
         mediaStream: preparedMediaStream,
         pcConfig: {
           iceServers,
