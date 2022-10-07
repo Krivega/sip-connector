@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.4.0](https://github.com/Krivega/sip-connector/compare/v6.3.3...v6.4.0) (2022-10-07)
+
+### Features
+
+- add degradationPreference options to call, answer and startPresentation ([fa91573](https://github.com/Krivega/sip-connector/commit/fa91573c53a53219df5beb25bdcc9542386b5d3e))
+
 ### [6.3.3](https://github.com/Krivega/sip-connector/compare/v6.3.2...v6.3.3) (2022-08-28)
 
 ### [6.3.2](https://github.com/Krivega/sip-connector/compare/v6.3.1...v6.3.2) (2022-08-12)
