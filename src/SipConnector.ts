@@ -494,6 +494,7 @@ export default class SipConnector {
       deleteExisting: boolean;
       addMissing: boolean;
       forceRenegotiation: boolean;
+      degradationPreference?: TDegradationPreference;
     }
   ): Promise<void> {
     if (!this.session) {
