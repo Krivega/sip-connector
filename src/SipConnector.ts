@@ -676,9 +676,12 @@ export default class SipConnector {
 
       const callerData = this.remoteCallerData;
 
-      session.on(FAILED, () => {
+      session.on(FAILED, ({ originator }) => {
         this.removeIncomingSession();
-        this._uaEvents.trigger(FAILED_INCOMING_CALL, callerData);
+
+        if (originator !== ORIGINATOR_LOCAL) {
+          this._uaEvents.trigger(FAILED_INCOMING_CALL, callerData);
+        }
       });
 
       this._uaEvents.trigger(INCOMING_CALL, callerData);
