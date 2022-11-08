@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [6.4.3](https://github.com/Krivega/sip-connector/compare/v6.4.2...v6.4.3) (2022-11-08)
+
+### Bug Fixes
+
+- do not trigger FAILED_INCOMING_CALL for declined ([04d5fb7](https://github.com/Krivega/sip-connector/commit/04d5fb75d5e20b317af4b8d998e58688aaa50f70))
+
 ### [6.4.2](https://github.com/Krivega/sip-connector/compare/v6.4.1...v6.4.2) (2022-10-13)
 
 ### [6.4.1](https://github.com/Krivega/sip-connector/compare/v6.4.0...v6.4.1) (2022-10-07)
