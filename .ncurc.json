@@ -1,5 +1,3 @@
 {
-  "reject": [
-    "node-fetch"
-  ]
+  "reject": ["node-fetch", "@rollup/plugin-commonjs", "@rollup/plugin-node-resolve", "rollup"]
 }
