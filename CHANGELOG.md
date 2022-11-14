@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.5.0](https://github.com/Krivega/sip-connector/compare/v6.4.4...v6.5.0) (2022-11-14)
+
+### Features
+
+- add notify sync media state mode ([#24](https://github.com/Krivega/sip-connector/issues/24)) ([f00737e](https://github.com/Krivega/sip-connector/commit/f00737ea6a14154ac00e353069d1a73c042cc6ad))
+
 ### [6.4.4](https://github.com/Krivega/sip-connector/compare/v6.4.3...v6.4.4) (2022-11-14)
 
 ### Bug Fixes
