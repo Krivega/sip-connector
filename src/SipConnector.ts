@@ -1559,6 +1559,10 @@ export default class SipConnector {
     return this.waitSession(CHANNELS);
   }
 
+  waitSyncMediaState(): Promise<{ isSyncForced: boolean }> {
+    return this.waitSession(ADMIN_FORCE_SYNC_MEDIA_STATE);
+  }
+
   sendChannels({ inputChannels, outputChannels }: TChannels): Promise<void> {
     if (!this.session) {
       throw new Error('No session established');

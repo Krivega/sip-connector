@@ -69,4 +69,40 @@ describe('sync media state', () => {
       expect(isSyncForced).toBe(false);
     });
   });
+
+  it('waitSyncMediaState force sync', async () => {
+    expect.assertions(1);
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    const promise = sipConnector.waitSyncMediaState();
+    const { session } = sipConnector;
+
+    if (session) {
+      JsSIP.triggerNewInfo(session, headersAdminSyncMediaStateForced);
+    }
+
+    return promise.then(({ isSyncForced }) => {
+      expect(isSyncForced).toBe(true);
+    });
+  });
+
+  it('waitSyncMediaState do not force sync', async () => {
+    expect.assertions(1);
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    const promise = sipConnector.waitSyncMediaState();
+    const { session } = sipConnector;
+
+    if (session) {
+      JsSIP.triggerNewInfo(session, headersAdminSyncMediaStateNotForced);
+    }
+
+    return promise.then(({ isSyncForced }) => {
+      expect(isSyncForced).toBe(false);
+    });
+  });
 });
