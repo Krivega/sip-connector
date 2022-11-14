@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [6.4.4](https://github.com/Krivega/sip-connector/compare/v6.4.3...v6.4.4) (2022-11-14)
+
+### Bug Fixes
+
+- return promise in sendChannels ([48297e8](https://github.com/Krivega/sip-connector/commit/48297e86a05b8c5e48223fd8d40fbca393880def))
+
 ### [6.4.3](https://github.com/Krivega/sip-connector/compare/v6.4.2...v6.4.3) (2022-11-08)
 
 ### Bug Fixes
