@@ -25,6 +25,7 @@ export const ADMIN_STOP_MAIN_CAM = 'admin-stop-main-cam';
 export const ADMIN_START_MAIN_CAM = 'admin-start-main-cam';
 export const ADMIN_STOP_MIC = 'admin-stop-mic';
 export const ADMIN_START_MIC = 'admin-start-mic';
+export const ADMIN_FORCE_SYNC_MEDIA_STATE = 'admin-force-sync-media-state';
 export const PARTICIPANT_ADDED_TO_LIST_MODERATORS = 'participant:added-to-list-moderators';
 export const PARTICIPANT_REMOVED_FROM_LIST_MODERATORS = 'participant:removed-from-list-moderators';
 export const PARTICIPANT_MOVE_REQUEST_TO_CONFERENCE = 'participant:move-request-to-conference';

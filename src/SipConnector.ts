@@ -28,6 +28,8 @@ import {
   CONTENT_TYPE_MEDIA_STATE,
   CONTENT_TYPE_MAIN_CAM,
   CONTENT_TYPE_MIC,
+  CONTENT_TYPE_SYNC_MEDIA_STATE,
+  HEADER_SYNC_MEDIA_STATE,
   HEADER_INPUT_CHANNELS,
   HEADER_OUTPUT_CHANNELS,
   HEADER_MEDIA_STATE,
@@ -83,6 +85,7 @@ import {
   ADMIN_STOP_MAIN_CAM,
   ADMIN_STOP_MIC,
   ADMIN_START_MIC,
+  ADMIN_FORCE_SYNC_MEDIA_STATE,
   PARTICIPANT_ADDED_TO_LIST_MODERATORS,
   PARTICIPANT_REMOVED_FROM_LIST_MODERATORS,
   PARTICIPANT_MOVE_REQUEST_TO_CONFERENCE,
@@ -119,6 +122,11 @@ export enum EEventsMainCAM {
 export enum EEventsMic {
   ADMIN_STOP_MIC = 'ADMINSTOPMIC',
   ADMIN_START_MIC = 'ADMINSTARTMIC',
+}
+
+export enum EEventsSyncMediaState {
+  ADMIN_SYNC_FORCED = '1',
+  ADMIN_SYNC_NOT_FORCED = '0',
 }
 
 export interface ICustomError extends Error {
@@ -1488,6 +1496,13 @@ export default class SipConnector {
     }
   };
 
+  _triggerSyncMediaState = (request: IncomingRequest) => {
+    const syncState = request.getHeader(HEADER_SYNC_MEDIA_STATE);
+    const isSyncForced = syncState === EEventsSyncMediaState.ADMIN_SYNC_FORCED ? true : false;
+
+    this._sessionEvents.trigger(ADMIN_FORCE_SYNC_MEDIA_STATE, { isSyncForced });
+  };
+
   _handleNewInfo = (info: IncomingInfoEvent | OutgoingInfoEvent) => {
     const { originator } = info;
 
@@ -1516,6 +1531,9 @@ export default class SipConnector {
         case CONTENT_TYPE_MIC:
           this._triggerMicControl(request);
           break;
+        case CONTENT_TYPE_SYNC_MEDIA_STATE:
+          this._triggerSyncMediaState(request);
+          break;
 
         default:
           break;
@@ -1539,6 +1557,10 @@ export default class SipConnector {
 
   waitChannels(): Promise<TChannels> {
     return this.waitSession(CHANNELS);
+  }
+
+  waitSyncMediaState(): Promise<{ isSyncForced: boolean }> {
+    return this.waitSession(ADMIN_FORCE_SYNC_MEDIA_STATE);
   }
 
   sendChannels({ inputChannels, outputChannels }: TChannels): Promise<void> {
