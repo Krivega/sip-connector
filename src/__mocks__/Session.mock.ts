@@ -65,7 +65,7 @@ class Session extends BaseSession {
       tracks.push(videoTrack);
     }
 
-    this._connection = new RTCPeerConnectionMock(tracks);
+    this._connection = new RTCPeerConnectionMock(undefined, tracks);
 
     this._addStream(sendedStream);
 

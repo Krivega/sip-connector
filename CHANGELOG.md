@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [6.4.4](https://github.com/Krivega/sip-connector/compare/v6.4.3...v6.4.4) (2022-11-14)
+
+### Bug Fixes
+
+- return promise in sendChannels ([48297e8](https://github.com/Krivega/sip-connector/commit/48297e86a05b8c5e48223fd8d40fbca393880def))
+
+### [6.4.3](https://github.com/Krivega/sip-connector/compare/v6.4.2...v6.4.3) (2022-11-08)
+
+### Bug Fixes
+
+- do not trigger FAILED_INCOMING_CALL for declined ([04d5fb7](https://github.com/Krivega/sip-connector/commit/04d5fb75d5e20b317af4b8d998e58688aaa50f70))
+
+### [6.4.2](https://github.com/Krivega/sip-connector/compare/v6.4.1...v6.4.2) (2022-10-13)
+
+### [6.4.1](https://github.com/Krivega/sip-connector/compare/v6.4.0...v6.4.1) (2022-10-07)
+
+## [6.4.0](https://github.com/Krivega/sip-connector/compare/v6.3.3...v6.4.0) (2022-10-07)
+
+### Features
+
+- add degradationPreference options to call, answer and startPresentation ([fa91573](https://github.com/Krivega/sip-connector/commit/fa91573c53a53219df5beb25bdcc9542386b5d3e))
+
 ### [6.3.3](https://github.com/Krivega/sip-connector/compare/v6.3.2...v6.3.3) (2022-08-28)
 
 ### [6.3.2](https://github.com/Krivega/sip-connector/compare/v6.3.1...v6.3.2) (2022-08-12)

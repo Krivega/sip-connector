@@ -1,18 +1,20 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import type { MediaStreamTrackMock } from 'webrtc-mock';
 import type { RTCPeerConnectionDeprecated } from '@krivega/jssip/lib/RTCSession';
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
 class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
   _senders: RTCRtpSender[] = [];
 
   _receivers: any[] = [];
 
-  constructor(tracks) {
+  constructor(
+    configuration?: RTCConfiguration,
+    // @ts-ignore
+    tracks: MediaStreamTrackMock[]
+  ) {
     this._receivers = tracks.map((track) => {
       return { track };
     });
-  }
-  getRemoteStreams(): MediaStream[] {
-    throw new Error('Method not implemented.');
   }
   canTrickleIceCandidates!: boolean | null;
   connectionState!: RTCPeerConnectionState;
@@ -40,6 +42,9 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
   sctp = null;
   signalingState!: RTCSignalingState;
 
+  getRemoteStreams(): MediaStream[] {
+    throw new Error('Method not implemented.');
+  }
   addIceCandidate(candidate: RTCIceCandidateInit | RTCIceCandidate): Promise<void> {
     throw new Error('Method not implemented.');
   }
