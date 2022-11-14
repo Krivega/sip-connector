@@ -1541,7 +1541,7 @@ export default class SipConnector {
     return this.waitSession(CHANNELS);
   }
 
-  sendChannels({ inputChannels, outputChannels }: TChannels) {
+  sendChannels({ inputChannels, outputChannels }: TChannels): Promise<void> {
     if (!this.session) {
       throw new Error('No session established');
     }
@@ -1553,7 +1553,7 @@ export default class SipConnector {
       headerOutputChannels,
     ];
 
-    this.session.sendInfo(CONTENT_TYPE_CHANNELS, undefined, { extraHeaders });
+    return this.session.sendInfo(CONTENT_TYPE_CHANNELS, undefined, { extraHeaders });
   }
 
   sendMediaState(
