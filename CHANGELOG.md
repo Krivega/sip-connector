@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.6.0](https://github.com/Krivega/sip-connector/compare/v6.5.0...v6.6.0) (2022-11-29)
+
+### Features
+
+- add ping and sendOptions ([8a8daf6](https://github.com/Krivega/sip-connector/commit/8a8daf65f47d2b833ad9c7538a403030a6e5ab37))
+
 ## [6.5.0](https://github.com/Krivega/sip-connector/compare/v6.4.4...v6.5.0) (2022-11-14)
 
 ### Features
