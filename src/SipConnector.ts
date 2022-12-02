@@ -1,4 +1,4 @@
-import type { UA, WebSocketInterface } from '@krivega/jssip';
+import type { UA, URI, WebSocketInterface } from '@krivega/jssip';
 import type { IncomingRequest } from '@krivega/jssip/lib/SIPMessage';
 import type RTCSession from '@krivega/jssip/lib/RTCSession';
 import type { IncomingInfoEvent, OutgoingInfoEvent } from '@krivega/jssip/lib/RTCSession';
@@ -495,6 +495,40 @@ export default class SipConnector {
         return undefined;
       });
   };
+
+  sendOptions(target: string | URI, body?: string, extraHeaders?: string[]): Promise<void> {
+    if (!this.ua) {
+      return Promise.reject(new Error('is not connected'));
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        this.ua.sendOptions(target, body, {
+          extraHeaders,
+          eventHandlers: {
+            succeeded: () => {
+              resolve();
+            },
+            failed: (error) => {
+              reject(error);
+            },
+          },
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  ping(body?: string, extraHeaders?: string[]): Promise<void> {
+    if (!this.ua || !this.ua.configuration || !this.ua.configuration.uri) {
+      return Promise.reject(new Error('is not connected'));
+    }
+
+    const target = this.ua.configuration.uri;
+
+    return this.sendOptions(target, body, extraHeaders);
+  }
 
   replaceMediaStream(
     mediaStream: MediaStream,
