@@ -60,8 +60,15 @@ const triggerIncomingSession = (
   ua.trigger('newRTCSession', { originator: originatorRemote, session });
 };
 
-const triggerFailIncomingSession = (incomingSession) => {
-  incomingSession.trigger('failed', incomingSession);
+const triggerFailIncomingSession = (
+  incomingSession,
+  options?: { originator: 'local' | 'remote' }
+) => {
+  if (!options) {
+    incomingSession.trigger('failed', incomingSession);
+  } else {
+    incomingSession.trigger('failed', options);
+  }
 };
 
 export { PASSWORD_CORRECT, PASSWORD_CORRECT_2, NAME_INCORRECT, FAILED_CONFERENCE_NUMBER };
