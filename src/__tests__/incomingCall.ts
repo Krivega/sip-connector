@@ -215,6 +215,37 @@ describe('incoming call', () => {
       });
   });
 
+  it('terminated', async () => {
+    expect.assertions(3);
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+
+    return new Promise((resolve) => {
+      sipConnector.on('incomingCall', () => {
+        return delayPromise(100).then(resolve);
+      }); // wait for to decline incoming call);
+
+      // @ts-ignore
+      JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
+    })
+      .then(() => {
+        return new Promise<{
+          displayName: string;
+          host: string;
+          incomingNumber: string;
+        }>((resolve) => {
+          sipConnector.on('terminatedIncomingCall', resolve);
+
+          JsSIP.triggerFailIncomingSession(sipConnector.incomingSession, { originator: 'local' });
+        });
+      })
+      .then(({ displayName, host, incomingNumber }) => {
+        expect(incomingNumber).toBe(remoteCallerData.incomingNumber);
+        expect(host).toBe(remoteCallerData.host);
+        expect(displayName).toBe(remoteCallerData.displayName);
+      });
+  });
+
   it('answer without videoMode and audioMode', async () => {
     expect.assertions(4);
 

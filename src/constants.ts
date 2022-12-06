@@ -1,6 +1,7 @@
 export const INCOMING_CALL = 'incomingCall';
 export const DECLINED_INCOMING_CALL = 'declinedIncomingCall';
 export const FAILED_INCOMING_CALL = 'failedIncomingCall';
+export const TERMINATED_INCOMING_CALL = 'terminatedIncomingCall';
 export const CONNECTING = 'connecting';
 export const CONNECTED = 'connected';
 export const DISCONNECTED = 'disconnected';

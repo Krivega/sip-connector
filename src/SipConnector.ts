@@ -65,6 +65,7 @@ import {
   INCOMING_CALL,
   DECLINED_INCOMING_CALL,
   FAILED_INCOMING_CALL,
+  TERMINATED_INCOMING_CALL,
   CONNECTING,
   CONNECTED,
   DISCONNECTED,
@@ -723,6 +724,8 @@ export default class SipConnector {
 
         if (originator !== ORIGINATOR_LOCAL) {
           this._uaEvents.trigger(FAILED_INCOMING_CALL, callerData);
+        } else {
+          this._uaEvents.trigger(TERMINATED_INCOMING_CALL, callerData);
         }
       });
 
