@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [6.6.1](https://github.com/Krivega/sip-connector/compare/v6.6.0...v6.6.1) (2022-12-06)
+
+### Bug Fixes
+
+- trigger terminated incoming session when failed from local ([#25](https://github.com/Krivega/sip-connector/issues/25)) ([3744114](https://github.com/Krivega/sip-connector/commit/3744114437024f7038c85d58a0144ebf4963ef30))
+
 ## [6.6.0](https://github.com/Krivega/sip-connector/compare/v6.5.0...v6.6.0) (2022-11-29)
 
 ### Features
