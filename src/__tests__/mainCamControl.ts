@@ -2,13 +2,15 @@ import { createMediaStreamMock } from 'webrtc-mock';
 import createSipConnector from '../__mocks__/doMock';
 import { dataForConnectionWithAuthorization } from '../__mocks__';
 import JsSIP from '../__mocks__/jssip.mock';
-import SipConnector, { EEventsMainCAM } from '../SipConnector';
+import SipConnector, { EEventsMainCAM, EEventsSyncMediaState } from '../SipConnector';
 import {
   HEADER_CONTENT_TYPE_NAME,
   CONTENT_TYPE_MAIN_CAM,
   HEADER_MAIN_CAM,
   HEADER_MAIN_CAM_RESOLUTION,
+  HEADER_MEDIA_SYNC,
 } from '../headers';
+import { ADMIN_START_MAIN_CAM, ADMIN_STOP_MAIN_CAM } from '../constants';
 
 const headersMainCamControl: [string, string][] = [
   [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
@@ -19,11 +21,13 @@ const headersMainCamControl: [string, string][] = [
 const headersAdminStartMainCam: [string, string][] = [
   [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
   [HEADER_MAIN_CAM, EEventsMainCAM.ADMIN_START_MAIN_CAM],
+  [HEADER_MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_NOT_FORCED],
 ];
 
 const headersAdminStopMainCam: [string, string][] = [
   [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
   [HEADER_MAIN_CAM, EEventsMainCAM.ADMIN_STOP_MAIN_CAM],
+  [HEADER_MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED],
 ];
 
 describe('main cam control', () => {
@@ -65,8 +69,8 @@ describe('main cam control', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    const promise = new Promise<{ mainCam: EEventsMainCAM }>((resolve) => {
-      return sipConnector.onSession('admin-start-main-cam', resolve);
+    const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
+      return sipConnector.onSession(ADMIN_START_MAIN_CAM, resolve);
     });
     const { session } = sipConnector;
 
@@ -74,8 +78,8 @@ describe('main cam control', () => {
       JsSIP.triggerNewInfo(session, headersAdminStartMainCam);
     }
 
-    return promise.then((data) => {
-      expect(data).toBe(undefined);
+    return promise.then(({ isSyncForced }) => {
+      expect(isSyncForced).toBe(false);
     });
   });
 
@@ -83,8 +87,8 @@ describe('main cam control', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    const promise = new Promise<{ mainCam: EEventsMainCAM }>((resolve) => {
-      return sipConnector.onSession('admin-stop-main-cam', resolve);
+    const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
+      return sipConnector.onSession(ADMIN_STOP_MAIN_CAM, resolve);
     });
     const { session } = sipConnector;
 
@@ -92,8 +96,8 @@ describe('main cam control', () => {
       JsSIP.triggerNewInfo(session, headersAdminStopMainCam);
     }
 
-    return promise.then((data) => {
-      expect(data).toBe(undefined);
+    return promise.then(({ isSyncForced }) => {
+      expect(isSyncForced).toBe(true);
     });
   });
 });
