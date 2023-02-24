@@ -66,7 +66,7 @@ describe('main cam control', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    const promise = new Promise<void>((resolve) => {
+    const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
       return sipConnector.onSession(ADMIN_START_MAIN_CAM, resolve);
     });
     const { session } = sipConnector;
@@ -75,8 +75,8 @@ describe('main cam control', () => {
       JsSIP.triggerNewInfo(session, headersAdminStartMainCam);
     }
 
-    return promise.then((data) => {
-      expect(data).toBe(undefined);
+    return promise.then(({ isSyncForced }) => {
+      expect(isSyncForced).toBe(false);
     });
   });
 
@@ -84,7 +84,7 @@ describe('main cam control', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    const promise = new Promise<void>((resolve) => {
+    const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
       return sipConnector.onSession(ADMIN_STOP_MAIN_CAM, resolve);
     });
     const { session } = sipConnector;
@@ -93,8 +93,8 @@ describe('main cam control', () => {
       JsSIP.triggerNewInfo(session, headersAdminStopMainCam);
     }
 
-    return promise.then((data) => {
-      expect(data).toBe(undefined);
+    return promise.then(({ isSyncForced }) => {
+      expect(isSyncForced).toBe(false);
     });
   });
 });
