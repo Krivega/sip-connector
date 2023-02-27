@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.7.0](https://github.com/Krivega/sip-connector/compare/v6.6.1...v6.7.0) (2023-02-27)
+
+### Features
+
+- implement process media sync info event ([#26](https://github.com/Krivega/sip-connector/issues/26)) ([73c914e](https://github.com/Krivega/sip-connector/commit/73c914e70822ee20f67248d472b2cd6885abfbc1))
+
 ### [6.6.1](https://github.com/Krivega/sip-connector/compare/v6.6.0...v6.6.1) (2022-12-06)
 
 ### Bug Fixes
