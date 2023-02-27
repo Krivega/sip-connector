@@ -28,8 +28,7 @@ import {
   CONTENT_TYPE_MEDIA_STATE,
   CONTENT_TYPE_MAIN_CAM,
   CONTENT_TYPE_MIC,
-  CONTENT_TYPE_SYNC_MEDIA_STATE,
-  HEADER_SYNC_MEDIA_STATE,
+  HEADER_MEDIA_SYNC,
   HEADER_INPUT_CHANNELS,
   HEADER_OUTPUT_CHANNELS,
   HEADER_MEDIA_STATE,
@@ -1509,10 +1508,18 @@ export default class SipConnector {
   _triggerMainCamControl = (request: IncomingRequest) => {
     const mainCam = request.getHeader(HEADER_MAIN_CAM) as EEventsMainCAM;
 
+    const syncState = request.getHeader(HEADER_MEDIA_SYNC);
+    const isSyncForced = syncState === EEventsSyncMediaState.ADMIN_SYNC_FORCED ? true : false;
+
     if (mainCam === EEventsMainCAM.ADMIN_START_MAIN_CAM) {
-      this._sessionEvents.trigger(ADMIN_START_MAIN_CAM, undefined);
+      this._sessionEvents.trigger(ADMIN_START_MAIN_CAM, { isSyncForced });
     } else if (mainCam === EEventsMainCAM.ADMIN_STOP_MAIN_CAM) {
-      this._sessionEvents.trigger(ADMIN_STOP_MAIN_CAM, undefined);
+      this._sessionEvents.trigger(ADMIN_STOP_MAIN_CAM, { isSyncForced });
+    } else if (
+      (mainCam === EEventsMainCAM.RESUME_MAIN_CAM || mainCam === EEventsMainCAM.PAUSE_MAIN_CAM) &&
+      !!syncState
+    ) {
+      this._sessionEvents.trigger(ADMIN_FORCE_SYNC_MEDIA_STATE, { isSyncForced });
     } else {
       const resolutionMainCam = request.getHeader(HEADER_MAIN_CAM_RESOLUTION);
 
@@ -1525,19 +1532,14 @@ export default class SipConnector {
 
   _triggerMicControl = (request: IncomingRequest) => {
     const mic = request.getHeader(HEADER_MIC);
-
-    if (mic === EEventsMic.ADMIN_START_MIC) {
-      this._sessionEvents.trigger(ADMIN_START_MIC, undefined);
-    } else if (mic === EEventsMic.ADMIN_STOP_MIC) {
-      this._sessionEvents.trigger(ADMIN_STOP_MIC, undefined);
-    }
-  };
-
-  _triggerSyncMediaState = (request: IncomingRequest) => {
-    const syncState = request.getHeader(HEADER_SYNC_MEDIA_STATE);
+    const syncState = request.getHeader(HEADER_MEDIA_SYNC);
     const isSyncForced = syncState === EEventsSyncMediaState.ADMIN_SYNC_FORCED ? true : false;
 
-    this._sessionEvents.trigger(ADMIN_FORCE_SYNC_MEDIA_STATE, { isSyncForced });
+    if (mic === EEventsMic.ADMIN_START_MIC) {
+      this._sessionEvents.trigger(ADMIN_START_MIC, { isSyncForced });
+    } else if (mic === EEventsMic.ADMIN_STOP_MIC) {
+      this._sessionEvents.trigger(ADMIN_STOP_MIC, { isSyncForced });
+    }
   };
 
   _handleNewInfo = (info: IncomingInfoEvent | OutgoingInfoEvent) => {
@@ -1567,9 +1569,6 @@ export default class SipConnector {
           break;
         case CONTENT_TYPE_MIC:
           this._triggerMicControl(request);
-          break;
-        case CONTENT_TYPE_SYNC_MEDIA_STATE:
-          this._triggerSyncMediaState(request);
           break;
 
         default:
