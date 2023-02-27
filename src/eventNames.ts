@@ -157,6 +157,6 @@ export const SESSION_EVENT_NAMES = [
   ...SESSION_SYNTHETICS_EVENT_NAMES,
 ] as const;
 
-export type TEventUA = typeof UA_EVENT_NAMES[number];
+export type TEventUA = (typeof UA_EVENT_NAMES)[number];
 
-export type TEventSession = typeof SESSION_EVENT_NAMES[number];
+export type TEventSession = (typeof SESSION_EVENT_NAMES)[number];
