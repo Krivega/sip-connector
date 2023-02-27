@@ -1532,11 +1532,13 @@ export default class SipConnector {
 
   _triggerMicControl = (request: IncomingRequest) => {
     const mic = request.getHeader(HEADER_MIC);
+    const syncState = request.getHeader(HEADER_MEDIA_SYNC);
+    const isSyncForced = syncState === EEventsSyncMediaState.ADMIN_SYNC_FORCED ? true : false;
 
     if (mic === EEventsMic.ADMIN_START_MIC) {
-      this._sessionEvents.trigger(ADMIN_START_MIC, undefined);
+      this._sessionEvents.trigger(ADMIN_START_MIC, { isSyncForced });
     } else if (mic === EEventsMic.ADMIN_STOP_MIC) {
-      this._sessionEvents.trigger(ADMIN_STOP_MIC, undefined);
+      this._sessionEvents.trigger(ADMIN_STOP_MIC, { isSyncForced });
     }
   };
 

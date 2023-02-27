@@ -33,7 +33,7 @@ describe('mic control', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    const promise = new Promise<{ mic: EEventsMic }>((resolve) => {
+    const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
       return sipConnector.onSession('admin-start-mic', resolve);
     });
     const { session } = sipConnector;
@@ -42,8 +42,8 @@ describe('mic control', () => {
       JsSIP.triggerNewInfo(session, headersAdminStartMic);
     }
 
-    return promise.then((data) => {
-      expect(data).toBe(undefined);
+    return promise.then(({ isSyncForced }) => {
+      expect(isSyncForced).toBe(false);
     });
   });
 
@@ -51,7 +51,7 @@ describe('mic control', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    const promise = new Promise<{ mic: EEventsMic }>((resolve) => {
+    const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
       return sipConnector.onSession('admin-stop-mic', resolve);
     });
     const { session } = sipConnector;
@@ -60,8 +60,8 @@ describe('mic control', () => {
       JsSIP.triggerNewInfo(session, headersAdminStopMic);
     }
 
-    return promise.then((data) => {
-      expect(data).toBe(undefined);
+    return promise.then(({ isSyncForced }) => {
+      expect(isSyncForced).toBe(false);
     });
   });
 });
