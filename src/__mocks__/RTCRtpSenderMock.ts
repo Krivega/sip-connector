@@ -13,7 +13,7 @@ class RTCRtpSenderMock implements RTCRtpSender {
   getStats(): Promise<RTCStatsReport> {
     throw new Error('Method not implemented.');
   }
-  replaceTrack(withTrack: MediaStreamTrack | null): Promise<void> {
+  replaceTrack(): Promise<void> {
     throw new Error('Method not implemented.');
   }
   setParameters(parameters: RTCRtpSendParameters): Promise<void> {
@@ -30,7 +30,7 @@ class RTCRtpSenderMock implements RTCRtpSender {
   getParameters(): RTCRtpSendParameters {
     return { ...this._parameters };
   }
-  setStreams(...streams: MediaStream[]): void {
+  setStreams(): void {
     throw new Error('Method not implemented.');
   }
 }
