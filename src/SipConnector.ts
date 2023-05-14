@@ -280,6 +280,11 @@ type TCall = ({
   extraHeaders,
   ontrack,
   iceServers,
+  videoMode,
+  audioMode,
+  offerToReceiveAudio,
+  offerToReceiveVideo,
+  degradationPreference,
 }: {
   number: string;
   mediaStream?: MediaStream;
@@ -288,6 +293,8 @@ type TCall = ({
   iceServers?: RTCIceServer[];
   videoMode?: 'sendrecv' | 'sendonly' | 'recvonly';
   audioMode?: 'sendrecv' | 'sendonly' | 'recvonly';
+  offerToReceiveAudio?: boolean;
+  offerToReceiveVideo?: boolean;
   degradationPreference?: TDegradationPreference;
 }) => Promise<RTCPeerConnection>;
 
@@ -1048,6 +1055,8 @@ export default class SipConnector {
     videoMode,
     audioMode,
     degradationPreference,
+    offerToReceiveAudio = true,
+    offerToReceiveVideo = true,
   }) => {
     return new Promise((resolve, reject) => {
       this._connectionConfiguration.number = number;
@@ -1068,8 +1077,8 @@ export default class SipConnector {
           iceServers,
         },
         rtcOfferConstraints: {
-          offerToReceiveAudio: true,
-          offerToReceiveVideo: true,
+          offerToReceiveAudio,
+          offerToReceiveVideo,
         },
       });
     });
