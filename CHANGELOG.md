@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.8.0](https://github.com/Krivega/sip-connector/compare/v6.7.1...v6.8.0) (2023-05-14)
+
+### Features
+
+- add offerToReceiveAudio, offerToReceiveVideo to params of call ([371546f](https://github.com/Krivega/sip-connector/commit/371546f22674b6b49f308a8530cc74882bc8b6b4))
+
+### [6.7.1](https://github.com/Krivega/sip-connector/compare/v6.7.0...v6.7.1) (2023-04-05)
+
+## [6.7.0](https://github.com/Krivega/sip-connector/compare/v6.6.1...v6.7.0) (2023-02-27)
+
+### Features
+
+- implement process media sync info event ([#26](https://github.com/Krivega/sip-connector/issues/26)) ([73c914e](https://github.com/Krivega/sip-connector/commit/73c914e70822ee20f67248d472b2cd6885abfbc1))
+
 ### [6.6.1](https://github.com/Krivega/sip-connector/compare/v6.6.0...v6.6.1) (2022-12-06)
 
 ### Bug Fixes
