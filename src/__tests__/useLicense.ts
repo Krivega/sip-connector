@@ -20,7 +20,7 @@ const headersUseLicenseVideo: [string, string][] = [
   [HEADER_CONTENT_USE_LICENSE, EUseLicense.VIDEO],
 ];
 
-const headersUseLicenseAudioPlusContent: [string, string][] = [
+const headersUseLicenseAudioPlusPresentation: [string, string][] = [
   [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_USE_LICENSE],
   [HEADER_CONTENT_USE_LICENSE, EUseLicense.AUDIOPLUSPRESENTATION],
 ];
@@ -75,7 +75,7 @@ describe('use license', () => {
     });
   });
 
-  it('use license audio plus content', async () => {
+  it('use license audio plus presentation', async () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
@@ -85,7 +85,7 @@ describe('use license', () => {
     const { session } = sipConnector;
 
     if (session) {
-      JsSIP.triggerNewInfo(session, headersUseLicenseAudioPlusContent);
+      JsSIP.triggerNewInfo(session, headersUseLicenseAudioPlusPresentation);
     }
 
     return promise.then((license: EUseLicense) => {
