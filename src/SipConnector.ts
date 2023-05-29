@@ -28,6 +28,8 @@ import {
   CONTENT_TYPE_MEDIA_STATE,
   CONTENT_TYPE_MAIN_CAM,
   CONTENT_TYPE_MIC,
+  CONTENT_TYPE_USE_LICENSE,
+  HEADER_CONTENT_USE_LICENSE,
   HEADER_MEDIA_SYNC,
   HEADER_INPUT_CHANNELS,
   HEADER_OUTPUT_CHANNELS,
@@ -75,6 +77,7 @@ import {
   SIP_EVENT,
   SHARE_STATE,
   ENTER_ROOM,
+  USE_LICENSE,
   PEER_CONNECTION_CONFIRMED,
   PEER_CONNECTION_ONTRACK,
   CHANNELS,
@@ -127,6 +130,12 @@ export enum EEventsMic {
 export enum EEventsSyncMediaState {
   ADMIN_SYNC_FORCED = '1',
   ADMIN_SYNC_NOT_FORCED = '0',
+}
+
+export enum EUseLicense {
+  AUDIO = 'AUDIO',
+  VIDEO = 'VIDEO',
+  AUDIOPLUSPRESENTATION = 'AUDIOPLUSPRESENTATION',
 }
 
 export interface ICustomError extends Error {
@@ -1551,6 +1560,12 @@ export default class SipConnector {
     }
   };
 
+  _triggerUseLicense = (request: IncomingRequest) => {
+    const license: EUseLicense = request.getHeader(HEADER_CONTENT_USE_LICENSE) as EUseLicense;
+
+    this._sessionEvents.trigger(USE_LICENSE, license);
+  };
+
   _handleNewInfo = (info: IncomingInfoEvent | OutgoingInfoEvent) => {
     const { originator } = info;
 
@@ -1578,6 +1593,9 @@ export default class SipConnector {
           break;
         case CONTENT_TYPE_MIC:
           this._triggerMicControl(request);
+          break;
+        case CONTENT_TYPE_USE_LICENSE:
+          this._triggerUseLicense(request);
           break;
 
         default:

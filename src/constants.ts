@@ -16,6 +16,7 @@ export const NOT_AVAILABLE_SECOND_REMOTE_STREAM_EVENT = 'notAvailableSecondRemot
 export const MUST_STOP_PRESENTATION_EVENT = 'mustStopPresentation';
 export const SHARE_STATE = 'shareState';
 export const ENTER_ROOM = 'enterRoom';
+export const USE_LICENSE = 'useLicense';
 export const PEER_CONNECTION_CONFIRMED = 'peerconnection:confirmed';
 export const PEER_CONNECTION_ONTRACK = 'peerconnection:ontrack';
 export const CHANNELS = 'channels';
