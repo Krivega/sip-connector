@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.9.0](https://github.com/Krivega/sip-connector/compare/v6.8.0...v6.9.0) (2023-05-29)
+
+### Features
+
+- process use license info ([#27](https://github.com/Krivega/sip-connector/issues/27)) ([12c5d42](https://github.com/Krivega/sip-connector/commit/12c5d4241cad1f0ee075a27674a917d92e68d914))
+
 ## [6.8.0](https://github.com/Krivega/sip-connector/compare/v6.7.1...v6.8.0) (2023-05-14)
 
 ### Features
