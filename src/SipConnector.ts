@@ -369,7 +369,8 @@ export default class SipConnector {
     return id;
   };
 
-  isPendingPresentation = false;
+  promisePendingStartPresentation?: Promise<MediaStream>;
+  promisePendingStopPresentation?: Promise<void | MediaStream>;
 
   ua?: UA;
 
@@ -615,6 +616,10 @@ export default class SipConnector {
       });
   }
 
+  get isPendingPresentation(): boolean {
+    return !!this.promisePendingStartPresentation || !!this.promisePendingStopPresentation;
+  }
+
   startPresentation(
     stream: MediaStream,
     {
@@ -635,19 +640,19 @@ export default class SipConnector {
       return Promise.reject(new Error('No session established'));
     }
 
-    this.isPendingPresentation = true;
+    if (this._streamPresentationCurrent) {
+      return Promise.reject(new Error('Presentation is already started'));
+    }
 
     const streamPresentationCurrent = prepareMediaStream(stream) as MediaStream;
 
     this._streamPresentationCurrent = streamPresentationCurrent;
 
-    let result: Promise<void | MediaStream> = Promise.resolve();
-
     const preparatoryHeaders = isP2P
       ? [HEADER_START_PRESENTATION_P2P]
       : [HEADER_START_PRESENTATION];
 
-    result = session
+    const result = session
       .sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
         extraHeaders: preparatoryHeaders,
       })
@@ -679,8 +684,10 @@ export default class SipConnector {
         throw error;
       });
 
+    this.promisePendingStartPresentation = result;
+
     return result.finally(() => {
-      this.isPendingPresentation = false;
+      this.promisePendingStartPresentation = undefined;
     });
   }
 
@@ -689,19 +696,20 @@ export default class SipConnector {
   }: {
     isP2P?: boolean;
   } = {}): Promise<MediaStream | void> {
-    this.isPendingPresentation = true;
-
     const streamPresentationPrev = this._streamPresentationCurrent;
-    let result: Promise<MediaStream | void> = Promise.resolve();
+    let result: Promise<MediaStream | void> =
+      this.promisePendingStartPresentation || Promise.resolve();
 
     const preparatoryHeaders = isP2P ? [HEADER_STOP_PRESENTATION_P2P] : [HEADER_STOP_PRESENTATION];
 
     const session = this.establishedSession;
 
     if (session && streamPresentationPrev) {
-      result = session
-        .sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
-          extraHeaders: preparatoryHeaders,
+      result = result
+        .then(() => {
+          return session.sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
+            extraHeaders: preparatoryHeaders,
+          });
         })
         .then(() => {
           return session.stopPresentation(streamPresentationPrev);
@@ -717,6 +725,8 @@ export default class SipConnector {
       this._sessionEvents.trigger(PRESENTATION_ENDED, streamPresentationPrev);
     }
 
+    this.promisePendingStopPresentation = result;
+
     return result.finally(() => {
       this._resetPresentation();
     });
@@ -725,7 +735,8 @@ export default class SipConnector {
   _resetPresentation(): void {
     delete this._streamPresentationCurrent;
 
-    this.isPendingPresentation = false;
+    this.promisePendingStartPresentation = undefined;
+    this.promisePendingStopPresentation = undefined;
   }
 
   handleNewRTCSession = ({ originator, session }: IncomingRTCSessionEvent) => {
