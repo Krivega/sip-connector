@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [6.9.2](https://github.com/Krivega/sip-connector/compare/v6.9.1...v6.9.2) (2023-06-20)
+
+### Bug Fixes
+
+- stop presentation when start in progress ([c1d2802](https://github.com/Krivega/sip-connector/commit/c1d2802d2b823478738649cddd51b824e1c4b2e5))
+
 ### [6.9.1](https://github.com/Krivega/sip-connector/compare/v6.9.0...v6.9.1) (2023-06-06)
 
 ## [6.9.0](https://github.com/Krivega/sip-connector/compare/v6.8.0...v6.9.0) (2023-05-29)
