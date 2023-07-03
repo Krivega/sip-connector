@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.10.0](https://github.com/Krivega/sip-connector/compare/v6.9.2...v6.10.0) (2023-07-03)
+
+### Features
+
+- add sendRefusalToTurnOnCam and sendRefusalToTurnOnMic ([3c63f66](https://github.com/Krivega/sip-connector/commit/3c63f66e44e52c9038e02e6d4d5abab97917087b))
+
 ### [6.9.2](https://github.com/Krivega/sip-connector/compare/v6.9.1...v6.9.2) (2023-06-20)
 
 ### Bug Fixes
