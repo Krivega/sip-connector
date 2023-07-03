@@ -5,6 +5,7 @@ export const CONTENT_TYPE_SHARE_STATE = 'application/vinteo.webrtc.sharedesktop'
 export const CONTENT_TYPE_ENTER_ROOM = 'application/vinteo.webrtc.roomname';
 export const CONTENT_TYPE_CHANNELS = 'application/vinteo.webrtc.channels';
 export const CONTENT_TYPE_MEDIA_STATE = 'application/vinteo.webrtc.mediastate';
+export const CONTENT_TYPE_REFUSAL = 'application/vinteo.webrtc.refusal';
 export const CONTENT_TYPE_MAIN_CAM = 'application/vinteo.webrtc.maincam';
 export const CONTENT_TYPE_MIC = 'application/vinteo.webrtc.mic';
 export const CONTENT_TYPE_USE_LICENSE = 'application/vinteo.webrtc.uselic';
@@ -16,6 +17,7 @@ export const HEADER_MIC = 'X-WEBRTC-MIC';
 export const HEADER_MEDIA_SYNC = 'X-WEBRTC-SYNC';
 export const HEADER_MAIN_CAM_RESOLUTION = 'X-WEBRTC-MAINCAM-RESOLUTION';
 export const HEADER_MEDIA_STATE = 'X-WEBRTC-MEDIA-STATE';
+export const HEADER_MEDIA_TYPE = 'X-Vinteo-Media-Type';
 export const HEADER_MAIN_CAM_STATE = 'X-Vinteo-MainCam-State';
 export const HEADER_MIC_STATE = 'X-Vinteo-Mic-State';
 

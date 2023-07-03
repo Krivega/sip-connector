@@ -26,6 +26,7 @@ import {
   CONTENT_TYPE_ENTER_ROOM,
   CONTENT_TYPE_CHANNELS,
   CONTENT_TYPE_MEDIA_STATE,
+  CONTENT_TYPE_REFUSAL,
   CONTENT_TYPE_MAIN_CAM,
   CONTENT_TYPE_MIC,
   CONTENT_TYPE_USE_LICENSE,
@@ -34,6 +35,7 @@ import {
   HEADER_INPUT_CHANNELS,
   HEADER_OUTPUT_CHANNELS,
   HEADER_MEDIA_STATE,
+  HEADER_MEDIA_TYPE,
   HEADER_MAIN_CAM_STATE,
   HEADER_MIC_STATE,
   HEADER_ENABLE_MAIN_CAM,
@@ -1670,6 +1672,44 @@ export default class SipConnector {
     ];
 
     return this.session.sendInfo(CONTENT_TYPE_MEDIA_STATE, undefined, { ...options, extraHeaders });
+  }
+
+  _sendRefusalToTurnOn(
+    type: 'cam' | 'mic',
+    options: TOptionsInfoMediaState = { noTerminateWhenError: true }
+  ): Promise<void> {
+    if (!this.session) {
+      throw new Error('No session established');
+    }
+
+    const typeMicOnServer = 0;
+    const typeCamOnServer = 1;
+    const typeToSend = type == 'mic' ? typeMicOnServer : typeCamOnServer;
+
+    const headerMediaType = `${HEADER_MEDIA_TYPE}: ${typeToSend}`;
+    const extraHeaders: TOptionsExtraHeaders['extraHeaders'] = [headerMediaType];
+
+    return this.session.sendInfo(CONTENT_TYPE_REFUSAL, undefined, { ...options, extraHeaders });
+  }
+
+  sendRefusalToTurnOnMic(
+    options: TOptionsInfoMediaState = { noTerminateWhenError: true }
+  ): Promise<void> {
+    if (!this.session) {
+      throw new Error('No session established');
+    }
+
+    return this._sendRefusalToTurnOn('mic', options);
+  }
+
+  sendRefusalToTurnOnCam(
+    options: TOptionsInfoMediaState = { noTerminateWhenError: true }
+  ): Promise<void> {
+    if (!this.session) {
+      throw new Error('No session established');
+    }
+
+    return this._sendRefusalToTurnOn('cam', options);
   }
 
   _handleEnded = (error: ICustomError) => {
