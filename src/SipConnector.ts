@@ -734,6 +734,71 @@ export default class SipConnector {
     });
   }
 
+  updatePresentation(
+    stream: MediaStream,
+    {
+      isP2P = false,
+      maxBitrate,
+      degradationPreference,
+    }: {
+      isP2P?: boolean;
+      maxBitrate?: number;
+      degradationPreference?: TDegradationPreference;
+    } = {}
+  ): Promise<void | MediaStream> {
+    const session = this.establishedSession;
+
+    if (!session) {
+      return Promise.reject(new Error('No session established'));
+    }
+
+    if (!this._streamPresentationCurrent) {
+      return Promise.reject(new Error('Presentation has not started yet'));
+    }
+
+    const streamPresentationCurrent = prepareMediaStream(stream) as MediaStream;
+
+    this._streamPresentationCurrent = streamPresentationCurrent;
+
+    const preparatoryHeaders = isP2P
+      ? [HEADER_START_PRESENTATION_P2P]
+      : [HEADER_START_PRESENTATION];
+
+    const result = session
+      .sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
+        extraHeaders: preparatoryHeaders,
+      })
+      .then(() => {
+        return session.startPresentation(streamPresentationCurrent, false, degradationPreference);
+      })
+      // @ts-ignore
+      .then(() => {
+        const { connection } = this;
+
+        if (!connection || maxBitrate === undefined) {
+          return undefined;
+        }
+
+        const senders = connection.getSenders();
+
+        return scaleBitrate(senders, stream, maxBitrate);
+      })
+      .then(() => {
+        return stream;
+      })
+      .catch((error) => {
+        this._sessionEvents.trigger(PRESENTATION_FAILED, error);
+
+        throw error;
+      });
+
+    this.promisePendingStartPresentation = result;
+
+    return result.finally(() => {
+      this.promisePendingStartPresentation = undefined;
+    });
+  }
+
   _resetPresentation(): void {
     delete this._streamPresentationCurrent;
 
