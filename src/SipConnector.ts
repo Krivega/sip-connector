@@ -622,30 +622,22 @@ export default class SipConnector {
     return !!this.promisePendingStartPresentation || !!this.promisePendingStopPresentation;
   }
 
-  startPresentation(
+  private _startPresentation(
     stream: MediaStream,
     {
-      isNeedReinvite = true,
-      isP2P = false,
+      session,
       maxBitrate,
       degradationPreference,
+      isNeedReinvite = true,
+      isP2P = false,
     }: {
+      session: RTCSession;
       isNeedReinvite?: boolean;
       isP2P?: boolean;
       maxBitrate?: number;
       degradationPreference?: TDegradationPreference;
-    } = {}
-  ): Promise<void | MediaStream> {
-    const session = this.establishedSession;
-
-    if (!session) {
-      return Promise.reject(new Error('No session established'));
     }
-
-    if (this._streamPresentationCurrent) {
-      return Promise.reject(new Error('Presentation is already started'));
-    }
-
+  ) {
     const streamPresentationCurrent = prepareMediaStream(stream) as MediaStream;
 
     this._streamPresentationCurrent = streamPresentationCurrent;
@@ -693,6 +685,39 @@ export default class SipConnector {
     });
   }
 
+  startPresentation(
+    stream: MediaStream,
+    {
+      isNeedReinvite = true,
+      isP2P = false,
+      maxBitrate,
+      degradationPreference,
+    }: {
+      isNeedReinvite?: boolean;
+      isP2P?: boolean;
+      maxBitrate?: number;
+      degradationPreference?: TDegradationPreference;
+    } = {}
+  ): Promise<void | MediaStream> {
+    const session = this.establishedSession;
+
+    if (!session) {
+      return Promise.reject(new Error('No session established'));
+    }
+
+    if (this._streamPresentationCurrent) {
+      return Promise.reject(new Error('Presentation is already started'));
+    }
+
+    return this._startPresentation(stream, {
+      session,
+      isNeedReinvite,
+      isP2P,
+      maxBitrate,
+      degradationPreference,
+    });
+  }
+
   stopPresentation({
     isP2P = false,
   }: {
@@ -731,6 +756,41 @@ export default class SipConnector {
 
     return result.finally(() => {
       this._resetPresentation();
+    });
+  }
+
+  async updatePresentation(
+    stream: MediaStream,
+    {
+      isP2P = false,
+      maxBitrate,
+      degradationPreference,
+    }: {
+      isP2P?: boolean;
+      maxBitrate?: number;
+      degradationPreference?: TDegradationPreference;
+    } = {}
+  ): Promise<void | MediaStream> {
+    const session = this.establishedSession;
+
+    if (!session) {
+      return Promise.reject(new Error('No session established'));
+    }
+
+    if (!this._streamPresentationCurrent) {
+      return Promise.reject(new Error('Presentation has not started yet'));
+    }
+
+    if (this.promisePendingStartPresentation) {
+      await this.promisePendingStartPresentation;
+    }
+
+    return this._startPresentation(stream, {
+      session,
+      isP2P,
+      maxBitrate,
+      degradationPreference,
+      isNeedReinvite: false,
     });
   }
 

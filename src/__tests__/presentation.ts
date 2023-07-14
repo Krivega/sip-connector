@@ -7,10 +7,15 @@ describe('presentation', () => {
   const number = '111';
   let sipConnector: SipConnector;
   let mediaStream;
+  let mediaStreamUpdated;
 
   beforeEach(() => {
     sipConnector = createSipConnector();
     mediaStream = createMediaStreamMock({
+      audio: { deviceId: { exact: 'audioDeviceId' } },
+      video: { deviceId: { exact: 'videoDeviceId' } },
+    });
+    mediaStreamUpdated = createMediaStreamMock({
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },
     });
@@ -96,5 +101,78 @@ describe('presentation', () => {
     expect(sipConnector.promisePendingStartPresentation).toBeUndefined();
     expect(sipConnector.promisePendingStopPresentation).toBeUndefined();
     expect(sipConnector._streamPresentationCurrent).toBeUndefined();
+  });
+
+  it('update presentation after start', async () => {
+    expect.assertions(8);
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+    await sipConnector.startPresentation(mediaStream);
+
+    const previousMediaStream = sipConnector._streamPresentationCurrent;
+
+    const promise = sipConnector.updatePresentation(mediaStreamUpdated);
+
+    expect(sipConnector.isPendingPresentation).toBe(true);
+    expect(sipConnector.promisePendingStartPresentation).toBeDefined();
+    expect(sipConnector._streamPresentationCurrent).toBeDefined();
+
+    return promise.then(() => {
+      expect(sipConnector.isPendingPresentation).toBe(false);
+      expect(sipConnector.promisePendingStartPresentation).toBeUndefined();
+      expect(sipConnector.promisePendingStopPresentation).toBeUndefined();
+      expect(sipConnector._streamPresentationCurrent).toBeDefined();
+      expect(previousMediaStream).not.toBe(sipConnector._streamPresentationCurrent);
+    });
+  });
+
+  it('update presentation before startPresentation promise resolved', async () => {
+    expect.assertions(13);
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    sipConnector.startPresentation(mediaStream);
+
+    const previousMediaStream = sipConnector._streamPresentationCurrent;
+    const startPresentationPromise = sipConnector.promisePendingStartPresentation;
+
+    sipConnector.updatePresentation(mediaStreamUpdated);
+
+    expect(sipConnector.isPendingPresentation).toBe(true);
+    expect(sipConnector.promisePendingStartPresentation).toBeDefined();
+    expect(sipConnector._streamPresentationCurrent).toBeDefined();
+
+    return startPresentationPromise
+      ?.then(() => {
+        expect(sipConnector.isPendingPresentation).toBe(true);
+        expect(previousMediaStream).not.toBe(sipConnector._streamPresentationCurrent);
+        expect(sipConnector.promisePendingStartPresentation).toBeDefined();
+        expect(sipConnector.promisePendingStopPresentation).toBeUndefined();
+        expect(sipConnector._streamPresentationCurrent).toBeDefined();
+
+        const updatePresentationPromise = sipConnector.promisePendingStartPresentation;
+
+        return updatePresentationPromise;
+      })
+      .then(() => {
+        expect(sipConnector.isPendingPresentation).toBe(false);
+        expect(sipConnector.promisePendingStartPresentation).toBeUndefined();
+        expect(sipConnector.promisePendingStopPresentation).toBeUndefined();
+        expect(sipConnector._streamPresentationCurrent).toBeDefined();
+        expect(previousMediaStream).not.toBe(sipConnector._streamPresentationCurrent);
+      });
+  });
+
+  it('update presentation without start', async () => {
+    expect.assertions(1);
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    return sipConnector.updatePresentation(mediaStreamUpdated).catch((error) => {
+      expect(error).toEqual(new Error('Presentation has not started yet'));
+    });
   });
 });

@@ -18,7 +18,7 @@ describe('call statuses', () => {
     mediaStream = createMediaStreamMock({
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },
-    });
+    }) as MediaStream;
     mockFn = jest.fn(() => {
       return undefined;
     });

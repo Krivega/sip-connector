@@ -212,6 +212,10 @@ class BaseSession implements RTCSession {
     return Promise.resolve(stream);
   }
 
+  updatePresentation(stream) {
+    return Promise.resolve(stream);
+  }
+
   stopPresentation(stream) {
     return Promise.resolve(stream);
   }
