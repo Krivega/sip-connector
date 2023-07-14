@@ -4,7 +4,7 @@ import setEncodingsToSender from './setEncodingsToSender';
 const scaleMaxBitrateBySender = (
   senders: RTCRtpSender[],
   mediaStream: MediaStream,
-  maxBitrate: number
+  maxBitrate: number,
 ) => {
   const sender = findSenderByStream(senders, mediaStream);
 

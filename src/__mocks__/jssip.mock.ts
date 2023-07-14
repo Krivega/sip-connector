@@ -50,7 +50,7 @@ const triggerIncomingSession = (
     incomingNumber = '1234',
     displayName,
     host,
-  }: { incomingNumber?: string; displayName: string; host: string }
+  }: { incomingNumber?: string; displayName: string; host: string },
 ) => {
   const session = new Session({ originator: originatorRemote });
   const uri = new URI('sip', incomingNumber, host);
@@ -62,7 +62,7 @@ const triggerIncomingSession = (
 
 const triggerFailIncomingSession = (
   incomingSession,
-  options?: { originator: 'local' | 'remote' }
+  options?: { originator: 'local' | 'remote' },
 ) => {
   if (!options) {
     incomingSession.trigger('failed', incomingSession);

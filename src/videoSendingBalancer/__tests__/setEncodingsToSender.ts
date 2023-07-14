@@ -26,7 +26,7 @@ describe('setEncodingsToSender', () => {
       ({ parameters, isChanged }) => {
         expect(isChanged).toBe(true);
         expect(parameters.encodings).toEqual([{ scaleResolutionDownBy }]);
-      }
+      },
     );
   });
 
@@ -41,7 +41,7 @@ describe('setEncodingsToSender', () => {
       ({ parameters, isChanged }) => {
         expect(isChanged).toBe(false);
         expect(parameters.encodings).toEqual([{ scaleResolutionDownBy }]);
-      }
+      },
     );
   });
 
@@ -56,7 +56,7 @@ describe('setEncodingsToSender', () => {
       ({ parameters, isChanged }) => {
         expect(isChanged).toBe(true);
         expect(parameters.encodings).toEqual([{ scaleResolutionDownBy }]);
-      }
+      },
     );
   });
 
@@ -71,7 +71,7 @@ describe('setEncodingsToSender', () => {
       ({ parameters, isChanged }) => {
         expect(isChanged).toBe(true);
         expect(parameters.encodings).toEqual([{ scaleResolutionDownBy }]);
-      }
+      },
     );
   });
 
@@ -84,7 +84,7 @@ describe('setEncodingsToSender', () => {
       ({ parameters, isChanged }) => {
         expect(isChanged).toBe(false);
         expect(parameters.encodings).toEqual([{}]);
-      }
+      },
     );
   });
 
@@ -99,7 +99,7 @@ describe('setEncodingsToSender', () => {
       ({ parameters, isChanged }) => {
         expect(isChanged).toBe(true);
         expect(parameters.encodings).toEqual([{ scaleResolutionDownBy: 1 }]);
-      }
+      },
     );
   });
 });

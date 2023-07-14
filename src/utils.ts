@@ -22,7 +22,7 @@ export const prepareMediaStream = (
   }: {
     videoMode?: 'sendrecv' | 'sendonly' | 'recvonly';
     audioMode?: 'sendrecv' | 'sendonly' | 'recvonly';
-  } = {}
+  } = {},
 ): MediaStream | undefined => {
   if (!mediaStream || (videoMode === 'recvonly' && audioMode === 'recvonly')) {
     return undefined;

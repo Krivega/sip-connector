@@ -38,7 +38,7 @@ const addToStackScaleResolutionDownBySender = ({
 
 const downgradeResolutionSender = (
   sender: RTCRtpSender,
-  onSetParameters?: TOnSetParameters
+  onSetParameters?: TOnSetParameters,
 ): Promise<TResult> => {
   const scaleResolutionDownByTarget = 200;
   const maxBitrate = MINIMUM_BITRATE;
@@ -53,7 +53,7 @@ const downgradeResolutionSender = (
 
 const resetScaleResolutionSender = (
   sender: RTCRtpSender,
-  onSetParameters?: TOnSetParameters
+  onSetParameters?: TOnSetParameters,
 ): Promise<TResult> => {
   const scaleResolutionDownByTarget = 1;
   const maxBitrate = MAXIMUM_BITRATE;
@@ -75,7 +75,7 @@ const setResolutionSender = (
     track: MediaStreamTrack;
     resolution: string;
   },
-  onSetParameters?: TOnSetParameters
+  onSetParameters?: TOnSetParameters,
 ): Promise<TResult> => {
   const settings = track.getSettings();
   const widthCurrent = settings.width!;
@@ -110,7 +110,7 @@ const processSender = (
     sender: RTCRtpSender;
     track: MediaStreamTrack;
   },
-  onSetParameters?: TOnSetParameters
+  onSetParameters?: TOnSetParameters,
 ): Promise<TResult> => {
   switch (mainCam) {
     case EEventsMainCAM.PAUSE_MAIN_CAM:
@@ -122,7 +122,7 @@ const processSender = (
         return setResolutionSender(
           sender,
           { track, resolution: resolutionMainCam },
-          onSetParameters
+          onSetParameters,
         );
       }
   }

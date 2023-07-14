@@ -48,7 +48,7 @@ describe('main cam control', () => {
     const promise = new Promise<{ mainCam: EEventsMainCAM; resolutionMainCam: string }>(
       (resolve) => {
         return sipConnector.onSession('main-cam-control', resolve);
-      }
+      },
     );
     const { session } = sipConnector;
 

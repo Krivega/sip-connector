@@ -49,7 +49,7 @@ describe('call', () => {
     expect(connectionConfiguration.number).toBe(number);
     expect(connectionConfiguration.answer).toBe(false);
     expect(connectionConfiguration.sipServerUrl).toBe(
-      dataForConnectionWithAuthorization.sipServerUrl
+      dataForConnectionWithAuthorization.sipServerUrl,
     );
     expect(connectionConfiguration.displayName).toBe('');
     expect(connectionConfiguration.register).toBe(dataForConnectionWithAuthorization.register);

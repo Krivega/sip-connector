@@ -127,7 +127,7 @@ class BaseSession implements RTCSession {
   }
   replaceMediaStream(
     stream: MediaStream,
-    options?: { deleteExisting: boolean; addMissing: boolean }
+    options?: { deleteExisting: boolean; addMissing: boolean },
   ): Promise<void> {
     throw new Error('Method not implemented.');
   }

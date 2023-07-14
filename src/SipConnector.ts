@@ -322,7 +322,7 @@ type TParametersAnswerToIncomingCall = {
 };
 
 type TAnswerToIncomingCall = (
-  parameters: TParametersAnswerToIncomingCall
+  parameters: TParametersAnswerToIncomingCall,
 ) => Promise<RTCPeerConnection>;
 
 type TSendDTMF = (tone: number | string) => Promise<void>;
@@ -398,7 +398,7 @@ export default class SipConnector {
           this._cancelableCreateUa.cancelRequest();
           this._cancelableDisconnect.cancelRequest();
         },
-      }
+      },
     );
 
     this._cancelableCreateUa = new CancelableRequest<
@@ -408,7 +408,7 @@ export default class SipConnector {
 
     this._cancelableDisconnect = new CancelableRequest<void, ReturnType<TDisconnect>>(
       this._disconnect,
-      { moduleName }
+      { moduleName },
     );
 
     this._cancelableSet = new CancelableRequest<Parameters<TSet>[0], ReturnType<TSet>>(this._set, {
@@ -417,7 +417,7 @@ export default class SipConnector {
 
     this._cancelableCall = new CancelableRequest<Parameters<TCall>[0], ReturnType<TCall>>(
       this._call,
-      { moduleName }
+      { moduleName },
     );
 
     this._cancelableAnswer = new CancelableRequest<
@@ -556,7 +556,7 @@ export default class SipConnector {
       addMissing: boolean;
       forceRenegotiation: boolean;
       degradationPreference?: TDegradationPreference;
-    }
+    },
   ): Promise<void> {
     if (!this.session) {
       throw new Error('No session established');
@@ -596,7 +596,7 @@ export default class SipConnector {
   };
 
   askPermissionToEnableCam(
-    options: TOptionsInfoMediaState = { noTerminateWhenError: true }
+    options: TOptionsInfoMediaState = { noTerminateWhenError: true },
   ): Promise<void> {
     if (!this.session) {
       throw new Error('No session established');
@@ -636,7 +636,7 @@ export default class SipConnector {
       isP2P?: boolean;
       maxBitrate?: number;
       degradationPreference?: TDegradationPreference;
-    }
+    },
   ) {
     const streamPresentationCurrent = prepareMediaStream(stream) as MediaStream;
 
@@ -654,7 +654,7 @@ export default class SipConnector {
         return session.startPresentation(
           streamPresentationCurrent,
           isNeedReinvite,
-          degradationPreference
+          degradationPreference,
         );
       })
       // @ts-ignore
@@ -697,7 +697,7 @@ export default class SipConnector {
       isP2P?: boolean;
       maxBitrate?: number;
       degradationPreference?: TDegradationPreference;
-    } = {}
+    } = {},
   ): Promise<void | MediaStream> {
     const session = this.establishedSession;
 
@@ -769,7 +769,7 @@ export default class SipConnector {
       isP2P?: boolean;
       maxBitrate?: number;
       degradationPreference?: TDegradationPreference;
-    } = {}
+    } = {},
   ): Promise<void | MediaStream> {
     const session = this.establishedSession;
 
@@ -1489,7 +1489,7 @@ export default class SipConnector {
 
     this._uaEvents.trigger(
       PARTICIPANT_REMOVED_FROM_LIST_MODERATORS,
-      headersParametersModeratorsList
+      headersParametersModeratorsList,
     );
   };
 
@@ -1538,7 +1538,7 @@ export default class SipConnector {
 
     this._uaEvents.trigger(
       CONFERENCE_PARTICIPANT_TOKEN_ISSUED,
-      headersConferenceParticipantTokenIssued
+      headersConferenceParticipantTokenIssued,
     );
   };
 
@@ -1716,7 +1716,7 @@ export default class SipConnector {
 
   sendMediaState(
     { cam, mic }: TMediaState,
-    options: TOptionsInfoMediaState = { noTerminateWhenError: true }
+    options: TOptionsInfoMediaState = { noTerminateWhenError: true },
   ): Promise<void> {
     if (!this.session) {
       throw new Error('No session established');
@@ -1736,7 +1736,7 @@ export default class SipConnector {
 
   _sendRefusalToTurnOn(
     type: 'cam' | 'mic',
-    options: TOptionsInfoMediaState = { noTerminateWhenError: true }
+    options: TOptionsInfoMediaState = { noTerminateWhenError: true },
   ): Promise<void> {
     if (!this.session) {
       throw new Error('No session established');
@@ -1753,7 +1753,7 @@ export default class SipConnector {
   }
 
   sendRefusalToTurnOnMic(
-    options: TOptionsInfoMediaState = { noTerminateWhenError: true }
+    options: TOptionsInfoMediaState = { noTerminateWhenError: true },
   ): Promise<void> {
     if (!this.session) {
       throw new Error('No session established');
@@ -1763,7 +1763,7 @@ export default class SipConnector {
   }
 
   sendRefusalToTurnOnCam(
-    options: TOptionsInfoMediaState = { noTerminateWhenError: true }
+    options: TOptionsInfoMediaState = { noTerminateWhenError: true },
   ): Promise<void> {
     if (!this.session) {
       throw new Error('No session established');

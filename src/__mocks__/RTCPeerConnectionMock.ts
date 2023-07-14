@@ -10,7 +10,7 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
   constructor(
     configuration?: RTCConfiguration,
     // @ts-ignore
-    tracks: MediaStreamTrackMock[]
+    tracks: MediaStreamTrackMock[],
   ) {
     this._receivers = tracks.map((track) => {
       return { track };
@@ -50,7 +50,7 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
   }
   addTransceiver(
     trackOrKind: string | MediaStreamTrack,
-    init?: RTCRtpTransceiverInit
+    init?: RTCRtpTransceiverInit,
   ): RTCRtpTransceiver {
     throw new Error('Method not implemented.');
   }
@@ -63,11 +63,11 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
   createAnswer(options?: RTCAnswerOptions): Promise<RTCSessionDescriptionInit>;
   createAnswer(
     successCallback: RTCSessionDescriptionCallback,
-    failureCallback: RTCPeerConnectionErrorCallback
+    failureCallback: RTCPeerConnectionErrorCallback,
   ): Promise<void>;
   createAnswer(
     successCallback?: any,
-    failureCallback?: any
+    failureCallback?: any,
   ): Promise<void> | Promise<RTCSessionDescriptionInit> {
     throw new Error('Method not implemented.');
   }
@@ -78,12 +78,12 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
   createOffer(
     successCallback: RTCSessionDescriptionCallback,
     failureCallback: RTCPeerConnectionErrorCallback,
-    options?: RTCOfferOptions
+    options?: RTCOfferOptions,
   ): Promise<void>;
   createOffer(
     successCallback?: any,
     failureCallback?: any,
-    options?: any
+    options?: any,
   ): Promise<void> | Promise<RTCSessionDescriptionInit> {
     throw new Error('Method not implemented.');
   }
@@ -114,12 +114,12 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
   addEventListener<K extends keyof RTCPeerConnectionEventMap>(
     type: K,
     listener: (this: RTCPeerConnection, ev: RTCPeerConnectionEventMap[K]) => any,
-    options?: boolean | AddEventListenerOptions
+    options?: boolean | AddEventListenerOptions,
   ): void;
   addEventListener(
     type: string,
     listener: EventListenerOrEventListenerObject,
-    options?: boolean | AddEventListenerOptions
+    options?: boolean | AddEventListenerOptions,
   ): void;
   addEventListener(type: any, listener: any, options?: any) {
     throw new Error('Method not implemented.');
@@ -127,12 +127,12 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
   removeEventListener<K extends keyof RTCPeerConnectionEventMap>(
     type: K,
     listener: (this: RTCPeerConnection, ev: RTCPeerConnectionEventMap[K]) => any,
-    options?: boolean | EventListenerOptions
+    options?: boolean | EventListenerOptions,
   ): void;
   removeEventListener(
     type: string,
     listener: EventListenerOrEventListenerObject,
-    options?: boolean | EventListenerOptions
+    options?: boolean | EventListenerOptions,
   ): void;
   removeEventListener(type: any, listener: any, options?: any) {
     throw new Error('Method not implemented.');

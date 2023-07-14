@@ -66,19 +66,19 @@ describe('connect', () => {
     const connectionConfiguration = sipConnector.getConnectionConfiguration();
 
     expect(connectionConfiguration.sipServerUrl).toBe(
-      dataForConnectionWithAuthorizationWithDisplayName.sipServerUrl
+      dataForConnectionWithAuthorizationWithDisplayName.sipServerUrl,
     );
     expect(connectionConfiguration.displayName).toBe(
-      dataForConnectionWithAuthorizationWithDisplayName.displayName
+      dataForConnectionWithAuthorizationWithDisplayName.displayName,
     );
     expect(connectionConfiguration.register).toBe(
-      dataForConnectionWithAuthorizationWithDisplayName.register
+      dataForConnectionWithAuthorizationWithDisplayName.register,
     );
     expect(connectionConfiguration.user).toBe(
-      dataForConnectionWithAuthorizationWithDisplayName.user
+      dataForConnectionWithAuthorizationWithDisplayName.user,
     );
     expect(connectionConfiguration.password).toBe(
-      dataForConnectionWithAuthorizationWithDisplayName.password
+      dataForConnectionWithAuthorizationWithDisplayName.password,
     );
     expect(ua.configuration).toEqual(uaConfigurationWithAuthorizationWithDisplayName);
   });
@@ -87,14 +87,15 @@ describe('connect', () => {
     expect.assertions(6);
 
     const ua = await sipConnector.connect(dataForConnectionWithoutAuthorization);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { uri, ...configuration } = ua.configuration;
     const connectionConfiguration = sipConnector.getConnectionConfiguration();
 
     expect(connectionConfiguration.sipServerUrl).toBe(
-      dataForConnectionWithoutAuthorization.sipServerUrl
+      dataForConnectionWithoutAuthorization.sipServerUrl,
     );
     expect(connectionConfiguration.displayName).toBe(
-      dataForConnectionWithoutAuthorization.displayName
+      dataForConnectionWithoutAuthorization.displayName,
     );
     expect(connectionConfiguration.register).toBe(dataForConnectionWithoutAuthorization.register);
     expect(connectionConfiguration.user).toBe(undefined);
@@ -107,11 +108,12 @@ describe('connect', () => {
     expect.assertions(6);
 
     const ua = await sipConnector.connect(dataForConnectionWithoutAuthorizationWithoutDisplayName);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { uri, ...configuration } = ua.configuration;
     const connectionConfiguration = sipConnector.getConnectionConfiguration();
 
     expect(connectionConfiguration.sipServerUrl).toBe(
-      dataForConnectionWithoutAuthorizationWithoutDisplayName.sipServerUrl
+      dataForConnectionWithoutAuthorizationWithoutDisplayName.sipServerUrl,
     );
     expect(connectionConfiguration.displayName).toBe('');
     expect(connectionConfiguration.register).toBe(false);
@@ -130,7 +132,7 @@ describe('connect', () => {
     const connectionConfiguration = sipConnector.getConnectionConfiguration();
 
     expect(connectionConfiguration.sipServerUrl).toBe(
-      dataForConnectionWithAuthorization.sipServerUrl
+      dataForConnectionWithAuthorization.sipServerUrl,
     );
     expect(connectionConfiguration.displayName).toBe('');
     expect(connectionConfiguration.register).toBe(dataForConnectionWithAuthorization.register);
@@ -160,7 +162,7 @@ describe('connect', () => {
     });
 
     expect(sipConnector.getConnectionConfiguration().password).toBe(
-      dataForConnectionWithAuthorizationWithDisplayName.password
+      dataForConnectionWithAuthorizationWithDisplayName.password,
     );
     expect(sipConnector.ua!.configuration).toEqual(uaConfigurationWithAuthorizationWithDisplayName);
   });
@@ -177,11 +179,11 @@ describe('connect', () => {
       .catch((error) => {
         expect(error).toBe(false);
         expect(sipConnector.getConnectionConfiguration().password).toBe(
-          dataForConnectionWithAuthorizationWithDisplayName.password
+          dataForConnectionWithAuthorizationWithDisplayName.password,
         );
         // @ts-ignore
         expect(sipConnector.ua!.configuration).toEqual(
-          uaConfigurationWithAuthorizationWithDisplayName
+          uaConfigurationWithAuthorizationWithDisplayName,
         );
       });
   });

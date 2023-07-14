@@ -11,7 +11,7 @@ const resolveVideoSendingBalancer = (
   }: {
     ignoreForCodec?: string;
     onSetParameters?: TOnSetParameters;
-  } = {}
+  } = {},
 ) => {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   let reBalance = () => {};

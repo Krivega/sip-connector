@@ -16,11 +16,11 @@ const resolveHasNeedToUpdateItemEncoding = (defaultValue: number | undefined) =>
 };
 
 const hasNeedToUpdateScaleResolutionDownBy = resolveHasNeedToUpdateItemEncoding(
-  MIN_SCALE_RESOLUTION_DOWN_BY
+  MIN_SCALE_RESOLUTION_DOWN_BY,
 );
 const performUpdateScaleResolutionDownBy = (
   scaleResolutionDownByTarget?: number,
-  scaleResolutionDownByCurrent?: number
+  scaleResolutionDownByCurrent?: number,
 ): number | undefined => {
   const scaleResolutionDownByTargetParsed: number | null =
     scaleResolutionDownByTarget !== undefined
@@ -31,7 +31,7 @@ const performUpdateScaleResolutionDownBy = (
     scaleResolutionDownByTargetParsed !== null &&
     hasNeedToUpdateScaleResolutionDownBy(
       scaleResolutionDownByTargetParsed,
-      scaleResolutionDownByCurrent
+      scaleResolutionDownByCurrent,
     )
   ) {
     return scaleResolutionDownByTargetParsed;
@@ -43,7 +43,7 @@ const performUpdateScaleResolutionDownBy = (
 const hasNeedToUpdateMaxBitrate = resolveHasNeedToUpdateItemEncoding(undefined);
 const performUpdateMaxBitrate = (
   maxBitrateTarget?: number,
-  maxBitrateCurrent?: number
+  maxBitrateCurrent?: number,
 ): number | undefined => {
   if (hasNeedToUpdateMaxBitrate(maxBitrateTarget, maxBitrateCurrent)) {
     return maxBitrateTarget;
@@ -55,7 +55,7 @@ const performUpdateMaxBitrate = (
 const setEncodingsToSender = (
   sender: RTCRtpSender,
   encodingsTarget: { scaleResolutionDownBy?: number; maxBitrate?: number },
-  onSetParameters?: TOnSetParameters
+  onSetParameters?: TOnSetParameters,
 ): Promise<TResult> => {
   const parameters: RTCRtpSendParameters = sender.getParameters();
 
@@ -67,7 +67,7 @@ const setEncodingsToSender = (
   const scaleResolutionDownByCurrent = encoding.scaleResolutionDownBy;
   const scaleResolutionDownByTarget = performUpdateScaleResolutionDownBy(
     encodingsTarget.scaleResolutionDownBy,
-    scaleResolutionDownByCurrent
+    scaleResolutionDownByCurrent,
   );
 
   let isChanged = false;
