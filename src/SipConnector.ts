@@ -622,16 +622,15 @@ export default class SipConnector {
     return !!this.promisePendingStartPresentation || !!this.promisePendingStopPresentation;
   }
 
-  private _startPresentation(
+  private _sendPresentation(
+    session: RTCSession,
     stream: MediaStream,
     {
-      session,
       maxBitrate,
       degradationPreference,
       isNeedReinvite = true,
       isP2P = false,
     }: {
-      session: RTCSession;
       isNeedReinvite?: boolean;
       isP2P?: boolean;
       maxBitrate?: number;
@@ -709,8 +708,7 @@ export default class SipConnector {
       return Promise.reject(new Error('Presentation is already started'));
     }
 
-    return this._startPresentation(stream, {
-      session,
+    return this._sendPresentation(session, stream, {
       isNeedReinvite,
       isP2P,
       maxBitrate,
@@ -785,8 +783,7 @@ export default class SipConnector {
       await this.promisePendingStartPresentation;
     }
 
-    return this._startPresentation(stream, {
-      session,
+    return this._sendPresentation(session, stream, {
       isP2P,
       maxBitrate,
       degradationPreference,
