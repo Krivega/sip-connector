@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.12.0](https://github.com/Krivega/sip-connector/compare/v6.11.0...v6.12.0) (2023-07-26)
+
+### Features
+
+- add factor of max bitrate for av1 codec ([25d5aa9](https://github.com/Krivega/sip-connector/commit/25d5aa90930922e286ee4ca249744c88afe24d52))
+
 ## [6.11.0](https://github.com/Krivega/sip-connector/compare/v6.10.0...v6.11.0) (2023-07-14)
 
 ### Features
