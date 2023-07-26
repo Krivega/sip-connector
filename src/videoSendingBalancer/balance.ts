@@ -2,11 +2,8 @@ import type { EEventsMainCAM } from '../SipConnector';
 import findVideoSender from '../utils/findVideoSender';
 import getCodecFromSender from '../utils/getCodecFromSender';
 import processSender from './processSender';
+import hasIncludesString from './hasIncludesString';
 import type { TOnSetParameters } from './setEncodingsToSender';
-
-const hasIncludesString = (source?: string, target?: string): boolean => {
-  return !!source && !!target && source.toLowerCase().includes(target.toLowerCase());
-};
 
 const balance = async ({
   mainCam,
@@ -28,15 +25,16 @@ const balance = async ({
     return;
   }
 
-  if (ignoreForCodec) {
-    const codec = await getCodecFromSender(sender);
+  const codec = await getCodecFromSender(sender);
 
-    if (hasIncludesString(codec, ignoreForCodec)) {
-      return;
-    }
+  if (hasIncludesString(codec, ignoreForCodec)) {
+    return;
   }
 
-  processSender({ mainCam, resolutionMainCam, sender, track: sender.track }, onSetParameters);
+  processSender(
+    { mainCam, resolutionMainCam, sender, codec, track: sender.track },
+    onSetParameters,
+  );
 };
 
 export default balance;

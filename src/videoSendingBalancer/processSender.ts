@@ -1,6 +1,9 @@
 import createStackPromises from 'stack-promises';
 import { EEventsMainCAM } from '../SipConnector';
-import getMaxBitrateByWidth, { MINIMUM_BITRATE, MAXIMUM_BITRATE } from './getMaxBitrateByWidth';
+import getMaxBitrateByWidthAndCodec, {
+  getMinimumBitrate,
+  getMaximumBitrate,
+} from './getMaxBitrateByWidthAndCodec';
 import setEncodingsToSender from './setEncodingsToSender';
 import type { TOnSetParameters, TResult } from './setEncodingsToSender';
 
@@ -37,11 +40,11 @@ const addToStackScaleResolutionDownBySender = ({
 };
 
 const downgradeResolutionSender = (
-  sender: RTCRtpSender,
+  { sender, codec }: { sender: RTCRtpSender; codec?: string },
   onSetParameters?: TOnSetParameters,
 ): Promise<TResult> => {
   const scaleResolutionDownByTarget = 200;
-  const maxBitrate = MINIMUM_BITRATE;
+  const maxBitrate = getMinimumBitrate(codec);
 
   return addToStackScaleResolutionDownBySender({
     sender,
@@ -52,11 +55,11 @@ const downgradeResolutionSender = (
 };
 
 const resetScaleResolutionSender = (
-  sender: RTCRtpSender,
+  { sender, codec }: { sender: RTCRtpSender; codec?: string },
   onSetParameters?: TOnSetParameters,
 ): Promise<TResult> => {
   const scaleResolutionDownByTarget = 1;
-  const maxBitrate = MAXIMUM_BITRATE;
+  const maxBitrate = getMaximumBitrate(codec);
 
   return addToStackScaleResolutionDownBySender({
     sender,
@@ -67,13 +70,16 @@ const resetScaleResolutionSender = (
 };
 
 const setResolutionSender = (
-  sender: RTCRtpSender,
   {
+    sender,
     track,
     resolution,
+    codec,
   }: {
+    sender: RTCRtpSender;
     track: MediaStreamTrack;
     resolution: string;
+    codec?: string;
   },
   onSetParameters?: TOnSetParameters,
 ): Promise<TResult> => {
@@ -88,7 +94,7 @@ const setResolutionSender = (
 
   const scaleResolutionDownByTarget = Math.max(scaleByWidth, scaleByHeight, SCALE_MIN);
 
-  const maxBitrate = getMaxBitrateByWidth(+widthTarget);
+  const maxBitrate = getMaxBitrateByWidthAndCodec(+widthTarget, codec);
 
   return addToStackScaleResolutionDownBySender({
     sender,
@@ -104,24 +110,25 @@ const processSender = (
     resolutionMainCam,
     sender,
     track,
+    codec,
   }: {
     mainCam: EEventsMainCAM;
     resolutionMainCam?: string;
     sender: RTCRtpSender;
     track: MediaStreamTrack;
+    codec?: string;
   },
   onSetParameters?: TOnSetParameters,
 ): Promise<TResult> => {
   switch (mainCam) {
     case EEventsMainCAM.PAUSE_MAIN_CAM:
-      return downgradeResolutionSender(sender, onSetParameters);
+      return downgradeResolutionSender({ sender, codec }, onSetParameters);
     case EEventsMainCAM.RESUME_MAIN_CAM:
-      return resetScaleResolutionSender(sender, onSetParameters);
+      return resetScaleResolutionSender({ sender, codec }, onSetParameters);
     case EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION:
       if (resolutionMainCam) {
         return setResolutionSender(
-          sender,
-          { track, resolution: resolutionMainCam },
+          { sender, track, codec, resolution: resolutionMainCam },
           onSetParameters,
         );
       }
