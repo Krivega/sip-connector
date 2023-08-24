@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.13.0](https://github.com/Krivega/sip-connector/compare/v6.12.0...v6.13.0) (2023-08-24)
+
+### Features
+
+- add setBitrateByTrackResolution to videoSendingBalancer ([1776067](https://github.com/Krivega/sip-connector/commit/177606718a7a206268a1b8a8694bb6d3183e36fc))
+
+### Bug Fixes
+
+- rename **mocks** to **fixtures** ([c3784dd](https://github.com/Krivega/sip-connector/commit/c3784dd6f0338cba3a09c4c34c5b81db672cb0ba))
+
 ## [6.12.0](https://github.com/Krivega/sip-connector/compare/v6.11.0...v6.12.0) (2023-07-26)
 
 ### Features
