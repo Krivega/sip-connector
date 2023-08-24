@@ -69,7 +69,7 @@ const resolveVideoSendingBalancer = (
       reBalance = balanceByTrack;
     },
     reBalance() {
-      reBalance();
+      return reBalance();
     },
   };
 };
