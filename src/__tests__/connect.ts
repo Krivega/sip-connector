@@ -1,17 +1,17 @@
-import createSipConnector from '../__mocks__/doMock';
+import type SipConnector from '../SipConnector';
 import {
   dataForConnectionWithAuthorization,
   dataForConnectionWithAuthorizationWithDisplayName,
   dataForConnectionWithoutAuthorization,
   dataForConnectionWithoutAuthorizationWithoutDisplayName,
-  uaConfigurationWithAuthorization,
-  uaConfigurationWithoutAuthorization,
-  uaConfigurationWithAuthorizationWithDisplayName,
-  uaConfigurationWithoutAuthorizationWithoutDisplayName,
-  remoteAddress,
   extraHeadersRemoteAddress,
-} from '../__mocks__';
-import type SipConnector from '../SipConnector';
+  remoteAddress,
+  uaConfigurationWithAuthorization,
+  uaConfigurationWithAuthorizationWithDisplayName,
+  uaConfigurationWithoutAuthorization,
+  uaConfigurationWithoutAuthorizationWithoutDisplayName,
+} from '../__fixtures__';
+import createSipConnector from '../__fixtures__/doMock';
 
 const wrongPassword = 'wrongPassword';
 

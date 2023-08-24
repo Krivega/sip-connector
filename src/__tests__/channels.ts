@@ -1,9 +1,9 @@
 import { createMediaStreamMock } from 'webrtc-mock';
-import createSipConnector from '../__mocks__/doMock';
-import { dataForConnectionWithAuthorization } from '../__mocks__';
-import { channelsHeaders, channelsData, sendedExtraHeaders } from '../__mocks__/channels';
-import JsSIP from '../__mocks__/jssip.mock';
 import SipConnector from '../SipConnector';
+import { dataForConnectionWithAuthorization } from '../__fixtures__';
+import { channelsData, channelsHeaders, sendedExtraHeaders } from '../__fixtures__/channels';
+import createSipConnector from '../__fixtures__/doMock';
+import JsSIP from '../__fixtures__/jssip.mock';
 import { CONTENT_TYPE_CHANNELS } from '../headers';
 
 describe('channels', () => {

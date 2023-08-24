@@ -1,10 +1,10 @@
 import delayPromise from 'promise-delay';
 import { createMediaStreamMock } from 'webrtc-mock';
-import createSipConnector from '../__mocks__/doMock';
-import { FAILED_CONFERENCE_NUMBER } from '../__mocks__/jssip.mock';
-import { dataForConnectionWithAuthorization } from '../__mocks__';
-import { hasCanceledCallError } from '../SipConnector';
 import type SipConnector from '../SipConnector';
+import { hasCanceledCallError } from '../SipConnector';
+import { dataForConnectionWithAuthorization } from '../__fixtures__';
+import createSipConnector from '../__fixtures__/doMock';
+import { FAILED_CONFERENCE_NUMBER } from '../__fixtures__/jssip.mock';
 
 describe('call', () => {
   let sipConnector: SipConnector;

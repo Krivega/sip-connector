@@ -1,15 +1,15 @@
 import { createMediaStreamMock } from 'webrtc-mock';
-import createSipConnector from '../__mocks__/doMock';
-import { dataForConnectionWithAuthorization } from '../__mocks__';
-import JsSIP from '../__mocks__/jssip.mock';
 import type SipConnector from '../SipConnector';
+import { dataForConnectionWithAuthorization } from '../__fixtures__';
+import createSipConnector from '../__fixtures__/doMock';
+import JsSIP from '../__fixtures__/jssip.mock';
 import {
+  AVAILABLE_SECOND_REMOTE_STREAM,
+  CONTENT_TYPE_SHARE_STATE,
   HEADER_CONTENT_SHARE_STATE,
   HEADER_CONTENT_TYPE_NAME,
-  CONTENT_TYPE_SHARE_STATE,
-  AVAILABLE_SECOND_REMOTE_STREAM,
-  NOT_AVAILABLE_SECOND_REMOTE_STREAM,
   MUST_STOP_PRESENTATION,
+  NOT_AVAILABLE_SECOND_REMOTE_STREAM,
 } from '../headers';
 
 describe('events', () => {

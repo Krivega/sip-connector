@@ -1,15 +1,15 @@
 import { createMediaStreamMock } from 'webrtc-mock';
-import createSipConnector from '../__mocks__/doMock';
-import { dataForConnectionWithAuthorization } from '../__mocks__';
-import JsSIP from '../__mocks__/jssip.mock';
 import SipConnector, { EEventsMainCAM } from '../SipConnector';
+import { dataForConnectionWithAuthorization } from '../__fixtures__';
+import createSipConnector from '../__fixtures__/doMock';
+import JsSIP from '../__fixtures__/jssip.mock';
+import { ADMIN_START_MAIN_CAM, ADMIN_STOP_MAIN_CAM } from '../constants';
 import {
-  HEADER_CONTENT_TYPE_NAME,
   CONTENT_TYPE_MAIN_CAM,
+  HEADER_CONTENT_TYPE_NAME,
   HEADER_MAIN_CAM,
   HEADER_MAIN_CAM_RESOLUTION,
 } from '../headers';
-import { ADMIN_START_MAIN_CAM, ADMIN_STOP_MAIN_CAM } from '../constants';
 
 const headersMainCamControl: [string, string][] = [
   [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],

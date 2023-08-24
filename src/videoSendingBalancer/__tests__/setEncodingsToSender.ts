@@ -1,4 +1,4 @@
-import RTCRtpSenderMock from '../../__mocks__/RTCRtpSenderMock';
+import RTCRtpSenderMock from '../../__fixtures__/RTCRtpSenderMock';
 import setEncodingsToSender from '../setEncodingsToSender';
 
 describe('setEncodingsToSender', () => {

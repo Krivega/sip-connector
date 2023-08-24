@@ -1,9 +1,9 @@
 import { createMediaStreamMock } from 'webrtc-mock';
-import createSipConnector from '../__mocks__/doMock';
-import { dataForConnectionWithAuthorization } from '../__mocks__';
-import { accountChangedHeaders, accountDeletedHeaders } from '../__mocks__/accountNotify';
-import JsSIP from '../__mocks__/jssip.mock';
 import SipConnector from '../SipConnector';
+import { dataForConnectionWithAuthorization } from '../__fixtures__';
+import { accountChangedHeaders, accountDeletedHeaders } from '../__fixtures__/accountNotify';
+import createSipConnector from '../__fixtures__/doMock';
+import JsSIP from '../__fixtures__/jssip.mock';
 
 describe('account notify', () => {
   const number = '111';

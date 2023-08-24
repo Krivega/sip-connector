@@ -1,6 +1,6 @@
 import { createVideoMediaStreamTrackMock } from 'webrtc-mock';
 import { EEventsMainCAM } from '../../SipConnector';
-import RTCRtpSenderMock from '../../__mocks__/RTCRtpSenderMock';
+import RTCRtpSenderMock from '../../__fixtures__/RTCRtpSenderMock';
 import processSender from '../processSender';
 
 const BITRATE_1024 = 1e6;

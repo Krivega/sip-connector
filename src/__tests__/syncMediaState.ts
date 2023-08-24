@@ -1,21 +1,21 @@
 import { createMediaStreamMock } from 'webrtc-mock';
-import createSipConnector from '../__mocks__/doMock';
-import { dataForConnectionWithAuthorization } from '../__mocks__';
-import JsSIP from '../__mocks__/jssip.mock';
-import SipConnector, { EEventsSyncMediaState, EEventsMainCAM, EEventsMic } from '../SipConnector';
-import {
-  HEADER_CONTENT_TYPE_NAME,
-  CONTENT_TYPE_MAIN_CAM,
-  CONTENT_TYPE_MIC,
-  HEADER_MEDIA_SYNC,
-  HEADER_MAIN_CAM,
-  HEADER_MIC,
-} from '../headers';
+import SipConnector, { EEventsMainCAM, EEventsMic, EEventsSyncMediaState } from '../SipConnector';
+import { dataForConnectionWithAuthorization } from '../__fixtures__';
+import createSipConnector from '../__fixtures__/doMock';
+import JsSIP from '../__fixtures__/jssip.mock';
 import {
   ADMIN_FORCE_SYNC_MEDIA_STATE,
   ADMIN_START_MAIN_CAM,
   ADMIN_STOP_MAIN_CAM,
 } from '../constants';
+import {
+  CONTENT_TYPE_MAIN_CAM,
+  CONTENT_TYPE_MIC,
+  HEADER_CONTENT_TYPE_NAME,
+  HEADER_MAIN_CAM,
+  HEADER_MEDIA_SYNC,
+  HEADER_MIC,
+} from '../headers';
 
 const headersSyncForcedAdminStartMainCam: [string, string][] = [
   [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],

@@ -1,6 +1,6 @@
-import createSipConnector from '../__mocks__/doMock';
-import { dataForConnectionWithAuthorizationWithDisplayName } from '../__mocks__';
 import type SipConnector from '../SipConnector';
+import { dataForConnectionWithAuthorizationWithDisplayName } from '../__fixtures__';
+import createSipConnector from '../__fixtures__/doMock';
 
 describe('validateAPI', () => {
   let sipConnector: SipConnector;

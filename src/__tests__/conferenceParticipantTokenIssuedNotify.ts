@@ -1,12 +1,12 @@
 import { createMediaStreamMock } from 'webrtc-mock';
-import createSipConnector from '../__mocks__/doMock';
-import { dataForConnectionWithoutAuthorization } from '../__mocks__';
-import {
-  conferenceParticipantTokenIssuedHeaders,
-  conferenceParticipantTokenIssuedData,
-} from '../__mocks__/conferenceParticipantTokenIssuedNotify';
-import JsSIP from '../__mocks__/jssip.mock';
 import SipConnector from '../SipConnector';
+import { dataForConnectionWithoutAuthorization } from '../__fixtures__';
+import {
+  conferenceParticipantTokenIssuedData,
+  conferenceParticipantTokenIssuedHeaders,
+} from '../__fixtures__/conferenceParticipantTokenIssuedNotify';
+import createSipConnector from '../__fixtures__/doMock';
+import JsSIP from '../__fixtures__/jssip.mock';
 
 describe('conference participant token issued notify', () => {
   const number = '111';

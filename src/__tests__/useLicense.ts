@@ -1,14 +1,14 @@
 import { createMediaStreamMock } from 'webrtc-mock';
-import createSipConnector from '../__mocks__/doMock';
-import { dataForConnectionWithAuthorization } from '../__mocks__';
-import JsSIP from '../__mocks__/jssip.mock';
 import SipConnector, { EUseLicense } from '../SipConnector';
+import { dataForConnectionWithAuthorization } from '../__fixtures__';
+import createSipConnector from '../__fixtures__/doMock';
+import JsSIP from '../__fixtures__/jssip.mock';
+import { USE_LICENSE } from '../constants';
 import {
-  HEADER_CONTENT_TYPE_NAME,
   CONTENT_TYPE_USE_LICENSE,
+  HEADER_CONTENT_TYPE_NAME,
   HEADER_CONTENT_USE_LICENSE,
 } from '../headers';
-import { USE_LICENSE } from '../constants';
 
 const headersUseLicenseAudio: [string, string][] = [
   [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_USE_LICENSE],
