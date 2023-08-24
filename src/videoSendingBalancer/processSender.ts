@@ -121,8 +121,6 @@ const processSender = (
   },
   onSetParameters?: TOnSetParameters,
 ): Promise<TResult> => {
-  console.log('🚀 ~ file: processSender.ts:125 ~ mainCam:', mainCam);
-
   switch (mainCam) {
     case EEventsMainCAM.PAUSE_MAIN_CAM:
       return downgradeResolutionSender({ sender, codec }, onSetParameters);
