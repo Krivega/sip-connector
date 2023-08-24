@@ -1,8 +1,8 @@
 import type { EEventsMainCAM } from '../SipConnector';
 import findVideoSender from '../utils/findVideoSender';
 import getCodecFromSender from '../utils/getCodecFromSender';
-import processSender from './processSender';
 import hasIncludesString from './hasIncludesString';
+import processSender from './processSender';
 import type { TOnSetParameters } from './setEncodingsToSender';
 
 const balance = async ({
@@ -12,7 +12,7 @@ const balance = async ({
   onSetParameters,
   ignoreForCodec,
 }: {
-  mainCam: EEventsMainCAM;
+  mainCam?: EEventsMainCAM;
   resolutionMainCam?: string;
   connection: RTCPeerConnection;
   onSetParameters?: TOnSetParameters;
@@ -31,7 +31,7 @@ const balance = async ({
     return;
   }
 
-  processSender(
+  return processSender(
     { mainCam, resolutionMainCam, sender, codec, track: sender.track },
     onSetParameters,
   );

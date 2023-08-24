@@ -13,8 +13,22 @@ const resolveVideoSendingBalancer = (
     onSetParameters?: TOnSetParameters;
   } = {},
 ) => {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  let reBalance = () => {};
+  const balanceByTrack = () => {
+    const { connection } = sipConnector;
+
+    if (!connection) {
+      return Promise.reject(new Error('connection is not exist'));
+    }
+
+    return balance({
+      connection,
+      onSetParameters,
+      ignoreForCodec,
+    });
+  };
+
+  let reBalance = balanceByTrack;
+
   const handleMainCamControl = (headers: {
     mainCam: EEventsMainCAM;
     resolutionMainCam?: string;
@@ -23,11 +37,11 @@ const resolveVideoSendingBalancer = (
       const { mainCam, resolutionMainCam } = headers;
       const { connection } = sipConnector;
 
-      if (!connection || mainCam === undefined) {
-        return;
+      if (!connection) {
+        return Promise.reject(new Error('connection is not exist'));
       }
 
-      balance({
+      return balance({
         mainCam,
         resolutionMainCam,
         connection,
@@ -47,7 +61,17 @@ const resolveVideoSendingBalancer = (
     sipConnector.offSession('main-cam-control', handleMainCamControl);
   };
 
-  return { subscribe, unsubscribe, reBalance };
+  return {
+    subscribe,
+    unsubscribe,
+    balanceByTrack,
+    resetMainCamControl() {
+      reBalance = balanceByTrack;
+    },
+    reBalance() {
+      reBalance();
+    },
+  };
 };
 
 export default resolveVideoSendingBalancer;

@@ -1,11 +1,8 @@
 import createStackPromises from 'stack-promises';
 import { EEventsMainCAM } from '../SipConnector';
-import getMaxBitrateByWidthAndCodec, {
-  getMinimumBitrate,
-  getMaximumBitrate,
-} from './getMaxBitrateByWidthAndCodec';
-import setEncodingsToSender from './setEncodingsToSender';
+import getMaxBitrateByWidthAndCodec, { getMinimumBitrate } from './getMaxBitrateByWidthAndCodec';
 import type { TOnSetParameters, TResult } from './setEncodingsToSender';
+import setEncodingsToSender from './setEncodingsToSender';
 
 const stackPromises = createStackPromises<TResult>();
 
@@ -54,12 +51,16 @@ const downgradeResolutionSender = (
   });
 };
 
-const resetScaleResolutionSender = (
-  { sender, codec }: { sender: RTCRtpSender; codec?: string },
+const setBitrateByTrackResolution = (
+  { sender, track, codec }: { sender: RTCRtpSender; track: MediaStreamTrack; codec?: string },
   onSetParameters?: TOnSetParameters,
 ): Promise<TResult> => {
   const scaleResolutionDownByTarget = 1;
-  const maxBitrate = getMaximumBitrate(codec);
+
+  const settings = track.getSettings();
+  const widthCurrent = settings.width!;
+
+  const maxBitrate = getMaxBitrateByWidthAndCodec(widthCurrent, codec);
 
   return addToStackScaleResolutionDownBySender({
     sender,
@@ -112,7 +113,7 @@ const processSender = (
     track,
     codec,
   }: {
-    mainCam: EEventsMainCAM;
+    mainCam?: EEventsMainCAM;
     resolutionMainCam?: string;
     sender: RTCRtpSender;
     track: MediaStreamTrack;
@@ -120,11 +121,13 @@ const processSender = (
   },
   onSetParameters?: TOnSetParameters,
 ): Promise<TResult> => {
+  console.log('🚀 ~ file: processSender.ts:125 ~ mainCam:', mainCam);
+
   switch (mainCam) {
     case EEventsMainCAM.PAUSE_MAIN_CAM:
       return downgradeResolutionSender({ sender, codec }, onSetParameters);
     case EEventsMainCAM.RESUME_MAIN_CAM:
-      return resetScaleResolutionSender({ sender, codec }, onSetParameters);
+      return setBitrateByTrackResolution({ sender, track, codec }, onSetParameters);
     case EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION:
       if (resolutionMainCam) {
         return setResolutionSender(
@@ -132,12 +135,11 @@ const processSender = (
           onSetParameters,
         );
       }
-  }
 
-  return Promise.resolve({
-    isChanged: false,
-    parameters: { encodings: [{}], transactionId: '0', codecs: [], headerExtensions: [], rtcp: {} },
-  });
+      return setBitrateByTrackResolution({ sender, track, codec }, onSetParameters);
+    default:
+      return setBitrateByTrackResolution({ sender, track, codec }, onSetParameters);
+  }
 };
 
 export default processSender;

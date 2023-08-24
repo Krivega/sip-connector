@@ -1,9 +1,9 @@
 import { createVideoMediaStreamTrackMock } from 'webrtc-mock';
-import RTCRtpSenderMock from '../../__mocks__/RTCRtpSenderMock';
 import { EEventsMainCAM } from '../../SipConnector';
+import RTCRtpSenderMock from '../../__mocks__/RTCRtpSenderMock';
 import processSender from '../processSender';
 
-const MAX_BITRATE_RESUME_MAIN_CAM = 4000000;
+const BITRATE_1024 = 1e6;
 
 const CODEC_AV1 = 'video/AV1';
 const FACTOR_CODEC_AV1 = 0.6;
@@ -15,6 +15,49 @@ describe('processSender', () => {
   beforeEach(() => {
     sender = new RTCRtpSenderMock();
     trackWith1024 = createVideoMediaStreamTrackMock({ constraints: { width: 1024, height: 720 } });
+  });
+
+  it('by track 1024', () => {
+    expect.assertions(2);
+
+    return processSender({
+      sender,
+      track: trackWith1024,
+    }).then(({ parameters, isChanged }) => {
+      expect(isChanged).toBe(true);
+      expect(parameters.encodings).toEqual([
+        {
+          maxBitrate: BITRATE_1024,
+        },
+      ]);
+    });
+  });
+
+  it('by track 1024 after MAX_MAIN_CAM_RESOLUTION', () => {
+    expect.assertions(2);
+
+    const targetWidth = 288;
+    const targeHight = 162;
+
+    processSender({
+      sender,
+      mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
+      resolutionMainCam: `${targetWidth}x${targeHight}`,
+      track: trackWith1024,
+    });
+
+    return processSender({
+      sender,
+      track: trackWith1024,
+    }).then(({ parameters, isChanged }) => {
+      expect(isChanged).toBe(true);
+      expect(parameters.encodings).toEqual([
+        {
+          scaleResolutionDownBy: 1,
+          maxBitrate: BITRATE_1024,
+        },
+      ]);
+    });
   });
 
   it('MAX_MAIN_CAM_RESOLUTION', () => {
@@ -83,7 +126,7 @@ describe('processSender', () => {
       expect(parameters.encodings).toEqual([
         {
           scaleResolutionDownBy: 1,
-          maxBitrate: MAX_BITRATE_RESUME_MAIN_CAM,
+          maxBitrate: BITRATE_1024,
         },
       ]);
     });
@@ -119,7 +162,7 @@ describe('processSender', () => {
       expect(parameters.encodings).toEqual([
         {
           scaleResolutionDownBy: 1,
-          maxBitrate: MAX_BITRATE_RESUME_MAIN_CAM,
+          maxBitrate: BITRATE_1024,
         },
       ]);
     });
@@ -195,7 +238,7 @@ describe('processSender', () => {
       expect(parameters.encodings).toEqual([
         {
           scaleResolutionDownBy: 1,
-          maxBitrate: MAX_BITRATE_RESUME_MAIN_CAM * FACTOR_CODEC_AV1,
+          maxBitrate: BITRATE_1024 * FACTOR_CODEC_AV1,
         },
       ]);
     });
@@ -234,7 +277,7 @@ describe('processSender', () => {
       expect(parameters.encodings).toEqual([
         {
           scaleResolutionDownBy: 1,
-          maxBitrate: MAX_BITRATE_RESUME_MAIN_CAM * FACTOR_CODEC_AV1,
+          maxBitrate: BITRATE_1024 * FACTOR_CODEC_AV1,
         },
       ]);
     });
