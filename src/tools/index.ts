@@ -4,7 +4,7 @@ import resolveAnswerIncomingCall from './answerIncomingCall';
 import resolveConnectToServer from './connectToServer';
 import resolveCallToServer from './callToServer';
 import resolveDisconnectFromServer from './disconnectFromServer';
-import hasPurgatory from './hasPurgatory';
+import hasPurgatory, { PURGATORY_CONFERENCE_NUMBER } from './hasPurgatory';
 import resolveAskPermissionToEnableCam from './resolveAskPermissionToEnableCam';
 import resolveStopShareSipConnector from './resolveStopShareSipConnector';
 import resolveOnMustStopPresentation from './resolveOnMustStopPresentation';
@@ -38,4 +38,5 @@ export {
   resolveUpdateRemoteStreams,
   resolveGetRemoteStreams,
   sendDTMFAccumulated,
+  PURGATORY_CONFERENCE_NUMBER,
 };
