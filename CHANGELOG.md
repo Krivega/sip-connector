@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.14.0](https://github.com/Krivega/sip-connector/compare/v6.13.4...v6.14.0) (2023-09-21)
+
+### Features
+
+- add tools ([84499d7](https://github.com/Krivega/sip-connector/commit/84499d77d3782c4705934c2847240227c9d99182))
+
 ### [6.13.4](https://github.com/Krivega/sip-connector/compare/v6.13.3...v6.13.4) (2023-09-12)
 
 ### [6.13.3](https://github.com/Krivega/sip-connector/compare/v6.13.2...v6.13.3) (2023-09-12)
