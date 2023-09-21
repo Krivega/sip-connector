@@ -1,7 +1,8 @@
 import * as error from './error';
 import createSyncMediaState from './syncMediaState';
 import resolveAnswerIncomingCall from './answerIncomingCall';
-import resolveConnectToServer from './callToServer';
+import resolveConnectToServer from './connectToServer';
+import resolveCallToServer from './callToServer';
 import resolveDisconnectFromServer from './disconnectFromServer';
 import hasPurgatory from './hasPurgatory';
 import resolveAskPermissionToEnableCam from './resolveAskPermissionToEnableCam';
@@ -22,6 +23,7 @@ export {
   createSyncMediaState,
   resolveAnswerIncomingCall,
   resolveConnectToServer,
+  resolveCallToServer,
   resolveDisconnectFromServer,
   hasPurgatory,
   resolveAskPermissionToEnableCam,
