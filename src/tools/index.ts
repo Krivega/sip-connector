@@ -1,42 +1,44 @@
-import * as error from './error';
-import createSyncMediaState from './syncMediaState';
 import resolveAnswerIncomingCall from './answerIncomingCall';
-import resolveConnectToServer from './connectToServer';
 import resolveCallToServer from './callToServer';
+import resolveConnectToServer from './connectToServer';
 import resolveDisconnectFromServer from './disconnectFromServer';
+import * as error from './error';
+import getExtraHeaders from './getExtraHeaders';
 import hasPurgatory, { PURGATORY_CONFERENCE_NUMBER } from './hasPurgatory';
 import resolveAskPermissionToEnableCam from './resolveAskPermissionToEnableCam';
-import resolveStopShareSipConnector from './resolveStopShareSipConnector';
+import resolveGetRemoteStreams from './resolveGetRemoteStreams';
 import resolveOnMustStopPresentation from './resolveOnMustStopPresentation';
 import resolveOnUseLicense from './resolveOnUseLicense';
 import resolveSendMediaState from './resolveSendMediaState';
 import resolveSendRefusalToTurnOnCam from './resolveSendRefusalToTurnOnCam';
 import resolveSendRefusalToTurnOnMic from './resolveSendRefusalToTurnOnMic';
 import resolveStartPresentation from './resolveStartPresentation';
+import resolveStopShareSipConnector from './resolveStopShareSipConnector';
 import resolveUpdatePresentation from './resolveUpdatePresentation';
 import resolveUpdateRemoteStreams from './resolveUpdateRemoteStreams';
-import resolveGetRemoteStreams from './resolveGetRemoteStreams';
 import sendDTMFAccumulated from './sendDTMFAccumulated';
+import createSyncMediaState from './syncMediaState';
 
 export {
-  error,
+  PURGATORY_CONFERENCE_NUMBER,
   createSyncMediaState,
-  resolveAnswerIncomingCall,
-  resolveConnectToServer,
-  resolveCallToServer,
-  resolveDisconnectFromServer,
+  error,
+  getExtraHeaders,
   hasPurgatory,
+  resolveAnswerIncomingCall,
   resolveAskPermissionToEnableCam,
-  resolveStopShareSipConnector,
+  resolveCallToServer,
+  resolveConnectToServer,
+  resolveDisconnectFromServer,
+  resolveGetRemoteStreams,
   resolveOnMustStopPresentation,
   resolveOnUseLicense,
   resolveSendMediaState,
   resolveSendRefusalToTurnOnCam,
   resolveSendRefusalToTurnOnMic,
   resolveStartPresentation,
+  resolveStopShareSipConnector,
   resolveUpdatePresentation,
   resolveUpdateRemoteStreams,
-  resolveGetRemoteStreams,
   sendDTMFAccumulated,
-  PURGATORY_CONFERENCE_NUMBER,
 };
