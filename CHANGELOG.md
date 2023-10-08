@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.17.0](https://github.com/Krivega/sip-connector/compare/v6.16.0...v6.17.0) (2023-10-08)
+
+### Features
+
+- getExtraHeaders ([402b55b](https://github.com/Krivega/sip-connector/commit/402b55ba822016b196ed50ff750d44db70d1e835))
+
 ## [6.16.0](https://github.com/Krivega/sip-connector/compare/v6.15.0...v6.16.0) (2023-09-21)
 
 ### Features
