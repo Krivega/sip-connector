@@ -4,6 +4,7 @@ import resolveConnectToServer from './connectToServer';
 import resolveDisconnectFromServer from './disconnectFromServer';
 import * as error from './error';
 import getExtraHeaders from './getExtraHeaders';
+import getUserAgent from './getUserAgent';
 import hasPurgatory, { PURGATORY_CONFERENCE_NUMBER } from './hasPurgatory';
 import resolveAskPermissionToEnableCam from './resolveAskPermissionToEnableCam';
 import resolveGetRemoteStreams from './resolveGetRemoteStreams';
@@ -24,6 +25,7 @@ export {
   createSyncMediaState,
   error,
   getExtraHeaders,
+  getUserAgent,
   hasPurgatory,
   resolveAnswerIncomingCall,
   resolveAskPermissionToEnableCam,
