@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.18.0](https://github.com/Krivega/sip-connector/compare/v6.17.0...v6.18.0) (2023-10-08)
+
+### Features
+
+- getUserAgent ([fd17f21](https://github.com/Krivega/sip-connector/commit/fd17f21f8d99aaede3c485fad6666f935ce0c7a3))
+
 ## [6.17.0](https://github.com/Krivega/sip-connector/compare/v6.16.0...v6.17.0) (2023-10-08)
 
 ### Features
