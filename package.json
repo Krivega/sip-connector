@@ -69,7 +69,7 @@
     "sequent-promises": "^1.0.0",
     "stack-promises": "^1.0.1",
     "ts-debounce": "^4.0.0",
-    "webrtc-mock": "^1.0.0"
+    "webrtc-mock": "^1.0.1"
   },
   "devDependencies": {
     "@babel/preset-typescript": "^7.23.2",

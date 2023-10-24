@@ -2956,7 +2956,7 @@ eventemitter3@^5.0.1:
   resolved "https://registry.yarnpkg.com/eventemitter3/-/eventemitter3-5.0.1.tgz#53f5ffd0a492ac800721bb42c66b841de96423c4"
   integrity sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA==
 
-events-constructor@^1.2.0, events-constructor@^1.2.2:
+events-constructor@^1.2.2:
   version "1.2.2"
   resolved "https://registry.yarnpkg.com/events-constructor/-/events-constructor-1.2.2.tgz#11d65cfd8ebbfe93f178249490f7ae278effa038"
   integrity sha512-IwsM23WoFRZr82DFsVIy7fj5x+RW9N/jrwqe4VJRpaHbsWi3Lq20TKO618E10K3ixZhIkzH3rdIbsIEMuWEKlA==
@@ -6228,12 +6228,12 @@ webidl-conversions@^7.0.0:
   resolved "https://registry.yarnpkg.com/webidl-conversions/-/webidl-conversions-7.0.0.tgz#256b4e1882be7debbf01d05f0aa2039778ea080a"
   integrity sha512-VwddBukDzu71offAQR975unBIGqfKZpM+8ZX6ySk8nYhVoo5CYaZyzt3YBvYtRtO+aoGlqxPg/B87NGVZ/fu6g==
 
-webrtc-mock@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/webrtc-mock/-/webrtc-mock-1.0.0.tgz#48cd3e620138dc19f15cb24ec4ad5f36b8250dcc"
-  integrity sha512-/x3DeBxSGcFUIVJIcIJXfBdRnP7g8M2xcWSWP8oP8ht4tztCsnXz0ib611hhejauahA5h3xYNGmzqBZfAah2qQ==
+webrtc-mock@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/webrtc-mock/-/webrtc-mock-1.0.1.tgz#c28a12d948ecd1ac1d70ee85397721449f8003fd"
+  integrity sha512-vxvf8RysYb04tvTwKEhmIARDAdht2c0RlRkmZe/8ewDzlzoOCZV3boE/exa5zi0eJ2U+2LaWXwUBGD5ZetFHjg==
   dependencies:
-    events-constructor "^1.2.0"
+    events-constructor "^1.2.2"
 
 whatwg-encoding@^2.0.0:
   version "2.0.0"
