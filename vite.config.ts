@@ -5,7 +5,12 @@ import tsConfigPaths from 'vite-tsconfig-paths';
 
 import packageJson from './package.json';
 
-const externalDependencies = Object.keys(packageJson.peerDependencies);
+const externalDependencies = [
+  ...Object.keys(packageJson.peerDependencies),
+  '@krivega/jssip/lib/URI',
+  '@krivega/jssip/lib/SIPMessage',
+  '@krivega/jssip/lib/NameAddrHeader',
+];
 
 export default defineConfig(() => {
   return {
@@ -19,7 +24,7 @@ export default defineConfig(() => {
     ],
     build: {
       lib: {
-        entry: [resolve('src', 'index.ts')],
+        entry: [resolve('src', 'index.ts'), resolve('src', 'doMock.ts')],
         name: 'index',
         formats: ['es', 'cjs'],
         fileName: (format, entryName) => `${entryName}.${format === 'cjs' ? 'cjs' : 'js'}`,

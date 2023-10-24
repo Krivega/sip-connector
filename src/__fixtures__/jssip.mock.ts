@@ -1,7 +1,11 @@
-import type { UA } from '@krivega/jssip';
+import type {
+  IncomingInfoEvent,
+  IncomingRequest,
+  Originator,
+  RTCSession,
+  UA,
+} from '@krivega/jssip';
 import NameAddrHeader from '@krivega/jssip/lib/NameAddrHeader';
-import type RTCSession from '@krivega/jssip/lib/RTCSession';
-import type { IncomingInfoEvent, Originator } from '@krivega/jssip/lib/RTCSession';
 import URI from '@krivega/jssip/lib/URI';
 import { EventEmitter } from 'node:events';
 import Request from './Request.mock';
@@ -27,7 +31,7 @@ const triggerNewInfo = (session: RTCSession, extraHeaders: [string, string][]) =
   const request = new Request(extraHeaders);
   const incomingInfoEvent: IncomingInfoEvent = {
     originator: originatorRemote,
-    request,
+    request: request as IncomingRequest,
     info: new Info('', ''),
   };
 

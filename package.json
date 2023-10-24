@@ -24,6 +24,10 @@
     ".": {
       "require": "./dist/index.cjs",
       "import": "./dist/index.js"
+    },
+    "./doMock": {
+      "require": "./dist/doMock.cjs",
+      "import": "./dist/doMock.js"
     }
   },
   "main": "./dist/index.js",
@@ -49,7 +53,7 @@
   },
   "dependencies": {
     "@krivega/cancelable-promise": "^1.1.0",
-    "@krivega/jssip": "^3.23.0",
+    "@krivega/jssip": "^3.23.3",
     "debug": "^4.3.4",
     "events-constructor": "^1.2.2",
     "sequent-promises": "^1.0.0",
@@ -98,6 +102,7 @@
     "@krivega/jssip": "^3.22.0",
     "debug": "^4.3.4",
     "events-constructor": "^1.2.2",
+    "node:events": "^0.0.0",
     "sequent-promises": "^1.0.0",
     "stack-promises": "^1.0.0",
     "ts-debounce": "^4.0.0"

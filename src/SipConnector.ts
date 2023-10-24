@@ -1,14 +1,17 @@
 /* eslint-disable unicorn/no-useless-undefined */
 import { CancelableRequest, isCanceledError } from '@krivega/cancelable-promise';
-import type { UA, URI, WebSocketInterface } from '@krivega/jssip';
-import type RTCSession from '@krivega/jssip/lib/RTCSession';
-import type { IncomingInfoEvent, OutgoingInfoEvent } from '@krivega/jssip/lib/RTCSession';
-import type { IncomingRequest } from '@krivega/jssip/lib/SIPMessage';
 import type {
+  IncomingInfoEvent,
   IncomingRTCSessionEvent,
+  IncomingRequest,
+  OutgoingInfoEvent,
+  RTCSession,
   RegisteredEvent,
+  UA,
+  URI,
   UnRegisteredEvent,
-} from '@krivega/jssip/lib/UA';
+  WebSocketInterface,
+} from '@krivega/jssip';
 import Events from 'events-constructor';
 import { BYE, CANCELED, REJECTED, REQUEST_TIMEOUT } from './causes';
 import {
