@@ -10,6 +10,7 @@ const externalDependencies = [
   '@krivega/jssip/lib/URI',
   '@krivega/jssip/lib/SIPMessage',
   '@krivega/jssip/lib/NameAddrHeader',
+  'node:events',
 ];
 
 export default defineConfig(() => {
