@@ -1,4 +1,4 @@
-export function resolveSipUrl(serverUrl: string): (string) => string {
+export function resolveSipUrl(serverUrl: string): (string: string) => string {
   return (id: string): string => {
     return `sip:${id}@${serverUrl}`;
   };
@@ -10,9 +10,9 @@ const resolveRandomInt = (min: number, max: number) => {
   };
 };
 export const parseDisplayName = (displayName: string) => {
-  return displayName.trim().replace(/ /g, '_');
+  return displayName.trim().replaceAll(' ', '_');
 };
-export const generateUserId = resolveRandomInt(100000, 99999999);
+export const generateUserId = resolveRandomInt(100_000, 99_999_999);
 
 export const prepareMediaStream = (
   mediaStream?: MediaStream,
@@ -20,8 +20,8 @@ export const prepareMediaStream = (
     videoMode,
     audioMode,
   }: {
-    videoMode?: 'sendrecv' | 'sendonly' | 'recvonly';
-    audioMode?: 'sendrecv' | 'sendonly' | 'recvonly';
+    videoMode?: 'recvonly' | 'sendonly' | 'sendrecv';
+    audioMode?: 'recvonly' | 'sendonly' | 'sendrecv';
   } = {},
 ): MediaStream | undefined => {
   if (!mediaStream || (videoMode === 'recvonly' && audioMode === 'recvonly')) {

@@ -2,7 +2,7 @@ import type SipConnector from '../SipConnector';
 import log from '../logger';
 
 const resolveDisconnectFromServer = (sipConnector: SipConnector) => {
-  return () => {
+  return async () => {
     log('disconnectFromServer');
 
     return sipConnector

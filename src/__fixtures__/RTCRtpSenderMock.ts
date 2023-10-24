@@ -1,6 +1,8 @@
 class RTCRtpSenderMock implements RTCRtpSender {
   dtmf: RTCDTMFSender | null = null;
+
   track: MediaStreamTrack | null = null;
+
   transport: RTCDtlsTransport | null = null;
 
   private _parameters: RTCRtpSendParameters = {
@@ -10,26 +12,29 @@ class RTCRtpSenderMock implements RTCRtpSender {
     headerExtensions: [],
     rtcp: {},
   };
-  getStats(): Promise<RTCStatsReport> {
+
+  async getStats(): Promise<RTCStatsReport> {
     throw new Error('Method not implemented.');
   }
-  replaceTrack(): Promise<void> {
+
+  async replaceTrack(): Promise<void> {
     throw new Error('Method not implemented.');
   }
-  setParameters(parameters: RTCRtpSendParameters): Promise<void> {
+
+  async setParameters(parameters: RTCRtpSendParameters): Promise<void> {
     const { transactionId } = this._parameters;
 
     this._parameters = {
       ...this._parameters,
       ...parameters,
-      transactionId: `${+transactionId + 1}`,
+      transactionId: `${Number(transactionId) + 1}`,
     };
-
-    return Promise.resolve();
   }
+
   getParameters(): RTCRtpSendParameters {
     return { ...this._parameters };
   }
+
   setStreams(): void {
     throw new Error('Method not implemented.');
   }

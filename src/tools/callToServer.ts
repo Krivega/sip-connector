@@ -5,10 +5,10 @@ import resolveGetRemoteStreams from './resolveGetRemoteStreams';
 import resolveHandleChangeTracks from './resolveHandleChangeTracks';
 import resolveUpdateRemoteStreams from './resolveUpdateRemoteStreams';
 
-type TDegradationPreference = 'maintain-framerate' | 'maintain-resolution' | 'balanced';
+type TDegradationPreference = 'balanced' | 'maintain-framerate' | 'maintain-resolution';
 
 const resolveCallToServer = (sipConnector: SipConnector) => {
-  const callToServer = (params: {
+  const callToServer = async (parameters: {
     conference: string;
     mediaStream: MediaStream;
     extraHeaders?: string[] | undefined;
@@ -16,9 +16,9 @@ const resolveCallToServer = (sipConnector: SipConnector) => {
     degradationPreference?: TDegradationPreference;
     setRemoteStreams: (streams: MediaStream[]) => void;
     onBeforeProgressCall?: (conference: string) => void;
-    onSuccessProgressCall?: (params: { isPurgatory: boolean }) => void;
+    onSuccessProgressCall?: (parameters_: { isPurgatory: boolean }) => void;
     onEnterPurgatory?: () => void;
-    onEnterConference?: (params: { isSuccessProgressCall: boolean }) => void;
+    onEnterConference?: (parameters_: { isSuccessProgressCall: boolean }) => void;
     onFailProgressCall?: () => void;
     onFinishProgressCall?: () => void;
     onEndedCall?: () => void;
@@ -37,16 +37,16 @@ const resolveCallToServer = (sipConnector: SipConnector) => {
       onFailProgressCall,
       onFinishProgressCall,
       onEndedCall,
-    } = params;
+    } = parameters;
     const updateRemoteStreams = resolveUpdateRemoteStreams({
       setRemoteStreams,
       getRemoteStreams: resolveGetRemoteStreams(sipConnector),
     });
     const handleChangeTracks = resolveHandleChangeTracks(updateRemoteStreams);
 
-    log('callToServer', params);
+    log('callToServer', parameters);
 
-    const startCall = (): Promise<RTCPeerConnection> => {
+    const startCall = async (): Promise<RTCPeerConnection> => {
       log('startCall');
 
       return sipConnector.call({
@@ -64,7 +64,7 @@ const resolveCallToServer = (sipConnector: SipConnector) => {
     const subscribeEnterConference = () => {
       log('subscribeEnterConference: onEnterConference', onEnterConference);
 
-      if (onEnterPurgatory || onEnterConference) {
+      if (onEnterPurgatory ?? onEnterConference) {
         return sipConnector.onSession('enterRoom', (_room: string) => {
           log('enterRoom', { _room, isSuccessProgressCall });
 

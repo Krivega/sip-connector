@@ -1,5 +1,7 @@
-import delayPromise from 'promise-delay';
+// @ts-nocheck
+
 import type SipConnector from '../../SipConnector';
+import delayPromise from '../../__fixtures__/delayPromise';
 import doMockSIPconnector from '../../__fixtures__/doMock';
 import {
   dataForConnectionWithAuthorization,
@@ -32,13 +34,13 @@ describe('processRequest', () => {
     processRequest = resolveProcessRequest(sipConnector);
   });
 
-  it('#1 Unregistered user: correct', () => {
+  it('#1 Unregistered user: correct', async () => {
     expect.assertions(4);
 
+    // @ts-expect-error
     return processRequest(dataForConnectionWithoutAuthorization).then((success) => {
       expect(success).toBe(true);
       expect(sipConnector.isConfigured()).toBe(true);
-      // @ts-ignore
       expect(hasValidUri(parseObject(sipConnector.ua!.configuration).uri)).toBe(true);
       expect(parseObjectWithoutUri(sipConnector.ua!.configuration)).toEqual(
         uaConfigurationWithoutAuthorization,
@@ -46,14 +48,13 @@ describe('processRequest', () => {
     });
   });
 
-  it('#2 Unregistered user isRequiredDisplayName=false: correct', () => {
+  it('#2 Unregistered user isRequiredDisplayName=false: correct', async () => {
     expect.assertions(4);
 
     return processRequest(dataForConnectionWithoutAuthorizationWithoutDisplayName).then(
       (success) => {
         expect(success).toBe(true);
         expect(sipConnector.isConfigured()).toBe(true);
-        // @ts-ignore
         expect(hasValidUri(parseObject(sipConnector.ua!.configuration).uri)).toBe(true);
         expect(parseObjectWithoutUri(sipConnector.ua!.configuration)).toEqual(
           uaConfigurationWithoutAuthorizationWithoutDisplayName,
@@ -62,17 +63,18 @@ describe('processRequest', () => {
     );
   });
 
-  it('#3 Unregistered user change isRequiredDisplayName to true: correct', () => {
+  it('#3 Unregistered user change isRequiredDisplayName to true: correct', async () => {
     expect.assertions(4);
 
+    // @ts-expect-error
     return processRequest(dataForConnectionWithoutAuthorizationWithoutDisplayName)
-      .then(() => {
+      .then(async () => {
+        // @ts-expect-error
         return processRequest(dataForConnectionWithoutAuthorization);
       })
       .then((success) => {
         expect(success).toBe(true);
         expect(sipConnector.isConfigured()).toBe(true);
-        // @ts-ignore
         expect(hasValidUri(parseObject(sipConnector.ua!.configuration).uri)).toBe(true);
         expect(parseObjectWithoutUri(sipConnector.ua!.configuration)).toEqual(
           uaConfigurationWithoutAuthorization,
@@ -80,13 +82,15 @@ describe('processRequest', () => {
       });
   });
 
-  it('#4 Unregistered user: remove displayName', () => {
+  it('#4 Unregistered user: remove displayName', async () => {
     expect.assertions(3);
 
+    // @ts-expect-error
     return processRequest(dataForConnectionWithoutAuthorization)
-      .then(() => {
+      .then(async () => {
         return processRequest({
           ...dataForConnectionWithoutAuthorizationWithoutDisplayName,
+          // @ts-expect-error
           displayNameChanged: true,
         });
       })
@@ -99,9 +103,10 @@ describe('processRequest', () => {
       });
   });
 
-  it('#5 Registered user: correct', () => {
+  it('#5 Registered user: correct', async () => {
     expect.assertions(3);
 
+    // @ts-expect-error
     return processRequest(dataForConnectionWithAuthorization).then((success) => {
       expect(success).toBe(true);
       expect(sipConnector.isConfigured()).toBe(true);
@@ -109,11 +114,13 @@ describe('processRequest', () => {
     });
   });
 
-  it('#6 Registered user: remove name', () => {
+  it('#6 Registered user: remove name', async () => {
     expect.assertions(2);
 
+    // @ts-expect-error
     return processRequest(dataForConnectionWithAuthorization)
-      .then(() => {
+      .then(async () => {
+        // @ts-expect-error
         return processRequest({ ...dataForConnectionWithAuthorization, name: '' });
       })
       .then((success) => {
@@ -122,29 +129,33 @@ describe('processRequest', () => {
       });
   });
 
-  it('#7 Registered user: incorrect password', () => {
+  it('#7 Registered user: incorrect password', async () => {
     expect.assertions(1);
 
+    // @ts-expect-error
     return processRequest(dataForConnectionWithAuthorizationIncorrectPassword).catch((error) => {
       expect(error).toBeDefined();
     });
   });
 
-  it('#8 Registered user: incorrect name', () => {
+  it('#8 Registered user: incorrect name', async () => {
     expect.assertions(1);
 
+    // @ts-expect-error
     return processRequest(dataForConnectionWithAuthorizationIncorrectUser).catch((error) => {
       expect(error).toBeDefined();
     });
   });
 
-  it('#9 sync changed displayName', () => {
+  it('#9 sync changed displayName', async () => {
     expect.assertions(2);
 
+    // @ts-expect-error
     return processRequest(dataForConnectionWithoutAuthorization)
-      .then(() => {
+      .then(async () => {
         return processRequest({
           ...dataForConnectionWithoutAuthorization,
+          // @ts-expect-error
           displayNameChanged: true,
           displayName: thirdWord,
         });
@@ -155,12 +166,14 @@ describe('processRequest', () => {
       });
   });
 
-  it('#10 debounce changed displayName', () => {
+  it('#10 debounce changed displayName', async () => {
     expect.assertions(2);
+    // @ts-expect-error
     processRequest(dataForConnectionWithoutAuthorization);
 
     return processRequest({
       ...dataForConnectionWithoutAuthorization,
+      // @ts-expect-error
       displayNameChanged: true,
       displayName: thirdWord,
     }).then((success) => {
@@ -169,15 +182,17 @@ describe('processRequest', () => {
     });
   });
 
-  it('#11 async changed displayName', () => {
+  it('#11 async changed displayName', async () => {
     expect.assertions(3);
 
     return Promise.all([
+      // @ts-expect-error
       processRequest(dataForConnectionWithoutAuthorization),
       // 300 -debounced value
-      delayPromise(300).then(() => {
+      delayPromise(300).then(async () => {
         return processRequest({
           ...dataForConnectionWithoutAuthorization,
+          // @ts-expect-error
           displayNameChanged: true,
           displayName: thirdWord,
         });
@@ -189,25 +204,29 @@ describe('processRequest', () => {
     });
   });
 
-  it('#12 sync changed name', () => {
+  it('#12 sync changed name', async () => {
     expect.assertions(2);
 
+    // @ts-expect-error
     return processRequest(dataForConnectionWithAuthorization)
-      .then(() => {
+      .then(async () => {
+        // @ts-expect-error
         return processRequest({ ...withNameChanged, name: thirdWord });
       })
       .then((success) => {
         expect(success).toBe(true);
-        // @ts-ignore
+        // @ts-expect-error
         expect(sipConnector.ua!.configuration.uri).toBe(sipConnector.getSipServerUrl(thirdWord));
       });
   });
 
-  it('#13 sync remove name', () => {
+  it('#13 sync remove name', async () => {
     expect.assertions(1);
 
+    // @ts-expect-error
     return processRequest(dataForConnectionWithAuthorization)
-      .then(() => {
+      .then(async () => {
+        // @ts-expect-error
         return processRequest({ ...withNameChanged, name: '' });
       })
       .then((success) => {
@@ -215,50 +234,59 @@ describe('processRequest', () => {
       });
   });
 
-  it('#14 debounce changed name', () => {
+  it('#14 debounce changed name', async () => {
     expect.assertions(2);
 
+    // @ts-expect-error
     return processRequest(dataForConnectionWithoutAuthorization)
-      .then(() => {
+      .then(async () => {
+        // @ts-expect-error
         processRequest(withNameChanged);
 
+        // @ts-expect-error
         return processRequest({ ...withNameChanged, name: thirdWord });
       })
       .then((success) => {
         expect(success).toBe(true);
-        // @ts-ignore
+        // @ts-expect-error
         expect(sipConnector.ua!.configuration.uri).toBe(sipConnector.getSipServerUrl(thirdWord));
       });
   });
 
-  it('# 15async changed name', () => {
+  it('# 15async changed name', async () => {
     expect.assertions(3);
 
-    return processRequest(dataForConnectionWithAuthorization).then(() => {
+    // @ts-expect-error
+    return processRequest(dataForConnectionWithAuthorization).then(async () => {
       return Promise.all([
+        // @ts-expect-error
         processRequest(withNameChanged),
         // 300 -debounced value
-        delayPromise(300).then(() => {
+        delayPromise(300).then(async () => {
+          // @ts-expect-error
           return processRequest({ ...withNameChanged, name: thirdWord });
         }),
       ]).then(([success1, success2]) => {
         expect(success1).toBe(false); // cancel first request
         expect(success2).toBe(true);
 
-        // @ts-ignore
+        // @ts-expect-error
         expect(sipConnector.ua!.configuration.uri).toBe(sipConnector.getSipServerUrl(thirdWord));
       });
     });
   });
 
-  it('#16 sync changed password', () => {
+  it('#16 sync changed password', async () => {
     expect.assertions(2);
 
+    // @ts-expect-error
     return processRequest(dataForConnectionWithAuthorization)
-      .then(() => {
+      .then(async () => {
+        // @ts-expect-error
         return processRequest({ ...dataForConnectionWithAuthorization, password: 'wrong' });
       })
-      .catch(() => {
+      .catch(async () => {
+        // @ts-expect-error
         return processRequest(dataForConnectionWithAuthorizationPasswordChanged);
       })
       .then((success) => {
@@ -269,11 +297,12 @@ describe('processRequest', () => {
       });
   });
 
-  it('#17 sync remove password', () => {
+  it('#17 sync remove password', async () => {
     expect.assertions(1);
 
+    // @ts-expect-error
     return processRequest(dataForConnectionWithAuthorization)
-      .then(() => {
+      .then(async () => {
         return processRequest({
           ...dataForConnectionWithAuthorizationPasswordChanged,
           password: '',
@@ -284,11 +313,12 @@ describe('processRequest', () => {
       });
   });
 
-  it('#18 debounce changed password', () => {
+  it('#18 debounce changed password', async () => {
     expect.assertions(2);
 
+    // @ts-expect-error
     return processRequest(dataForConnectionWithoutAuthorization)
-      .then(() => {
+      .then(async () => {
         const dataForRequest = {
           ...dataForConnectionWithAuthorizationPasswordChanged,
           isRegisteredUserChanged: true,
@@ -306,11 +336,11 @@ describe('processRequest', () => {
       });
   });
 
-  it('#19 debounce changed registered, with PasswordChanged', () => {
+  it('#19 debounce changed registered, with PasswordChanged', async () => {
     expect.assertions(3);
 
     return processRequest(dataForConnectionWithoutAuthorization)
-      .then((success) => {
+      .then(async (success) => {
         expect(success).toBe(true);
 
         return processRequest(dataForConnectionWithAuthorizationPasswordChanged);
@@ -323,11 +353,11 @@ describe('processRequest', () => {
       });
   });
 
-  it('#20 debounce changed registered, with NameChanged', () => {
+  it('#20 debounce changed registered, with NameChanged', async () => {
     expect.assertions(3);
 
     return processRequest(dataForConnectionWithoutAuthorization)
-      .then((success) => {
+      .then(async (success) => {
         expect(success).toBe(true);
 
         return processRequest(withNameChanged);
@@ -338,18 +368,18 @@ describe('processRequest', () => {
       });
   });
 
-  it('#21 change sipServerUrl', () => {
+  it('#21 change sipServerUrl', async () => {
     expect.assertions(2);
 
     return processRequest(dataForConnectionWithoutAuthorization)
-      .then(() => {
+      .then(async () => {
         return processRequest(dataForConnectionWithoutAuthorizationWithSipServerUrlChanged);
       })
       .then((success) => {
         expect(success).toBe(true);
         expect(
           hasValidUri(
-            // @ts-ignore
+            // @ts-expect-error
             parseObject(sipConnector.ua!.configuration).uri,
             dataForConnectionWithoutAuthorizationWithSipServerUrlChanged.sipServerUrl,
           ),
@@ -357,18 +387,18 @@ describe('processRequest', () => {
       });
   });
 
-  it('#22 change sipWebSocketServerURL', () => {
+  it('#22 change sipWebSocketServerURL', async () => {
     expect.assertions(2);
 
     return processRequest(dataForConnectionWithoutAuthorization)
-      .then(() => {
+      .then(async () => {
         return processRequest(
           dataForConnectionWithoutAuthorizationWithSipWebSocketServerUrlChanged,
         );
       })
       .then((success) => {
         expect(success).toBe(true);
-        // @ts-ignore
+        // @ts-expect-error
         expect(parseObject(sipConnector.socket).url).toEqual(
           dataForConnectionWithoutAuthorizationWithSipWebSocketServerUrlChanged.sipWebSocketServerURL,
         );

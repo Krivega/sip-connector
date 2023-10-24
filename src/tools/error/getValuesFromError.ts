@@ -1,4 +1,4 @@
-import type { ICustomError } from '../../SipConnector';
+import type { TCustomError } from '../../types';
 import getLinkError from './getLinkError';
 
 export type TValues = {
@@ -8,7 +8,7 @@ export type TValues = {
   cause?: string;
 };
 
-const getValuesFromError = (error: ICustomError = new Error()): TValues => {
+const getValuesFromError = (error: TCustomError = new Error()): TValues => {
   const { code, cause, message } = error;
   const link = getLinkError(error);
   const values: TValues = {};

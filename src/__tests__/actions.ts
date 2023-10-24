@@ -4,11 +4,11 @@ import createSipConnector from '../__fixtures__/doMock';
 
 describe('actions', () => {
   let sipConnector: SipConnector;
-  let mockFn;
+  let mockFunction = jest.fn();
 
   beforeEach(() => {
     sipConnector = createSipConnector();
-    mockFn = jest.fn();
+    mockFunction = jest.fn();
   });
 
   it('unregister', async () => {
@@ -26,12 +26,12 @@ describe('actions', () => {
   it('tryRegister', async () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
-    sipConnector.on('unregistered', mockFn);
-    sipConnector.on('connecting', mockFn);
-    sipConnector.on('connected', mockFn);
+    sipConnector.on('unregistered', mockFunction);
+    sipConnector.on('connecting', mockFunction);
+    sipConnector.on('connected', mockFunction);
 
     return sipConnector.tryRegister().then(() => {
-      expect(mockFn).toHaveBeenCalledTimes(3);
+      expect(mockFunction).toHaveBeenCalledTimes(3);
     });
   });
 });

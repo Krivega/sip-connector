@@ -5,7 +5,6 @@ const parseObject = <T = unknown>(object: T): T => {
 };
 
 const removeUri = <T extends { uri?: string | undefined }>({
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   uri,
   ...object
 }: T & { uri?: string }): Omit<T & { uri?: string | undefined }, 'uri'> => {

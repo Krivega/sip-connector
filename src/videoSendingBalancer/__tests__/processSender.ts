@@ -1,6 +1,6 @@
 import { createVideoMediaStreamTrackMock } from 'webrtc-mock';
-import { EEventsMainCAM } from '../../SipConnector';
 import RTCRtpSenderMock from '../../__fixtures__/RTCRtpSenderMock';
+import { EEventsMainCAM } from '../../types';
 import processSender from '../processSender';
 
 const BITRATE_1024 = 1e6;
@@ -17,7 +17,7 @@ describe('processSender', () => {
     trackWith1024 = createVideoMediaStreamTrackMock({ constraints: { width: 1024, height: 720 } });
   });
 
-  it('by track 1024', () => {
+  it('by track 1024', async () => {
     expect.assertions(2);
 
     return processSender({
@@ -33,7 +33,7 @@ describe('processSender', () => {
     });
   });
 
-  it('by track 1024 after MAX_MAIN_CAM_RESOLUTION', () => {
+  it('by track 1024 after MAX_MAIN_CAM_RESOLUTION', async () => {
     expect.assertions(2);
 
     const targetWidth = 288;
@@ -60,13 +60,13 @@ describe('processSender', () => {
     });
   });
 
-  it('MAX_MAIN_CAM_RESOLUTION', () => {
+  it('MAX_MAIN_CAM_RESOLUTION', async () => {
     expect.assertions(2);
 
     const targetWidth = 288;
     const targeHight = 162;
 
-    const targetScaleResolutionDownBy = 4.444444444444445; // 720 / 162
+    const targetScaleResolutionDownBy = 4.444_444_444_444_445; // 720 / 162
 
     return processSender({
       sender,
@@ -78,13 +78,13 @@ describe('processSender', () => {
       expect(parameters.encodings).toEqual([
         {
           scaleResolutionDownBy: targetScaleResolutionDownBy,
-          maxBitrate: 320000,
+          maxBitrate: 320_000,
         },
       ]);
     });
   });
 
-  it('PAUSE_MAIN_CAM', () => {
+  it('PAUSE_MAIN_CAM', async () => {
     expect.assertions(2);
 
     return processSender({
@@ -97,13 +97,13 @@ describe('processSender', () => {
       expect(parameters.encodings).toEqual([
         {
           scaleResolutionDownBy: 200,
-          maxBitrate: 60000,
+          maxBitrate: 60_000,
         },
       ]);
     });
   });
 
-  it('RESUME_MAIN_CAM', () => {
+  it('RESUME_MAIN_CAM', async () => {
     expect.assertions(2);
 
     const targetWidth = 288;
@@ -168,13 +168,13 @@ describe('processSender', () => {
     });
   });
 
-  it('MAX_MAIN_CAM_RESOLUTION for av1', () => {
+  it('MAX_MAIN_CAM_RESOLUTION for av1', async () => {
     expect.assertions(2);
 
     const targetWidth = 288;
     const targeHight = 162;
 
-    const targetScaleResolutionDownBy = 4.444444444444445; // 720 / 162
+    const targetScaleResolutionDownBy = 4.444_444_444_444_445; // 720 / 162
 
     return processSender({
       sender,
@@ -187,13 +187,13 @@ describe('processSender', () => {
       expect(parameters.encodings).toEqual([
         {
           scaleResolutionDownBy: targetScaleResolutionDownBy,
-          maxBitrate: 320000 * FACTOR_CODEC_AV1,
+          maxBitrate: 320_000 * FACTOR_CODEC_AV1,
         },
       ]);
     });
   });
 
-  it('PAUSE_MAIN_CAM for av1', () => {
+  it('PAUSE_MAIN_CAM for av1', async () => {
     expect.assertions(2);
 
     return processSender({
@@ -207,13 +207,13 @@ describe('processSender', () => {
       expect(parameters.encodings).toEqual([
         {
           scaleResolutionDownBy: 200,
-          maxBitrate: 60000 * FACTOR_CODEC_AV1,
+          maxBitrate: 60_000 * FACTOR_CODEC_AV1,
         },
       ]);
     });
   });
 
-  it('RESUME_MAIN_CAM for av1', () => {
+  it('RESUME_MAIN_CAM for av1', async () => {
     expect.assertions(2);
 
     const targetWidth = 288;

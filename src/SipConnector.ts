@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/no-useless-undefined */
 import { CancelableRequest, isCanceledError } from '@krivega/cancelable-promise';
 import type { UA, URI, WebSocketInterface } from '@krivega/jssip';
 import type RTCSession from '@krivega/jssip/lib/RTCSession';
@@ -101,6 +102,9 @@ import {
   MUST_STOP_PRESENTATION,
   NOT_AVAILABLE_SECOND_REMOTE_STREAM,
 } from './headers';
+import logger from './logger';
+import type { EUseLicense, TCustomError } from './types';
+import { EEventsMainCAM, EEventsMic, EEventsSyncMediaState } from './types';
 import {
   generateUserId,
   hasVideoTracks,
@@ -116,40 +120,7 @@ const REQUEST_TERMINATED_STATUS_CODE = 487;
 const ORIGINATOR_LOCAL = 'local';
 const ORIGINATOR_REMOTE = 'remote';
 
-export enum EEventsMainCAM {
-  PAUSE_MAIN_CAM = 'PAUSEMAINCAM',
-  RESUME_MAIN_CAM = 'RESUMEMAINCAM',
-  MAX_MAIN_CAM_RESOLUTION = 'MAXMAINCAMRESOLUTION',
-  ADMIN_STOP_MAIN_CAM = 'ADMINSTOPMAINCAM',
-  ADMIN_START_MAIN_CAM = 'ADMINSTARTMAINCAM',
-}
-
-export enum EEventsMic {
-  ADMIN_STOP_MIC = 'ADMINSTOPMIC',
-  ADMIN_START_MIC = 'ADMINSTARTMIC',
-}
-
-export enum EEventsSyncMediaState {
-  ADMIN_SYNC_FORCED = '1',
-  ADMIN_SYNC_NOT_FORCED = '0',
-}
-
-export enum EUseLicense {
-  AUDIO = 'AUDIO',
-  VIDEO = 'VIDEO',
-  AUDIOPLUSPRESENTATION = 'AUDIOPLUSPRESENTATION',
-}
-
-export interface ICustomError extends Error {
-  originator?: string;
-  cause?: unknown;
-  message: any;
-  socket?: any;
-  url?: string;
-  code?: string;
-}
-
-export const hasCanceledCallError = (error: ICustomError = new Error()): boolean => {
+export const hasCanceledCallError = (error: TCustomError = new Error()): boolean => {
   const { originator, cause } = error;
 
   if (isCanceledError(error)) {
@@ -200,7 +171,7 @@ type TParametersConferenceParticipantTokenIssued = {
 };
 
 type TOptionsInfoMediaState = {
-  noTerminateWhenError: boolean;
+  noTerminateWhenError?: boolean;
 };
 
 const CMD_CHANNELS = 'channels' as const;
@@ -247,7 +218,7 @@ type TWebcastInfoNotify = {
 };
 type TChannelsInfoNotify = { cmd: typeof CMD_CHANNELS; input: string; output: string };
 type TInfoNotify = Omit<
-  TChannelsInfoNotify | TAddedToListModeratorsInfoNotify | TRemovedFromListModeratorsInfoNotify,
+  TAddedToListModeratorsInfoNotify | TChannelsInfoNotify | TRemovedFromListModeratorsInfoNotify,
   'cmd'
 > & { cmd: string };
 
@@ -257,7 +228,7 @@ type TOptionsExtraHeaders = {
 
 type TOntrack = (track: RTCTrackEvent) => void;
 
-type TParametersConnection = {
+type TParametersConnection = TOptionsExtraHeaders & {
   displayName?: string;
   user?: string;
   password?: string;
@@ -271,7 +242,7 @@ type TParametersConnection = {
   connectionRecoveryMinInterval?: number;
   connectionRecoveryMaxInterval?: number;
   userAgent?: string;
-} & TOptionsExtraHeaders;
+};
 
 type TConnect = (parameters: TParametersConnection) => Promise<UA>;
 type TCreateUa = (parameters: TParametersConnection) => Promise<UA>;
@@ -284,7 +255,7 @@ type TSet = ({
   password?: string;
 }) => Promise<boolean>;
 
-type TDegradationPreference = 'maintain-framerate' | 'maintain-resolution' | 'balanced';
+type TDegradationPreference = 'balanced' | 'maintain-framerate' | 'maintain-resolution';
 type TCall = ({
   number,
   mediaStream,
@@ -298,12 +269,12 @@ type TCall = ({
   degradationPreference,
 }: {
   number: string;
-  mediaStream?: MediaStream;
+  mediaStream: MediaStream;
   extraHeaders?: TOptionsExtraHeaders['extraHeaders'];
   ontrack?: TOntrack;
   iceServers?: RTCIceServer[];
-  videoMode?: 'sendrecv' | 'sendonly' | 'recvonly';
-  audioMode?: 'sendrecv' | 'sendonly' | 'recvonly';
+  videoMode?: 'recvonly' | 'sendonly' | 'sendrecv';
+  audioMode?: 'recvonly' | 'sendonly' | 'sendrecv';
   offerToReceiveAudio?: boolean;
   offerToReceiveVideo?: boolean;
   degradationPreference?: TDegradationPreference;
@@ -316,8 +287,8 @@ type TParametersAnswerToIncomingCall = {
   extraHeaders?: TOptionsExtraHeaders['extraHeaders'];
   ontrack?: TOntrack;
   iceServers?: RTCIceServer[];
-  videoMode?: 'sendrecv' | 'sendonly' | 'recvonly';
-  audioMode?: 'sendrecv' | 'sendonly' | 'recvonly';
+  videoMode?: 'recvonly' | 'sendonly' | 'sendrecv';
+  audioMode?: 'recvonly' | 'sendonly' | 'sendrecv';
   degradationPreference?: TDegradationPreference;
 };
 
@@ -342,37 +313,47 @@ export default class SipConnector {
     answer?: boolean;
   } = {};
 
-  private _remoteStreams: { [key: string]: MediaStream } = {};
+  private _remoteStreams: Record<string, MediaStream> = {};
 
-  private JsSIP: TJsSIP;
+  private readonly JsSIP: TJsSIP;
 
-  private _sessionEvents: Events<typeof SESSION_EVENT_NAMES>;
+  private readonly _sessionEvents: Events<typeof SESSION_EVENT_NAMES>;
 
-  private _uaEvents: Events<typeof UA_EVENT_NAMES>;
+  private readonly _uaEvents: Events<typeof UA_EVENT_NAMES>;
 
-  private _cancelableConnect: CancelableRequest<Parameters<TConnect>[0], ReturnType<TConnect>>;
+  private readonly _cancelableConnect: CancelableRequest<
+    Parameters<TConnect>[0],
+    ReturnType<TConnect>
+  >;
 
-  private _cancelableCreateUa: CancelableRequest<Parameters<TCreateUa>[0], ReturnType<TCreateUa>>;
+  private readonly _cancelableCreateUa: CancelableRequest<
+    Parameters<TCreateUa>[0],
+    ReturnType<TCreateUa>
+  >;
 
-  private _cancelableDisconnect: CancelableRequest<void, ReturnType<TDisconnect>>;
+  private readonly _cancelableDisconnect: CancelableRequest<void, ReturnType<TDisconnect>>;
 
-  private _cancelableSet: CancelableRequest<Parameters<TSet>[0], ReturnType<TSet>>;
+  private readonly _cancelableSet: CancelableRequest<Parameters<TSet>[0], ReturnType<TSet>>;
 
-  private _cancelableCall: CancelableRequest<Parameters<TCall>[0], ReturnType<TCall>>;
+  private readonly _cancelableCall: CancelableRequest<Parameters<TCall>[0], ReturnType<TCall>>;
 
-  private _cancelableAnswer: CancelableRequest<
+  private readonly _cancelableAnswer: CancelableRequest<
     Parameters<TAnswerToIncomingCall>[0],
     ReturnType<TAnswerToIncomingCall>
   >;
 
-  private _cancelableSendDTMF: CancelableRequest<Parameters<TSendDTMF>[0], ReturnType<TSendDTMF>>;
+  private readonly _cancelableSendDTMF: CancelableRequest<
+    Parameters<TSendDTMF>[0],
+    ReturnType<TSendDTMF>
+  >;
 
   private getSipServerUrl: (id: string) => string = (id: string) => {
     return id;
   };
 
   promisePendingStartPresentation?: Promise<MediaStream>;
-  promisePendingStopPresentation?: Promise<void | MediaStream>;
+
+  promisePendingStopPresentation?: Promise<MediaStream | void>;
 
   ua?: UA;
 
@@ -438,99 +419,98 @@ export default class SipConnector {
     this.onSession(ENDED, this._handleEnded);
   }
 
-  connect: TConnect = (data) => {
+  connect: TConnect = async (data) => {
     this._cancelRequests();
 
     return this._cancelableConnect.request(data);
   };
 
-  createUa: TCreateUa = (data) => {
+  createUa: TCreateUa = async (data) => {
     return this._cancelableCreateUa.request(data);
   };
 
-  set: TSet = (data) => {
+  set: TSet = async (data) => {
     return this._cancelableSet.request(data);
   };
 
-  call: TCall = (data) => {
+  call: TCall = async (data) => {
     return this._cancelableCall.request(data);
   };
 
-  disconnect: TDisconnect = () => {
+  disconnect: TDisconnect = async () => {
     this._cancelRequests();
 
     return this._disconnectWithoutCancelRequests();
   };
 
-  answerToIncomingCall: TAnswerToIncomingCall = (data) => {
+  answerToIncomingCall: TAnswerToIncomingCall = async (data) => {
     return this._cancelableAnswer.request(data);
   };
 
-  sendDTMF: TSendDTMF = (tone) => {
+  sendDTMF: TSendDTMF = async (tone) => {
     return this._cancelableSendDTMF.request(tone);
   };
 
-  hangUp: THangUp = () => {
+  hangUp: THangUp = async () => {
     this._cancelRequests();
 
     return this._hangUpWithoutCancelRequests();
   };
 
-  register(): Promise<RegisteredEvent> {
+  async register(): Promise<RegisteredEvent> {
     return new Promise((resolve, reject) => {
-      if (this.isRegisterConfig) {
-        this.ua!.on(REGISTERED, resolve);
-        this.ua!.on(REGISTRATION_FAILED, reject);
-        this.ua!.register();
+      if (this.isRegisterConfig && this.ua) {
+        this.ua.on(REGISTERED, resolve);
+        this.ua.on(REGISTRATION_FAILED, reject);
+        this.ua.register();
       } else {
         reject(new Error('Config is not registered'));
       }
     });
   }
 
-  unregister(): Promise<UnRegisteredEvent> {
+  async unregister(): Promise<UnRegisteredEvent> {
     return new Promise((resolve, reject) => {
-      if (this.isRegistered) {
-        this.ua!.on(UNREGISTERED, resolve);
-        this.ua!.unregister();
+      if (this.isRegistered && this.ua) {
+        this.ua.on(UNREGISTERED, resolve);
+        this.ua.unregister();
       } else {
         reject(new Error('ua is not registered'));
       }
     });
   }
 
-  tryRegister = () => {
+  tryRegister = async () => {
     if (!this.isRegisterConfig) {
-      return Promise.reject(new Error('Config is not registered'));
+      throw new Error('Config is not registered');
     }
 
     this._uaEvents.trigger(CONNECTING, undefined);
 
-    return this.unregister()
-      .finally(() => {
-        return this.register();
-      })
-      .finally(() => {
-        return undefined;
-      });
+    try {
+      await this.unregister();
+    } catch (error) {
+      logger('tryRegister', error);
+    }
+
+    return this.register();
   };
 
-  sendOptions(target: string | URI, body?: string, extraHeaders?: string[]): Promise<void> {
+  async sendOptions(target: URI | string, body?: string, extraHeaders?: string[]): Promise<void> {
     if (!this.ua) {
-      return Promise.reject(new Error('is not connected'));
+      throw new Error('is not connected');
     }
 
     return new Promise((resolve, reject) => {
       try {
+        // @ts-expect-error
         this.ua.sendOptions(target, body, {
           extraHeaders,
           eventHandlers: {
             succeeded: () => {
               resolve();
             },
-            failed: (error) => {
-              reject(error);
-            },
+            failed: reject,
           },
         });
       } catch (error) {
@@ -539,9 +519,9 @@ export default class SipConnector {
     });
   }
 
-  ping(body?: string, extraHeaders?: string[]): Promise<void> {
-    if (!this.ua || !this.ua.configuration || !this.ua.configuration.uri) {
-      return Promise.reject(new Error('is not connected'));
+  async ping(body?: string, extraHeaders?: string[]): Promise<void> {
+    if (!this.ua?.configuration.uri) {
+      throw new Error('is not connected');
     }
 
     const target = this.ua.configuration.uri;
@@ -549,7 +529,7 @@ export default class SipConnector {
     return this.sendOptions(target, body, extraHeaders);
   }
 
-  replaceMediaStream(
+  async replaceMediaStream(
     mediaStream: MediaStream,
     options?: {
       deleteExisting: boolean;
@@ -565,15 +545,15 @@ export default class SipConnector {
     return this.session.replaceMediaStream(mediaStream, options);
   }
 
-  declineToIncomingCall = ({ statusCode = REQUEST_TERMINATED_STATUS_CODE } = {}) => {
+  declineToIncomingCall = async ({ statusCode = REQUEST_TERMINATED_STATUS_CODE } = {}) => {
     return new Promise((resolve, reject) => {
       if (!this.isAvailableIncomingCall) {
         reject(new Error('no incomingSession'));
 
-        return undefined;
+        return;
       }
 
-      const incomingSession = this!.incomingSession as RTCSession;
+      const incomingSession = this.incomingSession!;
       const callerData = this.remoteCallerData;
 
       this._cancelableCall.cancelRequest();
@@ -581,13 +561,12 @@ export default class SipConnector {
 
       this.removeIncomingSession();
       this._uaEvents.trigger(DECLINED_INCOMING_CALL, callerData);
+      // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
       resolve(incomingSession.terminate({ status_code: statusCode }));
-
-      return undefined;
     });
   };
 
-  busyIncomingCall = () => {
+  busyIncomingCall = async () => {
     return this.declineToIncomingCall({ statusCode: BUSY_HERE_STATUS_CODE });
   };
 
@@ -595,9 +574,7 @@ export default class SipConnector {
     delete this.incomingSession;
   };
 
-  askPermissionToEnableCam(
-    options: TOptionsInfoMediaState = { noTerminateWhenError: true },
-  ): Promise<void> {
+  async askPermissionToEnableCam(options: TOptionsInfoMediaState = {}): Promise<void> {
     if (!this.session) {
       throw new Error('No session established');
     }
@@ -606,15 +583,14 @@ export default class SipConnector {
 
     return this.session
       .sendInfo(CONTENT_TYPE_MAIN_CAM, undefined, {
+        noTerminateWhenError: true,
         ...options,
         extraHeaders,
       })
-      .catch((error) => {
+      .catch((error: Error) => {
         if (hasDeclineResponseFromServer(error)) {
           throw error;
         }
-
-        return;
       });
   }
 
@@ -622,7 +598,7 @@ export default class SipConnector {
     return !!this.promisePendingStartPresentation || !!this.promisePendingStopPresentation;
   }
 
-  private _sendPresentation(
+  private async _sendPresentation(
     session: RTCSession,
     stream: MediaStream,
     {
@@ -637,7 +613,7 @@ export default class SipConnector {
       degradationPreference?: TDegradationPreference;
     },
   ) {
-    const streamPresentationCurrent = prepareMediaStream(stream) as MediaStream;
+    const streamPresentationCurrent = prepareMediaStream(stream)!;
 
     this._streamPresentationCurrent = streamPresentationCurrent;
 
@@ -649,19 +625,18 @@ export default class SipConnector {
       .sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
         extraHeaders: preparatoryHeaders,
       })
-      .then(() => {
+      .then(async () => {
         return session.startPresentation(
           streamPresentationCurrent,
           isNeedReinvite,
           degradationPreference,
         );
       })
-      // @ts-ignore
-      .then(() => {
+      .then(async () => {
         const { connection } = this;
 
         if (!connection || maxBitrate === undefined) {
-          return undefined;
+          return;
         }
 
         const senders = connection.getSenders();
@@ -684,7 +659,7 @@ export default class SipConnector {
     });
   }
 
-  startPresentation(
+  async startPresentation(
     stream: MediaStream,
     {
       isNeedReinvite = true,
@@ -697,15 +672,15 @@ export default class SipConnector {
       maxBitrate?: number;
       degradationPreference?: TDegradationPreference;
     } = {},
-  ): Promise<void | MediaStream> {
+  ): Promise<MediaStream> {
     const session = this.establishedSession;
 
     if (!session) {
-      return Promise.reject(new Error('No session established'));
+      throw new Error('No session established');
     }
 
     if (this._streamPresentationCurrent) {
-      return Promise.reject(new Error('Presentation is already started'));
+      throw new Error('Presentation is already started');
     }
 
     return this._sendPresentation(session, stream, {
@@ -716,28 +691,28 @@ export default class SipConnector {
     });
   }
 
-  stopPresentation({
+  async stopPresentation({
     isP2P = false,
   }: {
     isP2P?: boolean;
   } = {}): Promise<MediaStream | void> {
-    const streamPresentationPrev = this._streamPresentationCurrent;
+    const streamPresentationPrevious = this._streamPresentationCurrent;
     let result: Promise<MediaStream | void> =
-      this.promisePendingStartPresentation || Promise.resolve();
+      this.promisePendingStartPresentation ?? Promise.resolve();
 
     const preparatoryHeaders = isP2P ? [HEADER_STOP_PRESENTATION_P2P] : [HEADER_STOP_PRESENTATION];
 
     const session = this.establishedSession;
 
-    if (session && streamPresentationPrev) {
+    if (session && streamPresentationPrevious) {
       result = result
-        .then(() => {
+        .then(async () => {
           return session.sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
             extraHeaders: preparatoryHeaders,
           });
         })
-        .then(() => {
-          return session.stopPresentation(streamPresentationPrev);
+        .then(async () => {
+          return session.stopPresentation(streamPresentationPrevious);
         })
         .catch((error) => {
           this._sessionEvents.trigger(PRESENTATION_FAILED, error);
@@ -746,8 +721,8 @@ export default class SipConnector {
         });
     }
 
-    if (!session && streamPresentationPrev) {
-      this._sessionEvents.trigger(PRESENTATION_ENDED, streamPresentationPrev);
+    if (!session && streamPresentationPrevious) {
+      this._sessionEvents.trigger(PRESENTATION_ENDED, streamPresentationPrevious);
     }
 
     this.promisePendingStopPresentation = result;
@@ -768,15 +743,15 @@ export default class SipConnector {
       maxBitrate?: number;
       degradationPreference?: TDegradationPreference;
     } = {},
-  ): Promise<void | MediaStream> {
+  ): Promise<MediaStream | void> {
     const session = this.establishedSession;
 
     if (!session) {
-      return Promise.reject(new Error('No session established'));
+      throw new Error('No session established');
     }
 
     if (!this._streamPresentationCurrent) {
-      return Promise.reject(new Error('Presentation has not started yet'));
+      throw new Error('Presentation has not started yet');
     }
 
     if (this.promisePendingStartPresentation) {
@@ -804,13 +779,13 @@ export default class SipConnector {
 
       const callerData = this.remoteCallerData;
 
-      session.on(FAILED, ({ originator }) => {
+      session.on(FAILED, (event: { originator: string }) => {
         this.removeIncomingSession();
 
-        if (originator !== ORIGINATOR_LOCAL) {
-          this._uaEvents.trigger(FAILED_INCOMING_CALL, callerData);
-        } else {
+        if (event.originator === ORIGINATOR_LOCAL) {
           this._uaEvents.trigger(TERMINATED_INCOMING_CALL, callerData);
+        } else {
+          this._uaEvents.trigger(FAILED_INCOMING_CALL, callerData);
         }
       });
 
@@ -818,44 +793,44 @@ export default class SipConnector {
     }
   };
 
-  on(eventName: TEventUA, handler) {
-    return this._uaEvents.on(eventName, handler);
+  on<T = void>(eventName: TEventUA, handler: (data: T) => void) {
+    return this._uaEvents.on<T>(eventName, handler);
   }
 
-  once(eventName: TEventUA, handler) {
-    return this._uaEvents.once(eventName, handler);
+  once<T>(eventName: TEventUA, handler: (data: T) => void) {
+    return this._uaEvents.once<T>(eventName, handler);
   }
 
-  onceRace(eventNames: TEventUA[], handler) {
-    return this._uaEvents.onceRace(eventNames, handler);
+  onceRace<T>(eventNames: TEventUA[], handler: (data: T) => void) {
+    return this._uaEvents.onceRace<T>(eventNames, handler);
   }
 
-  wait(eventName: TEventUA): Promise<any> {
-    return this._uaEvents.wait(eventName);
+  async wait<T>(eventName: TEventUA): Promise<T> {
+    return this._uaEvents.wait<T>(eventName);
   }
 
-  off(eventName: TEventUA, handler) {
-    this._uaEvents.off(eventName, handler);
+  off<T>(eventName: TEventUA, handler: (data: T) => void) {
+    this._uaEvents.off<T>(eventName, handler);
   }
 
-  onSession(eventName: TEventSession, handler) {
-    return this._sessionEvents.on(eventName, handler);
+  onSession<T>(eventName: TEventSession, handler: (data: T) => void) {
+    return this._sessionEvents.on<T>(eventName, handler);
   }
 
-  onceSession(eventName: TEventSession, handler) {
-    return this._sessionEvents.once(eventName, handler);
+  onceSession<T>(eventName: TEventSession, handler: (data: T) => void) {
+    return this._sessionEvents.once<T>(eventName, handler);
   }
 
-  onceRaceSession(eventNames: TEventSession[], handler) {
-    return this._sessionEvents.onceRace(eventNames, handler);
+  onceRaceSession<T>(eventNames: TEventSession[], handler: (data: T) => void) {
+    return this._sessionEvents.onceRace<T>(eventNames, handler);
   }
 
-  waitSession(eventName: TEventSession): Promise<any> {
-    return this._sessionEvents.wait(eventName);
+  async waitSession<T>(eventName: TEventSession): Promise<T> {
+    return this._sessionEvents.wait<T>(eventName);
   }
 
-  offSession(eventName: TEventSession, handler) {
-    this._sessionEvents.off(eventName, handler);
+  offSession<T>(eventName: TEventSession, handler: (data: T) => void) {
+    this._sessionEvents.off<T>(eventName, handler);
   }
 
   isConfigured() {
@@ -884,20 +859,19 @@ export default class SipConnector {
   }
 
   get connection(): RTCPeerConnection | undefined {
-    const connection = this?.session?.connection;
+    const connection = this.session?.connection;
 
     return connection;
   }
 
   get remoteCallerData() {
     return {
-      // eslint-disable-next-line camelcase
-      displayName: this?.incomingSession?.remote_identity?.display_name,
-      // eslint-disable-next-line camelcase
-      host: this?.incomingSession?.remote_identity?.uri.host,
-      // eslint-disable-next-line camelcase
-      incomingNumber: this?.incomingSession?.remote_identity?.uri.user,
-      session: this?.incomingSession,
+      displayName: this.incomingSession?.remote_identity?.display_name,
+
+      host: this.incomingSession?.remote_identity?.uri.host,
+
+      incomingNumber: this.incomingSession?.remote_identity?.uri.user,
+      session: this.incomingSession,
     };
   }
 
@@ -930,8 +904,8 @@ export default class SipConnector {
     return !!this.incomingSession;
   }
 
-  _connect: TConnect = (params) => {
-    return this.createUa(params).then(() => {
+  _connect: TConnect = async (parameters) => {
+    return this.createUa(parameters).then(async () => {
       return this._start();
     });
   };
@@ -978,13 +952,7 @@ export default class SipConnector {
 
     this._init({ sipServerUrl, sipWebSocketServerURL });
 
-    let authorizationUser;
-
-    if (register && user) {
-      authorizationUser = user.trim();
-    } else {
-      authorizationUser = generateUserId();
-    }
+    const authorizationUser = register && user ? user.trim() : `${generateUserId()}`;
 
     const configuration = {
       password,
@@ -992,7 +960,7 @@ export default class SipConnector {
       display_name: parseDisplayName(displayName),
       user_agent: userAgent,
       sdp_semantics: sdpSemantics,
-      sockets: [this.socket as WebSocketInterface],
+      sockets: [this.socket!],
       uri: this.getSipServerUrl(authorizationUser),
       session_timers: sessionTimers,
       register_expires: registerExpires,
@@ -1013,31 +981,45 @@ export default class SipConnector {
         return jsSipEvent === eventName;
       });
 
-      if (uaJsSipEvent) {
-        this.ua!.on(uaJsSipEvent, trigger);
+      if (uaJsSipEvent && this.ua) {
+        this.ua.on(uaJsSipEvent, trigger);
       }
     });
 
     const extraHeadersRemoteAddress = getExtraHeadersRemoteAddress(remoteAddress);
     const extraHeadersBase = [...extraHeadersRemoteAddress, ...extraHeaders];
 
-    this.ua!.registrator().setExtraHeaders(extraHeadersBase);
+    this.ua.registrator().setExtraHeaders(extraHeadersBase);
 
     return this.ua;
   };
 
-  _init({ sipServerUrl, sipWebSocketServerURL }) {
+  _init({
+    sipServerUrl,
+    sipWebSocketServerURL,
+  }: {
+    sipServerUrl: string;
+    sipWebSocketServerURL: string;
+  }) {
     this.getSipServerUrl = resolveSipUrl(sipServerUrl);
     this.socket = new this.JsSIP.WebSocketInterface(sipWebSocketServerURL);
   }
 
-  _start: TStart = () => {
+  _start: TStart = async () => {
     return new Promise((resolve, reject) => {
+      const { ua } = this;
+
+      if (!ua) {
+        reject(new Error('this.ua is not initialized'));
+
+        return;
+      }
+
       const resolveUa = () => {
         removeEventListeners();
-        resolve(this.ua as UA);
+        resolve(ua);
       };
-      const rejectError = (error) => {
+      const rejectError = (error: Error) => {
         removeEventListeners();
         reject(error);
       };
@@ -1061,22 +1043,30 @@ export default class SipConnector {
       addEventListeners();
       this.on(NEW_RTC_SESSION, this.handleNewRTCSession);
 
-      this.ua!.start();
+      ua.start();
     });
   };
 
-  _set: TSet = ({ displayName, password }) => {
+  _set: TSet = async ({ displayName, password }) => {
     return new Promise((resolve, reject) => {
+      const { ua } = this;
+
+      if (!ua) {
+        reject(new Error('this.ua is not initialized'));
+
+        return;
+      }
+
       let changedDisplayName = false;
       let changedPassword = false;
 
       if (displayName !== undefined && displayName !== this._connectionConfiguration.displayName) {
-        changedDisplayName = this.ua!.set('display_name', parseDisplayName(displayName));
+        changedDisplayName = ua.set('display_name', parseDisplayName(displayName));
         this._connectionConfiguration.displayName = displayName;
       }
 
       if (password !== undefined && password !== this._connectionConfiguration.password) {
-        changedPassword = this.ua!.set('password', password);
+        changedPassword = ua.set('password', password);
         this._connectionConfiguration.password = password;
       }
 
@@ -1085,7 +1075,7 @@ export default class SipConnector {
       if (changedPassword && this.isRegisterConfig) {
         this.register()
           .then(() => {
-            return resolve(changedSome);
+            resolve(changedSome);
           })
           .catch(reject);
       } else if (changedSome) {
@@ -1096,7 +1086,7 @@ export default class SipConnector {
     });
   };
 
-  _disconnectWithoutCancelRequests: TDisconnect = () => {
+  _disconnectWithoutCancelRequests: TDisconnect = async () => {
     return this._cancelableDisconnect.request();
   };
 
@@ -1125,7 +1115,7 @@ export default class SipConnector {
     return disconnectedPromise;
   };
 
-  _call: TCall = ({
+  _call: TCall = async ({
     number,
     mediaStream,
     extraHeaders = [],
@@ -1138,11 +1128,19 @@ export default class SipConnector {
     offerToReceiveVideo = true,
   }) => {
     return new Promise((resolve, reject) => {
+      const { ua } = this;
+
+      if (!ua) {
+        reject(new Error('this.ua is not initialized'));
+
+        return;
+      }
+
       this._connectionConfiguration.number = number;
       this._connectionConfiguration.answer = false;
       this._handleCall({ ontrack }).then(resolve).catch(reject);
 
-      this.session = this.ua!.call(this.getSipServerUrl(number), {
+      this.session = ua.call(this.getSipServerUrl(number), {
         extraHeaders,
         mediaStream: prepareMediaStream(mediaStream, {
           videoMode,
@@ -1163,7 +1161,7 @@ export default class SipConnector {
     });
   };
 
-  _answer: TAnswerToIncomingCall = ({
+  _answer: TAnswerToIncomingCall = async ({
     mediaStream,
     ontrack,
     extraHeaders = [],
@@ -1176,13 +1174,13 @@ export default class SipConnector {
       if (!this.isAvailableIncomingCall) {
         reject(new Error('no incomingSession'));
 
-        return undefined;
+        return;
       }
 
       this.session = this.incomingSession;
       this.removeIncomingSession();
 
-      const session = this.session;
+      const { session } = this;
 
       if (!session) {
         reject(new Error('No session established'));
@@ -1219,12 +1217,10 @@ export default class SipConnector {
           iceServers,
         },
       });
-
-      return undefined;
     });
   };
 
-  _handleCall = ({ ontrack }: { ontrack?: TOntrack }): Promise<RTCPeerConnection> => {
+  _handleCall = async ({ ontrack }: { ontrack?: TOntrack }): Promise<RTCPeerConnection> => {
     return new Promise((resolve, reject) => {
       const addStartedEventListeners = () => {
         this.onSession(PEER_CONNECTION, handlePeerConnection);
@@ -1242,7 +1238,7 @@ export default class SipConnector {
         this.offSession(FAILED, handleEnded);
         this.offSession(ENDED, handleEnded);
       };
-      const handleEnded = (error: ICustomError) => {
+      const handleEnded = (error: TCustomError) => {
         removeStartedEventListeners();
         removeEndedEventListeners();
         reject(error);
@@ -1250,7 +1246,7 @@ export default class SipConnector {
 
       let savedPeerconnection: RTCPeerConnection;
 
-      const handlePeerConnection = ({ peerconnection }) => {
+      const handlePeerConnection = ({ peerconnection }: { peerconnection: RTCPeerConnection }) => {
         savedPeerconnection = peerconnection;
 
         savedPeerconnection.ontrack = (track) => {
@@ -1284,9 +1280,9 @@ export default class SipConnector {
     this._remoteStreams = {};
   };
 
-  _sendDTMF: TSendDTMF = (tone) => {
+  _sendDTMF: TSendDTMF = async (tone) => {
     return new Promise<void>((resolve, reject) => {
-      const session = this.session;
+      const { session } = this;
 
       if (!session) {
         reject(new Error('No session established'));
@@ -1294,7 +1290,7 @@ export default class SipConnector {
         return;
       }
 
-      this.onceSession(NEW_DTMF, ({ originator }) => {
+      this.onceSession(NEW_DTMF, ({ originator }: { originator: string }) => {
         if (originator === ORIGINATOR_LOCAL) {
           resolve();
         }
@@ -1308,7 +1304,7 @@ export default class SipConnector {
   };
 
   _generateStream(videoTrack: MediaStreamTrack, audioTrack?: MediaStreamTrack): MediaStream {
-    const id = videoTrack.id;
+    const { id } = videoTrack;
 
     const remoteStream: MediaStream = this._remoteStreams[id] || new MediaStream();
 
@@ -1323,7 +1319,7 @@ export default class SipConnector {
   }
 
   _generateAudioStream(audioTrack: MediaStreamTrack): MediaStream {
-    const id = audioTrack.id;
+    const { id } = audioTrack;
 
     const remoteStream = this._remoteStreams[id] || new MediaStream();
 
@@ -1343,17 +1339,17 @@ export default class SipConnector {
       }
 
       const videoTrack = track;
-      const prevTrack = remoteTracks[index - 1];
+      const previousTrack = remoteTracks[index - 1];
       let audioTrack;
 
-      if (prevTrack && prevTrack.kind === 'audio') {
-        audioTrack = prevTrack;
+      if (previousTrack && previousTrack.kind === 'audio') {
+        audioTrack = previousTrack;
       }
 
       const remoteStream = this._generateStream(videoTrack, audioTrack);
 
       remoteStreams.push(remoteStream);
-    }, []);
+    });
 
     return remoteStreams;
   }
@@ -1402,20 +1398,24 @@ export default class SipConnector {
     this._cancelableSendDTMF.cancelRequest();
   }
 
-  _handleShareState = (eventName) => {
+  _handleShareState = (eventName: string) => {
     switch (eventName) {
-      case AVAILABLE_SECOND_REMOTE_STREAM:
+      case AVAILABLE_SECOND_REMOTE_STREAM: {
         this._sessionEvents.trigger(AVAILABLE_SECOND_REMOTE_STREAM_EVENT, undefined);
         break;
-      case NOT_AVAILABLE_SECOND_REMOTE_STREAM:
+      }
+      case NOT_AVAILABLE_SECOND_REMOTE_STREAM: {
         this._sessionEvents.trigger(NOT_AVAILABLE_SECOND_REMOTE_STREAM_EVENT, undefined);
         break;
-      case MUST_STOP_PRESENTATION:
+      }
+      case MUST_STOP_PRESENTATION: {
         this._sessionEvents.trigger(MUST_STOP_PRESENTATION_EVENT, undefined);
         break;
+      }
 
-      default:
+      default: {
         break;
+      }
     }
   };
 
@@ -1434,46 +1434,84 @@ export default class SipConnector {
   };
 
   _handleNotify = (header: TInfoNotify) => {
-    if (header.cmd === CMD_CHANNELS) {
-      const channelsInfo = header as TChannelsInfoNotify;
+    switch (header.cmd) {
+      case CMD_CHANNELS: {
+        const channelsInfo = header as TChannelsInfoNotify;
 
-      this._triggerChannelsNotify(channelsInfo);
-    } else if (header.cmd === CMD_WEBCAST_STARTED) {
-      const webcastInfo = header as TWebcastInfoNotify;
+        this._triggerChannelsNotify(channelsInfo);
 
-      this._triggerWebcastStartedNotify(webcastInfo);
-    } else if (header.cmd === CMD_WEBCAST_STOPPED) {
-      const webcastInfo = header as TWebcastInfoNotify;
+        break;
+      }
+      case CMD_WEBCAST_STARTED: {
+        const webcastInfo = header as TWebcastInfoNotify;
 
-      this._triggerWebcastStoppedNotify(webcastInfo);
-    } else if (header.cmd === CMD_ADDED_TO_LIST_MODERATORS) {
-      const data = header as TAddedToListModeratorsInfoNotify;
+        this._triggerWebcastStartedNotify(webcastInfo);
 
-      this._triggerAddedToListModeratorsNotify(data);
-    } else if (header.cmd === CMD_REMOVED_FROM_LIST_MODERATORS) {
-      const data = header as TRemovedFromListModeratorsInfoNotify;
+        break;
+      }
+      case CMD_WEBCAST_STOPPED: {
+        const webcastInfo = header as TWebcastInfoNotify;
 
-      this._triggerRemovedFromListModeratorsNotify(data);
-    } else if (header.cmd === CMD_MOVE_REQUEST_TO_CONFERENCE) {
-      const data = header as TMoveRequestToConferenceInfoNotify;
+        this._triggerWebcastStoppedNotify(webcastInfo);
 
-      this._triggerParticipantMoveRequestToConference(data);
-    } else if (header.cmd === CMD_CANCELLING_WORD_REQUEST) {
-      const data = header as TCancelingWordRequestInfoNotify;
+        break;
+      }
+      case CMD_ADDED_TO_LIST_MODERATORS: {
+        const data = header as TAddedToListModeratorsInfoNotify;
 
-      this._triggerParticipantCancelingWordRequest(data);
-    } else if (header.cmd === CMD_MOVE_REQUEST_TO_STREAM) {
-      const data = header as TMoveRequestToStreamInfoNotify;
+        this._triggerAddedToListModeratorsNotify(data);
 
-      this._triggerParticipantMoveRequestToStream(data);
-    } else if (header.cmd === CMD_ACCOUNT_CHANGED) {
-      this._triggerAccountChangedNotify();
-    } else if (header.cmd === CMD_ACCOUNT_DELETED) {
-      this._triggerAccountDeletedNotify();
-    } else if (header.cmd === CMD_CONFERENCE_PARTICIPANT_TOKEN_ISSUED) {
-      const data = header as TConferenceParticipantTokenIssued;
+        break;
+      }
+      case CMD_REMOVED_FROM_LIST_MODERATORS: {
+        const data = header as TRemovedFromListModeratorsInfoNotify;
 
-      this._triggerConferenceParticipantTokenIssued(data);
+        this._triggerRemovedFromListModeratorsNotify(data);
+
+        break;
+      }
+      case CMD_MOVE_REQUEST_TO_CONFERENCE: {
+        const data = header as TMoveRequestToConferenceInfoNotify;
+
+        this._triggerParticipantMoveRequestToConference(data);
+
+        break;
+      }
+      case CMD_CANCELLING_WORD_REQUEST: {
+        const data = header as TCancelingWordRequestInfoNotify;
+
+        this._triggerParticipantCancelingWordRequest(data);
+
+        break;
+      }
+      case CMD_MOVE_REQUEST_TO_STREAM: {
+        const data = header as TMoveRequestToStreamInfoNotify;
+
+        this._triggerParticipantMoveRequestToStream(data);
+
+        break;
+      }
+      case CMD_ACCOUNT_CHANGED: {
+        this._triggerAccountChangedNotify();
+
+        break;
+      }
+      case CMD_ACCOUNT_DELETED: {
+        this._triggerAccountDeletedNotify();
+
+        break;
+      }
+      case CMD_CONFERENCE_PARTICIPANT_TOKEN_ISSUED: {
+        const data = header as TConferenceParticipantTokenIssued;
+
+        this._triggerConferenceParticipantTokenIssued(data);
+
+        break;
+      }
+      default: {
+        logger('unknown cmd', header.cmd);
+      }
+      // No default
     }
   };
 
@@ -1597,7 +1635,7 @@ export default class SipConnector {
     const mainCam = request.getHeader(HEADER_MAIN_CAM) as EEventsMainCAM;
 
     const syncState = request.getHeader(HEADER_MEDIA_SYNC);
-    const isSyncForced = syncState === EEventsSyncMediaState.ADMIN_SYNC_FORCED ? true : false;
+    const isSyncForced = syncState === EEventsSyncMediaState.ADMIN_SYNC_FORCED;
 
     if (mainCam === EEventsMainCAM.ADMIN_START_MAIN_CAM) {
       this._sessionEvents.trigger(ADMIN_START_MAIN_CAM, { isSyncForced });
@@ -1621,7 +1659,7 @@ export default class SipConnector {
   _triggerMicControl = (request: IncomingRequest) => {
     const mic = request.getHeader(HEADER_MIC);
     const syncState = request.getHeader(HEADER_MEDIA_SYNC);
-    const isSyncForced = syncState === EEventsSyncMediaState.ADMIN_SYNC_FORCED ? true : false;
+    const isSyncForced = syncState === EEventsSyncMediaState.ADMIN_SYNC_FORCED;
 
     if (mic === EEventsMic.ADMIN_START_MIC) {
       this._sessionEvents.trigger(ADMIN_START_MIC, { isSyncForced });
@@ -1643,33 +1681,40 @@ export default class SipConnector {
       return;
     }
 
-    const request = info.request as IncomingRequest;
+    const { request } = info;
     const contentType = request.getHeader(HEADER_CONTENT_TYPE_NAME);
 
     if (contentType) {
       switch (contentType) {
-        case CONTENT_TYPE_ENTER_ROOM:
+        case CONTENT_TYPE_ENTER_ROOM: {
           this._triggerEnterRoom(request);
           this._maybeTriggerChannels(request);
           break;
-        case CONTENT_TYPE_NOTIFY:
+        }
+        case CONTENT_TYPE_NOTIFY: {
           this._maybeHandleNotify(request);
           break;
-        case CONTENT_TYPE_SHARE_STATE:
+        }
+        case CONTENT_TYPE_SHARE_STATE: {
           this._triggerShareState(request);
           break;
-        case CONTENT_TYPE_MAIN_CAM:
+        }
+        case CONTENT_TYPE_MAIN_CAM: {
           this._triggerMainCamControl(request);
           break;
-        case CONTENT_TYPE_MIC:
+        }
+        case CONTENT_TYPE_MIC: {
           this._triggerMicControl(request);
           break;
-        case CONTENT_TYPE_USE_LICENSE:
+        }
+        case CONTENT_TYPE_USE_LICENSE: {
           this._triggerUseLicense(request);
           break;
+        }
 
-        default:
+        default: {
           break;
+        }
       }
     }
   };
@@ -1688,15 +1733,15 @@ export default class SipConnector {
     }
   };
 
-  waitChannels(): Promise<TChannels> {
+  async waitChannels(): Promise<TChannels> {
     return this.waitSession(CHANNELS);
   }
 
-  waitSyncMediaState(): Promise<{ isSyncForced: boolean }> {
+  async waitSyncMediaState(): Promise<{ isSyncForced: boolean }> {
     return this.waitSession(ADMIN_FORCE_SYNC_MEDIA_STATE);
   }
 
-  sendChannels({ inputChannels, outputChannels }: TChannels): Promise<void> {
+  async sendChannels({ inputChannels, outputChannels }: TChannels): Promise<void> {
     if (!this.session) {
       throw new Error('No session established');
     }
@@ -1711,29 +1756,33 @@ export default class SipConnector {
     return this.session.sendInfo(CONTENT_TYPE_CHANNELS, undefined, { extraHeaders });
   }
 
-  sendMediaState(
+  async sendMediaState(
     { cam, mic }: TMediaState,
-    options: TOptionsInfoMediaState = { noTerminateWhenError: true },
+    options: TOptionsInfoMediaState = {},
   ): Promise<void> {
     if (!this.session) {
       throw new Error('No session established');
     }
 
     const headerMediaState = `${HEADER_MEDIA_STATE}: currentstate`;
-    const headerCam = `${HEADER_MAIN_CAM_STATE}: ${+cam}`;
-    const headerMic = `${HEADER_MIC_STATE}: ${+mic}`;
+    const headerCam = `${HEADER_MAIN_CAM_STATE}: ${Number(cam)}`;
+    const headerMic = `${HEADER_MIC_STATE}: ${Number(mic)}`;
     const extraHeaders: TOptionsExtraHeaders['extraHeaders'] = [
       headerMediaState,
       headerCam,
       headerMic,
     ];
 
-    return this.session.sendInfo(CONTENT_TYPE_MEDIA_STATE, undefined, { ...options, extraHeaders });
+    return this.session.sendInfo(CONTENT_TYPE_MEDIA_STATE, undefined, {
+      noTerminateWhenError: true,
+      ...options,
+      extraHeaders,
+    });
   }
 
-  _sendRefusalToTurnOn(
+  async _sendRefusalToTurnOn(
     type: 'cam' | 'mic',
-    options: TOptionsInfoMediaState = { noTerminateWhenError: true },
+    options: TOptionsInfoMediaState = {},
   ): Promise<void> {
     if (!this.session) {
       throw new Error('No session established');
@@ -1741,35 +1790,35 @@ export default class SipConnector {
 
     const typeMicOnServer = 0;
     const typeCamOnServer = 1;
-    const typeToSend = type == 'mic' ? typeMicOnServer : typeCamOnServer;
+    const typeToSend = type === 'mic' ? typeMicOnServer : typeCamOnServer;
 
     const headerMediaType = `${HEADER_MEDIA_TYPE}: ${typeToSend}`;
     const extraHeaders: TOptionsExtraHeaders['extraHeaders'] = [headerMediaType];
 
-    return this.session.sendInfo(CONTENT_TYPE_REFUSAL, undefined, { ...options, extraHeaders });
+    return this.session.sendInfo(CONTENT_TYPE_REFUSAL, undefined, {
+      noTerminateWhenError: true,
+      ...options,
+      extraHeaders,
+    });
   }
 
-  sendRefusalToTurnOnMic(
-    options: TOptionsInfoMediaState = { noTerminateWhenError: true },
-  ): Promise<void> {
+  async sendRefusalToTurnOnMic(options: TOptionsInfoMediaState = {}): Promise<void> {
     if (!this.session) {
       throw new Error('No session established');
     }
 
-    return this._sendRefusalToTurnOn('mic', options);
+    return this._sendRefusalToTurnOn('mic', { noTerminateWhenError: true, ...options });
   }
 
-  sendRefusalToTurnOnCam(
-    options: TOptionsInfoMediaState = { noTerminateWhenError: true },
-  ): Promise<void> {
+  async sendRefusalToTurnOnCam(options: TOptionsInfoMediaState = {}): Promise<void> {
     if (!this.session) {
       throw new Error('No session established');
     }
 
-    return this._sendRefusalToTurnOn('cam', options);
+    return this._sendRefusalToTurnOn('cam', { noTerminateWhenError: true, ...options });
   }
 
-  _handleEnded = (error: ICustomError) => {
+  _handleEnded = (error: TCustomError) => {
     const { originator } = error;
 
     if (originator === ORIGINATOR_REMOTE) {

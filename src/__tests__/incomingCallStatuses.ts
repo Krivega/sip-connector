@@ -8,10 +8,10 @@ import remoteCallerData from '../__fixtures__/remoteCallerData';
 describe('incoming call statuses', () => {
   let sipConnector: SipConnector;
   let mediaStream: MediaStream;
-  let mockFn: jest.Mock<void, any>;
-  let mockFnConnecting: jest.Mock<void, any>;
-  let mockFnAccepted: jest.Mock<void, any>;
-  let mockFnConfirmed: jest.Mock<void, any>;
+  let mockFunction: jest.Mock<void>;
+  let mockFunctionConnecting: jest.Mock<void>;
+  let mockFunctionAccepted: jest.Mock<void>;
+  let mockFunctionConfirmed: jest.Mock<void>;
 
   beforeEach(() => {
     sipConnector = createSipConnector();
@@ -19,12 +19,10 @@ describe('incoming call statuses', () => {
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },
     }) as MediaStream;
-    mockFn = jest.fn(() => {
-      return undefined;
-    });
-    mockFnConnecting = jest.fn();
-    mockFnAccepted = jest.fn();
-    mockFnConfirmed = jest.fn();
+    mockFunction = jest.fn(() => {});
+    mockFunctionConnecting = jest.fn();
+    mockFunctionAccepted = jest.fn();
+    mockFunctionConfirmed = jest.fn();
   });
 
   afterEach(() => {
@@ -38,13 +36,13 @@ describe('incoming call statuses', () => {
 
     const promiseCallStatuses = new Promise<void>((resolve) => {
       sipConnector.onSession('connecting', () => {
-        mockFnConnecting();
+        mockFunctionConnecting();
 
         sipConnector.onSession('accepted', () => {
-          mockFnAccepted();
+          mockFunctionAccepted();
 
           sipConnector.onSession('confirmed', () => {
-            mockFnConfirmed();
+            mockFunctionConfirmed();
             resolve();
           });
         });
@@ -54,18 +52,18 @@ describe('incoming call statuses', () => {
     sipConnector.on('incomingCall', () => {
       sipConnector.answerToIncomingCall({
         mediaStream,
-        ontrack: mockFn,
+        ontrack: mockFunction,
       });
     });
 
-    // @ts-ignore
+    // @ts-expect-error
     JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
 
     return promiseCallStatuses.then(() => {
       expect(sipConnector.isCallActive).toBe(true);
-      expect(mockFnConnecting).toHaveBeenCalledTimes(1);
-      expect(mockFnAccepted).toHaveBeenCalledTimes(1);
-      expect(mockFnConfirmed).toHaveBeenCalledTimes(1);
+      expect(mockFunctionConnecting).toHaveBeenCalledTimes(1);
+      expect(mockFunctionAccepted).toHaveBeenCalledTimes(1);
+      expect(mockFunctionConfirmed).toHaveBeenCalledTimes(1);
     });
   });
 });

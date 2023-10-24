@@ -2,7 +2,7 @@ import type SipConnector from '../SipConnector';
 import log from '../logger';
 
 const resolveStopShareSipConnector = ({ sipConnector }: { sipConnector: SipConnector }) => {
-  const stopShareSipConnector = ({ isP2P = false }: { isP2P: boolean } = { isP2P: false }) => {
+  const stopShareSipConnector = async ({ isP2P = false }: { isP2P?: boolean } = {}) => {
     log('stopShareSipConnector');
 
     return sipConnector

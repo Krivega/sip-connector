@@ -1,5 +1,5 @@
 import type SipConnector from '../SipConnector';
-import type { EEventsMainCAM } from '../SipConnector';
+import type { EEventsMainCAM } from '../types';
 import balance from './balance';
 import type { TOnSetParameters } from './setEncodingsToSender';
 
@@ -13,11 +13,11 @@ const resolveVideoSendingBalancer = (
     onSetParameters?: TOnSetParameters;
   } = {},
 ) => {
-  const balanceByTrack = () => {
+  const balanceByTrack = async () => {
     const { connection } = sipConnector;
 
     if (!connection) {
-      return Promise.reject(new Error('connection is not exist'));
+      throw new Error('connection is not exist');
     }
 
     return balance({
@@ -29,16 +29,16 @@ const resolveVideoSendingBalancer = (
 
   let reBalance = balanceByTrack;
 
-  const handleMainCamControl = (headers: {
+  const handleMainCamControl = async (headers: {
     mainCam: EEventsMainCAM;
     resolutionMainCam?: string;
   }) => {
-    reBalance = () => {
+    reBalance = async () => {
       const { mainCam, resolutionMainCam } = headers;
       const { connection } = sipConnector;
 
       if (!connection) {
-        return Promise.reject(new Error('connection is not exist'));
+        throw new Error('connection is not exist');
       }
 
       return balance({
@@ -50,7 +50,7 @@ const resolveVideoSendingBalancer = (
       });
     };
 
-    reBalance();
+    return reBalance();
   };
 
   const subscribe = () => {
@@ -68,7 +68,7 @@ const resolveVideoSendingBalancer = (
     resetMainCamControl() {
       reBalance = balanceByTrack;
     },
-    reBalance() {
+    async reBalance() {
       return reBalance();
     },
   };

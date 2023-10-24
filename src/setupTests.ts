@@ -1,14 +1,14 @@
 import { doMock } from 'webrtc-mock';
 import RTCPeerConnectionMock from './__fixtures__/RTCPeerConnectionMock';
 
-interface Global {
+type Global = {
   RTCPeerConnection: typeof RTCPeerConnectionMock;
-}
+};
 
 declare let global: Global;
 
 global.RTCPeerConnection = RTCPeerConnectionMock;
-// @ts-ignore
-global.navigator = global.navigator || {};
+// @ts-expect-error
+global.navigator ||= {};
 
 doMock();

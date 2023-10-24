@@ -1,19 +1,17 @@
 import type { UA as IUA } from '@krivega/jssip';
+import type { IncomingRequest } from '@krivega/jssip/lib/SIPMessage';
 import type { UAConfiguration } from '@krivega/jssip/lib/UA';
 import Events from 'events-constructor';
-import type { IncomingRequest } from '@krivega/jssip/lib/SIPMessage';
-import { UA_EVENT_NAMES } from '../eventNames';
 import type { TEventUA } from '../eventNames';
-import Session from './Session.mock';
+import { UA_EVENT_NAMES } from '../eventNames';
 import Registrator from './Registrator.mock';
+import Session from './Session.mock';
 
 export const PASSWORD_CORRECT = 'PASSWORD_CORRECT';
 export const PASSWORD_CORRECT_2 = 'PASSWORD_CORRECT_2';
 export const NAME_INCORRECT = 'NAME_INCORRECT';
 
 const CONNECTION_DELAY = 400; // more 300 for test cancel requests with debounced
-
-/* eslint-disable class-methods-use-this */
 
 class UA implements IUA {
   _events: Events<typeof UA_EVENT_NAMES>;
@@ -29,6 +27,7 @@ class UA implements IUA {
   _isConnected?: boolean;
 
   configuration: UAConfiguration;
+
   _registrator: Registrator;
 
   constructor(configuration: UAConfiguration) {
@@ -71,9 +70,9 @@ class UA implements IUA {
     }
   }
 
-  //@ts-ignore
-  call = jest.fn((url: string, params): Session => {
-    const { mediaStream, eventHandlers } = params;
+  // @ts-expect-error
+  call = jest.fn((url: string, parameters): Session => {
+    const { mediaStream, eventHandlers } = parameters;
 
     this.session = new Session({ url, mediaStream, eventHandlers, originator: 'local' });
 
@@ -82,7 +81,7 @@ class UA implements IUA {
     return this.session;
   });
 
-  //@ts-ignore
+  // @ts-expect-error
   on(eventName: TEventUA, handler) {
     this._events.on(eventName, handler);
 
@@ -110,8 +109,9 @@ class UA implements IUA {
    *
    * @returns {boolean} true
    */
-  set(key, value) {
-    this.configuration![key] = value;
+  set(key: string, value: any) {
+    // @ts-expect-error
+    this.configuration[key] = value;
 
     return true;
   }
@@ -126,7 +126,7 @@ class UA implements IUA {
       clearTimeout(this._startedTimeout);
     }
 
-    const { password, register, uri } = this.configuration!;
+    const { password, register, uri } = this.configuration;
 
     if (register && uri.includes(NAME_INCORRECT)) {
       this._isRegistered = false;

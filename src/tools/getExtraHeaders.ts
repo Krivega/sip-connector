@@ -18,8 +18,7 @@ const getExtraHeaders = ({
   const muteStateMic = isMutedAudio ? '0' : '1';
   const muteStateCam = isMutedVideo ? '0' : '1';
 
-  headers.push(`X-Vinteo-Mic-State: ${muteStateMic}`);
-  headers.push(`X-Vinteo-MainCam-State: ${muteStateCam}`);
+  headers.push(`X-Vinteo-Mic-State: ${muteStateMic}`, `X-Vinteo-MainCam-State: ${muteStateCam}`);
 
   if (!isRegistered) {
     headers.push('X-Vinteo-Purgatory-Call: yes');

@@ -3,7 +3,7 @@ import { IncomingRequest } from '@krivega/jssip/lib/SIPMessage';
 type TExtraHeaders = [string, string][];
 
 class Request extends IncomingRequest {
-  private headers: Headers;
+  private readonly headers: Headers;
 
   constructor(extraHeaders: TExtraHeaders) {
     super();

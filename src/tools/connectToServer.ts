@@ -2,16 +2,16 @@ import { isCanceledError } from '@krivega/cancelable-promise';
 import type SipConnector from '../SipConnector';
 import log from '../logger';
 
+const handleError = (error: Error): boolean => {
+  if (!isCanceledError(error)) {
+    throw error;
+  }
+
+  return false;
+};
+
 const resolveConnectToServer = (sipConnector: SipConnector) => {
-  const handleError = (error: Error): boolean => {
-    if (!isCanceledError(error)) {
-      throw error;
-    }
-
-    return false;
-  };
-
-  const connectToServer = (params: {
+  const connectToServer = async (parameters: {
     userAgent: string;
     sipWebSocketServerURL: string;
     sipServerUrl: string;
@@ -21,7 +21,7 @@ const resolveConnectToServer = (sipConnector: SipConnector) => {
     password?: string;
     isRegisteredUser?: boolean;
     isDisconnectOnFail?: boolean;
-    sdpSemantics: 'unified-plan' | 'plan-b';
+    sdpSemantics: 'plan-b' | 'unified-plan';
   }): Promise<boolean> => {
     const {
       userAgent,
@@ -34,9 +34,9 @@ const resolveConnectToServer = (sipConnector: SipConnector) => {
       isRegisteredUser,
       sdpSemantics,
       isDisconnectOnFail,
-    } = params;
+    } = parameters;
 
-    log('connectToServer', params);
+    log('connectToServer', parameters);
 
     return sipConnector
       .connect({
@@ -55,10 +55,10 @@ const resolveConnectToServer = (sipConnector: SipConnector) => {
 
         return true;
       })
-      .catch((error) => {
+      .catch(async (error: Error) => {
         log('connectToServer catch: error', error);
 
-        if (isDisconnectOnFail) {
+        if (isDisconnectOnFail === true) {
           return sipConnector
             .disconnect()
             .then(() => {

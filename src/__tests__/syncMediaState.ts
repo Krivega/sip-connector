@@ -1,5 +1,5 @@
 import { createMediaStreamMock } from 'webrtc-mock';
-import SipConnector, { EEventsMainCAM, EEventsMic, EEventsSyncMediaState } from '../SipConnector';
+import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import createSipConnector from '../__fixtures__/doMock';
 import JsSIP from '../__fixtures__/jssip.mock';
@@ -16,6 +16,7 @@ import {
   HEADER_MEDIA_SYNC,
   HEADER_MIC,
 } from '../headers';
+import { EEventsMainCAM, EEventsMic, EEventsSyncMediaState } from '../types';
 
 const headersSyncForcedAdminStartMainCam: [string, string][] = [
   [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
@@ -93,7 +94,7 @@ describe('sync media state', () => {
   const number = '111';
 
   let sipConnector: SipConnector;
-  let mediaStream;
+  let mediaStream: MediaStream;
 
   beforeEach(() => {
     sipConnector = createSipConnector();

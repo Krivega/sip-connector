@@ -16,7 +16,7 @@ describe('events', () => {
   const number = '111';
 
   let sipConnector: SipConnector;
-  let mediaStream;
+  let mediaStream: MediaStream;
 
   beforeEach(() => {
     sipConnector = createSipConnector();

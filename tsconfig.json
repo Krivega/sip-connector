@@ -1,4 +1,8 @@
 {
-  "extends": "./tsconfig.compiler.json",
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": "./",
+    "types": ["vite/client", "node"]
+  },
   "include": ["src"]
 }

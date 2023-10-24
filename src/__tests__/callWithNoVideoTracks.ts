@@ -7,17 +7,15 @@ const number = `10000`;
 
 describe('call with no video tracks', () => {
   let sipConnector: SipConnector;
-  let mediaStream;
-  let mockFn;
+  let mediaStream: MediaStream;
+  let mockFunction = jest.fn();
 
   beforeEach(() => {
     sipConnector = createSipConnector();
     mediaStream = createMediaStreamMock({
       audio: { deviceId: { exact: 'audioDeviceId' } },
     });
-    mockFn = jest.fn(() => {
-      return undefined;
-    });
+    mockFunction = jest.fn(() => {});
   });
 
   it('should exist peerconnection when call with no video tracks', async () => {
@@ -25,7 +23,7 @@ describe('call with no video tracks', () => {
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
-    const peerconnection = await sipConnector.call({ number, mediaStream, ontrack: mockFn });
+    const peerconnection = await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
     expect(!!peerconnection).toBe(true);
   });
@@ -37,7 +35,7 @@ describe('call with no video tracks', () => {
 
     expect(sipConnector.isCallActive).toBe(false);
 
-    await sipConnector.call({ number, mediaStream, ontrack: mockFn });
+    await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
     expect(sipConnector.isCallActive).toBe(true);
   });
@@ -46,7 +44,7 @@ describe('call with no video tracks', () => {
     expect.assertions(1);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
-    await sipConnector.call({ number, mediaStream, ontrack: mockFn });
+    await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
     const remoteStreams = sipConnector.getRemoteStreams();
 
@@ -57,7 +55,7 @@ describe('call with no video tracks', () => {
     expect.assertions(1);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
-    await sipConnector.call({ number, mediaStream, ontrack: mockFn });
+    await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
     const remoteStreams = sipConnector.getRemoteStreams();
 
@@ -71,12 +69,11 @@ describe('call with no video tracks', () => {
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
-    const number = `10000`;
-    const peerconnection = await sipConnector.call({ number, mediaStream, ontrack: mockFn });
+    const peerconnection = await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
-    // @ts-ignore
+    // @ts-expect-error
     expect(peerconnection._senders[0].track.kind).toBe('audio');
-    // @ts-ignore
+    // @ts-expect-error
     expect(peerconnection._senders[1]).toBe(undefined);
   });
 });

@@ -1,5 +1,5 @@
 import { createMediaStreamMock } from 'webrtc-mock';
-import SipConnector from '../SipConnector';
+import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import createSipConnector from '../__fixtures__/doMock';
 import { extraHeaders, mediaStateData } from '../__fixtures__/mediaState';
@@ -9,8 +9,8 @@ describe('media state', () => {
   const number = '111';
 
   let sipConnector: SipConnector;
-  let mediaStream;
-  let mockFn;
+  let mediaStream: MediaStream;
+  let mockFunction = jest.fn();
 
   beforeEach(() => {
     sipConnector = createSipConnector();
@@ -26,16 +26,14 @@ describe('media state', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    mockFn = jest.fn(() => {
-      return undefined;
-    });
+    mockFunction = jest.fn(() => {});
 
-    // @ts-ignore
-    sipConnector.session.sendInfo = mockFn;
+    // @ts-expect-error
+    sipConnector.session.sendInfo = mockFunction;
 
     sipConnector.sendMediaState(mediaStateData);
 
-    expect(mockFn).toHaveBeenCalledWith(CONTENT_TYPE_MEDIA_STATE, undefined, {
+    expect(mockFunction).toHaveBeenCalledWith(CONTENT_TYPE_MEDIA_STATE, undefined, {
       ...extraHeaders,
       noTerminateWhenError: true,
     });
@@ -49,9 +47,9 @@ describe('media state', () => {
 
     const ERROR_RESPONSE = 'Error response';
 
-    // @ts-ignore
-    sipConnector.session.sendInfo = () => {
-      return Promise.reject(new Error(ERROR_RESPONSE));
+    // @ts-expect-error
+    sipConnector.session.sendInfo = async () => {
+      throw new Error(ERROR_RESPONSE);
     };
 
     await sipConnector.sendMediaState(mediaStateData).catch((error) => {

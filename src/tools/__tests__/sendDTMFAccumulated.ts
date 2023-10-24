@@ -1,4 +1,4 @@
-import delayPromise from 'promise-delay';
+import delayPromise from '../../__fixtures__/delayPromise';
 import doMockSIPconnector from '../../__fixtures__/doMock';
 import dataCall from '../__fixtures__/call';
 import { dataForConnectionWithoutAuthorization } from '../__fixtures__/connectToServer';
@@ -20,20 +20,19 @@ describe('sendDTMFAccumulated', () => {
     call = resolveCall(sipConnector);
   });
 
-  it('should be sent dtmf from sendDTMFAccumulated', () => {
+  it('should be sent dtmf from sendDTMFAccumulated', async () => {
     expect.assertions(5);
 
     return connectToServer(dataForConnectionWithoutAuthorization)
-      .then(() => {
-        // @ts-ignore
+      .then(async () => {
         return call(dataCall);
       })
       .then(async () => {
-        sipConnector.onSession('newDTMF', ({ originator }) => {
+        sipConnector.onSession('newDTMF', ({ originator }: { originator: string }) => {
           expect(originator).toEqual('local');
         });
 
-        const sendKey = (key: string): Promise<void> => {
+        const sendKey = async (key: string): Promise<void> => {
           return sipConnector.sendDTMF(key);
         };
 

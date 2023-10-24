@@ -10,13 +10,7 @@ const getUserAgentUnifiedSdpSemantic = ({
   browserVersion?: string;
 }): string => {
   const appInfo = `${appName} ${appVersion}`;
-  let suffix: string;
-
-  if (browserName) {
-    suffix = `${browserName} ${browserVersion}, ${appInfo}`;
-  } else {
-    suffix = appInfo;
-  }
+  const suffix = browserName ? `${browserName} ${browserVersion}, ${appInfo}` : appInfo;
 
   const userAgent = `ChromeNew - ${suffix}`;
 

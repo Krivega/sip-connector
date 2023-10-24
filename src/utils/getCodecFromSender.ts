@@ -10,7 +10,7 @@ const findInResultByType = (results: RTCStatsReport, type: string) => {
   });
 };
 
-const getCodecFromSender = (sender: RTCRtpSender): Promise<string | undefined> => {
+const getCodecFromSender = async (sender: RTCRtpSender): Promise<string | undefined> => {
   return sender.getStats().then((stats: RTCStatsReport) => {
     const codec = findInResultByType(stats, 'codec');
 

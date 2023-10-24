@@ -2,8 +2,6 @@ import {
   SIP_SERVER_URL,
   SIP_WEB_SOCKET_SERVER_URL,
   uaConfigurationWithAuthorization as _uaConfigurationWithAuthorization,
-  uaConfigurationWithoutAuthorization as _uaConfigurationWithoutAuthorization,
-  uaConfigurationWithoutAuthorizationWithoutDisplayName as _uaConfigurationWithoutAuthorizationWithoutDisplayName,
   displayName,
   user,
 } from '../../__fixtures__';
@@ -70,9 +68,7 @@ export const dataForConnectionWithAuthorizationPasswordChanged = {
 };
 
 export const uaConfigurationWithAuthorization = _uaConfigurationWithAuthorization;
-export const uaConfigurationWithoutAuthorization = _uaConfigurationWithoutAuthorization;
-export const uaConfigurationWithoutAuthorizationWithoutDisplayName =
-  _uaConfigurationWithoutAuthorizationWithoutDisplayName;
+
 export const uaConfigurationWithAuthorizationPasswordChanged = {
   ...uaConfigurationWithAuthorization,
   password: PASSWORD_CORRECT_2,
@@ -82,6 +78,11 @@ export const oneWord = 'a';
 export const twoWord = 'ab';
 export const thirdWord = 'abc';
 
-export const uriWithName = (name) => {
+export const uriWithName = (name: string) => {
   return `sip:${name}@${SIP_SERVER_URL}`;
 };
+
+export {
+  uaConfigurationWithoutAuthorization,
+  uaConfigurationWithoutAuthorizationWithoutDisplayName,
+} from '../../__fixtures__';

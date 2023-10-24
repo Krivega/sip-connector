@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/max-params */
 import type SipConnector from '../../SipConnector';
 import resolveConnectToServer from '../connectToServer';
 import resolveDisconnectFromServer from '../disconnectFromServer';
@@ -27,8 +28,8 @@ import { canConnectToServer } from './permissions';
  */
 const initUa = (
   sipConnector: SipConnector,
-  resolve,
-  reject,
+  resolve: (success: boolean) => void,
+  reject: () => void,
   {
     sipServerUrl,
     sipWebSocketServerURL,
@@ -37,10 +38,18 @@ const initUa = (
     name,
     password,
     isRegisteredUser,
+  }: {
+    remoteAddress: string | undefined;
+    sipServerUrl: string;
+    displayName: string | undefined;
+    sipWebSocketServerURL: string;
+    name: string;
+    password: string;
+    isRegisteredUser: boolean;
   },
 ) => {
-  return Promise.resolve()
-    .then(() => {
+  Promise.resolve()
+    .then(async () => {
       const connectToServer = resolveConnectToServer(sipConnector);
       const disconnectFromServer = resolveDisconnectFromServer(sipConnector);
 
@@ -70,13 +79,21 @@ const initUa = (
       return disconnectFromServer();
     })
     .then((success) => {
-      return resolve(!!success);
+      resolve(!!success);
     })
     .catch(reject);
 };
 
 const resolveInitUaPromised = (sipConnector: SipConnector) => {
-  return (state) => {
+  return async (state: {
+    remoteAddress: string | undefined;
+    sipServerUrl: string;
+    displayName: string | undefined;
+    sipWebSocketServerURL: string;
+    name: string;
+    password: string;
+    isRegisteredUser: boolean;
+  }) => {
     return new Promise((resolve, reject) => {
       initUa(sipConnector, resolve, reject, state);
     });

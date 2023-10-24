@@ -1,5 +1,5 @@
 import { createMediaStreamMock } from 'webrtc-mock';
-import SipConnector from '../SipConnector';
+import type SipConnector from '../SipConnector';
 import { dataForConnectionWithoutAuthorization } from '../__fixtures__';
 import {
   conferenceParticipantTokenIssuedData,
@@ -12,7 +12,7 @@ describe('conference participant token issued notify', () => {
   const number = '111';
 
   let sipConnector: SipConnector;
-  let mediaStream;
+  let mediaStream: MediaStream;
 
   beforeEach(() => {
     sipConnector = createSipConnector();

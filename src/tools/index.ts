@@ -1,46 +1,21 @@
-import resolveAnswerIncomingCall from './answerIncomingCall';
-import resolveCallToServer from './callToServer';
-import resolveConnectToServer from './connectToServer';
-import resolveDisconnectFromServer from './disconnectFromServer';
-import * as error from './error';
-import getExtraHeaders from './getExtraHeaders';
-import getUserAgent from './getUserAgent';
-import hasPurgatory, { PURGATORY_CONFERENCE_NUMBER } from './hasPurgatory';
-import resolveAskPermissionToEnableCam from './resolveAskPermissionToEnableCam';
-import resolveGetRemoteStreams from './resolveGetRemoteStreams';
-import resolveOnMustStopPresentation from './resolveOnMustStopPresentation';
-import resolveOnUseLicense from './resolveOnUseLicense';
-import resolveSendMediaState from './resolveSendMediaState';
-import resolveSendRefusalToTurnOnCam from './resolveSendRefusalToTurnOnCam';
-import resolveSendRefusalToTurnOnMic from './resolveSendRefusalToTurnOnMic';
-import resolveStartPresentation from './resolveStartPresentation';
-import resolveStopShareSipConnector from './resolveStopShareSipConnector';
-import resolveUpdatePresentation from './resolveUpdatePresentation';
-import resolveUpdateRemoteStreams from './resolveUpdateRemoteStreams';
-import sendDTMFAccumulated from './sendDTMFAccumulated';
-import createSyncMediaState from './syncMediaState';
-
-export {
-  PURGATORY_CONFERENCE_NUMBER,
-  createSyncMediaState,
-  error,
-  getExtraHeaders,
-  getUserAgent,
-  hasPurgatory,
-  resolveAnswerIncomingCall,
-  resolveAskPermissionToEnableCam,
-  resolveCallToServer,
-  resolveConnectToServer,
-  resolveDisconnectFromServer,
-  resolveGetRemoteStreams,
-  resolveOnMustStopPresentation,
-  resolveOnUseLicense,
-  resolveSendMediaState,
-  resolveSendRefusalToTurnOnCam,
-  resolveSendRefusalToTurnOnMic,
-  resolveStartPresentation,
-  resolveStopShareSipConnector,
-  resolveUpdatePresentation,
-  resolveUpdateRemoteStreams,
-  sendDTMFAccumulated,
-};
+export { default as resolveAnswerIncomingCall } from './answerIncomingCall';
+export { default as resolveCallToServer } from './callToServer';
+export { default as resolveConnectToServer } from './connectToServer';
+export { default as resolveDisconnectFromServer } from './disconnectFromServer';
+export * as error from './error';
+export { default as getExtraHeaders } from './getExtraHeaders';
+export { default as getUserAgent } from './getUserAgent';
+export { PURGATORY_CONFERENCE_NUMBER, default as hasPurgatory } from './hasPurgatory';
+export { default as resolveAskPermissionToEnableCam } from './resolveAskPermissionToEnableCam';
+export { default as resolveGetRemoteStreams } from './resolveGetRemoteStreams';
+export { default as resolveOnMustStopPresentation } from './resolveOnMustStopPresentation';
+export { default as resolveOnUseLicense } from './resolveOnUseLicense';
+export { default as resolveSendMediaState } from './resolveSendMediaState';
+export { default as resolveSendRefusalToTurnOnCam } from './resolveSendRefusalToTurnOnCam';
+export { default as resolveSendRefusalToTurnOnMic } from './resolveSendRefusalToTurnOnMic';
+export { default as resolveStartPresentation } from './resolveStartPresentation';
+export { default as resolveStopShareSipConnector } from './resolveStopShareSipConnector';
+export { default as resolveUpdatePresentation } from './resolveUpdatePresentation';
+export { default as resolveUpdateRemoteStreams } from './resolveUpdateRemoteStreams';
+export { default as sendDTMFAccumulated } from './sendDTMFAccumulated';
+export { default as createSyncMediaState } from './syncMediaState';

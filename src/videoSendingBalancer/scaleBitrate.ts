@@ -1,7 +1,7 @@
 import findSenderByStream from '../utils/findSenderByStream';
 import setEncodingsToSender from './setEncodingsToSender';
 
-const scaleMaxBitrateBySender = (
+const scaleMaxBitrateBySender = async (
   senders: RTCRtpSender[],
   mediaStream: MediaStream,
   maxBitrate: number,
@@ -12,7 +12,8 @@ const scaleMaxBitrateBySender = (
     return setEncodingsToSender(sender, { maxBitrate });
   }
 
-  return Promise.resolve();
+  // eslint-disable-next-line unicorn/no-useless-undefined
+  return undefined;
 };
 
 export default scaleMaxBitrateBySender;

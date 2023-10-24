@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type { MediaStreamTrackMock } from 'webrtc-mock';
 import type { RTCPeerConnectionDeprecated } from '@krivega/jssip/lib/RTCSession';
+import type { MediaStreamTrackMock } from 'webrtc-mock';
 
 class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
   _senders: RTCRtpSender[] = [];
@@ -8,136 +8,177 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
   _receivers: any[] = [];
 
   constructor(
-    configuration?: RTCConfiguration,
-    // @ts-ignore
+    _configuration?: RTCConfiguration,
+    // @ts-expect-error
     tracks: MediaStreamTrackMock[],
   ) {
     this._receivers = tracks.map((track) => {
       return { track };
     });
   }
-  canTrickleIceCandidates!: boolean | null;
-  connectionState!: RTCPeerConnectionState;
-  currentLocalDescription!: RTCSessionDescription | null;
-  currentRemoteDescription!: RTCSessionDescription | null;
-  iceConnectionState!: RTCIceConnectionState;
-  iceGatheringState!: RTCIceGatheringState;
-  idpErrorInfo!: string | null;
-  idpLoginUrl!: string | null;
-  localDescription!: RTCSessionDescription | null;
-  onconnectionstatechange!: ((this: RTCPeerConnection, ev: Event) => any) | null;
-  ondatachannel!: ((this: RTCPeerConnection, ev: RTCDataChannelEvent) => any) | null;
-  onicecandidate!: ((this: RTCPeerConnection, ev: RTCPeerConnectionIceEvent) => any) | null;
 
-  onicecandidateerror: ((this: RTCPeerConnection, ev: Event) => any) | null = null;
-  oniceconnectionstatechange!: ((this: RTCPeerConnection, ev: Event) => any) | null;
-  onicegatheringstatechange!: ((this: RTCPeerConnection, ev: Event) => any) | null;
-  onnegotiationneeded!: ((this: RTCPeerConnection, ev: Event) => any) | null;
-  onsignalingstatechange!: ((this: RTCPeerConnection, ev: Event) => any) | null;
-  ontrack!: ((this: RTCPeerConnection, ev: RTCTrackEvent) => any) | null;
+  canTrickleIceCandidates!: boolean | null;
+
+  connectionState!: RTCPeerConnectionState;
+
+  currentLocalDescription!: RTCSessionDescription | null;
+
+  currentRemoteDescription!: RTCSessionDescription | null;
+
+  iceConnectionState!: RTCIceConnectionState;
+
+  iceGatheringState!: RTCIceGatheringState;
+
+  idpErrorInfo!: string | null;
+
+  idpLoginUrl!: string | null;
+
+  localDescription!: RTCSessionDescription | null;
+
+  onconnectionstatechange!: ((this: RTCPeerConnection, event_: Event) => any) | null;
+
+  ondatachannel!: ((this: RTCPeerConnection, event_: RTCDataChannelEvent) => any) | null;
+
+  onicecandidate!: ((this: RTCPeerConnection, event_: RTCPeerConnectionIceEvent) => any) | null;
+
+  onicecandidateerror: ((this: RTCPeerConnection, event_: Event) => any) | null = null;
+
+  oniceconnectionstatechange!: ((this: RTCPeerConnection, event_: Event) => any) | null;
+
+  onicegatheringstatechange!: ((this: RTCPeerConnection, event_: Event) => any) | null;
+
+  onnegotiationneeded!: ((this: RTCPeerConnection, event_: Event) => any) | null;
+
+  onsignalingstatechange!: ((this: RTCPeerConnection, event_: Event) => any) | null;
+
+  ontrack!: ((this: RTCPeerConnection, event_: RTCTrackEvent) => any) | null;
+
   peerIdentity = undefined;
+
   pendingLocalDescription!: RTCSessionDescription | null;
+
   pendingRemoteDescription!: RTCSessionDescription | null;
+
   remoteDescription!: RTCSessionDescription | null;
+
   sctp = null;
+
   signalingState!: RTCSignalingState;
 
   getRemoteStreams(): MediaStream[] {
     throw new Error('Method not implemented.');
   }
-  addIceCandidate(candidate: RTCIceCandidateInit | RTCIceCandidate): Promise<void> {
+
+  async addIceCandidate(_candidate: RTCIceCandidate | RTCIceCandidateInit): Promise<void> {
     throw new Error('Method not implemented.');
   }
+
   addTransceiver(
-    trackOrKind: string | MediaStreamTrack,
-    init?: RTCRtpTransceiverInit,
+    _trackOrKind: MediaStreamTrack | string,
+    _init?: RTCRtpTransceiverInit,
   ): RTCRtpTransceiver {
     throw new Error('Method not implemented.');
   }
+
   close(): void {
     throw new Error('Method not implemented.');
   }
+
   restartIce(): void {
     throw new Error('Method not implemented.');
   }
+
   createAnswer(options?: RTCAnswerOptions): Promise<RTCSessionDescriptionInit>;
   createAnswer(
     successCallback: RTCSessionDescriptionCallback,
     failureCallback: RTCPeerConnectionErrorCallback,
   ): Promise<void>;
-  createAnswer(
-    successCallback?: any,
-    failureCallback?: any,
-  ): Promise<void> | Promise<RTCSessionDescriptionInit> {
+  async createAnswer(
+    _successCallback?: any,
+    _failureCallback?: any,
+  ): Promise<RTCSessionDescriptionInit | void> {
     throw new Error('Method not implemented.');
   }
-  createDataChannel(label: string, dataChannelDict?: RTCDataChannelInit): RTCDataChannel {
+
+  createDataChannel(_label: string, _dataChannelDict?: RTCDataChannelInit): RTCDataChannel {
     throw new Error('Method not implemented.');
   }
+
   createOffer(options?: RTCOfferOptions): Promise<RTCSessionDescriptionInit>;
   createOffer(
     successCallback: RTCSessionDescriptionCallback,
     failureCallback: RTCPeerConnectionErrorCallback,
     options?: RTCOfferOptions,
   ): Promise<void>;
-  createOffer(
-    successCallback?: any,
-    failureCallback?: any,
-    options?: any,
-  ): Promise<void> | Promise<RTCSessionDescriptionInit> {
+  async createOffer(
+    _successCallback?: any,
+    _failureCallback?: any,
+    _options?: any,
+  ): Promise<RTCSessionDescriptionInit | void> {
     throw new Error('Method not implemented.');
   }
+
   getConfiguration(): RTCConfiguration {
     throw new Error('Method not implemented.');
   }
-  getIdentityAssertion(): Promise<string> {
+
+  async getIdentityAssertion(): Promise<string> {
     throw new Error('Method not implemented.');
   }
-  getStats(selector?: MediaStreamTrack | null): Promise<RTCStatsReport> {
+
+  async getStats(_selector?: MediaStreamTrack | null): Promise<RTCStatsReport> {
     throw new Error('Method not implemented.');
   }
+
   getTransceivers(): RTCRtpTransceiver[] {
     throw new Error('Method not implemented.');
   }
-  removeTrack(sender: RTCRtpSender): void {
+
+  removeTrack(_sender: RTCRtpSender): void {
     throw new Error('Method not implemented.');
   }
-  setConfiguration(configuration: RTCConfiguration): void {
+
+  setConfiguration(_configuration: RTCConfiguration): void {
     throw new Error('Method not implemented.');
   }
-  setLocalDescription(description: RTCSessionDescriptionInit): Promise<void> {
+
+  async setLocalDescription(_description: RTCSessionDescriptionInit): Promise<void> {
     throw new Error('Method not implemented.');
   }
-  setRemoteDescription(description: RTCSessionDescriptionInit): Promise<void> {
+
+  async setRemoteDescription(_description: RTCSessionDescriptionInit): Promise<void> {
     throw new Error('Method not implemented.');
   }
+
   addEventListener<K extends keyof RTCPeerConnectionEventMap>(
     type: K,
-    listener: (this: RTCPeerConnection, ev: RTCPeerConnectionEventMap[K]) => any,
-    options?: boolean | AddEventListenerOptions,
+    listener: (this: RTCPeerConnection, event_: RTCPeerConnectionEventMap[K]) => any,
+    options?: AddEventListenerOptions | boolean,
   ): void;
   addEventListener(
     type: string,
     listener: EventListenerOrEventListenerObject,
-    options?: boolean | AddEventListenerOptions,
+    options?: AddEventListenerOptions | boolean,
   ): void;
-  addEventListener(type: any, listener: any, options?: any) {
+  addEventListener(_type: any, _listener: any, _options?: any) {
     throw new Error('Method not implemented.');
   }
+
   removeEventListener<K extends keyof RTCPeerConnectionEventMap>(
     type: K,
-    listener: (this: RTCPeerConnection, ev: RTCPeerConnectionEventMap[K]) => any,
-    options?: boolean | EventListenerOptions,
+    listener: (this: RTCPeerConnection, event_: RTCPeerConnectionEventMap[K]) => any,
+    options?: EventListenerOptions | boolean,
   ): void;
   removeEventListener(
     type: string,
     listener: EventListenerOrEventListenerObject,
-    options?: boolean | EventListenerOptions,
+    options?: EventListenerOptions | boolean,
   ): void;
-  removeEventListener(type: any, listener: any, options?: any) {
+  removeEventListener(_type: any, _listener: any, _options?: any) {
     throw new Error('Method not implemented.');
   }
-  dispatchEvent(event: Event): boolean {
+
+  dispatchEvent(_event: Event): boolean {
     throw new Error('Method not implemented.');
   }
 
@@ -150,7 +191,7 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
   };
 
   addTrack = (track: MediaStreamTrack) => {
-    // @ts-ignore
+    // @ts-expect-error
     const sender: RTCRtpSender = { track };
 
     this._senders.push(sender);

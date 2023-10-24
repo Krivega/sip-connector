@@ -1,5 +1,5 @@
 import { createMediaStreamMock } from 'webrtc-mock';
-import SipConnector from '../SipConnector';
+import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import { accountChangedHeaders, accountDeletedHeaders } from '../__fixtures__/accountNotify';
 import createSipConnector from '../__fixtures__/doMock';
@@ -9,7 +9,7 @@ describe('account notify', () => {
   const number = '111';
 
   let sipConnector: SipConnector;
-  let mediaStream;
+  let mediaStream: MediaStream;
 
   beforeEach(() => {
     sipConnector = createSipConnector();

@@ -5,21 +5,21 @@ import resolveGetRemoteStreams from './resolveGetRemoteStreams';
 import resolveHandleChangeTracks from './resolveHandleChangeTracks';
 import resolveUpdateRemoteStreams from './resolveUpdateRemoteStreams';
 
-type TDegradationPreference = 'maintain-framerate' | 'maintain-resolution' | 'balanced';
+type TDegradationPreference = 'balanced' | 'maintain-framerate' | 'maintain-resolution';
 
 const resolveAnswerIncomingCall = (sipConnector: SipConnector) => {
-  const answerIncomingCall = (params: {
+  const answerIncomingCall = async (parameters: {
     mediaStream: MediaStream;
     extraHeaders?: string[] | undefined;
     iceServers?: RTCIceServer[];
     degradationPreference?: TDegradationPreference;
     setRemoteStreams: (streams: MediaStream[]) => void;
-    onBeforeProgressCall?: (conference: string) => void;
-    onSuccessProgressCall?: (params: { isPurgatory: boolean }) => void;
+    onBeforeProgressCall?: (conference?: string) => void;
+    onSuccessProgressCall?: (parameters_: { isPurgatory: boolean }) => void;
     onFailProgressCall?: () => void;
     onFinishProgressCall?: () => void;
     onEnterPurgatory?: () => void;
-    onEnterConference?: (params: { isSuccessProgressCall: boolean }) => void;
+    onEnterConference?: (parameters_: { isSuccessProgressCall: boolean }) => void;
     onEndedCall?: () => void;
   }): Promise<RTCPeerConnection | void> => {
     const {
@@ -35,16 +35,16 @@ const resolveAnswerIncomingCall = (sipConnector: SipConnector) => {
       onFailProgressCall,
       onFinishProgressCall,
       onEndedCall,
-    } = params;
+    } = parameters;
     const updateRemoteStreams = resolveUpdateRemoteStreams({
       setRemoteStreams,
       getRemoteStreams: resolveGetRemoteStreams(sipConnector),
     });
     const handleChangeTracks = resolveHandleChangeTracks(updateRemoteStreams);
 
-    log('answerIncomingCall', params);
+    log('answerIncomingCall', parameters);
 
-    const answer = (): Promise<RTCPeerConnection> => {
+    const answer = async (): Promise<RTCPeerConnection> => {
       return sipConnector.answerToIncomingCall({
         mediaStream,
         extraHeaders,
@@ -54,11 +54,10 @@ const resolveAnswerIncomingCall = (sipConnector: SipConnector) => {
       });
     };
 
-    const getIncomingNumber = (): string => {
+    const getIncomingNumber = (): string | undefined => {
       const { remoteCallerData } = sipConnector;
-      const { incomingNumber } = remoteCallerData;
 
-      return incomingNumber;
+      return remoteCallerData.incomingNumber;
     };
     let isSuccessProgressCall = false;
     let room: string;
@@ -66,7 +65,7 @@ const resolveAnswerIncomingCall = (sipConnector: SipConnector) => {
     const subscribeEnterConference = () => {
       log('subscribeEnterConference: onEnterConference', onEnterConference);
 
-      if (onEnterPurgatory || onEnterConference) {
+      if (onEnterPurgatory ?? onEnterConference) {
         return sipConnector.onSession('enterRoom', (_room: string) => {
           log('enterRoom', { _room, isSuccessProgressCall });
 

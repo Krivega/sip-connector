@@ -8,7 +8,7 @@ describe('setEncodingsToSender', () => {
     sender = new RTCRtpSenderMock();
   });
 
-  it('without targets', () => {
+  it('without targets', async () => {
     expect.assertions(2);
 
     return setEncodingsToSender(sender, {}).then(({ parameters, isChanged }) => {
@@ -17,7 +17,7 @@ describe('setEncodingsToSender', () => {
     });
   });
 
-  it('by scaleResolutionDownBy=2', () => {
+  it('by scaleResolutionDownBy=2', async () => {
     expect.assertions(2);
 
     const scaleResolutionDownBy = 2;
@@ -75,7 +75,7 @@ describe('setEncodingsToSender', () => {
     );
   });
 
-  it('by scaleResolutionDownBy less then 1', () => {
+  it('by scaleResolutionDownBy less then 1', async () => {
     expect.assertions(2);
 
     const scaleResolutionDownBy = 0.5;

@@ -1,6 +1,9 @@
-import { createMediaStreamMock } from 'webrtc-mock';
+import {
+  createAudioMediaStreamTrackMock,
+  createMediaStreamMock,
+  createVideoMediaStreamTrackMock,
+} from 'webrtc-mock';
 import RTCPeerConnectionMock from '../../__fixtures__/RTCPeerConnectionMock';
-import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
 
 const data = {
   mediaStream: createMediaStreamMock({
@@ -29,8 +32,6 @@ audioTrack.id = 'mainaudio1';
 videoTrack.id = 'mainvideo1';
 
 export const peerConnectionFromData = new RTCPeerConnectionMock(undefined, [
-  // @ts-ignore
   audioTrack,
-  // @ts-ignore
   videoTrack,
 ]);

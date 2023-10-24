@@ -1,26 +1,26 @@
 import createStackPromises from 'stack-promises';
-import { EEventsMainCAM } from '../SipConnector';
+import logger from '../logger';
+import { EEventsMainCAM } from '../types';
 import getMaxBitrateByWidthAndCodec, { getMinimumBitrate } from './getMaxBitrateByWidthAndCodec';
 import type { TOnSetParameters, TResult } from './setEncodingsToSender';
 import setEncodingsToSender from './setEncodingsToSender';
 
 const stackPromises = createStackPromises<TResult>();
 
-const runStackPromises = (): Promise<TResult> => {
-  // @ts-ignore
+const runStackPromises = async (): Promise<TResult> => {
+  // @ts-expect-error
   return stackPromises().catch((error) => {
-    // eslint-disable-next-line no-console
-    console.debug('videoSendingBalancer: error', error);
+    logger('videoSendingBalancer: error', error);
   });
 };
 
-const run = (action: () => Promise<TResult>): Promise<TResult> => {
+const run = async (action: () => Promise<TResult>): Promise<TResult> => {
   stackPromises.add(action);
 
   return runStackPromises();
 };
 
-const addToStackScaleResolutionDownBySender = ({
+const addToStackScaleResolutionDownBySender = async ({
   sender,
   scaleResolutionDownBy,
   maxBitrate,
@@ -31,12 +31,12 @@ const addToStackScaleResolutionDownBySender = ({
   maxBitrate: number;
   onSetParameters?: TOnSetParameters;
 }): Promise<TResult> => {
-  return run(() => {
+  return run(async () => {
     return setEncodingsToSender(sender, { scaleResolutionDownBy, maxBitrate }, onSetParameters);
   });
 };
 
-const downgradeResolutionSender = (
+const downgradeResolutionSender = async (
   { sender, codec }: { sender: RTCRtpSender; codec?: string },
   onSetParameters?: TOnSetParameters,
 ): Promise<TResult> => {
@@ -51,7 +51,7 @@ const downgradeResolutionSender = (
   });
 };
 
-const setBitrateByTrackResolution = (
+const setBitrateByTrackResolution = async (
   { sender, track, codec }: { sender: RTCRtpSender; track: MediaStreamTrack; codec?: string },
   onSetParameters?: TOnSetParameters,
 ): Promise<TResult> => {
@@ -70,7 +70,7 @@ const setBitrateByTrackResolution = (
   });
 };
 
-const setResolutionSender = (
+const setResolutionSender = async (
   {
     sender,
     track,
@@ -89,13 +89,13 @@ const setResolutionSender = (
   const heightCurrent = settings.height!;
   const [widthTarget, heightTarget] = resolution.split('x');
 
-  const scaleByWidth = widthCurrent / +widthTarget;
-  const scaleByHeight = heightCurrent / +heightTarget!;
+  const scaleByWidth = widthCurrent / Number(widthTarget);
+  const scaleByHeight = heightCurrent / Number(heightTarget);
   const SCALE_MIN = 1;
 
   const scaleResolutionDownByTarget = Math.max(scaleByWidth, scaleByHeight, SCALE_MIN);
 
-  const maxBitrate = getMaxBitrateByWidthAndCodec(+widthTarget, codec);
+  const maxBitrate = getMaxBitrateByWidthAndCodec(Number(widthTarget), codec);
 
   return addToStackScaleResolutionDownBySender({
     sender,
@@ -105,7 +105,7 @@ const setResolutionSender = (
   });
 };
 
-const processSender = (
+const processSender = async (
   {
     mainCam,
     resolutionMainCam,
@@ -122,12 +122,14 @@ const processSender = (
   onSetParameters?: TOnSetParameters,
 ): Promise<TResult> => {
   switch (mainCam) {
-    case EEventsMainCAM.PAUSE_MAIN_CAM:
+    case EEventsMainCAM.PAUSE_MAIN_CAM: {
       return downgradeResolutionSender({ sender, codec }, onSetParameters);
-    case EEventsMainCAM.RESUME_MAIN_CAM:
+    }
+    case EEventsMainCAM.RESUME_MAIN_CAM: {
       return setBitrateByTrackResolution({ sender, track, codec }, onSetParameters);
-    case EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION:
-      if (resolutionMainCam) {
+    }
+    case EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION: {
+      if (resolutionMainCam !== undefined) {
         return setResolutionSender(
           { sender, track, codec, resolution: resolutionMainCam },
           onSetParameters,
@@ -135,8 +137,10 @@ const processSender = (
       }
 
       return setBitrateByTrackResolution({ sender, track, codec }, onSetParameters);
-    default:
+    }
+    default: {
       return setBitrateByTrackResolution({ sender, track, codec }, onSetParameters);
+    }
   }
 };
 

@@ -1,4 +1,4 @@
-import type { EEventsMainCAM } from '../SipConnector';
+import type { EEventsMainCAM } from '../types';
 import findVideoSender from '../utils/findVideoSender';
 import getCodecFromSender from '../utils/getCodecFromSender';
 import hasIncludesString from './hasIncludesString';
@@ -32,7 +32,7 @@ const balance = async ({
   const senders = connection.getSenders();
   const sender = findVideoSender(senders);
 
-  if (!sender || !sender.track) {
+  if (!sender?.track) {
     return resultNoChanged;
   }
 

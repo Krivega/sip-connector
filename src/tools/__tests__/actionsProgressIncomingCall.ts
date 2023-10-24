@@ -11,11 +11,11 @@ describe('actionsProgressIncomingCall', () => {
   let sipConnector: SipConnector;
   let connectToServer: ReturnType<typeof resolveConnectToServer>;
   let answerIncomingCall: ReturnType<typeof resolveAnswerIncomingCall>;
-  let onBeforeProgressCall: jest.Mock<void, any>;
-  let onSuccessProgressCall: jest.Mock<void, any>;
-  let onFailProgressCall: jest.Mock<void, any>;
-  let onFinishProgressCall: jest.Mock<void, any>;
-  let onEndedCall: jest.Mock<void, any>;
+  let onBeforeProgressCall: jest.Mock<void>;
+  let onSuccessProgressCall: jest.Mock<void>;
+  let onFailProgressCall: jest.Mock<void>;
+  let onFinishProgressCall: jest.Mock<void>;
+  let onEndedCall: jest.Mock<void>;
 
   beforeEach(() => {
     jest.resetModules();
@@ -58,7 +58,7 @@ describe('actionsProgressIncomingCall', () => {
         resolve();
       });
 
-      // @ts-ignore
+      // @ts-expect-error
       JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
     });
   });
@@ -82,9 +82,9 @@ describe('actionsProgressIncomingCall', () => {
             onFailProgressCall,
             onFinishProgressCall,
           });
-        } catch (err) {
+        } catch (error) {
           // eslint-disable-next-line no-console
-          console.log(err);
+          console.log(error);
         } finally {
           expect(onBeforeProgressCall.mock.calls.length).toBe(1);
           expect(onSuccessProgressCall.mock.calls.length).toBe(0);
@@ -95,7 +95,7 @@ describe('actionsProgressIncomingCall', () => {
         resolve();
       });
 
-      // @ts-ignore
+      // @ts-expect-error
       JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
     });
   });
@@ -112,7 +112,7 @@ describe('actionsProgressIncomingCall', () => {
           onEndedCall,
         });
 
-        // @ts-ignore
+        // @ts-expect-error
         sipConnector._sessionEvents.trigger('ended', 'error');
 
         expect(onEndedCall.mock.calls.length).toBe(1);
@@ -120,7 +120,7 @@ describe('actionsProgressIncomingCall', () => {
         resolve();
       });
 
-      // @ts-ignore
+      // @ts-expect-error
       JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
     });
   });
@@ -137,7 +137,7 @@ describe('actionsProgressIncomingCall', () => {
           onEndedCall,
         });
 
-        // @ts-ignore
+        // @ts-expect-error
         sipConnector._sessionEvents.trigger('failed', 'error');
 
         expect(onEndedCall.mock.calls.length).toBe(1);
@@ -145,7 +145,7 @@ describe('actionsProgressIncomingCall', () => {
         resolve();
       });
 
-      // @ts-ignore
+      // @ts-expect-error
       JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
     });
   });

@@ -2,9 +2,9 @@ import type SipConnector from '../SipConnector';
 import log from '../logger';
 
 const resolveAskPermissionToEnableCam = (sipConnector: SipConnector): (() => Promise<void>) => {
-  const askPermissionToEnableCam = (): Promise<void> => {
+  const askPermissionToEnableCam = async (): Promise<void> => {
     if (!sipConnector.isCallActive) {
-      return Promise.resolve();
+      return;
     }
 
     log('askPermissionToEnableCam');

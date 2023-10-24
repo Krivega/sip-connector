@@ -1,5 +1,5 @@
 import { createMediaStreamMock } from 'webrtc-mock';
-import SipConnector from '../SipConnector';
+import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import { channelsData, channelsHeaders, sendedExtraHeaders } from '../__fixtures__/channels';
 import createSipConnector from '../__fixtures__/doMock';
@@ -10,8 +10,8 @@ describe('channels', () => {
   const number = '111';
 
   let sipConnector: SipConnector;
-  let mediaStream;
-  let mockFn;
+  let mediaStream: MediaStream;
+  let mockFunction = jest.fn();
 
   beforeEach(() => {
     sipConnector = createSipConnector();
@@ -45,15 +45,13 @@ describe('channels', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    mockFn = jest.fn(() => {
-      return undefined;
-    });
+    mockFunction = jest.fn(() => {});
 
-    // @ts-ignore
-    sipConnector.session.sendInfo = mockFn;
+    // @ts-expect-error
+    sipConnector.session.sendInfo = mockFunction;
 
     sipConnector.sendChannels(channelsData);
 
-    expect(mockFn).toHaveBeenCalledWith(CONTENT_TYPE_CHANNELS, undefined, sendedExtraHeaders);
+    expect(mockFunction).toHaveBeenCalledWith(CONTENT_TYPE_CHANNELS, undefined, sendedExtraHeaders);
   });
 });

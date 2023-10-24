@@ -4,7 +4,7 @@ import resolveOnStartMainCam from '../../syncMediaState/resolveOnStartMainCam';
 
 describe('media state: resolveOnStartMainCam', () => {
   let sipConnector: SipConnector;
-  let handlerOnStartMainCam: jest.Mock<void, any>;
+  let handlerOnStartMainCam: jest.Mock<void>;
   let onStartMainCam: ReturnType<typeof resolveOnStartMainCam>;
   let offStartMainCam: () => void;
 
@@ -27,13 +27,13 @@ describe('media state: resolveOnStartMainCam', () => {
 
     onStartMainCam(handlerOnStartMainCam);
 
-    // @ts-ignore
+    // @ts-expect-error
     sipConnector._sessionEvents.trigger('admin-start-main-cam', syncModeForced);
 
     expect(handlerOnStartMainCam).toHaveBeenCalledTimes(1);
     expect(handlerOnStartMainCam).toHaveBeenCalledWith(syncModeForced);
 
-    // @ts-ignore
+    // @ts-expect-error
     sipConnector._sessionEvents.trigger('admin-start-main-cam', syncModeNotForced);
 
     expect(handlerOnStartMainCam).toHaveBeenCalledTimes(2);
@@ -45,14 +45,14 @@ describe('media state: resolveOnStartMainCam', () => {
 
     offStartMainCam = onStartMainCam(handlerOnStartMainCam);
 
-    // @ts-ignore
+    // @ts-expect-error
     sipConnector._sessionEvents.trigger('admin-start-main-cam', syncModeForced);
 
     expect(handlerOnStartMainCam).toHaveBeenCalledTimes(1);
 
     offStartMainCam();
 
-    // @ts-ignore
+    // @ts-expect-error
     sipConnector._sessionEvents.trigger('admin-start-main-cam', syncModeForced);
 
     expect(handlerOnStartMainCam).toHaveBeenCalledTimes(1);

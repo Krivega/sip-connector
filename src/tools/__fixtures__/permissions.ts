@@ -1,5 +1,5 @@
-const hasNoEmptyString = (str) => {
-  return str !== undefined && str !== '';
+const hasNoEmptyString = (string_: string) => {
+  return string_ !== undefined && string_ !== '';
 };
 
 export const canConnectToServer = ({
@@ -9,12 +9,19 @@ export const canConnectToServer = ({
   name,
   password,
   isRegisteredUser,
+}: {
+  remoteAddress: string | undefined;
+  sipServerUrl: string | undefined;
+  sipWebSocketServerURL: string | undefined;
+  name: string;
+  password: string;
+  isRegisteredUser: boolean;
 }) => {
-  const hasInitParams = !!(remoteAddress && sipServerUrl && sipWebSocketServerURL);
+  const hasInitParameters = !!(remoteAddress && sipServerUrl && sipWebSocketServerURL);
 
   if (isRegisteredUser) {
-    return !!(hasInitParams && hasNoEmptyString(name) && hasNoEmptyString(password));
+    return !!(hasInitParameters && hasNoEmptyString(name) && hasNoEmptyString(password));
   }
 
-  return hasInitParams;
+  return hasInitParameters;
 };

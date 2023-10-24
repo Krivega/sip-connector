@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "prerelease": "yarn lint",
+    "postchangelog": "prettier --write \"CHANGELOG.md\""
+  }
+}

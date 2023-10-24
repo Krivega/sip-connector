@@ -2,9 +2,9 @@ import type SipConnector from '../SipConnector';
 import log from '../logger';
 
 const resolveSendRefusalToTurnOnMic = (sipConnector: SipConnector) => {
-  const sendRefusalToTurnOnMic = (): Promise<void> => {
+  const sendRefusalToTurnOnMic = async (): Promise<void> => {
     if (!sipConnector.isCallActive) {
-      return Promise.resolve();
+      return;
     }
 
     log('sendRefusalToTurnOnMic');

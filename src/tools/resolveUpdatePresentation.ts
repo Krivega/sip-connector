@@ -10,7 +10,7 @@ const resolveUpdatePresentation = ({
   maxBitrate?: number;
   sipConnector: SipConnector;
 }) => {
-  const updatePresentation = ({
+  const updatePresentation = async ({
     mediaStream,
     isP2P = false,
   }: {

@@ -10,7 +10,7 @@ const resolveStartPresentation = ({
   maxBitrate?: number;
   sipConnector: SipConnector;
 }) => {
-  const startPresentation = ({
+  const startPresentation = async ({
     mediaStream,
     isP2P = false,
   }: {

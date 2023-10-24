@@ -1,5 +1,5 @@
 import { createMediaStreamMock } from 'webrtc-mock';
-import SipConnector, { EUseLicense } from '../SipConnector';
+import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import createSipConnector from '../__fixtures__/doMock';
 import JsSIP from '../__fixtures__/jssip.mock';
@@ -9,6 +9,7 @@ import {
   HEADER_CONTENT_TYPE_NAME,
   HEADER_CONTENT_USE_LICENSE,
 } from '../headers';
+import { EUseLicense } from '../types';
 
 const headersUseLicenseAudio: [string, string][] = [
   [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_USE_LICENSE],
@@ -29,7 +30,7 @@ describe('use license', () => {
   const number = '111';
 
   let sipConnector: SipConnector;
-  let mediaStream;
+  let mediaStream: MediaStream;
 
   beforeEach(() => {
     sipConnector = createSipConnector();

@@ -30,7 +30,7 @@ describe('connect', () => {
     expect(ua.configuration).toEqual(uaConfigurationWithAuthorization);
   });
 
-  it('authorization user with wrong password', () => {
+  it('authorization user with wrong password', async () => {
     expect.assertions(1);
 
     return sipConnector
@@ -87,7 +87,7 @@ describe('connect', () => {
     expect.assertions(6);
 
     const ua = await sipConnector.connect(dataForConnectionWithoutAuthorization);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     const { uri, ...configuration } = ua.configuration;
     const connectionConfiguration = sipConnector.getConnectionConfiguration();
 
@@ -108,7 +108,7 @@ describe('connect', () => {
     expect.assertions(6);
 
     const ua = await sipConnector.connect(dataForConnectionWithoutAuthorizationWithoutDisplayName);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     const { uri, ...configuration } = ua.configuration;
     const connectionConfiguration = sipConnector.getConnectionConfiguration();
 
@@ -181,7 +181,6 @@ describe('connect', () => {
         expect(sipConnector.getConnectionConfiguration().password).toBe(
           dataForConnectionWithAuthorizationWithDisplayName.password,
         );
-        // @ts-ignore
         expect(sipConnector.ua!.configuration).toEqual(
           uaConfigurationWithAuthorizationWithDisplayName,
         );
@@ -204,7 +203,7 @@ describe('connect', () => {
 
     const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
 
-    // @ts-ignore
+    // @ts-expect-error
     expect(ua.registrator().extraHeaders).toEqual([]);
   });
 
@@ -213,7 +212,7 @@ describe('connect', () => {
 
     const ua = await sipConnector.connect({ ...dataForConnectionWithAuthorization, remoteAddress });
 
-    // @ts-ignore
+    // @ts-expect-error
     expect(ua.registrator().extraHeaders).toEqual(extraHeadersRemoteAddress);
   });
 
@@ -224,7 +223,7 @@ describe('connect', () => {
 
     const ua = await sipConnector.connect({ ...dataForConnectionWithAuthorization, extraHeaders });
 
-    // @ts-ignore
+    // @ts-expect-error
     expect(ua.registrator().extraHeaders).toEqual(extraHeaders);
   });
 
@@ -239,7 +238,7 @@ describe('connect', () => {
       extraHeaders,
     });
 
-    // @ts-ignore
+    // @ts-expect-error
     expect(ua.registrator().extraHeaders).toEqual([...extraHeadersRemoteAddress, ...extraHeaders]);
   });
 });

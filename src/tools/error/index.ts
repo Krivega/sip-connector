@@ -1,6 +1,5 @@
-import getLinkError from './getLinkError';
-import getTypeFromError from './getTypeFromError';
-import getValuesFromError from './getValuesFromError';
-import { EErrorTypes } from './getTypeFromError';
+export { default as getLinkError } from './getLinkError';
 
-export { getLinkError, getTypeFromError, getValuesFromError, EErrorTypes };
+export { default as getTypeFromError, EErrorTypes } from './getTypeFromError';
+
+export { default as getValuesFromError } from './getValuesFromError';

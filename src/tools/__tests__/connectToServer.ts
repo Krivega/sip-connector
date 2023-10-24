@@ -20,7 +20,7 @@ import resolveConnectToServer from '../connectToServer';
 describe('connectToServer', () => {
   let connectToServer: ReturnType<typeof resolveConnectToServer>;
   let sipConnector: SipConnector;
-  let disconnectedMock: jest.Mock<any, any>;
+  let disconnectedMock: jest.Mock;
 
   beforeEach(() => {
     jest.resetModules();
@@ -31,17 +31,17 @@ describe('connectToServer', () => {
 
     const { disconnect: disconnectOrigin, connect: connectOrigin } = sipConnector;
 
-    sipConnector.disconnect = () => {
+    sipConnector.disconnect = async () => {
       disconnectedMock();
 
       return disconnectOrigin();
     };
 
-    sipConnector.connect = (data) => {
+    sipConnector.connect = async (data) => {
       if (data.sipWebSocketServerURL === LOCKED_SIP_WEB_SOCKET_SERVER_URL) {
         const error = new Error('failed wss-request');
 
-        return Promise.reject(error);
+        throw error;
       }
 
       return connectOrigin(data);
@@ -50,13 +50,13 @@ describe('connectToServer', () => {
     connectToServer = resolveConnectToServer(sipConnector);
   });
 
-  it('registered', () => {
+  it('registered', async () => {
     return connectToServer(dataForConnectionWithAuthorization).then(() => {
       expect(sipConnector.ua!.configuration).toEqual(uaConfigurationWithAuthorization);
     });
   });
 
-  it('registered async', () => {
+  it('registered async', async () => {
     return Promise.all([
       connectToServer({ ...dataForConnectionWithAuthorization, name: oneWord }),
       connectToServer({ ...dataForConnectionWithAuthorization, name: twoWord }),
@@ -69,12 +69,12 @@ describe('connectToServer', () => {
     });
   });
 
-  it('registered sync', () => {
+  it('registered sync', async () => {
     return connectToServer({ ...dataForConnectionWithAuthorization, name: oneWord })
-      .then(() => {
+      .then(async () => {
         return connectToServer({ ...dataForConnectionWithAuthorization, name: twoWord });
       })
-      .then(() => {
+      .then(async () => {
         return connectToServer({ ...dataForConnectionWithAuthorization, name: thirdWord });
       })
       .then(() => {
@@ -85,7 +85,7 @@ describe('connectToServer', () => {
       });
   });
 
-  it('unregistered', () => {
+  it('unregistered', async () => {
     return connectToServer(dataForConnectionWithoutAuthorization).then(() => {
       expect(hasValidUri(sipConnector.ua!.configuration.uri)).toBe(true);
       expect(parseObjectWithoutUri(sipConnector.ua!.configuration)).toEqual(
@@ -94,7 +94,7 @@ describe('connectToServer', () => {
     });
   });
 
-  it('unregistered async', () => {
+  it('unregistered async', async () => {
     return Promise.all([
       connectToServer(dataForConnectionWithAuthorization),
       connectToServer(dataForConnectionWithoutAuthorization),
@@ -106,8 +106,8 @@ describe('connectToServer', () => {
     });
   });
 
-  it('change sipServerUrl', () => {
-    return connectToServer(dataForConnectionWithoutAuthorization).then(() => {
+  it('change sipServerUrl', async () => {
+    return connectToServer(dataForConnectionWithoutAuthorization).then(async () => {
       return connectToServer(dataForConnectionWithoutAuthorizationWithSipServerUrlChanged).then(
         () => {
           expect(
@@ -124,8 +124,8 @@ describe('connectToServer', () => {
     });
   });
 
-  it('change sipWebSocketServerUrl', () => {
-    return connectToServer(dataForConnectionWithoutAuthorization).then(() => {
+  it('change sipWebSocketServerUrl', async () => {
+    return connectToServer(dataForConnectionWithoutAuthorization).then(async () => {
       return connectToServer(
         dataForConnectionWithoutAuthorizationWithSipWebSocketServerUrlChanged,
       ).then(() => {

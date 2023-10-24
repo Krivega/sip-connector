@@ -17,16 +17,15 @@ describe('callToServer', () => {
     call = resolveCall(sipConnector);
   });
 
-  it('check call', () => {
+  it('check call', async () => {
     expect.assertions(1);
 
     return connectToServer(dataForConnectionWithoutAuthorization)
-      .then(() => {
-        // @ts-ignore
+      .then(async () => {
         return call(dataCall);
       })
       .then((peerConnection) => {
-        // @ts-ignore
+        // @ts-expect-error
         expect(parseObject(peerConnection._receivers)).toEqual(
           parseObject(peerConnectionFromData._receivers),
         );

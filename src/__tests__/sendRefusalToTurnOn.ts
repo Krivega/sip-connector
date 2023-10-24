@@ -1,5 +1,5 @@
 import { createMediaStreamMock } from 'webrtc-mock';
-import SipConnector from '../SipConnector';
+import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import createSipConnector from '../__fixtures__/doMock';
 import { CONTENT_TYPE_REFUSAL } from '../headers';
@@ -8,8 +8,8 @@ describe('media state', () => {
   const number = '111';
 
   let sipConnector: SipConnector;
-  let mediaStream;
-  let mockFn;
+  let mediaStream: MediaStream;
+  let mockFunction = jest.fn();
 
   beforeEach(() => {
     sipConnector = createSipConnector();
@@ -25,16 +25,14 @@ describe('media state', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    mockFn = jest.fn(() => {
-      return undefined;
-    });
+    mockFunction = jest.fn(() => {});
 
-    // @ts-ignore
-    sipConnector.session.sendInfo = mockFn;
+    // @ts-expect-error
+    sipConnector.session.sendInfo = mockFunction;
 
     sipConnector.sendRefusalToTurnOnMic();
 
-    expect(mockFn).toHaveBeenCalledWith(CONTENT_TYPE_REFUSAL, undefined, {
+    expect(mockFunction).toHaveBeenCalledWith(CONTENT_TYPE_REFUSAL, undefined, {
       extraHeaders: ['X-Vinteo-Media-Type: 0'],
       noTerminateWhenError: true,
     });
@@ -46,16 +44,14 @@ describe('media state', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    mockFn = jest.fn(() => {
-      return undefined;
-    });
+    mockFunction = jest.fn(() => {});
 
-    // @ts-ignore
-    sipConnector.session.sendInfo = mockFn;
+    // @ts-expect-error
+    sipConnector.session.sendInfo = mockFunction;
 
     sipConnector.sendRefusalToTurnOnCam();
 
-    expect(mockFn).toHaveBeenCalledWith(CONTENT_TYPE_REFUSAL, undefined, {
+    expect(mockFunction).toHaveBeenCalledWith(CONTENT_TYPE_REFUSAL, undefined, {
       extraHeaders: ['X-Vinteo-Media-Type: 1'],
       noTerminateWhenError: true,
     });
@@ -69,9 +65,9 @@ describe('media state', () => {
 
     const ERROR_RESPONSE = 'Error response';
 
-    // @ts-ignore
-    sipConnector.session.sendInfo = () => {
-      return Promise.reject(new Error(ERROR_RESPONSE));
+    // @ts-expect-error
+    sipConnector.session.sendInfo = async () => {
+      throw new Error(ERROR_RESPONSE);
     };
 
     await sipConnector.sendRefusalToTurnOnMic().catch((error) => {
@@ -87,9 +83,9 @@ describe('media state', () => {
 
     const ERROR_RESPONSE = 'Error response';
 
-    // @ts-ignore
-    sipConnector.session.sendInfo = () => {
-      return Promise.reject(new Error(ERROR_RESPONSE));
+    // @ts-expect-error
+    sipConnector.session.sendInfo = async () => {
+      throw new Error(ERROR_RESPONSE);
     };
 
     await sipConnector.sendRefusalToTurnOnCam().catch((error) => {

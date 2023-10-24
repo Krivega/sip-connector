@@ -9,22 +9,22 @@ describe('validateAPI', () => {
     sipConnector = createSipConnector();
   });
 
-  it('not full data: sipServerUrl', () => {
+  it('not full data: sipServerUrl', async () => {
     expect.assertions(1);
 
-    //@ts-ignore
+    // @ts-expect-error
     return sipConnector.connect({}).catch((error) => {
       expect(error.message).toBe('sipServerUrl is required');
     });
   });
 
-  it('not full data: sipWebSocketServerURL', () => {
+  it('not full data: sipWebSocketServerURL', async () => {
     expect.assertions(1);
 
     return sipConnector
       .connect({
         ...dataForConnectionWithAuthorizationWithDisplayName,
-        //@ts-ignore
+        // @ts-expect-error
         sipWebSocketServerURL: undefined,
       })
       .catch((error) => {
@@ -32,7 +32,7 @@ describe('validateAPI', () => {
       });
   });
 
-  it('not full data: not user with authorization user', () => {
+  it('not full data: not user with authorization user', async () => {
     expect.assertions(1);
 
     return sipConnector
@@ -45,7 +45,7 @@ describe('validateAPI', () => {
       });
   });
 
-  it('not full data: not password with authorization user', () => {
+  it('not full data: not password with authorization user', async () => {
     expect.assertions(1);
 
     return sipConnector

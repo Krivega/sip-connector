@@ -1,17 +1,17 @@
-import { EventEmitter } from 'events';
-import type RTCSession from '@krivega/jssip/lib/RTCSession';
-import type { IncomingInfoEvent } from '@krivega/jssip/lib/RTCSession';
-import { Originator } from '@krivega/jssip/lib/RTCSession';
-import NameAddrHeader from '@krivega/jssip/lib/NameAddrHeader';
-import URI from '@krivega/jssip/lib/URI';
 import type { UA } from '@krivega/jssip';
-import WebSocketInterfaceMock from './WebSocketInterface.mock';
-import UAmock, { PASSWORD_CORRECT, PASSWORD_CORRECT_2, NAME_INCORRECT } from './UA.mock';
-import Session, { FAILED_CONFERENCE_NUMBER } from './Session.mock';
+import NameAddrHeader from '@krivega/jssip/lib/NameAddrHeader';
+import type RTCSession from '@krivega/jssip/lib/RTCSession';
+import type { IncomingInfoEvent, Originator } from '@krivega/jssip/lib/RTCSession';
+import URI from '@krivega/jssip/lib/URI';
+import { EventEmitter } from 'node:events';
 import Request from './Request.mock';
+import Session from './Session.mock';
+import UAmock from './UA.mock';
+import WebSocketInterfaceMock from './WebSocketInterface.mock';
 
 class Info extends EventEmitter {
   contentType: string;
+
   body: string;
 
   constructor(contentType: string, body: string) {
@@ -61,17 +61,17 @@ const triggerIncomingSession = (
 };
 
 const triggerFailIncomingSession = (
-  incomingSession,
+  incomingSession: unknown,
   options?: { originator: 'local' | 'remote' },
 ) => {
-  if (!options) {
-    incomingSession.trigger('failed', incomingSession);
-  } else {
+  if (options) {
+    // @ts-expect-error
     incomingSession.trigger('failed', options);
+  } else {
+    // @ts-expect-error
+    incomingSession.trigger('failed', incomingSession);
   }
 };
-
-export { PASSWORD_CORRECT, PASSWORD_CORRECT_2, NAME_INCORRECT, FAILED_CONFERENCE_NUMBER };
 
 const jssip = {
   triggerNewInfo,
@@ -86,3 +86,7 @@ const jssip = {
 };
 
 export default jssip;
+
+export { NAME_INCORRECT, PASSWORD_CORRECT, PASSWORD_CORRECT_2 } from './UA.mock';
+
+export { FAILED_CONFERENCE_NUMBER } from './Session.mock';

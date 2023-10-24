@@ -6,8 +6,8 @@ import createSipConnector from '../__fixtures__/doMock';
 describe('presentation', () => {
   const number = '111';
   let sipConnector: SipConnector;
-  let mediaStream;
-  let mediaStreamUpdated;
+  let mediaStream: MediaStream;
+  let mediaStreamUpdated: MediaStream;
 
   beforeEach(() => {
     sipConnector = createSipConnector();
@@ -145,7 +145,7 @@ describe('presentation', () => {
     expect(sipConnector._streamPresentationCurrent).toBeDefined();
 
     return startPresentationPromise
-      ?.then(() => {
+      ?.then(async () => {
         expect(sipConnector.isPendingPresentation).toBe(true);
         expect(previousMediaStream).not.toBe(sipConnector._streamPresentationCurrent);
         expect(sipConnector.promisePendingStartPresentation).toBeDefined();

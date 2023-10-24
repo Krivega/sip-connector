@@ -7,11 +7,11 @@ describe('call statuses', () => {
   let sipConnector: SipConnector;
   let mediaStream: MediaStream;
   let conference: string;
-  let mockFn: jest.Mock<void, any>;
-  let mockFnConnecting: jest.Mock<void, any>;
-  let mockFnEnterRoom: jest.Mock<void, any>;
-  let mockFnAccepted: jest.Mock<void, any>;
-  let mockFnConfirmed: jest.Mock<void, any>;
+  let mockFunction: jest.Mock<void>;
+  let mockFunctionConnecting: jest.Mock<void>;
+  let mockFunctionEnterRoom: jest.Mock<void>;
+  let mockFunctionAccepted: jest.Mock<void>;
+  let mockFunctionConfirmed: jest.Mock<void>;
 
   beforeEach(() => {
     sipConnector = createSipConnector();
@@ -19,13 +19,11 @@ describe('call statuses', () => {
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },
     }) as MediaStream;
-    mockFn = jest.fn(() => {
-      return undefined;
-    });
-    mockFnConnecting = jest.fn();
-    mockFnEnterRoom = jest.fn();
-    mockFnAccepted = jest.fn();
-    mockFnConfirmed = jest.fn();
+    mockFunction = jest.fn(() => {});
+    mockFunctionConnecting = jest.fn();
+    mockFunctionEnterRoom = jest.fn();
+    mockFunctionAccepted = jest.fn();
+    mockFunctionConfirmed = jest.fn();
   });
 
   afterEach(() => {
@@ -41,18 +39,18 @@ describe('call statuses', () => {
 
     const promiseCallStatuses = new Promise<void>((resolve) => {
       sipConnector.onSession('connecting', () => {
-        mockFnConnecting();
+        mockFunctionConnecting();
 
         sipConnector.onSession('enterRoom', (room: string) => {
           conference = room;
 
-          mockFnEnterRoom();
+          mockFunctionEnterRoom();
 
           sipConnector.onSession('accepted', () => {
-            mockFnAccepted();
+            mockFunctionAccepted();
 
             sipConnector.onSession('confirmed', () => {
-              mockFnConfirmed();
+              mockFunctionConfirmed();
               resolve();
             });
           });
@@ -60,15 +58,15 @@ describe('call statuses', () => {
       });
     });
 
-    sipConnector.call({ number, mediaStream, ontrack: mockFn });
+    sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
     return promiseCallStatuses.then(() => {
       expect(conference).toBe(number);
       expect(sipConnector.isCallActive).toBe(true);
-      expect(mockFnConnecting).toHaveBeenCalledTimes(1);
-      expect(mockFnEnterRoom).toHaveBeenCalledTimes(1);
-      expect(mockFnAccepted).toHaveBeenCalledTimes(1);
-      expect(mockFnConfirmed).toHaveBeenCalledTimes(1);
+      expect(mockFunctionConnecting).toHaveBeenCalledTimes(1);
+      expect(mockFunctionEnterRoom).toHaveBeenCalledTimes(1);
+      expect(mockFunctionAccepted).toHaveBeenCalledTimes(1);
+      expect(mockFunctionConfirmed).toHaveBeenCalledTimes(1);
     });
   });
 });

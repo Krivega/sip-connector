@@ -2,9 +2,9 @@ import type SipConnector from '../SipConnector';
 import log from '../logger';
 
 const resolveSendRefusalToTurnOnCam = (sipConnector: SipConnector) => {
-  const sendRefusalToTurnOnCam = (): Promise<void> => {
+  const sendRefusalToTurnOnCam = async (): Promise<void> => {
     if (!sipConnector.isCallActive) {
-      return Promise.resolve();
+      return;
     }
 
     log('sendRefusalToTurnOnCam');

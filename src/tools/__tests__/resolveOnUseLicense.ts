@@ -6,7 +6,7 @@ const AUDIO_LICENSE = 'AUDIO';
 
 describe('media state: resolveOnUseLicense', () => {
   let sipConnector: SipConnector;
-  let handlerOnUseLicense: jest.Mock<void, any>;
+  let handlerOnUseLicense: jest.Mock<void>;
   let onUseLicense: ReturnType<typeof resolveOnUseLicense>;
   let offUseLicense: () => void;
 
@@ -26,13 +26,13 @@ describe('media state: resolveOnUseLicense', () => {
 
     onUseLicense(handlerOnUseLicense);
 
-    // @ts-ignore
+    // @ts-expect-error
     sipConnector._sessionEvents.trigger('useLicense', AUDIO_LICENSE);
 
     expect(handlerOnUseLicense).toHaveBeenCalledTimes(1);
     expect(handlerOnUseLicense).toHaveBeenCalledWith(AUDIO_LICENSE);
 
-    // @ts-ignore
+    // @ts-expect-error
     sipConnector._sessionEvents.trigger('useLicense', AUDIO_LICENSE);
 
     expect(handlerOnUseLicense).toHaveBeenCalledTimes(2);
@@ -44,14 +44,14 @@ describe('media state: resolveOnUseLicense', () => {
 
     offUseLicense = onUseLicense(handlerOnUseLicense);
 
-    // @ts-ignore
+    // @ts-expect-error
     sipConnector._sessionEvents.trigger('useLicense', AUDIO_LICENSE);
 
     expect(handlerOnUseLicense).toHaveBeenCalledTimes(1);
 
     offUseLicense();
 
-    // @ts-ignore
+    // @ts-expect-error
     sipConnector._sessionEvents.trigger('useLicense', AUDIO_LICENSE);
 
     expect(handlerOnUseLicense).toHaveBeenCalledTimes(1);

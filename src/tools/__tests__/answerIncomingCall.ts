@@ -30,7 +30,7 @@ describe('answerIncomingCall', () => {
       sipConnector.on('incomingCall', async () => {
         const peerconnection = await answerIncomingCall(dataCall);
 
-        // @ts-ignore
+        // @ts-expect-error
         expect(parseObject(peerconnection._receivers)).toEqual(
           parseObject(peerConnectionFromData._receivers),
         );
@@ -38,7 +38,7 @@ describe('answerIncomingCall', () => {
         resolve();
       });
 
-      // @ts-ignore
+      // @ts-expect-error
       JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
     });
   });

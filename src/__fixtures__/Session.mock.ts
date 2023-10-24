@@ -1,19 +1,17 @@
+import type { IncomingInfoEvent } from '@krivega/jssip/lib/RTCSession';
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
 import { REJECTED } from '../causes';
-import type { IncomingInfoEvent } from '@krivega/jssip/lib/RTCSession';
-import { getRoomFromSipUrl } from './utils';
-import RTCPeerConnectionMock from './RTCPeerConnectionMock';
 import BaseSession from './BaseSession.mock';
+import RTCPeerConnectionMock from './RTCPeerConnectionMock';
+import { getRoomFromSipUrl } from './utils';
 
 const CONNECTION_DELAY = 400; // more 300 for test cancel requests with debounced
 
 export const FAILED_CONFERENCE_NUMBER = '777';
 
 const hasVideoTracks = (mediaStream: MediaStream): boolean => {
-  return !!mediaStream.getVideoTracks().length;
+  return mediaStream.getVideoTracks().length > 0;
 };
-
-/* eslint-disable class-methods-use-this */
 
 class Session extends BaseSession {
   url: string;
@@ -74,7 +72,7 @@ class Session extends BaseSession {
     }, CONNECTION_DELAY);
   }
 
-  connect(target) {
+  connect(target: string) {
     const room = getRoomFromSipUrl(target);
 
     setTimeout(() => {
@@ -133,9 +131,7 @@ class Session extends BaseSession {
     }, CONNECTION_DELAY);
   });
 
-  // eslint-disable-next-line camelcase
   terminate({ status_code }: { status_code?: number } = {}) {
-    // eslint-disable-next-line camelcase
     this.status_code = status_code;
 
     this.trigger('ended', { status_code });
@@ -145,9 +141,7 @@ class Session extends BaseSession {
     return this;
   }
 
-  // eslint-disable-next-line camelcase
   terminateRemote({ status_code }: { status_code?: number } = {}) {
-    // eslint-disable-next-line camelcase
     this.status_code = status_code;
 
     this.trigger('ended', { status_code, originator: 'remote' });
@@ -155,18 +149,18 @@ class Session extends BaseSession {
     return this;
   }
 
-  _addStream(stream: { [x: string]: () => any[] }, action = 'getTracks') {
+  _addStream(stream: Record<string, () => any[]>, action = 'getTracks') {
     stream[action]().forEach((track: MediaStreamTrack) => {
-      return this.connection!.addTrack(track);
+      return this.connection.addTrack(track);
     });
   }
 
   _forEachSenders(callback: {
     ({ track }: { track: any }): void;
     ({ track }: { track: any }): void;
-    (arg0: any): void;
+    (argument0: any): void;
   }) {
-    const senders = this.connection!.getSenders();
+    const senders = this.connection.getSenders();
 
     for (const sender of senders) {
       callback(sender);
@@ -226,8 +220,8 @@ class Session extends BaseSession {
     return this._mutedOptions;
   }
 
-  replaceMediaStream(mediaStream: any) {
-    return Promise.resolve(mediaStream);
+  async replaceMediaStream(mediaStream: any) {
+    return mediaStream;
   }
 
   _onmute({ audio, video }: { audio: boolean; video: boolean }) {
@@ -237,9 +231,7 @@ class Session extends BaseSession {
     });
   }
 
-  sendInfo() {
-    return Promise.resolve();
-  }
+  async sendInfo() {}
 
   isEnded() {
     return this._isEnded;

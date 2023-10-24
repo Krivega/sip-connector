@@ -1,6 +1,6 @@
 import type SipConnector from '../SipConnector';
-import type { EUseLicense } from '../SipConnector';
 import log from '../logger';
+import type { EUseLicense } from '../types';
 
 const resolveOnUseLicense = (sipConnector: SipConnector) => {
   const onUseLicense = (handler: (license: EUseLicense) => void): (() => void) => {

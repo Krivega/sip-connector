@@ -1,5 +1,5 @@
 import * as causes from '../../causes';
-import type { ICustomError } from '../../SipConnector';
+import type { TCustomError } from '../../types';
 import getLinkError from './getLinkError';
 
 export enum EErrorTypes {
@@ -11,21 +11,35 @@ export enum EErrorTypes {
   CONNECT_SERVER_FAILED_BY_LINK = 'CONNECT_SERVER_FAILED_BY_LINK',
 }
 
-const getTypeFromError = (error: ICustomError = new Error()): EErrorTypes => {
+const getTypeFromError = (error: TCustomError = new Error()): EErrorTypes => {
   const { cause, socket } = error;
 
   let type: EErrorTypes = EErrorTypes.CONNECT_SERVER_FAILED;
 
-  if (cause === 'Forbidden') {
-    type = EErrorTypes.WRONG_USER_OR_PASSWORD;
-  } else if (cause === causes.BAD_MEDIA_DESCRIPTION) {
-    type = EErrorTypes.BAD_MEDIA_ERROR;
-  } else if (cause === causes.NOT_FOUND) {
-    type = EErrorTypes.NOT_FOUND_ERROR;
-  } else if (socket && socket?._ws?.readyState === 3) {
-    type = EErrorTypes.WS_CONNECTION_FAILED;
-  } else if (getLinkError(error)) {
-    type = EErrorTypes.CONNECT_SERVER_FAILED_BY_LINK;
+  switch (cause) {
+    case 'Forbidden': {
+      type = EErrorTypes.WRONG_USER_OR_PASSWORD;
+
+      break;
+    }
+    case causes.BAD_MEDIA_DESCRIPTION: {
+      type = EErrorTypes.BAD_MEDIA_ERROR;
+
+      break;
+    }
+    case causes.NOT_FOUND: {
+      type = EErrorTypes.NOT_FOUND_ERROR;
+
+      break;
+    }
+    default: {
+      // @ts-expect-error
+      if (socket && socket?._ws?.readyState === 3) {
+        type = EErrorTypes.WS_CONNECTION_FAILED;
+      } else if (getLinkError(error)) {
+        type = EErrorTypes.CONNECT_SERVER_FAILED_BY_LINK;
+      }
+    }
   }
 
   return type;

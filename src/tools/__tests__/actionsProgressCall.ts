@@ -8,11 +8,11 @@ describe('actionsProgressCall', () => {
   const sipConnector = doMockSIPconnector();
   let connectToServer: ReturnType<typeof resolveConnectToServer>;
   let call: ReturnType<typeof resolveCall>;
-  let onBeforeProgressCall: jest.Mock<void, any>;
-  let onSuccessProgressCall: jest.Mock<void, any>;
-  let onFailProgressCall: jest.Mock<void, any>;
-  let onFinishProgressCall: jest.Mock<void, any>;
-  let onEndedCall: jest.Mock<void, any>;
+  let onBeforeProgressCall: jest.Mock<void>;
+  let onSuccessProgressCall: jest.Mock<void>;
+  let onFailProgressCall: jest.Mock<void>;
+  let onFinishProgressCall: jest.Mock<void>;
+  let onEndedCall: jest.Mock<void>;
 
   beforeEach(() => {
     jest.resetModules();
@@ -31,11 +31,11 @@ describe('actionsProgressCall', () => {
     jest.clearAllMocks();
   });
 
-  it('#1 check onBeforeProgressCall, onSuccessProgressCall, onFinishProgressCall', () => {
+  it('#1 check onBeforeProgressCall, onSuccessProgressCall, onFinishProgressCall', async () => {
     expect.assertions(4);
 
     return connectToServer(dataForConnectionWithoutAuthorization)
-      .then(() => {
+      .then(async () => {
         return call({
           ...dataCall,
           onBeforeProgressCall,
@@ -52,7 +52,7 @@ describe('actionsProgressCall', () => {
       });
   });
 
-  it('#2 check onFailProgressCall', () => {
+  it('#2 check onFailProgressCall', async () => {
     expect.assertions(4);
 
     const mediaStream = {} as MediaStream;
@@ -60,7 +60,7 @@ describe('actionsProgressCall', () => {
     const dataForFailedCall = { ...dataCall, mediaStream };
 
     return connectToServer(dataForConnectionWithoutAuthorization)
-      .then(() => {
+      .then(async () => {
         return call({
           ...dataForFailedCall,
           onBeforeProgressCall,
@@ -84,14 +84,14 @@ describe('actionsProgressCall', () => {
   it('#3 check onEndedCall when ended', async () => {
     expect.assertions(1);
 
-    await connectToServer(dataForConnectionWithoutAuthorization).then(() => {
+    await connectToServer(dataForConnectionWithoutAuthorization).then(async () => {
       return call({
         ...dataCall,
         onEndedCall,
       });
     });
 
-    // @ts-ignore
+    // @ts-expect-error
     sipConnector._sessionEvents.trigger('ended', 'error');
 
     expect(onEndedCall.mock.calls.length).toBe(1);
@@ -100,21 +100,21 @@ describe('actionsProgressCall', () => {
   it('#4 check onEndedCall when ended: second call', async () => {
     expect.assertions(1);
 
-    await connectToServer(dataForConnectionWithoutAuthorization).then(() => {
+    await connectToServer(dataForConnectionWithoutAuthorization).then(async () => {
       return call({
         ...dataCall,
         onEndedCall,
       });
     });
 
-    // @ts-ignore
+    // @ts-expect-error
     sipConnector._sessionEvents.trigger('ended', 'error');
 
-    await connectToServer(dataForConnectionWithoutAuthorization).then(() => {
+    await connectToServer(dataForConnectionWithoutAuthorization).then(async () => {
       return call(dataCall);
     });
 
-    // @ts-ignore
+    // @ts-expect-error
     sipConnector._sessionEvents.trigger('ended', 'error');
 
     expect(onEndedCall.mock.calls.length).toBe(1);
@@ -123,14 +123,14 @@ describe('actionsProgressCall', () => {
   it('#5 check onEndedCall when failed', async () => {
     expect.assertions(1);
 
-    await connectToServer(dataForConnectionWithoutAuthorization).then(() => {
+    await connectToServer(dataForConnectionWithoutAuthorization).then(async () => {
       return call({
         ...dataCall,
         onEndedCall,
       });
     });
 
-    // @ts-ignore
+    // @ts-expect-error
     sipConnector._sessionEvents.trigger('failed', 'error');
 
     expect(onEndedCall.mock.calls.length).toBe(1);
@@ -139,21 +139,21 @@ describe('actionsProgressCall', () => {
   it('#6 check onEndedCall when failed: second call', async () => {
     expect.assertions(1);
 
-    await connectToServer(dataForConnectionWithoutAuthorization).then(() => {
+    await connectToServer(dataForConnectionWithoutAuthorization).then(async () => {
       return call({
         ...dataCall,
         onEndedCall,
       });
     });
 
-    // @ts-ignore
+    // @ts-expect-error
     sipConnector._sessionEvents.trigger('failed', 'error');
 
-    await connectToServer(dataForConnectionWithoutAuthorization).then(() => {
+    await connectToServer(dataForConnectionWithoutAuthorization).then(async () => {
       return call(dataCall);
     });
 
-    // @ts-ignore
+    // @ts-expect-error
     sipConnector._sessionEvents.trigger('failed', 'error');
 
     expect(onEndedCall.mock.calls.length).toBe(1);
@@ -162,21 +162,21 @@ describe('actionsProgressCall', () => {
   it('#7 check onEndedCall when race: failed first', async () => {
     expect.assertions(1);
 
-    await connectToServer(dataForConnectionWithoutAuthorization).then(() => {
+    await connectToServer(dataForConnectionWithoutAuthorization).then(async () => {
       return call({
         ...dataCall,
         onEndedCall,
       });
     });
 
-    // @ts-ignore
+    // @ts-expect-error
     sipConnector._sessionEvents.trigger('failed', 'error');
 
-    await connectToServer(dataForConnectionWithoutAuthorization).then(() => {
+    await connectToServer(dataForConnectionWithoutAuthorization).then(async () => {
       return call(dataCall);
     });
 
-    // @ts-ignore
+    // @ts-expect-error
     sipConnector._sessionEvents.trigger('ended', 'error');
 
     expect(onEndedCall.mock.calls.length).toBe(1);
@@ -185,21 +185,21 @@ describe('actionsProgressCall', () => {
   it('#8 check onEndedCall when race: ended first', async () => {
     expect.assertions(1);
 
-    await connectToServer(dataForConnectionWithoutAuthorization).then(() => {
+    await connectToServer(dataForConnectionWithoutAuthorization).then(async () => {
       return call({
         ...dataCall,
         onEndedCall,
       });
     });
 
-    // @ts-ignore
+    // @ts-expect-error
     sipConnector._sessionEvents.trigger('ended', 'error');
 
-    await connectToServer(dataForConnectionWithoutAuthorization).then(() => {
+    await connectToServer(dataForConnectionWithoutAuthorization).then(async () => {
       return call(dataCall);
     });
 
-    // @ts-ignore
+    // @ts-expect-error
     sipConnector._sessionEvents.trigger('failed', 'error');
 
     expect(onEndedCall.mock.calls.length).toBe(1);
