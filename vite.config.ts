@@ -20,7 +20,7 @@ export default defineConfig(() => {
       tsConfigPaths(),
       dts({
         include: ['src'],
-        exclude: ['src/setupTests.ts', 'src/**/__tests__/**', 'src/**/__fixtures__/**'],
+        exclude: ['src/setupTests.ts', 'src/**/__tests__/**'],
       }),
     ],
     build: {
