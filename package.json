@@ -103,11 +103,5 @@
     "sequent-promises": "^1.0.0",
     "stack-promises": "^1.0.0"
   },
-  "main:src": "src/index.ts",
-  "standard-version": {
-    "scripts": {
-      "prerelease": "npm run lint && CI=true npm test",
-      "postchangelog": "prettier --write \"CHANGELOG.md\""
-    }
-  }
+  "main:src": "src/index.ts"
 }
