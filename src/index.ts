@@ -2,6 +2,7 @@ import SipConnector from './SipConnector';
 
 export { hasCanceledCallError } from './SipConnector';
 export * as causes from './causes';
+export * as constants from './constants';
 export * as eventNames from './eventNames';
 export { debug, disableDebug, enableDebug } from './logger';
 export * as tools from './tools';

@@ -103,7 +103,7 @@ import {
   NOT_AVAILABLE_SECOND_REMOTE_STREAM,
 } from './headers';
 import logger from './logger';
-import type { EUseLicense, TCustomError } from './types';
+import type { EUseLicense, TCustomError, TJsSIP } from './types';
 import { EEventsMainCAM, EEventsMic, EEventsSyncMediaState } from './types';
 import {
   generateUserId,
@@ -139,11 +139,6 @@ export const hasCanceledCallError = (error: TCustomError = new Error()): boolean
 };
 
 const moduleName = 'SipConnector';
-
-export type TJsSIP = {
-  UA: typeof UA;
-  WebSocketInterface: typeof WebSocketInterface;
-};
 
 type TChannels = {
   inputChannels: string;

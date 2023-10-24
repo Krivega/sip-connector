@@ -1,3 +1,5 @@
+import type { UA, WebSocketInterface } from '@krivega/jssip';
+
 export enum EEventsMainCAM {
   PAUSE_MAIN_CAM = 'PAUSEMAINCAM',
   RESUME_MAIN_CAM = 'RESUMEMAINCAM',
@@ -30,4 +32,9 @@ export type TCustomError = Error & {
   socket?: unknown;
   url?: string;
   code?: string;
+};
+
+export type TJsSIP = {
+  UA: typeof UA;
+  WebSocketInterface: typeof WebSocketInterface;
 };

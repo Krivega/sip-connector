@@ -1,6 +1,6 @@
-import JsSIP from './jssip.mock';
-import type { TJsSIP } from '../SipConnector';
 import SIPconnector from '../SipConnector';
+import type { TJsSIP } from '../types';
+import JsSIP from './jssip.mock';
 
 const doMock = () => {
   return new SIPconnector({
