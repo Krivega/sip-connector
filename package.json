@@ -46,7 +46,7 @@
     "release": "standard-version && yarn release:publish",
     "release:major": "standard-version --release-as major && yarn release:publish",
     "release:pre": "standard-version --prerelease && yarn release:publish",
-    "release:publish": "git push --follow-tags origin master && npm publish",
+    "release:publish": "git push --follow-tags origin master && npm publish --access=public",
     "test": "jest --watch",
     "test:ci": "cross-env CI=true jest --passWithNoTests",
     "test:coverage": "yarn test:ci --coverage --reporters=default --reporters=jest-junit"
