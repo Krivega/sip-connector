@@ -1,14 +1,30 @@
-import flow from 'lodash/flow';
-import property from 'lodash/property';
-import sortBy from 'lodash/sortBy';
 import parseObject from './parseObject';
 
-const resolveParseArray = <T extends object>(parameter: string) => {
-  const parseArray = flow(parseObject<T>, (array: T[]) => {
-    return sortBy(array, property(parameter));
-  }) as (array: object[]) => object[];
+const resolveParseArray = <T extends object>(parameter: keyof T) => {
+  return (array: T[]) => {
+    return array
+      .map((item: T) => {
+        return parseObject<T>(item);
+      })
+      .sort((previous: T, next: T) => {
+        const previousValue = previous[parameter];
+        const nextValue = next[parameter];
 
-  return parseArray;
+        if (typeof previousValue === 'string' && typeof nextValue === 'string') {
+          return previousValue.localeCompare(nextValue);
+        }
+
+        if (previousValue > nextValue) {
+          return 1;
+        }
+
+        if (previousValue < nextValue) {
+          return -1;
+        }
+
+        return 0;
+      });
+  };
 };
 
 export default resolveParseArray;

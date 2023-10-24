@@ -1,22 +1,17 @@
-import flow from 'lodash/flow';
-import split from 'lodash/split';
 import sequentPromises from 'sequent-promises';
 
 type TSendKey = (values: string) => Promise<void>;
 
-const wrapKeysToSend = (sendKey: TSendKey) => {
-  return flow(
-    (keys: string): string[] => {
-      return split(keys, '');
-    },
-    (keyArray: string[]) => {
-      return keyArray.map((key) => {
-        return async () => {
-          return sendKey(key);
-        };
-      });
-    },
-  );
+const wrapKeysToSend = (sendKey: TSendKey): ((keys: string) => (() => Promise<void>)[]) => {
+  return (keys: string) => {
+    const keyArray = [...keys];
+
+    return keyArray.map((key) => {
+      return async () => {
+        return sendKey(key);
+      };
+    });
+  };
 };
 const sendDTMFAccumulated = async ({
   accumulatedKeys,

@@ -1,4 +1,4 @@
-import debounce from 'lodash/debounce';
+import { debounce } from 'ts-debounce';
 import log from '../logger';
 
 const resolveUpdateRemoteStreams = ({

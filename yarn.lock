@@ -1267,11 +1267,6 @@
   resolved "https://registry.yarnpkg.com/@types/json5/-/json5-0.0.29.tgz#ee28707ae94e11d2b827bcbe5270bcea7f3e71ee"
   integrity sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ==
 
-"@types/lodash@^4.14.200":
-  version "4.14.200"
-  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.200.tgz#435b6035c7eba9cdf1e039af8212c9e9281e7149"
-  integrity sha512-YI/M/4HRImtNf3pJgbF+W6FrXovqj+T+/HpENLTooK9PnkacBsDpeP3IpHab40CClUfhNmdM2WTNP2sa2dni5Q==
-
 "@types/minimist@^1.2.0":
   version "1.2.4"
   resolved "https://registry.yarnpkg.com/@types/minimist/-/minimist-1.2.4.tgz#81f886786411c45bba3f33e781ab48bd56bfca2e"
@@ -5595,10 +5590,10 @@ sprintf-js@~1.0.2:
   resolved "https://registry.yarnpkg.com/sprintf-js/-/sprintf-js-1.0.3.tgz#04e6926f662895354f3dd015203633b857297e2c"
   integrity sha512-D9cPgkvLlV3t3IzL0D0YLvGA9Ahk4PcvVwUbN0dSGr1aP0Nrt4AEnTUbuGvquEC0mA64Gqt1fzirlRs5ibXx8g==
 
-stack-promises@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/stack-promises/-/stack-promises-1.0.0.tgz#b2e379428d9d2962009a59e46e42090204e94e7e"
-  integrity sha512-pTs8YdJbnJAeKKk1H22XZrrJwg3jpgPh4FcTmVXtArYT4lmYzBhXZyg9uuMhAu5JiLyJnvy5qyhy2AvZIRk7Pw==
+stack-promises@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/stack-promises/-/stack-promises-1.0.1.tgz#6ae42c2b222f857ca5ba6a7e1236004620bab805"
+  integrity sha512-AsAmb8jRXR6DPgjPvSC+dBi0SHILWWd1YjSLVUIEoiJRu48s5euih8CE70yWdFwTYAmsDh09bHRMvSWiQa8a4g==
   dependencies:
     sequent-promises "^1.0.0"
 
@@ -5893,6 +5888,11 @@ ts-api-utils@^1.0.1:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/ts-api-utils/-/ts-api-utils-1.0.3.tgz#f12c1c781d04427313dbac808f453f050e54a331"
   integrity sha512-wNMeqtMz5NtwpT/UZGY5alT+VoKdSsOOP/kqHFcUW1P/VRhH2wJ48+DN2WwUliNbQ976ETwDL0Ifd2VVvgonvg==
+
+ts-debounce@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/ts-debounce/-/ts-debounce-4.0.0.tgz#33440ef64fab53793c3d546a8ca6ae539ec15841"
+  integrity sha512-+1iDGY6NmOGidq7i7xZGA4cm8DAa6fqdYcvO5Z6yBevH++Bdo9Qt/mN0TzHUgcCcKv1gmh9+W5dHqz8pMWbCbg==
 
 ts-jest@^29.1.1:
   version "29.1.1"
