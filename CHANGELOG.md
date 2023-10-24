@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.21.0](https://github.com/Krivega/sip-connector/compare/v6.20.1...v6.21.0) (2023-10-24)
+
+### Features
+
+- export doMock ([3b9d625](https://github.com/Krivega/sip-connector/commit/3b9d625dea4f6355c0453f6cc60f4587c1ebf8bf))
+- export doMock ([eac1412](https://github.com/Krivega/sip-connector/commit/eac14122df13de4247d111df34bd46cb978f9642))
+
 ### [6.20.1](https://github.com/Krivega/sip-connector/compare/v6.20.0...v6.20.1) (2023-10-24)
 
 ### Bug Fixes
