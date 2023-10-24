@@ -1,5 +1,5 @@
 import type SipConnector from '../../SipConnector';
-import doMockSIPconnector from '../../__fixtures__/doMock';
+import doMockSIPconnector from '../../doMock';
 import resolveOnUseLicense from '../resolveOnUseLicense';
 
 const AUDIO_LICENSE = 'AUDIO';

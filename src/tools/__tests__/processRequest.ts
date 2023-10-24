@@ -2,7 +2,7 @@
 
 import type SipConnector from '../../SipConnector';
 import delayPromise from '../../__fixtures__/delayPromise';
-import doMockSIPconnector from '../../__fixtures__/doMock';
+import doMockSIPconnector from '../../doMock';
 import {
   dataForConnectionWithAuthorization,
   dataForConnectionWithAuthorizationIncorrectPassword,

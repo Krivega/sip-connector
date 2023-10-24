@@ -1,5 +1,5 @@
 import type SipConnector from '../../../SipConnector';
-import doMockSIPconnector from '../../../__fixtures__/doMock';
+import doMockSIPconnector from '../../../doMock';
 import createState from '../../syncMediaState';
 
 describe('media state: create state', () => {

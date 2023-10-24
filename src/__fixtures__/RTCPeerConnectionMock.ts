@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type { RTCPeerConnectionDeprecated } from '@krivega/jssip/lib/RTCSession';
+import type { RTCPeerConnectionDeprecated } from '@krivega/jssip';
 import type { MediaStreamTrackMock } from 'webrtc-mock';
 
 class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {

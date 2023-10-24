@@ -1,6 +1,4 @@
-import type { UA as IUA } from '@krivega/jssip';
-import type { IncomingRequest } from '@krivega/jssip/lib/SIPMessage';
-import type { UAConfiguration } from '@krivega/jssip/lib/UA';
+import type { UA as IUA, IncomingRequest, UAConfiguration } from '@krivega/jssip';
 import Events from 'events-constructor';
 import type { TEventUA } from '../eventNames';
 import { UA_EVENT_NAMES } from '../eventNames';

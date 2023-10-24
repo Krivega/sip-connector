@@ -2,8 +2,8 @@ import { createMediaStreamMock } from 'webrtc-mock';
 import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import { accountChangedHeaders, accountDeletedHeaders } from '../__fixtures__/accountNotify';
-import createSipConnector from '../__fixtures__/doMock';
 import JsSIP from '../__fixtures__/jssip.mock';
+import createSipConnector from '../doMock';
 
 describe('account notify', () => {
   const number = '111';

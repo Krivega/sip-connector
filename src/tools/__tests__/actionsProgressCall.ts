@@ -1,4 +1,4 @@
-import doMockSIPconnector from '../../__fixtures__/doMock';
+import doMockSIPconnector from '../../doMock';
 import dataCall from '../__fixtures__/call';
 import { dataForConnectionWithoutAuthorization } from '../__fixtures__/connectToServer';
 import resolveCall from '../callToServer';

@@ -1,4 +1,4 @@
-import type { Registrator } from '@krivega/jssip/lib/Registrator';
+import type { Registrator } from '@krivega/jssip';
 
 class RegistratorMock implements Registrator {
   extraHeaders?: string[];

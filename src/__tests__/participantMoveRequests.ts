@@ -1,7 +1,6 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
-import createSipConnector from '../__fixtures__/doMock';
 import JsSIP from '../__fixtures__/jssip.mock';
 import {
   cancelingWordRequestData,
@@ -11,6 +10,7 @@ import {
   moveRequestToStreamData,
   moveRequestToStreamHeaders,
 } from '../__fixtures__/participantMoveRequests';
+import createSipConnector from '../doMock';
 
 describe('participants moveRequests', () => {
   const number = '111';

@@ -1,8 +1,8 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
-import createSipConnector from '../__fixtures__/doMock';
 import JsSIP from '../__fixtures__/jssip.mock';
+import createSipConnector from '../doMock';
 import {
   AVAILABLE_SECOND_REMOTE_STREAM,
   CONTENT_TYPE_SHARE_STATE,

@@ -1,13 +1,13 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
-import createSipConnector from '../__fixtures__/doMock';
 import JsSIP from '../__fixtures__/jssip.mock';
 import {
   ADMIN_FORCE_SYNC_MEDIA_STATE,
   ADMIN_START_MAIN_CAM,
   ADMIN_STOP_MAIN_CAM,
 } from '../constants';
+import createSipConnector from '../doMock';
 import {
   CONTENT_TYPE_MAIN_CAM,
   CONTENT_TYPE_MIC,

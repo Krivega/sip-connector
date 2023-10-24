@@ -5,8 +5,8 @@ import {
   dataForConnectionWithoutAuthorization,
 } from '../__fixtures__';
 import { channelsData, channelsHeaders } from '../__fixtures__/channelsNotify';
-import createSipConnector from '../__fixtures__/doMock';
 import JsSIP from '../__fixtures__/jssip.mock';
+import createSipConnector from '../doMock';
 
 describe('channels notify', () => {
   const number = '111';

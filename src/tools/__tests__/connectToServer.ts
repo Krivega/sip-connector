@@ -1,5 +1,5 @@
 import type SipConnector from '../../SipConnector';
-import doMockSIPconnector from '../../__fixtures__/doMock';
+import doMockSIPconnector from '../../doMock';
 import {
   LOCKED_SIP_WEB_SOCKET_SERVER_URL,
   dataForConnectionWithAuthorization,

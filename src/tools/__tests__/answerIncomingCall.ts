@@ -1,7 +1,7 @@
 import type SipConnector from '../../SipConnector';
-import doMockSIPconnector from '../../__fixtures__/doMock';
 import JsSIP from '../../__fixtures__/jssip.mock';
 import remoteCallerData from '../../__fixtures__/remoteCallerData';
+import doMockSIPconnector from '../../doMock';
 import dataCall, { peerConnectionFromData } from '../__fixtures__/call';
 import { dataForConnectionWithAuthorization } from '../__fixtures__/connectToServer';
 import parseObject from '../__tests-utils__/parseObject';

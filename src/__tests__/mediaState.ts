@@ -1,8 +1,8 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
-import createSipConnector from '../__fixtures__/doMock';
 import { extraHeaders, mediaStateData } from '../__fixtures__/mediaState';
+import createSipConnector from '../doMock';
 import { CONTENT_TYPE_MEDIA_STATE } from '../headers';
 
 describe('media state', () => {

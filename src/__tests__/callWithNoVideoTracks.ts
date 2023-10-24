@@ -1,7 +1,7 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
-import createSipConnector from '../__fixtures__/doMock';
+import createSipConnector from '../doMock';
 
 const number = `10000`;
 

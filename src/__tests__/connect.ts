@@ -11,7 +11,7 @@ import {
   uaConfigurationWithoutAuthorization,
   uaConfigurationWithoutAuthorizationWithoutDisplayName,
 } from '../__fixtures__';
-import createSipConnector from '../__fixtures__/doMock';
+import createSipConnector from '../doMock';
 
 const wrongPassword = 'wrongPassword';
 

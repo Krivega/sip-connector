@@ -3,8 +3,8 @@ import type SipConnector from '../SipConnector';
 import { hasCanceledCallError } from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import delayPromise from '../__fixtures__/delayPromise';
-import createSipConnector from '../__fixtures__/doMock';
 import { FAILED_CONFERENCE_NUMBER } from '../__fixtures__/jssip.mock';
+import createSipConnector from '../doMock';
 
 describe('call', () => {
   let sipConnector: SipConnector;

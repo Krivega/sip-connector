@@ -1,7 +1,6 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
-import createSipConnector from '../__fixtures__/doMock';
 import JsSIP from '../__fixtures__/jssip.mock';
 import {
   webcastStartedData,
@@ -9,6 +8,7 @@ import {
   webcastStoppedData,
   webcastStoppedHeaders,
 } from '../__fixtures__/webcastNotify';
+import createSipConnector from '../doMock';
 
 describe('webcast notify', () => {
   const number = '111';

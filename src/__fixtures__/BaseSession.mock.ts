@@ -1,20 +1,21 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type { NameAddrHeader, URI } from '@krivega/jssip';
-import type { causes } from '@krivega/jssip/lib/Constants';
-import type RTCSession from '@krivega/jssip/lib/RTCSession';
 import type {
   AnswerOptions,
   ExtraHeaders,
   HoldOptions,
   MediaConstraints,
+  NameAddrHeader,
   OnHoldResult,
   RTCPeerConnectionDeprecated,
+  RTCSession,
   ReferOptions,
   RenegotiateOptions,
   SessionDirection,
   SessionStatus,
   TerminateOptions,
-} from '@krivega/jssip/lib/RTCSession';
+  URI,
+  C as constants,
+} from '@krivega/jssip';
 import Events from 'events-constructor';
 import type { TEventSession } from '../eventNames';
 import { SESSION_EVENT_NAMES } from '../eventNames';
@@ -47,7 +48,7 @@ class BaseSession implements RTCSession {
   }
 
   // @ts-expect-error
-  get causes(): causes {
+  get causes(): constants.causes {
     throw new Error('Method not implemented.');
   }
 

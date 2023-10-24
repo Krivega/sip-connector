@@ -1,5 +1,5 @@
 import type SipConnector from '../../../SipConnector';
-import doMockSIPconnector from '../../../__fixtures__/doMock';
+import doMockSIPconnector from '../../../doMock';
 import resolveOnStopMic from '../../syncMediaState/resolveOnStopMic';
 
 describe('media state: resolveOnStopMic', () => {

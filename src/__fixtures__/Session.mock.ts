@@ -1,4 +1,4 @@
-import type { IncomingInfoEvent } from '@krivega/jssip/lib/RTCSession';
+import type { IncomingInfoEvent } from '@krivega/jssip';
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
 import { REJECTED } from '../causes';
 import BaseSession from './BaseSession.mock';
