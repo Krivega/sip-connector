@@ -799,7 +799,7 @@ export default class SipConnector {
     return this._uaEvents.once<T>(eventName, handler);
   }
 
-  onceRace<T>(eventNames: TEventUA[], handler: (data: T) => void) {
+  onceRace<T>(eventNames: TEventUA[], handler: (data: T, eventName: string) => void) {
     return this._uaEvents.onceRace<T>(eventNames, handler);
   }
 
@@ -819,7 +819,7 @@ export default class SipConnector {
     return this._sessionEvents.once<T>(eventName, handler);
   }
 
-  onceRaceSession<T>(eventNames: TEventSession[], handler: (data: T) => void) {
+  onceRaceSession<T>(eventNames: TEventSession[], handler: (data: T, eventName: string) => void) {
     return this._sessionEvents.onceRace<T>(eventNames, handler);
   }
 
