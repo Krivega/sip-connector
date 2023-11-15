@@ -1,21 +1,21 @@
 import { HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_NOTIFY, HEADER_NOTIFY } from '../headers';
 
-const moveRequestToConference = {
-  cmd: 'WebcastParticipationAccepted',
+const acceptingWordRequest = {
+  cmd: 'ParticipationRequestAccepted',
   body: { conference: '111' },
 };
 
-export const moveRequestToConferenceHeaders: [string, string][] = [
+export const acceptingWordRequestHeaders: [string, string][] = [
   [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_NOTIFY],
-  [HEADER_NOTIFY, JSON.stringify(moveRequestToConference)],
+  [HEADER_NOTIFY, JSON.stringify(acceptingWordRequest)],
 ];
 
-export const moveRequestToConferenceData = {
-  conference: moveRequestToConference.body.conference,
+export const acceptingWordRequestData = {
+  conference: acceptingWordRequest.body.conference,
 };
 
 const cancelingWordRequest = {
-  cmd: 'WebcastParticipationRejected',
+  cmd: 'ParticipationRequestRejected',
   body: { conference: '111' },
 };
 
