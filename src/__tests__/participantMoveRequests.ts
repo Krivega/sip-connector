@@ -3,8 +3,8 @@ import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
 import {
-  cancelingWordRequestData,
-  cancelingWordRequestHeaders,
+  cancellingWordRequestData,
+  cancellingWordRequestHeaders,
   acceptingWordRequestData,
   acceptingWordRequestHeaders,
   moveRequestToStreamData,
@@ -41,19 +41,19 @@ describe('participants moveRequests', () => {
     });
   });
 
-  it('event participation:canceling-word-request', async () => {
+  it('event participation:cancelling-word-request', async () => {
     const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
 
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('participation:canceling-word-request', (data) => {
-        expect(data).toEqual(cancelingWordRequestData);
+      sipConnector.on('participation:cancelling-word-request', (data) => {
+        expect(data).toEqual(cancellingWordRequestData);
 
         resolve();
       });
 
-      JsSIP.triggerNewSipEvent(ua, cancelingWordRequestHeaders);
+      JsSIP.triggerNewSipEvent(ua, cancellingWordRequestHeaders);
     });
   });
 
