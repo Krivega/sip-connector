@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.22.0](https://github.com/Krivega/sip-connector/compare/v6.21.7...v6.22.0) (2023-11-27)
+
+### Features
+
+- change accept and request word processing ([#30](https://github.com/Krivega/sip-connector/issues/30)) ([89df992](https://github.com/Krivega/sip-connector/commit/89df99229ab241d92110e224ed9681efcceca72d))
+
 ### [6.21.7](https://github.com/Krivega/sip-connector/compare/v6.21.6...v6.21.7) (2023-10-25)
 
 ### Bug Fixes
