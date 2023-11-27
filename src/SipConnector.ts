@@ -44,8 +44,8 @@ import {
   NEW_RTC_SESSION,
   NOT_AVAILABLE_SECOND_REMOTE_STREAM_EVENT,
   PARTICIPANT_ADDED_TO_LIST_MODERATORS,
-  PARTICIPANT_CANCELLING_WORD_REQUEST,
-  PARTICIPANT_MOVE_REQUEST_TO_CONFERENCE,
+  PARTICIPATION_CANCELLING_WORD_REQUEST,
+  PARTICIPATION_ACCEPTING_WORD_REQUEST,
   PARTICIPANT_MOVE_REQUEST_TO_STREAM,
   PARTICIPANT_REMOVED_FROM_LIST_MODERATORS,
   PEER_CONNECTION,
@@ -179,8 +179,8 @@ const CMD_ACCOUNT_CHANGED = 'accountChanged' as const;
 const CMD_ACCOUNT_DELETED = 'accountDeleted' as const;
 const CMD_ADDED_TO_LIST_MODERATORS = 'addedToListModerators' as const;
 const CMD_REMOVED_FROM_LIST_MODERATORS = 'removedFromListModerators' as const;
-const CMD_MOVE_REQUEST_TO_CONFERENCE = 'WebcastParticipationAccepted' as const;
-const CMD_CANCELLING_WORD_REQUEST = 'WebcastParticipationRejected' as const;
+const CMD_ACCEPTING_WORD_REQUEST = 'ParticipationRequestAccepted' as const;
+const CMD_CANCELLING_WORD_REQUEST = 'ParticipationRequestRejected' as const;
 const CMD_MOVE_REQUEST_TO_STREAM = 'ParticipantMovedToWebcast' as const;
 const CMD_CONFERENCE_PARTICIPANT_TOKEN_ISSUED = 'ConferenceParticipantTokenIssued' as const;
 
@@ -192,11 +192,11 @@ type TRemovedFromListModeratorsInfoNotify = {
   cmd: typeof CMD_REMOVED_FROM_LIST_MODERATORS;
   conference: string;
 };
-type TMoveRequestToConferenceInfoNotify = {
-  cmd: typeof CMD_MOVE_REQUEST_TO_CONFERENCE;
+type TAcceptingWordRequestInfoNotify = {
+  cmd: typeof CMD_ACCEPTING_WORD_REQUEST;
   body: { conference: string };
 };
-type TCancelingWordRequestInfoNotify = {
+type TCancellingWordRequestInfoNotify = {
   cmd: typeof CMD_CANCELLING_WORD_REQUEST;
   body: { conference: string };
 };
@@ -1468,17 +1468,17 @@ export default class SipConnector {
 
         break;
       }
-      case CMD_MOVE_REQUEST_TO_CONFERENCE: {
-        const data = header as TMoveRequestToConferenceInfoNotify;
+      case CMD_ACCEPTING_WORD_REQUEST: {
+        const data = header as TAcceptingWordRequestInfoNotify;
 
-        this._triggerParticipantMoveRequestToConference(data);
+        this._triggerParticipationAcceptingWordRequest(data);
 
         break;
       }
       case CMD_CANCELLING_WORD_REQUEST: {
-        const data = header as TCancelingWordRequestInfoNotify;
+        const data = header as TCancellingWordRequestInfoNotify;
 
-        this._triggerParticipantCancelingWordRequest(data);
+        this._triggerParticipationCancellingWordRequest(data);
 
         break;
       }
@@ -1587,24 +1587,24 @@ export default class SipConnector {
     this._uaEvents.trigger(CHANNELS_NOTIFY, data);
   };
 
-  _triggerParticipantMoveRequestToConference = ({
+  _triggerParticipationAcceptingWordRequest = ({
     body: { conference },
-  }: TMoveRequestToConferenceInfoNotify) => {
+  }: TAcceptingWordRequestInfoNotify) => {
     const data: TParametersModeratorsList = {
       conference,
     };
 
-    this._uaEvents.trigger(PARTICIPANT_MOVE_REQUEST_TO_CONFERENCE, data);
+    this._uaEvents.trigger(PARTICIPATION_ACCEPTING_WORD_REQUEST, data);
   };
 
-  _triggerParticipantCancelingWordRequest = ({
+  _triggerParticipationCancellingWordRequest = ({
     body: { conference },
-  }: TCancelingWordRequestInfoNotify) => {
+  }: TCancellingWordRequestInfoNotify) => {
     const data: TParametersModeratorsList = {
       conference,
     };
 
-    this._uaEvents.trigger(PARTICIPANT_CANCELLING_WORD_REQUEST, data);
+    this._uaEvents.trigger(PARTICIPATION_CANCELLING_WORD_REQUEST, data);
   };
 
   _triggerParticipantMoveRequestToStream = ({

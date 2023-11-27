@@ -3,10 +3,10 @@ import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
 import {
-  cancelingWordRequestData,
-  cancelingWordRequestHeaders,
-  moveRequestToConferenceData,
-  moveRequestToConferenceHeaders,
+  cancellingWordRequestData,
+  cancellingWordRequestHeaders,
+  acceptingWordRequestData,
+  acceptingWordRequestHeaders,
   moveRequestToStreamData,
   moveRequestToStreamHeaders,
 } from '../__fixtures__/participantMoveRequests';
@@ -25,35 +25,35 @@ describe('participants moveRequests', () => {
       video: { deviceId: { exact: 'videoDeviceId' } },
     });
   });
-  it('event participant:move-request-to-conference', async () => {
+  it('event participation:accepting-word-request', async () => {
     const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
 
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('participant:move-request-to-conference', (data) => {
-        expect(data).toEqual(moveRequestToConferenceData);
+      sipConnector.on('participation:accepting-word-request', (data) => {
+        expect(data).toEqual(acceptingWordRequestData);
 
         resolve();
       });
 
-      JsSIP.triggerNewSipEvent(ua, moveRequestToConferenceHeaders);
+      JsSIP.triggerNewSipEvent(ua, acceptingWordRequestHeaders);
     });
   });
 
-  it('event participant:canceling-word-request', async () => {
+  it('event participation:cancelling-word-request', async () => {
     const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
 
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('participant:canceling-word-request', (data) => {
-        expect(data).toEqual(cancelingWordRequestData);
+      sipConnector.on('participation:cancelling-word-request', (data) => {
+        expect(data).toEqual(cancellingWordRequestData);
 
         resolve();
       });
 
-      JsSIP.triggerNewSipEvent(ua, cancelingWordRequestHeaders);
+      JsSIP.triggerNewSipEvent(ua, cancellingWordRequestHeaders);
     });
   });
 
