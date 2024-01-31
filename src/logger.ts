@@ -5,7 +5,7 @@ const NAME = 'sip-connector';
 const logger = debug(NAME);
 
 export const enableDebug = () => {
-  debug.enable(`${NAME}`);
+  debug.enable(NAME);
 };
 
 export const disableDebug = () => {

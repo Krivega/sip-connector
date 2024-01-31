@@ -177,7 +177,7 @@ describe('connect', () => {
         password: dataForConnectionWithAuthorizationWithDisplayName.password,
       })
       .catch((error) => {
-        expect(error).toBe(false);
+        expect(error).toEqual(new Error('nothing changed'));
         expect(sipConnector.getConnectionConfiguration().password).toBe(
           dataForConnectionWithAuthorizationWithDisplayName.password,
         );

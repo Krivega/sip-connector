@@ -44,10 +44,10 @@ import {
   NEW_RTC_SESSION,
   NOT_AVAILABLE_SECOND_REMOTE_STREAM_EVENT,
   PARTICIPANT_ADDED_TO_LIST_MODERATORS,
-  PARTICIPATION_CANCELLING_WORD_REQUEST,
-  PARTICIPATION_ACCEPTING_WORD_REQUEST,
   PARTICIPANT_MOVE_REQUEST_TO_STREAM,
   PARTICIPANT_REMOVED_FROM_LIST_MODERATORS,
+  PARTICIPATION_ACCEPTING_WORD_REQUEST,
+  PARTICIPATION_CANCELLING_WORD_REQUEST,
   PEER_CONNECTION,
   PEER_CONNECTION_CONFIRMED,
   PEER_CONNECTION_ONTRACK,
@@ -512,7 +512,8 @@ export default class SipConnector {
           },
         });
       } catch (error) {
-        reject(error);
+        // eslint-disable-next-line prefer-promise-reject-errors
+        reject(error as Error);
       }
     });
   }
@@ -1079,7 +1080,7 @@ export default class SipConnector {
       } else if (changedSome) {
         resolve(changedSome);
       } else {
-        reject(changedSome);
+        reject(new Error('nothing changed'));
       }
     });
   };
