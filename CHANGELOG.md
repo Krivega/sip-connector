@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [6.22.1](https://github.com/Krivega/sip-connector/compare/v6.22.0...v6.22.1) (2024-01-31)
+
+### Bug Fixes
+
+- support chrome 91 ([5e8eccc](https://github.com/Krivega/sip-connector/commit/5e8eccc6a28ff905683c6eec23271c79f17ff3e2))
+
 ## [6.22.0](https://github.com/Krivega/sip-connector/compare/v6.21.7...v6.22.0) (2023-11-27)
 
 ### Features
