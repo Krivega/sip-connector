@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [6.22.2](https://github.com/Krivega/sip-connector/compare/v6.22.1...v6.22.2) (2024-02-02)
+
+### Bug Fixes
+
+- dependencies ([21234b4](https://github.com/Krivega/sip-connector/commit/21234b43d1e698337e4358d285ddf34fbf87eb5b))
+
 ### [6.22.1](https://github.com/Krivega/sip-connector/compare/v6.22.0...v6.22.1) (2024-01-31)
 
 ### Bug Fixes
