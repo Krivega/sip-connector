@@ -47,7 +47,6 @@
   ],
   "scripts": {
     "build": "vite build",
-    "commitlint": "commitlint --edit",
     "lint": "yarn lint:js && yarn lint:ts",
     "lint:js": "eslint src --ext ts,tsx --ignore-path .gitignore --report-unused-disable-directives --max-warnings 0",
     "lint:ts": "tsc",
@@ -98,7 +97,7 @@
     "jest-extended": "^4.0.2",
     "jest-junit": "^16.0.0",
     "lint-staged": "^15.2.1",
-    "prettier": "^3.2.4",
+    "prettier": "^3.2.5",
     "standard-version": "^9.5.0",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
@@ -113,8 +112,7 @@
     "@krivega/jssip": "^3.22.0",
     "debug": "^4.3.4",
     "events-constructor": "^1.2.2",
-    "ts-debounce": "^4.0.0",
-    "webrtc-mock": "^1.0.2"
+    "ts-debounce": "^4.0.0"
   },
   "main:src": "src/index.ts"
 }
