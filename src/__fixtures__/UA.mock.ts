@@ -12,6 +12,16 @@ export const NAME_INCORRECT = 'NAME_INCORRECT';
 const CONNECTION_DELAY = 400; // more 300 for test cancel requests with debounced
 
 class UA implements IUA {
+  private static isAvailableTelephony = true;
+
+  public static setAvailableTelephony() {
+    this.isAvailableTelephony = true;
+  }
+
+  public static setNotAvailableTelephony() {
+    this.isAvailableTelephony = false;
+  }
+
   _events: Events<typeof UA_EVENT_NAMES>;
 
   _startedTimeout?: ReturnType<typeof setTimeout>;
@@ -86,6 +96,13 @@ class UA implements IUA {
     return this;
   }
 
+  // @ts-expect-error
+  off(eventName: TEventUA, handler) {
+    this._events.off(eventName, handler);
+
+    return this;
+  }
+
   trigger(eventName: TEventUA, data?: any) {
     this._events.trigger(eventName, data);
   }
@@ -149,8 +166,12 @@ class UA implements IUA {
       }, CONNECTION_DELAY);
     }
 
-    this.trigger('connected');
-    this._isConnected = true;
+    if (UA.isAvailableTelephony) {
+      this.trigger('connected');
+      this._isConnected = true;
+    } else {
+      this.stop();
+    }
   }
 
   /**
