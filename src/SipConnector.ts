@@ -571,16 +571,16 @@ export default class SipConnector {
         userAgent,
       });
 
-      const rejectWhenDisconnected = () => {
+      const rejectWithError = () => {
         const error = new Error('Telephony is not available');
 
         reject(error);
       };
 
-      ua.on(DISCONNECTED, rejectWhenDisconnected);
+      ua.on(DISCONNECTED, rejectWithError);
 
       const stopAndResolveAfterDisconnect = () => {
-        ua.off(DISCONNECTED, rejectWhenDisconnected);
+        ua.off(DISCONNECTED, rejectWithError);
         ua.on(DISCONNECTED, resolve);
 
         ua.stop();
