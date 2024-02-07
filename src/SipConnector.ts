@@ -556,7 +556,7 @@ export default class SipConnector {
     sipServerUrl,
     sipWebSocketServerURL,
     sdpSemantics,
-  }: TParametersCheckTelephony) {
+  }: TParametersCheckTelephony): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void) => {
       const authorizationUser = `${generateUserId()}`;
       const getSipServerUrl = resolveSipUrl(sipServerUrl);
