@@ -97,8 +97,21 @@ class UA implements IUA {
   }
 
   // @ts-expect-error
+  once(eventName: TEventUA, handler) {
+    this._events.once(eventName, handler);
+
+    return this;
+  }
+
+  // @ts-expect-error
   off(eventName: TEventUA, handler) {
     this._events.off(eventName, handler);
+
+    return this;
+  }
+
+  removeAllListeners() {
+    this._events.removeEventHandlers();
 
     return this;
   }

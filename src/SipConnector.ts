@@ -225,6 +225,7 @@ type TOptionsExtraHeaders = {
 };
 
 type TOntrack = (track: RTCTrackEvent) => void;
+type TGetServerUrl = (id: string) => string;
 
 type TParametersConnection = TOptionsExtraHeaders & {
   displayName?: string;
@@ -242,9 +243,10 @@ type TParametersConnection = TOptionsExtraHeaders & {
   userAgent?: string;
 };
 type TParametersCreateUa = {
-  uri: string;
   socket: WebSocketInterface;
   displayName: string;
+  getSipServerUrl: TGetServerUrl;
+  user?: string;
   register?: boolean;
   password?: string;
   sdpSemantics?: 'plan-b' | 'unified-plan';
@@ -367,7 +369,7 @@ export default class SipConnector {
     ReturnType<TSendDTMF>
   >;
 
-  private getSipServerUrl: (id: string) => string = (id: string) => {
+  private getSipServerUrl: TGetServerUrl = (id: string) => {
     return id;
   };
 
@@ -558,17 +560,15 @@ export default class SipConnector {
     sdpSemantics,
   }: TParametersCheckTelephony): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void) => {
-      const authorizationUser = `${generateUserId()}`;
       const getSipServerUrl = resolveSipUrl(sipServerUrl);
-      const uri = getSipServerUrl(authorizationUser);
       const socket = new this.JsSIP.WebSocketInterface(sipWebSocketServerURL);
 
       const ua = this._createUa({
-        uri,
         socket,
         displayName,
         sdpSemantics,
         userAgent,
+        getSipServerUrl,
       });
 
       const rejectWithError = () => {
@@ -577,16 +577,16 @@ export default class SipConnector {
         reject(error);
       };
 
-      ua.on(DISCONNECTED, rejectWithError);
+      ua.once(DISCONNECTED, rejectWithError);
 
       const stopAndResolveAfterDisconnect = () => {
-        ua.off(DISCONNECTED, rejectWithError);
-        ua.on(DISCONNECTED, resolve);
+        ua.removeAllListeners();
+        ua.once(DISCONNECTED, resolve);
 
         ua.stop();
       };
 
-      ua.on(CONNECTED, stopAndResolveAfterDisconnect);
+      ua.once(CONNECTED, stopAndResolveAfterDisconnect);
 
       ua.start();
     });
@@ -1013,7 +1013,8 @@ export default class SipConnector {
       password,
     };
 
-    this._init({ sipServerUrl, sipWebSocketServerURL });
+    this.getSipServerUrl = resolveSipUrl(sipServerUrl);
+    this.socket = new this.JsSIP.WebSocketInterface(sipWebSocketServerURL);
 
     if (this.ua) {
       await this._disconnectWithoutCancelRequests();
@@ -1021,13 +1022,11 @@ export default class SipConnector {
 
     this._isRegisterConfig = !!register;
 
-    const authorizationUser = register && user ? user.trim() : `${generateUserId()}`;
-    const uri = this.getSipServerUrl(authorizationUser);
-    const socket = this.socket!;
+    const { socket } = this;
 
     this.ua = this._createUa({
+      user,
       password,
-      uri,
       socket,
       displayName,
       register,
@@ -1037,6 +1036,7 @@ export default class SipConnector {
       connectionRecoveryMinInterval,
       connectionRecoveryMaxInterval,
       userAgent,
+      getSipServerUrl: this.getSipServerUrl,
     });
 
     this._uaEvents.eachTriggers((trigger, eventName) => {
@@ -1057,22 +1057,12 @@ export default class SipConnector {
     return this.ua;
   };
 
-  _init({
-    sipServerUrl,
-    sipWebSocketServerURL,
-  }: {
-    sipServerUrl: string;
-    sipWebSocketServerURL: string;
-  }) {
-    this.getSipServerUrl = resolveSipUrl(sipServerUrl);
-    this.socket = new this.JsSIP.WebSocketInterface(sipWebSocketServerURL);
-  }
-
   _createUa: TCreateUa = ({
+    user,
     password,
-    uri,
     socket,
     displayName,
+    getSipServerUrl,
     register = false,
     sdpSemantics = 'plan-b',
     sessionTimers = false,
@@ -1084,6 +1074,9 @@ export default class SipConnector {
     if (register && !password) {
       throw new Error('password is required for authorized connection');
     }
+
+    const authorizationUser = register && user ? user.trim() : `${generateUserId()}`;
+    const uri = getSipServerUrl(authorizationUser);
 
     const configuration = {
       password,
