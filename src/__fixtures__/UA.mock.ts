@@ -166,14 +166,12 @@ class UA implements IUA {
       }, CONNECTION_DELAY);
     }
 
-    if (!UA.isAvailableTelephony) {
+    if (UA.isAvailableTelephony) {
+      this.trigger('connected');
+      this._isConnected = true;
+    } else {
       this.stop();
-
-      return;
     }
-
-    this.trigger('connected');
-    this._isConnected = true;
   }
 
   /**
