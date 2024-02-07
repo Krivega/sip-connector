@@ -245,7 +245,7 @@ type TParametersCreateUa = {
   uri: string;
   socket: WebSocketInterface;
   displayName: string;
-  register: boolean;
+  register?: boolean;
   password?: string;
   sdpSemantics?: 'plan-b' | 'unified-plan';
   sessionTimers?: boolean;
@@ -569,7 +569,6 @@ export default class SipConnector {
         displayName,
         sdpSemantics,
         userAgent,
-        register: false,
       });
 
       const rejectWhenDisconnected = () => {
@@ -1074,7 +1073,7 @@ export default class SipConnector {
     uri,
     socket,
     displayName,
-    register,
+    register = false,
     sdpSemantics = 'plan-b',
     sessionTimers = false,
     registerExpires = 60 * 5, // 5 minutes in sec
