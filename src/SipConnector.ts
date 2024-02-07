@@ -242,6 +242,19 @@ type TParametersConnection = TOptionsExtraHeaders & {
   userAgent?: string;
 };
 
+type TParametersCheckTelephony = {
+  displayName: string;
+  sipServerUrl: string;
+  sipWebSocketServerURL: string;
+  remoteAddress?: string;
+  sdpSemantics?: 'plan-b' | 'unified-plan';
+  sessionTimers?: boolean;
+  registerExpires?: number;
+  connectionRecoveryMinInterval?: number;
+  connectionRecoveryMaxInterval?: number;
+  userAgent?: string;
+};
+
 type TConnect = (parameters: TParametersConnection) => Promise<UA>;
 type TCreateUa = (parameters: TParametersConnection) => Promise<UA>;
 type TStart = () => Promise<UA>;
@@ -526,6 +539,59 @@ export default class SipConnector {
     const target = this.ua.configuration.uri;
 
     return this.sendOptions(target, body, extraHeaders);
+  }
+
+  async checkTelephony({
+    userAgent,
+    displayName,
+    sipServerUrl,
+    sipWebSocketServerURL,
+    sdpSemantics = 'plan-b',
+    sessionTimers = false,
+    registerExpires = 60 * 5, // 5 minutes in sec
+    connectionRecoveryMinInterval = 2,
+    connectionRecoveryMaxInterval = 6,
+  }: TParametersCheckTelephony) {
+    return new Promise<void>((resolve: () => void, reject: (error: Error) => void) => {
+      const authorizationUser = `${generateUserId()}`;
+      const getSipServerUrl = resolveSipUrl(sipServerUrl);
+      const uri = getSipServerUrl(authorizationUser);
+      const socket = new this.JsSIP.WebSocketInterface(sipWebSocketServerURL);
+      const parsedDisplayName = parseDisplayName(displayName);
+
+      const configuration = {
+        uri,
+        display_name: parsedDisplayName,
+        user_agent: userAgent,
+        sdp_semantics: sdpSemantics,
+        sockets: [socket],
+        session_timers: sessionTimers,
+        register_expires: registerExpires,
+        connection_recovery_min_interval: connectionRecoveryMinInterval,
+        connection_recovery_max_interval: connectionRecoveryMaxInterval,
+      };
+
+      const ua = new this.JsSIP.UA(configuration);
+
+      const rejectWhenDisconnected = () => {
+        const error = new Error('Telephony is not available');
+
+        reject(error);
+      };
+
+      ua.on(DISCONNECTED, rejectWhenDisconnected);
+
+      const stopAndResolveAfterDisconnect = () => {
+        ua.off(DISCONNECTED, rejectWhenDisconnected);
+        ua.on(DISCONNECTED, resolve);
+
+        ua.stop();
+      };
+
+      ua.on(CONNECTED, stopAndResolveAfterDisconnect);
+
+      ua.start();
+    });
   }
 
   async replaceMediaStream(
