@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.23.0](https://github.com/Krivega/sip-connector/compare/v6.22.3...v6.23.0) (2024-02-07)
+
+### Features
+
+- add method for check available of telephony ([#31](https://github.com/Krivega/sip-connector/issues/31)) ([b1e0164](https://github.com/Krivega/sip-connector/commit/b1e01646d44f34479313089e084d1282ad495611))
+
 ### [6.22.3](https://github.com/Krivega/sip-connector/compare/v6.22.2...v6.22.3) (2024-02-05)
 
 ### Bug Fixes
