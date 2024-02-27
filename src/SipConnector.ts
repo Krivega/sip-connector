@@ -704,7 +704,7 @@ export default class SipConnector {
 
         const senders = connection.getSenders();
 
-        return scaleBitrate(senders, stream, maxBitrate);
+        await scaleBitrate(senders, stream, maxBitrate);
       })
       .then(() => {
         return stream;
