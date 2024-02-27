@@ -1,3 +1,4 @@
+import { URI } from '@krivega/jssip';
 import {
   SIP_SERVER_URL,
   SIP_WEB_SOCKET_SERVER_URL,
@@ -78,8 +79,8 @@ export const oneWord = 'a';
 export const twoWord = 'ab';
 export const thirdWord = 'abc';
 
-export const uriWithName = (name: string) => {
-  return `sip:${name}@${SIP_SERVER_URL}`;
+export const uriWithName = (name: string, url: string = SIP_SERVER_URL) => {
+  return new URI('sip', name, url);
 };
 
 export {

@@ -1,4 +1,10 @@
-import type { UA as IUA, IncomingRequest, UAConfiguration } from '@krivega/jssip';
+import type {
+  UA as IUA,
+  IncomingRequest,
+  UAConfiguration,
+  UAConfigurationParams,
+} from '@krivega/jssip';
+import { URI } from '@krivega/jssip';
 import Events from 'events-constructor';
 import type { TEventUA } from '../eventNames';
 import { UA_EVENT_NAMES } from '../eventNames';
@@ -38,8 +44,17 @@ class UA implements IUA {
 
   _registrator: Registrator;
 
-  constructor(configuration: UAConfiguration) {
+  constructor(_configuration: UAConfigurationParams) {
     this._events = new Events<typeof UA_EVENT_NAMES>(UA_EVENT_NAMES);
+
+    const [scheme, infoUri] = _configuration.uri.split(':');
+    const [user, url] = infoUri.split('@');
+
+    const configuration = {
+      ..._configuration,
+      uri: new URI(scheme, user, url),
+    };
+
     this.configuration = configuration;
     this._registrator = new Registrator();
   }
@@ -156,7 +171,7 @@ class UA implements IUA {
 
     const { password, register, uri } = this.configuration;
 
-    if (register && uri.includes(NAME_INCORRECT)) {
+    if (register && uri.user.includes(NAME_INCORRECT)) {
       this._isRegistered = false;
       this._isConnected = false;
       this._startedTimeout = setTimeout(() => {

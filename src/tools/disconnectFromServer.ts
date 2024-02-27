@@ -10,12 +10,12 @@ const resolveDisconnectFromServer = (sipConnector: SipConnector) => {
       .then(() => {
         log('disconnectFromServer: then');
 
-        return false;
+        return { isSuccessful: true };
       })
       .catch((error) => {
         log('disconnectFromServer: catch', error);
 
-        return false;
+        return { isSuccessful: false };
       });
   };
 };

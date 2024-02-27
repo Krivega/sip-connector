@@ -1,3 +1,4 @@
+import { URI } from '@krivega/jssip';
 import JsSIP, { PASSWORD_CORRECT } from './jssip.mock';
 
 export const user = 'user';
@@ -44,14 +45,14 @@ const baseUaConfiguration = {
 export const uaConfigurationWithAuthorization = {
   ...baseUaConfiguration,
   password: PASSWORD_CORRECT,
-  uri: `sip:${user}@${SIP_SERVER_URL}`,
+  uri: new URI('sip', user, SIP_SERVER_URL),
   display_name: '',
   register: true,
 };
 export const uaConfigurationWithAuthorizationWithDisplayName = {
   ...baseUaConfiguration,
   password: PASSWORD_CORRECT,
-  uri: `sip:${user}@${SIP_SERVER_URL}`,
+  uri: new URI('sip', user, SIP_SERVER_URL),
   display_name: displayName,
   register: true,
 };

@@ -76,10 +76,12 @@ const initUa = (
         });
       }
 
-      return disconnectFromServer();
+      return disconnectFromServer().then(() => {
+        return { isSuccessful: false };
+      });
     })
-    .then((success) => {
-      resolve(!!success);
+    .then(({ isSuccessful }) => {
+      resolve(!!isSuccessful);
     })
     .catch(reject);
 };
@@ -94,7 +96,7 @@ const resolveInitUaPromised = (sipConnector: SipConnector) => {
     password: string;
     isRegisteredUser: boolean;
   }) => {
-    return new Promise((resolve, reject) => {
+    return new Promise<boolean>((resolve, reject) => {
       initUa(sipConnector, resolve, reject, state);
     });
   };

@@ -3,7 +3,7 @@ import type {
   AnswerOptions,
   ExtraHeaders,
   HoldOptions,
-  MediaConstraints,
+  MediaStreamTypes,
   NameAddrHeader,
   OnHoldResult,
   RTCPeerConnectionDeprecated,
@@ -136,15 +136,15 @@ class BaseSession implements RTCSession {
     throw new Error('Method not implemented.');
   }
 
-  mute(_options?: MediaConstraints): void {
+  mute(_options?: MediaStreamConstraints): void {
     throw new Error('Method not implemented.');
   }
 
-  unmute(_options?: MediaConstraints): void {
+  unmute(_options?: MediaStreamConstraints): void {
     throw new Error('Method not implemented.');
   }
 
-  isMuted(): MediaConstraints {
+  isMuted(): MediaStreamTypes {
     throw new Error('Method not implemented.');
   }
 

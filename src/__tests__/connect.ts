@@ -12,6 +12,7 @@ import {
   uaConfigurationWithoutAuthorizationWithoutDisplayName,
 } from '../__fixtures__';
 import createSipConnector from '../doMock';
+import { uriWithName } from '../tools/__fixtures__/connectToServer';
 
 const wrongPassword = 'wrongPassword';
 
@@ -47,7 +48,6 @@ describe('connect', () => {
     expect.assertions(1);
 
     const sipServerUrlChanged = `${dataForConnectionWithAuthorization.sipServerUrl}Changed`;
-    const uriChanged = `${uaConfigurationWithAuthorization.uri}Changed`;
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
@@ -56,7 +56,10 @@ describe('connect', () => {
       sipServerUrl: sipServerUrlChanged,
     });
 
-    expect(ua.configuration).toEqual({ ...uaConfigurationWithAuthorization, uri: uriChanged });
+    expect(ua.configuration).toEqual({
+      ...uaConfigurationWithAuthorization,
+      uri: uriWithName(uaConfigurationWithAuthorization.uri.user, sipServerUrlChanged),
+    });
   });
 
   it('authorization user with displayName', async () => {

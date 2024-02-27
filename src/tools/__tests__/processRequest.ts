@@ -41,7 +41,7 @@ describe('processRequest', () => {
     return processRequest(dataForConnectionWithoutAuthorization).then((success) => {
       expect(success).toBe(true);
       expect(sipConnector.isConfigured()).toBe(true);
-      expect(hasValidUri(parseObject(sipConnector.ua!.configuration).uri)).toBe(true);
+      expect(hasValidUri(sipConnector.ua!.configuration.uri)).toBe(true);
       expect(parseObjectWithoutUri(sipConnector.ua!.configuration)).toEqual(
         uaConfigurationWithoutAuthorization,
       );
@@ -55,7 +55,7 @@ describe('processRequest', () => {
       (success) => {
         expect(success).toBe(true);
         expect(sipConnector.isConfigured()).toBe(true);
-        expect(hasValidUri(parseObject(sipConnector.ua!.configuration).uri)).toBe(true);
+        expect(hasValidUri(sipConnector.ua!.configuration.uri)).toBe(true);
         expect(parseObjectWithoutUri(sipConnector.ua!.configuration)).toEqual(
           uaConfigurationWithoutAuthorizationWithoutDisplayName,
         );
@@ -75,7 +75,7 @@ describe('processRequest', () => {
       .then((success) => {
         expect(success).toBe(true);
         expect(sipConnector.isConfigured()).toBe(true);
-        expect(hasValidUri(parseObject(sipConnector.ua!.configuration).uri)).toBe(true);
+        expect(hasValidUri(sipConnector.ua!.configuration.uri)).toBe(true);
         expect(parseObjectWithoutUri(sipConnector.ua!.configuration)).toEqual(
           uaConfigurationWithoutAuthorization,
         );
@@ -117,10 +117,8 @@ describe('processRequest', () => {
   it('#6 Registered user: remove name', async () => {
     expect.assertions(2);
 
-    // @ts-expect-error
     return processRequest(dataForConnectionWithAuthorization)
       .then(async () => {
-        // @ts-expect-error
         return processRequest({ ...dataForConnectionWithAuthorization, name: '' });
       })
       .then((success) => {
@@ -205,7 +203,7 @@ describe('processRequest', () => {
   });
 
   it('#12 sync changed name', async () => {
-    expect.assertions(2);
+    expect.assertions(3);
 
     // @ts-expect-error
     return processRequest(dataForConnectionWithAuthorization)
@@ -215,8 +213,10 @@ describe('processRequest', () => {
       })
       .then((success) => {
         expect(success).toBe(true);
-        // @ts-expect-error
-        expect(sipConnector.ua!.configuration.uri).toBe(sipConnector.getSipServerUrl(thirdWord));
+        expect(sipConnector.ua!.configuration.uri.user).toBe(thirdWord);
+        expect(sipConnector.ua!.configuration.uri.host).toBe(
+          dataForConnectionWithAuthorization.sipServerUrl,
+        );
       });
   });
 
@@ -235,7 +235,7 @@ describe('processRequest', () => {
   });
 
   it('#14 debounce changed name', async () => {
-    expect.assertions(2);
+    expect.assertions(3);
 
     // @ts-expect-error
     return processRequest(dataForConnectionWithoutAuthorization)
@@ -248,13 +248,15 @@ describe('processRequest', () => {
       })
       .then((success) => {
         expect(success).toBe(true);
-        // @ts-expect-error
-        expect(sipConnector.ua!.configuration.uri).toBe(sipConnector.getSipServerUrl(thirdWord));
+        expect(sipConnector.ua!.configuration.uri.user).toBe(thirdWord);
+        expect(sipConnector.ua!.configuration.uri.host).toBe(
+          dataForConnectionWithoutAuthorization.sipServerUrl,
+        );
       });
   });
 
-  it('# 15async changed name', async () => {
-    expect.assertions(3);
+  it('#15 async changed name', async () => {
+    expect.assertions(4);
 
     // @ts-expect-error
     return processRequest(dataForConnectionWithAuthorization).then(async () => {
@@ -269,9 +271,10 @@ describe('processRequest', () => {
       ]).then(([success1, success2]) => {
         expect(success1).toBe(false); // cancel first request
         expect(success2).toBe(true);
-
-        // @ts-expect-error
-        expect(sipConnector.ua!.configuration.uri).toBe(sipConnector.getSipServerUrl(thirdWord));
+        expect(sipConnector.ua!.configuration.uri.user).toBe(thirdWord);
+        expect(sipConnector.ua!.configuration.uri.host).toBe(
+          dataForConnectionWithAuthorization.sipServerUrl,
+        );
       });
     });
   });
@@ -379,8 +382,7 @@ describe('processRequest', () => {
         expect(success).toBe(true);
         expect(
           hasValidUri(
-            // @ts-expect-error
-            parseObject(sipConnector.ua!.configuration).uri,
+            sipConnector.ua!.configuration.uri,
             dataForConnectionWithoutAuthorizationWithSipServerUrlChanged.sipServerUrl,
           ),
         ).toBe(true);

@@ -63,18 +63,18 @@
   },
   "dependencies": {
     "@krivega/cancelable-promise": "^1.1.0",
-    "@krivega/jssip": "^3.23.3",
+    "@krivega/jssip": "^3.23.8",
     "debug": "^4.3.4",
     "events-constructor": "^1.2.2",
-    "sequent-promises": "^1.0.0",
+    "sequent-promises": "^1.0.2",
     "stack-promises": "^1.0.2",
     "ts-debounce": "^4.0.0",
     "webrtc-mock": "^1.0.2"
   },
   "devDependencies": {
     "@babel/preset-typescript": "^7.23.3",
-    "@commitlint/cli": "^18.6.1",
-    "@commitlint/config-conventional": "^18.6.2",
+    "@commitlint/cli": "^19.0.1",
+    "@commitlint/config-conventional": "^19.0.0",
     "@nabla/vite-plugin-eslint": "^2.0.2",
     "@types/debug": "^4.1.12",
     "@types/jest": "^29.5.12",
