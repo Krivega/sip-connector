@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.24.0](https://github.com/Krivega/sip-connector/compare/v6.23.0...v6.24.0) (2024-02-27)
+
+### Features
+
+- add ua in promise of resolveConnectToServer ([ace335f](https://github.com/Krivega/sip-connector/commit/ace335f531e0dee5906144389000ffe485d985c9))
+
 ## [6.23.0](https://github.com/Krivega/sip-connector/compare/v6.22.3...v6.23.0) (2024-02-07)
 
 ### Features
