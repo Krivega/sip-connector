@@ -1,13 +1,14 @@
 import { isCanceledError } from '@krivega/cancelable-promise';
+import type { UA } from '@krivega/jssip';
 import type SipConnector from '../SipConnector';
 import log from '../logger';
 
-const handleError = (error: Error): boolean => {
+const handleError = (error: Error): { isSuccessful: boolean } => {
   if (!isCanceledError(error)) {
     throw error;
   }
 
-  return false;
+  return { isSuccessful: false };
 };
 
 const resolveConnectToServer = (sipConnector: SipConnector) => {
@@ -22,7 +23,7 @@ const resolveConnectToServer = (sipConnector: SipConnector) => {
     isRegisteredUser?: boolean;
     isDisconnectOnFail?: boolean;
     sdpSemantics: 'plan-b' | 'unified-plan';
-  }): Promise<boolean> => {
+  }): Promise<{ ua?: UA; isSuccessful: boolean }> => {
     const {
       userAgent,
       sipWebSocketServerURL,
@@ -50,10 +51,10 @@ const resolveConnectToServer = (sipConnector: SipConnector) => {
         user: name,
         register: isRegisteredUser,
       })
-      .then(() => {
+      .then((ua) => {
         log('connectToServer then');
 
-        return true;
+        return { ua, isSuccessful: true };
       })
       .catch(async (error: Error) => {
         log('connectToServer catch: error', error);
