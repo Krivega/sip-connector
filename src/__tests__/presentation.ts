@@ -2,6 +2,12 @@ import { createMediaStreamMock } from 'webrtc-mock';
 import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import createSipConnector from '../doMock';
+import {
+  CONTENT_TYPE_SHARE_STATE,
+  HEADER_START_PRESENTATION,
+  HEADER_START_PRESENTATION_P2P,
+  MUST_STOP_PRESENTATION,
+} from '../headers';
 
 describe('presentation', () => {
   const number = '111';
@@ -173,6 +179,41 @@ describe('presentation', () => {
 
     return sipConnector.updatePresentation(mediaStreamUpdated).catch((error) => {
       expect(error).toEqual(new Error('Presentation has not started yet'));
+    });
+  });
+
+  it('should be stopped incoming presentation before outgoing presentation started when isP2P is truthy', async () => {
+    expect.assertions(3);
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    const sendInfoMocked = jest.spyOn(sipConnector.session!, 'sendInfo');
+
+    await sipConnector.startPresentation(mediaStream, { isP2P: true });
+
+    expect(sendInfoMocked).toHaveBeenCalledTimes(2);
+    expect(sendInfoMocked).toHaveBeenNthCalledWith(1, CONTENT_TYPE_SHARE_STATE, undefined, {
+      extraHeaders: [MUST_STOP_PRESENTATION],
+    });
+    expect(sendInfoMocked).toHaveBeenNthCalledWith(2, CONTENT_TYPE_SHARE_STATE, undefined, {
+      extraHeaders: [HEADER_START_PRESENTATION_P2P],
+    });
+  });
+
+  it('should be stopped incoming presentation before outgoing presentation started when isP2P is falsy', async () => {
+    expect.assertions(2);
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    const sendInfoMocked = jest.spyOn(sipConnector.session!, 'sendInfo');
+
+    await sipConnector.startPresentation(mediaStream, { isP2P: false });
+
+    expect(sendInfoMocked).toHaveBeenCalledTimes(1);
+    expect(sendInfoMocked).toHaveBeenNthCalledWith(1, CONTENT_TYPE_SHARE_STATE, undefined, {
+      extraHeaders: [HEADER_START_PRESENTATION],
     });
   });
 });
