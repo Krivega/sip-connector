@@ -1,13 +1,41 @@
 import { createMediaStreamMock } from 'webrtc-mock';
+import type { ExtraHeaders } from '@krivega/jssip';
 import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import createSipConnector from '../doMock';
+import {
+  CONTENT_TYPE_SHARE_STATE,
+  HEADER_START_PRESENTATION,
+  HEADER_START_PRESENTATION_P2P,
+  MUST_STOP_PRESENTATION,
+} from '../headers';
 
 describe('presentation', () => {
   const number = '111';
   let sipConnector: SipConnector;
   let mediaStream: MediaStream;
   let mediaStreamUpdated: MediaStream;
+
+  const failedToSendMustStopSendPresentationError = 'failedToSendMustStopSendPresentationError';
+
+  const mockFailToSendMustStopPresentationInfo = () => {
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    const actualSendInfo = sipConnector.session!.sendInfo;
+
+    sipConnector.session!.sendInfo = jest.fn(
+      async (
+        contentType: string,
+        body?: string | undefined,
+        options?: ExtraHeaders | undefined,
+      ) => {
+        if (options?.extraHeaders && options.extraHeaders[0] === MUST_STOP_PRESENTATION) {
+          throw new Error(failedToSendMustStopSendPresentationError);
+        }
+
+        return actualSendInfo(contentType, body, options);
+      },
+    );
+  };
 
   beforeEach(() => {
     sipConnector = createSipConnector();
@@ -174,5 +202,57 @@ describe('presentation', () => {
     return sipConnector.updatePresentation(mediaStreamUpdated).catch((error) => {
       expect(error).toEqual(new Error('Presentation has not started yet'));
     });
+  });
+
+  it('should be stopped incoming presentation before outgoing presentation started when isP2P is truthy', async () => {
+    expect.assertions(3);
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    const sendInfoMocked = jest.spyOn(sipConnector.session!, 'sendInfo');
+
+    await sipConnector.startPresentation(mediaStream, { isP2P: true });
+
+    expect(sendInfoMocked).toHaveBeenCalledTimes(2);
+    expect(sendInfoMocked).toHaveBeenNthCalledWith(1, CONTENT_TYPE_SHARE_STATE, undefined, {
+      extraHeaders: [MUST_STOP_PRESENTATION],
+    });
+    expect(sendInfoMocked).toHaveBeenNthCalledWith(2, CONTENT_TYPE_SHARE_STATE, undefined, {
+      extraHeaders: [HEADER_START_PRESENTATION_P2P],
+    });
+  });
+
+  it('should be stopped incoming presentation before outgoing presentation started when isP2P is falsy', async () => {
+    expect.assertions(2);
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    const sendInfoMocked = jest.spyOn(sipConnector.session!, 'sendInfo');
+
+    await sipConnector.startPresentation(mediaStream, { isP2P: false });
+
+    expect(sendInfoMocked).toHaveBeenCalledTimes(1);
+    expect(sendInfoMocked).toHaveBeenNthCalledWith(1, CONTENT_TYPE_SHARE_STATE, undefined, {
+      extraHeaders: [HEADER_START_PRESENTATION],
+    });
+  });
+
+  it('should be failed presentation when sending MUST_STOP_PRESENTATION info fails', async () => {
+    expect.assertions(1);
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    mockFailToSendMustStopPresentationInfo();
+
+    let rejectedError = new Error('rejectedError');
+
+    await sipConnector.startPresentation(mediaStream, { isP2P: true }).catch((error: Error) => {
+      rejectedError = error;
+    });
+
+    expect(rejectedError.message).toBe(failedToSendMustStopSendPresentationError);
   });
 });

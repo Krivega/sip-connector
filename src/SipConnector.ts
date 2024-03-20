@@ -746,11 +746,21 @@ export default class SipConnector {
       throw new Error('Presentation is already started');
     }
 
+    if (isP2P) {
+      await this.sendMustStopPresentation(session);
+    }
+
     return this._sendPresentation(session, stream, {
       isNeedReinvite,
       isP2P,
       maxBitrate,
       degradationPreference,
+    });
+  }
+
+  private async sendMustStopPresentation(session: RTCSession): Promise<void> {
+    await session.sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
+      extraHeaders: [MUST_STOP_PRESENTATION],
     });
   }
 
