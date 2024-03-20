@@ -9,7 +9,7 @@ const resolveSendRefusalToTurnOnMic = (sipConnector: SipConnector) => {
 
     log('sendRefusalToTurnOnMic');
 
-    return sipConnector.sendRefusalToTurnOnMic().catch((error) => {
+    return sipConnector.sendRefusalToTurnOnMic().catch((error: unknown) => {
       log('sendRefusalToTurnOnMic: error', error);
     });
   };

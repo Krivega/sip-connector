@@ -5,6 +5,8 @@ class RTCRtpSenderMock implements RTCRtpSender {
 
   transport: RTCDtlsTransport | null = null;
 
+  transform: RTCRtpTransform | null = null;
+
   private _parameters: RTCRtpSendParameters = {
     encodings: [{}],
     transactionId: '0',

@@ -143,7 +143,7 @@ describe('connectToServer', () => {
       ...dataForConnectionWithAuthorization,
       sipWebSocketServerURL: LOCKED_SIP_WEB_SOCKET_SERVER_URL,
       isDisconnectOnFail: true,
-    }).catch((error: Error) => {
+    }).catch((error: unknown) => {
       expect(disconnectedMock).toHaveBeenCalledTimes(1);
       expect(error).toBeDefined();
     });
@@ -155,7 +155,7 @@ describe('connectToServer', () => {
     return connectToServer({
       ...dataForConnectionWithAuthorization,
       sipWebSocketServerURL: LOCKED_SIP_WEB_SOCKET_SERVER_URL,
-    }).catch((error: Error) => {
+    }).catch((error: unknown) => {
       expect(disconnectedMock).toHaveBeenCalledTimes(0);
       expect(error).toBeDefined();
     });

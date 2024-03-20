@@ -69,7 +69,7 @@ describe('actionsProgressCall', () => {
           onFinishProgressCall,
         });
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         // eslint-disable-next-line no-console
         console.log(error);
       })

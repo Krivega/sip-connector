@@ -39,7 +39,7 @@ describe('connect', () => {
         ...dataForConnectionWithAuthorizationWithDisplayName,
         password: wrongPassword,
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         expect(error).toEqual({ response: null, cause: 'Wrong credentials' });
       });
   });
@@ -179,7 +179,7 @@ describe('connect', () => {
       .set({
         password: dataForConnectionWithAuthorizationWithDisplayName.password,
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         expect(error).toEqual(new Error('nothing changed'));
         expect(sipConnector.getConnectionConfiguration().password).toBe(
           dataForConnectionWithAuthorizationWithDisplayName.password,

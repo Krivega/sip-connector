@@ -52,8 +52,8 @@ describe('media state', () => {
       throw new Error(ERROR_RESPONSE);
     };
 
-    await sipConnector.sendMediaState(mediaStateData).catch((error) => {
-      expect(error.message).toBe(ERROR_RESPONSE);
+    await sipConnector.sendMediaState(mediaStateData).catch((error: unknown) => {
+      expect((error as Error).message).toBe(ERROR_RESPONSE);
     });
   });
 });

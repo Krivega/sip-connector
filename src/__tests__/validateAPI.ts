@@ -13,8 +13,8 @@ describe('validateAPI', () => {
     expect.assertions(1);
 
     // @ts-expect-error
-    return sipConnector.connect({}).catch((error) => {
-      expect(error.message).toBe('sipServerUrl is required');
+    return sipConnector.connect({}).catch((error: unknown) => {
+      expect((error as Error).message).toBe('sipServerUrl is required');
     });
   });
 
@@ -27,8 +27,8 @@ describe('validateAPI', () => {
         // @ts-expect-error
         sipWebSocketServerURL: undefined,
       })
-      .catch((error) => {
-        expect(error.message).toBe('sipWebSocketServerURL is required');
+      .catch((error: unknown) => {
+        expect((error as Error).message).toBe('sipWebSocketServerURL is required');
       });
   });
 
@@ -40,8 +40,8 @@ describe('validateAPI', () => {
         ...dataForConnectionWithAuthorizationWithDisplayName,
         user: undefined,
       })
-      .catch((error) => {
-        expect(error.message).toBe('user is required for authorized connection');
+      .catch((error: unknown) => {
+        expect((error as Error).message).toBe('user is required for authorized connection');
       });
   });
 
@@ -53,8 +53,8 @@ describe('validateAPI', () => {
         ...dataForConnectionWithAuthorizationWithDisplayName,
         password: undefined,
       })
-      .catch((error) => {
-        expect(error.message).toBe('password is required for authorized connection');
+      .catch((error: unknown) => {
+        expect((error as Error).message).toBe('password is required for authorized connection');
       });
   });
 });

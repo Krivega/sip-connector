@@ -9,7 +9,9 @@ const resolveStopShareSipConnector = ({ sipConnector }: { sipConnector: SipConne
       .stopPresentation({
         isP2P,
       })
-      .catch(log);
+      .catch((error: unknown) => {
+        log(error as Error);
+      });
   };
 
   return stopShareSipConnector;

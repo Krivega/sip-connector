@@ -135,7 +135,12 @@ const resolveAnswerIncomingCall = (sipConnector: SipConnector) => {
       onBeforeProgressCall(conference);
     }
 
-    return answer().then(onSuccess).catch(onFail).finally(onFinish);
+    return answer()
+      .then(onSuccess)
+      .catch((error: unknown) => {
+        return onFail(error as Error);
+      })
+      .finally(onFinish);
   };
 
   return answerIncomingCall;

@@ -172,17 +172,17 @@ type TOptionsInfoMediaState = {
   noTerminateWhenError?: boolean;
 };
 
-const CMD_CHANNELS = 'channels' as const;
-const CMD_WEBCAST_STARTED = 'WebcastStarted' as const;
-const CMD_WEBCAST_STOPPED = 'WebcastStopped' as const;
-const CMD_ACCOUNT_CHANGED = 'accountChanged' as const;
-const CMD_ACCOUNT_DELETED = 'accountDeleted' as const;
-const CMD_ADDED_TO_LIST_MODERATORS = 'addedToListModerators' as const;
-const CMD_REMOVED_FROM_LIST_MODERATORS = 'removedFromListModerators' as const;
-const CMD_ACCEPTING_WORD_REQUEST = 'ParticipationRequestAccepted' as const;
-const CMD_CANCELLING_WORD_REQUEST = 'ParticipationRequestRejected' as const;
-const CMD_MOVE_REQUEST_TO_STREAM = 'ParticipantMovedToWebcast' as const;
-const CMD_CONFERENCE_PARTICIPANT_TOKEN_ISSUED = 'ConferenceParticipantTokenIssued' as const;
+const CMD_CHANNELS = 'channels';
+const CMD_WEBCAST_STARTED = 'WebcastStarted';
+const CMD_WEBCAST_STOPPED = 'WebcastStopped';
+const CMD_ACCOUNT_CHANGED = 'accountChanged';
+const CMD_ACCOUNT_DELETED = 'accountDeleted';
+const CMD_ADDED_TO_LIST_MODERATORS = 'addedToListModerators';
+const CMD_REMOVED_FROM_LIST_MODERATORS = 'removedFromListModerators';
+const CMD_ACCEPTING_WORD_REQUEST = 'ParticipationRequestAccepted';
+const CMD_CANCELLING_WORD_REQUEST = 'ParticipationRequestRejected';
+const CMD_MOVE_REQUEST_TO_STREAM = 'ParticipantMovedToWebcast';
+const CMD_CONFERENCE_PARTICIPANT_TOKEN_ISSUED = 'ConferenceParticipantTokenIssued';
 
 type TAddedToListModeratorsInfoNotify = {
   cmd: typeof CMD_ADDED_TO_LIST_MODERATORS;
@@ -650,8 +650,8 @@ export default class SipConnector {
         ...options,
         extraHeaders,
       })
-      .catch((error: Error) => {
-        if (hasDeclineResponseFromServer(error)) {
+      .catch((error: unknown) => {
+        if (hasDeclineResponseFromServer(error as Error)) {
           throw error;
         }
       });
@@ -709,7 +709,7 @@ export default class SipConnector {
       .then(() => {
         return stream;
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         this._sessionEvents.trigger(PRESENTATION_FAILED, error);
 
         throw error;
@@ -787,7 +787,7 @@ export default class SipConnector {
         .then(async () => {
           return session.stopPresentation(streamPresentationPrevious);
         })
-        .catch((error) => {
+        .catch((error: unknown) => {
           this._sessionEvents.trigger(PRESENTATION_FAILED, error);
 
           throw error;
@@ -1178,7 +1178,10 @@ export default class SipConnector {
           .then(() => {
             resolve(changedSome);
           })
-          .catch(reject);
+          .catch((error: unknown) => {
+            // eslint-disable-next-line prefer-promise-reject-errors
+            reject(error as Error);
+          });
       } else if (changedSome) {
         resolve(changedSome);
       } else {
@@ -1239,7 +1242,12 @@ export default class SipConnector {
 
       this._connectionConfiguration.number = number;
       this._connectionConfiguration.answer = false;
-      this._handleCall({ ontrack }).then(resolve).catch(reject);
+      this._handleCall({ ontrack })
+        .then(resolve)
+        .catch((error: unknown) => {
+          // eslint-disable-next-line prefer-promise-reject-errors
+          reject(error as Error);
+        });
 
       this.session = ua.call(this.getSipServerUrl(number), {
         extraHeaders,
@@ -1301,7 +1309,12 @@ export default class SipConnector {
 
       this._connectionConfiguration.answer = true;
       this._connectionConfiguration.number = session.remote_identity.uri.user;
-      this._handleCall({ ontrack }).then(resolve).catch(reject);
+      this._handleCall({ ontrack })
+        .then(resolve)
+        .catch((error: unknown) => {
+          // eslint-disable-next-line prefer-promise-reject-errors
+          reject(error as Error);
+        });
 
       const preparedMediaStream = prepareMediaStream(mediaStream, {
         videoMode,

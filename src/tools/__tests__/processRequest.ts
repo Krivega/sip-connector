@@ -131,18 +131,22 @@ describe('processRequest', () => {
     expect.assertions(1);
 
     // @ts-expect-error
-    return processRequest(dataForConnectionWithAuthorizationIncorrectPassword).catch((error) => {
-      expect(error).toBeDefined();
-    });
+    return processRequest(dataForConnectionWithAuthorizationIncorrectPassword).catch(
+      (error: unknown) => {
+        expect(error).toBeDefined();
+      },
+    );
   });
 
   it('#8 Registered user: incorrect name', async () => {
     expect.assertions(1);
 
     // @ts-expect-error
-    return processRequest(dataForConnectionWithAuthorizationIncorrectUser).catch((error) => {
-      expect(error).toBeDefined();
-    });
+    return processRequest(dataForConnectionWithAuthorizationIncorrectUser).catch(
+      (error: unknown) => {
+        expect(error).toBeDefined();
+      },
+    );
   });
 
   it('#9 sync changed displayName', async () => {

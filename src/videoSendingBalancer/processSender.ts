@@ -9,7 +9,7 @@ const stackPromises = createStackPromises<TResult>();
 
 const runStackPromises = async (): Promise<TResult> => {
   // @ts-expect-error
-  return stackPromises().catch((error) => {
+  return stackPromises().catch((error: unknown) => {
     logger('videoSendingBalancer: error', error);
   });
 };

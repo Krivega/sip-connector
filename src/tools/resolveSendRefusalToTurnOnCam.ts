@@ -9,7 +9,7 @@ const resolveSendRefusalToTurnOnCam = (sipConnector: SipConnector) => {
 
     log('sendRefusalToTurnOnCam');
 
-    return sipConnector.sendRefusalToTurnOnCam().catch((error) => {
+    return sipConnector.sendRefusalToTurnOnCam().catch((error: unknown) => {
       log('sendRefusalToTurnOnCam: error', error);
     });
   };

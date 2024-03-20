@@ -145,7 +145,13 @@ describe('call', () => {
     const disconnectPromise = new Promise((resolve, reject) => {
       sipConnector.onceSession('ended', () => {
         // order is important!!!
-        sipConnector.disconnect().then(resolve).catch(reject);
+        sipConnector
+          .disconnect()
+          .then(resolve)
+          .catch((error: unknown) => {
+            // eslint-disable-next-line prefer-promise-reject-errors
+            reject(error as Error);
+          });
       });
     });
 
@@ -166,7 +172,13 @@ describe('call', () => {
     const disconnectPromise = new Promise((resolve, reject) => {
       sipConnector.onceSession('failed', () => {
         // order is important!!!
-        sipConnector.disconnect().then(resolve).catch(reject);
+        sipConnector
+          .disconnect()
+          .then(resolve)
+          .catch((error: unknown) => {
+            // eslint-disable-next-line prefer-promise-reject-errors
+            reject(error as Error);
+          });
       });
     });
 
@@ -175,8 +187,8 @@ describe('call', () => {
     const promiseCall = sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
     return Promise.all([
-      promiseCall.catch((error) => {
-        expect(hasCanceledCallError(error)).toBeTruthy();
+      promiseCall.catch((error: unknown) => {
+        expect(hasCanceledCallError(error as Error)).toBeTruthy();
       }),
       disconnectPromise.then((result) => {
         expect(result).toBeUndefined();
@@ -194,12 +206,18 @@ describe('call', () => {
     const promiseCall = sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
     const disconnectPromise = new Promise((resolve, reject) => {
-      sipConnector.disconnect().then(resolve).catch(reject);
+      sipConnector
+        .disconnect()
+        .then(resolve)
+        .catch((error: unknown) => {
+          // eslint-disable-next-line prefer-promise-reject-errors
+          reject(error as Error);
+        });
     });
 
     return Promise.all([
-      promiseCall.catch((error) => {
-        expect(hasCanceledCallError(error)).toBeTruthy();
+      promiseCall.catch((error: unknown) => {
+        expect(hasCanceledCallError(error as Error)).toBeTruthy();
       }),
       disconnectPromise.then((result) => {
         expect(result).toBeUndefined();
@@ -217,12 +235,18 @@ describe('call', () => {
     const promiseCall = sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
     const disconnectPromise = new Promise((resolve, reject) => {
-      sipConnector.disconnect().then(resolve).catch(reject);
+      sipConnector
+        .disconnect()
+        .then(resolve)
+        .catch((error: unknown) => {
+          // eslint-disable-next-line prefer-promise-reject-errors
+          reject(error as Error);
+        });
     });
 
     return Promise.all([
-      promiseCall.catch((error) => {
-        expect(hasCanceledCallError(error)).toBeTruthy();
+      promiseCall.catch((error: unknown) => {
+        expect(hasCanceledCallError(error as Error)).toBeTruthy();
       }),
       disconnectPromise.then((result) => {
         expect(result).toBeUndefined();

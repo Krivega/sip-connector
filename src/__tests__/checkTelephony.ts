@@ -38,8 +38,8 @@ describe('checkTelephony', () => {
 
     await sipConnector
       .checkTelephony(dataForConnectionWithoutAuthorization)
-      .catch((error: Error) => {
-        rejectedError = error;
+      .catch((error: unknown) => {
+        rejectedError = error as Error;
       });
 
     expect(rejectedError.message).toBe('Telephony is not available');

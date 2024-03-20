@@ -56,21 +56,21 @@ const resolveConnectToServer = (sipConnector: SipConnector) => {
 
         return { ua, isSuccessful: true };
       })
-      .catch(async (error: Error) => {
+      .catch(async (error: unknown) => {
         log('connectToServer catch: error', error);
 
         if (isDisconnectOnFail === true) {
           return sipConnector
             .disconnect()
             .then(() => {
-              return handleError(error);
+              return handleError(error as Error);
             })
             .catch(() => {
-              return handleError(error);
+              return handleError(error as Error);
             });
         }
 
-        return handleError(error);
+        return handleError(error as Error);
       });
   };
 

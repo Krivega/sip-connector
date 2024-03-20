@@ -1,5 +1,5 @@
-import { createMediaStreamMock } from 'webrtc-mock';
 import type { ExtraHeaders } from '@krivega/jssip';
+import { createMediaStreamMock } from 'webrtc-mock';
 import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import createSipConnector from '../doMock';
@@ -56,7 +56,7 @@ describe('presentation', () => {
     await sipConnector.call({ number, mediaStream });
     await sipConnector.startPresentation(mediaStream);
 
-    return sipConnector.startPresentation(mediaStream).catch((error) => {
+    return sipConnector.startPresentation(mediaStream).catch((error: unknown) => {
       expect(error).toEqual(new Error('Presentation is already started'));
     });
   });
@@ -199,7 +199,7 @@ describe('presentation', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    return sipConnector.updatePresentation(mediaStreamUpdated).catch((error) => {
+    return sipConnector.updatePresentation(mediaStreamUpdated).catch((error: unknown) => {
       expect(error).toEqual(new Error('Presentation has not started yet'));
     });
   });
@@ -249,8 +249,8 @@ describe('presentation', () => {
 
     let rejectedError = new Error('rejectedError');
 
-    await sipConnector.startPresentation(mediaStream, { isP2P: true }).catch((error: Error) => {
-      rejectedError = error;
+    await sipConnector.startPresentation(mediaStream, { isP2P: true }).catch((error: unknown) => {
+      rejectedError = error as Error;
     });
 
     expect(rejectedError.message).toBe(failedToSendMustStopSendPresentationError);

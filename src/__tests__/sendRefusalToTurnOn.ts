@@ -70,8 +70,8 @@ describe('media state', () => {
       throw new Error(ERROR_RESPONSE);
     };
 
-    await sipConnector.sendRefusalToTurnOnMic().catch((error) => {
-      expect(error.message).toBe(ERROR_RESPONSE);
+    await sipConnector.sendRefusalToTurnOnMic().catch((error: unknown) => {
+      expect((error as Error).message).toBe(ERROR_RESPONSE);
     });
   });
 
@@ -88,8 +88,8 @@ describe('media state', () => {
       throw new Error(ERROR_RESPONSE);
     };
 
-    await sipConnector.sendRefusalToTurnOnCam().catch((error) => {
-      expect(error.message).toBe(ERROR_RESPONSE);
+    await sipConnector.sendRefusalToTurnOnCam().catch((error: unknown) => {
+      expect((error as Error).message).toBe(ERROR_RESPONSE);
     });
   });
 });

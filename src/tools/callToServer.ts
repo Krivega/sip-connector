@@ -132,7 +132,12 @@ const resolveCallToServer = (sipConnector: SipConnector) => {
       onBeforeProgressCall(conference);
     }
 
-    return startCall().then(onSuccess).catch(onFail).finally(onFinish);
+    return startCall()
+      .then(onSuccess)
+      .catch((error: unknown) => {
+        return onFail(error as Error);
+      })
+      .finally(onFinish);
   };
 
   return callToServer;
