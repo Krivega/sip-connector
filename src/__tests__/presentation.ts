@@ -9,7 +9,6 @@ import {
   HEADER_START_PRESENTATION_P2P,
   MUST_STOP_PRESENTATION,
 } from '../headers';
-import { PRESENTATION_FAILED } from '../constants';
 
 describe('presentation', () => {
   const number = '111';
@@ -241,14 +240,10 @@ describe('presentation', () => {
   });
 
   it('should be failed presentation when sending MUST_STOP_PRESENTATION info fails', async () => {
-    expect.assertions(3);
+    expect.assertions(1);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
-
-    const onPresentationFailedMocked = jest.fn();
-
-    sipConnector.onSession(PRESENTATION_FAILED, onPresentationFailedMocked);
 
     mockFailToSendMustStopPresentationInfo();
 
@@ -259,9 +254,5 @@ describe('presentation', () => {
     });
 
     expect(rejectedError.message).toBe(failedToSendMustStopSendPresentationError);
-    expect(onPresentationFailedMocked).toHaveBeenCalledTimes(1);
-    expect(onPresentationFailedMocked.mock.calls[0][0].message).toBe(
-      failedToSendMustStopSendPresentationError,
-    );
   });
 });

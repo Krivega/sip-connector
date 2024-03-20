@@ -759,15 +759,9 @@ export default class SipConnector {
   }
 
   private async sendMustStopPresentation(session: RTCSession): Promise<void> {
-    await session
-      .sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
-        extraHeaders: [MUST_STOP_PRESENTATION],
-      })
-      .catch((error: Error) => {
-        this._sessionEvents.trigger(PRESENTATION_FAILED, error);
-
-        throw error;
-      });
+    await session.sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
+      extraHeaders: [MUST_STOP_PRESENTATION],
+    });
   }
 
   async stopPresentation({
