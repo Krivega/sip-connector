@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [6.24.2](https://github.com/Krivega/sip-connector/compare/v6.24.1...v6.24.2) (2024-03-20)
+
+### Bug Fixes
+
+- stop incoming presentation in p2p-call before start outgoing presentation ([#32](https://github.com/Krivega/sip-connector/issues/32)) ([e3c179a](https://github.com/Krivega/sip-connector/commit/e3c179a52d4913cd9ae0a3339bddb90a9a93a769))
+
 ### [6.24.1](https://github.com/Krivega/sip-connector/compare/v6.24.0...v6.24.1) (2024-02-27)
 
 ### Bug Fixes
