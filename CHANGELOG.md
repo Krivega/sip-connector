@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [6.24.3](https://github.com/Krivega/sip-connector/compare/v6.24.2...v6.24.3) (2024-03-21)
+
+### Bug Fixes
+
+- add x-webrtc-share-state prefix to sending must-stop-presentation header ([#33](https://github.com/Krivega/sip-connector/issues/33)) ([0991904](https://github.com/Krivega/sip-connector/commit/09919048f62d7780f1a5e1213b897caa99afe7c7))
+
 ### [6.24.2](https://github.com/Krivega/sip-connector/compare/v6.24.1...v6.24.2) (2024-03-20)
 
 ### Bug Fixes
