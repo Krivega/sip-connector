@@ -7,7 +7,7 @@ import {
   CONTENT_TYPE_SHARE_STATE,
   HEADER_START_PRESENTATION,
   HEADER_START_PRESENTATION_P2P,
-  MUST_STOP_PRESENTATION,
+  HEADER_MUST_STOP_PRESENTATION_P2P,
 } from '../headers';
 
 describe('presentation', () => {
@@ -28,7 +28,10 @@ describe('presentation', () => {
         body?: string | undefined,
         options?: ExtraHeaders | undefined,
       ) => {
-        if (options?.extraHeaders && options.extraHeaders[0] === MUST_STOP_PRESENTATION) {
+        if (
+          options?.extraHeaders &&
+          options.extraHeaders[0] === HEADER_MUST_STOP_PRESENTATION_P2P
+        ) {
           throw new Error(failedToSendMustStopSendPresentationError);
         }
 
@@ -216,7 +219,7 @@ describe('presentation', () => {
 
     expect(sendInfoMocked).toHaveBeenCalledTimes(2);
     expect(sendInfoMocked).toHaveBeenNthCalledWith(1, CONTENT_TYPE_SHARE_STATE, undefined, {
-      extraHeaders: [MUST_STOP_PRESENTATION],
+      extraHeaders: [HEADER_MUST_STOP_PRESENTATION_P2P],
     });
     expect(sendInfoMocked).toHaveBeenNthCalledWith(2, CONTENT_TYPE_SHARE_STATE, undefined, {
       extraHeaders: [HEADER_START_PRESENTATION_P2P],
@@ -239,7 +242,7 @@ describe('presentation', () => {
     });
   });
 
-  it('should be failed presentation when sending MUST_STOP_PRESENTATION info fails', async () => {
+  it('should be failed presentation when sending HEADER_MUST_STOP_PRESENTATION_P2P info fails', async () => {
     expect.assertions(1);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
