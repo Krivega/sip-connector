@@ -103,6 +103,7 @@ import {
   HEADER_STOP_PRESENTATION,
   HEADER_STOP_PRESENTATION_P2P,
   MUST_STOP_PRESENTATION,
+  HEADER_MUST_STOP_PRESENTATION_P2P,
   NOT_AVAILABLE_SECOND_REMOTE_STREAM,
 } from './headers';
 import logger from './logger';
@@ -760,7 +761,7 @@ export default class SipConnector {
 
   private async sendMustStopPresentation(session: RTCSession): Promise<void> {
     await session.sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
-      extraHeaders: [MUST_STOP_PRESENTATION],
+      extraHeaders: [HEADER_MUST_STOP_PRESENTATION_P2P],
     });
   }
 
