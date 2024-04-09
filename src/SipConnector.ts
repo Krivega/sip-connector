@@ -62,6 +62,8 @@ import {
   USE_LICENSE,
   WEBCAST_STARTED,
   WEBCAST_STOPPED,
+  SPECTATOR,
+  PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS,
 } from './constants';
 import type { TEventSession, TEventUA } from './eventNames';
 import {
@@ -105,6 +107,8 @@ import {
   MUST_STOP_PRESENTATION,
   HEADER_MUST_STOP_PRESENTATION_P2P,
   NOT_AVAILABLE_SECOND_REMOTE_STREAM,
+  CONTENT_TYPE_PARTICIPANT_STATE,
+  HEADER_CONTENT_PARTICIPANT_STATE,
 } from './headers';
 import logger from './logger';
 import type { EUseLicense, TCustomError, TJsSIP } from './types';
@@ -1746,6 +1750,14 @@ export default class SipConnector {
     this._sessionEvents.trigger(SHARE_STATE, eventName);
   };
 
+  _maybeTriggerParticipantMoveRequestToSpectators = (request: IncomingRequest) => {
+    const participantState = request.getHeader(HEADER_CONTENT_PARTICIPANT_STATE);
+
+    if (participantState === SPECTATOR) {
+      this._sessionEvents.trigger(PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS, undefined);
+    }
+  };
+
   _triggerMainCamControl = (request: IncomingRequest) => {
     const mainCam = request.getHeader(HEADER_MAIN_CAM) as EEventsMainCAM;
 
@@ -1824,6 +1836,10 @@ export default class SipConnector {
         }
         case CONTENT_TYPE_USE_LICENSE: {
           this._triggerUseLicense(request);
+          break;
+        }
+        case CONTENT_TYPE_PARTICIPANT_STATE: {
+          this._maybeTriggerParticipantMoveRequestToSpectators(request);
           break;
         }
 

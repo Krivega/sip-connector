@@ -9,6 +9,7 @@ import {
   acceptingWordRequestHeaders,
   moveRequestToStreamData,
   moveRequestToStreamHeaders,
+  moveRequestToSpectatorsHeaders,
 } from '../__fixtures__/participantMoveRequests';
 import createSipConnector from '../doMock';
 
@@ -70,6 +71,21 @@ describe('participants moveRequests', () => {
       });
 
       JsSIP.triggerNewSipEvent(ua, moveRequestToStreamHeaders);
+    });
+  });
+
+  it('event participant:move-request-to-spectators', async () => {
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    return new Promise<void>((resolve) => {
+      sipConnector.onSession('participant:move-request-to-spectators', (data) => {
+        expect(data).toEqual(undefined);
+
+        resolve();
+      });
+
+      JsSIP.triggerNewInfo(sipConnector.session!, moveRequestToSpectatorsHeaders);
     });
   });
 });

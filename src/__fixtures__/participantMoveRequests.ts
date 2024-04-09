@@ -1,4 +1,11 @@
-import { HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_NOTIFY, HEADER_NOTIFY } from '../headers';
+import { SPECTATOR } from '../constants';
+import {
+  HEADER_CONTENT_TYPE_NAME,
+  CONTENT_TYPE_NOTIFY,
+  HEADER_NOTIFY,
+  HEADER_CONTENT_PARTICIPANT_STATE,
+  CONTENT_TYPE_PARTICIPANT_STATE,
+} from '../headers';
 
 const acceptingWordRequest = {
   cmd: 'ParticipationRequestAccepted',
@@ -41,3 +48,8 @@ export const moveRequestToStreamHeaders: [string, string][] = [
 export const moveRequestToStreamData = {
   conference: moveRequestToStream.body.conference,
 };
+
+export const moveRequestToSpectatorsHeaders: [string, string][] = [
+  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_PARTICIPANT_STATE],
+  [HEADER_CONTENT_PARTICIPANT_STATE, SPECTATOR],
+];
