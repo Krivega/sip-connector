@@ -62,7 +62,6 @@ import {
   USE_LICENSE,
   WEBCAST_STARTED,
   WEBCAST_STOPPED,
-  PARTICIPANT_STATE,
   SPECTATOR,
   PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS,
 } from './constants';
@@ -440,7 +439,6 @@ export default class SipConnector {
     >(this._sendDTMF, { moduleName });
 
     this.onSession(SHARE_STATE, this._handleShareState);
-    this.onSession(PARTICIPANT_STATE, this._handleParticipantState);
     this.onSession(NEW_INFO, this._handleNewInfo);
     this.on(SIP_EVENT, this._handleSipEvent);
 
@@ -1540,12 +1538,6 @@ export default class SipConnector {
     }
   };
 
-  _handleParticipantState = (participantState: string) => {
-    if (participantState === SPECTATOR) {
-      this._sessionEvents.trigger(PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS, undefined);
-    }
-  };
-
   _maybeTriggerChannels = (request: IncomingRequest) => {
     const inputChannels = request.getHeader(HEADER_INPUT_CHANNELS);
     const outputChannels = request.getHeader(HEADER_OUTPUT_CHANNELS);
@@ -1758,10 +1750,12 @@ export default class SipConnector {
     this._sessionEvents.trigger(SHARE_STATE, eventName);
   };
 
-  _triggerParticipantState = (request: IncomingRequest) => {
+  _maybeTriggerParticipantMoveRequestToSpectators = (request: IncomingRequest) => {
     const participantState = request.getHeader(HEADER_CONTENT_PARTICIPANT_STATE);
 
-    this._sessionEvents.trigger(PARTICIPANT_STATE, participantState);
+    if (participantState === SPECTATOR) {
+      this._sessionEvents.trigger(PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS, undefined);
+    }
   };
 
   _triggerMainCamControl = (request: IncomingRequest) => {
@@ -1845,7 +1839,7 @@ export default class SipConnector {
           break;
         }
         case CONTENT_TYPE_PARTICIPANT_STATE: {
-          this._triggerParticipantState(request);
+          this._maybeTriggerParticipantMoveRequestToSpectators(request);
           break;
         }
 

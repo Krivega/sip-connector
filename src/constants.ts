@@ -71,4 +71,3 @@ export const PRESENTATION_END = 'presentation:end';
 export const PRESENTATION_ENDED = 'presentation:ended';
 export const PRESENTATION_FAILED = 'presentation:failed';
 export const SPECTATOR = 'SPECTATOR';
-export const PARTICIPANT_STATE = 'participantState';
