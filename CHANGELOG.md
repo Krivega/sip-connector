@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.25.0](https://github.com/Krivega/sip-connector/compare/v6.24.3...v6.25.0) (2024-04-09)
+
+### Features
+
+- add move-request-to-spectators session event ([#34](https://github.com/Krivega/sip-connector/issues/34)) ([854b4c2](https://github.com/Krivega/sip-connector/commit/854b4c20ccfc0e2b885e91289137ddcab025b4c4))
+
 ### [6.24.3](https://github.com/Krivega/sip-connector/compare/v6.24.2...v6.24.3) (2024-03-21)
 
 ### Bug Fixes
