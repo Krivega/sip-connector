@@ -21,6 +21,9 @@ export const HEADER_MEDIA_TYPE = 'X-Vinteo-Media-Type';
 export const HEADER_MAIN_CAM_STATE = 'X-Vinteo-MainCam-State';
 export const HEADER_MIC_STATE = 'X-Vinteo-Mic-State';
 
+export const CONTENT_TYPE_PARTICIPANT_STATE = 'application/vinteo.webrtc.partstate';
+export const HEADER_CONTENT_PARTICIPANT_STATE = 'X-WEBRTC-PARTSTATE';
+
 export const CONTENT_TYPE_NOTIFY = 'application/vinteo.webrtc.notify';
 export const HEADER_NOTIFY = 'X-VINTEO-NOTIFY';
 

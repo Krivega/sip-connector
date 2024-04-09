@@ -9,6 +9,7 @@ export { PURGATORY_CONFERENCE_NUMBER, default as hasPurgatory } from './hasPurga
 export { default as resolveAskPermissionToEnableCam } from './resolveAskPermissionToEnableCam';
 export { default as resolveGetRemoteStreams } from './resolveGetRemoteStreams';
 export { default as resolveOnMustStopPresentation } from './resolveOnMustStopPresentation';
+export { default as resolveOnMoveToSpectators } from './resolveOnMoveToSpectators';
 export { default as resolveOnUseLicense } from './resolveOnUseLicense';
 export { default as resolveSendMediaState } from './resolveSendMediaState';
 export { default as resolveSendRefusalToTurnOnCam } from './resolveSendRefusalToTurnOnCam';
