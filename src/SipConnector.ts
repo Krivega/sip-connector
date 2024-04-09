@@ -1541,15 +1541,8 @@ export default class SipConnector {
   };
 
   _handleParticipantState = (participantState: string) => {
-    switch (participantState) {
-      case SPECTATOR: {
-        this._sessionEvents.trigger(PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS, undefined);
-        break;
-      }
-
-      default: {
-        break;
-      }
+    if (participantState === SPECTATOR) {
+      this._sessionEvents.trigger(PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS, undefined);
     }
   };
 
