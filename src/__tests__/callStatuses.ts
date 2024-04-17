@@ -41,7 +41,7 @@ describe('call statuses', () => {
       sipConnector.onSession('connecting', () => {
         mockFunctionConnecting();
 
-        sipConnector.onSession('enterRoom', (room: string) => {
+        sipConnector.onSession('enterRoom', ({ room }: { room: string }) => {
           conference = room;
 
           mockFunctionEnterRoom();

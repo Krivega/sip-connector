@@ -86,7 +86,7 @@ class Session extends BaseSession {
         this.trigger('connecting');
 
         setTimeout(() => {
-          this.trigger('enterRoom', room);
+          this.trigger('enterRoom', { room });
         }, 100);
 
         setTimeout(() => {
