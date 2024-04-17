@@ -103,6 +103,7 @@ import {
   HEADER_MUST_STOP_PRESENTATION_P2P,
   HEADER_NOTIFY,
   HEADER_OUTPUT_CHANNELS,
+  HEADER_PARTICIPANT_NAME,
   HEADER_START_PRESENTATION,
   HEADER_START_PRESENTATION_P2P,
   HEADER_STOP_PRESENTATION,
@@ -1740,8 +1741,9 @@ export default class SipConnector {
 
   _triggerEnterRoom = (request: IncomingRequest) => {
     const room = request.getHeader(HEADER_CONTENT_ENTER_ROOM);
+    const participantName = request.getHeader(HEADER_PARTICIPANT_NAME);
 
-    this._sessionEvents.trigger(ENTER_ROOM, room);
+    this._sessionEvents.trigger(ENTER_ROOM, { room, participantName });
   };
 
   _triggerShareState = (request: IncomingRequest) => {

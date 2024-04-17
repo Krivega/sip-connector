@@ -10,6 +10,7 @@ export const CONTENT_TYPE_MAIN_CAM = 'application/vinteo.webrtc.maincam';
 export const CONTENT_TYPE_MIC = 'application/vinteo.webrtc.mic';
 export const CONTENT_TYPE_USE_LICENSE = 'application/vinteo.webrtc.uselic';
 export const HEADER_CONTENT_USE_LICENSE = 'X-WEBRTC-USE-LICENSE';
+export const HEADER_PARTICIPANT_NAME = 'X-WEBRTC-PARTICIPANT-NAME';
 export const HEADER_INPUT_CHANNELS = 'X-WEBRTC-INPUT-CHANNELS';
 export const HEADER_OUTPUT_CHANNELS = 'X-WEBRTC-OUTPUT-CHANNELS';
 export const HEADER_MAIN_CAM = 'X-WEBRTC-MAINCAM';
