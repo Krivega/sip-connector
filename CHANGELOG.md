@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [7.0.0](https://github.com/Krivega/sip-connector/compare/v6.25.0...v7.0.0) (2024-04-17)
+
+### ⚠ BREAKING CHANGES
+
+- add X-WEBRTC-PARTICIPANT-NAME to enterroom (#35)
+
+### Features
+
+- add X-WEBRTC-PARTICIPANT-NAME to enterroom ([#35](https://github.com/Krivega/sip-connector/issues/35)) ([1973f1d](https://github.com/Krivega/sip-connector/commit/1973f1dca6ea9717ff6eb802858479a165d2443e))
+
 ## [6.25.0](https://github.com/Krivega/sip-connector/compare/v6.24.3...v6.25.0) (2024-04-09)
 
 ### Features
