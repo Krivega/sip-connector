@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [7.0.2](https://github.com/Krivega/sip-connector/compare/v7.0.1...v7.0.2) (2024-04-24)
+
+### Bug Fixes
+
+- trigger main-cam-control event by RESUME_MAIN_CAM or PAUSE_MAIN_CAM infos ([#37](https://github.com/Krivega/sip-connector/issues/37)) ([559fde4](https://github.com/Krivega/sip-connector/commit/559fde4aa769d6f063ff6b7c1e8599bb29846486))
+
 ### [7.0.1](https://github.com/Krivega/sip-connector/compare/v7.0.0...v7.0.1) (2024-04-24)
 
 ### Bug Fixes
