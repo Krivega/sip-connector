@@ -5,7 +5,14 @@ import {
 } from 'webrtc-mock';
 import RTCPeerConnectionMock from '../../__fixtures__/RTCPeerConnectionMock';
 
+const PURGATORY_NUMBER = 'purgatory';
+
+export const onEnterPurgatory = jest.fn();
+export const onEnterConference = jest.fn();
+
 const data = {
+  onEnterPurgatory,
+  onEnterConference,
   mediaStream: createMediaStreamMock({
     video: {
       deviceId: {
@@ -24,6 +31,13 @@ const data = {
 };
 
 export default data;
+
+export const dataCallPurgatory = {
+  ...data,
+  onEnterPurgatory,
+  onEnterConference,
+  conference: PURGATORY_NUMBER,
+};
 
 const audioTrack = createAudioMediaStreamTrackMock();
 const videoTrack = createVideoMediaStreamTrackMock();

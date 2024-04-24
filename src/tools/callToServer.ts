@@ -65,7 +65,7 @@ const resolveCallToServer = (sipConnector: SipConnector) => {
       log('subscribeEnterConference: onEnterConference', onEnterConference);
 
       if (onEnterPurgatory ?? onEnterConference) {
-        return sipConnector.onSession('enterRoom', (_room: string) => {
+        return sipConnector.onSession('enterRoom', ({ room: _room }: { room: string }) => {
           log('enterRoom', { _room, isSuccessProgressCall });
 
           room = _room;
