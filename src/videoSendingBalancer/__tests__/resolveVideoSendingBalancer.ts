@@ -1,6 +1,5 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 import type SipConnector from '../../SipConnector';
-import findVideoSender from '../../utils/findVideoSender';
 import { dataForConnectionWithAuthorization } from '../../__fixtures__';
 import JsSIP from '../../__fixtures__/jssip.mock';
 import createSipConnector from '../../doMock';
@@ -11,9 +10,10 @@ import {
   HEADER_MAIN_CAM_RESOLUTION,
 } from '../../headers';
 import { EEventsMainCAM } from '../../types';
+import findVideoSender from '../../utils/findVideoSender';
+import { MINIMUM_BITRATE } from '../getMaxBitrateByWidth';
 import getMaxBitrateByWidthAndCodec from '../getMaxBitrateByWidthAndCodec';
 import resolveVideoSendingBalancer from '../index';
-import { MINIMUM_BITRATE } from '../getMaxBitrateByWidth';
 
 const number = '111';
 
@@ -41,7 +41,6 @@ const headersMaxMainCamResolution: [string, string][] = [
 ];
 
 describe('resolveVideoSendingBalancer', () => {
-
   let sipConnector: SipConnector;
   let mediaStream: MediaStream;
   let videoSendingBalancer: ReturnType<typeof resolveVideoSendingBalancer>;
