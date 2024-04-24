@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [7.0.1](https://github.com/Krivega/sip-connector/compare/v7.0.0...v7.0.1) (2024-04-24)
+
+### Bug Fixes
+
+- enterRoom data format changed ([#36](https://github.com/Krivega/sip-connector/issues/36)) ([eb0c0ce](https://github.com/Krivega/sip-connector/commit/eb0c0ce21ab848a663af5a876ff2e3d497dd7f79))
+
 ## [7.0.0](https://github.com/Krivega/sip-connector/compare/v6.25.0...v7.0.0) (2024-04-17)
 
 ### ⚠ BREAKING CHANGES
