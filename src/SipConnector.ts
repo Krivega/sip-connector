@@ -1768,21 +1768,29 @@ export default class SipConnector {
 
     if (mainCam === EEventsMainCAM.ADMIN_START_MAIN_CAM) {
       this._sessionEvents.trigger(ADMIN_START_MAIN_CAM, { isSyncForced });
-    } else if (mainCam === EEventsMainCAM.ADMIN_STOP_MAIN_CAM) {
+
+      return;
+    }
+
+    if (mainCam === EEventsMainCAM.ADMIN_STOP_MAIN_CAM) {
       this._sessionEvents.trigger(ADMIN_STOP_MAIN_CAM, { isSyncForced });
-    } else if (
+
+      return;
+    }
+
+    if (
       (mainCam === EEventsMainCAM.RESUME_MAIN_CAM || mainCam === EEventsMainCAM.PAUSE_MAIN_CAM) &&
       !!syncState
     ) {
       this._sessionEvents.trigger(ADMIN_FORCE_SYNC_MEDIA_STATE, { isSyncForced });
-    } else {
-      const resolutionMainCam = request.getHeader(HEADER_MAIN_CAM_RESOLUTION);
-
-      this._sessionEvents.trigger(MAIN_CAM_CONTROL, {
-        mainCam,
-        resolutionMainCam,
-      });
     }
+
+    const resolutionMainCam = request.getHeader(HEADER_MAIN_CAM_RESOLUTION);
+
+    this._sessionEvents.trigger(MAIN_CAM_CONTROL, {
+      mainCam,
+      resolutionMainCam,
+    });
   };
 
   _triggerMicControl = (request: IncomingRequest) => {
