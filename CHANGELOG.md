@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [7.0.3](https://github.com/Krivega/sip-connector/compare/v7.0.2...v7.0.3) (2024-05-08)
+
+### Bug Fixes
+
+- use async terminate ([f88598f](https://github.com/Krivega/sip-connector/commit/f88598f6335a9801b3ed888885a3e2d5e59b55f2))
+
 ### [7.0.2](https://github.com/Krivega/sip-connector/compare/v7.0.1...v7.0.2) (2024-04-24)
 
 ### Bug Fixes
