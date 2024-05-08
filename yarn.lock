@@ -967,10 +967,10 @@
   resolved "https://registry.yarnpkg.com/@krivega/cancelable-promise/-/cancelable-promise-1.1.0.tgz#9771932f8dff3da283e5568cbbf40a7bfc981d3c"
   integrity sha512-Zj0M6QW8trZmbM8dezuw13OKTBInBYGu4xCUIR+AoUkTdNmNFa5XaEnY3Y9K8V1fxyPyL/pIKyENvrc3kfOMDg==
 
-"@krivega/jssip@^3.23.8":
-  version "3.23.8"
-  resolved "https://registry.yarnpkg.com/@krivega/jssip/-/jssip-3.23.8.tgz#e818447f15708f424c5a48048c6d7a1de4256d15"
-  integrity sha512-H5AVLyT1ETkfgYj9zD2zW48gbrfXBu2He+EtCWcMeogDfkQQF/oCigI62Xun7nzP/y4o0v3/UmHSFK0n3KPvOw==
+"@krivega/jssip@^3.24.0":
+  version "3.24.0"
+  resolved "https://registry.yarnpkg.com/@krivega/jssip/-/jssip-3.24.0.tgz#82e5f0e7afae1cb3a8465815a846b60fa01744c9"
+  integrity sha512-HmPtnTJ4qizxwgr3SyKXMGWwPRe6L0gArGM3s5smqGineEBnI0xdSFWrrE5hnCcp+o8jFbEnwCyILtJJrWkxSw==
   dependencies:
     "@types/debug" "^4.1.12"
     "@types/events" "^3.0.3"

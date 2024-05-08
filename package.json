@@ -63,7 +63,7 @@
   },
   "dependencies": {
     "@krivega/cancelable-promise": "^1.1.0",
-    "@krivega/jssip": "^3.23.8",
+    "@krivega/jssip": "^3.24.0",
     "debug": "^4.3.4",
     "events-constructor": "^1.2.2",
     "sequent-promises": "^1.0.2",
@@ -109,7 +109,7 @@
   },
   "peerDependencies": {
     "@krivega/cancelable-promise": "^1.1.0",
-    "@krivega/jssip": "^3.22.0",
+    "@krivega/jssip": "^3.24.0",
     "debug": "^4.3.4",
     "events-constructor": "^1.2.2",
     "ts-debounce": "^4.0.0"
