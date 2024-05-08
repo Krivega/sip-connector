@@ -1493,9 +1493,11 @@ export default class SipConnector {
       this._restoreSession();
 
       if (!session.isEnded()) {
-        session.terminate();
+        return session.terminateAsync();
       }
     }
+
+    return undefined;
   };
 
   _cancelRequests() {
