@@ -67,7 +67,7 @@
     "debug": "^4.3.4",
     "events-constructor": "^1.2.2",
     "sequent-promises": "^2.0.0",
-    "stack-promises": "^1.0.2",
+    "stack-promises": "^2.0.1",
     "ts-debounce": "^4.0.0",
     "webrtc-mock": "^1.0.2"
   },
@@ -113,7 +113,7 @@
     "debug": "^4.3.4",
     "events-constructor": "^1.2.2",
     "sequent-promises": "^2.0.0",
-    "stack-promises": "^1.0.2",
+    "stack-promises": "^2.0.1",
     "ts-debounce": "^4.0.0",
     "webrtc-mock": "^1.0.2"
   },

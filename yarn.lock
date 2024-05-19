@@ -5557,11 +5557,6 @@ sequent-promises@^0.1.4:
   resolved "https://registry.yarnpkg.com/sequent-promises/-/sequent-promises-0.1.4.tgz#22ece4d3aea1ab0fac8e2169efd3d20655912327"
   integrity sha512-k900gtmVFYMqvrj/s/8owoCz4xgW58IVKkErRoXQ8LSIhY3F2KBMpsCp+KqcB8cSGz6+1jSu7AX5cY8p2CwPIg==
 
-sequent-promises@^1.0.0:
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/sequent-promises/-/sequent-promises-1.0.3.tgz#f724628161a2a462466b165286a5fc87626b4b89"
-  integrity sha512-HlsNo56+YAbbJhbPaWgo4D4Vn+Zy5z/nOC650zb9qBX9TTRwKqPyaJD8aJ9UKugzO8fAELdN2cXA83ZO7I/1QQ==
-
 sequent-promises@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/sequent-promises/-/sequent-promises-2.0.0.tgz#f7a343c953f90e6b6dc0c60c28cee567f1d1b344"
@@ -5715,12 +5710,12 @@ sprintf-js@~1.0.2:
   resolved "https://registry.yarnpkg.com/sprintf-js/-/sprintf-js-1.0.3.tgz#04e6926f662895354f3dd015203633b857297e2c"
   integrity sha512-D9cPgkvLlV3t3IzL0D0YLvGA9Ahk4PcvVwUbN0dSGr1aP0Nrt4AEnTUbuGvquEC0mA64Gqt1fzirlRs5ibXx8g==
 
-stack-promises@^1.0.2:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/stack-promises/-/stack-promises-1.0.2.tgz#4c88ef353b846a38000fdf9d293251049178a8c2"
-  integrity sha512-u9wEhrLIU+emycIUTiYNWmkTXMWzVjnBGU8thZgM/0kBYaGX/14sga0Q+It9e3yBtSyLik4XGUwEe6bNy0qgsg==
+stack-promises@^2.0.1:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/stack-promises/-/stack-promises-2.0.1.tgz#40829d79c463d0fbe8e8aac6be73f365f9d8f0de"
+  integrity sha512-Ia7IGB+Lat3TDutGDomxhGaepCSjMo/vFK7rku6h7OJtAblvIt4a2hpcZOqkzB8+CEsI0cjI6tPaqZUhtrFUpA==
   dependencies:
-    sequent-promises "^1.0.0"
+    sequent-promises "^2.0.0"
 
 stack-utils@^2.0.3:
   version "2.0.6"
