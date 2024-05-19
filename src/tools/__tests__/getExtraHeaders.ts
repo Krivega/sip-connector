@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import getExtraHeaders from '../getExtraHeaders';
 
 describe('getExtraHeaders', () => {

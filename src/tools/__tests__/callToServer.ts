@@ -1,9 +1,10 @@
+/// <reference types="jest" />
 import doMockSIPconnector from '../../doMock';
 import dataCall, {
-  peerConnectionFromData,
   dataCallPurgatory,
-  onEnterPurgatory,
   onEnterConference,
+  onEnterPurgatory,
+  peerConnectionFromData,
 } from '../__fixtures__/call';
 import { dataForConnectionWithoutAuthorization } from '../__fixtures__/connectToServer';
 import parseObject from '../__tests-utils__/parseObject';

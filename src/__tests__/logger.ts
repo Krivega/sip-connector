@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import { debug, disableDebug, enableDebug } from '../index';
 
 const mockEnableDebug = jest.fn();

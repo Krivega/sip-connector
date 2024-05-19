@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import doMockSIPconnector from '../../doMock';
 import dataCall from '../__fixtures__/call';
 import { dataForConnectionWithoutAuthorization } from '../__fixtures__/connectToServer';

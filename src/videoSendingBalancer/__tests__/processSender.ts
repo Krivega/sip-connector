@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import { createVideoMediaStreamTrackMock } from 'webrtc-mock';
 import RTCRtpSenderMock from '../../__fixtures__/RTCRtpSenderMock';
 import { EEventsMainCAM } from '../../types';

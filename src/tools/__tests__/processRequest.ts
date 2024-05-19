@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 // @ts-nocheck
 
 import type SipConnector from '../../SipConnector';

@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import hasIncludesString from '../hasIncludesString';
 
 describe('hasIncludesString', () => {

@@ -1,4 +1,4 @@
-import sequentPromises from 'sequent-promises';
+import { sequentPromises } from 'sequent-promises';
 
 type TSendKey = (values: string) => Promise<void>;
 
