@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [7.0.6](https://github.com/Krivega/sip-connector/compare/v7.0.5...v7.0.6) (2024-05-21)
+
+### Bug Fixes
+
+- exports cjs ([14977a6](https://github.com/Krivega/sip-connector/commit/14977a6ec885a3caec5eecaf7d62a7ba819f97fd))
+
 ### [7.0.5](https://github.com/Krivega/sip-connector/compare/v7.0.4...v7.0.5) (2024-05-19)
 
 ### [7.0.4](https://github.com/Krivega/sip-connector/compare/v7.0.3...v7.0.4) (2024-05-19)
