@@ -66,6 +66,7 @@
     "@krivega/jssip": "^3.24.2",
     "debug": "^4.3.4",
     "events-constructor": "^1.2.3",
+    "repeated-calls": "^2.0.1",
     "sequent-promises": "^2.0.1",
     "stack-promises": "^2.0.2",
     "ts-debounce": "^4.0.0",

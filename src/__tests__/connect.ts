@@ -11,17 +11,37 @@ import {
   uaConfigurationWithAuthorizationWithDisplayName,
   uaConfigurationWithoutAuthorization,
   uaConfigurationWithoutAuthorizationWithoutDisplayName,
+  SIP_SERVER_URL,
 } from '../__fixtures__';
 import createSipConnector from '../doMock';
+import UAMock from '../__fixtures__/UA.mock';
 import { uriWithName } from '../tools/__fixtures__/connectToServer';
 
 const wrongPassword = 'wrongPassword';
+
+const websocketHandshakeTimeoutError = {
+  socket: {
+    _url: `wss://${SIP_SERVER_URL}/webrtc/wss/`,
+    _sip_uri: `sip:${SIP_SERVER_URL};transport=ws`,
+    _via_transport: 'WSS',
+    _ws: null,
+  },
+  error: true,
+  code: 1006,
+  reason: '',
+};
+
+const connectCallLimit = 3;
 
 describe('connect', () => {
   let sipConnector: SipConnector;
 
   beforeEach(() => {
     sipConnector = createSipConnector();
+  });
+
+  afterEach(() => {
+    UAMock.resetStartError();
   });
 
   it('authorization user', async () => {
@@ -35,14 +55,16 @@ describe('connect', () => {
   it('authorization user with wrong password', async () => {
     expect.assertions(1);
 
-    return sipConnector
+    const rejectedError = await sipConnector
       .connect({
         ...dataForConnectionWithAuthorizationWithDisplayName,
         password: wrongPassword,
       })
       .catch((error: unknown) => {
-        expect(error).toEqual({ response: null, cause: 'Wrong credentials' });
+        return error;
       });
+
+    expect(rejectedError).toEqual({ response: null, cause: 'Wrong credentials' });
   });
 
   it('and change sipServerUrl', async () => {
@@ -244,5 +266,26 @@ describe('connect', () => {
 
     // @ts-expect-error
     expect(ua.registrator().extraHeaders).toEqual([...extraHeadersRemoteAddress, ...extraHeaders]);
+  });
+
+  it('should repeat connection process when connection has failed with 1006 error', async () => {
+    expect.assertions(2);
+
+    UAMock.setStartError(websocketHandshakeTimeoutError);
+
+    // @ts-expect-error
+    sipConnector.JsSIP.UA = UAMock;
+
+    // @ts-expect-error
+    const requestConnectMocked = jest.spyOn(sipConnector._cancelableConnect, 'request');
+
+    const rejectedError = (await sipConnector
+      .connect(dataForConnectionWithoutAuthorization, { callLimit: connectCallLimit })
+      .catch((error: unknown) => {
+        return error;
+      })) as Error;
+
+    expect(rejectedError).toEqual([websocketHandshakeTimeoutError]);
+    expect(requestConnectMocked).toHaveBeenCalledTimes(connectCallLimit);
   });
 });

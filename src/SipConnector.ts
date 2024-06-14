@@ -13,6 +13,7 @@ import type {
   WebSocketInterface,
 } from '@krivega/jssip';
 import Events from 'events-constructor';
+import { repeatedCallsAsync } from 'repeated-calls';
 import { BYE, CANCELED, REJECTED, REQUEST_TIMEOUT } from './causes';
 import {
   ACCOUNT_CHANGED,
@@ -128,6 +129,7 @@ const BUSY_HERE_STATUS_CODE = 486;
 const REQUEST_TERMINATED_STATUS_CODE = 487;
 const ORIGINATOR_LOCAL = 'local';
 const ORIGINATOR_REMOTE = 'remote';
+const DELAYED_REPEATED_CALLS_CONNECT_LIMIT = 3;
 
 export const hasCanceledCallError = (error: TCustomError = new Error()): boolean => {
   const { originator, cause } = error;
@@ -271,7 +273,10 @@ type TParametersCheckTelephony = {
   userAgent?: string;
 };
 
-type TConnect = (parameters: TParametersConnection) => Promise<UA>;
+type TConnect = (
+  parameters: TParametersConnection,
+  options?: { callLimit?: number },
+) => Promise<UA>;
 type TInitUa = (parameters: TParametersConnection) => Promise<UA>;
 type TCreateUa = (parameters: TParametersCreateUa) => UA;
 type TStart = () => Promise<UA>;
@@ -447,10 +452,33 @@ export default class SipConnector {
     this.onSession(ENDED, this._handleEnded);
   }
 
-  connect: TConnect = async (data) => {
+  connect: TConnect = async (data, { callLimit = DELAYED_REPEATED_CALLS_CONNECT_LIMIT } = {}) => {
     this._cancelRequests();
 
-    return this._cancelableConnect.request(data);
+    let isFirstRequest = true;
+
+    const targetFunction = async () => {
+      isFirstRequest = false;
+
+      return this._cancelableConnect.request(data);
+    };
+
+    const isComplete = (): boolean => {
+      const isConnected = !!this.ua?.isConnected() && !isFirstRequest;
+      const isCanceled = this._cancelableConnect.canceled && !isFirstRequest;
+
+      return isConnected || isCanceled;
+    };
+
+    return repeatedCallsAsync<UA, any>({
+      targetFunction,
+      isComplete,
+      callLimit,
+      isRejectAsValid: true,
+    }).catch((error: unknown) => {
+      // @ts-expect-error
+      throw error.values.lastResult;
+    });
   };
 
   initUa: TInitUa = async (data) => {

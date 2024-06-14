@@ -20,6 +20,16 @@ const CONNECTION_DELAY = 400; // more 300 for test cancel requests with debounce
 class UA implements IUA {
   private static isAvailableTelephony = true;
 
+  private static startError?: unknown;
+
+  public static setStartError(startError: unknown) {
+    this.startError = startError;
+  }
+
+  public static resetStartError() {
+    this.startError = undefined;
+  }
+
   public static setAvailableTelephony() {
     this.isAvailableTelephony = true;
   }
@@ -59,12 +69,22 @@ class UA implements IUA {
     this._registrator = new Registrator();
   }
 
+  isConnected() {
+    return !!this._isConnected;
+  }
+
   /**
    * start
    *
    * @returns {undefined}
    */
   start() {
+    if (UA.startError) {
+      this.trigger('disconnected', [UA.startError]);
+
+      return;
+    }
+
     this.register();
   }
 
