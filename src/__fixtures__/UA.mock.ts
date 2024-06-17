@@ -15,6 +15,20 @@ export const PASSWORD_CORRECT = 'PASSWORD_CORRECT';
 export const PASSWORD_CORRECT_2 = 'PASSWORD_CORRECT_2';
 export const NAME_INCORRECT = 'NAME_INCORRECT';
 
+export const createWebsocketHandshakeTimeoutError = (sipServerUrl: string) => {
+  return {
+    socket: {
+      _url: `wss://${sipServerUrl}/webrtc/wss/`,
+      _sip_uri: `sip:${sipServerUrl};transport=ws`,
+      _via_transport: 'WSS',
+      _ws: null,
+    },
+    error: true,
+    code: 1006,
+    reason: '',
+  };
+};
+
 const CONNECTION_DELAY = 400; // more 300 for test cancel requests with debounced
 
 class UA implements IUA {
@@ -22,12 +36,22 @@ class UA implements IUA {
 
   private static startError?: unknown;
 
-  public static setStartError(startError: unknown) {
+  private static countStartError: number = Number.POSITIVE_INFINITY;
+
+  private static countStarts = 0;
+
+  public static setStartError(
+    startError: unknown,
+    { count = Number.POSITIVE_INFINITY }: { count?: number } = {},
+  ) {
     this.startError = startError;
+    this.countStartError = count;
   }
 
   public static resetStartError() {
     this.startError = undefined;
+    this.countStartError = Number.POSITIVE_INFINITY;
+    this.countStarts = 0;
   }
 
   public static setAvailableTelephony() {
@@ -79,7 +103,9 @@ class UA implements IUA {
    * @returns {undefined}
    */
   start() {
-    if (UA.startError) {
+    UA.countStarts += 1;
+
+    if (UA.startError && UA.countStarts < UA.countStartError) {
       this.trigger('disconnected', [UA.startError]);
 
       return;

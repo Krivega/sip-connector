@@ -7,11 +7,11 @@ import type {
   OutgoingInfoEvent,
   RTCSession,
   RegisteredEvent,
+  UA,
   URI,
   UnRegisteredEvent,
   WebSocketInterface,
 } from '@krivega/jssip';
-import { UA } from '@krivega/jssip';
 import Events from 'events-constructor';
 import { repeatedCallsAsync } from 'repeated-calls';
 import { BYE, CANCELED, REJECTED, REQUEST_TIMEOUT } from './causes';
@@ -66,6 +66,7 @@ import {
   WEBCAST_STARTED,
   WEBCAST_STOPPED,
 } from './constants';
+import createUaConfiguration from './createUaConfiguration';
 import type { TEventSession, TEventUA } from './eventNames';
 import {
   SESSION_EVENT_NAMES,
@@ -113,16 +114,19 @@ import {
   NOT_AVAILABLE_SECOND_REMOTE_STREAM,
 } from './headers';
 import logger from './logger';
-import type { EUseLicense, TCustomError, TJsSIP } from './types';
+import type {
+  EUseLicense,
+  TCustomError,
+  TGetServerUrl,
+  TJsSIP,
+  TParametersCreateUa,
+} from './types';
 import { EEventsMainCAM, EEventsMic, EEventsSyncMediaState } from './types';
+import { hasVideoTracks, parseDisplayName, prepareMediaStream, resolveSipUrl } from './utils';
 import {
-  generateUserId,
-  hasVideoTracks,
-  parseDisplayName,
-  prepareMediaStream,
-  resolveSipUrl,
-} from './utils';
-import { hasDeclineResponseFromServer, hasHandshakeWebsocketOpeningError } from './utils/errors';
+  hasDeclineResponseFromServer,
+  hasIncludesHandshakeWebsocketOpeningError,
+} from './utils/errors';
 import scaleBitrate from './videoSendingBalancer/scaleBitrate';
 
 const BUSY_HERE_STATUS_CODE = 486;
@@ -233,7 +237,6 @@ type TOptionsExtraHeaders = {
 };
 
 type TOntrack = (track: RTCTrackEvent) => void;
-type TGetServerUrl = (id: string) => string;
 
 type TParametersConnection = TOptionsExtraHeaders & {
   displayName?: string;
@@ -243,20 +246,6 @@ type TParametersConnection = TOptionsExtraHeaders & {
   sipServerUrl: string;
   sipWebSocketServerURL: string;
   remoteAddress?: string;
-  sdpSemantics?: 'plan-b' | 'unified-plan';
-  sessionTimers?: boolean;
-  registerExpires?: number;
-  connectionRecoveryMinInterval?: number;
-  connectionRecoveryMaxInterval?: number;
-  userAgent?: string;
-};
-type TParametersCreateUa = {
-  socket: WebSocketInterface;
-  displayName: string;
-  getSipServerUrl: TGetServerUrl;
-  user?: string;
-  register?: boolean;
-  password?: string;
   sdpSemantics?: 'plan-b' | 'unified-plan';
   sessionTimers?: boolean;
   registerExpires?: number;
@@ -358,6 +347,10 @@ export default class SipConnector {
     Parameters<TConnect>[0],
     ReturnType<TConnect>
   >;
+
+  private _cancelableConnectWithRepeatedCalls:
+    | ReturnType<typeof repeatedCallsAsync<UA>>
+    | undefined;
 
   private readonly _cancelableInitUa: CancelableRequest<
     Parameters<TInitUa>[0],
@@ -684,29 +677,67 @@ export default class SipConnector {
       return this._cancelableConnect.request(data);
     };
 
-    const isComplete = (response: unknown): boolean => {
+    const isComplete = (response?: unknown): boolean => {
       const isConnected = !!this.ua?.isConnected();
-      const isCanceled = this._cancelableConnect.canceled;
-      const isValidState = isConnected || isCanceled;
+      const isValidState =
+        !isFirstRequest && isConnected && this.hasEqualConnectionConfiguration(data);
+      const isValidError = !!response && !hasIncludesHandshakeWebsocketOpeningError(response);
 
-      const isHandshakeWebsocketOpeningError = hasHandshakeWebsocketOpeningError(response);
-
-      return isValidState && !isFirstRequest && !isHandshakeWebsocketOpeningError;
+      return isValidState || isValidError;
     };
 
-    return repeatedCallsAsync<UA, unknown>({
+    this._cancelableConnectWithRepeatedCalls = repeatedCallsAsync<UA>({
       targetFunction,
       isComplete,
       callLimit,
       isRejectAsValid: true,
-    }).then((response) => {
-      if (response instanceof UA) {
+      onAfterCancel: () => {
+        this._cancelableConnect.cancelRequest();
+      },
+    });
+
+    return this._cancelableConnectWithRepeatedCalls.then((response?: unknown) => {
+      if (response instanceof this.JsSIP.UA) {
         return response;
       }
 
       throw response;
     });
   };
+
+  private hasEqualConnectionConfiguration(parameters: TParametersConnection) {
+    const { socket, getSipServerUrl } = this;
+    const { displayName } = parameters;
+
+    if (!socket || displayName === undefined) {
+      return false;
+    }
+
+    const newConfiguration = createUaConfiguration({
+      ...parameters,
+      displayName,
+      socket,
+      getSipServerUrl,
+    });
+
+    const uaConfiguration = this.ua?.configuration;
+
+    return (
+      uaConfiguration?.password === newConfiguration.password &&
+      uaConfiguration?.register === newConfiguration.register &&
+      uaConfiguration?.uri.toString() === newConfiguration.uri &&
+      uaConfiguration?.display_name === newConfiguration.display_name &&
+      uaConfiguration?.user_agent === newConfiguration.user_agent &&
+      uaConfiguration?.sdpSemantics === newConfiguration.sdp_semantics &&
+      uaConfiguration?.sockets === newConfiguration.sockets &&
+      uaConfiguration?.session_timers === newConfiguration.session_timers &&
+      uaConfiguration?.register_expires === newConfiguration.register_expires &&
+      uaConfiguration?.connection_recovery_min_interval ===
+        newConfiguration.connection_recovery_min_interval &&
+      uaConfiguration?.connection_recovery_max_interval ===
+        newConfiguration.connection_recovery_max_interval
+    );
+  }
 
   private async _sendPresentation(
     session: RTCSession,
@@ -1114,41 +1145,8 @@ export default class SipConnector {
     return this.ua;
   };
 
-  _createUa: TCreateUa = ({
-    user,
-    password,
-    socket,
-    displayName,
-    getSipServerUrl,
-    register = false,
-    sdpSemantics = 'plan-b',
-    sessionTimers = false,
-    registerExpires = 60 * 5, // 5 minutes in sec
-    connectionRecoveryMinInterval = 2,
-    connectionRecoveryMaxInterval = 6,
-    userAgent,
-  }): UA => {
-    if (register && !password) {
-      throw new Error('password is required for authorized connection');
-    }
-
-    const authorizationUser = register && user ? user.trim() : `${generateUserId()}`;
-    const uri = getSipServerUrl(authorizationUser);
-
-    const configuration = {
-      password,
-      register,
-      uri,
-      display_name: parseDisplayName(displayName),
-      user_agent: userAgent,
-      sdp_semantics: sdpSemantics,
-      sockets: [socket],
-      session_timers: sessionTimers,
-      register_expires: registerExpires,
-
-      connection_recovery_min_interval: connectionRecoveryMinInterval,
-      connection_recovery_max_interval: connectionRecoveryMaxInterval,
-    };
+  _createUa: TCreateUa = (parametersCreateUa: TParametersCreateUa): UA => {
+    const configuration = createUaConfiguration(parametersCreateUa);
 
     return new this.JsSIP.UA(configuration);
   };
@@ -1544,11 +1542,11 @@ export default class SipConnector {
   _cancelRequests() {
     this._cancelActionsRequests();
     this._cancelCallRequests();
-    this._cancelConnectRequests();
+    this._cancelConnectWithRepeatedCalls();
   }
 
-  _cancelConnectRequests() {
-    this._cancelableConnect.cancelRequest();
+  _cancelConnectWithRepeatedCalls() {
+    this._cancelableConnectWithRepeatedCalls?.cancel();
   }
 
   _cancelCallRequests() {

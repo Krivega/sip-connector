@@ -38,3 +38,20 @@ export type TJsSIP = {
   UA: typeof UA;
   WebSocketInterface: typeof WebSocketInterface;
 };
+
+export type TGetServerUrl = (id: string) => string;
+
+export type TParametersCreateUa = {
+  socket: WebSocketInterface;
+  displayName: string;
+  getSipServerUrl: TGetServerUrl;
+  user?: string;
+  register?: boolean;
+  password?: string;
+  sdpSemantics?: 'plan-b' | 'unified-plan';
+  sessionTimers?: boolean;
+  registerExpires?: number;
+  connectionRecoveryMinInterval?: number;
+  connectionRecoveryMaxInterval?: number;
+  userAgent?: string;
+};

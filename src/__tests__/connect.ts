@@ -1,6 +1,7 @@
 /// <reference types="jest" />
 import type SipConnector from '../SipConnector';
 import {
+  SIP_SERVER_URL,
   dataForConnectionWithAuthorization,
   dataForConnectionWithAuthorizationWithDisplayName,
   dataForConnectionWithoutAuthorization,
@@ -11,25 +12,13 @@ import {
   uaConfigurationWithAuthorizationWithDisplayName,
   uaConfigurationWithoutAuthorization,
   uaConfigurationWithoutAuthorizationWithoutDisplayName,
-  SIP_SERVER_URL,
 } from '../__fixtures__';
+import UAMock, { createWebsocketHandshakeTimeoutError } from '../__fixtures__/UA.mock';
 import createSipConnector from '../doMock';
-import UAMock from '../__fixtures__/UA.mock';
 import { uriWithName } from '../tools/__fixtures__/connectToServer';
 
 const wrongPassword = 'wrongPassword';
-
-const websocketHandshakeTimeoutError = {
-  socket: {
-    _url: `wss://${SIP_SERVER_URL}/webrtc/wss/`,
-    _sip_uri: `sip:${SIP_SERVER_URL};transport=ws`,
-    _via_transport: 'WSS',
-    _ws: null,
-  },
-  error: true,
-  code: 1006,
-  reason: '',
-};
+const websocketHandshakeTimeoutError = createWebsocketHandshakeTimeoutError(SIP_SERVER_URL);
 
 const connectCallLimit = 3;
 
@@ -279,13 +268,33 @@ describe('connect', () => {
     // @ts-expect-error
     const requestConnectMocked = jest.spyOn(sipConnector._cancelableConnect, 'request');
 
-    const rejectedError = (await sipConnector
-      .connect(dataForConnectionWithoutAuthorization, { callLimit: connectCallLimit })
-      .catch((error: unknown) => {
-        return error;
-      })) as Error;
+    try {
+      await sipConnector.connect(dataForConnectionWithoutAuthorization, {
+        callLimit: connectCallLimit,
+      });
+    } catch (error) {
+      expect(error).toEqual(new Error('call limit (3) is reached'));
+    }
 
-    expect(rejectedError).toEqual([websocketHandshakeTimeoutError]);
     expect(requestConnectMocked).toHaveBeenCalledTimes(connectCallLimit);
+  });
+
+  it('should complete connection process after 2 connection has failed with 1006 error', async () => {
+    expect.assertions(2);
+
+    UAMock.setStartError(websocketHandshakeTimeoutError, { count: 2 });
+
+    // @ts-expect-error
+    sipConnector.JsSIP.UA = UAMock;
+
+    // @ts-expect-error
+    const requestConnectMocked = jest.spyOn(sipConnector._cancelableConnect, 'request');
+
+    const ua = await sipConnector.connect(dataForConnectionWithAuthorization, {
+      callLimit: connectCallLimit,
+    });
+
+    expect(ua.configuration).toEqual(uaConfigurationWithAuthorization);
+    expect(requestConnectMocked).toHaveBeenCalledTimes(2);
   });
 });
