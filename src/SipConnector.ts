@@ -66,7 +66,6 @@ import {
   WEBCAST_STARTED,
   WEBCAST_STOPPED,
 } from './constants';
-import createUaConfiguration from './createUaConfiguration';
 import type { TEventSession, TEventUA } from './eventNames';
 import {
   SESSION_EVENT_NAMES,
@@ -122,7 +121,13 @@ import type {
   TParametersCreateUa,
 } from './types';
 import { EEventsMainCAM, EEventsMic, EEventsSyncMediaState } from './types';
-import { hasVideoTracks, parseDisplayName, prepareMediaStream, resolveSipUrl } from './utils';
+import {
+  generateUserId,
+  hasVideoTracks,
+  parseDisplayName,
+  prepareMediaStream,
+  resolveSipUrl,
+} from './utils';
 import {
   hasDeclineResponseFromServer,
   hasIncludesHandshakeWebsocketOpeningError,
@@ -564,15 +569,12 @@ export default class SipConnector {
     sdpSemantics,
   }: TParametersCheckTelephony): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void) => {
-      const getSipServerUrl = resolveSipUrl(sipServerUrl);
-      const socket = new this.JsSIP.WebSocketInterface(sipWebSocketServerURL);
-
       const ua = this._createUa({
-        socket,
+        sipWebSocketServerURL,
         displayName,
         sdpSemantics,
         userAgent,
-        getSipServerUrl,
+        sipServerUrl,
       });
 
       const rejectWithError = () => {
@@ -706,19 +708,7 @@ export default class SipConnector {
   };
 
   private hasEqualConnectionConfiguration(parameters: TParametersConnection) {
-    const { socket, getSipServerUrl } = this;
-
-    if (!socket) {
-      return false;
-    }
-
-    const { displayName = '' } = parameters;
-    const newConfiguration = createUaConfiguration({
-      ...parameters,
-      displayName,
-      socket,
-      getSipServerUrl,
-    });
+    const newConfiguration = this.createUaConfiguration(parameters);
 
     const uaConfiguration = this.ua?.configuration;
 
@@ -737,6 +727,45 @@ export default class SipConnector {
       uaConfiguration?.connection_recovery_max_interval ===
         newConfiguration.connection_recovery_max_interval
     );
+  }
+
+  private createUaConfiguration({
+    user,
+    password,
+    sipWebSocketServerURL,
+    displayName = '',
+    sipServerUrl,
+    register = false,
+    sdpSemantics = 'plan-b',
+    sessionTimers = false,
+    registerExpires = 60 * 5, // 5 minutes in sec
+    connectionRecoveryMinInterval = 2,
+    connectionRecoveryMaxInterval = 6,
+    userAgent,
+  }: TParametersCreateUa) {
+    if (register && !password) {
+      throw new Error('password is required for authorized connection');
+    }
+
+    const authorizationUser = register && user ? user.trim() : `${generateUserId()}`;
+    const getSipServerUrl = resolveSipUrl(sipServerUrl);
+    const uri = getSipServerUrl(authorizationUser);
+    const socket = new this.JsSIP.WebSocketInterface(sipWebSocketServerURL);
+
+    return {
+      password,
+      register,
+      uri,
+      display_name: parseDisplayName(displayName),
+      user_agent: userAgent,
+      sdp_semantics: sdpSemantics,
+      sockets: [socket],
+      session_timers: sessionTimers,
+      register_expires: registerExpires,
+
+      connection_recovery_min_interval: connectionRecoveryMinInterval,
+      connection_recovery_max_interval: connectionRecoveryMaxInterval,
+    };
   }
 
   private async _sendPresentation(
@@ -1110,12 +1139,11 @@ export default class SipConnector {
 
     this._isRegisterConfig = !!register;
 
-    const { socket } = this;
-
     this.ua = this._createUa({
       user,
+      sipServerUrl,
+      sipWebSocketServerURL,
       password,
-      socket,
       displayName,
       register,
       sdpSemantics,
@@ -1124,7 +1152,6 @@ export default class SipConnector {
       connectionRecoveryMinInterval,
       connectionRecoveryMaxInterval,
       userAgent,
-      getSipServerUrl: this.getSipServerUrl,
     });
 
     this._uaEvents.eachTriggers((trigger, eventName) => {
@@ -1146,7 +1173,7 @@ export default class SipConnector {
   };
 
   _createUa: TCreateUa = (parametersCreateUa: TParametersCreateUa): UA => {
-    const configuration = createUaConfiguration(parametersCreateUa);
+    const configuration = this.createUaConfiguration(parametersCreateUa);
 
     return new this.JsSIP.UA(configuration);
   };

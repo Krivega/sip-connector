@@ -42,9 +42,9 @@ export type TJsSIP = {
 export type TGetServerUrl = (id: string) => string;
 
 export type TParametersCreateUa = {
-  socket: WebSocketInterface;
-  displayName: string;
-  getSipServerUrl: TGetServerUrl;
+  sipWebSocketServerURL: string;
+  displayName?: string;
+  sipServerUrl: string;
   user?: string;
   register?: boolean;
   password?: string;
