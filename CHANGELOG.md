@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [7.0.8](https://github.com/Krivega/sip-connector/compare/v7.0.7...v7.0.8) (2024-06-17)
+
+### Bug Fixes
+
+- compare websocket response with error instead array of errors ([#39](https://github.com/Krivega/sip-connector/issues/39)) ([f1fa602](https://github.com/Krivega/sip-connector/commit/f1fa602d2ae2b6913c470fcab2f7092ccfe860f2))
+
 ### [7.0.7](https://github.com/Krivega/sip-connector/compare/v7.0.6...v7.0.7) (2024-06-17)
 
 ### Bug Fixes
