@@ -679,11 +679,11 @@ export default class SipConnector {
 
     const isComplete = (response?: unknown): boolean => {
       const isConnected = !!this.ua?.isConnected();
-      const isValidState =
+      const isValidResponse =
         !isFirstRequest && isConnected && this.hasEqualConnectionConfiguration(data);
       const isValidError = !!response && !hasIncludesHandshakeWebsocketOpeningError(response);
 
-      return isValidState || isValidError;
+      return isValidResponse || isValidError;
     };
 
     this._cancelableConnectWithRepeatedCalls = repeatedCallsAsync<UA>({
