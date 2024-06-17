@@ -707,12 +707,12 @@ export default class SipConnector {
 
   private hasEqualConnectionConfiguration(parameters: TParametersConnection) {
     const { socket, getSipServerUrl } = this;
-    const { displayName } = parameters;
 
-    if (!socket || displayName === undefined) {
+    if (!socket) {
       return false;
     }
 
+    const { displayName = '' } = parameters;
     const newConfiguration = createUaConfiguration({
       ...parameters,
       displayName,
