@@ -106,7 +106,7 @@ class UA implements IUA {
     UA.countStarts += 1;
 
     if (UA.startError && UA.countStarts < UA.countStartError) {
-      this.trigger('disconnected', [UA.startError]);
+      this.trigger('disconnected', UA.startError);
 
       return;
     }

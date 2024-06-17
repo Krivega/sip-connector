@@ -129,10 +129,7 @@ import {
   prepareMediaStream,
   resolveSipUrl,
 } from './utils';
-import {
-  hasDeclineResponseFromServer,
-  hasIncludesHandshakeWebsocketOpeningError,
-} from './utils/errors';
+import { hasDeclineResponseFromServer, hasHandshakeWebsocketOpeningError } from './utils/errors';
 import scaleBitrate from './videoSendingBalancer/scaleBitrate';
 
 const BUSY_HERE_STATUS_CODE = 486;
@@ -686,7 +683,7 @@ export default class SipConnector {
       const isConnected = !!this.ua?.isConnected();
       const isValidResponse =
         !isFirstRequest && isConnected && this.hasEqualConnectionConfiguration(data);
-      const isValidError = !!response && !hasIncludesHandshakeWebsocketOpeningError(response);
+      const isValidError = !!response && !hasHandshakeWebsocketOpeningError(response);
 
       return isValidResponse || isValidError;
     };
