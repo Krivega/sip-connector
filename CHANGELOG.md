@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [7.0.7](https://github.com/Krivega/sip-connector/compare/v7.0.6...v7.0.7) (2024-06-17)
+
+### Bug Fixes
+
+- repeat connect request when handshake websocket opening has failed ([#38](https://github.com/Krivega/sip-connector/issues/38)) ([a6cbc8a](https://github.com/Krivega/sip-connector/commit/a6cbc8a4ca2ecfdde53eb4ad08a6b46999dc3763))
+
 ### [7.0.6](https://github.com/Krivega/sip-connector/compare/v7.0.5...v7.0.6) (2024-05-21)
 
 ### Bug Fixes
