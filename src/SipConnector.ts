@@ -7,11 +7,11 @@ import type {
   OutgoingInfoEvent,
   RTCSession,
   RegisteredEvent,
-  UA,
   URI,
   UnRegisteredEvent,
   WebSocketInterface,
 } from '@krivega/jssip';
+import { UA } from '@krivega/jssip';
 import Events from 'events-constructor';
 import { repeatedCallsAsync } from 'repeated-calls';
 import { BYE, CANCELED, REJECTED, REQUEST_TIMEOUT } from './causes';
@@ -122,7 +122,7 @@ import {
   prepareMediaStream,
   resolveSipUrl,
 } from './utils';
-import { hasDeclineResponseFromServer } from './utils/errors';
+import { hasDeclineResponseFromServer, hasHandshakeWebsocketOpeningError } from './utils/errors';
 import scaleBitrate from './videoSendingBalancer/scaleBitrate';
 
 const BUSY_HERE_STATUS_CODE = 486;
@@ -452,33 +452,10 @@ export default class SipConnector {
     this.onSession(ENDED, this._handleEnded);
   }
 
-  connect: TConnect = async (data, { callLimit = DELAYED_REPEATED_CALLS_CONNECT_LIMIT } = {}) => {
+  connect: TConnect = async (data, options) => {
     this._cancelRequests();
 
-    let isFirstRequest = true;
-
-    const targetFunction = async () => {
-      isFirstRequest = false;
-
-      return this._cancelableConnect.request(data);
-    };
-
-    const isComplete = (): boolean => {
-      const isConnected = !!this.ua?.isConnected() && !isFirstRequest;
-      const isCanceled = this._cancelableConnect.canceled && !isFirstRequest;
-
-      return isConnected || isCanceled;
-    };
-
-    return repeatedCallsAsync<UA, any>({
-      targetFunction,
-      isComplete,
-      callLimit,
-      isRejectAsValid: true,
-    }).catch((error: unknown) => {
-      // @ts-expect-error
-      throw error.values.lastResult;
-    });
+    return this._connectWithDuplicatedCalls(data, options);
   };
 
   initUa: TInitUa = async (data) => {
@@ -694,6 +671,42 @@ export default class SipConnector {
   get isPendingPresentation(): boolean {
     return !!this.promisePendingStartPresentation || !!this.promisePendingStopPresentation;
   }
+
+  private readonly _connectWithDuplicatedCalls: TConnect = async (
+    data,
+    { callLimit = DELAYED_REPEATED_CALLS_CONNECT_LIMIT } = {},
+  ) => {
+    let isFirstRequest = true;
+
+    const targetFunction = async () => {
+      isFirstRequest = false;
+
+      return this._cancelableConnect.request(data);
+    };
+
+    const isComplete = (response: unknown): boolean => {
+      const isConnected = !!this.ua?.isConnected();
+      const isCanceled = this._cancelableConnect.canceled;
+      const isValidState = isConnected || isCanceled;
+
+      const isHandshakeWebsocketOpeningError = hasHandshakeWebsocketOpeningError(response);
+
+      return isValidState && !isFirstRequest && !isHandshakeWebsocketOpeningError;
+    };
+
+    return repeatedCallsAsync<UA, unknown>({
+      targetFunction,
+      isComplete,
+      callLimit,
+      isRejectAsValid: true,
+    }).then((response) => {
+      if (response instanceof UA) {
+        return response;
+      }
+
+      throw response;
+    });
+  };
 
   private async _sendPresentation(
     session: RTCSession,
