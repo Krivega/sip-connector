@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [7.0.9](https://github.com/Krivega/sip-connector/compare/v7.0.8...v7.0.9) (2024-06-21)
+
+### Bug Fixes
+
+- stringify error message when message is object ([#40](https://github.com/Krivega/sip-connector/issues/40)) ([3d1f9ba](https://github.com/Krivega/sip-connector/commit/3d1f9baf58f7a8581519c6f3c4dc6692879d9b99))
+
 ### [7.0.8](https://github.com/Krivega/sip-connector/compare/v7.0.7...v7.0.8) (2024-06-17)
 
 ### Bug Fixes
