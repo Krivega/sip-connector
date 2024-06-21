@@ -1,20 +1,23 @@
 import type { TCustomError } from '../../types';
 import getLinkError from './getLinkError';
+import stringifyMessage from './stringifyMessage';
 
 export type TValues = {
-  message?: string;
+  code: string;
+  cause: string;
+  message: string;
   link?: string;
-  code?: string;
-  cause?: string;
 };
 
 const getValuesFromError = (error: TCustomError = new Error()): TValues => {
   const { code, cause, message } = error;
   const link = getLinkError(error);
-  const values: TValues = {};
+  const values: TValues = { code: '', cause: '', message: '' };
 
-  if (message) {
-    values.message = message;
+  if (typeof message === 'object' && message !== null) {
+    values.message = stringifyMessage(message);
+  } else if (message) {
+    values.message = String(message);
   }
 
   if (link) {
