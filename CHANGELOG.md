@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [8.0.0](https://github.com/Krivega/sip-connector/compare/v7.0.10...v8.0.0) (2024-07-03)
+
+### ⚠ BREAKING CHANGES
+
+- use sdp_semantics: 'unified-plan' by default
+
+### Features
+
+- use sdp_semantics: 'unified-plan' by default ([21c52b1](https://github.com/Krivega/sip-connector/commit/21c52b117a82c68274078a140dff60f7652027bb))
+
 ### [7.0.10](https://github.com/Krivega/sip-connector/compare/v7.0.9...v7.0.10) (2024-07-03)
 
 ### Bug Fixes
