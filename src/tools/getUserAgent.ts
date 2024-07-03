@@ -1,3 +1,5 @@
+import replaceForbiddenSymbolsWithUnderscore from '../utils/replaceForbiddenSymbolsWithUnderscore';
+
 const getUserAgentUnifiedSdpSemantic = ({
   appName,
   appVersion,
@@ -9,7 +11,9 @@ const getUserAgentUnifiedSdpSemantic = ({
   browserName?: string;
   browserVersion?: string;
 }): string => {
-  const appInfo = `${appName} ${appVersion}`;
+  const fixedAppName = replaceForbiddenSymbolsWithUnderscore(appName);
+
+  const appInfo = `${fixedAppName} ${appVersion}`;
   const suffix = browserName ? `${browserName} ${browserVersion}, ${appInfo}` : appInfo;
 
   const userAgent = `ChromeNew - ${suffix}`;
