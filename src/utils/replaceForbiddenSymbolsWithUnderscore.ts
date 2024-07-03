@@ -1,7 +1,7 @@
 const forbiddenChars = '[@*!|]';
 const allowedChar = '_';
 
-const fixForbiddenSymbols = (text: string): string => {
+const replaceForbiddenSymbolsWithUnderscore = (text: string): string => {
   let fixedTest = text;
 
   fixedTest = fixedTest.replaceAll(new RegExp(forbiddenChars, 'g'), allowedChar);
@@ -9,4 +9,4 @@ const fixForbiddenSymbols = (text: string): string => {
   return fixedTest;
 };
 
-export default fixForbiddenSymbols;
+export default replaceForbiddenSymbolsWithUnderscore;

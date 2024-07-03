@@ -1,4 +1,4 @@
-import fixForbiddenSymbols from '../utils/fixForbiddenSymbols';
+import replaceForbiddenSymbolsWithUnderscore from '../utils/replaceForbiddenSymbolsWithUnderscore';
 
 const getUserAgentUnifiedSdpSemantic = ({
   appName,
@@ -11,7 +11,7 @@ const getUserAgentUnifiedSdpSemantic = ({
   browserName?: string;
   browserVersion?: string;
 }): string => {
-  const fixedAppName = fixForbiddenSymbols(appName);
+  const fixedAppName = replaceForbiddenSymbolsWithUnderscore(appName);
 
   const appInfo = `${fixedAppName} ${appVersion}`;
   const suffix = browserName ? `${browserName} ${browserVersion}, ${appInfo}` : appInfo;
