@@ -23,7 +23,7 @@ describe('getUserAgent', () => {
     expect(result).toBe('ChromeNew - Chrome 100, Vinteo Desktop 17');
   });
 
-  it('should return the correct user agent string when isUnifiedSdpSemantic=true and browserName is not provided', () => {
+  it('should return the correct userAgent string when isUnifiedSdpSemantic=true and browserName is not provided', () => {
     const result = getUserAgent({
       isUnifiedSdpSemantic: true,
       appVersion: 17,
@@ -34,7 +34,7 @@ describe('getUserAgent', () => {
     expect(result).toBe('ChromeNew - Vinteo Desktop 17');
   });
 
-  it('should return the correct user agent string when isUnifiedSdpSemantic=true and browserVersion is not provided', () => {
+  it('should return the correct userAgent string when isUnifiedSdpSemantic=true and browserVersion is not provided', () => {
     const result = getUserAgent({
       isUnifiedSdpSemantic: true,
       appVersion: 17,
@@ -46,7 +46,7 @@ describe('getUserAgent', () => {
     expect(result).toBe('ChromeNew - Chrome undefined, Vinteo Desktop 17');
   });
 
-  it('should return the correct user agent string when isUnifiedSdpSemantic=true and appName includes forbidden symbols', () => {
+  it('should return the correct userAgent string when isUnifiedSdpSemantic=true and appName includes forbidden symbols', () => {
     const result = getUserAgent({
       isUnifiedSdpSemantic: true,
       appVersion: 17,
