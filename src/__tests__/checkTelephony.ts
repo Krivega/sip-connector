@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import type SipConnector from '../SipConnector';
 import { dataForConnectionWithoutAuthorization } from '../__fixtures__';
 import UAmock from '../__fixtures__/UA.mock';

@@ -1,4 +1,5 @@
 const parseObject = <T = unknown>(object: T): T => {
+  // eslint-disable-next-line unicorn/prefer-structured-clone
   return JSON.parse(JSON.stringify(object)) as T;
 };
 

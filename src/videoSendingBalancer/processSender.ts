@@ -1,4 +1,4 @@
-import createStackPromises from 'stack-promises';
+import { createStackPromises } from 'stack-promises';
 import logger from '../logger';
 import { EEventsMainCAM } from '../types';
 import getMaxBitrateByWidthAndCodec, { getMinimumBitrate } from './getMaxBitrateByWidthAndCodec';

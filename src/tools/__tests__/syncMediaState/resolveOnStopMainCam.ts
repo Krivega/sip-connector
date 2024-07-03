@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import type SipConnector from '../../../SipConnector';
 import doMockSIPconnector from '../../../doMock';
 import resolveOnStopMainCam from '../../syncMediaState/resolveOnStopMainCam';

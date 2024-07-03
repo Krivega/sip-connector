@@ -1,5 +1,7 @@
+/// <reference types="jest" />
 import type SipConnector from '../SipConnector';
 import {
+  SIP_SERVER_URL,
   dataForConnectionWithAuthorization,
   dataForConnectionWithAuthorizationWithDisplayName,
   dataForConnectionWithoutAuthorization,
@@ -11,16 +13,24 @@ import {
   uaConfigurationWithoutAuthorization,
   uaConfigurationWithoutAuthorizationWithoutDisplayName,
 } from '../__fixtures__';
+import UAMock, { createWebsocketHandshakeTimeoutError } from '../__fixtures__/UA.mock';
 import createSipConnector from '../doMock';
 import { uriWithName } from '../tools/__fixtures__/connectToServer';
 
 const wrongPassword = 'wrongPassword';
+const websocketHandshakeTimeoutError = createWebsocketHandshakeTimeoutError(SIP_SERVER_URL);
+
+const connectCallLimit = 3;
 
 describe('connect', () => {
   let sipConnector: SipConnector;
 
   beforeEach(() => {
     sipConnector = createSipConnector();
+  });
+
+  afterEach(() => {
+    UAMock.resetStartError();
   });
 
   it('authorization user', async () => {
@@ -34,14 +44,16 @@ describe('connect', () => {
   it('authorization user with wrong password', async () => {
     expect.assertions(1);
 
-    return sipConnector
+    const rejectedError = await sipConnector
       .connect({
         ...dataForConnectionWithAuthorizationWithDisplayName,
         password: wrongPassword,
       })
       .catch((error: unknown) => {
-        expect(error).toEqual({ response: null, cause: 'Wrong credentials' });
+        return error;
       });
+
+    expect(rejectedError).toEqual({ response: null, cause: 'Wrong credentials' });
   });
 
   it('and change sipServerUrl', async () => {
@@ -243,5 +255,46 @@ describe('connect', () => {
 
     // @ts-expect-error
     expect(ua.registrator().extraHeaders).toEqual([...extraHeadersRemoteAddress, ...extraHeaders]);
+  });
+
+  it('should repeat connection process when connection has failed with 1006 error', async () => {
+    expect.assertions(2);
+
+    UAMock.setStartError(websocketHandshakeTimeoutError);
+
+    // @ts-expect-error
+    sipConnector.JsSIP.UA = UAMock;
+
+    // @ts-expect-error
+    const requestConnectMocked = jest.spyOn(sipConnector._cancelableConnect, 'request');
+
+    try {
+      await sipConnector.connect(dataForConnectionWithoutAuthorization, {
+        callLimit: connectCallLimit,
+      });
+    } catch (error) {
+      expect(error).toEqual(new Error('call limit (3) is reached'));
+    }
+
+    expect(requestConnectMocked).toHaveBeenCalledTimes(connectCallLimit);
+  });
+
+  it('should complete connection process after 2 connection has failed with 1006 error', async () => {
+    expect.assertions(2);
+
+    UAMock.setStartError(websocketHandshakeTimeoutError, { count: 2 });
+
+    // @ts-expect-error
+    sipConnector.JsSIP.UA = UAMock;
+
+    // @ts-expect-error
+    const requestConnectMocked = jest.spyOn(sipConnector._cancelableConnect, 'request');
+
+    const ua = await sipConnector.connect(dataForConnectionWithAuthorization, {
+      callLimit: connectCallLimit,
+    });
+
+    expect(ua.configuration).toEqual(uaConfigurationWithAuthorization);
+    expect(requestConnectMocked).toHaveBeenCalledTimes(2);
   });
 });

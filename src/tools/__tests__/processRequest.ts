@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 // @ts-nocheck
 
 import type SipConnector from '../../SipConnector';
@@ -323,24 +324,19 @@ describe('processRequest', () => {
   it('#18 debounce changed password', async () => {
     expect.assertions(2);
 
-    // @ts-expect-error
-    return processRequest(dataForConnectionWithoutAuthorization)
-      .then(async () => {
-        const dataForRequest = {
-          ...dataForConnectionWithAuthorizationPasswordChanged,
-          isRegisteredUserChanged: true,
-        };
+    const success = await processRequest(dataForConnectionWithoutAuthorization).then(async () => {
+      const dataForRequest = {
+        ...dataForConnectionWithAuthorizationPasswordChanged,
+        isRegisteredUserChanged: true,
+      };
 
-        processRequest(dataForRequest);
+      processRequest(dataForRequest);
 
-        return processRequest(dataForRequest);
-      })
-      .then((success) => {
-        expect(success).toBe(true);
-        expect(sipConnector.ua!.configuration).toEqual(
-          uaConfigurationWithAuthorizationPasswordChanged,
-        );
-      });
+      return processRequest(dataForRequest);
+    });
+
+    expect(success).toBe(true);
+    expect(sipConnector.ua!.configuration).toEqual(uaConfigurationWithAuthorizationPasswordChanged);
   });
 
   it('#19 debounce changed registered, with PasswordChanged', async () => {

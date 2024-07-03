@@ -1,10 +1,11 @@
 import { isCanceledError } from '@krivega/cancelable-promise';
 import type { UA } from '@krivega/jssip';
+import { hasCanceledError } from 'repeated-calls';
 import type SipConnector from '../SipConnector';
 import log from '../logger';
 
 const handleError = (error: Error): { isSuccessful: boolean } => {
-  if (!isCanceledError(error)) {
+  if (!isCanceledError(error) && !hasCanceledError(error)) {
     throw error;
   }
 

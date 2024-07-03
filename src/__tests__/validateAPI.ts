@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorizationWithDisplayName } from '../__fixtures__';
 import createSipConnector from '../doMock';

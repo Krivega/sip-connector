@@ -1,8 +1,9 @@
+/// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
 import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
-import { ADMIN_START_MAIN_CAM, ADMIN_STOP_MAIN_CAM } from '../constants';
+import { ADMIN_START_MAIN_CAM, ADMIN_STOP_MAIN_CAM, MAIN_CAM_CONTROL } from '../constants';
 import createSipConnector from '../doMock';
 import {
   CONTENT_TYPE_MAIN_CAM,
@@ -26,6 +27,16 @@ const headersAdminStartMainCam: [string, string][] = [
 const headersAdminStopMainCam: [string, string][] = [
   [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
   [HEADER_MAIN_CAM, EEventsMainCAM.ADMIN_STOP_MAIN_CAM],
+];
+
+const headersResumeMainCam: [string, string][] = [
+  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
+  [HEADER_MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM],
+];
+
+const headersPauseMainCam: [string, string][] = [
+  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
+  [HEADER_MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM],
 ];
 
 describe('main cam control', () => {
@@ -96,6 +107,50 @@ describe('main cam control', () => {
 
     return promise.then(({ isSyncForced }) => {
       expect(isSyncForced).toBe(false);
+    });
+  });
+
+  it('call MAIN_CAM_CONTROL event by RESUME_MAIN_CAM info', async () => {
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    const promise = new Promise<{ mainCam: EEventsMainCAM; resolutionMainCam?: string }>(
+      (resolve) => {
+        return sipConnector.onSession(MAIN_CAM_CONTROL, resolve);
+      },
+    );
+
+    const { session } = sipConnector;
+
+    if (session) {
+      JsSIP.triggerNewInfo(session, headersResumeMainCam);
+    }
+
+    await promise.then(({ mainCam, resolutionMainCam }) => {
+      expect(mainCam).toBe(EEventsMainCAM.RESUME_MAIN_CAM);
+      expect(resolutionMainCam).toBe('');
+    });
+  });
+
+  it('call MAIN_CAM_CONTROL event by PAUSE_MAIN_CAM info', async () => {
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    const promise = new Promise<{ mainCam: EEventsMainCAM; resolutionMainCam?: string }>(
+      (resolve) => {
+        return sipConnector.onSession(MAIN_CAM_CONTROL, resolve);
+      },
+    );
+
+    const { session } = sipConnector;
+
+    if (session) {
+      JsSIP.triggerNewInfo(session, headersPauseMainCam);
+    }
+
+    await promise.then(({ mainCam, resolutionMainCam }) => {
+      expect(mainCam).toBe(EEventsMainCAM.PAUSE_MAIN_CAM);
+      expect(resolutionMainCam).toBe('');
     });
   });
 });

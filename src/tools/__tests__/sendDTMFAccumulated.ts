@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import delayPromise from '../../__fixtures__/delayPromise';
 import doMockSIPconnector from '../../doMock';
 import dataCall from '../__fixtures__/call';

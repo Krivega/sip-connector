@@ -2,6 +2,62 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [7.0.9](https://github.com/Krivega/sip-connector/compare/v7.0.8...v7.0.9) (2024-06-21)
+
+### Bug Fixes
+
+- stringify error message when message is object ([#40](https://github.com/Krivega/sip-connector/issues/40)) ([3d1f9ba](https://github.com/Krivega/sip-connector/commit/3d1f9baf58f7a8581519c6f3c4dc6692879d9b99))
+
+### [7.0.8](https://github.com/Krivega/sip-connector/compare/v7.0.7...v7.0.8) (2024-06-17)
+
+### Bug Fixes
+
+- compare websocket response with error instead array of errors ([#39](https://github.com/Krivega/sip-connector/issues/39)) ([f1fa602](https://github.com/Krivega/sip-connector/commit/f1fa602d2ae2b6913c470fcab2f7092ccfe860f2))
+
+### [7.0.7](https://github.com/Krivega/sip-connector/compare/v7.0.6...v7.0.7) (2024-06-17)
+
+### Bug Fixes
+
+- repeat connect request when handshake websocket opening has failed ([#38](https://github.com/Krivega/sip-connector/issues/38)) ([a6cbc8a](https://github.com/Krivega/sip-connector/commit/a6cbc8a4ca2ecfdde53eb4ad08a6b46999dc3763))
+
+### [7.0.6](https://github.com/Krivega/sip-connector/compare/v7.0.5...v7.0.6) (2024-05-21)
+
+### Bug Fixes
+
+- exports cjs ([14977a6](https://github.com/Krivega/sip-connector/commit/14977a6ec885a3caec5eecaf7d62a7ba819f97fd))
+
+### [7.0.5](https://github.com/Krivega/sip-connector/compare/v7.0.4...v7.0.5) (2024-05-19)
+
+### [7.0.4](https://github.com/Krivega/sip-connector/compare/v7.0.3...v7.0.4) (2024-05-19)
+
+### [7.0.3](https://github.com/Krivega/sip-connector/compare/v7.0.2...v7.0.3) (2024-05-08)
+
+### Bug Fixes
+
+- use async terminate ([f88598f](https://github.com/Krivega/sip-connector/commit/f88598f6335a9801b3ed888885a3e2d5e59b55f2))
+
+### [7.0.2](https://github.com/Krivega/sip-connector/compare/v7.0.1...v7.0.2) (2024-04-24)
+
+### Bug Fixes
+
+- trigger main-cam-control event by RESUME_MAIN_CAM or PAUSE_MAIN_CAM infos ([#37](https://github.com/Krivega/sip-connector/issues/37)) ([559fde4](https://github.com/Krivega/sip-connector/commit/559fde4aa769d6f063ff6b7c1e8599bb29846486))
+
+### [7.0.1](https://github.com/Krivega/sip-connector/compare/v7.0.0...v7.0.1) (2024-04-24)
+
+### Bug Fixes
+
+- enterRoom data format changed ([#36](https://github.com/Krivega/sip-connector/issues/36)) ([eb0c0ce](https://github.com/Krivega/sip-connector/commit/eb0c0ce21ab848a663af5a876ff2e3d497dd7f79))
+
+## [7.0.0](https://github.com/Krivega/sip-connector/compare/v6.25.0...v7.0.0) (2024-04-17)
+
+### ⚠ BREAKING CHANGES
+
+- add X-WEBRTC-PARTICIPANT-NAME to enterroom (#35)
+
+### Features
+
+- add X-WEBRTC-PARTICIPANT-NAME to enterroom ([#35](https://github.com/Krivega/sip-connector/issues/35)) ([1973f1d](https://github.com/Krivega/sip-connector/commit/1973f1dca6ea9717ff6eb802858479a165d2443e))
+
 ## [6.25.0](https://github.com/Krivega/sip-connector/compare/v6.24.3...v6.25.0) (2024-04-09)
 
 ### Features

@@ -8,11 +8,13 @@ import type {
   RTCSession,
   RegisteredEvent,
   UA,
+  UAConfigurationParams,
   URI,
   UnRegisteredEvent,
   WebSocketInterface,
 } from '@krivega/jssip';
 import Events from 'events-constructor';
+import { repeatedCallsAsync } from 'repeated-calls';
 import { BYE, CANCELED, REJECTED, REQUEST_TIMEOUT } from './causes';
 import {
   ACCOUNT_CHANGED,
@@ -112,7 +114,13 @@ import {
   NOT_AVAILABLE_SECOND_REMOTE_STREAM,
 } from './headers';
 import logger from './logger';
-import type { EUseLicense, TCustomError, TJsSIP } from './types';
+import type {
+  EUseLicense,
+  TCustomError,
+  TGetServerUrl,
+  TJsSIP,
+  TParametersCreateUa,
+} from './types';
 import { EEventsMainCAM, EEventsMic, EEventsSyncMediaState } from './types';
 import {
   generateUserId,
@@ -121,13 +129,14 @@ import {
   prepareMediaStream,
   resolveSipUrl,
 } from './utils';
-import { hasDeclineResponseFromServer } from './utils/errors';
+import { hasDeclineResponseFromServer, hasHandshakeWebsocketOpeningError } from './utils/errors';
 import scaleBitrate from './videoSendingBalancer/scaleBitrate';
 
 const BUSY_HERE_STATUS_CODE = 486;
 const REQUEST_TERMINATED_STATUS_CODE = 487;
 const ORIGINATOR_LOCAL = 'local';
 const ORIGINATOR_REMOTE = 'remote';
+const DELAYED_REPEATED_CALLS_CONNECT_LIMIT = 3;
 
 export const hasCanceledCallError = (error: TCustomError = new Error()): boolean => {
   const { originator, cause } = error;
@@ -231,7 +240,6 @@ type TOptionsExtraHeaders = {
 };
 
 type TOntrack = (track: RTCTrackEvent) => void;
-type TGetServerUrl = (id: string) => string;
 
 type TParametersConnection = TOptionsExtraHeaders & {
   displayName?: string;
@@ -248,20 +256,6 @@ type TParametersConnection = TOptionsExtraHeaders & {
   connectionRecoveryMaxInterval?: number;
   userAgent?: string;
 };
-type TParametersCreateUa = {
-  socket: WebSocketInterface;
-  displayName: string;
-  getSipServerUrl: TGetServerUrl;
-  user?: string;
-  register?: boolean;
-  password?: string;
-  sdpSemantics?: 'plan-b' | 'unified-plan';
-  sessionTimers?: boolean;
-  registerExpires?: number;
-  connectionRecoveryMinInterval?: number;
-  connectionRecoveryMaxInterval?: number;
-  userAgent?: string;
-};
 
 type TParametersCheckTelephony = {
   displayName: string;
@@ -271,9 +265,12 @@ type TParametersCheckTelephony = {
   userAgent?: string;
 };
 
-type TConnect = (parameters: TParametersConnection) => Promise<UA>;
+type TConnect = (
+  parameters: TParametersConnection,
+  options?: { callLimit?: number },
+) => Promise<UA>;
 type TInitUa = (parameters: TParametersConnection) => Promise<UA>;
-type TCreateUa = (parameters: TParametersCreateUa) => UA;
+type TCreateUa = (parameters: UAConfigurationParams) => UA;
 type TStart = () => Promise<UA>;
 type TSet = ({
   displayName,
@@ -353,6 +350,10 @@ export default class SipConnector {
     Parameters<TConnect>[0],
     ReturnType<TConnect>
   >;
+
+  private _cancelableConnectWithRepeatedCalls:
+    | ReturnType<typeof repeatedCallsAsync<UA>>
+    | undefined;
 
   private readonly _cancelableInitUa: CancelableRequest<
     Parameters<TInitUa>[0],
@@ -447,10 +448,10 @@ export default class SipConnector {
     this.onSession(ENDED, this._handleEnded);
   }
 
-  connect: TConnect = async (data) => {
+  connect: TConnect = async (data, options) => {
     this._cancelRequests();
 
-    return this._cancelableConnect.request(data);
+    return this._connectWithDuplicatedCalls(data, options);
   };
 
   initUa: TInitUa = async (data) => {
@@ -566,16 +567,15 @@ export default class SipConnector {
     sdpSemantics,
   }: TParametersCheckTelephony): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void) => {
-      const getSipServerUrl = resolveSipUrl(sipServerUrl);
-      const socket = new this.JsSIP.WebSocketInterface(sipWebSocketServerURL);
-
-      const ua = this._createUa({
-        socket,
+      const { configuration } = this.createUaConfiguration({
+        sipWebSocketServerURL,
         displayName,
         sdpSemantics,
         userAgent,
-        getSipServerUrl,
+        sipServerUrl,
       });
+
+      const ua = this._createUa(configuration);
 
       const rejectWithError = () => {
         const error = new Error('Telephony is not available');
@@ -665,6 +665,113 @@ export default class SipConnector {
 
   get isPendingPresentation(): boolean {
     return !!this.promisePendingStartPresentation || !!this.promisePendingStopPresentation;
+  }
+
+  private readonly _connectWithDuplicatedCalls: TConnect = async (
+    data,
+    { callLimit = DELAYED_REPEATED_CALLS_CONNECT_LIMIT } = {},
+  ) => {
+    let isFirstRequest = true;
+
+    const targetFunction = async () => {
+      isFirstRequest = false;
+
+      return this._cancelableConnect.request(data);
+    };
+
+    const isComplete = (response?: unknown): boolean => {
+      const isConnected = !!this.ua?.isConnected();
+      const isValidResponse =
+        !isFirstRequest && isConnected && this.hasEqualConnectionConfiguration(data);
+      const isValidError = !!response && !hasHandshakeWebsocketOpeningError(response);
+
+      return isValidResponse || isValidError;
+    };
+
+    this._cancelableConnectWithRepeatedCalls = repeatedCallsAsync<UA>({
+      targetFunction,
+      isComplete,
+      callLimit,
+      isRejectAsValid: true,
+      onAfterCancel: () => {
+        this._cancelableConnect.cancelRequest();
+      },
+    });
+
+    return this._cancelableConnectWithRepeatedCalls.then((response?: unknown) => {
+      if (response instanceof this.JsSIP.UA) {
+        return response;
+      }
+
+      throw response;
+    });
+  };
+
+  private hasEqualConnectionConfiguration(parameters: TParametersConnection) {
+    const { configuration: newConfiguration } = this.createUaConfiguration(parameters);
+
+    const uaConfiguration = this.ua?.configuration;
+
+    return (
+      uaConfiguration?.password === newConfiguration.password &&
+      uaConfiguration?.register === newConfiguration.register &&
+      uaConfiguration?.uri.toString() === newConfiguration.uri &&
+      uaConfiguration?.display_name === newConfiguration.display_name &&
+      uaConfiguration?.user_agent === newConfiguration.user_agent &&
+      uaConfiguration?.sdpSemantics === newConfiguration.sdp_semantics &&
+      uaConfiguration?.sockets === newConfiguration.sockets &&
+      uaConfiguration?.session_timers === newConfiguration.session_timers &&
+      uaConfiguration?.register_expires === newConfiguration.register_expires &&
+      uaConfiguration?.connection_recovery_min_interval ===
+        newConfiguration.connection_recovery_min_interval &&
+      uaConfiguration?.connection_recovery_max_interval ===
+        newConfiguration.connection_recovery_max_interval
+    );
+  }
+
+  private createUaConfiguration({
+    user,
+    password,
+    sipWebSocketServerURL,
+    displayName = '',
+    sipServerUrl,
+    register = false,
+    sdpSemantics = 'plan-b',
+    sessionTimers = false,
+    registerExpires = 60 * 5, // 5 minutes in sec
+    connectionRecoveryMinInterval = 2,
+    connectionRecoveryMaxInterval = 6,
+    userAgent,
+  }: TParametersCreateUa) {
+    if (register && !password) {
+      throw new Error('password is required for authorized connection');
+    }
+
+    const authorizationUser = register && user ? user.trim() : `${generateUserId()}`;
+    const getSipServerUrl = resolveSipUrl(sipServerUrl);
+    const uri = getSipServerUrl(authorizationUser);
+    const socket = new this.JsSIP.WebSocketInterface(sipWebSocketServerURL);
+
+    return {
+      configuration: {
+        password,
+        register,
+        uri,
+        display_name: parseDisplayName(displayName),
+        user_agent: userAgent,
+        sdp_semantics: sdpSemantics,
+        sockets: [socket],
+        session_timers: sessionTimers,
+        register_expires: registerExpires,
+
+        connection_recovery_min_interval: connectionRecoveryMinInterval,
+        connection_recovery_max_interval: connectionRecoveryMaxInterval,
+      },
+      helpers: {
+        socket,
+        getSipServerUrl,
+      },
+    };
   }
 
   private async _sendPresentation(
@@ -1029,21 +1136,11 @@ export default class SipConnector {
       password,
     };
 
-    this.getSipServerUrl = resolveSipUrl(sipServerUrl);
-    this.socket = new this.JsSIP.WebSocketInterface(sipWebSocketServerURL);
-
-    if (this.ua) {
-      await this._disconnectWithoutCancelRequests();
-    }
-
-    this._isRegisterConfig = !!register;
-
-    const { socket } = this;
-
-    this.ua = this._createUa({
+    const { configuration, helpers } = this.createUaConfiguration({
       user,
+      sipServerUrl,
+      sipWebSocketServerURL,
       password,
-      socket,
       displayName,
       register,
       sdpSemantics,
@@ -1052,8 +1149,18 @@ export default class SipConnector {
       connectionRecoveryMinInterval,
       connectionRecoveryMaxInterval,
       userAgent,
-      getSipServerUrl: this.getSipServerUrl,
     });
+
+    this.getSipServerUrl = helpers.getSipServerUrl;
+    this.socket = helpers.socket;
+
+    if (this.ua) {
+      await this._disconnectWithoutCancelRequests();
+    }
+
+    this._isRegisterConfig = !!register;
+
+    this.ua = this._createUa(configuration);
 
     this._uaEvents.eachTriggers((trigger, eventName) => {
       const uaJsSipEvent = UA_JSSIP_EVENT_NAMES.find((jsSipEvent) => {
@@ -1073,43 +1180,8 @@ export default class SipConnector {
     return this.ua;
   };
 
-  _createUa: TCreateUa = ({
-    user,
-    password,
-    socket,
-    displayName,
-    getSipServerUrl,
-    register = false,
-    sdpSemantics = 'plan-b',
-    sessionTimers = false,
-    registerExpires = 60 * 5, // 5 minutes in sec
-    connectionRecoveryMinInterval = 2,
-    connectionRecoveryMaxInterval = 6,
-    userAgent,
-  }): UA => {
-    if (register && !password) {
-      throw new Error('password is required for authorized connection');
-    }
-
-    const authorizationUser = register && user ? user.trim() : `${generateUserId()}`;
-    const uri = getSipServerUrl(authorizationUser);
-
-    const configuration = {
-      password,
-      register,
-      uri,
-      display_name: parseDisplayName(displayName),
-      user_agent: userAgent,
-      sdp_semantics: sdpSemantics,
-      sockets: [socket],
-      session_timers: sessionTimers,
-      register_expires: registerExpires,
-
-      connection_recovery_min_interval: connectionRecoveryMinInterval,
-      connection_recovery_max_interval: connectionRecoveryMaxInterval,
-    };
-
-    return new this.JsSIP.UA(configuration);
+  _createUa: TCreateUa = (parameters: UAConfigurationParams): UA => {
+    return new this.JsSIP.UA(parameters);
   };
 
   _start: TStart = async () => {
@@ -1493,19 +1565,21 @@ export default class SipConnector {
       this._restoreSession();
 
       if (!session.isEnded()) {
-        session.terminate();
+        return session.terminateAsync();
       }
     }
+
+    return undefined;
   };
 
   _cancelRequests() {
     this._cancelActionsRequests();
     this._cancelCallRequests();
-    this._cancelConnectRequests();
+    this._cancelConnectWithRepeatedCalls();
   }
 
-  _cancelConnectRequests() {
-    this._cancelableConnect.cancelRequest();
+  _cancelConnectWithRepeatedCalls() {
+    this._cancelableConnectWithRepeatedCalls?.cancel();
   }
 
   _cancelCallRequests() {
@@ -1768,21 +1842,29 @@ export default class SipConnector {
 
     if (mainCam === EEventsMainCAM.ADMIN_START_MAIN_CAM) {
       this._sessionEvents.trigger(ADMIN_START_MAIN_CAM, { isSyncForced });
-    } else if (mainCam === EEventsMainCAM.ADMIN_STOP_MAIN_CAM) {
+
+      return;
+    }
+
+    if (mainCam === EEventsMainCAM.ADMIN_STOP_MAIN_CAM) {
       this._sessionEvents.trigger(ADMIN_STOP_MAIN_CAM, { isSyncForced });
-    } else if (
+
+      return;
+    }
+
+    if (
       (mainCam === EEventsMainCAM.RESUME_MAIN_CAM || mainCam === EEventsMainCAM.PAUSE_MAIN_CAM) &&
       !!syncState
     ) {
       this._sessionEvents.trigger(ADMIN_FORCE_SYNC_MEDIA_STATE, { isSyncForced });
-    } else {
-      const resolutionMainCam = request.getHeader(HEADER_MAIN_CAM_RESOLUTION);
-
-      this._sessionEvents.trigger(MAIN_CAM_CONTROL, {
-        mainCam,
-        resolutionMainCam,
-      });
     }
+
+    const resolutionMainCam = request.getHeader(HEADER_MAIN_CAM_RESOLUTION);
+
+    this._sessionEvents.trigger(MAIN_CAM_CONTROL, {
+      mainCam,
+      resolutionMainCam,
+    });
   };
 
   _triggerMicControl = (request: IncomingRequest) => {

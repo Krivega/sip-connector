@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
 import type SipConnector from '../SipConnector';
 import { hasCanceledCallError } from '../SipConnector';

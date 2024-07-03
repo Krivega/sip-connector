@@ -1,3 +1,5 @@
+/// <reference types="jest" />
+
 import type { IncomingInfoEvent } from '@krivega/jssip';
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
 import { REJECTED } from '../causes';
@@ -139,6 +141,10 @@ class Session extends BaseSession {
     this._isEnded = false;
 
     return this;
+  }
+
+  async terminateAsync({ status_code }: { status_code?: number } = {}) {
+    this.terminate({ status_code });
   }
 
   terminateRemote({ status_code }: { status_code?: number } = {}) {

@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import type { ExtraHeaders } from '@krivega/jssip';
 import { createMediaStreamMock } from 'webrtc-mock';
 import type SipConnector from '../SipConnector';
@@ -5,9 +6,9 @@ import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import createSipConnector from '../doMock';
 import {
   CONTENT_TYPE_SHARE_STATE,
+  HEADER_MUST_STOP_PRESENTATION_P2P,
   HEADER_START_PRESENTATION,
   HEADER_START_PRESENTATION_P2P,
-  HEADER_MUST_STOP_PRESENTATION_P2P,
 } from '../headers';
 
 describe('presentation', () => {

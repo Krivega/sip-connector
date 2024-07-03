@@ -1,15 +1,16 @@
+/// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
 import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
 import {
-  cancellingWordRequestData,
-  cancellingWordRequestHeaders,
   acceptingWordRequestData,
   acceptingWordRequestHeaders,
+  cancellingWordRequestData,
+  cancellingWordRequestHeaders,
+  moveRequestToSpectatorsHeaders,
   moveRequestToStreamData,
   moveRequestToStreamHeaders,
-  moveRequestToSpectatorsHeaders,
 } from '../__fixtures__/participantMoveRequests';
 import createSipConnector from '../doMock';
 
