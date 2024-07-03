@@ -737,6 +737,7 @@ export default class SipConnector {
     this._sendPresentationWithRepeatedCalls = repeatedCallsAsync<MediaStream>({
       targetFunction,
       isComplete,
+      isRejectAsValid: true,
       ...options,
     });
 
