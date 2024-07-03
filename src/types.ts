@@ -48,7 +48,6 @@ export type TParametersCreateUa = {
   user?: string;
   register?: boolean;
   password?: string;
-  sdpSemantics?: 'plan-b' | 'unified-plan';
   sessionTimers?: boolean;
   registerExpires?: number;
   connectionRecoveryMinInterval?: number;

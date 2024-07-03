@@ -71,7 +71,6 @@ const initUa = (
           name,
           password,
           isRegisteredUser,
-          sdpSemantics: 'plan-b',
           userAgent: 'Chrome',
         });
       }

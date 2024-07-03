@@ -23,7 +23,6 @@ const resolveConnectToServer = (sipConnector: SipConnector) => {
     password?: string;
     isRegisteredUser?: boolean;
     isDisconnectOnFail?: boolean;
-    sdpSemantics: 'plan-b' | 'unified-plan';
   }): Promise<{ ua?: UA; isSuccessful: boolean }> => {
     const {
       userAgent,
@@ -34,7 +33,6 @@ const resolveConnectToServer = (sipConnector: SipConnector) => {
       name,
       password,
       isRegisteredUser,
-      sdpSemantics,
       isDisconnectOnFail,
     } = parameters;
 
@@ -43,7 +41,6 @@ const resolveConnectToServer = (sipConnector: SipConnector) => {
     return sipConnector
       .connect({
         userAgent,
-        sdpSemantics,
         sipWebSocketServerURL,
         sipServerUrl,
         remoteAddress,

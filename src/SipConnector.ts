@@ -249,7 +249,6 @@ type TParametersConnection = TOptionsExtraHeaders & {
   sipServerUrl: string;
   sipWebSocketServerURL: string;
   remoteAddress?: string;
-  sdpSemantics?: 'plan-b' | 'unified-plan';
   sessionTimers?: boolean;
   registerExpires?: number;
   connectionRecoveryMinInterval?: number;
@@ -261,7 +260,6 @@ type TParametersCheckTelephony = {
   displayName: string;
   sipServerUrl: string;
   sipWebSocketServerURL: string;
-  sdpSemantics?: 'plan-b' | 'unified-plan';
   userAgent?: string;
 };
 
@@ -564,13 +562,11 @@ export default class SipConnector {
     displayName,
     sipServerUrl,
     sipWebSocketServerURL,
-    sdpSemantics,
   }: TParametersCheckTelephony): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void) => {
       const { configuration } = this.createUaConfiguration({
         sipWebSocketServerURL,
         displayName,
-        sdpSemantics,
         userAgent,
         sipServerUrl,
       });
@@ -718,7 +714,6 @@ export default class SipConnector {
       uaConfiguration?.uri.toString() === newConfiguration.uri &&
       uaConfiguration?.display_name === newConfiguration.display_name &&
       uaConfiguration?.user_agent === newConfiguration.user_agent &&
-      uaConfiguration?.sdpSemantics === newConfiguration.sdp_semantics &&
       uaConfiguration?.sockets === newConfiguration.sockets &&
       uaConfiguration?.session_timers === newConfiguration.session_timers &&
       uaConfiguration?.register_expires === newConfiguration.register_expires &&
@@ -736,7 +731,6 @@ export default class SipConnector {
     displayName = '',
     sipServerUrl,
     register = false,
-    sdpSemantics = 'plan-b',
     sessionTimers = false,
     registerExpires = 60 * 5, // 5 minutes in sec
     connectionRecoveryMinInterval = 2,
@@ -759,7 +753,7 @@ export default class SipConnector {
         uri,
         display_name: parseDisplayName(displayName),
         user_agent: userAgent,
-        sdp_semantics: sdpSemantics,
+        sdp_semantics: 'unified-plan',
         sockets: [socket],
         session_timers: sessionTimers,
         register_expires: registerExpires,
@@ -1102,7 +1096,6 @@ export default class SipConnector {
     sipServerUrl,
     sipWebSocketServerURL,
     remoteAddress,
-    sdpSemantics,
     sessionTimers,
     registerExpires,
     connectionRecoveryMinInterval,
@@ -1143,7 +1136,6 @@ export default class SipConnector {
       password,
       displayName,
       register,
-      sdpSemantics,
       sessionTimers,
       registerExpires,
       connectionRecoveryMinInterval,

@@ -16,7 +16,6 @@ const baseDataForConnection = {
   remoteAddress: '10.10.10.10',
   sipServerUrl: SIP_SERVER_URL,
   sipWebSocketServerURL: SIP_WEB_SOCKET_SERVER_URL,
-  sdpSemantics: 'plan-b' as const,
   userAgent: 'Chrome',
 };
 
