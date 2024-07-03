@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [7.0.10](https://github.com/Krivega/sip-connector/compare/v7.0.9...v7.0.10) (2024-07-03)
+
+### Bug Fixes
+
+- forbidden symbols in app name ([#41](https://github.com/Krivega/sip-connector/issues/41)) ([9b2aff8](https://github.com/Krivega/sip-connector/commit/9b2aff867ab2da1024e2a974300789f2bf725303))
+
 ### [7.0.9](https://github.com/Krivega/sip-connector/compare/v7.0.8...v7.0.9) (2024-06-21)
 
 ### Bug Fixes
