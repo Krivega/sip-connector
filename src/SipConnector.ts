@@ -137,6 +137,7 @@ const REQUEST_TERMINATED_STATUS_CODE = 487;
 const ORIGINATOR_LOCAL = 'local';
 const ORIGINATOR_REMOTE = 'remote';
 const DELAYED_REPEATED_CALLS_CONNECT_LIMIT = 3;
+const DELAYED_REPEATED_CALLS_SEND_PRESENTATION = 1;
 
 export const hasCanceledCallError = (error: TCustomError = new Error()): boolean => {
   const { originator, cause } = error;
@@ -358,6 +359,10 @@ export default class SipConnector {
     ReturnType<TInitUa>
   >;
 
+  private _sendPresentationWithRepeatedCalls:
+    | ReturnType<typeof repeatedCallsAsync<MediaStream>>
+    | undefined;
+
   private readonly _cancelableDisconnect: CancelableRequest<void, ReturnType<TDisconnect>>;
 
   private readonly _cancelableSet: CancelableRequest<Parameters<TSet>[0], ReturnType<TSet>>;
@@ -391,6 +396,8 @@ export default class SipConnector {
   _streamPresentationCurrent?: MediaStream;
 
   socket?: WebSocketInterface;
+
+  private isStreamInProgress = false;
 
   constructor({ JsSIP }: { JsSIP: TJsSIP }) {
     this.JsSIP = JsSIP;
@@ -703,6 +710,45 @@ export default class SipConnector {
     });
   };
 
+  private async __sendPresentationWithDuplicatedCalls({
+    session,
+    stream,
+    data,
+    options = { callLimit: DELAYED_REPEATED_CALLS_SEND_PRESENTATION },
+  }: {
+    session: RTCSession;
+    stream: MediaStream;
+    data: {
+      isNeedReinvite?: boolean;
+      isP2P?: boolean;
+      maxBitrate?: number;
+      degradationPreference?: TDegradationPreference;
+    };
+    options?: { callLimit: number };
+  }) {
+    const targetFunction = async () => {
+      return this._sendPresentation(session, stream, data);
+    };
+
+    const isComplete = (): boolean => {
+      return this.isStreamInProgress;
+    };
+
+    this._sendPresentationWithRepeatedCalls = repeatedCallsAsync<MediaStream>({
+      targetFunction,
+      isComplete,
+      ...options,
+    });
+
+    return this._sendPresentationWithRepeatedCalls.then((response: unknown) => {
+      if (response instanceof MediaStream) {
+        return response;
+      }
+
+      throw response;
+    });
+  }
+
   private hasEqualConnectionConfiguration(parameters: TParametersConnection) {
     const { configuration: newConfiguration } = this.createUaConfiguration(parameters);
 
@@ -814,9 +860,13 @@ export default class SipConnector {
         await scaleBitrate(senders, stream, maxBitrate);
       })
       .then(() => {
+        this.isStreamInProgress = true;
+
         return stream;
       })
       .catch((error: unknown) => {
+        this.isStreamInProgress = true;
+
         this._sessionEvents.trigger(PRESENTATION_FAILED, error);
 
         throw error;
@@ -857,11 +907,15 @@ export default class SipConnector {
       await this.sendMustStopPresentation(session);
     }
 
-    return this._sendPresentation(session, stream, {
-      isNeedReinvite,
-      isP2P,
-      maxBitrate,
-      degradationPreference,
+    return this.__sendPresentationWithDuplicatedCalls({
+      session,
+      stream,
+      data: {
+        isNeedReinvite,
+        isP2P,
+        maxBitrate,
+        degradationPreference,
+      },
     });
   }
 
@@ -951,6 +1005,7 @@ export default class SipConnector {
 
     this.promisePendingStartPresentation = undefined;
     this.promisePendingStopPresentation = undefined;
+    this.isStreamInProgress = false;
   }
 
   handleNewRTCSession = ({ originator, session }: IncomingRTCSessionEvent) => {
