@@ -10,12 +10,11 @@ import { getRoomFromSipUrl } from './utils';
 const CONNECTION_DELAY = 400; // more 300 for test cancel requests with debounced
 
 export const FAILED_CONFERENCE_NUMBER = '777';
-export const ERROR_MESSAGE_FAILED_TO_START_PRESENTATION = 'Failed to start presentation';
 
 const DECLINE = 603;
 
 export const createDeclineStartPresentationError = () => {
-  const error = new Error(ERROR_MESSAGE_FAILED_TO_START_PRESENTATION);
+  const error = new Error('Failed to start presentation');
 
   error.cause = DECLINE;
 

@@ -3,10 +3,7 @@ import type { ExtraHeaders } from '@krivega/jssip';
 import { createMediaStreamMock } from 'webrtc-mock';
 import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
-import SessionMock, {
-  createDeclineStartPresentationError,
-  ERROR_MESSAGE_FAILED_TO_START_PRESENTATION,
-} from '../__fixtures__/Session.mock';
+import SessionMock, { createDeclineStartPresentationError } from '../__fixtures__/Session.mock';
 import createSipConnector from '../doMock';
 import {
   CONTENT_TYPE_SHARE_STATE,
@@ -25,6 +22,7 @@ describe('presentation', () => {
   let mediaStreamUpdated: MediaStream;
 
   const failedToSendMustStopSendPresentationError = 'failedToSendMustStopSendPresentationError';
+  const declineStartPresentationError = createDeclineStartPresentationError();
 
   const mockFailToSendMustStopPresentationInfo = () => {
     // eslint-disable-next-line @typescript-eslint/unbound-method
@@ -58,6 +56,13 @@ describe('presentation', () => {
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },
     });
+
+    const cancelSendPresentationWithRepeatedCallsActual =
+      sipConnector._cancelSendPresentationWithRepeatedCalls.bind(sipConnector);
+
+    sipConnector._cancelSendPresentationWithRepeatedCalls = () => {
+      cancelSendPresentationWithRepeatedCallsActual();
+    };
   });
 
   afterEach(() => {
@@ -275,7 +280,7 @@ describe('presentation', () => {
   it('should not repeat start presentation when presentation fails with error, when call limit is not passed', async () => {
     expect.assertions(3);
 
-    SessionMock.setStartPresentationError(createDeclineStartPresentationError());
+    SessionMock.setStartPresentationError(declineStartPresentationError);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
@@ -297,7 +302,7 @@ describe('presentation', () => {
   it('should complete start presentation after 2 attempts has failed', async () => {
     expect.assertions(2);
 
-    SessionMock.setStartPresentationError(createDeclineStartPresentationError(), {
+    SessionMock.setStartPresentationError(declineStartPresentationError, {
       count: errorStartPresentationCount,
     });
 
@@ -318,7 +323,7 @@ describe('presentation', () => {
   it('should cancel requests send presentation after stop presentation', async () => {
     expect.assertions(4);
 
-    SessionMock.setStartPresentationError(createDeclineStartPresentationError());
+    SessionMock.setStartPresentationError(declineStartPresentationError);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
@@ -337,7 +342,7 @@ describe('presentation', () => {
     try {
       await sipConnector.stopPresentation();
     } catch (error) {
-      expect(error).toEqual(new Error(ERROR_MESSAGE_FAILED_TO_START_PRESENTATION));
+      expect(error).toEqual(declineStartPresentationError);
     }
 
     try {
@@ -350,5 +355,38 @@ describe('presentation', () => {
       errorStartPresentationCount,
     );
     expect(cancelSendPresentationWithRepeatedCallsMocked).toHaveBeenCalledTimes(1);
+  });
+
+  it('should cancel requests send presentation after hang up call', async () => {
+    expect.assertions(3);
+
+    SessionMock.setStartPresentationError(declineStartPresentationError);
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    // @ts-expect-error
+    const sendPresentationMocked = jest.spyOn(sipConnector, '_sendPresentation');
+    const cancelSendPresentationWithRepeatedCallsMocked = jest.spyOn(
+      sipConnector,
+      '_cancelSendPresentationWithRepeatedCalls',
+    );
+
+    const promiseStartPresentation = sipConnector.startPresentation(mediaStream, undefined, {
+      callLimit: errorStartPresentationCount,
+    });
+
+    await sipConnector.hangUp();
+
+    try {
+      await promiseStartPresentation;
+    } catch (error) {
+      expect(error).toEqual(new Error('canceled'));
+    }
+
+    expect(sendPresentationMocked.mock.calls.length).toBeLessThanOrEqual(
+      errorStartPresentationCount,
+    );
+    expect(cancelSendPresentationWithRepeatedCallsMocked).toHaveBeenCalledTimes(4);
   });
 });

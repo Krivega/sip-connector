@@ -1611,7 +1611,11 @@ export default class SipConnector {
       const { session } = this;
 
       if (this._streamPresentationCurrent) {
-        await this.stopPresentation();
+        try {
+          await this.stopPresentation();
+        } catch (error) {
+          logger('error stop presentation: ', error);
+        }
       }
 
       this._restoreSession();
