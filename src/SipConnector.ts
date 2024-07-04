@@ -931,6 +931,8 @@ export default class SipConnector {
   }: {
     isP2P?: boolean;
   } = {}): Promise<MediaStream | void> {
+    this._cancelSendPresentationWithRepeatedCalls();
+
     const streamPresentationPrevious = this._streamPresentationCurrent;
     let result: Promise<MediaStream | void> =
       this.promisePendingStartPresentation ?? Promise.resolve();
@@ -1007,7 +1009,6 @@ export default class SipConnector {
 
   _resetPresentation() {
     this._removeStreamPresentationCurrent();
-    this._cancelSendPresentationWithRepeatedCalls();
 
     this.promisePendingStartPresentation = undefined;
     this.promisePendingStopPresentation = undefined;

@@ -344,9 +344,7 @@ describe('presentation', () => {
       expect(error).toEqual(new Error('canceled'));
     }
 
-    expect(sendPresentationMocked.mock.calls.length).toBeLessThanOrEqual(
-      errorStartPresentationCount,
-    );
+    expect(sendPresentationMocked).toHaveBeenCalledTimes(1);
     expect(cancelSendPresentationWithRepeatedCallsMocked).toHaveBeenCalledTimes(1);
   });
 
@@ -377,9 +375,7 @@ describe('presentation', () => {
       expect(error).toEqual(new Error('canceled'));
     }
 
-    expect(sendPresentationMocked.mock.calls.length).toBeLessThanOrEqual(
-      errorStartPresentationCount,
-    );
-    expect(cancelSendPresentationWithRepeatedCallsMocked).toHaveBeenCalledTimes(3);
+    expect(sendPresentationMocked).toHaveBeenCalledTimes(1);
+    expect(cancelSendPresentationWithRepeatedCallsMocked).toHaveBeenCalledTimes(1);
   });
 });
