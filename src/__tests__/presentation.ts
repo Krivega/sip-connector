@@ -387,6 +387,6 @@ describe('presentation', () => {
     expect(sendPresentationMocked.mock.calls.length).toBeLessThanOrEqual(
       errorStartPresentationCount,
     );
-    expect(cancelSendPresentationWithRepeatedCallsMocked).toHaveBeenCalledTimes(4);
+    expect(cancelSendPresentationWithRepeatedCallsMocked).toHaveBeenCalledTimes(3);
   });
 });

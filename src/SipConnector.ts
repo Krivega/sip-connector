@@ -1632,7 +1632,6 @@ export default class SipConnector {
     this._cancelActionsRequests();
     this._cancelCallRequests();
     this._cancelConnectWithRepeatedCalls();
-    this._cancelSendPresentationWithRepeatedCalls();
   }
 
   _cancelConnectWithRepeatedCalls() {
