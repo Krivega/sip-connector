@@ -22,6 +22,12 @@ class Session extends BaseSession {
 
   private _isEnded = false;
 
+  private static startPresentationError?: Error;
+
+  private static countStartPresentationError: number = Number.POSITIVE_INFINITY;
+
+  private static countStartsPresentation = 0;
+
   constructor({
     url = '',
     mediaStream,
@@ -36,6 +42,33 @@ class Session extends BaseSession {
     super({ originator, eventHandlers });
     this.url = url;
     this.initPeerconnection(mediaStream);
+  }
+
+  public static setStartPresentationError(
+    startPresentationError: Error,
+    { count = Number.POSITIVE_INFINITY }: { count?: number } = {},
+  ) {
+    this.startPresentationError = startPresentationError;
+    this.countStartPresentationError = count;
+  }
+
+  public static resetStartPresentationError() {
+    this.startPresentationError = undefined;
+    this.countStartPresentationError = Number.POSITIVE_INFINITY;
+    this.countStartsPresentation = 0;
+  }
+
+  public async startPresentation(stream: MediaStream) {
+    Session.countStartsPresentation += 1;
+
+    if (
+      Session.startPresentationError &&
+      Session.countStartsPresentation < Session.countStartPresentationError
+    ) {
+      throw Session.startPresentationError;
+    }
+
+    return super.startPresentation(stream);
   }
 
   initPeerconnection(mediaStream: any) {

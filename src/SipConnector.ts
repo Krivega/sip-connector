@@ -724,7 +724,7 @@ export default class SipConnector {
       maxBitrate?: number;
       degradationPreference?: TDegradationPreference;
     };
-    options?: { callLimit: number };
+    options?: { callLimit?: number };
   }) {
     const targetFunction = async () => {
       return this._sendPresentation(session, stream, data);
@@ -887,11 +887,13 @@ export default class SipConnector {
       isP2P = false,
       maxBitrate,
       degradationPreference,
+      callLimit,
     }: {
       isNeedReinvite?: boolean;
       isP2P?: boolean;
       maxBitrate?: number;
       degradationPreference?: TDegradationPreference;
+      callLimit?: number;
     } = {},
   ): Promise<MediaStream> {
     const session = this.establishedSession;
@@ -916,6 +918,9 @@ export default class SipConnector {
         isP2P,
         maxBitrate,
         degradationPreference,
+      },
+      options: {
+        callLimit,
       },
     });
   }
