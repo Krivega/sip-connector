@@ -137,7 +137,7 @@ const REQUEST_TERMINATED_STATUS_CODE = 487;
 const ORIGINATOR_LOCAL = 'local';
 const ORIGINATOR_REMOTE = 'remote';
 const DELAYED_REPEATED_CALLS_CONNECT_LIMIT = 3;
-const DELAYED_REPEATED_CALLS_SEND_PRESENTATION_LIMIT = 1;
+const SEND_PRESENTATION_CALL_LIMIT = 1;
 
 export const hasCanceledCallError = (error: TCustomError = new Error()): boolean => {
   const { originator, cause } = error;
@@ -354,14 +354,14 @@ export default class SipConnector {
     | ReturnType<typeof repeatedCallsAsync<UA>>
     | undefined;
 
+  private _cancelableSendPresentationWithRepeatedCalls:
+    | ReturnType<typeof repeatedCallsAsync<MediaStream>>
+    | undefined;
+
   private readonly _cancelableInitUa: CancelableRequest<
     Parameters<TInitUa>[0],
     ReturnType<TInitUa>
   >;
-
-  private _sendPresentationWithRepeatedCalls:
-    | ReturnType<typeof repeatedCallsAsync<MediaStream>>
-    | undefined;
 
   private readonly _cancelableDisconnect: CancelableRequest<void, ReturnType<TDisconnect>>;
 
@@ -396,8 +396,6 @@ export default class SipConnector {
   _streamPresentationCurrent?: MediaStream;
 
   socket?: WebSocketInterface;
-
-  private isStreamInProgress = false;
 
   constructor({ JsSIP }: { JsSIP: TJsSIP }) {
     this.JsSIP = JsSIP;
@@ -710,17 +708,17 @@ export default class SipConnector {
     });
   };
 
-  private async __sendPresentationWithDuplicatedCalls({
+  private async _sendPresentationWithDuplicatedCalls({
     session,
     stream,
-    data,
+    presentationOptions,
     options = {
-      callLimit: DELAYED_REPEATED_CALLS_SEND_PRESENTATION_LIMIT,
+      callLimit: SEND_PRESENTATION_CALL_LIMIT,
     },
   }: {
     session: RTCSession;
     stream: MediaStream;
-    data: {
+    presentationOptions: {
       isNeedReinvite?: boolean;
       isP2P?: boolean;
       maxBitrate?: number;
@@ -729,21 +727,21 @@ export default class SipConnector {
     options?: { callLimit: number };
   }) {
     const targetFunction = async () => {
-      return this._sendPresentation(session, stream, data);
+      return this._sendPresentation(session, stream, presentationOptions);
     };
 
     const isComplete = (): boolean => {
-      return this.isStreamInProgress;
+      return !!this._streamPresentationCurrent;
     };
 
-    this._sendPresentationWithRepeatedCalls = repeatedCallsAsync<MediaStream>({
+    this._cancelableSendPresentationWithRepeatedCalls = repeatedCallsAsync<MediaStream>({
       targetFunction,
       isComplete,
       isRejectAsValid: true,
       ...options,
     });
 
-    return this._sendPresentationWithRepeatedCalls.then((response: unknown) => {
+    return this._cancelableSendPresentationWithRepeatedCalls.then((response?: unknown) => {
       if (response instanceof MediaStream) {
         return response;
       }
@@ -863,12 +861,10 @@ export default class SipConnector {
         await scaleBitrate(senders, stream, maxBitrate);
       })
       .then(() => {
-        this.isStreamInProgress = true;
-
         return stream;
       })
       .catch((error: unknown) => {
-        this.isStreamInProgress = false;
+        this._removeStreamPresentationCurrent();
 
         this._sessionEvents.trigger(PRESENTATION_FAILED, error);
 
@@ -911,10 +907,10 @@ export default class SipConnector {
       await this.sendMustStopPresentation(session);
     }
 
-    return this.__sendPresentationWithDuplicatedCalls({
+    return this._sendPresentationWithDuplicatedCalls({
       session,
       stream,
-      data: {
+      presentationOptions: {
         isNeedReinvite,
         isP2P,
         maxBitrate,
@@ -1005,12 +1001,15 @@ export default class SipConnector {
     });
   }
 
-  _resetPresentation(): void {
+  _removeStreamPresentationCurrent() {
     delete this._streamPresentationCurrent;
+  }
+
+  _resetPresentation() {
+    this._removeStreamPresentationCurrent();
 
     this.promisePendingStartPresentation = undefined;
     this.promisePendingStopPresentation = undefined;
-    this.isStreamInProgress = false;
   }
 
   handleNewRTCSession = ({ originator, session }: IncomingRTCSessionEvent) => {
@@ -1628,9 +1627,14 @@ export default class SipConnector {
     this._cancelActionsRequests();
     this._cancelCallRequests();
     this._cancelConnectWithRepeatedCalls();
+    this._cancelSendPresentationWithRepeatedCalls();
   }
 
   _cancelConnectWithRepeatedCalls() {
+    this._cancelableConnectWithRepeatedCalls?.cancel();
+  }
+
+  _cancelSendPresentationWithRepeatedCalls() {
     this._cancelableConnectWithRepeatedCalls?.cancel();
   }
 
