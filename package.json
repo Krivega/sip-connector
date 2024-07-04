@@ -47,7 +47,6 @@
   ],
   "scripts": {
     "build": "vite build",
-    "format": "prettier --write \"src/**/*.{js,ts,tsx,json}\"",
     "lint": "yarn lint:ts && yarn lint:js",
     "lint:js": "eslint src --ext ts,tsx --ignore-path .gitignore --report-unused-disable-directives --max-warnings 0",
     "lint:ts": "tsc",
