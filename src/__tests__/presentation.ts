@@ -3,6 +3,7 @@ import type { ExtraHeaders } from '@krivega/jssip';
 import { createMediaStreamMock } from 'webrtc-mock';
 import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
+import SessionMock, { createDeclineStartPresentationError } from '../__fixtures__/Session.mock';
 import createSipConnector from '../doMock';
 import {
   CONTENT_TYPE_SHARE_STATE,
@@ -10,6 +11,8 @@ import {
   HEADER_START_PRESENTATION,
   HEADER_START_PRESENTATION_P2P,
 } from '../headers';
+
+const startPresentationCallLimit = 3;
 
 describe('presentation', () => {
   const number = '111';
@@ -258,5 +261,28 @@ describe('presentation', () => {
     });
 
     expect(rejectedError.message).toBe(failedToSendMustStopSendPresentationError);
+  });
+
+  it('should repeat start presentation when presentation fails with error', async () => {
+    expect.assertions(2);
+
+    SessionMock.setStartPresentationError(createDeclineStartPresentationError());
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    // @ts-expect-error
+    const sendPresentationMocked = jest.spyOn(sipConnector, '_sendPresentation');
+
+    try {
+      await sipConnector.startPresentation(mediaStream, {
+        isP2P: true,
+        callLimit: startPresentationCallLimit,
+      });
+    } catch (error) {
+      expect(error).toEqual(new Error('call limit (3) is reached'));
+    }
+
+    expect(sendPresentationMocked).toHaveBeenCalledTimes(startPresentationCallLimit);
   });
 });

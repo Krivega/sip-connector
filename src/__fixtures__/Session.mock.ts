@@ -10,6 +10,15 @@ import { getRoomFromSipUrl } from './utils';
 const CONNECTION_DELAY = 400; // more 300 for test cancel requests with debounced
 
 export const FAILED_CONFERENCE_NUMBER = '777';
+const DECLINE = 603;
+
+export const createDeclineStartPresentationError = () => {
+  const error = new Error('Failed to start presentation');
+
+  error.cause = DECLINE;
+
+  return error;
+};
 
 const hasVideoTracks = (mediaStream: MediaStream): boolean => {
   return mediaStream.getVideoTracks().length > 0;
