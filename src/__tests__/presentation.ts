@@ -315,7 +315,7 @@ describe('presentation', () => {
     expect(stream).toBeInstanceOf(MediaStream);
   });
 
-  it('should stop repeated calls after stop presentation', async () => {
+  it('should cancel requests send presentation after stop presentation', async () => {
     expect.assertions(4);
 
     SessionMock.setStartPresentationError(createDeclineStartPresentationError());
