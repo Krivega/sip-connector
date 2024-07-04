@@ -714,7 +714,7 @@ export default class SipConnector {
     session,
     stream,
     data,
-    options = { callLimit: DELAYED_REPEATED_CALLS_SEND_PRESENTATION },
+    options,
   }: {
     session: RTCSession;
     stream: MediaStream;
@@ -724,7 +724,7 @@ export default class SipConnector {
       maxBitrate?: number;
       degradationPreference?: TDegradationPreference;
     };
-    options?: { callLimit?: number };
+    options: { callLimit?: number };
   }) {
     const targetFunction = async () => {
       return this._sendPresentation(session, stream, data);
@@ -866,7 +866,7 @@ export default class SipConnector {
         return stream;
       })
       .catch((error: unknown) => {
-        this.isStreamInProgress = true;
+        this.isStreamInProgress = false;
 
         this._sessionEvents.trigger(PRESENTATION_FAILED, error);
 
@@ -885,9 +885,9 @@ export default class SipConnector {
     {
       isNeedReinvite = true,
       isP2P = false,
+      callLimit = DELAYED_REPEATED_CALLS_SEND_PRESENTATION,
       maxBitrate,
       degradationPreference,
-      callLimit,
     }: {
       isNeedReinvite?: boolean;
       isP2P?: boolean;

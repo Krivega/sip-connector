@@ -12,7 +12,8 @@ import {
   HEADER_START_PRESENTATION_P2P,
 } from '../headers';
 
-const startPresentationCallLimit = 3;
+const startPresentationCallLimit = 1;
+const errorStartPresentationCount = 3;
 
 describe('presentation', () => {
   const number = '111';
@@ -54,6 +55,11 @@ describe('presentation', () => {
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },
     });
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    SessionMock.resetStartPresentationError();
   });
 
   it('twice start presentation', async () => {
@@ -263,8 +269,8 @@ describe('presentation', () => {
     expect(rejectedError.message).toBe(failedToSendMustStopSendPresentationError);
   });
 
-  it('should repeat start presentation when presentation fails with error', async () => {
-    expect.assertions(2);
+  it('should not repeat start presentation when presentation fails with error, when call limit is not passed', async () => {
+    expect.assertions(3);
 
     SessionMock.setStartPresentationError(createDeclineStartPresentationError());
 
@@ -273,16 +279,39 @@ describe('presentation', () => {
 
     // @ts-expect-error
     const sendPresentationMocked = jest.spyOn(sipConnector, '_sendPresentation');
+    let stream;
 
     try {
-      await sipConnector.startPresentation(mediaStream, {
-        isP2P: true,
-        callLimit: startPresentationCallLimit,
+      stream = await sipConnector.startPresentation(mediaStream, {
+        isP2P: false,
       });
     } catch (error) {
-      expect(error).toEqual(new Error('call limit (3) is reached'));
+      expect(error).toEqual(new Error('call limit (1) is reached'));
     }
 
     expect(sendPresentationMocked).toHaveBeenCalledTimes(startPresentationCallLimit);
+    expect(stream).toBeUndefined();
+  });
+
+  it('should complete start presentation after 2 attempts has failed', async () => {
+    expect.assertions(2);
+
+    SessionMock.setStartPresentationError(createDeclineStartPresentationError(), {
+      count: errorStartPresentationCount,
+    });
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    // @ts-expect-error
+    const sendPresentationMocked = jest.spyOn(sipConnector, '_sendPresentation');
+
+    const stream = await sipConnector.startPresentation(mediaStream, {
+      isP2P: false,
+      callLimit: errorStartPresentationCount,
+    });
+
+    expect(sendPresentationMocked).toHaveBeenCalledTimes(errorStartPresentationCount);
+    expect(stream).toBeInstanceOf(MediaStream);
   });
 });
