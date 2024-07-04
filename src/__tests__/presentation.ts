@@ -282,9 +282,7 @@ describe('presentation', () => {
     let stream;
 
     try {
-      stream = await sipConnector.startPresentation(mediaStream, {
-        isP2P: false,
-      });
+      stream = await sipConnector.startPresentation(mediaStream);
     } catch (error) {
       expect(error).toEqual(new Error('call limit (1) is reached'));
     }
@@ -306,8 +304,7 @@ describe('presentation', () => {
     // @ts-expect-error
     const sendPresentationMocked = jest.spyOn(sipConnector, '_sendPresentation');
 
-    const stream = await sipConnector.startPresentation(mediaStream, {
-      isP2P: false,
+    const stream = await sipConnector.startPresentation(mediaStream, undefined, {
       callLimit: errorStartPresentationCount,
     });
 

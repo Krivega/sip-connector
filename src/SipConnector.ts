@@ -137,7 +137,7 @@ const REQUEST_TERMINATED_STATUS_CODE = 487;
 const ORIGINATOR_LOCAL = 'local';
 const ORIGINATOR_REMOTE = 'remote';
 const DELAYED_REPEATED_CALLS_CONNECT_LIMIT = 3;
-const DELAYED_REPEATED_CALLS_SEND_PRESENTATION = 1;
+const DELAYED_REPEATED_CALLS_SEND_PRESENTATION_LIMIT = 1;
 
 export const hasCanceledCallError = (error: TCustomError = new Error()): boolean => {
   const { originator, cause } = error;
@@ -714,7 +714,9 @@ export default class SipConnector {
     session,
     stream,
     data,
-    options,
+    options = {
+      callLimit: DELAYED_REPEATED_CALLS_SEND_PRESENTATION_LIMIT,
+    },
   }: {
     session: RTCSession;
     stream: MediaStream;
@@ -724,7 +726,7 @@ export default class SipConnector {
       maxBitrate?: number;
       degradationPreference?: TDegradationPreference;
     };
-    options: { callLimit?: number };
+    options?: { callLimit: number };
   }) {
     const targetFunction = async () => {
       return this._sendPresentation(session, stream, data);
@@ -885,7 +887,6 @@ export default class SipConnector {
     {
       isNeedReinvite = true,
       isP2P = false,
-      callLimit = DELAYED_REPEATED_CALLS_SEND_PRESENTATION,
       maxBitrate,
       degradationPreference,
     }: {
@@ -893,8 +894,8 @@ export default class SipConnector {
       isP2P?: boolean;
       maxBitrate?: number;
       degradationPreference?: TDegradationPreference;
-      callLimit?: number;
     } = {},
+    options?: { callLimit: number },
   ): Promise<MediaStream> {
     const session = this.establishedSession;
 
@@ -919,9 +920,7 @@ export default class SipConnector {
         maxBitrate,
         degradationPreference,
       },
-      options: {
-        callLimit,
-      },
+      options,
     });
   }
 
