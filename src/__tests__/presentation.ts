@@ -56,13 +56,6 @@ describe('presentation', () => {
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },
     });
-
-    const cancelSendPresentationWithRepeatedCallsActual =
-      sipConnector._cancelSendPresentationWithRepeatedCalls.bind(sipConnector);
-
-    sipConnector._cancelSendPresentationWithRepeatedCalls = () => {
-      cancelSendPresentationWithRepeatedCallsActual();
-    };
   });
 
   afterEach(() => {
