@@ -3,7 +3,10 @@ import type { ExtraHeaders } from '@krivega/jssip';
 import { createMediaStreamMock } from 'webrtc-mock';
 import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
-import SessionMock, { createDeclineStartPresentationError } from '../__fixtures__/Session.mock';
+import SessionMock, {
+  createDeclineStartPresentationError,
+  ERROR_MESSAGE_FAILED_TO_START_PRESENTATION,
+} from '../__fixtures__/Session.mock';
 import createSipConnector from '../doMock';
 import {
   CONTENT_TYPE_SHARE_STATE,
@@ -310,5 +313,42 @@ describe('presentation', () => {
 
     expect(sendPresentationMocked).toHaveBeenCalledTimes(errorStartPresentationCount);
     expect(stream).toBeInstanceOf(MediaStream);
+  });
+
+  it('should stop repeated calls after stop presentation', async () => {
+    expect.assertions(4);
+
+    SessionMock.setStartPresentationError(createDeclineStartPresentationError());
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    // @ts-expect-error
+    const sendPresentationMocked = jest.spyOn(sipConnector, '_sendPresentation');
+    const cancelSendPresentationWithRepeatedCallsMocked = jest.spyOn(
+      sipConnector,
+      '_cancelSendPresentationWithRepeatedCalls',
+    );
+
+    const promiseStartPresentation = sipConnector.startPresentation(mediaStream, undefined, {
+      callLimit: errorStartPresentationCount,
+    });
+
+    try {
+      await sipConnector.stopPresentation();
+    } catch (error) {
+      expect(error).toEqual(new Error(ERROR_MESSAGE_FAILED_TO_START_PRESENTATION));
+    }
+
+    try {
+      await promiseStartPresentation;
+    } catch (error) {
+      expect(error).toEqual(new Error('canceled'));
+    }
+
+    expect(sendPresentationMocked.mock.calls.length).toBeLessThanOrEqual(
+      errorStartPresentationCount,
+    );
+    expect(cancelSendPresentationWithRepeatedCallsMocked).toHaveBeenCalledTimes(1);
   });
 });

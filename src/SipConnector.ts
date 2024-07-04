@@ -1007,6 +1007,7 @@ export default class SipConnector {
 
   _resetPresentation() {
     this._removeStreamPresentationCurrent();
+    this._cancelSendPresentationWithRepeatedCalls();
 
     this.promisePendingStartPresentation = undefined;
     this.promisePendingStopPresentation = undefined;
@@ -1635,7 +1636,7 @@ export default class SipConnector {
   }
 
   _cancelSendPresentationWithRepeatedCalls() {
-    this._cancelableConnectWithRepeatedCalls?.cancel();
+    this._cancelableSendPresentationWithRepeatedCalls?.cancel();
   }
 
   _cancelCallRequests() {
