@@ -10,19 +10,26 @@ const resolveStartPresentation = ({
   maxBitrate?: number;
   sipConnector: SipConnector;
 }) => {
-  const startPresentation = async ({
-    mediaStream,
-    isP2P = false,
-  }: {
-    mediaStream: MediaStream;
-    isP2P: boolean;
-  }): Promise<MediaStream | void> => {
+  const startPresentation = async (
+    {
+      mediaStream,
+      isP2P = false,
+    }: {
+      mediaStream: MediaStream;
+      isP2P: boolean;
+    },
+    options?: { callLimit: number },
+  ): Promise<MediaStream | void> => {
     log('startPresentation');
 
-    return sipConnector.startPresentation(mediaStream, {
-      isP2P,
-      maxBitrate,
-    });
+    return sipConnector.startPresentation(
+      mediaStream,
+      {
+        isP2P,
+        maxBitrate,
+      },
+      options,
+    );
   };
 
   return startPresentation;
