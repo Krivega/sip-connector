@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [8.1.0](https://github.com/Krivega/sip-connector/compare/v8.0.0...v8.1.0) (2024-07-05)
+
+### Features
+
+- start presentation with retry ([#42](https://github.com/Krivega/sip-connector/issues/42)) ([a6dc727](https://github.com/Krivega/sip-connector/commit/a6dc72722bc87a6b02e847791d8742f7d6cb4082))
+
 ## [8.0.0](https://github.com/Krivega/sip-connector/compare/v7.0.10...v8.0.0) (2024-07-03)
 
 ### ⚠ BREAKING CHANGES
