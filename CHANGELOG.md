@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [8.2.0](https://github.com/Krivega/sip-connector/compare/v8.1.0...v8.2.0) (2024-07-05)
+
+### Features
+
+- add options param to resolveStartPresentation ([#43](https://github.com/Krivega/sip-connector/issues/43)) ([c572f25](https://github.com/Krivega/sip-connector/commit/c572f259b55c039918ce5cac2a6e35a7ce1da807))
+
 ## [8.1.0](https://github.com/Krivega/sip-connector/compare/v8.0.0...v8.1.0) (2024-07-05)
 
 ### Features
