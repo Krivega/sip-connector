@@ -11,6 +11,16 @@ const CONNECTION_DELAY = 400; // more 300 for test cancel requests with debounce
 
 export const FAILED_CONFERENCE_NUMBER = '777';
 
+const DECLINE = 603;
+
+export const createDeclineStartPresentationError = () => {
+  const error = new Error('Failed to start presentation');
+
+  error.cause = DECLINE;
+
+  return error;
+};
+
 const hasVideoTracks = (mediaStream: MediaStream): boolean => {
   return mediaStream.getVideoTracks().length > 0;
 };
@@ -21,6 +31,12 @@ class Session extends BaseSession {
   status_code?: number;
 
   private _isEnded = false;
+
+  private static startPresentationError?: Error;
+
+  private static countStartPresentationError: number = Number.POSITIVE_INFINITY;
+
+  private static countStartsPresentation = 0;
 
   constructor({
     url = '',
@@ -36,6 +52,33 @@ class Session extends BaseSession {
     super({ originator, eventHandlers });
     this.url = url;
     this.initPeerconnection(mediaStream);
+  }
+
+  public static setStartPresentationError(
+    startPresentationError: Error,
+    { count = Number.POSITIVE_INFINITY }: { count?: number } = {},
+  ) {
+    this.startPresentationError = startPresentationError;
+    this.countStartPresentationError = count;
+  }
+
+  public static resetStartPresentationError() {
+    this.startPresentationError = undefined;
+    this.countStartPresentationError = Number.POSITIVE_INFINITY;
+    this.countStartsPresentation = 0;
+  }
+
+  public async startPresentation(stream: MediaStream) {
+    Session.countStartsPresentation += 1;
+
+    if (
+      Session.startPresentationError &&
+      Session.countStartsPresentation < Session.countStartPresentationError
+    ) {
+      throw Session.startPresentationError;
+    }
+
+    return super.startPresentation(stream);
   }
 
   initPeerconnection(mediaStream: any) {

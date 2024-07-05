@@ -3,6 +3,7 @@ import type { ExtraHeaders } from '@krivega/jssip';
 import { createMediaStreamMock } from 'webrtc-mock';
 import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
+import SessionMock, { createDeclineStartPresentationError } from '../__fixtures__/Session.mock';
 import createSipConnector from '../doMock';
 import {
   CONTENT_TYPE_SHARE_STATE,
@@ -11,6 +12,9 @@ import {
   HEADER_START_PRESENTATION_P2P,
 } from '../headers';
 
+const startPresentationCallLimit = 1;
+const errorStartPresentationCount = 3;
+
 describe('presentation', () => {
   const number = '111';
   let sipConnector: SipConnector;
@@ -18,6 +22,7 @@ describe('presentation', () => {
   let mediaStreamUpdated: MediaStream;
 
   const failedToSendMustStopSendPresentationError = 'failedToSendMustStopSendPresentationError';
+  const declineStartPresentationError = createDeclineStartPresentationError();
 
   const mockFailToSendMustStopPresentationInfo = () => {
     // eslint-disable-next-line @typescript-eslint/unbound-method
@@ -51,6 +56,11 @@ describe('presentation', () => {
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },
     });
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    SessionMock.resetStartPresentationError();
   });
 
   it('twice start presentation', async () => {
@@ -258,5 +268,114 @@ describe('presentation', () => {
     });
 
     expect(rejectedError.message).toBe(failedToSendMustStopSendPresentationError);
+  });
+
+  it('should not repeat start presentation when presentation fails with error, when call limit is not passed', async () => {
+    expect.assertions(3);
+
+    SessionMock.setStartPresentationError(declineStartPresentationError);
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    // @ts-expect-error
+    const sendPresentationMocked = jest.spyOn(sipConnector, '_sendPresentation');
+    let stream;
+
+    try {
+      stream = await sipConnector.startPresentation(mediaStream);
+    } catch (error) {
+      expect(error).toEqual(new Error('call limit (1) is reached'));
+    }
+
+    expect(sendPresentationMocked).toHaveBeenCalledTimes(startPresentationCallLimit);
+    expect(stream).toBeUndefined();
+  });
+
+  it('should complete start presentation after 2 attempts has failed', async () => {
+    expect.assertions(2);
+
+    SessionMock.setStartPresentationError(declineStartPresentationError, {
+      count: errorStartPresentationCount,
+    });
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    // @ts-expect-error
+    const sendPresentationMocked = jest.spyOn(sipConnector, '_sendPresentation');
+
+    const stream = await sipConnector.startPresentation(mediaStream, undefined, {
+      callLimit: errorStartPresentationCount,
+    });
+
+    expect(sendPresentationMocked).toHaveBeenCalledTimes(errorStartPresentationCount);
+    expect(stream).toBeInstanceOf(MediaStream);
+  });
+
+  it('should cancel requests send presentation after stop presentation', async () => {
+    expect.assertions(4);
+
+    SessionMock.setStartPresentationError(declineStartPresentationError);
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    // @ts-expect-error
+    const sendPresentationMocked = jest.spyOn(sipConnector, '_sendPresentation');
+    const cancelSendPresentationWithRepeatedCallsMocked = jest.spyOn(
+      sipConnector,
+      '_cancelSendPresentationWithRepeatedCalls',
+    );
+
+    const promiseStartPresentation = sipConnector.startPresentation(mediaStream, undefined, {
+      callLimit: errorStartPresentationCount,
+    });
+
+    try {
+      await sipConnector.stopPresentation();
+    } catch (error) {
+      expect(error).toEqual(declineStartPresentationError);
+    }
+
+    try {
+      await promiseStartPresentation;
+    } catch (error) {
+      expect(error).toEqual(new Error('canceled'));
+    }
+
+    expect(sendPresentationMocked).toHaveBeenCalledTimes(1);
+    expect(cancelSendPresentationWithRepeatedCallsMocked).toHaveBeenCalledTimes(1);
+  });
+
+  it('should cancel requests send presentation after hang up call', async () => {
+    expect.assertions(3);
+
+    SessionMock.setStartPresentationError(declineStartPresentationError);
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    // @ts-expect-error
+    const sendPresentationMocked = jest.spyOn(sipConnector, '_sendPresentation');
+    const cancelSendPresentationWithRepeatedCallsMocked = jest.spyOn(
+      sipConnector,
+      '_cancelSendPresentationWithRepeatedCalls',
+    );
+
+    const promiseStartPresentation = sipConnector.startPresentation(mediaStream, undefined, {
+      callLimit: errorStartPresentationCount,
+    });
+
+    await sipConnector.hangUp();
+
+    try {
+      await promiseStartPresentation;
+    } catch (error) {
+      expect(error).toEqual(new Error('canceled'));
+    }
+
+    expect(sendPresentationMocked).toHaveBeenCalledTimes(1);
+    expect(cancelSendPresentationWithRepeatedCallsMocked).toHaveBeenCalledTimes(3);
   });
 });

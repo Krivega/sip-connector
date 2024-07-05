@@ -137,6 +137,7 @@ const REQUEST_TERMINATED_STATUS_CODE = 487;
 const ORIGINATOR_LOCAL = 'local';
 const ORIGINATOR_REMOTE = 'remote';
 const DELAYED_REPEATED_CALLS_CONNECT_LIMIT = 3;
+const SEND_PRESENTATION_CALL_LIMIT = 1;
 
 export const hasCanceledCallError = (error: TCustomError = new Error()): boolean => {
   const { originator, cause } = error;
@@ -351,6 +352,10 @@ export default class SipConnector {
 
   private _cancelableConnectWithRepeatedCalls:
     | ReturnType<typeof repeatedCallsAsync<UA>>
+    | undefined;
+
+  private _cancelableSendPresentationWithRepeatedCalls:
+    | ReturnType<typeof repeatedCallsAsync<MediaStream>>
     | undefined;
 
   private readonly _cancelableInitUa: CancelableRequest<
@@ -703,6 +708,48 @@ export default class SipConnector {
     });
   };
 
+  private async _sendPresentationWithDuplicatedCalls({
+    session,
+    stream,
+    presentationOptions,
+    options = {
+      callLimit: SEND_PRESENTATION_CALL_LIMIT,
+    },
+  }: {
+    session: RTCSession;
+    stream: MediaStream;
+    presentationOptions: {
+      isNeedReinvite?: boolean;
+      isP2P?: boolean;
+      maxBitrate?: number;
+      degradationPreference?: TDegradationPreference;
+    };
+    options?: { callLimit: number };
+  }) {
+    const targetFunction = async () => {
+      return this._sendPresentation(session, stream, presentationOptions);
+    };
+
+    const isComplete = (): boolean => {
+      return !!this._streamPresentationCurrent;
+    };
+
+    this._cancelableSendPresentationWithRepeatedCalls = repeatedCallsAsync<MediaStream>({
+      targetFunction,
+      isComplete,
+      isRejectAsValid: true,
+      ...options,
+    });
+
+    return this._cancelableSendPresentationWithRepeatedCalls.then((response?: unknown) => {
+      if (response instanceof MediaStream) {
+        return response;
+      }
+
+      throw response;
+    });
+  }
+
   private hasEqualConnectionConfiguration(parameters: TParametersConnection) {
     const { configuration: newConfiguration } = this.createUaConfiguration(parameters);
 
@@ -817,6 +864,8 @@ export default class SipConnector {
         return stream;
       })
       .catch((error: unknown) => {
+        this._removeStreamPresentationCurrent();
+
         this._sessionEvents.trigger(PRESENTATION_FAILED, error);
 
         throw error;
@@ -842,6 +891,7 @@ export default class SipConnector {
       maxBitrate?: number;
       degradationPreference?: TDegradationPreference;
     } = {},
+    options?: { callLimit: number },
   ): Promise<MediaStream> {
     const session = this.establishedSession;
 
@@ -857,11 +907,16 @@ export default class SipConnector {
       await this.sendMustStopPresentation(session);
     }
 
-    return this._sendPresentation(session, stream, {
-      isNeedReinvite,
-      isP2P,
-      maxBitrate,
-      degradationPreference,
+    return this._sendPresentationWithDuplicatedCalls({
+      session,
+      stream,
+      presentationOptions: {
+        isNeedReinvite,
+        isP2P,
+        maxBitrate,
+        degradationPreference,
+      },
+      options,
     });
   }
 
@@ -876,6 +931,8 @@ export default class SipConnector {
   }: {
     isP2P?: boolean;
   } = {}): Promise<MediaStream | void> {
+    this._cancelSendPresentationWithRepeatedCalls();
+
     const streamPresentationPrevious = this._streamPresentationCurrent;
     let result: Promise<MediaStream | void> =
       this.promisePendingStartPresentation ?? Promise.resolve();
@@ -946,11 +1003,20 @@ export default class SipConnector {
     });
   }
 
-  _resetPresentation(): void {
+  _removeStreamPresentationCurrent() {
     delete this._streamPresentationCurrent;
+  }
+
+  _resetPresentation() {
+    this._removeStreamPresentationCurrent();
 
     this.promisePendingStartPresentation = undefined;
     this.promisePendingStopPresentation = undefined;
+  }
+
+  _cancelRequestsAndResetPresentation() {
+    this._cancelSendPresentationWithRepeatedCalls();
+    this._resetPresentation();
   }
 
   handleNewRTCSession = ({ originator, session }: IncomingRTCSessionEvent) => {
@@ -1457,7 +1523,7 @@ export default class SipConnector {
   };
 
   _restoreSession: () => void = () => {
-    this._resetPresentation();
+    this._cancelRequestsAndResetPresentation();
 
     delete this._connectionConfiguration.number;
     delete this.session;
@@ -1551,7 +1617,11 @@ export default class SipConnector {
       const { session } = this;
 
       if (this._streamPresentationCurrent) {
-        await this.stopPresentation();
+        try {
+          await this.stopPresentation();
+        } catch (error) {
+          logger('error stop presentation: ', error);
+        }
       }
 
       this._restoreSession();
@@ -1572,6 +1642,10 @@ export default class SipConnector {
 
   _cancelConnectWithRepeatedCalls() {
     this._cancelableConnectWithRepeatedCalls?.cancel();
+  }
+
+  _cancelSendPresentationWithRepeatedCalls() {
+    this._cancelableSendPresentationWithRepeatedCalls?.cancel();
   }
 
   _cancelCallRequests() {
