@@ -376,6 +376,6 @@ describe('presentation', () => {
     }
 
     expect(sendPresentationMocked).toHaveBeenCalledTimes(1);
-    expect(cancelSendPresentationWithRepeatedCallsMocked).toHaveBeenCalledTimes(1);
+    expect(cancelSendPresentationWithRepeatedCallsMocked).toHaveBeenCalledTimes(3);
   });
 });

@@ -1014,6 +1014,11 @@ export default class SipConnector {
     this.promisePendingStopPresentation = undefined;
   }
 
+  _cancelRequestsAndResetPresentation() {
+    this._cancelSendPresentationWithRepeatedCalls();
+    this._resetPresentation();
+  }
+
   handleNewRTCSession = ({ originator, session }: IncomingRTCSessionEvent) => {
     if (originator === ORIGINATOR_REMOTE) {
       this.incomingSession = session;
@@ -1518,7 +1523,7 @@ export default class SipConnector {
   };
 
   _restoreSession: () => void = () => {
-    this._resetPresentation();
+    this._cancelRequestsAndResetPresentation();
 
     delete this._connectionConfiguration.number;
     delete this.session;
