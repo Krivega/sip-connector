@@ -741,13 +741,7 @@ export default class SipConnector {
       ...options,
     });
 
-    return this._cancelableSendPresentationWithRepeatedCalls.then((response?: unknown) => {
-      if (response instanceof MediaStream) {
-        return response;
-      }
-
-      throw response;
-    });
+    return this._cancelableSendPresentationWithRepeatedCalls as Promise<MediaStream>;
   }
 
   private hasEqualConnectionConfiguration(parameters: TParametersConnection) {
