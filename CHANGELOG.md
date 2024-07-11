@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [8.2.1](https://github.com/Krivega/sip-connector/compare/v8.2.0...v8.2.1) (2024-07-11)
+
+### Bug Fixes
+
+- sendPresentationWithDuplicatedCalls ([107de54](https://github.com/Krivega/sip-connector/commit/107de54e407167dbf57095c2c1295b274b98a6bf))
+
 ## [8.2.0](https://github.com/Krivega/sip-connector/compare/v8.1.0...v8.2.0) (2024-07-05)
 
 ### Features
