@@ -742,11 +742,7 @@ export default class SipConnector {
     });
 
     return this._cancelableSendPresentationWithRepeatedCalls.then((response?: unknown) => {
-      if (response instanceof MediaStream) {
-        return response;
-      }
-
-      throw response;
+      return response as MediaStream;
     });
   }
 
