@@ -830,11 +830,13 @@ export default class SipConnector {
 
     this._streamPresentationCurrent = streamPresentationCurrent;
 
+    // определяем заголовки для начала презентации в зависимости от типа сессии
     const preparatoryHeaders = isP2P
-      ? [HEADER_START_PRESENTATION_P2P]
-      : [HEADER_START_PRESENTATION];
+      ? [HEADER_START_PRESENTATION_P2P] // `x-webrtc-share-state: YOUCANRECEIVECONTENT
+      : [HEADER_START_PRESENTATION]; // `x-webrtc-share-state: LETMESTARTPRESENTATION`
 
     const result = session
+      // отправляем запрос на презентацию с заголовком 'application/vinteo.webrtc.sharedesktop'
       .sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
         extraHeaders: preparatoryHeaders,
       })
@@ -933,13 +935,17 @@ export default class SipConnector {
     let result: Promise<MediaStream | void> =
       this.promisePendingStartPresentation ?? Promise.resolve();
 
-    const preparatoryHeaders = isP2P ? [HEADER_STOP_PRESENTATION_P2P] : [HEADER_STOP_PRESENTATION];
+    // определяем заголовки для остановки презентации в зависимости от типа сессии
+    const preparatoryHeaders = isP2P
+      ? [HEADER_STOP_PRESENTATION_P2P] // `x-webrtc-share-state: CONTENTEND`
+      : [HEADER_STOP_PRESENTATION]; // `x-webrtc-share-state: STOPPRESENTATION`
 
     const session = this.establishedSession;
 
     if (session && streamPresentationPrevious) {
       result = result
         .then(async () => {
+          // информируем сервер о остановке презентации с заголовком 'application/vinteo.webrtc.sharedesktop'
           return session.sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
             extraHeaders: preparatoryHeaders,
           });
