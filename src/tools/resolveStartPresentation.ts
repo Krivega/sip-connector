@@ -1,19 +1,20 @@
 import type SipConnector from '../SipConnector';
+import type { TDegradationPreference } from '../SipConnector';
 import log from '../logger';
 
-const ONE_MEGABIT_IN_BITS = 1e6;
-
 const resolveStartPresentation = ({
-  maxBitrate = ONE_MEGABIT_IN_BITS,
   sipConnector,
+  maxBitrate,
+  degradationPreference,
 }: {
-  maxBitrate?: number;
   sipConnector: SipConnector;
+  maxBitrate?: number;
+  degradationPreference?: TDegradationPreference;
 }) => {
   const startPresentation = async (
     {
       mediaStream,
-      isP2P = false,
+      isP2P,
     }: {
       mediaStream: MediaStream;
       isP2P: boolean;
@@ -27,6 +28,7 @@ const resolveStartPresentation = ({
       {
         isP2P,
         maxBitrate,
+        degradationPreference,
       },
       options,
     );

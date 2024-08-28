@@ -45,6 +45,7 @@ import {
   NEW_INFO,
   NEW_RTC_SESSION,
   NOT_AVAILABLE_SECOND_REMOTE_STREAM_EVENT,
+  ONE_MEGABIT_IN_BITS,
   PARTICIPANT_ADDED_TO_LIST_MODERATORS,
   PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS,
   PARTICIPANT_MOVE_REQUEST_TO_STREAM,
@@ -279,7 +280,8 @@ type TSet = ({
   password?: string;
 }) => Promise<boolean>;
 
-type TDegradationPreference = 'balanced' | 'maintain-framerate' | 'maintain-resolution';
+export type TDegradationPreference = 'balanced' | 'maintain-framerate' | 'maintain-resolution';
+
 type TCall = ({
   number,
   mediaStream,
@@ -815,8 +817,8 @@ export default class SipConnector {
     session: RTCSession,
     stream: MediaStream,
     {
-      maxBitrate,
-      degradationPreference,
+      maxBitrate = ONE_MEGABIT_IN_BITS,
+      degradationPreference = 'maintain-resolution',
       isNeedReinvite = true,
       isP2P = false,
     }: {
@@ -879,8 +881,8 @@ export default class SipConnector {
   async startPresentation(
     stream: MediaStream,
     {
-      isNeedReinvite = true,
-      isP2P = false,
+      isNeedReinvite,
+      isP2P,
       maxBitrate,
       degradationPreference,
     }: {
@@ -974,9 +976,9 @@ export default class SipConnector {
   async updatePresentation(
     stream: MediaStream,
     {
-      isP2P = false,
+      isP2P,
       maxBitrate,
-      degradationPreference,
+      degradationPreference = 'maintain-resolution',
     }: {
       isP2P?: boolean;
       maxBitrate?: number;

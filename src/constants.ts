@@ -71,3 +71,5 @@ export const PRESENTATION_END = 'presentation:end';
 export const PRESENTATION_ENDED = 'presentation:ended';
 export const PRESENTATION_FAILED = 'presentation:failed';
 export const SPECTATOR = 'SPECTATOR';
+
+export const ONE_MEGABIT_IN_BITS = 1e6;
