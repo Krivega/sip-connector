@@ -115,21 +115,17 @@ import {
   NOT_AVAILABLE_SECOND_REMOTE_STREAM,
 } from './headers';
 import logger from './logger';
+import prepareMediaStream from './tools/prepareMediaStream';
 import type {
   EUseLicense,
+  TContentHint,
   TCustomError,
   TGetServerUrl,
   TJsSIP,
   TParametersCreateUa,
 } from './types';
 import { EEventsMainCAM, EEventsMic, EEventsSyncMediaState } from './types';
-import {
-  generateUserId,
-  hasVideoTracks,
-  parseDisplayName,
-  prepareMediaStream,
-  resolveSipUrl,
-} from './utils';
+import { generateUserId, hasVideoTracks, parseDisplayName, resolveSipUrl } from './utils';
 import { hasDeclineResponseFromServer, hasHandshakeWebsocketOpeningError } from './utils/errors';
 import scaleBitrate from './videoSendingBalancer/scaleBitrate';
 
@@ -725,6 +721,7 @@ export default class SipConnector {
       isP2P?: boolean;
       maxBitrate?: number;
       degradationPreference?: TDegradationPreference;
+      contentHint?: TContentHint;
     };
     options?: { callLimit: number };
   }) {
@@ -821,14 +818,16 @@ export default class SipConnector {
       degradationPreference = 'maintain-resolution',
       isNeedReinvite = true,
       isP2P = false,
+      contentHint = 'detail',
     }: {
       isNeedReinvite?: boolean;
       isP2P?: boolean;
       maxBitrate?: number;
       degradationPreference?: TDegradationPreference;
+      contentHint?: TContentHint;
     },
   ) {
-    const streamPresentationCurrent = prepareMediaStream(stream)!;
+    const streamPresentationCurrent = prepareMediaStream(stream, { contentHint })!;
 
     this._streamPresentationCurrent = streamPresentationCurrent;
 
@@ -885,11 +884,13 @@ export default class SipConnector {
       isP2P,
       maxBitrate,
       degradationPreference,
+      contentHint,
     }: {
       isNeedReinvite?: boolean;
       isP2P?: boolean;
       maxBitrate?: number;
       degradationPreference?: TDegradationPreference;
+      contentHint?: TContentHint;
     } = {},
     options?: { callLimit: number },
   ): Promise<MediaStream> {
@@ -915,6 +916,7 @@ export default class SipConnector {
         isP2P,
         maxBitrate,
         degradationPreference,
+        contentHint,
       },
       options,
     });
@@ -978,11 +980,13 @@ export default class SipConnector {
     {
       isP2P,
       maxBitrate,
-      degradationPreference = 'maintain-resolution',
+      degradationPreference,
+      contentHint,
     }: {
       isP2P?: boolean;
       maxBitrate?: number;
       degradationPreference?: TDegradationPreference;
+      contentHint?: TContentHint;
     } = {},
   ): Promise<MediaStream | void> {
     const session = this.establishedSession;
@@ -1003,6 +1007,7 @@ export default class SipConnector {
       isP2P,
       maxBitrate,
       degradationPreference,
+      contentHint,
       isNeedReinvite: false,
     });
   }

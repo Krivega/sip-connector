@@ -54,3 +54,5 @@ export type TParametersCreateUa = {
   connectionRecoveryMaxInterval?: number;
   userAgent?: string;
 };
+
+export type TContentHint = 'motion' | 'detail' | 'text' | 'none';
