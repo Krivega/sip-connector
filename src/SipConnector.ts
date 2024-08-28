@@ -120,6 +120,7 @@ import type {
   EUseLicense,
   TContentHint,
   TCustomError,
+  TDegradationPreference,
   TGetServerUrl,
   TJsSIP,
   TParametersCreateUa,
@@ -275,8 +276,6 @@ type TSet = ({
   displayName?: string;
   password?: string;
 }) => Promise<boolean>;
-
-export type TDegradationPreference = 'balanced' | 'maintain-framerate' | 'maintain-resolution';
 
 type TCall = ({
   number,

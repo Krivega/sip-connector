@@ -55,4 +55,5 @@ export type TParametersCreateUa = {
   userAgent?: string;
 };
 
+export type TDegradationPreference = 'balanced' | 'maintain-framerate' | 'maintain-resolution';
 export type TContentHint = 'motion' | 'detail' | 'text' | 'none';
