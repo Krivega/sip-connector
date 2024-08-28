@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [8.3.0](https://github.com/Krivega/sip-connector/compare/v8.2.1...v8.3.0) (2024-08-28)
+
+### Features
+
+- add contentHint to presentation ([9818c4f](https://github.com/Krivega/sip-connector/commit/9818c4fe3d522429673d5dcb03893b0f19418754))
+- set by default degradationPreference = 'maintain-resolution' for presentation ([8c0de6d](https://github.com/Krivega/sip-connector/commit/8c0de6dc51fdf1e8feaf3160158e4e2fb9765b05))
+
 ### [8.2.1](https://github.com/Krivega/sip-connector/compare/v8.2.0...v8.2.1) (2024-07-11)
 
 ### Bug Fixes
