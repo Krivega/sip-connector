@@ -1,5 +1,6 @@
 import type SipConnector from '../SipConnector';
 import log from '../logger';
+import type { TContentHint } from '../types';
 import hasPurgatory from './hasPurgatory';
 import resolveGetRemoteStreams from './resolveGetRemoteStreams';
 import resolveHandleChangeTracks from './resolveHandleChangeTracks';
@@ -14,6 +15,7 @@ const resolveCallToServer = (sipConnector: SipConnector) => {
     extraHeaders?: string[] | undefined;
     iceServers?: RTCIceServer[];
     degradationPreference?: TDegradationPreference;
+    contentHint?: TContentHint;
     setRemoteStreams: (streams: MediaStream[]) => void;
     onBeforeProgressCall?: (conference: string) => void;
     onSuccessProgressCall?: (parameters_: { isPurgatory: boolean }) => void;
@@ -29,6 +31,7 @@ const resolveCallToServer = (sipConnector: SipConnector) => {
       extraHeaders,
       iceServers,
       degradationPreference,
+      contentHint,
       setRemoteStreams,
       onBeforeProgressCall,
       onSuccessProgressCall,
@@ -54,6 +57,7 @@ const resolveCallToServer = (sipConnector: SipConnector) => {
         extraHeaders,
         iceServers,
         degradationPreference,
+        contentHint,
         number: conference,
         ontrack: handleChangeTracks,
       });
