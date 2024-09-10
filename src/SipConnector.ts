@@ -288,6 +288,7 @@ type TCall = ({
   offerToReceiveAudio,
   offerToReceiveVideo,
   degradationPreference,
+  contentHint,
 }: {
   number: string;
   mediaStream: MediaStream;
@@ -299,6 +300,7 @@ type TCall = ({
   offerToReceiveAudio?: boolean;
   offerToReceiveVideo?: boolean;
   degradationPreference?: TDegradationPreference;
+  contentHint?: TContentHint;
 }) => Promise<RTCPeerConnection>;
 
 type TDisconnect = () => Promise<void>;
@@ -311,6 +313,7 @@ type TParametersAnswerToIncomingCall = {
   videoMode?: 'recvonly' | 'sendonly' | 'sendrecv';
   audioMode?: 'recvonly' | 'sendonly' | 'sendrecv';
   degradationPreference?: TDegradationPreference;
+  contentHint?: TContentHint;
 };
 
 type TAnswerToIncomingCall = (
@@ -602,6 +605,7 @@ export default class SipConnector {
       deleteExisting: boolean;
       addMissing: boolean;
       forceRenegotiation: boolean;
+      contentHint?: TContentHint;
       degradationPreference?: TDegradationPreference;
     },
   ): Promise<void> {
@@ -609,7 +613,10 @@ export default class SipConnector {
       throw new Error('No session established');
     }
 
-    return this.session.replaceMediaStream(mediaStream, options);
+    const { contentHint } = options || {};
+    const preparedMediaStream = prepareMediaStream(mediaStream, { contentHint });
+
+    return this.session.replaceMediaStream(preparedMediaStream, options);
   }
 
   declineToIncomingCall = async ({ statusCode = REQUEST_TERMINATED_STATUS_CODE } = {}) => {
@@ -1372,6 +1379,7 @@ export default class SipConnector {
     videoMode,
     audioMode,
     degradationPreference,
+    contentHint,
     offerToReceiveAudio = true,
     offerToReceiveVideo = true,
   }) => {
@@ -1398,6 +1406,7 @@ export default class SipConnector {
         mediaStream: prepareMediaStream(mediaStream, {
           videoMode,
           audioMode,
+          contentHint,
         }),
         eventHandlers: this._sessionEvents.triggers,
         videoMode,
@@ -1422,6 +1431,7 @@ export default class SipConnector {
     videoMode,
     audioMode,
     degradationPreference,
+    contentHint,
   }): Promise<RTCPeerConnection> => {
     return new Promise((resolve, reject) => {
       if (!this.isAvailableIncomingCall) {
@@ -1463,6 +1473,7 @@ export default class SipConnector {
       const preparedMediaStream = prepareMediaStream(mediaStream, {
         videoMode,
         audioMode,
+        contentHint,
       });
 
       session.answer({
