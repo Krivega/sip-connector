@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [9.1.0](https://github.com/Krivega/sip-connector/compare/v9.0.0...v9.1.0) (2024-09-10)
+
+### Features
+
+- add content hint parameter for call, answer and replace media stream methods ([#45](https://github.com/Krivega/sip-connector/issues/45)) ([c2f8ef4](https://github.com/Krivega/sip-connector/commit/c2f8ef44ce40cab34a4dadfbbc28edae2acfd6c2))
+
 ## [9.0.0](https://github.com/Krivega/sip-connector/compare/v8.3.0...v9.0.0) (2024-08-28)
 
 ### ⚠ BREAKING CHANGES
