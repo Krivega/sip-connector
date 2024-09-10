@@ -614,7 +614,7 @@ export default class SipConnector {
     }
 
     const { contentHint } = options || {};
-    const preparedMediaStream = prepareMediaStream(mediaStream, { contentHint });
+    const preparedMediaStream = prepareMediaStream(mediaStream, { contentHint })!;
 
     return this.session.replaceMediaStream(preparedMediaStream, options);
   }
