@@ -313,6 +313,7 @@ type TParametersAnswerToIncomingCall = {
   videoMode?: 'recvonly' | 'sendonly' | 'sendrecv';
   audioMode?: 'recvonly' | 'sendonly' | 'sendrecv';
   degradationPreference?: TDegradationPreference;
+  contentHint?: TContentHint;
 };
 
 type TAnswerToIncomingCall = (
@@ -1430,6 +1431,7 @@ export default class SipConnector {
     videoMode,
     audioMode,
     degradationPreference,
+    contentHint,
   }): Promise<RTCPeerConnection> => {
     return new Promise((resolve, reject) => {
       if (!this.isAvailableIncomingCall) {
@@ -1471,6 +1473,7 @@ export default class SipConnector {
       const preparedMediaStream = prepareMediaStream(mediaStream, {
         videoMode,
         audioMode,
+        contentHint,
       });
 
       session.answer({
