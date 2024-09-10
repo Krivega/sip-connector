@@ -604,6 +604,7 @@ export default class SipConnector {
       deleteExisting: boolean;
       addMissing: boolean;
       forceRenegotiation: boolean;
+      contentHint?: TContentHint;
       degradationPreference?: TDegradationPreference;
     },
   ): Promise<void> {
@@ -611,7 +612,10 @@ export default class SipConnector {
       throw new Error('No session established');
     }
 
-    return this.session.replaceMediaStream(mediaStream, options);
+    const { contentHint } = options || {};
+    const preparedMediaStream = prepareMediaStream(mediaStream, { contentHint });
+
+    return this.session.replaceMediaStream(preparedMediaStream, options);
   }
 
   declineToIncomingCall = async ({ statusCode = REQUEST_TERMINATED_STATUS_CODE } = {}) => {
