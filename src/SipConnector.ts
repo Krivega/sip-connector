@@ -288,6 +288,7 @@ type TCall = ({
   offerToReceiveAudio,
   offerToReceiveVideo,
   degradationPreference,
+  contentHint,
 }: {
   number: string;
   mediaStream: MediaStream;
@@ -299,6 +300,7 @@ type TCall = ({
   offerToReceiveAudio?: boolean;
   offerToReceiveVideo?: boolean;
   degradationPreference?: TDegradationPreference;
+  contentHint?: TContentHint;
 }) => Promise<RTCPeerConnection>;
 
 type TDisconnect = () => Promise<void>;
@@ -1372,6 +1374,7 @@ export default class SipConnector {
     videoMode,
     audioMode,
     degradationPreference,
+    contentHint,
     offerToReceiveAudio = true,
     offerToReceiveVideo = true,
   }) => {
@@ -1398,6 +1401,7 @@ export default class SipConnector {
         mediaStream: prepareMediaStream(mediaStream, {
           videoMode,
           audioMode,
+          contentHint,
         }),
         eventHandlers: this._sessionEvents.triggers,
         videoMode,
