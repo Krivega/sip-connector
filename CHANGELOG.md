@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [9.2.0](https://github.com/Krivega/sip-connector/compare/v9.1.0...v9.2.0) (2024-09-24)
+
+### Features
+
+- add remoteAddress and extraHeaders to checkTelephony ([b25c8d2](https://github.com/Krivega/sip-connector/commit/b25c8d2690e043e3c76b84fef3e05bd1e31982fe))
+
 ## [9.1.0](https://github.com/Krivega/sip-connector/compare/v9.0.0...v9.1.0) (2024-09-10)
 
 ### Features
