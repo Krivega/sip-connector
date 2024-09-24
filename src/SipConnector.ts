@@ -123,7 +123,7 @@ import type {
   TDegradationPreference,
   TGetServerUrl,
   TJsSIP,
-  TParametersCreateUa,
+  TParametersCreateUaConfiguration,
 } from './types';
 import { EEventsMainCAM, EEventsMic, EEventsSyncMediaState } from './types';
 import { generateUserId, hasVideoTracks, parseDisplayName, resolveSipUrl } from './utils';
@@ -260,6 +260,12 @@ type TParametersCheckTelephony = {
   sipServerUrl: string;
   sipWebSocketServerURL: string;
   userAgent?: string;
+  remoteAddress?: string;
+  extraHeaders?: string[];
+};
+type TParametersCreateUa = UAConfigurationParams & {
+  remoteAddress?: string;
+  extraHeaders?: string[];
 };
 
 type TConnect = (
@@ -267,7 +273,7 @@ type TConnect = (
   options?: { callLimit?: number },
 ) => Promise<UA>;
 type TInitUa = (parameters: TParametersConnection) => Promise<UA>;
-type TCreateUa = (parameters: UAConfigurationParams) => UA;
+type TCreateUa = (parameters: TParametersCreateUa) => UA;
 type TStart = () => Promise<UA>;
 type TSet = ({
   displayName,
@@ -567,6 +573,8 @@ export default class SipConnector {
     displayName,
     sipServerUrl,
     sipWebSocketServerURL,
+    remoteAddress,
+    extraHeaders,
   }: TParametersCheckTelephony): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void) => {
       const { configuration } = this.createUaConfiguration({
@@ -576,7 +584,7 @@ export default class SipConnector {
         sipServerUrl,
       });
 
-      const ua = this._createUa(configuration);
+      const ua = this._createUa({ ...configuration, remoteAddress, extraHeaders });
 
       const rejectWithError = () => {
         const error = new Error('Telephony is not available');
@@ -784,7 +792,7 @@ export default class SipConnector {
     connectionRecoveryMinInterval = 2,
     connectionRecoveryMaxInterval = 6,
     userAgent,
-  }: TParametersCreateUa) {
+  }: TParametersCreateUaConfiguration) {
     if (register && !password) {
       throw new Error('password is required for authorized connection');
     }
@@ -1233,7 +1241,7 @@ export default class SipConnector {
 
     this._isRegisterConfig = !!register;
 
-    this.ua = this._createUa(configuration);
+    this.ua = this._createUa({ ...configuration, remoteAddress, extraHeaders });
 
     this._uaEvents.eachTriggers((trigger, eventName) => {
       const uaJsSipEvent = UA_JSSIP_EVENT_NAMES.find((jsSipEvent) => {
@@ -1245,16 +1253,26 @@ export default class SipConnector {
       }
     });
 
-    const extraHeadersRemoteAddress = getExtraHeadersRemoteAddress(remoteAddress);
-    const extraHeadersBase = [...extraHeadersRemoteAddress, ...extraHeaders];
-
-    this.ua.registrator().setExtraHeaders(extraHeadersBase);
-
     return this.ua;
   };
 
-  _createUa: TCreateUa = (parameters: UAConfigurationParams): UA => {
-    return new this.JsSIP.UA(parameters);
+  _createUa: TCreateUa = ({
+    remoteAddress,
+    extraHeaders = [],
+    ...parameters
+  }: TParametersCreateUa): UA => {
+    const ua = new this.JsSIP.UA(parameters);
+
+    const extraHeadersRemoteAddress = remoteAddress
+      ? getExtraHeadersRemoteAddress(remoteAddress)
+      : [];
+    const extraHeadersBase = [...extraHeadersRemoteAddress, ...extraHeaders];
+
+    if (extraHeadersBase.length > 0) {
+      ua.registrator().setExtraHeaders(extraHeadersBase);
+    }
+
+    return ua;
   };
 
   _start: TStart = async () => {
