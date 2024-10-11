@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { RTCPeerConnectionDeprecated } from '@krivega/jssip';
 import type { MediaStreamTrackMock } from 'webrtc-mock';
+import RTCRtpSenderMock from './RTCRtpSenderMock';
 
 class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
   _senders: RTCRtpSender[] = [];
@@ -191,8 +192,7 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
   };
 
   addTrack = (track: MediaStreamTrack) => {
-    // @ts-expect-error
-    const sender: RTCRtpSender = { track };
+    const sender = new RTCRtpSenderMock({ track });
 
     this._senders.push(sender);
 

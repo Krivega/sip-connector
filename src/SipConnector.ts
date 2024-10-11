@@ -684,18 +684,13 @@ export default class SipConnector {
     data,
     { callLimit = DELAYED_REPEATED_CALLS_CONNECT_LIMIT } = {},
   ) => {
-    let isFirstRequest = true;
-
     const targetFunction = async () => {
-      isFirstRequest = false;
-
       return this._cancelableConnect.request(data);
     };
 
     const isComplete = (response?: unknown): boolean => {
       const isConnected = !!this.ua?.isConnected();
-      const isValidResponse =
-        !isFirstRequest && isConnected && this.hasEqualConnectionConfiguration(data);
+      const isValidResponse = isConnected && this.hasEqualConnectionConfiguration(data);
       const isValidError = !!response && !hasHandshakeWebsocketOpeningError(response);
 
       return isValidResponse || isValidError;
@@ -706,6 +701,7 @@ export default class SipConnector {
       isComplete,
       callLimit,
       isRejectAsValid: true,
+      isCheckBeforeCall: false,
       onAfterCancel: () => {
         this._cancelableConnect.cancelRequest();
       },

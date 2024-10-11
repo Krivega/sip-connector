@@ -65,7 +65,6 @@ describe('presentation', () => {
 
   it('twice start presentation', async () => {
     expect.assertions(1);
-
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
     await sipConnector.startPresentation(mediaStream);

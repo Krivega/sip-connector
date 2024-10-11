@@ -15,12 +15,16 @@ class RTCRtpSenderMock implements RTCRtpSender {
     rtcp: {},
   };
 
+  constructor({ track }: { track?: MediaStreamTrack } = {}) {
+    this.track = track ?? null;
+  }
+
   async getStats(): Promise<RTCStatsReport> {
     throw new Error('Method not implemented.');
   }
 
-  async replaceTrack(): Promise<void> {
-    throw new Error('Method not implemented.');
+  async replaceTrack(track: MediaStreamTrack | null): Promise<void> {
+    this.track = track ?? null;
   }
 
   async setParameters(parameters: RTCRtpSendParameters): Promise<void> {
