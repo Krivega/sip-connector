@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 import resolveHasNeedToUpdateItemEncoding from './resolveHasNeedToUpdateItemEncoding';
 
 const MIN_SCALE_RESOLUTION_DOWN_BY = 1;
@@ -37,7 +38,7 @@ const configureScaleResolutionDownBy = (
   );
 
   if (scaleResolutionDownByTarget !== undefined) {
-    return { ...encodingCurrent, scaleResolutionDownBy: scaleResolutionDownByTarget };
+    encodingCurrent.scaleResolutionDownBy = scaleResolutionDownByTarget;
   }
 
   return encodingCurrent;

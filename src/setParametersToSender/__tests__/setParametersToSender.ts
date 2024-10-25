@@ -53,4 +53,27 @@ describe('setParametersToSender', () => {
     expect(mockSender.setParameters).not.toHaveBeenCalled();
     expect(result.isChanged).toBe(false);
   });
+
+  it("check error: ailed to execute 'setParameters' on 'RTCRtpSender': Read-only field modified in setParameters().", async () => {
+    const parametersCurrent: RTCRtpSendParameters = {
+      transactionId: '1',
+      encodings: [{ maxBitrate: 500_000 }],
+      codecs: [],
+      headerExtensions: [],
+      rtcp: { cname: '', reducedSize: false },
+    };
+    // @ts-expect-error
+    const parametersTarget: RTCRtpSendParameters = {
+      transactionId: '1',
+      encodings: [{ maxBitrate: 1_000_000, scaleResolutionDownBy: 2 }],
+    };
+
+    (mockSender.getParameters as jest.Mock).mockReturnValue(parametersCurrent);
+
+    const result = await setParametersToSender(mockSender, parametersTarget);
+
+    const isSameParameters = parametersCurrent === result.parameters;
+
+    expect(isSameParameters).toBe(true);
+  });
 });

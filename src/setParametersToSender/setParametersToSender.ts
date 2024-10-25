@@ -10,17 +10,19 @@ const setParametersToSender = async (
   parametersTarget: TRtpSendParameters,
 ): Promise<TResult> => {
   const parametersCurrent: RTCRtpSendParameters = sender.getParameters();
-  let parametersModified = configureEncodings(parametersCurrent, parametersTarget);
+  // eslint-disable-next-line unicorn/prefer-structured-clone
+  const parametersInitial: RTCRtpSendParameters = JSON.parse(JSON.stringify(parametersCurrent));
 
-  parametersModified = configureDegradationPreference(parametersModified, parametersTarget);
+  configureEncodings(parametersCurrent, parametersTarget);
+  configureDegradationPreference(parametersCurrent, parametersTarget);
 
-  const isChanged = hasChangedRTCRtpSendParameters(parametersCurrent, parametersModified);
+  const isChanged = hasChangedRTCRtpSendParameters(parametersInitial, parametersCurrent);
 
   if (isChanged) {
-    await sender.setParameters(parametersModified);
+    await sender.setParameters(parametersCurrent);
   }
 
-  return { parameters: parametersModified, isChanged };
+  return { parameters: parametersCurrent, isChanged };
 };
 
 export default setParametersToSender;

@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 import resolveHasNeedToUpdateItemEncoding from './resolveHasNeedToUpdateItemEncoding';
 
 const hasNeedToUpdateMaxBitrate = resolveHasNeedToUpdateItemEncoding();
@@ -20,7 +21,7 @@ const configureMaxBitrate = (
   const maxBitrateTarget = performUpdateMaxBitrate(maxBitrate, maxBitrateCurrent);
 
   if (maxBitrateTarget !== undefined) {
-    return { ...encodingCurrent, maxBitrate: maxBitrateTarget };
+    encodingCurrent.maxBitrate = maxBitrateTarget;
   }
 
   return encodingCurrent;

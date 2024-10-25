@@ -1,10 +1,13 @@
+/* eslint-disable no-param-reassign */
 import type { TRtpSendParameters } from '../types';
 
 const configureDegradationPreference = (
   parametersCurrent: RTCRtpSendParameters,
   parametersTarget: TRtpSendParameters,
 ): RTCRtpSendParameters => {
-  return { ...parametersCurrent, degradationPreference: parametersTarget.degradationPreference };
+  parametersCurrent.degradationPreference = parametersTarget.degradationPreference;
+
+  return parametersCurrent;
 };
 
 export default configureDegradationPreference;

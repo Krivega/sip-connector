@@ -8,21 +8,19 @@ const configureEncodings = (
   parametersTarget: TRtpSendParameters,
 ) => {
   const countEncodingsTarget = parametersTarget.encodings?.length ?? 0;
-  const parametersModified = configureEmptyEncodings(parametersCurrent, countEncodingsTarget);
 
-  const encodings = parametersModified.encodings.map((encoding, index) => {
+  configureEmptyEncodings(parametersCurrent, countEncodingsTarget);
+
+  parametersCurrent.encodings.forEach((encoding, index) => {
     const encodingTarget = (parametersTarget?.encodings ?? [])[index];
     const maxBitrate = encodingTarget?.maxBitrate;
     const scaleResolutionDownBy = encodingTarget?.scaleResolutionDownBy;
 
-    let encodingModified = configureMaxBitrate(encoding, maxBitrate);
-
-    encodingModified = configureScaleResolutionDownBy(encodingModified, scaleResolutionDownBy);
-
-    return encodingModified;
+    configureMaxBitrate(encoding, maxBitrate);
+    configureScaleResolutionDownBy(encoding, scaleResolutionDownBy);
   });
 
-  return { ...parametersModified, encodings };
+  return parametersCurrent;
 };
 
 export default configureEncodings;

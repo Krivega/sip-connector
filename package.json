@@ -73,7 +73,7 @@
     "webrtc-mock": "^1.1.6"
   },
   "devDependencies": {
-    "@babel/preset-typescript": "^7.25.9",
+    "@babel/preset-typescript": "^7.26.0",
     "@commitlint/cli": "^19.5.0",
     "@commitlint/config-conventional": "^19.5.0",
     "@nabla/vite-plugin-eslint": "^2.0.4",

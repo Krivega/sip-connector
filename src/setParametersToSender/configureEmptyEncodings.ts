@@ -1,18 +1,17 @@
+/* eslint-disable no-param-reassign */
 const configureEmptyEncodings = (
   parametersCurrent: RTCRtpSendParameters,
   count: number,
 ): RTCRtpSendParameters => {
-  let { encodings } = parametersCurrent;
-
-  if (encodings === undefined) {
-    encodings = [];
+  if (parametersCurrent.encodings === undefined) {
+    parametersCurrent.encodings = [];
   }
 
-  for (let index = encodings.length; index < count; index += 1) {
-    encodings.push({});
+  for (let index = parametersCurrent.encodings.length; index < count; index += 1) {
+    parametersCurrent.encodings.push({});
   }
 
-  return { ...parametersCurrent, encodings };
+  return parametersCurrent;
 };
 
 export default configureEmptyEncodings;
