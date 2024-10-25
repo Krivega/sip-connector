@@ -1,9 +1,8 @@
 import type SipConnector from '../SipConnector';
 import log from '../logger';
-import type { TContentHint, TRtpSendParameters } from '../types';
+import type { TContentHint } from '../types';
 import hasPurgatory from './hasPurgatory';
 import resolveGetRemoteStreams from './resolveGetRemoteStreams';
-import resolveHandleAddedSender from './resolveHandleAddedSender';
 import resolveHandleChangeTracks from './resolveHandleChangeTracks';
 import resolveUpdateRemoteStreams from './resolveUpdateRemoteStreams';
 
@@ -12,8 +11,8 @@ const resolveAnswerIncomingCall = (sipConnector: SipConnector) => {
     mediaStream: MediaStream;
     extraHeaders?: string[] | undefined;
     iceServers?: RTCIceServer[];
-    rtpSendParameters?: TRtpSendParameters;
     contentHint?: TContentHint;
+    sendEncodings?: RTCRtpEncodingParameters[];
     setRemoteStreams: (streams: MediaStream[]) => void;
     onBeforeProgressCall?: (conference?: string) => void;
     onSuccessProgressCall?: (parameters_: { isPurgatory: boolean }) => void;
@@ -27,8 +26,8 @@ const resolveAnswerIncomingCall = (sipConnector: SipConnector) => {
       mediaStream,
       extraHeaders,
       iceServers,
-      rtpSendParameters,
       contentHint,
+      sendEncodings,
       setRemoteStreams,
       onBeforeProgressCall,
       onSuccessProgressCall,
@@ -52,7 +51,7 @@ const resolveAnswerIncomingCall = (sipConnector: SipConnector) => {
         extraHeaders,
         iceServers,
         contentHint,
-        onAddedSender: resolveHandleAddedSender(rtpSendParameters),
+        sendEncodings,
         ontrack: handleChangeTracks,
       });
     };

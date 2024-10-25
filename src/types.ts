@@ -55,8 +55,8 @@ export type TParametersCreateUaConfiguration = {
   userAgent?: string;
 };
 
-export type TOnAddedSender = (
-  sender: RTCRtpSender,
+export type TOnAddedTransceiver = (
+  transceiver: RTCRtpTransceiver,
   track: MediaStreamTrack,
   stream: MediaStream,
 ) => Promise<void>;

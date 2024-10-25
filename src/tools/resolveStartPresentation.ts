@@ -1,7 +1,6 @@
 import log from '../logger';
 import type SipConnector from '../SipConnector';
-import type { TContentHint, TRtpSendParameters } from '../types';
-import resolveHandleAddedSender from './resolveHandleAddedSender';
+import type { TContentHint } from '../types';
 
 const resolveStartPresentation = (sipConnector: SipConnector) => {
   const startPresentation = async (
@@ -9,14 +8,14 @@ const resolveStartPresentation = (sipConnector: SipConnector) => {
       mediaStream,
       isP2P,
       maxBitrate,
-      rtpSendParameters,
       contentHint,
+      sendEncodings,
     }: {
       mediaStream: MediaStream;
       isP2P: boolean;
       maxBitrate?: number;
-      rtpSendParameters?: TRtpSendParameters;
       contentHint?: TContentHint;
+      sendEncodings?: RTCRtpEncodingParameters[];
     },
     options?: { callLimit: number },
   ): Promise<MediaStream | void> => {
@@ -28,7 +27,7 @@ const resolveStartPresentation = (sipConnector: SipConnector) => {
         isP2P,
         maxBitrate,
         contentHint,
-        onAddedSender: resolveHandleAddedSender(rtpSendParameters),
+        sendEncodings,
       },
       options,
     );

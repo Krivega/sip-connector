@@ -122,7 +122,7 @@ import type {
   TCustomError,
   TGetServerUrl,
   TJsSIP,
-  TOnAddedSender,
+  TOnAddedTransceiver,
   TParametersCreateUaConfiguration,
 } from './types';
 import { EEventsMainCAM, EEventsMic, EEventsSyncMediaState } from './types';
@@ -293,8 +293,9 @@ type TCall = ({
   audioMode,
   offerToReceiveAudio,
   offerToReceiveVideo,
-  onAddedSender,
   contentHint,
+  sendEncodings,
+  onAddedTransceiver,
 }: {
   number: string;
   mediaStream: MediaStream;
@@ -305,8 +306,9 @@ type TCall = ({
   audioMode?: 'recvonly' | 'sendonly' | 'sendrecv';
   offerToReceiveAudio?: boolean;
   offerToReceiveVideo?: boolean;
-  onAddedSender?: TOnAddedSender;
   contentHint?: TContentHint;
+  sendEncodings?: RTCRtpEncodingParameters[];
+  onAddedTransceiver?: TOnAddedTransceiver;
 }) => Promise<RTCPeerConnection>;
 
 type TDisconnect = () => Promise<void>;
@@ -318,8 +320,9 @@ type TParametersAnswerToIncomingCall = {
   iceServers?: RTCIceServer[];
   videoMode?: 'recvonly' | 'sendonly' | 'sendrecv';
   audioMode?: 'recvonly' | 'sendonly' | 'sendrecv';
-  onAddedSender?: TOnAddedSender;
   contentHint?: TContentHint;
+  sendEncodings?: RTCRtpEncodingParameters[];
+  onAddedTransceiver?: TOnAddedTransceiver;
 };
 
 type TAnswerToIncomingCall = (
@@ -614,7 +617,8 @@ export default class SipConnector {
       addMissing: boolean;
       forceRenegotiation: boolean;
       contentHint?: TContentHint;
-      onAddedSender?: TOnAddedSender;
+      sendEncodings?: RTCRtpEncodingParameters[];
+      onAddedTransceiver?: TOnAddedTransceiver;
     },
   ): Promise<void> {
     if (!this.session) {
@@ -730,8 +734,9 @@ export default class SipConnector {
       isNeedReinvite?: boolean;
       isP2P?: boolean;
       maxBitrate?: number;
-      onAddedSender?: TOnAddedSender;
       contentHint?: TContentHint;
+      sendEncodings?: RTCRtpEncodingParameters[];
+      onAddedTransceiver?: TOnAddedTransceiver;
     };
     options?: { callLimit: number };
   }) {
@@ -825,16 +830,18 @@ export default class SipConnector {
     stream: MediaStream,
     {
       maxBitrate = ONE_MEGABIT_IN_BITS,
-      onAddedSender,
       isNeedReinvite = true,
       isP2P = false,
       contentHint = 'detail',
+      sendEncodings,
+      onAddedTransceiver,
     }: {
       isNeedReinvite?: boolean;
       isP2P?: boolean;
       maxBitrate?: number;
-      onAddedSender?: TOnAddedSender;
       contentHint?: TContentHint;
+      sendEncodings?: RTCRtpEncodingParameters[];
+      onAddedTransceiver?: TOnAddedTransceiver;
     },
   ) {
     const streamPresentationCurrent = prepareMediaStream(stream, { contentHint })!;
@@ -852,7 +859,10 @@ export default class SipConnector {
         extraHeaders: preparatoryHeaders,
       })
       .then(async () => {
-        return session.startPresentation(streamPresentationCurrent, isNeedReinvite, onAddedSender);
+        return session.startPresentation(streamPresentationCurrent, isNeedReinvite, {
+          sendEncodings,
+          onAddedTransceiver,
+        });
       })
       .then(async () => {
         const { connection } = this;
@@ -889,14 +899,16 @@ export default class SipConnector {
       isNeedReinvite,
       isP2P,
       maxBitrate,
-      onAddedSender,
       contentHint,
+      sendEncodings,
+      onAddedTransceiver,
     }: {
       isNeedReinvite?: boolean;
       isP2P?: boolean;
       maxBitrate?: number;
-      onAddedSender?: TOnAddedSender;
       contentHint?: TContentHint;
+      sendEncodings?: RTCRtpEncodingParameters[];
+      onAddedTransceiver?: TOnAddedTransceiver;
     } = {},
     options?: { callLimit: number },
   ): Promise<MediaStream> {
@@ -921,8 +933,9 @@ export default class SipConnector {
         isNeedReinvite,
         isP2P,
         maxBitrate,
-        onAddedSender,
         contentHint,
+        sendEncodings,
+        onAddedTransceiver,
       },
       options,
     });
@@ -986,13 +999,15 @@ export default class SipConnector {
     {
       isP2P,
       maxBitrate,
-      onAddedSender,
       contentHint,
+      sendEncodings,
+      onAddedTransceiver,
     }: {
       isP2P?: boolean;
       maxBitrate?: number;
-      onAddedSender?: TOnAddedSender;
       contentHint?: TContentHint;
+      sendEncodings?: RTCRtpEncodingParameters[];
+      onAddedTransceiver?: TOnAddedTransceiver;
     } = {},
   ): Promise<MediaStream | void> {
     const session = this.establishedSession;
@@ -1012,9 +1027,10 @@ export default class SipConnector {
     return this._sendPresentation(session, stream, {
       isP2P,
       maxBitrate,
-      onAddedSender,
       contentHint,
       isNeedReinvite: false,
+      sendEncodings,
+      onAddedTransceiver,
     });
   }
 
@@ -1388,10 +1404,11 @@ export default class SipConnector {
     iceServers,
     videoMode,
     audioMode,
-    onAddedSender,
     contentHint,
     offerToReceiveAudio = true,
     offerToReceiveVideo = true,
+    sendEncodings,
+    onAddedTransceiver,
   }) => {
     return new Promise((resolve, reject) => {
       const { ua } = this;
@@ -1421,7 +1438,6 @@ export default class SipConnector {
         eventHandlers: this._sessionEvents.triggers,
         videoMode,
         audioMode,
-        onAddedSender,
         pcConfig: {
           iceServers,
         },
@@ -1429,6 +1445,8 @@ export default class SipConnector {
           offerToReceiveAudio,
           offerToReceiveVideo,
         },
+        sendEncodings,
+        onAddedTransceiver,
       });
     });
   };
@@ -1440,8 +1458,9 @@ export default class SipConnector {
     iceServers,
     videoMode,
     audioMode,
-    onAddedSender,
     contentHint,
+    sendEncodings,
+    onAddedTransceiver,
   }): Promise<RTCPeerConnection> => {
     return new Promise((resolve, reject) => {
       if (!this.isAvailableIncomingCall) {
@@ -1490,11 +1509,12 @@ export default class SipConnector {
         extraHeaders,
         videoMode,
         audioMode,
-        onAddedSender,
         mediaStream: preparedMediaStream,
         pcConfig: {
           iceServers,
         },
+        sendEncodings,
+        onAddedTransceiver,
       });
     });
   };
