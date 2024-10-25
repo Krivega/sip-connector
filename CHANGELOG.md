@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [11.0.0](https://github.com/Krivega/sip-connector/compare/v10.0.1...v11.0.0) (2024-10-25)
+
+### ⚠ BREAKING CHANGES
+
+- add sendEncodings option to call methods
+
+### Features
+
+- add sendEncodings option to call methods ([83d99a6](https://github.com/Krivega/sip-connector/commit/83d99a680b149d4703c527e8ec3f70cebe40e387))
+
 ### [10.0.1](https://github.com/Krivega/sip-connector/compare/v10.0.0...v10.0.1) (2024-10-25)
 
 ### Bug Fixes
