@@ -120,9 +120,9 @@ import type {
   EUseLicense,
   TContentHint,
   TCustomError,
-  TDegradationPreference,
   TGetServerUrl,
   TJsSIP,
+  TOnAddedSender,
   TParametersCreateUaConfiguration,
 } from './types';
 import { EEventsMainCAM, EEventsMic, EEventsSyncMediaState } from './types';
@@ -293,7 +293,7 @@ type TCall = ({
   audioMode,
   offerToReceiveAudio,
   offerToReceiveVideo,
-  degradationPreference,
+  onAddedSender,
   contentHint,
 }: {
   number: string;
@@ -305,7 +305,7 @@ type TCall = ({
   audioMode?: 'recvonly' | 'sendonly' | 'sendrecv';
   offerToReceiveAudio?: boolean;
   offerToReceiveVideo?: boolean;
-  degradationPreference?: TDegradationPreference;
+  onAddedSender?: TOnAddedSender;
   contentHint?: TContentHint;
 }) => Promise<RTCPeerConnection>;
 
@@ -318,7 +318,7 @@ type TParametersAnswerToIncomingCall = {
   iceServers?: RTCIceServer[];
   videoMode?: 'recvonly' | 'sendonly' | 'sendrecv';
   audioMode?: 'recvonly' | 'sendonly' | 'sendrecv';
-  degradationPreference?: TDegradationPreference;
+  onAddedSender?: TOnAddedSender;
   contentHint?: TContentHint;
 };
 
@@ -614,7 +614,7 @@ export default class SipConnector {
       addMissing: boolean;
       forceRenegotiation: boolean;
       contentHint?: TContentHint;
-      degradationPreference?: TDegradationPreference;
+      onAddedSender?: TOnAddedSender;
     },
   ): Promise<void> {
     if (!this.session) {
@@ -730,7 +730,7 @@ export default class SipConnector {
       isNeedReinvite?: boolean;
       isP2P?: boolean;
       maxBitrate?: number;
-      degradationPreference?: TDegradationPreference;
+      onAddedSender?: TOnAddedSender;
       contentHint?: TContentHint;
     };
     options?: { callLimit: number };
@@ -825,7 +825,7 @@ export default class SipConnector {
     stream: MediaStream,
     {
       maxBitrate = ONE_MEGABIT_IN_BITS,
-      degradationPreference = 'maintain-resolution',
+      onAddedSender,
       isNeedReinvite = true,
       isP2P = false,
       contentHint = 'detail',
@@ -833,7 +833,7 @@ export default class SipConnector {
       isNeedReinvite?: boolean;
       isP2P?: boolean;
       maxBitrate?: number;
-      degradationPreference?: TDegradationPreference;
+      onAddedSender?: TOnAddedSender;
       contentHint?: TContentHint;
     },
   ) {
@@ -852,11 +852,7 @@ export default class SipConnector {
         extraHeaders: preparatoryHeaders,
       })
       .then(async () => {
-        return session.startPresentation(
-          streamPresentationCurrent,
-          isNeedReinvite,
-          degradationPreference,
-        );
+        return session.startPresentation(streamPresentationCurrent, isNeedReinvite, onAddedSender);
       })
       .then(async () => {
         const { connection } = this;
@@ -893,13 +889,13 @@ export default class SipConnector {
       isNeedReinvite,
       isP2P,
       maxBitrate,
-      degradationPreference,
+      onAddedSender,
       contentHint,
     }: {
       isNeedReinvite?: boolean;
       isP2P?: boolean;
       maxBitrate?: number;
-      degradationPreference?: TDegradationPreference;
+      onAddedSender?: TOnAddedSender;
       contentHint?: TContentHint;
     } = {},
     options?: { callLimit: number },
@@ -925,7 +921,7 @@ export default class SipConnector {
         isNeedReinvite,
         isP2P,
         maxBitrate,
-        degradationPreference,
+        onAddedSender,
         contentHint,
       },
       options,
@@ -990,12 +986,12 @@ export default class SipConnector {
     {
       isP2P,
       maxBitrate,
-      degradationPreference,
+      onAddedSender,
       contentHint,
     }: {
       isP2P?: boolean;
       maxBitrate?: number;
-      degradationPreference?: TDegradationPreference;
+      onAddedSender?: TOnAddedSender;
       contentHint?: TContentHint;
     } = {},
   ): Promise<MediaStream | void> {
@@ -1016,7 +1012,7 @@ export default class SipConnector {
     return this._sendPresentation(session, stream, {
       isP2P,
       maxBitrate,
-      degradationPreference,
+      onAddedSender,
       contentHint,
       isNeedReinvite: false,
     });
@@ -1392,7 +1388,7 @@ export default class SipConnector {
     iceServers,
     videoMode,
     audioMode,
-    degradationPreference,
+    onAddedSender,
     contentHint,
     offerToReceiveAudio = true,
     offerToReceiveVideo = true,
@@ -1425,7 +1421,7 @@ export default class SipConnector {
         eventHandlers: this._sessionEvents.triggers,
         videoMode,
         audioMode,
-        degradationPreference,
+        onAddedSender,
         pcConfig: {
           iceServers,
         },
@@ -1444,7 +1440,7 @@ export default class SipConnector {
     iceServers,
     videoMode,
     audioMode,
-    degradationPreference,
+    onAddedSender,
     contentHint,
   }): Promise<RTCPeerConnection> => {
     return new Promise((resolve, reject) => {
@@ -1494,7 +1490,7 @@ export default class SipConnector {
         extraHeaders,
         videoMode,
         audioMode,
-        degradationPreference,
+        onAddedSender,
         mediaStream: preparedMediaStream,
         pcConfig: {
           iceServers,

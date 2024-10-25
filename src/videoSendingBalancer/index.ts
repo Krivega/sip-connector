@@ -35,6 +35,7 @@ const resolveVideoSendingBalancer = (
   }) => {
     reBalance = async () => {
       const { mainCam, resolutionMainCam } = headers;
+
       const { connection } = sipConnector;
 
       if (!connection) {

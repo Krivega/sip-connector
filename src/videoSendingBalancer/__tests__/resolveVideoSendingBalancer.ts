@@ -76,12 +76,12 @@ describe('resolveVideoSendingBalancer', () => {
     }
 
     const promiseSetResolution = new Promise<RTCRtpSendParameters>((resolve) => {
-      //  @ts-expect-error
+      // @ts-expect-error
       sender.getStats = async () => {
         return [];
       };
 
-      //  @ts-expect-error
+      // @ts-expect-error
       sender.getParameters = () => {
         return [
           {
@@ -90,7 +90,7 @@ describe('resolveVideoSendingBalancer', () => {
         ];
       };
 
-      //  @ts-expect-error
+      // @ts-expect-error
       sender.setParameters = resolve;
     });
 
@@ -100,9 +100,9 @@ describe('resolveVideoSendingBalancer', () => {
       JsSIP.triggerNewInfo(session, headersResumeMainCam);
     }
 
-    await promiseSetResolution.then((parameters) => {
-      expect(parameters.encodings[0].maxBitrate).toEqual(fhdBitrate);
-    });
+    const parameters = await promiseSetResolution;
+
+    expect(parameters.encodings[0].maxBitrate).toEqual(fhdBitrate);
   });
 
   it('should be set minimum mediaStreamTrack bitrate by PAUSE_MAIN_CAM info', async () => {
@@ -123,12 +123,12 @@ describe('resolveVideoSendingBalancer', () => {
     }
 
     const promiseSetResolution = new Promise<RTCRtpSendParameters>((resolve) => {
-      //  @ts-expect-error
+      // @ts-expect-error
       sender.getStats = async () => {
         return [];
       };
 
-      //  @ts-expect-error
+      // @ts-expect-error
       sender.getParameters = () => {
         return [
           {
@@ -137,7 +137,7 @@ describe('resolveVideoSendingBalancer', () => {
         ];
       };
 
-      //  @ts-expect-error
+      // @ts-expect-error
       sender.setParameters = resolve;
     });
 
@@ -147,9 +147,9 @@ describe('resolveVideoSendingBalancer', () => {
       JsSIP.triggerNewInfo(session, headersPauseMainCam);
     }
 
-    await promiseSetResolution.then((parameters) => {
-      expect(parameters.encodings[0].maxBitrate).toEqual(MINIMUM_BITRATE);
-    });
+    const parameters = await promiseSetResolution;
+
+    expect(parameters.encodings[0].maxBitrate).toEqual(MINIMUM_BITRATE);
   });
 
   it('should be set max mediaStreamTrack bitrate by MAX_MAIN_CAM_RESOLUTION info', async () => {
@@ -170,12 +170,12 @@ describe('resolveVideoSendingBalancer', () => {
     }
 
     const promiseSetResolution = new Promise<RTCRtpSendParameters>((resolve) => {
-      //  @ts-expect-error
+      // @ts-expect-error
       sender.getStats = async () => {
         return [];
       };
 
-      //  @ts-expect-error
+      // @ts-expect-error
       sender.getParameters = () => {
         return [
           {
@@ -184,7 +184,7 @@ describe('resolveVideoSendingBalancer', () => {
         ];
       };
 
-      //  @ts-expect-error
+      // @ts-expect-error
       sender.setParameters = resolve;
     });
 
@@ -194,8 +194,8 @@ describe('resolveVideoSendingBalancer', () => {
       JsSIP.triggerNewInfo(session, headersMaxMainCamResolution);
     }
 
-    await promiseSetResolution.then((parameters) => {
-      expect(parameters.encodings[0].maxBitrate).toEqual(sdBitrate);
-    });
+    const parameters = await promiseSetResolution;
+
+    expect(parameters.encodings[0].maxBitrate).toEqual(sdBitrate);
   });
 });

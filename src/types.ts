@@ -55,5 +55,11 @@ export type TParametersCreateUaConfiguration = {
   userAgent?: string;
 };
 
-export type TDegradationPreference = 'balanced' | 'maintain-framerate' | 'maintain-resolution';
+export type TOnAddedSender = (
+  sender: RTCRtpSender,
+  track: MediaStreamTrack,
+  stream: MediaStream,
+) => Promise<void>;
 export type TContentHint = 'motion' | 'detail' | 'text' | 'none';
+
+export type TRtpSendParameters = Partial<Omit<RTCRtpSendParameters, 'transactionId'>>;
