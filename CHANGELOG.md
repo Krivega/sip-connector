@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [10.0.1](https://github.com/Krivega/sip-connector/compare/v10.0.0...v10.0.1) (2024-10-25)
+
+### Bug Fixes
+
+- setParametersToSender ([32fc267](https://github.com/Krivega/sip-connector/commit/32fc2678a0050911576105921cc099c513ccf4ca))
+
 ## [10.0.0](https://github.com/Krivega/sip-connector/compare/v9.2.1...v10.0.0) (2024-10-25)
 
 ### ⚠ BREAKING CHANGES
