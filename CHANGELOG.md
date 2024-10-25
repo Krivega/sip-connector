@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [10.0.0](https://github.com/Krivega/sip-connector/compare/v9.2.1...v10.0.0) (2024-10-25)
+
+### ⚠ BREAKING CHANGES
+
+- add setParametersToSender to call methods
+
+### Features
+
+- add setParametersToSender to call methods ([f8e9e5d](https://github.com/Krivega/sip-connector/commit/f8e9e5d6c2608c3e8176dd6f12dee45bd3aa83d0))
+
 ### [9.2.1](https://github.com/Krivega/sip-connector/compare/v9.2.0...v9.2.1) (2024-10-11)
 
 ## [9.2.0](https://github.com/Krivega/sip-connector/compare/v9.1.0...v9.2.0) (2024-09-24)

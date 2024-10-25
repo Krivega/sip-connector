@@ -1,6 +1,6 @@
 {
   "name": "sip-connector",
-  "version": "9.2.1",
+  "version": "10.0.0",
   "description": "Module for connect to Vinteo server",
   "keywords": [
     "webrtc",
