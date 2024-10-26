@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [11.1.0](https://github.com/Krivega/sip-connector/compare/v11.0.0...v11.1.0) (2024-10-26)
+
+### Features
+
+- add simulcastEncodings option to call methods ([d4479ef](https://github.com/Krivega/sip-connector/commit/d4479efb2a19e60ea782e62fde8337d0e3e2eebe))
+
 ## [11.0.0](https://github.com/Krivega/sip-connector/compare/v10.0.1...v11.0.0) (2024-10-25)
 
 ### ⚠ BREAKING CHANGES
