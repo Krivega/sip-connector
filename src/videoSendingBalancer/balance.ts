@@ -43,7 +43,13 @@ const balance = async ({
   }
 
   return processSender(
-    { mainCam, resolutionMainCam, sender, codec, track: sender.track },
+    {
+      mainCam,
+      resolutionMainCam,
+      sender,
+      codec,
+      videoTrack: sender.track as MediaStreamVideoTrack,
+    },
     onSetParameters,
   );
 };

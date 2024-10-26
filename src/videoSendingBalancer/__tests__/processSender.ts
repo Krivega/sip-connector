@@ -11,19 +11,21 @@ const FACTOR_CODEC_AV1 = 0.6;
 
 describe('processSender', () => {
   let sender: RTCRtpSender;
-  let trackWith1024: MediaStreamTrack;
+  let trackWith1024: MediaStreamVideoTrack;
 
   beforeEach(() => {
     sender = new RTCRtpSenderMock();
-    trackWith1024 = createVideoMediaStreamTrackMock({ constraints: { width: 1024, height: 720 } });
+    trackWith1024 = createVideoMediaStreamTrackMock({
+      constraints: { width: 1024, height: 720 },
+    }) as MediaStreamVideoTrack;
   });
 
-  it('by track 1024', async () => {
+  it('by videoTrack 1024', async () => {
     expect.assertions(2);
 
     return processSender({
       sender,
-      track: trackWith1024,
+      videoTrack: trackWith1024,
     }).then(({ parameters, isChanged }) => {
       expect(isChanged).toBe(true);
       expect(parameters.encodings).toEqual([
@@ -34,7 +36,7 @@ describe('processSender', () => {
     });
   });
 
-  it('by track 1024 after MAX_MAIN_CAM_RESOLUTION', async () => {
+  it('by videoTrack 1024 after MAX_MAIN_CAM_RESOLUTION', async () => {
     expect.assertions(2);
 
     const targetWidth = 288;
@@ -44,12 +46,12 @@ describe('processSender', () => {
       sender,
       mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
       resolutionMainCam: `${targetWidth}x${targeHight}`,
-      track: trackWith1024,
+      videoTrack: trackWith1024,
     });
 
     return processSender({
       sender,
-      track: trackWith1024,
+      videoTrack: trackWith1024,
     }).then(({ parameters, isChanged }) => {
       expect(isChanged).toBe(true);
       expect(parameters.encodings).toEqual([
@@ -73,7 +75,7 @@ describe('processSender', () => {
       sender,
       mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
       resolutionMainCam: `${targetWidth}x${targeHight}`,
-      track: trackWith1024,
+      videoTrack: trackWith1024,
     }).then(({ parameters, isChanged }) => {
       expect(isChanged).toBe(true);
       expect(parameters.encodings).toEqual([
@@ -92,7 +94,7 @@ describe('processSender', () => {
       sender,
       mainCam: EEventsMainCAM.PAUSE_MAIN_CAM,
       resolutionMainCam: '',
-      track: trackWith1024,
+      videoTrack: trackWith1024,
     }).then(({ parameters, isChanged }) => {
       expect(isChanged).toBe(true);
       expect(parameters.encodings).toEqual([
@@ -114,14 +116,14 @@ describe('processSender', () => {
       sender,
       mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
       resolutionMainCam: `${targetWidth}x${targeHight}`,
-      track: trackWith1024,
+      videoTrack: trackWith1024,
     });
 
     return processSender({
       sender,
       mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
       resolutionMainCam: ``,
-      track: trackWith1024,
+      videoTrack: trackWith1024,
     }).then(({ parameters, isChanged }) => {
       expect(isChanged).toBe(true);
       expect(parameters.encodings).toEqual([
@@ -143,21 +145,21 @@ describe('processSender', () => {
       sender,
       mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
       resolutionMainCam: ``,
-      track: trackWith1024,
+      videoTrack: trackWith1024,
     });
 
     await processSender({
       sender,
       mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
       resolutionMainCam: `${targetWidth}x${targeHight}`,
-      track: trackWith1024,
+      videoTrack: trackWith1024,
     });
 
     return processSender({
       sender,
       mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
       resolutionMainCam: ``,
-      track: trackWith1024,
+      videoTrack: trackWith1024,
     }).then(({ parameters, isChanged }) => {
       expect(isChanged).toBe(true);
       expect(parameters.encodings).toEqual([
@@ -181,7 +183,7 @@ describe('processSender', () => {
       sender,
       mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
       resolutionMainCam: `${targetWidth}x${targeHight}`,
-      track: trackWith1024,
+      videoTrack: trackWith1024,
       codec: CODEC_AV1,
     }).then(({ parameters, isChanged }) => {
       expect(isChanged).toBe(true);
@@ -201,7 +203,7 @@ describe('processSender', () => {
       sender,
       mainCam: EEventsMainCAM.PAUSE_MAIN_CAM,
       resolutionMainCam: '',
-      track: trackWith1024,
+      videoTrack: trackWith1024,
       codec: CODEC_AV1,
     }).then(({ parameters, isChanged }) => {
       expect(isChanged).toBe(true);
@@ -224,7 +226,7 @@ describe('processSender', () => {
       sender,
       mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
       resolutionMainCam: `${targetWidth}x${targeHight}`,
-      track: trackWith1024,
+      videoTrack: trackWith1024,
       codec: CODEC_AV1,
     });
 
@@ -232,7 +234,7 @@ describe('processSender', () => {
       sender,
       mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
       resolutionMainCam: ``,
-      track: trackWith1024,
+      videoTrack: trackWith1024,
       codec: CODEC_AV1,
     }).then(({ parameters, isChanged }) => {
       expect(isChanged).toBe(true);
@@ -255,7 +257,7 @@ describe('processSender', () => {
       sender,
       mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
       resolutionMainCam: ``,
-      track: trackWith1024,
+      videoTrack: trackWith1024,
       codec: CODEC_AV1,
     });
 
@@ -263,7 +265,7 @@ describe('processSender', () => {
       sender,
       mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
       resolutionMainCam: `${targetWidth}x${targeHight}`,
-      track: trackWith1024,
+      videoTrack: trackWith1024,
       codec: CODEC_AV1,
     });
 
@@ -271,7 +273,7 @@ describe('processSender', () => {
       sender,
       mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
       resolutionMainCam: ``,
-      track: trackWith1024,
+      videoTrack: trackWith1024,
       codec: CODEC_AV1,
     }).then(({ parameters, isChanged }) => {
       expect(isChanged).toBe(true);

@@ -2,6 +2,7 @@ import { createStackPromises } from 'stack-promises';
 import logger from '../logger';
 import { EEventsMainCAM } from '../types';
 import getMaxBitrateByWidthAndCodec, { getMinimumBitrate } from './getMaxBitrateByWidthAndCodec';
+import scaleResolutionAndBitrate from './scaleResolutionAndBitrate';
 import type { TOnSetParameters, TResult } from './setEncodingsToSender';
 import setEncodingsToSender from './setEncodingsToSender';
 
@@ -52,12 +53,16 @@ const downgradeResolutionSender = async (
 };
 
 const setBitrateByTrackResolution = async (
-  { sender, track, codec }: { sender: RTCRtpSender; track: MediaStreamTrack; codec?: string },
+  {
+    sender,
+    videoTrack,
+    codec,
+  }: { sender: RTCRtpSender; videoTrack: MediaStreamVideoTrack; codec?: string },
   onSetParameters?: TOnSetParameters,
 ): Promise<TResult> => {
   const scaleResolutionDownByTarget = 1;
 
-  const settings = track.getSettings();
+  const settings = videoTrack.getSettings();
   const widthCurrent = settings.width!;
 
   const maxBitrate = getMaxBitrateByWidthAndCodec(widthCurrent, codec);
@@ -73,35 +78,32 @@ const setBitrateByTrackResolution = async (
 const setResolutionSender = async (
   {
     sender,
-    track,
+    videoTrack,
     resolution,
     codec,
   }: {
     sender: RTCRtpSender;
-    track: MediaStreamTrack;
+    videoTrack: MediaStreamVideoTrack;
     resolution: string;
     codec?: string;
   },
   onSetParameters?: TOnSetParameters,
 ): Promise<TResult> => {
-  const settings = track.getSettings();
-  const widthCurrent = settings.width!;
-  const heightCurrent = settings.height!;
   const [widthTarget, heightTarget] = resolution.split('x');
-
-  const scaleByWidth = widthCurrent / Number(widthTarget);
-  const scaleByHeight = heightCurrent / Number(heightTarget);
-  const SCALE_MIN = 1;
-
-  const scaleResolutionDownByTarget = Math.max(scaleByWidth, scaleByHeight, SCALE_MIN);
-
-  const maxBitrate = getMaxBitrateByWidthAndCodec(Number(widthTarget), codec);
+  const { maxBitrate, scaleResolutionDownBy } = scaleResolutionAndBitrate({
+    videoTrack,
+    codec,
+    targetSize: {
+      width: Number(widthTarget),
+      height: Number(heightTarget),
+    },
+  });
 
   return addToStackScaleResolutionDownBySender({
     sender,
     maxBitrate,
     onSetParameters,
-    scaleResolutionDownBy: scaleResolutionDownByTarget,
+    scaleResolutionDownBy,
   });
 };
 
@@ -110,13 +112,13 @@ const processSender = async (
     mainCam,
     resolutionMainCam,
     sender,
-    track,
+    videoTrack,
     codec,
   }: {
     mainCam?: EEventsMainCAM;
     resolutionMainCam?: string;
     sender: RTCRtpSender;
-    track: MediaStreamTrack;
+    videoTrack: MediaStreamVideoTrack;
     codec?: string;
   },
   onSetParameters?: TOnSetParameters,
@@ -126,20 +128,20 @@ const processSender = async (
       return downgradeResolutionSender({ sender, codec }, onSetParameters);
     }
     case EEventsMainCAM.RESUME_MAIN_CAM: {
-      return setBitrateByTrackResolution({ sender, track, codec }, onSetParameters);
+      return setBitrateByTrackResolution({ sender, videoTrack, codec }, onSetParameters);
     }
     case EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION: {
       if (resolutionMainCam !== undefined) {
         return setResolutionSender(
-          { sender, track, codec, resolution: resolutionMainCam },
+          { sender, videoTrack, codec, resolution: resolutionMainCam },
           onSetParameters,
         );
       }
 
-      return setBitrateByTrackResolution({ sender, track, codec }, onSetParameters);
+      return setBitrateByTrackResolution({ sender, videoTrack, codec }, onSetParameters);
     }
     default: {
-      return setBitrateByTrackResolution({ sender, track, codec }, onSetParameters);
+      return setBitrateByTrackResolution({ sender, videoTrack, codec }, onSetParameters);
     }
   }
 };

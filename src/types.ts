@@ -63,3 +63,5 @@ export type TOnAddedTransceiver = (
 export type TContentHint = 'motion' | 'detail' | 'text' | 'none';
 
 export type TRtpSendParameters = Partial<Omit<RTCRtpSendParameters, 'transactionId'>>;
+export type TSize = { width: number; height: number };
+export type TSimulcastEncodings = TSize[];

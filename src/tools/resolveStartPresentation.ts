@@ -1,6 +1,7 @@
 import log from '../logger';
 import type SipConnector from '../SipConnector';
-import type { TContentHint } from '../types';
+import type { TContentHint, TSimulcastEncodings } from '../types';
+import generateSimulcastEncodings from './generateSimulcastEncodings';
 
 const resolveStartPresentation = (sipConnector: SipConnector) => {
   const startPresentation = async (
@@ -9,12 +10,14 @@ const resolveStartPresentation = (sipConnector: SipConnector) => {
       isP2P,
       maxBitrate,
       contentHint,
+      simulcastEncodings,
       sendEncodings,
     }: {
       mediaStream: MediaStream;
       isP2P: boolean;
       maxBitrate?: number;
       contentHint?: TContentHint;
+      simulcastEncodings?: TSimulcastEncodings;
       sendEncodings?: RTCRtpEncodingParameters[];
     },
     options?: { callLimit: number },
@@ -27,7 +30,11 @@ const resolveStartPresentation = (sipConnector: SipConnector) => {
         isP2P,
         maxBitrate,
         contentHint,
-        sendEncodings,
+        sendEncodings: generateSimulcastEncodings({
+          mediaStream,
+          simulcastEncodings,
+          sendEncodings,
+        }),
       },
       options,
     );

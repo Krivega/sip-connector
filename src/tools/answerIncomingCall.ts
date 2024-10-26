@@ -1,6 +1,7 @@
 import type SipConnector from '../SipConnector';
 import log from '../logger';
-import type { TContentHint } from '../types';
+import type { TContentHint, TSimulcastEncodings } from '../types';
+import generateSimulcastEncodings from './generateSimulcastEncodings';
 import hasPurgatory from './hasPurgatory';
 import resolveGetRemoteStreams from './resolveGetRemoteStreams';
 import resolveHandleChangeTracks from './resolveHandleChangeTracks';
@@ -12,6 +13,7 @@ const resolveAnswerIncomingCall = (sipConnector: SipConnector) => {
     extraHeaders?: string[] | undefined;
     iceServers?: RTCIceServer[];
     contentHint?: TContentHint;
+    simulcastEncodings?: TSimulcastEncodings;
     sendEncodings?: RTCRtpEncodingParameters[];
     setRemoteStreams: (streams: MediaStream[]) => void;
     onBeforeProgressCall?: (conference?: string) => void;
@@ -27,6 +29,7 @@ const resolveAnswerIncomingCall = (sipConnector: SipConnector) => {
       extraHeaders,
       iceServers,
       contentHint,
+      simulcastEncodings,
       sendEncodings,
       setRemoteStreams,
       onBeforeProgressCall,
@@ -51,7 +54,11 @@ const resolveAnswerIncomingCall = (sipConnector: SipConnector) => {
         extraHeaders,
         iceServers,
         contentHint,
-        sendEncodings,
+        sendEncodings: generateSimulcastEncodings({
+          mediaStream,
+          simulcastEncodings,
+          sendEncodings,
+        }),
         ontrack: handleChangeTracks,
       });
     };
