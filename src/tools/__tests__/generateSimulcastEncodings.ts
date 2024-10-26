@@ -1,20 +1,20 @@
 // <reference types="jest" />
 import type { TSimulcastEncodings } from '../../types';
 import findVideoTrack from '../../utils/findVideoTrack';
-import scaleResolutionAndBitrate from '../../videoSendingBalancer/scaleResolutionAndBitrate';
 import generateSimulcastEncodings from '../generateSimulcastEncodings';
 
 jest.mock('../../utils/findVideoTrack');
-jest.mock('../../videoSendingBalancer/scaleResolutionAndBitrate');
 
 describe('generateSimulcastEncodings', () => {
   const mockMediaStream = {} as MediaStream;
-  const mockVideoTrack = {} as MediaStreamTrack;
-  const mockScaleResult = { maxBitrate: 1000, scaleResolutionDownBy: 2 };
+  const mockVideoTrack = {
+    getSettings: () => {
+      return { width: 1280, height: 720 };
+    },
+  } as MediaStreamTrack;
 
   beforeEach(() => {
     (findVideoTrack as jest.Mock).mockReturnValue(mockVideoTrack);
-    (scaleResolutionAndBitrate as jest.Mock).mockReturnValue(mockScaleResult);
   });
 
   afterEach(() => {
@@ -33,10 +33,9 @@ describe('generateSimulcastEncodings', () => {
     });
 
     expect(findVideoTrack).toHaveBeenCalledWith(mockMediaStream);
-    expect(scaleResolutionAndBitrate).toHaveBeenCalledTimes(2);
     expect(result).toEqual([
-      { maxBitrate: 1000, scaleResolutionDownBy: 2 },
-      { maxBitrate: 1000, scaleResolutionDownBy: 2 },
+      { maxBitrate: 1_000_000, scaleResolutionDownBy: 1 },
+      { maxBitrate: 500_000, scaleResolutionDownBy: 2 },
     ]);
   });
 
@@ -49,7 +48,6 @@ describe('generateSimulcastEncodings', () => {
     });
 
     expect(findVideoTrack).not.toHaveBeenCalled();
-    expect(scaleResolutionAndBitrate).not.toHaveBeenCalled();
     expect(result).toEqual(sendEncodings);
   });
 
@@ -59,7 +57,29 @@ describe('generateSimulcastEncodings', () => {
     });
 
     expect(findVideoTrack).not.toHaveBeenCalled();
-    expect(scaleResolutionAndBitrate).not.toHaveBeenCalled();
     expect(result).toEqual(undefined);
+  });
+
+  it('should generate simulcast encodings when simulcastEncodings is provided and no encodings are provided', () => {
+    const result = generateSimulcastEncodings({
+      mediaStream: mockMediaStream,
+      simulcastEncodings: [
+        { width: 1280, height: 720 },
+        {
+          width: 640,
+          height: 360,
+        },
+        {
+          width: 320,
+          height: 180,
+        },
+      ],
+    });
+
+    expect(result).toEqual([
+      { maxBitrate: 1_000_000, scaleResolutionDownBy: 1 },
+      { maxBitrate: 500_000, scaleResolutionDownBy: 2 },
+      { maxBitrate: 320_000, scaleResolutionDownBy: 4 },
+    ]);
   });
 });
