@@ -32,6 +32,7 @@ export const PARTICIPANT_ADDED_TO_LIST_MODERATORS = 'participant:added-to-list-m
 export const PARTICIPANT_REMOVED_FROM_LIST_MODERATORS = 'participant:removed-from-list-moderators';
 export const PARTICIPANT_MOVE_REQUEST_TO_STREAM = 'participant:move-request-to-stream';
 export const PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS = 'participant:move-request-to-spectators';
+export const PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS = 'participant:move-request-to-participants';
 export const PARTICIPATION_ACCEPTING_WORD_REQUEST = 'participation:accepting-word-request';
 export const PARTICIPATION_CANCELLING_WORD_REQUEST = 'participation:cancelling-word-request';
 export const WEBCAST_STARTED = 'webcast:started';
@@ -70,6 +71,7 @@ export const PRESENTATION_STARTED = 'presentation:started';
 export const PRESENTATION_END = 'presentation:end';
 export const PRESENTATION_ENDED = 'presentation:ended';
 export const PRESENTATION_FAILED = 'presentation:failed';
-export const SPECTATOR = 'SPECTATOR';export const PARTICIPANT = 'PARTICIPANT';
+export const SPECTATOR = 'SPECTATOR';
+export const PARTICIPANT = 'PARTICIPANT';
 
 export const ONE_MEGABIT_IN_BITS = 1e6;
