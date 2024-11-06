@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [11.4.0](https://github.com/Krivega/sip-connector/compare/v11.3.0...v11.4.0) (2024-11-06)
+
+### Features
+
+- add tool resolveReplaceMediaStream ([ad37f34](https://github.com/Krivega/sip-connector/commit/ad37f34e840f191c60714de0106c21bcb7ac3bc2))
+
 ## [11.3.0](https://github.com/Krivega/sip-connector/compare/v11.2.0...v11.3.0) (2024-11-06)
 
 ### Features
