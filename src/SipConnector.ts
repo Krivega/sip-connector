@@ -46,10 +46,10 @@ import {
   NEW_RTC_SESSION,
   NOT_AVAILABLE_SECOND_REMOTE_STREAM_EVENT,
   ONE_MEGABIT_IN_BITS,
-  PARTICIPANT_ADDED_TO_LIST_MODERATORS,
   PARTICIPANT,
-  PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS,
+  PARTICIPANT_ADDED_TO_LIST_MODERATORS,
   PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS,
+  PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS,
   PARTICIPANT_MOVE_REQUEST_TO_STREAM,
   PARTICIPANT_REMOVED_FROM_LIST_MODERATORS,
   PARTICIPATION_ACCEPTING_WORD_REQUEST,
@@ -615,9 +615,9 @@ export default class SipConnector {
   async replaceMediaStream(
     mediaStream: MediaStream,
     options?: {
-      deleteExisting: boolean;
-      addMissing: boolean;
-      forceRenegotiation: boolean;
+      deleteExisting?: boolean;
+      addMissing?: boolean;
+      forceRenegotiation?: boolean;
       contentHint?: TContentHint;
       sendEncodings?: RTCRtpEncodingParameters[];
       onAddedTransceiver?: TOnAddedTransceiver;
@@ -627,7 +627,7 @@ export default class SipConnector {
       throw new Error('No session established');
     }
 
-    const { contentHint } = options || {};
+    const { contentHint } = options ?? {};
     const preparedMediaStream = prepareMediaStream(mediaStream, { contentHint })!;
 
     return this.session.replaceMediaStream(preparedMediaStream, options);
