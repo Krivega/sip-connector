@@ -2,6 +2,7 @@ import log from '../logger';
 import type SipConnector from '../SipConnector';
 import type { TContentHint, TSimulcastEncodings } from '../types';
 import generateSimulcastEncodings from './generateSimulcastEncodings';
+import resolveUpdateSenderInTransceiver from './resolveUpdateSenderInTransceiver';
 
 const resolveStartPresentation = (sipConnector: SipConnector) => {
   const startPresentation = async (
@@ -11,6 +12,7 @@ const resolveStartPresentation = (sipConnector: SipConnector) => {
       maxBitrate,
       contentHint,
       simulcastEncodings,
+      degradationPreference,
       sendEncodings,
     }: {
       mediaStream: MediaStream;
@@ -18,10 +20,15 @@ const resolveStartPresentation = (sipConnector: SipConnector) => {
       maxBitrate?: number;
       contentHint?: TContentHint;
       simulcastEncodings?: TSimulcastEncodings;
+      degradationPreference?: RTCDegradationPreference;
       sendEncodings?: RTCRtpEncodingParameters[];
     },
     options?: { callLimit: number },
   ): Promise<MediaStream | void> => {
+    const updateSenderInTransceiver = resolveUpdateSenderInTransceiver({
+      degradationPreference,
+    });
+
     log('startPresentation');
 
     return sipConnector.startPresentation(
@@ -35,6 +42,7 @@ const resolveStartPresentation = (sipConnector: SipConnector) => {
           simulcastEncodings,
           sendEncodings,
         }),
+        onAddedTransceiver: updateSenderInTransceiver,
       },
       options,
     );

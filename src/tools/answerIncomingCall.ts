@@ -6,6 +6,7 @@ import hasPurgatory from './hasPurgatory';
 import resolveGetRemoteStreams from './resolveGetRemoteStreams';
 import resolveHandleChangeTracks from './resolveHandleChangeTracks';
 import resolveUpdateRemoteStreams from './resolveUpdateRemoteStreams';
+import resolveUpdateSenderInTransceiver from './resolveUpdateSenderInTransceiver';
 
 const resolveAnswerIncomingCall = (sipConnector: SipConnector) => {
   const answerIncomingCall = async (parameters: {
@@ -14,6 +15,7 @@ const resolveAnswerIncomingCall = (sipConnector: SipConnector) => {
     iceServers?: RTCIceServer[];
     contentHint?: TContentHint;
     simulcastEncodings?: TSimulcastEncodings;
+    degradationPreference?: RTCDegradationPreference;
     sendEncodings?: RTCRtpEncodingParameters[];
     setRemoteStreams: (streams: MediaStream[]) => void;
     onBeforeProgressCall?: (conference?: string) => void;
@@ -30,6 +32,7 @@ const resolveAnswerIncomingCall = (sipConnector: SipConnector) => {
       iceServers,
       contentHint,
       simulcastEncodings,
+      degradationPreference,
       sendEncodings,
       setRemoteStreams,
       onBeforeProgressCall,
@@ -45,6 +48,9 @@ const resolveAnswerIncomingCall = (sipConnector: SipConnector) => {
       getRemoteStreams: resolveGetRemoteStreams(sipConnector),
     });
     const handleChangeTracks = resolveHandleChangeTracks(updateRemoteStreams);
+    const updateSenderInTransceiver = resolveUpdateSenderInTransceiver({
+      degradationPreference,
+    });
 
     log('answerIncomingCall', parameters);
 
@@ -59,6 +65,7 @@ const resolveAnswerIncomingCall = (sipConnector: SipConnector) => {
           simulcastEncodings,
           sendEncodings,
         }),
+        onAddedTransceiver: updateSenderInTransceiver,
         ontrack: handleChangeTracks,
       });
     };
