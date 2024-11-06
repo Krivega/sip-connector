@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [11.2.0](https://github.com/Krivega/sip-connector/compare/v11.1.0...v11.2.0) (2024-11-06)
+
+### Features
+
+- update participant move request ([#46](https://github.com/Krivega/sip-connector/issues/46)) ([fa31651](https://github.com/Krivega/sip-connector/commit/fa3165136b228cd13dc2f8b550bdc95399628bdd))
+
 ## [11.1.0](https://github.com/Krivega/sip-connector/compare/v11.0.0...v11.1.0) (2024-10-26)
 
 ### Features
