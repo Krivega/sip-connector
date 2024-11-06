@@ -65,7 +65,7 @@
     "@krivega/cancelable-promise": "^1.1.3",
     "@krivega/jssip": "^5.0.0",
     "debug": "^4.3.7",
-    "events-constructor": "^1.2.3",
+    "events-constructor": "^1.3.0",
     "repeated-calls": "^2.3.0",
     "sequent-promises": "^2.0.1",
     "stack-promises": "^2.0.2",
@@ -90,7 +90,7 @@
     "eslint-import-resolver-typescript": "^3.6.3",
     "eslint-plugin-flowtype": "^8.0.3",
     "eslint-plugin-import": "^2.31.0",
-    "eslint-plugin-jest": "^28.8.3",
+    "eslint-plugin-jest": "^28.9.0",
     "eslint-plugin-prettier": "^5.2.1",
     "eslint-plugin-unicorn": "^56.0.0",
     "husky": "^9.1.6",
@@ -107,13 +107,13 @@
     "typescript": "^5.6.3",
     "vite": "^5.4.10",
     "vite-plugin-dts": "^4.3.0",
-    "vite-tsconfig-paths": "^5.0.1"
+    "vite-tsconfig-paths": "^5.1.0"
   },
   "peerDependencies": {
     "@krivega/cancelable-promise": "^1.1.3",
     "@krivega/jssip": "^5.0.0",
     "debug": "^4.3.7",
-    "events-constructor": "^1.2.3",
+    "events-constructor": "^1.3.0",
     "repeated-calls": "^2.2.1",
     "sequent-promises": "^2.0.1",
     "stack-promises": "^2.0.2",
