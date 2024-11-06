@@ -47,7 +47,9 @@ import {
   NOT_AVAILABLE_SECOND_REMOTE_STREAM_EVENT,
   ONE_MEGABIT_IN_BITS,
   PARTICIPANT_ADDED_TO_LIST_MODERATORS,
+  PARTICIPANT,
   PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS,
+  PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS,
   PARTICIPANT_MOVE_REQUEST_TO_STREAM,
   PARTICIPANT_REMOVED_FROM_LIST_MODERATORS,
   PARTICIPATION_ACCEPTING_WORD_REQUEST,
@@ -1941,11 +1943,15 @@ export default class SipConnector {
     this._sessionEvents.trigger(SHARE_STATE, eventName);
   };
 
-  _maybeTriggerParticipantMoveRequestToSpectators = (request: IncomingRequest) => {
+  _maybeTriggerParticipantMoveRequest = (request: IncomingRequest) => {
     const participantState = request.getHeader(HEADER_CONTENT_PARTICIPANT_STATE);
 
     if (participantState === SPECTATOR) {
       this._sessionEvents.trigger(PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS, undefined);
+    }
+
+    if (participantState === PARTICIPANT) {
+      this._sessionEvents.trigger(PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS, undefined);
     }
   };
 
@@ -2038,7 +2044,7 @@ export default class SipConnector {
           break;
         }
         case CONTENT_TYPE_PARTICIPANT_STATE: {
-          this._maybeTriggerParticipantMoveRequestToSpectators(request);
+          this._maybeTriggerParticipantMoveRequest(request);
           break;
         }
 

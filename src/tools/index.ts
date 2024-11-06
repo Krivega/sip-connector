@@ -10,6 +10,7 @@ export { default as resolveAskPermissionToEnableCam } from './resolveAskPermissi
 export { default as resolveGetRemoteStreams } from './resolveGetRemoteStreams';
 export { default as resolveOnMustStopPresentation } from './resolveOnMustStopPresentation';
 export { default as resolveOnMoveToSpectators } from './resolveOnMoveToSpectators';
+export { default as resolveOnMoveToParticipants } from './resolveOnMoveToParticipants';
 export { default as resolveOnUseLicense } from './resolveOnUseLicense';
 export { default as resolveSendMediaState } from './resolveSendMediaState';
 export { default as resolveSendRefusalToTurnOnCam } from './resolveSendRefusalToTurnOnCam';
