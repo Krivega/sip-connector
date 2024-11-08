@@ -2,7 +2,7 @@ import type SipConnector from '../SipConnector';
 import log from '../logger';
 import type { TContentHint, TSimulcastEncodings } from '../types';
 import generateSimulcastEncodings from './generateSimulcastEncodings';
-import resolveUpdateSenderInTransceiver from './resolveUpdateSenderInTransceiver';
+import resolveUpdateTransceiver from './resolveUpdateTransceiver';
 
 const resolveUpdatePresentation = (sipConnector: SipConnector) => {
   const updatePresentation = async ({
@@ -13,6 +13,7 @@ const resolveUpdatePresentation = (sipConnector: SipConnector) => {
     simulcastEncodings,
     degradationPreference,
     sendEncodings,
+    preferredMimeTypesVideoCodecs,
   }: {
     mediaStream: MediaStream;
     isP2P: boolean;
@@ -21,10 +22,14 @@ const resolveUpdatePresentation = (sipConnector: SipConnector) => {
     simulcastEncodings?: TSimulcastEncodings;
     degradationPreference?: RTCDegradationPreference;
     sendEncodings?: RTCRtpEncodingParameters[];
+    preferredMimeTypesVideoCodecs?: string[];
   }): Promise<MediaStream | void> => {
-    const updateSenderInTransceiver = resolveUpdateSenderInTransceiver({
-      degradationPreference,
-    });
+    const updateTransceiver = resolveUpdateTransceiver(
+      {
+        degradationPreference,
+      },
+      preferredMimeTypesVideoCodecs,
+    );
 
     log('updatePresentation');
 
@@ -37,7 +42,7 @@ const resolveUpdatePresentation = (sipConnector: SipConnector) => {
         simulcastEncodings,
         sendEncodings,
       }),
-      onAddedTransceiver: updateSenderInTransceiver,
+      onAddedTransceiver: updateTransceiver,
     });
   };
 

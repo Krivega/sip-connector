@@ -2,7 +2,7 @@ import type SipConnector from '../SipConnector';
 import log from '../logger';
 import type { TContentHint, TSimulcastEncodings } from '../types';
 import generateSimulcastEncodings from './generateSimulcastEncodings';
-import resolveUpdateSenderInTransceiver from './resolveUpdateSenderInTransceiver';
+import resolveUpdateTransceiver from './resolveUpdateTransceiver';
 
 const resolveReplaceMediaStream = (sipConnector: SipConnector) => {
   const replaceMediaStream = async (
@@ -15,6 +15,7 @@ const resolveReplaceMediaStream = (sipConnector: SipConnector) => {
       simulcastEncodings,
       degradationPreference,
       sendEncodings,
+      preferredMimeTypesVideoCodecs,
     }: {
       deleteExisting?: boolean;
       addMissing?: boolean;
@@ -23,11 +24,15 @@ const resolveReplaceMediaStream = (sipConnector: SipConnector) => {
       simulcastEncodings?: TSimulcastEncodings;
       degradationPreference?: RTCDegradationPreference;
       sendEncodings?: RTCRtpEncodingParameters[];
+      preferredMimeTypesVideoCodecs?: string[];
     } = {},
   ): Promise<void> => {
-    const updateSenderInTransceiver = resolveUpdateSenderInTransceiver({
-      degradationPreference,
-    });
+    const updateTransceiver = resolveUpdateTransceiver(
+      {
+        degradationPreference,
+      },
+      preferredMimeTypesVideoCodecs,
+    );
 
     log('replaceMediaStream');
 
@@ -41,7 +46,7 @@ const resolveReplaceMediaStream = (sipConnector: SipConnector) => {
         simulcastEncodings,
         sendEncodings,
       }),
-      onAddedTransceiver: updateSenderInTransceiver,
+      onAddedTransceiver: updateTransceiver,
     });
   };
 

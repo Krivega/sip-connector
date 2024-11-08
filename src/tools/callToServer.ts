@@ -6,7 +6,7 @@ import hasPurgatory from './hasPurgatory';
 import resolveGetRemoteStreams from './resolveGetRemoteStreams';
 import resolveHandleChangeTracks from './resolveHandleChangeTracks';
 import resolveUpdateRemoteStreams from './resolveUpdateRemoteStreams';
-import resolveUpdateSenderInTransceiver from './resolveUpdateSenderInTransceiver';
+import resolveUpdateTransceiver from './resolveUpdateTransceiver';
 
 const resolveCallToServer = (sipConnector: SipConnector) => {
   const callToServer = async (parameters: {
@@ -18,6 +18,7 @@ const resolveCallToServer = (sipConnector: SipConnector) => {
     simulcastEncodings?: TSimulcastEncodings;
     degradationPreference?: RTCDegradationPreference;
     sendEncodings?: RTCRtpEncodingParameters[];
+    preferredMimeTypesVideoCodecs?: string[];
     setRemoteStreams: (streams: MediaStream[]) => void;
     onBeforeProgressCall?: (conference: string) => void;
     onSuccessProgressCall?: (parameters_: { isPurgatory: boolean }) => void;
@@ -36,6 +37,7 @@ const resolveCallToServer = (sipConnector: SipConnector) => {
       simulcastEncodings,
       degradationPreference,
       sendEncodings,
+      preferredMimeTypesVideoCodecs,
       setRemoteStreams,
       onBeforeProgressCall,
       onSuccessProgressCall,
@@ -50,9 +52,12 @@ const resolveCallToServer = (sipConnector: SipConnector) => {
       getRemoteStreams: resolveGetRemoteStreams(sipConnector),
     });
     const handleChangeTracks = resolveHandleChangeTracks(updateRemoteStreams);
-    const updateSenderInTransceiver = resolveUpdateSenderInTransceiver({
-      degradationPreference,
-    });
+    const updateTransceiver = resolveUpdateTransceiver(
+      {
+        degradationPreference,
+      },
+      preferredMimeTypesVideoCodecs,
+    );
 
     log('callToServer', parameters);
 
@@ -70,7 +75,7 @@ const resolveCallToServer = (sipConnector: SipConnector) => {
           sendEncodings,
         }),
         number: conference,
-        onAddedTransceiver: updateSenderInTransceiver,
+        onAddedTransceiver: updateTransceiver,
         ontrack: handleChangeTracks,
       });
     };
