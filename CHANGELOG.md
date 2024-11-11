@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [11.6.0](https://github.com/Krivega/sip-connector/compare/v11.5.0...v11.6.0) (2024-11-11)
+
+### Features
+
+- add excludeMimeTypesVideoCodecs to call methods ([770b876](https://github.com/Krivega/sip-connector/commit/770b8764219a9899ee9403f01044c3e970963506))
+
 ## [11.5.0](https://github.com/Krivega/sip-connector/compare/v11.4.0...v11.5.0) (2024-11-08)
 
 ### Features
