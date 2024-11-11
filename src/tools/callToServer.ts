@@ -19,6 +19,7 @@ const resolveCallToServer = (sipConnector: SipConnector) => {
     degradationPreference?: RTCDegradationPreference;
     sendEncodings?: RTCRtpEncodingParameters[];
     preferredMimeTypesVideoCodecs?: string[];
+    excludeMimeTypesVideoCodecs?: string[];
     setRemoteStreams: (streams: MediaStream[]) => void;
     onBeforeProgressCall?: (conference: string) => void;
     onSuccessProgressCall?: (parameters_: { isPurgatory: boolean }) => void;
@@ -38,6 +39,7 @@ const resolveCallToServer = (sipConnector: SipConnector) => {
       degradationPreference,
       sendEncodings,
       preferredMimeTypesVideoCodecs,
+      excludeMimeTypesVideoCodecs,
       setRemoteStreams,
       onBeforeProgressCall,
       onSuccessProgressCall,
@@ -56,7 +58,10 @@ const resolveCallToServer = (sipConnector: SipConnector) => {
       {
         degradationPreference,
       },
-      preferredMimeTypesVideoCodecs,
+      {
+        preferredMimeTypesVideoCodecs,
+        excludeMimeTypesVideoCodecs,
+      },
     );
 
     log('callToServer', parameters);

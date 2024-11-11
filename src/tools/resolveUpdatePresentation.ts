@@ -14,6 +14,7 @@ const resolveUpdatePresentation = (sipConnector: SipConnector) => {
     degradationPreference,
     sendEncodings,
     preferredMimeTypesVideoCodecs,
+    excludeMimeTypesVideoCodecs,
   }: {
     mediaStream: MediaStream;
     isP2P: boolean;
@@ -23,12 +24,16 @@ const resolveUpdatePresentation = (sipConnector: SipConnector) => {
     degradationPreference?: RTCDegradationPreference;
     sendEncodings?: RTCRtpEncodingParameters[];
     preferredMimeTypesVideoCodecs?: string[];
+    excludeMimeTypesVideoCodecs?: string[];
   }): Promise<MediaStream | void> => {
     const updateTransceiver = resolveUpdateTransceiver(
       {
         degradationPreference,
       },
-      preferredMimeTypesVideoCodecs,
+      {
+        preferredMimeTypesVideoCodecs,
+        excludeMimeTypesVideoCodecs,
+      },
     );
 
     log('updatePresentation');

@@ -16,6 +16,7 @@ const resolveReplaceMediaStream = (sipConnector: SipConnector) => {
       degradationPreference,
       sendEncodings,
       preferredMimeTypesVideoCodecs,
+      excludeMimeTypesVideoCodecs,
     }: {
       deleteExisting?: boolean;
       addMissing?: boolean;
@@ -25,13 +26,17 @@ const resolveReplaceMediaStream = (sipConnector: SipConnector) => {
       degradationPreference?: RTCDegradationPreference;
       sendEncodings?: RTCRtpEncodingParameters[];
       preferredMimeTypesVideoCodecs?: string[];
+      excludeMimeTypesVideoCodecs?: string[];
     } = {},
   ): Promise<void> => {
     const updateTransceiver = resolveUpdateTransceiver(
       {
         degradationPreference,
       },
-      preferredMimeTypesVideoCodecs,
+      {
+        preferredMimeTypesVideoCodecs,
+        excludeMimeTypesVideoCodecs,
+      },
     );
 
     log('replaceMediaStream');

@@ -18,6 +18,7 @@ const resolveAnswerIncomingCall = (sipConnector: SipConnector) => {
     degradationPreference?: RTCDegradationPreference;
     sendEncodings?: RTCRtpEncodingParameters[];
     preferredMimeTypesVideoCodecs?: string[];
+    excludeMimeTypesVideoCodecs?: string[];
     setRemoteStreams: (streams: MediaStream[]) => void;
     onBeforeProgressCall?: (conference?: string) => void;
     onSuccessProgressCall?: (parameters_: { isPurgatory: boolean }) => void;
@@ -35,6 +36,8 @@ const resolveAnswerIncomingCall = (sipConnector: SipConnector) => {
       simulcastEncodings,
       degradationPreference,
       sendEncodings,
+      preferredMimeTypesVideoCodecs,
+      excludeMimeTypesVideoCodecs,
       setRemoteStreams,
       onBeforeProgressCall,
       onSuccessProgressCall,
@@ -49,9 +52,15 @@ const resolveAnswerIncomingCall = (sipConnector: SipConnector) => {
       getRemoteStreams: resolveGetRemoteStreams(sipConnector),
     });
     const handleChangeTracks = resolveHandleChangeTracks(updateRemoteStreams);
-    const updateTransceiver = resolveUpdateTransceiver({
-      degradationPreference,
-    });
+    const updateTransceiver = resolveUpdateTransceiver(
+      {
+        degradationPreference,
+      },
+      {
+        preferredMimeTypesVideoCodecs,
+        excludeMimeTypesVideoCodecs,
+      },
+    );
 
     log('answerIncomingCall', parameters);
 
