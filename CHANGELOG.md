@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [12.0.0](https://github.com/Krivega/sip-connector/compare/v11.6.1...v12.0.0) (2024-11-12)
+
+### ⚠ BREAKING CHANGES
+
+- move tools to SipConnectorFacade
+
+### Features
+
+- move tools to SipConnectorFacade ([31aefb4](https://github.com/Krivega/sip-connector/commit/31aefb4a53613f4b106f06f767f1c9027eca8e6b))
+
 ### [11.6.1](https://github.com/Krivega/sip-connector/compare/v11.6.0...v11.6.1) (2024-11-11)
 
 ## [11.6.0](https://github.com/Krivega/sip-connector/compare/v11.5.0...v11.6.0) (2024-11-11)
