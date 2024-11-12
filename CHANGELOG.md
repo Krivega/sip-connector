@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [12.1.0](https://github.com/Krivega/sip-connector/compare/v12.0.0...v12.1.0) (2024-11-12)
+
+### Features
+
+- add EMimeTypesVideoCodecs ([0690a9b](https://github.com/Krivega/sip-connector/commit/0690a9b50559352404416cb75c75b8821b32e6a0))
+
 ## [12.0.0](https://github.com/Krivega/sip-connector/compare/v11.6.1...v12.0.0) (2024-11-12)
 
 ### ⚠ BREAKING CHANGES
