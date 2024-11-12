@@ -1,14 +1,13 @@
 /// <reference types="jest" />
 import doMockSIPconnector from '../../doMock';
-import dataCall from '../__fixtures__/call';
-import { dataForConnectionWithoutAuthorization } from '../__fixtures__/connectToServer';
-import resolveCall from '../callToServer';
-import resolveConnectToServer from '../connectToServer';
+import dataCall from '../../tools/__fixtures__/call';
+import { dataForConnectionWithoutAuthorization } from '../../tools/__fixtures__/connectToServer';
+
+import SipConnectorFacade from '../SipConnectorFacade';
 
 describe('actionsProgressCall', () => {
   const sipConnector = doMockSIPconnector();
-  let connectToServer: ReturnType<typeof resolveConnectToServer>;
-  let call: ReturnType<typeof resolveCall>;
+  let sipConnectorFacade: SipConnectorFacade;
   let onBeforeProgressCall: jest.Mock<void>;
   let onSuccessProgressCall: jest.Mock<void>;
   let onFailProgressCall: jest.Mock<void>;
@@ -24,8 +23,7 @@ describe('actionsProgressCall', () => {
     onFinishProgressCall = jest.fn();
     onEndedCall = jest.fn();
 
-    connectToServer = resolveConnectToServer(sipConnector);
-    call = resolveCall(sipConnector);
+    sipConnectorFacade = new SipConnectorFacade(sipConnector);
   });
 
   afterEach(() => {
@@ -35,9 +33,10 @@ describe('actionsProgressCall', () => {
   it('#1 check onBeforeProgressCall, onSuccessProgressCall, onFinishProgressCall', async () => {
     expect.assertions(4);
 
-    return connectToServer(dataForConnectionWithoutAuthorization)
+    return sipConnectorFacade
+      .connectToServer(dataForConnectionWithoutAuthorization)
       .then(async () => {
-        return call({
+        return sipConnectorFacade.callToServer({
           ...dataCall,
           onBeforeProgressCall,
           onSuccessProgressCall,
@@ -60,9 +59,10 @@ describe('actionsProgressCall', () => {
 
     const dataForFailedCall = { ...dataCall, mediaStream };
 
-    return connectToServer(dataForConnectionWithoutAuthorization)
+    return sipConnectorFacade
+      .connectToServer(dataForConnectionWithoutAuthorization)
       .then(async () => {
-        return call({
+        return sipConnectorFacade.callToServer({
           ...dataForFailedCall,
           onBeforeProgressCall,
           onSuccessProgressCall,
@@ -85,12 +85,14 @@ describe('actionsProgressCall', () => {
   it('#3 check onEndedCall when ended', async () => {
     expect.assertions(1);
 
-    await connectToServer(dataForConnectionWithoutAuthorization).then(async () => {
-      return call({
-        ...dataCall,
-        onEndedCall,
+    await sipConnectorFacade
+      .connectToServer(dataForConnectionWithoutAuthorization)
+      .then(async () => {
+        return sipConnectorFacade.callToServer({
+          ...dataCall,
+          onEndedCall,
+        });
       });
-    });
 
     // @ts-expect-error
     sipConnector._sessionEvents.trigger('ended', 'error');
@@ -101,19 +103,23 @@ describe('actionsProgressCall', () => {
   it('#4 check onEndedCall when ended: second call', async () => {
     expect.assertions(1);
 
-    await connectToServer(dataForConnectionWithoutAuthorization).then(async () => {
-      return call({
-        ...dataCall,
-        onEndedCall,
+    await sipConnectorFacade
+      .connectToServer(dataForConnectionWithoutAuthorization)
+      .then(async () => {
+        return sipConnectorFacade.callToServer({
+          ...dataCall,
+          onEndedCall,
+        });
       });
-    });
 
     // @ts-expect-error
     sipConnector._sessionEvents.trigger('ended', 'error');
 
-    await connectToServer(dataForConnectionWithoutAuthorization).then(async () => {
-      return call(dataCall);
-    });
+    await sipConnectorFacade
+      .connectToServer(dataForConnectionWithoutAuthorization)
+      .then(async () => {
+        return sipConnectorFacade.callToServer(dataCall);
+      });
 
     // @ts-expect-error
     sipConnector._sessionEvents.trigger('ended', 'error');
@@ -124,12 +130,14 @@ describe('actionsProgressCall', () => {
   it('#5 check onEndedCall when failed', async () => {
     expect.assertions(1);
 
-    await connectToServer(dataForConnectionWithoutAuthorization).then(async () => {
-      return call({
-        ...dataCall,
-        onEndedCall,
+    await sipConnectorFacade
+      .connectToServer(dataForConnectionWithoutAuthorization)
+      .then(async () => {
+        return sipConnectorFacade.callToServer({
+          ...dataCall,
+          onEndedCall,
+        });
       });
-    });
 
     // @ts-expect-error
     sipConnector._sessionEvents.trigger('failed', 'error');
@@ -140,19 +148,23 @@ describe('actionsProgressCall', () => {
   it('#6 check onEndedCall when failed: second call', async () => {
     expect.assertions(1);
 
-    await connectToServer(dataForConnectionWithoutAuthorization).then(async () => {
-      return call({
-        ...dataCall,
-        onEndedCall,
+    await sipConnectorFacade
+      .connectToServer(dataForConnectionWithoutAuthorization)
+      .then(async () => {
+        return sipConnectorFacade.callToServer({
+          ...dataCall,
+          onEndedCall,
+        });
       });
-    });
 
     // @ts-expect-error
     sipConnector._sessionEvents.trigger('failed', 'error');
 
-    await connectToServer(dataForConnectionWithoutAuthorization).then(async () => {
-      return call(dataCall);
-    });
+    await sipConnectorFacade
+      .connectToServer(dataForConnectionWithoutAuthorization)
+      .then(async () => {
+        return sipConnectorFacade.callToServer(dataCall);
+      });
 
     // @ts-expect-error
     sipConnector._sessionEvents.trigger('failed', 'error');
@@ -163,19 +175,23 @@ describe('actionsProgressCall', () => {
   it('#7 check onEndedCall when race: failed first', async () => {
     expect.assertions(1);
 
-    await connectToServer(dataForConnectionWithoutAuthorization).then(async () => {
-      return call({
-        ...dataCall,
-        onEndedCall,
+    await sipConnectorFacade
+      .connectToServer(dataForConnectionWithoutAuthorization)
+      .then(async () => {
+        return sipConnectorFacade.callToServer({
+          ...dataCall,
+          onEndedCall,
+        });
       });
-    });
 
     // @ts-expect-error
     sipConnector._sessionEvents.trigger('failed', 'error');
 
-    await connectToServer(dataForConnectionWithoutAuthorization).then(async () => {
-      return call(dataCall);
-    });
+    await sipConnectorFacade
+      .connectToServer(dataForConnectionWithoutAuthorization)
+      .then(async () => {
+        return sipConnectorFacade.callToServer(dataCall);
+      });
 
     // @ts-expect-error
     sipConnector._sessionEvents.trigger('ended', 'error');
@@ -186,19 +202,23 @@ describe('actionsProgressCall', () => {
   it('#8 check onEndedCall when race: ended first', async () => {
     expect.assertions(1);
 
-    await connectToServer(dataForConnectionWithoutAuthorization).then(async () => {
-      return call({
-        ...dataCall,
-        onEndedCall,
+    await sipConnectorFacade
+      .connectToServer(dataForConnectionWithoutAuthorization)
+      .then(async () => {
+        return sipConnectorFacade.callToServer({
+          ...dataCall,
+          onEndedCall,
+        });
       });
-    });
 
     // @ts-expect-error
     sipConnector._sessionEvents.trigger('ended', 'error');
 
-    await connectToServer(dataForConnectionWithoutAuthorization).then(async () => {
-      return call(dataCall);
-    });
+    await sipConnectorFacade
+      .connectToServer(dataForConnectionWithoutAuthorization)
+      .then(async () => {
+        return sipConnectorFacade.callToServer(dataCall);
+      });
 
     // @ts-expect-error
     sipConnector._sessionEvents.trigger('failed', 'error');

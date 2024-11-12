@@ -1,21 +1,20 @@
 /// <reference types="jest" />
 import type SipConnector from '../../SipConnector';
 import doMockSIPconnector from '../../doMock';
-import resolveOnUseLicense from '../resolveOnUseLicense';
+import SipConnectorFacade from '../SipConnectorFacade';
 
 const AUDIO_LICENSE = 'AUDIO';
 
 describe('media state: resolveOnUseLicense', () => {
   let sipConnector: SipConnector;
+  let sipConnectorFacade: SipConnectorFacade;
   let handlerOnUseLicense: jest.Mock<void>;
-  let onUseLicense: ReturnType<typeof resolveOnUseLicense>;
   let offUseLicense: () => void;
 
   beforeEach(() => {
     sipConnector = doMockSIPconnector();
+    sipConnectorFacade = new SipConnectorFacade(sipConnector);
     handlerOnUseLicense = jest.fn();
-
-    onUseLicense = resolveOnUseLicense(sipConnector);
   });
 
   afterEach(() => {
@@ -25,7 +24,7 @@ describe('media state: resolveOnUseLicense', () => {
   it('#1 should subscribe media event and call handler on event trigger', async () => {
     expect.assertions(4);
 
-    onUseLicense(handlerOnUseLicense);
+    sipConnectorFacade.onUseLicense(handlerOnUseLicense);
 
     // @ts-expect-error
     sipConnector._sessionEvents.trigger('useLicense', AUDIO_LICENSE);
@@ -43,7 +42,7 @@ describe('media state: resolveOnUseLicense', () => {
   it('#2 should unsubscribe media event', async () => {
     expect.assertions(2);
 
-    offUseLicense = onUseLicense(handlerOnUseLicense);
+    offUseLicense = sipConnectorFacade.onUseLicense(handlerOnUseLicense);
 
     // @ts-expect-error
     sipConnector._sessionEvents.trigger('useLicense', AUDIO_LICENSE);

@@ -3,33 +3,30 @@ import type SipConnector from '../../SipConnector';
 import JsSIP from '../../__fixtures__/jssip.mock';
 import remoteCallerData from '../../__fixtures__/remoteCallerData';
 import doMockSIPconnector from '../../doMock';
-import dataCall, { peerConnectionFromData } from '../__fixtures__/call';
-import { dataForConnectionWithAuthorization } from '../__fixtures__/connectToServer';
-import parseObject from '../__tests-utils__/parseObject';
-import resolveAnswerIncomingCall from '../answerIncomingCall';
-import resolveConnectToServer from '../connectToServer';
+import dataCall, { peerConnectionFromData } from '../../tools/__fixtures__/call';
+import { dataForConnectionWithAuthorization } from '../../tools/__fixtures__/connectToServer';
+import parseObject from '../../tools/__tests-utils__/parseObject';
+import SipConnectorFacade from '../SipConnectorFacade';
 
 describe('answerIncomingCall', () => {
   let sipConnector: SipConnector;
-  let connectToServer: ReturnType<typeof resolveConnectToServer>;
-  let answerIncomingCall: ReturnType<typeof resolveAnswerIncomingCall>;
+  let sipConnectorFacade: SipConnectorFacade;
 
   beforeEach(() => {
     jest.resetModules();
 
     sipConnector = doMockSIPconnector();
-    connectToServer = resolveConnectToServer(sipConnector);
-    answerIncomingCall = resolveAnswerIncomingCall(sipConnector);
+    sipConnectorFacade = new SipConnectorFacade(sipConnector);
   });
 
   it('#1 check answer', async () => {
     expect.assertions(1);
 
-    await connectToServer(dataForConnectionWithAuthorization);
+    await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
       sipConnector.on('incomingCall', async () => {
-        const peerconnection = await answerIncomingCall(dataCall);
+        const peerconnection = await sipConnectorFacade.answerIncomingCall(dataCall);
 
         // @ts-expect-error
         expect(parseObject(peerconnection._receivers)).toEqual(

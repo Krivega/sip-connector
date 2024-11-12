@@ -1,17 +1,15 @@
 /// <reference types="jest" />
-import type SipConnector from '../../SipConnector';
 import JsSIP from '../../__fixtures__/jssip.mock';
 import remoteCallerData from '../../__fixtures__/remoteCallerData';
 import doMockSIPconnector from '../../doMock';
-import dataCall from '../__fixtures__/call';
-import { dataForConnectionWithAuthorization } from '../__fixtures__/connectToServer';
-import resolveAnswerIncomingCall from '../answerIncomingCall';
-import resolveConnectToServer from '../connectToServer';
+import type SipConnector from '../../SipConnector';
+import dataCall from '../../tools/__fixtures__/call';
+import { dataForConnectionWithAuthorization } from '../../tools/__fixtures__/connectToServer';
+import SipConnectorFacade from '../SipConnectorFacade';
 
 describe('actionsProgressIncomingCall', () => {
   let sipConnector: SipConnector;
-  let connectToServer: ReturnType<typeof resolveConnectToServer>;
-  let answerIncomingCall: ReturnType<typeof resolveAnswerIncomingCall>;
+  let sipConnectorFacade: SipConnectorFacade;
   let onBeforeProgressCall: jest.Mock<void>;
   let onSuccessProgressCall: jest.Mock<void>;
   let onFailProgressCall: jest.Mock<void>;
@@ -28,8 +26,7 @@ describe('actionsProgressIncomingCall', () => {
     onEndedCall = jest.fn();
 
     sipConnector = doMockSIPconnector();
-    connectToServer = resolveConnectToServer(sipConnector);
-    answerIncomingCall = resolveAnswerIncomingCall(sipConnector);
+    sipConnectorFacade = new SipConnectorFacade(sipConnector);
   });
 
   afterEach(() => {
@@ -39,11 +36,11 @@ describe('actionsProgressIncomingCall', () => {
   it('#1 check onBeforeProgressCall, onSuccessProgressCall, onFinishProgressCall', async () => {
     expect.assertions(4);
 
-    await connectToServer(dataForConnectionWithAuthorization);
+    await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
       sipConnector.on('incomingCall', async () => {
-        await answerIncomingCall({
+        await sipConnectorFacade.answerIncomingCall({
           ...dataCall,
           onBeforeProgressCall,
           onSuccessProgressCall,
@@ -71,12 +68,12 @@ describe('actionsProgressIncomingCall', () => {
 
     const dataForFailedCall = { ...dataCall, mediaStream };
 
-    await connectToServer(dataForConnectionWithAuthorization);
+    await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
       sipConnector.on('incomingCall', async () => {
         try {
-          await answerIncomingCall({
+          await sipConnectorFacade.answerIncomingCall({
             ...dataForFailedCall,
             onBeforeProgressCall,
             onSuccessProgressCall,
@@ -104,11 +101,11 @@ describe('actionsProgressIncomingCall', () => {
   it('#3 check onEndedCall when ended', async () => {
     expect.assertions(1);
 
-    await connectToServer(dataForConnectionWithAuthorization);
+    await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
       sipConnector.on('incomingCall', async () => {
-        await answerIncomingCall({
+        await sipConnectorFacade.answerIncomingCall({
           ...dataCall,
           onEndedCall,
         });
@@ -129,11 +126,11 @@ describe('actionsProgressIncomingCall', () => {
   it('#4 check onEndedCall when failed', async () => {
     expect.assertions(1);
 
-    await connectToServer(dataForConnectionWithAuthorization);
+    await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
       sipConnector.on('incomingCall', async () => {
-        await answerIncomingCall({
+        await sipConnectorFacade.answerIncomingCall({
           ...dataCall,
           onEndedCall,
         });

@@ -13,3 +13,5 @@ export { default as resolveVideoSendingBalancer } from './videoSendingBalancer';
 
 // eslint-disable-next-line unicorn/prefer-export-from
 export default SipConnector;
+
+export { SipConnectorFacade } from './SipConnectorFacade';

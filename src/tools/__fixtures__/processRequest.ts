@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/max-params */
 import type SipConnector from '../../SipConnector';
-import resolveConnectToServer from '../connectToServer';
-import resolveDisconnectFromServer from '../disconnectFromServer';
+import { SipConnectorFacade } from '../../SipConnectorFacade';
 import { canConnectToServer } from './permissions';
 
 /**
@@ -48,11 +47,10 @@ const initUa = (
     isRegisteredUser: boolean;
   },
 ) => {
+  const sipConnectorFacade = new SipConnectorFacade(sipConnector);
+
   Promise.resolve()
     .then(async () => {
-      const connectToServer = resolveConnectToServer(sipConnector);
-      const disconnectFromServer = resolveDisconnectFromServer(sipConnector);
-
       if (
         canConnectToServer({
           sipServerUrl,
@@ -63,7 +61,7 @@ const initUa = (
           password,
         })
       ) {
-        return connectToServer({
+        return sipConnectorFacade.connectToServer({
           remoteAddress,
           sipServerUrl,
           sipWebSocketServerURL,
@@ -75,7 +73,7 @@ const initUa = (
         });
       }
 
-      return disconnectFromServer().then(() => {
+      return sipConnectorFacade.disconnectFromServer().then(() => {
         return { isSuccessful: false };
       });
     })

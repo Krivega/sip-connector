@@ -1,32 +1,30 @@
 /// <reference types="jest" />
 import delayPromise from '../../__fixtures__/delayPromise';
 import doMockSIPconnector from '../../doMock';
+import { SipConnectorFacade } from '../../SipConnectorFacade';
 import dataCall from '../__fixtures__/call';
 import { dataForConnectionWithoutAuthorization } from '../__fixtures__/connectToServer';
-import resolveCall from '../callToServer';
-import resolveConnectToServer from '../connectToServer';
 import sendDTMFAccumulated from '../sendDTMFAccumulated';
 
 describe('sendDTMFAccumulated', () => {
   const DTMF_SENDING_DELAY = 100;
   const dtmf = '1234#';
   const sipConnector = doMockSIPconnector();
-  let connectToServer: ReturnType<typeof resolveConnectToServer>;
-  let call: ReturnType<typeof resolveCall>;
+  let sipConnectorFacade: SipConnectorFacade;
 
   beforeEach(() => {
     jest.resetModules();
 
-    connectToServer = resolveConnectToServer(sipConnector);
-    call = resolveCall(sipConnector);
+    sipConnectorFacade = new SipConnectorFacade(sipConnector);
   });
 
   it('should be sent dtmf from sendDTMFAccumulated', async () => {
     expect.assertions(5);
 
-    return connectToServer(dataForConnectionWithoutAuthorization)
+    return sipConnectorFacade
+      .connectToServer(dataForConnectionWithoutAuthorization)
       .then(async () => {
-        return call(dataCall);
+        return sipConnectorFacade.callToServer(dataCall);
       })
       .then(async () => {
         sipConnector.onSession('newDTMF', ({ originator }: { originator: string }) => {

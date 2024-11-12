@@ -5,30 +5,28 @@ import dataCall, {
   onEnterConference,
   onEnterPurgatory,
   peerConnectionFromData,
-} from '../__fixtures__/call';
-import { dataForConnectionWithoutAuthorization } from '../__fixtures__/connectToServer';
-import parseObject from '../__tests-utils__/parseObject';
-import resolveCall from '../callToServer';
-import resolveConnectToServer from '../connectToServer';
+} from '../../tools/__fixtures__/call';
+import { dataForConnectionWithoutAuthorization } from '../../tools/__fixtures__/connectToServer';
+import parseObject from '../../tools/__tests-utils__/parseObject';
+import SipConnectorFacade from '../SipConnectorFacade';
 
 describe('callToServer', () => {
   const sipConnector = doMockSIPconnector();
-  let connectToServer: ReturnType<typeof resolveConnectToServer>;
-  let call: ReturnType<typeof resolveCall>;
+  let sipConnectorFacade: SipConnectorFacade;
 
   beforeEach(() => {
     jest.resetModules();
 
-    connectToServer = resolveConnectToServer(sipConnector);
-    call = resolveCall(sipConnector);
+    sipConnectorFacade = new SipConnectorFacade(sipConnector);
   });
 
   it('check call', async () => {
     expect.assertions(3);
 
-    return connectToServer(dataForConnectionWithoutAuthorization)
+    return sipConnectorFacade
+      .connectToServer(dataForConnectionWithoutAuthorization)
       .then(async () => {
-        return call(dataCall);
+        return sipConnectorFacade.callToServer(dataCall);
       })
       .then((peerConnection) => {
         // @ts-expect-error
@@ -43,9 +41,10 @@ describe('callToServer', () => {
   it('chould call correct handler after purgatory call', async () => {
     expect.assertions(2);
 
-    return connectToServer(dataForConnectionWithoutAuthorization)
+    return sipConnectorFacade
+      .connectToServer(dataForConnectionWithoutAuthorization)
       .then(async () => {
-        return call(dataCallPurgatory);
+        return sipConnectorFacade.callToServer(dataCallPurgatory);
       })
       .then(() => {
         expect(onEnterPurgatory).toHaveBeenCalledTimes(1);
