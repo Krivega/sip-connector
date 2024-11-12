@@ -65,3 +65,13 @@ export type TContentHint = 'motion' | 'detail' | 'text' | 'none';
 export type TRtpSendParameters = Partial<Omit<RTCRtpSendParameters, 'transactionId'>>;
 export type TSize = { width: number; height: number };
 export type TSimulcastEncodings = TSize[];
+
+export enum EMimeTypesVideoCodecs {
+  VP8 = 'video/VP8',
+  VP9 = 'video/VP9',
+  H264 = 'video/H264',
+  AV1 = 'video/AV1',
+  rtx = 'video/rtx',
+  red = 'video/red',
+  flexfec03 = 'video/flexfec-03',
+}
