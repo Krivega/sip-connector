@@ -1,4 +1,4 @@
-import type { TSimulcastEncodings } from '../types';
+import type { TSimulcastEncoding } from '../types';
 import findVideoTrack from '../utils/findVideoTrack';
 import scaleResolutionAndBitrate from '../videoSendingBalancer/scaleResolutionAndBitrate';
 
@@ -8,7 +8,7 @@ const generateSimulcastEncodings = ({
   sendEncodings,
 }: {
   mediaStream: MediaStream;
-  simulcastEncodings?: TSimulcastEncodings;
+  simulcastEncodings?: TSimulcastEncoding[];
   sendEncodings?: RTCRtpEncodingParameters[];
 }) => {
   if (simulcastEncodings && simulcastEncodings.length > 0) {
@@ -17,6 +17,17 @@ const generateSimulcastEncodings = ({
 
     simulcastEncodings.forEach((item, index) => {
       const encoding = sendEncodingsGenerated[index] ?? ({} as RTCRtpEncodingParameters);
+
+      encoding.active = true;
+
+      if (item.rid !== undefined) {
+        encoding.rid = item.rid;
+      }
+
+      if (item.scalabilityMode !== undefined) {
+        // @ts-expect-error
+        encoding.scalabilityMode = item.scalabilityMode;
+      }
 
       const { maxBitrate, scaleResolutionDownBy } = scaleResolutionAndBitrate({
         videoTrack,

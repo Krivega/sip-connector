@@ -1,5 +1,5 @@
 // <reference types="jest" />
-import type { TSimulcastEncodings } from '../../types';
+import type { TSimulcastEncoding } from '../../types';
 import findVideoTrack from '../../utils/findVideoTrack';
 import generateSimulcastEncodings from '../generateSimulcastEncodings';
 
@@ -22,7 +22,7 @@ describe('generateSimulcastEncodings', () => {
   });
 
   it('should generate simulcast encodings when simulcastEncodings is provided', () => {
-    const simulcastEncodings: TSimulcastEncodings = [
+    const simulcastEncodings: TSimulcastEncoding[] = [
       { width: 1280, height: 720 },
       { width: 640, height: 360 },
     ];

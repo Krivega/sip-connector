@@ -11,7 +11,7 @@ import type SipConnector from '../SipConnector';
 import generateSimulcastEncodings from '../tools/generateSimulcastEncodings';
 import hasPurgatory from '../tools/hasPurgatory';
 import resolveUpdateTransceiver from '../tools/resolveUpdateTransceiver';
-import type { EUseLicense, TContentHint, TSimulcastEncodings } from '../types';
+import type { EUseLicense, TContentHint, TSimulcastEncoding } from '../types';
 
 const handleError = (error: Error): { isSuccessful: boolean } => {
   if (!isCanceledError(error) && !hasCanceledError(error)) {
@@ -112,7 +112,7 @@ class SipConnectorFacade {
     extraHeaders?: string[] | undefined;
     iceServers?: RTCIceServer[];
     contentHint?: TContentHint;
-    simulcastEncodings?: TSimulcastEncodings;
+    simulcastEncodings?: TSimulcastEncoding[];
     degradationPreference?: RTCDegradationPreference;
     sendEncodings?: RTCRtpEncodingParameters[];
     setRemoteStreams: (streams: MediaStream[]) => void;
@@ -280,7 +280,7 @@ class SipConnectorFacade {
     extraHeaders?: string[] | undefined;
     iceServers?: RTCIceServer[];
     contentHint?: TContentHint;
-    simulcastEncodings?: TSimulcastEncodings;
+    simulcastEncodings?: TSimulcastEncoding[];
     degradationPreference?: RTCDegradationPreference;
     sendEncodings?: RTCRtpEncodingParameters[];
     setRemoteStreams: (streams: MediaStream[]) => void;
@@ -447,7 +447,7 @@ class SipConnectorFacade {
     isP2P: boolean;
     maxBitrate?: number;
     contentHint?: TContentHint;
-    simulcastEncodings?: TSimulcastEncodings;
+    simulcastEncodings?: TSimulcastEncoding[];
     degradationPreference?: RTCDegradationPreference;
     sendEncodings?: RTCRtpEncodingParameters[];
     preferredMimeTypesVideoCodecs?: string[];
@@ -494,7 +494,7 @@ class SipConnectorFacade {
       isP2P: boolean;
       maxBitrate?: number;
       contentHint?: TContentHint;
-      simulcastEncodings?: TSimulcastEncodings;
+      simulcastEncodings?: TSimulcastEncoding[];
       degradationPreference?: RTCDegradationPreference;
       sendEncodings?: RTCRtpEncodingParameters[];
       preferredMimeTypesVideoCodecs?: string[];
@@ -598,7 +598,7 @@ class SipConnectorFacade {
       addMissing?: boolean;
       forceRenegotiation?: boolean;
       contentHint?: TContentHint;
-      simulcastEncodings?: TSimulcastEncodings;
+      simulcastEncodings?: TSimulcastEncoding[];
       degradationPreference?: RTCDegradationPreference;
       sendEncodings?: RTCRtpEncodingParameters[];
     } = {},
