@@ -314,7 +314,7 @@ describe('call', () => {
     return expect(endedFromServer).resolves.toEqual(data);
   });
 
-  it('calls without videoMode and audioMode', async () => {
+  it('calls without directionVideo and directionAudio', async () => {
     expect.assertions(4);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -326,49 +326,59 @@ describe('call', () => {
     // @ts-expect-error
     const parameters = sipConnector.ua.call.mock.calls[0][1];
 
-    expect(parameters.videoMode).toBe(undefined);
-    expect(parameters.audioMode).toBe(undefined);
+    expect(parameters.directionVideo).toBe(undefined);
+    expect(parameters.directionAudio).toBe(undefined);
     expect(parameters.mediaStream.getVideoTracks().length).toBe(1);
     expect(parameters.mediaStream.getAudioTracks().length).toBe(1);
   });
 
-  it('calls with videoMode=recvonly', async () => {
+  it('calls with directionVideo=recvonly', async () => {
     expect.assertions(4);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     const number = `10000`;
 
-    await sipConnector.call({ number, mediaStream, videoMode: 'recvonly', ontrack: mockFunction });
+    await sipConnector.call({
+      number,
+      mediaStream,
+      directionVideo: 'recvonly',
+      ontrack: mockFunction,
+    });
 
     // @ts-expect-error
     const parameters = sipConnector.ua.call.mock.calls[0][1];
 
-    expect(parameters.videoMode).toBe('recvonly');
-    expect(parameters.audioMode).toBe(undefined);
+    expect(parameters.directionVideo).toBe('recvonly');
+    expect(parameters.directionAudio).toBe(undefined);
     expect(parameters.mediaStream.getVideoTracks().length).toBe(0);
     expect(parameters.mediaStream.getAudioTracks().length).toBe(1);
   });
 
-  it('calls with audioMode=recvonly', async () => {
+  it('calls with directionAudio=recvonly', async () => {
     expect.assertions(4);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     const number = `10000`;
 
-    await sipConnector.call({ number, mediaStream, audioMode: 'recvonly', ontrack: mockFunction });
+    await sipConnector.call({
+      number,
+      mediaStream,
+      directionAudio: 'recvonly',
+      ontrack: mockFunction,
+    });
 
     // @ts-expect-error
     const parameters = sipConnector.ua.call.mock.calls[0][1];
 
-    expect(parameters.videoMode).toBe(undefined);
-    expect(parameters.audioMode).toBe('recvonly');
+    expect(parameters.directionVideo).toBe(undefined);
+    expect(parameters.directionAudio).toBe('recvonly');
     expect(parameters.mediaStream.getVideoTracks().length).toBe(1);
     expect(parameters.mediaStream.getAudioTracks().length).toBe(0);
   });
 
-  it('calls with videoMode=recvonly audioMode=recvonly', async () => {
+  it('calls with directionVideo=recvonly directionAudio=recvonly', async () => {
     expect.assertions(3);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -378,16 +388,16 @@ describe('call', () => {
     await sipConnector.call({
       number,
       mediaStream,
-      videoMode: 'recvonly',
-      audioMode: 'recvonly',
+      directionVideo: 'recvonly',
+      directionAudio: 'recvonly',
       ontrack: mockFunction,
     });
 
     // @ts-expect-error
     const parameters = sipConnector.ua.call.mock.calls[0][1];
 
-    expect(parameters.videoMode).toBe('recvonly');
-    expect(parameters.audioMode).toBe('recvonly');
+    expect(parameters.directionVideo).toBe('recvonly');
+    expect(parameters.directionAudio).toBe('recvonly');
     expect(parameters.mediaStream).toBe(undefined);
   });
 });

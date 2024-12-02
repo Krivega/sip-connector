@@ -257,7 +257,7 @@ describe('incoming call', () => {
       });
   });
 
-  it('answer without videoMode and audioMode', async () => {
+  it('answer without directionVideo and directionAudio', async () => {
     expect.assertions(4);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -273,8 +273,8 @@ describe('incoming call', () => {
         // @ts-expect-error
         const parameters = sipConnector.session.answer.mock.calls[0][0];
 
-        expect(parameters.videoMode).toBe(undefined);
-        expect(parameters.audioMode).toBe(undefined);
+        expect(parameters.directionVideo).toBe(undefined);
+        expect(parameters.directionAudio).toBe(undefined);
         expect(parameters.mediaStream.getVideoTracks().length).toBe(1);
         expect(parameters.mediaStream.getAudioTracks().length).toBe(1);
 
@@ -286,7 +286,7 @@ describe('incoming call', () => {
     });
   });
 
-  it('answer with videoMode=recvonly', async () => {
+  it('answer with directionVideo=recvonly', async () => {
     expect.assertions(4);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -296,15 +296,15 @@ describe('incoming call', () => {
         await delayPromise(100); // wait for to decline incoming call
         await sipConnector.answerToIncomingCall({
           mediaStream,
-          videoMode: 'recvonly',
+          directionVideo: 'recvonly',
           ontrack: mockFunction,
         });
 
         // @ts-expect-error
         const parameters = sipConnector.session.answer.mock.calls[0][0];
 
-        expect(parameters.videoMode).toBe('recvonly');
-        expect(parameters.audioMode).toBe(undefined);
+        expect(parameters.directionVideo).toBe('recvonly');
+        expect(parameters.directionAudio).toBe(undefined);
         expect(parameters.mediaStream.getVideoTracks().length).toBe(0);
         expect(parameters.mediaStream.getAudioTracks().length).toBe(1);
 
@@ -316,7 +316,7 @@ describe('incoming call', () => {
     });
   });
 
-  it('answer with audioMode=recvonly', async () => {
+  it('answer with directionAudio=recvonly', async () => {
     expect.assertions(4);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -326,15 +326,15 @@ describe('incoming call', () => {
         await delayPromise(100); // wait for to decline incoming call
         await sipConnector.answerToIncomingCall({
           mediaStream,
-          audioMode: 'recvonly',
+          directionAudio: 'recvonly',
           ontrack: mockFunction,
         });
 
         // @ts-expect-error
         const parameters = sipConnector.session.answer.mock.calls[0][0];
 
-        expect(parameters.videoMode).toBe(undefined);
-        expect(parameters.audioMode).toBe('recvonly');
+        expect(parameters.directionVideo).toBe(undefined);
+        expect(parameters.directionAudio).toBe('recvonly');
         expect(parameters.mediaStream.getVideoTracks().length).toBe(1);
         expect(parameters.mediaStream.getAudioTracks().length).toBe(0);
 
@@ -346,7 +346,7 @@ describe('incoming call', () => {
     });
   });
 
-  it('answer with videoMode=recvonly audioMode=recvonly', async () => {
+  it('answer with directionVideo=recvonly directionAudio=recvonly', async () => {
     expect.assertions(3);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -356,16 +356,16 @@ describe('incoming call', () => {
         await delayPromise(100); // wait for to decline incoming call
         await sipConnector.answerToIncomingCall({
           mediaStream,
-          videoMode: 'recvonly',
-          audioMode: 'recvonly',
+          directionVideo: 'recvonly',
+          directionAudio: 'recvonly',
           ontrack: mockFunction,
         });
 
         // @ts-expect-error
         const parameters = sipConnector.session.answer.mock.calls[0][0];
 
-        expect(parameters.videoMode).toBe('recvonly');
-        expect(parameters.audioMode).toBe('recvonly');
+        expect(parameters.directionVideo).toBe('recvonly');
+        expect(parameters.directionAudio).toBe('recvonly');
         expect(parameters.mediaStream).toBe(undefined);
 
         resolve();

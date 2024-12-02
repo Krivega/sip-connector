@@ -285,36 +285,6 @@ type TSet = ({
   password?: string;
 }) => Promise<boolean>;
 
-type TCall = ({
-  number,
-  mediaStream,
-  extraHeaders,
-  ontrack,
-  iceServers,
-  directionVideo,
-  directionAudio,
-  offerToReceiveAudio,
-  offerToReceiveVideo,
-  contentHint,
-  sendEncodings,
-  onAddedTransceiver,
-}: {
-  number: string;
-  mediaStream: MediaStream;
-  extraHeaders?: TOptionsExtraHeaders['extraHeaders'];
-  ontrack?: TOntrack;
-  iceServers?: RTCIceServer[];
-  directionVideo?: RTCRtpTransceiverDirection;
-  directionAudio?: RTCRtpTransceiverDirection;
-  contentHint?: TContentHint;
-  sendEncodings?: RTCRtpEncodingParameters[];
-  offerToReceiveAudio?: boolean;
-  offerToReceiveVideo?: boolean;
-  onAddedTransceiver?: TOnAddedTransceiver;
-}) => Promise<RTCPeerConnection>;
-
-type TDisconnect = () => Promise<void>;
-
 type TParametersAnswerToIncomingCall = {
   mediaStream: MediaStream;
   extraHeaders?: TOptionsExtraHeaders['extraHeaders'];
@@ -328,6 +298,14 @@ type TParametersAnswerToIncomingCall = {
   offerToReceiveVideo?: boolean;
   onAddedTransceiver?: TOnAddedTransceiver;
 };
+
+type TParametersCall = TParametersAnswerToIncomingCall & {
+  number: string;
+};
+
+type TCall = (parameters: TParametersCall) => Promise<RTCPeerConnection>;
+
+type TDisconnect = () => Promise<void>;
 
 type TAnswerToIncomingCall = (
   parameters: TParametersAnswerToIncomingCall,
