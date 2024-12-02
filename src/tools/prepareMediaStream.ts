@@ -4,21 +4,21 @@ import setVideoTrackContentHints from './setVideoTrackContentHints';
 const prepareMediaStream = (
   mediaStream?: MediaStream,
   {
-    videoMode,
-    audioMode,
+    directionVideo,
+    directionAudio,
     contentHint,
   }: {
-    videoMode?: 'recvonly' | 'sendonly' | 'sendrecv';
-    audioMode?: 'recvonly' | 'sendonly' | 'sendrecv';
+    directionVideo?: RTCRtpTransceiverDirection;
+    directionAudio?: RTCRtpTransceiverDirection;
     contentHint?: TContentHint;
   } = {},
 ): MediaStream | undefined => {
-  if (!mediaStream || (videoMode === 'recvonly' && audioMode === 'recvonly')) {
+  if (!mediaStream || (directionVideo === 'recvonly' && directionAudio === 'recvonly')) {
     return undefined;
   }
 
-  const audioTracks = audioMode === 'recvonly' ? [] : mediaStream.getAudioTracks();
-  const videoTracks = videoMode === 'recvonly' ? [] : mediaStream.getVideoTracks();
+  const audioTracks = directionAudio === 'recvonly' ? [] : mediaStream.getAudioTracks();
+  const videoTracks = directionVideo === 'recvonly' ? [] : mediaStream.getVideoTracks();
   const tracks = [...audioTracks, ...videoTracks];
   const newStream = new MediaStream(tracks);
 

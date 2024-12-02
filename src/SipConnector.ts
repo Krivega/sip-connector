@@ -291,8 +291,8 @@ type TCall = ({
   extraHeaders,
   ontrack,
   iceServers,
-  videoMode,
-  audioMode,
+  directionVideo,
+  directionAudio,
   offerToReceiveAudio,
   offerToReceiveVideo,
   contentHint,
@@ -304,12 +304,12 @@ type TCall = ({
   extraHeaders?: TOptionsExtraHeaders['extraHeaders'];
   ontrack?: TOntrack;
   iceServers?: RTCIceServer[];
-  videoMode?: 'recvonly' | 'sendonly' | 'sendrecv';
-  audioMode?: 'recvonly' | 'sendonly' | 'sendrecv';
-  offerToReceiveAudio?: boolean;
-  offerToReceiveVideo?: boolean;
+  directionVideo?: RTCRtpTransceiverDirection;
+  directionAudio?: RTCRtpTransceiverDirection;
   contentHint?: TContentHint;
   sendEncodings?: RTCRtpEncodingParameters[];
+  offerToReceiveAudio?: boolean;
+  offerToReceiveVideo?: boolean;
   onAddedTransceiver?: TOnAddedTransceiver;
 }) => Promise<RTCPeerConnection>;
 
@@ -320,10 +320,12 @@ type TParametersAnswerToIncomingCall = {
   extraHeaders?: TOptionsExtraHeaders['extraHeaders'];
   ontrack?: TOntrack;
   iceServers?: RTCIceServer[];
-  videoMode?: 'recvonly' | 'sendonly' | 'sendrecv';
-  audioMode?: 'recvonly' | 'sendonly' | 'sendrecv';
+  directionVideo?: RTCRtpTransceiverDirection;
+  directionAudio?: RTCRtpTransceiverDirection;
   contentHint?: TContentHint;
   sendEncodings?: RTCRtpEncodingParameters[];
+  offerToReceiveAudio?: boolean;
+  offerToReceiveVideo?: boolean;
   onAddedTransceiver?: TOnAddedTransceiver;
 };
 
@@ -1404,8 +1406,8 @@ export default class SipConnector {
     extraHeaders = [],
     ontrack,
     iceServers,
-    videoMode,
-    audioMode,
+    directionVideo,
+    directionAudio,
     contentHint,
     offerToReceiveAudio = true,
     offerToReceiveVideo = true,
@@ -1433,13 +1435,13 @@ export default class SipConnector {
       this.session = ua.call(this.getSipServerUrl(number), {
         extraHeaders,
         mediaStream: prepareMediaStream(mediaStream, {
-          videoMode,
-          audioMode,
+          directionVideo,
+          directionAudio,
           contentHint,
         }),
         eventHandlers: this._sessionEvents.triggers,
-        videoMode,
-        audioMode,
+        directionVideo,
+        directionAudio,
         pcConfig: {
           iceServers,
         },
@@ -1458,8 +1460,10 @@ export default class SipConnector {
     ontrack,
     extraHeaders = [],
     iceServers,
-    videoMode,
-    audioMode,
+    directionVideo,
+    directionAudio,
+    offerToReceiveAudio,
+    offerToReceiveVideo,
     contentHint,
     sendEncodings,
     onAddedTransceiver,
@@ -1502,18 +1506,22 @@ export default class SipConnector {
         });
 
       const preparedMediaStream = prepareMediaStream(mediaStream, {
-        videoMode,
-        audioMode,
+        directionVideo,
+        directionAudio,
         contentHint,
       });
 
       session.answer({
         extraHeaders,
-        videoMode,
-        audioMode,
+        directionVideo,
+        directionAudio,
         mediaStream: preparedMediaStream,
         pcConfig: {
           iceServers,
+        },
+        rtcOfferConstraints: {
+          offerToReceiveAudio,
+          offerToReceiveVideo,
         },
         sendEncodings,
         onAddedTransceiver,

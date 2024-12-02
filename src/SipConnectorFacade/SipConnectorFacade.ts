@@ -115,6 +115,10 @@ class SipConnectorFacade {
     simulcastEncodings?: TSimulcastEncoding[];
     degradationPreference?: RTCDegradationPreference;
     sendEncodings?: RTCRtpEncodingParameters[];
+    offerToReceiveAudio?: boolean;
+    offerToReceiveVideo?: boolean;
+    directionVideo?: RTCRtpTransceiverDirection;
+    directionAudio?: RTCRtpTransceiverDirection;
     setRemoteStreams: (streams: MediaStream[]) => void;
     onBeforeProgressCall?: (conference: string) => void;
     onSuccessProgressCall?: (parameters_: { isPurgatory: boolean }) => void;
@@ -133,6 +137,10 @@ class SipConnectorFacade {
       simulcastEncodings,
       degradationPreference,
       sendEncodings,
+      offerToReceiveAudio,
+      offerToReceiveVideo,
+      directionVideo,
+      directionAudio,
       setRemoteStreams,
       onBeforeProgressCall,
       onSuccessProgressCall,
@@ -168,6 +176,10 @@ class SipConnectorFacade {
         extraHeaders,
         iceServers,
         contentHint,
+        offerToReceiveAudio,
+        offerToReceiveVideo,
+        directionVideo,
+        directionAudio,
         sendEncodings: generateSimulcastEncodings({
           mediaStream,
           simulcastEncodings,
@@ -283,6 +295,10 @@ class SipConnectorFacade {
     simulcastEncodings?: TSimulcastEncoding[];
     degradationPreference?: RTCDegradationPreference;
     sendEncodings?: RTCRtpEncodingParameters[];
+    offerToReceiveAudio?: boolean;
+    offerToReceiveVideo?: boolean;
+    directionVideo?: RTCRtpTransceiverDirection;
+    directionAudio?: RTCRtpTransceiverDirection;
     setRemoteStreams: (streams: MediaStream[]) => void;
     onBeforeProgressCall?: (conference?: string) => void;
     onSuccessProgressCall?: (parameters_: { isPurgatory: boolean }) => void;
@@ -300,6 +316,10 @@ class SipConnectorFacade {
       simulcastEncodings,
       degradationPreference,
       sendEncodings,
+      offerToReceiveAudio,
+      offerToReceiveVideo,
+      directionVideo,
+      directionAudio,
       setRemoteStreams,
       onBeforeProgressCall,
       onSuccessProgressCall,
@@ -333,6 +353,10 @@ class SipConnectorFacade {
         extraHeaders,
         iceServers,
         contentHint,
+        offerToReceiveAudio,
+        offerToReceiveVideo,
+        directionVideo,
+        directionAudio,
         sendEncodings: generateSimulcastEncodings({
           mediaStream,
           simulcastEncodings,
