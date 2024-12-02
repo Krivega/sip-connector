@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [13.0.0](https://github.com/Krivega/sip-connector/compare/v12.2.0...v13.0.0) (2024-12-02)
+
+### ⚠ BREAKING CHANGES
+
+- rename videoMode, audioMode to directionVideo, directionAudio
+
+### Features
+
+- add offerToReceiveAudio, offerToReceiveVideo to call methods ([cb2fabe](https://github.com/Krivega/sip-connector/commit/cb2fabe5c96f2ee85f5ca92841b5b414d5c824a5))
+
 ## [12.2.0](https://github.com/Krivega/sip-connector/compare/v12.1.0...v12.2.0) (2024-12-01)
 
 ### Features
