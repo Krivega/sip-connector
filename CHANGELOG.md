@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [13.1.0](https://github.com/Krivega/sip-connector/compare/v13.0.0...v13.1.0) (2024-12-05)
+
+### Features
+
+- add methods to SipConnectorFacade ([16c447e](https://github.com/Krivega/sip-connector/commit/16c447e4db75a985d88d5e66b3583022510ea1f6))
+
 ## [13.0.0](https://github.com/Krivega/sip-connector/compare/v12.2.0...v13.0.0) (2024-12-02)
 
 ### ⚠ BREAKING CHANGES
