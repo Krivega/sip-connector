@@ -25,11 +25,47 @@ const hasVideoTrackReady = ({ kind, readyState }: MediaStreamTrack) => {
 };
 
 class SipConnectorFacade {
-  private readonly sipConnector: SipConnector;
+  public readonly sipConnector: SipConnector;
 
   private readonly preferredMimeTypesVideoCodecs?: string[];
 
   private readonly excludeMimeTypesVideoCodecs?: string[];
+
+  public on: SipConnector['on'];
+
+  public once: SipConnector['once'];
+
+  public onceRace: SipConnector['onceRace'];
+
+  public wait: SipConnector['wait'];
+
+  public off: SipConnector['off'];
+
+  public onSession: SipConnector['onSession'];
+
+  public onceSession: SipConnector['onceSession'];
+
+  public onceRaceSession: SipConnector['onceRaceSession'];
+
+  public waitSession: SipConnector['waitSession'];
+
+  public offSession: SipConnector['offSession'];
+
+  public sendDTMF: SipConnector['sendDTMF'];
+
+  public hangUp: SipConnector['hangUp'];
+
+  public declineToIncomingCall: SipConnector['declineToIncomingCall'];
+
+  public isConfigured: SipConnector['isConfigured'];
+
+  public sendChannels: SipConnector['sendChannels'];
+
+  public checkTelephony: SipConnector['checkTelephony'];
+
+  public waitChannels: SipConnector['waitChannels'];
+
+  public ping: SipConnector['ping'];
 
   public constructor(
     sipConnector: SipConnector,
@@ -41,10 +77,33 @@ class SipConnectorFacade {
       excludeMimeTypesVideoCodecs?: string[];
     } = {},
   ) {
-    this.sipConnector = sipConnector;
-
     this.preferredMimeTypesVideoCodecs = preferredMimeTypesVideoCodecs;
     this.excludeMimeTypesVideoCodecs = excludeMimeTypesVideoCodecs;
+
+    this.sipConnector = sipConnector;
+
+    this.on = this.sipConnector.on.bind(sipConnector);
+    this.once = this.sipConnector.once.bind(sipConnector);
+    this.onceRace = this.sipConnector.onceRace.bind(sipConnector);
+    this.wait = this.sipConnector.wait.bind(sipConnector);
+    this.off = this.sipConnector.off.bind(sipConnector);
+    this.onSession = this.sipConnector.onSession.bind(sipConnector);
+    this.onceSession = this.sipConnector.onceSession.bind(sipConnector);
+    this.onceRaceSession = this.sipConnector.onceRaceSession.bind(sipConnector);
+    this.waitSession = this.sipConnector.waitSession.bind(sipConnector);
+    this.offSession = this.sipConnector.offSession.bind(sipConnector);
+    this.sendDTMF = this.sipConnector.sendDTMF.bind(sipConnector);
+    this.hangUp = this.sipConnector.hangUp.bind(sipConnector);
+    this.declineToIncomingCall = this.sipConnector.declineToIncomingCall.bind(sipConnector);
+    this.isConfigured = this.sipConnector.isConfigured.bind(sipConnector);
+    this.sendChannels = this.sipConnector.sendChannels.bind(sipConnector);
+    this.checkTelephony = this.sipConnector.checkTelephony.bind(sipConnector);
+    this.waitChannels = this.sipConnector.waitChannels.bind(sipConnector);
+    this.ping = this.sipConnector.ping.bind(sipConnector);
+  }
+
+  public get isRegistered() {
+    return this.sipConnector.isRegistered;
   }
 
   public connectToServer = async (parameters: {
