@@ -40,11 +40,13 @@ interface IProxyMethods {
   sendDTMF: SipConnector['sendDTMF'];
   hangUp: SipConnector['hangUp'];
   declineToIncomingCall: SipConnector['declineToIncomingCall'];
-  isConfigured: SipConnector['isConfigured'];
   sendChannels: SipConnector['sendChannels'];
   checkTelephony: SipConnector['checkTelephony'];
   waitChannels: SipConnector['waitChannels'];
+  ping: SipConnector['ping'];
   connection: SipConnector['connection'];
+  isConfigured: SipConnector['isConfigured'];
+  isRegistered: SipConnector['isRegistered'];
 }
 
 const proxyMethods = new Set<keyof IProxyMethods>([
@@ -61,11 +63,13 @@ const proxyMethods = new Set<keyof IProxyMethods>([
   'sendDTMF',
   'hangUp',
   'declineToIncomingCall',
-  'isConfigured',
   'sendChannels',
   'checkTelephony',
   'waitChannels',
+  'ping',
   'connection',
+  'isConfigured',
+  'isRegistered',
 ]);
 
 class SipConnectorFacade implements IProxyMethods {
@@ -115,9 +119,6 @@ class SipConnectorFacade implements IProxyMethods {
   public declineToIncomingCall: IProxyMethods['declineToIncomingCall'];
 
   // @ts-expect-error: proxy method
-  public isConfigured: IProxyMethods['isConfigured'];
-
-  // @ts-expect-error: proxy method
   public sendChannels: IProxyMethods['sendChannels'];
 
   // @ts-expect-error: proxy method
@@ -126,8 +127,17 @@ class SipConnectorFacade implements IProxyMethods {
   // @ts-expect-error: proxy method
   public waitChannels: IProxyMethods['waitChannels'];
 
+  // @ts-expect-error: proxy method
+  public ping: IProxyMethods['ping'];
+
   //  proxy method
   public connection: IProxyMethods['connection'];
+
+  // @ts-expect-error: proxy method
+  public isConfigured: IProxyMethods['isConfigured'];
+
+  // @ts-expect-error: proxy method
+  public isRegistered: IProxyMethods['isRegistered'];
 
   public constructor(
     sipConnector: SipConnector,
