@@ -2150,3 +2150,22 @@ export default class SipConnector {
     this._restoreSession();
   };
 }
+export const proxyMethods = new Set<keyof SipConnector>([
+  'on',
+  'once',
+  'onceRace',
+  'wait',
+  'off',
+  'onSession',
+  'onceSession',
+  'onceRaceSession',
+  'waitSession',
+  'offSession',
+  'sendDTMF',
+  'hangUp',
+  'declineToIncomingCall',
+  'isConfigured',
+  'sendChannels',
+  'checkTelephony',
+  'waitChannels',
+]);

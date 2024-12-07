@@ -34,8 +34,8 @@ describe('generateSimulcastEncodings', () => {
 
     expect(findVideoTrack).toHaveBeenCalledWith(mockMediaStream);
     expect(result).toEqual([
-      { maxBitrate: 1_000_000, scaleResolutionDownBy: 1 },
-      { maxBitrate: 500_000, scaleResolutionDownBy: 2 },
+      { active: true, maxBitrate: 1_000_000, scaleResolutionDownBy: 1 },
+      { active: true, maxBitrate: 500_000, scaleResolutionDownBy: 2 },
     ]);
   });
 
@@ -77,9 +77,9 @@ describe('generateSimulcastEncodings', () => {
     });
 
     expect(result).toEqual([
-      { maxBitrate: 1_000_000, scaleResolutionDownBy: 1 },
-      { maxBitrate: 500_000, scaleResolutionDownBy: 2 },
-      { maxBitrate: 320_000, scaleResolutionDownBy: 4 },
+      { active: true, maxBitrate: 1_000_000, scaleResolutionDownBy: 1 },
+      { active: true, maxBitrate: 500_000, scaleResolutionDownBy: 2 },
+      { active: true, maxBitrate: 320_000, scaleResolutionDownBy: 4 },
     ]);
   });
 });

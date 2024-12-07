@@ -1,3 +1,4 @@
+/* eslint-disable no-constructor-return */
 import { isCanceledError } from '@krivega/cancelable-promise';
 import type { UA } from '@krivega/jssip';
 import { hasCanceledError } from 'repeated-calls';
@@ -24,48 +25,109 @@ const hasVideoTrackReady = ({ kind, readyState }: MediaStreamTrack) => {
   return kind === 'video' && readyState === 'live';
 };
 
-class SipConnectorFacade {
+// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+interface IProxyMethods {
+  on: SipConnector['on'];
+  once: SipConnector['once'];
+  onceRace: SipConnector['onceRace'];
+  wait: SipConnector['wait'];
+  off: SipConnector['off'];
+  onSession: SipConnector['onSession'];
+  onceSession: SipConnector['onceSession'];
+  onceRaceSession: SipConnector['onceRaceSession'];
+  waitSession: SipConnector['waitSession'];
+  offSession: SipConnector['offSession'];
+  sendDTMF: SipConnector['sendDTMF'];
+  hangUp: SipConnector['hangUp'];
+  declineToIncomingCall: SipConnector['declineToIncomingCall'];
+  isConfigured: SipConnector['isConfigured'];
+  sendChannels: SipConnector['sendChannels'];
+  checkTelephony: SipConnector['checkTelephony'];
+  waitChannels: SipConnector['waitChannels'];
+  connection: SipConnector['connection'];
+}
+
+const proxyMethods = new Set<keyof IProxyMethods>([
+  'on',
+  'once',
+  'onceRace',
+  'wait',
+  'off',
+  'onSession',
+  'onceSession',
+  'onceRaceSession',
+  'waitSession',
+  'offSession',
+  'sendDTMF',
+  'hangUp',
+  'declineToIncomingCall',
+  'isConfigured',
+  'sendChannels',
+  'checkTelephony',
+  'waitChannels',
+  'connection',
+]);
+
+class SipConnectorFacade implements IProxyMethods {
   public readonly sipConnector: SipConnector;
 
   private readonly preferredMimeTypesVideoCodecs?: string[];
 
   private readonly excludeMimeTypesVideoCodecs?: string[];
 
-  public on: SipConnector['on'];
+  // @ts-expect-error: proxy method
+  public on: IProxyMethods['on'];
 
-  public once: SipConnector['once'];
+  // @ts-expect-error: proxy method
+  public once: IProxyMethods['once'];
 
-  public onceRace: SipConnector['onceRace'];
+  // @ts-expect-error: proxy method
+  public onceRace: IProxyMethods['onceRace'];
 
-  public wait: SipConnector['wait'];
+  // @ts-expect-error: proxy method
+  public wait: IProxyMethods['wait'];
 
-  public off: SipConnector['off'];
+  // @ts-expect-error: proxy method
+  public off: IProxyMethods['off'];
 
-  public onSession: SipConnector['onSession'];
+  // @ts-expect-error: proxy method
+  public onSession: IProxyMethods['onSession'];
 
-  public onceSession: SipConnector['onceSession'];
+  // @ts-expect-error: proxy method
+  public onceSession: IProxyMethods['onceSession'];
 
-  public onceRaceSession: SipConnector['onceRaceSession'];
+  // @ts-expect-error: proxy method
+  public onceRaceSession: IProxyMethods['onceRaceSession'];
 
-  public waitSession: SipConnector['waitSession'];
+  // @ts-expect-error: proxy method
+  public waitSession: IProxyMethods['waitSession'];
 
-  public offSession: SipConnector['offSession'];
+  // @ts-expect-error: proxy method
+  public offSession: IProxyMethods['offSession'];
 
-  public sendDTMF: SipConnector['sendDTMF'];
+  // @ts-expect-error: proxy method
+  public sendDTMF: IProxyMethods['sendDTMF'];
 
-  public hangUp: SipConnector['hangUp'];
+  // @ts-expect-error: proxy method
+  public hangUp: IProxyMethods['hangUp'];
 
-  public declineToIncomingCall: SipConnector['declineToIncomingCall'];
+  // @ts-expect-error: proxy method
+  public declineToIncomingCall: IProxyMethods['declineToIncomingCall'];
 
-  public isConfigured: SipConnector['isConfigured'];
+  // @ts-expect-error: proxy method
+  public isConfigured: IProxyMethods['isConfigured'];
 
-  public sendChannels: SipConnector['sendChannels'];
+  // @ts-expect-error: proxy method
+  public sendChannels: IProxyMethods['sendChannels'];
 
-  public checkTelephony: SipConnector['checkTelephony'];
+  // @ts-expect-error: proxy method
+  public checkTelephony: IProxyMethods['checkTelephony'];
 
-  public waitChannels: SipConnector['waitChannels'];
+  // @ts-expect-error: proxy method
+  public waitChannels: IProxyMethods['waitChannels'];
 
-  public ping: SipConnector['ping'];
+  //  proxy method
+  public connection: IProxyMethods['connection'];
 
   public constructor(
     sipConnector: SipConnector,
@@ -82,28 +144,23 @@ class SipConnectorFacade {
 
     this.sipConnector = sipConnector;
 
-    this.on = this.sipConnector.on.bind(sipConnector);
-    this.once = this.sipConnector.once.bind(sipConnector);
-    this.onceRace = this.sipConnector.onceRace.bind(sipConnector);
-    this.wait = this.sipConnector.wait.bind(sipConnector);
-    this.off = this.sipConnector.off.bind(sipConnector);
-    this.onSession = this.sipConnector.onSession.bind(sipConnector);
-    this.onceSession = this.sipConnector.onceSession.bind(sipConnector);
-    this.onceRaceSession = this.sipConnector.onceRaceSession.bind(sipConnector);
-    this.waitSession = this.sipConnector.waitSession.bind(sipConnector);
-    this.offSession = this.sipConnector.offSession.bind(sipConnector);
-    this.sendDTMF = this.sipConnector.sendDTMF.bind(sipConnector);
-    this.hangUp = this.sipConnector.hangUp.bind(sipConnector);
-    this.declineToIncomingCall = this.sipConnector.declineToIncomingCall.bind(sipConnector);
-    this.isConfigured = this.sipConnector.isConfigured.bind(sipConnector);
-    this.sendChannels = this.sipConnector.sendChannels.bind(sipConnector);
-    this.checkTelephony = this.sipConnector.checkTelephony.bind(sipConnector);
-    this.waitChannels = this.sipConnector.waitChannels.bind(sipConnector);
-    this.ping = this.sipConnector.ping.bind(sipConnector);
-  }
+    return new Proxy(this, {
+      get: (target, property, receiver) => {
+        if (
+          typeof property === 'string' &&
+          proxyMethods.has(property as keyof IProxyMethods) &&
+          property in this.sipConnector
+        ) {
+          const value = Reflect.get(this.sipConnector, property, this.sipConnector);
 
-  public get isRegistered() {
-    return this.sipConnector.isRegistered;
+          return typeof value === 'function' ? value.bind(this.sipConnector) : value;
+        }
+
+        const value = Reflect.get(target, property, receiver);
+
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+    });
   }
 
   public connectToServer = async (parameters: {
