@@ -1,21 +1,16 @@
 import setParametersToSender from '../setParametersToSender';
 import type { TRtpSendParameters } from '../types';
 
-const mergeUniqueCodecs = (codecs1: RTCRtpCodec[], codecs2: RTCRtpCodec[]): RTCRtpCodec[] => {
-  const mergedArray = [...codecs1, ...codecs2];
-
-  const uniqueArray = mergedArray.filter((codec, index, self) => {
-    return (
-      index ===
-      self.findIndex((c) => {
-        return (
-          c.clockRate === codec.clockRate &&
-          c.mimeType === codec.mimeType &&
-          c.channels === codec.channels &&
-          c.sdpFmtpLine === codec.sdpFmtpLine
-        );
-      })
-    );
+const mergeIntersectionCodecs = (codecs1: RTCRtpCodec[], codecs2: RTCRtpCodec[]): RTCRtpCodec[] => {
+  const uniqueArray = codecs1.filter((codec) => {
+    return codecs2.some((c) => {
+      return (
+        c.clockRate === codec.clockRate &&
+        c.mimeType === codec.mimeType &&
+        c.channels === codec.channels &&
+        c.sdpFmtpLine === codec.sdpFmtpLine
+      );
+    });
   });
 
   return uniqueArray;
@@ -27,7 +22,7 @@ const getCapabilityCodecs = (kind: 'audio' | 'video') => {
   const senderCodecs = senderCapabilities === null ? [] : senderCapabilities.codecs;
   const receiverCodecs = receiverCapabilities === null ? [] : receiverCapabilities.codecs;
 
-  return mergeUniqueCodecs(senderCodecs, receiverCodecs);
+  return mergeIntersectionCodecs(senderCodecs, receiverCodecs);
 };
 
 const preferCodecs = (
