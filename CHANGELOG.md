@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [13.3.1](https://github.com/Krivega/sip-connector/compare/v13.3.0...v13.3.1) (2024-12-19)
+
+### Bug Fixes
+
+- work with codecs ([1c8f9f5](https://github.com/Krivega/sip-connector/commit/1c8f9f576266692b81763348f03e41f6bda8c167))
+
 ## [13.3.0](https://github.com/Krivega/sip-connector/compare/v13.2.0...v13.3.0) (2024-12-07)
 
 ### Features
