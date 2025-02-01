@@ -9,7 +9,7 @@ import {
   webcastStoppedData,
   webcastStoppedHeaders,
 } from '../__fixtures__/webcastNotify';
-import createSipConnector from '../doMock';
+import { doMockSipConnector } from '../doMock';
 
 describe('webcast notify', () => {
   const number = '111';
@@ -18,7 +18,7 @@ describe('webcast notify', () => {
   let mediaStream: MediaStream;
 
   beforeEach(() => {
-    sipConnector = createSipConnector();
+    sipConnector = doMockSipConnector();
     mediaStream = createMediaStreamMock({
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },

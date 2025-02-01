@@ -4,7 +4,7 @@ import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
 import { ADMIN_START_MAIN_CAM, ADMIN_STOP_MAIN_CAM, MAIN_CAM_CONTROL } from '../constants';
-import createSipConnector from '../doMock';
+import { doMockSipConnector } from '../doMock';
 import {
   CONTENT_TYPE_MAIN_CAM,
   HEADER_CONTENT_TYPE_NAME,
@@ -46,7 +46,7 @@ describe('main cam control', () => {
   let mediaStream: MediaStream;
 
   beforeEach(() => {
-    sipConnector = createSipConnector();
+    sipConnector = doMockSipConnector();
     mediaStream = createMediaStreamMock({
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },

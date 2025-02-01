@@ -7,7 +7,7 @@ import {
   conferenceParticipantTokenIssuedHeaders,
 } from '../__fixtures__/conferenceParticipantTokenIssuedNotify';
 import JsSIP from '../__fixtures__/jssip.mock';
-import createSipConnector from '../doMock';
+import { doMockSipConnector } from '../doMock';
 
 describe('conference participant token issued notify', () => {
   const number = '111';
@@ -16,7 +16,7 @@ describe('conference participant token issued notify', () => {
   let mediaStream: MediaStream;
 
   beforeEach(() => {
-    sipConnector = createSipConnector();
+    sipConnector = doMockSipConnector();
     mediaStream = createMediaStreamMock({
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },

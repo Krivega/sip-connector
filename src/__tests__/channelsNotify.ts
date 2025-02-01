@@ -7,7 +7,7 @@ import {
 } from '../__fixtures__';
 import { channelsData, channelsHeaders } from '../__fixtures__/channelsNotify';
 import JsSIP from '../__fixtures__/jssip.mock';
-import createSipConnector from '../doMock';
+import { doMockSipConnector } from '../doMock';
 
 describe('channels notify', () => {
   const number = '111';
@@ -16,7 +16,7 @@ describe('channels notify', () => {
   let mediaStream: MediaStream;
 
   beforeEach(() => {
-    sipConnector = createSipConnector();
+    sipConnector = doMockSipConnector();
     mediaStream = createMediaStreamMock({
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },

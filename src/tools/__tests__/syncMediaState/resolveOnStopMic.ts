@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 import type SipConnector from '../../../SipConnector';
-import doMockSIPconnector from '../../../doMock';
+import { doMockSipConnector } from '../../../doMock';
 import resolveOnStopMic from '../../syncMediaState/resolveOnStopMic';
 
 describe('media state: resolveOnStopMic', () => {
@@ -13,7 +13,7 @@ describe('media state: resolveOnStopMic', () => {
   const syncModeNotForced = { isSyncForced: false };
 
   beforeEach(() => {
-    sipConnector = doMockSIPconnector();
+    sipConnector = doMockSipConnector();
     handlerOnStopMic = jest.fn();
 
     onStopMic = resolveOnStopMic(sipConnector);

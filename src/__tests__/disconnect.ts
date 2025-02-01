@@ -1,13 +1,13 @@
 /// <reference types="jest" />
 import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
-import createSipConnector from '../doMock';
+import { doMockSipConnector } from '../doMock';
 
 describe('disconnect', () => {
   let sipConnector: SipConnector;
 
   beforeEach(() => {
-    sipConnector = createSipConnector();
+    sipConnector = doMockSipConnector();
   });
 
   it('authorization user', async () => {

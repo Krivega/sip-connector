@@ -2,7 +2,7 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
-import createSipConnector from '../doMock';
+import { doMockSipConnector } from '../doMock';
 
 const number = `10000`;
 
@@ -12,7 +12,7 @@ describe('call with no video tracks', () => {
   let mockFunction = jest.fn();
 
   beforeEach(() => {
-    sipConnector = createSipConnector();
+    sipConnector = doMockSipConnector();
     mediaStream = createMediaStreamMock({
       audio: { deviceId: { exact: 'audioDeviceId' } },
     });

@@ -12,7 +12,7 @@ import {
   moveRequestToStreamData,
   moveRequestToStreamHeaders,
 } from '../__fixtures__/participantMoveRequests';
-import createSipConnector from '../doMock';
+import { doMockSipConnector } from '../doMock';
 
 describe('participants moveRequests', () => {
   const number = '111';
@@ -21,7 +21,7 @@ describe('participants moveRequests', () => {
   let mediaStream: MediaStream;
 
   beforeEach(() => {
-    sipConnector = createSipConnector();
+    sipConnector = doMockSipConnector();
     mediaStream = createMediaStreamMock({
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },

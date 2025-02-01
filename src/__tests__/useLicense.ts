@@ -4,7 +4,7 @@ import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
 import { USE_LICENSE } from '../constants';
-import createSipConnector from '../doMock';
+import { doMockSipConnector } from '../doMock';
 import {
   CONTENT_TYPE_USE_LICENSE,
   HEADER_CONTENT_TYPE_NAME,
@@ -34,7 +34,7 @@ describe('use license', () => {
   let mediaStream: MediaStream;
 
   beforeEach(() => {
-    sipConnector = createSipConnector();
+    sipConnector = doMockSipConnector();
     mediaStream = createMediaStreamMock({
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },

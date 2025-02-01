@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-import doMockSIPconnector from '../../doMock';
+import { doMockSipConnector } from '../../doMock';
 import dataCall, {
   dataCallPurgatory,
   onEnterConference,
@@ -11,7 +11,7 @@ import parseObject from '../../tools/__tests-utils__/parseObject';
 import SipConnectorFacade from '../SipConnectorFacade';
 
 describe('callToServer', () => {
-  const sipConnector = doMockSIPconnector();
+  const sipConnector = doMockSipConnector();
   let sipConnectorFacade: SipConnectorFacade;
 
   beforeEach(() => {

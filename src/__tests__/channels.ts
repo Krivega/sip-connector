@@ -4,7 +4,7 @@ import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import { channelsData, channelsHeaders, sendedExtraHeaders } from '../__fixtures__/channels';
 import JsSIP from '../__fixtures__/jssip.mock';
-import createSipConnector from '../doMock';
+import { doMockSipConnector } from '../doMock';
 import { CONTENT_TYPE_CHANNELS } from '../headers';
 
 describe('channels', () => {
@@ -15,7 +15,7 @@ describe('channels', () => {
   let mockFunction = jest.fn();
 
   beforeEach(() => {
-    sipConnector = createSipConnector();
+    sipConnector = doMockSipConnector();
     mediaStream = createMediaStreamMock({
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },

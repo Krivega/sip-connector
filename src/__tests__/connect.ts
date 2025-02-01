@@ -14,7 +14,7 @@ import {
   uaConfigurationWithoutAuthorizationWithoutDisplayName,
 } from '../__fixtures__';
 import UAMock, { createWebsocketHandshakeTimeoutError } from '../__fixtures__/UA.mock';
-import createSipConnector from '../doMock';
+import { doMockSipConnector } from '../doMock';
 import { uriWithName } from '../tools/__fixtures__/connectToServer';
 
 const wrongPassword = 'wrongPassword';
@@ -26,7 +26,7 @@ describe('connect', () => {
   let sipConnector: SipConnector;
 
   beforeEach(() => {
-    sipConnector = createSipConnector();
+    sipConnector = doMockSipConnector();
   });
 
   afterEach(() => {

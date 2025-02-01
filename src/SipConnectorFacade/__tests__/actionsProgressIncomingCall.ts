@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 import JsSIP from '../../__fixtures__/jssip.mock';
 import remoteCallerData from '../../__fixtures__/remoteCallerData';
-import doMockSIPconnector from '../../doMock';
+import { doMockSipConnector } from '../../doMock';
 import type SipConnector from '../../SipConnector';
 import dataCall from '../../tools/__fixtures__/call';
 import { dataForConnectionWithAuthorization } from '../../tools/__fixtures__/connectToServer';
@@ -25,7 +25,7 @@ describe('actionsProgressIncomingCall', () => {
     onFinishProgressCall = jest.fn();
     onEndedCall = jest.fn();
 
-    sipConnector = doMockSIPconnector();
+    sipConnector = doMockSipConnector();
     sipConnectorFacade = new SipConnectorFacade(sipConnector);
   });
 

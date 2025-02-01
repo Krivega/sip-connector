@@ -1,12 +1,12 @@
 /// <reference types="jest" />
-import doMockSIPconnector from '../../doMock';
+import { doMockSipConnector } from '../../doMock';
 import dataCall from '../../tools/__fixtures__/call';
 import { dataForConnectionWithoutAuthorization } from '../../tools/__fixtures__/connectToServer';
 
 import SipConnectorFacade from '../SipConnectorFacade';
 
 describe('actionsProgressCall', () => {
-  const sipConnector = doMockSIPconnector();
+  const sipConnector = doMockSipConnector();
   let sipConnectorFacade: SipConnectorFacade;
   let onBeforeProgressCall: jest.Mock<void>;
   let onSuccessProgressCall: jest.Mock<void>;

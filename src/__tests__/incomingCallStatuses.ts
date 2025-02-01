@@ -4,7 +4,7 @@ import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
 import remoteCallerData from '../__fixtures__/remoteCallerData';
-import createSipConnector from '../doMock';
+import { doMockSipConnector } from '../doMock';
 
 describe('incoming call statuses', () => {
   let sipConnector: SipConnector;
@@ -15,7 +15,7 @@ describe('incoming call statuses', () => {
   let mockFunctionConfirmed: jest.Mock<void>;
 
   beforeEach(() => {
-    sipConnector = createSipConnector();
+    sipConnector = doMockSipConnector();
     mediaStream = createMediaStreamMock({
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },

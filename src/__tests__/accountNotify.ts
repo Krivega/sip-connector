@@ -4,7 +4,7 @@ import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import { accountChangedHeaders, accountDeletedHeaders } from '../__fixtures__/accountNotify';
 import JsSIP from '../__fixtures__/jssip.mock';
-import createSipConnector from '../doMock';
+import { doMockSipConnector } from '../doMock';
 
 describe('account notify', () => {
   const number = '111';
@@ -13,7 +13,7 @@ describe('account notify', () => {
   let mediaStream: MediaStream;
 
   beforeEach(() => {
-    sipConnector = createSipConnector();
+    sipConnector = doMockSipConnector();
     mediaStream = createMediaStreamMock({
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },

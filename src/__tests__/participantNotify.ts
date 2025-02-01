@@ -9,7 +9,7 @@ import {
   removedFromListModeratorsData,
   removedFromListModeratorsHeaders,
 } from '../__fixtures__/participantNotify';
-import createSipConnector from '../doMock';
+import { doMockSipConnector } from '../doMock';
 
 describe('participant notify', () => {
   const number = '111';
@@ -18,7 +18,7 @@ describe('participant notify', () => {
   let mediaStream: MediaStream;
 
   beforeEach(() => {
-    sipConnector = createSipConnector();
+    sipConnector = doMockSipConnector();
     mediaStream = createMediaStreamMock({
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },

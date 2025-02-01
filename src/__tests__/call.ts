@@ -5,7 +5,7 @@ import { hasCanceledCallError } from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import delayPromise from '../__fixtures__/delayPromise';
 import { FAILED_CONFERENCE_NUMBER } from '../__fixtures__/jssip.mock';
-import createSipConnector from '../doMock';
+import { doMockSipConnector } from '../doMock';
 
 describe('call', () => {
   let sipConnector: SipConnector;
@@ -13,7 +13,7 @@ describe('call', () => {
   let mockFunction = jest.fn();
 
   beforeEach(() => {
-    sipConnector = createSipConnector();
+    sipConnector = doMockSipConnector();
     mediaStream = createMediaStreamMock({
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },

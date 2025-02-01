@@ -3,7 +3,7 @@
 
 import type SipConnector from '../../SipConnector';
 import delayPromise from '../../__fixtures__/delayPromise';
-import doMockSIPconnector from '../../doMock';
+import { doMockSipConnector } from '../../doMock';
 import {
   dataForConnectionWithAuthorization,
   dataForConnectionWithAuthorizationIncorrectPassword,
@@ -31,7 +31,7 @@ describe('processRequest', () => {
   beforeEach(() => {
     jest.resetModules();
 
-    sipConnector = doMockSIPconnector();
+    sipConnector = doMockSipConnector();
     processRequest = resolveProcessRequest(sipConnector);
   });
 

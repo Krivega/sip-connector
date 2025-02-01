@@ -8,7 +8,7 @@ import {
   ADMIN_START_MAIN_CAM,
   ADMIN_STOP_MAIN_CAM,
 } from '../constants';
-import createSipConnector from '../doMock';
+import { doMockSipConnector } from '../doMock';
 import {
   CONTENT_TYPE_MAIN_CAM,
   CONTENT_TYPE_MIC,
@@ -98,7 +98,7 @@ describe('sync media state', () => {
   let mediaStream: MediaStream;
 
   beforeEach(() => {
-    sipConnector = createSipConnector();
+    sipConnector = doMockSipConnector();
     mediaStream = createMediaStreamMock({
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },

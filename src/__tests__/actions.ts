@@ -1,14 +1,14 @@
 /// <reference types="jest" />
 import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
-import createSipConnector from '../doMock';
+import { doMockSipConnector } from '../doMock';
 
 describe('actions', () => {
   let sipConnector: SipConnector;
   let mockFunction = jest.fn();
 
   beforeEach(() => {
-    sipConnector = createSipConnector();
+    sipConnector = doMockSipConnector();
     mockFunction = jest.fn();
   });
 

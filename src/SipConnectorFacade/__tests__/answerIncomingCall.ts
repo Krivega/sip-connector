@@ -2,7 +2,7 @@
 import type SipConnector from '../../SipConnector';
 import JsSIP from '../../__fixtures__/jssip.mock';
 import remoteCallerData from '../../__fixtures__/remoteCallerData';
-import doMockSIPconnector from '../../doMock';
+import { doMockSipConnector } from '../../doMock';
 import dataCall, { peerConnectionFromData } from '../../tools/__fixtures__/call';
 import { dataForConnectionWithAuthorization } from '../../tools/__fixtures__/connectToServer';
 import parseObject from '../../tools/__tests-utils__/parseObject';
@@ -15,7 +15,7 @@ describe('answerIncomingCall', () => {
   beforeEach(() => {
     jest.resetModules();
 
-    sipConnector = doMockSIPconnector();
+    sipConnector = doMockSipConnector();
     sipConnectorFacade = new SipConnectorFacade(sipConnector);
   });
 

@@ -4,7 +4,7 @@ import { createMediaStreamMock } from 'webrtc-mock';
 import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import SessionMock, { createDeclineStartPresentationError } from '../__fixtures__/RTCSessionMock';
-import createSipConnector from '../doMock';
+import { doMockSipConnector } from '../doMock';
 import {
   CONTENT_TYPE_SHARE_STATE,
   HEADER_MUST_STOP_PRESENTATION_P2P,
@@ -47,7 +47,7 @@ describe('presentation', () => {
   };
 
   beforeEach(() => {
-    sipConnector = createSipConnector();
+    sipConnector = doMockSipConnector();
     mediaStream = createMediaStreamMock({
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },

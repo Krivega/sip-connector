@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 import type SipConnector from '../../../SipConnector';
-import doMockSIPconnector from '../../../doMock';
+import { doMockSipConnector } from '../../../doMock';
 import createState from '../../syncMediaState';
 
 describe('media state: create state', () => {
@@ -19,7 +19,7 @@ describe('media state: create state', () => {
   const mediaStateEventPayloadNotForced = { isSyncForced: false };
 
   beforeEach(() => {
-    sipConnector = doMockSIPconnector();
+    sipConnector = doMockSipConnector();
     onStartMainCamForced = jest.fn();
     onStartMainCamNotForced = jest.fn();
     onStopMainCamForced = jest.fn();

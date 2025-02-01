@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 import type SipConnector from '../../SipConnector';
-import doMockSIPconnector from '../../doMock';
+import { doMockSipConnector } from '../../doMock';
 import SipConnectorFacade from '../SipConnectorFacade';
 
 const AUDIO_LICENSE = 'AUDIO';
@@ -12,7 +12,7 @@ describe('media state: resolveOnUseLicense', () => {
   let offUseLicense: () => void;
 
   beforeEach(() => {
-    sipConnector = doMockSIPconnector();
+    sipConnector = doMockSipConnector();
     sipConnectorFacade = new SipConnectorFacade(sipConnector);
     handlerOnUseLicense = jest.fn();
   });

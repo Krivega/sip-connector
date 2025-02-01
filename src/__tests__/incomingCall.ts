@@ -5,7 +5,7 @@ import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import delayPromise from '../__fixtures__/delayPromise';
 import JsSIP from '../__fixtures__/jssip.mock';
 import remoteCallerData from '../__fixtures__/remoteCallerData';
-import createSipConnector from '../doMock';
+import { doMockSipConnector } from '../doMock';
 
 describe('incoming call', () => {
   let sipConnector: SipConnector;
@@ -13,7 +13,7 @@ describe('incoming call', () => {
   let mockFunction = jest.fn();
 
   beforeEach(() => {
-    sipConnector = createSipConnector();
+    sipConnector = doMockSipConnector();
     mediaStream = createMediaStreamMock({
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },

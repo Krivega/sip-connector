@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 import type SipConnector from '../../SipConnector';
-import doMockSIPconnector from '../../doMock';
+import { doMockSipConnector } from '../../doMock';
 import {
   LOCKED_SIP_WEB_SOCKET_SERVER_URL,
   dataForConnectionWithAuthorization,
@@ -26,7 +26,7 @@ describe('connectToServer', () => {
   beforeEach(() => {
     jest.resetModules();
 
-    sipConnector = doMockSIPconnector();
+    sipConnector = doMockSipConnector();
     sipConnectorFacade = new SipConnectorFacade(sipConnector);
 
     disconnectedMock = jest.fn();

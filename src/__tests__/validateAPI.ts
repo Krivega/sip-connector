@@ -1,13 +1,13 @@
 /// <reference types="jest" />
 import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorizationWithDisplayName } from '../__fixtures__';
-import createSipConnector from '../doMock';
+import { doMockSipConnector } from '../doMock';
 
 describe('validateAPI', () => {
   let sipConnector: SipConnector;
 
   beforeEach(() => {
-    sipConnector = createSipConnector();
+    sipConnector = doMockSipConnector();
   });
 
   it('not full data: sipServerUrl', async () => {

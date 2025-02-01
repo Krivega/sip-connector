@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 // @ts-nocheck
-import doMockSIPconnector from '../../doMock';
+import { doMockSipConnector } from '../../doMock';
 import dataCall from '../../tools/__fixtures__/call';
 import {
   dataForConnectionWithAuthorization,
@@ -14,7 +14,7 @@ describe('SipConnectorFacade', () => {
   beforeEach(() => {
     jest.resetModules();
 
-    sipConnectorFacade = new SipConnectorFacade(doMockSIPconnector());
+    sipConnectorFacade = new SipConnectorFacade(doMockSipConnector());
   });
 
   afterEach(() => {
