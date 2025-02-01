@@ -73,7 +73,7 @@ describe('incoming call', () => {
           expect(sipConnector.getConnectionConfiguration().answer).toBe(true);
           expect(!!peerconnection).toBe(true);
           // @ts-expect-error
-          expect(sipConnector.session.answer.mock.calls.length).toBe(1);
+          expect(sipConnector.rtcSession.answer.mock.calls.length).toBe(1);
 
           resolve();
         },
@@ -186,9 +186,9 @@ describe('incoming call', () => {
           sipConnector.declineToIncomingCall(),
         ]);
       })
-      .then(([{ displayName, host, incomingNumber }, incomingSession]) => {
+      .then(([{ displayName, host, incomingNumber }, incomingRTCSession]) => {
         // @ts-expect-error
-        expect(incomingSession.status_code).toBe(487);
+        expect(incomingRTCSession.status_code).toBe(487);
         expect(incomingNumber).toBe(remoteCallerData.incomingNumber);
         expect(host).toBe(remoteCallerData.host);
         expect(displayName).toBe(remoteCallerData.displayName);
@@ -216,7 +216,7 @@ describe('incoming call', () => {
         }>((resolve) => {
           sipConnector.on('failedIncomingCall', resolve);
 
-          JsSIP.triggerFailIncomingSession(sipConnector.incomingSession);
+          JsSIP.triggerFailIncomingSession(sipConnector.incomingRTCSession);
         });
       })
       .then(({ displayName, host, incomingNumber }) => {
@@ -247,7 +247,9 @@ describe('incoming call', () => {
         }>((resolve) => {
           sipConnector.on('terminatedIncomingCall', resolve);
 
-          JsSIP.triggerFailIncomingSession(sipConnector.incomingSession, { originator: 'local' });
+          JsSIP.triggerFailIncomingSession(sipConnector.incomingRTCSession, {
+            originator: 'local',
+          });
         });
       })
       .then(({ displayName, host, incomingNumber }) => {
@@ -271,7 +273,7 @@ describe('incoming call', () => {
         });
 
         // @ts-expect-error
-        const parameters = sipConnector.session.answer.mock.calls[0][0];
+        const parameters = sipConnector.rtcSession.answer.mock.calls[0][0];
 
         expect(parameters.directionVideo).toBe(undefined);
         expect(parameters.directionAudio).toBe(undefined);
@@ -301,7 +303,7 @@ describe('incoming call', () => {
         });
 
         // @ts-expect-error
-        const parameters = sipConnector.session.answer.mock.calls[0][0];
+        const parameters = sipConnector.rtcSession.answer.mock.calls[0][0];
 
         expect(parameters.directionVideo).toBe('recvonly');
         expect(parameters.directionAudio).toBe(undefined);
@@ -331,7 +333,7 @@ describe('incoming call', () => {
         });
 
         // @ts-expect-error
-        const parameters = sipConnector.session.answer.mock.calls[0][0];
+        const parameters = sipConnector.rtcSession.answer.mock.calls[0][0];
 
         expect(parameters.directionVideo).toBe(undefined);
         expect(parameters.directionAudio).toBe('recvonly');
@@ -362,7 +364,7 @@ describe('incoming call', () => {
         });
 
         // @ts-expect-error
-        const parameters = sipConnector.session.answer.mock.calls[0][0];
+        const parameters = sipConnector.rtcSession.answer.mock.calls[0][0];
 
         expect(parameters.directionVideo).toBe('recvonly');
         expect(parameters.directionAudio).toBe('recvonly');

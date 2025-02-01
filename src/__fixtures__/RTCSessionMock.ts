@@ -25,7 +25,7 @@ const hasVideoTracks = (mediaStream: MediaStream): boolean => {
   return mediaStream.getVideoTracks().length > 0;
 };
 
-class Session extends BaseSession {
+class RTCSessionMock extends BaseSession {
   url: string;
 
   status_code?: number;
@@ -69,13 +69,13 @@ class Session extends BaseSession {
   }
 
   public async startPresentation(stream: MediaStream) {
-    Session.countStartsPresentation += 1;
+    RTCSessionMock.countStartsPresentation += 1;
 
     if (
-      Session.startPresentationError &&
-      Session.countStartsPresentation < Session.countStartPresentationError
+      RTCSessionMock.startPresentationError &&
+      RTCSessionMock.countStartsPresentation < RTCSessionMock.countStartPresentationError
     ) {
-      throw Session.startPresentationError;
+      throw RTCSessionMock.startPresentationError;
     }
 
     return super.startPresentation(stream);
@@ -292,4 +292,4 @@ class Session extends BaseSession {
   /* eslint-enable no-param-reassign */
 }
 
-export default Session;
+export default RTCSessionMock;

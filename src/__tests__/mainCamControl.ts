@@ -62,10 +62,10 @@ describe('main cam control', () => {
         return sipConnector.onSession('main-cam-control', resolve);
       },
     );
-    const { session } = sipConnector;
+    const { rtcSession } = sipConnector;
 
-    if (session) {
-      JsSIP.triggerNewInfo(session, headersMainCamControl);
+    if (rtcSession) {
+      JsSIP.triggerNewInfo(rtcSession, headersMainCamControl);
     }
 
     return promise.then(({ mainCam, resolutionMainCam }) => {
@@ -81,10 +81,10 @@ describe('main cam control', () => {
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
       return sipConnector.onSession(ADMIN_START_MAIN_CAM, resolve);
     });
-    const { session } = sipConnector;
+    const { rtcSession } = sipConnector;
 
-    if (session) {
-      JsSIP.triggerNewInfo(session, headersAdminStartMainCam);
+    if (rtcSession) {
+      JsSIP.triggerNewInfo(rtcSession, headersAdminStartMainCam);
     }
 
     return promise.then(({ isSyncForced }) => {
@@ -99,10 +99,10 @@ describe('main cam control', () => {
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
       return sipConnector.onSession(ADMIN_STOP_MAIN_CAM, resolve);
     });
-    const { session } = sipConnector;
+    const { rtcSession } = sipConnector;
 
-    if (session) {
-      JsSIP.triggerNewInfo(session, headersAdminStopMainCam);
+    if (rtcSession) {
+      JsSIP.triggerNewInfo(rtcSession, headersAdminStopMainCam);
     }
 
     return promise.then(({ isSyncForced }) => {
@@ -120,10 +120,10 @@ describe('main cam control', () => {
       },
     );
 
-    const { session } = sipConnector;
+    const { rtcSession } = sipConnector;
 
-    if (session) {
-      JsSIP.triggerNewInfo(session, headersResumeMainCam);
+    if (rtcSession) {
+      JsSIP.triggerNewInfo(rtcSession, headersResumeMainCam);
     }
 
     await promise.then(({ mainCam, resolutionMainCam }) => {
@@ -142,10 +142,10 @@ describe('main cam control', () => {
       },
     );
 
-    const { session } = sipConnector;
+    const { rtcSession } = sipConnector;
 
-    if (session) {
-      JsSIP.triggerNewInfo(session, headersPauseMainCam);
+    if (rtcSession) {
+      JsSIP.triggerNewInfo(rtcSession, headersPauseMainCam);
     }
 
     await promise.then(({ mainCam, resolutionMainCam }) => {

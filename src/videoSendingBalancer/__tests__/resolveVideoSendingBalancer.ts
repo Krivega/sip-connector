@@ -94,10 +94,10 @@ describe('resolveVideoSendingBalancer', () => {
       sender.setParameters = resolve;
     });
 
-    const { session } = sipConnector;
+    const { rtcSession } = sipConnector;
 
-    if (session) {
-      JsSIP.triggerNewInfo(session, headersResumeMainCam);
+    if (rtcSession) {
+      JsSIP.triggerNewInfo(rtcSession, headersResumeMainCam);
     }
 
     const parameters = await promiseSetResolution;
@@ -141,10 +141,10 @@ describe('resolveVideoSendingBalancer', () => {
       sender.setParameters = resolve;
     });
 
-    const { session } = sipConnector;
+    const { rtcSession } = sipConnector;
 
-    if (session) {
-      JsSIP.triggerNewInfo(session, headersPauseMainCam);
+    if (rtcSession) {
+      JsSIP.triggerNewInfo(rtcSession, headersPauseMainCam);
     }
 
     const parameters = await promiseSetResolution;
@@ -188,10 +188,10 @@ describe('resolveVideoSendingBalancer', () => {
       sender.setParameters = resolve;
     });
 
-    const { session } = sipConnector;
+    const { rtcSession } = sipConnector;
 
-    if (session) {
-      JsSIP.triggerNewInfo(session, headersMaxMainCamResolution);
+    if (rtcSession) {
+      JsSIP.triggerNewInfo(rtcSession, headersMaxMainCamResolution);
     }
 
     const parameters = await promiseSetResolution;

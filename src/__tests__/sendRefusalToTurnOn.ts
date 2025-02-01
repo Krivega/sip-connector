@@ -29,7 +29,7 @@ describe('media state', () => {
     mockFunction = jest.fn(() => {});
 
     // @ts-expect-error
-    sipConnector.session.sendInfo = mockFunction;
+    sipConnector.rtcSession.sendInfo = mockFunction;
 
     sipConnector.sendRefusalToTurnOnMic();
 
@@ -48,7 +48,7 @@ describe('media state', () => {
     mockFunction = jest.fn(() => {});
 
     // @ts-expect-error
-    sipConnector.session.sendInfo = mockFunction;
+    sipConnector.rtcSession.sendInfo = mockFunction;
 
     sipConnector.sendRefusalToTurnOnCam();
 
@@ -67,7 +67,7 @@ describe('media state', () => {
     const ERROR_RESPONSE = 'Error response';
 
     // @ts-expect-error
-    sipConnector.session.sendInfo = async () => {
+    sipConnector.rtcSession.sendInfo = async () => {
       throw new Error(ERROR_RESPONSE);
     };
 
@@ -85,7 +85,7 @@ describe('media state', () => {
     const ERROR_RESPONSE = 'Error response';
 
     // @ts-expect-error
-    sipConnector.session.sendInfo = async () => {
+    sipConnector.rtcSession.sendInfo = async () => {
       throw new Error(ERROR_RESPONSE);
     };
 

@@ -38,10 +38,10 @@ describe('mic control', () => {
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
       return sipConnector.onSession('admin-start-mic', resolve);
     });
-    const { session } = sipConnector;
+    const { rtcSession } = sipConnector;
 
-    if (session) {
-      JsSIP.triggerNewInfo(session, headersAdminStartMic);
+    if (rtcSession) {
+      JsSIP.triggerNewInfo(rtcSession, headersAdminStartMic);
     }
 
     return promise.then(({ isSyncForced }) => {
@@ -56,10 +56,10 @@ describe('mic control', () => {
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
       return sipConnector.onSession('admin-stop-mic', resolve);
     });
-    const { session } = sipConnector;
+    const { rtcSession } = sipConnector;
 
-    if (session) {
-      JsSIP.triggerNewInfo(session, headersAdminStopMic);
+    if (rtcSession) {
+      JsSIP.triggerNewInfo(rtcSession, headersAdminStopMic);
     }
 
     return promise.then(({ isSyncForced }) => {

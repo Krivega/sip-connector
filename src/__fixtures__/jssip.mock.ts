@@ -9,7 +9,7 @@ import NameAddrHeader from '@krivega/jssip/lib/NameAddrHeader';
 import URI from '@krivega/jssip/lib/URI';
 import { EventEmitter } from 'node:events';
 import Request from './Request.mock';
-import Session from './Session.mock';
+import Session from './RTCSessionMock';
 import UAmock from './UA.mock';
 import WebSocketInterfaceMock from './WebSocketInterface.mock';
 
@@ -27,7 +27,7 @@ class Info extends EventEmitter {
 
 const originatorRemote: Originator.REMOTE = 'remote' as Originator.REMOTE;
 
-const triggerNewInfo = (session: RTCSession, extraHeaders: [string, string][]) => {
+const triggerNewInfo = (rtcSession: RTCSession, extraHeaders: [string, string][]) => {
   const request = new Request(extraHeaders);
   const incomingInfoEvent: IncomingInfoEvent = {
     originator: originatorRemote,
@@ -35,9 +35,9 @@ const triggerNewInfo = (session: RTCSession, extraHeaders: [string, string][]) =
     info: new Info('', ''),
   };
 
-  const sessionMock = session as unknown as Session;
+  const rtcSessionMock = rtcSession as unknown as Session;
 
-  sessionMock.newInfo(incomingInfoEvent);
+  rtcSessionMock.newInfo(incomingInfoEvent);
 };
 
 const triggerNewSipEvent = (ua: UA, extraHeaders: [string, string][]) => {
@@ -93,4 +93,4 @@ export default jssip;
 
 export { NAME_INCORRECT, PASSWORD_CORRECT, PASSWORD_CORRECT_2 } from './UA.mock';
 
-export { FAILED_CONFERENCE_NUMBER } from './Session.mock';
+export { FAILED_CONFERENCE_NUMBER } from './RTCSessionMock';

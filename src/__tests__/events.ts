@@ -41,10 +41,10 @@ describe('events', () => {
       [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_SHARE_STATE],
       [HEADER_CONTENT_SHARE_STATE, AVAILABLE_SECOND_REMOTE_STREAM],
     ];
-    const { session } = sipConnector;
+    const { rtcSession } = sipConnector;
 
-    if (session) {
-      JsSIP.triggerNewInfo(session, extraHeaders);
+    if (rtcSession) {
+      JsSIP.triggerNewInfo(rtcSession, extraHeaders);
     }
 
     return expect(promise).resolves.toBeUndefined();
@@ -64,10 +64,10 @@ describe('events', () => {
       [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_SHARE_STATE],
       [HEADER_CONTENT_SHARE_STATE, NOT_AVAILABLE_SECOND_REMOTE_STREAM],
     ];
-    const { session } = sipConnector;
+    const { rtcSession } = sipConnector;
 
-    if (session) {
-      JsSIP.triggerNewInfo(session, extraHeaders);
+    if (rtcSession) {
+      JsSIP.triggerNewInfo(rtcSession, extraHeaders);
     }
 
     return expect(promise).resolves.toBeUndefined();
@@ -87,10 +87,10 @@ describe('events', () => {
       [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_SHARE_STATE],
       [HEADER_CONTENT_SHARE_STATE, MUST_STOP_PRESENTATION],
     ];
-    const { session } = sipConnector;
+    const { rtcSession } = sipConnector;
 
-    if (session) {
-      JsSIP.triggerNewInfo(session, extraHeaders);
+    if (rtcSession) {
+      JsSIP.triggerNewInfo(rtcSession, extraHeaders);
     }
 
     return expect(promise).resolves.toBeUndefined();

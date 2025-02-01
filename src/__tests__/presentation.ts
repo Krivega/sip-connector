@@ -3,7 +3,7 @@ import type { ExtraHeaders } from '@krivega/jssip';
 import { createMediaStreamMock } from 'webrtc-mock';
 import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
-import SessionMock, { createDeclineStartPresentationError } from '../__fixtures__/Session.mock';
+import SessionMock, { createDeclineStartPresentationError } from '../__fixtures__/RTCSessionMock';
 import createSipConnector from '../doMock';
 import {
   CONTENT_TYPE_SHARE_STATE,
@@ -26,9 +26,9 @@ describe('presentation', () => {
 
   const mockFailToSendMustStopPresentationInfo = () => {
     // eslint-disable-next-line @typescript-eslint/unbound-method
-    const actualSendInfo = sipConnector.session!.sendInfo;
+    const actualSendInfo = sipConnector.rtcSession!.sendInfo;
 
-    sipConnector.session!.sendInfo = jest.fn(
+    sipConnector.rtcSession!.sendInfo = jest.fn(
       async (
         contentType: string,
         body?: string | undefined,
@@ -223,7 +223,7 @@ describe('presentation', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    const sendInfoMocked = jest.spyOn(sipConnector.session!, 'sendInfo');
+    const sendInfoMocked = jest.spyOn(sipConnector.rtcSession!, 'sendInfo');
 
     await sipConnector.startPresentation(mediaStream, { isP2P: true });
 
@@ -242,7 +242,7 @@ describe('presentation', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    const sendInfoMocked = jest.spyOn(sipConnector.session!, 'sendInfo');
+    const sendInfoMocked = jest.spyOn(sipConnector.rtcSession!, 'sendInfo');
 
     await sipConnector.startPresentation(mediaStream, { isP2P: false });
 

@@ -29,10 +29,10 @@ describe('channels', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = sipConnector.waitChannels();
-    const { session } = sipConnector;
+    const { rtcSession } = sipConnector;
 
-    if (session) {
-      JsSIP.triggerNewInfo(session, channelsHeaders);
+    if (rtcSession) {
+      JsSIP.triggerNewInfo(rtcSession, channelsHeaders);
     }
 
     return promise.then((channels) => {
@@ -49,7 +49,7 @@ describe('channels', () => {
     mockFunction = jest.fn(() => {});
 
     // @ts-expect-error
-    sipConnector.session.sendInfo = mockFunction;
+    sipConnector.rtcSession.sendInfo = mockFunction;
 
     sipConnector.sendChannels(channelsData);
 

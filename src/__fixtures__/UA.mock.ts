@@ -9,7 +9,7 @@ import Events from 'events-constructor';
 import type { TEventUA } from '../eventNames';
 import { UA_EVENT_NAMES } from '../eventNames';
 import Registrator from './Registrator.mock';
-import Session from './Session.mock';
+import RTCSessionMock from './RTCSessionMock';
 
 export const PASSWORD_CORRECT = 'PASSWORD_CORRECT';
 export const PASSWORD_CORRECT_2 = 'PASSWORD_CORRECT_2';
@@ -68,7 +68,7 @@ class UA implements IUA {
 
   _stopedTimeout?: ReturnType<typeof setTimeout>;
 
-  session?: Session;
+  session?: RTCSessionMock;
 
   _isRegistered?: boolean;
 
@@ -140,10 +140,10 @@ class UA implements IUA {
   }
 
   // @ts-expect-error
-  call = jest.fn((url: string, parameters): Session => {
+  call = jest.fn((url: string, parameters): RTCSessionMock => {
     const { mediaStream, eventHandlers } = parameters;
 
-    this.session = new Session({ url, mediaStream, eventHandlers, originator: 'local' });
+    this.session = new RTCSessionMock({ url, mediaStream, eventHandlers, originator: 'local' });
 
     this.session.connect(url);
 

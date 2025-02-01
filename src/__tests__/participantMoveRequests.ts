@@ -86,7 +86,7 @@ describe('participants moveRequests', () => {
         resolve();
       });
 
-      JsSIP.triggerNewInfo(sipConnector.session!, moveRequestToSpectatorsHeaders);
+      JsSIP.triggerNewInfo(sipConnector.rtcSession!, moveRequestToSpectatorsHeaders);
     });
   });
 });

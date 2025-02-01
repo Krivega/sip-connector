@@ -131,11 +131,11 @@ describe('call', () => {
     await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
     sipConnector.hangUp();
     await endedPromise;
-    await delayPromise(100); // wait restore session
+    await delayPromise(100); // wait restore rtcSession
 
     const connectionConfiguration = sipConnector.getConnectionConfiguration();
 
-    expect(sipConnector.session).toBe(undefined);
+    expect(sipConnector.rtcSession).toBe(undefined);
     expect(connectionConfiguration.number).toBe(undefined);
   });
 
@@ -159,7 +159,7 @@ describe('call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
-    sipConnector.session!.terminate(); // end call from server
+    sipConnector.rtcSession!.terminate(); // end call from server
 
     return expect(disconnectPromise).resolves.toBeUndefined();
   });
@@ -264,7 +264,7 @@ describe('call', () => {
 
     await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
-    sipConnector.session!.terminate(); // end call from server
+    sipConnector.rtcSession!.terminate(); // end call from server
 
     return sipConnector.disconnect().then((result) => {
       expect(result).toBeUndefined();
@@ -287,7 +287,7 @@ describe('call', () => {
     });
 
     sipConnector.getRemoteStreams(); // for fill media streams in sipConnector._remoteStreams
-    sipConnector.session!.terminate(); // end call from server
+    sipConnector.rtcSession!.terminate(); // end call from server
 
     return disconnectPromise.then(() => {
       // @ts-expect-error
@@ -309,7 +309,7 @@ describe('call', () => {
     });
 
     // @ts-expect-error
-    sipConnector.session!.terminateRemote();
+    sipConnector.rtcSession!.terminateRemote();
 
     return expect(endedFromServer).resolves.toEqual(data);
   });

@@ -32,10 +32,10 @@ describe('enter room', () => {
       });
     });
 
-    const { session } = sipConnector;
+    const { rtcSession } = sipConnector;
 
-    if (session) {
-      JsSIP.triggerNewInfo(session, enterRoomHeaders);
+    if (rtcSession) {
+      JsSIP.triggerNewInfo(rtcSession, enterRoomHeaders);
     }
 
     return promise.then((data) => {

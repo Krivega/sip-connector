@@ -380,9 +380,9 @@ export default class SipConnector {
 
   ua?: UA;
 
-  session?: RTCSession;
+  rtcSession?: RTCSession;
 
-  incomingSession?: RTCSession;
+  incomingRTCSession?: RTCSession;
 
   _streamPresentationCurrent?: MediaStream;
 
@@ -603,25 +603,25 @@ export default class SipConnector {
       onAddedTransceiver?: TOnAddedTransceiver;
     },
   ): Promise<void> {
-    if (!this.session) {
-      throw new Error('No session established');
+    if (!this.rtcSession) {
+      throw new Error('No rtcSession established');
     }
 
     const { contentHint } = options ?? {};
     const preparedMediaStream = prepareMediaStream(mediaStream, { contentHint })!;
 
-    return this.session.replaceMediaStream(preparedMediaStream, options);
+    return this.rtcSession.replaceMediaStream(preparedMediaStream, options);
   }
 
   declineToIncomingCall = async ({ statusCode = REQUEST_TERMINATED_STATUS_CODE } = {}) => {
     return new Promise((resolve, reject) => {
       if (!this.isAvailableIncomingCall) {
-        reject(new Error('no incomingSession'));
+        reject(new Error('no incomingRTCSession'));
 
         return;
       }
 
-      const incomingSession = this.incomingSession!;
+      const incomingRTCSession = this.incomingRTCSession!;
       const callerData = this.remoteCallerData;
 
       this._cancelableCall.cancelRequest();
@@ -630,7 +630,7 @@ export default class SipConnector {
       this.removeIncomingSession();
       this._uaEvents.trigger(DECLINED_INCOMING_CALL, callerData);
       // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
-      resolve(incomingSession.terminate({ status_code: statusCode }));
+      resolve(incomingRTCSession.terminate({ status_code: statusCode }));
     });
   };
 
@@ -639,17 +639,17 @@ export default class SipConnector {
   };
 
   removeIncomingSession = () => {
-    delete this.incomingSession;
+    delete this.incomingRTCSession;
   };
 
   async askPermissionToEnableCam(options: TOptionsInfoMediaState = {}): Promise<void> {
-    if (!this.session) {
-      throw new Error('No session established');
+    if (!this.rtcSession) {
+      throw new Error('No rtcSession established');
     }
 
     const extraHeaders = [HEADER_ENABLE_MAIN_CAM];
 
-    return this.session
+    return this.rtcSession
       .sendInfo(CONTENT_TYPE_MAIN_CAM, undefined, {
         noTerminateWhenError: true,
         ...options,
@@ -703,14 +703,14 @@ export default class SipConnector {
   };
 
   private async _sendPresentationWithDuplicatedCalls({
-    session,
+    rtcSession,
     stream,
     presentationOptions,
     options = {
       callLimit: SEND_PRESENTATION_CALL_LIMIT,
     },
   }: {
-    session: RTCSession;
+    rtcSession: RTCSession;
     stream: MediaStream;
     presentationOptions: {
       isNeedReinvite?: boolean;
@@ -723,7 +723,7 @@ export default class SipConnector {
     options?: { callLimit: number };
   }) {
     const targetFunction = async () => {
-      return this._sendPresentation(session, stream, presentationOptions);
+      return this._sendPresentation(rtcSession, stream, presentationOptions);
     };
 
     const isComplete = (): boolean => {
@@ -808,7 +808,7 @@ export default class SipConnector {
   }
 
   private async _sendPresentation(
-    session: RTCSession,
+    rtcSession: RTCSession,
     stream: MediaStream,
     {
       maxBitrate = ONE_MEGABIT_IN_BITS,
@@ -835,13 +835,13 @@ export default class SipConnector {
       ? [HEADER_START_PRESENTATION_P2P] // `x-webrtc-share-state: YOUCANRECEIVECONTENT
       : [HEADER_START_PRESENTATION]; // `x-webrtc-share-state: LETMESTARTPRESENTATION`
 
-    const result = session
+    const result = rtcSession
       // отправляем запрос на презентацию с заголовком 'application/vinteo.webrtc.sharedesktop'
       .sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
         extraHeaders: preparatoryHeaders,
       })
       .then(async () => {
-        return session.startPresentation(streamPresentationCurrent, isNeedReinvite, {
+        return rtcSession.startPresentation(streamPresentationCurrent, isNeedReinvite, {
           sendEncodings,
           onAddedTransceiver,
         });
@@ -894,10 +894,10 @@ export default class SipConnector {
     } = {},
     options?: { callLimit: number },
   ): Promise<MediaStream> {
-    const session = this.establishedSession;
+    const rtcSession = this.establishedRTCSession;
 
-    if (!session) {
-      throw new Error('No session established');
+    if (!rtcSession) {
+      throw new Error('No rtcSession established');
     }
 
     if (this._streamPresentationCurrent) {
@@ -905,11 +905,11 @@ export default class SipConnector {
     }
 
     if (isP2P) {
-      await this.sendMustStopPresentation(session);
+      await this.sendMustStopPresentation(rtcSession);
     }
 
     return this._sendPresentationWithDuplicatedCalls({
-      session,
+      rtcSession,
       stream,
       presentationOptions: {
         isNeedReinvite,
@@ -923,8 +923,8 @@ export default class SipConnector {
     });
   }
 
-  private async sendMustStopPresentation(session: RTCSession): Promise<void> {
-    await session.sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
+  private async sendMustStopPresentation(rtcSession: RTCSession): Promise<void> {
+    await rtcSession.sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
       extraHeaders: [HEADER_MUST_STOP_PRESENTATION_P2P],
     });
   }
@@ -945,18 +945,18 @@ export default class SipConnector {
       ? [HEADER_STOP_PRESENTATION_P2P] // `x-webrtc-share-state: CONTENTEND`
       : [HEADER_STOP_PRESENTATION]; // `x-webrtc-share-state: STOPPRESENTATION`
 
-    const session = this.establishedSession;
+    const rtcSession = this.establishedRTCSession;
 
-    if (session && streamPresentationPrevious) {
+    if (rtcSession && streamPresentationPrevious) {
       result = result
         .then(async () => {
           // информируем сервер о остановке презентации с заголовком 'application/vinteo.webrtc.sharedesktop'
-          return session.sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
+          return rtcSession.sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
             extraHeaders: preparatoryHeaders,
           });
         })
         .then(async () => {
-          return session.stopPresentation(streamPresentationPrevious);
+          return rtcSession.stopPresentation(streamPresentationPrevious);
         })
         .catch((error: unknown) => {
           this._sessionEvents.trigger(PRESENTATION_FAILED, error);
@@ -965,7 +965,7 @@ export default class SipConnector {
         });
     }
 
-    if (!session && streamPresentationPrevious) {
+    if (!rtcSession && streamPresentationPrevious) {
       this._sessionEvents.trigger(PRESENTATION_ENDED, streamPresentationPrevious);
     }
 
@@ -992,10 +992,10 @@ export default class SipConnector {
       onAddedTransceiver?: TOnAddedTransceiver;
     } = {},
   ): Promise<MediaStream | void> {
-    const session = this.establishedSession;
+    const rtcSession = this.establishedRTCSession;
 
-    if (!session) {
-      throw new Error('No session established');
+    if (!rtcSession) {
+      throw new Error('No rtcSession established');
     }
 
     if (!this._streamPresentationCurrent) {
@@ -1006,7 +1006,7 @@ export default class SipConnector {
       await this.promisePendingStartPresentation;
     }
 
-    return this._sendPresentation(session, stream, {
+    return this._sendPresentation(rtcSession, stream, {
       isP2P,
       maxBitrate,
       contentHint,
@@ -1032,13 +1032,13 @@ export default class SipConnector {
     this._resetPresentation();
   }
 
-  handleNewRTCSession = ({ originator, session }: IncomingRTCSessionEvent) => {
+  handleNewRTCSession = ({ originator, session: rtcSession }: IncomingRTCSessionEvent) => {
     if (originator === ORIGINATOR_REMOTE) {
-      this.incomingSession = session;
+      this.incomingRTCSession = rtcSession;
 
       const callerData = this.remoteCallerData;
 
-      session.on(FAILED, (event: { originator: string }) => {
+      rtcSession.on(FAILED, (event: { originator: string }) => {
         this.removeIncomingSession();
 
         if (event.originator === ORIGINATOR_LOCAL) {
@@ -1118,19 +1118,19 @@ export default class SipConnector {
   }
 
   get connection(): RTCPeerConnection | undefined {
-    const connection = this.session?.connection;
+    const connection = this.rtcSession?.connection;
 
     return connection;
   }
 
   get remoteCallerData() {
     return {
-      displayName: this.incomingSession?.remote_identity?.display_name,
+      displayName: this.incomingRTCSession?.remote_identity?.display_name,
 
-      host: this.incomingSession?.remote_identity?.uri.host,
+      host: this.incomingRTCSession?.remote_identity?.uri.host,
 
-      incomingNumber: this.incomingSession?.remote_identity?.uri.user,
-      session: this.incomingSession,
+      incomingNumber: this.incomingRTCSession?.remote_identity?.uri.user,
+      rtcSession: this.incomingRTCSession,
     };
   }
 
@@ -1143,8 +1143,8 @@ export default class SipConnector {
     );
   }
 
-  get establishedSession(): RTCSession | undefined {
-    return this.session?.isEstablished() ? this.session : undefined;
+  get establishedRTCSession(): RTCSession | undefined {
+    return this.rtcSession?.isEstablished() ? this.rtcSession : undefined;
   }
 
   get isRegistered() {
@@ -1156,11 +1156,11 @@ export default class SipConnector {
   }
 
   get isCallActive() {
-    return !!(this.ua && this.session);
+    return !!(this.ua && this.rtcSession);
   }
 
   get isAvailableIncomingCall() {
-    return !!this.incomingSession;
+    return !!this.incomingRTCSession;
   }
 
   _connect: TConnect = async (parameters) => {
@@ -1410,7 +1410,7 @@ export default class SipConnector {
           reject(error as Error);
         });
 
-      this.session = ua.call(this.getSipServerUrl(number), {
+      this.rtcSession = ua.call(this.getSipServerUrl(number), {
         extraHeaders,
         mediaStream: prepareMediaStream(mediaStream, {
           directionVideo,
@@ -1448,18 +1448,18 @@ export default class SipConnector {
   }): Promise<RTCPeerConnection> => {
     return new Promise((resolve, reject) => {
       if (!this.isAvailableIncomingCall) {
-        reject(new Error('no incomingSession'));
+        reject(new Error('no incomingRTCSession'));
 
         return;
       }
 
-      this.session = this.incomingSession;
+      this.rtcSession = this.incomingRTCSession;
       this.removeIncomingSession();
 
-      const { session } = this;
+      const { rtcSession } = this;
 
-      if (!session) {
-        reject(new Error('No session established'));
+      if (!rtcSession) {
+        reject(new Error('No rtcSession established'));
 
         return;
       }
@@ -1470,12 +1470,12 @@ export default class SipConnector {
         });
 
         if (sessionJsSipEvent) {
-          session.on(sessionJsSipEvent, trigger);
+          rtcSession.on(sessionJsSipEvent, trigger);
         }
       });
 
       this._connectionConfiguration.answer = true;
-      this._connectionConfiguration.number = session.remote_identity.uri.user;
+      this._connectionConfiguration.number = rtcSession.remote_identity.uri.user;
       this._handleCall({ ontrack })
         .then(resolve)
         .catch((error: unknown) => {
@@ -1489,7 +1489,7 @@ export default class SipConnector {
         contentHint,
       });
 
-      session.answer({
+      rtcSession.answer({
         extraHeaders,
         directionVideo,
         directionAudio,
@@ -1563,16 +1563,16 @@ export default class SipConnector {
     this._cancelRequestsAndResetPresentation();
 
     delete this._connectionConfiguration.number;
-    delete this.session;
+    delete this.rtcSession;
     this._remoteStreams = {};
   };
 
   _sendDTMF: TSendDTMF = async (tone) => {
     return new Promise<void>((resolve, reject) => {
-      const { session } = this;
+      const { rtcSession } = this;
 
-      if (!session) {
-        reject(new Error('No session established'));
+      if (!rtcSession) {
+        reject(new Error('No rtcSession established'));
 
         return;
       }
@@ -1583,7 +1583,7 @@ export default class SipConnector {
         }
       });
 
-      session.sendDTMF(tone, {
+      rtcSession.sendDTMF(tone, {
         duration: 120,
         interToneGap: 600,
       });
@@ -1650,8 +1650,8 @@ export default class SipConnector {
   }
 
   _hangUpWithoutCancelRequests: THangUp = async () => {
-    if (this.ua && this.session) {
-      const { session } = this;
+    if (this.ua && this.rtcSession) {
+      const { rtcSession } = this;
 
       if (this._streamPresentationCurrent) {
         try {
@@ -1663,8 +1663,8 @@ export default class SipConnector {
 
       this._restoreSession();
 
-      if (!session.isEnded()) {
-        return session.terminateAsync();
+      if (!rtcSession.isEnded()) {
+        return rtcSession.terminateAsync();
       }
     }
 
@@ -2064,8 +2064,8 @@ export default class SipConnector {
   }
 
   async sendChannels({ inputChannels, outputChannels }: TChannels): Promise<void> {
-    if (!this.session) {
-      throw new Error('No session established');
+    if (!this.rtcSession) {
+      throw new Error('No rtcSession established');
     }
 
     const headerInputChannels = `${HEADER_INPUT_CHANNELS}: ${inputChannels}`;
@@ -2075,15 +2075,15 @@ export default class SipConnector {
       headerOutputChannels,
     ];
 
-    return this.session.sendInfo(CONTENT_TYPE_CHANNELS, undefined, { extraHeaders });
+    return this.rtcSession.sendInfo(CONTENT_TYPE_CHANNELS, undefined, { extraHeaders });
   }
 
   async sendMediaState(
     { cam, mic }: TMediaState,
     options: TOptionsInfoMediaState = {},
   ): Promise<void> {
-    if (!this.session) {
-      throw new Error('No session established');
+    if (!this.rtcSession) {
+      throw new Error('No rtcSession established');
     }
 
     const headerMediaState = `${HEADER_MEDIA_STATE}: currentstate`;
@@ -2095,7 +2095,7 @@ export default class SipConnector {
       headerMic,
     ];
 
-    return this.session.sendInfo(CONTENT_TYPE_MEDIA_STATE, undefined, {
+    return this.rtcSession.sendInfo(CONTENT_TYPE_MEDIA_STATE, undefined, {
       noTerminateWhenError: true,
       ...options,
       extraHeaders,
@@ -2106,8 +2106,8 @@ export default class SipConnector {
     type: 'cam' | 'mic',
     options: TOptionsInfoMediaState = {},
   ): Promise<void> {
-    if (!this.session) {
-      throw new Error('No session established');
+    if (!this.rtcSession) {
+      throw new Error('No rtcSession established');
     }
 
     const typeMicOnServer = 0;
@@ -2117,7 +2117,7 @@ export default class SipConnector {
     const headerMediaType = `${HEADER_MEDIA_TYPE}: ${typeToSend}`;
     const extraHeaders: TOptionsExtraHeaders['extraHeaders'] = [headerMediaType];
 
-    return this.session.sendInfo(CONTENT_TYPE_REFUSAL, undefined, {
+    return this.rtcSession.sendInfo(CONTENT_TYPE_REFUSAL, undefined, {
       noTerminateWhenError: true,
       ...options,
       extraHeaders,
@@ -2125,16 +2125,16 @@ export default class SipConnector {
   }
 
   async sendRefusalToTurnOnMic(options: TOptionsInfoMediaState = {}): Promise<void> {
-    if (!this.session) {
-      throw new Error('No session established');
+    if (!this.rtcSession) {
+      throw new Error('No rtcSession established');
     }
 
     return this._sendRefusalToTurnOn('mic', { noTerminateWhenError: true, ...options });
   }
 
   async sendRefusalToTurnOnCam(options: TOptionsInfoMediaState = {}): Promise<void> {
-    if (!this.session) {
-      throw new Error('No session established');
+    if (!this.rtcSession) {
+      throw new Error('No rtcSession established');
     }
 
     return this._sendRefusalToTurnOn('cam', { noTerminateWhenError: true, ...options });

@@ -11,6 +11,6 @@ const doMock = () => {
 
 export default doMock;
 
-export { FAILED_CONFERENCE_NUMBER } from './__fixtures__/Session.mock';
+export { FAILED_CONFERENCE_NUMBER } from './__fixtures__/RTCSessionMock';
 export { NAME_INCORRECT, PASSWORD_CORRECT, PASSWORD_CORRECT_2 } from './__fixtures__/UA.mock';
 export * from './__fixtures__/index';

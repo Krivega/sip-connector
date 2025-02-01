@@ -48,10 +48,10 @@ describe('use license', () => {
     const promise = new Promise<EUseLicense>((resolve) => {
       return sipConnector.onSession(USE_LICENSE, resolve);
     });
-    const { session } = sipConnector;
+    const { rtcSession } = sipConnector;
 
-    if (session) {
-      JsSIP.triggerNewInfo(session, headersUseLicenseAudio);
+    if (rtcSession) {
+      JsSIP.triggerNewInfo(rtcSession, headersUseLicenseAudio);
     }
 
     return promise.then((license: EUseLicense) => {
@@ -66,10 +66,10 @@ describe('use license', () => {
     const promise = new Promise<EUseLicense>((resolve) => {
       return sipConnector.onSession(USE_LICENSE, resolve);
     });
-    const { session } = sipConnector;
+    const { rtcSession } = sipConnector;
 
-    if (session) {
-      JsSIP.triggerNewInfo(session, headersUseLicenseVideo);
+    if (rtcSession) {
+      JsSIP.triggerNewInfo(rtcSession, headersUseLicenseVideo);
     }
 
     return promise.then((license: EUseLicense) => {
@@ -84,10 +84,10 @@ describe('use license', () => {
     const promise = new Promise<EUseLicense>((resolve) => {
       return sipConnector.onSession(USE_LICENSE, resolve);
     });
-    const { session } = sipConnector;
+    const { rtcSession } = sipConnector;
 
-    if (session) {
-      JsSIP.triggerNewInfo(session, headersUseLicenseAudioPlusPresentation);
+    if (rtcSession) {
+      JsSIP.triggerNewInfo(rtcSession, headersUseLicenseAudioPlusPresentation);
     }
 
     return promise.then((license: EUseLicense) => {
