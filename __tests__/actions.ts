@@ -1,7 +1,7 @@
 /// <reference types="jest" />
-import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
-import { doMockSipConnector } from '../doMock';
+import { doMockSipConnector } from '../src/doMock';
+import type SipConnector from '../src/SipConnector';
 
 describe('actions', () => {
   let sipConnector: SipConnector;

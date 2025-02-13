@@ -128,7 +128,7 @@ import type {
   TParametersCreateUaConfiguration,
 } from './types';
 import { EEventsMainCAM, EEventsMic, EEventsSyncMediaState } from './types';
-import { generateUserId, hasVideoTracks, parseDisplayName, resolveSipUrl } from './utils';
+import { generateUserId, hasVideoTracks, parseDisplayName, resolveSipUrl } from '../utils';
 import { hasDeclineResponseFromServer, hasHandshakeWebsocketOpeningError } from './utils/errors';
 import scaleBitrate from './videoSendingBalancer/scaleBitrate';
 
@@ -770,7 +770,7 @@ export default class SipConnector {
     displayName = '',
     sipServerUrl,
     register = false,
-    sessionTimers = false,
+    sessionTimers = false,  SJLN 
     registerExpires = 60 * 5, // 5 minutes in sec
     connectionRecoveryMinInterval = 2,
     connectionRecoveryMaxInterval = 6,

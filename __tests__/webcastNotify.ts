@@ -1,12 +1,17 @@
 /// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
-import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
-import { accountChangedHeaders, accountDeletedHeaders } from '../__fixtures__/accountNotify';
 import JsSIP from '../__fixtures__/jssip.mock';
-import { doMockSipConnector } from '../doMock';
+import {
+    webcastStartedData,
+    webcastStartedHeaders,
+    webcastStoppedData,
+    webcastStoppedHeaders,
+} from '../__fixtures__/webcastNotify';
+import { doMockSipConnector } from '../src/doMock';
+import type SipConnector from '../src/SipConnector';
 
-describe('account notify', () => {
+describe('webcast notify', () => {
   const number = '111';
 
   let sipConnector: SipConnector;
@@ -19,8 +24,7 @@ describe('account notify', () => {
       video: { deviceId: { exact: 'videoDeviceId' } },
     });
   });
-
-  it('event account:changed', async () => {
+  it('event webcast:started', async () => {
     expect.assertions(1);
 
     const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -28,17 +32,17 @@ describe('account notify', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('account:changed', (data) => {
-        expect(data).toBe(undefined);
+      sipConnector.on('webcast:started', (data) => {
+        expect(data).toEqual(webcastStartedData);
 
         resolve();
       });
 
-      JsSIP.triggerNewSipEvent(ua, accountChangedHeaders);
+      JsSIP.triggerNewSipEvent(ua, webcastStartedHeaders);
     });
   });
 
-  it('event account:deleted', async () => {
+  it('event webcast:stopped', async () => {
     expect.assertions(1);
 
     const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -46,13 +50,13 @@ describe('account notify', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('account:deleted', (data) => {
-        expect(data).toBe(undefined);
+      sipConnector.on('webcast:stopped', (data) => {
+        expect(data).toEqual(webcastStoppedData);
 
         resolve();
       });
 
-      JsSIP.triggerNewSipEvent(ua, accountDeletedHeaders);
+      JsSIP.triggerNewSipEvent(ua, webcastStoppedHeaders);
     });
   });
 });

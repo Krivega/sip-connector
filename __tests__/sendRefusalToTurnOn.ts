@@ -1,9 +1,9 @@
 /// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
-import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
-import { doMockSipConnector } from '../doMock';
-import { CONTENT_TYPE_REFUSAL } from '../headers';
+import { doMockSipConnector } from '../src/doMock';
+import { CONTENT_TYPE_REFUSAL } from '../src/headers';
+import type SipConnector from '../src/SipConnector';
 
 describe('media state', () => {
   const number = '111';

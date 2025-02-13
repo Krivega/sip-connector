@@ -1,16 +1,16 @@
 /// <reference types="jest" />
 import type { ExtraHeaders } from '@krivega/jssip';
 import { createMediaStreamMock } from 'webrtc-mock';
-import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import SessionMock, { createDeclineStartPresentationError } from '../__fixtures__/RTCSessionMock';
-import { doMockSipConnector } from '../doMock';
+import { doMockSipConnector } from '../src/doMock';
 import {
-  CONTENT_TYPE_SHARE_STATE,
-  HEADER_MUST_STOP_PRESENTATION_P2P,
-  HEADER_START_PRESENTATION,
-  HEADER_START_PRESENTATION_P2P,
-} from '../headers';
+    CONTENT_TYPE_SHARE_STATE,
+    HEADER_MUST_STOP_PRESENTATION_P2P,
+    HEADER_START_PRESENTATION,
+    HEADER_START_PRESENTATION_P2P,
+} from '../src/headers';
+import type SipConnector from '../src/SipConnector';
 
 const startPresentationCallLimit = 1;
 const errorStartPresentationCount = 3;

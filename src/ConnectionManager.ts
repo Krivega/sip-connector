@@ -13,6 +13,7 @@ import type {
 } from '@krivega/jssip';
 import Events from 'events-constructor';
 import { repeatedCallsAsync } from 'repeated-calls';
+import { generateUserId, parseDisplayName, resolveSipUrl } from '../utils';
 import {
   ACCOUNT_CHANGED,
   ACCOUNT_DELETED,
@@ -52,7 +53,6 @@ import type {
   TOnAddedTransceiver,
   TParametersCreateUaConfiguration,
 } from './types';
-import { generateUserId, parseDisplayName, resolveSipUrl } from './utils';
 import { hasHandshakeWebsocketOpeningError } from './utils/errors';
 
 const BUSY_HERE_STATUS_CODE = 486;
@@ -284,7 +284,7 @@ export default class ConnectionManager {
     this._uaEvents.trigger(CONNECTING, undefined);
 
     try {
-      await this.unregister();
+      await thts.unregister();
     } catch (error) {
       logger('tryRegister', error);
     }

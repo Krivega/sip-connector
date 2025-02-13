@@ -1,11 +1,11 @@
 /// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
-import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import delayPromise from '../__fixtures__/delayPromise';
 import JsSIP from '../__fixtures__/jssip.mock';
 import remoteCallerData from '../__fixtures__/remoteCallerData';
-import { doMockSipConnector } from '../doMock';
+import { doMockSipConnector } from '../src/doMock';
+import type SipConnector from '../src/SipConnector';
 
 describe('incoming call', () => {
   let sipConnector: SipConnector;
