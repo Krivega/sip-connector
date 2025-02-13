@@ -284,7 +284,7 @@ export default class ConnectionManager {
     this._uaEvents.trigger(CONNECTING, undefined);
 
     try {
-      await thts.unregister();
+      await this.unregister();
     } catch (error) {
       logger('tryRegister', error);
     }
