@@ -2,7 +2,7 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "baseUrl": "./",
-    "types": ["vite/client", "node", "dom-mediacapture-transform"]
+    "types": ["./src/global.d.ts"]
   },
-  "include": ["src"]
+  "include": ["src", "__tests__", "utils.ts"]
 }

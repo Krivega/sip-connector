@@ -41,11 +41,11 @@ const hasChangedRTCRtpSendParameters = (
   }
 
   // Сравниваем общие параметры
-  if (parameters1.rtcp.cname !== parameters2.rtcp.cname) {
+  if (parameters1.rtcp?.cname !== parameters2.rtcp?.cname) {
     return true;
   }
 
-  if (parameters1.rtcp.reducedSize !== parameters2.rtcp.reducedSize) {
+  if (parameters1.rtcp?.reducedSize !== parameters2.rtcp?.reducedSize) {
     return true;
   }
 

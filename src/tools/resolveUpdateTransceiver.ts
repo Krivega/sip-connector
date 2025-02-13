@@ -1,3 +1,4 @@
+import log from '../logger';
 import setParametersToSender from '../setParametersToSender';
 import type { TRtpSendParameters } from '../types';
 
@@ -61,22 +62,27 @@ const resolveUpdateTransceiver = (
   }: { preferredMimeTypesVideoCodecs?: string[]; excludeMimeTypesVideoCodecs?: string[] },
 ) => {
   return async (transceiver: RTCRtpTransceiver) => {
-    if (
-      typeof transceiver.setCodecPreferences === 'function' &&
-      transceiver.sender.track?.kind === 'video' &&
-      ((preferredMimeTypesVideoCodecs !== undefined && preferredMimeTypesVideoCodecs?.length > 0) ||
-        (excludeMimeTypesVideoCodecs !== undefined && excludeMimeTypesVideoCodecs?.length > 0))
-    ) {
-      const capabilityCodecs = getCapabilityCodecs('video');
+    try {
+      if (
+        typeof transceiver.setCodecPreferences === 'function' &&
+        transceiver.sender.track?.kind === 'video' &&
+        ((preferredMimeTypesVideoCodecs !== undefined &&
+          preferredMimeTypesVideoCodecs?.length > 0) ||
+          (excludeMimeTypesVideoCodecs !== undefined && excludeMimeTypesVideoCodecs?.length > 0))
+      ) {
+        const capabilityCodecs = getCapabilityCodecs('video');
 
-      const filteredCodecs = excludeCodecs(capabilityCodecs, excludeMimeTypesVideoCodecs);
-      const sortedCodecs = preferCodecs(filteredCodecs, preferredMimeTypesVideoCodecs);
+        const filteredCodecs = excludeCodecs(capabilityCodecs, excludeMimeTypesVideoCodecs);
+        const sortedCodecs = preferCodecs(filteredCodecs, preferredMimeTypesVideoCodecs);
 
-      transceiver.setCodecPreferences(sortedCodecs);
-    }
+        transceiver.setCodecPreferences(sortedCodecs);
+      }
 
-    if (Object.keys(parametersTarget).length > 0) {
-      await setParametersToSender(transceiver.sender, parametersTarget);
+      if (Object.keys(parametersTarget).length > 0) {
+        await setParametersToSender(transceiver.sender, parametersTarget);
+      }
+    } catch (error) {
+      log('updateTransceiver error', error);
     }
   };
 };
