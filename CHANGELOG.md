@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [14.0.0](https://github.com/Krivega/sip-connector/compare/v13.3.1...v14.0.0) (2025-02-13)
+
+### ⚠ BREAKING CHANGES
+
+- use named export
+- rename session to rtcSession
+
+### Bug Fixes
+
+- support ff 109 and lower ([17dcd84](https://github.com/Krivega/sip-connector/commit/17dcd8437f01ad22b96c4a00373b537bccf3cd6f))
+
+- rename session to rtcSession ([fd2e956](https://github.com/Krivega/sip-connector/commit/fd2e956267b4d05e3f1fe8e40452a5d4568872ac))
+- use named export ([c8a48ab](https://github.com/Krivega/sip-connector/commit/c8a48abf675b3c9982c8a4e9e799b85750fe3959))
+
 ### [13.3.1](https://github.com/Krivega/sip-connector/compare/v13.3.0...v13.3.1) (2024-12-19)
 
 ### Bug Fixes
