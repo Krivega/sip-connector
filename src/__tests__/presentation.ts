@@ -1,7 +1,6 @@
 /// <reference types="jest" />
 import type { ExtraHeaders } from '@krivega/jssip';
 import { createMediaStreamMock } from 'webrtc-mock';
-import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import SessionMock, { createDeclineStartPresentationError } from '../__fixtures__/RTCSessionMock';
 import { doMockSipConnector } from '../doMock';
@@ -11,6 +10,7 @@ import {
   HEADER_START_PRESENTATION,
   HEADER_START_PRESENTATION_P2P,
 } from '../headers';
+import type SipConnector from '../SipConnector';
 
 const startPresentationCallLimit = 1;
 const errorStartPresentationCount = 3;
@@ -29,11 +29,7 @@ describe('presentation', () => {
     const actualSendInfo = sipConnector.rtcSession!.sendInfo;
 
     sipConnector.rtcSession!.sendInfo = jest.fn(
-      async (
-        contentType: string,
-        body?: string | undefined,
-        options?: ExtraHeaders | undefined,
-      ) => {
+      async (contentType: string, body?: string, options?: ExtraHeaders) => {
         if (
           options?.extraHeaders &&
           options.extraHeaders[0] === HEADER_MUST_STOP_PRESENTATION_P2P

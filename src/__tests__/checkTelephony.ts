@@ -1,8 +1,8 @@
 /// <reference types="jest" />
-import type SipConnector from '../SipConnector';
 import { dataForConnectionWithoutAuthorization } from '../__fixtures__';
 import UAmock from '../__fixtures__/UA.mock';
 import { doMockSipConnector } from '../doMock';
+import type SipConnector from '../SipConnector';
 
 describe('checkTelephony', () => {
   let sipConnector: SipConnector;

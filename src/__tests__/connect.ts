@@ -1,5 +1,4 @@
 /// <reference types="jest" />
-import type SipConnector from '../SipConnector';
 import {
   SIP_SERVER_URL,
   dataForConnectionWithAuthorization,
@@ -15,6 +14,7 @@ import {
 } from '../__fixtures__';
 import UAMock, { createWebsocketHandshakeTimeoutError } from '../__fixtures__/UA.mock';
 import { doMockSipConnector } from '../doMock';
+import type SipConnector from '../SipConnector';
 import { uriWithName } from '../tools/__fixtures__/connectToServer';
 
 const wrongPassword = 'wrongPassword';

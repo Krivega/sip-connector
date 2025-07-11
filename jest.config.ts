@@ -34,7 +34,6 @@ const jestConfig: JestConfigWithTsJest = {
     '^.+\\.tsx?$': [
       'ts-jest',
       {
-        isolatedModules: true,
         diagnostics: false
       },
     ],

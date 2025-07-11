@@ -1,6 +1,5 @@
 /// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
-import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
 import {
@@ -13,6 +12,7 @@ import {
   moveRequestToStreamHeaders,
 } from '../__fixtures__/participantMoveRequests';
 import { doMockSipConnector } from '../doMock';
+import type SipConnector from '../SipConnector';
 
 describe('participants moveRequests', () => {
   const number = '111';

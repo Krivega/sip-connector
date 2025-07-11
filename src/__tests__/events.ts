@@ -1,6 +1,5 @@
 /// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
-import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
 import { doMockSipConnector } from '../doMock';
@@ -12,6 +11,7 @@ import {
   MUST_STOP_PRESENTATION,
   NOT_AVAILABLE_SECOND_REMOTE_STREAM,
 } from '../headers';
+import type SipConnector from '../SipConnector';
 
 describe('events', () => {
   const number = '111';

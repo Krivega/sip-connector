@@ -15,6 +15,7 @@ import type {
 } from '@krivega/jssip';
 import Events from 'events-constructor';
 import { repeatedCallsAsync } from 'repeated-calls';
+import { generateUserId, hasVideoTracks, parseDisplayName, resolveSipUrl } from '../utils';
 import { BYE, CANCELED, REJECTED, REQUEST_TIMEOUT } from './causes';
 import {
   ACCOUNT_CHANGED,
@@ -128,7 +129,6 @@ import type {
   TParametersCreateUaConfiguration,
 } from './types';
 import { EEventsMainCAM, EEventsMic, EEventsSyncMediaState } from './types';
-import { generateUserId, hasVideoTracks, parseDisplayName, resolveSipUrl } from './utils';
 import { hasDeclineResponseFromServer, hasHandshakeWebsocketOpeningError } from './utils/errors';
 import scaleBitrate from './videoSendingBalancer/scaleBitrate';
 

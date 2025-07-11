@@ -1,8 +1,8 @@
 /// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
-import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import { doMockSipConnector } from '../doMock';
+import type SipConnector from '../SipConnector';
 
 describe('call statuses', () => {
   let sipConnector: SipConnector;
@@ -36,7 +36,7 @@ describe('call statuses', () => {
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
-    const number = `10000`;
+    const number = '10000';
 
     const promiseCallStatuses = new Promise<void>((resolve) => {
       sipConnector.onSession('connecting', () => {

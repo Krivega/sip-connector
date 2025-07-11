@@ -1,6 +1,5 @@
 /// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
-import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
 import { USE_LICENSE } from '../constants';
@@ -10,6 +9,7 @@ import {
   HEADER_CONTENT_TYPE_NAME,
   HEADER_CONTENT_USE_LICENSE,
 } from '../headers';
+import type SipConnector from '../SipConnector';
 import { EUseLicense } from '../types';
 
 const headersUseLicenseAudio: [string, string][] = [
