@@ -4,5 +4,14 @@
     "baseUrl": "./",
     "types": ["./src/global.d.ts"]
   },
-  "include": ["src", "__tests__", "utils.ts"]
+  "include": [
+    "src",
+    "__tests__",
+    "utils.ts",
+    "eslint.config.ts",
+    "eslint.config.jest.ts",
+    "eslint.config.base.ts",
+    "jest.config.ts",
+    "vite.config.ts"
+  ]
 }

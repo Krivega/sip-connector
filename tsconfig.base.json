@@ -5,7 +5,7 @@
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "module": "ESNext",
-    "moduleResolution": "Node", //: "node16"
+    "moduleResolution": "bundler",
     "target": "ESNext",
     "useDefineForClassFields": true,
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
@@ -19,6 +19,5 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true
-  },
-  "include": ["vite.config.ts"]
+  }
 }
