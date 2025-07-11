@@ -3,15 +3,15 @@ import { createMediaStreamMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
 import {
-    webcastStartedData,
-    webcastStartedHeaders,
-    webcastStoppedData,
-    webcastStoppedHeaders,
-} from '../__fixtures__/webcastNotify';
-import { doMockSipConnector } from '../src/doMock';
-import type SipConnector from '../src/SipConnector';
+  addedToListModeratorsData,
+  addedToListModeratorsHeaders,
+  removedFromListModeratorsData,
+  removedFromListModeratorsHeaders,
+} from '../__fixtures__/participantNotify';
+import { doMockSipConnector } from '../doMock';
+import type SipConnector from '../SipConnector';
 
-describe('webcast notify', () => {
+describe('participant notify', () => {
   const number = '111';
 
   let sipConnector: SipConnector;
@@ -24,7 +24,8 @@ describe('webcast notify', () => {
       video: { deviceId: { exact: 'videoDeviceId' } },
     });
   });
-  it('event webcast:started', async () => {
+
+  it('wait participant notify event added-to-list-moderators', async () => {
     expect.assertions(1);
 
     const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -32,17 +33,17 @@ describe('webcast notify', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('webcast:started', (data) => {
-        expect(data).toEqual(webcastStartedData);
+      sipConnector.on('participant:added-to-list-moderators', (data) => {
+        expect(data).toEqual(addedToListModeratorsData);
 
         resolve();
       });
 
-      JsSIP.triggerNewSipEvent(ua, webcastStartedHeaders);
+      JsSIP.triggerNewSipEvent(ua, addedToListModeratorsHeaders);
     });
   });
 
-  it('event webcast:stopped', async () => {
+  it('wait participant notify event removed-from-list-moderators', async () => {
     expect.assertions(1);
 
     const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -50,13 +51,13 @@ describe('webcast notify', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('webcast:stopped', (data) => {
-        expect(data).toEqual(webcastStoppedData);
+      sipConnector.on('participant:removed-from-list-moderators', (data) => {
+        expect(data).toEqual(removedFromListModeratorsData);
 
         resolve();
       });
 
-      JsSIP.triggerNewSipEvent(ua, webcastStoppedHeaders);
+      JsSIP.triggerNewSipEvent(ua, removedFromListModeratorsHeaders);
     });
   });
 });

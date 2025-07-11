@@ -3,9 +3,9 @@ import { createMediaStreamMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import delayPromise from '../__fixtures__/delayPromise';
 import { FAILED_CONFERENCE_NUMBER } from '../__fixtures__/jssip.mock';
-import { doMockSipConnector } from '../src/doMock';
-import type SipConnector from '../src/SipConnector';
-import { hasCanceledCallError } from '../src/SipConnector';
+import { doMockSipConnector } from '../doMock';
+import type SipConnector from '../SipConnector';
+import { hasCanceledCallError } from '../SipConnector';
 
 describe('call', () => {
   let sipConnector: SipConnector;
@@ -26,7 +26,7 @@ describe('call', () => {
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
-    const number = `10000`;
+    const number = '10000';
     const peerconnection = await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
     expect(!!peerconnection).toBe(true);
@@ -43,7 +43,7 @@ describe('call', () => {
 
     expect(sipConnector.getConnectionConfiguration().answer).toBe(undefined);
 
-    const number = `10000`;
+    const number = '10000';
     const callPromise = sipConnector.call({ number, mediaStream, ontrack: mockFunction });
     const connectionConfiguration = sipConnector.getConnectionConfiguration();
 
@@ -67,7 +67,7 @@ describe('call', () => {
 
     expect(sipConnector.isCallActive).toBe(false);
 
-    const number = `10000`;
+    const number = '10000';
 
     await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
@@ -79,7 +79,7 @@ describe('call', () => {
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
-    const number = `10000`;
+    const number = '10000';
     const peerconnection = await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
     // @ts-expect-error
@@ -96,7 +96,7 @@ describe('call', () => {
     // @ts-expect-error
     mediaStream.tracks.reverse();
 
-    const number = `10000`;
+    const number = '10000';
     const peerconnection = await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
     // @ts-expect-error
@@ -108,7 +108,7 @@ describe('call', () => {
   it('getRemoteStreams', async () => {
     expect.assertions(1);
 
-    const number = `10000`;
+    const number = '10000';
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
@@ -121,7 +121,7 @@ describe('call', () => {
   it('hangUp', async () => {
     expect.assertions(2);
 
-    const number = `10000`;
+    const number = '10000';
 
     const endedPromise = new Promise((resolve) => {
       sipConnector.onceSession('ended', resolve);
@@ -142,7 +142,7 @@ describe('call', () => {
   it('disconnect after end call from server', async () => {
     expect.assertions(1);
 
-    const number = `10000`;
+    const number = '10000';
     const disconnectPromise = new Promise((resolve, reject) => {
       sipConnector.onceSession('ended', () => {
         // order is important!!!
@@ -150,7 +150,6 @@ describe('call', () => {
           .disconnect()
           .then(resolve)
           .catch((error: unknown) => {
-            // eslint-disable-next-line prefer-promise-reject-errors
             reject(error as Error);
           });
       });
@@ -177,7 +176,6 @@ describe('call', () => {
           .disconnect()
           .then(resolve)
           .catch((error: unknown) => {
-            // eslint-disable-next-line prefer-promise-reject-errors
             reject(error as Error);
           });
       });
@@ -211,7 +209,6 @@ describe('call', () => {
         .disconnect()
         .then(resolve)
         .catch((error: unknown) => {
-          // eslint-disable-next-line prefer-promise-reject-errors
           reject(error as Error);
         });
     });
@@ -229,7 +226,7 @@ describe('call', () => {
   it('disconnect after confirm call from server: dont wait to confirm', async () => {
     expect.assertions(2);
 
-    const number = `10000`;
+    const number = '10000';
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
@@ -240,7 +237,6 @@ describe('call', () => {
         .disconnect()
         .then(resolve)
         .catch((error: unknown) => {
-          // eslint-disable-next-line prefer-promise-reject-errors
           reject(error as Error);
         });
     });
@@ -258,7 +254,7 @@ describe('call', () => {
   it('disconnect after confirm call from server: wait to confirm', async () => {
     expect.assertions(1);
 
-    const number = `10000`;
+    const number = '10000';
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
@@ -275,7 +271,7 @@ describe('call', () => {
     expect.assertions(1);
 
     const remoteStreams = {};
-    const number = `10000`;
+    const number = '10000';
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
@@ -298,7 +294,7 @@ describe('call', () => {
   it('end call from server', async () => {
     expect.assertions(1);
 
-    const number = `10000`;
+    const number = '10000';
     const data = { originator: 'remote' };
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -319,7 +315,7 @@ describe('call', () => {
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
-    const number = `10000`;
+    const number = '10000';
 
     await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
@@ -337,7 +333,7 @@ describe('call', () => {
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
-    const number = `10000`;
+    const number = '10000';
 
     await sipConnector.call({
       number,
@@ -360,7 +356,7 @@ describe('call', () => {
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
-    const number = `10000`;
+    const number = '10000';
 
     await sipConnector.call({
       number,
@@ -383,7 +379,7 @@ describe('call', () => {
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
-    const number = `10000`;
+    const number = '10000';
 
     await sipConnector.call({
       number,

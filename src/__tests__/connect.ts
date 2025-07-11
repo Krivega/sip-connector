@@ -1,21 +1,21 @@
 /// <reference types="jest" />
 import {
-    SIP_SERVER_URL,
-    dataForConnectionWithAuthorization,
-    dataForConnectionWithAuthorizationWithDisplayName,
-    dataForConnectionWithoutAuthorization,
-    dataForConnectionWithoutAuthorizationWithoutDisplayName,
-    extraHeadersRemoteAddress,
-    remoteAddress,
-    uaConfigurationWithAuthorization,
-    uaConfigurationWithAuthorizationWithDisplayName,
-    uaConfigurationWithoutAuthorization,
-    uaConfigurationWithoutAuthorizationWithoutDisplayName,
+  SIP_SERVER_URL,
+  dataForConnectionWithAuthorization,
+  dataForConnectionWithAuthorizationWithDisplayName,
+  dataForConnectionWithoutAuthorization,
+  dataForConnectionWithoutAuthorizationWithoutDisplayName,
+  extraHeadersRemoteAddress,
+  remoteAddress,
+  uaConfigurationWithAuthorization,
+  uaConfigurationWithAuthorizationWithDisplayName,
+  uaConfigurationWithoutAuthorization,
+  uaConfigurationWithoutAuthorizationWithoutDisplayName,
 } from '../__fixtures__';
 import UAMock, { createWebsocketHandshakeTimeoutError } from '../__fixtures__/UA.mock';
-import { doMockSipConnector } from '../src/doMock';
-import type SipConnector from '../src/SipConnector';
-import { uriWithName } from '../src/tools/__fixtures__/connectToServer';
+import { doMockSipConnector } from '../doMock';
+import type SipConnector from '../SipConnector';
+import { uriWithName } from '../tools/__fixtures__/connectToServer';
 
 const wrongPassword = 'wrongPassword';
 const websocketHandshakeTimeoutError = createWebsocketHandshakeTimeoutError(SIP_SERVER_URL);

@@ -1,10 +1,10 @@
 /// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
-import { doMockSipConnector } from '../src/doMock';
-import type SipConnector from '../src/SipConnector';
+import { doMockSipConnector } from '../doMock';
+import type SipConnector from '../SipConnector';
 
-const number = `10000`;
+const number = '10000';
 
 describe('call with no video tracks', () => {
   let sipConnector: SipConnector;

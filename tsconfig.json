@@ -6,7 +6,6 @@
   },
   "include": [
     "src",
-    "__tests__",
     "utils.ts",
     "eslint.config.ts",
     "eslint.config.jest.ts",

@@ -3,8 +3,8 @@ import { createMediaStreamMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import { enterRoomData, enterRoomHeaders } from '../__fixtures__/enterRoom';
 import JsSIP from '../__fixtures__/jssip.mock';
-import { doMockSipConnector } from '../src/doMock';
-import type SipConnector from '../src/SipConnector';
+import { doMockSipConnector } from '../doMock';
+import type SipConnector from '../SipConnector';
 
 describe('enter room', () => {
   const number = '111';

@@ -2,10 +2,10 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
-import { doMockSipConnector } from '../src/doMock';
-import { CONTENT_TYPE_MIC, HEADER_CONTENT_TYPE_NAME, HEADER_MIC } from '../src/headers';
-import type SipConnector from '../src/SipConnector';
-import { EEventsMic } from '../src/types';
+import { doMockSipConnector } from '../doMock';
+import { CONTENT_TYPE_MIC, HEADER_CONTENT_TYPE_NAME, HEADER_MIC } from '../headers';
+import type SipConnector from '../SipConnector';
+import { EEventsMic } from '../types';
 
 const headersAdminStartMic: [string, string][] = [
   [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MIC],
