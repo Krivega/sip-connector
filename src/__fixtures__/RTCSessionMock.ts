@@ -204,11 +204,7 @@ class RTCSessionMock extends BaseSession {
     });
   }
 
-  _forEachSenders(callback: {
-    ({ track }: { track: any }): void;
-    ({ track }: { track: any }): void;
-    (argument0: any): void;
-  }) {
+  _forEachSenders(callback: (sender: RTCRtpSender) => void) {
     const senders = this.connection.getSenders();
 
     for (const sender of senders) {
@@ -280,6 +276,7 @@ class RTCSessionMock extends BaseSession {
     });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   async sendInfo() {}
 
   isEnded() {

@@ -122,7 +122,7 @@ describe('processSender', () => {
     return processSender({
       sender,
       mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
-      resolutionMainCam: ``,
+      resolutionMainCam: '',
       videoTrack: trackWith1024,
     }).then(({ parameters, isChanged }) => {
       expect(isChanged).toBe(true);
@@ -144,7 +144,7 @@ describe('processSender', () => {
     await processSender({
       sender,
       mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
-      resolutionMainCam: ``,
+      resolutionMainCam: '',
       videoTrack: trackWith1024,
     });
 
@@ -158,7 +158,7 @@ describe('processSender', () => {
     return processSender({
       sender,
       mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
-      resolutionMainCam: ``,
+      resolutionMainCam: '',
       videoTrack: trackWith1024,
     }).then(({ parameters, isChanged }) => {
       expect(isChanged).toBe(true);
@@ -233,7 +233,7 @@ describe('processSender', () => {
     return processSender({
       sender,
       mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
-      resolutionMainCam: ``,
+      resolutionMainCam: '',
       videoTrack: trackWith1024,
       codec: CODEC_AV1,
     }).then(({ parameters, isChanged }) => {
@@ -256,7 +256,7 @@ describe('processSender', () => {
     await processSender({
       sender,
       mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
-      resolutionMainCam: ``,
+      resolutionMainCam: '',
       videoTrack: trackWith1024,
       codec: CODEC_AV1,
     });
@@ -272,7 +272,7 @@ describe('processSender', () => {
     return processSender({
       sender,
       mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
-      resolutionMainCam: ``,
+      resolutionMainCam: '',
       videoTrack: trackWith1024,
       codec: CODEC_AV1,
     }).then(({ parameters, isChanged }) => {

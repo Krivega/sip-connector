@@ -233,7 +233,7 @@ class BaseSession implements RTCSession {
   }
 
   // @ts-expect-error
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+
   on<T>(eventName: string, handler: (data: T) => void) {
     // @ts-expect-error
     this._events.on(eventName, handler);

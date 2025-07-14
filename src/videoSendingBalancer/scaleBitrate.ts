@@ -12,7 +12,6 @@ const scaleMaxBitrateBySender = async (
     return setEncodingsToSender(sender, { maxBitrate });
   }
 
-  // eslint-disable-next-line unicorn/no-useless-undefined
   return undefined;
 };
 

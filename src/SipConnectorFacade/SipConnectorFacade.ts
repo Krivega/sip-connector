@@ -25,7 +25,6 @@ const hasVideoTrackReady = ({ kind, readyState }: MediaStreamTrack) => {
   return kind === 'video' && readyState === 'live';
 };
 
-// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 interface IProxyMethods {
   on: SipConnector['on'];
   once: SipConnector['once'];
@@ -700,7 +699,7 @@ class SipConnectorFacade implements IProxyMethods {
 
     log('sendRefusalToTurnOnMic');
 
-    return this.sipConnector.sendRefusalToTurnOnMic().catch((error: unknown) => {
+    await this.sipConnector.sendRefusalToTurnOnMic().catch((error: unknown) => {
       log('sendRefusalToTurnOnMic: error', error);
     });
   };
@@ -712,7 +711,7 @@ class SipConnectorFacade implements IProxyMethods {
 
     log('sendRefusalToTurnOnCam');
 
-    return this.sipConnector.sendRefusalToTurnOnCam().catch((error: unknown) => {
+    await this.sipConnector.sendRefusalToTurnOnCam().catch((error: unknown) => {
       log('sendRefusalToTurnOnCam: error', error);
     });
   };
@@ -730,7 +729,7 @@ class SipConnectorFacade implements IProxyMethods {
 
     log('sendMediaState');
 
-    return this.sipConnector.sendMediaState({ cam: isEnabledCam, mic: isEnabledMic });
+    await this.sipConnector.sendMediaState({ cam: isEnabledCam, mic: isEnabledMic });
   };
 
   public replaceMediaStream = async (
@@ -786,7 +785,7 @@ class SipConnectorFacade implements IProxyMethods {
 
     log('askPermissionToEnableCam');
 
-    return this.sipConnector.askPermissionToEnableCam();
+    await this.sipConnector.askPermissionToEnableCam();
   };
 
   public resolveHandleReadyRemoteStreamsDebounced = ({

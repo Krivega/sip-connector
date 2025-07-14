@@ -9,6 +9,7 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
   _receivers: any[] = [];
 
   constructor(
+    // eslint-disable-next-line @typescript-eslint/default-param-last
     _configuration?: RTCConfiguration,
     // @ts-expect-error
     tracks: MediaStreamTrackMock[],

@@ -1,5 +1,3 @@
-/* eslint-disable unicorn/no-useless-undefined */
-
 import type {
   IncomingRTCSessionEvent,
   IncomingRequest,
@@ -310,7 +308,6 @@ export default class ConnectionManager {
           },
         });
       } catch (error) {
-        // eslint-disable-next-line prefer-promise-reject-errors
         reject(error as Error);
       }
     });
@@ -743,7 +740,6 @@ export default class ConnectionManager {
             resolve(changedSome);
           })
           .catch((error: unknown) => {
-            // eslint-disable-next-line prefer-promise-reject-errors
             reject(error as Error);
           });
       } else if (changedSome) {

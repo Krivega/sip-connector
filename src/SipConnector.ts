@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/no-useless-undefined */
 import { CancelableRequest, isCanceledError } from '@krivega/cancelable-promise';
 import type {
   IncomingInfoEvent,
@@ -537,7 +536,6 @@ export default class SipConnector {
           },
         });
       } catch (error) {
-        // eslint-disable-next-line prefer-promise-reject-errors
         reject(error as Error);
       }
     });
@@ -1338,7 +1336,6 @@ export default class SipConnector {
             resolve(changedSome);
           })
           .catch((error: unknown) => {
-            // eslint-disable-next-line prefer-promise-reject-errors
             reject(error as Error);
           });
       } else if (changedSome) {
@@ -1406,7 +1403,6 @@ export default class SipConnector {
       this._handleCall({ ontrack })
         .then(resolve)
         .catch((error: unknown) => {
-          // eslint-disable-next-line prefer-promise-reject-errors
           reject(error as Error);
         });
 
@@ -1479,7 +1475,6 @@ export default class SipConnector {
       this._handleCall({ ontrack })
         .then(resolve)
         .catch((error: unknown) => {
-          // eslint-disable-next-line prefer-promise-reject-errors
           reject(error as Error);
         });
 
