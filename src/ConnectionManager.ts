@@ -197,9 +197,9 @@ type TParametersCall = TParametersAnswerToIncomingCall & {
 type TCreateRtcSession = (parameters: TParametersCall) => RTCSession;
 
 export default class ConnectionManager {
-  private _isRegisterConfig = false;
+  private isRegisterConfigInner = false;
 
-  private _connectionConfiguration: {
+  private connectionConfiguration: {
     sipServerUrl?: string;
     displayName?: string;
     register?: boolean;
@@ -209,23 +209,25 @@ export default class ConnectionManager {
     answer?: boolean;
   } = {};
 
-  private _remoteStreams: Record<string, MediaStream> = {};
+  private remoteStreams: Record<string, MediaStream> = {};
 
   private readonly JsSIP: TJsSIP;
 
-  private readonly _uaEvents: Events<typeof UA_EVENT_NAMES>;
+  private readonly uaEvents: Events<typeof UA_EVENT_NAMES>;
 
-  private _cancelableConnectWithRepeatedCalls:
-    | ReturnType<typeof repeatedCallsAsync<UA>>
-    | undefined;
-
-  private readonly _cancelableSendPresentationWithRepeatedCalls:
-    | ReturnType<typeof repeatedCallsAsync<MediaStream>>
-    | undefined;
+  private cancelableConnectWithRepeatedCalls: ReturnType<typeof repeatedCallsAsync<UA>> | undefined;
 
   private getSipServerUrl: TGetServerUrl = (id: string) => {
     return id;
   };
+
+  private readonly cancelableSendPresentationWithRepeatedCalls:
+    | ReturnType<typeof repeatedCallsAsync<MediaStream>>
+    | undefined;
+
+  private isPendingConnect = false;
+
+  private isPendingInitUa = false;
 
   promisePendingStartPresentation?: Promise<MediaStream>;
 
@@ -240,15 +242,15 @@ export default class ConnectionManager {
   constructor({ JsSIP }: { JsSIP: TJsSIP }) {
     this.JsSIP = JsSIP;
 
-    this._uaEvents = new Events<typeof UA_EVENT_NAMES>(UA_EVENT_NAMES);
+    this.uaEvents = new Events<typeof UA_EVENT_NAMES>(UA_EVENT_NAMES);
 
-    this.on(SIP_EVENT, this._handleSipEvent);
+    this.on(SIP_EVENT, this.handleSipEvent);
   }
 
   connect: TConnect = async (data, options) => {
-    this._cancelRequests();
+    this.cancelRequests();
 
-    return this._connectWithDuplicatedCalls(data, options);
+    return this.connectWithDuplicatedCalls(data, options);
   };
 
   async register(): Promise<RegisteredEvent> {
@@ -279,7 +281,7 @@ export default class ConnectionManager {
       throw new Error('Config is not registered');
     }
 
-    this._uaEvents.trigger(CONNECTING, undefined);
+    this.uaEvents.trigger(CONNECTING, undefined);
 
     try {
       await this.unregister();
@@ -374,7 +376,7 @@ export default class ConnectionManager {
       const callerData = this.remoteCallerData;
 
       this.removeIncomingSession();
-      this._uaEvents.trigger(DECLINED_INCOMING_CALL, callerData);
+      this.uaEvents.trigger(DECLINED_INCOMING_CALL, callerData);
       // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
       resolve(incomingRTCSession.terminate({ status_code: statusCode }));
     });
@@ -392,12 +394,12 @@ export default class ConnectionManager {
     return !!this.promisePendingStartPresentation || !!this.promisePendingStopPresentation;
   }
 
-  private readonly _connectWithDuplicatedCalls: TConnect = async (
+  private readonly connectWithDuplicatedCalls: TConnect = async (
     data,
     { callLimit = DELAYED_REPEATED_CALLS_CONNECT_LIMIT } = {},
   ) => {
     const targetFunction = async () => {
-      return this._connect(data);
+      return this.connectInner(data);
     };
 
     const isComplete = (response?: unknown): boolean => {
@@ -408,7 +410,9 @@ export default class ConnectionManager {
       return isValidResponse || isValidError;
     };
 
-    this._cancelableConnectWithRepeatedCalls = repeatedCallsAsync<UA>({
+    this.isPendingConnect = true;
+
+    this.cancelableConnectWithRepeatedCalls = repeatedCallsAsync<UA>({
       targetFunction,
       isComplete,
       callLimit,
@@ -416,13 +420,17 @@ export default class ConnectionManager {
       isCheckBeforeCall: false,
     });
 
-    return this._cancelableConnectWithRepeatedCalls.then((response?: unknown) => {
-      if (response instanceof this.JsSIP.UA) {
-        return response;
-      }
+    return this.cancelableConnectWithRepeatedCalls
+      .then((response?: unknown) => {
+        if (response instanceof this.JsSIP.UA) {
+          return response;
+        }
 
-      throw response;
-    });
+        throw response;
+      })
+      .finally(() => {
+        this.isPendingConnect = false;
+      });
   };
 
   private hasEqualConnectionConfiguration(parameters: TParametersConnection) {
@@ -490,8 +498,8 @@ export default class ConnectionManager {
     };
   }
 
-  _cancelRequestsAndResetPresentation() {
-    this._cancelSendPresentationWithRepeatedCalls();
+  cancelRequestsAndResetPresentation() {
+    this.cancelSendPresentationWithRepeatedCalls();
   }
 
   handleNewRTCSession = ({ originator, session: rtcSession }: IncomingRTCSessionEvent) => {
@@ -504,34 +512,34 @@ export default class ConnectionManager {
         this.removeIncomingSession();
 
         if (event.originator === ORIGINATOR_LOCAL) {
-          this._uaEvents.trigger(TERMINATED_INCOMING_CALL, callerData);
+          this.uaEvents.trigger(TERMINATED_INCOMING_CALL, callerData);
         } else {
-          this._uaEvents.trigger(FAILED_INCOMING_CALL, callerData);
+          this.uaEvents.trigger(FAILED_INCOMING_CALL, callerData);
         }
       });
 
-      this._uaEvents.trigger(INCOMING_CALL, callerData);
+      this.uaEvents.trigger(INCOMING_CALL, callerData);
     }
   };
 
   on<T = void>(eventName: TEventUA, handler: (data: T) => void) {
-    return this._uaEvents.on<T>(eventName, handler);
+    return this.uaEvents.on<T>(eventName, handler);
   }
 
   once<T>(eventName: TEventUA, handler: (data: T) => void) {
-    return this._uaEvents.once<T>(eventName, handler);
+    return this.uaEvents.once<T>(eventName, handler);
   }
 
   onceRace<T>(eventNames: TEventUA[], handler: (data: T, eventName: string) => void) {
-    return this._uaEvents.onceRace<T>(eventNames, handler);
+    return this.uaEvents.onceRace<T>(eventNames, handler);
   }
 
   async wait<T>(eventName: TEventUA): Promise<T> {
-    return this._uaEvents.wait<T>(eventName);
+    return this.uaEvents.wait<T>(eventName);
   }
 
   off<T>(eventName: TEventUA, handler: (data: T) => void) {
-    this._uaEvents.off<T>(eventName, handler);
+    this.uaEvents.off<T>(eventName, handler);
   }
 
   isConfigured() {
@@ -539,7 +547,7 @@ export default class ConnectionManager {
   }
 
   getConnectionConfiguration() {
-    return { ...this._connectionConfiguration };
+    return { ...this.connectionConfiguration };
   }
 
   get remoteCallerData() {
@@ -553,21 +561,25 @@ export default class ConnectionManager {
     };
   }
 
+  get requested() {
+    return this.isPendingInitUa || this.isPendingConnect;
+  }
+
   get isRegistered() {
     return !!this.ua && this.ua.isRegistered();
   }
 
   get isRegisterConfig() {
-    return !!this.ua && this._isRegisterConfig;
+    return !!this.ua && this.isRegisterConfigInner;
   }
 
   get isAvailableIncomingCall() {
     return !!this.incomingRTCSession;
   }
 
-  _connect: TConnect = async (parameters) => {
+  connectInner: TConnect = async (parameters) => {
     return this.initUa(parameters).then(async () => {
-      return this._start();
+      return this.start();
     });
   };
 
@@ -602,50 +614,56 @@ export default class ConnectionManager {
       throw new Error('password is required for authorized connection');
     }
 
-    this._connectionConfiguration = {
-      sipServerUrl,
-      displayName,
-      register,
-      user,
-      password,
-    };
+    this.isPendingInitUa = true;
 
-    const { configuration, helpers } = this.createUaConfiguration({
-      user,
-      sipServerUrl,
-      sipWebSocketServerURL,
-      password,
-      displayName,
-      register,
-      sessionTimers,
-      registerExpires,
-      connectionRecoveryMinInterval,
-      connectionRecoveryMaxInterval,
-      userAgent,
-    });
+    try {
+      this.connectionConfiguration = {
+        sipServerUrl,
+        displayName,
+        register,
+        user,
+        password,
+      };
 
-    this.getSipServerUrl = helpers.getSipServerUrl;
-    this.socket = helpers.socket;
-
-    if (this.ua) {
-      await this.disconnect();
-    }
-
-    this._isRegisterConfig = !!register;
-
-    this.ua = this.createUa({ ...configuration, remoteAddress, extraHeaders });
-
-    this._uaEvents.eachTriggers((trigger, eventName) => {
-      const uaJsSipEvent = UA_JSSIP_EVENT_NAMES.find((jsSipEvent) => {
-        return jsSipEvent === eventName;
+      const { configuration, helpers } = this.createUaConfiguration({
+        user,
+        sipServerUrl,
+        sipWebSocketServerURL,
+        password,
+        displayName,
+        register,
+        sessionTimers,
+        registerExpires,
+        connectionRecoveryMinInterval,
+        connectionRecoveryMaxInterval,
+        userAgent,
       });
 
-      if (uaJsSipEvent && this.ua) {
-        this.ua.on(uaJsSipEvent, trigger);
-      }
-    });
+      this.getSipServerUrl = helpers.getSipServerUrl;
+      this.socket = helpers.socket;
 
-    return this.ua;
+      if (this.ua) {
+        await this.disconnect();
+      }
+
+      this.isRegisterConfigInner = !!register;
+
+      this.ua = this.createUa({ ...configuration, remoteAddress, extraHeaders });
+
+      this.uaEvents.eachTriggers((trigger, eventName) => {
+        const uaJsSipEvent = UA_JSSIP_EVENT_NAMES.find((jsSipEvent) => {
+          return jsSipEvent === eventName;
+        });
+
+        if (uaJsSipEvent && this.ua) {
+          this.ua.on(uaJsSipEvent, trigger);
+        }
+      });
+
+      return this.ua;
+    } finally {
+      this.isPendingInitUa = false;
+    }
   };
 
   createUa: TCreateUa = ({
@@ -667,7 +685,7 @@ export default class ConnectionManager {
     return ua;
   };
 
-  _start: TStart = async () => {
+  start: TStart = async () => {
     return new Promise((resolve, reject) => {
       const { ua } = this;
 
@@ -722,14 +740,14 @@ export default class ConnectionManager {
       let changedDisplayName = false;
       let changedPassword = false;
 
-      if (displayName !== undefined && displayName !== this._connectionConfiguration.displayName) {
+      if (displayName !== undefined && displayName !== this.connectionConfiguration.displayName) {
         changedDisplayName = ua.set('display_name', parseDisplayName(displayName));
-        this._connectionConfiguration.displayName = displayName;
+        this.connectionConfiguration.displayName = displayName;
       }
 
-      if (password !== undefined && password !== this._connectionConfiguration.password) {
+      if (password !== undefined && password !== this.connectionConfiguration.password) {
         changedPassword = ua.set('password', password);
-        this._connectionConfiguration.password = password;
+        this.connectionConfiguration.password = password;
       }
 
       const changedSome = changedDisplayName || changedPassword;
@@ -764,10 +782,10 @@ export default class ConnectionManager {
       if (this.ua) {
         this.ua.stop();
       } else {
-        this._uaEvents.trigger(DISCONNECTED, undefined);
+        this.uaEvents.trigger(DISCONNECTED, undefined);
       }
     } else {
-      this._uaEvents.trigger(DISCONNECTED, undefined);
+      this.uaEvents.trigger(DISCONNECTED, undefined);
     }
 
     return disconnectedPromise;
@@ -792,8 +810,8 @@ export default class ConnectionManager {
       throw new Error('this.ua is not initialized');
     }
 
-    this._connectionConfiguration.number = number;
-    this._connectionConfiguration.answer = false;
+    this.connectionConfiguration.number = number;
+    this.connectionConfiguration.answer = false;
 
     return ua.call(this.getSipServerUrl(number), {
       extraHeaders,
@@ -816,41 +834,41 @@ export default class ConnectionManager {
     });
   };
 
-  _restoreSession: () => void = () => {
-    this._cancelRequestsAndResetPresentation();
+  restoreSession: () => void = () => {
+    this.cancelRequestsAndResetPresentation();
 
-    delete this._connectionConfiguration.number;
-    this._remoteStreams = {};
+    delete this.connectionConfiguration.number;
+    this.remoteStreams = {};
   };
 
-  _generateStream(videoTrack: MediaStreamTrack, audioTrack?: MediaStreamTrack): MediaStream {
+  generateStream(videoTrack: MediaStreamTrack, audioTrack?: MediaStreamTrack): MediaStream {
     const { id } = videoTrack;
 
-    const remoteStream: MediaStream = this._remoteStreams[id] || new MediaStream();
+    const remoteStream: MediaStream = this.remoteStreams[id] || new MediaStream();
 
     if (audioTrack) {
       remoteStream.addTrack(audioTrack);
     }
 
     remoteStream.addTrack(videoTrack);
-    this._remoteStreams[id] = remoteStream;
+    this.remoteStreams[id] = remoteStream;
 
     return remoteStream;
   }
 
-  _generateAudioStream(audioTrack: MediaStreamTrack): MediaStream {
+  generateAudioStream(audioTrack: MediaStreamTrack): MediaStream {
     const { id } = audioTrack;
 
-    const remoteStream = this._remoteStreams[id] || new MediaStream();
+    const remoteStream = this.remoteStreams[id] || new MediaStream();
 
     remoteStream.addTrack(audioTrack);
 
-    this._remoteStreams[id] = remoteStream;
+    this.remoteStreams[id] = remoteStream;
 
     return remoteStream;
   }
 
-  _generateStreams(remoteTracks: MediaStreamTrack[]): MediaStream[] {
+  generateStreams(remoteTracks: MediaStreamTrack[]): MediaStream[] {
     const remoteStreams: MediaStream[] = [];
 
     remoteTracks.forEach((track, index) => {
@@ -866,7 +884,7 @@ export default class ConnectionManager {
         audioTrack = previousTrack;
       }
 
-      const remoteStream = this._generateStream(videoTrack, audioTrack);
+      const remoteStream = this.generateStream(videoTrack, audioTrack);
 
       remoteStreams.push(remoteStream);
     });
@@ -874,98 +892,98 @@ export default class ConnectionManager {
     return remoteStreams;
   }
 
-  _generateAudioStreams(remoteTracks: MediaStreamTrack[]): MediaStream[] {
+  generateAudioStreams(remoteTracks: MediaStreamTrack[]): MediaStream[] {
     const remoteStreams: MediaStream[] = remoteTracks.map((remoteTrack) => {
-      return this._generateAudioStream(remoteTrack);
+      return this.generateAudioStream(remoteTrack);
     });
 
     return remoteStreams;
   }
 
-  _cancelRequests() {
-    this._cancelConnectWithRepeatedCalls();
+  cancelRequests() {
+    this.cancelConnectWithRepeatedCalls();
   }
 
-  _cancelConnectWithRepeatedCalls() {
-    this._cancelableConnectWithRepeatedCalls?.cancel();
+  cancelConnectWithRepeatedCalls() {
+    this.cancelableConnectWithRepeatedCalls?.cancel();
   }
 
-  _cancelSendPresentationWithRepeatedCalls() {
-    this._cancelableSendPresentationWithRepeatedCalls?.cancel();
+  cancelSendPresentationWithRepeatedCalls() {
+    this.cancelableSendPresentationWithRepeatedCalls?.cancel();
   }
 
-  _handleNotify = (header: TInfoNotify) => {
+  handleNotify = (header: TInfoNotify) => {
     switch (header.cmd) {
       case CMD_CHANNELS: {
         const channelsInfo = header as TChannelsInfoNotify;
 
-        this._triggerChannelsNotify(channelsInfo);
+        this.triggerChannelsNotify(channelsInfo);
 
         break;
       }
       case CMD_WEBCAST_STARTED: {
         const webcastInfo = header as TWebcastInfoNotify;
 
-        this._triggerWebcastStartedNotify(webcastInfo);
+        this.triggerWebcastStartedNotify(webcastInfo);
 
         break;
       }
       case CMD_WEBCAST_STOPPED: {
         const webcastInfo = header as TWebcastInfoNotify;
 
-        this._triggerWebcastStoppedNotify(webcastInfo);
+        this.triggerWebcastStoppedNotify(webcastInfo);
 
         break;
       }
       case CMD_ADDED_TO_LIST_MODERATORS: {
         const data = header as TAddedToListModeratorsInfoNotify;
 
-        this._triggerAddedToListModeratorsNotify(data);
+        this.triggerAddedToListModeratorsNotify(data);
 
         break;
       }
       case CMD_REMOVED_FROM_LIST_MODERATORS: {
         const data = header as TRemovedFromListModeratorsInfoNotify;
 
-        this._triggerRemovedFromListModeratorsNotify(data);
+        this.triggerRemovedFromListModeratorsNotify(data);
 
         break;
       }
       case CMD_ACCEPTING_WORD_REQUEST: {
         const data = header as TAcceptingWordRequestInfoNotify;
 
-        this._triggerParticipationAcceptingWordRequest(data);
+        this.triggerParticipationAcceptingWordRequest(data);
 
         break;
       }
       case CMD_CANCELLING_WORD_REQUEST: {
         const data = header as TCancellingWordRequestInfoNotify;
 
-        this._triggerParticipationCancellingWordRequest(data);
+        this.triggerParticipationCancellingWordRequest(data);
 
         break;
       }
       case CMD_MOVE_REQUEST_TO_STREAM: {
         const data = header as TMoveRequestToStreamInfoNotify;
 
-        this._triggerParticipantMoveRequestToStream(data);
+        this.triggerParticipantMoveRequestToStream(data);
 
         break;
       }
       case CMD_ACCOUNT_CHANGED: {
-        this._triggerAccountChangedNotify();
+        this.triggerAccountChangedNotify();
 
         break;
       }
       case CMD_ACCOUNT_DELETED: {
-        this._triggerAccountDeletedNotify();
+        this.triggerAccountDeletedNotify();
 
         break;
       }
       case CMD_CONFERENCE_PARTICIPANT_TOKEN_ISSUED: {
         const data = header as TConferenceParticipantTokenIssued;
 
-        this._triggerConferenceParticipantTokenIssued(data);
+        this.triggerConferenceParticipantTokenIssued(data);
 
         break;
       }
@@ -976,54 +994,54 @@ export default class ConnectionManager {
     }
   };
 
-  _triggerRemovedFromListModeratorsNotify = ({
+  triggerRemovedFromListModeratorsNotify = ({
     conference,
   }: TRemovedFromListModeratorsInfoNotify) => {
     const headersParametersModeratorsList: TParametersModeratorsList = {
       conference,
     };
 
-    this._uaEvents.trigger(
+    this.uaEvents.trigger(
       PARTICIPANT_REMOVED_FROM_LIST_MODERATORS,
       headersParametersModeratorsList,
     );
   };
 
-  _triggerAddedToListModeratorsNotify = ({ conference }: TAddedToListModeratorsInfoNotify) => {
+  triggerAddedToListModeratorsNotify = ({ conference }: TAddedToListModeratorsInfoNotify) => {
     const headersParametersModeratorsList: TParametersModeratorsList = {
       conference,
     };
 
-    this._uaEvents.trigger(PARTICIPANT_ADDED_TO_LIST_MODERATORS, headersParametersModeratorsList);
+    this.uaEvents.trigger(PARTICIPANT_ADDED_TO_LIST_MODERATORS, headersParametersModeratorsList);
   };
 
-  _triggerWebcastStartedNotify = ({ body: { conference, type } }: TWebcastInfoNotify) => {
+  triggerWebcastStartedNotify = ({ body: { conference, type } }: TWebcastInfoNotify) => {
     const headersParametersWebcast: TParametersWebcast = {
       conference,
       type,
     };
 
-    this._uaEvents.trigger(WEBCAST_STARTED, headersParametersWebcast);
+    this.uaEvents.trigger(WEBCAST_STARTED, headersParametersWebcast);
   };
 
-  _triggerWebcastStoppedNotify = ({ body: { conference, type } }: TWebcastInfoNotify) => {
+  triggerWebcastStoppedNotify = ({ body: { conference, type } }: TWebcastInfoNotify) => {
     const headersParametersWebcast: TParametersWebcast = {
       conference,
       type,
     };
 
-    this._uaEvents.trigger(WEBCAST_STOPPED, headersParametersWebcast);
+    this.uaEvents.trigger(WEBCAST_STOPPED, headersParametersWebcast);
   };
 
-  _triggerAccountChangedNotify = () => {
-    this._uaEvents.trigger(ACCOUNT_CHANGED, undefined);
+  triggerAccountChangedNotify = () => {
+    this.uaEvents.trigger(ACCOUNT_CHANGED, undefined);
   };
 
-  _triggerAccountDeletedNotify = () => {
-    this._uaEvents.trigger(ACCOUNT_DELETED, undefined);
+  triggerAccountDeletedNotify = () => {
+    this.uaEvents.trigger(ACCOUNT_DELETED, undefined);
   };
 
-  _triggerConferenceParticipantTokenIssued = ({
+  triggerConferenceParticipantTokenIssued = ({
     body: { conference, participant, jwt },
   }: TConferenceParticipantTokenIssued) => {
     const headersConferenceParticipantTokenIssued: TParametersConferenceParticipantTokenIssued = {
@@ -1032,13 +1050,13 @@ export default class ConnectionManager {
       jwt,
     };
 
-    this._uaEvents.trigger(
+    this.uaEvents.trigger(
       CONFERENCE_PARTICIPANT_TOKEN_ISSUED,
       headersConferenceParticipantTokenIssued,
     );
   };
 
-  _triggerChannelsNotify = (channelsInfo: TChannelsInfoNotify) => {
+  triggerChannelsNotify = (channelsInfo: TChannelsInfoNotify) => {
     const inputChannels = channelsInfo.input;
     const outputChannels = channelsInfo.output;
 
@@ -1047,50 +1065,50 @@ export default class ConnectionManager {
       outputChannels,
     };
 
-    this._uaEvents.trigger(CHANNELS_NOTIFY, data);
+    this.uaEvents.trigger(CHANNELS_NOTIFY, data);
   };
 
-  _triggerParticipationAcceptingWordRequest = ({
+  triggerParticipationAcceptingWordRequest = ({
     body: { conference },
   }: TAcceptingWordRequestInfoNotify) => {
     const data: TParametersModeratorsList = {
       conference,
     };
 
-    this._uaEvents.trigger(PARTICIPATION_ACCEPTING_WORD_REQUEST, data);
+    this.uaEvents.trigger(PARTICIPATION_ACCEPTING_WORD_REQUEST, data);
   };
 
-  _triggerParticipationCancellingWordRequest = ({
+  triggerParticipationCancellingWordRequest = ({
     body: { conference },
   }: TCancellingWordRequestInfoNotify) => {
     const data: TParametersModeratorsList = {
       conference,
     };
 
-    this._uaEvents.trigger(PARTICIPATION_CANCELLING_WORD_REQUEST, data);
+    this.uaEvents.trigger(PARTICIPATION_CANCELLING_WORD_REQUEST, data);
   };
 
-  _triggerParticipantMoveRequestToStream = ({
+  triggerParticipantMoveRequestToStream = ({
     body: { conference },
   }: TMoveRequestToStreamInfoNotify) => {
     const data: TParametersModeratorsList = {
       conference,
     };
 
-    this._uaEvents.trigger(PARTICIPANT_MOVE_REQUEST_TO_STREAM, data);
+    this.uaEvents.trigger(PARTICIPANT_MOVE_REQUEST_TO_STREAM, data);
   };
 
-  _handleSipEvent = ({ request }: { request: IncomingRequest }) => {
-    this._maybeHandleNotify(request);
+  handleSipEvent = ({ request }: { request: IncomingRequest }) => {
+    this.maybeHandleNotify(request);
   };
 
-  _maybeHandleNotify = (request: IncomingRequest) => {
+  maybeHandleNotify = (request: IncomingRequest) => {
     const headerNotify = request.getHeader(HEADER_NOTIFY);
 
     if (headerNotify) {
       const headerNotifyParsed: TInfoNotify = JSON.parse(headerNotify);
 
-      this._handleNotify(headerNotifyParsed);
+      this.handleNotify(headerNotifyParsed);
     }
   };
 }

@@ -18,7 +18,6 @@ export default defineConfig([
     },
     rules: {
       // Отключаем правила, которые вызывают ошибки
-      'no-underscore-dangle': 'off',
       '@typescript-eslint/explicit-member-accessibility': 'off',
       '@typescript-eslint/member-ordering': 'off',
       '@typescript-eslint/strict-boolean-expressions': 'off',
