@@ -27,18 +27,18 @@ import { SESSION_EVENT_NAMES } from '../eventNames';
 class BaseSession implements RTCSession {
   originator: string;
 
-  _connection!: RTCPeerConnectionDeprecated;
+  connection!: RTCPeerConnectionDeprecated;
 
-  _events: Events<typeof SESSION_EVENT_NAMES>;
+  events: Events<typeof SESSION_EVENT_NAMES>;
 
-  _remote_identity!: NameAddrHeader;
+  remote_identity!: NameAddrHeader;
 
-  _mutedOptions = { audio: false, video: false };
+  mutedOptions = { audio: false, video: false };
 
   // @ts-expect-error
   constructor({ originator = 'local', eventHandlers }) {
     this.originator = originator;
-    this._events = new Events<typeof SESSION_EVENT_NAMES>(SESSION_EVENT_NAMES);
+    this.events = new Events<typeof SESSION_EVENT_NAMES>(SESSION_EVENT_NAMES);
     this.initEvents(eventHandlers);
   }
 
@@ -64,10 +64,6 @@ class BaseSession implements RTCSession {
     throw new Error('Method not implemented.');
   }
 
-  get connection(): RTCPeerConnectionDeprecated {
-    return this._connection;
-  }
-
   get contact(): string {
     throw new Error('Method not implemented.');
   }
@@ -78,10 +74,6 @@ class BaseSession implements RTCSession {
 
   get local_identity(): NameAddrHeader {
     throw new Error('Method not implemented.');
-  }
-
-  get remote_identity(): NameAddrHeader {
-    return this._remote_identity;
   }
 
   get start_time(): Date {
@@ -233,16 +225,16 @@ class BaseSession implements RTCSession {
   }
 
   // @ts-expect-error
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+
   on<T>(eventName: string, handler: (data: T) => void) {
     // @ts-expect-error
-    this._events.on(eventName, handler);
+    this.events.on(eventName, handler);
 
     return this;
   }
 
   trigger(eventName: TEventSession, data?: any) {
-    this._events.trigger(eventName, data);
+    this.events.trigger(eventName, data);
   }
 
   /**

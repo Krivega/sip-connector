@@ -1,6 +1,5 @@
 /// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
-import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
 import {
@@ -17,6 +16,7 @@ import {
   HEADER_MEDIA_SYNC,
   HEADER_MIC,
 } from '../headers';
+import type SipConnector from '../SipConnector';
 import { EEventsMainCAM, EEventsMic, EEventsSyncMediaState } from '../types';
 
 const headersSyncForcedAdminStartMainCam: [string, string][] = [

@@ -56,22 +56,6 @@ describe('connectToServer', () => {
     });
   });
 
-  it('registered async', async () => {
-    return Promise.all([
-      sipConnectorFacade.connectToServer({ ...dataForConnectionWithAuthorization, name: oneWord }),
-      sipConnectorFacade.connectToServer({ ...dataForConnectionWithAuthorization, name: twoWord }),
-      sipConnectorFacade.connectToServer({
-        ...dataForConnectionWithAuthorization,
-        name: thirdWord,
-      }),
-    ]).then(() => {
-      expect(sipConnector.ua!.configuration).toEqual({
-        ...uaConfigurationWithAuthorization,
-        uri: uriWithName(thirdWord),
-      });
-    });
-  });
-
   it('registered sync', async () => {
     return sipConnectorFacade
       .connectToServer({ ...dataForConnectionWithAuthorization, name: oneWord })

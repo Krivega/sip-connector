@@ -1,7 +1,6 @@
 /// <reference types="jest" />
 import type { ExtraHeaders } from '@krivega/jssip';
 import { createMediaStreamMock } from 'webrtc-mock';
-import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import SessionMock, { createDeclineStartPresentationError } from '../__fixtures__/RTCSessionMock';
 import { doMockSipConnector } from '../doMock';
@@ -11,6 +10,7 @@ import {
   HEADER_START_PRESENTATION,
   HEADER_START_PRESENTATION_P2P,
 } from '../headers';
+import type SipConnector from '../SipConnector';
 
 const startPresentationCallLimit = 1;
 const errorStartPresentationCount = 3;
@@ -29,11 +29,7 @@ describe('presentation', () => {
     const actualSendInfo = sipConnector.rtcSession!.sendInfo;
 
     sipConnector.rtcSession!.sendInfo = jest.fn(
-      async (
-        contentType: string,
-        body?: string | undefined,
-        options?: ExtraHeaders | undefined,
-      ) => {
+      async (contentType: string, body?: string, options?: ExtraHeaders) => {
         if (
           options?.extraHeaders &&
           options.extraHeaders[0] === HEADER_MUST_STOP_PRESENTATION_P2P
@@ -84,13 +80,13 @@ describe('presentation', () => {
 
     expect(sipConnector.isPendingPresentation).toBe(true);
     expect(sipConnector.promisePendingStartPresentation).toBeDefined();
-    expect(sipConnector._streamPresentationCurrent).toBeDefined();
+    expect(sipConnector.streamPresentationCurrent).toBeDefined();
 
     return promise.then(() => {
       expect(sipConnector.isPendingPresentation).toBe(false);
       expect(sipConnector.promisePendingStartPresentation).toBeUndefined();
       expect(sipConnector.promisePendingStopPresentation).toBeUndefined();
-      expect(sipConnector._streamPresentationCurrent).toBeDefined();
+      expect(sipConnector.streamPresentationCurrent).toBeDefined();
     });
   });
 
@@ -105,7 +101,7 @@ describe('presentation', () => {
     expect(sipConnector.isPendingPresentation).toBe(false);
     expect(sipConnector.promisePendingStartPresentation).toBeUndefined();
     expect(sipConnector.promisePendingStopPresentation).toBeUndefined();
-    expect(sipConnector._streamPresentationCurrent).toBeUndefined();
+    expect(sipConnector.streamPresentationCurrent).toBeUndefined();
   });
 
   it('isPendingPresentation and promisePendingStopPresentation for stop presentation', async () => {
@@ -119,12 +115,12 @@ describe('presentation', () => {
 
     expect(sipConnector.isPendingPresentation).toBe(true);
     expect(sipConnector.promisePendingStopPresentation).toBeDefined();
-    expect(sipConnector._streamPresentationCurrent).toBeDefined();
+    expect(sipConnector.streamPresentationCurrent).toBeDefined();
 
     return promise.then(() => {
       expect(sipConnector.isPendingPresentation).toBe(false);
       expect(sipConnector.promisePendingStopPresentation).toBeUndefined();
-      expect(sipConnector._streamPresentationCurrent).toBeUndefined();
+      expect(sipConnector.streamPresentationCurrent).toBeUndefined();
       expect(sipConnector.promisePendingStartPresentation).toBeUndefined();
     });
   });
@@ -141,7 +137,7 @@ describe('presentation', () => {
     expect(sipConnector.isPendingPresentation).toBe(false);
     expect(sipConnector.promisePendingStartPresentation).toBeUndefined();
     expect(sipConnector.promisePendingStopPresentation).toBeUndefined();
-    expect(sipConnector._streamPresentationCurrent).toBeUndefined();
+    expect(sipConnector.streamPresentationCurrent).toBeUndefined();
   });
 
   it('update presentation after start', async () => {
@@ -151,20 +147,20 @@ describe('presentation', () => {
     await sipConnector.call({ number, mediaStream });
     await sipConnector.startPresentation(mediaStream);
 
-    const previousMediaStream = sipConnector._streamPresentationCurrent;
+    const previousMediaStream = sipConnector.streamPresentationCurrent;
 
     const promise = sipConnector.updatePresentation(mediaStreamUpdated);
 
     expect(sipConnector.isPendingPresentation).toBe(true);
     expect(sipConnector.promisePendingStartPresentation).toBeDefined();
-    expect(sipConnector._streamPresentationCurrent).toBeDefined();
+    expect(sipConnector.streamPresentationCurrent).toBeDefined();
 
     return promise.then(() => {
       expect(sipConnector.isPendingPresentation).toBe(false);
       expect(sipConnector.promisePendingStartPresentation).toBeUndefined();
       expect(sipConnector.promisePendingStopPresentation).toBeUndefined();
-      expect(sipConnector._streamPresentationCurrent).toBeDefined();
-      expect(previousMediaStream).not.toBe(sipConnector._streamPresentationCurrent);
+      expect(sipConnector.streamPresentationCurrent).toBeDefined();
+      expect(previousMediaStream).not.toBe(sipConnector.streamPresentationCurrent);
     });
   });
 
@@ -176,22 +172,22 @@ describe('presentation', () => {
 
     sipConnector.startPresentation(mediaStream);
 
-    const previousMediaStream = sipConnector._streamPresentationCurrent;
+    const previousMediaStream = sipConnector.streamPresentationCurrent;
     const startPresentationPromise = sipConnector.promisePendingStartPresentation;
 
     sipConnector.updatePresentation(mediaStreamUpdated);
 
     expect(sipConnector.isPendingPresentation).toBe(true);
     expect(sipConnector.promisePendingStartPresentation).toBeDefined();
-    expect(sipConnector._streamPresentationCurrent).toBeDefined();
+    expect(sipConnector.streamPresentationCurrent).toBeDefined();
 
     return startPresentationPromise
       ?.then(async () => {
         expect(sipConnector.isPendingPresentation).toBe(true);
-        expect(previousMediaStream).not.toBe(sipConnector._streamPresentationCurrent);
+        expect(previousMediaStream).not.toBe(sipConnector.streamPresentationCurrent);
         expect(sipConnector.promisePendingStartPresentation).toBeDefined();
         expect(sipConnector.promisePendingStopPresentation).toBeUndefined();
-        expect(sipConnector._streamPresentationCurrent).toBeDefined();
+        expect(sipConnector.streamPresentationCurrent).toBeDefined();
 
         const updatePresentationPromise = sipConnector.promisePendingStartPresentation;
 
@@ -201,8 +197,8 @@ describe('presentation', () => {
         expect(sipConnector.isPendingPresentation).toBe(false);
         expect(sipConnector.promisePendingStartPresentation).toBeUndefined();
         expect(sipConnector.promisePendingStopPresentation).toBeUndefined();
-        expect(sipConnector._streamPresentationCurrent).toBeDefined();
-        expect(previousMediaStream).not.toBe(sipConnector._streamPresentationCurrent);
+        expect(sipConnector.streamPresentationCurrent).toBeDefined();
+        expect(previousMediaStream).not.toBe(sipConnector.streamPresentationCurrent);
       });
   });
 
@@ -278,7 +274,7 @@ describe('presentation', () => {
     await sipConnector.call({ number, mediaStream });
 
     // @ts-expect-error
-    const sendPresentationMocked = jest.spyOn(sipConnector, '_sendPresentation');
+    const sendPresentationMocked = jest.spyOn(sipConnector, 'sendPresentation');
     let stream;
 
     try {
@@ -302,7 +298,7 @@ describe('presentation', () => {
     await sipConnector.call({ number, mediaStream });
 
     // @ts-expect-error
-    const sendPresentationMocked = jest.spyOn(sipConnector, '_sendPresentation');
+    const sendPresentationMocked = jest.spyOn(sipConnector, 'sendPresentation');
 
     const stream = await sipConnector.startPresentation(mediaStream, undefined, {
       callLimit: errorStartPresentationCount,
@@ -321,10 +317,10 @@ describe('presentation', () => {
     await sipConnector.call({ number, mediaStream });
 
     // @ts-expect-error
-    const sendPresentationMocked = jest.spyOn(sipConnector, '_sendPresentation');
+    const sendPresentationMocked = jest.spyOn(sipConnector, 'sendPresentation');
     const cancelSendPresentationWithRepeatedCallsMocked = jest.spyOn(
       sipConnector,
-      '_cancelSendPresentationWithRepeatedCalls',
+      'cancelSendPresentationWithRepeatedCalls',
     );
 
     const promiseStartPresentation = sipConnector.startPresentation(mediaStream, undefined, {
@@ -356,10 +352,10 @@ describe('presentation', () => {
     await sipConnector.call({ number, mediaStream });
 
     // @ts-expect-error
-    const sendPresentationMocked = jest.spyOn(sipConnector, '_sendPresentation');
+    const sendPresentationMocked = jest.spyOn(sipConnector, 'sendPresentation');
     const cancelSendPresentationWithRepeatedCallsMocked = jest.spyOn(
       sipConnector,
-      '_cancelSendPresentationWithRepeatedCalls',
+      'cancelSendPresentationWithRepeatedCalls',
     );
 
     const promiseStartPresentation = sipConnector.startPresentation(mediaStream, undefined, {

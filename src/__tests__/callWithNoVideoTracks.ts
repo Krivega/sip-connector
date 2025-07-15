@@ -1,10 +1,10 @@
 /// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
-import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import { doMockSipConnector } from '../doMock';
+import type SipConnector from '../SipConnector';
 
-const number = `10000`;
+const number = '10000';
 
 describe('call with no video tracks', () => {
   let sipConnector: SipConnector;
@@ -72,9 +72,7 @@ describe('call with no video tracks', () => {
 
     const peerconnection = await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
-    // @ts-expect-error
-    expect(peerconnection._senders[0].track.kind).toBe('audio');
-    // @ts-expect-error
-    expect(peerconnection._senders[1]).toBe(undefined);
+    expect(peerconnection.getSenders()?.[0]?.track?.kind).toBe('audio');
+    expect(peerconnection.getSenders()?.[1]).toBe(undefined);
   });
 });

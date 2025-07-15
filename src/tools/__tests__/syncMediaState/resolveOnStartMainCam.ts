@@ -29,13 +29,13 @@ describe('media state: resolveOnStartMainCam', () => {
     onStartMainCam(handlerOnStartMainCam);
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-start-main-cam', syncModeForced);
+    sipConnector.sessionEvents.trigger('admin-start-main-cam', syncModeForced);
 
     expect(handlerOnStartMainCam).toHaveBeenCalledTimes(1);
     expect(handlerOnStartMainCam).toHaveBeenCalledWith(syncModeForced);
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-start-main-cam', syncModeNotForced);
+    sipConnector.sessionEvents.trigger('admin-start-main-cam', syncModeNotForced);
 
     expect(handlerOnStartMainCam).toHaveBeenCalledTimes(2);
     expect(handlerOnStartMainCam).toHaveBeenCalledWith(syncModeNotForced);
@@ -47,14 +47,14 @@ describe('media state: resolveOnStartMainCam', () => {
     offStartMainCam = onStartMainCam(handlerOnStartMainCam);
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-start-main-cam', syncModeForced);
+    sipConnector.sessionEvents.trigger('admin-start-main-cam', syncModeForced);
 
     expect(handlerOnStartMainCam).toHaveBeenCalledTimes(1);
 
     offStartMainCam();
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-start-main-cam', syncModeForced);
+    sipConnector.sessionEvents.trigger('admin-start-main-cam', syncModeForced);
 
     expect(handlerOnStartMainCam).toHaveBeenCalledTimes(1);
   });

@@ -1,4 +1,4 @@
-import { resolve } from 'node:path';
+import path from 'node:path';
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 import tsConfigPaths from 'vite-tsconfig-paths';
@@ -25,10 +25,12 @@ export default defineConfig(() => {
     ],
     build: {
       lib: {
-        entry: [resolve('src', 'index.ts'), resolve('src', 'doMock.ts')],
+        entry: [path.resolve('src', 'index.ts'), path.resolve('src', 'doMock.ts')],
         name: 'index',
         formats: ['es', 'cjs'],
-        fileName: (format, entryName) => `${entryName}.${format === 'cjs' ? 'cjs' : 'js'}`,
+        fileName: (format, entryName) => {
+          return `${entryName}.${format === 'cjs' ? 'cjs' : 'js'}`;
+        },
         target: 'esnext',
       },
       rollupOptions: {

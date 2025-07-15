@@ -27,13 +27,13 @@ describe('media state: resolveOnUseLicense', () => {
     sipConnectorFacade.onUseLicense(handlerOnUseLicense);
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('useLicense', AUDIO_LICENSE);
+    sipConnector.sessionEvents.trigger('useLicense', AUDIO_LICENSE);
 
     expect(handlerOnUseLicense).toHaveBeenCalledTimes(1);
     expect(handlerOnUseLicense).toHaveBeenCalledWith(AUDIO_LICENSE);
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('useLicense', AUDIO_LICENSE);
+    sipConnector.sessionEvents.trigger('useLicense', AUDIO_LICENSE);
 
     expect(handlerOnUseLicense).toHaveBeenCalledTimes(2);
     expect(handlerOnUseLicense).toHaveBeenCalledWith(AUDIO_LICENSE);
@@ -45,14 +45,14 @@ describe('media state: resolveOnUseLicense', () => {
     offUseLicense = sipConnectorFacade.onUseLicense(handlerOnUseLicense);
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('useLicense', AUDIO_LICENSE);
+    sipConnector.sessionEvents.trigger('useLicense', AUDIO_LICENSE);
 
     expect(handlerOnUseLicense).toHaveBeenCalledTimes(1);
 
     offUseLicense();
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('useLicense', AUDIO_LICENSE);
+    sipConnector.sessionEvents.trigger('useLicense', AUDIO_LICENSE);
 
     expect(handlerOnUseLicense).toHaveBeenCalledTimes(1);
   });

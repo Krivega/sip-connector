@@ -239,28 +239,7 @@ describe('processRequest', () => {
       });
   });
 
-  it('#14 debounce changed name', async () => {
-    expect.assertions(3);
-
-    // @ts-expect-error
-    return processRequest(dataForConnectionWithoutAuthorization)
-      .then(async () => {
-        // @ts-expect-error
-        processRequest(withNameChanged);
-
-        // @ts-expect-error
-        return processRequest({ ...withNameChanged, name: thirdWord });
-      })
-      .then((success) => {
-        expect(success).toBe(true);
-        expect(sipConnector.ua!.configuration.uri.user).toBe(thirdWord);
-        expect(sipConnector.ua!.configuration.uri.host).toBe(
-          dataForConnectionWithoutAuthorization.sipServerUrl,
-        );
-      });
-  });
-
-  it('#15 async changed name', async () => {
+  it('#14 async changed name', async () => {
     expect.assertions(4);
 
     // @ts-expect-error
@@ -284,7 +263,7 @@ describe('processRequest', () => {
     });
   });
 
-  it('#16 sync changed password', async () => {
+  it('#15 sync changed password', async () => {
     expect.assertions(2);
 
     // @ts-expect-error
@@ -305,7 +284,7 @@ describe('processRequest', () => {
       });
   });
 
-  it('#17 sync remove password', async () => {
+  it('#16 sync remove password', async () => {
     expect.assertions(1);
 
     // @ts-expect-error
@@ -321,25 +300,7 @@ describe('processRequest', () => {
       });
   });
 
-  it('#18 debounce changed password', async () => {
-    expect.assertions(2);
-
-    const success = await processRequest(dataForConnectionWithoutAuthorization).then(async () => {
-      const dataForRequest = {
-        ...dataForConnectionWithAuthorizationPasswordChanged,
-        isRegisteredUserChanged: true,
-      };
-
-      processRequest(dataForRequest);
-
-      return processRequest(dataForRequest);
-    });
-
-    expect(success).toBe(true);
-    expect(sipConnector.ua!.configuration).toEqual(uaConfigurationWithAuthorizationPasswordChanged);
-  });
-
-  it('#19 debounce changed registered, with PasswordChanged', async () => {
+  it('#17 debounce changed registered, with PasswordChanged', async () => {
     expect.assertions(3);
 
     return processRequest(dataForConnectionWithoutAuthorization)
@@ -356,7 +317,7 @@ describe('processRequest', () => {
       });
   });
 
-  it('#20 debounce changed registered, with NameChanged', async () => {
+  it('#18 debounce changed registered, with NameChanged', async () => {
     expect.assertions(3);
 
     return processRequest(dataForConnectionWithoutAuthorization)
@@ -371,7 +332,7 @@ describe('processRequest', () => {
       });
   });
 
-  it('#21 change sipServerUrl', async () => {
+  it('#19 change sipServerUrl', async () => {
     expect.assertions(2);
 
     return processRequest(dataForConnectionWithoutAuthorization)
@@ -389,7 +350,7 @@ describe('processRequest', () => {
       });
   });
 
-  it('#22 change sipWebSocketServerURL', async () => {
+  it('#20 change sipWebSocketServerURL', async () => {
     expect.assertions(2);
 
     return processRequest(dataForConnectionWithoutAuthorization)

@@ -1,5 +1,4 @@
-/* eslint-disable unicorn/no-useless-undefined */
-import { CancelableRequest, isCanceledError } from '@krivega/cancelable-promise';
+import { isCanceledError } from '@krivega/cancelable-promise';
 import type {
   IncomingInfoEvent,
   IncomingRTCSessionEvent,
@@ -15,6 +14,7 @@ import type {
 } from '@krivega/jssip';
 import Events from 'events-constructor';
 import { repeatedCallsAsync } from 'repeated-calls';
+import { generateUserId, hasVideoTracks, parseDisplayName, resolveSipUrl } from '../utils';
 import { BYE, CANCELED, REJECTED, REQUEST_TIMEOUT } from './causes';
 import {
   ACCOUNT_CHANGED,
@@ -128,7 +128,6 @@ import type {
   TParametersCreateUaConfiguration,
 } from './types';
 import { EEventsMainCAM, EEventsMic, EEventsSyncMediaState } from './types';
-import { generateUserId, hasVideoTracks, parseDisplayName, resolveSipUrl } from './utils';
 import { hasDeclineResponseFromServer, hasHandshakeWebsocketOpeningError } from './utils/errors';
 import scaleBitrate from './videoSendingBalancer/scaleBitrate';
 
@@ -139,12 +138,20 @@ const ORIGINATOR_REMOTE = 'remote';
 const DELAYED_REPEATED_CALLS_CONNECT_LIMIT = 3;
 const SEND_PRESENTATION_CALL_LIMIT = 1;
 
-export const hasCanceledCallError = (error: TCustomError = new Error()): boolean => {
-  const { originator, cause } = error;
+const hasCustomError = (error: unknown): error is TCustomError => {
+  return error instanceof Object && ('originator' in error || 'cause' in error);
+};
 
+export const hasCanceledCallError = (error: unknown): boolean => {
   if (isCanceledError(error)) {
     return true;
   }
+
+  if (!hasCustomError(error)) {
+    return false;
+  }
+
+  const { originator, cause } = error;
 
   if (typeof cause === 'string') {
     return (
@@ -156,8 +163,6 @@ export const hasCanceledCallError = (error: TCustomError = new Error()): boolean
 
   return false;
 };
-
-const moduleName = 'SipConnector';
 
 type TChannels = {
   inputChannels: string;
@@ -305,8 +310,6 @@ type TParametersCall = TParametersAnswerToIncomingCall & {
 
 type TCall = (parameters: TParametersCall) => Promise<RTCPeerConnection>;
 
-type TDisconnect = () => Promise<void>;
-
 type TAnswerToIncomingCall = (
   parameters: TParametersAnswerToIncomingCall,
 ) => Promise<RTCPeerConnection>;
@@ -316,9 +319,9 @@ type TSendDTMF = (tone: number | string) => Promise<void>;
 type THangUp = () => Promise<void>;
 
 export default class SipConnector {
-  private _isRegisterConfig = false;
+  private isRegisterConfigInner = false;
 
-  private _connectionConfiguration: {
+  private connectionConfiguration: {
     sipServerUrl?: string;
     displayName?: string;
     register?: boolean;
@@ -328,51 +331,31 @@ export default class SipConnector {
     answer?: boolean;
   } = {};
 
-  private _remoteStreams: Record<string, MediaStream> = {};
+  private remoteStreams: Record<string, MediaStream> = {};
 
   private readonly JsSIP: TJsSIP;
 
-  private readonly _sessionEvents: Events<typeof SESSION_EVENT_NAMES>;
+  private readonly sessionEvents: Events<typeof SESSION_EVENT_NAMES>;
 
-  private readonly _uaEvents: Events<typeof UA_EVENT_NAMES>;
-
-  private readonly _cancelableConnect: CancelableRequest<
-    Parameters<TConnect>[0],
-    ReturnType<TConnect>
-  >;
-
-  private _cancelableConnectWithRepeatedCalls:
-    | ReturnType<typeof repeatedCallsAsync<UA>>
-    | undefined;
-
-  private _cancelableSendPresentationWithRepeatedCalls:
-    | ReturnType<typeof repeatedCallsAsync<MediaStream>>
-    | undefined;
-
-  private readonly _cancelableInitUa: CancelableRequest<
-    Parameters<TInitUa>[0],
-    ReturnType<TInitUa>
-  >;
-
-  private readonly _cancelableDisconnect: CancelableRequest<void, ReturnType<TDisconnect>>;
-
-  private readonly _cancelableSet: CancelableRequest<Parameters<TSet>[0], ReturnType<TSet>>;
-
-  private readonly _cancelableCall: CancelableRequest<Parameters<TCall>[0], ReturnType<TCall>>;
-
-  private readonly _cancelableAnswer: CancelableRequest<
-    Parameters<TAnswerToIncomingCall>[0],
-    ReturnType<TAnswerToIncomingCall>
-  >;
-
-  private readonly _cancelableSendDTMF: CancelableRequest<
-    Parameters<TSendDTMF>[0],
-    ReturnType<TSendDTMF>
-  >;
+  private readonly uaEvents: Events<typeof UA_EVENT_NAMES>;
 
   private getSipServerUrl: TGetServerUrl = (id: string) => {
     return id;
   };
+
+  private cancelableConnectWithRepeatedCalls: ReturnType<typeof repeatedCallsAsync<UA>> | undefined;
+
+  private cancelableSendPresentationWithRepeatedCalls:
+    | ReturnType<typeof repeatedCallsAsync<MediaStream>>
+    | undefined;
+
+  private isPendingConnect = false;
+
+  private isPendingInitUa = false;
+
+  private isPendingCall = false;
+
+  private isPendingAnswer = false;
 
   promisePendingStartPresentation?: Promise<MediaStream>;
 
@@ -384,100 +367,34 @@ export default class SipConnector {
 
   incomingRTCSession?: RTCSession;
 
-  _streamPresentationCurrent?: MediaStream;
+  streamPresentationCurrent?: MediaStream;
 
   socket?: WebSocketInterface;
 
   constructor({ JsSIP }: { JsSIP: TJsSIP }) {
     this.JsSIP = JsSIP;
 
-    this._sessionEvents = new Events<typeof SESSION_EVENT_NAMES>(SESSION_EVENT_NAMES);
-    this._uaEvents = new Events<typeof UA_EVENT_NAMES>(UA_EVENT_NAMES);
+    this.sessionEvents = new Events<typeof SESSION_EVENT_NAMES>(SESSION_EVENT_NAMES);
+    this.uaEvents = new Events<typeof UA_EVENT_NAMES>(UA_EVENT_NAMES);
 
-    this._cancelableConnect = new CancelableRequest<Parameters<TConnect>[0], ReturnType<TConnect>>(
-      this._connect,
-      {
-        moduleName,
-        afterCancelRequest: () => {
-          this._cancelableInitUa.cancelRequest();
-          this._cancelableDisconnect.cancelRequest();
-        },
-      },
-    );
+    this.onSession(SHARE_STATE, this.handleShareState);
+    this.onSession(NEW_INFO, this.handleNewInfo);
+    this.on(SIP_EVENT, this.handleSipEvent);
 
-    this._cancelableInitUa = new CancelableRequest<Parameters<TInitUa>[0], ReturnType<TInitUa>>(
-      this._initUa,
-      { moduleName },
-    );
-
-    this._cancelableDisconnect = new CancelableRequest<void, ReturnType<TDisconnect>>(
-      this._disconnect,
-      { moduleName },
-    );
-
-    this._cancelableSet = new CancelableRequest<Parameters<TSet>[0], ReturnType<TSet>>(this._set, {
-      moduleName,
-    });
-
-    this._cancelableCall = new CancelableRequest<Parameters<TCall>[0], ReturnType<TCall>>(
-      this._call,
-      { moduleName },
-    );
-
-    this._cancelableAnswer = new CancelableRequest<
-      Parameters<TAnswerToIncomingCall>[0],
-      ReturnType<TAnswerToIncomingCall>
-    >(this._answer, { moduleName });
-
-    this._cancelableSendDTMF = new CancelableRequest<
-      Parameters<TSendDTMF>[0],
-      ReturnType<TSendDTMF>
-    >(this._sendDTMF, { moduleName });
-
-    this.onSession(SHARE_STATE, this._handleShareState);
-    this.onSession(NEW_INFO, this._handleNewInfo);
-    this.on(SIP_EVENT, this._handleSipEvent);
-
-    this.onSession(FAILED, this._handleEnded);
-    this.onSession(ENDED, this._handleEnded);
+    this.onSession(FAILED, this.handleEnded);
+    this.onSession(ENDED, this.handleEnded);
   }
 
   connect: TConnect = async (data, options) => {
-    this._cancelRequests();
+    this.cancelRequests();
 
-    return this._connectWithDuplicatedCalls(data, options);
-  };
-
-  initUa: TInitUa = async (data) => {
-    return this._cancelableInitUa.request(data);
-  };
-
-  set: TSet = async (data) => {
-    return this._cancelableSet.request(data);
-  };
-
-  call: TCall = async (data) => {
-    return this._cancelableCall.request(data);
-  };
-
-  disconnect: TDisconnect = async () => {
-    this._cancelRequests();
-
-    return this._disconnectWithoutCancelRequests();
-  };
-
-  answerToIncomingCall: TAnswerToIncomingCall = async (data) => {
-    return this._cancelableAnswer.request(data);
-  };
-
-  sendDTMF: TSendDTMF = async (tone) => {
-    return this._cancelableSendDTMF.request(tone);
+    return this.connectWithDuplicatedCalls(data, options);
   };
 
   hangUp: THangUp = async () => {
-    this._cancelRequests();
+    this.cancelRequests();
 
-    return this._hangUpWithoutCancelRequests();
+    return this.hangUpWithoutCancelRequests();
   };
 
   async register(): Promise<RegisteredEvent> {
@@ -508,7 +425,7 @@ export default class SipConnector {
       throw new Error('Config is not registered');
     }
 
-    this._uaEvents.trigger(CONNECTING, undefined);
+    this.uaEvents.trigger(CONNECTING, undefined);
 
     try {
       await this.unregister();
@@ -537,7 +454,6 @@ export default class SipConnector {
           },
         });
       } catch (error) {
-        // eslint-disable-next-line prefer-promise-reject-errors
         reject(error as Error);
       }
     });
@@ -569,7 +485,7 @@ export default class SipConnector {
         sipServerUrl,
       });
 
-      const ua = this._createUa({ ...configuration, remoteAddress, extraHeaders });
+      const ua = this.createUa({ ...configuration, remoteAddress, extraHeaders });
 
       const rejectWithError = () => {
         const error = new Error('Telephony is not available');
@@ -624,11 +540,8 @@ export default class SipConnector {
       const incomingRTCSession = this.incomingRTCSession!;
       const callerData = this.remoteCallerData;
 
-      this._cancelableCall.cancelRequest();
-      this._cancelableAnswer.cancelRequest();
-
       this.removeIncomingSession();
-      this._uaEvents.trigger(DECLINED_INCOMING_CALL, callerData);
+      this.uaEvents.trigger(DECLINED_INCOMING_CALL, callerData);
       // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
       resolve(incomingRTCSession.terminate({ status_code: statusCode }));
     });
@@ -666,12 +579,12 @@ export default class SipConnector {
     return !!this.promisePendingStartPresentation || !!this.promisePendingStopPresentation;
   }
 
-  private readonly _connectWithDuplicatedCalls: TConnect = async (
+  private readonly connectWithDuplicatedCalls: TConnect = async (
     data,
     { callLimit = DELAYED_REPEATED_CALLS_CONNECT_LIMIT } = {},
   ) => {
     const targetFunction = async () => {
-      return this._cancelableConnect.request(data);
+      return this.connectInner(data);
     };
 
     const isComplete = (response?: unknown): boolean => {
@@ -682,27 +595,30 @@ export default class SipConnector {
       return isValidResponse || isValidError;
     };
 
-    this._cancelableConnectWithRepeatedCalls = repeatedCallsAsync<UA>({
+    this.isPendingConnect = true;
+
+    this.cancelableConnectWithRepeatedCalls = repeatedCallsAsync<UA>({
       targetFunction,
       isComplete,
       callLimit,
       isRejectAsValid: true,
       isCheckBeforeCall: false,
-      onAfterCancel: () => {
-        this._cancelableConnect.cancelRequest();
-      },
     });
 
-    return this._cancelableConnectWithRepeatedCalls.then((response?: unknown) => {
-      if (response instanceof this.JsSIP.UA) {
-        return response;
-      }
+    return this.cancelableConnectWithRepeatedCalls
+      .then((response?: unknown) => {
+        if (response instanceof this.JsSIP.UA) {
+          return response;
+        }
 
-      throw response;
-    });
+        throw response;
+      })
+      .finally(() => {
+        this.isPendingConnect = false;
+      });
   };
 
-  private async _sendPresentationWithDuplicatedCalls({
+  private async sendPresentationWithDuplicatedCalls({
     rtcSession,
     stream,
     presentationOptions,
@@ -723,21 +639,21 @@ export default class SipConnector {
     options?: { callLimit: number };
   }) {
     const targetFunction = async () => {
-      return this._sendPresentation(rtcSession, stream, presentationOptions);
+      return this.sendPresentation(rtcSession, stream, presentationOptions);
     };
 
     const isComplete = (): boolean => {
-      return !!this._streamPresentationCurrent;
+      return !!this.streamPresentationCurrent;
     };
 
-    this._cancelableSendPresentationWithRepeatedCalls = repeatedCallsAsync<MediaStream>({
+    this.cancelableSendPresentationWithRepeatedCalls = repeatedCallsAsync<MediaStream>({
       targetFunction,
       isComplete,
       isRejectAsValid: true,
       ...options,
     });
 
-    return this._cancelableSendPresentationWithRepeatedCalls.then((response?: unknown) => {
+    return this.cancelableSendPresentationWithRepeatedCalls.then((response?: unknown) => {
       return response as MediaStream;
     });
   }
@@ -807,7 +723,7 @@ export default class SipConnector {
     };
   }
 
-  private async _sendPresentation(
+  private async sendPresentation(
     rtcSession: RTCSession,
     stream: MediaStream,
     {
@@ -828,7 +744,7 @@ export default class SipConnector {
   ) {
     const streamPresentationCurrent = prepareMediaStream(stream, { contentHint })!;
 
-    this._streamPresentationCurrent = streamPresentationCurrent;
+    this.streamPresentationCurrent = streamPresentationCurrent;
 
     // определяем заголовки для начала презентации в зависимости от типа сессии
     const preparatoryHeaders = isP2P
@@ -861,9 +777,9 @@ export default class SipConnector {
         return stream;
       })
       .catch((error: unknown) => {
-        this._removeStreamPresentationCurrent();
+        this.removeStreamPresentationCurrent();
 
-        this._sessionEvents.trigger(PRESENTATION_FAILED, error);
+        this.sessionEvents.trigger(PRESENTATION_FAILED, error);
 
         throw error;
       });
@@ -900,7 +816,7 @@ export default class SipConnector {
       throw new Error('No rtcSession established');
     }
 
-    if (this._streamPresentationCurrent) {
+    if (this.streamPresentationCurrent) {
       throw new Error('Presentation is already started');
     }
 
@@ -908,7 +824,7 @@ export default class SipConnector {
       await this.sendMustStopPresentation(rtcSession);
     }
 
-    return this._sendPresentationWithDuplicatedCalls({
+    return this.sendPresentationWithDuplicatedCalls({
       rtcSession,
       stream,
       presentationOptions: {
@@ -934,9 +850,9 @@ export default class SipConnector {
   }: {
     isP2P?: boolean;
   } = {}): Promise<MediaStream | void> {
-    this._cancelSendPresentationWithRepeatedCalls();
+    this.cancelSendPresentationWithRepeatedCalls();
 
-    const streamPresentationPrevious = this._streamPresentationCurrent;
+    const streamPresentationPrevious = this.streamPresentationCurrent;
     let result: Promise<MediaStream | void> =
       this.promisePendingStartPresentation ?? Promise.resolve();
 
@@ -959,20 +875,20 @@ export default class SipConnector {
           return rtcSession.stopPresentation(streamPresentationPrevious);
         })
         .catch((error: unknown) => {
-          this._sessionEvents.trigger(PRESENTATION_FAILED, error);
+          this.sessionEvents.trigger(PRESENTATION_FAILED, error);
 
           throw error;
         });
     }
 
     if (!rtcSession && streamPresentationPrevious) {
-      this._sessionEvents.trigger(PRESENTATION_ENDED, streamPresentationPrevious);
+      this.sessionEvents.trigger(PRESENTATION_ENDED, streamPresentationPrevious);
     }
 
     this.promisePendingStopPresentation = result;
 
     return result.finally(() => {
-      this._resetPresentation();
+      this.resetPresentation();
     });
   }
 
@@ -998,7 +914,7 @@ export default class SipConnector {
       throw new Error('No rtcSession established');
     }
 
-    if (!this._streamPresentationCurrent) {
+    if (!this.streamPresentationCurrent) {
       throw new Error('Presentation has not started yet');
     }
 
@@ -1006,7 +922,7 @@ export default class SipConnector {
       await this.promisePendingStartPresentation;
     }
 
-    return this._sendPresentation(rtcSession, stream, {
+    return this.sendPresentation(rtcSession, stream, {
       isP2P,
       maxBitrate,
       contentHint,
@@ -1016,20 +932,20 @@ export default class SipConnector {
     });
   }
 
-  _removeStreamPresentationCurrent() {
-    delete this._streamPresentationCurrent;
+  removeStreamPresentationCurrent() {
+    delete this.streamPresentationCurrent;
   }
 
-  _resetPresentation() {
-    this._removeStreamPresentationCurrent();
+  resetPresentation() {
+    this.removeStreamPresentationCurrent();
 
     this.promisePendingStartPresentation = undefined;
     this.promisePendingStopPresentation = undefined;
   }
 
-  _cancelRequestsAndResetPresentation() {
-    this._cancelSendPresentationWithRepeatedCalls();
-    this._resetPresentation();
+  cancelRequestsAndResetPresentation() {
+    this.cancelSendPresentationWithRepeatedCalls();
+    this.resetPresentation();
   }
 
   handleNewRTCSession = ({ originator, session: rtcSession }: IncomingRTCSessionEvent) => {
@@ -1042,54 +958,54 @@ export default class SipConnector {
         this.removeIncomingSession();
 
         if (event.originator === ORIGINATOR_LOCAL) {
-          this._uaEvents.trigger(TERMINATED_INCOMING_CALL, callerData);
+          this.uaEvents.trigger(TERMINATED_INCOMING_CALL, callerData);
         } else {
-          this._uaEvents.trigger(FAILED_INCOMING_CALL, callerData);
+          this.uaEvents.trigger(FAILED_INCOMING_CALL, callerData);
         }
       });
 
-      this._uaEvents.trigger(INCOMING_CALL, callerData);
+      this.uaEvents.trigger(INCOMING_CALL, callerData);
     }
   };
 
   on<T = void>(eventName: TEventUA, handler: (data: T) => void) {
-    return this._uaEvents.on<T>(eventName, handler);
+    return this.uaEvents.on<T>(eventName, handler);
   }
 
   once<T>(eventName: TEventUA, handler: (data: T) => void) {
-    return this._uaEvents.once<T>(eventName, handler);
+    return this.uaEvents.once<T>(eventName, handler);
   }
 
   onceRace<T>(eventNames: TEventUA[], handler: (data: T, eventName: string) => void) {
-    return this._uaEvents.onceRace<T>(eventNames, handler);
+    return this.uaEvents.onceRace<T>(eventNames, handler);
   }
 
   async wait<T>(eventName: TEventUA): Promise<T> {
-    return this._uaEvents.wait<T>(eventName);
+    return this.uaEvents.wait<T>(eventName);
   }
 
   off<T>(eventName: TEventUA, handler: (data: T) => void) {
-    this._uaEvents.off<T>(eventName, handler);
+    this.uaEvents.off<T>(eventName, handler);
   }
 
   onSession<T>(eventName: TEventSession, handler: (data: T) => void) {
-    return this._sessionEvents.on<T>(eventName, handler);
+    return this.sessionEvents.on<T>(eventName, handler);
   }
 
   onceSession<T>(eventName: TEventSession, handler: (data: T) => void) {
-    return this._sessionEvents.once<T>(eventName, handler);
+    return this.sessionEvents.once<T>(eventName, handler);
   }
 
   onceRaceSession<T>(eventNames: TEventSession[], handler: (data: T, eventName: string) => void) {
-    return this._sessionEvents.onceRace<T>(eventNames, handler);
+    return this.sessionEvents.onceRace<T>(eventNames, handler);
   }
 
   async waitSession<T>(eventName: TEventSession): Promise<T> {
-    return this._sessionEvents.wait<T>(eventName);
+    return this.sessionEvents.wait<T>(eventName);
   }
 
   offSession<T>(eventName: TEventSession, handler: (data: T) => void) {
-    this._sessionEvents.off<T>(eventName, handler);
+    this.sessionEvents.off<T>(eventName, handler);
   }
 
   isConfigured() {
@@ -1097,7 +1013,7 @@ export default class SipConnector {
   }
 
   getConnectionConfiguration() {
-    return { ...this._connectionConfiguration };
+    return { ...this.connectionConfiguration };
   }
 
   getRemoteStreams(): MediaStream[] | undefined {
@@ -1111,10 +1027,10 @@ export default class SipConnector {
     });
 
     if (hasVideoTracks(remoteTracks)) {
-      return this._generateStreams(remoteTracks);
+      return this.generateStreams(remoteTracks);
     }
 
-    return this._generateAudioStreams(remoteTracks);
+    return this.generateAudioStreams(remoteTracks);
   }
 
   get connection(): RTCPeerConnection | undefined {
@@ -1136,10 +1052,7 @@ export default class SipConnector {
 
   get requested() {
     return (
-      this._cancelableConnect.requested ||
-      this._cancelableInitUa.requested ||
-      this._cancelableCall.requested ||
-      this._cancelableAnswer.requested
+      this.isPendingInitUa || this.isPendingConnect || this.isPendingCall || this.isPendingAnswer
     );
   }
 
@@ -1152,7 +1065,7 @@ export default class SipConnector {
   }
 
   get isRegisterConfig() {
-    return !!this.ua && this._isRegisterConfig;
+    return !!this.ua && this.isRegisterConfigInner;
   }
 
   get isCallActive() {
@@ -1163,13 +1076,13 @@ export default class SipConnector {
     return !!this.incomingRTCSession;
   }
 
-  _connect: TConnect = async (parameters) => {
+  connectInner: TConnect = async (parameters) => {
     return this.initUa(parameters).then(async () => {
-      return this._start();
+      return this.start();
     });
   };
 
-  _initUa: TInitUa = async ({
+  initUa: TInitUa = async ({
     user,
     password,
     sipServerUrl,
@@ -1200,53 +1113,59 @@ export default class SipConnector {
       throw new Error('password is required for authorized connection');
     }
 
-    this._connectionConfiguration = {
-      sipServerUrl,
-      displayName,
-      register,
-      user,
-      password,
-    };
+    this.isPendingInitUa = true;
 
-    const { configuration, helpers } = this.createUaConfiguration({
-      user,
-      sipServerUrl,
-      sipWebSocketServerURL,
-      password,
-      displayName,
-      register,
-      sessionTimers,
-      registerExpires,
-      connectionRecoveryMinInterval,
-      connectionRecoveryMaxInterval,
-      userAgent,
-    });
+    try {
+      this.connectionConfiguration = {
+        sipServerUrl,
+        displayName,
+        register,
+        user,
+        password,
+      };
 
-    this.getSipServerUrl = helpers.getSipServerUrl;
-    this.socket = helpers.socket;
-
-    if (this.ua) {
-      await this._disconnectWithoutCancelRequests();
-    }
-
-    this._isRegisterConfig = !!register;
-
-    this.ua = this._createUa({ ...configuration, remoteAddress, extraHeaders });
-
-    this._uaEvents.eachTriggers((trigger, eventName) => {
-      const uaJsSipEvent = UA_JSSIP_EVENT_NAMES.find((jsSipEvent) => {
-        return jsSipEvent === eventName;
+      const { configuration, helpers } = this.createUaConfiguration({
+        user,
+        sipServerUrl,
+        sipWebSocketServerURL,
+        password,
+        displayName,
+        register,
+        sessionTimers,
+        registerExpires,
+        connectionRecoveryMinInterval,
+        connectionRecoveryMaxInterval,
+        userAgent,
       });
 
-      if (uaJsSipEvent && this.ua) {
-        this.ua.on(uaJsSipEvent, trigger);
-      }
-    });
+      this.getSipServerUrl = helpers.getSipServerUrl;
+      this.socket = helpers.socket;
 
-    return this.ua;
+      if (this.ua) {
+        await this.disconnect();
+      }
+
+      this.isRegisterConfigInner = !!register;
+
+      this.ua = this.createUa({ ...configuration, remoteAddress, extraHeaders });
+
+      this.uaEvents.eachTriggers((trigger, eventName) => {
+        const uaJsSipEvent = UA_JSSIP_EVENT_NAMES.find((jsSipEvent) => {
+          return jsSipEvent === eventName;
+        });
+
+        if (uaJsSipEvent && this.ua) {
+          this.ua.on(uaJsSipEvent, trigger);
+        }
+      });
+
+      return this.ua;
+    } finally {
+      this.isPendingInitUa = false;
+    }
   };
 
-  _createUa: TCreateUa = ({
+  createUa: TCreateUa = ({
     remoteAddress,
     extraHeaders = [],
     ...parameters
@@ -1265,7 +1184,7 @@ export default class SipConnector {
     return ua;
   };
 
-  _start: TStart = async () => {
+  start: TStart = async () => {
     return new Promise((resolve, reject) => {
       const { ua } = this;
 
@@ -1307,7 +1226,7 @@ export default class SipConnector {
     });
   };
 
-  _set: TSet = async ({ displayName, password }) => {
+  set: TSet = async ({ displayName, password }) => {
     return new Promise((resolve, reject) => {
       const { ua } = this;
 
@@ -1320,14 +1239,14 @@ export default class SipConnector {
       let changedDisplayName = false;
       let changedPassword = false;
 
-      if (displayName !== undefined && displayName !== this._connectionConfiguration.displayName) {
+      if (displayName !== undefined && displayName !== this.connectionConfiguration.displayName) {
         changedDisplayName = ua.set('display_name', parseDisplayName(displayName));
-        this._connectionConfiguration.displayName = displayName;
+        this.connectionConfiguration.displayName = displayName;
       }
 
-      if (password !== undefined && password !== this._connectionConfiguration.password) {
+      if (password !== undefined && password !== this.connectionConfiguration.password) {
         changedPassword = ua.set('password', password);
-        this._connectionConfiguration.password = password;
+        this.connectionConfiguration.password = password;
       }
 
       const changedSome = changedDisplayName || changedPassword;
@@ -1338,7 +1257,6 @@ export default class SipConnector {
             resolve(changedSome);
           })
           .catch((error: unknown) => {
-            // eslint-disable-next-line prefer-promise-reject-errors
             reject(error as Error);
           });
       } else if (changedSome) {
@@ -1349,36 +1267,33 @@ export default class SipConnector {
     });
   };
 
-  _disconnectWithoutCancelRequests: TDisconnect = async () => {
-    return this._cancelableDisconnect.request();
-  };
-
-  _disconnect = async () => {
+  disconnect = async () => {
     this.off(NEW_RTC_SESSION, this.handleNewRTCSession);
 
     const disconnectedPromise = new Promise<void>((resolve) => {
       this.once(DISCONNECTED, () => {
-        delete this.ua;
         resolve();
       });
     });
 
     if (this.ua) {
-      await this._hangUpWithoutCancelRequests();
+      await this.hangUpWithoutCancelRequests();
 
       if (this.ua) {
         this.ua.stop();
       } else {
-        this._uaEvents.trigger(DISCONNECTED, undefined);
+        this.uaEvents.trigger(DISCONNECTED, undefined);
       }
     } else {
-      this._uaEvents.trigger(DISCONNECTED, undefined);
+      this.uaEvents.trigger(DISCONNECTED, undefined);
     }
 
-    return disconnectedPromise;
+    return disconnectedPromise.finally(() => {
+      delete this.ua;
+    });
   };
 
-  _call: TCall = async ({
+  call: TCall = async ({
     number,
     mediaStream,
     extraHeaders = [],
@@ -1392,7 +1307,9 @@ export default class SipConnector {
     sendEncodings,
     onAddedTransceiver,
   }) => {
-    return new Promise((resolve, reject) => {
+    this.isPendingCall = true;
+
+    return new Promise<RTCPeerConnection>((resolve, reject) => {
       const { ua } = this;
 
       if (!ua) {
@@ -1401,12 +1318,11 @@ export default class SipConnector {
         return;
       }
 
-      this._connectionConfiguration.number = number;
-      this._connectionConfiguration.answer = false;
-      this._handleCall({ ontrack })
+      this.connectionConfiguration.number = number;
+      this.connectionConfiguration.answer = false;
+      this.handleCall({ ontrack })
         .then(resolve)
         .catch((error: unknown) => {
-          // eslint-disable-next-line prefer-promise-reject-errors
           reject(error as Error);
         });
 
@@ -1417,7 +1333,7 @@ export default class SipConnector {
           directionAudio,
           contentHint,
         }),
-        eventHandlers: this._sessionEvents.triggers,
+        eventHandlers: this.sessionEvents.triggers,
         directionVideo,
         directionAudio,
         pcConfig: {
@@ -1430,10 +1346,12 @@ export default class SipConnector {
         sendEncodings,
         onAddedTransceiver,
       });
+    }).finally(() => {
+      this.isPendingCall = false;
     });
   };
 
-  _answer: TAnswerToIncomingCall = async ({
+  answerToIncomingCall: TAnswerToIncomingCall = async ({
     mediaStream,
     ontrack,
     extraHeaders = [],
@@ -1446,7 +1364,9 @@ export default class SipConnector {
     sendEncodings,
     onAddedTransceiver,
   }): Promise<RTCPeerConnection> => {
-    return new Promise((resolve, reject) => {
+    this.isPendingAnswer = true;
+
+    return new Promise<RTCPeerConnection>((resolve, reject) => {
       if (!this.isAvailableIncomingCall) {
         reject(new Error('no incomingRTCSession'));
 
@@ -1464,7 +1384,7 @@ export default class SipConnector {
         return;
       }
 
-      this._sessionEvents.eachTriggers((trigger, eventName) => {
+      this.sessionEvents.eachTriggers((trigger, eventName) => {
         const sessionJsSipEvent = SESSION_JSSIP_EVENT_NAMES.find((jsSipEvent) => {
           return jsSipEvent === eventName;
         });
@@ -1474,12 +1394,11 @@ export default class SipConnector {
         }
       });
 
-      this._connectionConfiguration.answer = true;
-      this._connectionConfiguration.number = rtcSession.remote_identity.uri.user;
-      this._handleCall({ ontrack })
+      this.connectionConfiguration.answer = true;
+      this.connectionConfiguration.number = rtcSession.remote_identity.uri.user;
+      this.handleCall({ ontrack })
         .then(resolve)
         .catch((error: unknown) => {
-          // eslint-disable-next-line prefer-promise-reject-errors
           reject(error as Error);
         });
 
@@ -1504,10 +1423,12 @@ export default class SipConnector {
         sendEncodings,
         onAddedTransceiver,
       });
+    }).finally(() => {
+      this.isPendingAnswer = false;
     });
   };
 
-  _handleCall = async ({ ontrack }: { ontrack?: TOntrack }): Promise<RTCPeerConnection> => {
+  handleCall = async ({ ontrack }: { ontrack?: TOntrack }): Promise<RTCPeerConnection> => {
     return new Promise((resolve, reject) => {
       const addStartedEventListeners = () => {
         this.onSession(PEER_CONNECTION, handlePeerConnection);
@@ -1537,7 +1458,7 @@ export default class SipConnector {
         savedPeerconnection = peerconnection;
 
         savedPeerconnection.ontrack = (track) => {
-          this._sessionEvents.trigger(PEER_CONNECTION_ONTRACK, savedPeerconnection);
+          this.sessionEvents.trigger(PEER_CONNECTION_ONTRACK, savedPeerconnection);
 
           if (ontrack) {
             ontrack(track);
@@ -1546,7 +1467,7 @@ export default class SipConnector {
       };
       const handleConfirmed = () => {
         if (savedPeerconnection) {
-          this._sessionEvents.trigger(PEER_CONNECTION_CONFIRMED, savedPeerconnection);
+          this.sessionEvents.trigger(PEER_CONNECTION_CONFIRMED, savedPeerconnection);
         }
 
         removeStartedEventListeners();
@@ -1559,15 +1480,15 @@ export default class SipConnector {
     });
   };
 
-  _restoreSession: () => void = () => {
-    this._cancelRequestsAndResetPresentation();
+  restoreSession: () => void = () => {
+    this.cancelRequestsAndResetPresentation();
 
-    delete this._connectionConfiguration.number;
+    delete this.connectionConfiguration.number;
     delete this.rtcSession;
-    this._remoteStreams = {};
+    this.remoteStreams = {};
   };
 
-  _sendDTMF: TSendDTMF = async (tone) => {
+  sendDTMF: TSendDTMF = async (tone) => {
     return new Promise<void>((resolve, reject) => {
       const { rtcSession } = this;
 
@@ -1590,34 +1511,34 @@ export default class SipConnector {
     });
   };
 
-  _generateStream(videoTrack: MediaStreamTrack, audioTrack?: MediaStreamTrack): MediaStream {
+  generateStream(videoTrack: MediaStreamTrack, audioTrack?: MediaStreamTrack): MediaStream {
     const { id } = videoTrack;
 
-    const remoteStream: MediaStream = this._remoteStreams[id] || new MediaStream();
+    const remoteStream: MediaStream = this.remoteStreams[id] || new MediaStream();
 
     if (audioTrack) {
       remoteStream.addTrack(audioTrack);
     }
 
     remoteStream.addTrack(videoTrack);
-    this._remoteStreams[id] = remoteStream;
+    this.remoteStreams[id] = remoteStream;
 
     return remoteStream;
   }
 
-  _generateAudioStream(audioTrack: MediaStreamTrack): MediaStream {
+  generateAudioStream(audioTrack: MediaStreamTrack): MediaStream {
     const { id } = audioTrack;
 
-    const remoteStream = this._remoteStreams[id] || new MediaStream();
+    const remoteStream = this.remoteStreams[id] || new MediaStream();
 
     remoteStream.addTrack(audioTrack);
 
-    this._remoteStreams[id] = remoteStream;
+    this.remoteStreams[id] = remoteStream;
 
     return remoteStream;
   }
 
-  _generateStreams(remoteTracks: MediaStreamTrack[]): MediaStream[] {
+  generateStreams(remoteTracks: MediaStreamTrack[]): MediaStream[] {
     const remoteStreams: MediaStream[] = [];
 
     remoteTracks.forEach((track, index) => {
@@ -1633,7 +1554,7 @@ export default class SipConnector {
         audioTrack = previousTrack;
       }
 
-      const remoteStream = this._generateStream(videoTrack, audioTrack);
+      const remoteStream = this.generateStream(videoTrack, audioTrack);
 
       remoteStreams.push(remoteStream);
     });
@@ -1641,19 +1562,19 @@ export default class SipConnector {
     return remoteStreams;
   }
 
-  _generateAudioStreams(remoteTracks: MediaStreamTrack[]): MediaStream[] {
+  generateAudioStreams(remoteTracks: MediaStreamTrack[]): MediaStream[] {
     const remoteStreams: MediaStream[] = remoteTracks.map((remoteTrack) => {
-      return this._generateAudioStream(remoteTrack);
+      return this.generateAudioStream(remoteTrack);
     });
 
     return remoteStreams;
   }
 
-  _hangUpWithoutCancelRequests: THangUp = async () => {
+  hangUpWithoutCancelRequests: THangUp = async () => {
     if (this.ua && this.rtcSession) {
       const { rtcSession } = this;
 
-      if (this._streamPresentationCurrent) {
+      if (this.streamPresentationCurrent) {
         try {
           await this.stopPresentation();
         } catch (error) {
@@ -1661,52 +1582,42 @@ export default class SipConnector {
         }
       }
 
-      this._restoreSession();
+      this.restoreSession();
 
       if (!rtcSession.isEnded()) {
-        return rtcSession.terminateAsync();
+        return rtcSession.terminateAsync({
+          cause: CANCELED,
+        });
       }
     }
 
     return undefined;
   };
 
-  _cancelRequests() {
-    this._cancelActionsRequests();
-    this._cancelCallRequests();
-    this._cancelConnectWithRepeatedCalls();
+  cancelRequests() {
+    this.cancelConnectWithRepeatedCalls();
   }
 
-  _cancelConnectWithRepeatedCalls() {
-    this._cancelableConnectWithRepeatedCalls?.cancel();
+  cancelConnectWithRepeatedCalls() {
+    this.cancelableConnectWithRepeatedCalls?.cancel();
   }
 
-  _cancelSendPresentationWithRepeatedCalls() {
-    this._cancelableSendPresentationWithRepeatedCalls?.cancel();
+  cancelSendPresentationWithRepeatedCalls() {
+    this.cancelableSendPresentationWithRepeatedCalls?.cancel();
   }
 
-  _cancelCallRequests() {
-    this._cancelableCall.cancelRequest();
-    this._cancelableAnswer.cancelRequest();
-  }
-
-  _cancelActionsRequests() {
-    this._cancelableAnswer.cancelRequest();
-    this._cancelableSendDTMF.cancelRequest();
-  }
-
-  _handleShareState = (eventName: string) => {
+  handleShareState = (eventName: string) => {
     switch (eventName) {
       case AVAILABLE_SECOND_REMOTE_STREAM: {
-        this._sessionEvents.trigger(AVAILABLE_SECOND_REMOTE_STREAM_EVENT, undefined);
+        this.sessionEvents.trigger(AVAILABLE_SECOND_REMOTE_STREAM_EVENT, undefined);
         break;
       }
       case NOT_AVAILABLE_SECOND_REMOTE_STREAM: {
-        this._sessionEvents.trigger(NOT_AVAILABLE_SECOND_REMOTE_STREAM_EVENT, undefined);
+        this.sessionEvents.trigger(NOT_AVAILABLE_SECOND_REMOTE_STREAM_EVENT, undefined);
         break;
       }
       case MUST_STOP_PRESENTATION: {
-        this._sessionEvents.trigger(MUST_STOP_PRESENTATION_EVENT, undefined);
+        this.sessionEvents.trigger(MUST_STOP_PRESENTATION_EVENT, undefined);
         break;
       }
 
@@ -1716,7 +1627,7 @@ export default class SipConnector {
     }
   };
 
-  _maybeTriggerChannels = (request: IncomingRequest) => {
+  maybeTriggerChannels = (request: IncomingRequest) => {
     const inputChannels = request.getHeader(HEADER_INPUT_CHANNELS);
     const outputChannels = request.getHeader(HEADER_OUTPUT_CHANNELS);
 
@@ -1726,82 +1637,82 @@ export default class SipConnector {
         outputChannels,
       };
 
-      this._sessionEvents.trigger(CHANNELS, headersChannels);
+      this.sessionEvents.trigger(CHANNELS, headersChannels);
     }
   };
 
-  _handleNotify = (header: TInfoNotify) => {
+  handleNotify = (header: TInfoNotify) => {
     switch (header.cmd) {
       case CMD_CHANNELS: {
         const channelsInfo = header as TChannelsInfoNotify;
 
-        this._triggerChannelsNotify(channelsInfo);
+        this.triggerChannelsNotify(channelsInfo);
 
         break;
       }
       case CMD_WEBCAST_STARTED: {
         const webcastInfo = header as TWebcastInfoNotify;
 
-        this._triggerWebcastStartedNotify(webcastInfo);
+        this.triggerWebcastStartedNotify(webcastInfo);
 
         break;
       }
       case CMD_WEBCAST_STOPPED: {
         const webcastInfo = header as TWebcastInfoNotify;
 
-        this._triggerWebcastStoppedNotify(webcastInfo);
+        this.triggerWebcastStoppedNotify(webcastInfo);
 
         break;
       }
       case CMD_ADDED_TO_LIST_MODERATORS: {
         const data = header as TAddedToListModeratorsInfoNotify;
 
-        this._triggerAddedToListModeratorsNotify(data);
+        this.triggerAddedToListModeratorsNotify(data);
 
         break;
       }
       case CMD_REMOVED_FROM_LIST_MODERATORS: {
         const data = header as TRemovedFromListModeratorsInfoNotify;
 
-        this._triggerRemovedFromListModeratorsNotify(data);
+        this.triggerRemovedFromListModeratorsNotify(data);
 
         break;
       }
       case CMD_ACCEPTING_WORD_REQUEST: {
         const data = header as TAcceptingWordRequestInfoNotify;
 
-        this._triggerParticipationAcceptingWordRequest(data);
+        this.triggerParticipationAcceptingWordRequest(data);
 
         break;
       }
       case CMD_CANCELLING_WORD_REQUEST: {
         const data = header as TCancellingWordRequestInfoNotify;
 
-        this._triggerParticipationCancellingWordRequest(data);
+        this.triggerParticipationCancellingWordRequest(data);
 
         break;
       }
       case CMD_MOVE_REQUEST_TO_STREAM: {
         const data = header as TMoveRequestToStreamInfoNotify;
 
-        this._triggerParticipantMoveRequestToStream(data);
+        this.triggerParticipantMoveRequestToStream(data);
 
         break;
       }
       case CMD_ACCOUNT_CHANGED: {
-        this._triggerAccountChangedNotify();
+        this.triggerAccountChangedNotify();
 
         break;
       }
       case CMD_ACCOUNT_DELETED: {
-        this._triggerAccountDeletedNotify();
+        this.triggerAccountDeletedNotify();
 
         break;
       }
       case CMD_CONFERENCE_PARTICIPANT_TOKEN_ISSUED: {
         const data = header as TConferenceParticipantTokenIssued;
 
-        this._triggerConferenceParticipantTokenIssued(data);
+        this.triggerConferenceParticipantTokenIssued(data);
 
         break;
       }
@@ -1812,54 +1723,54 @@ export default class SipConnector {
     }
   };
 
-  _triggerRemovedFromListModeratorsNotify = ({
+  triggerRemovedFromListModeratorsNotify = ({
     conference,
   }: TRemovedFromListModeratorsInfoNotify) => {
     const headersParametersModeratorsList: TParametersModeratorsList = {
       conference,
     };
 
-    this._uaEvents.trigger(
+    this.uaEvents.trigger(
       PARTICIPANT_REMOVED_FROM_LIST_MODERATORS,
       headersParametersModeratorsList,
     );
   };
 
-  _triggerAddedToListModeratorsNotify = ({ conference }: TAddedToListModeratorsInfoNotify) => {
+  triggerAddedToListModeratorsNotify = ({ conference }: TAddedToListModeratorsInfoNotify) => {
     const headersParametersModeratorsList: TParametersModeratorsList = {
       conference,
     };
 
-    this._uaEvents.trigger(PARTICIPANT_ADDED_TO_LIST_MODERATORS, headersParametersModeratorsList);
+    this.uaEvents.trigger(PARTICIPANT_ADDED_TO_LIST_MODERATORS, headersParametersModeratorsList);
   };
 
-  _triggerWebcastStartedNotify = ({ body: { conference, type } }: TWebcastInfoNotify) => {
+  triggerWebcastStartedNotify = ({ body: { conference, type } }: TWebcastInfoNotify) => {
     const headersParametersWebcast: TParametersWebcast = {
       conference,
       type,
     };
 
-    this._uaEvents.trigger(WEBCAST_STARTED, headersParametersWebcast);
+    this.uaEvents.trigger(WEBCAST_STARTED, headersParametersWebcast);
   };
 
-  _triggerWebcastStoppedNotify = ({ body: { conference, type } }: TWebcastInfoNotify) => {
+  triggerWebcastStoppedNotify = ({ body: { conference, type } }: TWebcastInfoNotify) => {
     const headersParametersWebcast: TParametersWebcast = {
       conference,
       type,
     };
 
-    this._uaEvents.trigger(WEBCAST_STOPPED, headersParametersWebcast);
+    this.uaEvents.trigger(WEBCAST_STOPPED, headersParametersWebcast);
   };
 
-  _triggerAccountChangedNotify = () => {
-    this._uaEvents.trigger(ACCOUNT_CHANGED, undefined);
+  triggerAccountChangedNotify = () => {
+    this.uaEvents.trigger(ACCOUNT_CHANGED, undefined);
   };
 
-  _triggerAccountDeletedNotify = () => {
-    this._uaEvents.trigger(ACCOUNT_DELETED, undefined);
+  triggerAccountDeletedNotify = () => {
+    this.uaEvents.trigger(ACCOUNT_DELETED, undefined);
   };
 
-  _triggerConferenceParticipantTokenIssued = ({
+  triggerConferenceParticipantTokenIssued = ({
     body: { conference, participant, jwt },
   }: TConferenceParticipantTokenIssued) => {
     const headersConferenceParticipantTokenIssued: TParametersConferenceParticipantTokenIssued = {
@@ -1868,13 +1779,13 @@ export default class SipConnector {
       jwt,
     };
 
-    this._uaEvents.trigger(
+    this.uaEvents.trigger(
       CONFERENCE_PARTICIPANT_TOKEN_ISSUED,
       headersConferenceParticipantTokenIssued,
     );
   };
 
-  _triggerChannelsNotify = (channelsInfo: TChannelsInfoNotify) => {
+  triggerChannelsNotify = (channelsInfo: TChannelsInfoNotify) => {
     const inputChannels = channelsInfo.input;
     const outputChannels = channelsInfo.output;
 
@@ -1883,78 +1794,78 @@ export default class SipConnector {
       outputChannels,
     };
 
-    this._uaEvents.trigger(CHANNELS_NOTIFY, data);
+    this.uaEvents.trigger(CHANNELS_NOTIFY, data);
   };
 
-  _triggerParticipationAcceptingWordRequest = ({
+  triggerParticipationAcceptingWordRequest = ({
     body: { conference },
   }: TAcceptingWordRequestInfoNotify) => {
     const data: TParametersModeratorsList = {
       conference,
     };
 
-    this._uaEvents.trigger(PARTICIPATION_ACCEPTING_WORD_REQUEST, data);
+    this.uaEvents.trigger(PARTICIPATION_ACCEPTING_WORD_REQUEST, data);
   };
 
-  _triggerParticipationCancellingWordRequest = ({
+  triggerParticipationCancellingWordRequest = ({
     body: { conference },
   }: TCancellingWordRequestInfoNotify) => {
     const data: TParametersModeratorsList = {
       conference,
     };
 
-    this._uaEvents.trigger(PARTICIPATION_CANCELLING_WORD_REQUEST, data);
+    this.uaEvents.trigger(PARTICIPATION_CANCELLING_WORD_REQUEST, data);
   };
 
-  _triggerParticipantMoveRequestToStream = ({
+  triggerParticipantMoveRequestToStream = ({
     body: { conference },
   }: TMoveRequestToStreamInfoNotify) => {
     const data: TParametersModeratorsList = {
       conference,
     };
 
-    this._uaEvents.trigger(PARTICIPANT_MOVE_REQUEST_TO_STREAM, data);
+    this.uaEvents.trigger(PARTICIPANT_MOVE_REQUEST_TO_STREAM, data);
   };
 
-  _triggerEnterRoom = (request: IncomingRequest) => {
+  triggerEnterRoom = (request: IncomingRequest) => {
     const room = request.getHeader(HEADER_CONTENT_ENTER_ROOM);
     const participantName = request.getHeader(HEADER_PARTICIPANT_NAME);
 
-    this._sessionEvents.trigger(ENTER_ROOM, { room, participantName });
+    this.sessionEvents.trigger(ENTER_ROOM, { room, participantName });
   };
 
-  _triggerShareState = (request: IncomingRequest) => {
+  triggerShareState = (request: IncomingRequest) => {
     const eventName = request.getHeader(HEADER_CONTENT_SHARE_STATE);
 
-    this._sessionEvents.trigger(SHARE_STATE, eventName);
+    this.sessionEvents.trigger(SHARE_STATE, eventName);
   };
 
-  _maybeTriggerParticipantMoveRequest = (request: IncomingRequest) => {
+  maybeTriggerParticipantMoveRequest = (request: IncomingRequest) => {
     const participantState = request.getHeader(HEADER_CONTENT_PARTICIPANT_STATE);
 
     if (participantState === SPECTATOR) {
-      this._sessionEvents.trigger(PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS, undefined);
+      this.sessionEvents.trigger(PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS, undefined);
     }
 
     if (participantState === PARTICIPANT) {
-      this._sessionEvents.trigger(PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS, undefined);
+      this.sessionEvents.trigger(PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS, undefined);
     }
   };
 
-  _triggerMainCamControl = (request: IncomingRequest) => {
+  triggerMainCamControl = (request: IncomingRequest) => {
     const mainCam = request.getHeader(HEADER_MAIN_CAM) as EEventsMainCAM;
 
     const syncState = request.getHeader(HEADER_MEDIA_SYNC);
     const isSyncForced = syncState === EEventsSyncMediaState.ADMIN_SYNC_FORCED;
 
     if (mainCam === EEventsMainCAM.ADMIN_START_MAIN_CAM) {
-      this._sessionEvents.trigger(ADMIN_START_MAIN_CAM, { isSyncForced });
+      this.sessionEvents.trigger(ADMIN_START_MAIN_CAM, { isSyncForced });
 
       return;
     }
 
     if (mainCam === EEventsMainCAM.ADMIN_STOP_MAIN_CAM) {
-      this._sessionEvents.trigger(ADMIN_STOP_MAIN_CAM, { isSyncForced });
+      this.sessionEvents.trigger(ADMIN_STOP_MAIN_CAM, { isSyncForced });
 
       return;
     }
@@ -1963,36 +1874,36 @@ export default class SipConnector {
       (mainCam === EEventsMainCAM.RESUME_MAIN_CAM || mainCam === EEventsMainCAM.PAUSE_MAIN_CAM) &&
       !!syncState
     ) {
-      this._sessionEvents.trigger(ADMIN_FORCE_SYNC_MEDIA_STATE, { isSyncForced });
+      this.sessionEvents.trigger(ADMIN_FORCE_SYNC_MEDIA_STATE, { isSyncForced });
     }
 
     const resolutionMainCam = request.getHeader(HEADER_MAIN_CAM_RESOLUTION);
 
-    this._sessionEvents.trigger(MAIN_CAM_CONTROL, {
+    this.sessionEvents.trigger(MAIN_CAM_CONTROL, {
       mainCam,
       resolutionMainCam,
     });
   };
 
-  _triggerMicControl = (request: IncomingRequest) => {
+  triggerMicControl = (request: IncomingRequest) => {
     const mic = request.getHeader(HEADER_MIC);
     const syncState = request.getHeader(HEADER_MEDIA_SYNC);
     const isSyncForced = syncState === EEventsSyncMediaState.ADMIN_SYNC_FORCED;
 
     if (mic === EEventsMic.ADMIN_START_MIC) {
-      this._sessionEvents.trigger(ADMIN_START_MIC, { isSyncForced });
+      this.sessionEvents.trigger(ADMIN_START_MIC, { isSyncForced });
     } else if (mic === EEventsMic.ADMIN_STOP_MIC) {
-      this._sessionEvents.trigger(ADMIN_STOP_MIC, { isSyncForced });
+      this.sessionEvents.trigger(ADMIN_STOP_MIC, { isSyncForced });
     }
   };
 
-  _triggerUseLicense = (request: IncomingRequest) => {
+  triggerUseLicense = (request: IncomingRequest) => {
     const license: EUseLicense = request.getHeader(HEADER_CONTENT_USE_LICENSE) as EUseLicense;
 
-    this._sessionEvents.trigger(USE_LICENSE, license);
+    this.sessionEvents.trigger(USE_LICENSE, license);
   };
 
-  _handleNewInfo = (info: IncomingInfoEvent | OutgoingInfoEvent) => {
+  handleNewInfo = (info: IncomingInfoEvent | OutgoingInfoEvent) => {
     const { originator } = info;
 
     if (originator !== 'remote') {
@@ -2005,32 +1916,32 @@ export default class SipConnector {
     if (contentType) {
       switch (contentType) {
         case CONTENT_TYPE_ENTER_ROOM: {
-          this._triggerEnterRoom(request);
-          this._maybeTriggerChannels(request);
+          this.triggerEnterRoom(request);
+          this.maybeTriggerChannels(request);
           break;
         }
         case CONTENT_TYPE_NOTIFY: {
-          this._maybeHandleNotify(request);
+          this.maybeHandleNotify(request);
           break;
         }
         case CONTENT_TYPE_SHARE_STATE: {
-          this._triggerShareState(request);
+          this.triggerShareState(request);
           break;
         }
         case CONTENT_TYPE_MAIN_CAM: {
-          this._triggerMainCamControl(request);
+          this.triggerMainCamControl(request);
           break;
         }
         case CONTENT_TYPE_MIC: {
-          this._triggerMicControl(request);
+          this.triggerMicControl(request);
           break;
         }
         case CONTENT_TYPE_USE_LICENSE: {
-          this._triggerUseLicense(request);
+          this.triggerUseLicense(request);
           break;
         }
         case CONTENT_TYPE_PARTICIPANT_STATE: {
-          this._maybeTriggerParticipantMoveRequest(request);
+          this.maybeTriggerParticipantMoveRequest(request);
           break;
         }
 
@@ -2041,17 +1952,17 @@ export default class SipConnector {
     }
   };
 
-  _handleSipEvent = ({ request }: { request: IncomingRequest }) => {
-    this._maybeHandleNotify(request);
+  handleSipEvent = ({ request }: { request: IncomingRequest }) => {
+    this.maybeHandleNotify(request);
   };
 
-  _maybeHandleNotify = (request: IncomingRequest) => {
+  maybeHandleNotify = (request: IncomingRequest) => {
     const headerNotify = request.getHeader(HEADER_NOTIFY);
 
     if (headerNotify) {
       const headerNotifyParsed: TInfoNotify = JSON.parse(headerNotify);
 
-      this._handleNotify(headerNotifyParsed);
+      this.handleNotify(headerNotifyParsed);
     }
   };
 
@@ -2102,7 +2013,7 @@ export default class SipConnector {
     });
   }
 
-  async _sendRefusalToTurnOn(
+  async sendRefusalToTurnOn(
     type: 'cam' | 'mic',
     options: TOptionsInfoMediaState = {},
   ): Promise<void> {
@@ -2129,7 +2040,7 @@ export default class SipConnector {
       throw new Error('No rtcSession established');
     }
 
-    return this._sendRefusalToTurnOn('mic', { noTerminateWhenError: true, ...options });
+    return this.sendRefusalToTurnOn('mic', { noTerminateWhenError: true, ...options });
   }
 
   async sendRefusalToTurnOnCam(options: TOptionsInfoMediaState = {}): Promise<void> {
@@ -2137,16 +2048,16 @@ export default class SipConnector {
       throw new Error('No rtcSession established');
     }
 
-    return this._sendRefusalToTurnOn('cam', { noTerminateWhenError: true, ...options });
+    return this.sendRefusalToTurnOn('cam', { noTerminateWhenError: true, ...options });
   }
 
-  _handleEnded = (error: TCustomError) => {
+  handleEnded = (error: TCustomError) => {
     const { originator } = error;
 
     if (originator === ORIGINATOR_REMOTE) {
-      this._sessionEvents.trigger(ENDED_FROM_SERVER, error);
+      this.sessionEvents.trigger(ENDED_FROM_SERVER, error);
     }
 
-    this._restoreSession();
+    this.restoreSession();
   };
 }

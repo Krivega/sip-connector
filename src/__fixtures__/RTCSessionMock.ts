@@ -30,7 +30,7 @@ class RTCSessionMock extends BaseSession {
 
   status_code?: number;
 
-  private _isEnded = false;
+  private isEndedInner = false;
 
   private static startPresentationError?: Error;
 
@@ -108,9 +108,9 @@ class RTCSessionMock extends BaseSession {
       tracks.push(videoTrack);
     }
 
-    this._connection = new RTCPeerConnectionMock(undefined, tracks);
+    this.connection = new RTCPeerConnectionMock(undefined, tracks);
 
-    this._addStream(sendedStream);
+    this.addStream(sendedStream);
 
     setTimeout(() => {
       this.trigger('peerconnection', { peerconnection: this.connection });
@@ -176,18 +176,18 @@ class RTCSessionMock extends BaseSession {
     }, CONNECTION_DELAY);
   });
 
-  terminate({ status_code }: { status_code?: number } = {}) {
+  terminate({ status_code, cause }: { status_code?: number; cause?: string } = {}) {
     this.status_code = status_code;
 
-    this.trigger('ended', { status_code });
+    this.trigger('ended', { status_code, cause, originator: 'local' });
 
-    this._isEnded = false;
+    this.isEndedInner = false;
 
     return this;
   }
 
-  async terminateAsync({ status_code }: { status_code?: number } = {}) {
-    this.terminate({ status_code });
+  async terminateAsync({ status_code, cause }: { status_code?: number; cause?: string } = {}) {
+    this.terminate({ status_code, cause });
   }
 
   terminateRemote({ status_code }: { status_code?: number } = {}) {
@@ -198,17 +198,13 @@ class RTCSessionMock extends BaseSession {
     return this;
   }
 
-  _addStream(stream: Record<string, () => any[]>, action = 'getTracks') {
+  addStream(stream: Record<string, () => any[]>, action = 'getTracks') {
     stream[action]().forEach((track: MediaStreamTrack) => {
       return this.connection.addTrack(track);
     });
   }
 
-  _forEachSenders(callback: {
-    ({ track }: { track: any }): void;
-    ({ track }: { track: any }): void;
-    (argument0: any): void;
-  }) {
+  forEachSenders(callback: (sender: RTCRtpSender) => void) {
     const senders = this.connection.getSenders();
 
     for (const sender of senders) {
@@ -220,8 +216,8 @@ class RTCSessionMock extends BaseSession {
 
   /* eslint-disable no-param-reassign */
 
-  _toggleMuteAudio(mute: boolean) {
-    this._forEachSenders(({ track }) => {
+  toggleMuteAudio(mute: boolean) {
+    this.forEachSenders(({ track }) => {
       if (track && track.kind === 'audio') {
         track.enabled = !mute;
       }
@@ -231,8 +227,8 @@ class RTCSessionMock extends BaseSession {
 
   /* eslint-disable no-param-reassign */
 
-  _toggleMuteVideo(mute: boolean) {
-    this._forEachSenders(({ track }) => {
+  toggleMuteVideo(mute: boolean) {
+    this.forEachSenders(({ track }) => {
       if (track && track.kind === 'video') {
         track.enabled = !mute;
       }
@@ -241,49 +237,50 @@ class RTCSessionMock extends BaseSession {
 
   mute(options: { audio: any; video: any }) {
     if (options.audio) {
-      this._mutedOptions.audio = true;
-      this._toggleMuteAudio(this._mutedOptions.audio);
+      this.mutedOptions.audio = true;
+      this.toggleMuteAudio(this.mutedOptions.audio);
     }
 
     if (options.video) {
-      this._mutedOptions.video = true;
-      this._toggleMuteVideo(this._mutedOptions.video);
+      this.mutedOptions.video = true;
+      this.toggleMuteVideo(this.mutedOptions.video);
     }
 
-    this._onmute(options);
+    this.onmute(options);
   }
 
   unmute(options: { audio: any; video: any }) {
     if (options.audio) {
-      this._mutedOptions.audio = false;
+      this.mutedOptions.audio = false;
     }
 
     if (options.video) {
-      this._mutedOptions.video = false;
+      this.mutedOptions.video = false;
     }
 
     this.trigger('unmuted', options);
   }
 
   isMuted() {
-    return this._mutedOptions;
+    return this.mutedOptions;
   }
 
   async replaceMediaStream(mediaStream: any) {
     return mediaStream;
   }
 
-  _onmute({ audio, video }: { audio: boolean; video: boolean }) {
+  onmute({ audio, video }: { audio: boolean; video: boolean }) {
     this.trigger('muted', {
       audio,
       video,
     });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   async sendInfo() {}
 
   isEnded() {
-    return this._isEnded;
+    return this.isEndedInner;
   }
 
   newInfo(data: IncomingInfoEvent) {

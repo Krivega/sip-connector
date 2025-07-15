@@ -4,16 +4,17 @@ import type { MediaStreamTrackMock } from 'webrtc-mock';
 import RTCRtpSenderMock from './RTCRtpSenderMock';
 
 class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
-  _senders: RTCRtpSender[] = [];
+  senders: RTCRtpSender[] = [];
 
-  _receivers: any[] = [];
+  receivers: any[] = [];
 
   constructor(
+    // eslint-disable-next-line @typescript-eslint/default-param-last
     _configuration?: RTCConfiguration,
     // @ts-expect-error
     tracks: MediaStreamTrackMock[],
   ) {
-    this._receivers = tracks.map((track) => {
+    this.receivers = tracks.map((track) => {
       return { track };
     });
   }
@@ -184,17 +185,17 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
   }
 
   getReceivers = () => {
-    return this._receivers;
+    return this.receivers;
   };
 
   getSenders = () => {
-    return this._senders;
+    return this.senders;
   };
 
   addTrack = (track: MediaStreamTrack) => {
     const sender = new RTCRtpSenderMock({ track });
 
-    this._senders.push(sender);
+    this.senders.push(sender);
 
     return sender;
   };

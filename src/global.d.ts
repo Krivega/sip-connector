@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/consistent-type-definitions */
 /// <reference types="node" />
 /// <reference types="vite/client" />
 /// <reference types="jest" />

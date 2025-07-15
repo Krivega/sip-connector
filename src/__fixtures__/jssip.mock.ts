@@ -59,7 +59,7 @@ const triggerIncomingSession = (
   const session = new Session({ originator: originatorRemote });
   const uri = new URI('sip', incomingNumber, host);
 
-  session._remote_identity = new NameAddrHeader(uri, displayName);
+  session.remote_identity = new NameAddrHeader(uri, displayName);
 
   ua.trigger('newRTCSession', { originator: originatorRemote, session });
 };

@@ -1,11 +1,11 @@
 /// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
-import type SipConnector from '../SipConnector';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import delayPromise from '../__fixtures__/delayPromise';
 import JsSIP from '../__fixtures__/jssip.mock';
 import remoteCallerData from '../__fixtures__/remoteCallerData';
 import { doMockSipConnector } from '../doMock';
+import type SipConnector from '../SipConnector';
 
 describe('incoming call', () => {
   let sipConnector: SipConnector;
@@ -119,9 +119,9 @@ describe('incoming call', () => {
         });
 
         // @ts-expect-error
-        expect(peerconnection._senders[0].track.kind).toBe('audio');
+        expect(peerconnection.getSenders()[0].track.kind).toBe('audio');
         // @ts-expect-error
-        expect(peerconnection._senders[1].track.kind).toBe('video');
+        expect(peerconnection.getSenders()[1].track.kind).toBe('video');
 
         resolve();
       });
@@ -149,9 +149,9 @@ describe('incoming call', () => {
         });
 
         // @ts-expect-error
-        expect(peerconnection._senders[0].track.kind).toBe('audio');
+        expect(peerconnection.getSenders()[0].track.kind).toBe('audio');
         // @ts-expect-error
-        expect(peerconnection._senders[1].track.kind).toBe('video');
+        expect(peerconnection.getSenders()[1].track.kind).toBe('video');
 
         resolve();
       });

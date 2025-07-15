@@ -95,7 +95,7 @@ describe('actionsProgressCall', () => {
       });
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('ended', 'error');
+    sipConnector.sessionEvents.trigger('ended', 'error');
 
     expect(onEndedCall.mock.calls.length).toBe(1);
   });
@@ -113,7 +113,7 @@ describe('actionsProgressCall', () => {
       });
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('ended', 'error');
+    sipConnector.sessionEvents.trigger('ended', 'error');
 
     await sipConnectorFacade
       .connectToServer(dataForConnectionWithoutAuthorization)
@@ -122,7 +122,7 @@ describe('actionsProgressCall', () => {
       });
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('ended', 'error');
+    sipConnector.sessionEvents.trigger('ended', 'error');
 
     expect(onEndedCall.mock.calls.length).toBe(1);
   });
@@ -140,7 +140,7 @@ describe('actionsProgressCall', () => {
       });
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('failed', 'error');
+    sipConnector.sessionEvents.trigger('failed', 'error');
 
     expect(onEndedCall.mock.calls.length).toBe(1);
   });
@@ -158,7 +158,7 @@ describe('actionsProgressCall', () => {
       });
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('failed', 'error');
+    sipConnector.sessionEvents.trigger('failed', 'error');
 
     await sipConnectorFacade
       .connectToServer(dataForConnectionWithoutAuthorization)
@@ -167,7 +167,7 @@ describe('actionsProgressCall', () => {
       });
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('failed', 'error');
+    sipConnector.sessionEvents.trigger('failed', 'error');
 
     expect(onEndedCall.mock.calls.length).toBe(1);
   });
@@ -185,7 +185,7 @@ describe('actionsProgressCall', () => {
       });
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('failed', 'error');
+    sipConnector.sessionEvents.trigger('failed', 'error');
 
     await sipConnectorFacade
       .connectToServer(dataForConnectionWithoutAuthorization)
@@ -194,7 +194,7 @@ describe('actionsProgressCall', () => {
       });
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('ended', 'error');
+    sipConnector.sessionEvents.trigger('ended', 'error');
 
     expect(onEndedCall.mock.calls.length).toBe(1);
   });
@@ -212,7 +212,7 @@ describe('actionsProgressCall', () => {
       });
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('ended', 'error');
+    sipConnector.sessionEvents.trigger('ended', 'error');
 
     await sipConnectorFacade
       .connectToServer(dataForConnectionWithoutAuthorization)
@@ -221,7 +221,7 @@ describe('actionsProgressCall', () => {
       });
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('failed', 'error');
+    sipConnector.sessionEvents.trigger('failed', 'error');
 
     expect(onEndedCall.mock.calls.length).toBe(1);
   });

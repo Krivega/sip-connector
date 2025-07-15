@@ -62,24 +62,24 @@ class UA implements IUA {
     this.isAvailableTelephony = false;
   }
 
-  _events: Events<typeof UA_EVENT_NAMES>;
+  events: Events<typeof UA_EVENT_NAMES>;
 
-  _startedTimeout?: ReturnType<typeof setTimeout>;
+  private startedTimeout?: ReturnType<typeof setTimeout>;
 
-  _stopedTimeout?: ReturnType<typeof setTimeout>;
+  private stopedTimeout?: ReturnType<typeof setTimeout>;
 
-  session?: RTCSessionMock;
+  private session?: RTCSessionMock;
 
-  _isRegistered?: boolean;
+  private isRegisteredInner?: boolean;
 
-  _isConnected?: boolean;
+  private isConnectedInner?: boolean;
 
-  configuration: UAConfiguration;
+  private configuration: UAConfiguration;
 
-  _registrator: Registrator;
+  public readonly registratorInner: Registrator;
 
   constructor(_configuration: UAConfigurationParams) {
-    this._events = new Events<typeof UA_EVENT_NAMES>(UA_EVENT_NAMES);
+    this.events = new Events<typeof UA_EVENT_NAMES>(UA_EVENT_NAMES);
 
     const [scheme, infoUri] = _configuration.uri.split(':');
     const [user, url] = infoUri.split('@');
@@ -90,11 +90,7 @@ class UA implements IUA {
     };
 
     this.configuration = configuration;
-    this._registrator = new Registrator();
-  }
-
-  isConnected() {
-    return !!this._isConnected;
+    this.registratorInner = new Registrator();
   }
 
   /**
@@ -120,18 +116,18 @@ class UA implements IUA {
    * @returns {undefined}
    */
   stop() {
-    if (this._startedTimeout) {
-      clearTimeout(this._startedTimeout);
+    if (this.startedTimeout) {
+      clearTimeout(this.startedTimeout);
     }
 
-    if (this._stopedTimeout) {
-      clearTimeout(this._stopedTimeout);
+    if (this.stopedTimeout) {
+      clearTimeout(this.stopedTimeout);
     }
 
     this.unregister();
 
     if (this.isStarted()) {
-      this._stopedTimeout = setTimeout(() => {
+      this.stopedTimeout = setTimeout(() => {
         this.trigger('disconnected', { error: new Error('stoped') });
       }, CONNECTION_DELAY);
     } else {
@@ -152,33 +148,33 @@ class UA implements IUA {
 
   // @ts-expect-error
   on(eventName: TEventUA, handler) {
-    this._events.on(eventName, handler);
+    this.events.on(eventName, handler);
 
     return this;
   }
 
   // @ts-expect-error
   once(eventName: TEventUA, handler) {
-    this._events.once(eventName, handler);
+    this.events.once(eventName, handler);
 
     return this;
   }
 
   // @ts-expect-error
   off(eventName: TEventUA, handler) {
-    this._events.off(eventName, handler);
+    this.events.off(eventName, handler);
 
     return this;
   }
 
   removeAllListeners() {
-    this._events.removeEventHandlers();
+    this.events.removeEventHandlers();
 
     return this;
   }
 
   trigger(eventName: TEventUA, data?: any) {
-    this._events.trigger(eventName, data);
+    this.events.trigger(eventName, data);
   }
 
   /**
@@ -211,38 +207,38 @@ class UA implements IUA {
    * @returns {undefined}
    */
   register() {
-    if (this._startedTimeout) {
-      clearTimeout(this._startedTimeout);
+    if (this.startedTimeout) {
+      clearTimeout(this.startedTimeout);
     }
 
     const { password, register, uri } = this.configuration;
 
     if (register && uri.user.includes(NAME_INCORRECT)) {
-      this._isRegistered = false;
-      this._isConnected = false;
-      this._startedTimeout = setTimeout(() => {
+      this.isRegisteredInner = false;
+      this.isConnectedInner = false;
+      this.startedTimeout = setTimeout(() => {
         this.trigger('registrationFailed', { response: null, cause: 'Request Timeout' });
       }, CONNECTION_DELAY);
     } else if (
-      !this._isRegistered &&
+      !this.isRegistered() &&
       register &&
       (password === PASSWORD_CORRECT || password === PASSWORD_CORRECT_2)
     ) {
-      this._isRegistered = true;
-      this._startedTimeout = setTimeout(() => {
+      this.isRegisteredInner = true;
+      this.startedTimeout = setTimeout(() => {
         this.trigger('registered');
       }, CONNECTION_DELAY);
     } else if (register && password !== PASSWORD_CORRECT && password !== PASSWORD_CORRECT_2) {
-      this._isRegistered = false;
-      this._isConnected = false;
-      this._startedTimeout = setTimeout(() => {
+      this.isRegisteredInner = false;
+      this.isConnectedInner = false;
+      this.startedTimeout = setTimeout(() => {
         this.trigger('registrationFailed', { response: null, cause: 'Wrong credentials' });
       }, CONNECTION_DELAY);
     }
 
     if (UA.isAvailableTelephony) {
       this.trigger('connected');
-      this._isConnected = true;
+      this.isConnectedInner = true;
     } else {
       this.stop();
     }
@@ -254,19 +250,18 @@ class UA implements IUA {
    * @returns {undefined}
    */
   unregister() {
-    this._isRegistered = false;
-    this._isConnected = false;
+    this.isRegisteredInner = false;
+    this.isConnectedInner = false;
 
     this.trigger('unregistered');
   }
 
-  /**
-   * isRegistered
-   *
-   * @returns {boolean} isRegistered
-   */
   isRegistered() {
-    return !!this._isRegistered;
+    return !!this.isRegisteredInner;
+  }
+
+  isConnected() {
+    return !!this.isConnectedInner;
   }
 
   /**
@@ -277,17 +272,17 @@ class UA implements IUA {
   isStarted() {
     return (
       this.configuration &&
-      ((this.configuration.register && !!this._isRegistered) ||
-        (!this.configuration.register && !!this._isConnected))
+      ((this.configuration.register && !!this.isRegisteredInner) ||
+        (!this.configuration.register && !!this.isConnectedInner))
     );
-  }
-
-  registrator() {
-    return this._registrator;
   }
 
   newSipEvent(data: { request: IncomingRequest }) {
     this.trigger('sipEvent', data);
+  }
+
+  registrator() {
+    return this.registratorInner;
   }
 }
 
