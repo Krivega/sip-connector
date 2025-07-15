@@ -185,7 +185,7 @@ describe('connect', () => {
     expect(sipConnector.getConnectionConfiguration().password).toBe(
       dataForConnectionWithAuthorizationWithDisplayName.password,
     );
-    expect(sipConnector.ua!.configuration).toEqual(uaConfigurationWithAuthorizationWithDisplayName);
+    expect(sipConnector.ua?.configuration).toEqual(uaConfigurationWithAuthorizationWithDisplayName);
   });
 
   it('set same password after with authorization', async () => {
@@ -202,7 +202,7 @@ describe('connect', () => {
         expect(sipConnector.getConnectionConfiguration().password).toBe(
           dataForConnectionWithAuthorizationWithDisplayName.password,
         );
-        expect(sipConnector.ua!.configuration).toEqual(
+        expect(sipConnector.ua?.configuration).toEqual(
           uaConfigurationWithAuthorizationWithDisplayName,
         );
       });

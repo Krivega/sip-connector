@@ -524,26 +524,29 @@ export default class SipConnector {
     }
 
     const { contentHint } = options ?? {};
-    const preparedMediaStream = prepareMediaStream(mediaStream, { contentHint })!;
+    const preparedMediaStream = prepareMediaStream(mediaStream, { contentHint });
+
+    if (preparedMediaStream === undefined) {
+      throw new Error('No preparedMediaStream');
+    }
 
     return this.rtcSession.replaceMediaStream(preparedMediaStream, options);
   }
 
   declineToIncomingCall = async ({ statusCode = REQUEST_TERMINATED_STATUS_CODE } = {}) => {
-    return new Promise((resolve, reject) => {
-      if (!this.isAvailableIncomingCall) {
-        reject(new Error('no incomingRTCSession'));
+    return new Promise<void>((resolve, reject) => {
+      try {
+        const incomingRTCSession = this.getIncomingRTCSession();
 
-        return;
+        const callerData = this.remoteCallerData;
+
+        this.removeIncomingSession();
+        this.uaEvents.trigger(DECLINED_INCOMING_CALL, callerData);
+        incomingRTCSession.terminate({ status_code: statusCode });
+        resolve();
+      } catch (error) {
+        reject(error as Error);
       }
-
-      const incomingRTCSession = this.incomingRTCSession!;
-      const callerData = this.remoteCallerData;
-
-      this.removeIncomingSession();
-      this.uaEvents.trigger(DECLINED_INCOMING_CALL, callerData);
-      // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
-      resolve(incomingRTCSession.terminate({ status_code: statusCode }));
     });
   };
 
@@ -742,7 +745,11 @@ export default class SipConnector {
       onAddedTransceiver?: TOnAddedTransceiver;
     },
   ) {
-    const streamPresentationCurrent = prepareMediaStream(stream, { contentHint })!;
+    const streamPresentationCurrent = prepareMediaStream(stream, { contentHint });
+
+    if (streamPresentationCurrent === undefined) {
+      throw new Error('No streamPresentationCurrent');
+    }
 
     this.streamPresentationCurrent = streamPresentationCurrent;
 
@@ -1085,6 +1092,16 @@ export default class SipConnector {
     return !!this.incomingRTCSession;
   }
 
+  getIncomingRTCSession() {
+    const { incomingRTCSession } = this;
+
+    if (!incomingRTCSession) {
+      throw new Error('No incomingRTCSession');
+    }
+
+    return incomingRTCSession;
+  }
+
   connectInner: TConnect = async (parameters) => {
     return this.initUa(parameters).then(async () => {
       return this.start();
@@ -1376,62 +1393,54 @@ export default class SipConnector {
     this.isPendingAnswer = true;
 
     return new Promise<RTCPeerConnection>((resolve, reject) => {
-      if (!this.isAvailableIncomingCall) {
-        reject(new Error('no incomingRTCSession'));
+      try {
+        const rtcSession = this.getIncomingRTCSession();
 
-        return;
-      }
+        this.rtcSession = rtcSession;
+        this.removeIncomingSession();
 
-      this.rtcSession = this.incomingRTCSession;
-      this.removeIncomingSession();
+        this.sessionEvents.eachTriggers((trigger, eventName) => {
+          const sessionJsSipEvent = SESSION_JSSIP_EVENT_NAMES.find((jsSipEvent) => {
+            return jsSipEvent === eventName;
+          });
 
-      const { rtcSession } = this;
-
-      if (!rtcSession) {
-        reject(new Error('No rtcSession established'));
-
-        return;
-      }
-
-      this.sessionEvents.eachTriggers((trigger, eventName) => {
-        const sessionJsSipEvent = SESSION_JSSIP_EVENT_NAMES.find((jsSipEvent) => {
-          return jsSipEvent === eventName;
+          if (sessionJsSipEvent) {
+            rtcSession.on(sessionJsSipEvent, trigger);
+          }
         });
 
-        if (sessionJsSipEvent) {
-          rtcSession.on(sessionJsSipEvent, trigger);
-        }
-      });
+        this.connectionConfiguration.answer = true;
+        this.connectionConfiguration.number = rtcSession.remote_identity.uri.user;
+        this.handleCall({ ontrack })
+          .then(resolve)
+          .catch((error: unknown) => {
+            reject(error as Error);
+          });
 
-      this.connectionConfiguration.answer = true;
-      this.connectionConfiguration.number = rtcSession.remote_identity.uri.user;
-      this.handleCall({ ontrack })
-        .then(resolve)
-        .catch((error: unknown) => {
-          reject(error as Error);
+        const preparedMediaStream = prepareMediaStream(mediaStream, {
+          directionVideo,
+          directionAudio,
+          contentHint,
         });
 
-      const preparedMediaStream = prepareMediaStream(mediaStream, {
-        directionVideo,
-        directionAudio,
-        contentHint,
-      });
-
-      rtcSession.answer({
-        extraHeaders,
-        directionVideo,
-        directionAudio,
-        mediaStream: preparedMediaStream,
-        pcConfig: {
-          iceServers,
-        },
-        rtcOfferConstraints: {
-          offerToReceiveAudio,
-          offerToReceiveVideo,
-        },
-        sendEncodings,
-        onAddedTransceiver,
-      });
+        rtcSession.answer({
+          extraHeaders,
+          directionVideo,
+          directionAudio,
+          mediaStream: preparedMediaStream,
+          pcConfig: {
+            iceServers,
+          },
+          rtcOfferConstraints: {
+            offerToReceiveAudio,
+            offerToReceiveVideo,
+          },
+          sendEncodings,
+          onAddedTransceiver,
+        });
+      } catch (error) {
+        reject(error as Error);
+      }
     }).finally(() => {
       this.isPendingAnswer = false;
     });

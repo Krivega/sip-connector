@@ -206,7 +206,7 @@ class UA implements IUA {
    * @returns {undefined}
    */
   terminateSessions() {
-    this.session!.terminate();
+    this.session?.terminate();
   }
 
   set(key: keyof UAConfiguration, value: UAConfiguration[keyof UAConfiguration]) {

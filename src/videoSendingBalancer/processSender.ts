@@ -63,9 +63,9 @@ const setBitrateByTrackResolution = async (
   const scaleResolutionDownByTarget = 1;
 
   const settings = videoTrack.getSettings();
-  const widthCurrent = settings.width!;
+  const widthCurrent = settings.width;
 
-  const maxBitrate = getMaxBitrateByWidthAndCodec(widthCurrent, codec);
+  const maxBitrate = getMaxBitrateByWidthAndCodec(widthCurrent ?? 0, codec);
 
   return addToStackScaleResolutionDownBySender({
     sender,

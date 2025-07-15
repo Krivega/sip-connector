@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /// <reference types="jest" />
 import type SipConnector from '../../SipConnector';
 import { doMockSipConnector } from '../../doMock';
@@ -52,7 +53,7 @@ describe('connectToServer', () => {
 
   it('registered', async () => {
     return sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization).then(() => {
-      expect(sipConnector.ua!.configuration).toEqual(uaConfigurationWithAuthorization);
+      expect(sipConnector.ua?.configuration).toEqual(uaConfigurationWithAuthorization);
     });
   });
 
@@ -72,7 +73,7 @@ describe('connectToServer', () => {
         });
       })
       .then(() => {
-        expect(sipConnector.ua!.configuration).toEqual({
+        expect(sipConnector.ua?.configuration).toEqual({
           ...uaConfigurationWithAuthorization,
           uri: uriWithName(thirdWord),
         });

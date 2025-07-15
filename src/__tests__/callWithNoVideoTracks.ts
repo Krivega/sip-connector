@@ -49,7 +49,7 @@ describe('call with no video tracks', () => {
 
     const remoteStreams = sipConnector.getRemoteStreams();
 
-    expect(remoteStreams!.length).toBe(1);
+    expect(remoteStreams?.length).toBe(1);
   });
 
   it('should no exist video tracks in incoming mediaStream when call with no video', async () => {
@@ -60,9 +60,9 @@ describe('call with no video tracks', () => {
 
     const remoteStreams = sipConnector.getRemoteStreams();
 
-    const videoTrack = remoteStreams![0].getVideoTracks();
+    const videoTrack = remoteStreams?.[0]?.getVideoTracks();
 
-    expect(videoTrack.length).toBe(0);
+    expect(videoTrack?.length).toBe(0);
   });
 
   it('tracks on senders', async () => {

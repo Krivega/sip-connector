@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
@@ -177,6 +178,8 @@ describe('incoming call', () => {
       JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
     })
       .then(async () => {
+        const incomingRTCSession = sipConnector.getIncomingRTCSession();
+
         return Promise.all([
           new Promise<{
             displayName: string;
@@ -185,12 +188,14 @@ describe('incoming call', () => {
           }>((resolve) => {
             sipConnector.on('declinedIncomingCall', resolve);
           }),
-          sipConnector.declineToIncomingCall(),
+          sipConnector.declineToIncomingCall().then(() => {
+            return incomingRTCSession;
+          }),
         ]);
       })
       .then(([{ displayName, host, incomingNumber }, incomingRTCSession]) => {
         // @ts-expect-error
-        expect(incomingRTCSession.status_code).toBe(487);
+        expect(incomingRTCSession?.status_code).toBe(487);
         expect(incomingNumber).toBe(remoteCallerData.incomingNumber);
         expect(host).toBe(remoteCallerData.host);
         expect(displayName).toBe(remoteCallerData.displayName);
