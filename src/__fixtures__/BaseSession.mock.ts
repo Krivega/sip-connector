@@ -20,10 +20,8 @@ import Events from 'events-constructor';
 import type { TEventSession } from '../eventNames';
 import { SESSION_EVENT_NAMES } from '../eventNames';
 
-/**
- * BaseSession
- * @class
- */
+export type TEventHandlers = Record<string, (data: unknown) => void>;
+
 class BaseSession implements RTCSession {
   originator: string;
 
@@ -35,8 +33,13 @@ class BaseSession implements RTCSession {
 
   mutedOptions = { audio: false, video: false };
 
-  // @ts-expect-error
-  constructor({ originator = 'local', eventHandlers }) {
+  constructor({
+    originator = 'local',
+    eventHandlers,
+  }: {
+    originator?: string;
+    eventHandlers: TEventHandlers;
+  }) {
     this.originator = originator;
     this.events = new Events<typeof SESSION_EVENT_NAMES>(SESSION_EVENT_NAMES);
     this.initEvents(eventHandlers);
@@ -56,11 +59,11 @@ class BaseSession implements RTCSession {
     throw new Error('Method not implemented.');
   }
 
-  set data(_data: any) {
+  set data(_data: unknown) {
     throw new Error('Method not implemented.');
   }
 
-  get data(): any {
+  get data(): unknown {
     throw new Error('Method not implemented.');
   }
 
@@ -155,19 +158,19 @@ class BaseSession implements RTCSession {
     throw new Error('Method not implemented.');
   }
 
-  addListener(_event: string | symbol, _listener: (...arguments_: any[]) => void): this {
+  addListener(_event: string | symbol, _listener: (...arguments_: unknown[]) => void): this {
     throw new Error('Method not implemented.');
   }
 
-  once(_event: string | symbol, _listener: (...arguments_: any[]) => void): this {
+  once(_event: string | symbol, _listener: (...arguments_: unknown[]) => void): this {
     throw new Error('Method not implemented.');
   }
 
-  removeListener(_event: string | symbol, _listener: (...arguments_: any[]) => void): this {
+  removeListener(_event: string | symbol, _listener: (...arguments_: unknown[]) => void): this {
     throw new Error('Method not implemented.');
   }
 
-  off(_event: string | symbol, _listener: (...arguments_: any[]) => void): this {
+  off(_event: string | symbol, _listener: (...arguments_: unknown[]) => void): this {
     throw new Error('Method not implemented.');
   }
 
@@ -191,7 +194,7 @@ class BaseSession implements RTCSession {
     throw new Error('Method not implemented.');
   }
 
-  emit(_event: string | symbol, ..._arguments_: any[]): boolean {
+  emit(_event: string | symbol, ..._arguments_: unknown[]): boolean {
     throw new Error('Method not implemented.');
   }
 
@@ -199,11 +202,14 @@ class BaseSession implements RTCSession {
     throw new Error('Method not implemented.');
   }
 
-  prependListener(_event: string | symbol, _listener: (...arguments_: any[]) => void): this {
+  prependListener(_event: string | symbol, _listener: (...arguments_: unknown[]) => void): this {
     throw new Error('Method not implemented.');
   }
 
-  prependOnceListener(_event: string | symbol, _listener: (...arguments_: any[]) => void): this {
+  prependOnceListener(
+    _event: string | symbol,
+    _listener: (...arguments_: unknown[]) => void,
+  ): this {
     throw new Error('Method not implemented.');
   }
 
@@ -211,21 +217,14 @@ class BaseSession implements RTCSession {
     throw new Error('Method not implemented.');
   }
 
-  /**
-   * initEvents
-   *
-   * @param {Array} [eventHandlers=[] - ]  The event handlers
-   *
-   * @returns {undefined}
-   */
-  initEvents(eventHandlers = []) {
+  initEvents(eventHandlers: TEventHandlers) {
     Object.entries(eventHandlers).forEach(([eventName, handler]) => {
       return this.on(eventName, handler);
     });
   }
 
   // @ts-expect-error
-
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
   on<T>(eventName: string, handler: (data: T) => void) {
     // @ts-expect-error
     this.events.on(eventName, handler);
@@ -233,7 +232,7 @@ class BaseSession implements RTCSession {
     return this;
   }
 
-  trigger(eventName: TEventSession, data?: any) {
+  trigger(eventName: TEventSession, data?: unknown) {
     this.events.trigger(eventName, data);
   }
 

@@ -6,7 +6,7 @@ import RTCRtpSenderMock from './RTCRtpSenderMock';
 class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
   senders: RTCRtpSender[] = [];
 
-  receivers: any[] = [];
+  receivers: RTCRtpReceiver[] = [];
 
   constructor(
     // eslint-disable-next-line @typescript-eslint/default-param-last
@@ -15,7 +15,7 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
     tracks: MediaStreamTrackMock[],
   ) {
     this.receivers = tracks.map((track) => {
-      return { track };
+      return { track } as unknown as RTCRtpReceiver;
     });
   }
 
@@ -37,23 +37,23 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
 
   localDescription!: RTCSessionDescription | null;
 
-  onconnectionstatechange!: ((this: RTCPeerConnection, event_: Event) => any) | null;
+  onconnectionstatechange!: ((this: RTCPeerConnection, event_: Event) => unknown) | null;
 
-  ondatachannel!: ((this: RTCPeerConnection, event_: RTCDataChannelEvent) => any) | null;
+  ondatachannel!: ((this: RTCPeerConnection, event_: RTCDataChannelEvent) => unknown) | null;
 
-  onicecandidate!: ((this: RTCPeerConnection, event_: RTCPeerConnectionIceEvent) => any) | null;
+  onicecandidate!: ((this: RTCPeerConnection, event_: RTCPeerConnectionIceEvent) => unknown) | null;
 
-  onicecandidateerror: ((this: RTCPeerConnection, event_: Event) => any) | null = null;
+  onicecandidateerror: ((this: RTCPeerConnection, event_: Event) => unknown) | null = null;
 
-  oniceconnectionstatechange!: ((this: RTCPeerConnection, event_: Event) => any) | null;
+  oniceconnectionstatechange!: ((this: RTCPeerConnection, event_: Event) => unknown) | null;
 
-  onicegatheringstatechange!: ((this: RTCPeerConnection, event_: Event) => any) | null;
+  onicegatheringstatechange!: ((this: RTCPeerConnection, event_: Event) => unknown) | null;
 
-  onnegotiationneeded!: ((this: RTCPeerConnection, event_: Event) => any) | null;
+  onnegotiationneeded!: ((this: RTCPeerConnection, event_: Event) => unknown) | null;
 
-  onsignalingstatechange!: ((this: RTCPeerConnection, event_: Event) => any) | null;
+  onsignalingstatechange!: ((this: RTCPeerConnection, event_: Event) => unknown) | null;
 
-  ontrack!: ((this: RTCPeerConnection, event_: RTCTrackEvent) => any) | null;
+  ontrack!: ((this: RTCPeerConnection, event_: RTCTrackEvent) => unknown) | null;
 
   peerIdentity = undefined;
 
@@ -96,8 +96,8 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
     failureCallback: RTCPeerConnectionErrorCallback,
   ): Promise<void>;
   async createAnswer(
-    _successCallback?: any,
-    _failureCallback?: any,
+    _successCallback?: unknown,
+    _failureCallback?: unknown,
   ): Promise<RTCSessionDescriptionInit | void> {
     throw new Error('Method not implemented.');
   }
@@ -113,9 +113,9 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
     options?: RTCOfferOptions,
   ): Promise<void>;
   async createOffer(
-    _successCallback?: any,
-    _failureCallback?: any,
-    _options?: any,
+    _successCallback?: unknown,
+    _failureCallback?: unknown,
+    _options?: unknown,
   ): Promise<RTCSessionDescriptionInit | void> {
     throw new Error('Method not implemented.');
   }
@@ -154,7 +154,7 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
 
   addEventListener<K extends keyof RTCPeerConnectionEventMap>(
     type: K,
-    listener: (this: RTCPeerConnection, event_: RTCPeerConnectionEventMap[K]) => any,
+    listener: (this: RTCPeerConnection, event_: RTCPeerConnectionEventMap[K]) => unknown,
     options?: AddEventListenerOptions | boolean,
   ): void;
   addEventListener(
@@ -162,13 +162,13 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
     listener: EventListenerOrEventListenerObject,
     options?: AddEventListenerOptions | boolean,
   ): void;
-  addEventListener(_type: any, _listener: any, _options?: any) {
+  addEventListener(_type: unknown, _listener: unknown, _options?: unknown) {
     throw new Error('Method not implemented.');
   }
 
   removeEventListener<K extends keyof RTCPeerConnectionEventMap>(
     type: K,
-    listener: (this: RTCPeerConnection, event_: RTCPeerConnectionEventMap[K]) => any,
+    listener: (this: RTCPeerConnection, event_: RTCPeerConnectionEventMap[K]) => unknown,
     options?: EventListenerOptions | boolean,
   ): void;
   removeEventListener(
@@ -176,7 +176,7 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
     listener: EventListenerOrEventListenerObject,
     options?: EventListenerOptions | boolean,
   ): void;
-  removeEventListener(_type: any, _listener: any, _options?: any) {
+  removeEventListener(_type: unknown, _listener: unknown, _options?: unknown) {
     throw new Error('Method not implemented.');
   }
 
@@ -184,11 +184,11 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
     throw new Error('Method not implemented.');
   }
 
-  getReceivers = () => {
+  getReceivers = (): RTCRtpReceiver[] => {
     return this.receivers;
   };
 
-  getSenders = () => {
+  getSenders = (): RTCRtpSender[] => {
     return this.senders;
   };
 

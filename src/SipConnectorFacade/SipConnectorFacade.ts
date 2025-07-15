@@ -7,7 +7,7 @@ import {
   PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS,
   PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS,
 } from '../constants';
-import log from '../logger';
+import log, { debug } from '../logger';
 import type SipConnector from '../SipConnector';
 import generateSimulcastEncodings from '../tools/generateSimulcastEncodings';
 import hasPurgatory from '../tools/hasPurgatory';
@@ -160,13 +160,15 @@ class SipConnectorFacade implements IProxyMethods {
           proxyMethods.has(property as keyof IProxyMethods) &&
           property in this.sipConnector
         ) {
-          const value = Reflect.get(this.sipConnector, property, this.sipConnector);
+          const value = Reflect.get(this.sipConnector, property, this.sipConnector) as unknown;
 
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
           return typeof value === 'function' ? value.bind(this.sipConnector) : value;
         }
 
-        const value = Reflect.get(target, property, receiver);
+        const value = Reflect.get(target, property, receiver) as unknown;
 
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return typeof value === 'function' ? value.bind(target) : value;
       },
     });
@@ -346,7 +348,7 @@ class SipConnectorFacade implements IProxyMethods {
       log('onSuccess');
 
       isSuccessProgressCall = true;
-      handleReadyRemoteStreamsDebounced();
+      handleReadyRemoteStreamsDebounced().catch(debug);
 
       if (onSuccessProgressCall) {
         onSuccessProgressCall({ isPurgatory: hasPurgatory(room) });

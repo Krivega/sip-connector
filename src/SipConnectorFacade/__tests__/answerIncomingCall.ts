@@ -28,8 +28,7 @@ describe('answerIncomingCall', () => {
       sipConnector.on('incomingCall', async () => {
         const peerconnection = await sipConnectorFacade.answerIncomingCall(dataCall);
 
-        // @ts-expect-error
-        expect(parseObject(peerconnection.getReceivers())).toEqual(
+        expect(parseObject((peerconnection as RTCPeerConnection).getReceivers())).toEqual(
           parseObject(peerConnectionFromData.getReceivers()),
         );
 

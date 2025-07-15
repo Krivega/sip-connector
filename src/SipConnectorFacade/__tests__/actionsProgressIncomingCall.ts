@@ -19,11 +19,11 @@ describe('actionsProgressIncomingCall', () => {
   beforeEach(() => {
     jest.resetModules();
 
-    onBeforeProgressCall = jest.fn();
-    onSuccessProgressCall = jest.fn();
-    onFailProgressCall = jest.fn();
-    onFinishProgressCall = jest.fn();
-    onEndedCall = jest.fn();
+    onBeforeProgressCall = jest.fn() as jest.Mock<void>;
+    onSuccessProgressCall = jest.fn() as jest.Mock<void>;
+    onFailProgressCall = jest.fn() as jest.Mock<void>;
+    onFinishProgressCall = jest.fn() as jest.Mock<void>;
+    onEndedCall = jest.fn() as jest.Mock<void>;
 
     sipConnector = doMockSipConnector();
     sipConnectorFacade = new SipConnectorFacade(sipConnector);

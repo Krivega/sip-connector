@@ -21,9 +21,9 @@ describe('incoming call statuses', () => {
       video: { deviceId: { exact: 'videoDeviceId' } },
     }) as MediaStream;
     mockFunction = jest.fn(() => {});
-    mockFunctionConnecting = jest.fn();
-    mockFunctionAccepted = jest.fn();
-    mockFunctionConfirmed = jest.fn();
+    mockFunctionConnecting = jest.fn() as jest.Mock<void>;
+    mockFunctionAccepted = jest.fn() as jest.Mock<void>;
+    mockFunctionConfirmed = jest.fn() as jest.Mock<void>;
   });
 
   afterEach(() => {

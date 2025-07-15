@@ -1,3 +1,4 @@
+import { debug } from '../logger';
 import type SipConnector from '../SipConnector';
 import type { EEventsMainCAM } from '../types';
 import balance from './balance';
@@ -29,7 +30,7 @@ const resolveVideoSendingBalancer = (
 
   let reBalance = balanceByTrack;
 
-  const handleMainCamControl = async (headers: {
+  const handleMainCamControl = (headers: {
     mainCam: EEventsMainCAM;
     resolutionMainCam?: string;
   }) => {
@@ -51,7 +52,7 @@ const resolveVideoSendingBalancer = (
       });
     };
 
-    return reBalance();
+    reBalance().catch(debug);
   };
 
   const subscribe = () => {

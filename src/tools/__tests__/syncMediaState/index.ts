@@ -20,14 +20,14 @@ describe('media state: create state', () => {
 
   beforeEach(() => {
     sipConnector = doMockSipConnector();
-    onStartMainCamForced = jest.fn();
-    onStartMainCamNotForced = jest.fn();
-    onStopMainCamForced = jest.fn();
-    onStopMainCamNotForced = jest.fn();
-    onStartMicForced = jest.fn();
-    onStartMicNotForced = jest.fn();
-    onStopMicForced = jest.fn();
-    onStopMicNotForced = jest.fn();
+    onStartMainCamForced = jest.fn() as jest.Mock<void>;
+    onStartMainCamNotForced = jest.fn() as jest.Mock<void>;
+    onStopMainCamForced = jest.fn() as jest.Mock<void>;
+    onStopMainCamNotForced = jest.fn() as jest.Mock<void>;
+    onStartMicForced = jest.fn() as jest.Mock<void>;
+    onStartMicNotForced = jest.fn() as jest.Mock<void>;
+    onStopMicForced = jest.fn() as jest.Mock<void>;
+    onStopMicNotForced = jest.fn() as jest.Mock<void>;
 
     state = createState({ sipConnector });
   });

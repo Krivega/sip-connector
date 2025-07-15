@@ -140,6 +140,11 @@ const processSender = async (
 
       return setBitrateByTrackResolution({ sender, videoTrack, codec }, onSetParameters);
     }
+    case EEventsMainCAM.ADMIN_STOP_MAIN_CAM:
+    case EEventsMainCAM.ADMIN_START_MAIN_CAM:
+    case undefined: {
+      return setBitrateByTrackResolution({ sender, videoTrack, codec }, onSetParameters);
+    }
     default: {
       return setBitrateByTrackResolution({ sender, videoTrack, codec }, onSetParameters);
     }

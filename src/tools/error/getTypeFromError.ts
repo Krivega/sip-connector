@@ -34,7 +34,7 @@ const getTypeFromError = (error: TCustomError = new Error()): EErrorTypes => {
     }
     default: {
       // @ts-expect-error
-      // eslint-disable-next-line no-underscore-dangle
+      // eslint-disable-next-line no-underscore-dangle, @typescript-eslint/no-unsafe-member-access
       if (socket && socket?._ws?.readyState === 3) {
         type = EErrorTypes.WS_CONNECTION_FAILED;
       } else if (getLinkError(error)) {

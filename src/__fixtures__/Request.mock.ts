@@ -12,7 +12,7 @@ class Request extends IncomingRequest {
   }
 
   getHeader(headerName: string) {
-    return this.headers.get(headerName) || '';
+    return this.headers.get(headerName) ?? '';
   }
 }
 

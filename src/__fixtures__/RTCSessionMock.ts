@@ -3,6 +3,7 @@
 import type { IncomingInfoEvent } from '@krivega/jssip';
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
 import { REJECTED } from '../causes';
+import type { TEventHandlers } from './BaseSession.mock';
 import BaseSession from './BaseSession.mock';
 import RTCPeerConnectionMock from './RTCPeerConnectionMock';
 import { getRoomFromSipUrl } from './utils';
@@ -45,8 +46,8 @@ class RTCSessionMock extends BaseSession {
     originator,
   }: {
     url?: string;
-    mediaStream?: any;
-    eventHandlers?: any;
+    mediaStream?: MediaStream;
+    eventHandlers: TEventHandlers;
     originator: string;
   }) {
     super({ originator, eventHandlers });
@@ -81,7 +82,7 @@ class RTCSessionMock extends BaseSession {
     return super.startPresentation(stream);
   }
 
-  initPeerconnection(mediaStream: any) {
+  initPeerconnection(mediaStream: MediaStream | undefined) {
     if (!mediaStream) {
       return false;
     }
@@ -91,7 +92,7 @@ class RTCSessionMock extends BaseSession {
     return true;
   }
 
-  createPeerconnection(sendedStream: any) {
+  createPeerconnection(sendedStream: MediaStream) {
     const audioTrack = createAudioMediaStreamTrackMock();
 
     audioTrack.id = 'mainaudio1';
@@ -154,7 +155,7 @@ class RTCSessionMock extends BaseSession {
 
  * @returns {undefined}
      */
-  answer = jest.fn(({ mediaStream }) => {
+  answer = jest.fn(({ mediaStream }: { mediaStream: MediaStream }) => {
     if (this.originator !== 'remote') {
       const error = new Error('answer available only for remote sessions');
 
@@ -198,7 +199,10 @@ class RTCSessionMock extends BaseSession {
     return this;
   }
 
-  addStream(stream: Record<string, () => any[]>, action = 'getTracks') {
+  addStream(
+    stream: MediaStream,
+    action: 'getTracks' | 'getAudioTracks' | 'getVideoTracks' = 'getTracks',
+  ) {
     stream[action]().forEach((track: MediaStreamTrack) => {
       return this.connection.addTrack(track);
     });
@@ -235,7 +239,7 @@ class RTCSessionMock extends BaseSession {
     });
   }
 
-  mute(options: { audio: any; video: any }) {
+  mute(options: { audio: boolean; video: boolean }) {
     if (options.audio) {
       this.mutedOptions.audio = true;
       this.toggleMuteAudio(this.mutedOptions.audio);
@@ -249,7 +253,7 @@ class RTCSessionMock extends BaseSession {
     this.onmute(options);
   }
 
-  unmute(options: { audio: any; video: any }) {
+  unmute(options: { audio: boolean; video: boolean }) {
     if (options.audio) {
       this.mutedOptions.audio = false;
     }
@@ -265,9 +269,8 @@ class RTCSessionMock extends BaseSession {
     return this.mutedOptions;
   }
 
-  async replaceMediaStream(mediaStream: any) {
-    return mediaStream;
-  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-empty-function
+  async replaceMediaStream(_mediaStream: MediaStream): Promise<void> {}
 
   onmute({ audio, video }: { audio: boolean; video: boolean }) {
     this.trigger('muted', {

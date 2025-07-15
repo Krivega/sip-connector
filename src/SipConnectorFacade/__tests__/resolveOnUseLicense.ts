@@ -14,7 +14,7 @@ describe('media state: resolveOnUseLicense', () => {
   beforeEach(() => {
     sipConnector = doMockSipConnector();
     sipConnectorFacade = new SipConnectorFacade(sipConnector);
-    handlerOnUseLicense = jest.fn();
+    handlerOnUseLicense = jest.fn() as jest.Mock<void>;
   });
 
   afterEach(() => {

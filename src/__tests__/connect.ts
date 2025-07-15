@@ -53,7 +53,13 @@ describe('connect', () => {
         return error;
       });
 
-    expect(rejectedError).toEqual({ response: null, cause: 'Wrong credentials' });
+    expect(rejectedError).toEqual({
+      response: {
+        status_code: 401,
+        reason_phrase: 'Unauthorized',
+      },
+      cause: 'Rejected',
+    });
   });
 
   it('and change sipServerUrl', async () => {

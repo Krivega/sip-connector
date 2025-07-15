@@ -31,8 +31,10 @@ describe('call', () => {
 
     expect(!!peerconnection).toBe(true);
     // @ts-expect-error
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     expect(sipConnector.ua.call.mock.calls.length).toBe(1);
     // @ts-expect-error
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     expect(sipConnector.ua.call.mock.calls[0][0]).toBe('sip:10000@SIP_SERVER_URL');
   });
 
@@ -92,6 +94,7 @@ describe('call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     // @ts-expect-error
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     mediaStream.tracks.reverse();
 
     const number = '10000';
@@ -286,6 +289,7 @@ describe('call', () => {
     });
 
     // @ts-expect-error
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     sipConnector.rtcSession!.terminateRemote();
 
     return expect(endedFromServer).resolves.toEqual(data);
@@ -301,7 +305,12 @@ describe('call', () => {
     await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
     // @ts-expect-error
-    const parameters = sipConnector.ua.call.mock.calls[0][1];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const parameters = sipConnector.ua.call.mock.calls[0][1] as {
+      directionVideo: string;
+      directionAudio: string;
+      mediaStream: MediaStream;
+    };
 
     expect(parameters.directionVideo).toBe(undefined);
     expect(parameters.directionAudio).toBe(undefined);
@@ -324,7 +333,12 @@ describe('call', () => {
     });
 
     // @ts-expect-error
-    const parameters = sipConnector.ua.call.mock.calls[0][1];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const parameters = sipConnector.ua.call.mock.calls[0][1] as {
+      directionVideo: string;
+      directionAudio: string;
+      mediaStream: MediaStream;
+    };
 
     expect(parameters.directionVideo).toBe('recvonly');
     expect(parameters.directionAudio).toBe(undefined);
@@ -347,7 +361,12 @@ describe('call', () => {
     });
 
     // @ts-expect-error
-    const parameters = sipConnector.ua.call.mock.calls[0][1];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const parameters = sipConnector.ua.call.mock.calls[0][1] as {
+      directionVideo: string;
+      directionAudio: string;
+      mediaStream: MediaStream;
+    };
 
     expect(parameters.directionVideo).toBe(undefined);
     expect(parameters.directionAudio).toBe('recvonly');
@@ -371,7 +390,12 @@ describe('call', () => {
     });
 
     // @ts-expect-error
-    const parameters = sipConnector.ua.call.mock.calls[0][1];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const parameters = sipConnector.ua.call.mock.calls[0][1] as {
+      directionVideo: string;
+      directionAudio: string;
+      mediaStream: MediaStream;
+    };
 
     expect(parameters.directionVideo).toBe('recvonly');
     expect(parameters.directionAudio).toBe('recvonly');

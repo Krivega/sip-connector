@@ -46,6 +46,7 @@ import {
   NEW_RTC_SESSION,
   NOT_AVAILABLE_SECOND_REMOTE_STREAM_EVENT,
   ONE_MEGABIT_IN_BITS,
+  Originator,
   PARTICIPANT,
   PARTICIPANT_ADDED_TO_LIST_MODERATORS,
   PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS,
@@ -133,8 +134,6 @@ import scaleBitrate from './videoSendingBalancer/scaleBitrate';
 
 const BUSY_HERE_STATUS_CODE = 486;
 const REQUEST_TERMINATED_STATUS_CODE = 487;
-const ORIGINATOR_LOCAL = 'local';
-const ORIGINATOR_REMOTE = 'remote';
 const DELAYED_REPEATED_CALLS_CONNECT_LIMIT = 3;
 const SEND_PRESENTATION_CALL_LIMIT = 1;
 
@@ -157,7 +156,7 @@ export const hasCanceledCallError = (error: unknown): boolean => {
     return (
       cause === REQUEST_TIMEOUT ||
       cause === REJECTED ||
-      (originator === ORIGINATOR_LOCAL && (cause === CANCELED || cause === BYE))
+      (originator === Originator.LOCAL && (cause === CANCELED || cause === BYE))
     );
   }
 
@@ -444,6 +443,7 @@ export default class SipConnector {
     return new Promise((resolve, reject) => {
       try {
         // @ts-expect-error
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         this.ua.sendOptions(target, body, {
           extraHeaders,
           eventHandlers: {
@@ -949,15 +949,16 @@ export default class SipConnector {
   }
 
   handleNewRTCSession = ({ originator, session: rtcSession }: IncomingRTCSessionEvent) => {
-    if (originator === ORIGINATOR_REMOTE) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+    if (originator === Originator.REMOTE) {
       this.incomingRTCSession = rtcSession;
 
       const callerData = this.remoteCallerData;
 
-      rtcSession.on(FAILED, (event: { originator: string }) => {
+      rtcSession.on(FAILED, (event: { originator: Originator }) => {
         this.removeIncomingSession();
 
-        if (event.originator === ORIGINATOR_LOCAL) {
+        if (event.originator === Originator.LOCAL) {
           this.uaEvents.trigger(TERMINATED_INCOMING_CALL, callerData);
         } else {
           this.uaEvents.trigger(FAILED_INCOMING_CALL, callerData);
@@ -968,14 +969,17 @@ export default class SipConnector {
     }
   };
 
-  on<T = void>(eventName: TEventUA, handler: (data: T) => void) {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  on<T>(eventName: TEventUA, handler: (data: T) => void) {
     return this.uaEvents.on<T>(eventName, handler);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
   once<T>(eventName: TEventUA, handler: (data: T) => void) {
     return this.uaEvents.once<T>(eventName, handler);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
   onceRace<T>(eventNames: TEventUA[], handler: (data: T, eventName: string) => void) {
     return this.uaEvents.onceRace<T>(eventNames, handler);
   }
@@ -984,18 +988,22 @@ export default class SipConnector {
     return this.uaEvents.wait<T>(eventName);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
   off<T>(eventName: TEventUA, handler: (data: T) => void) {
     this.uaEvents.off<T>(eventName, handler);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
   onSession<T>(eventName: TEventSession, handler: (data: T) => void) {
     return this.sessionEvents.on<T>(eventName, handler);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
   onceSession<T>(eventName: TEventSession, handler: (data: T) => void) {
     return this.sessionEvents.once<T>(eventName, handler);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
   onceRaceSession<T>(eventNames: TEventSession[], handler: (data: T, eventName: string) => void) {
     return this.sessionEvents.onceRace<T>(eventNames, handler);
   }
@@ -1004,6 +1012,7 @@ export default class SipConnector {
     return this.sessionEvents.wait<T>(eventName);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
   offSession<T>(eventName: TEventSession, handler: (data: T) => void) {
     this.sessionEvents.off<T>(eventName, handler);
   }
@@ -1498,8 +1507,8 @@ export default class SipConnector {
         return;
       }
 
-      this.onceSession(NEW_DTMF, ({ originator }: { originator: string }) => {
-        if (originator === ORIGINATOR_LOCAL) {
+      this.onceSession(NEW_DTMF, ({ originator }: { originator: Originator }) => {
+        if (originator === Originator.LOCAL) {
           resolve();
         }
       });
@@ -1854,8 +1863,7 @@ export default class SipConnector {
 
   triggerMainCamControl = (request: IncomingRequest) => {
     const mainCam = request.getHeader(HEADER_MAIN_CAM) as EEventsMainCAM;
-
-    const syncState = request.getHeader(HEADER_MEDIA_SYNC);
+    const syncState = request.getHeader(HEADER_MEDIA_SYNC) as EEventsSyncMediaState;
     const isSyncForced = syncState === EEventsSyncMediaState.ADMIN_SYNC_FORCED;
 
     if (mainCam === EEventsMainCAM.ADMIN_START_MAIN_CAM) {
@@ -1886,8 +1894,8 @@ export default class SipConnector {
   };
 
   triggerMicControl = (request: IncomingRequest) => {
-    const mic = request.getHeader(HEADER_MIC);
-    const syncState = request.getHeader(HEADER_MEDIA_SYNC);
+    const mic = request.getHeader(HEADER_MIC) as EEventsMic;
+    const syncState = request.getHeader(HEADER_MEDIA_SYNC) as EEventsSyncMediaState;
     const isSyncForced = syncState === EEventsSyncMediaState.ADMIN_SYNC_FORCED;
 
     if (mic === EEventsMic.ADMIN_START_MIC) {
@@ -1906,7 +1914,8 @@ export default class SipConnector {
   handleNewInfo = (info: IncomingInfoEvent | OutgoingInfoEvent) => {
     const { originator } = info;
 
-    if (originator !== 'remote') {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+    if (originator !== Originator.REMOTE) {
       return;
     }
 
@@ -1960,7 +1969,7 @@ export default class SipConnector {
     const headerNotify = request.getHeader(HEADER_NOTIFY);
 
     if (headerNotify) {
-      const headerNotifyParsed: TInfoNotify = JSON.parse(headerNotify);
+      const headerNotifyParsed = JSON.parse(headerNotify) as TInfoNotify;
 
       this.handleNotify(headerNotifyParsed);
     }
@@ -2054,7 +2063,7 @@ export default class SipConnector {
   handleEnded = (error: TCustomError) => {
     const { originator } = error;
 
-    if (originator === ORIGINATOR_REMOTE) {
+    if (originator === Originator.REMOTE) {
       this.sessionEvents.trigger(ENDED_FROM_SERVER, error);
     }
 

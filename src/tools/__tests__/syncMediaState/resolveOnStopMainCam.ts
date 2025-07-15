@@ -14,7 +14,7 @@ describe('media state: resolveOnStopMainCam', () => {
 
   beforeEach(() => {
     sipConnector = doMockSipConnector();
-    handlerOnStopMainCam = jest.fn();
+    handlerOnStopMainCam = jest.fn() as jest.Mock<void>;
 
     onStopMainCam = resolveOnStopMainCam(sipConnector);
   });

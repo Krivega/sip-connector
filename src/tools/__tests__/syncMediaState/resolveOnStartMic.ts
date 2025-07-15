@@ -14,7 +14,7 @@ describe('media state: resolveOnStartMic', () => {
 
   beforeEach(() => {
     sipConnector = doMockSipConnector();
-    handlerOnStartMic = jest.fn();
+    handlerOnStartMic = jest.fn() as jest.Mock<void>;
 
     onStartMic = resolveOnStartMic(sipConnector);
   });
