@@ -13,7 +13,7 @@ import type {
   WebSocketInterface,
 } from '@krivega/jssip';
 import Events from 'events-constructor';
-import { repeatedCallsAsync } from 'repeated-calls';
+import { hasCanceledError, repeatedCallsAsync } from 'repeated-calls';
 import { generateUserId, hasVideoTracks, parseDisplayName, resolveSipUrl } from '../utils';
 import { BYE, CANCELED, REJECTED, REQUEST_TIMEOUT } from './causes';
 import {
@@ -161,6 +161,10 @@ export const hasCanceledCallError = (error: unknown): boolean => {
   }
 
   return false;
+};
+
+export const hasCanceledStartPresentationError = (error: unknown) => {
+  return hasCanceledError(error);
 };
 
 type TChannels = {
