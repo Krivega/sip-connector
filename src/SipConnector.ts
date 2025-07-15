@@ -14,7 +14,7 @@ import type {
   WebSocketInterface,
 } from '@krivega/jssip';
 import Events from 'events-constructor';
-import { repeatedCallsAsync } from 'repeated-calls';
+import { hasCanceledError, repeatedCallsAsync } from 'repeated-calls';
 import { BYE, CANCELED, REJECTED, REQUEST_TIMEOUT } from './causes';
 import {
   ACCOUNT_CHANGED,
@@ -46,6 +46,7 @@ import {
   NEW_RTC_SESSION,
   NOT_AVAILABLE_SECOND_REMOTE_STREAM_EVENT,
   ONE_MEGABIT_IN_BITS,
+  Originator,
   PARTICIPANT,
   PARTICIPANT_ADDED_TO_LIST_MODERATORS,
   PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS,
@@ -134,27 +135,37 @@ import scaleBitrate from './videoSendingBalancer/scaleBitrate';
 
 const BUSY_HERE_STATUS_CODE = 486;
 const REQUEST_TERMINATED_STATUS_CODE = 487;
-const ORIGINATOR_LOCAL = 'local';
-const ORIGINATOR_REMOTE = 'remote';
 const DELAYED_REPEATED_CALLS_CONNECT_LIMIT = 3;
 const SEND_PRESENTATION_CALL_LIMIT = 1;
 
-export const hasCanceledCallError = (error: TCustomError = new Error()): boolean => {
-  const { originator, cause } = error;
+const hasCustomError = (error: unknown): error is TCustomError => {
+  return error instanceof Object && ('originator' in error || 'cause' in error);
+};
 
+export const hasCanceledCallError = (error: unknown): boolean => {
   if (isCanceledError(error)) {
     return true;
   }
+
+  if (!hasCustomError(error)) {
+    return false;
+  }
+
+  const { originator, cause } = error;
 
   if (typeof cause === 'string') {
     return (
       cause === REQUEST_TIMEOUT ||
       cause === REJECTED ||
-      (originator === ORIGINATOR_LOCAL && (cause === CANCELED || cause === BYE))
+      (originator === Originator.LOCAL && (cause === CANCELED || cause === BYE))
     );
   }
 
   return false;
+};
+
+export const hasCanceledStartPresentationError = (error: unknown) => {
+  return hasCanceledError(error);
 };
 
 const moduleName = 'SipConnector';
@@ -1033,7 +1044,7 @@ export default class SipConnector {
   }
 
   handleNewRTCSession = ({ originator, session: rtcSession }: IncomingRTCSessionEvent) => {
-    if (originator === ORIGINATOR_REMOTE) {
+    if (originator === Originator.REMOTE) {
       this.incomingRTCSession = rtcSession;
 
       const callerData = this.remoteCallerData;
@@ -1041,7 +1052,7 @@ export default class SipConnector {
       rtcSession.on(FAILED, (event: { originator: string }) => {
         this.removeIncomingSession();
 
-        if (event.originator === ORIGINATOR_LOCAL) {
+        if (event.originator === Originator.LOCAL) {
           this._uaEvents.trigger(TERMINATED_INCOMING_CALL, callerData);
         } else {
           this._uaEvents.trigger(FAILED_INCOMING_CALL, callerData);
@@ -1578,7 +1589,7 @@ export default class SipConnector {
       }
 
       this.onceSession(NEW_DTMF, ({ originator }: { originator: string }) => {
-        if (originator === ORIGINATOR_LOCAL) {
+        if (originator === Originator.LOCAL) {
           resolve();
         }
       });
@@ -2143,7 +2154,7 @@ export default class SipConnector {
   _handleEnded = (error: TCustomError) => {
     const { originator } = error;
 
-    if (originator === ORIGINATOR_REMOTE) {
+    if (originator === Originator.REMOTE) {
       this._sessionEvents.trigger(ENDED_FROM_SERVER, error);
     }
 

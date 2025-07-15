@@ -946,10 +946,10 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
-"@krivega/cancelable-promise@^1.1.3":
-  version "1.1.3"
-  resolved "https://registry.yarnpkg.com/@krivega/cancelable-promise/-/cancelable-promise-1.1.3.tgz#fabc38fa1cbe0f430b77c01e9869ccf3831d9aaf"
-  integrity sha512-briV8fATVuFoxA3LO9mWwpkFW3clG5kZMIiGmvtHKuQqeUa7ttjoN02src27KW5bP+Pa8zbjPGVq1Sv3CTwKtg==
+"@krivega/cancelable-promise@^1.1.4":
+  version "1.1.4"
+  resolved "https://registry.yarnpkg.com/@krivega/cancelable-promise/-/cancelable-promise-1.1.4.tgz#7f711de6906b16049be2e689c13eb05f57d7aff7"
+  integrity sha512-VHkPoutoVahV+bklIN7aXhFREQ7donYroZGLGlE3z4ECcxIF9JX1QbQbvN2iDneeNMpO567mxL3ttbprB48G0w==
 
 "@krivega/jssip@^5.1.2":
   version "5.1.2"
@@ -1292,10 +1292,17 @@
   dependencies:
     "@types/ms" "*"
 
-"@types/dom-mediacapture-transform@^0.1.10", "@types/dom-mediacapture-transform@^0.1.9":
+"@types/dom-mediacapture-transform@^0.1.10":
   version "0.1.10"
   resolved "https://registry.yarnpkg.com/@types/dom-mediacapture-transform/-/dom-mediacapture-transform-0.1.10.tgz#93e2c04284c95dd2faa2992216417599ee9d27a6"
   integrity sha512-zUxMN2iShu7p3Fz5sqfvLp93qW/3sLs+RwXWWOkMb969hsuoVqUUokqrENjXqTMNmEEcVXKoHuMMbIGcWyrVVA==
+  dependencies:
+    "@types/dom-webcodecs" "*"
+
+"@types/dom-mediacapture-transform@^0.1.11":
+  version "0.1.11"
+  resolved "https://registry.yarnpkg.com/@types/dom-mediacapture-transform/-/dom-mediacapture-transform-0.1.11.tgz#4157f81498e7c01fdb76ac45506b6889fe1f162b"
+  integrity sha512-Y2p+nGf1bF2XMttBnsVPHUWzRRZzqUoJAKmiP10b5umnO6DDrWI0BrGDJy1pOHoOULVmGSfFNkQrAlC5dcj6nQ==
   dependencies:
     "@types/dom-webcodecs" "*"
 
@@ -2598,6 +2605,13 @@ debug@^3.2.7:
   dependencies:
     ms "^2.1.1"
 
+debug@^4.4.1:
+  version "4.4.1"
+  resolved "https://registry.yarnpkg.com/debug/-/debug-4.4.1.tgz#e5a8bc6cbc4c6cd3e64308b0693a3d4fa550189b"
+  integrity sha512-KcKCqiftBJcZr++7ykoDIEwSa3XWowTfNPo92BYxjXiyYEVrUQh2aLyhxBCwww+heortUFxEJYcRzosstTEBYQ==
+  dependencies:
+    ms "^2.1.3"
+
 decamelize-keys@^1.1.0:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/decamelize-keys/-/decamelize-keys-1.1.1.tgz#04a2d523b2f18d80d0158a43b895d56dff8d19d8"
@@ -3177,7 +3191,7 @@ eventemitter3@^5.0.1:
   resolved "https://registry.yarnpkg.com/eventemitter3/-/eventemitter3-5.0.1.tgz#53f5ffd0a492ac800721bb42c66b841de96423c4"
   integrity sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA==
 
-events-constructor@^1.2.3, events-constructor@^1.3.0:
+events-constructor@^1.3.0:
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/events-constructor/-/events-constructor-1.3.0.tgz#88f35ae2a4eba2afb5c0402074a1c21bc9382331"
   integrity sha512-aU7qLo8/euACDRiaeLxPxZ4e+CpfyAZK0U6hxhs6UfCoMuLJC37ctByDGS6OUiL50kyhNohcbUvs0waEtslL6w==
@@ -5696,10 +5710,10 @@ regjsparser@^0.10.0:
   dependencies:
     jsesc "~0.5.0"
 
-repeated-calls@^2.3.0:
-  version "2.3.0"
-  resolved "https://registry.yarnpkg.com/repeated-calls/-/repeated-calls-2.3.0.tgz#98d489323f9ab7ad12d0c1733b9b68eebd5198fc"
-  integrity sha512-ZBBxhCSGiI2r5HX1vXwt30FF/FWP6wRvmU87V1agX9loD3F5/j3JhCz0pXXSKo0HMQWrIJJxY2nBWo++USM1Jg==
+repeated-calls@^2.3.3:
+  version "2.3.3"
+  resolved "https://registry.yarnpkg.com/repeated-calls/-/repeated-calls-2.3.3.tgz#dc00fbf09728a81882c7e374982a24285adc4552"
+  integrity sha512-8vz9iOz9KKYowXeXJsaO2ymOtHvvH+5bgbkGJuki4UPuE4xkt3TKmAERG0vfwGoYAzuuzPj4sraBBROMEpl44g==
 
 require-directory@^2.1.1:
   version "2.1.1"
@@ -6710,13 +6724,13 @@ webidl-conversions@^7.0.0:
   resolved "https://registry.yarnpkg.com/webidl-conversions/-/webidl-conversions-7.0.0.tgz#256b4e1882be7debbf01d05f0aa2039778ea080a"
   integrity sha512-VwddBukDzu71offAQR975unBIGqfKZpM+8ZX6ySk8nYhVoo5CYaZyzt3YBvYtRtO+aoGlqxPg/B87NGVZ/fu6g==
 
-webrtc-mock@^1.1.6:
-  version "1.1.6"
-  resolved "https://registry.yarnpkg.com/webrtc-mock/-/webrtc-mock-1.1.6.tgz#c7635d6bf0a0bbbf9c2f139a07a615365758fe97"
-  integrity sha512-7ksOnv+U0YIa90scNW46uX8OfB0QRsR/141tYJd0fQPA3Nv55Khw/95lMocBMxAYvmYkDDeAc82guPM/fYklxQ==
+webrtc-mock@^1.1.7:
+  version "1.1.7"
+  resolved "https://registry.yarnpkg.com/webrtc-mock/-/webrtc-mock-1.1.7.tgz#a5089ad5904245e24b4a3b47ccc4dabaa3c7903d"
+  integrity sha512-wxSGcYNgamq9fLAhE4XKneO9PpwlNhHl8+Yq4bE4Hcyww2jSsGfxRHDootuNz3jtrZYehDT9jvQZn95ncWZB/A==
   dependencies:
-    "@types/dom-mediacapture-transform" "^0.1.9"
-    events-constructor "^1.2.3"
+    "@types/dom-mediacapture-transform" "^0.1.11"
+    events-constructor "^1.3.0"
 
 whatwg-encoding@^2.0.0:
   version "2.0.0"
