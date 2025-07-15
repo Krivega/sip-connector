@@ -46,6 +46,7 @@ describe('use license', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<EUseLicense>((resolve) => {
+      // eslint-disable-next-line no-promise-executor-return
       return sipConnector.onSession(USE_LICENSE, resolve);
     });
     const { rtcSession } = sipConnector;
@@ -64,6 +65,7 @@ describe('use license', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<EUseLicense>((resolve) => {
+      // eslint-disable-next-line no-promise-executor-return
       return sipConnector.onSession(USE_LICENSE, resolve);
     });
     const { rtcSession } = sipConnector;
@@ -82,6 +84,7 @@ describe('use license', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<EUseLicense>((resolve) => {
+      // eslint-disable-next-line no-promise-executor-return
       return sipConnector.onSession(USE_LICENSE, resolve);
     });
     const { rtcSession } = sipConnector;

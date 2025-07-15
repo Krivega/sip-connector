@@ -21,6 +21,7 @@ class RTCRtpSenderMock implements RTCRtpSender {
     this.track = track ?? null;
   }
 
+  // eslint-disable-next-line class-methods-use-this
   async getStats(): Promise<RTCStatsReport> {
     throw new Error('Method not implemented.');
   }
@@ -51,6 +52,7 @@ class RTCRtpSenderMock implements RTCRtpSender {
     return this.parametersGets;
   }
 
+  // eslint-disable-next-line class-methods-use-this
   setStreams(): void {
     throw new Error('Method not implemented.');
   }

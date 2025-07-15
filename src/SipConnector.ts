@@ -343,6 +343,7 @@ export default class SipConnector {
 
   private readonly uaEvents: Events<typeof UA_EVENT_NAMES>;
 
+  // eslint-disable-next-line class-methods-use-this
   private getSipServerUrl: TGetServerUrl = (id: string) => {
     return id;
   };
@@ -833,7 +834,7 @@ export default class SipConnector {
     }
 
     if (isP2P) {
-      await this.sendMustStopPresentation(rtcSession);
+      await this.sendMustStopPresentation();
     }
 
     return this.sendPresentationWithDuplicatedCalls({
@@ -851,7 +852,13 @@ export default class SipConnector {
     });
   }
 
-  private async sendMustStopPresentation(rtcSession: RTCSession): Promise<void> {
+  private async sendMustStopPresentation(): Promise<void> {
+    const rtcSession = this.establishedRTCSession;
+
+    if (!rtcSession) {
+      throw new Error('No rtcSession established');
+    }
+
     await rtcSession.sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
       extraHeaders: [HEADER_MUST_STOP_PRESENTATION_P2P],
     });

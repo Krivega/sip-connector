@@ -1,3 +1,4 @@
+/* eslint-disable no-promise-executor-return */
 /// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';

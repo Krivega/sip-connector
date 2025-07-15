@@ -269,7 +269,7 @@ class RTCSessionMock extends BaseSession {
     return this.mutedOptions;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-empty-function
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-empty-function, class-methods-use-this
   async replaceMediaStream(_mediaStream: MediaStream): Promise<void> {}
 
   onmute({ audio, video }: { audio: boolean; video: boolean }) {
@@ -279,7 +279,7 @@ class RTCSessionMock extends BaseSession {
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  // eslint-disable-next-line @typescript-eslint/no-empty-function, class-methods-use-this
   async sendInfo() {}
 
   isEnded() {

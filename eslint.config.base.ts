@@ -846,7 +846,6 @@ const config: Linter.Config[] = [
       '@typescript-eslint/no-unsafe-function-type': 'error',
       '@typescript-eslint/no-restricted-types': 'error',
       '@typescript-eslint/class-literal-property-style': ['error'],
-      '@typescript-eslint/class-methods-use-this': ['error'],
       '@typescript-eslint/consistent-generic-constructors': ['error'],
       '@typescript-eslint/consistent-indexed-object-style': ['error'],
       '@typescript-eslint/consistent-return': ['error'],

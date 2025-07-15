@@ -7,6 +7,7 @@ class RegistratorMock implements Registrator {
     this.extraHeaders = extraHeaders;
   }
 
+  // eslint-disable-next-line class-methods-use-this
   setExtraContactParams() {}
 }
 
