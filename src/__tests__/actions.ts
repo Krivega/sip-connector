@@ -19,6 +19,7 @@ describe('actions', () => {
       sipConnector.once('unregistered', resolve);
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sipConnector.unregister();
 
     return expect(unregistered).resolves.toEqual({

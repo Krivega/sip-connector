@@ -286,9 +286,8 @@ class UA implements IUA {
    */
   isStarted() {
     return (
-      this.configuration &&
-      ((this.configuration.register && !!this.isRegisteredInner) ??
-        (!this.configuration.register && !!this.isConnectedInner))
+      (this.configuration.register && !!this.isRegisteredInner) ??
+      (!this.configuration.register && !!this.isConnectedInner)
     );
   }
 

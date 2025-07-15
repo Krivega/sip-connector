@@ -173,6 +173,7 @@ describe('processRequest', () => {
   it('#10 debounce changed displayName', async () => {
     expect.assertions(2);
     // @ts-expect-error
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     processRequest(dataForConnectionWithoutAuthorization);
 
     return processRequest({

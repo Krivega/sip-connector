@@ -39,6 +39,7 @@ describe('actionsProgressIncomingCall', () => {
     await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       sipConnector.on('incomingCall', async () => {
         await sipConnectorFacade.answerIncomingCall({
           ...dataCall,
@@ -71,6 +72,7 @@ describe('actionsProgressIncomingCall', () => {
     await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       sipConnector.on('incomingCall', async () => {
         try {
           await sipConnectorFacade.answerIncomingCall({
@@ -104,6 +106,7 @@ describe('actionsProgressIncomingCall', () => {
     await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       sipConnector.on('incomingCall', async () => {
         await sipConnectorFacade.answerIncomingCall({
           ...dataCall,
@@ -129,6 +132,7 @@ describe('actionsProgressIncomingCall', () => {
     await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       sipConnector.on('incomingCall', async () => {
         await sipConnectorFacade.answerIncomingCall({
           ...dataCall,

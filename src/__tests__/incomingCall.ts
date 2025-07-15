@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 /// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
@@ -195,7 +196,7 @@ describe('incoming call', () => {
       })
       .then(([{ displayName, host, incomingNumber }, incomingRTCSession]) => {
         // @ts-expect-error
-        expect(incomingRTCSession?.status_code).toBe(487);
+        expect(incomingRTCSession.status_code).toBe(487);
         expect(incomingNumber).toBe(remoteCallerData.incomingNumber);
         expect(host).toBe(remoteCallerData.host);
         expect(displayName).toBe(remoteCallerData.displayName);

@@ -14,7 +14,7 @@ const getCodecFromSender = async (sender: RTCRtpSender): Promise<string | undefi
   return sender.getStats().then((stats: RTCStatsReport) => {
     const codec = findInResultByType(stats, 'codec');
 
-    return (codec as unknown as { mimeType: string })?.mimeType;
+    return (codec as unknown as { mimeType: string } | undefined)?.mimeType;
   });
 };
 

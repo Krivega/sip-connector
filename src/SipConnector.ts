@@ -4,6 +4,7 @@ import type {
   IncomingRTCSessionEvent,
   IncomingRequest,
   OutgoingInfoEvent,
+  OutgoingRTCSessionEvent,
   RTCSession,
   RegisteredEvent,
   UA,
@@ -673,15 +674,15 @@ export default class SipConnector {
     return (
       uaConfiguration?.password === newConfiguration.password &&
       uaConfiguration?.register === newConfiguration.register &&
-      uaConfiguration?.uri.toString() === newConfiguration.uri &&
-      uaConfiguration?.display_name === newConfiguration.display_name &&
-      uaConfiguration?.user_agent === newConfiguration.user_agent &&
-      uaConfiguration?.sockets === newConfiguration.sockets &&
-      uaConfiguration?.session_timers === newConfiguration.session_timers &&
-      uaConfiguration?.register_expires === newConfiguration.register_expires &&
-      uaConfiguration?.connection_recovery_min_interval ===
+      uaConfiguration.uri.toString() === newConfiguration.uri &&
+      uaConfiguration.display_name === newConfiguration.display_name &&
+      uaConfiguration.user_agent === newConfiguration.user_agent &&
+      uaConfiguration.sockets === newConfiguration.sockets &&
+      uaConfiguration.session_timers === newConfiguration.session_timers &&
+      uaConfiguration.register_expires === newConfiguration.register_expires &&
+      uaConfiguration.connection_recovery_min_interval ===
         newConfiguration.connection_recovery_min_interval &&
-      uaConfiguration?.connection_recovery_max_interval ===
+      uaConfiguration.connection_recovery_max_interval ===
         newConfiguration.connection_recovery_max_interval
     );
   }
@@ -776,7 +777,7 @@ export default class SipConnector {
       .then(async () => {
         const { connection } = this;
 
-        if (!connection || maxBitrate === undefined) {
+        if (!connection) {
           return;
         }
 
@@ -959,7 +960,10 @@ export default class SipConnector {
     this.resetPresentation();
   }
 
-  handleNewRTCSession = ({ originator, session: rtcSession }: IncomingRTCSessionEvent) => {
+  handleNewRTCSession = ({
+    originator,
+    session: rtcSession,
+  }: IncomingRTCSessionEvent | OutgoingRTCSessionEvent) => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
     if (originator === Originator.REMOTE) {
       this.incomingRTCSession = rtcSession;
@@ -1061,11 +1065,11 @@ export default class SipConnector {
 
   get remoteCallerData() {
     return {
-      displayName: this.incomingRTCSession?.remote_identity?.display_name,
+      displayName: this.incomingRTCSession?.remote_identity.display_name,
 
-      host: this.incomingRTCSession?.remote_identity?.uri.host,
+      host: this.incomingRTCSession?.remote_identity.uri.host,
 
-      incomingNumber: this.incomingRTCSession?.remote_identity?.uri.user,
+      incomingNumber: this.incomingRTCSession?.remote_identity.uri.user,
       rtcSession: this.incomingRTCSession,
     };
   }
@@ -1306,14 +1310,11 @@ export default class SipConnector {
       });
     });
 
-    if (this.ua) {
-      await this.hangUpWithoutCancelRequests();
+    const { ua } = this;
 
-      if (this.ua) {
-        this.ua.stop();
-      } else {
-        this.uaEvents.trigger(DISCONNECTED, undefined);
-      }
+    if (ua) {
+      await this.hangUpWithoutCancelRequests();
+      ua.stop();
     } else {
       this.uaEvents.trigger(DISCONNECTED, undefined);
     }
@@ -1488,6 +1489,7 @@ export default class SipConnector {
         };
       };
       const handleConfirmed = () => {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         if (savedPeerconnection) {
           this.sessionEvents.trigger(PEER_CONNECTION_CONFIRMED, savedPeerconnection);
         }
@@ -1536,7 +1538,7 @@ export default class SipConnector {
   generateStream(videoTrack: MediaStreamTrack, audioTrack?: MediaStreamTrack): MediaStream {
     const { id } = videoTrack;
 
-    const remoteStream: MediaStream = this.remoteStreams[id] || new MediaStream();
+    const remoteStream: MediaStream = this.remoteStreams[id] ?? new MediaStream();
 
     if (audioTrack) {
       remoteStream.addTrack(audioTrack);
@@ -1551,7 +1553,7 @@ export default class SipConnector {
   generateAudioStream(audioTrack: MediaStreamTrack): MediaStream {
     const { id } = audioTrack;
 
-    const remoteStream = this.remoteStreams[id] || new MediaStream();
+    const remoteStream = this.remoteStreams[id] ?? new MediaStream();
 
     remoteStream.addTrack(audioTrack);
 
@@ -1569,10 +1571,10 @@ export default class SipConnector {
       }
 
       const videoTrack = track;
-      const previousTrack = remoteTracks[index - 1];
+      const previousTrack = remoteTracks[index - 1] as MediaStreamTrack | undefined;
       let audioTrack;
 
-      if (previousTrack && previousTrack.kind === 'audio') {
+      if (previousTrack?.kind === 'audio') {
         audioTrack = previousTrack;
       }
 
@@ -1875,8 +1877,8 @@ export default class SipConnector {
   };
 
   triggerMainCamControl = (request: IncomingRequest) => {
-    const mainCam = request.getHeader(HEADER_MAIN_CAM) as EEventsMainCAM;
-    const syncState = request.getHeader(HEADER_MEDIA_SYNC) as EEventsSyncMediaState;
+    const mainCam = request.getHeader(HEADER_MAIN_CAM) as EEventsMainCAM | undefined;
+    const syncState = request.getHeader(HEADER_MEDIA_SYNC) as EEventsSyncMediaState | undefined;
     const isSyncForced = syncState === EEventsSyncMediaState.ADMIN_SYNC_FORCED;
 
     if (mainCam === EEventsMainCAM.ADMIN_START_MAIN_CAM) {
@@ -1907,8 +1909,8 @@ export default class SipConnector {
   };
 
   triggerMicControl = (request: IncomingRequest) => {
-    const mic = request.getHeader(HEADER_MIC) as EEventsMic;
-    const syncState = request.getHeader(HEADER_MEDIA_SYNC) as EEventsSyncMediaState;
+    const mic = request.getHeader(HEADER_MIC) as EEventsMic | undefined;
+    const syncState = request.getHeader(HEADER_MEDIA_SYNC) as EEventsSyncMediaState | undefined;
     const isSyncForced = syncState === EEventsSyncMediaState.ADMIN_SYNC_FORCED;
 
     if (mic === EEventsMic.ADMIN_START_MIC) {

@@ -281,7 +281,9 @@ class SipConnectorFacade implements IProxyMethods {
       onReadyRemoteStreams: setRemoteStreams,
     });
     const handleReadyRemoteStreams = this.resolveHandleReadyRemoteStreams({
-      onReadyRemoteStreams: handleReadyRemoteStreamsDebounced,
+      onReadyRemoteStreams: () => {
+        handleReadyRemoteStreamsDebounced().catch(debug);
+      },
     });
     const updateTransceiver = resolveUpdateTransceiver(
       {
@@ -460,7 +462,9 @@ class SipConnectorFacade implements IProxyMethods {
       onReadyRemoteStreams: setRemoteStreams,
     });
     const handleReadyRemoteStreams = this.resolveHandleReadyRemoteStreams({
-      onReadyRemoteStreams: handleReadyRemoteStreamsDebounced,
+      onReadyRemoteStreams: () => {
+        handleReadyRemoteStreamsDebounced().catch(debug);
+      },
     });
     const updateTransceiver = resolveUpdateTransceiver(
       {
@@ -530,7 +534,7 @@ class SipConnectorFacade implements IProxyMethods {
       log('onSuccess');
 
       isSuccessProgressCall = true;
-      handleReadyRemoteStreamsDebounced();
+      handleReadyRemoteStreamsDebounced().catch(debug);
 
       if (onSuccessProgressCall) {
         onSuccessProgressCall({ isPurgatory: hasPurgatory(room) });

@@ -14,6 +14,7 @@ const getValuesFromError = (error: TCustomError = new Error()): TValues => {
   const link = getLinkError(error);
   const values: TValues = { code: '', cause: '', message: '' };
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (typeof message === 'object' && message !== null) {
     values.message = stringifyMessage(message);
   } else if (message) {

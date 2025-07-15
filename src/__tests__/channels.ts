@@ -51,6 +51,7 @@ describe('channels', () => {
     // @ts-expect-error
     sipConnector.rtcSession.sendInfo = mockFunction;
 
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sipConnector.sendChannels(channelsData);
 
     expect(mockFunction).toHaveBeenCalledWith(CONTENT_TYPE_CHANNELS, undefined, sendedExtraHeaders);

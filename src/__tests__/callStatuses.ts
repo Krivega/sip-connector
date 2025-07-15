@@ -59,6 +59,7 @@ describe('call statuses', () => {
       });
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
     return promiseCallStatuses.then(() => {

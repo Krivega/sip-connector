@@ -171,11 +171,13 @@ describe('presentation', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sipConnector.startPresentation(mediaStream);
 
     const previousMediaStream = sipConnector.streamPresentationCurrent;
     const startPresentationPromise = sipConnector.promisePendingStartPresentation;
 
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sipConnector.updatePresentation(mediaStreamUpdated);
 
     expect(sipConnector.isPendingPresentation).toBe(true);

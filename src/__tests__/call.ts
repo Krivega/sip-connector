@@ -84,8 +84,8 @@ describe('call', () => {
     const number = '10000';
     const peerconnection = await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
-    expect(peerconnection.getSenders()?.[0]?.track?.kind).toBe('audio');
-    expect(peerconnection.getSenders()?.[1]?.track?.kind).toBe('video');
+    expect(peerconnection.getSenders()[0]?.track?.kind).toBe('audio');
+    expect(peerconnection.getSenders()[1]?.track?.kind).toBe('video');
   });
 
   it('order tracks mediaStream: call: reverse', async () => {
@@ -100,8 +100,8 @@ describe('call', () => {
     const number = '10000';
     const peerconnection = await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
-    expect(peerconnection.getSenders()?.[0]?.track?.kind).toBe('audio');
-    expect(peerconnection.getSenders()?.[1]?.track?.kind).toBe('video');
+    expect(peerconnection.getSenders()[0]?.track?.kind).toBe('audio');
+    expect(peerconnection.getSenders()[1]?.track?.kind).toBe('video');
   });
 
   it('getRemoteStreams', async () => {
@@ -128,6 +128,7 @@ describe('call', () => {
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sipConnector.hangUp();
     await endedPromise;
     await delayPromise(100); // wait restore rtcSession

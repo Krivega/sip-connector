@@ -32,6 +32,7 @@ describe('media state', () => {
     // @ts-expect-error
     sipConnector.rtcSession.sendInfo = mockFunction;
 
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sipConnector.sendMediaState(mediaStateData);
 
     expect(mockFunction).toHaveBeenCalledWith(CONTENT_TYPE_MEDIA_STATE, undefined, {

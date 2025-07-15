@@ -35,7 +35,7 @@ describe('sendDTMFAccumulated', () => {
           return sipConnector.sendDTMF(key);
         };
 
-        sendDTMFAccumulated({ accumulatedKeys: dtmf, sendKey });
+        await sendDTMFAccumulated({ accumulatedKeys: dtmf, sendKey });
 
         await delayPromise(DTMF_SENDING_DELAY);
       });

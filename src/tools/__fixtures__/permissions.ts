@@ -1,5 +1,5 @@
-const hasNoEmptyString = (string_: string) => {
-  return string_ !== undefined && string_ !== '';
+const hasNoEmptyString = (value?: string) => {
+  return value !== undefined && value !== '';
 };
 
 export const canConnectToServer = ({

@@ -51,6 +51,7 @@ describe('incoming call statuses', () => {
     });
 
     sipConnector.on('incomingCall', () => {
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       sipConnector.answerToIncomingCall({
         mediaStream,
         ontrack: mockFunction,

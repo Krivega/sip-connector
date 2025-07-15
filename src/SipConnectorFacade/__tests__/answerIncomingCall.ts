@@ -25,6 +25,7 @@ describe('answerIncomingCall', () => {
     await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       sipConnector.on('incomingCall', async () => {
         const peerconnection = await sipConnectorFacade.answerIncomingCall(dataCall);
 

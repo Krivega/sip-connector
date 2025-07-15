@@ -72,7 +72,7 @@ describe('call with no video tracks', () => {
 
     const peerconnection = await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
-    expect(peerconnection.getSenders()?.[0]?.track?.kind).toBe('audio');
-    expect(peerconnection.getSenders()?.[1]).toBe(undefined);
+    expect(peerconnection.getSenders()[0]?.track?.kind).toBe('audio');
+    expect(peerconnection.getSenders()[1]).toBe(undefined);
   });
 });

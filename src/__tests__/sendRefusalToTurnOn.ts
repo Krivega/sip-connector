@@ -31,6 +31,7 @@ describe('media state', () => {
     // @ts-expect-error
     sipConnector.rtcSession.sendInfo = mockFunction;
 
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sipConnector.sendRefusalToTurnOnMic();
 
     expect(mockFunction).toHaveBeenCalledWith(CONTENT_TYPE_REFUSAL, undefined, {
@@ -50,6 +51,7 @@ describe('media state', () => {
     // @ts-expect-error
     sipConnector.rtcSession.sendInfo = mockFunction;
 
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sipConnector.sendRefusalToTurnOnCam();
 
     expect(mockFunction).toHaveBeenCalledWith(CONTENT_TYPE_REFUSAL, undefined, {
