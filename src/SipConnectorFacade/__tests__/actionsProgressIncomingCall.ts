@@ -19,11 +19,11 @@ describe('actionsProgressIncomingCall', () => {
   beforeEach(() => {
     jest.resetModules();
 
-    onBeforeProgressCall = jest.fn();
-    onSuccessProgressCall = jest.fn();
-    onFailProgressCall = jest.fn();
-    onFinishProgressCall = jest.fn();
-    onEndedCall = jest.fn();
+    onBeforeProgressCall = jest.fn() as jest.Mock<void>;
+    onSuccessProgressCall = jest.fn() as jest.Mock<void>;
+    onFailProgressCall = jest.fn() as jest.Mock<void>;
+    onFinishProgressCall = jest.fn() as jest.Mock<void>;
+    onEndedCall = jest.fn() as jest.Mock<void>;
 
     sipConnector = doMockSipConnector();
     sipConnectorFacade = new SipConnectorFacade(sipConnector);
@@ -39,6 +39,7 @@ describe('actionsProgressIncomingCall', () => {
     await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       sipConnector.on('incomingCall', async () => {
         await sipConnectorFacade.answerIncomingCall({
           ...dataCall,
@@ -71,6 +72,7 @@ describe('actionsProgressIncomingCall', () => {
     await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       sipConnector.on('incomingCall', async () => {
         try {
           await sipConnectorFacade.answerIncomingCall({
@@ -104,6 +106,7 @@ describe('actionsProgressIncomingCall', () => {
     await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       sipConnector.on('incomingCall', async () => {
         await sipConnectorFacade.answerIncomingCall({
           ...dataCall,
@@ -111,7 +114,7 @@ describe('actionsProgressIncomingCall', () => {
         });
 
         // @ts-expect-error
-        sipConnector._sessionEvents.trigger('ended', 'error');
+        sipConnector.sessionEvents.trigger('ended', 'error');
 
         expect(onEndedCall.mock.calls.length).toBe(1);
 
@@ -129,6 +132,7 @@ describe('actionsProgressIncomingCall', () => {
     await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       sipConnector.on('incomingCall', async () => {
         await sipConnectorFacade.answerIncomingCall({
           ...dataCall,
@@ -136,7 +140,7 @@ describe('actionsProgressIncomingCall', () => {
         });
 
         // @ts-expect-error
-        sipConnector._sessionEvents.trigger('failed', 'error');
+        sipConnector.sessionEvents.trigger('failed', 'error');
 
         expect(onEndedCall.mock.calls.length).toBe(1);
 

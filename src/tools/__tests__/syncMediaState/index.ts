@@ -20,14 +20,14 @@ describe('media state: create state', () => {
 
   beforeEach(() => {
     sipConnector = doMockSipConnector();
-    onStartMainCamForced = jest.fn();
-    onStartMainCamNotForced = jest.fn();
-    onStopMainCamForced = jest.fn();
-    onStopMainCamNotForced = jest.fn();
-    onStartMicForced = jest.fn();
-    onStartMicNotForced = jest.fn();
-    onStopMicForced = jest.fn();
-    onStopMicNotForced = jest.fn();
+    onStartMainCamForced = jest.fn() as jest.Mock<void>;
+    onStartMainCamNotForced = jest.fn() as jest.Mock<void>;
+    onStopMainCamForced = jest.fn() as jest.Mock<void>;
+    onStopMainCamNotForced = jest.fn() as jest.Mock<void>;
+    onStartMicForced = jest.fn() as jest.Mock<void>;
+    onStartMicNotForced = jest.fn() as jest.Mock<void>;
+    onStopMicForced = jest.fn() as jest.Mock<void>;
+    onStopMicNotForced = jest.fn() as jest.Mock<void>;
 
     state = createState({ sipConnector });
   });
@@ -53,13 +53,13 @@ describe('media state: create state', () => {
     // #1.2 should subscribe to media state commands
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-start-main-cam', mediaStateEventPayloadForced);
+    sipConnector.sessionEvents.trigger('admin-start-main-cam', mediaStateEventPayloadForced);
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-stop-main-cam', mediaStateEventPayloadForced);
+    sipConnector.sessionEvents.trigger('admin-stop-main-cam', mediaStateEventPayloadForced);
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-start-mic', mediaStateEventPayloadForced);
+    sipConnector.sessionEvents.trigger('admin-start-mic', mediaStateEventPayloadForced);
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-stop-mic', mediaStateEventPayloadForced);
+    sipConnector.sessionEvents.trigger('admin-stop-mic', mediaStateEventPayloadForced);
 
     expect(onStartMainCamForced).toHaveBeenCalledTimes(1);
     expect(onStartMainCamNotForced).toHaveBeenCalledTimes(0);
@@ -71,13 +71,13 @@ describe('media state: create state', () => {
     expect(onStopMicNotForced).toHaveBeenCalledTimes(0);
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-start-main-cam', mediaStateEventPayloadNotForced);
+    sipConnector.sessionEvents.trigger('admin-start-main-cam', mediaStateEventPayloadNotForced);
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-stop-main-cam', mediaStateEventPayloadNotForced);
+    sipConnector.sessionEvents.trigger('admin-stop-main-cam', mediaStateEventPayloadNotForced);
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-start-mic', mediaStateEventPayloadNotForced);
+    sipConnector.sessionEvents.trigger('admin-start-mic', mediaStateEventPayloadNotForced);
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-stop-mic', mediaStateEventPayloadNotForced);
+    sipConnector.sessionEvents.trigger('admin-stop-mic', mediaStateEventPayloadNotForced);
 
     expect(onStartMainCamForced).toHaveBeenCalledTimes(1);
     expect(onStartMainCamNotForced).toHaveBeenCalledTimes(1);
@@ -106,22 +106,22 @@ describe('media state: create state', () => {
     state.stop();
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-start-main-cam', mediaStateEventPayloadForced);
+    sipConnector.sessionEvents.trigger('admin-start-main-cam', mediaStateEventPayloadForced);
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-stop-main-cam', mediaStateEventPayloadForced);
+    sipConnector.sessionEvents.trigger('admin-stop-main-cam', mediaStateEventPayloadForced);
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-start-mic', mediaStateEventPayloadForced);
+    sipConnector.sessionEvents.trigger('admin-start-mic', mediaStateEventPayloadForced);
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-stop-mic', mediaStateEventPayloadForced);
+    sipConnector.sessionEvents.trigger('admin-stop-mic', mediaStateEventPayloadForced);
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-start-main-cam', mediaStateEventPayloadNotForced);
+    sipConnector.sessionEvents.trigger('admin-start-main-cam', mediaStateEventPayloadNotForced);
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-stop-main-cam', mediaStateEventPayloadNotForced);
+    sipConnector.sessionEvents.trigger('admin-stop-main-cam', mediaStateEventPayloadNotForced);
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-start-mic', mediaStateEventPayloadNotForced);
+    sipConnector.sessionEvents.trigger('admin-start-mic', mediaStateEventPayloadNotForced);
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-stop-mic', mediaStateEventPayloadNotForced);
+    sipConnector.sessionEvents.trigger('admin-stop-mic', mediaStateEventPayloadNotForced);
 
     expect(onStartMainCamForced).toHaveBeenCalledTimes(0);
     expect(onStartMainCamNotForced).toHaveBeenCalledTimes(0);

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
@@ -10,7 +12,7 @@ import type SipConnector from '../SipConnector';
 describe('incoming call', () => {
   let sipConnector: SipConnector;
   let mediaStream: MediaStream;
-  let mockFunction = jest.fn();
+  let mockFunction = jest.fn() as jest.Mock<void>;
 
   beforeEach(() => {
     sipConnector = doMockSipConnector();
@@ -18,7 +20,7 @@ describe('incoming call', () => {
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },
     });
-    mockFunction = jest.fn();
+    mockFunction = jest.fn() as jest.Mock<void>;
   });
 
   it('init', async () => {
@@ -31,12 +33,14 @@ describe('incoming call', () => {
     try {
       await sipConnector.answerToIncomingCall({ mediaStream });
     } catch {
+      // eslint-disable-next-line jest/no-conditional-expect
       expect(true).toBe(true);
     }
 
     try {
       await sipConnector.declineToIncomingCall();
     } catch {
+      // eslint-disable-next-line jest/no-conditional-expect
       expect(true).toBe(true);
     }
   });
@@ -71,8 +75,9 @@ describe('incoming call', () => {
           });
 
           expect(sipConnector.getConnectionConfiguration().answer).toBe(true);
-          expect(!!peerconnection).toBe(true);
+          expect(peerconnection).toBeDefined();
           // @ts-expect-error
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           expect(sipConnector.rtcSession.answer.mock.calls.length).toBe(1);
 
           resolve();
@@ -119,9 +124,9 @@ describe('incoming call', () => {
         });
 
         // @ts-expect-error
-        expect(peerconnection._senders[0].track.kind).toBe('audio');
+        expect(peerconnection.getSenders()[0].track.kind).toBe('audio');
         // @ts-expect-error
-        expect(peerconnection._senders[1].track.kind).toBe('video');
+        expect(peerconnection.getSenders()[1].track.kind).toBe('video');
 
         resolve();
       });
@@ -141,6 +146,7 @@ describe('incoming call', () => {
         await delayPromise(100); // wait for to decline incoming call
 
         // @ts-expect-error
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
         mediaStream.tracks.reverse();
 
         const peerconnection = await sipConnector.answerToIncomingCall({
@@ -149,9 +155,9 @@ describe('incoming call', () => {
         });
 
         // @ts-expect-error
-        expect(peerconnection._senders[0].track.kind).toBe('audio');
+        expect(peerconnection.getSenders()[0].track.kind).toBe('audio');
         // @ts-expect-error
-        expect(peerconnection._senders[1].track.kind).toBe('video');
+        expect(peerconnection.getSenders()[1].track.kind).toBe('video');
 
         resolve();
       });
@@ -175,6 +181,8 @@ describe('incoming call', () => {
       JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
     })
       .then(async () => {
+        const incomingRTCSession = sipConnector.getIncomingRTCSession();
+
         return Promise.all([
           new Promise<{
             displayName: string;
@@ -183,7 +191,9 @@ describe('incoming call', () => {
           }>((resolve) => {
             sipConnector.on('declinedIncomingCall', resolve);
           }),
-          sipConnector.declineToIncomingCall(),
+          sipConnector.declineToIncomingCall().then(() => {
+            return incomingRTCSession;
+          }),
         ]);
       })
       .then(([{ displayName, host, incomingNumber }, incomingRTCSession]) => {
@@ -216,7 +226,7 @@ describe('incoming call', () => {
         }>((resolve) => {
           sipConnector.on('failedIncomingCall', resolve);
 
-          JsSIP.triggerFailIncomingSession(sipConnector.incomingRTCSession);
+          JsSIP.triggerFailIncomingSession(sipConnector.incomingRTCSession!);
         });
       })
       .then(({ displayName, host, incomingNumber }) => {
@@ -247,7 +257,7 @@ describe('incoming call', () => {
         }>((resolve) => {
           sipConnector.on('terminatedIncomingCall', resolve);
 
-          JsSIP.triggerFailIncomingSession(sipConnector.incomingRTCSession, {
+          JsSIP.triggerFailIncomingSession(sipConnector.incomingRTCSession!, {
             originator: 'local',
           });
         });
@@ -273,7 +283,12 @@ describe('incoming call', () => {
         });
 
         // @ts-expect-error
-        const parameters = sipConnector.rtcSession.answer.mock.calls[0][0];
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        const parameters = sipConnector.rtcSession.answer.mock.calls[0][0] as {
+          directionVideo: string;
+          directionAudio: string;
+          mediaStream: MediaStream;
+        };
 
         expect(parameters.directionVideo).toBe(undefined);
         expect(parameters.directionAudio).toBe(undefined);
@@ -303,7 +318,12 @@ describe('incoming call', () => {
         });
 
         // @ts-expect-error
-        const parameters = sipConnector.rtcSession.answer.mock.calls[0][0];
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        const parameters = sipConnector.rtcSession.answer.mock.calls[0][0] as {
+          directionVideo: string;
+          directionAudio: string;
+          mediaStream: MediaStream;
+        };
 
         expect(parameters.directionVideo).toBe('recvonly');
         expect(parameters.directionAudio).toBe(undefined);
@@ -333,7 +353,12 @@ describe('incoming call', () => {
         });
 
         // @ts-expect-error
-        const parameters = sipConnector.rtcSession.answer.mock.calls[0][0];
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        const parameters = sipConnector.rtcSession.answer.mock.calls[0][0] as {
+          directionVideo: string;
+          directionAudio: string;
+          mediaStream: MediaStream;
+        };
 
         expect(parameters.directionVideo).toBe(undefined);
         expect(parameters.directionAudio).toBe('recvonly');
@@ -364,7 +389,12 @@ describe('incoming call', () => {
         });
 
         // @ts-expect-error
-        const parameters = sipConnector.rtcSession.answer.mock.calls[0][0];
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        const parameters = sipConnector.rtcSession.answer.mock.calls[0][0] as {
+          directionVideo: string;
+          directionAudio: string;
+          mediaStream: MediaStream;
+        };
 
         expect(parameters.directionVideo).toBe('recvonly');
         expect(parameters.directionAudio).toBe('recvonly');

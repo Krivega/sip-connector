@@ -26,7 +26,7 @@ describe('call with no video tracks', () => {
 
     const peerconnection = await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
-    expect(!!peerconnection).toBe(true);
+    expect(peerconnection).toBeDefined();
   });
 
   it('isCallActive is true after call', async () => {
@@ -49,7 +49,7 @@ describe('call with no video tracks', () => {
 
     const remoteStreams = sipConnector.getRemoteStreams();
 
-    expect(remoteStreams!.length).toBe(1);
+    expect(remoteStreams?.length).toBe(1);
   });
 
   it('should no exist video tracks in incoming mediaStream when call with no video', async () => {
@@ -60,9 +60,9 @@ describe('call with no video tracks', () => {
 
     const remoteStreams = sipConnector.getRemoteStreams();
 
-    const videoTrack = remoteStreams![0].getVideoTracks();
+    const videoTrack = remoteStreams?.[0]?.getVideoTracks();
 
-    expect(videoTrack.length).toBe(0);
+    expect(videoTrack?.length).toBe(0);
   });
 
   it('tracks on senders', async () => {
@@ -72,9 +72,7 @@ describe('call with no video tracks', () => {
 
     const peerconnection = await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
-    // @ts-expect-error
-    expect(peerconnection._senders[0].track.kind).toBe('audio');
-    // @ts-expect-error
-    expect(peerconnection._senders[1]).toBe(undefined);
+    expect(peerconnection.getSenders()[0]?.track?.kind).toBe('audio');
+    expect(peerconnection.getSenders()[1]).toBe(undefined);
   });
 });

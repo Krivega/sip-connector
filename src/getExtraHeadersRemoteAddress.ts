@@ -1,7 +1,7 @@
 const getExtraHeadersRegistration = (remoteAddress?: string) => {
   const headers: string[] = [];
 
-  if (remoteAddress) {
+  if (remoteAddress !== undefined && remoteAddress !== '') {
     headers.push(`X-Vinteo-Remote: ${remoteAddress}`);
   }
 

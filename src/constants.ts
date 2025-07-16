@@ -75,3 +75,9 @@ export const SPECTATOR = 'SPECTATOR';
 export const PARTICIPANT = 'PARTICIPANT';
 
 export const ONE_MEGABIT_IN_BITS = 1e6;
+
+export enum Originator {
+  LOCAL = 'local',
+  REMOTE = 'remote',
+  SYSTEM = 'system',
+}

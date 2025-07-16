@@ -1,4 +1,5 @@
 import type { UA, WebSocketInterface } from '@krivega/jssip';
+import type { Originator } from './constants';
 
 export enum EEventsMainCAM {
   PAUSE_MAIN_CAM = 'PAUSEMAINCAM',
@@ -25,7 +26,7 @@ export enum EUseLicense {
 }
 
 export type TCustomError = Error & {
-  originator?: string;
+  originator?: Originator;
   cause?: unknown;
   message: unknown;
   _ws?: unknown;

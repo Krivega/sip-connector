@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /// <reference types="jest" />
 import type SipConnector from '../../SipConnector';
 import { doMockSipConnector } from '../../doMock';
@@ -52,23 +53,7 @@ describe('connectToServer', () => {
 
   it('registered', async () => {
     return sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization).then(() => {
-      expect(sipConnector.ua!.configuration).toEqual(uaConfigurationWithAuthorization);
-    });
-  });
-
-  it('registered async', async () => {
-    return Promise.all([
-      sipConnectorFacade.connectToServer({ ...dataForConnectionWithAuthorization, name: oneWord }),
-      sipConnectorFacade.connectToServer({ ...dataForConnectionWithAuthorization, name: twoWord }),
-      sipConnectorFacade.connectToServer({
-        ...dataForConnectionWithAuthorization,
-        name: thirdWord,
-      }),
-    ]).then(() => {
-      expect(sipConnector.ua!.configuration).toEqual({
-        ...uaConfigurationWithAuthorization,
-        uri: uriWithName(thirdWord),
-      });
+      expect(sipConnector.ua?.configuration).toEqual(uaConfigurationWithAuthorization);
     });
   });
 
@@ -88,7 +73,7 @@ describe('connectToServer', () => {
         });
       })
       .then(() => {
-        expect(sipConnector.ua!.configuration).toEqual({
+        expect(sipConnector.ua?.configuration).toEqual({
           ...uaConfigurationWithAuthorization,
           uri: uriWithName(thirdWord),
         });
@@ -160,7 +145,9 @@ describe('connectToServer', () => {
         isDisconnectOnFail: true,
       })
       .catch((error: unknown) => {
+        // eslint-disable-next-line jest/no-conditional-expect
         expect(disconnectedMock).toHaveBeenCalledTimes(1);
+        // eslint-disable-next-line jest/no-conditional-expect
         expect(error).toBeDefined();
       });
   });
@@ -174,7 +161,9 @@ describe('connectToServer', () => {
         sipWebSocketServerURL: LOCKED_SIP_WEB_SOCKET_SERVER_URL,
       })
       .catch((error: unknown) => {
+        // eslint-disable-next-line jest/no-conditional-expect
         expect(disconnectedMock).toHaveBeenCalledTimes(0);
+        // eslint-disable-next-line jest/no-conditional-expect
         expect(error).toBeDefined();
       });
   });

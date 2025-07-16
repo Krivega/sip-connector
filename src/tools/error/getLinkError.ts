@@ -8,6 +8,7 @@ const getLinkError = (error: TCustomError): string | undefined => {
 
   if (cause === causes.BAD_MEDIA_DESCRIPTION || cause === causes.NOT_FOUND) {
     // @ts-expect-error
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     link = `${error.message.to.uri.user}@${error.message.to.uri.host}`;
   }
 

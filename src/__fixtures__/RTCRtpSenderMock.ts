@@ -1,13 +1,15 @@
+/* eslint-disable unicorn/filename-case */
+/* eslint-disable unicorn/no-null */
 class RTCRtpSenderMock implements RTCRtpSender {
-  dtmf: RTCDTMFSender | null = null;
+  public dtmf: RTCDTMFSender | null = null;
 
-  track: MediaStreamTrack | null = null;
+  public track: MediaStreamTrack | null = null;
 
-  transport: RTCDtlsTransport | null = null;
+  public transport: RTCDtlsTransport | null = null;
 
-  transform: RTCRtpTransform | null = null;
+  public transform: RTCRtpTransform | null = null;
 
-  private _parameters: RTCRtpSendParameters = {
+  private parameters: RTCRtpSendParameters = {
     encodings: [{}],
     transactionId: '0',
     codecs: [],
@@ -15,43 +17,45 @@ class RTCRtpSenderMock implements RTCRtpSender {
     rtcp: {},
   };
 
-  private _parametersGets?: RTCRtpSendParameters;
+  private parametersGets?: RTCRtpSendParameters;
 
-  constructor({ track }: { track?: MediaStreamTrack } = {}) {
+  public constructor({ track }: { track?: MediaStreamTrack } = {}) {
     this.track = track ?? null;
   }
 
-  async getStats(): Promise<RTCStatsReport> {
+  // eslint-disable-next-line class-methods-use-this
+  public async getStats(): Promise<RTCStatsReport> {
     throw new Error('Method not implemented.');
   }
 
-  async replaceTrack(track: MediaStreamTrack | null): Promise<void> {
+  public async replaceTrack(track: MediaStreamTrack | null): Promise<void> {
     this.track = track ?? null;
   }
 
-  async setParameters(parameters: RTCRtpSendParameters): Promise<void> {
-    if (parameters !== this._parametersGets) {
+  public async setParameters(parameters: RTCRtpSendParameters): Promise<void> {
+    if (parameters !== this.parametersGets) {
       throw new Error(
         "Failed to execute 'setParameters' on 'RTCRtpSender': Read-only field modified in setParameters().",
       );
     }
 
-    const { transactionId } = this._parameters;
+    const { transactionId } = this.parameters;
 
-    this._parameters = {
-      ...this._parameters,
+    this.parameters = {
+      ...this.parameters,
       ...parameters,
       transactionId: `${Number(transactionId) + 1}`,
     };
   }
 
-  getParameters(): RTCRtpSendParameters {
-    this._parametersGets = { ...this._parameters };
+  public getParameters(): RTCRtpSendParameters {
+    this.parametersGets = { ...this.parameters };
 
-    return this._parametersGets;
+    return this.parametersGets;
   }
 
-  setStreams(): void {
+  // eslint-disable-next-line class-methods-use-this
+  public setStreams(): void {
     throw new Error('Method not implemented.');
   }
 }

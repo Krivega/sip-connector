@@ -63,9 +63,9 @@ const setBitrateByTrackResolution = async (
   const scaleResolutionDownByTarget = 1;
 
   const settings = videoTrack.getSettings();
-  const widthCurrent = settings.width!;
+  const widthCurrent = settings.width;
 
-  const maxBitrate = getMaxBitrateByWidthAndCodec(widthCurrent, codec);
+  const maxBitrate = getMaxBitrateByWidthAndCodec(widthCurrent ?? 0, codec);
 
   return addToStackScaleResolutionDownBySender({
     sender,
@@ -138,6 +138,11 @@ const processSender = async (
         );
       }
 
+      return setBitrateByTrackResolution({ sender, videoTrack, codec }, onSetParameters);
+    }
+    case EEventsMainCAM.ADMIN_STOP_MAIN_CAM:
+    case EEventsMainCAM.ADMIN_START_MAIN_CAM:
+    case undefined: {
       return setBitrateByTrackResolution({ sender, videoTrack, codec }, onSetParameters);
     }
     default: {

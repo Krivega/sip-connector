@@ -14,7 +14,7 @@ describe('media state: resolveOnStopMainCam', () => {
 
   beforeEach(() => {
     sipConnector = doMockSipConnector();
-    handlerOnStopMainCam = jest.fn();
+    handlerOnStopMainCam = jest.fn() as jest.Mock<void>;
 
     onStopMainCam = resolveOnStopMainCam(sipConnector);
   });
@@ -29,13 +29,13 @@ describe('media state: resolveOnStopMainCam', () => {
     onStopMainCam(handlerOnStopMainCam);
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-stop-main-cam', syncModeForced);
+    sipConnector.sessionEvents.trigger('admin-stop-main-cam', syncModeForced);
 
     expect(handlerOnStopMainCam).toHaveBeenCalledTimes(1);
     expect(handlerOnStopMainCam).toHaveBeenCalledWith(syncModeForced);
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-stop-main-cam', syncModeNotForced);
+    sipConnector.sessionEvents.trigger('admin-stop-main-cam', syncModeNotForced);
 
     expect(handlerOnStopMainCam).toHaveBeenCalledTimes(2);
     expect(handlerOnStopMainCam).toHaveBeenCalledWith(syncModeNotForced);
@@ -47,14 +47,14 @@ describe('media state: resolveOnStopMainCam', () => {
     offStopMainCam = onStopMainCam(handlerOnStopMainCam);
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-stop-main-cam', syncModeForced);
+    sipConnector.sessionEvents.trigger('admin-stop-main-cam', syncModeForced);
 
     expect(handlerOnStopMainCam).toHaveBeenCalledTimes(1);
 
     offStopMainCam();
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-stop-main-cam', syncModeForced);
+    sipConnector.sessionEvents.trigger('admin-stop-main-cam', syncModeForced);
 
     expect(handlerOnStopMainCam).toHaveBeenCalledTimes(1);
   });

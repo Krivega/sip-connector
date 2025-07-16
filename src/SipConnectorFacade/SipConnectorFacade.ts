@@ -7,7 +7,7 @@ import {
   PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS,
   PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS,
 } from '../constants';
-import log from '../logger';
+import log, { debug } from '../logger';
 import type SipConnector from '../SipConnector';
 import generateSimulcastEncodings from '../tools/generateSimulcastEncodings';
 import hasPurgatory from '../tools/hasPurgatory';
@@ -72,12 +72,6 @@ const proxyMethods = new Set<keyof IProxyMethods>([
 ]);
 
 class SipConnectorFacade implements IProxyMethods {
-  public readonly sipConnector: SipConnector;
-
-  private readonly preferredMimeTypesVideoCodecs?: string[];
-
-  private readonly excludeMimeTypesVideoCodecs?: string[];
-
   // @ts-expect-error: proxy method
   public on: IProxyMethods['on'];
 
@@ -138,6 +132,12 @@ class SipConnectorFacade implements IProxyMethods {
   // @ts-expect-error: proxy method
   public isRegistered: IProxyMethods['isRegistered'];
 
+  public readonly sipConnector: SipConnector;
+
+  private readonly preferredMimeTypesVideoCodecs?: string[];
+
+  private readonly excludeMimeTypesVideoCodecs?: string[];
+
   public constructor(
     sipConnector: SipConnector,
     {
@@ -160,13 +160,15 @@ class SipConnectorFacade implements IProxyMethods {
           proxyMethods.has(property as keyof IProxyMethods) &&
           property in this.sipConnector
         ) {
-          const value = Reflect.get(this.sipConnector, property, this.sipConnector);
+          const value = Reflect.get(this.sipConnector, property, this.sipConnector) as unknown;
 
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
           return typeof value === 'function' ? value.bind(this.sipConnector) : value;
         }
 
-        const value = Reflect.get(target, property, receiver);
+        const value = Reflect.get(target, property, receiver) as unknown;
 
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return typeof value === 'function' ? value.bind(target) : value;
       },
     });
@@ -279,7 +281,9 @@ class SipConnectorFacade implements IProxyMethods {
       onReadyRemoteStreams: setRemoteStreams,
     });
     const handleReadyRemoteStreams = this.resolveHandleReadyRemoteStreams({
-      onReadyRemoteStreams: handleReadyRemoteStreamsDebounced,
+      onReadyRemoteStreams: () => {
+        handleReadyRemoteStreamsDebounced().catch(debug);
+      },
     });
     const updateTransceiver = resolveUpdateTransceiver(
       {
@@ -346,7 +350,7 @@ class SipConnectorFacade implements IProxyMethods {
       log('onSuccess');
 
       isSuccessProgressCall = true;
-      handleReadyRemoteStreamsDebounced();
+      handleReadyRemoteStreamsDebounced().catch(debug);
 
       if (onSuccessProgressCall) {
         onSuccessProgressCall({ isPurgatory: hasPurgatory(room) });
@@ -432,7 +436,7 @@ class SipConnectorFacade implements IProxyMethods {
     onEnterPurgatory?: () => void;
     onEnterConference?: (parameters_: { isSuccessProgressCall: boolean }) => void;
     onEndedCall?: () => void;
-  }): Promise<RTCPeerConnection | void> => {
+  }): Promise<RTCPeerConnection | undefined> => {
     const {
       mediaStream,
       extraHeaders,
@@ -458,7 +462,9 @@ class SipConnectorFacade implements IProxyMethods {
       onReadyRemoteStreams: setRemoteStreams,
     });
     const handleReadyRemoteStreams = this.resolveHandleReadyRemoteStreams({
-      onReadyRemoteStreams: handleReadyRemoteStreamsDebounced,
+      onReadyRemoteStreams: () => {
+        handleReadyRemoteStreamsDebounced().catch(debug);
+      },
     });
     const updateTransceiver = resolveUpdateTransceiver(
       {
@@ -528,7 +534,7 @@ class SipConnectorFacade implements IProxyMethods {
       log('onSuccess');
 
       isSuccessProgressCall = true;
-      handleReadyRemoteStreamsDebounced();
+      handleReadyRemoteStreamsDebounced().catch(debug);
 
       if (onSuccessProgressCall) {
         onSuccessProgressCall({ isPurgatory: hasPurgatory(room) });
@@ -601,7 +607,7 @@ class SipConnectorFacade implements IProxyMethods {
     sendEncodings?: RTCRtpEncodingParameters[];
     preferredMimeTypesVideoCodecs?: string[];
     excludeMimeTypesVideoCodecs?: string[];
-  }): Promise<MediaStream | void> => {
+  }): Promise<MediaStream | undefined> => {
     const updateTransceiver = resolveUpdateTransceiver(
       {
         degradationPreference,
@@ -650,7 +656,7 @@ class SipConnectorFacade implements IProxyMethods {
       excludeMimeTypesVideoCodecs?: string[];
     },
     options?: { callLimit: number },
-  ): Promise<MediaStream | void> => {
+  ): Promise<MediaStream | undefined> => {
     const updateTransceiver = resolveUpdateTransceiver(
       {
         degradationPreference,
@@ -804,6 +810,7 @@ class SipConnectorFacade implements IProxyMethods {
     }, 200);
   };
 
+  // eslint-disable-next-line class-methods-use-this
   public resolveHandleReadyRemoteStreams = ({
     onReadyRemoteStreams,
   }: {

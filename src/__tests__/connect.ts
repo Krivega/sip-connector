@@ -53,7 +53,13 @@ describe('connect', () => {
         return error;
       });
 
-    expect(rejectedError).toEqual({ response: null, cause: 'Wrong credentials' });
+    expect(rejectedError).toEqual({
+      response: {
+        status_code: 401,
+        reason_phrase: 'Unauthorized',
+      },
+      cause: 'Rejected',
+    });
   });
 
   it('and change sipServerUrl', async () => {
@@ -179,7 +185,7 @@ describe('connect', () => {
     expect(sipConnector.getConnectionConfiguration().password).toBe(
       dataForConnectionWithAuthorizationWithDisplayName.password,
     );
-    expect(sipConnector.ua!.configuration).toEqual(uaConfigurationWithAuthorizationWithDisplayName);
+    expect(sipConnector.ua?.configuration).toEqual(uaConfigurationWithAuthorizationWithDisplayName);
   });
 
   it('set same password after with authorization', async () => {
@@ -192,11 +198,14 @@ describe('connect', () => {
         password: dataForConnectionWithAuthorizationWithDisplayName.password,
       })
       .catch((error: unknown) => {
+        // eslint-disable-next-line jest/no-conditional-expect
         expect(error).toEqual(new Error('nothing changed'));
+        // eslint-disable-next-line jest/no-conditional-expect
         expect(sipConnector.getConnectionConfiguration().password).toBe(
           dataForConnectionWithAuthorizationWithDisplayName.password,
         );
-        expect(sipConnector.ua!.configuration).toEqual(
+        // eslint-disable-next-line jest/no-conditional-expect
+        expect(sipConnector.ua?.configuration).toEqual(
           uaConfigurationWithAuthorizationWithDisplayName,
         );
       });
@@ -266,13 +275,14 @@ describe('connect', () => {
     sipConnector.JsSIP.UA = UAMock;
 
     // @ts-expect-error
-    const requestConnectMocked = jest.spyOn(sipConnector._cancelableConnect, 'request');
+    const requestConnectMocked = jest.spyOn(sipConnector, 'connectInner');
 
     try {
       await sipConnector.connect(dataForConnectionWithoutAuthorization, {
         callLimit: connectCallLimit,
       });
     } catch (error) {
+      // eslint-disable-next-line jest/no-conditional-expect
       expect(error).toEqual(new Error('call limit (3) is reached'));
     }
 
@@ -288,7 +298,7 @@ describe('connect', () => {
     sipConnector.JsSIP.UA = UAMock;
 
     // @ts-expect-error
-    const requestConnectMocked = jest.spyOn(sipConnector._cancelableConnect, 'request');
+    const requestConnectMocked = jest.spyOn(sipConnector, 'connectInner');
 
     const ua = await sipConnector.connect(dataForConnectionWithAuthorization, {
       callLimit: connectCallLimit,

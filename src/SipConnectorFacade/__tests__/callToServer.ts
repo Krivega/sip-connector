@@ -29,9 +29,8 @@ describe('callToServer', () => {
         return sipConnectorFacade.callToServer(dataCall);
       })
       .then((peerConnection) => {
-        // @ts-expect-error
-        expect(parseObject(peerConnection._receivers)).toEqual(
-          parseObject(peerConnectionFromData._receivers),
+        expect(parseObject(peerConnection.getReceivers())).toEqual(
+          parseObject(peerConnectionFromData.getReceivers()),
         );
         expect(onEnterPurgatory).toHaveBeenCalledTimes(0);
         expect(onEnterConference).toHaveBeenCalledTimes(1);

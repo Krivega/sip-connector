@@ -12,7 +12,10 @@ const configureEncodings = (
   configureEmptyEncodings(parametersCurrent, countEncodingsTarget);
 
   parametersCurrent.encodings.forEach((encoding, index) => {
-    const encodingTarget = (parametersTarget?.encodings ?? [])[index];
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    const encodingTarget = (parametersTarget?.encodings ?? [])[index] as
+      | RTCRtpEncodingParameters
+      | undefined;
     const maxBitrate = encodingTarget?.maxBitrate;
     const scaleResolutionDownBy = encodingTarget?.scaleResolutionDownBy;
 

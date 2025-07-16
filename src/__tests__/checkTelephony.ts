@@ -24,9 +24,24 @@ describe('checkTelephony', () => {
     await sipConnector.checkTelephony(dataForConnectionWithoutAuthorization);
 
     expect(uaTrigger).toHaveBeenCalledTimes(3);
-    expect(uaTrigger).toHaveBeenNthCalledWith(1, 'connected');
-    expect(uaTrigger).toHaveBeenNthCalledWith(2, 'unregistered');
-    expect(uaTrigger).toHaveBeenNthCalledWith(3, 'disconnected', { error: new Error('stoped') });
+    expect(uaTrigger).toHaveBeenNthCalledWith(1, 'connected', {
+      socket: {
+        sip_uri: 'sip:sipServerUrl;transport=ws',
+        url: 'wss://sipServerUrl/webrtc/wss/',
+        via_transport: 'WSS',
+      },
+    });
+    expect(uaTrigger).toHaveBeenNthCalledWith(2, 'unregistered', {
+      response: { reason_phrase: 'OK', status_code: 200 },
+    });
+    expect(uaTrigger).toHaveBeenNthCalledWith(3, 'disconnected', {
+      error: true,
+      socket: {
+        sip_uri: 'sip:sipServerUrl;transport=ws',
+        url: 'wss://sipServerUrl/webrtc/wss/',
+        via_transport: 'WSS',
+      },
+    });
   });
 
   it('should fail request when telephony is not ready', async () => {

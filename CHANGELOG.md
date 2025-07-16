@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [14.0.1-0](https://github.com/Krivega/sip-connector/compare/v14.0.0...v14.0.1-0) (2025-07-15)
+
+## [14.1.0](https://github.com/Krivega/sip-connector/compare/v14.0.0...v14.1.0) (2025-07-15)
+
+### Features
+
+- hasCanceledStartPresentationError ([d2c0458](https://github.com/Krivega/sip-connector/commit/d2c04584d62134b0be93d853f6dbb1ba8c87f498))
+
 ## [14.0.0](https://github.com/Krivega/sip-connector/compare/v13.3.1...v14.0.0) (2025-02-13)
 
 ### ⚠ BREAKING CHANGES

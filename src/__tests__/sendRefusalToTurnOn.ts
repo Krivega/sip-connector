@@ -29,8 +29,10 @@ describe('media state', () => {
     mockFunction = jest.fn(() => {});
 
     // @ts-expect-error
+    // eslint-disable-next-line require-atomic-updates
     sipConnector.rtcSession.sendInfo = mockFunction;
 
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sipConnector.sendRefusalToTurnOnMic();
 
     expect(mockFunction).toHaveBeenCalledWith(CONTENT_TYPE_REFUSAL, undefined, {
@@ -48,8 +50,10 @@ describe('media state', () => {
     mockFunction = jest.fn(() => {});
 
     // @ts-expect-error
+    // eslint-disable-next-line require-atomic-updates
     sipConnector.rtcSession.sendInfo = mockFunction;
 
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sipConnector.sendRefusalToTurnOnCam();
 
     expect(mockFunction).toHaveBeenCalledWith(CONTENT_TYPE_REFUSAL, undefined, {
@@ -72,6 +76,7 @@ describe('media state', () => {
     };
 
     await sipConnector.sendRefusalToTurnOnMic().catch((error: unknown) => {
+      // eslint-disable-next-line jest/no-conditional-expect
       expect((error as Error).message).toBe(ERROR_RESPONSE);
     });
   });
@@ -90,6 +95,7 @@ describe('media state', () => {
     };
 
     await sipConnector.sendRefusalToTurnOnCam().catch((error: unknown) => {
+      // eslint-disable-next-line jest/no-conditional-expect
       expect((error as Error).message).toBe(ERROR_RESPONSE);
     });
   });

@@ -13,7 +13,11 @@ const generateSimulcastEncodings = ({
 }) => {
   if (simulcastEncodings && simulcastEncodings.length > 0) {
     const sendEncodingsGenerated: RTCRtpEncodingParameters[] = sendEncodings ?? [];
-    const videoTrack = findVideoTrack(mediaStream)!;
+    const videoTrack = findVideoTrack(mediaStream);
+
+    if (videoTrack === undefined) {
+      throw new Error('No video track');
+    }
 
     simulcastEncodings.forEach((item, index) => {
       const encoding = sendEncodingsGenerated[index] ?? ({} as RTCRtpEncodingParameters);

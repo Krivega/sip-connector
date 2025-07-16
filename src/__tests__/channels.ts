@@ -49,8 +49,10 @@ describe('channels', () => {
     mockFunction = jest.fn(() => {});
 
     // @ts-expect-error
+    // eslint-disable-next-line require-atomic-updates
     sipConnector.rtcSession.sendInfo = mockFunction;
 
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sipConnector.sendChannels(channelsData);
 
     expect(mockFunction).toHaveBeenCalledWith(CONTENT_TYPE_CHANNELS, undefined, sendedExtraHeaders);

@@ -1,13 +1,14 @@
 import type { Registrator } from '@krivega/jssip';
 
 class RegistratorMock implements Registrator {
-  extraHeaders?: string[] = [];
+  public extraHeaders?: string[] = [];
 
-  setExtraHeaders(extraHeaders: string[]) {
+  public setExtraHeaders(extraHeaders: string[]) {
     this.extraHeaders = extraHeaders;
   }
 
-  setExtraContactParams() {}
+  // eslint-disable-next-line class-methods-use-this
+  public setExtraContactParams() {}
 }
 
 export default RegistratorMock;

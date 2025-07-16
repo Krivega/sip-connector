@@ -67,8 +67,8 @@ const resolveUpdateTransceiver = (
         typeof transceiver.setCodecPreferences === 'function' &&
         transceiver.sender.track?.kind === 'video' &&
         ((preferredMimeTypesVideoCodecs !== undefined &&
-          preferredMimeTypesVideoCodecs?.length > 0) ||
-          (excludeMimeTypesVideoCodecs !== undefined && excludeMimeTypesVideoCodecs?.length > 0))
+          preferredMimeTypesVideoCodecs.length > 0) ||
+          (excludeMimeTypesVideoCodecs !== undefined && excludeMimeTypesVideoCodecs.length > 0))
       ) {
         const capabilityCodecs = getCapabilityCodecs('video');
 

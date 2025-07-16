@@ -36,6 +36,7 @@ describe('mic control', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
+      // eslint-disable-next-line no-promise-executor-return
       return sipConnector.onSession('admin-start-mic', resolve);
     });
     const { rtcSession } = sipConnector;
@@ -54,6 +55,7 @@ describe('mic control', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
+      // eslint-disable-next-line no-promise-executor-return
       return sipConnector.onSession('admin-stop-mic', resolve);
     });
     const { rtcSession } = sipConnector;

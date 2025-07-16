@@ -5,14 +5,14 @@ type TExtraHeaders = [string, string][];
 class Request extends IncomingRequest {
   private readonly headers: Headers;
 
-  constructor(extraHeaders: TExtraHeaders) {
+  public constructor(extraHeaders: TExtraHeaders) {
     super();
 
     this.headers = new Headers(extraHeaders);
   }
 
-  getHeader(headerName: string) {
-    return this.headers.get(headerName) || '';
+  public getHeader(headerName: string) {
+    return this.headers.get(headerName) ?? '';
   }
 }
 

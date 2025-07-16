@@ -1,8 +1,10 @@
+/* eslint-disable unicorn/filename-case */
 /// <reference types="jest" />
 
 import type { IncomingInfoEvent } from '@krivega/jssip';
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
 import { REJECTED } from '../causes';
+import type { TEventHandlers } from './BaseSession.mock';
 import BaseSession from './BaseSession.mock';
 import RTCPeerConnectionMock from './RTCPeerConnectionMock';
 import { getRoomFromSipUrl } from './utils';
@@ -26,27 +28,58 @@ const hasVideoTracks = (mediaStream: MediaStream): boolean => {
 };
 
 class RTCSessionMock extends BaseSession {
-  url: string;
-
-  status_code?: number;
-
-  private _isEnded = false;
-
   private static startPresentationError?: Error;
 
   private static countStartPresentationError: number = Number.POSITIVE_INFINITY;
 
   private static countStartsPresentation = 0;
 
-  constructor({
+  public url: string;
+
+  public status_code?: number;
+
+  /**
+     * answer
+     *
+     * @param {Object} arg1               - The argument 1
+     * @param {Object} arg1.mediaStream   - The media stream
+     * @param {Array}  arg1.eventHandlers - The event handlers
+
+ * @returns {undefined}
+     */
+  public answer = jest.fn(({ mediaStream }: { mediaStream: MediaStream }) => {
+    if (this.originator !== 'remote') {
+      const error = new Error('answer available only for remote sessions');
+
+      throw error;
+    }
+
+    this.initPeerconnection(mediaStream);
+
+    setTimeout(() => {
+      this.trigger('connecting');
+
+      setTimeout(() => {
+        this.trigger('accepted');
+      }, 100);
+
+      setTimeout(() => {
+        this.trigger('confirmed');
+      }, 200);
+    }, CONNECTION_DELAY);
+  });
+
+  private isEndedInner = false;
+
+  public constructor({
     url = '',
     mediaStream,
     eventHandlers,
     originator,
   }: {
     url?: string;
-    mediaStream?: any;
-    eventHandlers?: any;
+    mediaStream?: MediaStream;
+    eventHandlers: TEventHandlers;
     originator: string;
   }) {
     super({ originator, eventHandlers });
@@ -81,7 +114,7 @@ class RTCSessionMock extends BaseSession {
     return super.startPresentation(stream);
   }
 
-  initPeerconnection(mediaStream: any) {
+  public initPeerconnection(mediaStream: MediaStream | undefined) {
     if (!mediaStream) {
       return false;
     }
@@ -91,7 +124,7 @@ class RTCSessionMock extends BaseSession {
     return true;
   }
 
-  createPeerconnection(sendedStream: any) {
+  public createPeerconnection(sendedStream: MediaStream) {
     const audioTrack = createAudioMediaStreamTrackMock();
 
     audioTrack.id = 'mainaudio1';
@@ -108,16 +141,16 @@ class RTCSessionMock extends BaseSession {
       tracks.push(videoTrack);
     }
 
-    this._connection = new RTCPeerConnectionMock(undefined, tracks);
+    this.connection = new RTCPeerConnectionMock(undefined, tracks);
 
-    this._addStream(sendedStream);
+    this.addStream(sendedStream);
 
     setTimeout(() => {
       this.trigger('peerconnection', { peerconnection: this.connection });
     }, CONNECTION_DELAY);
   }
 
-  connect(target: string) {
+  public connect(target: string) {
     const room = getRoomFromSipUrl(target);
 
     setTimeout(() => {
@@ -145,52 +178,24 @@ class RTCSessionMock extends BaseSession {
     }, CONNECTION_DELAY);
   }
 
-  /**
-     * answer
-     *
-     * @param {Object} arg1               - The argument 1
-     * @param {Object} arg1.mediaStream   - The media stream
-     * @param {Array}  arg1.eventHandlers - The event handlers
-
- * @returns {undefined}
-     */
-  answer = jest.fn(({ mediaStream }) => {
-    if (this.originator !== 'remote') {
-      const error = new Error('answer available only for remote sessions');
-
-      throw error;
-    }
-
-    this.initPeerconnection(mediaStream);
-
-    setTimeout(() => {
-      this.trigger('connecting');
-
-      setTimeout(() => {
-        this.trigger('accepted');
-      }, 100);
-
-      setTimeout(() => {
-        this.trigger('confirmed');
-      }, 200);
-    }, CONNECTION_DELAY);
-  });
-
-  terminate({ status_code }: { status_code?: number } = {}) {
+  public terminate({ status_code, cause }: { status_code?: number; cause?: string } = {}) {
     this.status_code = status_code;
 
-    this.trigger('ended', { status_code });
+    this.trigger('ended', { status_code, cause, originator: 'local' });
 
-    this._isEnded = false;
+    this.isEndedInner = false;
 
     return this;
   }
 
-  async terminateAsync({ status_code }: { status_code?: number } = {}) {
-    this.terminate({ status_code });
+  public async terminateAsync({
+    status_code,
+    cause,
+  }: { status_code?: number; cause?: string } = {}) {
+    this.terminate({ status_code, cause });
   }
 
-  terminateRemote({ status_code }: { status_code?: number } = {}) {
+  public terminateRemote({ status_code }: { status_code?: number } = {}) {
     this.status_code = status_code;
 
     this.trigger('ended', { status_code, originator: 'remote' });
@@ -198,13 +203,16 @@ class RTCSessionMock extends BaseSession {
     return this;
   }
 
-  _addStream(stream: Record<string, () => any[]>, action = 'getTracks') {
+  public addStream(
+    stream: MediaStream,
+    action: 'getTracks' | 'getAudioTracks' | 'getVideoTracks' = 'getTracks',
+  ) {
     stream[action]().forEach((track: MediaStreamTrack) => {
       return this.connection.addTrack(track);
     });
   }
 
-  _forEachSenders(callback: (sender: RTCRtpSender) => void) {
+  public forEachSenders(callback: (sender: RTCRtpSender) => void) {
     const senders = this.connection.getSenders();
 
     for (const sender of senders) {
@@ -216,8 +224,8 @@ class RTCSessionMock extends BaseSession {
 
   /* eslint-disable no-param-reassign */
 
-  _toggleMuteAudio(mute: boolean) {
-    this._forEachSenders(({ track }) => {
+  public toggleMuteAudio(mute: boolean) {
+    this.forEachSenders(({ track }) => {
       if (track && track.kind === 'audio') {
         track.enabled = !mute;
       }
@@ -227,63 +235,62 @@ class RTCSessionMock extends BaseSession {
 
   /* eslint-disable no-param-reassign */
 
-  _toggleMuteVideo(mute: boolean) {
-    this._forEachSenders(({ track }) => {
+  public toggleMuteVideo(mute: boolean) {
+    this.forEachSenders(({ track }) => {
       if (track && track.kind === 'video') {
         track.enabled = !mute;
       }
     });
   }
 
-  mute(options: { audio: any; video: any }) {
+  public mute(options: { audio: boolean; video: boolean }) {
     if (options.audio) {
-      this._mutedOptions.audio = true;
-      this._toggleMuteAudio(this._mutedOptions.audio);
+      this.mutedOptions.audio = true;
+      this.toggleMuteAudio(this.mutedOptions.audio);
     }
 
     if (options.video) {
-      this._mutedOptions.video = true;
-      this._toggleMuteVideo(this._mutedOptions.video);
+      this.mutedOptions.video = true;
+      this.toggleMuteVideo(this.mutedOptions.video);
     }
 
-    this._onmute(options);
+    this.onmute(options);
   }
 
-  unmute(options: { audio: any; video: any }) {
+  public unmute(options: { audio: boolean; video: boolean }) {
     if (options.audio) {
-      this._mutedOptions.audio = false;
+      this.mutedOptions.audio = false;
     }
 
     if (options.video) {
-      this._mutedOptions.video = false;
+      this.mutedOptions.video = false;
     }
 
     this.trigger('unmuted', options);
   }
 
-  isMuted() {
-    return this._mutedOptions;
+  public isMuted() {
+    return this.mutedOptions;
   }
 
-  async replaceMediaStream(mediaStream: any) {
-    return mediaStream;
-  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-empty-function, class-methods-use-this
+  public async replaceMediaStream(_mediaStream: MediaStream): Promise<void> {}
 
-  _onmute({ audio, video }: { audio: boolean; video: boolean }) {
+  public onmute({ audio, video }: { audio: boolean; video: boolean }) {
     this.trigger('muted', {
       audio,
       video,
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  async sendInfo() {}
+  // eslint-disable-next-line @typescript-eslint/no-empty-function, class-methods-use-this
+  public async sendInfo() {}
 
-  isEnded() {
-    return this._isEnded;
+  public isEnded() {
+    return this.isEndedInner;
   }
 
-  newInfo(data: IncomingInfoEvent) {
+  public newInfo(data: IncomingInfoEvent) {
     this.trigger('newInfo', data);
   }
   /* eslint-enable no-param-reassign */

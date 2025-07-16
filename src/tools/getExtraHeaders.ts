@@ -20,19 +20,19 @@ const getExtraHeaders = ({
 
   headers.push(`X-Vinteo-Mic-State: ${muteStateMic}`, `X-Vinteo-MainCam-State: ${muteStateCam}`);
 
-  if (!isRegistered) {
+  if (isRegistered === false || isRegistered === undefined) {
     headers.push('X-Vinteo-Purgatory-Call: yes');
   }
 
-  if (sessionId) {
+  if (sessionId !== undefined && sessionId !== '') {
     headers.push(`X-Vinteo-Session: ${sessionId}`);
   }
 
-  if (isPresentationCall) {
+  if (isPresentationCall === true) {
     headers.push('X-Vinteo-Presentation-Call: yes');
   }
 
-  if (remoteAddress) {
+  if (remoteAddress !== undefined && remoteAddress !== '') {
     headers.push(`X-Vinteo-Remote: ${remoteAddress}`);
   }
 

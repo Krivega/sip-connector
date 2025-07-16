@@ -5846,10 +5846,10 @@ regjsparser@^0.12.0:
   dependencies:
     jsesc "~3.0.2"
 
-repeated-calls@^2.3.0:
-  version "2.3.0"
-  resolved "https://registry.yarnpkg.com/repeated-calls/-/repeated-calls-2.3.0.tgz#98d489323f9ab7ad12d0c1733b9b68eebd5198fc"
-  integrity sha512-ZBBxhCSGiI2r5HX1vXwt30FF/FWP6wRvmU87V1agX9loD3F5/j3JhCz0pXXSKo0HMQWrIJJxY2nBWo++USM1Jg==
+repeated-calls@^2.3.3:
+  version "2.3.3"
+  resolved "https://registry.yarnpkg.com/repeated-calls/-/repeated-calls-2.3.3.tgz#dc00fbf09728a81882c7e374982a24285adc4552"
+  integrity sha512-8vz9iOz9KKYowXeXJsaO2ymOtHvvH+5bgbkGJuki4UPuE4xkt3TKmAERG0vfwGoYAzuuzPj4sraBBROMEpl44g==
 
 require-directory@^2.1.1:
   version "2.1.1"

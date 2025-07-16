@@ -13,12 +13,13 @@ import Session from './RTCSessionMock';
 import UAmock from './UA.mock';
 import WebSocketInterfaceMock from './WebSocketInterface.mock';
 
+// eslint-disable-next-line unicorn/prefer-event-target
 class Info extends EventEmitter {
-  contentType: string;
+  public contentType: string;
 
-  body: string;
+  public body: string;
 
-  constructor(contentType: string, body: string) {
+  public constructor(contentType: string, body: string) {
     super();
     this.contentType = contentType;
     this.body = body;
@@ -42,7 +43,7 @@ const triggerNewInfo = (rtcSession: RTCSession, extraHeaders: [string, string][]
 
 const triggerNewSipEvent = (ua: UA, extraHeaders: [string, string][]) => {
   const request = new Request(extraHeaders);
-  const incomingSipEvent = { request };
+  const incomingSipEvent = { event: 'sipEvent', request };
   const uaMock = ua as unknown as UAmock;
 
   uaMock.newSipEvent(incomingSipEvent);
@@ -56,24 +57,28 @@ const triggerIncomingSession = (
     host,
   }: { incomingNumber?: string; displayName: string; host: string },
 ) => {
-  const session = new Session({ originator: originatorRemote });
+  const session = new Session({ originator: originatorRemote, eventHandlers: {} });
   const uri = new URI('sip', incomingNumber, host);
 
-  session._remote_identity = new NameAddrHeader(uri, displayName);
+  session.remote_identity = new NameAddrHeader(uri, displayName);
 
-  ua.trigger('newRTCSession', { originator: originatorRemote, session });
+  const request = new Request([]);
+
+  ua.trigger('newRTCSession', {
+    originator: originatorRemote,
+    session: session as unknown as RTCSession,
+    request,
+  });
 };
 
 const triggerFailIncomingSession = (
-  incomingSession: unknown,
+  incomingSession: RTCSession,
   options?: { originator: 'local' | 'remote' },
 ) => {
   if (options) {
-    // @ts-expect-error
-    incomingSession.trigger('failed', options);
+    (incomingSession as unknown as Session).trigger('failed', options);
   } else {
-    // @ts-expect-error
-    incomingSession.trigger('failed', incomingSession);
+    (incomingSession as unknown as Session).trigger('failed', incomingSession);
   }
 };
 

@@ -14,7 +14,7 @@ describe('media state: resolveOnStopMic', () => {
 
   beforeEach(() => {
     sipConnector = doMockSipConnector();
-    handlerOnStopMic = jest.fn();
+    handlerOnStopMic = jest.fn() as jest.Mock<void>;
 
     onStopMic = resolveOnStopMic(sipConnector);
   });
@@ -29,13 +29,13 @@ describe('media state: resolveOnStopMic', () => {
     onStopMic(handlerOnStopMic);
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-stop-mic', syncModeForced);
+    sipConnector.sessionEvents.trigger('admin-stop-mic', syncModeForced);
 
     expect(handlerOnStopMic).toHaveBeenCalledTimes(1);
     expect(handlerOnStopMic).toHaveBeenCalledWith(syncModeForced);
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-stop-mic', syncModeNotForced);
+    sipConnector.sessionEvents.trigger('admin-stop-mic', syncModeNotForced);
 
     expect(handlerOnStopMic).toHaveBeenCalledTimes(2);
     expect(handlerOnStopMic).toHaveBeenCalledWith(syncModeNotForced);
@@ -47,14 +47,14 @@ describe('media state: resolveOnStopMic', () => {
     offStopMic = onStopMic(handlerOnStopMic);
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-stop-mic', syncModeForced);
+    sipConnector.sessionEvents.trigger('admin-stop-mic', syncModeForced);
 
     expect(handlerOnStopMic).toHaveBeenCalledTimes(1);
 
     offStopMic();
 
     // @ts-expect-error
-    sipConnector._sessionEvents.trigger('admin-stop-mic', syncModeForced);
+    sipConnector.sessionEvents.trigger('admin-stop-mic', syncModeForced);
 
     expect(handlerOnStopMic).toHaveBeenCalledTimes(1);
   });

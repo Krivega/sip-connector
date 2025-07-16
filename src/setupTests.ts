@@ -9,6 +9,6 @@ declare let global: Global;
 
 global.RTCPeerConnection = RTCPeerConnectionMock;
 // @ts-expect-error
-global.navigator ||= {};
+global.navigator ??= {};
 
 doMock();

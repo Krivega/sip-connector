@@ -1,6 +1,6 @@
 {
   "name": "sip-connector",
-  "version": "14.0.0",
+  "version": "14.0.1-0",
   "description": "Module for connect to Vinteo server",
   "keywords": [
     "webrtc",
@@ -67,7 +67,7 @@
     "@krivega/jssip": "^5.1.2",
     "debug": "^4.4.1",
     "events-constructor": "^1.3.0",
-    "repeated-calls": "^2.3.0",
+    "repeated-calls": "^2.3.3",
     "sequent-promises": "^2.0.1",
     "stack-promises": "^2.0.3",
     "ts-debounce": "^4.0.0",
@@ -114,7 +114,7 @@
     "@krivega/jssip": "^5.1.2",
     "debug": "^4.4.1",
     "events-constructor": "^1.3.0",
-    "repeated-calls": "^2.2.1",
+    "repeated-calls": "^2.3.3",
     "sequent-promises": "^2.0.1",
     "stack-promises": "^2.0.3",
     "ts-debounce": "^4.0.0",

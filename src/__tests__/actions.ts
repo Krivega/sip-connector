@@ -19,9 +19,12 @@ describe('actions', () => {
       sipConnector.once('unregistered', resolve);
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sipConnector.unregister();
 
-    return expect(unregistered).resolves.toEqual(undefined);
+    return expect(unregistered).resolves.toEqual({
+      response: { reason_phrase: 'OK', status_code: 200 },
+    });
   });
 
   it('tryRegister', async () => {

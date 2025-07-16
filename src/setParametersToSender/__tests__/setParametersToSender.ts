@@ -9,7 +9,7 @@ describe('setParametersToSender', () => {
     mockSender = {
       getParameters: jest.fn(),
       setParameters: jest.fn(),
-    } as any as RTCRtpSender;
+    } as unknown as RTCRtpSender;
   });
 
   it('should set parameters correctly when there are changes', async () => {

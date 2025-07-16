@@ -25,12 +25,13 @@ describe('answerIncomingCall', () => {
     await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       sipConnector.on('incomingCall', async () => {
         const peerconnection = await sipConnectorFacade.answerIncomingCall(dataCall);
 
-        // @ts-expect-error
-        expect(parseObject(peerconnection._receivers)).toEqual(
-          parseObject(peerConnectionFromData._receivers),
+        // eslint-disable-next-line @typescript-eslint/non-nullable-type-assertion-style
+        expect(parseObject((peerconnection as RTCPeerConnection).getReceivers())).toEqual(
+          parseObject(peerConnectionFromData.getReceivers()),
         );
 
         resolve();

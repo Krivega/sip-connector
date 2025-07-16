@@ -1,3 +1,5 @@
+/* eslint-disable unicorn/filename-case */
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 const hasChangedRTCRtpSendParameters = (
   parameters1: RTCRtpSendParameters,
   parameters2: RTCRtpSendParameters,

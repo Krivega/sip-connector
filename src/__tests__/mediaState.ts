@@ -30,8 +30,10 @@ describe('media state', () => {
     mockFunction = jest.fn(() => {});
 
     // @ts-expect-error
+    // eslint-disable-next-line require-atomic-updates
     sipConnector.rtcSession.sendInfo = mockFunction;
 
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sipConnector.sendMediaState(mediaStateData);
 
     expect(mockFunction).toHaveBeenCalledWith(CONTENT_TYPE_MEDIA_STATE, undefined, {
@@ -54,6 +56,7 @@ describe('media state', () => {
     };
 
     await sipConnector.sendMediaState(mediaStateData).catch((error: unknown) => {
+      // eslint-disable-next-line jest/no-conditional-expect
       expect((error as Error).message).toBe(ERROR_RESPONSE);
     });
   });

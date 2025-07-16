@@ -29,10 +29,12 @@ describe('call', () => {
     const number = '10000';
     const peerconnection = await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
-    expect(!!peerconnection).toBe(true);
+    expect(peerconnection).toBeDefined();
     // @ts-expect-error
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     expect(sipConnector.ua.call.mock.calls.length).toBe(1);
     // @ts-expect-error
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     expect(sipConnector.ua.call.mock.calls[0][0]).toBe('sip:10000@SIP_SERVER_URL');
   });
 
@@ -82,10 +84,8 @@ describe('call', () => {
     const number = '10000';
     const peerconnection = await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
-    // @ts-expect-error
-    expect(peerconnection._senders[0].track.kind).toBe('audio');
-    // @ts-expect-error
-    expect(peerconnection._senders[1].track.kind).toBe('video');
+    expect(peerconnection.getSenders()[0]?.track?.kind).toBe('audio');
+    expect(peerconnection.getSenders()[1]?.track?.kind).toBe('video');
   });
 
   it('order tracks mediaStream: call: reverse', async () => {
@@ -94,15 +94,14 @@ describe('call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     // @ts-expect-error
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     mediaStream.tracks.reverse();
 
     const number = '10000';
     const peerconnection = await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
-    // @ts-expect-error
-    expect(peerconnection._senders[0].track.kind).toBe('audio');
-    // @ts-expect-error
-    expect(peerconnection._senders[1].track.kind).toBe('video');
+    expect(peerconnection.getSenders()[0]?.track?.kind).toBe('audio');
+    expect(peerconnection.getSenders()[1]?.track?.kind).toBe('video');
   });
 
   it('getRemoteStreams', async () => {
@@ -115,7 +114,7 @@ describe('call', () => {
 
     const remoteStreams = sipConnector.getRemoteStreams();
 
-    expect(remoteStreams!.length).toBe(1);
+    expect(remoteStreams?.length).toBe(1);
   });
 
   it('hangUp', async () => {
@@ -129,6 +128,7 @@ describe('call', () => {
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sipConnector.hangUp();
     await endedPromise;
     await delayPromise(100); // wait restore rtcSession
@@ -158,7 +158,7 @@ describe('call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
-    sipConnector.rtcSession!.terminate(); // end call from server
+    sipConnector.rtcSession?.terminate(); // end call from server
 
     return expect(disconnectPromise).resolves.toBeUndefined();
   });
@@ -187,7 +187,8 @@ describe('call', () => {
 
     return Promise.all([
       promiseCall.catch((error: unknown) => {
-        expect(hasCanceledCallError(error as Error)).toBeTruthy();
+        // eslint-disable-next-line jest/no-conditional-expect
+        expect(hasCanceledCallError(error)).toBeTruthy();
       }),
       disconnectPromise.then((result) => {
         expect(result).toBeUndefined();
@@ -204,18 +205,12 @@ describe('call', () => {
 
     const promiseCall = sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
-    const disconnectPromise = new Promise((resolve, reject) => {
-      sipConnector
-        .disconnect()
-        .then(resolve)
-        .catch((error: unknown) => {
-          reject(error as Error);
-        });
-    });
+    const disconnectPromise = sipConnector.disconnect();
 
     return Promise.all([
       promiseCall.catch((error: unknown) => {
-        expect(hasCanceledCallError(error as Error)).toBeTruthy();
+        // eslint-disable-next-line jest/no-conditional-expect
+        expect(hasCanceledCallError(error)).toBeTruthy();
       }),
       disconnectPromise.then((result) => {
         expect(result).toBeUndefined();
@@ -231,19 +226,12 @@ describe('call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     const promiseCall = sipConnector.call({ number, mediaStream, ontrack: mockFunction });
-
-    const disconnectPromise = new Promise((resolve, reject) => {
-      sipConnector
-        .disconnect()
-        .then(resolve)
-        .catch((error: unknown) => {
-          reject(error as Error);
-        });
-    });
+    const disconnectPromise = sipConnector.disconnect();
 
     return Promise.all([
       promiseCall.catch((error: unknown) => {
-        expect(hasCanceledCallError(error as Error)).toBeTruthy();
+        // eslint-disable-next-line jest/no-conditional-expect
+        expect(hasCanceledCallError(error)).toBeTruthy();
       }),
       disconnectPromise.then((result) => {
         expect(result).toBeUndefined();
@@ -260,7 +248,7 @@ describe('call', () => {
 
     await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
-    sipConnector.rtcSession!.terminate(); // end call from server
+    sipConnector.rtcSession?.terminate(); // end call from server
 
     return sipConnector.disconnect().then((result) => {
       expect(result).toBeUndefined();
@@ -282,12 +270,12 @@ describe('call', () => {
       });
     });
 
-    sipConnector.getRemoteStreams(); // for fill media streams in sipConnector._remoteStreams
-    sipConnector.rtcSession!.terminate(); // end call from server
+    sipConnector.getRemoteStreams(); // for fill media streams in sipConnector.remoteStreams
+    sipConnector.rtcSession?.terminate(); // end call from server
 
     return disconnectPromise.then(() => {
       // @ts-expect-error
-      expect(sipConnector!._remoteStreams).toEqual(remoteStreams);
+      expect(sipConnector.remoteStreams).toEqual(remoteStreams);
     });
   });
 
@@ -305,7 +293,8 @@ describe('call', () => {
     });
 
     // @ts-expect-error
-    sipConnector.rtcSession!.terminateRemote();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    sipConnector.rtcSession?.terminateRemote();
 
     return expect(endedFromServer).resolves.toEqual(data);
   });
@@ -320,7 +309,12 @@ describe('call', () => {
     await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
     // @ts-expect-error
-    const parameters = sipConnector.ua.call.mock.calls[0][1];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const parameters = sipConnector.ua.call.mock.calls[0][1] as {
+      directionVideo: string;
+      directionAudio: string;
+      mediaStream: MediaStream;
+    };
 
     expect(parameters.directionVideo).toBe(undefined);
     expect(parameters.directionAudio).toBe(undefined);
@@ -343,7 +337,12 @@ describe('call', () => {
     });
 
     // @ts-expect-error
-    const parameters = sipConnector.ua.call.mock.calls[0][1];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const parameters = sipConnector.ua.call.mock.calls[0][1] as {
+      directionVideo: string;
+      directionAudio: string;
+      mediaStream: MediaStream;
+    };
 
     expect(parameters.directionVideo).toBe('recvonly');
     expect(parameters.directionAudio).toBe(undefined);
@@ -366,7 +365,12 @@ describe('call', () => {
     });
 
     // @ts-expect-error
-    const parameters = sipConnector.ua.call.mock.calls[0][1];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const parameters = sipConnector.ua.call.mock.calls[0][1] as {
+      directionVideo: string;
+      directionAudio: string;
+      mediaStream: MediaStream;
+    };
 
     expect(parameters.directionVideo).toBe(undefined);
     expect(parameters.directionAudio).toBe('recvonly');
@@ -390,7 +394,12 @@ describe('call', () => {
     });
 
     // @ts-expect-error
-    const parameters = sipConnector.ua.call.mock.calls[0][1];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const parameters = sipConnector.ua.call.mock.calls[0][1] as {
+      directionVideo: string;
+      directionAudio: string;
+      mediaStream: MediaStream;
+    };
 
     expect(parameters.directionVideo).toBe('recvonly');
     expect(parameters.directionAudio).toBe('recvonly');
