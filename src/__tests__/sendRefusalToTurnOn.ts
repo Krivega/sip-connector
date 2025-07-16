@@ -76,6 +76,7 @@ describe('media state', () => {
     };
 
     await sipConnector.sendRefusalToTurnOnMic().catch((error: unknown) => {
+      // eslint-disable-next-line jest/no-conditional-expect
       expect((error as Error).message).toBe(ERROR_RESPONSE);
     });
   });
@@ -94,6 +95,7 @@ describe('media state', () => {
     };
 
     await sipConnector.sendRefusalToTurnOnCam().catch((error: unknown) => {
+      // eslint-disable-next-line jest/no-conditional-expect
       expect((error as Error).message).toBe(ERROR_RESPONSE);
     });
   });

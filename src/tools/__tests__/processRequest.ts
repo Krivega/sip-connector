@@ -135,6 +135,7 @@ describe('processRequest', () => {
     // @ts-expect-error
     return processRequest(dataForConnectionWithAuthorizationIncorrectPassword).catch(
       (error: unknown) => {
+        // eslint-disable-next-line jest/no-conditional-expect
         expect(error).toBeDefined();
       },
     );
@@ -146,6 +147,7 @@ describe('processRequest', () => {
     // @ts-expect-error
     return processRequest(dataForConnectionWithAuthorizationIncorrectUser).catch(
       (error: unknown) => {
+        // eslint-disable-next-line jest/no-conditional-expect
         expect(error).toBeDefined();
       },
     );

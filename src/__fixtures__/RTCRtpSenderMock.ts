@@ -1,11 +1,13 @@
+/* eslint-disable unicorn/filename-case */
+/* eslint-disable unicorn/no-null */
 class RTCRtpSenderMock implements RTCRtpSender {
-  dtmf: RTCDTMFSender | null = null;
+  public dtmf: RTCDTMFSender | null = null;
 
-  track: MediaStreamTrack | null = null;
+  public track: MediaStreamTrack | null = null;
 
-  transport: RTCDtlsTransport | null = null;
+  public transport: RTCDtlsTransport | null = null;
 
-  transform: RTCRtpTransform | null = null;
+  public transform: RTCRtpTransform | null = null;
 
   private parameters: RTCRtpSendParameters = {
     encodings: [{}],
@@ -17,20 +19,20 @@ class RTCRtpSenderMock implements RTCRtpSender {
 
   private parametersGets?: RTCRtpSendParameters;
 
-  constructor({ track }: { track?: MediaStreamTrack } = {}) {
+  public constructor({ track }: { track?: MediaStreamTrack } = {}) {
     this.track = track ?? null;
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async getStats(): Promise<RTCStatsReport> {
+  public async getStats(): Promise<RTCStatsReport> {
     throw new Error('Method not implemented.');
   }
 
-  async replaceTrack(track: MediaStreamTrack | null): Promise<void> {
+  public async replaceTrack(track: MediaStreamTrack | null): Promise<void> {
     this.track = track ?? null;
   }
 
-  async setParameters(parameters: RTCRtpSendParameters): Promise<void> {
+  public async setParameters(parameters: RTCRtpSendParameters): Promise<void> {
     if (parameters !== this.parametersGets) {
       throw new Error(
         "Failed to execute 'setParameters' on 'RTCRtpSender': Read-only field modified in setParameters().",
@@ -46,14 +48,14 @@ class RTCRtpSenderMock implements RTCRtpSender {
     };
   }
 
-  getParameters(): RTCRtpSendParameters {
+  public getParameters(): RTCRtpSendParameters {
     this.parametersGets = { ...this.parameters };
 
     return this.parametersGets;
   }
 
   // eslint-disable-next-line class-methods-use-this
-  setStreams(): void {
+  public setStreams(): void {
     throw new Error('Method not implemented.');
   }
 }

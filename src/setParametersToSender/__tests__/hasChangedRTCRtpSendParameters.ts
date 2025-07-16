@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/filename-case */
 /// <reference types="jest" />
 import hasChangedRTCRtpSendParameters from '../hasChangedRTCRtpSendParameters';
 

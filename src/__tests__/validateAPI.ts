@@ -3,7 +3,7 @@ import { dataForConnectionWithAuthorizationWithDisplayName } from '../__fixtures
 import { doMockSipConnector } from '../doMock';
 import type SipConnector from '../SipConnector';
 
-describe('validateAPI', () => {
+describe('validateApi', () => {
   let sipConnector: SipConnector;
 
   beforeEach(() => {
@@ -15,6 +15,7 @@ describe('validateAPI', () => {
 
     // @ts-expect-error
     return sipConnector.connect({}).catch((error: unknown) => {
+      // eslint-disable-next-line jest/no-conditional-expect
       expect((error as Error).message).toBe('sipServerUrl is required');
     });
   });
@@ -29,6 +30,7 @@ describe('validateAPI', () => {
         sipWebSocketServerURL: undefined,
       })
       .catch((error: unknown) => {
+        // eslint-disable-next-line jest/no-conditional-expect
         expect((error as Error).message).toBe('sipWebSocketServerURL is required');
       });
   });
@@ -42,6 +44,7 @@ describe('validateAPI', () => {
         user: undefined,
       })
       .catch((error: unknown) => {
+        // eslint-disable-next-line jest/no-conditional-expect
         expect((error as Error).message).toBe('user is required for authorized connection');
       });
   });
@@ -55,6 +58,7 @@ describe('validateAPI', () => {
         password: undefined,
       })
       .catch((error: unknown) => {
+        // eslint-disable-next-line jest/no-conditional-expect
         expect((error as Error).message).toBe('password is required for authorized connection');
       });
   });

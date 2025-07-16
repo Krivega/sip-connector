@@ -67,6 +67,7 @@ describe('presentation', () => {
     await sipConnector.startPresentation(mediaStream);
 
     return sipConnector.startPresentation(mediaStream).catch((error: unknown) => {
+      // eslint-disable-next-line jest/no-conditional-expect
       expect(error).toEqual(new Error('Presentation is already started'));
     });
   });
@@ -212,6 +213,7 @@ describe('presentation', () => {
     await sipConnector.call({ number, mediaStream });
 
     return sipConnector.updatePresentation(mediaStreamUpdated).catch((error: unknown) => {
+      // eslint-disable-next-line jest/no-conditional-expect
       expect(error).toEqual(new Error('Presentation has not started yet'));
     });
   });
@@ -283,6 +285,7 @@ describe('presentation', () => {
     try {
       stream = await sipConnector.startPresentation(mediaStream);
     } catch (error) {
+      // eslint-disable-next-line jest/no-conditional-expect
       expect(error).toEqual(new Error('call limit (1) is reached'));
     }
 
@@ -333,12 +336,14 @@ describe('presentation', () => {
     try {
       await sipConnector.stopPresentation();
     } catch (error) {
+      // eslint-disable-next-line jest/no-conditional-expect
       expect(error).toEqual(declineStartPresentationError);
     }
 
     try {
       await promiseStartPresentation;
     } catch (error) {
+      // eslint-disable-next-line jest/no-conditional-expect
       expect(error).toEqual(new Error('canceled'));
     }
 
@@ -370,6 +375,7 @@ describe('presentation', () => {
     try {
       await promiseStartPresentation;
     } catch (error) {
+      // eslint-disable-next-line jest/no-conditional-expect
       expect(error).toEqual(new Error('canceled'));
     }
 

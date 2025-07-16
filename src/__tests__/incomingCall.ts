@@ -33,12 +33,14 @@ describe('incoming call', () => {
     try {
       await sipConnector.answerToIncomingCall({ mediaStream });
     } catch {
+      // eslint-disable-next-line jest/no-conditional-expect
       expect(true).toBe(true);
     }
 
     try {
       await sipConnector.declineToIncomingCall();
     } catch {
+      // eslint-disable-next-line jest/no-conditional-expect
       expect(true).toBe(true);
     }
   });
@@ -73,7 +75,7 @@ describe('incoming call', () => {
           });
 
           expect(sipConnector.getConnectionConfiguration().answer).toBe(true);
-          expect(!!peerconnection).toBe(true);
+          expect(peerconnection).toBeDefined();
           // @ts-expect-error
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           expect(sipConnector.rtcSession.answer.mock.calls.length).toBe(1);

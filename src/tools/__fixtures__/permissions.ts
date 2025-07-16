@@ -17,10 +17,13 @@ export const canConnectToServer = ({
   password: string;
   isRegisteredUser: boolean;
 }) => {
-  const hasInitParameters = !!(remoteAddress && sipServerUrl && sipWebSocketServerURL);
+  const hasInitParameters =
+    remoteAddress !== undefined &&
+    sipServerUrl !== undefined &&
+    sipWebSocketServerURL !== undefined;
 
   if (isRegisteredUser) {
-    return !!(hasInitParameters && hasNoEmptyString(name) && hasNoEmptyString(password));
+    return hasInitParameters && hasNoEmptyString(name) && hasNoEmptyString(password);
   }
 
   return hasInitParameters;

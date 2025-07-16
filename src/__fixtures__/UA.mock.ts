@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/filename-case */
 import type {
   DisconnectEvent,
   UA as IUA,
@@ -58,6 +59,53 @@ class UA implements IUA {
 
   private static countStarts = 0;
 
+  public events: Events<readonly (keyof UAEventMap)[]>;
+
+  public readonly registratorInner: Registrator;
+
+  // @ts-expect-error
+  public call = jest.fn(
+    (
+      url: string,
+      parameters: { mediaStream: MediaStream; eventHandlers: TEventHandlers },
+    ): RTCSessionMock => {
+      const { mediaStream, eventHandlers } = parameters;
+
+      this.session = new RTCSessionMock({ url, mediaStream, eventHandlers, originator: 'local' });
+
+      this.session.connect(url);
+
+      return this.session;
+    },
+  );
+
+  private startedTimeout?: ReturnType<typeof setTimeout>;
+
+  private stopedTimeout?: ReturnType<typeof setTimeout>;
+
+  private session?: RTCSessionMock;
+
+  private isRegisteredInner?: boolean;
+
+  private isConnectedInner?: boolean;
+
+  private configuration: UAConfiguration;
+
+  public constructor(_configuration: UAConfigurationParams) {
+    this.events = new Events<readonly (keyof UAEventMap)[]>(UA_JSSIP_EVENT_NAMES);
+
+    const [scheme, infoUri] = _configuration.uri.split(':');
+    const [user, url] = infoUri.split('@');
+
+    const configuration = {
+      ..._configuration,
+      uri: new URI(scheme, user, url),
+    };
+
+    this.configuration = configuration;
+    this.registratorInner = new Registrator();
+  }
+
   public static setStartError(
     startError: DisconnectEvent,
     { count = Number.POSITIVE_INFINITY }: { count?: number } = {},
@@ -80,43 +128,12 @@ class UA implements IUA {
     this.isAvailableTelephony = false;
   }
 
-  events: Events<readonly (keyof UAEventMap)[]>;
-
-  private startedTimeout?: ReturnType<typeof setTimeout>;
-
-  private stopedTimeout?: ReturnType<typeof setTimeout>;
-
-  private session?: RTCSessionMock;
-
-  private isRegisteredInner?: boolean;
-
-  private isConnectedInner?: boolean;
-
-  private configuration: UAConfiguration;
-
-  public readonly registratorInner: Registrator;
-
-  constructor(_configuration: UAConfigurationParams) {
-    this.events = new Events<readonly (keyof UAEventMap)[]>(UA_JSSIP_EVENT_NAMES);
-
-    const [scheme, infoUri] = _configuration.uri.split(':');
-    const [user, url] = infoUri.split('@');
-
-    const configuration = {
-      ..._configuration,
-      uri: new URI(scheme, user, url),
-    };
-
-    this.configuration = configuration;
-    this.registratorInner = new Registrator();
-  }
-
   /**
    * start
    *
    * @returns {undefined}
    */
-  start() {
+  public start() {
     UA.countStarts += 1;
 
     if (UA.startError && UA.countStarts < UA.countStartError) {
@@ -133,7 +150,7 @@ class UA implements IUA {
    *
    * @returns {undefined}
    */
-  stop() {
+  public stop() {
     if (this.startedTimeout) {
       clearTimeout(this.startedTimeout);
     }
@@ -153,50 +170,34 @@ class UA implements IUA {
     }
   }
 
-  // @ts-expect-error
-  call = jest.fn(
-    (
-      url: string,
-      parameters: { mediaStream: MediaStream; eventHandlers: TEventHandlers },
-    ): RTCSessionMock => {
-      const { mediaStream, eventHandlers } = parameters;
-
-      this.session = new RTCSessionMock({ url, mediaStream, eventHandlers, originator: 'local' });
-
-      this.session.connect(url);
-
-      return this.session;
-    },
-  );
-
-  on<T extends keyof UAEventMap>(eventName: T, handler: UAEventMap[T]) {
+  public on<T extends keyof UAEventMap>(eventName: T, handler: UAEventMap[T]) {
     // @ts-expect-error
     this.events.on<Parameters<UAEventMap[T]>[0]>(eventName, handler);
 
     return this;
   }
 
-  once<T extends keyof UAEventMap>(eventName: T, handler: UAEventMap[T]) {
+  public once<T extends keyof UAEventMap>(eventName: T, handler: UAEventMap[T]) {
     // @ts-expect-error
     this.events.once<Parameters<UAEventMap[T]>[0]>(eventName, handler);
 
     return this;
   }
 
-  off<T extends keyof UAEventMap>(eventName: T, handler: UAEventMap[T]) {
+  public off<T extends keyof UAEventMap>(eventName: T, handler: UAEventMap[T]) {
     // @ts-expect-error
     this.events.off<Parameters<UAEventMap[T]>[0]>(eventName, handler);
 
     return this;
   }
 
-  removeAllListeners() {
+  public removeAllListeners() {
     this.events.removeEventHandlers();
 
     return this;
   }
 
-  trigger<T extends keyof UAEventMap>(eventName: T, data: Parameters<UAEventMap[T]>[0]) {
+  public trigger<T extends keyof UAEventMap>(eventName: T, data: Parameters<UAEventMap[T]>[0]) {
     this.events.trigger(eventName, data);
   }
 
@@ -205,11 +206,11 @@ class UA implements IUA {
    *
    * @returns {undefined}
    */
-  terminateSessions() {
+  public terminateSessions() {
     this.session?.terminate();
   }
 
-  set(key: keyof UAConfiguration, value: UAConfiguration[keyof UAConfiguration]) {
+  public set(key: keyof UAConfiguration, value: UAConfiguration[keyof UAConfiguration]) {
     // @ts-expect-error
     this.configuration[key] = value;
 
@@ -221,14 +222,14 @@ class UA implements IUA {
    *
    * @returns {undefined}
    */
-  register() {
+  public register() {
     if (this.startedTimeout) {
       clearTimeout(this.startedTimeout);
     }
 
     const { password, register, uri } = this.configuration;
 
-    if (register && uri.user.includes(NAME_INCORRECT)) {
+    if (register === true && uri.user.includes(NAME_INCORRECT)) {
       this.isRegisteredInner = false;
       this.isConnectedInner = false;
       this.startedTimeout = setTimeout(() => {
@@ -236,14 +237,18 @@ class UA implements IUA {
       }, CONNECTION_DELAY);
     } else if (
       !this.isRegistered() &&
-      register &&
+      register === true &&
       (password === PASSWORD_CORRECT || password === PASSWORD_CORRECT_2)
     ) {
       this.isRegisteredInner = true;
       this.startedTimeout = setTimeout(() => {
         this.trigger('registered', { response: responseSuccess });
       }, CONNECTION_DELAY);
-    } else if (register && password !== PASSWORD_CORRECT && password !== PASSWORD_CORRECT_2) {
+    } else if (
+      register === true &&
+      password !== PASSWORD_CORRECT &&
+      password !== PASSWORD_CORRECT_2
+    ) {
       this.isRegisteredInner = false;
       this.isConnectedInner = false;
       this.startedTimeout = setTimeout(() => {
@@ -264,19 +269,19 @@ class UA implements IUA {
    *
    * @returns {undefined}
    */
-  unregister() {
+  public unregister() {
     this.isRegisteredInner = false;
     this.isConnectedInner = false;
 
     this.trigger('unregistered', { response: responseSuccess });
   }
 
-  isRegistered() {
-    return !!this.isRegisteredInner;
+  public isRegistered() {
+    return this.isRegisteredInner === true;
   }
 
-  isConnected() {
-    return !!this.isConnectedInner;
+  public isConnected() {
+    return this.isConnectedInner === true;
   }
 
   /**
@@ -284,18 +289,18 @@ class UA implements IUA {
    *
    * @returns {boolean} isStarted
    */
-  isStarted() {
+  public isStarted() {
     return (
-      (this.configuration.register && !!this.isRegisteredInner) ??
-      (!this.configuration.register && !!this.isConnectedInner)
+      (this.configuration.register === true && this.isRegisteredInner === true) ||
+      (this.configuration.register !== true && this.isConnectedInner === true)
     );
   }
 
-  newSipEvent(data: { event: unknown; request: IncomingRequest }) {
+  public newSipEvent(data: { event: unknown; request: IncomingRequest }) {
     this.trigger('sipEvent', data);
   }
 
-  registrator() {
+  public registrator() {
     return this.registratorInner;
   }
 }

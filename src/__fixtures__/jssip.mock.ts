@@ -13,12 +13,13 @@ import Session from './RTCSessionMock';
 import UAmock from './UA.mock';
 import WebSocketInterfaceMock from './WebSocketInterface.mock';
 
+// eslint-disable-next-line unicorn/prefer-event-target
 class Info extends EventEmitter {
-  contentType: string;
+  public contentType: string;
 
-  body: string;
+  public body: string;
 
-  constructor(contentType: string, body: string) {
+  public constructor(contentType: string, body: string) {
     super();
     this.contentType = contentType;
     this.body = body;

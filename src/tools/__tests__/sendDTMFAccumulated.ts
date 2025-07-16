@@ -4,9 +4,9 @@ import { doMockSipConnector } from '../../doMock';
 import { SipConnectorFacade } from '../../SipConnectorFacade';
 import dataCall from '../__fixtures__/call';
 import { dataForConnectionWithoutAuthorization } from '../__fixtures__/connectToServer';
-import sendDTMFAccumulated from '../sendDTMFAccumulated';
+import sendDtmfAccumulated from '../sendDtmfAccumulated';
 
-describe('sendDTMFAccumulated', () => {
+describe('sendDtmfAccumulated', () => {
   const DTMF_SENDING_DELAY = 100;
   const dtmf = '1234#';
   const sipConnector = doMockSipConnector();
@@ -18,7 +18,7 @@ describe('sendDTMFAccumulated', () => {
     sipConnectorFacade = new SipConnectorFacade(sipConnector);
   });
 
-  it('should be sent dtmf from sendDTMFAccumulated', async () => {
+  it('should be sent dtmf from sendDtmfAccumulated', async () => {
     expect.assertions(5);
 
     return sipConnectorFacade
@@ -35,7 +35,7 @@ describe('sendDTMFAccumulated', () => {
           return sipConnector.sendDTMF(key);
         };
 
-        await sendDTMFAccumulated({ accumulatedKeys: dtmf, sendKey });
+        await sendDtmfAccumulated({ accumulatedKeys: dtmf, sendKey });
 
         await delayPromise(DTMF_SENDING_DELAY);
       });

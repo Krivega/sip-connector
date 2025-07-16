@@ -17,17 +17,6 @@ export default defineConfig([
       },
     },
     rules: {
-      // Отключаем правила, которые вызывают ошибки
-      '@typescript-eslint/explicit-member-accessibility': 'off',
-      '@typescript-eslint/member-ordering': 'off',
-      '@typescript-eslint/strict-boolean-expressions': 'off',
-      '@typescript-eslint/no-invalid-void-type': 'off',
-      '@typescript-eslint/no-use-before-define': 'off',
-      'unicorn/filename-case': 'off',
-      'unicorn/no-null': 'off',
-      'unicorn/error-message': 'off',
-      'unicorn/prefer-event-target': 'off',
-      'jest/no-conditional-expect': 'off',
       '@stylistic/max-len': 'off',
     },
   },

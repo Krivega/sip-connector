@@ -72,12 +72,6 @@ const proxyMethods = new Set<keyof IProxyMethods>([
 ]);
 
 class SipConnectorFacade implements IProxyMethods {
-  public readonly sipConnector: SipConnector;
-
-  private readonly preferredMimeTypesVideoCodecs?: string[];
-
-  private readonly excludeMimeTypesVideoCodecs?: string[];
-
   // @ts-expect-error: proxy method
   public on: IProxyMethods['on'];
 
@@ -137,6 +131,12 @@ class SipConnectorFacade implements IProxyMethods {
 
   // @ts-expect-error: proxy method
   public isRegistered: IProxyMethods['isRegistered'];
+
+  public readonly sipConnector: SipConnector;
+
+  private readonly preferredMimeTypesVideoCodecs?: string[];
+
+  private readonly excludeMimeTypesVideoCodecs?: string[];
 
   public constructor(
     sipConnector: SipConnector,
@@ -436,7 +436,7 @@ class SipConnectorFacade implements IProxyMethods {
     onEnterPurgatory?: () => void;
     onEnterConference?: (parameters_: { isSuccessProgressCall: boolean }) => void;
     onEndedCall?: () => void;
-  }): Promise<RTCPeerConnection | void> => {
+  }): Promise<RTCPeerConnection | undefined> => {
     const {
       mediaStream,
       extraHeaders,
@@ -607,7 +607,7 @@ class SipConnectorFacade implements IProxyMethods {
     sendEncodings?: RTCRtpEncodingParameters[];
     preferredMimeTypesVideoCodecs?: string[];
     excludeMimeTypesVideoCodecs?: string[];
-  }): Promise<MediaStream | void> => {
+  }): Promise<MediaStream | undefined> => {
     const updateTransceiver = resolveUpdateTransceiver(
       {
         degradationPreference,
@@ -656,7 +656,7 @@ class SipConnectorFacade implements IProxyMethods {
       excludeMimeTypesVideoCodecs?: string[];
     },
     options?: { callLimit: number },
-  ): Promise<MediaStream | void> => {
+  ): Promise<MediaStream | undefined> => {
     const updateTransceiver = resolveUpdateTransceiver(
       {
         degradationPreference,

@@ -145,7 +145,9 @@ describe('connectToServer', () => {
         isDisconnectOnFail: true,
       })
       .catch((error: unknown) => {
+        // eslint-disable-next-line jest/no-conditional-expect
         expect(disconnectedMock).toHaveBeenCalledTimes(1);
+        // eslint-disable-next-line jest/no-conditional-expect
         expect(error).toBeDefined();
       });
   });
@@ -159,7 +161,9 @@ describe('connectToServer', () => {
         sipWebSocketServerURL: LOCKED_SIP_WEB_SOCKET_SERVER_URL,
       })
       .catch((error: unknown) => {
+        // eslint-disable-next-line jest/no-conditional-expect
         expect(disconnectedMock).toHaveBeenCalledTimes(0);
+        // eslint-disable-next-line jest/no-conditional-expect
         expect(error).toBeDefined();
       });
   });

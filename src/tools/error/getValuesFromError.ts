@@ -9,7 +9,9 @@ export type TValues = {
   link?: string;
 };
 
-const getValuesFromError = (error: TCustomError = new Error()): TValues => {
+const unknownError = new Error('Unknown error');
+
+const getValuesFromError = (error: TCustomError = unknownError): TValues => {
   const { code, cause, message } = error;
   const link = getLinkError(error);
   const values: TValues = { code: '', cause: '', message: '' };
@@ -21,15 +23,15 @@ const getValuesFromError = (error: TCustomError = new Error()): TValues => {
     values.message = String(message);
   }
 
-  if (link) {
+  if (link !== undefined && link !== '') {
     values.link = link;
   }
 
-  if (code) {
+  if (code !== undefined && code !== '') {
     values.code = code;
   }
 
-  if (cause) {
+  if (cause !== undefined && cause !== '') {
     values.cause = cause as string;
   }
 

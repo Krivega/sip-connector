@@ -11,7 +11,9 @@ export enum EErrorTypes {
   CONNECT_SERVER_FAILED_BY_LINK = 'CONNECT_SERVER_FAILED_BY_LINK',
 }
 
-const getTypeFromError = (error: TCustomError = new Error()): EErrorTypes => {
+const unknownError = new Error('Unknown error');
+
+const getTypeFromError = (error: TCustomError = unknownError): EErrorTypes => {
   const { cause, socket } = error;
 
   let type: EErrorTypes = EErrorTypes.CONNECT_SERVER_FAILED;
@@ -35,9 +37,9 @@ const getTypeFromError = (error: TCustomError = new Error()): EErrorTypes => {
     default: {
       // @ts-expect-error
       // eslint-disable-next-line no-underscore-dangle, @typescript-eslint/no-unsafe-member-access
-      if (socket && socket._ws?.readyState === 3) {
+      if (socket !== undefined && socket._ws?.readyState === 3) {
         type = EErrorTypes.WS_CONNECTION_FAILED;
-      } else if (getLinkError(error)) {
+      } else if (getLinkError(error) !== undefined && getLinkError(error) !== '') {
         type = EErrorTypes.CONNECT_SERVER_FAILED_BY_LINK;
       }
     }

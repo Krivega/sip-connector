@@ -1,7 +1,7 @@
 class WebSocketInterface {
-  url: string;
+  public url: string;
 
-  constructor(url: string) {
+  public constructor(url: string) {
     this.url = url;
   }
 }

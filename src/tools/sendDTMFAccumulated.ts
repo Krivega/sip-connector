@@ -13,7 +13,7 @@ const wrapKeysToSend = (sendKey: TSendKey): ((keys: string) => (() => Promise<vo
     });
   };
 };
-const sendDTMFAccumulated = async ({
+const sendDtmfAccumulated = async ({
   accumulatedKeys,
   sendKey,
   canRunTask,
@@ -27,7 +27,7 @@ const sendDTMFAccumulated = async ({
   const wrapperSendKeys = wrapKeysToSend(sendKey);
   const tasks = wrapperSendKeys(accumulatedKeys);
 
-  return sequentPromises<void>(tasks, canRunTask);
+  return sequentPromises(tasks, canRunTask);
 };
 
-export default sendDTMFAccumulated;
+export default sendDtmfAccumulated;

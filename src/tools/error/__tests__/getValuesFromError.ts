@@ -9,8 +9,7 @@ describe('getValuesFromError', () => {
     expect(values).toEqual({
       code: '',
       cause: '',
-      message: '',
-      link: undefined,
+      message: 'Unknown error',
     });
   });
 

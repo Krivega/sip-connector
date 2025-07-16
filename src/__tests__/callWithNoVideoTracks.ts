@@ -26,7 +26,7 @@ describe('call with no video tracks', () => {
 
     const peerconnection = await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
-    expect(!!peerconnection).toBe(true);
+    expect(peerconnection).toBeDefined();
   });
 
   it('isCallActive is true after call', async () => {

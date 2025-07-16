@@ -29,7 +29,7 @@ describe('call', () => {
     const number = '10000';
     const peerconnection = await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
-    expect(!!peerconnection).toBe(true);
+    expect(peerconnection).toBeDefined();
     // @ts-expect-error
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     expect(sipConnector.ua.call.mock.calls.length).toBe(1);
@@ -187,6 +187,7 @@ describe('call', () => {
 
     return Promise.all([
       promiseCall.catch((error: unknown) => {
+        // eslint-disable-next-line jest/no-conditional-expect
         expect(hasCanceledCallError(error)).toBeTruthy();
       }),
       disconnectPromise.then((result) => {
@@ -208,6 +209,7 @@ describe('call', () => {
 
     return Promise.all([
       promiseCall.catch((error: unknown) => {
+        // eslint-disable-next-line jest/no-conditional-expect
         expect(hasCanceledCallError(error)).toBeTruthy();
       }),
       disconnectPromise.then((result) => {
@@ -228,6 +230,7 @@ describe('call', () => {
 
     return Promise.all([
       promiseCall.catch((error: unknown) => {
+        // eslint-disable-next-line jest/no-conditional-expect
         expect(hasCanceledCallError(error)).toBeTruthy();
       }),
       disconnectPromise.then((result) => {

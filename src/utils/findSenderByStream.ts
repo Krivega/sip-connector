@@ -3,7 +3,7 @@ const findSenderByStream = (
   stream: MediaStream,
 ): RTCRtpSender | undefined => {
   return senders.find((sender) => {
-    return sender.track && stream.getTracks().includes(sender.track);
+    return sender.track !== null && stream.getTracks().includes(sender.track);
   });
 };
 

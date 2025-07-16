@@ -56,6 +56,7 @@ describe('media state', () => {
     };
 
     await sipConnector.sendMediaState(mediaStateData).catch((error: unknown) => {
+      // eslint-disable-next-line jest/no-conditional-expect
       expect((error as Error).message).toBe(ERROR_RESPONSE);
     });
   });

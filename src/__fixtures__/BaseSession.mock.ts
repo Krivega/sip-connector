@@ -25,17 +25,17 @@ import { SESSION_EVENT_NAMES } from '../eventNames';
 export type TEventHandlers = Record<string, (data: unknown) => void>;
 
 class BaseSession implements RTCSession {
-  originator: string;
+  public originator: string;
 
-  connection!: RTCPeerConnectionDeprecated;
+  public connection!: RTCPeerConnectionDeprecated;
 
-  events: Events<typeof SESSION_EVENT_NAMES>;
+  public events: Events<typeof SESSION_EVENT_NAMES>;
 
-  remote_identity!: NameAddrHeader;
+  public remote_identity!: NameAddrHeader;
 
-  mutedOptions = { audio: false, video: false };
+  public mutedOptions = { audio: false, video: false };
 
-  constructor({
+  public constructor({
     originator = 'local',
     eventHandlers,
   }: {
@@ -47,179 +47,189 @@ class BaseSession implements RTCSession {
     this.initEvents(eventHandlers);
   }
 
-  // @ts-expect-error
-  get C(): SessionStatus {
+  public get contact(): string {
+    throw new Error('Method not implemented.');
+  }
+
+  public get direction(): SessionDirection {
+    throw new Error('Method not implemented.');
+  }
+
+  public get local_identity(): NameAddrHeader {
+    throw new Error('Method not implemented.');
+  }
+
+  public get start_time(): Date {
+    throw new Error('Method not implemented.');
+  }
+
+  public get end_time(): Date {
+    throw new Error('Method not implemented.');
+  }
+
+  public get status(): SessionStatus {
     throw new Error('Method not implemented.');
   }
 
   // @ts-expect-error
-  get causes(): constants.causes {
+  public get C(): SessionStatus {
     throw new Error('Method not implemented.');
   }
 
-  get id(): string {
+  // @ts-expect-error
+  public get causes(): constants.causes {
     throw new Error('Method not implemented.');
   }
 
-  set data(_data: unknown) {
+  public get id(): string {
     throw new Error('Method not implemented.');
   }
 
-  get data(): unknown {
+  public get data(): unknown {
     throw new Error('Method not implemented.');
   }
 
-  get contact(): string {
+  public set data(_data: unknown) {
     throw new Error('Method not implemented.');
   }
 
-  get direction(): SessionDirection {
+  public isInProgress(): boolean {
     throw new Error('Method not implemented.');
   }
 
-  get local_identity(): NameAddrHeader {
+  public isEnded(): boolean {
     throw new Error('Method not implemented.');
   }
 
-  get start_time(): Date {
+  public isReadyToReOffer(): boolean {
     throw new Error('Method not implemented.');
   }
 
-  get end_time(): Date {
+  public answer(_options?: AnswerOptions): void {
     throw new Error('Method not implemented.');
   }
 
-  get status(): SessionStatus {
+  public terminate(_options?: TerminateOptions): void {
     throw new Error('Method not implemented.');
   }
 
-  isInProgress(): boolean {
+  public async sendInfo(
+    _contentType: string,
+    _body?: string,
+    _options?: ExtraHeaders,
+  ): Promise<void> {
     throw new Error('Method not implemented.');
   }
 
-  isEnded(): boolean {
+  public hold(_options?: HoldOptions, _done?: VoidFunction): boolean {
     throw new Error('Method not implemented.');
   }
 
-  isReadyToReOffer(): boolean {
+  public unhold(_options?: HoldOptions, _done?: VoidFunction): boolean {
     throw new Error('Method not implemented.');
   }
 
-  answer(_options?: AnswerOptions): void {
+  public async renegotiate(_options?: RenegotiateOptions, _done?: VoidFunction): Promise<boolean> {
     throw new Error('Method not implemented.');
   }
 
-  terminate(_options?: TerminateOptions): void {
+  public isOnHold(): OnHoldResult {
     throw new Error('Method not implemented.');
   }
 
-  async sendInfo(_contentType: string, _body?: string, _options?: ExtraHeaders): Promise<void> {
+  public mute(_options?: MediaStreamConstraints): void {
     throw new Error('Method not implemented.');
   }
 
-  hold(_options?: HoldOptions, _done?: VoidFunction): boolean {
+  public unmute(_options?: MediaStreamConstraints): void {
     throw new Error('Method not implemented.');
   }
 
-  unhold(_options?: HoldOptions, _done?: VoidFunction): boolean {
+  public isMuted(): MediaStreamTypes {
     throw new Error('Method not implemented.');
   }
 
-  async renegotiate(_options?: RenegotiateOptions, _done?: VoidFunction): Promise<boolean> {
+  public refer(_target: URI | string, _options?: ReferOptions): void {
     throw new Error('Method not implemented.');
   }
 
-  isOnHold(): OnHoldResult {
+  public resetLocalMedia(): void {
     throw new Error('Method not implemented.');
   }
 
-  mute(_options?: MediaStreamConstraints): void {
-    throw new Error('Method not implemented.');
-  }
-
-  unmute(_options?: MediaStreamConstraints): void {
-    throw new Error('Method not implemented.');
-  }
-
-  isMuted(): MediaStreamTypes {
-    throw new Error('Method not implemented.');
-  }
-
-  refer(_target: URI | string, _options?: ReferOptions): void {
-    throw new Error('Method not implemented.');
-  }
-
-  resetLocalMedia(): void {
-    throw new Error('Method not implemented.');
-  }
-
-  async replaceMediaStream(
+  public async replaceMediaStream(
     _stream: MediaStream,
     _options?: { deleteExisting: boolean; addMissing: boolean },
   ): Promise<void> {
     throw new Error('Method not implemented.');
   }
 
-  addListener(_event: string | symbol, _listener: (...arguments_: unknown[]) => void): this {
+  public addListener(_event: string | symbol, _listener: (...arguments_: unknown[]) => void): this {
     throw new Error('Method not implemented.');
   }
 
-  once(_event: string | symbol, _listener: (...arguments_: unknown[]) => void): this {
+  public once(_event: string | symbol, _listener: (...arguments_: unknown[]) => void): this {
     throw new Error('Method not implemented.');
   }
 
-  removeListener(_event: string | symbol, _listener: (...arguments_: unknown[]) => void): this {
-    throw new Error('Method not implemented.');
-  }
-
-  off(_event: string | symbol, _listener: (...arguments_: unknown[]) => void): this {
-    throw new Error('Method not implemented.');
-  }
-
-  removeAllListeners(_event?: string | symbol): this {
-    throw new Error('Method not implemented.');
-  }
-
-  setMaxListeners(_n: number): this {
-    throw new Error('Method not implemented.');
-  }
-
-  getMaxListeners(): number {
-    throw new Error('Method not implemented.');
-  }
-
-  listeners(_event: string | symbol): (() => void)[] {
-    throw new Error('Method not implemented.');
-  }
-
-  rawListeners(_event: string | symbol): (() => void)[] {
-    throw new Error('Method not implemented.');
-  }
-
-  emit(_event: string | symbol, ..._arguments_: unknown[]): boolean {
-    throw new Error('Method not implemented.');
-  }
-
-  listenerCount(_event: string | symbol): number {
-    throw new Error('Method not implemented.');
-  }
-
-  prependListener(_event: string | symbol, _listener: (...arguments_: unknown[]) => void): this {
-    throw new Error('Method not implemented.');
-  }
-
-  prependOnceListener(
+  public removeListener(
     _event: string | symbol,
     _listener: (...arguments_: unknown[]) => void,
   ): this {
     throw new Error('Method not implemented.');
   }
 
-  eventNames(): (string | symbol)[] {
+  public off(_event: string | symbol, _listener: (...arguments_: unknown[]) => void): this {
     throw new Error('Method not implemented.');
   }
 
-  initEvents(eventHandlers: TEventHandlers) {
+  public removeAllListeners(_event?: string | symbol): this {
+    throw new Error('Method not implemented.');
+  }
+
+  public setMaxListeners(_n: number): this {
+    throw new Error('Method not implemented.');
+  }
+
+  public getMaxListeners(): number {
+    throw new Error('Method not implemented.');
+  }
+
+  public listeners(_event: string | symbol): (() => void)[] {
+    throw new Error('Method not implemented.');
+  }
+
+  public rawListeners(_event: string | symbol): (() => void)[] {
+    throw new Error('Method not implemented.');
+  }
+
+  public emit(_event: string | symbol, ..._arguments_: unknown[]): boolean {
+    throw new Error('Method not implemented.');
+  }
+
+  public listenerCount(_event: string | symbol): number {
+    throw new Error('Method not implemented.');
+  }
+
+  public prependListener(
+    _event: string | symbol,
+    _listener: (...arguments_: unknown[]) => void,
+  ): this {
+    throw new Error('Method not implemented.');
+  }
+
+  public prependOnceListener(
+    _event: string | symbol,
+    _listener: (...arguments_: unknown[]) => void,
+  ): this {
+    throw new Error('Method not implemented.');
+  }
+
+  public eventNames(): (string | symbol)[] {
+    throw new Error('Method not implemented.');
+  }
+
+  public initEvents(eventHandlers: TEventHandlers) {
     Object.entries(eventHandlers).forEach(([eventName, handler]) => {
       return this.on(eventName, handler);
     });
@@ -227,14 +237,14 @@ class BaseSession implements RTCSession {
 
   // @ts-expect-error
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  on<T>(eventName: string, handler: (data: T) => void) {
+  public on<T>(eventName: string, handler: (data: T) => void) {
     // @ts-expect-error
     this.events.on(eventName, handler);
 
     return this;
   }
 
-  trigger(eventName: TEventSession, data?: unknown) {
+  public trigger(eventName: TEventSession, data?: unknown) {
     this.events.trigger(eventName, data);
   }
 
@@ -245,23 +255,23 @@ class BaseSession implements RTCSession {
    *
    * @returns {undefined}
    */
-  sendDTMF() {
+  public sendDTMF() {
     this.trigger('newDTMF', { originator: this.originator });
   }
 
-  async startPresentation(stream: MediaStream) {
+  public async startPresentation(stream: MediaStream) {
     return stream;
   }
 
-  async updatePresentation(stream: MediaStream) {
+  public async updatePresentation(stream: MediaStream) {
     return stream;
   }
 
-  async stopPresentation(stream: MediaStream) {
+  public async stopPresentation(stream: MediaStream) {
     return stream;
   }
 
-  isEstablished() {
+  public isEstablished() {
     return true;
   }
 }
