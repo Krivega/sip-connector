@@ -1,8 +1,4 @@
 import type {
-  IncomingRTCSessionEvent,
-  IncomingRequest,
-  OutgoingRTCSessionEvent,
-  RTCSession,
   RegisteredEvent,
   UA,
   UAConfigurationParams,
@@ -12,113 +8,25 @@ import type {
 } from '@krivega/jssip';
 import Events from 'events-constructor';
 import { repeatedCallsAsync } from 'repeated-calls';
-import { generateUserId, parseDisplayName, resolveSipUrl } from '../utils';
+import { generateUserId, parseDisplayName, resolveSipUrl } from '../../utils';
 import {
-  ACCOUNT_CHANGED,
-  ACCOUNT_DELETED,
-  CHANNELS_NOTIFY,
-  CONFERENCE_PARTICIPANT_TOKEN_ISSUED,
   CONNECTED,
   CONNECTING,
-  DECLINED_INCOMING_CALL,
   DISCONNECTED,
-  FAILED,
-  FAILED_INCOMING_CALL,
-  INCOMING_CALL,
-  NEW_RTC_SESSION,
-  Originator,
-  PARTICIPANT_ADDED_TO_LIST_MODERATORS,
-  PARTICIPANT_MOVE_REQUEST_TO_STREAM,
-  PARTICIPANT_REMOVED_FROM_LIST_MODERATORS,
-  PARTICIPATION_ACCEPTING_WORD_REQUEST,
-  PARTICIPATION_CANCELLING_WORD_REQUEST,
   REGISTERED,
   REGISTRATION_FAILED,
-  SIP_EVENT,
-  TERMINATED_INCOMING_CALL,
   UNREGISTERED,
-  WEBCAST_STARTED,
-  WEBCAST_STOPPED,
-} from './constants';
-import type { TEventUA } from './eventNames';
-import { UA_EVENT_NAMES, UA_JSSIP_EVENT_NAMES } from './eventNames';
-import getExtraHeadersRemoteAddress from './getExtraHeadersRemoteAddress';
-import { HEADER_NOTIFY } from './headers';
-import logger from './logger';
-import type { TGetServerUrl, TJsSIP, TParametersCreateUaConfiguration } from './types';
-import { hasHandshakeWebsocketOpeningError } from './utils/errors';
+} from '../constants';
+import type { TEventUA } from '../eventNames';
+import { UA_EVENT_NAMES, UA_JSSIP_EVENT_NAMES } from '../eventNames';
+import getExtraHeadersRemoteAddress from '../getExtraHeadersRemoteAddress';
+import logger from '../logger';
+import type { TGetServerUrl, TJsSIP, TParametersCreateUaConfiguration } from '../types';
+import { hasHandshakeWebsocketOpeningError } from '../utils/errors';
+import IncomingCallManager from './IncomingCallManager';
+import SipEventHandler from './SipEventHandler';
 
-const BUSY_HERE_STATUS_CODE = 486;
-const REQUEST_TERMINATED_STATUS_CODE = 487;
 const DELAYED_REPEATED_CALLS_CONNECT_LIMIT = 3;
-
-type TChannels = {
-  inputChannels: string;
-  outputChannels: string;
-};
-
-type TParametersModeratorsList = {
-  conference: string;
-};
-
-type TParametersWebcast = {
-  conference: string;
-  type: string;
-};
-
-type TParametersConferenceParticipantTokenIssued = {
-  conference: string;
-  participant: string;
-  jwt: string;
-};
-
-const CMD_CHANNELS = 'channels';
-const CMD_WEBCAST_STARTED = 'WebcastStarted';
-const CMD_WEBCAST_STOPPED = 'WebcastStopped';
-const CMD_ACCOUNT_CHANGED = 'accountChanged';
-const CMD_ACCOUNT_DELETED = 'accountDeleted';
-const CMD_ADDED_TO_LIST_MODERATORS = 'addedToListModerators';
-const CMD_REMOVED_FROM_LIST_MODERATORS = 'removedFromListModerators';
-const CMD_ACCEPTING_WORD_REQUEST = 'ParticipationRequestAccepted';
-const CMD_CANCELLING_WORD_REQUEST = 'ParticipationRequestRejected';
-const CMD_MOVE_REQUEST_TO_STREAM = 'ParticipantMovedToWebcast';
-const CMD_CONFERENCE_PARTICIPANT_TOKEN_ISSUED = 'ConferenceParticipantTokenIssued';
-
-type TAddedToListModeratorsInfoNotify = {
-  cmd: typeof CMD_ADDED_TO_LIST_MODERATORS;
-  conference: string;
-};
-type TRemovedFromListModeratorsInfoNotify = {
-  cmd: typeof CMD_REMOVED_FROM_LIST_MODERATORS;
-  conference: string;
-};
-type TAcceptingWordRequestInfoNotify = {
-  cmd: typeof CMD_ACCEPTING_WORD_REQUEST;
-  body: { conference: string };
-};
-type TCancellingWordRequestInfoNotify = {
-  cmd: typeof CMD_CANCELLING_WORD_REQUEST;
-  body: { conference: string };
-};
-type TMoveRequestToStreamInfoNotify = {
-  cmd: typeof CMD_MOVE_REQUEST_TO_STREAM;
-  body: { conference: string };
-};
-
-type TConferenceParticipantTokenIssued = {
-  cmd: typeof CMD_CONFERENCE_PARTICIPANT_TOKEN_ISSUED;
-  body: { conference: string; participant: string; jwt: string };
-};
-
-type TWebcastInfoNotify = {
-  cmd: typeof CMD_WEBCAST_STARTED;
-  body: { conference: string; type: string };
-};
-type TChannelsInfoNotify = { cmd: typeof CMD_CHANNELS; input: string; output: string };
-type TInfoNotify = Omit<
-  TAddedToListModeratorsInfoNotify | TChannelsInfoNotify | TRemovedFromListModeratorsInfoNotify,
-  'cmd'
-> & { cmd: string };
 
 type TOptionsExtraHeaders = {
   extraHeaders?: string[];
@@ -147,6 +55,7 @@ type TParametersCheckTelephony = {
   remoteAddress?: string;
   extraHeaders?: string[];
 };
+
 type TParametersCreateUa = UAConfigurationParams & {
   remoteAddress?: string;
   extraHeaders?: string[];
@@ -159,20 +68,15 @@ type TConnect = (
 type TInitUa = (parameters: TParametersConnection) => Promise<UA>;
 type TCreateUa = (parameters: TParametersCreateUa) => UA;
 type TStart = () => Promise<UA>;
-type TSet = ({
-  displayName,
-  password,
-}: {
-  displayName?: string;
-  password?: string;
-}) => Promise<boolean>;
 
 export default class ConnectionManager {
   public ua?: UA;
 
-  public incomingRTCSession?: RTCSession;
-
   public socket?: WebSocketInterface;
+
+  private readonly incomingCallManager: IncomingCallManager;
+
+  private readonly sipEventHandler: SipEventHandler;
 
   private isRegisterConfigInner = false;
 
@@ -182,8 +86,6 @@ export default class ConnectionManager {
     register?: boolean;
     user?: string;
     password?: string;
-    number?: string;
-    answer?: boolean;
   } = {};
 
   private readonly JsSIP: TJsSIP;
@@ -200,19 +102,8 @@ export default class ConnectionManager {
     this.JsSIP = JsSIP;
 
     this.uaEvents = new Events<typeof UA_EVENT_NAMES>(UA_EVENT_NAMES);
-
-    this.on(SIP_EVENT, this.handleSipEvent);
-  }
-
-  public get remoteCallerData() {
-    return {
-      displayName: this.incomingRTCSession?.remote_identity.display_name,
-
-      host: this.incomingRTCSession?.remote_identity.uri.host,
-
-      incomingNumber: this.incomingRTCSession?.remote_identity.uri.user,
-      rtcSession: this.incomingRTCSession,
-    };
+    this.incomingCallManager = new IncomingCallManager(this.uaEvents);
+    this.sipEventHandler = new SipEventHandler(this.uaEvents);
   }
 
   public get requested() {
@@ -227,8 +118,12 @@ export default class ConnectionManager {
     return !!this.ua && this.isRegisterConfigInner;
   }
 
+  public get remoteCallerData() {
+    return this.incomingCallManager.remoteCallerData;
+  }
+
   public get isAvailableIncomingCall() {
-    return !!this.incomingRTCSession;
+    return this.incomingCallManager.isAvailableIncomingCall;
   }
 
   public connect: TConnect = async (data, options) => {
@@ -353,31 +248,12 @@ export default class ConnectionManager {
     });
   }
 
-  public declineToIncomingCall = async ({
-    statusCode = REQUEST_TERMINATED_STATUS_CODE,
-  }: { statusCode?: number } = {}) => {
-    return new Promise<void>((resolve, reject) => {
-      try {
-        const incomingRTCSession = this.getIncomingRTCSession();
-
-        const callerData = this.remoteCallerData;
-
-        this.removeIncomingSession();
-        this.uaEvents.trigger(DECLINED_INCOMING_CALL, callerData);
-        incomingRTCSession.terminate({ status_code: statusCode });
-        resolve();
-      } catch (error) {
-        reject(error as Error);
-      }
-    });
+  public declineToIncomingCall = async ({ statusCode }: { statusCode?: number } = {}) => {
+    return this.incomingCallManager.declineToIncomingCall({ statusCode });
   };
 
   public busyIncomingCall = async () => {
-    return this.declineToIncomingCall({ statusCode: BUSY_HERE_STATUS_CODE });
-  };
-
-  public removeIncomingSession = () => {
-    delete this.incomingRTCSession;
+    return this.incomingCallManager.busyIncomingCall();
   };
 
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
@@ -412,59 +288,9 @@ export default class ConnectionManager {
     return { ...this.connectionConfiguration };
   }
 
-  public getIncomingRTCSession() {
-    const { incomingRTCSession } = this;
-
-    if (!incomingRTCSession) {
-      throw new Error('No incomingRTCSession');
-    }
-
-    return incomingRTCSession;
-  }
-
-  public set: TSet = async ({ displayName, password }) => {
-    return new Promise((resolve, reject) => {
-      const { ua } = this;
-
-      if (!ua) {
-        reject(new Error('this.ua is not initialized'));
-
-        return;
-      }
-
-      let changedDisplayName = false;
-      let changedPassword = false;
-
-      if (displayName !== undefined && displayName !== this.connectionConfiguration.displayName) {
-        changedDisplayName = ua.set('display_name', parseDisplayName(displayName));
-        this.connectionConfiguration.displayName = displayName;
-      }
-
-      if (password !== undefined && password !== this.connectionConfiguration.password) {
-        changedPassword = ua.set('password', password);
-        this.connectionConfiguration.password = password;
-      }
-
-      const changedSome = changedDisplayName || changedPassword;
-
-      if (changedPassword && this.isRegisterConfig) {
-        this.register()
-          .then(() => {
-            resolve(changedSome);
-          })
-          .catch((error: unknown) => {
-            reject(error as Error);
-          });
-      } else if (changedSome) {
-        resolve(changedSome);
-      } else {
-        reject(new Error('nothing changed'));
-      }
-    });
-  };
-
   public disconnect = async () => {
-    this.off(NEW_RTC_SESSION, this.handleNewRTCSession);
+    this.incomingCallManager.stop();
+    this.sipEventHandler.stop();
 
     const disconnectedPromise = new Promise<void>((resolve) => {
       this.once(DISCONNECTED, () => {
@@ -595,30 +421,6 @@ export default class ConnectionManager {
       },
     };
   }
-
-  private readonly handleNewRTCSession = ({
-    originator,
-    session: rtcSession,
-  }: IncomingRTCSessionEvent | OutgoingRTCSessionEvent) => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-    if (originator === Originator.REMOTE) {
-      this.incomingRTCSession = rtcSession;
-
-      const callerData = this.remoteCallerData;
-
-      rtcSession.on(FAILED, (event: { originator: Originator }) => {
-        this.removeIncomingSession();
-
-        if (event.originator === Originator.LOCAL) {
-          this.uaEvents.trigger(TERMINATED_INCOMING_CALL, callerData);
-        } else {
-          this.uaEvents.trigger(FAILED_INCOMING_CALL, callerData);
-        }
-      });
-
-      this.uaEvents.trigger(INCOMING_CALL, callerData);
-    }
-  };
 
   private readonly connectInner: TConnect = async (parameters) => {
     return this.initUa(parameters).then(async () => {
@@ -767,7 +569,8 @@ export default class ConnectionManager {
       };
 
       addEventListeners();
-      this.on(NEW_RTC_SESSION, this.handleNewRTCSession);
+      this.incomingCallManager.start();
+      this.sipEventHandler.start();
 
       ua.start();
     });
@@ -780,210 +583,4 @@ export default class ConnectionManager {
   private cancelConnectWithRepeatedCalls() {
     this.cancelableConnectWithRepeatedCalls?.cancel();
   }
-
-  private readonly handleNotify = (header: TInfoNotify) => {
-    switch (header.cmd) {
-      case CMD_CHANNELS: {
-        const channelsInfo = header as TChannelsInfoNotify;
-
-        this.triggerChannelsNotify(channelsInfo);
-
-        break;
-      }
-      case CMD_WEBCAST_STARTED: {
-        const webcastInfo = header as TWebcastInfoNotify;
-
-        this.triggerWebcastStartedNotify(webcastInfo);
-
-        break;
-      }
-      case CMD_WEBCAST_STOPPED: {
-        const webcastInfo = header as TWebcastInfoNotify;
-
-        this.triggerWebcastStoppedNotify(webcastInfo);
-
-        break;
-      }
-      case CMD_ADDED_TO_LIST_MODERATORS: {
-        const data = header as TAddedToListModeratorsInfoNotify;
-
-        this.triggerAddedToListModeratorsNotify(data);
-
-        break;
-      }
-      case CMD_REMOVED_FROM_LIST_MODERATORS: {
-        const data = header as TRemovedFromListModeratorsInfoNotify;
-
-        this.triggerRemovedFromListModeratorsNotify(data);
-
-        break;
-      }
-      case CMD_ACCEPTING_WORD_REQUEST: {
-        const data = header as TAcceptingWordRequestInfoNotify;
-
-        this.triggerParticipationAcceptingWordRequest(data);
-
-        break;
-      }
-      case CMD_CANCELLING_WORD_REQUEST: {
-        const data = header as TCancellingWordRequestInfoNotify;
-
-        this.triggerParticipationCancellingWordRequest(data);
-
-        break;
-      }
-      case CMD_MOVE_REQUEST_TO_STREAM: {
-        const data = header as TMoveRequestToStreamInfoNotify;
-
-        this.triggerParticipantMoveRequestToStream(data);
-
-        break;
-      }
-      case CMD_ACCOUNT_CHANGED: {
-        this.triggerAccountChangedNotify();
-
-        break;
-      }
-      case CMD_ACCOUNT_DELETED: {
-        this.triggerAccountDeletedNotify();
-
-        break;
-      }
-      case CMD_CONFERENCE_PARTICIPANT_TOKEN_ISSUED: {
-        const data = header as TConferenceParticipantTokenIssued;
-
-        this.triggerConferenceParticipantTokenIssued(data);
-
-        break;
-      }
-      default: {
-        logger('unknown cmd', header.cmd);
-      }
-      // No default
-    }
-  };
-
-  private readonly triggerRemovedFromListModeratorsNotify = ({
-    conference,
-  }: TRemovedFromListModeratorsInfoNotify) => {
-    const headersParametersModeratorsList: TParametersModeratorsList = {
-      conference,
-    };
-
-    this.uaEvents.trigger(
-      PARTICIPANT_REMOVED_FROM_LIST_MODERATORS,
-      headersParametersModeratorsList,
-    );
-  };
-
-  private readonly triggerAddedToListModeratorsNotify = ({
-    conference,
-  }: TAddedToListModeratorsInfoNotify) => {
-    const headersParametersModeratorsList: TParametersModeratorsList = {
-      conference,
-    };
-
-    this.uaEvents.trigger(PARTICIPANT_ADDED_TO_LIST_MODERATORS, headersParametersModeratorsList);
-  };
-
-  private readonly triggerWebcastStartedNotify = ({
-    body: { conference, type },
-  }: TWebcastInfoNotify) => {
-    const headersParametersWebcast: TParametersWebcast = {
-      conference,
-      type,
-    };
-
-    this.uaEvents.trigger(WEBCAST_STARTED, headersParametersWebcast);
-  };
-
-  private readonly triggerWebcastStoppedNotify = ({
-    body: { conference, type },
-  }: TWebcastInfoNotify) => {
-    const headersParametersWebcast: TParametersWebcast = {
-      conference,
-      type,
-    };
-
-    this.uaEvents.trigger(WEBCAST_STOPPED, headersParametersWebcast);
-  };
-
-  private readonly triggerAccountChangedNotify = () => {
-    this.uaEvents.trigger(ACCOUNT_CHANGED, undefined);
-  };
-
-  private readonly triggerAccountDeletedNotify = () => {
-    this.uaEvents.trigger(ACCOUNT_DELETED, undefined);
-  };
-
-  private readonly triggerConferenceParticipantTokenIssued = ({
-    body: { conference, participant, jwt },
-  }: TConferenceParticipantTokenIssued) => {
-    const headersConferenceParticipantTokenIssued: TParametersConferenceParticipantTokenIssued = {
-      conference,
-      participant,
-      jwt,
-    };
-
-    this.uaEvents.trigger(
-      CONFERENCE_PARTICIPANT_TOKEN_ISSUED,
-      headersConferenceParticipantTokenIssued,
-    );
-  };
-
-  private readonly triggerChannelsNotify = (channelsInfo: TChannelsInfoNotify) => {
-    const inputChannels = channelsInfo.input;
-    const outputChannels = channelsInfo.output;
-
-    const data: TChannels = {
-      inputChannels,
-      outputChannels,
-    };
-
-    this.uaEvents.trigger(CHANNELS_NOTIFY, data);
-  };
-
-  private readonly triggerParticipationAcceptingWordRequest = ({
-    body: { conference },
-  }: TAcceptingWordRequestInfoNotify) => {
-    const data: TParametersModeratorsList = {
-      conference,
-    };
-
-    this.uaEvents.trigger(PARTICIPATION_ACCEPTING_WORD_REQUEST, data);
-  };
-
-  private readonly triggerParticipationCancellingWordRequest = ({
-    body: { conference },
-  }: TCancellingWordRequestInfoNotify) => {
-    const data: TParametersModeratorsList = {
-      conference,
-    };
-
-    this.uaEvents.trigger(PARTICIPATION_CANCELLING_WORD_REQUEST, data);
-  };
-
-  private readonly triggerParticipantMoveRequestToStream = ({
-    body: { conference },
-  }: TMoveRequestToStreamInfoNotify) => {
-    const data: TParametersModeratorsList = {
-      conference,
-    };
-
-    this.uaEvents.trigger(PARTICIPANT_MOVE_REQUEST_TO_STREAM, data);
-  };
-
-  private readonly handleSipEvent = ({ request }: { request: IncomingRequest }) => {
-    this.maybeHandleNotify(request);
-  };
-
-  private readonly maybeHandleNotify = (request: IncomingRequest) => {
-    const headerNotify = request.getHeader(HEADER_NOTIFY);
-
-    if (headerNotify) {
-      const headerNotifyParsed = JSON.parse(headerNotify) as TInfoNotify;
-
-      this.handleNotify(headerNotifyParsed);
-    }
-  };
 }
