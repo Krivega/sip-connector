@@ -124,12 +124,16 @@ export default class SipEventHandler {
   };
 
   private readonly maybeHandleNotify = (request: IncomingRequest) => {
-    const headerNotify = request.getHeader(HEADER_NOTIFY);
+    try {
+      const headerNotify = request.getHeader(HEADER_NOTIFY);
 
-    if (headerNotify) {
-      const headerNotifyParsed = JSON.parse(headerNotify) as TInfoNotify;
+      if (headerNotify) {
+        const headerNotifyParsed = JSON.parse(headerNotify) as TInfoNotify;
 
-      this.handleNotify(headerNotifyParsed);
+        this.handleNotify(headerNotifyParsed);
+      }
+    } catch (error) {
+      logger('error parse notify', error);
     }
   };
 

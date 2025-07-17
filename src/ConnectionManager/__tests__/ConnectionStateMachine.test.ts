@@ -3,15 +3,14 @@ import { UA_EVENT_NAMES } from '../../eventNames';
 import logger from '../../logger';
 import ConnectionStateMachine, { EEvents, EState } from '../ConnectionStateMachine';
 
-// Мокаем logger
 jest.mock('../../logger', () => {
   return jest.fn();
 });
 
 describe('ConnectionStateMachine', () => {
+  const mockLogger = logger as jest.MockedFunction<typeof logger>;
   let uaEvents: Events<typeof UA_EVENT_NAMES>;
   let stateMachine: ConnectionStateMachine;
-  const mockLogger = logger as jest.MockedFunction<typeof logger>;
 
   beforeEach(() => {
     jest.clearAllMocks();

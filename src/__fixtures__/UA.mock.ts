@@ -79,6 +79,68 @@ class UA implements IUA {
     },
   );
 
+  public sendOptions = jest.fn(
+    (target: string, body?: string, options?: Record<string, unknown>) => {
+      // eslint-disable-next-line no-console
+      console.log('sendOptions', target, body, options);
+    },
+  );
+
+  /**
+   * start
+   *
+   * @returns {undefined}
+   */
+  public start = jest.fn(() => {
+    UA.countStarts += 1;
+
+    if (UA.startError && UA.countStarts < UA.countStartError) {
+      this.trigger('disconnected', UA.startError);
+
+      return;
+    }
+
+    this.register();
+  });
+
+  /**
+   * stop
+   *
+   * @returns {undefined}
+   */
+  public stop = jest.fn(() => {
+    if (this.startedTimeout) {
+      clearTimeout(this.startedTimeout);
+    }
+
+    if (this.stopedTimeout) {
+      clearTimeout(this.stopedTimeout);
+    }
+
+    this.unregister();
+
+    if (this.isStarted()) {
+      this.stopedTimeout = setTimeout(() => {
+        this.trigger('disconnected', { error: true, socket });
+      }, CONNECTION_DELAY);
+    } else {
+      this.trigger('disconnected', { error: true, socket });
+    }
+  });
+
+  public removeAllListeners = jest.fn(() => {
+    this.events.removeEventHandlers();
+
+    return this;
+  });
+
+  public once = jest.fn((eventName: string, handler: () => void) => {
+    // @ts-expect-error
+    this.events.once(eventName, handler);
+
+    return this;
+  });
+
   private startedTimeout?: ReturnType<typeof setTimeout>;
 
   private stopedTimeout?: ReturnType<typeof setTimeout>;
@@ -128,48 +190,6 @@ class UA implements IUA {
     this.isAvailableTelephony = false;
   }
 
-  /**
-   * start
-   *
-   * @returns {undefined}
-   */
-  public start() {
-    UA.countStarts += 1;
-
-    if (UA.startError && UA.countStarts < UA.countStartError) {
-      this.trigger('disconnected', UA.startError);
-
-      return;
-    }
-
-    this.register();
-  }
-
-  /**
-   * stop
-   *
-   * @returns {undefined}
-   */
-  public stop() {
-    if (this.startedTimeout) {
-      clearTimeout(this.startedTimeout);
-    }
-
-    if (this.stopedTimeout) {
-      clearTimeout(this.stopedTimeout);
-    }
-
-    this.unregister();
-
-    if (this.isStarted()) {
-      this.stopedTimeout = setTimeout(() => {
-        this.trigger('disconnected', { error: true, socket });
-      }, CONNECTION_DELAY);
-    } else {
-      this.trigger('disconnected', { error: true, socket });
-    }
-  }
-
   public on<T extends keyof UAEventMap>(eventName: T, handler: UAEventMap[T]) {
     // @ts-expect-error
     this.events.on<Parameters<UAEventMap[T]>[0]>(eventName, handler);
@@ -177,22 +197,9 @@ class UA implements IUA {
     return this;
   }
 
-  public once<T extends keyof UAEventMap>(eventName: T, handler: UAEventMap[T]) {
-    // @ts-expect-error
-    this.events.once<Parameters<UAEventMap[T]>[0]>(eventName, handler);
-
-    return this;
-  }
-
   public off<T extends keyof UAEventMap>(eventName: T, handler: UAEventMap[T]) {
     // @ts-expect-error
     this.events.off<Parameters<UAEventMap[T]>[0]>(eventName, handler);
-
-    return this;
-  }
-
-  public removeAllListeners() {
-    this.events.removeEventHandlers();
 
     return this;
   }
