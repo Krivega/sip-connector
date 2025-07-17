@@ -400,7 +400,7 @@ describe('ConnectionStateMachine', () => {
     });
   });
 
-  describe('Edge cases', () => {
+  describe('Граничные случаи', () => {
     test('должен игнорировать события UA в неподходящих состояниях', () => {
       // В состоянии IDLE события UA не должны менять состояние
       expect(stateMachine.state).toBe(EState.IDLE);

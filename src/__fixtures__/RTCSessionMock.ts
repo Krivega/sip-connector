@@ -2,6 +2,7 @@
 /// <reference types="jest" />
 
 import type { IncomingInfoEvent } from '@krivega/jssip';
+import { NameAddrHeader, URI } from '@krivega/jssip';
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
 import { REJECTED } from '../causes';
 import type { TEventHandlers } from './BaseSession.mock';
@@ -76,13 +77,18 @@ class RTCSessionMock extends BaseSession {
     mediaStream,
     eventHandlers,
     originator,
+    remoteIdentity = new NameAddrHeader(
+      new URI('sip', 'caller1', 'test1.com', 5060),
+      'Test Caller 1',
+    ),
   }: {
     url?: string;
     mediaStream?: MediaStream;
     eventHandlers: TEventHandlers;
     originator: string;
+    remoteIdentity?: NameAddrHeader;
   }) {
-    super({ originator, eventHandlers });
+    super({ originator, eventHandlers, remoteIdentity });
     this.url = url;
     this.initPeerconnection(mediaStream);
   }

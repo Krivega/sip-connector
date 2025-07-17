@@ -15,7 +15,7 @@ jest.mock('debug', () => {
 });
 
 describe('Logger', () => {
-  it('enableDebug/disableDebug', () => {
+  it('должен включать и отключать отладку', () => {
     enableDebug();
 
     expect(mockEnableDebug).toHaveBeenCalledTimes(1);

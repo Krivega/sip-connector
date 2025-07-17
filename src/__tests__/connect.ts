@@ -33,7 +33,7 @@ describe('connect', () => {
     UAMock.resetStartError();
   });
 
-  it('authorization user', async () => {
+  it('должен подключать пользователя с авторизацией', async () => {
     expect.assertions(1);
 
     const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -41,7 +41,7 @@ describe('connect', () => {
     expect(ua.configuration).toEqual(uaConfigurationWithAuthorization);
   });
 
-  it('authorization user with wrong password', async () => {
+  it('должен отклонять подключение с неправильным паролем', async () => {
     expect.assertions(1);
 
     const rejectedError = await sipConnector
@@ -62,7 +62,7 @@ describe('connect', () => {
     });
   });
 
-  it('and change sipServerUrl', async () => {
+  it('должен изменять sipServerUrl при повторном подключении', async () => {
     expect.assertions(1);
 
     const sipServerUrlChanged = `${dataForConnectionWithAuthorization.sipServerUrl}Changed`;
@@ -80,7 +80,7 @@ describe('connect', () => {
     });
   });
 
-  it('authorization user with displayName', async () => {
+  it('должен подключать пользователя с авторизацией и displayName', async () => {
     expect.assertions(6);
 
     const ua = await sipConnector.connect(dataForConnectionWithAuthorizationWithDisplayName);
@@ -104,7 +104,7 @@ describe('connect', () => {
     expect(ua.configuration).toEqual(uaConfigurationWithAuthorizationWithDisplayName);
   });
 
-  it('without authorization', async () => {
+  it('должен подключать пользователя без авторизации', async () => {
     expect.assertions(6);
 
     const ua = await sipConnector.connect(dataForConnectionWithoutAuthorization);
@@ -125,7 +125,7 @@ describe('connect', () => {
     expect(configuration).toEqual(uaConfigurationWithoutAuthorization);
   });
 
-  it('without authorization without displayName', async () => {
+  it('должен подключать пользователя без авторизации и displayName', async () => {
     expect.assertions(6);
 
     const ua = await sipConnector.connect(dataForConnectionWithoutAuthorizationWithoutDisplayName);
@@ -143,7 +143,7 @@ describe('connect', () => {
     expect(configuration).toEqual(uaConfigurationWithoutAuthorizationWithoutDisplayName);
   });
 
-  it('connectionConfiguration after connect', async () => {
+  it('должен сохранять connectionConfiguration после подключения', async () => {
     expect.assertions(6);
 
     const connectPromise = sipConnector.connect(dataForConnectionWithAuthorization);
@@ -163,7 +163,7 @@ describe('connect', () => {
     return connectPromise;
   });
 
-  it('set password after with authorization', async () => {
+  it('должен устанавливать пароль после подключения с авторизацией', async () => {
     expect.assertions(3);
 
     try {
@@ -188,7 +188,7 @@ describe('connect', () => {
     expect(sipConnector.ua?.configuration).toEqual(uaConfigurationWithAuthorizationWithDisplayName);
   });
 
-  it('set same password after with authorization', async () => {
+  it('должен устанавливать тот же пароль после подключения с авторизацией', async () => {
     expect.assertions(3);
 
     await sipConnector.connect(dataForConnectionWithAuthorizationWithDisplayName);
@@ -211,7 +211,7 @@ describe('connect', () => {
       });
   });
 
-  it('set displayName after with authorization', async () => {
+  it('должен устанавливать displayName после подключения с авторизацией', async () => {
     const anotherDisplayName = 'anotherDisplayName';
 
     await sipConnector.connect(dataForConnectionWithAuthorizationWithDisplayName);
@@ -222,7 +222,7 @@ describe('connect', () => {
     expect(sipConnector.getConnectionConfiguration().displayName).toBe(anotherDisplayName);
   });
 
-  it('send base extraHeaders', async () => {
+  it('должен отправлять базовые extraHeaders', async () => {
     expect.assertions(1);
 
     const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -231,7 +231,7 @@ describe('connect', () => {
     expect(ua.registrator().extraHeaders).toEqual([]);
   });
 
-  it('send extraHeaders with remoteAddress', async () => {
+  it('должен отправлять extraHeaders с remoteAddress', async () => {
     expect.assertions(1);
 
     const ua = await sipConnector.connect({ ...dataForConnectionWithAuthorization, remoteAddress });
@@ -240,7 +240,7 @@ describe('connect', () => {
     expect(ua.registrator().extraHeaders).toEqual(extraHeadersRemoteAddress);
   });
 
-  it('send extended extraHeaders', async () => {
+  it('должен отправлять расширенные extraHeaders', async () => {
     expect.assertions(1);
 
     const extraHeaders = ['test'];
@@ -251,7 +251,7 @@ describe('connect', () => {
     expect(ua.registrator().extraHeaders).toEqual(extraHeaders);
   });
 
-  it('send extended extraHeaders with remoteAddress', async () => {
+  it('должен отправлять расширенные extraHeaders с remoteAddress', async () => {
     expect.assertions(1);
 
     const extraHeaders = ['test'];
@@ -266,7 +266,7 @@ describe('connect', () => {
     expect(ua.registrator().extraHeaders).toEqual([...extraHeadersRemoteAddress, ...extraHeaders]);
   });
 
-  it('should repeat connection process when connection has failed with 1006 error', async () => {
+  it('должен повторять процесс подключения при ошибке 1006', async () => {
     expect.assertions(2);
 
     UAMock.setStartError(websocketHandshakeTimeoutError);
@@ -289,7 +289,7 @@ describe('connect', () => {
     expect(requestConnectMocked).toHaveBeenCalledTimes(connectCallLimit);
   });
 
-  it('should complete connection process after 2 connection has failed with 1006 error', async () => {
+  it('должен завершать процесс подключения после 2 неудачных попыток с ошибкой 1006', async () => {
     expect.assertions(2);
 
     UAMock.setStartError(websocketHandshakeTimeoutError, { count: 2 });

@@ -10,7 +10,7 @@ describe('disconnect', () => {
     sipConnector = doMockSipConnector();
   });
 
-  it('authorization user', async () => {
+  it('должен отключать пользователя с авторизацией', async () => {
     expect.assertions(2);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);

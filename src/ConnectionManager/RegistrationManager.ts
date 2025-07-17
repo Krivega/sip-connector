@@ -1,4 +1,3 @@
-/* eslint-disable class-methods-use-this */
 import type { RegisteredEvent, UA, UnRegisteredEvent } from '@krivega/jssip';
 import type Events from 'events-constructor';
 import {
@@ -11,14 +10,28 @@ import {
 import type { UA_EVENT_NAMES } from '../eventNames';
 import logger from '../logger';
 
-export default class RegistrationManager {
-  private readonly uaEvents: Events<typeof UA_EVENT_NAMES>;
+interface IDependencies {
+  uaEvents: Events<typeof UA_EVENT_NAMES>;
+  getUa: () => UA | undefined;
+}
 
-  public constructor(uaEvents: Events<typeof UA_EVENT_NAMES>) {
-    this.uaEvents = uaEvents;
+export default class RegistrationManager {
+  private readonly uaEvents: IDependencies['uaEvents'];
+
+  private readonly getUa: IDependencies['getUa'];
+
+  public constructor(dependencies: IDependencies) {
+    this.uaEvents = dependencies.uaEvents;
+    this.getUa = dependencies.getUa;
   }
 
-  public async register(ua: UA): Promise<RegisteredEvent> {
+  public async register(): Promise<RegisteredEvent> {
+    const ua = this.getUa();
+
+    if (!ua) {
+      throw new Error('UA is not initialized');
+    }
+
     return new Promise((resolve, reject) => {
       ua.on(REGISTERED, resolve);
       ua.on(REGISTRATION_FAILED, reject);
@@ -26,23 +39,35 @@ export default class RegistrationManager {
     });
   }
 
-  public async unregister(ua: UA): Promise<UnRegisteredEvent> {
+  public async unregister(): Promise<UnRegisteredEvent> {
+    const ua = this.getUa();
+
+    if (!ua) {
+      throw new Error('UA is not initialized');
+    }
+
     return new Promise((resolve) => {
       ua.on(UNREGISTERED, resolve);
       ua.unregister();
     });
   }
 
-  public async tryRegister(ua: UA): Promise<RegisteredEvent> {
+  public async tryRegister(): Promise<RegisteredEvent> {
+    const ua = this.getUa();
+
+    if (!ua) {
+      throw new Error('UA is not initialized');
+    }
+
     this.uaEvents.trigger(CONNECTING, undefined);
 
     try {
-      await this.unregister(ua);
+      await this.unregister();
     } catch (error) {
       logger('tryRegister', error);
     }
 
-    return this.register(ua);
+    return this.register();
   }
 
   public subscribeToStartEvents(

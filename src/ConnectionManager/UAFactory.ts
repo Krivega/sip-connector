@@ -1,6 +1,7 @@
 /* eslint-disable unicorn/filename-case */
 import type { UA, UAConfigurationParams, WebSocketInterface } from '@krivega/jssip';
 import { generateUserId, parseDisplayName, resolveSipUrl } from '../../utils';
+import { UA_JSSIP_EVENT_NAMES } from '../eventNames';
 import getExtraHeadersRemoteAddress from '../getExtraHeadersRemoteAddress';
 import type { TJsSIP, TParametersCreateUaConfiguration } from '../types';
 
@@ -32,11 +33,23 @@ export default class UAFactory {
     register,
     password,
     user,
+    sipServerUrl,
+    sipWebSocketServerURL,
   }: {
     register: boolean;
     password?: string;
     user?: string;
+    sipServerUrl: string;
+    sipWebSocketServerURL: string;
   }): void {
+    if (!sipServerUrl) {
+      throw new Error('sipServerUrl is required');
+    }
+
+    if (!sipWebSocketServerURL) {
+      throw new Error('sipWebSocketServerURL is required');
+    }
+
     if (register && (password === undefined || password === '')) {
       throw new Error('password is required for authorized connection');
     }
@@ -74,7 +87,13 @@ export default class UAFactory {
     connectionRecoveryMaxInterval = 6,
     userAgent,
   }: TParametersCreateUaConfiguration): TUAConfiguration {
-    UAFactory.validateConfiguration({ register, password, user });
+    UAFactory.validateConfiguration({
+      register,
+      password,
+      user,
+      sipServerUrl,
+      sipWebSocketServerURL,
+    });
 
     const authorizationUser = UAFactory.resolveAuthorizationUser(register, user);
     const getSipServerUrl = resolveSipUrl(sipServerUrl);
@@ -112,5 +131,42 @@ export default class UAFactory {
     }
 
     return ua;
+  }
+
+  /**
+   * Создает UA с полным жизненным циклом - конфигурация + создание + настройка событий
+   */
+  public createUAWithConfiguration(
+    parameters: TParametersCreateUaConfiguration & {
+      remoteAddress?: string;
+      extraHeaders?: string[];
+    },
+    uaEvents?: {
+      eachTriggers: (
+        callback: (trigger: (...args: unknown[]) => void, eventName: string) => void,
+      ) => void;
+    },
+  ): { ua: UA; helpers: TUAConfiguration['helpers'] } {
+    const { configuration, helpers } = this.createConfiguration(parameters);
+    const ua = this.createUA({
+      ...configuration,
+      remoteAddress: parameters.remoteAddress,
+      extraHeaders: parameters.extraHeaders,
+    });
+
+    // Настраиваем события UA, если переданы
+    if (uaEvents) {
+      uaEvents.eachTriggers((trigger, eventName) => {
+        const uaJsSipEvent = UA_JSSIP_EVENT_NAMES.find((jsSipEvent) => {
+          return jsSipEvent === eventName;
+        });
+
+        if (uaJsSipEvent) {
+          ua.on(uaJsSipEvent, trigger);
+        }
+      });
+    }
+
+    return { ua, helpers };
   }
 }

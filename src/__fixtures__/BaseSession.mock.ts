@@ -38,13 +38,16 @@ class BaseSession implements RTCSession {
   public constructor({
     originator = 'local',
     eventHandlers,
+    remoteIdentity,
   }: {
     originator?: string;
     eventHandlers: TEventHandlers;
+    remoteIdentity: NameAddrHeader;
   }) {
     this.originator = originator;
     this.events = new Events<typeof SESSION_EVENT_NAMES>(SESSION_EVENT_NAMES);
     this.initEvents(eventHandlers);
+    this.remote_identity = remoteIdentity;
   }
 
   public get contact(): string {

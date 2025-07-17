@@ -10,7 +10,7 @@ describe('validateApi', () => {
     sipConnector = doMockSipConnector();
   });
 
-  it('not full data: sipServerUrl', async () => {
+  it('должен требовать sipServerUrl', async () => {
     expect.assertions(1);
 
     // @ts-expect-error
@@ -20,7 +20,7 @@ describe('validateApi', () => {
     });
   });
 
-  it('not full data: sipWebSocketServerURL', async () => {
+  it('должен требовать sipWebSocketServerURL', async () => {
     expect.assertions(1);
 
     return sipConnector
@@ -35,7 +35,7 @@ describe('validateApi', () => {
       });
   });
 
-  it('not full data: not user with authorization user', async () => {
+  it('должен требовать user для авторизованного подключения', async () => {
     expect.assertions(1);
 
     return sipConnector
@@ -49,7 +49,7 @@ describe('validateApi', () => {
       });
   });
 
-  it('not full data: not password with authorization user', async () => {
+  it('должен требовать password для авторизованного подключения', async () => {
     expect.assertions(1);
 
     return sipConnector

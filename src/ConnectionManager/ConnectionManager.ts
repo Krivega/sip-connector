@@ -1,59 +1,18 @@
-import type {
-  RegisteredEvent,
-  UA,
-  URI,
-  UnRegisteredEvent,
-  WebSocketInterface,
-} from '@krivega/jssip';
+import type { RegisteredEvent, UA, UnRegisteredEvent, WebSocketInterface } from '@krivega/jssip';
 import Events from 'events-constructor';
-import { repeatedCallsAsync } from 'repeated-calls';
-import { CONNECTED, DISCONNECTED } from '../constants';
 import type { TEventUA } from '../eventNames';
-import { UA_EVENT_NAMES, UA_JSSIP_EVENT_NAMES } from '../eventNames';
+import { UA_EVENT_NAMES } from '../eventNames';
 import type { TGetServerUrl, TJsSIP } from '../types';
-import { hasHandshakeWebsocketOpeningError } from '../utils/errors';
+import ConfigurationManager from './ConfigurationManager';
+import type { TConnect } from './ConnectionFlow';
+import ConnectionFlow from './ConnectionFlow';
 import ConnectionStateMachine from './ConnectionStateMachine';
 import IncomingCallManager from './IncomingCallManager';
 import RegistrationManager from './RegistrationManager';
 import SipEventHandler from './SipEventHandler';
+import type { TParametersCheckTelephony } from './SipOperations';
+import SipOperations from './SipOperations';
 import UAFactory from './UAFactory';
-
-const DELAYED_REPEATED_CALLS_CONNECT_LIMIT = 3;
-
-type TOptionsExtraHeaders = {
-  extraHeaders?: string[];
-};
-
-type TParametersConnection = TOptionsExtraHeaders & {
-  displayName?: string;
-  user?: string;
-  password?: string;
-  register?: boolean;
-  sipServerUrl: string;
-  sipWebSocketServerURL: string;
-  remoteAddress?: string;
-  sessionTimers?: boolean;
-  registerExpires?: number;
-  connectionRecoveryMinInterval?: number;
-  connectionRecoveryMaxInterval?: number;
-  userAgent?: string;
-};
-
-type TParametersCheckTelephony = {
-  displayName: string;
-  sipServerUrl: string;
-  sipWebSocketServerURL: string;
-  userAgent?: string;
-  remoteAddress?: string;
-  extraHeaders?: string[];
-};
-
-type TConnect = (
-  parameters: TParametersConnection,
-  options?: { callLimit?: number },
-) => Promise<UA>;
-type TInitUa = (parameters: TParametersConnection) => Promise<UA>;
-type TStart = () => Promise<UA>;
 
 export default class ConnectionManager {
   public ua?: UA;
@@ -70,19 +29,15 @@ export default class ConnectionManager {
 
   private readonly stateMachine: ConnectionStateMachine;
 
-  private connectionConfiguration: {
-    sipServerUrl?: string;
-    displayName?: string;
-    register?: boolean;
-    user?: string;
-    password?: string;
-  } = {};
+  private readonly connectionFlow: ConnectionFlow;
+
+  private readonly sipOperations: SipOperations;
+
+  private readonly configurationManager: ConfigurationManager;
 
   private readonly JsSIP: TJsSIP;
 
   private readonly uaEvents: Events<typeof UA_EVENT_NAMES>;
-
-  private cancelableConnectWithRepeatedCalls: ReturnType<typeof repeatedCallsAsync<UA>> | undefined;
 
   public constructor({ JsSIP }: { JsSIP: TJsSIP }) {
     this.JsSIP = JsSIP;
@@ -91,8 +46,44 @@ export default class ConnectionManager {
     this.incomingCallManager = new IncomingCallManager(this.uaEvents);
     this.sipEventHandler = new SipEventHandler(this.uaEvents);
     this.uaFactory = new UAFactory(JsSIP);
-    this.registrationManager = new RegistrationManager(this.uaEvents);
+    this.registrationManager = new RegistrationManager({
+      uaEvents: this.uaEvents,
+      getUa: this.getUa,
+    });
     this.stateMachine = new ConnectionStateMachine(this.uaEvents);
+
+    this.configurationManager = new ConfigurationManager({
+      getUa: this.getUa,
+    });
+
+    this.sipOperations = new SipOperations({
+      uaFactory: this.uaFactory,
+      getUa: this.getUa,
+    });
+
+    this.connectionFlow = new ConnectionFlow({
+      JsSIP: this.JsSIP,
+      uaEvents: this.uaEvents,
+      uaFactory: this.uaFactory,
+      stateMachine: this.stateMachine,
+      registrationManager: this.registrationManager,
+      incomingCallManager: this.incomingCallManager,
+      sipEventHandler: this.sipEventHandler,
+      getUa: this.getUa,
+      getConnectionConfiguration: this.getConnectionConfiguration,
+      setConnectionConfiguration: (config) => {
+        this.configurationManager.setConnectionConfiguration(config);
+      },
+      setUa: (ua: UA | undefined) => {
+        this.ua = ua;
+      },
+      setSipServerUrl: (getSipServerUrl: TGetServerUrl) => {
+        this.getSipServerUrl = getSipServerUrl;
+      },
+      setSocket: (socket: WebSocketInterface) => {
+        this.socket = socket;
+      },
+    });
   }
 
   public get requested() {
@@ -116,7 +107,7 @@ export default class ConnectionManager {
   }
 
   public get isRegisterConfig() {
-    return this.connectionConfiguration.register;
+    return this.configurationManager.isRegister();
   }
 
   public get remoteCallerData() {
@@ -128,111 +119,43 @@ export default class ConnectionManager {
   }
 
   public connect: TConnect = async (data, options) => {
-    this.cancelRequests();
+    return this.connectionFlow.connect(data, options);
+  };
 
-    return this.connectWithDuplicatedCalls(data, options);
+  public disconnect = async () => {
+    return this.connectionFlow.disconnect();
   };
 
   public async register(): Promise<RegisteredEvent> {
-    if (!this.ua) {
-      throw new Error('UA is not initialized');
-    }
-
-    return this.registrationManager.register(this.ua);
+    return this.registrationManager.register();
   }
 
   public async unregister(): Promise<UnRegisteredEvent> {
-    if (!this.ua) {
-      throw new Error('UA is not initialized');
-    }
-
-    return this.registrationManager.unregister(this.ua);
+    return this.registrationManager.unregister();
   }
 
   public readonly tryRegister = async () => {
-    if (!this.ua) {
-      throw new Error('UA is not initialized');
-    }
-
-    return this.registrationManager.tryRegister(this.ua);
+    return this.registrationManager.tryRegister();
   };
 
-  public async sendOptions(
-    target: URI | string,
-    body?: string,
-    extraHeaders?: string[],
-  ): Promise<void> {
-    if (!this.ua) {
-      throw new Error('is not connected');
-    }
+  public sendOptions = async (
+    target: Parameters<SipOperations['sendOptions']>[0],
+    body?: Parameters<SipOperations['sendOptions']>[1],
+    extraHeaders?: Parameters<SipOperations['sendOptions']>[2],
+  ) => {
+    return this.sipOperations.sendOptions(target, body, extraHeaders);
+  };
 
-    return new Promise((resolve, reject) => {
-      try {
-        // @ts-expect-error
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        this.ua.sendOptions(target, body, {
-          extraHeaders,
-          eventHandlers: {
-            succeeded: () => {
-              resolve();
-            },
-            failed: reject,
-          },
-        });
-      } catch (error) {
-        reject(error as Error);
-      }
-    });
-  }
+  public ping = async (
+    body?: Parameters<SipOperations['ping']>[0],
+    extraHeaders?: Parameters<SipOperations['ping']>[1],
+  ) => {
+    return this.sipOperations.ping(body, extraHeaders);
+  };
 
-  public async ping(body?: string, extraHeaders?: string[]): Promise<void> {
-    if (!this.ua?.configuration.uri) {
-      throw new Error('is not connected');
-    }
-
-    const target = this.ua.configuration.uri;
-
-    return this.sendOptions(target, body, extraHeaders);
-  }
-
-  public async checkTelephony({
-    userAgent,
-    displayName,
-    sipServerUrl,
-    sipWebSocketServerURL,
-    remoteAddress,
-    extraHeaders,
-  }: TParametersCheckTelephony): Promise<void> {
-    return new Promise<void>((resolve: () => void, reject: (error: Error) => void) => {
-      const { configuration } = this.uaFactory.createConfiguration({
-        sipWebSocketServerURL,
-        displayName,
-        userAgent,
-        sipServerUrl,
-      });
-
-      const ua = this.uaFactory.createUA({ ...configuration, remoteAddress, extraHeaders });
-
-      const rejectWithError = () => {
-        const error = new Error('Telephony is not available');
-
-        reject(error);
-      };
-
-      ua.once(DISCONNECTED, rejectWithError);
-
-      const stopAndResolveAfterDisconnect = () => {
-        ua.removeAllListeners();
-        ua.once(DISCONNECTED, resolve);
-
-        ua.stop();
-      };
-
-      ua.once(CONNECTED, stopAndResolveAfterDisconnect);
-
-      ua.start();
-    });
-  }
+  public checkTelephony = async (parameters: TParametersCheckTelephony) => {
+    return this.sipOperations.checkTelephony(parameters);
+  };
 
   public declineToIncomingCall = async ({ statusCode }: { statusCode?: number } = {}) => {
     return this.incomingCallManager.declineToIncomingCall({ statusCode });
@@ -267,35 +190,11 @@ export default class ConnectionManager {
   }
 
   public isConfigured() {
-    return !!this.ua;
+    return this.configurationManager.isConfigured();
   }
 
-  public getConnectionConfiguration() {
-    return { ...this.connectionConfiguration };
-  }
-
-  public disconnect = async () => {
-    this.incomingCallManager.stop();
-    this.sipEventHandler.stop();
-
-    const disconnectedPromise = new Promise<void>((resolve) => {
-      this.once(DISCONNECTED, () => {
-        resolve();
-      });
-    });
-
-    const { ua } = this;
-
-    if (ua) {
-      ua.stop();
-    } else {
-      this.uaEvents.trigger(DISCONNECTED, undefined);
-    }
-
-    return disconnectedPromise.finally(() => {
-      delete this.ua;
-      this.stateMachine.reset(); // Возвращаем в idle состояние
-    });
+  public getConnectionConfiguration = () => {
+    return this.configurationManager.getConnectionConfiguration();
   };
 
   public destroy(): void {
@@ -307,209 +206,7 @@ export default class ConnectionManager {
     return id;
   };
 
-  private readonly connectWithDuplicatedCalls: TConnect = async (
-    data,
-    { callLimit = DELAYED_REPEATED_CALLS_CONNECT_LIMIT } = {},
-  ) => {
-    const targetFunction = async () => {
-      return this.connectInner(data);
-    };
-
-    const isComplete = (response?: unknown): boolean => {
-      const isConnected = this.ua?.isConnected() === true;
-      const isValidResponse = isConnected && this.hasEqualConnectionConfiguration(data);
-      const isValidError =
-        response !== undefined && response !== null && !hasHandshakeWebsocketOpeningError(response);
-
-      return isValidResponse || isValidError;
-    };
-
-    this.stateMachine.startConnect();
-
-    this.cancelableConnectWithRepeatedCalls = repeatedCallsAsync<UA>({
-      targetFunction,
-      isComplete,
-      callLimit,
-      isRejectAsValid: true,
-      isCheckBeforeCall: false,
-    });
-
-    return this.cancelableConnectWithRepeatedCalls.then((response?: unknown) => {
-      if (response instanceof this.JsSIP.UA) {
-        return response;
-      }
-
-      throw response;
-    });
-  };
-
-  private hasEqualConnectionConfiguration(parameters: TParametersConnection) {
-    const { configuration: newConfiguration } = this.uaFactory.createConfiguration(parameters);
-
-    const uaConfiguration = this.ua?.configuration;
-
-    if (!uaConfiguration) {
-      return false;
-    }
-
-    return (
-      uaConfiguration.password === newConfiguration.password &&
-      uaConfiguration.register === newConfiguration.register &&
-      uaConfiguration.uri.toString() === newConfiguration.uri &&
-      uaConfiguration.display_name === newConfiguration.display_name &&
-      uaConfiguration.user_agent === newConfiguration.user_agent &&
-      uaConfiguration.sockets === newConfiguration.sockets &&
-      uaConfiguration.session_timers === newConfiguration.session_timers &&
-      uaConfiguration.register_expires === newConfiguration.register_expires &&
-      uaConfiguration.connection_recovery_min_interval ===
-        newConfiguration.connection_recovery_min_interval &&
-      uaConfiguration.connection_recovery_max_interval ===
-        newConfiguration.connection_recovery_max_interval
-    );
-  }
-
-  private readonly connectInner: TConnect = async (parameters) => {
-    return this.initUa(parameters).then(async () => {
-      return this.start();
-    });
-  };
-
-  private readonly initUa: TInitUa = async ({
-    user,
-    password,
-    sipServerUrl,
-    sipWebSocketServerURL,
-    remoteAddress,
-    sessionTimers,
-    registerExpires,
-    connectionRecoveryMinInterval,
-    connectionRecoveryMaxInterval,
-    userAgent,
-    displayName = '',
-    register = false,
-    extraHeaders = [],
-  }) => {
-    if (!sipServerUrl) {
-      throw new Error('sipServerUrl is required');
-    }
-
-    if (!sipWebSocketServerURL) {
-      throw new Error('sipWebSocketServerURL is required');
-    }
-
-    if (register && (user === undefined || user === '')) {
-      throw new Error('user is required for authorized connection');
-    }
-
-    if (register && (password === undefined || password === '')) {
-      throw new Error('password is required for authorized connection');
-    }
-
-    this.stateMachine.startInitUa();
-
-    this.connectionConfiguration = {
-      sipServerUrl,
-      displayName,
-      register,
-      user,
-      password,
-    };
-
-    const { configuration, helpers } = this.uaFactory.createConfiguration({
-      user,
-      sipServerUrl,
-      sipWebSocketServerURL,
-      password,
-      displayName,
-      register,
-      sessionTimers,
-      registerExpires,
-      connectionRecoveryMinInterval,
-      connectionRecoveryMaxInterval,
-      userAgent,
-    });
-
-    this.getSipServerUrl = helpers.getSipServerUrl;
-    this.socket = helpers.socket;
-
-    if (this.ua) {
-      await this.disconnect();
-    }
-
-    this.ua = this.uaFactory.createUA({ ...configuration, remoteAddress, extraHeaders });
-
-    this.uaEvents.eachTriggers((trigger, eventName) => {
-      const uaJsSipEvent = UA_JSSIP_EVENT_NAMES.find((jsSipEvent) => {
-        return jsSipEvent === eventName;
-      });
-
-      if (uaJsSipEvent && this.ua) {
-        this.ua.on(uaJsSipEvent, trigger);
-      }
-    });
-
+  private readonly getUa = () => {
     return this.ua;
   };
-
-  private readonly start: TStart = async () => {
-    return new Promise((resolve, reject) => {
-      const { ua } = this;
-
-      if (!ua) {
-        reject(new Error('this.ua is not initialized'));
-
-        return;
-      }
-
-      const resolveUa = () => {
-        // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        unsubscribeFromEvents();
-        resolve(ua);
-      };
-
-      const rejectError = (error: Error) => {
-        // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        unsubscribeFromEvents();
-        reject(error);
-      };
-
-      const subscribeToStartEvents = (onSuccess: () => void, onError: (error: Error) => void) => {
-        if (this.isRegisterConfig === true) {
-          return this.registrationManager.subscribeToStartEvents(onSuccess, onError);
-        }
-
-        const successEvent = CONNECTED;
-        const errorEvents = [DISCONNECTED] as const;
-
-        // Подписываемся на события
-        this.uaEvents.on(successEvent, onSuccess);
-        errorEvents.forEach((errorEvent) => {
-          this.uaEvents.on(errorEvent, onError);
-        });
-
-        // Возвращаем функцию для отписки
-        return () => {
-          this.uaEvents.off(successEvent, onSuccess);
-          errorEvents.forEach((errorEvent) => {
-            this.uaEvents.off(errorEvent, onError);
-          });
-        };
-      };
-
-      const unsubscribeFromEvents = subscribeToStartEvents(resolveUa, rejectError);
-
-      this.incomingCallManager.start();
-      this.sipEventHandler.start();
-
-      ua.start();
-    });
-  };
-
-  private cancelRequests() {
-    this.cancelConnectWithRepeatedCalls();
-  }
-
-  private cancelConnectWithRepeatedCalls() {
-    this.cancelableConnectWithRepeatedCalls?.cancel();
-  }
 }
