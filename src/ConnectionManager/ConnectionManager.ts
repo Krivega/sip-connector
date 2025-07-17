@@ -12,6 +12,7 @@ import type { TEventUA } from '../eventNames';
 import { UA_EVENT_NAMES, UA_JSSIP_EVENT_NAMES } from '../eventNames';
 import type { TGetServerUrl, TJsSIP } from '../types';
 import { hasHandshakeWebsocketOpeningError } from '../utils/errors';
+import ConnectionStateMachine from './ConnectionStateMachine';
 import IncomingCallManager from './IncomingCallManager';
 import RegistrationManager from './RegistrationManager';
 import SipEventHandler from './SipEventHandler';
@@ -67,6 +68,8 @@ export default class ConnectionManager {
 
   private readonly registrationManager: RegistrationManager;
 
+  private readonly stateMachine: ConnectionStateMachine;
+
   private connectionConfiguration: {
     sipServerUrl?: string;
     displayName?: string;
@@ -81,10 +84,6 @@ export default class ConnectionManager {
 
   private cancelableConnectWithRepeatedCalls: ReturnType<typeof repeatedCallsAsync<UA>> | undefined;
 
-  private isPendingConnect = false;
-
-  private isPendingInitUa = false;
-
   public constructor({ JsSIP }: { JsSIP: TJsSIP }) {
     this.JsSIP = JsSIP;
 
@@ -93,10 +92,23 @@ export default class ConnectionManager {
     this.sipEventHandler = new SipEventHandler(this.uaEvents);
     this.uaFactory = new UAFactory(JsSIP);
     this.registrationManager = new RegistrationManager(this.uaEvents);
+    this.stateMachine = new ConnectionStateMachine(this.uaEvents);
   }
 
   public get requested() {
-    return this.isPendingInitUa || this.isPendingConnect;
+    return this.stateMachine.isPending;
+  }
+
+  public get isPendingConnect() {
+    return this.stateMachine.isPendingConnect;
+  }
+
+  public get isPendingInitUa() {
+    return this.stateMachine.isPendingInitUa;
+  }
+
+  public get connectionState() {
+    return this.stateMachine.state;
   }
 
   public get isRegistered() {
@@ -282,8 +294,13 @@ export default class ConnectionManager {
 
     return disconnectedPromise.finally(() => {
       delete this.ua;
+      this.stateMachine.reset(); // Возвращаем в idle состояние
     });
   };
+
+  public destroy(): void {
+    this.stateMachine.destroy();
+  }
 
   // eslint-disable-next-line class-methods-use-this
   public getSipServerUrl: TGetServerUrl = (id: string) => {
@@ -307,7 +324,7 @@ export default class ConnectionManager {
       return isValidResponse || isValidError;
     };
 
-    this.isPendingConnect = true;
+    this.stateMachine.startConnect();
 
     this.cancelableConnectWithRepeatedCalls = repeatedCallsAsync<UA>({
       targetFunction,
@@ -317,17 +334,13 @@ export default class ConnectionManager {
       isCheckBeforeCall: false,
     });
 
-    return this.cancelableConnectWithRepeatedCalls
-      .then((response?: unknown) => {
-        if (response instanceof this.JsSIP.UA) {
-          return response;
-        }
+    return this.cancelableConnectWithRepeatedCalls.then((response?: unknown) => {
+      if (response instanceof this.JsSIP.UA) {
+        return response;
+      }
 
-        throw response;
-      })
-      .finally(() => {
-        this.isPendingConnect = false;
-      });
+      throw response;
+    });
   };
 
   private hasEqualConnectionConfiguration(parameters: TParametersConnection) {
@@ -392,54 +405,50 @@ export default class ConnectionManager {
       throw new Error('password is required for authorized connection');
     }
 
-    this.isPendingInitUa = true;
+    this.stateMachine.startInitUa();
 
-    try {
-      this.connectionConfiguration = {
-        sipServerUrl,
-        displayName,
-        register,
-        user,
-        password,
-      };
+    this.connectionConfiguration = {
+      sipServerUrl,
+      displayName,
+      register,
+      user,
+      password,
+    };
 
-      const { configuration, helpers } = this.uaFactory.createConfiguration({
-        user,
-        sipServerUrl,
-        sipWebSocketServerURL,
-        password,
-        displayName,
-        register,
-        sessionTimers,
-        registerExpires,
-        connectionRecoveryMinInterval,
-        connectionRecoveryMaxInterval,
-        userAgent,
-      });
+    const { configuration, helpers } = this.uaFactory.createConfiguration({
+      user,
+      sipServerUrl,
+      sipWebSocketServerURL,
+      password,
+      displayName,
+      register,
+      sessionTimers,
+      registerExpires,
+      connectionRecoveryMinInterval,
+      connectionRecoveryMaxInterval,
+      userAgent,
+    });
 
-      this.getSipServerUrl = helpers.getSipServerUrl;
-      this.socket = helpers.socket;
+    this.getSipServerUrl = helpers.getSipServerUrl;
+    this.socket = helpers.socket;
 
-      if (this.ua) {
-        await this.disconnect();
-      }
-
-      this.ua = this.uaFactory.createUA({ ...configuration, remoteAddress, extraHeaders });
-
-      this.uaEvents.eachTriggers((trigger, eventName) => {
-        const uaJsSipEvent = UA_JSSIP_EVENT_NAMES.find((jsSipEvent) => {
-          return jsSipEvent === eventName;
-        });
-
-        if (uaJsSipEvent && this.ua) {
-          this.ua.on(uaJsSipEvent, trigger);
-        }
-      });
-
-      return this.ua;
-    } finally {
-      this.isPendingInitUa = false;
+    if (this.ua) {
+      await this.disconnect();
     }
+
+    this.ua = this.uaFactory.createUA({ ...configuration, remoteAddress, extraHeaders });
+
+    this.uaEvents.eachTriggers((trigger, eventName) => {
+      const uaJsSipEvent = UA_JSSIP_EVENT_NAMES.find((jsSipEvent) => {
+        return jsSipEvent === eventName;
+      });
+
+      if (uaJsSipEvent && this.ua) {
+        this.ua.on(uaJsSipEvent, trigger);
+      }
+    });
+
+    return this.ua;
   };
 
   private readonly start: TStart = async () => {
@@ -457,6 +466,7 @@ export default class ConnectionManager {
         unsubscribeFromEvents();
         resolve(ua);
       };
+
       const rejectError = (error: Error) => {
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
         unsubscribeFromEvents();

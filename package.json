@@ -71,7 +71,8 @@
     "sequent-promises": "^2.0.1",
     "stack-promises": "^2.0.3",
     "ts-debounce": "^4.0.0",
-    "webrtc-mock": "^1.1.7"
+    "webrtc-mock": "^1.1.7",
+    "xstate": "^5.20.1"
   },
   "devDependencies": {
     "@babel/preset-typescript": "^7.27.1",
@@ -118,7 +119,8 @@
     "sequent-promises": "^2.0.1",
     "stack-promises": "^2.0.3",
     "ts-debounce": "^4.0.0",
-    "webrtc-mock": "^1.1.7"
+    "webrtc-mock": "^1.1.7",
+    "xstate": "^5.20.1"
   },
   "packageManager": "yarn@1.22.22",
   "main:src": "src/index.ts"
