@@ -61,9 +61,9 @@ class UA implements IUA {
 
   public events: Events<readonly (keyof UAEventMap)[]>;
 
-  public readonly registratorInner: Registrator;
+  public readonly registratorInner!: Registrator;
 
-  // @ts-expect-error
+  // @ts-expect-error – Jest создаёт функцию-замок.
   public call = jest.fn(
     (
       url: string,
@@ -87,9 +87,7 @@ class UA implements IUA {
   );
 
   /**
-   * start
-   *
-   * @returns {undefined}
+   * start – имитирует запуск UA.
    */
   public start = jest.fn(() => {
     UA.countStarts += 1;
@@ -104,9 +102,7 @@ class UA implements IUA {
   });
 
   /**
-   * stop
-   *
-   * @returns {undefined}
+   * stop – имитирует остановку UA.
    */
   public stop = jest.fn(() => {
     if (this.startedTimeout) {
@@ -172,22 +168,27 @@ class UA implements IUA {
     startError: DisconnectEvent,
     { count = Number.POSITIVE_INFINITY }: { count?: number } = {},
   ) {
-    this.startError = startError;
-    this.countStartError = count;
+    UA.startError = startError;
+    UA.countStartError = count;
   }
 
   public static resetStartError() {
-    this.startError = undefined;
-    this.countStartError = Number.POSITIVE_INFINITY;
-    this.countStarts = 0;
+    UA.startError = undefined;
+    UA.countStartError = Number.POSITIVE_INFINITY;
+    UA.countStarts = 0;
   }
 
   public static setAvailableTelephony() {
-    this.isAvailableTelephony = true;
+    UA.isAvailableTelephony = true;
   }
 
   public static setNotAvailableTelephony() {
-    this.isAvailableTelephony = false;
+    UA.isAvailableTelephony = false;
+  }
+
+  public static reset() {
+    UA.resetStartError();
+    UA.setAvailableTelephony();
   }
 
   public on<T extends keyof UAEventMap>(eventName: T, handler: UAEventMap[T]) {

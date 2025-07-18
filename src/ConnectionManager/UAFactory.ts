@@ -141,7 +141,7 @@ export default class UAFactory {
       remoteAddress?: string;
       extraHeaders?: string[];
     },
-    uaEvents?: {
+    uaEvents: {
       eachTriggers: (
         callback: (trigger: (...args: unknown[]) => void, eventName: string) => void,
       ) => void;
@@ -154,18 +154,15 @@ export default class UAFactory {
       extraHeaders: parameters.extraHeaders,
     });
 
-    // Настраиваем события UA, если переданы
-    if (uaEvents) {
-      uaEvents.eachTriggers((trigger, eventName) => {
-        const uaJsSipEvent = UA_JSSIP_EVENT_NAMES.find((jsSipEvent) => {
-          return jsSipEvent === eventName;
-        });
-
-        if (uaJsSipEvent) {
-          ua.on(uaJsSipEvent, trigger);
-        }
+    uaEvents.eachTriggers((trigger, eventName) => {
+      const uaJsSipEvent = UA_JSSIP_EVENT_NAMES.find((jsSipEvent) => {
+        return jsSipEvent === eventName;
       });
-    }
+
+      if (uaJsSipEvent) {
+        ua.on(uaJsSipEvent, trigger);
+      }
+    });
 
     return { ua, helpers };
   }

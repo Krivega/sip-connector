@@ -288,14 +288,14 @@ export default class ConnectionFlow {
         return;
       }
 
+      let unsubscribeFromEvents: () => void = () => {};
+
       const resolveUa = () => {
-        // eslint-disable-next-line @typescript-eslint/no-use-before-define
         unsubscribeFromEvents();
         resolve(ua);
       };
 
       const rejectError = (error: Error) => {
-        // eslint-disable-next-line @typescript-eslint/no-use-before-define
         unsubscribeFromEvents();
         reject(error);
       };
@@ -325,7 +325,7 @@ export default class ConnectionFlow {
         };
       };
 
-      const unsubscribeFromEvents = subscribeToStartEvents(resolveUa, rejectError);
+      unsubscribeFromEvents = subscribeToStartEvents(resolveUa, rejectError);
 
       this.incomingCallManager.start();
       this.sipEventHandler.start();

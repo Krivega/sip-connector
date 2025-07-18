@@ -315,15 +315,6 @@ describe('UAFactory', () => {
       register: true,
     };
 
-    it('должен создавать UA с конфигурацией без событий', () => {
-      const result = uaFactory.createUAWithConfiguration(baseParameters);
-
-      expect(result.ua).toBeDefined();
-      expect(result.ua).toBeInstanceOf(jssip.UA);
-      expect(result.helpers.socket).toBeDefined();
-      expect(result.helpers.getSipServerUrl).toBeDefined();
-    });
-
     it('должен создавать UA с конфигурацией и событиями', () => {
       const uaEvents = {
         eachTriggers: (
@@ -343,31 +334,64 @@ describe('UAFactory', () => {
     });
 
     it('должен создавать UA с remoteAddress', () => {
-      const result = uaFactory.createUAWithConfiguration({
-        ...baseParameters,
-        remoteAddress: '192.168.1.1',
-      });
+      const uaEvents = {
+        eachTriggers: (
+          callback: (trigger: (...args: unknown[]) => void, eventName: string) => void,
+        ) => {
+          callback(() => {}, 'connected');
+          callback(() => {}, 'disconnected');
+        },
+      };
+      const result = uaFactory.createUAWithConfiguration(
+        {
+          ...baseParameters,
+          remoteAddress: '192.168.1.1',
+        },
+        uaEvents,
+      );
 
       expect(result.ua).toBeDefined();
       expect(result.helpers.socket).toBeDefined();
     });
 
     it('должен создавать UA с extraHeaders', () => {
-      const result = uaFactory.createUAWithConfiguration({
-        ...baseParameters,
-        extraHeaders: ['X-Custom-Header: value'],
-      });
+      const uaEvents = {
+        eachTriggers: (
+          callback: (trigger: (...args: unknown[]) => void, eventName: string) => void,
+        ) => {
+          callback(() => {}, 'connected');
+          callback(() => {}, 'disconnected');
+        },
+      };
+      const result = uaFactory.createUAWithConfiguration(
+        {
+          ...baseParameters,
+          extraHeaders: ['X-Custom-Header: value'],
+        },
+        uaEvents,
+      );
 
       expect(result.ua).toBeDefined();
       expect(result.helpers.socket).toBeDefined();
     });
 
     it('должен создавать UA с remoteAddress и extraHeaders', () => {
-      const result = uaFactory.createUAWithConfiguration({
-        ...baseParameters,
-        remoteAddress: '192.168.1.1',
-        extraHeaders: ['X-Custom-Header: value'],
-      });
+      const uaEvents = {
+        eachTriggers: (
+          callback: (trigger: (...args: unknown[]) => void, eventName: string) => void,
+        ) => {
+          callback(() => {}, 'connected');
+          callback(() => {}, 'disconnected');
+        },
+      };
+      const result = uaFactory.createUAWithConfiguration(
+        {
+          ...baseParameters,
+          remoteAddress: '192.168.1.1',
+          extraHeaders: ['X-Custom-Header: value'],
+        },
+        uaEvents,
+      );
 
       expect(result.ua).toBeDefined();
       expect(result.helpers.socket).toBeDefined();
