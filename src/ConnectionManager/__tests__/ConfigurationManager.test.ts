@@ -57,9 +57,9 @@ describe('ConfigurationManager', () => {
     });
   });
 
-  describe('getConnectionConfiguration', () => {
+  describe('get', () => {
     it('должен возвращать пустую конфигурацию по умолчанию', () => {
-      const config = configurationManager.getConnectionConfiguration();
+      const config = configurationManager.get();
 
       expect(config).toEqual({});
     });
@@ -73,16 +73,16 @@ describe('ConfigurationManager', () => {
         password: 'testpass',
       };
 
-      configurationManager.setConnectionConfiguration(testConfig);
+      configurationManager.set(testConfig);
 
-      const config = configurationManager.getConnectionConfiguration();
+      const config = configurationManager.get();
 
       expect(config).toEqual(testConfig);
       expect(config).not.toBe(testConfig); // Должна быть копия
     });
   });
 
-  describe('setConnectionConfiguration', () => {
+  describe('set', () => {
     it('должен устанавливать конфигурацию', () => {
       const testConfig: IConnectionConfiguration = {
         sipServerUrl: 'sip.test.com',
@@ -92,9 +92,9 @@ describe('ConfigurationManager', () => {
         password: 'testpass',
       };
 
-      configurationManager.setConnectionConfiguration(testConfig);
+      configurationManager.set(testConfig);
 
-      expect(configurationManager.getConnectionConfiguration()).toEqual(testConfig);
+      expect(configurationManager.get()).toEqual(testConfig);
     });
 
     it('должен перезаписывать существующую конфигурацию', () => {
@@ -109,10 +109,10 @@ describe('ConfigurationManager', () => {
         register: true,
       };
 
-      configurationManager.setConnectionConfiguration(initialConfig);
-      configurationManager.setConnectionConfiguration(newConfig);
+      configurationManager.set(initialConfig);
+      configurationManager.set(newConfig);
 
-      expect(configurationManager.getConnectionConfiguration()).toEqual(newConfig);
+      expect(configurationManager.get()).toEqual(newConfig);
     });
   });
 
@@ -122,13 +122,13 @@ describe('ConfigurationManager', () => {
     });
 
     it('должен возвращать true когда регистрация включена', () => {
-      configurationManager.setConnectionConfiguration({ register: true });
+      configurationManager.set({ register: true });
 
       expect(configurationManager.isRegister()).toBe(true);
     });
 
     it('должен возвращать false когда register установлен в false', () => {
-      configurationManager.setConnectionConfiguration({ register: false });
+      configurationManager.set({ register: false });
 
       expect(configurationManager.isRegister()).toBe(false);
     });
@@ -142,7 +142,7 @@ describe('ConfigurationManager', () => {
     it('должен возвращать SIP сервер URL', () => {
       const serverUrl = 'sip.test.com';
 
-      configurationManager.setConnectionConfiguration({ sipServerUrl: serverUrl });
+      configurationManager.set({ sipServerUrl: serverUrl });
 
       expect(configurationManager.getSipServerUrl()).toBe(serverUrl);
     });
@@ -156,7 +156,7 @@ describe('ConfigurationManager', () => {
     it('должен возвращать display name', () => {
       const displayName = 'Test User';
 
-      configurationManager.setConnectionConfiguration({ displayName });
+      configurationManager.set({ displayName });
 
       expect(configurationManager.getDisplayName()).toBe(displayName);
     });
@@ -170,7 +170,7 @@ describe('ConfigurationManager', () => {
     it('должен возвращать пользователя', () => {
       const user = 'testuser';
 
-      configurationManager.setConnectionConfiguration({ user });
+      configurationManager.set({ user });
 
       expect(configurationManager.getUser()).toBe(user);
     });
@@ -184,7 +184,7 @@ describe('ConfigurationManager', () => {
     it('должен возвращать пароль', () => {
       const password = 'testpass';
 
-      configurationManager.setConnectionConfiguration({ password });
+      configurationManager.set({ password });
 
       expect(configurationManager.getPassword()).toBe(password);
     });
@@ -196,19 +196,19 @@ describe('ConfigurationManager', () => {
     });
 
     it('должен возвращать true когда регистрация включена', () => {
-      configurationManager.setConnectionConfiguration({ register: true });
+      configurationManager.set({ register: true });
 
       expect(configurationManager.isRegisterEnabled()).toBe(true);
     });
 
     it('должен возвращать false когда register установлен в false', () => {
-      configurationManager.setConnectionConfiguration({ register: false });
+      configurationManager.set({ register: false });
 
       expect(configurationManager.isRegisterEnabled()).toBe(false);
     });
   });
 
-  describe('clearConfiguration', () => {
+  describe('clear', () => {
     it('должен очищать конфигурацию', () => {
       const testConfig: IConnectionConfiguration = {
         sipServerUrl: 'sip.test.com',
@@ -218,10 +218,10 @@ describe('ConfigurationManager', () => {
         password: 'testpass',
       };
 
-      configurationManager.setConnectionConfiguration(testConfig);
-      configurationManager.clearConfiguration();
+      configurationManager.set(testConfig);
+      configurationManager.clear();
 
-      expect(configurationManager.getConnectionConfiguration()).toEqual({});
+      expect(configurationManager.get()).toEqual({});
     });
 
     it('должен очищать все поля конфигурации', () => {
@@ -233,8 +233,8 @@ describe('ConfigurationManager', () => {
         password: 'testpass',
       };
 
-      configurationManager.setConnectionConfiguration(testConfig);
-      configurationManager.clearConfiguration();
+      configurationManager.set(testConfig);
+      configurationManager.clear();
 
       expect(configurationManager.getSipServerUrl()).toBeUndefined();
       expect(configurationManager.getDisplayName()).toBeUndefined();
@@ -242,6 +242,19 @@ describe('ConfigurationManager', () => {
       expect(configurationManager.getPassword()).toBeUndefined();
       expect(configurationManager.isRegister()).toBe(false);
       expect(configurationManager.isRegisterEnabled()).toBe(false);
+    });
+  });
+
+  describe('update', () => {
+    it('должен обновлять конфигурацию', () => {
+      const testConfig: IConnectionConfiguration = {
+        sipServerUrl: 'sip.test.com',
+      };
+
+      configurationManager.set(testConfig);
+      configurationManager.update('sipServerUrl', 'sip.test.com');
+
+      expect(configurationManager.getSipServerUrl()).toBe('sip.test.com');
     });
   });
 
@@ -255,7 +268,7 @@ describe('ConfigurationManager', () => {
         password: 'testpass',
       };
 
-      configurationManager.setConnectionConfiguration(fullConfig);
+      configurationManager.set(fullConfig);
 
       expect(configurationManager.getSipServerUrl()).toBe('sip.test.com');
       expect(configurationManager.getDisplayName()).toBe('Test User');
@@ -271,7 +284,7 @@ describe('ConfigurationManager', () => {
         displayName: 'Test User',
       };
 
-      configurationManager.setConnectionConfiguration(partialConfig);
+      configurationManager.set(partialConfig);
 
       expect(configurationManager.getSipServerUrl()).toBe('sip.test.com');
       expect(configurationManager.getDisplayName()).toBe('Test User');
@@ -284,7 +297,7 @@ describe('ConfigurationManager', () => {
     it('должен корректно работать с пустой конфигурацией', () => {
       const emptyConfig: IConnectionConfiguration = {};
 
-      configurationManager.setConnectionConfiguration(emptyConfig);
+      configurationManager.set(emptyConfig);
 
       expect(configurationManager.getSipServerUrl()).toBeUndefined();
       expect(configurationManager.getDisplayName()).toBeUndefined();
@@ -304,7 +317,7 @@ describe('ConfigurationManager', () => {
         password: '',
       };
 
-      configurationManager.setConnectionConfiguration(configWithEmptyStrings);
+      configurationManager.set(configWithEmptyStrings);
 
       expect(configurationManager.getSipServerUrl()).toBe('');
       expect(configurationManager.getDisplayName()).toBe('');
@@ -321,7 +334,7 @@ describe('ConfigurationManager', () => {
         register: undefined,
       };
 
-      configurationManager.setConnectionConfiguration(configWithUndefined);
+      configurationManager.set(configWithUndefined);
 
       expect(configurationManager.getSipServerUrl()).toBeUndefined();
       expect(configurationManager.getDisplayName()).toBeUndefined();

@@ -1,6 +1,7 @@
 import type { UA, WebSocketInterface } from '@krivega/jssip';
 import type Events from 'events-constructor';
 import { repeatedCallsAsync } from 'repeated-calls';
+import { parseDisplayName } from '../../utils';
 import { CONNECTED, DISCONNECTED } from '../constants';
 import type { UA_EVENT_NAMES } from '../eventNames';
 import type { TGetServerUrl, TJsSIP } from '../types';
@@ -9,6 +10,7 @@ import type ConnectionStateMachine from './ConnectionStateMachine';
 import type IncomingCallManager from './IncomingCallManager';
 import type RegistrationManager from './RegistrationManager';
 import type SipEventHandler from './SipEventHandler';
+
 import type UAFactory from './UAFactory';
 
 const DELAYED_REPEATED_CALLS_CONNECT_LIMIT = 3;
@@ -37,6 +39,8 @@ export type TConnect = (
   options?: { callLimit?: number },
 ) => Promise<UA>;
 
+export type TSet = (parameters: { displayName?: string }) => Promise<boolean>;
+
 type TInitUa = (parameters: TParametersConnection) => Promise<UA>;
 type TStart = () => Promise<UA>;
 
@@ -64,6 +68,7 @@ interface IDependencies {
     user?: string;
     password?: string;
   }) => void;
+  updateConnectionConfiguration: (key: 'displayName', value: string) => void;
   setSipServerUrl: (getSipServerUrl: TGetServerUrl) => void;
   setSocket: (socket: WebSocketInterface) => void;
 }
@@ -93,6 +98,8 @@ export default class ConnectionFlow {
 
   private readonly setConnectionConfiguration: IDependencies['setConnectionConfiguration'];
 
+  private readonly updateConnectionConfiguration: IDependencies['updateConnectionConfiguration'];
+
   private readonly setSipServerUrl: IDependencies['setSipServerUrl'];
 
   private readonly setSocket: IDependencies['setSocket'];
@@ -109,6 +116,7 @@ export default class ConnectionFlow {
     this.setUa = dependencies.setUa;
     this.getConnectionConfiguration = dependencies.getConnectionConfiguration;
     this.setConnectionConfiguration = dependencies.setConnectionConfiguration;
+    this.updateConnectionConfiguration = dependencies.updateConnectionConfiguration;
     this.setSipServerUrl = dependencies.setSipServerUrl;
     this.setSocket = dependencies.setSocket;
   }
@@ -117,6 +125,34 @@ export default class ConnectionFlow {
     this.cancelRequests();
 
     return this.connectWithDuplicatedCalls(data, options);
+  };
+
+  public set: TSet = async ({ displayName }: { displayName?: string }): Promise<boolean> => {
+    return new Promise((resolve, reject) => {
+      const ua = this.getUa();
+
+      if (!ua) {
+        reject(new Error('this.ua is not initialized'));
+
+        return;
+      }
+
+      let changedDisplayName = false;
+      const connectionConfiguration = this.getConnectionConfiguration();
+
+      if (displayName !== undefined && displayName !== connectionConfiguration.displayName) {
+        changedDisplayName = ua.set('display_name', parseDisplayName(displayName));
+        this.updateConnectionConfiguration('displayName', displayName);
+      }
+
+      const changedSome = changedDisplayName;
+
+      if (changedSome) {
+        resolve(changedSome);
+      } else {
+        reject(new Error('nothing changed'));
+      }
+    });
   };
 
   public disconnect = async () => {

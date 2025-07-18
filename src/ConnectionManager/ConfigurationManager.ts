@@ -13,7 +13,7 @@ export interface ConfigurationManagerDependencies {
 }
 
 export default class ConfigurationManager {
-  private connectionConfiguration: IConnectionConfiguration = {};
+  private data: IConnectionConfiguration = {};
 
   private readonly getUa: () => UA | undefined;
 
@@ -33,63 +33,73 @@ export default class ConfigurationManager {
   /**
    * Получает текущую конфигурацию подключения
    */
-  public getConnectionConfiguration(): IConnectionConfiguration {
-    return { ...this.connectionConfiguration };
+  public get(): IConnectionConfiguration {
+    return { ...this.data };
   }
 
   /**
    * Устанавливает конфигурацию подключения
    */
-  public setConnectionConfiguration(config: IConnectionConfiguration): void {
-    this.connectionConfiguration = config;
+  public set(data: IConnectionConfiguration): void {
+    this.data = { ...data };
+  }
+
+  /**
+   * Обновляет конфигурацию подключения
+   */
+  public update<K extends keyof IConnectionConfiguration>(
+    key: K,
+    value: IConnectionConfiguration[K],
+  ): void {
+    this.data[key] = value;
+  }
+
+  /**
+   * Очищает конфигурацию
+   */
+  public clear(): void {
+    this.data = {} as IConnectionConfiguration;
   }
 
   /**
    * Проверяет, включена ли регистрация в конфигурации
    */
   public isRegister(): boolean {
-    return this.connectionConfiguration.register === true;
+    return this.data.register === true;
   }
 
   /**
    * Получает SIP сервер URL из конфигурации
    */
   public getSipServerUrl(): string | undefined {
-    return this.connectionConfiguration.sipServerUrl;
+    return this.data.sipServerUrl;
   }
 
   /**
    * Получает display name из конфигурации
    */
   public getDisplayName(): string | undefined {
-    return this.connectionConfiguration.displayName;
+    return this.data.displayName;
   }
 
   /**
    * Получает пользователя из конфигурации
    */
   public getUser(): string | undefined {
-    return this.connectionConfiguration.user;
+    return this.data.user;
   }
 
   /**
    * Получает пароль из конфигурации
    */
   public getPassword(): string | undefined {
-    return this.connectionConfiguration.password;
+    return this.data.password;
   }
 
   /**
    * Проверяет, включена ли регистрация
    */
   public isRegisterEnabled(): boolean {
-    return this.connectionConfiguration.register === true;
-  }
-
-  /**
-   * Очищает конфигурацию
-   */
-  public clearConfiguration(): void {
-    this.connectionConfiguration = {};
+    return this.data.register === true;
   }
 }

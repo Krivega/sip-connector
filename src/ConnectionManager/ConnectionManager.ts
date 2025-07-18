@@ -4,7 +4,7 @@ import type { TEventUA } from '../eventNames';
 import { UA_EVENT_NAMES } from '../eventNames';
 import type { TGetServerUrl, TJsSIP } from '../types';
 import ConfigurationManager from './ConfigurationManager';
-import type { TConnect } from './ConnectionFlow';
+import type { TConnect, TSet } from './ConnectionFlow';
 import ConnectionFlow from './ConnectionFlow';
 import ConnectionStateMachine from './ConnectionStateMachine';
 import IncomingCallManager from './IncomingCallManager';
@@ -72,7 +72,10 @@ export default class ConnectionManager {
       getUa: this.getUa,
       getConnectionConfiguration: this.getConnectionConfiguration,
       setConnectionConfiguration: (config) => {
-        this.configurationManager.setConnectionConfiguration(config);
+        this.configurationManager.set(config);
+      },
+      updateConnectionConfiguration: (key: 'displayName', value: string) => {
+        this.configurationManager.update(key, value);
       },
       setUa: (ua: UA | undefined) => {
         this.ua = ua;
@@ -120,6 +123,10 @@ export default class ConnectionManager {
 
   public connect: TConnect = async (data, options) => {
     return this.connectionFlow.connect(data, options);
+  };
+
+  public set: TSet = async ({ displayName }) => {
+    return this.connectionFlow.set({ displayName });
   };
 
   public disconnect = async () => {
@@ -194,7 +201,7 @@ export default class ConnectionManager {
   }
 
   public getConnectionConfiguration = () => {
-    return this.configurationManager.getConnectionConfiguration();
+    return this.configurationManager.get();
   };
 
   public destroy(): void {

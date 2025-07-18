@@ -1304,7 +1304,7 @@ export default class SipConnector {
         uri,
         display_name: parseDisplayName(displayName),
         user_agent: userAgent,
-        sdp_semantics: 'unified-plan',
+        sdpSemantics: 'unified-plan' as const,
         sockets: [socket],
         session_timers: sessionTimers,
         register_expires: registerExpires,
