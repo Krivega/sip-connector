@@ -36,7 +36,6 @@ export enum EState {
 enum EAction {
   LOG_TRANSITION = 'logTransition',
   LOG_STATE_CHANGE = 'logStateChange',
-  LOG_INVALID_TRANSITION = 'logInvalidTransition',
 }
 
 // Создаем XState машину с setup API для лучшей типизации
@@ -51,11 +50,6 @@ const connectionMachine = setup({
     },
     [EAction.LOG_STATE_CHANGE]: (_, params: { state: string }) => {
       logger('ConnectionStateMachine state changed', params.state);
-    },
-    [EAction.LOG_INVALID_TRANSITION]: (_, params: { event: string; state: string }) => {
-      logger(
-        `Invalid transition: ${params.event} from ${params.state}. Event cannot be processed in current state.`,
-      );
     },
   },
 }).createMachine({
@@ -432,24 +426,13 @@ export default class ConnectionStateMachine {
   public canTransition(event: TConnectionMachineEvent): boolean {
     const snapshot = this.actor.getSnapshot();
 
-    // Проверяем, может ли машина обработать это событие в текущем состоянии
-    try {
-      return snapshot.can({ type: event } as TConnectionMachineEvents);
-    } catch {
-      return false;
-    }
+    return snapshot.can({ type: event } as TConnectionMachineEvents);
   }
 
   public getValidEvents(): TConnectionMachineEvent[] {
-    const snapshot = this.actor.getSnapshot();
-
     // Возвращаем все события, которые машина может обработать в текущем состоянии
     return Object.values(EEvents).filter((event) => {
-      try {
-        return snapshot.can({ type: event } as TConnectionMachineEvents);
-      } catch {
-        return false;
-      }
+      return this.canTransition(event);
     });
   }
 

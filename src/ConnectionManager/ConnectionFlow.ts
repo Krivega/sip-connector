@@ -288,15 +288,15 @@ export default class ConnectionFlow {
         return;
       }
 
-      let unsubscribeFromEvents: () => void = () => {};
+      let unsubscribeFromEvents: undefined | (() => void);
 
       const resolveUa = () => {
-        unsubscribeFromEvents();
+        unsubscribeFromEvents?.();
         resolve(ua);
       };
 
       const rejectError = (error: Error) => {
-        unsubscribeFromEvents();
+        unsubscribeFromEvents?.();
         reject(error);
       };
 

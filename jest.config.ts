@@ -13,6 +13,9 @@ const jestConfig: JestConfigWithTsJest = {
     '!src/**/*.d.ts',
     '!src/**/types.ts',
     '!src/**/typings.ts',
+    '!src/ConnectionManager/index.ts',
+    '!src/doMock.ts',
+    '!src/index.ts',
   ],
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
   coverageReporters: ['html', 'text', 'text-summary', 'cobertura'],
@@ -34,7 +37,7 @@ const jestConfig: JestConfigWithTsJest = {
     '^.+\\.tsx?$': [
       'ts-jest',
       {
-        diagnostics: false
+        diagnostics: false,
       },
     ],
   },

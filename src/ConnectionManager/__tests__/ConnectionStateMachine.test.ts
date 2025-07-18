@@ -425,5 +425,40 @@ describe('ConnectionStateMachine', () => {
       );
       expect(stateMachine.state).toBe(EState.CONNECTING); // состояние не изменилось
     });
+
+    test('должен корректно работать геттер isDisconnected', () => {
+      // В начальном состоянии
+      expect(stateMachine.isDisconnected).toBe(false);
+
+      // Переводим в DISCONNECTED
+      stateMachine.startConnect();
+      uaEvents.trigger('disconnected', undefined);
+      expect(stateMachine.isDisconnected).toBe(true);
+      expect(stateMachine.state).toBe(EState.DISCONNECTED);
+    });
+
+    test('должен корректно работать геттер isFailed', () => {
+      // В начальном состоянии
+      expect(stateMachine.isFailed).toBe(false);
+
+      // Переводим в FAILED
+      stateMachine.startConnect();
+      uaEvents.trigger('registrationFailed', undefined);
+      expect(stateMachine.isFailed).toBe(true);
+      expect(stateMachine.state).toBe(EState.FAILED);
+    });
+
+    test('должен корректно логировать невалидные переходы', () => {
+      // Очищаем предыдущие вызовы логгера
+      mockLogger.mockClear();
+
+      // Попытка сделать невалидный переход
+      stateMachine.startInitUa(); // из IDLE нельзя напрямую в INITIALIZING
+
+      // Проверяем, что было логирование невалидного перехода
+      expect(mockLogger).toHaveBeenCalledWith(
+        'Invalid transition: START_INIT_UA from idle. Event cannot be processed in current state.',
+      );
+    });
   });
 });

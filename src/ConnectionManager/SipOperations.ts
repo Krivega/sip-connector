@@ -105,7 +105,9 @@ export default class SipOperations {
 
       const stopAndResolveAfterDisconnect = () => {
         ua.removeAllListeners();
-        ua.once(DISCONNECTED, resolve);
+        ua.once(DISCONNECTED, () => {
+          resolve();
+        });
         ua.stop();
       };
 
