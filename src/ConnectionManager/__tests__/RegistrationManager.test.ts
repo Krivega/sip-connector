@@ -394,7 +394,13 @@ describe('RegistrationManager', () => {
         mockUa.trigger(REGISTERED, testData.mockRegisteredEvent);
       }, 10);
 
-      await Promise.all(promises);
+      const results = await Promise.all(promises);
+
+      expect(results).toEqual([
+        testData.mockRegisteredEvent,
+        testData.mockRegisteredEvent,
+        testData.mockRegisteredEvent,
+      ]);
     });
 
     it('должен корректно обрабатывать таймауты при регистрации', async () => {

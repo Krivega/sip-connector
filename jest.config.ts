@@ -18,7 +18,10 @@ const jestConfig: JestConfigWithTsJest = {
     '!src/index.ts',
   ],
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
-  coverageReporters: ['html', 'text', 'text-summary', 'cobertura'],
+  reporters: ['default', 'jest-junit'],
+  coverageReporters: ['text', 'text-summary', 'lcov'],
+  coverageDirectory: 'coverage',
+  coverageProvider: 'babel',
   coverageThreshold: {
     global: {
       statements: 100,
@@ -28,8 +31,6 @@ const jestConfig: JestConfigWithTsJest = {
     },
   },
   clearMocks: true,
-  coverageDirectory: 'coverage',
-  coverageProvider: 'v8',
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },

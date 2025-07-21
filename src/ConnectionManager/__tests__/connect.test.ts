@@ -16,7 +16,7 @@ import jssip from '../../__fixtures__/jssip.mock';
 import UAMock, { createWebsocketHandshakeTimeoutError } from '../../__fixtures__/UA.mock';
 import { uriWithName } from '../../tools/__fixtures__/connectToServer';
 import type { TJsSIP } from '../../types';
-import ConnectionManager from '../ConnectionManager';
+import ConnectionManager from '../@ConnectionManager';
 
 const wrongPassword = 'wrongPassword';
 const websocketHandshakeTimeoutError = createWebsocketHandshakeTimeoutError(SIP_SERVER_URL);

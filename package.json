@@ -59,7 +59,7 @@
     "release:publish": "git push --follow-tags origin master && npm publish --access=public",
     "test": "jest",
     "test:ci": "cross-env CI=true jest",
-    "test:coverage": "yarn test:ci --coverage --reporters=default --reporters=jest-junit",
+    "test:coverage": "yarn test:ci --no-cache --coverage",
     "test:watch": "jest --watch"
   },
   "dependencies": {

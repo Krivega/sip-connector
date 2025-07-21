@@ -1,7 +1,7 @@
 import jssip from '../../__fixtures__/jssip.mock';
 import UAMock, { PASSWORD_CORRECT } from '../../__fixtures__/UA.mock';
 import type { TJsSIP } from '../../types';
-import ConnectionManager from '../ConnectionManager';
+import ConnectionManager from '../@ConnectionManager';
 
 // Учитываем задержку, заложенную в моках UA
 jest.setTimeout(5000);
@@ -235,7 +235,23 @@ describe('ConnectionManager', () => {
   });
 
   describe('incoming call operations', () => {
-    it('должен вызывать declineToIncomingCall', async () => {
+    it('должен вызывать declineToIncomingCall без кода статуса', async () => {
+      const parameters = {
+        displayName: 'Test User',
+        register: false,
+        sipServerUrl: SIP_SERVER_URL,
+        sipWebSocketServerURL: WS_URL,
+      } as const;
+
+      await connectionManager.connect(parameters);
+
+      // Ожидаем ошибку, так как нет входящего вызова
+      await expect(connectionManager.declineToIncomingCall()).rejects.toThrow(
+        'No incomingRTCSession',
+      );
+    });
+
+    it('должен вызывать declineToIncomingCall с кодом статуса', async () => {
       const parameters = {
         displayName: 'Test User',
         register: false,

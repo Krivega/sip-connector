@@ -65,11 +65,15 @@ export default class UAFactory {
       : `${generateUserId()}`;
   }
 
-  private static buildExtraHeaders(remoteAddress?: string, extraHeaders: string[] = []): string[] {
+  private static buildExtraHeaders(remoteAddress?: string, extraHeaders?: string[]): string[] {
     const extraHeadersRemoteAddress =
       remoteAddress !== undefined && remoteAddress !== ''
         ? getExtraHeadersRemoteAddress(remoteAddress)
         : [];
+
+    if (extraHeaders === undefined) {
+      return extraHeadersRemoteAddress;
+    }
 
     return [...extraHeadersRemoteAddress, ...extraHeaders];
   }
@@ -121,7 +125,7 @@ export default class UAFactory {
     };
   }
 
-  public createUA({ remoteAddress, extraHeaders = [], ...parameters }: TCreateUAParameters): UA {
+  public createUA({ remoteAddress, extraHeaders, ...parameters }: TCreateUAParameters): UA {
     const ua = new this.JsSIP.UA(parameters);
 
     const allExtraHeaders = UAFactory.buildExtraHeaders(remoteAddress, extraHeaders);

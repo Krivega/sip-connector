@@ -54,6 +54,10 @@ describe('ConnectionFlow', () => {
     connectionConfiguration = config;
   });
 
+  const updateConnectionConfiguration = jest.fn((key: 'displayName', value: string) => {
+    connectionConfiguration[key] = value;
+  });
+
   const setSipServerUrl = jest.fn();
   const setSocket = jest.fn();
 
@@ -86,6 +90,7 @@ describe('ConnectionFlow', () => {
       setUa,
       getConnectionConfiguration,
       setConnectionConfiguration,
+      updateConnectionConfiguration,
       setSipServerUrl,
       setSocket,
     });
@@ -220,6 +225,60 @@ describe('ConnectionFlow', () => {
       });
 
       expect(requestConnectMocked).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('set', () => {
+    it('должен успешно менять displayName и возвращать true', async () => {
+      // Создаём UA с displayName 'Old Name'
+      const uaMock = uaFactory.createUAWithConfiguration(
+        {
+          displayName: 'Old Name',
+          register: false,
+          sipServerUrl: SIP_SERVER_URL,
+          sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+        },
+        uaEvents,
+      ).ua as unknown as UAMock;
+
+      uaInstance = uaMock;
+      connectionConfiguration = { displayName: 'Old Name' };
+
+      const setSpy = jest.spyOn(uaMock, 'set');
+
+      const result = await connectionFlow.set({ displayName: 'New Name' });
+
+      expect(result).toBe(true);
+      expect(setSpy).toHaveBeenCalledWith('display_name', expect.any(String));
+      expect(updateConnectionConfiguration).toHaveBeenCalledWith('displayName', 'New Name');
+    });
+
+    it('должен выбрасывать ошибку "nothing changed", если displayName не изменился', async () => {
+      const uaMock = uaFactory.createUAWithConfiguration(
+        {
+          displayName: 'Same Name',
+          register: false,
+          sipServerUrl: SIP_SERVER_URL,
+          sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+        },
+        uaEvents,
+      ).ua as unknown as UAMock;
+
+      uaInstance = uaMock;
+      connectionConfiguration = { displayName: 'Same Name' };
+
+      await expect(connectionFlow.set({ displayName: 'Same Name' })).rejects.toThrow(
+        'nothing changed',
+      );
+    });
+
+    it('должен выбрасывать ошибку, если UA не инициализирован', async () => {
+      uaInstance = undefined;
+      connectionConfiguration = { displayName: 'Any Name' };
+
+      await expect(connectionFlow.set({ displayName: 'Another Name' })).rejects.toThrow(
+        'this.ua is not initialized',
+      );
     });
   });
 
