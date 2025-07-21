@@ -2,12 +2,11 @@ import type { UA, WebSocketInterface } from '@krivega/jssip';
 import type Events from 'events-constructor';
 import { repeatedCallsAsync } from 'repeated-calls';
 import { parseDisplayName } from '../../utils';
-import { CONNECTED, DISCONNECTED } from '../constants';
-import type { UA_EVENT_NAMES } from '../eventNames';
 import type { TGetServerUrl, TJsSIP } from '../types';
 import { hasHandshakeWebsocketOpeningError } from '../utils/errors';
 import type ConnectionStateMachine from './ConnectionStateMachine';
-import type IncomingCallManager from './IncomingCallManager';
+import type { EVENT_NAMES } from './constants';
+import { EEvent } from './constants';
 import type RegistrationManager from './RegistrationManager';
 import type SipEventHandler from './SipEventHandler';
 
@@ -46,11 +45,10 @@ type TStart = () => Promise<UA>;
 
 interface IDependencies {
   JsSIP: TJsSIP;
-  uaEvents: Events<typeof UA_EVENT_NAMES>;
+  events: Events<typeof EVENT_NAMES>;
   uaFactory: UAFactory;
   stateMachine: ConnectionStateMachine;
   registrationManager: RegistrationManager;
-  incomingCallManager: IncomingCallManager;
   sipEventHandler: SipEventHandler;
   getUa: () => UA | undefined;
   setUa: (ua: UA | undefined) => void;
@@ -78,15 +76,13 @@ export default class ConnectionFlow {
 
   private readonly JsSIP: IDependencies['JsSIP'];
 
-  private readonly uaEvents: IDependencies['uaEvents'];
+  private readonly events: IDependencies['events'];
 
   private readonly uaFactory: IDependencies['uaFactory'];
 
   private readonly stateMachine: IDependencies['stateMachine'];
 
   private readonly registrationManager: IDependencies['registrationManager'];
-
-  private readonly incomingCallManager: IDependencies['incomingCallManager'];
 
   private readonly sipEventHandler: IDependencies['sipEventHandler'];
 
@@ -106,11 +102,10 @@ export default class ConnectionFlow {
 
   public constructor(dependencies: IDependencies) {
     this.JsSIP = dependencies.JsSIP;
-    this.uaEvents = dependencies.uaEvents;
+    this.events = dependencies.events;
     this.uaFactory = dependencies.uaFactory;
     this.stateMachine = dependencies.stateMachine;
     this.registrationManager = dependencies.registrationManager;
-    this.incomingCallManager = dependencies.incomingCallManager;
     this.sipEventHandler = dependencies.sipEventHandler;
     this.getUa = dependencies.getUa;
     this.setUa = dependencies.setUa;
@@ -156,11 +151,10 @@ export default class ConnectionFlow {
   };
 
   public disconnect = async () => {
-    this.incomingCallManager.stop();
     this.sipEventHandler.stop();
 
     const disconnectedPromise = new Promise<void>((resolve) => {
-      this.uaEvents.once(DISCONNECTED, () => {
+      this.events.once(EEvent.DISCONNECTED, () => {
         resolve();
       });
     });
@@ -170,7 +164,7 @@ export default class ConnectionFlow {
     if (ua) {
       ua.stop();
     } else {
-      this.uaEvents.trigger(DISCONNECTED, undefined);
+      this.events.trigger(EEvent.DISCONNECTED, undefined);
     }
 
     return disconnectedPromise.finally(() => {
@@ -303,7 +297,7 @@ export default class ConnectionFlow {
         remoteAddress,
         extraHeaders,
       },
-      this.uaEvents,
+      this.events,
     );
 
     // Сохраняем UA и связанные объекты
@@ -343,27 +337,26 @@ export default class ConnectionFlow {
           return this.registrationManager.subscribeToStartEvents(onSuccess, onError);
         }
 
-        const successEvent = CONNECTED;
-        const errorEvents = [DISCONNECTED] as const;
+        const successEvent = EEvent.CONNECTED;
+        const errorEvents = [EEvent.DISCONNECTED] as const;
 
         // Подписываемся на события
-        this.uaEvents.on(successEvent, onSuccess);
+        this.events.on(successEvent, onSuccess);
         errorEvents.forEach((errorEvent) => {
-          this.uaEvents.on(errorEvent, onError);
+          this.events.on(errorEvent, onError);
         });
 
         // Возвращаем функцию для отписки
         return () => {
-          this.uaEvents.off(successEvent, onSuccess);
+          this.events.off(successEvent, onSuccess);
           errorEvents.forEach((errorEvent) => {
-            this.uaEvents.off(errorEvent, onError);
+            this.events.off(errorEvent, onError);
           });
         };
       };
 
       unsubscribeFromEvents = subscribeToStartEvents(resolveUa, rejectError);
 
-      this.incomingCallManager.start();
       this.sipEventHandler.start();
 
       ua.start();

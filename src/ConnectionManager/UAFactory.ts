@@ -1,9 +1,9 @@
 /* eslint-disable unicorn/filename-case */
 import type { UA, UAConfigurationParams, WebSocketInterface } from '@krivega/jssip';
 import { generateUserId, parseDisplayName, resolveSipUrl } from '../../utils';
-import { UA_JSSIP_EVENT_NAMES } from '../eventNames';
 import getExtraHeadersRemoteAddress from '../getExtraHeadersRemoteAddress';
-import type { TJsSIP, TParametersCreateUaConfiguration } from '../types';
+import type { TJsSIP } from '../types';
+import { UA_EVENT_NAMES } from './constants';
 
 export type TUAConfiguration = {
   configuration: UAConfigurationParams;
@@ -16,6 +16,20 @@ export type TUAConfiguration = {
 export type TCreateUAParameters = UAConfigurationParams & {
   remoteAddress?: string;
   extraHeaders?: string[];
+};
+
+type TParametersCreateUaConfiguration = {
+  sipWebSocketServerURL: string;
+  displayName?: string;
+  sipServerUrl: string;
+  user?: string;
+  register?: boolean;
+  password?: string;
+  sessionTimers?: boolean;
+  registerExpires?: number;
+  connectionRecoveryMinInterval?: number;
+  connectionRecoveryMaxInterval?: number;
+  userAgent?: string;
 };
 
 export default class UAFactory {
@@ -145,7 +159,7 @@ export default class UAFactory {
       remoteAddress?: string;
       extraHeaders?: string[];
     },
-    uaEvents: {
+    events: {
       eachTriggers: (
         callback: (trigger: (...args: unknown[]) => void, eventName: string) => void,
       ) => void;
@@ -158,8 +172,8 @@ export default class UAFactory {
       extraHeaders: parameters.extraHeaders,
     });
 
-    uaEvents.eachTriggers((trigger, eventName) => {
-      const uaJsSipEvent = UA_JSSIP_EVENT_NAMES.find((jsSipEvent) => {
+    events.eachTriggers((trigger, eventName) => {
+      const uaJsSipEvent = UA_EVENT_NAMES.find((jsSipEvent) => {
         return jsSipEvent === eventName;
       });
 

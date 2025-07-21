@@ -234,54 +234,6 @@ describe('ConnectionManager', () => {
     });
   });
 
-  describe('incoming call operations', () => {
-    it('должен вызывать declineToIncomingCall без кода статуса', async () => {
-      const parameters = {
-        displayName: 'Test User',
-        register: false,
-        sipServerUrl: SIP_SERVER_URL,
-        sipWebSocketServerURL: WS_URL,
-      } as const;
-
-      await connectionManager.connect(parameters);
-
-      // Ожидаем ошибку, так как нет входящего вызова
-      await expect(connectionManager.declineToIncomingCall()).rejects.toThrow(
-        'No incomingRTCSession',
-      );
-    });
-
-    it('должен вызывать declineToIncomingCall с кодом статуса', async () => {
-      const parameters = {
-        displayName: 'Test User',
-        register: false,
-        sipServerUrl: SIP_SERVER_URL,
-        sipWebSocketServerURL: WS_URL,
-      } as const;
-
-      await connectionManager.connect(parameters);
-
-      // Ожидаем ошибку, так как нет входящего вызова
-      await expect(connectionManager.declineToIncomingCall({ statusCode: 486 })).rejects.toThrow(
-        'No incomingRTCSession',
-      );
-    });
-
-    it('должен вызывать busyIncomingCall', async () => {
-      const parameters = {
-        displayName: 'Test User',
-        register: false,
-        sipServerUrl: SIP_SERVER_URL,
-        sipWebSocketServerURL: WS_URL,
-      } as const;
-
-      await connectionManager.connect(parameters);
-
-      // Ожидаем ошибку, так как нет входящего вызова
-      await expect(connectionManager.busyIncomingCall()).rejects.toThrow('No incomingRTCSession');
-    });
-  });
-
   describe('event handling', () => {
     it('должен поддерживать on/off события', () => {
       const handler = jest.fn();
@@ -370,8 +322,6 @@ describe('ConnectionManager', () => {
       expect(connectionManager.connectionState).toBeDefined();
       expect(connectionManager.isRegistered).toBeDefined();
       expect(connectionManager.isRegisterConfig).toBeDefined();
-      expect(connectionManager.remoteCallerData).toBeDefined();
-      expect(connectionManager.isAvailableIncomingCall).toBeDefined();
     });
   });
 

@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unsafe-enum-comparison */
 import type { Socket, UA, URI } from '@krivega/jssip';
 import jssip from '../../__fixtures__/jssip.mock';
 import UAMock from '../../__fixtures__/UA.mock';
-import { CONNECTED, DISCONNECTED } from '../../constants';
 import type { TJsSIP } from '../../types';
+import { EEvent } from '../constants';
 import SipOperations from '../SipOperations';
 import UAFactory from '../UAFactory';
 
@@ -270,14 +271,14 @@ describe('SipOperations', () => {
 
       // Делаем once jest функцией
       mockCreatedUA.once.mockImplementation((event: string, handler: () => void) => {
-        if (event === DISCONNECTED) {
+        if (event === EEvent.DISCONNECTED) {
           // Первый вызов - reject handler, второй - resolve handler
-          if (eventHandlers[DISCONNECTED]) {
+          if (eventHandlers[EEvent.DISCONNECTED]) {
             resolveHandler = handler;
           } else {
-            eventHandlers[DISCONNECTED] = handler;
+            eventHandlers[EEvent.DISCONNECTED] = handler;
           }
-        } else if (event === CONNECTED) {
+        } else if (event === EEvent.CONNECTED) {
           eventHandlers[event] = handler;
         }
 
@@ -307,7 +308,7 @@ describe('SipOperations', () => {
       const checkPromise = sipOperations.checkTelephony(checkTelephonyParams);
 
       // Симулируем успешное подключение
-      eventHandlers[CONNECTED]?.();
+      eventHandlers[EEvent.CONNECTED]?.();
 
       // Симулируем отключение после stop() - вызываем resolve handler
       if (resolveHandler) {
@@ -334,8 +335,8 @@ describe('SipOperations', () => {
         extraHeaders: ['X-Test-Header: value'],
       });
 
-      expect(mockCreatedUA.once).toHaveBeenCalledWith(DISCONNECTED, expect.any(Function));
-      expect(mockCreatedUA.once).toHaveBeenCalledWith(CONNECTED, expect.any(Function));
+      expect(mockCreatedUA.once).toHaveBeenCalledWith(EEvent.DISCONNECTED, expect.any(Function));
+      expect(mockCreatedUA.once).toHaveBeenCalledWith(EEvent.CONNECTED, expect.any(Function));
       expect(mockCreatedUA.start).toHaveBeenCalled();
       expect(mockCreatedUA.removeAllListeners).toHaveBeenCalled();
       expect(mockCreatedUA.stop).toHaveBeenCalled();
@@ -378,11 +379,11 @@ describe('SipOperations', () => {
       const checkPromise = sipOperations.checkTelephony(checkTelephonyParams);
 
       // Симулируем отключение до подключения
-      eventHandlers[DISCONNECTED]();
+      eventHandlers[EEvent.DISCONNECTED]();
 
       await expect(checkPromise).rejects.toThrow('Telephony is not available');
 
-      expect(mockCreatedUA.once).toHaveBeenCalledWith(DISCONNECTED, expect.any(Function));
+      expect(mockCreatedUA.once).toHaveBeenCalledWith(EEvent.DISCONNECTED, expect.any(Function));
       expect(mockCreatedUA.start).toHaveBeenCalled();
     });
 
@@ -403,14 +404,14 @@ describe('SipOperations', () => {
       let resolveHandler: (() => void) | undefined;
 
       mockCreatedUA.once.mockImplementation((event: string, handler: () => void) => {
-        if (event === DISCONNECTED) {
+        if (event === EEvent.DISCONNECTED) {
           // Первый вызов - reject handler, второй - resolve handler
-          if (eventHandlers[DISCONNECTED]) {
+          if (eventHandlers[EEvent.DISCONNECTED]) {
             resolveHandler = handler;
           } else {
-            eventHandlers[DISCONNECTED] = handler;
+            eventHandlers[EEvent.DISCONNECTED] = handler;
           }
-        } else if (event === CONNECTED) {
+        } else if (event === EEvent.CONNECTED) {
           eventHandlers[event] = handler;
         }
 
@@ -439,7 +440,7 @@ describe('SipOperations', () => {
       const checkPromise = sipOperations.checkTelephony(minimalParams);
 
       // Симулируем успешное подключение
-      eventHandlers[CONNECTED]?.();
+      eventHandlers[EEvent.CONNECTED]?.();
 
       // Симулируем отключение после stop() - вызываем resolve handler
       if (resolveHandler) {

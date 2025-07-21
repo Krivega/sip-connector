@@ -1,27 +1,21 @@
 import type { RegisteredEvent, UA, UnRegisteredEvent } from '@krivega/jssip';
 import type Events from 'events-constructor';
-import {
-  CONNECTING,
-  DISCONNECTED,
-  REGISTERED,
-  REGISTRATION_FAILED,
-  UNREGISTERED,
-} from '../constants';
-import type { UA_EVENT_NAMES } from '../eventNames';
 import logger from '../logger';
+import type { EVENT_NAMES } from './constants';
+import { EEvent } from './constants';
 
 interface IDependencies {
-  uaEvents: Events<typeof UA_EVENT_NAMES>;
+  events: Events<typeof EVENT_NAMES>;
   getUa: () => UA | undefined;
 }
 
 export default class RegistrationManager {
-  private readonly uaEvents: IDependencies['uaEvents'];
+  private readonly events: IDependencies['events'];
 
   private readonly getUa: IDependencies['getUa'];
 
   public constructor(dependencies: IDependencies) {
-    this.uaEvents = dependencies.uaEvents;
+    this.events = dependencies.events;
     this.getUa = dependencies.getUa;
   }
 
@@ -33,8 +27,8 @@ export default class RegistrationManager {
     }
 
     return new Promise((resolve, reject) => {
-      ua.on(REGISTERED, resolve);
-      ua.on(REGISTRATION_FAILED, reject);
+      ua.on(EEvent.REGISTERED, resolve);
+      ua.on(EEvent.REGISTRATION_FAILED, reject);
       ua.register();
     });
   }
@@ -47,7 +41,7 @@ export default class RegistrationManager {
     }
 
     return new Promise((resolve) => {
-      ua.on(UNREGISTERED, resolve);
+      ua.on(EEvent.UNREGISTERED, resolve);
       ua.unregister();
     });
   }
@@ -59,7 +53,7 @@ export default class RegistrationManager {
       throw new Error('UA is not initialized');
     }
 
-    this.uaEvents.trigger(CONNECTING, undefined);
+    this.events.trigger(EEvent.CONNECTING, undefined);
 
     try {
       await this.unregister();
@@ -74,18 +68,18 @@ export default class RegistrationManager {
     onSuccess: () => void,
     onError: (error: Error) => void,
   ): () => void {
-    const successEvent = REGISTERED;
-    const errorEvents = [REGISTRATION_FAILED, DISCONNECTED] as const;
+    const successEvent = EEvent.REGISTERED;
+    const errorEvents = [EEvent.REGISTRATION_FAILED, EEvent.DISCONNECTED] as const;
 
-    this.uaEvents.on(successEvent, onSuccess);
+    this.events.on(successEvent, onSuccess);
     errorEvents.forEach((errorEvent) => {
-      this.uaEvents.on(errorEvent, onError);
+      this.events.on(errorEvent, onError);
     });
 
     return () => {
-      this.uaEvents.off(successEvent, onSuccess);
+      this.events.off(successEvent, onSuccess);
       errorEvents.forEach((errorEvent) => {
-        this.uaEvents.off(errorEvent, onError);
+        this.events.off(errorEvent, onError);
       });
     };
   }

@@ -1,21 +1,7 @@
 import Events from 'events-constructor';
-import {
-  ACCOUNT_CHANGED,
-  ACCOUNT_DELETED,
-  CHANNELS_NOTIFY,
-  CONFERENCE_PARTICIPANT_TOKEN_ISSUED,
-  PARTICIPANT_ADDED_TO_LIST_MODERATORS,
-  PARTICIPANT_MOVE_REQUEST_TO_STREAM,
-  PARTICIPANT_REMOVED_FROM_LIST_MODERATORS,
-  PARTICIPATION_ACCEPTING_WORD_REQUEST,
-  PARTICIPATION_CANCELLING_WORD_REQUEST,
-  SIP_EVENT,
-  WEBCAST_STARTED,
-  WEBCAST_STOPPED,
-} from '../../constants';
-import { UA_EVENT_NAMES } from '../../eventNames';
 import { HEADER_NOTIFY } from '../../headers';
 import logger from '../../logger';
+import { EEvent, EVENT_NAMES } from '../constants';
 import SipEventHandler from '../SipEventHandler';
 
 // Мок для IncomingRequest
@@ -38,13 +24,13 @@ jest.mock('../../logger', () => {
 
 describe('SipEventHandler', () => {
   const mockLogger = logger as jest.MockedFunction<typeof logger>;
-  let uaEvents: Events<typeof UA_EVENT_NAMES>;
+  let events: Events<typeof EVENT_NAMES>;
   let sipEventHandler: SipEventHandler;
   let mockRequest: IncomingRequestMock;
 
   beforeEach(() => {
-    uaEvents = new Events<typeof UA_EVENT_NAMES>(UA_EVENT_NAMES);
-    sipEventHandler = new SipEventHandler(uaEvents);
+    events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
+    sipEventHandler = new SipEventHandler(events);
     mockRequest = new IncomingRequestMock();
   });
 
@@ -58,20 +44,20 @@ describe('SipEventHandler', () => {
     });
 
     it('должен подписываться на события при запуске', () => {
-      const onSpy = jest.spyOn(uaEvents, 'on');
+      const onSpy = jest.spyOn(events, 'on');
 
       sipEventHandler.start();
 
-      expect(onSpy).toHaveBeenCalledWith(SIP_EVENT, expect.any(Function));
+      expect(onSpy).toHaveBeenCalledWith(EEvent.SIP_EVENT, expect.any(Function));
     });
 
     it('должен отписываться от событий при остановке', () => {
-      const offSpy = jest.spyOn(uaEvents, 'off');
+      const offSpy = jest.spyOn(events, 'off');
 
       sipEventHandler.start();
       sipEventHandler.stop();
 
-      expect(offSpy).toHaveBeenCalledWith(SIP_EVENT, expect.any(Function));
+      expect(offSpy).toHaveBeenCalledWith(EEvent.SIP_EVENT, expect.any(Function));
     });
   });
 
@@ -83,9 +69,9 @@ describe('SipEventHandler', () => {
     it('должен игнорировать запросы без заголовка Notify', () => {
       const channelsSpy = jest.fn();
 
-      uaEvents.on(CHANNELS_NOTIFY, channelsSpy);
+      events.on(EEvent.CHANNELS_NOTIFY, channelsSpy);
 
-      uaEvents.trigger(SIP_EVENT, { request: mockRequest });
+      events.trigger(EEvent.SIP_EVENT, { request: mockRequest });
 
       expect(channelsSpy).not.toHaveBeenCalled();
     });
@@ -93,13 +79,13 @@ describe('SipEventHandler', () => {
     it('должен обрабатывать запросы с заголовком Notify', () => {
       const channelsSpy = jest.fn();
 
-      uaEvents.on(CHANNELS_NOTIFY, channelsSpy);
+      events.on(EEvent.CHANNELS_NOTIFY, channelsSpy);
 
       const notifyData = { cmd: 'channels', input: 'input1', output: 'output1' };
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      uaEvents.trigger(SIP_EVENT, { request: mockRequest });
+      events.trigger(EEvent.SIP_EVENT, { request: mockRequest });
 
       expect(channelsSpy).toHaveBeenCalledWith({
         inputChannels: 'input1',
@@ -112,7 +98,7 @@ describe('SipEventHandler', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      uaEvents.trigger(SIP_EVENT, { request: mockRequest });
+      events.trigger(EEvent.SIP_EVENT, { request: mockRequest });
 
       expect(mockLogger).toHaveBeenCalledWith('unknown cmd', 'unknown_command');
     });
@@ -126,7 +112,7 @@ describe('SipEventHandler', () => {
     it('должен обрабатывать уведомление channels', () => {
       const channelsSpy = jest.fn();
 
-      uaEvents.on(CHANNELS_NOTIFY, channelsSpy);
+      events.on(EEvent.CHANNELS_NOTIFY, channelsSpy);
 
       const notifyData = {
         cmd: 'channels',
@@ -136,7 +122,7 @@ describe('SipEventHandler', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      uaEvents.trigger(SIP_EVENT, { request: mockRequest });
+      events.trigger(EEvent.SIP_EVENT, { request: mockRequest });
 
       expect(channelsSpy).toHaveBeenCalledWith({
         inputChannels: 'input_channel_1,input_channel_2',
@@ -153,7 +139,7 @@ describe('SipEventHandler', () => {
     it('должен обрабатывать уведомление WebcastStarted', () => {
       const webcastStartedSpy = jest.fn();
 
-      uaEvents.on(WEBCAST_STARTED, webcastStartedSpy);
+      events.on(EEvent.WEBCAST_STARTED, webcastStartedSpy);
 
       const notifyData = {
         cmd: 'WebcastStarted',
@@ -162,7 +148,7 @@ describe('SipEventHandler', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      uaEvents.trigger(SIP_EVENT, { request: mockRequest });
+      events.trigger(EEvent.SIP_EVENT, { request: mockRequest });
 
       expect(webcastStartedSpy).toHaveBeenCalledWith({
         conference: 'conf123',
@@ -173,7 +159,7 @@ describe('SipEventHandler', () => {
     it('должен обрабатывать уведомление WebcastStopped', () => {
       const webcastStoppedSpy = jest.fn();
 
-      uaEvents.on(WEBCAST_STOPPED, webcastStoppedSpy);
+      events.on(EEvent.WEBCAST_STOPPED, webcastStoppedSpy);
 
       const notifyData = {
         cmd: 'WebcastStopped',
@@ -182,7 +168,7 @@ describe('SipEventHandler', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      uaEvents.trigger(SIP_EVENT, { request: mockRequest });
+      events.trigger(EEvent.SIP_EVENT, { request: mockRequest });
 
       expect(webcastStoppedSpy).toHaveBeenCalledWith({
         conference: 'conf123',
@@ -199,7 +185,7 @@ describe('SipEventHandler', () => {
     it('должен обрабатывать уведомление addedToListModerators', () => {
       const addedToModeratorsSpy = jest.fn();
 
-      uaEvents.on(PARTICIPANT_ADDED_TO_LIST_MODERATORS, addedToModeratorsSpy);
+      events.on(EEvent.PARTICIPANT_ADDED_TO_LIST_MODERATORS, addedToModeratorsSpy);
 
       const notifyData = {
         cmd: 'addedToListModerators',
@@ -208,7 +194,7 @@ describe('SipEventHandler', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      uaEvents.trigger(SIP_EVENT, { request: mockRequest });
+      events.trigger(EEvent.SIP_EVENT, { request: mockRequest });
 
       expect(addedToModeratorsSpy).toHaveBeenCalledWith({
         conference: 'conf123',
@@ -218,7 +204,7 @@ describe('SipEventHandler', () => {
     it('должен обрабатывать уведомление removedFromListModerators', () => {
       const removedFromModeratorsSpy = jest.fn();
 
-      uaEvents.on(PARTICIPANT_REMOVED_FROM_LIST_MODERATORS, removedFromModeratorsSpy);
+      events.on(EEvent.PARTICIPANT_REMOVED_FROM_LIST_MODERATORS, removedFromModeratorsSpy);
 
       const notifyData = {
         cmd: 'removedFromListModerators',
@@ -227,7 +213,7 @@ describe('SipEventHandler', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      uaEvents.trigger(SIP_EVENT, { request: mockRequest });
+      events.trigger(EEvent.SIP_EVENT, { request: mockRequest });
 
       expect(removedFromModeratorsSpy).toHaveBeenCalledWith({
         conference: 'conf123',
@@ -243,7 +229,7 @@ describe('SipEventHandler', () => {
     it('должен обрабатывать уведомление ParticipationRequestAccepted', () => {
       const participationAcceptedSpy = jest.fn();
 
-      uaEvents.on(PARTICIPATION_ACCEPTING_WORD_REQUEST, participationAcceptedSpy);
+      events.on(EEvent.PARTICIPATION_ACCEPTING_WORD_REQUEST, participationAcceptedSpy);
 
       const notifyData = {
         cmd: 'ParticipationRequestAccepted',
@@ -252,7 +238,7 @@ describe('SipEventHandler', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      uaEvents.trigger(SIP_EVENT, { request: mockRequest });
+      events.trigger(EEvent.SIP_EVENT, { request: mockRequest });
 
       expect(participationAcceptedSpy).toHaveBeenCalledWith({
         conference: 'conf123',
@@ -262,7 +248,7 @@ describe('SipEventHandler', () => {
     it('должен обрабатывать уведомление ParticipationRequestRejected', () => {
       const participationRejectedSpy = jest.fn();
 
-      uaEvents.on(PARTICIPATION_CANCELLING_WORD_REQUEST, participationRejectedSpy);
+      events.on(EEvent.PARTICIPATION_CANCELLING_WORD_REQUEST, participationRejectedSpy);
 
       const notifyData = {
         cmd: 'ParticipationRequestRejected',
@@ -271,7 +257,7 @@ describe('SipEventHandler', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      uaEvents.trigger(SIP_EVENT, { request: mockRequest });
+      events.trigger(EEvent.SIP_EVENT, { request: mockRequest });
 
       expect(participationRejectedSpy).toHaveBeenCalledWith({
         conference: 'conf123',
@@ -287,7 +273,7 @@ describe('SipEventHandler', () => {
     it('должен обрабатывать уведомление ParticipantMovedToWebcast', () => {
       const participantMoveSpy = jest.fn();
 
-      uaEvents.on(PARTICIPANT_MOVE_REQUEST_TO_STREAM, participantMoveSpy);
+      events.on(EEvent.PARTICIPANT_MOVE_REQUEST_TO_STREAM, participantMoveSpy);
 
       const notifyData = {
         cmd: 'ParticipantMovedToWebcast',
@@ -296,7 +282,7 @@ describe('SipEventHandler', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      uaEvents.trigger(SIP_EVENT, { request: mockRequest });
+      events.trigger(EEvent.SIP_EVENT, { request: mockRequest });
 
       expect(participantMoveSpy).toHaveBeenCalledWith({
         conference: 'conf123',
@@ -312,7 +298,7 @@ describe('SipEventHandler', () => {
     it('должен обрабатывать уведомление accountChanged', () => {
       const accountChangedSpy = jest.fn();
 
-      uaEvents.on(ACCOUNT_CHANGED, accountChangedSpy);
+      events.on(EEvent.ACCOUNT_CHANGED, accountChangedSpy);
 
       const notifyData = {
         cmd: 'accountChanged',
@@ -320,7 +306,7 @@ describe('SipEventHandler', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      uaEvents.trigger(SIP_EVENT, { request: mockRequest });
+      events.trigger(EEvent.SIP_EVENT, { request: mockRequest });
 
       expect(accountChangedSpy).toHaveBeenCalledWith(undefined);
     });
@@ -328,7 +314,7 @@ describe('SipEventHandler', () => {
     it('должен обрабатывать уведомление accountDeleted', () => {
       const accountDeletedSpy = jest.fn();
 
-      uaEvents.on(ACCOUNT_DELETED, accountDeletedSpy);
+      events.on(EEvent.ACCOUNT_DELETED, accountDeletedSpy);
 
       const notifyData = {
         cmd: 'accountDeleted',
@@ -336,7 +322,7 @@ describe('SipEventHandler', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      uaEvents.trigger(SIP_EVENT, { request: mockRequest });
+      events.trigger(EEvent.SIP_EVENT, { request: mockRequest });
 
       expect(accountDeletedSpy).toHaveBeenCalledWith(undefined);
     });
@@ -350,7 +336,7 @@ describe('SipEventHandler', () => {
     it('должен обрабатывать уведомление ConferenceParticipantTokenIssued', () => {
       const tokenIssuedSpy = jest.fn();
 
-      uaEvents.on(CONFERENCE_PARTICIPANT_TOKEN_ISSUED, tokenIssuedSpy);
+      events.on(EEvent.CONFERENCE_PARTICIPANT_TOKEN_ISSUED, tokenIssuedSpy);
 
       const notifyData = {
         cmd: 'ConferenceParticipantTokenIssued',
@@ -363,7 +349,7 @@ describe('SipEventHandler', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      uaEvents.trigger(SIP_EVENT, { request: mockRequest });
+      events.trigger(EEvent.SIP_EVENT, { request: mockRequest });
 
       expect(tokenIssuedSpy).toHaveBeenCalledWith({
         conference: 'conf123',
@@ -382,7 +368,7 @@ describe('SipEventHandler', () => {
       mockRequest.setHeader(HEADER_NOTIFY, 'invalid json');
 
       expect(() => {
-        uaEvents.trigger(SIP_EVENT, { request: mockRequest });
+        events.trigger(EEvent.SIP_EVENT, { request: mockRequest });
       }).not.toThrow();
 
       expect(mockLogger).toHaveBeenCalledWith('error parse notify', expect.any(Error));
@@ -391,7 +377,7 @@ describe('SipEventHandler', () => {
     it('должен корректно обрабатывать отсутствующие поля в уведомлении', () => {
       const channelsSpy = jest.fn();
 
-      uaEvents.on(CHANNELS_NOTIFY, channelsSpy);
+      events.on(EEvent.CHANNELS_NOTIFY, channelsSpy);
 
       const notifyData = {
         cmd: 'channels',
@@ -400,7 +386,7 @@ describe('SipEventHandler', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      uaEvents.trigger(SIP_EVENT, { request: mockRequest });
+      events.trigger(EEvent.SIP_EVENT, { request: mockRequest });
 
       expect(channelsSpy).toHaveBeenCalledWith({
         inputChannels: undefined,
@@ -418,8 +404,8 @@ describe('SipEventHandler', () => {
       const channelsSpy = jest.fn();
       const accountChangedSpy = jest.fn();
 
-      uaEvents.on(CHANNELS_NOTIFY, channelsSpy);
-      uaEvents.on(ACCOUNT_CHANGED, accountChangedSpy);
+      events.on(EEvent.CHANNELS_NOTIFY, channelsSpy);
+      events.on(EEvent.ACCOUNT_CHANGED, accountChangedSpy);
 
       // Первое уведомление
       const notifyData1 = {
@@ -429,7 +415,7 @@ describe('SipEventHandler', () => {
       };
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData1));
-      uaEvents.trigger(SIP_EVENT, { request: mockRequest });
+      events.trigger(EEvent.SIP_EVENT, { request: mockRequest });
 
       // Второе уведомление
       const notifyData2 = {
@@ -437,7 +423,7 @@ describe('SipEventHandler', () => {
       };
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData2));
-      uaEvents.trigger(SIP_EVENT, { request: mockRequest });
+      events.trigger(EEvent.SIP_EVENT, { request: mockRequest });
 
       expect(channelsSpy).toHaveBeenCalledTimes(1);
       expect(channelsSpy).toHaveBeenCalledWith({

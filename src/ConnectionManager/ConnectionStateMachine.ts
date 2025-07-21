@@ -1,7 +1,7 @@
 import type Events from 'events-constructor';
 import { createActor, setup, type ActorRefFrom } from 'xstate';
-import type { UA_EVENT_NAMES } from '../eventNames';
 import logger from '../logger';
+import type { EVENT_NAMES } from './constants';
 
 // Определяем типы событий для XState машины
 export enum EEvents {
@@ -321,14 +321,14 @@ export default class ConnectionStateMachine {
 
   private readonly stateChangeListeners = new Set<(state: EState) => void>();
 
-  private readonly uaEvents: Events<typeof UA_EVENT_NAMES>;
+  private readonly events: Events<typeof EVENT_NAMES>;
 
   private unsubscribeFromEvents?: () => void;
 
   private readonly actorSubscription?: { unsubscribe: () => void };
 
-  public constructor(uaEvents: Events<typeof UA_EVENT_NAMES>) {
-    this.uaEvents = uaEvents;
+  public constructor(events: Events<typeof EVENT_NAMES>) {
+    this.events = events;
 
     this.actor = createActor(connectionMachine);
 
@@ -488,18 +488,18 @@ export default class ConnectionStateMachine {
   };
 
   private subscribeToEvents(): void {
-    this.uaEvents.on('connected', this.toConnected);
-    this.uaEvents.on('registered', this.toRegistered);
-    this.uaEvents.on('unregistered', this.toUnregistered);
-    this.uaEvents.on('disconnected', this.toDisconnected);
-    this.uaEvents.on('registrationFailed', this.toFailed);
+    this.events.on('connected', this.toConnected);
+    this.events.on('registered', this.toRegistered);
+    this.events.on('unregistered', this.toUnregistered);
+    this.events.on('disconnected', this.toDisconnected);
+    this.events.on('registrationFailed', this.toFailed);
 
     this.unsubscribeFromEvents = () => {
-      this.uaEvents.off('connected', this.toConnected);
-      this.uaEvents.off('registered', this.toRegistered);
-      this.uaEvents.off('unregistered', this.toUnregistered);
-      this.uaEvents.off('disconnected', this.toDisconnected);
-      this.uaEvents.off('registrationFailed', this.toFailed);
+      this.events.off('connected', this.toConnected);
+      this.events.off('registered', this.toRegistered);
+      this.events.off('unregistered', this.toUnregistered);
+      this.events.off('disconnected', this.toDisconnected);
+      this.events.off('registrationFailed', this.toFailed);
     };
   }
 }

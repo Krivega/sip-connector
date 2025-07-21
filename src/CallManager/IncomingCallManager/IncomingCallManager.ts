@@ -1,15 +1,8 @@
 import type { IncomingRTCSessionEvent, OutgoingRTCSessionEvent, RTCSession } from '@krivega/jssip';
-import type Events from 'events-constructor';
-import {
-  DECLINED_INCOMING_CALL,
-  FAILED,
-  FAILED_INCOMING_CALL,
-  INCOMING_CALL,
-  NEW_RTC_SESSION,
-  Originator,
-  TERMINATED_INCOMING_CALL,
-} from '../constants';
-import type { UA_EVENT_NAMES } from '../eventNames';
+import Events from 'events-constructor';
+import type { ConnectionManager } from '../../ConnectionManager';
+import type { TEvent } from './constants';
+import { EEvent, EVENT_NAMES, Originator } from './constants';
 
 const BUSY_HERE_STATUS_CODE = 486;
 const REQUEST_TERMINATED_STATUS_CODE = 487;
@@ -24,10 +17,13 @@ type TRemoteCallerData = {
 export default class IncomingCallManager {
   private incomingRTCSession?: RTCSession;
 
-  private readonly uaEvents: Events<typeof UA_EVENT_NAMES>;
+  private readonly connectionManager: ConnectionManager;
 
-  public constructor(uaEvents: Events<typeof UA_EVENT_NAMES>) {
-    this.uaEvents = uaEvents;
+  private readonly events: Events<typeof EVENT_NAMES>;
+
+  public constructor(connectionManager: ConnectionManager) {
+    this.connectionManager = connectionManager;
+    this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
   }
 
   public get remoteCallerData(): TRemoteCallerData {
@@ -71,7 +67,7 @@ export default class IncomingCallManager {
         const callerData = this.remoteCallerData;
 
         this.removeIncomingSession();
-        this.uaEvents.trigger(DECLINED_INCOMING_CALL, callerData);
+        this.events.trigger(EEvent.DECLINED_INCOMING_CALL, callerData);
         incomingRTCSession.terminate({ status_code: statusCode });
         resolve();
       } catch (error) {
@@ -84,12 +80,36 @@ export default class IncomingCallManager {
     return this.declineToIncomingCall({ statusCode: BUSY_HERE_STATUS_CODE });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public on<T>(eventName: TEvent, handler: (data: T) => void) {
+    return this.events.on<T>(eventName, handler);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public once<T>(eventName: TEvent, handler: (data: T) => void) {
+    return this.events.once<T>(eventName, handler);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public onceRace<T>(eventNames: TEvent[], handler: (data: T, eventName: string) => void) {
+    return this.events.onceRace<T>(eventNames, handler);
+  }
+
+  public async wait<T>(eventName: TEvent): Promise<T> {
+    return this.events.wait<T>(eventName);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public off<T>(eventName: TEvent, handler: (data: T) => void) {
+    this.events.off<T>(eventName, handler);
+  }
+
   private subscribe() {
-    this.uaEvents.on(NEW_RTC_SESSION, this.handleNewRTCSession);
+    this.connectionManager.on('newRTCSession', this.handleNewRTCSession);
   }
 
   private unsubscribe() {
-    this.uaEvents.off(NEW_RTC_SESSION, this.handleNewRTCSession);
+    this.connectionManager.off('newRTCSession', this.handleNewRTCSession);
   }
 
   private readonly handleNewRTCSession = ({
@@ -107,17 +127,17 @@ export default class IncomingCallManager {
 
     const callerData = this.remoteCallerData;
 
-    rtcSession.on(FAILED, (event: { originator: Originator }) => {
+    rtcSession.on('failed', (event: { originator: Originator }) => {
       this.removeIncomingSession();
 
       if (event.originator === Originator.LOCAL) {
-        this.uaEvents.trigger(TERMINATED_INCOMING_CALL, callerData);
+        this.events.trigger(EEvent.TERMINATED_INCOMING_CALL, callerData);
       } else {
-        this.uaEvents.trigger(FAILED_INCOMING_CALL, callerData);
+        this.events.trigger(EEvent.FAILED_INCOMING_CALL, callerData);
       }
     });
 
-    this.uaEvents.trigger(INCOMING_CALL, callerData);
+    this.events.trigger(EEvent.INCOMING_CALL, callerData);
   }
 
   private removeIncomingSession(): void {

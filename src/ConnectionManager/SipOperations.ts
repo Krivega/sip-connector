@@ -1,6 +1,6 @@
 import type { UA, URI } from '@krivega/jssip';
-import { CONNECTED, DISCONNECTED } from '../constants';
 import type UAFactory from './UAFactory';
+import { EEvent } from './constants';
 
 export type TParametersCheckTelephony = {
   displayName: string;
@@ -101,17 +101,17 @@ export default class SipOperations {
         reject(error);
       };
 
-      ua.once(DISCONNECTED, rejectWithError);
+      ua.once(EEvent.DISCONNECTED, rejectWithError);
 
       const stopAndResolveAfterDisconnect = () => {
         ua.removeAllListeners();
-        ua.once(DISCONNECTED, () => {
+        ua.once(EEvent.DISCONNECTED, () => {
           resolve();
         });
         ua.stop();
       };
 
-      ua.once(CONNECTED, stopAndResolveAfterDisconnect);
+      ua.once(EEvent.CONNECTED, stopAndResolveAfterDisconnect);
 
       ua.start();
     });

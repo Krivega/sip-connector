@@ -1,7 +1,7 @@
 /* eslint-disable unicorn/filename-case */
 import type { Socket, UA } from '@krivega/jssip';
 import jssip from '../../__fixtures__/jssip.mock';
-import type { TJsSIP, TParametersCreateUaConfiguration } from '../../types';
+import type { TJsSIP } from '../../types';
 import UAFactory from '../UAFactory';
 
 describe('UAFactory', () => {
@@ -48,7 +48,7 @@ describe('UAFactory', () => {
   });
 
   describe('createConfiguration', () => {
-    const baseParameters: TParametersCreateUaConfiguration = {
+    const baseParameters = {
       sipServerUrl: 'sip.example.com',
       sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
       user: 'testuser',
@@ -303,10 +303,7 @@ describe('UAFactory', () => {
   });
 
   describe('createUAWithConfiguration', () => {
-    const baseParameters: TParametersCreateUaConfiguration & {
-      remoteAddress?: string;
-      extraHeaders?: string[];
-    } = {
+    const baseParameters = {
       sipServerUrl: 'sip.example.com',
       sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
       user: 'testuser',
@@ -316,7 +313,7 @@ describe('UAFactory', () => {
     };
 
     it('должен создавать UA с конфигурацией и событиями', () => {
-      const uaEvents = {
+      const events = {
         eachTriggers: (
           callback: (trigger: (...args: unknown[]) => void, eventName: string) => void,
         ) => {
@@ -325,7 +322,7 @@ describe('UAFactory', () => {
         },
       };
 
-      const result = uaFactory.createUAWithConfiguration(baseParameters, uaEvents);
+      const result = uaFactory.createUAWithConfiguration(baseParameters, events);
 
       expect(result.ua).toBeDefined();
       expect(result.ua).toBeInstanceOf(jssip.UA);
@@ -334,7 +331,7 @@ describe('UAFactory', () => {
     });
 
     it('должен создавать UA с remoteAddress', () => {
-      const uaEvents = {
+      const events = {
         eachTriggers: (
           callback: (trigger: (...args: unknown[]) => void, eventName: string) => void,
         ) => {
@@ -347,7 +344,7 @@ describe('UAFactory', () => {
           ...baseParameters,
           remoteAddress: '192.168.1.1',
         },
-        uaEvents,
+        events,
       );
 
       expect(result.ua).toBeDefined();
@@ -355,7 +352,7 @@ describe('UAFactory', () => {
     });
 
     it('должен создавать UA с extraHeaders', () => {
-      const uaEvents = {
+      const events = {
         eachTriggers: (
           callback: (trigger: (...args: unknown[]) => void, eventName: string) => void,
         ) => {
@@ -368,7 +365,7 @@ describe('UAFactory', () => {
           ...baseParameters,
           extraHeaders: ['X-Custom-Header: value'],
         },
-        uaEvents,
+        events,
       );
 
       expect(result.ua).toBeDefined();
@@ -376,7 +373,7 @@ describe('UAFactory', () => {
     });
 
     it('должен создавать UA с remoteAddress и extraHeaders', () => {
-      const uaEvents = {
+      const events = {
         eachTriggers: (
           callback: (trigger: (...args: unknown[]) => void, eventName: string) => void,
         ) => {
@@ -390,7 +387,7 @@ describe('UAFactory', () => {
           remoteAddress: '192.168.1.1',
           extraHeaders: ['X-Custom-Header: value'],
         },
-        uaEvents,
+        events,
       );
 
       expect(result.ua).toBeDefined();
@@ -398,7 +395,7 @@ describe('UAFactory', () => {
     });
 
     it('должен обрабатывать события только для валидных JsSIP событий', () => {
-      const uaEvents = {
+      const events = {
         eachTriggers: (
           callback: (trigger: (...args: unknown[]) => void, eventName: string) => void,
         ) => {
@@ -407,7 +404,7 @@ describe('UAFactory', () => {
         },
       };
 
-      const result = uaFactory.createUAWithConfiguration(baseParameters, uaEvents);
+      const result = uaFactory.createUAWithConfiguration(baseParameters, events);
 
       expect(result.ua).toBeDefined();
       // Невалидное событие не должно быть зарегистрировано
@@ -416,7 +413,7 @@ describe('UAFactory', () => {
 
   describe('интеграционные тесты', () => {
     it('должен создавать полную конфигурацию и UA', () => {
-      const parameters: TParametersCreateUaConfiguration = {
+      const parameters = {
         sipServerUrl: 'sip.example.com',
         sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
         user: 'testuser',
@@ -453,7 +450,7 @@ describe('UAFactory', () => {
     });
 
     it('должен создавать UA без регистрации', () => {
-      const parameters: TParametersCreateUaConfiguration = {
+      const parameters = {
         sipServerUrl: 'sip.example.com',
         sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
         register: false,

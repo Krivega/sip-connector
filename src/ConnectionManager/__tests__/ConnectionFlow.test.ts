@@ -5,12 +5,10 @@ import UAMock, {
   PASSWORD_CORRECT,
   createWebsocketHandshakeTimeoutError,
 } from '../../__fixtures__/UA.mock';
-import { DISCONNECTED } from '../../constants';
-import { UA_EVENT_NAMES } from '../../eventNames';
 import type { TJsSIP } from '../../types';
 import ConnectionFlow from '../ConnectionFlow';
 import ConnectionStateMachine from '../ConnectionStateMachine';
-import IncomingCallManager from '../IncomingCallManager';
+import { EEvent, EVENT_NAMES } from '../constants';
 import RegistrationManager from '../RegistrationManager';
 import SipEventHandler from '../SipEventHandler';
 import UAFactory from '../UAFactory';
@@ -19,10 +17,9 @@ const SIP_SERVER_URL = 'sip.example.com';
 const websocketHandshakeTimeoutError = createWebsocketHandshakeTimeoutError(SIP_SERVER_URL);
 
 describe('ConnectionFlow', () => {
-  let uaEvents: Events<typeof UA_EVENT_NAMES>;
+  let events: Events<typeof EVENT_NAMES>;
   let uaFactory: UAFactory;
   let stateMachine: ConnectionStateMachine;
-  let incomingCallManager: IncomingCallManager;
   let sipEventHandler: SipEventHandler;
   let registrationManager: RegistrationManager;
   let connectionFlow: ConnectionFlow;
@@ -68,23 +65,21 @@ describe('ConnectionFlow', () => {
     connectionConfiguration = {};
     uaInstance = undefined;
 
-    uaEvents = new Events<typeof UA_EVENT_NAMES>(UA_EVENT_NAMES);
+    events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
     uaFactory = new UAFactory(jssip as unknown as TJsSIP);
-    stateMachine = new ConnectionStateMachine(uaEvents);
-    incomingCallManager = new IncomingCallManager(uaEvents);
-    sipEventHandler = new SipEventHandler(uaEvents);
+    stateMachine = new ConnectionStateMachine(events);
+    sipEventHandler = new SipEventHandler(events);
     registrationManager = new RegistrationManager({
-      uaEvents,
+      events,
       getUa,
     });
 
     connectionFlow = new ConnectionFlow({
       JsSIP: jssip as unknown as TJsSIP,
-      uaEvents,
+      events,
       uaFactory,
       stateMachine,
       registrationManager,
-      incomingCallManager,
       sipEventHandler,
       getUa,
       setUa,
@@ -132,7 +127,6 @@ describe('ConnectionFlow', () => {
 
       const startConnectSpy = jest.spyOn(stateMachine, 'startConnect');
       const startInitUaSpy = jest.spyOn(stateMachine, 'startInitUa');
-      const incomingStartSpy = jest.spyOn(incomingCallManager, 'start');
       const sipHandlerStartSpy = jest.spyOn(sipEventHandler, 'start');
 
       const result = await connectionFlow.connect(parameters);
@@ -147,7 +141,6 @@ describe('ConnectionFlow', () => {
       expect(setUa).toHaveBeenCalled();
       expect(startConnectSpy).toHaveBeenCalled();
       expect(startInitUaSpy).toHaveBeenCalled();
-      expect(incomingStartSpy).toHaveBeenCalled();
       expect(sipHandlerStartSpy).toHaveBeenCalled();
     });
 
@@ -188,7 +181,6 @@ describe('ConnectionFlow', () => {
 
       const startConnectSpy = jest.spyOn(stateMachine, 'startConnect');
       const startInitUaSpy = jest.spyOn(stateMachine, 'startInitUa');
-      const incomingStartSpy = jest.spyOn(incomingCallManager, 'start');
       const sipHandlerStartSpy = jest.spyOn(sipEventHandler, 'start');
 
       const result = await connectionFlow.connect(parameters);
@@ -197,7 +189,6 @@ describe('ConnectionFlow', () => {
       expect(setUa).toHaveBeenCalled();
       expect(startConnectSpy).toHaveBeenCalled();
       expect(startInitUaSpy).toHaveBeenCalled();
-      expect(incomingStartSpy).toHaveBeenCalled();
       expect(sipHandlerStartSpy).toHaveBeenCalled();
     });
 
@@ -238,7 +229,7 @@ describe('ConnectionFlow', () => {
           sipServerUrl: SIP_SERVER_URL,
           sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
         },
-        uaEvents,
+        events,
       ).ua as unknown as UAMock;
 
       uaInstance = uaMock;
@@ -261,7 +252,7 @@ describe('ConnectionFlow', () => {
           sipServerUrl: SIP_SERVER_URL,
           sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
         },
-        uaEvents,
+        events,
       ).ua as unknown as UAMock;
 
       uaInstance = uaMock;
@@ -290,18 +281,16 @@ describe('ConnectionFlow', () => {
           sipServerUrl: SIP_SERVER_URL,
           sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
         },
-        uaEvents,
+        events,
       ).ua as unknown as UAMock;
 
       uaInstance = uaMock;
 
-      const incomingStopSpy = jest.spyOn(incomingCallManager, 'stop');
       const sipHandlerStopSpy = jest.spyOn(sipEventHandler, 'stop');
       const resetSpy = jest.spyOn(stateMachine, 'reset');
 
       await connectionFlow.disconnect();
 
-      expect(incomingStopSpy).toHaveBeenCalled();
       expect(sipHandlerStopSpy).toHaveBeenCalled();
       expect(uaMock.stop).toHaveBeenCalled();
       expect(setUa).toHaveBeenCalledWith(undefined);
@@ -313,16 +302,16 @@ describe('ConnectionFlow', () => {
       uaInstance = undefined;
 
       const resetSpy = jest.spyOn(stateMachine, 'reset');
-      const triggerSpy = jest.spyOn(uaEvents, 'trigger');
+      const triggerSpy = jest.spyOn(events, 'trigger');
 
       const disconnectPromise = connectionFlow.disconnect();
 
       // Вручную эмитим DISCONNECTED, так как UA нет
-      uaEvents.trigger(DISCONNECTED, undefined);
+      events.trigger(EEvent.DISCONNECTED, undefined);
 
       await disconnectPromise;
 
-      expect(triggerSpy).toHaveBeenCalledWith(DISCONNECTED, undefined);
+      expect(triggerSpy).toHaveBeenCalledWith(EEvent.DISCONNECTED, undefined);
       expect(setUa).toHaveBeenCalledWith(undefined);
       expect(resetSpy).toHaveBeenCalled();
     });
@@ -338,7 +327,7 @@ describe('ConnectionFlow', () => {
           connectionRecoveryMinInterval: 2,
           connectionRecoveryMaxInterval: 6,
         },
-        uaEvents,
+        events,
       ).ua as unknown as UAMock;
 
       uaInstance = uaMock;
@@ -368,7 +357,7 @@ describe('ConnectionFlow', () => {
           connectionRecoveryMinInterval: 2,
           connectionRecoveryMaxInterval: 6,
         },
-        uaEvents,
+        events,
       ).ua as unknown as UAMock;
 
       uaInstance = uaMock;

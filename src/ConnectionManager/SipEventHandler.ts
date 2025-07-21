@@ -1,22 +1,9 @@
 import type { IncomingRequest } from '@krivega/jssip';
 import type Events from 'events-constructor';
-import {
-  ACCOUNT_CHANGED,
-  ACCOUNT_DELETED,
-  CHANNELS_NOTIFY,
-  CONFERENCE_PARTICIPANT_TOKEN_ISSUED,
-  PARTICIPANT_ADDED_TO_LIST_MODERATORS,
-  PARTICIPANT_MOVE_REQUEST_TO_STREAM,
-  PARTICIPANT_REMOVED_FROM_LIST_MODERATORS,
-  PARTICIPATION_ACCEPTING_WORD_REQUEST,
-  PARTICIPATION_CANCELLING_WORD_REQUEST,
-  SIP_EVENT,
-  WEBCAST_STARTED,
-  WEBCAST_STOPPED,
-} from '../constants';
-import type { UA_EVENT_NAMES } from '../eventNames';
 import { HEADER_NOTIFY } from '../headers';
 import logger from '../logger';
+import type { EVENT_NAMES } from './constants';
+import { EEvent } from './constants';
 
 const CMD_CHANNELS = 'channels';
 const CMD_WEBCAST_STARTED = 'WebcastStarted';
@@ -97,10 +84,10 @@ type TInfoNotify = Omit<
 > & { cmd: string };
 
 export default class SipEventHandler {
-  private readonly uaEvents: Events<typeof UA_EVENT_NAMES>;
+  private readonly events: Events<typeof EVENT_NAMES>;
 
-  public constructor(uaEvents: Events<typeof UA_EVENT_NAMES>) {
-    this.uaEvents = uaEvents;
+  public constructor(events: Events<typeof EVENT_NAMES>) {
+    this.events = events;
   }
 
   public start(): void {
@@ -112,11 +99,11 @@ export default class SipEventHandler {
   }
 
   private subscribe(): void {
-    this.uaEvents.on(SIP_EVENT, this.handleSipEvent);
+    this.events.on(EEvent.SIP_EVENT, this.handleSipEvent);
   }
 
   private unsubscribe(): void {
-    this.uaEvents.off(SIP_EVENT, this.handleSipEvent);
+    this.events.off(EEvent.SIP_EVENT, this.handleSipEvent);
   }
 
   private readonly handleSipEvent = ({ request }: { request: IncomingRequest }) => {
@@ -228,7 +215,7 @@ export default class SipEventHandler {
       outputChannels,
     };
 
-    this.uaEvents.trigger(CHANNELS_NOTIFY, data);
+    this.events.trigger(EEvent.CHANNELS_NOTIFY, data);
   };
 
   private readonly triggerWebcastStartedNotify = ({
@@ -239,7 +226,7 @@ export default class SipEventHandler {
       type,
     };
 
-    this.uaEvents.trigger(WEBCAST_STARTED, headersParametersWebcast);
+    this.events.trigger(EEvent.WEBCAST_STARTED, headersParametersWebcast);
   };
 
   private readonly triggerWebcastStoppedNotify = ({
@@ -250,7 +237,7 @@ export default class SipEventHandler {
       type,
     };
 
-    this.uaEvents.trigger(WEBCAST_STOPPED, headersParametersWebcast);
+    this.events.trigger(EEvent.WEBCAST_STOPPED, headersParametersWebcast);
   };
 
   private readonly triggerAddedToListModeratorsNotify = ({
@@ -260,7 +247,10 @@ export default class SipEventHandler {
       conference,
     };
 
-    this.uaEvents.trigger(PARTICIPANT_ADDED_TO_LIST_MODERATORS, headersParametersModeratorsList);
+    this.events.trigger(
+      EEvent.PARTICIPANT_ADDED_TO_LIST_MODERATORS,
+      headersParametersModeratorsList,
+    );
   };
 
   private readonly triggerRemovedFromListModeratorsNotify = ({
@@ -270,8 +260,8 @@ export default class SipEventHandler {
       conference,
     };
 
-    this.uaEvents.trigger(
-      PARTICIPANT_REMOVED_FROM_LIST_MODERATORS,
+    this.events.trigger(
+      EEvent.PARTICIPANT_REMOVED_FROM_LIST_MODERATORS,
       headersParametersModeratorsList,
     );
   };
@@ -283,7 +273,7 @@ export default class SipEventHandler {
       conference,
     };
 
-    this.uaEvents.trigger(PARTICIPATION_ACCEPTING_WORD_REQUEST, data);
+    this.events.trigger(EEvent.PARTICIPATION_ACCEPTING_WORD_REQUEST, data);
   };
 
   private readonly triggerParticipationCancellingWordRequest = ({
@@ -293,7 +283,7 @@ export default class SipEventHandler {
       conference,
     };
 
-    this.uaEvents.trigger(PARTICIPATION_CANCELLING_WORD_REQUEST, data);
+    this.events.trigger(EEvent.PARTICIPATION_CANCELLING_WORD_REQUEST, data);
   };
 
   private readonly triggerParticipantMoveRequestToStream = ({
@@ -303,15 +293,15 @@ export default class SipEventHandler {
       conference,
     };
 
-    this.uaEvents.trigger(PARTICIPANT_MOVE_REQUEST_TO_STREAM, data);
+    this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_STREAM, data);
   };
 
   private readonly triggerAccountChangedNotify = () => {
-    this.uaEvents.trigger(ACCOUNT_CHANGED, undefined);
+    this.events.trigger(EEvent.ACCOUNT_CHANGED, undefined);
   };
 
   private readonly triggerAccountDeletedNotify = () => {
-    this.uaEvents.trigger(ACCOUNT_DELETED, undefined);
+    this.events.trigger(EEvent.ACCOUNT_DELETED, undefined);
   };
 
   private readonly triggerConferenceParticipantTokenIssued = ({
@@ -323,8 +313,8 @@ export default class SipEventHandler {
       jwt,
     };
 
-    this.uaEvents.trigger(
-      CONFERENCE_PARTICIPANT_TOKEN_ISSUED,
+    this.events.trigger(
+      EEvent.CONFERENCE_PARTICIPANT_TOKEN_ISSUED,
       headersConferenceParticipantTokenIssued,
     );
   };

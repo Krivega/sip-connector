@@ -1,18 +1,14 @@
 import type { RTCSession } from '@krivega/jssip';
 import { NameAddrHeader, URI } from '@krivega/jssip';
-import Events from 'events-constructor';
-import RTCSessionMock from '../../__fixtures__/RTCSessionMock';
-import {
-  DECLINED_INCOMING_CALL,
-  FAILED,
-  FAILED_INCOMING_CALL,
-  INCOMING_CALL,
-  NEW_RTC_SESSION,
-  Originator,
-  TERMINATED_INCOMING_CALL,
-} from '../../constants';
-import { UA_EVENT_NAMES } from '../../eventNames';
+import jssip from '../../../__fixtures__/jssip.mock';
+import RTCSessionMock from '../../../__fixtures__/RTCSessionMock';
+import { ConnectionManager, EConnectionManagerEvent } from '../../../ConnectionManager';
+import type { TJsSIP } from '../../../types';
+import { EEvent, Originator } from '../constants';
 import IncomingCallManager from '../IncomingCallManager';
+
+// FAILED event name for RTCSession
+const FAILED = 'failed';
 
 // Мокаем RTCSession используя RTCSessionMock
 const createMockRTCSession = (overrides: Partial<RTCSession> = {}): RTCSession => {
@@ -24,7 +20,7 @@ const createMockRTCSession = (overrides: Partial<RTCSession> = {}): RTCSession =
   const mockSession = new RTCSessionMock({
     url: 'sip:testuser@test.com',
     eventHandlers: {},
-    originator: 'remote',
+    originator: Originator.REMOTE,
     remoteIdentity: defaultRemoteIdentity,
   });
 
@@ -40,13 +36,15 @@ const createMockRTCSession = (overrides: Partial<RTCSession> = {}): RTCSession =
 };
 
 describe('IncomingCallManager', () => {
-  let uaEvents: Events<typeof UA_EVENT_NAMES>;
+  let connectionManager: ConnectionManager;
   let incomingCallManager: IncomingCallManager;
   let mockRTCSession: RTCSession;
 
   beforeEach(() => {
-    uaEvents = new Events<typeof UA_EVENT_NAMES>(UA_EVENT_NAMES);
-    incomingCallManager = new IncomingCallManager(uaEvents);
+    connectionManager = new ConnectionManager({
+      JsSIP: jssip as unknown as TJsSIP,
+    });
+    incomingCallManager = new IncomingCallManager(connectionManager);
     mockRTCSession = createMockRTCSession();
   });
 
@@ -77,7 +75,7 @@ describe('IncomingCallManager', () => {
       const session = new RTCSessionMock({
         url: 'sip:johndoe@example.com',
         eventHandlers: {},
-        originator: 'remote',
+        originator: Originator.REMOTE,
         remoteIdentity: new NameAddrHeader(
           new URI('sip', 'johndoe', 'example.com', 5060),
           'John Doe',
@@ -86,7 +84,7 @@ describe('IncomingCallManager', () => {
 
       // Запускаем менеджер и эмулируем входящий звонок
       incomingCallManager.start();
-      uaEvents.trigger(NEW_RTC_SESSION, {
+      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session,
       });
@@ -110,7 +108,7 @@ describe('IncomingCallManager', () => {
     it('должен возвращать true когда есть входящий звонок', () => {
       // Запускаем менеджер и эмулируем входящий звонок
       incomingCallManager.start();
-      uaEvents.trigger(NEW_RTC_SESSION, {
+      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: mockRTCSession,
       });
@@ -121,21 +119,24 @@ describe('IncomingCallManager', () => {
 
   describe('start', () => {
     it('должен подписываться на события UA', () => {
-      const spyOn = jest.spyOn(uaEvents, 'on');
+      const spyOn = jest.spyOn(connectionManager, 'on');
 
       incomingCallManager.start();
 
-      expect(spyOn).toHaveBeenCalledWith(NEW_RTC_SESSION, expect.any(Function));
+      expect(spyOn).toHaveBeenCalledWith(
+        EConnectionManagerEvent.NEW_RTC_SESSION,
+        expect.any(Function),
+      );
     });
   });
 
   describe('stop', () => {
     it('должен отписываться от событий UA и очищать сессию', () => {
-      const spyOff = jest.spyOn(uaEvents, 'off');
+      const spyOff = jest.spyOn(connectionManager, 'off');
 
       // Запускаем менеджер и устанавливаем входящий звонок
       incomingCallManager.start();
-      uaEvents.trigger(NEW_RTC_SESSION, {
+      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: mockRTCSession,
       });
@@ -144,7 +145,10 @@ describe('IncomingCallManager', () => {
 
       incomingCallManager.stop();
 
-      expect(spyOff).toHaveBeenCalledWith(NEW_RTC_SESSION, expect.any(Function));
+      expect(spyOff).toHaveBeenCalledWith(
+        EConnectionManagerEvent.NEW_RTC_SESSION,
+        expect.any(Function),
+      );
       expect(incomingCallManager.isAvailableIncomingCall).toBe(false);
     });
   });
@@ -153,7 +157,7 @@ describe('IncomingCallManager', () => {
     it('должен возвращать RTC сессию когда она существует', () => {
       // Запускаем менеджер и устанавливаем входящий звонок
       incomingCallManager.start();
-      uaEvents.trigger(NEW_RTC_SESSION, {
+      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: mockRTCSession,
       });
@@ -172,11 +176,13 @@ describe('IncomingCallManager', () => {
 
   describe('declineToIncomingCall', () => {
     it('должен отклонять входящий звонок с кодом по умолчанию', async () => {
-      const triggerSpy = jest.spyOn(uaEvents, 'trigger');
+      const handler = jest.fn();
+
+      incomingCallManager.on(EEvent.DECLINED_INCOMING_CALL, handler);
 
       // Запускаем менеджер и устанавливаем входящий звонок
       incomingCallManager.start();
-      uaEvents.trigger(NEW_RTC_SESSION, {
+      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: mockRTCSession,
       });
@@ -185,7 +191,7 @@ describe('IncomingCallManager', () => {
 
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(mockRTCSession.terminate).toHaveBeenCalledWith({ status_code: 487 });
-      expect(triggerSpy).toHaveBeenCalledWith(DECLINED_INCOMING_CALL, {
+      expect(handler).toHaveBeenCalledWith({
         displayName: 'Test Caller',
         host: 'test.com',
         incomingNumber: 'testuser',
@@ -199,7 +205,7 @@ describe('IncomingCallManager', () => {
 
       // Запускаем менеджер и устанавливаем входящий звонок
       incomingCallManager.start();
-      uaEvents.trigger(NEW_RTC_SESSION, {
+      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: mockRTCSession,
       });
@@ -221,7 +227,7 @@ describe('IncomingCallManager', () => {
     it('должен отклонять входящий звонок с кодом BUSY_HERE', async () => {
       // Запускаем менеджер и устанавливаем входящий звонок
       incomingCallManager.start();
-      uaEvents.trigger(NEW_RTC_SESSION, {
+      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: mockRTCSession,
       });
@@ -235,17 +241,19 @@ describe('IncomingCallManager', () => {
 
   describe('Обработка событий NEW_RTC_SESSION', () => {
     it('должен устанавливать входящую сессию для REMOTE originator', () => {
-      const triggerSpy = jest.spyOn(uaEvents, 'trigger');
+      const handler = jest.fn();
+
+      incomingCallManager.on(EEvent.INCOMING_CALL, handler);
 
       incomingCallManager.start();
 
-      uaEvents.trigger(NEW_RTC_SESSION, {
+      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: mockRTCSession,
       });
 
       expect(incomingCallManager.isAvailableIncomingCall).toBe(true);
-      expect(triggerSpy).toHaveBeenCalledWith(INCOMING_CALL, {
+      expect(handler).toHaveBeenCalledWith({
         displayName: 'Test Caller',
         host: 'test.com',
         incomingNumber: 'testuser',
@@ -254,27 +262,31 @@ describe('IncomingCallManager', () => {
     });
 
     it('должен игнорировать события для LOCAL originator', () => {
-      const triggerSpy = jest.spyOn(uaEvents, 'trigger');
+      const handler = jest.fn();
+
+      incomingCallManager.on(EEvent.INCOMING_CALL, handler);
 
       incomingCallManager.start();
 
-      uaEvents.trigger(NEW_RTC_SESSION, {
+      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.LOCAL,
         session: mockRTCSession,
       });
 
       expect(incomingCallManager.isAvailableIncomingCall).toBe(false);
-      expect(triggerSpy).not.toHaveBeenCalledWith(INCOMING_CALL, expect.anything());
+      expect(handler).not.toHaveBeenCalled();
     });
   });
 
   describe('Обработка событий FAILED', () => {
     it('должен обрабатывать FAILED событие от LOCAL originator', () => {
-      const triggerSpy = jest.spyOn(uaEvents, 'trigger');
+      const handler = jest.fn();
+
+      incomingCallManager.on(EEvent.TERMINATED_INCOMING_CALL, handler);
 
       // Запускаем менеджер и устанавливаем входящий звонок
       incomingCallManager.start();
-      uaEvents.trigger(NEW_RTC_SESSION, {
+      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: mockRTCSession,
       });
@@ -290,7 +302,7 @@ describe('IncomingCallManager', () => {
         failedHandler({ originator: Originator.LOCAL });
       }
 
-      expect(triggerSpy).toHaveBeenCalledWith(TERMINATED_INCOMING_CALL, {
+      expect(handler).toHaveBeenCalledWith({
         displayName: 'Test Caller',
         host: 'test.com',
         incomingNumber: 'testuser',
@@ -300,11 +312,13 @@ describe('IncomingCallManager', () => {
     });
 
     it('должен обрабатывать FAILED событие от REMOTE originator', () => {
-      const triggerSpy = jest.spyOn(uaEvents, 'trigger');
+      const handler = jest.fn();
+
+      incomingCallManager.on(EEvent.FAILED_INCOMING_CALL, handler);
 
       // Запускаем менеджер и устанавливаем входящий звонок
       incomingCallManager.start();
-      uaEvents.trigger(NEW_RTC_SESSION, {
+      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: mockRTCSession,
       });
@@ -320,7 +334,7 @@ describe('IncomingCallManager', () => {
         failedHandler({ originator: Originator.REMOTE });
       }
 
-      expect(triggerSpy).toHaveBeenCalledWith(FAILED_INCOMING_CALL, {
+      expect(handler).toHaveBeenCalledWith({
         displayName: 'Test Caller',
         host: 'test.com',
         incomingNumber: 'testuser',
@@ -332,18 +346,22 @@ describe('IncomingCallManager', () => {
 
   describe('Интеграционные сценарии', () => {
     it('должен корректно обрабатывать полный жизненный цикл входящего звонка', async () => {
-      const triggerSpy = jest.spyOn(uaEvents, 'trigger');
+      const handlerIncoming = jest.fn();
+      const handlerDeclined = jest.fn();
+
+      incomingCallManager.on(EEvent.INCOMING_CALL, handlerIncoming);
+      incomingCallManager.on(EEvent.DECLINED_INCOMING_CALL, handlerDeclined);
 
       incomingCallManager.start();
 
       // Входящий звонок
-      uaEvents.trigger(NEW_RTC_SESSION, {
+      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: mockRTCSession,
       });
 
       expect(incomingCallManager.isAvailableIncomingCall).toBe(true);
-      expect(triggerSpy).toHaveBeenCalledWith(INCOMING_CALL, expect.any(Object));
+      expect(handlerIncoming).toHaveBeenCalledWith(expect.any(Object));
 
       // Отклоняем звонок
       const promise = incomingCallManager.declineToIncomingCall();
@@ -351,7 +369,7 @@ describe('IncomingCallManager', () => {
       expect(incomingCallManager.isAvailableIncomingCall).toBe(false);
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(mockRTCSession.terminate).toHaveBeenCalled();
-      expect(triggerSpy).toHaveBeenCalledWith(DECLINED_INCOMING_CALL, expect.any(Object));
+      expect(handlerDeclined).toHaveBeenCalledWith(expect.any(Object));
 
       return promise;
     });
@@ -380,7 +398,7 @@ describe('IncomingCallManager', () => {
       incomingCallManager.start();
 
       // Первый звонок
-      uaEvents.trigger(NEW_RTC_SESSION, {
+      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: session1,
       });
@@ -388,7 +406,7 @@ describe('IncomingCallManager', () => {
       expect(incomingCallManager.remoteCallerData.incomingNumber).toBe('caller1');
 
       // Второй звонок (заменяет первый)
-      uaEvents.trigger(NEW_RTC_SESSION, {
+      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: session2,
       });
@@ -402,13 +420,13 @@ describe('IncomingCallManager', () => {
       const sessionWithoutDisplayName = new RTCSessionMock({
         url: 'sip:testuser@test.com',
         eventHandlers: {},
-        originator: 'remote',
+        originator: Originator.REMOTE,
         remoteIdentity: new NameAddrHeader(new URI('sip', 'testuser', 'test.com', 5060), undefined),
       });
 
       incomingCallManager.start();
 
-      uaEvents.trigger(NEW_RTC_SESSION, {
+      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: sessionWithoutDisplayName,
       });
@@ -421,13 +439,13 @@ describe('IncomingCallManager', () => {
       const sessionWithoutUser = new RTCSessionMock({
         url: 'sip:@test.com',
         eventHandlers: {},
-        originator: 'remote',
+        originator: Originator.REMOTE,
         remoteIdentity: new NameAddrHeader(new URI('sip', '', 'test.com', 5060), 'Test Caller'),
       });
 
       incomingCallManager.start();
 
-      uaEvents.trigger(NEW_RTC_SESSION, {
+      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: sessionWithoutUser,
       });
@@ -440,7 +458,7 @@ describe('IncomingCallManager', () => {
       const sessionWithError = new RTCSessionMock({
         url: 'sip:testuser@test.com',
         eventHandlers: {},
-        originator: 'remote',
+        originator: Originator.REMOTE,
         remoteIdentity: new NameAddrHeader(
           new URI('sip', 'testuser', 'test.com', 5060),
           'Test Caller',
@@ -454,7 +472,7 @@ describe('IncomingCallManager', () => {
 
       // Запускаем менеджер и устанавливаем входящий звонок
       incomingCallManager.start();
-      uaEvents.trigger(NEW_RTC_SESSION, {
+      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: sessionWithError,
       });
@@ -463,5 +481,77 @@ describe('IncomingCallManager', () => {
         'Termination failed',
       );
     });
+  });
+});
+
+describe('API событий IncomingCallManager', () => {
+  let incomingCallManager: IncomingCallManager;
+  let connectionManager: ConnectionManager;
+  let mockRTCSession: RTCSession;
+
+  beforeEach(() => {
+    connectionManager = new ConnectionManager({ JsSIP: jssip as unknown as TJsSIP });
+    incomingCallManager = new IncomingCallManager(connectionManager);
+    mockRTCSession = createMockRTCSession();
+  });
+
+  it('on: должен вызывать handler при входящем звонке', () => {
+    const handler = jest.fn();
+
+    incomingCallManager.on(EEvent.INCOMING_CALL, handler);
+    incomingCallManager.start();
+    connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+      originator: Originator.REMOTE,
+      session: mockRTCSession,
+    });
+    expect(handler).toHaveBeenCalledWith(expect.objectContaining({ rtcSession: mockRTCSession }));
+    incomingCallManager.off(EEvent.INCOMING_CALL, handler);
+  });
+
+  it('once: должен вызывать handler только один раз', () => {
+    const handler = jest.fn();
+
+    incomingCallManager.once(EEvent.INCOMING_CALL, handler);
+    incomingCallManager.start();
+    connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+      originator: Originator.REMOTE,
+      session: mockRTCSession,
+    });
+    connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+      originator: Originator.REMOTE,
+      session: mockRTCSession,
+    });
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it('onceRace: должен вызывать handler для первого из событий', async () => {
+    const handler = jest.fn();
+
+    incomingCallManager.onceRace([EEvent.INCOMING_CALL, EEvent.DECLINED_INCOMING_CALL], handler);
+    incomingCallManager.start();
+    connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+      originator: Originator.REMOTE,
+      session: mockRTCSession,
+    });
+    await incomingCallManager.declineToIncomingCall();
+    expect(handler).toHaveBeenCalledTimes(1);
+
+    // Безопасно достаём второй аргумент вызова handler
+    const callArgs = handler.mock.calls as unknown[][];
+    const eventName = callArgs[0]?.[1];
+
+    expect([EEvent.INCOMING_CALL, EEvent.DECLINED_INCOMING_CALL]).toContain(eventName);
+  });
+
+  it('wait: должен резолвить промис при входящем звонке', async () => {
+    incomingCallManager.start();
+
+    const promise = incomingCallManager.wait(EEvent.INCOMING_CALL);
+
+    connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+      originator: Originator.REMOTE,
+      session: mockRTCSession,
+    });
+    await expect(promise).resolves.toEqual(expect.objectContaining({ rtcSession: mockRTCSession }));
   });
 });

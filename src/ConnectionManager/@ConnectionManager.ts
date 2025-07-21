@@ -1,13 +1,12 @@
 import type { RegisteredEvent, UA, UnRegisteredEvent, WebSocketInterface } from '@krivega/jssip';
 import Events from 'events-constructor';
-import type { TEventUA } from '../eventNames';
-import { UA_EVENT_NAMES } from '../eventNames';
 import type { TGetServerUrl, TJsSIP } from '../types';
 import ConfigurationManager from './ConfigurationManager';
 import type { TConnect, TSet } from './ConnectionFlow';
 import ConnectionFlow from './ConnectionFlow';
 import ConnectionStateMachine from './ConnectionStateMachine';
-import IncomingCallManager from './IncomingCallManager';
+import type { TEvent } from './constants';
+import { EVENT_NAMES } from './constants';
 import RegistrationManager from './RegistrationManager';
 import SipEventHandler from './SipEventHandler';
 import type { TParametersCheckTelephony } from './SipOperations';
@@ -15,11 +14,11 @@ import SipOperations from './SipOperations';
 import UAFactory from './UAFactory';
 
 export default class ConnectionManager {
+  public readonly events: Events<typeof EVENT_NAMES>;
+
   public ua?: UA;
 
   public socket?: WebSocketInterface;
-
-  private readonly incomingCallManager: IncomingCallManager;
 
   private readonly sipEventHandler: SipEventHandler;
 
@@ -37,20 +36,17 @@ export default class ConnectionManager {
 
   private readonly JsSIP: TJsSIP;
 
-  private readonly uaEvents: Events<typeof UA_EVENT_NAMES>;
-
   public constructor({ JsSIP }: { JsSIP: TJsSIP }) {
     this.JsSIP = JsSIP;
 
-    this.uaEvents = new Events<typeof UA_EVENT_NAMES>(UA_EVENT_NAMES);
-    this.incomingCallManager = new IncomingCallManager(this.uaEvents);
-    this.sipEventHandler = new SipEventHandler(this.uaEvents);
+    this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
+    this.sipEventHandler = new SipEventHandler(this.events);
     this.uaFactory = new UAFactory(JsSIP);
     this.registrationManager = new RegistrationManager({
-      uaEvents: this.uaEvents,
+      events: this.events,
       getUa: this.getUa,
     });
-    this.stateMachine = new ConnectionStateMachine(this.uaEvents);
+    this.stateMachine = new ConnectionStateMachine(this.events);
 
     this.configurationManager = new ConfigurationManager({
       getUa: this.getUa,
@@ -63,11 +59,10 @@ export default class ConnectionManager {
 
     this.connectionFlow = new ConnectionFlow({
       JsSIP: this.JsSIP,
-      uaEvents: this.uaEvents,
+      events: this.events,
       uaFactory: this.uaFactory,
       stateMachine: this.stateMachine,
       registrationManager: this.registrationManager,
-      incomingCallManager: this.incomingCallManager,
       sipEventHandler: this.sipEventHandler,
       getUa: this.getUa,
       getConnectionConfiguration: this.getConnectionConfiguration,
@@ -113,14 +108,6 @@ export default class ConnectionManager {
     return this.configurationManager.isRegister();
   }
 
-  public get remoteCallerData() {
-    return this.incomingCallManager.remoteCallerData;
-  }
-
-  public get isAvailableIncomingCall() {
-    return this.incomingCallManager.isAvailableIncomingCall;
-  }
-
   public connect: TConnect = async (data, options) => {
     return this.connectionFlow.connect(data, options);
   };
@@ -164,36 +151,28 @@ export default class ConnectionManager {
     return this.sipOperations.checkTelephony(parameters);
   };
 
-  public declineToIncomingCall = async ({ statusCode }: { statusCode?: number } = {}) => {
-    return this.incomingCallManager.declineToIncomingCall({ statusCode });
-  };
-
-  public busyIncomingCall = async () => {
-    return this.incomingCallManager.busyIncomingCall();
-  };
-
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public on<T>(eventName: TEventUA, handler: (data: T) => void) {
-    return this.uaEvents.on<T>(eventName, handler);
+  public on<T>(eventName: TEvent, handler: (data: T) => void) {
+    return this.events.on<T>(eventName, handler);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public once<T>(eventName: TEventUA, handler: (data: T) => void) {
-    return this.uaEvents.once<T>(eventName, handler);
+  public once<T>(eventName: TEvent, handler: (data: T) => void) {
+    return this.events.once<T>(eventName, handler);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public onceRace<T>(eventNames: TEventUA[], handler: (data: T, eventName: string) => void) {
-    return this.uaEvents.onceRace<T>(eventNames, handler);
+  public onceRace<T>(eventNames: TEvent[], handler: (data: T, eventName: string) => void) {
+    return this.events.onceRace<T>(eventNames, handler);
   }
 
-  public async wait<T>(eventName: TEventUA): Promise<T> {
-    return this.uaEvents.wait<T>(eventName);
+  public async wait<T>(eventName: TEvent): Promise<T> {
+    return this.events.wait<T>(eventName);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public off<T>(eventName: TEventUA, handler: (data: T) => void) {
-    this.uaEvents.off<T>(eventName, handler);
+  public off<T>(eventName: TEvent, handler: (data: T) => void) {
+    this.events.off<T>(eventName, handler);
   }
 
   public isConfigured() {
