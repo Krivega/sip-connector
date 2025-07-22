@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
 export enum EEvent {
   INCOMING_CALL = 'incomingCall',
   DECLINED_INCOMING_CALL = 'declinedIncomingCall',
@@ -12,10 +13,10 @@ export enum Originator {
 }
 
 export const EVENT_NAMES = [
-  EEvent.INCOMING_CALL,
-  EEvent.DECLINED_INCOMING_CALL,
-  EEvent.TERMINATED_INCOMING_CALL,
-  EEvent.FAILED_INCOMING_CALL,
+  `${EEvent.INCOMING_CALL}`,
+  `${EEvent.DECLINED_INCOMING_CALL}`,
+  `${EEvent.TERMINATED_INCOMING_CALL}`,
+  `${EEvent.FAILED_INCOMING_CALL}`,
 ] as const;
 
 export type TEvent = (typeof EVENT_NAMES)[number];

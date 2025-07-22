@@ -4,7 +4,7 @@ import jssip from '../../../__fixtures__/jssip.mock';
 import RTCSessionMock from '../../../__fixtures__/RTCSessionMock';
 import { ConnectionManager, EConnectionManagerEvent } from '../../../ConnectionManager';
 import type { TJsSIP } from '../../../types';
-import { EEvent, Originator } from '../eventNames';
+import { Originator } from '../eventNames';
 import IncomingCallManager from '../IncomingCallManager';
 
 // FAILED event name for RTCSession
@@ -178,7 +178,7 @@ describe('IncomingCallManager', () => {
     it('должен отклонять входящий звонок с кодом по умолчанию', async () => {
       const handler = jest.fn();
 
-      incomingCallManager.on(EEvent.DECLINED_INCOMING_CALL, handler);
+      incomingCallManager.on('declinedIncomingCall', handler);
 
       // Запускаем менеджер и устанавливаем входящий звонок
       incomingCallManager.start();
@@ -243,7 +243,7 @@ describe('IncomingCallManager', () => {
     it('должен устанавливать входящую сессию для REMOTE originator', () => {
       const handler = jest.fn();
 
-      incomingCallManager.on(EEvent.INCOMING_CALL, handler);
+      incomingCallManager.on('incomingCall', handler);
 
       incomingCallManager.start();
 
@@ -264,7 +264,7 @@ describe('IncomingCallManager', () => {
     it('должен игнорировать события для LOCAL originator', () => {
       const handler = jest.fn();
 
-      incomingCallManager.on(EEvent.INCOMING_CALL, handler);
+      incomingCallManager.on('incomingCall', handler);
 
       incomingCallManager.start();
 
@@ -282,7 +282,7 @@ describe('IncomingCallManager', () => {
     it('должен обрабатывать FAILED событие от LOCAL originator', () => {
       const handler = jest.fn();
 
-      incomingCallManager.on(EEvent.TERMINATED_INCOMING_CALL, handler);
+      incomingCallManager.on('terminatedIncomingCall', handler);
 
       // Запускаем менеджер и устанавливаем входящий звонок
       incomingCallManager.start();
@@ -314,7 +314,7 @@ describe('IncomingCallManager', () => {
     it('должен обрабатывать FAILED событие от REMOTE originator', () => {
       const handler = jest.fn();
 
-      incomingCallManager.on(EEvent.FAILED_INCOMING_CALL, handler);
+      incomingCallManager.on('failedIncomingCall', handler);
 
       // Запускаем менеджер и устанавливаем входящий звонок
       incomingCallManager.start();
@@ -349,8 +349,8 @@ describe('IncomingCallManager', () => {
       const handlerIncoming = jest.fn();
       const handlerDeclined = jest.fn();
 
-      incomingCallManager.on(EEvent.INCOMING_CALL, handlerIncoming);
-      incomingCallManager.on(EEvent.DECLINED_INCOMING_CALL, handlerDeclined);
+      incomingCallManager.on('incomingCall', handlerIncoming);
+      incomingCallManager.on('declinedIncomingCall', handlerDeclined);
 
       incomingCallManager.start();
 
@@ -498,20 +498,20 @@ describe('API событий IncomingCallManager', () => {
   it('on: должен вызывать handler при входящем звонке', () => {
     const handler = jest.fn();
 
-    incomingCallManager.on(EEvent.INCOMING_CALL, handler);
+    incomingCallManager.on('incomingCall', handler);
     incomingCallManager.start();
     connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
       originator: Originator.REMOTE,
       session: mockRTCSession,
     });
     expect(handler).toHaveBeenCalledWith(expect.objectContaining({ rtcSession: mockRTCSession }));
-    incomingCallManager.off(EEvent.INCOMING_CALL, handler);
+    incomingCallManager.off('incomingCall', handler);
   });
 
   it('once: должен вызывать handler только один раз', () => {
     const handler = jest.fn();
 
-    incomingCallManager.once(EEvent.INCOMING_CALL, handler);
+    incomingCallManager.once('incomingCall', handler);
     incomingCallManager.start();
     connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
       originator: Originator.REMOTE,
@@ -527,7 +527,7 @@ describe('API событий IncomingCallManager', () => {
   it('onceRace: должен вызывать handler для первого из событий', async () => {
     const handler = jest.fn();
 
-    incomingCallManager.onceRace([EEvent.INCOMING_CALL, EEvent.DECLINED_INCOMING_CALL], handler);
+    incomingCallManager.onceRace(['incomingCall', 'declinedIncomingCall'], handler);
     incomingCallManager.start();
     connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
       originator: Originator.REMOTE,
@@ -540,13 +540,13 @@ describe('API событий IncomingCallManager', () => {
     const callArgs = handler.mock.calls as unknown[][];
     const eventName = callArgs[0]?.[1];
 
-    expect([EEvent.INCOMING_CALL, EEvent.DECLINED_INCOMING_CALL]).toContain(eventName);
+    expect(['incomingCall', 'declinedIncomingCall']).toContain(eventName);
   });
 
   it('wait: должен резолвить промис при входящем звонке', async () => {
     incomingCallManager.start();
 
-    const promise = incomingCallManager.wait(EEvent.INCOMING_CALL);
+    const promise = incomingCallManager.wait('incomingCall');
 
     connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
       originator: Originator.REMOTE,

@@ -9,7 +9,7 @@ import Events from 'events-constructor';
 import UAMock from '../../__fixtures__/UA.mock';
 import logger from '../../logger';
 import type { UA_EVENT_NAMES } from '../eventNames';
-import { EEvent, EVENT_NAMES } from '../eventNames';
+import { EVENT_NAMES } from '../eventNames';
 import RegistrationManager from '../RegistrationManager';
 
 jest.mock('../../logger', () => {
@@ -124,7 +124,7 @@ describe('RegistrationManager', () => {
 
   describe('register', () => {
     it('должен успешно регистрировать UA', async () => {
-      triggerEventWithDelay(mockUa, EEvent.REGISTERED, testData.mockRegisteredEvent);
+      triggerEventWithDelay(mockUa, 'registered', testData.mockRegisteredEvent);
 
       const result = await registrationManager.register();
 
@@ -134,7 +134,7 @@ describe('RegistrationManager', () => {
     it('должен отклонять регистрацию при ошибке', async () => {
       triggerEventWithDelay(
         mockUa,
-        EEvent.REGISTRATION_FAILED,
+        'registrationFailed',
         testData.mockError as unknown as UnRegisteredEvent,
       );
 
@@ -152,7 +152,7 @@ describe('RegistrationManager', () => {
           response: statusCode,
         } as unknown as RegisteredEvent;
 
-        triggerEventWithDelay(mockUa, EEvent.REGISTERED, eventData);
+        triggerEventWithDelay(mockUa, 'registered', eventData);
 
         // eslint-disable-next-line no-await-in-loop
         const result = await registrationManager.register();
@@ -164,7 +164,7 @@ describe('RegistrationManager', () => {
 
   describe('unregister', () => {
     it('должен успешно отменять регистрацию UA', async () => {
-      triggerEventWithDelay(mockUa, EEvent.UNREGISTERED, testData.mockUnregisteredEvent);
+      triggerEventWithDelay(mockUa, 'unregistered', testData.mockUnregisteredEvent);
 
       const result = await registrationManager.unregister();
 
@@ -176,9 +176,9 @@ describe('RegistrationManager', () => {
     it('должен успешно перерегистрировать UA', async () => {
       // Эмулируем успешную отмену регистрации, затем регистрацию
       setTimeout(() => {
-        mockUa.trigger(EEvent.UNREGISTERED, testData.mockUnregisteredEvent);
+        mockUa.trigger('unregistered', testData.mockUnregisteredEvent);
         setTimeout(() => {
-          mockUa.trigger(EEvent.REGISTERED, testData.mockRegisteredEvent);
+          mockUa.trigger('registered', testData.mockRegisteredEvent);
         }, 5);
       }, 10);
 
@@ -193,7 +193,7 @@ describe('RegistrationManager', () => {
         .spyOn(registrationManager, 'unregister')
         .mockRejectedValue(new Error('Unregister failed'));
 
-      triggerEventWithDelay(mockUa, EEvent.REGISTERED, testData.mockRegisteredEvent);
+      triggerEventWithDelay(mockUa, 'registered', testData.mockRegisteredEvent);
 
       const result = await registrationManager.tryRegister();
 
@@ -209,7 +209,7 @@ describe('RegistrationManager', () => {
         .spyOn(registrationManager, 'unregister')
         .mockRejectedValue(new Error('Multiple unregister errors'));
 
-      triggerEventWithDelay(mockUa, EEvent.REGISTERED, testData.mockRegisteredEvent);
+      triggerEventWithDelay(mockUa, 'registered', testData.mockRegisteredEvent);
 
       const result = await registrationManager.tryRegister();
 
@@ -236,7 +236,7 @@ describe('RegistrationManager', () => {
 
       registrationManager.subscribeToStartEvents(onSuccessSpy, onErrorSpy);
 
-      events.trigger(EEvent.REGISTERED, testData.mockRegisteredEvent);
+      events.trigger('registered', testData.mockRegisteredEvent);
 
       expect(onSuccessSpy).toHaveBeenCalled();
       expect(onErrorSpy).not.toHaveBeenCalled();
@@ -248,7 +248,7 @@ describe('RegistrationManager', () => {
 
       registrationManager.subscribeToStartEvents(onSuccessSpy, onErrorSpy);
 
-      events.trigger(EEvent.REGISTRATION_FAILED, testData.mockError);
+      events.trigger('registrationFailed', testData.mockError);
 
       expect(onErrorSpy).toHaveBeenCalledWith(testData.mockError);
       expect(onSuccessSpy).not.toHaveBeenCalled();
@@ -260,7 +260,7 @@ describe('RegistrationManager', () => {
 
       registrationManager.subscribeToStartEvents(onSuccessSpy, onErrorSpy);
 
-      events.trigger(EEvent.DISCONNECTED, testData.mockError);
+      events.trigger('disconnected', testData.mockError);
 
       expect(onErrorSpy).toHaveBeenCalledWith(testData.mockError);
       expect(onSuccessSpy).not.toHaveBeenCalled();
@@ -276,8 +276,8 @@ describe('RegistrationManager', () => {
       unsubscribe();
 
       // Эмулируем события
-      events.trigger(EEvent.REGISTERED, testData.mockRegisteredEvent);
-      events.trigger(EEvent.REGISTRATION_FAILED, testData.mockError);
+      events.trigger('registered', testData.mockRegisteredEvent);
+      events.trigger('registrationFailed', testData.mockError);
 
       expect(onSuccessSpy).not.toHaveBeenCalled();
       expect(onErrorSpy).not.toHaveBeenCalled();
@@ -304,7 +304,7 @@ describe('RegistrationManager', () => {
       unsubscribe1();
 
       // Эмулируем событие
-      events.trigger(EEvent.REGISTERED, testData.mockRegisteredEvent);
+      events.trigger('registered', testData.mockRegisteredEvent);
 
       expect(onSuccessSpy1).not.toHaveBeenCalled();
       expect(onSuccessSpy2).toHaveBeenCalled();
@@ -336,7 +336,7 @@ describe('RegistrationManager', () => {
 
       // Эмулируем успешную регистрацию для всех
       setTimeout(() => {
-        mockUa.trigger(EEvent.REGISTERED, testData.mockRegisteredEvent);
+        mockUa.trigger('registered', testData.mockRegisteredEvent);
       }, 10);
 
       const results = await Promise.all(promises);
@@ -366,13 +366,13 @@ describe('RegistrationManager', () => {
       registrationManager.subscribeToStartEvents(onSuccessSpy, onErrorSpy);
 
       // Эмулируем ошибку
-      events.trigger(EEvent.REGISTRATION_FAILED, testData.mockError);
+      events.trigger('registrationFailed', testData.mockError);
 
       // Проверяем, что колбэк был вызван
       expect(onErrorSpy).toHaveBeenCalledWith(testData.mockError);
 
       // Эмулируем успешное событие после ошибки
-      events.trigger(EEvent.REGISTERED, testData.mockRegisteredEvent);
+      events.trigger('registered', testData.mockRegisteredEvent);
 
       // Проверяем, что успешный колбэк все еще работает
       expect(onSuccessSpy).toHaveBeenCalled();
@@ -385,9 +385,9 @@ describe('RegistrationManager', () => {
       registrationManager.subscribeToStartEvents(onSuccessSpy, onErrorSpy);
 
       // Эмулируем события с пустыми данными
-      events.trigger(EEvent.REGISTERED, undefined);
-      events.trigger(EEvent.REGISTRATION_FAILED, undefined);
-      events.trigger(EEvent.DISCONNECTED, undefined);
+      events.trigger('registered', undefined);
+      events.trigger('registrationFailed', undefined);
+      events.trigger('disconnected', undefined);
 
       // Проверяем, что колбэки были вызваны
       expect(onSuccessSpy).toHaveBeenCalled();

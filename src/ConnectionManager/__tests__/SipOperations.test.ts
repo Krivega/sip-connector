@@ -1,9 +1,7 @@
-/* eslint-disable @typescript-eslint/no-unsafe-enum-comparison */
 import type { Socket, UA, URI } from '@krivega/jssip';
 import jssip from '../../__fixtures__/jssip.mock';
 import UAMock from '../../__fixtures__/UA.mock';
 import type { TJsSIP } from '../../types';
-import { EEvent } from '../eventNames';
 import SipOperations from '../SipOperations';
 import UAFactory from '../UAFactory';
 
@@ -237,15 +235,15 @@ describe('SipOperations', () => {
 
       // Делаем once jest функцией
       mockCreatedUA.once.mockImplementation((event: string, handler: () => void) => {
-        if (event === EEvent.DISCONNECTED) {
+        if (event === 'disconnected') {
           // Первый вызов - reject handler, второй - resolve handler
-          if (eventHandlers[EEvent.DISCONNECTED]) {
+          if (eventHandlers.disconnected) {
             resolveHandler = handler;
           } else {
-            eventHandlers[EEvent.DISCONNECTED] = handler;
+            eventHandlers.disconnected = handler;
           }
-        } else if (event === EEvent.CONNECTED) {
-          eventHandlers[event] = handler;
+        } else if (event === 'connected') {
+          eventHandlers.connected = handler;
         }
 
         return mockCreatedUA;
@@ -274,7 +272,7 @@ describe('SipOperations', () => {
       const checkPromise = sipOperations.checkTelephony(checkTelephonyParams);
 
       // Симулируем успешное подключение
-      eventHandlers[EEvent.CONNECTED]?.();
+      eventHandlers.connected?.();
 
       // Симулируем отключение после stop() - вызываем resolve handler
       if (resolveHandler) {
@@ -301,8 +299,8 @@ describe('SipOperations', () => {
         extraHeaders: ['X-Test-Header: value'],
       });
 
-      expect(mockCreatedUA.once).toHaveBeenCalledWith(EEvent.DISCONNECTED, expect.any(Function));
-      expect(mockCreatedUA.once).toHaveBeenCalledWith(EEvent.CONNECTED, expect.any(Function));
+      expect(mockCreatedUA.once).toHaveBeenCalledWith('disconnected', expect.any(Function));
+      expect(mockCreatedUA.once).toHaveBeenCalledWith('connected', expect.any(Function));
       expect(mockCreatedUA.start).toHaveBeenCalled();
       expect(mockCreatedUA.removeAllListeners).toHaveBeenCalled();
       expect(mockCreatedUA.stop).toHaveBeenCalled();
@@ -345,11 +343,11 @@ describe('SipOperations', () => {
       const checkPromise = sipOperations.checkTelephony(checkTelephonyParams);
 
       // Симулируем отключение до подключения
-      eventHandlers[EEvent.DISCONNECTED]();
+      eventHandlers.disconnected();
 
       await expect(checkPromise).rejects.toThrow('Telephony is not available');
 
-      expect(mockCreatedUA.once).toHaveBeenCalledWith(EEvent.DISCONNECTED, expect.any(Function));
+      expect(mockCreatedUA.once).toHaveBeenCalledWith('disconnected', expect.any(Function));
       expect(mockCreatedUA.start).toHaveBeenCalled();
     });
 
@@ -370,15 +368,15 @@ describe('SipOperations', () => {
       let resolveHandler: (() => void) | undefined;
 
       mockCreatedUA.once.mockImplementation((event: string, handler: () => void) => {
-        if (event === EEvent.DISCONNECTED) {
+        if (event === 'disconnected') {
           // Первый вызов - reject handler, второй - resolve handler
-          if (eventHandlers[EEvent.DISCONNECTED]) {
+          if (eventHandlers.disconnected) {
             resolveHandler = handler;
           } else {
-            eventHandlers[EEvent.DISCONNECTED] = handler;
+            eventHandlers.disconnected = handler;
           }
-        } else if (event === EEvent.CONNECTED) {
-          eventHandlers[event] = handler;
+        } else if (event === 'connected') {
+          eventHandlers.connected = handler;
         }
 
         return mockCreatedUA;
@@ -406,7 +404,7 @@ describe('SipOperations', () => {
       const checkPromise = sipOperations.checkTelephony(minimalParams);
 
       // Симулируем успешное подключение
-      eventHandlers[EEvent.CONNECTED]?.();
+      eventHandlers.connected?.();
 
       // Симулируем отключение после stop() - вызываем resolve handler
       if (resolveHandler) {

@@ -8,7 +8,7 @@ import UAMock, {
 import type { TJsSIP } from '../../types';
 import ConnectionFlow from '../ConnectionFlow';
 import ConnectionStateMachine from '../ConnectionStateMachine';
-import { EEvent, EVENT_NAMES } from '../eventNames';
+import { EVENT_NAMES } from '../eventNames';
 import RegistrationManager from '../RegistrationManager';
 import UAFactory from '../UAFactory';
 
@@ -305,11 +305,11 @@ describe('ConnectionFlow', () => {
       const disconnectPromise = connectionFlow.disconnect();
 
       // Вручную эмитим DISCONNECTED, так как UA нет
-      events.trigger(EEvent.DISCONNECTED, undefined);
+      events.trigger('disconnected', undefined);
 
       await disconnectPromise;
 
-      expect(triggerSpy).toHaveBeenCalledWith(EEvent.DISCONNECTED, undefined);
+      expect(triggerSpy).toHaveBeenCalledWith('disconnected', undefined);
       expect(setUa).toHaveBeenCalledWith(undefined);
       expect(resetSpy).toHaveBeenCalled();
     });
