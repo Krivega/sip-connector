@@ -5,170 +5,35 @@ import { EConnectionManagerEvent } from '../../ConnectionManager';
 import logger from '../../logger';
 import { EEvent as ECallEvent, Originator } from '../eventNames';
 import type { TEvents as TCallEvents } from '../types';
-import type { TEvent } from './eventNames';
+import type { EUseLicense } from './constants';
+import {
+  EContentType,
+  EEventsMainCAM,
+  EEventsMic,
+  EEventsSyncMediaState,
+  EHeader,
+  EParticipantType,
+  EShareState,
+} from './constants';
+import type { TEvent, TEvents } from './eventNames';
 import { EEvent, EVENT_NAMES } from './eventNames';
-
-export type TEvents = Events<typeof EVENT_NAMES>;
-
-enum ECMDNotify {
-  CHANNELS = 'channels',
-  WEBCAST_STARTED = 'WebcastStarted',
-  WEBCAST_STOPPED = 'WebcastStopped',
-  ACCOUNT_CHANGED = 'accountChanged',
-  ACCOUNT_DELETED = 'accountDeleted',
-  ADDED_TO_LIST_MODERATORS = 'addedToListModerators',
-  REMOVED_FROM_LIST_MODERATORS = 'removedFromListModerators',
-  ACCEPTING_WORD_REQUEST = 'ParticipationRequestAccepted',
-  CANCELLING_WORD_REQUEST = 'ParticipationRequestRejected',
-  MOVE_REQUEST_TO_STREAM = 'ParticipantMovedToWebcast',
-  CONFERENCE_PARTICIPANT_TOKEN_ISSUED = 'ConferenceParticipantTokenIssued',
-}
-
-type TChannels = {
-  inputChannels: string;
-  outputChannels: string;
-};
-
-type TParametersModeratorsList = {
-  conference: string;
-};
-
-type TParametersWebcast = {
-  conference: string;
-  type: string;
-};
-
-type TParametersConferenceParticipantTokenIssued = {
-  conference: string;
-  participant: string;
-  jwt: string;
-};
-
-type TAddedToListModeratorsInfoNotify = {
-  cmd: `${ECMDNotify.ADDED_TO_LIST_MODERATORS}`;
-  conference: string;
-};
-
-type TRemovedFromListModeratorsInfoNotify = {
-  cmd: `${ECMDNotify.REMOVED_FROM_LIST_MODERATORS}`;
-  conference: string;
-};
-
-type TAcceptingWordRequestInfoNotify = {
-  cmd: `${ECMDNotify.ACCEPTING_WORD_REQUEST}`;
-  body: { conference: string };
-};
-
-type TCancellingWordRequestInfoNotify = {
-  cmd: `${ECMDNotify.CANCELLING_WORD_REQUEST}`;
-  body: { conference: string };
-};
-
-type TMoveRequestToStreamInfoNotify = {
-  cmd: `${ECMDNotify.MOVE_REQUEST_TO_STREAM}`;
-  body: { conference: string };
-};
-
-type TConferenceParticipantTokenIssued = {
-  cmd: `${ECMDNotify.CONFERENCE_PARTICIPANT_TOKEN_ISSUED}`;
-  body: { conference: string; participant: string; jwt: string };
-};
-
-type TWebcastInfoNotify = {
-  cmd: `${ECMDNotify.WEBCAST_STARTED}`;
-  body: { conference: string; type: string };
-};
-
-type TWebcastStoppedInfoNotify = {
-  cmd: `${ECMDNotify.WEBCAST_STOPPED}`;
-  body: { conference: string; type: string };
-};
-
-type TChannelsInfoNotify = {
-  cmd: `${ECMDNotify.CHANNELS}`;
-  input: string;
-  output: string;
-};
-
-type TAccountChangedInfoNotify = {
-  cmd: `${ECMDNotify.ACCOUNT_CHANGED}`;
-};
-
-type TAccountDeletedInfoNotify = {
-  cmd: `${ECMDNotify.ACCOUNT_DELETED}`;
-};
-
-type TInfoNotify =
-  | TAddedToListModeratorsInfoNotify
-  | TChannelsInfoNotify
-  | TRemovedFromListModeratorsInfoNotify
-  | TWebcastInfoNotify
-  | TConferenceParticipantTokenIssued
-  | TAcceptingWordRequestInfoNotify
-  | TCancellingWordRequestInfoNotify
-  | TMoveRequestToStreamInfoNotify
-  | TAccountChangedInfoNotify
-  | TAccountDeletedInfoNotify
-  | TWebcastStoppedInfoNotify;
-
-const HEADER_CONTENT_TYPE_NAME = 'content-type';
-const HEADER_CONTENT_ENTER_ROOM = 'x-webrtc-enter-room';
-const HEADER_CONTENT_USE_LICENSE = 'X-WEBRTC-USE-LICENSE';
-const HEADER_PARTICIPANT_NAME = 'X-WEBRTC-PARTICIPANT-NAME';
-const HEADER_INPUT_CHANNELS = 'X-WEBRTC-INPUT-CHANNELS';
-const HEADER_OUTPUT_CHANNELS = 'X-WEBRTC-OUTPUT-CHANNELS';
-const HEADER_MAIN_CAM = 'X-WEBRTC-MAINCAM';
-const HEADER_MIC = 'X-WEBRTC-MIC';
-const HEADER_MEDIA_SYNC = 'X-WEBRTC-SYNC';
-const HEADER_MAIN_CAM_RESOLUTION = 'X-WEBRTC-MAINCAM-RESOLUTION';
-const HEADER_NOTIFY = 'X-VINTEO-NOTIFY';
-const HEADER_CONTENT_PARTICIPANT_STATE = 'X-WEBRTC-PARTSTATE';
-
-const HEADER_CONTENT_SHARE_STATE = 'x-webrtc-share-state';
-
-const AVAILABLE_SECOND_REMOTE_STREAM = 'YOUCANRECEIVECONTENT';
-const NOT_AVAILABLE_SECOND_REMOTE_STREAM = 'CONTENTEND';
-const MUST_STOP_PRESENTATION = 'YOUMUSTSTOPSENDCONTENT';
-
-const SPECTATOR = 'SPECTATOR';
-const PARTICIPANT = 'PARTICIPANT';
-
-enum EContentType {
-  ENTER_ROOM = 'application/vinteo.webrtc.roomname',
-  SHARE_STATE = 'application/vinteo.webrtc.sharedesktop',
-  CHANNELS = 'application/vinteo.webrtc.channels',
-  MEDIA_STATE = 'application/vinteo.webrtc.mediastate',
-  REFUSAL = 'application/vinteo.webrtc.refusal',
-  MAIN_CAM = 'application/vinteo.webrtc.maincam',
-  MIC = 'application/vinteo.webrtc.mic',
-  USE_LICENSE = 'application/vinteo.webrtc.uselic',
-  PARTICIPANT_STATE = 'application/vinteo.webrtc.partstate',
-  NOTIFY = 'application/vinteo.webrtc.notify',
-}
-
-enum EEventsMainCAM {
-  PAUSE_MAIN_CAM = 'PAUSEMAINCAM',
-  RESUME_MAIN_CAM = 'RESUMEMAINCAM',
-  MAX_MAIN_CAM_RESOLUTION = 'MAXMAINCAMRESOLUTION',
-  ADMIN_STOP_MAIN_CAM = 'ADMINSTOPMAINCAM',
-  ADMIN_START_MAIN_CAM = 'ADMINSTARTMAINCAM',
-}
-
-enum EEventsMic {
-  ADMIN_STOP_MIC = 'ADMINSTOPMIC',
-  ADMIN_START_MIC = 'ADMINSTARTMIC',
-}
-
-enum EEventsSyncMediaState {
-  ADMIN_SYNC_FORCED = '1',
-  ADMIN_SYNC_NOT_FORCED = '0',
-}
-
-enum EUseLicense {
-  AUDIO = 'AUDIO',
-  VIDEO = 'VIDEO',
-  AUDIOPLUSPRESENTATION = 'AUDIOPLUSPRESENTATION',
-}
+import type {
+  TAcceptingWordRequestInfoNotify,
+  TAddedToListModeratorsInfoNotify,
+  TCancellingWordRequestInfoNotify,
+  TChannels,
+  TChannelsInfoNotify,
+  TConferenceParticipantTokenIssued,
+  TInfoNotify,
+  TMoveRequestToStreamInfoNotify,
+  TParametersConferenceParticipantTokenIssued,
+  TParametersModeratorsList,
+  TParametersWebcast,
+  TRemovedFromListModeratorsInfoNotify,
+  TWebcastInfoNotify,
+  TWebcastStoppedInfoNotify,
+} from './types';
+import { ECMDNotify } from './types';
 
 export class ApiManager {
   private readonly events: TEvents;
@@ -226,7 +91,7 @@ export class ApiManager {
 
   private readonly maybeHandleNotify = (request: IncomingRequest) => {
     try {
-      const headerNotify = request.getHeader(HEADER_NOTIFY);
+      const headerNotify = request.getHeader(EHeader.NOTIFY);
 
       if (headerNotify) {
         const headerNotifyParsed = JSON.parse(headerNotify) as TInfoNotify;
@@ -362,7 +227,7 @@ export class ApiManager {
     }
 
     const { request } = info;
-    const contentType = request.getHeader(HEADER_CONTENT_TYPE_NAME) as EContentType | undefined;
+    const contentType = request.getHeader(EHeader.CONTENT_TYPE_NAME) as EContentType | undefined;
 
     if (contentType !== undefined) {
       switch (contentType) {
@@ -526,8 +391,8 @@ export class ApiManager {
   };
 
   private readonly maybeTriggerChannels = (request: IncomingRequest) => {
-    const inputChannels = request.getHeader(HEADER_INPUT_CHANNELS);
-    const outputChannels = request.getHeader(HEADER_OUTPUT_CHANNELS);
+    const inputChannels = request.getHeader(EHeader.INPUT_CHANNELS);
+    const outputChannels = request.getHeader(EHeader.OUTPUT_CHANNELS);
 
     if (inputChannels && outputChannels) {
       const headersChannels: TChannels = {
@@ -540,25 +405,29 @@ export class ApiManager {
   };
 
   private readonly triggerEnterRoom = (request: IncomingRequest) => {
-    const room = request.getHeader(HEADER_CONTENT_ENTER_ROOM);
-    const participantName = request.getHeader(HEADER_PARTICIPANT_NAME);
+    const room = request.getHeader(EHeader.CONTENT_ENTER_ROOM);
+    const participantName = request.getHeader(EHeader.PARTICIPANT_NAME);
 
     this.events.trigger(EEvent.ENTER_ROOM, { room, participantName });
   };
 
   private readonly triggerShareState = (request: IncomingRequest) => {
-    const eventName = request.getHeader(HEADER_CONTENT_SHARE_STATE);
+    const eventName = request.getHeader(EHeader.CONTENT_SHARE_STATE) as EShareState | undefined;
+
+    if (eventName === undefined) {
+      return;
+    }
 
     switch (eventName) {
-      case AVAILABLE_SECOND_REMOTE_STREAM: {
+      case EShareState.AVAILABLE_SECOND_REMOTE_STREAM: {
         this.events.trigger(EEvent.AVAILABLE_SECOND_REMOTE_STREAM, undefined);
         break;
       }
-      case NOT_AVAILABLE_SECOND_REMOTE_STREAM: {
+      case EShareState.NOT_AVAILABLE_SECOND_REMOTE_STREAM: {
         this.events.trigger(EEvent.NOT_AVAILABLE_SECOND_REMOTE_STREAM, undefined);
         break;
       }
-      case MUST_STOP_PRESENTATION: {
+      case EShareState.MUST_STOP_PRESENTATION: {
         this.events.trigger(EEvent.MUST_STOP_PRESENTATION, undefined);
         break;
       }
@@ -570,20 +439,22 @@ export class ApiManager {
   };
 
   private readonly maybeTriggerParticipantMoveRequest = (request: IncomingRequest) => {
-    const participantState = request.getHeader(HEADER_CONTENT_PARTICIPANT_STATE);
+    const participantState = request.getHeader(EHeader.CONTENT_PARTICIPANT_STATE) as
+      | EParticipantType
+      | undefined;
 
-    if (participantState === SPECTATOR) {
+    if (participantState === EParticipantType.SPECTATOR) {
       this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS, undefined);
     }
 
-    if (participantState === PARTICIPANT) {
+    if (participantState === EParticipantType.PARTICIPANT) {
       this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS, undefined);
     }
   };
 
   private readonly triggerMainCamControl = (request: IncomingRequest) => {
-    const mainCam = request.getHeader(HEADER_MAIN_CAM) as EEventsMainCAM | undefined;
-    const syncState = request.getHeader(HEADER_MEDIA_SYNC) as EEventsSyncMediaState | undefined;
+    const mainCam = request.getHeader(EHeader.MAIN_CAM) as EEventsMainCAM | undefined;
+    const syncState = request.getHeader(EHeader.MEDIA_SYNC) as EEventsSyncMediaState | undefined;
     const isSyncForced = syncState === EEventsSyncMediaState.ADMIN_SYNC_FORCED;
 
     if (mainCam === EEventsMainCAM.ADMIN_START_MAIN_CAM) {
@@ -605,7 +476,7 @@ export class ApiManager {
       this.events.trigger(EEvent.ADMIN_FORCE_SYNC_MEDIA_STATE, { isSyncForced });
     }
 
-    const resolutionMainCam = request.getHeader(HEADER_MAIN_CAM_RESOLUTION);
+    const resolutionMainCam = request.getHeader(EHeader.MAIN_CAM_RESOLUTION);
 
     this.events.trigger(EEvent.MAIN_CAM_CONTROL, {
       mainCam,
@@ -614,8 +485,8 @@ export class ApiManager {
   };
 
   private readonly triggerMicControl = (request: IncomingRequest) => {
-    const mic = request.getHeader(HEADER_MIC) as EEventsMic | undefined;
-    const syncState = request.getHeader(HEADER_MEDIA_SYNC) as EEventsSyncMediaState | undefined;
+    const mic = request.getHeader(EHeader.MIC) as EEventsMic | undefined;
+    const syncState = request.getHeader(EHeader.MEDIA_SYNC) as EEventsSyncMediaState | undefined;
     const isSyncForced = syncState === EEventsSyncMediaState.ADMIN_SYNC_FORCED;
 
     if (mic === EEventsMic.ADMIN_START_MIC) {
@@ -626,7 +497,7 @@ export class ApiManager {
   };
 
   private readonly triggerUseLicense = (request: IncomingRequest) => {
-    const license: EUseLicense = request.getHeader(HEADER_CONTENT_USE_LICENSE) as EUseLicense;
+    const license: EUseLicense = request.getHeader(EHeader.CONTENT_USE_LICENSE) as EUseLicense;
 
     this.events.trigger(EEvent.USE_LICENSE, license);
   };

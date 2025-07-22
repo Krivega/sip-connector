@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
+import type Events from 'events-constructor';
+
 export enum EEvent {
   CHANNELS_NOTIFY = 'channels:notify',
   PARTICIPANT_ADDED_TO_LIST_MODERATORS = 'participant:added-to-list-moderators',
@@ -58,5 +60,4 @@ export const EVENT_NAMES = [
 ] as const;
 
 export type TEvent = (typeof EVENT_NAMES)[number];
-
-export const HEADER_NOTIFY = 'X-VINTEO-NOTIFY';
+export type TEvents = Events<typeof EVENT_NAMES>;
