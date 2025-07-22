@@ -8,9 +8,8 @@ import UAMock, {
 import type { TJsSIP } from '../../types';
 import ConnectionFlow from '../ConnectionFlow';
 import ConnectionStateMachine from '../ConnectionStateMachine';
-import { EEvent, EVENT_NAMES } from '../constants';
+import { EEvent, EVENT_NAMES } from '../eventNames';
 import RegistrationManager from '../RegistrationManager';
-import SipEventHandler from '../SipEventHandler';
 import UAFactory from '../UAFactory';
 
 const SIP_SERVER_URL = 'sip.example.com';
@@ -20,7 +19,6 @@ describe('ConnectionFlow', () => {
   let events: Events<typeof EVENT_NAMES>;
   let uaFactory: UAFactory;
   let stateMachine: ConnectionStateMachine;
-  let sipEventHandler: SipEventHandler;
   let registrationManager: RegistrationManager;
   let connectionFlow: ConnectionFlow;
 
@@ -68,7 +66,6 @@ describe('ConnectionFlow', () => {
     events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
     uaFactory = new UAFactory(jssip as unknown as TJsSIP);
     stateMachine = new ConnectionStateMachine(events);
-    sipEventHandler = new SipEventHandler(events);
     registrationManager = new RegistrationManager({
       events,
       getUaProtected: () => {
@@ -88,7 +85,6 @@ describe('ConnectionFlow', () => {
       uaFactory,
       stateMachine,
       registrationManager,
-      sipEventHandler,
       getUa,
       setUa,
       getConnectionConfiguration,
@@ -135,7 +131,6 @@ describe('ConnectionFlow', () => {
 
       const startConnectSpy = jest.spyOn(stateMachine, 'startConnect');
       const startInitUaSpy = jest.spyOn(stateMachine, 'startInitUa');
-      const sipHandlerStartSpy = jest.spyOn(sipEventHandler, 'start');
 
       const result = await connectionFlow.connect(parameters);
 
@@ -149,7 +144,6 @@ describe('ConnectionFlow', () => {
       expect(setUa).toHaveBeenCalled();
       expect(startConnectSpy).toHaveBeenCalled();
       expect(startInitUaSpy).toHaveBeenCalled();
-      expect(sipHandlerStartSpy).toHaveBeenCalled();
     });
 
     it('должен успешно устанавливать соединение и вызывать нужные зависимости с регистрацией', async () => {
@@ -189,7 +183,6 @@ describe('ConnectionFlow', () => {
 
       const startConnectSpy = jest.spyOn(stateMachine, 'startConnect');
       const startInitUaSpy = jest.spyOn(stateMachine, 'startInitUa');
-      const sipHandlerStartSpy = jest.spyOn(sipEventHandler, 'start');
 
       const result = await connectionFlow.connect(parameters);
 
@@ -197,7 +190,6 @@ describe('ConnectionFlow', () => {
       expect(setUa).toHaveBeenCalled();
       expect(startConnectSpy).toHaveBeenCalled();
       expect(startInitUaSpy).toHaveBeenCalled();
-      expect(sipHandlerStartSpy).toHaveBeenCalled();
     });
 
     it('должен отменять повторяющиеся запросы при вызове cancelRequests', async () => {
@@ -294,12 +286,10 @@ describe('ConnectionFlow', () => {
 
       uaInstance = uaMock;
 
-      const sipHandlerStopSpy = jest.spyOn(sipEventHandler, 'stop');
       const resetSpy = jest.spyOn(stateMachine, 'reset');
 
       await connectionFlow.disconnect();
 
-      expect(sipHandlerStopSpy).toHaveBeenCalled();
       expect(uaMock.stop).toHaveBeenCalled();
       expect(setUa).toHaveBeenCalledWith(undefined);
       expect(resetSpy).toHaveBeenCalled();

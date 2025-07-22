@@ -1,7 +1,7 @@
 import Events from 'events-constructor';
 import logger from '../../logger';
 import ConnectionStateMachine, { EEvents, EState } from '../ConnectionStateMachine';
-import { EVENT_NAMES } from '../constants';
+import { EVENT_NAMES } from '../eventNames';
 
 jest.mock('../../logger', () => {
   return jest.fn();

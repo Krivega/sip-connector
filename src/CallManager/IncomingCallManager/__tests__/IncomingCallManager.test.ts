@@ -4,7 +4,7 @@ import jssip from '../../../__fixtures__/jssip.mock';
 import RTCSessionMock from '../../../__fixtures__/RTCSessionMock';
 import { ConnectionManager, EConnectionManagerEvent } from '../../../ConnectionManager';
 import type { TJsSIP } from '../../../types';
-import { EEvent, Originator } from '../constants';
+import { EEvent, Originator } from '../eventNames';
 import IncomingCallManager from '../IncomingCallManager';
 
 // FAILED event name for RTCSession

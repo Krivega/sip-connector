@@ -5,10 +5,9 @@ import { parseDisplayName } from '../../utils';
 import type { TGetServerUrl, TJsSIP } from '../types';
 import { hasHandshakeWebsocketOpeningError } from '../utils/errors';
 import type ConnectionStateMachine from './ConnectionStateMachine';
-import type { EVENT_NAMES } from './constants';
-import { EEvent } from './constants';
+import type { EVENT_NAMES } from './eventNames';
+import { EEvent } from './eventNames';
 import type RegistrationManager from './RegistrationManager';
-import type SipEventHandler from './SipEventHandler';
 
 import type UAFactory from './UAFactory';
 
@@ -49,7 +48,6 @@ interface IDependencies {
   uaFactory: UAFactory;
   stateMachine: ConnectionStateMachine;
   registrationManager: RegistrationManager;
-  sipEventHandler: SipEventHandler;
   getUa: () => UA | undefined;
   setUa: (ua: UA | undefined) => void;
   getConnectionConfiguration: () => {
@@ -84,8 +82,6 @@ export default class ConnectionFlow {
 
   private readonly registrationManager: IDependencies['registrationManager'];
 
-  private readonly sipEventHandler: IDependencies['sipEventHandler'];
-
   private readonly getUa: IDependencies['getUa'];
 
   private readonly setUa: IDependencies['setUa'];
@@ -106,7 +102,6 @@ export default class ConnectionFlow {
     this.uaFactory = dependencies.uaFactory;
     this.stateMachine = dependencies.stateMachine;
     this.registrationManager = dependencies.registrationManager;
-    this.sipEventHandler = dependencies.sipEventHandler;
     this.getUa = dependencies.getUa;
     this.setUa = dependencies.setUa;
     this.getConnectionConfiguration = dependencies.getConnectionConfiguration;
@@ -151,8 +146,6 @@ export default class ConnectionFlow {
   };
 
   public disconnect = async () => {
-    this.sipEventHandler.stop();
-
     const disconnectedPromise = new Promise<void>((resolve) => {
       this.events.once(EEvent.DISCONNECTED, () => {
         resolve();
@@ -356,8 +349,6 @@ export default class ConnectionFlow {
       };
 
       unsubscribeFromEvents = subscribeToStartEvents(resolveUa, rejectError);
-
-      this.sipEventHandler.start();
 
       ua.start();
     });

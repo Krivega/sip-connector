@@ -1,19 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
-
 export enum EEvent {
-  // UA members
-  CONNECTING = 'connecting',
-  CONNECTED = 'connected',
-  DISCONNECTED = 'disconnected',
-  NEW_RTC_SESSION = 'newRTCSession',
-  REGISTERED = 'registered',
-  UNREGISTERED = 'unregistered',
-  REGISTRATION_FAILED = 'registrationFailed',
-  NEW_MESSAGE = 'newMessage',
-  SIP_EVENT = 'sipEvent',
-
-  // Synthetic members
-  CHANNELS = 'channels',
   CHANNELS_NOTIFY = 'channels:notify',
   PARTICIPANT_ADDED_TO_LIST_MODERATORS = 'participant:added-to-list-moderators',
   PARTICIPANT_REMOVED_FROM_LIST_MODERATORS = 'participant:removed-from-list-moderators',
@@ -27,9 +13,22 @@ export enum EEvent {
   ACCOUNT_CHANGED = 'account:changed',
   ACCOUNT_DELETED = 'account:deleted',
   CONFERENCE_PARTICIPANT_TOKEN_ISSUED = 'conference:participant-token-issued',
+  CHANNELS = 'channels',
+  ENTER_ROOM = 'enterRoom',
+  SHARE_STATE = 'shareState',
+  MAIN_CAM_CONTROL = 'main-cam-control',
+  USE_LICENSE = 'useLicense',
+  ADMIN_START_MAIN_CAM = 'admin-start-main-cam',
+  ADMIN_STOP_MAIN_CAM = 'admin-stop-main-cam',
+  ADMIN_START_MIC = 'admin-start-mic',
+  ADMIN_STOP_MIC = 'admin-stop-mic',
+  ADMIN_FORCE_SYNC_MEDIA_STATE = 'admin-force-sync-media-state',
+  AVAILABLE_SECOND_REMOTE_STREAM = 'availableSecondRemoteStream',
+  NOT_AVAILABLE_SECOND_REMOTE_STREAM = 'notAvailableSecondRemoteStream',
+  MUST_STOP_PRESENTATION = 'mustStopPresentation',
 }
 
-const SYNTHETIC_EVENT_NAMES = [
+export const EVENT_NAMES = [
   `${EEvent.PARTICIPATION_ACCEPTING_WORD_REQUEST}`,
   `${EEvent.PARTICIPATION_CANCELLING_WORD_REQUEST}`,
   `${EEvent.PARTICIPANT_MOVE_REQUEST_TO_STREAM}`,
@@ -41,20 +40,23 @@ const SYNTHETIC_EVENT_NAMES = [
   `${EEvent.WEBCAST_STOPPED}`,
   `${EEvent.PARTICIPANT_ADDED_TO_LIST_MODERATORS}`,
   `${EEvent.PARTICIPANT_REMOVED_FROM_LIST_MODERATORS}`,
+  `${EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS}`,
+  `${EEvent.PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS}`,
+  `${EEvent.CHANNELS}`,
+  `${EEvent.ENTER_ROOM}`,
+  `${EEvent.SHARE_STATE}`,
+  `${EEvent.MAIN_CAM_CONTROL}`,
+  `${EEvent.USE_LICENSE}`,
+  `${EEvent.ADMIN_START_MAIN_CAM}`,
+  `${EEvent.ADMIN_STOP_MAIN_CAM}`,
+  `${EEvent.ADMIN_START_MIC}`,
+  `${EEvent.ADMIN_STOP_MIC}`,
+  `${EEvent.ADMIN_FORCE_SYNC_MEDIA_STATE}`,
+  `${EEvent.AVAILABLE_SECOND_REMOTE_STREAM}`,
+  `${EEvent.NOT_AVAILABLE_SECOND_REMOTE_STREAM}`,
+  `${EEvent.MUST_STOP_PRESENTATION}`,
 ] as const;
-
-export const UA_EVENT_NAMES = [
-  `${EEvent.CONNECTING}`,
-  `${EEvent.CONNECTED}`,
-  `${EEvent.DISCONNECTED}`,
-  `${EEvent.NEW_RTC_SESSION}`,
-  `${EEvent.REGISTERED}`,
-  `${EEvent.UNREGISTERED}`,
-  `${EEvent.REGISTRATION_FAILED}`,
-  `${EEvent.NEW_MESSAGE}`,
-  `${EEvent.SIP_EVENT}`,
-] as const;
-
-export const EVENT_NAMES = [...UA_EVENT_NAMES, ...SYNTHETIC_EVENT_NAMES];
 
 export type TEvent = (typeof EVENT_NAMES)[number];
+
+export const HEADER_NOTIFY = 'X-VINTEO-NOTIFY';

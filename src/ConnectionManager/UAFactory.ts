@@ -3,7 +3,7 @@ import type { UA, UAConfigurationParams, WebSocketInterface } from '@krivega/jss
 import { generateUserId, parseDisplayName, resolveSipUrl } from '../../utils';
 import getExtraHeadersRemoteAddress from '../getExtraHeadersRemoteAddress';
 import type { TJsSIP } from '../types';
-import { UA_EVENT_NAMES } from './constants';
+import { UA_EVENT_NAMES } from './eventNames';
 
 export type TUAConfiguration = {
   configuration: UAConfigurationParams;

@@ -3,7 +3,7 @@ import type { Socket, UA, URI } from '@krivega/jssip';
 import jssip from '../../__fixtures__/jssip.mock';
 import UAMock from '../../__fixtures__/UA.mock';
 import type { TJsSIP } from '../../types';
-import { EEvent } from '../constants';
+import { EEvent } from '../eventNames';
 import SipOperations from '../SipOperations';
 import UAFactory from '../UAFactory';
 

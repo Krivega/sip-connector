@@ -1,9 +1,4 @@
-// Интерфейс стратегии звонка
-export interface ICallStrategy {
-  startCall: (localStream: MediaStream) => void;
-  endCall: () => void;
-  answerIncomingCall: (localStream: MediaStream) => void;
-}
+import type { ICallStrategy } from './types';
 
 // Типы событий CallManager
 export type TCallManagerEvent = 'newDTMF' | 'newInfo';

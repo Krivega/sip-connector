@@ -5,10 +5,9 @@ import ConfigurationManager from './ConfigurationManager';
 import type { TConnect, TSet } from './ConnectionFlow';
 import ConnectionFlow from './ConnectionFlow';
 import ConnectionStateMachine from './ConnectionStateMachine';
-import type { TEvent } from './constants';
-import { EVENT_NAMES } from './constants';
+import type { TEvent } from './eventNames';
+import { EVENT_NAMES } from './eventNames';
 import RegistrationManager from './RegistrationManager';
-import SipEventHandler from './SipEventHandler';
 import type { TParametersCheckTelephony } from './SipOperations';
 import SipOperations from './SipOperations';
 import UAFactory from './UAFactory';
@@ -19,8 +18,6 @@ export default class ConnectionManager {
   public ua?: UA;
 
   public socket?: WebSocketInterface;
-
-  private readonly sipEventHandler: SipEventHandler;
 
   private readonly uaFactory: UAFactory;
 
@@ -40,7 +37,6 @@ export default class ConnectionManager {
     this.JsSIP = JsSIP;
 
     this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
-    this.sipEventHandler = new SipEventHandler(this.events);
     this.uaFactory = new UAFactory(JsSIP);
     this.registrationManager = new RegistrationManager({
       events: this.events,
@@ -63,7 +59,6 @@ export default class ConnectionManager {
       uaFactory: this.uaFactory,
       stateMachine: this.stateMachine,
       registrationManager: this.registrationManager,
-      sipEventHandler: this.sipEventHandler,
       getUa: this.getUa,
       getConnectionConfiguration: this.getConnectionConfiguration,
       setConnectionConfiguration: (config) => {
