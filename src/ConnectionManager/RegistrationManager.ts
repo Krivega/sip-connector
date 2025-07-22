@@ -6,25 +6,21 @@ import { EEvent } from './constants';
 
 interface IDependencies {
   events: Events<typeof EVENT_NAMES>;
-  getUa: () => UA | undefined;
+  getUaProtected: () => UA;
 }
 
 export default class RegistrationManager {
   private readonly events: IDependencies['events'];
 
-  private readonly getUa: IDependencies['getUa'];
+  private readonly getUaProtected: IDependencies['getUaProtected'];
 
   public constructor(dependencies: IDependencies) {
     this.events = dependencies.events;
-    this.getUa = dependencies.getUa;
+    this.getUaProtected = dependencies.getUaProtected;
   }
 
   public async register(): Promise<RegisteredEvent> {
-    const ua = this.getUa();
-
-    if (!ua) {
-      throw new Error('UA is not initialized');
-    }
+    const ua = this.getUaProtected();
 
     return new Promise((resolve, reject) => {
       ua.on(EEvent.REGISTERED, resolve);
@@ -34,11 +30,7 @@ export default class RegistrationManager {
   }
 
   public async unregister(): Promise<UnRegisteredEvent> {
-    const ua = this.getUa();
-
-    if (!ua) {
-      throw new Error('UA is not initialized');
-    }
+    const ua = this.getUaProtected();
 
     return new Promise((resolve) => {
       ua.on(EEvent.UNREGISTERED, resolve);
@@ -47,14 +39,6 @@ export default class RegistrationManager {
   }
 
   public async tryRegister(): Promise<RegisteredEvent> {
-    const ua = this.getUa();
-
-    if (!ua) {
-      throw new Error('UA is not initialized');
-    }
-
-    this.events.trigger(EEvent.CONNECTING, undefined);
-
     try {
       await this.unregister();
     } catch (error) {

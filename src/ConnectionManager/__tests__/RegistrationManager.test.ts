@@ -57,7 +57,7 @@ const createUAMock = (): UAMock => {
   });
 };
 
-const createGetUaMock = (mockUa: UAMock): jest.MockedFunction<() => UA | undefined> => {
+const createGetUaMock = (mockUa: UAMock): jest.MockedFunction<() => UA> => {
   return jest.fn(() => {
     return mockUa as unknown as UA;
   });
@@ -84,7 +84,7 @@ describe('RegistrationManager', () => {
   let registrationManager: RegistrationManager;
   let mockUa: UAMock;
   let events: Events<typeof EVENT_NAMES>;
-  let getUaMock: jest.MockedFunction<() => UA | undefined>;
+  let getUaMock: jest.MockedFunction<() => UA>;
   let testData: ITestEventData;
 
   beforeEach(() => {
@@ -99,7 +99,7 @@ describe('RegistrationManager', () => {
     // Создание экземпляра RegistrationManager
     registrationManager = new RegistrationManager({
       events,
-      getUa: getUaMock,
+      getUaProtected: getUaMock,
     });
   });
 
@@ -115,7 +115,7 @@ describe('RegistrationManager', () => {
     it('должен корректно инициализировать зависимости', () => {
       const manager = new RegistrationManager({
         events,
-        getUa: getUaMock,
+        getUaProtected: getUaMock,
       });
 
       expect(manager).toBeDefined();
@@ -140,13 +140,6 @@ describe('RegistrationManager', () => {
 
       await expect(registrationManager.register()).rejects.toThrow('Test error');
     });
-
-    it('должен выбрасывать ошибку когда UA не инициализирован', async () => {
-      getUaMock.mockReturnValue(undefined);
-
-      await expect(registrationManager.register()).rejects.toThrow('UA is not initialized');
-    });
-
     it('должен корректно обрабатывать различные статус коды', async () => {
       const eventsWithDifferentStatusCodes = [
         { status_code: 200, reason_phrase: 'OK' },
@@ -177,18 +170,6 @@ describe('RegistrationManager', () => {
 
       expect(result).toEqual(testData.mockUnregisteredEvent);
     });
-
-    it('должен выбрасывать ошибку когда UA не инициализирован', async () => {
-      getUaMock.mockReturnValue(undefined);
-
-      await expect(registrationManager.unregister()).rejects.toThrow('UA is not initialized');
-    });
-
-    it('должен выбрасывать ошибку когда UA равен null', async () => {
-      getUaMock.mockReturnValue(undefined);
-
-      await expect(registrationManager.unregister()).rejects.toThrow('UA is not initialized');
-    });
   });
 
   describe('tryRegister', () => {
@@ -204,35 +185,6 @@ describe('RegistrationManager', () => {
       const result = await registrationManager.tryRegister();
 
       expect(result).toEqual(testData.mockRegisteredEvent);
-    });
-
-    it('должен выбрасывать ошибку когда UA не инициализирован', async () => {
-      getUaMock.mockReturnValue(undefined);
-
-      await expect(registrationManager.tryRegister()).rejects.toThrow('UA is not initialized');
-    });
-
-    it('должен выбрасывать ошибку когда UA равен null', async () => {
-      getUaMock.mockReturnValue(undefined);
-
-      await expect(registrationManager.tryRegister()).rejects.toThrow('UA is not initialized');
-    });
-
-    it('должен эмитировать событие CONNECTING перед попыткой регистрации', async () => {
-      const onConnectingSpy = jest.fn();
-
-      events.on(EEvent.CONNECTING, onConnectingSpy);
-
-      setTimeout(() => {
-        mockUa.trigger(EEvent.UNREGISTERED, testData.mockUnregisteredEvent);
-        setTimeout(() => {
-          mockUa.trigger(EEvent.REGISTERED, testData.mockRegisteredEvent);
-        }, 5);
-      }, 10);
-
-      await registrationManager.tryRegister();
-
-      expect(onConnectingSpy).toHaveBeenCalledWith(undefined);
     });
 
     it('должен корректно обрабатывать ошибку при unregister и продолжать регистрацию', async () => {

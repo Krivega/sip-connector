@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
 
 export enum EEvent {
-  // EEvent members
+  // UA members
   CONNECTING = 'connecting',
   CONNECTED = 'connected',
   DISCONNECTED = 'disconnected',
@@ -12,7 +12,7 @@ export enum EEvent {
   NEW_MESSAGE = 'newMessage',
   SIP_EVENT = 'sipEvent',
 
-  // EEvent members
+  // Synthetic members
   CHANNELS = 'channels',
   CHANNELS_NOTIFY = 'channels:notify',
   PARTICIPANT_ADDED_TO_LIST_MODERATORS = 'participant:added-to-list-moderators',
@@ -29,7 +29,7 @@ export enum EEvent {
   CONFERENCE_PARTICIPANT_TOKEN_ISSUED = 'conference:participant-token-issued',
 }
 
-const SYNTHETICS_EVENT_NAMES = [
+const SYNTHETIC_EVENT_NAMES = [
   `${EEvent.PARTICIPATION_ACCEPTING_WORD_REQUEST}`,
   `${EEvent.PARTICIPATION_CANCELLING_WORD_REQUEST}`,
   `${EEvent.PARTICIPANT_MOVE_REQUEST_TO_STREAM}`,
@@ -55,6 +55,6 @@ export const UA_EVENT_NAMES = [
   `${EEvent.SIP_EVENT}`,
 ] as const;
 
-export const EVENT_NAMES = [...UA_EVENT_NAMES, ...SYNTHETICS_EVENT_NAMES];
+export const EVENT_NAMES = [...UA_EVENT_NAMES, ...SYNTHETIC_EVENT_NAMES];
 
 export type TEvent = (typeof EVENT_NAMES)[number];

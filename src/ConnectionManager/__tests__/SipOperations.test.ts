@@ -11,7 +11,7 @@ describe('SipOperations', () => {
   let uaFactory: UAFactory;
   let sipOperations: SipOperations;
   let mockUA: UAMock;
-  let getUa: () => UA | undefined;
+  let getUaProtected: () => UA;
 
   beforeEach(() => {
     uaFactory = new UAFactory(jssip as unknown as TJsSIP);
@@ -20,13 +20,13 @@ describe('SipOperations', () => {
       register: false,
       sockets: [{}] as unknown as Socket,
     });
-    getUa = jest.fn(() => {
+    getUaProtected = jest.fn(() => {
       return mockUA as unknown as UA;
     });
 
     sipOperations = new SipOperations({
       uaFactory,
-      getUa,
+      getUaProtected,
     });
   });
 
@@ -108,21 +108,6 @@ describe('SipOperations', () => {
         }),
       });
     });
-
-    it('должен выбрасывать ошибку при отсутствии UA', async () => {
-      getUa = jest.fn(() => {
-        return undefined;
-      });
-      sipOperations = new SipOperations({
-        uaFactory,
-        getUa,
-      });
-
-      const target = 'sip:target@sip.example.com';
-
-      await expect(sipOperations.sendOptions(target)).rejects.toThrow('is not connected');
-    });
-
     it('должен выбрасывать ошибку при неудачном запросе', async () => {
       const target = 'sip:target@sip.example.com';
       const error = new Error('Request failed');
@@ -226,25 +211,6 @@ describe('SipOperations', () => {
           }),
         },
       );
-    });
-
-    it('должен выбрасывать ошибку при отсутствии UA', async () => {
-      getUa = jest.fn(() => {
-        return undefined;
-      });
-      sipOperations = new SipOperations({
-        uaFactory,
-        getUa,
-      });
-
-      await expect(sipOperations.ping()).rejects.toThrow('is not connected');
-    });
-
-    it('должен выбрасывать ошибку при отсутствии URI в конфигурации', async () => {
-      // @ts-expect-error
-      mockUA.configuration.uri = undefined as unknown as URI;
-
-      await expect(sipOperations.ping()).rejects.toThrow('is not connected');
     });
   });
 

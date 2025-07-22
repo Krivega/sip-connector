@@ -44,7 +44,7 @@ export default class ConnectionManager {
     this.uaFactory = new UAFactory(JsSIP);
     this.registrationManager = new RegistrationManager({
       events: this.events,
-      getUa: this.getUa,
+      getUaProtected: this.getUaProtected,
     });
     this.stateMachine = new ConnectionStateMachine(this.events);
 
@@ -54,7 +54,7 @@ export default class ConnectionManager {
 
     this.sipOperations = new SipOperations({
       uaFactory: this.uaFactory,
-      getUa: this.getUa,
+      getUaProtected: this.getUaProtected,
     });
 
     this.connectionFlow = new ConnectionFlow({
@@ -193,6 +193,14 @@ export default class ConnectionManager {
   };
 
   private readonly getUa = () => {
+    return this.ua;
+  };
+
+  private readonly getUaProtected = () => {
+    if (!this.ua) {
+      throw new Error('UA not initialized');
+    }
+
     return this.ua;
   };
 }

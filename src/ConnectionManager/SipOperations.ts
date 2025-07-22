@@ -13,17 +13,17 @@ export type TParametersCheckTelephony = {
 
 interface IDependencies {
   uaFactory: UAFactory;
-  getUa: () => UA | undefined;
+  getUaProtected: () => UA;
 }
 
 export default class SipOperations {
-  private readonly uaFactory: UAFactory;
+  private readonly uaFactory: IDependencies['uaFactory'];
 
-  private readonly getUa: () => UA | undefined;
+  private readonly getUaProtected: IDependencies['getUaProtected'];
 
   public constructor(dependencies: IDependencies) {
     this.uaFactory = dependencies.uaFactory;
-    this.getUa = dependencies.getUa;
+    this.getUaProtected = dependencies.getUaProtected;
   }
 
   /**
@@ -34,11 +34,7 @@ export default class SipOperations {
     body?: string,
     extraHeaders?: string[],
   ): Promise<void> {
-    const ua = this.getUa();
-
-    if (!ua) {
-      throw new Error('is not connected');
-    }
+    const ua = this.getUaProtected();
 
     return new Promise((resolve, reject) => {
       try {
@@ -63,12 +59,7 @@ export default class SipOperations {
    * Отправляет SIP OPTIONS запрос к собственному URI (ping)
    */
   public async ping(body?: string, extraHeaders?: string[]): Promise<void> {
-    const ua = this.getUa();
-
-    if (!ua?.configuration.uri) {
-      throw new Error('is not connected');
-    }
-
+    const ua = this.getUaProtected();
     const target = ua.configuration.uri;
 
     return this.sendOptions(target, body, extraHeaders);

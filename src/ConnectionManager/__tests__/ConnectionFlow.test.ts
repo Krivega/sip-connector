@@ -71,7 +71,15 @@ describe('ConnectionFlow', () => {
     sipEventHandler = new SipEventHandler(events);
     registrationManager = new RegistrationManager({
       events,
-      getUa,
+      getUaProtected: () => {
+        const ua = getUa();
+
+        if (!ua) {
+          throw new Error('UA is not initialized');
+        }
+
+        return ua;
+      },
     });
 
     connectionFlow = new ConnectionFlow({
