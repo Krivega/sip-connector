@@ -5,6 +5,7 @@ const jestConfig: JestConfigWithTsJest = {
   testEnvironment: 'jsdom',
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
+    'src/PresentationManager/@PresentationManager.ts',
     '!<rootDir>/node_modules/',
     '!<rootDir>/demoDist/**',
     '!<rootDir>/dist/**',
@@ -13,6 +14,7 @@ const jestConfig: JestConfigWithTsJest = {
     '!src/**/*.d.ts',
     '!src/**/types.ts',
     '!src/**/typings.ts',
+    '!src/**/constants.ts',
     '!src/ConnectionManager/index.ts',
     '!src/CallManager/index.ts',
     '!src/PresentationManager/index.ts',

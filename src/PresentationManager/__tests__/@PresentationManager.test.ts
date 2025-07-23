@@ -1,8 +1,8 @@
+import type { TReachedLimitError } from 'repeated-calls';
 import { createMediaStreamMock } from 'webrtc-mock';
 import RTCSessionMock from '../../__fixtures__/RTCSessionMock';
 import { CallManager } from '../../CallManager';
-import PresentationManager from '../@PresentationManager';
-import { EEvent } from '../eventNames';
+import PresentationManager, { hasCanceledStartPresentationError } from '../@PresentationManager';
 
 describe('PresentationManager', () => {
   let callManager: CallManager;
@@ -124,13 +124,34 @@ describe('PresentationManager', () => {
 
   it('вызывает событие FAILED_PRESENTATION при ошибке stopPresentation', async () => {
     await manager.startPresentation(mediaStream);
-    RTCSessionMock.setPresentationError(new Error('fail'));
+
+    const testError = new Error('fail');
+
+    RTCSessionMock.setPresentationError(testError);
 
     const spy = jest.fn();
 
-    manager.on(EEvent.FAILED_PRESENTATION, spy);
+    manager.on('presentation:failed', spy);
+
     await expect(manager.stopPresentation()).rejects.toThrow('fail');
-    expect(spy).toHaveBeenCalledWith(expect.any(Error));
+
+    expect(spy).toHaveBeenCalledWith(testError);
+  });
+
+  it('вызывает событие FAILED_PRESENTATION в блоке catch при ошибке stopPresentation', async () => {
+    await manager.startPresentation(mediaStream);
+
+    const testError = new Error('fail-catch');
+
+    RTCSessionMock.setPresentationError(testError);
+
+    const spy = jest.fn();
+
+    manager.on('presentation:failed', spy);
+
+    await expect(manager.stopPresentation()).rejects.toThrow('fail-catch');
+
+    expect(spy).toHaveBeenCalledWith(testError);
   });
 
   it('вызывает событие ENDED_PRESENTATION если нет rtcSession при stopPresentation', async () => {
@@ -143,7 +164,7 @@ describe('PresentationManager', () => {
 
     const spy = jest.fn();
 
-    manager.on(EEvent.ENDED_PRESENTATION, spy);
+    manager.on('presentation:ended', spy);
     await manager.stopPresentation();
     expect(spy).toHaveBeenCalled();
 
@@ -155,6 +176,26 @@ describe('PresentationManager', () => {
 
     expect(calledWith).toBeDefined();
     expect(calledWith.id).toBe(streamPresentationCurrent?.id);
+  });
+
+  it('вызывает событие ENDED_PRESENTATION когда есть streamPresentationPrevious но нет rtcSession', async () => {
+    await manager.startPresentation(mediaStream);
+
+    const { streamPresentationCurrent } = manager;
+
+    // Устанавливаем rtcSession в undefined
+    (
+      callManager as unknown as { getEstablishedRTCSession: jest.Mock }
+    ).getEstablishedRTCSession.mockReturnValue(undefined);
+
+    const spy = jest.fn();
+
+    manager.on('presentation:ended', spy);
+
+    const result = await manager.stopPresentation();
+
+    expect(result).toBeUndefined();
+    expect(spy).toHaveBeenCalledWith(streamPresentationCurrent);
   });
 
   it('успешно обновляет презентацию', async () => {
@@ -222,13 +263,13 @@ describe('PresentationManager', () => {
   it('on/once/off работают для событий', () => {
     const handler = jest.fn();
 
-    manager.on(EEvent.START_PRESENTATION, handler);
+    manager.on('presentation:start', handler);
     // @ts-ignore
-    manager.events.trigger(EEvent.START_PRESENTATION, 'data');
+    manager.events.trigger('presentation:start', 'data');
     expect(handler).toHaveBeenCalledWith('data');
-    manager.off(EEvent.START_PRESENTATION, handler);
+    manager.off('presentation:start', handler);
     // @ts-ignore
-    manager.events.trigger(EEvent.START_PRESENTATION, 'data2');
+    manager.events.trigger('presentation:start', 'data2');
     expect(handler).toHaveBeenCalledTimes(1);
   });
 
@@ -278,5 +319,185 @@ describe('PresentationManager', () => {
     expect(manager.promisePendingStartPresentation).toBeUndefined();
     expect(manager.promisePendingStopPresentation).toBeUndefined();
     expect(manager.streamPresentationCurrent).toBeUndefined();
+  });
+
+  it('hasCanceledStartPresentationError возвращает true для отменённой презентации', async () => {
+    // Запускаем презентацию, отменяем, ловим ошибку
+    const promise = manager.startPresentation(mediaStream);
+
+    manager.cancelSendPresentationWithRepeatedCalls();
+
+    let error: unknown = undefined;
+
+    try {
+      await promise;
+    } catch (error_) {
+      error = error_;
+    }
+
+    expect(hasCanceledStartPresentationError(error)).toBe(true);
+  });
+
+  it('hasCanceledStartPresentationError возвращает false для обычной ошибки', () => {
+    expect(hasCanceledStartPresentationError(new Error('fail'))).toBe(false);
+  });
+
+  it('once работает для событий', () => {
+    const handler = jest.fn();
+
+    manager.once('presentation:start', handler);
+    // @ts-ignore
+    manager.events.trigger('presentation:start', 'once-data');
+    // @ts-ignore
+    manager.events.trigger('presentation:start', 'once-data2');
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler).toHaveBeenCalledWith('once-data');
+  });
+
+  it('onceRace работает для событий', () => {
+    const handler = jest.fn();
+
+    manager.onceRace(['presentation:start', 'presentation:end'], handler);
+    // @ts-ignore
+    manager.events.trigger('presentation:end', 'race-data');
+    expect(handler).toHaveBeenCalledTimes(1);
+
+    const calls = handler.mock.calls as [string, string][];
+
+    expect(calls[0][0]).toBe('race-data');
+    expect(['presentation:start', 'presentation:end']).toContain(calls[0][1]);
+  });
+
+  it('wait работает для событий', async () => {
+    setTimeout(() => {
+      // @ts-ignore
+      manager.events.trigger('presentation:start', 'wait-data');
+    }, 10);
+
+    const result = await manager.wait('presentation:start');
+
+    expect(result).toBe('wait-data');
+  });
+
+  it('handleEnded сбрасывает состояние при событии ended/failed', async () => {
+    await manager.startPresentation(mediaStream);
+    // эмулируем событие ended
+    // @ts-ignore
+    manager.handleEnded();
+    expect(manager.streamPresentationCurrent).toBeUndefined();
+    expect(manager.promisePendingStartPresentation).toBeUndefined();
+    expect(manager.promisePendingStopPresentation).toBeUndefined();
+  });
+
+  it('повторные вызовы startPresentation не дублируют презентацию', async () => {
+    await manager.startPresentation(mediaStream);
+    await expect(manager.startPresentation(mediaStream)).rejects.toThrow(
+      'Presentation is already started',
+    );
+  });
+
+  it('resetPresentation очищает все поля', async () => {
+    await manager.startPresentation(mediaStream);
+    // @ts-ignore
+    manager.resetPresentation();
+    expect(manager.streamPresentationCurrent).toBeUndefined();
+    expect(manager.promisePendingStartPresentation).toBeUndefined();
+    expect(manager.promisePendingStopPresentation).toBeUndefined();
+  });
+
+  it('removeStreamPresentationCurrent очищает streamPresentationCurrent', async () => {
+    await manager.startPresentation(mediaStream);
+    // @ts-ignore
+    manager.removeStreamPresentationCurrent();
+    expect(manager.streamPresentationCurrent).toBeUndefined();
+  });
+
+  it('updatePresentation сразу после startPresentation ожидает завершения старта', async () => {
+    // Запускаем startPresentation, не дожидаясь завершения, сразу вызываем updatePresentation
+    const startPromise = manager.startPresentation(mediaStream);
+    const newStream = createMediaStreamMock({
+      audio: { deviceId: { exact: 'audioDeviceId2' } },
+      video: { deviceId: { exact: 'videoDeviceId2' } },
+    });
+    // updatePresentation должен дождаться завершения startPresentation
+    const updatePromise = manager.updatePresentation(newStream);
+    const [startResult, updateResult] = await Promise.all([startPromise, updatePromise]);
+
+    expect(startResult).toBeDefined();
+    expect(updateResult).toBeDefined();
+    expect(updateResult?.id).toBe(newStream.id);
+  });
+
+  it('startPresentation вызывает FAILED_PRESENTATION и сбрасывает streamPresentationCurrent при ошибке', async () => {
+    const targetError = new Error('fail-start');
+
+    RTCSessionMock.setPresentationError(targetError);
+
+    const spy = jest.fn();
+
+    manager.on('presentation:failed', spy);
+
+    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+    let error: TReachedLimitError<Error> | undefined;
+
+    try {
+      await manager.startPresentation(mediaStream);
+    } catch (error_) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      error = error_ as unknown as TReachedLimitError<Error>;
+    }
+
+    if (error === undefined) {
+      throw new Error('error is undefined');
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    const lastResult: Error | undefined = error?.values?.lastResult;
+
+    expect(lastResult).toBeInstanceOf(Error);
+    expect(lastResult?.message).toBe('fail-start');
+    expect(spy).toHaveBeenCalledWith(lastResult);
+    expect(manager.streamPresentationCurrent).toBeUndefined();
+  });
+
+  it('startPresentation выбрасывает ошибку, если directionVideo и directionAudio === recvonly', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+    let error: TReachedLimitError<Error> | undefined;
+
+    try {
+      // @ts-expect-error для теста
+      await manager.startPresentation(undefined);
+    } catch (error_) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      error = error_ as unknown as TReachedLimitError<Error>;
+    }
+
+    if (error === undefined) {
+      throw new Error('error is undefined');
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    const lastResult: Error | undefined = error?.values?.lastResult;
+
+    expect(lastResult?.message).toBe('No streamPresentationTarget');
+    expect(manager.streamPresentationCurrent).toBeUndefined();
+  });
+
+  it('stopPresentation без текущей презентации возвращает undefined', async () => {
+    const spyFailed = jest.fn();
+    const spyEnded = jest.fn();
+
+    manager.on('presentation:failed', spyFailed);
+    manager.on('presentation:ended', spyEnded);
+
+    // Вызов без стартовавшей презентации
+    const result = await manager.stopPresentation();
+
+    expect(result).toBeUndefined();
+    // Не должно быть текущей презентации
+    expect(manager.streamPresentationCurrent).toBeUndefined();
+    // Не должно вызываться события failed/ended, так как презентация не запускалась
+    expect(spyFailed).not.toHaveBeenCalled();
+    expect(spyEnded).not.toHaveBeenCalled();
   });
 });

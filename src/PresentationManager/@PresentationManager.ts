@@ -15,11 +15,11 @@ export const hasCanceledStartPresentationError = (error: unknown) => {
   return hasCanceledError(error);
 };
 
-// TODO: Добавить перед вызовом startPresentation  if isP2P == true => sendMustStopPresentationP2P
-// TODO: Добавить перед вызовом startPresentation  if isP2P == true => askPermissionToStartPresentationP2P
-// TODO: Добавить перед вызовом startPresentation  if isP2P == false => askPermissionToStartPresentation
-// TODO: Добавить перед вызовом stopPresentation  if isP2P == true => sendStoppedPresentationP2P
-// TODO: Добавить перед вызовом stopPresentation  if isP2P == false => sendStoppedPresentation
+// TODO: Добавить перед вызовом startPresentation if isP2P == true => sendMustStopPresentationP2P
+// TODO: Добавить перед вызовом startPresentation if isP2P == true => askPermissionToStartPresentationP2P
+// TODO: Добавить перед вызовом startPresentation if isP2P == false => askPermissionToStartPresentation
+// TODO: Добавить перед вызовом stopPresentation if isP2P == true => sendStoppedPresentationP2P
+// TODO: Добавить перед вызовом stopPresentation if isP2P == false => sendStoppedPresentation
 
 class PresentationManager {
   public promisePendingStartPresentation?: Promise<MediaStream>;
@@ -98,7 +98,7 @@ class PresentationManager {
 
         throw error;
       });
-    } else if (!rtcSession && streamPresentationPrevious) {
+    } else if (streamPresentationPrevious) {
       this.events.trigger(EEvent.ENDED_PRESENTATION, streamPresentationPrevious);
     }
 
