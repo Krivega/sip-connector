@@ -8,7 +8,7 @@ import logger from '../../../logger';
 import { EVENT_NAMES as CALL_MANAGER_EVENT_NAMES } from '../../eventNames';
 import { ApiManager } from '../ApiManager';
 import {
-  EContentType,
+  EContentTypeReceived,
   EEventsMainCAM,
   EEventsMic,
   EEventsSyncMediaState,
@@ -192,7 +192,7 @@ describe('ApiManager', () => {
 
       apiManager.on('enterRoom', enterRoomSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.ENTER_ROOM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.ENTER_ROOM);
       mockRequest.setHeader(EHeader.CONTENT_ENTER_ROOM, 'room123');
       mockRequest.setHeader(EHeader.PARTICIPANT_NAME, 'user123');
 
@@ -211,7 +211,7 @@ describe('ApiManager', () => {
 
       apiManager.on('availableSecondRemoteStream', shareStateSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.SHARE_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.SHARE_STATE);
       mockRequest.setHeader(
         EHeader.CONTENT_SHARE_STATE,
         EShareState.AVAILABLE_SECOND_REMOTE_STREAM,
@@ -229,7 +229,7 @@ describe('ApiManager', () => {
 
       apiManager.on('admin-start-main-cam', mainCamSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.MAIN_CAM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MAIN_CAM);
       mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.ADMIN_START_MAIN_CAM);
       mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
 
@@ -245,7 +245,7 @@ describe('ApiManager', () => {
 
       apiManager.on('admin-start-mic', micSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.MIC);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MIC);
       mockRequest.setHeader(EHeader.MIC, EEventsMic.ADMIN_START_MIC);
       mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
 
@@ -261,7 +261,7 @@ describe('ApiManager', () => {
 
       apiManager.on('useLicense', licenseSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.USE_LICENSE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.USE_LICENSE);
       mockRequest.setHeader(EHeader.CONTENT_USE_LICENSE, EUseLicense.AUDIO);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -276,7 +276,7 @@ describe('ApiManager', () => {
 
       apiManager.on('participant:move-request-to-spectators', participantSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.PARTICIPANT_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.PARTICIPANT_STATE);
       mockRequest.setHeader(EHeader.CONTENT_PARTICIPANT_STATE, EParticipantType.SPECTATOR);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -291,7 +291,7 @@ describe('ApiManager', () => {
 
       apiManager.on('channels', channelsSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.ENTER_ROOM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.ENTER_ROOM);
       mockRequest.setHeader(EHeader.INPUT_CHANNELS, 'input1,input2');
       mockRequest.setHeader(EHeader.OUTPUT_CHANNELS, 'output1,output2');
 
@@ -311,6 +311,55 @@ describe('ApiManager', () => {
       apiManager.on('channels', anySpy);
 
       mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, 'unknown/type');
+
+      const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
+
+      callEvents.trigger('newInfo' as never, infoEvent);
+
+      expect(anySpy).not.toHaveBeenCalled();
+    });
+
+    it('должен обрабатывать NOTIFY события через NEW_INFO', () => {
+      const channelsSpy = jest.fn();
+
+      apiManager.on('channels:notify', channelsSpy);
+
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.NOTIFY);
+
+      const notifyData = { cmd: 'channels', input: 'input1', output: 'output1' };
+
+      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
+
+      const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
+
+      callEvents.trigger('newInfo' as never, infoEvent);
+
+      expect(channelsSpy).toHaveBeenCalledWith({
+        inputChannels: 'input1',
+        outputChannels: 'output1',
+      });
+    });
+
+    it('должен игнорировать события с undefined content-type', () => {
+      const anySpy = jest.fn();
+
+      apiManager.on('channels', anySpy);
+
+      // Не устанавливаем CONTENT_TYPE_NAME заголовок
+
+      const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
+
+      callEvents.trigger('newInfo' as never, infoEvent);
+
+      expect(anySpy).not.toHaveBeenCalled();
+    });
+
+    it('должен обрабатывать default случай в content-type switch', () => {
+      const anySpy = jest.fn();
+
+      apiManager.on('channels', anySpy);
+
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, 'unknown/content-type');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -547,13 +596,120 @@ describe('ApiManager', () => {
     });
   });
 
+  describe('обработка всех типов уведомлений', () => {
+    it('должен обрабатывать все команды в switch notify', () => {
+      const channelsSpy = jest.fn();
+      const webcastStartedSpy = jest.fn();
+      const webcastStoppedSpy = jest.fn();
+      const addedToModeratorsSpy = jest.fn();
+      const removedFromModeratorsSpy = jest.fn();
+      const participationAcceptedSpy = jest.fn();
+      const participationRejectedSpy = jest.fn();
+      const participantMoveSpy = jest.fn();
+      const accountChangedSpy = jest.fn();
+      const accountDeletedSpy = jest.fn();
+      const tokenIssuedSpy = jest.fn();
+
+      apiManager.on('channels:notify', channelsSpy);
+      apiManager.on('webcast:started', webcastStartedSpy);
+      apiManager.on('webcast:stopped', webcastStoppedSpy);
+      apiManager.on('participant:added-to-list-moderators', addedToModeratorsSpy);
+      apiManager.on('participant:removed-from-list-moderators', removedFromModeratorsSpy);
+      apiManager.on('participation:accepting-word-request', participationAcceptedSpy);
+      apiManager.on('participation:cancelling-word-request', participationRejectedSpy);
+      apiManager.on('participant:move-request-to-stream', participantMoveSpy);
+      apiManager.on('account:changed', accountChangedSpy);
+      apiManager.on('account:deleted', accountDeletedSpy);
+      apiManager.on('conference:participant-token-issued', tokenIssuedSpy);
+
+      // Тестируем все команды
+      const testCases = [
+        {
+          cmd: 'channels',
+          data: { input: 'input1', output: 'output1' },
+          spy: channelsSpy,
+          expected: { inputChannels: 'input1', outputChannels: 'output1' },
+        },
+        {
+          cmd: 'WebcastStarted',
+          data: { body: { conference: 'conf1', type: 'video' } },
+          spy: webcastStartedSpy,
+          expected: { conference: 'conf1', type: 'video' },
+        },
+        {
+          cmd: 'WebcastStopped',
+          data: { body: { conference: 'conf2', type: 'audio' } },
+          spy: webcastStoppedSpy,
+          expected: { conference: 'conf2', type: 'audio' },
+        },
+        {
+          cmd: 'addedToListModerators',
+          data: { conference: 'conf3' },
+          spy: addedToModeratorsSpy,
+          expected: { conference: 'conf3' },
+        },
+        {
+          cmd: 'removedFromListModerators',
+          data: { conference: 'conf4' },
+          spy: removedFromModeratorsSpy,
+          expected: { conference: 'conf4' },
+        },
+        {
+          cmd: 'ParticipationRequestAccepted',
+          data: { body: { conference: 'conf5' } },
+          spy: participationAcceptedSpy,
+          expected: { conference: 'conf5' },
+        },
+        {
+          cmd: 'ParticipationRequestRejected',
+          data: { body: { conference: 'conf6' } },
+          spy: participationRejectedSpy,
+          expected: { conference: 'conf6' },
+        },
+        {
+          cmd: 'ParticipantMovedToWebcast',
+          data: { body: { conference: 'conf7' } },
+          spy: participantMoveSpy,
+          expected: { conference: 'conf7' },
+        },
+        {
+          cmd: 'accountChanged',
+          data: {},
+          spy: accountChangedSpy,
+          expected: undefined,
+        },
+        {
+          cmd: 'accountDeleted',
+          data: {},
+          spy: accountDeletedSpy,
+          expected: undefined,
+        },
+        {
+          cmd: 'ConferenceParticipantTokenIssued',
+          data: { body: { conference: 'conf8', participant: 'user1', jwt: 'token1' } },
+          spy: tokenIssuedSpy,
+          expected: { conference: 'conf8', participant: 'user1', jwt: 'token1' },
+        },
+      ];
+
+      testCases.forEach(({ cmd, data, spy, expected }) => {
+        const notifyData = { cmd, ...data };
+
+        mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
+        connectionEvents.trigger(EConnectionManagerEvent.SIP_EVENT, { request: mockRequest });
+
+        expect(spy).toHaveBeenCalledWith(expected);
+      });
+    });
+  });
+
   describe('обработка SHARE_STATE событий', () => {
     it('должен обрабатывать AVAILABLE_SECOND_REMOTE_STREAM', () => {
       const availableStreamSpy = jest.fn();
 
       apiManager.on('availableSecondRemoteStream', availableStreamSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.SHARE_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.SHARE_STATE);
       mockRequest.setHeader(
         EHeader.CONTENT_SHARE_STATE,
         EShareState.AVAILABLE_SECOND_REMOTE_STREAM,
@@ -571,7 +727,7 @@ describe('ApiManager', () => {
 
       apiManager.on('notAvailableSecondRemoteStream', notAvailableStreamSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.SHARE_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.SHARE_STATE);
       mockRequest.setHeader(
         EHeader.CONTENT_SHARE_STATE,
         EShareState.NOT_AVAILABLE_SECOND_REMOTE_STREAM,
@@ -589,7 +745,7 @@ describe('ApiManager', () => {
 
       apiManager.on('mustStopPresentation', mustStopPresentationSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.SHARE_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.SHARE_STATE);
       mockRequest.setHeader(EHeader.CONTENT_SHARE_STATE, EShareState.MUST_STOP_PRESENTATION);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -604,7 +760,7 @@ describe('ApiManager', () => {
 
       apiManager.on('availableSecondRemoteStream', anySpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.SHARE_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.SHARE_STATE);
       mockRequest.setHeader(EHeader.CONTENT_SHARE_STATE, 'unknown_state');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -619,8 +775,23 @@ describe('ApiManager', () => {
 
       apiManager.on('availableSecondRemoteStream', anySpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.SHARE_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.SHARE_STATE);
       // Не устанавливаем CONTENT_SHARE_STATE заголовок
+
+      const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
+
+      callEvents.trigger('newInfo' as never, infoEvent);
+
+      expect(anySpy).not.toHaveBeenCalled();
+    });
+
+    it('должен обрабатывать default случай в SHARE_STATE switch', () => {
+      const anySpy = jest.fn();
+
+      apiManager.on('availableSecondRemoteStream', anySpy);
+
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.SHARE_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_SHARE_STATE, 'unknown_share_state');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -636,7 +807,7 @@ describe('ApiManager', () => {
 
       apiManager.on('admin-start-main-cam', adminStartSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.MAIN_CAM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MAIN_CAM);
       mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.ADMIN_START_MAIN_CAM);
       mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
 
@@ -652,7 +823,7 @@ describe('ApiManager', () => {
 
       apiManager.on('admin-stop-main-cam', adminStopSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.MAIN_CAM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MAIN_CAM);
       mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.ADMIN_STOP_MAIN_CAM);
       mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_NOT_FORCED);
 
@@ -668,7 +839,7 @@ describe('ApiManager', () => {
 
       apiManager.on('admin-force-sync-media-state', syncSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.MAIN_CAM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MAIN_CAM);
       mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM);
       mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
 
@@ -684,7 +855,7 @@ describe('ApiManager', () => {
 
       apiManager.on('admin-force-sync-media-state', syncSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.MAIN_CAM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MAIN_CAM);
       mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM);
       mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
 
@@ -695,12 +866,56 @@ describe('ApiManager', () => {
       expect(syncSpy).toHaveBeenCalledWith({ isSyncForced: true });
     });
 
+    it('должен обрабатывать RESUME_MAIN_CAM без синхронизации', () => {
+      const syncSpy = jest.fn();
+      const mainCamControlSpy = jest.fn();
+
+      apiManager.on('admin-force-sync-media-state', syncSpy);
+      apiManager.on('main-cam-control', mainCamControlSpy);
+
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM);
+      // Не устанавливаем MEDIA_SYNC заголовок
+
+      const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
+
+      callEvents.trigger('newInfo' as never, infoEvent);
+
+      expect(syncSpy).not.toHaveBeenCalled();
+      expect(mainCamControlSpy).toHaveBeenCalledWith({
+        mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
+        resolutionMainCam: undefined,
+      });
+    });
+
+    it('должен обрабатывать PAUSE_MAIN_CAM без синхронизации', () => {
+      const syncSpy = jest.fn();
+      const mainCamControlSpy = jest.fn();
+
+      apiManager.on('admin-force-sync-media-state', syncSpy);
+      apiManager.on('main-cam-control', mainCamControlSpy);
+
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM);
+      // Не устанавливаем MEDIA_SYNC заголовок
+
+      const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
+
+      callEvents.trigger('newInfo' as never, infoEvent);
+
+      expect(syncSpy).not.toHaveBeenCalled();
+      expect(mainCamControlSpy).toHaveBeenCalledWith({
+        mainCam: EEventsMainCAM.PAUSE_MAIN_CAM,
+        resolutionMainCam: undefined,
+      });
+    });
+
     it('должен триггерить MAIN_CAM_CONTROL для неизвестных MAIN_CAM событий', () => {
       const mainCamControlSpy = jest.fn();
 
       apiManager.on('main-cam-control', mainCamControlSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.MAIN_CAM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MAIN_CAM);
       mockRequest.setHeader(EHeader.MAIN_CAM, 'UNKNOWN_MAIN_CAM_EVENT');
       mockRequest.setHeader(EHeader.MAIN_CAM_RESOLUTION, '1920x1080');
 
@@ -713,6 +928,25 @@ describe('ApiManager', () => {
         resolutionMainCam: '1920x1080',
       });
     });
+
+    it('должен обрабатывать default случай в main cam control switch', () => {
+      const mainCamControlSpy = jest.fn();
+
+      apiManager.on('main-cam-control', mainCamControlSpy);
+
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EHeader.MAIN_CAM, 'UNKNOWN_MAIN_CAM_EVENT');
+      // Не устанавливаем MAIN_CAM_RESOLUTION заголовок
+
+      const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
+
+      callEvents.trigger('newInfo' as never, infoEvent);
+
+      expect(mainCamControlSpy).toHaveBeenCalledWith({
+        mainCam: 'UNKNOWN_MAIN_CAM_EVENT',
+        resolutionMainCam: undefined,
+      });
+    });
   });
 
   describe('обработка MIC_CONTROL событий', () => {
@@ -721,7 +955,7 @@ describe('ApiManager', () => {
 
       apiManager.on('admin-start-mic', adminStartSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.MIC);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MIC);
       mockRequest.setHeader(EHeader.MIC, EEventsMic.ADMIN_START_MIC);
       mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
 
@@ -737,7 +971,7 @@ describe('ApiManager', () => {
 
       apiManager.on('admin-stop-mic', adminStopSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.MIC);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MIC);
       mockRequest.setHeader(EHeader.MIC, EEventsMic.ADMIN_STOP_MIC);
       mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_NOT_FORCED);
 
@@ -753,7 +987,22 @@ describe('ApiManager', () => {
 
       apiManager.on('admin-start-mic', anySpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.MIC);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MIC);
+      mockRequest.setHeader(EHeader.MIC, 'unknown_mic_event');
+
+      const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
+
+      callEvents.trigger('newInfo' as never, infoEvent);
+
+      expect(anySpy).not.toHaveBeenCalled();
+    });
+
+    it('должен обрабатывать default случай в mic control switch', () => {
+      const anySpy = jest.fn();
+
+      apiManager.on('admin-start-mic', anySpy);
+
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MIC);
       mockRequest.setHeader(EHeader.MIC, 'unknown_mic_event');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -764,13 +1013,81 @@ describe('ApiManager', () => {
     });
   });
 
+  describe('обработка CHANNELS событий', () => {
+    it('должен обрабатывать CHANNELS когда оба заголовка присутствуют', () => {
+      const channelsSpy = jest.fn();
+
+      apiManager.on('channels', channelsSpy);
+
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.ENTER_ROOM);
+      mockRequest.setHeader(EHeader.INPUT_CHANNELS, 'input1,input2');
+      mockRequest.setHeader(EHeader.OUTPUT_CHANNELS, 'output1,output2');
+
+      const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
+
+      callEvents.trigger('newInfo' as never, infoEvent);
+
+      expect(channelsSpy).toHaveBeenCalledWith({
+        inputChannels: 'input1,input2',
+        outputChannels: 'output1,output2',
+      });
+    });
+
+    it('должен игнорировать CHANNELS когда отсутствует INPUT_CHANNELS', () => {
+      const channelsSpy = jest.fn();
+
+      apiManager.on('channels', channelsSpy);
+
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.ENTER_ROOM);
+      // Не устанавливаем INPUT_CHANNELS заголовок
+      mockRequest.setHeader(EHeader.OUTPUT_CHANNELS, 'output1,output2');
+
+      const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
+
+      callEvents.trigger('newInfo' as never, infoEvent);
+
+      expect(channelsSpy).not.toHaveBeenCalled();
+    });
+
+    it('должен игнорировать CHANNELS когда отсутствует OUTPUT_CHANNELS', () => {
+      const channelsSpy = jest.fn();
+
+      apiManager.on('channels', channelsSpy);
+
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.ENTER_ROOM);
+      mockRequest.setHeader(EHeader.INPUT_CHANNELS, 'input1,input2');
+      // Не устанавливаем OUTPUT_CHANNELS заголовок
+
+      const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
+
+      callEvents.trigger('newInfo' as never, infoEvent);
+
+      expect(channelsSpy).not.toHaveBeenCalled();
+    });
+
+    it('должен игнорировать CHANNELS когда оба заголовка отсутствуют', () => {
+      const channelsSpy = jest.fn();
+
+      apiManager.on('channels', channelsSpy);
+
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.ENTER_ROOM);
+      // Не устанавливаем INPUT_CHANNELS и OUTPUT_CHANNELS заголовки
+
+      const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
+
+      callEvents.trigger('newInfo' as never, infoEvent);
+
+      expect(channelsSpy).not.toHaveBeenCalled();
+    });
+  });
+
   describe('обработка PARTICIPANT_STATE событий', () => {
     it('должен обрабатывать SPECTATOR состояние', () => {
       const spectatorSpy = jest.fn();
 
       apiManager.on('participant:move-request-to-spectators', spectatorSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.PARTICIPANT_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.PARTICIPANT_STATE);
       mockRequest.setHeader(EHeader.CONTENT_PARTICIPANT_STATE, EParticipantType.SPECTATOR);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -785,7 +1102,7 @@ describe('ApiManager', () => {
 
       apiManager.on('participant:move-request-to-participants', participantSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.PARTICIPANT_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.PARTICIPANT_STATE);
       mockRequest.setHeader(EHeader.CONTENT_PARTICIPANT_STATE, EParticipantType.PARTICIPANT);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -800,7 +1117,7 @@ describe('ApiManager', () => {
 
       apiManager.on('participant:move-request-to-spectators', anySpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.PARTICIPANT_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.PARTICIPANT_STATE);
       mockRequest.setHeader(EHeader.CONTENT_PARTICIPANT_STATE, 'unknown_state');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -815,7 +1132,7 @@ describe('ApiManager', () => {
 
       apiManager.on('participant:move-request-to-spectators', anySpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.PARTICIPANT_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.PARTICIPANT_STATE);
       // Не устанавливаем CONTENT_PARTICIPANT_STATE заголовок
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -823,6 +1140,24 @@ describe('ApiManager', () => {
       callEvents.trigger('newInfo' as never, infoEvent);
 
       expect(anySpy).not.toHaveBeenCalled();
+    });
+
+    it('должен обрабатывать оба состояния одновременно', () => {
+      const spectatorSpy = jest.fn();
+      const participantSpy = jest.fn();
+
+      apiManager.on('participant:move-request-to-spectators', spectatorSpy);
+      apiManager.on('participant:move-request-to-participants', participantSpy);
+
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.PARTICIPANT_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_PARTICIPANT_STATE, EParticipantType.SPECTATOR);
+
+      const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
+
+      callEvents.trigger('newInfo' as never, infoEvent);
+
+      expect(spectatorSpy).toHaveBeenCalledWith(undefined);
+      expect(participantSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -862,7 +1197,7 @@ describe('ApiManager', () => {
 
       apiManager.on('enterRoom', enterRoomSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.ENTER_ROOM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.ENTER_ROOM);
       // Не устанавливаем заголовки CONTENT_ENTER_ROOM и PARTICIPANT_NAME
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -880,7 +1215,7 @@ describe('ApiManager', () => {
 
       apiManager.on('channels', channelsSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.ENTER_ROOM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.ENTER_ROOM);
       // Не устанавливаем заголовки INPUT_CHANNELS и OUTPUT_CHANNELS
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -895,7 +1230,7 @@ describe('ApiManager', () => {
 
       apiManager.on('main-cam-control', mainCamControlSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.MAIN_CAM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MAIN_CAM);
       // Не устанавливаем заголовки MAIN_CAM и MAIN_CAM_RESOLUTION
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -906,6 +1241,28 @@ describe('ApiManager', () => {
         mainCam: undefined,
         resolutionMainCam: undefined,
       });
+    });
+
+    it('должен корректно обрабатывать ошибку парсинга JSON в maybeHandleNotify', () => {
+      mockRequest.setHeader(HEADER_NOTIFY, 'invalid json');
+
+      expect(() => {
+        connectionEvents.trigger(EConnectionManagerEvent.SIP_EVENT, { request: mockRequest });
+      }).not.toThrow();
+
+      expect(mockLogger).toHaveBeenCalledWith('error parse notify', expect.any(Error));
+    });
+
+    it('должен корректно обрабатывать отсутствующий заголовок NOTIFY', () => {
+      const anySpy = jest.fn();
+
+      apiManager.on('channels:notify', anySpy);
+
+      // Не устанавливаем заголовок NOTIFY
+
+      connectionEvents.trigger(EConnectionManagerEvent.SIP_EVENT, { request: mockRequest });
+
+      expect(anySpy).not.toHaveBeenCalled();
     });
   });
 
@@ -953,7 +1310,7 @@ describe('ApiManager', () => {
       apiManager.on('availableSecondRemoteStream', shareStateSpy);
 
       // Первое событие
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.ENTER_ROOM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.ENTER_ROOM);
       mockRequest.setHeader(EHeader.CONTENT_ENTER_ROOM, 'room1');
       mockRequest.setHeader(EHeader.PARTICIPANT_NAME, 'user1');
 
@@ -962,7 +1319,7 @@ describe('ApiManager', () => {
       callEvents.trigger('newInfo' as never, infoEvent1);
 
       // Второе событие
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentType.SHARE_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.SHARE_STATE);
       mockRequest.setHeader(
         EHeader.CONTENT_SHARE_STATE,
         EShareState.AVAILABLE_SECOND_REMOTE_STREAM,

@@ -7,7 +7,7 @@ import { EEvent as ECallEvent, Originator } from '../eventNames';
 import type { TEvents as TCallEvents } from '../types';
 import type { EUseLicense } from './constants';
 import {
-  EContentType,
+  EContentTypeReceived,
   EEventsMainCAM,
   EEventsMic,
   EEventsSyncMediaState,
@@ -178,39 +178,6 @@ export class ApiManager {
 
         break;
       }
-      case 'channels': {
-        throw new Error('Not implemented yet: "channels" case');
-      }
-      case 'addedToListModerators': {
-        throw new Error('Not implemented yet: "addedToListModerators" case');
-      }
-      case 'removedFromListModerators': {
-        throw new Error('Not implemented yet: "removedFromListModerators" case');
-      }
-      case 'WebcastStarted': {
-        throw new Error('Not implemented yet: "WebcastStarted" case');
-      }
-      case 'ConferenceParticipantTokenIssued': {
-        throw new Error('Not implemented yet: "ConferenceParticipantTokenIssued" case');
-      }
-      case 'ParticipationRequestAccepted': {
-        throw new Error('Not implemented yet: "ParticipationRequestAccepted" case');
-      }
-      case 'ParticipationRequestRejected': {
-        throw new Error('Not implemented yet: "ParticipationRequestRejected" case');
-      }
-      case 'ParticipantMovedToWebcast': {
-        throw new Error('Not implemented yet: "ParticipantMovedToWebcast" case');
-      }
-      case 'accountChanged': {
-        throw new Error('Not implemented yet: "accountChanged" case');
-      }
-      case 'accountDeleted': {
-        throw new Error('Not implemented yet: "accountDeleted" case');
-      }
-      case 'WebcastStopped': {
-        throw new Error('Not implemented yet: "WebcastStopped" case');
-      }
       default: {
         logger('unknown cmd', header);
       }
@@ -227,49 +194,42 @@ export class ApiManager {
     }
 
     const { request } = info;
-    const contentType = request.getHeader(EHeader.CONTENT_TYPE_NAME) as EContentType | undefined;
+    const contentType = request.getHeader(EHeader.CONTENT_TYPE_NAME) as
+      | EContentTypeReceived
+      | undefined;
 
     if (contentType !== undefined) {
       switch (contentType) {
-        case EContentType.ENTER_ROOM: {
+        case EContentTypeReceived.ENTER_ROOM: {
           this.triggerEnterRoom(request);
           this.maybeTriggerChannels(request);
           break;
         }
-        case EContentType.NOTIFY: {
+        case EContentTypeReceived.NOTIFY: {
           this.maybeHandleNotify(request);
           break;
         }
-        case EContentType.SHARE_STATE: {
+        case EContentTypeReceived.SHARE_STATE: {
           this.triggerShareState(request);
           break;
         }
-        case EContentType.MAIN_CAM: {
+        case EContentTypeReceived.MAIN_CAM: {
           this.triggerMainCamControl(request);
           break;
         }
-        case EContentType.MIC: {
+        case EContentTypeReceived.MIC: {
           this.triggerMicControl(request);
           break;
         }
-        case EContentType.USE_LICENSE: {
+        case EContentTypeReceived.USE_LICENSE: {
           this.triggerUseLicense(request);
           break;
         }
-        case EContentType.PARTICIPANT_STATE: {
+        case EContentTypeReceived.PARTICIPANT_STATE: {
           this.maybeTriggerParticipantMoveRequest(request);
           break;
         }
 
-        case EContentType.CHANNELS: {
-          throw new Error('Not implemented yet: EContentType.CHANNELS case');
-        }
-        case EContentType.MEDIA_STATE: {
-          throw new Error('Not implemented yet: EContentType.MEDIA_STATE case');
-        }
-        case EContentType.REFUSAL: {
-          throw new Error('Not implemented yet: EContentType.REFUSAL case');
-        }
         default: {
           break;
         }

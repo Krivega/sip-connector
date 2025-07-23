@@ -33,57 +33,57 @@ export type TParametersConferenceParticipantTokenIssued = {
 };
 
 export type TAddedToListModeratorsInfoNotify = {
-  cmd: `${ECMDNotify.ADDED_TO_LIST_MODERATORS}`;
+  cmd: ECMDNotify.ADDED_TO_LIST_MODERATORS;
   conference: string;
 };
 
 export type TRemovedFromListModeratorsInfoNotify = {
-  cmd: `${ECMDNotify.REMOVED_FROM_LIST_MODERATORS}`;
+  cmd: ECMDNotify.REMOVED_FROM_LIST_MODERATORS;
   conference: string;
 };
 
 export type TAcceptingWordRequestInfoNotify = {
-  cmd: `${ECMDNotify.ACCEPTING_WORD_REQUEST}`;
+  cmd: ECMDNotify.ACCEPTING_WORD_REQUEST;
   body: { conference: string };
 };
 
 export type TCancellingWordRequestInfoNotify = {
-  cmd: `${ECMDNotify.CANCELLING_WORD_REQUEST}`;
+  cmd: ECMDNotify.CANCELLING_WORD_REQUEST;
   body: { conference: string };
 };
 
 export type TMoveRequestToStreamInfoNotify = {
-  cmd: `${ECMDNotify.MOVE_REQUEST_TO_STREAM}`;
+  cmd: ECMDNotify.MOVE_REQUEST_TO_STREAM;
   body: { conference: string };
 };
 
 export type TConferenceParticipantTokenIssued = {
-  cmd: `${ECMDNotify.CONFERENCE_PARTICIPANT_TOKEN_ISSUED}`;
+  cmd: ECMDNotify.CONFERENCE_PARTICIPANT_TOKEN_ISSUED;
   body: { conference: string; participant: string; jwt: string };
 };
 
 export type TWebcastInfoNotify = {
-  cmd: `${ECMDNotify.WEBCAST_STARTED}`;
+  cmd: ECMDNotify.WEBCAST_STARTED;
   body: { conference: string; type: string };
 };
 
 export type TWebcastStoppedInfoNotify = {
-  cmd: `${ECMDNotify.WEBCAST_STOPPED}`;
+  cmd: ECMDNotify.WEBCAST_STOPPED;
   body: { conference: string; type: string };
 };
 
 export type TChannelsInfoNotify = {
-  cmd: `${ECMDNotify.CHANNELS}`;
+  cmd: ECMDNotify.CHANNELS;
   input: string;
   output: string;
 };
 
 export type TAccountChangedInfoNotify = {
-  cmd: `${ECMDNotify.ACCOUNT_CHANGED}`;
+  cmd: ECMDNotify.ACCOUNT_CHANGED;
 };
 
 export type TAccountDeletedInfoNotify = {
-  cmd: `${ECMDNotify.ACCOUNT_DELETED}`;
+  cmd: ECMDNotify.ACCOUNT_DELETED;
 };
 
 export type TInfoNotify =

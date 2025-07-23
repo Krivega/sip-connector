@@ -30,17 +30,20 @@ export enum EParticipantType {
   PARTICIPANT = 'PARTICIPANT',
 }
 
-export enum EContentType {
+export enum EContentTypeReceived {
   ENTER_ROOM = 'application/vinteo.webrtc.roomname',
   SHARE_STATE = 'application/vinteo.webrtc.sharedesktop',
-  CHANNELS = 'application/vinteo.webrtc.channels',
-  MEDIA_STATE = 'application/vinteo.webrtc.mediastate',
-  REFUSAL = 'application/vinteo.webrtc.refusal',
   MAIN_CAM = 'application/vinteo.webrtc.maincam',
   MIC = 'application/vinteo.webrtc.mic',
   USE_LICENSE = 'application/vinteo.webrtc.uselic',
   PARTICIPANT_STATE = 'application/vinteo.webrtc.partstate',
   NOTIFY = 'application/vinteo.webrtc.notify',
+}
+
+export enum EContentTypeSent {
+  CHANNELS = 'application/vinteo.webrtc.channels',
+  MEDIA_STATE = 'application/vinteo.webrtc.mediastate',
+  REFUSAL = 'application/vinteo.webrtc.refusal',
 }
 
 export enum EEventsMainCAM {
