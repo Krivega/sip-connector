@@ -38,6 +38,8 @@ export abstract class AbstractCallStrategy implements ICallStrategy {
    */
   public abstract answerIncomingCall(localStream: MediaStream): Promise<void>;
 
+  public abstract getEstablishedRTCSession(): RTCSession | undefined;
+
   /**
    * Внутренняя обработка звонка (например, для ontrack)
    */

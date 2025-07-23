@@ -29,6 +29,8 @@ const hasVideoTracks = (mediaStream: MediaStream): boolean => {
 };
 
 class RTCSessionMock extends BaseSession {
+  private static presentationError?: Error;
+
   private static startPresentationError?: Error;
 
   private static countStartPresentationError: number = Number.POSITIVE_INFINITY;
@@ -93,6 +95,14 @@ class RTCSessionMock extends BaseSession {
     this.initPeerconnection(mediaStream);
   }
 
+  public static setPresentationError(presentationError: Error) {
+    this.presentationError = presentationError;
+  }
+
+  public static resetPresentationError() {
+    this.presentationError = undefined;
+  }
+
   public static setStartPresentationError(
     startPresentationError: Error,
     { count = Number.POSITIVE_INFINITY }: { count?: number } = {},
@@ -107,18 +117,42 @@ class RTCSessionMock extends BaseSession {
     this.countStartsPresentation = 0;
   }
 
-  public async startPresentation(stream: MediaStream) {
+  public startPresentation = async (stream: MediaStream) => {
     RTCSessionMock.countStartsPresentation += 1;
+
+    if (RTCSessionMock.presentationError) {
+      this.trigger('presentation:start', stream);
+
+      this.trigger('presentation:failed', stream);
+
+      throw RTCSessionMock.presentationError;
+    }
 
     if (
       RTCSessionMock.startPresentationError &&
       RTCSessionMock.countStartsPresentation < RTCSessionMock.countStartPresentationError
     ) {
+      this.trigger('presentation:start', stream);
+
+      this.trigger('presentation:failed', stream);
+
       throw RTCSessionMock.startPresentationError;
     }
 
     return super.startPresentation(stream);
-  }
+  };
+
+  public stopPresentation = async (stream: MediaStream) => {
+    if (RTCSessionMock.presentationError) {
+      this.trigger('presentation:end', stream);
+
+      this.trigger('presentation:failed', stream);
+
+      throw RTCSessionMock.presentationError;
+    }
+
+    return super.stopPresentation(stream);
+  };
 
   public initPeerconnection(mediaStream: MediaStream | undefined) {
     if (!mediaStream) {

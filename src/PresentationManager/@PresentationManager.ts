@@ -21,7 +21,7 @@ export const hasCanceledStartPresentationError = (error: unknown) => {
 // TODO: Добавить перед вызовом stopPresentation  if isP2P == true => sendStoppedPresentationP2P
 // TODO: Добавить перед вызовом stopPresentation  if isP2P == false => sendStoppedPresentation
 
-export class PresentationManager {
+class PresentationManager {
   public promisePendingStartPresentation?: Promise<MediaStream>;
 
   public promisePendingStopPresentation?: Promise<MediaStream | undefined>;
@@ -36,17 +36,8 @@ export class PresentationManager {
 
   private readonly callManager: CallManager;
 
-  private readonly getRtcSession: () => RTCSession | undefined;
-
-  public constructor({
-    callManager,
-    getRtcSession,
-  }: {
-    callManager: CallManager;
-    getRtcSession: () => RTCSession | undefined;
-  }) {
+  public constructor({ callManager }: { callManager: CallManager }) {
     this.callManager = callManager;
-    this.getRtcSession = getRtcSession;
     this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
 
     this.subscribe();
@@ -73,11 +64,7 @@ export class PresentationManager {
     } = {},
     options?: { callLimit: number },
   ): Promise<MediaStream> {
-    const rtcSession = this.getRtcSession();
-
-    if (!rtcSession) {
-      throw new Error('No rtcSession established');
-    }
+    const rtcSession = this.getRtcSessionProtected();
 
     if (this.streamPresentationCurrent) {
       throw new Error('Presentation is already started');
@@ -103,7 +90,7 @@ export class PresentationManager {
     const streamPresentationPrevious = this.streamPresentationCurrent;
     let result: Promise<MediaStream | undefined> =
       this.promisePendingStartPresentation ?? Promise.resolve<undefined>(undefined);
-    const rtcSession = this.getRtcSession();
+    const rtcSession = this.callManager.getEstablishedRTCSession();
 
     if (rtcSession && streamPresentationPrevious) {
       result = rtcSession.stopPresentation(streamPresentationPrevious).catch((error: unknown) => {
@@ -137,11 +124,7 @@ export class PresentationManager {
       onAddedTransceiver?: TOnAddedTransceiver;
     } = {},
   ): Promise<MediaStream | undefined> {
-    const rtcSession = this.getRtcSession();
-
-    if (!rtcSession) {
-      throw new Error('No rtcSession established');
-    }
+    const rtcSession = this.getRtcSessionProtected();
 
     if (!this.streamPresentationCurrent) {
       throw new Error('Presentation has not started yet');
@@ -265,16 +248,16 @@ export class PresentationManager {
       onAddedTransceiver?: TOnAddedTransceiver;
     },
   ) {
-    const streamPresentationCurrent = prepareMediaStream(stream, { contentHint });
+    const streamPresentationTarget = prepareMediaStream(stream, { contentHint });
 
-    if (streamPresentationCurrent === undefined) {
-      throw new Error('No streamPresentationCurrent');
+    if (streamPresentationTarget === undefined) {
+      throw new Error('No streamPresentationTarget');
     }
 
-    this.streamPresentationCurrent = streamPresentationCurrent;
+    this.streamPresentationCurrent = streamPresentationTarget;
 
     const result = rtcSession
-      .startPresentation(streamPresentationCurrent, isNeedReinvite, {
+      .startPresentation(streamPresentationTarget, isNeedReinvite, {
         sendEncodings,
         onAddedTransceiver,
       })
@@ -326,4 +309,16 @@ export class PresentationManager {
   private readonly handleEnded = () => {
     this.reset();
   };
+
+  private readonly getRtcSessionProtected = () => {
+    const rtcSession = this.callManager.getEstablishedRTCSession();
+
+    if (!rtcSession) {
+      throw new Error('No rtcSession established');
+    }
+
+    return rtcSession;
+  };
 }
+
+export default PresentationManager;

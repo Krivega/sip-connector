@@ -108,8 +108,13 @@ export class MCUCallStrategy extends AbstractCallStrategy {
 
   // eslint-disable-next-line class-methods-use-this
   public async answerIncomingCall(localStream: MediaStream): Promise<void> {
+    // eslint-disable-next-line no-console
     console.log('MCUCallStrategy.answerIncomingCall', localStream);
     // TODO: Реализация ответа на входящий звонок MCU
+  }
+
+  public getEstablishedRTCSession(): RTCSession | undefined {
+    return this.rtcSession?.isEstablished() === true ? this.rtcSession : undefined;
   }
 
   protected readonly handleCall = async ({

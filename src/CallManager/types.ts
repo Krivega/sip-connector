@@ -1,4 +1,4 @@
-import type { UA } from '@krivega/jssip';
+import type { RTCSession, UA } from '@krivega/jssip';
 import type Events from 'events-constructor';
 import type { EVENT_NAMES, Originator } from './eventNames';
 
@@ -52,6 +52,7 @@ export interface ICallStrategy {
   ) => Promise<RTCPeerConnection>;
   endCall: () => Promise<void>;
   answerIncomingCall: (localStream: MediaStream) => Promise<void>;
+  getEstablishedRTCSession: () => RTCSession | undefined;
 }
 
 export type TEvents = Events<typeof EVENT_NAMES>;

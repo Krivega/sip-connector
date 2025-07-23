@@ -1,4 +1,3 @@
-import type { RTCSession } from '@krivega/jssip';
 import jssip from '../../__fixtures__/jssip.mock';
 import RTCSessionMock from '../../__fixtures__/RTCSessionMock';
 import { CallManager } from '../../CallManager';
@@ -7,7 +6,7 @@ import { HEADER_NOTIFY } from '../../headers';
 import logger from '../../logger';
 import type { TJsSIP } from '../../types';
 import * as errorsUtils from '../../utils/errors';
-import { ApiManager } from '../@ApiManager';
+import ApiManager from '../@ApiManager';
 import {
   EContentTypeReceived,
   EContentTypeSent,
@@ -45,7 +44,7 @@ jest.mock('../../logger', () => {
 describe('ApiManager', () => {
   const mockLogger = logger as jest.MockedFunction<typeof logger>;
   let connectionManager: ConnectionManager;
-  let callManager: CallManager;
+  let callManager: CallManager & { getEstablishedRTCSession: jest.Mock };
   let apiManager: ApiManager;
   let mockRequest: MockRequest;
   let rtcSession: RTCSessionMock;
@@ -54,18 +53,19 @@ describe('ApiManager', () => {
     connectionManager = new ConnectionManager({
       JsSIP: jssip as unknown as TJsSIP,
     });
-    callManager = new CallManager();
+    callManager = Object.assign(new CallManager(), {
+      getEstablishedRTCSession: jest.fn(),
+    });
     rtcSession = new RTCSessionMock({
       url: 'wss://test.com',
       eventHandlers: {},
-      originator: 'remote',
+      originator: 'local',
     });
+    // По умолчанию rtcSession есть
+    callManager.getEstablishedRTCSession.mockReturnValue(rtcSession);
     apiManager = new ApiManager({
       connectionManager,
       callManager,
-      getRtcSession: () => {
-        return rtcSession as unknown as RTCSession;
-      },
     });
     mockRequest = new MockRequest();
   });
@@ -77,9 +77,6 @@ describe('ApiManager', () => {
       apiManager = new ApiManager({
         connectionManager,
         callManager,
-        getRtcSession: () => {
-          return rtcSession as unknown as RTCSession;
-        },
       });
 
       expect(onSpy).toHaveBeenCalledWith('sipEvent', expect.any(Function));
@@ -91,9 +88,6 @@ describe('ApiManager', () => {
       apiManager = new ApiManager({
         connectionManager,
         callManager,
-        getRtcSession: () => {
-          return rtcSession as unknown as RTCSession;
-        },
       });
 
       expect(onSpy).toHaveBeenCalledWith('newInfo', expect.any(Function));
@@ -436,16 +430,14 @@ describe('ApiManager', () => {
     });
 
     it('должен выбрасывать ошибку при отсутствии rtcSession в sendChannels', async () => {
-      const apiManagerWithoutSession = new ApiManager({
+      callManager.getEstablishedRTCSession.mockReturnValue(undefined);
+      apiManager = new ApiManager({
         connectionManager,
         callManager,
-        getRtcSession: () => {
-          return undefined as unknown as RTCSession;
-        },
       });
 
       await expect(
-        apiManagerWithoutSession.sendChannels({
+        apiManager.sendChannels({
           inputChannels: 'input1',
           outputChannels: 'output1',
         }),
@@ -453,148 +445,133 @@ describe('ApiManager', () => {
     });
 
     it('должен выбрасывать ошибку при отсутствии rtcSession в sendMediaState', async () => {
-      const apiManagerWithoutSession = new ApiManager({
+      callManager.getEstablishedRTCSession.mockReturnValue(undefined);
+      apiManager = new ApiManager({
         connectionManager,
         callManager,
-        getRtcSession: () => {
-          return undefined as unknown as RTCSession;
-        },
       });
 
-      await expect(
-        apiManagerWithoutSession.sendMediaState({ cam: true, mic: false }),
-      ).rejects.toThrow('No rtcSession established');
+      await expect(apiManager.sendMediaState({ cam: true, mic: false })).rejects.toThrow(
+        'No rtcSession established',
+      );
     });
 
     it('должен выбрасывать ошибку при отсутствии rtcSession в sendRefusalToTurnOn', async () => {
-      const apiManagerWithoutSession = new ApiManager({
+      callManager.getEstablishedRTCSession.mockReturnValue(undefined);
+      apiManager = new ApiManager({
         connectionManager,
         callManager,
-        getRtcSession: () => {
-          return undefined as unknown as RTCSession;
-        },
       });
 
-      await expect(apiManagerWithoutSession.sendRefusalToTurnOn('mic')).rejects.toThrow(
+      await expect(apiManager.sendRefusalToTurnOn('mic')).rejects.toThrow(
         'No rtcSession established',
       );
     });
 
     it('должен выбрасывать ошибку при отсутствии rtcSession в sendRefusalToTurnOnMic', async () => {
-      const apiManagerWithoutSession = new ApiManager({
+      callManager.getEstablishedRTCSession.mockReturnValue(undefined);
+      apiManager = new ApiManager({
         connectionManager,
         callManager,
-        getRtcSession: () => {
-          return undefined;
-        },
       });
 
-      await expect(apiManagerWithoutSession.sendRefusalToTurnOnMic()).rejects.toThrow(
+      await expect(apiManager.sendRefusalToTurnOnMic()).rejects.toThrow(
         'No rtcSession established',
       );
     });
 
     it('должен выбрасывать ошибку при отсутствии rtcSession в sendRefusalToTurnOnCam', async () => {
-      const apiManagerWithoutSession = new ApiManager({
+      callManager.getEstablishedRTCSession.mockReturnValue(undefined);
+      apiManager = new ApiManager({
         connectionManager,
         callManager,
-        getRtcSession: () => {
-          return undefined;
-        },
       });
 
-      await expect(apiManagerWithoutSession.sendRefusalToTurnOnCam()).rejects.toThrow(
+      await expect(apiManager.sendRefusalToTurnOnCam()).rejects.toThrow(
         'No rtcSession established',
       );
     });
 
     it('должен выбрасывать ошибку при отсутствии rtcSession в sendMustStopPresentationP2P', async () => {
-      const apiManagerWithoutSession = new ApiManager({
+      callManager.getEstablishedRTCSession.mockReturnValue(undefined);
+      apiManager = new ApiManager({
         connectionManager,
         callManager,
-        getRtcSession: () => {
-          return undefined;
-        },
       });
 
-      await expect(apiManagerWithoutSession.sendMustStopPresentationP2P()).rejects.toThrow(
+      await expect(apiManager.sendMustStopPresentationP2P()).rejects.toThrow(
         'No rtcSession established',
       );
     });
 
     it('должен выбрасывать ошибку при отсутствии rtcSession в sendStoppedPresentationP2P', async () => {
-      const apiManagerWithoutSession = new ApiManager({
+      callManager.getEstablishedRTCSession.mockReturnValue(undefined);
+      apiManager = new ApiManager({
         connectionManager,
         callManager,
-        getRtcSession: () => {
-          return undefined;
-        },
       });
 
-      await expect(apiManagerWithoutSession.sendStoppedPresentationP2P()).rejects.toThrow(
+      await expect(apiManager.sendStoppedPresentationP2P()).rejects.toThrow(
         'No rtcSession established',
       );
     });
 
     it('должен выбрасывать ошибку при отсутствии rtcSession в sendStoppedPresentation', async () => {
-      const apiManagerWithoutSession = new ApiManager({
+      callManager.getEstablishedRTCSession.mockReturnValue(undefined);
+      apiManager = new ApiManager({
         connectionManager,
         callManager,
-        getRtcSession: () => {
-          return undefined;
-        },
       });
 
-      await expect(apiManagerWithoutSession.sendStoppedPresentation()).rejects.toThrow(
+      await expect(apiManager.sendStoppedPresentation()).rejects.toThrow(
         'No rtcSession established',
       );
     });
 
     it('должен выбрасывать ошибку при отсутствии rtcSession в askPermissionToStartPresentationP2P', async () => {
-      const apiManagerWithoutSession = new ApiManager({
+      callManager.getEstablishedRTCSession.mockReturnValue(undefined);
+      apiManager = new ApiManager({
         connectionManager,
         callManager,
-        getRtcSession: () => {
-          return undefined;
-        },
       });
 
-      await expect(apiManagerWithoutSession.askPermissionToStartPresentationP2P()).rejects.toThrow(
+      await expect(apiManager.askPermissionToStartPresentationP2P()).rejects.toThrow(
         'No rtcSession established',
       );
     });
 
     it('должен выбрасывать ошибку при отсутствии rtcSession в askPermissionToStartPresentation', async () => {
-      const apiManagerWithoutSession = new ApiManager({
+      callManager.getEstablishedRTCSession.mockReturnValue(undefined);
+      apiManager = new ApiManager({
         connectionManager,
         callManager,
-        getRtcSession: () => {
-          return undefined;
-        },
       });
 
-      await expect(apiManagerWithoutSession.askPermissionToStartPresentation()).rejects.toThrow(
+      await expect(apiManager.askPermissionToStartPresentation()).rejects.toThrow(
         'No rtcSession established',
       );
     });
 
     it('должен выбрасывать ошибку при отсутствии rtcSession в askPermissionToEnableCam', async () => {
-      const apiManagerWithoutSession = new ApiManager({
+      callManager.getEstablishedRTCSession.mockReturnValue(undefined);
+      apiManager = new ApiManager({
         connectionManager,
         callManager,
-        getRtcSession: () => {
-          return undefined;
-        },
       });
 
-      await expect(apiManagerWithoutSession.askPermissionToEnableCam()).rejects.toThrow(
+      await expect(apiManager.askPermissionToEnableCam()).rejects.toThrow(
         'No rtcSession established',
       );
     });
 
     it('должен отправлять DTMF с числовым тоном', async () => {
+      callManager.getEstablishedRTCSession.mockReturnValue(rtcSession);
+      apiManager = new ApiManager({
+        connectionManager,
+        callManager,
+      });
+
       const sendDTMFSpy = jest.spyOn(rtcSession, 'sendDTMF').mockImplementation(() => {
-        // Симулируем событие NEW_DTMF с LOCAL originator
         setTimeout(() => {
           callManager.events.trigger('newDTMF' as never, { originator: 'local' });
         }, 0);
@@ -609,8 +586,13 @@ describe('ApiManager', () => {
     });
 
     it('должен отправлять DTMF со строковым тоном', async () => {
+      callManager.getEstablishedRTCSession.mockReturnValue(rtcSession);
+      apiManager = new ApiManager({
+        connectionManager,
+        callManager,
+      });
+
       const sendDTMFSpy = jest.spyOn(rtcSession, 'sendDTMF').mockImplementation(() => {
-        // Симулируем событие NEW_DTMF с LOCAL originator
         setTimeout(() => {
           callManager.events.trigger('newDTMF' as never, { originator: 'local' });
         }, 0);
@@ -625,8 +607,13 @@ describe('ApiManager', () => {
     });
 
     it('должен отправлять DTMF с тоном 0', async () => {
+      callManager.getEstablishedRTCSession.mockReturnValue(rtcSession);
+      apiManager = new ApiManager({
+        connectionManager,
+        callManager,
+      });
+
       const sendDTMFSpy = jest.spyOn(rtcSession, 'sendDTMF').mockImplementation(() => {
-        // Симулируем событие NEW_DTMF с LOCAL originator
         setTimeout(() => {
           callManager.events.trigger('newDTMF' as never, { originator: 'local' });
         }, 0);
@@ -641,8 +628,13 @@ describe('ApiManager', () => {
     });
 
     it('должен отправлять DTMF с тоном #', async () => {
+      callManager.getEstablishedRTCSession.mockReturnValue(rtcSession);
+      apiManager = new ApiManager({
+        connectionManager,
+        callManager,
+      });
+
       const sendDTMFSpy = jest.spyOn(rtcSession, 'sendDTMF').mockImplementation(() => {
-        // Симулируем событие NEW_DTMF с LOCAL originator
         setTimeout(() => {
           callManager.events.trigger('newDTMF' as never, { originator: 'local' });
         }, 0);
@@ -657,8 +649,13 @@ describe('ApiManager', () => {
     });
 
     it('должен ждать события NEW_DTMF с LOCAL originator', async () => {
+      callManager.getEstablishedRTCSession.mockReturnValue(rtcSession);
+      apiManager = new ApiManager({
+        connectionManager,
+        callManager,
+      });
+
       const sendDTMFSpy = jest.spyOn(rtcSession, 'sendDTMF').mockImplementation(() => {
-        // Симулируем событие NEW_DTMF с LOCAL originator сразу
         callManager.events.trigger('newDTMF' as never, { originator: 'local' });
       });
 
@@ -671,31 +668,30 @@ describe('ApiManager', () => {
     });
 
     it('должен выбрасывать ошибку при отсутствии rtcSession в sendDTMF', async () => {
-      const apiManagerWithoutSession = new ApiManager({
+      callManager.getEstablishedRTCSession.mockReturnValue(undefined);
+      apiManager = new ApiManager({
         connectionManager,
         callManager,
-        getRtcSession: () => {
-          return undefined;
-        },
       });
 
-      await expect(apiManagerWithoutSession.sendDTMF(1)).rejects.toThrow(
-        'No rtcSession established',
-      );
+      await expect(apiManager.sendDTMF(1)).rejects.toThrow('No rtcSession established');
     });
 
     it('должен игнорировать события NEW_DTMF с REMOTE originator', async () => {
+      callManager.getEstablishedRTCSession.mockReturnValue(rtcSession);
+      apiManager = new ApiManager({
+        connectionManager,
+        callManager,
+      });
+
       const sendDTMFSpy = jest.spyOn(rtcSession, 'sendDTMF').mockImplementation(() => {
-        // Симулируем только событие NEW_DTMF с REMOTE originator
         setTimeout(() => {
           callManager.events.trigger('newDTMF' as never, { originator: 'remote' });
         }, 10);
       });
 
-      // Промис не должен разрешиться, так как событие пришло от REMOTE
       const dtmfPromise = apiManager.sendDTMF(1);
 
-      // Ждем немного, чтобы убедиться, что промис не разрешился
       await new Promise((resolve) => {
         setTimeout(resolve, 50);
       });
@@ -705,7 +701,6 @@ describe('ApiManager', () => {
         interToneGap: 600,
       });
 
-      // Промис должен остаться в состоянии pending
       expect(dtmfPromise).toBeInstanceOf(Promise);
     });
   });

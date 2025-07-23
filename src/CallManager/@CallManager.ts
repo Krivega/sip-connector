@@ -1,19 +1,17 @@
 import Events from 'events-constructor';
 import type { TEvent, TEvents } from './eventNames';
 import { EVENT_NAMES } from './eventNames';
+import { MCUCallStrategy } from './MCUCallStrategy';
 import type { ICallStrategy } from './types';
 
-// Типы событий CallManager
-export type TCallManagerEvent = 'newDTMF' | 'newInfo';
-
-// Класс CallManager
 class CallManager {
   public readonly events: TEvents;
 
-  private strategy: ICallStrategy | undefined;
+  private strategy: ICallStrategy;
 
-  public constructor() {
+  public constructor(strategy?: ICallStrategy) {
     this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
+    this.strategy = strategy ?? new MCUCallStrategy(this.events);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
@@ -45,22 +43,16 @@ class CallManager {
   }
 
   public startCall: ICallStrategy['startCall'] = async (...args) => {
-    if (!this.strategy) {
-      throw new Error('Call strategy is not set');
-    }
-
     return this.strategy.startCall(...args);
   };
 
   public endCall: ICallStrategy['endCall'] = async () => {
-    if (!this.strategy) {
-      throw new Error('Call strategy is not set');
-    }
-
     return this.strategy.endCall();
+  };
+
+  public getEstablishedRTCSession: ICallStrategy['getEstablishedRTCSession'] = () => {
+    return this.strategy.getEstablishedRTCSession();
   };
 }
 
-// Экспорт заглушки стратегии MCU из отдельного файла
 export default CallManager;
-export { MCUCallStrategy } from './MCUCallStrategy';

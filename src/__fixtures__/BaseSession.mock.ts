@@ -263,14 +263,18 @@ class BaseSession implements RTCSession {
   }
 
   public async startPresentation(stream: MediaStream) {
-    return stream;
-  }
+    this.trigger('presentation:start', stream);
 
-  public async updatePresentation(stream: MediaStream) {
+    this.trigger('presentation:started', stream);
+
     return stream;
   }
 
   public async stopPresentation(stream: MediaStream) {
+    this.trigger('presentation:end', stream);
+
+    this.trigger('presentation:ended', stream);
+
     return stream;
   }
 

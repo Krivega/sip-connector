@@ -1,9 +1,4 @@
-import type {
-  IncomingInfoEvent,
-  IncomingRequest,
-  OutgoingInfoEvent,
-  RTCSession,
-} from '@krivega/jssip';
+import type { IncomingInfoEvent, IncomingRequest, OutgoingInfoEvent } from '@krivega/jssip';
 import Events from 'events-constructor';
 import type { CallManager } from '../CallManager';
 import { Originator } from '../CallManager';
@@ -44,27 +39,22 @@ import type {
 } from './types';
 import { ECMDNotify } from './types';
 
-export class ApiManager {
+class ApiManager {
   private readonly events: TEvents;
 
   private readonly connectionManager: ConnectionManager;
 
   private readonly callManager: CallManager;
 
-  private readonly getRtcSession: () => RTCSession | undefined;
-
   public constructor({
     connectionManager,
     callManager,
-    getRtcSession,
   }: {
     connectionManager: ConnectionManager;
     callManager: CallManager;
-    getRtcSession: () => RTCSession | undefined;
   }) {
     this.connectionManager = connectionManager;
     this.callManager = callManager;
-    this.getRtcSession = getRtcSession;
     this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
 
     this.subscribe();
@@ -80,7 +70,7 @@ export class ApiManager {
 
   public async sendDTMF(tone: number | string): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      const rtcSession = this.getRtcSession();
+      const rtcSession = this.callManager.getEstablishedRTCSession();
 
       if (!rtcSession) {
         reject(new Error('No rtcSession established'));
@@ -102,7 +92,7 @@ export class ApiManager {
   }
 
   public async sendChannels({ inputChannels, outputChannels }: TChannels): Promise<void> {
-    const rtcSession = this.getRtcSession();
+    const rtcSession = this.callManager.getEstablishedRTCSession();
 
     if (!rtcSession) {
       throw new Error('No rtcSession established');
@@ -122,7 +112,7 @@ export class ApiManager {
     { cam, mic }: TMediaState,
     options: TOptionsInfoMediaState = {},
   ): Promise<void> {
-    const rtcSession = this.getRtcSession();
+    const rtcSession = this.callManager.getEstablishedRTCSession();
 
     if (!rtcSession) {
       throw new Error('No rtcSession established');
@@ -148,7 +138,7 @@ export class ApiManager {
     type: 'cam' | 'mic',
     options: TOptionsInfoMediaState = {},
   ): Promise<void> {
-    const rtcSession = this.getRtcSession();
+    const rtcSession = this.callManager.getEstablishedRTCSession();
 
     if (!rtcSession) {
       throw new Error('No rtcSession established');
@@ -169,7 +159,7 @@ export class ApiManager {
   }
 
   public async sendRefusalToTurnOnMic(options: TOptionsInfoMediaState = {}): Promise<void> {
-    const rtcSession = this.getRtcSession();
+    const rtcSession = this.callManager.getEstablishedRTCSession();
 
     if (!rtcSession) {
       throw new Error('No rtcSession established');
@@ -179,7 +169,7 @@ export class ApiManager {
   }
 
   public async sendRefusalToTurnOnCam(options: TOptionsInfoMediaState = {}): Promise<void> {
-    const rtcSession = this.getRtcSession();
+    const rtcSession = this.callManager.getEstablishedRTCSession();
 
     if (!rtcSession) {
       throw new Error('No rtcSession established');
@@ -189,7 +179,7 @@ export class ApiManager {
   }
 
   public async sendMustStopPresentationP2P(): Promise<void> {
-    const rtcSession = this.getRtcSession();
+    const rtcSession = this.callManager.getEstablishedRTCSession();
 
     if (!rtcSession) {
       throw new Error('No rtcSession established');
@@ -201,7 +191,7 @@ export class ApiManager {
   }
 
   public async sendStoppedPresentationP2P(): Promise<void> {
-    const rtcSession = this.getRtcSession();
+    const rtcSession = this.callManager.getEstablishedRTCSession();
 
     if (!rtcSession) {
       throw new Error('No rtcSession established');
@@ -213,7 +203,7 @@ export class ApiManager {
   }
 
   public async sendStoppedPresentation(): Promise<void> {
-    const rtcSession = this.getRtcSession();
+    const rtcSession = this.callManager.getEstablishedRTCSession();
 
     if (!rtcSession) {
       throw new Error('No rtcSession established');
@@ -225,7 +215,7 @@ export class ApiManager {
   }
 
   public async askPermissionToStartPresentationP2P(): Promise<void> {
-    const rtcSession = this.getRtcSession();
+    const rtcSession = this.callManager.getEstablishedRTCSession();
 
     if (!rtcSession) {
       throw new Error('No rtcSession established');
@@ -237,7 +227,7 @@ export class ApiManager {
   }
 
   public async askPermissionToStartPresentation(): Promise<void> {
-    const rtcSession = this.getRtcSession();
+    const rtcSession = this.callManager.getEstablishedRTCSession();
 
     if (!rtcSession) {
       throw new Error('No rtcSession established');
@@ -249,7 +239,7 @@ export class ApiManager {
   }
 
   public async askPermissionToEnableCam(options: TOptionsInfoMediaState = {}): Promise<void> {
-    const rtcSession = this.getRtcSession();
+    const rtcSession = this.callManager.getEstablishedRTCSession();
 
     if (!rtcSession) {
       throw new Error('No rtcSession established');
@@ -676,3 +666,5 @@ export class ApiManager {
     this.events.trigger(EEvent.USE_LICENSE, license);
   };
 }
+
+export default ApiManager;
