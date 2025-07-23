@@ -6,7 +6,6 @@ import { BYE, CANCELED, REJECTED, REQUEST_TIMEOUT } from './causes';
 import {
   CONFIRMED,
   ENDED,
-  ENDED_FROM_SERVER,
   FAILED,
   Originator,
   PEER_CONNECTION,
@@ -15,7 +14,6 @@ import {
 } from './constants';
 import type { TEventSession } from './eventNames';
 import { SESSION_EVENT_NAMES, SESSION_JSSIP_EVENT_NAMES } from './eventNames';
-import logger from './logger';
 import prepareMediaStream from './tools/prepareMediaStream';
 import type { TContentHint, TCustomError, TOnAddedTransceiver } from './types';
 
@@ -89,9 +87,6 @@ export default class SipConnector {
 
   public constructor() {
     this.sessionEvents = new Events<typeof SESSION_EVENT_NAMES>(SESSION_EVENT_NAMES);
-
-    this.onSession(FAILED, this.handleEnded);
-    this.onSession(ENDED, this.handleEnded);
   }
 
   public get connection(): RTCPeerConnection | undefined {
@@ -112,14 +107,6 @@ export default class SipConnector {
     const { rtcSession } = this;
 
     if (rtcSession) {
-      if (this.streamPresentationCurrent) {
-        try {
-          await this.stopPresentation();
-        } catch (error) {
-          logger('error stop presentation: ', error);
-        }
-      }
-
       this.resetSession();
 
       if (!rtcSession.isEnded()) {
@@ -343,8 +330,6 @@ export default class SipConnector {
   };
 
   private readonly resetSession: () => void = () => {
-    this.cancelRequestsAndResetPresentation();
-
     delete this.rtcSession;
     this.remoteStreams = {};
   };
@@ -407,14 +392,4 @@ export default class SipConnector {
 
     return remoteStreams;
   }
-
-  private readonly handleEnded = (error: TCustomError) => {
-    const { originator } = error;
-
-    if (originator === Originator.REMOTE) {
-      this.sessionEvents.trigger(ENDED_FROM_SERVER, error);
-    }
-
-    this.resetSession();
-  };
 }

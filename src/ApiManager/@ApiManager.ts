@@ -5,12 +5,11 @@ import type {
   RTCSession,
 } from '@krivega/jssip';
 import Events from 'events-constructor';
-import type { TConnectionManagerEvents } from '../../ConnectionManager';
-import { EConnectionManagerEvent } from '../../ConnectionManager';
-import logger from '../../logger';
-import { hasDeclineResponseFromServer } from '../../utils/errors';
-import { EEvent as ECallEvent, Originator } from '../eventNames';
-import type { TEvents as TCallEvents } from '../types';
+import type { CallManager } from '../CallManager';
+import { Originator } from '../CallManager';
+import type { ConnectionManager } from '../ConnectionManager';
+import logger from '../logger';
+import { hasDeclineResponseFromServer } from '../utils/errors';
 import type { EUseLicense } from './constants';
 import {
   EContentTypeReceived,
@@ -48,23 +47,23 @@ import { ECMDNotify } from './types';
 export class ApiManager {
   private readonly events: TEvents;
 
-  private readonly connectionEvents: TConnectionManagerEvents;
+  private readonly connectionManager: ConnectionManager;
 
-  private readonly callEvents: TCallEvents;
+  private readonly callManager: CallManager;
 
   private readonly getRtcSession: () => RTCSession | undefined;
 
   public constructor({
-    connectionEvents,
-    callEvents,
+    connectionManager,
+    callManager,
     getRtcSession,
   }: {
-    connectionEvents: TConnectionManagerEvents;
-    callEvents: TCallEvents;
+    connectionManager: ConnectionManager;
+    callManager: CallManager;
     getRtcSession: () => RTCSession | undefined;
   }) {
-    this.connectionEvents = connectionEvents;
-    this.callEvents = callEvents;
+    this.connectionManager = connectionManager;
+    this.callManager = callManager;
     this.getRtcSession = getRtcSession;
     this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
 
@@ -89,7 +88,7 @@ export class ApiManager {
         return;
       }
 
-      this.callEvents.once(ECallEvent.NEW_DTMF, ({ originator }: { originator: Originator }) => {
+      this.callManager.once('newDTMF', ({ originator }: { originator: Originator }) => {
         if (originator === Originator.LOCAL) {
           resolve();
         }
@@ -296,8 +295,8 @@ export class ApiManager {
   }
 
   private subscribe(): void {
-    this.connectionEvents.on(EConnectionManagerEvent.SIP_EVENT, this.handleSipEvent);
-    this.callEvents.on(ECallEvent.NEW_INFO, this.handleNewInfo);
+    this.connectionManager.on('sipEvent', this.handleSipEvent);
+    this.callManager.on('newInfo', this.handleNewInfo);
   }
 
   private readonly handleSipEvent = ({ request }: { request: IncomingRequest }) => {

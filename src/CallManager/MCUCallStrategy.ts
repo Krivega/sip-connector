@@ -10,8 +10,6 @@ export class MCUCallStrategy extends AbstractCallStrategy {
   public constructor(events: TEvents) {
     super(events);
 
-    events.on(EEvent.SHARE_STATE, this.handleShareState);
-    events.on(EEvent.NEW_INFO, this.handleNewInfo);
     events.on(EEvent.FAILED, this.handleEnded);
     events.on(EEvent.ENDED, this.handleEnded);
   }
@@ -96,7 +94,7 @@ export class MCUCallStrategy extends AbstractCallStrategy {
       //   }
       // }
 
-      this.resetSession();
+      this.reset();
 
       if (!rtcSession.isEnded()) {
         return rtcSession.terminateAsync({
@@ -178,9 +176,7 @@ export class MCUCallStrategy extends AbstractCallStrategy {
     });
   };
 
-  private readonly resetSession: () => void = () => {
-    // this.cancelRequestsAndResetPresentation();
-
+  private readonly reset: () => void = () => {
     delete this.rtcSession;
     this.remoteStreams = {};
   };
@@ -192,6 +188,6 @@ export class MCUCallStrategy extends AbstractCallStrategy {
       this.events.trigger(EEvent.ENDED_FROM_SERVER, error);
     }
 
-    this.resetSession();
+    this.reset();
   };
 }

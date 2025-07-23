@@ -1,11 +1,12 @@
 import type { RTCSession } from '@krivega/jssip';
 import Events from 'events-constructor';
 import { hasCanceledError, repeatedCallsAsync } from 'repeated-calls';
-import type { TConnectionManagerEvents } from '../../ConnectionManager';
-import prepareMediaStream from '../../tools/prepareMediaStream';
-import type { TEvents as TCallEvents } from '../types';
+import prepareMediaStream from '../tools/prepareMediaStream';
+// import scaleBitrate from '../../videoSendingBalancer/scaleBitrate';
+// import { ONE_MEGABIT_IN_BITS } from './constants';
+import type { CallManager } from '../CallManager';
 import type { TEvent, TEvents } from './eventNames';
-import { EVENT_NAMES } from './eventNames';
+import { EEvent, EVENT_NAMES } from './eventNames';
 import type { TContentHint, TOnAddedTransceiver } from './types';
 
 const SEND_PRESENTATION_CALL_LIMIT = 1;
@@ -14,38 +15,41 @@ export const hasCanceledStartPresentationError = (error: unknown) => {
   return hasCanceledError(error);
 };
 
-export class PresentationManager {
-  private readonly events: TEvents;
+// TODO: Добавить перед вызовом startPresentation  if isP2P == true => sendMustStopPresentationP2P
+// TODO: Добавить перед вызовом startPresentation  if isP2P == true => askPermissionToStartPresentationP2P
+// TODO: Добавить перед вызовом startPresentation  if isP2P == false => askPermissionToStartPresentation
+// TODO: Добавить перед вызовом stopPresentation  if isP2P == true => sendStoppedPresentationP2P
+// TODO: Добавить перед вызовом stopPresentation  if isP2P == false => sendStoppedPresentation
 
+export class PresentationManager {
   public promisePendingStartPresentation?: Promise<MediaStream>;
 
   public promisePendingStopPresentation?: Promise<MediaStream | undefined>;
 
   public streamPresentationCurrent?: MediaStream;
 
+  private readonly events: TEvents;
+
   private cancelableSendPresentationWithRepeatedCalls:
     | ReturnType<typeof repeatedCallsAsync<MediaStream>>
     | undefined;
 
-  private readonly connectionEvents: TConnectionManagerEvents;
-
-  private readonly callEvents: TCallEvents;
+  private readonly callManager: CallManager;
 
   private readonly getRtcSession: () => RTCSession | undefined;
 
   public constructor({
-    connectionEvents,
-    callEvents,
+    callManager,
     getRtcSession,
   }: {
-    connectionEvents: TConnectionManagerEvents;
-    callEvents: TCallEvents;
+    callManager: CallManager;
     getRtcSession: () => RTCSession | undefined;
   }) {
-    this.connectionEvents = connectionEvents;
-    this.callEvents = callEvents;
+    this.callManager = callManager;
     this.getRtcSession = getRtcSession;
     this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
+
+    this.subscribe();
   }
 
   public get isPendingPresentation(): boolean {
@@ -56,14 +60,12 @@ export class PresentationManager {
     stream: MediaStream,
     {
       isNeedReinvite,
-      isP2P,
       maxBitrate,
       contentHint,
       sendEncodings,
       onAddedTransceiver,
     }: {
       isNeedReinvite?: boolean;
-      isP2P?: boolean;
       maxBitrate?: number;
       contentHint?: TContentHint;
       sendEncodings?: RTCRtpEncodingParameters[];
@@ -81,16 +83,11 @@ export class PresentationManager {
       throw new Error('Presentation is already started');
     }
 
-    if (isP2P === true) {
-      await this.sendMustStopPresentation();
-    }
-
     return this.sendPresentationWithDuplicatedCalls({
       rtcSession,
       stream,
       presentationOptions: {
         isNeedReinvite,
-        isP2P,
         maxBitrate,
         contentHint,
         sendEncodings,
@@ -100,44 +97,22 @@ export class PresentationManager {
     });
   }
 
-  public async stopPresentation({
-    isP2P = false,
-  }: {
-    isP2P?: boolean;
-  } = {}): Promise<MediaStream | undefined> {
+  public async stopPresentation(): Promise<MediaStream | undefined> {
     this.cancelSendPresentationWithRepeatedCalls();
 
     const streamPresentationPrevious = this.streamPresentationCurrent;
     let result: Promise<MediaStream | undefined> =
       this.promisePendingStartPresentation ?? Promise.resolve<undefined>(undefined);
-
-    // определяем заголовки для остановки презентации в зависимости от типа сессии
-    const preparatoryHeaders = isP2P
-      ? [HEADER_STOP_PRESENTATION_P2P] // `x-webrtc-share-state: CONTENTEND`
-      : [HEADER_STOP_PRESENTATION]; // `x-webrtc-share-state: STOPPRESENTATION`
-
     const rtcSession = this.getRtcSession();
 
     if (rtcSession && streamPresentationPrevious) {
-      result = result
-        .then(async () => {
-          // информируем сервер о остановке презентации с заголовком 'application/vinteo.webrtc.sharedesktop'
-          return rtcSession.sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
-            extraHeaders: preparatoryHeaders,
-          });
-        })
-        .then(async () => {
-          return rtcSession.stopPresentation(streamPresentationPrevious);
-        })
-        .catch((error: unknown) => {
-          this.sessionEvents.trigger(PRESENTATION_FAILED, error);
+      result = rtcSession.stopPresentation(streamPresentationPrevious).catch((error: unknown) => {
+        this.events.trigger(EEvent.FAILED_PRESENTATION, error);
 
-          throw error;
-        });
-    }
-
-    if (!rtcSession && streamPresentationPrevious) {
-      this.sessionEvents.trigger(PRESENTATION_ENDED, streamPresentationPrevious);
+        throw error;
+      });
+    } else if (!rtcSession && streamPresentationPrevious) {
+      this.events.trigger(EEvent.ENDED_PRESENTATION, streamPresentationPrevious);
     }
 
     this.promisePendingStopPresentation = result;
@@ -150,14 +125,13 @@ export class PresentationManager {
   public async updatePresentation(
     stream: MediaStream,
     {
-      isP2P,
-      maxBitrate,
+      // maxBitrate,
       contentHint,
       sendEncodings,
       onAddedTransceiver,
     }: {
       isP2P?: boolean;
-      maxBitrate?: number;
+      // maxBitrate?: number;
       contentHint?: TContentHint;
       sendEncodings?: RTCRtpEncodingParameters[];
       onAddedTransceiver?: TOnAddedTransceiver;
@@ -178,8 +152,7 @@ export class PresentationManager {
     }
 
     return this.sendPresentation(rtcSession, stream, {
-      isP2P,
-      maxBitrate,
+      // maxBitrate,
       contentHint,
       isNeedReinvite: false,
       sendEncodings,
@@ -215,6 +188,27 @@ export class PresentationManager {
     this.events.off<T>(eventName, handler);
   }
 
+  private subscribe() {
+    this.callManager.on('presentation:start', (stream: MediaStream) => {
+      this.events.trigger(EEvent.START_PRESENTATION, stream);
+    });
+    this.callManager.on('presentation:started', (stream: MediaStream) => {
+      this.events.trigger(EEvent.STARTED_PRESENTATION, stream);
+    });
+    this.callManager.on('presentation:end', (stream: MediaStream) => {
+      this.events.trigger(EEvent.END_PRESENTATION, stream);
+    });
+    this.callManager.on('presentation:ended', (stream: MediaStream) => {
+      this.events.trigger(EEvent.ENDED_PRESENTATION, stream);
+    });
+    this.callManager.on('presentation:failed', (error: unknown) => {
+      this.events.trigger(EEvent.FAILED_PRESENTATION, error);
+    });
+
+    this.callManager.on('failed', this.handleEnded);
+    this.callManager.on('ended', this.handleEnded);
+  }
+
   private async sendPresentationWithDuplicatedCalls({
     rtcSession,
     stream,
@@ -227,7 +221,6 @@ export class PresentationManager {
     stream: MediaStream;
     presentationOptions: {
       isNeedReinvite?: boolean;
-      isP2P?: boolean;
       maxBitrate?: number;
       contentHint?: TContentHint;
       sendEncodings?: RTCRtpEncodingParameters[];
@@ -259,16 +252,14 @@ export class PresentationManager {
     rtcSession: RTCSession,
     stream: MediaStream,
     {
-      maxBitrate = ONE_MEGABIT_IN_BITS,
+      // maxBitrate = ONE_MEGABIT_IN_BITS,
       isNeedReinvite = true,
-      isP2P = false,
       contentHint = 'detail',
       sendEncodings,
       onAddedTransceiver,
     }: {
       isNeedReinvite?: boolean;
-      isP2P?: boolean;
-      maxBitrate?: number;
+      // maxBitrate?: number;
       contentHint?: TContentHint;
       sendEncodings?: RTCRtpEncodingParameters[];
       onAddedTransceiver?: TOnAddedTransceiver;
@@ -282,40 +273,29 @@ export class PresentationManager {
 
     this.streamPresentationCurrent = streamPresentationCurrent;
 
-    // определяем заголовки для начала презентации в зависимости от типа сессии
-    const preparatoryHeaders = isP2P
-      ? [HEADER_START_PRESENTATION_P2P] // `x-webrtc-share-state: YOUCANRECEIVECONTENT
-      : [HEADER_START_PRESENTATION]; // `x-webrtc-share-state: LETMESTARTPRESENTATION`
-
     const result = rtcSession
-      // отправляем запрос на презентацию с заголовком 'application/vinteo.webrtc.sharedesktop'
-      .sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
-        extraHeaders: preparatoryHeaders,
+      .startPresentation(streamPresentationCurrent, isNeedReinvite, {
+        sendEncodings,
+        onAddedTransceiver,
       })
-      .then(async () => {
-        return rtcSession.startPresentation(streamPresentationCurrent, isNeedReinvite, {
-          sendEncodings,
-          onAddedTransceiver,
-        });
-      })
-      .then(async () => {
-        const { connection } = this;
+      // .then(async () => {
+      //   const { connection } = this;
 
-        if (!connection) {
-          return;
-        }
+      //   if (!connection) {
+      //     return;
+      //   }
 
-        const senders = connection.getSenders();
+      //   const senders = connection.getSenders();
 
-        await scaleBitrate(senders, stream, maxBitrate);
-      })
+      //   await scaleBitrate(senders, stream, maxBitrate);
+      // })
       .then(() => {
         return stream;
       })
       .catch((error: unknown) => {
         this.removeStreamPresentationCurrent();
 
-        this.sessionEvents.trigger(PRESENTATION_FAILED, error);
+        this.events.trigger(EEvent.FAILED_PRESENTATION, error);
 
         throw error;
       });
@@ -338,8 +318,12 @@ export class PresentationManager {
     this.promisePendingStopPresentation = undefined;
   }
 
-  private cancelRequestsAndResetPresentation() {
+  private reset() {
     this.cancelSendPresentationWithRepeatedCalls();
     this.resetPresentation();
   }
+
+  private readonly handleEnded = () => {
+    this.reset();
+  };
 }

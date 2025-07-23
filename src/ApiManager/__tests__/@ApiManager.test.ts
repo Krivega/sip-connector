@@ -1,15 +1,13 @@
 import type { RTCSession } from '@krivega/jssip';
-import Events from 'events-constructor';
-import RTCSessionMock from '../../../__fixtures__/RTCSessionMock';
-import {
-  CONNECTION_MANAGER_EVENT_NAMES,
-  EConnectionManagerEvent,
-} from '../../../ConnectionManager';
-import { HEADER_NOTIFY } from '../../../headers';
-import logger from '../../../logger';
-import * as errorsUtils from '../../../utils/errors';
-import { EVENT_NAMES as CALL_MANAGER_EVENT_NAMES } from '../../eventNames';
-import { ApiManager } from '../ApiManager';
+import jssip from '../../__fixtures__/jssip.mock';
+import RTCSessionMock from '../../__fixtures__/RTCSessionMock';
+import { CallManager } from '../../CallManager';
+import { ConnectionManager } from '../../ConnectionManager';
+import { HEADER_NOTIFY } from '../../headers';
+import logger from '../../logger';
+import type { TJsSIP } from '../../types';
+import * as errorsUtils from '../../utils/errors';
+import { ApiManager } from '../@ApiManager';
 import {
   EContentTypeReceived,
   EContentTypeSent,
@@ -40,31 +38,31 @@ class MockRequest {
 }
 
 // Мокаем logger
-jest.mock('../../../logger', () => {
+jest.mock('../../logger', () => {
   return jest.fn();
 });
 
 describe('ApiManager', () => {
   const mockLogger = logger as jest.MockedFunction<typeof logger>;
-  let connectionEvents: Events<typeof CONNECTION_MANAGER_EVENT_NAMES>;
-  let callEvents: Events<typeof CALL_MANAGER_EVENT_NAMES>;
+  let connectionManager: ConnectionManager;
+  let callManager: CallManager;
   let apiManager: ApiManager;
   let mockRequest: MockRequest;
   let rtcSession: RTCSessionMock;
 
   beforeEach(() => {
-    connectionEvents = new Events<typeof CONNECTION_MANAGER_EVENT_NAMES>(
-      CONNECTION_MANAGER_EVENT_NAMES,
-    );
-    callEvents = new Events<typeof CALL_MANAGER_EVENT_NAMES>(CALL_MANAGER_EVENT_NAMES);
+    connectionManager = new ConnectionManager({
+      JsSIP: jssip as unknown as TJsSIP,
+    });
+    callManager = new CallManager();
     rtcSession = new RTCSessionMock({
       url: 'wss://test.com',
       eventHandlers: {},
       originator: 'remote',
     });
     apiManager = new ApiManager({
-      connectionEvents,
-      callEvents,
+      connectionManager,
+      callManager,
       getRtcSession: () => {
         return rtcSession as unknown as RTCSession;
       },
@@ -74,25 +72,25 @@ describe('ApiManager', () => {
 
   describe('конструктор и базовые методы', () => {
     it('должен подписываться на события при создании', () => {
-      const onSpy = jest.spyOn(connectionEvents, 'on');
+      const onSpy = jest.spyOn(connectionManager, 'on');
 
       apiManager = new ApiManager({
-        connectionEvents,
-        callEvents,
+        connectionManager,
+        callManager,
         getRtcSession: () => {
           return rtcSession as unknown as RTCSession;
         },
       });
 
-      expect(onSpy).toHaveBeenCalledWith(EConnectionManagerEvent.SIP_EVENT, expect.any(Function));
+      expect(onSpy).toHaveBeenCalledWith('sipEvent', expect.any(Function));
     });
 
     it('должен подписываться на call события при создании', () => {
-      const onSpy = jest.spyOn(callEvents, 'on');
+      const onSpy = jest.spyOn(callManager, 'on');
 
       apiManager = new ApiManager({
-        connectionEvents,
-        callEvents,
+        connectionManager,
+        callManager,
         getRtcSession: () => {
           return rtcSession as unknown as RTCSession;
         },
@@ -143,7 +141,7 @@ describe('ApiManager', () => {
       const notifyData = { cmd: 'channels', input: 'input1', output: 'output1' };
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
-      connectionEvents.trigger(EConnectionManagerEvent.SIP_EVENT, { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
       const result = await waitPromise;
 
@@ -165,7 +163,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       const result = await waitPromise;
 
@@ -185,7 +183,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       const result = await waitPromise;
 
@@ -204,7 +202,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       const result = await waitPromise;
 
@@ -439,8 +437,8 @@ describe('ApiManager', () => {
 
     it('должен выбрасывать ошибку при отсутствии rtcSession в sendChannels', async () => {
       const apiManagerWithoutSession = new ApiManager({
-        connectionEvents,
-        callEvents,
+        connectionManager,
+        callManager,
         getRtcSession: () => {
           return undefined as unknown as RTCSession;
         },
@@ -456,8 +454,8 @@ describe('ApiManager', () => {
 
     it('должен выбрасывать ошибку при отсутствии rtcSession в sendMediaState', async () => {
       const apiManagerWithoutSession = new ApiManager({
-        connectionEvents,
-        callEvents,
+        connectionManager,
+        callManager,
         getRtcSession: () => {
           return undefined as unknown as RTCSession;
         },
@@ -470,8 +468,8 @@ describe('ApiManager', () => {
 
     it('должен выбрасывать ошибку при отсутствии rtcSession в sendRefusalToTurnOn', async () => {
       const apiManagerWithoutSession = new ApiManager({
-        connectionEvents,
-        callEvents,
+        connectionManager,
+        callManager,
         getRtcSession: () => {
           return undefined as unknown as RTCSession;
         },
@@ -484,8 +482,8 @@ describe('ApiManager', () => {
 
     it('должен выбрасывать ошибку при отсутствии rtcSession в sendRefusalToTurnOnMic', async () => {
       const apiManagerWithoutSession = new ApiManager({
-        connectionEvents,
-        callEvents,
+        connectionManager,
+        callManager,
         getRtcSession: () => {
           return undefined;
         },
@@ -498,8 +496,8 @@ describe('ApiManager', () => {
 
     it('должен выбрасывать ошибку при отсутствии rtcSession в sendRefusalToTurnOnCam', async () => {
       const apiManagerWithoutSession = new ApiManager({
-        connectionEvents,
-        callEvents,
+        connectionManager,
+        callManager,
         getRtcSession: () => {
           return undefined;
         },
@@ -512,8 +510,8 @@ describe('ApiManager', () => {
 
     it('должен выбрасывать ошибку при отсутствии rtcSession в sendMustStopPresentationP2P', async () => {
       const apiManagerWithoutSession = new ApiManager({
-        connectionEvents,
-        callEvents,
+        connectionManager,
+        callManager,
         getRtcSession: () => {
           return undefined;
         },
@@ -526,8 +524,8 @@ describe('ApiManager', () => {
 
     it('должен выбрасывать ошибку при отсутствии rtcSession в sendStoppedPresentationP2P', async () => {
       const apiManagerWithoutSession = new ApiManager({
-        connectionEvents,
-        callEvents,
+        connectionManager,
+        callManager,
         getRtcSession: () => {
           return undefined;
         },
@@ -540,8 +538,8 @@ describe('ApiManager', () => {
 
     it('должен выбрасывать ошибку при отсутствии rtcSession в sendStoppedPresentation', async () => {
       const apiManagerWithoutSession = new ApiManager({
-        connectionEvents,
-        callEvents,
+        connectionManager,
+        callManager,
         getRtcSession: () => {
           return undefined;
         },
@@ -554,8 +552,8 @@ describe('ApiManager', () => {
 
     it('должен выбрасывать ошибку при отсутствии rtcSession в askPermissionToStartPresentationP2P', async () => {
       const apiManagerWithoutSession = new ApiManager({
-        connectionEvents,
-        callEvents,
+        connectionManager,
+        callManager,
         getRtcSession: () => {
           return undefined;
         },
@@ -568,8 +566,8 @@ describe('ApiManager', () => {
 
     it('должен выбрасывать ошибку при отсутствии rtcSession в askPermissionToStartPresentation', async () => {
       const apiManagerWithoutSession = new ApiManager({
-        connectionEvents,
-        callEvents,
+        connectionManager,
+        callManager,
         getRtcSession: () => {
           return undefined;
         },
@@ -582,8 +580,8 @@ describe('ApiManager', () => {
 
     it('должен выбрасывать ошибку при отсутствии rtcSession в askPermissionToEnableCam', async () => {
       const apiManagerWithoutSession = new ApiManager({
-        connectionEvents,
-        callEvents,
+        connectionManager,
+        callManager,
         getRtcSession: () => {
           return undefined;
         },
@@ -598,7 +596,7 @@ describe('ApiManager', () => {
       const sendDTMFSpy = jest.spyOn(rtcSession, 'sendDTMF').mockImplementation(() => {
         // Симулируем событие NEW_DTMF с LOCAL originator
         setTimeout(() => {
-          callEvents.trigger('newDTMF' as never, { originator: 'local' });
+          callManager.events.trigger('newDTMF' as never, { originator: 'local' });
         }, 0);
       });
 
@@ -614,7 +612,7 @@ describe('ApiManager', () => {
       const sendDTMFSpy = jest.spyOn(rtcSession, 'sendDTMF').mockImplementation(() => {
         // Симулируем событие NEW_DTMF с LOCAL originator
         setTimeout(() => {
-          callEvents.trigger('newDTMF' as never, { originator: 'local' });
+          callManager.events.trigger('newDTMF' as never, { originator: 'local' });
         }, 0);
       });
 
@@ -630,7 +628,7 @@ describe('ApiManager', () => {
       const sendDTMFSpy = jest.spyOn(rtcSession, 'sendDTMF').mockImplementation(() => {
         // Симулируем событие NEW_DTMF с LOCAL originator
         setTimeout(() => {
-          callEvents.trigger('newDTMF' as never, { originator: 'local' });
+          callManager.events.trigger('newDTMF' as never, { originator: 'local' });
         }, 0);
       });
 
@@ -646,7 +644,7 @@ describe('ApiManager', () => {
       const sendDTMFSpy = jest.spyOn(rtcSession, 'sendDTMF').mockImplementation(() => {
         // Симулируем событие NEW_DTMF с LOCAL originator
         setTimeout(() => {
-          callEvents.trigger('newDTMF' as never, { originator: 'local' });
+          callManager.events.trigger('newDTMF' as never, { originator: 'local' });
         }, 0);
       });
 
@@ -661,7 +659,7 @@ describe('ApiManager', () => {
     it('должен ждать события NEW_DTMF с LOCAL originator', async () => {
       const sendDTMFSpy = jest.spyOn(rtcSession, 'sendDTMF').mockImplementation(() => {
         // Симулируем событие NEW_DTMF с LOCAL originator сразу
-        callEvents.trigger('newDTMF' as never, { originator: 'local' });
+        callManager.events.trigger('newDTMF' as never, { originator: 'local' });
       });
 
       await apiManager.sendDTMF(1);
@@ -674,8 +672,8 @@ describe('ApiManager', () => {
 
     it('должен выбрасывать ошибку при отсутствии rtcSession в sendDTMF', async () => {
       const apiManagerWithoutSession = new ApiManager({
-        connectionEvents,
-        callEvents,
+        connectionManager,
+        callManager,
         getRtcSession: () => {
           return undefined;
         },
@@ -690,7 +688,7 @@ describe('ApiManager', () => {
       const sendDTMFSpy = jest.spyOn(rtcSession, 'sendDTMF').mockImplementation(() => {
         // Симулируем только событие NEW_DTMF с REMOTE originator
         setTimeout(() => {
-          callEvents.trigger('newDTMF' as never, { originator: 'remote' });
+          callManager.events.trigger('newDTMF' as never, { originator: 'remote' });
         }, 10);
       });
 
@@ -718,7 +716,7 @@ describe('ApiManager', () => {
 
       apiManager.on('channels:notify', channelsSpy);
 
-      connectionEvents.trigger(EConnectionManagerEvent.SIP_EVENT, { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
       expect(channelsSpy).not.toHaveBeenCalled();
     });
@@ -732,7 +730,7 @@ describe('ApiManager', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      connectionEvents.trigger(EConnectionManagerEvent.SIP_EVENT, { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
       expect(channelsSpy).toHaveBeenCalledWith({
         inputChannels: 'input1',
@@ -745,7 +743,7 @@ describe('ApiManager', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      connectionEvents.trigger(EConnectionManagerEvent.SIP_EVENT, { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
       expect(mockLogger).toHaveBeenCalledWith('unknown cmd', notifyData);
     });
@@ -759,7 +757,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('local', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(enterRoomSpy).not.toHaveBeenCalled();
     });
@@ -775,7 +773,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(enterRoomSpy).toHaveBeenCalledWith({
         room: 'room123',
@@ -796,7 +794,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(shareStateSpy).toHaveBeenCalledWith(undefined);
     });
@@ -812,7 +810,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(mainCamSpy).toHaveBeenCalledWith({ isSyncForced: true });
     });
@@ -828,7 +826,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(micSpy).toHaveBeenCalledWith({ isSyncForced: true });
     });
@@ -843,7 +841,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(licenseSpy).toHaveBeenCalledWith(EUseLicense.AUDIO);
     });
@@ -858,7 +856,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(participantSpy).toHaveBeenCalledWith(undefined);
     });
@@ -874,7 +872,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(channelsSpy).toHaveBeenCalledWith({
         inputChannels: 'input1,input2',
@@ -891,7 +889,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(anySpy).not.toHaveBeenCalled();
     });
@@ -909,7 +907,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(channelsSpy).toHaveBeenCalledWith({
         inputChannels: 'input1',
@@ -926,7 +924,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(anySpy).not.toHaveBeenCalled();
     });
@@ -940,7 +938,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(anySpy).not.toHaveBeenCalled();
     });
@@ -960,7 +958,7 @@ describe('ApiManager', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      connectionEvents.trigger(EConnectionManagerEvent.SIP_EVENT, { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
       expect(channelsSpy).toHaveBeenCalledWith({
         inputChannels: 'input_channel_1,input_channel_2',
@@ -982,7 +980,7 @@ describe('ApiManager', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      connectionEvents.trigger(EConnectionManagerEvent.SIP_EVENT, { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
       expect(webcastStartedSpy).toHaveBeenCalledWith({
         conference: 'conf123',
@@ -1002,7 +1000,7 @@ describe('ApiManager', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      connectionEvents.trigger(EConnectionManagerEvent.SIP_EVENT, { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
       expect(webcastStoppedSpy).toHaveBeenCalledWith({
         conference: 'conf123',
@@ -1024,7 +1022,7 @@ describe('ApiManager', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      connectionEvents.trigger(EConnectionManagerEvent.SIP_EVENT, { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
       expect(addedToModeratorsSpy).toHaveBeenCalledWith({
         conference: 'conf123',
@@ -1043,7 +1041,7 @@ describe('ApiManager', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      connectionEvents.trigger(EConnectionManagerEvent.SIP_EVENT, { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
       expect(removedFromModeratorsSpy).toHaveBeenCalledWith({
         conference: 'conf123',
@@ -1064,7 +1062,7 @@ describe('ApiManager', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      connectionEvents.trigger(EConnectionManagerEvent.SIP_EVENT, { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
       expect(participationAcceptedSpy).toHaveBeenCalledWith({
         conference: 'conf123',
@@ -1083,7 +1081,7 @@ describe('ApiManager', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      connectionEvents.trigger(EConnectionManagerEvent.SIP_EVENT, { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
       expect(participationRejectedSpy).toHaveBeenCalledWith({
         conference: 'conf123',
@@ -1104,7 +1102,7 @@ describe('ApiManager', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      connectionEvents.trigger(EConnectionManagerEvent.SIP_EVENT, { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
       expect(participantMoveSpy).toHaveBeenCalledWith({
         conference: 'conf123',
@@ -1124,7 +1122,7 @@ describe('ApiManager', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      connectionEvents.trigger(EConnectionManagerEvent.SIP_EVENT, { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
       expect(accountChangedSpy).toHaveBeenCalledWith(undefined);
     });
@@ -1140,7 +1138,7 @@ describe('ApiManager', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      connectionEvents.trigger(EConnectionManagerEvent.SIP_EVENT, { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
       expect(accountDeletedSpy).toHaveBeenCalledWith(undefined);
     });
@@ -1163,7 +1161,7 @@ describe('ApiManager', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      connectionEvents.trigger(EConnectionManagerEvent.SIP_EVENT, { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
       expect(tokenIssuedSpy).toHaveBeenCalledWith({
         conference: 'conf123',
@@ -1273,7 +1271,7 @@ describe('ApiManager', () => {
         const notifyData = { cmd, ...data };
 
         mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
-        connectionEvents.trigger(EConnectionManagerEvent.SIP_EVENT, { request: mockRequest });
+        connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
         expect(spy).toHaveBeenCalledWith(expected);
       });
@@ -1294,7 +1292,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(availableStreamSpy).toHaveBeenCalledWith(undefined);
     });
@@ -1312,7 +1310,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(notAvailableStreamSpy).toHaveBeenCalledWith(undefined);
     });
@@ -1327,7 +1325,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(mustStopPresentationSpy).toHaveBeenCalledWith(undefined);
     });
@@ -1342,7 +1340,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(anySpy).not.toHaveBeenCalled();
     });
@@ -1357,7 +1355,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(anySpy).not.toHaveBeenCalled();
     });
@@ -1372,7 +1370,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(anySpy).not.toHaveBeenCalled();
     });
@@ -1390,7 +1388,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(adminStartSpy).toHaveBeenCalledWith({ isSyncForced: true });
     });
@@ -1406,7 +1404,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(adminStopSpy).toHaveBeenCalledWith({ isSyncForced: false });
     });
@@ -1422,7 +1420,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(syncSpy).toHaveBeenCalledWith({ isSyncForced: true });
     });
@@ -1438,7 +1436,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(syncSpy).toHaveBeenCalledWith({ isSyncForced: true });
     });
@@ -1456,7 +1454,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(syncSpy).not.toHaveBeenCalled();
       expect(mainCamControlSpy).toHaveBeenCalledWith({
@@ -1478,7 +1476,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(syncSpy).not.toHaveBeenCalled();
       expect(mainCamControlSpy).toHaveBeenCalledWith({
@@ -1498,7 +1496,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(mainCamControlSpy).toHaveBeenCalledWith({
         mainCam: 'UNKNOWN_MAIN_CAM_EVENT',
@@ -1517,7 +1515,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(mainCamControlSpy).toHaveBeenCalledWith({
         mainCam: 'UNKNOWN_MAIN_CAM_EVENT',
@@ -1538,7 +1536,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(adminStartSpy).toHaveBeenCalledWith({ isSyncForced: true });
     });
@@ -1554,7 +1552,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(adminStopSpy).toHaveBeenCalledWith({ isSyncForced: false });
     });
@@ -1569,7 +1567,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(anySpy).not.toHaveBeenCalled();
     });
@@ -1584,7 +1582,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(anySpy).not.toHaveBeenCalled();
     });
@@ -1602,7 +1600,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(channelsSpy).toHaveBeenCalledWith({
         inputChannels: 'input1,input2',
@@ -1621,7 +1619,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(channelsSpy).not.toHaveBeenCalled();
     });
@@ -1637,7 +1635,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(channelsSpy).not.toHaveBeenCalled();
     });
@@ -1652,7 +1650,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(channelsSpy).not.toHaveBeenCalled();
     });
@@ -1669,7 +1667,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(spectatorSpy).toHaveBeenCalledWith(undefined);
     });
@@ -1684,7 +1682,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(participantSpy).toHaveBeenCalledWith(undefined);
     });
@@ -1699,7 +1697,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(anySpy).not.toHaveBeenCalled();
     });
@@ -1714,7 +1712,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(anySpy).not.toHaveBeenCalled();
     });
@@ -1731,7 +1729,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(spectatorSpy).toHaveBeenCalledWith(undefined);
       expect(participantSpy).not.toHaveBeenCalled();
@@ -1743,7 +1741,7 @@ describe('ApiManager', () => {
       mockRequest.setHeader(HEADER_NOTIFY, 'invalid json');
 
       expect(() => {
-        connectionEvents.trigger(EConnectionManagerEvent.SIP_EVENT, { request: mockRequest });
+        connectionManager.events.trigger('sipEvent', { request: mockRequest });
       }).not.toThrow();
 
       expect(mockLogger).toHaveBeenCalledWith('error parse notify', expect.any(Error));
@@ -1761,7 +1759,7 @@ describe('ApiManager', () => {
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
 
-      connectionEvents.trigger(EConnectionManagerEvent.SIP_EVENT, { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
       expect(channelsSpy).toHaveBeenCalledWith({
         inputChannels: undefined,
@@ -1779,7 +1777,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(enterRoomSpy).toHaveBeenCalledWith({
         room: undefined,
@@ -1797,7 +1795,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(channelsSpy).not.toHaveBeenCalled();
     });
@@ -1812,7 +1810,7 @@ describe('ApiManager', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo' as never, infoEvent);
 
       expect(mainCamControlSpy).toHaveBeenCalledWith({
         mainCam: undefined,
@@ -1824,7 +1822,7 @@ describe('ApiManager', () => {
       mockRequest.setHeader(HEADER_NOTIFY, 'invalid json');
 
       expect(() => {
-        connectionEvents.trigger(EConnectionManagerEvent.SIP_EVENT, { request: mockRequest });
+        connectionManager.events.trigger('sipEvent', { request: mockRequest });
       }).not.toThrow();
 
       expect(mockLogger).toHaveBeenCalledWith('error parse notify', expect.any(Error));
@@ -1837,7 +1835,7 @@ describe('ApiManager', () => {
 
       // Не устанавливаем заголовок NOTIFY
 
-      connectionEvents.trigger(EConnectionManagerEvent.SIP_EVENT, { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
       expect(anySpy).not.toHaveBeenCalled();
     });
@@ -1859,7 +1857,7 @@ describe('ApiManager', () => {
       };
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData1));
-      connectionEvents.trigger(EConnectionManagerEvent.SIP_EVENT, { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
       // Второе уведомление
       const notifyData2 = {
@@ -1867,7 +1865,7 @@ describe('ApiManager', () => {
       };
 
       mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData2));
-      connectionEvents.trigger(EConnectionManagerEvent.SIP_EVENT, { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
       expect(channelsSpy).toHaveBeenCalledTimes(1);
       expect(channelsSpy).toHaveBeenCalledWith({
@@ -1893,7 +1891,7 @@ describe('ApiManager', () => {
 
       const infoEvent1 = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent1);
+      callManager.events.trigger('newInfo' as never, infoEvent1);
 
       // Второе событие
       mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.SHARE_STATE);
@@ -1904,7 +1902,7 @@ describe('ApiManager', () => {
 
       const infoEvent2 = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callEvents.trigger('newInfo' as never, infoEvent2);
+      callManager.events.trigger('newInfo' as never, infoEvent2);
 
       expect(enterRoomSpy).toHaveBeenCalledTimes(1);
       expect(enterRoomSpy).toHaveBeenCalledWith({
