@@ -15,11 +15,11 @@ export const hasCanceledStartPresentationError = (error: unknown) => {
   return hasCanceledError(error);
 };
 
-// TODO: Добавить перед вызовом startPresentation if isP2P == true => sendMustStopPresentationP2P
-// TODO: Добавить перед вызовом startPresentation if isP2P == true => askPermissionToStartPresentationP2P
-// TODO: Добавить перед вызовом startPresentation if isP2P == false => askPermissionToStartPresentation
-// TODO: Добавить перед вызовом stopPresentation if isP2P == true => sendStoppedPresentationP2P
-// TODO: Добавить перед вызовом stopPresentation if isP2P == false => sendStoppedPresentation
+// TODO: Добавить перед вызовом startPresentation if isP2P == true => apiManager.sendMustStopPresentationP2P
+// TODO: Добавить перед вызовом startPresentation if isP2P == true => apiManager.askPermissionToStartPresentationP2P
+// TODO: Добавить перед вызовом startPresentation if isP2P == false => apiManager.askPermissionToStartPresentation
+// TODO: Добавить перед вызовом stopPresentation if isP2P == true => apiManager.sendStoppedPresentationP2P
+// TODO: Добавить перед вызовом stopPresentation if isP2P == false => apiManager.sendStoppedPresentation
 
 class PresentationManager {
   public promisePendingStartPresentation?: Promise<MediaStream>;
@@ -290,26 +290,6 @@ class PresentationManager {
     });
   }
 
-  private removeStreamPresentationCurrent() {
-    delete this.streamPresentationCurrent;
-  }
-
-  private resetPresentation() {
-    this.removeStreamPresentationCurrent();
-
-    this.promisePendingStartPresentation = undefined;
-    this.promisePendingStopPresentation = undefined;
-  }
-
-  private reset() {
-    this.cancelSendPresentationWithRepeatedCalls();
-    this.resetPresentation();
-  }
-
-  private readonly handleEnded = () => {
-    this.reset();
-  };
-
   private readonly getRtcSessionProtected = () => {
     const rtcSession = this.callManager.getEstablishedRTCSession();
 
@@ -319,6 +299,26 @@ class PresentationManager {
 
     return rtcSession;
   };
+
+  private readonly handleEnded = () => {
+    this.reset();
+  };
+
+  private reset() {
+    this.cancelSendPresentationWithRepeatedCalls();
+    this.resetPresentation();
+  }
+
+  private resetPresentation() {
+    this.removeStreamPresentationCurrent();
+
+    this.promisePendingStartPresentation = undefined;
+    this.promisePendingStopPresentation = undefined;
+  }
+
+  private removeStreamPresentationCurrent() {
+    delete this.streamPresentationCurrent;
+  }
 }
 
 export default PresentationManager;

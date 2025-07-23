@@ -72,6 +72,9 @@ class RTCSessionMock extends BaseSession {
     }, CONNECTION_DELAY);
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public replaceMediaStream = jest.fn(async (_mediaStream: MediaStream): Promise<void> => {});
+
   private isEndedInner = false;
 
   public constructor({
@@ -312,9 +315,6 @@ class RTCSessionMock extends BaseSession {
   public isMuted() {
     return this.mutedOptions;
   }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-empty-function, class-methods-use-this
-  public async replaceMediaStream(_mediaStream: MediaStream): Promise<void> {}
 
   public onmute({ audio, video }: { audio: boolean; video: boolean }) {
     this.trigger('muted', {

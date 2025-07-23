@@ -1,8 +1,10 @@
-import type { RTCSession, UA } from '@krivega/jssip';
-import type { ICallStrategy, TEvents, TGetServerUrl, TOntrack, TParametersCall } from './types';
+import type { RTCSession } from '@krivega/jssip';
+import type { ICallStrategy, TEvents, TOntrack } from './types';
 
 export abstract class AbstractCallStrategy implements ICallStrategy {
   protected isPendingCall = false;
+
+  protected isPendingAnswer = false;
 
   protected rtcSession?: RTCSession;
 
@@ -23,9 +25,9 @@ export abstract class AbstractCallStrategy implements ICallStrategy {
    * Запуск исходящего звонка
    */
   public abstract startCall(
-    parameters: TParametersCall,
-    ua: UA,
-    getSipServerUrl: TGetServerUrl,
+    parameters: Parameters<ICallStrategy['startCall']>[0],
+    ua: Parameters<ICallStrategy['startCall']>[1],
+    getSipServerUrl: Parameters<ICallStrategy['startCall']>[2],
   ): Promise<RTCPeerConnection>;
 
   /**
@@ -36,7 +38,19 @@ export abstract class AbstractCallStrategy implements ICallStrategy {
   /**
    * Ответ на входящий звонок
    */
-  public abstract answerIncomingCall(localStream: MediaStream): Promise<void>;
+  public abstract answerIncomingCall(
+    getIncomingRTCSession: Parameters<ICallStrategy['answerIncomingCall']>[0],
+    removeIncomingSession: Parameters<ICallStrategy['answerIncomingCall']>[1],
+    parameters: Parameters<ICallStrategy['answerIncomingCall']>[2],
+  ): Promise<RTCPeerConnection>;
+
+  /**
+   * Замена медиа-потока
+   */
+  public abstract replaceMediaStream(
+    mediaStream: Parameters<ICallStrategy['replaceMediaStream']>[0],
+    options?: Parameters<ICallStrategy['replaceMediaStream']>[1],
+  ): Promise<void>;
 
   public abstract getEstablishedRTCSession(): RTCSession | undefined;
 

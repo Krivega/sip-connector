@@ -6,6 +6,7 @@ const jestConfig: JestConfigWithTsJest = {
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
     'src/PresentationManager/@PresentationManager.ts',
+    'src/CallManager/RemoteStreamsManager.ts',
     '!<rootDir>/node_modules/',
     '!<rootDir>/demoDist/**',
     '!<rootDir>/dist/**',

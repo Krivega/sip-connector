@@ -1,12 +1,16 @@
 /* eslint-disable unicorn/filename-case */
 import type { RTCSession } from '@krivega/jssip';
+import { hasVideoTracks } from '../../utils';
 import prepareMediaStream from '../tools/prepareMediaStream';
 import { AbstractCallStrategy } from './AbstractCallStrategy';
 import { ECallCause } from './causes';
-import { EEvent, Originator } from './eventNames';
+import { EEvent, Originator, SESSION_JSSIP_EVENT_NAMES } from './eventNames';
+import { RemoteStreamsManager } from './RemoteStreamsManager';
 import type { ICallStrategy, TCustomError, TEvents, TOntrack } from './types';
 
 export class MCUCallStrategy extends AbstractCallStrategy {
+  private readonly remoteStreamsManager = new RemoteStreamsManager();
+
   public constructor(events: TEvents) {
     super(events);
 
@@ -15,7 +19,7 @@ export class MCUCallStrategy extends AbstractCallStrategy {
   }
 
   public get requested() {
-    return this.isPendingCall;
+    return this.isPendingCall || this.isPendingAnswer;
   }
 
   public get connection(): RTCPeerConnection | undefined {
@@ -77,6 +81,8 @@ export class MCUCallStrategy extends AbstractCallStrategy {
         sendEncodings,
         onAddedTransceiver,
       });
+
+      this.subscribeToSessionEvents(this.rtcSession);
     }).finally(() => {
       this.isPendingCall = false;
     });
@@ -86,14 +92,6 @@ export class MCUCallStrategy extends AbstractCallStrategy {
     const { rtcSession } = this;
 
     if (rtcSession) {
-      // if (this.streamPresentationCurrent) {
-      //   try {
-      //     await this.stopPresentation();
-      //   } catch (error) {
-      //     logger('error stop presentation: ', error);
-      //   }
-      // }
-
       this.reset();
 
       if (!rtcSession.isEnded()) {
@@ -106,15 +104,112 @@ export class MCUCallStrategy extends AbstractCallStrategy {
     return undefined;
   }
 
-  // eslint-disable-next-line class-methods-use-this
-  public async answerIncomingCall(localStream: MediaStream): Promise<void> {
-    // eslint-disable-next-line no-console
-    console.log('MCUCallStrategy.answerIncomingCall', localStream);
-    // TODO: Реализация ответа на входящий звонок MCU
-  }
+  public answerIncomingCall: ICallStrategy['answerIncomingCall'] = async (
+    getIncomingRTCSession: () => RTCSession,
+    removeIncomingSession: () => void,
+    {
+      mediaStream,
+      ontrack,
+      extraHeaders = [],
+      iceServers,
+      directionVideo,
+      directionAudio,
+      offerToReceiveAudio,
+      offerToReceiveVideo,
+      contentHint,
+      sendEncodings,
+      onAddedTransceiver,
+    },
+  ): Promise<RTCPeerConnection> => {
+    this.isPendingAnswer = true;
+
+    return new Promise<RTCPeerConnection>((resolve, reject) => {
+      try {
+        const rtcSession = getIncomingRTCSession();
+
+        this.rtcSession = rtcSession;
+        removeIncomingSession();
+
+        this.subscribeToSessionEvents(rtcSession);
+
+        this.callConfiguration.answer = true;
+        this.callConfiguration.number = rtcSession.remote_identity.uri.user;
+        this.handleCall({ ontrack })
+          .then(resolve)
+          .catch((error: unknown) => {
+            reject(error as Error);
+          });
+
+        const preparedMediaStream = prepareMediaStream(mediaStream, {
+          directionVideo,
+          directionAudio,
+          contentHint,
+        });
+
+        rtcSession.answer({
+          extraHeaders,
+          directionVideo,
+          directionAudio,
+          mediaStream: preparedMediaStream,
+          pcConfig: {
+            iceServers,
+          },
+          rtcOfferConstraints: {
+            offerToReceiveAudio,
+            offerToReceiveVideo,
+          },
+          sendEncodings,
+          onAddedTransceiver,
+        });
+      } catch (error) {
+        reject(error as Error);
+      }
+    }).finally(() => {
+      this.isPendingAnswer = false;
+    });
+  };
 
   public getEstablishedRTCSession(): RTCSession | undefined {
     return this.rtcSession?.isEstablished() === true ? this.rtcSession : undefined;
+  }
+
+  public getCallConfiguration() {
+    return { ...this.callConfiguration };
+  }
+
+  public getRemoteStreams(): MediaStream[] | undefined {
+    if (!this.connection) {
+      return undefined;
+    }
+
+    const receivers = this.connection.getReceivers();
+    const remoteTracks = receivers.map(({ track }) => {
+      return track;
+    });
+
+    if (hasVideoTracks(remoteTracks)) {
+      return this.remoteStreamsManager.generateStreams(remoteTracks);
+    }
+
+    return this.remoteStreamsManager.generateAudioStreams(remoteTracks);
+  }
+
+  public async replaceMediaStream(
+    mediaStream: Parameters<ICallStrategy['replaceMediaStream']>[0],
+    options?: Parameters<ICallStrategy['replaceMediaStream']>[1],
+  ): Promise<void> {
+    if (!this.rtcSession) {
+      throw new Error('No rtcSession established');
+    }
+
+    const { contentHint } = options ?? {};
+    const preparedMediaStream = prepareMediaStream(mediaStream, { contentHint });
+
+    if (preparedMediaStream === undefined) {
+      throw new Error('No preparedMediaStream');
+    }
+
+    return this.rtcSession.replaceMediaStream(preparedMediaStream, options);
   }
 
   protected readonly handleCall = async ({
@@ -181,10 +276,17 @@ export class MCUCallStrategy extends AbstractCallStrategy {
     });
   };
 
-  private readonly reset: () => void = () => {
-    delete this.rtcSession;
-    this.remoteStreams = {};
-  };
+  private subscribeToSessionEvents(rtcSession: RTCSession) {
+    this.events.eachTriggers((trigger, eventName) => {
+      const sessionJsSipEvent = SESSION_JSSIP_EVENT_NAMES.find((jsSipEvent) => {
+        return jsSipEvent === eventName;
+      });
+
+      if (sessionJsSipEvent) {
+        rtcSession.on(sessionJsSipEvent, trigger);
+      }
+    });
+  }
 
   private readonly handleEnded = (error: TCustomError) => {
     const { originator } = error;
@@ -194,5 +296,10 @@ export class MCUCallStrategy extends AbstractCallStrategy {
     }
 
     this.reset();
+  };
+
+  private readonly reset: () => void = () => {
+    delete this.rtcSession;
+    this.remoteStreamsManager.reset();
   };
 }

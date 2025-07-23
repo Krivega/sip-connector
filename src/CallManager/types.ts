@@ -51,8 +51,23 @@ export interface ICallStrategy {
     getSipServerUrl: TGetServerUrl,
   ) => Promise<RTCPeerConnection>;
   endCall: () => Promise<void>;
-  answerIncomingCall: (localStream: MediaStream) => Promise<void>;
+  answerIncomingCall: (
+    getIncomingRTCSession: () => RTCSession,
+    removeIncomingSession: () => void,
+    parameters: TParametersAnswerToIncomingCall,
+  ) => Promise<RTCPeerConnection>;
   getEstablishedRTCSession: () => RTCSession | undefined;
+  replaceMediaStream: (
+    mediaStream: MediaStream,
+    options?: {
+      deleteExisting?: boolean;
+      addMissing?: boolean;
+      forceRenegotiation?: boolean;
+      contentHint?: TContentHint;
+      sendEncodings?: RTCRtpEncodingParameters[];
+      onAddedTransceiver?: TOnAddedTransceiver;
+    },
+  ) => Promise<void>;
 }
 
 export type TEvents = Events<typeof EVENT_NAMES>;
