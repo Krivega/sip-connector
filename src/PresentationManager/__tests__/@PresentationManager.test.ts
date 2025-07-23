@@ -437,13 +437,11 @@ describe('PresentationManager', () => {
 
     manager.on('presentation:failed', spy);
 
-    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
     let error: TReachedLimitError<Error> | undefined;
 
     try {
       await manager.startPresentation(mediaStream);
     } catch (error_) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       error = error_ as unknown as TReachedLimitError<Error>;
     }
 
@@ -451,8 +449,7 @@ describe('PresentationManager', () => {
       throw new Error('error is undefined');
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-    const lastResult: Error | undefined = error?.values?.lastResult;
+    const lastResult: Error | undefined = error.values?.lastResult;
 
     expect(lastResult).toBeInstanceOf(Error);
     expect(lastResult?.message).toBe('fail-start');
@@ -461,14 +458,12 @@ describe('PresentationManager', () => {
   });
 
   it('startPresentation выбрасывает ошибку, если directionVideo и directionAudio === recvonly', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
     let error: TReachedLimitError<Error> | undefined;
 
     try {
       // @ts-expect-error для теста
       await manager.startPresentation(undefined);
     } catch (error_) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       error = error_ as unknown as TReachedLimitError<Error>;
     }
 
@@ -476,8 +471,7 @@ describe('PresentationManager', () => {
       throw new Error('error is undefined');
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-    const lastResult: Error | undefined = error?.values?.lastResult;
+    const lastResult: Error | undefined = error.values?.lastResult;
 
     expect(lastResult?.message).toBe('No streamPresentationTarget');
     expect(manager.streamPresentationCurrent).toBeUndefined();

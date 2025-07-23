@@ -221,7 +221,8 @@ describe('MCUCallStrategy - дополнительные тесты для по�
 
     events.trigger('peerconnection', { peerconnection: fakePeerconnection });
     events.trigger('confirmed', {});
-    await promise;
+
+    await expect(promise).resolves.toBeDefined();
   });
 
   it('replaceMediaStream: выбрасывает ошибку, если prepareMediaStream вернул undefined', async () => {
