@@ -17,8 +17,8 @@ type THandlers = {
 
 const createSyncMediaState = ({ sipConnector }: { sipConnector: SipConnector }) => {
   const resolveWhenElseSyncForced = (whenSyncForced: () => void, whenNotSyncForced: () => void) => {
-    return ({ isSyncForced = false }: { isSyncForced?: boolean }) => {
-      if (isSyncForced) {
+    return ({ isSyncForced }: { isSyncForced?: boolean }) => {
+      if (isSyncForced === true) {
         whenSyncForced();
 
         return;
