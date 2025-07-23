@@ -5,7 +5,7 @@ export enum EEvent {
   ENDED = 'ended',
   FAILED = 'failed',
   NEW_INFO = 'newInfo',
-
+  NEW_DTMF = 'newDTMF',
   // synthetic events
   PEER_CONNECTION_CONFIRMED = 'peerconnection:confirmed',
   PEER_CONNECTION_ONTRACK = 'peerconnection:ontrack',
@@ -24,6 +24,7 @@ export const EVENT_NAMES = [
   EEvent.ENDED,
   EEvent.FAILED,
   EEvent.NEW_INFO,
+  EEvent.NEW_DTMF,
   EEvent.PEER_CONNECTION_CONFIRMED,
   EEvent.PEER_CONNECTION_ONTRACK,
   EEvent.ENDED_FROM_SERVER,

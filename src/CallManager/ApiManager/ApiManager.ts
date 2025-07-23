@@ -1,13 +1,20 @@
-import type { IncomingInfoEvent, IncomingRequest, OutgoingInfoEvent } from '@krivega/jssip';
+import type {
+  IncomingInfoEvent,
+  IncomingRequest,
+  OutgoingInfoEvent,
+  RTCSession,
+} from '@krivega/jssip';
 import Events from 'events-constructor';
 import type { TConnectionManagerEvents } from '../../ConnectionManager';
 import { EConnectionManagerEvent } from '../../ConnectionManager';
 import logger from '../../logger';
+import { hasDeclineResponseFromServer } from '../../utils/errors';
 import { EEvent as ECallEvent, Originator } from '../eventNames';
 import type { TEvents as TCallEvents } from '../types';
 import type { EUseLicense } from './constants';
 import {
   EContentTypeReceived,
+  EContentTypeSent,
   EEventsMainCAM,
   EEventsMic,
   EEventsSyncMediaState,
@@ -25,7 +32,10 @@ import type {
   TChannelsInfoNotify,
   TConferenceParticipantTokenIssued,
   TInfoNotify,
+  TMediaState,
   TMoveRequestToStreamInfoNotify,
+  TOptionsExtraHeaders,
+  TOptionsInfoMediaState,
   TParametersConferenceParticipantTokenIssued,
   TParametersModeratorsList,
   TParametersWebcast,
@@ -42,18 +52,223 @@ export class ApiManager {
 
   private readonly callEvents: TCallEvents;
 
+  private readonly getRtcSession: () => RTCSession | undefined;
+
   public constructor({
     connectionEvents,
     callEvents,
+    getRtcSession,
   }: {
     connectionEvents: TConnectionManagerEvents;
     callEvents: TCallEvents;
+    getRtcSession: () => RTCSession | undefined;
   }) {
     this.connectionEvents = connectionEvents;
     this.callEvents = callEvents;
+    this.getRtcSession = getRtcSession;
     this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
 
     this.subscribe();
+  }
+
+  public async waitChannels(): Promise<TChannels> {
+    return this.wait(EEvent.CHANNELS);
+  }
+
+  public async waitSyncMediaState(): Promise<{ isSyncForced: boolean }> {
+    return this.wait(EEvent.ADMIN_FORCE_SYNC_MEDIA_STATE);
+  }
+
+  public async sendDTMF(tone: number | string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      const rtcSession = this.getRtcSession();
+
+      if (!rtcSession) {
+        reject(new Error('No rtcSession established'));
+
+        return;
+      }
+
+      this.callEvents.once(ECallEvent.NEW_DTMF, ({ originator }: { originator: Originator }) => {
+        if (originator === Originator.LOCAL) {
+          resolve();
+        }
+      });
+
+      rtcSession.sendDTMF(tone, {
+        duration: 120,
+        interToneGap: 600,
+      });
+    });
+  }
+
+  public async sendChannels({ inputChannels, outputChannels }: TChannels): Promise<void> {
+    const rtcSession = this.getRtcSession();
+
+    if (!rtcSession) {
+      throw new Error('No rtcSession established');
+    }
+
+    const headerInputChannels = `${EHeader.INPUT_CHANNELS}: ${inputChannels}`;
+    const headerOutputChannels = `${EHeader.OUTPUT_CHANNELS}: ${outputChannels}`;
+    const extraHeaders: TOptionsExtraHeaders['extraHeaders'] = [
+      headerInputChannels,
+      headerOutputChannels,
+    ];
+
+    return rtcSession.sendInfo(EContentTypeSent.CHANNELS, undefined, { extraHeaders });
+  }
+
+  public async sendMediaState(
+    { cam, mic }: TMediaState,
+    options: TOptionsInfoMediaState = {},
+  ): Promise<void> {
+    const rtcSession = this.getRtcSession();
+
+    if (!rtcSession) {
+      throw new Error('No rtcSession established');
+    }
+
+    const headerMediaState = `${EHeader.MEDIA_STATE}: currentstate`;
+    const headerCam = `${EHeader.MAIN_CAM_STATE}: ${Number(cam)}`;
+    const headerMic = `${EHeader.MIC_STATE}: ${Number(mic)}`;
+    const extraHeaders: TOptionsExtraHeaders['extraHeaders'] = [
+      headerMediaState,
+      headerCam,
+      headerMic,
+    ];
+
+    return rtcSession.sendInfo(EContentTypeSent.MEDIA_STATE, undefined, {
+      noTerminateWhenError: true,
+      ...options,
+      extraHeaders,
+    });
+  }
+
+  public async sendRefusalToTurnOn(
+    type: 'cam' | 'mic',
+    options: TOptionsInfoMediaState = {},
+  ): Promise<void> {
+    const rtcSession = this.getRtcSession();
+
+    if (!rtcSession) {
+      throw new Error('No rtcSession established');
+    }
+
+    const typeMicOnServer = 0;
+    const typeCamOnServer = 1;
+    const typeToSend = type === 'mic' ? typeMicOnServer : typeCamOnServer;
+
+    const headerMediaType = `${EHeader.MEDIA_TYPE}: ${typeToSend}`;
+    const extraHeaders: TOptionsExtraHeaders['extraHeaders'] = [headerMediaType];
+
+    return rtcSession.sendInfo(EContentTypeSent.REFUSAL, undefined, {
+      noTerminateWhenError: true,
+      ...options,
+      extraHeaders,
+    });
+  }
+
+  public async sendRefusalToTurnOnMic(options: TOptionsInfoMediaState = {}): Promise<void> {
+    const rtcSession = this.getRtcSession();
+
+    if (!rtcSession) {
+      throw new Error('No rtcSession established');
+    }
+
+    return this.sendRefusalToTurnOn('mic', { noTerminateWhenError: true, ...options });
+  }
+
+  public async sendRefusalToTurnOnCam(options: TOptionsInfoMediaState = {}): Promise<void> {
+    const rtcSession = this.getRtcSession();
+
+    if (!rtcSession) {
+      throw new Error('No rtcSession established');
+    }
+
+    return this.sendRefusalToTurnOn('cam', { noTerminateWhenError: true, ...options });
+  }
+
+  public async sendMustStopPresentationP2P(): Promise<void> {
+    const rtcSession = this.getRtcSession();
+
+    if (!rtcSession) {
+      throw new Error('No rtcSession established');
+    }
+
+    await rtcSession.sendInfo(EContentTypeSent.SHARE_STATE, undefined, {
+      extraHeaders: [EHeader.MUST_STOP_PRESENTATION_P2P],
+    });
+  }
+
+  public async sendStoppedPresentationP2P(): Promise<void> {
+    const rtcSession = this.getRtcSession();
+
+    if (!rtcSession) {
+      throw new Error('No rtcSession established');
+    }
+
+    await rtcSession.sendInfo(EContentTypeSent.SHARE_STATE, undefined, {
+      extraHeaders: [EHeader.STOP_PRESENTATION_P2P],
+    });
+  }
+
+  public async sendStoppedPresentation(): Promise<void> {
+    const rtcSession = this.getRtcSession();
+
+    if (!rtcSession) {
+      throw new Error('No rtcSession established');
+    }
+
+    await rtcSession.sendInfo(EContentTypeSent.SHARE_STATE, undefined, {
+      extraHeaders: [EHeader.STOP_PRESENTATION],
+    });
+  }
+
+  public async askPermissionToStartPresentationP2P(): Promise<void> {
+    const rtcSession = this.getRtcSession();
+
+    if (!rtcSession) {
+      throw new Error('No rtcSession established');
+    }
+
+    await rtcSession.sendInfo(EContentTypeSent.SHARE_STATE, undefined, {
+      extraHeaders: [EHeader.START_PRESENTATION_P2P],
+    });
+  }
+
+  public async askPermissionToStartPresentation(): Promise<void> {
+    const rtcSession = this.getRtcSession();
+
+    if (!rtcSession) {
+      throw new Error('No rtcSession established');
+    }
+
+    await rtcSession.sendInfo(EContentTypeSent.SHARE_STATE, undefined, {
+      extraHeaders: [EHeader.START_PRESENTATION],
+    });
+  }
+
+  public async askPermissionToEnableCam(options: TOptionsInfoMediaState = {}): Promise<void> {
+    const rtcSession = this.getRtcSession();
+
+    if (!rtcSession) {
+      throw new Error('No rtcSession established');
+    }
+
+    const extraHeaders = [EHeader.ENABLE_MAIN_CAM];
+
+    return rtcSession
+      .sendInfo(EContentTypeSent.MAIN_CAM, undefined, {
+        noTerminateWhenError: true,
+        ...options,
+        extraHeaders,
+      })
+      .catch((error: unknown) => {
+        if (hasDeclineResponseFromServer(error as Error)) {
+          throw error;
+        }
+      });
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters

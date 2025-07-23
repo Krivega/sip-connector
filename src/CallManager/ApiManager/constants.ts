@@ -15,8 +15,14 @@ export enum EHeader {
   MIC_STATE = 'X-Vinteo-Mic-State',
   CONTENT_PARTICIPANT_STATE = 'X-WEBRTC-PARTSTATE',
   NOTIFY = 'X-VINTEO-NOTIFY',
-  CONTENT_SHARE_STATE = 'x-webrtc-share-state',
   CONTENT_ENABLE_MEDIA_DEVICE = 'X-WEBRTC-REQUEST-ENABLE-MEDIA-DEVICE',
+  CONTENT_SHARE_STATE = 'x-webrtc-share-state',
+  MUST_STOP_PRESENTATION_P2P = 'x-webrtc-share-state: YOUMUSTSTOPSENDCONTENT',
+  START_PRESENTATION_P2P = 'x-webrtc-share-state: YOUCANRECEIVECONTENT',
+  STOP_PRESENTATION_P2P = 'x-webrtc-share-state: CONTENTEND',
+  STOP_PRESENTATION = 'x-webrtc-share-state: STOPPRESENTATION',
+  START_PRESENTATION = 'x-webrtc-share-state: LETMESTARTPRESENTATION',
+  ENABLE_MAIN_CAM = 'X-WEBRTC-REQUEST-ENABLE-MEDIA-DEVICE: LETMESTARTMAINCAM',
 }
 
 export enum EShareState {
@@ -32,18 +38,20 @@ export enum EParticipantType {
 
 export enum EContentTypeReceived {
   ENTER_ROOM = 'application/vinteo.webrtc.roomname',
-  SHARE_STATE = 'application/vinteo.webrtc.sharedesktop',
-  MAIN_CAM = 'application/vinteo.webrtc.maincam',
   MIC = 'application/vinteo.webrtc.mic',
   USE_LICENSE = 'application/vinteo.webrtc.uselic',
   PARTICIPANT_STATE = 'application/vinteo.webrtc.partstate',
   NOTIFY = 'application/vinteo.webrtc.notify',
+  SHARE_STATE = 'application/vinteo.webrtc.sharedesktop',
+  MAIN_CAM = 'application/vinteo.webrtc.maincam',
 }
 
 export enum EContentTypeSent {
   CHANNELS = 'application/vinteo.webrtc.channels',
   MEDIA_STATE = 'application/vinteo.webrtc.mediastate',
   REFUSAL = 'application/vinteo.webrtc.refusal',
+  SHARE_STATE = 'application/vinteo.webrtc.sharedesktop',
+  MAIN_CAM = 'application/vinteo.webrtc.maincam',
 }
 
 export enum EEventsMainCAM {

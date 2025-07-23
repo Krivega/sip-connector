@@ -5,13 +5,10 @@ import { hasCanceledError, repeatedCallsAsync } from 'repeated-calls';
 import { hasVideoTracks } from '../utils';
 import { BYE, CANCELED, REJECTED, REQUEST_TIMEOUT } from './causes';
 import {
-  ADMIN_FORCE_SYNC_MEDIA_STATE,
-  CHANNELS,
   CONFIRMED,
   ENDED,
   ENDED_FROM_SERVER,
   FAILED,
-  NEW_DTMF,
   ONE_MEGABIT_IN_BITS,
   Originator,
   PEER_CONNECTION,
@@ -23,19 +20,7 @@ import {
 import type { TEventSession } from './eventNames';
 import { SESSION_EVENT_NAMES, SESSION_JSSIP_EVENT_NAMES } from './eventNames';
 import {
-  CONTENT_TYPE_CHANNELS,
-  CONTENT_TYPE_MAIN_CAM,
-  CONTENT_TYPE_MEDIA_STATE,
-  CONTENT_TYPE_REFUSAL,
   CONTENT_TYPE_SHARE_STATE,
-  HEADER_ENABLE_MAIN_CAM,
-  HEADER_INPUT_CHANNELS,
-  HEADER_MAIN_CAM_STATE,
-  HEADER_MEDIA_STATE,
-  HEADER_MEDIA_TYPE,
-  HEADER_MIC_STATE,
-  HEADER_MUST_STOP_PRESENTATION_P2P,
-  HEADER_OUTPUT_CHANNELS,
   HEADER_START_PRESENTATION,
   HEADER_START_PRESENTATION_P2P,
   HEADER_STOP_PRESENTATION,
@@ -44,7 +29,6 @@ import {
 import logger from './logger';
 import prepareMediaStream from './tools/prepareMediaStream';
 import type { TContentHint, TCustomError, TOnAddedTransceiver } from './types';
-import { hasDeclineResponseFromServer } from './utils/errors';
 import scaleBitrate from './videoSendingBalancer/scaleBitrate';
 
 const SEND_PRESENTATION_CALL_LIMIT = 1;
@@ -79,20 +63,6 @@ export const hasCanceledStartPresentationError = (error: unknown) => {
   return hasCanceledError(error);
 };
 
-type TChannels = {
-  inputChannels: string;
-  outputChannels: string;
-};
-
-type TMediaState = {
-  cam: boolean;
-  mic: boolean;
-};
-
-type TOptionsInfoMediaState = {
-  noTerminateWhenError?: boolean;
-};
-
 type TOptionsExtraHeaders = {
   extraHeaders?: string[];
 };
@@ -118,8 +88,6 @@ type TAnswerToIncomingCall = (
   removeIncomingSession: () => void,
   parameters: TParametersAnswerToIncomingCall,
 ) => Promise<RTCPeerConnection>;
-
-type TSendDTMF = (tone: number | string) => Promise<void>;
 
 type THangUp = () => Promise<void>;
 
@@ -219,26 +187,6 @@ export default class SipConnector {
     }
 
     return this.rtcSession.replaceMediaStream(preparedMediaStream, options);
-  }
-
-  public async askPermissionToEnableCam(options: TOptionsInfoMediaState = {}): Promise<void> {
-    if (!this.rtcSession) {
-      throw new Error('No rtcSession established');
-    }
-
-    const extraHeaders = [HEADER_ENABLE_MAIN_CAM];
-
-    return this.rtcSession
-      .sendInfo(CONTENT_TYPE_MAIN_CAM, undefined, {
-        noTerminateWhenError: true,
-        ...options,
-        extraHeaders,
-      })
-      .catch((error: unknown) => {
-        if (hasDeclineResponseFromServer(error as Error)) {
-          throw error;
-        }
-      });
   }
 
   public async startPresentation(
@@ -497,128 +445,8 @@ export default class SipConnector {
     });
   };
 
-  public sendDTMF: TSendDTMF = async (tone) => {
-    return new Promise<void>((resolve, reject) => {
-      const { rtcSession } = this;
-
-      if (!rtcSession) {
-        reject(new Error('No rtcSession established'));
-
-        return;
-      }
-
-      this.onceSession(NEW_DTMF, ({ originator }: { originator: Originator }) => {
-        if (originator === Originator.LOCAL) {
-          resolve();
-        }
-      });
-
-      rtcSession.sendDTMF(tone, {
-        duration: 120,
-        interToneGap: 600,
-      });
-    });
-  };
-
   public cancelSendPresentationWithRepeatedCalls() {
     this.cancelableSendPresentationWithRepeatedCalls?.cancel();
-  }
-
-  public async waitChannels(): Promise<TChannels> {
-    return this.waitSession(CHANNELS);
-  }
-
-  public async waitSyncMediaState(): Promise<{ isSyncForced: boolean }> {
-    return this.waitSession(ADMIN_FORCE_SYNC_MEDIA_STATE);
-  }
-
-  public async sendChannels({ inputChannels, outputChannels }: TChannels): Promise<void> {
-    if (!this.rtcSession) {
-      throw new Error('No rtcSession established');
-    }
-
-    const headerInputChannels = `${HEADER_INPUT_CHANNELS}: ${inputChannels}`;
-    const headerOutputChannels = `${HEADER_OUTPUT_CHANNELS}: ${outputChannels}`;
-    const extraHeaders: TOptionsExtraHeaders['extraHeaders'] = [
-      headerInputChannels,
-      headerOutputChannels,
-    ];
-
-    return this.rtcSession.sendInfo(CONTENT_TYPE_CHANNELS, undefined, { extraHeaders });
-  }
-
-  public async sendMediaState(
-    { cam, mic }: TMediaState,
-    options: TOptionsInfoMediaState = {},
-  ): Promise<void> {
-    if (!this.rtcSession) {
-      throw new Error('No rtcSession established');
-    }
-
-    const headerMediaState = `${HEADER_MEDIA_STATE}: currentstate`;
-    const headerCam = `${HEADER_MAIN_CAM_STATE}: ${Number(cam)}`;
-    const headerMic = `${HEADER_MIC_STATE}: ${Number(mic)}`;
-    const extraHeaders: TOptionsExtraHeaders['extraHeaders'] = [
-      headerMediaState,
-      headerCam,
-      headerMic,
-    ];
-
-    return this.rtcSession.sendInfo(CONTENT_TYPE_MEDIA_STATE, undefined, {
-      noTerminateWhenError: true,
-      ...options,
-      extraHeaders,
-    });
-  }
-
-  public async sendRefusalToTurnOn(
-    type: 'cam' | 'mic',
-    options: TOptionsInfoMediaState = {},
-  ): Promise<void> {
-    if (!this.rtcSession) {
-      throw new Error('No rtcSession established');
-    }
-
-    const typeMicOnServer = 0;
-    const typeCamOnServer = 1;
-    const typeToSend = type === 'mic' ? typeMicOnServer : typeCamOnServer;
-
-    const headerMediaType = `${HEADER_MEDIA_TYPE}: ${typeToSend}`;
-    const extraHeaders: TOptionsExtraHeaders['extraHeaders'] = [headerMediaType];
-
-    return this.rtcSession.sendInfo(CONTENT_TYPE_REFUSAL, undefined, {
-      noTerminateWhenError: true,
-      ...options,
-      extraHeaders,
-    });
-  }
-
-  public async sendRefusalToTurnOnMic(options: TOptionsInfoMediaState = {}): Promise<void> {
-    if (!this.rtcSession) {
-      throw new Error('No rtcSession established');
-    }
-
-    return this.sendRefusalToTurnOn('mic', { noTerminateWhenError: true, ...options });
-  }
-
-  public async sendRefusalToTurnOnCam(options: TOptionsInfoMediaState = {}): Promise<void> {
-    if (!this.rtcSession) {
-      throw new Error('No rtcSession established');
-    }
-
-    return this.sendRefusalToTurnOn('cam', { noTerminateWhenError: true, ...options });
-  }
-
-  private async sendMustStopPresentation(): Promise<void> {
-    const rtcSession = this.establishedRTCSession;
-
-    if (!rtcSession) {
-      throw new Error('No rtcSession established');
-    }
-
-    await rtcSession.sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
-      extraHeaders: [HEADER_MUST_STOP_PRESENTATION_P2P],
-    });
   }
 
   private async sendPresentationWithDuplicatedCalls({

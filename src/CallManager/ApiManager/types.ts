@@ -98,3 +98,16 @@ export type TInfoNotify =
   | TAccountChangedInfoNotify
   | TAccountDeletedInfoNotify
   | TWebcastStoppedInfoNotify;
+
+export type TMediaState = {
+  cam: boolean;
+  mic: boolean;
+};
+
+export type TOptionsInfoMediaState = {
+  noTerminateWhenError?: boolean;
+};
+
+export type TOptionsExtraHeaders = {
+  extraHeaders?: string[];
+};

@@ -33,10 +33,11 @@ const createSyncMediaState = ({ sipConnector }: { sipConnector: SipConnector }) 
   const subscribeStartMic = resolveOnStartMic(sipConnector);
   const subscribeStopMic = resolveOnStopMic(sipConnector);
 
-  let unsubscribeStartMainCam = () => {};
-  let unsubscribeStopMainCam = () => {};
-  let unsubscribeStartMic = () => {};
-  let unsubscribeStopMic = () => {};
+  let unsubscribeStartMainCam: (() => void) | undefined;
+  let unsubscribeStopMainCam: (() => void) | undefined;
+  let unsubscribeStartMic: (() => void) | undefined;
+  let unsubscribeStopMic: (() => void) | undefined;
+
   const subscribeSyncCommands = ({
     onStartMainCamForced,
     onStartMainCamNotForced,
@@ -71,10 +72,10 @@ const createSyncMediaState = ({ sipConnector }: { sipConnector: SipConnector }) 
   };
 
   const unsubscribeSyncCommands = () => {
-    unsubscribeStartMainCam();
-    unsubscribeStopMainCam();
-    unsubscribeStartMic();
-    unsubscribeStopMic();
+    unsubscribeStartMainCam?.();
+    unsubscribeStopMainCam?.();
+    unsubscribeStartMic?.();
+    unsubscribeStopMic?.();
   };
 
   const start = (handlers: THandlers) => {

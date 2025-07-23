@@ -1,14 +1,18 @@
+import type { RTCSession } from '@krivega/jssip';
 import Events from 'events-constructor';
+import RTCSessionMock from '../../../__fixtures__/RTCSessionMock';
 import {
   CONNECTION_MANAGER_EVENT_NAMES,
   EConnectionManagerEvent,
 } from '../../../ConnectionManager';
 import { HEADER_NOTIFY } from '../../../headers';
 import logger from '../../../logger';
+import * as errorsUtils from '../../../utils/errors';
 import { EVENT_NAMES as CALL_MANAGER_EVENT_NAMES } from '../../eventNames';
 import { ApiManager } from '../ApiManager';
 import {
   EContentTypeReceived,
+  EContentTypeSent,
   EEventsMainCAM,
   EEventsMic,
   EEventsSyncMediaState,
@@ -46,15 +50,24 @@ describe('ApiManager', () => {
   let callEvents: Events<typeof CALL_MANAGER_EVENT_NAMES>;
   let apiManager: ApiManager;
   let mockRequest: MockRequest;
+  let rtcSession: RTCSessionMock;
 
   beforeEach(() => {
     connectionEvents = new Events<typeof CONNECTION_MANAGER_EVENT_NAMES>(
       CONNECTION_MANAGER_EVENT_NAMES,
     );
     callEvents = new Events<typeof CALL_MANAGER_EVENT_NAMES>(CALL_MANAGER_EVENT_NAMES);
+    rtcSession = new RTCSessionMock({
+      url: 'wss://test.com',
+      eventHandlers: {},
+      originator: 'remote',
+    });
     apiManager = new ApiManager({
       connectionEvents,
       callEvents,
+      getRtcSession: () => {
+        return rtcSession as unknown as RTCSession;
+      },
     });
     mockRequest = new MockRequest();
   });
@@ -66,6 +79,9 @@ describe('ApiManager', () => {
       apiManager = new ApiManager({
         connectionEvents,
         callEvents,
+        getRtcSession: () => {
+          return rtcSession as unknown as RTCSession;
+        },
       });
 
       expect(onSpy).toHaveBeenCalledWith(EConnectionManagerEvent.SIP_EVENT, expect.any(Function));
@@ -77,6 +93,9 @@ describe('ApiManager', () => {
       apiManager = new ApiManager({
         connectionEvents,
         callEvents,
+        getRtcSession: () => {
+          return rtcSession as unknown as RTCSession;
+        },
       });
 
       expect(onSpy).toHaveBeenCalledWith('newInfo', expect.any(Function));
@@ -132,6 +151,564 @@ describe('ApiManager', () => {
         inputChannels: 'input1',
         outputChannels: 'output1',
       });
+    });
+  });
+
+  describe('методы wait', () => {
+    it('должен ждать события channels', async () => {
+      const waitPromise = apiManager.waitChannels();
+
+      // Триггерим событие CHANNELS
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.ENTER_ROOM);
+      mockRequest.setHeader(EHeader.INPUT_CHANNELS, 'input1,input2');
+      mockRequest.setHeader(EHeader.OUTPUT_CHANNELS, 'output1,output2');
+
+      const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
+
+      callEvents.trigger('newInfo' as never, infoEvent);
+
+      const result = await waitPromise;
+
+      expect(result).toEqual({
+        inputChannels: 'input1,input2',
+        outputChannels: 'output1,output2',
+      });
+    });
+
+    it('должен ждать события sync media state', async () => {
+      const waitPromise = apiManager.waitSyncMediaState();
+
+      // Триггерим событие ADMIN_FORCE_SYNC_MEDIA_STATE
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM);
+      mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
+
+      const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
+
+      callEvents.trigger('newInfo' as never, infoEvent);
+
+      const result = await waitPromise;
+
+      expect(result).toEqual({
+        isSyncForced: true,
+      });
+    });
+
+    it('должен ждать события sync media state с не принудительной синхронизацией', async () => {
+      const waitPromise = apiManager.waitSyncMediaState();
+
+      // Триггерим событие ADMIN_FORCE_SYNC_MEDIA_STATE с не принудительной синхронизацией
+      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM);
+      mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_NOT_FORCED);
+
+      const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
+
+      callEvents.trigger('newInfo' as never, infoEvent);
+
+      const result = await waitPromise;
+
+      expect(result).toEqual({
+        isSyncForced: false,
+      });
+    });
+  });
+
+  describe('методы send', () => {
+    it('должен отправлять channels', async () => {
+      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
+
+      await apiManager.sendChannels({
+        inputChannels: 'input1,input2',
+        outputChannels: 'output1,output2',
+      });
+
+      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.CHANNELS, undefined, {
+        extraHeaders: [
+          `${EHeader.INPUT_CHANNELS}: input1,input2`,
+          `${EHeader.OUTPUT_CHANNELS}: output1,output2`,
+        ],
+      });
+    });
+
+    it('должен отправлять media state', async () => {
+      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
+
+      await apiManager.sendMediaState({ cam: true, mic: false }, { noTerminateWhenError: false });
+
+      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.MEDIA_STATE, undefined, {
+        noTerminateWhenError: false,
+        extraHeaders: [
+          `${EHeader.MEDIA_STATE}: currentstate`,
+          `${EHeader.MAIN_CAM_STATE}: 1`,
+          `${EHeader.MIC_STATE}: 0`,
+        ],
+      });
+    });
+
+    it('должен отправлять media state с дефолтными опциями', async () => {
+      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
+
+      await apiManager.sendMediaState({ cam: false, mic: true });
+
+      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.MEDIA_STATE, undefined, {
+        noTerminateWhenError: true,
+        extraHeaders: [
+          `${EHeader.MEDIA_STATE}: currentstate`,
+          `${EHeader.MAIN_CAM_STATE}: 0`,
+          `${EHeader.MIC_STATE}: 1`,
+        ],
+      });
+    });
+
+    it('должен отправлять refusal для mic', async () => {
+      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
+
+      await apiManager.sendRefusalToTurnOn('mic', { noTerminateWhenError: false });
+
+      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.REFUSAL, undefined, {
+        noTerminateWhenError: false,
+        extraHeaders: [`${EHeader.MEDIA_TYPE}: 0`],
+      });
+    });
+
+    it('должен отправлять refusal для cam', async () => {
+      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
+
+      await apiManager.sendRefusalToTurnOn('cam', { noTerminateWhenError: false });
+
+      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.REFUSAL, undefined, {
+        noTerminateWhenError: false,
+        extraHeaders: [`${EHeader.MEDIA_TYPE}: 1`],
+      });
+    });
+
+    it('должен отправлять refusal для mic с дефолтными опциями', async () => {
+      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
+
+      await apiManager.sendRefusalToTurnOn('mic');
+
+      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.REFUSAL, undefined, {
+        noTerminateWhenError: true,
+        extraHeaders: [`${EHeader.MEDIA_TYPE}: 0`],
+      });
+    });
+
+    it('должен отправлять refusal для cam с дефолтными опциями', async () => {
+      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
+
+      await apiManager.sendRefusalToTurnOn('cam');
+
+      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.REFUSAL, undefined, {
+        noTerminateWhenError: true,
+        extraHeaders: [`${EHeader.MEDIA_TYPE}: 1`],
+      });
+    });
+
+    it('должен отправлять refusal для mic через sendRefusalToTurnOnMic', async () => {
+      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
+
+      await apiManager.sendRefusalToTurnOnMic({ noTerminateWhenError: false });
+
+      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.REFUSAL, undefined, {
+        noTerminateWhenError: false,
+        extraHeaders: [`${EHeader.MEDIA_TYPE}: 0`],
+      });
+    });
+
+    it('должен отправлять refusal для cam через sendRefusalToTurnOnCam', async () => {
+      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
+
+      await apiManager.sendRefusalToTurnOnCam({ noTerminateWhenError: false });
+
+      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.REFUSAL, undefined, {
+        noTerminateWhenError: false,
+        extraHeaders: [`${EHeader.MEDIA_TYPE}: 1`],
+      });
+    });
+
+    it('должен отправлять must stop presentation p2p', async () => {
+      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
+
+      await apiManager.sendMustStopPresentationP2P();
+
+      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.SHARE_STATE, undefined, {
+        extraHeaders: [EHeader.MUST_STOP_PRESENTATION_P2P],
+      });
+    });
+
+    it('должен отправлять stopped presentation p2p', async () => {
+      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
+
+      await apiManager.sendStoppedPresentationP2P();
+
+      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.SHARE_STATE, undefined, {
+        extraHeaders: [EHeader.STOP_PRESENTATION_P2P],
+      });
+    });
+
+    it('должен отправлять stopped presentation', async () => {
+      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
+
+      await apiManager.sendStoppedPresentation();
+
+      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.SHARE_STATE, undefined, {
+        extraHeaders: [EHeader.STOP_PRESENTATION],
+      });
+    });
+
+    it('должен запрашивать разрешение на запуск презентации p2p', async () => {
+      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
+
+      await apiManager.askPermissionToStartPresentationP2P();
+
+      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.SHARE_STATE, undefined, {
+        extraHeaders: [EHeader.START_PRESENTATION_P2P],
+      });
+    });
+
+    it('должен запрашивать разрешение на запуск презентации', async () => {
+      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
+
+      await apiManager.askPermissionToStartPresentation();
+
+      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.SHARE_STATE, undefined, {
+        extraHeaders: [EHeader.START_PRESENTATION],
+      });
+    });
+
+    it('должен запрашивать разрешение на включение камеры', async () => {
+      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
+
+      await apiManager.askPermissionToEnableCam({ noTerminateWhenError: false });
+
+      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.MAIN_CAM, undefined, {
+        noTerminateWhenError: false,
+        extraHeaders: [EHeader.ENABLE_MAIN_CAM],
+      });
+    });
+
+    it('должен запрашивать разрешение на включение камеры с дефолтными опциями', async () => {
+      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
+
+      await apiManager.askPermissionToEnableCam();
+
+      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.MAIN_CAM, undefined, {
+        noTerminateWhenError: true,
+        extraHeaders: [EHeader.ENABLE_MAIN_CAM],
+      });
+    });
+
+    it('должен обрабатывать ошибку decline response в askPermissionToEnableCam', async () => {
+      const declineError = new Error('Decline response from server');
+      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockRejectedValue(declineError);
+
+      // Мокаем функцию hasDeclineResponseFromServer чтобы она возвращала true
+      const hasDeclineResponseFromServerSpy = jest
+        .spyOn(errorsUtils, 'hasDeclineResponseFromServer')
+        .mockReturnValue(true);
+
+      await expect(apiManager.askPermissionToEnableCam()).rejects.toThrow(
+        'Decline response from server',
+      );
+
+      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.MAIN_CAM, undefined, {
+        noTerminateWhenError: true,
+        extraHeaders: [EHeader.ENABLE_MAIN_CAM],
+      });
+      expect(hasDeclineResponseFromServerSpy).toHaveBeenCalledWith(declineError);
+    });
+
+    it('должен игнорировать ошибки не decline response в askPermissionToEnableCam', async () => {
+      const otherError = new Error('Other error');
+      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockRejectedValue(otherError);
+
+      // Мокаем функцию hasDeclineResponseFromServer чтобы она возвращала false
+      const hasDeclineResponseFromServerSpy = jest
+        .spyOn(errorsUtils, 'hasDeclineResponseFromServer')
+        .mockReturnValue(false);
+
+      await apiManager.askPermissionToEnableCam();
+
+      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.MAIN_CAM, undefined, {
+        noTerminateWhenError: true,
+        extraHeaders: [EHeader.ENABLE_MAIN_CAM],
+      });
+      expect(hasDeclineResponseFromServerSpy).toHaveBeenCalledWith(otherError);
+    });
+
+    it('должен выбрасывать ошибку при отсутствии rtcSession в sendChannels', async () => {
+      const apiManagerWithoutSession = new ApiManager({
+        connectionEvents,
+        callEvents,
+        getRtcSession: () => {
+          return undefined as unknown as RTCSession;
+        },
+      });
+
+      await expect(
+        apiManagerWithoutSession.sendChannels({
+          inputChannels: 'input1',
+          outputChannels: 'output1',
+        }),
+      ).rejects.toThrow('No rtcSession established');
+    });
+
+    it('должен выбрасывать ошибку при отсутствии rtcSession в sendMediaState', async () => {
+      const apiManagerWithoutSession = new ApiManager({
+        connectionEvents,
+        callEvents,
+        getRtcSession: () => {
+          return undefined as unknown as RTCSession;
+        },
+      });
+
+      await expect(
+        apiManagerWithoutSession.sendMediaState({ cam: true, mic: false }),
+      ).rejects.toThrow('No rtcSession established');
+    });
+
+    it('должен выбрасывать ошибку при отсутствии rtcSession в sendRefusalToTurnOn', async () => {
+      const apiManagerWithoutSession = new ApiManager({
+        connectionEvents,
+        callEvents,
+        getRtcSession: () => {
+          return undefined as unknown as RTCSession;
+        },
+      });
+
+      await expect(apiManagerWithoutSession.sendRefusalToTurnOn('mic')).rejects.toThrow(
+        'No rtcSession established',
+      );
+    });
+
+    it('должен выбрасывать ошибку при отсутствии rtcSession в sendRefusalToTurnOnMic', async () => {
+      const apiManagerWithoutSession = new ApiManager({
+        connectionEvents,
+        callEvents,
+        getRtcSession: () => {
+          return undefined;
+        },
+      });
+
+      await expect(apiManagerWithoutSession.sendRefusalToTurnOnMic()).rejects.toThrow(
+        'No rtcSession established',
+      );
+    });
+
+    it('должен выбрасывать ошибку при отсутствии rtcSession в sendRefusalToTurnOnCam', async () => {
+      const apiManagerWithoutSession = new ApiManager({
+        connectionEvents,
+        callEvents,
+        getRtcSession: () => {
+          return undefined;
+        },
+      });
+
+      await expect(apiManagerWithoutSession.sendRefusalToTurnOnCam()).rejects.toThrow(
+        'No rtcSession established',
+      );
+    });
+
+    it('должен выбрасывать ошибку при отсутствии rtcSession в sendMustStopPresentationP2P', async () => {
+      const apiManagerWithoutSession = new ApiManager({
+        connectionEvents,
+        callEvents,
+        getRtcSession: () => {
+          return undefined;
+        },
+      });
+
+      await expect(apiManagerWithoutSession.sendMustStopPresentationP2P()).rejects.toThrow(
+        'No rtcSession established',
+      );
+    });
+
+    it('должен выбрасывать ошибку при отсутствии rtcSession в sendStoppedPresentationP2P', async () => {
+      const apiManagerWithoutSession = new ApiManager({
+        connectionEvents,
+        callEvents,
+        getRtcSession: () => {
+          return undefined;
+        },
+      });
+
+      await expect(apiManagerWithoutSession.sendStoppedPresentationP2P()).rejects.toThrow(
+        'No rtcSession established',
+      );
+    });
+
+    it('должен выбрасывать ошибку при отсутствии rtcSession в sendStoppedPresentation', async () => {
+      const apiManagerWithoutSession = new ApiManager({
+        connectionEvents,
+        callEvents,
+        getRtcSession: () => {
+          return undefined;
+        },
+      });
+
+      await expect(apiManagerWithoutSession.sendStoppedPresentation()).rejects.toThrow(
+        'No rtcSession established',
+      );
+    });
+
+    it('должен выбрасывать ошибку при отсутствии rtcSession в askPermissionToStartPresentationP2P', async () => {
+      const apiManagerWithoutSession = new ApiManager({
+        connectionEvents,
+        callEvents,
+        getRtcSession: () => {
+          return undefined;
+        },
+      });
+
+      await expect(apiManagerWithoutSession.askPermissionToStartPresentationP2P()).rejects.toThrow(
+        'No rtcSession established',
+      );
+    });
+
+    it('должен выбрасывать ошибку при отсутствии rtcSession в askPermissionToStartPresentation', async () => {
+      const apiManagerWithoutSession = new ApiManager({
+        connectionEvents,
+        callEvents,
+        getRtcSession: () => {
+          return undefined;
+        },
+      });
+
+      await expect(apiManagerWithoutSession.askPermissionToStartPresentation()).rejects.toThrow(
+        'No rtcSession established',
+      );
+    });
+
+    it('должен выбрасывать ошибку при отсутствии rtcSession в askPermissionToEnableCam', async () => {
+      const apiManagerWithoutSession = new ApiManager({
+        connectionEvents,
+        callEvents,
+        getRtcSession: () => {
+          return undefined;
+        },
+      });
+
+      await expect(apiManagerWithoutSession.askPermissionToEnableCam()).rejects.toThrow(
+        'No rtcSession established',
+      );
+    });
+
+    it('должен отправлять DTMF с числовым тоном', async () => {
+      const sendDTMFSpy = jest.spyOn(rtcSession, 'sendDTMF').mockImplementation(() => {
+        // Симулируем событие NEW_DTMF с LOCAL originator
+        setTimeout(() => {
+          callEvents.trigger('newDTMF' as never, { originator: 'local' });
+        }, 0);
+      });
+
+      await apiManager.sendDTMF(1);
+
+      expect(sendDTMFSpy).toHaveBeenCalledWith(1, {
+        duration: 120,
+        interToneGap: 600,
+      });
+    });
+
+    it('должен отправлять DTMF со строковым тоном', async () => {
+      const sendDTMFSpy = jest.spyOn(rtcSession, 'sendDTMF').mockImplementation(() => {
+        // Симулируем событие NEW_DTMF с LOCAL originator
+        setTimeout(() => {
+          callEvents.trigger('newDTMF' as never, { originator: 'local' });
+        }, 0);
+      });
+
+      await apiManager.sendDTMF('*');
+
+      expect(sendDTMFSpy).toHaveBeenCalledWith('*', {
+        duration: 120,
+        interToneGap: 600,
+      });
+    });
+
+    it('должен отправлять DTMF с тоном 0', async () => {
+      const sendDTMFSpy = jest.spyOn(rtcSession, 'sendDTMF').mockImplementation(() => {
+        // Симулируем событие NEW_DTMF с LOCAL originator
+        setTimeout(() => {
+          callEvents.trigger('newDTMF' as never, { originator: 'local' });
+        }, 0);
+      });
+
+      await apiManager.sendDTMF(0);
+
+      expect(sendDTMFSpy).toHaveBeenCalledWith(0, {
+        duration: 120,
+        interToneGap: 600,
+      });
+    });
+
+    it('должен отправлять DTMF с тоном #', async () => {
+      const sendDTMFSpy = jest.spyOn(rtcSession, 'sendDTMF').mockImplementation(() => {
+        // Симулируем событие NEW_DTMF с LOCAL originator
+        setTimeout(() => {
+          callEvents.trigger('newDTMF' as never, { originator: 'local' });
+        }, 0);
+      });
+
+      await apiManager.sendDTMF('#');
+
+      expect(sendDTMFSpy).toHaveBeenCalledWith('#', {
+        duration: 120,
+        interToneGap: 600,
+      });
+    });
+
+    it('должен ждать события NEW_DTMF с LOCAL originator', async () => {
+      const sendDTMFSpy = jest.spyOn(rtcSession, 'sendDTMF').mockImplementation(() => {
+        // Симулируем событие NEW_DTMF с LOCAL originator сразу
+        callEvents.trigger('newDTMF' as never, { originator: 'local' });
+      });
+
+      await apiManager.sendDTMF(1);
+
+      expect(sendDTMFSpy).toHaveBeenCalledWith(1, {
+        duration: 120,
+        interToneGap: 600,
+      });
+    });
+
+    it('должен выбрасывать ошибку при отсутствии rtcSession в sendDTMF', async () => {
+      const apiManagerWithoutSession = new ApiManager({
+        connectionEvents,
+        callEvents,
+        getRtcSession: () => {
+          return undefined;
+        },
+      });
+
+      await expect(apiManagerWithoutSession.sendDTMF(1)).rejects.toThrow(
+        'No rtcSession established',
+      );
+    });
+
+    it('должен игнорировать события NEW_DTMF с REMOTE originator', async () => {
+      const sendDTMFSpy = jest.spyOn(rtcSession, 'sendDTMF').mockImplementation(() => {
+        // Симулируем только событие NEW_DTMF с REMOTE originator
+        setTimeout(() => {
+          callEvents.trigger('newDTMF' as never, { originator: 'remote' });
+        }, 10);
+      });
+
+      // Промис не должен разрешиться, так как событие пришло от REMOTE
+      const dtmfPromise = apiManager.sendDTMF(1);
+
+      // Ждем немного, чтобы убедиться, что промис не разрешился
+      await new Promise((resolve) => {
+        setTimeout(resolve, 50);
+      });
+
+      expect(sendDTMFSpy).toHaveBeenCalledWith(1, {
+        duration: 120,
+        interToneGap: 600,
+      });
+
+      // Промис должен остаться в состоянии pending
+      expect(dtmfPromise).toBeInstanceOf(Promise);
     });
   });
 
