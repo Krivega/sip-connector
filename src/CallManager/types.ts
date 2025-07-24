@@ -44,7 +44,18 @@ export type TCustomError = Error & {
   code?: string;
 };
 
+export type TCallConfiguration = {
+  answer?: boolean;
+  number?: string;
+};
+
 export interface ICallStrategy {
+  // Свойства (getters)
+  readonly requested: boolean;
+  readonly connection: RTCPeerConnection | undefined;
+  readonly establishedRTCSession: RTCSession | undefined;
+
+  // Методы
   startCall: (
     parameters: TParametersCall,
     ua: UA,
@@ -57,6 +68,8 @@ export interface ICallStrategy {
     parameters: TParametersAnswerToIncomingCall,
   ) => Promise<RTCPeerConnection>;
   getEstablishedRTCSession: () => RTCSession | undefined;
+  getCallConfiguration: () => TCallConfiguration;
+  getRemoteStreams: () => MediaStream[] | undefined;
   replaceMediaStream: (
     mediaStream: MediaStream,
     options?: {
