@@ -62,9 +62,11 @@ class SipConnector {
   public async stopPresentation(options: { isP2P: boolean }): Promise<MediaStream | undefined> {
     const { isP2P } = options;
 
-    await (isP2P
-      ? this.apiManager.sendStoppedPresentationP2P()
-      : this.apiManager.sendStoppedPresentation());
+    if (isP2P) {
+      await this.apiManager.sendStoppedPresentationP2P();
+    } else {
+      await this.apiManager.sendStoppedPresentation();
+    }
 
     return this.presentationManager.stopPresentation();
   }
