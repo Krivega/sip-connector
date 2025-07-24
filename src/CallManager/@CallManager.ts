@@ -15,7 +15,6 @@ class CallManager {
     this.strategy = strategy ?? new MCUCallStrategy(this.events);
   }
 
-  // Свойства (getters)
   public get requested(): boolean {
     return this.strategy.requested;
   }
@@ -56,7 +55,6 @@ class CallManager {
     this.strategy = strategy;
   }
 
-  // Прокси методов стратегии
   public startCall: ICallStrategy['startCall'] = async (...args) => {
     return this.strategy.startCall(...args);
   };
@@ -65,8 +63,8 @@ class CallManager {
     return this.strategy.endCall();
   };
 
-  public answerIncomingCall: ICallStrategy['answerIncomingCall'] = async (...args) => {
-    return this.strategy.answerIncomingCall(...args);
+  public answerToIncomingCall: ICallStrategy['answerToIncomingCall'] = async (...args) => {
+    return this.strategy.answerToIncomingCall(...args);
   };
 
   public getEstablishedRTCSession: ICallStrategy['getEstablishedRTCSession'] = () => {

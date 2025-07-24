@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 // @ts-nocheck
-import { doMockSipConnector } from '../../doMock';
+import { doMockSipConnector } from '../../doMock.new';
 import dataCall from '../../tools/__fixtures__/call';
 import {
   dataForConnectionWithAuthorization,

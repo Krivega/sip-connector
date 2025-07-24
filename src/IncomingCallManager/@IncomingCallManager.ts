@@ -24,6 +24,7 @@ export default class IncomingCallManager {
   public constructor(connectionManager: ConnectionManager) {
     this.connectionManager = connectionManager;
     this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
+    this.start();
   }
 
   public get remoteCallerData(): TRemoteCallerData {
@@ -48,7 +49,7 @@ export default class IncomingCallManager {
     this.removeIncomingSession();
   }
 
-  public getIncomingRTCSession(): RTCSession {
+  public getIncomingRTCSession = (): RTCSession => {
     const { incomingRTCSession } = this;
 
     if (!incomingRTCSession) {
@@ -56,7 +57,15 @@ export default class IncomingCallManager {
     }
 
     return incomingRTCSession;
-  }
+  };
+
+  public extractIncomingRTCSession = (): RTCSession => {
+    const incomingRTCSession = this.getIncomingRTCSession();
+
+    this.removeIncomingSession();
+
+    return incomingRTCSession;
+  };
 
   public async declineToIncomingCall({
     statusCode = REQUEST_TERMINATED_STATUS_CODE,

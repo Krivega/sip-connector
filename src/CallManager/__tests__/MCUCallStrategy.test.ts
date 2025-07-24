@@ -1,6 +1,8 @@
 /* eslint-disable unicorn/filename-case */
 import type { RTCSession, UA } from '@krivega/jssip';
 import Events from 'events-constructor';
+import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
+import RTCPeerConnectionMock from '../../__fixtures__/RTCPeerConnectionMock';
 import RTCSessionMock from '../../__fixtures__/RTCSessionMock';
 import UAMock from '../../__fixtures__/UA.mock';
 import prepareMediaStream from '../../tools/prepareMediaStream';
@@ -42,17 +44,16 @@ describe('MCUCallStrategy', () => {
 
   it('startCall: создает звонок и возвращает peerconnection', async () => {
     const ontrack = jest.fn();
-    const promise = strategy.startCall(
-      {
-        number: '123',
-        mediaStream,
-        ontrack,
-      },
-      ua as unknown as UA,
-      getSipServerUrl,
-    );
+    const promise = strategy.startCall(ua as unknown as UA, getSipServerUrl, {
+      number: '123',
+      mediaStream,
+      ontrack,
+    });
+    const audioTrack = createAudioMediaStreamTrackMock();
+    const videoTrack = createVideoMediaStreamTrackMock();
+    const fakePeerconnection = new RTCPeerConnectionMock(undefined, [audioTrack, videoTrack]);
 
-    events.trigger('peerconnection', { peerconnection: {} });
+    events.trigger('peerconnection', { peerconnection: fakePeerconnection });
     events.trigger('confirmed', {});
 
     const pc = await promise;
@@ -80,7 +81,7 @@ describe('MCUCallStrategy', () => {
     await expect(strategy.endCall()).resolves.toBeUndefined();
   });
 
-  it('answerIncomingCall: отвечает на входящий звонок', async () => {
+  it('answerToIncomingCall: отвечает на входящий звонок', async () => {
     const rtcSession = new RTCSessionMock({
       url: 'sip:123',
       mediaStream,
@@ -90,20 +91,22 @@ describe('MCUCallStrategy', () => {
     const getIncomingRTCSession = () => {
       return rtcSession as unknown as RTCSession;
     };
-    const removeIncomingSession = jest.fn();
     const ontrack = jest.fn();
-    const promise = strategy.answerIncomingCall(getIncomingRTCSession, removeIncomingSession, {
+    const promise = strategy.answerToIncomingCall(getIncomingRTCSession, {
       mediaStream,
       ontrack,
     });
 
-    events.trigger('peerconnection', { peerconnection: {} });
+    const audioTrack = createAudioMediaStreamTrackMock();
+    const videoTrack = createVideoMediaStreamTrackMock();
+    const fakePeerconnection = new RTCPeerConnectionMock(undefined, [audioTrack, videoTrack]);
+
+    events.trigger('peerconnection', { peerconnection: fakePeerconnection });
     events.trigger('confirmed', {});
 
     const pc = await promise;
 
     expect(pc).toBeDefined();
-    expect(removeIncomingSession).toHaveBeenCalled();
   });
 
   it('getRemoteStreams: возвращает undefined если нет connection', () => {
@@ -217,7 +220,9 @@ describe('MCUCallStrategy - дополнительные тесты для по�
     const ontrack = jest.fn();
     // @ts-expect-error
     const promise = strategy.handleCall({ ontrack });
-    const fakePeerconnection = { ontrack: undefined };
+    const audioTrack = createAudioMediaStreamTrackMock();
+    const videoTrack = createVideoMediaStreamTrackMock();
+    const fakePeerconnection = new RTCPeerConnectionMock(undefined, [audioTrack, videoTrack]);
 
     events.trigger('peerconnection', { peerconnection: fakePeerconnection });
     events.trigger('confirmed', {});

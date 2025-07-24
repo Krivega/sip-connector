@@ -287,6 +287,9 @@ class ApiManager {
   private subscribe(): void {
     this.connectionManager.on('sipEvent', this.handleSipEvent);
     this.callManager.on('newInfo', this.handleNewInfo);
+    this.callManager.on('newDTMF', (event) => {
+      this.events.trigger('newDTMF', event);
+    });
   }
 
   private readonly handleSipEvent = ({ request }: { request: IncomingRequest }) => {

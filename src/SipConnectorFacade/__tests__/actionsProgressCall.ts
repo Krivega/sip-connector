@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-import { doMockSipConnector } from '../../doMock';
+import { doMockSipConnector } from '../../doMock.new';
 import dataCall from '../../tools/__fixtures__/call';
 import { dataForConnectionWithoutAuthorization } from '../../tools/__fixtures__/connectToServer';
 
@@ -94,8 +94,7 @@ describe('actionsProgressCall', () => {
         });
       });
 
-    // @ts-expect-error
-    sipConnector.sessionEvents.trigger('ended', 'error');
+    sipConnector.callManager.events.trigger('ended', 'error');
 
     expect(onEndedCall.mock.calls.length).toBe(1);
   });
@@ -112,8 +111,7 @@ describe('actionsProgressCall', () => {
         });
       });
 
-    // @ts-expect-error
-    sipConnector.sessionEvents.trigger('ended', 'error');
+    sipConnector.callManager.events.trigger('ended', 'error');
 
     await sipConnectorFacade
       .connectToServer(dataForConnectionWithoutAuthorization)
@@ -121,8 +119,7 @@ describe('actionsProgressCall', () => {
         return sipConnectorFacade.callToServer(dataCall);
       });
 
-    // @ts-expect-error
-    sipConnector.sessionEvents.trigger('ended', 'error');
+    sipConnector.callManager.events.trigger('ended', 'error');
 
     expect(onEndedCall.mock.calls.length).toBe(1);
   });
@@ -139,8 +136,7 @@ describe('actionsProgressCall', () => {
         });
       });
 
-    // @ts-expect-error
-    sipConnector.sessionEvents.trigger('failed', 'error');
+    sipConnector.callManager.events.trigger('failed', 'error');
 
     expect(onEndedCall.mock.calls.length).toBe(1);
   });
@@ -157,8 +153,7 @@ describe('actionsProgressCall', () => {
         });
       });
 
-    // @ts-expect-error
-    sipConnector.sessionEvents.trigger('failed', 'error');
+    sipConnector.callManager.events.trigger('failed', 'error');
 
     await sipConnectorFacade
       .connectToServer(dataForConnectionWithoutAuthorization)
@@ -166,8 +161,7 @@ describe('actionsProgressCall', () => {
         return sipConnectorFacade.callToServer(dataCall);
       });
 
-    // @ts-expect-error
-    sipConnector.sessionEvents.trigger('failed', 'error');
+    sipConnector.callManager.events.trigger('failed', 'error');
 
     expect(onEndedCall.mock.calls.length).toBe(1);
   });
@@ -184,8 +178,7 @@ describe('actionsProgressCall', () => {
         });
       });
 
-    // @ts-expect-error
-    sipConnector.sessionEvents.trigger('failed', 'error');
+    sipConnector.callManager.events.trigger('failed', 'error');
 
     await sipConnectorFacade
       .connectToServer(dataForConnectionWithoutAuthorization)
@@ -193,8 +186,7 @@ describe('actionsProgressCall', () => {
         return sipConnectorFacade.callToServer(dataCall);
       });
 
-    // @ts-expect-error
-    sipConnector.sessionEvents.trigger('ended', 'error');
+    sipConnector.callManager.events.trigger('ended', 'error');
 
     expect(onEndedCall.mock.calls.length).toBe(1);
   });
@@ -211,8 +203,7 @@ describe('actionsProgressCall', () => {
         });
       });
 
-    // @ts-expect-error
-    sipConnector.sessionEvents.trigger('ended', 'error');
+    sipConnector.callManager.events.trigger('ended', 'error');
 
     await sipConnectorFacade
       .connectToServer(dataForConnectionWithoutAuthorization)
@@ -220,8 +211,7 @@ describe('actionsProgressCall', () => {
         return sipConnectorFacade.callToServer(dataCall);
       });
 
-    // @ts-expect-error
-    sipConnector.sessionEvents.trigger('failed', 'error');
+    sipConnector.callManager.events.trigger('failed', 'error');
 
     expect(onEndedCall.mock.calls.length).toBe(1);
   });

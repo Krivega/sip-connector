@@ -87,6 +87,5 @@ export const EVENT_NAMES = [
   ...SESSION_SYNTHETICS_EVENT_NAMES,
 ] as const;
 
-export type TEvent = (typeof EVENT_NAMES)[number];
-
 export type TEvents = Events<typeof EVENT_NAMES>;
+export type TEvent = (typeof EVENT_NAMES)[number];

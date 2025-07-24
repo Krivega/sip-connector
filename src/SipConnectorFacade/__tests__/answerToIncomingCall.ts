@@ -1,14 +1,14 @@
 /// <reference types="jest" />
-import type SipConnector from '../../SipConnector';
+import type SipConnector from '../../SipConnector.new';
 import JsSIP from '../../__fixtures__/jssip.mock';
 import remoteCallerData from '../../__fixtures__/remoteCallerData';
-import { doMockSipConnector } from '../../doMock';
+import { doMockSipConnector } from '../../doMock.new';
 import dataCall, { peerConnectionFromData } from '../../tools/__fixtures__/call';
 import { dataForConnectionWithAuthorization } from '../../tools/__fixtures__/connectToServer';
 import parseObject from '../../tools/__tests-utils__/parseObject';
 import SipConnectorFacade from '../SipConnectorFacade';
 
-describe('answerIncomingCall', () => {
+describe('answerToIncomingCall', () => {
   let sipConnector: SipConnector;
   let sipConnectorFacade: SipConnectorFacade;
 
@@ -24,21 +24,18 @@ describe('answerIncomingCall', () => {
 
     await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
-    return new Promise<void>((resolve) => {
-      // eslint-disable-next-line @typescript-eslint/no-misused-promises
-      sipConnector.on('incomingCall', async () => {
-        const peerconnection = await sipConnectorFacade.answerIncomingCall(dataCall);
+    const promiseIncomingCall = sipConnector.waitIncomingCall('incomingCall');
 
-        // eslint-disable-next-line @typescript-eslint/non-nullable-type-assertion-style
-        expect(parseObject((peerconnection as RTCPeerConnection).getReceivers())).toEqual(
-          parseObject(peerConnectionFromData.getReceivers()),
-        );
+    // @ts-expect-error
+    JsSIP.triggerIncomingSession(sipConnector.connectionManager.ua, remoteCallerData);
 
-        resolve();
-      });
+    await promiseIncomingCall;
 
-      // @ts-expect-error
-      JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
-    });
+    const peerconnection = await sipConnectorFacade.answerToIncomingCall(dataCall);
+
+    // eslint-disable-next-line @typescript-eslint/non-nullable-type-assertion-style
+    expect(parseObject((peerconnection as RTCPeerConnection).getReceivers())).toEqual(
+      parseObject(peerConnectionFromData.getReceivers()),
+    );
   });
 });

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 /// <reference types="jest" />
-import type SipConnector from '../../SipConnector';
-import { doMockSipConnector } from '../../doMock';
+import type SipConnector from '../../SipConnector.new';
+import { doMockSipConnector } from '../../doMock.new';
 import {
   LOCKED_SIP_WEB_SOCKET_SERVER_URL,
   dataForConnectionWithAuthorization,
@@ -53,7 +53,9 @@ describe('connectToServer', () => {
 
   it('registered', async () => {
     return sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization).then(() => {
-      expect(sipConnector.ua?.configuration).toEqual(uaConfigurationWithAuthorization);
+      expect(sipConnector.connectionManager.ua?.configuration).toEqual(
+        uaConfigurationWithAuthorization,
+      );
     });
   });
 
@@ -73,7 +75,7 @@ describe('connectToServer', () => {
         });
       })
       .then(() => {
-        expect(sipConnector.ua?.configuration).toEqual({
+        expect(sipConnector.connectionManager.ua?.configuration).toEqual({
           ...uaConfigurationWithAuthorization,
           uri: uriWithName(thirdWord),
         });
@@ -82,8 +84,8 @@ describe('connectToServer', () => {
 
   it('unregistered', async () => {
     return sipConnectorFacade.connectToServer(dataForConnectionWithoutAuthorization).then(() => {
-      expect(hasValidUri(sipConnector.ua!.configuration.uri)).toBe(true);
-      expect(parseObjectWithoutUri(sipConnector.ua!.configuration)).toEqual(
+      expect(hasValidUri(sipConnector.connectionManager.ua!.configuration.uri)).toBe(true);
+      expect(parseObjectWithoutUri(sipConnector.connectionManager.ua!.configuration)).toEqual(
         uaConfigurationWithoutAuthorization,
       );
     });
@@ -94,8 +96,8 @@ describe('connectToServer', () => {
       sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization),
       sipConnectorFacade.connectToServer(dataForConnectionWithoutAuthorization),
     ]).then(() => {
-      expect(hasValidUri(sipConnector.ua!.configuration.uri)).toBe(true);
-      expect(parseObjectWithoutUri(sipConnector.ua!.configuration)).toEqual(
+      expect(hasValidUri(sipConnector.connectionManager.ua!.configuration.uri)).toBe(true);
+      expect(parseObjectWithoutUri(sipConnector.connectionManager.ua!.configuration)).toEqual(
         uaConfigurationWithoutAuthorization,
       );
     });
@@ -110,11 +112,11 @@ describe('connectToServer', () => {
           .then(() => {
             expect(
               hasValidUri(
-                sipConnector.ua!.configuration.uri,
+                sipConnector.connectionManager.ua!.configuration.uri,
                 dataForConnectionWithoutAuthorizationWithSipServerUrlChanged.sipServerUrl,
               ),
             ).toBe(true);
-            expect(parseObjectWithoutUri(sipConnector.ua!.configuration)).toEqual(
+            expect(parseObjectWithoutUri(sipConnector.connectionManager.ua!.configuration)).toEqual(
               uaConfigurationWithoutAuthorization,
             );
           });

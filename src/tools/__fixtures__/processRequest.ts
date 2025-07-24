@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/max-params */
-import type SipConnector from '../../SipConnector';
+import type SipConnector from '../../SipConnector.new';
 import { SipConnectorFacade } from '../../SipConnectorFacade';
 import { canConnectToServer } from './permissions';
 

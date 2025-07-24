@@ -187,15 +187,15 @@ export default class ConnectionManager {
     return id;
   };
 
-  private readonly getUa = () => {
-    return this.ua;
-  };
-
-  private readonly getUaProtected = () => {
+  public readonly getUaProtected = () => {
     if (!this.ua) {
       throw new Error('UA not initialized');
     }
 
+    return this.ua;
+  };
+
+  private readonly getUa = () => {
     return this.ua;
   };
 }

@@ -118,7 +118,7 @@ class CallManager {
 interface CallStrategy {
   startCall(localStream: MediaStream): void;
   endCall(): void;
-  answerIncomingCall(localStream: MediaStream): void;
+  answerToIncomingCall(localStream: MediaStream): void;
 }
 ```
 
@@ -150,7 +150,7 @@ class SFUCallStrategy implements CallStrategy {
     // Логика для SFU
   }
 
-  answerIncomingCall(localStream: MediaStream) {
+  answerToIncomingCall(localStream: MediaStream) {
     console.log('Answering incoming SFU call');
     // Добавляем локальные треки в peerConnection
     localStream.getTracks().forEach((track) => {
@@ -189,7 +189,7 @@ class MCUCallStrategy implements CallStrategy {
     // Логика для MCU
   }
 
-  answerIncomingCall(localStream: MediaStream) {
+  answerToIncomingCall(localStream: MediaStream) {
     console.log('Answering incoming MCU call');
     // Добавляем локальные треки в peerConnection
     localStream.getTracks().forEach((track) => {
@@ -237,7 +237,7 @@ class SipConnector {
     this.callManager.endCall();
   }
 
-  answerIncomingCall(callType: 'SFU' | 'MCU', localStream: MediaStream) {
+  answerToIncomingCall(callType: 'SFU' | 'MCU', localStream: MediaStream) {
     const strategy = callType === 'SFU' ? new SFUCallStrategy() : new MCUCallStrategy();
     this.callManager.setStrategy(strategy);
     this.callManager.handleIncomingCall(localStream);
@@ -297,28 +297,28 @@ class SipConnector {
   +connect(url: string, username: string, password: string): Promise~boolean~
   +startCall(callType: 'SFU' | 'MCU', localStream: MediaStream): Promise~void~
   +endCall(): void
-  +answerIncomingCall(callType: 'SFU' | 'MCU', localStream: MediaStream): void
+  +answerToIncomingCall(callType: 'SFU' | 'MCU', localStream: MediaStream): void
 }
 
 class CallStrategy {
   <<interface>>
   +startCall(localStream: MediaStream): void
   +endCall(): void
-  +answerIncomingCall(localStream: MediaStream): void
+  +answerToIncomingCall(localStream: MediaStream): void
 }
 
 class SFUCallStrategy {
   -peerConnection: RTCPeerConnection
   +startCall(localStream: MediaStream): void
   +endCall(): void
-  +answerIncomingCall(localStream: MediaStream): void
+  +answerToIncomingCall(localStream: MediaStream): void
 }
 
 class MCUCallStrategy {
   -peerConnection: RTCPeerConnection
   +startCall(localStream: MediaStream): void
   +endCall(): void
-  +answerIncomingCall(localStream: MediaStream): void
+  +answerToIncomingCall(localStream: MediaStream): void
 }
 
 ConnectionManager --> SipConnector : creates
@@ -388,7 +388,7 @@ MCUCallStrategy ..|> CallStrategy : implements
    - **Методы**:
      - `startCall(localStream: MediaStream)`: Начало звонка.
      - `endCall()`: Завершение звонка.
-     - `answerIncomingCall(localStream: MediaStream)`: Ответ на входящий звонок.
+     - `answerToIncomingCall(localStream: MediaStream)`: Ответ на входящий звонок.
 
 6. **SFUCallStrategy** и **MCUCallStrategy**:
    - **Ответственность**: Реализация логики звонков для SFU и MCU соответственно.
@@ -403,7 +403,7 @@ MCUCallStrategy ..|> CallStrategy : implements
      - `authorize(username: string, password: string)`: Авторизация на сервере.
      - `startCall(callType: 'SFU' | 'MCU', localStream: MediaStream)`: Начало звонка.
      - `endCall()`: Завершение звонка.
-     - `answerIncomingCall(callType: 'SFU' | 'MCU', localStream: MediaStream)`: Ответ на входящий звонок.
+     - `answerToIncomingCall(callType: 'SFU' | 'MCU', localStream: MediaStream)`: Ответ на входящий звонок.
 
 8. **ReconnectStrategy**:
    - **Ответственность**: Вычисление задержки между попытками переподключения (например, экспоненциальный _back-off_).
@@ -553,7 +553,7 @@ await sipConnector.startCall('SFU', localStream);
 sipConnector.endCall();
 
 // Ответ на входящий звонок
-sipConnector.answerIncomingCall('MCU', localStream);
+sipConnector.answerToIncomingCall('MCU', localStream);
 ```
 
 ---

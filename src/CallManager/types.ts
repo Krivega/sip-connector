@@ -1,6 +1,5 @@
 import type { RTCSession, UA } from '@krivega/jssip';
-import type Events from 'events-constructor';
-import type { EVENT_NAMES, Originator } from './eventNames';
+import type { Originator } from './eventNames';
 
 export type TOntrack = (track: RTCTrackEvent) => void;
 
@@ -16,7 +15,7 @@ type TOptionsExtraHeaders = {
   extraHeaders?: string[];
 };
 
-type TParametersAnswerToIncomingCall = {
+type TParamsAnswerToIncomingCall = {
   mediaStream: MediaStream;
   extraHeaders?: TOptionsExtraHeaders['extraHeaders'];
   ontrack?: TOntrack;
@@ -30,7 +29,7 @@ type TParametersAnswerToIncomingCall = {
   onAddedTransceiver?: TOnAddedTransceiver;
 };
 
-export type TParametersCall = TParametersAnswerToIncomingCall & {
+export type TParamsCall = TParamsAnswerToIncomingCall & {
   number: string;
 };
 
@@ -57,15 +56,14 @@ export interface ICallStrategy {
 
   // Методы
   startCall: (
-    parameters: TParametersCall,
     ua: UA,
     getSipServerUrl: TGetServerUrl,
+    params: TParamsCall,
   ) => Promise<RTCPeerConnection>;
   endCall: () => Promise<void>;
-  answerIncomingCall: (
-    getIncomingRTCSession: () => RTCSession,
-    removeIncomingSession: () => void,
-    parameters: TParametersAnswerToIncomingCall,
+  answerToIncomingCall: (
+    extractIncomingRTCSession: () => RTCSession,
+    params: TParamsAnswerToIncomingCall,
   ) => Promise<RTCPeerConnection>;
   getEstablishedRTCSession: () => RTCSession | undefined;
   getCallConfiguration: () => TCallConfiguration;
@@ -82,5 +80,3 @@ export interface ICallStrategy {
     },
   ) => Promise<void>;
 }
-
-export type TEvents = Events<typeof EVENT_NAMES>;

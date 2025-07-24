@@ -169,7 +169,8 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
     options?: AddEventListenerOptions | boolean,
   ): void;
   public addEventListener(_type: unknown, _listener: unknown, _options?: unknown) {
-    throw new Error('Method not implemented.');
+    // eslint-disable-next-line no-console
+    console.warn('Method not implemented. Type:', _type);
   }
 
   public removeEventListener<K extends keyof RTCPeerConnectionEventMap>(
@@ -183,7 +184,8 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
     options?: EventListenerOptions | boolean,
   ): void;
   public removeEventListener(_type: unknown, _listener: unknown, _options?: unknown) {
-    throw new Error('Method not implemented.');
+    // eslint-disable-next-line no-console
+    console.warn('Method not implemented. Type:', _type);
   }
 
   public dispatchEvent(_event: Event): boolean {

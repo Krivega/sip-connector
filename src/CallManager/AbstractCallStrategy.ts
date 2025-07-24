@@ -1,5 +1,6 @@
 import type { RTCSession } from '@krivega/jssip';
-import type { ICallStrategy, TCallConfiguration, TEvents, TOntrack } from './types';
+import type { TEvents } from './eventNames';
+import type { ICallStrategy, TCallConfiguration, TOntrack } from './types';
 
 export abstract class AbstractCallStrategy implements ICallStrategy {
   protected isPendingCall = false;
@@ -27,7 +28,7 @@ export abstract class AbstractCallStrategy implements ICallStrategy {
    * Запуск исходящего звонка
    */
   public abstract startCall(
-    parameters: Parameters<ICallStrategy['startCall']>[0],
+    params: Parameters<ICallStrategy['startCall']>[0],
     ua: Parameters<ICallStrategy['startCall']>[1],
     getSipServerUrl: Parameters<ICallStrategy['startCall']>[2],
   ): Promise<RTCPeerConnection>;
@@ -40,10 +41,9 @@ export abstract class AbstractCallStrategy implements ICallStrategy {
   /**
    * Ответ на входящий звонок
    */
-  public abstract answerIncomingCall(
-    getIncomingRTCSession: Parameters<ICallStrategy['answerIncomingCall']>[0],
-    removeIncomingSession: Parameters<ICallStrategy['answerIncomingCall']>[1],
-    parameters: Parameters<ICallStrategy['answerIncomingCall']>[2],
+  public abstract answerToIncomingCall(
+    extractIncomingRTCSession: Parameters<ICallStrategy['answerToIncomingCall']>[0],
+    params: Parameters<ICallStrategy['answerToIncomingCall']>[1],
   ): Promise<RTCPeerConnection>;
 
   /**

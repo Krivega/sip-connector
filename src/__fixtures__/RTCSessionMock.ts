@@ -4,6 +4,7 @@
 import type { IncomingInfoEvent } from '@krivega/jssip';
 import { NameAddrHeader, URI } from '@krivega/jssip';
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
+import { Originator } from '../CallManager/eventNames';
 import { REJECTED } from '../causes';
 import type { TEventHandlers } from './BaseSession.mock';
 import BaseSession from './BaseSession.mock';
@@ -207,7 +208,27 @@ class RTCSessionMock extends BaseSession {
         this.trigger('connecting');
 
         setTimeout(() => {
-          this.trigger('enterRoom', { room });
+          this.newInfo({
+            originator: Originator.REMOTE,
+            // @ts-expect-error
+            request: {
+              getHeader: (name: string) => {
+                if (name === 'content-type') {
+                  return 'application/vinteo.webrtc.roomname';
+                }
+
+                if (name === 'x-webrtc-enter-room') {
+                  return room;
+                }
+
+                if (name === 'x-webrtc-participant-name') {
+                  return 'Test Caller 1';
+                }
+
+                return '';
+              },
+            },
+          });
         }, 100);
 
         setTimeout(() => {

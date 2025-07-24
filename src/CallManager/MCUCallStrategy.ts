@@ -4,12 +4,15 @@ import { hasVideoTracks } from '../../utils';
 import prepareMediaStream from '../tools/prepareMediaStream';
 import { AbstractCallStrategy } from './AbstractCallStrategy';
 import { ECallCause } from './causes';
+import type { TEvents } from './eventNames';
 import { EEvent, Originator, SESSION_JSSIP_EVENT_NAMES } from './eventNames';
 import { RemoteStreamsManager } from './RemoteStreamsManager';
-import type { ICallStrategy, TCustomError, TEvents, TOntrack } from './types';
+import type { ICallStrategy, TCustomError, TOntrack } from './types';
 
 export class MCUCallStrategy extends AbstractCallStrategy {
   private readonly remoteStreamsManager = new RemoteStreamsManager();
+
+  private readonly disposers = new Set<() => void>();
 
   public constructor(events: TEvents) {
     super(events);
@@ -33,6 +36,8 @@ export class MCUCallStrategy extends AbstractCallStrategy {
   }
 
   public startCall: ICallStrategy['startCall'] = async (
+    ua,
+    getSipServerUrl,
     {
       number,
       mediaStream,
@@ -47,8 +52,6 @@ export class MCUCallStrategy extends AbstractCallStrategy {
       sendEncodings,
       onAddedTransceiver,
     },
-    ua,
-    getSipServerUrl,
   ) => {
     this.isPendingCall = true;
 
@@ -68,7 +71,6 @@ export class MCUCallStrategy extends AbstractCallStrategy {
           directionAudio,
           contentHint,
         }),
-        eventHandlers: this.events.triggers,
         directionVideo,
         directionAudio,
         pcConfig: {
@@ -104,9 +106,8 @@ export class MCUCallStrategy extends AbstractCallStrategy {
     return undefined;
   }
 
-  public answerIncomingCall: ICallStrategy['answerIncomingCall'] = async (
-    getIncomingRTCSession: () => RTCSession,
-    removeIncomingSession: () => void,
+  public answerToIncomingCall: ICallStrategy['answerToIncomingCall'] = async (
+    extractIncomingRTCSession: () => RTCSession,
     {
       mediaStream,
       ontrack,
@@ -125,10 +126,9 @@ export class MCUCallStrategy extends AbstractCallStrategy {
 
     return new Promise<RTCPeerConnection>((resolve, reject) => {
       try {
-        const rtcSession = getIncomingRTCSession();
+        const rtcSession = extractIncomingRTCSession();
 
         this.rtcSession = rtcSession;
-        removeIncomingSession();
 
         this.subscribeToSessionEvents(rtcSession);
 
@@ -253,13 +253,19 @@ export class MCUCallStrategy extends AbstractCallStrategy {
       const handlePeerConnection = ({ peerconnection }: { peerconnection: RTCPeerConnection }) => {
         savedPeerconnection = peerconnection;
 
-        savedPeerconnection.ontrack = (track) => {
-          this.events.trigger(EEvent.PEER_CONNECTION_ONTRACK, savedPeerconnection);
+        const handleTrack = (track: RTCTrackEvent) => {
+          this.events.trigger(EEvent.PEER_CONNECTION_ONTRACK, peerconnection);
 
           if (ontrack) {
             ontrack(track);
           }
         };
+
+        peerconnection.addEventListener('track', handleTrack);
+
+        this.disposers.add(() => {
+          peerconnection.removeEventListener('track', handleTrack);
+        });
       };
       const handleConfirmed = () => {
         if (savedPeerconnection !== undefined) {
@@ -284,8 +290,18 @@ export class MCUCallStrategy extends AbstractCallStrategy {
 
       if (sessionJsSipEvent) {
         rtcSession.on(sessionJsSipEvent, trigger);
+        this.disposers.add(() => {
+          rtcSession.off(sessionJsSipEvent, trigger);
+        });
       }
     });
+  }
+
+  private unsubscribeFromSessionEvents() {
+    this.disposers.forEach((disposer) => {
+      disposer();
+    });
+    this.disposers.clear();
   }
 
   private readonly handleEnded = (error: TCustomError) => {
@@ -301,5 +317,6 @@ export class MCUCallStrategy extends AbstractCallStrategy {
   private readonly reset: () => void = () => {
     delete this.rtcSession;
     this.remoteStreamsManager.reset();
+    this.unsubscribeFromSessionEvents();
   };
 }

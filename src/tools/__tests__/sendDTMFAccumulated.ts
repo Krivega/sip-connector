@@ -1,7 +1,7 @@
 /* eslint-disable unicorn/filename-case */
 /// <reference types="jest" />
 import delayPromise from '../../__fixtures__/delayPromise';
-import { doMockSipConnector } from '../../doMock';
+import { doMockSipConnector } from '../../doMock.new';
 import { SipConnectorFacade } from '../../SipConnectorFacade';
 import dataCall from '../__fixtures__/call';
 import { dataForConnectionWithoutAuthorization } from '../__fixtures__/connectToServer';
@@ -28,7 +28,7 @@ describe('sendDtmfAccumulated', () => {
         return sipConnectorFacade.callToServer(dataCall);
       })
       .then(async () => {
-        sipConnector.onSession('newDTMF', ({ originator }: { originator: string }) => {
+        sipConnector.onApi('newDTMF', ({ originator }: { originator: string }) => {
           expect(originator).toEqual('local');
         });
 

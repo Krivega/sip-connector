@@ -1,21 +1,17 @@
 /// <reference types="jest" />
-import { doMockSipConnector } from '../../doMock';
-import dataCall, {
-  dataCallPurgatory,
-  onEnterConference,
-  onEnterPurgatory,
-  peerConnectionFromData,
-} from '../../tools/__fixtures__/call';
+import { doMockSipConnector } from '../../doMock.new';
+import dataCall, { dataCallPurgatory, peerConnectionFromData } from '../../tools/__fixtures__/call';
 import { dataForConnectionWithoutAuthorization } from '../../tools/__fixtures__/connectToServer';
 import parseObject from '../../tools/__tests-utils__/parseObject';
 import SipConnectorFacade from '../SipConnectorFacade';
 
 describe('callToServer', () => {
-  const sipConnector = doMockSipConnector();
   let sipConnectorFacade: SipConnectorFacade;
 
   beforeEach(() => {
     jest.resetModules();
+
+    const sipConnector = doMockSipConnector();
 
     sipConnectorFacade = new SipConnectorFacade(sipConnector);
   });
@@ -32,12 +28,12 @@ describe('callToServer', () => {
         expect(parseObject(peerConnection.getReceivers())).toEqual(
           parseObject(peerConnectionFromData.getReceivers()),
         );
-        expect(onEnterPurgatory).toHaveBeenCalledTimes(0);
-        expect(onEnterConference).toHaveBeenCalledTimes(1);
+        expect(dataCall.onEnterPurgatory).toHaveBeenCalledTimes(0);
+        expect(dataCall.onEnterConference).toHaveBeenCalledTimes(1);
       });
   });
 
-  it('chould call correct handler after purgatory call', async () => {
+  it('should call correct handler after purgatory call', async () => {
     expect.assertions(2);
 
     return sipConnectorFacade
@@ -46,8 +42,8 @@ describe('callToServer', () => {
         return sipConnectorFacade.callToServer(dataCallPurgatory);
       })
       .then(() => {
-        expect(onEnterPurgatory).toHaveBeenCalledTimes(1);
-        expect(onEnterConference).toHaveBeenCalledTimes(0);
+        expect(dataCallPurgatory.onEnterPurgatory).toHaveBeenCalledTimes(1);
+        expect(dataCallPurgatory.onEnterConference).toHaveBeenCalledTimes(0);
       });
   });
 });

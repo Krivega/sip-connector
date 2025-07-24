@@ -28,6 +28,7 @@ export enum EEvent {
   AVAILABLE_SECOND_REMOTE_STREAM = 'availableSecondRemoteStream',
   NOT_AVAILABLE_SECOND_REMOTE_STREAM = 'notAvailableSecondRemoteStream',
   MUST_STOP_PRESENTATION = 'mustStopPresentation',
+  NEW_DTMF = 'newDTMF',
 }
 
 export const EVENT_NAMES = [
@@ -57,6 +58,7 @@ export const EVENT_NAMES = [
   `${EEvent.AVAILABLE_SECOND_REMOTE_STREAM}`,
   `${EEvent.NOT_AVAILABLE_SECOND_REMOTE_STREAM}`,
   `${EEvent.MUST_STOP_PRESENTATION}`,
+  `${EEvent.NEW_DTMF}`,
 ] as const;
 
 export type TEvent = (typeof EVENT_NAMES)[number];

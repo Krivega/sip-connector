@@ -182,12 +182,18 @@ class BaseSession implements RTCSession {
     throw new Error('Method not implemented.');
   }
 
-  public off(_event: string | symbol, _listener: (...arguments_: unknown[]) => void): this {
-    throw new Error('Method not implemented.');
+  public off(eventName: string | symbol, _listener: (...arguments_: unknown[]) => void): this {
+    // @ts-expect-error
+    this.events.off(eventName, _listener);
+
+    return this;
   }
 
   public removeAllListeners(_event?: string | symbol): this {
-    throw new Error('Method not implemented.');
+    // eslint-disable-next-line no-console
+    console.warn('Method not implemented. Event:', _event);
+
+    return this;
   }
 
   public setMaxListeners(_n: number): this {
@@ -232,10 +238,12 @@ class BaseSession implements RTCSession {
     throw new Error('Method not implemented.');
   }
 
-  public initEvents(eventHandlers: TEventHandlers) {
-    Object.entries(eventHandlers).forEach(([eventName, handler]) => {
-      return this.on(eventName, handler);
-    });
+  public initEvents(eventHandlers?: TEventHandlers) {
+    if (eventHandlers) {
+      Object.entries(eventHandlers).forEach(([eventName, handler]) => {
+        return this.on(eventName, handler);
+      });
+    }
   }
 
   // @ts-expect-error
