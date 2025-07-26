@@ -1,2125 +1,424 @@
-import { isCanceledError } from '@krivega/cancelable-promise';
-import type {
-  IncomingInfoEvent,
-  IncomingRTCSessionEvent,
-  IncomingRequest,
-  OutgoingInfoEvent,
-  OutgoingRTCSessionEvent,
-  RTCSession,
-  RegisteredEvent,
-  UA,
-  UAConfigurationParams,
-  URI,
-  UnRegisteredEvent,
-  WebSocketInterface,
-} from '@krivega/jssip';
-import Events from 'events-constructor';
-import { hasCanceledError, repeatedCallsAsync } from 'repeated-calls';
-import { generateUserId, hasVideoTracks, parseDisplayName, resolveSipUrl } from '../utils';
-import { BYE, CANCELED, REJECTED, REQUEST_TIMEOUT } from './causes';
-import {
-  ACCOUNT_CHANGED,
-  ACCOUNT_DELETED,
-  ADMIN_FORCE_SYNC_MEDIA_STATE,
-  ADMIN_START_MAIN_CAM,
-  ADMIN_START_MIC,
-  ADMIN_STOP_MAIN_CAM,
-  ADMIN_STOP_MIC,
-  AVAILABLE_SECOND_REMOTE_STREAM_EVENT,
-  CHANNELS,
-  CHANNELS_NOTIFY,
-  CONFERENCE_PARTICIPANT_TOKEN_ISSUED,
-  CONFIRMED,
-  CONNECTED,
-  CONNECTING,
-  DECLINED_INCOMING_CALL,
-  DISCONNECTED,
-  ENDED,
-  ENDED_FROM_SERVER,
-  ENTER_ROOM,
-  FAILED,
-  FAILED_INCOMING_CALL,
-  INCOMING_CALL,
-  MAIN_CAM_CONTROL,
-  MUST_STOP_PRESENTATION_EVENT,
-  NEW_DTMF,
-  NEW_INFO,
-  NEW_RTC_SESSION,
-  NOT_AVAILABLE_SECOND_REMOTE_STREAM_EVENT,
-  ONE_MEGABIT_IN_BITS,
-  Originator,
-  PARTICIPANT,
-  PARTICIPANT_ADDED_TO_LIST_MODERATORS,
-  PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS,
-  PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS,
-  PARTICIPANT_MOVE_REQUEST_TO_STREAM,
-  PARTICIPANT_REMOVED_FROM_LIST_MODERATORS,
-  PARTICIPATION_ACCEPTING_WORD_REQUEST,
-  PARTICIPATION_CANCELLING_WORD_REQUEST,
-  PEER_CONNECTION,
-  PEER_CONNECTION_CONFIRMED,
-  PEER_CONNECTION_ONTRACK,
-  PRESENTATION_ENDED,
-  PRESENTATION_FAILED,
-  REGISTERED,
-  REGISTRATION_FAILED,
-  SHARE_STATE,
-  SIP_EVENT,
-  SPECTATOR,
-  TERMINATED_INCOMING_CALL,
-  UNREGISTERED,
-  USE_LICENSE,
-  WEBCAST_STARTED,
-  WEBCAST_STOPPED,
-} from './constants';
-import type { TEventSession, TEventUA } from './eventNames';
-import {
-  SESSION_EVENT_NAMES,
-  SESSION_JSSIP_EVENT_NAMES,
-  UA_EVENT_NAMES,
-  UA_JSSIP_EVENT_NAMES,
-} from './eventNames';
-import getExtraHeadersRemoteAddress from './getExtraHeadersRemoteAddress';
-import {
-  AVAILABLE_SECOND_REMOTE_STREAM,
-  CONTENT_TYPE_CHANNELS,
-  CONTENT_TYPE_ENTER_ROOM,
-  CONTENT_TYPE_MAIN_CAM,
-  CONTENT_TYPE_MEDIA_STATE,
-  CONTENT_TYPE_MIC,
-  CONTENT_TYPE_NOTIFY,
-  CONTENT_TYPE_PARTICIPANT_STATE,
-  CONTENT_TYPE_REFUSAL,
-  CONTENT_TYPE_SHARE_STATE,
-  CONTENT_TYPE_USE_LICENSE,
-  HEADER_CONTENT_ENTER_ROOM,
-  HEADER_CONTENT_PARTICIPANT_STATE,
-  HEADER_CONTENT_SHARE_STATE,
-  HEADER_CONTENT_TYPE_NAME,
-  HEADER_CONTENT_USE_LICENSE,
-  HEADER_ENABLE_MAIN_CAM,
-  HEADER_INPUT_CHANNELS,
-  HEADER_MAIN_CAM,
-  HEADER_MAIN_CAM_RESOLUTION,
-  HEADER_MAIN_CAM_STATE,
-  HEADER_MEDIA_STATE,
-  HEADER_MEDIA_SYNC,
-  HEADER_MEDIA_TYPE,
-  HEADER_MIC,
-  HEADER_MIC_STATE,
-  HEADER_MUST_STOP_PRESENTATION_P2P,
-  HEADER_NOTIFY,
-  HEADER_OUTPUT_CHANNELS,
-  HEADER_PARTICIPANT_NAME,
-  HEADER_START_PRESENTATION,
-  HEADER_START_PRESENTATION_P2P,
-  HEADER_STOP_PRESENTATION,
-  HEADER_STOP_PRESENTATION_P2P,
-  MUST_STOP_PRESENTATION,
-  NOT_AVAILABLE_SECOND_REMOTE_STREAM,
-} from './headers';
-import logger from './logger';
-import prepareMediaStream from './tools/prepareMediaStream';
-import type {
-  EUseLicense,
-  TContentHint,
-  TCustomError,
-  TGetServerUrl,
-  TJsSIP,
-  TOnAddedTransceiver,
-  TParametersCreateUaConfiguration,
-} from './types';
-import { EEventsMainCAM, EEventsMic, EEventsSyncMediaState } from './types';
-import { hasDeclineResponseFromServer, hasHandshakeWebsocketOpeningError } from './utils/errors';
-import scaleBitrate from './videoSendingBalancer/scaleBitrate';
+import type { TApiEvent } from './ApiManager';
+import { ApiManager } from './ApiManager';
+import type { TCallEvent } from './CallManager';
+import { CallManager } from './CallManager';
+import type { TConnectionManagerEvent } from './ConnectionManager';
+import { ConnectionManager } from './ConnectionManager';
+import type { TIncomingCallEvent } from './IncomingCallManager';
+import { IncomingCallManager } from './IncomingCallManager';
+import { PresentationManager } from './PresentationManager';
+import type { TContentHint, TOnAddedTransceiver } from './PresentationManager/types';
+import type { TGetServerUrl, TJsSIP } from './types';
 
-const BUSY_HERE_STATUS_CODE = 486;
-const REQUEST_TERMINATED_STATUS_CODE = 487;
-const DELAYED_REPEATED_CALLS_CONNECT_LIMIT = 3;
-const SEND_PRESENTATION_CALL_LIMIT = 1;
+class SipConnector {
+  public readonly connectionManager: ConnectionManager;
 
-const hasCustomError = (error: unknown): error is TCustomError => {
-  return error instanceof Object && ('originator' in error || 'cause' in error);
-};
+  public readonly callManager: CallManager;
 
-export const hasCanceledCallError = (error: unknown): boolean => {
-  if (isCanceledError(error)) {
-    return true;
-  }
+  public readonly apiManager: ApiManager;
 
-  if (!hasCustomError(error)) {
-    return false;
-  }
+  public readonly incomingCallManager: IncomingCallManager;
 
-  const { originator, cause } = error;
-
-  if (typeof cause === 'string') {
-    return (
-      cause === REQUEST_TIMEOUT ||
-      cause === REJECTED ||
-      (originator === Originator.LOCAL && (cause === CANCELED || cause === BYE))
-    );
-  }
-
-  return false;
-};
-
-export const hasCanceledStartPresentationError = (error: unknown) => {
-  return hasCanceledError(error);
-};
-
-type TChannels = {
-  inputChannels: string;
-  outputChannels: string;
-};
-
-type TMediaState = {
-  cam: boolean;
-  mic: boolean;
-};
-
-type TParametersModeratorsList = {
-  conference: string;
-};
-
-type TParametersWebcast = {
-  conference: string;
-  type: string;
-};
-
-type TParametersConferenceParticipantTokenIssued = {
-  conference: string;
-  participant: string;
-  jwt: string;
-};
-
-type TOptionsInfoMediaState = {
-  noTerminateWhenError?: boolean;
-};
-
-const CMD_CHANNELS = 'channels';
-const CMD_WEBCAST_STARTED = 'WebcastStarted';
-const CMD_WEBCAST_STOPPED = 'WebcastStopped';
-const CMD_ACCOUNT_CHANGED = 'accountChanged';
-const CMD_ACCOUNT_DELETED = 'accountDeleted';
-const CMD_ADDED_TO_LIST_MODERATORS = 'addedToListModerators';
-const CMD_REMOVED_FROM_LIST_MODERATORS = 'removedFromListModerators';
-const CMD_ACCEPTING_WORD_REQUEST = 'ParticipationRequestAccepted';
-const CMD_CANCELLING_WORD_REQUEST = 'ParticipationRequestRejected';
-const CMD_MOVE_REQUEST_TO_STREAM = 'ParticipantMovedToWebcast';
-const CMD_CONFERENCE_PARTICIPANT_TOKEN_ISSUED = 'ConferenceParticipantTokenIssued';
-
-type TAddedToListModeratorsInfoNotify = {
-  cmd: typeof CMD_ADDED_TO_LIST_MODERATORS;
-  conference: string;
-};
-type TRemovedFromListModeratorsInfoNotify = {
-  cmd: typeof CMD_REMOVED_FROM_LIST_MODERATORS;
-  conference: string;
-};
-type TAcceptingWordRequestInfoNotify = {
-  cmd: typeof CMD_ACCEPTING_WORD_REQUEST;
-  body: { conference: string };
-};
-type TCancellingWordRequestInfoNotify = {
-  cmd: typeof CMD_CANCELLING_WORD_REQUEST;
-  body: { conference: string };
-};
-type TMoveRequestToStreamInfoNotify = {
-  cmd: typeof CMD_MOVE_REQUEST_TO_STREAM;
-  body: { conference: string };
-};
-
-type TConferenceParticipantTokenIssued = {
-  cmd: typeof CMD_CONFERENCE_PARTICIPANT_TOKEN_ISSUED;
-  body: { conference: string; participant: string; jwt: string };
-};
-
-type TWebcastInfoNotify = {
-  cmd: typeof CMD_WEBCAST_STARTED;
-  body: { conference: string; type: string };
-};
-type TChannelsInfoNotify = { cmd: typeof CMD_CHANNELS; input: string; output: string };
-type TInfoNotify = Omit<
-  TAddedToListModeratorsInfoNotify | TChannelsInfoNotify | TRemovedFromListModeratorsInfoNotify,
-  'cmd'
-> & { cmd: string };
-
-type TOptionsExtraHeaders = {
-  extraHeaders?: string[];
-};
-
-type TOntrack = (track: RTCTrackEvent) => void;
-
-type TParametersConnection = TOptionsExtraHeaders & {
-  displayName?: string;
-  user?: string;
-  password?: string;
-  register?: boolean;
-  sipServerUrl: string;
-  sipWebSocketServerURL: string;
-  remoteAddress?: string;
-  sessionTimers?: boolean;
-  registerExpires?: number;
-  connectionRecoveryMinInterval?: number;
-  connectionRecoveryMaxInterval?: number;
-  userAgent?: string;
-};
-
-type TParametersCheckTelephony = {
-  displayName: string;
-  sipServerUrl: string;
-  sipWebSocketServerURL: string;
-  userAgent?: string;
-  remoteAddress?: string;
-  extraHeaders?: string[];
-};
-type TParametersCreateUa = UAConfigurationParams & {
-  remoteAddress?: string;
-  extraHeaders?: string[];
-};
-
-type TConnect = (
-  parameters: TParametersConnection,
-  options?: { callLimit?: number },
-) => Promise<UA>;
-type TInitUa = (parameters: TParametersConnection) => Promise<UA>;
-type TCreateUa = (parameters: TParametersCreateUa) => UA;
-type TStart = () => Promise<UA>;
-type TSet = ({
-  displayName,
-  password,
-}: {
-  displayName?: string;
-  password?: string;
-}) => Promise<boolean>;
-
-type TParametersAnswerToIncomingCall = {
-  mediaStream: MediaStream;
-  extraHeaders?: TOptionsExtraHeaders['extraHeaders'];
-  ontrack?: TOntrack;
-  iceServers?: RTCIceServer[];
-  directionVideo?: RTCRtpTransceiverDirection;
-  directionAudio?: RTCRtpTransceiverDirection;
-  contentHint?: TContentHint;
-  sendEncodings?: RTCRtpEncodingParameters[];
-  offerToReceiveAudio?: boolean;
-  offerToReceiveVideo?: boolean;
-  onAddedTransceiver?: TOnAddedTransceiver;
-};
-
-type TParametersCall = TParametersAnswerToIncomingCall & {
-  number: string;
-};
-
-type TCall = (parameters: TParametersCall) => Promise<RTCPeerConnection>;
-
-type TAnswerToIncomingCall = (
-  parameters: TParametersAnswerToIncomingCall,
-) => Promise<RTCPeerConnection>;
-
-type TSendDTMF = (tone: number | string) => Promise<void>;
-
-type THangUp = () => Promise<void>;
-
-export default class SipConnector {
-  public promisePendingStartPresentation?: Promise<MediaStream>;
-
-  public promisePendingStopPresentation?: Promise<MediaStream | undefined>;
-
-  public ua?: UA;
-
-  public rtcSession?: RTCSession;
-
-  public incomingRTCSession?: RTCSession;
-
-  public streamPresentationCurrent?: MediaStream;
-
-  public socket?: WebSocketInterface;
-
-  private isRegisterConfigInner = false;
-
-  private connectionConfiguration: {
-    sipServerUrl?: string;
-    displayName?: string;
-    register?: boolean;
-    user?: string;
-    password?: string;
-    number?: string;
-    answer?: boolean;
-  } = {};
-
-  private remoteStreams: Record<string, MediaStream> = {};
-
-  private readonly JsSIP: TJsSIP;
-
-  private readonly sessionEvents: Events<typeof SESSION_EVENT_NAMES>;
-
-  private readonly uaEvents: Events<typeof UA_EVENT_NAMES>;
-
-  private cancelableConnectWithRepeatedCalls: ReturnType<typeof repeatedCallsAsync<UA>> | undefined;
-
-  private cancelableSendPresentationWithRepeatedCalls:
-    | ReturnType<typeof repeatedCallsAsync<MediaStream>>
-    | undefined;
-
-  private isPendingConnect = false;
-
-  private isPendingInitUa = false;
-
-  private isPendingCall = false;
-
-  private isPendingAnswer = false;
+  public readonly presentationManager: PresentationManager;
 
   public constructor({ JsSIP }: { JsSIP: TJsSIP }) {
-    this.JsSIP = JsSIP;
-
-    this.sessionEvents = new Events<typeof SESSION_EVENT_NAMES>(SESSION_EVENT_NAMES);
-    this.uaEvents = new Events<typeof UA_EVENT_NAMES>(UA_EVENT_NAMES);
-
-    this.onSession(SHARE_STATE, this.handleShareState);
-    this.onSession(NEW_INFO, this.handleNewInfo);
-    this.on(SIP_EVENT, this.handleSipEvent);
-
-    this.onSession(FAILED, this.handleEnded);
-    this.onSession(ENDED, this.handleEnded);
+    this.connectionManager = new ConnectionManager({ JsSIP });
+    this.callManager = new CallManager();
+    this.apiManager = new ApiManager({
+      connectionManager: this.connectionManager,
+      callManager: this.callManager,
+    });
+    this.incomingCallManager = new IncomingCallManager(this.connectionManager);
+    this.presentationManager = new PresentationManager({
+      callManager: this.callManager,
+    });
   }
 
-  public get connection(): RTCPeerConnection | undefined {
-    const connection = this.rtcSession?.connection;
-
-    return connection;
+  public get requestedConnection() {
+    return this.connectionManager.requested;
   }
 
-  public get remoteCallerData() {
-    return {
-      displayName: this.incomingRTCSession?.remote_identity.display_name,
-
-      host: this.incomingRTCSession?.remote_identity.uri.host,
-
-      incomingNumber: this.incomingRTCSession?.remote_identity.uri.user,
-      rtcSession: this.incomingRTCSession,
-    };
+  public get isPendingConnect() {
+    return this.connectionManager.isPendingConnect;
   }
 
-  public get requested() {
-    return (
-      this.isPendingInitUa || this.isPendingConnect || this.isPendingCall || this.isPendingAnswer
-    );
+  public get isPendingInitUa() {
+    return this.connectionManager.isPendingInitUa;
   }
 
-  public get establishedRTCSession(): RTCSession | undefined {
-    return this.rtcSession?.isEstablished() === true ? this.rtcSession : undefined;
+  public get connectionState() {
+    return this.connectionManager.connectionState;
   }
 
   public get isRegistered() {
-    return !!this.ua && this.ua.isRegistered();
+    return this.connectionManager.isRegistered;
   }
 
   public get isRegisterConfig() {
-    return !!this.ua && this.isRegisterConfigInner;
+    return this.connectionManager.isRegisterConfig;
+  }
+
+  public get socket() {
+    return this.connectionManager.socket;
+  }
+
+  public get requestedCall() {
+    return this.callManager.requested;
+  }
+
+  public get connection() {
+    return this.callManager.connection;
+  }
+
+  public get establishedRTCSession() {
+    return this.callManager.establishedRTCSession;
   }
 
   public get isCallActive() {
-    return !!(this.ua && this.rtcSession);
+    return this.callManager.isCallActive;
   }
 
-  public get isAvailableIncomingCall() {
-    return !!this.incomingRTCSession;
+  public get remoteCallerData(): IncomingCallManager['remoteCallerData'] {
+    return this.incomingCallManager.remoteCallerData;
   }
 
-  public get isPendingPresentation(): boolean {
-    return !!this.promisePendingStartPresentation || !!this.promisePendingStopPresentation;
+  public get isAvailableIncomingCall(): IncomingCallManager['isAvailableIncomingCall'] {
+    return this.incomingCallManager.isAvailableIncomingCall;
   }
 
-  public connect: TConnect = async (data, options) => {
-    this.cancelRequests();
-
-    return this.connectWithDuplicatedCalls(data, options);
+  public connect: ConnectionManager['connect'] = async (...args) => {
+    return this.connectionManager.connect(...args);
   };
 
-  public hangUp: THangUp = async () => {
-    this.cancelRequests();
-
-    return this.hangUpWithoutCancelRequests();
+  public set: ConnectionManager['set'] = async (...args) => {
+    return this.connectionManager.set(...args);
   };
 
-  public async register(): Promise<RegisteredEvent> {
-    return new Promise((resolve, reject) => {
-      if (this.isRegisterConfig && this.ua) {
-        this.ua.on(REGISTERED, resolve);
-        this.ua.on(REGISTRATION_FAILED, reject);
-        this.ua.register();
-      } else {
-        reject(new Error('Config is not registered'));
-      }
-    });
-  }
-
-  public async unregister(): Promise<UnRegisteredEvent> {
-    return new Promise((resolve, reject) => {
-      if (this.isRegistered && this.ua) {
-        this.ua.on(UNREGISTERED, resolve);
-        this.ua.unregister();
-      } else {
-        reject(new Error('ua is not registered'));
-      }
-    });
-  }
-
-  public readonly tryRegister = async () => {
-    if (!this.isRegisterConfig) {
-      throw new Error('Config is not registered');
-    }
-
-    this.uaEvents.trigger(CONNECTING, undefined);
-
-    try {
-      await this.unregister();
-    } catch (error) {
-      logger('tryRegister', error);
-    }
-
-    return this.register();
+  public disconnect = async () => {
+    return this.connectionManager.disconnect();
   };
 
-  public async sendOptions(
-    target: URI | string,
-    body?: string,
-    extraHeaders?: string[],
-  ): Promise<void> {
-    if (!this.ua) {
-      throw new Error('is not connected');
-    }
-
-    return new Promise((resolve, reject) => {
-      try {
-        // @ts-expect-error
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        this.ua.sendOptions(target, body, {
-          extraHeaders,
-          eventHandlers: {
-            succeeded: () => {
-              resolve();
-            },
-            failed: reject,
-          },
-        });
-      } catch (error) {
-        reject(error as Error);
-      }
-    });
-  }
-
-  public async ping(body?: string, extraHeaders?: string[]): Promise<void> {
-    if (!this.ua?.configuration.uri) {
-      throw new Error('is not connected');
-    }
-
-    const target = this.ua.configuration.uri;
-
-    return this.sendOptions(target, body, extraHeaders);
-  }
-
-  public async checkTelephony({
-    userAgent,
-    displayName,
-    sipServerUrl,
-    sipWebSocketServerURL,
-    remoteAddress,
-    extraHeaders,
-  }: TParametersCheckTelephony): Promise<void> {
-    return new Promise<void>((resolve: () => void, reject: (error: Error) => void) => {
-      const { configuration } = this.createUaConfiguration({
-        sipWebSocketServerURL,
-        displayName,
-        userAgent,
-        sipServerUrl,
-      });
-
-      const ua = this.createUa({ ...configuration, remoteAddress, extraHeaders });
-
-      const rejectWithError = () => {
-        const error = new Error('Telephony is not available');
-
-        reject(error);
-      };
-
-      ua.once(DISCONNECTED, rejectWithError);
-
-      const stopAndResolveAfterDisconnect = () => {
-        ua.removeAllListeners();
-        ua.once(DISCONNECTED, resolve);
-
-        ua.stop();
-      };
-
-      ua.once(CONNECTED, stopAndResolveAfterDisconnect);
-
-      ua.start();
-    });
-  }
-
-  public async replaceMediaStream(
-    mediaStream: MediaStream,
-    options?: {
-      deleteExisting?: boolean;
-      addMissing?: boolean;
-      forceRenegotiation?: boolean;
-      contentHint?: TContentHint;
-      sendEncodings?: RTCRtpEncodingParameters[];
-      onAddedTransceiver?: TOnAddedTransceiver;
-    },
-  ): Promise<void> {
-    if (!this.rtcSession) {
-      throw new Error('No rtcSession established');
-    }
-
-    const { contentHint } = options ?? {};
-    const preparedMediaStream = prepareMediaStream(mediaStream, { contentHint });
-
-    if (preparedMediaStream === undefined) {
-      throw new Error('No preparedMediaStream');
-    }
-
-    return this.rtcSession.replaceMediaStream(preparedMediaStream, options);
-  }
-
-  public declineToIncomingCall = async ({
-    statusCode = REQUEST_TERMINATED_STATUS_CODE,
-  }: { statusCode?: number } = {}) => {
-    return new Promise<void>((resolve, reject) => {
-      try {
-        const incomingRTCSession = this.getIncomingRTCSession();
-
-        const callerData = this.remoteCallerData;
-
-        this.removeIncomingSession();
-        this.uaEvents.trigger(DECLINED_INCOMING_CALL, callerData);
-        incomingRTCSession.terminate({ status_code: statusCode });
-        resolve();
-      } catch (error) {
-        reject(error as Error);
-      }
-    });
+  public register = async () => {
+    return this.connectionManager.register();
   };
 
-  public busyIncomingCall = async () => {
-    return this.declineToIncomingCall({ statusCode: BUSY_HERE_STATUS_CODE });
+  public unregister = async () => {
+    return this.connectionManager.unregister();
   };
 
-  public async askPermissionToEnableCam(options: TOptionsInfoMediaState = {}): Promise<void> {
-    if (!this.rtcSession) {
-      throw new Error('No rtcSession established');
-    }
+  public tryRegister = async () => {
+    return this.connectionManager.tryRegister();
+  };
 
-    const extraHeaders = [HEADER_ENABLE_MAIN_CAM];
+  public sendOptions = async (
+    target: Parameters<ConnectionManager['sendOptions']>[0],
+    body?: Parameters<ConnectionManager['sendOptions']>[1],
+    extraHeaders?: Parameters<ConnectionManager['sendOptions']>[2],
+  ) => {
+    return this.connectionManager.sendOptions(target, body, extraHeaders);
+  };
 
-    return this.rtcSession
-      .sendInfo(CONTENT_TYPE_MAIN_CAM, undefined, {
-        noTerminateWhenError: true,
-        ...options,
-        extraHeaders,
-      })
-      .catch((error: unknown) => {
-        if (hasDeclineResponseFromServer(error as Error)) {
-          throw error;
-        }
-      });
+  public ping = async (
+    body?: Parameters<ConnectionManager['ping']>[0],
+    extraHeaders?: Parameters<ConnectionManager['ping']>[1],
+  ) => {
+    return this.connectionManager.ping(body, extraHeaders);
+  };
+
+  public checkTelephony: ConnectionManager['checkTelephony'] = async (parameters) => {
+    return this.connectionManager.checkTelephony(parameters);
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public onConnection<T>(eventName: TConnectionManagerEvent, handler: (data: T) => void) {
+    return this.connectionManager.on<T>(eventName, handler);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public onceConnection<T>(eventName: TConnectionManagerEvent, handler: (data: T) => void) {
+    return this.connectionManager.once<T>(eventName, handler);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public onceRaceConnection<T>(
+    eventNames: TConnectionManagerEvent[],
+    handler: (data: T, eventName: string) => void,
+  ) {
+    return this.connectionManager.onceRace<T>(eventNames, handler);
+  }
+
+  public async waitConnection<T>(eventName: TConnectionManagerEvent): Promise<T> {
+    return this.connectionManager.wait<T>(eventName);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public offConnection<T>(eventName: TConnectionManagerEvent, handler: (data: T) => void) {
+    this.connectionManager.off<T>(eventName, handler);
+  }
+
+  public isConfigured = () => {
+    return this.connectionManager.isConfigured();
+  };
+
+  public getConnectionConfiguration = () => {
+    return this.connectionManager.getConnectionConfiguration();
+  };
+
+  public getSipServerUrl: TGetServerUrl = (id: string) => {
+    return this.connectionManager.getSipServerUrl(id);
+  };
+
+  public call = async (params: Parameters<CallManager['startCall']>[2]) => {
+    return this.callManager.startCall(
+      this.connectionManager.getUaProtected(),
+      this.getSipServerUrl,
+      params,
+    );
+  };
+
+  public hangUp: CallManager['endCall'] = async () => {
+    return this.callManager.endCall();
+  };
+
+  public answerToIncomingCall = async (
+    params: Parameters<CallManager['answerToIncomingCall']>[1],
+  ) => {
+    return this.callManager.answerToIncomingCall(
+      this.incomingCallManager.extractIncomingRTCSession,
+      params,
+    );
+  };
+
+  public declineToIncomingCall: IncomingCallManager['declineToIncomingCall'] = async (...args) => {
+    return this.incomingCallManager.declineToIncomingCall(...args);
+  };
+
+  public getEstablishedRTCSession: CallManager['getEstablishedRTCSession'] = () => {
+    return this.callManager.getEstablishedRTCSession();
+  };
+
+  public getCallConfiguration: CallManager['getCallConfiguration'] = () => {
+    return this.callManager.getCallConfiguration();
+  };
+
+  public getRemoteStreams: CallManager['getRemoteStreams'] = () => {
+    return this.callManager.getRemoteStreams();
+  };
+
+  public replaceMediaStream: CallManager['replaceMediaStream'] = async (...args) => {
+    return this.callManager.replaceMediaStream(...args);
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public onCall<T>(eventName: TCallEvent, handler: (data: T) => void) {
+    return this.callManager.on<T>(eventName, handler);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public onceCall<T>(eventName: TCallEvent, handler: (data: T) => void) {
+    return this.callManager.once<T>(eventName, handler);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public onceRaceCall<T>(eventNames: TCallEvent[], handler: (data: T, eventName: string) => void) {
+    return this.callManager.onceRace<T>(eventNames, handler);
+  }
+
+  public async waitCall<T>(eventName: TCallEvent): Promise<T> {
+    return this.callManager.wait<T>(eventName);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public offIncomingCall<T>(eventName: TIncomingCallEvent, handler: (data: T) => void) {
+    this.incomingCallManager.off<T>(eventName, handler);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public onIncomingCall<T>(eventName: TIncomingCallEvent, handler: (data: T) => void) {
+    return this.incomingCallManager.on<T>(eventName, handler);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public onceIncomingCall<T>(eventName: TIncomingCallEvent, handler: (data: T) => void) {
+    return this.incomingCallManager.once<T>(eventName, handler);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public onceRaceIncomingCall<T>(
+    eventNames: TIncomingCallEvent[],
+    handler: (data: T, eventName: string) => void,
+  ) {
+    return this.incomingCallManager.onceRace<T>(eventNames, handler);
+  }
+
+  public async waitIncomingCall<T>(eventName: TIncomingCallEvent): Promise<T> {
+    return this.incomingCallManager.wait<T>(eventName);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public offCall<T>(eventName: TCallEvent, handler: (data: T) => void) {
+    this.callManager.off<T>(eventName, handler);
   }
 
   public async startPresentation(
     stream: MediaStream,
-    {
-      isNeedReinvite,
-      isP2P,
-      maxBitrate,
-      contentHint,
-      sendEncodings,
-      onAddedTransceiver,
-    }: {
-      isNeedReinvite?: boolean;
+    options: {
       isP2P?: boolean;
+      isNeedReinvite?: boolean;
       maxBitrate?: number;
       contentHint?: TContentHint;
       sendEncodings?: RTCRtpEncodingParameters[];
       onAddedTransceiver?: TOnAddedTransceiver;
+      callLimit?: number;
     } = {},
-    options?: { callLimit: number },
   ): Promise<MediaStream> {
-    const rtcSession = this.establishedRTCSession;
+    const { isP2P, callLimit, ...rest } = options;
 
-    if (!rtcSession) {
-      throw new Error('No rtcSession established');
-    }
-
-    if (this.streamPresentationCurrent) {
-      throw new Error('Presentation is already started');
-    }
-
-    if (isP2P === true) {
-      await this.sendMustStopPresentation();
-    }
-
-    return this.sendPresentationWithDuplicatedCalls({
-      rtcSession,
-      stream,
-      presentationOptions: {
-        isNeedReinvite,
-        isP2P,
-        maxBitrate,
-        contentHint,
-        sendEncodings,
-        onAddedTransceiver,
+    return this.presentationManager.startPresentation(
+      async () => {
+        if (isP2P === true) {
+          await this.apiManager.sendMustStopPresentationP2P();
+          await this.apiManager.askPermissionToStartPresentationP2P();
+        } else {
+          await this.apiManager.askPermissionToStartPresentation();
+        }
       },
-      options,
-    });
+      stream,
+      rest,
+      callLimit === undefined ? undefined : { callLimit },
+    );
   }
 
-  public async stopPresentation({
-    isP2P = false,
-  }: {
-    isP2P?: boolean;
-  } = {}): Promise<MediaStream | undefined> {
-    this.cancelSendPresentationWithRepeatedCalls();
+  public async stopPresentation(
+    options: { isP2P?: boolean } = {},
+  ): Promise<MediaStream | undefined> {
+    const { isP2P } = options;
 
-    const streamPresentationPrevious = this.streamPresentationCurrent;
-    let result: Promise<MediaStream | undefined> =
-      this.promisePendingStartPresentation ?? Promise.resolve<undefined>(undefined);
-
-    // определяем заголовки для остановки презентации в зависимости от типа сессии
-    const preparatoryHeaders = isP2P
-      ? [HEADER_STOP_PRESENTATION_P2P] // `x-webrtc-share-state: CONTENTEND`
-      : [HEADER_STOP_PRESENTATION]; // `x-webrtc-share-state: STOPPRESENTATION`
-
-    const rtcSession = this.establishedRTCSession;
-
-    if (rtcSession && streamPresentationPrevious) {
-      result = result
-        .then(async () => {
-          // информируем сервер о остановке презентации с заголовком 'application/vinteo.webrtc.sharedesktop'
-          return rtcSession.sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
-            extraHeaders: preparatoryHeaders,
-          });
-        })
-        .then(async () => {
-          return rtcSession.stopPresentation(streamPresentationPrevious);
-        })
-        .catch((error: unknown) => {
-          this.sessionEvents.trigger(PRESENTATION_FAILED, error);
-
-          throw error;
-        });
-    }
-
-    if (!rtcSession && streamPresentationPrevious) {
-      this.sessionEvents.trigger(PRESENTATION_ENDED, streamPresentationPrevious);
-    }
-
-    this.promisePendingStopPresentation = result;
-
-    return result.finally(() => {
-      this.resetPresentation();
+    return this.presentationManager.stopPresentation(async () => {
+      if (isP2P === true) {
+        await this.apiManager.sendMustStopPresentationP2P();
+      } else {
+        await this.apiManager.sendStoppedPresentation();
+      }
     });
   }
 
   public async updatePresentation(
     stream: MediaStream,
-    {
-      isP2P,
-      maxBitrate,
-      contentHint,
-      sendEncodings,
-      onAddedTransceiver,
-    }: {
+    options: {
       isP2P?: boolean;
+      isNeedReinvite?: boolean;
       maxBitrate?: number;
       contentHint?: TContentHint;
       sendEncodings?: RTCRtpEncodingParameters[];
       onAddedTransceiver?: TOnAddedTransceiver;
     } = {},
   ): Promise<MediaStream | undefined> {
-    const rtcSession = this.establishedRTCSession;
-
-    if (!rtcSession) {
-      throw new Error('No rtcSession established');
-    }
-
-    if (!this.streamPresentationCurrent) {
-      throw new Error('Presentation has not started yet');
-    }
-
-    if (this.promisePendingStartPresentation) {
-      await this.promisePendingStartPresentation;
-    }
-
-    return this.sendPresentation(rtcSession, stream, {
-      isP2P,
-      maxBitrate,
-      contentHint,
-      isNeedReinvite: false,
-      sendEncodings,
-      onAddedTransceiver,
-    });
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public on<T>(eventName: TEventUA, handler: (data: T) => void) {
-    return this.uaEvents.on<T>(eventName, handler);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public once<T>(eventName: TEventUA, handler: (data: T) => void) {
-    return this.uaEvents.once<T>(eventName, handler);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public onceRace<T>(eventNames: TEventUA[], handler: (data: T, eventName: string) => void) {
-    return this.uaEvents.onceRace<T>(eventNames, handler);
-  }
-
-  public async wait<T>(eventName: TEventUA): Promise<T> {
-    return this.uaEvents.wait<T>(eventName);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public off<T>(eventName: TEventUA, handler: (data: T) => void) {
-    this.uaEvents.off<T>(eventName, handler);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public onSession<T>(eventName: TEventSession, handler: (data: T) => void) {
-    return this.sessionEvents.on<T>(eventName, handler);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public onceSession<T>(eventName: TEventSession, handler: (data: T) => void) {
-    return this.sessionEvents.once<T>(eventName, handler);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public onceRaceSession<T>(
-    eventNames: TEventSession[],
-    handler: (data: T, eventName: string) => void,
-  ) {
-    return this.sessionEvents.onceRace<T>(eventNames, handler);
-  }
-
-  public async waitSession<T>(eventName: TEventSession): Promise<T> {
-    return this.sessionEvents.wait<T>(eventName);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public offSession<T>(eventName: TEventSession, handler: (data: T) => void) {
-    this.sessionEvents.off<T>(eventName, handler);
-  }
-
-  public isConfigured() {
-    return !!this.ua;
-  }
-
-  public getConnectionConfiguration() {
-    return { ...this.connectionConfiguration };
-  }
-
-  public getRemoteStreams(): MediaStream[] | undefined {
-    if (!this.connection) {
-      return undefined;
-    }
-
-    const receivers = this.connection.getReceivers();
-    const remoteTracks = receivers.map(({ track }) => {
-      return track;
-    });
-
-    if (hasVideoTracks(remoteTracks)) {
-      return this.generateStreams(remoteTracks);
-    }
-
-    return this.generateAudioStreams(remoteTracks);
-  }
-
-  public getIncomingRTCSession() {
-    const { incomingRTCSession } = this;
-
-    if (!incomingRTCSession) {
-      throw new Error('No incomingRTCSession');
-    }
-
-    return incomingRTCSession;
-  }
-
-  public set: TSet = async ({ displayName, password }) => {
-    return new Promise((resolve, reject) => {
-      const { ua } = this;
-
-      if (!ua) {
-        reject(new Error('this.ua is not initialized'));
-
-        return;
-      }
-
-      let changedDisplayName = false;
-      let changedPassword = false;
-
-      if (displayName !== undefined && displayName !== this.connectionConfiguration.displayName) {
-        changedDisplayName = ua.set('display_name', parseDisplayName(displayName));
-        this.connectionConfiguration.displayName = displayName;
-      }
-
-      if (password !== undefined && password !== this.connectionConfiguration.password) {
-        changedPassword = ua.set('password', password);
-        this.connectionConfiguration.password = password;
-      }
-
-      const changedSome = changedDisplayName || changedPassword;
-
-      if (changedPassword && this.isRegisterConfig) {
-        this.register()
-          .then(() => {
-            resolve(changedSome);
-          })
-          .catch((error: unknown) => {
-            reject(error as Error);
-          });
-      } else if (changedSome) {
-        resolve(changedSome);
-      } else {
-        reject(new Error('nothing changed'));
-      }
-    });
-  };
-
-  public disconnect = async () => {
-    this.off(NEW_RTC_SESSION, this.handleNewRTCSession);
-
-    const disconnectedPromise = new Promise<void>((resolve) => {
-      this.once(DISCONNECTED, () => {
-        resolve();
-      });
-    });
-
-    const { ua } = this;
-
-    if (ua) {
-      await this.hangUpWithoutCancelRequests();
-      ua.stop();
-    } else {
-      this.uaEvents.trigger(DISCONNECTED, undefined);
-    }
-
-    return disconnectedPromise.finally(() => {
-      delete this.ua;
-    });
-  };
-
-  public call: TCall = async ({
-    number,
-    mediaStream,
-    extraHeaders = [],
-    ontrack,
-    iceServers,
-    directionVideo,
-    directionAudio,
-    contentHint,
-    offerToReceiveAudio = true,
-    offerToReceiveVideo = true,
-    sendEncodings,
-    onAddedTransceiver,
-  }) => {
-    this.isPendingCall = true;
-
-    return new Promise<RTCPeerConnection>((resolve, reject) => {
-      const { ua } = this;
-
-      if (!ua) {
-        reject(new Error('this.ua is not initialized'));
-
-        return;
-      }
-
-      this.connectionConfiguration.number = number;
-      this.connectionConfiguration.answer = false;
-      this.handleCall({ ontrack })
-        .then(resolve)
-        .catch((error: unknown) => {
-          reject(error as Error);
-        });
-
-      this.rtcSession = ua.call(this.getSipServerUrl(number), {
-        extraHeaders,
-        mediaStream: prepareMediaStream(mediaStream, {
-          directionVideo,
-          directionAudio,
-          contentHint,
-        }),
-        eventHandlers: this.sessionEvents.triggers,
-        directionVideo,
-        directionAudio,
-        pcConfig: {
-          iceServers,
-        },
-        rtcOfferConstraints: {
-          offerToReceiveAudio,
-          offerToReceiveVideo,
-        },
-        sendEncodings,
-        onAddedTransceiver,
-      });
-    }).finally(() => {
-      this.isPendingCall = false;
-    });
-  };
-
-  public answerToIncomingCall: TAnswerToIncomingCall = async ({
-    mediaStream,
-    ontrack,
-    extraHeaders = [],
-    iceServers,
-    directionVideo,
-    directionAudio,
-    offerToReceiveAudio,
-    offerToReceiveVideo,
-    contentHint,
-    sendEncodings,
-    onAddedTransceiver,
-  }): Promise<RTCPeerConnection> => {
-    this.isPendingAnswer = true;
-
-    return new Promise<RTCPeerConnection>((resolve, reject) => {
-      try {
-        const rtcSession = this.getIncomingRTCSession();
-
-        this.rtcSession = rtcSession;
-        this.removeIncomingSession();
-
-        this.sessionEvents.eachTriggers((trigger, eventName) => {
-          const sessionJsSipEvent = SESSION_JSSIP_EVENT_NAMES.find((jsSipEvent) => {
-            return jsSipEvent === eventName;
-          });
-
-          if (sessionJsSipEvent) {
-            rtcSession.on(sessionJsSipEvent, trigger);
-          }
-        });
-
-        this.connectionConfiguration.answer = true;
-        this.connectionConfiguration.number = rtcSession.remote_identity.uri.user;
-        this.handleCall({ ontrack })
-          .then(resolve)
-          .catch((error: unknown) => {
-            reject(error as Error);
-          });
-
-        const preparedMediaStream = prepareMediaStream(mediaStream, {
-          directionVideo,
-          directionAudio,
-          contentHint,
-        });
-
-        rtcSession.answer({
-          extraHeaders,
-          directionVideo,
-          directionAudio,
-          mediaStream: preparedMediaStream,
-          pcConfig: {
-            iceServers,
-          },
-          rtcOfferConstraints: {
-            offerToReceiveAudio,
-            offerToReceiveVideo,
-          },
-          sendEncodings,
-          onAddedTransceiver,
-        });
-      } catch (error) {
-        reject(error as Error);
-      }
-    }).finally(() => {
-      this.isPendingAnswer = false;
-    });
-  };
-
-  public sendDTMF: TSendDTMF = async (tone) => {
-    return new Promise<void>((resolve, reject) => {
-      const { rtcSession } = this;
-
-      if (!rtcSession) {
-        reject(new Error('No rtcSession established'));
-
-        return;
-      }
-
-      this.onceSession(NEW_DTMF, ({ originator }: { originator: Originator }) => {
-        if (originator === Originator.LOCAL) {
-          resolve();
-        }
-      });
-
-      rtcSession.sendDTMF(tone, {
-        duration: 120,
-        interToneGap: 600,
-      });
-    });
-  };
-
-  public cancelSendPresentationWithRepeatedCalls() {
-    this.cancelableSendPresentationWithRepeatedCalls?.cancel();
-  }
-
-  public async waitChannels(): Promise<TChannels> {
-    return this.waitSession(CHANNELS);
-  }
-
-  public async waitSyncMediaState(): Promise<{ isSyncForced: boolean }> {
-    return this.waitSession(ADMIN_FORCE_SYNC_MEDIA_STATE);
-  }
-
-  public async sendChannels({ inputChannels, outputChannels }: TChannels): Promise<void> {
-    if (!this.rtcSession) {
-      throw new Error('No rtcSession established');
-    }
-
-    const headerInputChannels = `${HEADER_INPUT_CHANNELS}: ${inputChannels}`;
-    const headerOutputChannels = `${HEADER_OUTPUT_CHANNELS}: ${outputChannels}`;
-    const extraHeaders: TOptionsExtraHeaders['extraHeaders'] = [
-      headerInputChannels,
-      headerOutputChannels,
-    ];
-
-    return this.rtcSession.sendInfo(CONTENT_TYPE_CHANNELS, undefined, { extraHeaders });
-  }
-
-  public async sendMediaState(
-    { cam, mic }: TMediaState,
-    options: TOptionsInfoMediaState = {},
-  ): Promise<void> {
-    if (!this.rtcSession) {
-      throw new Error('No rtcSession established');
-    }
-
-    const headerMediaState = `${HEADER_MEDIA_STATE}: currentstate`;
-    const headerCam = `${HEADER_MAIN_CAM_STATE}: ${Number(cam)}`;
-    const headerMic = `${HEADER_MIC_STATE}: ${Number(mic)}`;
-    const extraHeaders: TOptionsExtraHeaders['extraHeaders'] = [
-      headerMediaState,
-      headerCam,
-      headerMic,
-    ];
-
-    return this.rtcSession.sendInfo(CONTENT_TYPE_MEDIA_STATE, undefined, {
-      noTerminateWhenError: true,
-      ...options,
-      extraHeaders,
-    });
-  }
-
-  public async sendRefusalToTurnOn(
-    type: 'cam' | 'mic',
-    options: TOptionsInfoMediaState = {},
-  ): Promise<void> {
-    if (!this.rtcSession) {
-      throw new Error('No rtcSession established');
-    }
-
-    const typeMicOnServer = 0;
-    const typeCamOnServer = 1;
-    const typeToSend = type === 'mic' ? typeMicOnServer : typeCamOnServer;
-
-    const headerMediaType = `${HEADER_MEDIA_TYPE}: ${typeToSend}`;
-    const extraHeaders: TOptionsExtraHeaders['extraHeaders'] = [headerMediaType];
-
-    return this.rtcSession.sendInfo(CONTENT_TYPE_REFUSAL, undefined, {
-      noTerminateWhenError: true,
-      ...options,
-      extraHeaders,
-    });
-  }
-
-  public async sendRefusalToTurnOnMic(options: TOptionsInfoMediaState = {}): Promise<void> {
-    if (!this.rtcSession) {
-      throw new Error('No rtcSession established');
-    }
-
-    return this.sendRefusalToTurnOn('mic', { noTerminateWhenError: true, ...options });
-  }
-
-  public async sendRefusalToTurnOnCam(options: TOptionsInfoMediaState = {}): Promise<void> {
-    if (!this.rtcSession) {
-      throw new Error('No rtcSession established');
-    }
-
-    return this.sendRefusalToTurnOn('cam', { noTerminateWhenError: true, ...options });
-  }
-
-  private readonly removeIncomingSession = () => {
-    delete this.incomingRTCSession;
-  };
-
-  // eslint-disable-next-line class-methods-use-this
-  private getSipServerUrl: TGetServerUrl = (id: string) => {
-    return id;
-  };
-
-  private async sendMustStopPresentation(): Promise<void> {
-    const rtcSession = this.establishedRTCSession;
-
-    if (!rtcSession) {
-      throw new Error('No rtcSession established');
-    }
-
-    await rtcSession.sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
-      extraHeaders: [HEADER_MUST_STOP_PRESENTATION_P2P],
-    });
-  }
-
-  private readonly connectWithDuplicatedCalls: TConnect = async (
-    data,
-    { callLimit = DELAYED_REPEATED_CALLS_CONNECT_LIMIT } = {},
-  ) => {
-    const targetFunction = async () => {
-      return this.connectInner(data);
-    };
-
-    const isComplete = (response?: unknown): boolean => {
-      const isConnected = this.ua?.isConnected() === true;
-      const isValidResponse = isConnected && this.hasEqualConnectionConfiguration(data);
-      const isValidError =
-        response !== undefined && response !== null && !hasHandshakeWebsocketOpeningError(response);
-
-      return isValidResponse || isValidError;
-    };
-
-    this.isPendingConnect = true;
-
-    this.cancelableConnectWithRepeatedCalls = repeatedCallsAsync<UA>({
-      targetFunction,
-      isComplete,
-      callLimit,
-      isRejectAsValid: true,
-      isCheckBeforeCall: false,
-    });
-
-    return this.cancelableConnectWithRepeatedCalls
-      .then((response?: unknown) => {
-        if (response instanceof this.JsSIP.UA) {
-          return response;
-        }
-
-        throw response;
-      })
-      .finally(() => {
-        this.isPendingConnect = false;
-      });
-  };
-
-  private async sendPresentationWithDuplicatedCalls({
-    rtcSession,
-    stream,
-    presentationOptions,
-    options = {
-      callLimit: SEND_PRESENTATION_CALL_LIMIT,
-    },
-  }: {
-    rtcSession: RTCSession;
-    stream: MediaStream;
-    presentationOptions: {
-      isNeedReinvite?: boolean;
-      isP2P?: boolean;
-      maxBitrate?: number;
-      contentHint?: TContentHint;
-      sendEncodings?: RTCRtpEncodingParameters[];
-      onAddedTransceiver?: TOnAddedTransceiver;
-    };
-    options?: { callLimit: number };
-  }) {
-    const targetFunction = async () => {
-      return this.sendPresentation(rtcSession, stream, presentationOptions);
-    };
-
-    const isComplete = (): boolean => {
-      return !!this.streamPresentationCurrent;
-    };
-
-    this.cancelableSendPresentationWithRepeatedCalls = repeatedCallsAsync<MediaStream>({
-      targetFunction,
-      isComplete,
-      isRejectAsValid: true,
-      ...options,
-    });
-
-    return this.cancelableSendPresentationWithRepeatedCalls.then((response?: unknown) => {
-      return response as MediaStream;
-    });
-  }
-
-  private hasEqualConnectionConfiguration(parameters: TParametersConnection) {
-    const { configuration: newConfiguration } = this.createUaConfiguration(parameters);
-
-    const uaConfiguration = this.ua?.configuration;
-
-    return (
-      uaConfiguration?.password === newConfiguration.password &&
-      uaConfiguration?.register === newConfiguration.register &&
-      uaConfiguration.uri.toString() === newConfiguration.uri &&
-      uaConfiguration.display_name === newConfiguration.display_name &&
-      uaConfiguration.user_agent === newConfiguration.user_agent &&
-      uaConfiguration.sockets === newConfiguration.sockets &&
-      uaConfiguration.session_timers === newConfiguration.session_timers &&
-      uaConfiguration.register_expires === newConfiguration.register_expires &&
-      uaConfiguration.connection_recovery_min_interval ===
-        newConfiguration.connection_recovery_min_interval &&
-      uaConfiguration.connection_recovery_max_interval ===
-        newConfiguration.connection_recovery_max_interval
-    );
-  }
-
-  private createUaConfiguration({
-    user,
-    password,
-    sipWebSocketServerURL,
-    displayName = '',
-    sipServerUrl,
-    register = false,
-    sessionTimers = false,
-    registerExpires = 60 * 5, // 5 minutes in sec
-    connectionRecoveryMinInterval = 2,
-    connectionRecoveryMaxInterval = 6,
-    userAgent,
-  }: TParametersCreateUaConfiguration) {
-    if (register && (password === undefined || password === '')) {
-      throw new Error('password is required for authorized connection');
-    }
-
-    const authorizationUser =
-      register && user !== undefined && user.trim() !== '' ? user.trim() : `${generateUserId()}`;
-    const getSipServerUrl = resolveSipUrl(sipServerUrl);
-    const uri = getSipServerUrl(authorizationUser);
-    const socket = new this.JsSIP.WebSocketInterface(sipWebSocketServerURL);
-
-    return {
-      configuration: {
-        password,
-        register,
-        uri,
-        display_name: parseDisplayName(displayName),
-        user_agent: userAgent,
-        sdpSemantics: 'unified-plan' as const,
-        sockets: [socket],
-        session_timers: sessionTimers,
-        register_expires: registerExpires,
-
-        connection_recovery_min_interval: connectionRecoveryMinInterval,
-        connection_recovery_max_interval: connectionRecoveryMaxInterval,
-      },
-      helpers: {
-        socket,
-        getSipServerUrl,
-      },
-    };
-  }
-
-  private async sendPresentation(
-    rtcSession: RTCSession,
-    stream: MediaStream,
-    {
-      maxBitrate = ONE_MEGABIT_IN_BITS,
-      isNeedReinvite = true,
-      isP2P = false,
-      contentHint = 'detail',
-      sendEncodings,
-      onAddedTransceiver,
-    }: {
-      isNeedReinvite?: boolean;
-      isP2P?: boolean;
-      maxBitrate?: number;
-      contentHint?: TContentHint;
-      sendEncodings?: RTCRtpEncodingParameters[];
-      onAddedTransceiver?: TOnAddedTransceiver;
-    },
-  ) {
-    const streamPresentationCurrent = prepareMediaStream(stream, { contentHint });
-
-    if (streamPresentationCurrent === undefined) {
-      throw new Error('No streamPresentationCurrent');
-    }
-
-    this.streamPresentationCurrent = streamPresentationCurrent;
-
-    // определяем заголовки для начала презентации в зависимости от типа сессии
-    const preparatoryHeaders = isP2P
-      ? [HEADER_START_PRESENTATION_P2P] // `x-webrtc-share-state: YOUCANRECEIVECONTENT
-      : [HEADER_START_PRESENTATION]; // `x-webrtc-share-state: LETMESTARTPRESENTATION`
-
-    const result = rtcSession
-      // отправляем запрос на презентацию с заголовком 'application/vinteo.webrtc.sharedesktop'
-      .sendInfo(CONTENT_TYPE_SHARE_STATE, undefined, {
-        extraHeaders: preparatoryHeaders,
-      })
-      .then(async () => {
-        return rtcSession.startPresentation(streamPresentationCurrent, isNeedReinvite, {
-          sendEncodings,
-          onAddedTransceiver,
-        });
-      })
-      .then(async () => {
-        const { connection } = this;
-
-        if (!connection) {
-          return;
-        }
-
-        const senders = connection.getSenders();
-
-        await scaleBitrate(senders, stream, maxBitrate);
-      })
-      .then(() => {
-        return stream;
-      })
-      .catch((error: unknown) => {
-        this.removeStreamPresentationCurrent();
-
-        this.sessionEvents.trigger(PRESENTATION_FAILED, error);
-
-        throw error;
-      });
-
-    this.promisePendingStartPresentation = result;
-
-    return result.finally(() => {
-      this.promisePendingStartPresentation = undefined;
-    });
-  }
-
-  private removeStreamPresentationCurrent() {
-    delete this.streamPresentationCurrent;
-  }
-
-  private resetPresentation() {
-    this.removeStreamPresentationCurrent();
-
-    this.promisePendingStartPresentation = undefined;
-    this.promisePendingStopPresentation = undefined;
-  }
-
-  private cancelRequestsAndResetPresentation() {
-    this.cancelSendPresentationWithRepeatedCalls();
-    this.resetPresentation();
-  }
-
-  private readonly handleNewRTCSession = ({
-    originator,
-    session: rtcSession,
-  }: IncomingRTCSessionEvent | OutgoingRTCSessionEvent) => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-    if (originator === Originator.REMOTE) {
-      this.incomingRTCSession = rtcSession;
-
-      const callerData = this.remoteCallerData;
-
-      rtcSession.on(FAILED, (event: { originator: Originator }) => {
-        this.removeIncomingSession();
-
-        if (event.originator === Originator.LOCAL) {
-          this.uaEvents.trigger(TERMINATED_INCOMING_CALL, callerData);
+    const { isP2P, ...rest } = options;
+
+    return this.presentationManager.updatePresentation(
+      async () => {
+        if (isP2P === true) {
+          await this.apiManager.sendMustStopPresentationP2P();
+          await this.apiManager.askPermissionToStartPresentationP2P();
         } else {
-          this.uaEvents.trigger(FAILED_INCOMING_CALL, callerData);
+          await this.apiManager.askPermissionToStartPresentation();
         }
-      });
-
-      this.uaEvents.trigger(INCOMING_CALL, callerData);
-    }
-  };
-
-  private readonly connectInner: TConnect = async (parameters) => {
-    return this.initUa(parameters).then(async () => {
-      return this.start();
-    });
-  };
-
-  private readonly initUa: TInitUa = async ({
-    user,
-    password,
-    sipServerUrl,
-    sipWebSocketServerURL,
-    remoteAddress,
-    sessionTimers,
-    registerExpires,
-    connectionRecoveryMinInterval,
-    connectionRecoveryMaxInterval,
-    userAgent,
-    displayName = '',
-    register = false,
-    extraHeaders = [],
-  }) => {
-    if (!sipServerUrl) {
-      throw new Error('sipServerUrl is required');
-    }
-
-    if (!sipWebSocketServerURL) {
-      throw new Error('sipWebSocketServerURL is required');
-    }
-
-    if (register && (user === undefined || user === '')) {
-      throw new Error('user is required for authorized connection');
-    }
-
-    if (register && (password === undefined || password === '')) {
-      throw new Error('password is required for authorized connection');
-    }
-
-    this.isPendingInitUa = true;
-
-    try {
-      this.connectionConfiguration = {
-        sipServerUrl,
-        displayName,
-        register,
-        user,
-        password,
-      };
-
-      const { configuration, helpers } = this.createUaConfiguration({
-        user,
-        sipServerUrl,
-        sipWebSocketServerURL,
-        password,
-        displayName,
-        register,
-        sessionTimers,
-        registerExpires,
-        connectionRecoveryMinInterval,
-        connectionRecoveryMaxInterval,
-        userAgent,
-      });
-
-      this.getSipServerUrl = helpers.getSipServerUrl;
-      this.socket = helpers.socket;
-
-      if (this.ua) {
-        await this.disconnect();
-      }
-
-      this.isRegisterConfigInner = !!register;
-
-      this.ua = this.createUa({ ...configuration, remoteAddress, extraHeaders });
-
-      this.uaEvents.eachTriggers((trigger, eventName) => {
-        const uaJsSipEvent = UA_JSSIP_EVENT_NAMES.find((jsSipEvent) => {
-          return jsSipEvent === eventName;
-        });
-
-        if (uaJsSipEvent && this.ua) {
-          this.ua.on(uaJsSipEvent, trigger);
-        }
-      });
-
-      return this.ua;
-    } finally {
-      this.isPendingInitUa = false;
-    }
-  };
-
-  private readonly createUa: TCreateUa = ({
-    remoteAddress,
-    extraHeaders = [],
-    ...parameters
-  }: TParametersCreateUa): UA => {
-    const ua = new this.JsSIP.UA(parameters);
-
-    const extraHeadersRemoteAddress =
-      remoteAddress !== undefined && remoteAddress !== ''
-        ? getExtraHeadersRemoteAddress(remoteAddress)
-        : [];
-    const extraHeadersBase = [...extraHeadersRemoteAddress, ...extraHeaders];
-
-    if (extraHeadersBase.length > 0) {
-      ua.registrator().setExtraHeaders(extraHeadersBase);
-    }
-
-    return ua;
-  };
-
-  private readonly start: TStart = async () => {
-    return new Promise((resolve, reject) => {
-      const { ua } = this;
-
-      if (!ua) {
-        reject(new Error('this.ua is not initialized'));
-
-        return;
-      }
-
-      const resolveUa = () => {
-        // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        removeEventListeners();
-        resolve(ua);
-      };
-      const rejectError = (error: Error) => {
-        // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        removeEventListeners();
-        reject(error);
-      };
-      const addEventListeners = () => {
-        if (this.isRegisterConfig) {
-          this.on(REGISTERED, resolveUa);
-          this.on(REGISTRATION_FAILED, rejectError);
-        } else {
-          this.on(CONNECTED, resolveUa);
-        }
-
-        this.on(DISCONNECTED, rejectError);
-      };
-      const removeEventListeners = () => {
-        this.off(REGISTERED, resolveUa);
-        this.off(REGISTRATION_FAILED, rejectError);
-        this.off(CONNECTED, resolveUa);
-        this.off(DISCONNECTED, rejectError);
-      };
-
-      addEventListeners();
-      this.on(NEW_RTC_SESSION, this.handleNewRTCSession);
-
-      ua.start();
-    });
-  };
-
-  private readonly handleCall = async ({
-    ontrack,
-  }: {
-    ontrack?: TOntrack;
-  }): Promise<RTCPeerConnection> => {
-    return new Promise((resolve, reject) => {
-      const addStartedEventListeners = () => {
-        // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        this.onSession(PEER_CONNECTION, handlePeerConnection);
-        // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        this.onSession(CONFIRMED, handleConfirmed);
-      };
-      const removeStartedEventListeners = () => {
-        // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        this.offSession(PEER_CONNECTION, handlePeerConnection);
-        // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        this.offSession(CONFIRMED, handleConfirmed);
-      };
-      const addEndedEventListeners = () => {
-        // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        this.onSession(FAILED, handleEnded);
-        // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        this.onSession(ENDED, handleEnded);
-      };
-      const removeEndedEventListeners = () => {
-        // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        this.offSession(FAILED, handleEnded);
-        // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        this.offSession(ENDED, handleEnded);
-      };
-      const handleEnded = (error: TCustomError) => {
-        removeStartedEventListeners();
-        removeEndedEventListeners();
-        reject(error);
-      };
-
-      let savedPeerconnection: RTCPeerConnection | undefined;
-
-      const handlePeerConnection = ({ peerconnection }: { peerconnection: RTCPeerConnection }) => {
-        savedPeerconnection = peerconnection;
-
-        savedPeerconnection.ontrack = (track) => {
-          this.sessionEvents.trigger(PEER_CONNECTION_ONTRACK, savedPeerconnection);
-
-          if (ontrack) {
-            ontrack(track);
-          }
-        };
-      };
-      const handleConfirmed = () => {
-        if (savedPeerconnection !== undefined) {
-          this.sessionEvents.trigger(PEER_CONNECTION_CONFIRMED, savedPeerconnection);
-        }
-
-        removeStartedEventListeners();
-        removeEndedEventListeners();
-        resolve(savedPeerconnection as unknown as RTCPeerConnection);
-      };
-
-      addStartedEventListeners();
-      addEndedEventListeners();
-    });
-  };
-
-  private readonly restoreSession: () => void = () => {
-    this.cancelRequestsAndResetPresentation();
-
-    delete this.connectionConfiguration.number;
-    delete this.rtcSession;
-    this.remoteStreams = {};
-  };
-
-  private generateStream(videoTrack: MediaStreamTrack, audioTrack?: MediaStreamTrack): MediaStream {
-    const { id } = videoTrack;
-
-    const remoteStream: MediaStream = this.remoteStreams[id] ?? new MediaStream();
-
-    if (audioTrack) {
-      remoteStream.addTrack(audioTrack);
-    }
-
-    remoteStream.addTrack(videoTrack);
-    this.remoteStreams[id] = remoteStream;
-
-    return remoteStream;
-  }
-
-  private generateAudioStream(audioTrack: MediaStreamTrack): MediaStream {
-    const { id } = audioTrack;
-
-    const remoteStream = this.remoteStreams[id] ?? new MediaStream();
-
-    remoteStream.addTrack(audioTrack);
-
-    this.remoteStreams[id] = remoteStream;
-
-    return remoteStream;
-  }
-
-  private generateStreams(remoteTracks: MediaStreamTrack[]): MediaStream[] {
-    const remoteStreams: MediaStream[] = [];
-
-    remoteTracks.forEach((track, index) => {
-      if (track.kind === 'audio') {
-        return;
-      }
-
-      const videoTrack = track;
-      const previousTrack = remoteTracks[index - 1] as MediaStreamTrack | undefined;
-      let audioTrack;
-
-      if (previousTrack?.kind === 'audio') {
-        audioTrack = previousTrack;
-      }
-
-      const remoteStream = this.generateStream(videoTrack, audioTrack);
-
-      remoteStreams.push(remoteStream);
-    });
-
-    return remoteStreams;
-  }
-
-  private generateAudioStreams(remoteTracks: MediaStreamTrack[]): MediaStream[] {
-    const remoteStreams: MediaStream[] = remoteTracks.map((remoteTrack) => {
-      return this.generateAudioStream(remoteTrack);
-    });
-
-    return remoteStreams;
-  }
-
-  private readonly hangUpWithoutCancelRequests: THangUp = async () => {
-    if (this.ua && this.rtcSession) {
-      const { rtcSession } = this;
-
-      if (this.streamPresentationCurrent) {
-        try {
-          await this.stopPresentation();
-        } catch (error) {
-          logger('error stop presentation: ', error);
-        }
-      }
-
-      this.restoreSession();
-
-      if (!rtcSession.isEnded()) {
-        return rtcSession.terminateAsync({
-          cause: CANCELED,
-        });
-      }
-    }
-
-    return undefined;
-  };
-
-  private cancelRequests() {
-    this.cancelConnectWithRepeatedCalls();
-  }
-
-  private cancelConnectWithRepeatedCalls() {
-    this.cancelableConnectWithRepeatedCalls?.cancel();
-  }
-
-  private readonly handleShareState = (eventName: string) => {
-    switch (eventName) {
-      case AVAILABLE_SECOND_REMOTE_STREAM: {
-        this.sessionEvents.trigger(AVAILABLE_SECOND_REMOTE_STREAM_EVENT, undefined);
-        break;
-      }
-      case NOT_AVAILABLE_SECOND_REMOTE_STREAM: {
-        this.sessionEvents.trigger(NOT_AVAILABLE_SECOND_REMOTE_STREAM_EVENT, undefined);
-        break;
-      }
-      case MUST_STOP_PRESENTATION: {
-        this.sessionEvents.trigger(MUST_STOP_PRESENTATION_EVENT, undefined);
-        break;
-      }
-
-      default: {
-        break;
-      }
-    }
-  };
-
-  private readonly maybeTriggerChannels = (request: IncomingRequest) => {
-    const inputChannels = request.getHeader(HEADER_INPUT_CHANNELS);
-    const outputChannels = request.getHeader(HEADER_OUTPUT_CHANNELS);
-
-    if (inputChannels && outputChannels) {
-      const headersChannels: TChannels = {
-        inputChannels,
-        outputChannels,
-      };
-
-      this.sessionEvents.trigger(CHANNELS, headersChannels);
-    }
-  };
-
-  private readonly handleNotify = (header: TInfoNotify) => {
-    switch (header.cmd) {
-      case CMD_CHANNELS: {
-        const channelsInfo = header as TChannelsInfoNotify;
-
-        this.triggerChannelsNotify(channelsInfo);
-
-        break;
-      }
-      case CMD_WEBCAST_STARTED: {
-        const webcastInfo = header as TWebcastInfoNotify;
-
-        this.triggerWebcastStartedNotify(webcastInfo);
-
-        break;
-      }
-      case CMD_WEBCAST_STOPPED: {
-        const webcastInfo = header as TWebcastInfoNotify;
-
-        this.triggerWebcastStoppedNotify(webcastInfo);
-
-        break;
-      }
-      case CMD_ADDED_TO_LIST_MODERATORS: {
-        const data = header as TAddedToListModeratorsInfoNotify;
-
-        this.triggerAddedToListModeratorsNotify(data);
-
-        break;
-      }
-      case CMD_REMOVED_FROM_LIST_MODERATORS: {
-        const data = header as TRemovedFromListModeratorsInfoNotify;
-
-        this.triggerRemovedFromListModeratorsNotify(data);
-
-        break;
-      }
-      case CMD_ACCEPTING_WORD_REQUEST: {
-        const data = header as TAcceptingWordRequestInfoNotify;
-
-        this.triggerParticipationAcceptingWordRequest(data);
-
-        break;
-      }
-      case CMD_CANCELLING_WORD_REQUEST: {
-        const data = header as TCancellingWordRequestInfoNotify;
-
-        this.triggerParticipationCancellingWordRequest(data);
-
-        break;
-      }
-      case CMD_MOVE_REQUEST_TO_STREAM: {
-        const data = header as TMoveRequestToStreamInfoNotify;
-
-        this.triggerParticipantMoveRequestToStream(data);
-
-        break;
-      }
-      case CMD_ACCOUNT_CHANGED: {
-        this.triggerAccountChangedNotify();
-
-        break;
-      }
-      case CMD_ACCOUNT_DELETED: {
-        this.triggerAccountDeletedNotify();
-
-        break;
-      }
-      case CMD_CONFERENCE_PARTICIPANT_TOKEN_ISSUED: {
-        const data = header as TConferenceParticipantTokenIssued;
-
-        this.triggerConferenceParticipantTokenIssued(data);
-
-        break;
-      }
-      default: {
-        logger('unknown cmd', header.cmd);
-      }
-      // No default
-    }
-  };
-
-  private readonly triggerRemovedFromListModeratorsNotify = ({
-    conference,
-  }: TRemovedFromListModeratorsInfoNotify) => {
-    const headersParametersModeratorsList: TParametersModeratorsList = {
-      conference,
-    };
-
-    this.uaEvents.trigger(
-      PARTICIPANT_REMOVED_FROM_LIST_MODERATORS,
-      headersParametersModeratorsList,
+      },
+      stream,
+      rest,
     );
-  };
+  }
 
-  private readonly triggerAddedToListModeratorsNotify = ({
-    conference,
-  }: TAddedToListModeratorsInfoNotify) => {
-    const headersParametersModeratorsList: TParametersModeratorsList = {
-      conference,
-    };
+  public async waitChannels(...args: Parameters<ApiManager['waitChannels']>) {
+    return this.apiManager.waitChannels(...args);
+  }
 
-    this.uaEvents.trigger(PARTICIPANT_ADDED_TO_LIST_MODERATORS, headersParametersModeratorsList);
-  };
+  public async waitSyncMediaState(...args: Parameters<ApiManager['waitSyncMediaState']>) {
+    return this.apiManager.waitSyncMediaState(...args);
+  }
 
-  private readonly triggerWebcastStartedNotify = ({
-    body: { conference, type },
-  }: TWebcastInfoNotify) => {
-    const headersParametersWebcast: TParametersWebcast = {
-      conference,
-      type,
-    };
+  public async sendDTMF(...args: Parameters<ApiManager['sendDTMF']>) {
+    return this.apiManager.sendDTMF(...args);
+  }
 
-    this.uaEvents.trigger(WEBCAST_STARTED, headersParametersWebcast);
-  };
+  public async sendChannels(...args: Parameters<ApiManager['sendChannels']>) {
+    return this.apiManager.sendChannels(...args);
+  }
 
-  private readonly triggerWebcastStoppedNotify = ({
-    body: { conference, type },
-  }: TWebcastInfoNotify) => {
-    const headersParametersWebcast: TParametersWebcast = {
-      conference,
-      type,
-    };
+  public async sendMediaState(...args: Parameters<ApiManager['sendMediaState']>) {
+    return this.apiManager.sendMediaState(...args);
+  }
 
-    this.uaEvents.trigger(WEBCAST_STOPPED, headersParametersWebcast);
-  };
+  public async sendRefusalToTurnOn(...args: Parameters<ApiManager['sendRefusalToTurnOn']>) {
+    return this.apiManager.sendRefusalToTurnOn(...args);
+  }
 
-  private readonly triggerAccountChangedNotify = () => {
-    this.uaEvents.trigger(ACCOUNT_CHANGED, undefined);
-  };
+  public async sendRefusalToTurnOnMic(...args: Parameters<ApiManager['sendRefusalToTurnOnMic']>) {
+    return this.apiManager.sendRefusalToTurnOnMic(...args);
+  }
 
-  private readonly triggerAccountDeletedNotify = () => {
-    this.uaEvents.trigger(ACCOUNT_DELETED, undefined);
-  };
+  public async sendRefusalToTurnOnCam(...args: Parameters<ApiManager['sendRefusalToTurnOnCam']>) {
+    return this.apiManager.sendRefusalToTurnOnCam(...args);
+  }
 
-  private readonly triggerConferenceParticipantTokenIssued = ({
-    body: { conference, participant, jwt },
-  }: TConferenceParticipantTokenIssued) => {
-    const headersConferenceParticipantTokenIssued: TParametersConferenceParticipantTokenIssued = {
-      conference,
-      participant,
-      jwt,
-    };
+  public async sendMustStopPresentationP2P(
+    ...args: Parameters<ApiManager['sendMustStopPresentationP2P']>
+  ) {
+    return this.apiManager.sendMustStopPresentationP2P(...args);
+  }
 
-    this.uaEvents.trigger(
-      CONFERENCE_PARTICIPANT_TOKEN_ISSUED,
-      headersConferenceParticipantTokenIssued,
-    );
-  };
+  public async sendStoppedPresentationP2P(
+    ...args: Parameters<ApiManager['sendStoppedPresentationP2P']>
+  ) {
+    return this.apiManager.sendStoppedPresentationP2P(...args);
+  }
 
-  private readonly triggerChannelsNotify = (channelsInfo: TChannelsInfoNotify) => {
-    const inputChannels = channelsInfo.input;
-    const outputChannels = channelsInfo.output;
+  public async sendStoppedPresentation(...args: Parameters<ApiManager['sendStoppedPresentation']>) {
+    return this.apiManager.sendStoppedPresentation(...args);
+  }
 
-    const data: TChannels = {
-      inputChannels,
-      outputChannels,
-    };
+  public async askPermissionToStartPresentationP2P(
+    ...args: Parameters<ApiManager['askPermissionToStartPresentationP2P']>
+  ) {
+    return this.apiManager.askPermissionToStartPresentationP2P(...args);
+  }
 
-    this.uaEvents.trigger(CHANNELS_NOTIFY, data);
-  };
+  public async askPermissionToStartPresentation(
+    ...args: Parameters<ApiManager['askPermissionToStartPresentation']>
+  ) {
+    return this.apiManager.askPermissionToStartPresentation(...args);
+  }
 
-  private readonly triggerParticipationAcceptingWordRequest = ({
-    body: { conference },
-  }: TAcceptingWordRequestInfoNotify) => {
-    const data: TParametersModeratorsList = {
-      conference,
-    };
+  public async askPermissionToEnableCam(
+    ...args: Parameters<ApiManager['askPermissionToEnableCam']>
+  ) {
+    return this.apiManager.askPermissionToEnableCam(...args);
+  }
 
-    this.uaEvents.trigger(PARTICIPATION_ACCEPTING_WORD_REQUEST, data);
-  };
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public onApi<T>(eventName: TApiEvent, handler: (data: T) => void) {
+    return this.apiManager.on<T>(eventName, handler);
+  }
 
-  private readonly triggerParticipationCancellingWordRequest = ({
-    body: { conference },
-  }: TCancellingWordRequestInfoNotify) => {
-    const data: TParametersModeratorsList = {
-      conference,
-    };
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public onceApi<T>(eventName: TApiEvent, handler: (data: T) => void) {
+    return this.apiManager.once<T>(eventName, handler);
+  }
 
-    this.uaEvents.trigger(PARTICIPATION_CANCELLING_WORD_REQUEST, data);
-  };
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public onceRaceApi<T>(eventNames: TApiEvent[], handler: (data: T, eventName: string) => void) {
+    return this.apiManager.onceRace<T>(eventNames, handler);
+  }
 
-  private readonly triggerParticipantMoveRequestToStream = ({
-    body: { conference },
-  }: TMoveRequestToStreamInfoNotify) => {
-    const data: TParametersModeratorsList = {
-      conference,
-    };
+  public async waitApi<T>(eventName: TApiEvent): Promise<T> {
+    return this.apiManager.wait<T>(eventName);
+  }
 
-    this.uaEvents.trigger(PARTICIPANT_MOVE_REQUEST_TO_STREAM, data);
-  };
-
-  private readonly triggerEnterRoom = (request: IncomingRequest) => {
-    const room = request.getHeader(HEADER_CONTENT_ENTER_ROOM);
-    const participantName = request.getHeader(HEADER_PARTICIPANT_NAME);
-
-    this.sessionEvents.trigger(ENTER_ROOM, { room, participantName });
-  };
-
-  private readonly triggerShareState = (request: IncomingRequest) => {
-    const eventName = request.getHeader(HEADER_CONTENT_SHARE_STATE);
-
-    this.sessionEvents.trigger(SHARE_STATE, eventName);
-  };
-
-  private readonly maybeTriggerParticipantMoveRequest = (request: IncomingRequest) => {
-    const participantState = request.getHeader(HEADER_CONTENT_PARTICIPANT_STATE);
-
-    if (participantState === SPECTATOR) {
-      this.sessionEvents.trigger(PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS, undefined);
-    }
-
-    if (participantState === PARTICIPANT) {
-      this.sessionEvents.trigger(PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS, undefined);
-    }
-  };
-
-  private readonly triggerMainCamControl = (request: IncomingRequest) => {
-    const mainCam = request.getHeader(HEADER_MAIN_CAM) as EEventsMainCAM | undefined;
-    const syncState = request.getHeader(HEADER_MEDIA_SYNC) as EEventsSyncMediaState | undefined;
-    const isSyncForced = syncState === EEventsSyncMediaState.ADMIN_SYNC_FORCED;
-
-    if (mainCam === EEventsMainCAM.ADMIN_START_MAIN_CAM) {
-      this.sessionEvents.trigger(ADMIN_START_MAIN_CAM, { isSyncForced });
-
-      return;
-    }
-
-    if (mainCam === EEventsMainCAM.ADMIN_STOP_MAIN_CAM) {
-      this.sessionEvents.trigger(ADMIN_STOP_MAIN_CAM, { isSyncForced });
-
-      return;
-    }
-
-    if (
-      (mainCam === EEventsMainCAM.RESUME_MAIN_CAM || mainCam === EEventsMainCAM.PAUSE_MAIN_CAM) &&
-      syncState !== undefined
-    ) {
-      this.sessionEvents.trigger(ADMIN_FORCE_SYNC_MEDIA_STATE, { isSyncForced });
-    }
-
-    const resolutionMainCam = request.getHeader(HEADER_MAIN_CAM_RESOLUTION);
-
-    this.sessionEvents.trigger(MAIN_CAM_CONTROL, {
-      mainCam,
-      resolutionMainCam,
-    });
-  };
-
-  private readonly triggerMicControl = (request: IncomingRequest) => {
-    const mic = request.getHeader(HEADER_MIC) as EEventsMic | undefined;
-    const syncState = request.getHeader(HEADER_MEDIA_SYNC) as EEventsSyncMediaState | undefined;
-    const isSyncForced = syncState === EEventsSyncMediaState.ADMIN_SYNC_FORCED;
-
-    if (mic === EEventsMic.ADMIN_START_MIC) {
-      this.sessionEvents.trigger(ADMIN_START_MIC, { isSyncForced });
-    } else if (mic === EEventsMic.ADMIN_STOP_MIC) {
-      this.sessionEvents.trigger(ADMIN_STOP_MIC, { isSyncForced });
-    }
-  };
-
-  private readonly triggerUseLicense = (request: IncomingRequest) => {
-    const license: EUseLicense = request.getHeader(HEADER_CONTENT_USE_LICENSE) as EUseLicense;
-
-    this.sessionEvents.trigger(USE_LICENSE, license);
-  };
-
-  private readonly handleNewInfo = (info: IncomingInfoEvent | OutgoingInfoEvent) => {
-    const { originator } = info;
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-    if (originator !== Originator.REMOTE) {
-      return;
-    }
-
-    const { request } = info;
-    const contentType = request.getHeader(HEADER_CONTENT_TYPE_NAME);
-
-    if (contentType) {
-      switch (contentType) {
-        case CONTENT_TYPE_ENTER_ROOM: {
-          this.triggerEnterRoom(request);
-          this.maybeTriggerChannels(request);
-          break;
-        }
-        case CONTENT_TYPE_NOTIFY: {
-          this.maybeHandleNotify(request);
-          break;
-        }
-        case CONTENT_TYPE_SHARE_STATE: {
-          this.triggerShareState(request);
-          break;
-        }
-        case CONTENT_TYPE_MAIN_CAM: {
-          this.triggerMainCamControl(request);
-          break;
-        }
-        case CONTENT_TYPE_MIC: {
-          this.triggerMicControl(request);
-          break;
-        }
-        case CONTENT_TYPE_USE_LICENSE: {
-          this.triggerUseLicense(request);
-          break;
-        }
-        case CONTENT_TYPE_PARTICIPANT_STATE: {
-          this.maybeTriggerParticipantMoveRequest(request);
-          break;
-        }
-
-        default: {
-          break;
-        }
-      }
-    }
-  };
-
-  private readonly handleSipEvent = ({ request }: { request: IncomingRequest }) => {
-    this.maybeHandleNotify(request);
-  };
-
-  private readonly maybeHandleNotify = (request: IncomingRequest) => {
-    const headerNotify = request.getHeader(HEADER_NOTIFY);
-
-    if (headerNotify) {
-      const headerNotifyParsed = JSON.parse(headerNotify) as TInfoNotify;
-
-      this.handleNotify(headerNotifyParsed);
-    }
-  };
-
-  private readonly handleEnded = (error: TCustomError) => {
-    const { originator } = error;
-
-    if (originator === Originator.REMOTE) {
-      this.sessionEvents.trigger(ENDED_FROM_SERVER, error);
-    }
-
-    this.restoreSession();
-  };
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public offApi<T>(eventName: TApiEvent, handler: (data: T) => void) {
+    this.apiManager.off<T>(eventName, handler);
+  }
 }
+
+export default SipConnector;

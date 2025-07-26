@@ -31,7 +31,7 @@ describe('events', () => {
     expect.assertions(1);
 
     const promise = new Promise((resolve) => {
-      sipConnector.onSession('availableSecondRemoteStream', resolve);
+      sipConnector.onApi('availableSecondRemoteStream', resolve);
     });
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -41,10 +41,10 @@ describe('events', () => {
       [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_SHARE_STATE],
       [HEADER_CONTENT_SHARE_STATE, AVAILABLE_SECOND_REMOTE_STREAM],
     ];
-    const { rtcSession } = sipConnector;
+    const { establishedRTCSession } = sipConnector.callManager;
 
-    if (rtcSession) {
-      JsSIP.triggerNewInfo(rtcSession, extraHeaders);
+    if (establishedRTCSession) {
+      JsSIP.triggerNewInfo(establishedRTCSession, extraHeaders);
     }
 
     return expect(promise).resolves.toBeUndefined();
@@ -54,7 +54,7 @@ describe('events', () => {
     expect.assertions(1);
 
     const promise = new Promise((resolve) => {
-      sipConnector.onSession('notAvailableSecondRemoteStream', resolve);
+      sipConnector.onApi('notAvailableSecondRemoteStream', resolve);
     });
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -64,10 +64,10 @@ describe('events', () => {
       [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_SHARE_STATE],
       [HEADER_CONTENT_SHARE_STATE, NOT_AVAILABLE_SECOND_REMOTE_STREAM],
     ];
-    const { rtcSession } = sipConnector;
+    const { establishedRTCSession } = sipConnector.callManager;
 
-    if (rtcSession) {
-      JsSIP.triggerNewInfo(rtcSession, extraHeaders);
+    if (establishedRTCSession) {
+      JsSIP.triggerNewInfo(establishedRTCSession, extraHeaders);
     }
 
     return expect(promise).resolves.toBeUndefined();
@@ -77,7 +77,7 @@ describe('events', () => {
     expect.assertions(1);
 
     const promise = new Promise((resolve) => {
-      sipConnector.onSession('mustStopPresentation', resolve);
+      sipConnector.onApi('mustStopPresentation', resolve);
     });
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -87,10 +87,10 @@ describe('events', () => {
       [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_SHARE_STATE],
       [HEADER_CONTENT_SHARE_STATE, MUST_STOP_PRESENTATION],
     ];
-    const { rtcSession } = sipConnector;
+    const { establishedRTCSession } = sipConnector.callManager;
 
-    if (rtcSession) {
-      JsSIP.triggerNewInfo(rtcSession, extraHeaders);
+    if (establishedRTCSession) {
+      JsSIP.triggerNewInfo(establishedRTCSession, extraHeaders);
     }
 
     return expect(promise).resolves.toBeUndefined();

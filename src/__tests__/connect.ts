@@ -1,19 +1,19 @@
 /// <reference types="jest" />
 import {
-  SIP_SERVER_URL,
   dataForConnectionWithAuthorization,
   dataForConnectionWithAuthorizationWithDisplayName,
   dataForConnectionWithoutAuthorization,
   dataForConnectionWithoutAuthorizationWithoutDisplayName,
   extraHeadersRemoteAddress,
   remoteAddress,
+  SIP_SERVER_URL,
   uaConfigurationWithAuthorization,
   uaConfigurationWithAuthorizationWithDisplayName,
   uaConfigurationWithoutAuthorization,
   uaConfigurationWithoutAuthorizationWithoutDisplayName,
 } from '../__fixtures__';
 import UAMock, { createWebsocketHandshakeTimeoutError } from '../__fixtures__/UA.mock';
-import { doMockSipConnector } from '../doMock';
+import { doMockSipConnector, JsSIP } from '../doMock';
 import type SipConnector from '../SipConnector';
 import { uriWithName } from '../tools/__fixtures__/connectToServer';
 
@@ -148,7 +148,7 @@ describe('connect', () => {
 
     const connectPromise = sipConnector.connect(dataForConnectionWithAuthorization);
 
-    expect(sipConnector.getConnectionConfiguration().answer).toBe(undefined);
+    expect(sipConnector.getCallConfiguration().answer).toBe(undefined);
 
     const connectionConfiguration = sipConnector.getConnectionConfiguration();
 
@@ -161,54 +161,6 @@ describe('connect', () => {
     expect(connectionConfiguration.password).toBe(dataForConnectionWithAuthorization.password);
 
     return connectPromise;
-  });
-
-  it('должен устанавливать пароль после подключения с авторизацией', async () => {
-    expect.assertions(3);
-
-    try {
-      await sipConnector.connect({
-        ...dataForConnectionWithAuthorizationWithDisplayName,
-        password: wrongPassword,
-      });
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.log('error', error);
-    }
-
-    expect(sipConnector.getConnectionConfiguration().password).toBe(wrongPassword);
-
-    await sipConnector.set({
-      password: dataForConnectionWithAuthorizationWithDisplayName.password,
-    });
-
-    expect(sipConnector.getConnectionConfiguration().password).toBe(
-      dataForConnectionWithAuthorizationWithDisplayName.password,
-    );
-    expect(sipConnector.ua?.configuration).toEqual(uaConfigurationWithAuthorizationWithDisplayName);
-  });
-
-  it('должен устанавливать тот же пароль после подключения с авторизацией', async () => {
-    expect.assertions(3);
-
-    await sipConnector.connect(dataForConnectionWithAuthorizationWithDisplayName);
-
-    return sipConnector
-      .set({
-        password: dataForConnectionWithAuthorizationWithDisplayName.password,
-      })
-      .catch((error: unknown) => {
-        // eslint-disable-next-line jest/no-conditional-expect
-        expect(error).toEqual(new Error('nothing changed'));
-        // eslint-disable-next-line jest/no-conditional-expect
-        expect(sipConnector.getConnectionConfiguration().password).toBe(
-          dataForConnectionWithAuthorizationWithDisplayName.password,
-        );
-        // eslint-disable-next-line jest/no-conditional-expect
-        expect(sipConnector.ua?.configuration).toEqual(
-          uaConfigurationWithAuthorizationWithDisplayName,
-        );
-      });
   });
 
   it('должен устанавливать displayName после подключения с авторизацией', async () => {
@@ -270,12 +222,14 @@ describe('connect', () => {
     expect.assertions(2);
 
     UAMock.setStartError(websocketHandshakeTimeoutError);
+    JsSIP.UA = UAMock;
 
-    // @ts-expect-error
-    sipConnector.JsSIP.UA = UAMock;
-
-    // @ts-expect-error
-    const requestConnectMocked = jest.spyOn(sipConnector, 'connectInner');
+    const requestConnectMocked = jest.spyOn(
+      // @ts-expect-error
+      sipConnector.connectionManager.connectionFlow,
+      // @ts-expect-error
+      'connectInner',
+    );
 
     try {
       await sipConnector.connect(dataForConnectionWithoutAuthorization, {
@@ -294,11 +248,14 @@ describe('connect', () => {
 
     UAMock.setStartError(websocketHandshakeTimeoutError, { count: 2 });
 
-    // @ts-expect-error
-    sipConnector.JsSIP.UA = UAMock;
+    JsSIP.UA = UAMock;
 
-    // @ts-expect-error
-    const requestConnectMocked = jest.spyOn(sipConnector, 'connectInner');
+    const requestConnectMocked = jest.spyOn(
+      // @ts-expect-error
+      sipConnector.connectionManager.connectionFlow,
+      // @ts-expect-error
+      'connectInner',
+    );
 
     const ua = await sipConnector.connect(dataForConnectionWithAuthorization, {
       callLimit: connectCallLimit,

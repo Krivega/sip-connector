@@ -29,13 +29,13 @@ describe('media state: resolveOnStartMic', () => {
     onStartMic(handlerOnStartMic);
 
     // @ts-expect-error
-    sipConnector.sessionEvents.trigger('admin-start-mic', syncModeForced);
+    sipConnector.apiManager.events.trigger('admin-start-mic', syncModeForced);
 
     expect(handlerOnStartMic).toHaveBeenCalledTimes(1);
     expect(handlerOnStartMic).toHaveBeenCalledWith(syncModeForced);
 
     // @ts-expect-error
-    sipConnector.sessionEvents.trigger('admin-start-mic', syncModeNotForced);
+    sipConnector.apiManager.events.trigger('admin-start-mic', syncModeNotForced);
 
     expect(handlerOnStartMic).toHaveBeenCalledTimes(2);
     expect(handlerOnStartMic).toHaveBeenCalledWith(syncModeNotForced);
@@ -47,14 +47,14 @@ describe('media state: resolveOnStartMic', () => {
     offStartMic = onStartMic(handlerOnStartMic);
 
     // @ts-expect-error
-    sipConnector.sessionEvents.trigger('admin-start-mic', syncModeForced);
+    sipConnector.apiManager.events.trigger('admin-start-mic', syncModeForced);
 
     expect(handlerOnStartMic).toHaveBeenCalledTimes(1);
 
     offStartMic();
 
     // @ts-expect-error
-    sipConnector.sessionEvents.trigger('admin-start-mic', syncModeForced);
+    sipConnector.apiManager.events.trigger('admin-start-mic', syncModeForced);
 
     expect(handlerOnStartMic).toHaveBeenCalledTimes(1);
   });

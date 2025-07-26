@@ -47,7 +47,9 @@ class PresentationManager {
     return !!this.promisePendingStartPresentation || !!this.promisePendingStopPresentation;
   }
 
+  // eslint-disable-next-line @typescript-eslint/max-params
   public async startPresentation(
+    beforeStartPresentation: () => Promise<void>,
     stream: MediaStream,
     {
       isNeedReinvite,
@@ -70,7 +72,7 @@ class PresentationManager {
       throw new Error('Presentation is already started');
     }
 
-    return this.sendPresentationWithDuplicatedCalls({
+    return this.sendPresentationWithDuplicatedCalls(beforeStartPresentation, {
       rtcSession,
       stream,
       presentationOptions: {
@@ -84,7 +86,9 @@ class PresentationManager {
     });
   }
 
-  public async stopPresentation(): Promise<MediaStream | undefined> {
+  public async stopPresentation(
+    beforeStopPresentation: () => Promise<void>,
+  ): Promise<MediaStream | undefined> {
     this.cancelSendPresentationWithRepeatedCalls();
 
     const streamPresentationPrevious = this.streamPresentationCurrent;
@@ -93,11 +97,15 @@ class PresentationManager {
     const rtcSession = this.callManager.getEstablishedRTCSession();
 
     if (rtcSession && streamPresentationPrevious) {
-      result = rtcSession.stopPresentation(streamPresentationPrevious).catch((error: unknown) => {
-        this.events.trigger(EEvent.FAILED_PRESENTATION, error);
+      result = beforeStopPresentation()
+        .then(async () => {
+          return rtcSession.stopPresentation(streamPresentationPrevious);
+        })
+        .catch((error: unknown) => {
+          this.events.trigger(EEvent.FAILED_PRESENTATION, error);
 
-        throw error;
-      });
+          throw error;
+        });
     } else if (streamPresentationPrevious) {
       this.events.trigger(EEvent.ENDED_PRESENTATION, streamPresentationPrevious);
     }
@@ -110,6 +118,7 @@ class PresentationManager {
   }
 
   public async updatePresentation(
+    beforeStartPresentation: () => Promise<void>,
     stream: MediaStream,
     {
       // maxBitrate,
@@ -134,7 +143,7 @@ class PresentationManager {
       await this.promisePendingStartPresentation;
     }
 
-    return this.sendPresentation(rtcSession, stream, {
+    return this.sendPresentation(beforeStartPresentation, rtcSession, stream, {
       // maxBitrate,
       contentHint,
       isNeedReinvite: false,
@@ -192,27 +201,35 @@ class PresentationManager {
     this.callManager.on('ended', this.handleEnded);
   }
 
-  private async sendPresentationWithDuplicatedCalls({
-    rtcSession,
-    stream,
-    presentationOptions,
-    options = {
-      callLimit: SEND_PRESENTATION_CALL_LIMIT,
+  private async sendPresentationWithDuplicatedCalls(
+    beforeStartPresentation: () => Promise<void>,
+    {
+      rtcSession,
+      stream,
+      presentationOptions,
+      options = {
+        callLimit: SEND_PRESENTATION_CALL_LIMIT,
+      },
+    }: {
+      rtcSession: RTCSession;
+      stream: MediaStream;
+      presentationOptions: {
+        isNeedReinvite?: boolean;
+        maxBitrate?: number;
+        contentHint?: TContentHint;
+        sendEncodings?: RTCRtpEncodingParameters[];
+        onAddedTransceiver?: TOnAddedTransceiver;
+      };
+      options?: { callLimit: number };
     },
-  }: {
-    rtcSession: RTCSession;
-    stream: MediaStream;
-    presentationOptions: {
-      isNeedReinvite?: boolean;
-      maxBitrate?: number;
-      contentHint?: TContentHint;
-      sendEncodings?: RTCRtpEncodingParameters[];
-      onAddedTransceiver?: TOnAddedTransceiver;
-    };
-    options?: { callLimit: number };
-  }) {
+  ) {
     const targetFunction = async () => {
-      return this.sendPresentation(rtcSession, stream, presentationOptions);
+      return this.sendPresentation(
+        beforeStartPresentation,
+        rtcSession,
+        stream,
+        presentationOptions,
+      );
     };
 
     const isComplete = (): boolean => {
@@ -231,7 +248,9 @@ class PresentationManager {
     });
   }
 
+  // eslint-disable-next-line @typescript-eslint/max-params
   private async sendPresentation(
+    beforeStartPresentation: () => Promise<void>,
     rtcSession: RTCSession,
     stream: MediaStream,
     {
@@ -256,10 +275,12 @@ class PresentationManager {
 
     this.streamPresentationCurrent = streamPresentationTarget;
 
-    const result = rtcSession
-      .startPresentation(streamPresentationTarget, isNeedReinvite, {
-        sendEncodings,
-        onAddedTransceiver,
+    const result = beforeStartPresentation()
+      .then(async () => {
+        return rtcSession.startPresentation(streamPresentationTarget, isNeedReinvite, {
+          sendEncodings,
+          onAddedTransceiver,
+        });
       })
       // .then(async () => {
       //   const { connection } = this;

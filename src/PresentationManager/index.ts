@@ -1,1 +1,4 @@
-export { default as PresentationManager } from './@PresentationManager';
+export {
+  hasCanceledStartPresentationError,
+  default as PresentationManager,
+} from './@PresentationManager';

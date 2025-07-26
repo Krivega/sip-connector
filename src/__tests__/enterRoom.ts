@@ -27,15 +27,15 @@ describe('enter room', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<{ room: string; participantName: string }>((resolve) => {
-      sipConnector.onSession('enterRoom', (data: { room: string; participantName: string }) => {
+      sipConnector.onApi('enterRoom', (data: { room: string; participantName: string }) => {
         resolve(data);
       });
     });
 
-    const { rtcSession } = sipConnector;
+    const { establishedRTCSession } = sipConnector.callManager;
 
-    if (rtcSession) {
-      JsSIP.triggerNewInfo(rtcSession, enterRoomHeaders);
+    if (establishedRTCSession) {
+      JsSIP.triggerNewInfo(establishedRTCSession, enterRoomHeaders);
     }
 
     return promise.then((data) => {

@@ -29,10 +29,10 @@ describe('channels', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = sipConnector.waitChannels();
-    const { rtcSession } = sipConnector;
+    const { establishedRTCSession } = sipConnector.callManager;
 
-    if (rtcSession) {
-      JsSIP.triggerNewInfo(rtcSession, channelsHeaders);
+    if (establishedRTCSession) {
+      JsSIP.triggerNewInfo(establishedRTCSession, channelsHeaders);
     }
 
     return promise.then((channels) => {
@@ -48,9 +48,8 @@ describe('channels', () => {
 
     mockFunction = jest.fn(() => {});
 
-    // @ts-expect-error
-    // eslint-disable-next-line require-atomic-updates
-    sipConnector.rtcSession.sendInfo = mockFunction;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    sipConnector.callManager.establishedRTCSession!.sendInfo = mockFunction;
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sipConnector.sendChannels(channelsData);

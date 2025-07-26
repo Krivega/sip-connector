@@ -46,13 +46,12 @@ describe('use license', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<EUseLicense>((resolve) => {
-      // eslint-disable-next-line no-promise-executor-return
-      return sipConnector.onSession(USE_LICENSE, resolve);
+      sipConnector.onApi('useLicense', resolve);
     });
-    const { rtcSession } = sipConnector;
+    const { establishedRTCSession } = sipConnector;
 
-    if (rtcSession) {
-      JsSIP.triggerNewInfo(rtcSession, headersUseLicenseAudio);
+    if (establishedRTCSession) {
+      JsSIP.triggerNewInfo(establishedRTCSession, headersUseLicenseAudio);
     }
 
     return promise.then((license: EUseLicense) => {
@@ -65,13 +64,12 @@ describe('use license', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<EUseLicense>((resolve) => {
-      // eslint-disable-next-line no-promise-executor-return
-      return sipConnector.onSession(USE_LICENSE, resolve);
+      sipConnector.onApi('useLicense', resolve);
     });
-    const { rtcSession } = sipConnector;
+    const { establishedRTCSession } = sipConnector;
 
-    if (rtcSession) {
-      JsSIP.triggerNewInfo(rtcSession, headersUseLicenseVideo);
+    if (establishedRTCSession) {
+      JsSIP.triggerNewInfo(establishedRTCSession, headersUseLicenseVideo);
     }
 
     return promise.then((license: EUseLicense) => {
@@ -84,13 +82,12 @@ describe('use license', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<EUseLicense>((resolve) => {
-      // eslint-disable-next-line no-promise-executor-return
-      return sipConnector.onSession(USE_LICENSE, resolve);
+      sipConnector.onApi(USE_LICENSE, resolve);
     });
-    const { rtcSession } = sipConnector;
+    const { establishedRTCSession } = sipConnector;
 
-    if (rtcSession) {
-      JsSIP.triggerNewInfo(rtcSession, headersUseLicenseAudioPlusPresentation);
+    if (establishedRTCSession) {
+      JsSIP.triggerNewInfo(establishedRTCSession, headersUseLicenseAudioPlusPresentation);
     }
 
     return promise.then((license: EUseLicense) => {

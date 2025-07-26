@@ -8,9 +8,7 @@ export * from './types';
 export { default as getCodecFromSender } from './utils/getCodecFromSender';
 export { default as resolveVideoSendingBalancer } from './videoSendingBalancer';
 
-export {
-  hasCanceledCallError,
-  hasCanceledStartPresentationError,
-  default as SipConnector,
-} from './SipConnector';
+export { hasCanceledCallError } from './CallManager';
+export { hasCanceledStartPresentationError } from './PresentationManager';
+export { default as SipConnector } from './SipConnector';
 export { SipConnectorFacade } from './SipConnectorFacade';

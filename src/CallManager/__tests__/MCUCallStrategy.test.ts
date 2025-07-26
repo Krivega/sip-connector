@@ -63,7 +63,7 @@ describe('MCUCallStrategy', () => {
   });
 
   it('endCall: вызывает reset и terminateAsync', async () => {
-    const terminateAsync = jest.fn();
+    const terminateAsync = jest.fn(async () => {});
 
     (strategy as unknown as { rtcSession: RTCSession }).rtcSession = {
       isEnded: () => {

@@ -3,9 +3,9 @@ import { createMediaStreamMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import delayPromise from '../__fixtures__/delayPromise';
 import { FAILED_CONFERENCE_NUMBER } from '../__fixtures__/jssip.mock';
+import { hasCanceledCallError } from '../CallManager';
 import { doMockSipConnector } from '../doMock';
 import type SipConnector from '../SipConnector';
-import { hasCanceledCallError } from '../SipConnector';
 
 describe('call', () => {
   let sipConnector: SipConnector;
@@ -32,10 +32,12 @@ describe('call', () => {
     expect(peerconnection).toBeDefined();
     // @ts-expect-error
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(sipConnector.ua.call.mock.calls.length).toBe(1);
+    expect(sipConnector.connectionManager.ua.call.mock.calls.length).toBe(1);
     // @ts-expect-error
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(sipConnector.ua.call.mock.calls[0][0]).toBe('sip:10000@SIP_SERVER_URL');
+    expect(sipConnector.connectionManager.ua.call.mock.calls[0][0]).toBe(
+      'sip:10000@SIP_SERVER_URL',
+    );
   });
 
   it('connectionConfiguration after call', async () => {
@@ -43,14 +45,15 @@ describe('call', () => {
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
-    expect(sipConnector.getConnectionConfiguration().answer).toBe(undefined);
+    expect(sipConnector.callManager.getCallConfiguration().answer).toBe(undefined);
 
     const number = '10000';
     const callPromise = sipConnector.call({ number, mediaStream, ontrack: mockFunction });
-    const connectionConfiguration = sipConnector.getConnectionConfiguration();
+    const connectionConfiguration = sipConnector.connectionManager.getConnectionConfiguration();
+    const callConfiguration = sipConnector.callManager.getCallConfiguration();
 
-    expect(connectionConfiguration.number).toBe(number);
-    expect(connectionConfiguration.answer).toBe(false);
+    expect(callConfiguration.number).toBe(number);
+    expect(callConfiguration.answer).toBe(false);
     expect(connectionConfiguration.sipServerUrl).toBe(
       dataForConnectionWithAuthorization.sipServerUrl,
     );
@@ -123,20 +126,20 @@ describe('call', () => {
     const number = '10000';
 
     const endedPromise = new Promise((resolve) => {
-      sipConnector.onceSession('ended', resolve);
+      sipConnector.onceCall('ended', resolve);
     });
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    sipConnector.hangUp();
+
+    await sipConnector.hangUp();
     await endedPromise;
     await delayPromise(100); // wait restore rtcSession
 
-    const connectionConfiguration = sipConnector.getConnectionConfiguration();
+    const callConfiguration = sipConnector.getCallConfiguration();
 
-    expect(sipConnector.rtcSession).toBe(undefined);
-    expect(connectionConfiguration.number).toBe(undefined);
+    expect(sipConnector.callManager.establishedRTCSession).toBe(undefined);
+    expect(callConfiguration.number).toBe(undefined);
   });
 
   it('disconnect after end call from server', async () => {
@@ -144,7 +147,7 @@ describe('call', () => {
 
     const number = '10000';
     const disconnectPromise = new Promise((resolve, reject) => {
-      sipConnector.onceSession('ended', () => {
+      sipConnector.onceCall('ended', () => {
         // order is important!!!
         sipConnector
           .disconnect()
@@ -158,7 +161,7 @@ describe('call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
-    sipConnector.rtcSession?.terminate(); // end call from server
+    sipConnector.callManager.establishedRTCSession?.terminate(); // end call from server
 
     return expect(disconnectPromise).resolves.toBeUndefined();
   });
@@ -170,7 +173,7 @@ describe('call', () => {
 
     // order is important!!!
     const disconnectPromise = new Promise((resolve, reject) => {
-      sipConnector.onceSession('failed', () => {
+      sipConnector.onceCall('failed', () => {
         // order is important!!!
         sipConnector
           .disconnect()
@@ -248,7 +251,7 @@ describe('call', () => {
 
     await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
-    sipConnector.rtcSession?.terminate(); // end call from server
+    sipConnector.callManager.establishedRTCSession?.terminate(); // end call from server
 
     return sipConnector.disconnect().then((result) => {
       expect(result).toBeUndefined();
@@ -256,27 +259,28 @@ describe('call', () => {
   });
 
   it('Clean up remoteStreams after end call from server', async () => {
-    expect.assertions(1);
+    expect.assertions(2);
 
-    const remoteStreams = {};
     const number = '10000';
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
     const disconnectPromise = new Promise<void>((resolve) => {
-      sipConnector.onceSession('ended', () => {
+      sipConnector.onceCall('ended', () => {
         resolve();
       });
     });
 
-    sipConnector.getRemoteStreams(); // for fill media streams in sipConnector.remoteStreams
-    sipConnector.rtcSession?.terminate(); // end call from server
+    // for fill media streams in sipConnector.remoteStreams
 
-    return disconnectPromise.then(() => {
-      // @ts-expect-error
-      expect(sipConnector.remoteStreams).toEqual(remoteStreams);
-    });
+    expect(sipConnector.getRemoteStreams()).toBeDefined();
+
+    sipConnector.callManager.establishedRTCSession?.terminate(); // end call from server
+
+    await disconnectPromise;
+
+    expect(sipConnector.getRemoteStreams()).toBe(undefined);
   });
 
   it('end call from server', async () => {
@@ -289,12 +293,12 @@ describe('call', () => {
     await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
     const endedFromServer = new Promise((resolve) => {
-      sipConnector.onSession('ended:fromserver', resolve);
+      sipConnector.onCall('ended:fromserver', resolve);
     });
 
     // @ts-expect-error
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    sipConnector.rtcSession?.terminateRemote();
+    sipConnector.callManager.establishedRTCSession?.terminateRemote();
 
     return expect(endedFromServer).resolves.toEqual(data);
   });
@@ -310,7 +314,7 @@ describe('call', () => {
 
     // @ts-expect-error
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const parameters = sipConnector.ua.call.mock.calls[0][1] as {
+    const parameters = sipConnector.connectionManager.ua.call.mock.calls[0][1] as {
       directionVideo: string;
       directionAudio: string;
       mediaStream: MediaStream;
@@ -338,7 +342,7 @@ describe('call', () => {
 
     // @ts-expect-error
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const parameters = sipConnector.ua.call.mock.calls[0][1] as {
+    const parameters = sipConnector.connectionManager.ua.call.mock.calls[0][1] as {
       directionVideo: string;
       directionAudio: string;
       mediaStream: MediaStream;
@@ -366,7 +370,7 @@ describe('call', () => {
 
     // @ts-expect-error
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const parameters = sipConnector.ua.call.mock.calls[0][1] as {
+    const parameters = sipConnector.connectionManager.ua.call.mock.calls[0][1] as {
       directionVideo: string;
       directionAudio: string;
       mediaStream: MediaStream;
@@ -395,7 +399,7 @@ describe('call', () => {
 
     // @ts-expect-error
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const parameters = sipConnector.ua.call.mock.calls[0][1] as {
+    const parameters = sipConnector.connectionManager.ua.call.mock.calls[0][1] as {
       directionVideo: string;
       directionAudio: string;
       mediaStream: MediaStream;

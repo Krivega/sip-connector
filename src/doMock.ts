@@ -11,3 +11,5 @@ export const doMockSipConnector = () => {
     JsSIP: JsSIP as unknown as TJsSIP,
   });
 };
+
+export { default as JsSIP } from './__fixtures__/jssip.mock';

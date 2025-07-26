@@ -2,8 +2,8 @@
 /// <reference types="jest" />
 import JsSIP from '../../__fixtures__/jssip.mock';
 import remoteCallerData from '../../__fixtures__/remoteCallerData';
-import { doMockSipConnector } from '../../doMock.new';
-import type SipConnector from '../../SipConnector.new';
+import { doMockSipConnector } from '../../doMock';
+import type SipConnector from '../../SipConnector';
 import dataCall from '../../tools/__fixtures__/call';
 import { dataForConnectionWithAuthorization } from '../../tools/__fixtures__/connectToServer';
 import SipConnectorFacade from '../SipConnectorFacade';

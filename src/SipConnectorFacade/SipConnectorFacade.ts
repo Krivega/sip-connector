@@ -4,7 +4,7 @@ import type { UA } from '@krivega/jssip';
 import { hasCanceledError } from 'repeated-calls';
 import { debounce } from 'ts-debounce';
 import log, { debug } from '../logger';
-import type SipConnector from '../SipConnector.new';
+import type SipConnector from '../SipConnector';
 import generateSimulcastEncodings from '../tools/generateSimulcastEncodings';
 import hasPurgatory from '../tools/hasPurgatory';
 import resolveUpdateTransceiver from '../tools/resolveUpdateTransceiver';

@@ -31,6 +31,10 @@ export class MCUCallStrategy extends AbstractCallStrategy {
     return connection;
   }
 
+  public get isCallActive(): boolean {
+    return this.rtcSession?.isEstablished() === true;
+  }
+
   public get establishedRTCSession(): RTCSession | undefined {
     return this.rtcSession?.isEstablished() === true ? this.rtcSession : undefined;
   }
@@ -93,15 +97,17 @@ export class MCUCallStrategy extends AbstractCallStrategy {
   public async endCall(): Promise<void> {
     const { rtcSession } = this;
 
-    if (rtcSession) {
-      this.reset();
-
-      if (!rtcSession.isEnded()) {
-        return rtcSession.terminateAsync({
+    if (rtcSession && !rtcSession.isEnded()) {
+      return rtcSession
+        .terminateAsync({
           cause: ECallCause.CANCELED,
+        })
+        .finally(() => {
+          this.reset();
         });
-      }
     }
+
+    this.reset();
 
     return undefined;
   }
@@ -318,5 +324,7 @@ export class MCUCallStrategy extends AbstractCallStrategy {
     delete this.rtcSession;
     this.remoteStreamsManager.reset();
     this.unsubscribeFromSessionEvents();
+    this.callConfiguration.number = undefined;
+    this.callConfiguration.answer = false;
   };
 }

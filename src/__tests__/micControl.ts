@@ -36,13 +36,12 @@ describe('mic control', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
-      // eslint-disable-next-line no-promise-executor-return
-      return sipConnector.onSession('admin-start-mic', resolve);
+      sipConnector.onApi('admin-start-mic', resolve);
     });
-    const { rtcSession } = sipConnector;
+    const { establishedRTCSession } = sipConnector;
 
-    if (rtcSession) {
-      JsSIP.triggerNewInfo(rtcSession, headersAdminStartMic);
+    if (establishedRTCSession) {
+      JsSIP.triggerNewInfo(establishedRTCSession, headersAdminStartMic);
     }
 
     return promise.then(({ isSyncForced }) => {
@@ -55,13 +54,12 @@ describe('mic control', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
-      // eslint-disable-next-line no-promise-executor-return
-      return sipConnector.onSession('admin-stop-mic', resolve);
+      sipConnector.onApi('admin-stop-mic', resolve);
     });
-    const { rtcSession } = sipConnector;
+    const { establishedRTCSession } = sipConnector;
 
-    if (rtcSession) {
-      JsSIP.triggerNewInfo(rtcSession, headersAdminStopMic);
+    if (establishedRTCSession) {
+      JsSIP.triggerNewInfo(establishedRTCSession, headersAdminStopMic);
     }
 
     return promise.then(({ isSyncForced }) => {

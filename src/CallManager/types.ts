@@ -53,7 +53,7 @@ export interface ICallStrategy {
   readonly requested: boolean;
   readonly connection: RTCPeerConnection | undefined;
   readonly establishedRTCSession: RTCSession | undefined;
-
+  readonly isCallActive: boolean;
   // Методы
   startCall: (
     ua: UA,

@@ -1,9 +1,7 @@
-/* eslint-disable no-promise-executor-return */
 /// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
-import { ADMIN_START_MAIN_CAM, ADMIN_STOP_MAIN_CAM, MAIN_CAM_CONTROL } from '../constants';
 import { doMockSipConnector } from '../doMock';
 import {
   CONTENT_TYPE_MAIN_CAM,
@@ -60,13 +58,13 @@ describe('main cam control', () => {
 
     const promise = new Promise<{ mainCam: EEventsMainCAM; resolutionMainCam: string }>(
       (resolve) => {
-        return sipConnector.onSession('main-cam-control', resolve);
+        sipConnector.onApi('main-cam-control', resolve);
       },
     );
-    const { rtcSession } = sipConnector;
+    const { establishedRTCSession } = sipConnector.callManager;
 
-    if (rtcSession) {
-      JsSIP.triggerNewInfo(rtcSession, headersMainCamControl);
+    if (establishedRTCSession) {
+      JsSIP.triggerNewInfo(establishedRTCSession, headersMainCamControl);
     }
 
     return promise.then(({ mainCam, resolutionMainCam }) => {
@@ -80,12 +78,12 @@ describe('main cam control', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
-      return sipConnector.onSession(ADMIN_START_MAIN_CAM, resolve);
+      sipConnector.onApi('admin-start-main-cam', resolve);
     });
-    const { rtcSession } = sipConnector;
+    const { establishedRTCSession } = sipConnector.callManager;
 
-    if (rtcSession) {
-      JsSIP.triggerNewInfo(rtcSession, headersAdminStartMainCam);
+    if (establishedRTCSession) {
+      JsSIP.triggerNewInfo(establishedRTCSession, headersAdminStartMainCam);
     }
 
     return promise.then(({ isSyncForced }) => {
@@ -98,12 +96,12 @@ describe('main cam control', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
-      return sipConnector.onSession(ADMIN_STOP_MAIN_CAM, resolve);
+      sipConnector.onApi('admin-stop-main-cam', resolve);
     });
-    const { rtcSession } = sipConnector;
+    const { establishedRTCSession } = sipConnector;
 
-    if (rtcSession) {
-      JsSIP.triggerNewInfo(rtcSession, headersAdminStopMainCam);
+    if (establishedRTCSession) {
+      JsSIP.triggerNewInfo(establishedRTCSession, headersAdminStopMainCam);
     }
 
     return promise.then(({ isSyncForced }) => {
@@ -117,14 +115,14 @@ describe('main cam control', () => {
 
     const promise = new Promise<{ mainCam: EEventsMainCAM; resolutionMainCam?: string }>(
       (resolve) => {
-        return sipConnector.onSession(MAIN_CAM_CONTROL, resolve);
+        sipConnector.onApi('main-cam-control', resolve);
       },
     );
 
-    const { rtcSession } = sipConnector;
+    const { establishedRTCSession } = sipConnector;
 
-    if (rtcSession) {
-      JsSIP.triggerNewInfo(rtcSession, headersResumeMainCam);
+    if (establishedRTCSession) {
+      JsSIP.triggerNewInfo(establishedRTCSession, headersResumeMainCam);
     }
 
     await promise.then(({ mainCam, resolutionMainCam }) => {
@@ -139,14 +137,14 @@ describe('main cam control', () => {
 
     const promise = new Promise<{ mainCam: EEventsMainCAM; resolutionMainCam?: string }>(
       (resolve) => {
-        return sipConnector.onSession(MAIN_CAM_CONTROL, resolve);
+        sipConnector.onApi('main-cam-control', resolve);
       },
     );
 
-    const { rtcSession } = sipConnector;
+    const { establishedRTCSession } = sipConnector;
 
-    if (rtcSession) {
-      JsSIP.triggerNewInfo(rtcSession, headersPauseMainCam);
+    if (establishedRTCSession) {
+      JsSIP.triggerNewInfo(establishedRTCSession, headersPauseMainCam);
     }
 
     await promise.then(({ mainCam, resolutionMainCam }) => {

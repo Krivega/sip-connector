@@ -27,6 +27,10 @@ class CallManager {
     return this.strategy.establishedRTCSession;
   }
 
+  public get isCallActive(): ICallStrategy['isCallActive'] {
+    return this.strategy.isCallActive;
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
   public on<T>(eventName: TEvent, handler: (data: T) => void) {
     return this.events.on<T>(eventName, handler);

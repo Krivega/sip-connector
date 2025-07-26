@@ -43,8 +43,8 @@ describe('processRequest', () => {
     return processRequest(dataForConnectionWithoutAuthorization).then((success) => {
       expect(success).toBe(true);
       expect(sipConnector.isConfigured()).toBe(true);
-      expect(hasValidUri(sipConnector.ua!.configuration.uri)).toBe(true);
-      expect(parseObjectWithoutUri(sipConnector.ua!.configuration)).toEqual(
+      expect(hasValidUri(sipConnector.connectionManager.ua!.configuration.uri)).toBe(true);
+      expect(parseObjectWithoutUri(sipConnector.connectionManager.ua!.configuration)).toEqual(
         uaConfigurationWithoutAuthorization,
       );
     });
@@ -57,8 +57,8 @@ describe('processRequest', () => {
       (success) => {
         expect(success).toBe(true);
         expect(sipConnector.isConfigured()).toBe(true);
-        expect(hasValidUri(sipConnector.ua!.configuration.uri)).toBe(true);
-        expect(parseObjectWithoutUri(sipConnector.ua!.configuration)).toEqual(
+        expect(hasValidUri(sipConnector.connectionManager.ua!.configuration.uri)).toBe(true);
+        expect(parseObjectWithoutUri(sipConnector.connectionManager.ua!.configuration)).toEqual(
           uaConfigurationWithoutAuthorizationWithoutDisplayName,
         );
       },
@@ -77,8 +77,8 @@ describe('processRequest', () => {
       .then((success) => {
         expect(success).toBe(true);
         expect(sipConnector.isConfigured()).toBe(true);
-        expect(hasValidUri(sipConnector.ua!.configuration.uri)).toBe(true);
-        expect(parseObjectWithoutUri(sipConnector.ua!.configuration)).toEqual(
+        expect(hasValidUri(sipConnector.connectionManager.ua!.configuration.uri)).toBe(true);
+        expect(parseObjectWithoutUri(sipConnector.connectionManager.ua!.configuration)).toEqual(
           uaConfigurationWithoutAuthorization,
         );
       });
@@ -99,7 +99,7 @@ describe('processRequest', () => {
       .then((success) => {
         expect(success).toBe(true);
         expect(sipConnector.isConfigured()).toBe(true);
-        expect(parseObjectWithoutUri(sipConnector.ua!.configuration)).toEqual(
+        expect(parseObjectWithoutUri(sipConnector.connectionManager.ua!.configuration)).toEqual(
           uaConfigurationWithoutAuthorizationWithoutDisplayName,
         );
       });
@@ -112,7 +112,9 @@ describe('processRequest', () => {
     return processRequest(dataForConnectionWithAuthorization).then((success) => {
       expect(success).toBe(true);
       expect(sipConnector.isConfigured()).toBe(true);
-      expect(sipConnector.ua!.configuration).toEqual(uaConfigurationWithAuthorization);
+      expect(sipConnector.connectionManager.ua!.configuration).toEqual(
+        uaConfigurationWithAuthorization,
+      );
     });
   });
 
@@ -168,7 +170,7 @@ describe('processRequest', () => {
       })
       .then((success) => {
         expect(success).toBe(true);
-        expect(sipConnector.ua!.configuration.display_name).toBe(thirdWord);
+        expect(sipConnector.connectionManager.ua!.configuration.display_name).toBe(thirdWord);
       });
   });
 
@@ -185,7 +187,7 @@ describe('processRequest', () => {
       displayName: thirdWord,
     }).then((success) => {
       expect(success).toBe(true);
-      expect(sipConnector.ua!.configuration.display_name).toBe(thirdWord);
+      expect(sipConnector.connectionManager.ua!.configuration.display_name).toBe(thirdWord);
     });
   });
 
@@ -207,7 +209,7 @@ describe('processRequest', () => {
     ]).then(([success1, success2]) => {
       expect(success1).toBe(true); // because change Display name hanlded sipConnector.st, - sync fucntion
       expect(success2).toBe(true);
-      expect(sipConnector.ua!.configuration.display_name).toBe(thirdWord);
+      expect(sipConnector.connectionManager.ua!.configuration.display_name).toBe(thirdWord);
     });
   });
 
@@ -222,8 +224,8 @@ describe('processRequest', () => {
       })
       .then((success) => {
         expect(success).toBe(true);
-        expect(sipConnector.ua!.configuration.uri.user).toBe(thirdWord);
-        expect(sipConnector.ua!.configuration.uri.host).toBe(
+        expect(sipConnector.connectionManager.ua!.configuration.uri.user).toBe(thirdWord);
+        expect(sipConnector.connectionManager.ua!.configuration.uri.host).toBe(
           dataForConnectionWithAuthorization.sipServerUrl,
         );
       });
@@ -259,8 +261,8 @@ describe('processRequest', () => {
       ]).then(([success1, success2]) => {
         expect(success1).toBe(false); // cancel first request
         expect(success2).toBe(true);
-        expect(sipConnector.ua!.configuration.uri.user).toBe(thirdWord);
-        expect(sipConnector.ua!.configuration.uri.host).toBe(
+        expect(sipConnector.connectionManager.ua!.configuration.uri.user).toBe(thirdWord);
+        expect(sipConnector.connectionManager.ua!.configuration.uri.host).toBe(
           dataForConnectionWithAuthorization.sipServerUrl,
         );
       });
@@ -282,7 +284,7 @@ describe('processRequest', () => {
       })
       .then((success) => {
         expect(success).toBe(true);
-        expect(sipConnector.ua!.configuration).toEqual(
+        expect(sipConnector.connectionManager.ua!.configuration).toEqual(
           uaConfigurationWithAuthorizationPasswordChanged,
         );
       });
@@ -315,7 +317,7 @@ describe('processRequest', () => {
       })
       .then((success) => {
         expect(success).toBe(true);
-        expect(sipConnector.ua!.configuration).toEqual(
+        expect(sipConnector.connectionManager.ua!.configuration).toEqual(
           uaConfigurationWithAuthorizationPasswordChanged,
         );
       });
@@ -332,7 +334,9 @@ describe('processRequest', () => {
       })
       .then((success) => {
         expect(success).toBe(true);
-        expect(sipConnector.ua!.configuration).toEqual(uaConfigurationWithAuthorization);
+        expect(sipConnector.connectionManager.ua!.configuration).toEqual(
+          uaConfigurationWithAuthorization,
+        );
       });
   });
 
@@ -347,7 +351,7 @@ describe('processRequest', () => {
         expect(success).toBe(true);
         expect(
           hasValidUri(
-            sipConnector.ua!.configuration.uri,
+            sipConnector.connectionManager.ua!.configuration.uri,
             dataForConnectionWithoutAuthorizationWithSipServerUrlChanged.sipServerUrl,
           ),
         ).toBe(true);

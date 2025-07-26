@@ -33,7 +33,7 @@ describe('participants moveRequests', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('participation:accepting-word-request', (data) => {
+      sipConnector.onApi('participation:accepting-word-request', (data) => {
         expect(data).toEqual(acceptingWordRequestData);
 
         resolve();
@@ -49,7 +49,7 @@ describe('participants moveRequests', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('participation:cancelling-word-request', (data) => {
+      sipConnector.onApi('participation:cancelling-word-request', (data) => {
         expect(data).toEqual(cancellingWordRequestData);
 
         resolve();
@@ -65,7 +65,7 @@ describe('participants moveRequests', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('participant:move-request-to-stream', (data) => {
+      sipConnector.onApi('participant:move-request-to-stream', (data) => {
         expect(data).toEqual(moveRequestToStreamData);
 
         resolve();
@@ -80,14 +80,14 @@ describe('participants moveRequests', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onSession('participant:move-request-to-spectators', (data) => {
+      sipConnector.onApi('participant:move-request-to-spectators', (data) => {
         expect(data).toEqual(undefined);
 
         resolve();
       });
 
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      JsSIP.triggerNewInfo(sipConnector.rtcSession!, moveRequestToSpectatorsHeaders);
+      JsSIP.triggerNewInfo(sipConnector.establishedRTCSession!, moveRequestToSpectatorsHeaders);
     });
   });
 });

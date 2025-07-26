@@ -23,7 +23,7 @@ export abstract class AbstractCallStrategy implements ICallStrategy {
   public abstract get requested(): boolean;
   public abstract get connection(): RTCPeerConnection | undefined;
   public abstract get establishedRTCSession(): RTCSession | undefined;
-
+  public abstract get isCallActive(): boolean;
   /**
    * Запуск исходящего звонка
    */

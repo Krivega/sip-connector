@@ -36,13 +36,13 @@ describe('incoming call statuses', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     const promiseCallStatuses = new Promise<void>((resolve) => {
-      sipConnector.onSession('connecting', () => {
+      sipConnector.onCall('connecting', () => {
         mockFunctionConnecting();
 
-        sipConnector.onSession('accepted', () => {
+        sipConnector.onCall('accepted', () => {
           mockFunctionAccepted();
 
-          sipConnector.onSession('confirmed', () => {
+          sipConnector.onCall('confirmed', () => {
             mockFunctionConfirmed();
             resolve();
           });
@@ -50,7 +50,7 @@ describe('incoming call statuses', () => {
       });
     });
 
-    sipConnector.on('incomingCall', () => {
+    sipConnector.onIncomingCall('incomingCall', () => {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       sipConnector.answerToIncomingCall({
         mediaStream,
@@ -59,7 +59,7 @@ describe('incoming call statuses', () => {
     });
 
     // @ts-expect-error
-    JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
+    JsSIP.triggerIncomingSession(sipConnector.connectionManager.ua, remoteCallerData);
 
     return promiseCallStatuses.then(() => {
       expect(sipConnector.isCallActive).toBe(true);

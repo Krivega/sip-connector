@@ -7,7 +7,7 @@ const resolveOnStopMainCam = (sipConnector: SipConnector) => {
   ): (() => void) => {
     log('onStopMainCam');
 
-    return sipConnector.onSession('admin-stop-main-cam', handler);
+    return sipConnector.onApi('admin-stop-main-cam', handler);
   };
 
   return onStopMainCam;

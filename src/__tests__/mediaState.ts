@@ -31,7 +31,7 @@ describe('media state', () => {
 
     // @ts-expect-error
     // eslint-disable-next-line require-atomic-updates
-    sipConnector.rtcSession.sendInfo = mockFunction;
+    sipConnector.establishedRTCSession.sendInfo = mockFunction;
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sipConnector.sendMediaState(mediaStateData);
@@ -51,7 +51,7 @@ describe('media state', () => {
     const ERROR_RESPONSE = 'Error response';
 
     // @ts-expect-error
-    sipConnector.rtcSession.sendInfo = async () => {
+    sipConnector.establishedRTCSession.sendInfo = async () => {
       throw new Error(ERROR_RESPONSE);
     };
 
