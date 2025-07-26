@@ -33,7 +33,7 @@ describe('participants moveRequests', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onApi('participation:accepting-word-request', (data) => {
+      sipConnector.on('api:participation:accepting-word-request', (data) => {
         expect(data).toEqual(acceptingWordRequestData);
 
         resolve();
@@ -49,7 +49,7 @@ describe('participants moveRequests', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onApi('participation:cancelling-word-request', (data) => {
+      sipConnector.on('api:participation:cancelling-word-request', (data) => {
         expect(data).toEqual(cancellingWordRequestData);
 
         resolve();
@@ -65,7 +65,7 @@ describe('participants moveRequests', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onApi('participant:move-request-to-stream', (data) => {
+      sipConnector.on('api:participant:move-request-to-stream', (data) => {
         expect(data).toEqual(moveRequestToStreamData);
 
         resolve();
@@ -80,7 +80,7 @@ describe('participants moveRequests', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onApi('participant:move-request-to-spectators', (data) => {
+      sipConnector.on('api:participant:move-request-to-spectators', (data) => {
         expect(data).toEqual(undefined);
 
         resolve();

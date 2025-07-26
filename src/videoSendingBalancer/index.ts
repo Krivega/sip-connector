@@ -56,11 +56,11 @@ const resolveVideoSendingBalancer = (
   };
 
   const subscribe = () => {
-    sipConnector.onApi('main-cam-control', handleMainCamControl);
+    sipConnector.on('api:main-cam-control', handleMainCamControl);
   };
 
   const unsubscribe = () => {
-    sipConnector.offApi('main-cam-control', handleMainCamControl);
+    sipConnector.off('api:main-cam-control', handleMainCamControl);
   };
 
   return {

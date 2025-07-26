@@ -1,4 +1,4 @@
-import * as causes from '../../causes';
+import { ECallCause } from '../../CallManager/causes';
 import type { TCustomError } from '../../types';
 import getLinkError from './getLinkError';
 
@@ -24,12 +24,12 @@ const getTypeFromError = (error: TCustomError = unknownError): EErrorTypes => {
 
       break;
     }
-    case causes.BAD_MEDIA_DESCRIPTION: {
+    case ECallCause.BAD_MEDIA_DESCRIPTION: {
       type = EErrorTypes.BAD_MEDIA_ERROR;
 
       break;
     }
-    case causes.NOT_FOUND: {
+    case ECallCause.NOT_FOUND: {
       type = EErrorTypes.NOT_FOUND_ERROR;
 
       break;

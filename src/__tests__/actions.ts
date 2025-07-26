@@ -16,7 +16,7 @@ describe('actions', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     const unregistered = new Promise((resolve) => {
-      sipConnector.onceConnection('unregistered', resolve);
+      sipConnector.once('connection:unregistered', resolve);
     });
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -30,8 +30,8 @@ describe('actions', () => {
   it('tryRegister', async () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
-    sipConnector.onConnection('unregistered', mockFunction);
-    sipConnector.onConnection('connected', mockFunction);
+    sipConnector.on('connection:unregistered', mockFunction);
+    sipConnector.on('connection:connected', mockFunction);
 
     return sipConnector.tryRegister().then(() => {
       expect(mockFunction).toHaveBeenCalledTimes(2);

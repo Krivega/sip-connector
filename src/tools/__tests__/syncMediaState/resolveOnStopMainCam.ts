@@ -28,13 +28,11 @@ describe('media state: resolveOnStopMainCam', () => {
 
     onStopMainCam(handlerOnStopMainCam);
 
-    // @ts-expect-error
     sipConnector.apiManager.events.trigger('admin-stop-main-cam', syncModeForced);
 
     expect(handlerOnStopMainCam).toHaveBeenCalledTimes(1);
     expect(handlerOnStopMainCam).toHaveBeenCalledWith(syncModeForced);
 
-    // @ts-expect-error
     sipConnector.apiManager.events.trigger('admin-stop-main-cam', syncModeNotForced);
 
     expect(handlerOnStopMainCam).toHaveBeenCalledTimes(2);
@@ -46,14 +44,12 @@ describe('media state: resolveOnStopMainCam', () => {
 
     offStopMainCam = onStopMainCam(handlerOnStopMainCam);
 
-    // @ts-expect-error
     sipConnector.apiManager.events.trigger('admin-stop-main-cam', syncModeForced);
 
     expect(handlerOnStopMainCam).toHaveBeenCalledTimes(1);
 
     offStopMainCam();
 
-    // @ts-expect-error
     sipConnector.apiManager.events.trigger('admin-stop-main-cam', syncModeForced);
 
     expect(handlerOnStopMainCam).toHaveBeenCalledTimes(1);

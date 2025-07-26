@@ -32,7 +32,7 @@ describe('webcast notify', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onApi('webcast:started', (data) => {
+      sipConnector.on('api:webcast:started', (data) => {
         expect(data).toEqual(webcastStartedData);
 
         resolve();
@@ -50,7 +50,7 @@ describe('webcast notify', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.onApi('webcast:stopped', (data) => {
+      sipConnector.on('api:webcast:stopped', (data) => {
         expect(data).toEqual(webcastStoppedData);
 
         resolve();

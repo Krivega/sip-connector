@@ -40,7 +40,7 @@ import type {
 import { ECMDNotify } from './types';
 
 class ApiManager {
-  private readonly events: TEvents;
+  public readonly events: TEvents;
 
   private readonly connectionManager: ConnectionManager;
 

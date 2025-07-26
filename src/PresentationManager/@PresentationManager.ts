@@ -15,20 +15,14 @@ export const hasCanceledStartPresentationError = (error: unknown) => {
   return hasCanceledError(error);
 };
 
-// TODO: Добавить перед вызовом startPresentation if isP2P == true => apiManager.sendMustStopPresentationP2P
-// TODO: Добавить перед вызовом startPresentation if isP2P == true => apiManager.askPermissionToStartPresentationP2P
-// TODO: Добавить перед вызовом startPresentation if isP2P == false => apiManager.askPermissionToStartPresentation
-// TODO: Добавить перед вызовом stopPresentation if isP2P == true => apiManager.sendStoppedPresentationP2P
-// TODO: Добавить перед вызовом stopPresentation if isP2P == false => apiManager.sendStoppedPresentation
-
 class PresentationManager {
+  public readonly events: TEvents;
+
   public promisePendingStartPresentation?: Promise<MediaStream>;
 
   public promisePendingStopPresentation?: Promise<MediaStream | undefined>;
 
   public streamPresentationCurrent?: MediaStream;
-
-  private readonly events: TEvents;
 
   private cancelableSendPresentationWithRepeatedCalls:
     | ReturnType<typeof repeatedCallsAsync<MediaStream>>

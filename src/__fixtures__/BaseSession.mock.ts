@@ -19,8 +19,8 @@ import type {
   C as constants,
 } from '@krivega/jssip';
 import Events from 'events-constructor';
-import type { TEventSession } from '../eventNames';
-import { SESSION_EVENT_NAMES } from '../eventNames';
+import type { TEventSession } from './eventNames';
+import { SESSION_EVENT_NAMES } from './eventNames';
 
 export type TEventHandlers = Record<string, (data: unknown) => void>;
 

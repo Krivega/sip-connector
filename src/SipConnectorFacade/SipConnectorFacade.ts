@@ -22,21 +22,11 @@ const hasVideoTrackReady = ({ kind, readyState }: MediaStreamTrack) => {
 };
 
 interface IProxyMethods {
-  on: SipConnector['onConnection'];
-  once: SipConnector['onceConnection'];
-  onceRace: SipConnector['onceRaceConnection'];
-  wait: SipConnector['waitConnection'];
-  off: SipConnector['offConnection'];
-  onCall: SipConnector['onCall'];
-  onceCall: SipConnector['onceCall'];
-  onceRaceCall: SipConnector['onceRaceCall'];
-  waitCall: SipConnector['waitCall'];
-  offCall: SipConnector['offCall'];
-  onIncomingCall: SipConnector['onIncomingCall'];
-  onceIncomingCall: SipConnector['onceIncomingCall'];
-  onceRaceIncomingCall: SipConnector['onceRaceIncomingCall'];
-  waitIncomingCall: SipConnector['waitIncomingCall'];
-  offIncomingCall: SipConnector['offIncomingCall'];
+  on: SipConnector['on'];
+  once: SipConnector['once'];
+  onceRace: SipConnector['onceRace'];
+  wait: SipConnector['wait'];
+  off: SipConnector['off'];
   sendDTMF: SipConnector['sendDTMF'];
   hangUp: SipConnector['hangUp'];
   declineToIncomingCall: SipConnector['declineToIncomingCall'];
@@ -55,16 +45,6 @@ const proxyMethods = new Set<keyof IProxyMethods>([
   'onceRace',
   'wait',
   'off',
-  'onCall',
-  'onceCall',
-  'onceRaceCall',
-  'waitCall',
-  'offCall',
-  'onIncomingCall',
-  'onceIncomingCall',
-  'onceRaceIncomingCall',
-  'waitIncomingCall',
-  'offIncomingCall',
   'sendDTMF',
   'hangUp',
   'declineToIncomingCall',
@@ -92,36 +72,6 @@ class SipConnectorFacade implements IProxyMethods {
 
   // @ts-expect-error: proxy method
   public off: IProxyMethods['off'];
-
-  // @ts-expect-error: proxy method
-  public onCall: IProxyMethods['onCall'];
-
-  // @ts-expect-error: proxy method
-  public onceCall: IProxyMethods['onceCall'];
-
-  // @ts-expect-error: proxy method
-  public onceRaceCall: IProxyMethods['onceRaceCall'];
-
-  // @ts-expect-error: proxy method
-  public waitCall: IProxyMethods['waitCall'];
-
-  // @ts-expect-error: proxy method
-  public offCall: IProxyMethods['offCall'];
-
-  // @ts-expect-error: proxy method
-  public onIncomingCall: IProxyMethods['onIncomingCall'];
-
-  // @ts-expect-error: proxy method
-  public onceIncomingCall: IProxyMethods['onceIncomingCall'];
-
-  // @ts-expect-error: proxy method
-  public onceRaceIncomingCall: IProxyMethods['onceRaceIncomingCall'];
-
-  // @ts-expect-error: proxy method
-  public waitIncomingCall: IProxyMethods['waitIncomingCall'];
-
-  // @ts-expect-error: proxy method
-  public offIncomingCall: IProxyMethods['offIncomingCall'];
 
   // @ts-expect-error: proxy method
   public sendDTMF: IProxyMethods['sendDTMF'];
@@ -347,7 +297,7 @@ class SipConnectorFacade implements IProxyMethods {
       log('subscribeEnterConference: onEnterConference', onEnterConference);
 
       if (onEnterPurgatory ?? onEnterConference) {
-        return this.sipConnector.onApi('enterRoom', ({ room: _room }: { room: string }) => {
+        return this.sipConnector.on('api:enterRoom', ({ room: _room }: { room: string }) => {
           log('enterRoom', { _room, isSuccessProgressCall });
 
           room = _room;
@@ -377,7 +327,7 @@ class SipConnectorFacade implements IProxyMethods {
         onSuccessProgressCall({ isPurgatory: hasPurgatory(room) });
       }
 
-      this.sipConnector.onceRaceCall(['ended', 'failed'], () => {
+      this.sipConnector.onceRace(['call:ended', 'call:failed'], () => {
         unsubscribeEnterConference();
 
         if (onEndedCall) {
@@ -531,7 +481,7 @@ class SipConnectorFacade implements IProxyMethods {
       log('subscribeEnterConference: onEnterConference', onEnterConference);
 
       if (onEnterPurgatory ?? onEnterConference) {
-        return this.sipConnector.onApi('enterRoom', (_room: string) => {
+        return this.sipConnector.on('api:enterRoom', (_room: string) => {
           log('enterRoom', { _room, isSuccessProgressCall });
 
           room = _room;
@@ -561,7 +511,7 @@ class SipConnectorFacade implements IProxyMethods {
         onSuccessProgressCall({ isPurgatory: hasPurgatory(room) });
       }
 
-      this.sipConnector.onceRaceCall(['ended', 'failed'], () => {
+      this.sipConnector.onceRace(['call:ended', 'call:failed'], () => {
         unsubscribeEnterConference();
 
         if (onEndedCall) {
@@ -833,25 +783,25 @@ class SipConnectorFacade implements IProxyMethods {
   public onUseLicense = (handler: (license: EUseLicense) => void): (() => void) => {
     log('onUseLicense');
 
-    return this.sipConnector.onApi('useLicense', handler);
+    return this.sipConnector.on('api:useLicense', handler);
   };
 
   public onMustStopPresentation = (handler: () => void): (() => void) => {
     log('onMustStopPresentation');
 
-    return this.sipConnector.onApi('mustStopPresentation', handler);
+    return this.sipConnector.on('api:mustStopPresentation', handler);
   };
 
   public onMoveToSpectators = (handler: () => void): (() => void) => {
     log('onMoveToSpectators');
 
-    return this.sipConnector.onApi('participant:move-request-to-spectators', handler);
+    return this.sipConnector.on('api:participant:move-request-to-spectators', handler);
   };
 
   public onMoveToParticipants = (handler: () => void): (() => void) => {
     log('onMoveToParticipants');
 
-    return this.sipConnector.onApi('participant:move-request-to-participants', handler);
+    return this.sipConnector.on('api:participant:move-request-to-participants', handler);
   };
 }
 

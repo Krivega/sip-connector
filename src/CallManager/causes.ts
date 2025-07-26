@@ -9,4 +9,5 @@ export enum ECallCause {
   NOT_FOUND = 'Not Found',
   ADDRESS_INCOMPLETE = 'Address Incomplete',
   INCOMPATIBLE_SDP = 'Incompatible SDP',
+  BAD_MEDIA_DESCRIPTION = 'Bad Media Description',
 }

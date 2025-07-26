@@ -1,5 +1,4 @@
 import { isCanceledError } from '@krivega/cancelable-promise';
-import { Originator } from '../../constants';
 import { ECallCause } from '../causes';
 import hasCanceledCallError from '../hasCanceledCallError';
 
@@ -36,7 +35,7 @@ describe('hasCanceledCallError', () => {
   it('возвращает false если cause не является строкой', () => {
     mockIsCanceledError.mockReturnValue(false);
 
-    const error = { originator: Originator.LOCAL, cause: 123 };
+    const error = { originator: 'local', cause: 123 };
 
     expect(hasCanceledCallError(error)).toBe(false);
   });
@@ -44,7 +43,7 @@ describe('hasCanceledCallError', () => {
   it('возвращает true если cause равен REQUEST_TIMEOUT', () => {
     mockIsCanceledError.mockReturnValue(false);
 
-    const error = { originator: Originator.LOCAL, cause: ECallCause.REQUEST_TIMEOUT };
+    const error = { originator: 'local', cause: ECallCause.REQUEST_TIMEOUT };
 
     expect(hasCanceledCallError(error)).toBe(true);
   });
@@ -52,7 +51,7 @@ describe('hasCanceledCallError', () => {
   it('возвращает true если cause равен REJECTED', () => {
     mockIsCanceledError.mockReturnValue(false);
 
-    const error = { originator: Originator.LOCAL, cause: ECallCause.REJECTED };
+    const error = { originator: 'local', cause: ECallCause.REJECTED };
 
     expect(hasCanceledCallError(error)).toBe(true);
   });
@@ -60,7 +59,7 @@ describe('hasCanceledCallError', () => {
   it('возвращает true если cause равен CANCELED и originator LOCAL', () => {
     mockIsCanceledError.mockReturnValue(false);
 
-    const error = { originator: Originator.LOCAL, cause: ECallCause.CANCELED };
+    const error = { originator: 'local', cause: ECallCause.CANCELED };
 
     expect(hasCanceledCallError(error)).toBe(true);
   });
@@ -68,7 +67,7 @@ describe('hasCanceledCallError', () => {
   it('возвращает true если cause равен BYE и originator LOCAL', () => {
     mockIsCanceledError.mockReturnValue(false);
 
-    const error = { originator: Originator.LOCAL, cause: ECallCause.BYE };
+    const error = { originator: 'local', cause: ECallCause.BYE };
 
     expect(hasCanceledCallError(error)).toBe(true);
   });
@@ -76,7 +75,7 @@ describe('hasCanceledCallError', () => {
   it('возвращает false если cause равен CANCELED но originator REMOTE', () => {
     mockIsCanceledError.mockReturnValue(false);
 
-    const error = { originator: Originator.REMOTE, cause: ECallCause.CANCELED };
+    const error = { originator: 'remote', cause: ECallCause.CANCELED };
 
     expect(hasCanceledCallError(error)).toBe(false);
   });
@@ -84,7 +83,7 @@ describe('hasCanceledCallError', () => {
   it('возвращает false если cause равен BYE но originator REMOTE', () => {
     mockIsCanceledError.mockReturnValue(false);
 
-    const error = { originator: Originator.REMOTE, cause: ECallCause.BYE };
+    const error = { originator: 'remote', cause: ECallCause.BYE };
 
     expect(hasCanceledCallError(error)).toBe(false);
   });
@@ -92,7 +91,7 @@ describe('hasCanceledCallError', () => {
   it('возвращает false для неизвестного cause', () => {
     mockIsCanceledError.mockReturnValue(false);
 
-    const error = { originator: Originator.LOCAL, cause: 'UNKNOWN_CAUSE' };
+    const error = { originator: 'local', cause: 'UNKNOWN_CAUSE' };
 
     expect(hasCanceledCallError(error)).toBe(false);
   });
@@ -100,7 +99,7 @@ describe('hasCanceledCallError', () => {
   it('возвращает false для объекта только с originator', () => {
     mockIsCanceledError.mockReturnValue(false);
 
-    const error = { originator: Originator.LOCAL };
+    const error = { originator: 'local' };
 
     expect(hasCanceledCallError(error)).toBe(false);
   });

@@ -1,16 +1,17 @@
-import type { TApiEvent } from './ApiManager';
-import { ApiManager } from './ApiManager';
-import type { TCallEvent } from './CallManager';
-import { CallManager } from './CallManager';
-import type { TConnectionManagerEvent } from './ConnectionManager';
-import { ConnectionManager } from './ConnectionManager';
-import type { TIncomingCallEvent } from './IncomingCallManager';
-import { IncomingCallManager } from './IncomingCallManager';
-import { PresentationManager } from './PresentationManager';
-import type { TContentHint, TOnAddedTransceiver } from './PresentationManager/types';
-import type { TGetServerUrl, TJsSIP } from './types';
+import Events from 'events-constructor';
+import { ApiManager } from '../ApiManager';
+import { CallManager } from '../CallManager';
+import { ConnectionManager } from '../ConnectionManager';
+import { IncomingCallManager } from '../IncomingCallManager';
+import { PresentationManager } from '../PresentationManager';
+import type { TContentHint, TOnAddedTransceiver } from '../PresentationManager/types';
+import type { TGetServerUrl, TJsSIP } from '../types';
+import type { TEvent } from './eventNames';
+import { EVENT_NAMES } from './eventNames';
 
 class SipConnector {
+  public readonly events: Events<typeof EVENT_NAMES>;
+
   public readonly connectionManager: ConnectionManager;
 
   public readonly callManager: CallManager;
@@ -22,6 +23,7 @@ class SipConnector {
   public readonly presentationManager: PresentationManager;
 
   public constructor({ JsSIP }: { JsSIP: TJsSIP }) {
+    this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
     this.connectionManager = new ConnectionManager({ JsSIP });
     this.callManager = new CallManager();
     this.apiManager = new ApiManager({
@@ -32,6 +34,8 @@ class SipConnector {
     this.presentationManager = new PresentationManager({
       callManager: this.callManager,
     });
+
+    this.subscribe();
   }
 
   public get requestedConnection() {
@@ -86,6 +90,30 @@ class SipConnector {
     return this.incomingCallManager.isAvailableIncomingCall;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public on<T>(eventName: TEvent, handler: (data: T) => void) {
+    return this.events.on<T>(eventName, handler);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public once<T>(eventName: TEvent, handler: (data: T) => void) {
+    return this.events.once<T>(eventName, handler);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public onceRace<T>(eventNames: TEvent[], handler: (data: T, eventName: string) => void) {
+    return this.events.onceRace<T>(eventNames, handler);
+  }
+
+  public async wait<T>(eventName: TEvent): Promise<T> {
+    return this.events.wait<T>(eventName);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  public off<T>(eventName: TEvent, handler: (data: T) => void) {
+    this.events.off<T>(eventName, handler);
+  }
+
   public connect: ConnectionManager['connect'] = async (...args) => {
     return this.connectionManager.connect(...args);
   };
@@ -128,33 +156,6 @@ class SipConnector {
   public checkTelephony: ConnectionManager['checkTelephony'] = async (parameters) => {
     return this.connectionManager.checkTelephony(parameters);
   };
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public onConnection<T>(eventName: TConnectionManagerEvent, handler: (data: T) => void) {
-    return this.connectionManager.on<T>(eventName, handler);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public onceConnection<T>(eventName: TConnectionManagerEvent, handler: (data: T) => void) {
-    return this.connectionManager.once<T>(eventName, handler);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public onceRaceConnection<T>(
-    eventNames: TConnectionManagerEvent[],
-    handler: (data: T, eventName: string) => void,
-  ) {
-    return this.connectionManager.onceRace<T>(eventNames, handler);
-  }
-
-  public async waitConnection<T>(eventName: TConnectionManagerEvent): Promise<T> {
-    return this.connectionManager.wait<T>(eventName);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public offConnection<T>(eventName: TConnectionManagerEvent, handler: (data: T) => void) {
-    this.connectionManager.off<T>(eventName, handler);
-  }
 
   public isConfigured = () => {
     return this.connectionManager.isConfigured();
@@ -208,57 +209,6 @@ class SipConnector {
   public replaceMediaStream: CallManager['replaceMediaStream'] = async (...args) => {
     return this.callManager.replaceMediaStream(...args);
   };
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public onCall<T>(eventName: TCallEvent, handler: (data: T) => void) {
-    return this.callManager.on<T>(eventName, handler);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public onceCall<T>(eventName: TCallEvent, handler: (data: T) => void) {
-    return this.callManager.once<T>(eventName, handler);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public onceRaceCall<T>(eventNames: TCallEvent[], handler: (data: T, eventName: string) => void) {
-    return this.callManager.onceRace<T>(eventNames, handler);
-  }
-
-  public async waitCall<T>(eventName: TCallEvent): Promise<T> {
-    return this.callManager.wait<T>(eventName);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public offIncomingCall<T>(eventName: TIncomingCallEvent, handler: (data: T) => void) {
-    this.incomingCallManager.off<T>(eventName, handler);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public onIncomingCall<T>(eventName: TIncomingCallEvent, handler: (data: T) => void) {
-    return this.incomingCallManager.on<T>(eventName, handler);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public onceIncomingCall<T>(eventName: TIncomingCallEvent, handler: (data: T) => void) {
-    return this.incomingCallManager.once<T>(eventName, handler);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public onceRaceIncomingCall<T>(
-    eventNames: TIncomingCallEvent[],
-    handler: (data: T, eventName: string) => void,
-  ) {
-    return this.incomingCallManager.onceRace<T>(eventNames, handler);
-  }
-
-  public async waitIncomingCall<T>(eventName: TIncomingCallEvent): Promise<T> {
-    return this.incomingCallManager.wait<T>(eventName);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public offCall<T>(eventName: TCallEvent, handler: (data: T) => void) {
-    this.callManager.off<T>(eventName, handler);
-  }
 
   public async startPresentation(
     stream: MediaStream,
@@ -396,28 +346,36 @@ class SipConnector {
     return this.apiManager.askPermissionToEnableCam(...args);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public onApi<T>(eventName: TApiEvent, handler: (data: T) => void) {
-    return this.apiManager.on<T>(eventName, handler);
-  }
+  private subscribe() {
+    this.connectionManager.events.eachTriggers((_trigger, eventName) => {
+      this.connectionManager.on(eventName, (event) => {
+        this.events.trigger(`connection:${eventName}`, event);
+      });
+    });
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public onceApi<T>(eventName: TApiEvent, handler: (data: T) => void) {
-    return this.apiManager.once<T>(eventName, handler);
-  }
+    this.callManager.events.eachTriggers((_trigger, eventName) => {
+      this.callManager.on(eventName, (event) => {
+        this.events.trigger(`call:${eventName}`, event);
+      });
+    });
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public onceRaceApi<T>(eventNames: TApiEvent[], handler: (data: T, eventName: string) => void) {
-    return this.apiManager.onceRace<T>(eventNames, handler);
-  }
+    this.apiManager.events.eachTriggers((_trigger, eventName) => {
+      this.apiManager.on(eventName, (event) => {
+        this.events.trigger(`api:${eventName}`, event);
+      });
+    });
 
-  public async waitApi<T>(eventName: TApiEvent): Promise<T> {
-    return this.apiManager.wait<T>(eventName);
-  }
+    this.incomingCallManager.events.eachTriggers((_trigger, eventName) => {
+      this.incomingCallManager.on(eventName, (event) => {
+        this.events.trigger(`incoming-call:${eventName}`, event);
+      });
+    });
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public offApi<T>(eventName: TApiEvent, handler: (data: T) => void) {
-    this.apiManager.off<T>(eventName, handler);
+    this.presentationManager.events.eachTriggers((_trigger, eventName) => {
+      this.presentationManager.on(eventName, (event) => {
+        this.events.trigger(`presentation:${eventName}`, event);
+      });
+    });
   }
 }
 

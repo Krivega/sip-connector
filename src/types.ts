@@ -1,5 +1,5 @@
 import type { UA, WebSocketInterface } from '@krivega/jssip';
-import type { Originator } from './constants';
+import type { Originator } from './CallManager';
 
 export enum EEventsMainCAM {
   PAUSE_MAIN_CAM = 'PAUSEMAINCAM',
@@ -42,25 +42,6 @@ export type TJsSIP = {
 
 export type TGetServerUrl = (id: string) => string;
 
-export type TParametersCreateUaConfiguration = {
-  sipWebSocketServerURL: string;
-  displayName?: string;
-  sipServerUrl: string;
-  user?: string;
-  register?: boolean;
-  password?: string;
-  sessionTimers?: boolean;
-  registerExpires?: number;
-  connectionRecoveryMinInterval?: number;
-  connectionRecoveryMaxInterval?: number;
-  userAgent?: string;
-};
-
-export type TOnAddedTransceiver = (
-  transceiver: RTCRtpTransceiver,
-  track: MediaStreamTrack,
-  stream: MediaStream,
-) => Promise<void>;
 export type TContentHint = 'motion' | 'detail' | 'text' | 'none';
 
 export type TRtpSendParameters = Partial<Omit<RTCRtpSendParameters, 'transactionId'>>;
@@ -70,13 +51,3 @@ export type TSimulcastEncoding = TSize & {
   rid?: string;
   scalabilityMode?: string;
 };
-
-export enum EMimeTypesVideoCodecs {
-  VP8 = 'video/VP8',
-  VP9 = 'video/VP9',
-  H264 = 'video/H264',
-  AV1 = 'video/AV1',
-  rtx = 'video/rtx',
-  red = 'video/red',
-  flexfec03 = 'video/flexfec-03',
-}

@@ -126,7 +126,7 @@ describe('call', () => {
     const number = '10000';
 
     const endedPromise = new Promise((resolve) => {
-      sipConnector.onceCall('ended', resolve);
+      sipConnector.once('call:ended', resolve);
     });
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -147,7 +147,7 @@ describe('call', () => {
 
     const number = '10000';
     const disconnectPromise = new Promise((resolve, reject) => {
-      sipConnector.onceCall('ended', () => {
+      sipConnector.once('call:ended', () => {
         // order is important!!!
         sipConnector
           .disconnect()
@@ -173,7 +173,7 @@ describe('call', () => {
 
     // order is important!!!
     const disconnectPromise = new Promise((resolve, reject) => {
-      sipConnector.onceCall('failed', () => {
+      sipConnector.once('call:failed', () => {
         // order is important!!!
         sipConnector
           .disconnect()
@@ -267,7 +267,7 @@ describe('call', () => {
     await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
     const disconnectPromise = new Promise<void>((resolve) => {
-      sipConnector.onceCall('ended', () => {
+      sipConnector.once('call:ended', () => {
         resolve();
       });
     });
@@ -293,7 +293,7 @@ describe('call', () => {
     await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
     const endedFromServer = new Promise((resolve) => {
-      sipConnector.onCall('ended:fromserver', resolve);
+      sipConnector.on('call:ended:fromserver', resolve);
     });
 
     // @ts-expect-error

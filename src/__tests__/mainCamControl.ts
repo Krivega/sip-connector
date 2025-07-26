@@ -58,7 +58,7 @@ describe('main cam control', () => {
 
     const promise = new Promise<{ mainCam: EEventsMainCAM; resolutionMainCam: string }>(
       (resolve) => {
-        sipConnector.onApi('main-cam-control', resolve);
+        sipConnector.on('api:main-cam-control', resolve);
       },
     );
     const { establishedRTCSession } = sipConnector.callManager;
@@ -78,7 +78,7 @@ describe('main cam control', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
-      sipConnector.onApi('admin-start-main-cam', resolve);
+      sipConnector.on('api:admin-start-main-cam', resolve);
     });
     const { establishedRTCSession } = sipConnector.callManager;
 
@@ -96,7 +96,7 @@ describe('main cam control', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
-      sipConnector.onApi('admin-stop-main-cam', resolve);
+      sipConnector.on('api:admin-stop-main-cam', resolve);
     });
     const { establishedRTCSession } = sipConnector;
 
@@ -115,7 +115,7 @@ describe('main cam control', () => {
 
     const promise = new Promise<{ mainCam: EEventsMainCAM; resolutionMainCam?: string }>(
       (resolve) => {
-        sipConnector.onApi('main-cam-control', resolve);
+        sipConnector.on('api:main-cam-control', resolve);
       },
     );
 
@@ -137,7 +137,7 @@ describe('main cam control', () => {
 
     const promise = new Promise<{ mainCam: EEventsMainCAM; resolutionMainCam?: string }>(
       (resolve) => {
-        sipConnector.onApi('main-cam-control', resolve);
+        sipConnector.on('api:main-cam-control', resolve);
       },
     );
 

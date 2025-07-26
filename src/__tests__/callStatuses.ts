@@ -39,18 +39,18 @@ describe('call statuses', () => {
     const number = '10000';
 
     const promiseCallStatuses = new Promise<void>((resolve) => {
-      sipConnector.onCall('connecting', () => {
+      sipConnector.on('call:connecting', () => {
         mockFunctionConnecting();
 
-        sipConnector.onApi('enterRoom', ({ room }: { room: string }) => {
+        sipConnector.on('api:enterRoom', ({ room }: { room: string }) => {
           conference = room;
 
           mockFunctionEnterRoom();
 
-          sipConnector.onCall('accepted', () => {
+          sipConnector.on('call:accepted', () => {
             mockFunctionAccepted();
 
-            sipConnector.onCall('confirmed', () => {
+            sipConnector.on('call:confirmed', () => {
               mockFunctionConfirmed();
               resolve();
             });

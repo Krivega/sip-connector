@@ -5,7 +5,6 @@ import type { IncomingInfoEvent } from '@krivega/jssip';
 import { NameAddrHeader, URI } from '@krivega/jssip';
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
 import { Originator } from '../CallManager/eventNames';
-import { REJECTED } from '../causes';
 import type { TEventHandlers } from './BaseSession.mock';
 import BaseSession from './BaseSession.mock';
 import RTCPeerConnectionMock from './RTCPeerConnectionMock';
@@ -202,7 +201,7 @@ class RTCSessionMock extends BaseSession {
         this.trigger('failed', {
           originator: 'remote',
           message: 'IncomingResponse',
-          cause: REJECTED,
+          cause: 'Rejected',
         });
       } else {
         this.trigger('connecting');

@@ -18,7 +18,7 @@ describe('account notify', () => {
     const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      sipConnector.onApi('account:changed', (data) => {
+      sipConnector.on('api:account:changed', (data) => {
         expect(data).toBe(undefined);
 
         resolve();
@@ -34,7 +34,7 @@ describe('account notify', () => {
     const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      sipConnector.onApi('account:deleted', (data) => {
+      sipConnector.on('api:account:deleted', (data) => {
         expect(data).toBe(undefined);
 
         resolve();

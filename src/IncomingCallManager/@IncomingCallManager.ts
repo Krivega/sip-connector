@@ -15,11 +15,11 @@ type TRemoteCallerData = {
 };
 
 export default class IncomingCallManager {
+  public readonly events: Events<typeof EVENT_NAMES>;
+
   private incomingRTCSession?: RTCSession;
 
   private readonly connectionManager: ConnectionManager;
-
-  private readonly events: Events<typeof EVENT_NAMES>;
 
   public constructor(connectionManager: ConnectionManager) {
     this.connectionManager = connectionManager;

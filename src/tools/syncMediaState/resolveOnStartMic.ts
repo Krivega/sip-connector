@@ -7,7 +7,7 @@ const resolveOnStartMic = (sipConnector: SipConnector) => {
   ): (() => void) => {
     log('onStartMic');
 
-    return sipConnector.onApi('admin-start-mic', handler);
+    return sipConnector.on('api:admin-start-mic', handler);
   };
 
   return onStartMic;

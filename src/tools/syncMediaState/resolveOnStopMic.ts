@@ -7,7 +7,7 @@ const resolveOnStopMic = (sipConnector: SipConnector) => {
   ): (() => void) => {
     log('onStopMic');
 
-    return sipConnector.onApi('admin-stop-mic', handler);
+    return sipConnector.on('api:admin-stop-mic', handler);
   };
 
   return onStopMic;

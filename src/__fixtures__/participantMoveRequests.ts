@@ -1,11 +1,11 @@
-import { SPECTATOR } from '../constants';
 import {
-  HEADER_CONTENT_TYPE_NAME,
   CONTENT_TYPE_NOTIFY,
-  HEADER_NOTIFY,
-  HEADER_CONTENT_PARTICIPANT_STATE,
   CONTENT_TYPE_PARTICIPANT_STATE,
+  HEADER_CONTENT_PARTICIPANT_STATE,
+  HEADER_CONTENT_TYPE_NAME,
+  HEADER_NOTIFY,
 } from '../headers';
+import { SPECTATOR } from './constants';
 
 const acceptingWordRequest = {
   cmd: 'ParticipationRequestAccepted',

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-enum-comparison */
 import { isCanceledError } from '@krivega/cancelable-promise';
-import { Originator } from '../constants';
 import { ECallCause } from './causes';
+import { Originator } from './eventNames';
 import type { TCustomError } from './types';
 
 const hasCustomError = (error: unknown): error is TCustomError => {

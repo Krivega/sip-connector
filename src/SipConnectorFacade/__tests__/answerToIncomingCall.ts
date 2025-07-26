@@ -24,10 +24,11 @@ describe('answerToIncomingCall', () => {
 
     await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
-    const promiseIncomingCall = sipConnector.waitIncomingCall('incomingCall');
+    const promiseIncomingCall = sipConnector.wait('incoming-call:incomingCall');
 
     // @ts-expect-error
-    JsSIP.triggerIncomingSession(sipConnector.connectionManager.ua, remoteCallerData);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    JsSIP.triggerIncomingSession(sipConnector.connectionManager.ua!, remoteCallerData);
 
     await promiseIncomingCall;
 

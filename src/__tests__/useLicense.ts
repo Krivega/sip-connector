@@ -2,7 +2,6 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
-import { USE_LICENSE } from '../constants';
 import { doMockSipConnector } from '../doMock';
 import {
   CONTENT_TYPE_USE_LICENSE,
@@ -46,7 +45,7 @@ describe('use license', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<EUseLicense>((resolve) => {
-      sipConnector.onApi('useLicense', resolve);
+      sipConnector.on('api:useLicense', resolve);
     });
     const { establishedRTCSession } = sipConnector;
 
@@ -64,7 +63,7 @@ describe('use license', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<EUseLicense>((resolve) => {
-      sipConnector.onApi('useLicense', resolve);
+      sipConnector.on('api:useLicense', resolve);
     });
     const { establishedRTCSession } = sipConnector;
 
@@ -82,7 +81,7 @@ describe('use license', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<EUseLicense>((resolve) => {
-      sipConnector.onApi(USE_LICENSE, resolve);
+      sipConnector.on('api:useLicense', resolve);
     });
     const { establishedRTCSession } = sipConnector;
 

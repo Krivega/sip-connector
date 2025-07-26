@@ -36,7 +36,7 @@ describe('mic control', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
-      sipConnector.onApi('admin-start-mic', resolve);
+      sipConnector.on('api:admin-start-mic', resolve);
     });
     const { establishedRTCSession } = sipConnector;
 
@@ -54,7 +54,7 @@ describe('mic control', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
-      sipConnector.onApi('admin-stop-mic', resolve);
+      sipConnector.on('api:admin-stop-mic', resolve);
     });
     const { establishedRTCSession } = sipConnector;
 

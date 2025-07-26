@@ -31,7 +31,7 @@ describe('events', () => {
     expect.assertions(1);
 
     const promise = new Promise((resolve) => {
-      sipConnector.onApi('availableSecondRemoteStream', resolve);
+      sipConnector.on('api:availableSecondRemoteStream', resolve);
     });
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -54,7 +54,7 @@ describe('events', () => {
     expect.assertions(1);
 
     const promise = new Promise((resolve) => {
-      sipConnector.onApi('notAvailableSecondRemoteStream', resolve);
+      sipConnector.on('api:notAvailableSecondRemoteStream', resolve);
     });
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -77,7 +77,7 @@ describe('events', () => {
     expect.assertions(1);
 
     const promise = new Promise((resolve) => {
-      sipConnector.onApi('mustStopPresentation', resolve);
+      sipConnector.on('api:mustStopPresentation', resolve);
     });
 
     await sipConnector.connect(dataForConnectionWithAuthorization);

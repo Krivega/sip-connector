@@ -28,7 +28,7 @@ describe('sendDtmfAccumulated', () => {
         return sipConnectorFacade.callToServer(dataCall);
       })
       .then(async () => {
-        sipConnector.onApi('newDTMF', ({ originator }: { originator: string }) => {
+        sipConnector.on('api:newDTMF', ({ originator }: { originator: string }) => {
           expect(originator).toEqual('local');
         });
 

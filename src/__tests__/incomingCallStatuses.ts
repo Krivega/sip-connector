@@ -36,13 +36,13 @@ describe('incoming call statuses', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     const promiseCallStatuses = new Promise<void>((resolve) => {
-      sipConnector.onCall('connecting', () => {
+      sipConnector.on('call:connecting', () => {
         mockFunctionConnecting();
 
-        sipConnector.onCall('accepted', () => {
+        sipConnector.on('call:accepted', () => {
           mockFunctionAccepted();
 
-          sipConnector.onCall('confirmed', () => {
+          sipConnector.on('call:confirmed', () => {
             mockFunctionConfirmed();
             resolve();
           });
@@ -50,7 +50,7 @@ describe('incoming call statuses', () => {
       });
     });
 
-    sipConnector.onIncomingCall('incomingCall', () => {
+    sipConnector.on('incoming-call:incomingCall', () => {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       sipConnector.answerToIncomingCall({
         mediaStream,
