@@ -56,6 +56,7 @@
     "release": "standard-version && npm run release:publish",
     "release:major": "standard-version --release-as major && npm run release:publish",
     "release:pre": "standard-version --prerelease && npm run release:publish",
+    "release:alpha": "standard-version --prerelease alpha && npm run release:publish",
     "release:publish": "git push --follow-tags origin master && npm publish --access=public",
     "test": "jest",
     "test:ci": "cross-env CI=true jest",
