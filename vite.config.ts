@@ -19,6 +19,7 @@ export default defineConfig(() => {
     plugins: [
       tsConfigPaths(),
       dts({
+        entryRoot: 'src',
         include: ['src'],
         exclude: ['src/setupTests.ts', 'src/**/__tests__/**'],
       }),
