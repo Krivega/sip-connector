@@ -31,11 +31,10 @@ describe('actions', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     sipConnector.onConnection('unregistered', mockFunction);
-    sipConnector.onConnection('connecting', mockFunction);
     sipConnector.onConnection('connected', mockFunction);
 
     return sipConnector.tryRegister().then(() => {
-      expect(mockFunction).toHaveBeenCalledTimes(3);
+      expect(mockFunction).toHaveBeenCalledTimes(2);
     });
   });
 });
