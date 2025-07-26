@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 /// <reference types="jest" />
-import type SipConnector from '../../SipConnector';
+import type { SipConnector } from '../../SipConnector';
 import { doMockSipConnector } from '../../doMock';
 import {
   LOCKED_SIP_WEB_SOCKET_SERVER_URL,

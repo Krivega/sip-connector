@@ -11,7 +11,7 @@ import {
   MUST_STOP_PRESENTATION,
   NOT_AVAILABLE_SECOND_REMOTE_STREAM,
 } from '../headers';
-import type SipConnector from '../SipConnector';
+import type { SipConnector } from '../SipConnector';
 
 describe('events', () => {
   const number = '111';

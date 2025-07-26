@@ -2,7 +2,7 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import { doMockSipConnector } from '../doMock';
-import type SipConnector from '../SipConnector';
+import type { SipConnector } from '../SipConnector';
 
 describe('call statuses', () => {
   let sipConnector: SipConnector;

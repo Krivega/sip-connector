@@ -6,5 +6,5 @@ export { default as resolveVideoSendingBalancer } from './videoSendingBalancer';
 
 export { hasCanceledCallError } from './CallManager';
 export { hasCanceledStartPresentationError } from './PresentationManager';
-export { default as SipConnector } from './SipConnector';
+export { SipConnector } from './SipConnector';
 export { SipConnectorFacade } from './SipConnectorFacade';

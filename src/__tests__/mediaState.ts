@@ -4,7 +4,7 @@ import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import { extraHeaders, mediaStateData } from '../__fixtures__/mediaState';
 import { doMockSipConnector } from '../doMock';
 import { CONTENT_TYPE_MEDIA_STATE } from '../headers';
-import type SipConnector from '../SipConnector';
+import type { SipConnector } from '../SipConnector';
 
 describe('media state', () => {
   const number = '111';

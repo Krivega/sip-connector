@@ -12,7 +12,7 @@ import {
   moveRequestToStreamHeaders,
 } from '../__fixtures__/participantMoveRequests';
 import { doMockSipConnector } from '../doMock';
-import type SipConnector from '../SipConnector';
+import type { SipConnector } from '../SipConnector';
 
 describe('participants moveRequests', () => {
   const number = '111';

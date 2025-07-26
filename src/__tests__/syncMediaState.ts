@@ -11,7 +11,7 @@ import {
   HEADER_MEDIA_SYNC,
   HEADER_MIC,
 } from '../headers';
-import type SipConnector from '../SipConnector';
+import type { SipConnector } from '../SipConnector';
 import { EEventsMainCAM, EEventsMic, EEventsSyncMediaState } from '../types';
 
 const headersSyncForcedAdminStartMainCam: [string, string][] = [

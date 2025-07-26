@@ -2,7 +2,7 @@
 import { dataForConnectionWithoutAuthorization } from '../__fixtures__';
 import UAMock from '../__fixtures__/UA.mock';
 import { doMockSipConnector, JsSIP } from '../doMock';
-import type SipConnector from '../SipConnector';
+import type { SipConnector } from '../SipConnector';
 
 describe('checkTelephony', () => {
   let sipConnector: SipConnector;

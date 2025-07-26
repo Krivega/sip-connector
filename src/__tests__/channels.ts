@@ -5,7 +5,7 @@ import { channelsData, channelsHeaders, sendedExtraHeaders } from '../__fixtures
 import JsSIP from '../__fixtures__/jssip.mock';
 import { doMockSipConnector } from '../doMock';
 import { CONTENT_TYPE_CHANNELS } from '../headers';
-import type SipConnector from '../SipConnector';
+import type { SipConnector } from '../SipConnector';
 
 describe('channels', () => {
   const number = '111';

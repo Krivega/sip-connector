@@ -8,7 +8,7 @@ import {
   HEADER_CONTENT_TYPE_NAME,
   HEADER_CONTENT_USE_LICENSE,
 } from '../headers';
-import type SipConnector from '../SipConnector';
+import type { SipConnector } from '../SipConnector';
 import { EUseLicense } from '../types';
 
 const headersUseLicenseAudio: [string, string][] = [

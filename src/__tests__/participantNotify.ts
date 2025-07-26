@@ -9,7 +9,7 @@ import {
   removedFromListModeratorsHeaders,
 } from '../__fixtures__/participantNotify';
 import { doMockSipConnector } from '../doMock';
-import type SipConnector from '../SipConnector';
+import type { SipConnector } from '../SipConnector';
 
 describe('participant notify', () => {
   const number = '111';

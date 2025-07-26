@@ -1,4 +1,4 @@
-import type SipConnector from '../../SipConnector';
+import type { SipConnector } from '../../SipConnector';
 import resolveOnStartMainCam from './resolveOnStartMainCam';
 import resolveOnStartMic from './resolveOnStartMic';
 import resolveOnStopMainCam from './resolveOnStopMainCam';

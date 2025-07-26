@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-import type SipConnector from '../../../SipConnector';
+import type { SipConnector } from '../../../SipConnector';
 import { doMockSipConnector } from '../../../doMock';
 import resolveOnStartMic from '../../syncMediaState/resolveOnStartMic';
 

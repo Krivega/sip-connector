@@ -9,7 +9,7 @@ import {
   HEADER_MAIN_CAM,
   HEADER_MAIN_CAM_RESOLUTION,
 } from '../headers';
-import type SipConnector from '../SipConnector';
+import type { SipConnector } from '../SipConnector';
 import { EEventsMainCAM } from '../types';
 
 const headersMainCamControl: [string, string][] = [

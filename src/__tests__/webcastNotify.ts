@@ -9,7 +9,7 @@ import {
   webcastStoppedHeaders,
 } from '../__fixtures__/webcastNotify';
 import { doMockSipConnector } from '../doMock';
-import type SipConnector from '../SipConnector';
+import type { SipConnector } from '../SipConnector';
 
 describe('webcast notify', () => {
   const number = '111';

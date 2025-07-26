@@ -1,4 +1,4 @@
-import SipConnector from './SipConnector';
+import { SipConnector } from './SipConnector';
 import JsSIP from './__fixtures__/jssip.mock';
 import type { TJsSIP } from './types';
 

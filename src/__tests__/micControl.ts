@@ -4,7 +4,7 @@ import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
 import { doMockSipConnector } from '../doMock';
 import { CONTENT_TYPE_MIC, HEADER_CONTENT_TYPE_NAME, HEADER_MIC } from '../headers';
-import type SipConnector from '../SipConnector';
+import type { SipConnector } from '../SipConnector';
 import { EEventsMic } from '../types';
 
 const headersAdminStartMic: [string, string][] = [

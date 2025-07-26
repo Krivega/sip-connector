@@ -1,4 +1,4 @@
-import type SipConnector from '../../SipConnector';
+import type { SipConnector } from '../../SipConnector';
 import log from '../../logger';
 
 const resolveOnStopMic = (sipConnector: SipConnector) => {

@@ -14,7 +14,7 @@ import {
 } from '../__fixtures__';
 import UAMock, { createWebsocketHandshakeTimeoutError } from '../__fixtures__/UA.mock';
 import { doMockSipConnector, JsSIP } from '../doMock';
-import type SipConnector from '../SipConnector';
+import type { SipConnector } from '../SipConnector';
 import { uriWithName } from '../tools/__fixtures__/connectToServer';
 
 const wrongPassword = 'wrongPassword';

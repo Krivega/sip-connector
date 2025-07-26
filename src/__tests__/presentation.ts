@@ -11,7 +11,7 @@ import {
   HEADER_START_PRESENTATION,
   HEADER_START_PRESENTATION_P2P,
 } from '../headers';
-import type SipConnector from '../SipConnector';
+import type { SipConnector } from '../SipConnector';
 
 const startPresentationCallLimit = 1;
 const errorStartPresentationCount = 3;

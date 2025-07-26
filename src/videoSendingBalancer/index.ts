@@ -1,5 +1,5 @@
 import { debug } from '../logger';
-import type SipConnector from '../SipConnector';
+import type { SipConnector } from '../SipConnector';
 import type { EEventsMainCAM } from '../types';
 import balance from './balance';
 import type { TOnSetParameters } from './setEncodingsToSender';

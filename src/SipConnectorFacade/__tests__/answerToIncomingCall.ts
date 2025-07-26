@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-import type SipConnector from '../../SipConnector';
+import type { SipConnector } from '../../SipConnector';
 import JsSIP from '../../__fixtures__/jssip.mock';
 import remoteCallerData from '../../__fixtures__/remoteCallerData';
 import { doMockSipConnector } from '../../doMock';
