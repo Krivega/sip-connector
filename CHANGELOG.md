@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [14.1.0-alpha.0](https://github.com/Krivega/sip-connector/compare/v14.1.0...v14.1.0-alpha.0) (2025-07-26)
+
+### Features
+
+- add ApiManager ([ff2861d](https://github.com/Krivega/sip-connector/commit/ff2861dd2d038f310fb8d13e28f8a51f8abb3cc6))
+- add CallManager ([8de9cef](https://github.com/Krivega/sip-connector/commit/8de9cef60041fe33457f6095e8867b1237d0c626))
+- add CallManager ([40810cd](https://github.com/Krivega/sip-connector/commit/40810cdf524554086b4f3fa25f64318754997e6e))
+- add CallManager and IncomingCallManager ([cb4636a](https://github.com/Krivega/sip-connector/commit/cb4636adfd2273aefe86280cb4fa6d42ddd857b5))
+- add ConfigurationManager and ConnectionFlow for enhanced SIP connection management ([43b6ee7](https://github.com/Krivega/sip-connector/commit/43b6ee779e165b8dba4ea11a46d3b8d8856e3786))
+- add ConfigurationManager and ConnectionFlow for enhanced SIP connection management ([9fbbc8d](https://github.com/Krivega/sip-connector/commit/9fbbc8db6dff8c5a903be8cf09e7f0bd1f127507))
+- implement ConnectionManager and IncomingCallManager for SIP handling ([3b89b75](https://github.com/Krivega/sip-connector/commit/3b89b75a7846a3223dda5f1f69809f46e53cec7e))
+- integrate XState for connection state management in ConnectionManager ([07dcda7](https://github.com/Krivega/sip-connector/commit/07dcda7a3a66ad8a6c665f204b8ebec51bc2303c))
+- refactor ConnectionManager to use RegistrationManager and UAFactory for improved SIP handling ([aa982f9](https://github.com/Krivega/sip-connector/commit/aa982f9cc05b10aff511b372ea2e407b0fcfffbb))
+
+### Bug Fixes
+
+- resolve unsubscribe function initialization and improve UA event handling in ConnectionFlow and UAFactory ([a4ccd53](https://github.com/Krivega/sip-connector/commit/a4ccd53a1ee408ebe36f75053f330990a466b04a))
+- update jest configuration and improve error handling in ConnectionManager tests ([7e3cc9b](https://github.com/Krivega/sip-connector/commit/7e3cc9b47353d4c129058e07df4abc667252ef9c))
+
+### [14.0.1-0](https://github.com/Krivega/sip-connector/compare/v14.0.0...v14.0.1-0) (2025-07-15)
+
 ### [14.0.1-0](https://github.com/Krivega/sip-connector/compare/v14.0.0...v14.0.1-0) (2025-07-15)
 
 ## [14.1.0](https://github.com/Krivega/sip-connector/compare/v14.0.0...v14.1.0) (2025-07-15)
