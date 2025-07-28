@@ -8,5 +8,6 @@ export { default as setParametersToSender } from './setParametersToSender';
 export { SipConnector } from './SipConnector';
 export { SipConnectorFacade } from './SipConnectorFacade';
 export * as tools from './tools';
+export { EMimeTypesVideoCodecs } from './types';
 export { default as getCodecFromSender } from './utils/getCodecFromSender';
 export { default as resolveVideoSendingBalancer } from './videoSendingBalancer';
