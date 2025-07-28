@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [14.1.0-alpha.5](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.4...v14.1.0-alpha.5) (2025-07-28)
+
+### Features
+
+- export TContentHint ([60d5637](https://github.com/Krivega/sip-connector/commit/60d5637c50fad9e9cceccffa3d7525ec555e9894))
+
 ## [14.1.0-alpha.4](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.3...v14.1.0-alpha.4) (2025-07-28)
 
 ### Features
