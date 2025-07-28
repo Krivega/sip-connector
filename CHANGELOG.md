@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [14.1.0-alpha.3](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.2...v14.1.0-alpha.3) (2025-07-28)
+
+### Features
+
+- export ECallCause ([e2d0fa6](https://github.com/Krivega/sip-connector/commit/e2d0fa69bc1d480b0e2a6f7245a587b8af8407e8))
+- export EUseLicense ([128db55](https://github.com/Krivega/sip-connector/commit/128db554c99593cf0c3153a8ca945b8fca16b9c2))
+
 ## [14.1.0-alpha.2](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.1...v14.1.0-alpha.2) (2025-07-26)
 
 ## [14.1.0-alpha.1](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.0...v14.1.0-alpha.1) (2025-07-26)
