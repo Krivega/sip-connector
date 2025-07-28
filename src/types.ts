@@ -1,15 +1,4 @@
 import type { UA, WebSocketInterface } from '@krivega/jssip';
-import type { Originator } from './CallManager';
-
-export type TCustomError = Error & {
-  originator?: Originator;
-  cause?: unknown;
-  message: unknown;
-  _ws?: unknown;
-  socket?: unknown;
-  url?: string;
-  code?: string;
-};
 
 export type TJsSIP = {
   UA: typeof UA;
