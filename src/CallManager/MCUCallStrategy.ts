@@ -267,10 +267,12 @@ export class MCUCallStrategy extends AbstractCallStrategy {
           }
         };
 
-        peerconnection.addEventListener('track', handleTrack);
+        // eslint-disable-next-line no-param-reassign
+        peerconnection.ontrack = handleTrack;
 
         this.disposers.add(() => {
-          peerconnection.removeEventListener('track', handleTrack);
+          // eslint-disable-next-line unicorn/no-null, no-param-reassign
+          peerconnection.ontrack = null;
         });
       };
       const handleConfirmed = () => {
