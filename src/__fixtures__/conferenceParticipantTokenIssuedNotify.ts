@@ -1,4 +1,4 @@
-import { HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_NOTIFY, HEADER_NOTIFY } from '../headers';
+import { EContentTypeReceived, EHeader } from '../ApiManager';
 
 const conferenceParticipantTokenIssued = {
   cmd: 'ConferenceParticipantTokenIssued',
@@ -10,8 +10,8 @@ const conferenceParticipantTokenIssued = {
 };
 
 export const conferenceParticipantTokenIssuedHeaders: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_NOTIFY],
-  [HEADER_NOTIFY, JSON.stringify(conferenceParticipantTokenIssued)],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.NOTIFY],
+  [EHeader.NOTIFY, JSON.stringify(conferenceParticipantTokenIssued)],
 ];
 
 export const conferenceParticipantTokenIssuedData = {

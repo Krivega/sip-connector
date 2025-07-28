@@ -2,40 +2,34 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
-import { EEventsMainCAM } from '../ApiManager';
+import { EContentTypeReceived, EEventsMainCAM, EHeader } from '../ApiManager';
 import { doMockSipConnector } from '../doMock';
-import {
-  CONTENT_TYPE_MAIN_CAM,
-  HEADER_CONTENT_TYPE_NAME,
-  HEADER_MAIN_CAM,
-  HEADER_MAIN_CAM_RESOLUTION,
-} from '../headers';
 import type { SipConnector } from '../SipConnector';
 
 const headersMainCamControl: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
-  [HEADER_MAIN_CAM, EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION],
-  [HEADER_MAIN_CAM_RESOLUTION, '720'],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
+  [EHeader.MAIN_CAM, EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION],
+  [EHeader.MAIN_CAM_RESOLUTION, '720'],
 ];
 
 const headersAdminStartMainCam: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
-  [HEADER_MAIN_CAM, EEventsMainCAM.ADMIN_START_MAIN_CAM],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
+  [EHeader.MAIN_CAM, EEventsMainCAM.ADMIN_START_MAIN_CAM],
 ];
 
 const headersAdminStopMainCam: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
-  [HEADER_MAIN_CAM, EEventsMainCAM.ADMIN_STOP_MAIN_CAM],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
+  [EHeader.MAIN_CAM, EEventsMainCAM.ADMIN_STOP_MAIN_CAM],
 ];
 
 const headersResumeMainCam: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
-  [HEADER_MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
+  [EHeader.MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM],
 ];
 
 const headersPauseMainCam: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
-  [HEADER_MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
+  [EHeader.MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM],
 ];
 
 describe('main cam control', () => {

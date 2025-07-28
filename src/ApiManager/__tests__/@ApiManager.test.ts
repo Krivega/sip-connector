@@ -2,7 +2,6 @@ import jssip from '../../__fixtures__/jssip.mock';
 import RTCSessionMock from '../../__fixtures__/RTCSessionMock';
 import { CallManager } from '../../CallManager';
 import { ConnectionManager } from '../../ConnectionManager';
-import { HEADER_NOTIFY } from '../../headers';
 import logger from '../../logger';
 import type { TJsSIP } from '../../types';
 import * as errorsUtils from '../../utils/errors';
@@ -134,7 +133,7 @@ describe('ApiManager', () => {
       // Триггерим событие
       const notifyData = { cmd: 'channels', input: 'input1', output: 'output1' };
 
-      mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
       connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
       const result = await waitPromise;
@@ -151,7 +150,7 @@ describe('ApiManager', () => {
       const waitPromise = apiManager.waitChannels();
 
       // Триггерим событие CHANNELS
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.ENTER_ROOM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
       mockRequest.setHeader(EHeader.INPUT_CHANNELS, 'input1,input2');
       mockRequest.setHeader(EHeader.OUTPUT_CHANNELS, 'output1,output2');
 
@@ -171,7 +170,7 @@ describe('ApiManager', () => {
       const waitPromise = apiManager.waitSyncMediaState();
 
       // Триггерим событие ADMIN_FORCE_SYNC_MEDIA_STATE
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
       mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM);
       mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
 
@@ -190,7 +189,7 @@ describe('ApiManager', () => {
       const waitPromise = apiManager.waitSyncMediaState();
 
       // Триггерим событие ADMIN_FORCE_SYNC_MEDIA_STATE с не принудительной синхронизацией
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
       mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM);
       mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_NOT_FORCED);
 
@@ -723,7 +722,7 @@ describe('ApiManager', () => {
 
       const notifyData = { cmd: 'channels', input: 'input1', output: 'output1' };
 
-      mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
 
       connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
@@ -736,7 +735,7 @@ describe('ApiManager', () => {
     it('должен логировать неизвестные команды', () => {
       const notifyData = { cmd: 'unknown_command', data: 'test' };
 
-      mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
 
       connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
@@ -762,7 +761,7 @@ describe('ApiManager', () => {
 
       apiManager.on('enterRoom', enterRoomSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.ENTER_ROOM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
       mockRequest.setHeader(EHeader.CONTENT_ENTER_ROOM, 'room123');
       mockRequest.setHeader(EHeader.PARTICIPANT_NAME, 'user123');
 
@@ -781,7 +780,7 @@ describe('ApiManager', () => {
 
       apiManager.on('availableSecondRemoteStream', shareStateSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.SHARE_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
       mockRequest.setHeader(
         EHeader.CONTENT_SHARE_STATE,
         EShareState.AVAILABLE_SECOND_REMOTE_STREAM,
@@ -799,7 +798,7 @@ describe('ApiManager', () => {
 
       apiManager.on('admin-start-main-cam', mainCamSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
       mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.ADMIN_START_MAIN_CAM);
       mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
 
@@ -815,7 +814,7 @@ describe('ApiManager', () => {
 
       apiManager.on('admin-start-mic', micSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MIC);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MIC);
       mockRequest.setHeader(EHeader.MIC, EEventsMic.ADMIN_START_MIC);
       mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
 
@@ -831,7 +830,7 @@ describe('ApiManager', () => {
 
       apiManager.on('useLicense', licenseSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.USE_LICENSE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.USE_LICENSE);
       mockRequest.setHeader(EHeader.CONTENT_USE_LICENSE, EUseLicense.AUDIO);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -846,7 +845,7 @@ describe('ApiManager', () => {
 
       apiManager.on('participant:move-request-to-spectators', participantSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.PARTICIPANT_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE);
       mockRequest.setHeader(EHeader.CONTENT_PARTICIPANT_STATE, EParticipantType.SPECTATOR);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -861,7 +860,7 @@ describe('ApiManager', () => {
 
       apiManager.on('channels', channelsSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.ENTER_ROOM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
       mockRequest.setHeader(EHeader.INPUT_CHANNELS, 'input1,input2');
       mockRequest.setHeader(EHeader.OUTPUT_CHANNELS, 'output1,output2');
 
@@ -880,7 +879,7 @@ describe('ApiManager', () => {
 
       apiManager.on('channels', anySpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, 'unknown/type');
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, 'unknown/type');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -894,7 +893,7 @@ describe('ApiManager', () => {
 
       apiManager.on('channels:notify', channelsSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.NOTIFY);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.NOTIFY);
 
       const notifyData = { cmd: 'channels', input: 'input1', output: 'output1' };
 
@@ -915,7 +914,7 @@ describe('ApiManager', () => {
 
       apiManager.on('channels', anySpy);
 
-      // Не устанавливаем CONTENT_TYPE_NAME заголовок
+      // Не устанавливаем CONTENT_TYPE заголовок
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -929,7 +928,7 @@ describe('ApiManager', () => {
 
       apiManager.on('channels', anySpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, 'unknown/content-type');
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, 'unknown/content-type');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -951,7 +950,7 @@ describe('ApiManager', () => {
         output: 'output_channel_1,output_channel_2',
       };
 
-      mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
 
       connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
@@ -973,7 +972,7 @@ describe('ApiManager', () => {
         body: { conference: 'conf123', type: 'video' },
       };
 
-      mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
 
       connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
@@ -993,7 +992,7 @@ describe('ApiManager', () => {
         body: { conference: 'conf123', type: 'video' },
       };
 
-      mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
 
       connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
@@ -1015,7 +1014,7 @@ describe('ApiManager', () => {
         conference: 'conf123',
       };
 
-      mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
 
       connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
@@ -1034,7 +1033,7 @@ describe('ApiManager', () => {
         conference: 'conf123',
       };
 
-      mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
 
       connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
@@ -1055,7 +1054,7 @@ describe('ApiManager', () => {
         body: { conference: 'conf123' },
       };
 
-      mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
 
       connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
@@ -1074,7 +1073,7 @@ describe('ApiManager', () => {
         body: { conference: 'conf123' },
       };
 
-      mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
 
       connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
@@ -1095,7 +1094,7 @@ describe('ApiManager', () => {
         body: { conference: 'conf123' },
       };
 
-      mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
 
       connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
@@ -1115,7 +1114,7 @@ describe('ApiManager', () => {
         cmd: 'accountChanged',
       };
 
-      mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
 
       connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
@@ -1131,7 +1130,7 @@ describe('ApiManager', () => {
         cmd: 'accountDeleted',
       };
 
-      mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
 
       connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
@@ -1154,7 +1153,7 @@ describe('ApiManager', () => {
         },
       };
 
-      mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
 
       connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
@@ -1265,7 +1264,7 @@ describe('ApiManager', () => {
       testCases.forEach(({ cmd, data, spy, expected }) => {
         const notifyData = { cmd, ...data };
 
-        mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
+        mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
         connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
         expect(spy).toHaveBeenCalledWith(expected);
@@ -1279,7 +1278,7 @@ describe('ApiManager', () => {
 
       apiManager.on('availableSecondRemoteStream', availableStreamSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.SHARE_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
       mockRequest.setHeader(
         EHeader.CONTENT_SHARE_STATE,
         EShareState.AVAILABLE_SECOND_REMOTE_STREAM,
@@ -1297,7 +1296,7 @@ describe('ApiManager', () => {
 
       apiManager.on('notAvailableSecondRemoteStream', notAvailableStreamSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.SHARE_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
       mockRequest.setHeader(
         EHeader.CONTENT_SHARE_STATE,
         EShareState.NOT_AVAILABLE_SECOND_REMOTE_STREAM,
@@ -1315,7 +1314,7 @@ describe('ApiManager', () => {
 
       apiManager.on('mustStopPresentation', mustStopPresentationSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.SHARE_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
       mockRequest.setHeader(EHeader.CONTENT_SHARE_STATE, EShareState.MUST_STOP_PRESENTATION);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -1330,7 +1329,7 @@ describe('ApiManager', () => {
 
       apiManager.on('availableSecondRemoteStream', anySpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.SHARE_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
       mockRequest.setHeader(EHeader.CONTENT_SHARE_STATE, 'unknown_state');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -1345,7 +1344,7 @@ describe('ApiManager', () => {
 
       apiManager.on('availableSecondRemoteStream', anySpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.SHARE_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
       // Не устанавливаем CONTENT_SHARE_STATE заголовок
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -1360,7 +1359,7 @@ describe('ApiManager', () => {
 
       apiManager.on('availableSecondRemoteStream', anySpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.SHARE_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
       mockRequest.setHeader(EHeader.CONTENT_SHARE_STATE, 'unknown_share_state');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -1377,7 +1376,7 @@ describe('ApiManager', () => {
 
       apiManager.on('admin-start-main-cam', adminStartSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
       mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.ADMIN_START_MAIN_CAM);
       mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
 
@@ -1393,7 +1392,7 @@ describe('ApiManager', () => {
 
       apiManager.on('admin-stop-main-cam', adminStopSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
       mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.ADMIN_STOP_MAIN_CAM);
       mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_NOT_FORCED);
 
@@ -1409,7 +1408,7 @@ describe('ApiManager', () => {
 
       apiManager.on('admin-force-sync-media-state', syncSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
       mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM);
       mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
 
@@ -1425,7 +1424,7 @@ describe('ApiManager', () => {
 
       apiManager.on('admin-force-sync-media-state', syncSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
       mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM);
       mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
 
@@ -1443,7 +1442,7 @@ describe('ApiManager', () => {
       apiManager.on('admin-force-sync-media-state', syncSpy);
       apiManager.on('main-cam-control', mainCamControlSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
       mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM);
       // Не устанавливаем MEDIA_SYNC заголовок
 
@@ -1465,7 +1464,7 @@ describe('ApiManager', () => {
       apiManager.on('admin-force-sync-media-state', syncSpy);
       apiManager.on('main-cam-control', mainCamControlSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
       mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM);
       // Не устанавливаем MEDIA_SYNC заголовок
 
@@ -1485,7 +1484,7 @@ describe('ApiManager', () => {
 
       apiManager.on('main-cam-control', mainCamControlSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
       mockRequest.setHeader(EHeader.MAIN_CAM, 'UNKNOWN_MAIN_CAM_EVENT');
       mockRequest.setHeader(EHeader.MAIN_CAM_RESOLUTION, '1920x1080');
 
@@ -1504,7 +1503,7 @@ describe('ApiManager', () => {
 
       apiManager.on('main-cam-control', mainCamControlSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
       mockRequest.setHeader(EHeader.MAIN_CAM, 'UNKNOWN_MAIN_CAM_EVENT');
       // Не устанавливаем MAIN_CAM_RESOLUTION заголовок
 
@@ -1525,7 +1524,7 @@ describe('ApiManager', () => {
 
       apiManager.on('admin-start-mic', adminStartSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MIC);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MIC);
       mockRequest.setHeader(EHeader.MIC, EEventsMic.ADMIN_START_MIC);
       mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
 
@@ -1541,7 +1540,7 @@ describe('ApiManager', () => {
 
       apiManager.on('admin-stop-mic', adminStopSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MIC);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MIC);
       mockRequest.setHeader(EHeader.MIC, EEventsMic.ADMIN_STOP_MIC);
       mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_NOT_FORCED);
 
@@ -1557,7 +1556,7 @@ describe('ApiManager', () => {
 
       apiManager.on('admin-start-mic', anySpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MIC);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MIC);
       mockRequest.setHeader(EHeader.MIC, 'unknown_mic_event');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -1572,7 +1571,7 @@ describe('ApiManager', () => {
 
       apiManager.on('admin-start-mic', anySpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MIC);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MIC);
       mockRequest.setHeader(EHeader.MIC, 'unknown_mic_event');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -1589,7 +1588,7 @@ describe('ApiManager', () => {
 
       apiManager.on('channels', channelsSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.ENTER_ROOM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
       mockRequest.setHeader(EHeader.INPUT_CHANNELS, 'input1,input2');
       mockRequest.setHeader(EHeader.OUTPUT_CHANNELS, 'output1,output2');
 
@@ -1608,7 +1607,7 @@ describe('ApiManager', () => {
 
       apiManager.on('channels', channelsSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.ENTER_ROOM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
       // Не устанавливаем INPUT_CHANNELS заголовок
       mockRequest.setHeader(EHeader.OUTPUT_CHANNELS, 'output1,output2');
 
@@ -1624,7 +1623,7 @@ describe('ApiManager', () => {
 
       apiManager.on('channels', channelsSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.ENTER_ROOM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
       mockRequest.setHeader(EHeader.INPUT_CHANNELS, 'input1,input2');
       // Не устанавливаем OUTPUT_CHANNELS заголовок
 
@@ -1640,7 +1639,7 @@ describe('ApiManager', () => {
 
       apiManager.on('channels', channelsSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.ENTER_ROOM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
       // Не устанавливаем INPUT_CHANNELS и OUTPUT_CHANNELS заголовки
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -1657,7 +1656,7 @@ describe('ApiManager', () => {
 
       apiManager.on('participant:move-request-to-spectators', spectatorSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.PARTICIPANT_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE);
       mockRequest.setHeader(EHeader.CONTENT_PARTICIPANT_STATE, EParticipantType.SPECTATOR);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -1672,7 +1671,7 @@ describe('ApiManager', () => {
 
       apiManager.on('participant:move-request-to-participants', participantSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.PARTICIPANT_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE);
       mockRequest.setHeader(EHeader.CONTENT_PARTICIPANT_STATE, EParticipantType.PARTICIPANT);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -1687,7 +1686,7 @@ describe('ApiManager', () => {
 
       apiManager.on('participant:move-request-to-spectators', anySpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.PARTICIPANT_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE);
       mockRequest.setHeader(EHeader.CONTENT_PARTICIPANT_STATE, 'unknown_state');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -1702,7 +1701,7 @@ describe('ApiManager', () => {
 
       apiManager.on('participant:move-request-to-spectators', anySpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.PARTICIPANT_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE);
       // Не устанавливаем CONTENT_PARTICIPANT_STATE заголовок
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -1719,7 +1718,7 @@ describe('ApiManager', () => {
       apiManager.on('participant:move-request-to-spectators', spectatorSpy);
       apiManager.on('participant:move-request-to-participants', participantSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.PARTICIPANT_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE);
       mockRequest.setHeader(EHeader.CONTENT_PARTICIPANT_STATE, EParticipantType.SPECTATOR);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -1733,7 +1732,7 @@ describe('ApiManager', () => {
 
   describe('обработка ошибок', () => {
     it('должен корректно обрабатывать некорректный JSON в заголовке', () => {
-      mockRequest.setHeader(HEADER_NOTIFY, 'invalid json');
+      mockRequest.setHeader(EHeader.NOTIFY, 'invalid json');
 
       expect(() => {
         connectionManager.events.trigger('sipEvent', { request: mockRequest });
@@ -1752,7 +1751,7 @@ describe('ApiManager', () => {
         // Отсутствуют поля input и output
       };
 
-      mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
 
       connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
@@ -1767,7 +1766,7 @@ describe('ApiManager', () => {
 
       apiManager.on('enterRoom', enterRoomSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.ENTER_ROOM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
       // Не устанавливаем заголовки CONTENT_ENTER_ROOM и PARTICIPANT_NAME
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -1785,7 +1784,7 @@ describe('ApiManager', () => {
 
       apiManager.on('channels', channelsSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.ENTER_ROOM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
       // Не устанавливаем заголовки INPUT_CHANNELS и OUTPUT_CHANNELS
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -1800,7 +1799,7 @@ describe('ApiManager', () => {
 
       apiManager.on('main-cam-control', mainCamControlSpy);
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
       // Не устанавливаем заголовки MAIN_CAM и MAIN_CAM_RESOLUTION
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -1814,7 +1813,7 @@ describe('ApiManager', () => {
     });
 
     it('должен корректно обрабатывать ошибку парсинга JSON в maybeHandleNotify', () => {
-      mockRequest.setHeader(HEADER_NOTIFY, 'invalid json');
+      mockRequest.setHeader(EHeader.NOTIFY, 'invalid json');
 
       expect(() => {
         connectionManager.events.trigger('sipEvent', { request: mockRequest });
@@ -1851,7 +1850,7 @@ describe('ApiManager', () => {
         output: 'output1',
       };
 
-      mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData1));
+      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData1));
       connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
       // Второе уведомление
@@ -1859,7 +1858,7 @@ describe('ApiManager', () => {
         cmd: 'accountChanged',
       };
 
-      mockRequest.setHeader(HEADER_NOTIFY, JSON.stringify(notifyData2));
+      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData2));
       connectionManager.events.trigger('sipEvent', { request: mockRequest });
 
       expect(channelsSpy).toHaveBeenCalledTimes(1);
@@ -1880,7 +1879,7 @@ describe('ApiManager', () => {
       apiManager.on('availableSecondRemoteStream', shareStateSpy);
 
       // Первое событие
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.ENTER_ROOM);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
       mockRequest.setHeader(EHeader.CONTENT_ENTER_ROOM, 'room1');
       mockRequest.setHeader(EHeader.PARTICIPANT_NAME, 'user1');
 
@@ -1889,7 +1888,7 @@ describe('ApiManager', () => {
       callManager.events.trigger('newInfo' as never, infoEvent1);
 
       // Второе событие
-      mockRequest.setHeader(EHeader.CONTENT_TYPE_NAME, EContentTypeReceived.SHARE_STATE);
+      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
       mockRequest.setHeader(
         EHeader.CONTENT_SHARE_STATE,
         EShareState.AVAILABLE_SECOND_REMOTE_STREAM,

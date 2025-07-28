@@ -1,5 +1,5 @@
 export enum EHeader {
-  CONTENT_TYPE_NAME = 'content-type',
+  CONTENT_TYPE = 'content-type',
   CONTENT_ENTER_ROOM = 'x-webrtc-enter-room',
   CONTENT_USE_LICENSE = 'X-WEBRTC-USE-LICENSE',
   PARTICIPANT_NAME = 'X-WEBRTC-PARTICIPANT-NAME',

@@ -2,19 +2,18 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
-import { EEventsMic } from '../ApiManager';
+import { EContentTypeReceived, EEventsMic, EHeader } from '../ApiManager';
 import { doMockSipConnector } from '../doMock';
-import { CONTENT_TYPE_MIC, HEADER_CONTENT_TYPE_NAME, HEADER_MIC } from '../headers';
 import type { SipConnector } from '../SipConnector';
 
 const headersAdminStartMic: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MIC],
-  [HEADER_MIC, EEventsMic.ADMIN_START_MIC],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.MIC],
+  [EHeader.MIC, EEventsMic.ADMIN_START_MIC],
 ];
 
 const headersAdminStopMic: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MIC],
-  [HEADER_MIC, EEventsMic.ADMIN_STOP_MIC],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.MIC],
+  [EHeader.MIC, EEventsMic.ADMIN_STOP_MIC],
 ];
 
 describe('mic control', () => {

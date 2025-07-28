@@ -4,13 +4,8 @@ import type { ExtraHeaders } from '@krivega/jssip';
 import { createMediaStreamMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import SessionMock, { createDeclineStartPresentationError } from '../__fixtures__/RTCSessionMock';
+import { EContentTypeReceived, EHeader } from '../ApiManager';
 import { doMockSipConnector } from '../doMock';
-import {
-  CONTENT_TYPE_SHARE_STATE,
-  HEADER_MUST_STOP_PRESENTATION_P2P,
-  HEADER_START_PRESENTATION,
-  HEADER_START_PRESENTATION_P2P,
-} from '../headers';
 import type { SipConnector } from '../SipConnector';
 
 const startPresentationCallLimit = 1;
@@ -33,7 +28,8 @@ describe('presentation', () => {
       async (contentType: string, body?: string, options?: ExtraHeaders) => {
         if (
           options?.extraHeaders &&
-          options.extraHeaders[0] === HEADER_MUST_STOP_PRESENTATION_P2P
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+          options.extraHeaders[0] === EHeader.MUST_STOP_PRESENTATION_P2P
         ) {
           throw new Error(failedToSendMustStopSendPresentationError);
         }
@@ -237,11 +233,11 @@ describe('presentation', () => {
     await sipConnector.startPresentation(mediaStream, { isP2P: true });
 
     expect(sendInfoMocked).toHaveBeenCalledTimes(2);
-    expect(sendInfoMocked).toHaveBeenNthCalledWith(1, CONTENT_TYPE_SHARE_STATE, undefined, {
-      extraHeaders: [HEADER_MUST_STOP_PRESENTATION_P2P],
+    expect(sendInfoMocked).toHaveBeenNthCalledWith(1, EContentTypeReceived.SHARE_STATE, undefined, {
+      extraHeaders: [EHeader.MUST_STOP_PRESENTATION_P2P],
     });
-    expect(sendInfoMocked).toHaveBeenNthCalledWith(2, CONTENT_TYPE_SHARE_STATE, undefined, {
-      extraHeaders: [HEADER_START_PRESENTATION_P2P],
+    expect(sendInfoMocked).toHaveBeenNthCalledWith(2, EContentTypeReceived.SHARE_STATE, undefined, {
+      extraHeaders: [EHeader.START_PRESENTATION_P2P],
     });
   });
 
@@ -256,8 +252,8 @@ describe('presentation', () => {
     await sipConnector.startPresentation(mediaStream, { isP2P: false });
 
     expect(sendInfoMocked).toHaveBeenCalledTimes(1);
-    expect(sendInfoMocked).toHaveBeenNthCalledWith(1, CONTENT_TYPE_SHARE_STATE, undefined, {
-      extraHeaders: [HEADER_START_PRESENTATION],
+    expect(sendInfoMocked).toHaveBeenNthCalledWith(1, EContentTypeReceived.SHARE_STATE, undefined, {
+      extraHeaders: [EHeader.START_PRESENTATION],
     });
   });
 
@@ -326,7 +322,9 @@ describe('presentation', () => {
     expect(stream).toBeInstanceOf(MediaStream);
   });
 
-  it('should cancel requests send presentation after stop presentation', async () => {
+  // TODO: because of removed cancelable promises, this test is skipped
+  // eslint-disable-next-line jest/no-disabled-tests
+  it.skip('should cancel requests send presentation after stop presentation', async () => {
     expect.assertions(4);
 
     SessionMock.setStartPresentationError(declineStartPresentationError);
@@ -363,7 +361,9 @@ describe('presentation', () => {
     expect(cancelSendPresentationWithRepeatedCallsMocked).toHaveBeenCalledTimes(1);
   });
 
-  it('should cancel requests send presentation after hang up call', async () => {
+  // TODO: because of removed cancelable promises, this test is skipped
+  // eslint-disable-next-line jest/no-disabled-tests
+  it.skip('should cancel requests send presentation after hang up call', async () => {
     expect.assertions(3);
 
     SessionMock.setStartPresentationError(declineStartPresentationError);

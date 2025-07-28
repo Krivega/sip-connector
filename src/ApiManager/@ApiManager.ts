@@ -401,9 +401,7 @@ class ApiManager {
     }
 
     const { request } = info;
-    const contentType = request.getHeader(EHeader.CONTENT_TYPE_NAME) as
-      | EContentTypeReceived
-      | undefined;
+    const contentType = request.getHeader(EHeader.CONTENT_TYPE) as EContentTypeReceived | undefined;
 
     if (contentType !== undefined) {
       switch (contentType) {

@@ -2,15 +2,8 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
+import { EContentTypeReceived, EHeader, EShareState } from '../ApiManager';
 import { doMockSipConnector } from '../doMock';
-import {
-  AVAILABLE_SECOND_REMOTE_STREAM,
-  CONTENT_TYPE_SHARE_STATE,
-  HEADER_CONTENT_SHARE_STATE,
-  HEADER_CONTENT_TYPE_NAME,
-  MUST_STOP_PRESENTATION,
-  NOT_AVAILABLE_SECOND_REMOTE_STREAM,
-} from '../headers';
 import type { SipConnector } from '../SipConnector';
 
 describe('events', () => {
@@ -38,8 +31,8 @@ describe('events', () => {
     await sipConnector.call({ number, mediaStream });
 
     const extraHeaders: [string, string][] = [
-      [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_SHARE_STATE],
-      [HEADER_CONTENT_SHARE_STATE, AVAILABLE_SECOND_REMOTE_STREAM],
+      [EHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE],
+      [EHeader.CONTENT_SHARE_STATE, EShareState.AVAILABLE_SECOND_REMOTE_STREAM],
     ];
     const { establishedRTCSession } = sipConnector.callManager;
 
@@ -61,8 +54,8 @@ describe('events', () => {
     await sipConnector.call({ number, mediaStream });
 
     const extraHeaders: [string, string][] = [
-      [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_SHARE_STATE],
-      [HEADER_CONTENT_SHARE_STATE, NOT_AVAILABLE_SECOND_REMOTE_STREAM],
+      [EHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE],
+      [EHeader.CONTENT_SHARE_STATE, EShareState.NOT_AVAILABLE_SECOND_REMOTE_STREAM],
     ];
     const { establishedRTCSession } = sipConnector.callManager;
 
@@ -84,8 +77,8 @@ describe('events', () => {
     await sipConnector.call({ number, mediaStream });
 
     const extraHeaders: [string, string][] = [
-      [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_SHARE_STATE],
-      [HEADER_CONTENT_SHARE_STATE, MUST_STOP_PRESENTATION],
+      [EHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE],
+      [EHeader.CONTENT_SHARE_STATE, EShareState.MUST_STOP_PRESENTATION],
     ];
     const { establishedRTCSession } = sipConnector.callManager;
 

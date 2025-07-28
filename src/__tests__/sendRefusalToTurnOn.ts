@@ -1,8 +1,8 @@
 /// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
+import { EContentTypeSent } from '../ApiManager';
 import { doMockSipConnector } from '../doMock';
-import { CONTENT_TYPE_REFUSAL } from '../headers';
 import type { SipConnector } from '../SipConnector';
 
 describe('media state', () => {
@@ -35,7 +35,7 @@ describe('media state', () => {
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sipConnector.sendRefusalToTurnOnMic();
 
-    expect(mockFunction).toHaveBeenCalledWith(CONTENT_TYPE_REFUSAL, undefined, {
+    expect(mockFunction).toHaveBeenCalledWith(EContentTypeSent.REFUSAL, undefined, {
       extraHeaders: ['X-Vinteo-Media-Type: 0'],
       noTerminateWhenError: true,
     });
@@ -56,7 +56,7 @@ describe('media state', () => {
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sipConnector.sendRefusalToTurnOnCam();
 
-    expect(mockFunction).toHaveBeenCalledWith(CONTENT_TYPE_REFUSAL, undefined, {
+    expect(mockFunction).toHaveBeenCalledWith(EContentTypeSent.REFUSAL, undefined, {
       extraHeaders: ['X-Vinteo-Media-Type: 1'],
       noTerminateWhenError: true,
     });

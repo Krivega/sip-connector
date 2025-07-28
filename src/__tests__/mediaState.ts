@@ -2,8 +2,8 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import { extraHeaders, mediaStateData } from '../__fixtures__/mediaState';
+import { EContentTypeSent } from '../ApiManager';
 import { doMockSipConnector } from '../doMock';
-import { CONTENT_TYPE_MEDIA_STATE } from '../headers';
 import type { SipConnector } from '../SipConnector';
 
 describe('media state', () => {
@@ -36,7 +36,7 @@ describe('media state', () => {
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sipConnector.sendMediaState(mediaStateData);
 
-    expect(mockFunction).toHaveBeenCalledWith(CONTENT_TYPE_MEDIA_STATE, undefined, {
+    expect(mockFunction).toHaveBeenCalledWith(EContentTypeSent.MEDIA_STATE, undefined, {
       ...extraHeaders,
       noTerminateWhenError: true,
     });

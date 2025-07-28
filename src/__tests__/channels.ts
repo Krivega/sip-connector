@@ -3,8 +3,8 @@ import { createMediaStreamMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import { channelsData, channelsHeaders, sendedExtraHeaders } from '../__fixtures__/channels';
 import JsSIP from '../__fixtures__/jssip.mock';
+import { EContentTypeSent } from '../ApiManager';
 import { doMockSipConnector } from '../doMock';
-import { CONTENT_TYPE_CHANNELS } from '../headers';
 import type { SipConnector } from '../SipConnector';
 
 describe('channels', () => {
@@ -54,6 +54,10 @@ describe('channels', () => {
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sipConnector.sendChannels(channelsData);
 
-    expect(mockFunction).toHaveBeenCalledWith(CONTENT_TYPE_CHANNELS, undefined, sendedExtraHeaders);
+    expect(mockFunction).toHaveBeenCalledWith(
+      EContentTypeSent.CHANNELS,
+      undefined,
+      sendedExtraHeaders,
+    );
   });
 });

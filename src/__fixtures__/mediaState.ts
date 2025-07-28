@@ -1,11 +1,11 @@
-import { HEADER_MEDIA_STATE, HEADER_MAIN_CAM_STATE, HEADER_MIC_STATE } from '../headers';
+import { EHeader } from '../ApiManager';
 
 const cam = true;
 const mic = true;
 
-const headerMediaState = `${HEADER_MEDIA_STATE}: currentstate`;
-const headerCam = `${HEADER_MAIN_CAM_STATE}: 1`;
-const headerMic = `${HEADER_MIC_STATE}: 1`;
+const headerMediaState = `${EHeader.MEDIA_STATE}: currentstate`;
+const headerCam = `${EHeader.MAIN_CAM_STATE}: 1`;
+const headerMic = `${EHeader.MIC_STATE}: 1`;
 
 export const mediaStateData = { cam, mic };
 

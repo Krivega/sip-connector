@@ -2,88 +2,86 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
-import { EEventsMainCAM, EEventsMic, EEventsSyncMediaState } from '../ApiManager';
-import { doMockSipConnector } from '../doMock';
 import {
-  CONTENT_TYPE_MAIN_CAM,
-  CONTENT_TYPE_MIC,
-  HEADER_CONTENT_TYPE_NAME,
-  HEADER_MAIN_CAM,
-  HEADER_MEDIA_SYNC,
-  HEADER_MIC,
-} from '../headers';
+  EContentTypeReceived,
+  EEventsMainCAM,
+  EEventsMic,
+  EEventsSyncMediaState,
+  EHeader,
+} from '../ApiManager';
+import { doMockSipConnector } from '../doMock';
 import type { SipConnector } from '../SipConnector';
 
 const headersSyncForcedAdminStartMainCam: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
-  [HEADER_MAIN_CAM, EEventsMainCAM.ADMIN_START_MAIN_CAM],
-  [HEADER_MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
+  [EHeader.MAIN_CAM, EEventsMainCAM.ADMIN_START_MAIN_CAM],
+  [EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED],
 ];
 
 const headersSyncNotForcedAdminStartMainCam: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
-  [HEADER_MAIN_CAM, EEventsMainCAM.ADMIN_START_MAIN_CAM],
-  [HEADER_MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_NOT_FORCED],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
+  [EHeader.MAIN_CAM, EEventsMainCAM.ADMIN_START_MAIN_CAM],
+  [EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_NOT_FORCED],
 ];
 
 const headersSyncForcedAdminStopMainCam: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
-  [HEADER_MAIN_CAM, EEventsMainCAM.ADMIN_STOP_MAIN_CAM],
-  [HEADER_MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
+  [EHeader.MAIN_CAM, EEventsMainCAM.ADMIN_STOP_MAIN_CAM],
+  [EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED],
 ];
 
 const headersSyncNotForcedAdminStopMainCam: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
-  [HEADER_MAIN_CAM, EEventsMainCAM.ADMIN_STOP_MAIN_CAM],
-  [HEADER_MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_NOT_FORCED],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
+  [EHeader.MAIN_CAM, EEventsMainCAM.ADMIN_STOP_MAIN_CAM],
+  [EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_NOT_FORCED],
 ];
 
 const headersSyncForcedAdminStartMic: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MIC],
-  [HEADER_MIC, EEventsMic.ADMIN_START_MIC],
-  [HEADER_MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.MIC],
+  [EHeader.MIC, EEventsMic.ADMIN_START_MIC],
+  [EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED],
 ];
 
 const headersSyncNotForcedAdminStartMic: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MIC],
-  [HEADER_MIC, EEventsMic.ADMIN_START_MIC],
-  [HEADER_MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_NOT_FORCED],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.MIC],
+  [EHeader.MIC, EEventsMic.ADMIN_START_MIC],
+  [EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_NOT_FORCED],
 ];
 
 const headersSyncForcedAdminStopMic: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MIC],
-  [HEADER_MIC, EEventsMic.ADMIN_STOP_MIC],
-  [HEADER_MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.MIC],
+  [EHeader.MIC, EEventsMic.ADMIN_STOP_MIC],
+  [EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED],
 ];
 
 const headersSyncNotForcedAdminStopMic: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MIC],
-  [HEADER_MIC, EEventsMic.ADMIN_STOP_MIC],
-  [HEADER_MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_NOT_FORCED],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.MIC],
+  [EHeader.MIC, EEventsMic.ADMIN_STOP_MIC],
+  [EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_NOT_FORCED],
 ];
 
 const headersSyncForcedResumeMainCam: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
-  [HEADER_MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM],
-  [HEADER_MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
+  [EHeader.MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM],
+  [EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED],
 ];
 
 const headersSyncNotForcedResumeMainCam: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
-  [HEADER_MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM],
-  [HEADER_MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_NOT_FORCED],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
+  [EHeader.MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM],
+  [EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_NOT_FORCED],
 ];
 
 const headersSyncForcedPauseMainCam: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
-  [HEADER_MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM],
-  [HEADER_MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
+  [EHeader.MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM],
+  [EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED],
 ];
 
 const headersSyncNotForcedPauseMainCam: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
-  [HEADER_MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM],
-  [HEADER_MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_NOT_FORCED],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
+  [EHeader.MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM],
+  [EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_NOT_FORCED],
 ];
 
 describe('sync media state', () => {
