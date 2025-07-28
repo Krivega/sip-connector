@@ -75,6 +75,7 @@ export class MCUCallStrategy extends AbstractCallStrategy {
           directionAudio,
           contentHint,
         }),
+        eventHandlers: this.events.triggers,
         directionVideo,
         directionAudio,
         pcConfig: {
@@ -87,8 +88,6 @@ export class MCUCallStrategy extends AbstractCallStrategy {
         sendEncodings,
         onAddedTransceiver,
       });
-
-      this.subscribeToSessionEvents(this.rtcSession);
     }).finally(() => {
       this.isPendingCall = false;
     });
@@ -267,12 +266,10 @@ export class MCUCallStrategy extends AbstractCallStrategy {
           }
         };
 
-        // eslint-disable-next-line no-param-reassign
-        peerconnection.ontrack = handleTrack;
+        peerconnection.addEventListener('track', handleTrack);
 
         this.disposers.add(() => {
-          // eslint-disable-next-line unicorn/no-null, no-param-reassign
-          peerconnection.ontrack = null;
+          peerconnection.removeEventListener('track', handleTrack);
         });
       };
       const handleConfirmed = () => {
