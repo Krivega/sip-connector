@@ -1,5 +1,6 @@
 /// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
+import { EEventsMainCAM } from '../../ApiManager';
 import type { SipConnector } from '../../SipConnector';
 import { dataForConnectionWithAuthorization } from '../../__fixtures__';
 import JsSIP from '../../__fixtures__/jssip.mock';
@@ -10,7 +11,6 @@ import {
   HEADER_MAIN_CAM,
   HEADER_MAIN_CAM_RESOLUTION,
 } from '../../headers';
-import { EEventsMainCAM } from '../../types';
 import findVideoSender from '../../utils/findVideoSender';
 import { MINIMUM_BITRATE } from '../getMaxBitrateByWidth';
 import getMaxBitrateByWidthAndCodec from '../getMaxBitrateByWidthAndCodec';

@@ -1,6 +1,6 @@
 import { createStackPromises } from 'stack-promises';
+import { EEventsMainCAM } from '../ApiManager';
 import logger from '../logger';
-import { EEventsMainCAM } from '../types';
 import getMaxBitrateByWidthAndCodec, { getMinimumBitrate } from './getMaxBitrateByWidthAndCodec';
 import scaleResolutionAndBitrate from './scaleResolutionAndBitrate';
 import type { TOnSetParameters, TResult } from './setEncodingsToSender';

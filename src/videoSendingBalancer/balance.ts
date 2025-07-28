@@ -1,4 +1,4 @@
-import type { EEventsMainCAM } from '../types';
+import type { EEventsMainCAM } from '../ApiManager';
 import findVideoSender from '../utils/findVideoSender';
 import getCodecFromSender from '../utils/getCodecFromSender';
 import hasIncludesString from './hasIncludesString';
