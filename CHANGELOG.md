@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [14.1.0-alpha.4](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.3...v14.1.0-alpha.4) (2025-07-28)
+
+### Features
+
+- export TCustomError ([6e34edc](https://github.com/Krivega/sip-connector/commit/6e34edc2d7bf577fc8b9cbb954b6192adf254a6c))
+
 ## [14.1.0-alpha.3](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.2...v14.1.0-alpha.3) (2025-07-28)
 
 ### Features
