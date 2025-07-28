@@ -627,7 +627,7 @@ class SipConnectorFacade implements IProxyMethods {
     sendEncodings?: RTCRtpEncodingParameters[];
     preferredMimeTypesVideoCodecs?: string[];
     excludeMimeTypesVideoCodecs?: string[];
-    callLimit: number;
+    callLimit?: number;
   }): Promise<MediaStream | undefined> => {
     const updateTransceiver = resolveUpdateTransceiver(
       {
