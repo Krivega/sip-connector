@@ -1,4 +1,5 @@
 import type { RTCSession, UA } from '@krivega/jssip';
+import type { TContentHint } from '../PresentationManager';
 import type { Originator } from './eventNames';
 
 export type TOntrack = (track: RTCTrackEvent) => void;
@@ -8,7 +9,6 @@ export type TOnAddedTransceiver = (
   track: MediaStreamTrack,
   stream: MediaStream,
 ) => Promise<void>;
-export type TContentHint = 'motion' | 'detail' | 'text' | 'none';
 export type TGetServerUrl = (id: string) => string;
 
 type TOptionsExtraHeaders = {

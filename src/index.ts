@@ -3,6 +3,7 @@ export { ECallCause, hasCanceledCallError } from './CallManager';
 export type { TCustomError } from './CallManager';
 export { debug, disableDebug, enableDebug } from './logger';
 export { hasCanceledStartPresentationError } from './PresentationManager';
+export type { TContentHint } from './PresentationManager';
 export { default as setParametersToSender } from './setParametersToSender';
 export { SipConnector } from './SipConnector';
 export { SipConnectorFacade } from './SipConnectorFacade';
