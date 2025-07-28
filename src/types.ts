@@ -19,12 +19,6 @@ export enum EEventsSyncMediaState {
   ADMIN_SYNC_NOT_FORCED = '0',
 }
 
-export enum EUseLicense {
-  AUDIO = 'AUDIO',
-  VIDEO = 'VIDEO',
-  AUDIOPLUSPRESENTATION = 'AUDIOPLUSPRESENTATION',
-}
-
 export type TCustomError = Error & {
   originator?: Originator;
   cause?: unknown;

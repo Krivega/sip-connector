@@ -1,10 +1,10 @@
+export { EUseLicense } from './ApiManager';
+export { hasCanceledCallError } from './CallManager';
 export { debug, disableDebug, enableDebug } from './logger';
+export { hasCanceledStartPresentationError } from './PresentationManager';
 export { default as setParametersToSender } from './setParametersToSender';
+export { SipConnector } from './SipConnector';
+export { SipConnectorFacade } from './SipConnectorFacade';
 export * as tools from './tools';
 export { default as getCodecFromSender } from './utils/getCodecFromSender';
 export { default as resolveVideoSendingBalancer } from './videoSendingBalancer';
-
-export { hasCanceledCallError } from './CallManager';
-export { hasCanceledStartPresentationError } from './PresentationManager';
-export { SipConnector } from './SipConnector';
-export { SipConnectorFacade } from './SipConnectorFacade';
