@@ -1,9 +1,9 @@
 /* eslint-disable unicorn/filename-case */
 import type { UA, UAConfigurationParams, WebSocketInterface } from '@krivega/jssip';
 import { generateUserId, parseDisplayName, resolveSipUrl } from '../../utils';
-import getExtraHeadersRemoteAddress from '../getExtraHeadersRemoteAddress';
 import type { TJsSIP } from '../types';
 import { UA_EVENT_NAMES } from './eventNames';
+import getExtraHeadersRemoteAddress from './getExtraHeadersRemoteAddress';
 
 export type TUAConfiguration = {
   configuration: UAConfigurationParams;

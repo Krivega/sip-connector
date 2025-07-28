@@ -5,8 +5,6 @@ export type TJsSIP = {
   WebSocketInterface: typeof WebSocketInterface;
 };
 
-export type TGetServerUrl = (id: string) => string;
-
 export type TRtpSendParameters = Partial<Omit<RTCRtpSendParameters, 'transactionId'>>;
 export type TSize = { width: number; height: number };
 
