@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [14.1.0-alpha.8](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.7...v14.1.0-alpha.8) (2025-07-28)
+
+### Features
+
+- export TJsSIP ([85afe22](https://github.com/Krivega/sip-connector/commit/85afe221adbf0871456d63d1b807c0f72ba1d560))
+
 ## [14.1.0-alpha.7](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.6...v14.1.0-alpha.7) (2025-07-28)
 
 ### Features
