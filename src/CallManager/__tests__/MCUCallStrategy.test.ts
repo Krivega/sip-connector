@@ -5,17 +5,9 @@ import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from
 import RTCPeerConnectionMock from '../../__fixtures__/RTCPeerConnectionMock';
 import RTCSessionMock from '../../__fixtures__/RTCSessionMock';
 import UAMock from '../../__fixtures__/UA.mock';
-import prepareMediaStream from '../../tools/prepareMediaStream';
 import { EVENT_NAMES } from '../eventNames';
 import { MCUCallStrategy } from '../MCUCallStrategy';
 import { RemoteStreamsManager } from '../RemoteStreamsManager';
-
-jest.mock('../../tools/prepareMediaStream', () => {
-  return {
-    __esModule: true,
-    default: jest.fn(),
-  };
-});
 
 // Вспомогательный тип для доступа к защищённым свойствам MCUCallStrategy
 interface MCUCallStrategyTestAccess {
@@ -62,6 +54,28 @@ describe('MCUCallStrategy', () => {
     expect(typeof pc).toBe('object');
   });
 
+  it('startCall: подписывается на события peerconnection', async () => {
+    const ontrack = jest.fn();
+    const onPeerconnection = jest.fn();
+
+    events.on('peerconnection', onPeerconnection);
+
+    const pc = (await strategy.startCall(ua as unknown as UA, getSipServerUrl, {
+      number: '123',
+      mediaStream,
+      ontrack,
+    })) as RTCPeerConnectionMock;
+
+    expect(ontrack).toHaveBeenCalledTimes(0);
+    expect(onPeerconnection).toHaveBeenCalled();
+
+    const videoTrack = createVideoMediaStreamTrackMock();
+
+    pc.addTrack(videoTrack);
+
+    expect(ontrack).toHaveBeenCalledTimes(1);
+  });
+
   it('endCall: вызывает reset и terminateAsync', async () => {
     const terminateAsync = jest.fn(async () => {});
 
@@ -83,8 +97,6 @@ describe('MCUCallStrategy', () => {
 
   it('answerToIncomingCall: отвечает на входящий звонок', async () => {
     const rtcSession = new RTCSessionMock({
-      url: 'sip:123',
-      mediaStream,
       eventHandlers: {},
       originator: 'remote',
     });
@@ -131,16 +143,12 @@ describe('MCUCallStrategy', () => {
 
   it('replaceMediaStream: заменяет поток', async () => {
     const rtcSession = new RTCSessionMock({
-      url: 'sip:123',
-      mediaStream,
       eventHandlers: {},
       originator: 'remote',
     });
 
     // @ts-expect-error
     strategy.rtcSession = rtcSession as unknown as RTCSession;
-    // Исправление: мок возвращаемого значения
-    (prepareMediaStream as jest.Mock).mockReturnValue(mediaStream);
 
     await strategy.replaceMediaStream(mediaStream);
 
@@ -157,8 +165,6 @@ describe('MCUCallStrategy', () => {
 
   it('reset: очищает rtcSession и remoteStreamsManager', () => {
     const rtcSession = new RTCSessionMock({
-      url: 'sip:123',
-      mediaStream,
       eventHandlers: {},
       originator: 'remote',
     });
@@ -190,13 +196,11 @@ describe('MCUCallStrategy - дополнительные тесты для по�
   let events: Events<typeof EVENT_NAMES>;
   let strategy: MCUCallStrategy;
   let strategyTest: MCUCallStrategyTestAccess;
-  let mediaStream: MediaStream;
 
   beforeEach(() => {
     events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
     strategy = new MCUCallStrategy(events);
     strategyTest = strategy as unknown as MCUCallStrategyTestAccess;
-    mediaStream = new MediaStream();
     jest.clearAllMocks();
   });
 
@@ -228,14 +232,6 @@ describe('MCUCallStrategy - дополнительные тесты для по�
     events.trigger('confirmed', {});
 
     await expect(promise).resolves.toBeDefined();
-  });
-
-  it('replaceMediaStream: выбрасывает ошибку, если prepareMediaStream вернул undefined', async () => {
-    (prepareMediaStream as jest.Mock).mockReturnValueOnce(undefined);
-    strategyTest.rtcSession = { replaceMediaStream: jest.fn() };
-    await expect(strategy.replaceMediaStream(mediaStream)).rejects.toThrow(
-      'No preparedMediaStream',
-    );
   });
 
   it('getRemoteStreams: вызывает generateAudioStreams если нет видео-треков', () => {

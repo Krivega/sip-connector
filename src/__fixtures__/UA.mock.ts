@@ -71,9 +71,8 @@ class UA implements IUA {
     ): RTCSessionMock => {
       const { mediaStream, eventHandlers } = parameters;
 
-      this.session = new RTCSessionMock({ url, mediaStream, eventHandlers, originator: 'local' });
-
-      this.session.connect(url);
+      this.session = new RTCSessionMock({ eventHandlers, originator: 'local' });
+      this.session.connect(url, { mediaStream });
 
       return this.session;
     },

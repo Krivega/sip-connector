@@ -18,7 +18,6 @@ const createMockRTCSession = (overrides: Partial<RTCSession> = {}): RTCSession =
   );
 
   const mockSession = new RTCSessionMock({
-    url: 'sip:testuser@test.com',
     eventHandlers: {},
     originator: Originator.REMOTE,
     remoteIdentity: defaultRemoteIdentity,
@@ -73,7 +72,6 @@ describe('IncomingCallManager', () => {
     it('должен возвращать данные звонящего когда есть входящий звонок', () => {
       // Устанавливаем входящую сессию
       const session = new RTCSessionMock({
-        url: 'sip:johndoe@example.com',
         eventHandlers: {},
         originator: Originator.REMOTE,
         remoteIdentity: new NameAddrHeader(
@@ -376,7 +374,6 @@ describe('IncomingCallManager', () => {
 
     it('должен корректно обрабатывать множественные входящие звонки', () => {
       const session1 = new RTCSessionMock({
-        url: 'sip:caller1@test1.com',
         eventHandlers: {},
         originator: Originator.REMOTE,
         remoteIdentity: new NameAddrHeader(
@@ -386,7 +383,6 @@ describe('IncomingCallManager', () => {
       });
 
       const session2 = new RTCSessionMock({
-        url: 'sip:caller2@test2.com',
         eventHandlers: {},
         originator: Originator.REMOTE,
         remoteIdentity: new NameAddrHeader(
@@ -418,7 +414,6 @@ describe('IncomingCallManager', () => {
   describe('Граничные случаи', () => {
     it('должен корректно обрабатывать сессию без display_name', () => {
       const sessionWithoutDisplayName = new RTCSessionMock({
-        url: 'sip:testuser@test.com',
         eventHandlers: {},
         originator: Originator.REMOTE,
         remoteIdentity: new NameAddrHeader(new URI('sip', 'testuser', 'test.com', 5060), undefined),
@@ -437,7 +432,6 @@ describe('IncomingCallManager', () => {
 
     it('должен корректно обрабатывать сессию без uri.user', () => {
       const sessionWithoutUser = new RTCSessionMock({
-        url: 'sip:@test.com',
         eventHandlers: {},
         originator: Originator.REMOTE,
         remoteIdentity: new NameAddrHeader(new URI('sip', '', 'test.com', 5060), 'Test Caller'),
@@ -456,7 +450,6 @@ describe('IncomingCallManager', () => {
 
     it('должен корректно обрабатывать ошибки в declineToIncomingCall', async () => {
       const sessionWithError = new RTCSessionMock({
-        url: 'sip:testuser@test.com',
         eventHandlers: {},
         originator: Originator.REMOTE,
         remoteIdentity: new NameAddrHeader(

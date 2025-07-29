@@ -37,7 +37,7 @@ class RTCSessionMock extends BaseSession {
 
   private static countStartsPresentation = 0;
 
-  public url: string;
+  public url?: string;
 
   public status_code?: number;
 
@@ -78,8 +78,6 @@ class RTCSessionMock extends BaseSession {
   private isEndedInner = false;
 
   public constructor({
-    url = '',
-    mediaStream,
     eventHandlers,
     originator,
     remoteIdentity = new NameAddrHeader(
@@ -87,15 +85,11 @@ class RTCSessionMock extends BaseSession {
       'Test Caller 1',
     ),
   }: {
-    url?: string;
-    mediaStream?: MediaStream;
     eventHandlers: TEventHandlers;
     originator: string;
     remoteIdentity?: NameAddrHeader;
   }) {
     super({ originator, eventHandlers, remoteIdentity });
-    this.url = url;
-    this.initPeerconnection(mediaStream);
   }
 
   public static setPresentationError(presentationError: Error) {
@@ -188,16 +182,16 @@ class RTCSessionMock extends BaseSession {
 
     this.addStream(sendedStream);
 
-    setTimeout(() => {
-      this.trigger('peerconnection', { peerconnection: this.connection });
-    }, CONNECTION_DELAY);
+    this.trigger('peerconnection', { peerconnection: this.connection });
   }
 
-  public connect(target: string) {
+  public connect(target: string, { mediaStream }: { mediaStream?: MediaStream } = {}) {
     const room = getRoomFromSipUrl(target);
 
+    this.initPeerconnection(mediaStream);
+
     setTimeout(() => {
-      if (this.url.includes(FAILED_CONFERENCE_NUMBER)) {
+      if (target.includes(FAILED_CONFERENCE_NUMBER)) {
         this.trigger('failed', {
           originator: 'remote',
           message: 'IncomingResponse',
@@ -239,6 +233,8 @@ class RTCSessionMock extends BaseSession {
         }, 300);
       }
     }, CONNECTION_DELAY);
+
+    return this.connection;
   }
 
   public terminate({ status_code, cause }: { status_code?: number; cause?: string } = {}) {

@@ -14,7 +14,6 @@ describe('PresentationManager', () => {
 
   beforeEach(() => {
     rtcSession = new RTCSessionMock({
-      url: 'wss://test.com',
       eventHandlers: {},
       originator: 'local',
     });

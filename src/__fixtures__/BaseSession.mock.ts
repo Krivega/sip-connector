@@ -19,8 +19,7 @@ import type {
   C as constants,
 } from '@krivega/jssip';
 import Events from 'events-constructor';
-import type { TEventSession } from './eventNames';
-import { SESSION_EVENT_NAMES } from './eventNames';
+import { SESSION_JSSIP_EVENT_NAMES } from './eventNames';
 
 export type TEventHandlers = Record<string, (data: unknown) => void>;
 
@@ -29,7 +28,7 @@ class BaseSession implements RTCSession {
 
   public connection!: RTCPeerConnectionDeprecated;
 
-  public events: Events<typeof SESSION_EVENT_NAMES>;
+  public events: Events<typeof SESSION_JSSIP_EVENT_NAMES>;
 
   public remote_identity!: NameAddrHeader;
 
@@ -45,7 +44,7 @@ class BaseSession implements RTCSession {
     remoteIdentity: NameAddrHeader;
   }) {
     this.originator = originator;
-    this.events = new Events<typeof SESSION_EVENT_NAMES>(SESSION_EVENT_NAMES);
+    this.events = new Events<typeof SESSION_JSSIP_EVENT_NAMES>(SESSION_JSSIP_EVENT_NAMES);
     this.initEvents(eventHandlers);
     this.remote_identity = remoteIdentity;
   }
@@ -241,21 +240,22 @@ class BaseSession implements RTCSession {
   public initEvents(eventHandlers?: TEventHandlers) {
     if (eventHandlers) {
       Object.entries(eventHandlers).forEach(([eventName, handler]) => {
-        return this.on(eventName, handler);
+        this.on(eventName as (typeof SESSION_JSSIP_EVENT_NAMES)[number], handler);
       });
     }
   }
 
   // @ts-expect-error
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public on<T>(eventName: string, handler: (data: T) => void) {
-    // @ts-expect-error
-    this.events.on(eventName, handler);
+  public on<T>(eventName: (typeof SESSION_JSSIP_EVENT_NAMES)[number], handler: (data: T) => void) {
+    if (SESSION_JSSIP_EVENT_NAMES.includes(eventName)) {
+      this.events.on(eventName, handler);
+    }
 
     return this;
   }
 
-  public trigger(eventName: TEventSession, data?: unknown) {
+  public trigger(eventName: (typeof SESSION_JSSIP_EVENT_NAMES)[number], data?: unknown) {
     this.events.trigger(eventName, data);
   }
 

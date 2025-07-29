@@ -56,7 +56,6 @@ describe('ApiManager', () => {
       getEstablishedRTCSession: jest.fn(),
     });
     rtcSession = new RTCSessionMock({
-      url: 'wss://test.com',
       eventHandlers: {},
       originator: 'local',
     });

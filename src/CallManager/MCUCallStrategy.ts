@@ -75,6 +75,9 @@ export class MCUCallStrategy extends AbstractCallStrategy {
           directionAudio,
           contentHint,
         }),
+        // необходимо передавать в методе call, чтобы подписаться на события peerconnection,
+        // так как в методе call создается RTCSession
+        // и после создания нет возможности подписаться на события peerconnection через subscribeToSessionEvents
         eventHandlers: this.events.triggers,
         directionVideo,
         directionAudio,
