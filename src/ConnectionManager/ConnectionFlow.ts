@@ -1,5 +1,5 @@
 import type { UA, WebSocketInterface } from '@krivega/jssip';
-import type Events from 'events-constructor';
+import type { Events } from 'events-constructor';
 import { repeatedCallsAsync } from 'repeated-calls';
 import { parseDisplayName } from '../../utils';
 import type { TGetServerUrl } from '../CallManager';

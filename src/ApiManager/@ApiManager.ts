@@ -1,5 +1,5 @@
 import type { IncomingInfoEvent, IncomingRequest, OutgoingInfoEvent } from '@krivega/jssip';
-import Events from 'events-constructor';
+import { Events } from 'events-constructor';
 import type { CallManager } from '../CallManager';
 import { Originator } from '../CallManager';
 import type { ConnectionManager } from '../ConnectionManager';

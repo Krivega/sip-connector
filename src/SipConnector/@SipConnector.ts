@@ -1,4 +1,4 @@
-import Events from 'events-constructor';
+import { Events } from 'events-constructor';
 import { ApiManager } from '../ApiManager';
 import type { TGetServerUrl } from '../CallManager';
 import { CallManager } from '../CallManager';

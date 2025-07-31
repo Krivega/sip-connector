@@ -1,4 +1,4 @@
-import type Events from 'events-constructor';
+import type { Events } from 'events-constructor';
 import { createActor, setup, type ActorRefFrom } from 'xstate';
 import logger from '../logger';
 import type { EVENT_NAMES } from './eventNames';

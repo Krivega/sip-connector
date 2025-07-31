@@ -1,5 +1,5 @@
 import type { IncomingRTCSessionEvent, OutgoingRTCSessionEvent, RTCSession } from '@krivega/jssip';
-import Events from 'events-constructor';
+import { Events } from 'events-constructor';
 import type { ConnectionManager } from '../ConnectionManager';
 import type { TEvent } from './eventNames';
 import { EEvent, EVENT_NAMES, Originator } from './eventNames';

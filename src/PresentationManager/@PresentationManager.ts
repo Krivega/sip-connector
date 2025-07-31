@@ -1,5 +1,5 @@
 import type { RTCSession } from '@krivega/jssip';
-import Events from 'events-constructor';
+import { Events } from 'events-constructor';
 import { hasCanceledError, repeatedCallsAsync } from 'repeated-calls';
 import prepareMediaStream from '../tools/prepareMediaStream';
 // import scaleBitrate from '../../videoSendingBalancer/scaleBitrate';

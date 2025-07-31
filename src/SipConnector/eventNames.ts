@@ -1,4 +1,4 @@
-import type Events from 'events-constructor';
+import type { Events } from 'events-constructor';
 import { EVENT_NAMES as API_MANAGER_EVENT_NAMES } from '../ApiManager/eventNames';
 import { EVENT_NAMES as CALL_MANAGER_EVENT_NAMES } from '../CallManager/eventNames';
 import { EVENT_NAMES as CONNECTION_MANAGER_EVENT_NAMES } from '../ConnectionManager/eventNames';

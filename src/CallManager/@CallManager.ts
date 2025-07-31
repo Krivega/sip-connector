@@ -1,5 +1,5 @@
 import type { RTCSession } from '@krivega/jssip';
-import Events from 'events-constructor';
+import { Events } from 'events-constructor';
 import type { TEvent, TEvents } from './eventNames';
 import { EVENT_NAMES } from './eventNames';
 import { MCUCallStrategy } from './MCUCallStrategy';

@@ -5,7 +5,7 @@ import type {
   UnRegisteredEvent,
   WebSocketInterface,
 } from '@krivega/jssip';
-import Events from 'events-constructor';
+import { Events } from 'events-constructor';
 import UAMock from '../../__fixtures__/UA.mock';
 import logger from '../../logger';
 import type { UA_EVENT_NAMES } from '../eventNames';

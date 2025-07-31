@@ -1,5 +1,5 @@
 import type { UA } from '@krivega/jssip';
-import Events from 'events-constructor';
+import { Events } from 'events-constructor';
 import jssip from '../../__fixtures__/jssip.mock';
 import UAMock, {
   PASSWORD_CORRECT,

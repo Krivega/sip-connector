@@ -1,5 +1,5 @@
 import type { RegisteredEvent, UA, UnRegisteredEvent, WebSocketInterface } from '@krivega/jssip';
-import Events from 'events-constructor';
+import { Events } from 'events-constructor';
 import type { TGetServerUrl } from '../CallManager';
 import type { TJsSIP } from '../types';
 import ConfigurationManager from './ConfigurationManager';

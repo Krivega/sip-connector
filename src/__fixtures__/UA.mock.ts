@@ -10,7 +10,7 @@ import type {
   UAEventMap,
 } from '@krivega/jssip';
 import { C, URI } from '@krivega/jssip';
-import Events from 'events-constructor';
+import { Events } from 'events-constructor';
 import type { TEventHandlers } from './BaseSession.mock';
 import { UA_JSSIP_EVENT_NAMES } from './eventNames';
 import Registrator from './Registrator.mock';

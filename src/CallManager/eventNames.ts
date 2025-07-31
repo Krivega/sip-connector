@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
-import type Events from 'events-constructor';
+import type { Events } from 'events-constructor';
 
 export enum EEvent {
   // rtcSession events

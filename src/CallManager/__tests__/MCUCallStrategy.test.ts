@@ -1,6 +1,6 @@
 /* eslint-disable unicorn/filename-case */
 import type { RTCSession, UA } from '@krivega/jssip';
-import Events from 'events-constructor';
+import { Events } from 'events-constructor';
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
 import RTCPeerConnectionMock from '../../__fixtures__/RTCPeerConnectionMock';
 import RTCSessionMock from '../../__fixtures__/RTCSessionMock';

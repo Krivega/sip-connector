@@ -1,5 +1,5 @@
 import type { RegisteredEvent, UA, UnRegisteredEvent } from '@krivega/jssip';
-import type Events from 'events-constructor';
+import type { Events } from 'events-constructor';
 import logger from '../logger';
 import type { EVENT_NAMES } from './eventNames';
 import { EEvent } from './eventNames';
