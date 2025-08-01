@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [14.1.0-alpha.12](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.11...v14.1.0-alpha.12) (2025-08-01)
+
+### Bug Fixes
+
+- replaceMediaStream ([53c498a](https://github.com/Krivega/sip-connector/commit/53c498afc3fbfb5f510c7c695e8f7df63ec64530))
+
 ## [14.1.0-alpha.11](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.10...v14.1.0-alpha.11) (2025-07-31)
 
 ### Bug Fixes
