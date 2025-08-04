@@ -15,9 +15,9 @@ const generateSimulcastEncodings = ({
     const sendEncodingsGenerated: RTCRtpEncodingParameters[] = sendEncodings ?? [];
     const videoTrack = findVideoTrack(mediaStream);
 
-    if (videoTrack === undefined) {
-      throw new Error('No video track');
-    }
+    // if (videoTrack === undefined) {
+    //   throw new Error('No video track');
+    // }
 
     simulcastEncodings.forEach((item, index) => {
       const encoding = sendEncodingsGenerated[index] ?? ({} as RTCRtpEncodingParameters);
@@ -34,6 +34,7 @@ const generateSimulcastEncodings = ({
       }
 
       const { maxBitrate, scaleResolutionDownBy } = scaleResolutionAndBitrate({
+        // @ts-expect-error
         videoTrack,
         targetSize: {
           width: item.width,

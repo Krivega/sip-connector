@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { createStackPromises } from 'stack-promises';
 import logger from '../logger';
 import { EEventsMainCAM } from '../types';
@@ -63,9 +64,9 @@ const setBitrateByTrackResolution = async (
   const scaleResolutionDownByTarget = 1;
 
   const settings = videoTrack.getSettings();
-  const widthCurrent = settings.width;
+  const widthCurrent = settings.width!;
 
-  const maxBitrate = getMaxBitrateByWidthAndCodec(widthCurrent ?? 0, codec);
+  const maxBitrate = getMaxBitrateByWidthAndCodec(widthCurrent, codec);
 
   return addToStackScaleResolutionDownBySender({
     sender,
