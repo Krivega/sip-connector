@@ -208,6 +208,7 @@ const config: Linter.Config[] = [
       'unicorn/filename-case': [
         'error',
         {
+          ignore: ['DTMF', 'dtmf', 'API', 'api'],
           cases: {
             camelCase: true,
             pascalCase: true,

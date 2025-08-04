@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/filename-case */
 /// <reference types="jest" />
 import { dataForConnectionWithAuthorizationWithDisplayName } from '../__fixtures__';
 import { doMockSipConnector } from '../doMock';

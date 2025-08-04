@@ -1,11 +1,10 @@
-/* eslint-disable unicorn/filename-case */
 /// <reference types="jest" />
 import delayPromise from '../../__fixtures__/delayPromise';
 import { doMockSipConnector } from '../../doMock';
 import { SipConnectorFacade } from '../../SipConnectorFacade';
 import dataCall from '../__fixtures__/call';
 import { dataForConnectionWithoutAuthorization } from '../__fixtures__/connectToServer';
-import sendDtmfAccumulated from '../sendDtmfAccumulated';
+import sendDtmfAccumulated from '../sendDTMFAccumulated';
 
 describe('sendDtmfAccumulated', () => {
   const DTMF_SENDING_DELAY = 100;
