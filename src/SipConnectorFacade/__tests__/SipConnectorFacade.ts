@@ -1,11 +1,11 @@
 /// <reference types="jest" />
 // @ts-nocheck
-import { doMockSipConnector } from '../../doMock';
-import dataCall from '../../tools/__fixtures__/call';
+import { doMockSipConnector } from '@/doMock';
+import dataCall from '@/tools/__fixtures__/call';
 import {
   dataForConnectionWithAuthorization,
   dataForConnectionWithoutAuthorization,
-} from '../../tools/__fixtures__/connectToServer';
+} from '@/tools/__fixtures__/connectToServer';
 import SipConnectorFacade from '../SipConnectorFacade';
 
 describe('SipConnectorFacade', () => {

@@ -1,4 +1,4 @@
-import type { TRtpSendParameters } from '../types';
+import type { TRtpSendParameters } from '@/types';
 import configureDegradationPreference from './configureDegradationPreference';
 import configureEncodings from './configureEncodings';
 import hasChangedRTCRtpSendParameters from './hasChangedRTCRtpSendParameters';

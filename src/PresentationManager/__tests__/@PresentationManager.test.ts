@@ -1,7 +1,7 @@
+import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
+import { CallManager } from '@/CallManager';
 import type { TReachedLimitError } from 'repeated-calls';
 import { createMediaStreamMock } from 'webrtc-mock';
-import RTCSessionMock from '../../__fixtures__/RTCSessionMock';
-import { CallManager } from '../../CallManager';
 import PresentationManager, { hasCanceledStartPresentationError } from '../@PresentationManager';
 
 describe('PresentationManager', () => {

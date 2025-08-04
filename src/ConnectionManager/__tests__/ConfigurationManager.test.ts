@@ -1,5 +1,5 @@
+import UAMock from '@/__fixtures__/UA.mock';
 import type { UA, WebSocketInterface } from '@krivega/jssip';
-import UAMock from '../../__fixtures__/UA.mock';
 import type { IConnectionConfiguration } from '../ConfigurationManager';
 import ConfigurationManager from '../ConfigurationManager';
 

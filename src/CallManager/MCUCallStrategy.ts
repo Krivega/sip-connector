@@ -1,7 +1,7 @@
 /* eslint-disable unicorn/filename-case */
+import prepareMediaStream from '@/tools/prepareMediaStream';
+import { hasVideoTracks } from '@/utils/utils';
 import type { RTCSession } from '@krivega/jssip';
-import { hasVideoTracks } from '../../utils';
-import prepareMediaStream from '../tools/prepareMediaStream';
 import { AbstractCallStrategy } from './AbstractCallStrategy';
 import { ECallCause } from './causes';
 import type { TEvents } from './eventNames';

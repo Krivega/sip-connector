@@ -1,11 +1,11 @@
 /// <reference types="jest" />
-import type { SipConnector } from '../../SipConnector';
-import JsSIP from '../../__fixtures__/jssip.mock';
-import remoteCallerData from '../../__fixtures__/remoteCallerData';
-import { doMockSipConnector } from '../../doMock';
-import dataCall, { peerConnectionFromData } from '../../tools/__fixtures__/call';
-import { dataForConnectionWithAuthorization } from '../../tools/__fixtures__/connectToServer';
-import parseObject from '../../tools/__tests-utils__/parseObject';
+import JsSIP from '@/__fixtures__/jssip.mock';
+import remoteCallerData from '@/__fixtures__/remoteCallerData';
+import { doMockSipConnector } from '@/doMock';
+import type { SipConnector } from '@/SipConnector';
+import dataCall, { peerConnectionFromData } from '@/tools/__fixtures__/call';
+import { dataForConnectionWithAuthorization } from '@/tools/__fixtures__/connectToServer';
+import parseObject from '@/tools/__tests-utils__/parseObject';
 import SipConnectorFacade from '../SipConnectorFacade';
 
 describe('answerToIncomingCall', () => {

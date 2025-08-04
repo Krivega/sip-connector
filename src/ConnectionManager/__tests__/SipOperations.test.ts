@@ -1,7 +1,7 @@
+import jssip from '@/__fixtures__/jssip.mock';
+import UAMock from '@/__fixtures__/UA.mock';
+import type { TJsSIP } from '@/types';
 import type { Socket, UA, URI } from '@krivega/jssip';
-import jssip from '../../__fixtures__/jssip.mock';
-import UAMock from '../../__fixtures__/UA.mock';
-import type { TJsSIP } from '../../types';
 import SipOperations from '../SipOperations';
 import UAFactory from '../UAFactory';
 

@@ -1,7 +1,7 @@
 /// <reference types="jest" />
-import type { SipConnector } from '../../../SipConnector';
-import { doMockSipConnector } from '../../../doMock';
-import resolveOnStopMic from '../../syncMediaState/resolveOnStopMic';
+import type { SipConnector } from '@/SipConnector';
+import { doMockSipConnector } from '@/doMock';
+import resolveOnStopMic from '../resolveOnStopMic';
 
 describe('media state: resolveOnStopMic', () => {
   let sipConnector: SipConnector;

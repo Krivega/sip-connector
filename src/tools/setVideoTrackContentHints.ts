@@ -1,5 +1,5 @@
 /* eslint-disable no-param-reassign */
-import type { TContentHint } from '../PresentationManager';
+import type { TContentHint } from '@/PresentationManager';
 
 const setVideoTrackContentHints = (stream: MediaStream, contentHint: TContentHint) => {
   const tracks = stream.getVideoTracks();

@@ -1,11 +1,11 @@
-import type { UA } from '@krivega/jssip';
-import { Events } from 'events-constructor';
-import jssip from '../../__fixtures__/jssip.mock';
+import jssip from '@/__fixtures__/jssip.mock';
 import UAMock, {
   PASSWORD_CORRECT,
   createWebsocketHandshakeTimeoutError,
-} from '../../__fixtures__/UA.mock';
-import type { TJsSIP } from '../../types';
+} from '@/__fixtures__/UA.mock';
+import type { TJsSIP } from '@/types';
+import type { UA } from '@krivega/jssip';
+import { Events } from 'events-constructor';
 import ConnectionFlow from '../ConnectionFlow';
 import ConnectionStateMachine from '../ConnectionStateMachine';
 import { EVENT_NAMES } from '../eventNames';

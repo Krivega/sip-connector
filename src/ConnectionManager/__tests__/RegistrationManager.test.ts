@@ -1,3 +1,5 @@
+import UAMock from '@/__fixtures__/UA.mock';
+import logger from '@/logger';
 import type {
   RegisteredEvent,
   UA,
@@ -6,8 +8,6 @@ import type {
   WebSocketInterface,
 } from '@krivega/jssip';
 import { Events } from 'events-constructor';
-import UAMock from '../../__fixtures__/UA.mock';
-import logger from '../../logger';
 import type { UA_EVENT_NAMES } from '../eventNames';
 import { EVENT_NAMES } from '../eventNames';
 import RegistrationManager from '../RegistrationManager';

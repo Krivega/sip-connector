@@ -1,4 +1,4 @@
-import type { TCustomError } from '../../CallManager';
+import type { TCustomError } from '@/CallManager';
 import getLinkError from './getLinkError';
 import stringifyMessage from './stringifyMessage';
 

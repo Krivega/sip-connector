@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 /// <reference types="jest" />
-import type { SipConnector } from '../../SipConnector';
-import { doMockSipConnector } from '../../doMock';
+import type { SipConnector } from '@/SipConnector';
+import { doMockSipConnector } from '@/doMock';
 import {
   LOCKED_SIP_WEB_SOCKET_SERVER_URL,
   dataForConnectionWithAuthorization,
@@ -14,9 +14,9 @@ import {
   uaConfigurationWithAuthorization,
   uaConfigurationWithoutAuthorization,
   uriWithName,
-} from '../../tools/__fixtures__/connectToServer';
-import hasValidUri from '../../tools/__fixtures__/hasValidUri';
-import { parseObjectWithoutUri } from '../../tools/__tests-utils__/parseObject';
+} from '@/tools/__fixtures__/connectToServer';
+import hasValidUri from '@/tools/__fixtures__/hasValidUri';
+import { parseObjectWithoutUri } from '@/tools/__tests-utils__/parseObject';
 import SipConnectorFacade from '../SipConnectorFacade';
 
 describe('connectToServer', () => {

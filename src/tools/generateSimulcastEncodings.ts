@@ -1,5 +1,5 @@
-import type { TSimulcastEncoding } from '../types';
-import findVideoTrack from '../utils/findVideoTrack';
+import type { TSimulcastEncoding } from '@/types';
+import findVideoTrack from '@/utils/findVideoTrack';
 import scaleResolutionAndBitrate from './scaleResolutionAndBitrate';
 
 const generateSimulcastEncodings = ({

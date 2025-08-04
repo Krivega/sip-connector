@@ -1,4 +1,4 @@
-const getExtraHeadersRegistration = (remoteAddress?: string) => {
+const getExtraHeadersRemoteAddress = (remoteAddress?: string) => {
   const headers: string[] = [];
 
   if (remoteAddress !== undefined && remoteAddress !== '') {
@@ -8,4 +8,4 @@ const getExtraHeadersRegistration = (remoteAddress?: string) => {
   return headers;
 };
 
-export default getExtraHeadersRegistration;
+export default getExtraHeadersRemoteAddress;

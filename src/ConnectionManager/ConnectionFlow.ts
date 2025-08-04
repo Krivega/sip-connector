@@ -1,10 +1,10 @@
 import type { UA, WebSocketInterface } from '@krivega/jssip';
 import type { Events } from 'events-constructor';
 import { repeatedCallsAsync } from 'repeated-calls';
-import { parseDisplayName } from '../../utils';
 import type { TGetServerUrl } from '../CallManager';
 import type { TJsSIP } from '../types';
 import { hasHandshakeWebsocketOpeningError } from '../utils/errors';
+import { parseDisplayName } from '../utils/utils';
 import type ConnectionStateMachine from './ConnectionStateMachine';
 import type { EVENT_NAMES } from './eventNames';
 import { EEvent } from './eventNames';

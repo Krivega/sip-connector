@@ -1,5 +1,5 @@
-import JsSIP from '../../__fixtures__/jssip.mock';
-import type { TJsSIP } from '../../types';
+import JsSIP from '@/__fixtures__/jssip.mock';
+import type { TJsSIP } from '@/types';
 import SipConnector from '../@SipConnector';
 
 describe('SipConnector events', () => {

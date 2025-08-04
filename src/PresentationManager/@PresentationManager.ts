@@ -1,10 +1,10 @@
+import type { CallManager } from '@/CallManager';
+import prepareMediaStream from '@/tools/prepareMediaStream';
 import type { RTCSession } from '@krivega/jssip';
 import { Events } from 'events-constructor';
 import { hasCanceledError, repeatedCallsAsync } from 'repeated-calls';
-import prepareMediaStream from '../tools/prepareMediaStream';
 // import setMaxBitrateToSender from '../../videoSendingBalancer/setMaxBitrateToSender';
 // import { ONE_MEGABIT_IN_BITS } from './constants';
-import type { CallManager } from '../CallManager';
 import type { TEvent, TEvents } from './eventNames';
 import { EEvent, EVENT_NAMES } from './eventNames';
 import type { TContentHint, TOnAddedTransceiver } from './types';

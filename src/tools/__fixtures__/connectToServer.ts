@@ -1,16 +1,12 @@
-import { URI } from '@krivega/jssip';
 import {
   SIP_SERVER_URL,
   SIP_WEB_SOCKET_SERVER_URL,
   uaConfigurationWithAuthorization as _uaConfigurationWithAuthorization,
   displayName,
   user,
-} from '../../__fixtures__';
-import {
-  NAME_INCORRECT,
-  PASSWORD_CORRECT,
-  PASSWORD_CORRECT_2,
-} from '../../__fixtures__/jssip.mock';
+} from '@/__fixtures__';
+import { NAME_INCORRECT, PASSWORD_CORRECT, PASSWORD_CORRECT_2 } from '@/__fixtures__/jssip.mock';
+import { URI } from '@krivega/jssip';
 
 const baseDataForConnection = {
   remoteAddress: '10.10.10.10',

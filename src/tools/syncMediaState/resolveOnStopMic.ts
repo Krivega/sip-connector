@@ -1,5 +1,5 @@
-import type { SipConnector } from '../../SipConnector';
-import log from '../../logger';
+import type { SipConnector } from '@/SipConnector';
+import log from '@/logger';
 
 const resolveOnStopMic = (sipConnector: SipConnector) => {
   const onStopMic = (

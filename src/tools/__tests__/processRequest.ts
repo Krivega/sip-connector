@@ -2,9 +2,9 @@
 /// <reference types="jest" />
 // @ts-nocheck
 
-import type { SipConnector } from '../../SipConnector';
-import delayPromise from '../../__fixtures__/delayPromise';
-import { doMockSipConnector } from '../../doMock';
+import type { SipConnector } from '@/SipConnector';
+import delayPromise from '@/__fixtures__/delayPromise';
+import { doMockSipConnector } from '@/doMock';
 import {
   dataForConnectionWithAuthorization,
   dataForConnectionWithAuthorizationIncorrectPassword,

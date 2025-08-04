@@ -1,4 +1,4 @@
-import replaceForbiddenSymbolsWithUnderscore from '../utils/replaceForbiddenSymbolsWithUnderscore';
+import replaceForbiddenSymbolsWithUnderscore from '@/utils/replaceForbiddenSymbolsWithUnderscore';
 
 const getUserAgentUnifiedSdpSemantic = ({
   appName,

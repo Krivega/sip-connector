@@ -1,8 +1,7 @@
 /// <reference types="jest" />
-import { doMockSipConnector } from '../../doMock';
-import dataCall from '../../tools/__fixtures__/call';
-import { dataForConnectionWithoutAuthorization } from '../../tools/__fixtures__/connectToServer';
-
+import { doMockSipConnector } from '@/doMock';
+import dataCall from '@/tools/__fixtures__/call';
+import { dataForConnectionWithoutAuthorization } from '@/tools/__fixtures__/connectToServer';
 import SipConnectorFacade from '../SipConnectorFacade';
 
 describe('actionsProgressCall', () => {

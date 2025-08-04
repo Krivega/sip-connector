@@ -1,7 +1,7 @@
 /// <reference types="jest" />
-import delayPromise from '../../__fixtures__/delayPromise';
-import { doMockSipConnector } from '../../doMock';
-import { SipConnectorFacade } from '../../SipConnectorFacade';
+import delayPromise from '@/__fixtures__/delayPromise';
+import { doMockSipConnector } from '@/doMock';
+import { SipConnectorFacade } from '@/SipConnectorFacade';
 import dataCall from '../__fixtures__/call';
 import { dataForConnectionWithoutAuthorization } from '../__fixtures__/connectToServer';
 import sendDtmfAccumulated from '../sendDtmfFAccumulated';

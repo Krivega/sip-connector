@@ -1,4 +1,4 @@
-import type { TRtpSendParameters } from '../types';
+import type { TRtpSendParameters } from '@/types';
 import configureEmptyEncodings from './configureEmptyEncodings';
 import configureMaxBitrate from './configureMaxBitrate';
 import configureScaleResolutionDownBy from './configureScaleResolutionDownBy';

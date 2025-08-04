@@ -1,5 +1,5 @@
-import type { TCustomError } from '../../CallManager';
-import { ECallCause } from '../../CallManager';
+import type { TCustomError } from '@/CallManager';
+import { ECallCause } from '@/CallManager';
 import getLinkError from './getLinkError';
 
 export enum EErrorTypes {

@@ -1,7 +1,7 @@
 /// <reference types="jest" />
-import type { SipConnector } from '../../../SipConnector';
-import { doMockSipConnector } from '../../../doMock';
-import createState from '../../syncMediaState';
+import type { SipConnector } from '@/SipConnector';
+import { doMockSipConnector } from '@/doMock';
+import createState from '..';
 
 describe('media state: create state', () => {
   let sipConnector: SipConnector;

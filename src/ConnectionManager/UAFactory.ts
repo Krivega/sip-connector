@@ -1,7 +1,7 @@
 /* eslint-disable unicorn/filename-case */
+import type { TJsSIP } from '@/types';
+import { generateUserId, parseDisplayName, resolveSipUrl } from '@/utils/utils';
 import type { UA, UAConfigurationParams, WebSocketInterface } from '@krivega/jssip';
-import { generateUserId, parseDisplayName, resolveSipUrl } from '../../utils';
-import type { TJsSIP } from '../types';
 import { UA_EVENT_NAMES } from './eventNames';
 import getExtraHeadersRemoteAddress from './getExtraHeadersRemoteAddress';
 

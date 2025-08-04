@@ -1,10 +1,10 @@
 /* eslint-disable unicorn/filename-case */
+import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
+import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
+import UAMock from '@/__fixtures__/UA.mock';
 import type { RTCSession, UA } from '@krivega/jssip';
 import { Events } from 'events-constructor';
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
-import RTCPeerConnectionMock from '../../__fixtures__/RTCPeerConnectionMock';
-import RTCSessionMock from '../../__fixtures__/RTCSessionMock';
-import UAMock from '../../__fixtures__/UA.mock';
 import { EVENT_NAMES } from '../eventNames';
 import { MCUCallStrategy } from '../MCUCallStrategy';
 import { RemoteStreamsManager } from '../RemoteStreamsManager';

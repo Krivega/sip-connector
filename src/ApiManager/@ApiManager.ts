@@ -1,3 +1,8 @@
+import type { CallManager } from '@/CallManager';
+import { Originator } from '@/CallManager';
+import type { ConnectionManager } from '@/ConnectionManager';
+import logger from '@/logger';
+import { hasDeclineResponseFromServer } from '@/utils/errors';
 import type {
   IncomingInfoEvent,
   IncomingRequest,
@@ -5,11 +10,6 @@ import type {
   RTCSession,
 } from '@krivega/jssip';
 import { Events } from 'events-constructor';
-import type { CallManager } from '../CallManager';
-import { Originator } from '../CallManager';
-import type { ConnectionManager } from '../ConnectionManager';
-import logger from '../logger';
-import { hasDeclineResponseFromServer } from '../utils/errors';
 import type { EUseLicense } from './constants';
 import {
   EContentTypeReceived,

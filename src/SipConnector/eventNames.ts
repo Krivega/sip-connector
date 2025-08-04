@@ -1,9 +1,9 @@
+import { EVENT_NAMES as API_MANAGER_EVENT_NAMES } from '@/ApiManager/eventNames';
+import { EVENT_NAMES as CALL_MANAGER_EVENT_NAMES } from '@/CallManager/eventNames';
+import { EVENT_NAMES as CONNECTION_MANAGER_EVENT_NAMES } from '@/ConnectionManager/eventNames';
+import { EVENT_NAMES as INCOMING_CALL_MANAGER_EVENT_NAMES } from '@/IncomingCallManager/eventNames';
+import { EVENT_NAMES as PRESENTATION_MANAGER_EVENT_NAMES } from '@/PresentationManager/eventNames';
 import type { Events } from 'events-constructor';
-import { EVENT_NAMES as API_MANAGER_EVENT_NAMES } from '../ApiManager/eventNames';
-import { EVENT_NAMES as CALL_MANAGER_EVENT_NAMES } from '../CallManager/eventNames';
-import { EVENT_NAMES as CONNECTION_MANAGER_EVENT_NAMES } from '../ConnectionManager/eventNames';
-import { EVENT_NAMES as INCOMING_CALL_MANAGER_EVENT_NAMES } from '../IncomingCallManager/eventNames';
-import { EVENT_NAMES as PRESENTATION_MANAGER_EVENT_NAMES } from '../PresentationManager/eventNames';
 
 // Добавляем префиксы к событиям от разных менеджеров
 const CONNECTION_EVENTS = CONNECTION_MANAGER_EVENT_NAMES.map((eventName) => {
