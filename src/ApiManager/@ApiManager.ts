@@ -1,4 +1,9 @@
-import type { IncomingInfoEvent, IncomingRequest, OutgoingInfoEvent } from '@krivega/jssip';
+import type {
+  IncomingInfoEvent,
+  IncomingRequest,
+  OutgoingInfoEvent,
+  RTCSession,
+} from '@krivega/jssip';
 import { Events } from 'events-constructor';
 import type { CallManager } from '../CallManager';
 import { Originator } from '../CallManager';
@@ -70,11 +75,15 @@ class ApiManager {
 
   public async sendDTMF(tone: number | string): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      const rtcSession = this.callManager.getEstablishedRTCSession();
+      let rtcSession: RTCSession | undefined;
+
+      try {
+        rtcSession = this.getEstablishedRTCSessionProtected();
+      } catch (error) {
+        reject(error as Error);
+      }
 
       if (!rtcSession) {
-        reject(new Error('No rtcSession established'));
-
         return;
       }
 
@@ -92,11 +101,7 @@ class ApiManager {
   }
 
   public async sendChannels({ inputChannels, outputChannels }: TChannels): Promise<void> {
-    const rtcSession = this.callManager.getEstablishedRTCSession();
-
-    if (!rtcSession) {
-      throw new Error('No rtcSession established');
-    }
+    const rtcSession = this.getEstablishedRTCSessionProtected();
 
     const headerInputChannels = `${EHeader.INPUT_CHANNELS}: ${inputChannels}`;
     const headerOutputChannels = `${EHeader.OUTPUT_CHANNELS}: ${outputChannels}`;
@@ -112,11 +117,7 @@ class ApiManager {
     { cam, mic }: TMediaState,
     options: TOptionsInfoMediaState = {},
   ): Promise<void> {
-    const rtcSession = this.callManager.getEstablishedRTCSession();
-
-    if (!rtcSession) {
-      throw new Error('No rtcSession established');
-    }
+    const rtcSession = this.getEstablishedRTCSessionProtected();
 
     const headerMediaState = `${EHeader.MEDIA_STATE}: currentstate`;
     const headerCam = `${EHeader.MAIN_CAM_STATE}: ${Number(cam)}`;
@@ -138,11 +139,7 @@ class ApiManager {
     type: 'cam' | 'mic',
     options: TOptionsInfoMediaState = {},
   ): Promise<void> {
-    const rtcSession = this.callManager.getEstablishedRTCSession();
-
-    if (!rtcSession) {
-      throw new Error('No rtcSession established');
-    }
+    const rtcSession = this.getEstablishedRTCSessionProtected();
 
     const typeMicOnServer = 0;
     const typeCamOnServer = 1;
@@ -159,31 +156,15 @@ class ApiManager {
   }
 
   public async sendRefusalToTurnOnMic(options: TOptionsInfoMediaState = {}): Promise<void> {
-    const rtcSession = this.callManager.getEstablishedRTCSession();
-
-    if (!rtcSession) {
-      throw new Error('No rtcSession established');
-    }
-
     return this.sendRefusalToTurnOn('mic', { noTerminateWhenError: true, ...options });
   }
 
   public async sendRefusalToTurnOnCam(options: TOptionsInfoMediaState = {}): Promise<void> {
-    const rtcSession = this.callManager.getEstablishedRTCSession();
-
-    if (!rtcSession) {
-      throw new Error('No rtcSession established');
-    }
-
     return this.sendRefusalToTurnOn('cam', { noTerminateWhenError: true, ...options });
   }
 
   public async sendMustStopPresentationP2P(): Promise<void> {
-    const rtcSession = this.callManager.getEstablishedRTCSession();
-
-    if (!rtcSession) {
-      throw new Error('No rtcSession established');
-    }
+    const rtcSession = this.getEstablishedRTCSessionProtected();
 
     await rtcSession.sendInfo(EContentTypeSent.SHARE_STATE, undefined, {
       extraHeaders: [EHeader.MUST_STOP_PRESENTATION_P2P],
@@ -191,11 +172,7 @@ class ApiManager {
   }
 
   public async sendStoppedPresentationP2P(): Promise<void> {
-    const rtcSession = this.callManager.getEstablishedRTCSession();
-
-    if (!rtcSession) {
-      throw new Error('No rtcSession established');
-    }
+    const rtcSession = this.getEstablishedRTCSessionProtected();
 
     await rtcSession.sendInfo(EContentTypeSent.SHARE_STATE, undefined, {
       extraHeaders: [EHeader.STOP_PRESENTATION_P2P],
@@ -203,11 +180,7 @@ class ApiManager {
   }
 
   public async sendStoppedPresentation(): Promise<void> {
-    const rtcSession = this.callManager.getEstablishedRTCSession();
-
-    if (!rtcSession) {
-      throw new Error('No rtcSession established');
-    }
+    const rtcSession = this.getEstablishedRTCSessionProtected();
 
     await rtcSession.sendInfo(EContentTypeSent.SHARE_STATE, undefined, {
       extraHeaders: [EHeader.STOP_PRESENTATION],
@@ -215,11 +188,7 @@ class ApiManager {
   }
 
   public async askPermissionToStartPresentationP2P(): Promise<void> {
-    const rtcSession = this.callManager.getEstablishedRTCSession();
-
-    if (!rtcSession) {
-      throw new Error('No rtcSession established');
-    }
+    const rtcSession = this.getEstablishedRTCSessionProtected();
 
     await rtcSession.sendInfo(EContentTypeSent.SHARE_STATE, undefined, {
       extraHeaders: [EHeader.START_PRESENTATION_P2P],
@@ -227,11 +196,7 @@ class ApiManager {
   }
 
   public async askPermissionToStartPresentation(): Promise<void> {
-    const rtcSession = this.callManager.getEstablishedRTCSession();
-
-    if (!rtcSession) {
-      throw new Error('No rtcSession established');
-    }
+    const rtcSession = this.getEstablishedRTCSessionProtected();
 
     await rtcSession.sendInfo(EContentTypeSent.SHARE_STATE, undefined, {
       extraHeaders: [EHeader.START_PRESENTATION],
@@ -239,11 +204,7 @@ class ApiManager {
   }
 
   public async askPermissionToEnableCam(options: TOptionsInfoMediaState = {}): Promise<void> {
-    const rtcSession = this.callManager.getEstablishedRTCSession();
-
-    if (!rtcSession) {
-      throw new Error('No rtcSession established');
-    }
+    const rtcSession = this.getEstablishedRTCSessionProtected();
 
     const extraHeaders = [EHeader.ENABLE_MAIN_CAM];
 
@@ -283,6 +244,16 @@ class ApiManager {
   public off<T>(eventName: TEvent, handler: (data: T) => void) {
     this.events.off<T>(eventName, handler);
   }
+
+  private readonly getEstablishedRTCSessionProtected = () => {
+    const rtcSession = this.callManager.getEstablishedRTCSession();
+
+    if (!rtcSession) {
+      throw new Error('No rtcSession established');
+    }
+
+    return rtcSession;
+  };
 
   private subscribe(): void {
     this.connectionManager.on('sipEvent', this.handleSipEvent);
