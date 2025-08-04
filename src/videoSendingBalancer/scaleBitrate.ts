@@ -1,7 +1,7 @@
 import findSenderByStream from '../utils/findSenderByStream';
 import setEncodingsToSender from './setEncodingsToSender';
 
-const scaleMaxBitrateBySender = async (
+const scaleBitrate = async (
   senders: RTCRtpSender[],
   mediaStream: MediaStream,
   maxBitrate: number,
@@ -15,4 +15,4 @@ const scaleMaxBitrateBySender = async (
   return undefined;
 };
 
-export default scaleMaxBitrateBySender;
+export default scaleBitrate;

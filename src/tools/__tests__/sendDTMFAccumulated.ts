@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/filename-case */
 /// <reference types="jest" />
 import delayPromise from '../../__fixtures__/delayPromise';
 import { doMockSipConnector } from '../../doMock';

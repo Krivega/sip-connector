@@ -82,6 +82,10 @@ All notable changes to this project will be documented in this file. See [standa
 - resolve unsubscribe function initialization and improve UA event handling in ConnectionFlow and UAFactory ([a4ccd53](https://github.com/Krivega/sip-connector/commit/a4ccd53a1ee408ebe36f75053f330990a466b04a))
 - update jest configuration and improve error handling in ConnectionManager tests ([7e3cc9b](https://github.com/Krivega/sip-connector/commit/7e3cc9b47353d4c129058e07df4abc667252ef9c))
 
+### [14.1.1](https://github.com/Krivega/sip-connector/compare/v14.0.1...v14.1.1) (2025-08-04)
+
+### [14.0.1](https://github.com/Krivega/sip-connector/compare/v14.1.0...v14.0.1) (2025-08-04)
+
 ### [14.0.1-0](https://github.com/Krivega/sip-connector/compare/v14.0.0...v14.0.1-0) (2025-07-15)
 
 ### [14.0.1-0](https://github.com/Krivega/sip-connector/compare/v14.0.0...v14.0.1-0) (2025-07-15)
