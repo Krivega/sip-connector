@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [15.0.0](https://github.com/Krivega/sip-connector/compare/v14.1.1...v15.0.0) (2025-08-04)
+
+### ⚠ BREAKING CHANGES
+
+- V15 (#47)
+
+### Features
+
+- V15 ([#47](https://github.com/Krivega/sip-connector/issues/47)) ([57f5ad5](https://github.com/Krivega/sip-connector/commit/57f5ad5b49af40f94ca1eec6e6ef212b7d04e213))
+
 ## [14.1.0-alpha.13](https://github.com/Krivega/sip-connector/compare/v14.1.1...v14.1.0-alpha.13) (2025-08-04)
 
 ### Bug Fixes
