@@ -1,23 +1,22 @@
 /// <reference types="jest" />
+import { dataForConnectionWithAuthorization } from '@/__fixtures__';
+import JsSIP from '@/__fixtures__/jssip.mock';
+import { EContentTypeReceived, EEventsMainCAM, EHeader } from '@/ApiManager';
+import { doMockSipConnector } from '@/doMock';
+import type { SipConnector } from '@/SipConnector';
+import findVideoSender from '@/utils/findVideoSender';
 import { createMediaStreamMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
-import { dataForConnectionWithAuthorization } from '../../__fixtures__';
-import JsSIP from '../../__fixtures__/jssip.mock';
-import { EContentTypeReceived, EEventsMainCAM, EHeader } from '../../ApiManager';
-import { doMockSipConnector } from '../../doMock';
-import type { SipConnector } from '../../SipConnector';
-import findVideoSender from '../../utils/findVideoSender';
-import { MINIMUM_BITRATE } from '../getMaxBitrateByWidth';
-import getMaxBitrateByWidthAndCodec from '../getMaxBitrateByWidthAndCodec';
+import { calcMaxBitrateByWidthAndCodec } from '../calcBitrate';
 import { resolveVideoSendingBalancer } from '../VideoSendingBalancer';
 
 const number = '111';
 
 const fhdWidth = 1920;
-const fhdBitrate = getMaxBitrateByWidthAndCodec(fhdWidth);
+const fhdBitrate = calcMaxBitrateByWidthAndCodec(fhdWidth);
 
 const sdWidth = 640;
 const sdHeight = 480;
-const sdBitrate = getMaxBitrateByWidthAndCodec(sdWidth);
+const sdBitrate = calcMaxBitrateByWidthAndCodec(sdWidth);
 
 const BITRATE_1024 = 1e6;
 const CODEC_AV1 = 'video/AV1';
@@ -147,7 +146,7 @@ describe('resolveVideoSendingBalancer', () => {
 
     const parameters = await promiseSetResolution;
 
-    expect(parameters.encodings[0].maxBitrate).toEqual(MINIMUM_BITRATE);
+    expect(parameters.encodings[0].maxBitrate).toEqual(0.06 * 1e6);
   });
 
   it('should be set max mediaStreamTrack bitrate by MAX_MAIN_CAM_RESOLUTION info', async () => {

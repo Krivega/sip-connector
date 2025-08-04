@@ -2,8 +2,7 @@ import type { TRtpSendParameters } from '../types';
 import configureDegradationPreference from './configureDegradationPreference';
 import configureEncodings from './configureEncodings';
 import hasChangedRTCRtpSendParameters from './hasChangedRTCRtpSendParameters';
-
-type TResult = { parameters: RTCRtpSendParameters; isChanged: boolean };
+import type { TResult } from './types';
 
 const setParametersToSender = async (
   sender: RTCRtpSender,

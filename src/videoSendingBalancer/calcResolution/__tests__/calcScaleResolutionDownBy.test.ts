@@ -1,8 +1,8 @@
 /// <reference types="jest" />
-import type { TSize } from '../../types';
-import scaleResolutionAndBitrate from '../scaleResolutionAndBitrate';
+import type { TSize } from '@/types';
+import calcScaleResolutionDownBy from '../calcScaleResolutionDownBy';
 
-describe('scaleResolutionAndBitrate', () => {
+describe('calcScaleResolutionDownBy', () => {
   const mockVideoTrack = {} as MediaStreamVideoTrack;
 
   it('should scale resolution down and calculate max bitrate correctly', () => {
@@ -13,22 +13,17 @@ describe('scaleResolutionAndBitrate', () => {
     };
 
     const targetSize: TSize = { width: 1280, height: 720 };
-    const codec = 'vp8';
 
-    const result = scaleResolutionAndBitrate({
+    const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,
       targetSize,
-      codec,
     });
     const resultResolutions = {
-      width: settings.width / result.scaleResolutionDownBy,
-      height: settings.height / result.scaleResolutionDownBy,
+      width: settings.width / result,
+      height: settings.height / result,
     };
 
-    expect(result).toEqual({
-      scaleResolutionDownBy: 1.5,
-      maxBitrate: 1_000_000,
-    });
+    expect(result).toEqual(1.5);
 
     expect(resultResolutions).toEqual({
       width: 1280,
@@ -44,22 +39,17 @@ describe('scaleResolutionAndBitrate', () => {
     };
 
     const targetSize: TSize = { width: 1280, height: 720 };
-    const codec = 'vp9';
 
-    const result = scaleResolutionAndBitrate({
+    const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,
       targetSize,
-      codec,
     });
     const resultResolutions = {
-      width: settings.width / result.scaleResolutionDownBy,
-      height: settings.height / result.scaleResolutionDownBy,
+      width: settings.width / result,
+      height: settings.height / result,
     };
 
-    expect(result).toEqual({
-      scaleResolutionDownBy: 1,
-      maxBitrate: 1_000_000,
-    });
+    expect(result).toEqual(1);
 
     expect(resultResolutions).toEqual(settings);
   });
@@ -72,22 +62,17 @@ describe('scaleResolutionAndBitrate', () => {
     };
 
     const targetSize: TSize = { width: 640, height: 720 };
-    const codec = 'vp8';
 
-    const result = scaleResolutionAndBitrate({
+    const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,
       targetSize,
-      codec,
     });
     const resultResolutions = {
-      width: settings.width / result.scaleResolutionDownBy,
-      height: settings.height / result.scaleResolutionDownBy,
+      width: settings.width / result,
+      height: settings.height / result,
     };
 
-    expect(result).toEqual({
-      scaleResolutionDownBy: 3,
-      maxBitrate: 500_000,
-    });
+    expect(result).toEqual(3);
 
     expect(resultResolutions).toEqual({
       width: 640,
@@ -103,22 +88,17 @@ describe('scaleResolutionAndBitrate', () => {
     };
 
     const targetSize: TSize = { width: 1280, height: 360 };
-    const codec = 'vp8';
 
-    const result = scaleResolutionAndBitrate({
+    const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,
       targetSize,
-      codec,
     });
     const resultResolutions = {
-      width: settings.width / result.scaleResolutionDownBy,
-      height: settings.height / result.scaleResolutionDownBy,
+      width: settings.width / result,
+      height: settings.height / result,
     };
 
-    expect(result).toEqual({
-      scaleResolutionDownBy: 3,
-      maxBitrate: 1_000_000,
-    });
+    expect(result).toEqual(3);
 
     expect(resultResolutions).toEqual({
       width: 640,
@@ -134,22 +114,17 @@ describe('scaleResolutionAndBitrate', () => {
     };
 
     const targetSize: TSize = { width: 640, height: 360 };
-    const codec = 'vp8';
 
-    const result = scaleResolutionAndBitrate({
+    const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,
       targetSize,
-      codec,
     });
     const resultResolutions = {
-      width: settings.width / result.scaleResolutionDownBy,
-      height: settings.height / result.scaleResolutionDownBy,
+      width: settings.width / result,
+      height: settings.height / result,
     };
 
-    expect(result).toEqual({
-      scaleResolutionDownBy: 3,
-      maxBitrate: 500_000,
-    });
+    expect(result).toEqual(3);
 
     expect(resultResolutions).toEqual(targetSize);
   });
@@ -162,22 +137,17 @@ describe('scaleResolutionAndBitrate', () => {
     };
 
     const targetSize: TSize = { width: 320, height: 240 };
-    const codec = 'vp8';
 
-    const result = scaleResolutionAndBitrate({
+    const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,
       targetSize,
-      codec,
     });
     const resultResolutions = {
-      width: settings.width / result.scaleResolutionDownBy,
-      height: settings.height / result.scaleResolutionDownBy,
+      width: settings.width / result,
+      height: settings.height / result,
     };
 
-    expect(result).toEqual({
-      scaleResolutionDownBy: 2,
-      maxBitrate: 320_000,
-    });
+    expect(result).toEqual(2);
 
     expect(resultResolutions).toEqual({
       width: 320,

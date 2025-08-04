@@ -1,17 +1,14 @@
+import { EEventsMainCAM } from '@/ApiManager';
+import logger, { debug } from '@/logger';
+import type { TOnSetParameters, TResult } from '@/setParametersToSender';
+import { setEncodingsToSender } from '@/setParametersToSender';
+import type { SipConnector } from '@/SipConnector';
+import findVideoSender from '@/utils/findVideoSender';
+import getCodecFromSender from '@/utils/getCodecFromSender';
+import hasIncludesString from '@/utils/hasIncludesString';
 import { createStackPromises } from 'stack-promises';
-import { EEventsMainCAM } from '../ApiManager';
-import logger, { debug } from '../logger';
-import type { SipConnector } from '../SipConnector';
-import findVideoSender from '../utils/findVideoSender';
-import getCodecFromSender from '../utils/getCodecFromSender';
-import getMaxBitrateByWidthAndCodec, {
-  getMaximumBitrate,
-  getMinimumBitrate,
-} from './getMaxBitrateByWidthAndCodec';
-import hasIncludesString from './hasIncludesString';
-import scaleResolutionAndBitrate from './scaleResolutionAndBitrate';
-import type { TOnSetParameters, TResult } from './setEncodingsToSender';
-import setEncodingsToSender from './setEncodingsToSender';
+import { calcMaxBitrateByWidthAndCodec, getMaximumBitrate, getMinimumBitrate } from './calcBitrate';
+import { calcScaleResolutionDownBy } from './calcResolution';
 
 class VideoSendingBalancer {
   private readonly sipConnector: SipConnector;
@@ -176,7 +173,7 @@ class VideoSendingBalancer {
     const maxBitrate =
       widthCurrent === undefined
         ? getMaximumBitrate(codec)
-        : getMaxBitrateByWidthAndCodec(widthCurrent, codec);
+        : calcMaxBitrateByWidthAndCodec(widthCurrent, codec);
 
     return this.addToStackScaleResolutionDownBySender({
       sender,
@@ -197,14 +194,16 @@ class VideoSendingBalancer {
     codec?: string;
   }): Promise<TResult> {
     const [widthTarget, heightTarget] = resolution.split('x');
-    const { maxBitrate, scaleResolutionDownBy } = scaleResolutionAndBitrate({
+    const targetSize = {
+      width: Number(widthTarget),
+      height: Number(heightTarget),
+    };
+
+    const scaleResolutionDownBy = calcScaleResolutionDownBy({
       videoTrack,
-      codec,
-      targetSize: {
-        width: Number(widthTarget),
-        height: Number(heightTarget),
-      },
+      targetSize,
     });
+    const maxBitrate = calcMaxBitrateByWidthAndCodec(targetSize.width, codec);
 
     return this.addToStackScaleResolutionDownBySender({
       sender,

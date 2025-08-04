@@ -7,7 +7,7 @@ const megabitsToBits = (mb: number): number => {
 export const MINIMUM_BITRATE = megabitsToBits(0.06);
 export const MAXIMUM_BITRATE = megabitsToBits(4);
 
-const getMaxBitrateByWidth = (maxWidth: number): number => {
+const calcMaxBitrateByWidth = (maxWidth: number): number => {
   if (maxWidth <= 64) {
     return MINIMUM_BITRATE;
   }
@@ -47,4 +47,4 @@ const getMaxBitrateByWidth = (maxWidth: number): number => {
   return MAXIMUM_BITRATE;
 };
 
-export default getMaxBitrateByWidth;
+export default calcMaxBitrateByWidth;

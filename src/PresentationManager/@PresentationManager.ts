@@ -2,7 +2,7 @@ import type { RTCSession } from '@krivega/jssip';
 import { Events } from 'events-constructor';
 import { hasCanceledError, repeatedCallsAsync } from 'repeated-calls';
 import prepareMediaStream from '../tools/prepareMediaStream';
-// import scaleBitrate from '../../videoSendingBalancer/scaleBitrate';
+// import setMaxBitrateToSender from '../../videoSendingBalancer/setMaxBitrateToSender';
 // import { ONE_MEGABIT_IN_BITS } from './constants';
 import type { CallManager } from '../CallManager';
 import type { TEvent, TEvents } from './eventNames';
@@ -285,7 +285,7 @@ class PresentationManager {
 
       //   const senders = connection.getSenders();
 
-      //   await scaleBitrate(senders, stream, maxBitrate);
+      //   await setMaxBitrateToSender(senders, stream, maxBitrate);
       // })
       .then(() => {
         return stream;

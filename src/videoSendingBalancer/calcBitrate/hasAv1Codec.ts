@@ -1,4 +1,4 @@
-import hasIncludesString from './hasIncludesString';
+import hasIncludesString from '@/utils/hasIncludesString';
 
 const CODEC_AV1 = 'av1';
 

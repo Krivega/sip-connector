@@ -1,7 +1,8 @@
+import { setEncodingsToSender } from '.';
 import findSenderByStream from '../utils/findSenderByStream';
-import setEncodingsToSender from './setEncodingsToSender';
 
-const scaleBitrate = async (
+// unused (see comment in src/PresentationManager/@PresentationManager.ts)
+const setMaxBitrateToSender = async (
   senders: RTCRtpSender[],
   mediaStream: MediaStream,
   maxBitrate: number,
@@ -15,4 +16,4 @@ const scaleBitrate = async (
   return undefined;
 };
 
-export default scaleBitrate;
+export default setMaxBitrateToSender;

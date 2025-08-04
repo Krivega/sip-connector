@@ -1,4 +1,4 @@
-import getMaxBitrateByWidth, { MAXIMUM_BITRATE, MINIMUM_BITRATE } from './getMaxBitrateByWidth';
+import calcMaxBitrateByWidth, { MAXIMUM_BITRATE, MINIMUM_BITRATE } from './calcMaxBitrateByWidth';
 import scaleBitrateByCodec from './scaleBitrateByCodec';
 
 export const getMinimumBitrate = (codec?: string) => {
@@ -9,10 +9,10 @@ export const getMaximumBitrate = (codec?: string) => {
   return scaleBitrateByCodec(MAXIMUM_BITRATE, codec);
 };
 
-const getMaxBitrateByWidthAndCodec = (maxWidth: number, codec?: string): number => {
-  const maxBitrate = getMaxBitrateByWidth(maxWidth);
+const calcMaxBitrateByWidthAndCodec = (maxWidth: number, codec?: string): number => {
+  const maxBitrate = calcMaxBitrateByWidth(maxWidth);
 
   return scaleBitrateByCodec(maxBitrate, codec);
 };
 
-export default getMaxBitrateByWidthAndCodec;
+export default calcMaxBitrateByWidthAndCodec;

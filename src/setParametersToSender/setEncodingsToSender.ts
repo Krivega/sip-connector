@@ -1,7 +1,5 @@
-import setParametersToSender from '../setParametersToSender';
-
-export type TOnSetParameters = (parameters: RTCRtpSendParameters) => void;
-export type TResult = { parameters: RTCRtpSendParameters; isChanged: boolean };
+import setParametersToSender from './setParametersToSender';
+import type { TOnSetParameters, TResult } from './types';
 
 const setEncodingsToSender = async (
   sender: RTCRtpSender,
