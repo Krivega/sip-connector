@@ -1,6 +1,6 @@
 import type { TSimulcastEncoding } from '../types';
 import findVideoTrack from '../utils/findVideoTrack';
-import scaleResolutionAndBitrate from '../videoSendingBalancer/scaleResolutionAndBitrate';
+import { scaleResolutionAndBitrate } from '../videoSendingBalancer';
 
 const generateSimulcastEncodings = ({
   mediaStream,

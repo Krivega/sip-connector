@@ -1,14 +1,14 @@
 /// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
-import { EContentTypeReceived, EEventsMainCAM, EHeader } from '../../ApiManager';
-import type { SipConnector } from '../../SipConnector';
 import { dataForConnectionWithAuthorization } from '../../__fixtures__';
 import JsSIP from '../../__fixtures__/jssip.mock';
+import { EContentTypeReceived, EEventsMainCAM, EHeader } from '../../ApiManager';
 import { doMockSipConnector } from '../../doMock';
+import type { SipConnector } from '../../SipConnector';
 import findVideoSender from '../../utils/findVideoSender';
 import { MINIMUM_BITRATE } from '../getMaxBitrateByWidth';
 import getMaxBitrateByWidthAndCodec from '../getMaxBitrateByWidthAndCodec';
-import resolveVideoSendingBalancer from '../index';
+import { resolveVideoSendingBalancer } from '../VideoSendingBalancer';
 
 const number = '111';
 
