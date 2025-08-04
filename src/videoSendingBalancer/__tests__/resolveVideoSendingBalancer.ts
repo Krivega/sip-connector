@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-import { createMediaStreamMock } from 'webrtc-mock';
+import { createMediaStreamMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../../__fixtures__';
 import JsSIP from '../../__fixtures__/jssip.mock';
 import { EContentTypeReceived, EEventsMainCAM, EHeader } from '../../ApiManager';
@@ -18,6 +18,10 @@ const fhdBitrate = getMaxBitrateByWidthAndCodec(fhdWidth);
 const sdWidth = 640;
 const sdHeight = 480;
 const sdBitrate = getMaxBitrateByWidthAndCodec(sdWidth);
+
+const BITRATE_1024 = 1e6;
+const CODEC_AV1 = 'video/AV1';
+const FACTOR_CODEC_AV1 = 0.6;
 
 const headersResumeMainCam: [string, string][] = [
   [EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
@@ -191,5 +195,418 @@ describe('resolveVideoSendingBalancer', () => {
     const parameters = await promiseSetResolution;
 
     expect(parameters.encodings[0].maxBitrate).toEqual(sdBitrate);
+  });
+
+  describe('processSender scenarios', () => {
+    let sender: RTCRtpSender;
+    let trackWith1024: MediaStreamVideoTrack;
+    let balancer: ReturnType<typeof resolveVideoSendingBalancer>;
+
+    beforeEach(() => {
+      sender = {
+        getStats: jest.fn().mockResolvedValue(
+          new Map([
+            [
+              'codec-1',
+              {
+                id: 'codec-1',
+                timestamp: 0,
+                type: 'codec',
+                mimeType: 'video/H264',
+              } as RTCStats,
+            ],
+          ]),
+        ),
+        getParameters: jest.fn().mockReturnValue({
+          transactionId: '1',
+          encodings: [{ maxBitrate: BITRATE_1024 }],
+          codecs: [],
+          headerExtensions: [],
+          rtcp: {},
+        }),
+        setParameters: jest.fn(),
+      } as unknown as RTCRtpSender;
+
+      trackWith1024 = createVideoMediaStreamTrackMock({
+        constraints: { width: 1024, height: 720 },
+      }) as MediaStreamVideoTrack;
+
+      balancer = resolveVideoSendingBalancer(sipConnector);
+    });
+
+    it('by videoTrack 1024 after MAX_MAIN_CAM_RESOLUTION', async () => {
+      expect.assertions(2);
+
+      const targetWidth = 288;
+      const targeHight = 162;
+
+      // Мокаем connection и sender
+      const mockConnection = {
+        getSenders: () => {
+          return [sender];
+        },
+      } as RTCPeerConnection;
+
+      Object.defineProperty(sipConnector, 'connection', {
+        value: mockConnection,
+        writable: true,
+      });
+
+      // Мокаем sender.track
+      Object.defineProperty(sender, 'track', {
+        value: trackWith1024,
+        writable: true,
+      });
+
+      // Симулируем событие MAX_MAIN_CAM_RESOLUTION
+
+      // @ts-expect-error
+      balancer.serverHeaders = {
+        mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
+        resolutionMainCam: `${targetWidth}x${targeHight}`,
+      };
+
+      const result = await balancer.reBalance();
+
+      expect(result.isChanged).toBe(true);
+      expect(result.parameters.encodings).toEqual([
+        {
+          scaleResolutionDownBy: 4.444_444_444_444_445,
+          maxBitrate: 320_000,
+        },
+      ]);
+    });
+
+    it('MAX_MAIN_CAM_RESOLUTION', async () => {
+      expect.assertions(2);
+
+      const targetWidth = 288;
+      const targeHight = 162;
+
+      const targetScaleResolutionDownBy = 4.444_444_444_444_445; // 720 / 162
+
+      // Мокаем connection и sender
+      const mockConnection = {
+        getSenders: () => {
+          return [sender];
+        },
+      } as RTCPeerConnection;
+
+      Object.defineProperty(sipConnector, 'connection', {
+        value: mockConnection,
+        writable: true,
+      });
+
+      // Мокаем sender.track
+      Object.defineProperty(sender, 'track', {
+        value: trackWith1024,
+        writable: true,
+      });
+
+      // Симулируем событие MAX_MAIN_CAM_RESOLUTION
+
+      // @ts-expect-error
+      balancer.serverHeaders = {
+        mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
+        resolutionMainCam: `${targetWidth}x${targeHight}`,
+      };
+
+      const result = await balancer.reBalance();
+
+      expect(result.isChanged).toBe(true);
+      expect(result.parameters.encodings).toEqual([
+        {
+          scaleResolutionDownBy: targetScaleResolutionDownBy,
+          maxBitrate: 320_000,
+        },
+      ]);
+    });
+
+    it('PAUSE_MAIN_CAM', async () => {
+      expect.assertions(2);
+
+      // Мокаем connection и sender
+      const mockConnection = {
+        getSenders: () => {
+          return [sender];
+        },
+      } as RTCPeerConnection;
+
+      Object.defineProperty(sipConnector, 'connection', {
+        value: mockConnection,
+        writable: true,
+      });
+
+      // Мокаем sender.track
+      Object.defineProperty(sender, 'track', {
+        value: trackWith1024,
+        writable: true,
+      });
+
+      // Симулируем событие PAUSE_MAIN_CAM
+
+      // @ts-expect-error
+      balancer.serverHeaders = {
+        mainCam: EEventsMainCAM.PAUSE_MAIN_CAM,
+        resolutionMainCam: '',
+      };
+
+      const result = await balancer.reBalance();
+
+      expect(result.isChanged).toBe(true);
+      expect(result.parameters.encodings).toEqual([
+        {
+          scaleResolutionDownBy: 200,
+          maxBitrate: 60_000,
+        },
+      ]);
+    });
+
+    it('RESUME_MAIN_CAM 2', async () => {
+      expect.assertions(2);
+
+      const targetWidth = 896;
+      const targeHight = 504;
+
+      // Мокаем connection и sender
+      const mockConnection = {
+        getSenders: () => {
+          return [sender];
+        },
+      } as RTCPeerConnection;
+
+      Object.defineProperty(sipConnector, 'connection', {
+        value: mockConnection,
+        writable: true,
+      });
+
+      // Мокаем sender.track
+      Object.defineProperty(sender, 'track', {
+        value: trackWith1024,
+        writable: true,
+      });
+
+      // Симулируем событие RESUME_MAIN_CAM
+
+      // @ts-expect-error
+      balancer.serverHeaders = {
+        mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
+      };
+
+      await balancer.reBalance();
+
+      // Симулируем событие MAX_MAIN_CAM_RESOLUTION
+
+      // @ts-expect-error
+      // eslint-disable-next-line require-atomic-updates
+      balancer.serverHeaders = {
+        mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
+        resolutionMainCam: `${targetWidth}x${targeHight}`,
+      };
+
+      await balancer.reBalance();
+
+      // Симулируем событие RESUME_MAIN_CAM снова
+
+      // @ts-expect-error
+      // eslint-disable-next-line require-atomic-updates
+      balancer.serverHeaders = {
+        mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
+      };
+
+      const result = await balancer.reBalance();
+
+      expect(result.isChanged).toBe(true);
+      expect(result.parameters.encodings).toEqual([
+        {
+          scaleResolutionDownBy: 1,
+          maxBitrate: BITRATE_1024,
+        },
+      ]);
+    });
+
+    it('MAX_MAIN_CAM_RESOLUTION for av1', async () => {
+      expect.assertions(2);
+
+      const targetWidth = 288;
+      const targeHight = 162;
+
+      const targetScaleResolutionDownBy = 4.444_444_444_444_445; // 720 / 162
+
+      // Мокаем connection и sender
+      const mockConnection = {
+        getSenders: () => {
+          return [sender];
+        },
+      } as RTCPeerConnection;
+
+      Object.defineProperty(sipConnector, 'connection', {
+        value: mockConnection,
+        writable: true,
+      });
+
+      // Мокаем sender.track
+      Object.defineProperty(sender, 'track', {
+        value: trackWith1024,
+        writable: true,
+      });
+
+      // Мокаем getStats для AV1 кодека
+      jest
+        .spyOn(sender, 'getStats')
+        .mockResolvedValue(
+          new Map([
+            [
+              'codec-1',
+              { id: 'codec-1', timestamp: 0, type: 'codec', mimeType: CODEC_AV1 } as RTCStats,
+            ],
+          ]),
+        );
+
+      // Симулируем событие MAX_MAIN_CAM_RESOLUTION
+
+      // @ts-expect-error
+      balancer.serverHeaders = {
+        mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
+        resolutionMainCam: `${targetWidth}x${targeHight}`,
+      };
+
+      const result = await balancer.reBalance();
+
+      expect(result.isChanged).toBe(true);
+      expect(result.parameters.encodings).toEqual([
+        {
+          scaleResolutionDownBy: targetScaleResolutionDownBy,
+          maxBitrate: 320_000 * FACTOR_CODEC_AV1,
+        },
+      ]);
+    });
+
+    it('PAUSE_MAIN_CAM for av1', async () => {
+      expect.assertions(2);
+
+      // Мокаем connection и sender
+      const mockConnection = {
+        getSenders: () => {
+          return [sender];
+        },
+      } as RTCPeerConnection;
+
+      Object.defineProperty(sipConnector, 'connection', {
+        value: mockConnection,
+        writable: true,
+      });
+
+      // Мокаем sender.track
+      Object.defineProperty(sender, 'track', {
+        value: trackWith1024,
+        writable: true,
+      });
+
+      // Мокаем getStats для AV1 кодека
+      jest
+        .spyOn(sender, 'getStats')
+        .mockResolvedValue(
+          new Map([
+            [
+              'codec-1',
+              { id: 'codec-1', timestamp: 0, type: 'codec', mimeType: CODEC_AV1 } as RTCStats,
+            ],
+          ]),
+        );
+
+      // Симулируем событие PAUSE_MAIN_CAM
+
+      // @ts-expect-error
+      balancer.serverHeaders = {
+        mainCam: EEventsMainCAM.PAUSE_MAIN_CAM,
+        resolutionMainCam: '',
+      };
+
+      const result = await balancer.reBalance();
+
+      expect(result.isChanged).toBe(true);
+      expect(result.parameters.encodings).toEqual([
+        {
+          scaleResolutionDownBy: 200,
+          maxBitrate: 60_000 * FACTOR_CODEC_AV1,
+        },
+      ]);
+    });
+
+    it('RESUME_MAIN_CAM 2 for av1', async () => {
+      expect.assertions(2);
+
+      const targetWidth = 896;
+      const targeHight = 504;
+
+      // Мокаем connection и sender
+      const mockConnection = {
+        getSenders: () => {
+          return [sender];
+        },
+      } as RTCPeerConnection;
+
+      Object.defineProperty(sipConnector, 'connection', {
+        value: mockConnection,
+        writable: true,
+      });
+
+      // Мокаем sender.track
+      Object.defineProperty(sender, 'track', {
+        value: trackWith1024,
+        writable: true,
+      });
+
+      // Мокаем getStats для AV1 кодека
+      jest
+        .spyOn(sender, 'getStats')
+        .mockResolvedValue(
+          new Map([
+            [
+              'codec-1',
+              { id: 'codec-1', timestamp: 0, type: 'codec', mimeType: CODEC_AV1 } as RTCStats,
+            ],
+          ]),
+        );
+
+      // Симулируем событие RESUME_MAIN_CAM
+
+      // @ts-expect-error
+      balancer.serverHeaders = {
+        mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
+      };
+
+      await balancer.reBalance();
+
+      // Симулируем событие MAX_MAIN_CAM_RESOLUTION
+
+      // @ts-expect-error
+      // eslint-disable-next-line require-atomic-updates
+      balancer.serverHeaders = {
+        mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
+        resolutionMainCam: `${targetWidth}x${targeHight}`,
+      };
+
+      await balancer.reBalance();
+
+      // Симулируем событие RESUME_MAIN_CAM снова
+
+      // @ts-expect-error
+      // eslint-disable-next-line require-atomic-updates
+      balancer.serverHeaders = {
+        mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
+      };
+
+      const result = await balancer.reBalance();
+
+      expect(result.isChanged).toBe(true);
+      expect(result.parameters.encodings).toEqual([
+        {
+          scaleResolutionDownBy: 1,
+          maxBitrate: BITRATE_1024 * FACTOR_CODEC_AV1,
+        },
+      ]);
+    });
   });
 });

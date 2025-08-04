@@ -1,8 +1,17 @@
-import type { EEventsMainCAM } from '../ApiManager';
-import { debug } from '../logger';
+import { createStackPromises } from 'stack-promises';
+import { EEventsMainCAM } from '../ApiManager';
+import logger, { debug } from '../logger';
 import type { SipConnector } from '../SipConnector';
-import balance from './balance';
+import findVideoSender from '../utils/findVideoSender';
+import getCodecFromSender from '../utils/getCodecFromSender';
+import getMaxBitrateByWidthAndCodec, {
+  getMaximumBitrate,
+  getMinimumBitrate,
+} from './getMaxBitrateByWidthAndCodec';
+import hasIncludesString from './hasIncludesString';
+import scaleResolutionAndBitrate from './scaleResolutionAndBitrate';
 import type { TOnSetParameters, TResult } from './setEncodingsToSender';
+import setEncodingsToSender from './setEncodingsToSender';
 
 class VideoSendingBalancer {
   private readonly sipConnector: SipConnector;
@@ -11,7 +20,23 @@ class VideoSendingBalancer {
 
   private readonly onSetParameters?: TOnSetParameters;
 
-  private balanceFunction: () => Promise<TResult>;
+  private serverHeaders?: {
+    mainCam: EEventsMainCAM;
+    resolutionMainCam?: string;
+  };
+
+  private readonly resultNoChanged: TResult = {
+    isChanged: false,
+    parameters: {
+      encodings: [{}],
+      transactionId: '0',
+      codecs: [],
+      headerExtensions: [],
+      rtcp: {},
+    },
+  };
+
+  private readonly stackPromises = createStackPromises<TResult>();
 
   public constructor(
     sipConnector: SipConnector,
@@ -22,7 +47,6 @@ class VideoSendingBalancer {
   ) {
     this.sipConnector = sipConnector;
     this.ignoreForCodec = options.ignoreForCodec;
-    this.balanceFunction = this.balanceByTrack.bind(this);
     this.onSetParameters = options.onSetParameters;
   }
 
@@ -32,15 +56,15 @@ class VideoSendingBalancer {
 
   public unsubscribe(): void {
     this.sipConnector.off('api:main-cam-control', this.handleMainCamControl);
-    this.resetMainCamControl();
+    this.reset();
   }
 
-  public resetMainCamControl(): void {
-    this.balanceFunction = this.balanceByTrack.bind(this);
+  public reset(): void {
+    delete this.serverHeaders;
   }
 
   public async reBalance(): Promise<TResult> {
-    return this.balanceFunction();
+    return this.balanceByTrack();
   }
 
   private async balanceByTrack(): Promise<TResult> {
@@ -50,36 +74,195 @@ class VideoSendingBalancer {
       throw new Error('connection is not exist');
     }
 
-    return balance({
+    return this.balance({
       connection,
       ignoreForCodec: this.ignoreForCodec,
-      onSetParameters: this.onSetParameters,
     });
+  }
+
+  private async balance({
+    connection,
+    ignoreForCodec,
+  }: {
+    connection: RTCPeerConnection;
+    ignoreForCodec?: string;
+  }): Promise<TResult> {
+    const senders = connection.getSenders();
+    const sender = findVideoSender(senders);
+
+    if (!sender?.track) {
+      return this.resultNoChanged;
+    }
+
+    const codec = await getCodecFromSender(sender);
+
+    if (hasIncludesString(codec, ignoreForCodec)) {
+      return this.resultNoChanged;
+    }
+
+    const { mainCam, resolutionMainCam } = this.serverHeaders ?? {};
+
+    return this.processSender({
+      mainCam,
+      resolutionMainCam,
+      sender,
+      codec,
+      videoTrack: sender.track as MediaStreamVideoTrack,
+    });
+  }
+
+  private async runStackPromises(): Promise<TResult> {
+    // @ts-expect-error
+    return this.stackPromises().catch((error: unknown) => {
+      logger('videoSendingBalancer: error', error);
+    });
+  }
+
+  private async run(action: () => Promise<TResult>): Promise<TResult> {
+    this.stackPromises.add(action);
+
+    return this.runStackPromises();
+  }
+
+  private async addToStackScaleResolutionDownBySender({
+    sender,
+    scaleResolutionDownBy,
+    maxBitrate,
+  }: {
+    sender: RTCRtpSender;
+    scaleResolutionDownBy: number;
+    maxBitrate: number;
+  }): Promise<TResult> {
+    return this.run(async () => {
+      return setEncodingsToSender(
+        sender,
+        { scaleResolutionDownBy, maxBitrate },
+        this.onSetParameters,
+      );
+    });
+  }
+
+  private async downgradeResolutionSender({
+    sender,
+    codec,
+  }: {
+    sender: RTCRtpSender;
+    codec?: string;
+  }): Promise<TResult> {
+    const scaleResolutionDownByTarget = 200;
+    const maxBitrate = getMinimumBitrate(codec);
+
+    return this.addToStackScaleResolutionDownBySender({
+      sender,
+      maxBitrate,
+      scaleResolutionDownBy: scaleResolutionDownByTarget,
+    });
+  }
+
+  private async setBitrateByTrackResolution({
+    sender,
+    videoTrack,
+    codec,
+  }: {
+    sender: RTCRtpSender;
+    videoTrack: MediaStreamVideoTrack;
+    codec?: string;
+  }): Promise<TResult> {
+    const scaleResolutionDownByTarget = 1;
+
+    const settings = videoTrack.getSettings();
+    const widthCurrent = settings.width;
+
+    const maxBitrate =
+      widthCurrent === undefined
+        ? getMaximumBitrate(codec)
+        : getMaxBitrateByWidthAndCodec(widthCurrent, codec);
+
+    return this.addToStackScaleResolutionDownBySender({
+      sender,
+      maxBitrate,
+      scaleResolutionDownBy: scaleResolutionDownByTarget,
+    });
+  }
+
+  private async setResolutionSender({
+    sender,
+    videoTrack,
+    resolution,
+    codec,
+  }: {
+    sender: RTCRtpSender;
+    videoTrack: MediaStreamVideoTrack;
+    resolution: string;
+    codec?: string;
+  }): Promise<TResult> {
+    const [widthTarget, heightTarget] = resolution.split('x');
+    const { maxBitrate, scaleResolutionDownBy } = scaleResolutionAndBitrate({
+      videoTrack,
+      codec,
+      targetSize: {
+        width: Number(widthTarget),
+        height: Number(heightTarget),
+      },
+    });
+
+    return this.addToStackScaleResolutionDownBySender({
+      sender,
+      maxBitrate,
+      scaleResolutionDownBy,
+    });
+  }
+
+  private async processSender({
+    mainCam,
+    resolutionMainCam,
+    sender,
+    videoTrack,
+    codec,
+  }: {
+    mainCam?: EEventsMainCAM;
+    resolutionMainCam?: string;
+    sender: RTCRtpSender;
+    videoTrack: MediaStreamVideoTrack;
+    codec?: string;
+  }): Promise<TResult> {
+    switch (mainCam) {
+      case EEventsMainCAM.PAUSE_MAIN_CAM: {
+        return this.downgradeResolutionSender({ sender, codec });
+      }
+      case EEventsMainCAM.RESUME_MAIN_CAM: {
+        return this.setBitrateByTrackResolution({ sender, videoTrack, codec });
+      }
+      case EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION: {
+        if (resolutionMainCam !== undefined) {
+          return this.setResolutionSender({
+            sender,
+            videoTrack,
+            codec,
+            resolution: resolutionMainCam,
+          });
+        }
+
+        return this.setBitrateByTrackResolution({ sender, videoTrack, codec });
+      }
+      case EEventsMainCAM.ADMIN_STOP_MAIN_CAM:
+      case EEventsMainCAM.ADMIN_START_MAIN_CAM:
+      case undefined: {
+        return this.setBitrateByTrackResolution({ sender, videoTrack, codec });
+      }
+      default: {
+        return this.setBitrateByTrackResolution({ sender, videoTrack, codec });
+      }
+    }
   }
 
   private readonly handleMainCamControl = (headers: {
     mainCam: EEventsMainCAM;
     resolutionMainCam?: string;
   }) => {
-    this.balanceFunction = async () => {
-      const { mainCam, resolutionMainCam } = headers;
+    this.serverHeaders = headers;
 
-      const { connection } = this.sipConnector;
-
-      if (!connection) {
-        throw new Error('connection is not exist');
-      }
-
-      return balance({
-        mainCam,
-        resolutionMainCam,
-        connection,
-        ignoreForCodec: this.ignoreForCodec,
-        onSetParameters: this.onSetParameters,
-      });
-    };
-
-    this.balanceFunction().catch(debug);
+    this.balanceByTrack().catch(debug);
   };
 }
 
