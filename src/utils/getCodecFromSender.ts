@@ -6,7 +6,8 @@ const statsReportToArray = (results: RTCStatsReport): (RTCStats | undefined)[] =
 
 const findInResultByType = (results: RTCStatsReport, type: string): RTCStats | undefined => {
   return statsReportToArray(results).find((value) => {
-    return value?.type === type;
+    // @ts-expect-error
+    return value.type === type;
   });
 };
 
