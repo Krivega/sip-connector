@@ -744,7 +744,7 @@ const config: Linter.Config[] = [
       'unicorn/explicit-length-check': ['error'],
       'unicorn/import-style': ['error'],
       'unicorn/new-for-builtins': ['error'],
-      // 'unicorn/no-abusive-eslint-disable': ['error'],
+      'unicorn/no-abusive-eslint-disable': ['error'],
       'unicorn/no-anonymous-default-export': ['error'],
       'unicorn/no-array-method-this-argument': ['error'],
       'unicorn/no-await-expression-member': ['error'],

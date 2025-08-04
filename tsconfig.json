@@ -6,6 +6,7 @@
   },
   "include": [
     "src",
+    "utils.ts",
     "eslint.config.ts",
     "eslint.config.jest.ts",
     "eslint.config.base.ts",

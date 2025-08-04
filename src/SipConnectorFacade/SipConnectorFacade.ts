@@ -620,7 +620,6 @@ class SipConnectorFacade implements IProxyMethods {
 
     log('updatePresentation');
 
-    // @ts-ignore
     return this.sipConnector.updatePresentation(mediaStream, {
       isP2P,
       maxBitrate,
