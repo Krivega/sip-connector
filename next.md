@@ -352,15 +352,15 @@ class SipConnectorFacade {
   +sipConnector: SipConnector
   +preferredMimeTypesVideoCodecs?: string[]
   +excludeMimeTypesVideoCodecs?: string[]
-  +connectToServer(parameters): Promise~{ ua?: UA; isSuccessful: boolean }~
-  +disconnectFromServer(): Promise~{ isSuccessful: boolean }~
-  +callToServer(parameters): Promise~RTCPeerConnection~
-  +answerToIncomingCall(parameters): Promise~RTCPeerConnection | undefined~
-  +startPresentation(parameters): Promise~MediaStream | undefined~
-  +updatePresentation(parameters): Promise~MediaStream | undefined~
-  +stopShareSipConnector(parameters): Promise~void~
-  +replaceMediaStream(mediaStream, options): Promise~void~
-  +sendMediaState(parameters): Promise~void~
+  +connectToServer(parameters)
+  +disconnectFromServer()
+  +callToServer(parameters)
+  +answerToIncomingCall(parameters)
+  +startPresentation(parameters)
+  +updatePresentation(parameters)
+  +stopShareSipConnector(parameters)
+  +replaceMediaStream(mediaStream, options)
+  +sendMediaState(parameters)
   +getRemoteStreams(): MediaStream[] | undefined
   +onUseLicense(handler): (() => void)
   +onMustStopPresentation(handler): (() => void)
@@ -391,13 +391,13 @@ class ConnectionManager {
   +socket?: WebSocketInterface
   +connect: TConnect
   +set: TSet
-  +disconnect(): Promise~void~
-  +register(): Promise~RegisteredEvent~
-  +unregister(): Promise~UnRegisteredEvent~
-  +tryRegister(): Promise~void~
-  +sendOptions(target, body?, extraHeaders?): Promise~void~
-  +ping(body?, extraHeaders?): Promise~void~
-  +checkTelephony(parameters): Promise~void~
+  +disconnect()
+  +register()
+  +unregister()
+  +tryRegister()
+  +sendOptions(target, body?, extraHeaders?)
+  +ping(body?, extraHeaders?)
+  +checkTelephony(parameters)
   +requested: boolean
   +isPendingConnect: boolean
   +isPendingInitUa: boolean
@@ -424,30 +424,30 @@ class CallManager {
 
 class ApiManager {
   +events: TEvents
-  +waitChannels(): Promise~TChannels~
-  +waitSyncMediaState(): Promise~{ isSyncForced: boolean }~
-  +sendDTMF(tone: number | string): Promise~void~
-  +sendChannels(channels: TChannels): Promise~void~
-  +sendMediaState(mediaState: TMediaState, options?): Promise~void~
-  +sendRefusalToTurnOn(type: 'cam' | 'mic', options?): Promise~void~
-  +sendRefusalToTurnOnMic(options?): Promise~void~
-  +sendRefusalToTurnOnCam(options?): Promise~void~
-  +sendMustStopPresentationP2P(): Promise~void~
-  +sendStoppedPresentationP2P(): Promise~void~
-  +sendStoppedPresentation(): Promise~void~
-  +askPermissionToStartPresentationP2P(): Promise~void~
-  +askPermissionToStartPresentation(): Promise~void~
-  +askPermissionToEnableCam(options?): Promise~void~
+  +waitChannels()
+  +waitSyncMediaState()
+  +sendDTMF(tone: number | string)
+  +sendChannels(channels: TChannels)
+  +sendMediaState(mediaState: TMediaState, options?)
+  +sendRefusalToTurnOn(type: 'cam' | 'mic', options?)
+  +sendRefusalToTurnOnMic(options?)
+  +sendRefusalToTurnOnCam(options?)
+  +sendMustStopPresentationP2P()
+  +sendStoppedPresentationP2P()
+  +sendStoppedPresentation()
+  +askPermissionToStartPresentationP2P()
+  +askPermissionToStartPresentation()
+  +askPermissionToEnableCam(options?)
 }
 
 class PresentationManager {
   +events: TEvents
-  +promisePendingStartPresentation?: Promise~MediaStream~
-  +promisePendingStopPresentation?: Promise~MediaStream | undefined~
+  +promisePendingStartPresentation?: Promise
+  +promisePendingStopPresentation?: Promise
   +streamPresentationCurrent?: MediaStream
-  +startPresentation(beforeStartPresentation, stream, options?): Promise~MediaStream~
-  +stopPresentation(beforeStopPresentation): Promise~MediaStream | undefined~
-  +updatePresentation(beforeStartPresentation, stream, options?): Promise~MediaStream | undefined~
+  +startPresentation(beforeStartPresentation, stream, options?)
+  +stopPresentation(beforeStopPresentation)
+  +updatePresentation(beforeStartPresentation, stream, options?)
   +cancelSendPresentationWithRepeatedCalls(): void
   +isPendingPresentation: boolean
 }
@@ -466,13 +466,13 @@ class IncomingCallManager {
 
 class ICallStrategy {
   <<interface>>
-  +startCall(ua: UA, getSipServerUrl: TGetServerUrl, params): Promise~RTCPeerConnection~
-  +endCall(): Promise~void~
-  +answerToIncomingCall(ua: UA, getSipServerUrl: TGetServerUrl, params): Promise~RTCPeerConnection~
+  +startCall(ua: UA, getSipServerUrl: TGetServerUrl, params)
+  +endCall()
+  +answerToIncomingCall(ua: UA, getSipServerUrl: TGetServerUrl, params)
   +getEstablishedRTCSession(): RTCSession | undefined
   +getCallConfiguration(): TCallConfiguration | undefined
   +getRemoteStreams(): MediaStream[] | undefined
-  +replaceMediaStream(mediaStream: MediaStream, options?): Promise~void~
+  +replaceMediaStream(mediaStream: MediaStream, options?)
   +requested: boolean
   +connection: RTCPeerConnection | undefined
   +establishedRTCSession: RTCSession | undefined
@@ -480,13 +480,13 @@ class ICallStrategy {
 }
 
 class MCUCallStrategy {
-  +startCall(ua: UA, getSipServerUrl: TGetServerUrl, params): Promise~RTCPeerConnection~
-  +endCall(): Promise~void~
-  +answerToIncomingCall(ua: UA, getSipServerUrl: TGetServerUrl, params): Promise~RTCPeerConnection~
+  +startCall(ua: UA, getSipServerUrl: TGetServerUrl, params)
+  +endCall()
+  +answerToIncomingCall(ua: UA, getSipServerUrl: TGetServerUrl, params)
   +getEstablishedRTCSession(): RTCSession | undefined
   +getCallConfiguration(): TCallConfiguration | undefined
   +getRemoteStreams(): MediaStream[] | undefined
-  +replaceMediaStream(mediaStream: MediaStream, options?): Promise~void~
+  +replaceMediaStream(mediaStream: MediaStream, options?)
   +requested: boolean
   +connection: RTCPeerConnection | undefined
   +establishedRTCSession: RTCSession | undefined
@@ -494,13 +494,13 @@ class MCUCallStrategy {
 }
 
 class SFUCallStrategy {
-  +startCall(ua: UA, getSipServerUrl: TGetServerUrl, params): Promise~RTCPeerConnection~
-  +endCall(): Promise~void~
-  +answerToIncomingCall(ua: UA, getSipServerUrl: TGetServerUrl, params): Promise~RTCPeerConnection~
+  +startCall(ua: UA, getSipServerUrl: TGetServerUrl, params)
+  +endCall()
+  +answerToIncomingCall(ua: UA, getSipServerUrl: TGetServerUrl, params)
   +getEstablishedRTCSession(): RTCSession | undefined
   +getCallConfiguration(): TCallConfiguration | undefined
   +getRemoteStreams(): MediaStream[] | undefined
-  +replaceMediaStream(mediaStream: MediaStream, options?): Promise~void~
+  +replaceMediaStream(mediaStream: MediaStream, options?)
   +requested: boolean
   +connection: RTCPeerConnection | undefined
   +establishedRTCSession: RTCSession | undefined
