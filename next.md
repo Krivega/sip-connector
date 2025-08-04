@@ -35,23 +35,25 @@ class SipConnectorFacade implements IProxyMethods {
   callToServer(parameters): Promise<RTCPeerConnection>;
   answerToIncomingCall(parameters): Promise<RTCPeerConnection | undefined>;
 
+  // Методы для управления медиа в звонке
+  replaceMediaStream(mediaStream, options): Promise<void>;
+
   // Методы для презентации
   startPresentation(parameters): Promise<MediaStream | undefined>;
   updatePresentation(parameters): Promise<MediaStream | undefined>;
   stopShareSipConnector(parameters): Promise<void>;
 
-  // Методы для управления медиа
-  replaceMediaStream(mediaStream, options): Promise<void>;
+  // Синтаксический сахар над методами работы с  API
   sendMediaState(parameters): Promise<void>;
   sendRefusalToTurnOnMic(): Promise<void>;
   sendRefusalToTurnOnCam(): Promise<void>;
-
-  // Утилитарные методы
-  getRemoteStreams(): MediaStream[] | undefined;
   onUseLicense(handler): () => void;
   onMustStopPresentation(handler): () => void;
   onMoveToSpectators(handler): () => void;
   onMoveToParticipants(handler): () => void;
+
+  // Утилитарные методы
+  getRemoteStreams(): MediaStream[] | undefined;
 }
 ```
 
