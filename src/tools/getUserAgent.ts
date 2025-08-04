@@ -14,8 +14,8 @@ const getUserAgentUnifiedSdpSemantic = ({
   const fixedAppName = replaceForbiddenSymbolsWithUnderscore(appName);
 
   const appInfo = `${fixedAppName} ${appVersion}`;
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-  const suffix = browserName ? `${browserName} ${browserVersion}, ${appInfo}` : appInfo;
+  const suffix =
+    browserName === undefined ? appInfo : `${browserName} ${browserVersion}, ${appInfo}`;
 
   const userAgent = `ChromeNew - ${suffix}`;
 

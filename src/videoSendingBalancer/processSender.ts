@@ -63,9 +63,10 @@ const setBitrateByTrackResolution = async (
   const scaleResolutionDownByTarget = 1;
 
   const settings = videoTrack.getSettings();
-  const widthCurrent = settings.width;
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const widthCurrent = settings.width!;
 
-  const maxBitrate = getMaxBitrateByWidthAndCodec(widthCurrent ?? 0, codec);
+  const maxBitrate = getMaxBitrateByWidthAndCodec(widthCurrent, codec);
 
   return addToStackScaleResolutionDownBySender({
     sender,
