@@ -2,7 +2,7 @@
 /// <reference types="jest" />
 import { createVideoMediaStreamTrackMock } from 'webrtc-mock';
 import RTCRtpSenderMock from '../../__fixtures__/RTCRtpSenderMock';
-import { EEventsMainCAM } from '../../types';
+import { EEventsMainCAM } from '../../ApiManager';
 import processSender from '../processSender';
 
 const BITRATE_1024 = 1e6;

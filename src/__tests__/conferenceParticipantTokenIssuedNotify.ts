@@ -7,7 +7,7 @@ import {
 } from '../__fixtures__/conferenceParticipantTokenIssuedNotify';
 import JsSIP from '../__fixtures__/jssip.mock';
 import { doMockSipConnector } from '../doMock';
-import type SipConnector from '../SipConnector';
+import type { SipConnector } from '../SipConnector';
 
 describe('conference participant token issued notify', () => {
   const number = '111';
@@ -30,7 +30,7 @@ describe('conference participant token issued notify', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('conference:participant-token-issued', (data) => {
+      sipConnector.on('api:conference:participant-token-issued', (data) => {
         expect(data).toEqual(conferenceParticipantTokenIssuedData);
 
         resolve();

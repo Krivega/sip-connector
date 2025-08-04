@@ -1,5 +1,5 @@
 const resolveHasNeedToUpdateItemEncoding = (defaultValue?: number) => {
-  return (itemEncodingTarget: typeof defaultValue, itemEncodingCurrent?: number): boolean => {
+  return (itemEncodingTarget?: number, itemEncodingCurrent?: number): boolean => {
     const isChangedDefaultScale =
       itemEncodingCurrent === undefined && itemEncodingTarget !== defaultValue;
     const isChangedPreviousScale =

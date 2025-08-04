@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 import { getValuesFromError } from '..';
-import type { TCustomError } from '../../../types';
+import type { TCustomError } from '../../../CallManager';
 
 describe('getValuesFromError', () => {
   it('should return default values when error is not provided', () => {

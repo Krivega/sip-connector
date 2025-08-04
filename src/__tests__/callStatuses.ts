@@ -2,7 +2,7 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import { doMockSipConnector } from '../doMock';
-import type SipConnector from '../SipConnector';
+import type { SipConnector } from '../SipConnector';
 
 describe('call statuses', () => {
   let sipConnector: SipConnector;
@@ -39,18 +39,18 @@ describe('call statuses', () => {
     const number = '10000';
 
     const promiseCallStatuses = new Promise<void>((resolve) => {
-      sipConnector.onSession('connecting', () => {
+      sipConnector.on('call:connecting', () => {
         mockFunctionConnecting();
 
-        sipConnector.onSession('enterRoom', ({ room }: { room: string }) => {
+        sipConnector.on('api:enterRoom', ({ room }: { room: string }) => {
           conference = room;
 
           mockFunctionEnterRoom();
 
-          sipConnector.onSession('accepted', () => {
+          sipConnector.on('call:accepted', () => {
             mockFunctionAccepted();
 
-            sipConnector.onSession('confirmed', () => {
+            sipConnector.on('call:confirmed', () => {
               mockFunctionConfirmed();
               resolve();
             });

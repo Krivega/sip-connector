@@ -1,16 +1,14 @@
-export * as causes from './causes';
-export * as constants from './constants';
-export * as eventNames from './eventNames';
+export { EUseLicense } from './ApiManager';
+export { ECallCause, hasCanceledCallError } from './CallManager';
+export type { TCustomError } from './CallManager';
 export { debug, disableDebug, enableDebug } from './logger';
+export { hasCanceledStartPresentationError } from './PresentationManager';
+export type { TContentHint } from './PresentationManager';
 export { default as setParametersToSender } from './setParametersToSender';
+export { SipConnector } from './SipConnector';
+export { SipConnectorFacade } from './SipConnectorFacade';
 export * as tools from './tools';
-export * from './types';
+export { EMimeTypesVideoCodecs } from './types';
+export type { TJsSIP } from './types';
 export { default as getCodecFromSender } from './utils/getCodecFromSender';
 export { default as resolveVideoSendingBalancer } from './videoSendingBalancer';
-
-export {
-  hasCanceledCallError,
-  hasCanceledStartPresentationError,
-  default as SipConnector,
-} from './SipConnector';
-export { SipConnectorFacade } from './SipConnectorFacade';

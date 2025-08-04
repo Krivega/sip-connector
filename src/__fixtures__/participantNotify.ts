@@ -1,4 +1,4 @@
-import { CONTENT_TYPE_NOTIFY, HEADER_CONTENT_TYPE_NAME, HEADER_NOTIFY } from '../headers';
+import { EContentTypeReceived, EHeader } from '../ApiManager';
 
 const addedToListModeratorsStringified = JSON.stringify({
   cmd: 'addedToListModerators',
@@ -17,8 +17,8 @@ const removedFromListModeratorsParsed = JSON.parse(removedFromListModeratorsStri
 };
 
 export const removedFromListModeratorsHeaders: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_NOTIFY],
-  [HEADER_NOTIFY, removedFromListModeratorsStringified],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.NOTIFY],
+  [EHeader.NOTIFY, removedFromListModeratorsStringified],
 ];
 
 export const removedFromListModeratorsData = {
@@ -26,8 +26,8 @@ export const removedFromListModeratorsData = {
 };
 
 export const addedToListModeratorsHeaders: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_NOTIFY],
-  [HEADER_NOTIFY, addedToListModeratorsStringified],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.NOTIFY],
+  [EHeader.NOTIFY, addedToListModeratorsStringified],
 ];
 
 export const addedToListModeratorsData = {

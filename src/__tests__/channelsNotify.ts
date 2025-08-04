@@ -7,7 +7,7 @@ import {
 import { channelsData, channelsHeaders } from '../__fixtures__/channelsNotify';
 import JsSIP from '../__fixtures__/jssip.mock';
 import { doMockSipConnector } from '../doMock';
-import type SipConnector from '../SipConnector';
+import type { SipConnector } from '../SipConnector';
 
 describe('channels notify', () => {
   const number = '111';
@@ -31,7 +31,7 @@ describe('channels notify', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('channels:notify', (channels) => {
+      sipConnector.on('api:channels:notify', (channels) => {
         expect(channels).toEqual(channelsData);
 
         resolve();
@@ -49,7 +49,7 @@ describe('channels notify', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('channels:notify', (channels) => {
+      sipConnector.on('api:channels:notify', (channels) => {
         expect(channels).toEqual(channelsData);
 
         resolve();

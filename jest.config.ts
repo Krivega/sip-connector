@@ -5,6 +5,8 @@ const jestConfig: JestConfigWithTsJest = {
   testEnvironment: 'jsdom',
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
+    'src/PresentationManager/@PresentationManager.ts',
+    'src/CallManager/RemoteStreamsManager.ts',
     '!<rootDir>/node_modules/',
     '!<rootDir>/demoDist/**',
     '!<rootDir>/dist/**',
@@ -13,9 +15,20 @@ const jestConfig: JestConfigWithTsJest = {
     '!src/**/*.d.ts',
     '!src/**/types.ts',
     '!src/**/typings.ts',
+    '!src/**/constants.ts',
+    '!src/ConnectionManager/index.ts',
+    '!src/CallManager/index.ts',
+    '!src/PresentationManager/index.ts',
+    '!src/ApiManager/index.ts',
+    '!src/IncomingCallManager/index.ts',
+    '!src/doMock.ts',
+    '!src/index.ts',
   ],
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
-  coverageReporters: ['html', 'text', 'text-summary', 'cobertura'],
+  reporters: ['default', 'jest-junit'],
+  coverageReporters: ['text', 'text-summary', 'lcov'],
+  coverageDirectory: 'coverage',
+  coverageProvider: 'babel',
   coverageThreshold: {
     global: {
       statements: 100,
@@ -25,8 +38,6 @@ const jestConfig: JestConfigWithTsJest = {
     },
   },
   clearMocks: true,
-  coverageDirectory: 'coverage',
-  coverageProvider: 'v8',
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
@@ -34,7 +45,7 @@ const jestConfig: JestConfigWithTsJest = {
     '^.+\\.tsx?$': [
       'ts-jest',
       {
-        diagnostics: false
+        diagnostics: false,
       },
     ],
   },

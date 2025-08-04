@@ -1,4 +1,4 @@
-import type SipConnector from '../../SipConnector';
+import type { SipConnector } from '../../SipConnector';
 import log from '../../logger';
 
 const resolveOnStopMainCam = (sipConnector: SipConnector) => {
@@ -7,7 +7,7 @@ const resolveOnStopMainCam = (sipConnector: SipConnector) => {
   ): (() => void) => {
     log('onStopMainCam');
 
-    return sipConnector.onSession('admin-stop-main-cam', handler);
+    return sipConnector.on('api:admin-stop-main-cam', handler);
   };
 
   return onStopMainCam;

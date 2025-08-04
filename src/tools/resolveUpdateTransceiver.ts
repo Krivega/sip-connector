@@ -54,6 +54,28 @@ const excludeCodecs = (codecs: RTCRtpCodec[], excludeMimeTypesVideoCodecs?: stri
   });
 };
 
+const setCodecPreferences = (
+  transceiver: RTCRtpTransceiver,
+  {
+    preferredMimeTypesVideoCodecs,
+    excludeMimeTypesVideoCodecs,
+  }: { preferredMimeTypesVideoCodecs?: string[]; excludeMimeTypesVideoCodecs?: string[] },
+) => {
+  if (
+    typeof transceiver.setCodecPreferences === 'function' &&
+    transceiver.sender.track?.kind === 'video' &&
+    ((preferredMimeTypesVideoCodecs !== undefined && preferredMimeTypesVideoCodecs.length > 0) ||
+      (excludeMimeTypesVideoCodecs !== undefined && excludeMimeTypesVideoCodecs.length > 0))
+  ) {
+    const capabilityCodecs = getCapabilityCodecs('video');
+
+    const filteredCodecs = excludeCodecs(capabilityCodecs, excludeMimeTypesVideoCodecs);
+    const sortedCodecs = preferCodecs(filteredCodecs, preferredMimeTypesVideoCodecs);
+
+    transceiver.setCodecPreferences(sortedCodecs);
+  }
+};
+
 const resolveUpdateTransceiver = (
   parametersTarget: TRtpSendParameters,
   {
@@ -63,22 +85,18 @@ const resolveUpdateTransceiver = (
 ) => {
   return async (transceiver: RTCRtpTransceiver) => {
     try {
-      if (
-        typeof transceiver.setCodecPreferences === 'function' &&
-        transceiver.sender.track?.kind === 'video' &&
-        ((preferredMimeTypesVideoCodecs !== undefined &&
-          preferredMimeTypesVideoCodecs.length > 0) ||
-          (excludeMimeTypesVideoCodecs !== undefined && excludeMimeTypesVideoCodecs.length > 0))
-      ) {
-        const capabilityCodecs = getCapabilityCodecs('video');
+      setCodecPreferences(transceiver, {
+        preferredMimeTypesVideoCodecs,
+        excludeMimeTypesVideoCodecs,
+      });
 
-        const filteredCodecs = excludeCodecs(capabilityCodecs, excludeMimeTypesVideoCodecs);
-        const sortedCodecs = preferCodecs(filteredCodecs, preferredMimeTypesVideoCodecs);
+      const values = Object.values(parametersTarget).filter((value) => {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        return value !== undefined && value !== null;
+      });
 
-        transceiver.setCodecPreferences(sortedCodecs);
-      }
-
-      if (Object.keys(parametersTarget).length > 0) {
+      if (values.length > 0) {
+        log('updateTransceiver setParametersToSender', parametersTarget);
         await setParametersToSender(transceiver.sender, parametersTarget);
       }
     } catch (error) {

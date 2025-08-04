@@ -41,4 +41,14 @@ describe('resolveHasNeedToUpdateItemEncoding', () => {
 
     expect(result).toBe(false);
   });
+
+  it('should return true when itemEncodingCurrent is defined and itemEncodingTarget is greater than itemEncodingCurrent', () => {
+    const itemEncodingCurrent = 60_000;
+    const itemEncodingTarget = 1_000_000;
+
+    const hasNeedToUpdate = resolveHasNeedToUpdateItemEncoding();
+    const result = hasNeedToUpdate(itemEncodingTarget, itemEncodingCurrent);
+
+    expect(result).toBe(true);
+  });
 });

@@ -1,4 +1,4 @@
-import type SipConnector from '../../SipConnector';
+import type { SipConnector } from '../../SipConnector';
 import resolveOnStartMainCam from './resolveOnStartMainCam';
 import resolveOnStartMic from './resolveOnStartMic';
 import resolveOnStopMainCam from './resolveOnStopMainCam';
@@ -17,8 +17,8 @@ type THandlers = {
 
 const createSyncMediaState = ({ sipConnector }: { sipConnector: SipConnector }) => {
   const resolveWhenElseSyncForced = (whenSyncForced: () => void, whenNotSyncForced: () => void) => {
-    return ({ isSyncForced = false }: { isSyncForced?: boolean }) => {
-      if (isSyncForced) {
+    return ({ isSyncForced }: { isSyncForced?: boolean }) => {
+      if (isSyncForced === true) {
         whenSyncForced();
 
         return;
@@ -33,10 +33,11 @@ const createSyncMediaState = ({ sipConnector }: { sipConnector: SipConnector }) 
   const subscribeStartMic = resolveOnStartMic(sipConnector);
   const subscribeStopMic = resolveOnStopMic(sipConnector);
 
-  let unsubscribeStartMainCam = () => {};
-  let unsubscribeStopMainCam = () => {};
-  let unsubscribeStartMic = () => {};
-  let unsubscribeStopMic = () => {};
+  let unsubscribeStartMainCam: (() => void) | undefined;
+  let unsubscribeStopMainCam: (() => void) | undefined;
+  let unsubscribeStartMic: (() => void) | undefined;
+  let unsubscribeStopMic: (() => void) | undefined;
+
   const subscribeSyncCommands = ({
     onStartMainCamForced,
     onStartMainCamNotForced,
@@ -71,10 +72,10 @@ const createSyncMediaState = ({ sipConnector }: { sipConnector: SipConnector }) 
   };
 
   const unsubscribeSyncCommands = () => {
-    unsubscribeStartMainCam();
-    unsubscribeStopMainCam();
-    unsubscribeStartMic();
-    unsubscribeStopMic();
+    unsubscribeStartMainCam?.();
+    unsubscribeStopMainCam?.();
+    unsubscribeStartMic?.();
+    unsubscribeStopMic?.();
   };
 
   const start = (handlers: THandlers) => {

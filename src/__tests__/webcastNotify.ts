@@ -9,7 +9,7 @@ import {
   webcastStoppedHeaders,
 } from '../__fixtures__/webcastNotify';
 import { doMockSipConnector } from '../doMock';
-import type SipConnector from '../SipConnector';
+import type { SipConnector } from '../SipConnector';
 
 describe('webcast notify', () => {
   const number = '111';
@@ -32,7 +32,7 @@ describe('webcast notify', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('webcast:started', (data) => {
+      sipConnector.on('api:webcast:started', (data) => {
         expect(data).toEqual(webcastStartedData);
 
         resolve();
@@ -50,7 +50,7 @@ describe('webcast notify', () => {
     await sipConnector.call({ number, mediaStream });
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('webcast:stopped', (data) => {
+      sipConnector.on('api:webcast:stopped', (data) => {
         expect(data).toEqual(webcastStoppedData);
 
         resolve();

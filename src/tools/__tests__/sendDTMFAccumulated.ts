@@ -4,7 +4,7 @@ import { doMockSipConnector } from '../../doMock';
 import { SipConnectorFacade } from '../../SipConnectorFacade';
 import dataCall from '../__fixtures__/call';
 import { dataForConnectionWithoutAuthorization } from '../__fixtures__/connectToServer';
-import sendDtmfAccumulated from '../sendDTMFAccumulated';
+import sendDtmfAccumulated from '../sendDtmfFAccumulated';
 
 describe('sendDtmfAccumulated', () => {
   const DTMF_SENDING_DELAY = 100;
@@ -27,7 +27,7 @@ describe('sendDtmfAccumulated', () => {
         return sipConnectorFacade.callToServer(dataCall);
       })
       .then(async () => {
-        sipConnector.onSession('newDTMF', ({ originator }: { originator: string }) => {
+        sipConnector.on('api:newDTMF', ({ originator }: { originator: string }) => {
           expect(originator).toEqual('local');
         });
 

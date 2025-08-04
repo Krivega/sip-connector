@@ -3,16 +3,14 @@ import { isCanceledError } from '@krivega/cancelable-promise';
 import type { UA } from '@krivega/jssip';
 import { hasCanceledError } from 'repeated-calls';
 import { debounce } from 'ts-debounce';
-import {
-  PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS,
-  PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS,
-} from '../constants';
+import type { EUseLicense } from '../ApiManager';
 import log, { debug } from '../logger';
-import type SipConnector from '../SipConnector';
+import type { TContentHint } from '../PresentationManager';
+import type { SipConnector } from '../SipConnector';
 import generateSimulcastEncodings from '../tools/generateSimulcastEncodings';
 import hasPurgatory from '../tools/hasPurgatory';
 import resolveUpdateTransceiver from '../tools/resolveUpdateTransceiver';
-import type { EUseLicense, TContentHint, TSimulcastEncoding } from '../types';
+import type { TSimulcastEncoding } from '../types';
 
 const handleError = (error: Error): { isSuccessful: boolean } => {
   if (!isCanceledError(error) && !hasCanceledError(error)) {
@@ -31,11 +29,6 @@ interface IProxyMethods {
   onceRace: SipConnector['onceRace'];
   wait: SipConnector['wait'];
   off: SipConnector['off'];
-  onSession: SipConnector['onSession'];
-  onceSession: SipConnector['onceSession'];
-  onceRaceSession: SipConnector['onceRaceSession'];
-  waitSession: SipConnector['waitSession'];
-  offSession: SipConnector['offSession'];
   sendDTMF: SipConnector['sendDTMF'];
   hangUp: SipConnector['hangUp'];
   declineToIncomingCall: SipConnector['declineToIncomingCall'];
@@ -54,11 +47,6 @@ const proxyMethods = new Set<keyof IProxyMethods>([
   'onceRace',
   'wait',
   'off',
-  'onSession',
-  'onceSession',
-  'onceRaceSession',
-  'waitSession',
-  'offSession',
   'sendDTMF',
   'hangUp',
   'declineToIncomingCall',
@@ -86,21 +74,6 @@ class SipConnectorFacade implements IProxyMethods {
 
   // @ts-expect-error: proxy method
   public off: IProxyMethods['off'];
-
-  // @ts-expect-error: proxy method
-  public onSession: IProxyMethods['onSession'];
-
-  // @ts-expect-error: proxy method
-  public onceSession: IProxyMethods['onceSession'];
-
-  // @ts-expect-error: proxy method
-  public onceRaceSession: IProxyMethods['onceRaceSession'];
-
-  // @ts-expect-error: proxy method
-  public waitSession: IProxyMethods['waitSession'];
-
-  // @ts-expect-error: proxy method
-  public offSession: IProxyMethods['offSession'];
 
   // @ts-expect-error: proxy method
   public sendDTMF: IProxyMethods['sendDTMF'];
@@ -326,7 +299,7 @@ class SipConnectorFacade implements IProxyMethods {
       log('subscribeEnterConference: onEnterConference', onEnterConference);
 
       if (onEnterPurgatory ?? onEnterConference) {
-        return this.sipConnector.onSession('enterRoom', ({ room: _room }: { room: string }) => {
+        return this.sipConnector.on('api:enterRoom', ({ room: _room }: { room: string }) => {
           log('enterRoom', { _room, isSuccessProgressCall });
 
           room = _room;
@@ -356,7 +329,7 @@ class SipConnectorFacade implements IProxyMethods {
         onSuccessProgressCall({ isPurgatory: hasPurgatory(room) });
       }
 
-      this.sipConnector.onceRaceSession(['ended', 'failed'], () => {
+      this.sipConnector.onceRace(['call:ended', 'call:failed'], () => {
         unsubscribeEnterConference();
 
         if (onEndedCall) {
@@ -416,7 +389,7 @@ class SipConnectorFacade implements IProxyMethods {
       });
   };
 
-  public answerIncomingCall = async (parameters: {
+  public answerToIncomingCall = async (parameters: {
     mediaStream: MediaStream;
     extraHeaders?: string[] | undefined;
     iceServers?: RTCIceServer[];
@@ -476,7 +449,7 @@ class SipConnectorFacade implements IProxyMethods {
       },
     );
 
-    log('answerIncomingCall', parameters);
+    log('answerToIncomingCall', parameters);
 
     const answer = async (): Promise<RTCPeerConnection> => {
       return this.sipConnector.answerToIncomingCall({
@@ -510,7 +483,7 @@ class SipConnectorFacade implements IProxyMethods {
       log('subscribeEnterConference: onEnterConference', onEnterConference);
 
       if (onEnterPurgatory ?? onEnterConference) {
-        return this.sipConnector.onSession('enterRoom', (_room: string) => {
+        return this.sipConnector.on('api:enterRoom', (_room: string) => {
           log('enterRoom', { _room, isSuccessProgressCall });
 
           room = _room;
@@ -540,7 +513,7 @@ class SipConnectorFacade implements IProxyMethods {
         onSuccessProgressCall({ isPurgatory: hasPurgatory(room) });
       }
 
-      this.sipConnector.onceRaceSession(['ended', 'failed'], () => {
+      this.sipConnector.onceRace(['call:ended', 'call:failed'], () => {
         unsubscribeEnterConference();
 
         if (onEndedCall) {
@@ -633,30 +606,29 @@ class SipConnectorFacade implements IProxyMethods {
     });
   };
 
-  public startPresentation = async (
-    {
-      mediaStream,
-      isP2P,
-      maxBitrate,
-      contentHint,
-      simulcastEncodings,
-      degradationPreference,
-      sendEncodings,
-      preferredMimeTypesVideoCodecs,
-      excludeMimeTypesVideoCodecs,
-    }: {
-      mediaStream: MediaStream;
-      isP2P: boolean;
-      maxBitrate?: number;
-      contentHint?: TContentHint;
-      simulcastEncodings?: TSimulcastEncoding[];
-      degradationPreference?: RTCDegradationPreference;
-      sendEncodings?: RTCRtpEncodingParameters[];
-      preferredMimeTypesVideoCodecs?: string[];
-      excludeMimeTypesVideoCodecs?: string[];
-    },
-    options?: { callLimit: number },
-  ): Promise<MediaStream | undefined> => {
+  public startPresentation = async ({
+    mediaStream,
+    isP2P,
+    maxBitrate,
+    contentHint,
+    simulcastEncodings,
+    degradationPreference,
+    sendEncodings,
+    preferredMimeTypesVideoCodecs,
+    excludeMimeTypesVideoCodecs,
+    callLimit,
+  }: {
+    mediaStream: MediaStream;
+    isP2P: boolean;
+    maxBitrate?: number;
+    contentHint?: TContentHint;
+    simulcastEncodings?: TSimulcastEncoding[];
+    degradationPreference?: RTCDegradationPreference;
+    sendEncodings?: RTCRtpEncodingParameters[];
+    preferredMimeTypesVideoCodecs?: string[];
+    excludeMimeTypesVideoCodecs?: string[];
+    callLimit?: number;
+  }): Promise<MediaStream | undefined> => {
     const updateTransceiver = resolveUpdateTransceiver(
       {
         degradationPreference,
@@ -669,21 +641,18 @@ class SipConnectorFacade implements IProxyMethods {
 
     log('startPresentation');
 
-    return this.sipConnector.startPresentation(
-      mediaStream,
-      {
-        isP2P,
-        maxBitrate,
-        contentHint,
-        sendEncodings: generateSimulcastEncodings({
-          mediaStream,
-          simulcastEncodings,
-          sendEncodings,
-        }),
-        onAddedTransceiver: updateTransceiver,
-      },
-      options,
-    );
+    return this.sipConnector.startPresentation(mediaStream, {
+      isP2P,
+      maxBitrate,
+      contentHint,
+      callLimit,
+      sendEncodings: generateSimulcastEncodings({
+        mediaStream,
+        simulcastEncodings,
+        sendEncodings,
+      }),
+      onAddedTransceiver: updateTransceiver,
+    });
   };
 
   public stopShareSipConnector = async ({ isP2P = false }: { isP2P?: boolean } = {}) => {
@@ -699,10 +668,6 @@ class SipConnectorFacade implements IProxyMethods {
   };
 
   public sendRefusalToTurnOnMic = async (): Promise<void> => {
-    if (!this.sipConnector.isCallActive) {
-      return;
-    }
-
     log('sendRefusalToTurnOnMic');
 
     await this.sipConnector.sendRefusalToTurnOnMic().catch((error: unknown) => {
@@ -711,10 +676,6 @@ class SipConnectorFacade implements IProxyMethods {
   };
 
   public sendRefusalToTurnOnCam = async (): Promise<void> => {
-    if (!this.sipConnector.isCallActive) {
-      return;
-    }
-
     log('sendRefusalToTurnOnCam');
 
     await this.sipConnector.sendRefusalToTurnOnCam().catch((error: unknown) => {
@@ -729,10 +690,6 @@ class SipConnectorFacade implements IProxyMethods {
     isEnabledCam: boolean;
     isEnabledMic: boolean;
   }): Promise<void> => {
-    if (!this.sipConnector.isCallActive) {
-      return;
-    }
-
     log('sendMediaState');
 
     await this.sipConnector.sendMediaState({ cam: isEnabledCam, mic: isEnabledMic });
@@ -785,10 +742,6 @@ class SipConnectorFacade implements IProxyMethods {
   };
 
   public askPermissionToEnableCam = async (): Promise<void> => {
-    if (!this.sipConnector.isCallActive) {
-      return;
-    }
-
     log('askPermissionToEnableCam');
 
     await this.sipConnector.askPermissionToEnableCam();
@@ -832,25 +785,25 @@ class SipConnectorFacade implements IProxyMethods {
   public onUseLicense = (handler: (license: EUseLicense) => void): (() => void) => {
     log('onUseLicense');
 
-    return this.sipConnector.onSession('useLicense', handler);
+    return this.sipConnector.on('api:useLicense', handler);
   };
 
   public onMustStopPresentation = (handler: () => void): (() => void) => {
     log('onMustStopPresentation');
 
-    return this.sipConnector.onSession('mustStopPresentation', handler);
+    return this.sipConnector.on('api:mustStopPresentation', handler);
   };
 
   public onMoveToSpectators = (handler: () => void): (() => void) => {
     log('onMoveToSpectators');
 
-    return this.sipConnector.onSession(PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS, handler);
+    return this.sipConnector.on('api:participant:move-request-to-spectators', handler);
   };
 
   public onMoveToParticipants = (handler: () => void): (() => void) => {
     log('onMoveToParticipants');
 
-    return this.sipConnector.onSession(PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS, handler);
+    return this.sipConnector.on('api:participant:move-request-to-participants', handler);
   };
 }
 

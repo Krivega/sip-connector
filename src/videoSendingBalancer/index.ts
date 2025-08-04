@@ -1,6 +1,6 @@
+import type { EEventsMainCAM } from '../ApiManager';
 import { debug } from '../logger';
-import type SipConnector from '../SipConnector';
-import type { EEventsMainCAM } from '../types';
+import type { SipConnector } from '../SipConnector';
 import balance from './balance';
 import type { TOnSetParameters } from './setEncodingsToSender';
 
@@ -56,11 +56,11 @@ const resolveVideoSendingBalancer = (
   };
 
   const subscribe = () => {
-    sipConnector.onSession('main-cam-control', handleMainCamControl);
+    sipConnector.on('api:main-cam-control', handleMainCamControl);
   };
 
   const unsubscribe = () => {
-    sipConnector.offSession('main-cam-control', handleMainCamControl);
+    sipConnector.off('api:main-cam-control', handleMainCamControl);
   };
 
   return {

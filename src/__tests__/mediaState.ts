@@ -2,9 +2,9 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import { extraHeaders, mediaStateData } from '../__fixtures__/mediaState';
+import { EContentTypeSent } from '../ApiManager';
 import { doMockSipConnector } from '../doMock';
-import { CONTENT_TYPE_MEDIA_STATE } from '../headers';
-import type SipConnector from '../SipConnector';
+import type { SipConnector } from '../SipConnector';
 
 describe('media state', () => {
   const number = '111';
@@ -31,12 +31,12 @@ describe('media state', () => {
 
     // @ts-expect-error
     // eslint-disable-next-line require-atomic-updates
-    sipConnector.rtcSession.sendInfo = mockFunction;
+    sipConnector.establishedRTCSession.sendInfo = mockFunction;
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sipConnector.sendMediaState(mediaStateData);
 
-    expect(mockFunction).toHaveBeenCalledWith(CONTENT_TYPE_MEDIA_STATE, undefined, {
+    expect(mockFunction).toHaveBeenCalledWith(EContentTypeSent.MEDIA_STATE, undefined, {
       ...extraHeaders,
       noTerminateWhenError: true,
     });
@@ -51,7 +51,7 @@ describe('media state', () => {
     const ERROR_RESPONSE = 'Error response';
 
     // @ts-expect-error
-    sipConnector.rtcSession.sendInfo = async () => {
+    sipConnector.establishedRTCSession.sendInfo = async () => {
       throw new Error(ERROR_RESPONSE);
     };
 

@@ -1,4 +1,4 @@
-import type SipConnector from '../../SipConnector';
+import type { SipConnector } from '../../SipConnector';
 import log from '../../logger';
 
 const resolveOnStopMic = (sipConnector: SipConnector) => {
@@ -7,7 +7,7 @@ const resolveOnStopMic = (sipConnector: SipConnector) => {
   ): (() => void) => {
     log('onStopMic');
 
-    return sipConnector.onSession('admin-stop-mic', handler);
+    return sipConnector.on('api:admin-stop-mic', handler);
   };
 
   return onStopMic;

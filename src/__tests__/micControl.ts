@@ -2,19 +2,18 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
+import { EContentTypeReceived, EEventsMic, EHeader } from '../ApiManager';
 import { doMockSipConnector } from '../doMock';
-import { CONTENT_TYPE_MIC, HEADER_CONTENT_TYPE_NAME, HEADER_MIC } from '../headers';
-import type SipConnector from '../SipConnector';
-import { EEventsMic } from '../types';
+import type { SipConnector } from '../SipConnector';
 
 const headersAdminStartMic: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MIC],
-  [HEADER_MIC, EEventsMic.ADMIN_START_MIC],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.MIC],
+  [EHeader.MIC, EEventsMic.ADMIN_START_MIC],
 ];
 
 const headersAdminStopMic: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MIC],
-  [HEADER_MIC, EEventsMic.ADMIN_STOP_MIC],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.MIC],
+  [EHeader.MIC, EEventsMic.ADMIN_STOP_MIC],
 ];
 
 describe('mic control', () => {
@@ -36,13 +35,12 @@ describe('mic control', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
-      // eslint-disable-next-line no-promise-executor-return
-      return sipConnector.onSession('admin-start-mic', resolve);
+      sipConnector.on('api:admin-start-mic', resolve);
     });
-    const { rtcSession } = sipConnector;
+    const { establishedRTCSession } = sipConnector;
 
-    if (rtcSession) {
-      JsSIP.triggerNewInfo(rtcSession, headersAdminStartMic);
+    if (establishedRTCSession) {
+      JsSIP.triggerNewInfo(establishedRTCSession, headersAdminStartMic);
     }
 
     return promise.then(({ isSyncForced }) => {
@@ -55,13 +53,12 @@ describe('mic control', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
-      // eslint-disable-next-line no-promise-executor-return
-      return sipConnector.onSession('admin-stop-mic', resolve);
+      sipConnector.on('api:admin-stop-mic', resolve);
     });
-    const { rtcSession } = sipConnector;
+    const { establishedRTCSession } = sipConnector;
 
-    if (rtcSession) {
-      JsSIP.triggerNewInfo(rtcSession, headersAdminStopMic);
+    if (establishedRTCSession) {
+      JsSIP.triggerNewInfo(establishedRTCSession, headersAdminStopMic);
     }
 
     return promise.then(({ isSyncForced }) => {

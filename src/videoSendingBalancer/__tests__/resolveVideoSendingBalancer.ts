@@ -1,16 +1,10 @@
 /// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
-import type SipConnector from '../../SipConnector';
+import { EContentTypeReceived, EEventsMainCAM, EHeader } from '../../ApiManager';
+import type { SipConnector } from '../../SipConnector';
 import { dataForConnectionWithAuthorization } from '../../__fixtures__';
 import JsSIP from '../../__fixtures__/jssip.mock';
 import { doMockSipConnector } from '../../doMock';
-import {
-  CONTENT_TYPE_MAIN_CAM,
-  HEADER_CONTENT_TYPE_NAME,
-  HEADER_MAIN_CAM,
-  HEADER_MAIN_CAM_RESOLUTION,
-} from '../../headers';
-import { EEventsMainCAM } from '../../types';
 import findVideoSender from '../../utils/findVideoSender';
 import { MINIMUM_BITRATE } from '../getMaxBitrateByWidth';
 import getMaxBitrateByWidthAndCodec from '../getMaxBitrateByWidthAndCodec';
@@ -26,19 +20,19 @@ const sdHeight = 480;
 const sdBitrate = getMaxBitrateByWidthAndCodec(sdWidth);
 
 const headersResumeMainCam: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
-  [HEADER_MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
+  [EHeader.MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM],
 ];
 
 const headersPauseMainCam: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
-  [HEADER_MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
+  [EHeader.MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM],
 ];
 
 const headersMaxMainCamResolution: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_MAIN_CAM],
-  [HEADER_MAIN_CAM, EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION],
-  [HEADER_MAIN_CAM_RESOLUTION, `${sdWidth}x${sdHeight}`],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
+  [EHeader.MAIN_CAM, EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION],
+  [EHeader.MAIN_CAM_RESOLUTION, `${sdWidth}x${sdHeight}`],
 ];
 
 describe('resolveVideoSendingBalancer', () => {
@@ -94,10 +88,10 @@ describe('resolveVideoSendingBalancer', () => {
       sender.setParameters = resolve;
     });
 
-    const { rtcSession } = sipConnector;
+    const { establishedRTCSession } = sipConnector;
 
-    if (rtcSession) {
-      JsSIP.triggerNewInfo(rtcSession, headersResumeMainCam);
+    if (establishedRTCSession) {
+      JsSIP.triggerNewInfo(establishedRTCSession, headersResumeMainCam);
     }
 
     const parameters = await promiseSetResolution;
@@ -141,10 +135,10 @@ describe('resolveVideoSendingBalancer', () => {
       sender.setParameters = resolve;
     });
 
-    const { rtcSession } = sipConnector;
+    const { establishedRTCSession } = sipConnector;
 
-    if (rtcSession) {
-      JsSIP.triggerNewInfo(rtcSession, headersPauseMainCam);
+    if (establishedRTCSession) {
+      JsSIP.triggerNewInfo(establishedRTCSession, headersPauseMainCam);
     }
 
     const parameters = await promiseSetResolution;
@@ -188,10 +182,10 @@ describe('resolveVideoSendingBalancer', () => {
       sender.setParameters = resolve;
     });
 
-    const { rtcSession } = sipConnector;
+    const { establishedRTCSession } = sipConnector;
 
-    if (rtcSession) {
-      JsSIP.triggerNewInfo(rtcSession, headersMaxMainCamResolution);
+    if (establishedRTCSession) {
+      JsSIP.triggerNewInfo(establishedRTCSession, headersMaxMainCamResolution);
     }
 
     const parameters = await promiseSetResolution;

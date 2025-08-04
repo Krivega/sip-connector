@@ -2,6 +2,172 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [14.1.0-alpha.13](https://github.com/Krivega/sip-connector/compare/v14.1.1...v14.1.0-alpha.13) (2025-08-04)
+
+### Bug Fixes
+
+- set max bitrate ([b8b5488](https://github.com/Krivega/sip-connector/commit/b8b5488d330b2ab6b9b809fb55dfb3d740805423))
+
+## [14.1.0-alpha.12](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.11...v14.1.0-alpha.12) (2025-08-01)
+
+### Bug Fixes
+
+- replaceMediaStream ([53c498a](https://github.com/Krivega/sip-connector/commit/53c498afc3fbfb5f510c7c695e8f7df63ec64530))
+
+## [14.1.0-alpha.11](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.10...v14.1.0-alpha.11) (2025-07-31)
+
+### Bug Fixes
+
+- add tests ([ec8f618](https://github.com/Krivega/sip-connector/commit/ec8f618e163f2ae2fceb479b75ce82abd9864f51))
+
+## [14.1.0-alpha.10](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.9...v14.1.0-alpha.10) (2025-07-28)
+
+### Bug Fixes
+
+- ontrack ([e6ac300](https://github.com/Krivega/sip-connector/commit/e6ac30091aa1c95b0b8447edd56ddb2e2f387245))
+
+## [14.1.0-alpha.9](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.8...v14.1.0-alpha.9) (2025-07-28)
+
+### Bug Fixes
+
+- ontrack ([ceebc89](https://github.com/Krivega/sip-connector/commit/ceebc897cb71acae13a5c57d2341cfe2e313cabc))
+
+## [14.1.0-alpha.8](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.7...v14.1.0-alpha.8) (2025-07-28)
+
+### Features
+
+- export TJsSIP ([85afe22](https://github.com/Krivega/sip-connector/commit/85afe221adbf0871456d63d1b807c0f72ba1d560))
+
+## [14.1.0-alpha.7](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.6...v14.1.0-alpha.7) (2025-07-28)
+
+### Features
+
+- export EMimeTypesVideoCodecs ([bc034e9](https://github.com/Krivega/sip-connector/commit/bc034e9bb8776f7779207e86ff15e7ba680f08e8))
+
+## [14.1.0-alpha.6](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.5...v14.1.0-alpha.6) (2025-07-28)
+
+## [14.1.0-alpha.5](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.4...v14.1.0-alpha.5) (2025-07-28)
+
+### Features
+
+- export TContentHint ([60d5637](https://github.com/Krivega/sip-connector/commit/60d5637c50fad9e9cceccffa3d7525ec555e9894))
+
+## [14.1.0-alpha.4](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.3...v14.1.0-alpha.4) (2025-07-28)
+
+### Features
+
+- export TCustomError ([6e34edc](https://github.com/Krivega/sip-connector/commit/6e34edc2d7bf577fc8b9cbb954b6192adf254a6c))
+
+## [14.1.0-alpha.3](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.2...v14.1.0-alpha.3) (2025-07-28)
+
+### Features
+
+- export ECallCause ([e2d0fa6](https://github.com/Krivega/sip-connector/commit/e2d0fa69bc1d480b0e2a6f7245a587b8af8407e8))
+- export EUseLicense ([128db55](https://github.com/Krivega/sip-connector/commit/128db554c99593cf0c3153a8ca945b8fca16b9c2))
+
+## [14.1.0-alpha.2](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.1...v14.1.0-alpha.2) (2025-07-26)
+
+## [14.1.0-alpha.1](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.0...v14.1.0-alpha.1) (2025-07-26)
+
+## [14.1.0-alpha.0](https://github.com/Krivega/sip-connector/compare/v14.1.0...v14.1.0-alpha.0) (2025-07-26)
+
+### Features
+
+- add ApiManager ([ff2861d](https://github.com/Krivega/sip-connector/commit/ff2861dd2d038f310fb8d13e28f8a51f8abb3cc6))
+- add CallManager ([8de9cef](https://github.com/Krivega/sip-connector/commit/8de9cef60041fe33457f6095e8867b1237d0c626))
+- add CallManager ([40810cd](https://github.com/Krivega/sip-connector/commit/40810cdf524554086b4f3fa25f64318754997e6e))
+- add CallManager and IncomingCallManager ([cb4636a](https://github.com/Krivega/sip-connector/commit/cb4636adfd2273aefe86280cb4fa6d42ddd857b5))
+- add ConfigurationManager and ConnectionFlow for enhanced SIP connection management ([43b6ee7](https://github.com/Krivega/sip-connector/commit/43b6ee779e165b8dba4ea11a46d3b8d8856e3786))
+- add ConfigurationManager and ConnectionFlow for enhanced SIP connection management ([9fbbc8d](https://github.com/Krivega/sip-connector/commit/9fbbc8db6dff8c5a903be8cf09e7f0bd1f127507))
+- implement ConnectionManager and IncomingCallManager for SIP handling ([3b89b75](https://github.com/Krivega/sip-connector/commit/3b89b75a7846a3223dda5f1f69809f46e53cec7e))
+- integrate XState for connection state management in ConnectionManager ([07dcda7](https://github.com/Krivega/sip-connector/commit/07dcda7a3a66ad8a6c665f204b8ebec51bc2303c))
+- refactor ConnectionManager to use RegistrationManager and UAFactory for improved SIP handling ([aa982f9](https://github.com/Krivega/sip-connector/commit/aa982f9cc05b10aff511b372ea2e407b0fcfffbb))
+
+### Bug Fixes
+
+- resolve unsubscribe function initialization and improve UA event handling in ConnectionFlow and UAFactory ([a4ccd53](https://github.com/Krivega/sip-connector/commit/a4ccd53a1ee408ebe36f75053f330990a466b04a))
+- update jest configuration and improve error handling in ConnectionManager tests ([7e3cc9b](https://github.com/Krivega/sip-connector/commit/7e3cc9b47353d4c129058e07df4abc667252ef9c))
+
+## [14.1.0-alpha.12](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.11...v14.1.0-alpha.12) (2025-08-01)
+
+### Bug Fixes
+
+- replaceMediaStream ([53c498a](https://github.com/Krivega/sip-connector/commit/53c498afc3fbfb5f510c7c695e8f7df63ec64530))
+
+## [14.1.0-alpha.11](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.10...v14.1.0-alpha.11) (2025-07-31)
+
+### Bug Fixes
+
+- add tests ([ec8f618](https://github.com/Krivega/sip-connector/commit/ec8f618e163f2ae2fceb479b75ce82abd9864f51))
+
+## [14.1.0-alpha.10](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.9...v14.1.0-alpha.10) (2025-07-28)
+
+### Bug Fixes
+
+- ontrack ([e6ac300](https://github.com/Krivega/sip-connector/commit/e6ac30091aa1c95b0b8447edd56ddb2e2f387245))
+
+## [14.1.0-alpha.9](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.8...v14.1.0-alpha.9) (2025-07-28)
+
+### Bug Fixes
+
+- ontrack ([ceebc89](https://github.com/Krivega/sip-connector/commit/ceebc897cb71acae13a5c57d2341cfe2e313cabc))
+
+## [14.1.0-alpha.8](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.7...v14.1.0-alpha.8) (2025-07-28)
+
+### Features
+
+- export TJsSIP ([85afe22](https://github.com/Krivega/sip-connector/commit/85afe221adbf0871456d63d1b807c0f72ba1d560))
+
+## [14.1.0-alpha.7](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.6...v14.1.0-alpha.7) (2025-07-28)
+
+### Features
+
+- export EMimeTypesVideoCodecs ([bc034e9](https://github.com/Krivega/sip-connector/commit/bc034e9bb8776f7779207e86ff15e7ba680f08e8))
+
+## [14.1.0-alpha.6](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.5...v14.1.0-alpha.6) (2025-07-28)
+
+## [14.1.0-alpha.5](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.4...v14.1.0-alpha.5) (2025-07-28)
+
+### Features
+
+- export TContentHint ([60d5637](https://github.com/Krivega/sip-connector/commit/60d5637c50fad9e9cceccffa3d7525ec555e9894))
+
+## [14.1.0-alpha.4](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.3...v14.1.0-alpha.4) (2025-07-28)
+
+### Features
+
+- export TCustomError ([6e34edc](https://github.com/Krivega/sip-connector/commit/6e34edc2d7bf577fc8b9cbb954b6192adf254a6c))
+
+## [14.1.0-alpha.3](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.2...v14.1.0-alpha.3) (2025-07-28)
+
+### Features
+
+- export ECallCause ([e2d0fa6](https://github.com/Krivega/sip-connector/commit/e2d0fa69bc1d480b0e2a6f7245a587b8af8407e8))
+- export EUseLicense ([128db55](https://github.com/Krivega/sip-connector/commit/128db554c99593cf0c3153a8ca945b8fca16b9c2))
+
+## [14.1.0-alpha.2](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.1...v14.1.0-alpha.2) (2025-07-26)
+
+## [14.1.0-alpha.1](https://github.com/Krivega/sip-connector/compare/v14.1.0-alpha.0...v14.1.0-alpha.1) (2025-07-26)
+
+## [14.1.0-alpha.0](https://github.com/Krivega/sip-connector/compare/v14.1.0...v14.1.0-alpha.0) (2025-07-26)
+
+### Features
+
+- add ApiManager ([ff2861d](https://github.com/Krivega/sip-connector/commit/ff2861dd2d038f310fb8d13e28f8a51f8abb3cc6))
+- add CallManager ([8de9cef](https://github.com/Krivega/sip-connector/commit/8de9cef60041fe33457f6095e8867b1237d0c626))
+- add CallManager ([40810cd](https://github.com/Krivega/sip-connector/commit/40810cdf524554086b4f3fa25f64318754997e6e))
+- add CallManager and IncomingCallManager ([cb4636a](https://github.com/Krivega/sip-connector/commit/cb4636adfd2273aefe86280cb4fa6d42ddd857b5))
+- add ConfigurationManager and ConnectionFlow for enhanced SIP connection management ([43b6ee7](https://github.com/Krivega/sip-connector/commit/43b6ee779e165b8dba4ea11a46d3b8d8856e3786))
+- add ConfigurationManager and ConnectionFlow for enhanced SIP connection management ([9fbbc8d](https://github.com/Krivega/sip-connector/commit/9fbbc8db6dff8c5a903be8cf09e7f0bd1f127507))
+- implement ConnectionManager and IncomingCallManager for SIP handling ([3b89b75](https://github.com/Krivega/sip-connector/commit/3b89b75a7846a3223dda5f1f69809f46e53cec7e))
+- integrate XState for connection state management in ConnectionManager ([07dcda7](https://github.com/Krivega/sip-connector/commit/07dcda7a3a66ad8a6c665f204b8ebec51bc2303c))
+- refactor ConnectionManager to use RegistrationManager and UAFactory for improved SIP handling ([aa982f9](https://github.com/Krivega/sip-connector/commit/aa982f9cc05b10aff511b372ea2e407b0fcfffbb))
+
+### Bug Fixes
+
+- resolve unsubscribe function initialization and improve UA event handling in ConnectionFlow and UAFactory ([a4ccd53](https://github.com/Krivega/sip-connector/commit/a4ccd53a1ee408ebe36f75053f330990a466b04a))
+- update jest configuration and improve error handling in ConnectionManager tests ([7e3cc9b](https://github.com/Krivega/sip-connector/commit/7e3cc9b47353d4c129058e07df4abc667252ef9c))
+
 ### [14.1.1](https://github.com/Krivega/sip-connector/compare/v14.0.1...v14.1.1) (2025-08-04)
 
 ### [14.0.1](https://github.com/Krivega/sip-connector/compare/v14.1.0...v14.0.1) (2025-08-04)

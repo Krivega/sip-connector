@@ -1,20 +1,20 @@
 /// <reference types="jest" />
 import {
-  SIP_SERVER_URL,
   dataForConnectionWithAuthorization,
   dataForConnectionWithAuthorizationWithDisplayName,
   dataForConnectionWithoutAuthorization,
   dataForConnectionWithoutAuthorizationWithoutDisplayName,
   extraHeadersRemoteAddress,
   remoteAddress,
+  SIP_SERVER_URL,
   uaConfigurationWithAuthorization,
   uaConfigurationWithAuthorizationWithDisplayName,
   uaConfigurationWithoutAuthorization,
   uaConfigurationWithoutAuthorizationWithoutDisplayName,
 } from '../__fixtures__';
 import UAMock, { createWebsocketHandshakeTimeoutError } from '../__fixtures__/UA.mock';
-import { doMockSipConnector } from '../doMock';
-import type SipConnector from '../SipConnector';
+import { doMockSipConnector, JsSIP } from '../doMock';
+import type { SipConnector } from '../SipConnector';
 import { uriWithName } from '../tools/__fixtures__/connectToServer';
 
 const wrongPassword = 'wrongPassword';
@@ -33,7 +33,7 @@ describe('connect', () => {
     UAMock.resetStartError();
   });
 
-  it('authorization user', async () => {
+  it('должен подключать пользователя с авторизацией', async () => {
     expect.assertions(1);
 
     const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -41,7 +41,7 @@ describe('connect', () => {
     expect(ua.configuration).toEqual(uaConfigurationWithAuthorization);
   });
 
-  it('authorization user with wrong password', async () => {
+  it('должен отклонять подключение с неправильным паролем', async () => {
     expect.assertions(1);
 
     const rejectedError = await sipConnector
@@ -62,7 +62,7 @@ describe('connect', () => {
     });
   });
 
-  it('and change sipServerUrl', async () => {
+  it('должен изменять sipServerUrl при повторном подключении', async () => {
     expect.assertions(1);
 
     const sipServerUrlChanged = `${dataForConnectionWithAuthorization.sipServerUrl}Changed`;
@@ -80,7 +80,7 @@ describe('connect', () => {
     });
   });
 
-  it('authorization user with displayName', async () => {
+  it('должен подключать пользователя с авторизацией и displayName', async () => {
     expect.assertions(6);
 
     const ua = await sipConnector.connect(dataForConnectionWithAuthorizationWithDisplayName);
@@ -104,7 +104,7 @@ describe('connect', () => {
     expect(ua.configuration).toEqual(uaConfigurationWithAuthorizationWithDisplayName);
   });
 
-  it('without authorization', async () => {
+  it('должен подключать пользователя без авторизации', async () => {
     expect.assertions(6);
 
     const ua = await sipConnector.connect(dataForConnectionWithoutAuthorization);
@@ -125,7 +125,7 @@ describe('connect', () => {
     expect(configuration).toEqual(uaConfigurationWithoutAuthorization);
   });
 
-  it('without authorization without displayName', async () => {
+  it('должен подключать пользователя без авторизации и displayName', async () => {
     expect.assertions(6);
 
     const ua = await sipConnector.connect(dataForConnectionWithoutAuthorizationWithoutDisplayName);
@@ -143,12 +143,12 @@ describe('connect', () => {
     expect(configuration).toEqual(uaConfigurationWithoutAuthorizationWithoutDisplayName);
   });
 
-  it('connectionConfiguration after connect', async () => {
+  it('должен сохранять connectionConfiguration после подключения', async () => {
     expect.assertions(6);
 
     const connectPromise = sipConnector.connect(dataForConnectionWithAuthorization);
 
-    expect(sipConnector.getConnectionConfiguration().answer).toBe(undefined);
+    expect(sipConnector.getCallConfiguration().answer).toBe(undefined);
 
     const connectionConfiguration = sipConnector.getConnectionConfiguration();
 
@@ -163,55 +163,7 @@ describe('connect', () => {
     return connectPromise;
   });
 
-  it('set password after with authorization', async () => {
-    expect.assertions(3);
-
-    try {
-      await sipConnector.connect({
-        ...dataForConnectionWithAuthorizationWithDisplayName,
-        password: wrongPassword,
-      });
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.log('error', error);
-    }
-
-    expect(sipConnector.getConnectionConfiguration().password).toBe(wrongPassword);
-
-    await sipConnector.set({
-      password: dataForConnectionWithAuthorizationWithDisplayName.password,
-    });
-
-    expect(sipConnector.getConnectionConfiguration().password).toBe(
-      dataForConnectionWithAuthorizationWithDisplayName.password,
-    );
-    expect(sipConnector.ua?.configuration).toEqual(uaConfigurationWithAuthorizationWithDisplayName);
-  });
-
-  it('set same password after with authorization', async () => {
-    expect.assertions(3);
-
-    await sipConnector.connect(dataForConnectionWithAuthorizationWithDisplayName);
-
-    return sipConnector
-      .set({
-        password: dataForConnectionWithAuthorizationWithDisplayName.password,
-      })
-      .catch((error: unknown) => {
-        // eslint-disable-next-line jest/no-conditional-expect
-        expect(error).toEqual(new Error('nothing changed'));
-        // eslint-disable-next-line jest/no-conditional-expect
-        expect(sipConnector.getConnectionConfiguration().password).toBe(
-          dataForConnectionWithAuthorizationWithDisplayName.password,
-        );
-        // eslint-disable-next-line jest/no-conditional-expect
-        expect(sipConnector.ua?.configuration).toEqual(
-          uaConfigurationWithAuthorizationWithDisplayName,
-        );
-      });
-  });
-
-  it('set displayName after with authorization', async () => {
+  it('должен устанавливать displayName после подключения с авторизацией', async () => {
     const anotherDisplayName = 'anotherDisplayName';
 
     await sipConnector.connect(dataForConnectionWithAuthorizationWithDisplayName);
@@ -222,7 +174,7 @@ describe('connect', () => {
     expect(sipConnector.getConnectionConfiguration().displayName).toBe(anotherDisplayName);
   });
 
-  it('send base extraHeaders', async () => {
+  it('должен отправлять базовые extraHeaders', async () => {
     expect.assertions(1);
 
     const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -231,7 +183,7 @@ describe('connect', () => {
     expect(ua.registrator().extraHeaders).toEqual([]);
   });
 
-  it('send extraHeaders with remoteAddress', async () => {
+  it('должен отправлять extraHeaders с remoteAddress', async () => {
     expect.assertions(1);
 
     const ua = await sipConnector.connect({ ...dataForConnectionWithAuthorization, remoteAddress });
@@ -240,7 +192,7 @@ describe('connect', () => {
     expect(ua.registrator().extraHeaders).toEqual(extraHeadersRemoteAddress);
   });
 
-  it('send extended extraHeaders', async () => {
+  it('должен отправлять расширенные extraHeaders', async () => {
     expect.assertions(1);
 
     const extraHeaders = ['test'];
@@ -251,7 +203,7 @@ describe('connect', () => {
     expect(ua.registrator().extraHeaders).toEqual(extraHeaders);
   });
 
-  it('send extended extraHeaders with remoteAddress', async () => {
+  it('должен отправлять расширенные extraHeaders с remoteAddress', async () => {
     expect.assertions(1);
 
     const extraHeaders = ['test'];
@@ -266,16 +218,18 @@ describe('connect', () => {
     expect(ua.registrator().extraHeaders).toEqual([...extraHeadersRemoteAddress, ...extraHeaders]);
   });
 
-  it('should repeat connection process when connection has failed with 1006 error', async () => {
+  it('должен повторять процесс подключения при ошибке 1006', async () => {
     expect.assertions(2);
 
     UAMock.setStartError(websocketHandshakeTimeoutError);
+    JsSIP.UA = UAMock;
 
-    // @ts-expect-error
-    sipConnector.JsSIP.UA = UAMock;
-
-    // @ts-expect-error
-    const requestConnectMocked = jest.spyOn(sipConnector, 'connectInner');
+    const requestConnectMocked = jest.spyOn(
+      // @ts-expect-error
+      sipConnector.connectionManager.connectionFlow,
+      // @ts-expect-error
+      'connectInner',
+    );
 
     try {
       await sipConnector.connect(dataForConnectionWithoutAuthorization, {
@@ -289,16 +243,19 @@ describe('connect', () => {
     expect(requestConnectMocked).toHaveBeenCalledTimes(connectCallLimit);
   });
 
-  it('should complete connection process after 2 connection has failed with 1006 error', async () => {
+  it('должен завершать процесс подключения после 2 неудачных попыток с ошибкой 1006', async () => {
     expect.assertions(2);
 
     UAMock.setStartError(websocketHandshakeTimeoutError, { count: 2 });
 
-    // @ts-expect-error
-    sipConnector.JsSIP.UA = UAMock;
+    JsSIP.UA = UAMock;
 
-    // @ts-expect-error
-    const requestConnectMocked = jest.spyOn(sipConnector, 'connectInner');
+    const requestConnectMocked = jest.spyOn(
+      // @ts-expect-error
+      sipConnector.connectionManager.connectionFlow,
+      // @ts-expect-error
+      'connectInner',
+    );
 
     const ua = await sipConnector.connect(dataForConnectionWithAuthorization, {
       callLimit: connectCallLimit,

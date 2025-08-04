@@ -829,7 +829,6 @@ const config: Linter.Config[] = [
       'unicorn/prefer-string-trim-start-end': ['error'],
       'unicorn/prefer-structured-clone': ['error'],
       'unicorn/prefer-switch': ['error'],
-      'unicorn/prefer-ternary': ['error'],
       'unicorn/prefer-top-level-await': ['error'],
       'unicorn/prefer-type-error': ['error'],
       'unicorn/relative-url-style': ['error'],

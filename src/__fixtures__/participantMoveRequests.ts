@@ -1,11 +1,5 @@
-import { SPECTATOR } from '../constants';
-import {
-  HEADER_CONTENT_TYPE_NAME,
-  CONTENT_TYPE_NOTIFY,
-  HEADER_NOTIFY,
-  HEADER_CONTENT_PARTICIPANT_STATE,
-  CONTENT_TYPE_PARTICIPANT_STATE,
-} from '../headers';
+import { EContentTypeReceived, EHeader } from '../ApiManager';
+import { SPECTATOR } from './constants';
 
 const acceptingWordRequest = {
   cmd: 'ParticipationRequestAccepted',
@@ -13,8 +7,8 @@ const acceptingWordRequest = {
 };
 
 export const acceptingWordRequestHeaders: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_NOTIFY],
-  [HEADER_NOTIFY, JSON.stringify(acceptingWordRequest)],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.NOTIFY],
+  [EHeader.NOTIFY, JSON.stringify(acceptingWordRequest)],
 ];
 
 export const acceptingWordRequestData = {
@@ -27,8 +21,8 @@ const cancellingWordRequest = {
 };
 
 export const cancellingWordRequestHeaders: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_NOTIFY],
-  [HEADER_NOTIFY, JSON.stringify(cancellingWordRequest)],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.NOTIFY],
+  [EHeader.NOTIFY, JSON.stringify(cancellingWordRequest)],
 ];
 
 export const cancellingWordRequestData = {
@@ -41,8 +35,8 @@ const moveRequestToStream = {
 };
 
 export const moveRequestToStreamHeaders: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_NOTIFY],
-  [HEADER_NOTIFY, JSON.stringify(moveRequestToStream)],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.NOTIFY],
+  [EHeader.NOTIFY, JSON.stringify(moveRequestToStream)],
 ];
 
 export const moveRequestToStreamData = {
@@ -50,6 +44,6 @@ export const moveRequestToStreamData = {
 };
 
 export const moveRequestToSpectatorsHeaders: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_PARTICIPANT_STATE],
-  [HEADER_CONTENT_PARTICIPANT_STATE, SPECTATOR],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE],
+  [EHeader.CONTENT_PARTICIPANT_STATE, SPECTATOR],
 ];

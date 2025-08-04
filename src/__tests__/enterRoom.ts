@@ -4,7 +4,7 @@ import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import { enterRoomData, enterRoomHeaders } from '../__fixtures__/enterRoom';
 import JsSIP from '../__fixtures__/jssip.mock';
 import { doMockSipConnector } from '../doMock';
-import type SipConnector from '../SipConnector';
+import type { SipConnector } from '../SipConnector';
 
 describe('enter room', () => {
   const number = '111';
@@ -27,15 +27,15 @@ describe('enter room', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<{ room: string; participantName: string }>((resolve) => {
-      sipConnector.onSession('enterRoom', (data: { room: string; participantName: string }) => {
+      sipConnector.on('api:enterRoom', (data: { room: string; participantName: string }) => {
         resolve(data);
       });
     });
 
-    const { rtcSession } = sipConnector;
+    const { establishedRTCSession } = sipConnector.callManager;
 
-    if (rtcSession) {
-      JsSIP.triggerNewInfo(rtcSession, enterRoomHeaders);
+    if (establishedRTCSession) {
+      JsSIP.triggerNewInfo(establishedRTCSession, enterRoomHeaders);
     }
 
     return promise.then((data) => {

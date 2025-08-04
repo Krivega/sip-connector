@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-import type SipConnector from '../../../SipConnector';
+import type { SipConnector } from '../../../SipConnector';
 import { doMockSipConnector } from '../../../doMock';
 import resolveOnStopMic from '../../syncMediaState/resolveOnStopMic';
 
@@ -27,15 +27,12 @@ describe('media state: resolveOnStopMic', () => {
     expect.assertions(4);
 
     onStopMic(handlerOnStopMic);
-
-    // @ts-expect-error
-    sipConnector.sessionEvents.trigger('admin-stop-mic', syncModeForced);
+    sipConnector.apiManager.events.trigger('admin-stop-mic', syncModeForced);
 
     expect(handlerOnStopMic).toHaveBeenCalledTimes(1);
     expect(handlerOnStopMic).toHaveBeenCalledWith(syncModeForced);
 
-    // @ts-expect-error
-    sipConnector.sessionEvents.trigger('admin-stop-mic', syncModeNotForced);
+    sipConnector.apiManager.events.trigger('admin-stop-mic', syncModeNotForced);
 
     expect(handlerOnStopMic).toHaveBeenCalledTimes(2);
     expect(handlerOnStopMic).toHaveBeenCalledWith(syncModeNotForced);
@@ -45,16 +42,13 @@ describe('media state: resolveOnStopMic', () => {
     expect.assertions(2);
 
     offStopMic = onStopMic(handlerOnStopMic);
-
-    // @ts-expect-error
-    sipConnector.sessionEvents.trigger('admin-stop-mic', syncModeForced);
+    sipConnector.apiManager.events.trigger('admin-stop-mic', syncModeForced);
 
     expect(handlerOnStopMic).toHaveBeenCalledTimes(1);
 
     offStopMic();
 
-    // @ts-expect-error
-    sipConnector.sessionEvents.trigger('admin-stop-mic', syncModeForced);
+    sipConnector.apiManager.events.trigger('admin-stop-mic', syncModeForced);
 
     expect(handlerOnStopMic).toHaveBeenCalledTimes(1);
   });

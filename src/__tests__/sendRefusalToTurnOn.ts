@@ -1,9 +1,9 @@
 /// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
+import { EContentTypeSent } from '../ApiManager';
 import { doMockSipConnector } from '../doMock';
-import { CONTENT_TYPE_REFUSAL } from '../headers';
-import type SipConnector from '../SipConnector';
+import type { SipConnector } from '../SipConnector';
 
 describe('media state', () => {
   const number = '111';
@@ -30,12 +30,12 @@ describe('media state', () => {
 
     // @ts-expect-error
     // eslint-disable-next-line require-atomic-updates
-    sipConnector.rtcSession.sendInfo = mockFunction;
+    sipConnector.establishedRTCSession.sendInfo = mockFunction;
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sipConnector.sendRefusalToTurnOnMic();
 
-    expect(mockFunction).toHaveBeenCalledWith(CONTENT_TYPE_REFUSAL, undefined, {
+    expect(mockFunction).toHaveBeenCalledWith(EContentTypeSent.REFUSAL, undefined, {
       extraHeaders: ['X-Vinteo-Media-Type: 0'],
       noTerminateWhenError: true,
     });
@@ -51,12 +51,12 @@ describe('media state', () => {
 
     // @ts-expect-error
     // eslint-disable-next-line require-atomic-updates
-    sipConnector.rtcSession.sendInfo = mockFunction;
+    sipConnector.establishedRTCSession.sendInfo = mockFunction;
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sipConnector.sendRefusalToTurnOnCam();
 
-    expect(mockFunction).toHaveBeenCalledWith(CONTENT_TYPE_REFUSAL, undefined, {
+    expect(mockFunction).toHaveBeenCalledWith(EContentTypeSent.REFUSAL, undefined, {
       extraHeaders: ['X-Vinteo-Media-Type: 1'],
       noTerminateWhenError: true,
     });
@@ -71,7 +71,7 @@ describe('media state', () => {
     const ERROR_RESPONSE = 'Error response';
 
     // @ts-expect-error
-    sipConnector.rtcSession.sendInfo = async () => {
+    sipConnector.establishedRTCSession.sendInfo = async () => {
       throw new Error(ERROR_RESPONSE);
     };
 
@@ -90,7 +90,7 @@ describe('media state', () => {
     const ERROR_RESPONSE = 'Error response';
 
     // @ts-expect-error
-    sipConnector.rtcSession.sendInfo = async () => {
+    sipConnector.establishedRTCSession.sendInfo = async () => {
       throw new Error(ERROR_RESPONSE);
     };
 

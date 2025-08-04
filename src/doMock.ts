@@ -1,4 +1,4 @@
-import SipConnector from './SipConnector';
+import { SipConnector } from './SipConnector';
 import JsSIP from './__fixtures__/jssip.mock';
 import type { TJsSIP } from './types';
 
@@ -11,3 +11,5 @@ export const doMockSipConnector = () => {
     JsSIP: JsSIP as unknown as TJsSIP,
   });
 };
+
+export { default as JsSIP } from './__fixtures__/jssip.mock';

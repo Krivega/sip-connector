@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import { doMockSipConnector } from '../doMock';
-import type SipConnector from '../SipConnector';
+import type { SipConnector } from '../SipConnector';
 
 describe('actions', () => {
   let sipConnector: SipConnector;
@@ -16,7 +16,7 @@ describe('actions', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     const unregistered = new Promise((resolve) => {
-      sipConnector.once('unregistered', resolve);
+      sipConnector.once('connection:unregistered', resolve);
     });
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -30,12 +30,11 @@ describe('actions', () => {
   it('tryRegister', async () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
-    sipConnector.on('unregistered', mockFunction);
-    sipConnector.on('connecting', mockFunction);
-    sipConnector.on('connected', mockFunction);
+    sipConnector.on('connection:unregistered', mockFunction);
+    sipConnector.on('connection:connected', mockFunction);
 
     return sipConnector.tryRegister().then(() => {
-      expect(mockFunction).toHaveBeenCalledTimes(3);
+      expect(mockFunction).toHaveBeenCalledTimes(2);
     });
   });
 });

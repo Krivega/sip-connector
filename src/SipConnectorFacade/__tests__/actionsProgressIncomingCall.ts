@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */
 /// <reference types="jest" />
 import JsSIP from '../../__fixtures__/jssip.mock';
 import remoteCallerData from '../../__fixtures__/remoteCallerData';
 import { doMockSipConnector } from '../../doMock';
-import type SipConnector from '../../SipConnector';
+import type { SipConnector } from '../../SipConnector';
 import dataCall from '../../tools/__fixtures__/call';
 import { dataForConnectionWithAuthorization } from '../../tools/__fixtures__/connectToServer';
 import SipConnectorFacade from '../SipConnectorFacade';
@@ -39,9 +40,8 @@ describe('actionsProgressIncomingCall', () => {
     await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      // eslint-disable-next-line @typescript-eslint/no-misused-promises
-      sipConnector.on('incomingCall', async () => {
-        await sipConnectorFacade.answerIncomingCall({
+      sipConnector.on('incoming-call:incomingCall', async () => {
+        await sipConnectorFacade.answerToIncomingCall({
           ...dataCall,
           onBeforeProgressCall,
           onSuccessProgressCall,
@@ -58,7 +58,7 @@ describe('actionsProgressIncomingCall', () => {
       });
 
       // @ts-expect-error
-      JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
+      JsSIP.triggerIncomingSession(sipConnector.connectionManager.ua, remoteCallerData);
     });
   });
 
@@ -72,10 +72,9 @@ describe('actionsProgressIncomingCall', () => {
     await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      // eslint-disable-next-line @typescript-eslint/no-misused-promises
-      sipConnector.on('incomingCall', async () => {
+      sipConnector.on('incoming-call:incomingCall', async () => {
         try {
-          await sipConnectorFacade.answerIncomingCall({
+          await sipConnectorFacade.answerToIncomingCall({
             ...dataForFailedCall,
             onBeforeProgressCall,
             onSuccessProgressCall,
@@ -96,7 +95,7 @@ describe('actionsProgressIncomingCall', () => {
       });
 
       // @ts-expect-error
-      JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
+      JsSIP.triggerIncomingSession(sipConnector.connectionManager.ua, remoteCallerData);
     });
   });
 
@@ -106,15 +105,13 @@ describe('actionsProgressIncomingCall', () => {
     await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      // eslint-disable-next-line @typescript-eslint/no-misused-promises
-      sipConnector.on('incomingCall', async () => {
-        await sipConnectorFacade.answerIncomingCall({
+      sipConnector.on('incoming-call:incomingCall', async () => {
+        await sipConnectorFacade.answerToIncomingCall({
           ...dataCall,
           onEndedCall,
         });
 
-        // @ts-expect-error
-        sipConnector.sessionEvents.trigger('ended', 'error');
+        sipConnector.callManager.events.trigger('ended', 'error');
 
         expect(onEndedCall.mock.calls.length).toBe(1);
 
@@ -122,7 +119,7 @@ describe('actionsProgressIncomingCall', () => {
       });
 
       // @ts-expect-error
-      JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
+      JsSIP.triggerIncomingSession(sipConnector.connectionManager.ua, remoteCallerData);
     });
   });
 
@@ -132,15 +129,13 @@ describe('actionsProgressIncomingCall', () => {
     await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      // eslint-disable-next-line @typescript-eslint/no-misused-promises
-      sipConnector.on('incomingCall', async () => {
-        await sipConnectorFacade.answerIncomingCall({
+      sipConnector.on('incoming-call:incomingCall', async () => {
+        await sipConnectorFacade.answerToIncomingCall({
           ...dataCall,
           onEndedCall,
         });
 
-        // @ts-expect-error
-        sipConnector.sessionEvents.trigger('failed', 'error');
+        sipConnector.callManager.events.trigger('failed', 'error');
 
         expect(onEndedCall.mock.calls.length).toBe(1);
 
@@ -148,7 +143,7 @@ describe('actionsProgressIncomingCall', () => {
       });
 
       // @ts-expect-error
-      JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
+      JsSIP.triggerIncomingSession(sipConnector.connectionManager.ua, remoteCallerData);
     });
   });
 });

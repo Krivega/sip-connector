@@ -1,9 +1,17 @@
 /* eslint-disable unicorn/filename-case */
+/* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
 /* eslint-disable class-methods-use-this */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { RTCPeerConnectionDeprecated } from '@krivega/jssip';
+import { Events } from 'events-constructor';
 import type { MediaStreamTrackMock } from 'webrtc-mock';
 import RTCRtpSenderMock from './RTCRtpSenderMock';
+
+export enum EEvent {
+  TRACK = 'track',
+}
+
+const EVENT_NAMES = [`${EEvent.TRACK}`] as const;
 
 class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
   public senders: RTCRtpSender[] = [];
@@ -62,12 +70,15 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
 
   public signalingState!: RTCSignalingState;
 
+  public events: Events<typeof EVENT_NAMES>;
+
   public constructor(
     // eslint-disable-next-line @typescript-eslint/default-param-last
     _configuration?: RTCConfiguration,
     // @ts-expect-error
     tracks: MediaStreamTrackMock[],
   ) {
+    this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
     this.receivers = tracks.map((track) => {
       return { track } as unknown as RTCRtpReceiver;
     });
@@ -168,8 +179,8 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
     listener: EventListenerOrEventListenerObject,
     options?: AddEventListenerOptions | boolean,
   ): void;
-  public addEventListener(_type: unknown, _listener: unknown, _options?: unknown) {
-    throw new Error('Method not implemented.');
+  public addEventListener(type: unknown, listener: (data: unknown) => void, _options?: unknown) {
+    this.events.on(type as EEvent, listener);
   }
 
   public removeEventListener<K extends keyof RTCPeerConnectionEventMap>(
@@ -182,8 +193,8 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
     listener: EventListenerOrEventListenerObject,
     options?: EventListenerOptions | boolean,
   ): void;
-  public removeEventListener(_type: unknown, _listener: unknown, _options?: unknown) {
-    throw new Error('Method not implemented.');
+  public removeEventListener(type: unknown, listener: (data: unknown) => void, _options?: unknown) {
+    this.events.off(type as EEvent, listener);
   }
 
   public dispatchEvent(_event: Event): boolean {
@@ -202,6 +213,8 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
     const sender = new RTCRtpSenderMock({ track });
 
     this.senders.push(sender);
+
+    this.events.trigger(EEvent.TRACK, { track });
 
     return sender;
   };

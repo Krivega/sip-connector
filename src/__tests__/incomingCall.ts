@@ -7,7 +7,7 @@ import delayPromise from '../__fixtures__/delayPromise';
 import JsSIP from '../__fixtures__/jssip.mock';
 import remoteCallerData from '../__fixtures__/remoteCallerData';
 import { doMockSipConnector } from '../doMock';
-import type SipConnector from '../SipConnector';
+import type { SipConnector } from '../SipConnector';
 
 describe('incoming call', () => {
   let sipConnector: SipConnector;
@@ -52,7 +52,7 @@ describe('incoming call', () => {
 
     return new Promise<void>((resolve) => {
       sipConnector.on(
-        'incomingCall',
+        'incoming-call:incomingCall',
         async ({
           displayName,
           host,
@@ -74,18 +74,18 @@ describe('incoming call', () => {
             ontrack: mockFunction,
           });
 
-          expect(sipConnector.getConnectionConfiguration().answer).toBe(true);
+          expect(sipConnector.callManager.getCallConfiguration().answer).toBe(true);
           expect(peerconnection).toBeDefined();
           // @ts-expect-error
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          expect(sipConnector.rtcSession.answer.mock.calls.length).toBe(1);
+          expect(sipConnector.establishedRTCSession.answer.mock.calls.length).toBe(1);
 
           resolve();
         },
       );
 
       // @ts-expect-error
-      JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
+      JsSIP.triggerIncomingSession(sipConnector.connectionManager.ua, remoteCallerData);
     });
   });
 
@@ -95,7 +95,7 @@ describe('incoming call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('incomingCall', async () => {
+      sipConnector.on('incoming-call:incomingCall', async () => {
         expect(sipConnector.isAvailableIncomingCall).toBe(true);
         expect(sipConnector.remoteCallerData.incomingNumber).toBe(remoteCallerData.incomingNumber);
         expect(sipConnector.remoteCallerData.host).toBe(remoteCallerData.host);
@@ -105,7 +105,7 @@ describe('incoming call', () => {
       });
 
       // @ts-expect-error
-      JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
+      JsSIP.triggerIncomingSession(sipConnector.connectionManager.ua, remoteCallerData);
     });
   });
 
@@ -115,7 +115,7 @@ describe('incoming call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('incomingCall', async () => {
+      sipConnector.on('incoming-call:incomingCall', async () => {
         await delayPromise(100); // wait for to decline incoming call
 
         const peerconnection = await sipConnector.answerToIncomingCall({
@@ -132,7 +132,7 @@ describe('incoming call', () => {
       });
 
       // @ts-expect-error
-      JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
+      JsSIP.triggerIncomingSession(sipConnector.connectionManager.ua, remoteCallerData);
     });
   });
 
@@ -142,7 +142,7 @@ describe('incoming call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('incomingCall', async () => {
+      sipConnector.on('incoming-call:incomingCall', async () => {
         await delayPromise(100); // wait for to decline incoming call
 
         // @ts-expect-error
@@ -163,7 +163,7 @@ describe('incoming call', () => {
       });
 
       // @ts-expect-error
-      JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
+      JsSIP.triggerIncomingSession(sipConnector.connectionManager.ua, remoteCallerData);
     });
   });
 
@@ -173,15 +173,15 @@ describe('incoming call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise((resolve) => {
-      sipConnector.on('incomingCall', async () => {
+      sipConnector.on('incoming-call:incomingCall', async () => {
         return delayPromise(100).then(resolve);
       }); // wait for to decline incoming call);
 
       // @ts-expect-error
-      JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
+      JsSIP.triggerIncomingSession(sipConnector.connectionManager.ua, remoteCallerData);
     })
       .then(async () => {
-        const incomingRTCSession = sipConnector.getIncomingRTCSession();
+        const incomingRTCSession = sipConnector.incomingCallManager.getIncomingRTCSession();
 
         return Promise.all([
           new Promise<{
@@ -189,7 +189,7 @@ describe('incoming call', () => {
             host: string;
             incomingNumber: string;
           }>((resolve) => {
-            sipConnector.on('declinedIncomingCall', resolve);
+            sipConnector.on('incoming-call:declinedIncomingCall', resolve);
           }),
           sipConnector.declineToIncomingCall().then(() => {
             return incomingRTCSession;
@@ -211,12 +211,12 @@ describe('incoming call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise((resolve) => {
-      sipConnector.on('incomingCall', async () => {
+      sipConnector.on('incoming-call:incomingCall', async () => {
         return delayPromise(100).then(resolve);
       }); // wait for to decline incoming call);
 
       // @ts-expect-error
-      JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
+      JsSIP.triggerIncomingSession(sipConnector.connectionManager.ua, remoteCallerData);
     })
       .then(async () => {
         return new Promise<{
@@ -224,9 +224,11 @@ describe('incoming call', () => {
           host: string;
           incomingNumber: string;
         }>((resolve) => {
-          sipConnector.on('failedIncomingCall', resolve);
+          sipConnector.on('incoming-call:failedIncomingCall', resolve);
 
-          JsSIP.triggerFailIncomingSession(sipConnector.incomingRTCSession!);
+          JsSIP.triggerFailIncomingSession(
+            sipConnector.incomingCallManager.getIncomingRTCSession()!,
+          );
         });
       })
       .then(({ displayName, host, incomingNumber }) => {
@@ -242,12 +244,12 @@ describe('incoming call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise((resolve) => {
-      sipConnector.on('incomingCall', async () => {
+      sipConnector.on('incoming-call:incomingCall', async () => {
         return delayPromise(100).then(resolve);
       }); // wait for to decline incoming call);
 
       // @ts-expect-error
-      JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
+      JsSIP.triggerIncomingSession(sipConnector.connectionManager.ua, remoteCallerData);
     })
       .then(async () => {
         return new Promise<{
@@ -255,11 +257,14 @@ describe('incoming call', () => {
           host: string;
           incomingNumber: string;
         }>((resolve) => {
-          sipConnector.on('terminatedIncomingCall', resolve);
+          sipConnector.on('incoming-call:terminatedIncomingCall', resolve);
 
-          JsSIP.triggerFailIncomingSession(sipConnector.incomingRTCSession!, {
-            originator: 'local',
-          });
+          JsSIP.triggerFailIncomingSession(
+            sipConnector.incomingCallManager.getIncomingRTCSession()!,
+            {
+              originator: 'local',
+            },
+          );
         });
       })
       .then(({ displayName, host, incomingNumber }) => {
@@ -275,7 +280,7 @@ describe('incoming call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('incomingCall', async () => {
+      sipConnector.on('incoming-call:incomingCall', async () => {
         await delayPromise(100); // wait for to decline incoming call
         await sipConnector.answerToIncomingCall({
           mediaStream,
@@ -284,7 +289,7 @@ describe('incoming call', () => {
 
         // @ts-expect-error
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        const parameters = sipConnector.rtcSession.answer.mock.calls[0][0] as {
+        const parameters = sipConnector.establishedRTCSession.answer.mock.calls[0][0] as {
           directionVideo: string;
           directionAudio: string;
           mediaStream: MediaStream;
@@ -299,7 +304,7 @@ describe('incoming call', () => {
       });
 
       // @ts-expect-error
-      JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
+      JsSIP.triggerIncomingSession(sipConnector.connectionManager.ua, remoteCallerData);
     });
   });
 
@@ -309,7 +314,7 @@ describe('incoming call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('incomingCall', async () => {
+      sipConnector.on('incoming-call:incomingCall', async () => {
         await delayPromise(100); // wait for to decline incoming call
         await sipConnector.answerToIncomingCall({
           mediaStream,
@@ -319,7 +324,7 @@ describe('incoming call', () => {
 
         // @ts-expect-error
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        const parameters = sipConnector.rtcSession.answer.mock.calls[0][0] as {
+        const parameters = sipConnector.establishedRTCSession.answer.mock.calls[0][0] as {
           directionVideo: string;
           directionAudio: string;
           mediaStream: MediaStream;
@@ -334,7 +339,7 @@ describe('incoming call', () => {
       });
 
       // @ts-expect-error
-      JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
+      JsSIP.triggerIncomingSession(sipConnector.connectionManager.ua, remoteCallerData);
     });
   });
 
@@ -344,7 +349,7 @@ describe('incoming call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('incomingCall', async () => {
+      sipConnector.on('incoming-call:incomingCall', async () => {
         await delayPromise(100); // wait for to decline incoming call
         await sipConnector.answerToIncomingCall({
           mediaStream,
@@ -354,7 +359,7 @@ describe('incoming call', () => {
 
         // @ts-expect-error
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        const parameters = sipConnector.rtcSession.answer.mock.calls[0][0] as {
+        const parameters = sipConnector.establishedRTCSession.answer.mock.calls[0][0] as {
           directionVideo: string;
           directionAudio: string;
           mediaStream: MediaStream;
@@ -369,7 +374,7 @@ describe('incoming call', () => {
       });
 
       // @ts-expect-error
-      JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
+      JsSIP.triggerIncomingSession(sipConnector.connectionManager.ua, remoteCallerData);
     });
   });
 
@@ -379,7 +384,7 @@ describe('incoming call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('incomingCall', async () => {
+      sipConnector.on('incoming-call:incomingCall', async () => {
         await delayPromise(100); // wait for to decline incoming call
         await sipConnector.answerToIncomingCall({
           mediaStream,
@@ -390,7 +395,7 @@ describe('incoming call', () => {
 
         // @ts-expect-error
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        const parameters = sipConnector.rtcSession.answer.mock.calls[0][0] as {
+        const parameters = sipConnector.establishedRTCSession.answer.mock.calls[0][0] as {
           directionVideo: string;
           directionAudio: string;
           mediaStream: MediaStream;
@@ -404,7 +409,7 @@ describe('incoming call', () => {
       });
 
       // @ts-expect-error
-      JsSIP.triggerIncomingSession(sipConnector.ua, remoteCallerData);
+      JsSIP.triggerIncomingSession(sipConnector.connectionManager.ua, remoteCallerData);
     });
   });
 });

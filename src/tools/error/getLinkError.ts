@@ -1,12 +1,12 @@
-import * as causes from '../../causes';
-import type { TCustomError } from '../../types';
+import type { TCustomError } from '../../CallManager';
+import { ECallCause } from '../../CallManager';
 
 const getLinkError = (error: TCustomError): string | undefined => {
   const { url, cause } = error;
 
   let link = url;
 
-  if (cause === causes.BAD_MEDIA_DESCRIPTION || cause === causes.NOT_FOUND) {
+  if (cause === ECallCause.BAD_MEDIA_DESCRIPTION || cause === ECallCause.NOT_FOUND) {
     // @ts-expect-error
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     link = `${error.message.to.uri.user}@${error.message.to.uri.host}`;

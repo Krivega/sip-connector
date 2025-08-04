@@ -1,4 +1,4 @@
-import { HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_NOTIFY, HEADER_NOTIFY } from '../headers';
+import { EContentTypeReceived, EHeader } from '../ApiManager';
 
 const webcastStarted = {
   cmd: 'WebcastStarted',
@@ -6,8 +6,8 @@ const webcastStarted = {
 };
 
 export const webcastStartedHeaders: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_NOTIFY],
-  [HEADER_NOTIFY, JSON.stringify(webcastStarted)],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.NOTIFY],
+  [EHeader.NOTIFY, JSON.stringify(webcastStarted)],
 ];
 
 export const webcastStartedData = {
@@ -21,8 +21,8 @@ const webcastStopped = {
 };
 
 export const webcastStoppedHeaders: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_NOTIFY],
-  [HEADER_NOTIFY, JSON.stringify(webcastStopped)],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.NOTIFY],
+  [EHeader.NOTIFY, JSON.stringify(webcastStopped)],
 ];
 
 export const webcastStoppedData = {

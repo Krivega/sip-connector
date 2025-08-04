@@ -10,7 +10,7 @@ import URI from '@krivega/jssip/lib/URI';
 import { EventEmitter } from 'node:events';
 import Request from './Request.mock';
 import Session from './RTCSessionMock';
-import UAmock from './UA.mock';
+import UAMock from './UA.mock';
 import WebSocketInterfaceMock from './WebSocketInterface.mock';
 
 // eslint-disable-next-line unicorn/prefer-event-target
@@ -44,13 +44,13 @@ const triggerNewInfo = (rtcSession: RTCSession, extraHeaders: [string, string][]
 const triggerNewSipEvent = (ua: UA, extraHeaders: [string, string][]) => {
   const request = new Request(extraHeaders);
   const incomingSipEvent = { event: 'sipEvent', request };
-  const uaMock = ua as unknown as UAmock;
+  const uaMock = ua as unknown as UAMock;
 
   uaMock.newSipEvent(incomingSipEvent);
 };
 
 const triggerIncomingSession = (
-  ua: UAmock,
+  ua: UAMock,
   {
     incomingNumber = '1234',
     displayName,
@@ -88,7 +88,7 @@ const jssip = {
   triggerIncomingSession,
   triggerFailIncomingSession,
   WebSocketInterface: WebSocketInterfaceMock,
-  UA: UAmock,
+  UA: UAMock,
   C: {
     INVITE: 'INVITE',
   },

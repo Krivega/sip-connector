@@ -1,19 +1,14 @@
-import {
-  HEADER_CONTENT_TYPE_NAME,
-  CONTENT_TYPE_ENTER_ROOM,
-  HEADER_INPUT_CHANNELS,
-  HEADER_OUTPUT_CHANNELS,
-} from '../headers';
+import { EContentTypeReceived, EHeader } from '../ApiManager';
 
 const inputChannels = '100,1';
 const outputChannels = '2,3';
-const headerInputChannels = `${HEADER_INPUT_CHANNELS}: ${inputChannels}`;
-const headerOutputChannels = `${HEADER_OUTPUT_CHANNELS}: ${outputChannels}`;
+const headerInputChannels = `${EHeader.INPUT_CHANNELS}: ${inputChannels}`;
+const headerOutputChannels = `${EHeader.OUTPUT_CHANNELS}: ${outputChannels}`;
 
 export const channelsHeaders: [string, string][] = [
-  [HEADER_CONTENT_TYPE_NAME, CONTENT_TYPE_ENTER_ROOM],
-  [HEADER_INPUT_CHANNELS, inputChannels],
-  [HEADER_OUTPUT_CHANNELS, outputChannels],
+  [EHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM],
+  [EHeader.INPUT_CHANNELS, inputChannels],
+  [EHeader.OUTPUT_CHANNELS, outputChannels],
 ];
 
 export const channelsData = { inputChannels, outputChannels };

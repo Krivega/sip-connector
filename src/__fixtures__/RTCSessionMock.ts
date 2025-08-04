@@ -2,8 +2,9 @@
 /// <reference types="jest" />
 
 import type { IncomingInfoEvent } from '@krivega/jssip';
+import { NameAddrHeader, URI } from '@krivega/jssip';
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
-import { REJECTED } from '../causes';
+import { Originator } from '../CallManager/eventNames';
 import type { TEventHandlers } from './BaseSession.mock';
 import BaseSession from './BaseSession.mock';
 import RTCPeerConnectionMock from './RTCPeerConnectionMock';
@@ -28,13 +29,15 @@ const hasVideoTracks = (mediaStream: MediaStream): boolean => {
 };
 
 class RTCSessionMock extends BaseSession {
+  private static presentationError?: Error;
+
   private static startPresentationError?: Error;
 
   private static countStartPresentationError: number = Number.POSITIVE_INFINITY;
 
   private static countStartsPresentation = 0;
 
-  public url: string;
+  public url?: string;
 
   public status_code?: number;
 
@@ -69,22 +72,32 @@ class RTCSessionMock extends BaseSession {
     }, CONNECTION_DELAY);
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public replaceMediaStream = jest.fn(async (_mediaStream: MediaStream): Promise<void> => {});
+
   private isEndedInner = false;
 
   public constructor({
-    url = '',
-    mediaStream,
     eventHandlers,
     originator,
+    remoteIdentity = new NameAddrHeader(
+      new URI('sip', 'caller1', 'test1.com', 5060),
+      'Test Caller 1',
+    ),
   }: {
-    url?: string;
-    mediaStream?: MediaStream;
     eventHandlers: TEventHandlers;
     originator: string;
+    remoteIdentity?: NameAddrHeader;
   }) {
-    super({ originator, eventHandlers });
-    this.url = url;
-    this.initPeerconnection(mediaStream);
+    super({ originator, eventHandlers, remoteIdentity });
+  }
+
+  public static setPresentationError(presentationError: Error) {
+    this.presentationError = presentationError;
+  }
+
+  public static resetPresentationError() {
+    this.presentationError = undefined;
   }
 
   public static setStartPresentationError(
@@ -101,18 +114,42 @@ class RTCSessionMock extends BaseSession {
     this.countStartsPresentation = 0;
   }
 
-  public async startPresentation(stream: MediaStream) {
+  public startPresentation = async (stream: MediaStream) => {
     RTCSessionMock.countStartsPresentation += 1;
+
+    if (RTCSessionMock.presentationError) {
+      this.trigger('presentation:start', stream);
+
+      this.trigger('presentation:failed', stream);
+
+      throw RTCSessionMock.presentationError;
+    }
 
     if (
       RTCSessionMock.startPresentationError &&
       RTCSessionMock.countStartsPresentation < RTCSessionMock.countStartPresentationError
     ) {
+      this.trigger('presentation:start', stream);
+
+      this.trigger('presentation:failed', stream);
+
       throw RTCSessionMock.startPresentationError;
     }
 
     return super.startPresentation(stream);
-  }
+  };
+
+  public stopPresentation = async (stream: MediaStream) => {
+    if (RTCSessionMock.presentationError) {
+      this.trigger('presentation:end', stream);
+
+      this.trigger('presentation:failed', stream);
+
+      throw RTCSessionMock.presentationError;
+    }
+
+    return super.stopPresentation(stream);
+  };
 
   public initPeerconnection(mediaStream: MediaStream | undefined) {
     if (!mediaStream) {
@@ -145,26 +182,46 @@ class RTCSessionMock extends BaseSession {
 
     this.addStream(sendedStream);
 
-    setTimeout(() => {
-      this.trigger('peerconnection', { peerconnection: this.connection });
-    }, CONNECTION_DELAY);
+    this.trigger('peerconnection', { peerconnection: this.connection });
   }
 
-  public connect(target: string) {
+  public connect(target: string, { mediaStream }: { mediaStream?: MediaStream } = {}) {
     const room = getRoomFromSipUrl(target);
 
+    this.initPeerconnection(mediaStream);
+
     setTimeout(() => {
-      if (this.url.includes(FAILED_CONFERENCE_NUMBER)) {
+      if (target.includes(FAILED_CONFERENCE_NUMBER)) {
         this.trigger('failed', {
           originator: 'remote',
           message: 'IncomingResponse',
-          cause: REJECTED,
+          cause: 'Rejected',
         });
       } else {
         this.trigger('connecting');
 
         setTimeout(() => {
-          this.trigger('enterRoom', { room });
+          this.newInfo({
+            originator: Originator.REMOTE,
+            // @ts-expect-error
+            request: {
+              getHeader: (name: string) => {
+                if (name === 'content-type') {
+                  return 'application/vinteo.webrtc.roomname';
+                }
+
+                if (name === 'x-webrtc-enter-room') {
+                  return room;
+                }
+
+                if (name === 'x-webrtc-participant-name') {
+                  return 'Test Caller 1';
+                }
+
+                return '';
+              },
+            },
+          });
         }, 100);
 
         setTimeout(() => {
@@ -176,6 +233,8 @@ class RTCSessionMock extends BaseSession {
         }, 300);
       }
     }, CONNECTION_DELAY);
+
+    return this.connection;
   }
 
   public terminate({ status_code, cause }: { status_code?: number; cause?: string } = {}) {
@@ -272,9 +331,6 @@ class RTCSessionMock extends BaseSession {
   public isMuted() {
     return this.mutedOptions;
   }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-empty-function, class-methods-use-this
-  public async replaceMediaStream(_mediaStream: MediaStream): Promise<void> {}
 
   public onmute({ audio, video }: { audio: boolean; video: boolean }) {
     this.trigger('muted', {

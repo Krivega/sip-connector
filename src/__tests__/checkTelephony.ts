@@ -1,8 +1,8 @@
 /// <reference types="jest" />
 import { dataForConnectionWithoutAuthorization } from '../__fixtures__';
-import UAmock from '../__fixtures__/UA.mock';
-import { doMockSipConnector } from '../doMock';
-import type SipConnector from '../SipConnector';
+import UAMock from '../__fixtures__/UA.mock';
+import { doMockSipConnector, JsSIP } from '../doMock';
+import type { SipConnector } from '../SipConnector';
 
 describe('checkTelephony', () => {
   let sipConnector: SipConnector;
@@ -12,14 +12,13 @@ describe('checkTelephony', () => {
   });
 
   afterEach(() => {
-    UAmock.setAvailableTelephony();
+    UAMock.setAvailableTelephony();
   });
 
   it('should be resolved request when telephony is ready', async () => {
-    const uaTrigger = jest.spyOn(UAmock.prototype, 'trigger');
+    const uaTrigger = jest.spyOn(UAMock.prototype, 'trigger');
 
-    // @ts-expect-error
-    sipConnector.JsSIP.UA = UAmock;
+    JsSIP.UA = UAMock;
 
     await sipConnector.checkTelephony(dataForConnectionWithoutAuthorization);
 
@@ -45,10 +44,9 @@ describe('checkTelephony', () => {
   });
 
   it('should fail request when telephony is not ready', async () => {
-    UAmock.setNotAvailableTelephony();
+    UAMock.setNotAvailableTelephony();
 
-    // @ts-expect-error
-    sipConnector.JsSIP.UA = UAmock;
+    JsSIP.UA = UAMock;
 
     let rejectedError = new Error('rejectedError');
 
