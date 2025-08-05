@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 import type { SipConnector } from '@/SipConnector';
 import { doMockSipConnector } from '@/doMock';
-import createState from '..';
+import createSyncMediaState from '../createSyncMediaState';
 
 describe('media state: create state', () => {
   let sipConnector: SipConnector;
@@ -13,7 +13,7 @@ describe('media state: create state', () => {
   let onStartMicNotForced: jest.Mock<void>;
   let onStopMicForced: jest.Mock<void>;
   let onStopMicNotForced: jest.Mock<void>;
-  let state: ReturnType<typeof createState>;
+  let state: ReturnType<typeof createSyncMediaState>;
 
   const mediaStateEventPayloadForced = { isSyncForced: true };
   const mediaStateEventPayloadNotForced = { isSyncForced: false };
@@ -29,7 +29,7 @@ describe('media state: create state', () => {
     onStopMicForced = jest.fn() as jest.Mock<void>;
     onStopMicNotForced = jest.fn() as jest.Mock<void>;
 
-    state = createState({ sipConnector });
+    state = createSyncMediaState({ sipConnector });
   });
 
   afterEach(() => {

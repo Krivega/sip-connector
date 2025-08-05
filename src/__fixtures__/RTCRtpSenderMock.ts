@@ -1,6 +1,8 @@
 /* eslint-disable unicorn/filename-case */
 /* eslint-disable unicorn/no-null */
 class RTCRtpSenderMock implements RTCRtpSender {
+  public stats: RTCStatsReport = new Map().set('codec', { mimeType: 'video/h264' });
+
   public dtmf: RTCDTMFSender | null = null;
 
   public track: MediaStreamTrack | null = null;
@@ -23,9 +25,8 @@ class RTCRtpSenderMock implements RTCRtpSender {
     this.track = track ?? null;
   }
 
-  // eslint-disable-next-line class-methods-use-this
   public async getStats(): Promise<RTCStatsReport> {
-    throw new Error('Method not implemented.');
+    return this.stats;
   }
 
   public async replaceTrack(track: MediaStreamTrack | null): Promise<void> {

@@ -1,5 +1,3 @@
 export { default as getLinkError } from './getLinkError';
-
-export { default as getTypeFromError, EErrorTypes } from './getTypeFromError';
-
+export { EErrorTypes, default as getTypeFromError } from './getTypeFromError';
 export { default as getValuesFromError } from './getValuesFromError';
