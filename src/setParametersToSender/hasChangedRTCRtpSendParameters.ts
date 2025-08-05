@@ -34,7 +34,7 @@ const hasChangedRTCRtpSendParameters = (
     return true;
   }
 
-  for (let index = 0; index < (parameters1.encodings.length ?? 0); index++) {
+  for (let index = 0; index < (parameters1.encodings?.length ?? 0); index++) {
     if (
       JSON.stringify(parameters1.encodings[index]) !== JSON.stringify(parameters2.encodings[index])
     ) {

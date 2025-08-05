@@ -355,4 +355,29 @@ describe('ConnectionManager', () => {
       expect(result).toBe(id);
     });
   });
+
+  describe('getUaProtected', () => {
+    it('должен выбрасывать ошибку, когда UA не инициализирован', () => {
+      expect(() => {
+        connectionManager.getUaProtected();
+      }).toThrow('UA not initialized');
+    });
+
+    it('должен возвращать UA, когда он инициализирован', async () => {
+      const parameters = {
+        displayName: 'Test User',
+        register: false,
+        sipServerUrl: SIP_SERVER_URL,
+        sipWebSocketServerURL: WS_URL,
+      } as const;
+
+      await connectionManager.connect(parameters);
+
+      expect(() => {
+        const ua = connectionManager.getUaProtected();
+
+        expect(ua).toBe(connectionManager.ua);
+      }).not.toThrow();
+    });
+  });
 });

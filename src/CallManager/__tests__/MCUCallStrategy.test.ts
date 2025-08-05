@@ -95,6 +95,25 @@ describe('MCUCallStrategy', () => {
     await expect(strategy.endCall()).resolves.toBeUndefined();
   });
 
+  it('answerToIncomingCall: отклоняет при FAILED событии', async () => {
+    const rtcSession = new RTCSessionMock({
+      eventHandlers: {},
+      originator: 'remote',
+    });
+    const getIncomingRTCSession = () => {
+      return rtcSession as unknown as RTCSession;
+    };
+
+    const promise = strategy.answerToIncomingCall(getIncomingRTCSession, {
+      mediaStream,
+    });
+
+    // Провоцируем событие FAILED, чтобы промис был отклонён
+    events.trigger('failed', { originator: 'remote' });
+
+    await expect(promise).rejects.toBeDefined();
+  });
+
   it('answerToIncomingCall: отвечает на входящий звонок', async () => {
     const rtcSession = new RTCSessionMock({
       eventHandlers: {},
@@ -153,6 +172,27 @@ describe('MCUCallStrategy', () => {
     await strategy.replaceMediaStream(mediaStream);
 
     expect(rtcSession.replaceMediaStream).toHaveBeenCalled();
+  });
+
+  it('replaceMediaStream: бросает ошибку если prepareMediaStream вернул undefined', async () => {
+    const prepareMediaStreamModule = await import('@/tools/prepareMediaStream');
+
+    jest
+      .spyOn(prepareMediaStreamModule, 'default')
+      .mockReturnValue(undefined as unknown as MediaStream);
+
+    const strategyLocal = new MCUCallStrategy(events);
+    const rtcSession = new RTCSessionMock({
+      eventHandlers: {},
+      originator: 'remote',
+    });
+
+    // @ts-expect-error
+    strategyLocal.rtcSession = rtcSession as unknown as RTCSession;
+
+    await expect(strategyLocal.replaceMediaStream(mediaStream)).rejects.toThrow(
+      'No preparedMediaStream',
+    );
   });
 
   it('replaceMediaStream: бросает ошибку если нет rtcSession', async () => {
@@ -232,6 +272,39 @@ describe('MCUCallStrategy - дополнительные тесты для по�
     events.trigger('confirmed', {});
 
     await expect(promise).resolves.toBeDefined();
+  });
+
+  it('handleCall: не вызывает ontrack если он не передан', async () => {
+    // @ts-expect-error
+    const promise = strategy.handleCall({});
+    const audioTrack = createAudioMediaStreamTrackMock();
+    const videoTrack = createVideoMediaStreamTrackMock();
+    const fakePeerconnection = new RTCPeerConnectionMock(undefined, [audioTrack, videoTrack]);
+
+    events.trigger('peerconnection', { peerconnection: fakePeerconnection });
+    events.trigger('confirmed', {});
+
+    await expect(promise).resolves.toBeDefined();
+  });
+
+  it('handleCall: триггерит PEER_CONNECTION_ONTRACK без ontrack', async () => {
+    const triggerSpy = jest.spyOn(events, 'trigger');
+
+    // @ts-expect-error
+    const promise = strategy.handleCall({});
+    const audioTrack = createAudioMediaStreamTrackMock();
+    const fakePeerconnection = new RTCPeerConnectionMock(undefined, [audioTrack]);
+
+    events.trigger('peerconnection', { peerconnection: fakePeerconnection });
+
+    // инициируем track событие
+    fakePeerconnection.addTrack(audioTrack);
+
+    events.trigger('confirmed', {});
+
+    await expect(promise).resolves.toBeDefined();
+
+    expect(triggerSpy).toHaveBeenCalledWith('peerconnection:ontrack', expect.anything());
   });
 
   it('getRemoteStreams: вызывает generateAudioStreams если нет видео-треков', () => {
