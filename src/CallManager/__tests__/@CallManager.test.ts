@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import type { RTCSession } from '@krivega/jssip';
 import { Events } from 'events-constructor';
 import CallManager from '../@CallManager';
@@ -33,6 +34,7 @@ describe('CallManager', () => {
     };
 
     // Create mock events
+    // @ts-expect-error
     mockEvents = {
       on: jest.fn(),
       once: jest.fn(),
@@ -40,9 +42,10 @@ describe('CallManager', () => {
       wait: jest.fn(),
       off: jest.fn(),
       trigger: jest.fn(),
-    } as any;
+    };
 
     // Mock Events constructor
+    // @ts-expect-error
     jest.spyOn(Events.prototype, 'constructor').mockImplementation(() => {
       return mockEvents;
     });
@@ -53,6 +56,7 @@ describe('CallManager', () => {
       // Mock MCUCallStrategy constructor
       const MockMCUCallStrategy = MCUCallStrategy as jest.MockedClass<typeof MCUCallStrategy>;
 
+      // @ts-expect-error
       MockMCUCallStrategy.mockImplementation(() => {
         return mockStrategy;
       });
@@ -76,6 +80,7 @@ describe('CallManager', () => {
     });
 
     it('should return requested from strategy', () => {
+      // @ts-expect-error
       mockStrategy.requested = true;
       expect(callManager.requested).toBe(true);
     });
@@ -83,6 +88,7 @@ describe('CallManager', () => {
     it('should return connection from strategy', () => {
       const mockConnection = {} as RTCPeerConnection;
 
+      // @ts-expect-error
       mockStrategy.connection = mockConnection;
       expect(callManager.connection).toBe(mockConnection);
     });
@@ -90,11 +96,13 @@ describe('CallManager', () => {
     it('should return establishedRTCSession from strategy', () => {
       const mockSession = {} as RTCSession;
 
+      // @ts-expect-error
       mockStrategy.establishedRTCSession = mockSession;
       expect(callManager.establishedRTCSession).toBe(mockSession);
     });
 
     it('should return isCallActive from strategy', () => {
+      // @ts-expect-error
       mockStrategy.isCallActive = true;
       expect(callManager.isCallActive).toBe(true);
     });
@@ -104,7 +112,8 @@ describe('CallManager', () => {
     beforeEach(() => {
       callManager = new CallManager(mockStrategy);
       // Mock the events property
-      (callManager as any).events = mockEvents;
+      // @ts-expect-error
+      callManager.events = mockEvents;
     });
 
     it('should call on method on events', () => {
@@ -112,6 +121,7 @@ describe('CallManager', () => {
       const handler = jest.fn();
       const returnValue = { remove: jest.fn() };
 
+      // @ts-expect-error
       mockEvents.on.mockReturnValue(returnValue);
 
       const result = callManager.on(eventName, handler);
@@ -125,6 +135,7 @@ describe('CallManager', () => {
       const handler = jest.fn();
       const returnValue = { remove: jest.fn() };
 
+      // @ts-expect-error
       mockEvents.once.mockReturnValue(returnValue);
 
       const result = callManager.once(eventName, handler);
@@ -138,6 +149,7 @@ describe('CallManager', () => {
       const handler = jest.fn();
       const returnValue = { remove: jest.fn() };
 
+      // @ts-expect-error
       mockEvents.onceRace.mockReturnValue(returnValue);
 
       const result = callManager.onceRace(eventNames, handler);
@@ -191,13 +203,14 @@ describe('CallManager', () => {
     });
 
     it('should delegate startCall to strategy', async () => {
-      const mockUA = {} as any;
+      const mockUA = {};
       const mockGetSipServerUrl = jest.fn();
       const mockParams = { number: '123', mediaStream: {} as MediaStream };
       const mockConnection = {} as RTCPeerConnection;
 
       mockStrategy.startCall.mockResolvedValue(mockConnection);
 
+      // @ts-expect-error
       const result = await callManager.startCall(mockUA, mockGetSipServerUrl, mockParams);
 
       expect(mockStrategy.startCall).toHaveBeenCalledWith(mockUA, mockGetSipServerUrl, mockParams);

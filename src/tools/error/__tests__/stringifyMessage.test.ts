@@ -50,12 +50,12 @@ describe('stringifyMessage', () => {
     expect(result).toBe('true');
   });
 
-  it('should stringify null', () => {
+  it('should stringify undefined', () => {
     const message = undefined;
 
     const result = stringifyMessage(message);
 
-    expect(result).toBe('undefined');
+    expect(result).toBe(undefined);
   });
 
   it('should stringify array', () => {

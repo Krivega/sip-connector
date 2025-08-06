@@ -146,4 +146,55 @@ describe('getValuesFromError', () => {
       link: 'user@example.com',
     });
   });
+
+  it('should return empty message when message is falsy', () => {
+    const error = {
+      code: 'code',
+      cause: 'cause',
+      message: false,
+    } as TCustomError;
+
+    const values = getValuesFromError(error);
+
+    expect(values).toEqual({
+      code: 'code',
+      cause: 'cause',
+      message: '',
+      link: undefined,
+    });
+  });
+
+  it('should return empty message when message is empty string', () => {
+    const error = {
+      code: 'code',
+      cause: 'cause',
+      message: '',
+    } as TCustomError;
+
+    const values = getValuesFromError(error);
+
+    expect(values).toEqual({
+      code: 'code',
+      cause: 'cause',
+      message: '',
+      link: undefined,
+    });
+  });
+
+  it('should return empty message when message is zero', () => {
+    const error = {
+      code: 'code',
+      cause: 'cause',
+      message: 0,
+    } as TCustomError;
+
+    const values = getValuesFromError(error);
+
+    expect(values).toEqual({
+      code: 'code',
+      cause: 'cause',
+      message: '',
+      link: undefined,
+    });
+  });
 });
