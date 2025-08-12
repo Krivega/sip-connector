@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/unbound-method */
 /* eslint-disable no-await-in-loop */
 
 /// <reference types="jest" />

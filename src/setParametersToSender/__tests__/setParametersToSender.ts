@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/unbound-method */
 /// <reference types="jest" />
 import setParametersToSender from '../setParametersToSender';
 

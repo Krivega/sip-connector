@@ -4,7 +4,7 @@ import UAMock, {
   createWebsocketHandshakeTimeoutError,
 } from '@/__fixtures__/UA.mock';
 import type { TJsSIP } from '@/types';
-import type { UA } from '@krivega/jssip';
+import type { UA, UAConfigurationParams, WebSocketInterface } from '@krivega/jssip';
 import { Events } from 'events-constructor';
 import ConnectionFlow from '../ConnectionFlow';
 import ConnectionStateMachine from '../ConnectionStateMachine';
@@ -316,6 +316,29 @@ describe('ConnectionFlow', () => {
   });
 
   describe('hasEqualConnectionConfiguration', () => {
+    const mockCreateConfiguration = (
+      baseConfig: UAConfigurationParams,
+      override?: Partial<UAConfigurationParams>,
+    ) => {
+      uaInstance = { configuration: baseConfig } as unknown as UAMock;
+
+      const configuration: UAConfigurationParams = { ...baseConfig, ...override };
+
+      const sockets = Array.isArray(baseConfig.sockets)
+        ? baseConfig.sockets
+        : [baseConfig.sockets as unknown as WebSocketInterface];
+
+      jest.spyOn(uaFactory, 'createConfiguration').mockReturnValue({
+        configuration,
+        helpers: {
+          socket: sockets[0] as WebSocketInterface,
+          getSipServerUrl: (id: string) => {
+            return `sip:${id}@${SIP_SERVER_URL}`;
+          },
+        },
+      });
+    };
+
     it('должен корректно сравнивать конфигурации с connection_recovery интервалами', () => {
       const uaMock = uaFactory.createUAWithConfiguration(
         {
@@ -387,6 +410,97 @@ describe('ConnectionFlow', () => {
 
       // @ts-expect-error - тестируем приватный метод
       const result = connectionFlow.hasEqualConnectionConfiguration(parameters);
+
+      expect(result).toBe(false);
+    });
+
+    it('должен возвращать true при полном совпадении, включая session_timers и register_expires (и пройдя sockets)', () => {
+      const { configuration: baseConfig } = uaFactory.createConfiguration({
+        register: false,
+        sipServerUrl: SIP_SERVER_URL,
+        sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+        sessionTimers: true,
+        registerExpires: 777,
+        connectionRecoveryMinInterval: 4,
+        connectionRecoveryMaxInterval: 8,
+      });
+
+      mockCreateConfiguration(baseConfig);
+
+      // @ts-expect-error - тестируем приватный метод
+      const result = connectionFlow.hasEqualConnectionConfiguration({});
+
+      expect(result).toBe(true);
+    });
+
+    it('должен возвращать false если отличается session_timers', () => {
+      const { configuration: baseConfig } = uaFactory.createConfiguration({
+        register: false,
+        sipServerUrl: SIP_SERVER_URL,
+        sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+        sessionTimers: false,
+      });
+
+      mockCreateConfiguration(baseConfig, { session_timers: true });
+
+      // @ts-expect-error - тестируем приватный метод
+      const result = connectionFlow.hasEqualConnectionConfiguration({});
+
+      expect(result).toBe(false);
+    });
+
+    it('должен возвращать false если отличается register_expires', () => {
+      const { configuration: baseConfig } = uaFactory.createConfiguration({
+        register: false,
+        sipServerUrl: SIP_SERVER_URL,
+        sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+        registerExpires: 300,
+      });
+
+      mockCreateConfiguration(baseConfig, {
+        register_expires: (baseConfig.register_expires ?? 0) + 1,
+      });
+
+      // @ts-expect-error - тестируем приватный метод
+      const result = connectionFlow.hasEqualConnectionConfiguration({});
+
+      expect(result).toBe(false);
+    });
+
+    it('должен возвращать false если отличается connection_recovery_min_interval', () => {
+      const { configuration: baseConfig } = uaFactory.createConfiguration({
+        register: false,
+        sipServerUrl: SIP_SERVER_URL,
+        sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+        connectionRecoveryMinInterval: 2,
+        connectionRecoveryMaxInterval: 6,
+      });
+
+      mockCreateConfiguration(baseConfig, {
+        connection_recovery_min_interval: (baseConfig.connection_recovery_min_interval ?? 0) + 1,
+      });
+
+      // @ts-expect-error - тестируем приватный метод
+      const result = connectionFlow.hasEqualConnectionConfiguration({});
+
+      expect(result).toBe(false);
+    });
+
+    it('должен возвращать false если отличается connection_recovery_max_interval', () => {
+      const { configuration: baseConfig } = uaFactory.createConfiguration({
+        register: false,
+        sipServerUrl: SIP_SERVER_URL,
+        sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+        connectionRecoveryMinInterval: 2,
+        connectionRecoveryMaxInterval: 6,
+      });
+
+      mockCreateConfiguration(baseConfig, {
+        connection_recovery_max_interval: (baseConfig.connection_recovery_max_interval ?? 0) + 1,
+      });
+
+      // @ts-expect-error - тестируем приватный метод
+      const result = connectionFlow.hasEqualConnectionConfiguration({});
 
       expect(result).toBe(false);
     });

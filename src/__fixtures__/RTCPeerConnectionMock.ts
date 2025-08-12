@@ -1,7 +1,7 @@
 /* eslint-disable unicorn/filename-case */
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
 /* eslint-disable class-methods-use-this */
-/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import type { RTCPeerConnectionDeprecated } from '@krivega/jssip';
 import { Events } from 'events-constructor';
 import type { MediaStreamTrackMock } from 'webrtc-mock';

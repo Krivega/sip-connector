@@ -21,7 +21,6 @@ describe('presentation', () => {
   const declineStartPresentationError = createDeclineStartPresentationError();
 
   const mockFailToSendMustStopPresentationInfo = () => {
-    // eslint-disable-next-line @typescript-eslint/unbound-method
     const actualSendInfo = sipConnector.callManager.establishedRTCSession!.sendInfo;
 
     sipConnector.callManager.establishedRTCSession!.sendInfo = jest.fn(

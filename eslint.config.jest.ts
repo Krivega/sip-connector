@@ -13,6 +13,7 @@ const jestConfig: Linter.Config[] = [
     },
     rules: {
       ...pluginJest.configs['flat/recommended'].rules,
+      '@typescript-eslint/unbound-method': 'off',
     },
   },
 ];

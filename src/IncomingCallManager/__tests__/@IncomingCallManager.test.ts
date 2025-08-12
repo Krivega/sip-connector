@@ -186,8 +186,6 @@ describe('IncomingCallManager', () => {
       });
 
       await incomingCallManager.declineToIncomingCall();
-
-      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(mockRTCSession.terminate).toHaveBeenCalledWith({ status_code: 487 });
       expect(handler).toHaveBeenCalledWith({
         displayName: 'Test Caller',
@@ -209,8 +207,6 @@ describe('IncomingCallManager', () => {
       });
 
       await incomingCallManager.declineToIncomingCall({ statusCode: customStatusCode });
-
-      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(mockRTCSession.terminate).toHaveBeenCalledWith({ status_code: customStatusCode });
     });
 
@@ -231,8 +227,6 @@ describe('IncomingCallManager', () => {
       });
 
       await incomingCallManager.busyIncomingCall();
-
-      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(mockRTCSession.terminate).toHaveBeenCalledWith({ status_code: 486 });
     });
   });
@@ -290,7 +284,7 @@ describe('IncomingCallManager', () => {
       });
 
       // Эмулируем FAILED событие от LOCAL
-      // eslint-disable-next-line @typescript-eslint/unbound-method
+
       const mockOn = mockRTCSession.on as jest.MockedFunction<typeof mockRTCSession.on>;
       const failedHandler = mockOn.mock.calls.find(([event]) => {
         return event === FAILED;
@@ -322,7 +316,7 @@ describe('IncomingCallManager', () => {
       });
 
       // Эмулируем FAILED событие от REMOTE
-      // eslint-disable-next-line @typescript-eslint/unbound-method
+
       const mockOn = mockRTCSession.on as jest.MockedFunction<typeof mockRTCSession.on>;
       const failedHandler = mockOn.mock.calls.find(([event]) => {
         return event === FAILED;
@@ -365,7 +359,7 @@ describe('IncomingCallManager', () => {
       const promise = incomingCallManager.declineToIncomingCall();
 
       expect(incomingCallManager.isAvailableIncomingCall).toBe(false);
-      // eslint-disable-next-line @typescript-eslint/unbound-method
+
       expect(mockRTCSession.terminate).toHaveBeenCalled();
       expect(handlerDeclined).toHaveBeenCalledWith(expect.any(Object));
 

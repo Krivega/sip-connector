@@ -72,7 +72,6 @@ class RTCSessionMock extends BaseSession {
     }, CONNECTION_DELAY);
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public replaceMediaStream = jest.fn(async (_mediaStream: MediaStream): Promise<void> => {});
 
   private isEndedInner = false;

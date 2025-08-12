@@ -285,6 +285,7 @@ const config: Linter.Config[] = [
         {
           vars: 'all',
           args: 'after-used',
+          argsIgnorePattern: '^_',
           ignoreRestSiblings: true,
         },
       ],
@@ -933,7 +934,7 @@ const config: Linter.Config[] = [
       '@typescript-eslint/switch-exhaustiveness-check': ['error'],
       '@typescript-eslint/triple-slash-reference': ['error'],
       '@typescript-eslint/typedef': ['error'],
-      '@typescript-eslint/unbound-method': ['error'],
+      '@typescript-eslint/unbound-method': ['error', { ignoreStatic: true }],
       '@typescript-eslint/unified-signatures': ['error'],
       '@typescript-eslint/use-unknown-in-catch-callback-variable': ['error'],
       'logical-assignment-operators': ['error'],

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/unbound-method */
 import type { RTCSession } from '@krivega/jssip';
 import { Events } from 'events-constructor';
 import CallManager from '../@CallManager';

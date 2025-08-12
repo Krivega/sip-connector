@@ -93,7 +93,7 @@ describe('resolveUpdateTransceiver', () => {
     await update(transceiver);
 
     // Assert codec preferences
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(transceiver.setCodecPreferences as jest.Mock).toHaveBeenCalledTimes(1);
 
     const calls = (transceiver.setCodecPreferences as jest.Mock).mock.calls as [TCodec[]][];
@@ -128,8 +128,6 @@ describe('resolveUpdateTransceiver', () => {
     const update = resolveUpdateTransceiver(parametersTarget, {});
 
     await update(transceiver);
-
-    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(transceiver.setCodecPreferences as jest.Mock).not.toHaveBeenCalled();
     expect(setParametersToSender).not.toHaveBeenCalled();
   });
@@ -158,8 +156,6 @@ describe('resolveUpdateTransceiver', () => {
     });
 
     await update(transceiver);
-
-    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(transceiver.setCodecPreferences as jest.Mock).toHaveBeenCalledTimes(1);
 
     const calls = (transceiver.setCodecPreferences as jest.Mock).mock.calls as [TCodec[]][];
@@ -191,7 +187,6 @@ describe('resolveUpdateTransceiver', () => {
 
     await update(transceiver);
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(transceiver.setCodecPreferences as jest.Mock).toHaveBeenCalledTimes(1);
 
     const callArgs = (transceiver.setCodecPreferences as jest.Mock).mock.calls as [TCodec[]][];
@@ -224,7 +219,6 @@ describe('resolveUpdateTransceiver', () => {
 
     await update(transceiver);
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(transceiver.setCodecPreferences as jest.Mock).toHaveBeenCalledTimes(1);
 
     const callsUnknown = (transceiver.setCodecPreferences as jest.Mock).mock.calls as [TCodec[]][];
