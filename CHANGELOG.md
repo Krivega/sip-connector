@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [15.1.0](https://github.com/Krivega/sip-connector/compare/v15.0.0...v15.1.0) (2025-08-13)
+
+### Features
+
+- add support event participant:move-request-to-spectators-over-sfu ([e145403](https://github.com/Krivega/sip-connector/commit/e145403e33858edd081a8ad71072273739356ac2))
+
 ## [15.0.0](https://github.com/Krivega/sip-connector/compare/v14.1.1...v15.0.0) (2025-08-04)
 
 ### ⚠ BREAKING CHANGES
