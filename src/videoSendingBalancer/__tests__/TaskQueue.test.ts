@@ -57,7 +57,7 @@ describe('TaskQueue', () => {
         return new Promise<void>((resolve) => {
           setTimeout(() => {
             resolve();
-          }, 10);
+          }, 12);
         });
       });
       const task2 = jest.fn(async () => {});

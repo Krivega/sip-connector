@@ -23,6 +23,57 @@ const hasVideoTrackReady = ({ kind, readyState }: MediaStreamTrack) => {
   return kind === 'video' && readyState === 'live';
 };
 
+type TEnterRoomHandlers = {
+  onEnterPurgatory?: () => void;
+  onEnterConference?: (parameters_: { isSuccessProgressCall: boolean }) => void;
+};
+
+const handleEnterRoomEvent = (
+  room: string,
+  isSuccessProgressCall: boolean,
+  { onEnterPurgatory, onEnterConference }: TEnterRoomHandlers,
+): void => {
+  if (hasPurgatory(room)) {
+    if (onEnterPurgatory) {
+      onEnterPurgatory();
+    }
+  } else if (onEnterConference) {
+    onEnterConference({ isSuccessProgressCall });
+  }
+};
+
+const handleOnceRaceEvent = (
+  unsubscribeEnterConference: () => void,
+  onEndedCall?: () => void,
+): void => {
+  unsubscribeEnterConference();
+
+  if (onEndedCall) {
+    onEndedCall();
+  }
+};
+
+const handleFailProgressEvent = (
+  onFailProgressCall: (() => void) | undefined,
+  unsubscribeEnterConference: () => void,
+  error: Error,
+): never => {
+  if (onFailProgressCall) {
+    onFailProgressCall();
+  }
+
+  unsubscribeEnterConference();
+
+  throw error;
+};
+
+// test hooks
+export const TEST_HOOKS = {
+  handleEnterRoomEvent,
+  handleOnceRaceEvent,
+  handleFailProgressEvent,
+};
+
 interface IProxyMethods {
   on: SipConnector['on'];
   once: SipConnector['once'];
@@ -298,23 +349,18 @@ class SipConnectorFacade implements IProxyMethods {
     const subscribeEnterConference = () => {
       log('subscribeEnterConference: onEnterConference', onEnterConference);
 
-      if (onEnterPurgatory ?? onEnterConference) {
-        return this.sipConnector.on('api:enterRoom', ({ room: _room }: { room: string }) => {
-          log('enterRoom', { _room, isSuccessProgressCall });
+      return this.sipConnector.on('api:enterRoom', ({ room: _room }: { room: string }) => {
+        log('enterRoom', { _room, isSuccessProgressCall });
 
-          room = _room;
+        room = _room;
 
-          if (hasPurgatory(room)) {
-            if (onEnterPurgatory) {
-              onEnterPurgatory();
-            }
-          } else if (onEnterConference) {
-            onEnterConference({ isSuccessProgressCall });
-          }
-        });
-      }
-
-      return () => {};
+        if (onEnterPurgatory ?? onEnterConference) {
+          handleEnterRoomEvent(room, isSuccessProgressCall, {
+            onEnterPurgatory,
+            onEnterConference,
+          });
+        }
+      });
     };
 
     const unsubscribeEnterConference = subscribeEnterConference();
@@ -330,11 +376,7 @@ class SipConnectorFacade implements IProxyMethods {
       }
 
       this.sipConnector.onceRace(['call:ended', 'call:failed'], () => {
-        unsubscribeEnterConference();
-
-        if (onEndedCall) {
-          onEndedCall();
-        }
+        handleOnceRaceEvent(unsubscribeEnterConference, onEndedCall);
       });
 
       return peerConnection;
@@ -343,13 +385,7 @@ class SipConnectorFacade implements IProxyMethods {
     const onFail = (error: Error): never => {
       log('onFail');
 
-      if (onFailProgressCall) {
-        onFailProgressCall();
-      }
-
-      unsubscribeEnterConference();
-
-      throw error;
+      return handleFailProgressEvent(onFailProgressCall, unsubscribeEnterConference, error);
     };
 
     const onFinish = () => {
@@ -482,23 +518,18 @@ class SipConnectorFacade implements IProxyMethods {
     const subscribeEnterConference = () => {
       log('subscribeEnterConference: onEnterConference', onEnterConference);
 
-      if (onEnterPurgatory ?? onEnterConference) {
-        return this.sipConnector.on('api:enterRoom', (_room: string) => {
-          log('enterRoom', { _room, isSuccessProgressCall });
+      return this.sipConnector.on('api:enterRoom', (_room: string) => {
+        log('enterRoom', { _room, isSuccessProgressCall });
 
-          room = _room;
+        room = _room;
 
-          if (hasPurgatory(room)) {
-            if (onEnterPurgatory) {
-              onEnterPurgatory();
-            }
-          } else if (onEnterConference) {
-            onEnterConference({ isSuccessProgressCall });
-          }
-        });
-      }
-
-      return () => {};
+        if (onEnterPurgatory ?? onEnterConference) {
+          handleEnterRoomEvent(room, isSuccessProgressCall, {
+            onEnterPurgatory,
+            onEnterConference,
+          });
+        }
+      });
     };
 
     const unsubscribeEnterConference = subscribeEnterConference();
@@ -514,11 +545,7 @@ class SipConnectorFacade implements IProxyMethods {
       }
 
       this.sipConnector.onceRace(['call:ended', 'call:failed'], () => {
-        unsubscribeEnterConference();
-
-        if (onEndedCall) {
-          onEndedCall();
-        }
+        handleOnceRaceEvent(unsubscribeEnterConference, onEndedCall);
       });
 
       return peerConnection;
@@ -527,13 +554,7 @@ class SipConnectorFacade implements IProxyMethods {
     const onFail = (error: Error): never => {
       log('onFail');
 
-      if (onFailProgressCall) {
-        onFailProgressCall();
-      }
-
-      unsubscribeEnterConference();
-
-      throw error;
+      return handleFailProgressEvent(onFailProgressCall, unsubscribeEnterConference, error);
     };
 
     const onFinish = () => {
@@ -713,7 +734,7 @@ class SipConnectorFacade implements IProxyMethods {
       simulcastEncodings?: TSimulcastEncoding[];
       degradationPreference?: RTCDegradationPreference;
       sendEncodings?: RTCRtpEncodingParameters[];
-    } = {},
+    },
   ): Promise<void> => {
     const updateTransceiver = resolveUpdateTransceiver(
       {

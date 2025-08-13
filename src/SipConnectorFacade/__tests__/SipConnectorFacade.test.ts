@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-// @ts-nocheck
+
 import { doMockSipConnector } from '@/doMock';
 import dataCall from '@/tools/__fixtures__/call';
 import {
