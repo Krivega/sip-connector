@@ -248,11 +248,9 @@ class SipConnector {
     const { isP2P } = options;
 
     return this.presentationManager.stopPresentation(async () => {
-      if (isP2P === true) {
-        await this.apiManager.sendMustStopPresentationP2P();
-      } else {
-        await this.apiManager.sendStoppedPresentation();
-      }
+      await (isP2P === true
+        ? this.apiManager.sendMustStopPresentationP2P()
+        : this.apiManager.sendStoppedPresentation());
     });
   }
 

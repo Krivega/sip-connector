@@ -185,7 +185,7 @@ export default class ConnectionManager {
     this.stateMachine.destroy();
   }
 
-  // eslint-disable-next-line class-methods-use-this
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   public getSipServerUrl: TGetServerUrl = (id: string) => {
     return id;
   };

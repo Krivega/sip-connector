@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/filename-case */
 /// <reference types="jest" />
 
 import { NameAddrHeader, URI } from '@krivega/jssip';
@@ -340,7 +339,7 @@ class RTCSessionMock extends BaseSession {
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function, class-methods-use-this
+  // eslint-disable-next-line @typescript-eslint/no-empty-function, @typescript-eslint/class-methods-use-this
   public async sendInfo() {}
 
   public isEnded() {

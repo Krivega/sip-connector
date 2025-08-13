@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/filename-case */
 /* eslint-disable unicorn/no-null */
 class RTCRtpSenderMock implements RTCRtpSender {
   public stats: RTCStatsReport = new Map().set('codec', { mimeType: 'video/h264' });
@@ -55,7 +54,7 @@ class RTCRtpSenderMock implements RTCRtpSender {
     return this.parametersGets;
   }
 
-  // eslint-disable-next-line class-methods-use-this
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   public setStreams(): void {
     throw new Error('Method not implemented.');
   }

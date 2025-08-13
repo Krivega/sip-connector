@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/filename-case */
 import { Events } from 'events-constructor';
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
 

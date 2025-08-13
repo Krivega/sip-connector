@@ -1,5 +1,4 @@
-/* eslint-disable class-methods-use-this */
-
+/* eslint-disable @typescript-eslint/class-methods-use-this */
 import { Events } from 'events-constructor';
 
 import { SESSION_JSSIP_EVENT_NAMES } from './eventNames';

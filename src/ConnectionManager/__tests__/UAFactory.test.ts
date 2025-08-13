@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/filename-case */
 import jssip from '@/__fixtures__/jssip.mock';
 import UAFactory from '../UAFactory';
 

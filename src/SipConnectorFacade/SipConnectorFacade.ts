@@ -786,7 +786,7 @@ class SipConnectorFacade implements IProxyMethods {
     }, 200);
   };
 
-  // eslint-disable-next-line class-methods-use-this
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   public resolveHandleReadyRemoteStreams = ({
     onReadyRemoteStreams,
   }: {

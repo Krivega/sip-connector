@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/filename-case */
 import prepareMediaStream from '@/tools/prepareMediaStream';
 import { hasVideoTracks } from '@/utils/utils';
 import { AbstractCallStrategy } from './AbstractCallStrategy';

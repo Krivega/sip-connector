@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/filename-case */
 import { C, URI } from '@krivega/jssip';
 import { Events } from 'events-constructor';
 

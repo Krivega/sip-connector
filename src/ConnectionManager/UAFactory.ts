@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/filename-case */
 import { generateUserId, parseDisplayName, resolveSipUrl } from '@/utils/utils';
 import { UA_EVENT_NAMES } from './eventNames';
 import getExtraHeadersRemoteAddress from './getExtraHeadersRemoteAddress';

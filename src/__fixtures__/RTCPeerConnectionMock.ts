@@ -1,6 +1,6 @@
-/* eslint-disable unicorn/filename-case */
+/* eslint-disable @typescript-eslint/class-methods-use-this */
+
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
-/* eslint-disable class-methods-use-this */
 
 import { Events } from 'events-constructor';
 
