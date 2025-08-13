@@ -1,12 +1,13 @@
 /* eslint-disable unicorn/filename-case */
 import prepareMediaStream from '@/tools/prepareMediaStream';
 import { hasVideoTracks } from '@/utils/utils';
-import type { RTCSession } from '@krivega/jssip';
 import { AbstractCallStrategy } from './AbstractCallStrategy';
 import { ECallCause } from './causes';
-import type { TEvents } from './eventNames';
 import { EEvent, Originator, SESSION_JSSIP_EVENT_NAMES } from './eventNames';
 import { RemoteStreamsManager } from './RemoteStreamsManager';
+
+import type { RTCSession } from '@krivega/jssip';
+import type { TEvents } from './eventNames';
 import type { ICallStrategy, TCustomError, TOntrack } from './types';
 
 export class MCUCallStrategy extends AbstractCallStrategy {

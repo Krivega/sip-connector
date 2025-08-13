@@ -1,6 +1,7 @@
-import type { TOnSetParameters, TResult } from '@/setParametersToSender';
 import { setEncodingsToSender } from '@/setParametersToSender';
 import { TaskQueue } from './TaskQueue';
+
+import type { TOnSetParameters, TResult } from '@/setParametersToSender';
 import type { IEncodingParameters, IParametersSetter } from './types';
 
 /**

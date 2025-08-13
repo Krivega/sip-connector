@@ -1,7 +1,8 @@
-import type { TRtpSendParameters } from '@/types';
 import configureEmptyEncodings from './configureEmptyEncodings';
 import configureMaxBitrate from './configureMaxBitrate';
 import configureScaleResolutionDownBy from './configureScaleResolutionDownBy';
+
+import type { TRtpSendParameters } from '@/types';
 
 const configureEncodings = (
   parametersCurrent: RTCRtpSendParameters,

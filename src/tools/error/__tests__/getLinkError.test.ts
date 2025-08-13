@@ -1,7 +1,8 @@
 /// <reference types="jest" />
-import type { TCustomError } from '@/CallManager';
 import { ECallCause } from '@/CallManager';
 import getLinkError from '../getLinkError';
+
+import type { TCustomError } from '@/CallManager';
 
 describe('getLinkError', () => {
   it('should return url when cause is not BAD_MEDIA_DESCRIPTION or NOT_FOUND', () => {

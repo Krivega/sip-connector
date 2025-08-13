@@ -6,9 +6,10 @@
 /* eslint-disable global-require */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /// <reference types="jest" />
-import type { TCustomError } from '@/CallManager';
 import { ECallCause } from '@/CallManager';
 import getTypeFromError, { EErrorTypes } from '../getTypeFromError';
+
+import type { TCustomError } from '@/CallManager';
 
 // Mock dependencies
 jest.mock('@/logger');

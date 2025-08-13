@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 /// <reference types="jest" />
-import type { SipConnector } from '@/SipConnector';
 import { doMockSipConnector } from '@/doMock';
 import {
   LOCKED_SIP_WEB_SOCKET_SERVER_URL,
@@ -18,6 +17,8 @@ import {
 import hasValidUri from '@/tools/__fixtures__/hasValidUri';
 import { parseObjectWithoutUri } from '@/tools/__tests-utils__/parseObject';
 import SipConnectorFacade from '../SipConnectorFacade';
+
+import type { SipConnector } from '@/SipConnector';
 
 describe('connectToServer', () => {
   let sipConnector: SipConnector;

@@ -1,16 +1,8 @@
-import type { CallManager } from '@/CallManager';
+import { Events } from 'events-constructor';
+
 import { Originator } from '@/CallManager';
-import type { ConnectionManager } from '@/ConnectionManager';
 import logger from '@/logger';
 import { hasDeclineResponseFromServer } from '@/utils/errors';
-import type {
-  IncomingInfoEvent,
-  IncomingRequest,
-  OutgoingInfoEvent,
-  RTCSession,
-} from '@krivega/jssip';
-import { Events } from 'events-constructor';
-import type { EUseLicense } from './constants';
 import {
   EContentTypeReceived,
   EContentTypeSent,
@@ -21,8 +13,19 @@ import {
   EParticipantType,
   EShareState,
 } from './constants';
-import type { TEvent, TEvents } from './eventNames';
 import { EEvent, EVENT_NAMES } from './eventNames';
+import { ECMDNotify } from './types';
+
+import type {
+  IncomingInfoEvent,
+  IncomingRequest,
+  OutgoingInfoEvent,
+  RTCSession,
+} from '@krivega/jssip';
+import type { CallManager } from '@/CallManager';
+import type { ConnectionManager } from '@/ConnectionManager';
+import type { EUseLicense } from './constants';
+import type { TEvent, TEvents } from './eventNames';
 import type {
   TAcceptingWordRequestInfoNotify,
   TAddedToListModeratorsInfoNotify,
@@ -42,7 +45,6 @@ import type {
   TWebcastInfoNotify,
   TWebcastStoppedInfoNotify,
 } from './types';
-import { ECMDNotify } from './types';
 
 class ApiManager {
   public readonly events: TEvents;

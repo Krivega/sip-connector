@@ -1,4 +1,5 @@
 import { doMock } from 'webrtc-mock';
+
 import RTCPeerConnectionMock from './__fixtures__/RTCPeerConnectionMock';
 
 type Global = {

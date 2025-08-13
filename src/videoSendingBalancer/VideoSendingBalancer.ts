@@ -1,12 +1,13 @@
 import { debug } from '@/logger';
-import type { TResult } from '@/setParametersToSender';
-import type { SipConnector } from '@/SipConnector';
 import { CodecProvider } from './CodecProvider';
 import { ParametersSetterWithQueue } from './ParametersSetterWithQueue';
 import { SenderBalancer } from './SenderBalancer';
 import { SenderFinder } from './SenderFinder';
-import type { IBalancerOptions, IMainCamHeaders } from './types';
 import { VideoSendingEventHandler } from './VideoSendingEventHandler';
+
+import type { TResult } from '@/setParametersToSender';
+import type { SipConnector } from '@/SipConnector';
+import type { IBalancerOptions, IMainCamHeaders } from './types';
 
 /**
  * Контроллер/фасад для балансировки видеопотоков

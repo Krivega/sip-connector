@@ -1,4 +1,5 @@
 import getCodecFromSender from '@/utils/getCodecFromSender';
+
 import type { ICodecProvider } from './types';
 
 /**

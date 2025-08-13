@@ -1,15 +1,16 @@
-import type { UA, WebSocketInterface } from '@krivega/jssip';
-import type { Events } from 'events-constructor';
 import { repeatedCallsAsync } from 'repeated-calls';
-import type { TGetServerUrl } from '../CallManager';
-import type { TJsSIP } from '../types';
+
+import { EEvent } from './eventNames';
 import { hasHandshakeWebsocketOpeningError } from '../utils/errors';
 import { parseDisplayName } from '../utils/utils';
+
+import type { UA, WebSocketInterface } from '@krivega/jssip';
+import type { Events } from 'events-constructor';
+import type { TGetServerUrl } from '../CallManager';
+import type { TJsSIP } from '../types';
 import type ConnectionStateMachine from './ConnectionStateMachine';
 import type { EVENT_NAMES } from './eventNames';
-import { EEvent } from './eventNames';
 import type RegistrationManager from './RegistrationManager';
-
 import type UAFactory from './UAFactory';
 
 const DELAYED_REPEATED_CALLS_CONNECT_LIMIT = 3;

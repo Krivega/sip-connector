@@ -1,8 +1,10 @@
-import JsSIP from '@/__fixtures__/jssip.mock';
-import type { TJsSIP } from '@/types';
-import type { IncomingResponse, RegisteredEvent, UA, UnRegisteredEvent } from '@krivega/jssip';
 import { createMediaStreamMock } from 'webrtc-mock';
+
+import JsSIP from '@/__fixtures__/jssip.mock';
 import SipConnector from '../@SipConnector';
+
+import type { IncomingResponse, RegisteredEvent, UA, UnRegisteredEvent } from '@krivega/jssip';
+import type { TJsSIP } from '@/types';
 
 describe('SipConnector facade', () => {
   let sipConnector: SipConnector;

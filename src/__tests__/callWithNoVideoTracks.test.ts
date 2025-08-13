@@ -1,7 +1,9 @@
 /// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
+
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import { doMockSipConnector } from '../doMock';
+
 import type { SipConnector } from '../SipConnector';
 
 const number = '10000';

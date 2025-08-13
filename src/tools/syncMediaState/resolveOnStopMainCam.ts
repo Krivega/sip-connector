@@ -1,5 +1,6 @@
-import type { SipConnector } from '@/SipConnector';
 import log from '@/logger';
+
+import type { SipConnector } from '@/SipConnector';
 
 const resolveOnStopMainCam = (sipConnector: SipConnector) => {
   const onStopMainCam = (

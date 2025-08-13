@@ -1,4 +1,5 @@
 import findVideoSender from '@/utils/findVideoSender';
+
 import type { ISenderFinder } from './types';
 
 /**

@@ -1,7 +1,8 @@
 import jssip from '@/__fixtures__/jssip.mock';
 import UAMock, { PASSWORD_CORRECT } from '@/__fixtures__/UA.mock';
-import type { TJsSIP } from '@/types';
 import ConnectionManager from '../@ConnectionManager';
+
+import type { TJsSIP } from '@/types';
 
 // Учитываем задержку, заложенную в моках UA
 jest.setTimeout(5000);

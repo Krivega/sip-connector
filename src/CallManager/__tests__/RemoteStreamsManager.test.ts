@@ -1,4 +1,5 @@
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
+
 import { RemoteStreamsManager } from '../RemoteStreamsManager';
 
 describe('RemoteStreamsManager', () => {

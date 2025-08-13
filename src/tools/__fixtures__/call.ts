@@ -1,9 +1,10 @@
-import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import {
   createAudioMediaStreamTrackMock,
   createMediaStreamMock,
   createVideoMediaStreamTrackMock,
 } from 'webrtc-mock';
+
+import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 
 const PURGATORY_NUMBER = 'purgatory';
 

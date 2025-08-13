@@ -1,11 +1,13 @@
 /* eslint-disable no-await-in-loop */
 
 /// <reference types="jest" />
-import { EEventsMainCAM } from '@/ApiManager';
-import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
-import { doMockSipConnector } from '@/doMock';
 import { createVideoMediaStreamTrackMock } from 'webrtc-mock';
+
+import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
+import { EEventsMainCAM } from '@/ApiManager';
+import { doMockSipConnector } from '@/doMock';
 import VideoSendingBalancer, { resolveVideoSendingBalancer } from '../VideoSendingBalancer';
+
 import type { IBalancerOptions, IMainCamHeaders } from '../types';
 
 // Мокаем только логгер, как запрошено

@@ -1,7 +1,8 @@
 import UAMock from '@/__fixtures__/UA.mock';
+import ConfigurationManager from '../ConfigurationManager';
+
 import type { UA, WebSocketInterface } from '@krivega/jssip';
 import type { IConnectionConfiguration } from '../ConfigurationManager';
-import ConfigurationManager from '../ConfigurationManager';
 
 describe('ConfigurationManager', () => {
   let configurationManager: ConfigurationManager;

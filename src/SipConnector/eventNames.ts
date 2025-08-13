@@ -3,6 +3,7 @@ import { EVENT_NAMES as CALL_MANAGER_EVENT_NAMES } from '@/CallManager/eventName
 import { EVENT_NAMES as CONNECTION_MANAGER_EVENT_NAMES } from '@/ConnectionManager/eventNames';
 import { EVENT_NAMES as INCOMING_CALL_MANAGER_EVENT_NAMES } from '@/IncomingCallManager/eventNames';
 import { EVENT_NAMES as PRESENTATION_MANAGER_EVENT_NAMES } from '@/PresentationManager/eventNames';
+
 import type { Events } from 'events-constructor';
 
 // Добавляем префиксы к событиям от разных менеджеров

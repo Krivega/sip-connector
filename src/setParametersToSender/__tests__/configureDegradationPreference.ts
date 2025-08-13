@@ -1,6 +1,7 @@
 /// <reference types="jest" />
-import type { TRtpSendParameters } from '../../types';
 import configureDegradationPreference from '../configureDegradationPreference';
+
+import type { TRtpSendParameters } from '../../types';
 
 describe('configureDegradationPreference', () => {
   it('should set the degradationPreference correctly', () => {

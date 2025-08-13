@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/max-params */
-import type { SipConnector } from '@/SipConnector';
 import { SipConnectorFacade } from '@/SipConnectorFacade';
 import { canConnectToServer } from './permissions';
+
+import type { SipConnector } from '@/SipConnector';
 
 /**
  * initUa

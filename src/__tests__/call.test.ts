@@ -1,10 +1,12 @@
 /// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
+
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import delayPromise from '../__fixtures__/delayPromise';
 import { FAILED_CONFERENCE_NUMBER } from '../__fixtures__/jssip.mock';
 import { hasCanceledCallError } from '../CallManager';
 import { doMockSipConnector } from '../doMock';
+
 import type { SipConnector } from '../SipConnector';
 
 describe('call', () => {

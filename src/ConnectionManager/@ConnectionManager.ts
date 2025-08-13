@@ -1,17 +1,19 @@
-import type { TGetServerUrl } from '@/CallManager';
-import type { TJsSIP } from '@/types';
-import type { RegisteredEvent, UA, UnRegisteredEvent, WebSocketInterface } from '@krivega/jssip';
 import { Events } from 'events-constructor';
+
 import ConfigurationManager from './ConfigurationManager';
-import type { TConnect, TSet } from './ConnectionFlow';
 import ConnectionFlow from './ConnectionFlow';
 import ConnectionStateMachine from './ConnectionStateMachine';
-import type { TEvent } from './eventNames';
 import { EVENT_NAMES } from './eventNames';
 import RegistrationManager from './RegistrationManager';
-import type { TParametersCheckTelephony } from './SipOperations';
 import SipOperations from './SipOperations';
 import UAFactory from './UAFactory';
+
+import type { RegisteredEvent, UA, UnRegisteredEvent, WebSocketInterface } from '@krivega/jssip';
+import type { TGetServerUrl } from '@/CallManager';
+import type { TJsSIP } from '@/types';
+import type { TConnect, TSet } from './ConnectionFlow';
+import type { TEvent } from './eventNames';
+import type { TParametersCheckTelephony } from './SipOperations';
 
 export default class ConnectionManager {
   public readonly events: Events<typeof EVENT_NAMES>;

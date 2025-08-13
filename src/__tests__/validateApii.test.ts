@@ -1,6 +1,7 @@
 /// <reference types="jest" />
 import { dataForConnectionWithAuthorizationWithDisplayName } from '../__fixtures__';
 import { doMockSipConnector } from '../doMock';
+
 import type { SipConnector } from '../SipConnector';
 
 describe('validateApi', () => {

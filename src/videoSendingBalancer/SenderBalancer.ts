@@ -1,8 +1,9 @@
 import { EEventsMainCAM } from '@/ApiManager';
-import type { TResult } from '@/setParametersToSender';
 import hasIncludesString from '@/utils/hasIncludesString';
 import { calcMaxBitrateByWidthAndCodec, getMaximumBitrate, getMinimumBitrate } from './calcBitrate';
 import { calcScaleResolutionDownBy } from './calcResolution';
+
+import type { TResult } from '@/setParametersToSender';
 import type {
   IBalancingContext,
   ICodecProvider,

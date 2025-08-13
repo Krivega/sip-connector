@@ -1,5 +1,10 @@
+import { Events } from 'events-constructor';
+
 import UAMock from '@/__fixtures__/UA.mock';
 import logger from '@/logger';
+import { EVENT_NAMES } from '../eventNames';
+import RegistrationManager from '../RegistrationManager';
+
 import type {
   RegisteredEvent,
   UA,
@@ -7,10 +12,7 @@ import type {
   UnRegisteredEvent,
   WebSocketInterface,
 } from '@krivega/jssip';
-import { Events } from 'events-constructor';
 import type { UA_EVENT_NAMES } from '../eventNames';
-import { EVENT_NAMES } from '../eventNames';
-import RegistrationManager from '../RegistrationManager';
 
 jest.mock('../../logger', () => {
   return jest.fn();

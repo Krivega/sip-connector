@@ -1,11 +1,13 @@
+import { createMediaStreamMock } from 'webrtc-mock';
+
 import { dataForConnectionWithAuthorization } from '@/__fixtures__';
 import JsSIP from '@/__fixtures__/jssip.mock';
 import remoteCallerData from '@/__fixtures__/remoteCallerData';
 import { doMockSipConnector } from '@/doMock';
-import type { SipConnector } from '@/SipConnector';
-import type { UA } from '@krivega/jssip';
-import { createMediaStreamMock } from 'webrtc-mock';
 import SipConnectorFacade, { TEST_HOOKS } from '../SipConnectorFacade';
+
+import type { UA } from '@krivega/jssip';
+import type { SipConnector } from '@/SipConnector';
 
 describe('SipConnectorFacade comprehensive', () => {
   let sipConnector: SipConnector;

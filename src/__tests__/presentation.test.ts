@@ -1,11 +1,13 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 /// <reference types="jest" />
-import type { ExtraHeaders } from '@krivega/jssip';
 import { createMediaStreamMock } from 'webrtc-mock';
+
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import SessionMock, { createDeclineStartPresentationError } from '../__fixtures__/RTCSessionMock';
 import { EContentTypeReceived, EHeader } from '../ApiManager';
 import { doMockSipConnector } from '../doMock';
+
+import type { ExtraHeaders } from '@krivega/jssip';
 import type { SipConnector } from '../SipConnector';
 
 const startPresentationCallLimit = 1;

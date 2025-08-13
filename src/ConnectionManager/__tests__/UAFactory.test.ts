@@ -1,8 +1,9 @@
 /* eslint-disable unicorn/filename-case */
 import jssip from '@/__fixtures__/jssip.mock';
-import type { TJsSIP } from '@/types';
-import type { Socket, UA } from '@krivega/jssip';
 import UAFactory from '../UAFactory';
+
+import type { Socket, UA } from '@krivega/jssip';
+import type { TJsSIP } from '@/types';
 
 describe('UAFactory', () => {
   let uaFactory: UAFactory;

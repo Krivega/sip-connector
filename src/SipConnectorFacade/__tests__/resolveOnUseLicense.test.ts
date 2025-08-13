@@ -1,7 +1,8 @@
 /// <reference types="jest" />
-import type { SipConnector } from '@/SipConnector';
 import { doMockSipConnector } from '@/doMock';
 import SipConnectorFacade from '../SipConnectorFacade';
+
+import type { SipConnector } from '@/SipConnector';
 
 const AUDIO_LICENSE = 'AUDIO';
 

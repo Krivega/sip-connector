@@ -1,5 +1,6 @@
-import type { TSize } from '@/types';
 import { calcMaxBitrateByWidthAndCodec, calcScaleResolutionDownBy } from '@/videoSendingBalancer';
+
+import type { TSize } from '@/types';
 
 const scaleResolutionAndBitrate = ({
   videoTrack,

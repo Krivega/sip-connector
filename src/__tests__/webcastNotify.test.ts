@@ -1,5 +1,6 @@
 /// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
+
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
 import {
@@ -9,6 +10,7 @@ import {
   webcastStoppedHeaders,
 } from '../__fixtures__/webcastNotify';
 import { doMockSipConnector } from '../doMock';
+
 import type { SipConnector } from '../SipConnector';
 
 describe('webcast notify', () => {

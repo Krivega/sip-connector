@@ -1,4 +1,5 @@
 import setParametersToSender from './setParametersToSender';
+
 import type { TOnSetParameters, TResult } from './types';
 
 const setEncodingsToSender = async (

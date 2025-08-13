@@ -3,7 +3,6 @@ import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { CallManager } from '@/CallManager';
 import { ConnectionManager } from '@/ConnectionManager';
 import logger from '@/logger';
-import type { TJsSIP } from '@/types';
 import * as errorsUtils from '@/utils/errors';
 import ApiManager from '../@ApiManager';
 import {
@@ -17,6 +16,8 @@ import {
   EShareState,
   EUseLicense,
 } from '../constants';
+
+import type { TJsSIP } from '@/types';
 
 // Мок для IncomingRequest и InfoEvent
 class MockRequest {

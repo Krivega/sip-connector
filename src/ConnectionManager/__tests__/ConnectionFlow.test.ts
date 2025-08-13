@@ -1,16 +1,18 @@
+import { Events } from 'events-constructor';
+
 import jssip from '@/__fixtures__/jssip.mock';
 import UAMock, {
   PASSWORD_CORRECT,
   createWebsocketHandshakeTimeoutError,
 } from '@/__fixtures__/UA.mock';
-import type { TJsSIP } from '@/types';
-import type { UA, UAConfigurationParams, WebSocketInterface } from '@krivega/jssip';
-import { Events } from 'events-constructor';
 import ConnectionFlow from '../ConnectionFlow';
 import ConnectionStateMachine from '../ConnectionStateMachine';
 import { EVENT_NAMES } from '../eventNames';
 import RegistrationManager from '../RegistrationManager';
 import UAFactory from '../UAFactory';
+
+import type { UA, UAConfigurationParams, WebSocketInterface } from '@krivega/jssip';
+import type { TJsSIP } from '@/types';
 
 const SIP_SERVER_URL = 'sip.example.com';
 const websocketHandshakeTimeoutError = createWebsocketHandshakeTimeoutError(SIP_SERVER_URL);

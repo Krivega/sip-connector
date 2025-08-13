@@ -1,4 +1,5 @@
 import { URI } from '@krivega/jssip';
+
 import JsSIP, { PASSWORD_CORRECT } from './jssip.mock';
 
 export const user = 'user';

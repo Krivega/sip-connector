@@ -1,4 +1,11 @@
 /* eslint-disable unicorn/filename-case */
+import { C, URI } from '@krivega/jssip';
+import { Events } from 'events-constructor';
+
+import { UA_JSSIP_EVENT_NAMES } from './eventNames';
+import Registrator from './Registrator.mock';
+import RTCSessionMock from './RTCSessionMock';
+
 import type {
   DisconnectEvent,
   UA as IUA,
@@ -9,12 +16,7 @@ import type {
   UAConfigurationParams,
   UAEventMap,
 } from '@krivega/jssip';
-import { C, URI } from '@krivega/jssip';
-import { Events } from 'events-constructor';
 import type { TEventHandlers } from './BaseSession.mock';
-import { UA_JSSIP_EVENT_NAMES } from './eventNames';
-import Registrator from './Registrator.mock';
-import RTCSessionMock from './RTCSessionMock';
 
 export const PASSWORD_CORRECT = 'PASSWORD_CORRECT';
 export const PASSWORD_CORRECT_2 = 'PASSWORD_CORRECT_2';

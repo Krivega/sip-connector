@@ -1,6 +1,7 @@
 /// <reference types="jest" />
-import type { TSize } from '@/types';
 import calcScaleResolutionDownBy from '../calcScaleResolutionDownBy';
+
+import type { TSize } from '@/types';
 
 describe('calcScaleResolutionDownBy', () => {
   const mockVideoTrack = {} as MediaStreamVideoTrack;

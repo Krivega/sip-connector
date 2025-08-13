@@ -1,5 +1,5 @@
-import type { TContentHint } from '@/PresentationManager';
 import type { RTCSession, UA } from '@krivega/jssip';
+import type { TContentHint } from '@/PresentationManager';
 import type { Originator } from './eventNames';
 
 export type TOntrack = (track: RTCTrackEvent) => void;

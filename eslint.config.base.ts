@@ -312,9 +312,20 @@ const config: Linter.Config[] = [
       'import/order': [
         'error',
         {
-          groups: [['builtin', 'external', 'internal']],
-          distinctGroup: true,
-          warnOnUnassignedImports: false,
+          groups: ['builtin', 'external', ['internal', 'parent', 'sibling', 'index'], 'type'],
+          'newlines-between': 'always',
+          'newlines-between-types': 'always',
+          sortTypesGroup: true,
+          pathGroups: [
+            // value imports aliases
+            { pattern: '@/**', group: 'internal', position: 'before' },
+            { pattern: '~/**', group: 'internal', position: 'before' },
+            { pattern: '#**', group: 'internal', position: 'before' },
+          ],
+          pathGroupsExcludedImportTypes: ['builtin', 'external'],
+          alphabetize: { order: 'asc', caseInsensitive: true },
+          distinctGroup: false,
+          warnOnUnassignedImports: true,
         },
       ],
       'import/newline-after-import': ['error'],

@@ -1,9 +1,10 @@
 // <reference types="jest" />
-import type { TRtpSendParameters } from '@/types';
 
 import log from '@/logger';
 import { setParametersToSender } from '@/setParametersToSender';
 import resolveUpdateTransceiver from '../resolveUpdateTransceiver';
+
+import type { TRtpSendParameters } from '@/types';
 
 // Mock logger and setParametersToSender before the module under test is imported
 jest.mock('@/logger', () => {

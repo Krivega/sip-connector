@@ -1,14 +1,16 @@
+import { Events } from 'events-constructor';
+
 import { ApiManager } from '@/ApiManager';
-import type { TGetServerUrl } from '@/CallManager';
 import { CallManager } from '@/CallManager';
 import { ConnectionManager } from '@/ConnectionManager';
 import { IncomingCallManager } from '@/IncomingCallManager';
 import { PresentationManager } from '@/PresentationManager';
+import { EVENT_NAMES } from './eventNames';
+
+import type { TGetServerUrl } from '@/CallManager';
 import type { TContentHint, TOnAddedTransceiver } from '@/PresentationManager/types';
 import type { TJsSIP } from '@/types';
-import { Events } from 'events-constructor';
 import type { TEvent } from './eventNames';
-import { EVENT_NAMES } from './eventNames';
 
 class SipConnector {
   public readonly events: Events<typeof EVENT_NAMES>;

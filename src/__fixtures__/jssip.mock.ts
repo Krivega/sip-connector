@@ -1,3 +1,13 @@
+import { EventEmitter } from 'node:events';
+
+import NameAddrHeader from '@krivega/jssip/lib/NameAddrHeader';
+import URI from '@krivega/jssip/lib/URI';
+
+import Request from './Request.mock';
+import Session from './RTCSessionMock';
+import UAMock from './UA.mock';
+import WebSocketInterfaceMock from './WebSocketInterface.mock';
+
 import type {
   IncomingInfoEvent,
   IncomingRequest,
@@ -5,13 +15,6 @@ import type {
   RTCSession,
   UA,
 } from '@krivega/jssip';
-import NameAddrHeader from '@krivega/jssip/lib/NameAddrHeader';
-import URI from '@krivega/jssip/lib/URI';
-import { EventEmitter } from 'node:events';
-import Request from './Request.mock';
-import Session from './RTCSessionMock';
-import UAMock from './UA.mock';
-import WebSocketInterfaceMock from './WebSocketInterface.mock';
 
 // eslint-disable-next-line unicorn/prefer-event-target
 class Info extends EventEmitter {

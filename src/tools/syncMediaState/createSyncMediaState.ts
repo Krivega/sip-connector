@@ -1,8 +1,9 @@
-import type { SipConnector } from '@/SipConnector';
 import resolveOnStartMainCam from './resolveOnStartMainCam';
 import resolveOnStartMic from './resolveOnStartMic';
 import resolveOnStopMainCam from './resolveOnStopMainCam';
 import resolveOnStopMic from './resolveOnStopMic';
+
+import type { SipConnector } from '@/SipConnector';
 
 type THandlers = {
   onStartMainCamForced: () => void;

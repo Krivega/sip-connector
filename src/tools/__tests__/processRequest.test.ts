@@ -2,7 +2,6 @@
 /// <reference types="jest" />
 // @ts-nocheck
 
-import type { SipConnector } from '@/SipConnector';
 import delayPromise from '@/__fixtures__/delayPromise';
 import { doMockSipConnector } from '@/doMock';
 import {
@@ -24,6 +23,8 @@ import {
 import hasValidUri from '../__fixtures__/hasValidUri';
 import resolveProcessRequest from '../__fixtures__/processRequest';
 import parseObject, { parseObjectWithoutUri } from '../__tests-utils__/parseObject';
+
+import type { SipConnector } from '@/SipConnector';
 
 describe('processRequest', () => {
   let sipConnector: SipConnector;

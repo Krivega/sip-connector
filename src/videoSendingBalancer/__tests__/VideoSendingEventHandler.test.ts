@@ -1,6 +1,7 @@
 /// <reference types="jest" />
-import type { SipConnector } from '@/SipConnector';
 import { VideoSendingEventHandler } from '../VideoSendingEventHandler';
+
+import type { SipConnector } from '@/SipConnector';
 import type { IMainCamHeaders } from '../types';
 
 describe('VideoSendingEventHandler', () => {

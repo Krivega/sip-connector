@@ -1,7 +1,8 @@
 // <reference types="jest" />
-import type { TSimulcastEncoding } from '@/types';
 import findVideoTrack from '@/utils/findVideoTrack';
 import generateSimulcastEncodings from '../generateSimulcastEncodings';
+
+import type { TSimulcastEncoding } from '@/types';
 
 jest.mock('../../utils/findVideoTrack');
 

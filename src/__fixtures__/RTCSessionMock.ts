@@ -1,14 +1,16 @@
 /* eslint-disable unicorn/filename-case */
 /// <reference types="jest" />
 
-import type { IncomingInfoEvent } from '@krivega/jssip';
 import { NameAddrHeader, URI } from '@krivega/jssip';
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
-import { Originator } from '../CallManager/eventNames';
-import type { TEventHandlers } from './BaseSession.mock';
+
 import BaseSession from './BaseSession.mock';
 import RTCPeerConnectionMock from './RTCPeerConnectionMock';
 import { getRoomFromSipUrl } from './utils';
+import { Originator } from '../CallManager/eventNames';
+
+import type { IncomingInfoEvent } from '@krivega/jssip';
+import type { TEventHandlers } from './BaseSession.mock';
 
 const CONNECTION_DELAY = 400; // more 300 for test cancel requests with debounced
 

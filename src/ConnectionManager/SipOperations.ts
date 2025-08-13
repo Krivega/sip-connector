@@ -1,6 +1,7 @@
+import { EEvent } from './eventNames';
+
 import type { UA, URI } from '@krivega/jssip';
 import type UAFactory from './UAFactory';
-import { EEvent } from './eventNames';
 
 export type TParametersCheckTelephony = {
   displayName: string;

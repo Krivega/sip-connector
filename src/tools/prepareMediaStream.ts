@@ -1,5 +1,6 @@
-import type { TContentHint } from '@/PresentationManager';
 import setVideoTrackContentHints from './setVideoTrackContentHints';
+
+import type { TContentHint } from '@/PresentationManager';
 
 const prepareMediaStream = (
   mediaStream?: MediaStream,

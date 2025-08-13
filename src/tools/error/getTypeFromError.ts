@@ -1,6 +1,7 @@
-import type { TCustomError } from '@/CallManager';
 import { ECallCause } from '@/CallManager';
 import getLinkError from './getLinkError';
+
+import type { TCustomError } from '@/CallManager';
 
 export enum EErrorTypes {
   CONNECT_SERVER_FAILED = 'CONNECT_SERVER_FAILED',

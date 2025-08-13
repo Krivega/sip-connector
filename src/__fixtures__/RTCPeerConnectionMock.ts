@@ -2,10 +2,12 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
 /* eslint-disable class-methods-use-this */
 
-import type { RTCPeerConnectionDeprecated } from '@krivega/jssip';
 import { Events } from 'events-constructor';
-import type { MediaStreamTrackMock } from 'webrtc-mock';
+
 import RTCRtpSenderMock from './RTCRtpSenderMock';
+
+import type { RTCPeerConnectionDeprecated } from '@krivega/jssip';
+import type { MediaStreamTrackMock } from 'webrtc-mock';
 
 export enum EEvent {
   TRACK = 'track',

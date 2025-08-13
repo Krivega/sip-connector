@@ -1,11 +1,13 @@
+import { NameAddrHeader, URI } from '@krivega/jssip';
+
 import jssip from '@/__fixtures__/jssip.mock';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { ConnectionManager, EConnectionManagerEvent } from '@/ConnectionManager';
-import type { TJsSIP } from '@/types';
-import type { RTCSession } from '@krivega/jssip';
-import { NameAddrHeader, URI } from '@krivega/jssip';
 import IncomingCallManager from '../@IncomingCallManager';
 import { Originator } from '../eventNames';
+
+import type { RTCSession } from '@krivega/jssip';
+import type { TJsSIP } from '@/types';
 
 // FAILED event name for RTCSession
 const FAILED = 'failed';

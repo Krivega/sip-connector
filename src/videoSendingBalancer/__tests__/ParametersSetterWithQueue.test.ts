@@ -1,6 +1,7 @@
 /// <reference types="jest" />
 import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
 import { ParametersSetterWithQueue } from '../ParametersSetterWithQueue';
+
 import type { IEncodingParameters } from '../types';
 
 describe('ParametersSetterWithQueue', () => {

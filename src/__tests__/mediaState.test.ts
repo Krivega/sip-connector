@@ -1,9 +1,11 @@
 /// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
+
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import { extraHeaders, mediaStateData } from '../__fixtures__/mediaState';
 import { EContentTypeSent } from '../ApiManager';
 import { doMockSipConnector } from '../doMock';
+
 import type { SipConnector } from '../SipConnector';
 
 describe('media state', () => {

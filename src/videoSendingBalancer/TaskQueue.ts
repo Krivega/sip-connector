@@ -1,5 +1,7 @@
-import logger from '@/logger';
 import { createStackPromises } from 'stack-promises';
+
+import logger from '@/logger';
+
 import type { ITaskQueue } from './types';
 
 /**

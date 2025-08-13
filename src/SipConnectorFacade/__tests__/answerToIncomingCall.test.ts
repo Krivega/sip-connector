@@ -2,11 +2,12 @@
 import JsSIP from '@/__fixtures__/jssip.mock';
 import remoteCallerData from '@/__fixtures__/remoteCallerData';
 import { doMockSipConnector } from '@/doMock';
-import type { SipConnector } from '@/SipConnector';
 import dataCall, { peerConnectionFromData } from '@/tools/__fixtures__/call';
 import { dataForConnectionWithAuthorization } from '@/tools/__fixtures__/connectToServer';
 import parseObject from '@/tools/__tests-utils__/parseObject';
 import SipConnectorFacade from '../SipConnectorFacade';
+
+import type { SipConnector } from '@/SipConnector';
 
 describe('answerToIncomingCall', () => {
   let sipConnector: SipConnector;

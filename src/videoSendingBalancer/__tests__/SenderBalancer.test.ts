@@ -1,7 +1,8 @@
 /// <reference types="jest" />
-import { EEventsMainCAM } from '@/ApiManager';
 import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
+import { EEventsMainCAM } from '@/ApiManager';
 import { SenderBalancer } from '../SenderBalancer';
+
 import type { ICodecProvider, IMainCamHeaders, IParametersSetter, ISenderFinder } from '../types';
 
 describe('SenderBalancer', () => {

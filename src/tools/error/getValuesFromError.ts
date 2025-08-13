@@ -1,6 +1,7 @@
-import type { TCustomError } from '@/CallManager';
 import getLinkError from './getLinkError';
 import stringifyMessage from './stringifyMessage';
+
+import type { TCustomError } from '@/CallManager';
 
 export type TValues = {
   code: string;

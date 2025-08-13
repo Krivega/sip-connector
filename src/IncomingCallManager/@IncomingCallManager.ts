@@ -1,8 +1,10 @@
-import type { ConnectionManager } from '@/ConnectionManager';
-import type { IncomingRTCSessionEvent, OutgoingRTCSessionEvent, RTCSession } from '@krivega/jssip';
 import { Events } from 'events-constructor';
-import type { TEvent } from './eventNames';
+
 import { EEvent, EVENT_NAMES, Originator } from './eventNames';
+
+import type { IncomingRTCSessionEvent, OutgoingRTCSessionEvent, RTCSession } from '@krivega/jssip';
+import type { ConnectionManager } from '@/ConnectionManager';
+import type { TEvent } from './eventNames';
 
 const BUSY_HERE_STATUS_CODE = 486;
 const REQUEST_TERMINATED_STATUS_CODE = 487;

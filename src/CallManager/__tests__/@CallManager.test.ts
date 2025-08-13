@@ -1,8 +1,10 @@
-import type { RTCSession } from '@krivega/jssip';
 import { Events } from 'events-constructor';
+
 import CallManager from '../@CallManager';
-import type { EVENT_NAMES, TEvent } from '../eventNames';
 import { MCUCallStrategy } from '../MCUCallStrategy';
+
+import type { RTCSession } from '@krivega/jssip';
+import type { EVENT_NAMES, TEvent } from '../eventNames';
 import type { ICallStrategy } from '../types';
 
 // Mock MCUCallStrategy

@@ -1,5 +1,6 @@
-import { SipConnector } from './SipConnector';
 import JsSIP from './__fixtures__/jssip.mock';
+import { SipConnector } from './SipConnector';
+
 import type { TJsSIP } from './types';
 
 export { FAILED_CONFERENCE_NUMBER } from './__fixtures__/RTCSessionMock';

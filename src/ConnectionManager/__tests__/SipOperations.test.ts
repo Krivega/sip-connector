@@ -1,9 +1,10 @@
 import jssip from '@/__fixtures__/jssip.mock';
 import UAMock from '@/__fixtures__/UA.mock';
-import type { TJsSIP } from '@/types';
-import type { Socket, UA, URI } from '@krivega/jssip';
 import SipOperations from '../SipOperations';
 import UAFactory from '../UAFactory';
+
+import type { Socket, UA, URI } from '@krivega/jssip';
+import type { TJsSIP } from '@/types';
 
 describe('SipOperations', () => {
   let uaFactory: UAFactory;
