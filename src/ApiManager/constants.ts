@@ -34,6 +34,7 @@ export enum EShareState {
 export enum EParticipantType {
   SPECTATOR = 'SPECTATOR',
   PARTICIPANT = 'PARTICIPANT',
+  SPECTATOR_OVER_SFU = 'SPECTATOROVERSFU',
 }
 
 export enum EContentTypeReceived {

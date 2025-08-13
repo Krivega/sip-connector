@@ -588,6 +588,10 @@ class ApiManager {
     if (participantState === EParticipantType.PARTICIPANT) {
       this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS, undefined);
     }
+
+    if (participantState === EParticipantType.SPECTATOR_OVER_SFU) {
+      this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS_OVER_SFU, undefined);
+    }
   };
 
   private readonly triggerMainCamControl = (request: IncomingRequest) => {
