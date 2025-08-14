@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [15.2.0](https://github.com/Krivega/sip-connector/compare/v15.1.0...v15.2.0) (2025-08-14)
+
+### Features
+
+- add StatsManager ([d382a6c](https://github.com/Krivega/sip-connector/commit/d382a6c472ba6b65f201dd801eb8babfd9123ef7))
+- add StatsPeerConnection ([a9d62dc](https://github.com/Krivega/sip-connector/commit/a9d62dca9999c95cbb3cc3d0d09d54f12f8c7a4a))
+
 ## [15.1.0](https://github.com/Krivega/sip-connector/compare/v15.0.0...v15.1.0) (2025-08-13)
 
 ### Features
