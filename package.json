@@ -58,12 +58,14 @@
   "dependencies": {
     "@krivega/cancelable-promise": "^1.1.4",
     "@krivega/jssip": "^5.1.2",
+    "@krivega/timeout-requester": "^1.0.0",
     "debug": "^4.4.1",
     "events-constructor": "^2.0.0",
     "repeated-calls": "^2.3.4",
     "sequent-promises": "^2.0.1",
     "stack-promises": "^2.0.3",
     "ts-debounce": "^4.0.0",
+    "ua-parser-js": "^2.0.4",
     "webrtc-mock": "^1.1.7",
     "xstate": "^5.20.2"
   },
@@ -96,12 +98,14 @@
   "peerDependencies": {
     "@krivega/cancelable-promise": "^1.1.4",
     "@krivega/jssip": "^5.1.2",
+    "@krivega/timeout-requester": "^1.0.0",
     "debug": "^4.4.1",
     "events-constructor": "^2.0.0",
     "repeated-calls": "^2.3.3",
     "sequent-promises": "^2.0.1",
     "stack-promises": "^2.0.3",
     "ts-debounce": "^4.0.0",
+    "ua-parser-js": "^2.0.4",
     "webrtc-mock": "^1.1.7",
     "xstate": "^5.20.2"
   },

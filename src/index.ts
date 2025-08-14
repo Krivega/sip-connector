@@ -7,6 +7,7 @@ export type { TContentHint } from './PresentationManager';
 export { setParametersToSender } from './setParametersToSender';
 export { SipConnector } from './SipConnector';
 export { SipConnectorFacade } from './SipConnectorFacade';
+export { EStatsTypes, hasAvailableStats, StatsPeerConnection } from './StatsPeerConnection';
 export * as tools from './tools';
 export { EMimeTypesVideoCodecs } from './types';
 export type { TJsSIP } from './types';

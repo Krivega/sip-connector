@@ -1,3 +1,4 @@
+export { createUaParser } from './createUaParser';
 export * as error from './error';
 export { default as getExtraHeaders } from './getExtraHeaders';
 export { default as getUserAgent } from './getUserAgent';
