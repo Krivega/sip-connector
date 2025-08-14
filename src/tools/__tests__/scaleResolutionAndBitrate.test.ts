@@ -1,9 +1,9 @@
 /// <reference types="jest" />
-import { calcMaxBitrateByWidthAndCodec, calcScaleResolutionDownBy } from '@/videoSendingBalancer';
+import { calcMaxBitrateByWidthAndCodec, calcScaleResolutionDownBy } from '@/VideoSendingBalancer';
 import scaleResolutionAndBitrate from '../scaleResolutionAndBitrate';
 
 // Mock dependencies
-jest.mock('@/videoSendingBalancer');
+jest.mock('@/VideoSendingBalancer');
 
 describe('scaleResolutionAndBitrate', () => {
   let mockVideoTrack: MediaStreamVideoTrack;

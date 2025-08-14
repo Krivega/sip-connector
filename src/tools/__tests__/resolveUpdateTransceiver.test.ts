@@ -1,8 +1,8 @@
 // <reference types="jest" />
 
 import log from '@/logger';
-import { setParametersToSender } from '@/tools/setParametersToSender';
 import resolveUpdateTransceiver from '../resolveUpdateTransceiver';
+import { setParametersToSender } from '../setParametersToSender';
 
 import type { TRtpSendParameters } from '@/types';
 
@@ -14,7 +14,7 @@ jest.mock('@/logger', () => {
   };
 });
 
-jest.mock('@/setParametersToSender', () => {
+jest.mock('../setParametersToSender', () => {
   return {
     __esModule: true,
     setParametersToSender: jest.fn().mockResolvedValue({}),

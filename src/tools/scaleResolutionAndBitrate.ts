@@ -1,4 +1,4 @@
-import { calcMaxBitrateByWidthAndCodec, calcScaleResolutionDownBy } from '@/videoSendingBalancer';
+import { calcMaxBitrateByWidthAndCodec, calcScaleResolutionDownBy } from '@/VideoSendingBalancer';
 
 import type { TSize } from '@/types';
 
