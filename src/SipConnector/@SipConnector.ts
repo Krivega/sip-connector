@@ -5,6 +5,7 @@ import { CallManager } from '@/CallManager';
 import { ConnectionManager } from '@/ConnectionManager';
 import { IncomingCallManager } from '@/IncomingCallManager';
 import { PresentationManager } from '@/PresentationManager';
+import { StatsManager } from '@/StatsManager';
 import { EVENT_NAMES } from './eventNames';
 
 import type { TGetServerUrl } from '@/CallManager';
@@ -25,6 +26,8 @@ class SipConnector {
 
   public readonly presentationManager: PresentationManager;
 
+  public readonly statsManager: StatsManager;
+
   public constructor({ JsSIP }: { JsSIP: TJsSIP }) {
     this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
     this.connectionManager = new ConnectionManager({ JsSIP });
@@ -37,7 +40,7 @@ class SipConnector {
     this.presentationManager = new PresentationManager({
       callManager: this.callManager,
     });
-
+    this.statsManager = new StatsManager({ callManager: this.callManager });
     this.subscribe();
   }
 
@@ -375,6 +378,12 @@ class SipConnector {
     this.presentationManager.events.eachTriggers((_trigger, eventName) => {
       this.presentationManager.on(eventName, (event) => {
         this.events.trigger(`presentation:${eventName}`, event);
+      });
+    });
+
+    this.statsManager.events.eachTriggers((_trigger, eventName) => {
+      this.statsManager.on(eventName, (event) => {
+        this.events.trigger(`stats:${eventName}`, event);
       });
     });
   }

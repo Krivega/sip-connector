@@ -12,6 +12,7 @@ import type { UA } from '@krivega/jssip';
 import type { EUseLicense } from '@/ApiManager';
 import type { TContentHint } from '@/PresentationManager';
 import type { SipConnector } from '@/SipConnector';
+import type { TEventMap as TStatsEventMap } from '@/StatsManager';
 import type { TSimulcastEncoding } from '@/types';
 
 const handleError = (error: Error): { isSuccessful: boolean } => {
@@ -827,6 +828,18 @@ class SipConnectorFacade implements IProxyMethods {
     log('onMoveToParticipants');
 
     return this.sipConnector.on('api:participant:move-request-to-participants', handler);
+  };
+
+  public onStats = (handler: (data: TStatsEventMap['collected']) => void): (() => void) => {
+    log('onStats');
+
+    return this.sipConnector.on('stats:collected', handler);
+  };
+
+  public offStats = (handler: (data: TStatsEventMap['collected']) => void): void => {
+    log('offStats');
+
+    this.sipConnector.off('stats:collected', handler);
   };
 }
 

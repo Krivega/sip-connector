@@ -900,6 +900,23 @@ describe('SipConnectorFacade comprehensive', () => {
       );
       expect(typeof unsubscribe).toBe('function');
     });
+
+    it('должен подписаться на событие stats:collected', () => {
+      const handler = jest.fn();
+      const unsubscribe = sipConnectorFacade.onStats(handler);
+
+      expect(sipConnector.on).toHaveBeenCalledWith('stats:collected', handler);
+      expect(typeof unsubscribe).toBe('function');
+    });
+
+    it('должен отписаться от события stats:collected', () => {
+      const handler = jest.fn();
+      const offSpy = jest.spyOn(sipConnector, 'off');
+
+      sipConnectorFacade.offStats(handler);
+
+      expect(offSpy).toHaveBeenCalledWith('stats:collected', handler);
+    });
   });
 
   describe('Utility methods', () => {

@@ -80,6 +80,7 @@ describe('SipConnector events', () => {
     const apiHandler = jest.fn();
     const incomingCallHandler = jest.fn();
     const presentationHandler = jest.fn();
+    const statsHandler = jest.fn();
 
     // Подписываемся на события от разных менеджеров
     sipConnector.events.on('connection:connecting', connectionHandler);
@@ -87,13 +88,16 @@ describe('SipConnector events', () => {
     sipConnector.events.on('api:channels', apiHandler);
     sipConnector.events.on('incoming-call:incomingCall', incomingCallHandler);
     sipConnector.events.on('presentation:presentation:start', presentationHandler);
+    sipConnector.events.on('stats:collected', statsHandler);
 
     // Эмитим события от разных менеджеров
-    sipConnector.events.trigger('connection:connecting', { data: 'connection' });
-    sipConnector.events.trigger('call:accepted', { data: 'call' });
-    sipConnector.events.trigger('api:channels', { data: 'api' });
-    sipConnector.events.trigger('incoming-call:incomingCall', { data: 'incoming' });
-    sipConnector.events.trigger('presentation:presentation:start', { data: 'presentation' });
+    sipConnector.connectionManager.events.trigger('connecting', { data: 'connection' });
+    sipConnector.callManager.events.trigger('accepted', { data: 'call' });
+    sipConnector.apiManager.events.trigger('channels', { data: 'api' });
+    sipConnector.incomingCallManager.events.trigger('incomingCall', { data: 'incoming' });
+    sipConnector.presentationManager.events.trigger('presentation:start', { data: 'presentation' });
+    // @ts-expect-error
+    sipConnector.statsManager.events.trigger('collected', { outbound: {}, inbound: {} });
 
     // Проверяем, что каждый обработчик был вызван с правильными данными
     expect(connectionHandler).toHaveBeenCalledWith({ data: 'connection' });
@@ -101,6 +105,7 @@ describe('SipConnector events', () => {
     expect(apiHandler).toHaveBeenCalledWith({ data: 'api' });
     expect(incomingCallHandler).toHaveBeenCalledWith({ data: 'incoming' });
     expect(presentationHandler).toHaveBeenCalledWith({ data: 'presentation' });
+    expect(statsHandler).toHaveBeenCalledWith({ outbound: {}, inbound: {} });
 
     // Проверяем, что каждый обработчик был вызван только один раз
     expect(connectionHandler).toHaveBeenCalledTimes(1);
@@ -108,5 +113,6 @@ describe('SipConnector events', () => {
     expect(apiHandler).toHaveBeenCalledTimes(1);
     expect(incomingCallHandler).toHaveBeenCalledTimes(1);
     expect(presentationHandler).toHaveBeenCalledTimes(1);
+    expect(statsHandler).toHaveBeenCalledTimes(1);
   });
 });
