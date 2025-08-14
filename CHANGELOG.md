@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [15.3.1](https://github.com/Krivega/sip-connector/compare/v15.3.0...v15.3.1) (2025-08-14)
+
+### Bug Fixes
+
+- export types TInboundStats, TOutboundStats ([122c64c](https://github.com/Krivega/sip-connector/commit/122c64cc6bfceb1d997a3cad81acf9c93a223349))
+
 ## [15.3.0](https://github.com/Krivega/sip-connector/compare/v15.2.0...v15.3.0) (2025-08-14)
 
 ### Features
