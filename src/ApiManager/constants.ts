@@ -23,6 +23,7 @@ export enum EHeader {
   STOP_PRESENTATION = 'x-webrtc-share-state: STOPPRESENTATION',
   START_PRESENTATION = 'x-webrtc-share-state: LETMESTARTPRESENTATION',
   ENABLE_MAIN_CAM = 'X-WEBRTC-REQUEST-ENABLE-MEDIA-DEVICE: LETMESTARTMAINCAM',
+  AVAILABLE_INCOMING_BITRATE = 'X-WEBRTC-AVAILABLE-INCOMING-BITRATE',
 }
 
 export enum EShareState {
@@ -53,6 +54,7 @@ export enum EContentTypeSent {
   REFUSAL = 'application/vinteo.webrtc.refusal',
   SHARE_STATE = 'application/vinteo.webrtc.sharedesktop',
   MAIN_CAM = 'application/vinteo.webrtc.maincam',
+  STATS = 'application/vinteo.webrtc.stats',
 }
 
 export enum EEventsMainCAM {

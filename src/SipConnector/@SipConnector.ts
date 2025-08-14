@@ -40,7 +40,10 @@ class SipConnector {
     this.presentationManager = new PresentationManager({
       callManager: this.callManager,
     });
-    this.statsManager = new StatsManager({ callManager: this.callManager });
+    this.statsManager = new StatsManager({
+      callManager: this.callManager,
+      apiManager: this.apiManager,
+    });
     this.subscribe();
   }
 

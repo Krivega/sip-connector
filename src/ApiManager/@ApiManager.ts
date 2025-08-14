@@ -137,6 +137,22 @@ class ApiManager {
     });
   }
 
+  public async sendStats({
+    availableIncomingBitrate,
+  }: {
+    availableIncomingBitrate: number;
+  }): Promise<void> {
+    const rtcSession = this.getEstablishedRTCSessionProtected();
+
+    const headerAvailableIncomingBitrate = `${EHeader.AVAILABLE_INCOMING_BITRATE}: ${availableIncomingBitrate}`;
+    const extraHeaders: TOptionsExtraHeaders['extraHeaders'] = [headerAvailableIncomingBitrate];
+
+    return rtcSession.sendInfo(EContentTypeSent.STATS, undefined, {
+      noTerminateWhenError: true,
+      extraHeaders,
+    });
+  }
+
   public async sendRefusalToTurnOn(
     type: 'cam' | 'mic',
     options: TOptionsInfoMediaState = {},

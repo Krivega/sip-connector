@@ -210,6 +210,16 @@ describe('ApiManager (core)', () => {
       });
     });
 
+    it('должен отправлять stats', async () => {
+      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
+
+      await apiManager.sendStats({ availableIncomingBitrate: 12_345 });
+      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.STATS, undefined, {
+        noTerminateWhenError: true,
+        extraHeaders: [`${EHeader.AVAILABLE_INCOMING_BITRATE}: 12345`],
+      });
+    });
+
     it('должен отправлять refusal для mic', async () => {
       const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
 
@@ -379,6 +389,14 @@ describe('ApiManager (core)', () => {
       callManager.getEstablishedRTCSession.mockReturnValue(undefined);
       apiManager = new ApiManager({ connectionManager, callManager });
       await expect(apiManager.sendMediaState({ cam: true, mic: false })).rejects.toThrow(
+        'No rtcSession established',
+      );
+    });
+
+    it('должен выбрасывать ошибку при отсутствии rtcSession в sendStats', async () => {
+      callManager.getEstablishedRTCSession.mockReturnValue(undefined);
+      apiManager = new ApiManager({ connectionManager, callManager });
+      await expect(apiManager.sendStats({ availableIncomingBitrate: 1 })).rejects.toThrow(
         'No rtcSession established',
       );
     });

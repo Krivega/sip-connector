@@ -90,6 +90,19 @@ describe('SipConnector events', () => {
     sipConnector.events.on('presentation:presentation:start', presentationHandler);
     sipConnector.events.on('stats:collected', statsHandler);
 
+    const stats = {
+      outbound: {
+        additional: {
+          candidatePair: { availableOutgoingBitrate: 1000 },
+        },
+      },
+      inbound: {
+        additional: {
+          candidatePair: { availableIncomingBitrate: 1000 },
+        },
+      },
+    };
+
     // Эмитим события от разных менеджеров
     sipConnector.connectionManager.events.trigger('connecting', { data: 'connection' });
     sipConnector.callManager.events.trigger('accepted', { data: 'call' });
@@ -97,7 +110,7 @@ describe('SipConnector events', () => {
     sipConnector.incomingCallManager.events.trigger('incomingCall', { data: 'incoming' });
     sipConnector.presentationManager.events.trigger('presentation:start', { data: 'presentation' });
     // @ts-expect-error
-    sipConnector.statsManager.events.trigger('collected', { outbound: {}, inbound: {} });
+    sipConnector.statsManager.events.trigger('collected', stats);
 
     // Проверяем, что каждый обработчик был вызван с правильными данными
     expect(connectionHandler).toHaveBeenCalledWith({ data: 'connection' });
@@ -105,7 +118,7 @@ describe('SipConnector events', () => {
     expect(apiHandler).toHaveBeenCalledWith({ data: 'api' });
     expect(incomingCallHandler).toHaveBeenCalledWith({ data: 'incoming' });
     expect(presentationHandler).toHaveBeenCalledWith({ data: 'presentation' });
-    expect(statsHandler).toHaveBeenCalledWith({ outbound: {}, inbound: {} });
+    expect(statsHandler).toHaveBeenCalledWith(stats);
 
     // Проверяем, что каждый обработчик был вызван только один раз
     expect(connectionHandler).toHaveBeenCalledTimes(1);
