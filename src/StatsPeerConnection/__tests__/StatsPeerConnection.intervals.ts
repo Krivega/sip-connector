@@ -55,11 +55,9 @@ describe('StatsPeerConnection intervals by elapsed time', () => {
     });
 
     // @ts-expect-error
-    const collect = statsPeerConnection.resolveCollectStatistics(createPeerConnection(), {
+    statsPeerConnection.collectStatistics(createPeerConnection(), {
       onError: undefined,
     });
-
-    collect();
 
     // wait microtasks
     await Promise.resolve();
@@ -96,11 +94,9 @@ describe('StatsPeerConnection intervals by elapsed time', () => {
     });
 
     // @ts-expect-error
-    const collect = statsPeerConnection.resolveCollectStatistics(createPeerConnection(), {
+    statsPeerConnection.collectStatistics(createPeerConnection(), {
       onError: undefined,
     });
-
-    collect();
 
     await Promise.resolve();
 
@@ -136,11 +132,9 @@ describe('StatsPeerConnection intervals by elapsed time', () => {
     });
 
     // @ts-expect-error
-    const collect = statsPeerConnection.resolveCollectStatistics(createPeerConnection(), {
+    statsPeerConnection.collectStatistics(createPeerConnection(), {
       onError: undefined,
     });
-
-    collect();
 
     await Promise.resolve();
 
@@ -163,11 +157,9 @@ describe('StatsPeerConnection intervals by elapsed time', () => {
       .mockRejectedValue(new Error('failure'));
 
     // @ts-expect-error
-    const collect = statsPeerConnection.resolveCollectStatistics(createPeerConnection(), {
+    statsPeerConnection.collectStatistics(createPeerConnection(), {
       onError: undefined,
     });
-
-    collect();
 
     await Promise.resolve();
     await Promise.resolve();

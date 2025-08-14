@@ -1,4 +1,4 @@
-import type { TSynchronizationSources } from './typings';
+import type { TSynchronizationSources } from './types';
 
 const requestAllStatistics = async (peerConnection: RTCPeerConnection) => {
   const AUDIO = 'audio';

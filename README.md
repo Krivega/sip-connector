@@ -10,6 +10,7 @@ TypeScript SDK для подключения к Vinteo по WebRTC через SI
 - управления презентацией (share screen/video);
 - отправки служебных сообщений (DTMF, каналы, синхронизация медиа-состояния);
 - подписки на события платформы.
+- сбора и подписки на WebRTC‑статистику (outbound/inbound RTP, битрейты и др.).
 
 ## Установка
 
@@ -58,8 +59,15 @@ const pc = await facade.callToServer({
   },
 });
 
+// (опционально) Подписка на WebRTC‑статистику
+const unsubscribeStats = facade.onStats(({ outbound, inbound }) => {
+  console.log('stats outbound', outbound);
+  console.log('stats inbound', inbound);
+});
+
 // 5) Завершение
 await facade.disconnectFromServer();
+unsubscribeStats();
 ```
 
 ## Входящий звонок (пример)
@@ -105,6 +113,7 @@ await facade.stopShareSipConnector();
 
 - `src/SipConnector/eventNames.ts`
 - `src/ApiManager/eventNames.ts`
+- `src/StatsManager/eventNames.ts`
 
 Примеры часто используемых событий:
 
@@ -113,6 +122,7 @@ await facade.stopShareSipConnector();
 - `api:enterRoom`, `api:useLicense`, `api:mustStopPresentation`, `api:newDTMF` — события от сервера;
 - `incoming-call:incoming`, `incoming-call:failed` — входящие вызовы;
 - `presentation:started`, `presentation:stopped` — презентация.
+- `stats:collected` — собранная WebRTC‑статистика.
 
 Подписка:
 
@@ -140,6 +150,9 @@ import {
   hasCanceledCallError,
   EUseLicense,
   EMimeTypesVideoCodecs,
+  EStatsTypes,
+  StatsPeerConnection,
+  hasAvailableStats,
   type TContentHint,
   type TCustomError,
   type TJsSIP,
@@ -152,6 +165,7 @@ import {
 - `SipConnector` — низкоуровневый класс, инкапсулирующий менеджеры подключения/звонков/презентаций. Требует `JsSIP` при создании.
 - `SipConnectorFacade` — удобный фасад с готовыми сценариями: `connectToServer`, `callToServer`, `answerToIncomingCall`, `disconnectFromServer`, `replaceMediaStream`, `sendMediaState`, `sendRefusalToTurnOnMic/Cam`, `onUseLicense`, `onMustStopPresentation`, `onMoveToSpectators/Participants` и др. Также проксирует методы `on/once/onceRace/wait/off`, `ping`, `hangUp`, `sendDTMF`, `checkTelephony`, `connection`, `isConfigured`, `isRegistered`.
 - Поддерживаются настройки качества: `contentHint`, `degradationPreference`, `simulcastEncodings`, `sendEncodings`, фильтрация кодеков видео через `preferredMimeTypesVideoCodecs`/`excludeMimeTypesVideoCodecs`.
+- Статистика: подписка `facade.onStats(handler)` и отписка `facade.offStats(handler)`. Также доступны низкоуровневые инструменты: `StatsPeerConnection`, `EStatsTypes`, `hasAvailableStats`.
 
 ## Отладка
 

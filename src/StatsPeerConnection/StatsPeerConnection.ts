@@ -7,7 +7,7 @@ import { INTERVAL_COLLECT_STATISTICS } from './constants';
 import { EVENT_NAMES } from './eventNames';
 import parseStatsReports from './parseStatsReports';
 import requestAllStatistics from './requestAllStatistics';
-import now from './utils/now';
+import { now } from './utils';
 
 import type { TEventMap, TEvents } from './eventNames';
 
@@ -44,12 +44,12 @@ class StatsPeerConnection {
       interval?: number;
     } = {},
   ) {
-    const collectStatistics = this.resolveCollectStatistics(peerConnection, {
-      onError,
-    });
-
     this.stop();
-    this.setTimeoutRequest.request(collectStatistics, interval);
+    this.setTimeoutRequest.request(() => {
+      this.collectStatistics(peerConnection, {
+        onError,
+      });
+    }, interval);
   }
 
   public stop() {
@@ -80,7 +80,7 @@ class StatsPeerConnection {
     this.events.off(eventName, handler);
   }
 
-  private readonly resolveCollectStatistics = (
+  private readonly collectStatistics = (
     peerConnection: RTCPeerConnection,
     {
       onError,
@@ -88,38 +88,36 @@ class StatsPeerConnection {
       onError?: (error: unknown) => void;
     },
   ) => {
-    return () => {
-      const startTime = now();
+    const startTime = now();
 
-      this.requesterAllStatistics
-        .request(peerConnection)
-        .then((allStatistics) => {
-          this.events.trigger('collected', parseStatsReports(allStatistics));
+    this.requesterAllStatistics
+      .request(peerConnection)
+      .then((allStatistics) => {
+        this.events.trigger('collected', parseStatsReports(allStatistics));
 
-          const endTime = now();
-          const elapsed = endTime - startTime;
+        const endTime = now();
+        const elapsed = endTime - startTime;
 
-          let interval = INTERVAL_COLLECT_STATISTICS;
+        let interval = INTERVAL_COLLECT_STATISTICS;
 
-          if (elapsed > 48) {
-            interval = INTERVAL_COLLECT_STATISTICS * 4;
-          } else if (elapsed > 32) {
-            interval = INTERVAL_COLLECT_STATISTICS * 3;
-          } else if (elapsed > 16) {
-            interval = INTERVAL_COLLECT_STATISTICS * 2;
-          }
+        if (elapsed > 48) {
+          interval = INTERVAL_COLLECT_STATISTICS * 4;
+        } else if (elapsed > 32) {
+          interval = INTERVAL_COLLECT_STATISTICS * 3;
+        } else if (elapsed > 16) {
+          interval = INTERVAL_COLLECT_STATISTICS * 2;
+        }
 
-          this.start(peerConnection, {
-            onError,
-            interval,
-          });
-        })
-        .catch((error: unknown) => {
-          if (onError) {
-            onError(error);
-          }
+        this.start(peerConnection, {
+          onError,
+          interval,
         });
-    };
+      })
+      .catch((error: unknown) => {
+        if (onError) {
+          onError(error);
+        }
+      });
   };
 }
 

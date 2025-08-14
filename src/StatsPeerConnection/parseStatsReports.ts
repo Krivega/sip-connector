@@ -4,17 +4,17 @@ import { statsReportToObject } from './utils';
 import type {
   TAdditional,
   TAudioStatistics,
-  TInbound,
   TInboundAudio,
+  TInboundStats,
   TInboundVideo,
   TMedia,
-  TOutbound,
   TOutboundAudio,
+  TOutboundStats,
   TOutboundVideo,
   TParsedStatistics,
   TSynchronizationSources,
   TVideoStatistics,
-} from './typings';
+} from './types';
 
 const getOutboundAudioStatisticsReport = (audioSenderStats?: RTCStatsReport): TOutboundAudio => {
   if (!audioSenderStats) {
@@ -136,7 +136,7 @@ const getOutboundStatisticsReport = ({
   audioSenderStats?: RTCStatsReport;
   videoSenderFirstStats?: RTCStatsReport;
   videoSenderSecondStats?: RTCStatsReport;
-}): TOutbound => {
+}): TOutboundStats => {
   return {
     video: getOutboundVideoStatisticsReport(videoSenderFirstStats),
     secondVideo: getOutboundVideoStatisticsReport(videoSenderSecondStats),
@@ -157,7 +157,7 @@ const getInboundStatisticsReport = ({
   videoReceiverFirstStats?: RTCStatsReport;
   videoReceiverSecondStats?: RTCStatsReport;
   synchronizationSources: TSynchronizationSources;
-}): TInbound => {
+}): TInboundStats => {
   return {
     video: getInboundVideoStatisticsReport({
       videoReceiversStats: videoReceiverFirstStats,
@@ -194,8 +194,8 @@ const parseStatsReports = ({
   videoReceiverSecondStats?: RTCStatsReport;
   synchronizationSources: TSynchronizationSources;
 }): {
-  inbound: TInbound;
-  outbound: TOutbound;
+  inbound: TInboundStats;
+  outbound: TOutboundStats;
 } => {
   const outbound = getOutboundStatisticsReport({
     audioSenderStats,

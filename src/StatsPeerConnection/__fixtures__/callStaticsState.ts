@@ -1,8 +1,8 @@
-import type { TInbound, TOutbound } from '../typings';
+import type { TInboundStats, TOutboundStats } from '../types';
 
 export type TStats = {
-  inbound: TInbound;
-  outbound: TOutbound;
+  inbound: TInboundStats;
+  outbound: TOutboundStats;
 };
 
 const videoOutboundRtpMock = {

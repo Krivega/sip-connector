@@ -175,14 +175,14 @@ export type TInboundAudio = {
   synchronizationSources?: TMedia;
 };
 
-export type TInbound = {
+export type TInboundStats = {
   video: TInboundVideo;
   secondVideo: TInboundVideo;
   audio: TInboundAudio;
   additional: TAdditional;
 };
 
-export type TOutbound = {
+export type TOutboundStats = {
   video: TOutboundVideo;
   secondVideo: TOutboundVideo;
   audio: TOutboundAudio;
