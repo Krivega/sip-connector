@@ -1,5 +1,5 @@
 import log from '@/logger';
-import { setParametersToSender } from '@/setParametersToSender';
+import { setParametersToSender } from './setParametersToSender';
 
 import type { TRtpSendParameters } from '@/types';
 

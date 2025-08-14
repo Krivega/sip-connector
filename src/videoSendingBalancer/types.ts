@@ -1,5 +1,5 @@
 import type { EEventsMainCAM } from '@/ApiManager';
-import type { TOnSetParameters, TResult } from '@/setParametersToSender';
+import type { TOnSetParameters, TResultSetParametersToSender } from '@/tools';
 
 // Конфигурация балансировщика
 export interface IBalancerOptions {
@@ -39,7 +39,7 @@ export interface IParametersSetter {
     sender: RTCRtpSender,
     parameters: IEncodingParameters,
     onSetParameters?: TOnSetParameters,
-  ) => Promise<TResult>;
+  ) => Promise<TResultSetParametersToSender>;
 }
 
 // Интерфейс для обработчика событий

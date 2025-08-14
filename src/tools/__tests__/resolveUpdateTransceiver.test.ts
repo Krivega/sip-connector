@@ -1,7 +1,7 @@
 // <reference types="jest" />
 
 import log from '@/logger';
-import { setParametersToSender } from '@/setParametersToSender';
+import { setParametersToSender } from '@/tools/setParametersToSender';
 import resolveUpdateTransceiver from '../resolveUpdateTransceiver';
 
 import type { TRtpSendParameters } from '@/types';

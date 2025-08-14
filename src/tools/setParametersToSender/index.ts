@@ -1,3 +1,3 @@
 export { default as setEncodingsToSender } from './setEncodingsToSender';
 export { default as setParametersToSender } from './setParametersToSender';
-export type { TOnSetParameters, TResult } from './types';
+export type { TOnSetParameters, TResultSetParametersToSender } from './types';

@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 import configureEncodings from '../configureEncodings';
 
-import type { TRtpSendParameters } from '../../types';
+import type { TRtpSendParameters } from '@/types';
 
 describe('configureEncodings', () => {
   it('should configure encodings correctly', () => {

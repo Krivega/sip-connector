@@ -5,8 +5,8 @@ import { SenderBalancer } from './SenderBalancer';
 import { SenderFinder } from './SenderFinder';
 import { VideoSendingEventHandler } from './VideoSendingEventHandler';
 
-import type { TResult } from '@/setParametersToSender';
 import type { SipConnector } from '@/SipConnector';
+import type { TResultSetParametersToSender } from '@/tools';
 import type { IBalancerOptions, IMainCamHeaders } from './types';
 
 /**
@@ -69,7 +69,7 @@ class VideoSendingBalancer {
    * Перебалансирует текущее состояние
    * @returns Promise с результатом балансировки
    */
-  public async reBalance(): Promise<TResult> {
+  public async reBalance(): Promise<TResultSetParametersToSender> {
     return this.balanceByTrack();
   }
 
@@ -77,7 +77,7 @@ class VideoSendingBalancer {
    * Выполняет балансировку на основе текущего состояния
    * @returns Promise с результатом балансировки
    */
-  private async balanceByTrack(): Promise<TResult> {
+  private async balanceByTrack(): Promise<TResultSetParametersToSender> {
     const connection = this.eventHandler.getConnection();
 
     if (!connection) {

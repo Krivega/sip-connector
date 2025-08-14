@@ -4,7 +4,6 @@ export type { TCustomError } from './CallManager';
 export { debug, disableDebug, enableDebug } from './logger';
 export { hasCanceledStartPresentationError } from './PresentationManager';
 export type { TContentHint } from './PresentationManager';
-export { setParametersToSender } from './setParametersToSender';
 export { SipConnector } from './SipConnector';
 export { SipConnectorFacade } from './SipConnectorFacade';
 export { EStatsTypes, hasAvailableStats, StatsPeerConnection } from './StatsPeerConnection';

@@ -1,12 +1,12 @@
 import setParametersToSender from './setParametersToSender';
 
-import type { TOnSetParameters, TResult } from './types';
+import type { TOnSetParameters, TResultSetParametersToSender } from './types';
 
 const setEncodingsToSender = async (
   sender: RTCRtpSender,
   encodingsTarget: { scaleResolutionDownBy?: number; maxBitrate?: number },
   onSetParameters?: TOnSetParameters,
-): Promise<TResult> => {
+): Promise<TResultSetParametersToSender> => {
   const { isChanged, parameters } = await setParametersToSender(sender, {
     encodings: [
       {

@@ -3,12 +3,12 @@ import configureEncodings from './configureEncodings';
 import hasChangedRTCRtpSendParameters from './hasChangedRTCRtpSendParameters';
 
 import type { TRtpSendParameters } from '@/types';
-import type { TResult } from './types';
+import type { TResultSetParametersToSender } from './types';
 
 const setParametersToSender = async (
   sender: RTCRtpSender,
   parametersTarget: TRtpSendParameters,
-): Promise<TResult> => {
+): Promise<TResultSetParametersToSender> => {
   const parametersCurrent: RTCRtpSendParameters = sender.getParameters();
   // eslint-disable-next-line unicorn/prefer-structured-clone
   const parametersInitial: RTCRtpSendParameters = JSON.parse(

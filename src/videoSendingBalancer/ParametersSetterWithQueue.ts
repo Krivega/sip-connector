@@ -1,14 +1,14 @@
-import { setEncodingsToSender } from '@/setParametersToSender';
+import { setEncodingsToSender } from '@/tools';
 import { TaskQueue } from './TaskQueue';
 
-import type { TOnSetParameters, TResult } from '@/setParametersToSender';
+import type { TOnSetParameters, TResultSetParametersToSender } from '@/tools';
 import type { IEncodingParameters, IParametersSetter } from './types';
 
 /**
  * Обёртка для ParametersSetter с использованием TaskQueue
  */
 export class ParametersSetterWithQueue implements IParametersSetter {
-  private readonly taskQueue: TaskQueue<TResult>;
+  private readonly taskQueue: TaskQueue<TResultSetParametersToSender>;
 
   private readonly onSetParameters?: TOnSetParameters;
 
@@ -21,7 +21,7 @@ export class ParametersSetterWithQueue implements IParametersSetter {
   public async setEncodingsToSender(
     sender: RTCRtpSender,
     parameters: IEncodingParameters,
-  ): Promise<TResult> {
+  ): Promise<TResultSetParametersToSender> {
     return this.taskQueue.add(async () => {
       return setEncodingsToSender(sender, parameters, this.onSetParameters);
     });

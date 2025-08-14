@@ -3,7 +3,7 @@ import hasIncludesString from '@/utils/hasIncludesString';
 import { calcMaxBitrateByWidthAndCodec, getMaximumBitrate, getMinimumBitrate } from './calcBitrate';
 import { calcScaleResolutionDownBy } from './calcResolution';
 
-import type { TResult } from '@/setParametersToSender';
+import type { TResultSetParametersToSender } from '@/tools';
 import type {
   IBalancingContext,
   ICodecProvider,
@@ -26,7 +26,7 @@ export class SenderBalancer {
 
   private readonly parametersSetter: IParametersSetter;
 
-  private readonly resultNoChanged: TResult = {
+  private readonly resultNoChanged: TResultSetParametersToSender = {
     isChanged: false,
     parameters: {
       encodings: [{}],
@@ -63,7 +63,10 @@ export class SenderBalancer {
    * @param headers - Заголовки от сервера с командами управления
    * @returns Promise с результатом балансировки
    */
-  public async balance(connection: RTCPeerConnection, headers?: IMainCamHeaders): Promise<TResult> {
+  public async balance(
+    connection: RTCPeerConnection,
+    headers?: IMainCamHeaders,
+  ): Promise<TResultSetParametersToSender> {
     const senders = connection.getSenders();
     const sender = this.senderFinder.findVideoSender(senders);
 
@@ -97,7 +100,7 @@ export class SenderBalancer {
   private async processSender(
     headers: IMainCamHeaders,
     context: IBalancingContext,
-  ): Promise<TResult> {
+  ): Promise<TResultSetParametersToSender> {
     const { mainCam, resolutionMainCam } = headers;
 
     switch (mainCam) {
@@ -130,7 +133,9 @@ export class SenderBalancer {
    * @param context - Контекст балансировки
    * @returns Promise с результатом
    */
-  private async downgradeResolutionSender(context: IBalancingContext): Promise<TResult> {
+  private async downgradeResolutionSender(
+    context: IBalancingContext,
+  ): Promise<TResultSetParametersToSender> {
     const { sender, codec } = context;
     const parameters: IEncodingParameters = {
       scaleResolutionDownBy: 200,
@@ -145,7 +150,9 @@ export class SenderBalancer {
    * @param context - Контекст балансировки
    * @returns Promise с результатом
    */
-  private async setBitrateByTrackResolution(context: IBalancingContext): Promise<TResult> {
+  private async setBitrateByTrackResolution(
+    context: IBalancingContext,
+  ): Promise<TResultSetParametersToSender> {
     const { sender, videoTrack, codec } = context;
     const settings = videoTrack.getSettings();
     const widthCurrent = settings.width;
@@ -170,7 +177,7 @@ export class SenderBalancer {
   private async setResolutionSender(
     resolutionMainCam: string,
     context: IBalancingContext,
-  ): Promise<TResult> {
+  ): Promise<TResultSetParametersToSender> {
     const [widthTarget, heightTarget] = resolutionMainCam.split('x');
     const { sender, videoTrack, codec } = context;
     const targetSize = {
