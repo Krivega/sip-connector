@@ -2,7 +2,6 @@
 import type { Events } from 'events-constructor';
 
 export enum EEvent {
-  // UA members
   CONNECTING = 'connecting',
   CONNECTED = 'connected',
   DISCONNECTED = 'disconnected',

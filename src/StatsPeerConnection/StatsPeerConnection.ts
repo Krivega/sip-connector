@@ -1,22 +1,22 @@
 import { CancelableRequest } from '@krivega/cancelable-promise';
 import { SetTimeoutRequest } from '@krivega/timeout-requester';
-import { Events } from 'events-constructor';
+import { TypedEvents } from 'events-constructor';
 
 import log from '@/logger';
 import { INTERVAL_COLLECT_STATISTICS } from './constants';
-import { COLLECTED_EVENT, EVENT_NAMES } from './eventNames';
+import { EVENT_NAMES } from './eventNames';
 import parseStatsReports from './parseStatsReports';
 import requestAllStatistics from './requestAllStatistics';
 import now from './utils/now';
 
-import type { TInbound, TOutbound } from './typings';
+import type { TEventMap, TEvents } from './eventNames';
 
 const debug = (data: unknown) => {
   log(String(data));
 };
 
 class StatsPeerConnection {
-  private readonly events: Events<typeof EVENT_NAMES>;
+  public readonly events: TEvents;
 
   private readonly setTimeoutRequest: SetTimeoutRequest;
 
@@ -26,7 +26,7 @@ class StatsPeerConnection {
   >(requestAllStatistics);
 
   public constructor() {
-    this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
+    this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
     this.setTimeoutRequest = new SetTimeoutRequest();
   }
 
@@ -57,12 +57,27 @@ class StatsPeerConnection {
     this.requesterAllStatistics.cancelRequest();
   }
 
-  public onCollected(handler: (statistics: { outbound: TOutbound; inbound: TInbound }) => void) {
-    this.events.on(COLLECTED_EVENT, handler);
+  public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+    return this.events.on(eventName, handler);
   }
 
-  public offCollected(handler: (statistics: { outbound: TOutbound; inbound: TInbound }) => void) {
-    this.events.off(COLLECTED_EVENT, handler);
+  public once<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+    return this.events.once(eventName, handler);
+  }
+
+  public onceRace<T extends keyof TEventMap>(
+    eventNames: T[],
+    handler: (data: TEventMap[T], eventName: string) => void,
+  ) {
+    return this.events.onceRace(eventNames, handler);
+  }
+
+  public async wait<T extends keyof TEventMap>(eventName: T): Promise<TEventMap[T]> {
+    return this.events.wait(eventName);
+  }
+
+  public off<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+    this.events.off(eventName, handler);
   }
 
   private readonly resolveCollectStatistics = (
@@ -79,7 +94,7 @@ class StatsPeerConnection {
       this.requesterAllStatistics
         .request(peerConnection)
         .then((allStatistics) => {
-          this.events.trigger(COLLECTED_EVENT, parseStatsReports(allStatistics));
+          this.events.trigger('collected', parseStatsReports(allStatistics));
 
           const endTime = now();
           const elapsed = endTime - startTime;
