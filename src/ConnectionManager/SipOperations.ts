@@ -39,8 +39,6 @@ export default class SipOperations {
 
     return new Promise((resolve, reject) => {
       try {
-        // @ts-expect-error
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         ua.sendOptions(target, body, {
           extraHeaders,
           eventHandlers: {
