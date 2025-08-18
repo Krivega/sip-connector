@@ -1,3 +1,7 @@
+import { createVideoMediaStreamTrackMock } from 'webrtc-mock';
+
+import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
+import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
 import { doMockSipConnector } from '@/doMock';
 import VideoSendingBalancerManager from '../@VideoSendingBalancerManager';
 
@@ -8,10 +12,43 @@ describe('VideoSendingBalancerManager', () => {
   let sipConnector: SipConnector;
   let callManager: CallManager;
   let videoSendingBalancerManager: VideoSendingBalancerManager;
+  let mockConnection: RTCPeerConnection;
+  let mockVideoTrack: MediaStreamVideoTrack;
+  let mockSender: RTCRtpSender;
 
   beforeEach(() => {
     sipConnector = doMockSipConnector();
     callManager = sipConnector.callManager;
+
+    // Создаем видео трек
+    mockVideoTrack = createVideoMediaStreamTrackMock({
+      constraints: { width: 1920, height: 1080 },
+    }) as MediaStreamVideoTrack;
+
+    // Создаем sender
+    mockSender = new RTCRtpSenderMock({ track: mockVideoTrack }) as RTCRtpSender;
+    Object.defineProperty(mockSender, 'getParameters', {
+      value: jest.fn().mockReturnValue({
+        encodings: [{ scaleResolutionDownBy: 1, maxBitrate: 1_000_000 }],
+      }),
+    });
+    Object.defineProperty(mockSender, 'setParameters', {
+      value: jest.fn().mockResolvedValue(undefined),
+    });
+
+    // Создаем RTCPeerConnection
+    mockConnection = new RTCPeerConnectionMock(undefined, [] as never[]) as RTCPeerConnection;
+    Object.defineProperty(mockConnection, 'getSenders', {
+      value: jest.fn().mockReturnValue([mockSender]),
+    });
+
+    // Мокаем connection в CallManager
+    Object.defineProperty(callManager, 'connection', {
+      value: mockConnection,
+      writable: true,
+      configurable: true,
+    });
+
     videoSendingBalancerManager = new VideoSendingBalancerManager(
       callManager,
       sipConnector.apiManager,
@@ -41,18 +78,21 @@ describe('VideoSendingBalancerManager', () => {
 
       // Проверяем, что используется кастомная задержка
       expect(customManager.isBalancingScheduled).toBe(true);
+
+      // Очищаем после теста
+      customManager.stopBalancing();
     });
   });
 
   describe('balancing lifecycle', () => {
-    it('should start balancing immediately when startBalancing is called', () => {
-      videoSendingBalancerManager.startBalancing();
+    it('should start balancing immediately when startBalancing is called', async () => {
+      await videoSendingBalancerManager.startBalancing();
 
       expect(videoSendingBalancerManager.isBalancingActive).toBe(true);
     });
 
-    it('should stop balancing when stopBalancing is called', () => {
-      videoSendingBalancerManager.startBalancing();
+    it('should stop balancing when stopBalancing is called', async () => {
+      await videoSendingBalancerManager.startBalancing();
       expect(videoSendingBalancerManager.isBalancingActive).toBe(true);
 
       videoSendingBalancerManager.stopBalancing();
@@ -64,7 +104,7 @@ describe('VideoSendingBalancerManager', () => {
     it('should trigger balancing-started event when balancing starts', async () => {
       const promise = videoSendingBalancerManager.wait('balancing-started');
 
-      videoSendingBalancerManager.startBalancing();
+      await videoSendingBalancerManager.startBalancing();
 
       const data = await promise;
 
@@ -73,7 +113,7 @@ describe('VideoSendingBalancerManager', () => {
 
     // eslint-disable-next-line jest/expect-expect
     it('should trigger balancing-stopped event when balancing stops', async () => {
-      videoSendingBalancerManager.startBalancing();
+      await videoSendingBalancerManager.startBalancing();
 
       const promise = videoSendingBalancerManager.wait('balancing-stopped');
 
@@ -109,8 +149,8 @@ describe('VideoSendingBalancerManager', () => {
       expect(videoSendingBalancerManager.isBalancingScheduled).toBe(true);
     });
 
-    it('should stop balancing when call ends', () => {
-      videoSendingBalancerManager.startBalancing();
+    it('should stop balancing when call ends', async () => {
+      await videoSendingBalancerManager.startBalancing();
       expect(videoSendingBalancerManager.isBalancingActive).toBe(true);
 
       // Эмулируем окончание звонка
@@ -119,8 +159,8 @@ describe('VideoSendingBalancerManager', () => {
       expect(videoSendingBalancerManager.isBalancingActive).toBe(false);
     });
 
-    it('should stop balancing when call fails', () => {
-      videoSendingBalancerManager.startBalancing();
+    it('should stop balancing when call fails', async () => {
+      await videoSendingBalancerManager.startBalancing();
       expect(videoSendingBalancerManager.isBalancingActive).toBe(true);
 
       // Эмулируем неудачный звонок
@@ -131,8 +171,28 @@ describe('VideoSendingBalancerManager', () => {
   });
 
   describe('error handling', () => {
-    it('should throw error when trying to reBalance without active balancer', async () => {
-      await expect(videoSendingBalancerManager.reBalance()).rejects.toThrow(
+    it('should throw error when trying to balance without connection', async () => {
+      // Убираем connection из CallManager
+      Object.defineProperty(callManager, 'connection', {
+        value: undefined,
+        writable: true,
+        configurable: true,
+      });
+
+      await expect(videoSendingBalancerManager.balance()).rejects.toThrow(
+        'connection is not exist',
+      );
+    });
+
+    it('should throw error when trying to start balancing without connection', async () => {
+      // Убираем connection из CallManager
+      Object.defineProperty(callManager, 'connection', {
+        value: undefined,
+        writable: true,
+        configurable: true,
+      });
+
+      await expect(videoSendingBalancerManager.startBalancing()).rejects.toThrow(
         'connection is not exist',
       );
     });

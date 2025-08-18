@@ -1,5 +1,6 @@
 import { TypedEvents } from 'events-constructor';
 
+import debug from '@/logger';
 import { VideoSendingBalancer } from '@/VideoSendingBalancer';
 import { EVENT_NAMES } from './eventNames';
 
@@ -65,13 +66,14 @@ class VideoSendingBalancerManager {
   /**
    * Принудительно запустить балансировку
    */
-  public startBalancing(): void {
+  public async startBalancing(): Promise<void> {
     if (this.isBalancingActive) {
       return; // Уже запущена
     }
 
     this.clearStartTimer();
 
+    await this.videoSendingBalancer.balance();
     this.videoSendingBalancer.subscribe();
     this.isBalancingActive = true;
 
@@ -92,8 +94,8 @@ class VideoSendingBalancerManager {
   /**
    * Выполнить ручную балансировку
    */
-  public async reBalance() {
-    return this.videoSendingBalancer.reBalance();
+  public async balance() {
+    return this.videoSendingBalancer.balance();
   }
 
   public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
@@ -143,7 +145,9 @@ class VideoSendingBalancerManager {
     // Запланируем запуск балансировки через настраиваемое время
     this.startBalancingTimer = setTimeout(() => {
       this.startBalancingTimer = undefined;
-      this.startBalancing();
+      this.startBalancing().catch((error: unknown) => {
+        debug('startBalancing: error', error);
+      });
     }, this.balancingStartDelay);
 
     this.events.trigger('balancing-scheduled', { delay: this.balancingStartDelay });

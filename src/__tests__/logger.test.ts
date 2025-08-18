@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-import { debug, disableDebug, enableDebug } from '../index';
+import { disableDebug, enableDebug } from '../index';
 
 const mockEnableDebug = jest.fn();
 
@@ -25,10 +25,5 @@ describe('Logger', () => {
 
     expect(mockEnableDebug).toHaveBeenCalledTimes(2);
     expect(mockEnableDebug).toHaveBeenCalledWith('-sip-connector');
-
-    debug.enable('sip-connector');
-
-    expect(mockEnableDebug).toHaveBeenCalledTimes(3);
-    expect(mockEnableDebug).toHaveBeenCalledWith('sip-connector');
   });
 });

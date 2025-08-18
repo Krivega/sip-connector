@@ -1,5 +1,4 @@
-export { calcMaxBitrateByWidthAndCodec } from './calcBitrate';
-export { calcScaleResolutionDownBy } from './calcResolution';
+export type { IBalancerOptions } from './types';
 export {
   resolveVideoSendingBalancer,
   default as VideoSendingBalancer,

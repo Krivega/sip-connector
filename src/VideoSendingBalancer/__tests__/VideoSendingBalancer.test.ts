@@ -187,9 +187,9 @@ describe('VideoSendingBalancer', () => {
     });
   });
 
-  describe('reBalance', () => {
+  describe('balance', () => {
     it('должен выполнить балансировку при наличии соединения', async () => {
-      const result = await balancer.reBalance();
+      const result = await balancer.balance();
 
       expect(result).toBeDefined();
       expect(mockConnection.getSenders).toHaveBeenCalled();
@@ -202,7 +202,7 @@ describe('VideoSendingBalancer', () => {
         writable: true,
       });
 
-      await expect(balancer.reBalance()).rejects.toThrow('connection is not exist');
+      await expect(balancer.balance()).rejects.toThrow('connection is not exist');
     });
 
     it('должен работать с заголовками сервера', async () => {
@@ -214,7 +214,7 @@ describe('VideoSendingBalancer', () => {
         resolutionMainCam: '1920x1080',
       };
 
-      const result = await balancer.reBalance();
+      const result = await balancer.balance();
 
       expect(result).toBeDefined();
       expect(mockConnection.getSenders).toHaveBeenCalled();
@@ -348,7 +348,7 @@ describe('VideoSendingBalancer', () => {
       );
 
       // Ребалансировка
-      const result = await balancer.reBalance();
+      const result = await balancer.balance();
 
       expect(result).toBeDefined();
 
@@ -376,7 +376,7 @@ describe('VideoSendingBalancer', () => {
       );
 
       try {
-        const result = await balancerWithOptions.reBalance();
+        const result = await balancerWithOptions.balance();
 
         expect(result).toBeDefined();
       } finally {
@@ -432,7 +432,7 @@ describe('VideoSendingBalancer', () => {
         writable: true,
       });
 
-      await expect(balancer.reBalance()).rejects.toThrow('Test error');
+      await expect(balancer.balance()).rejects.toThrow('Test error');
     });
 
     it('должен обрабатывать ошибки в обработчике событий', async () => {

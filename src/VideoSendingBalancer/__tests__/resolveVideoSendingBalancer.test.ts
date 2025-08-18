@@ -271,7 +271,7 @@ describe('resolveVideoSendingBalancer', () => {
         resolutionMainCam: `${targetWidth}x${targeHight}`,
       };
 
-      const result = await balancer.reBalance();
+      const result = await balancer.balance();
 
       expect(result.isChanged).toBe(true);
       expect(result.parameters.encodings).toEqual([
@@ -316,7 +316,7 @@ describe('resolveVideoSendingBalancer', () => {
         resolutionMainCam: `${targetWidth}x${targeHight}`,
       };
 
-      const result = await balancer.reBalance();
+      const result = await balancer.balance();
 
       expect(result.isChanged).toBe(true);
       expect(result.parameters.encodings).toEqual([
@@ -356,7 +356,7 @@ describe('resolveVideoSendingBalancer', () => {
         resolutionMainCam: '',
       };
 
-      const result = await balancer.reBalance();
+      const result = await balancer.balance();
 
       expect(result.isChanged).toBe(true);
       expect(result.parameters.encodings).toEqual([
@@ -398,7 +398,7 @@ describe('resolveVideoSendingBalancer', () => {
         mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
       };
 
-      await balancer.reBalance();
+      await balancer.balance();
 
       // Симулируем событие MAX_MAIN_CAM_RESOLUTION
 
@@ -409,7 +409,7 @@ describe('resolveVideoSendingBalancer', () => {
         resolutionMainCam: `${targetWidth}x${targeHight}`,
       };
 
-      await balancer.reBalance();
+      await balancer.balance();
 
       // Симулируем событие RESUME_MAIN_CAM снова
 
@@ -419,7 +419,7 @@ describe('resolveVideoSendingBalancer', () => {
         mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
       };
 
-      const result = await balancer.reBalance();
+      const result = await balancer.balance();
 
       expect(result.isChanged).toBe(true);
       expect(result.parameters.encodings).toEqual([
@@ -476,7 +476,7 @@ describe('resolveVideoSendingBalancer', () => {
         resolutionMainCam: `${targetWidth}x${targeHight}`,
       };
 
-      const result = await balancer.reBalance();
+      const result = await balancer.balance();
 
       expect(result.isChanged).toBe(true);
       expect(result.parameters.encodings).toEqual([
@@ -528,7 +528,7 @@ describe('resolveVideoSendingBalancer', () => {
         resolutionMainCam: '',
       };
 
-      const result = await balancer.reBalance();
+      const result = await balancer.balance();
 
       expect(result.isChanged).toBe(true);
       expect(result.parameters.encodings).toEqual([
@@ -582,7 +582,7 @@ describe('resolveVideoSendingBalancer', () => {
         mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
       };
 
-      await balancer.reBalance();
+      await balancer.balance();
 
       // Симулируем событие MAX_MAIN_CAM_RESOLUTION
 
@@ -593,7 +593,7 @@ describe('resolveVideoSendingBalancer', () => {
         resolutionMainCam: `${targetWidth}x${targeHight}`,
       };
 
-      await balancer.reBalance();
+      await balancer.balance();
 
       // Симулируем событие RESUME_MAIN_CAM снова
 
@@ -603,7 +603,7 @@ describe('resolveVideoSendingBalancer', () => {
         mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
       };
 
-      const result = await balancer.reBalance();
+      const result = await balancer.balance();
 
       expect(result.isChanged).toBe(true);
       expect(result.parameters.encodings).toEqual([

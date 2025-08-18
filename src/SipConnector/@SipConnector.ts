@@ -14,7 +14,7 @@ import { EVENT_NAMES } from './eventNames';
 import type { TGetServerUrl } from '@/CallManager';
 import type { TContentHint, TOnAddedTransceiver } from '@/PresentationManager/types';
 import type { TJsSIP } from '@/types';
-import type { IBalancerOptions } from '@/VideoSendingBalancer/types';
+import type { IBalancerOptions } from '@/VideoSendingBalancer';
 import type { TEvent } from './eventNames';
 
 class SipConnector {
@@ -428,8 +428,8 @@ class SipConnector {
   /**
    * Принудительно запустить балансировку видео
    */
-  public startVideoBalancing(): void {
-    this.videoSendingBalancerManager.startBalancing();
+  public async startVideoBalancing(): Promise<void> {
+    return this.videoSendingBalancerManager.startBalancing();
   }
 
   /**
@@ -442,8 +442,8 @@ class SipConnector {
   /**
    * Выполнить ручную балансировку видео
    */
-  public async reBalanceVideo() {
-    return this.videoSendingBalancerManager.reBalance();
+  public async balanceVideo() {
+    return this.videoSendingBalancerManager.balance();
   }
 
   private setCodecPreferences(transceiver: RTCRtpTransceiver) {

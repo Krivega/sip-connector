@@ -147,11 +147,11 @@ class PresentationManager {
       isNeedReinvite: false,
       sendEncodings,
       onAddedTransceiver,
-    })
-      .then(this.setMaxBitrate)
-      .then(() => {
-        return this.streamPresentationCurrent;
-      });
+    }).then(async (mediaStream) => {
+      await this.setMaxBitrate();
+
+      return mediaStream;
+    });
   }
 
   public cancelSendPresentationWithRepeatedCalls() {

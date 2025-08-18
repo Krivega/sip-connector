@@ -1,4 +1,4 @@
-import { debug } from '@/logger';
+import debug from '@/logger';
 import { CodecProvider } from './CodecProvider';
 import { ParametersSetterWithQueue } from './ParametersSetterWithQueue';
 import { SenderBalancer } from './SenderBalancer';
@@ -69,18 +69,10 @@ class VideoSendingBalancer {
   }
 
   /**
-   * Перебалансирует текущее состояние
-   * @returns Promise с результатом балансировки
-   */
-  public async reBalance(): Promise<TResultSetParametersToSender> {
-    return this.balanceByTrack();
-  }
-
-  /**
    * Выполняет балансировку на основе текущего состояния
    * @returns Promise с результатом балансировки
    */
-  private async balanceByTrack(): Promise<TResultSetParametersToSender> {
+  public async balance(): Promise<TResultSetParametersToSender> {
     const connection = this.getConnection();
 
     if (!connection) {
@@ -96,7 +88,9 @@ class VideoSendingBalancer {
    */
   private readonly handleMainCamControl = (headers: IMainCamHeaders) => {
     this.serverHeaders = headers;
-    this.balanceByTrack().catch(debug);
+    this.balance().catch((error: unknown) => {
+      debug('handleMainCamControl: error', error);
+    });
   };
 }
 

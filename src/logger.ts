@@ -13,5 +13,3 @@ export const disableDebug = () => {
 };
 
 export default logger;
-
-export { default as debug } from 'debug';

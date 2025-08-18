@@ -709,17 +709,10 @@ describe('SipConnectorFacade comprehensive', () => {
       expect(result).toBe(mockMediaStream);
       expect(sipConnector.startPresentation).toHaveBeenCalledWith(mockMediaStream, {
         isP2P: false,
-        maxBitrate: 1000,
         contentHint: 'detail',
         callLimit: 10,
         degradationPreference: 'maintain-framerate',
-        sendEncodings: [
-          expect.objectContaining({
-            active: true,
-            maxBitrate: 500_000,
-            scaleResolutionDownBy: 1,
-          }),
-        ],
+        sendEncodings: [],
         onAddedTransceiver: undefined,
       });
     });
@@ -736,16 +729,9 @@ describe('SipConnectorFacade comprehensive', () => {
       expect(result).toBe(mockMediaStream);
       expect(sipConnector.updatePresentation).toHaveBeenCalledWith(mockMediaStream, {
         isP2P: true,
-        maxBitrate: 2000,
         contentHint: 'motion',
         degradationPreference: 'maintain-resolution',
-        sendEncodings: [
-          expect.objectContaining({
-            active: true,
-            maxBitrate: 1_000_000,
-            scaleResolutionDownBy: 1,
-          }),
-        ],
+        sendEncodings: [],
         onAddedTransceiver: undefined,
       });
     });
@@ -852,13 +838,7 @@ describe('SipConnectorFacade comprehensive', () => {
         forceRenegotiation: true,
         contentHint: 'detail',
         degradationPreference: 'maintain-framerate',
-        sendEncodings: [
-          expect.objectContaining({
-            active: true,
-            maxBitrate: 1_000_000,
-            scaleResolutionDownBy: 1,
-          }),
-        ],
+        sendEncodings: [],
         onAddedTransceiver: undefined,
       });
     });
