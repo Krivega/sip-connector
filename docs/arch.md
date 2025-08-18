@@ -1,4 +1,6 @@
-### Архитектура
+# Архитектура SIP Connector
+
+## Обзор архитектуры
 
 #### 1. **SipConnectorFacade** (Входная точка)
 
@@ -69,6 +71,7 @@ class SipConnector {
   public readonly apiManager: ApiManager;
   public readonly incomingCallManager: IncomingCallManager;
   public readonly presentationManager: PresentationManager;
+  public readonly statsManager: StatsManager;
 
   constructor({ JsSIP }: { JsSIP: TJsSIP }) {
     this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
@@ -81,6 +84,10 @@ class SipConnector {
     this.incomingCallManager = new IncomingCallManager(this.connectionManager);
     this.presentationManager = new PresentationManager({
       callManager: this.callManager,
+    });
+    this.statsManager = new StatsManager({
+      callManager: this.callManager,
+      apiManager: this.apiManager,
     });
 
     this.subscribe();
@@ -110,10 +117,11 @@ class ConnectionManager {
 
   private readonly uaFactory: UAFactory;
   private readonly registrationManager: RegistrationManager;
-  private readonly stateMachine: ConnectionStateMachine;
+  private readonly stateMachine: ConnectionStateMachine; // Использует XState
   private readonly connectionFlow: ConnectionFlow;
   private readonly sipOperations: SipOperations;
   private readonly configurationManager: ConfigurationManager;
+  private readonly JsSIP: TJsSIP;
 
   constructor({ JsSIP }: { JsSIP: TJsSIP }) {
     this.JsSIP = JsSIP;
@@ -377,6 +385,7 @@ class SipConnector {
   +apiManager: ApiManager
   +incomingCallManager: IncomingCallManager
   +presentationManager: PresentationManager
+  +statsManager: StatsManager
   +connect: ConnectionManager['connect']
   +disconnect: ConnectionManager['disconnect']
   +call: CallManager['startCall']
@@ -495,18 +504,44 @@ class MCUCallStrategy {
   +isCallActive: boolean
 }
 
-class SFUCallStrategy {
-  +startCall(ua: UA, getSipServerUrl: TGetServerUrl, params)
-  +endCall()
-  +answerToIncomingCall(ua: UA, getSipServerUrl: TGetServerUrl, params)
-  +getEstablishedRTCSession(): RTCSession | undefined
-  +getCallConfiguration(): TCallConfiguration | undefined
-  +getRemoteStreams(): MediaStream[] | undefined
-  +replaceMediaStream(mediaStream: MediaStream, options?)
+class StatsManager {
+  +events: TEvents
+  +availableIncomingBitrate?: number
+  +statsPeerConnection: StatsPeerConnection
+  +hasAvailableIncomingBitrateChangedQuarter(): boolean
+}
+
+class VideoSendingBalancer {
+  +subscribe(): void
+  +unsubscribe(): void
+  +reBalance(): Promise~TResult~
+  +reset(): void
+}
+
+class StatsPeerConnection {
+  +events: Events
+  +start(peerConnection: RTCPeerConnection): void
+  +stop(): void
+  +requestAllStatistics(): Promise~TStats~
+  +parseStatsReports(reports: RTCStatsReport): TStats
+}
+
+class AbstractCallStrategy {
+  <<abstract>>
+  #isPendingCall: boolean
+  #isPendingAnswer: boolean
   +requested: boolean
   +connection: RTCPeerConnection | undefined
   +establishedRTCSession: RTCSession | undefined
   +isCallActive: boolean
+  +startCall(ua: UA, getSipServerUrl: TGetServerUrl, params)*
+  +endCall()*
+  +answerToIncomingCall(extractIncomingRTCSession, params)*
+  +replaceMediaStream(mediaStream: MediaStream, options?)*
+  +getEstablishedRTCSession(): RTCSession | undefined*
+  +getCallConfiguration(): TCallConfiguration*
+  +getRemoteStreams(): MediaStream[] | undefined*
+  #handleCall(options)*
 }
 
 SipConnectorFacade --> SipConnector : depends on
@@ -515,6 +550,7 @@ SipConnector --> CallManager : depends on
 SipConnector --> ApiManager : depends on
 SipConnector --> IncomingCallManager : depends on
 SipConnector --> PresentationManager : depends on
+SipConnector --> StatsManager : depends on
 
 ApiManager --> ConnectionManager : depends on
 ApiManager --> CallManager : depends on
@@ -523,9 +559,15 @@ IncomingCallManager --> ConnectionManager : depends on
 
 PresentationManager --> CallManager : depends on
 
+StatsManager --> CallManager : depends on
+StatsManager --> ApiManager : depends on
+StatsManager --> StatsPeerConnection : depends on
+
 CallManager --> ICallStrategy : depends on
 MCUCallStrategy ..|> ICallStrategy : implements
-SFUCallStrategy ..|> ICallStrategy : implements
+MCUCallStrategy --|> AbstractCallStrategy : extends
+
+VideoSendingBalancer --> SipConnector : depends on
 ```
 
 ---
@@ -562,13 +604,14 @@ SFUCallStrategy ..|> ICallStrategy : implements
      2. Предоставление единого API для всех операций.
      3. Управление событиями и их подписками.
      4. Проксирование методов менеджеров.
-   - **Зависимости**: Зависит от всех менеджеров (`ConnectionManager`, `CallManager`, `ApiManager`, `IncomingCallManager`, `PresentationManager`).
+   - **Зависимости**: Зависит от всех менеджеров (`ConnectionManager`, `CallManager`, `ApiManager`, `IncomingCallManager`, `PresentationManager`, `StatsManager`).
    - **Методы**:
      - Проксированные методы от `ConnectionManager`: `connect`, `set`, `disconnect`, `register`, `unregister`, `tryRegister`, `sendOptions`, `ping`, `checkTelephony`, `isConfigured`, `getConnectionConfiguration`, `getSipServerUrl`.
      - Проксированные методы от `CallManager`: `call`, `hangUp`, `answerToIncomingCall`, `getEstablishedRTCSession`, `getCallConfiguration`, `getRemoteStreams`, `replaceMediaStream`.
      - Проксированные методы от `PresentationManager`: `startPresentation`, `stopPresentation`, `updatePresentation`.
      - Проксированные методы от `ApiManager`: `waitChannels`, `waitSyncMediaState`, `sendDTMF`, `sendChannels`, `sendMediaState`, `sendRefusalToTurnOn`, `sendRefusalToTurnOnMic`, `sendRefusalToTurnOnCam`, `sendMustStopPresentationP2P`, `sendStoppedPresentationP2P`, `sendStoppedPresentation`, `askPermissionToStartPresentationP2P`, `askPermissionToStartPresentation`, `askPermissionToEnableCam`.
      - Проксированные методы от `IncomingCallManager`: `declineToIncomingCall`.
+     - События от `StatsManager`: Проксирует события статистики с префиксом `stats:`.
 
 3. **ConnectionManager**:
    - **Ответственность**:
@@ -650,7 +693,21 @@ SFUCallStrategy ..|> ICallStrategy : implements
      - `declineToIncomingCall(options?)`: Отклонение входящего звонка.
      - `busyIncomingCall()`: Отклонение с кодом "занято".
 
-8. **ICallStrategy** (интерфейс):
+8. **StatsManager**:
+   - **Ответственность**:
+     1. Сбор и обработка статистики WebRTC соединения.
+     2. Мониторинг доступной пропускной способности.
+     3. Автоматическая отправка статистики на сервер.
+     4. Управление StatsPeerConnection для получения метрик.
+   - **Зависимости**: Зависит от `CallManager` и `ApiManager`.
+   - **Методы**:
+     - `hasAvailableIncomingBitrateChangedQuarter()`: Проверка изменения битрейта на 25%.
+     - События: Проксирует события от `StatsPeerConnection`.
+   - **Свойства**:
+     - `availableIncomingBitrate`: Текущая доступная пропускная способность.
+     - `statsPeerConnection`: Экземпляр StatsPeerConnection для сбора статистики.
+
+9. **ICallStrategy** (интерфейс):
    - **Ответственность**: Определение общего интерфейса для стратегий звонков.
    - **Методы**:
      - `startCall(ua, getSipServerUrl, params)`: Начало звонка.
@@ -661,10 +718,82 @@ SFUCallStrategy ..|> ICallStrategy : implements
      - `getRemoteStreams()`: Получение удалённых потоков.
      - `replaceMediaStream(mediaStream, options?)`: Замена медиапотока.
 
-9. **MCUCallStrategy** и **SFUCallStrategy**:
-   - **Ответственность**: Реализация логики звонков для MCU и SFU соответственно.
-   - **Зависимости**: Нет.
-   - **Методы**: Реализация всех методов интерфейса `ICallStrategy`.
+10. **MCUCallStrategy**:
+
+- **Ответственность**: Реализация логики звонков для MCU (Multipoint Control Unit).
+- **Зависимости**: Наследуется от `AbstractCallStrategy`, использует `RemoteStreamsManager`.
+- **Методы**: Реализация всех методов интерфейса `ICallStrategy`.
+- **Особенности**:
+  - Управление удалёнными потоками через `RemoteStreamsManager`.
+  - Подписка на события JsSIP сессии.
+  - Обработка конфигурации звонков и медиапотоков.
+
+11. **AbstractCallStrategy** (абстрактный класс):
+
+- **Ответственность**: Базовая реализация общей логики для всех стратегий звонков.
+- **Зависимости**: Использует систему событий.
+- **Свойства**:
+  - `isPendingCall`: Флаг ожидания исходящего звонка.
+  - `isPendingAnswer`: Флаг ожидания ответа на входящий звонок.
+- **Методы**: Определяет абстрактные методы, которые должны быть реализованы в наследниках.
+
+---
+
+#### Дополнительные компоненты системы
+
+12. **VideoSendingBalancer** (Балансировщик видеопотоков):
+
+- **Ответственность**:
+  1.  Автоматическая балансировка видеопотоков на основе серверных команд.
+  2.  Управление параметрами видеокодеков и битрейтом.
+  3.  Обработка событий управления главной камерой.
+  4.  Координация работы с WebRTC senders.
+
+- **Зависимости**: Зависит от `SipConnector`.
+
+- **Компоненты**:
+  - `VideoSendingEventHandler`: Обработка событий управления камерой.
+  - `SenderBalancer`: Бизнес-логика балансировки.
+  - `ParametersSetterWithQueue`: Управление очередью установки параметров.
+  - `SenderFinder`: Поиск video senders в соединении.
+  - `CodecProvider`: Определение используемых кодеков.
+
+- **Методы**:
+  - `subscribe()`: Подписка на события управления камерой.
+  - `unsubscribe()`: Отписка от событий.
+  - `reBalance()`: Ручная балансировка.
+  - `reset()`: Сброс состояния.
+
+13. **StatsPeerConnection** (Сбор статистики WebRTC):
+
+- **Ответственность**:
+  1.  Периодический сбор статистики WebRTC соединения.
+  2.  Парсинг и обработка RTCStatsReport.
+  3.  Предоставление структурированных данных о качестве соединения.
+
+- **Зависимости**: Работает с RTCPeerConnection.
+
+- **Методы**:
+  - `start(peerConnection)`: Запуск сбора статистики.
+  - `stop()`: Остановка сбора статистики.
+  - `requestAllStatistics()`: Получение всей статистики.
+  - `parseStatsReports()`: Парсинг отчетов статистики.
+
+- **События**:
+  - `collected`: Событие получения новых данных статистики.
+
+14. **ConnectionStateMachine** (Машина состояний соединения):
+
+- **Ответственность**:
+  1.  Управление состояниями SIP соединения с использованием XState.
+  2.  Обработка переходов между состояниями.
+  3.  Валидация допустимых операций в текущем состоянии.
+
+- **Зависимости**: Использует XState, интегрируется с системой событий.
+
+- **Состояния**: idle, connecting, connected, registering, registered, disconnecting.
+
+- **События**: connect, connected, register, registered, disconnect, failed.
 
 #### Детали реализации Proxy в SipConnectorFacade
 
@@ -729,12 +858,15 @@ return new Proxy(this, {
 
 1. **Фасад (Facade)**:
    - `SipConnectorFacade` выступает в роли фасада, предоставляя простой интерфейс для работы с модулем и скрывая сложность внутренних компонентов.
+   - `VideoSendingBalancer` является фасадом для управления балансировкой видеопотоков.
 
 2. **Стратегия (Strategy)**:
-   - Используется для реализации разных типов звонков (MCU и SFU). Каждая стратегия (`MCUCallStrategy`, `SFUCallStrategy`) реализует общий интерфейс `ICallStrategy`.
+   - Используется для реализации разных типов звонков. `MCUCallStrategy` реализует интерфейс `ICallStrategy`.
+   - Возможность добавления новых стратегий (например, SFU) без изменения существующего кода.
 
 3. **Наблюдатель (Observer)**:
    - Используется для обработки событий во всех менеджерах. Компоненты подписываются на события и реагируют на них.
+   - Система событий с префиксами для разделения событий от разных менеджеров.
 
 4. **Прокси (Proxy)**:
    - `SipConnectorFacade` использует JavaScript Proxy для автоматического проксирования методов из `SipConnector`.
@@ -742,30 +874,56 @@ return new Proxy(this, {
 5. **Композиция**:
    - `SipConnector` использует композицию для объединения всех менеджеров.
    - `CallManager` использует композицию со стратегиями.
+   - `VideoSendingBalancer` композирует несколько специализированных компонентов.
+
+6. **Машина состояний (State Machine)**:
+   - `ConnectionStateMachine` использует XState для управления состояниями SIP соединения.
+   - Четкое определение допустимых переходов между состояниями.
+
+7. **Шаблонный метод (Template Method)**:
+   - `AbstractCallStrategy` определяет общую структуру для всех стратегий звонков.
+   - Конкретные реализации переопределяют абстрактные методы.
+
+8. **Очередь задач (Task Queue)**:
+   - `ParametersSetterWithQueue` в `VideoSendingBalancer` обеспечивает последовательное выполнение операций установки параметров.
 
 ---
 
 ### Преимущества архитектуры
 
 1. **Гибкость**:
-   - Легко добавлять новые типы звонков (например, P2P) или изменять логику существующих через стратегии.
+   - Легко добавлять новые типы звонков через стратегии (`ICallStrategy`).
    - `SipConnectorFacade` предоставляет упрощённый API, скрывая сложность.
+   - Машина состояний XState обеспечивает предсказуемое поведение соединения.
 
 2. **Модульность**:
    - Компоненты слабо связаны, что упрощает тестирование и поддержку.
-   - Каждый менеджер отвечает за свою область.
+   - Каждый менеджер отвечает за свою область (соединение, звонки, API, статистика).
+   - Дополнительные компоненты (`VideoSendingBalancer`, `StatsPeerConnection`) изолированы.
 
 3. **Расширяемость**:
    - Новые функции можно добавлять без изменения существующего кода.
    - Proxy в `SipConnectorFacade` автоматически проксирует новые методы.
+   - Система событий с префиксами позволяет легко добавлять новые типы событий.
 
 4. **Чистая архитектура**:
    - Соблюдение принципов SOLID.
    - Использование паттернов делает код понятным и легко поддерживаемым.
+   - Абстрактные классы и интерфейсы обеспечивают контракты.
 
 5. **Упрощённый API**:
    - `SipConnectorFacade` предоставляет удобный интерфейс для клиентов.
    - Автоматическое проксирование методов снижает дублирование кода.
+
+6. **Мониторинг и диагностика**:
+   - `StatsManager` и `StatsPeerConnection` обеспечивают детальную статистику.
+   - `VideoSendingBalancer` автоматически оптимизирует качество видео.
+   - Централизованная система событий для отладки и логирования.
+
+7. **Надёжность**:
+   - Машина состояний предотвращает некорректные переходы.
+   - Очереди задач обеспечивают последовательное выполнение операций.
+   - Обработка ошибок на всех уровнях архитектуры.
 
 ---
 
@@ -851,7 +1009,24 @@ const unsubscribeMustStopPresentation = sipConnectorFacade.onMustStopPresentatio
   console.log('Must stop presentation');
 });
 
+// Настройка балансировщика видеопотоков
+const videoBalancer = new VideoSendingBalancer(sipConnector, {
+  ignoreForCodec: 'H264',
+  onSetParameters: (result) => {
+    console.log('Video parameters updated:', result);
+  },
+});
+
+// Подписка на автоматическую балансировку
+videoBalancer.subscribe();
+
+// Подписка на события статистики
+sipConnectorFacade.on('stats:collected', (stats) => {
+  console.log('WebRTC stats collected:', stats);
+});
+
 // Отключение от сервера
+videoBalancer.unsubscribe();
 await sipConnectorFacade.disconnectFromServer();
 ```
 
@@ -859,4 +1034,15 @@ await sipConnectorFacade.disconnectFromServer();
 
 ### Итог
 
-Архитектура модуля построена с использованием паттернов **Фасад**, **Стратегия**, **Наблюдатель**, **Прокси** и **Композиция**, что делает её гибкой, расширяемой и легко поддерживаемой. `SipConnectorFacade` служит входной точкой и предоставляет упрощённый API, скрывая сложность внутренних компонентов. Каждый компонент имеет чёткую зону ответственности, а зависимости между ними минимизированы и управляются через интерфейсы и события. Это позволяет легко адаптировать модуль под новые требования и интегрировать его в различные системы.
+Архитектура модуля построена с использованием современных паттернов проектирования: **Фасад**, **Стратегия**, **Наблюдатель**, **Прокси**, **Композиция**, **Машина состояний** и **Шаблонный метод**. Это делает её гибкой, расширяемой и легко поддерживаемой.
+
+**Ключевые особенности:**
+
+1. **Многослойная архитектура**: `SipConnectorFacade` → `SipConnector` → Специализированные менеджеры
+2. **Управление состоянием**: XState для ConnectionStateMachine обеспечивает надёжное управление состояниями
+3. **Автоматическая оптимизация**: VideoSendingBalancer автоматически балансирует видеопотоки
+4. **Мониторинг**: StatsManager и StatsPeerConnection предоставляют детальную телеметрию
+5. **Расширяемость**: Система стратегий позволяет легко добавлять новые типы соединений
+6. **Надёжность**: Очереди задач и обработка ошибок на всех уровнях
+
+Каждый компонент имеет чёткую зону ответственности, а зависимости между ними минимизированы и управляются через интерфейсы и события. Это позволяет легко адаптировать модуль под новые требования, интегрировать его в различные системы и обеспечивать высокое качество видеозвонков.
