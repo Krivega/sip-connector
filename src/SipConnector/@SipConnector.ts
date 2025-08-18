@@ -8,6 +8,7 @@ import { PresentationManager } from '@/PresentationManager';
 import { StatsManager } from '@/StatsManager';
 import setCodecPreferences from '@/tools/setCodecPreferences';
 import { VideoSendingBalancerManager } from '@/VideoSendingBalancerManager';
+import { ONE_MEGABIT_IN_BITS } from './constants';
 import { EVENT_NAMES } from './eventNames';
 
 import type { TGetServerUrl } from '@/CallManager';
@@ -62,6 +63,7 @@ class SipConnector {
     this.incomingCallManager = new IncomingCallManager(this.connectionManager);
     this.presentationManager = new PresentationManager({
       callManager: this.callManager,
+      maxBitrate: ONE_MEGABIT_IN_BITS,
     });
     this.statsManager = new StatsManager({
       callManager: this.callManager,
@@ -282,7 +284,6 @@ class SipConnector {
     options: {
       isP2P?: boolean;
       isNeedReinvite?: boolean;
-      maxBitrate?: number;
       contentHint?: TContentHint;
       degradationPreference?: RTCDegradationPreference;
       sendEncodings?: RTCRtpEncodingParameters[];
@@ -330,7 +331,6 @@ class SipConnector {
     options: {
       isP2P?: boolean;
       isNeedReinvite?: boolean;
-      maxBitrate?: number;
       contentHint?: TContentHint;
       degradationPreference?: RTCDegradationPreference;
       sendEncodings?: RTCRtpEncodingParameters[];

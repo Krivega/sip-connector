@@ -2,8 +2,7 @@ import { Events } from 'events-constructor';
 import { hasCanceledError, repeatedCallsAsync } from 'repeated-calls';
 
 import prepareMediaStream from '@/tools/prepareMediaStream';
-// import setMaxBitrateToSender from '../../videoSendingBalancer/setMaxBitrateToSender';
-// import { ONE_MEGABIT_IN_BITS } from './constants';
+import { setMaxBitrateToSender } from '@/tools/setParametersToSender';
 import { EEvent, EVENT_NAMES } from './eventNames';
 
 import type { RTCSession } from '@krivega/jssip';
@@ -26,14 +25,23 @@ class PresentationManager {
 
   public streamPresentationCurrent?: MediaStream;
 
+  private readonly maxBitrate?: number;
+
   private cancelableSendPresentationWithRepeatedCalls:
     | ReturnType<typeof repeatedCallsAsync<MediaStream>>
     | undefined;
 
   private readonly callManager: CallManager;
 
-  public constructor({ callManager }: { callManager: CallManager }) {
+  public constructor({
+    callManager,
+    maxBitrate,
+  }: {
+    callManager: CallManager;
+    maxBitrate?: number;
+  }) {
     this.callManager = callManager;
+    this.maxBitrate = maxBitrate;
     this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
 
     this.subscribe();
@@ -49,13 +57,11 @@ class PresentationManager {
     stream: MediaStream,
     {
       isNeedReinvite,
-      maxBitrate,
       contentHint,
       sendEncodings,
       onAddedTransceiver,
     }: {
       isNeedReinvite?: boolean;
-      maxBitrate?: number;
       contentHint?: TContentHint;
       sendEncodings?: RTCRtpEncodingParameters[];
       onAddedTransceiver?: TOnAddedTransceiver;
@@ -73,7 +79,6 @@ class PresentationManager {
       stream,
       presentationOptions: {
         isNeedReinvite,
-        maxBitrate,
         contentHint,
         sendEncodings,
         onAddedTransceiver,
@@ -117,13 +122,11 @@ class PresentationManager {
     beforeStartPresentation: () => Promise<void>,
     stream: MediaStream,
     {
-      // maxBitrate,
       contentHint,
       sendEncodings,
       onAddedTransceiver,
     }: {
       isP2P?: boolean;
-      // maxBitrate?: number;
       contentHint?: TContentHint;
       sendEncodings?: RTCRtpEncodingParameters[];
       onAddedTransceiver?: TOnAddedTransceiver;
@@ -140,12 +143,15 @@ class PresentationManager {
     }
 
     return this.sendPresentation(beforeStartPresentation, rtcSession, stream, {
-      // maxBitrate,
       contentHint,
       isNeedReinvite: false,
       sendEncodings,
       onAddedTransceiver,
-    });
+    })
+      .then(this.setMaxBitrate)
+      .then(() => {
+        return this.streamPresentationCurrent;
+      });
   }
 
   public cancelSendPresentationWithRepeatedCalls() {
@@ -211,7 +217,6 @@ class PresentationManager {
       stream: MediaStream;
       presentationOptions: {
         isNeedReinvite?: boolean;
-        maxBitrate?: number;
         contentHint?: TContentHint;
         sendEncodings?: RTCRtpEncodingParameters[];
         onAddedTransceiver?: TOnAddedTransceiver;
@@ -250,7 +255,6 @@ class PresentationManager {
     rtcSession: RTCSession,
     stream: MediaStream,
     {
-      // maxBitrate = ONE_MEGABIT_IN_BITS,
       isNeedReinvite = true,
       contentHint = 'detail',
       degradationPreference,
@@ -258,7 +262,6 @@ class PresentationManager {
       onAddedTransceiver,
     }: {
       isNeedReinvite?: boolean;
-      // maxBitrate?: number;
       contentHint?: TContentHint;
       degradationPreference?: RTCDegradationPreference;
       sendEncodings?: RTCRtpEncodingParameters[];
@@ -281,17 +284,7 @@ class PresentationManager {
           onAddedTransceiver,
         });
       })
-      // .then(async () => {
-      //   const { connection } = this;
-
-      //   if (!connection) {
-      //     return;
-      //   }
-
-      //   const senders = connection.getSenders();
-
-      //   await setMaxBitrateToSender(senders, stream, maxBitrate);
-      // })
+      .then(this.setMaxBitrate)
       .then(() => {
         return stream;
       })
@@ -309,6 +302,20 @@ class PresentationManager {
       this.promisePendingStartPresentation = undefined;
     });
   }
+
+  private readonly setMaxBitrate = async () => {
+    const { connection } = this.callManager;
+    const { streamPresentationCurrent } = this;
+    const { maxBitrate } = this;
+
+    if (!connection || !streamPresentationCurrent || maxBitrate === undefined) {
+      return;
+    }
+
+    const senders = connection.getSenders();
+
+    await setMaxBitrateToSender(senders, streamPresentationCurrent, maxBitrate);
+  };
 
   private readonly getRtcSessionProtected = () => {
     const rtcSession = this.callManager.getEstablishedRTCSession();

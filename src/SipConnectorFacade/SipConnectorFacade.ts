@@ -559,7 +559,6 @@ class SipConnectorFacade implements IProxyMethods {
   public updatePresentation = async ({
     mediaStream,
     isP2P,
-    maxBitrate,
     contentHint,
     simulcastEncodings,
     degradationPreference,
@@ -568,7 +567,6 @@ class SipConnectorFacade implements IProxyMethods {
   }: {
     mediaStream: MediaStream;
     isP2P: boolean;
-    maxBitrate?: number;
     contentHint?: TContentHint;
     simulcastEncodings?: TSimulcastEncoding[];
     degradationPreference?: RTCDegradationPreference;
@@ -579,7 +577,6 @@ class SipConnectorFacade implements IProxyMethods {
 
     return this.sipConnector.updatePresentation(mediaStream, {
       isP2P,
-      maxBitrate,
       contentHint,
       degradationPreference,
       onAddedTransceiver,
@@ -594,7 +591,6 @@ class SipConnectorFacade implements IProxyMethods {
   public startPresentation = async ({
     mediaStream,
     isP2P,
-    maxBitrate,
     contentHint,
     simulcastEncodings,
     degradationPreference,
@@ -604,7 +600,6 @@ class SipConnectorFacade implements IProxyMethods {
   }: {
     mediaStream: MediaStream;
     isP2P: boolean;
-    maxBitrate?: number;
     contentHint?: TContentHint;
     simulcastEncodings?: TSimulcastEncoding[];
     degradationPreference?: RTCDegradationPreference;
@@ -616,7 +611,6 @@ class SipConnectorFacade implements IProxyMethods {
 
     return this.sipConnector.startPresentation(mediaStream, {
       isP2P,
-      maxBitrate,
       contentHint,
       callLimit,
       degradationPreference,
