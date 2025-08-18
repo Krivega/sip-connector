@@ -4,7 +4,6 @@ import { hasCanceledError } from 'repeated-calls';
 import { debounce } from 'ts-debounce';
 
 import log, { debug } from '@/logger';
-import generateSimulcastEncodings from '@/tools/generateSimulcastEncodings';
 import hasPurgatory from '@/tools/hasPurgatory';
 
 import type { UA } from '@krivega/jssip';
@@ -13,7 +12,6 @@ import type { TOnAddedTransceiver } from '@/CallManager/types';
 import type { TContentHint } from '@/PresentationManager';
 import type { SipConnector } from '@/SipConnector';
 import type { TEventMap as TStatsEventMap } from '@/StatsManager';
-import type { TSimulcastEncoding } from '@/types';
 
 const handleError = (error: Error): { isSuccessful: boolean } => {
   if (!isCanceledError(error) && !hasCanceledError(error)) {
@@ -250,7 +248,6 @@ class SipConnectorFacade implements IProxyMethods {
     extraHeaders?: string[] | undefined;
     iceServers?: RTCIceServer[];
     contentHint?: TContentHint;
-    simulcastEncodings?: TSimulcastEncoding[];
     degradationPreference?: RTCDegradationPreference;
     sendEncodings?: RTCRtpEncodingParameters[];
     offerToReceiveAudio?: boolean;
@@ -273,7 +270,6 @@ class SipConnectorFacade implements IProxyMethods {
       extraHeaders,
       iceServers,
       contentHint,
-      simulcastEncodings,
       degradationPreference,
       sendEncodings,
       offerToReceiveAudio,
@@ -315,11 +311,7 @@ class SipConnectorFacade implements IProxyMethods {
         directionAudio,
         degradationPreference,
         onAddedTransceiver,
-        sendEncodings: generateSimulcastEncodings({
-          mediaStream,
-          simulcastEncodings,
-          sendEncodings,
-        }),
+        sendEncodings,
         number: conference,
         ontrack: handleReadyRemoteStreams,
       });
@@ -411,7 +403,6 @@ class SipConnectorFacade implements IProxyMethods {
     extraHeaders?: string[] | undefined;
     iceServers?: RTCIceServer[];
     contentHint?: TContentHint;
-    simulcastEncodings?: TSimulcastEncoding[];
     degradationPreference?: RTCDegradationPreference;
     sendEncodings?: RTCRtpEncodingParameters[];
     offerToReceiveAudio?: boolean;
@@ -433,7 +424,6 @@ class SipConnectorFacade implements IProxyMethods {
       extraHeaders,
       iceServers,
       contentHint,
-      simulcastEncodings,
       degradationPreference,
       sendEncodings,
       offerToReceiveAudio,
@@ -473,11 +463,7 @@ class SipConnectorFacade implements IProxyMethods {
         directionAudio,
         degradationPreference,
         onAddedTransceiver,
-        sendEncodings: generateSimulcastEncodings({
-          mediaStream,
-          simulcastEncodings,
-          sendEncodings,
-        }),
+        sendEncodings,
         ontrack: handleReadyRemoteStreams,
       });
     };
@@ -560,7 +546,6 @@ class SipConnectorFacade implements IProxyMethods {
     mediaStream,
     isP2P,
     contentHint,
-    simulcastEncodings,
     degradationPreference,
     sendEncodings,
     onAddedTransceiver,
@@ -568,7 +553,6 @@ class SipConnectorFacade implements IProxyMethods {
     mediaStream: MediaStream;
     isP2P: boolean;
     contentHint?: TContentHint;
-    simulcastEncodings?: TSimulcastEncoding[];
     degradationPreference?: RTCDegradationPreference;
     sendEncodings?: RTCRtpEncodingParameters[];
     onAddedTransceiver?: TOnAddedTransceiver;
@@ -580,11 +564,7 @@ class SipConnectorFacade implements IProxyMethods {
       contentHint,
       degradationPreference,
       onAddedTransceiver,
-      sendEncodings: generateSimulcastEncodings({
-        mediaStream,
-        simulcastEncodings,
-        sendEncodings,
-      }),
+      sendEncodings,
     });
   };
 
@@ -592,7 +572,6 @@ class SipConnectorFacade implements IProxyMethods {
     mediaStream,
     isP2P,
     contentHint,
-    simulcastEncodings,
     degradationPreference,
     sendEncodings,
     callLimit,
@@ -601,7 +580,6 @@ class SipConnectorFacade implements IProxyMethods {
     mediaStream: MediaStream;
     isP2P: boolean;
     contentHint?: TContentHint;
-    simulcastEncodings?: TSimulcastEncoding[];
     degradationPreference?: RTCDegradationPreference;
     sendEncodings?: RTCRtpEncodingParameters[];
     onAddedTransceiver?: TOnAddedTransceiver;
@@ -615,11 +593,7 @@ class SipConnectorFacade implements IProxyMethods {
       callLimit,
       degradationPreference,
       onAddedTransceiver,
-      sendEncodings: generateSimulcastEncodings({
-        mediaStream,
-        simulcastEncodings,
-        sendEncodings,
-      }),
+      sendEncodings,
     });
   };
 
@@ -670,7 +644,6 @@ class SipConnectorFacade implements IProxyMethods {
       addMissing,
       forceRenegotiation,
       contentHint,
-      simulcastEncodings,
       degradationPreference,
       sendEncodings,
       onAddedTransceiver,
@@ -679,7 +652,6 @@ class SipConnectorFacade implements IProxyMethods {
       addMissing?: boolean;
       forceRenegotiation?: boolean;
       contentHint?: TContentHint;
-      simulcastEncodings?: TSimulcastEncoding[];
       degradationPreference?: RTCDegradationPreference;
       sendEncodings?: RTCRtpEncodingParameters[];
       onAddedTransceiver?: TOnAddedTransceiver;
@@ -694,11 +666,7 @@ class SipConnectorFacade implements IProxyMethods {
       contentHint,
       degradationPreference,
       onAddedTransceiver,
-      sendEncodings: generateSimulcastEncodings({
-        mediaStream,
-        simulcastEncodings,
-        sendEncodings,
-      }),
+      sendEncodings,
     });
   };
 

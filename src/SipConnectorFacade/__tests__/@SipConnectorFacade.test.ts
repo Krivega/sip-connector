@@ -700,9 +700,7 @@ describe('SipConnectorFacade comprehensive', () => {
       const result = await sipConnectorFacade.startPresentation({
         mediaStream: mockMediaStream,
         isP2P: false,
-        maxBitrate: 1000,
         contentHint: 'detail',
-        simulcastEncodings: [{ width: 500, height: 500 }],
         degradationPreference: 'maintain-framerate',
         sendEncodings: [],
         callLimit: 10,
@@ -730,9 +728,7 @@ describe('SipConnectorFacade comprehensive', () => {
       const result = await sipConnectorFacade.updatePresentation({
         mediaStream: mockMediaStream,
         isP2P: true,
-        maxBitrate: 2000,
         contentHint: 'motion',
-        simulcastEncodings: [{ width: 1000, height: 1000 }],
         degradationPreference: 'maintain-resolution',
         sendEncodings: [],
       });
@@ -846,7 +842,6 @@ describe('SipConnectorFacade comprehensive', () => {
         addMissing: false,
         forceRenegotiation: true,
         contentHint: 'detail',
-        simulcastEncodings: [{ width: 1000, height: 1000 }],
         degradationPreference: 'maintain-framerate',
         sendEncodings: [],
       });
