@@ -310,4 +310,76 @@ describe('SipConnector facade', () => {
       sipConnector.isAvailableIncomingCall;
     }).not.toThrow();
   });
+
+  describe('Constructor with codec preferences', () => {
+    it('должен создать SipConnector с предпочтительными кодекми', () => {
+      const sipConnectorWithCodecs = new SipConnector(
+        { JsSIP: JsSIP as unknown as TJsSIP },
+        {
+          preferredMimeTypesVideoCodecs: ['video/VP8', 'video/VP9'],
+          excludeMimeTypesVideoCodecs: ['video/H264'],
+        },
+      );
+
+      // @ts-expect-error: доступ к приватным полям для тестирования
+      expect(sipConnectorWithCodecs.preferredMimeTypesVideoCodecs).toEqual([
+        'video/VP8',
+        'video/VP9',
+      ]);
+      // @ts-expect-error: доступ к приватным полям для тестирования
+      expect(sipConnectorWithCodecs.excludeMimeTypesVideoCodecs).toEqual(['video/H264']);
+    });
+
+    it('должен создать SipConnector без предпочтений кодеков', () => {
+      const sipConnectorWithoutCodecs = new SipConnector({ JsSIP: JsSIP as unknown as TJsSIP });
+
+      // @ts-expect-error: доступ к приватным полям для тестирования
+      expect(sipConnectorWithoutCodecs.preferredMimeTypesVideoCodecs).toBeUndefined();
+      // @ts-expect-error: доступ к приватным полям для тестирования
+      expect(sipConnectorWithoutCodecs.excludeMimeTypesVideoCodecs).toBeUndefined();
+    });
+
+    it('должен создать SipConnector с пустыми массивами кодеков', () => {
+      const sipConnectorWithEmptyCodecs = new SipConnector(
+        { JsSIP: JsSIP as unknown as TJsSIP },
+        {
+          preferredMimeTypesVideoCodecs: [],
+          excludeMimeTypesVideoCodecs: [],
+        },
+      );
+
+      // @ts-expect-error: доступ к приватным полям для тестирования
+      expect(sipConnectorWithEmptyCodecs.preferredMimeTypesVideoCodecs).toEqual([]);
+      // @ts-expect-error: доступ к приватным полям для тестирования
+      expect(sipConnectorWithEmptyCodecs.excludeMimeTypesVideoCodecs).toEqual([]);
+    });
+
+    it('должен создать SipConnector только с preferredMimeTypesVideoCodecs', () => {
+      const sipConnectorWithPreferredOnly = new SipConnector(
+        { JsSIP: JsSIP as unknown as TJsSIP },
+        {
+          preferredMimeTypesVideoCodecs: ['video/VP8'],
+        },
+      );
+
+      // @ts-expect-error: доступ к приватным полям для тестирования
+      expect(sipConnectorWithPreferredOnly.preferredMimeTypesVideoCodecs).toEqual(['video/VP8']);
+      // @ts-expect-error: доступ к приватным полям для тестирования
+      expect(sipConnectorWithPreferredOnly.excludeMimeTypesVideoCodecs).toBeUndefined();
+    });
+
+    it('должен создать SipConnector только с excludeMimeTypesVideoCodecs', () => {
+      const sipConnectorWithExcludeOnly = new SipConnector(
+        { JsSIP: JsSIP as unknown as TJsSIP },
+        {
+          excludeMimeTypesVideoCodecs: ['video/H264'],
+        },
+      );
+
+      // @ts-expect-error: доступ к приватным полям для тестирования
+      expect(sipConnectorWithExcludeOnly.preferredMimeTypesVideoCodecs).toBeUndefined();
+      // @ts-expect-error: доступ к приватным полям для тестирования
+      expect(sipConnectorWithExcludeOnly.excludeMimeTypesVideoCodecs).toEqual(['video/H264']);
+    });
+  });
 });

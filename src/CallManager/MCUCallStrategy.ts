@@ -53,6 +53,7 @@ export class MCUCallStrategy extends AbstractCallStrategy {
       contentHint,
       offerToReceiveAudio = true,
       offerToReceiveVideo = true,
+      degradationPreference,
       sendEncodings,
       onAddedTransceiver,
     },
@@ -88,6 +89,7 @@ export class MCUCallStrategy extends AbstractCallStrategy {
           offerToReceiveAudio,
           offerToReceiveVideo,
         },
+        degradationPreference,
         sendEncodings,
         onAddedTransceiver,
       });
@@ -126,6 +128,7 @@ export class MCUCallStrategy extends AbstractCallStrategy {
       offerToReceiveAudio,
       offerToReceiveVideo,
       contentHint,
+      degradationPreference,
       sendEncodings,
       onAddedTransceiver,
     },
@@ -166,6 +169,7 @@ export class MCUCallStrategy extends AbstractCallStrategy {
             offerToReceiveAudio,
             offerToReceiveVideo,
           },
+          degradationPreference,
           sendEncodings,
           onAddedTransceiver,
         });

@@ -705,8 +705,6 @@ describe('SipConnectorFacade comprehensive', () => {
         simulcastEncodings: [{ width: 500, height: 500 }],
         degradationPreference: 'maintain-framerate',
         sendEncodings: [],
-        preferredMimeTypesVideoCodecs: ['video/VP8'],
-        excludeMimeTypesVideoCodecs: ['video/H264'],
         callLimit: 10,
       });
 
@@ -716,10 +714,15 @@ describe('SipConnectorFacade comprehensive', () => {
         maxBitrate: 1000,
         contentHint: 'detail',
         callLimit: 10,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        sendEncodings: expect.any(Array),
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        onAddedTransceiver: expect.any(Function),
+        degradationPreference: 'maintain-framerate',
+        sendEncodings: [
+          expect.objectContaining({
+            active: true,
+            maxBitrate: 500_000,
+            scaleResolutionDownBy: 1,
+          }),
+        ],
+        onAddedTransceiver: undefined,
       });
     });
 
@@ -732,8 +735,6 @@ describe('SipConnectorFacade comprehensive', () => {
         simulcastEncodings: [{ width: 1000, height: 1000 }],
         degradationPreference: 'maintain-resolution',
         sendEncodings: [],
-        preferredMimeTypesVideoCodecs: ['video/VP9'],
-        excludeMimeTypesVideoCodecs: ['video/AV1'],
       });
 
       expect(result).toBe(mockMediaStream);
@@ -741,10 +742,15 @@ describe('SipConnectorFacade comprehensive', () => {
         isP2P: true,
         maxBitrate: 2000,
         contentHint: 'motion',
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        sendEncodings: expect.any(Array),
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        onAddedTransceiver: expect.any(Function),
+        degradationPreference: 'maintain-resolution',
+        sendEncodings: [
+          expect.objectContaining({
+            active: true,
+            maxBitrate: 1_000_000,
+            scaleResolutionDownBy: 1,
+          }),
+        ],
+        onAddedTransceiver: undefined,
       });
     });
 
@@ -850,10 +856,15 @@ describe('SipConnectorFacade comprehensive', () => {
         addMissing: false,
         forceRenegotiation: true,
         contentHint: 'detail',
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        sendEncodings: expect.any(Array),
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        onAddedTransceiver: expect.any(Function),
+        degradationPreference: 'maintain-framerate',
+        sendEncodings: [
+          expect.objectContaining({
+            active: true,
+            maxBitrate: 1_000_000,
+            scaleResolutionDownBy: 1,
+          }),
+        ],
+        onAddedTransceiver: undefined,
       });
     });
   });
@@ -1127,29 +1138,6 @@ describe('SipConnectorFacade comprehensive', () => {
       enterHandler?.('test-room');
 
       expect(handleEnterRoomEventSpy).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('Constructor with codec preferences', () => {
-    it('должен создать фасад с предпочтительными кодекми', () => {
-      const facadeWithCodecs = new SipConnectorFacade(sipConnector, {
-        preferredMimeTypesVideoCodecs: ['video/VP8', 'video/VP9'],
-        excludeMimeTypesVideoCodecs: ['video/H264'],
-      });
-
-      // @ts-expect-error
-      expect(facadeWithCodecs.preferredMimeTypesVideoCodecs).toEqual(['video/VP8', 'video/VP9']);
-      // @ts-expect-error
-      expect(facadeWithCodecs.excludeMimeTypesVideoCodecs).toEqual(['video/H264']);
-    });
-
-    it('должен создать фасад без предпочтений кодеков', () => {
-      const facadeWithoutCodecs = new SipConnectorFacade(sipConnector);
-
-      // @ts-expect-error
-      expect(facadeWithoutCodecs.preferredMimeTypesVideoCodecs).toBeUndefined();
-      // @ts-expect-error
-      expect(facadeWithoutCodecs.excludeMimeTypesVideoCodecs).toBeUndefined();
     });
   });
 });

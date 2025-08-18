@@ -253,12 +253,14 @@ class PresentationManager {
       // maxBitrate = ONE_MEGABIT_IN_BITS,
       isNeedReinvite = true,
       contentHint = 'detail',
+      degradationPreference,
       sendEncodings,
       onAddedTransceiver,
     }: {
       isNeedReinvite?: boolean;
       // maxBitrate?: number;
       contentHint?: TContentHint;
+      degradationPreference?: RTCDegradationPreference;
       sendEncodings?: RTCRtpEncodingParameters[];
       onAddedTransceiver?: TOnAddedTransceiver;
     },
@@ -274,6 +276,7 @@ class PresentationManager {
     const result = beforeStartPresentation()
       .then(async () => {
         return rtcSession.startPresentation(streamPresentationTarget, isNeedReinvite, {
+          degradationPreference,
           sendEncodings,
           onAddedTransceiver,
         });

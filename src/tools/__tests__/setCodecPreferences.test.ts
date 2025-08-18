@@ -1,23 +1,12 @@
 // <reference types="jest" />
 
 import log from '@/logger';
-import resolveUpdateTransceiver from '../resolveUpdateTransceiver';
-import { setParametersToSender } from '../setParametersToSender';
+import setCodecPreferences from '../setCodecPreferences';
 
-import type { TRtpSendParameters } from '@/types';
-
-// Mock logger and setParametersToSender before the module under test is imported
 jest.mock('@/logger', () => {
   return {
     __esModule: true,
     default: jest.fn(),
-  };
-});
-
-jest.mock('../setParametersToSender', () => {
-  return {
-    __esModule: true,
-    setParametersToSender: jest.fn().mockResolvedValue({}),
   };
 });
 
@@ -35,7 +24,7 @@ type TCodec = {
   sdpFmtpLine?: string;
 };
 
-describe('resolveUpdateTransceiver', () => {
+describe('setCodecPreferences', () => {
   const vp8Codec: TCodec = {
     mimeType: 'video/vp8',
     clockRate: 90_000,
@@ -62,7 +51,7 @@ describe('resolveUpdateTransceiver', () => {
     jest.resetAllMocks();
   });
 
-  it('should set codec preferences and call setParametersToSender when parameters contain values', async () => {
+  it('should set codec preferences when parameters contain values', async () => {
     // Arrange capabilities (intersection is vp8 & h264)
     (globalWithRTC.RTCRtpSender.getCapabilities as jest.Mock).mockReturnValue({
       codecs: [vp8Codec, h264Codec],
@@ -73,11 +62,6 @@ describe('resolveUpdateTransceiver', () => {
 
     const preferredMimeTypesVideoCodecs = ['video/vp8'];
     const excludeMimeTypesVideoCodecs = ['video/h264'];
-
-    const parametersTarget: TRtpSendParameters = {
-      degradationPreference: 'maintain-framerate',
-    };
-
     const transceiver = {
       sender: {
         track: { kind: 'video' },
@@ -86,12 +70,10 @@ describe('resolveUpdateTransceiver', () => {
     } as unknown as RTCRtpTransceiver;
 
     // Act
-    const update = resolveUpdateTransceiver(parametersTarget, {
+    setCodecPreferences(transceiver, {
       preferredMimeTypesVideoCodecs,
       excludeMimeTypesVideoCodecs,
     });
-
-    await update(transceiver);
 
     // Assert codec preferences
 
@@ -102,35 +84,6 @@ describe('resolveUpdateTransceiver', () => {
 
     expect(codecsPassed).toHaveLength(1);
     expect(codecsPassed[0].mimeType).toBe('video/vp8');
-
-    // Assert setParametersToSender invoked
-    expect(setParametersToSender).toHaveBeenCalledWith(transceiver.sender, parametersTarget);
-    // Assert success log
-    expect(log).toHaveBeenCalledWith('updateTransceiver setParametersToSender', parametersTarget);
-  });
-
-  it('should skip codec preferences and setParametersToSender when no meaningful parameters and track is audio', async () => {
-    (globalWithRTC.RTCRtpSender.getCapabilities as jest.Mock).mockReturnValue({
-      codecs: [vp8Codec],
-    });
-    (globalWithRTC.RTCRtpReceiver.getCapabilities as jest.Mock).mockReturnValue({
-      codecs: [vp8Codec],
-    });
-
-    const parametersTarget: TRtpSendParameters = {};
-
-    const transceiver = {
-      sender: {
-        track: { kind: 'audio' },
-      },
-      setCodecPreferences: jest.fn(),
-    } as unknown as RTCRtpTransceiver;
-
-    const update = resolveUpdateTransceiver(parametersTarget, {});
-
-    await update(transceiver);
-    expect(transceiver.setCodecPreferences as jest.Mock).not.toHaveBeenCalled();
-    expect(setParametersToSender).not.toHaveBeenCalled();
   });
 
   it('should order codecs according to preferredMimeTypesVideoCodecs', async () => {
@@ -143,8 +96,6 @@ describe('resolveUpdateTransceiver', () => {
 
     const preferredMimeTypesVideoCodecs = ['video/h264', 'video/vp8'];
 
-    const parametersTarget: TRtpSendParameters = {};
-
     const transceiver = {
       sender: {
         track: { kind: 'video' },
@@ -152,11 +103,10 @@ describe('resolveUpdateTransceiver', () => {
       setCodecPreferences: jest.fn(),
     } as unknown as RTCRtpTransceiver;
 
-    const update = resolveUpdateTransceiver(parametersTarget, {
+    setCodecPreferences(transceiver, {
       preferredMimeTypesVideoCodecs,
     });
 
-    await update(transceiver);
     expect(transceiver.setCodecPreferences as jest.Mock).toHaveBeenCalledTimes(1);
 
     const calls = (transceiver.setCodecPreferences as jest.Mock).mock.calls as [TCodec[]][];
@@ -173,8 +123,6 @@ describe('resolveUpdateTransceiver', () => {
     // eslint-disable-next-line unicorn/no-null
     (globalWithRTC.RTCRtpReceiver.getCapabilities as jest.Mock).mockReturnValue(null);
 
-    const parametersTarget: TRtpSendParameters = {};
-
     const transceiver = {
       sender: {
         track: { kind: 'video' },
@@ -182,11 +130,9 @@ describe('resolveUpdateTransceiver', () => {
       setCodecPreferences: jest.fn(),
     } as unknown as RTCRtpTransceiver;
 
-    const update = resolveUpdateTransceiver(parametersTarget, {
+    setCodecPreferences(transceiver, {
       excludeMimeTypesVideoCodecs: ['video/vp8'],
     });
-
-    await update(transceiver);
 
     expect(transceiver.setCodecPreferences as jest.Mock).toHaveBeenCalledTimes(1);
 
@@ -205,8 +151,6 @@ describe('resolveUpdateTransceiver', () => {
 
     const preferredMimeTypesVideoCodecs = ['video/av1']; // none of the sender codecs
 
-    const parametersTarget: TRtpSendParameters = {};
-
     const transceiver = {
       sender: {
         track: { kind: 'video' },
@@ -214,11 +158,9 @@ describe('resolveUpdateTransceiver', () => {
       setCodecPreferences: jest.fn(),
     } as unknown as RTCRtpTransceiver;
 
-    const update = resolveUpdateTransceiver(parametersTarget, {
+    setCodecPreferences(transceiver, {
       preferredMimeTypesVideoCodecs,
     });
-
-    await update(transceiver);
 
     expect(transceiver.setCodecPreferences as jest.Mock).toHaveBeenCalledTimes(1);
 
@@ -236,8 +178,6 @@ describe('resolveUpdateTransceiver', () => {
       codecs: [vp8Codec],
     });
 
-    const parametersTarget: TRtpSendParameters = {};
-
     const transceiver = {
       sender: {
         track: { kind: 'video' },
@@ -247,13 +187,10 @@ describe('resolveUpdateTransceiver', () => {
       }),
     } as unknown as RTCRtpTransceiver;
 
-    const update = resolveUpdateTransceiver(parametersTarget, {
+    setCodecPreferences(transceiver, {
       excludeMimeTypesVideoCodecs: ['video/h264'],
     });
 
-    await update(transceiver);
-
-    expect(log).toHaveBeenCalledWith('updateTransceiver error', expect.any(Error));
-    expect(setParametersToSender).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledWith('setCodecPreferences error', expect.any(Error));
   });
 });

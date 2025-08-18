@@ -6,6 +6,7 @@ import { ConnectionManager } from '@/ConnectionManager';
 import { IncomingCallManager } from '@/IncomingCallManager';
 import { PresentationManager } from '@/PresentationManager';
 import { StatsManager } from '@/StatsManager';
+import setCodecPreferences from '@/tools/setCodecPreferences';
 import { VideoSendingBalancerManager } from '@/VideoSendingBalancerManager';
 import { EVENT_NAMES } from './eventNames';
 
@@ -32,7 +33,25 @@ class SipConnector {
 
   public readonly videoSendingBalancerManager: VideoSendingBalancerManager;
 
-  public constructor({ JsSIP }: { JsSIP: TJsSIP }, videoBalancerOptions: IBalancerOptions = {}) {
+  private readonly preferredMimeTypesVideoCodecs?: string[];
+
+  private readonly excludeMimeTypesVideoCodecs?: string[];
+
+  public constructor(
+    { JsSIP }: { JsSIP: TJsSIP },
+    {
+      preferredMimeTypesVideoCodecs,
+      excludeMimeTypesVideoCodecs,
+      videoBalancerOptions,
+    }: {
+      preferredMimeTypesVideoCodecs?: string[];
+      excludeMimeTypesVideoCodecs?: string[];
+      videoBalancerOptions?: IBalancerOptions;
+    } = {},
+  ) {
+    this.preferredMimeTypesVideoCodecs = preferredMimeTypesVideoCodecs;
+    this.excludeMimeTypesVideoCodecs = excludeMimeTypesVideoCodecs;
+
     this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
     this.connectionManager = new ConnectionManager({ JsSIP });
     this.callManager = new CallManager();
@@ -202,10 +221,18 @@ class SipConnector {
   };
 
   public call = async (params: Parameters<CallManager['startCall']>[2]) => {
+    const { onAddedTransceiver, ...rest } = params;
+
     return this.callManager.startCall(
       this.connectionManager.getUaProtected(),
       this.getSipServerUrl,
-      params,
+      {
+        ...rest,
+        onAddedTransceiver: async (transceiver, track, stream) => {
+          this.setCodecPreferences(transceiver);
+          await onAddedTransceiver?.(transceiver, track, stream);
+        },
+      },
     );
   };
 
@@ -216,9 +243,17 @@ class SipConnector {
   public answerToIncomingCall = async (
     params: Parameters<CallManager['answerToIncomingCall']>[1],
   ) => {
+    const { onAddedTransceiver, ...rest } = params;
+
     return this.callManager.answerToIncomingCall(
       this.incomingCallManager.extractIncomingRTCSession,
-      params,
+      {
+        ...rest,
+        onAddedTransceiver: async (transceiver, track, stream) => {
+          this.setCodecPreferences(transceiver);
+          await onAddedTransceiver?.(transceiver, track, stream);
+        },
+      },
     );
   };
 
@@ -243,18 +278,19 @@ class SipConnector {
   };
 
   public async startPresentation(
-    stream: MediaStream,
+    mediaStream: MediaStream,
     options: {
       isP2P?: boolean;
       isNeedReinvite?: boolean;
       maxBitrate?: number;
       contentHint?: TContentHint;
+      degradationPreference?: RTCDegradationPreference;
       sendEncodings?: RTCRtpEncodingParameters[];
       onAddedTransceiver?: TOnAddedTransceiver;
       callLimit?: number;
     } = {},
   ): Promise<MediaStream> {
-    const { isP2P, callLimit, ...rest } = options;
+    const { isP2P, callLimit, onAddedTransceiver, ...rest } = options;
 
     return this.presentationManager.startPresentation(
       async () => {
@@ -265,8 +301,14 @@ class SipConnector {
           await this.apiManager.askPermissionToStartPresentation();
         }
       },
-      stream,
-      rest,
+      mediaStream,
+      {
+        ...rest,
+        onAddedTransceiver: async (transceiver, track, stream) => {
+          this.setCodecPreferences(transceiver);
+          await onAddedTransceiver?.(transceiver, track, stream);
+        },
+      },
       callLimit === undefined ? undefined : { callLimit },
     );
   }
@@ -284,17 +326,18 @@ class SipConnector {
   }
 
   public async updatePresentation(
-    stream: MediaStream,
+    mediaStream: MediaStream,
     options: {
       isP2P?: boolean;
       isNeedReinvite?: boolean;
       maxBitrate?: number;
       contentHint?: TContentHint;
+      degradationPreference?: RTCDegradationPreference;
       sendEncodings?: RTCRtpEncodingParameters[];
       onAddedTransceiver?: TOnAddedTransceiver;
     } = {},
   ): Promise<MediaStream | undefined> {
-    const { isP2P, ...rest } = options;
+    const { isP2P, onAddedTransceiver, ...rest } = options;
 
     return this.presentationManager.updatePresentation(
       async () => {
@@ -305,8 +348,14 @@ class SipConnector {
           await this.apiManager.askPermissionToStartPresentation();
         }
       },
-      stream,
-      rest,
+      mediaStream,
+      {
+        ...rest,
+        onAddedTransceiver: async (transceiver, track, stream) => {
+          this.setCodecPreferences(transceiver);
+          await onAddedTransceiver?.(transceiver, track, stream);
+        },
+      },
     );
   }
 
@@ -395,6 +444,13 @@ class SipConnector {
    */
   public async reBalanceVideo() {
     return this.videoSendingBalancerManager.reBalance();
+  }
+
+  private setCodecPreferences(transceiver: RTCRtpTransceiver) {
+    setCodecPreferences(transceiver, {
+      preferredMimeTypesVideoCodecs: this.preferredMimeTypesVideoCodecs,
+      excludeMimeTypesVideoCodecs: this.excludeMimeTypesVideoCodecs,
+    });
   }
 
   private subscribe() {

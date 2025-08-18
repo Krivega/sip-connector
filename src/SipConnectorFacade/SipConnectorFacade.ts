@@ -6,10 +6,10 @@ import { debounce } from 'ts-debounce';
 import log, { debug } from '@/logger';
 import generateSimulcastEncodings from '@/tools/generateSimulcastEncodings';
 import hasPurgatory from '@/tools/hasPurgatory';
-import resolveUpdateTransceiver from '@/tools/resolveUpdateTransceiver';
 
 import type { UA } from '@krivega/jssip';
 import type { EUseLicense } from '@/ApiManager';
+import type { TOnAddedTransceiver } from '@/CallManager/types';
 import type { TContentHint } from '@/PresentationManager';
 import type { SipConnector } from '@/SipConnector';
 import type { TEventMap as TStatsEventMap } from '@/StatsManager';
@@ -161,23 +161,7 @@ class SipConnectorFacade implements IProxyMethods {
 
   public readonly sipConnector: SipConnector;
 
-  private readonly preferredMimeTypesVideoCodecs?: string[];
-
-  private readonly excludeMimeTypesVideoCodecs?: string[];
-
-  public constructor(
-    sipConnector: SipConnector,
-    {
-      preferredMimeTypesVideoCodecs,
-      excludeMimeTypesVideoCodecs,
-    }: {
-      preferredMimeTypesVideoCodecs?: string[];
-      excludeMimeTypesVideoCodecs?: string[];
-    } = {},
-  ) {
-    this.preferredMimeTypesVideoCodecs = preferredMimeTypesVideoCodecs;
-    this.excludeMimeTypesVideoCodecs = excludeMimeTypesVideoCodecs;
-
+  public constructor(sipConnector: SipConnector) {
     this.sipConnector = sipConnector;
 
     return new Proxy(this, {
@@ -281,6 +265,7 @@ class SipConnectorFacade implements IProxyMethods {
     onFailProgressCall?: () => void;
     onFinishProgressCall?: () => void;
     onEndedCall?: () => void;
+    onAddedTransceiver?: TOnAddedTransceiver;
   }): Promise<RTCPeerConnection> => {
     const {
       conference,
@@ -303,6 +288,7 @@ class SipConnectorFacade implements IProxyMethods {
       onFailProgressCall,
       onFinishProgressCall,
       onEndedCall,
+      onAddedTransceiver,
     } = parameters;
     const handleReadyRemoteStreamsDebounced = this.resolveHandleReadyRemoteStreamsDebounced({
       onReadyRemoteStreams: setRemoteStreams,
@@ -312,15 +298,6 @@ class SipConnectorFacade implements IProxyMethods {
         handleReadyRemoteStreamsDebounced().catch(debug);
       },
     });
-    const updateTransceiver = resolveUpdateTransceiver(
-      {
-        degradationPreference,
-      },
-      {
-        preferredMimeTypesVideoCodecs: this.preferredMimeTypesVideoCodecs,
-        excludeMimeTypesVideoCodecs: this.excludeMimeTypesVideoCodecs,
-      },
-    );
 
     log('callToServer', parameters);
 
@@ -336,13 +313,14 @@ class SipConnectorFacade implements IProxyMethods {
         offerToReceiveVideo,
         directionVideo,
         directionAudio,
+        degradationPreference,
+        onAddedTransceiver,
         sendEncodings: generateSimulcastEncodings({
           mediaStream,
           simulcastEncodings,
           sendEncodings,
         }),
         number: conference,
-        onAddedTransceiver: updateTransceiver,
         ontrack: handleReadyRemoteStreams,
       });
     };
@@ -448,6 +426,7 @@ class SipConnectorFacade implements IProxyMethods {
     onEnterPurgatory?: () => void;
     onEnterConference?: (parameters_: { isSuccessProgressCall: boolean }) => void;
     onEndedCall?: () => void;
+    onAddedTransceiver?: TOnAddedTransceiver;
   }): Promise<RTCPeerConnection | undefined> => {
     const {
       mediaStream,
@@ -469,6 +448,7 @@ class SipConnectorFacade implements IProxyMethods {
       onFailProgressCall,
       onFinishProgressCall,
       onEndedCall,
+      onAddedTransceiver,
     } = parameters;
     const handleReadyRemoteStreamsDebounced = this.resolveHandleReadyRemoteStreamsDebounced({
       onReadyRemoteStreams: setRemoteStreams,
@@ -478,15 +458,6 @@ class SipConnectorFacade implements IProxyMethods {
         handleReadyRemoteStreamsDebounced().catch(debug);
       },
     });
-    const updateTransceiver = resolveUpdateTransceiver(
-      {
-        degradationPreference,
-      },
-      {
-        preferredMimeTypesVideoCodecs: this.preferredMimeTypesVideoCodecs,
-        excludeMimeTypesVideoCodecs: this.excludeMimeTypesVideoCodecs,
-      },
-    );
 
     log('answerToIncomingCall', parameters);
 
@@ -500,12 +471,13 @@ class SipConnectorFacade implements IProxyMethods {
         offerToReceiveVideo,
         directionVideo,
         directionAudio,
+        degradationPreference,
+        onAddedTransceiver,
         sendEncodings: generateSimulcastEncodings({
           mediaStream,
           simulcastEncodings,
           sendEncodings,
         }),
-        onAddedTransceiver: updateTransceiver,
         ontrack: handleReadyRemoteStreams,
       });
     };
@@ -592,8 +564,7 @@ class SipConnectorFacade implements IProxyMethods {
     simulcastEncodings,
     degradationPreference,
     sendEncodings,
-    preferredMimeTypesVideoCodecs,
-    excludeMimeTypesVideoCodecs,
+    onAddedTransceiver,
   }: {
     mediaStream: MediaStream;
     isP2P: boolean;
@@ -602,31 +573,21 @@ class SipConnectorFacade implements IProxyMethods {
     simulcastEncodings?: TSimulcastEncoding[];
     degradationPreference?: RTCDegradationPreference;
     sendEncodings?: RTCRtpEncodingParameters[];
-    preferredMimeTypesVideoCodecs?: string[];
-    excludeMimeTypesVideoCodecs?: string[];
+    onAddedTransceiver?: TOnAddedTransceiver;
   }): Promise<MediaStream | undefined> => {
-    const updateTransceiver = resolveUpdateTransceiver(
-      {
-        degradationPreference,
-      },
-      {
-        preferredMimeTypesVideoCodecs,
-        excludeMimeTypesVideoCodecs,
-      },
-    );
-
     log('updatePresentation');
 
     return this.sipConnector.updatePresentation(mediaStream, {
       isP2P,
       maxBitrate,
       contentHint,
+      degradationPreference,
+      onAddedTransceiver,
       sendEncodings: generateSimulcastEncodings({
         mediaStream,
         simulcastEncodings,
         sendEncodings,
       }),
-      onAddedTransceiver: updateTransceiver,
     });
   };
 
@@ -638,9 +599,8 @@ class SipConnectorFacade implements IProxyMethods {
     simulcastEncodings,
     degradationPreference,
     sendEncodings,
-    preferredMimeTypesVideoCodecs,
-    excludeMimeTypesVideoCodecs,
     callLimit,
+    onAddedTransceiver,
   }: {
     mediaStream: MediaStream;
     isP2P: boolean;
@@ -649,20 +609,9 @@ class SipConnectorFacade implements IProxyMethods {
     simulcastEncodings?: TSimulcastEncoding[];
     degradationPreference?: RTCDegradationPreference;
     sendEncodings?: RTCRtpEncodingParameters[];
-    preferredMimeTypesVideoCodecs?: string[];
-    excludeMimeTypesVideoCodecs?: string[];
+    onAddedTransceiver?: TOnAddedTransceiver;
     callLimit?: number;
   }): Promise<MediaStream | undefined> => {
-    const updateTransceiver = resolveUpdateTransceiver(
-      {
-        degradationPreference,
-      },
-      {
-        preferredMimeTypesVideoCodecs,
-        excludeMimeTypesVideoCodecs,
-      },
-    );
-
     log('startPresentation');
 
     return this.sipConnector.startPresentation(mediaStream, {
@@ -670,12 +619,13 @@ class SipConnectorFacade implements IProxyMethods {
       maxBitrate,
       contentHint,
       callLimit,
+      degradationPreference,
+      onAddedTransceiver,
       sendEncodings: generateSimulcastEncodings({
         mediaStream,
         simulcastEncodings,
         sendEncodings,
       }),
-      onAddedTransceiver: updateTransceiver,
     });
   };
 
@@ -729,6 +679,7 @@ class SipConnectorFacade implements IProxyMethods {
       simulcastEncodings,
       degradationPreference,
       sendEncodings,
+      onAddedTransceiver,
     }: {
       deleteExisting?: boolean;
       addMissing?: boolean;
@@ -737,18 +688,9 @@ class SipConnectorFacade implements IProxyMethods {
       simulcastEncodings?: TSimulcastEncoding[];
       degradationPreference?: RTCDegradationPreference;
       sendEncodings?: RTCRtpEncodingParameters[];
+      onAddedTransceiver?: TOnAddedTransceiver;
     },
   ): Promise<void> => {
-    const updateTransceiver = resolveUpdateTransceiver(
-      {
-        degradationPreference,
-      },
-      {
-        preferredMimeTypesVideoCodecs: this.preferredMimeTypesVideoCodecs,
-        excludeMimeTypesVideoCodecs: this.excludeMimeTypesVideoCodecs,
-      },
-    );
-
     log('replaceMediaStream');
 
     return this.sipConnector.replaceMediaStream(mediaStream, {
@@ -756,12 +698,13 @@ class SipConnectorFacade implements IProxyMethods {
       addMissing,
       forceRenegotiation,
       contentHint,
+      degradationPreference,
+      onAddedTransceiver,
       sendEncodings: generateSimulcastEncodings({
         mediaStream,
         simulcastEncodings,
         sendEncodings,
       }),
-      onAddedTransceiver: updateTransceiver,
     });
   };
 

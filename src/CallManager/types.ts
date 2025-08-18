@@ -23,6 +23,7 @@ type TParamsAnswerToIncomingCall = {
   directionVideo?: RTCRtpTransceiverDirection;
   directionAudio?: RTCRtpTransceiverDirection;
   contentHint?: TContentHint;
+  degradationPreference?: RTCDegradationPreference;
   sendEncodings?: RTCRtpEncodingParameters[];
   offerToReceiveAudio?: boolean;
   offerToReceiveVideo?: boolean;
@@ -75,6 +76,7 @@ export interface ICallStrategy {
       addMissing?: boolean;
       forceRenegotiation?: boolean;
       contentHint?: TContentHint;
+      degradationPreference?: RTCDegradationPreference;
       sendEncodings?: RTCRtpEncodingParameters[];
       onAddedTransceiver?: TOnAddedTransceiver;
     },

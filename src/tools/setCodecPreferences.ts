@@ -1,7 +1,4 @@
 import log from '@/logger';
-import { setParametersToSender } from './setParametersToSender';
-
-import type { TRtpSendParameters } from '@/types';
 
 const mergeIntersectionCodecs = (codecs1: RTCRtpCodec[], codecs2: RTCRtpCodec[]): RTCRtpCodec[] => {
   const uniqueArray = codecs1.filter((codec) => {
@@ -62,48 +59,23 @@ const setCodecPreferences = (
     excludeMimeTypesVideoCodecs,
   }: { preferredMimeTypesVideoCodecs?: string[]; excludeMimeTypesVideoCodecs?: string[] },
 ) => {
-  if (
-    typeof transceiver.setCodecPreferences === 'function' &&
-    transceiver.sender.track?.kind === 'video' &&
-    ((preferredMimeTypesVideoCodecs !== undefined && preferredMimeTypesVideoCodecs.length > 0) ||
-      (excludeMimeTypesVideoCodecs !== undefined && excludeMimeTypesVideoCodecs.length > 0))
-  ) {
-    const capabilityCodecs = getCapabilityCodecs('video');
+  try {
+    if (
+      typeof transceiver.setCodecPreferences === 'function' &&
+      transceiver.sender.track?.kind === 'video' &&
+      ((preferredMimeTypesVideoCodecs !== undefined && preferredMimeTypesVideoCodecs.length > 0) ||
+        (excludeMimeTypesVideoCodecs !== undefined && excludeMimeTypesVideoCodecs.length > 0))
+    ) {
+      const capabilityCodecs = getCapabilityCodecs('video');
 
-    const filteredCodecs = excludeCodecs(capabilityCodecs, excludeMimeTypesVideoCodecs);
-    const sortedCodecs = preferCodecs(filteredCodecs, preferredMimeTypesVideoCodecs);
+      const filteredCodecs = excludeCodecs(capabilityCodecs, excludeMimeTypesVideoCodecs);
+      const sortedCodecs = preferCodecs(filteredCodecs, preferredMimeTypesVideoCodecs);
 
-    transceiver.setCodecPreferences(sortedCodecs);
+      transceiver.setCodecPreferences(sortedCodecs);
+    }
+  } catch (error) {
+    log('setCodecPreferences error', error);
   }
 };
 
-const resolveUpdateTransceiver = (
-  parametersTarget: TRtpSendParameters,
-  {
-    preferredMimeTypesVideoCodecs,
-    excludeMimeTypesVideoCodecs,
-  }: { preferredMimeTypesVideoCodecs?: string[]; excludeMimeTypesVideoCodecs?: string[] },
-) => {
-  return async (transceiver: RTCRtpTransceiver) => {
-    try {
-      setCodecPreferences(transceiver, {
-        preferredMimeTypesVideoCodecs,
-        excludeMimeTypesVideoCodecs,
-      });
-
-      const values = Object.values(parametersTarget).filter((value) => {
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        return value !== undefined && value !== null;
-      });
-
-      if (values.length > 0) {
-        log('updateTransceiver setParametersToSender', parametersTarget);
-        await setParametersToSender(transceiver.sender, parametersTarget);
-      }
-    } catch (error) {
-      log('updateTransceiver error', error);
-    }
-  };
-};
-
-export default resolveUpdateTransceiver;
+export default setCodecPreferences;
