@@ -5,7 +5,7 @@ import { SenderBalancer } from './SenderBalancer';
 import { SenderFinder } from './SenderFinder';
 import { VideoSendingEventHandler } from './VideoSendingEventHandler';
 
-import type { SipConnector } from '@/SipConnector';
+import type { ApiManager } from '@/ApiManager';
 import type { TResultSetParametersToSender } from '@/tools';
 import type { IBalancerOptions, IMainCamHeaders } from './types';
 
@@ -20,14 +20,17 @@ class VideoSendingBalancer {
 
   private readonly parametersSetterWithQueue: ParametersSetterWithQueue;
 
+  private readonly getConnection: () => RTCPeerConnection | undefined;
+
   private serverHeaders?: IMainCamHeaders;
 
   public constructor(
-    sipConnector: SipConnector,
+    apiManager: ApiManager,
+    getConnection: () => RTCPeerConnection | undefined,
     { ignoreForCodec, onSetParameters }: IBalancerOptions = {},
   ) {
-    this.eventHandler = new VideoSendingEventHandler(sipConnector);
-
+    this.eventHandler = new VideoSendingEventHandler(apiManager);
+    this.getConnection = getConnection;
     this.parametersSetterWithQueue = new ParametersSetterWithQueue(onSetParameters);
 
     this.senderBalancer = new SenderBalancer(
@@ -78,7 +81,7 @@ class VideoSendingBalancer {
    * @returns Promise с результатом балансировки
    */
   private async balanceByTrack(): Promise<TResultSetParametersToSender> {
-    const connection = this.eventHandler.getConnection();
+    const connection = this.getConnection();
 
     if (!connection) {
       throw new Error('connection is not exist');
@@ -99,10 +102,11 @@ class VideoSendingBalancer {
 
 // Фабричная функция для обратной совместимости
 const resolveVideoSendingBalancer = (
-  sipConnector: SipConnector,
+  apiManager: ApiManager,
+  getConnection: () => RTCPeerConnection | undefined,
   options: IBalancerOptions = {},
 ) => {
-  return new VideoSendingBalancer(sipConnector, options);
+  return new VideoSendingBalancer(apiManager, getConnection, options);
 };
 
 export default VideoSendingBalancer;

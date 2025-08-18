@@ -52,7 +52,9 @@ describe('resolveVideoSendingBalancer', () => {
       video: { deviceId: { exact: 'videoDeviceId' }, width: { exact: fhdWidth } },
     });
 
-    videoSendingBalancer = resolveVideoSendingBalancer(sipConnector);
+    videoSendingBalancer = resolveVideoSendingBalancer(sipConnector.apiManager, () => {
+      return sipConnector.connection;
+    });
 
     videoSendingBalancer.subscribe();
   });
@@ -232,7 +234,9 @@ describe('resolveVideoSendingBalancer', () => {
         constraints: { width: 1024, height: 720 },
       }) as MediaStreamVideoTrack;
 
-      balancer = resolveVideoSendingBalancer(sipConnector);
+      balancer = resolveVideoSendingBalancer(sipConnector.apiManager, () => {
+        return sipConnector.connection;
+      });
     });
 
     it('by videoTrack 1024 after MAX_MAIN_CAM_RESOLUTION', async () => {

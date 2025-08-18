@@ -4,6 +4,7 @@ import { EVENT_NAMES as CONNECTION_MANAGER_EVENT_NAMES } from '@/ConnectionManag
 import { EVENT_NAMES as INCOMING_CALL_MANAGER_EVENT_NAMES } from '@/IncomingCallManager/eventNames';
 import { EVENT_NAMES as PRESENTATION_MANAGER_EVENT_NAMES } from '@/PresentationManager/eventNames';
 import { EVENT_NAMES as STATS_MANAGER_EVENT_NAMES } from '@/StatsManager/eventNames';
+import { EVENT_NAMES as VIDEO_BALANCER_MANAGER_EVENT_NAMES } from '@/VideoSendingBalancerManager/eventNames';
 
 import type { Events } from 'events-constructor';
 
@@ -26,6 +27,9 @@ const PRESENTATION_EVENTS = PRESENTATION_MANAGER_EVENT_NAMES.map((eventName) => 
 const STATS_EVENTS = STATS_MANAGER_EVENT_NAMES.map((eventName) => {
   return `stats:${eventName}` as const;
 });
+const VIDEO_BALANCER_EVENTS = VIDEO_BALANCER_MANAGER_EVENT_NAMES.map((eventName) => {
+  return `video-balancer:${eventName}` as const;
+});
 
 export const EVENT_NAMES = [
   ...CONNECTION_EVENTS,
@@ -34,6 +38,7 @@ export const EVENT_NAMES = [
   ...INCOMING_CALL_EVENTS,
   ...PRESENTATION_EVENTS,
   ...STATS_EVENTS,
+  ...VIDEO_BALANCER_EVENTS,
 ] as const;
 
 export type TEvent = (typeof EVENT_NAMES)[number];

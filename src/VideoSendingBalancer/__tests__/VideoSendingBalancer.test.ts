@@ -8,6 +8,7 @@ import { EEventsMainCAM } from '@/ApiManager';
 import { doMockSipConnector } from '@/doMock';
 import VideoSendingBalancer, { resolveVideoSendingBalancer } from '../VideoSendingBalancer';
 
+import type { ApiManager } from '@/ApiManager';
 import type { IBalancerOptions, IMainCamHeaders } from '../types';
 
 // Мокаем только логгер, как запрошено
@@ -22,6 +23,7 @@ jest.mock('../../logger', () => {
 describe('VideoSendingBalancer', () => {
   let balancer: VideoSendingBalancer;
   let sipConnector: ReturnType<typeof doMockSipConnector>;
+  let apiManager: ApiManager;
   let mockConnection: RTCPeerConnection;
   let mockVideoTrack: MediaStreamVideoTrack;
   let mockSender: RTCRtpSender;
@@ -58,8 +60,10 @@ describe('VideoSendingBalancer', () => {
     });
 
     // Добавляем методы для имитации событий (реальный SipConnector уже их имеет)
-
-    balancer = new VideoSendingBalancer(sipConnector);
+    apiManager = sipConnector.apiManager;
+    balancer = new VideoSendingBalancer(apiManager, () => {
+      return sipConnector.connection;
+    });
   });
 
   afterEach(() => {
@@ -78,7 +82,13 @@ describe('VideoSendingBalancer', () => {
         onSetParameters: jest.fn(),
       };
 
-      const balancerWithOptions = new VideoSendingBalancer(sipConnector, options);
+      const balancerWithOptions = new VideoSendingBalancer(
+        apiManager,
+        () => {
+          return sipConnector.connection;
+        },
+        options,
+      );
 
       expect(balancerWithOptions).toBeInstanceOf(VideoSendingBalancer);
     });
@@ -86,19 +96,19 @@ describe('VideoSendingBalancer', () => {
 
   describe('subscribe', () => {
     it('должен подписаться на события управления главной камерой', () => {
-      const spyOn = jest.spyOn(sipConnector, 'on');
+      const spyOn = jest.spyOn(apiManager, 'on');
 
       balancer.subscribe();
 
-      expect(spyOn).toHaveBeenCalledWith('api:main-cam-control', expect.any(Function));
+      expect(spyOn).toHaveBeenCalledWith('main-cam-control', expect.any(Function));
     });
 
     it('должен обрабатывать событие main-cam-control при подписке', async () => {
-      const spyOn = jest.spyOn(sipConnector, 'on');
+      const spyOn = jest.spyOn(apiManager, 'on');
       let eventHandler: ((data: IMainCamHeaders) => void) | undefined;
 
       spyOn.mockImplementation((eventName, handler) => {
-        if (eventName === 'api:main-cam-control') {
+        if (eventName === 'main-cam-control') {
           eventHandler = handler as (data: IMainCamHeaders) => void;
         }
 
@@ -134,12 +144,12 @@ describe('VideoSendingBalancer', () => {
 
   describe('unsubscribe', () => {
     it('должен отписаться от событий', () => {
-      const spyOff = jest.spyOn(sipConnector, 'off');
+      const spyOff = jest.spyOn(apiManager, 'off');
 
       balancer.subscribe();
       balancer.unsubscribe();
 
-      expect(spyOff).toHaveBeenCalledWith('api:main-cam-control', expect.any(Function));
+      expect(spyOff).toHaveBeenCalledWith('main-cam-control', expect.any(Function));
     });
 
     it('должен сбросить состояние при отписке', () => {
@@ -213,11 +223,11 @@ describe('VideoSendingBalancer', () => {
 
   describe('handleMainCamControl (через события)', () => {
     it('должен обновить заголовки сервера при получении события', async () => {
-      const spyOn = jest.spyOn(sipConnector, 'on');
+      const spyOn = jest.spyOn(apiManager, 'on');
       let eventHandler: ((data: IMainCamHeaders) => void) | undefined;
 
       spyOn.mockImplementation((eventName, handler) => {
-        if (eventName === 'api:main-cam-control') {
+        if (eventName === 'main-cam-control') {
           eventHandler = handler as (data: IMainCamHeaders) => void;
         }
 
@@ -247,11 +257,11 @@ describe('VideoSendingBalancer', () => {
     });
 
     it('должен вызвать балансировку при получении разных типов событий главной камеры', async () => {
-      const spyOn = jest.spyOn(sipConnector, 'on');
+      const spyOn = jest.spyOn(apiManager, 'on');
       let eventHandler: ((data: IMainCamHeaders) => void) | undefined;
 
       spyOn.mockImplementation((eventName, handler) => {
-        if (eventName === 'api:main-cam-control') {
+        if (eventName === 'main-cam-control') {
           eventHandler = handler as (data: IMainCamHeaders) => void;
         }
 
@@ -303,12 +313,12 @@ describe('VideoSendingBalancer', () => {
 
   describe('интеграционные тесты', () => {
     it('должен корректно работать полный цикл подписки, события и отписки', async () => {
-      const spyOn = jest.spyOn(sipConnector, 'on');
-      const spyOff = jest.spyOn(sipConnector, 'off');
+      const spyOn = jest.spyOn(apiManager, 'on');
+      const spyOff = jest.spyOn(apiManager, 'off');
       let eventHandler: ((data: IMainCamHeaders) => void) | undefined;
 
       spyOn.mockImplementation((eventName, handler) => {
-        if (eventName === 'api:main-cam-control') {
+        if (eventName === 'main-cam-control') {
           eventHandler = handler as (data: IMainCamHeaders) => void;
         }
 
@@ -319,7 +329,7 @@ describe('VideoSendingBalancer', () => {
 
       // Подписка
       balancer.subscribe();
-      expect(spyOn).toHaveBeenCalledWith('api:main-cam-control', expect.any(Function));
+      expect(spyOn).toHaveBeenCalledWith('main-cam-control', expect.any(Function));
 
       // Событие
       const testHeaders: IMainCamHeaders = {
@@ -344,7 +354,7 @@ describe('VideoSendingBalancer', () => {
 
       // Отписка
       balancer.unsubscribe();
-      expect(spyOff).toHaveBeenCalledWith('api:main-cam-control', expect.any(Function));
+      expect(spyOff).toHaveBeenCalledWith('main-cam-control', expect.any(Function));
       expect(
         (balancer as unknown as { serverHeaders?: IMainCamHeaders }).serverHeaders,
       ).toBeUndefined();
@@ -357,7 +367,13 @@ describe('VideoSendingBalancer', () => {
         onSetParameters,
       };
 
-      const balancerWithOptions = new VideoSendingBalancer(sipConnector, options);
+      const balancerWithOptions = new VideoSendingBalancer(
+        apiManager,
+        () => {
+          return sipConnector.connection;
+        },
+        options,
+      );
 
       try {
         const result = await balancerWithOptions.reBalance();
@@ -369,11 +385,11 @@ describe('VideoSendingBalancer', () => {
     });
 
     it('должен обрабатывать события без заголовков разрешения', async () => {
-      const spyOn = jest.spyOn(sipConnector, 'on');
+      const spyOn = jest.spyOn(apiManager, 'on');
       let eventHandler: ((data: IMainCamHeaders) => void) | undefined;
 
       spyOn.mockImplementation((eventName, handler) => {
-        if (eventName === 'api:main-cam-control') {
+        if (eventName === 'main-cam-control') {
           eventHandler = handler as (data: IMainCamHeaders) => void;
         }
 
@@ -420,11 +436,11 @@ describe('VideoSendingBalancer', () => {
     });
 
     it('должен обрабатывать ошибки в обработчике событий', async () => {
-      const spyOn = jest.spyOn(sipConnector, 'on');
+      const spyOn = jest.spyOn(apiManager, 'on');
       let eventHandler: ((data: IMainCamHeaders) => void) | undefined;
 
       spyOn.mockImplementation((eventName, handler) => {
-        if (eventName === 'api:main-cam-control') {
+        if (eventName === 'main-cam-control') {
           eventHandler = handler as (data: IMainCamHeaders) => void;
         }
 
@@ -462,13 +478,17 @@ describe('VideoSendingBalancer', () => {
 
 describe('resolveVideoSendingBalancer', () => {
   let sipConnector: ReturnType<typeof doMockSipConnector>;
+  let apiManager: ApiManager;
 
   beforeEach(() => {
     sipConnector = doMockSipConnector();
+    apiManager = sipConnector.apiManager;
   });
 
   it('должен создать экземпляр VideoSendingBalancer', () => {
-    const balancer = resolveVideoSendingBalancer(sipConnector);
+    const balancer = resolveVideoSendingBalancer(apiManager, () => {
+      return sipConnector.connection;
+    });
 
     expect(balancer).toBeInstanceOf(VideoSendingBalancer);
 
@@ -481,7 +501,13 @@ describe('resolveVideoSendingBalancer', () => {
       onSetParameters: jest.fn(),
     };
 
-    const balancer = resolveVideoSendingBalancer(sipConnector, options);
+    const balancer = resolveVideoSendingBalancer(
+      apiManager,
+      () => {
+        return sipConnector.connection;
+      },
+      options,
+    );
 
     expect(balancer).toBeInstanceOf(VideoSendingBalancer);
 
@@ -489,7 +515,13 @@ describe('resolveVideoSendingBalancer', () => {
   });
 
   it('должен создать экземпляр без опций', () => {
-    const balancer = resolveVideoSendingBalancer(sipConnector, {});
+    const balancer = resolveVideoSendingBalancer(
+      apiManager,
+      () => {
+        return sipConnector.connection;
+      },
+      {},
+    );
 
     expect(balancer).toBeInstanceOf(VideoSendingBalancer);
 

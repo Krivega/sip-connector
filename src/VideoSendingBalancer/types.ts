@@ -46,7 +46,6 @@ export interface IParametersSetter {
 export interface IEventHandler {
   subscribe: (handler: (headers: IMainCamHeaders) => void) => void;
   unsubscribe: () => void;
-  getConnection: () => RTCPeerConnection | undefined;
 }
 
 // Интерфейс для очереди задач

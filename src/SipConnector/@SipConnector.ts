@@ -6,11 +6,13 @@ import { ConnectionManager } from '@/ConnectionManager';
 import { IncomingCallManager } from '@/IncomingCallManager';
 import { PresentationManager } from '@/PresentationManager';
 import { StatsManager } from '@/StatsManager';
+import { VideoSendingBalancerManager } from '@/VideoSendingBalancerManager';
 import { EVENT_NAMES } from './eventNames';
 
 import type { TGetServerUrl } from '@/CallManager';
 import type { TContentHint, TOnAddedTransceiver } from '@/PresentationManager/types';
 import type { TJsSIP } from '@/types';
+import type { IBalancerOptions } from '@/VideoSendingBalancer/types';
 import type { TEvent } from './eventNames';
 
 class SipConnector {
@@ -28,7 +30,9 @@ class SipConnector {
 
   public readonly statsManager: StatsManager;
 
-  public constructor({ JsSIP }: { JsSIP: TJsSIP }) {
+  public readonly videoSendingBalancerManager: VideoSendingBalancerManager;
+
+  public constructor({ JsSIP }: { JsSIP: TJsSIP }, videoBalancerOptions: IBalancerOptions = {}) {
     this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
     this.connectionManager = new ConnectionManager({ JsSIP });
     this.callManager = new CallManager();
@@ -44,6 +48,11 @@ class SipConnector {
       callManager: this.callManager,
       apiManager: this.apiManager,
     });
+    this.videoSendingBalancerManager = new VideoSendingBalancerManager(
+      this.callManager,
+      this.apiManager,
+      videoBalancerOptions,
+    );
     this.subscribe();
   }
 
@@ -97,6 +106,20 @@ class SipConnector {
 
   public get isAvailableIncomingCall(): IncomingCallManager['isAvailableIncomingCall'] {
     return this.incomingCallManager.isAvailableIncomingCall;
+  }
+
+  /**
+   * Проверить, активна ли балансировка видео
+   */
+  public get isVideoBalancingActive(): boolean {
+    return this.videoSendingBalancerManager.isBalancingActive;
+  }
+
+  /**
+   * Проверить, запланирован ли запуск балансировки видео
+   */
+  public get isVideoBalancingScheduled(): boolean {
+    return this.videoSendingBalancerManager.isBalancingScheduled;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
@@ -353,6 +376,27 @@ class SipConnector {
     return this.apiManager.askPermissionToEnableCam(...args);
   }
 
+  /**
+   * Принудительно запустить балансировку видео
+   */
+  public startVideoBalancing(): void {
+    this.videoSendingBalancerManager.startBalancing();
+  }
+
+  /**
+   * Остановить балансировку видео
+   */
+  public stopVideoBalancing(): void {
+    this.videoSendingBalancerManager.stopBalancing();
+  }
+
+  /**
+   * Выполнить ручную балансировку видео
+   */
+  public async reBalanceVideo() {
+    return this.videoSendingBalancerManager.reBalance();
+  }
+
   private subscribe() {
     this.connectionManager.events.eachTriggers((_trigger, eventName) => {
       this.connectionManager.on(eventName, (event) => {
@@ -387,6 +431,12 @@ class SipConnector {
     this.statsManager.events.eachTriggers((_trigger, eventName) => {
       this.statsManager.on(eventName, (event) => {
         this.events.trigger(`stats:${eventName}`, event);
+      });
+    });
+
+    this.videoSendingBalancerManager.events.eachTriggers((_trigger, eventName) => {
+      this.videoSendingBalancerManager.on(eventName, (event) => {
+        this.events.trigger(`video-balancer:${eventName}` as TEvent, event);
       });
     });
   }

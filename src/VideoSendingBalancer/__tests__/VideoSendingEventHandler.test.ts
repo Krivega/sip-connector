@@ -1,23 +1,20 @@
 /// <reference types="jest" />
 import { VideoSendingEventHandler } from '../VideoSendingEventHandler';
 
-import type { SipConnector } from '@/SipConnector';
+import type { ApiManager } from '@/ApiManager';
 import type { IMainCamHeaders } from '../types';
 
 describe('VideoSendingEventHandler', () => {
   let eventHandler: VideoSendingEventHandler;
-  let mockSipConnector: jest.Mocked<SipConnector>;
-  let mockConnection: RTCPeerConnection;
+  let apiManager: jest.Mocked<ApiManager>;
 
   beforeEach(() => {
-    mockConnection = {} as RTCPeerConnection;
-    mockSipConnector = {
+    apiManager = {
       on: jest.fn(),
       off: jest.fn(),
-      connection: mockConnection,
-    } as unknown as jest.Mocked<SipConnector>;
+    } as unknown as jest.Mocked<ApiManager>;
 
-    eventHandler = new VideoSendingEventHandler(mockSipConnector);
+    eventHandler = new VideoSendingEventHandler(apiManager);
   });
 
   describe('constructor', () => {
@@ -32,7 +29,7 @@ describe('VideoSendingEventHandler', () => {
 
       eventHandler.subscribe(handler);
 
-      expect(mockSipConnector.on).toHaveBeenCalledWith('api:main-cam-control', handler);
+      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', handler);
     });
 
     it('должен сохранить текущий обработчик', () => {
@@ -41,7 +38,7 @@ describe('VideoSendingEventHandler', () => {
       eventHandler.subscribe(handler);
 
       // Проверяем, что обработчик сохранился для последующей отписки
-      expect(mockSipConnector.on).toHaveBeenCalledWith('api:main-cam-control', handler);
+      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', handler);
     });
 
     it('должен заменить предыдущий обработчик при повторной подписке', () => {
@@ -51,9 +48,9 @@ describe('VideoSendingEventHandler', () => {
       eventHandler.subscribe(handler1);
       eventHandler.subscribe(handler2);
 
-      expect(mockSipConnector.on).toHaveBeenCalledTimes(2);
-      expect(mockSipConnector.on).toHaveBeenNthCalledWith(1, 'api:main-cam-control', handler1);
-      expect(mockSipConnector.on).toHaveBeenNthCalledWith(2, 'api:main-cam-control', handler2);
+      expect(apiManager.on).toHaveBeenCalledTimes(2);
+      expect(apiManager.on).toHaveBeenNthCalledWith(1, 'main-cam-control', handler1);
+      expect(apiManager.on).toHaveBeenNthCalledWith(2, 'main-cam-control', handler2);
     });
   });
 
@@ -64,7 +61,7 @@ describe('VideoSendingEventHandler', () => {
       eventHandler.subscribe(handler);
       eventHandler.unsubscribe();
 
-      expect(mockSipConnector.off).toHaveBeenCalledWith('api:main-cam-control', handler);
+      expect(apiManager.off).toHaveBeenCalledWith('main-cam-control', handler);
     });
 
     it('должен очистить текущий обработчик после отписки', () => {
@@ -76,13 +73,13 @@ describe('VideoSendingEventHandler', () => {
       // Повторная отписка не должна вызывать off
       eventHandler.unsubscribe();
 
-      expect(mockSipConnector.off).toHaveBeenCalledTimes(1);
+      expect(apiManager.off).toHaveBeenCalledTimes(1);
     });
 
     it('должен ничего не делать если нет текущего обработчика', () => {
       eventHandler.unsubscribe();
 
-      expect(mockSipConnector.off).not.toHaveBeenCalled();
+      expect(apiManager.off).not.toHaveBeenCalled();
     });
 
     it('должен отписаться от правильного обработчика', () => {
@@ -93,24 +90,7 @@ describe('VideoSendingEventHandler', () => {
       eventHandler.subscribe(handler2);
       eventHandler.unsubscribe();
 
-      expect(mockSipConnector.off).toHaveBeenCalledWith('api:main-cam-control', handler2);
-    });
-  });
-
-  describe('getConnection', () => {
-    it('должен вернуть соединение из SipConnector', () => {
-      const connection = eventHandler.getConnection();
-
-      expect(connection).toBe(mockConnection);
-    });
-
-    it('должен вернуть undefined если соединения нет', () => {
-      // @ts-expect-error
-      mockSipConnector.connection = undefined;
-
-      const connection = eventHandler.getConnection();
-
-      expect(connection).toBeUndefined();
+      expect(apiManager.off).toHaveBeenCalledWith('main-cam-control', handler2);
     });
   });
 
@@ -120,15 +100,15 @@ describe('VideoSendingEventHandler', () => {
 
       // Подписка
       eventHandler.subscribe(handler);
-      expect(mockSipConnector.on).toHaveBeenCalledWith('api:main-cam-control', handler);
+      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', handler);
 
       // Отписка
       eventHandler.unsubscribe();
-      expect(mockSipConnector.off).toHaveBeenCalledWith('api:main-cam-control', handler);
+      expect(apiManager.off).toHaveBeenCalledWith('main-cam-control', handler);
 
       // Повторная отписка не должна вызывать off
       eventHandler.unsubscribe();
-      expect(mockSipConnector.off).toHaveBeenCalledTimes(1);
+      expect(apiManager.off).toHaveBeenCalledTimes(1);
     });
 
     it('должен корректно обрабатывать смену обработчиков', () => {
@@ -137,15 +117,15 @@ describe('VideoSendingEventHandler', () => {
 
       // Первая подписка
       eventHandler.subscribe(handler1);
-      expect(mockSipConnector.on).toHaveBeenCalledWith('api:main-cam-control', handler1);
+      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', handler1);
 
       // Смена обработчика
       eventHandler.subscribe(handler2);
-      expect(mockSipConnector.on).toHaveBeenCalledWith('api:main-cam-control', handler2);
+      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', handler2);
 
       // Отписка от второго обработчика
       eventHandler.unsubscribe();
-      expect(mockSipConnector.off).toHaveBeenCalledWith('api:main-cam-control', handler2);
+      expect(apiManager.off).toHaveBeenCalledWith('main-cam-control', handler2);
     });
 
     it('должен корректно обрабатывать множественные подписки и отписки', () => {
@@ -155,23 +135,23 @@ describe('VideoSendingEventHandler', () => {
 
       // Подписка 1
       eventHandler.subscribe(handler1);
-      expect(mockSipConnector.on).toHaveBeenCalledWith('api:main-cam-control', handler1);
+      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', handler1);
 
       // Подписка 2
       eventHandler.subscribe(handler2);
-      expect(mockSipConnector.on).toHaveBeenCalledWith('api:main-cam-control', handler2);
+      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', handler2);
 
       // Отписка
       eventHandler.unsubscribe();
-      expect(mockSipConnector.off).toHaveBeenCalledWith('api:main-cam-control', handler2);
+      expect(apiManager.off).toHaveBeenCalledWith('main-cam-control', handler2);
 
       // Подписка 3
       eventHandler.subscribe(handler3);
-      expect(mockSipConnector.on).toHaveBeenCalledWith('api:main-cam-control', handler3);
+      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', handler3);
 
       // Финальная отписка
       eventHandler.unsubscribe();
-      expect(mockSipConnector.off).toHaveBeenCalledWith('api:main-cam-control', handler3);
+      expect(apiManager.off).toHaveBeenCalledWith('main-cam-control', handler3);
     });
   });
 
@@ -181,7 +161,7 @@ describe('VideoSendingEventHandler', () => {
 
       eventHandler.subscribe(handler);
 
-      expect(mockSipConnector.on).toHaveBeenCalledWith('api:main-cam-control', handler);
+      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', handler);
     });
 
     it('должен корректно обрабатывать null handler', () => {
@@ -190,7 +170,7 @@ describe('VideoSendingEventHandler', () => {
 
       eventHandler.subscribe(handler);
 
-      expect(mockSipConnector.on).toHaveBeenCalledWith('api:main-cam-control', handler);
+      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', handler);
     });
 
     it('должен корректно обрабатывать пустую функцию handler', () => {
@@ -198,7 +178,7 @@ describe('VideoSendingEventHandler', () => {
 
       eventHandler.subscribe(handler);
 
-      expect(mockSipConnector.on).toHaveBeenCalledWith('api:main-cam-control', handler);
+      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', handler);
     });
   });
 });
