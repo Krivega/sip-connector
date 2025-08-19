@@ -8,8 +8,6 @@ import JsSIP from '@/__fixtures__/jssip.mock';
 import { doMockSipConnector } from '@/doMock';
 import SipConnector from '../@SipConnector';
 
-import type { RTCRtpTransceiver } from 'webrtc-mock';
-
 const setCodecPreferencesMock = jest.requireMock('@/tools/setCodecPreferences') as jest.Mock;
 
 describe('SipConnector.setCodecPreferences', () => {

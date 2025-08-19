@@ -3548,11 +3548,6 @@ eventemitter3@^5.0.1:
   resolved "https://registry.yarnpkg.com/eventemitter3/-/eventemitter3-5.0.1.tgz#53f5ffd0a492ac800721bb42c66b841de96423c4"
   integrity sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA==
 
-events-constructor@^1.3.0:
-  version "1.5.0"
-  resolved "https://registry.yarnpkg.com/events-constructor/-/events-constructor-1.5.0.tgz#6d0e236c3c87a1698581a362034a490249e3fe6d"
-  integrity sha512-aM89B9uHF+/bUq4Fc9QvhZOlCo0fpumVEUg+nHdHF0E3UiCGo64ZG/zzf9JKbtVTyQ5c93TmTmHxxuWG6mkOXw==
-
 events-constructor@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/events-constructor/-/events-constructor-2.0.0.tgz#565926c9b8b0d810e2589f58a8b7a6dbdb4cb909"
@@ -3650,10 +3645,15 @@ fb-watchman@^2.0.2:
   dependencies:
     bser "2.1.1"
 
-fdir@^6.4.4, fdir@^6.4.6:
+fdir@^6.4.4:
   version "6.4.6"
   resolved "https://registry.yarnpkg.com/fdir/-/fdir-6.4.6.tgz#2b268c0232697063111bbf3f64810a2a741ba281"
   integrity sha512-hiFoqpyZcfNm1yc4u8oWCf9A2c4D3QjCrks3zmoVKVxpQRzmPNar1hUJcBG2RQHvEVGDN+Jm81ZheVLAQMK6+w==
+
+fdir@^6.5.0:
+  version "6.5.0"
+  resolved "https://registry.yarnpkg.com/fdir/-/fdir-6.5.0.tgz#ed2ab967a331ade62f18d077dae192684d50d350"
+  integrity sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==
 
 figures@^3.1.0:
   version "3.2.0"
@@ -7206,13 +7206,13 @@ vite-tsconfig-paths@^5.1.4:
     globrex "^0.1.2"
     tsconfck "^3.0.3"
 
-vite@^7.1.2:
-  version "7.1.2"
-  resolved "https://registry.yarnpkg.com/vite/-/vite-7.1.2.tgz#62ffd8a915977ff387fbe7a731af1a650ec5006e"
-  integrity sha512-J0SQBPlQiEXAF7tajiH+rUooJPo0l8KQgyg4/aMunNtrOa7bwuZJsJbDWzeljqQpgftxuq5yNJxQ91O9ts29UQ==
+vite@^7.1.3:
+  version "7.1.3"
+  resolved "https://registry.yarnpkg.com/vite/-/vite-7.1.3.tgz#8d70cb02fd6346b4bf1329a6760800538ef0faea"
+  integrity sha512-OOUi5zjkDxYrKhTV3V7iKsoS37VUM7v40+HuwEmcrsf11Cdx9y3DIr2Px6liIcZFwt3XSRpQvFpL3WVy7ApkGw==
   dependencies:
     esbuild "^0.25.0"
-    fdir "^6.4.6"
+    fdir "^6.5.0"
     picomatch "^4.0.3"
     postcss "^8.5.6"
     rollup "^4.43.0"
@@ -7249,13 +7249,13 @@ webidl-conversions@^7.0.0:
   resolved "https://registry.yarnpkg.com/webidl-conversions/-/webidl-conversions-7.0.0.tgz#256b4e1882be7debbf01d05f0aa2039778ea080a"
   integrity sha512-VwddBukDzu71offAQR975unBIGqfKZpM+8ZX6ySk8nYhVoo5CYaZyzt3YBvYtRtO+aoGlqxPg/B87NGVZ/fu6g==
 
-webrtc-mock@^1.1.7:
-  version "1.1.7"
-  resolved "https://registry.yarnpkg.com/webrtc-mock/-/webrtc-mock-1.1.7.tgz#a5089ad5904245e24b4a3b47ccc4dabaa3c7903d"
-  integrity sha512-wxSGcYNgamq9fLAhE4XKneO9PpwlNhHl8+Yq4bE4Hcyww2jSsGfxRHDootuNz3jtrZYehDT9jvQZn95ncWZB/A==
+webrtc-mock@^1.2.1:
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/webrtc-mock/-/webrtc-mock-1.2.1.tgz#302bc96e2ede54f65fe0b4bb367da4aa9ec4ca02"
+  integrity sha512-IRWMYVThqphixau8V8cp4OgoeJ+/8xwlZWmRM40iY+kSugtLketjOT/B55i0wBjvRpPotceTHt/HxSCmpMir8A==
   dependencies:
     "@types/dom-mediacapture-transform" "^0.1.11"
-    events-constructor "^1.3.0"
+    events-constructor "^2.0.0"
 
 whatwg-encoding@^3.1.1:
   version "3.1.1"

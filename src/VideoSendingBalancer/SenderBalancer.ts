@@ -66,18 +66,18 @@ export class SenderBalancer {
   public async balance(
     connection: RTCPeerConnection,
     headers?: IMainCamHeaders,
-  ): Promise<TResultSetParametersToSender> {
+  ): Promise<TResultSetParametersToSender & { sender: RTCRtpSender | undefined }> {
     const senders = connection.getSenders();
     const sender = this.senderFinder.findVideoSender(senders);
 
     if (!sender?.track) {
-      return this.resultNoChanged;
+      return { ...this.resultNoChanged, sender };
     }
 
     const codec = await this.codecProvider.getCodecFromSender(sender);
 
     if (hasIncludesString(codec, this.ignoreForCodec)) {
-      return this.resultNoChanged;
+      return { ...this.resultNoChanged, sender };
     }
 
     const { mainCam, resolutionMainCam } = headers ?? {};
@@ -89,7 +89,9 @@ export class SenderBalancer {
         codec,
         videoTrack: sender.track as MediaStreamVideoTrack,
       },
-    );
+    ).then((result) => {
+      return { ...result, sender };
+    });
   }
 
   /**

@@ -3,6 +3,7 @@ import { createMediaStreamMock, createVideoMediaStreamTrackMock } from 'webrtc-m
 
 import { dataForConnectionWithAuthorization } from '@/__fixtures__';
 import JsSIP from '@/__fixtures__/jssip.mock';
+import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
 import { EContentTypeReceived, EEventsMainCAM, EHeader } from '@/ApiManager';
 import { doMockSipConnector } from '@/doMock';
 import findVideoSender from '@/utils/findVideoSender';
@@ -206,33 +207,38 @@ describe('resolveVideoSendingBalancer', () => {
     let balancer: ReturnType<typeof resolveVideoSendingBalancer>;
 
     beforeEach(() => {
-      sender = {
-        getStats: jest.fn().mockResolvedValue(
-          new Map([
-            [
-              'codec-1',
-              {
-                id: 'codec-1',
-                timestamp: 0,
-                type: 'codec',
-                mimeType: 'video/H264',
-              } as RTCStats,
-            ],
-          ]),
-        ),
-        getParameters: jest.fn().mockReturnValue({
-          transactionId: '1',
-          encodings: [{ maxBitrate: BITRATE_1024 }],
-          codecs: [],
-          headerExtensions: [],
-          rtcp: {},
-        }),
-        setParameters: jest.fn(),
-      } as unknown as RTCRtpSender;
-
       trackWith1024 = createVideoMediaStreamTrackMock({
         constraints: { width: 1024, height: 720 },
       }) as MediaStreamVideoTrack;
+
+      sender = new RTCRtpSenderMock({ track: trackWith1024 }) as unknown as RTCRtpSender;
+
+      // Мокаем getStats для H264 кодека
+      jest.spyOn(sender, 'getStats').mockResolvedValue(
+        new Map([
+          [
+            'codec-1',
+            {
+              id: 'codec-1',
+              timestamp: 0,
+              type: 'codec',
+              mimeType: 'video/H264',
+            } as RTCStats,
+          ],
+        ]),
+      );
+
+      // Мокаем getParameters
+      jest.spyOn(sender, 'getParameters').mockReturnValue({
+        transactionId: '1',
+        encodings: [{ maxBitrate: BITRATE_1024 }],
+        codecs: [],
+        headerExtensions: [],
+        rtcp: {},
+      });
+
+      // Мокаем setParameters
+      jest.spyOn(sender, 'setParameters').mockResolvedValue(undefined);
 
       balancer = resolveVideoSendingBalancer(sipConnector.apiManager, () => {
         return sipConnector.connection;

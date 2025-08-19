@@ -3,6 +3,7 @@ import { CodecProvider } from './CodecProvider';
 import { ParametersSetterWithQueue } from './ParametersSetterWithQueue';
 import { SenderBalancer } from './SenderBalancer';
 import { SenderFinder } from './SenderFinder';
+import { TrackMonitor } from './TrackMonitor';
 import { VideoSendingEventHandler } from './VideoSendingEventHandler';
 
 import type { ApiManager } from '@/ApiManager';
@@ -24,13 +25,15 @@ class VideoSendingBalancer {
 
   private serverHeaders?: IMainCamHeaders;
 
+  private readonly trackMonitor: TrackMonitor;
+
   public constructor(
     apiManager: ApiManager,
     getConnection: () => RTCPeerConnection | undefined,
     { ignoreForCodec, onSetParameters }: IBalancerOptions = {},
   ) {
-    this.eventHandler = new VideoSendingEventHandler(apiManager);
     this.getConnection = getConnection;
+    this.eventHandler = new VideoSendingEventHandler(apiManager);
     this.parametersSetterWithQueue = new ParametersSetterWithQueue(onSetParameters);
 
     this.senderBalancer = new SenderBalancer(
@@ -43,6 +46,8 @@ class VideoSendingBalancer {
         ignoreForCodec,
       },
     );
+
+    this.trackMonitor = new TrackMonitor();
   }
 
   /**
@@ -66,6 +71,7 @@ class VideoSendingBalancer {
    */
   public reset(): void {
     delete this.serverHeaders;
+    this.trackMonitor.unsubscribe();
   }
 
   /**
@@ -79,7 +85,15 @@ class VideoSendingBalancer {
       throw new Error('connection is not exist');
     }
 
-    return this.senderBalancer.balance(connection, this.serverHeaders);
+    const result = await this.senderBalancer.balance(connection, this.serverHeaders);
+
+    this.trackMonitor.subscribe(result.sender, () => {
+      this.balance().catch((error: unknown) => {
+        debug('balance on track change: error', error);
+      });
+    });
+
+    return result;
   }
 
   /**
