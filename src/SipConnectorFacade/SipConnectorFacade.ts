@@ -445,9 +445,7 @@ class SipConnectorFacade implements IProxyMethods {
     });
     const handleReadyRemoteStreams = this.resolveHandleReadyRemoteStreams({
       onReadyRemoteStreams: () => {
-        handleReadyRemoteStreamsDebounced().catch((error: unknown) => {
-          debug('handleReadyRemoteStreamsDebounced: error', error);
-        });
+        handleReadyRemoteStreamsDebounced().catch(debug);
       },
     });
 

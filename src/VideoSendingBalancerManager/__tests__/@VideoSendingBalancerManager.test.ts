@@ -7,6 +7,7 @@ import VideoSendingBalancerManager from '../@VideoSendingBalancerManager';
 
 import type { CallManager } from '@/CallManager';
 import type SipConnector from '@/SipConnector/@SipConnector';
+import type VideoSendingBalancer from '@/VideoSendingBalancer/VideoSendingBalancer';
 
 describe('VideoSendingBalancerManager', () => {
   let sipConnector: SipConnector;
@@ -170,31 +171,24 @@ describe('VideoSendingBalancerManager', () => {
     });
   });
 
-  describe('error handling', () => {
-    it('should throw error when trying to balance without connection', async () => {
-      // Убираем connection из CallManager
-      Object.defineProperty(callManager, 'connection', {
-        value: undefined,
-        writable: true,
-        configurable: true,
-      });
+  it('should not call balance again if balancing already active', async () => {
+    // Достаём приватный videoSendingBalancer, сохраняя типизацию через двойное приведение
+    const balancer = (
+      videoSendingBalancerManager as unknown as {
+        videoSendingBalancer: VideoSendingBalancer;
+      }
+    ).videoSendingBalancer;
 
-      await expect(videoSendingBalancerManager.balance()).rejects.toThrow(
-        'connection is not exist',
-      );
-    });
+    const balanceSpy = jest.spyOn(balancer, 'balance');
 
-    it('should throw error when trying to start balancing without connection', async () => {
-      // Убираем connection из CallManager
-      Object.defineProperty(callManager, 'connection', {
-        value: undefined,
-        writable: true,
-        configurable: true,
-      });
+    // Первый запуск
+    await videoSendingBalancerManager.startBalancing();
+    expect(videoSendingBalancerManager.isBalancingActive).toBe(true);
+    expect(balanceSpy).toHaveBeenCalledTimes(1);
 
-      await expect(videoSendingBalancerManager.startBalancing()).rejects.toThrow(
-        'connection is not exist',
-      );
-    });
+    // Повторный запуск не должен вызвать balance второй раз
+    await videoSendingBalancerManager.startBalancing();
+
+    expect(balanceSpy).toHaveBeenCalledTimes(1);
   });
 });

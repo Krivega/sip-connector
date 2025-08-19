@@ -193,4 +193,24 @@ describe('setCodecPreferences', () => {
 
     expect(log).toHaveBeenCalledWith('setCodecPreferences error', expect.any(Error));
   });
+
+  it('should not call setCodecPreferences when no preferred or exclude codecs are provided', async () => {
+    (globalWithRTC.RTCRtpSender.getCapabilities as jest.Mock).mockReturnValue({
+      codecs: [vp8Codec],
+    });
+    (globalWithRTC.RTCRtpReceiver.getCapabilities as jest.Mock).mockReturnValue({
+      codecs: [vp8Codec],
+    });
+
+    const transceiver = {
+      sender: {
+        track: { kind: 'video' },
+      },
+      setCodecPreferences: jest.fn(),
+    } as unknown as RTCRtpTransceiver;
+
+    setCodecPreferences(transceiver, {});
+
+    expect(transceiver.setCodecPreferences as jest.Mock).not.toHaveBeenCalled();
+  });
 });

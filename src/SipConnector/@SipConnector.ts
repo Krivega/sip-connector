@@ -129,20 +129,6 @@ class SipConnector {
     return this.incomingCallManager.isAvailableIncomingCall;
   }
 
-  /**
-   * Проверить, активна ли балансировка видео
-   */
-  public get isVideoBalancingActive(): boolean {
-    return this.videoSendingBalancerManager.isBalancingActive;
-  }
-
-  /**
-   * Проверить, запланирован ли запуск балансировки видео
-   */
-  public get isVideoBalancingScheduled(): boolean {
-    return this.videoSendingBalancerManager.isBalancingScheduled;
-  }
-
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
   public on<T>(eventName: TEvent, handler: (data: T) => void) {
     return this.events.on<T>(eventName, handler);
@@ -423,27 +409,6 @@ class SipConnector {
     ...args: Parameters<ApiManager['askPermissionToEnableCam']>
   ) {
     return this.apiManager.askPermissionToEnableCam(...args);
-  }
-
-  /**
-   * Принудительно запустить балансировку видео
-   */
-  public async startVideoBalancing(): Promise<void> {
-    return this.videoSendingBalancerManager.startBalancing();
-  }
-
-  /**
-   * Остановить балансировку видео
-   */
-  public stopVideoBalancing(): void {
-    this.videoSendingBalancerManager.stopBalancing();
-  }
-
-  /**
-   * Выполнить ручную балансировку видео
-   */
-  public async balanceVideo() {
-    return this.videoSendingBalancerManager.balance();
   }
 
   private setCodecPreferences(transceiver: RTCRtpTransceiver) {
