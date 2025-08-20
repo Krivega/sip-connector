@@ -1,13 +1,6 @@
-# Архитектура SIP Connector v16.0.0
+# Архитектура SIP Connector
 
 ## Обзор архитектуры
-
-> **Версия 16.0.0** включает критические изменения в архитектуре:
->
-> - **VideoSendingBalancer** интегрирован в `SipConnector`
-> - **Настройки кодеков** перенесены в `SipConnector`
-> - **Адаптивное опрашивание** в `TrackMonitor`
-> - **Улучшенная статистика** с новыми метриками
 
 ### 1. **SipConnectorFacade** (Входная точка)
 
@@ -374,34 +367,31 @@ class SFUCallStrategy implements ICallStrategy {
 
 ---
 
-## Диаграмма архитектуры v16.0.0
+## Диаграмма архитектуры
 
 ```mermaid
 graph TB
-    subgraph "SIP-Connector v16.0.0 Architecture"
+    subgraph "SIP-Connector Architecture"
         A["SipConnectorFacade<br/>🎯 High-level API"]
         B["SipConnector<br/>🔧 Core Coordinator<br/>+ Codec Settings<br/>+ Video Balancer"]
-        
+
         subgraph "Core Managers"
             C["ConnectionManager<br/>🔗 SIP Connections"]
-            D["CallManager<br/>📞 WebRTC Calls"]  
+            D["CallManager<br/>📞 WebRTC Calls"]
             E["ApiManager<br/>📡 Server API"]
             F["PresentationManager<br/>🖥️ Screen Sharing<br/>+ maxBitrate Support"]
             G["IncomingCallManager<br/>📲 Incoming Calls"]
             H["StatsManager<br/>📊 Enhanced Stats<br/>+ availableIncomingBitrate"]
-        end
-        
-        subgraph "New in v16.0.0"
             I["VideoSendingBalancerManager<br/>⚖️ Auto Video Optimization<br/>+ 10sec Delay Start"]
             J["VideoSendingBalancer<br/>🎛️ Video Parameters Control"]
             K["TrackMonitor<br/>👁️ Adaptive Polling<br/>1000ms → 16000ms"]
         end
-        
+
         subgraph "Foundation"
             L["@krivega/jssip<br/>📞 SIP Protocol"]
             M["WebRTC API<br/>🌐 Media Streams"]
         end
-        
+
         A --> B
         B --> C
         B --> D
@@ -416,7 +406,7 @@ graph TB
         F --> M
         C --> L
     end
-    
+
     style I fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     style J fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     style K fill:#e1f5fe,stroke:#01579b,stroke-width:2px
@@ -1094,7 +1084,7 @@ const sipConnector = new SipConnector(
         console.log('Video parameters updated:', result);
       },
     },
-  }
+  },
 );
 
 const sipConnectorFacade = new SipConnectorFacade(sipConnector);
@@ -1145,7 +1135,7 @@ const peerConnection = await sipConnectorFacade.callToServer({
   },
 });
 
-// Начало презентации с новыми возможностями v16.0.0
+// Начало презентации
 const presentationStream = await sipConnectorFacade.startPresentation({
   mediaStream: presentationMediaStream,
   isP2P: false,
@@ -1169,7 +1159,7 @@ const unsubscribeMustStopPresentation = sipConnectorFacade.onMustStopPresentatio
   console.log('Must stop presentation');
 });
 
-// Подписка на события автоматической балансировки (v16.0.0)
+// Подписка на события автоматической балансировки
 sipConnectorFacade.on('video-balancer:balancing-started', (data) => {
   console.log(`Video balancing started after ${data.delay}ms`);
 });
@@ -1195,7 +1185,7 @@ await sipConnectorFacade.disconnectFromServer();
 
 Архитектура модуля построена с использованием современных паттернов проектирования: **Фасад**, **Стратегия**, **Наблюдатель**, **Прокси**, **Композиция**, **Машина состояний** и **Шаблонный метод**. Это делает её гибкой, расширяемой и легко поддерживаемой.
 
-**Ключевые особенности v16.0.0:**
+**Ключевые особенности:**
 
 1. **Многослойная архитектура**: `SipConnectorFacade` → `SipConnector` → Специализированные менеджеры
 2. **Управление состоянием**: XState для ConnectionStateMachine обеспечивает надёжное управление состояниями
