@@ -19,7 +19,7 @@ export class TrackMonitor {
 
   private readonly pollIntervalMs: number;
 
-  public constructor({ pollIntervalMs = 1000 }: { pollIntervalMs?: number } = {}) {
+  public constructor({ pollIntervalMs = 1000 }: { pollIntervalMs?: number }) {
     this.pollIntervalMs = pollIntervalMs;
   }
 

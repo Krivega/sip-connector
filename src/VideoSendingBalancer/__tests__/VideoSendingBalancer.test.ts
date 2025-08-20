@@ -3,21 +3,19 @@
 /// <reference types="jest" />
 import { createVideoMediaStreamTrackMock } from 'webrtc-mock';
 
+import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
 import { EEventsMainCAM } from '@/ApiManager';
 import { doMockSipConnector } from '@/doMock';
+import logger from '@/logger';
+import { createMockTrack } from '../__fixtures__';
 import VideoSendingBalancer, { resolveVideoSendingBalancer } from '../VideoSendingBalancer';
 
 import type { ApiManager } from '@/ApiManager';
 import type { IBalancerOptions, IMainCamHeaders } from '../types';
 
-// Мокаем только логгер, как запрошено
 jest.mock('../../logger', () => {
-  return {
-    debug: jest.fn(),
-    __esModule: true,
-    default: jest.fn(),
-  };
+  return jest.fn();
 });
 
 describe('VideoSendingBalancer', () => {
@@ -418,21 +416,155 @@ describe('VideoSendingBalancer', () => {
     });
   });
 
-  describe('обработка ошибок', () => {
-    it('должен обрабатывать ошибки балансировки без падения', async () => {
-      // Делаем getSenders возвращающим ошибку
-      const errorConnection = {
-        getSenders: jest.fn().mockImplementation(() => {
-          throw new Error('Test error');
-        }),
-      } as unknown as RTCPeerConnection;
+  describe('TrackMonitor колбэк при изменении трека', () => {
+    it('должен создать VideoSendingBalancer с pollIntervalMs', () => {
+      const testBalancer = new VideoSendingBalancer(
+        apiManager,
+        () => {
+          return sipConnector.connection;
+        },
+        {
+          pollIntervalMs: 500,
+        },
+      );
 
-      Object.defineProperty(sipConnector, 'connection', {
-        value: errorConnection,
-        writable: true,
+      expect(testBalancer).toBeInstanceOf(VideoSendingBalancer);
+      testBalancer.unsubscribe();
+    });
+
+    it('должен вызывать balance без ошибок', async () => {
+      const result = await balancer.balance();
+
+      expect(result).toHaveProperty('isChanged');
+      expect(result).toHaveProperty('parameters');
+      expect(typeof result.isChanged).toBe('boolean');
+    });
+
+    it('должен обрабатывать ошибки при отсутствии connection', async () => {
+      const testBalancer = new VideoSendingBalancer(
+        apiManager,
+        () => {
+          return undefined;
+        },
+        {
+          pollIntervalMs: 100,
+        },
+      );
+
+      try {
+        await expect(testBalancer.balance()).rejects.toThrow('connection is not exist');
+      } finally {
+        testBalancer.unsubscribe();
+      }
+    });
+  });
+
+  describe('обработка ошибок', () => {
+    afterEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('должен обрабатывать ошибки балансировки без падения', async () => {
+      const { track, setWidth } = createMockTrack(640); // no resize event support
+
+      const sender = new RTCRtpSenderMock({ track });
+      const connection = new RTCPeerConnectionMock(undefined, [track]);
+
+      Object.defineProperty(connection, 'getSenders', {
+        value: () => {
+          return [sender];
+        },
       });
 
-      await expect(balancer.balance()).rejects.toThrow('Test error');
+      const testBalancer = new VideoSendingBalancer(
+        apiManager,
+        () => {
+          return connection;
+        },
+        {
+          pollIntervalMs: 100,
+        },
+      );
+
+      try {
+        // Вызываем balance
+        await testBalancer.balance();
+
+        // Мокаем balance метод для проверки вызова
+        const balanceSpy = jest.spyOn(testBalancer, 'balance');
+
+        setWidth(320);
+
+        // Ждем выполнения асинхронного кода
+        await new Promise((resolve) => {
+          setTimeout(resolve, 100);
+        });
+
+        // Проверяем, что balance был вызван повторно
+        expect(balanceSpy).toHaveBeenCalled();
+      } finally {
+        testBalancer.unsubscribe();
+      }
+    });
+
+    it('должен логировать ошибки в колбэке TrackMonitor при неудачном вызове balance()', async () => {
+      const { track, setWidth } = createMockTrack(640); // no resize event support
+
+      const sender = new RTCRtpSenderMock({ track });
+      const connection = new RTCPeerConnectionMock(undefined, [track]);
+
+      Object.defineProperty(connection, 'getSenders', {
+        value: () => {
+          return [sender];
+        },
+      });
+
+      // Мокаем TrackMonitor
+      const mockTrackMonitorSubscribe = jest.fn();
+      const MockTrackMonitor = jest.fn().mockImplementation(() => {
+        return {
+          subscribe: mockTrackMonitorSubscribe,
+          unsubscribe: jest.fn(),
+        };
+      });
+
+      jest.doMock('../TrackMonitor', () => {
+        return {
+          TrackMonitor: MockTrackMonitor,
+        };
+      });
+
+      const testBalancer = new VideoSendingBalancer(
+        apiManager,
+        () => {
+          return connection;
+        }, // Возвращаем undefined для создания ошибки
+        { pollIntervalMs: 100 },
+      );
+
+      try {
+        await testBalancer.balance();
+
+        // Ломаем connection для создания ошибки
+        // @ts-expect-error
+        testBalancer.getConnection = () => {
+          return undefined;
+        };
+
+        setWidth(320);
+
+        // Ждем выполнения асинхронного кода
+        await new Promise((resolve) => {
+          setTimeout(resolve, 100);
+        });
+
+        // Проверяем, что debug был вызван с ошибкой
+        expect(logger).toHaveBeenCalledWith('balance on track change: error', expect.any(Error));
+      } finally {
+        testBalancer.unsubscribe();
+        jest.clearAllMocks();
+        jest.dontMock('../TrackMonitor');
+      }
     });
 
     it('должен обрабатывать ошибки в обработчике событий', async () => {

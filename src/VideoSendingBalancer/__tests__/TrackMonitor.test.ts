@@ -1,31 +1,7 @@
-import { createVideoMediaStreamTrackMock } from 'webrtc-mock';
-
 import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
+import { createMockTrack } from '../__fixtures__';
 import { TrackMonitor } from '../TrackMonitor';
-
-// Helper to create mock MediaStreamTrack based on webrtc-mock implementation
-const createMockTrack = (initialWidth: number) => {
-  let width = initialWidth;
-
-  // webrtc-mock возвращает полноценный объект с необходимыми методами
-  const track = createVideoMediaStreamTrackMock({
-    constraints: { width, height: 480 },
-  });
-
-  // Переопределяем getSettings, чтобы он отражал динамический width
-  Object.defineProperty(track, 'getSettings', {
-    value: jest.fn(() => {
-      return { width, height: 480 };
-    }),
-  });
-
-  const setWidth = (newWidth: number) => {
-    width = newWidth;
-  };
-
-  return { track, setWidth };
-};
 
 describe('TrackMonitor', () => {
   beforeEach(() => {
@@ -66,8 +42,6 @@ describe('TrackMonitor', () => {
     const newTrackMock = createMockTrack(800);
 
     const sender = new RTCRtpSenderMock({ track: original.track });
-
-    jest.spyOn(sender, 'replaceTrack');
 
     const connection = new RTCPeerConnectionMock(undefined, [original.track]);
 
@@ -151,9 +125,6 @@ describe('TrackMonitor', () => {
     const original = createMockTrack(640);
 
     const sender = new RTCRtpSenderMock({ track: original.track });
-
-    jest.spyOn(sender, 'replaceTrack');
-
     const connection = new RTCPeerConnectionMock(undefined, [original.track]);
 
     Object.defineProperty(connection, 'getSenders', {

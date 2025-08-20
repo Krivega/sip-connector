@@ -30,7 +30,11 @@ class VideoSendingBalancer {
   public constructor(
     apiManager: ApiManager,
     getConnection: () => RTCPeerConnection | undefined,
-    { ignoreForCodec, onSetParameters }: IBalancerOptions = {},
+    {
+      ignoreForCodec,
+      onSetParameters,
+      pollIntervalMs,
+    }: IBalancerOptions & { pollIntervalMs?: number } = {},
   ) {
     this.getConnection = getConnection;
     this.eventHandler = new VideoSendingEventHandler(apiManager);
@@ -47,7 +51,7 @@ class VideoSendingBalancer {
       },
     );
 
-    this.trackMonitor = new TrackMonitor();
+    this.trackMonitor = new TrackMonitor({ pollIntervalMs });
   }
 
   /**
