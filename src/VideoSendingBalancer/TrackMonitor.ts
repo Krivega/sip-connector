@@ -136,14 +136,10 @@ export class TrackMonitor {
         );
       }
 
-      this.setTimeoutRequest.request(() => {
-        poll();
-      }, this.currentPollIntervalMs);
+      this.setTimeoutRequest.request(poll, this.currentPollIntervalMs);
     };
 
-    this.setTimeoutRequest.request(() => {
-      poll();
-    }, this.currentPollIntervalMs);
+    this.setTimeoutRequest.request(poll, this.currentPollIntervalMs);
   }
 
   private detachTrack(): void {
