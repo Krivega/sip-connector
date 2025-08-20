@@ -144,4 +144,68 @@ describe('TrackMonitor', () => {
     // callback должен вызваться (handleTrackResize), но polling не запускается
     expect(callback).toHaveBeenCalledTimes(1);
   });
+
+  describe('adaptive polling', () => {
+    test('doubles interval when no size changes detected', () => {
+      const { track } = createMockTrack(640);
+
+      const sender = new RTCRtpSenderMock({ track });
+
+      const callback = jest.fn();
+
+      const monitor = new TrackMonitor({ pollIntervalMs: 100 });
+
+      const setTimeoutSpy = jest.spyOn(global, 'setTimeout');
+
+      monitor.subscribe(sender, callback);
+
+      // Первый вызов setTimeout должен быть с базовым интервалом 100мс
+      expect(setTimeoutSpy).toHaveBeenCalledTimes(1);
+      expect(setTimeoutSpy.mock.calls[0][1]).toBe(100);
+
+      // Прокручиваем первый интервал — изменений нет
+      jest.advanceTimersByTime(100);
+
+      // Должен быть запланирован второй таймаут с удвоенным интервалом (200мс)
+      expect(setTimeoutSpy).toHaveBeenCalledTimes(2);
+      expect(setTimeoutSpy.mock.calls[1][1]).toBe(200);
+
+      // Колбэк не должен вызываться, так как размер не менялся
+      expect(callback).not.toHaveBeenCalled();
+
+      setTimeoutSpy.mockRestore();
+    });
+
+    test('interval сбрасывается после изменения размера', () => {
+      const { track, setWidth } = createMockTrack(640);
+
+      const sender = new RTCRtpSenderMock({ track });
+      const callback = jest.fn();
+
+      const monitor = new TrackMonitor({ pollIntervalMs: 100 });
+
+      const setTimeoutSpy = jest.spyOn(global, 'setTimeout');
+
+      monitor.subscribe(sender, callback);
+
+      // Первый цикл – без изменений
+      jest.advanceTimersByTime(100);
+
+      // Изменяем размер, но колбэк пока не должен вызваться, так как проверка будет во втором цикле
+      setWidth(320);
+
+      jest.advanceTimersByTime(200); // ждём второй опрос (200мс)
+
+      // Колбэк должен быть вызван один раз после обнаружения изменения
+      expect(callback).toHaveBeenCalledTimes(1);
+
+      // После изменения интервал должен сброситься до базового 100мс
+      const lastCallArgs = setTimeoutSpy.mock.calls.at(-1);
+
+      // @ts-expect-error
+      expect(lastCallArgs[1]).toBe(100);
+
+      setTimeoutSpy.mockRestore();
+    });
+  });
 });

@@ -1,3 +1,5 @@
+import { SetTimeoutRequest } from '@krivega/timeout-requester';
+
 /**
  * TrackMonitor следит за изменением MediaStreamTrack, который отправляется
  * локальным RTCRtpSender-ом.
@@ -11,16 +13,30 @@ export class TrackMonitor {
 
   private originalReplaceTrack?: RTCRtpSender['replaceTrack'];
 
-  private pollIntervalId?: number;
-
   private lastWidth?: number;
 
   private lastHeight?: number;
 
+  private readonly maxPollIntervalMs: number;
+
+  private currentPollIntervalMs: number;
+
   private readonly pollIntervalMs: number;
 
-  public constructor({ pollIntervalMs = 1000 }: { pollIntervalMs?: number }) {
+  private readonly setTimeoutRequest: SetTimeoutRequest;
+
+  public constructor({
+    pollIntervalMs = 1000,
+    maxPollIntervalMs,
+  }: {
+    pollIntervalMs?: number;
+    maxPollIntervalMs?: number;
+  }) {
     this.pollIntervalMs = pollIntervalMs;
+    // default max ~ 16x initial
+    this.maxPollIntervalMs = maxPollIntervalMs ?? pollIntervalMs * 16;
+    this.currentPollIntervalMs = this.pollIntervalMs;
+    this.setTimeoutRequest = new SetTimeoutRequest();
   }
 
   /**
@@ -93,23 +109,46 @@ export class TrackMonitor {
 
     this.lastWidth = width;
     this.lastHeight = height;
-    this.pollIntervalId = window.setInterval(() => {
+    // запускаем адаптивный опрос
+    this.currentPollIntervalMs = this.pollIntervalMs;
+    this.schedulePoll(track, callback);
+  }
+
+  /**
+   * Периодически опрашивает track с экспоненциальной адаптацией частоты.
+   * При отсутствии изменений интервал удваивается до maxPollIntervalMs,
+   * при обнаружении изменений сбрасывается до начального.
+   */
+  private schedulePoll(track: MediaStreamTrack, callback: () => void): void {
+    const poll = () => {
       const { width: w, height: h } = track.getSettings();
 
       if (w !== this.lastWidth || h !== this.lastHeight) {
         this.lastWidth = w;
         this.lastHeight = h;
+        this.currentPollIntervalMs = this.pollIntervalMs; // сброс при изменениях
         callback();
+      } else {
+        // нет изменений — увеличиваем интервал, но не превышаем максимум
+        this.currentPollIntervalMs = Math.min(
+          this.currentPollIntervalMs * 2,
+          this.maxPollIntervalMs,
+        );
       }
-    }, this.pollIntervalMs);
+
+      this.setTimeoutRequest.request(() => {
+        poll();
+      }, this.currentPollIntervalMs);
+    };
+
+    this.setTimeoutRequest.request(() => {
+      poll();
+    }, this.currentPollIntervalMs);
   }
 
   private detachTrack(): void {
-    if (this.pollIntervalId !== undefined) {
-      clearInterval(this.pollIntervalId);
-    }
+    this.setTimeoutRequest.cancelRequest();
 
-    this.pollIntervalId = undefined;
     this.lastWidth = undefined;
     this.lastHeight = undefined;
   }
