@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.0.0](https://github.com/Krivega/sip-connector/compare/v15.3.1...v16.0.0) (2025-08-20)
+
+### ⚠ BREAKING CHANGES
+
+- remove simulcastEncodings from SipConnectorFacade
+- move videoSendingBalancer to SipConnector
+
+### Features
+
+- add adaptive polling ([19c6484](https://github.com/Krivega/sip-connector/commit/19c6484ef3b463d74b95977cf46c381f906ae5c0))
+- add support maxBitrate to PresentationManager ([f5d7a4b](https://github.com/Krivega/sip-connector/commit/f5d7a4b0ac337a2c02ade61a09378338abcb358f))
+- add supports preferred codecs in SipConnector ([d84bc71](https://github.com/Krivega/sip-connector/commit/d84bc71c83d86fb5454aabfd1c4d3ccda9842c40))
+- handle change track for video balance ([81ea495](https://github.com/Krivega/sip-connector/commit/81ea495128bb727941e89261bf544aa8997dbcee))
+- move videoSendingBalancer to SipConnector ([56a75c5](https://github.com/Krivega/sip-connector/commit/56a75c5a6d132c70f43e7dc9b6d9e5665e3b9933))
+- start balance video after start call ([1a5214d](https://github.com/Krivega/sip-connector/commit/1a5214d3705612d15d5eef1d40d770188116980a))
+
+- remove simulcastEncodings from SipConnectorFacade ([2ad97cc](https://github.com/Krivega/sip-connector/commit/2ad97ccaaec66011f44ede2858b87deb60cc914e))
+
 ### [15.3.1](https://github.com/Krivega/sip-connector/compare/v15.3.0...v15.3.1) (2025-08-14)
 
 ### Bug Fixes
