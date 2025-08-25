@@ -452,7 +452,7 @@ sipConnector.on('video-balancer:error', (error) => {
 
 // Ручное управление балансировкой
 sipConnector.videoSendingBalancerManager.start(); // Принудительный запуск
-sipConnector.videoSendingBalancerManager.stop();  // Остановка
+sipConnector.videoSendingBalancerManager.stop(); // Остановка
 sipConnector.videoSendingBalancerManager.restart(); // Перезапуск
 ```
 
@@ -746,7 +746,7 @@ const sipConnector = new SipConnector(
       ignoreForCodec: 'H264',
       balancingStartDelay: 5000, // Быстрее запуск для критичных приложений
     },
-  }
+  },
 );
 const facade = new SipConnectorFacade(sipConnector);
 ```
