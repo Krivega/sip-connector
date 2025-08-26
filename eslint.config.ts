@@ -15,7 +15,7 @@ export default defineConfig([
     languageOptions: {
       parserOptions: {
         project: './tsconfig.json',
-        tsconfigRootDir: './',
+        tsconfigRootDir: nodeUrl.fileURLToPath(new URL('.', import.meta.url)),
       },
     },
     rules: {
