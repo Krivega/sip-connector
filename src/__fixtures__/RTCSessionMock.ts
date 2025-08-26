@@ -77,6 +77,18 @@ class RTCSessionMock extends BaseSession {
 
   private isEndedInner = false;
 
+  private readonly delayStartPresentation: number = 0;
+
+  private timeoutStartPresentation?: NodeJS.Timeout;
+
+  private timeoutConnect?: NodeJS.Timeout;
+
+  private timeoutNewInfo?: NodeJS.Timeout;
+
+  private timeoutAccepted?: NodeJS.Timeout;
+
+  private timeoutConfirmed?: NodeJS.Timeout;
+
   public constructor({
     eventHandlers,
     originator,
@@ -84,12 +96,16 @@ class RTCSessionMock extends BaseSession {
       new URI('sip', 'caller1', 'test1.com', 5060),
       'Test Caller 1',
     ),
+    delayStartPresentation = 0,
   }: {
     eventHandlers: TEventHandlers;
     originator: string;
     remoteIdentity?: NameAddrHeader;
+    delayStartPresentation?: number;
   }) {
     super({ originator, eventHandlers, remoteIdentity });
+
+    this.delayStartPresentation = delayStartPresentation;
   }
 
   public static setPresentationError(presentationError: Error) {
@@ -117,26 +133,34 @@ class RTCSessionMock extends BaseSession {
   public startPresentation = async (stream: MediaStream) => {
     RTCSessionMock.countStartsPresentation += 1;
 
-    if (RTCSessionMock.presentationError) {
-      this.trigger('presentation:start', stream);
+    return new Promise<MediaStream>((resolve, reject) => {
+      this.timeoutStartPresentation = setTimeout(() => {
+        if (RTCSessionMock.presentationError) {
+          this.trigger('presentation:start', stream);
 
-      this.trigger('presentation:failed', stream);
+          this.trigger('presentation:failed', stream);
 
-      throw RTCSessionMock.presentationError;
-    }
+          reject(RTCSessionMock.presentationError);
 
-    if (
-      RTCSessionMock.startPresentationError &&
-      RTCSessionMock.countStartsPresentation < RTCSessionMock.countStartPresentationError
-    ) {
-      this.trigger('presentation:start', stream);
+          return;
+        }
 
-      this.trigger('presentation:failed', stream);
+        if (
+          RTCSessionMock.startPresentationError &&
+          RTCSessionMock.countStartsPresentation < RTCSessionMock.countStartPresentationError
+        ) {
+          this.trigger('presentation:start', stream);
 
-      throw RTCSessionMock.startPresentationError;
-    }
+          this.trigger('presentation:failed', stream);
 
-    return super.startPresentation(stream);
+          reject(RTCSessionMock.startPresentationError);
+
+          return;
+        }
+
+        resolve(super.startPresentation(stream));
+      }, this.delayStartPresentation);
+    });
   };
 
   public stopPresentation = async (stream: MediaStream) => {
@@ -190,7 +214,7 @@ class RTCSessionMock extends BaseSession {
 
     this.initPeerconnection(mediaStream);
 
-    setTimeout(() => {
+    this.timeoutConnect = setTimeout(() => {
       if (target.includes(FAILED_CONFERENCE_NUMBER)) {
         this.trigger('failed', {
           originator: 'remote',
@@ -200,7 +224,7 @@ class RTCSessionMock extends BaseSession {
       } else {
         this.trigger('connecting');
 
-        setTimeout(() => {
+        this.timeoutNewInfo = setTimeout(() => {
           this.newInfo({
             originator: Originator.REMOTE,
             // @ts-expect-error
@@ -224,11 +248,11 @@ class RTCSessionMock extends BaseSession {
           });
         }, 100);
 
-        setTimeout(() => {
+        this.timeoutAccepted = setTimeout(() => {
           this.trigger('accepted');
         }, 200);
 
-        setTimeout(() => {
+        this.timeoutConfirmed = setTimeout(() => {
           this.trigger('confirmed');
         }, 300);
       }
@@ -348,6 +372,14 @@ class RTCSessionMock extends BaseSession {
 
   public newInfo(data: IncomingInfoEvent) {
     this.trigger('newInfo', data);
+  }
+
+  public clear() {
+    clearTimeout(this.timeoutStartPresentation);
+    clearTimeout(this.timeoutConnect);
+    clearTimeout(this.timeoutNewInfo);
+    clearTimeout(this.timeoutAccepted);
+    clearTimeout(this.timeoutConfirmed);
   }
   /* eslint-enable no-param-reassign */
 }

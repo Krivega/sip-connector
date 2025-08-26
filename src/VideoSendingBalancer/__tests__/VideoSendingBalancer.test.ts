@@ -3,6 +3,7 @@
 /// <reference types="jest" />
 import { createVideoMediaStreamTrackMock } from 'webrtc-mock';
 
+import delayPromise from '@/__fixtures__/delayPromise';
 import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
 import { EEventsMainCAM } from '@/ApiManager';
@@ -134,9 +135,7 @@ describe('VideoSendingBalancer', () => {
       }).not.toThrow();
 
       // Даем время на обработку асинхронного вызова
-      await new Promise((resolve) => {
-        setTimeout(resolve, 10);
-      });
+      await delayPromise(10);
     });
   });
 
@@ -245,9 +244,7 @@ describe('VideoSendingBalancer', () => {
 
       eventHandler?.(testHeaders);
       // Даем время на обработку
-      await new Promise((resolve) => {
-        setTimeout(resolve, 10);
-      });
+      await delayPromise(10);
 
       expect((balancer as unknown as { serverHeaders: IMainCamHeaders }).serverHeaders).toEqual(
         testHeaders,
@@ -298,9 +295,7 @@ describe('VideoSendingBalancer', () => {
       for (const headers of events) {
         eventHandler?.(headers);
         // Даем время на обработку каждого события
-        await new Promise((resolve) => {
-          setTimeout(resolve, 10);
-        });
+        await delayPromise(10);
 
         expect((balancer as unknown as { serverHeaders: IMainCamHeaders }).serverHeaders).toEqual(
           headers,
@@ -338,9 +333,7 @@ describe('VideoSendingBalancer', () => {
       expect(eventHandler).toBeDefined();
 
       eventHandler?.(testHeaders);
-      await new Promise((resolve) => {
-        setTimeout(resolve, 10);
-      });
+      await delayPromise(10);
       expect((balancer as unknown as { serverHeaders: IMainCamHeaders }).serverHeaders).toEqual(
         testHeaders,
       );
@@ -406,9 +399,7 @@ describe('VideoSendingBalancer', () => {
       expect(eventHandler).toBeDefined();
 
       eventHandler?.(headersWithoutResolution);
-      await new Promise((resolve) => {
-        setTimeout(resolve, 10);
-      });
+      await delayPromise(10);
 
       expect((balancer as unknown as { serverHeaders: IMainCamHeaders }).serverHeaders).toEqual(
         headersWithoutResolution,
@@ -496,9 +487,7 @@ describe('VideoSendingBalancer', () => {
         setWidth(320);
 
         // Ждем выполнения асинхронного кода
-        await new Promise((resolve) => {
-          setTimeout(resolve, 100);
-        });
+        await delayPromise(100);
 
         // Проверяем, что balance был вызван повторно
         expect(balanceSpy).toHaveBeenCalled();
@@ -554,9 +543,7 @@ describe('VideoSendingBalancer', () => {
         setWidth(320);
 
         // Ждем выполнения асинхронного кода
-        await new Promise((resolve) => {
-          setTimeout(resolve, 100);
-        });
+        await delayPromise(100);
 
         // Проверяем, что debug был вызван с ошибкой
         expect(logger).toHaveBeenCalledWith('balance on track change: error', expect.any(Error));
@@ -601,9 +588,7 @@ describe('VideoSendingBalancer', () => {
         eventHandler?.(testHeaders);
       }).not.toThrow();
 
-      await new Promise((resolve) => {
-        setTimeout(resolve, 10);
-      });
+      await delayPromise(10);
     });
   });
 });

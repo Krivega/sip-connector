@@ -95,6 +95,11 @@ class PresentationManager {
     const streamPresentationPrevious = this.streamPresentationCurrent;
     let result: Promise<MediaStream | undefined> =
       this.promisePendingStartPresentation ?? Promise.resolve<undefined>(undefined);
+
+    if (this.promisePendingStartPresentation) {
+      await this.promisePendingStartPresentation.catch(() => {});
+    }
+
     const rtcSession = this.callManager.getEstablishedRTCSession();
 
     if (rtcSession && streamPresentationPrevious) {
@@ -155,7 +160,7 @@ class PresentationManager {
   }
 
   public cancelSendPresentationWithRepeatedCalls() {
-    this.cancelableSendPresentationWithRepeatedCalls?.cancel();
+    this.cancelableSendPresentationWithRepeatedCalls?.stopRepeatedCalls();
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters

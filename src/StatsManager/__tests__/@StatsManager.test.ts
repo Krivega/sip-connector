@@ -1,5 +1,6 @@
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
 
+import delayPromise from '@/__fixtures__/delayPromise';
 import jssip from '@/__fixtures__/jssip.mock';
 import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import { ApiManager } from '@/ApiManager';
@@ -349,9 +350,7 @@ describe('StatsManager', () => {
       manager.statsPeerConnection.events.trigger('collected', cloneStatsWithBitrate(base));
       manager.statsPeerConnection.events.trigger('collected', cloneStatsWithBitrate(base * 1.25));
 
-      await new Promise((resolve) => {
-        setTimeout(resolve, 0);
-      });
+      await delayPromise(0);
 
       expect(logger as jest.MockedFunction<typeof logger>).toHaveBeenCalledWith(
         'Failed to send stats',

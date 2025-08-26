@@ -1,6 +1,7 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 
 import { dataForConnectionWithAuthorization } from '@/__fixtures__';
+import delayPromise from '@/__fixtures__/delayPromise';
 import JsSIP from '@/__fixtures__/jssip.mock';
 import remoteCallerData from '@/__fixtures__/remoteCallerData';
 import { doMockSipConnector } from '@/doMock';
@@ -258,9 +259,7 @@ describe('SipConnectorFacade comprehensive', () => {
       await sipConnectorFacade.callToServer(mockCallParams);
 
       // Ждем обработки события
-      await new Promise((resolve) => {
-        setTimeout(resolve, 10);
-      });
+      await delayPromise(10);
 
       expect(mockCallParams.onSuccessProgressCall).toHaveBeenCalledWith({ isPurgatory: false });
       expect(mockCallParams.onEnterConference).toHaveBeenCalledWith({
@@ -283,9 +282,7 @@ describe('SipConnectorFacade comprehensive', () => {
       await sipConnectorFacade.callToServer(mockCallParams);
 
       // Ждем обработки события
-      await new Promise((resolve) => {
-        setTimeout(resolve, 10);
-      });
+      await delayPromise(10);
 
       expect(mockCallParams.onEnterPurgatory).toHaveBeenCalled();
     });
@@ -314,9 +311,7 @@ describe('SipConnectorFacade comprehensive', () => {
       await sipConnectorFacade.callToServer(mockCallParams);
 
       // Ждем обработки события
-      await new Promise((resolve) => {
-        setTimeout(resolve, 10);
-      });
+      await delayPromise(10);
 
       expect(mockCallParams.onEndedCall).toHaveBeenCalled();
     });
@@ -347,9 +342,7 @@ describe('SipConnectorFacade comprehensive', () => {
 
       await sipConnectorFacade.callToServer(paramsWithoutPurgatory as never);
 
-      await new Promise((resolve) => {
-        setTimeout(resolve, 10);
-      });
+      await delayPromise(10);
 
       expect(onEnterConference).toHaveBeenCalledWith({ isSuccessProgressCall: true });
     });
@@ -380,9 +373,7 @@ describe('SipConnectorFacade comprehensive', () => {
 
       await sipConnectorFacade.callToServer(paramsWithoutPurgatory as never);
 
-      await new Promise((resolve) => {
-        setTimeout(resolve, 10);
-      });
+      await delayPromise(10);
 
       expect(onEnterConference).not.toHaveBeenCalled();
     });
@@ -528,9 +519,7 @@ describe('SipConnectorFacade comprehensive', () => {
 
       await sipConnectorFacade.answerToIncomingCall(mockAnswerParams);
 
-      await new Promise((resolve) => {
-        setTimeout(resolve, 10);
-      });
+      await delayPromise(10);
 
       expect(mockAnswerParams.onEndedCall).toHaveBeenCalled();
     });
@@ -560,9 +549,7 @@ describe('SipConnectorFacade comprehensive', () => {
 
       await sipConnectorFacade.answerToIncomingCall(paramsWithPurgatory as never);
 
-      await new Promise((resolve) => {
-        setTimeout(resolve, 10);
-      });
+      await delayPromise(10);
 
       expect(onEnterPurgatory).toHaveBeenCalled();
     });
@@ -592,9 +579,7 @@ describe('SipConnectorFacade comprehensive', () => {
 
       await sipConnectorFacade.answerToIncomingCall(paramsWithoutPurgatory as never);
 
-      await new Promise((resolve) => {
-        setTimeout(resolve, 10);
-      });
+      await delayPromise(10);
 
       expect(onEnterConference).toHaveBeenCalledWith({ isSuccessProgressCall: true });
     });
@@ -624,9 +609,7 @@ describe('SipConnectorFacade comprehensive', () => {
 
       await sipConnectorFacade.answerToIncomingCall(paramsWithoutPurgatory as never);
 
-      await new Promise((resolve) => {
-        setTimeout(resolve, 10);
-      });
+      await delayPromise(10);
 
       expect(onEnterConference).not.toHaveBeenCalled();
     });

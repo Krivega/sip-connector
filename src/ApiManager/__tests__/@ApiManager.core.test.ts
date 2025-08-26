@@ -1,3 +1,4 @@
+import delayPromise from '@/__fixtures__/delayPromise';
 import jssip from '@/__fixtures__/jssip.mock';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { CallManager } from '@/CallManager';
@@ -558,9 +559,7 @@ describe('ApiManager (core)', () => {
       });
       const dtmfPromise = apiManager.sendDTMF(1);
 
-      await new Promise((resolve) => {
-        setTimeout(resolve, 50);
-      });
+      await delayPromise(50);
       expect(sendDTMFSpy).toHaveBeenCalledWith(1, { duration: 120, interToneGap: 600 });
       expect(dtmfPromise).toBeInstanceOf(Promise);
     });

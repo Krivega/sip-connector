@@ -45,6 +45,7 @@ describe('PresentationManager', () => {
 
   afterEach(() => {
     RTCSessionMock.resetPresentationError();
+    rtcSession.clear();
     jest.clearAllMocks();
   });
 
@@ -497,5 +498,127 @@ describe('PresentationManager', () => {
     // Не должно вызываться события failed/ended, так как презентация не запускалась
     expect(spyFailed).not.toHaveBeenCalled();
     expect(spyEnded).not.toHaveBeenCalled();
+  });
+
+  it('startPresentation и stopPresentation без ожидания завершения вызывают события в правильном порядке', async () => {
+    const eventOrder: string[] = [];
+
+    // Подписываемся на все события презентации для отслеживания порядка
+    manager.on('presentation:start', () => {
+      eventOrder.push('presentation:start');
+    });
+
+    manager.on('presentation:started', () => {
+      eventOrder.push('presentation:started');
+    });
+
+    manager.on('presentation:end', () => {
+      eventOrder.push('presentation:end');
+    });
+
+    manager.on('presentation:ended', () => {
+      eventOrder.push('presentation:ended');
+    });
+
+    manager.on('presentation:failed', () => {
+      eventOrder.push('presentation:failed');
+    });
+
+    // Запускаем startPresentation, не дожидаясь завершения
+    const startPromise = manager.startPresentation(beforeStartPresentation, mediaStream);
+
+    // Сразу вызываем stopPresentation, не дожидаясь завершения startPresentation
+    const stopPromise = manager.stopPresentation(beforeStopPresentation);
+
+    // Ждем завершения обеих операций
+    const [startResult, stopResult] = await Promise.allSettled([startPromise, stopPromise]);
+
+    // Проверяем, что обе операции завершились успешно
+    expect(startResult).toBeDefined();
+    expect(stopResult).toBeDefined();
+    expect(startResult.status).toBe('rejected');
+    expect(stopResult.status).toBe('fulfilled');
+
+    // @ts-expect-error для теста
+    expect(hasCanceledStartPresentationError(startResult.reason)).toBe(true);
+    // @ts-expect-error для теста
+    expect(stopResult.value).toBeDefined();
+
+    // Проверяем правильный порядок событий
+    expect(eventOrder).toEqual([
+      'presentation:start',
+      'presentation:started',
+      'presentation:end',
+      'presentation:ended',
+    ]);
+
+    // Проверяем, что состояние сброшено
+    expect(manager.streamPresentationCurrent).toBeUndefined();
+    expect(manager.promisePendingStartPresentation).toBeUndefined();
+    expect(manager.promisePendingStopPresentation).toBeUndefined();
+  });
+
+  it('startPresentation и stopPresentation без ожидания завершения вызывают события в правильном порядке при ошибке', async () => {
+    const eventOrder: string[] = [];
+
+    // Подписываемся на все события презентации для отслеживания порядка
+    manager.on('presentation:start', () => {
+      eventOrder.push('presentation:start');
+    });
+
+    manager.on('presentation:started', () => {
+      eventOrder.push('presentation:started');
+    });
+
+    manager.on('presentation:end', () => {
+      eventOrder.push('presentation:end');
+    });
+
+    manager.on('presentation:ended', () => {
+      eventOrder.push('presentation:ended');
+    });
+
+    manager.on('presentation:failed', () => {
+      eventOrder.push('presentation:failed');
+    });
+
+    const testError = new Error('fail');
+
+    // запускаем ошибку
+    RTCSessionMock.setPresentationError(testError);
+
+    // Запускаем startPresentation, не дожидаясь завершения
+    const startPromise = manager.startPresentation(beforeStartPresentation, mediaStream);
+    // Сразу вызываем stopPresentation, не дожидаясь завершения startPresentation
+    const stopPromise = manager.stopPresentation(beforeStopPresentation);
+
+    // Ждем завершения обеих операций
+    const [startResult, stopResult] = await Promise.allSettled([startPromise, stopPromise]);
+
+    // Проверяем, что обе операции завершились успешно
+    expect(startResult).toBeDefined();
+    expect(stopResult).toBeDefined();
+    expect(startResult.status).toBe('rejected');
+    expect(stopResult.status).toBe('rejected');
+
+    // @ts-expect-error для теста
+    expect(hasCanceledStartPresentationError(startResult.reason)).toBe(true);
+    // @ts-expect-error для теста
+    expect(stopResult.reason).toBe(testError);
+
+    // Проверяем правильный порядок событий
+    expect(eventOrder).toEqual([
+      'presentation:start',
+      'presentation:failed',
+      'presentation:failed',
+      'presentation:end',
+      'presentation:failed',
+      'presentation:failed',
+    ]);
+
+    // Проверяем, что состояние сброшено
+    expect(manager.streamPresentationCurrent).toBeUndefined();
+    expect(manager.promisePendingStartPresentation).toBeUndefined();
+    expect(manager.promisePendingStopPresentation).toBeUndefined();
   });
 });

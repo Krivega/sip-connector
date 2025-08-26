@@ -1,5 +1,6 @@
 import { Events } from 'events-constructor';
 
+import delayPromise from '@/__fixtures__/delayPromise';
 import jssip from '@/__fixtures__/jssip.mock';
 import UAMock, {
   PASSWORD_CORRECT,
@@ -213,9 +214,7 @@ describe('ConnectionFlow', () => {
 
       expect(requestConnectMocked).toHaveBeenCalledTimes(2);
 
-      await new Promise((resolve) => {
-        setTimeout(resolve, 1000);
-      });
+      await delayPromise(1000);
 
       expect(requestConnectMocked).toHaveBeenCalledTimes(2);
     });

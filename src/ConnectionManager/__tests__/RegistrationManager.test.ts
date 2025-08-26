@@ -1,5 +1,6 @@
 import { Events } from 'events-constructor';
 
+import delayPromise from '@/__fixtures__/delayPromise';
 import UAMock from '@/__fixtures__/UA.mock';
 import logger from '@/logger';
 import { EVENT_NAMES } from '../eventNames';
@@ -62,13 +63,6 @@ const createUAMock = (): UAMock => {
 const createGetUaMock = (mockUa: UAMock): jest.MockedFunction<() => UA> => {
   return jest.fn(() => {
     return mockUa as unknown as UA;
-  });
-};
-
-// Утилиты для асинхронных операций
-const waitForEvent = async (ms = 10): Promise<void> => {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
   });
 };
 
@@ -355,7 +349,7 @@ describe('RegistrationManager', () => {
       const registerPromise = registrationManager.register();
 
       // Ждем немного, но не до таймаута
-      await waitForEvent(50);
+      await delayPromise(50);
 
       // Проверяем, что промис еще не разрешен
       expect(registerPromise).toBeDefined();
