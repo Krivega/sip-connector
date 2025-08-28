@@ -542,12 +542,7 @@ class PresentationManager {
   +promisePendingStartPresentation?: Promise
   +promisePendingStopPresentation?: Promise
   +streamPresentationCurrent?: MediaStream
-  +startPresentation(
-    beforeStartPresentation,
-    stream,
-    presentationOptions?,
-    options?
-  )
+  +startPresentation(beforeStartPresentation, stream, presentationOptions?, options?)
   +stopPresentation(beforeStopPresentation)
   +updatePresentation(beforeStartPresentation, stream, options?)
   +cancelSendPresentationWithRepeatedCalls(): void
