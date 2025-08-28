@@ -18,13 +18,14 @@
 ### Создание экземпляра
 
 ```typescript
-import VideoSendingBalancer from './videoSendingBalancer';
+import VideoSendingBalancer from './VideoSendingBalancer';
 
-const balancer = new VideoSendingBalancer(sipConnector, {
+const balancer = new VideoSendingBalancer(apiManager, getConnection, {
   ignoreForCodec: 'H264',
   onSetParameters: (parameters) => {
     console.log('Параметры обновлены:', parameters);
   },
+  pollIntervalMs: 1000,
 });
 ```
 
@@ -38,11 +39,11 @@ balancer.subscribe();
 balancer.unsubscribe();
 ```
 
-### Ручная балансировка
+### Балансировка
 
 ```typescript
-// Выполнить балансировку вручную
-const result = await balancer.reBalance();
+// Выполнить балансировку
+const result = await balancer.balance();
 console.log('Результат балансировки:', result);
 ```
 
@@ -59,10 +60,12 @@ balancer.reset();
 
 ```typescript
 constructor(
-  sipConnector: SipConnector,
+  apiManager: ApiManager,
+  getConnection: () => RTCPeerConnection | undefined,
   options?: {
     ignoreForCodec?: string;
     onSetParameters?: TOnSetParameters;
+    pollIntervalMs?: number;
   }
 )
 ```
@@ -71,32 +74,23 @@ constructor(
 
 - `subscribe()`: Подписаться на события управления камерой
 - `unsubscribe()`: Отписаться от событий управления камерой
-- `reBalance()`: Выполнить балансировку вручную
+- `balance()`: Выполнить балансировку
 - `reset()`: Сбросить состояние управления камерой
 
 ### Приватные методы
 
-- `balanceByTrack()`: Базовая функция балансировки без параметров камеры
-- `balance()`: Основная логика балансировки с поддержкой параметров камеры
-- `processSender()`: Логика обработки сендера в зависимости от состояния камеры
 - `handleMainCamControl()`: Обработчик событий управления камерой
-- `runStackPromises()`: Управление стеком промисов
-- `run()`: Добавление действий в стек промисов
-- `addToStackScaleResolutionDownBySender()`: Настройка параметров сендера
-- `downgradeResolutionSender()`: Понижение разрешения (PAUSE_MAIN_CAM)
-- `setBitrateByTrackResolution()`: Установка битрейта по разрешению трека
-- `setResolutionSender()`: Установка конкретного разрешения
 
 ## Внутренняя логика
 
 Класс использует следующие компоненты:
 
-- `findVideoSender`: Поиск видео-сендера в соединении
-- `getCodecFromSender`: Получение кодека из сендера
-- `hasIncludesString`: Проверка включения строки в кодеки
-- `setEncodingsToSender`: Установка параметров кодирования
-- `scaleResolutionAndBitrate`: Масштабирование разрешения и битрейта
-- `getMaxBitrateByWidthAndCodec`: Получение максимального битрейта по ширине и кодеку
+- `VideoSendingEventHandler`: Обработка событий управления камерой
+- `SenderBalancer`: Бизнес-логика балансировки
+- `ParametersSetterWithQueue`: Управление очередью установки параметров
+- `TrackMonitor`: Мониторинг изменений видеотреков
+- `SenderFinder`: Поиск видео-сендера в соединении
+- `CodecProvider`: Получение кодека из сендера
 
 ## Состояния камеры
 
@@ -112,9 +106,9 @@ constructor(
 Для обратной совместимости доступна фабричная функция:
 
 ```typescript
-import { resolveVideoSendingBalancer } from './videoSendingBalancer';
+import { resolveVideoSendingBalancer } from './VideoSendingBalancer';
 
-const balancer = resolveVideoSendingBalancer(sipConnector, options);
+const balancer = resolveVideoSendingBalancer(apiManager, getConnection, options);
 ```
 
 ## Рефакторинг
