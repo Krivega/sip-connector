@@ -168,7 +168,7 @@ unsubscribeStats();
 
 ```typescript
 // Подписка на входящие события
-sipConnector.on('incoming-call:incoming', () => {
+sipConnector.on('incoming-call:incomingCall', () => {
   // Автоматический ответ с локальным потоком
   facade.answerToIncomingCall({
     mediaStream: localStream,
@@ -377,13 +377,15 @@ try {
 
 SDK использует **событийно-ориентированную архитектуру** с префиксами для группировки:
 
-| Префикс          | Описание            | Примеры событий               |
-| ---------------- | ------------------- | ----------------------------- |
-| `connection:*`   | События подключения | `connected`, `disconnected`   |
-| `call:*`         | События звонков     | `accepted`, `ended`, `failed` |
-| `api:*`          | События от сервера  | `enterRoom`, `useLicense`     |
-| `presentation:*` | События презентаций | `started`, `stopped`          |
-| `stats:*`        | События статистики  | `collected`                   |
+| Префикс            | Описание                 | Примеры событий                           |
+| ------------------ | ------------------------ | ----------------------------------------- |
+| `connection:*`     | События подключения      | `connected`, `disconnected`               |
+| `call:*`           | События звонков          | `accepted`, `ended`, `failed`             |
+| `api:*`            | События от сервера       | `enterRoom`, `useLicense`                 |
+| `incoming-call:*`  | События входящих звонков | `incomingCall`                            |
+| `presentation:*`   | События презентаций      | `started`, `stopped`                      |
+| `stats:*`          | События статистики       | `collected`                               |
+| `video-balancer:*` | События балансировки     | `balancing-started`, `parameters-updated` |
 
 ### Основные события
 
@@ -446,14 +448,13 @@ sipConnector.on('video-balancer:balancing-stopped', () => {
   console.log('Балансировка остановлена');
 });
 
-sipConnector.on('video-balancer:error', (error) => {
-  console.error('Ошибка балансировки:', error);
+sipConnector.on('video-balancer:parameters-updated', (result) => {
+  console.log('Обновлены параметры:', result);
 });
 
 // Ручное управление балансировкой
-sipConnector.videoSendingBalancerManager.start(); // Принудительный запуск
-sipConnector.videoSendingBalancerManager.stop(); // Остановка
-sipConnector.videoSendingBalancerManager.restart(); // Перезапуск
+sipConnector.videoSendingBalancerManager.startBalancing(); // Принудительный запуск
+sipConnector.videoSendingBalancerManager.stopBalancing(); // Остановка
 ```
 
 ---
@@ -486,8 +487,11 @@ if (hasAvailableStats()) {
     console.log('Входящая статистика:', inbound);
 
     // Новая метрика availableIncomingBitrate
-    if (inbound.availableIncomingBitrate) {
-      console.log('Доступный входящий битрейт:', inbound.availableIncomingBitrate);
+    if (inbound.additional?.candidatePair?.availableIncomingBitrate) {
+      console.log(
+        'Доступный входящий битрейт:',
+        inbound.additional.candidatePair.availableIncomingBitrate,
+      );
     }
 
     // Анализ качества соединения
@@ -586,8 +590,6 @@ const sipConnector = new SipConnector(
   {
     videoBalancerOptions: {
       ignoreForCodec: 'H264', // Игнорировать H264
-      balancingStartDelay: 10000, // Задержка запуска (мс)
-      pollIntervalMs: 1000, // Интервал мониторинга
       onSetParameters: (result) => {
         console.log('Параметры обновлены:', result);
       },
@@ -621,12 +623,12 @@ graph TD
 
 ### События балансировщика
 
-| Событие                              | Описание                   | Данные                         |
-| ------------------------------------ | -------------------------- | ------------------------------ |
-| `video-balancer:balancing-scheduled` | Балансировка запланирована | `{ delay: number }`            |
-| `video-balancer:balancing-started`   | Балансировка запущена      | `{ delay: number }`            |
-| `video-balancer:balancing-stopped`   | Балансировка остановлена   | -                              |
-| `video-balancer:parameters-updated`  | Параметры обновлены        | `TResultSetParametersToSender` |
+| Событие                              | Описание                   | Данные                 |
+| ------------------------------------ | -------------------------- | ---------------------- |
+| `video-balancer:balancing-scheduled` | Балансировка запланирована | `{ delay: number }`    |
+| `video-balancer:balancing-started`   | Балансировка запущена      | `{ delay: number }`    |
+| `video-balancer:balancing-stopped`   | Балансировка остановлена   | -                      |
+| `video-balancer:parameters-updated`  | Параметры обновлены        | `RTCRtpSendParameters` |
 
 ---
 
@@ -771,8 +773,7 @@ disableDebug();
 
 ```typescript
 // Проверка состояния подключения
-console.log('Подключен:', facade.connection.isConnected());
-console.log('Зарегистрирован:', facade.isRegistered());
+console.log('Зарегистрирован:', facade.isRegistered);
 
 // Проверка конфигурации
 console.log('Настроен:', facade.isConfigured());

@@ -8,7 +8,7 @@
 - **Настраиваемая задержка**: Возможность указать кастомную задержку запуска через `balancingStartDelay`
 - **Управление жизненным циклом**: Автоматически останавливается при завершении звонка
 - **События**: Полная система событий для мониторинга состояния балансировки
-- **Ручное управление**: Возможность принудительного запуска, остановки и перезапуска
+- **Ручное управление**: Возможность принудительного запуска и остановки
 
 ## Использование
 
@@ -21,9 +21,11 @@ import { SipConnector } from 'sip-connector';
 const sipConnector = new SipConnector(
   { JsSIP },
   {
-    ignoreForCodec: 'H264',
-    onSetParameters: (result) => {
-      console.log('Video parameters updated:', result);
+    videoBalancerOptions: {
+      ignoreForCodec: 'H264',
+      onSetParameters: (result) => {
+        console.log('Video parameters updated:', result);
+      },
     },
   },
 );
@@ -45,14 +47,16 @@ sipConnector.on('video-balancer:parameters-updated', (result) => {
   console.log('Parameters updated:', result);
 });
 
-// Ручное управление балансировкой
-sipConnector.startVideoBalancing(); // Принудительный запуск
-sipConnector.stopVideoBalancing(); // Остановка
-sipConnector.restartVideoBalancing(); // Перезапуск
+// Ручное управление балансировкой через менеджер
+sipConnector.videoSendingBalancerManager.startBalancing(); // Принудительный запуск
+sipConnector.videoSendingBalancerManager.stopBalancing(); // Остановка
 
 // Проверка состояния
-console.log('Is balancing active:', sipConnector.isVideoBalancingActive);
-console.log('Is balancing scheduled:', sipConnector.isVideoBalancingScheduled);
+console.log('Is balancing active:', sipConnector.videoSendingBalancerManager.isBalancingActive);
+console.log(
+  'Is balancing scheduled:',
+  sipConnector.videoSendingBalancerManager.isBalancingScheduled,
+);
 ```
 
 ### Прямое использование VideoSendingBalancerManager
@@ -60,30 +64,34 @@ console.log('Is balancing scheduled:', sipConnector.isVideoBalancingScheduled);
 ```typescript
 import { VideoSendingBalancerManager } from './VideoSendingBalancerManager';
 
-const manager = new VideoSendingBalancerManager(callManager, sipConnector, {
+const manager = new VideoSendingBalancerManager(callManager, apiManager, {
   ignoreForCodec: 'H264',
   onSetParameters: (result) => {
     console.log('Parameters updated:', result);
   },
+  balancingStartDelay: 5000, // 5 секунд
 });
 
 // Подписка на события
-manager.events.on('balancing-scheduled', (data) => {
+manager.on('balancing-scheduled', (data) => {
   console.log(`Balancing will start in ${data.delay}ms`);
 });
 
-manager.events.on('balancing-started', (data) => {
+manager.on('balancing-started', (data) => {
   console.log(`Balancing started (delay was ${data.delay}ms)`);
 });
 
-manager.events.on('balancing-stopped', () => {
+manager.on('balancing-stopped', () => {
   console.log('Balancing stopped');
+});
+
+manager.on('parameters-updated', (result) => {
+  console.log('Video parameters updated:', result);
 });
 
 // Ручное управление
 manager.startBalancing();
 manager.stopBalancing();
-manager.restartBalancing();
 
 // Проверка состояния
 console.log('Active:', manager.isBalancingActive);
@@ -114,7 +122,7 @@ const customDelayOptions = {
   ignoreForCodec: 'H264',
 };
 
-// Кастомная задержка (30 секунд) с обработчиком
+// Полная конфигурация с обработчиком
 const fullOptions = {
   balancingStartDelay: 30000,
   ignoreForCodec: 'H264',
@@ -130,15 +138,19 @@ const fullOptions = {
 
 - `startBalancing()` - Принудительно запустить балансировку
 - `stopBalancing()` - Остановить балансировку
-- `restartBalancing()` - Перезапустить балансировку
-- `reBalance()` - Выполнить ручную балансировку (async)
-- `resetBalancing()` - Сбросить состояние балансировки
+- `balance()` - Выполнить ручную балансировку (async)
+- `on(eventName, handler)` - Подписка на события
+- `once(eventName, handler)` - Однократная подписка на события
+- `onceRace(eventNames, handler)` - Подписка на одно из нескольких событий
+- `wait(eventName)` - Ожидание события
+- `off(eventName, handler)` - Отписка от событий
 
 ### Свойства
 
-- `balancer` - Текущий экземпляр VideoSendingBalancer
+- `videoSendingBalancer` - Текущий экземпляр VideoSendingBalancer
 - `isBalancingActive` - Активна ли балансировка
 - `isBalancingScheduled` - Запланирован ли запуск балансировки
+- `events` - Система событий для подписки
 
 ### События
 
@@ -156,7 +168,7 @@ VideoSendingBalancerManager автоматически интегрируетс�
 
 Это обеспечивает автоматическое управление балансировкой без необходимости ручного вмешательства.
 
-## Конфигурация
+## Конфигурация через SipConnector
 
 Все опции VideoSendingBalancer доступны через параметр `videoBalancerOptions` в конструкторе SipConnector:
 
@@ -164,10 +176,12 @@ VideoSendingBalancerManager автоматически интегрируетс�
 const sipConnector = new SipConnector(
   { JsSIP },
   {
-    ignoreForCodec: 'H264', // Игнорировать балансировку для H264
-    onSetParameters: (result) => {
-      // Обработчик обновления параметров
-      console.log('Video parameters updated:', result);
+    videoBalancerOptions: {
+      ignoreForCodec: 'H264', // Игнорировать балансировку для H264
+      onSetParameters: (result) => {
+        // Обработчик обновления параметров
+        console.log('Video parameters updated:', result);
+      },
     },
   },
 );

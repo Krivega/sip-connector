@@ -9,6 +9,8 @@ class SipConnectorFacade implements IProxyMethods {
   public readonly sipConnector: SipConnector;
 
   constructor(sipConnector: SipConnector) {
+    this.sipConnector = sipConnector;
+
     // Proxy для проксирования методов из SipConnector
     return new Proxy(this, {
       get: (target, property, receiver) => {
@@ -34,7 +36,8 @@ class SipConnectorFacade implements IProxyMethods {
   updatePresentation(parameters): Promise<MediaStream | undefined>;
   stopShareSipConnector(parameters): Promise<void>;
 
-  // Синтаксический сахар над методами работы с  API
+  // Синтаксический сахар над методами работы с API
+  askPermissionToEnableCam(): Promise<void>;
   sendMediaState(parameters): Promise<void>;
   sendRefusalToTurnOnMic(): Promise<void>;
   sendRefusalToTurnOnCam(): Promise<void>;
@@ -42,9 +45,13 @@ class SipConnectorFacade implements IProxyMethods {
   onMustStopPresentation(handler): () => void;
   onMoveToSpectators(handler): () => void;
   onMoveToParticipants(handler): () => void;
+  onStats(handler): () => void;
+  offStats(handler): void;
 
   // Утилитарные методы
   getRemoteStreams(): MediaStream[] | undefined;
+  resolveHandleReadyRemoteStreamsDebounced(options): () => void;
+  resolveHandleReadyRemoteStreams(options): (event) => void;
 }
 ```
 
@@ -75,13 +82,13 @@ class SipConnector {
     }: {
       preferredMimeTypesVideoCodecs?: string[];
       excludeMimeTypesVideoCodecs?: string[];
-      videoBalancerOptions?: IBalancerOptions & { balancingStartDelay?: number };
+      videoBalancerOptions?: IBalancerOptions;
     } = {},
   ) {
-    this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
     this.preferredMimeTypesVideoCodecs = preferredMimeTypesVideoCodecs;
     this.excludeMimeTypesVideoCodecs = excludeMimeTypesVideoCodecs;
 
+    this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
     this.connectionManager = new ConnectionManager({ JsSIP });
     this.callManager = new CallManager();
     this.apiManager = new ApiManager({
@@ -91,6 +98,7 @@ class SipConnector {
     this.incomingCallManager = new IncomingCallManager(this.connectionManager);
     this.presentationManager = new PresentationManager({
       callManager: this.callManager,
+      maxBitrate: ONE_MEGABIT_IN_BITS,
     });
     this.statsManager = new StatsManager({
       callManager: this.callManager,
@@ -259,6 +267,7 @@ class ApiManager {
   sendDTMF(tone: number | string): Promise<void>;
   sendChannels(channels: TChannels): Promise<void>;
   sendMediaState(mediaState: TMediaState, options?): Promise<void>;
+  sendStats(parameters: { availableIncomingBitrate: number }): Promise<void>;
   sendRefusalToTurnOn(type: 'cam' | 'mic', options?): Promise<void>;
   sendRefusalToTurnOnMic(options?): Promise<void>;
   sendRefusalToTurnOnCam(options?): Promise<void>;
@@ -282,20 +291,28 @@ class PresentationManager {
   public promisePendingStopPresentation?: Promise<MediaStream | undefined>;
   public streamPresentationCurrent?: MediaStream;
 
+  private readonly maxBitrate?: number;
+
   private cancelableSendPresentationWithRepeatedCalls:
     | ReturnType<typeof repeatedCallsAsync<MediaStream>>
     | undefined;
 
   private readonly callManager: CallManager;
 
-  constructor({ callManager }: { callManager: CallManager }) {
+  constructor({ callManager, maxBitrate }: { callManager: CallManager; maxBitrate?: number }) {
     this.callManager = callManager;
+    this.maxBitrate = maxBitrate;
     this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
     this.subscribe();
   }
 
   // Основные методы
-  startPresentation(beforeStartPresentation, stream, options?): Promise<MediaStream>;
+  startPresentation(
+    beforeStartPresentation,
+    stream,
+    presentationOptions?,
+    options?,
+  ): Promise<MediaStream>;
   stopPresentation(beforeStopPresentation): Promise<MediaStream | undefined>;
   updatePresentation(beforeStartPresentation, stream, options?): Promise<MediaStream | undefined>;
   cancelSendPresentationWithRepeatedCalls(): void;
@@ -343,7 +360,7 @@ class IncomingCallManager {
 interface ICallStrategy {
   startCall(ua: UA, getSipServerUrl: TGetServerUrl, params): Promise<RTCPeerConnection>;
   endCall(): Promise<void>;
-  answerToIncomingCall(ua: UA, getSipServerUrl: TGetServerUrl, params): Promise<RTCPeerConnection>;
+  answerToIncomingCall(extractIncomingRTCSession, params): Promise<RTCPeerConnection>;
   getEstablishedRTCSession(): RTCSession | undefined;
   getCallConfiguration(): TCallConfiguration | undefined;
   getRemoteStreams(): MediaStream[] | undefined;
@@ -432,10 +449,15 @@ class SipConnectorFacade {
   +replaceMediaStream(mediaStream, options)
   +sendMediaState(parameters)
   +getRemoteStreams(): MediaStream[] | undefined
+  +resolveHandleReadyRemoteStreamsDebounced(options): Function
+  +resolveHandleReadyRemoteStreams(options): Function
+  +askPermissionToEnableCam(): Promise<void>
   +onUseLicense(handler): (() => void)
   +onMustStopPresentation(handler): (() => void)
   +onMoveToSpectators(handler): (() => void)
   +onMoveToParticipants(handler): (() => void)
+  +onStats(handler): (() => void);
+  +offStats(handler): void;
 }
 
 class SipConnector {
@@ -503,6 +525,7 @@ class ApiManager {
   +sendDTMF(tone: number | string)
   +sendChannels(channels: TChannels)
   +sendMediaState(mediaState: TMediaState, options?)
+  +sendStats(parameters)
   +sendRefusalToTurnOn(type: 'cam' | 'mic', options?)
   +sendRefusalToTurnOnMic(options?)
   +sendRefusalToTurnOnCam(options?)
@@ -519,7 +542,7 @@ class PresentationManager {
   +promisePendingStartPresentation?: Promise
   +promisePendingStopPresentation?: Promise
   +streamPresentationCurrent?: MediaStream
-  +startPresentation(beforeStartPresentation, stream, options?)
+  +startPresentation(beforeStartPresentation, stream, presentationOptions?, options?)
   +stopPresentation(beforeStopPresentation)
   +updatePresentation(beforeStartPresentation, stream, options?)
   +cancelSendPresentationWithRepeatedCalls(): void
@@ -542,7 +565,7 @@ class ICallStrategy {
   <<interface>>
   +startCall(ua: UA, getSipServerUrl: TGetServerUrl, params)
   +endCall()
-  +answerToIncomingCall(ua: UA, getSipServerUrl: TGetServerUrl, params)
+  +answerToIncomingCall(extractIncomingRTCSession, params)
   +getEstablishedRTCSession(): RTCSession | undefined
   +getCallConfiguration(): TCallConfiguration | undefined
   +getRemoteStreams(): MediaStream[] | undefined
@@ -556,7 +579,7 @@ class ICallStrategy {
 class MCUCallStrategy {
   +startCall(ua: UA, getSipServerUrl: TGetServerUrl, params)
   +endCall()
-  +answerToIncomingCall(ua: UA, getSipServerUrl: TGetServerUrl, params)
+  +answerToIncomingCall(extractIncomingRTCSession, params)
   +getEstablishedRTCSession(): RTCSession | undefined
   +getCallConfiguration(): TCallConfiguration | undefined
   +getRemoteStreams(): MediaStream[] | undefined
@@ -579,15 +602,19 @@ class VideoSendingBalancerManager {
   +isBalancingActive: boolean
   +videoSendingBalancer: VideoSendingBalancer
   +isBalancingScheduled(): boolean
+  +startBalancing(): Promise~void~
+  +stopBalancing(): void
+  +balance(): Promise~TResult~
 }
 
 class VideoSendingBalancer {
   +eventHandler: VideoSendingEventHandler
   +senderBalancer: SenderBalancer
+  +parametersSetterWithQueue: ParametersSetterWithQueue
   +trackMonitor: TrackMonitor
   +subscribe(): void
   +unsubscribe(): void
-  +reBalance(): Promise~TResult~
+  +balance(): Promise~TResult~
   +reset(): void
 }
 
@@ -595,7 +622,7 @@ class TrackMonitor {
   +pollIntervalMs: number
   +maxPollIntervalMs: number
   +currentPollIntervalMs: number
-  +subscribe(sender: RTCRtpSender, callback: () => void): void
+  +subscribe(sender: RTCRtpSender | undefined, callback: () => void): void
   +unsubscribe(): void
   +attachTrack(callback: () => void, track?: MediaStreamTrack): void
   +schedulePoll(track: MediaStreamTrack, callback: () => void): void
@@ -730,7 +757,7 @@ MCUCallStrategy --|> AbstractCallStrategy : extends
      - `setStrategy(strategy: ICallStrategy)`: Установка стратегии звонка.
      - `startCall(ua, getSipServerUrl, params)`: Начало звонка.
      - `endCall()`: Завершение звонка.
-     - `answerToIncomingCall(ua, getSipServerUrl, params)`: Ответ на входящий звонок.
+     - `answerToIncomingCall(extractIncomingRTCSession, params)`: Ответ на входящий звонок.
      - `getEstablishedRTCSession()`: Получение активной сессии.
      - `getCallConfiguration()`: Получение конфигурации звонка.
      - `getRemoteStreams()`: Получение удалённых потоков.
@@ -764,7 +791,7 @@ MCUCallStrategy --|> AbstractCallStrategy : extends
      3. Управление состоянием презентации.
    - **Зависимости**: Зависит от `CallManager`.
    - **Методы**:
-     - `startPresentation(beforeStartPresentation, stream, options?)`: Начало презентации.
+     - `startPresentation(beforeStartPresentation, stream, presentationOptions?, options?)`: Начало презентации.
      - `stopPresentation(beforeStopPresentation)`: Остановка презентации.
      - `updatePresentation(beforeStartPresentation, stream, options?)`: Обновление презентации.
      - `cancelSendPresentationWithRepeatedCalls()`: Отмена отправки презентации.
@@ -802,7 +829,7 @@ MCUCallStrategy --|> AbstractCallStrategy : extends
    - **Методы**:
      - `startCall(ua, getSipServerUrl, params)`: Начало звонка.
      - `endCall()`: Завершение звонка.
-     - `answerToIncomingCall(ua, getSipServerUrl, params)`: Ответ на входящий звонк.
+     - `answerToIncomingCall(extractIncomingRTCSession, params)`: Ответ на входящий звонк.
      - `getEstablishedRTCSession()`: Получение активной сессии.
      - `getCallConfiguration()`: Получение конфигурации звонка.
      - `getRemoteStreams()`: Получение удалённых потоков.
@@ -839,7 +866,7 @@ MCUCallStrategy --|> AbstractCallStrategy : extends
   3. Обработка событий управления главной камерой.
   4. Координация работы с WebRTC senders.
 
-- **Зависимости**: Зависит от `SipConnector`.
+- **Зависимости**: Работает с RTCPeerConnection и зависит от `ApiManager`.
 
 - **Компоненты**:
   - `VideoSendingEventHandler`: Обработка событий управления камерой.
@@ -851,7 +878,7 @@ MCUCallStrategy --|> AbstractCallStrategy : extends
 - **Методы**:
   - `subscribe()`: Подписка на события управления камерой.
   - `unsubscribe()`: Отписка от событий.
-  - `reBalance()`: Ручная балансировка.
+  - `balance()`: Балансировка.
   - `reset()`: Сброс состояния.
 
 ### 10. **StatsPeerConnection** (Сбор статистики WebRTC)
@@ -888,6 +915,9 @@ MCUCallStrategy --|> AbstractCallStrategy : extends
 
 - **Методы**:
   - Автоматическое управление: запуск через `balancingStartDelay` (по умолчанию 10 сек).
+  - `startBalancing()`: Принудительный запуск балансировки.
+  - `stopBalancing()`: Остановка балансировки.
+  - `balance()`: Выполнение балансировки.
   - `isBalancingActive`: Проверка активности балансировки.
   - `isBalancingScheduled`: Проверка запланированности запуска.
 
@@ -1078,8 +1108,6 @@ const sipConnector = new SipConnector(
     excludeMimeTypesVideoCodecs: ['video/H264'],
     videoBalancerOptions: {
       ignoreForCodec: 'H264',
-      balancingStartDelay: 10000, // 10 секунд
-      pollIntervalMs: 1000, // Адаптивное опрашивание
       onSetParameters: (result) => {
         console.log('Video parameters updated:', result);
       },
@@ -1139,7 +1167,6 @@ const peerConnection = await sipConnectorFacade.callToServer({
 const presentationStream = await sipConnectorFacade.startPresentation({
   mediaStream: presentationMediaStream,
   isP2P: false,
-  maxBitrate: 4000000, // Увеличенный битрейт для HD контента
   contentHint: 'detail', // Оптимизация для детального контента
   degradationPreference: 'maintain-resolution', // Приоритет разрешения
 });
