@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.0.3](https://github.com/Krivega/sip-connector/compare/v16.0.2...v16.0.3) (2025-08-29)
+
+### Bug Fixes
+
+- type onBeforeProgressCall ([f0b534a](https://github.com/Krivega/sip-connector/commit/f0b534ac86b6ea56091727f2ff5b0e7bb8cbbfa9))
+
 ### [16.0.2](https://github.com/Krivega/sip-connector/compare/v16.0.1...v16.0.2) (2025-08-26)
 
 ### Bug Fixes
