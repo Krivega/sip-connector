@@ -410,7 +410,7 @@ class SipConnectorFacade implements IProxyMethods {
     directionVideo?: RTCRtpTransceiverDirection;
     directionAudio?: RTCRtpTransceiverDirection;
     setRemoteStreams: (streams: MediaStream[]) => void;
-    onBeforeProgressCall?: (conference?: string) => void;
+    onBeforeProgressCall?: (conference: string) => void;
     onSuccessProgressCall?: (parameters_: { isPurgatory: boolean }) => void;
     onFailProgressCall?: () => void;
     onFinishProgressCall?: () => void;
@@ -531,7 +531,8 @@ class SipConnectorFacade implements IProxyMethods {
     if (onBeforeProgressCall) {
       const conference = getIncomingNumber();
 
-      onBeforeProgressCall(conference);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      onBeforeProgressCall(conference!);
     }
 
     return answer()
