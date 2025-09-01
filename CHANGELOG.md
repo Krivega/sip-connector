@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.1.0](https://github.com/Krivega/sip-connector/compare/v16.0.3...v16.1.0) (2025-09-01)
+
+### Features
+
+- add connection Queue manager ([#49](https://github.com/Krivega/sip-connector/issues/49)) ([16ff779](https://github.com/Krivega/sip-connector/commit/16ff779a92e5212dc9c0238f1e5eac462fd33b8d))
+
 ### [16.0.3](https://github.com/Krivega/sip-connector/compare/v16.0.2...v16.0.3) (2025-08-29)
 
 ### Bug Fixes
