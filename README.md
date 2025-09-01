@@ -728,7 +728,7 @@ import {
 │                  SipConnector                      │ ← Координация менеджеров
 ├────────────────────────────────────────────────────┤
 │ Connection │ Connection │ Call       │  API        │ ← Основные менеджеры
-│ Manager    │ Stack      │ Manager    │  Manager    │
+│ Manager    │ Queue      │ Manager    │  Manager    │
 │            │ Manager    │            │             │
 ├────────────────────────────────────────────────────┤
 │ Stats      │Presentation│IncomingCall│VideoBalancer│ ← Специализированные менеджеры
