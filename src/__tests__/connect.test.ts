@@ -151,6 +151,8 @@ describe('connect', () => {
 
     expect(sipConnector.getCallConfiguration().answer).toBe(undefined);
 
+    await connectPromise;
+
     const connectionConfiguration = sipConnector.getConnectionConfiguration();
 
     expect(connectionConfiguration.sipServerUrl).toBe(
@@ -160,8 +162,6 @@ describe('connect', () => {
     expect(connectionConfiguration.register).toBe(dataForConnectionWithAuthorization.register);
     expect(connectionConfiguration.user).toBe(dataForConnectionWithAuthorization.user);
     expect(connectionConfiguration.password).toBe(dataForConnectionWithAuthorization.password);
-
-    return connectPromise;
   });
 
   it('должен устанавливать displayName после подключения с авторизацией', async () => {

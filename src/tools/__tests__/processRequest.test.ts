@@ -176,20 +176,21 @@ describe('processRequest', () => {
   });
 
   it('#10 debounce changed displayName', async () => {
-    expect.assertions(2);
-    // @ts-expect-error
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    processRequest(dataForConnectionWithoutAuthorization);
+    expect.assertions(3);
 
-    return processRequest({
-      ...dataForConnectionWithoutAuthorization,
-      // @ts-expect-error
-      displayNameChanged: true,
-      displayName: thirdWord,
-    }).then((success) => {
-      expect(success).toBe(true);
-      expect(sipConnector.connectionManager.ua!.configuration.display_name).toBe(thirdWord);
-    });
+    const results = await Promise.allSettled([
+      processRequest(dataForConnectionWithoutAuthorization),
+      processRequest({
+        ...dataForConnectionWithoutAuthorization,
+        // @ts-expect-error
+        displayNameChanged: true,
+        displayName: thirdWord,
+      }),
+    ]);
+
+    expect(results[0].status).toBe('rejected');
+    expect(results[1].status).toBe('fulfilled');
+    expect(sipConnector.connectionManager.ua!.configuration.display_name).toBe(thirdWord);
   });
 
   it('#11 async changed displayName', async () => {
@@ -251,7 +252,7 @@ describe('processRequest', () => {
 
     // @ts-expect-error
     return processRequest(dataForConnectionWithAuthorization).then(async () => {
-      return Promise.all([
+      return Promise.allSettled([
         // @ts-expect-error
         processRequest(withNameChanged),
         // 300 -debounced value
@@ -259,9 +260,9 @@ describe('processRequest', () => {
           // @ts-expect-error
           return processRequest({ ...withNameChanged, name: thirdWord });
         }),
-      ]).then(([success1, success2]) => {
-        expect(success1).toBe(false); // cancel first request
-        expect(success2).toBe(true);
+      ]).then(([result1, result2]) => {
+        expect(result1.status).toBe('rejected');
+        expect(result2.status).toBe('fulfilled');
         expect(sipConnector.connectionManager.ua!.configuration.uri.user).toBe(thirdWord);
         expect(sipConnector.connectionManager.ua!.configuration.uri.host).toBe(
           dataForConnectionWithAuthorization.sipServerUrl,
