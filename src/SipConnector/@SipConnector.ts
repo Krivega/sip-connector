@@ -3,7 +3,7 @@ import { Events } from 'events-constructor';
 import { ApiManager } from '@/ApiManager';
 import { CallManager } from '@/CallManager';
 import { ConnectionManager } from '@/ConnectionManager';
-import { ConnectionStackManager } from '@/ConnectionStackManager';
+import { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import { IncomingCallManager } from '@/IncomingCallManager';
 import { PresentationManager } from '@/PresentationManager';
 import { StatsManager } from '@/StatsManager';
@@ -23,7 +23,7 @@ class SipConnector {
 
   public readonly connectionManager: ConnectionManager;
 
-  public readonly connectionStackManager: ConnectionStackManager;
+  public readonly connectionQueueManager: ConnectionQueueManager;
 
   public readonly callManager: CallManager;
 
@@ -58,7 +58,7 @@ class SipConnector {
 
     this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
     this.connectionManager = new ConnectionManager({ JsSIP });
-    this.connectionStackManager = new ConnectionStackManager({
+    this.connectionQueueManager = new ConnectionQueueManager({
       connectionManager: this.connectionManager,
     });
     this.callManager = new CallManager();
@@ -160,27 +160,27 @@ class SipConnector {
   }
 
   public connect: ConnectionManager['connect'] = async (...args) => {
-    return this.connectionStackManager.connect(...args);
+    return this.connectionQueueManager.connect(...args);
   };
 
   public set: ConnectionManager['set'] = async (...args) => {
-    return this.connectionStackManager.set(...args);
+    return this.connectionQueueManager.set(...args);
   };
 
   public disconnect = async () => {
-    return this.connectionStackManager.disconnect();
+    return this.connectionQueueManager.disconnect();
   };
 
   public register = async () => {
-    return this.connectionStackManager.register();
+    return this.connectionQueueManager.register();
   };
 
   public unregister = async () => {
-    return this.connectionStackManager.unregister();
+    return this.connectionQueueManager.unregister();
   };
 
   public tryRegister = async () => {
-    return this.connectionStackManager.tryRegister();
+    return this.connectionQueueManager.tryRegister();
   };
 
   public sendOptions = async (
@@ -188,18 +188,18 @@ class SipConnector {
     body?: Parameters<ConnectionManager['sendOptions']>[1],
     extraHeaders?: Parameters<ConnectionManager['sendOptions']>[2],
   ) => {
-    return this.connectionStackManager.sendOptions(target, body, extraHeaders);
+    return this.connectionQueueManager.sendOptions(target, body, extraHeaders);
   };
 
   public ping = async (
     body?: Parameters<ConnectionManager['ping']>[0],
     extraHeaders?: Parameters<ConnectionManager['ping']>[1],
   ) => {
-    return this.connectionStackManager.ping(body, extraHeaders);
+    return this.connectionQueueManager.ping(body, extraHeaders);
   };
 
   public checkTelephony: ConnectionManager['checkTelephony'] = async (parameters) => {
-    return this.connectionStackManager.checkTelephony(parameters);
+    return this.connectionQueueManager.checkTelephony(parameters);
   };
 
   public isConfigured = () => {

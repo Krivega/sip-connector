@@ -634,25 +634,25 @@ graph TD
 
 ## 🔄 Управление последовательными операциями
 
-### ConnectionStackManager
+### ConnectionQueueManager
 
-`ConnectionStackManager` обеспечивает **последовательное выполнение операций** для предотвращения конфликтов и гонки условий:
+`ConnectionQueueManager` обеспечивает **последовательное выполнение операций** для предотвращения конфликтов и гонки условий:
 
 ```typescript
-// Все операции ConnectionManager проходят через стек
-const connectionStackManager = new ConnectionStackManager({
+// Все операции ConnectionManager проходят через очередь
+const connectionQueueManager = new ConnectionQueueManager({
   connectionManager: connectionManager,
 });
 
 // Операции выполняются последовательно
-await connectionStackManager.connect(params);
-await connectionStackManager.register();
-await connectionStackManager.checkTelephony(params);
+await connectionQueueManager.connect(params);
+await connectionQueueManager.register();
+await connectionQueueManager.checkTelephony(params);
 ```
 
 ### Принцип работы
 
-- **Стек операций**: Использует `stack-promises` с `noRunIsNotActual: true`
+- **Очередь операций**: Использует `stack-promises` с `noRunIsNotActual: true`
 - **Предотвращение конфликтов**: Исключает одновременные connect/disconnect операции
 
 ### Поддерживаемые операции
@@ -672,12 +672,12 @@ await connectionStackManager.checkTelephony(params);
 ### Интеграция в SipConnector
 
 ```typescript
-// SipConnector автоматически использует ConnectionStackManager
+// SipConnector автоматически использует ConnectionQueueManager
 const sipConnector = new SipConnector({ JsSIP });
 
-// Все операции подключения проходят через стек
-await sipConnector.connect(params); // → connectionStackManager.connect()
-await sipConnector.disconnect(); // → connectionStackManager.disconnect()
+// Все операции подключения проходят через очередь
+await sipConnector.connect(params); // → connectionQueueManager.connect()
+await sipConnector.disconnect(); // → connectionQueueManager.disconnect()
 ```
 
 ---

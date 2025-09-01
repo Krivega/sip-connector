@@ -63,7 +63,7 @@ class SipConnectorFacade implements IProxyMethods {
 class SipConnector {
   public readonly events: Events<typeof EVENT_NAMES>;
   public readonly connectionManager: ConnectionManager;
-  public readonly connectionStackManager: ConnectionStackManager;
+  public readonly connectionQueueManager: ConnectionQueueManager;
   public readonly callManager: CallManager;
   public readonly apiManager: ApiManager;
   public readonly incomingCallManager: IncomingCallManager;
@@ -91,7 +91,7 @@ class SipConnector {
 
     this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
     this.connectionManager = new ConnectionManager({ JsSIP });
-    this.connectionStackManager = new ConnectionStackManager({
+    this.connectionQueueManager = new ConnectionQueueManager({
       connectionManager: this.connectionManager,
     });
     this.callManager = new CallManager();
@@ -118,15 +118,15 @@ class SipConnector {
   }
 
   // Проксирование методов менеджеров
-  connect: ConnectionStackManager['connect'];
-  disconnect: ConnectionStackManager['disconnect'];
-  register: ConnectionStackManager['register'];
-  unregister: ConnectionStackManager['unregister'];
-  tryRegister: ConnectionStackManager['tryRegister'];
-  checkTelephony: ConnectionStackManager['checkTelephony'];
-  sendOptions: ConnectionStackManager['sendOptions'];
-  ping: ConnectionStackManager['ping'];
-  set: ConnectionStackManager['set'];
+  connect: ConnectionQueueManager['connect'];
+  disconnect: ConnectionQueueManager['disconnect'];
+  register: ConnectionQueueManager['register'];
+  unregister: ConnectionQueueManager['unregister'];
+  tryRegister: ConnectionQueueManager['tryRegister'];
+  checkTelephony: ConnectionQueueManager['checkTelephony'];
+  sendOptions: ConnectionQueueManager['sendOptions'];
+  ping: ConnectionQueueManager['ping'];
+  set: ConnectionQueueManager['set'];
   call: CallManager['startCall'];
   hangUp: CallManager['endCall'];
   answerToIncomingCall: CallManager['answerToIncomingCall'];
@@ -219,10 +219,10 @@ class ConnectionManager {
 
 ---
 
-### 4. **ConnectionStackManager** (Управление стеком операций)
+### 4. **ConnectionQueueManager** (Управление очередью операций)
 
 ```ts
-class ConnectionStackManager {
+class ConnectionQueueManager {
   private readonly connectionManager: ConnectionManager;
   private readonly stackPromises = createStackPromises<unknown>({
     noRunIsNotActual: true,
@@ -437,7 +437,7 @@ graph TB
             I["VideoSendingBalancerManager<br/>⚖️ Auto Video Optimization<br/>+ 10sec Delay Start"]
             J["VideoSendingBalancer<br/>🎛️ Video Parameters Control"]
             K["TrackMonitor<br/>👁️ Adaptive Polling<br/>1000ms → 16000ms"]
-            L["ConnectionStackManager<br/>🔄 Sequential Operations<br/>+ Stack Promises"]
+            L["ConnectionQueueManager<br/>🔄 Sequential Operations<br/>+ Queue Promises"]
         end
 
         subgraph "Foundation"
@@ -500,7 +500,7 @@ class SipConnectorFacade {
 class SipConnector {
   +events: Events
   +connectionManager: ConnectionManager
-  +connectionStackManager: ConnectionStackManager
+  +connectionQueueManager: ConnectionQueueManager
   +callManager: CallManager
   +apiManager: ApiManager
   +incomingCallManager: IncomingCallManager
@@ -509,15 +509,15 @@ class SipConnector {
   +videoSendingBalancerManager: VideoSendingBalancerManager
   +preferredMimeTypesVideoCodecs?: string[]
   +excludeMimeTypesVideoCodecs?: string[]
-  +connect: ConnectionStackManager['connect']
-  +disconnect: ConnectionStackManager['disconnect']
-  +register: ConnectionStackManager['register']
-  +unregister: ConnectionStackManager['unregister']
-  +tryRegister: ConnectionStackManager['tryRegister']
-  +checkTelephony: ConnectionStackManager['checkTelephony']
-  +sendOptions: ConnectionStackManager['sendOptions']
-  +ping: ConnectionStackManager['ping']
-  +set: ConnectionStackManager['set']
+  +connect: ConnectionQueueManager['connect']
+  +disconnect: ConnectionQueueManager['disconnect']
+  +register: ConnectionQueueManager['register']
+  +unregister: ConnectionQueueManager['unregister']
+  +tryRegister: ConnectionQueueManager['tryRegister']
+  +checkTelephony: ConnectionQueueManager['checkTelephony']
+  +sendOptions: ConnectionQueueManager['sendOptions']
+  +ping: ConnectionQueueManager['ping']
+  +set: ConnectionQueueManager['set']
   +call: CallManager['startCall']
   +hangUp: CallManager['endCall']
   +answerToIncomingCall: CallManager['answerToIncomingCall']
@@ -547,7 +547,7 @@ class ConnectionManager {
   +isRegisterConfig: boolean
 }
 
-class ConnectionStackManager {
+class ConnectionQueueManager {
   +connectionManager: ConnectionManager
   +stackPromises: StackPromises
   +connect: ConnectionManager['connect']
@@ -715,8 +715,8 @@ class AbstractCallStrategy {
 
 SipConnectorFacade --> SipConnector : depends on
 SipConnector --> ConnectionManager : depends on
-SipConnector --> ConnectionStackManager : depends on
-ConnectionStackManager --> ConnectionManager : depends on
+SipConnector --> ConnectionQueueManager : depends on
+ConnectionQueueManager --> ConnectionManager : depends on
 SipConnector --> CallManager : depends on
 SipConnector --> ApiManager : depends on
 SipConnector --> IncomingCallManager : depends on
@@ -782,11 +782,11 @@ MCUCallStrategy --|> AbstractCallStrategy : extends
      4. Проксирование методов менеджеров.
      5. **Управление настройками кодеков** (preferredMimeTypesVideoCodecs, excludeMimeTypesVideoCodecs).
      6. **Интеграция VideoSendingBalancerManager** для автоматической оптимизации видеопотоков.
-     7. **Интеграция ConnectionStackManager** для последовательного выполнения операций подключения.
+     7. **Интеграция ConnectionQueueManager** для последовательного выполнения операций подключения.
    - **Зависимости**: Зависит от всех менеджеров (`ConnectionManager`, `CallManager`, `ApiManager`, `IncomingCallManager`, `PresentationManager`, `StatsManager`, `VideoSendingBalancerManager`).
    - **Методы**:
      - Проксированные методы от `ConnectionManager`: `isConfigured`, `getConnectionConfiguration`, `getSipServerUrl`.
-     - Проксированные методы от `ConnectionStackManager`: `connect`, `disconnect`, `register`, `unregister`, `tryRegister`, `checkTelephony`, `sendOptions`, `ping`, `set`.
+     - Проксированные методы от `ConnectionQueueManager`: `connect`, `disconnect`, `register`, `unregister`, `tryRegister`, `checkTelephony`, `sendOptions`, `ping`, `set`.
      - Проксированные методы от `CallManager`: `call`, `hangUp`, `answerToIncomingCall`, `getEstablishedRTCSession`, `getCallConfiguration`, `getRemoteStreams`, `replaceMediaStream`.
      - Проксированные методы от `PresentationManager`: `startPresentation`, `stopPresentation`, `updatePresentation`.
      - Проксированные методы от `ApiManager`: `waitChannels`, `waitSyncMediaState`, `sendDTMF`, `sendChannels`, `sendMediaState`, `sendRefusalToTurnOn`, `sendRefusalToTurnOnMic`, `sendRefusalToTurnOnCam`, `sendMustStopPresentationP2P`, `sendStoppedPresentationP2P`, `sendStoppedPresentation`, `askPermissionToStartPresentationP2P`, `askPermissionToStartPresentation`, `askPermissionToEnableCam`.
@@ -813,16 +813,16 @@ MCUCallStrategy --|> AbstractCallStrategy : extends
      - `ping(body?, extraHeaders?)`: Отправка PING.
      - `checkTelephony(parameters)`: Проверка телефонии.
 
-4. **ConnectionStackManager**:
+4. **ConnectionQueueManager**:
    - **Ответственность**:
      1. **Последовательное выполнение операций подключения** для предотвращения конфликтов.
-     2. **Управление стеком операций** с использованием `stack-promises`.
+     2. **Управление очередью операций** с использованием `stack-promises`.
      3. **Проксирование методов ConnectionManager** с гарантией последовательности.
      4. **Предотвращение гонки условий** между connect/disconnect операциями.
    - **Зависимости**: Зависит от `ConnectionManager`, использует `stack-promises`.
    - **Принцип работы**:
    - Использует `createStackPromises` с `noRunIsNotActual: true`.
-   - Все методы ConnectionManager проксируются через стек.
+   - Все методы ConnectionManager проксируются через очередь.
    - **Методы**:
      - Проксирует все методы `ConnectionManager`: `connect`, `disconnect`, `register`, `unregister`, `tryRegister`, `checkTelephony`, `sendOptions`, `ping`, `set`.
      - Каждый метод обернут в `stackPromises.run()` для последовательного выполнения.
@@ -902,35 +902,32 @@ MCUCallStrategy --|> AbstractCallStrategy : extends
      - `statsPeerConnection`: Экземпляр StatsPeerConnection для сбора статистики.
 
 10. **ICallStrategy** (интерфейс):
+    - **Ответственность**: Определение общего интерфейса для стратегий звонков.
+    - **Методы**:
+      - `startCall(ua, getSipServerUrl, params)`: Начало звонка.
+      - `endCall()`: Завершение звонка.
+      - `answerToIncomingCall(extractIncomingRTCSession, params)`: Ответ на входящий звонк.
+      - `getEstablishedRTCSession()`: Получение активной сессии.
+      - `getCallConfiguration()`: Получение конфигурации звонка.
+      - `getRemoteStreams()`: Получение удалённых потоков.
+      - `replaceMediaStream(mediaStream, options?)`: Замена медиапотока.
 
-- **Ответственность**: Определение общего интерфейса для стратегий звонков.
-- **Методы**:
-  - `startCall(ua, getSipServerUrl, params)`: Начало звонка.
-  - `endCall()`: Завершение звонка.
-  - `answerToIncomingCall(extractIncomingRTCSession, params)`: Ответ на входящий звонк.
-  - `getEstablishedRTCSession()`: Получение активной сессии.
-  - `getCallConfiguration()`: Получение конфигурации звонка.
-  - `getRemoteStreams()`: Получение удалённых потоков.
-  - `replaceMediaStream(mediaStream, options?)`: Замена медиапотока.
+11. **MCUCallStrategy**:
+    - **Ответственность**: Реализация логики звонков для MCU (Multipoint Control Unit).
+    - **Зависимости**: Наследуется от `AbstractCallStrategy`, использует `RemoteStreamsManager`.
+    - **Методы**: Реализация всех методов интерфейса `ICallStrategy`.
+    - **Особенности**:
+      - Управление удалёнными потоками через `RemoteStreamsManager`.
+      - Подписка на события JsSIP сессии.
+      - Обработка конфигурации звонков и медиапотоков.
 
-**MCUCallStrategy**:
-
-- **Ответственность**: Реализация логики звонков для MCU (Multipoint Control Unit).
-- **Зависимости**: Наследуется от `AbstractCallStrategy`, использует `RemoteStreamsManager`.
-- **Методы**: Реализация всех методов интерфейса `ICallStrategy`.
-- **Особенности**:
-  - Управление удалёнными потоками через `RemoteStreamsManager`.
-  - Подписка на события JsSIP сессии.
-  - Обработка конфигурации звонков и медиапотоков.
-
-**AbstractCallStrategy** (абстрактный класс):
-
-- **Ответственность**: Базовая реализация общей логики для всех стратегий звонков.
-- **Зависимости**: Использует систему событий.
-- **Свойства**:
-  - `isPendingCall`: Флаг ожидания исходящего звонка.
-  - `isPendingAnswer`: Флаг ожидания ответа на входящий звонок.
-- **Методы**: Определяет абстрактные методы, которые должны быть реализованы в наследниках.
+12. **AbstractCallStrategy** (абстрактный класс):
+    - **Ответственность**: Базовая реализация общей логики для всех стратегий звонков.
+    - **Зависимости**: Использует систему событий.
+    - **Свойства**:
+      - `isPendingCall`: Флаг ожидания исходящего звонка.
+      - `isPendingAnswer`: Флаг ожидания ответа на входящий звонок.
+    - **Методы**: Определяет абстрактные методы, которые должны быть реализованы в наследниках.
 
 ---
 
@@ -1131,7 +1128,7 @@ return new Proxy(this, {
 
 8. **Очередь задач (Task Queue)**:
    - `ParametersSetterWithQueue` в `VideoSendingBalancer` обеспечивает последовательное выполнение операций установки параметров.
-   - `ConnectionStackManager` использует `stack-promises` для последовательного выполнения операций подключения.
+   - `ConnectionQueueManager` использует `stack-promises` для последовательного выполнения операций подключения.
 
 ---
 
@@ -1300,7 +1297,7 @@ await sipConnectorFacade.disconnectFromServer();
 5. **🆕 Настройки кодеков в SipConnector**: Централизованное управление предпочитаемыми кодеками
 6. **🆕 Улучшенная статистика**: availableIncomingBitrate и адаптивные интервалы сбора
 7. **🆕 maxBitrate для презентаций**: Точный контроль качества screen sharing
-8. **🆕 Последовательные операции**: ConnectionStackManager предотвращает конфликты между операциями подключения
+8. **🆕 Последовательные операции**: ConnectionQueueManager предотвращает конфликты между операциями подключения
 9. **Мониторинг**: StatsManager и StatsPeerConnection предоставляют детальную телеметрию
 10. **Расширяемость**: Система стратегий позволяет легко добавлять новые типы соединений
 11. **Надёжность**: Очереди задач и обработка ошибок на всех уровнях

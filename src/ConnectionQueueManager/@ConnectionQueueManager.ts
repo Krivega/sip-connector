@@ -2,7 +2,7 @@ import { createStackPromises } from 'stack-promises';
 
 import type { ConnectionManager } from '@/ConnectionManager';
 
-class ConnectionStackManager {
+class ConnectionQueueManager {
   private readonly connectionManager: ConnectionManager;
 
   private readonly stackPromises = createStackPromises<unknown>({
@@ -68,4 +68,4 @@ class ConnectionStackManager {
   };
 }
 
-export default ConnectionStackManager;
+export default ConnectionQueueManager;
