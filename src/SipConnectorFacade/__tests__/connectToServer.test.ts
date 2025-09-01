@@ -93,10 +93,12 @@ describe('connectToServer', () => {
   });
 
   it('unregistered async', async () => {
-    return Promise.all([
+    return Promise.allSettled([
       sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization),
       sipConnectorFacade.connectToServer(dataForConnectionWithoutAuthorization),
-    ]).then(() => {
+    ]).then((results) => {
+      expect(results[0].status).toBe('rejected');
+      expect(results[1].status).toBe('fulfilled');
       expect(hasValidUri(sipConnector.connectionManager.ua!.configuration.uri)).toBe(true);
       expect(parseObjectWithoutUri(sipConnector.connectionManager.ua!.configuration)).toEqual(
         uaConfigurationWithoutAuthorization,
