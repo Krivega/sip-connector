@@ -8,7 +8,7 @@ import type { ConnectionManager } from '@/ConnectionManager';
 const INTERVAL_PING_SERVER_REQUEST = 15_000;
 const MAX_FAIL_REQUESTS_COUNT = 2;
 
-class PingServer {
+class PingServerRequester {
   private readonly callManager: CallManager;
 
   private readonly connectionManager: ConnectionManager;
@@ -65,4 +65,4 @@ class PingServer {
   }
 }
 
-export default PingServer;
+export default PingServerRequester;
