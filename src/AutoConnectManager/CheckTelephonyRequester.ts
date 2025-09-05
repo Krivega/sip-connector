@@ -2,8 +2,8 @@ import { resolveRequesterByTimeout } from '@krivega/timeout-requester';
 
 import type { ConnectionManager } from '@/ConnectionManager';
 
-type TParametersCheckTelephony = Parameters<ConnectionManager['checkTelephony']>[0];
-type TOptionsCheckTelephony = {
+export type TParametersCheckTelephony = Parameters<ConnectionManager['checkTelephony']>[0];
+export type TOptionsCheckTelephony = {
   interval: number;
   onBeforeRequest?: () => Promise<void>;
 };

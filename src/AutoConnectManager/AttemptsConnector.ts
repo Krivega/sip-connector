@@ -12,7 +12,7 @@ const DEFAULT_LIMIT = 30;
 
 type TStateMachineActor = ActorRefFrom<typeof stateMachine>;
 
-export default class AttemptsConnector {
+class AttemptsConnector {
   private readonly actor: TStateMachineActor;
 
   private readonly counter: Counter;
@@ -75,8 +75,13 @@ export default class AttemptsConnector {
     this.sendEvent(EEvents.START_CALL);
   }
 
+  public increment(): void {
+    this.counter.increment();
+  }
+
   public reset(): void {
     this.sendEvent(EEvents.RESET);
+    this.counter.reset();
   }
 
   public destroy(): void {
@@ -103,3 +108,5 @@ export default class AttemptsConnector {
     this.actor.send(event);
   }
 }
+
+export default AttemptsConnector;
