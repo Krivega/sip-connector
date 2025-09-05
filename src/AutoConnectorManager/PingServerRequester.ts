@@ -1,6 +1,6 @@
 import { requesterByTimeoutsWithFailCalls } from '@krivega/timeout-requester';
 
-import debug from '@/logger';
+import logger from '@/logger';
 
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
@@ -36,29 +36,29 @@ class PingServerRequester {
       requestInterval: INTERVAL_PING_SERVER_REQUEST,
 
       request: async () => {
-        debug('ping');
+        logger('ping');
 
         return this.connectionManager.ping().then(() => {
-          debug('ping success');
+          logger('ping success');
         });
       },
     });
   }
 
-  public start() {
-    debug('start');
+  public start({ onFailRequest }: { onFailRequest: () => void }) {
+    logger('start');
 
     this.unsubscribeFromCallStatus = this.callManager.onChangeCallStatus((isCallActive) => {
       if (isCallActive) {
         this.pingServerByTimeoutWithFailCalls.stop();
       } else {
-        this.pingServerByTimeoutWithFailCalls.start().catch(debug);
+        this.pingServerByTimeoutWithFailCalls.start(undefined, { onFailRequest }).catch(logger);
       }
     });
   }
 
   public stop() {
-    debug('stop');
+    logger('stop');
 
     this.unsubscribeFromCallStatus?.();
     this.pingServerByTimeoutWithFailCalls.stop();

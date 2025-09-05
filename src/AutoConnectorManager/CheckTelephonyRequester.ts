@@ -1,5 +1,7 @@
 import { resolveRequesterByTimeout } from '@krivega/timeout-requester';
 
+import logger from '@/logger';
+
 import type { ConnectionManager } from '@/ConnectionManager';
 
 export type TParametersCheckTelephony = Parameters<ConnectionManager['checkTelephony']>[0];
@@ -8,7 +10,6 @@ export type TOptionsCheckTelephony = {
   onBeforeRequest?: () => Promise<void>;
 };
 
-const DEFAULT_INTERVAL = 15_000;
 const noop = async () => {};
 
 class CheckTelephonyRequester {
@@ -18,36 +19,56 @@ class CheckTelephonyRequester {
 
   private request = noop;
 
-  private interval: number = DEFAULT_INTERVAL;
-
-  public constructor({ connectionManager }: { connectionManager: ConnectionManager }) {
+  public constructor({
+    connectionManager,
+    interval,
+  }: {
+    connectionManager: ConnectionManager;
+    interval: number;
+  }) {
     this.connectionManager = connectionManager;
 
     this.checkTelephonyByTimeout = resolveRequesterByTimeout({
       isDontStopOnFail: true,
-      requestInterval: this.interval,
+      requestInterval: interval,
       request: this.request,
     });
   }
 
   public start({
-    options,
     getParameters,
+    clearCache,
+    onSuccessRequest,
+    onFailRequest,
   }: {
-    options: TOptionsCheckTelephony;
     getParameters: () => TParametersCheckTelephony;
+    onSuccessRequest: () => void;
+    onFailRequest: () => void;
+    clearCache?: () => Promise<void>;
   }) {
-    this.interval = options.interval;
-
     this.request = async () => {
-      return options.onBeforeRequest?.().then(async () => {
-        const parameters = getParameters();
+      if (clearCache) {
+        await clearCache();
+      }
 
-        return this.connectionManager.checkTelephony(parameters);
-      });
+      const parameters = getParameters();
+
+      return this.connectionManager.checkTelephony(parameters);
     };
 
-    this.checkTelephonyByTimeout.start(undefined);
+    this.checkTelephonyByTimeout.start(undefined, {
+      onFailRequest: (error: unknown) => {
+        logger('check telephony: error - ', (error as Error).message);
+
+        onFailRequest();
+      },
+      onSuccessRequest: () => {
+        logger('check telephony: success');
+
+        this.stop();
+        onSuccessRequest();
+      },
+    });
   }
 
   public stop() {

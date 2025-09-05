@@ -1,28 +1,26 @@
 import { isCanceledError } from '@krivega/cancelable-promise';
 import { DelayRequester, hasCanceledError } from '@krivega/timeout-requester';
+import { TypedEvents } from 'events-constructor';
 
 import { hasPromiseIsNotActualError, type ConnectionQueueManager } from '@/ConnectionQueueManager';
 import log from '@/logger';
 import AttemptsConnector from './AttemptsConnector';
 import CheckTelephonyRequester from './CheckTelephonyRequester';
+import { EEvent, EVENT_NAMES } from './eventNames';
 import PingServerRequester from './PingServerRequester';
 
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
-import type { TOptionsCheckTelephony, TParametersCheckTelephony } from './CheckTelephonyRequester';
+import type { TParametersCheckTelephony } from './CheckTelephonyRequester';
+import type { TEventMap, TEvents } from './eventNames';
+import type { IAutoConnectorOptions } from './types';
 
 type TParametersConnect = Parameters<ConnectionQueueManager['connect']>[0];
 
-type TCheckTelephony = {
-  getParameters: () => TParametersCheckTelephony;
-  options: TOptionsCheckTelephony;
-};
-
-type TCallbacks = {
-  onSuccess: () => void;
-  onBeforeAttemptConnect: () => void;
-  onFail: (parameters: { isRequestTimeoutError: boolean }) => void;
-  onCancel?: () => void;
+type TParametersAutoConnect = {
+  getConnectParameters: () => TParametersConnect;
+  getCheckTelephonyParameters: () => TParametersCheckTelephony;
+  clearCache?: () => Promise<void>;
 };
 
 type TErrorSipConnector = Error & { cause: string };
@@ -37,7 +35,11 @@ const hasRequestTimeoutError = ({ cause }: TErrorSipConnector): boolean => {
   return cause === REQUEST_TIMEOUT_CAUSE;
 };
 
-class AutoConnectManager {
+const DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS = 3000;
+
+class AutoConnectorManager {
+  public readonly events: TEvents;
+
   private readonly connectionQueueManager: ConnectionQueueManager;
 
   private readonly checkTelephonyRequester: CheckTelephonyRequester;
@@ -52,23 +54,29 @@ class AutoConnectManager {
     connectionQueueManager,
     connectionManager,
     callManager,
+    options: {
+      checkTelephonyRequestInterval,
+      timeoutBetweenAttempts = DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS,
+    },
   }: {
     connectionQueueManager: ConnectionQueueManager;
     connectionManager: ConnectionManager;
     callManager: CallManager;
+    options: IAutoConnectorOptions;
   }) {
+    this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
     this.connectionQueueManager = connectionQueueManager;
-    this.checkTelephonyRequester = new CheckTelephonyRequester({ connectionManager });
+
+    this.checkTelephonyRequester = new CheckTelephonyRequester({
+      connectionManager,
+      interval: checkTelephonyRequestInterval,
+    });
     this.pingServerRequester = new PingServerRequester({ connectionManager, callManager });
     this.attemptsConnector = new AttemptsConnector();
-    this.delayBetweenAttempts = new DelayRequester(3000);
+    this.delayBetweenAttempts = new DelayRequester(timeoutBetweenAttempts);
   }
 
-  public processConnectWithResetAttempts(parameters: {
-    connectParameters: TParametersConnect;
-    checkTelephony: TCheckTelephony;
-    callbacks?: TCallbacks;
-  }) {
+  public processConnectWithResetAttempts(parameters: TParametersAutoConnect) {
     log('processConnectWithResetAttempts');
 
     this.cancel();
@@ -89,39 +97,51 @@ class AutoConnectManager {
     });
   }
 
-  private readonly runCheckTelephony = (parameters: {
-    connectParameters: TParametersConnect;
-    checkTelephony: TCheckTelephony;
-    callbacks?: TCallbacks;
-  }) => {
+  public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+    return this.events.on(eventName, handler);
+  }
+
+  public once<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+    return this.events.once(eventName, handler);
+  }
+
+  public onceRace<T extends keyof TEventMap>(
+    eventNames: T[],
+    handler: (data: TEventMap[T], eventName: string) => void,
+  ) {
+    return this.events.onceRace(eventNames, handler);
+  }
+
+  public async wait<T extends keyof TEventMap>(eventName: T): Promise<TEventMap[T]> {
+    return this.events.wait(eventName);
+  }
+
+  public off<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+    this.events.off(eventName, handler);
+  }
+
+  private readonly runCheckTelephony = (parameters: TParametersAutoConnect) => {
     log('runCheckTelephony');
 
-    // clearDNSCache на уровне электрона
-    // + requestServerIp -> {sipServerIp, remoteAddress, isUnifiedSdpSemantic} (проверка на 200 и использование sipServerIp)
-    // + sipConnectorFacade.checkTelephony по  по полученным {sipServerIp, remoteAddress, isUnifiedSdpSemantic}
-    this.checkTelephonyRequester.start(parameters.checkTelephony);
+    this.checkTelephonyRequester.start({
+      getParameters: parameters.getCheckTelephonyParameters,
+      clearCache: parameters.clearCache,
+      onSuccessRequest: () => {
+        log('runCheckTelephony: onSuccessRequest');
 
-    // успех
-    (() => {
-      log('runCheckTelephony: onSuccessRequest');
-
-      this.processConnectIfDisconnected(parameters);
-    })();
-
-    // ошибка
-    (() => {
-      log('runCheckTelephony: onFailRequest');
-    })();
+        this.processConnectIfDisconnected(parameters);
+      },
+      onFailRequest: () => {
+        log('runCheckTelephony: onFailRequest');
+      },
+    });
   };
 
-  private readonly processConnect = async (parameters: {
-    connectParameters: TParametersConnect;
-    checkTelephony: TCheckTelephony;
-    callbacks?: TCallbacks;
-  }) => {
+  private readonly processConnect = async (parameters: TParametersAutoConnect) => {
     log('processConnect: attempts.count', this.attemptsConnector.count);
 
-    parameters.callbacks?.onBeforeAttemptConnect();
+    // onBeforeAttemptConnect
+    this.events.trigger(EEvent.BEFORE_ATTEMPT, {});
     this.stopPing();
 
     const isLimitReached = this.attemptsConnector.hasLimitReached();
@@ -131,9 +151,7 @@ class AutoConnectManager {
 
       this.attemptsConnector.startCheckTelephony();
 
-      parameters.callbacks?.onFail({
-        isRequestTimeoutError: false,
-      });
+      this.events.trigger(EEvent.FAILED, { isRequestTimeoutError: false });
 
       this.runCheckTelephony(parameters);
 
@@ -143,24 +161,21 @@ class AutoConnectManager {
     this.attemptsConnector.startConnect();
     this.attemptsConnector.increment();
 
-    // requestServerIp -> {sipServerIp, remoteAddress, isUnifiedSdpSemantic}
-    // + checkAuth {name, password}
-    // + sipConnectorFacade.connect по полученным {sipServerIp, remoteAddress, isUnifiedSdpSemantic}
-    // sipServerUrl: sipServerIp,
-    // sipWebSocketServerURL: `wss://${sipServerUrl}/webrtc/wss/`,
+    const connectParameters = parameters.getConnectParameters();
 
-    await this.connectInner(parameters.connectParameters)
+    await this.connectInner(connectParameters)
       .then(() => {
         log('processConnect success');
 
-        this.pingServerRequester.start();
+        this.pingServerRequester.start({
+          onFailRequest: () => {
+            log('pingServer onFailRequest');
 
-        // after ping start
-        log('pingServer onFailRequest');
+            this.processConnectWithResetAttempts(parameters);
+          },
+        });
 
-        this.processConnectWithResetAttempts(parameters);
-
-        parameters.callbacks?.onSuccess();
+        this.events.trigger(EEvent.CONNECTED, {});
       })
       .catch((error: unknown) => {
         const isPromiseIsNotActualError = hasPromiseIsNotActualError(error as TErrorSipConnector);
@@ -168,7 +183,7 @@ class AutoConnectManager {
         if (isPromiseIsNotActualError) {
           log('processConnect: not actual error', error);
 
-          parameters.callbacks?.onCancel?.();
+          this.events.trigger(EEvent.CANCELLED, {});
 
           return;
         }
@@ -180,7 +195,7 @@ class AutoConnectManager {
 
           this.cancel();
 
-          parameters.callbacks?.onFail({
+          this.events.trigger(EEvent.FAILED, {
             isRequestTimeoutError: hasRequestTimeoutError(error as TErrorSipConnector),
           });
 
@@ -200,11 +215,7 @@ class AutoConnectManager {
     this.checkTelephonyRequester.stop();
   };
 
-  private readonly processConnectIfDisconnected = (parameters: {
-    connectParameters: TParametersConnect;
-    checkTelephony: TCheckTelephony;
-    callbacks?: TCallbacks;
-  }) => {
+  private readonly processConnectIfDisconnected = (parameters: TParametersAutoConnect) => {
     const hasFailedOrDisconnected = (): boolean => {
       return false;
     };
@@ -215,15 +226,11 @@ class AutoConnectManager {
       this.processConnectWithResetAttempts(parameters);
     } else {
       this.stopPing();
-      parameters.callbacks?.onSuccess();
+      this.events.trigger(EEvent.CONNECTED, {});
     }
   };
 
-  private readonly processReconnect = (parameters: {
-    connectParameters: TParametersConnect;
-    checkTelephony: TCheckTelephony;
-    callbacks?: TCallbacks;
-  }) => {
+  private readonly processReconnect = (parameters: TParametersAutoConnect) => {
     log('processReconnect');
 
     this.delayBetweenAttempts
@@ -231,20 +238,18 @@ class AutoConnectManager {
       .then(async () => {
         log('processReconnect: delayBetweenAttempts success');
 
-        // return this.cancelableRequestClearDNSCache.request();
+        return parameters.clearCache?.();
       })
       .then(async () => {
-        log('processReconnect: clearDNSCache success');
+        log('processReconnect: clearCache success');
 
         return this.processConnect(parameters);
       })
       .catch((error: unknown) => {
         if (isCanceledError(error) || hasCanceledError(error as Error)) {
-          parameters.callbacks?.onCancel?.();
+          this.events.trigger(EEvent.CANCELLED, {});
         } else {
-          parameters.callbacks?.onFail({
-            isRequestTimeoutError: false,
-          });
+          this.events.trigger(EEvent.FAILED, { isRequestTimeoutError: false });
         }
 
         log('processReconnect: error', error);
@@ -265,4 +270,4 @@ class AutoConnectManager {
   }
 }
 
-export default AutoConnectManager;
+export default AutoConnectorManager;
