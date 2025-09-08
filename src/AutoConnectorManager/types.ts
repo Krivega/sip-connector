@@ -2,7 +2,7 @@ import type { ConnectionManager } from '@/ConnectionManager';
 import type { ConnectionQueueManager } from '@/ConnectionQueueManager';
 
 export interface IAutoConnectorOptions {
-  checkTelephonyRequestInterval: number;
+  checkTelephonyRequestInterval?: number;
   timeoutBetweenAttempts?: number;
 }
 export type ISubscriber = {

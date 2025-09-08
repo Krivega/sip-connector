@@ -23,6 +23,7 @@ import type {
 } from './types';
 
 const DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS = 3000;
+const DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL = 15_000;
 
 class AutoConnectorManager {
   public readonly events: TEvents;
@@ -47,15 +48,12 @@ class AutoConnectorManager {
     connectionQueueManager,
     connectionManager,
     callManager,
-    options: {
-      checkTelephonyRequestInterval,
-      timeoutBetweenAttempts = DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS,
-    },
+    options,
   }: {
     connectionQueueManager: ConnectionQueueManager;
     connectionManager: ConnectionManager;
     callManager: CallManager;
-    options: IAutoConnectorOptions;
+    options?: IAutoConnectorOptions;
   }) {
     this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
     this.connectionManager = connectionManager;
@@ -63,7 +61,7 @@ class AutoConnectorManager {
 
     this.checkTelephonyRequester = new CheckTelephonyRequester({
       connectionManager,
-      interval: checkTelephonyRequestInterval,
+      interval: options?.checkTelephonyRequestInterval ?? DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL,
     });
     this.pingServerRequester = new PingServerRequester({ connectionManager, callManager });
     this.registrationFailedOutOfCallSubscriber = new RegistrationFailedOutOfCallSubscriber({
@@ -71,7 +69,9 @@ class AutoConnectorManager {
       callManager,
     });
     this.attemptsState = new AttemptsState();
-    this.delayBetweenAttempts = new DelayRequester(timeoutBetweenAttempts);
+    this.delayBetweenAttempts = new DelayRequester(
+      options?.timeoutBetweenAttempts ?? DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS,
+    );
   }
 
   public get isAttemptInProgress(): boolean {
