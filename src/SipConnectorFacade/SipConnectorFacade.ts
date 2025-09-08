@@ -88,9 +88,12 @@ interface IProxyMethods {
   checkTelephony: SipConnector['checkTelephony'];
   waitChannels: SipConnector['waitChannels'];
   ping: SipConnector['ping'];
+  startAutoConnect: SipConnector['startAutoConnect'];
+  cancelAutoConnect: SipConnector['cancelAutoConnect'];
   connection: SipConnector['connection'];
   isConfigured: SipConnector['isConfigured'];
   isRegistered: SipConnector['isRegistered'];
+  isAutoConnectAttemptInProgress: SipConnector['isAutoConnectAttemptInProgress'];
 }
 
 const proxyMethods = new Set<keyof IProxyMethods>([
@@ -106,9 +109,12 @@ const proxyMethods = new Set<keyof IProxyMethods>([
   'checkTelephony',
   'waitChannels',
   'ping',
+  'startAutoConnect',
+  'cancelAutoConnect',
   'connection',
   'isConfigured',
   'isRegistered',
+  'isAutoConnectAttemptInProgress',
 ]);
 
 class SipConnectorFacade implements IProxyMethods {
@@ -148,6 +154,12 @@ class SipConnectorFacade implements IProxyMethods {
   // @ts-expect-error: proxy method
   public ping: IProxyMethods['ping'];
 
+  // @ts-expect-error: proxy method
+  public startAutoConnect: IProxyMethods['startAutoConnect'];
+
+  // @ts-expect-error: proxy method
+  public cancelAutoConnect: IProxyMethods['cancelAutoConnect'];
+
   //  proxy method
   public connection: IProxyMethods['connection'];
 
@@ -156,6 +168,9 @@ class SipConnectorFacade implements IProxyMethods {
 
   // @ts-expect-error: proxy method
   public isRegistered: IProxyMethods['isRegistered'];
+
+  // @ts-expect-error: proxy method
+  public isAutoConnectAttemptInProgress: IProxyMethods['isAutoConnectAttemptInProgress'];
 
   public readonly sipConnector: SipConnector;
 

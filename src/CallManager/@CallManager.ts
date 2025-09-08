@@ -108,13 +108,13 @@ class CallManager {
       EEvent.FAILED,
     ] as const;
 
-    const unsubscribers = callStatusEvents.map((eventName) => {
+    const disposers = callStatusEvents.map((eventName) => {
       return this.events.on(eventName as TEvent, handleChangeCallStatus);
     });
 
     return () => {
-      unsubscribers.forEach((unsubscribe) => {
-        unsubscribe();
+      disposers.forEach((disposer) => {
+        disposer();
       });
     };
   }
