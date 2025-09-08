@@ -42,7 +42,7 @@ class AttemptsState {
 
   public reset(): void {
     this.countInner = this.initialCount;
-    this.inProgress = false;
+    this.finishAttempt();
   }
 }
 
