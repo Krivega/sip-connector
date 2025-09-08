@@ -25,6 +25,8 @@ const DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS = 3000;
 class AutoConnectorManager {
   public readonly events: TEvents;
 
+  private readonly connectionManager: ConnectionManager;
+
   private readonly connectionQueueManager: ConnectionQueueManager;
 
   private readonly checkTelephonyRequester: CheckTelephonyRequester;
@@ -50,6 +52,7 @@ class AutoConnectorManager {
     options: IAutoConnectorOptions;
   }) {
     this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
+    this.connectionManager = connectionManager;
     this.connectionQueueManager = connectionQueueManager;
 
     this.checkTelephonyRequester = new CheckTelephonyRequester({
@@ -77,7 +80,7 @@ class AutoConnectorManager {
     this.pingServerRequester.stop();
     this.attemptsConnector.reset();
 
-    this.disconnectInner().catch((error: unknown) => {
+    this.disconnectIfConfigured().catch((error: unknown) => {
       log('disconnect: error', error);
     });
   }
@@ -105,7 +108,7 @@ class AutoConnectorManager {
     this.events.off(eventName, handler);
   }
 
-  private readonly runCheckTelephony = (parameters: TParametersAutoConnect) => {
+  private runCheckTelephony(parameters: TParametersAutoConnect) {
     log('runCheckTelephony');
 
     this.checkTelephonyRequester.start({
@@ -120,12 +123,11 @@ class AutoConnectorManager {
         log('runCheckTelephony: onFailRequest');
       },
     });
-  };
+  }
 
-  private readonly connect = async (parameters: TParametersAutoConnect) => {
+  private async connect(parameters: TParametersAutoConnect) {
     log('connect: attempts.count', this.attemptsConnector.count);
 
-    // onBeforeAttemptConnect
     this.events.trigger(EEvent.BEFORE_ATTEMPT, {});
     this.stopRequesters();
 
@@ -149,7 +151,7 @@ class AutoConnectorManager {
     await parameters
       .getConnectParameters()
       .then(async (connectParameters) => {
-        return this.connectInner(connectParameters);
+        return this.connectWithDisconnect(connectParameters, parameters.hasReadyForConnection);
       })
       .then(() => {
         log('connect success');
@@ -179,31 +181,30 @@ class AutoConnectorManager {
 
         this.reconnect(parameters);
       });
-  };
+  }
 
-  private readonly stopRequesters = () => {
+  private stopRequesters() {
     log('stopRequesters');
 
     this.pingServerRequester.stop();
     this.checkTelephonyRequester.stop();
-  };
+  }
 
-  private readonly connectIfDisconnected = (parameters: TParametersAutoConnect) => {
-    const hasFailedOrDisconnected = (): boolean => {
-      return false;
-    };
+  private connectIfDisconnected(parameters: TParametersAutoConnect) {
+    const isFailedOrDisconnected =
+      this.connectionManager.isFailed || this.connectionManager.isDisconnected;
 
-    log('connectIfDisconnected: hasFailedOrDisconnected', hasFailedOrDisconnected());
+    log('connectIfDisconnected: isFailedOrDisconnected', isFailedOrDisconnected);
 
-    if (hasFailedOrDisconnected()) {
+    if (isFailedOrDisconnected) {
       this.start(parameters);
     } else {
       this.stopRequesters();
       this.events.trigger(EEvent.CONNECTED, {});
     }
-  };
+  }
 
-  private readonly reconnect = (parameters: TParametersAutoConnect) => {
+  private reconnect(parameters: TParametersAutoConnect) {
     log('reconnect');
 
     this.delayBetweenAttempts
@@ -227,19 +228,73 @@ class AutoConnectorManager {
 
         log('reconnect: error', error);
       });
-  };
+  }
 
-  private async connectInner(params: TParametersConnect) {
+  private async connectWithDisconnect(
+    parameters: TParametersConnect,
+    hasReadyForConnection?: () => boolean,
+  ) {
     return this.connectionQueueManager
       .disconnect()
-      .catch(() => {})
+      .catch((error: unknown) => {
+        log('connectWithDisconnect: disconnect error', error);
+      })
       .then(async () => {
-        return this.connectionQueueManager.connect(params);
+        log('connectWithDisconnect: disconnect success');
+
+        return this.connectWithProcessError(parameters, hasReadyForConnection);
       });
   }
 
-  private async disconnectInner() {
-    return this.connectionQueueManager.disconnect().catch(() => {});
+  private async connectWithProcessError(
+    parameters: TParametersConnect,
+    hasReadyForConnection?: () => boolean,
+  ) {
+    const isReadyForConnection = hasReadyForConnection?.() ?? true;
+
+    log('connectWithProcessError: hasReadyForConnection, ', isReadyForConnection);
+
+    if (!isReadyForConnection) {
+      return;
+    }
+
+    await this.connectionQueueManager
+      .connect(parameters)
+      .then((isConnected) => {
+        log('connect, isConnected', isConnected);
+      })
+      .catch(async (error: unknown) => {
+        const isErrorNullOrUndefined = error === null || error === undefined;
+
+        if (isErrorNullOrUndefined || !hasPromiseIsNotActualError(error as TErrorSipConnector)) {
+          const connectToServerError =
+            error instanceof Error ? error : new Error('Failed to connect to server');
+
+          log('connectWithProcessError, error:', error);
+
+          return this.disconnectIfConfigured()
+            .then(() => {
+              throw connectToServerError;
+            })
+            .catch(() => {
+              throw connectToServerError;
+            });
+        }
+
+        return undefined;
+      });
+  }
+
+  private async disconnectIfConfigured() {
+    const isConfigured = this.connectionManager.isConfigured();
+
+    log('disconnect: isConfigured, ', isConfigured);
+
+    if (isConfigured) {
+      return this.connectionQueueManager.disconnect();
+    }
+
+    return undefined;
   }
 }
 
