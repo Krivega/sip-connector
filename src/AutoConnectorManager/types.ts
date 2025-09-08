@@ -5,8 +5,8 @@ export interface IAutoConnectorOptions {
   checkTelephonyRequestInterval?: number;
   timeoutBetweenAttempts?: number;
 }
-export type ISubscriber = {
-  subscribe: (callback: () => void) => void;
+export type ISubscriber<T = void> = {
+  subscribe: (callback: (value: T) => void) => void;
   unsubscribe: () => void;
 };
 

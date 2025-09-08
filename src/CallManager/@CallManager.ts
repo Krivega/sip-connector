@@ -1,6 +1,6 @@
 import { Events } from 'events-constructor';
 
-import { EVENT_NAMES, EEvent } from './eventNames';
+import { EVENT_NAMES } from './eventNames';
 import { MCUCallStrategy } from './MCUCallStrategy';
 
 import type { RTCSession } from '@krivega/jssip';
@@ -88,36 +88,6 @@ class CallManager {
   public replaceMediaStream: ICallStrategy['replaceMediaStream'] = async (...args) => {
     return this.strategy.replaceMediaStream(...args);
   };
-
-  public onChangeCallStatus(callback: (isActive: boolean) => void): () => void {
-    let currentStatus = this.isCallActive;
-
-    const handleChangeCallStatus = () => {
-      const newStatus = this.isCallActive;
-
-      if (newStatus !== currentStatus) {
-        currentStatus = newStatus;
-        callback(newStatus);
-      }
-    };
-
-    const callStatusEvents = [
-      EEvent.ACCEPTED,
-      EEvent.CONFIRMED,
-      EEvent.ENDED,
-      EEvent.FAILED,
-    ] as const;
-
-    const disposers = callStatusEvents.map((eventName) => {
-      return this.events.on(eventName as TEvent, handleChangeCallStatus);
-    });
-
-    return () => {
-      disposers.forEach((disposer) => {
-        disposer();
-      });
-    };
-  }
 }
 
 export default CallManager;

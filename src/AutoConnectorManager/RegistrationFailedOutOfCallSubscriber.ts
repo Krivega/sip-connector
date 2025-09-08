@@ -1,15 +1,14 @@
+import AbstractSubscriber from './AbstractSubscriber';
+import CallStatusSubscriber from './CallStatusSubscriber';
+import RegistrationFailedSubscriber from './RegistrationFailedSubscriber';
+
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
-import type { ISubscriber } from './types';
 
-class RegistrationFailedOutOfCallSubscriber implements ISubscriber {
-  private readonly connectionManager: ConnectionManager;
+class RegistrationFailedOutOfCallSubscriber extends AbstractSubscriber {
+  private readonly callStatusSubscriber: CallStatusSubscriber;
 
-  private readonly callManager: CallManager;
-
-  private registrationFailedDisposer?: () => void;
-
-  private callStatusDisposer?: () => void;
+  private readonly registrationFailedSubscriber: RegistrationFailedSubscriber;
 
   public constructor({
     connectionManager,
@@ -18,41 +17,27 @@ class RegistrationFailedOutOfCallSubscriber implements ISubscriber {
     connectionManager: ConnectionManager;
     callManager: CallManager;
   }) {
-    this.connectionManager = connectionManager;
-    this.callManager = callManager;
+    super();
+
+    this.callStatusSubscriber = new CallStatusSubscriber({ callManager });
+    this.registrationFailedSubscriber = new RegistrationFailedSubscriber({ connectionManager });
   }
 
   public subscribe(callback: () => void) {
     this.unsubscribe();
 
-    this.registrationFailedDisposer = this.connectionManager.on('registrationFailed', () => {
-      this.subscribeChangeCallStatus(callback);
+    this.registrationFailedSubscriber.subscribe(() => {
+      this.callStatusSubscriber.subscribe((isCallActive) => {
+        if (!isCallActive) {
+          callback();
+        }
+      });
     });
   }
 
   public unsubscribe() {
-    this.unsubscribeRegistrationFailed();
-    this.unsubscribeChangeCallStatus();
-  }
-
-  private subscribeChangeCallStatus(callback: () => void) {
-    this.unsubscribeChangeCallStatus();
-
-    this.callStatusDisposer = this.callManager.onChangeCallStatus((isCallActive) => {
-      if (!isCallActive) {
-        callback();
-      }
-    });
-  }
-
-  private unsubscribeChangeCallStatus() {
-    this.callStatusDisposer?.();
-    this.callStatusDisposer = undefined;
-  }
-
-  private unsubscribeRegistrationFailed() {
-    this.registrationFailedDisposer?.();
-    this.registrationFailedDisposer = undefined;
+    this.callStatusSubscriber.unsubscribe();
+    this.registrationFailedSubscriber.unsubscribe();
   }
 }
 
