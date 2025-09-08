@@ -1,7 +1,8 @@
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
+import type { ISubscriber } from './types';
 
-class RegistrationFailedOutOfCallListener {
+class RegistrationFailedOutOfCallSubscriber implements ISubscriber {
   private readonly connectionManager: ConnectionManager;
 
   private readonly callManager: CallManager;
@@ -21,11 +22,11 @@ class RegistrationFailedOutOfCallListener {
     this.callManager = callManager;
   }
 
-  public subscribe({ onFailed }: { onFailed: () => void }) {
+  public subscribe(callback: () => void) {
     this.unsubscribe();
 
     this.registrationFailedDisposer = this.connectionManager.on('registrationFailed', () => {
-      this.subscribeChangeCallStatus(onFailed);
+      this.subscribeChangeCallStatus(callback);
     });
   }
 
@@ -34,12 +35,12 @@ class RegistrationFailedOutOfCallListener {
     this.unsubscribeChangeCallStatus();
   }
 
-  private subscribeChangeCallStatus(onFailed: () => void) {
+  private subscribeChangeCallStatus(callback: () => void) {
     this.unsubscribeChangeCallStatus();
 
     this.callStatusDisposer = this.callManager.onChangeCallStatus((isCallActive) => {
       if (!isCallActive) {
-        onFailed();
+        callback();
       }
     });
   }
@@ -55,4 +56,4 @@ class RegistrationFailedOutOfCallListener {
   }
 }
 
-export default RegistrationFailedOutOfCallListener;
+export default RegistrationFailedOutOfCallSubscriber;

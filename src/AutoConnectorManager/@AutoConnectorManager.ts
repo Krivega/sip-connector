@@ -8,7 +8,7 @@ import AttemptsConnector from './AttemptsConnector';
 import CheckTelephonyRequester from './CheckTelephonyRequester';
 import { EEvent, EVENT_NAMES } from './eventNames';
 import PingServerRequester from './PingServerRequester';
-import RegistrationFailedOutOfCallListener from './RegistrationFailedOutOfCallListener';
+import RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCallSubscriber';
 
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
@@ -16,6 +16,7 @@ import type { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import type { TEventMap, TEvents } from './eventNames';
 import type {
   IAutoConnectorOptions,
+  ISubscriber,
   TErrorSipConnector,
   TParametersAutoConnect,
   TParametersConnect,
@@ -34,11 +35,13 @@ class AutoConnectorManager {
 
   private readonly pingServerRequester: PingServerRequester;
 
-  private readonly registrationFailedOutOfCallListener: RegistrationFailedOutOfCallListener;
+  private readonly registrationFailedOutOfCallSubscriber: RegistrationFailedOutOfCallSubscriber;
 
   private readonly attemptsConnector: AttemptsConnector;
 
   private readonly delayBetweenAttempts: DelayRequester;
+
+  private connectorSubscriber?: ISubscriber;
 
   public constructor({
     connectionQueueManager,
@@ -63,7 +66,7 @@ class AutoConnectorManager {
       interval: checkTelephonyRequestInterval,
     });
     this.pingServerRequester = new PingServerRequester({ connectionManager, callManager });
-    this.registrationFailedOutOfCallListener = new RegistrationFailedOutOfCallListener({
+    this.registrationFailedOutOfCallSubscriber = new RegistrationFailedOutOfCallSubscriber({
       connectionManager,
       callManager,
     });
@@ -73,6 +76,8 @@ class AutoConnectorManager {
 
   public start(parameters: TParametersAutoConnect) {
     log('start');
+
+    this.connectorSubscriber = parameters.connectorSubscriber;
 
     this.cancel();
     this.connect(parameters).catch((error: unknown) => {
@@ -84,8 +89,8 @@ class AutoConnectorManager {
     log('cancel');
 
     this.delayBetweenAttempts.cancelRequest();
-    this.pingServerRequester.stop();
     this.attemptsConnector.reset();
+    this.stopConnectTriggers();
 
     this.disconnectIfConfigured().catch((error: unknown) => {
       log('disconnect: error', error);
@@ -136,7 +141,7 @@ class AutoConnectorManager {
     log('connect: attempts.count', this.attemptsConnector.count);
 
     this.events.trigger(EEvent.BEFORE_ATTEMPT, {});
-    this.stopConnectionTriggers();
+    this.stopConnectTriggers();
 
     const isLimitReached = this.attemptsConnector.hasLimitReached();
 
@@ -171,12 +176,16 @@ class AutoConnectorManager {
           },
         });
 
-        this.registrationFailedOutOfCallListener.subscribe({
-          onFailed: () => {
-            log('registrationFailedOutOfCallListener onFailed');
+        this.registrationFailedOutOfCallSubscriber.subscribe(() => {
+          log('registrationFailedOutOfCallListener callback');
 
-            this.start(parameters);
-          },
+          this.start(parameters);
+        });
+
+        this.connectorSubscriber?.subscribe(() => {
+          log('connectorSubscriber callback');
+
+          this.start(parameters);
         });
 
         this.events.trigger(EEvent.CONNECTED, {});
@@ -198,12 +207,13 @@ class AutoConnectorManager {
       });
   }
 
-  private stopConnectionTriggers() {
-    log('stopConnectionTriggers');
+  private stopConnectTriggers() {
+    log('stopConnectTriggers');
 
     this.pingServerRequester.stop();
     this.checkTelephonyRequester.stop();
-    this.registrationFailedOutOfCallListener.unsubscribe();
+    this.registrationFailedOutOfCallSubscriber.unsubscribe();
+    this.connectorSubscriber?.unsubscribe();
   }
 
   private connectIfDisconnected(parameters: TParametersAutoConnect) {
@@ -215,7 +225,7 @@ class AutoConnectorManager {
     if (isFailedOrDisconnected) {
       this.start(parameters);
     } else {
-      this.stopConnectionTriggers();
+      this.stopConnectTriggers();
       this.events.trigger(EEvent.CONNECTED, {});
     }
   }

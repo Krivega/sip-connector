@@ -5,6 +5,10 @@ export interface IAutoConnectorOptions {
   checkTelephonyRequestInterval: number;
   timeoutBetweenAttempts?: number;
 }
+export type ISubscriber = {
+  subscribe: (callback: () => void) => void;
+  unsubscribe: () => void;
+};
 
 export type TErrorSipConnector = Error & { cause: string };
 export type TParametersCheckTelephony = Parameters<ConnectionManager['checkTelephony']>[0];
@@ -14,4 +18,5 @@ export type TParametersAutoConnect = {
   getCheckTelephonyParameters: () => TParametersCheckTelephony;
   hasReadyForConnection?: () => boolean;
   clearCache?: () => Promise<void>;
+  connectorSubscriber?: ISubscriber;
 };
