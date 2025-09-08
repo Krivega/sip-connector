@@ -4,7 +4,7 @@ import { TypedEvents } from 'events-constructor';
 
 import { hasPromiseIsNotActualError } from '@/ConnectionQueueManager';
 import log from '@/logger';
-import AttemptsConnector from './AttemptsConnector';
+import AttemptsState from './AttemptsState';
 import CheckTelephonyRequester from './CheckTelephonyRequester';
 import { EEvent, EVENT_NAMES } from './eventNames';
 import PingServerRequester from './PingServerRequester';
@@ -37,7 +37,7 @@ class AutoConnectorManager {
 
   private readonly registrationFailedOutOfCallSubscriber: RegistrationFailedOutOfCallSubscriber;
 
-  private readonly attemptsConnector: AttemptsConnector;
+  private readonly attemptsState: AttemptsState;
 
   private readonly delayBetweenAttempts: DelayRequester;
 
@@ -70,7 +70,7 @@ class AutoConnectorManager {
       connectionManager,
       callManager,
     });
-    this.attemptsConnector = new AttemptsConnector();
+    this.attemptsState = new AttemptsState();
     this.delayBetweenAttempts = new DelayRequester(timeoutBetweenAttempts);
   }
 
@@ -89,7 +89,7 @@ class AutoConnectorManager {
     log('cancel');
 
     this.delayBetweenAttempts.cancelRequest();
-    this.attemptsConnector.reset();
+    this.attemptsState.reset();
     this.stopConnectTriggers();
 
     this.disconnectIfConfigured().catch((error: unknown) => {
@@ -138,12 +138,12 @@ class AutoConnectorManager {
   }
 
   private async connect(parameters: TParametersAutoConnect) {
-    log('connect: attempts.count', this.attemptsConnector.count);
+    log('connect: attempts.count', this.attemptsState.count);
 
     this.events.trigger(EEvent.BEFORE_ATTEMPT, {});
     this.stopConnectTriggers();
 
-    const isLimitReached = this.attemptsConnector.hasLimitReached();
+    const isLimitReached = this.attemptsState.hasLimitReached();
 
     if (isLimitReached) {
       log('connect: isLimitReached!');
@@ -153,8 +153,8 @@ class AutoConnectorManager {
       return;
     }
 
-    this.attemptsConnector.startConnect();
-    this.attemptsConnector.increment();
+    this.attemptsState.startAttempt();
+    this.attemptsState.increment();
 
     return this.processConnect(parameters);
   }
@@ -190,7 +190,7 @@ class AutoConnectorManager {
   }
 
   private handleLimitReached(parameters: TParametersAutoConnect) {
-    this.attemptsConnector.startCheckTelephony();
+    this.attemptsState.finishAttempt();
 
     this.events.trigger(EEvent.FAILED, { isRequestTimeoutError: false });
 
