@@ -34,7 +34,6 @@ class PingServerRequester {
     >(MAX_FAIL_REQUESTS_COUNT, {
       whenPossibleRequest: async () => {},
       requestInterval: INTERVAL_PING_SERVER_REQUEST,
-
       request: async () => {
         logger('ping');
 

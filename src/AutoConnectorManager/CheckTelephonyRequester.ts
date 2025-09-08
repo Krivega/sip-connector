@@ -3,21 +3,15 @@ import { resolveRequesterByTimeout } from '@krivega/timeout-requester';
 import logger from '@/logger';
 
 import type { ConnectionManager } from '@/ConnectionManager';
-
-export type TParametersCheckTelephony = Parameters<ConnectionManager['checkTelephony']>[0];
-export type TOptionsCheckTelephony = {
-  interval: number;
-  onBeforeRequest?: () => Promise<void>;
-};
-
-const noop = async () => {};
+import type { TParametersCheckTelephony } from './types';
 
 class CheckTelephonyRequester {
   private readonly connectionManager: ConnectionManager;
 
-  private readonly checkTelephonyByTimeout: ReturnType<typeof resolveRequesterByTimeout>;
+  private readonly interval: number;
 
-  private request = noop;
+  private checkTelephonyByTimeout: ReturnType<typeof resolveRequesterByTimeout> | undefined =
+    undefined;
 
   public constructor({
     connectionManager,
@@ -27,12 +21,7 @@ class CheckTelephonyRequester {
     interval: number;
   }) {
     this.connectionManager = connectionManager;
-
-    this.checkTelephonyByTimeout = resolveRequesterByTimeout({
-      isDontStopOnFail: true,
-      requestInterval: interval,
-      request: this.request,
-    });
+    this.interval = interval;
   }
 
   public start({
@@ -46,15 +35,21 @@ class CheckTelephonyRequester {
     onFailRequest: () => void;
     clearCache?: () => Promise<void>;
   }) {
-    this.request = async () => {
-      if (clearCache) {
-        await clearCache();
-      }
+    this.stop();
 
-      const parameters = getParameters();
+    this.checkTelephonyByTimeout = resolveRequesterByTimeout({
+      isDontStopOnFail: true,
+      requestInterval: this.interval,
+      request: async () => {
+        if (clearCache) {
+          await clearCache();
+        }
 
-      return this.connectionManager.checkTelephony(parameters);
-    };
+        const parameters = getParameters();
+
+        return this.connectionManager.checkTelephony(parameters);
+      },
+    });
 
     this.checkTelephonyByTimeout.start(undefined, {
       onFailRequest: (error: unknown) => {
@@ -72,7 +67,10 @@ class CheckTelephonyRequester {
   }
 
   public stop() {
-    this.checkTelephonyByTimeout.stop();
+    if (this.checkTelephonyByTimeout) {
+      this.checkTelephonyByTimeout.stop();
+      this.checkTelephonyByTimeout = undefined;
+    }
   }
 }
 
