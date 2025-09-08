@@ -1,4 +1,5 @@
 import { EVENT_NAMES as API_MANAGER_EVENT_NAMES } from '@/ApiManager/eventNames';
+import { EVENT_NAMES as AUTO_CONNECTOR_MANAGER_EVENT_NAMES } from '@/AutoConnectorManager/eventNames';
 import { EVENT_NAMES as CALL_MANAGER_EVENT_NAMES } from '@/CallManager/eventNames';
 import { EVENT_NAMES as CONNECTION_MANAGER_EVENT_NAMES } from '@/ConnectionManager/eventNames';
 import { EVENT_NAMES as INCOMING_CALL_MANAGER_EVENT_NAMES } from '@/IncomingCallManager/eventNames';
@@ -9,6 +10,9 @@ import { EVENT_NAMES as VIDEO_BALANCER_MANAGER_EVENT_NAMES } from '@/VideoSendin
 import type { Events } from 'events-constructor';
 
 // Добавляем префиксы к событиям от разных менеджеров
+const AUTO_CONNECTOR_EVENTS = AUTO_CONNECTOR_MANAGER_EVENT_NAMES.map((eventName) => {
+  return `auto-connect:${eventName}` as const;
+});
 const CONNECTION_EVENTS = CONNECTION_MANAGER_EVENT_NAMES.map((eventName) => {
   return `connection:${eventName}` as const;
 });
@@ -32,6 +36,7 @@ const VIDEO_BALANCER_EVENTS = VIDEO_BALANCER_MANAGER_EVENT_NAMES.map((eventName)
 });
 
 export const EVENT_NAMES = [
+  ...AUTO_CONNECTOR_EVENTS,
   ...CONNECTION_EVENTS,
   ...CALL_EVENTS,
   ...API_EVENTS,

@@ -1,6 +1,7 @@
 import { Events } from 'events-constructor';
 
 import { ApiManager } from '@/ApiManager';
+import { AutoConnectorManager } from '@/AutoConnectorManager';
 import { CallManager } from '@/CallManager';
 import { ConnectionManager } from '@/ConnectionManager';
 import { ConnectionQueueManager } from '@/ConnectionQueueManager';
@@ -12,6 +13,7 @@ import { VideoSendingBalancerManager } from '@/VideoSendingBalancerManager';
 import { ONE_MEGABIT_IN_BITS } from './constants';
 import { EVENT_NAMES } from './eventNames';
 
+import type { IAutoConnectorOptions } from '@/AutoConnectorManager';
 import type { TGetServerUrl } from '@/CallManager';
 import type { TContentHint, TOnAddedTransceiver } from '@/PresentationManager/types';
 import type { TJsSIP } from '@/types';
@@ -26,6 +28,8 @@ class SipConnector {
   public readonly connectionQueueManager: ConnectionQueueManager;
 
   public readonly callManager: CallManager;
+
+  public readonly autoConnectorManager: AutoConnectorManager;
 
   public readonly apiManager: ApiManager;
 
@@ -47,10 +51,12 @@ class SipConnector {
       preferredMimeTypesVideoCodecs,
       excludeMimeTypesVideoCodecs,
       videoBalancerOptions,
+      autoConnectorOptions,
     }: {
       preferredMimeTypesVideoCodecs?: string[];
       excludeMimeTypesVideoCodecs?: string[];
       videoBalancerOptions?: IBalancerOptions;
+      autoConnectorOptions?: IAutoConnectorOptions;
     } = {},
   ) {
     this.preferredMimeTypesVideoCodecs = preferredMimeTypesVideoCodecs;
@@ -74,6 +80,12 @@ class SipConnector {
     this.statsManager = new StatsManager({
       callManager: this.callManager,
       apiManager: this.apiManager,
+    });
+    this.autoConnectorManager = new AutoConnectorManager({
+      connectionQueueManager: this.connectionQueueManager,
+      connectionManager: this.connectionManager,
+      callManager: this.callManager,
+      options: autoConnectorOptions,
     });
     this.videoSendingBalancerManager = new VideoSendingBalancerManager(
       this.callManager,
@@ -133,6 +145,10 @@ class SipConnector {
 
   public get isAvailableIncomingCall(): IncomingCallManager['isAvailableIncomingCall'] {
     return this.incomingCallManager.isAvailableIncomingCall;
+  }
+
+  public get isAutoConnectAttemptInProgress(): AutoConnectorManager['isAttemptInProgress'] {
+    return this.autoConnectorManager.isAttemptInProgress;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
@@ -212,6 +228,14 @@ class SipConnector {
 
   public getSipServerUrl: TGetServerUrl = (id: string) => {
     return this.connectionManager.getSipServerUrl(id);
+  };
+
+  public startAutoConnect: AutoConnectorManager['start'] = (...args) => {
+    this.autoConnectorManager.start(...args);
+  };
+
+  public cancelAutoConnect: AutoConnectorManager['cancel'] = () => {
+    this.autoConnectorManager.cancel();
   };
 
   public call = async (params: Parameters<CallManager['startCall']>[2]) => {
@@ -425,6 +449,12 @@ class SipConnector {
   }
 
   private subscribe() {
+    this.autoConnectorManager.events.eachTriggers((_trigger, eventName) => {
+      this.autoConnectorManager.on(eventName, (event) => {
+        this.events.trigger(`auto-connect:${eventName}` as TEvent, event);
+      });
+    });
+
     this.connectionManager.events.eachTriggers((_trigger, eventName) => {
       this.connectionManager.on(eventName, (event) => {
         this.events.trigger(`connection:${eventName}`, event);

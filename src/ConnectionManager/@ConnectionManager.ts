@@ -94,6 +94,14 @@ export default class ConnectionManager {
     return this.stateMachine.isPendingInitUa;
   }
 
+  public get isDisconnected() {
+    return this.stateMachine.isDisconnected;
+  }
+
+  public get isFailed() {
+    return this.stateMachine.isFailed;
+  }
+
   public get connectionState() {
     return this.stateMachine.state;
   }
