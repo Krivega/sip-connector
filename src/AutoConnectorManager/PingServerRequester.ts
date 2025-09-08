@@ -1,6 +1,7 @@
 import { requesterByTimeoutsWithFailCalls } from '@krivega/timeout-requester';
 
 import logger from '@/logger';
+import CallStatusSubscriber from './CallStatusSubscriber';
 
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
@@ -9,15 +10,13 @@ const INTERVAL_PING_SERVER_REQUEST = 15_000;
 const MAX_FAIL_REQUESTS_COUNT = 2;
 
 class PingServerRequester {
-  private readonly callManager: CallManager;
-
   private readonly connectionManager: ConnectionManager;
+
+  private readonly callStatusSubscriber: CallStatusSubscriber;
 
   private readonly pingServerByTimeoutWithFailCalls: ReturnType<
     typeof requesterByTimeoutsWithFailCalls<ReturnType<typeof this.connectionManager.ping>>
   >;
-
-  private unsubscribeFromCallStatus?: () => void;
 
   public constructor({
     connectionManager,
@@ -27,7 +26,8 @@ class PingServerRequester {
     callManager: CallManager;
   }) {
     this.connectionManager = connectionManager;
-    this.callManager = callManager;
+
+    this.callStatusSubscriber = new CallStatusSubscriber({ callManager });
 
     this.pingServerByTimeoutWithFailCalls = requesterByTimeoutsWithFailCalls<
       ReturnType<typeof this.connectionManager.ping>
@@ -47,7 +47,7 @@ class PingServerRequester {
   public start({ onFailRequest }: { onFailRequest: () => void }) {
     logger('start');
 
-    this.unsubscribeFromCallStatus = this.callManager.onChangeCallStatus((isCallActive) => {
+    this.callStatusSubscriber.subscribe((isCallActive) => {
       if (isCallActive) {
         this.pingServerByTimeoutWithFailCalls.stop();
       } else {
@@ -59,8 +59,8 @@ class PingServerRequester {
   public stop() {
     logger('stop');
 
-    this.unsubscribeFromCallStatus?.();
     this.pingServerByTimeoutWithFailCalls.stop();
+    this.callStatusSubscriber.unsubscribe();
   }
 }
 
