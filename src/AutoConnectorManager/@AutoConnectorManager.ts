@@ -74,6 +74,10 @@ class AutoConnectorManager {
     this.delayBetweenAttempts = new DelayRequester(timeoutBetweenAttempts);
   }
 
+  public get isAttemptInProgress(): boolean {
+    return this.attemptsState.isAttemptInProgress;
+  }
+
   public start(parameters: TParametersAutoConnect) {
     log('start');
 
