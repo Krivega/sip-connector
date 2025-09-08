@@ -8,6 +8,7 @@ import AttemptsConnector from './AttemptsConnector';
 import CheckTelephonyRequester from './CheckTelephonyRequester';
 import { EEvent, EVENT_NAMES } from './eventNames';
 import PingServerRequester from './PingServerRequester';
+import RegistrationFailedOutOfCallListener from './RegistrationFailedOutOfCallListener';
 
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
@@ -32,6 +33,8 @@ class AutoConnectorManager {
   private readonly checkTelephonyRequester: CheckTelephonyRequester;
 
   private readonly pingServerRequester: PingServerRequester;
+
+  private readonly registrationFailedOutOfCallListener: RegistrationFailedOutOfCallListener;
 
   private readonly attemptsConnector: AttemptsConnector;
 
@@ -60,6 +63,10 @@ class AutoConnectorManager {
       interval: checkTelephonyRequestInterval,
     });
     this.pingServerRequester = new PingServerRequester({ connectionManager, callManager });
+    this.registrationFailedOutOfCallListener = new RegistrationFailedOutOfCallListener({
+      connectionManager,
+      callManager,
+    });
     this.attemptsConnector = new AttemptsConnector();
     this.delayBetweenAttempts = new DelayRequester(timeoutBetweenAttempts);
   }
@@ -129,7 +136,7 @@ class AutoConnectorManager {
     log('connect: attempts.count', this.attemptsConnector.count);
 
     this.events.trigger(EEvent.BEFORE_ATTEMPT, {});
-    this.stopRequesters();
+    this.stopConnectionTriggers();
 
     const isLimitReached = this.attemptsConnector.hasLimitReached();
 
@@ -164,6 +171,14 @@ class AutoConnectorManager {
           },
         });
 
+        this.registrationFailedOutOfCallListener.subscribe({
+          onFailed: () => {
+            log('registrationFailedOutOfCallListener onFailed');
+
+            this.start(parameters);
+          },
+        });
+
         this.events.trigger(EEvent.CONNECTED, {});
       })
       .catch((error: unknown) => {
@@ -183,11 +198,12 @@ class AutoConnectorManager {
       });
   }
 
-  private stopRequesters() {
-    log('stopRequesters');
+  private stopConnectionTriggers() {
+    log('stopConnectionTriggers');
 
     this.pingServerRequester.stop();
     this.checkTelephonyRequester.stop();
+    this.registrationFailedOutOfCallListener.unsubscribe();
   }
 
   private connectIfDisconnected(parameters: TParametersAutoConnect) {
@@ -199,7 +215,7 @@ class AutoConnectorManager {
     if (isFailedOrDisconnected) {
       this.start(parameters);
     } else {
-      this.stopRequesters();
+      this.stopConnectionTriggers();
       this.events.trigger(EEvent.CONNECTED, {});
     }
   }
