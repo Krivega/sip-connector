@@ -148,11 +148,7 @@ class AutoConnectorManager {
     if (isLimitReached) {
       log('connect: isLimitReached!');
 
-      this.attemptsConnector.startCheckTelephony();
-
-      this.events.trigger(EEvent.FAILED, { isRequestTimeoutError: false });
-
-      this.runCheckTelephony(parameters);
+      this.handleLimitReached(parameters);
 
       return;
     }
@@ -160,33 +156,19 @@ class AutoConnectorManager {
     this.attemptsConnector.startConnect();
     this.attemptsConnector.increment();
 
+    return this.processConnect(parameters);
+  }
+
+  private async processConnect(parameters: TParametersAutoConnect) {
     await parameters
       .getConnectParameters()
       .then(async (connectParameters) => {
         return this.connectWithDisconnect(connectParameters, parameters.hasReadyForConnection);
       })
       .then(() => {
-        log('connect success');
+        log('processConnect success');
 
-        this.pingServerRequester.start({
-          onFailRequest: () => {
-            log('pingServer onFailRequest');
-
-            this.start(parameters);
-          },
-        });
-
-        this.registrationFailedOutOfCallSubscriber.subscribe(() => {
-          log('registrationFailedOutOfCallListener callback');
-
-          this.start(parameters);
-        });
-
-        this.connectorSubscriber?.subscribe(() => {
-          log('connectorSubscriber callback');
-
-          this.start(parameters);
-        });
+        this.subscribeToConnectTriggers(parameters);
 
         this.events.trigger(EEvent.CONNECTED, {});
       })
@@ -194,17 +176,47 @@ class AutoConnectorManager {
         const isPromiseIsNotActualError = hasPromiseIsNotActualError(error as TErrorSipConnector);
 
         if (isPromiseIsNotActualError) {
-          log('connect: not actual error', error);
+          log('processConnect: not actual error', error);
 
           this.events.trigger(EEvent.CANCELLED, {});
 
           return;
         }
 
-        log('connect: error', error);
+        log('processConnect: error', error);
 
         this.reconnect(parameters);
       });
+  }
+
+  private handleLimitReached(parameters: TParametersAutoConnect) {
+    this.attemptsConnector.startCheckTelephony();
+
+    this.events.trigger(EEvent.FAILED, { isRequestTimeoutError: false });
+
+    this.runCheckTelephony(parameters);
+  }
+
+  private subscribeToConnectTriggers(parameters: TParametersAutoConnect) {
+    this.pingServerRequester.start({
+      onFailRequest: () => {
+        log('pingServer onFailRequest');
+
+        this.start(parameters);
+      },
+    });
+
+    this.registrationFailedOutOfCallSubscriber.subscribe(() => {
+      log('registrationFailedOutOfCallListener callback');
+
+      this.start(parameters);
+    });
+
+    this.connectorSubscriber?.subscribe(() => {
+      log('connectorSubscriber callback');
+
+      this.start(parameters);
+    });
   }
 
   private stopConnectTriggers() {

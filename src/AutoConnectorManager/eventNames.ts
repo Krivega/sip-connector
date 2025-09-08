@@ -15,8 +15,6 @@ export const EVENT_NAMES = [
   `${EEvent.CANCELLED}`,
 ] as const;
 
-export type TEvent = (typeof EVENT_NAMES)[number];
-
 export type TEventMap = {
   connected: Record<string, never>;
   'before-attempt': Record<string, never>;
