@@ -179,10 +179,6 @@ class SipConnector {
     return this.connectionQueueManager.connect(...args);
   };
 
-  public set: ConnectionManager['set'] = async (...args) => {
-    return this.connectionQueueManager.set(...args);
-  };
-
   public disconnect = async () => {
     return this.connectionQueueManager.disconnect();
   };
@@ -199,23 +195,27 @@ class SipConnector {
     return this.connectionQueueManager.tryRegister();
   };
 
+  public set: ConnectionManager['set'] = async (...args) => {
+    return this.connectionManager.set(...args);
+  };
+
   public sendOptions = async (
     target: Parameters<ConnectionManager['sendOptions']>[0],
     body?: Parameters<ConnectionManager['sendOptions']>[1],
     extraHeaders?: Parameters<ConnectionManager['sendOptions']>[2],
   ) => {
-    return this.connectionQueueManager.sendOptions(target, body, extraHeaders);
+    return this.connectionManager.sendOptions(target, body, extraHeaders);
   };
 
   public ping = async (
     body?: Parameters<ConnectionManager['ping']>[0],
     extraHeaders?: Parameters<ConnectionManager['ping']>[1],
   ) => {
-    return this.connectionQueueManager.ping(body, extraHeaders);
+    return this.connectionManager.ping(body, extraHeaders);
   };
 
   public checkTelephony: ConnectionManager['checkTelephony'] = async (parameters) => {
-    return this.connectionQueueManager.checkTelephony(parameters);
+    return this.connectionManager.checkTelephony(parameters);
   };
 
   public isConfigured = () => {

@@ -42,6 +42,10 @@ class ConnectionQueueManager {
       return this.connectionManager.tryRegister();
     }) as ReturnType<ConnectionManager['tryRegister']>;
   };
+
+  public stop() {
+    this.stackPromises.stop();
+  }
 }
 
 export default ConnectionQueueManager;

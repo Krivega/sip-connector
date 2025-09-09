@@ -92,6 +92,10 @@ class AutoConnectorManager {
   public cancel() {
     log('cancel');
 
+    if (this.isAttemptInProgress) {
+      this.connectionQueueManager.stop();
+    }
+
     this.delayBetweenAttempts.cancelRequest();
     this.attemptsState.reset();
     this.stopConnectTriggers();
