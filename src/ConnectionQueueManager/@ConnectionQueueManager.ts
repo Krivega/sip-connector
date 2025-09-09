@@ -42,30 +42,6 @@ class ConnectionQueueManager {
       return this.connectionManager.tryRegister();
     }) as ReturnType<ConnectionManager['tryRegister']>;
   };
-
-  public checkTelephony: ConnectionManager['checkTelephony'] = async (...args) => {
-    return this.stackPromises.run(async () => {
-      return this.connectionManager.checkTelephony(...args);
-    }) as ReturnType<ConnectionManager['checkTelephony']>;
-  };
-
-  public sendOptions: ConnectionManager['sendOptions'] = async (...args) => {
-    return this.stackPromises.run(async () => {
-      return this.connectionManager.sendOptions(...args);
-    }) as ReturnType<ConnectionManager['sendOptions']>;
-  };
-
-  public ping: ConnectionManager['ping'] = async (...args) => {
-    return this.stackPromises.run(async () => {
-      return this.connectionManager.ping(...args);
-    }) as ReturnType<ConnectionManager['ping']>;
-  };
-
-  public set: ConnectionManager['set'] = async (...args) => {
-    return this.stackPromises.run(async () => {
-      return this.connectionManager.set(...args);
-    }) as ReturnType<ConnectionManager['set']>;
-  };
 }
 
 export default ConnectionQueueManager;
