@@ -24,6 +24,9 @@ export enum EHeader {
   START_PRESENTATION = 'x-webrtc-share-state: LETMESTARTPRESENTATION',
   ENABLE_MAIN_CAM = 'X-WEBRTC-REQUEST-ENABLE-MEDIA-DEVICE: LETMESTARTMAINCAM',
   AVAILABLE_INCOMING_BITRATE = 'X-WEBRTC-AVAILABLE-INCOMING-BITRATE',
+  AUDIO_TRACK_COUNT = 'X-WEBRTC-AUDIO-TRACK-COUNT',
+  VIDEO_TRACK_COUNT = 'X-WEBRTC-VIDEO-TRACK-COUNT',
+  TRACKS_DIRECTION = 'X-WEBRTC-TRACKS-DIRECTION',
 }
 
 export enum EShareState {
@@ -46,6 +49,7 @@ export enum EContentTypeReceived {
   NOTIFY = 'application/vinteo.webrtc.notify',
   SHARE_STATE = 'application/vinteo.webrtc.sharedesktop',
   MAIN_CAM = 'application/vinteo.webrtc.maincam',
+  RESTART = 'application/vinteo.webrtc.restart',
 }
 
 export enum EContentTypeSent {
@@ -79,4 +83,10 @@ export enum EUseLicense {
   AUDIO = 'AUDIO',
   VIDEO = 'VIDEO',
   AUDIOPLUSPRESENTATION = 'AUDIOPLUSPRESENTATION',
+}
+
+export enum ETracksDirection {
+  SENDRECV = 'SENDRECV',
+  SENDONLY = 'SENDONLY',
+  RECVONLY = 'RECVONLY',
 }
