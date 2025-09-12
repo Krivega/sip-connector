@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.2.0](https://github.com/Krivega/sip-connector/compare/v16.1.0...v16.2.0) (2025-09-12)
+
+### Features
+
+- add auto restart ICE-connection on restart event from server ([5a4c8c7](https://github.com/Krivega/sip-connector/commit/5a4c8c702a6cbbc6bc9026f8aed3a1425d9dfe18))
+- add restart event ([56f3241](https://github.com/Krivega/sip-connector/commit/56f3241d2d797bb1b49ef230184b7a1a6eae673f))
+
 ## [16.1.0](https://github.com/Krivega/sip-connector/compare/v16.0.3...v16.1.0) (2025-09-01)
 
 ### Features
