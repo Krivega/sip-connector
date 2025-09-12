@@ -1,10 +1,11 @@
 import { Events } from 'events-constructor';
 
 import { ApiManager } from '@/ApiManager';
-import { CallManager } from '@/CallManager';
+import CallManager from '@/CallManager/@CallManager';
 import { ConnectionManager } from '@/ConnectionManager';
 import { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import { IncomingCallManager } from '@/IncomingCallManager';
+import logger from '@/logger';
 import { PresentationManager } from '@/PresentationManager';
 import { StatsManager } from '@/StatsManager';
 import setCodecPreferences from '@/tools/setCodecPreferences';
@@ -13,7 +14,7 @@ import { ONE_MEGABIT_IN_BITS } from './constants';
 import { EVENT_NAMES } from './eventNames';
 
 import type { TGetServerUrl } from '@/CallManager';
-import type { TContentHint, TOnAddedTransceiver } from '@/PresentationManager/types';
+import type { TContentHint, TOnAddedTransceiver } from '@/PresentationManager';
 import type { TJsSIP } from '@/types';
 import type { IBalancerOptions } from '@/VideoSendingBalancer';
 import type { TEvent } from './eventNames';
@@ -466,7 +467,15 @@ class SipConnector {
         this.events.trigger(`video-balancer:${eventName}` as TEvent, event);
       });
     });
+
+    this.apiManager.on('restart', this.handleRestart);
   }
+
+  private readonly handleRestart = () => {
+    this.callManager.restartIce().catch((error: unknown) => {
+      logger('Failed to restart ICE', error);
+    });
+  };
 }
 
 export default SipConnector;

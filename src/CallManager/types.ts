@@ -81,4 +81,11 @@ export interface ICallStrategy {
       onAddedTransceiver?: TOnAddedTransceiver;
     },
   ) => Promise<void>;
+  restartIce: (options?: {
+    useUpdate?: boolean;
+    extraHeaders?: string[];
+    rtcOfferConstraints?: RTCOfferOptions;
+    sendEncodings?: RTCRtpEncodingParameters[];
+    degradationPreference?: RTCDegradationPreference;
+  }) => Promise<boolean>;
 }

@@ -67,6 +67,17 @@ export abstract class AbstractCallStrategy implements ICallStrategy {
   public abstract getRemoteStreams(): MediaStream[] | undefined;
 
   /**
+   * Перезапуск ICE-соединения
+   */
+  public abstract restartIce(options?: {
+    useUpdate?: boolean;
+    extraHeaders?: string[];
+    rtcOfferConstraints?: RTCOfferOptions;
+    sendEncodings?: RTCRtpEncodingParameters[];
+    degradationPreference?: RTCDegradationPreference;
+  }): Promise<boolean>;
+
+  /**
    * Внутренняя обработка звонка (например, для ontrack)
    */
   protected abstract handleCall(options: { ontrack?: TOntrack }): Promise<RTCPeerConnection>;

@@ -44,6 +44,7 @@ import type {
   TRemovedFromListModeratorsInfoNotify,
   TWebcastInfoNotify,
   TWebcastStoppedInfoNotify,
+  TRestartData,
 } from './types';
 
 class ApiManager {
@@ -667,11 +668,17 @@ class ApiManager {
   private readonly triggerRestart = (request: IncomingRequest) => {
     const tracksDirection: ETracksDirection = request.getHeader(
       EHeader.TRACKS_DIRECTION,
-    ) as ETracksDirection;
-    const audioTrackCount = Number(request.getHeader(EHeader.AUDIO_TRACK_COUNT)) as number;
-    const videoTrackCount = Number(request.getHeader(EHeader.VIDEO_TRACK_COUNT)) as number;
+    ) as TRestartData['tracksDirection'];
+    const audioTrackCount = Number(
+      request.getHeader(EHeader.AUDIO_TRACK_COUNT),
+    ) as TRestartData['audioTrackCount'];
+    const videoTrackCount = Number(
+      request.getHeader(EHeader.VIDEO_TRACK_COUNT),
+    ) as TRestartData['videoTrackCount'];
 
-    this.events.trigger(EEvent.RESTART, { tracksDirection, audioTrackCount, videoTrackCount });
+    const data: TRestartData = { tracksDirection, audioTrackCount, videoTrackCount };
+
+    this.events.trigger(EEvent.RESTART, data);
   };
 }
 

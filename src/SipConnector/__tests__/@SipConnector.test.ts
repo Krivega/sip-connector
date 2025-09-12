@@ -1,12 +1,19 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 
 import JsSIP from '@/__fixtures__/jssip.mock';
+import logger from '@/logger';
 import SipConnector from '../@SipConnector';
 
 import type { IncomingResponse, RegisteredEvent, UA, UnRegisteredEvent } from '@krivega/jssip';
 import type { TJsSIP } from '@/types';
 
+// Мокаем logger
+jest.mock('../../logger', () => {
+  return jest.fn();
+});
+
 describe('SipConnector facade', () => {
+  const mockLogger = logger as jest.MockedFunction<typeof logger>;
   let sipConnector: SipConnector;
 
   beforeEach(() => {
@@ -309,6 +316,88 @@ describe('SipConnector facade', () => {
       // eslint-disable-next-line @typescript-eslint/no-unused-expressions
       sipConnector.isAvailableIncomingCall;
     }).not.toThrow();
+  });
+
+  describe('Обработка события restart', () => {
+    it('должен вызвать callManager.restartIce при получении события restart', async () => {
+      const restartIceSpy = jest
+        .spyOn(sipConnector.callManager, 'restartIce')
+        .mockResolvedValue(true);
+
+      // Триггерим событие restart от ApiManager
+      sipConnector.apiManager.events.trigger('restart', {
+        tracksDirection: 'incoming',
+        audioTrackCount: 2,
+        videoTrackCount: 1,
+      });
+
+      // Ждем выполнения асинхронной операции
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
+
+      expect(restartIceSpy).toHaveBeenCalledWith();
+    });
+
+    it('должен логировать ошибку если callManager.restartIce завершился с ошибкой', async () => {
+      const mockError = new Error('RestartIce failed');
+      const restartIceSpy = jest
+        .spyOn(sipConnector.callManager, 'restartIce')
+        .mockRejectedValue(mockError);
+
+      // Триггерим событие restart от ApiManager
+      sipConnector.apiManager.events.trigger('restart', {
+        tracksDirection: 'outgoing',
+        audioTrackCount: 1,
+        videoTrackCount: 3,
+      });
+
+      // Ждем выполнения асинхронной операции
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
+
+      expect(restartIceSpy).toHaveBeenCalledWith();
+      expect(mockLogger).toHaveBeenCalledWith('Failed to restart ICE', mockError);
+    });
+
+    it('должен обрабатывать событие restart с различными параметрами', async () => {
+      const restartIceSpy = jest
+        .spyOn(sipConnector.callManager, 'restartIce')
+        .mockResolvedValue(true);
+
+      const testCases = [
+        {
+          tracksDirection: 'incoming',
+          audioTrackCount: 0,
+          videoTrackCount: 1,
+        },
+        {
+          tracksDirection: 'outgoing',
+          audioTrackCount: 2,
+          videoTrackCount: 0,
+        },
+        {
+          tracksDirection: 'bidirectional',
+          audioTrackCount: 1,
+          videoTrackCount: 1,
+        },
+      ];
+
+      for (const testData of testCases) {
+        restartIceSpy.mockClear();
+
+        sipConnector.apiManager.events.trigger('restart', testData);
+
+        // Ждем выполнения асинхронной операции
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((resolve) => {
+          setTimeout(resolve, 0);
+        });
+
+        expect(restartIceSpy).toHaveBeenCalledWith();
+      }
+    });
   });
 
   describe('Constructor with codec preferences', () => {

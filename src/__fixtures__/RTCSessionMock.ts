@@ -75,6 +75,19 @@ class RTCSessionMock extends BaseSession {
 
   public replaceMediaStream = jest.fn(async (_mediaStream: MediaStream): Promise<void> => {});
 
+  public restartIce = jest.fn(
+    async (_options?: {
+      useUpdate?: boolean;
+      extraHeaders?: string[];
+      rtcOfferConstraints?: RTCOfferOptions;
+      sendEncodings?: RTCRtpEncodingParameters[];
+      degradationPreference?: RTCDegradationPreference;
+    }): Promise<boolean> => {
+      // Имитация успешного перезапуска ICE
+      return true;
+    },
+  );
+
   private isEndedInner = false;
 
   private readonly delayStartPresentation: number = 0;

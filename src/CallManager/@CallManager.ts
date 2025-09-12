@@ -88,6 +88,10 @@ class CallManager {
   public replaceMediaStream: ICallStrategy['replaceMediaStream'] = async (...args) => {
     return this.strategy.replaceMediaStream(...args);
   };
+
+  public restartIce: ICallStrategy['restartIce'] = async (options) => {
+    return this.strategy.restartIce(options);
+  };
 }
 
 export default CallManager;

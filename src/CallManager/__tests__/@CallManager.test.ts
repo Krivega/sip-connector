@@ -32,6 +32,7 @@ describe('CallManager', () => {
       getCallConfiguration: jest.fn(),
       getRemoteStreams: jest.fn(),
       replaceMediaStream: jest.fn(),
+      restartIce: jest.fn(),
     };
 
     // Create mock events
@@ -284,6 +285,35 @@ describe('CallManager', () => {
       await callManager.replaceMediaStream(mockMediaStream, mockOptions);
 
       expect(mockStrategy.replaceMediaStream).toHaveBeenCalledWith(mockMediaStream, mockOptions);
+    });
+
+    it('should delegate restartIce to strategy', async () => {
+      const mockOptions = {
+        useUpdate: true,
+        extraHeaders: ['X-Test: value'],
+        rtcOfferConstraints: { offerToReceiveAudio: true },
+        sendEncodings: [{ maxBitrate: 1_000_000 }],
+        degradationPreference: 'maintain-framerate' as RTCDegradationPreference,
+      };
+      const expectedResult = true;
+
+      mockStrategy.restartIce.mockResolvedValue(expectedResult);
+
+      const result = await callManager.restartIce(mockOptions);
+
+      expect(mockStrategy.restartIce).toHaveBeenCalledWith(mockOptions);
+      expect(result).toBe(expectedResult);
+    });
+
+    it('should delegate restartIce to strategy without options', async () => {
+      const expectedResult = false;
+
+      mockStrategy.restartIce.mockResolvedValue(expectedResult);
+
+      const result = await callManager.restartIce();
+
+      expect(mockStrategy.restartIce).toHaveBeenCalledWith(undefined);
+      expect(result).toBe(expectedResult);
     });
   });
 });

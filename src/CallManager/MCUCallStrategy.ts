@@ -224,6 +224,20 @@ export class MCUCallStrategy extends AbstractCallStrategy {
     return this.rtcSession.replaceMediaStream(preparedMediaStream, options);
   }
 
+  public async restartIce(options?: {
+    useUpdate?: boolean;
+    extraHeaders?: string[];
+    rtcOfferConstraints?: RTCOfferOptions;
+    sendEncodings?: RTCRtpEncodingParameters[];
+    degradationPreference?: RTCDegradationPreference;
+  }): Promise<boolean> {
+    if (!this.rtcSession) {
+      throw new Error('No rtcSession established');
+    }
+
+    return this.rtcSession.restartIce(options);
+  }
+
   protected readonly handleCall = async ({
     ontrack,
   }: {

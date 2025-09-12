@@ -405,4 +405,61 @@ describe('MCUCallStrategy - дополнительные тесты для по�
     // expect(rtcSession.on).toHaveBeenCalledWith('peerconnection', expect.any(Function));
     // expect(rtcSession.on).toHaveBeenCalledWith('confirmed', expect.any(Function));
   });
+
+  it('restartIce: вызывает restartIce на rtcSession', async () => {
+    const rtcSession = new RTCSessionMock({
+      eventHandlers: {},
+      originator: 'remote',
+    });
+
+    // Мокаем rtcSession
+    Object.defineProperty(strategy, 'rtcSession', {
+      get: () => {
+        return rtcSession;
+      },
+      configurable: true,
+    });
+
+    const result = await strategy.restartIce();
+
+    expect(rtcSession.restartIce).toHaveBeenCalledTimes(1);
+    expect(result).toBe(true);
+  });
+
+  it('restartIce: передает опции в rtcSession.restartIce', async () => {
+    const rtcSession = new RTCSessionMock({
+      eventHandlers: {},
+      originator: 'remote',
+    });
+
+    // Мокаем rtcSession
+    Object.defineProperty(strategy, 'rtcSession', {
+      get: () => {
+        return rtcSession;
+      },
+      configurable: true,
+    });
+
+    const options = {
+      useUpdate: true,
+      extraHeaders: ['X-Test: value'],
+      rtcOfferConstraints: { offerToReceiveAudio: true },
+    };
+
+    await strategy.restartIce(options);
+
+    expect(rtcSession.restartIce).toHaveBeenCalledWith(options);
+  });
+
+  it('restartIce: выбрасывает ошибку если нет rtcSession', async () => {
+    // Мокаем rtcSession чтобы вернуть undefined
+    Object.defineProperty(strategy, 'rtcSession', {
+      get: () => {
+        return undefined;
+      },
+      configurable: true,
+    });
+
+    await expect(strategy.restartIce()).rejects.toThrow('No rtcSession established');
+  });
 });
