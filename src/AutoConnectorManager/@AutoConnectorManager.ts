@@ -168,33 +168,33 @@ class AutoConnectorManager {
   }
 
   private async processConnect(parameters: TParametersAutoConnect) {
-    await parameters
-      .getConnectParameters()
-      .then(async (connectParameters) => {
-        return this.connectWithDisconnect(connectParameters, parameters.hasReadyForConnection);
-      })
-      .then(() => {
-        logger('processConnect success');
+    try {
+      const connectParameters = await parameters.getConnectParameters();
 
-        this.subscribeToConnectTriggers(parameters);
+      if (!connectParameters) {
+        return;
+      }
 
-        this.events.trigger(EEvent.CONNECTED, {});
-      })
-      .catch((error: unknown) => {
-        const isPromiseIsNotActualError = hasPromiseIsNotActualError(error as TErrorSipConnector);
+      await this.connectWithDisconnect(connectParameters, parameters.hasReadyForConnection);
 
-        if (isPromiseIsNotActualError) {
-          logger('processConnect: not actual error', error);
+      logger('processConnect success');
 
-          this.events.trigger(EEvent.CANCELLED, {});
+      this.subscribeToConnectTriggers(parameters);
 
-          return;
-        }
+      this.events.trigger(EEvent.CONNECTED, {});
+    } catch (error) {
+      if (hasPromiseIsNotActualError(error as TErrorSipConnector)) {
+        logger('processConnect: not actual error', error);
 
-        logger('processConnect: error', error);
+        this.events.trigger(EEvent.CANCELLED, {});
 
-        this.reconnect(parameters);
-      });
+        return;
+      }
+
+      logger('processConnect: error', error);
+
+      this.reconnect(parameters);
+    }
   }
 
   private handleLimitReached(parameters: TParametersAutoConnect) {
