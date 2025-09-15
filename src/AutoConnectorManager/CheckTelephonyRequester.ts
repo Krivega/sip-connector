@@ -1,7 +1,5 @@
 import { resolveRequesterByTimeout } from '@krivega/timeout-requester';
 
-import logger from '@/logger';
-
 import type { ConnectionManager } from '@/ConnectionManager';
 import type { TParametersCheckTelephony } from './types';
 
@@ -52,14 +50,8 @@ class CheckTelephonyRequester {
     });
 
     this.checkTelephonyByTimeout.start(undefined, {
-      onFailRequest: (error: unknown) => {
-        logger('check telephony: error - ', (error as Error).message);
-
-        onFailRequest();
-      },
+      onFailRequest,
       onSuccessRequest: () => {
-        logger('check telephony: success');
-
         this.stop();
         onSuccessRequest();
       },

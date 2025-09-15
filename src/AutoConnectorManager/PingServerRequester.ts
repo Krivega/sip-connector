@@ -45,7 +45,7 @@ class PingServerRequester {
   }
 
   public start({ onFailRequest }: { onFailRequest: () => void }) {
-    logger('start');
+    logger('ping start');
 
     this.callStatusSubscriber.subscribe((isCallActive) => {
       if (isCallActive) {
@@ -57,7 +57,7 @@ class PingServerRequester {
   }
 
   public stop() {
-    logger('stop');
+    logger('ping stop');
 
     this.pingServerByTimeoutWithFailCalls.stop();
     this.callStatusSubscriber.unsubscribe();
