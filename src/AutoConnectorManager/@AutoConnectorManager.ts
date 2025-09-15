@@ -312,22 +312,22 @@ class AutoConnectorManager {
       .catch(async (error: unknown) => {
         const isErrorNullOrUndefined = error === null || error === undefined;
 
-        if (isErrorNullOrUndefined || !hasPromiseIsNotActualError(error as TErrorSipConnector)) {
-          const connectToServerError =
-            error instanceof Error ? error : new Error('Failed to connect to server');
-
-          logger('connectWithProcessError, error:', error);
-
-          return this.disconnectIfConfigured()
-            .then(() => {
-              throw connectToServerError;
-            })
-            .catch(() => {
-              throw connectToServerError;
-            });
+        if (!isErrorNullOrUndefined && hasPromiseIsNotActualError(error as TErrorSipConnector)) {
+          throw error;
         }
 
-        return undefined;
+        const connectToServerError =
+          error instanceof Error ? error : new Error('Failed to connect to server');
+
+        logger('connectWithProcessError, error:', error);
+
+        return this.disconnectIfConfigured()
+          .then(() => {
+            throw connectToServerError;
+          })
+          .catch(() => {
+            throw connectToServerError;
+          });
       });
   }
 
