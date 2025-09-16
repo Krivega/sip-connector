@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
-import type { TypedEvents } from 'events-constructor';
+import type { Events } from 'events-constructor';
 
 export enum EEvent {
   CONNECTED = 'connected',
@@ -15,11 +15,5 @@ export const EVENT_NAMES = [
   `${EEvent.CANCELLED}`,
 ] as const;
 
-export type TEventMap = {
-  connected: Record<string, never>;
-  'before-attempt': Record<string, never>;
-  failed: { isRequestTimeoutError: boolean };
-  cancelled: Record<string, never>;
-};
-
-export type TEvents = TypedEvents<TEventMap>;
+export type TEvent = (typeof EVENT_NAMES)[number];
+export type TEvents = Events<typeof EVENT_NAMES>;
