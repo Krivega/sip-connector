@@ -1,3 +1,4 @@
+import { CancelableRequest } from '@krivega/cancelable-promise';
 import { resolveRequesterByTimeout } from '@krivega/timeout-requester';
 
 import type { ConnectionManager } from '@/ConnectionManager';
@@ -5,6 +6,8 @@ import type { TParametersCheckTelephony } from './types';
 
 class CheckTelephonyRequester {
   private readonly connectionManager: ConnectionManager;
+
+  private readonly cancelableRequestClearCache: CancelableRequest<void, void>;
 
   private readonly interval: number;
 
@@ -14,24 +17,26 @@ class CheckTelephonyRequester {
   public constructor({
     connectionManager,
     interval,
+    clearCache,
   }: {
     connectionManager: ConnectionManager;
     interval: number;
+    clearCache: () => Promise<void>;
   }) {
     this.connectionManager = connectionManager;
     this.interval = interval;
+
+    this.cancelableRequestClearCache = new CancelableRequest(clearCache);
   }
 
   public start({
     getParameters,
-    clearCache,
     onSuccessRequest,
     onFailRequest,
   }: {
     getParameters: () => TParametersCheckTelephony;
     onSuccessRequest: () => void;
     onFailRequest: () => void;
-    clearCache?: () => Promise<void>;
   }) {
     this.stop();
 
@@ -39,9 +44,7 @@ class CheckTelephonyRequester {
       isDontStopOnFail: true,
       requestInterval: this.interval,
       request: async () => {
-        if (clearCache) {
-          await clearCache();
-        }
+        await this.cancelableRequestClearCache.request();
 
         const parameters = getParameters();
 
@@ -59,6 +62,8 @@ class CheckTelephonyRequester {
   }
 
   public stop() {
+    this.cancelableRequestClearCache.cancelRequest();
+
     if (this.checkTelephonyByTimeout) {
       this.checkTelephonyByTimeout.stop();
       this.checkTelephonyByTimeout = undefined;

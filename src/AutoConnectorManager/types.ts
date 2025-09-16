@@ -4,6 +4,7 @@ import type { ConnectionQueueManager } from '@/ConnectionQueueManager';
 export interface IAutoConnectorOptions {
   checkTelephonyRequestInterval?: number;
   timeoutBetweenAttempts?: number;
+  clearCache?: () => Promise<void>;
 }
 export type ISubscriber<T = void> = {
   subscribe: (callback: (value: T) => void) => void;
@@ -17,5 +18,4 @@ export type TParametersAutoConnect = {
   getConnectParameters: () => Promise<TParametersConnect | undefined>;
   getCheckTelephonyParameters: () => TParametersCheckTelephony;
   hasReadyForConnection?: () => boolean;
-  clearCache?: () => Promise<void>;
 };

@@ -1,4 +1,4 @@
-import { isCanceledError } from '@krivega/cancelable-promise';
+import { CancelableRequest, isCanceledError } from '@krivega/cancelable-promise';
 import { DelayRequester, hasCanceledError } from '@krivega/timeout-requester';
 import { Events } from 'events-constructor';
 
@@ -20,6 +20,8 @@ import type { IAutoConnectorOptions, TErrorSipConnector, TParametersAutoConnect 
 const DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS = 3000;
 const DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL = 15_000;
 
+const asyncNoop = async (): Promise<void> => {};
+
 class AutoConnectorManager {
   public readonly events: TEvents;
 
@@ -37,6 +39,8 @@ class AutoConnectorManager {
 
   private readonly delayBetweenAttempts: DelayRequester;
 
+  private readonly cancelableRequestClearCache: CancelableRequest<void, void>;
+
   public constructor({
     connectionQueueManager,
     connectionManager,
@@ -48,9 +52,11 @@ class AutoConnectorManager {
     callManager: CallManager;
     options?: IAutoConnectorOptions;
   }) {
-    this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
+    const clearCache = options?.clearCache ?? asyncNoop;
+
     this.connectionManager = connectionManager;
 
+    this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
     this.connectFlow = new ConnectFlow({
       connectionQueueManager,
       hasConfigured: () => {
@@ -58,6 +64,7 @@ class AutoConnectorManager {
       },
     });
     this.checkTelephonyRequester = new CheckTelephonyRequester({
+      clearCache,
       connectionManager,
       interval: options?.checkTelephonyRequestInterval ?? DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL,
     });
@@ -67,6 +74,7 @@ class AutoConnectorManager {
       callManager,
     });
     this.attemptsState = new AttemptsState();
+    this.cancelableRequestClearCache = new CancelableRequest(clearCache);
     this.delayBetweenAttempts = new DelayRequester(
       options?.timeoutBetweenAttempts ?? DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS,
     );
@@ -88,12 +96,7 @@ class AutoConnectorManager {
   public cancel() {
     logger('auto connector cancel');
 
-    if (this.isAttemptInProgress) {
-      this.connectFlow.stop();
-    }
-
-    this.delayBetweenAttempts.cancelRequest();
-    this.attemptsState.reset();
+    this.stopAttempts();
     this.stopConnectTriggers();
 
     this.connectFlow.runDisconnect().catch((error: unknown) => {
@@ -125,12 +128,29 @@ class AutoConnectorManager {
     this.events.off<T>(eventName, handler);
   }
 
+  private stopAttempts() {
+    this.delayBetweenAttempts.cancelRequest();
+    this.cancelableRequestClearCache.cancelRequest();
+    this.attemptsState.reset();
+
+    if (this.isAttemptInProgress) {
+      this.connectFlow.stop();
+    }
+  }
+
+  private stopConnectTriggers() {
+    logger('stopConnectTriggers');
+
+    this.pingServerRequester.stop();
+    this.checkTelephonyRequester.stop();
+    this.registrationFailedOutOfCallSubscriber.unsubscribe();
+  }
+
   private runCheckTelephony(parameters: TParametersAutoConnect) {
     logger('runCheckTelephony');
 
     this.checkTelephonyRequester.start({
       getParameters: parameters.getCheckTelephonyParameters,
-      clearCache: parameters.clearCache,
       onSuccessRequest: () => {
         logger('runCheckTelephony: onSuccessRequest');
 
@@ -218,14 +238,6 @@ class AutoConnectorManager {
     });
   }
 
-  private stopConnectTriggers() {
-    logger('stopConnectTriggers');
-
-    this.pingServerRequester.stop();
-    this.checkTelephonyRequester.stop();
-    this.registrationFailedOutOfCallSubscriber.unsubscribe();
-  }
-
   private connectIfDisconnected(parameters: TParametersAutoConnect) {
     const isFailedOrDisconnected = this.hasFailedOrDisconnectedConnection();
 
@@ -247,7 +259,7 @@ class AutoConnectorManager {
       .then(async () => {
         logger('reconnect: delayBetweenAttempts success');
 
-        return parameters.clearCache?.();
+        return this.cancelableRequestClearCache.request();
       })
       .then(async () => {
         logger('reconnect: clearCache success');
