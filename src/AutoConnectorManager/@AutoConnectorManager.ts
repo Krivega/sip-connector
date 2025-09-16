@@ -16,7 +16,6 @@ import type { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import type { TEventMap, TEvents } from './eventNames';
 import type {
   IAutoConnectorOptions,
-  ISubscriber,
   TErrorSipConnector,
   TParametersAutoConnect,
   TParametersConnect,
@@ -41,8 +40,6 @@ class AutoConnectorManager {
   private readonly attemptsState: AttemptsState;
 
   private readonly delayBetweenAttempts: DelayRequester;
-
-  private connectorSubscriber?: ISubscriber;
 
   public constructor({
     connectionQueueManager,
@@ -80,8 +77,6 @@ class AutoConnectorManager {
 
   public start(parameters: TParametersAutoConnect) {
     logger('auto connector start');
-
-    this.connectorSubscriber = parameters.connectorSubscriber;
 
     this.cancel();
     this.connect(parameters).catch((error: unknown) => {
@@ -219,12 +214,6 @@ class AutoConnectorManager {
 
       this.start(parameters);
     });
-
-    this.connectorSubscriber?.subscribe(() => {
-      logger('connectorSubscriber callback');
-
-      this.start(parameters);
-    });
   }
 
   private stopConnectTriggers() {
@@ -233,7 +222,8 @@ class AutoConnectorManager {
     this.pingServerRequester.stop();
     this.checkTelephonyRequester.stop();
     this.registrationFailedOutOfCallSubscriber.unsubscribe();
-    this.connectorSubscriber?.unsubscribe();
+
+    this.events.trigger(EEvent.CONNECT_TRIGGERS_STOPPED, {});
   }
 
   private connectIfDisconnected(parameters: TParametersAutoConnect) {
@@ -334,7 +324,7 @@ class AutoConnectorManager {
   private async disconnectIfConfigured() {
     const isConfigured = this.connectionManager.isConfigured();
 
-    logger('disconnect: isConfigured, ', isConfigured);
+    logger('disconnectIfConfigured: isConfigured, ', isConfigured);
 
     if (isConfigured) {
       return this.connectionQueueManager.disconnect();

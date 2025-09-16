@@ -45,19 +45,24 @@ class PingServerRequester {
   }
 
   public start({ onFailRequest }: { onFailRequest: () => void }) {
-    logger('ping start');
+    logger('start');
 
-    this.callStatusSubscriber.subscribe((isCallActive) => {
-      if (isCallActive) {
-        this.pingServerByTimeoutWithFailCalls.stop();
-      } else {
-        this.pingServerByTimeoutWithFailCalls.start(undefined, { onFailRequest }).catch(logger);
-      }
-    });
+    this.callStatusSubscriber.subscribe(
+      (isCallActive) => {
+        if (isCallActive) {
+          this.pingServerByTimeoutWithFailCalls.stop();
+        } else {
+          this.pingServerByTimeoutWithFailCalls.start(undefined, { onFailRequest }).catch(logger);
+        }
+      },
+      {
+        fireImmediately: true,
+      },
+    );
   }
 
   public stop() {
-    logger('ping stop');
+    logger('stop');
 
     this.pingServerByTimeoutWithFailCalls.stop();
     this.callStatusSubscriber.unsubscribe();

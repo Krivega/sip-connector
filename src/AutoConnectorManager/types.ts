@@ -18,5 +18,4 @@ export type TParametersAutoConnect = {
   getCheckTelephonyParameters: () => TParametersCheckTelephony;
   hasReadyForConnection?: () => boolean;
   clearCache?: () => Promise<void>;
-  connectorSubscriber?: ISubscriber;
 };

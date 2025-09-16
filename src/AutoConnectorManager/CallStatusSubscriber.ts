@@ -16,8 +16,14 @@ class CallStatusSubscriber extends AbstractSubscriber<boolean> {
     this.isCallActive = callManager.isCallActive;
   }
 
-  public subscribe(callback: (isActive: boolean) => void) {
+  public subscribe(callback: (isActive: boolean) => void, options?: { fireImmediately?: boolean }) {
     this.unsubscribe();
+
+    this.isCallActive = this.callManager.isCallActive;
+
+    if (options?.fireImmediately === true) {
+      callback(this.isCallActive);
+    }
 
     const disposers = EVENT_NAMES.map((eventName) => {
       return this.callManager.on(eventName, () => {
