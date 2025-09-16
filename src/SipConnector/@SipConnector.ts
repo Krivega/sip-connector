@@ -147,10 +147,6 @@ class SipConnector {
     return this.incomingCallManager.isAvailableIncomingCall;
   }
 
-  public get isAutoConnectAttemptInProgress(): AutoConnectorManager['isAttemptInProgress'] {
-    return this.autoConnectorManager.isAttemptInProgress;
-  }
-
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
   public on<T>(eventName: TEvent, handler: (data: T) => void) {
     return this.events.on<T>(eventName, handler);

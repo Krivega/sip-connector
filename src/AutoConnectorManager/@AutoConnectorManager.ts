@@ -1,6 +1,6 @@
 import { CancelableRequest, isCanceledError } from '@krivega/cancelable-promise';
 import { DelayRequester, hasCanceledError } from '@krivega/timeout-requester';
-import { Events } from 'events-constructor';
+import { TypedEvents } from 'events-constructor';
 
 import { hasPromiseIsNotActualError } from '@/ConnectionQueueManager';
 import logger from '@/logger';
@@ -14,7 +14,7 @@ import RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCall
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
 import type { ConnectionQueueManager } from '@/ConnectionQueueManager';
-import type { TEvent, TEvents } from './eventNames';
+import type { TEventMap, TEvents } from './eventNames';
 import type { IAutoConnectorOptions, TErrorSipConnector, TParametersAutoConnect } from './types';
 
 const DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS = 3000;
@@ -56,7 +56,7 @@ class AutoConnectorManager {
 
     this.connectionManager = connectionManager;
 
-    this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
+    this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
     this.connectFlow = new ConnectFlow({
       connectionQueueManager,
       hasConfigured: () => {
@@ -73,15 +73,13 @@ class AutoConnectorManager {
       connectionManager,
       callManager,
     });
-    this.attemptsState = new AttemptsState();
+    this.attemptsState = new AttemptsState((isAttemptInProgress) => {
+      this.events.trigger(EEvent.ATTEMPT_STATUS_CHANGED, { isAttemptInProgress });
+    });
     this.cancelableRequestClearCache = new CancelableRequest(clearCache);
     this.delayBetweenAttempts = new DelayRequester(
       options?.timeoutBetweenAttempts ?? DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS,
     );
-  }
-
-  public get isAttemptInProgress(): boolean {
-    return this.attemptsState.isAttemptInProgress;
   }
 
   public start(parameters: TParametersAutoConnect) {
@@ -104,28 +102,27 @@ class AutoConnectorManager {
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public on<T>(eventName: TEvent, handler: (data: T) => void) {
-    return this.events.on<T>(eventName, handler);
+  public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+    return this.events.on(eventName, handler);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public once<T>(eventName: TEvent, handler: (data: T) => void) {
-    return this.events.once<T>(eventName, handler);
+  public once<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+    return this.events.once(eventName, handler);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public onceRace<T>(eventNames: TEvent[], handler: (data: T, eventName: string) => void) {
-    return this.events.onceRace<T>(eventNames, handler);
+  public onceRace<T extends keyof TEventMap>(
+    eventNames: T[],
+    handler: (data: TEventMap[T], eventName: string) => void,
+  ) {
+    return this.events.onceRace(eventNames, handler);
   }
 
-  public async wait<T>(eventName: TEvent): Promise<T> {
-    return this.events.wait<T>(eventName);
+  public async wait<T extends keyof TEventMap>(eventName: T): Promise<TEventMap[T]> {
+    return this.events.wait(eventName);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public off<T>(eventName: TEvent, handler: (data: T) => void) {
-    this.events.off<T>(eventName, handler);
+  public off<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+    this.events.off(eventName, handler);
   }
 
   private stopAttempts() {
@@ -133,7 +130,7 @@ class AutoConnectorManager {
     this.cancelableRequestClearCache.cancelRequest();
     this.attemptsState.reset();
 
-    if (this.isAttemptInProgress) {
+    if (this.attemptsState.isAttemptInProgress) {
       this.connectFlow.stop();
     }
   }
@@ -165,7 +162,7 @@ class AutoConnectorManager {
   private async connect(parameters: TParametersAutoConnect) {
     logger('connect: attempts.count', this.attemptsState.count);
 
-    this.events.trigger(EEvent.BEFORE_ATTEMPT);
+    this.events.trigger(EEvent.BEFORE_ATTEMPT, {});
     this.stopConnectTriggers();
 
     const isLimitReached = this.attemptsState.hasLimitReached();
@@ -198,12 +195,12 @@ class AutoConnectorManager {
 
       this.subscribeToConnectTriggers(parameters);
 
-      this.events.trigger(EEvent.CONNECTED);
+      this.events.trigger(EEvent.CONNECTED, {});
     } catch (error) {
       if (hasPromiseIsNotActualError(error as TErrorSipConnector)) {
         logger('processConnect: not actual error', error);
 
-        this.events.trigger(EEvent.CANCELLED);
+        this.events.trigger(EEvent.CANCELLED, {});
 
         return;
       }
@@ -247,7 +244,7 @@ class AutoConnectorManager {
       this.start(parameters);
     } else {
       this.stopConnectTriggers();
-      this.events.trigger(EEvent.CONNECTED);
+      this.events.trigger(EEvent.CONNECTED, {});
     }
   }
 
@@ -268,7 +265,7 @@ class AutoConnectorManager {
       })
       .catch((error: unknown) => {
         if (isCanceledError(error) || hasCanceledError(error as Error)) {
-          this.events.trigger(EEvent.CANCELLED);
+          this.events.trigger(EEvent.CANCELLED, {});
         } else {
           this.events.trigger(EEvent.FAILED, error);
         }

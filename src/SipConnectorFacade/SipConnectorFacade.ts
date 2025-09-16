@@ -93,7 +93,6 @@ interface IProxyMethods {
   connection: SipConnector['connection'];
   isConfigured: SipConnector['isConfigured'];
   isRegistered: SipConnector['isRegistered'];
-  isAutoConnectAttemptInProgress: SipConnector['isAutoConnectAttemptInProgress'];
 }
 
 const proxyMethods = new Set<keyof IProxyMethods>([
@@ -114,7 +113,6 @@ const proxyMethods = new Set<keyof IProxyMethods>([
   'connection',
   'isConfigured',
   'isRegistered',
-  'isAutoConnectAttemptInProgress',
 ]);
 
 class SipConnectorFacade implements IProxyMethods {

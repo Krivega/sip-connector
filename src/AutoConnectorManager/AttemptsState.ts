@@ -10,6 +10,12 @@ class AttemptsState {
 
   private inProgress = false;
 
+  private readonly onStatusChange: (inProgress: boolean) => void;
+
+  public constructor(onStatusChange: (inProgress: boolean) => void) {
+    this.onStatusChange = onStatusChange;
+  }
+
   public get count(): number {
     return this.countInner;
   }
@@ -27,11 +33,17 @@ class AttemptsState {
   }
 
   public startAttempt(): void {
-    this.inProgress = true;
+    if (!this.inProgress) {
+      this.inProgress = true;
+      this.onStatusChange(this.inProgress);
+    }
   }
 
   public finishAttempt(): void {
-    this.inProgress = false;
+    if (this.inProgress) {
+      this.inProgress = false;
+      this.onStatusChange(this.inProgress);
+    }
   }
 
   public increment(): void {

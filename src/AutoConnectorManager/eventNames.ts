@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
-import type { Events } from 'events-constructor';
+import type { TypedEvents } from 'events-constructor';
 
 export enum EEvent {
   CONNECTED = 'connected',
   BEFORE_ATTEMPT = 'before-attempt',
   FAILED = 'failed',
   CANCELLED = 'cancelled',
+  ATTEMPT_STATUS_CHANGED = 'attempt-status-changed',
 }
 
 export const EVENT_NAMES = [
@@ -13,7 +14,15 @@ export const EVENT_NAMES = [
   `${EEvent.BEFORE_ATTEMPT}`,
   `${EEvent.FAILED}`,
   `${EEvent.CANCELLED}`,
+  `${EEvent.ATTEMPT_STATUS_CHANGED}`,
 ] as const;
 
-export type TEvent = (typeof EVENT_NAMES)[number];
-export type TEvents = Events<typeof EVENT_NAMES>;
+export type TEventMap = {
+  connected: Record<string, never>;
+  'before-attempt': Record<string, never>;
+  failed: unknown;
+  cancelled: Record<string, never>;
+  'attempt-status-changed': { isAttemptInProgress: boolean };
+};
+
+export type TEvents = TypedEvents<TEventMap>;
