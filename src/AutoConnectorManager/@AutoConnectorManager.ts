@@ -6,6 +6,7 @@ import { hasPromiseIsNotActualError } from '@/ConnectionQueueManager';
 import logger from '@/logger';
 import AttemptsState from './AttemptsState';
 import CheckTelephonyRequester from './CheckTelephonyRequester';
+import ConnectFlow from './ConnectFlow';
 import { EEvent, EVENT_NAMES } from './eventNames';
 import PingServerRequester from './PingServerRequester';
 import RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCallSubscriber';
@@ -14,12 +15,7 @@ import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
 import type { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import type { TEventMap, TEvents } from './eventNames';
-import type {
-  IAutoConnectorOptions,
-  TErrorSipConnector,
-  TParametersAutoConnect,
-  TParametersConnect,
-} from './types';
+import type { IAutoConnectorOptions, TErrorSipConnector, TParametersAutoConnect } from './types';
 
 const DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS = 3000;
 const DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL = 15_000;
@@ -29,7 +25,7 @@ class AutoConnectorManager {
 
   private readonly connectionManager: ConnectionManager;
 
-  private readonly connectionQueueManager: ConnectionQueueManager;
+  private readonly connectFlow: ConnectFlow;
 
   private readonly checkTelephonyRequester: CheckTelephonyRequester;
 
@@ -54,8 +50,13 @@ class AutoConnectorManager {
   }) {
     this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
     this.connectionManager = connectionManager;
-    this.connectionQueueManager = connectionQueueManager;
 
+    this.connectFlow = new ConnectFlow({
+      connectionQueueManager,
+      hasConfigured: () => {
+        return this.connectionManager.isConfigured();
+      },
+    });
     this.checkTelephonyRequester = new CheckTelephonyRequester({
       connectionManager,
       interval: options?.checkTelephonyRequestInterval ?? DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL,
@@ -88,14 +89,14 @@ class AutoConnectorManager {
     logger('auto connector cancel');
 
     if (this.isAttemptInProgress) {
-      this.connectionQueueManager.stop();
+      this.connectFlow.stop();
     }
 
     this.delayBetweenAttempts.cancelRequest();
     this.attemptsState.reset();
     this.stopConnectTriggers();
 
-    this.disconnectIfConfigured().catch((error: unknown) => {
+    this.connectFlow.runDisconnect().catch((error: unknown) => {
       logger('auto connector disconnect: error', error);
     });
   }
@@ -170,7 +171,7 @@ class AutoConnectorManager {
         return;
       }
 
-      await this.connectWithDisconnect(connectParameters, parameters.hasReadyForConnection);
+      await this.connectFlow.runConnect(connectParameters, parameters.hasReadyForConnection);
 
       logger('processConnect success');
 
@@ -225,8 +226,7 @@ class AutoConnectorManager {
   }
 
   private connectIfDisconnected(parameters: TParametersAutoConnect) {
-    const isFailedOrDisconnected =
-      this.connectionManager.isFailed || this.connectionManager.isDisconnected;
+    const isFailedOrDisconnected = this.hasFailedOrDisconnectedConnection();
 
     logger('connectIfDisconnected: isFailedOrDisconnected', isFailedOrDisconnected);
 
@@ -264,71 +264,10 @@ class AutoConnectorManager {
       });
   }
 
-  private async connectWithDisconnect(
-    parameters: TParametersConnect,
-    hasReadyForConnection?: () => boolean,
-  ) {
-    return this.connectionQueueManager
-      .disconnect()
-      .catch((error: unknown) => {
-        logger('connectWithDisconnect: disconnect error', error);
-      })
-      .then(async () => {
-        logger('connectWithDisconnect: disconnect success');
+  private hasFailedOrDisconnectedConnection() {
+    const { isFailed, isDisconnected } = this.connectionManager;
 
-        return this.connectWithProcessError(parameters, hasReadyForConnection);
-      });
-  }
-
-  private async connectWithProcessError(
-    parameters: TParametersConnect,
-    hasReadyForConnection?: () => boolean,
-  ) {
-    const isReadyForConnection = hasReadyForConnection?.() ?? true;
-
-    logger('connectWithProcessError: isReadyForConnection, ', isReadyForConnection);
-
-    if (!isReadyForConnection) {
-      return;
-    }
-
-    await this.connectionQueueManager
-      .connect(parameters)
-      .then((isConnected) => {
-        logger('connect, isConnected', isConnected);
-      })
-      .catch(async (error: unknown) => {
-        const isErrorNullOrUndefined = error === null || error === undefined;
-
-        if (!isErrorNullOrUndefined && hasPromiseIsNotActualError(error as TErrorSipConnector)) {
-          throw error;
-        }
-
-        const connectToServerError =
-          error instanceof Error ? error : new Error('Failed to connect to server');
-
-        logger('connectWithProcessError, error:', error);
-
-        return this.disconnectIfConfigured()
-          .then(() => {
-            throw connectToServerError;
-          })
-          .catch(() => {
-            throw connectToServerError;
-          });
-      });
-  }
-
-  private async disconnectIfConfigured() {
-    const isConfigured = this.connectionManager.isConfigured();
-
-    logger('disconnectIfConfigured: isConfigured, ', isConfigured);
-
-    if (isConfigured) {
-      return this.connectionQueueManager.disconnect();
-    }
-
-    return undefined;
+    return isFailed || isDisconnected;
   }
 }
 
