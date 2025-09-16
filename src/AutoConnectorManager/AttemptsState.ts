@@ -12,7 +12,7 @@ class AttemptsState {
 
   private readonly onStatusChange: (inProgress: boolean) => void;
 
-  public constructor(onStatusChange: (inProgress: boolean) => void) {
+  public constructor({ onStatusChange }: { onStatusChange: (inProgress: boolean) => void }) {
     this.onStatusChange = onStatusChange;
   }
 

@@ -5,6 +5,8 @@ export enum EEvent {
   CONNECTING = 'connecting',
   CONNECTED = 'connected',
   DISCONNECTED = 'disconnected',
+  DISCONNECTING = 'disconnecting',
+  DISCONNECT_FAILED = 'disconnectFailed',
   NEW_RTC_SESSION = 'newRTCSession',
   REGISTERED = 'registered',
   UNREGISTERED = 'unregistered',
@@ -25,7 +27,11 @@ export const UA_EVENT_NAMES = [
   `${EEvent.SIP_EVENT}`,
 ] as const;
 
-export const EVENT_NAMES = [...UA_EVENT_NAMES];
+export const EVENT_NAMES = [
+  ...UA_EVENT_NAMES,
+  `${EEvent.DISCONNECTING}`,
+  `${EEvent.DISCONNECT_FAILED}`,
+] as const;
 
 export type TEvent = (typeof EVENT_NAMES)[number];
 export type TEvents = Events<typeof EVENT_NAMES>;

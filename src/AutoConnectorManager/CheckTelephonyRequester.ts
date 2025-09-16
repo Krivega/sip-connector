@@ -34,7 +34,7 @@ class CheckTelephonyRequester {
     onSuccessRequest,
     onFailRequest,
   }: {
-    getParameters: () => TParametersCheckTelephony;
+    getParameters: () => Promise<TParametersCheckTelephony>;
     onSuccessRequest: () => void;
     onFailRequest: () => void;
   }) {
@@ -46,7 +46,7 @@ class CheckTelephonyRequester {
       request: async () => {
         await this.cancelableRequestClearCache.request();
 
-        const parameters = getParameters();
+        const parameters = await getParameters();
 
         return this.connectionManager.checkTelephony(parameters);
       },

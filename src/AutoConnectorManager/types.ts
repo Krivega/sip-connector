@@ -16,6 +16,6 @@ export type TParametersCheckTelephony = Parameters<ConnectionManager['checkTelep
 export type TParametersConnect = Parameters<ConnectionQueueManager['connect']>[0];
 export type TParametersAutoConnect = {
   getConnectParameters: () => Promise<TParametersConnect | undefined>;
-  getCheckTelephonyParameters: () => TParametersCheckTelephony;
+  getCheckTelephonyParameters: () => Promise<TParametersCheckTelephony>;
   hasReadyForConnection?: () => boolean;
 };

@@ -73,13 +73,17 @@ class AutoConnectorManager {
       connectionManager,
       callManager,
     });
-    this.attemptsState = new AttemptsState((isAttemptInProgress) => {
-      this.events.trigger(EEvent.ATTEMPT_STATUS_CHANGED, isAttemptInProgress);
+    this.attemptsState = new AttemptsState({
+      onStatusChange: (isAttemptInProgress: boolean) => {
+        this.events.trigger(EEvent.ATTEMPT_STATUS_CHANGED, isAttemptInProgress);
+      },
     });
     this.cancelableRequestClearCache = new CancelableRequest(clearCache);
     this.delayBetweenAttempts = new DelayRequester(
       options?.timeoutBetweenAttempts ?? DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS,
     );
+
+    this.subscribe();
   }
 
   public start(parameters: TParametersAutoConnect) {
@@ -183,7 +187,13 @@ class AutoConnectorManager {
 
   private async processConnect(parameters: TParametersAutoConnect) {
     try {
-      const connectParameters = await parameters.getConnectParameters();
+      const connectParameters = await parameters.getConnectParameters().catch((error: unknown) => {
+        logger('processConnect: getConnectParameters error', error);
+
+        this.events.trigger(EEvent.PARAMETERS_FAILED, error);
+
+        throw error;
+      });
 
       if (!connectParameters) {
         return;
@@ -278,6 +288,16 @@ class AutoConnectorManager {
     const { isFailed, isDisconnected } = this.connectionManager;
 
     return isFailed || isDisconnected;
+  }
+
+  private subscribe() {
+    this.connectionManager.on('disconnecting', () => {
+      this.events.trigger(EEvent.DISCONNECTING, {});
+    });
+
+    this.connectionManager.on('disconnected', () => {
+      this.events.trigger(EEvent.DISCONNECTED, {});
+    });
   }
 }
 

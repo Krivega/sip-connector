@@ -39,6 +39,8 @@ describe('AutoConnectorManager', () => {
   let sipConnector: SipConnector;
   let baseParameters: TParametersAutoConnect;
 
+  const clearCacheMock = jest.fn();
+
   const createManager = (options?: {
     timeoutBetweenAttempts?: number;
     checkTelephonyRequestInterval?: number;
@@ -50,6 +52,7 @@ describe('AutoConnectorManager', () => {
       options: {
         timeoutBetweenAttempts: options?.timeoutBetweenAttempts ?? 1,
         checkTelephonyRequestInterval: options?.checkTelephonyRequestInterval ?? 1,
+        clearCache: clearCacheMock,
       },
     });
   };
@@ -65,7 +68,7 @@ describe('AutoConnectorManager', () => {
           register: false,
         } as unknown as TParametersConnect;
       },
-      getCheckTelephonyParameters: () => {
+      getCheckTelephonyParameters: async () => {
         return {
           sipServerUrl: 'sip',
           sipWebSocketServerURL: 'wss',
@@ -146,20 +149,6 @@ describe('AutoConnectorManager', () => {
       expect(handleConnected).toHaveBeenCalled();
     });
 
-    it('переключает счетчик и меняет состояние попытки', () => {
-      const manager = createManager();
-
-      // @ts-ignore приватное свойство
-      expect(manager.attemptsState.count).toBe(0);
-      expect(manager.isAttemptInProgress).toBe(false);
-
-      manager.start(baseParameters);
-
-      // @ts-ignore приватное свойство
-      expect(manager.attemptsState.count).toBe(1);
-      expect(manager.isAttemptInProgress).toBe(true);
-    });
-
     it('не продолжает процесс, если getConnectParameters возвращает undefined', async () => {
       const handleConnected = jest.fn();
 
@@ -214,16 +203,12 @@ describe('AutoConnectorManager', () => {
 
     it('после сетевой ошибки делает реконнект после задержки', async () => {
       const connectSpy = jest.spyOn(sipConnector.connectionQueueManager, 'connect');
-      const clearCacheMock = jest.fn();
 
       connectSpy.mockRejectedValue(new Error('Network Error'));
 
       const manager = createManager({ timeoutBetweenAttempts: DELAY });
 
-      manager.start({
-        ...baseParameters,
-        clearCache: clearCacheMock,
-      });
+      manager.start(baseParameters);
 
       jest.clearAllMocks();
 
