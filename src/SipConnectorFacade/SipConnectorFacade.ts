@@ -167,9 +167,6 @@ class SipConnectorFacade implements IProxyMethods {
   // @ts-expect-error: proxy method
   public isRegistered: IProxyMethods['isRegistered'];
 
-  // @ts-expect-error: proxy method
-  public isAutoConnectAttemptInProgress: IProxyMethods['isAutoConnectAttemptInProgress'];
-
   public readonly sipConnector: SipConnector;
 
   public constructor(sipConnector: SipConnector) {
