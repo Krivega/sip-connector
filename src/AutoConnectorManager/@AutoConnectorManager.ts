@@ -74,7 +74,7 @@ class AutoConnectorManager {
       callManager,
     });
     this.attemptsState = new AttemptsState((isAttemptInProgress) => {
-      this.events.trigger(EEvent.ATTEMPT_STATUS_CHANGED, { isAttemptInProgress });
+      this.events.trigger(EEvent.ATTEMPT_STATUS_CHANGED, isAttemptInProgress);
     });
     this.cancelableRequestClearCache = new CancelableRequest(clearCache);
     this.delayBetweenAttempts = new DelayRequester(

@@ -22,7 +22,7 @@ export type TEventMap = {
   'before-attempt': Record<string, never>;
   failed: unknown;
   cancelled: Record<string, never>;
-  'attempt-status-changed': { isAttemptInProgress: boolean };
+  'attempt-status-changed': boolean;
 };
 
 export type TEvents = TypedEvents<TEventMap>;
