@@ -6,7 +6,6 @@ export enum EEvent {
   BEFORE_ATTEMPT = 'before-attempt',
   FAILED = 'failed',
   CANCELLED = 'cancelled',
-  CONNECT_TRIGGERS_STOPPED = 'connect-triggers-stopped',
 }
 
 export const EVENT_NAMES = [
@@ -14,7 +13,6 @@ export const EVENT_NAMES = [
   `${EEvent.BEFORE_ATTEMPT}`,
   `${EEvent.FAILED}`,
   `${EEvent.CANCELLED}`,
-  `${EEvent.CONNECT_TRIGGERS_STOPPED}`,
 ] as const;
 
 export type TEventMap = {
@@ -22,7 +20,6 @@ export type TEventMap = {
   'before-attempt': Record<string, never>;
   failed: { isRequestTimeoutError: boolean };
   cancelled: Record<string, never>;
-  'connect-triggers-stopped': Record<string, never>;
 };
 
 export type TEvents = TypedEvents<TEventMap>;

@@ -281,24 +281,6 @@ describe('AutoConnectorManager', () => {
 
       expect(connectSpy).toHaveBeenCalledTimes(2);
     });
-
-    it('эмитит connect-triggers-stopped при остановке триггеров', async () => {
-      const handleStopped = jest.fn();
-
-      const manager = createManager();
-
-      manager.on('connect-triggers-stopped', handleStopped);
-
-      manager.start(baseParameters);
-
-      await manager.wait('connected');
-
-      manager.cancel();
-
-      await delayPromise(0);
-
-      expect(handleStopped).toHaveBeenCalled();
-    });
   });
 
   describe('requesters', () => {

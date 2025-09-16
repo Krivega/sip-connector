@@ -222,8 +222,6 @@ class AutoConnectorManager {
     this.pingServerRequester.stop();
     this.checkTelephonyRequester.stop();
     this.registrationFailedOutOfCallSubscriber.unsubscribe();
-
-    this.events.trigger(EEvent.CONNECT_TRIGGERS_STOPPED, {});
   }
 
   private connectIfDisconnected(parameters: TParametersAutoConnect) {
