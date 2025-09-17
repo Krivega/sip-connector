@@ -70,6 +70,7 @@ class SipConnector {
   public readonly presentationManager: PresentationManager;
   public readonly statsManager: StatsManager;
   public readonly videoSendingBalancerManager: VideoSendingBalancerManager;
+  public readonly autoConnectorManager: AutoConnectorManager;
 
   private readonly preferredMimeTypesVideoCodecs?: string[];
   private readonly excludeMimeTypesVideoCodecs?: string[];
@@ -80,10 +81,12 @@ class SipConnector {
       preferredMimeTypesVideoCodecs,
       excludeMimeTypesVideoCodecs,
       videoBalancerOptions,
+      autoConnectorOptions,
     }: {
       preferredMimeTypesVideoCodecs?: string[];
       excludeMimeTypesVideoCodecs?: string[];
       videoBalancerOptions?: IBalancerOptions;
+      autoConnectorOptions?: IAutoConnectorOptions;
     } = {},
   ) {
     this.preferredMimeTypesVideoCodecs = preferredMimeTypesVideoCodecs;
@@ -108,6 +111,12 @@ class SipConnector {
       callManager: this.callManager,
       apiManager: this.apiManager,
     });
+    this.autoConnectorManager = new AutoConnectorManager({
+      connectionQueueManager: this.connectionQueueManager,
+      connectionManager: this.connectionManager,
+      callManager: this.callManager,
+      options: autoConnectorOptions,
+    });
     this.videoSendingBalancerManager = new VideoSendingBalancerManager(
       this.callManager,
       this.apiManager,
@@ -118,15 +127,17 @@ class SipConnector {
   }
 
   // Проксирование методов менеджеров
+  startAutoConnect: AutoConnectorManager['start'];
+  cancelAutoConnect: AutoConnectorManager['cancel'];
   connect: ConnectionQueueManager['connect'];
   disconnect: ConnectionQueueManager['disconnect'];
   register: ConnectionQueueManager['register'];
   unregister: ConnectionQueueManager['unregister'];
   tryRegister: ConnectionQueueManager['tryRegister'];
-  checkTelephony: ConnectionQueueManager['checkTelephony'];
-  sendOptions: ConnectionQueueManager['sendOptions'];
-  ping: ConnectionQueueManager['ping'];
-  set: ConnectionQueueManager['set'];
+  checkTelephony: ConnectionManager['checkTelephony'];
+  sendOptions: ConnectionManager['sendOptions'];
+  ping: ConnectionManager['ping'];
+  set: ConnectionManager['set'];
   call: CallManager['startCall'];
   hangUp: CallManager['endCall'];
   answerToIncomingCall: CallManager['answerToIncomingCall'];
@@ -211,6 +222,8 @@ class ConnectionManager {
   get requested(): boolean;
   get isPendingConnect(): boolean;
   get isPendingInitUa(): boolean;
+  get isDisconnected(): boolean;
+  get isFailed(): boolean;
   get connectionState(): string;
   get isRegistered(): boolean;
   get isRegisterConfig(): boolean;
@@ -228,22 +241,85 @@ class ConnectionQueueManager {
     noRunIsNotActual: true,
   });
 
-  // Проксирует все методы ConnectionManager через stackPromises.run()
-  public connect: ConnectionManager['connect'];
-  public disconnect: ConnectionManager['disconnect'];
-  public register: ConnectionManager['register'];
-  public unregister: ConnectionManager['unregister'];
-  public tryRegister: ConnectionManager['tryRegister'];
-  public checkTelephony: ConnectionManager['checkTelephony'];
-  public sendOptions: ConnectionManager['sendOptions'];
-  public ping: ConnectionManager['ping'];
-  public set: ConnectionManager['set'];
+  connect: ConnectionManager['connect'];
+  disconnect: ConnectionManager['disconnect'];
+  register: ConnectionManager['register'];
+  unregister: ConnectionManager['unregister'];
+  tryRegister: ConnectionManager['tryRegister'];
+  stop(): void;
 }
 ```
 
 ---
 
-### 5. **CallManager** (Управление звонками)
+### 5. **AutoConnectorManager** (Управление автоподключением)
+
+```ts
+class AutoConnectorManager {
+  public readonly events: TEvents;
+
+  private readonly connectionManager: ConnectionManager;
+  private readonly callManager: CallManager;
+  private readonly connectionQueueManager: ConnectionQueueManager;
+  private readonly checkTelephonyRequester: CheckTelephonyRequester;
+  private readonly pingServerRequester: PingServerRequester;
+  private readonly registrationFailedOutOfCallSubscriber: RegistrationFailedOutOfCallSubscriber;
+  private readonly attemptsState: AttemptsState;
+  private readonly delayBetweenAttempts: DelayRequester;
+  private readonly cancelableRequestClearCache: CancelableRequest;
+
+  constructor({
+    connectionQueueManager,
+    connectionManager,
+    callManager,
+    options,
+  }: {
+    connectionQueueManager: ConnectionQueueManager;
+    connectionManager: ConnectionManager;
+    callManager: CallManager;
+    options?: IAutoConnectorOptions;
+  }) {
+    const clearCache = options?.clearCache ?? asyncNoop;
+
+    this.connectionManager = connectionManager;
+
+    this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
+    this.connectFlow = new ConnectFlow({
+      connectionQueueManager,
+      hasConfigured: () => {
+        return this.connectionManager.isConfigured();
+      },
+    });
+    this.checkTelephonyRequester = new CheckTelephonyRequester({
+      clearCache,
+      connectionManager,
+      interval: options?.checkTelephonyRequestInterval ?? DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL,
+    });
+    this.pingServerRequester = new PingServerRequester({ connectionManager, callManager });
+    this.registrationFailedOutOfCallSubscriber = new RegistrationFailedOutOfCallSubscriber({
+      connectionManager,
+      callManager,
+    });
+    this.attemptsState = new AttemptsState({
+      onStatusChange: (isAttemptInProgress: boolean) => {
+        this.events.trigger(EEvent.ATTEMPT_STATUS_CHANGED, isAttemptInProgress);
+      },
+    });
+    this.cancelableRequestClearCache = new CancelableRequest(clearCache);
+    this.delayBetweenAttempts = new DelayRequester(
+      options?.timeoutBetweenAttempts ?? DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS,
+    );
+
+    this.subscribe();
+  }
+
+  // Основные методы
+  start(parameters: TParametersAutoConnect): void;
+  cancel(): void;
+}
+```
+
+### 6. **CallManager** (Управление звонками)
 
 ```ts
 class CallManager {
@@ -275,7 +351,7 @@ class CallManager {
 
 ---
 
-### 6. **ApiManager** (Управление API)
+### 7. **ApiManager** (Управление API)
 
 ```ts
 class ApiManager {
@@ -317,7 +393,7 @@ class ApiManager {
 
 ---
 
-### 7. **PresentationManager** (Управление презентацией)
+### 8. **PresentationManager** (Управление презентацией)
 
 ```ts
 class PresentationManager {
@@ -359,7 +435,7 @@ class PresentationManager {
 
 ---
 
-### 8. **IncomingCallManager** (Управление входящими звонками)
+### 9. **IncomingCallManager** (Управление входящими звонками)
 
 ```ts
 class IncomingCallManager {
@@ -389,7 +465,7 @@ class IncomingCallManager {
 
 ---
 
-### 9. **CallStrategy** (Стратегии звонков)
+### 10. **CallStrategy** (Стратегии звонков)
 
 ```ts
 interface ICallStrategy {
@@ -438,11 +514,12 @@ graph TB
             J["VideoSendingBalancer<br/>🎛️ Video Parameters Control"]
             K["TrackMonitor<br/>👁️ Adaptive Polling<br/>1000ms → 16000ms"]
             L["ConnectionQueueManager<br/>🔄 Sequential Operations<br/>+ Queue Promises"]
+            M["AutoConnectorManager<br/>🔄 Auto Reconnection"]
         end
 
         subgraph "Foundation"
-            M["@krivega/jssip<br/>📞 SIP Protocol"]
-            N["WebRTC API<br/>🌐 Media Streams"]
+            O["@krivega/jssip<br/>📞 SIP Protocol"]
+            P["WebRTC API<br/>🌐 Media Streams"]
         end
 
         A --> B
@@ -456,9 +533,10 @@ graph TB
         B --> I
         I --> J
         J --> K
-        D --> N
-        F --> N
-        C --> M
+        D --> P
+        F --> P
+        C --> O
+        B --> M
     end
 
     style I fill:#e1f5fe,stroke:#01579b,stroke-width:2px
@@ -507,6 +585,7 @@ class SipConnector {
   +presentationManager: PresentationManager
   +statsManager: StatsManager
   +videoSendingBalancerManager: VideoSendingBalancerManager
+  +autoConnectorManager: AutoConnectorManager
   +preferredMimeTypesVideoCodecs?: string[]
   +excludeMimeTypesVideoCodecs?: string[]
   +connect: ConnectionQueueManager['connect']
@@ -514,10 +593,12 @@ class SipConnector {
   +register: ConnectionQueueManager['register']
   +unregister: ConnectionQueueManager['unregister']
   +tryRegister: ConnectionQueueManager['tryRegister']
-  +checkTelephony: ConnectionQueueManager['checkTelephony']
-  +sendOptions: ConnectionQueueManager['sendOptions']
-  +ping: ConnectionQueueManager['ping']
-  +set: ConnectionQueueManager['set']
+  +startAutoConnect: AutoConnectorManager['start']
+  +cancelAutoConnect: AutoConnectorManager['cancel']
+  +checkTelephony: ConnectionManager['checkTelephony']
+  +sendOptions: ConnectionManager['sendOptions']
+  +ping: ConnectionManager['ping']
+  +set: ConnectionManager['set']
   +call: CallManager['startCall']
   +hangUp: CallManager['endCall']
   +answerToIncomingCall: CallManager['answerToIncomingCall']
@@ -545,6 +626,8 @@ class ConnectionManager {
   +connectionState: string
   +isRegistered: boolean
   +isRegisterConfig: boolean
+  +isFailed: boolean
+  +isDisconnected: boolean
 }
 
 class ConnectionQueueManager {
@@ -555,10 +638,13 @@ class ConnectionQueueManager {
   +register: ConnectionManager['register']
   +unregister: ConnectionManager['unregister']
   +tryRegister: ConnectionManager['tryRegister']
-  +checkTelephony: ConnectionManager['checkTelephony']
-  +sendOptions: ConnectionManager['sendOptions']
-  +ping: ConnectionManager['ping']
-  +set: ConnectionManager['set']
+  +stop()
+}
+
+class AutoConnectorManager {
+  +events: TEvents
+  +start(parameters: TParametersAutoConnect): void
+  +cancel(): void
 }
 
 class CallManager {
@@ -723,6 +809,11 @@ SipConnector --> IncomingCallManager : depends on
 SipConnector --> PresentationManager : depends on
 SipConnector --> StatsManager : depends on
 SipConnector --> VideoSendingBalancerManager : depends on
+SipConnector --> AutoConnectorManager : depends on
+
+AutoConnectorManager --> ConnectionManager : depends on
+AutoConnectorManager --> CallManager : depends on
+AutoConnectorManager --> ConnectionQueueManager : depends on
 
 ApiManager --> ConnectionManager : depends on
 ApiManager --> CallManager : depends on
@@ -783,10 +874,10 @@ MCUCallStrategy --|> AbstractCallStrategy : extends
      5. **Управление настройками кодеков** (preferredMimeTypesVideoCodecs, excludeMimeTypesVideoCodecs).
      6. **Интеграция VideoSendingBalancerManager** для автоматической оптимизации видеопотоков.
      7. **Интеграция ConnectionQueueManager** для последовательного выполнения операций подключения.
-   - **Зависимости**: Зависит от всех менеджеров (`ConnectionManager`, `CallManager`, `ApiManager`, `IncomingCallManager`, `PresentationManager`, `StatsManager`, `VideoSendingBalancerManager`).
+   - **Зависимости**: Зависит от всех менеджеров (`ConnectionManager`, `CallManager`, `AutoConnectorManager`, `ApiManager`, `IncomingCallManager`, `PresentationManager`, `StatsManager`, `VideoSendingBalancerManager`).
    - **Методы**:
      - Проксированные методы от `ConnectionManager`: `isConfigured`, `getConnectionConfiguration`, `getSipServerUrl`.
-     - Проксированные методы от `ConnectionQueueManager`: `connect`, `disconnect`, `register`, `unregister`, `tryRegister`, `checkTelephony`, `sendOptions`, `ping`, `set`.
+     - Проксированные методы от `ConnectionQueueManager`: `connect`, `disconnect`, `register`, `unregister`, `tryRegister`.
      - Проксированные методы от `CallManager`: `call`, `hangUp`, `answerToIncomingCall`, `getEstablishedRTCSession`, `getCallConfiguration`, `getRemoteStreams`, `replaceMediaStream`.
      - Проксированные методы от `PresentationManager`: `startPresentation`, `stopPresentation`, `updatePresentation`.
      - Проксированные методы от `ApiManager`: `waitChannels`, `waitSyncMediaState`, `sendDTMF`, `sendChannels`, `sendMediaState`, `sendRefusalToTurnOn`, `sendRefusalToTurnOnMic`, `sendRefusalToTurnOnCam`, `sendMustStopPresentationP2P`, `sendStoppedPresentationP2P`, `sendStoppedPresentation`, `askPermissionToStartPresentationP2P`, `askPermissionToStartPresentation`, `askPermissionToEnableCam`.
@@ -824,10 +915,21 @@ MCUCallStrategy --|> AbstractCallStrategy : extends
    - Использует `createStackPromises` с `noRunIsNotActual: true`.
    - Все методы ConnectionManager проксируются через очередь.
    - **Методы**:
-     - Проксирует все методы `ConnectionManager`: `connect`, `disconnect`, `register`, `unregister`, `tryRegister`, `checkTelephony`, `sendOptions`, `ping`, `set`.
+     - Проксирует методы `ConnectionManager`: `connect`, `disconnect`, `register`, `unregister`, `tryRegister`.
      - Каждый метод обернут в `stackPromises.run()` для последовательного выполнения.
 
-5. **CallManager**:
+5. **AutoConnectorManager**:
+   - **Ответственность**:
+     1. Автоматическое переподключение при обрывах связи.
+     2. Управление попытками подключения с задержками.
+     3. Проверка доступности телефонии.
+     4. Мониторинг состояния соединения.
+   - **Зависимости**: Зависит от `ConnectionManager`, `CallManager`, `ConnectionQueueManager`.
+   - **Методы**:
+     - `start(parameters: TParametersAutoConnect)`: Запуск процесса автоподключения.
+     - `cancel()`: Отмена текущей попытки автоподключения.
+
+6. **CallManager**:
    - **Ответственность**: Управление звонками через стратегии (MCU/SFU).
    - **Зависимости**: Зависит от `ICallStrategy` (по умолчанию `MCUCallStrategy`).
    - **Методы**:
@@ -840,7 +942,7 @@ MCUCallStrategy --|> AbstractCallStrategy : extends
      - `getRemoteStreams()`: Получение удалённых потоков.
      - `replaceMediaStream(mediaStream, options?)`: Замена медиапотока.
 
-6. **ApiManager**:
+7. **ApiManager**:
    - **Ответственность**:
      1. Обработка SIP-событий и INFO-сообщений.
      2. Управление DTMF-сигналами.
@@ -861,7 +963,7 @@ MCUCallStrategy --|> AbstractCallStrategy : extends
      - `askPermissionToStartPresentation()`: Запрос разрешения на презентацию.
      - `askPermissionToEnableCam(options?)`: Запрос разрешения на включение камеры.
 
-7. **PresentationManager**:
+8. **PresentationManager**:
    - **Ответственность**:
      1. Управление презентацией (старт, остановка, обновление).
      2. Обработка дублированных вызовов презентации.
@@ -873,7 +975,7 @@ MCUCallStrategy --|> AbstractCallStrategy : extends
      - `updatePresentation(beforeStartPresentation, stream, options?)`: Обновление презентации.
      - `cancelSendPresentationWithRepeatedCalls()`: Отмена отправки презентации.
 
-8. **IncomingCallManager**:
+9. **IncomingCallManager**:
    - **Ответственность**:
      1. Обработка входящих звонков.
      2. Управление данными вызывающего абонента.
@@ -887,21 +989,21 @@ MCUCallStrategy --|> AbstractCallStrategy : extends
      - `declineToIncomingCall(options?)`: Отклонение входящего звонка.
      - `busyIncomingCall()`: Отклонение с кодом "занято".
 
-9. **StatsManager**:
-   - **Ответственность**:
-     1. Сбор и обработка статистики WebRTC соединения.
-     2. Мониторинг доступной пропускной способности.
-     3. Автоматическая отправка статистики на сервер.
-     4. Управление StatsPeerConnection для получения метрик.
-   - **Зависимости**: Зависит от `CallManager` и `ApiManager`.
-   - **Методы**:
-     - `hasAvailableIncomingBitrateChangedQuarter()`: Проверка изменения битрейта на 25%.
-     - События: Проксирует события от `StatsPeerConnection`.
-   - **Свойства**:
-     - `availableIncomingBitrate`: Текущая доступная пропускная способность.
-     - `statsPeerConnection`: Экземпляр StatsPeerConnection для сбора статистики.
+10. **StatsManager**:
+    - **Ответственность**:
+      1. Сбор и обработка статистики WebRTC соединения.
+      2. Мониторинг доступной пропускной способности.
+      3. Автоматическая отправка статистики на сервер.
+      4. Управление StatsPeerConnection для получения метрик.
+    - **Зависимости**: Зависит от `CallManager` и `ApiManager`.
+    - **Методы**:
+      - `hasAvailableIncomingBitrateChangedQuarter()`: Проверка изменения битрейта на 25%.
+      - События: Проксирует события от `StatsPeerConnection`.
+    - **Свойства**:
+      - `availableIncomingBitrate`: Текущая доступная пропускная способность.
+      - `statsPeerConnection`: Экземпляр StatsPeerConnection для сбора статистики.
 
-10. **ICallStrategy** (интерфейс):
+11. **ICallStrategy** (интерфейс):
     - **Ответственность**: Определение общего интерфейса для стратегий звонков.
     - **Методы**:
       - `startCall(ua, getSipServerUrl, params)`: Начало звонка.
@@ -912,7 +1014,7 @@ MCUCallStrategy --|> AbstractCallStrategy : extends
       - `getRemoteStreams()`: Получение удалённых потоков.
       - `replaceMediaStream(mediaStream, options?)`: Замена медиапотока.
 
-11. **MCUCallStrategy**:
+12. **MCUCallStrategy**:
     - **Ответственность**: Реализация логики звонков для MCU (Multipoint Control Unit).
     - **Зависимости**: Наследуется от `AbstractCallStrategy`, использует `RemoteStreamsManager`.
     - **Методы**: Реализация всех методов интерфейса `ICallStrategy`.
@@ -921,7 +1023,7 @@ MCUCallStrategy --|> AbstractCallStrategy : extends
       - Подписка на события JsSIP сессии.
       - Обработка конфигурации звонков и медиапотоков.
 
-12. **AbstractCallStrategy** (абстрактный класс):
+13. **AbstractCallStrategy** (абстрактный класс):
     - **Ответственность**: Базовая реализация общей логики для всех стратегий звонков.
     - **Зависимости**: Использует систему событий.
     - **Свойства**:
@@ -933,7 +1035,7 @@ MCUCallStrategy --|> AbstractCallStrategy : extends
 
 ### Дополнительные компоненты системы
 
-### 10. **VideoSendingBalancer** (Балансировщик видеопотоков)
+### 11. **VideoSendingBalancer** (Балансировщик видеопотоков)
 
 - **Ответственность**:
   1. Автоматическая балансировка видеопотоков на основе серверных команд.
@@ -956,7 +1058,7 @@ MCUCallStrategy --|> AbstractCallStrategy : extends
   - `balance()`: Балансировка.
   - `reset()`: Сброс состояния.
 
-### 11. **StatsPeerConnection** (Сбор статистики WebRTC)
+### 12. **StatsPeerConnection** (Сбор статистики WebRTC)
 
 - **Ответственность**:
   1. Периодический сбор статистики WebRTC соединения.
@@ -974,7 +1076,7 @@ MCUCallStrategy --|> AbstractCallStrategy : extends
 - **События**:
   - `collected`: Событие получения новых данных статистики.
 
-### 12. **VideoSendingBalancerManager** (Менеджер видеобалансировщика)
+### 13. **VideoSendingBalancerManager** (Менеджер видеобалансировщика)
 
 - **Ответственность**:
   1. Управление жизненным циклом VideoSendingBalancer.
@@ -1002,7 +1104,7 @@ MCUCallStrategy --|> AbstractCallStrategy : extends
   - `video-balancer:balancing-stopped`: Балансировка остановлена.
   - `video-balancer:parameters-updated`: Параметры видео обновлены.
 
-### 13. **TrackMonitor** (Адаптивный мониторинг видеотреков)
+### 14. **TrackMonitor** (Адаптивный мониторинг видеотреков)
 
 - **Ответственность**:
   1. Мониторинг изменений MediaStreamTrack с адаптивной частотой.
@@ -1024,7 +1126,7 @@ MCUCallStrategy --|> AbstractCallStrategy : extends
   - `attachTrack(callback, track)`: Подключение к конкретному треку.
   - `schedulePoll(track, callback)`: Запуск адаптивного опрашивания.
 
-### 14. **ConnectionStateMachine** (Машина состояний соединения)
+### 15. **ConnectionStateMachine** (Машина состояний соединения)
 
 - **Ответственность**:
   1. Управление состояниями SIP соединения с использованием XState.
