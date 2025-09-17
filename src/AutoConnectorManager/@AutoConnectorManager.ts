@@ -15,7 +15,7 @@ import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
 import type { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import type { TEventMap, TEvents } from './eventNames';
-import type { IAutoConnectorOptions, TErrorSipConnector, TParametersAutoConnect } from './types';
+import type { IAutoConnectorOptions, TParametersAutoConnect } from './types';
 
 const DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS = 3000;
 const DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL = 15_000;
@@ -207,7 +207,7 @@ class AutoConnectorManager {
 
       this.events.trigger(EEvent.CONNECTED, {});
     } catch (error) {
-      if (hasPromiseIsNotActualError(error as TErrorSipConnector)) {
+      if (hasPromiseIsNotActualError(error)) {
         logger('processConnect: not actual error', error);
 
         this.events.trigger(EEvent.CANCELLED, {});

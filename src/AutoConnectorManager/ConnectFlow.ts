@@ -1,7 +1,7 @@
 import { hasPromiseIsNotActualError, type ConnectionQueueManager } from '@/ConnectionQueueManager';
 import logger from '@/logger';
 
-import type { TErrorSipConnector, TParametersConnect } from './types';
+import type { TParametersConnect } from './types';
 
 class ConnectFlow {
   private readonly connectionQueueManager: ConnectionQueueManager;
@@ -33,13 +33,12 @@ class ConnectFlow {
   }
 
   public async runConnect(parameters: TParametersConnect, hasReadyForConnection?: () => boolean) {
-    return this.connectionQueueManager
-      .disconnect()
+    return this.runDisconnect()
       .catch((error: unknown) => {
-        logger('runConnect: disconnect error', error);
+        logger('runConnect: disconnect catch', error);
       })
       .then(async () => {
-        logger('runConnect: disconnect success');
+        logger('runConnect: disconnect then');
 
         return this.connectWithProcessError(parameters, hasReadyForConnection);
       });
@@ -67,9 +66,7 @@ class ConnectFlow {
         logger('connect, isConnected', isConnected);
       })
       .catch(async (error: unknown) => {
-        const isErrorNullOrUndefined = error === null || error === undefined;
-
-        if (!isErrorNullOrUndefined && hasPromiseIsNotActualError(error as TErrorSipConnector)) {
+        if (hasPromiseIsNotActualError(error)) {
           throw error;
         }
 

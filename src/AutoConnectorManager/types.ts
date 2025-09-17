@@ -11,7 +11,6 @@ export type ISubscriber<T = void> = {
   unsubscribe: () => void;
 };
 
-export type TErrorSipConnector = Error & { cause: string };
 export type TParametersCheckTelephony = Parameters<ConnectionManager['checkTelephony']>[0];
 export type TParametersConnect = Parameters<ConnectionQueueManager['connect']>[0];
 export type TParametersAutoConnect = {
