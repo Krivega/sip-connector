@@ -7,13 +7,12 @@ const EVENT_NAMES = ['accepted', 'confirmed', 'ended', 'failed'] as const;
 class CallStatusSubscriber extends AbstractSubscriber<boolean> {
   private readonly callManager: CallManager;
 
-  private isCallActive: boolean;
+  private isCallActive = false;
 
   public constructor({ callManager }: { callManager: CallManager }) {
     super();
 
     this.callManager = callManager;
-    this.isCallActive = callManager.isCallActive;
   }
 
   public subscribe(callback: (isActive: boolean) => void, options?: { fireImmediately?: boolean }) {
