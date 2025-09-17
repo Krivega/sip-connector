@@ -57,7 +57,7 @@ describe('SipConnector onAddedTransceiver wrappers', () => {
     jest
       .spyOn(sipConnector.callManager, 'startCall')
       .mockImplementation(async (_ua, _getUrl, params) => {
-        await params.onAddedTransceiver?.(transceiver, track, stream);
+        await params.onAddedTransceiver?.(transceiver, track, [stream]);
 
         return {} as unknown as RTCPeerConnection;
       });
@@ -87,7 +87,7 @@ describe('SipConnector onAddedTransceiver wrappers', () => {
     jest
       .spyOn(sipConnector.callManager, 'answerToIncomingCall')
       .mockImplementation(async (_extractRtc, params) => {
-        await params.onAddedTransceiver?.(transceiver, track, stream);
+        await params.onAddedTransceiver?.(transceiver, track, [stream]);
 
         return {} as unknown as RTCPeerConnection;
       });
@@ -117,7 +117,7 @@ describe('SipConnector onAddedTransceiver wrappers', () => {
 
       .spyOn(sipConnector.presentationManager, 'startPresentation')
       .mockImplementation(async (_before, _mediaStream: MediaStream, options) => {
-        await options?.onAddedTransceiver?.(transceiver, track, stream);
+        await options?.onAddedTransceiver?.(transceiver, track, [stream]);
 
         return _mediaStream;
       });
@@ -144,7 +144,7 @@ describe('SipConnector onAddedTransceiver wrappers', () => {
 
       .spyOn(sipConnector.presentationManager, 'updatePresentation')
       .mockImplementation(async (_before, _mediaStream: MediaStream, options) => {
-        await options?.onAddedTransceiver?.(transceiver, track, stream);
+        await options?.onAddedTransceiver?.(transceiver, track, [stream]);
 
         return _mediaStream;
       });

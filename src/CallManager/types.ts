@@ -7,7 +7,7 @@ export type TOntrack = (track: RTCTrackEvent) => void;
 export type TOnAddedTransceiver = (
   transceiver: RTCRtpTransceiver,
   track: MediaStreamTrack,
-  stream: MediaStream,
+  streams: MediaStream[],
 ) => Promise<void>;
 export type TGetServerUrl = (id: string) => string;
 
