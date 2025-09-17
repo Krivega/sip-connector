@@ -382,7 +382,10 @@ describe('AutoConnectorManager', () => {
       manager.start(baseParameters);
 
       await manager.wait('connected');
-      manager.events.trigger('connected', {});
+      manager.events.trigger('connected', {
+        ua: sipConnector.connectionManager.ua,
+        isRegistered: sipConnector.connectionManager.isRegistered,
+      });
 
       expect(handler).toHaveBeenCalledTimes(1);
     });
@@ -404,7 +407,10 @@ describe('AutoConnectorManager', () => {
 
       const result = await manager.wait('connected');
 
-      expect(result).toEqual({});
+      expect(result).toEqual({
+        ua: sipConnector.connectionManager.ua,
+        isRegistered: sipConnector.connectionManager.isRegistered,
+      });
     });
 
     it('onceRace: вызывает обработчик с первым сработавшим событием', async () => {
@@ -415,7 +421,13 @@ describe('AutoConnectorManager', () => {
 
       await manager.wait('connected');
 
-      expect(raceHandler).toHaveBeenCalledWith({}, 'connected');
+      expect(raceHandler).toHaveBeenCalledWith(
+        {
+          ua: sipConnector.connectionManager.ua,
+          isRegistered: sipConnector.connectionManager.isRegistered,
+        },
+        'connected',
+      );
     });
 
     it('проксирует disconnecting и disconnected события', () => {

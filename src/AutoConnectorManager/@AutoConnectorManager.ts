@@ -205,7 +205,7 @@ class AutoConnectorManager {
 
       this.subscribeToConnectTriggers(parameters);
 
-      this.events.trigger(EEvent.CONNECTED, {});
+      this.events.trigger(EEvent.CONNECTED, this.getConnectedConfiguration());
     } catch (error) {
       if (hasPromiseIsNotActualError(error)) {
         logger('processConnect: not actual error', error);
@@ -254,7 +254,7 @@ class AutoConnectorManager {
       this.start(parameters);
     } else {
       this.stopConnectTriggers();
-      this.events.trigger(EEvent.CONNECTED, {});
+      this.events.trigger(EEvent.CONNECTED, this.getConnectedConfiguration());
     }
   }
 
@@ -282,6 +282,13 @@ class AutoConnectorManager {
 
         logger('reconnect: error', error);
       });
+  }
+
+  private getConnectedConfiguration() {
+    return {
+      ua: this.connectionManager.ua,
+      isRegistered: this.connectionManager.isRegistered,
+    };
   }
 
   private hasFailedOrDisconnectedConnection() {

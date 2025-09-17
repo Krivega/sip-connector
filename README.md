@@ -711,8 +711,8 @@ sipConnector.on('auto-connect:before-attempt', () => {
   console.log('Начало попытки подключения');
 });
 
-sipConnector.on('auto-connect:connected', () => {
-  console.log('Успешное подключение');
+sipConnector.on('auto-connect:connected', (data) => {
+  console.log('Успешное подключение:', data.isRegistered);
 });
 
 sipConnector.on('auto-connect:failed', (error) => {
@@ -746,16 +746,16 @@ sipConnector.on('auto-connect:disconnected', () => {
 
 ### События автоподключения
 
-| Событие                               | Описание                    | Данные        |
-| ------------------------------------- | --------------------------- | ------------- |
-| `auto-connect:before-attempt`         | Начало попытки подключения  | `{}`          |
-| `auto-connect:attempt-status-changed` | Изменение статуса попытки   | `boolean`     |
-| `auto-connect:connected`              | Успешное подключение        | `{}`          |
-| `auto-connect:failed`                 | Ошибка подключения          | `Error \| {}` |
-| `auto-connect:cancelled`              | Отмена подключения          | `{}`          |
-| `auto-connect:parameters-failed`      | Ошибка получения параметров | `Error`       |
-| `auto-connect:disconnecting`          | Начало отключения           | `{}`          |
-| `auto-connect:disconnected`           | Отключение завершено        | `{}`          |
+| Событие                               | Описание                    | Данные                               |
+| ------------------------------------- | --------------------------- | ------------------------------------ |
+| `auto-connect:before-attempt`         | Начало попытки подключения  | `{}`                                 |
+| `auto-connect:attempt-status-changed` | Изменение статуса попытки   | `boolean`                            |
+| `auto-connect:connected`              | Успешное подключение        | `{ ua?: UA, isRegistered: boolean }` |
+| `auto-connect:failed`                 | Ошибка подключения          | `Error \| {}`                        |
+| `auto-connect:cancelled`              | Отмена подключения          | `{}`                                 |
+| `auto-connect:parameters-failed`      | Ошибка получения параметров | `Error`                              |
+| `auto-connect:disconnecting`          | Начало отключения           | `{}`                                 |
+| `auto-connect:disconnected`           | Отключение завершено        | `{}`                                 |
 
 ---
 

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
 import type { TypedEvents } from 'events-constructor';
+import type { TConnectedConfiguration } from './types';
 
 export enum EEvent {
   CONNECTED = 'connected',
@@ -24,7 +25,7 @@ export const EVENT_NAMES = [
 ] as const;
 
 export type TEventMap = {
-  connected: Record<string, never>;
+  connected: TConnectedConfiguration;
   disconnected: Record<string, never>;
   disconnecting: Record<string, never>;
   'before-attempt': Record<string, never>;
