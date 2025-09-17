@@ -75,6 +75,7 @@ describe('SipConnector events', () => {
   });
 
   it('should handle events from different managers with prefixes', () => {
+    const autoConnectHandler = jest.fn();
     const connectionHandler = jest.fn();
     const callHandler = jest.fn();
     const apiHandler = jest.fn();
@@ -83,6 +84,7 @@ describe('SipConnector events', () => {
     const statsHandler = jest.fn();
 
     // Подписываемся на события от разных менеджеров
+    sipConnector.events.on('auto-connect:connected', autoConnectHandler);
     sipConnector.events.on('connection:connecting', connectionHandler);
     sipConnector.events.on('call:accepted', callHandler);
     sipConnector.events.on('api:channels', apiHandler);
@@ -104,6 +106,7 @@ describe('SipConnector events', () => {
     };
 
     // Эмитим события от разных менеджеров
+    sipConnector.autoConnectorManager.events.trigger('connected', {});
     sipConnector.connectionManager.events.trigger('connecting', { data: 'connection' });
     sipConnector.callManager.events.trigger('accepted', { data: 'call' });
     sipConnector.apiManager.events.trigger('channels', { data: 'api' });
@@ -113,6 +116,7 @@ describe('SipConnector events', () => {
     sipConnector.statsManager.events.trigger('collected', stats);
 
     // Проверяем, что каждый обработчик был вызван с правильными данными
+    expect(autoConnectHandler).toHaveBeenCalledWith({});
     expect(connectionHandler).toHaveBeenCalledWith({ data: 'connection' });
     expect(callHandler).toHaveBeenCalledWith({ data: 'call' });
     expect(apiHandler).toHaveBeenCalledWith({ data: 'api' });
@@ -121,6 +125,7 @@ describe('SipConnector events', () => {
     expect(statsHandler).toHaveBeenCalledWith(stats);
 
     // Проверяем, что каждый обработчик был вызван только один раз
+    expect(autoConnectHandler).toHaveBeenCalledTimes(1);
     expect(connectionHandler).toHaveBeenCalledTimes(1);
     expect(callHandler).toHaveBeenCalledTimes(1);
     expect(apiHandler).toHaveBeenCalledTimes(1);

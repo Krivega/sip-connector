@@ -25,21 +25,57 @@ describe('SipConnector facade', () => {
     expect(handler).toHaveBeenCalledWith({ ok: true });
   });
 
+  it('должен проксировать методы AutoConnectorManager', async () => {
+    const { autoConnectorManager } = sipConnector;
+
+    jest.spyOn(autoConnectorManager, 'start');
+    jest.spyOn(autoConnectorManager, 'cancel');
+
+    sipConnector.startAutoConnect(
+      {} as unknown as Parameters<(typeof autoConnectorManager)['start']>[0],
+    );
+    sipConnector.cancelAutoConnect();
+
+    expect(autoConnectorManager.start).toHaveBeenCalled();
+    expect(autoConnectorManager.cancel).toHaveBeenCalled();
+  });
+
+  it('должен проксировать методы ConnectionQueueManager', async () => {
+    const { connectionQueueManager } = sipConnector;
+
+    jest.spyOn(connectionQueueManager, 'connect').mockResolvedValue({} as unknown as UA);
+    jest.spyOn(connectionQueueManager, 'disconnect').mockResolvedValue(undefined);
+    jest
+      .spyOn(connectionQueueManager, 'register')
+      .mockResolvedValue({ response: {} as IncomingResponse } as RegisteredEvent);
+    jest
+      .spyOn(connectionQueueManager, 'unregister')
+      .mockResolvedValue({ response: {} as IncomingResponse } as UnRegisteredEvent);
+    jest
+      .spyOn(connectionQueueManager, 'tryRegister')
+      .mockResolvedValue({ response: {} as IncomingResponse } as RegisteredEvent);
+
+    await sipConnector.connect({
+      register: false,
+      sipServerUrl: 'sip.example.com',
+      sipWebSocketServerURL: 'wss://sip.example.com/ws',
+    });
+    await sipConnector.disconnect();
+    await sipConnector.register();
+    await sipConnector.unregister();
+    await sipConnector.tryRegister();
+
+    expect(connectionQueueManager.connect).toHaveBeenCalled();
+    expect(connectionQueueManager.disconnect).toHaveBeenCalled();
+    expect(connectionQueueManager.register).toHaveBeenCalled();
+    expect(connectionQueueManager.unregister).toHaveBeenCalled();
+    expect(connectionQueueManager.tryRegister).toHaveBeenCalled();
+  });
+
   it('должен проксировать методы ConnectionManager', async () => {
     const cm = sipConnector.connectionManager;
 
-    jest.spyOn(cm, 'connect').mockResolvedValue({} as unknown as UA);
     jest.spyOn(cm, 'set').mockResolvedValue(true);
-    jest.spyOn(cm, 'disconnect').mockResolvedValue(undefined);
-    jest
-      .spyOn(cm, 'register')
-      .mockResolvedValue({ response: {} as IncomingResponse } as RegisteredEvent);
-    jest
-      .spyOn(cm, 'unregister')
-      .mockResolvedValue({ response: {} as IncomingResponse } as UnRegisteredEvent);
-    jest
-      .spyOn(cm, 'tryRegister')
-      .mockResolvedValue({ response: {} as IncomingResponse } as RegisteredEvent);
     jest.spyOn(cm, 'sendOptions').mockResolvedValue(undefined);
     jest.spyOn(cm, 'ping').mockResolvedValue(undefined);
     jest.spyOn(cm, 'checkTelephony').mockResolvedValue(undefined);
@@ -48,16 +84,7 @@ describe('SipConnector facade', () => {
       .spyOn(cm, 'getConnectionConfiguration')
       .mockReturnValue({ displayName: 'X' } as unknown as { displayName: string });
 
-    await sipConnector.connect({
-      register: false,
-      sipServerUrl: 'sip.example.com',
-      sipWebSocketServerURL: 'wss://sip.example.com/ws',
-    });
     await sipConnector.set({ displayName: 'Test' });
-    await sipConnector.disconnect();
-    await sipConnector.register();
-    await sipConnector.unregister();
-    await sipConnector.tryRegister();
     await sipConnector.sendOptions('sip:test@example.com', 'test', ['X-Test: value']);
     await sipConnector.ping('ping', ['X-Ping: value']);
     await sipConnector.checkTelephony({
@@ -70,12 +97,7 @@ describe('SipConnector facade', () => {
     expect(sipConnector.getConnectionConfiguration()).toEqual({ displayName: 'X' });
     expect(sipConnector.getSipServerUrl('id')).toBe('id');
 
-    expect(cm.connect).toHaveBeenCalled();
     expect(cm.set).toHaveBeenCalledWith({ displayName: 'Test' });
-    expect(cm.disconnect).toHaveBeenCalled();
-    expect(cm.register).toHaveBeenCalled();
-    expect(cm.unregister).toHaveBeenCalled();
-    expect(cm.tryRegister).toHaveBeenCalled();
     expect(cm.sendOptions).toHaveBeenCalled();
     expect(cm.ping).toHaveBeenCalled();
     expect(cm.checkTelephony).toHaveBeenCalled();
