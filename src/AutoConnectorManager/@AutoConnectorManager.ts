@@ -130,13 +130,13 @@ class AutoConnectorManager {
   }
 
   private stopAttempts() {
-    this.delayBetweenAttempts.cancelRequest();
-    this.cancelableRequestClearCache.cancelRequest();
-    this.attemptsState.reset();
-
     if (this.attemptsState.isAttemptInProgress) {
       this.connectFlow.stop();
     }
+
+    this.delayBetweenAttempts.cancelRequest();
+    this.cancelableRequestClearCache.cancelRequest();
+    this.attemptsState.reset();
   }
 
   private stopConnectTriggers() {

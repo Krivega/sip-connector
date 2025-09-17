@@ -99,69 +99,6 @@ describe('ConnectFlow', () => {
     expect(sipConnector.isConfigured()).toBe(true);
   });
 
-  it('должен отловить ошибку при неуспешном connect', async () => {
-    expect.assertions(2);
-
-    const errorMessage = 'Connect is failed';
-
-    connectSpy.mockImplementation(async () => {
-      throw new Error(errorMessage);
-    });
-
-    await connectFlow.runConnect(connectParameters).catch((error: unknown) => {
-      // eslint-disable-next-line jest/no-conditional-expect
-      expect((error as Error).message).toBe(errorMessage);
-      // eslint-disable-next-line jest/no-conditional-expect
-      expect(sipConnector.isConfigured()).toBe(false);
-    });
-  });
-
-  it('должен пробросить ошибку дальше без вызова disconnect, если промис не актуален', async () => {
-    expect.assertions(2);
-
-    const runDisconnectSpy = jest.spyOn(connectFlow, 'runDisconnect');
-
-    connectSpy.mockImplementation(async () => {
-      await delayPromise(CONNECTION_DELAY);
-
-      return true;
-    });
-
-    const connectPromise1 = connectFlow.runConnect(connectParameters);
-    const connectPromise2 = connectFlow.runConnect(connectParameters);
-
-    return Promise.allSettled([connectPromise1, connectPromise2]).then((results) => {
-      const [result1] = results;
-
-      if (result1.status === 'rejected') {
-        // eslint-disable-next-line jest/no-conditional-expect
-        expect(hasPromiseIsNotActualError(result1.reason)).toBe(true);
-        // Вызывается два раза перед connect
-        // eslint-disable-next-line jest/no-conditional-expect
-        expect(runDisconnectSpy).toHaveBeenCalledTimes(2);
-      }
-    });
-  });
-
-  it('должен отловить ошибку при неуспешном disconnect', async () => {
-    expect.assertions(2);
-
-    const errorMessage = 'Disconnect is failed';
-
-    disconnectSpy.mockImplementation(async () => {
-      throw new Error(errorMessage);
-    });
-
-    await connectFlow.runConnect(connectParameters);
-
-    expect(sipConnector.isConfigured()).toBe(true);
-
-    return connectFlow.runDisconnect().catch((error: unknown) => {
-      // eslint-disable-next-line jest/no-conditional-expect
-      expect((error as Error).message).toBe(errorMessage);
-    });
-  });
-
   it('не должен запускать подключение если hasReadyForConnection возвращает false', async () => {
     expect.assertions(2);
 
@@ -181,5 +118,101 @@ describe('ConnectFlow', () => {
     connectFlow.stop();
 
     expect(stopQueueSpy).toHaveBeenCalled();
+  });
+
+  describe('обработка ошибок', () => {
+    it('должен продолжить подключение даже, если disconnect упал с ошибкой', async () => {
+      expect.assertions(2);
+
+      await connectFlow.runConnect(connectParameters);
+
+      jest.clearAllMocks();
+
+      const errorMessage = 'Disconnect is failed';
+
+      disconnectSpy.mockImplementation(async () => {
+        throw new Error(errorMessage);
+      });
+
+      await connectFlow.runConnect(connectParameters);
+
+      expect(disconnectSpy).toHaveBeenCalledTimes(1);
+      expect(connectSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('должен отловить ошибку при неуспешном connect', async () => {
+      expect.assertions(2);
+
+      const errorMessage = 'Connect is failed';
+
+      connectSpy.mockImplementation(async () => {
+        throw new Error(errorMessage);
+      });
+
+      await connectFlow.runConnect(connectParameters).catch((error: unknown) => {
+        // eslint-disable-next-line jest/no-conditional-expect
+        expect((error as Error).message).toBe(errorMessage);
+        // eslint-disable-next-line jest/no-conditional-expect
+        expect(sipConnector.isConfigured()).toBe(false);
+      });
+    });
+
+    it('должен создать новую ошибку если connect упал с неопределенной ошибкой', async () => {
+      connectSpy.mockImplementation(async () => {
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
+        throw 'error';
+      });
+
+      await connectFlow.runConnect(connectParameters).catch((error: unknown) => {
+        // eslint-disable-next-line jest/no-conditional-expect
+        expect((error as Error).message).toBe('Failed to connect to server');
+      });
+    });
+
+    it('должен пробросить ошибку дальше без вызова disconnect, если промис не актуален', async () => {
+      expect.assertions(2);
+
+      const runDisconnectSpy = jest.spyOn(connectFlow, 'runDisconnect');
+
+      connectSpy.mockImplementation(async () => {
+        await delayPromise(CONNECTION_DELAY);
+
+        return true;
+      });
+
+      const connectPromise1 = connectFlow.runConnect(connectParameters);
+      const connectPromise2 = connectFlow.runConnect(connectParameters);
+
+      return Promise.allSettled([connectPromise1, connectPromise2]).then((results) => {
+        const [result1] = results;
+
+        if (result1.status === 'rejected') {
+          // eslint-disable-next-line jest/no-conditional-expect
+          expect(hasPromiseIsNotActualError(result1.reason)).toBe(true);
+          // Вызывается два раза перед connect
+          // eslint-disable-next-line jest/no-conditional-expect
+          expect(runDisconnectSpy).toHaveBeenCalledTimes(2);
+        }
+      });
+    });
+
+    it('должен отловить ошибку при неуспешном disconnect', async () => {
+      expect.assertions(2);
+
+      const errorMessage = 'Disconnect is failed';
+
+      disconnectSpy.mockImplementation(async () => {
+        throw new Error(errorMessage);
+      });
+
+      await connectFlow.runConnect(connectParameters);
+
+      expect(sipConnector.isConfigured()).toBe(true);
+
+      return connectFlow.runDisconnect().catch((error: unknown) => {
+        // eslint-disable-next-line jest/no-conditional-expect
+        expect((error as Error).message).toBe(errorMessage);
+      });
+    });
   });
 });
