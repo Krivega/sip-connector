@@ -323,6 +323,8 @@ describe('ConnectionManager', () => {
       expect(connectionManager.connectionState).toBeDefined();
       expect(connectionManager.isRegistered).toBeDefined();
       expect(connectionManager.isRegisterConfig).toBeDefined();
+      expect(connectionManager.isDisconnected).toBeDefined();
+      expect(connectionManager.isFailed).toBeDefined();
     });
   });
 
