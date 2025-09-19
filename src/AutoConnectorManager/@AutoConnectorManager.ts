@@ -199,8 +199,6 @@ class AutoConnectorManager {
       if (hasParametersNotExistError(error)) {
         logger('processConnect: parameters not exist error', error);
 
-        this.events.trigger(EEvent.FAILED_ATTEMPT, error);
-
         return;
       }
 
