@@ -131,9 +131,9 @@ class SipConnector {
   cancelAutoConnect: AutoConnectorManager['cancel'];
   connect: ConnectionQueueManager['connect'];
   disconnect: ConnectionQueueManager['disconnect'];
-  register: ConnectionQueueManager['register'];
-  unregister: ConnectionQueueManager['unregister'];
-  tryRegister: ConnectionQueueManager['tryRegister'];
+  register: ConnectionManager['register'];
+  unregister: ConnectionManager['unregister'];
+  tryRegister: ConnectionManager['tryRegister'];
   checkTelephony: ConnectionManager['checkTelephony'];
   sendOptions: ConnectionManager['sendOptions'];
   ping: ConnectionManager['ping'];
@@ -243,9 +243,7 @@ class ConnectionQueueManager {
 
   connect: ConnectionManager['connect'];
   disconnect: ConnectionManager['disconnect'];
-  register: ConnectionManager['register'];
-  unregister: ConnectionManager['unregister'];
-  tryRegister: ConnectionManager['tryRegister'];
+  run<T = void>(task: () => Promise<T>): Promise<T>;
   stop(): void;
 }
 ```
@@ -261,6 +259,7 @@ class AutoConnectorManager {
   private readonly connectionManager: ConnectionManager;
   private readonly callManager: CallManager;
   private readonly connectionQueueManager: ConnectionQueueManager;
+  private readonly connectFlow: ConnectFlow;
   private readonly checkTelephonyRequester: CheckTelephonyRequester;
   private readonly pingServerRequester: PingServerRequester;
   private readonly registrationFailedOutOfCallSubscriber: RegistrationFailedOutOfCallSubscriber;
@@ -302,7 +301,7 @@ class AutoConnectorManager {
     });
     this.attemptsState = new AttemptsState({
       onStatusChange: (isAttemptInProgress: boolean) => {
-        this.events.trigger(EEvent.ATTEMPT_STATUS_CHANGED, isAttemptInProgress);
+        this.events.trigger(EEvent.CHANGED_ATTEMPT_STATUS, isAttemptInProgress);
       },
     });
     this.cancelableRequestClearCache = new CancelableRequest(clearCache);
@@ -590,11 +589,11 @@ class SipConnector {
   +excludeMimeTypesVideoCodecs?: string[]
   +connect: ConnectionQueueManager['connect']
   +disconnect: ConnectionQueueManager['disconnect']
-  +register: ConnectionQueueManager['register']
-  +unregister: ConnectionQueueManager['unregister']
-  +tryRegister: ConnectionQueueManager['tryRegister']
   +startAutoConnect: AutoConnectorManager['start']
   +cancelAutoConnect: AutoConnectorManager['cancel']
+  +register: ConnectionManager['register']
+  +unregister: ConnectionManager['unregister']
+  +tryRegister: ConnectionManager['tryRegister']
   +checkTelephony: ConnectionManager['checkTelephony']
   +sendOptions: ConnectionManager['sendOptions']
   +ping: ConnectionManager['ping']
@@ -635,9 +634,7 @@ class ConnectionQueueManager {
   +stackPromises: StackPromises
   +connect: ConnectionManager['connect']
   +disconnect: ConnectionManager['disconnect']
-  +register: ConnectionManager['register']
-  +unregister: ConnectionManager['unregister']
-  +tryRegister: ConnectionManager['tryRegister']
+  +run<T>(task: () => Promise<T>): Promise<T>
   +stop()
 }
 
@@ -877,7 +874,7 @@ MCUCallStrategy --|> AbstractCallStrategy : extends
    - **Зависимости**: Зависит от всех менеджеров (`ConnectionManager`, `CallManager`, `AutoConnectorManager`, `ApiManager`, `IncomingCallManager`, `PresentationManager`, `StatsManager`, `VideoSendingBalancerManager`).
    - **Методы**:
      - Проксированные методы от `ConnectionManager`: `isConfigured`, `getConnectionConfiguration`, `getSipServerUrl`.
-     - Проксированные методы от `ConnectionQueueManager`: `connect`, `disconnect`, `register`, `unregister`, `tryRegister`.
+     - Проксированные методы от `ConnectionQueueManager`: `connect`, `disconnect`.
      - Проксированные методы от `CallManager`: `call`, `hangUp`, `answerToIncomingCall`, `getEstablishedRTCSession`, `getCallConfiguration`, `getRemoteStreams`, `replaceMediaStream`.
      - Проксированные методы от `PresentationManager`: `startPresentation`, `stopPresentation`, `updatePresentation`.
      - Проксированные методы от `ApiManager`: `waitChannels`, `waitSyncMediaState`, `sendDTMF`, `sendChannels`, `sendMediaState`, `sendRefusalToTurnOn`, `sendRefusalToTurnOnMic`, `sendRefusalToTurnOnCam`, `sendMustStopPresentationP2P`, `sendStoppedPresentationP2P`, `sendStoppedPresentation`, `askPermissionToStartPresentationP2P`, `askPermissionToStartPresentation`, `askPermissionToEnableCam`.
@@ -910,13 +907,15 @@ MCUCallStrategy --|> AbstractCallStrategy : extends
      2. **Управление очередью операций** с использованием `stack-promises`.
      3. **Проксирование методов ConnectionManager** с гарантией последовательности.
      4. **Предотвращение гонки условий** между connect/disconnect операциями.
+     5. **Выполнение произвольных задач** в очереди через метод `run()`.
    - **Зависимости**: Зависит от `ConnectionManager`, использует `stack-promises`.
    - **Принцип работы**:
    - Использует `createStackPromises` с `noRunIsNotActual: true`.
-   - Все методы ConnectionManager проксируются через очередь.
+   - Все операции выполняются последовательно в очереди.
    - **Методы**:
-     - Проксирует методы `ConnectionManager`: `connect`, `disconnect`, `register`, `unregister`, `tryRegister`.
-     - Каждый метод обернут в `stackPromises.run()` для последовательного выполнения.
+     - Проксирует методы `ConnectionManager`: `connect`, `disconnect`.
+     - `run<T>(task: () => Promise<T>): Promise<T>` - выполнение произвольной задачи в очереди.
+     - `stop()` - остановка всех операций в очереди.
 
 5. **AutoConnectorManager**:
    - **Ответственность**:

@@ -20,6 +20,6 @@ export type TParametersAutoConnect = {
   hasReadyForConnection?: () => boolean;
 };
 export type TConnectedConfiguration = {
-  ua: UA | undefined;
+  ua: UA;
   isRegistered: boolean;
 };
