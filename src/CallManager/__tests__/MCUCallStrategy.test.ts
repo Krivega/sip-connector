@@ -462,4 +462,360 @@ describe('MCUCallStrategy - дополнительные тесты для по�
 
     await expect(strategy.restartIce()).rejects.toThrow('No rtcSession established');
   });
+
+  describe('addTransceiver', () => {
+    it('should call addTransceiver on rtcSession with audio kind', async () => {
+      const mockTransceiver = {} as RTCRtpTransceiver;
+      const mockRtcSession = {
+        addTransceiver: jest.fn().mockResolvedValue(mockTransceiver),
+      } as unknown as RTCSession;
+
+      // Мокаем rtcSession
+      Object.defineProperty(strategy, 'rtcSession', {
+        value: mockRtcSession,
+        configurable: true,
+      });
+
+      const result = await strategy.addTransceiver('audio');
+
+      expect(mockRtcSession.addTransceiver).toHaveBeenCalledWith('audio', undefined);
+      expect(result).toBe(mockTransceiver);
+    });
+
+    it('should call addTransceiver on rtcSession with video kind', async () => {
+      const mockTransceiver = {} as RTCRtpTransceiver;
+      const mockRtcSession = {
+        addTransceiver: jest.fn().mockResolvedValue(mockTransceiver),
+      } as unknown as RTCSession;
+
+      // Мокаем rtcSession
+      Object.defineProperty(strategy, 'rtcSession', {
+        value: mockRtcSession,
+        configurable: true,
+      });
+
+      const result = await strategy.addTransceiver('video');
+
+      expect(mockRtcSession.addTransceiver).toHaveBeenCalledWith('video', undefined);
+      expect(result).toBe(mockTransceiver);
+    });
+
+    it('should call addTransceiver on rtcSession with options', async () => {
+      const mockTransceiver = {} as RTCRtpTransceiver;
+      const options: RTCRtpTransceiverInit = {
+        direction: 'sendrecv',
+        streams: [],
+        sendEncodings: [{ rid: 'test', maxBitrate: 1_000_000 }],
+      };
+      const mockRtcSession = {
+        addTransceiver: jest.fn().mockResolvedValue(mockTransceiver),
+      } as unknown as RTCSession;
+
+      // Мокаем rtcSession
+      Object.defineProperty(strategy, 'rtcSession', {
+        value: mockRtcSession,
+        configurable: true,
+      });
+
+      const result = await strategy.addTransceiver('video', options);
+
+      expect(mockRtcSession.addTransceiver).toHaveBeenCalledWith('video', options);
+      expect(result).toBe(mockTransceiver);
+    });
+
+    it('should throw error if no rtcSession established', async () => {
+      // Мокаем rtcSession чтобы вернуть undefined
+      Object.defineProperty(strategy, 'rtcSession', {
+        get: () => {
+          return undefined;
+        },
+        configurable: true,
+      });
+
+      await expect(strategy.addTransceiver('audio')).rejects.toThrow('No rtcSession established');
+    });
+
+    it('should handle rtcSession.addTransceiver rejection', async () => {
+      const error = new Error('Failed to add transceiver');
+      const mockRtcSession = {
+        addTransceiver: jest.fn().mockRejectedValue(error),
+      } as unknown as RTCSession;
+
+      // Мокаем rtcSession
+      Object.defineProperty(strategy, 'rtcSession', {
+        value: mockRtcSession,
+        configurable: true,
+      });
+
+      await expect(strategy.addTransceiver('audio')).rejects.toThrow('Failed to add transceiver');
+      expect(mockRtcSession.addTransceiver).toHaveBeenCalledWith('audio', undefined);
+    });
+
+    it('should pass through RTCRtpTransceiverInit options with sendonly direction', async () => {
+      const mockTransceiver = {} as RTCRtpTransceiver;
+      const addTransceiverMock = jest.fn().mockResolvedValue(mockTransceiver);
+      const mockRtcSession = {
+        addTransceiver: addTransceiverMock,
+      } as unknown as RTCSession;
+
+      // Мокаем rtcSession
+      Object.defineProperty(strategy, 'rtcSession', {
+        value: mockRtcSession,
+        configurable: true,
+      });
+
+      const options: RTCRtpTransceiverInit = { direction: 'sendonly' };
+
+      await strategy.addTransceiver('audio', options);
+
+      expect(addTransceiverMock).toHaveBeenCalledWith('audio', options);
+    });
+
+    it('should pass through RTCRtpTransceiverInit options with sendEncodings', async () => {
+      const mockTransceiver = {} as RTCRtpTransceiver;
+      const addTransceiverMock = jest.fn().mockResolvedValue(mockTransceiver);
+      const mockRtcSession = {
+        addTransceiver: addTransceiverMock,
+      } as unknown as RTCSession;
+
+      // Мокаем rtcSession
+      Object.defineProperty(strategy, 'rtcSession', {
+        value: mockRtcSession,
+        configurable: true,
+      });
+
+      const options: RTCRtpTransceiverInit = {
+        direction: 'sendrecv',
+        sendEncodings: [{ rid: 'high', maxBitrate: 2_000_000 }],
+      };
+
+      await strategy.addTransceiver('video', options);
+
+      expect(addTransceiverMock).toHaveBeenCalledWith('video', options);
+    });
+  });
+});
+
+describe("MCUCallStrategy - тесты хранения transceiver'ов", () => {
+  let events: Events<typeof EVENT_NAMES>;
+  let strategy: MCUCallStrategy;
+  let ua: UAMock;
+  let getSipServerUrl: (number: string) => string;
+  let mediaStream: MediaStream;
+
+  beforeEach(() => {
+    events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
+    strategy = new MCUCallStrategy(events);
+    ua = new UAMock({ uri: 'sip:user@sipServerUrl', register: false, sockets: [] });
+    getSipServerUrl = (number) => {
+      return `sip:${number}@sipServerUrl`;
+    };
+    mediaStream = new MediaStream();
+  });
+
+  describe('getTransceivers', () => {
+    it('возвращает пустой объект при инициализации', () => {
+      const transceivers = strategy.getTransceivers();
+
+      expect(transceivers).toEqual({
+        mainAudio: undefined,
+        mainVideo: undefined,
+        presentationVideo: undefined,
+      });
+    });
+
+    it('возвращает копию объекта (не мутирует внутреннее состояние)', () => {
+      const transceivers1 = strategy.getTransceivers();
+      const transceivers2 = strategy.getTransceivers();
+
+      expect(transceivers1).not.toBe(transceivers2);
+      expect(transceivers1).toEqual(transceivers2);
+    });
+  });
+
+  describe("хранение transceiver'ов через handleTrack", () => {
+    let pc: RTCPeerConnectionMock;
+    let ontrack: jest.Mock;
+
+    beforeEach(async () => {
+      ontrack = jest.fn();
+
+      // Начинаем звонок чтобы инициализировать handleTrack
+      const promise = strategy.startCall(ua as unknown as UA, getSipServerUrl, {
+        number: '123',
+        mediaStream,
+        ontrack,
+      });
+
+      const audioTrack = createAudioMediaStreamTrackMock();
+      const videoTrack = createVideoMediaStreamTrackMock();
+
+      pc = new RTCPeerConnectionMock(undefined, [audioTrack, videoTrack]);
+
+      events.trigger('peerconnection', { peerconnection: pc });
+      events.trigger('confirmed', {});
+
+      await promise;
+    });
+
+    it('сохраняет аудио transceiver как mainAudio', () => {
+      const audioTrack = createAudioMediaStreamTrackMock();
+
+      pc.addTrack(audioTrack);
+
+      const transceivers = strategy.getTransceivers();
+
+      expect(transceivers.mainAudio).toBeDefined();
+      expect(transceivers.mainAudio?.sender.track).toBe(audioTrack);
+    });
+
+    it('сохраняет видео transceiver как mainVideo по умолчанию', () => {
+      const videoTrack = createVideoMediaStreamTrackMock();
+
+      pc.addTrack(videoTrack);
+
+      const transceivers = strategy.getTransceivers();
+
+      expect(transceivers.mainVideo).toBeDefined();
+      expect(transceivers.mainVideo?.sender.track).toBe(videoTrack);
+    });
+
+    it('сохраняет видео transceiver с mid="2" как presentationVideo', () => {
+      const videoTrack = createVideoMediaStreamTrackMock();
+
+      // Добавляем трек с mid="2" для презентации
+      pc.addTrackWithMid(videoTrack, '2');
+
+      const transceivers = strategy.getTransceivers();
+
+      expect(transceivers.presentationVideo).toBeDefined();
+      expect(transceivers.presentationVideo?.sender.track).toBe(videoTrack);
+      expect(transceivers.presentationVideo?.mid).toBe('2');
+      expect(transceivers.mainVideo).toBeUndefined();
+    });
+
+    it('сохраняет видео transceiver с mid="1" как mainVideo', () => {
+      const videoTrack = createVideoMediaStreamTrackMock();
+
+      // Добавляем трек с mid="1" (обычное видео)
+      pc.addTrackWithMid(videoTrack, '1');
+
+      const transceivers = strategy.getTransceivers();
+
+      expect(transceivers.mainVideo).toBeDefined();
+      expect(transceivers.mainVideo?.sender.track).toBe(videoTrack);
+      expect(transceivers.mainVideo?.mid).toBe('1');
+      expect(transceivers.presentationVideo).toBeUndefined();
+    });
+
+    it('не перезаписывает уже сохраненный transceiver того же типа', () => {
+      const audioTrack1 = createAudioMediaStreamTrackMock();
+      const audioTrack2 = createAudioMediaStreamTrackMock();
+
+      pc.addTrack(audioTrack1);
+
+      const firstTransceiver = strategy.getTransceivers().mainAudio;
+
+      pc.addTrack(audioTrack2);
+
+      const secondTransceiver = strategy.getTransceivers().mainAudio;
+
+      expect(firstTransceiver).toBe(secondTransceiver);
+      expect(firstTransceiver?.sender.track).toBe(audioTrack1);
+    });
+
+    it("корректно обрабатывает множественные типы transceiver'ов", () => {
+      const audioTrack = createAudioMediaStreamTrackMock();
+      const videoTrack = createVideoMediaStreamTrackMock();
+      const presentationVideoTrack = createVideoMediaStreamTrackMock();
+
+      pc.addTrack(audioTrack); // mid будет '0'
+      pc.addTrack(videoTrack); // mid будет '1'
+      pc.addTrackWithMid(presentationVideoTrack, '2'); // mid будет '2'
+
+      const transceivers = strategy.getTransceivers();
+
+      expect(transceivers.mainAudio).toBeDefined();
+      expect(transceivers.mainVideo).toBeDefined();
+      expect(transceivers.presentationVideo).toBeDefined();
+
+      expect(transceivers.mainAudio?.sender.track).toBe(audioTrack);
+      expect(transceivers.mainAudio?.mid).toBe('0');
+      expect(transceivers.mainVideo?.sender.track).toBe(videoTrack);
+      expect(transceivers.mainVideo?.mid).toBe('1');
+      expect(transceivers.presentationVideo?.sender.track).toBe(presentationVideoTrack);
+      expect(transceivers.presentationVideo?.mid).toBe('2');
+    });
+  });
+
+  describe("очистка transceiver'ов", () => {
+    it("очищает transceiver'ы при вызове endCall", async () => {
+      // Сначала добавим transceiver'ы
+      const ontrack = jest.fn();
+      const promise = strategy.startCall(ua as unknown as UA, getSipServerUrl, {
+        number: '123',
+        mediaStream,
+        ontrack,
+      });
+
+      const audioTrack = createAudioMediaStreamTrackMock();
+      const pc = new RTCPeerConnectionMock(undefined, [audioTrack]);
+
+      events.trigger('peerconnection', { peerconnection: pc });
+      events.trigger('confirmed', {});
+
+      await promise;
+
+      pc.addTrack(audioTrack);
+
+      // Убеждаемся что transceiver сохранился
+      expect(strategy.getTransceivers().mainAudio).toBeDefined();
+
+      // Завершаем звонок
+      await strategy.endCall();
+
+      // Проверяем что transceiver'ы очищены
+      const transceivers = strategy.getTransceivers();
+
+      expect(transceivers.mainAudio).toBeUndefined();
+      expect(transceivers.mainVideo).toBeUndefined();
+      expect(transceivers.presentationVideo).toBeUndefined();
+    });
+
+    it("очищает transceiver'ы при ошибке (FAILED событие)", async () => {
+      // Сначала добавим transceiver'ы
+      const ontrack = jest.fn();
+      const promise = strategy.startCall(ua as unknown as UA, getSipServerUrl, {
+        number: '123',
+        mediaStream,
+        ontrack,
+      });
+
+      const audioTrack = createAudioMediaStreamTrackMock();
+      const pc = new RTCPeerConnectionMock(undefined, [audioTrack]);
+
+      events.trigger('peerconnection', { peerconnection: pc });
+
+      pc.addTrack(audioTrack);
+
+      // Убеждаемся что transceiver сохранился
+      expect(strategy.getTransceivers().mainAudio).toBeDefined();
+
+      // Эмулируем ошибку
+      events.trigger('failed', new Error('Test error'));
+
+      try {
+        await promise;
+      } catch {
+        // Ошибка ожидается
+      }
+
+      // Проверяем что transceiver'ы очищены
+      const transceivers = strategy.getTransceivers();
+
+      expect(transceivers.mainAudio).toBeUndefined();
+      expect(transceivers.mainVideo).toBeUndefined();
+      expect(transceivers.presentationVideo).toBeUndefined();
+    });
+  });
 });

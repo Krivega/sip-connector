@@ -13,6 +13,7 @@ import { VideoSendingBalancerManager } from '@/VideoSendingBalancerManager';
 import { ONE_MEGABIT_IN_BITS } from './constants';
 import { EVENT_NAMES } from './eventNames';
 
+import type { TRestartData } from '@/ApiManager';
 import type { TGetServerUrl } from '@/CallManager';
 import type { TContentHint, TOnAddedTransceiver } from '@/PresentationManager';
 import type { TJsSIP } from '@/types';
@@ -471,10 +472,37 @@ class SipConnector {
     this.apiManager.on('restart', this.handleRestart);
   }
 
-  private readonly handleRestart = () => {
-    this.callManager.restartIce().catch((error: unknown) => {
-      logger('Failed to restart ICE', error);
-    });
+  private readonly handleRestart = (restartData: TRestartData) => {
+    this.updateTransceivers(restartData)
+      .catch((error: unknown) => {
+        logger('Failed to update transceivers', error);
+      })
+      .finally(() => {
+        this.callManager.restartIce().catch((error: unknown) => {
+          logger('Failed to restart ICE', error);
+        });
+      });
+  };
+
+  private readonly updateTransceivers = async (restartData: TRestartData) => {
+    const { videoTrackCount } = restartData;
+
+    // Если videoTrackCount === 2 и отсутствует презентационный видео transceiver,
+    // добавляем его через addTransceiver
+    if (videoTrackCount === 2) {
+      const transceivers = this.callManager.getTransceivers();
+      const hasPresentationVideo = transceivers.presentationVideo !== undefined;
+
+      if (!hasPresentationVideo) {
+        await this.callManager
+          .addTransceiver('video', {
+            direction: 'recvonly',
+          })
+          .catch((error: unknown) => {
+            logger('Failed to add presentation video transceiver', error);
+          });
+      }
+    }
   };
 }
 

@@ -5,6 +5,7 @@
 import { Events } from 'events-constructor';
 
 import RTCRtpSenderMock from './RTCRtpSenderMock';
+import RTCRtpTransceiverMock from './RTCRtpTransceiverMock';
 
 import type { RTCPeerConnectionDeprecated } from '@krivega/jssip';
 import type { MediaStreamTrackMock } from 'webrtc-mock';
@@ -211,12 +212,36 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
     return this.senders;
   };
 
-  public addTrack = (track: MediaStreamTrack) => {
+  public addTrack = (track: MediaStreamTrack, ..._streams: MediaStream[]) => {
     const sender = new RTCRtpSenderMock({ track });
+    const transceiver = new RTCRtpTransceiverMock(sender);
+
+    // Автоматически присваиваем mid: '0' для аудио, '1' для видео
+    transceiver.mid = track.kind === 'audio' ? '0' : '1';
 
     this.senders.push(sender);
 
-    this.events.trigger(EEvent.TRACK, { track });
+    this.events.trigger(EEvent.TRACK, { track, transceiver });
+
+    return sender;
+  };
+
+  // Дополнительный метод для тестов с возможностью установки mid
+  public addTrackWithMid = (track: MediaStreamTrack, mid?: string) => {
+    const sender = new RTCRtpSenderMock({ track });
+    const transceiver = new RTCRtpTransceiverMock(sender);
+
+    // Устанавливаем mid если передан, иначе используем логику по умолчанию
+    if (mid === undefined) {
+      // Автоматически присваиваем mid: '0' для аудио, '1' для видео
+      transceiver.mid = track.kind === 'audio' ? '0' : '1';
+    } else {
+      transceiver.mid = mid;
+    }
+
+    this.senders.push(sender);
+
+    this.events.trigger(EEvent.TRACK, { track, transceiver });
 
     return sender;
   };

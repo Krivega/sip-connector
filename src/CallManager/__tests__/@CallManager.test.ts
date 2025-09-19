@@ -31,6 +31,8 @@ describe('CallManager', () => {
       getEstablishedRTCSession: jest.fn(),
       getCallConfiguration: jest.fn(),
       getRemoteStreams: jest.fn(),
+      getTransceivers: jest.fn(),
+      addTransceiver: jest.fn(),
       replaceMediaStream: jest.fn(),
       restartIce: jest.fn(),
     };
@@ -314,6 +316,116 @@ describe('CallManager', () => {
 
       expect(mockStrategy.restartIce).toHaveBeenCalledWith(undefined);
       expect(result).toBe(expectedResult);
+    });
+  });
+
+  describe('getTransceivers', () => {
+    beforeEach(() => {
+      callManager = new CallManager(mockStrategy);
+    });
+
+    it('should delegate getTransceivers to strategy', () => {
+      const expectedTransceivers = {
+        mainAudio: {} as RTCRtpTransceiver,
+        mainVideo: {} as RTCRtpTransceiver,
+        presentationVideo: undefined,
+      };
+
+      mockStrategy.getTransceivers.mockReturnValue(expectedTransceivers);
+
+      const result = callManager.getTransceivers();
+
+      expect(mockStrategy.getTransceivers).toHaveBeenCalledWith();
+      expect(result).toBe(expectedTransceivers);
+    });
+
+    it('should return empty transceivers when strategy returns empty', () => {
+      const emptyTransceivers = {
+        mainAudio: undefined,
+        mainVideo: undefined,
+        presentationVideo: undefined,
+      };
+
+      mockStrategy.getTransceivers.mockReturnValue(emptyTransceivers);
+
+      const result = callManager.getTransceivers();
+
+      expect(mockStrategy.getTransceivers).toHaveBeenCalledWith();
+      expect(result).toEqual(emptyTransceivers);
+    });
+  });
+
+  describe('addTransceiver', () => {
+    beforeEach(() => {
+      callManager = new CallManager(mockStrategy);
+    });
+
+    it('should delegate addTransceiver to strategy with audio kind', async () => {
+      const expectedTransceiver = {} as RTCRtpTransceiver;
+
+      mockStrategy.addTransceiver.mockResolvedValue(expectedTransceiver);
+
+      const result = await callManager.addTransceiver('audio');
+
+      expect(mockStrategy.addTransceiver).toHaveBeenCalledWith('audio');
+      expect(result).toBe(expectedTransceiver);
+    });
+
+    it('should delegate addTransceiver to strategy with video kind', async () => {
+      const expectedTransceiver = {} as RTCRtpTransceiver;
+
+      mockStrategy.addTransceiver.mockResolvedValue(expectedTransceiver);
+
+      const result = await callManager.addTransceiver('video');
+
+      expect(mockStrategy.addTransceiver).toHaveBeenCalledWith('video');
+      expect(result).toBe(expectedTransceiver);
+    });
+
+    it('should delegate addTransceiver to strategy with options', async () => {
+      const expectedTransceiver = {} as RTCRtpTransceiver;
+      const options: RTCRtpTransceiverInit = {
+        direction: 'sendrecv',
+        streams: [],
+        sendEncodings: [{ rid: 'test', maxBitrate: 1_000_000 }],
+      };
+
+      mockStrategy.addTransceiver.mockResolvedValue(expectedTransceiver);
+
+      const result = await callManager.addTransceiver('video', options);
+
+      expect(mockStrategy.addTransceiver).toHaveBeenCalledWith('video', options);
+      expect(result).toBe(expectedTransceiver);
+    });
+
+    it('should handle addTransceiver rejection from strategy', async () => {
+      const mockError = new Error('Strategy addTransceiver failed');
+
+      mockStrategy.addTransceiver.mockRejectedValue(mockError);
+
+      await expect(callManager.addTransceiver('audio')).rejects.toThrow(
+        'Strategy addTransceiver failed',
+      );
+      expect(mockStrategy.addTransceiver).toHaveBeenCalledWith('audio');
+    });
+
+    it('should pass through all parameters correctly', async () => {
+      const expectedTransceiver = {} as RTCRtpTransceiver;
+      const complexOptions: RTCRtpTransceiverInit = {
+        direction: 'sendonly',
+        streams: [new MediaStream()],
+        sendEncodings: [
+          { rid: 'low', maxBitrate: 500_000, scaleResolutionDownBy: 4 },
+          { rid: 'high', maxBitrate: 2_000_000, scaleResolutionDownBy: 1 },
+        ],
+      };
+
+      mockStrategy.addTransceiver.mockResolvedValue(expectedTransceiver);
+
+      const result = await callManager.addTransceiver('video', complexOptions);
+
+      expect(mockStrategy.addTransceiver).toHaveBeenCalledWith('video', complexOptions);
+      expect(result).toBe(expectedTransceiver);
     });
   });
 });

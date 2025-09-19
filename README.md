@@ -26,6 +26,8 @@
 - **Обработка смены треков**: Автоматическая адаптация балансировки при изменении видеотреков
 - **Улучшенная статистика**: Расширенные возможности сбора и анализа WebRTC статистики
 - **Автоматический перезапуск ICE**: Обработка событий `restart` от сервера с автоматическим вызовом `restartIce`
+- **Управление transceiver'ами**: Новый `TransceiverManager` для отслеживания и управления RTCRtpTransceiver'ами
+- **Автоматическое добавление transceiver'ов**: Умное добавление презентационных transceiver'ов при событиях restart
 
 ### 🎯 Основные возможности
 
@@ -34,7 +36,7 @@ SDK предоставляет комплексное решение для:
 | Категория                    | Возможности                                                                                |
 | ---------------------------- | ------------------------------------------------------------------------------------------ |
 | **SIP-подключения**          | Регистрация на сервере (SIP REGISTER), управление сессиями                                 |
-| **WebRTC-коммуникации**      | Исходящие/входящие звонки (SIP INVITE/200 OK), медиа-потоки, автоматический перезапуск ICE |
+| **WebRTC-коммуникации**      | Исходящие/входящие звонки (SIP INVITE/200 OK), медиа-потоки, управление transceiver'ами, автоматический перезапуск ICE |
 | **Презентации**              | Отправка второго потока (screen sharing, демонстрация экрана)                              |
 | **Системные сообщения**      | DTMF, SIP INFO, синхронизация медиа-состояния                                              |
 | **Событийная архитектура**   | Подписка на события платформы в реальном времени                                           |
@@ -398,11 +400,13 @@ try {
 
 #### Автоматический перезапуск по событию сервера
 
-SDK автоматически обрабатывает события `restart` от сервера и инициирует перезапуск ICE-соединения:
+SDK автоматически обрабатывает события `restart` от сервера и инициирует перезапуск ICE-соединения с интеллектуальным управлением transceiver'ами:
 
 ```typescript
 // SDK автоматически подписывается на события restart от ApiManager
-// и вызывает callManager.restartIce() при получении таких событий
+// и выполняет следующие действия:
+// 1. Проверяет необходимость добавления презентационного transceiver'а
+// 2. Вызывает callManager.restartIce()
 
 // Мониторинг событий restart (опционально)
 sipConnector.on('api:restart', (data) => {
@@ -412,8 +416,14 @@ sipConnector.on('api:restart', (data) => {
     videoTrackCount: data.videoTrackCount,
   });
 
-  // SDK автоматически вызовет restartIce()
+  // SDK автоматически:
+  // - Добавит презентационный transceiver если videoTrackCount === 2
+  // - Вызовет restartIce()
   console.log('ICE будет перезапущен автоматически');
+  
+  if (data.videoTrackCount === 2) {
+    console.log('Может быть добавлен презентационный transceiver');
+  }
 });
 ```
 
@@ -426,6 +436,100 @@ sipConnector.on('api:restart', (data) => {
 | `rtcOfferConstraints`   | object   | Ограничения для создания SDP offer       | `{}`         |
 | `sendEncodings`         | array    | Параметры кодирования для видеопотока    | `[]`         |
 | `degradationPreference` | string   | Приоритет при ухудшении качества         | `undefined`  |
+
+---
+
+## 🎛️ Управление RTCRtpTransceiver'ами
+
+### Обзор TransceiverManager
+
+SDK автоматически отслеживает и управляет RTCRtpTransceiver'ами через новый класс `TransceiverManager`:
+
+```typescript
+// Получение текущих transceiver'ов
+const transceivers = sipConnector.callManager.getTransceivers();
+
+console.log('Основной аудио transceiver:', transceivers.mainAudio);
+console.log('Основной видео transceiver:', transceivers.mainVideo);
+console.log('Презентационный видео transceiver:', transceivers.presentationVideo);
+```
+
+### Типы transceiver'ов
+
+SDK автоматически классифицирует transceiver'ы по их `mid` значению:
+
+| Тип transceiver'а      | mid | Назначение                    |
+| ---------------------- | --- | ----------------------------- |
+| `mainAudio`            | '0' | Основной аудио поток          |
+| `mainVideo`            | '1' | Основной видео поток          |
+| `presentationVideo`    | '2' | Презентационный видео поток   |
+
+### Автоматическое добавление transceiver'ов
+
+При получении события `restart` с `videoTrackCount === 2`, SDK автоматически добавляет презентационный transceiver если он отсутствует:
+
+```typescript
+// SDK автоматически обрабатывает события restart
+sipConnector.on('api:restart', (data) => {
+  if (data.videoTrackCount === 2) {
+    // SDK проверит наличие presentationVideo transceiver'а
+    // и добавит его автоматически если необходимо
+    console.log('Будет добавлен презентационный transceiver');
+  }
+});
+```
+
+### Ручное управление transceiver'ами
+
+```typescript
+// Добавление нового transceiver'а
+try {
+  const audioTransceiver = await sipConnector.callManager.addTransceiver('audio', {
+    direction: 'sendrecv',
+  });
+  
+  const videoTransceiver = await sipConnector.callManager.addTransceiver('video', {
+    direction: 'sendonly',
+    sendEncodings: [
+      { rid: 'low', maxBitrate: 500_000, scaleResolutionDownBy: 4 },
+      { rid: 'high', maxBitrate: 2_000_000, scaleResolutionDownBy: 1 },
+    ],
+  });
+  
+  console.log('Transceiver'ы добавлены:', { audioTransceiver, videoTransceiver });
+} catch (error) {
+  console.error('Ошибка добавления transceiver'а:', error);
+}
+```
+
+### Мониторинг transceiver'ов
+
+```typescript
+// Проверка состояния transceiver'ов
+const checkTransceivers = () => {
+  const transceivers = sipConnector.callManager.getTransceivers();
+  
+  console.log('Статус transceiver'ов:', {
+    hasAudio: transceivers.mainAudio !== undefined,
+    hasVideo: transceivers.mainVideo !== undefined,
+    hasPresentation: transceivers.presentationVideo !== undefined,
+  });
+  
+  // Детальная информация
+  if (transceivers.mainVideo) {
+    console.log('Основное видео:', {
+      mid: transceivers.mainVideo.mid,
+      direction: transceivers.mainVideo.direction,
+      currentDirection: transceivers.mainVideo.currentDirection,
+    });
+  }
+};
+
+// Проверка после установки соединения
+sipConnector.on('call:confirmed', () => {
+  checkTransceivers();
+});
+```
 
 ---
 
@@ -753,6 +857,7 @@ import {
   SipConnector, // Низкоуровневый API
   SipConnectorFacade, // Высокоуровневый фасад
   StatsPeerConnection, // Сбор статистики
+  TransceiverManager, // Управление transceiver'ами
   // ... другие экспорты
 } from 'sip-connector';
 ```
@@ -768,6 +873,10 @@ await facade.replaceMediaStream(mediaStream, options);
 
 // Получение удаленных потоков
 const streams = facade.getRemoteStreams();
+
+// Управление transceiver'ами (низкоуровневый API)
+const transceivers = sipConnector.callManager.getTransceivers();
+await sipConnector.callManager.addTransceiver('video', { direction: 'sendrecv' });
 
 // Перезапуск ICE-соединения (низкоуровневый API)
 await sipConnector.callManager.restartIce(options);
@@ -791,6 +900,7 @@ import {
   type TInboundStats, // Входящая статистика
   type TOutboundStats, // Исходящая статистика
   type TRestartData, // Данные события restart
+  type ITransceiverStorage, // Интерфейс хранения transceiver'ов
 } from 'sip-connector';
 ```
 

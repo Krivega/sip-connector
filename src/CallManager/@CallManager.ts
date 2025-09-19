@@ -85,6 +85,14 @@ class CallManager {
     return this.strategy.getRemoteStreams();
   };
 
+  public getTransceivers: ICallStrategy['getTransceivers'] = () => {
+    return this.strategy.getTransceivers();
+  };
+
+  public addTransceiver: ICallStrategy['addTransceiver'] = async (...args) => {
+    return this.strategy.addTransceiver(...args);
+  };
+
   public replaceMediaStream: ICallStrategy['replaceMediaStream'] = async (...args) => {
     return this.strategy.replaceMediaStream(...args);
   };
