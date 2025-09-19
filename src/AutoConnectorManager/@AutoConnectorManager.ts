@@ -10,6 +10,7 @@ import ConnectFlow from './ConnectFlow';
 import { EEvent, EVENT_NAMES } from './eventNames';
 import PingServerRequester from './PingServerRequester';
 import RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCallSubscriber';
+import { hasParametersNotExistError } from './utils';
 
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
@@ -58,10 +59,9 @@ class AutoConnectorManager {
 
     this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
     this.connectFlow = new ConnectFlow({
+      connectionManager,
       connectionQueueManager,
-      hasConfigured: () => {
-        return this.connectionManager.isConfigured();
-      },
+      events: this.events,
     });
     this.checkTelephonyRequester = new CheckTelephonyRequester({
       clearCache,
@@ -75,15 +75,13 @@ class AutoConnectorManager {
     });
     this.attemptsState = new AttemptsState({
       onStatusChange: (isAttemptInProgress: boolean) => {
-        this.events.trigger(EEvent.ATTEMPT_STATUS_CHANGED, isAttemptInProgress);
+        this.events.trigger(EEvent.CHANGED_ATTEMPT_STATUS, isAttemptInProgress);
       },
     });
     this.cancelableRequestClearCache = new CancelableRequest(clearCache);
     this.delayBetweenAttempts = new DelayRequester(
       options?.timeoutBetweenAttempts ?? DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS,
     );
-
-    this.subscribe();
   }
 
   public start(parameters: TParametersAutoConnect) {
@@ -166,7 +164,7 @@ class AutoConnectorManager {
   private async connect(parameters: TParametersAutoConnect) {
     logger('connect: attempts.count', this.attemptsState.count);
 
-    this.events.trigger(EEvent.BEFORE_ATTEMPT, {});
+    this.events.trigger(EEvent.BEFORE_ATTEMPT, undefined);
     this.stopConnectTriggers();
 
     const isLimitReached = this.attemptsState.hasLimitReached();
@@ -187,30 +185,29 @@ class AutoConnectorManager {
 
   private async processConnect(parameters: TParametersAutoConnect) {
     try {
-      const connectParameters = await parameters.getConnectParameters().catch((error: unknown) => {
-        logger('processConnect: getConnectParameters error', error);
-
-        this.events.trigger(EEvent.PARAMETERS_FAILED, error);
-
-        throw error;
-      });
-
-      if (!connectParameters) {
-        return;
-      }
-
-      await this.connectFlow.runConnect(connectParameters, parameters.hasReadyForConnection);
+      await this.connectFlow.runConnect(
+        parameters.getConnectParameters,
+        parameters.hasReadyForConnection,
+      );
 
       logger('processConnect success');
 
       this.subscribeToConnectTriggers(parameters);
 
-      this.events.trigger(EEvent.CONNECTED, this.getConnectedConfiguration());
+      this.events.trigger(EEvent.SUCCEEDED_ATTEMPT, undefined);
     } catch (error) {
+      if (hasParametersNotExistError(error)) {
+        logger('processConnect: parameters not exist error', error);
+
+        this.events.trigger(EEvent.FAILED_ATTEMPT, error);
+
+        return;
+      }
+
       if (hasPromiseIsNotActualError(error)) {
         logger('processConnect: not actual error', error);
 
-        this.events.trigger(EEvent.CANCELLED, {});
+        this.events.trigger(EEvent.CANCELLED_ATTEMPT, error);
 
         return;
       }
@@ -224,7 +221,7 @@ class AutoConnectorManager {
   private handleLimitReached(parameters: TParametersAutoConnect) {
     this.attemptsState.finishAttempt();
 
-    this.events.trigger(EEvent.FAILED, {});
+    this.events.trigger(EEvent.FAILED_ATTEMPT, undefined);
 
     this.runCheckTelephony(parameters);
   }
@@ -254,7 +251,7 @@ class AutoConnectorManager {
       this.start(parameters);
     } else {
       this.stopConnectTriggers();
-      this.events.trigger(EEvent.CONNECTED, this.getConnectedConfiguration());
+      this.events.trigger(EEvent.SUCCEEDED_ATTEMPT, undefined);
     }
   }
 
@@ -275,36 +272,19 @@ class AutoConnectorManager {
       })
       .catch((error: unknown) => {
         if (isCanceledError(error) || hasCanceledError(error as Error)) {
-          this.events.trigger(EEvent.CANCELLED, {});
+          this.events.trigger(EEvent.CANCELLED_ATTEMPT, error);
         } else {
-          this.events.trigger(EEvent.FAILED, error);
+          this.events.trigger(EEvent.FAILED_ATTEMPT, error);
         }
 
         logger('reconnect: error', error);
       });
   }
 
-  private getConnectedConfiguration() {
-    return {
-      ua: this.connectionManager.ua,
-      isRegistered: this.connectionManager.isRegistered,
-    };
-  }
-
   private hasFailedOrDisconnectedConnection() {
     const { isFailed, isDisconnected } = this.connectionManager;
 
     return isFailed || isDisconnected;
-  }
-
-  private subscribe() {
-    this.connectionManager.on('disconnecting', () => {
-      this.events.trigger(EEvent.DISCONNECTING, {});
-    });
-
-    this.connectionManager.on('disconnected', () => {
-      this.events.trigger(EEvent.DISCONNECTED, {});
-    });
   }
 }
 

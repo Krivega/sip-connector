@@ -3,36 +3,47 @@ import type { TypedEvents } from 'events-constructor';
 import type { TConnectedConfiguration } from './types';
 
 export enum EEvent {
+  // События состояний подключения
+  CONNECTING = 'connecting',
   CONNECTED = 'connected',
   DISCONNECTED = 'disconnected',
   DISCONNECTING = 'disconnecting',
-  BEFORE_ATTEMPT = 'before-attempt',
   FAILED = 'failed',
-  PARAMETERS_FAILED = 'parameters-failed',
-  CANCELLED = 'cancelled',
-  ATTEMPT_STATUS_CHANGED = 'attempt-status-changed',
+
+  // События попытки подключения
+  BEFORE_ATTEMPT = 'before-attempt',
+  SUCCEEDED_ATTEMPT = 'succeeded-attempt',
+  FAILED_ATTEMPT = 'failed-attempt',
+  CANCELLED_ATTEMPT = 'cancelled-attempt',
+  CHANGED_ATTEMPT_STATUS = 'changed-attempt-status',
 }
 
 export const EVENT_NAMES = [
+  // Состояния
+  `${EEvent.CONNECTING}`,
   `${EEvent.CONNECTED}`,
   `${EEvent.DISCONNECTED}`,
   `${EEvent.DISCONNECTING}`,
-  `${EEvent.BEFORE_ATTEMPT}`,
   `${EEvent.FAILED}`,
-  `${EEvent.CANCELLED}`,
-  `${EEvent.ATTEMPT_STATUS_CHANGED}`,
-  `${EEvent.PARAMETERS_FAILED}`,
+  // Попытки
+  `${EEvent.BEFORE_ATTEMPT}`,
+  `${EEvent.SUCCEEDED_ATTEMPT}`,
+  `${EEvent.FAILED_ATTEMPT}`,
+  `${EEvent.CANCELLED_ATTEMPT}`,
+  `${EEvent.CHANGED_ATTEMPT_STATUS}`,
 ] as const;
 
 export type TEventMap = {
+  connecting: undefined;
   connected: TConnectedConfiguration;
-  disconnected: Record<string, never>;
-  disconnecting: Record<string, never>;
-  'before-attempt': Record<string, never>;
+  disconnected: undefined;
+  disconnecting: undefined;
   failed: unknown;
-  'parameters-failed': unknown;
-  cancelled: Record<string, never>;
-  'attempt-status-changed': boolean;
+  'before-attempt': undefined;
+  'succeeded-attempt': undefined;
+  'failed-attempt': unknown;
+  'cancelled-attempt': unknown;
+  'changed-attempt-status': boolean;
 };
 
 export type TEvents = TypedEvents<TEventMap>;

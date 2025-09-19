@@ -677,4 +677,109 @@ describe('AutoConnectorManager', () => {
       expect(connectFlowRunConnectSpy).toHaveBeenCalledTimes(2);
     });
   });
+
+  describe('нестандартные сценарии', () => {
+    it('комбинированный вызов 1', async () => {
+      const newParameters = {
+        ...baseParameters,
+        getConnectParameters: async () => {
+          await delayPromise(DELAY * 3);
+
+          return baseParameters.getConnectParameters();
+        },
+      };
+
+      const handleConnected = jest.fn();
+      const handleConnecting = jest.fn();
+
+      manager.on('c-connecting', handleConnecting);
+      manager.on('c-connected', handleConnected);
+
+      manager.start(newParameters);
+
+      await delayPromise(DELAY);
+
+      manager.start(newParameters);
+
+      await delayPromise(DELAY);
+
+      manager.cancel();
+
+      await delayPromise(DELAY);
+
+      manager.start(newParameters);
+
+      await delayPromise(DELAY * 10);
+
+      expect(handleConnecting).toHaveBeenCalledTimes(2);
+      expect(handleConnected).toHaveBeenCalledTimes(2);
+    });
+
+    it('комбинированный вызов 2', async () => {
+      const newParameters = {
+        ...baseParameters,
+        getConnectParameters: async () => {
+          await delayPromise(DELAY * 3);
+
+          return baseParameters.getConnectParameters();
+        },
+      };
+
+      const handleConnected = jest.fn();
+      const handleConnecting = jest.fn();
+
+      manager.on('c-connecting', handleConnecting);
+      manager.on('c-connected', handleConnected);
+
+      // @ts-ignore приватное свойство
+      manager.connectFlow.runConnect(newParameters.getConnectParameters).catch(() => {});
+
+      await delayPromise(DELAY);
+
+      // @ts-ignore приватное свойство
+      manager.connectFlow.runConnect(newParameters.getConnectParameters).catch(() => {});
+
+      await delayPromise(DELAY);
+
+      // @ts-ignore приватное свойство
+      manager.connectFlow.runConnect(newParameters.getConnectParameters).catch(() => {});
+
+      await delayPromise(DELAY * 10);
+
+      expect(handleConnecting).toHaveBeenCalledTimes(2);
+      expect(handleConnected).toHaveBeenCalledTimes(2);
+    });
+
+    it.only('комбинированный вызов 3', async () => {
+      const newParameters = {
+        ...baseParameters,
+        getConnectParameters: async () => {
+          await delayPromise(DELAY * 3);
+
+          return baseParameters.getConnectParameters();
+        },
+      };
+
+      const handleConnected = jest.fn();
+      const handleConnecting = jest.fn();
+
+      manager.on('c-connecting', handleConnecting);
+      manager.on('c-connected', handleConnected);
+
+      manager.start(newParameters);
+
+      await delayPromise(DELAY);
+
+      manager.start(newParameters);
+
+      await delayPromise(DELAY);
+
+      manager.start(newParameters);
+
+      await delayPromise(DELAY * 10);
+
+      expect(handleConnecting).toHaveBeenCalledTimes(2);
+      expect(handleConnected).toHaveBeenCalledTimes(2);
+    });
+  });
 });

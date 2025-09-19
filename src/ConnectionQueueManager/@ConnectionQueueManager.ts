@@ -25,22 +25,8 @@ class ConnectionQueueManager {
     }) as ReturnType<ConnectionManager['disconnect']>;
   };
 
-  public register: ConnectionManager['register'] = async () => {
-    return this.stackPromises.run(async () => {
-      return this.connectionManager.register();
-    }) as ReturnType<ConnectionManager['register']>;
-  };
-
-  public unregister: ConnectionManager['unregister'] = async () => {
-    return this.stackPromises.run(async () => {
-      return this.connectionManager.unregister();
-    }) as ReturnType<ConnectionManager['unregister']>;
-  };
-
-  public tryRegister: ConnectionManager['tryRegister'] = async () => {
-    return this.stackPromises.run(async () => {
-      return this.connectionManager.tryRegister();
-    }) as ReturnType<ConnectionManager['tryRegister']>;
+  public run = async <T = void>(task: () => Promise<T>): Promise<T> => {
+    return this.stackPromises.run(task) as Promise<T>;
   };
 
   public stop() {

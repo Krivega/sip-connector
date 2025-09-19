@@ -1,55 +1,87 @@
-import { hasPromiseIsNotActualError, type ConnectionQueueManager } from '@/ConnectionQueueManager';
 import logger from '@/logger';
+import { EEvent } from './eventNames';
+import { createParametersNotExistError } from './utils';
 
+import type { ConnectionManager } from '@/ConnectionManager';
+import type { ConnectionQueueManager } from '@/ConnectionQueueManager';
+import type { TEvents } from './eventNames';
 import type { TParametersConnect } from './types';
 
 class ConnectFlow {
+  private readonly events: TEvents;
+
+  private readonly connectionManager: ConnectionManager;
+
   private readonly connectionQueueManager: ConnectionQueueManager;
 
-  private readonly hasConfigured: () => boolean;
-
   public constructor({
+    events,
+    connectionManager,
     connectionQueueManager,
-    hasConfigured,
   }: {
+    events: TEvents;
     connectionQueueManager: ConnectionQueueManager;
-    hasConfigured: () => boolean;
+    connectionManager: ConnectionManager;
   }) {
+    this.events = events;
+    this.connectionManager = connectionManager;
     this.connectionQueueManager = connectionQueueManager;
 
-    this.hasConfigured = hasConfigured;
+    this.subscribe();
   }
 
   public async runDisconnect() {
-    const isConfigured = this.hasConfigured();
-
-    logger('runDisconnect: isConfigured, ', isConfigured);
-
-    if (isConfigured) {
-      return this.connectionQueueManager.disconnect();
-    }
-
-    return undefined;
+    return this.connectionQueueManager
+      .run(async () => {
+        return this.disconnect();
+      })
+      .catch((error: unknown) => {
+        logger('runDisconnect: error', error);
+      });
   }
 
-  public async runConnect(parameters: TParametersConnect, hasReadyForConnection?: () => boolean) {
-    return this.runDisconnect()
-      .catch((error: unknown) => {
-        logger('runConnect: disconnect catch', error);
-      })
-      .then(async () => {
-        logger('runConnect: disconnect then');
-
-        return this.connectWithProcessError(parameters, hasReadyForConnection);
-      });
+  public async runConnect(
+    getConnectParameters: () => Promise<TParametersConnect | undefined>,
+    hasReadyForConnection?: () => boolean,
+  ) {
+    return this.connectionQueueManager.run(async () => {
+      return this.connect(getConnectParameters, hasReadyForConnection);
+    });
   }
 
   public stop() {
     this.connectionQueueManager.stop();
   }
 
+  private async disconnect() {
+    const isConfigured = this.connectionManager.isConfigured();
+
+    logger('disconnect: isConfigured, ', isConfigured);
+
+    if (isConfigured) {
+      return this.connectionManager.disconnect();
+    }
+
+    return undefined;
+  }
+
+  private async connect(
+    getConnectParameters: () => Promise<TParametersConnect | undefined>,
+    hasReadyForConnection?: () => boolean,
+  ) {
+    return this.disconnect()
+      .catch((error: unknown) => {
+        logger('connect: disconnect error', error);
+      })
+      .then(async () => {
+        logger('connect: then');
+
+        return this.connectWithProcessError(getConnectParameters, hasReadyForConnection);
+      });
+  }
+
   private async connectWithProcessError(
-    parameters: TParametersConnect,
+    getConnectParameters: () => Promise<TParametersConnect | undefined>,
     hasReadyForConnection?: () => boolean,
   ) {
     const isReadyForConnection = hasReadyForConnection?.() ?? true;
@@ -60,29 +92,57 @@ class ConnectFlow {
       return;
     }
 
-    await this.connectionQueueManager
-      .connect(parameters)
-      .then((isConnected) => {
-        logger('connect, isConnected', isConnected);
-      })
-      .catch(async (error: unknown) => {
-        if (hasPromiseIsNotActualError(error)) {
-          throw error;
-        }
+    await this.connectToServer(getConnectParameters).catch(async (error: unknown) => {
+      const connectToServerError =
+        error instanceof Error ? error : new Error('Failed to connect to server');
 
-        const connectToServerError =
-          error instanceof Error ? error : new Error('Failed to connect to server');
+      logger('connectWithProcessError: error:', connectToServerError);
 
-        logger('connectWithProcessError, error:', error);
+      return this.disconnect()
+        .then(() => {
+          throw connectToServerError;
+        })
+        .catch(() => {
+          throw connectToServerError;
+        });
+    });
+  }
 
-        return this.runDisconnect()
-          .then(() => {
-            throw connectToServerError;
-          })
-          .catch(() => {
-            throw connectToServerError;
-          });
+  private async connectToServer(
+    getConnectParameters: () => Promise<TParametersConnect | undefined>,
+  ) {
+    try {
+      this.events.trigger(EEvent.CONNECTING, undefined);
+
+      const parameters = await getConnectParameters();
+
+      if (!parameters) {
+        throw createParametersNotExistError();
+      }
+
+      const ua = await this.connectionQueueManager.connect(parameters);
+
+      logger('connectToServer: isConnected');
+
+      this.events.trigger(EEvent.CONNECTED, {
+        ua,
+        isRegistered: this.connectionManager.isRegistered,
       });
+    } catch (error: unknown) {
+      this.events.trigger(EEvent.FAILED, error);
+
+      throw error;
+    }
+  }
+
+  private subscribe() {
+    this.connectionManager.on('disconnecting', () => {
+      this.events.trigger(EEvent.DISCONNECTING, undefined);
+    });
+
+    this.connectionManager.on('disconnected', () => {
+      this.events.trigger(EEvent.DISCONNECTED, undefined);
+    });
   }
 }
 

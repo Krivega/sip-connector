@@ -180,15 +180,15 @@ class SipConnector {
   };
 
   public register = async () => {
-    return this.connectionQueueManager.register();
+    return this.connectionManager.register();
   };
 
   public unregister = async () => {
-    return this.connectionQueueManager.unregister();
+    return this.connectionManager.unregister();
   };
 
   public tryRegister = async () => {
-    return this.connectionQueueManager.tryRegister();
+    return this.connectionManager.tryRegister();
   };
 
   public set: ConnectionManager['set'] = async (...args) => {
