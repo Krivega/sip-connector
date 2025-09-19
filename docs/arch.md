@@ -284,10 +284,9 @@ class AutoConnectorManager {
 
     this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
     this.connectFlow = new ConnectFlow({
+      connectionManager,
       connectionQueueManager,
-      hasConfigured: () => {
-        return this.connectionManager.isConfigured();
-      },
+      events: this.events,
     });
     this.checkTelephonyRequester = new CheckTelephonyRequester({
       clearCache,
