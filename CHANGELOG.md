@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [17.0.0](https://github.com/Krivega/sip-connector/compare/v16.2.0...v17.0.0) (2025-09-19)
+
+### ⚠ BREAKING CHANGES
+
+- Added getTransceivers and addTransceiver methods to ICallStrategy interface
+
+### Features
+
+- add TransceiverManager and auto presentation transceiver handling ([ded6e37](https://github.com/Krivega/sip-connector/commit/ded6e374b2d9bca0d0c4c73d46ce2523e79084ed))
+
 ## [16.2.0](https://github.com/Krivega/sip-connector/compare/v16.1.0...v16.2.0) (2025-09-12)
 
 ### Features
