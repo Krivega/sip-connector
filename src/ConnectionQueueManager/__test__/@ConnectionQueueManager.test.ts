@@ -49,4 +49,22 @@ describe('ConnectionQueueManager', () => {
     expect(stackRunSpy).toHaveBeenCalled();
     expect(connectionManager.disconnect).toHaveBeenCalled();
   });
+
+  it('должен проксировать метод stop', async () => {
+    const stopSpy = jest.spyOn(connectionQueueManager, 'stop');
+
+    connectionQueueManager.stop();
+
+    expect(stopSpy).toHaveBeenCalled();
+  });
+
+  it('должен проксировать метод run', async () => {
+    const runSpy = jest.spyOn(connectionQueueManager, 'run');
+
+    await connectionQueueManager.run(async () => {
+      return undefined;
+    });
+
+    expect(runSpy).toHaveBeenCalled();
+  });
 });

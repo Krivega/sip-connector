@@ -45,15 +45,6 @@ describe('SipConnector facade', () => {
 
     jest.spyOn(connectionQueueManager, 'connect').mockResolvedValue({} as unknown as UA);
     jest.spyOn(connectionQueueManager, 'disconnect').mockResolvedValue(undefined);
-    jest
-      .spyOn(connectionQueueManager, 'register')
-      .mockResolvedValue({ response: {} as IncomingResponse } as RegisteredEvent);
-    jest
-      .spyOn(connectionQueueManager, 'unregister')
-      .mockResolvedValue({ response: {} as IncomingResponse } as UnRegisteredEvent);
-    jest
-      .spyOn(connectionQueueManager, 'tryRegister')
-      .mockResolvedValue({ response: {} as IncomingResponse } as RegisteredEvent);
 
     await sipConnector.connect({
       register: false,
@@ -61,15 +52,9 @@ describe('SipConnector facade', () => {
       sipWebSocketServerURL: 'wss://sip.example.com/ws',
     });
     await sipConnector.disconnect();
-    await sipConnector.register();
-    await sipConnector.unregister();
-    await sipConnector.tryRegister();
 
     expect(connectionQueueManager.connect).toHaveBeenCalled();
     expect(connectionQueueManager.disconnect).toHaveBeenCalled();
-    expect(connectionQueueManager.register).toHaveBeenCalled();
-    expect(connectionQueueManager.unregister).toHaveBeenCalled();
-    expect(connectionQueueManager.tryRegister).toHaveBeenCalled();
   });
 
   it('должен проксировать методы ConnectionManager', async () => {
@@ -81,12 +66,25 @@ describe('SipConnector facade', () => {
     jest.spyOn(cm, 'checkTelephony').mockResolvedValue(undefined);
     jest.spyOn(cm, 'isConfigured').mockReturnValue(true);
     jest
+      .spyOn(cm, 'register')
+      .mockResolvedValue({ response: {} as IncomingResponse } as RegisteredEvent);
+    jest
+      .spyOn(cm, 'unregister')
+      .mockResolvedValue({ response: {} as IncomingResponse } as UnRegisteredEvent);
+    jest
+      .spyOn(cm, 'tryRegister')
+      .mockResolvedValue({ response: {} as IncomingResponse } as RegisteredEvent);
+
+    jest
       .spyOn(cm, 'getConnectionConfiguration')
       .mockReturnValue({ displayName: 'X' } as unknown as { displayName: string });
 
     await sipConnector.set({ displayName: 'Test' });
     await sipConnector.sendOptions('sip:test@example.com', 'test', ['X-Test: value']);
     await sipConnector.ping('ping', ['X-Ping: value']);
+    await sipConnector.register();
+    await sipConnector.unregister();
+    await sipConnector.tryRegister();
     await sipConnector.checkTelephony({
       displayName: 'Test',
       sipServerUrl: 'sip.example.com',
@@ -97,6 +95,9 @@ describe('SipConnector facade', () => {
     expect(sipConnector.getConnectionConfiguration()).toEqual({ displayName: 'X' });
     expect(sipConnector.getSipServerUrl('id')).toBe('id');
 
+    expect(cm.register).toHaveBeenCalled();
+    expect(cm.unregister).toHaveBeenCalled();
+    expect(cm.tryRegister).toHaveBeenCalled();
     expect(cm.set).toHaveBeenCalledWith({ displayName: 'Test' });
     expect(cm.sendOptions).toHaveBeenCalled();
     expect(cm.ping).toHaveBeenCalled();

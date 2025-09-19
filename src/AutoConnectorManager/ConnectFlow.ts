@@ -120,7 +120,7 @@ class ConnectFlow {
         throw createParametersNotExistError();
       }
 
-      const ua = await this.connectionQueueManager.connect(parameters);
+      const ua = await this.connectionManager.connect(parameters);
 
       logger('connectToServer: isConnected');
 
