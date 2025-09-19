@@ -2,12 +2,12 @@ import type { RTCSession, UA } from '@krivega/jssip';
 import type { TContentHint } from '@/PresentationManager';
 import type { Originator } from './eventNames';
 
-export type TOntrack = (track: RTCTrackEvent) => void;
+export type TOntrack = (event: RTCTrackEvent) => void;
 
 export type TOnAddedTransceiver = (
   transceiver: RTCRtpTransceiver,
   track: MediaStreamTrack,
-  stream: MediaStream,
+  streams: MediaStream[],
 ) => Promise<void>;
 export type TGetServerUrl = (id: string) => string;
 
@@ -44,6 +44,18 @@ export type TCustomError = Error & {
   code?: string;
 };
 
+/**
+ * Интерфейс для хранения основных transceiver'ов
+ */
+export interface ITransceiverStorage {
+  /** Основной transceiver для видео */
+  mainVideo?: RTCRtpTransceiver;
+  /** Основной transceiver для аудио */
+  mainAudio?: RTCRtpTransceiver;
+  /** Transceiver для презентации видео */
+  presentationVideo?: RTCRtpTransceiver;
+}
+
 export type TCallConfiguration = {
   answer?: boolean;
   number?: string;
@@ -69,6 +81,11 @@ export interface ICallStrategy {
   getEstablishedRTCSession: () => RTCSession | undefined;
   getCallConfiguration: () => TCallConfiguration;
   getRemoteStreams: () => MediaStream[] | undefined;
+  getTransceivers: () => Readonly<ITransceiverStorage>;
+  addTransceiver: (
+    kind: 'audio' | 'video',
+    options?: RTCRtpTransceiverInit,
+  ) => Promise<RTCRtpTransceiver>;
   replaceMediaStream: (
     mediaStream: MediaStream,
     options?: {
@@ -81,4 +98,11 @@ export interface ICallStrategy {
       onAddedTransceiver?: TOnAddedTransceiver;
     },
   ) => Promise<void>;
+  restartIce: (options?: {
+    extraHeaders?: string[];
+    useUpdate?: boolean;
+    rtcOfferConstraints?: RTCOfferOptions;
+    sendEncodings?: RTCRtpEncodingParameters[];
+    degradationPreference?: RTCDegradationPreference;
+  }) => Promise<boolean>;
 }

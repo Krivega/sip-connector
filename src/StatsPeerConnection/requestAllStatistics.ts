@@ -37,12 +37,12 @@ const requestAllStatistics = async (peerConnection: RTCPeerConnection) => {
   };
 
   return Promise.all<RTCStatsReport | undefined>([
-    audioSender?.getStats(),
-    videoSenders[0]?.getStats(),
-    videoSenders[1]?.getStats(),
-    audioReceiver?.getStats(),
-    videoReceivers[0]?.getStats(),
-    videoReceivers[1]?.getStats(),
+    audioSender?.getStats() ?? Promise.resolve(undefined),
+    videoSenders[0]?.getStats() ?? Promise.resolve(undefined),
+    videoSenders[1]?.getStats() ?? Promise.resolve(undefined),
+    audioReceiver?.getStats() ?? Promise.resolve(undefined),
+    videoReceivers[0]?.getStats() ?? Promise.resolve(undefined),
+    videoReceivers[1]?.getStats() ?? Promise.resolve(undefined),
   ]).then((reports) => {
     const [
       audioSenderStats,

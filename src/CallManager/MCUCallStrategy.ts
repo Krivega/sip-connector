@@ -4,15 +4,21 @@ import { AbstractCallStrategy } from './AbstractCallStrategy';
 import { ECallCause } from './causes';
 import { EEvent, Originator, SESSION_JSSIP_EVENT_NAMES } from './eventNames';
 import { RemoteStreamsManager } from './RemoteStreamsManager';
+import { TransceiverManager } from './TransceiverManager';
 
 import type { RTCSession } from '@krivega/jssip';
 import type { TEvents } from './eventNames';
-import type { ICallStrategy, TCustomError, TOntrack } from './types';
+import type { ICallStrategy, ITransceiverStorage, TCustomError, TOntrack } from './types';
 
 export class MCUCallStrategy extends AbstractCallStrategy {
   private readonly remoteStreamsManager = new RemoteStreamsManager();
 
   private readonly disposers = new Set<() => void>();
+
+  /**
+   * Менеджер для управления transceiver'ами
+   */
+  private readonly transceiverManager = new TransceiverManager();
 
   public constructor(events: TEvents) {
     super(events);
@@ -70,18 +76,11 @@ export class MCUCallStrategy extends AbstractCallStrategy {
         });
 
       this.rtcSession = ua.call(getSipServerUrl(number), {
-        extraHeaders,
         mediaStream: prepareMediaStream(mediaStream, {
           directionVideo,
           directionAudio,
           contentHint,
         }),
-        // необходимо передавать в методе call, чтобы подписаться на события peerconnection,
-        // так как в методе call создается RTCSession
-        // и после создания нет возможности подписаться на события peerconnection через subscribeToSessionEvents
-        eventHandlers: this.events.triggers,
-        directionVideo,
-        directionAudio,
         pcConfig: {
           iceServers,
         },
@@ -89,6 +88,13 @@ export class MCUCallStrategy extends AbstractCallStrategy {
           offerToReceiveAudio,
           offerToReceiveVideo,
         },
+        // необходимо передавать в методе call, чтобы подписаться на события peerconnection,
+        // так как в методе call создается RTCSession
+        // и после создания нет возможности подписаться на события peerconnection через subscribeToSessionEvents
+        eventHandlers: this.events.triggers,
+        extraHeaders,
+        directionVideo,
+        directionAudio,
         degradationPreference,
         sendEncodings,
         onAddedTransceiver,
@@ -151,17 +157,7 @@ export class MCUCallStrategy extends AbstractCallStrategy {
             reject(error as Error);
           });
 
-        const preparedMediaStream = prepareMediaStream(mediaStream, {
-          directionVideo,
-          directionAudio,
-          contentHint,
-        });
-
         rtcSession.answer({
-          extraHeaders,
-          directionVideo,
-          directionAudio,
-          mediaStream: preparedMediaStream,
           pcConfig: {
             iceServers,
           },
@@ -169,6 +165,14 @@ export class MCUCallStrategy extends AbstractCallStrategy {
             offerToReceiveAudio,
             offerToReceiveVideo,
           },
+          mediaStream: prepareMediaStream(mediaStream, {
+            directionVideo,
+            directionAudio,
+            contentHint,
+          }),
+          extraHeaders,
+          directionVideo,
+          directionAudio,
           degradationPreference,
           sendEncodings,
           onAddedTransceiver,
@@ -224,6 +228,38 @@ export class MCUCallStrategy extends AbstractCallStrategy {
     return this.rtcSession.replaceMediaStream(preparedMediaStream, options);
   }
 
+  public async restartIce(options?: {
+    useUpdate?: boolean;
+    extraHeaders?: string[];
+    rtcOfferConstraints?: RTCOfferOptions;
+    sendEncodings?: RTCRtpEncodingParameters[];
+    degradationPreference?: RTCDegradationPreference;
+  }): Promise<boolean> {
+    if (!this.rtcSession) {
+      throw new Error('No rtcSession established');
+    }
+
+    return this.rtcSession.restartIce(options);
+  }
+
+  public async addTransceiver(
+    kind: 'audio' | 'video',
+    options?: RTCRtpTransceiverInit,
+  ): Promise<RTCRtpTransceiver> {
+    if (!this.rtcSession) {
+      throw new Error('No rtcSession established');
+    }
+
+    return this.rtcSession.addTransceiver(kind, options);
+  }
+
+  /**
+   * Возвращает сохраненные transceiver'ы
+   */
+  public getTransceivers(): Readonly<ITransceiverStorage> {
+    return this.transceiverManager.getTransceivers();
+  }
+
   protected readonly handleCall = async ({
     ontrack,
   }: {
@@ -265,11 +301,14 @@ export class MCUCallStrategy extends AbstractCallStrategy {
       const handlePeerConnection = ({ peerconnection }: { peerconnection: RTCPeerConnection }) => {
         savedPeerconnection = peerconnection;
 
-        const handleTrack = (track: RTCTrackEvent) => {
+        const handleTrack = (event: RTCTrackEvent) => {
           this.events.trigger(EEvent.PEER_CONNECTION_ONTRACK, peerconnection);
 
+          // Сохраняем transceiver в зависимости от типа трека
+          this.transceiverManager.storeTransceiver(event.transceiver, event.track);
+
           if (ontrack) {
-            ontrack(track);
+            ontrack(event);
           }
         };
 
@@ -332,5 +371,6 @@ export class MCUCallStrategy extends AbstractCallStrategy {
     this.unsubscribeFromSessionEvents();
     this.callConfiguration.number = undefined;
     this.callConfiguration.answer = false;
+    this.transceiverManager.clear();
   };
 }

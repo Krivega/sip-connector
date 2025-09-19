@@ -1,12 +1,19 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 
 import JsSIP from '@/__fixtures__/jssip.mock';
+import logger from '@/logger';
 import SipConnector from '../@SipConnector';
 
 import type { IncomingResponse, RegisteredEvent, UA, UnRegisteredEvent } from '@krivega/jssip';
 import type { TJsSIP } from '@/types';
 
+// Мокаем logger
+jest.mock('../../logger', () => {
+  return jest.fn();
+});
+
 describe('SipConnector facade', () => {
+  const mockLogger = logger as jest.MockedFunction<typeof logger>;
   let sipConnector: SipConnector;
 
   beforeEach(() => {
@@ -332,6 +339,269 @@ describe('SipConnector facade', () => {
       // eslint-disable-next-line @typescript-eslint/no-unused-expressions
       sipConnector.isAvailableIncomingCall;
     }).not.toThrow();
+  });
+
+  describe('Обработка события restart', () => {
+    it('должен вызвать callManager.restartIce при получении события restart', async () => {
+      const restartIceSpy = jest
+        .spyOn(sipConnector.callManager, 'restartIce')
+        .mockResolvedValue(true);
+
+      // Триггерим событие restart от ApiManager
+      sipConnector.apiManager.events.trigger('restart', {
+        tracksDirection: 'incoming',
+        audioTrackCount: 2,
+        videoTrackCount: 1,
+      });
+
+      // Ждем выполнения асинхронной операции
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
+
+      expect(restartIceSpy).toHaveBeenCalledWith();
+    });
+
+    it('должен логировать ошибку если callManager.restartIce завершился с ошибкой', async () => {
+      const mockError = new Error('RestartIce failed');
+      const restartIceSpy = jest
+        .spyOn(sipConnector.callManager, 'restartIce')
+        .mockRejectedValue(mockError);
+
+      // Триггерим событие restart от ApiManager
+      sipConnector.apiManager.events.trigger('restart', {
+        tracksDirection: 'outgoing',
+        audioTrackCount: 1,
+        videoTrackCount: 3,
+      });
+
+      // Ждем выполнения асинхронной операции
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
+
+      expect(restartIceSpy).toHaveBeenCalledWith();
+      expect(mockLogger).toHaveBeenCalledWith('Failed to restart ICE', mockError);
+    });
+
+    it('должен обрабатывать событие restart с различными параметрами', async () => {
+      const restartIceSpy = jest
+        .spyOn(sipConnector.callManager, 'restartIce')
+        .mockResolvedValue(true);
+
+      const testCases = [
+        {
+          tracksDirection: 'incoming',
+          audioTrackCount: 0,
+          videoTrackCount: 1,
+        },
+        {
+          tracksDirection: 'outgoing',
+          audioTrackCount: 2,
+          videoTrackCount: 0,
+        },
+        {
+          tracksDirection: 'bidirectional',
+          audioTrackCount: 1,
+          videoTrackCount: 1,
+        },
+      ];
+
+      for (const testData of testCases) {
+        restartIceSpy.mockClear();
+
+        sipConnector.apiManager.events.trigger('restart', testData);
+
+        // Ждем выполнения асинхронной операции
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((resolve) => {
+          setTimeout(resolve, 0);
+        });
+
+        expect(restartIceSpy).toHaveBeenCalledWith();
+      }
+    });
+
+    describe('добавление презентационного transceiver при videoTrackCount === 2', () => {
+      it('должен добавить презентационный transceiver если videoTrackCount === 2 и его нет', async () => {
+        const addTransceiverSpy = jest
+          .spyOn(sipConnector.callManager, 'addTransceiver')
+          .mockResolvedValue({} as RTCRtpTransceiver);
+
+        const getTransceiversSpy = jest
+          .spyOn(sipConnector.callManager, 'getTransceivers')
+          .mockReturnValue({
+            mainAudio: {} as RTCRtpTransceiver,
+            mainVideo: {} as RTCRtpTransceiver,
+            presentationVideo: undefined, // Отсутствует презентационный transceiver
+          });
+
+        const restartIceSpy = jest
+          .spyOn(sipConnector.callManager, 'restartIce')
+          .mockResolvedValue(true);
+
+        // Триггерим событие restart с videoTrackCount === 2
+        sipConnector.apiManager.events.trigger('restart', {
+          tracksDirection: 'incoming',
+          audioTrackCount: 1,
+          videoTrackCount: 2,
+        });
+
+        // Ждем выполнения асинхронной операции
+        await new Promise((resolve) => {
+          setTimeout(resolve, 0);
+        });
+
+        expect(getTransceiversSpy).toHaveBeenCalled();
+        expect(addTransceiverSpy).toHaveBeenCalledWith('video', {
+          direction: 'recvonly',
+        });
+        expect(restartIceSpy).toHaveBeenCalledWith();
+      });
+
+      it('не должен добавлять презентационный transceiver если он уже существует', async () => {
+        const addTransceiverSpy = jest
+          .spyOn(sipConnector.callManager, 'addTransceiver')
+          .mockResolvedValue({} as RTCRtpTransceiver);
+
+        const getTransceiversSpy = jest
+          .spyOn(sipConnector.callManager, 'getTransceivers')
+          .mockReturnValue({
+            mainAudio: {} as RTCRtpTransceiver,
+            mainVideo: {} as RTCRtpTransceiver,
+            presentationVideo: {} as RTCRtpTransceiver, // Презентационный transceiver уже есть
+          });
+
+        const restartIceSpy = jest
+          .spyOn(sipConnector.callManager, 'restartIce')
+          .mockResolvedValue(true);
+
+        // Триггерим событие restart с videoTrackCount === 2
+        sipConnector.apiManager.events.trigger('restart', {
+          tracksDirection: 'incoming',
+          audioTrackCount: 1,
+          videoTrackCount: 2,
+        });
+
+        // Ждем выполнения асинхронной операции
+        await new Promise((resolve) => {
+          setTimeout(resolve, 0);
+        });
+
+        expect(getTransceiversSpy).toHaveBeenCalled();
+        expect(addTransceiverSpy).not.toHaveBeenCalled(); // Не должен вызываться
+        expect(restartIceSpy).toHaveBeenCalledWith();
+      });
+
+      it('не должен добавлять презентационный transceiver если videoTrackCount !== 2', async () => {
+        const addTransceiverSpy = jest
+          .spyOn(sipConnector.callManager, 'addTransceiver')
+          .mockResolvedValue({} as RTCRtpTransceiver);
+
+        const getTransceiversSpy = jest
+          .spyOn(sipConnector.callManager, 'getTransceivers')
+          .mockReturnValue({
+            mainAudio: {} as RTCRtpTransceiver,
+            mainVideo: {} as RTCRtpTransceiver,
+            presentationVideo: undefined,
+          });
+
+        const restartIceSpy = jest
+          .spyOn(sipConnector.callManager, 'restartIce')
+          .mockResolvedValue(true);
+
+        // Триггерим событие restart с videoTrackCount !== 2
+        sipConnector.apiManager.events.trigger('restart', {
+          tracksDirection: 'incoming',
+          audioTrackCount: 1,
+          videoTrackCount: 1, // Не равно 2
+        });
+
+        // Ждем выполнения асинхронной операции
+        await new Promise((resolve) => {
+          setTimeout(resolve, 0);
+        });
+
+        expect(getTransceiversSpy).not.toHaveBeenCalled(); // Не должен проверять transceivers
+        expect(addTransceiverSpy).not.toHaveBeenCalled(); // Не должен добавлять transceiver
+        expect(restartIceSpy).toHaveBeenCalledWith();
+      });
+
+      it('должен логировать ошибку если addTransceiver завершился с ошибкой', async () => {
+        const mockError = new Error('Failed to add transceiver');
+        const addTransceiverSpy = jest
+          .spyOn(sipConnector.callManager, 'addTransceiver')
+          .mockRejectedValue(mockError);
+
+        const getTransceiversSpy = jest
+          .spyOn(sipConnector.callManager, 'getTransceivers')
+          .mockReturnValue({
+            mainAudio: {} as RTCRtpTransceiver,
+            mainVideo: {} as RTCRtpTransceiver,
+            presentationVideo: undefined,
+          });
+
+        const restartIceSpy = jest
+          .spyOn(sipConnector.callManager, 'restartIce')
+          .mockResolvedValue(true);
+
+        // Триггерим событие restart с videoTrackCount === 2
+        sipConnector.apiManager.events.trigger('restart', {
+          tracksDirection: 'incoming',
+          audioTrackCount: 1,
+          videoTrackCount: 2,
+        });
+
+        // Ждем выполнения асинхронной операции
+        await new Promise((resolve) => {
+          setTimeout(resolve, 10);
+        });
+
+        expect(getTransceiversSpy).toHaveBeenCalled();
+        expect(addTransceiverSpy).toHaveBeenCalledWith('video', {
+          direction: 'recvonly',
+        });
+        expect(mockLogger).toHaveBeenCalledWith(
+          'Failed to add presentation video transceiver',
+          mockError,
+        );
+        expect(restartIceSpy).toHaveBeenCalledWith();
+      });
+
+      it('должен логировать ошибку если getTransceivers завершился с ошибкой', async () => {
+        const mockError = new Error('Failed to update transceivers');
+        const getTransceiversSpy = jest
+          .spyOn(sipConnector.callManager, 'getTransceivers')
+          .mockImplementation(() => {
+            throw mockError;
+          });
+
+        const addTransceiverSpy = jest
+          .spyOn(sipConnector.callManager, 'addTransceiver')
+          .mockResolvedValue({} as RTCRtpTransceiver);
+
+        const restartIceSpy = jest
+          .spyOn(sipConnector.callManager, 'restartIce')
+          .mockResolvedValue(true);
+
+        // Триггерим событие restart с videoTrackCount === 2
+        sipConnector.apiManager.events.trigger('restart', {
+          tracksDirection: 'incoming',
+          audioTrackCount: 1,
+          videoTrackCount: 2,
+        });
+
+        // Ждем выполнения асинхронной операции
+        await new Promise((resolve) => {
+          setTimeout(resolve, 0);
+        });
+
+        expect(getTransceiversSpy).toHaveBeenCalled();
+        expect(addTransceiverSpy).not.toHaveBeenCalled(); // Не должен вызываться из-за ошибки
+        expect(mockLogger).toHaveBeenCalledWith('Failed to update transceivers', mockError);
+        expect(restartIceSpy).toHaveBeenCalledWith();
+      });
+    });
   });
 
   describe('Constructor with codec preferences', () => {

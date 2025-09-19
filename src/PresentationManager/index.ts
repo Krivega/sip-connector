@@ -2,4 +2,4 @@ export {
   hasCanceledStartPresentationError,
   default as PresentationManager,
 } from './@PresentationManager';
-export type { TContentHint } from './types';
+export type { TContentHint, TOnAddedTransceiver } from './types';

@@ -1,6 +1,6 @@
 import type { RTCSession } from '@krivega/jssip';
 import type { TEvents } from './eventNames';
-import type { ICallStrategy, TCallConfiguration, TOntrack } from './types';
+import type { ICallStrategy, ITransceiverStorage, TCallConfiguration, TOntrack } from './types';
 
 export abstract class AbstractCallStrategy implements ICallStrategy {
   protected isPendingCall = false;
@@ -65,6 +65,30 @@ export abstract class AbstractCallStrategy implements ICallStrategy {
    * Получение удаленных медиа-потоков
    */
   public abstract getRemoteStreams(): MediaStream[] | undefined;
+
+  /**
+   * Получение сохраненных transceiver'ов
+   */
+  public abstract getTransceivers(): Readonly<ITransceiverStorage>;
+
+  /**
+   * Добавление нового transceiver'а
+   */
+  public abstract addTransceiver(
+    kind: 'audio' | 'video',
+    options?: RTCRtpTransceiverInit,
+  ): Promise<RTCRtpTransceiver>;
+
+  /**
+   * Перезапуск ICE-соединения
+   */
+  public abstract restartIce(options?: {
+    useUpdate?: boolean;
+    extraHeaders?: string[];
+    rtcOfferConstraints?: RTCOfferOptions;
+    sendEncodings?: RTCRtpEncodingParameters[];
+    degradationPreference?: RTCDegradationPreference;
+  }): Promise<boolean>;
 
   /**
    * Внутренняя обработка звонка (например, для ontrack)

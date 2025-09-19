@@ -24,7 +24,7 @@ import type {
 } from '@krivega/jssip';
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
-import type { EUseLicense } from './constants';
+import type { ETracksDirection, EUseLicense } from './constants';
 import type { TEvent, TEvents } from './eventNames';
 import type {
   TAcceptingWordRequestInfoNotify,
@@ -44,6 +44,7 @@ import type {
   TRemovedFromListModeratorsInfoNotify,
   TWebcastInfoNotify,
   TWebcastStoppedInfoNotify,
+  TRestartData,
 } from './types';
 
 class ApiManager {
@@ -423,6 +424,10 @@ class ApiManager {
           this.maybeTriggerParticipantMoveRequest(request);
           break;
         }
+        case EContentTypeReceived.RESTART: {
+          this.triggerRestart(request);
+          break;
+        }
 
         default: {
           break;
@@ -658,6 +663,22 @@ class ApiManager {
     const license: EUseLicense = request.getHeader(EHeader.CONTENT_USE_LICENSE) as EUseLicense;
 
     this.events.trigger(EEvent.USE_LICENSE, license);
+  };
+
+  private readonly triggerRestart = (request: IncomingRequest) => {
+    const tracksDirection: ETracksDirection = request.getHeader(
+      EHeader.TRACKS_DIRECTION,
+    ) as TRestartData['tracksDirection'];
+    const audioTrackCount = Number(
+      request.getHeader(EHeader.AUDIO_TRACK_COUNT),
+    ) as TRestartData['audioTrackCount'];
+    const videoTrackCount = Number(
+      request.getHeader(EHeader.VIDEO_TRACK_COUNT),
+    ) as TRestartData['videoTrackCount'];
+
+    const data: TRestartData = { tracksDirection, audioTrackCount, videoTrackCount };
+
+    this.events.trigger(EEvent.RESTART, data);
   };
 }
 
