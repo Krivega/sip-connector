@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
 import type { TypedEvents } from 'events-constructor';
-import type { TConnectedConfiguration } from './types';
+import type { TAttemptStatus, TConnectedConfiguration } from './types';
 
 export enum EEvent {
   // События состояний подключения
@@ -34,16 +34,16 @@ export const EVENT_NAMES = [
 ] as const;
 
 export type TEventMap = {
-  connecting: undefined;
+  connecting: Record<string, never>;
   connected: TConnectedConfiguration;
-  disconnected: undefined;
-  disconnecting: undefined;
-  failed: unknown;
-  'before-attempt': undefined;
-  'succeeded-attempt': undefined;
-  'failed-attempt': unknown;
-  'cancelled-attempt': unknown;
-  'changed-attempt-status': { isInProgress: boolean };
+  disconnected: Record<string, never>;
+  disconnecting: Record<string, never>;
+  failed: Error;
+  'before-attempt': Record<string, never>;
+  'succeeded-attempt': Record<string, never>;
+  'failed-attempt': Error;
+  'cancelled-attempt': Error;
+  'changed-attempt-status': TAttemptStatus;
 };
 
 export type TEvents = TypedEvents<TEventMap>;

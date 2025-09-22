@@ -849,19 +849,11 @@ sipConnector.on('auto-connect:succeeded-attempt', () => {
 });
 
 sipConnector.on('auto-connect:failed-attempt', (error) => {
-  if (error) {
-    console.log('Попытка подключения неудачна:', error);
-  } else {
-    console.log('Попытка подключения неудачна');
-  }
+  console.log('Попытка подключения неудачна:', error);
 });
 
 sipConnector.on('auto-connect:cancelled-attempt', (error) => {
-  if (error) {
-    console.log('Попытка подключения отменена:', error);
-  } else {
-    console.log('Попытка подключения отменена');
-  }
+  console.log('Попытка подключения отменена:', error);
 });
 
 sipConnector.on('auto-connect:connecting', () => {
@@ -873,11 +865,7 @@ sipConnector.on('auto-connect:connected', (data) => {
 });
 
 sipConnector.on('auto-connect:failed', (error) => {
-  if (error) {
-    console.log('Ошибка подключения:', error);
-  } else {
-    console.log('Подключение не удалось');
-  }
+  console.log('Ошибка подключения:', error);
 });
 
 sipConnector.on('auto-connect:disconnecting', () => {
@@ -901,14 +889,14 @@ sipConnector.on('auto-connect:disconnected', () => {
 
 | Событие                               | Описание                       | Данные                              |
 | ------------------------------------- | ------------------------------ | ----------------------------------- |
-| `auto-connect:connecting`             | Начало подключения             | `undefined`                         |
+| `auto-connect:connecting`             | Начало подключения             | -                                   |
 | `auto-connect:connected`              | Успешное подключение           | `{ ua: UA, isRegistered: boolean }` |
-| `auto-connect:disconnecting`          | Начало отключения              | `undefined`                         |
-| `auto-connect:disconnected`           | Отключение завершено           | `undefined`                         |
+| `auto-connect:disconnecting`          | Начало отключения              | -                                   |
+| `auto-connect:disconnected`           | Отключение завершено           | -                                   |
 | `auto-connect:failed`                 | Ошибка подключения             | `Error`                             |
-| `auto-connect:before-attempt`         | Начало попытки подключения     | `undefined`                         |
-| `auto-connect:succeeded-attempt`      | Успешная попытка подключения   | `undefined`                         |
-| `auto-connect:failed-attempt`         | Неудачная попытка подключения  | `Error \| undefined`                |
+| `auto-connect:before-attempt`         | Начало попытки подключения     | -                                   |
+| `auto-connect:succeeded-attempt`      | Успешная попытка подключения   | -                                   |
+| `auto-connect:failed-attempt`         | Неудачная попытка подключения  | `Error`                             |
 | `auto-connect:cancelled-attempt`      | Отмененная попытка подключения | `Error`                             |
 | `auto-connect:changed-attempt-status` | Изменение статуса попытки      | `{ isInProgress: boolean }`         |
 

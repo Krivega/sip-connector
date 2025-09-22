@@ -93,17 +93,14 @@ class ConnectFlow {
     }
 
     await this.connectToServer(getConnectParameters).catch(async (error: unknown) => {
-      const connectToServerError =
-        error instanceof Error ? error : new Error('Failed to connect to server');
-
-      logger('connectWithProcessError: error:', connectToServerError);
+      logger('connectWithProcessError: error:', error);
 
       return this.disconnect()
         .then(() => {
-          throw connectToServerError;
+          throw error as Error;
         })
         .catch(() => {
-          throw connectToServerError;
+          throw error as Error;
         });
     });
   }
@@ -112,7 +109,7 @@ class ConnectFlow {
     getConnectParameters: () => Promise<TParametersConnect | undefined>,
   ) {
     try {
-      this.events.trigger(EEvent.CONNECTING, undefined);
+      this.events.trigger(EEvent.CONNECTING, {});
 
       const parameters = await getConnectParameters();
 
@@ -129,19 +126,22 @@ class ConnectFlow {
         isRegistered: this.connectionManager.isRegistered,
       });
     } catch (error: unknown) {
-      this.events.trigger(EEvent.FAILED, error);
+      const connectError =
+        error instanceof Error ? error : new Error('Failed to connect to server');
 
-      throw error;
+      this.events.trigger(EEvent.FAILED, connectError);
+
+      throw connectError;
     }
   }
 
   private subscribe() {
     this.connectionManager.on('disconnecting', () => {
-      this.events.trigger(EEvent.DISCONNECTING, undefined);
+      this.events.trigger(EEvent.DISCONNECTING, {});
     });
 
     this.connectionManager.on('disconnected', () => {
-      this.events.trigger(EEvent.DISCONNECTED, undefined);
+      this.events.trigger(EEvent.DISCONNECTED, {});
     });
   }
 }

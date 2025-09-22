@@ -350,7 +350,7 @@ describe('AutoConnectorManager', () => {
 
       await manager.wait('succeeded-attempt');
 
-      manager.events.trigger('succeeded-attempt', undefined);
+      manager.events.trigger('succeeded-attempt', {});
 
       expect(handler).toHaveBeenCalledTimes(1);
     });
@@ -402,8 +402,8 @@ describe('AutoConnectorManager', () => {
       manager.on('disconnecting', handleDisconnecting);
       manager.on('disconnected', handleDisconnected);
 
-      sipConnector.connectionManager.events.trigger('disconnecting', undefined);
-      sipConnector.connectionManager.events.trigger('disconnected', undefined);
+      sipConnector.connectionManager.events.trigger('disconnecting', {});
+      sipConnector.connectionManager.events.trigger('disconnected', {});
 
       expect(handleDisconnecting).toHaveBeenCalled();
       expect(handleDisconnected).toHaveBeenCalled();

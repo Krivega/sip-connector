@@ -23,3 +23,6 @@ export type TConnectedConfiguration = {
   ua: UA;
   isRegistered: boolean;
 };
+export type TAttemptStatus = {
+  isInProgress: boolean;
+};

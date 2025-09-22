@@ -164,7 +164,7 @@ class AutoConnectorManager {
   private async connect(parameters: TParametersAutoConnect) {
     logger('connect: attempts.count', this.attemptsState.count);
 
-    this.events.trigger(EEvent.BEFORE_ATTEMPT, undefined);
+    this.events.trigger(EEvent.BEFORE_ATTEMPT, {});
     this.stopConnectTriggers();
 
     const isLimitReached = this.attemptsState.hasLimitReached();
@@ -194,7 +194,7 @@ class AutoConnectorManager {
 
       this.subscribeToConnectTriggers(parameters);
 
-      this.events.trigger(EEvent.SUCCEEDED_ATTEMPT, undefined);
+      this.events.trigger(EEvent.SUCCEEDED_ATTEMPT, {});
     } catch (error) {
       if (hasParametersNotExistError(error)) {
         logger('processConnect: parameters not exist error', error);
@@ -205,7 +205,7 @@ class AutoConnectorManager {
       if (hasPromiseIsNotActualError(error)) {
         logger('processConnect: not actual error', error);
 
-        this.events.trigger(EEvent.CANCELLED_ATTEMPT, error);
+        this.events.trigger(EEvent.CANCELLED_ATTEMPT, error as Error);
 
         return;
       }
@@ -219,7 +219,7 @@ class AutoConnectorManager {
   private handleLimitReached(parameters: TParametersAutoConnect) {
     this.attemptsState.finishAttempt();
 
-    this.events.trigger(EEvent.FAILED_ATTEMPT, undefined);
+    this.events.trigger(EEvent.FAILED_ATTEMPT, new Error('Limit reached'));
 
     this.runCheckTelephony(parameters);
   }
@@ -249,7 +249,7 @@ class AutoConnectorManager {
       this.start(parameters);
     } else {
       this.stopConnectTriggers();
-      this.events.trigger(EEvent.SUCCEEDED_ATTEMPT, undefined);
+      this.events.trigger(EEvent.SUCCEEDED_ATTEMPT, {});
     }
   }
 
@@ -269,10 +269,12 @@ class AutoConnectorManager {
         return this.connect(parameters);
       })
       .catch((error: unknown) => {
+        const reconnectError = error instanceof Error ? error : new Error('Failed to reconnect');
+
         if (isCanceledError(error) || hasCanceledError(error as Error)) {
-          this.events.trigger(EEvent.CANCELLED_ATTEMPT, error);
+          this.events.trigger(EEvent.CANCELLED_ATTEMPT, reconnectError);
         } else {
-          this.events.trigger(EEvent.FAILED_ATTEMPT, error);
+          this.events.trigger(EEvent.FAILED_ATTEMPT, reconnectError);
         }
 
         logger('reconnect: error', error);
