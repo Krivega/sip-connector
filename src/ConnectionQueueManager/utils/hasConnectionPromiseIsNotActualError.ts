@@ -1,7 +1,7 @@
 import { isPromiseIsNotActualError } from 'stack-promises';
 
-const hasPromiseIsNotActualError = (error: unknown) => {
+const hasConnectionPromiseIsNotActualError = (error: unknown) => {
   return error instanceof Error && isPromiseIsNotActualError(error);
 };
 
-export default hasPromiseIsNotActualError;
+export default hasConnectionPromiseIsNotActualError;

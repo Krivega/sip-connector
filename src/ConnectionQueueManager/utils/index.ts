@@ -1,1 +1,1 @@
-export { default as hasPromiseIsNotActualError } from './hasPromiseIsNotActualError';
+export { default as hasConnectionPromiseIsNotActualError } from './hasConnectionPromiseIsNotActualError';

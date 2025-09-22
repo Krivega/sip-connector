@@ -2,7 +2,7 @@ import { CancelableRequest, isCanceledError } from '@krivega/cancelable-promise'
 import { DelayRequester, hasCanceledError } from '@krivega/timeout-requester';
 import { TypedEvents } from 'events-constructor';
 
-import { hasPromiseIsNotActualError } from '@/ConnectionQueueManager';
+import { hasConnectionPromiseIsNotActualError } from '@/ConnectionQueueManager';
 import logger from '@/logger';
 import AttemptsState from './AttemptsState';
 import CheckTelephonyRequester from './CheckTelephonyRequester';
@@ -203,7 +203,7 @@ class AutoConnectorManager {
         return;
       }
 
-      if (hasPromiseIsNotActualError(error)) {
+      if (hasConnectionPromiseIsNotActualError(error)) {
         logger('processConnect: not actual error', error);
 
         this.events.trigger(EEvent.CANCELLED_ATTEMPT, error as Error);
