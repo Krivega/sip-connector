@@ -10,6 +10,8 @@ class RegistrationFailedOutOfCallSubscriber extends AbstractSubscriber {
 
   private readonly registrationFailedSubscriber: RegistrationFailedSubscriber;
 
+  private isRegistrationFailed = false;
+
   public constructor({
     connectionManager,
     callManager,
@@ -27,17 +29,28 @@ class RegistrationFailedOutOfCallSubscriber extends AbstractSubscriber {
     this.unsubscribe();
 
     this.registrationFailedSubscriber.subscribe(() => {
-      this.callStatusSubscriber.subscribe((isCallActive) => {
-        if (!isCallActive) {
-          callback();
-        }
-      });
+      this.setIsRegistrationFailed();
+    });
+
+    this.callStatusSubscriber.subscribe((isCallActive) => {
+      if (!isCallActive && this.isRegistrationFailed) {
+        callback();
+      }
     });
   }
 
   public unsubscribe() {
     this.callStatusSubscriber.unsubscribe();
     this.registrationFailedSubscriber.unsubscribe();
+    this.resetIsRegistrationFailed();
+  }
+
+  private setIsRegistrationFailed() {
+    this.isRegistrationFailed = true;
+  }
+
+  private resetIsRegistrationFailed() {
+    this.isRegistrationFailed = false;
   }
 }
 
