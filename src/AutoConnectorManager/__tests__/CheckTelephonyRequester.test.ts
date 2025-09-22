@@ -222,7 +222,7 @@ describe('CheckTelephonyRequester', () => {
         { request: () => Promise<void> },
       ];
 
-      await expect(config.request()).rejects.toThrow('onBeforeRequest is not defined');
+      await expect(config.request()).rejects.toThrow('cancelableBeforeRequest is not defined');
     });
   });
 
