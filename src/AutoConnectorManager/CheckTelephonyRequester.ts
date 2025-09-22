@@ -44,7 +44,7 @@ class CheckTelephonyRequester {
       requestInterval: this.interval,
       request: async () => {
         if (!this.cancelableBeforeRequest) {
-          throw new Error('onBeforeRequest is not defined');
+          throw new Error('cancelableBeforeRequest is not defined');
         }
 
         const parameters = await this.cancelableBeforeRequest.request();

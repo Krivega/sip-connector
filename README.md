@@ -838,14 +838,7 @@ const sipConnector = new SipConnector(
 // Запуск автоподключения
 sipConnector.startAutoConnect({
   // Возвращает параметры подключения
-  getConnectParameters: async () => {
-    return {
-      sipWebSocketServerURL: 'wss://example.com/ws',
-      sipServerUrl: 'sipServerUrl',
-    };
-  },
-  // Возвращает параметры для проверки телефонии
-  getCheckTelephonyParameters: async () => {
+  getParameters: async () => {
     return {
       displayName: 'displayName',
       sipWebSocketServerURL: 'wss://example.com/ws',
