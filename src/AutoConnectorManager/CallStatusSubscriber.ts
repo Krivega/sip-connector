@@ -24,17 +24,15 @@ class CallStatusSubscriber extends AbstractSubscriber<boolean> {
       callback(this.isCallActive);
     }
 
-    const disposers = EVENT_NAMES.map((eventName) => {
-      return this.callManager.on(eventName, () => {
-        this.handleChangeCallStatus(callback);
-      });
-    });
+    this.subscribeToCallStatusChanges(callback);
+  }
 
-    this.disposer = () => {
-      disposers.forEach((disposer) => {
-        disposer();
-      });
-    };
+  private subscribeToCallStatusChanges(callback: (isActive: boolean) => void) {
+    this.disposer = this.callManager.onceRace([...EVENT_NAMES], () => {
+      this.handleChangeCallStatus(callback);
+
+      this.subscribeToCallStatusChanges(callback);
+    });
   }
 
   private handleChangeCallStatus(callback: (isActive: boolean) => void) {

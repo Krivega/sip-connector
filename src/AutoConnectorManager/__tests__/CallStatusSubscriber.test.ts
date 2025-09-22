@@ -42,24 +42,22 @@ describe('CallStatusSubscriber', () => {
       expect(callback).not.toHaveBeenCalled();
     });
 
-    it('регистрирует обработчики callManager', () => {
-      const spyOn = jest.spyOn(sipConnector.callManager, 'on');
+    it('регистрирует обработчик onceRace callManager', () => {
+      const spyOnceRace = jest.spyOn(sipConnector.callManager, 'onceRace');
 
       subscriber.subscribe(callback);
 
-      expect(spyOn).toHaveBeenCalledTimes(4);
-
-      const registeredEvents = spyOn.mock.calls.map((args) => {
-        return args[0];
-      });
-
-      expect(registeredEvents).toEqual(['accepted', 'confirmed', 'ended', 'failed']);
+      expect(spyOnceRace).toHaveBeenCalledTimes(1);
+      expect(spyOnceRace).toHaveBeenCalledWith(
+        ['accepted', 'confirmed', 'ended', 'failed'],
+        expect.any(Function),
+      );
     });
 
     it('отписывается от предыдущих обработчиков', () => {
       const disposer = jest.fn();
 
-      jest.spyOn(sipConnector.callManager, 'on').mockImplementation(() => {
+      jest.spyOn(sipConnector.callManager, 'onceRace').mockImplementation(() => {
         return disposer;
       });
 
@@ -69,7 +67,7 @@ describe('CallStatusSubscriber', () => {
 
       subscriber.subscribe(callback);
 
-      expect(disposer).toHaveBeenCalledTimes(4);
+      expect(disposer).toHaveBeenCalledTimes(1);
     });
   });
 
