@@ -1,7 +1,6 @@
 import { doMockSipConnector } from '@/doMock';
 import CallStatusSubscriber from '../CallStatusSubscriber';
 import RegistrationFailedOutOfCallSubscriber from '../RegistrationFailedOutOfCallSubscriber';
-import RegistrationFailedSubscriber from '../RegistrationFailedSubscriber';
 
 describe('RegistrationFailedOutOfCallSubscriber', () => {
   const callback = jest.fn();
@@ -37,16 +36,13 @@ describe('RegistrationFailedOutOfCallSubscriber', () => {
   });
 
   describe('subscribe', () => {
-    it('подписывается на RegistrationFailedSubscriber', () => {
-      const registrationFailedSubscribeSpy = jest.spyOn(
-        RegistrationFailedSubscriber.prototype,
-        'subscribe',
-      );
+    it('подписывается на registrationFailed', () => {
+      const onSpy = jest.spyOn(sipConnector.connectionManager, 'on');
 
       subscriber.subscribe(callback);
 
-      expect(registrationFailedSubscribeSpy).toHaveBeenCalledTimes(1);
-      expect(typeof registrationFailedSubscribeSpy.mock.calls[0][0]).toBe('function');
+      expect(onSpy).toHaveBeenCalledTimes(1);
+      expect(onSpy).toHaveBeenCalledWith('registrationFailed', expect.any(Function));
     });
 
     it('отписывается от предыдущих подписок при повторном вызове subscribe', () => {
@@ -60,17 +56,11 @@ describe('RegistrationFailedOutOfCallSubscriber', () => {
     it('вызывает callback только когда registrationFailed происходит вне звонка', () => {
       jest.spyOn(sipConnector.callManager, 'isCallActive', 'get').mockReturnValue(false);
 
-      const registrationFailedSubscribeSpy = jest.spyOn(
-        RegistrationFailedSubscriber.prototype,
-        'subscribe',
-      );
       const callStatusSubscribeSpy = jest.spyOn(CallStatusSubscriber.prototype, 'subscribe');
 
       subscriber.subscribe(callback);
 
-      const registrationFailedCallback = registrationFailedSubscribeSpy.mock.calls[0][0];
-
-      registrationFailedCallback();
+      sipConnector.connectionManager.events.trigger('registrationFailed', {});
 
       expect(callStatusSubscribeSpy).toHaveBeenCalledTimes(1);
 
@@ -84,17 +74,11 @@ describe('RegistrationFailedOutOfCallSubscriber', () => {
     it('не вызывает callback когда registrationFailed происходит во время активного звонка', () => {
       jest.spyOn(sipConnector.callManager, 'isCallActive', 'get').mockReturnValue(true);
 
-      const registrationFailedSubscribeSpy = jest.spyOn(
-        RegistrationFailedSubscriber.prototype,
-        'subscribe',
-      );
       const callStatusSubscribeSpy = jest.spyOn(CallStatusSubscriber.prototype, 'subscribe');
 
       subscriber.subscribe(callback);
 
-      const registrationFailedCallback = registrationFailedSubscribeSpy.mock.calls[0][0];
-
-      registrationFailedCallback();
+      sipConnector.connectionManager.events.trigger('registrationFailed', {});
 
       expect(callStatusSubscribeSpy).toHaveBeenCalledTimes(1);
 
@@ -108,25 +92,23 @@ describe('RegistrationFailedOutOfCallSubscriber', () => {
     it('подписывается на оба события сразу', () => {
       jest.spyOn(sipConnector.callManager, 'isCallActive', 'get').mockReturnValue(false);
 
-      const registrationFailedSubscribeSpy = jest.spyOn(
-        RegistrationFailedSubscriber.prototype,
-        'subscribe',
-      );
+      const onSpy = jest.spyOn(sipConnector.connectionManager, 'on');
+
       const callStatusSubscribeSpy = jest.spyOn(CallStatusSubscriber.prototype, 'subscribe');
 
       subscriber.subscribe(callback);
 
       expect(callStatusSubscribeSpy).toHaveBeenCalledTimes(1);
-      expect(registrationFailedSubscribeSpy).toHaveBeenCalledTimes(1);
+      expect(onSpy).toHaveBeenCalledTimes(1);
 
-      const registrationFailedCallback = registrationFailedSubscribeSpy.mock.calls[0][0];
       const callStatusCallback = callStatusSubscribeSpy.mock.calls[0][0];
 
       callStatusCallback(true);
 
       expect(callback).not.toHaveBeenCalled();
 
-      registrationFailedCallback();
+      sipConnector.connectionManager.events.trigger('registrationFailed', {});
+
       callStatusCallback(false);
 
       expect(callback).toHaveBeenCalledTimes(1);
@@ -135,11 +117,13 @@ describe('RegistrationFailedOutOfCallSubscriber', () => {
 
   describe('unsubscribe', () => {
     it('отписывается от обоих подписчиков', () => {
+      const disposeRegistrationFailed = jest.fn();
+
       const callStatusUnsubscribeSpy = jest.spyOn(CallStatusSubscriber.prototype, 'unsubscribe');
-      const registrationFailedUnsubscribeSpy = jest.spyOn(
-        RegistrationFailedSubscriber.prototype,
-        'unsubscribe',
-      );
+
+      jest.spyOn(sipConnector.connectionManager, 'on').mockImplementation(() => {
+        return disposeRegistrationFailed;
+      });
 
       subscriber.subscribe(callback);
 
@@ -148,22 +132,15 @@ describe('RegistrationFailedOutOfCallSubscriber', () => {
       subscriber.unsubscribe();
 
       expect(callStatusUnsubscribeSpy).toHaveBeenCalledTimes(1);
-      expect(registrationFailedUnsubscribeSpy).toHaveBeenCalledTimes(1);
+      expect(disposeRegistrationFailed).toHaveBeenCalledTimes(1);
     });
 
     it('не вызывает callback после unsubscribe', () => {
       startCall();
 
-      const registrationFailedSubscribeSpy = jest.spyOn(
-        RegistrationFailedSubscriber.prototype,
-        'subscribe',
-      );
-
       subscriber.subscribe(callback);
 
-      const registrationFailedCallback = registrationFailedSubscribeSpy.mock.calls[0][0];
-
-      registrationFailedCallback();
+      sipConnector.connectionManager.events.trigger('registrationFailed', {});
 
       endCall();
 

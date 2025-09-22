@@ -1,17 +1,16 @@
-import AbstractSubscriber from './AbstractSubscriber';
-
 import type { CallManager } from '@/CallManager';
+import type { ISubscriber } from './types';
 
 const EVENT_NAMES = ['accepted', 'confirmed', 'ended', 'failed'] as const;
 
-class CallStatusSubscriber extends AbstractSubscriber<boolean> {
+class CallStatusSubscriber implements ISubscriber<boolean> {
   private readonly callManager: CallManager;
 
   private isCallActive = false;
 
-  public constructor({ callManager }: { callManager: CallManager }) {
-    super();
+  private disposer?: () => void;
 
+  public constructor({ callManager }: { callManager: CallManager }) {
     this.callManager = callManager;
   }
 
@@ -25,6 +24,11 @@ class CallStatusSubscriber extends AbstractSubscriber<boolean> {
     }
 
     this.subscribeToCallStatusChanges(callback);
+  }
+
+  public unsubscribe() {
+    this.disposer?.();
+    this.disposer = undefined;
   }
 
   private subscribeToCallStatusChanges(callback: (isActive: boolean) => void) {

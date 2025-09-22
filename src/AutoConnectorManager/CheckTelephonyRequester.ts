@@ -63,15 +63,11 @@ class CheckTelephonyRequester {
   }
 
   public stop() {
-    if (this.checkTelephonyByTimeout) {
-      this.checkTelephonyByTimeout.stop();
-      this.checkTelephonyByTimeout = undefined;
-    }
+    this.checkTelephonyByTimeout?.stop();
+    this.checkTelephonyByTimeout = undefined;
 
-    if (this.cancelableBeforeRequest) {
-      this.cancelableBeforeRequest.cancelRequest();
-      this.cancelableBeforeRequest = undefined;
-    }
+    this.cancelableBeforeRequest?.cancelRequest();
+    this.cancelableBeforeRequest = undefined;
   }
 }
 

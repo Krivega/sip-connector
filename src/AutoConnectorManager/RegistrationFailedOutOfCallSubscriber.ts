@@ -1,16 +1,17 @@
-import AbstractSubscriber from './AbstractSubscriber';
 import CallStatusSubscriber from './CallStatusSubscriber';
-import RegistrationFailedSubscriber from './RegistrationFailedSubscriber';
 
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
+import type { ISubscriber } from './types';
 
-class RegistrationFailedOutOfCallSubscriber extends AbstractSubscriber {
+class RegistrationFailedOutOfCallSubscriber implements ISubscriber {
   private readonly callStatusSubscriber: CallStatusSubscriber;
 
-  private readonly registrationFailedSubscriber: RegistrationFailedSubscriber;
+  private readonly connectionManager: ConnectionManager;
 
   private isRegistrationFailed = false;
+
+  private disposeRegistrationFailed: (() => void) | undefined;
 
   public constructor({
     connectionManager,
@@ -19,16 +20,15 @@ class RegistrationFailedOutOfCallSubscriber extends AbstractSubscriber {
     connectionManager: ConnectionManager;
     callManager: CallManager;
   }) {
-    super();
+    this.connectionManager = connectionManager;
 
     this.callStatusSubscriber = new CallStatusSubscriber({ callManager });
-    this.registrationFailedSubscriber = new RegistrationFailedSubscriber({ connectionManager });
   }
 
   public subscribe(callback: () => void) {
     this.unsubscribe();
 
-    this.registrationFailedSubscriber.subscribe(() => {
+    this.disposeRegistrationFailed = this.connectionManager.on('registrationFailed', () => {
       this.setIsRegistrationFailed();
     });
 
@@ -41,7 +41,7 @@ class RegistrationFailedOutOfCallSubscriber extends AbstractSubscriber {
 
   public unsubscribe() {
     this.callStatusSubscriber.unsubscribe();
-    this.registrationFailedSubscriber.unsubscribe();
+    this.unsubscribeRegistrationFailed();
     this.resetIsRegistrationFailed();
   }
 
@@ -51,6 +51,11 @@ class RegistrationFailedOutOfCallSubscriber extends AbstractSubscriber {
 
   private resetIsRegistrationFailed() {
     this.isRegistrationFailed = false;
+  }
+
+  private unsubscribeRegistrationFailed() {
+    this.disposeRegistrationFailed?.();
+    this.disposeRegistrationFailed = undefined;
   }
 }
 
