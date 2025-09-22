@@ -835,6 +835,32 @@ const sipConnector = new SipConnector(
   },
 );
 
+// Запуск автоподключения
+sipConnector.startAutoConnect({
+  // Возвращает параметры подключения
+  getConnectParameters: async () => {
+    return {
+      sipWebSocketServerURL: 'wss://example.com/ws',
+      sipServerUrl: 'sipServerUrl',
+    };
+  },
+  // Возвращает параметры для проверки телефонии
+  getCheckTelephonyParameters: async () => {
+    return {
+      displayName: 'displayName',
+      sipWebSocketServerURL: 'wss://example.com/ws',
+      sipServerUrl: 'sipServerUrl',
+    };
+  },
+  // Проверяет готовность к подключению
+  hasReadyForConnection: () => {
+    return true;
+  },
+});
+
+// Остановка автоподключения
+sipConnector.stopAutoConnect();
+
 // Подписка на события автоподключения
 sipConnector.on('auto-connect:changed-attempt-status', ({ isInProgress }) => {
   console.log('Попытка подключения в процессе:', isInProgress);
