@@ -26,7 +26,9 @@ export const UA_EVENT_NAMES = [
   `${EEvent.SIP_EVENT}`,
 ] as const;
 
-export const EVENT_NAMES = [...UA_EVENT_NAMES, `${EEvent.DISCONNECTING}`] as const;
+const SYNTHETICS_EVENT_NAMES = [`${EEvent.DISCONNECTING}`];
+
+export const EVENT_NAMES = [...UA_EVENT_NAMES, ...SYNTHETICS_EVENT_NAMES] as const;
 
 export type TEvent = (typeof EVENT_NAMES)[number];
 export type TEvents = Events<typeof EVENT_NAMES>;
