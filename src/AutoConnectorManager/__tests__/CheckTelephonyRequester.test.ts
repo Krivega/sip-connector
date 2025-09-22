@@ -28,7 +28,7 @@ jest.mock('@krivega/timeout-requester', () => {
 describe('CheckTelephonyRequester', () => {
   let sipConnector: ReturnType<typeof doMockSipConnector>;
   let checkTelephonyRequester: CheckTelephonyRequester;
-  let clearCacheMock: jest.Mock;
+  let onBeforeRequestMock: jest.Mock;
 
   const interval = 10_000;
 
@@ -36,12 +36,12 @@ describe('CheckTelephonyRequester', () => {
     jest.clearAllMocks();
 
     sipConnector = doMockSipConnector();
-    clearCacheMock = jest.fn().mockResolvedValue(undefined);
+    onBeforeRequestMock = jest.fn().mockResolvedValue(undefined);
 
     checkTelephonyRequester = new CheckTelephonyRequester({
       connectionManager: sipConnector.connectionManager,
       interval,
-      clearCache: clearCacheMock,
+      onBeforeRequest: onBeforeRequestMock,
     });
   });
 
@@ -117,7 +117,7 @@ describe('CheckTelephonyRequester', () => {
       });
     });
 
-    it('request функция вызывает clearCache и checkTelephony', async () => {
+    it('request функция вызывает onBeforeRequest и checkTelephony', async () => {
       const checkTelephonySpy = jest
         .spyOn(sipConnector.connectionManager, 'checkTelephony')
         .mockResolvedValue(undefined);
@@ -134,7 +134,7 @@ describe('CheckTelephonyRequester', () => {
 
       await config.request();
 
-      expect(clearCacheMock).toHaveBeenCalledTimes(1);
+      expect(onBeforeRequestMock).toHaveBeenCalledTimes(1);
       expect(getParametersMock).toHaveBeenCalledTimes(1);
       expect(checkTelephonySpy).toHaveBeenCalledTimes(1);
       expect(checkTelephonySpy).toHaveBeenCalledWith(mockParameters);
@@ -161,10 +161,10 @@ describe('CheckTelephonyRequester', () => {
       expect(onSuccessRequestMock).toHaveBeenCalledTimes(1);
     });
 
-    it('обрабатывает ошибки в clearCache', async () => {
-      const clearCacheError = new Error('Clear cache failed');
+    it('обрабатывает ошибки в onBeforeRequest', async () => {
+      const error = new Error('onBeforeRequest failed');
 
-      clearCacheMock.mockRejectedValue(clearCacheError);
+      onBeforeRequestMock.mockRejectedValue(error);
 
       checkTelephonyRequester.start({
         getParameters: getParametersMock,
@@ -176,7 +176,7 @@ describe('CheckTelephonyRequester', () => {
         { request: () => Promise<void> },
       ];
 
-      await expect(config.request()).rejects.toThrow('Clear cache failed');
+      await expect(config.request()).rejects.toThrow('onBeforeRequest failed');
     });
 
     it('обрабатывает ошибки в getParameters', async () => {
@@ -219,10 +219,10 @@ describe('CheckTelephonyRequester', () => {
   });
 
   describe('stop', () => {
-    it('отменяет cancelableRequestClearCache', () => {
+    it('отменяет cancelableBeforeRequest', () => {
       const cancelRequestSpy = jest.spyOn(
         // @ts-ignore приватное свойство
-        checkTelephonyRequester.cancelableRequestClearCache,
+        checkTelephonyRequester.cancelableBeforeRequest,
         'cancelRequest',
       );
 

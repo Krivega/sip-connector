@@ -7,7 +7,7 @@ import type { TParametersCheckTelephony } from './types';
 class CheckTelephonyRequester {
   private readonly connectionManager: ConnectionManager;
 
-  private readonly cancelableRequestClearCache: CancelableRequest<void, void>;
+  private readonly cancelableBeforeRequest: CancelableRequest<void, void>;
 
   private readonly interval: number;
 
@@ -17,16 +17,16 @@ class CheckTelephonyRequester {
   public constructor({
     connectionManager,
     interval,
-    clearCache,
+    onBeforeRequest,
   }: {
     connectionManager: ConnectionManager;
     interval: number;
-    clearCache: () => Promise<void>;
+    onBeforeRequest: () => Promise<void>;
   }) {
     this.connectionManager = connectionManager;
     this.interval = interval;
 
-    this.cancelableRequestClearCache = new CancelableRequest(clearCache);
+    this.cancelableBeforeRequest = new CancelableRequest(onBeforeRequest);
   }
 
   public start({
@@ -44,7 +44,7 @@ class CheckTelephonyRequester {
       isDontStopOnFail: true,
       requestInterval: this.interval,
       request: async () => {
-        await this.cancelableRequestClearCache.request();
+        await this.cancelableBeforeRequest.request();
 
         const parameters = await getParameters();
 
@@ -62,7 +62,7 @@ class CheckTelephonyRequester {
   }
 
   public stop() {
-    this.cancelableRequestClearCache.cancelRequest();
+    this.cancelableBeforeRequest.cancelRequest();
 
     if (this.checkTelephonyByTimeout) {
       this.checkTelephonyByTimeout.stop();

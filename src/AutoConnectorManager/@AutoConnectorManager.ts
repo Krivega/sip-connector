@@ -40,7 +40,7 @@ class AutoConnectorManager {
 
   private readonly delayBetweenAttempts: DelayRequester;
 
-  private readonly cancelableRequestClearCache: CancelableRequest<void, void>;
+  private readonly cancelableRequestBeforeRetry: CancelableRequest<void, void>;
 
   public constructor(
     {
@@ -54,7 +54,7 @@ class AutoConnectorManager {
     },
     options?: IAutoConnectorOptions,
   ) {
-    const clearCache = options?.clearCache ?? asyncNoop;
+    const onBeforeRetry = options?.onBeforeRetry ?? asyncNoop;
 
     this.connectionManager = connectionManager;
 
@@ -65,8 +65,8 @@ class AutoConnectorManager {
       events: this.events,
     });
     this.checkTelephonyRequester = new CheckTelephonyRequester({
-      clearCache,
       connectionManager,
+      onBeforeRequest: onBeforeRetry,
       interval: options?.checkTelephonyRequestInterval ?? DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL,
     });
     this.pingServerRequester = new PingServerRequester({ connectionManager, callManager });
@@ -79,7 +79,7 @@ class AutoConnectorManager {
         this.events.trigger(EEvent.CHANGED_ATTEMPT_STATUS, { isInProgress });
       },
     });
-    this.cancelableRequestClearCache = new CancelableRequest(clearCache);
+    this.cancelableRequestBeforeRetry = new CancelableRequest(onBeforeRetry);
     this.delayBetweenAttempts = new DelayRequester(
       options?.timeoutBetweenAttempts ?? DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS,
     );
@@ -134,7 +134,7 @@ class AutoConnectorManager {
     }
 
     this.delayBetweenAttempts.cancelRequest();
-    this.cancelableRequestClearCache.cancelRequest();
+    this.cancelableRequestBeforeRetry.cancelRequest();
     this.attemptsState.reset();
   }
 
@@ -262,10 +262,10 @@ class AutoConnectorManager {
       .then(async () => {
         logger('reconnect: delayBetweenAttempts success');
 
-        return this.cancelableRequestClearCache.request();
+        return this.cancelableRequestBeforeRetry.request();
       })
       .then(async () => {
-        logger('reconnect: clearCache success');
+        logger('reconnect: onBeforeRetry success');
 
         return this.connect(parameters);
       })

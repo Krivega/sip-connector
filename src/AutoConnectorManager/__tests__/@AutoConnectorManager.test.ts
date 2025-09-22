@@ -30,7 +30,7 @@ jest.mock('@/logger', () => {
 describe('AutoConnectorManager', () => {
   let sipConnector: SipConnector;
   let manager: AutoConnectorManager;
-  let clearCacheMock: jest.Mock;
+  let onBeforeRetryMock: jest.Mock;
 
   const getConnectParametersMock = async () => {
     return {
@@ -63,7 +63,7 @@ describe('AutoConnectorManager', () => {
 
   beforeEach(() => {
     sipConnector = doMockSipConnector();
-    clearCacheMock = jest.fn().mockResolvedValue(undefined);
+    onBeforeRetryMock = jest.fn().mockResolvedValue(undefined);
 
     baseParameters = {
       getConnectParameters: getConnectParametersMock,
@@ -71,7 +71,7 @@ describe('AutoConnectorManager', () => {
     };
 
     manager = createManager({
-      clearCache: clearCacheMock,
+      onBeforeRetry: onBeforeRetryMock,
       timeoutBetweenAttempts: 100,
     });
   });
@@ -82,13 +82,13 @@ describe('AutoConnectorManager', () => {
   });
 
   describe('инициализация', () => {
-    it('использует asyncNoop, если clearCache не передан', async () => {
+    it('использует asyncNoop, если onBeforeRetry не передан', async () => {
       manager = createManager();
 
       // @ts-expect-error приватное свойство
-      const clearCachePromise = manager.cancelableRequestClearCache.request();
+      const onBeforeRetryPromise = manager.cancelableRequestBeforeRetry.request();
 
-      await expect(clearCachePromise).resolves.toBeUndefined();
+      await expect(onBeforeRetryPromise).resolves.toBeUndefined();
     });
   });
 
@@ -128,7 +128,7 @@ describe('AutoConnectorManager', () => {
         DelayRequester.prototype,
         'cancelRequest',
       );
-      const cancelableRequestClearCacheCancelRequestSpy = jest.spyOn(
+      const cancelableRequestBeforeRetryCancelRequestSpy = jest.spyOn(
         CancelableRequest.prototype,
         'cancelRequest',
       );
@@ -147,7 +147,7 @@ describe('AutoConnectorManager', () => {
 
       expect(connectFlowStopSpy).toHaveBeenCalled();
       expect(delayBetweenAttemptsCancelRequestSpy).toHaveBeenCalled();
-      expect(cancelableRequestClearCacheCancelRequestSpy).toHaveBeenCalled();
+      expect(cancelableRequestBeforeRetryCancelRequestSpy).toHaveBeenCalled();
       expect(pingServerStopSpy).toHaveBeenCalled();
       expect(checkTelephonyStopSpy).toHaveBeenCalled();
       expect(registrationFailedOutOfCallSubscriberUnsubscribeSpy).toHaveBeenCalled();
@@ -258,7 +258,7 @@ describe('AutoConnectorManager', () => {
       const error = new Error('Unknown error');
 
       jest.spyOn(ConnectFlow.prototype, 'runConnect').mockRejectedValue(error);
-      clearCacheMock.mockRejectedValue(error);
+      onBeforeRetryMock.mockRejectedValue(error);
 
       manager.on('failed-attempt', handleFailed);
       manager.start(baseParameters);
@@ -290,13 +290,13 @@ describe('AutoConnectorManager', () => {
       expect(handleCancelled).toHaveBeenCalled();
     });
 
-    it('вызывает cancelled-attempt при отмене clearCache', async () => {
+    it('вызывает cancelled-attempt при отмене onBeforeRetry', async () => {
       const handleCancelled = jest.fn();
 
       jest.spyOn(ConnectFlow.prototype, 'runConnect').mockRejectedValue(undefined);
 
       manager = createManager({
-        clearCache: async () => {
+        onBeforeRetry: async () => {
           await delayPromise(DELAY * 10);
         },
         timeoutBetweenAttempts: 1,
@@ -308,7 +308,7 @@ describe('AutoConnectorManager', () => {
       await delayPromise(DELAY);
 
       // @ts-expect-error имитация отмены запроса
-      manager.cancelableRequestClearCache.cancelRequest();
+      manager.cancelableRequestBeforeRetry.cancelRequest();
 
       await manager.wait('cancelled-attempt');
 
@@ -684,7 +684,7 @@ describe('AutoConnectorManager', () => {
       // @ts-ignore приватное свойство
       expect(manager.attemptsState.count).toBe(2);
       expect(delayRequestSpy).toHaveBeenCalled();
-      expect(clearCacheMock).toHaveBeenCalled();
+      expect(onBeforeRetryMock).toHaveBeenCalled();
       expect(connectFlowRunConnectSpy).toHaveBeenCalledTimes(2);
     });
   });
