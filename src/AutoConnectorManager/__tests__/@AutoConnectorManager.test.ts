@@ -189,15 +189,15 @@ describe('AutoConnectorManager', () => {
       manager.start(baseParameters);
 
       expect(handleAttemptStatusChanged).toHaveBeenCalledTimes(1);
-      expect(handleAttemptStatusChanged).toHaveBeenCalledWith(true);
+      expect(handleAttemptStatusChanged).toHaveBeenCalledWith({ isInProgress: true });
 
       manager.stop();
 
-      expect(handleAttemptStatusChanged).toHaveBeenCalledWith(false);
+      expect(handleAttemptStatusChanged).toHaveBeenCalledWith({ isInProgress: false });
 
       manager.start(baseParameters);
 
-      expect(handleAttemptStatusChanged).toHaveBeenCalledWith(true);
+      expect(handleAttemptStatusChanged).toHaveBeenCalledWith({ isInProgress: true });
     });
 
     it('вызывает succeeded-attempt при успешном подключении', async () => {

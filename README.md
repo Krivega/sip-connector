@@ -836,8 +836,8 @@ const sipConnector = new SipConnector(
 );
 
 // Подписка на события автоподключения
-sipConnector.on('auto-connect:changed-attempt-status', (isAttemptInProgress) => {
-  console.log('Попытка подключения в процессе:', isAttemptInProgress);
+sipConnector.on('auto-connect:changed-attempt-status', ({ isInProgress }) => {
+  console.log('Попытка подключения в процессе:', isInProgress);
 });
 
 sipConnector.on('auto-connect:before-attempt', () => {
@@ -910,7 +910,7 @@ sipConnector.on('auto-connect:disconnected', () => {
 | `auto-connect:succeeded-attempt`      | Успешная попытка подключения   | `undefined`                         |
 | `auto-connect:failed-attempt`         | Неудачная попытка подключения  | `Error \| undefined`                |
 | `auto-connect:cancelled-attempt`      | Отмененная попытка подключения | `Error`                             |
-| `auto-connect:changed-attempt-status` | Изменение статуса попытки      | `boolean`                           |
+| `auto-connect:changed-attempt-status` | Изменение статуса попытки      | `{ isInProgress: boolean }`         |
 
 ---
 

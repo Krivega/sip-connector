@@ -43,7 +43,7 @@ export type TEventMap = {
   'succeeded-attempt': undefined;
   'failed-attempt': unknown;
   'cancelled-attempt': unknown;
-  'changed-attempt-status': boolean;
+  'changed-attempt-status': { isInProgress: boolean };
 };
 
 export type TEvents = TypedEvents<TEventMap>;

@@ -8,11 +8,15 @@ class AttemptsState {
 
   private readonly limitInner = DEFAULT_LIMIT;
 
-  private inProgress = false;
+  private isInProgress = false;
 
-  private readonly onStatusChange: (inProgress: boolean) => void;
+  private readonly onStatusChange: ({ isInProgress }: { isInProgress: boolean }) => void;
 
-  public constructor({ onStatusChange }: { onStatusChange: (inProgress: boolean) => void }) {
+  public constructor({
+    onStatusChange,
+  }: {
+    onStatusChange: ({ isInProgress }: { isInProgress: boolean }) => void;
+  }) {
     this.onStatusChange = onStatusChange;
   }
 
@@ -25,7 +29,7 @@ class AttemptsState {
   }
 
   public get isAttemptInProgress(): boolean {
-    return this.inProgress;
+    return this.isInProgress;
   }
 
   public hasLimitReached(): boolean {
@@ -33,16 +37,16 @@ class AttemptsState {
   }
 
   public startAttempt(): void {
-    if (!this.inProgress) {
-      this.inProgress = true;
-      this.onStatusChange(this.inProgress);
+    if (!this.isInProgress) {
+      this.isInProgress = true;
+      this.emitStatusChange();
     }
   }
 
   public finishAttempt(): void {
-    if (this.inProgress) {
-      this.inProgress = false;
-      this.onStatusChange(this.inProgress);
+    if (this.isInProgress) {
+      this.isInProgress = false;
+      this.emitStatusChange();
     }
   }
 
@@ -55,6 +59,10 @@ class AttemptsState {
   public reset(): void {
     this.countInner = this.initialCount;
     this.finishAttempt();
+  }
+
+  private emitStatusChange() {
+    this.onStatusChange({ isInProgress: this.isInProgress });
   }
 }
 
