@@ -51,12 +51,14 @@ describe('AutoConnectorManager', () => {
   let baseParameters: TParametersAutoConnect;
 
   const createManager = (options?: IAutoConnectorOptions) => {
-    return new AutoConnectorManager({
+    return new AutoConnectorManager(
+      {
+        connectionQueueManager: sipConnector.connectionQueueManager,
+        connectionManager: sipConnector.connectionManager,
+        callManager: sipConnector.callManager,
+      },
       options,
-      connectionQueueManager: sipConnector.connectionQueueManager,
-      connectionManager: sipConnector.connectionManager,
-      callManager: sipConnector.callManager,
-    });
+    );
   };
 
   beforeEach(() => {

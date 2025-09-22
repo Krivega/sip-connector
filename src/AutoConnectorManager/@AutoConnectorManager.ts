@@ -42,17 +42,18 @@ class AutoConnectorManager {
 
   private readonly cancelableRequestClearCache: CancelableRequest<void, void>;
 
-  public constructor({
-    connectionQueueManager,
-    connectionManager,
-    callManager,
-    options,
-  }: {
-    connectionQueueManager: ConnectionQueueManager;
-    connectionManager: ConnectionManager;
-    callManager: CallManager;
-    options?: IAutoConnectorOptions;
-  }) {
+  public constructor(
+    {
+      connectionQueueManager,
+      connectionManager,
+      callManager,
+    }: {
+      connectionQueueManager: ConnectionQueueManager;
+      connectionManager: ConnectionManager;
+      callManager: CallManager;
+    },
+    options?: IAutoConnectorOptions,
+  ) {
     const clearCache = options?.clearCache ?? asyncNoop;
 
     this.connectionManager = connectionManager;

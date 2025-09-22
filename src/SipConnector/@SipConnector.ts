@@ -83,12 +83,14 @@ class SipConnector {
       callManager: this.callManager,
       apiManager: this.apiManager,
     });
-    this.autoConnectorManager = new AutoConnectorManager({
-      connectionQueueManager: this.connectionQueueManager,
-      connectionManager: this.connectionManager,
-      callManager: this.callManager,
-      options: autoConnectorOptions,
-    });
+    this.autoConnectorManager = new AutoConnectorManager(
+      {
+        connectionQueueManager: this.connectionQueueManager,
+        connectionManager: this.connectionManager,
+        callManager: this.callManager,
+      },
+      autoConnectorOptions,
+    );
     this.videoSendingBalancerManager = new VideoSendingBalancerManager(
       this.callManager,
       this.apiManager,
