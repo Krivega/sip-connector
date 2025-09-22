@@ -1,7 +1,13 @@
+import { EEvent } from './eventNames';
+
+import type { TEvents } from './eventNames';
+
 const DEFAULT_INITIAL_COUNT = 0;
 const DEFAULT_LIMIT = 30;
 
 class AttemptsState {
+  private readonly events: TEvents;
+
   private countInner = DEFAULT_INITIAL_COUNT;
 
   private readonly initialCount = DEFAULT_INITIAL_COUNT;
@@ -10,14 +16,8 @@ class AttemptsState {
 
   private isInProgress = false;
 
-  private readonly onStatusChange: ({ isInProgress }: { isInProgress: boolean }) => void;
-
-  public constructor({
-    onStatusChange,
-  }: {
-    onStatusChange: ({ isInProgress }: { isInProgress: boolean }) => void;
-  }) {
-    this.onStatusChange = onStatusChange;
+  public constructor({ events }: { events: TEvents }) {
+    this.events = events;
   }
 
   public get count(): number {
@@ -62,7 +62,7 @@ class AttemptsState {
   }
 
   private emitStatusChange() {
-    this.onStatusChange({ isInProgress: this.isInProgress });
+    this.events.trigger(EEvent.CHANGED_ATTEMPT_STATUS, { isInProgress: this.isInProgress });
   }
 }
 

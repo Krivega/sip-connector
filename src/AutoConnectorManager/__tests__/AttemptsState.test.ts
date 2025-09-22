@@ -1,12 +1,16 @@
+import { TypedEvents } from 'events-constructor';
+
 import AttemptsState from '../AttemptsState';
+
+import type { TEventMap } from '../eventNames';
 
 describe('AttemptsState', () => {
   let attemptsState: AttemptsState;
 
-  const onStatusChangeMock = jest.fn();
+  const events = new TypedEvents<TEventMap>(['changed-attempt-status']);
 
   beforeEach(() => {
-    attemptsState = new AttemptsState({ onStatusChange: onStatusChangeMock });
+    attemptsState = new AttemptsState({ events });
   });
 
   it('начальные значения', () => {
@@ -74,20 +78,24 @@ describe('AttemptsState', () => {
   });
 
   it('onStatusChange: вызывается при изменении isAttemptInProgress', () => {
+    const handleStatusChange = jest.fn();
+
+    events.on('changed-attempt-status', handleStatusChange);
+
     attemptsState.startAttempt();
 
-    expect(onStatusChangeMock).toHaveBeenCalledTimes(1);
+    expect(handleStatusChange).toHaveBeenCalledTimes(1);
 
     attemptsState.startAttempt();
 
-    expect(onStatusChangeMock).toHaveBeenCalledTimes(1);
+    expect(handleStatusChange).toHaveBeenCalledTimes(1);
 
     attemptsState.finishAttempt();
 
-    expect(onStatusChangeMock).toHaveBeenCalledTimes(2);
+    expect(handleStatusChange).toHaveBeenCalledTimes(2);
 
     attemptsState.finishAttempt();
 
-    expect(onStatusChangeMock).toHaveBeenCalledTimes(2);
+    expect(handleStatusChange).toHaveBeenCalledTimes(2);
   });
 });
