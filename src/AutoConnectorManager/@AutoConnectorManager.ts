@@ -87,14 +87,14 @@ class AutoConnectorManager {
   public start(parameters: TParametersAutoConnect) {
     logger('auto connector start');
 
-    this.cancel();
+    this.stop();
     this.connect(parameters).catch((error: unknown) => {
       logger('auto connector failed to connect:', error);
     });
   }
 
-  public cancel() {
-    logger('auto connector cancel');
+  public stop() {
+    logger('auto connector stop');
 
     this.stopAttempts();
     this.stopConnectTriggers();

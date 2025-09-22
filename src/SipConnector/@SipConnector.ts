@@ -232,8 +232,8 @@ class SipConnector {
     this.autoConnectorManager.start(...args);
   };
 
-  public cancelAutoConnect: AutoConnectorManager['cancel'] = () => {
-    this.autoConnectorManager.cancel();
+  public stopAutoConnect: AutoConnectorManager['stop'] = () => {
+    this.autoConnectorManager.stop();
   };
 
   public call = async (params: Parameters<CallManager['startCall']>[2]) => {

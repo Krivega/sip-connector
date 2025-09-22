@@ -36,15 +36,15 @@ describe('SipConnector facade', () => {
     const { autoConnectorManager } = sipConnector;
 
     jest.spyOn(autoConnectorManager, 'start');
-    jest.spyOn(autoConnectorManager, 'cancel');
+    jest.spyOn(autoConnectorManager, 'stop');
 
     sipConnector.startAutoConnect(
       {} as unknown as Parameters<(typeof autoConnectorManager)['start']>[0],
     );
-    sipConnector.cancelAutoConnect();
+    sipConnector.stopAutoConnect();
 
     expect(autoConnectorManager.start).toHaveBeenCalled();
-    expect(autoConnectorManager.cancel).toHaveBeenCalled();
+    expect(autoConnectorManager.stop).toHaveBeenCalled();
   });
 
   it('должен проксировать методы ConnectionQueueManager', async () => {

@@ -90,7 +90,7 @@ describe('AutoConnectorManager', () => {
     });
   });
 
-  describe('start и cancel', () => {
+  describe('start и stop', () => {
     it('start: запускает процесс подключения', async () => {
       expect(sipConnector.isConfigured()).toBe(false);
 
@@ -102,11 +102,11 @@ describe('AutoConnectorManager', () => {
     });
 
     it('start: сбрасывает состояния перед подключением', () => {
-      const cancelSpy = jest.spyOn(manager, 'cancel');
+      const stopSpy = jest.spyOn(manager, 'stop');
 
       manager.start(baseParameters);
 
-      expect(cancelSpy).toHaveBeenCalled();
+      expect(stopSpy).toHaveBeenCalled();
     });
 
     it('start: не должна всплывать ошибка, если connect завершился с ошибкой', async () => {
@@ -120,7 +120,7 @@ describe('AutoConnectorManager', () => {
       expect(loggerMock).toHaveBeenCalled();
     });
 
-    it('cancel: останавливает все процессы', () => {
+    it('stop: останавливает все процессы', () => {
       const connectFlowStopSpy = jest.spyOn(ConnectFlow.prototype, 'stop');
       const delayBetweenAttemptsCancelRequestSpy = jest.spyOn(
         DelayRequester.prototype,
@@ -141,7 +141,7 @@ describe('AutoConnectorManager', () => {
 
       jest.clearAllMocks();
 
-      manager.cancel();
+      manager.stop();
 
       expect(connectFlowStopSpy).toHaveBeenCalled();
       expect(delayBetweenAttemptsCancelRequestSpy).toHaveBeenCalled();
@@ -151,22 +151,22 @@ describe('AutoConnectorManager', () => {
       expect(registrationFailedOutOfCallSubscriberUnsubscribeSpy).toHaveBeenCalled();
     });
 
-    it('cancel: не останавливает очередь запросов, если попытка подключения не запущена', () => {
+    it('stop: не останавливает очередь запросов, если попытка подключения не запущена', () => {
       const connectFlowStopSpy = jest.spyOn(ConnectFlow.prototype, 'stop');
 
-      manager.cancel();
+      manager.stop();
 
       // @ts-ignore приватное свойство
       expect(manager.attemptsState.isAttemptInProgress).toBe(false);
       expect(connectFlowStopSpy).not.toHaveBeenCalled();
     });
 
-    it('cancel: не должна всплывать ошибка, если runDisconnect завершился с ошибкой', async () => {
+    it('stop: не должна всплывать ошибка, если runDisconnect завершился с ошибкой', async () => {
       const error = new Error('Disconnect error');
 
       jest.spyOn(ConnectFlow.prototype, 'runDisconnect').mockRejectedValue(error);
 
-      manager.cancel();
+      manager.stop();
 
       expect(loggerMock).toHaveBeenCalled();
     });
@@ -191,7 +191,7 @@ describe('AutoConnectorManager', () => {
       expect(handleAttemptStatusChanged).toHaveBeenCalledTimes(1);
       expect(handleAttemptStatusChanged).toHaveBeenCalledWith(true);
 
-      manager.cancel();
+      manager.stop();
 
       expect(handleAttemptStatusChanged).toHaveBeenCalledWith(false);
 

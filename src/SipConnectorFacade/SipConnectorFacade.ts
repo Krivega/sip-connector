@@ -89,7 +89,7 @@ interface IProxyMethods {
   waitChannels: SipConnector['waitChannels'];
   ping: SipConnector['ping'];
   startAutoConnect: SipConnector['startAutoConnect'];
-  cancelAutoConnect: SipConnector['cancelAutoConnect'];
+  stopAutoConnect: SipConnector['stopAutoConnect'];
   connection: SipConnector['connection'];
   isConfigured: SipConnector['isConfigured'];
   isRegistered: SipConnector['isRegistered'];
@@ -109,7 +109,7 @@ const proxyMethods = new Set<keyof IProxyMethods>([
   'waitChannels',
   'ping',
   'startAutoConnect',
-  'cancelAutoConnect',
+  'stopAutoConnect',
   'connection',
   'isConfigured',
   'isRegistered',
@@ -156,7 +156,7 @@ class SipConnectorFacade implements IProxyMethods {
   public startAutoConnect: IProxyMethods['startAutoConnect'];
 
   // @ts-expect-error: proxy method
-  public cancelAutoConnect: IProxyMethods['cancelAutoConnect'];
+  public stopAutoConnect: IProxyMethods['stopAutoConnect'];
 
   //  proxy method
   public connection: IProxyMethods['connection'];
