@@ -1,6 +1,5 @@
 import logger from '@/logger';
 import { EEvent } from './eventNames';
-import { createParametersNotExistError } from './utils';
 
 import type { ConnectionManager } from '@/ConnectionManager';
 import type { ConnectionQueueManager } from '@/ConnectionQueueManager';
@@ -40,12 +39,15 @@ class ConnectFlow {
       });
   }
 
-  public async runConnect(
-    getConnectParameters: () => Promise<TParametersConnect | undefined>,
-    hasReadyForConnection?: () => boolean,
-  ) {
+  public async runConnect({
+    onBeforeRequest,
+    hasReadyForConnection,
+  }: {
+    onBeforeRequest: () => Promise<TParametersConnect>;
+    hasReadyForConnection?: () => boolean;
+  }) {
     return this.connectionQueueManager.run(async () => {
-      return this.connect(getConnectParameters, hasReadyForConnection);
+      return this.connect(onBeforeRequest, hasReadyForConnection);
     });
   }
 
@@ -66,7 +68,7 @@ class ConnectFlow {
   }
 
   private async connect(
-    getConnectParameters: () => Promise<TParametersConnect | undefined>,
+    onBeforeRequest: () => Promise<TParametersConnect>,
     hasReadyForConnection?: () => boolean,
   ) {
     return this.disconnect()
@@ -76,12 +78,12 @@ class ConnectFlow {
       .then(async () => {
         logger('connect: then');
 
-        return this.connectWithProcessError(getConnectParameters, hasReadyForConnection);
+        return this.connectWithProcessError(onBeforeRequest, hasReadyForConnection);
       });
   }
 
   private async connectWithProcessError(
-    getConnectParameters: () => Promise<TParametersConnect | undefined>,
+    onBeforeRequest: () => Promise<TParametersConnect>,
     hasReadyForConnection?: () => boolean,
   ) {
     const isReadyForConnection = hasReadyForConnection?.() ?? true;
@@ -92,7 +94,7 @@ class ConnectFlow {
       return;
     }
 
-    await this.connectToServer(getConnectParameters).catch(async (error: unknown) => {
+    await this.connectToServer(onBeforeRequest).catch(async (error: unknown) => {
       logger('connectWithProcessError: error:', error);
 
       return this.disconnect()
@@ -105,17 +107,11 @@ class ConnectFlow {
     });
   }
 
-  private async connectToServer(
-    getConnectParameters: () => Promise<TParametersConnect | undefined>,
-  ) {
+  private async connectToServer(onBeforeRequest: () => Promise<TParametersConnect>) {
     try {
       this.events.trigger(EEvent.CONNECTING, {});
 
-      const parameters = await getConnectParameters();
-
-      if (!parameters) {
-        throw createParametersNotExistError();
-      }
+      const parameters = await onBeforeRequest();
 
       const ua = await this.connectionManager.connect(parameters);
 

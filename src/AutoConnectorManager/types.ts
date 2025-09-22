@@ -15,8 +15,7 @@ export type ISubscriber<T = void> = {
 export type TParametersCheckTelephony = Parameters<ConnectionManager['checkTelephony']>[0];
 export type TParametersConnect = Parameters<ConnectionQueueManager['connect']>[0];
 export type TParametersAutoConnect = {
-  getConnectParameters: () => Promise<TParametersConnect | undefined>;
-  getCheckTelephonyParameters: () => Promise<TParametersCheckTelephony>;
+  getParameters: () => Promise<(TParametersConnect & TParametersCheckTelephony) | undefined>;
   hasReadyForConnection?: () => boolean;
 };
 export type TConnectedConfiguration = {

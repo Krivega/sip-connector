@@ -32,20 +32,15 @@ describe('AutoConnectorManager', () => {
   let manager: AutoConnectorManager;
   let onBeforeRetryMock: jest.Mock;
 
-  const getConnectParametersMock = async () => {
-    return {
-      sipServerUrl: 'sip://test.com',
-      sipWebSocketServerURL: 'wss://test.com',
-      register: false,
-    } as unknown as TParametersConnect;
+  const parameters = {
+    displayName: 'Test User',
+    sipServerUrl: 'sip://test.com',
+    sipWebSocketServerURL: 'wss://test.com',
+    register: false,
   };
 
-  const getCheckTelephonyParametersMock = async () => {
-    return {
-      sipServerUrl: 'sip://test.com',
-      sipWebSocketServerURL: 'wss://test.com',
-      displayName: 'Test User',
-    } as unknown as TParametersCheckTelephony;
+  const getConnectParametersMock = async () => {
+    return parameters;
   };
 
   let baseParameters: TParametersAutoConnect;
@@ -66,8 +61,7 @@ describe('AutoConnectorManager', () => {
     onBeforeRetryMock = jest.fn().mockResolvedValue(undefined);
 
     baseParameters = {
-      getConnectParameters: getConnectParametersMock,
-      getCheckTelephonyParameters: getCheckTelephonyParametersMock,
+      getParameters: getConnectParametersMock,
     };
 
     manager = createManager({
@@ -543,7 +537,7 @@ describe('AutoConnectorManager', () => {
       manager.start(baseParameters);
 
       expect(checkTelephonyStartSpy).toHaveBeenCalledWith({
-        getParameters: baseParameters.getCheckTelephonyParameters,
+        onBeforeRequest: expect.any(Function) as () => Promise<TParametersCheckTelephony>,
         onSuccessRequest: expect.any(Function) as () => void,
         onFailRequest: expect.any(Function) as (error?: unknown) => void,
       });
@@ -617,6 +611,72 @@ describe('AutoConnectorManager', () => {
 
       expect(connectSpy).toHaveBeenCalled();
     });
+
+    describe('onBeforeRequest', () => {
+      it('вызывает onBeforeRetry перед getParameters', async () => {
+        const startSpy = jest
+          .spyOn(CheckTelephonyRequester.prototype, 'start')
+          .mockImplementation();
+
+        // @ts-ignore приватное свойство
+        manager.attemptsState.limitInner = 0;
+
+        manager.start({
+          getParameters: baseParameters.getParameters,
+        });
+
+        const { onBeforeRequest } = startSpy.mock.calls[0][0] as {
+          onBeforeRequest: () => Promise<TParametersCheckTelephony>;
+        };
+
+        await onBeforeRequest();
+
+        expect(onBeforeRetryMock).toHaveBeenCalledTimes(1);
+      });
+
+      it('возвращает данные при успешном getParameters', async () => {
+        const startSpy = jest
+          .spyOn(CheckTelephonyRequester.prototype, 'start')
+          .mockImplementation();
+
+        // @ts-ignore приватное свойство
+        manager.attemptsState.limitInner = 0;
+
+        manager.start({
+          getParameters: baseParameters.getParameters,
+        });
+
+        const { onBeforeRequest } = startSpy.mock.calls[0][0] as {
+          onBeforeRequest: () => Promise<TParametersCheckTelephony>;
+        };
+
+        const result = await onBeforeRequest();
+
+        expect(result).toEqual(parameters);
+      });
+
+      it('выбрасывает ошибку, если getParameters возвращает undefined', async () => {
+        const startSpy = jest
+          .spyOn(CheckTelephonyRequester.prototype, 'start')
+          .mockImplementation();
+
+        // @ts-ignore приватное свойство
+        manager.attemptsState.limitInner = 0;
+
+        manager.start({
+          getParameters: async () => {
+            return undefined;
+          },
+        });
+
+        const { onBeforeRequest } = startSpy.mock.calls[0][0] as {
+          onBeforeRequest: () => Promise<TParametersCheckTelephony>;
+        };
+
+        await expect(onBeforeRequest()).rejects.toThrow(createParametersNotExistError());
+        expect(onBeforeRetryMock).toHaveBeenCalledTimes(1);
+      });
+    });
   });
 
   describe('переподключение', () => {
@@ -629,7 +689,7 @@ describe('AutoConnectorManager', () => {
 
       const parametersWithUndefined = {
         ...baseParameters,
-        getConnectParameters: async () => {
+        getParameters: async () => {
           return undefined;
         },
       };
@@ -655,7 +715,11 @@ describe('AutoConnectorManager', () => {
       manager.start(baseParameters);
 
       // @ts-expect-error приватное свойство
-      manager.connectFlow.runConnect(baseParameters.getConnectParameters).catch(() => {});
+      manager.connectFlow
+        .runConnect({
+          onBeforeRequest: baseParameters.getParameters as () => Promise<TParametersConnect>,
+        })
+        .catch(() => {});
 
       await delayPromise(DELAY);
 
@@ -686,6 +750,40 @@ describe('AutoConnectorManager', () => {
       expect(delayRequestSpy).toHaveBeenCalled();
       expect(onBeforeRetryMock).toHaveBeenCalled();
       expect(connectFlowRunConnectSpy).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('подключение', () => {
+    it('вызывает connect с данными из getParameters', async () => {
+      // @ts-expect-error приватное свойство
+      const connectFlowSpy = jest.spyOn(manager.connectFlow, 'runConnect');
+
+      manager.start({
+        getParameters: baseParameters.getParameters,
+      });
+
+      const { onBeforeRequest } = connectFlowSpy.mock.calls[0][0] as {
+        onBeforeRequest: () => Promise<TParametersConnect>;
+      };
+
+      const result = await onBeforeRequest();
+
+      expect(result).toEqual(parameters);
+    });
+
+    it('возвращает ошибку, если getParameters возвращает undefined', async () => {
+      const handleFailed = jest.fn();
+
+      manager.on('failed', handleFailed);
+      manager.start({
+        getParameters: async () => {
+          return undefined;
+        },
+      });
+
+      await manager.wait('failed');
+
+      expect(handleFailed).toHaveBeenCalledWith(createParametersNotExistError());
     });
   });
 });

@@ -7,46 +7,47 @@ import type { TParametersCheckTelephony } from './types';
 class CheckTelephonyRequester {
   private readonly connectionManager: ConnectionManager;
 
-  private readonly cancelableBeforeRequest: CancelableRequest<void, void>;
-
   private readonly interval: number;
 
   private checkTelephonyByTimeout: ReturnType<typeof resolveRequesterByTimeout> | undefined =
     undefined;
 
+  private cancelableBeforeRequest: CancelableRequest<void, TParametersCheckTelephony> | undefined =
+    undefined;
+
   public constructor({
     connectionManager,
     interval,
-    onBeforeRequest,
   }: {
     connectionManager: ConnectionManager;
     interval: number;
-    onBeforeRequest: () => Promise<void>;
   }) {
     this.connectionManager = connectionManager;
     this.interval = interval;
-
-    this.cancelableBeforeRequest = new CancelableRequest(onBeforeRequest);
   }
 
   public start({
-    getParameters,
+    onBeforeRequest,
     onSuccessRequest,
     onFailRequest,
   }: {
-    getParameters: () => Promise<TParametersCheckTelephony>;
+    onBeforeRequest: () => Promise<TParametersCheckTelephony>;
     onSuccessRequest: () => void;
     onFailRequest: () => void;
   }) {
     this.stop();
 
+    this.cancelableBeforeRequest = new CancelableRequest(onBeforeRequest);
+
     this.checkTelephonyByTimeout = resolveRequesterByTimeout({
       isDontStopOnFail: true,
       requestInterval: this.interval,
       request: async () => {
-        await this.cancelableBeforeRequest.request();
+        if (!this.cancelableBeforeRequest) {
+          throw new Error('onBeforeRequest is not defined');
+        }
 
-        const parameters = await getParameters();
+        const parameters = await this.cancelableBeforeRequest.request();
 
         return this.connectionManager.checkTelephony(parameters);
       },
@@ -62,11 +63,14 @@ class CheckTelephonyRequester {
   }
 
   public stop() {
-    this.cancelableBeforeRequest.cancelRequest();
-
     if (this.checkTelephonyByTimeout) {
       this.checkTelephonyByTimeout.stop();
       this.checkTelephonyByTimeout = undefined;
+    }
+
+    if (this.cancelableBeforeRequest) {
+      this.cancelableBeforeRequest.cancelRequest();
+      this.cancelableBeforeRequest = undefined;
     }
   }
 }

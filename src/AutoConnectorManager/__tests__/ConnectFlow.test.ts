@@ -20,7 +20,7 @@ describe('ConnectFlow', () => {
 
   let disconnectSpy: jest.SpyInstance;
   let connectSpy: jest.SpyInstance;
-  let getConnectParameters = jest.fn(async (): Promise<TParametersConnect> => {
+  let onBeforeRequest = jest.fn(async (): Promise<TParametersConnect> => {
     return connectParameters;
   });
 
@@ -33,7 +33,7 @@ describe('ConnectFlow', () => {
     hasReadyForConnectionMock.mockReturnValue(true);
     disconnectSpy = jest.spyOn(sipConnector.connectionManager, 'disconnect');
     connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
-    getConnectParameters = jest.fn(async (): Promise<TParametersConnect> => {
+    onBeforeRequest = jest.fn(async (): Promise<TParametersConnect> => {
       return connectParameters;
     });
   });
@@ -45,7 +45,7 @@ describe('ConnectFlow', () => {
   it('должен успешно подключиться', async () => {
     expect.assertions(1);
 
-    await connectFlow.runConnect(getConnectParameters);
+    await connectFlow.runConnect({ onBeforeRequest });
 
     expect(sipConnector.isConfigured()).toBe(true);
   });
@@ -53,7 +53,7 @@ describe('ConnectFlow', () => {
   it('должен успешно отключиться', async () => {
     expect.assertions(1);
 
-    await connectFlow.runConnect(getConnectParameters);
+    await connectFlow.runConnect({ onBeforeRequest });
     await connectFlow.runDisconnect();
 
     expect(sipConnector.isConfigured()).toBe(false);
@@ -62,7 +62,7 @@ describe('ConnectFlow', () => {
   it('должен корректно отключиться после задержки', async () => {
     expect.assertions(2);
 
-    await connectFlow.runConnect(getConnectParameters);
+    await connectFlow.runConnect({ onBeforeRequest });
 
     expect(sipConnector.isConfigured()).toBe(true);
 
@@ -76,7 +76,7 @@ describe('ConnectFlow', () => {
   it('должен корректно отключиться, если сразу вызвать disconnect после connect', async () => {
     expect.assertions(1);
 
-    connectFlow.runConnect(getConnectParameters).catch(() => {});
+    connectFlow.runConnect({ onBeforeRequest }).catch(() => {});
 
     await connectFlow.runDisconnect();
 
@@ -88,10 +88,10 @@ describe('ConnectFlow', () => {
   it('должен корректно подключиться, если вызвать connect, сразу disconnect и снова connect', async () => {
     expect.assertions(1);
 
-    connectFlow.runConnect(getConnectParameters).catch(() => {});
+    connectFlow.runConnect({ onBeforeRequest }).catch(() => {});
     connectFlow.runDisconnect().catch(() => {});
 
-    await connectFlow.runConnect(getConnectParameters);
+    await connectFlow.runConnect({ onBeforeRequest });
 
     await delayPromise(CONNECTION_DELAY);
 
@@ -103,7 +103,7 @@ describe('ConnectFlow', () => {
 
     expect(sipConnector.isConfigured()).toBe(false);
 
-    await connectFlow.runConnect(getConnectParameters);
+    await connectFlow.runConnect({ onBeforeRequest });
 
     expect(disconnectSpy).toHaveBeenCalledTimes(0);
     expect(connectSpy).toHaveBeenCalledTimes(1);
@@ -113,11 +113,11 @@ describe('ConnectFlow', () => {
   it('должен выполнить disconnect и затем connect при вызове connect с уже сконфигурированным sipConnector', async () => {
     expect.assertions(4);
 
-    await connectFlow.runConnect(getConnectParameters);
+    await connectFlow.runConnect({ onBeforeRequest });
 
     expect(connectSpy).toHaveBeenCalledTimes(1);
 
-    await connectFlow.runConnect(getConnectParameters);
+    await connectFlow.runConnect({ onBeforeRequest });
 
     expect(disconnectSpy).toHaveBeenCalledTimes(1);
     expect(connectSpy).toHaveBeenCalledTimes(2);
@@ -127,15 +127,15 @@ describe('ConnectFlow', () => {
   it('должен выполнить disconnect и connect только для актуального промиса', async () => {
     expect.assertions(5);
 
-    await connectFlow.runConnect(getConnectParameters);
+    await connectFlow.runConnect({ onBeforeRequest });
 
     expect(disconnectSpy).toHaveBeenCalledTimes(0);
     expect(connectSpy).toHaveBeenCalledTimes(1);
 
-    connectFlow.runConnect(getConnectParameters).catch(() => {});
-    connectFlow.runConnect(getConnectParameters).catch(() => {});
-    connectFlow.runConnect(getConnectParameters).catch(() => {});
-    connectFlow.runConnect(getConnectParameters).catch(() => {});
+    connectFlow.runConnect({ onBeforeRequest }).catch(() => {});
+    connectFlow.runConnect({ onBeforeRequest }).catch(() => {});
+    connectFlow.runConnect({ onBeforeRequest }).catch(() => {});
+    connectFlow.runConnect({ onBeforeRequest }).catch(() => {});
 
     await delayPromise(CONNECTION_DELAY);
 
@@ -150,7 +150,10 @@ describe('ConnectFlow', () => {
 
     hasReadyForConnectionMock.mockReturnValue(false);
 
-    await connectFlow.runConnect(getConnectParameters, hasReadyForConnectionMock);
+    await connectFlow.runConnect({
+      onBeforeRequest,
+      hasReadyForConnection: hasReadyForConnectionMock,
+    });
 
     expect(connectSpy).not.toHaveBeenCalled();
     expect(sipConnector.isConfigured()).toBe(false);
@@ -170,7 +173,7 @@ describe('ConnectFlow', () => {
     it('должен продолжить подключение даже, если disconnect упал с ошибкой', async () => {
       expect.assertions(2);
 
-      await connectFlow.runConnect(getConnectParameters);
+      await connectFlow.runConnect({ onBeforeRequest });
 
       jest.clearAllMocks();
 
@@ -180,7 +183,7 @@ describe('ConnectFlow', () => {
         throw new Error(errorMessage);
       });
 
-      await connectFlow.runConnect(getConnectParameters);
+      await connectFlow.runConnect({ onBeforeRequest });
 
       expect(disconnectSpy).toHaveBeenCalledTimes(1);
       expect(connectSpy).toHaveBeenCalledTimes(1);
@@ -195,7 +198,7 @@ describe('ConnectFlow', () => {
         throw new Error(errorMessage);
       });
 
-      await connectFlow.runConnect(getConnectParameters).catch((error: unknown) => {
+      await connectFlow.runConnect({ onBeforeRequest }).catch((error: unknown) => {
         // eslint-disable-next-line jest/no-conditional-expect
         expect((error as Error).message).toBe(errorMessage);
         // eslint-disable-next-line jest/no-conditional-expect
@@ -209,20 +212,9 @@ describe('ConnectFlow', () => {
         throw 'error';
       });
 
-      await connectFlow.runConnect(getConnectParameters).catch((error: unknown) => {
+      await connectFlow.runConnect({ onBeforeRequest }).catch((error: unknown) => {
         // eslint-disable-next-line jest/no-conditional-expect
         expect((error as Error).message).toBe('Failed to connect to server');
-      });
-    });
-
-    it('должен вернуть ошибку, если параметры отсутствуют', async () => {
-      expect.assertions(1);
-
-      getConnectParameters.mockResolvedValue(undefined as unknown as TParametersConnect);
-
-      await connectFlow.runConnect(getConnectParameters).catch((error: unknown) => {
-        // eslint-disable-next-line jest/no-conditional-expect
-        expect((error as Error).message).toBe('Parameters are missing');
       });
     });
   });
@@ -233,7 +225,7 @@ describe('ConnectFlow', () => {
 
       sipConnector.autoConnectorManager.on('connecting', handleConnecting);
 
-      await connectFlow.runConnect(getConnectParameters);
+      await connectFlow.runConnect({ onBeforeRequest });
 
       expect(handleConnecting).toHaveBeenCalled();
     });
@@ -243,7 +235,7 @@ describe('ConnectFlow', () => {
 
       sipConnector.autoConnectorManager.on('connected', handleConnected);
 
-      await connectFlow.runConnect(getConnectParameters);
+      await connectFlow.runConnect({ onBeforeRequest });
 
       expect(handleConnected).toHaveBeenCalled();
     });
@@ -257,21 +249,17 @@ describe('ConnectFlow', () => {
 
       sipConnector.autoConnectorManager.on('failed', handleFailed);
 
-      await connectFlow.runConnect(getConnectParameters).catch(() => {});
+      await connectFlow.runConnect({ onBeforeRequest }).catch(() => {});
 
       expect(handleFailed).toHaveBeenCalled();
     });
+  });
 
-    it('должен вызвать событие FAILED, если параметры отсутствуют', async () => {
-      const handleFailed = jest.fn();
+  describe('хуки', () => {
+    it('должен вызывать connect с данными из onBeforeRequest', async () => {
+      await connectFlow.runConnect({ onBeforeRequest });
 
-      getConnectParameters.mockResolvedValue(undefined as unknown as TParametersConnect);
-
-      sipConnector.autoConnectorManager.on('failed', handleFailed);
-
-      await connectFlow.runConnect(getConnectParameters).catch(() => {});
-
-      expect(handleFailed).toHaveBeenCalled();
+      expect(connectSpy).toHaveBeenCalledWith(connectParameters);
     });
   });
 });

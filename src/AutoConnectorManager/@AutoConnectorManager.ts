@@ -10,7 +10,7 @@ import ConnectFlow from './ConnectFlow';
 import { EEvent, EVENT_NAMES } from './eventNames';
 import PingServerRequester from './PingServerRequester';
 import RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCallSubscriber';
-import { hasParametersNotExistError } from './utils';
+import { createParametersNotExistError, hasParametersNotExistError } from './utils';
 
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
@@ -42,6 +42,8 @@ class AutoConnectorManager {
 
   private readonly cancelableRequestBeforeRetry: CancelableRequest<void, void>;
 
+  private readonly onBeforeRetry: () => Promise<void>;
+
   public constructor(
     {
       connectionQueueManager,
@@ -57,6 +59,7 @@ class AutoConnectorManager {
     const onBeforeRetry = options?.onBeforeRetry ?? asyncNoop;
 
     this.connectionManager = connectionManager;
+    this.onBeforeRetry = onBeforeRetry;
 
     this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
     this.connectFlow = new ConnectFlow({
@@ -66,7 +69,6 @@ class AutoConnectorManager {
     });
     this.checkTelephonyRequester = new CheckTelephonyRequester({
       connectionManager,
-      onBeforeRequest: onBeforeRetry,
       interval: options?.checkTelephonyRequestInterval ?? DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL,
     });
     this.pingServerRequester = new PingServerRequester({ connectionManager, callManager });
@@ -150,7 +152,11 @@ class AutoConnectorManager {
     logger('runCheckTelephony');
 
     this.checkTelephonyRequester.start({
-      getParameters: parameters.getCheckTelephonyParameters,
+      onBeforeRequest: async () => {
+        await this.onBeforeRetry();
+
+        return this.getParametersWithValidation(parameters.getParameters);
+      },
       onSuccessRequest: () => {
         logger('runCheckTelephony: onSuccessRequest');
 
@@ -186,10 +192,12 @@ class AutoConnectorManager {
 
   private async processConnect(parameters: TParametersAutoConnect) {
     try {
-      await this.connectFlow.runConnect(
-        parameters.getConnectParameters,
-        parameters.hasReadyForConnection,
-      );
+      await this.connectFlow.runConnect({
+        onBeforeRequest: async () => {
+          return this.getParametersWithValidation(parameters.getParameters);
+        },
+        hasReadyForConnection: parameters.hasReadyForConnection,
+      });
 
       logger('processConnect success');
 
@@ -280,6 +288,19 @@ class AutoConnectorManager {
 
         logger('reconnect: error', error);
       });
+  }
+
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
+  private async getParametersWithValidation(
+    getParameters: TParametersAutoConnect['getParameters'],
+  ) {
+    return getParameters().then((data) => {
+      if (!data) {
+        throw createParametersNotExistError();
+      }
+
+      return data;
+    });
   }
 
   private hasFailedOrDisconnectedConnection() {
