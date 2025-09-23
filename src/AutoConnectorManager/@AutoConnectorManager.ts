@@ -6,7 +6,6 @@ import { hasConnectionPromiseIsNotActualError } from '@/ConnectionQueueManager';
 import logger from '@/logger';
 import AttemptsState from './AttemptsState';
 import CheckTelephonyRequester from './CheckTelephonyRequester';
-import ConnectFlow from './ConnectFlow';
 import { EEvent, EVENT_NAMES } from './eventNames';
 import PingServerRequester from './PingServerRequester';
 import RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCallSubscriber';
@@ -28,7 +27,7 @@ class AutoConnectorManager {
 
   private readonly connectionManager: ConnectionManager;
 
-  private readonly connectFlow: ConnectFlow;
+  private readonly connectionQueueManager: ConnectionQueueManager;
 
   private readonly checkTelephonyRequester: CheckTelephonyRequester;
 
@@ -58,15 +57,11 @@ class AutoConnectorManager {
   ) {
     const onBeforeRetry = options?.onBeforeRetry ?? asyncNoop;
 
+    this.connectionQueueManager = connectionQueueManager;
     this.connectionManager = connectionManager;
     this.onBeforeRetry = onBeforeRetry;
 
     this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
-    this.connectFlow = new ConnectFlow({
-      connectionManager,
-      connectionQueueManager,
-      events: this.events,
-    });
     this.checkTelephonyRequester = new CheckTelephonyRequester({
       connectionManager,
       interval: options?.checkTelephonyRequestInterval ?? DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL,
@@ -100,7 +95,7 @@ class AutoConnectorManager {
     this.stopAttempts();
     this.stopConnectTriggers();
 
-    this.connectFlow.runDisconnect().catch((error: unknown) => {
+    this.connectionQueueManager.disconnect().catch((error: unknown) => {
       logger('auto connector disconnect: error', error);
     });
   }
@@ -130,7 +125,7 @@ class AutoConnectorManager {
 
   private stopAttempts() {
     if (this.attemptsState.isAttemptInProgress) {
-      this.connectFlow.stop();
+      this.connectionQueueManager.stop();
     }
 
     this.delayBetweenAttempts.cancelRequest();
@@ -190,8 +185,7 @@ class AutoConnectorManager {
 
   private async processConnect(parameters: TParametersAutoConnect) {
     try {
-      await this.connectFlow.runConnect({
-        onBeforeRequest: parameters.getParameters,
+      await this.connectionQueueManager.connect(parameters.getParameters, {
         hasReadyForConnection: parameters.hasReadyForConnection,
       });
 

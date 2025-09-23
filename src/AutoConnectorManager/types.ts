@@ -1,4 +1,3 @@
-import type { UA } from '@krivega/jssip';
 import type { ConnectionManager } from '@/ConnectionManager';
 import type { ConnectionQueueManager } from '@/ConnectionQueueManager';
 
@@ -17,10 +16,6 @@ export type TParametersConnect = Parameters<ConnectionQueueManager['connect']>[0
 export type TParametersAutoConnect = {
   getParameters: () => Promise<TParametersConnect & TParametersCheckTelephony>;
   hasReadyForConnection?: () => boolean;
-};
-export type TConnectedConfiguration = {
-  ua: UA;
-  isRegistered: boolean;
 };
 export type TAttemptStatus = {
   isInProgress: boolean;

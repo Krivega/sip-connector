@@ -3,6 +3,7 @@ import { isCanceledError } from '@krivega/cancelable-promise';
 import { hasCanceledError } from 'repeated-calls';
 import { debounce } from 'ts-debounce';
 
+import { hasNotReadyForConnectionError } from '@/ConnectionManager';
 import debug from '@/logger';
 import hasPurgatory from '@/tools/hasPurgatory';
 
@@ -14,7 +15,11 @@ import type { SipConnector } from '@/SipConnector';
 import type { TEventMap as TStatsEventMap } from '@/StatsManager';
 
 const handleError = (error: Error): { isSuccessful: boolean } => {
-  if (!isCanceledError(error) && !hasCanceledError(error)) {
+  if (
+    !isCanceledError(error) &&
+    !hasCanceledError(error) &&
+    !hasNotReadyForConnectionError(error)
+  ) {
     throw error;
   }
 
@@ -193,33 +198,39 @@ class SipConnectorFacade implements IProxyMethods {
     });
   }
 
-  public connectToServer = async (parameters: {
-    userAgent: string;
-    sipWebSocketServerURL: string;
-    sipServerUrl: string;
-    remoteAddress?: string;
-    displayName?: string;
-    name?: string;
-    password?: string;
-    isRegisteredUser?: boolean;
-    isDisconnectOnFail?: boolean;
-  }): Promise<{ ua?: UA; isSuccessful: boolean }> => {
-    const {
-      userAgent,
-      sipWebSocketServerURL,
-      sipServerUrl,
-      remoteAddress,
-      displayName,
-      name,
-      password,
-      isRegisteredUser,
-      isDisconnectOnFail,
-    } = parameters;
+  public connectToServer = async (
+    onPrepareConnect: () => Promise<{
+      userAgent: string;
+      sipWebSocketServerURL: string;
+      sipServerUrl: string;
+      remoteAddress?: string;
+      displayName?: string;
+      name?: string;
+      password?: string;
+      isRegisteredUser?: boolean;
+    }>,
+    options?: {
+      isDisconnectOnFail?: boolean;
+      hasReadyForConnection?: () => boolean;
+    },
+  ): Promise<{ ua?: UA; isSuccessful: boolean }> => {
+    const onPrepareConnectInner = async () => {
+      const parameters = await onPrepareConnect();
 
-    debug('connectToServer', parameters);
+      debug('connectToServer', parameters);
 
-    return this.sipConnector
-      .connect({
+      const {
+        userAgent,
+        sipWebSocketServerURL,
+        sipServerUrl,
+        remoteAddress,
+        displayName,
+        name,
+        password,
+        isRegisteredUser,
+      } = parameters;
+
+      return {
         userAgent,
         sipWebSocketServerURL,
         sipServerUrl,
@@ -228,7 +239,11 @@ class SipConnectorFacade implements IProxyMethods {
         password,
         user: name,
         register: isRegisteredUser,
-      })
+      };
+    };
+
+    return this.sipConnector
+      .connect(onPrepareConnectInner, options)
       .then((ua) => {
         debug('connectToServer then');
 
@@ -236,17 +251,6 @@ class SipConnectorFacade implements IProxyMethods {
       })
       .catch(async (error: unknown) => {
         debug('connectToServer catch: error', error);
-
-        if (isDisconnectOnFail === true) {
-          return this.sipConnector
-            .disconnect()
-            .then(() => {
-              return handleError(error as Error);
-            })
-            .catch(() => {
-              return handleError(error as Error);
-            });
-        }
 
         return handleError(error as Error);
       });

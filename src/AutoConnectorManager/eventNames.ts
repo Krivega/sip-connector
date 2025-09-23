@@ -1,16 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
 import type { TypedEvents } from 'events-constructor';
-import type { TAttemptStatus, TConnectedConfiguration } from './types';
+import type { TAttemptStatus } from './types';
 
 export enum EEvent {
-  // События состояний подключения
-  CONNECTING = 'connecting',
-  CONNECTED = 'connected',
-  DISCONNECTED = 'disconnected',
-  DISCONNECTING = 'disconnecting',
-  FAILED = 'failed',
-
-  // События попытки подключения
   BEFORE_ATTEMPT = 'before-attempt',
   SUCCEEDED_ATTEMPT = 'succeeded-attempt',
   FAILED_ATTEMPT = 'failed-attempt',
@@ -19,13 +11,6 @@ export enum EEvent {
 }
 
 export const EVENT_NAMES = [
-  // Состояния
-  `${EEvent.CONNECTING}`,
-  `${EEvent.CONNECTED}`,
-  `${EEvent.DISCONNECTED}`,
-  `${EEvent.DISCONNECTING}`,
-  `${EEvent.FAILED}`,
-  // Попытки
   `${EEvent.BEFORE_ATTEMPT}`,
   `${EEvent.SUCCEEDED_ATTEMPT}`,
   `${EEvent.FAILED_ATTEMPT}`,
@@ -34,11 +19,11 @@ export const EVENT_NAMES = [
 ] as const;
 
 export type TEventMap = {
-  connecting: Record<string, never>;
-  connected: TConnectedConfiguration;
-  disconnected: Record<string, never>;
-  disconnecting: Record<string, never>;
-  failed: Error;
+  // connecting: Record<string, never>;
+  // connected: TConnectedConfiguration;
+  // disconnected: Record<string, never>;
+  // disconnecting: Record<string, never>;
+  // failed: Error;
   'before-attempt': Record<string, never>;
   'succeeded-attempt': Record<string, never>;
   'failed-attempt': Error;

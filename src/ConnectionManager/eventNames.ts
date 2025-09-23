@@ -12,6 +12,9 @@ export enum EEvent {
   REGISTRATION_FAILED = 'registrationFailed',
   NEW_MESSAGE = 'newMessage',
   SIP_EVENT = 'sipEvent',
+  CONNECT_STARTED = 'connect-started',
+  CONNECT_SUCCEEDED = 'connect-succeeded',
+  CONNECT_FAILED = 'connect-failed',
 }
 
 export const UA_EVENT_NAMES = [
@@ -26,7 +29,12 @@ export const UA_EVENT_NAMES = [
   `${EEvent.SIP_EVENT}`,
 ] as const;
 
-const SYNTHETICS_EVENT_NAMES = [`${EEvent.DISCONNECTING}`];
+const SYNTHETICS_EVENT_NAMES = [
+  `${EEvent.DISCONNECTING}`,
+  `${EEvent.CONNECT_STARTED}`,
+  `${EEvent.CONNECT_SUCCEEDED}`,
+  `${EEvent.CONNECT_FAILED}`,
+] as const;
 
 export const EVENT_NAMES = [...UA_EVENT_NAMES, ...SYNTHETICS_EVENT_NAMES] as const;
 

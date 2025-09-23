@@ -25,10 +25,6 @@ class ConnectionQueueManager {
     }) as ReturnType<ConnectionManager['disconnect']>;
   };
 
-  public run = async <T = void>(task: () => Promise<T>): Promise<T> => {
-    return this.stackPromises.run(task) as Promise<T>;
-  };
-
   public stop() {
     this.stackPromises.stop();
   }

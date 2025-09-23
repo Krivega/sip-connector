@@ -32,12 +32,16 @@ describe('ConnectionQueueManager', () => {
       sipWebSocketServerURL: 'wss://test.com',
     };
 
+    const onPrepareConnect = async () => {
+      return connectParams;
+    };
+
     (connectionManager.connect as jest.Mock).mockResolvedValue(mockResult);
 
-    const result = await connectionQueueManager.connect(connectParams);
+    const result = await connectionQueueManager.connect(onPrepareConnect);
 
     expect(stackRunSpy).toHaveBeenCalled();
-    expect(connectionManager.connect).toHaveBeenCalledWith(connectParams);
+    expect(connectionManager.connect).toHaveBeenCalledWith(onPrepareConnect);
     expect(result).toBe(mockResult);
   });
 
@@ -56,15 +60,5 @@ describe('ConnectionQueueManager', () => {
     connectionQueueManager.stop();
 
     expect(stopSpy).toHaveBeenCalled();
-  });
-
-  it('должен проксировать метод run', async () => {
-    const runSpy = jest.spyOn(connectionQueueManager, 'run');
-
-    await connectionQueueManager.run(async () => {
-      return undefined;
-    });
-
-    expect(runSpy).toHaveBeenCalled();
   });
 });
