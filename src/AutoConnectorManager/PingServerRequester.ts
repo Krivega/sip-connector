@@ -17,7 +17,7 @@ class PingServerRequester {
     typeof requesterByTimeoutsWithFailCalls<ReturnType<typeof this.connectionManager.ping>>
   >;
 
-  private disposerCallStatusChange: (() => void) | undefined;
+  private disposeCallStatusChange: (() => void) | undefined;
 
   public constructor({
     connectionManager,
@@ -47,7 +47,7 @@ class PingServerRequester {
   public start({ onFailRequest }: { onFailRequest: () => void }) {
     logger('start');
 
-    this.disposerCallStatusChange = this.callManager.on('call-status-changed', () => {
+    this.disposeCallStatusChange = this.callManager.on('call-status-changed', () => {
       this.handleCallStatusChange({ onFailRequest });
     });
 
@@ -62,8 +62,8 @@ class PingServerRequester {
   }
 
   private unsubscribeCallStatusChange() {
-    this.disposerCallStatusChange?.();
-    this.disposerCallStatusChange = undefined;
+    this.disposeCallStatusChange?.();
+    this.disposeCallStatusChange = undefined;
   }
 
   private handleCallStatusChange({ onFailRequest }: { onFailRequest: () => void }) {
