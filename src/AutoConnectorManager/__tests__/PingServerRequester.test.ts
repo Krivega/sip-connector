@@ -82,9 +82,8 @@ describe('PingServerRequester', () => {
     it('подписывается на изменение статуса звонка и сразу вызывает callback', () => {
       const callManagerOnSpy = jest.spyOn(sipConnector.callManager, 'on');
 
-      callManagerOnSpy.mockImplementation((eventName, handler) => {
+      callManagerOnSpy.mockImplementation((eventName) => {
         expect(eventName).toBe('call-status-changed');
-        handler({});
 
         return jest.fn();
       });
@@ -93,6 +92,7 @@ describe('PingServerRequester', () => {
 
       pingServerRequester.start({ onFailRequest });
 
+      expect(startMock).toHaveBeenCalledTimes(1);
       expect(callManagerOnSpy).toHaveBeenCalledTimes(1);
     });
 
@@ -114,7 +114,6 @@ describe('PingServerRequester', () => {
       expect(stopMock).toHaveBeenCalledTimes(0);
 
       startCall();
-      endCall();
 
       expect(stopMock).toHaveBeenCalledTimes(1);
     });

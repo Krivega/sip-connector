@@ -16,7 +16,7 @@ class CallManager {
     this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
     this.strategy = strategy ?? new MCUCallStrategy(this.events);
 
-    this.subscribeToCallStatusChanges();
+    this.subscribeCallStatusChange();
   }
 
   public get requested(): boolean {
@@ -102,14 +102,14 @@ class CallManager {
     return this.strategy.restartIce(options);
   };
 
-  private subscribeToCallStatusChanges() {
+  private subscribeCallStatusChange() {
     const { isCallActive } = this;
     const { ACCEPTED, CONFIRMED, ENDED, FAILED } = EEvent;
 
     this.onceRace([ACCEPTED, CONFIRMED, ENDED, FAILED], () => {
       this.handleChangeCallStatus(isCallActive);
 
-      this.subscribeToCallStatusChanges();
+      this.subscribeCallStatusChange();
     });
   }
 
