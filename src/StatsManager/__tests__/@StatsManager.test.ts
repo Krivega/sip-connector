@@ -61,12 +61,18 @@ describe('StatsManager', () => {
     // stop on ended
     callManager.events.trigger('ended', {
       originator: 'local',
+      // @ts-expect-error
+      message: {},
+      cause: 'error',
     });
     expect(stopSpy).toHaveBeenCalledTimes(2);
 
     // stop on failed as well
     callManager.events.trigger('failed', {
       originator: 'local',
+      // @ts-expect-error
+      message: {},
+      cause: 'error',
     });
     expect(stopSpy).toHaveBeenCalledTimes(3);
   });
@@ -147,7 +153,12 @@ describe('StatsManager', () => {
     );
 
     // сброс при ended
-    callManager.events.trigger('ended', { originator: 'local' });
+    callManager.events.trigger('ended', {
+      originator: 'local',
+      // @ts-expect-error
+      message: {},
+      cause: 'error',
+    });
     expect(manager.availableIncomingBitrate).toBeUndefined();
 
     // восстановим и проверим сброс при failed
@@ -156,7 +167,12 @@ describe('StatsManager', () => {
       statisticsMockBase.inbound.additional.candidatePair.availableIncomingBitrate,
     );
 
-    callManager.events.trigger('failed', { originator: 'local' });
+    callManager.events.trigger('failed', {
+      originator: 'local',
+      // @ts-expect-error
+      message: {},
+      cause: 'error',
+    });
     expect(manager.availableIncomingBitrate).toBeUndefined();
   });
 

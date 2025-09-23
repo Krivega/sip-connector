@@ -435,7 +435,7 @@ class SipConnector {
 
     this.callManager.events.eachTriggers((_trigger, eventName) => {
       this.callManager.on(eventName, (event) => {
-        this.events.trigger(`call:${eventName}`, event);
+        this.events.trigger(`call:${eventName}` as TEvent, event);
       });
     });
 

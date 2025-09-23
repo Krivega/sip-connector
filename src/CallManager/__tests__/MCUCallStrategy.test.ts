@@ -1,4 +1,4 @@
-import { Events } from 'events-constructor';
+import { TypedEvents } from 'events-constructor';
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
 
 import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
@@ -9,6 +9,7 @@ import { MCUCallStrategy } from '../MCUCallStrategy';
 import { RemoteStreamsManager } from '../RemoteStreamsManager';
 
 import type { RTCSession, UA } from '@krivega/jssip';
+import type { TEventMap } from '../eventNames';
 
 // Вспомогательный тип для доступа к защищённым свойствам MCUCallStrategy
 interface MCUCallStrategyTestAccess {
@@ -19,14 +20,14 @@ interface MCUCallStrategyTestAccess {
 }
 
 describe('MCUCallStrategy', () => {
-  let events: Events<typeof EVENT_NAMES>;
+  let events: TypedEvents<TEventMap>;
   let ua: UAMock;
   let strategy: MCUCallStrategy;
   let getSipServerUrl: (number: string) => string;
   let mediaStream: MediaStream;
 
   beforeEach(() => {
-    events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
+    events = new TypedEvents<TEventMap>(EVENT_NAMES);
     ua = new UAMock({ uri: 'sip:user@sipServerUrl', register: false, sockets: [] });
     strategy = new MCUCallStrategy(events);
     getSipServerUrl = (number) => {
@@ -110,7 +111,12 @@ describe('MCUCallStrategy', () => {
     });
 
     // Провоцируем событие FAILED, чтобы промис был отклонён
-    events.trigger('failed', { originator: 'remote' });
+    events.trigger('failed', {
+      originator: 'remote',
+      // @ts-expect-error
+      message: {},
+      cause: 'error',
+    });
 
     await expect(promise).rejects.toBeDefined();
   });
@@ -234,12 +240,12 @@ describe('MCUCallStrategy', () => {
 });
 
 describe('MCUCallStrategy - дополнительные тесты для покрытия', () => {
-  let events: Events<typeof EVENT_NAMES>;
+  let events: TypedEvents<TEventMap>;
   let strategy: MCUCallStrategy;
   let strategyTest: MCUCallStrategyTestAccess;
 
   beforeEach(() => {
-    events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
+    events = new TypedEvents<TEventMap>(EVENT_NAMES);
     strategy = new MCUCallStrategy(events);
     strategyTest = strategy as unknown as MCUCallStrategyTestAccess;
     jest.clearAllMocks();
@@ -249,7 +255,12 @@ describe('MCUCallStrategy - дополнительные тесты для по�
     // @ts-expect-error
     const promise = strategy.handleCall({});
 
-    events.trigger('failed', { originator: 'remote' });
+    events.trigger('failed', {
+      originator: 'remote',
+      // @ts-expect-error
+      message: {},
+      cause: 'error',
+    });
     await expect(promise).rejects.toBeDefined();
   });
 
@@ -597,14 +608,14 @@ describe('MCUCallStrategy - дополнительные тесты для по�
 });
 
 describe("MCUCallStrategy - тесты хранения transceiver'ов", () => {
-  let events: Events<typeof EVENT_NAMES>;
+  let events: TypedEvents<TEventMap>;
   let strategy: MCUCallStrategy;
   let ua: UAMock;
   let getSipServerUrl: (number: string) => string;
   let mediaStream: MediaStream;
 
   beforeEach(() => {
-    events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
+    events = new TypedEvents<TEventMap>(EVENT_NAMES);
     strategy = new MCUCallStrategy(events);
     ua = new UAMock({ uri: 'sip:user@sipServerUrl', register: false, sockets: [] });
     getSipServerUrl = (number) => {
@@ -802,7 +813,12 @@ describe("MCUCallStrategy - тесты хранения transceiver'ов", () =>
       expect(strategy.getTransceivers().mainAudio).toBeDefined();
 
       // Эмулируем ошибку
-      events.trigger('failed', new Error('Test error'));
+      events.trigger('failed', {
+        originator: 'remote',
+        // @ts-expect-error
+        message: {},
+        cause: 'error',
+      });
 
       try {
         await promise;

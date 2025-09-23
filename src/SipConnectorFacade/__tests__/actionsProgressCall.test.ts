@@ -93,7 +93,12 @@ describe('actionsProgressCall', () => {
         });
       });
 
-    sipConnector.callManager.events.trigger('ended', 'error');
+    sipConnector.callManager.events.trigger('ended', {
+      originator: 'remote',
+      // @ts-expect-error
+      message: {},
+      cause: 'error',
+    });
 
     expect(onEndedCall.mock.calls.length).toBe(1);
   });
@@ -110,7 +115,12 @@ describe('actionsProgressCall', () => {
         });
       });
 
-    sipConnector.callManager.events.trigger('ended', 'error');
+    sipConnector.callManager.events.trigger('ended', {
+      originator: 'remote',
+      // @ts-expect-error
+      message: {},
+      cause: 'error',
+    });
 
     await sipConnectorFacade
       .connectToServer(dataForConnectionWithoutAuthorization)
@@ -118,7 +128,12 @@ describe('actionsProgressCall', () => {
         return sipConnectorFacade.callToServer(dataCall);
       });
 
-    sipConnector.callManager.events.trigger('ended', 'error');
+    sipConnector.callManager.events.trigger('ended', {
+      originator: 'remote',
+      // @ts-expect-error
+      message: {},
+      cause: 'error',
+    });
 
     expect(onEndedCall.mock.calls.length).toBe(1);
   });
@@ -135,7 +150,12 @@ describe('actionsProgressCall', () => {
         });
       });
 
-    sipConnector.callManager.events.trigger('failed', 'error');
+    sipConnector.callManager.events.trigger('failed', {
+      originator: 'remote',
+      // @ts-expect-error
+      message: {},
+      cause: 'error',
+    });
 
     expect(onEndedCall.mock.calls.length).toBe(1);
   });
@@ -152,7 +172,12 @@ describe('actionsProgressCall', () => {
         });
       });
 
-    sipConnector.callManager.events.trigger('failed', 'error');
+    sipConnector.callManager.events.trigger('failed', {
+      originator: 'remote',
+      // @ts-expect-error
+      message: {},
+      cause: 'error',
+    });
 
     await sipConnectorFacade
       .connectToServer(dataForConnectionWithoutAuthorization)
@@ -160,7 +185,12 @@ describe('actionsProgressCall', () => {
         return sipConnectorFacade.callToServer(dataCall);
       });
 
-    sipConnector.callManager.events.trigger('failed', 'error');
+    sipConnector.callManager.events.trigger('failed', {
+      originator: 'remote',
+      // @ts-expect-error
+      message: {},
+      cause: 'error',
+    });
 
     expect(onEndedCall.mock.calls.length).toBe(1);
   });
@@ -177,7 +207,12 @@ describe('actionsProgressCall', () => {
         });
       });
 
-    sipConnector.callManager.events.trigger('failed', 'error');
+    sipConnector.callManager.events.trigger('failed', {
+      originator: 'remote',
+      // @ts-expect-error
+      message: {},
+      cause: 'error',
+    });
 
     await sipConnectorFacade
       .connectToServer(dataForConnectionWithoutAuthorization)
@@ -185,7 +220,12 @@ describe('actionsProgressCall', () => {
         return sipConnectorFacade.callToServer(dataCall);
       });
 
-    sipConnector.callManager.events.trigger('ended', 'error');
+    sipConnector.callManager.events.trigger('ended', {
+      originator: 'remote',
+      // @ts-expect-error
+      message: {},
+      cause: 'error',
+    });
 
     expect(onEndedCall.mock.calls.length).toBe(1);
   });
@@ -202,7 +242,12 @@ describe('actionsProgressCall', () => {
         });
       });
 
-    sipConnector.callManager.events.trigger('ended', 'error');
+    sipConnector.callManager.events.trigger('ended', {
+      originator: 'remote',
+      // @ts-expect-error
+      message: {},
+      cause: 'error',
+    });
 
     await sipConnectorFacade
       .connectToServer(dataForConnectionWithoutAuthorization)
@@ -210,7 +255,12 @@ describe('actionsProgressCall', () => {
         return sipConnectorFacade.callToServer(dataCall);
       });
 
-    sipConnector.callManager.events.trigger('failed', 'error');
+    sipConnector.callManager.events.trigger('failed', {
+      originator: 'remote',
+      // @ts-expect-error
+      message: {},
+      cause: 'error',
+    });
 
     expect(onEndedCall.mock.calls.length).toBe(1);
   });

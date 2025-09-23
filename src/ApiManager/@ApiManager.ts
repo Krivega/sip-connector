@@ -1,6 +1,5 @@
 import { Events } from 'events-constructor';
 
-import { Originator } from '@/CallManager';
 import logger from '@/logger';
 import { hasDeclineResponseFromServer } from '@/utils/errors';
 import {
@@ -90,8 +89,8 @@ class ApiManager {
         return;
       }
 
-      this.callManager.once('newDTMF', ({ originator }: { originator: Originator }) => {
-        if (originator === Originator.LOCAL) {
+      this.callManager.once('newDTMF', ({ originator }) => {
+        if (originator === 'local') {
           resolve();
         }
       });
@@ -385,47 +384,50 @@ class ApiManager {
   private readonly handleNewInfo = (info: IncomingInfoEvent | OutgoingInfoEvent) => {
     const { originator } = info;
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-    if (originator !== Originator.REMOTE) {
+    if (originator !== 'remote') {
       return;
     }
 
     const { request } = info;
-    const contentType = request.getHeader(EHeader.CONTENT_TYPE) as EContentTypeReceived | undefined;
+
+    const typedRequest = request as IncomingRequest;
+    const contentType = typedRequest.getHeader(EHeader.CONTENT_TYPE) as
+      | EContentTypeReceived
+      | undefined;
 
     if (contentType !== undefined) {
       switch (contentType) {
         case EContentTypeReceived.ENTER_ROOM: {
-          this.triggerEnterRoom(request);
-          this.maybeTriggerChannels(request);
+          this.triggerEnterRoom(typedRequest);
+          this.maybeTriggerChannels(typedRequest);
           break;
         }
         case EContentTypeReceived.NOTIFY: {
-          this.maybeHandleNotify(request);
+          this.maybeHandleNotify(typedRequest);
           break;
         }
         case EContentTypeReceived.SHARE_STATE: {
-          this.triggerShareState(request);
+          this.triggerShareState(typedRequest);
           break;
         }
         case EContentTypeReceived.MAIN_CAM: {
-          this.triggerMainCamControl(request);
+          this.triggerMainCamControl(typedRequest);
           break;
         }
         case EContentTypeReceived.MIC: {
-          this.triggerMicControl(request);
+          this.triggerMicControl(typedRequest);
           break;
         }
         case EContentTypeReceived.USE_LICENSE: {
-          this.triggerUseLicense(request);
+          this.triggerUseLicense(typedRequest);
           break;
         }
         case EContentTypeReceived.PARTICIPANT_STATE: {
-          this.maybeTriggerParticipantMoveRequest(request);
+          this.maybeTriggerParticipantMoveRequest(typedRequest);
           break;
         }
         case EContentTypeReceived.RESTART: {
-          this.triggerRestart(request);
+          this.triggerRestart(typedRequest);
           break;
         }
 

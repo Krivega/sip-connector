@@ -9,6 +9,7 @@ jest.mock('@/logger', () => {
   };
 });
 
+import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import { doMockSipConnector } from '@/doMock';
 import debugMock from '@/logger';
 import VideoSendingBalancerManager from '../@VideoSendingBalancerManager';
@@ -17,6 +18,7 @@ import type { CallManager } from '@/CallManager';
 
 describe('VideoSendingBalancerManager scheduleBalancingStart error handling', () => {
   let callManager: CallManager;
+  let mockConnection: RTCPeerConnection;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -24,6 +26,7 @@ describe('VideoSendingBalancerManager scheduleBalancingStart error handling', ()
 
     const sipConnector = doMockSipConnector();
 
+    mockConnection = new RTCPeerConnectionMock(undefined, [] as never[]) as RTCPeerConnection;
     callManager = sipConnector.callManager;
 
     // Убираем connection, чтобы balance упал с ошибкой
@@ -41,7 +44,7 @@ describe('VideoSendingBalancerManager scheduleBalancingStart error handling', ()
     });
 
     // Эмулируем начало звонка, что запланирует балансировку
-    callManager.events.trigger('peerconnection:confirmed', {});
+    callManager.events.trigger('peerconnection:confirmed', mockConnection);
 
     // Прокручиваем таймеры, чтобы исполнился setTimeout
     jest.runAllTimers();

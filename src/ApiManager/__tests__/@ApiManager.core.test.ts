@@ -127,7 +127,7 @@ describe('ApiManager (core)', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callManager.events.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo', infoEvent);
 
       const result = await waitPromise;
 
@@ -143,7 +143,7 @@ describe('ApiManager (core)', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callManager.events.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo', infoEvent);
 
       const result = await waitPromise;
 
@@ -159,7 +159,7 @@ describe('ApiManager (core)', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callManager.events.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo', infoEvent);
 
       const result = await waitPromise;
 
@@ -480,7 +480,7 @@ describe('ApiManager (core)', () => {
 
       const sendDTMFSpy = jest.spyOn(rtcSession, 'sendDTMF').mockImplementation(() => {
         setTimeout(() => {
-          callManager.events.trigger('newDTMF' as never, { originator: 'local' });
+          callManager.events.trigger('newDTMF', { originator: 'local' });
         }, 0);
       });
 
@@ -494,7 +494,7 @@ describe('ApiManager (core)', () => {
 
       const sendDTMFSpy = jest.spyOn(rtcSession, 'sendDTMF').mockImplementation(() => {
         setTimeout(() => {
-          callManager.events.trigger('newDTMF' as never, { originator: 'local' });
+          callManager.events.trigger('newDTMF', { originator: 'local' });
         }, 0);
       });
 
@@ -508,7 +508,7 @@ describe('ApiManager (core)', () => {
 
       const sendDTMFSpy = jest.spyOn(rtcSession, 'sendDTMF').mockImplementation(() => {
         setTimeout(() => {
-          callManager.events.trigger('newDTMF' as never, { originator: 'local' });
+          callManager.events.trigger('newDTMF', { originator: 'local' });
         }, 0);
       });
 
@@ -522,7 +522,7 @@ describe('ApiManager (core)', () => {
 
       const sendDTMFSpy = jest.spyOn(rtcSession, 'sendDTMF').mockImplementation(() => {
         setTimeout(() => {
-          callManager.events.trigger('newDTMF' as never, { originator: 'local' });
+          callManager.events.trigger('newDTMF', { originator: 'local' });
         }, 0);
       });
 
@@ -535,7 +535,7 @@ describe('ApiManager (core)', () => {
       apiManager = new ApiManager({ connectionManager, callManager });
 
       const sendDTMFSpy = jest.spyOn(rtcSession, 'sendDTMF').mockImplementation(() => {
-        callManager.events.trigger('newDTMF' as never, { originator: 'local' });
+        callManager.events.trigger('newDTMF', { originator: 'local' });
       });
 
       await apiManager.sendDTMF(1);
@@ -554,7 +554,7 @@ describe('ApiManager (core)', () => {
 
       const sendDTMFSpy = jest.spyOn(rtcSession, 'sendDTMF').mockImplementation(() => {
         setTimeout(() => {
-          callManager.events.trigger('newDTMF' as never, { originator: 'remote' });
+          callManager.events.trigger('newDTMF', { originator: 'remote' });
         }, 10);
       });
       const dtmfPromise = apiManager.sendDTMF(1);
@@ -597,7 +597,7 @@ describe('ApiManager (core)', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callManager.events.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo', infoEvent);
       expect(enterRoomSpy).toHaveBeenCalledWith({ room: undefined, participantName: undefined });
     });
 
@@ -609,7 +609,7 @@ describe('ApiManager (core)', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callManager.events.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo', infoEvent);
       expect(channelsSpy).not.toHaveBeenCalled();
     });
 
@@ -621,7 +621,7 @@ describe('ApiManager (core)', () => {
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
-      callManager.events.trigger('newInfo' as never, infoEvent);
+      callManager.events.trigger('newInfo', infoEvent);
       expect(mainCamControlSpy).toHaveBeenCalledWith({
         mainCam: undefined,
         resolutionMainCam: undefined,

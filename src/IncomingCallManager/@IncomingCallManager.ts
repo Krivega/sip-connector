@@ -1,10 +1,10 @@
 import { Events } from 'events-constructor';
 
-import { EEvent, EVENT_NAMES, Originator } from './eventNames';
+import { EEvent, EVENT_NAMES } from './eventNames';
 
 import type { IncomingRTCSessionEvent, OutgoingRTCSessionEvent, RTCSession } from '@krivega/jssip';
 import type { ConnectionManager } from '@/ConnectionManager';
-import type { TEvent } from './eventNames';
+import type { TEvent, Originator } from './eventNames';
 
 const BUSY_HERE_STATUS_CODE = 486;
 const REQUEST_TERMINATED_STATUS_CODE = 487;
@@ -127,8 +127,7 @@ export default class IncomingCallManager {
     originator,
     session: rtcSession,
   }: IncomingRTCSessionEvent | OutgoingRTCSessionEvent) => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-    if (originator === Originator.REMOTE) {
+    if (originator === 'remote') {
       this.setIncomingSession(rtcSession);
     }
   };
@@ -138,10 +137,10 @@ export default class IncomingCallManager {
 
     const callerData = this.remoteCallerData;
 
-    rtcSession.on('failed', (event: { originator: Originator }) => {
+    rtcSession.on('failed', (event: { originator: `${Originator}` }) => {
       this.removeIncomingSession();
 
-      if (event.originator === Originator.LOCAL) {
+      if (event.originator === 'local') {
         this.events.trigger(EEvent.TERMINATED_INCOMING_CALL, callerData);
       } else {
         this.events.trigger(EEvent.FAILED_INCOMING_CALL, callerData);

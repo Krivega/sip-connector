@@ -75,7 +75,7 @@ describe('VideoSendingBalancerManager', () => {
       });
 
       // Эмулируем начало звонка
-      callManager.events.trigger('peerconnection:confirmed', {});
+      callManager.events.trigger('peerconnection:confirmed', mockConnection);
 
       // Проверяем, что используется кастомная задержка
       expect(customManager.isBalancingScheduled).toBe(true);
@@ -127,7 +127,7 @@ describe('VideoSendingBalancerManager', () => {
       const promise = videoSendingBalancerManager.wait('balancing-scheduled');
 
       // Эмулируем начало звонка
-      callManager.events.trigger('peerconnection:confirmed', {});
+      callManager.events.trigger('peerconnection:confirmed', mockConnection);
 
       const data = await promise;
 
@@ -144,7 +144,7 @@ describe('VideoSendingBalancerManager', () => {
       videoSendingBalancerManager.on('balancing-scheduled', scheduledSpy);
 
       // Эмулируем начало звонка
-      callManager.events.trigger('peerconnection:confirmed', {});
+      callManager.events.trigger('peerconnection:confirmed', mockConnection);
 
       expect(scheduledSpy).toHaveBeenCalledWith({ delay: 10_000 }); // Значение по умолчанию
       expect(videoSendingBalancerManager.isBalancingScheduled).toBe(true);
@@ -155,7 +155,12 @@ describe('VideoSendingBalancerManager', () => {
       expect(videoSendingBalancerManager.isBalancingActive).toBe(true);
 
       // Эмулируем окончание звонка
-      callManager.events.trigger('ended', {});
+      callManager.events.trigger('ended', {
+        originator: 'remote',
+        // @ts-expect-error
+        message: {},
+        cause: 'error',
+      });
 
       expect(videoSendingBalancerManager.isBalancingActive).toBe(false);
     });
@@ -165,7 +170,12 @@ describe('VideoSendingBalancerManager', () => {
       expect(videoSendingBalancerManager.isBalancingActive).toBe(true);
 
       // Эмулируем неудачный звонок
-      callManager.events.trigger('failed', {});
+      callManager.events.trigger('failed', {
+        originator: 'remote',
+        // @ts-expect-error
+        message: {},
+        cause: 'error',
+      });
 
       expect(videoSendingBalancerManager.isBalancingActive).toBe(false);
     });

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
-import type { Events } from 'events-constructor';
+import type { IncomingInfoEvent, OutgoingInfoEvent, EndEvent } from '@krivega/jssip';
+import type { TypedEvents } from 'events-constructor';
 
 export enum EEvent {
   // rtcSession events
@@ -87,5 +88,45 @@ export const EVENT_NAMES = [
   ...SESSION_SYNTHETICS_EVENT_NAMES,
 ] as const;
 
-export type TEvents = Events<typeof EVENT_NAMES>;
 export type TEvent = (typeof EVENT_NAMES)[number];
+
+export type TEventMap = {
+  // RTCSession events
+  peerconnection: { peerconnection: RTCPeerConnection };
+  connecting: unknown;
+  sending: unknown;
+  progress: unknown;
+  accepted: unknown;
+  confirmed: unknown;
+  ended: EndEvent;
+  failed: EndEvent;
+  newDTMF: { originator: `${Originator}` };
+  newInfo: IncomingInfoEvent | OutgoingInfoEvent;
+  hold: unknown;
+  unhold: unknown;
+  muted: unknown;
+  unmuted: unknown;
+  reinvite: unknown;
+  update: unknown;
+  refer: unknown;
+  replaces: unknown;
+  sdp: unknown;
+  icecandidate: unknown;
+  getusermediafailed: unknown;
+  'peerconnection:createofferfailed': unknown;
+  'peerconnection:createanswerfailed': unknown;
+  'peerconnection:setlocaldescriptionfailed': unknown;
+  'peerconnection:setremotedescriptionfailed': unknown;
+  // presentation events
+  'presentation:start': MediaStream;
+  'presentation:started': MediaStream;
+  'presentation:end': MediaStream;
+  'presentation:ended': MediaStream;
+  'presentation:failed': Error;
+  // synthetic events
+  'peerconnection:confirmed': RTCPeerConnection;
+  'peerconnection:ontrack': RTCTrackEvent;
+  'ended:fromserver': EndEvent;
+};
+
+export type TEvents = TypedEvents<TEventMap>;
