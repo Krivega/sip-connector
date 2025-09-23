@@ -1,2 +1,2 @@
 export { default as ConnectionQueueManager } from './@ConnectionQueueManager';
-export { hasConnectionPromiseIsNotActualError } from './utils';
+export { isPromiseIsNotActualError as hasConnectionPromiseIsNotActualError } from 'stack-promises';
