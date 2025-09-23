@@ -5,7 +5,7 @@ import { doMockSipConnector } from '@/doMock';
 import dataCall, { peerConnectionFromData } from '@/tools/__fixtures__/call';
 import { dataForConnectionWithAuthorization } from '@/tools/__fixtures__/connectToServer';
 import parseObject from '@/tools/__tests-utils__/parseObject';
-import SipConnectorFacade from '../SipConnectorFacade';
+import SipConnectorFacade from '../@SipConnectorFacade';
 
 import type { SipConnector } from '@/SipConnector';
 

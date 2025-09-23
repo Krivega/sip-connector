@@ -5,7 +5,7 @@ import remoteCallerData from '@/__fixtures__/remoteCallerData';
 import { doMockSipConnector } from '@/doMock';
 import dataCall from '@/tools/__fixtures__/call';
 import { dataForConnectionWithAuthorization } from '@/tools/__fixtures__/connectToServer';
-import SipConnectorFacade from '../SipConnectorFacade';
+import SipConnectorFacade from '../@SipConnectorFacade';
 
 import type { SipConnector } from '@/SipConnector';
 
@@ -112,7 +112,12 @@ describe('actionsProgressIncomingCall', () => {
           onEndedCall,
         });
 
-        sipConnector.callManager.events.trigger('ended', 'error');
+        sipConnector.callManager.events.trigger('ended', {
+          originator: 'remote',
+          // @ts-expect-error
+          message: {},
+          cause: 'error',
+        });
 
         expect(onEndedCall.mock.calls.length).toBe(1);
 
@@ -136,7 +141,12 @@ describe('actionsProgressIncomingCall', () => {
           onEndedCall,
         });
 
-        sipConnector.callManager.events.trigger('failed', 'error');
+        sipConnector.callManager.events.trigger('failed', {
+          originator: 'remote',
+          // @ts-expect-error
+          message: {},
+          cause: 'error',
+        });
 
         expect(onEndedCall.mock.calls.length).toBe(1);
 

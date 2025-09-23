@@ -16,7 +16,7 @@ import {
 } from '@/tools/__fixtures__/connectToServer';
 import hasValidUri from '@/tools/__fixtures__/hasValidUri';
 import { parseObjectWithoutUri } from '@/tools/__tests-utils__/parseObject';
-import SipConnectorFacade from '../SipConnectorFacade';
+import SipConnectorFacade from '../@SipConnectorFacade';
 
 import type { SipConnector } from '@/SipConnector';
 

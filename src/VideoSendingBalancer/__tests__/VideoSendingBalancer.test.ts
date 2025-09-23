@@ -9,8 +9,8 @@ import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
 import { EEventsMainCAM } from '@/ApiManager';
 import { doMockSipConnector } from '@/doMock';
 import logger from '@/logger';
+import VideoSendingBalancer, { resolveVideoSendingBalancer } from '../@VideoSendingBalancer';
 import { createMockTrack } from '../__fixtures__';
-import VideoSendingBalancer, { resolveVideoSendingBalancer } from '../VideoSendingBalancer';
 
 import type { ApiManager } from '@/ApiManager';
 import type { IBalancerOptions, IMainCamHeaders } from '../types';

@@ -35,7 +35,7 @@ export type TParamsCall = TParamsAnswerToIncomingCall & {
 };
 
 export type TCustomError = Error & {
-  originator?: Originator;
+  originator?: `${Originator}`;
   cause?: unknown;
   message: unknown;
   _ws?: unknown;

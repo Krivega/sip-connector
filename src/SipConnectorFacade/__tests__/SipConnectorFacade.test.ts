@@ -6,7 +6,7 @@ import {
   dataForConnectionWithAuthorization,
   dataForConnectionWithoutAuthorization,
 } from '@/tools/__fixtures__/connectToServer';
-import SipConnectorFacade from '../SipConnectorFacade';
+import SipConnectorFacade from '../@SipConnectorFacade';
 
 describe('SipConnectorFacade', () => {
   let sipConnectorFacade: SipConnectorFacade;

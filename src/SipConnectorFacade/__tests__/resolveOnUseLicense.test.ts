@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 import { doMockSipConnector } from '@/doMock';
-import SipConnectorFacade from '../SipConnectorFacade';
+import SipConnectorFacade from '../@SipConnectorFacade';
 
 import type { SipConnector } from '@/SipConnector';
 

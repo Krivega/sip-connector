@@ -20,19 +20,19 @@ describe('PresentationManager', () => {
       originator: 'local',
     });
     callManager = new CallManager();
-    rtcSession.on('presentation:start', (data) => {
+    rtcSession.on('presentation:start', (data: MediaStream) => {
       callManager.events.trigger('presentation:start', data);
     });
-    rtcSession.on('presentation:started', (data) => {
+    rtcSession.on('presentation:started', (data: MediaStream) => {
       callManager.events.trigger('presentation:started', data);
     });
-    rtcSession.on('presentation:end', (data) => {
+    rtcSession.on('presentation:end', (data: MediaStream) => {
       callManager.events.trigger('presentation:end', data);
     });
-    rtcSession.on('presentation:ended', (data) => {
+    rtcSession.on('presentation:ended', (data: MediaStream) => {
       callManager.events.trigger('presentation:ended', data);
     });
-    rtcSession.on('presentation:failed', (data) => {
+    rtcSession.on('presentation:failed', (data: Error) => {
       callManager.events.trigger('presentation:failed', data);
     });
     callManager.getEstablishedRTCSession = jest.fn().mockReturnValue(rtcSession);

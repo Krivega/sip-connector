@@ -1,14 +1,14 @@
 import prepareMediaStream from '@/tools/prepareMediaStream';
+import { TransceiverManager } from '@/TransceiverManager';
 import { hasVideoTracks } from '@/utils/utils';
 import { AbstractCallStrategy } from './AbstractCallStrategy';
 import { ECallCause } from './causes';
-import { EEvent, Originator, SESSION_JSSIP_EVENT_NAMES } from './eventNames';
+import { EEvent, SESSION_JSSIP_EVENT_NAMES } from './eventNames';
 import { RemoteStreamsManager } from './RemoteStreamsManager';
-import { TransceiverManager } from './TransceiverManager';
 
-import type { RTCSession } from '@krivega/jssip';
+import type { RTCSession, EndEvent } from '@krivega/jssip';
 import type { TEvents } from './eventNames';
-import type { ICallStrategy, ITransceiverStorage, TCustomError, TOntrack } from './types';
+import type { ICallStrategy, ITransceiverStorage, TOntrack } from './types';
 
 export class MCUCallStrategy extends AbstractCallStrategy {
   private readonly remoteStreamsManager = new RemoteStreamsManager();
@@ -290,9 +290,10 @@ export class MCUCallStrategy extends AbstractCallStrategy {
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
         this.events.off(EEvent.ENDED, handleEnded);
       };
-      const handleEnded = (error: TCustomError) => {
+      const handleEnded = (error: EndEvent) => {
         removeStartedEventListeners();
         removeEndedEventListeners();
+        // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
         reject(error);
       };
 
@@ -302,7 +303,7 @@ export class MCUCallStrategy extends AbstractCallStrategy {
         savedPeerconnection = peerconnection;
 
         const handleTrack = (event: RTCTrackEvent) => {
-          this.events.trigger(EEvent.PEER_CONNECTION_ONTRACK, peerconnection);
+          this.events.trigger(EEvent.PEER_CONNECTION_ONTRACK, event);
 
           // Сохраняем transceiver в зависимости от типа трека
           this.transceiverManager.storeTransceiver(event.transceiver, event.track);
@@ -355,11 +356,11 @@ export class MCUCallStrategy extends AbstractCallStrategy {
     this.disposers.clear();
   }
 
-  private readonly handleEnded = (error: TCustomError) => {
-    const { originator } = error;
+  private readonly handleEnded = (event: EndEvent) => {
+    const { originator } = event;
 
-    if (originator === Originator.REMOTE) {
-      this.events.trigger(EEvent.ENDED_FROM_SERVER, error);
+    if (originator === 'remote') {
+      this.events.trigger(EEvent.ENDED_FROM_SERVER, event);
     }
 
     this.reset();

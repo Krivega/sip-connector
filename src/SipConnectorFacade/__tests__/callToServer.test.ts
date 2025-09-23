@@ -3,7 +3,7 @@ import { doMockSipConnector } from '@/doMock';
 import dataCall, { dataCallPurgatory, peerConnectionFromData } from '@/tools/__fixtures__/call';
 import { dataForConnectionWithoutAuthorization } from '@/tools/__fixtures__/connectToServer';
 import parseObject from '@/tools/__tests-utils__/parseObject';
-import SipConnectorFacade from '../SipConnectorFacade';
+import SipConnectorFacade from '../@SipConnectorFacade';
 
 describe('callToServer', () => {
   let sipConnectorFacade: SipConnectorFacade;
