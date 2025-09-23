@@ -15,7 +15,7 @@ import { createMockTrack } from '../__fixtures__';
 import type { ApiManager } from '@/ApiManager';
 import type { IBalancerOptions, IMainCamHeaders } from '../types';
 
-jest.mock('../../logger', () => {
+jest.mock('@/logger', () => {
   return jest.fn();
 });
 

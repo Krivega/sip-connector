@@ -15,7 +15,7 @@ import type {
 } from '@krivega/jssip';
 import type { UA_EVENT_NAMES } from '../eventNames';
 
-jest.mock('../../logger', () => {
+jest.mock('@/logger', () => {
   return jest.fn();
 });
 

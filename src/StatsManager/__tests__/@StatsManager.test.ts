@@ -16,7 +16,7 @@ const audioTrack = createAudioMediaStreamTrackMock();
 const videoTrack = createVideoMediaStreamTrackMock();
 
 // Мокаем logger
-jest.mock('../../logger', () => {
+jest.mock('@/logger', () => {
   return jest.fn();
 });
 

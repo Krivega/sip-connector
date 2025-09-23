@@ -6,11 +6,6 @@ import SipConnector from '../@SipConnector';
 import type { IncomingResponse, RegisteredEvent, UA, UnRegisteredEvent } from '@krivega/jssip';
 import type { TJsSIP } from '@/types';
 
-// Мокаем logger
-jest.mock('../../logger', () => {
-  return jest.fn();
-});
-
 describe('SipConnector facade', () => {
   let sipConnector: SipConnector;
 

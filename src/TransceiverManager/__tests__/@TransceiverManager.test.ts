@@ -11,7 +11,7 @@ import type { EndEvent } from '@krivega/jssip';
 import type { TEventMap } from '@/CallManager';
 
 // Мокаем logger
-jest.mock('../../logger', () => {
+jest.mock('@/logger', () => {
   return jest.fn();
 });
 
