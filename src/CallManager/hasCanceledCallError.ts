@@ -2,7 +2,6 @@
 import { isCanceledError } from '@krivega/cancelable-promise';
 
 import { ECallCause } from './causes';
-import { Originator } from './eventNames';
 
 import type { TCustomError } from './types';
 
@@ -25,8 +24,7 @@ const hasCanceledCallError = (error: unknown): boolean => {
     return (
       cause === ECallCause.REQUEST_TIMEOUT ||
       cause === ECallCause.REJECTED ||
-      (originator === Originator.LOCAL &&
-        (cause === ECallCause.CANCELED || cause === ECallCause.BYE))
+      (originator === 'local' && (cause === ECallCause.CANCELED || cause === ECallCause.BYE))
     );
   }
 
