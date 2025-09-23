@@ -1,17 +1,15 @@
-import CallStatusSubscriber from './CallStatusSubscriber';
-
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
 import type { ISubscriber } from './types';
 
 class RegistrationFailedOutOfCallSubscriber implements ISubscriber {
-  private readonly callStatusSubscriber: CallStatusSubscriber;
-
   private readonly connectionManager: ConnectionManager;
+
+  private readonly callManager: CallManager;
 
   private isRegistrationFailed = false;
 
-  private disposeRegistrationFailed: (() => void) | undefined;
+  private disposers: (() => void)[] = [];
 
   public constructor({
     connectionManager,
@@ -22,26 +20,33 @@ class RegistrationFailedOutOfCallSubscriber implements ISubscriber {
   }) {
     this.connectionManager = connectionManager;
 
-    this.callStatusSubscriber = new CallStatusSubscriber({ callManager });
+    this.callManager = callManager;
   }
 
   public subscribe(callback: () => void) {
     this.unsubscribe();
 
-    this.disposeRegistrationFailed = this.connectionManager.on('registrationFailed', () => {
-      this.setIsRegistrationFailed();
-    });
+    this.disposers.push(
+      this.connectionManager.on('registrationFailed', () => {
+        this.setIsRegistrationFailed();
+      }),
+    );
 
-    this.callStatusSubscriber.subscribe((isCallActive) => {
-      if (!isCallActive && this.isRegistrationFailed) {
-        callback();
-      }
-    });
+    this.disposers.push(
+      this.callManager.on('call-status-changed', ({ isCallActive }) => {
+        if (!isCallActive && this.isRegistrationFailed) {
+          callback();
+        }
+      }),
+    );
   }
 
   public unsubscribe() {
-    this.callStatusSubscriber.unsubscribe();
-    this.unsubscribeRegistrationFailed();
+    this.disposers.forEach((disposer) => {
+      disposer();
+    });
+    this.disposers = [];
+
     this.resetIsRegistrationFailed();
   }
 
@@ -51,11 +56,6 @@ class RegistrationFailedOutOfCallSubscriber implements ISubscriber {
 
   private resetIsRegistrationFailed() {
     this.isRegistrationFailed = false;
-  }
-
-  private unsubscribeRegistrationFailed() {
-    this.disposeRegistrationFailed?.();
-    this.disposeRegistrationFailed = undefined;
   }
 }
 

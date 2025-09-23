@@ -40,6 +40,7 @@ export enum EEvent {
   PEER_CONNECTION_CONFIRMED = 'peerconnection:confirmed',
   PEER_CONNECTION_ONTRACK = 'peerconnection:ontrack',
   ENDED_FROM_SERVER = 'ended:fromserver',
+  CALL_STATUS_CHANGED = 'call-status-changed',
 }
 
 export enum Originator {
@@ -81,6 +82,7 @@ const SESSION_SYNTHETICS_EVENT_NAMES = [
   `${EEvent.PEER_CONNECTION_CONFIRMED}`,
   `${EEvent.PEER_CONNECTION_ONTRACK}`,
   `${EEvent.ENDED_FROM_SERVER}`,
+  `${EEvent.CALL_STATUS_CHANGED}`,
 ] as const;
 
 export const EVENT_NAMES = [
@@ -127,6 +129,7 @@ export type TEventMap = {
   'peerconnection:confirmed': RTCPeerConnection;
   'peerconnection:ontrack': RTCTrackEvent;
   'ended:fromserver': EndEvent;
+  'call-status-changed': { isCallActive: boolean };
 };
 
 export type TEvents = TypedEvents<TEventMap>;

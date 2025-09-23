@@ -1,7 +1,6 @@
 import { requesterByTimeoutsWithFailCalls } from '@krivega/timeout-requester';
 
 import { doMockSipConnector } from '@/doMock';
-import CallStatusSubscriber from '../CallStatusSubscriber';
 import PingServerRequester from '../PingServerRequester';
 
 const requesterByTimeoutsWithFailCallsMock =
@@ -27,6 +26,9 @@ describe('PingServerRequester', () => {
   let pingServerRequester: PingServerRequester;
   let sipConnector: ReturnType<typeof doMockSipConnector>;
 
+  let startCall: () => void;
+  let endCall: () => void;
+
   beforeEach(() => {
     sipConnector = doMockSipConnector();
 
@@ -36,6 +38,16 @@ describe('PingServerRequester', () => {
       connectionManager: sipConnector.connectionManager,
       callManager: sipConnector.callManager,
     });
+
+    startCall = () => {
+      jest.spyOn(sipConnector.callManager, 'isCallActive', 'get').mockReturnValue(true);
+      sipConnector.callManager.events.trigger('confirmed', {});
+    };
+    endCall = () => {
+      jest.spyOn(sipConnector.callManager, 'isCallActive', 'get').mockReturnValue(false);
+      // @ts-expect-error
+      sipConnector.callManager.events.trigger('ended', {});
+    };
   });
 
   describe('инициализация', () => {
@@ -67,44 +79,42 @@ describe('PingServerRequester', () => {
   });
 
   describe('start', () => {
-    it('подписывается на CallStatusSubscriber с fireImmediately=true', () => {
-      const subscribeSpy = jest.spyOn(CallStatusSubscriber.prototype, 'subscribe');
+    it('подписывается на изменение статуса звонка и сразу вызывает callback', () => {
+      const callManagerOnSpy = jest.spyOn(sipConnector.callManager, 'on');
 
-      subscribeSpy.mockImplementation((callback, options) => {
-        expect(options).toEqual({ fireImmediately: true });
-        callback(false);
+      callManagerOnSpy.mockImplementation((eventName, handler) => {
+        expect(eventName).toBe('call-status-changed');
+        handler({});
+
+        return jest.fn();
       });
 
       const onFailRequest = jest.fn();
 
       pingServerRequester.start({ onFailRequest });
 
-      expect(subscribeSpy).toHaveBeenCalledTimes(1);
+      expect(callManagerOnSpy).toHaveBeenCalledTimes(1);
     });
 
     it('запускает пинг вне звонка', () => {
-      const subscribeSpy = jest.spyOn(CallStatusSubscriber.prototype, 'subscribe');
-
-      subscribeSpy.mockImplementation((callback) => {
-        callback(false);
-      });
-
       const onFailRequest = jest.fn();
 
       pingServerRequester.start({ onFailRequest });
 
-      expect(startMock).toHaveBeenCalledTimes(1);
+      startCall();
+      endCall();
+
+      expect(startMock).toHaveBeenCalledTimes(2);
       expect(startMock).toHaveBeenCalledWith(undefined, { onFailRequest });
     });
 
     it('останавливает пинг при активном звонке', () => {
-      const subscribeSpy = jest.spyOn(CallStatusSubscriber.prototype, 'subscribe');
-
-      subscribeSpy.mockImplementation((callback) => {
-        callback(true);
-      });
-
       pingServerRequester.start({ onFailRequest: jest.fn() });
+
+      expect(stopMock).toHaveBeenCalledTimes(0);
+
+      startCall();
+      endCall();
 
       expect(stopMock).toHaveBeenCalledTimes(1);
     });
@@ -112,12 +122,18 @@ describe('PingServerRequester', () => {
 
   describe('stop', () => {
     it('останавливает пинг и отписывается', () => {
-      const unsubscribeSpy = jest.spyOn(CallStatusSubscriber.prototype, 'unsubscribe');
+      const disposer = jest.fn();
+      const callManagerOnSpy = jest.spyOn(sipConnector.callManager, 'on');
 
+      callManagerOnSpy.mockImplementation(() => {
+        return disposer;
+      });
+
+      pingServerRequester.start({ onFailRequest: jest.fn() });
       pingServerRequester.stop();
 
       expect(stopMock).toHaveBeenCalledTimes(1);
-      expect(unsubscribeSpy).toHaveBeenCalledTimes(1);
+      expect(disposer).toHaveBeenCalledTimes(1);
     });
   });
 });

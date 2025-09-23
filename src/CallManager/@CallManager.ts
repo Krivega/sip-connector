@@ -1,6 +1,6 @@
 import { TypedEvents } from 'events-constructor';
 
-import { EVENT_NAMES } from './eventNames';
+import { EEvent, EVENT_NAMES } from './eventNames';
 import { MCUCallStrategy } from './MCUCallStrategy';
 
 import type { RTCSession } from '@krivega/jssip';
@@ -15,6 +15,8 @@ class CallManager {
   public constructor(strategy?: ICallStrategy) {
     this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
     this.strategy = strategy ?? new MCUCallStrategy(this.events);
+
+    this.subscribeToCallStatusChanges();
   }
 
   public get requested(): boolean {
@@ -99,6 +101,25 @@ class CallManager {
   public restartIce: ICallStrategy['restartIce'] = async (options) => {
     return this.strategy.restartIce(options);
   };
+
+  private subscribeToCallStatusChanges() {
+    const { isCallActive } = this;
+    const { ACCEPTED, CONFIRMED, ENDED, FAILED } = EEvent;
+
+    this.onceRace([ACCEPTED, CONFIRMED, ENDED, FAILED], () => {
+      this.handleChangeCallStatus(isCallActive);
+
+      this.subscribeToCallStatusChanges();
+    });
+  }
+
+  private handleChangeCallStatus(isCallActive: boolean) {
+    const newStatus = this.isCallActive;
+
+    if (newStatus !== isCallActive) {
+      this.events.trigger(EEvent.CALL_STATUS_CHANGED, { isCallActive: newStatus });
+    }
+  }
 }
 
 export default CallManager;

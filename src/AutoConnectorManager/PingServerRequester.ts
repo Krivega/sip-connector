@@ -1,7 +1,6 @@
 import { requesterByTimeoutsWithFailCalls } from '@krivega/timeout-requester';
 
 import logger from '@/logger';
-import CallStatusSubscriber from './CallStatusSubscriber';
 
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
@@ -12,11 +11,13 @@ const MAX_FAIL_REQUESTS_COUNT = 2;
 class PingServerRequester {
   private readonly connectionManager: ConnectionManager;
 
-  private readonly callStatusSubscriber: CallStatusSubscriber;
+  private readonly callManager: CallManager;
 
   private readonly pingServerByTimeoutWithFailCalls: ReturnType<
     typeof requesterByTimeoutsWithFailCalls<ReturnType<typeof this.connectionManager.ping>>
   >;
+
+  private disposerCallStatusChange: (() => void) | undefined;
 
   public constructor({
     connectionManager,
@@ -26,8 +27,7 @@ class PingServerRequester {
     callManager: CallManager;
   }) {
     this.connectionManager = connectionManager;
-
-    this.callStatusSubscriber = new CallStatusSubscriber({ callManager });
+    this.callManager = callManager;
 
     this.pingServerByTimeoutWithFailCalls = requesterByTimeoutsWithFailCalls<
       ReturnType<typeof this.connectionManager.ping>
@@ -47,25 +47,31 @@ class PingServerRequester {
   public start({ onFailRequest }: { onFailRequest: () => void }) {
     logger('start');
 
-    this.callStatusSubscriber.subscribe(
-      (isCallActive) => {
-        if (isCallActive) {
-          this.pingServerByTimeoutWithFailCalls.stop();
-        } else {
-          this.pingServerByTimeoutWithFailCalls.start(undefined, { onFailRequest }).catch(logger);
-        }
-      },
-      {
-        fireImmediately: true,
-      },
-    );
+    this.disposerCallStatusChange = this.callManager.on('call-status-changed', () => {
+      this.handleCallStatusChange({ onFailRequest });
+    });
+
+    this.handleCallStatusChange({ onFailRequest });
   }
 
   public stop() {
     logger('stop');
 
     this.pingServerByTimeoutWithFailCalls.stop();
-    this.callStatusSubscriber.unsubscribe();
+    this.unsubscribeCallStatusChange();
+  }
+
+  private unsubscribeCallStatusChange() {
+    this.disposerCallStatusChange?.();
+    this.disposerCallStatusChange = undefined;
+  }
+
+  private handleCallStatusChange({ onFailRequest }: { onFailRequest: () => void }) {
+    if (this.callManager.isCallActive) {
+      this.pingServerByTimeoutWithFailCalls.stop();
+    } else {
+      this.pingServerByTimeoutWithFailCalls.start(undefined, { onFailRequest }).catch(logger);
+    }
   }
 }
 
