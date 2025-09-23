@@ -229,10 +229,7 @@ class SipConnector {
       this.getSipServerUrl,
       {
         ...rest,
-        onAddedTransceiver: async (transceiver, track, stream) => {
-          this.setCodecPreferences(transceiver);
-          await onAddedTransceiver?.(transceiver, track, stream);
-        },
+        onAddedTransceiver: this.resolveHandleAddTransceiver(onAddedTransceiver),
       },
     );
   };
@@ -250,10 +247,7 @@ class SipConnector {
       this.incomingCallManager.extractIncomingRTCSession,
       {
         ...rest,
-        onAddedTransceiver: async (transceiver, track, stream) => {
-          this.setCodecPreferences(transceiver);
-          await onAddedTransceiver?.(transceiver, track, stream);
-        },
+        onAddedTransceiver: this.resolveHandleAddTransceiver(onAddedTransceiver),
       },
     );
   };
@@ -304,10 +298,7 @@ class SipConnector {
       mediaStream,
       {
         ...rest,
-        onAddedTransceiver: async (transceiver, track, stream) => {
-          this.setCodecPreferences(transceiver);
-          await onAddedTransceiver?.(transceiver, track, stream);
-        },
+        onAddedTransceiver: this.resolveHandleAddTransceiver(onAddedTransceiver),
       },
       callLimit === undefined ? undefined : { callLimit },
     );
@@ -350,10 +341,7 @@ class SipConnector {
       mediaStream,
       {
         ...rest,
-        onAddedTransceiver: async (transceiver, track, stream) => {
-          this.setCodecPreferences(transceiver);
-          await onAddedTransceiver?.(transceiver, track, stream);
-        },
+        onAddedTransceiver: this.resolveHandleAddTransceiver(onAddedTransceiver),
       },
     );
   }
@@ -474,6 +462,17 @@ class SipConnector {
       });
     });
   }
+
+  private readonly resolveHandleAddTransceiver = (onAddedTransceiver?: TOnAddedTransceiver) => {
+    return async (
+      transceiver: RTCRtpTransceiver,
+      track: MediaStreamTrack,
+      streams: MediaStream[],
+    ) => {
+      this.setCodecPreferences(transceiver);
+      await onAddedTransceiver?.(transceiver, track, streams);
+    };
+  };
 }
 
 export default SipConnector;
