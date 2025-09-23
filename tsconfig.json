@@ -7,12 +7,5 @@
     },
     "types": ["./src/global.d.ts"]
   },
-  "include": [
-    "src",
-    "eslint.config.ts",
-    "eslint.config.jest.ts",
-    "eslint.config.base.ts",
-    "jest.config.ts",
-    "vite.config.ts"
-  ]
+  "include": ["src", "eslint.config.ts", "jest.config.ts", "vite.config.ts"]
 }

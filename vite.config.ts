@@ -1,4 +1,5 @@
 import path from 'node:path';
+
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 import tsConfigPaths from 'vite-tsconfig-paths';
