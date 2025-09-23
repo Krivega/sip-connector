@@ -2,7 +2,7 @@ import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from
 
 import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
 import RTCRtpTransceiverMock from '@/__fixtures__/RTCRtpTransceiverMock';
-import { TransceiverManager } from '../TransceiverManager';
+import { TransceiverManager } from '../@TransceiverManager';
 
 describe('TransceiverManager', () => {
   let transceiverManager: TransceiverManager;

@@ -1,10 +1,10 @@
 import prepareMediaStream from '@/tools/prepareMediaStream';
+import { TransceiverManager } from '@/TransceiverManager';
 import { hasVideoTracks } from '@/utils/utils';
 import { AbstractCallStrategy } from './AbstractCallStrategy';
 import { ECallCause } from './causes';
 import { EEvent, Originator, SESSION_JSSIP_EVENT_NAMES } from './eventNames';
 import { RemoteStreamsManager } from './RemoteStreamsManager';
-import { TransceiverManager } from './TransceiverManager';
 
 import type { RTCSession } from '@krivega/jssip';
 import type { TEvents } from './eventNames';
@@ -302,7 +302,7 @@ export class MCUCallStrategy extends AbstractCallStrategy {
         savedPeerconnection = peerconnection;
 
         const handleTrack = (event: RTCTrackEvent) => {
-          this.events.trigger(EEvent.PEER_CONNECTION_ONTRACK, peerconnection);
+          this.events.trigger(EEvent.PEER_CONNECTION_ONTRACK, event);
 
           // Сохраняем transceiver в зависимости от типа трека
           this.transceiverManager.storeTransceiver(event.transceiver, event.track);
