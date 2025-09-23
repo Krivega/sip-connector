@@ -420,48 +420,30 @@ class SipConnector {
   }
 
   private subscribe() {
-    this.connectionManager.events.eachTriggers((_trigger, eventName) => {
-      this.connectionManager.on(eventName, (event) => {
-        this.events.trigger(`connection:${eventName}`, event);
-      });
-    });
-
-    this.callManager.events.eachTriggers((_trigger, eventName) => {
-      this.callManager.on(eventName, (event) => {
-        this.events.trigger(`call:${eventName}` as TEvent, event);
-      });
-    });
-
-    this.apiManager.events.eachTriggers((_trigger, eventName) => {
-      this.apiManager.on(eventName, (event) => {
-        this.events.trigger(`api:${eventName}`, event);
-      });
-    });
-
-    this.incomingCallManager.events.eachTriggers((_trigger, eventName) => {
-      this.incomingCallManager.on(eventName, (event) => {
-        this.events.trigger(`incoming-call:${eventName}`, event);
-      });
-    });
-
-    this.presentationManager.events.eachTriggers((_trigger, eventName) => {
-      this.presentationManager.on(eventName, (event) => {
-        this.events.trigger(`presentation:${eventName}`, event);
-      });
-    });
-
-    this.statsManager.events.eachTriggers((_trigger, eventName) => {
-      this.statsManager.on(eventName, (event) => {
-        this.events.trigger(`stats:${eventName}`, event);
-      });
-    });
-
-    this.videoSendingBalancerManager.events.eachTriggers((_trigger, eventName) => {
-      this.videoSendingBalancerManager.on(eventName, (event) => {
-        this.events.trigger(`video-balancer:${eventName}` as TEvent, event);
-      });
-    });
+    this.bridgeEvents('connection', this.connectionManager);
+    this.bridgeEvents('call', this.callManager);
+    this.bridgeEvents('api', this.apiManager);
+    this.bridgeEvents('incoming-call', this.incomingCallManager);
+    this.bridgeEvents('presentation', this.presentationManager);
+    this.bridgeEvents('stats', this.statsManager);
+    this.bridgeEvents('video-balancer', this.videoSendingBalancerManager);
   }
+
+  private readonly bridgeEvents = <T extends string>(
+    prefix: string,
+    source: {
+      events: {
+        eachTriggers: (handler: (trigger: unknown, eventName: T) => void) => void;
+      };
+      on: (eventName: T, handler: (data: unknown) => void) => unknown;
+    },
+  ): void => {
+    source.events.eachTriggers((_trigger, eventName) => {
+      source.on(eventName, (event: unknown) => {
+        this.events.trigger(`${prefix}:${eventName}` as TEvent, event);
+      });
+    });
+  };
 
   private readonly resolveHandleAddTransceiver = (onAddedTransceiver?: TOnAddedTransceiver) => {
     return async (
