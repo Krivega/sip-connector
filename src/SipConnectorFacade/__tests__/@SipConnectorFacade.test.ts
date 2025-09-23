@@ -5,7 +5,7 @@ import delayPromise from '@/__fixtures__/delayPromise';
 import JsSIP from '@/__fixtures__/jssip.mock';
 import remoteCallerData from '@/__fixtures__/remoteCallerData';
 import { doMockSipConnector } from '@/doMock';
-import SipConnectorFacade, { TEST_HOOKS } from '../SipConnectorFacade';
+import SipConnectorFacade, { TEST_HOOKS } from '../@SipConnectorFacade';
 
 import type { UA } from '@krivega/jssip';
 import type { SipConnector } from '@/SipConnector';
@@ -152,7 +152,7 @@ describe('SipConnectorFacade comprehensive', () => {
         };
       });
 
-      const { default: SipConnectorFacadeIsolated } = (await import('../SipConnectorFacade')) as {
+      const { default: SipConnectorFacadeIsolated } = (await import('../@SipConnectorFacade')) as {
         default: typeof SipConnectorFacade;
       };
 
@@ -189,7 +189,7 @@ describe('SipConnectorFacade comprehensive', () => {
         };
       });
 
-      const { default: SipConnectorFacadeIsolated } = (await import('../SipConnectorFacade')) as {
+      const { default: SipConnectorFacadeIsolated } = (await import('../@SipConnectorFacade')) as {
         default: typeof SipConnectorFacade;
       };
 

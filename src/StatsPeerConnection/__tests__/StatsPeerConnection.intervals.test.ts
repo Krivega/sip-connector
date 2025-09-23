@@ -1,5 +1,5 @@
+import StatsPeerConnection from '../@StatsPeerConnection';
 import { INTERVAL_COLLECT_STATISTICS } from '../constants';
-import StatsPeerConnection from '../StatsPeerConnection';
 import mockedNow from '../utils/now';
 
 jest.mock('../utils/now');

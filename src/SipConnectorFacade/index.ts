@@ -1,1 +1,1 @@
-export { default as SipConnectorFacade } from './SipConnectorFacade';
+export { default as SipConnectorFacade } from './@SipConnectorFacade';

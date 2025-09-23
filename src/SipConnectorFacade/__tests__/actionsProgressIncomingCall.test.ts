@@ -5,7 +5,7 @@ import remoteCallerData from '@/__fixtures__/remoteCallerData';
 import { doMockSipConnector } from '@/doMock';
 import dataCall from '@/tools/__fixtures__/call';
 import { dataForConnectionWithAuthorization } from '@/tools/__fixtures__/connectToServer';
-import SipConnectorFacade from '../SipConnectorFacade';
+import SipConnectorFacade from '../@SipConnectorFacade';
 
 import type { SipConnector } from '@/SipConnector';
 

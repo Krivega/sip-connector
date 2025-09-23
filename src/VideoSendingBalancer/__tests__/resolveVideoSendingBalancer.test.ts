@@ -7,8 +7,8 @@ import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
 import { EContentTypeReceived, EEventsMainCAM, EHeader } from '@/ApiManager';
 import { doMockSipConnector } from '@/doMock';
 import findVideoSender from '@/utils/findVideoSender';
+import { resolveVideoSendingBalancer } from '../@VideoSendingBalancer';
 import { calcMaxBitrateByWidthAndCodec } from '../calcBitrate';
-import { resolveVideoSendingBalancer } from '../VideoSendingBalancer';
 
 import type { SipConnector } from '@/SipConnector';
 

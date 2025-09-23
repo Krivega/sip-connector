@@ -1,6 +1,6 @@
 import delayPromise from '@/__fixtures__/delayPromise';
+import StatsPeerConnection from '../@StatsPeerConnection';
 import { INTERVAL_COLLECT_STATISTICS } from '../constants';
-import StatsPeerConnection from '../StatsPeerConnection';
 
 const resolveMockPromise = <T>(): [promise: Promise<T>, resolvePromise: jest.Mock] => {
   let resolvePromise: jest.Mock = jest.fn();

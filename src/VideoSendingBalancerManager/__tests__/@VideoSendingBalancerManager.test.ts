@@ -7,7 +7,7 @@ import VideoSendingBalancerManager from '../@VideoSendingBalancerManager';
 
 import type { CallManager } from '@/CallManager';
 import type SipConnector from '@/SipConnector/@SipConnector';
-import type VideoSendingBalancer from '@/VideoSendingBalancer/VideoSendingBalancer';
+import type VideoSendingBalancer from '@/VideoSendingBalancer/@VideoSendingBalancer';
 
 describe('VideoSendingBalancerManager', () => {
   let sipConnector: SipConnector;
