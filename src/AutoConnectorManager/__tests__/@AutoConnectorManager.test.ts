@@ -655,7 +655,7 @@ describe('AutoConnectorManager', () => {
         expect(result).toEqual(parameters);
       });
 
-      it('выбрасывает ошибку, если getParameters возвращает undefined', async () => {
+      it('выбрасывает ошибку, если параметры отсутствуют', async () => {
         const startSpy = jest
           .spyOn(CheckTelephonyRequester.prototype, 'start')
           .mockImplementation();
@@ -665,7 +665,7 @@ describe('AutoConnectorManager', () => {
 
         manager.start({
           getParameters: async () => {
-            return undefined;
+            throw createParametersNotExistError();
           },
         });
 
@@ -690,7 +690,7 @@ describe('AutoConnectorManager', () => {
       const parametersWithUndefined = {
         ...baseParameters,
         getParameters: async () => {
-          return undefined;
+          throw createParametersNotExistError();
         },
       };
 
@@ -769,21 +769,6 @@ describe('AutoConnectorManager', () => {
       const result = await onBeforeRequest();
 
       expect(result).toEqual(parameters);
-    });
-
-    it('возвращает ошибку, если getParameters возвращает undefined', async () => {
-      const handleFailed = jest.fn();
-
-      manager.on('failed', handleFailed);
-      manager.start({
-        getParameters: async () => {
-          return undefined;
-        },
-      });
-
-      await manager.wait('failed');
-
-      expect(handleFailed).toHaveBeenCalledWith(createParametersNotExistError());
     });
   });
 });

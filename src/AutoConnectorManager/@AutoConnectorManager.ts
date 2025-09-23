@@ -10,7 +10,7 @@ import ConnectFlow from './ConnectFlow';
 import { EEvent, EVENT_NAMES } from './eventNames';
 import PingServerRequester from './PingServerRequester';
 import RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCallSubscriber';
-import { createParametersNotExistError, hasParametersNotExistError } from './utils';
+import { hasParametersNotExistError } from './utils';
 
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
@@ -153,7 +153,7 @@ class AutoConnectorManager {
       onBeforeRequest: async () => {
         await this.onBeforeRetry();
 
-        return this.getParametersWithValidation(parameters.getParameters);
+        return parameters.getParameters();
       },
       onSuccessRequest: () => {
         logger('runCheckTelephony: onSuccessRequest');
@@ -191,9 +191,7 @@ class AutoConnectorManager {
   private async processConnect(parameters: TParametersAutoConnect) {
     try {
       await this.connectFlow.runConnect({
-        onBeforeRequest: async () => {
-          return this.getParametersWithValidation(parameters.getParameters);
-        },
+        onBeforeRequest: parameters.getParameters,
         hasReadyForConnection: parameters.hasReadyForConnection,
       });
 
@@ -286,19 +284,6 @@ class AutoConnectorManager {
 
         logger('reconnect: error', error);
       });
-  }
-
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
-  private async getParametersWithValidation(
-    getParameters: TParametersAutoConnect['getParameters'],
-  ) {
-    return getParameters().then((data) => {
-      if (!data) {
-        throw createParametersNotExistError();
-      }
-
-      return data;
-    });
   }
 
   private hasFailedOrDisconnectedConnection() {
