@@ -32,16 +32,16 @@ describe('ConnectionQueueManager', () => {
       sipWebSocketServerURL: 'wss://test.com',
     };
 
-    const onPrepareConnect = async () => {
+    const getParameters = async () => {
       return connectParams;
     };
 
     (connectionManager.connect as jest.Mock).mockResolvedValue(mockResult);
 
-    const result = await connectionQueueManager.connect(onPrepareConnect);
+    const result = await connectionQueueManager.connect(getParameters);
 
     expect(stackRunSpy).toHaveBeenCalled();
-    expect(connectionManager.connect).toHaveBeenCalledWith(onPrepareConnect);
+    expect(connectionManager.connect).toHaveBeenCalledWith(getParameters);
     expect(result).toBe(mockResult);
   });
 

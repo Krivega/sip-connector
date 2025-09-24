@@ -745,10 +745,9 @@ describe('AutoConnectorManager', () => {
 
       manager.start(baseParameters);
 
-      const onPrepareConnect = connectSpy.mock
-        .calls[0][0] as TParametersAutoConnect['getParameters'];
+      const getParameters = connectSpy.mock.calls[0][0] as TParametersAutoConnect['getParameters'];
 
-      const result = await onPrepareConnect();
+      const result = await getParameters();
 
       expect(result).toEqual(parameters);
     });

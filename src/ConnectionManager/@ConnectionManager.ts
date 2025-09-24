@@ -121,7 +121,10 @@ export default class ConnectionManager {
     return this.configurationManager.isRegister();
   }
 
-  public async connect(parameters: TConnectParameters, options?: TConnectOptions): Promise<UA> {
+  public connect = async (
+    parameters: TConnectParameters,
+    options?: TConnectOptions,
+  ): Promise<UA> => {
     return this.disconnect()
       .catch((error: unknown) => {
         logger('connect: disconnect error', error);
@@ -129,7 +132,7 @@ export default class ConnectionManager {
       .then(async () => {
         return this.connectWithProcessError(parameters, options);
       });
-  }
+  };
 
   public set: TSet = async ({ displayName }) => {
     return this.connectionFlow.set({ displayName });
