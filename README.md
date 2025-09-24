@@ -94,6 +94,7 @@ const facade = new SipConnectorFacade(sipConnector);
 ### Шаг 2: Подключение к серверу
 
 ```typescript
+// Подключение с объектом параметров
 await facade.connectToServer({
   userAgent: tools.getUserAgent({ appName: 'MyApp' }),
   sipWebSocketServerURL: 'wss://sip.example.com/ws',
@@ -101,6 +102,20 @@ await facade.connectToServer({
   name: '1001', // SIP URI user part
   password: 'secret',
   isRegisteredUser: true, // Включить SIP REGISTER
+});
+
+// Или с функцией для динамического получения параметров
+await facade.connectToServer(async () => {
+  // Получение актуальных параметров подключения
+  const config = await fetchConnectionConfig();
+  return {
+    userAgent: tools.getUserAgent({ appName: 'MyApp' }),
+    sipWebSocketServerURL: config.websocketUrl,
+    sipServerUrl: config.sipUrl,
+    name: config.username,
+    password: config.password,
+    isRegisteredUser: true,
+  };
 });
 ```
 
@@ -800,7 +815,6 @@ await connectionQueueManager.disconnect();
 | ------------ | --------------------------------- |
 | `connect`    | Подключение к серверу             |
 | `disconnect` | Отключение от сервера             |
-| `run`        | Добавление задачи в очередь       |
 | `stop`       | Остановка всех операций в очереди |
 
 ### Интеграция в SipConnector
@@ -873,26 +887,6 @@ sipConnector.on('auto-connect:failed-attempt', (error) => {
 
 sipConnector.on('auto-connect:cancelled-attempt', (error) => {
   console.log('Попытка подключения отменена:', error);
-});
-
-sipConnector.on('auto-connect:connecting', () => {
-  console.log('Начало подключения');
-});
-
-sipConnector.on('auto-connect:connected', (data) => {
-  console.log('Успешное подключение:', data.isRegistered);
-});
-
-sipConnector.on('auto-connect:failed', (error) => {
-  console.log('Ошибка подключения:', error);
-});
-
-sipConnector.on('auto-connect:disconnecting', () => {
-  console.log('Начало отключения');
-});
-
-sipConnector.on('auto-connect:disconnected', () => {
-  console.log('Отключение завершено');
 });
 ```
 
@@ -984,20 +978,20 @@ import {
 ### Слоистая архитектура
 
 ```shell
-┌────────────────────────────────────────────────────┐
-│                  SipConnectorFacade                │ ← Высокоуровневый API
-├────────────────────────────────────────────────────┤
-│                  SipConnector                      │ ← Координация менеджеров
-├────────────────────────────────────────────────────┤
-│ Connection │ Connection │ Call       │  API        │ ← Основные менеджеры
-│ Manager    │ Queue      │ Manager    │  Manager    │
-│            │ Manager    │            │             │
-├────────────────────────────────────────────────────┤
-│ Stats      │Presentation│IncomingCall│VideoBalancer│ ← Специализированные менеджеры
-│ Manager    │ Manager    │ Manager    │ Manager     │
-├────────────────────────────────────────────────────┤
-│                  @krivega/jssip                    │ ← SIP-функциональность
-└────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                        SipConnectorFacade                        │ ← Высокоуровневый API
+├──────────────────────────────────────────────────────────────────┤
+│                           SipConnector                           │ ← Координация менеджеров
+├──────────────────────────────────────────────────────────────────┤
+│ Connection │ Connection │ Call       │  API        │             │ ← Основные менеджеры
+│ Manager    │ Queue      │ Manager    │  Manager    │             │
+│            │ Manager    │            │             │             │
+├──────────────────────────────────────────────────────────────────┤
+│ Stats      │Presentation│IncomingCall│VideoBalancer│AutoConnector│ ← Специализированные менеджеры
+│ Manager    │ Manager    │ Manager    │ Manager     │Manager      │
+├──────────────────────────────────────────────────────────────────┤
+│                          @krivega/jssip                          │ ← SIP-функциональность
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 ### Паттерны проектирования

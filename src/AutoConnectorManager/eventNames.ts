@@ -19,11 +19,6 @@ export const EVENT_NAMES = [
 ] as const;
 
 export type TEventMap = {
-  // connecting: Record<string, never>;
-  // connected: TConnectedConfiguration;
-  // disconnected: Record<string, never>;
-  // disconnecting: Record<string, never>;
-  // failed: Error;
   'before-attempt': Record<string, never>;
   'succeeded-attempt': Record<string, never>;
   'failed-attempt': Error;
