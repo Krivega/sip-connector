@@ -39,6 +39,13 @@ class CallManager {
     return this.events.on(eventName, handler);
   }
 
+  public onRace<T extends keyof TEventMap>(
+    eventNames: T[],
+    handler: (data: TEventMap[T], eventName: string) => void,
+  ) {
+    return this.events.onRace(eventNames, handler);
+  }
+
   public once<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
     return this.events.once(eventName, handler);
   }
@@ -99,22 +106,23 @@ class CallManager {
   };
 
   private subscribeCallStatusChange() {
-    const { isCallActive } = this;
+    let { isCallActive } = this;
+
     const { ACCEPTED, CONFIRMED, ENDED, FAILED } = EEvent;
 
-    this.onceRace([ACCEPTED, CONFIRMED, ENDED, FAILED], () => {
-      this.handleChangeCallStatus(isCallActive);
-
-      this.subscribeCallStatusChange();
+    this.onRace([ACCEPTED, CONFIRMED, ENDED, FAILED], () => {
+      isCallActive = this.maybeTriggerCallStatus(isCallActive);
     });
   }
 
-  private handleChangeCallStatus(isCallActive: boolean) {
+  private maybeTriggerCallStatus(isCallActive: boolean) {
     const newStatus = this.isCallActive;
 
     if (newStatus !== isCallActive) {
       this.events.trigger(EEvent.CALL_STATUS_CHANGED, { isCallActive: newStatus });
     }
+
+    return newStatus;
   }
 }
 
