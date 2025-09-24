@@ -3541,6 +3541,11 @@ events-constructor@^2.0.0:
   resolved "https://registry.yarnpkg.com/events-constructor/-/events-constructor-2.0.0.tgz#565926c9b8b0d810e2589f58a8b7a6dbdb4cb909"
   integrity sha512-atVuhWDK0RRmRpVvQ1pRTfqAkvdNp/EcfxvZjPQkHsGo3VpUucvJF7gjcmMxMbmQY5wY6dE6GS5C4jmJTgMxAw==
 
+events-constructor@^2.1.1:
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/events-constructor/-/events-constructor-2.1.1.tgz#916a3efeda320128256dc6cd0cafe98fb9147c4e"
+  integrity sha512-yJR+bkO0qQsU7zp+ZwHK7Rj1ZLQ+XS0pDTzlYE8x65yJtYeL8isBsbn5nBQBrCGy4UUx3Gmp7E5NILjXbfanNQ==
+
 events@^3.3.0:
   version "3.3.0"
   resolved "https://registry.yarnpkg.com/events/-/events-3.3.0.tgz#31a95ad0a924e2d2c419a813aeb2c4e878ea7400"
