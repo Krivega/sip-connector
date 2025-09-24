@@ -400,7 +400,7 @@ describe('ConnectionManager', () => {
 
       await connectionManager.connect(parameters);
 
-      expect(handleSucceeded).toHaveBeenCalled();
+      expect(handleSucceeded).toHaveBeenCalledWith({ ua: connectionManager.ua });
     });
 
     it('должен вызывать CONNECT_FAILED при ошибке подключения', async () => {
