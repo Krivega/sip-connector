@@ -8,7 +8,7 @@ import { doMockSipConnector } from '@/doMock';
 import logger from '@/logger';
 import AutoConnectorManager from '../@AutoConnectorManager';
 import CheckTelephonyRequester from '../CheckTelephonyRequester';
-import PingServerRequester from '../PingServerRequester';
+import PingServerIfNotActiveCallRequester from '../PingServerIfNotActiveCallRequester';
 import RegistrationFailedOutOfCallSubscriber from '../RegistrationFailedOutOfCallSubscriber';
 import { createParametersNotExistError } from '../utils';
 
@@ -128,7 +128,10 @@ describe('AutoConnectorManager', () => {
         CancelableRequest.prototype,
         'cancelRequest',
       );
-      const pingServerStopSpy = jest.spyOn(PingServerRequester.prototype, 'stop');
+      const pingServerIfNotActiveCallStopSpy = jest.spyOn(
+        PingServerIfNotActiveCallRequester.prototype,
+        'stop',
+      );
       const checkTelephonyStopSpy = jest.spyOn(CheckTelephonyRequester.prototype, 'stop');
       const registrationFailedOutOfCallSubscriberUnsubscribeSpy = jest.spyOn(
         RegistrationFailedOutOfCallSubscriber.prototype,
@@ -144,7 +147,7 @@ describe('AutoConnectorManager', () => {
       expect(connectQueueStopSpy).toHaveBeenCalled();
       expect(delayBetweenAttemptsCancelRequestSpy).toHaveBeenCalled();
       expect(cancelableRequestBeforeRetryCancelRequestSpy).toHaveBeenCalled();
-      expect(pingServerStopSpy).toHaveBeenCalled();
+      expect(pingServerIfNotActiveCallStopSpy).toHaveBeenCalled();
       expect(checkTelephonyStopSpy).toHaveBeenCalled();
       expect(registrationFailedOutOfCallSubscriberUnsubscribeSpy).toHaveBeenCalled();
     });
@@ -396,13 +399,16 @@ describe('AutoConnectorManager', () => {
 
   describe('подписчики и триггеры', () => {
     it('запускает ping server requester после успешного подключения', async () => {
-      const pingServerStartSpy = jest.spyOn(PingServerRequester.prototype, 'start');
+      const pingServerIfNotActiveCallStartSpy = jest.spyOn(
+        PingServerIfNotActiveCallRequester.prototype,
+        'start',
+      );
 
       manager.start(baseParameters);
 
       await manager.wait('succeeded-attempt');
 
-      expect(pingServerStartSpy).toHaveBeenCalledWith({
+      expect(pingServerIfNotActiveCallStartSpy).toHaveBeenCalledWith({
         onFailRequest: expect.any(Function) as () => void,
       });
     });
@@ -424,7 +430,9 @@ describe('AutoConnectorManager', () => {
 
     it('запускает start при onFailRequest в ping server', async () => {
       const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
-      const startSpy = jest.spyOn(PingServerRequester.prototype, 'start').mockImplementation();
+      const startSpy = jest
+        .spyOn(PingServerIfNotActiveCallRequester.prototype, 'start')
+        .mockImplementation();
 
       manager.start(baseParameters);
 
@@ -465,7 +473,10 @@ describe('AutoConnectorManager', () => {
     });
 
     it('stopConnectTriggers: останавливает все триггеры', () => {
-      const pingServerStopSpy = jest.spyOn(PingServerRequester.prototype, 'stop');
+      const pingServerIfNotActiveCallStopSpy = jest.spyOn(
+        PingServerIfNotActiveCallRequester.prototype,
+        'stop',
+      );
       const checkTelephonyStopSpy = jest.spyOn(CheckTelephonyRequester.prototype, 'stop');
       const registrationFailedSubscriberUnsubscribeSpy = jest.spyOn(
         RegistrationFailedOutOfCallSubscriber.prototype,
@@ -475,7 +486,7 @@ describe('AutoConnectorManager', () => {
       // @ts-expect-error
       manager.stopConnectTriggers();
 
-      expect(pingServerStopSpy).toHaveBeenCalled();
+      expect(pingServerIfNotActiveCallStopSpy).toHaveBeenCalled();
       expect(checkTelephonyStopSpy).toHaveBeenCalled();
       expect(registrationFailedSubscriberUnsubscribeSpy).toHaveBeenCalled();
     });
@@ -755,7 +766,10 @@ describe('AutoConnectorManager', () => {
     it('должен вызывать событие succeeded-attempt и подписываться на слушателей при ошибке not ready for connection', async () => {
       expect.assertions(3);
 
-      const pingServerStartSpy = jest.spyOn(PingServerRequester.prototype, 'start');
+      const pingServerIfNotActiveCallStartSpy = jest.spyOn(
+        PingServerIfNotActiveCallRequester.prototype,
+        'start',
+      );
       const registrationFailedSubscriberSpy = jest.spyOn(
         RegistrationFailedOutOfCallSubscriber.prototype,
         'subscribe',
@@ -776,7 +790,7 @@ describe('AutoConnectorManager', () => {
 
       const connectResult = connectSpy.mock.results[0].value as Promise<Error>;
 
-      expect(pingServerStartSpy).toHaveBeenCalled();
+      expect(pingServerIfNotActiveCallStartSpy).toHaveBeenCalled();
       expect(registrationFailedSubscriberSpy).toHaveBeenCalled();
 
       await connectResult.catch((error: unknown) => {

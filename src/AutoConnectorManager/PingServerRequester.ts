@@ -2,7 +2,6 @@ import { requesterByTimeoutsWithFailCalls } from '@krivega/timeout-requester';
 
 import logger from '@/logger';
 
-import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
 
 const INTERVAL_PING_SERVER_REQUEST = 15_000;
@@ -11,23 +10,12 @@ const MAX_FAIL_REQUESTS_COUNT = 2;
 class PingServerRequester {
   private readonly connectionManager: ConnectionManager;
 
-  private readonly callManager: CallManager;
-
   private readonly pingServerByTimeoutWithFailCalls: ReturnType<
     typeof requesterByTimeoutsWithFailCalls<ReturnType<typeof this.connectionManager.ping>>
   >;
 
-  private disposeCallStatusChange: (() => void) | undefined;
-
-  public constructor({
-    connectionManager,
-    callManager,
-  }: {
-    connectionManager: ConnectionManager;
-    callManager: CallManager;
-  }) {
+  public constructor({ connectionManager }: { connectionManager: ConnectionManager }) {
     this.connectionManager = connectionManager;
-    this.callManager = callManager;
 
     this.pingServerByTimeoutWithFailCalls = requesterByTimeoutsWithFailCalls<
       ReturnType<typeof this.connectionManager.ping>
@@ -45,33 +33,11 @@ class PingServerRequester {
   }
 
   public start({ onFailRequest }: { onFailRequest: () => void }) {
-    logger('start');
-
-    this.disposeCallStatusChange = this.callManager.on('call-status-changed', () => {
-      this.handleCallStatusChange({ onFailRequest });
-    });
-
-    this.handleCallStatusChange({ onFailRequest });
+    this.pingServerByTimeoutWithFailCalls.start(undefined, { onFailRequest }).catch(logger);
   }
 
   public stop() {
-    logger('stop');
-
     this.pingServerByTimeoutWithFailCalls.stop();
-    this.unsubscribeCallStatusChange();
-  }
-
-  private unsubscribeCallStatusChange() {
-    this.disposeCallStatusChange?.();
-    this.disposeCallStatusChange = undefined;
-  }
-
-  private handleCallStatusChange({ onFailRequest }: { onFailRequest: () => void }) {
-    if (this.callManager.isCallActive) {
-      this.pingServerByTimeoutWithFailCalls.stop();
-    } else {
-      this.pingServerByTimeoutWithFailCalls.start(undefined, { onFailRequest }).catch(logger);
-    }
   }
 }
 

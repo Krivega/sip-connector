@@ -8,7 +8,7 @@ import logger from '@/logger';
 import AttemptsState from './AttemptsState';
 import CheckTelephonyRequester from './CheckTelephonyRequester';
 import { EEvent, EVENT_NAMES } from './eventNames';
-import PingServerRequester from './PingServerRequester';
+import PingServerIfNotActiveCallRequester from './PingServerIfNotActiveCallRequester';
 import RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCallSubscriber';
 import { hasParametersNotExistError } from './utils';
 
@@ -31,7 +31,7 @@ class AutoConnectorManager {
 
   private readonly checkTelephonyRequester: CheckTelephonyRequester;
 
-  private readonly pingServerRequester: PingServerRequester;
+  private readonly pingServerIfNotActiveCallRequester: PingServerIfNotActiveCallRequester;
 
   private readonly registrationFailedOutOfCallSubscriber: RegistrationFailedOutOfCallSubscriber;
 
@@ -66,7 +66,10 @@ class AutoConnectorManager {
       connectionManager,
       interval: options?.checkTelephonyRequestInterval ?? DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL,
     });
-    this.pingServerRequester = new PingServerRequester({ connectionManager, callManager });
+    this.pingServerIfNotActiveCallRequester = new PingServerIfNotActiveCallRequester({
+      connectionManager,
+      callManager,
+    });
     this.registrationFailedOutOfCallSubscriber = new RegistrationFailedOutOfCallSubscriber({
       connectionManager,
       callManager,
@@ -136,7 +139,7 @@ class AutoConnectorManager {
   private stopConnectTriggers() {
     logger('stopConnectTriggers');
 
-    this.pingServerRequester.stop();
+    this.pingServerIfNotActiveCallRequester.stop();
     this.checkTelephonyRequester.stop();
     this.registrationFailedOutOfCallSubscriber.unsubscribe();
   }
@@ -234,7 +237,7 @@ class AutoConnectorManager {
   }
 
   private subscribeToConnectTriggers(parameters: TParametersAutoConnect) {
-    this.pingServerRequester.start({
+    this.pingServerIfNotActiveCallRequester.start({
       onFailRequest: () => {
         logger('pingServer onFailRequest');
 

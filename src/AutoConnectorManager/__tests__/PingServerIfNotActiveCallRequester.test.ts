@@ -1,7 +1,7 @@
 import { requesterByTimeoutsWithFailCalls } from '@krivega/timeout-requester';
 
 import { doMockSipConnector } from '@/doMock';
-import PingServerRequester from '../PingServerRequester';
+import PingServerIfNotActiveCallRequester from '../PingServerIfNotActiveCallRequester';
 
 const requesterByTimeoutsWithFailCallsMock =
   requesterByTimeoutsWithFailCalls as jest.MockedFunction<typeof requesterByTimeoutsWithFailCalls>;
@@ -22,8 +22,8 @@ jest.mock('@krivega/timeout-requester', () => {
   };
 });
 
-describe('PingServerRequester', () => {
-  let pingServerRequester: PingServerRequester;
+describe('PingServerIfNotActiveCallRequester', () => {
+  let pingServerIfNotActiveCallRequester: PingServerIfNotActiveCallRequester;
   let sipConnector: ReturnType<typeof doMockSipConnector>;
 
   let startCall: () => void;
@@ -34,7 +34,7 @@ describe('PingServerRequester', () => {
 
     jest.clearAllMocks();
 
-    pingServerRequester = new PingServerRequester({
+    pingServerIfNotActiveCallRequester = new PingServerIfNotActiveCallRequester({
       connectionManager: sipConnector.connectionManager,
       callManager: sipConnector.callManager,
     });
@@ -90,7 +90,7 @@ describe('PingServerRequester', () => {
 
       const onFailRequest = jest.fn();
 
-      pingServerRequester.start({ onFailRequest });
+      pingServerIfNotActiveCallRequester.start({ onFailRequest });
 
       expect(startMock).toHaveBeenCalledTimes(1);
       expect(callManagerOnSpy).toHaveBeenCalledTimes(1);
@@ -99,7 +99,7 @@ describe('PingServerRequester', () => {
     it('запускает пинг вне звонка', () => {
       const onFailRequest = jest.fn();
 
-      pingServerRequester.start({ onFailRequest });
+      pingServerIfNotActiveCallRequester.start({ onFailRequest });
 
       startCall();
       endCall();
@@ -109,7 +109,7 @@ describe('PingServerRequester', () => {
     });
 
     it('останавливает пинг при активном звонке', () => {
-      pingServerRequester.start({ onFailRequest: jest.fn() });
+      pingServerIfNotActiveCallRequester.start({ onFailRequest: jest.fn() });
 
       expect(stopMock).toHaveBeenCalledTimes(0);
 
@@ -128,8 +128,8 @@ describe('PingServerRequester', () => {
         return disposer;
       });
 
-      pingServerRequester.start({ onFailRequest: jest.fn() });
-      pingServerRequester.stop();
+      pingServerIfNotActiveCallRequester.start({ onFailRequest: jest.fn() });
+      pingServerIfNotActiveCallRequester.stop();
 
       expect(stopMock).toHaveBeenCalledTimes(1);
       expect(disposer).toHaveBeenCalledTimes(1);
