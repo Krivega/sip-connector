@@ -212,7 +212,6 @@ class SipConnectorFacade implements IProxyMethods {
   public connectToServer = async (
     parameters: (() => Promise<TConnectToServerParameters>) | TConnectToServerParameters,
     options?: {
-      isDisconnectOnFail?: boolean;
       hasReadyForConnection?: () => boolean;
     },
   ): Promise<{ ua?: UA; isSuccessful: boolean }> => {
