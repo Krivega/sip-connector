@@ -1,6 +1,6 @@
 import type { RTCSession } from '@krivega/jssip';
 import type { TEvents } from './eventNames';
-import type { ICallStrategy, ITransceiverStorage, TCallConfiguration, TOntrack } from './types';
+import type { ICallStrategy, TCallConfiguration, TOntrack } from './types';
 
 export abstract class AbstractCallStrategy implements ICallStrategy {
   protected isPendingCall = false;
@@ -28,9 +28,9 @@ export abstract class AbstractCallStrategy implements ICallStrategy {
    * Запуск исходящего звонка
    */
   public abstract startCall(
-    params: Parameters<ICallStrategy['startCall']>[0],
-    ua: Parameters<ICallStrategy['startCall']>[1],
-    getSipServerUrl: Parameters<ICallStrategy['startCall']>[2],
+    ua: Parameters<ICallStrategy['startCall']>[0],
+    getSipServerUrl: Parameters<ICallStrategy['startCall']>[1],
+    params: Parameters<ICallStrategy['startCall']>[2],
   ): Promise<RTCPeerConnection>;
 
   /**
@@ -65,12 +65,6 @@ export abstract class AbstractCallStrategy implements ICallStrategy {
    * Получение удаленных медиа-потоков
    */
   public abstract getRemoteStreams(): MediaStream[] | undefined;
-
-  /**
-   * Получение сохраненных transceiver'ов
-   */
-  public abstract getTransceivers(): Readonly<ITransceiverStorage>;
-
   /**
    * Добавление нового transceiver'а
    */
@@ -89,7 +83,6 @@ export abstract class AbstractCallStrategy implements ICallStrategy {
     sendEncodings?: RTCRtpEncodingParameters[];
     degradationPreference?: RTCDegradationPreference;
   }): Promise<boolean>;
-
   /**
    * Внутренняя обработка звонка (например, для ontrack)
    */

@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [18.0.0](https://github.com/Krivega/sip-connector/compare/v17.0.0...v18.0.0) (2025-09-23)
+
+### ⚠ BREAKING CHANGES
+
+- remove handle event SPECTATOR_OVER_SFU
+
+### Bug Fixes
+
+- remove handle event SPECTATOR_OVER_SFU ([be7bcc8](https://github.com/Krivega/sip-connector/commit/be7bcc8a4adf1451ef10fcb9d0706f793f9a4e59))
+- set typed events for CallManager ([627db50](https://github.com/Krivega/sip-connector/commit/627db50fd691ab5edbb7dd188169e3f8e71a49b3))
+
 ## [17.0.0](https://github.com/Krivega/sip-connector/compare/v16.2.0...v17.0.0) (2025-09-19)
 
 ### ⚠ BREAKING CHANGES

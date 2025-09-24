@@ -1,6 +1,6 @@
 {
   "name": "sip-connector",
-  "version": "17.0.0",
+  "version": "18.0.0",
   "description": "Module for connect to Vinteo server",
   "keywords": [
     "webrtc",
@@ -97,7 +97,7 @@
   },
   "peerDependencies": {
     "@krivega/cancelable-promise": "^1.1.4",
-    "@krivega/jssip": "^5.3.0",
+    "@krivega/jssip": "^5.4.1",
     "@krivega/timeout-requester": "^1.0.0",
     "debug": "^4.4.1",
     "events-constructor": "^2.0.0",

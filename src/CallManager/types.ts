@@ -44,18 +44,6 @@ export type TCustomError = Error & {
   code?: string;
 };
 
-/**
- * Интерфейс для хранения основных transceiver'ов
- */
-export interface ITransceiverStorage {
-  /** Основной transceiver для видео */
-  mainVideo?: RTCRtpTransceiver;
-  /** Основной transceiver для аудио */
-  mainAudio?: RTCRtpTransceiver;
-  /** Transceiver для презентации видео */
-  presentationVideo?: RTCRtpTransceiver;
-}
-
 export type TCallConfiguration = {
   answer?: boolean;
   number?: string;
@@ -81,7 +69,6 @@ export interface ICallStrategy {
   getEstablishedRTCSession: () => RTCSession | undefined;
   getCallConfiguration: () => TCallConfiguration;
   getRemoteStreams: () => MediaStream[] | undefined;
-  getTransceivers: () => Readonly<ITransceiverStorage>;
   addTransceiver: (
     kind: 'audio' | 'video',
     options?: RTCRtpTransceiverInit,

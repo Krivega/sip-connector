@@ -558,19 +558,6 @@ describe('ApiManager (NEW_INFO handling)', () => {
       expect(participantSpy).toHaveBeenCalledWith(undefined);
     });
 
-    it('должен обрабатывать SPECTATOR_OVER_SFU состояние', () => {
-      const overSfuSpy = jest.fn();
-
-      apiManager.on('participant:move-request-to-spectators-over-sfu', overSfuSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE);
-      mockRequest.setHeader(EHeader.CONTENT_PARTICIPANT_STATE, EParticipantType.SPECTATOR_OVER_SFU);
-
-      const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
-
-      callManager.events.trigger('newInfo', infoEvent);
-      expect(overSfuSpy).toHaveBeenCalledWith(undefined);
-    });
-
     it('должен игнорировать неизвестные PARTICIPANT_STATE', () => {
       const anySpy = jest.fn();
 
@@ -609,26 +596,6 @@ describe('ApiManager (NEW_INFO handling)', () => {
 
       callManager.events.trigger('newInfo', infoEvent);
       expect(spectatorSpy).toHaveBeenCalledWith(undefined);
-      expect(participantSpy).not.toHaveBeenCalled();
-    });
-
-    it('должен триггерить только SPECTATOR_OVER_SFU и не триггерить другие', () => {
-      const spectatorSpy = jest.fn();
-      const participantSpy = jest.fn();
-      const overSfuSpy = jest.fn();
-
-      apiManager.on('participant:move-request-to-spectators', spectatorSpy);
-      apiManager.on('participant:move-request-to-participants', participantSpy);
-      apiManager.on('participant:move-request-to-spectators-over-sfu', overSfuSpy);
-
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE);
-      mockRequest.setHeader(EHeader.CONTENT_PARTICIPANT_STATE, EParticipantType.SPECTATOR_OVER_SFU);
-
-      const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
-
-      callManager.events.trigger('newInfo', infoEvent);
-      expect(overSfuSpy).toHaveBeenCalledWith(undefined);
-      expect(spectatorSpy).not.toHaveBeenCalled();
       expect(participantSpy).not.toHaveBeenCalled();
     });
   });

@@ -6,15 +6,14 @@ import { CallManager } from '@/CallManager';
 import { ConnectionManager } from '@/ConnectionManager';
 import { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import { IncomingCallManager } from '@/IncomingCallManager';
-import logger from '@/logger';
 import { PresentationManager } from '@/PresentationManager';
 import { StatsManager } from '@/StatsManager';
 import setCodecPreferences from '@/tools/setCodecPreferences';
+import { TransceiverManager } from '@/TransceiverManager';
 import { VideoSendingBalancerManager } from '@/VideoSendingBalancerManager';
 import { ONE_MEGABIT_IN_BITS } from './constants';
 import { EVENT_NAMES } from './eventNames';
 
-import type { TRestartData } from '@/ApiManager';
 import type { IAutoConnectorOptions } from '@/AutoConnectorManager';
 import type { TGetServerUrl } from '@/CallManager';
 import type { TContentHint, TOnAddedTransceiver } from '@/PresentationManager';
@@ -42,6 +41,8 @@ class SipConnector {
   public readonly statsManager: StatsManager;
 
   public readonly videoSendingBalancerManager: VideoSendingBalancerManager;
+
+  public readonly transceiverManager: TransceiverManager;
 
   private readonly preferredMimeTypesVideoCodecs?: string[];
 
@@ -91,6 +92,10 @@ class SipConnector {
       },
       autoConnectorOptions,
     );
+    this.transceiverManager = new TransceiverManager({
+      callManager: this.callManager,
+      apiManager: this.apiManager,
+    });
     this.videoSendingBalancerManager = new VideoSendingBalancerManager(
       this.callManager,
       this.apiManager,
@@ -246,10 +251,7 @@ class SipConnector {
       this.getSipServerUrl,
       {
         ...rest,
-        onAddedTransceiver: async (transceiver, track, stream) => {
-          this.setCodecPreferences(transceiver);
-          await onAddedTransceiver?.(transceiver, track, stream);
-        },
+        onAddedTransceiver: this.resolveHandleAddTransceiver(onAddedTransceiver),
       },
     );
   };
@@ -267,10 +269,7 @@ class SipConnector {
       this.incomingCallManager.extractIncomingRTCSession,
       {
         ...rest,
-        onAddedTransceiver: async (transceiver, track, stream) => {
-          this.setCodecPreferences(transceiver);
-          await onAddedTransceiver?.(transceiver, track, stream);
-        },
+        onAddedTransceiver: this.resolveHandleAddTransceiver(onAddedTransceiver),
       },
     );
   };
@@ -321,10 +320,7 @@ class SipConnector {
       mediaStream,
       {
         ...rest,
-        onAddedTransceiver: async (transceiver, track, stream) => {
-          this.setCodecPreferences(transceiver);
-          await onAddedTransceiver?.(transceiver, track, stream);
-        },
+        onAddedTransceiver: this.resolveHandleAddTransceiver(onAddedTransceiver),
       },
       callLimit === undefined ? undefined : { callLimit },
     );
@@ -367,10 +363,7 @@ class SipConnector {
       mediaStream,
       {
         ...rest,
-        onAddedTransceiver: async (transceiver, track, stream) => {
-          this.setCodecPreferences(transceiver);
-          await onAddedTransceiver?.(transceiver, track, stream);
-        },
+        onAddedTransceiver: this.resolveHandleAddTransceiver(onAddedTransceiver),
       },
     );
   }
@@ -449,88 +442,41 @@ class SipConnector {
   }
 
   private subscribe() {
-    this.autoConnectorManager.events.eachTriggers((_trigger, eventName) => {
-      this.autoConnectorManager.on(eventName, (event) => {
-        this.events.trigger(`auto-connect:${eventName}` as TEvent, event);
-      });
-    });
-
-    this.connectionManager.events.eachTriggers((_trigger, eventName) => {
-      this.connectionManager.on(eventName, (event) => {
-        this.events.trigger(`connection:${eventName}`, event);
-      });
-    });
-
-    this.callManager.events.eachTriggers((_trigger, eventName) => {
-      this.callManager.on(eventName, (event) => {
-        this.events.trigger(`call:${eventName}` as TEvent, event);
-      });
-    });
-
-    this.apiManager.events.eachTriggers((_trigger, eventName) => {
-      this.apiManager.on(eventName, (event) => {
-        this.events.trigger(`api:${eventName}`, event);
-      });
-    });
-
-    this.incomingCallManager.events.eachTriggers((_trigger, eventName) => {
-      this.incomingCallManager.on(eventName, (event) => {
-        this.events.trigger(`incoming-call:${eventName}`, event);
-      });
-    });
-
-    this.presentationManager.events.eachTriggers((_trigger, eventName) => {
-      this.presentationManager.on(eventName, (event) => {
-        this.events.trigger(`presentation:${eventName}`, event);
-      });
-    });
-
-    this.statsManager.events.eachTriggers((_trigger, eventName) => {
-      this.statsManager.on(eventName, (event) => {
-        this.events.trigger(`stats:${eventName}`, event);
-      });
-    });
-
-    this.videoSendingBalancerManager.events.eachTriggers((_trigger, eventName) => {
-      this.videoSendingBalancerManager.on(eventName, (event) => {
-        this.events.trigger(`video-balancer:${eventName}` as TEvent, event);
-      });
-    });
-
-    this.apiManager.on('restart', this.handleRestart);
+    this.bridgeEvents('auto-connect', this.autoConnectorManager);
+    this.bridgeEvents('connection', this.connectionManager);
+    this.bridgeEvents('call', this.callManager);
+    this.bridgeEvents('api', this.apiManager);
+    this.bridgeEvents('incoming-call', this.incomingCallManager);
+    this.bridgeEvents('presentation', this.presentationManager);
+    this.bridgeEvents('stats', this.statsManager);
+    this.bridgeEvents('video-balancer', this.videoSendingBalancerManager);
   }
 
-  private readonly handleRestart = (restartData: TRestartData) => {
-    this.updateTransceivers(restartData)
-      .catch((error: unknown) => {
-        logger('Failed to update transceivers', error);
-      })
-      .finally(() => {
-        this.callManager.restartIce().catch((error: unknown) => {
-          logger('Failed to restart ICE', error);
-        });
+  private readonly bridgeEvents = <T extends string>(
+    prefix: string,
+    source: {
+      events: {
+        eachTriggers: (handler: (trigger: unknown, eventName: T) => void) => void;
+      };
+      on: (eventName: T, handler: (data: unknown) => void) => unknown;
+    },
+  ): void => {
+    source.events.eachTriggers((_trigger, eventName) => {
+      source.on(eventName, (event: unknown) => {
+        this.events.trigger(`${prefix}:${eventName}` as TEvent, event);
       });
+    });
   };
 
-  private readonly updateTransceivers = async (restartData: TRestartData) => {
-    const { videoTrackCount } = restartData;
-
-    // Если videoTrackCount === 2 и отсутствует презентационный видео transceiver,
-    // добавляем его через addTransceiver
-    if (videoTrackCount === 2) {
-      const transceivers = this.callManager.getTransceivers();
-      const hasPresentationVideo = transceivers.presentationVideo !== undefined;
-
-      if (!hasPresentationVideo) {
-        await this.callManager
-          .addTransceiver('video', {
-            direction: 'recvonly',
-          })
-          .catch((error: unknown) => {
-            logger('Failed to add presentation video transceiver', error);
-          });
-      }
-    }
+  private readonly resolveHandleAddTransceiver = (onAddedTransceiver?: TOnAddedTransceiver) => {
+    return async (
+      transceiver: RTCRtpTransceiver,
+      track: MediaStreamTrack,
+      streams: MediaStream[],
+    ) => {
+      this.setCodecPreferences(transceiver);
+      await onAddedTransceiver?.(transceiver, track, streams);
+    };
   };
 }
 

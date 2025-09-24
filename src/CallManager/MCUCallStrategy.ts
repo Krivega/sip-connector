@@ -1,5 +1,4 @@
 import prepareMediaStream from '@/tools/prepareMediaStream';
-import { TransceiverManager } from '@/TransceiverManager';
 import { hasVideoTracks } from '@/utils/utils';
 import { AbstractCallStrategy } from './AbstractCallStrategy';
 import { ECallCause } from './causes';
@@ -8,17 +7,12 @@ import { RemoteStreamsManager } from './RemoteStreamsManager';
 
 import type { RTCSession, EndEvent } from '@krivega/jssip';
 import type { TEvents } from './eventNames';
-import type { ICallStrategy, ITransceiverStorage, TOntrack } from './types';
+import type { ICallStrategy, TOntrack } from './types';
 
 export class MCUCallStrategy extends AbstractCallStrategy {
   private readonly remoteStreamsManager = new RemoteStreamsManager();
 
   private readonly disposers = new Set<() => void>();
-
-  /**
-   * Менеджер для управления transceiver'ами
-   */
-  private readonly transceiverManager = new TransceiverManager();
 
   public constructor(events: TEvents) {
     super(events);
@@ -253,13 +247,6 @@ export class MCUCallStrategy extends AbstractCallStrategy {
     return this.rtcSession.addTransceiver(kind, options);
   }
 
-  /**
-   * Возвращает сохраненные transceiver'ы
-   */
-  public getTransceivers(): Readonly<ITransceiverStorage> {
-    return this.transceiverManager.getTransceivers();
-  }
-
   protected readonly handleCall = async ({
     ontrack,
   }: {
@@ -304,9 +291,6 @@ export class MCUCallStrategy extends AbstractCallStrategy {
 
         const handleTrack = (event: RTCTrackEvent) => {
           this.events.trigger(EEvent.PEER_CONNECTION_ONTRACK, event);
-
-          // Сохраняем transceiver в зависимости от типа трека
-          this.transceiverManager.storeTransceiver(event.transceiver, event.track);
 
           if (ontrack) {
             ontrack(event);
@@ -372,6 +356,5 @@ export class MCUCallStrategy extends AbstractCallStrategy {
     this.unsubscribeFromSessionEvents();
     this.callConfiguration.number = undefined;
     this.callConfiguration.answer = false;
-    this.transceiverManager.clear();
   };
 }

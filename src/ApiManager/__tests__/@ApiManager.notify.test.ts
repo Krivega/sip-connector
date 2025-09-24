@@ -9,7 +9,7 @@ import { EHeader } from '../constants';
 import type { TJsSIP } from '@/types';
 
 // Мокаем logger
-jest.mock('../../logger', () => {
+jest.mock('@/logger', () => {
   return jest.fn();
 });
 

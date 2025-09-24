@@ -31,7 +31,6 @@ describe('CallManager', () => {
       getEstablishedRTCSession: jest.fn(),
       getCallConfiguration: jest.fn(),
       getRemoteStreams: jest.fn(),
-      getTransceivers: jest.fn(),
       addTransceiver: jest.fn(),
       replaceMediaStream: jest.fn(),
       restartIce: jest.fn(),
@@ -403,42 +402,6 @@ describe('CallManager', () => {
 
       expect(mockStrategy.restartIce).toHaveBeenCalledWith(undefined);
       expect(result).toBe(expectedResult);
-    });
-  });
-
-  describe('getTransceivers', () => {
-    beforeEach(() => {
-      callManager = new CallManager(mockStrategy);
-    });
-
-    it('should delegate getTransceivers to strategy', () => {
-      const expectedTransceivers = {
-        mainAudio: {} as RTCRtpTransceiver,
-        mainVideo: {} as RTCRtpTransceiver,
-        presentationVideo: undefined,
-      };
-
-      mockStrategy.getTransceivers.mockReturnValue(expectedTransceivers);
-
-      const result = callManager.getTransceivers();
-
-      expect(mockStrategy.getTransceivers).toHaveBeenCalledWith();
-      expect(result).toBe(expectedTransceivers);
-    });
-
-    it('should return empty transceivers when strategy returns empty', () => {
-      const emptyTransceivers = {
-        mainAudio: undefined,
-        mainVideo: undefined,
-        presentationVideo: undefined,
-      };
-
-      mockStrategy.getTransceivers.mockReturnValue(emptyTransceivers);
-
-      const result = callManager.getTransceivers();
-
-      expect(mockStrategy.getTransceivers).toHaveBeenCalledWith();
-      expect(result).toEqual(emptyTransceivers);
     });
   });
 
