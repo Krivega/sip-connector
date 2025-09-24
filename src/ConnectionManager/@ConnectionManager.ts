@@ -264,7 +264,7 @@ export default class ConnectionManager {
         return this.connectionFlow.connect(data, options);
       })
       .then((ua) => {
-        this.events.trigger(EEvent.CONNECT_SUCCEEDED, ua);
+        this.events.trigger(EEvent.CONNECT_SUCCEEDED, { ua });
 
         return ua;
       })
