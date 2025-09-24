@@ -152,7 +152,8 @@ describe('connect', () => {
   it('должен сохранять connectionConfiguration после подключения', async () => {
     expect.assertions(5);
 
-    const connectPromise = connectionManager.connect(dataForConnectionWithAuthorization);
+    await connectionManager.connect(dataForConnectionWithAuthorization);
+
     const connectionConfiguration = connectionManager.getConnectionConfiguration();
 
     expect(connectionConfiguration.sipServerUrl).toBe(
@@ -162,8 +163,6 @@ describe('connect', () => {
     expect(connectionConfiguration.register).toBe(dataForConnectionWithAuthorization.register);
     expect(connectionConfiguration.user).toBe(dataForConnectionWithAuthorization.user);
     expect(connectionConfiguration.password).toBe(dataForConnectionWithAuthorization.password);
-
-    return connectPromise;
   });
 
   it('должен устанавливать displayName после подключения с авторизацией', async () => {

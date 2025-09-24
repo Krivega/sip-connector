@@ -2,6 +2,7 @@ import { CancelableRequest, isCanceledError } from '@krivega/cancelable-promise'
 import { DelayRequester, hasCanceledError } from '@krivega/timeout-requester';
 import { TypedEvents } from 'events-constructor';
 
+import { hasNotReadyForConnectionError, type ConnectionManager } from '@/ConnectionManager';
 import { hasConnectionPromiseIsNotActualError } from '@/ConnectionQueueManager';
 import logger from '@/logger';
 import AttemptsState from './AttemptsState';
@@ -12,7 +13,6 @@ import RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCall
 import { hasParametersNotExistError } from './utils';
 
 import type { CallManager } from '@/CallManager';
-import type { ConnectionManager } from '@/ConnectionManager';
 import type { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import type { TEventMap, TEvents } from './eventNames';
 import type { IAutoConnectorOptions, TParametersAutoConnect } from './types';
@@ -185,16 +185,18 @@ class AutoConnectorManager {
 
   private async processConnect(parameters: TParametersAutoConnect) {
     try {
-      await this.connectionQueueManager.connect(parameters.getParameters, {
-        hasReadyForConnection: parameters.hasReadyForConnection,
-      });
+      await this.connectionQueueManager.connect(parameters.getParameters, parameters.options);
 
       logger('processConnect success');
 
-      this.subscribeToConnectTriggers(parameters);
-
-      this.events.trigger(EEvent.SUCCEEDED_ATTEMPT, {});
+      this.handleSucceededAttempt(parameters);
     } catch (error) {
+      if (hasNotReadyForConnectionError(error)) {
+        this.handleSucceededAttempt(parameters);
+
+        return;
+      }
+
       if (hasParametersNotExistError(error)) {
         logger('processConnect: parameters not exist error', error);
 
@@ -221,6 +223,14 @@ class AutoConnectorManager {
     this.events.trigger(EEvent.FAILED_ATTEMPT, new Error('Limit reached'));
 
     this.runCheckTelephony(parameters);
+  }
+
+  private handleSucceededAttempt(parameters: TParametersAutoConnect) {
+    logger('handleSucceededAttempt');
+
+    this.subscribeToConnectTriggers(parameters);
+
+    this.events.trigger(EEvent.SUCCEEDED_ATTEMPT, {});
   }
 
   private subscribeToConnectTriggers(parameters: TParametersAutoConnect) {

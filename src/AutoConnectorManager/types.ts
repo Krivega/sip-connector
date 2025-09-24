@@ -12,10 +12,17 @@ export type ISubscriber<T = void> = {
 };
 
 export type TParametersCheckTelephony = Parameters<ConnectionManager['checkTelephony']>[0];
-export type TParametersConnect = Parameters<ConnectionQueueManager['connect']>[0];
+export type TParametersConnect = Parameters<ConnectionQueueManager['connect']>[0] extends
+  | (() => Promise<infer T>)
+  | infer T
+  ? T
+  : never;
+
+type TOptionsConnect = Parameters<ConnectionQueueManager['connect']>[1];
+
 export type TParametersAutoConnect = {
   getParameters: () => Promise<TParametersConnect & TParametersCheckTelephony>;
-  hasReadyForConnection?: () => boolean;
+  options?: TOptionsConnect;
 };
 export type TAttemptStatus = {
   isInProgress: boolean;

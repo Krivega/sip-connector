@@ -3,7 +3,7 @@ import { isCanceledError } from '@krivega/cancelable-promise';
 import { hasCanceledError } from 'repeated-calls';
 import { debounce } from 'ts-debounce';
 
-import { hasNotReadyForConnectionError } from '@/ConnectionManager';
+import { hasNotReadyForConnectionError, resolveParameters } from '@/ConnectionManager';
 import debug from '@/logger';
 import hasPurgatory from '@/tools/hasPurgatory';
 
@@ -78,6 +78,17 @@ export const TEST_HOOKS = {
   handleEnterRoomEvent,
   handleOnceRaceEvent,
   handleFailProgressEvent,
+};
+
+type TConnectToServerParameters = {
+  userAgent: string;
+  sipWebSocketServerURL: string;
+  sipServerUrl: string;
+  remoteAddress?: string;
+  displayName?: string;
+  name?: string;
+  password?: string;
+  isRegisteredUser?: boolean;
 };
 
 interface IProxyMethods {
@@ -199,25 +210,16 @@ class SipConnectorFacade implements IProxyMethods {
   }
 
   public connectToServer = async (
-    onPrepareConnect: () => Promise<{
-      userAgent: string;
-      sipWebSocketServerURL: string;
-      sipServerUrl: string;
-      remoteAddress?: string;
-      displayName?: string;
-      name?: string;
-      password?: string;
-      isRegisteredUser?: boolean;
-    }>,
+    parameters: (() => Promise<TConnectToServerParameters>) | TConnectToServerParameters,
     options?: {
       isDisconnectOnFail?: boolean;
       hasReadyForConnection?: () => boolean;
     },
   ): Promise<{ ua?: UA; isSuccessful: boolean }> => {
-    const onPrepareConnectInner = async () => {
-      const parameters = await onPrepareConnect();
+    const getParameters = async () => {
+      const parametersInner = await resolveParameters(parameters);
 
-      debug('connectToServer', parameters);
+      debug('connectToServer', parametersInner);
 
       const {
         userAgent,
@@ -228,7 +230,7 @@ class SipConnectorFacade implements IProxyMethods {
         name,
         password,
         isRegisteredUser,
-      } = parameters;
+      } = parametersInner;
 
       return {
         userAgent,
@@ -243,7 +245,7 @@ class SipConnectorFacade implements IProxyMethods {
     };
 
     return this.sipConnector
-      .connect(onPrepareConnectInner, options)
+      .connect(getParameters, options)
       .then((ua) => {
         debug('connectToServer then');
 

@@ -4,6 +4,7 @@ import { dataForConnectionWithAuthorization } from '@/__fixtures__';
 import delayPromise from '@/__fixtures__/delayPromise';
 import JsSIP from '@/__fixtures__/jssip.mock';
 import remoteCallerData from '@/__fixtures__/remoteCallerData';
+import { resolveParameters } from '@/ConnectionManager';
 import { doMockSipConnector } from '@/doMock';
 import SipConnectorFacade, { TEST_HOOKS } from '../@SipConnectorFacade';
 
@@ -63,9 +64,12 @@ describe('SipConnectorFacade comprehensive', () => {
         isRegisteredUser: true,
       });
 
+      const connectParameters = connectSpy.mock.calls[0][0];
+      const expectedParameters = await resolveParameters(connectParameters);
+
       expect(result.isSuccessful).toBe(true);
       expect(result.ua).toBeDefined();
-      expect(connectSpy).toHaveBeenCalledWith({
+      expect(expectedParameters).toEqual({
         userAgent: 'Chrome',
         sipWebSocketServerURL: 'wss://sip.example.com/ws',
         sipServerUrl: 'sip.example.com',
@@ -87,51 +91,10 @@ describe('SipConnectorFacade comprehensive', () => {
           userAgent: 'Chrome',
           sipWebSocketServerURL: 'wss://sip.example.com/ws',
           sipServerUrl: 'sip.example.com',
-          isDisconnectOnFail: false,
         }),
       ).rejects.toThrow('Connection failed');
 
       expect(connectSpy).toHaveBeenCalled();
-    });
-
-    it('должен отключиться при ошибке подключения если isDisconnectOnFail=true', async () => {
-      const connectSpy = jest
-        .spyOn(sipConnector, 'connect')
-        .mockRejectedValue(new Error('Connection failed'));
-      const disconnectSpy = jest.spyOn(sipConnector, 'disconnect').mockResolvedValue(undefined);
-
-      await expect(
-        sipConnectorFacade.connectToServer({
-          userAgent: 'Chrome',
-          sipWebSocketServerURL: 'wss://sip.example.com/ws',
-          sipServerUrl: 'sip.example.com',
-          isDisconnectOnFail: true,
-        }),
-      ).rejects.toThrow('Connection failed');
-
-      expect(connectSpy).toHaveBeenCalled();
-      expect(disconnectSpy).toHaveBeenCalled();
-    });
-
-    it('должен обработать ошибку отключения при isDisconnectOnFail=true', async () => {
-      const connectSpy = jest
-        .spyOn(sipConnector, 'connect')
-        .mockRejectedValue(new Error('Connection failed'));
-      const disconnectSpy = jest
-        .spyOn(sipConnector, 'disconnect')
-        .mockRejectedValue(new Error('Disconnect failed'));
-
-      await expect(
-        sipConnectorFacade.connectToServer({
-          userAgent: 'Chrome',
-          sipWebSocketServerURL: 'wss://sip.example.com/ws',
-          sipServerUrl: 'sip.example.com',
-          isDisconnectOnFail: true,
-        }),
-      ).rejects.toThrow('Connection failed');
-
-      expect(connectSpy).toHaveBeenCalled();
-      expect(disconnectSpy).toHaveBeenCalled();
     });
 
     it('должен вернуть isSuccessful=false для canceled-ошибки без отключения', async () => {
@@ -165,13 +128,12 @@ describe('SipConnectorFacade comprehensive', () => {
         userAgent: 'Chrome',
         sipWebSocketServerURL: 'wss://sip.example.com/ws',
         sipServerUrl: 'sip.example.com',
-        isDisconnectOnFail: false,
       });
 
       expect(result.isSuccessful).toBe(false);
     });
 
-    it('должен вернуть isSuccessful=false для canceled-ошибки с отключением', async () => {
+    it('должен вернуть isSuccessful=false для canceled-ошибки', async () => {
       jest.resetModules();
 
       jest.doMock('@krivega/cancelable-promise', () => {
@@ -196,14 +158,12 @@ describe('SipConnectorFacade comprehensive', () => {
       const localSipConnector = doMockSipConnector();
 
       jest.spyOn(localSipConnector, 'connect').mockRejectedValue(new Error('canceled'));
-      jest.spyOn(localSipConnector, 'disconnect').mockResolvedValue(undefined);
 
       const facade = new SipConnectorFacadeIsolated(localSipConnector);
       const result = await facade.connectToServer({
         userAgent: 'Chrome',
         sipWebSocketServerURL: 'wss://sip.example.com/ws',
         sipServerUrl: 'sip.example.com',
-        isDisconnectOnFail: true,
       });
 
       expect(result.isSuccessful).toBe(false);

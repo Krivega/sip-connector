@@ -1,7 +1,6 @@
 import JsSIP from '@/__fixtures__/jssip.mock';
 import SipConnector from '../@SipConnector';
 
-import type { UA } from '@krivega/jssip';
 import type { TJsSIP } from '@/types';
 
 describe('SipConnector events', () => {
@@ -85,7 +84,7 @@ describe('SipConnector events', () => {
     const statsHandler = jest.fn();
 
     // Подписываемся на события от разных менеджеров
-    sipConnector.events.on('auto-connect:connected', autoConnectHandler);
+    sipConnector.events.on('auto-connect:succeeded-attempt', autoConnectHandler);
     sipConnector.events.on('connection:connecting', connectionHandler);
     sipConnector.events.on('call:accepted', callHandler);
     sipConnector.events.on('api:channels', apiHandler);
@@ -107,10 +106,7 @@ describe('SipConnector events', () => {
     };
 
     // Эмитим события от разных менеджеров
-    sipConnector.autoConnectorManager.events.trigger('connected', {
-      ua: {} as UA,
-      isRegistered: true,
-    });
+    sipConnector.autoConnectorManager.events.trigger('succeeded-attempt', {});
     sipConnector.connectionManager.events.trigger('connecting', { data: 'connection' });
     sipConnector.callManager.events.trigger('accepted', { data: 'call' });
     sipConnector.apiManager.events.trigger('channels', { data: 'api' });
@@ -120,10 +116,7 @@ describe('SipConnector events', () => {
     sipConnector.statsManager.events.trigger('collected', stats);
 
     // Проверяем, что каждый обработчик был вызван с правильными данными
-    expect(autoConnectHandler).toHaveBeenCalledWith({
-      ua: {},
-      isRegistered: true,
-    });
+    expect(autoConnectHandler).toHaveBeenCalledWith({});
     expect(connectionHandler).toHaveBeenCalledWith({ data: 'connection' });
     expect(callHandler).toHaveBeenCalledWith({ data: 'call' });
     expect(apiHandler).toHaveBeenCalledWith({ data: 'api' });
