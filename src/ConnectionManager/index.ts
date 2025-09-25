@@ -7,3 +7,4 @@ export type {
   TEvent as TConnectionManagerEvent,
   TEvents as TConnectionManagerEvents,
 } from './eventNames';
+export { hasNotReadyForConnectionError, resolveParameters } from './utils';

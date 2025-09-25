@@ -12,3 +12,5 @@ export * as tools from './tools';
 export { EMimeTypesVideoCodecs } from './types';
 export type { TJsSIP } from './types';
 export { default as getCodecFromSender } from './utils/getCodecFromSender';
+export { hasConnectionPromiseIsNotActualError } from './ConnectionQueueManager';
+export { createParametersNotExistError } from './AutoConnectorManager';

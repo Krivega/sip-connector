@@ -23,6 +23,7 @@ SDK предоставляет комплексное решение для:
 | **Мониторинг**               | WebRTC-статистика (RTCRtpStats, ICE candidate stats)                                                                   |
 | **Управление конференциями** | Перемещение участников между ролями (участник/зритель)                                                                 |
 | **Лицензирование**           | Мониторинг использования лицензий и состояния презентаций                                                              |
+| **Автоподключение**          | Автоматическое переподключение при обрывах связи                                                                       |
 
 - **Адаптивный polling**: Улучшенная система опроса для мониторинга изменений видеотреков
 - **Поддержка maxBitrate в PresentationManager**: Автоматическое управление битрейтом для презентаций
@@ -38,9 +39,9 @@ SDK предоставляет комплексное решение для:
 
 SDK построен по принципу **слоистой архитектуры**:
 
-- **SipConnector** — низкоуровневый слой с менеджерами (Connection, Call, Presentation, API)
+- **SipConnector** — низкоуровневый слой с менеджерами (Connection, Call, Presentation, API, AutoConnector)
 - **SipConnectorFacade** — высокоуровневый фасад с готовыми сценариями
-- **Специализированные менеджеры** — для статистики, участников, медиа-потоков
+- **Специализированные менеджеры** — для статистики, участников, медиа-потоков, автоподключения
 
 ---
 
@@ -93,6 +94,7 @@ const facade = new SipConnectorFacade(sipConnector);
 ### Шаг 2: Подключение к серверу
 
 ```typescript
+// Подключение с объектом параметров
 await facade.connectToServer({
   userAgent: tools.getUserAgent({ appName: 'MyApp' }),
   sipWebSocketServerURL: 'wss://sip.example.com/ws',
@@ -100,6 +102,20 @@ await facade.connectToServer({
   name: '1001', // SIP URI user part
   password: 'secret',
   isRegisteredUser: true, // Включить SIP REGISTER
+});
+
+// Или с функцией для динамического получения параметров
+await facade.connectToServer(async () => {
+  // Получение актуальных параметров подключения
+  const config = await fetchConnectionConfig();
+  return {
+    userAgent: tools.getUserAgent({ appName: 'MyApp' }),
+    sipWebSocketServerURL: config.websocketUrl,
+    sipServerUrl: config.sipUrl,
+    name: config.username,
+    password: config.password,
+    isRegisteredUser: true,
+  };
 });
 ```
 
@@ -785,8 +801,7 @@ const connectionQueueManager = new ConnectionQueueManager({
 
 // Операции выполняются последовательно
 await connectionQueueManager.connect(params);
-await connectionQueueManager.register();
-await connectionQueueManager.checkTelephony(params);
+await connectionQueueManager.disconnect();
 ```
 
 ### Механизм работы
@@ -796,17 +811,11 @@ await connectionQueueManager.checkTelephony(params);
 
 ### Поддерживаемые операции
 
-| Операция         | Описание                |
-| ---------------- | ----------------------- |
-| `connect`        | Подключение к серверу   |
-| `disconnect`     | Отключение от сервера   |
-| `register`       | Регистрация на сервере  |
-| `unregister`     | Отмена регистрации      |
-| `tryRegister`    | Попытка регистрации     |
-| `checkTelephony` | Проверка телефонии      |
-| `sendOptions`    | Отправка OPTIONS        |
-| `ping`           | Отправка PING           |
-| `set`            | Обновление конфигурации |
+| Операция     | Описание                          |
+| ------------ | --------------------------------- |
+| `connect`    | Подключение к серверу             |
+| `disconnect` | Отключение от сервера             |
+| `stop`       | Остановка всех операций в очереди |
 
 ### Интеграция в SipConnector
 
@@ -818,6 +827,91 @@ const sipConnector = new SipConnector({ JsSIP });
 await sipConnector.connect(params); // → connectionQueueManager.connect()
 await sipConnector.disconnect(); // → connectionQueueManager.disconnect()
 ```
+
+---
+
+## 🔄 Автоматическое переподключение
+
+### AutoConnectorManager
+
+`AutoConnectorManager` обеспечивает **автоматическое переподключение** при обрывах связи и проблемах с сетью:
+
+```typescript
+// Создание SipConnector с настройками автоподключения
+const sipConnector = new SipConnector(
+  { JsSIP },
+  {
+    autoConnectorOptions: {
+      onBeforeRetry, // Очистка кэша перед переподключением
+      timeoutBetweenAttempts: 3000, // Задержка между попытками
+      checkTelephonyRequestInterval: 15000, // Интервал проверки телефонии
+    },
+  },
+);
+
+// Запуск автоподключения
+sipConnector.startAutoConnect({
+  // Возвращает параметры подключения
+  getParameters: async () => {
+    return {
+      displayName: 'displayName',
+      sipWebSocketServerURL: 'wss://example.com/ws',
+      sipServerUrl: 'sipServerUrl',
+    };
+  },
+  // Проверяет готовность к подключению
+  hasReadyForConnection: () => {
+    return true;
+  },
+});
+
+// Остановка автоподключения
+sipConnector.stopAutoConnect();
+
+// Подписка на события автоподключения
+sipConnector.on('auto-connect:changed-attempt-status', ({ isInProgress }) => {
+  console.log('Попытка подключения в процессе:', isInProgress);
+});
+
+sipConnector.on('auto-connect:before-attempt', () => {
+  console.log('Начало попытки подключения');
+});
+
+sipConnector.on('auto-connect:succeeded-attempt', () => {
+  console.log('Попытка подключения успешна');
+});
+
+sipConnector.on('auto-connect:failed-attempt', (error) => {
+  console.log('Попытка подключения неудачна:', error);
+});
+
+sipConnector.on('auto-connect:cancelled-attempt', (error) => {
+  console.log('Попытка подключения отменена:', error);
+});
+```
+
+### Принцип работы
+
+- **Автоматические попытки**: Повторяет попытки подключения при ошибках
+- **Проверка телефонии**: Периодически проверяет доступность сервера
+- **Мониторинг состояния**: Отслеживает состояние регистрации и звонков
+- **Адаптивные задержки**: Использует настраиваемые интервалы между попытками
+- **Очистка кэша**: Возможность настраивать очистку кэша через хук
+
+### События автоподключения
+
+| Событие                               | Описание                       | Данные                              |
+| ------------------------------------- | ------------------------------ | ----------------------------------- |
+| `auto-connect:connecting`             | Начало подключения             | -                                   |
+| `auto-connect:connected`              | Успешное подключение           | `{ ua: UA, isRegistered: boolean }` |
+| `auto-connect:disconnecting`          | Начало отключения              | -                                   |
+| `auto-connect:disconnected`           | Отключение завершено           | -                                   |
+| `auto-connect:failed`                 | Ошибка подключения             | `Error`                             |
+| `auto-connect:before-attempt`         | Начало попытки подключения     | -                                   |
+| `auto-connect:succeeded-attempt`      | Успешная попытка подключения   | -                                   |
+| `auto-connect:failed-attempt`         | Неудачная попытка подключения  | `Error`                             |
+| `auto-connect:cancelled-attempt`      | Отмененная попытка подключения | `Error`                             |
+| `auto-connect:changed-attempt-status` | Изменение статуса попытки      | `{ isInProgress: boolean }`         |
 
 ---
 
@@ -884,20 +978,20 @@ import {
 ### Слоистая архитектура
 
 ```shell
-┌────────────────────────────────────────────────────┐
-│                  SipConnectorFacade                │ ← Высокоуровневый API
-├────────────────────────────────────────────────────┤
-│                  SipConnector                      │ ← Координация менеджеров
-├────────────────────────────────────────────────────┤
-│ Connection │ Connection │ Call       │  API        │ ← Основные менеджеры
-│ Manager    │ Queue      │ Manager    │  Manager    │
-│            │ Manager    │            │             │
-├────────────────────────────────────────────────────┤
-│ Stats      │Presentation│IncomingCall│VideoBalancer│ ← Специализированные менеджеры
-│ Manager    │ Manager    │ Manager    │ Manager     │
-├────────────────────────────────────────────────────┤
-│                  @krivega/jssip                    │ ← SIP-функциональность
-└────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                        SipConnectorFacade                        │ ← Высокоуровневый API
+├──────────────────────────────────────────────────────────────────┤
+│                           SipConnector                           │ ← Координация менеджеров
+├──────────────────────────────────────────────────────────────────┤
+│ Connection │ Connection │ Call       │  API        │             │ ← Основные менеджеры
+│ Manager    │ Queue      │ Manager    │  Manager    │             │
+│            │ Manager    │            │             │             │
+├──────────────────────────────────────────────────────────────────┤
+│ Stats      │Presentation│IncomingCall│VideoBalancer│AutoConnector│ ← Специализированные менеджеры
+│ Manager    │ Manager    │ Manager    │ Manager     │Manager      │
+├──────────────────────────────────────────────────────────────────┤
+│                          @krivega/jssip                          │ ← SIP-функциональность
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 ### Паттерны проектирования

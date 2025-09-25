@@ -11,13 +11,6 @@ describe('ConnectionQueueManager', () => {
     connectionManager = {
       connect: jest.fn(),
       disconnect: jest.fn(),
-      register: jest.fn(),
-      unregister: jest.fn(),
-      tryRegister: jest.fn(),
-      checkTelephony: jest.fn(),
-      sendOptions: jest.fn(),
-      ping: jest.fn(),
-      set: jest.fn(),
     } as unknown as ConnectionManager;
 
     connectionQueueManager = new ConnectionQueueManager({
@@ -39,12 +32,16 @@ describe('ConnectionQueueManager', () => {
       sipWebSocketServerURL: 'wss://test.com',
     };
 
+    const getParameters = async () => {
+      return connectParams;
+    };
+
     (connectionManager.connect as jest.Mock).mockResolvedValue(mockResult);
 
-    const result = await connectionQueueManager.connect(connectParams);
+    const result = await connectionQueueManager.connect(getParameters);
 
     expect(stackRunSpy).toHaveBeenCalled();
-    expect(connectionManager.connect).toHaveBeenCalledWith(connectParams);
+    expect(connectionManager.connect).toHaveBeenCalledWith(getParameters);
     expect(result).toBe(mockResult);
   });
 
@@ -57,91 +54,11 @@ describe('ConnectionQueueManager', () => {
     expect(connectionManager.disconnect).toHaveBeenCalled();
   });
 
-  it('должен выполнять register через очередь', async () => {
-    const mockEvent = {};
+  it('должен проксировать метод stop', async () => {
+    const stopSpy = jest.spyOn(connectionQueueManager, 'stop');
 
-    (connectionManager.register as jest.Mock).mockResolvedValue(mockEvent);
+    connectionQueueManager.stop();
 
-    const result = await connectionQueueManager.register();
-
-    expect(stackRunSpy).toHaveBeenCalled();
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(connectionManager.register).toHaveBeenCalled();
-    expect(result).toBe(mockEvent);
-  });
-
-  it('должен выполнять unregister через очередь', async () => {
-    const mockEvent = {};
-
-    (connectionManager.unregister as jest.Mock).mockResolvedValue(mockEvent);
-
-    const result = await connectionQueueManager.unregister();
-
-    expect(stackRunSpy).toHaveBeenCalled();
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(connectionManager.unregister).toHaveBeenCalled();
-    expect(result).toBe(mockEvent);
-  });
-
-  it('должен выполнять tryRegister через очередь', async () => {
-    const mockEvent = {};
-
-    (connectionManager.tryRegister as jest.Mock).mockResolvedValue(mockEvent);
-
-    const result = await connectionQueueManager.tryRegister();
-
-    expect(stackRunSpy).toHaveBeenCalled();
-    expect(connectionManager.tryRegister).toHaveBeenCalled();
-    expect(result).toBe(mockEvent);
-  });
-
-  it('должен выполнять checkTelephony через очередь', async () => {
-    const params = {
-      displayName: 'test',
-      sipServerUrl: 'test.com',
-      sipWebSocketServerURL: 'wss://test.com',
-    };
-
-    (connectionManager.checkTelephony as jest.Mock).mockResolvedValue(undefined);
-
-    await connectionQueueManager.checkTelephony(params);
-
-    expect(stackRunSpy).toHaveBeenCalled();
-    expect(connectionManager.checkTelephony).toHaveBeenCalledWith(params);
-  });
-
-  it('должен выполнять sendOptions через очередь', async () => {
-    const target = 'sip:test@example.com';
-    const body = 'test body';
-
-    (connectionManager.sendOptions as jest.Mock).mockResolvedValue(undefined);
-
-    await connectionQueueManager.sendOptions(target, body);
-
-    expect(stackRunSpy).toHaveBeenCalled();
-    expect(connectionManager.sendOptions).toHaveBeenCalledWith(target, body);
-  });
-
-  it('должен выполнять ping через очередь', async () => {
-    const body = 'test body';
-
-    (connectionManager.ping as jest.Mock).mockResolvedValue(undefined);
-
-    await connectionQueueManager.ping(body);
-
-    expect(stackRunSpy).toHaveBeenCalled();
-    expect(connectionManager.ping).toHaveBeenCalledWith(body);
-  });
-
-  it('должен выполнять set через очередь', async () => {
-    const params = { displayName: 'new name' };
-
-    (connectionManager.set as jest.Mock).mockResolvedValue(true);
-
-    const result = await connectionQueueManager.set(params);
-
-    expect(stackRunSpy).toHaveBeenCalled();
-    expect(connectionManager.set).toHaveBeenCalledWith(params);
-    expect(result).toBe(true);
+    expect(stopSpy).toHaveBeenCalled();
   });
 });

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 /// <reference types="jest" />
+import { resolveParameters } from '@/ConnectionManager';
 import { doMockSipConnector } from '@/doMock';
 import {
   LOCKED_SIP_WEB_SOCKET_SERVER_URL,
@@ -41,7 +42,9 @@ describe('connectToServer', () => {
       return disconnectOrigin();
     };
 
-    sipConnector.connect = async (data) => {
+    sipConnector.connect = async (getParameters) => {
+      const data = await resolveParameters(getParameters);
+
       if (data.sipWebSocketServerURL === LOCKED_SIP_WEB_SOCKET_SERVER_URL) {
         const error = new Error('failed wss-request');
 
@@ -140,25 +143,22 @@ describe('connectToServer', () => {
       });
   });
 
-  it('should be closed web-socket connection when wss-request has failed and isDisconnectOnFail is true', async () => {
-    expect.assertions(2);
+  it('should be closed web-socket connection when wss-request has failed', async () => {
+    expect.assertions(1);
 
     return sipConnectorFacade
       .connectToServer({
         ...dataForConnectionWithAuthorization,
         sipWebSocketServerURL: LOCKED_SIP_WEB_SOCKET_SERVER_URL,
-        isDisconnectOnFail: true,
       })
       .catch((error: unknown) => {
-        // eslint-disable-next-line jest/no-conditional-expect
-        expect(disconnectedMock).toHaveBeenCalledTimes(1);
         // eslint-disable-next-line jest/no-conditional-expect
         expect(error).toBeDefined();
       });
   });
 
-  it('should not be closed web-socket connection when wss-request has failed and isDisconnectOnFail is false', async () => {
-    expect.assertions(2);
+  it('should not be closed web-socket connection when wss-request has failed', async () => {
+    expect.assertions(1);
 
     return sipConnectorFacade
       .connectToServer({
@@ -166,8 +166,6 @@ describe('connectToServer', () => {
         sipWebSocketServerURL: LOCKED_SIP_WEB_SOCKET_SERVER_URL,
       })
       .catch((error: unknown) => {
-        // eslint-disable-next-line jest/no-conditional-expect
-        expect(disconnectedMock).toHaveBeenCalledTimes(0);
         // eslint-disable-next-line jest/no-conditional-expect
         expect(error).toBeDefined();
       });

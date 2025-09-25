@@ -1,12 +1,14 @@
 import { Events } from 'events-constructor';
 
+import logger from '@/logger';
 import ConfigurationManager from './ConfigurationManager';
 import ConnectionFlow from './ConnectionFlow';
 import ConnectionStateMachine from './ConnectionStateMachine';
-import { EVENT_NAMES } from './eventNames';
+import { EEvent, EVENT_NAMES } from './eventNames';
 import RegistrationManager from './RegistrationManager';
 import SipOperations from './SipOperations';
 import UAFactory from './UAFactory';
+import { createNotReadyForConnectionError, resolveParameters } from './utils';
 
 import type { RegisteredEvent, UA, UnRegisteredEvent, WebSocketInterface } from '@krivega/jssip';
 import type { TGetServerUrl } from '@/CallManager';
@@ -14,6 +16,11 @@ import type { TJsSIP } from '@/types';
 import type { TConnect, TSet } from './ConnectionFlow';
 import type { TEvent } from './eventNames';
 import type { TParametersCheckTelephony } from './SipOperations';
+
+type TConnectParameters = (() => Promise<Parameters<TConnect>[0]>) | Parameters<TConnect>[0];
+type TConnectOptions = Parameters<TConnect>[1] & {
+  hasReadyForConnection?: () => boolean;
+};
 
 export default class ConnectionManager {
   public readonly events: Events<typeof EVENT_NAMES>;
@@ -94,6 +101,14 @@ export default class ConnectionManager {
     return this.stateMachine.isPendingInitUa;
   }
 
+  public get isDisconnected() {
+    return this.stateMachine.isDisconnected;
+  }
+
+  public get isFailed() {
+    return this.stateMachine.isFailed;
+  }
+
   public get connectionState() {
     return this.stateMachine.state;
   }
@@ -106,8 +121,17 @@ export default class ConnectionManager {
     return this.configurationManager.isRegister();
   }
 
-  public connect: TConnect = async (data, options) => {
-    return this.connectionFlow.connect(data, options);
+  public connect = async (
+    parameters: TConnectParameters,
+    options?: TConnectOptions,
+  ): Promise<UA> => {
+    return this.disconnect()
+      .catch((error: unknown) => {
+        logger('connect: disconnect error', error);
+      })
+      .then(async () => {
+        return this.connectWithProcessError(parameters, options);
+      });
   };
 
   public set: TSet = async ({ displayName }) => {
@@ -115,7 +139,11 @@ export default class ConnectionManager {
   };
 
   public disconnect = async () => {
-    return this.connectionFlow.disconnect();
+    if (this.isConfigured()) {
+      return this.connectionFlow.disconnect();
+    }
+
+    return undefined;
   };
 
   public async register(): Promise<RegisteredEvent> {
@@ -200,5 +228,52 @@ export default class ConnectionManager {
 
   private readonly getUa = () => {
     return this.ua;
+  };
+
+  private readonly connectWithProcessError = async (
+    parameters: TConnectParameters,
+    options?: TConnectOptions,
+  ) => {
+    const isReadyForConnection = options?.hasReadyForConnection?.() ?? true;
+
+    if (!isReadyForConnection) {
+      throw createNotReadyForConnectionError();
+    }
+
+    return this.processConnect(parameters, options).catch(async (error: unknown) => {
+      const typedError = error as Error;
+
+      return this.disconnect()
+        .then(() => {
+          throw typedError;
+        })
+        .catch(() => {
+          throw typedError;
+        });
+    });
+  };
+
+  private readonly processConnect = async (
+    parameters: TConnectParameters,
+    options?: TConnectOptions,
+  ) => {
+    this.events.trigger(EEvent.CONNECT_STARTED, {});
+
+    return resolveParameters(parameters)
+      .then(async (data) => {
+        return this.connectionFlow.connect(data, options);
+      })
+      .then((ua) => {
+        this.events.trigger(EEvent.CONNECT_SUCCEEDED, { ua });
+
+        return ua;
+      })
+      .catch((error: unknown) => {
+        const connectError: unknown = error ?? new Error('Failed to connect to server');
+
+        this.events.trigger(EEvent.CONNECT_FAILED, connectError);
+
+        throw connectError;
+      });
   };
 }

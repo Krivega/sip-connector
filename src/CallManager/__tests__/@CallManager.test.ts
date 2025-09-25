@@ -40,6 +40,7 @@ describe('CallManager', () => {
     // @ts-expect-error
     mockEvents = {
       on: jest.fn(),
+      onRace: jest.fn(),
       once: jest.fn(),
       onceRace: jest.fn(),
       wait: jest.fn(),
@@ -133,6 +134,20 @@ describe('CallManager', () => {
       expect(result).toBe(returnValue);
     });
 
+    it('should call onRace method on events', () => {
+      const eventNames = ['accepted', 'failed'] as TEvent[];
+      const handler = jest.fn();
+      const returnValue = { remove: jest.fn() };
+
+      // @ts-expect-error
+      mockEvents.onRace.mockReturnValue(returnValue);
+
+      const result = callManager.onRace(eventNames, handler);
+
+      expect(mockEvents.onRace).toHaveBeenCalledWith(eventNames, handler);
+      expect(result).toBe(returnValue);
+    });
+
     it('should call once method on events', () => {
       const eventName = 'accepted' as TEvent;
       const handler = jest.fn();
@@ -180,6 +195,81 @@ describe('CallManager', () => {
       callManager.off(eventName, handler);
 
       expect(mockEvents.off).toHaveBeenCalledWith(eventName, handler);
+    });
+
+    describe('call-status-changed event', () => {
+      let onRaceSpy: jest.SpyInstance;
+
+      type TOnRaceParameters = Parameters<typeof Events.prototype.onRace>;
+
+      beforeEach(() => {
+        onRaceSpy = jest.spyOn(Events.prototype, 'onRace');
+
+        callManager = new CallManager(mockStrategy);
+      });
+
+      afterEach(() => {
+        onRaceSpy.mockRestore();
+      });
+
+      it('should trigger call-status-changed when call status changes from false to true', () => {
+        const handleCallStatusChange = jest.fn();
+
+        expect(mockStrategy.isCallActive).toBe(false);
+
+        callManager.on('call-status-changed', handleCallStatusChange);
+
+        // @ts-expect-error
+        mockStrategy.isCallActive = true;
+
+        const onRaceHandler = (onRaceSpy.mock.calls[0] as TOnRaceParameters)[1];
+
+        onRaceHandler({}, 'accepted');
+
+        expect(handleCallStatusChange).toHaveBeenCalledWith({
+          isCallActive: true,
+        });
+      });
+
+      it('should trigger call-status-changed when call status changes from true to false', () => {
+        const handleCallStatusChange = jest.fn();
+
+        // @ts-expect-error
+        mockStrategy.isCallActive = true;
+
+        callManager.on('call-status-changed', handleCallStatusChange);
+        callManager.events.trigger('accepted', {});
+
+        // @ts-expect-error
+        mockStrategy.isCallActive = false;
+
+        // @ts-expect-error
+        callManager.events.trigger('ended', {});
+
+        expect(handleCallStatusChange).toHaveBeenCalledTimes(2);
+        expect(handleCallStatusChange).toHaveBeenCalledWith({
+          isCallActive: false,
+        });
+      });
+
+      it('should not trigger call-status-changed when call status does not change', () => {
+        const handleCallStatusChange = jest.fn();
+
+        callManager.on('call-status-changed', handleCallStatusChange);
+
+        const onRaceHandler = (onRaceSpy.mock.calls[0] as TOnRaceParameters)[1];
+
+        onRaceHandler({}, 'failed');
+
+        expect(handleCallStatusChange).not.toHaveBeenCalled();
+      });
+
+      it('should subscribe to call status events on construction', () => {
+        expect(onRaceSpy).toHaveBeenCalledWith(
+          ['accepted', 'confirmed', 'ended', 'failed'],
+          expect.any(Function),
+        );
+      });
     });
   });
 

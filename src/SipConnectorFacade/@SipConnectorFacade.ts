@@ -3,6 +3,7 @@ import { isCanceledError } from '@krivega/cancelable-promise';
 import { hasCanceledError } from 'repeated-calls';
 import { debounce } from 'ts-debounce';
 
+import { hasNotReadyForConnectionError, resolveParameters } from '@/ConnectionManager';
 import debug from '@/logger';
 import hasPurgatory from '@/tools/hasPurgatory';
 
@@ -14,7 +15,11 @@ import type { SipConnector } from '@/SipConnector';
 import type { TEventMap as TStatsEventMap } from '@/StatsManager';
 
 const handleError = (error: Error): { isSuccessful: boolean } => {
-  if (!isCanceledError(error) && !hasCanceledError(error)) {
+  if (
+    !isCanceledError(error) &&
+    !hasCanceledError(error) &&
+    !hasNotReadyForConnectionError(error)
+  ) {
     throw error;
   }
 
@@ -75,6 +80,17 @@ export const TEST_HOOKS = {
   handleFailProgressEvent,
 };
 
+type TConnectToServerParameters = {
+  userAgent: string;
+  sipWebSocketServerURL: string;
+  sipServerUrl: string;
+  remoteAddress?: string;
+  displayName?: string;
+  name?: string;
+  password?: string;
+  isRegisteredUser?: boolean;
+};
+
 interface IProxyMethods {
   on: SipConnector['on'];
   once: SipConnector['once'];
@@ -88,6 +104,8 @@ interface IProxyMethods {
   checkTelephony: SipConnector['checkTelephony'];
   waitChannels: SipConnector['waitChannels'];
   ping: SipConnector['ping'];
+  startAutoConnect: SipConnector['startAutoConnect'];
+  stopAutoConnect: SipConnector['stopAutoConnect'];
   connection: SipConnector['connection'];
   isConfigured: SipConnector['isConfigured'];
   isRegistered: SipConnector['isRegistered'];
@@ -106,6 +124,8 @@ const proxyMethods = new Set<keyof IProxyMethods>([
   'checkTelephony',
   'waitChannels',
   'ping',
+  'startAutoConnect',
+  'stopAutoConnect',
   'connection',
   'isConfigured',
   'isRegistered',
@@ -148,6 +168,12 @@ class SipConnectorFacade implements IProxyMethods {
   // @ts-expect-error: proxy method
   public ping: IProxyMethods['ping'];
 
+  // @ts-expect-error: proxy method
+  public startAutoConnect: IProxyMethods['startAutoConnect'];
+
+  // @ts-expect-error: proxy method
+  public stopAutoConnect: IProxyMethods['stopAutoConnect'];
+
   //  proxy method
   public connection: IProxyMethods['connection'];
 
@@ -183,33 +209,29 @@ class SipConnectorFacade implements IProxyMethods {
     });
   }
 
-  public connectToServer = async (parameters: {
-    userAgent: string;
-    sipWebSocketServerURL: string;
-    sipServerUrl: string;
-    remoteAddress?: string;
-    displayName?: string;
-    name?: string;
-    password?: string;
-    isRegisteredUser?: boolean;
-    isDisconnectOnFail?: boolean;
-  }): Promise<{ ua?: UA; isSuccessful: boolean }> => {
-    const {
-      userAgent,
-      sipWebSocketServerURL,
-      sipServerUrl,
-      remoteAddress,
-      displayName,
-      name,
-      password,
-      isRegisteredUser,
-      isDisconnectOnFail,
-    } = parameters;
+  public connectToServer = async (
+    parameters: (() => Promise<TConnectToServerParameters>) | TConnectToServerParameters,
+    options?: {
+      hasReadyForConnection?: () => boolean;
+    },
+  ): Promise<{ ua?: UA; isSuccessful: boolean }> => {
+    const getParameters = async () => {
+      const parametersInner = await resolveParameters(parameters);
 
-    debug('connectToServer', parameters);
+      debug('connectToServer', parametersInner);
 
-    return this.sipConnector
-      .connect({
+      const {
+        userAgent,
+        sipWebSocketServerURL,
+        sipServerUrl,
+        remoteAddress,
+        displayName,
+        name,
+        password,
+        isRegisteredUser,
+      } = parametersInner;
+
+      return {
         userAgent,
         sipWebSocketServerURL,
         sipServerUrl,
@@ -218,7 +240,11 @@ class SipConnectorFacade implements IProxyMethods {
         password,
         user: name,
         register: isRegisteredUser,
-      })
+      };
+    };
+
+    return this.sipConnector
+      .connect(getParameters, options)
       .then((ua) => {
         debug('connectToServer then');
 
@@ -226,17 +252,6 @@ class SipConnectorFacade implements IProxyMethods {
       })
       .catch(async (error: unknown) => {
         debug('connectToServer catch: error', error);
-
-        if (isDisconnectOnFail === true) {
-          return this.sipConnector
-            .disconnect()
-            .then(() => {
-              return handleError(error as Error);
-            })
-            .catch(() => {
-              return handleError(error as Error);
-            });
-        }
 
         return handleError(error as Error);
       });

@@ -1,6 +1,6 @@
 import { TypedEvents } from 'events-constructor';
 
-import { EVENT_NAMES } from './eventNames';
+import { EEvent, EVENT_NAMES } from './eventNames';
 import { MCUCallStrategy } from './MCUCallStrategy';
 
 import type { RTCSession } from '@krivega/jssip';
@@ -15,6 +15,8 @@ class CallManager {
   public constructor(strategy?: ICallStrategy) {
     this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
     this.strategy = strategy ?? new MCUCallStrategy(this.events);
+
+    this.subscribeCallStatusChange();
   }
 
   public get requested(): boolean {
@@ -35,6 +37,13 @@ class CallManager {
 
   public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
     return this.events.on(eventName, handler);
+  }
+
+  public onRace<T extends keyof TEventMap>(
+    eventNames: T[],
+    handler: (data: TEventMap[T], eventName: string) => void,
+  ) {
+    return this.events.onRace(eventNames, handler);
   }
 
   public once<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
@@ -95,6 +104,26 @@ class CallManager {
   public restartIce: ICallStrategy['restartIce'] = async (options) => {
     return this.strategy.restartIce(options);
   };
+
+  private subscribeCallStatusChange() {
+    let { isCallActive } = this;
+
+    const { ACCEPTED, CONFIRMED, ENDED, FAILED } = EEvent;
+
+    this.onRace([ACCEPTED, CONFIRMED, ENDED, FAILED], () => {
+      isCallActive = this.maybeTriggerCallStatus(isCallActive);
+    });
+  }
+
+  private maybeTriggerCallStatus(isCallActive: boolean) {
+    const newStatus = this.isCallActive;
+
+    if (newStatus !== isCallActive) {
+      this.events.trigger(EEvent.CALL_STATUS_CHANGED, { isCallActive: newStatus });
+    }
+
+    return newStatus;
+  }
 }
 
 export default CallManager;

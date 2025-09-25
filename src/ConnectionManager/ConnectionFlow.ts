@@ -148,6 +148,8 @@ export default class ConnectionFlow {
   };
 
   public disconnect = async () => {
+    this.events.trigger(EEvent.DISCONNECTING, undefined);
+
     const disconnectedPromise = new Promise<void>((resolve) => {
       this.events.once(EEvent.DISCONNECTED, () => {
         resolve();

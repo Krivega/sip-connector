@@ -12,6 +12,15 @@ describe('ConnectionManager', () => {
   const WS_URL = 'wss://sip.example.com:8089/ws';
   let connectionManager: ConnectionManager;
 
+  const parameters = {
+    displayName: 'Test User',
+    user: 'testuser',
+    password: PASSWORD_CORRECT,
+    register: false,
+    sipServerUrl: SIP_SERVER_URL,
+    sipWebSocketServerURL: WS_URL,
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
     // Сбрасываем внутреннее состояние мока UA
@@ -32,13 +41,6 @@ describe('ConnectionManager', () => {
 
   describe('connect', () => {
     it('должен успешно подключаться без регистрации', async () => {
-      const parameters = {
-        displayName: 'Test User',
-        register: false,
-        sipServerUrl: SIP_SERVER_URL,
-        sipWebSocketServerURL: WS_URL,
-      } as const;
-
       const ua = await connectionManager.connect(parameters);
 
       // Проверяем, что возвращён UA и он сохранён внутри ConnectionManager
@@ -65,17 +67,16 @@ describe('ConnectionManager', () => {
     });
 
     it('должен успешно подключаться c регистрацией', async () => {
-      const user = 'testuser';
-      const parameters = {
+      const parameters2 = {
         displayName: 'Test User',
-        user,
+        user: 'testuser',
         password: PASSWORD_CORRECT,
         register: true,
         sipServerUrl: SIP_SERVER_URL,
         sipWebSocketServerURL: WS_URL,
-      } as const;
+      };
 
-      const ua = await connectionManager.connect(parameters);
+      const ua = await connectionManager.connect(parameters2);
 
       // UA сохранён внутри менеджера
       expect(connectionManager.ua).toBe(ua);
@@ -84,17 +85,98 @@ describe('ConnectionManager', () => {
       // UA успешно зарегистрирован
       expect(connectionManager.isRegistered).toBe(true);
     });
+
+    it('должен отключаться перед подключением, если конфигурация уже установлена', async () => {
+      // @ts-expect-error
+      const disconnectSpy = jest.spyOn(connectionManager.connectionFlow, 'disconnect');
+
+      await connectionManager.connect(parameters);
+
+      expect(connectionManager.isConfigured()).toBe(true);
+
+      await connectionManager.connect(parameters);
+
+      expect(disconnectSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('должен продолжить подключение, если disconnect упал с ошибкой', async () => {
+      const disconnectSpy = jest.spyOn(connectionManager, 'disconnect');
+      // @ts-expect-error
+      const connectSpy = jest.spyOn(connectionManager.connectionFlow, 'connect');
+
+      disconnectSpy.mockImplementation(async () => {
+        throw new Error('Disconnect is failed');
+      });
+
+      await connectionManager.connect(parameters);
+
+      expect(connectSpy).toHaveBeenCalledTimes(1);
+      expect(connectionManager.isConfigured()).toBe(true);
+    });
+
+    it('должен вернуть ошибку, если подключение не доступно', async () => {
+      await expect(
+        connectionManager.connect(parameters, {
+          hasReadyForConnection: () => {
+            return false;
+          },
+        }),
+      ).rejects.toThrow('Not ready for connection');
+
+      expect(connectionManager.isConfigured()).toBe(false);
+    });
+
+    it('должен отключиться при ошибке подключения', async () => {
+      const disconnectSpy = jest.spyOn(connectionManager, 'disconnect');
+
+      jest
+        // @ts-expect-error
+        .spyOn(connectionManager.connectionFlow, 'connect')
+        .mockRejectedValue(new Error('Connect is failed'));
+
+      await connectionManager.connect(parameters).catch(() => {});
+
+      expect(connectionManager.isConfigured()).toBe(false);
+      expect(disconnectSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('должен подключаться с параметрами из функции', async () => {
+      const getParameters = async () => {
+        return parameters;
+      };
+
+      await connectionManager.connect(getParameters);
+
+      expect(connectionManager.isConfigured()).toBe(true);
+    });
+
+    it('должен обработать ошибку, если функция с параметрами вернула ошибку', async () => {
+      const disconnectSpy = jest.spyOn(connectionManager, 'disconnect');
+
+      const getParameters = async () => {
+        throw new Error('Get parameters is failed');
+      };
+
+      await connectionManager.connect(getParameters).catch(() => {});
+
+      expect(connectionManager.isConfigured()).toBe(false);
+      expect(disconnectSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('должен возвращать новую ошибку, если подключение завершилось с несуществующей ошибкой', async () => {
+      jest
+        // @ts-expect-error
+        .spyOn(connectionManager.connectionFlow, 'connect')
+        .mockRejectedValue(undefined);
+
+      await expect(connectionManager.connect(parameters)).rejects.toThrow(
+        'Failed to connect to server',
+      );
+    });
   });
 
   describe('disconnect', () => {
     it('должен корректно завершать соединение при наличии UA', async () => {
-      const parameters = {
-        displayName: 'Test User',
-        register: false,
-        sipServerUrl: SIP_SERVER_URL,
-        sipWebSocketServerURL: WS_URL,
-      } as const;
-
       await connectionManager.connect(parameters);
 
       const uaInstance = connectionManager.ua;
@@ -114,6 +196,15 @@ describe('ConnectionManager', () => {
       expect(connectionManager.isConfigured()).toBe(false);
     });
 
+    it('не должен завершать соединение при отсутствии конфигурации', async () => {
+      // @ts-expect-error
+      const disconnectSpy = jest.spyOn(connectionManager.connectionFlow, 'disconnect');
+
+      await expect(connectionManager.disconnect()).resolves.toBeUndefined();
+      expect(disconnectSpy).not.toHaveBeenCalled();
+      expect(connectionManager.isConfigured()).toBe(false);
+    });
+
     it('должен корректно завершать соединение при отсутствии UA', async () => {
       // UA не устанавливалось, сразу вызываем disconnect
       await expect(connectionManager.disconnect()).resolves.toBeUndefined();
@@ -125,16 +216,16 @@ describe('ConnectionManager', () => {
   describe('registration operations', () => {
     it('должен регистрировать и разрегистрировать UA', async () => {
       const user = 'testuser';
-      const parameters = {
+      const parameters2 = {
         displayName: 'Test User',
         user,
         password: PASSWORD_CORRECT,
         register: true,
         sipServerUrl: SIP_SERVER_URL,
         sipWebSocketServerURL: WS_URL,
-      } as const;
+      };
 
-      await connectionManager.connect(parameters);
+      await connectionManager.connect(parameters2);
 
       // Проверяем, что UA зарегистрирован из-за register: true
       expect(connectionManager.isRegistered).toBe(true);
@@ -153,17 +244,16 @@ describe('ConnectionManager', () => {
     });
 
     it('должен вызывать tryRegister', async () => {
-      const user = 'testuser';
-      const parameters = {
+      const parameters2 = {
         displayName: 'Test User',
-        user,
+        user: 'testuser',
         password: PASSWORD_CORRECT,
         register: true,
         sipServerUrl: SIP_SERVER_URL,
         sipWebSocketServerURL: WS_URL,
-      } as const;
+      };
 
-      await connectionManager.connect(parameters);
+      await connectionManager.connect(parameters2);
 
       const result = await connectionManager.tryRegister();
 
@@ -173,13 +263,6 @@ describe('ConnectionManager', () => {
 
   describe('SIP operations', () => {
     it('должен вызывать sendOptions', async () => {
-      const parameters = {
-        displayName: 'Test User',
-        register: false,
-        sipServerUrl: SIP_SERVER_URL,
-        sipWebSocketServerURL: WS_URL,
-      } as const;
-
       await connectionManager.connect(parameters);
 
       const target = 'sip:test@example.com';
@@ -192,13 +275,6 @@ describe('ConnectionManager', () => {
     });
 
     it('должен вызывать ping', async () => {
-      const parameters = {
-        displayName: 'Test User',
-        register: false,
-        sipServerUrl: SIP_SERVER_URL,
-        sipWebSocketServerURL: WS_URL,
-      } as const;
-
       await connectionManager.connect(parameters);
 
       const body = 'ping body';
@@ -210,13 +286,6 @@ describe('ConnectionManager', () => {
     });
 
     it('должен вызывать checkTelephony', async () => {
-      const parameters = {
-        displayName: 'Test User',
-        register: false,
-        sipServerUrl: SIP_SERVER_URL,
-        sipWebSocketServerURL: WS_URL,
-      } as const;
-
       await connectionManager.connect(parameters);
 
       const telephonyParams = {
@@ -313,6 +382,55 @@ describe('ConnectionManager', () => {
       expect(waitPromise2).toBeInstanceOf(Promise);
       expect(waitPromise1).not.toBe(waitPromise2); // Разные промисы
     });
+
+    it('должен вызывать CONNECT_STARTED при запуске подключения', async () => {
+      const handleStarted = jest.fn();
+
+      connectionManager.on('connect-started', handleStarted);
+
+      await connectionManager.connect(parameters);
+
+      expect(handleStarted).toHaveBeenCalled();
+    });
+
+    it('должен вызывать CONNECT_SUCCEEDED при успешном подключении', async () => {
+      const handleSucceeded = jest.fn();
+
+      connectionManager.on('connect-succeeded', handleSucceeded);
+
+      await connectionManager.connect(parameters);
+
+      expect(handleSucceeded).toHaveBeenCalledWith({ ua: connectionManager.ua });
+    });
+
+    it('должен вызывать CONNECT_FAILED при ошибке подключения', async () => {
+      jest
+        // @ts-expect-error
+        .spyOn(connectionManager.connectionFlow, 'connect')
+        .mockRejectedValue(new Error('Connect is failed'));
+
+      const handleFailed = jest.fn();
+
+      connectionManager.on('connect-failed', handleFailed);
+
+      await connectionManager.connect(parameters).catch(() => {});
+
+      expect(handleFailed).toHaveBeenCalled();
+    });
+
+    it('должен вызывать CONNECT_FAILED, если функция с параметрами вернула ошибку', async () => {
+      const handleFailed = jest.fn();
+
+      connectionManager.on('connect-failed', handleFailed);
+
+      const getParameters = async () => {
+        throw new Error('Get parameters is failed');
+      };
+
+      await connectionManager.connect(getParameters).catch(() => {});
+
+      expect(handleFailed).toHaveBeenCalled();
+    });
   });
 
   describe('getters', () => {
@@ -323,6 +441,8 @@ describe('ConnectionManager', () => {
       expect(connectionManager.connectionState).toBeDefined();
       expect(connectionManager.isRegistered).toBeDefined();
       expect(connectionManager.isRegisterConfig).toBeDefined();
+      expect(connectionManager.isDisconnected).toBeDefined();
+      expect(connectionManager.isFailed).toBeDefined();
     });
   });
 
@@ -365,13 +485,6 @@ describe('ConnectionManager', () => {
     });
 
     it('должен возвращать UA, когда он инициализирован', async () => {
-      const parameters = {
-        displayName: 'Test User',
-        register: false,
-        sipServerUrl: SIP_SERVER_URL,
-        sipWebSocketServerURL: WS_URL,
-      } as const;
-
       await connectionManager.connect(parameters);
 
       expect(() => {
