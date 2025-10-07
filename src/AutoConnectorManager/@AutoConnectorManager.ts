@@ -294,9 +294,9 @@ class AutoConnectorManager {
   }
 
   private hasFailedOrDisconnectedConnection() {
-    const { isFailed, isDisconnected } = this.connectionManager;
+    const { isFailed, isDisconnected, isIdle } = this.connectionManager;
 
-    return isFailed || isDisconnected;
+    return isFailed || isDisconnected || isIdle;
   }
 }
 

@@ -1,6 +1,5 @@
 import { Events } from 'events-constructor';
 
-import logger from '@/logger';
 import ConfigurationManager from './ConfigurationManager';
 import ConnectionFlow from './ConnectionFlow';
 import ConnectionStateMachine from './ConnectionStateMachine';
@@ -101,6 +100,10 @@ export default class ConnectionManager {
     return this.stateMachine.isPendingInitUa;
   }
 
+  public get isIdle() {
+    return this.stateMachine.isIdle;
+  }
+
   public get isDisconnected() {
     return this.stateMachine.isDisconnected;
   }
@@ -125,13 +128,23 @@ export default class ConnectionManager {
     parameters: TConnectParameters,
     options?: TConnectOptions,
   ): Promise<UA> => {
-    return this.disconnect()
-      .catch((error: unknown) => {
-        logger('connect: disconnect error', error);
-      })
-      .then(async () => {
-        return this.connectWithProcessError(parameters, options);
-      });
+    const isReadyForConnection = options?.hasReadyForConnection?.() ?? true;
+
+    if (!isReadyForConnection) {
+      throw createNotReadyForConnectionError();
+    }
+
+    return this.processConnect(parameters, options).catch(async (error: unknown) => {
+      const typedError = error as Error;
+
+      return this.disconnect()
+        .then(() => {
+          throw typedError;
+        })
+        .catch(() => {
+          throw typedError;
+        });
+    });
   };
 
   public set: TSet = async ({ displayName }) => {
@@ -228,29 +241,6 @@ export default class ConnectionManager {
 
   private readonly getUa = () => {
     return this.ua;
-  };
-
-  private readonly connectWithProcessError = async (
-    parameters: TConnectParameters,
-    options?: TConnectOptions,
-  ) => {
-    const isReadyForConnection = options?.hasReadyForConnection?.() ?? true;
-
-    if (!isReadyForConnection) {
-      throw createNotReadyForConnectionError();
-    }
-
-    return this.processConnect(parameters, options).catch(async (error: unknown) => {
-      const typedError = error as Error;
-
-      return this.disconnect()
-        .then(() => {
-          throw typedError;
-        })
-        .catch(() => {
-          throw typedError;
-        });
-    });
   };
 
   private readonly processConnect = async (

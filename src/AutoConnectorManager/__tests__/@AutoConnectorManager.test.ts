@@ -75,6 +75,9 @@ describe('AutoConnectorManager', () => {
   afterEach(() => {
     jest.clearAllMocks();
     jest.restoreAllMocks();
+
+    // @ts-ignore приватное свойство
+    manager.attemptsState.limitInner = 30;
   });
 
   describe('инициализация', () => {
@@ -218,6 +221,7 @@ describe('AutoConnectorManager', () => {
 
       jest.spyOn(sipConnector.connectionManager, 'isFailed', 'get').mockReturnValue(false);
       jest.spyOn(sipConnector.connectionManager, 'isDisconnected', 'get').mockReturnValue(false);
+      jest.spyOn(sipConnector.connectionManager, 'isIdle', 'get').mockReturnValue(false);
 
       const startSpy = jest.spyOn(CheckTelephonyRequester.prototype, 'start').mockImplementation();
 
@@ -504,6 +508,7 @@ describe('AutoConnectorManager', () => {
     it('остановка всех триггеров успешной проверки телефонии', () => {
       jest.spyOn(sipConnector.connectionManager, 'isFailed', 'get').mockReturnValue(false);
       jest.spyOn(sipConnector.connectionManager, 'isDisconnected', 'get').mockReturnValue(false);
+      jest.spyOn(sipConnector.connectionManager, 'isIdle', 'get').mockReturnValue(false);
 
       // @ts-expect-error
       const stopConnectTriggersSpy = jest.spyOn(manager, 'stopConnectTriggers');
