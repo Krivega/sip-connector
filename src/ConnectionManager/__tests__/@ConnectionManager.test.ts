@@ -93,11 +93,25 @@ describe('ConnectionManager', () => {
       await connectionManager.connect(parameters);
 
       expect(connectionManager.isConfigured()).toBe(true);
-      expect(disconnectSpy).toHaveBeenCalledTimes(0);
 
       await connectionManager.connect(parameters);
 
       expect(disconnectSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('должен продолжить подключение, если disconnect упал с ошибкой', async () => {
+      const disconnectSpy = jest.spyOn(connectionManager, 'disconnect');
+      // @ts-expect-error
+      const connectSpy = jest.spyOn(connectionManager.connectionFlow, 'connect');
+
+      disconnectSpy.mockImplementation(async () => {
+        throw new Error('Disconnect is failed');
+      });
+
+      await connectionManager.connect(parameters);
+
+      expect(connectSpy).toHaveBeenCalledTimes(1);
+      expect(connectionManager.isConfigured()).toBe(true);
     });
 
     it('должен вернуть ошибку, если подключение не доступно', async () => {
@@ -123,7 +137,7 @@ describe('ConnectionManager', () => {
       await connectionManager.connect(parameters).catch(() => {});
 
       expect(connectionManager.isConfigured()).toBe(false);
-      expect(disconnectSpy).toHaveBeenCalledTimes(1);
+      expect(disconnectSpy).toHaveBeenCalledTimes(2);
     });
 
     it('должен подключаться с параметрами из функции', async () => {
@@ -146,7 +160,7 @@ describe('ConnectionManager', () => {
       await connectionManager.connect(getParameters).catch(() => {});
 
       expect(connectionManager.isConfigured()).toBe(false);
-      expect(disconnectSpy).toHaveBeenCalledTimes(1);
+      expect(disconnectSpy).toHaveBeenCalledTimes(2);
     });
 
     it('должен возвращать новую ошибку, если подключение завершилось с несуществующей ошибкой', async () => {
