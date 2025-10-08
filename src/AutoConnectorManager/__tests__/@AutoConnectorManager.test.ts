@@ -566,7 +566,7 @@ describe('AutoConnectorManager', () => {
       expect(loggerMock).toHaveBeenCalled();
     });
 
-    it('при успешном проверке запускает start в случае, если соединение isDisconnected', async () => {
+    it('при успешной проверке запускает start в случае, если соединение isDisconnected', async () => {
       jest.spyOn(sipConnector.connectionManager, 'isDisconnected', 'get').mockReturnValue(true);
 
       const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
@@ -591,7 +591,7 @@ describe('AutoConnectorManager', () => {
       expect(connectSpy).toHaveBeenCalled();
     });
 
-    it('при успешном проверке запускает start в случае, если соединение isFailed', async () => {
+    it('при успешной проверке запускает start в случае, если соединение isFailed', async () => {
       jest.spyOn(sipConnector.connectionManager, 'isFailed', 'get').mockReturnValue(true);
 
       const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
@@ -614,6 +614,49 @@ describe('AutoConnectorManager', () => {
       await manager.wait('succeeded-attempt');
 
       expect(connectSpy).toHaveBeenCalled();
+    });
+
+    it('при успешной проверке запускает start в случае, если соединение было отключено', async () => {
+      jest
+        .spyOn(PingServerIfNotActiveCallRequester.prototype, 'start')
+        .mockImplementation(({ onFailRequest }) => {
+          setTimeout(() => {
+            onFailRequest();
+          }, DELAY);
+        });
+
+      manager = createManager({
+        checkTelephonyRequestInterval: 10,
+        timeoutBetweenAttempts: 10,
+      });
+      manager.start(baseParameters);
+
+      // @ts-ignore приватное свойство
+      manager.attemptsState.limitInner = 5;
+
+      await sipConnector.connectionManager.wait('connect-succeeded');
+
+      expect(sipConnector.connectionManager.isConfigured()).toBe(true);
+
+      jest
+        // @ts-expect-error
+        .spyOn(sipConnector.connectionManager.connectionFlow, 'connect')
+        .mockRejectedValue(new Error('connect is rejected'));
+
+      const disconnectSpy = jest.spyOn(sipConnector.connectionManager, 'disconnect');
+
+      await manager.wait('failed-attempt');
+
+      const startSpy = jest.spyOn(manager, 'start');
+
+      expect(disconnectSpy).toHaveBeenCalled();
+      expect(sipConnector.connectionManager.isFailed).toBe(false);
+      expect(sipConnector.connectionManager.isDisconnected).toBe(false);
+      expect(sipConnector.connectionManager.isIdle).toBe(true);
+
+      await manager.wait('before-attempt');
+
+      expect(startSpy).toHaveBeenCalledTimes(1);
     });
 
     describe('onBeforeRequest', () => {
