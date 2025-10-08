@@ -101,6 +101,10 @@ export default class ConnectionManager {
     return this.stateMachine.isPendingInitUa;
   }
 
+  public get isIdle() {
+    return this.stateMachine.isIdle;
+  }
+
   public get isDisconnected() {
     return this.stateMachine.isDisconnected;
   }
