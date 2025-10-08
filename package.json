@@ -67,7 +67,7 @@
     "ts-debounce": "^4.0.0",
     "ua-parser-js": "^2.0.5",
     "webrtc-mock": "^1.2.1",
-    "xstate": "^5.22.0"
+    "xstate": "^5.22.1"
   },
   "devDependencies": {
     "@babel/preset-typescript": "^7.27.1",
@@ -107,7 +107,7 @@
     "ts-debounce": "^4.0.0",
     "ua-parser-js": "^2.0.5",
     "webrtc-mock": "^1.2.1",
-    "xstate": "^5.22.0"
+    "xstate": "^5.22.1"
   },
   "packageManager": "yarn@1.22.22"
 }
