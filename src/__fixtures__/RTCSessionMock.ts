@@ -322,7 +322,7 @@ class RTCSessionMock extends BaseSession {
 
   public toggleMuteAudio(mute: boolean) {
     this.forEachSenders(({ track }) => {
-      if (track && track.kind === 'audio') {
+      if (track?.kind === 'audio') {
         track.enabled = !mute;
       }
     });
@@ -333,7 +333,7 @@ class RTCSessionMock extends BaseSession {
 
   public toggleMuteVideo(mute: boolean) {
     this.forEachSenders(({ track }) => {
-      if (track && track.kind === 'video') {
+      if (track?.kind === 'video') {
         track.enabled = !mute;
       }
     });

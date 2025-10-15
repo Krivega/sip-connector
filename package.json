@@ -74,7 +74,7 @@
     "@commitlint/cli": "^20.1.0",
     "@commitlint/config-conventional": "^20.0.0",
     "@eslint/compat": "^1.4.0",
-    "@krivega/eslint-config": "^1.0.6",
+    "@krivega/eslint-config": "^1.0.7",
     "@types/debug": "^4.1.12",
     "@types/dom-mediacapture-transform": "^0.1.11",
     "@types/jest": "^30.0.0",
@@ -91,7 +91,7 @@
     "ts-node": "^10.9.2",
     "tsc-files": "^1.1.4",
     "typescript": "^5.9.3",
-    "vite": "^7.1.9",
+    "vite": "^7.1.10",
     "vite-plugin-dts": "^4.5.4",
     "vite-tsconfig-paths": "^5.1.4"
   },
