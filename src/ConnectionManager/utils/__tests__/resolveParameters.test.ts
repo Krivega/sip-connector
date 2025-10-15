@@ -51,10 +51,10 @@ describe('resolveParameters', () => {
   });
 
   it('должен обрабатывать функцию с ошибкой', async () => {
-    const error = new Error('Test error');
+    const error = new Error('Get parameters is failed');
     const getParameters = jest.fn().mockRejectedValue(error);
 
-    await expect(resolveParameters(getParameters)).rejects.toThrow('Test error');
+    await expect(resolveParameters(getParameters)).rejects.toThrow(error);
     expect(getParameters).toHaveBeenCalledTimes(1);
   });
 

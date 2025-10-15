@@ -10,15 +10,12 @@ import AutoConnectorManager from '../@AutoConnectorManager';
 import CheckTelephonyRequester from '../CheckTelephonyRequester';
 import PingServerIfNotActiveCallRequester from '../PingServerIfNotActiveCallRequester';
 import RegistrationFailedOutOfCallSubscriber from '../RegistrationFailedOutOfCallSubscriber';
-import { createParametersNotExistError } from '../utils';
 
-import type { UA } from '@krivega/jssip';
 import type { SipConnector } from '@/SipConnector';
 import type {
   IAutoConnectorOptions,
   TParametersAutoConnect,
   TParametersCheckTelephony,
-  TParametersConnect,
 } from '../types';
 
 const DELAY = 100;
@@ -710,9 +707,11 @@ describe('AutoConnectorManager', () => {
         // @ts-ignore приватное свойство
         manager.attemptsState.limitInner = 0;
 
+        const error = new Error('Parameters are missing');
+
         manager.start({
           getParameters: async () => {
-            throw createParametersNotExistError();
+            throw error;
           },
         });
 
@@ -720,7 +719,7 @@ describe('AutoConnectorManager', () => {
           onBeforeRequest: () => Promise<TParametersCheckTelephony>;
         };
 
-        await expect(onBeforeRequest()).rejects.toThrow(createParametersNotExistError());
+        await expect(onBeforeRequest()).rejects.toThrow(error);
         expect(onBeforeRetryMock).toHaveBeenCalledTimes(1);
       });
     });
@@ -732,13 +731,22 @@ describe('AutoConnectorManager', () => {
       const reconnectSpy = jest.spyOn(manager, 'reconnect');
       // @ts-ignore приватное свойство
       const connectSpy = jest.spyOn(manager.connectionQueueManager, 'connect');
+      const errorGetParameters = new Error('getParameters is failed');
 
       const parametersWithUndefined = {
         ...baseParameters,
         getParameters: async () => {
-          throw createParametersNotExistError();
+          throw errorGetParameters;
         },
       };
+
+      // Создаем менеджер с кастомной функцией canRetryOnError
+      manager = createManager({
+        canRetryOnError: (error: unknown) => {
+          // Не повторяем попытки для ошибок получения параметров
+          return error !== errorGetParameters;
+        },
+      });
 
       manager.start(parametersWithUndefined);
 
@@ -756,15 +764,23 @@ describe('AutoConnectorManager', () => {
       // @ts-ignore приватное свойство
       const connectSpy = jest.spyOn(manager.connectionQueueManager, 'connect');
 
+      // Симулируем долгое подключение
+      jest.spyOn(sipConnector.connectionManager, 'connect').mockImplementation(async () => {
+        await delayPromise(DELAY * 10);
+
+        return {} as unknown as ReturnType<typeof sipConnector.connectionManager.connect>;
+      });
+
       manager.on('cancelled-attempt', handleCancelled);
       manager.start(baseParameters);
 
-      // @ts-expect-error приватное свойство
-      manager.connectionQueueManager
-        .connect(baseParameters.getParameters as () => Promise<TParametersConnect>)
-        .catch(() => {});
-
       await delayPromise(DELAY);
+
+      // Останавливаем подключение, чтобы сделать промис неактуальным
+      // @ts-expect-error приватное свойство
+      manager.connectionQueueManager.stop();
+
+      await manager.wait('cancelled-attempt');
 
       expect(handleCancelled).toHaveBeenCalled();
       expect(connectSpy).toHaveBeenCalled();
@@ -775,9 +791,9 @@ describe('AutoConnectorManager', () => {
       // @ts-ignore приватное свойство
       const connectSpy = jest.spyOn(manager.connectionQueueManager, 'connect');
       const delayRequestSpy = jest.spyOn(DelayRequester.prototype, 'request').mockResolvedValue();
+      const newError = new Error('Network Error');
 
-      connectSpy.mockRejectedValueOnce(new Error('Network Error'));
-      connectSpy.mockResolvedValueOnce({} as unknown as UA);
+      connectSpy.mockRejectedValueOnce(newError);
 
       // @ts-ignore приватное свойство
       expect(manager.attemptsState.count).toBe(0);

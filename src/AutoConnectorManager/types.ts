@@ -5,6 +5,7 @@ export interface IAutoConnectorOptions {
   checkTelephonyRequestInterval?: number;
   timeoutBetweenAttempts?: number;
   onBeforeRetry?: () => Promise<void>;
+  canRetryOnError?: (error: unknown) => boolean;
 }
 export type ISubscriber<T = void> = {
   subscribe: (callback: (value: T) => void) => void;

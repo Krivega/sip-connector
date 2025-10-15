@@ -2,7 +2,7 @@ import { CancelableRequest, isCanceledError } from '@krivega/cancelable-promise'
 import { DelayRequester, hasCanceledError } from '@krivega/timeout-requester';
 import { TypedEvents } from 'events-constructor';
 
-import { hasNotReadyForConnectionError, type ConnectionManager } from '@/ConnectionManager';
+import { hasNotReadyForConnectionError } from '@/ConnectionManager';
 import { hasConnectionPromiseIsNotActualError } from '@/ConnectionQueueManager';
 import logger from '@/logger';
 import AttemptsState from './AttemptsState';
@@ -10,9 +10,9 @@ import CheckTelephonyRequester from './CheckTelephonyRequester';
 import { EEvent, EVENT_NAMES } from './eventNames';
 import PingServerIfNotActiveCallRequester from './PingServerIfNotActiveCallRequester';
 import RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCallSubscriber';
-import { hasParametersNotExistError } from './utils';
 
 import type { CallManager } from '@/CallManager';
+import type { ConnectionManager } from '@/ConnectionManager';
 import type { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import type { TEventMap, TEvents } from './eventNames';
 import type { IAutoConnectorOptions, TParametersAutoConnect } from './types';
@@ -21,6 +21,10 @@ const DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS = 3000;
 const DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL = 15_000;
 
 const asyncNoop = async (): Promise<void> => {};
+
+const defaultCanRetryOnError = (_error: unknown): boolean => {
+  return true;
+};
 
 class AutoConnectorManager {
   public readonly events: TEvents;
@@ -43,6 +47,8 @@ class AutoConnectorManager {
 
   private readonly onBeforeRetry: () => Promise<void>;
 
+  private readonly canRetryOnError: (error: unknown) => boolean;
+
   public constructor(
     {
       connectionQueueManager,
@@ -56,10 +62,12 @@ class AutoConnectorManager {
     options?: IAutoConnectorOptions,
   ) {
     const onBeforeRetry = options?.onBeforeRetry ?? asyncNoop;
+    const canRetryOnError = options?.canRetryOnError ?? defaultCanRetryOnError;
 
     this.connectionQueueManager = connectionQueueManager;
     this.connectionManager = connectionManager;
     this.onBeforeRetry = onBeforeRetry;
+    this.canRetryOnError = canRetryOnError;
 
     this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
     this.checkTelephonyRequester = new CheckTelephonyRequester({
@@ -200,8 +208,8 @@ class AutoConnectorManager {
         return;
       }
 
-      if (hasParametersNotExistError(error)) {
-        logger('processConnect: parameters not exist error', error);
+      if (!this.canRetryOnError(error)) {
+        logger('processConnect: error does not allow retry', error);
 
         return;
       }

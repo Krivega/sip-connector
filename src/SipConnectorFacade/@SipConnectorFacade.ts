@@ -20,7 +20,7 @@ const handleError = (error: Error): { isSuccessful: boolean } => {
     !hasCanceledError(error) &&
     !hasNotReadyForConnectionError(error)
   ) {
-    throw error;
+    throw error as Error;
   }
 
   return { isSuccessful: false };

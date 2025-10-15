@@ -43,7 +43,7 @@ export default class UAFactory {
     return !!ua && ua.isRegistered();
   }
 
-  private static validateConfiguration({
+  private static validateParametersConnection({
     register,
     password,
     user,
@@ -105,7 +105,7 @@ export default class UAFactory {
     connectionRecoveryMaxInterval = 6,
     userAgent,
   }: TParametersCreateUaConfiguration): TUAConfiguration {
-    UAFactory.validateConfiguration({
+    UAFactory.validateParametersConnection({
       register,
       password,
       user,
