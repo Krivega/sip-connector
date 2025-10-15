@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [19.1.0](https://github.com/Krivega/sip-connector/compare/v19.0.1...v19.1.0) (2025-10-15)
+
+### Features
+
+- remove parameters not exist error handling and introduce canRetryOnError option ([fa61313](https://github.com/Krivega/sip-connector/commit/fa613131608604d86725774769a120818c1e6f5d))
+
 ### [19.0.1](https://github.com/Krivega/sip-connector/compare/v19.0.0...v19.0.1) (2025-10-08)
 
 ### Bug Fixes
