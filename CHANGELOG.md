@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [19.2.0](https://github.com/Krivega/sip-connector/compare/v19.1.0...v19.2.0) (2025-10-16)
+
+### Features
+
+- add event for connection parameters resolution failure ([83485ea](https://github.com/Krivega/sip-connector/commit/83485ea1c8c2945c74c09e2ed4a79e11f43e1a5c))
+
 ## [19.1.0](https://github.com/Krivega/sip-connector/compare/v19.0.1...v19.1.0) (2025-10-15)
 
 ### Features
