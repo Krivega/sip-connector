@@ -240,10 +240,10 @@ describe('AutoConnectorManager', () => {
       expect(handleConnected).toHaveBeenCalled();
     });
 
-    it('вызывает failed-attempt при достижении лимита попыток', async () => {
+    it('вызывает failed-all-attempts при достижении лимита попыток', async () => {
       const handleFailed = jest.fn();
 
-      manager.on('failed-attempt', handleFailed);
+      manager.on('failed-all-attempts', handleFailed);
 
       // Устанавливаем лимит попыток = 0 для немедленного срабатывания
       // @ts-ignore приватное свойство
@@ -642,7 +642,7 @@ describe('AutoConnectorManager', () => {
 
       const disconnectSpy = jest.spyOn(sipConnector.connectionManager, 'disconnect');
 
-      await manager.wait('failed-attempt');
+      await manager.wait('failed-all-attempts');
 
       const startSpy = jest.spyOn(manager, 'start');
 

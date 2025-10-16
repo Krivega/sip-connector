@@ -231,7 +231,7 @@ class AutoConnectorManager {
   private handleLimitReached(parameters: TParametersAutoConnect) {
     this.attemptsState.finishAttempt();
 
-    this.events.trigger(EEvent.FAILED_ATTEMPT, new Error('Limit reached'));
+    this.events.trigger(EEvent.FAILED_ALL_ATTEMPTS, new Error('Limit reached'));
 
     this.runCheckTelephony(parameters);
   }
