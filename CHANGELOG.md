@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.2.1](https://github.com/Krivega/sip-connector/compare/v19.2.0...v19.2.1) (2025-10-16)
+
+### Bug Fixes
+
+- update event names and handling in AutoConnectorManager ([2abf40b](https://github.com/Krivega/sip-connector/commit/2abf40bc2b430814f5634d57762014758792c3ce))
+
 ## [19.2.0](https://github.com/Krivega/sip-connector/compare/v19.1.0...v19.2.0) (2025-10-16)
 
 ### Features
