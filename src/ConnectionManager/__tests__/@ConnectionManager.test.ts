@@ -431,6 +431,45 @@ describe('ConnectionManager', () => {
 
       expect(handleFailed).toHaveBeenCalled();
     });
+
+    it('должен вызывать CONNECT_PARAMETERS_RESOLVE_FAILED при ошибке в resolveParameters', async () => {
+      const handleParametersResolveFailed = jest.fn();
+      const handleFailed = jest.fn();
+
+      connectionManager.on('connect-parameters-resolve-failed', handleParametersResolveFailed);
+      connectionManager.on('connect-failed', handleFailed);
+
+      const getParameters = async () => {
+        throw new Error('Get parameters is failed');
+      };
+
+      await connectionManager.connect(getParameters).catch(() => {});
+
+      expect(handleParametersResolveFailed).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'Get parameters is failed',
+        }),
+      );
+      expect(handleFailed).toHaveBeenCalled();
+    });
+
+    it('не должен вызывать CONNECT_PARAMETERS_RESOLVE_FAILED при ошибке в connectionFlow.connect', async () => {
+      jest
+        // @ts-expect-error
+        .spyOn(connectionManager.connectionFlow, 'connect')
+        .mockRejectedValue(new Error('Connect is failed'));
+
+      const handleParametersResolveFailed = jest.fn();
+      const handleFailed = jest.fn();
+
+      connectionManager.on('connect-parameters-resolve-failed', handleParametersResolveFailed);
+      connectionManager.on('connect-failed', handleFailed);
+
+      await connectionManager.connect(parameters).catch(() => {});
+
+      expect(handleParametersResolveFailed).not.toHaveBeenCalled();
+      expect(handleFailed).toHaveBeenCalled();
+    });
   });
 
   describe('getters', () => {

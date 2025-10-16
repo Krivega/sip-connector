@@ -263,6 +263,11 @@ export default class ConnectionManager {
     this.events.trigger(EEvent.CONNECT_STARTED, {});
 
     return resolveParameters(parameters)
+      .catch((error: unknown) => {
+        this.events.trigger(EEvent.CONNECT_PARAMETERS_RESOLVE_FAILED, error);
+
+        throw error;
+      })
       .then(async (data) => {
         return this.connectionFlow.connect(data, options);
       })

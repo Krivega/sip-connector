@@ -27,6 +27,7 @@ export enum EEvent {
   CONNECT_STARTED = 'connect-started',
   CONNECT_SUCCEEDED = 'connect-succeeded',
   CONNECT_FAILED = 'connect-failed',
+  CONNECT_PARAMETERS_RESOLVE_FAILED = 'connect-parameters-resolve-failed',
 }
 
 export const UA_EVENT_NAMES = [
@@ -46,6 +47,7 @@ const SYNTHETICS_EVENT_NAMES = [
   `${EEvent.CONNECT_STARTED}`,
   `${EEvent.CONNECT_SUCCEEDED}`,
   `${EEvent.CONNECT_FAILED}`,
+  `${EEvent.CONNECT_PARAMETERS_RESOLVE_FAILED}`,
 ] as const;
 
 export const EVENT_NAMES = [...UA_EVENT_NAMES, ...SYNTHETICS_EVENT_NAMES] as const;
@@ -66,6 +68,7 @@ export type TEventMap = {
   'connect-started': Record<string, never>;
   'connect-succeeded': { ua: UA };
   'connect-failed': unknown;
+  'connect-parameters-resolve-failed': unknown;
 };
 
 export type TEvents = TypedEvents<TEventMap>;
