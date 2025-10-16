@@ -85,7 +85,7 @@ describe('SipConnector events', () => {
     const statsHandler = jest.fn();
 
     // Подписываемся на события от разных менеджеров
-    sipConnector.events.on('auto-connect:succeeded-attempt', autoConnectHandler);
+    sipConnector.events.on('auto-connect:success', autoConnectHandler);
     sipConnector.events.on('connection:connecting', connectionHandler);
     sipConnector.events.on('call:accepted', callHandler);
     sipConnector.events.on('api:channels', apiHandler);
@@ -107,7 +107,7 @@ describe('SipConnector events', () => {
     };
 
     // Эмитим события от разных менеджеров
-    sipConnector.autoConnectorManager.events.trigger('succeeded-attempt', {});
+    sipConnector.autoConnectorManager.events.trigger('success');
     sipConnector.connectionManager.events.trigger('connecting', {
       socket: {} as Socket,
       attempts: 1,
@@ -120,7 +120,7 @@ describe('SipConnector events', () => {
     sipConnector.statsManager.events.trigger('collected', stats);
 
     // Проверяем, что каждый обработчик был вызван с правильными данными
-    expect(autoConnectHandler).toHaveBeenCalledWith({});
+    expect(autoConnectHandler).toHaveBeenCalledWith(undefined);
     expect(connectionHandler).toHaveBeenCalledWith({
       socket: {} as Socket,
       attempts: 1,

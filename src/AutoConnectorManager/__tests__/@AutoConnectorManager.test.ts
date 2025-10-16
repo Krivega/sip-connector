@@ -202,19 +202,19 @@ describe('AutoConnectorManager', () => {
       expect(handleAttemptStatusChanged).toHaveBeenCalledWith({ isInProgress: true });
     });
 
-    it('вызывает succeeded-attempt при успешном подключении', async () => {
-      const handleConnected = jest.fn();
+    it('вызывает success при успешном подключении', async () => {
+      const handleSuccess = jest.fn();
 
-      manager.on('succeeded-attempt', handleConnected);
+      manager.on('success', handleSuccess);
       manager.start(baseParameters);
 
-      await manager.wait('succeeded-attempt');
+      await manager.wait('success');
 
-      expect(handleConnected).toHaveBeenCalled();
+      expect(handleSuccess).toHaveBeenCalled();
     });
 
-    it('вызывает succeeded-attempt при запуске проверки телефонии', async () => {
-      const handleConnected = jest.fn();
+    it('вызывает success при запуске проверки телефонии', async () => {
+      const handleSuccess = jest.fn();
 
       jest.spyOn(sipConnector.connectionManager, 'isFailed', 'get').mockReturnValue(false);
       jest.spyOn(sipConnector.connectionManager, 'isDisconnected', 'get').mockReturnValue(false);
@@ -225,7 +225,7 @@ describe('AutoConnectorManager', () => {
       // @ts-ignore приватное свойство
       manager.attemptsState.limitInner = 0;
 
-      manager.on('succeeded-attempt', handleConnected);
+      manager.on('success', handleSuccess);
       manager.start(baseParameters);
 
       const { onSuccessRequest } = startSpy.mock.calls[0][0] as {
@@ -237,13 +237,13 @@ describe('AutoConnectorManager', () => {
 
       onSuccessRequest();
 
-      expect(handleConnected).toHaveBeenCalled();
+      expect(handleSuccess).toHaveBeenCalled();
     });
 
-    it('вызывает failed-all-attempts при достижении лимита попыток', async () => {
-      const handleFailed = jest.fn();
+    it('вызывает limit-reached-attempts при достижении лимита попыток', async () => {
+      const handleLimitReached = jest.fn();
 
-      manager.on('failed-all-attempts', handleFailed);
+      manager.on('limit-reached-attempts', handleLimitReached);
 
       // Устанавливаем лимит попыток = 0 для немедленного срабатывания
       // @ts-ignore приватное свойство
@@ -251,7 +251,9 @@ describe('AutoConnectorManager', () => {
 
       manager.start(baseParameters);
 
-      expect(handleFailed).toHaveBeenCalled();
+      await manager.wait('limit-reached-attempts');
+
+      expect(handleLimitReached).toHaveBeenCalled();
     });
 
     it('вызывает failed-attempt при ошибке реконнекта', async () => {
@@ -262,10 +264,10 @@ describe('AutoConnectorManager', () => {
       jest.spyOn(manager.connectionQueueManager, 'connect').mockRejectedValue(error);
       onBeforeRetryMock.mockRejectedValue(error);
 
-      manager.on('failed-attempt', handleFailed);
+      manager.on('failed-all-attempts', handleFailed);
       manager.start(baseParameters);
 
-      await manager.wait('failed-attempt');
+      await manager.wait('failed-all-attempts');
 
       expect(handleFailed).toHaveBeenCalledWith(error);
     });
@@ -279,7 +281,7 @@ describe('AutoConnectorManager', () => {
         return {} as unknown as ReturnType<typeof sipConnector.connectionManager.connect>;
       });
 
-      manager.on('cancelled-attempt', handleCancelled);
+      manager.on('cancelled-attempts', handleCancelled);
       manager.start(baseParameters);
 
       await delayPromise(DELAY);
@@ -287,7 +289,7 @@ describe('AutoConnectorManager', () => {
       // @ts-expect-error
       manager.connectionQueueManager.stop();
 
-      await manager.wait('cancelled-attempt');
+      await manager.wait('cancelled-attempts');
 
       expect(handleCancelled).toHaveBeenCalled();
     });
@@ -305,7 +307,7 @@ describe('AutoConnectorManager', () => {
         timeoutBetweenAttempts: 1,
       });
 
-      manager.on('cancelled-attempt', handleCancelled);
+      manager.on('cancelled-attempts', handleCancelled);
       manager.start(baseParameters);
 
       await delayPromise(DELAY);
@@ -313,7 +315,7 @@ describe('AutoConnectorManager', () => {
       // @ts-expect-error имитация отмены запроса
       manager.cancelableRequestBeforeRetry.cancelRequest();
 
-      await manager.wait('cancelled-attempt');
+      await manager.wait('cancelled-attempts');
 
       expect(handleCancelled).toHaveBeenCalled();
     });
@@ -328,7 +330,7 @@ describe('AutoConnectorManager', () => {
         timeoutBetweenAttempts: DELAY * 10,
       });
 
-      manager.on('cancelled-attempt', handleCancelled);
+      manager.on('cancelled-attempts', handleCancelled);
       manager.start(baseParameters);
 
       await delayPromise(DELAY);
@@ -336,14 +338,14 @@ describe('AutoConnectorManager', () => {
       // @ts-expect-error имитация отмены запроса
       manager.delayBetweenAttempts.cancelRequest();
 
-      await manager.wait('cancelled-attempt');
+      await manager.wait('cancelled-attempts');
 
       expect(handleCancelled).toHaveBeenCalled();
     });
 
     it('on: возвращает функцию отписки', () => {
       const handler = jest.fn();
-      const unsubscribe = manager.on('succeeded-attempt', handler);
+      const unsubscribe = manager.on('success', handler);
 
       expect(typeof unsubscribe).toBe('function');
     });
@@ -351,12 +353,12 @@ describe('AutoConnectorManager', () => {
     it('once: вызывает обработчик один раз', async () => {
       const handler = jest.fn();
 
-      manager.once('succeeded-attempt', handler);
+      manager.once('success', handler);
       manager.start(baseParameters);
 
-      await manager.wait('succeeded-attempt');
+      await manager.wait('success');
 
-      manager.events.trigger('succeeded-attempt', {});
+      manager.events.trigger('success');
 
       expect(handler).toHaveBeenCalledTimes(1);
     });
@@ -364,11 +366,11 @@ describe('AutoConnectorManager', () => {
     it('off: отписывает обработчик', async () => {
       const handler = jest.fn();
 
-      manager.on('succeeded-attempt', handler);
-      manager.off('succeeded-attempt', handler);
+      manager.on('success', handler);
+      manager.off('success', handler);
       manager.start(baseParameters);
 
-      await manager.wait('succeeded-attempt');
+      await manager.wait('success');
 
       expect(handler).not.toHaveBeenCalled();
     });
@@ -376,18 +378,18 @@ describe('AutoConnectorManager', () => {
     it('wait: возвращает данные события', async () => {
       manager.start(baseParameters);
 
-      const result = await manager.wait('succeeded-attempt');
+      const result = await manager.wait('success');
 
-      expect(result).toEqual({});
+      expect(result).toEqual(undefined);
     });
 
     it('onceRace: вызывает обработчик с первым сработавшим событием', async () => {
       const raceHandler = jest.fn();
 
-      manager.onceRace(['changed-attempt-status', 'failed-attempt'], raceHandler);
+      manager.onceRace(['changed-attempt-status', 'failed-all-attempts'], raceHandler);
       manager.start(baseParameters);
 
-      await manager.wait('succeeded-attempt');
+      await manager.wait('success');
 
       expect(raceHandler).toHaveBeenCalledWith(
         {
@@ -407,7 +409,7 @@ describe('AutoConnectorManager', () => {
 
       manager.start(baseParameters);
 
-      await manager.wait('succeeded-attempt');
+      await manager.wait('success');
 
       expect(pingServerIfNotActiveCallStartSpy).toHaveBeenCalledWith({
         onFailRequest: expect.any(Function) as () => void,
@@ -422,7 +424,7 @@ describe('AutoConnectorManager', () => {
 
       manager.start(baseParameters);
 
-      await manager.wait('succeeded-attempt');
+      await manager.wait('success');
 
       expect(registrationFailedSubscriberSpy).toHaveBeenCalledWith(
         expect.any(Function) as () => void,
@@ -437,7 +439,7 @@ describe('AutoConnectorManager', () => {
 
       manager.start(baseParameters);
 
-      await manager.wait('succeeded-attempt');
+      await manager.wait('success');
 
       const { onFailRequest } = startSpy.mock.calls[0][0] as {
         onFailRequest: () => void;
@@ -447,7 +449,7 @@ describe('AutoConnectorManager', () => {
 
       onFailRequest();
 
-      await manager.wait('succeeded-attempt');
+      await manager.wait('success');
 
       expect(connectSpy).toHaveBeenCalledTimes(2);
     });
@@ -460,7 +462,7 @@ describe('AutoConnectorManager', () => {
 
       manager.start(baseParameters);
 
-      await manager.wait('succeeded-attempt');
+      await manager.wait('success');
 
       const [callback] = subscribeSpy.mock.calls[0] as [() => void];
 
@@ -468,7 +470,7 @@ describe('AutoConnectorManager', () => {
 
       callback();
 
-      await manager.wait('succeeded-attempt');
+      await manager.wait('success');
 
       expect(connectSpy).toHaveBeenCalledTimes(2);
     });
@@ -583,7 +585,7 @@ describe('AutoConnectorManager', () => {
 
       onSuccessRequest();
 
-      await manager.wait('succeeded-attempt');
+      await manager.wait('success');
 
       expect(connectSpy).toHaveBeenCalled();
     });
@@ -608,7 +610,7 @@ describe('AutoConnectorManager', () => {
 
       onSuccessRequest();
 
-      await manager.wait('succeeded-attempt');
+      await manager.wait('success');
 
       expect(connectSpy).toHaveBeenCalled();
     });
@@ -642,7 +644,7 @@ describe('AutoConnectorManager', () => {
 
       const disconnectSpy = jest.spyOn(sipConnector.connectionManager, 'disconnect');
 
-      await manager.wait('failed-all-attempts');
+      await manager.wait('limit-reached-attempts');
 
       const startSpy = jest.spyOn(manager, 'start');
 
@@ -771,7 +773,7 @@ describe('AutoConnectorManager', () => {
         return {} as unknown as ReturnType<typeof sipConnector.connectionManager.connect>;
       });
 
-      manager.on('cancelled-attempt', handleCancelled);
+      manager.on('cancelled-attempts', handleCancelled);
       manager.start(baseParameters);
 
       await delayPromise(DELAY);
@@ -780,7 +782,7 @@ describe('AutoConnectorManager', () => {
       // @ts-expect-error приватное свойство
       manager.connectionQueueManager.stop();
 
-      await manager.wait('cancelled-attempt');
+      await manager.wait('cancelled-attempts');
 
       expect(handleCancelled).toHaveBeenCalled();
       expect(connectSpy).toHaveBeenCalled();
@@ -803,7 +805,7 @@ describe('AutoConnectorManager', () => {
       // @ts-ignore приватное свойство
       expect(manager.attemptsState.count).toBe(1);
 
-      await manager.wait('succeeded-attempt');
+      await manager.wait('success');
 
       // @ts-ignore приватное свойство
       expect(manager.attemptsState.count).toBe(2);
@@ -827,7 +829,7 @@ describe('AutoConnectorManager', () => {
       expect(result).toEqual(parameters);
     });
 
-    it('должен вызывать событие succeeded-attempt и подписываться на слушателей при ошибке not ready for connection', async () => {
+    it('должен вызывать событие success-attempt и подписываться на слушателей при ошибке not ready for connection', async () => {
       expect.assertions(3);
 
       const pingServerIfNotActiveCallStartSpy = jest.spyOn(
@@ -850,7 +852,7 @@ describe('AutoConnectorManager', () => {
         },
       });
 
-      await manager.wait('succeeded-attempt');
+      await manager.wait('success');
 
       const connectResult = connectSpy.mock.results[0].value as Promise<Error>;
 

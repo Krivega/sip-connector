@@ -211,13 +211,15 @@ class AutoConnectorManager {
       if (!this.canRetryOnError(error)) {
         logger('processConnect: error does not allow retry', error);
 
+        this.events.trigger(EEvent.STOP_ATTEMPTS_BY_ERROR, error);
+
         return;
       }
 
       if (hasConnectionPromiseIsNotActualError(error)) {
         logger('processConnect: not actual error', error);
 
-        this.events.trigger(EEvent.CANCELLED_ATTEMPT, error as Error);
+        this.events.trigger(EEvent.CANCELLED_ATTEMPTS, error);
 
         return;
       }
@@ -231,7 +233,7 @@ class AutoConnectorManager {
   private handleLimitReached(parameters: TParametersAutoConnect) {
     this.attemptsState.finishAttempt();
 
-    this.events.trigger(EEvent.FAILED_ALL_ATTEMPTS, new Error('Limit reached'));
+    this.events.trigger(EEvent.LIMIT_REACHED_ATTEMPTS, new Error('Limit reached'));
 
     this.runCheckTelephony(parameters);
   }
@@ -241,7 +243,7 @@ class AutoConnectorManager {
 
     this.subscribeToConnectTriggers(parameters);
 
-    this.events.trigger(EEvent.SUCCEEDED_ATTEMPT, {});
+    this.events.trigger(EEvent.SUCCESS);
   }
 
   private subscribeToConnectTriggers(parameters: TParametersAutoConnect) {
@@ -269,7 +271,7 @@ class AutoConnectorManager {
       this.start(parameters);
     } else {
       this.stopConnectTriggers();
-      this.events.trigger(EEvent.SUCCEEDED_ATTEMPT, {});
+      this.events.trigger(EEvent.SUCCESS);
     }
   }
 
@@ -292,9 +294,9 @@ class AutoConnectorManager {
         const reconnectError = error instanceof Error ? error : new Error('Failed to reconnect');
 
         if (isCanceledError(error) || hasCanceledError(error as Error)) {
-          this.events.trigger(EEvent.CANCELLED_ATTEMPT, reconnectError);
+          this.events.trigger(EEvent.CANCELLED_ATTEMPTS, reconnectError);
         } else {
-          this.events.trigger(EEvent.FAILED_ATTEMPT, reconnectError);
+          this.events.trigger(EEvent.FAILED_ALL_ATTEMPTS, reconnectError);
         }
 
         logger('reconnect: error', error);
