@@ -3,7 +3,13 @@ import { createMediaStreamMock } from 'webrtc-mock';
 import JsSIP from '@/__fixtures__/jssip.mock';
 import SipConnector from '../@SipConnector';
 
-import type { IncomingResponse, RegisteredEvent, UA, UnRegisteredEvent } from '@krivega/jssip';
+import type {
+  IncomingResponse,
+  RegisteredEvent,
+  UA,
+  UnRegisteredEvent,
+  Socket,
+} from '@krivega/jssip';
 import type { TJsSIP } from '@/types';
 
 describe('SipConnector facade', () => {
@@ -20,9 +26,9 @@ describe('SipConnector facade', () => {
     sipConnector.on('connection:connected', handler);
 
     // Тригерим событие на уровне ConnectionManager
-    sipConnector.connectionManager.events.trigger('connected', { ok: true });
+    sipConnector.connectionManager.events.trigger('connected', { socket: {} as Socket });
 
-    expect(handler).toHaveBeenCalledWith({ ok: true });
+    expect(handler).toHaveBeenCalledWith({ socket: {} as Socket });
   });
 
   it('должен проксировать методы AutoConnectorManager', async () => {

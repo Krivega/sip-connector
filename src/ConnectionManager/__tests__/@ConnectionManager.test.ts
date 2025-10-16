@@ -351,7 +351,7 @@ describe('ConnectionManager', () => {
     it('должен поддерживать wait события с типизированными данными', async () => {
       const eventName = 'connected';
 
-      const waitPromise = connectionManager.wait<{ userId: string; status: string }>(eventName);
+      const waitPromise = connectionManager.wait(eventName);
 
       expect(waitPromise).toBeInstanceOf(Promise);
 

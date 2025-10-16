@@ -1,6 +1,8 @@
 import { doMockSipConnector } from '@/doMock';
 import RegistrationFailedOutOfCallSubscriber from '../RegistrationFailedOutOfCallSubscriber';
 
+import type { IncomingResponse } from '@krivega/jssip';
+
 describe('RegistrationFailedOutOfCallSubscriber', () => {
   const callback = jest.fn();
 
@@ -60,7 +62,9 @@ describe('RegistrationFailedOutOfCallSubscriber', () => {
 
       subscriber.subscribe(callback);
 
-      sipConnector.connectionManager.events.trigger('registrationFailed', {});
+      sipConnector.connectionManager.events.trigger('registrationFailed', {
+        response: {} as IncomingResponse,
+      });
 
       expect(callManagerOnSpy).toHaveBeenCalledTimes(1);
 
@@ -80,7 +84,9 @@ describe('RegistrationFailedOutOfCallSubscriber', () => {
 
       startCall();
 
-      sipConnector.connectionManager.events.trigger('registrationFailed', {});
+      sipConnector.connectionManager.events.trigger('registrationFailed', {
+        response: {} as IncomingResponse,
+      });
 
       expect(callManagerOnSpy).toHaveBeenCalledTimes(1);
       expect(callback).not.toHaveBeenCalled();
@@ -100,7 +106,9 @@ describe('RegistrationFailedOutOfCallSubscriber', () => {
 
       startCall();
 
-      sipConnector.connectionManager.events.trigger('registrationFailed', {});
+      sipConnector.connectionManager.events.trigger('registrationFailed', {
+        response: {} as IncomingResponse,
+      });
 
       expect(callback).not.toHaveBeenCalled();
 
@@ -138,7 +146,9 @@ describe('RegistrationFailedOutOfCallSubscriber', () => {
 
       subscriber.subscribe(callback);
 
-      sipConnector.connectionManager.events.trigger('registrationFailed', {});
+      sipConnector.connectionManager.events.trigger('registrationFailed', {
+        response: {} as IncomingResponse,
+      });
 
       endCall();
 

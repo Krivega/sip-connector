@@ -1,4 +1,4 @@
-import { Events } from 'events-constructor';
+import { TypedEvents } from 'events-constructor';
 
 import delayPromise from '@/__fixtures__/delayPromise';
 import jssip from '@/__fixtures__/jssip.mock';
@@ -12,14 +12,15 @@ import { EVENT_NAMES } from '../eventNames';
 import RegistrationManager from '../RegistrationManager';
 import UAFactory from '../UAFactory';
 
-import type { UA, UAConfigurationParams, WebSocketInterface } from '@krivega/jssip';
+import type { UA, UAConfigurationParams, WebSocketInterface, Socket } from '@krivega/jssip';
 import type { TJsSIP } from '@/types';
+import type { TEvents, TEventMap } from '../eventNames';
 
 const SIP_SERVER_URL = 'sip.example.com';
 const websocketHandshakeTimeoutError = createWebsocketHandshakeTimeoutError(SIP_SERVER_URL);
 
 describe('ConnectionFlow', () => {
-  let events: Events<typeof EVENT_NAMES>;
+  let events: TEvents;
   let uaFactory: UAFactory;
   let stateMachine: ConnectionStateMachine;
   let registrationManager: RegistrationManager;
@@ -66,7 +67,7 @@ describe('ConnectionFlow', () => {
     connectionConfiguration = {};
     uaInstance = undefined;
 
-    events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
+    events = new TypedEvents<TEventMap>(EVENT_NAMES);
     uaFactory = new UAFactory(jssip as unknown as TJsSIP);
     stateMachine = new ConnectionStateMachine(events);
     registrationManager = new RegistrationManager({
@@ -306,11 +307,13 @@ describe('ConnectionFlow', () => {
       const disconnectPromise = connectionFlow.disconnect();
 
       // Вручную эмитим DISCONNECTED, так как UA нет
-      events.trigger('disconnected', undefined);
+      const mockDisconnectedEvent = { socket: {} as Socket, error: false };
+
+      events.trigger('disconnected', mockDisconnectedEvent);
 
       await disconnectPromise;
 
-      expect(triggerSpy).toHaveBeenCalledWith('disconnected', undefined);
+      expect(triggerSpy).toHaveBeenCalledWith('disconnected', mockDisconnectedEvent);
       expect(setUa).toHaveBeenCalledWith(undefined);
       expect(resetSpy).toHaveBeenCalled();
     });

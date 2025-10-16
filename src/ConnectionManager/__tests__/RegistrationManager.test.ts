@@ -1,4 +1,4 @@
-import { Events } from 'events-constructor';
+import { TypedEvents } from 'events-constructor';
 
 import delayPromise from '@/__fixtures__/delayPromise';
 import UAMock from '@/__fixtures__/UA.mock';
@@ -11,9 +11,11 @@ import type {
   UA,
   UAEventMap,
   UnRegisteredEvent,
+  DisconnectEvent,
+  Socket,
   WebSocketInterface,
 } from '@krivega/jssip';
-import type { UA_EVENT_NAMES } from '../eventNames';
+import type { UA_EVENT_NAMES, TEvents, TEventMap } from '../eventNames';
 
 jest.mock('@/logger', () => {
   return jest.fn();
@@ -79,7 +81,7 @@ const triggerEventWithDelay = (
 describe('RegistrationManager', () => {
   let registrationManager: RegistrationManager;
   let mockUa: UAMock;
-  let events: Events<typeof EVENT_NAMES>;
+  let events: TEvents;
   let getUaMock: jest.MockedFunction<() => UA>;
   let testData: ITestEventData;
 
@@ -90,7 +92,7 @@ describe('RegistrationManager', () => {
     // Создание моков
     mockUa = createUAMock();
     getUaMock = createGetUaMock(mockUa);
-    events = new Events(EVENT_NAMES);
+    events = new TypedEvents<TEventMap>(EVENT_NAMES);
 
     // Создание экземпляра RegistrationManager
     registrationManager = new RegistrationManager({
@@ -244,9 +246,17 @@ describe('RegistrationManager', () => {
 
       registrationManager.subscribeToStartEvents(onSuccessSpy, onErrorSpy);
 
-      events.trigger('registrationFailed', testData.mockError);
+      const mockRegistrationFailedEvent: UnRegisteredEvent = {
+        response: {
+          status_code: 401,
+          reason_phrase: 'Unauthorized',
+        },
+        cause: 'Authentication failed',
+      } as unknown as UnRegisteredEvent;
 
-      expect(onErrorSpy).toHaveBeenCalledWith(testData.mockError);
+      events.trigger('registrationFailed', mockRegistrationFailedEvent);
+
+      expect(onErrorSpy).toHaveBeenCalledWith(mockRegistrationFailedEvent);
       expect(onSuccessSpy).not.toHaveBeenCalled();
     });
 
@@ -256,9 +266,16 @@ describe('RegistrationManager', () => {
 
       registrationManager.subscribeToStartEvents(onSuccessSpy, onErrorSpy);
 
-      events.trigger('disconnected', testData.mockError);
+      const mockDisconnectedEvent: DisconnectEvent = {
+        socket: {} as Socket,
+        error: true,
+        code: 1006,
+        reason: 'Connection lost',
+      };
 
-      expect(onErrorSpy).toHaveBeenCalledWith(testData.mockError);
+      events.trigger('disconnected', mockDisconnectedEvent);
+
+      expect(onErrorSpy).toHaveBeenCalledWith(mockDisconnectedEvent);
       expect(onSuccessSpy).not.toHaveBeenCalled();
     });
 
@@ -273,7 +290,16 @@ describe('RegistrationManager', () => {
 
       // Эмулируем события
       events.trigger('registered', testData.mockRegisteredEvent);
-      events.trigger('registrationFailed', testData.mockError);
+
+      const mockRegistrationFailedEvent: UnRegisteredEvent = {
+        response: {
+          status_code: 401,
+          reason_phrase: 'Unauthorized',
+        },
+        cause: 'Authentication failed',
+      } as unknown as UnRegisteredEvent;
+
+      events.trigger('registrationFailed', mockRegistrationFailedEvent);
 
       expect(onSuccessSpy).not.toHaveBeenCalled();
       expect(onErrorSpy).not.toHaveBeenCalled();
@@ -362,10 +388,18 @@ describe('RegistrationManager', () => {
       registrationManager.subscribeToStartEvents(onSuccessSpy, onErrorSpy);
 
       // Эмулируем ошибку
-      events.trigger('registrationFailed', testData.mockError);
+      const mockRegistrationFailedEvent: UnRegisteredEvent = {
+        response: {
+          status_code: 401,
+          reason_phrase: 'Unauthorized',
+        },
+        cause: 'Authentication failed',
+      } as unknown as UnRegisteredEvent;
+
+      events.trigger('registrationFailed', mockRegistrationFailedEvent);
 
       // Проверяем, что колбэк был вызван
-      expect(onErrorSpy).toHaveBeenCalledWith(testData.mockError);
+      expect(onErrorSpy).toHaveBeenCalledWith(mockRegistrationFailedEvent);
 
       // Эмулируем успешное событие после ошибки
       events.trigger('registered', testData.mockRegisteredEvent);
@@ -381,9 +415,26 @@ describe('RegistrationManager', () => {
       registrationManager.subscribeToStartEvents(onSuccessSpy, onErrorSpy);
 
       // Эмулируем события с пустыми данными
-      events.trigger('registered', undefined);
-      events.trigger('registrationFailed', undefined);
-      events.trigger('disconnected', undefined);
+      events.trigger('registered', testData.mockRegisteredEvent);
+
+      const mockRegistrationFailedEvent: UnRegisteredEvent = {
+        response: {
+          status_code: 401,
+          reason_phrase: 'Unauthorized',
+        },
+        cause: 'Authentication failed',
+      } as unknown as UnRegisteredEvent;
+
+      events.trigger('registrationFailed', mockRegistrationFailedEvent);
+
+      const mockDisconnectedEvent: DisconnectEvent = {
+        socket: {} as Socket,
+        error: true,
+        code: 1006,
+        reason: 'Connection lost',
+      };
+
+      events.trigger('disconnected', mockDisconnectedEvent);
 
       // Проверяем, что колбэки были вызваны
       expect(onSuccessSpy).toHaveBeenCalled();

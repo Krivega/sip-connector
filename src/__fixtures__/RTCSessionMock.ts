@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 
-import { NameAddrHeader, URI } from '@krivega/jssip';
+import { NameAddrHeader, URI, SessionStatus } from '@krivega/jssip';
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
 
 import BaseSession from './BaseSession.mock';
@@ -75,6 +75,16 @@ class RTCSessionMock extends BaseSession {
 
   public replaceMediaStream = jest.fn(async (_mediaStream: MediaStream): Promise<void> => {});
 
+  public _isReadyToReOffer = jest.fn((): boolean => {
+    return true;
+  });
+
+  public addTransceiver = jest.fn(
+    (_trackOrKind: MediaStreamTrack | string, _init?: RTCRtpTransceiverInit): RTCRtpTransceiver => {
+      return {} as RTCRtpTransceiver;
+    },
+  );
+
   public restartIce = jest.fn(
     async (_options?: {
       useUpdate?: boolean;
@@ -119,6 +129,10 @@ class RTCSessionMock extends BaseSession {
     super({ originator, eventHandlers, remoteIdentity });
 
     this.delayStartPresentation = delayStartPresentation;
+  }
+
+  public static get C(): typeof SessionStatus {
+    return SessionStatus;
   }
 
   public static setPresentationError(presentationError: Error) {
@@ -318,22 +332,19 @@ class RTCSessionMock extends BaseSession {
     return senders;
   }
 
-  /* eslint-disable no-param-reassign */
-
   public toggleMuteAudio(mute: boolean) {
     this.forEachSenders(({ track }) => {
       if (track?.kind === 'audio') {
+        // eslint-disable-next-line no-param-reassign
         track.enabled = !mute;
       }
     });
   }
-  /* eslint-enable no-param-reassign */
-
-  /* eslint-disable no-param-reassign */
 
   public toggleMuteVideo(mute: boolean) {
     this.forEachSenders(({ track }) => {
       if (track?.kind === 'video') {
+        // eslint-disable-next-line no-param-reassign
         track.enabled = !mute;
       }
     });
@@ -394,7 +405,6 @@ class RTCSessionMock extends BaseSession {
     clearTimeout(this.timeoutAccepted);
     clearTimeout(this.timeoutConfirmed);
   }
-  /* eslint-enable no-param-reassign */
 }
 
 export default RTCSessionMock;

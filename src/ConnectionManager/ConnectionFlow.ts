@@ -4,12 +4,17 @@ import { EEvent } from './eventNames';
 import { hasHandshakeWebsocketOpeningError } from '../utils/errors';
 import { parseDisplayName } from '../utils/utils';
 
-import type { UA, WebSocketInterface } from '@krivega/jssip';
-import type { Events } from 'events-constructor';
+import type {
+  UA,
+  DisconnectEvent,
+  WebSocketInterface,
+  Socket,
+  UnRegisteredEvent,
+} from '@krivega/jssip';
 import type { TGetServerUrl } from '../CallManager';
 import type { TJsSIP } from '../types';
 import type ConnectionStateMachine from './ConnectionStateMachine';
-import type { EVENT_NAMES } from './eventNames';
+import type { TEvents } from './eventNames';
 import type RegistrationManager from './RegistrationManager';
 import type UAFactory from './UAFactory';
 
@@ -46,7 +51,7 @@ type TStart = () => Promise<UA>;
 
 interface IDependencies {
   JsSIP: TJsSIP;
-  events: Events<typeof EVENT_NAMES>;
+  events: TEvents;
   uaFactory: UAFactory;
   stateMachine: ConnectionStateMachine;
   registrationManager: RegistrationManager;
@@ -148,7 +153,7 @@ export default class ConnectionFlow {
   };
 
   public disconnect = async () => {
-    this.events.trigger(EEvent.DISCONNECTING, undefined);
+    this.events.trigger(EEvent.DISCONNECTING, {});
 
     const disconnectedPromise = new Promise<void>((resolve) => {
       this.events.once(EEvent.DISCONNECTED, () => {
@@ -161,7 +166,7 @@ export default class ConnectionFlow {
     if (ua) {
       ua.stop();
     } else {
-      this.events.trigger(EEvent.DISCONNECTED, undefined);
+      this.events.trigger(EEvent.DISCONNECTED, { socket: {} as Socket, error: false });
     }
 
     return disconnectedPromise.finally(() => {
@@ -322,12 +327,16 @@ export default class ConnectionFlow {
         resolve(ua);
       };
 
-      const rejectError = (error: Error) => {
+      const rejectError = (error: DisconnectEvent | UnRegisteredEvent) => {
         unsubscribeFromEvents?.();
+        // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
         reject(error);
       };
 
-      const subscribeToStartEvents = (onSuccess: () => void, onError: (error: Error) => void) => {
+      const subscribeToStartEvents = (
+        onSuccess: () => void,
+        onError: (error: DisconnectEvent | UnRegisteredEvent) => void,
+      ) => {
         const connectionConfig = this.getConnectionConfiguration();
 
         if (connectionConfig.register === true) {

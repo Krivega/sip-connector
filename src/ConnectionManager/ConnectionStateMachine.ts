@@ -2,8 +2,7 @@ import { createActor, setup, type ActorRefFrom } from 'xstate';
 
 import logger from '@/logger';
 
-import type { Events } from 'events-constructor';
-import type { EVENT_NAMES } from './eventNames';
+import type { TEvents } from './eventNames';
 
 // Определяем типы событий для XState машины
 export enum EEvents {
@@ -323,13 +322,13 @@ export default class ConnectionStateMachine {
 
   private readonly stateChangeListeners = new Set<(state: EState) => void>();
 
-  private readonly events: Events<typeof EVENT_NAMES>;
+  private readonly events: TEvents;
 
   private unsubscribeFromEvents?: () => void;
 
   private readonly actorSubscription?: { unsubscribe: () => void };
 
-  public constructor(events: Events<typeof EVENT_NAMES>) {
+  public constructor(events: TEvents) {
     this.events = events;
 
     this.actor = createActor(connectionMachine);

@@ -6,6 +6,7 @@ import ApiManager from '../@ApiManager';
 import { MockRequest } from '../__tests-utils__/helpers';
 import { EHeader } from '../constants';
 
+import type { IncomingRequest } from '@krivega/jssip';
 import type { TJsSIP } from '@/types';
 
 // Мокаем logger
@@ -39,7 +40,10 @@ describe('ApiManager (notify via sipEvent)', () => {
       const channelsSpy = jest.fn();
 
       apiManager.on('channels:notify', channelsSpy);
-      connectionManager.events.trigger('sipEvent', { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', {
+        event: {},
+        request: mockRequest as unknown as IncomingRequest,
+      });
       expect(channelsSpy).not.toHaveBeenCalled();
     });
 
@@ -51,7 +55,10 @@ describe('ApiManager (notify via sipEvent)', () => {
       const notifyData = { cmd: 'channels', input: 'input1', output: 'output1' };
 
       mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
-      connectionManager.events.trigger('sipEvent', { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', {
+        event: {},
+        request: mockRequest as unknown as IncomingRequest,
+      });
       expect(channelsSpy).toHaveBeenCalledWith({
         inputChannels: 'input1',
         outputChannels: 'output1',
@@ -62,7 +69,10 @@ describe('ApiManager (notify via sipEvent)', () => {
       const notifyData = { cmd: 'unknown_command', data: 'test' };
 
       mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
-      connectionManager.events.trigger('sipEvent', { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', {
+        event: {},
+        request: mockRequest as unknown as IncomingRequest,
+      });
       expect(mockLogger).toHaveBeenCalledWith('unknown cmd', notifyData);
     });
   });
@@ -80,7 +90,10 @@ describe('ApiManager (notify via sipEvent)', () => {
       };
 
       mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
-      connectionManager.events.trigger('sipEvent', { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', {
+        event: {},
+        request: mockRequest as unknown as IncomingRequest,
+      });
       expect(channelsSpy).toHaveBeenCalledWith({
         inputChannels: 'input_channel_1,input_channel_2',
         outputChannels: 'output_channel_1,output_channel_2',
@@ -97,7 +110,10 @@ describe('ApiManager (notify via sipEvent)', () => {
       const notifyData = { cmd: 'WebcastStarted', body: { conference: 'conf123', type: 'video' } };
 
       mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
-      connectionManager.events.trigger('sipEvent', { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', {
+        event: {},
+        request: mockRequest as unknown as IncomingRequest,
+      });
       expect(webcastStartedSpy).toHaveBeenCalledWith({ conference: 'conf123', type: 'video' });
     });
 
@@ -109,7 +125,10 @@ describe('ApiManager (notify via sipEvent)', () => {
       const notifyData = { cmd: 'WebcastStopped', body: { conference: 'conf123', type: 'video' } };
 
       mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
-      connectionManager.events.trigger('sipEvent', { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', {
+        event: {},
+        request: mockRequest as unknown as IncomingRequest,
+      });
       expect(webcastStoppedSpy).toHaveBeenCalledWith({ conference: 'conf123', type: 'video' });
     });
   });
@@ -123,7 +142,10 @@ describe('ApiManager (notify via sipEvent)', () => {
       const notifyData = { cmd: 'addedToListModerators', conference: 'conf123' };
 
       mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
-      connectionManager.events.trigger('sipEvent', { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', {
+        event: {},
+        request: mockRequest as unknown as IncomingRequest,
+      });
       expect(addedToModeratorsSpy).toHaveBeenCalledWith({ conference: 'conf123' });
     });
 
@@ -135,7 +157,10 @@ describe('ApiManager (notify via sipEvent)', () => {
       const notifyData = { cmd: 'removedFromListModerators', conference: 'conf123' };
 
       mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
-      connectionManager.events.trigger('sipEvent', { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', {
+        event: {},
+        request: mockRequest as unknown as IncomingRequest,
+      });
       expect(removedFromModeratorsSpy).toHaveBeenCalledWith({ conference: 'conf123' });
     });
   });
@@ -149,7 +174,10 @@ describe('ApiManager (notify via sipEvent)', () => {
       const notifyData = { cmd: 'ParticipationRequestAccepted', body: { conference: 'conf123' } };
 
       mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
-      connectionManager.events.trigger('sipEvent', { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', {
+        event: {},
+        request: mockRequest as unknown as IncomingRequest,
+      });
       expect(participationAcceptedSpy).toHaveBeenCalledWith({ conference: 'conf123' });
     });
 
@@ -161,7 +189,10 @@ describe('ApiManager (notify via sipEvent)', () => {
       const notifyData = { cmd: 'ParticipationRequestRejected', body: { conference: 'conf123' } };
 
       mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
-      connectionManager.events.trigger('sipEvent', { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', {
+        event: {},
+        request: mockRequest as unknown as IncomingRequest,
+      });
       expect(participationRejectedSpy).toHaveBeenCalledWith({ conference: 'conf123' });
     });
   });
@@ -175,7 +206,10 @@ describe('ApiManager (notify via sipEvent)', () => {
       const notifyData = { cmd: 'ParticipantMovedToWebcast', body: { conference: 'conf123' } };
 
       mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
-      connectionManager.events.trigger('sipEvent', { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', {
+        event: {},
+        request: mockRequest as unknown as IncomingRequest,
+      });
       expect(participantMoveSpy).toHaveBeenCalledWith({ conference: 'conf123' });
     });
   });
@@ -189,7 +223,10 @@ describe('ApiManager (notify via sipEvent)', () => {
       const notifyData = { cmd: 'accountChanged' };
 
       mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
-      connectionManager.events.trigger('sipEvent', { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', {
+        event: {},
+        request: mockRequest as unknown as IncomingRequest,
+      });
       expect(accountChangedSpy).toHaveBeenCalledWith(undefined);
     });
 
@@ -201,7 +238,10 @@ describe('ApiManager (notify via sipEvent)', () => {
       const notifyData = { cmd: 'accountDeleted' };
 
       mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
-      connectionManager.events.trigger('sipEvent', { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', {
+        event: {},
+        request: mockRequest as unknown as IncomingRequest,
+      });
       expect(accountDeletedSpy).toHaveBeenCalledWith(undefined);
     });
   });
@@ -218,7 +258,10 @@ describe('ApiManager (notify via sipEvent)', () => {
       };
 
       mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
-      connectionManager.events.trigger('sipEvent', { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', {
+        event: {},
+        request: mockRequest as unknown as IncomingRequest,
+      });
       expect(tokenIssuedSpy).toHaveBeenCalledWith({
         conference: 'conf123',
         participant: 'user456',
@@ -316,7 +359,10 @@ describe('ApiManager (notify via sipEvent)', () => {
         const notifyData = { cmd, ...data };
 
         mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
-        connectionManager.events.trigger('sipEvent', { request: mockRequest });
+        connectionManager.events.trigger('sipEvent', {
+          event: {},
+          request: mockRequest as unknown as IncomingRequest,
+        });
         expect(spy).toHaveBeenCalledWith(expected);
       });
     });
@@ -333,12 +379,18 @@ describe('ApiManager (notify via sipEvent)', () => {
       const notifyData1 = { cmd: 'channels', input: 'input1', output: 'output1' };
 
       mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData1));
-      connectionManager.events.trigger('sipEvent', { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', {
+        event: {},
+        request: mockRequest as unknown as IncomingRequest,
+      });
 
       const notifyData2 = { cmd: 'accountChanged' };
 
       mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData2));
-      connectionManager.events.trigger('sipEvent', { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', {
+        event: {},
+        request: mockRequest as unknown as IncomingRequest,
+      });
 
       expect(channelsSpy).toHaveBeenCalledTimes(1);
       expect(channelsSpy).toHaveBeenCalledWith({

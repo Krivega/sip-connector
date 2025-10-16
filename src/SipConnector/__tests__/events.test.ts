@@ -1,6 +1,7 @@
 import JsSIP from '@/__fixtures__/jssip.mock';
 import SipConnector from '../@SipConnector';
 
+import type { Socket, IncomingResponse } from '@krivega/jssip';
 import type { TJsSIP } from '@/types';
 
 describe('SipConnector events', () => {
@@ -27,16 +28,16 @@ describe('SipConnector events', () => {
     sipConnector.events.on('connection:connecting', mockHandler);
 
     // Эмитим событие
-    sipConnector.events.trigger('connection:connecting', { data: 'test' });
+    sipConnector.events.trigger('connection:connecting', { socket: {} as Socket });
 
     // Проверяем, что обработчик был вызван
-    expect(mockHandler).toHaveBeenCalledWith({ data: 'test' });
+    expect(mockHandler).toHaveBeenCalledWith({ socket: {} as Socket });
 
     // Отписываемся от события
     sipConnector.events.off('connection:connecting', mockHandler);
 
     // Эмитим событие снова
-    sipConnector.events.trigger('connection:connecting', { data: 'test2' });
+    sipConnector.events.trigger('connection:connecting', { socket: {} as Socket });
 
     // Проверяем, что обработчик не был вызван снова
     expect(mockHandler).toHaveBeenCalledTimes(1);
@@ -49,13 +50,13 @@ describe('SipConnector events', () => {
     sipConnector.events.once('connection:connected', mockHandler);
 
     // Эмитим событие
-    sipConnector.events.trigger('connection:connected', { data: 'test' });
+    sipConnector.events.trigger('connection:connected', { socket: {} as Socket });
 
     // Проверяем, что обработчик был вызван
-    expect(mockHandler).toHaveBeenCalledWith({ data: 'test' });
+    expect(mockHandler).toHaveBeenCalledWith({ socket: {} as Socket });
 
     // Эмитим событие снова
-    sipConnector.events.trigger('connection:connected', { data: 'test2' });
+    sipConnector.events.trigger('connection:connected', { socket: {} as Socket });
 
     // Проверяем, что обработчик не был вызван снова
     expect(mockHandler).toHaveBeenCalledTimes(1);
@@ -66,12 +67,12 @@ describe('SipConnector events', () => {
     const waitPromise = sipConnector.events.wait('connection:registered');
 
     // Эмитим событие
-    sipConnector.events.trigger('connection:registered', { data: 'test' });
+    sipConnector.events.trigger('connection:registered', { response: {} as IncomingResponse });
 
     // Проверяем, что промис разрешился с правильными данными
     const result = await waitPromise;
 
-    expect(result).toEqual({ data: 'test' });
+    expect(result).toEqual({ response: {} as IncomingResponse });
   });
 
   it('should handle events from different managers with prefixes', () => {
@@ -107,7 +108,10 @@ describe('SipConnector events', () => {
 
     // Эмитим события от разных менеджеров
     sipConnector.autoConnectorManager.events.trigger('succeeded-attempt', {});
-    sipConnector.connectionManager.events.trigger('connecting', { data: 'connection' });
+    sipConnector.connectionManager.events.trigger('connecting', {
+      socket: {} as Socket,
+      attempts: 1,
+    });
     sipConnector.callManager.events.trigger('accepted', { data: 'call' });
     sipConnector.apiManager.events.trigger('channels', { data: 'api' });
     sipConnector.incomingCallManager.events.trigger('incomingCall', { data: 'incoming' });
@@ -117,7 +121,10 @@ describe('SipConnector events', () => {
 
     // Проверяем, что каждый обработчик был вызван с правильными данными
     expect(autoConnectHandler).toHaveBeenCalledWith({});
-    expect(connectionHandler).toHaveBeenCalledWith({ data: 'connection' });
+    expect(connectionHandler).toHaveBeenCalledWith({
+      socket: {} as Socket,
+      attempts: 1,
+    });
     expect(callHandler).toHaveBeenCalledWith({ data: 'call' });
     expect(apiHandler).toHaveBeenCalledWith({ data: 'api' });
     expect(incomingCallHandler).toHaveBeenCalledWith({ data: 'incoming' });

@@ -6,7 +6,7 @@ import { ConnectionManager, EConnectionManagerEvent } from '@/ConnectionManager'
 import IncomingCallManager from '../@IncomingCallManager';
 import { Originator } from '../eventNames';
 
-import type { RTCSession } from '@krivega/jssip';
+import type { RTCSession, IncomingRequest, OutgoingRequest } from '@krivega/jssip';
 import type { TJsSIP } from '@/types';
 
 // FAILED event name for RTCSession
@@ -80,13 +80,14 @@ describe('IncomingCallManager', () => {
           new URI('sip', 'johndoe', 'example.com', 5060),
           'John Doe',
         ),
-      });
+      }) as unknown as RTCSession;
 
       // Запускаем менеджер и эмулируем входящий звонок
       incomingCallManager.start();
       connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session,
+        request: {} as IncomingRequest,
       });
 
       const data = incomingCallManager.remoteCallerData;
@@ -111,6 +112,7 @@ describe('IncomingCallManager', () => {
       connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: mockRTCSession,
+        request: {} as IncomingRequest,
       });
 
       expect(incomingCallManager.isAvailableIncomingCall).toBe(true);
@@ -139,6 +141,7 @@ describe('IncomingCallManager', () => {
       connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: mockRTCSession,
+        request: {} as IncomingRequest,
       });
 
       expect(incomingCallManager.isAvailableIncomingCall).toBe(true);
@@ -160,6 +163,7 @@ describe('IncomingCallManager', () => {
       connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: mockRTCSession,
+        request: {} as IncomingRequest,
       });
 
       const session = incomingCallManager.getIncomingRTCSession();
@@ -185,6 +189,7 @@ describe('IncomingCallManager', () => {
       connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: mockRTCSession,
+        request: {} as IncomingRequest,
       });
 
       await incomingCallManager.declineToIncomingCall();
@@ -206,6 +211,7 @@ describe('IncomingCallManager', () => {
       connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: mockRTCSession,
+        request: {} as IncomingRequest,
       });
 
       await incomingCallManager.declineToIncomingCall({ statusCode: customStatusCode });
@@ -226,6 +232,7 @@ describe('IncomingCallManager', () => {
       connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: mockRTCSession,
+        request: {} as IncomingRequest,
       });
 
       await incomingCallManager.busyIncomingCall();
@@ -244,6 +251,7 @@ describe('IncomingCallManager', () => {
       connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: mockRTCSession,
+        request: {} as IncomingRequest,
       });
 
       expect(incomingCallManager.isAvailableIncomingCall).toBe(true);
@@ -265,6 +273,7 @@ describe('IncomingCallManager', () => {
       connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.LOCAL,
         session: mockRTCSession,
+        request: {} as OutgoingRequest,
       });
 
       expect(incomingCallManager.isAvailableIncomingCall).toBe(false);
@@ -283,6 +292,7 @@ describe('IncomingCallManager', () => {
       connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: mockRTCSession,
+        request: {} as IncomingRequest,
       });
 
       // Эмулируем FAILED событие от LOCAL
@@ -315,6 +325,7 @@ describe('IncomingCallManager', () => {
       connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: mockRTCSession,
+        request: {} as IncomingRequest,
       });
 
       // Эмулируем FAILED событие от REMOTE
@@ -352,6 +363,7 @@ describe('IncomingCallManager', () => {
       connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: mockRTCSession,
+        request: {} as IncomingRequest,
       });
 
       expect(incomingCallManager.isAvailableIncomingCall).toBe(true);
@@ -376,7 +388,7 @@ describe('IncomingCallManager', () => {
           new URI('sip', 'caller1', 'test1.com', 5060),
           'Test Caller 1',
         ),
-      });
+      }) as unknown as RTCSession;
 
       const session2 = new RTCSessionMock({
         eventHandlers: {},
@@ -385,7 +397,7 @@ describe('IncomingCallManager', () => {
           new URI('sip', 'caller2', 'test2.com', 5060),
           'Test Caller 2',
         ),
-      });
+      }) as unknown as RTCSession;
 
       incomingCallManager.start();
 
@@ -393,6 +405,7 @@ describe('IncomingCallManager', () => {
       connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: session1,
+        request: {} as IncomingRequest,
       });
 
       expect(incomingCallManager.remoteCallerData.incomingNumber).toBe('caller1');
@@ -401,6 +414,7 @@ describe('IncomingCallManager', () => {
       connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: session2,
+        request: {} as IncomingRequest,
       });
 
       expect(incomingCallManager.remoteCallerData.incomingNumber).toBe('caller2');
@@ -413,13 +427,14 @@ describe('IncomingCallManager', () => {
         eventHandlers: {},
         originator: Originator.REMOTE,
         remoteIdentity: new NameAddrHeader(new URI('sip', 'testuser', 'test.com', 5060), undefined),
-      });
+      }) as unknown as RTCSession;
 
       incomingCallManager.start();
 
       connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: sessionWithoutDisplayName,
+        request: {} as IncomingRequest,
       });
 
       expect(incomingCallManager.remoteCallerData.displayName).toBeUndefined();
@@ -431,13 +446,14 @@ describe('IncomingCallManager', () => {
         eventHandlers: {},
         originator: Originator.REMOTE,
         remoteIdentity: new NameAddrHeader(new URI('sip', '', 'test.com', 5060), 'Test Caller'),
-      });
+      }) as unknown as RTCSession;
 
       incomingCallManager.start();
 
       connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: sessionWithoutUser,
+        request: {} as IncomingRequest,
       });
 
       expect(incomingCallManager.remoteCallerData.incomingNumber).toBe('');
@@ -452,7 +468,7 @@ describe('IncomingCallManager', () => {
           new URI('sip', 'testuser', 'test.com', 5060),
           'Test Caller',
         ),
-      });
+      }) as unknown as RTCSession;
 
       // Переопределяем метод terminate для эмуляции ошибки
       sessionWithError.terminate = jest.fn(() => {
@@ -464,6 +480,7 @@ describe('IncomingCallManager', () => {
       connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
         originator: Originator.REMOTE,
         session: sessionWithError,
+        request: {} as IncomingRequest,
       });
 
       await expect(incomingCallManager.declineToIncomingCall()).rejects.toThrow(
@@ -492,6 +509,7 @@ describe('API событий IncomingCallManager', () => {
     connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
       originator: Originator.REMOTE,
       session: mockRTCSession,
+      request: {} as IncomingRequest,
     });
     expect(handler).toHaveBeenCalledWith(expect.objectContaining({ rtcSession: mockRTCSession }));
     incomingCallManager.off('incomingCall', handler);
@@ -505,10 +523,12 @@ describe('API событий IncomingCallManager', () => {
     connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
       originator: Originator.REMOTE,
       session: mockRTCSession,
+      request: {} as IncomingRequest,
     });
     connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
       originator: Originator.REMOTE,
       session: mockRTCSession,
+      request: {} as IncomingRequest,
     });
     expect(handler).toHaveBeenCalledTimes(1);
   });
@@ -521,6 +541,7 @@ describe('API событий IncomingCallManager', () => {
     connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
       originator: Originator.REMOTE,
       session: mockRTCSession,
+      request: {} as IncomingRequest,
     });
     await incomingCallManager.declineToIncomingCall();
     expect(handler).toHaveBeenCalledTimes(1);
@@ -540,6 +561,7 @@ describe('API событий IncomingCallManager', () => {
     connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
       originator: Originator.REMOTE,
       session: mockRTCSession,
+      request: {} as IncomingRequest,
     });
     await expect(promise).resolves.toEqual(expect.objectContaining({ rtcSession: mockRTCSession }));
   });

@@ -1,5 +1,17 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
-import type { Events } from 'events-constructor';
+import type {
+  UA,
+  ConnectingEventUA,
+  ConnectedEvent,
+  DisconnectEvent,
+  RegisteredEvent,
+  UnRegisteredEvent,
+  RTCSessionEvent,
+  IncomingMessageEvent,
+  OutgoingMessageEvent,
+  IncomingRequest,
+} from '@krivega/jssip';
+import type { TypedEvents } from 'events-constructor';
 
 export enum EEvent {
   CONNECTING = 'connecting',
@@ -39,4 +51,21 @@ const SYNTHETICS_EVENT_NAMES = [
 export const EVENT_NAMES = [...UA_EVENT_NAMES, ...SYNTHETICS_EVENT_NAMES] as const;
 
 export type TEvent = (typeof EVENT_NAMES)[number];
-export type TEvents = Events<typeof EVENT_NAMES>;
+
+export type TEventMap = {
+  connecting: ConnectingEventUA;
+  connected: ConnectedEvent;
+  disconnected: DisconnectEvent;
+  disconnecting: Record<string, never>;
+  newRTCSession: RTCSessionEvent;
+  registered: RegisteredEvent;
+  unregistered: UnRegisteredEvent;
+  registrationFailed: UnRegisteredEvent;
+  newMessage: IncomingMessageEvent | OutgoingMessageEvent;
+  sipEvent: { event: unknown; request: IncomingRequest };
+  'connect-started': Record<string, never>;
+  'connect-succeeded': { ua: UA };
+  'connect-failed': unknown;
+};
+
+export type TEvents = TypedEvents<TEventMap>;

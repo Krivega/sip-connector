@@ -1,12 +1,11 @@
 import logger from '@/logger';
 import { EEvent } from './eventNames';
 
-import type { RegisteredEvent, UA, UnRegisteredEvent } from '@krivega/jssip';
-import type { Events } from 'events-constructor';
-import type { EVENT_NAMES } from './eventNames';
+import type { RegisteredEvent, UA, UnRegisteredEvent, DisconnectEvent } from '@krivega/jssip';
+import type { TEvents } from './eventNames';
 
 interface IDependencies {
-  events: Events<typeof EVENT_NAMES>;
+  events: TEvents;
   getUaProtected: () => UA;
 }
 
@@ -51,7 +50,7 @@ export default class RegistrationManager {
 
   public subscribeToStartEvents(
     onSuccess: () => void,
-    onError: (error: Error) => void,
+    onError: (event: DisconnectEvent | UnRegisteredEvent) => void,
   ): () => void {
     const successEvent = EEvent.REGISTERED;
     const errorEvents = [EEvent.REGISTRATION_FAILED, EEvent.DISCONNECTED] as const;

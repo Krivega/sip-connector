@@ -15,6 +15,7 @@ import {
   EHeader,
 } from '../constants';
 
+import type { IncomingRequest } from '@krivega/jssip';
 import type { TJsSIP } from '@/types';
 
 // Мокаем logger
@@ -109,7 +110,10 @@ describe('ApiManager (core)', () => {
       const notifyData = { cmd: 'channels', input: 'input1', output: 'output1' };
 
       mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
-      connectionManager.events.trigger('sipEvent', { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', {
+        event: {},
+        request: mockRequest as unknown as IncomingRequest,
+      });
 
       const result = await waitPromise;
 
@@ -569,7 +573,10 @@ describe('ApiManager (core)', () => {
     it('должен корректно обрабатывать некорректный JSON в заголовке', () => {
       mockRequest.setHeader(EHeader.NOTIFY, 'invalid json');
       expect(() => {
-        connectionManager.events.trigger('sipEvent', { request: mockRequest });
+        connectionManager.events.trigger('sipEvent', {
+          event: {},
+          request: mockRequest as unknown as IncomingRequest,
+        });
       }).not.toThrow();
       expect(mockLogger).toHaveBeenCalledWith('error parse notify', expect.any(Error));
     });
@@ -582,7 +589,10 @@ describe('ApiManager (core)', () => {
       const notifyData = { cmd: 'channels' } as const;
 
       mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
-      connectionManager.events.trigger('sipEvent', { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', {
+        event: {},
+        request: mockRequest as unknown as IncomingRequest,
+      });
       expect(channelsSpy).toHaveBeenCalledWith({
         inputChannels: undefined,
         outputChannels: undefined,
@@ -631,7 +641,10 @@ describe('ApiManager (core)', () => {
     it('должен корректно обрабатывать ошибку парсинга JSON в maybeHandleNotify', () => {
       mockRequest.setHeader(EHeader.NOTIFY, 'invalid json');
       expect(() => {
-        connectionManager.events.trigger('sipEvent', { request: mockRequest });
+        connectionManager.events.trigger('sipEvent', {
+          event: {},
+          request: mockRequest as unknown as IncomingRequest,
+        });
       }).not.toThrow();
       expect(mockLogger).toHaveBeenCalledWith('error parse notify', expect.any(Error));
     });
@@ -640,7 +653,10 @@ describe('ApiManager (core)', () => {
       const anySpy = jest.fn();
 
       apiManager.on('channels:notify', anySpy);
-      connectionManager.events.trigger('sipEvent', { request: mockRequest });
+      connectionManager.events.trigger('sipEvent', {
+        event: {},
+        request: mockRequest as unknown as IncomingRequest,
+      });
       expect(anySpy).not.toHaveBeenCalled();
     });
   });

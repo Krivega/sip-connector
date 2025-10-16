@@ -1,8 +1,11 @@
-import { Events } from 'events-constructor';
+import { TypedEvents } from 'events-constructor';
 
 import logger from '@/logger';
 import ConnectionStateMachine, { EEvents, EState } from '../ConnectionStateMachine';
 import { EVENT_NAMES } from '../eventNames';
+
+import type { Socket, IncomingResponse } from '@krivega/jssip';
+import type { TEvents, TEventMap } from '../eventNames';
 
 jest.mock('@/logger', () => {
   return jest.fn();
@@ -10,12 +13,12 @@ jest.mock('@/logger', () => {
 
 describe('ConnectionStateMachine', () => {
   const mockLogger = logger as jest.MockedFunction<typeof logger>;
-  let events: Events<typeof EVENT_NAMES>;
+  let events: TEvents;
   let stateMachine: ConnectionStateMachine;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
+    events = new TypedEvents<TEventMap>(EVENT_NAMES);
     stateMachine = new ConnectionStateMachine(events);
   });
 
@@ -97,12 +100,12 @@ describe('ConnectionStateMachine', () => {
       // Переводим в состояние CONNECTED
       stateMachine.startConnect();
       stateMachine.startInitUa();
-      events.trigger('connected', undefined);
+      events.trigger('connected', { socket: {} as Socket });
       expect(stateMachine.isActiveConnection).toBe(true);
       expect(stateMachine.isConnected).toBe(true);
 
       // Переводим в состояние REGISTERED
-      events.trigger('registered', undefined);
+      events.trigger('registered', { response: {} as IncomingResponse });
       expect(stateMachine.isActiveConnection).toBe(true);
       expect(stateMachine.isRegistered).toBe(true);
     });
@@ -134,7 +137,7 @@ describe('ConnectionStateMachine', () => {
 
     test('reset должен переводить из DISCONNECTED в IDLE', () => {
       stateMachine.startConnect();
-      events.trigger('disconnected', undefined);
+      events.trigger('disconnected', { socket: {} as Socket, error: false });
       expect(stateMachine.state).toBe(EState.DISCONNECTED);
 
       stateMachine.reset();
@@ -145,7 +148,7 @@ describe('ConnectionStateMachine', () => {
 
     test('reset должен переводить из FAILED в IDLE', () => {
       stateMachine.startConnect();
-      events.trigger('registrationFailed', undefined);
+      events.trigger('registrationFailed', { response: {} as IncomingResponse });
       expect(stateMachine.state).toBe(EState.FAILED);
 
       stateMachine.reset();
@@ -160,7 +163,7 @@ describe('ConnectionStateMachine', () => {
       stateMachine.startInitUa();
       expect(stateMachine.state).toBe(EState.INITIALIZING);
 
-      events.trigger('connected', undefined);
+      events.trigger('connected', { socket: {} as Socket });
 
       expect(stateMachine.state).toBe(EState.CONNECTED);
       expect(mockLogger).toHaveBeenCalledWith(
@@ -171,10 +174,10 @@ describe('ConnectionStateMachine', () => {
     test('registered событие должно переводить из CONNECTED в REGISTERED', () => {
       stateMachine.startConnect();
       stateMachine.startInitUa();
-      events.trigger('connected', undefined);
+      events.trigger('connected', { socket: {} as Socket });
       expect(stateMachine.state).toBe(EState.CONNECTED);
 
-      events.trigger('registered', undefined);
+      events.trigger('registered', { response: {} as IncomingResponse });
 
       expect(stateMachine.state).toBe(EState.REGISTERED);
       expect(mockLogger).toHaveBeenCalledWith(
@@ -187,7 +190,7 @@ describe('ConnectionStateMachine', () => {
       stateMachine.startInitUa();
       expect(stateMachine.state).toBe(EState.INITIALIZING);
 
-      events.trigger('registered', undefined);
+      events.trigger('registered', { response: {} as IncomingResponse });
 
       expect(stateMachine.state).toBe(EState.REGISTERED);
     });
@@ -196,10 +199,10 @@ describe('ConnectionStateMachine', () => {
       // Переводим в REGISTERED
       stateMachine.startConnect();
       stateMachine.startInitUa();
-      events.trigger('registered', undefined);
+      events.trigger('registered', { response: {} as IncomingResponse });
       expect(stateMachine.state).toBe(EState.REGISTERED);
 
-      events.trigger('unregistered', undefined);
+      events.trigger('unregistered', { response: {} as IncomingResponse });
 
       expect(stateMachine.state).toBe(EState.CONNECTED);
       expect(mockLogger).toHaveBeenCalledWith(
@@ -210,22 +213,22 @@ describe('ConnectionStateMachine', () => {
     test('disconnected событие должно переводить активные состояния в DISCONNECTED', () => {
       // Тест из CONNECTING
       stateMachine.startConnect();
-      events.trigger('disconnected', undefined);
+      events.trigger('disconnected', { socket: {} as Socket, error: false });
       expect(stateMachine.state).toBe(EState.DISCONNECTED);
 
       // Тест из INITIALIZING
       stateMachine.reset();
       stateMachine.startConnect();
       stateMachine.startInitUa();
-      events.trigger('disconnected', undefined);
+      events.trigger('disconnected', { socket: {} as Socket, error: false });
       expect(stateMachine.state).toBe(EState.DISCONNECTED);
 
       // Тест из CONNECTED
       stateMachine.reset();
       stateMachine.startConnect();
       stateMachine.startInitUa();
-      events.trigger('connected', undefined);
-      events.trigger('disconnected', undefined);
+      events.trigger('connected', { socket: {} as Socket });
+      events.trigger('disconnected', { socket: {} as Socket, error: false });
       expect(stateMachine.state).toBe(EState.DISCONNECTED);
     });
 
@@ -233,7 +236,7 @@ describe('ConnectionStateMachine', () => {
       stateMachine.startConnect();
       expect(stateMachine.state).toBe(EState.CONNECTING);
 
-      events.trigger('registrationFailed', undefined);
+      events.trigger('registrationFailed', { response: {} as IncomingResponse });
 
       expect(stateMachine.state).toBe(EState.FAILED);
       expect(mockLogger).toHaveBeenCalledWith(
@@ -322,7 +325,7 @@ describe('ConnectionStateMachine', () => {
       // После destroy события UA не должны влиять на состояние
       const currentState = stateMachine.state;
 
-      events.trigger('connected', undefined);
+      events.trigger('connected', { socket: {} as Socket });
       expect(stateMachine.state).toBe(currentState);
     });
   });
@@ -344,15 +347,15 @@ describe('ConnectionStateMachine', () => {
       expect(stateMachine.state).toBe(EState.INITIALIZING);
 
       // UA подключился и зарегистрировался
-      events.trigger('registered', undefined);
+      events.trigger('registered', { response: {} as IncomingResponse });
       expect(stateMachine.state).toBe(EState.REGISTERED);
 
       // Разрегистрировались
-      events.trigger('unregistered', undefined);
+      events.trigger('unregistered', { response: {} as IncomingResponse });
       expect(stateMachine.state).toBe(EState.CONNECTED);
 
       // Отключились
-      events.trigger('disconnected', undefined);
+      events.trigger('disconnected', { socket: {} as Socket, error: false });
       expect(stateMachine.state).toBe(EState.DISCONNECTED);
 
       // Сбрасываем состояние
@@ -374,7 +377,7 @@ describe('ConnectionStateMachine', () => {
       stateMachine.startInitUa();
 
       // Ошибка регистрации
-      events.trigger('registrationFailed', undefined);
+      events.trigger('registrationFailed', { response: {} as IncomingResponse });
       expect(stateMachine.state).toBe(EState.FAILED);
       expect(stateMachine.isFailed).toBe(true);
 
@@ -389,13 +392,13 @@ describe('ConnectionStateMachine', () => {
       stateMachine.startInitUa();
 
       // Просто подключились без регистрации
-      events.trigger('connected', undefined);
+      events.trigger('connected', { socket: {} as Socket });
       expect(stateMachine.state).toBe(EState.CONNECTED);
       expect(stateMachine.isConnected).toBe(true);
       expect(stateMachine.isRegistered).toBe(false);
 
       // Отключились
-      events.trigger('disconnected', undefined);
+      events.trigger('disconnected', { socket: {} as Socket, error: false });
       expect(stateMachine.state).toBe(EState.DISCONNECTED);
     });
   });
@@ -405,13 +408,13 @@ describe('ConnectionStateMachine', () => {
       // В состоянии IDLE события UA не должны менять состояние
       expect(stateMachine.state).toBe(EState.IDLE);
 
-      events.trigger('connected', undefined);
+      events.trigger('connected', { socket: {} as Socket });
       expect(stateMachine.state).toBe(EState.IDLE);
 
-      events.trigger('registered', undefined);
+      events.trigger('registered', { response: {} as IncomingResponse });
       expect(stateMachine.state).toBe(EState.IDLE);
 
-      events.trigger('unregistered', undefined);
+      events.trigger('unregistered', { response: {} as IncomingResponse });
       expect(stateMachine.state).toBe(EState.IDLE);
     });
 
@@ -433,7 +436,7 @@ describe('ConnectionStateMachine', () => {
 
       // Переводим в DISCONNECTED
       stateMachine.startConnect();
-      events.trigger('disconnected', undefined);
+      events.trigger('disconnected', { socket: {} as Socket, error: false });
       expect(stateMachine.isDisconnected).toBe(true);
       expect(stateMachine.state).toBe(EState.DISCONNECTED);
     });
@@ -444,7 +447,7 @@ describe('ConnectionStateMachine', () => {
 
       // Переводим в FAILED
       stateMachine.startConnect();
-      events.trigger('registrationFailed', undefined);
+      events.trigger('registrationFailed', { response: {} as IncomingResponse });
       expect(stateMachine.isFailed).toBe(true);
       expect(stateMachine.state).toBe(EState.FAILED);
     });
