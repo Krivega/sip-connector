@@ -203,6 +203,7 @@ class AutoConnectorManager {
       this.handleSucceededAttempt(parameters);
     } catch (error) {
       if (hasNotReadyForConnectionError(error)) {
+        this.attemptsState.finishAttempt();
         this.handleSucceededAttempt(parameters);
 
         return;
@@ -211,6 +212,7 @@ class AutoConnectorManager {
       if (!this.canRetryOnError(error)) {
         logger('processConnect: error does not allow retry', error);
 
+        this.attemptsState.finishAttempt();
         this.events.trigger(EEvent.STOP_ATTEMPTS_BY_ERROR, error);
 
         return;
@@ -219,6 +221,7 @@ class AutoConnectorManager {
       if (hasConnectionPromiseIsNotActualError(error)) {
         logger('processConnect: not actual error', error);
 
+        this.attemptsState.finishAttempt();
         this.events.trigger(EEvent.CANCELLED_ATTEMPTS, error);
 
         return;
@@ -292,6 +295,8 @@ class AutoConnectorManager {
       })
       .catch((error: unknown) => {
         const reconnectError = error instanceof Error ? error : new Error('Failed to reconnect');
+
+        this.attemptsState.finishAttempt();
 
         if (isCanceledError(error) || hasCanceledError(error as Error)) {
           this.events.trigger(EEvent.CANCELLED_ATTEMPTS, reconnectError);
