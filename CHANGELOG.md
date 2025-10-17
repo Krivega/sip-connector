@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.2.2](https://github.com/Krivega/sip-connector/compare/v19.2.1...v19.2.2) (2025-10-17)
+
+### Bug Fixes
+
+- ensure attempts state is finished on various connection errors ([6c14702](https://github.com/Krivega/sip-connector/commit/6c147020e0d12c46ddbfc9ff2c8ee4a11d46df5c))
+
 ### [19.2.1](https://github.com/Krivega/sip-connector/compare/v19.2.0...v19.2.1) (2025-10-16)
 
 ### Bug Fixes
