@@ -1,16 +1,12 @@
-import { TypedEvents } from 'events-constructor';
-
 import AttemptsState from '../AttemptsState';
-
-import type { TEventMap } from '../eventNames';
 
 describe('AttemptsState', () => {
   let attemptsState: AttemptsState;
 
-  const events = new TypedEvents<TEventMap>(['changed-attempt-status']);
+  const onStatusChange = jest.fn();
 
   beforeEach(() => {
-    attemptsState = new AttemptsState({ events });
+    attemptsState = new AttemptsState({ onStatusChange });
   });
 
   it('начальные значения', () => {
@@ -78,24 +74,20 @@ describe('AttemptsState', () => {
   });
 
   it('onStatusChange: вызывается при изменении isAttemptInProgress', () => {
-    const handleStatusChange = jest.fn();
+    attemptsState.startAttempt();
 
-    events.on('changed-attempt-status', handleStatusChange);
+    expect(onStatusChange).toHaveBeenCalledTimes(1);
 
     attemptsState.startAttempt();
 
-    expect(handleStatusChange).toHaveBeenCalledTimes(1);
-
-    attemptsState.startAttempt();
-
-    expect(handleStatusChange).toHaveBeenCalledTimes(1);
+    expect(onStatusChange).toHaveBeenCalledTimes(1);
 
     attemptsState.finishAttempt();
 
-    expect(handleStatusChange).toHaveBeenCalledTimes(2);
+    expect(onStatusChange).toHaveBeenCalledTimes(2);
 
     attemptsState.finishAttempt();
 
-    expect(handleStatusChange).toHaveBeenCalledTimes(2);
+    expect(onStatusChange).toHaveBeenCalledTimes(2);
   });
 });

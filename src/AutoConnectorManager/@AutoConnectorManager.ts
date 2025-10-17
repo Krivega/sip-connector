@@ -83,7 +83,7 @@ class AutoConnectorManager {
       callManager,
     });
     this.attemptsState = new AttemptsState({
-      events: this.events,
+      onStatusChange: this.emitStatusChange,
     });
     this.cancelableRequestBeforeRetry = new CancelableRequest(onBeforeRetry);
     this.delayBetweenAttempts = new DelayRequester(
@@ -308,6 +308,10 @@ class AutoConnectorManager {
 
     return isFailed || isDisconnected || isIdle;
   }
+
+  private readonly emitStatusChange = ({ isInProgress }: { isInProgress: boolean }) => {
+    this.events.trigger(EEvent.CHANGED_ATTEMPT_STATUS, { isInProgress });
+  };
 }
 
 export default AutoConnectorManager;

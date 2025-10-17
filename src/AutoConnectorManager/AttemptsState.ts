@@ -1,13 +1,7 @@
-import { EEvent } from './eventNames';
-
-import type { TEvents } from './eventNames';
-
 const DEFAULT_INITIAL_COUNT = 0;
 const DEFAULT_LIMIT = 30;
 
 class AttemptsState {
-  private readonly events: TEvents;
-
   private countInner = DEFAULT_INITIAL_COUNT;
 
   private readonly initialCount = DEFAULT_INITIAL_COUNT;
@@ -16,8 +10,14 @@ class AttemptsState {
 
   private isInProgress = false;
 
-  public constructor({ events }: { events: TEvents }) {
-    this.events = events;
+  private readonly onStatusChange: ({ isInProgress }: { isInProgress: boolean }) => void;
+
+  public constructor({
+    onStatusChange,
+  }: {
+    onStatusChange: ({ isInProgress }: { isInProgress: boolean }) => void;
+  }) {
+    this.onStatusChange = onStatusChange;
   }
 
   public get count(): number {
@@ -39,14 +39,14 @@ class AttemptsState {
   public startAttempt(): void {
     if (!this.isInProgress) {
       this.isInProgress = true;
-      this.emitStatusChange();
+      this.onStatusChange({ isInProgress: this.isInProgress });
     }
   }
 
   public finishAttempt(): void {
     if (this.isInProgress) {
       this.isInProgress = false;
-      this.emitStatusChange();
+      this.onStatusChange({ isInProgress: this.isInProgress });
     }
   }
 
@@ -59,10 +59,6 @@ class AttemptsState {
   public reset(): void {
     this.countInner = this.initialCount;
     this.finishAttempt();
-  }
-
-  private emitStatusChange() {
-    this.events.trigger(EEvent.CHANGED_ATTEMPT_STATUS, { isInProgress: this.isInProgress });
   }
 }
 
