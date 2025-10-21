@@ -53,9 +53,11 @@ describe('ConnectionFlow', () => {
     connectionConfiguration = config;
   });
 
-  const updateConnectionConfiguration = jest.fn((key: 'displayName', value: string) => {
-    connectionConfiguration[key] = value;
-  });
+  const updateConnectionConfiguration = jest.fn(
+    <K extends keyof TConnectionConfig>(key: K, value: TConnectionConfig[K]) => {
+      connectionConfiguration[key] = value;
+    },
+  );
 
   const setSipServerUrl = jest.fn();
   const setSocket = jest.fn();
@@ -142,9 +144,9 @@ describe('ConnectionFlow', () => {
       // так как user генерируется случайно
       // @ts-expect-error
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, no-underscore-dangle
-      configuration.uri._user = result.configuration.uri._user;
+      configuration.uri._user = result.ua.configuration.uri._user;
 
-      expect(result.configuration).toEqual(configuration);
+      expect(result.ua.configuration).toEqual(configuration);
       expect(setUa).toHaveBeenCalled();
       expect(startConnectSpy).toHaveBeenCalled();
       expect(startInitUaSpy).toHaveBeenCalled();
@@ -190,7 +192,7 @@ describe('ConnectionFlow', () => {
 
       const result = await connectionFlow.connect(parameters);
 
-      expect(result.configuration).toEqual(configuration);
+      expect(result.ua.configuration).toEqual(configuration);
       expect(setUa).toHaveBeenCalled();
       expect(startConnectSpy).toHaveBeenCalled();
       expect(startInitUaSpy).toHaveBeenCalled();

@@ -40,9 +40,9 @@ describe('connect', () => {
   it('должен подключать пользователя с авторизацией', async () => {
     expect.assertions(1);
 
-    const ua = await connectionManager.connect(dataForConnectionWithAuthorization);
+    const result = await connectionManager.connect(dataForConnectionWithAuthorization);
 
-    expect(ua.configuration).toEqual(uaConfigurationWithAuthorization);
+    expect(result.ua.configuration).toEqual(uaConfigurationWithAuthorization);
   });
 
   it('должен отклонять подключение с неправильным паролем', async () => {
@@ -73,12 +73,12 @@ describe('connect', () => {
 
     await connectionManager.connect(dataForConnectionWithAuthorization);
 
-    const ua = await connectionManager.connect({
+    const result = await connectionManager.connect({
       ...dataForConnectionWithAuthorization,
       sipServerUrl: sipServerUrlChanged,
     });
 
-    expect(ua.configuration).toEqual({
+    expect(result.ua.configuration).toEqual({
       ...uaConfigurationWithAuthorization,
       uri: uriWithName(uaConfigurationWithAuthorization.uri.user, sipServerUrlChanged),
     });
@@ -87,7 +87,9 @@ describe('connect', () => {
   it('должен подключать пользователя с авторизацией и displayName', async () => {
     expect.assertions(6);
 
-    const ua = await connectionManager.connect(dataForConnectionWithAuthorizationWithDisplayName);
+    const result = await connectionManager.connect(
+      dataForConnectionWithAuthorizationWithDisplayName,
+    );
     const connectionConfiguration = connectionManager.getConnectionConfiguration();
 
     expect(connectionConfiguration.sipServerUrl).toBe(
@@ -105,15 +107,15 @@ describe('connect', () => {
     expect(connectionConfiguration.password).toBe(
       dataForConnectionWithAuthorizationWithDisplayName.password,
     );
-    expect(ua.configuration).toEqual(uaConfigurationWithAuthorizationWithDisplayName);
+    expect(result.ua.configuration).toEqual(uaConfigurationWithAuthorizationWithDisplayName);
   });
 
   it('должен подключать пользователя без авторизации', async () => {
     expect.assertions(6);
 
-    const ua = await connectionManager.connect(dataForConnectionWithoutAuthorization);
+    const result = await connectionManager.connect(dataForConnectionWithoutAuthorization);
 
-    const { uri, ...configuration } = ua.configuration;
+    const { uri, ...configuration } = result.ua.configuration;
     const connectionConfiguration = connectionManager.getConnectionConfiguration();
 
     expect(connectionConfiguration.sipServerUrl).toBe(
@@ -132,11 +134,11 @@ describe('connect', () => {
   it('должен подключать пользователя без авторизации и displayName', async () => {
     expect.assertions(6);
 
-    const ua = await connectionManager.connect(
+    const result = await connectionManager.connect(
       dataForConnectionWithoutAuthorizationWithoutDisplayName,
     );
 
-    const { uri, ...configuration } = ua.configuration;
+    const { uri, ...configuration } = result.ua.configuration;
     const connectionConfiguration = connectionManager.getConnectionConfiguration();
 
     expect(connectionConfiguration.sipServerUrl).toBe(
@@ -181,22 +183,22 @@ describe('connect', () => {
   it('должен отправлять базовые extraHeaders', async () => {
     expect.assertions(1);
 
-    const ua = await connectionManager.connect(dataForConnectionWithAuthorization);
+    const result = await connectionManager.connect(dataForConnectionWithAuthorization);
 
     // @ts-expect-error
-    expect(ua.registrator().extraHeaders).toEqual([]);
+    expect(result.ua.registrator().extraHeaders).toEqual([]);
   });
 
   it('должен отправлять extraHeaders с remoteAddress', async () => {
     expect.assertions(1);
 
-    const ua = await connectionManager.connect({
+    const result = await connectionManager.connect({
       ...dataForConnectionWithAuthorization,
       remoteAddress,
     });
 
     // @ts-expect-error
-    expect(ua.registrator().extraHeaders).toEqual(extraHeadersRemoteAddress);
+    expect(result.ua.registrator().extraHeaders).toEqual(extraHeadersRemoteAddress);
   });
 
   it('должен отправлять расширенные extraHeaders', async () => {
@@ -204,13 +206,13 @@ describe('connect', () => {
 
     const extraHeaders = ['test'];
 
-    const ua = await connectionManager.connect({
+    const result = await connectionManager.connect({
       ...dataForConnectionWithAuthorization,
       extraHeaders,
     });
 
     // @ts-expect-error
-    expect(ua.registrator().extraHeaders).toEqual(extraHeaders);
+    expect(result.ua.registrator().extraHeaders).toEqual(extraHeaders);
   });
 
   it('должен отправлять расширенные extraHeaders с remoteAddress', async () => {
@@ -218,14 +220,17 @@ describe('connect', () => {
 
     const extraHeaders = ['test'];
 
-    const ua = await connectionManager.connect({
+    const result = await connectionManager.connect({
       ...dataForConnectionWithAuthorization,
       remoteAddress,
       extraHeaders,
     });
 
     // @ts-expect-error
-    expect(ua.registrator().extraHeaders).toEqual([...extraHeadersRemoteAddress, ...extraHeaders]);
+    expect(result.ua.registrator().extraHeaders).toEqual([
+      ...extraHeadersRemoteAddress,
+      ...extraHeaders,
+    ]);
   });
 
   it('должен повторять процесс подключения при ошибке 1006', async () => {
@@ -262,11 +267,11 @@ describe('connect', () => {
     // @ts-expect-error
     const requestConnectMocked = jest.spyOn(connectionManager.connectionFlow, 'connectInner');
 
-    const ua = await connectionManager.connect(dataForConnectionWithAuthorization, {
+    const result = await connectionManager.connect(dataForConnectionWithAuthorization, {
       callLimit: connectCallLimit,
     });
 
-    expect(ua.configuration).toEqual(uaConfigurationWithAuthorization);
+    expect(result.ua.configuration).toEqual(uaConfigurationWithAuthorization);
     expect(requestConnectMocked).toHaveBeenCalledTimes(2);
   });
 });

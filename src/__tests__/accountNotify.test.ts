@@ -16,7 +16,8 @@ describe('account notify', () => {
   it('event account:changed', async () => {
     expect.assertions(1);
 
-    const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
+    const result = await sipConnector.connect(dataForConnectionWithAuthorization);
+    const { ua } = result;
 
     return new Promise<void>((resolve) => {
       sipConnector.on('api:account:changed', (data) => {
@@ -32,7 +33,8 @@ describe('account notify', () => {
   it('event account:deleted', async () => {
     expect.assertions(1);
 
-    const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
+    const result = await sipConnector.connect(dataForConnectionWithAuthorization);
+    const { ua } = result;
 
     return new Promise<void>((resolve) => {
       sipConnector.on('api:account:deleted', (data) => {

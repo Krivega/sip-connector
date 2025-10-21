@@ -13,7 +13,13 @@ import { createNotReadyForConnectionError, resolveParameters } from './utils';
 import type { RegisteredEvent, UA, UnRegisteredEvent, WebSocketInterface } from '@krivega/jssip';
 import type { TGetServerUrl } from '@/CallManager';
 import type { TJsSIP } from '@/types';
-import type { TConnect, TParametersConnection, TSet } from './ConnectionFlow';
+import type {
+  TConnectionConfiguration,
+  TConnect,
+  TParametersConnection,
+  TSet,
+  TConnectionConfigurationWithUa,
+} from './ConnectionFlow';
 import type { TEvents, TEventMap } from './eventNames';
 import type { TParametersCheckTelephony } from './SipOperations';
 
@@ -74,7 +80,10 @@ export default class ConnectionManager {
       setConnectionConfiguration: (config) => {
         this.configurationManager.set(config);
       },
-      updateConnectionConfiguration: (key: 'displayName', value: string) => {
+      updateConnectionConfiguration: <K extends keyof TConnectionConfiguration>(
+        key: K,
+        value: TConnectionConfiguration[K],
+      ) => {
         this.configurationManager.update(key, value);
       },
       setUa: (ua: UA | undefined) => {
@@ -128,7 +137,7 @@ export default class ConnectionManager {
   public connect = async (
     parameters: TConnectParameters,
     options?: TConnectOptions,
-  ): Promise<UA> => {
+  ): Promise<TConnectionConfigurationWithUa> => {
     return this.disconnect()
       .catch((error: unknown) => {
         logger('connect: disconnect error', error);
@@ -271,10 +280,12 @@ export default class ConnectionManager {
       .then(async (data) => {
         return this.connectionFlow.connect(data, options);
       })
-      .then((ua) => {
-        this.events.trigger(EEvent.CONNECT_SUCCEEDED, { ua });
+      .then((connectionConfigurationWithUa) => {
+        this.events.trigger(EEvent.CONNECT_SUCCEEDED, {
+          ...connectionConfigurationWithUa,
+        });
 
-        return ua;
+        return connectionConfigurationWithUa;
       })
       .catch((error: unknown) => {
         const connectError: unknown = error ?? new Error('Failed to connect to server');

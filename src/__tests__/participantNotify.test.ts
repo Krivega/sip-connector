@@ -30,7 +30,8 @@ describe('participant notify', () => {
   it('wait participant notify event added-to-list-moderators', async () => {
     expect.assertions(1);
 
-    const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
+    const result = await sipConnector.connect(dataForConnectionWithAuthorization);
+    const { ua } = result;
 
     await sipConnector.call({ number, mediaStream });
 
@@ -48,7 +49,8 @@ describe('participant notify', () => {
   it('wait participant notify event removed-from-list-moderators', async () => {
     expect.assertions(1);
 
-    const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
+    const result = await sipConnector.connect(dataForConnectionWithAuthorization);
+    const { ua } = result;
 
     await sipConnector.call({ number, mediaStream });
 

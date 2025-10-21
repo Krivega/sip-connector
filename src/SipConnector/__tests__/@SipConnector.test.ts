@@ -10,6 +10,7 @@ import type {
   UnRegisteredEvent,
   Socket,
 } from '@krivega/jssip';
+import type { TConnectionConfigurationWithUa } from '@/ConnectionManager';
 import type { TJsSIP } from '@/types';
 
 describe('SipConnector facade', () => {
@@ -49,7 +50,9 @@ describe('SipConnector facade', () => {
   it('должен проксировать методы ConnectionQueueManager', async () => {
     const { connectionQueueManager } = sipConnector;
 
-    jest.spyOn(connectionQueueManager, 'connect').mockResolvedValue({} as unknown as UA);
+    jest
+      .spyOn(connectionQueueManager, 'connect')
+      .mockResolvedValue({} as unknown as TConnectionConfigurationWithUa);
     jest.spyOn(connectionQueueManager, 'disconnect').mockResolvedValue(undefined);
 
     await sipConnector.connect({

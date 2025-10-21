@@ -7,15 +7,14 @@ import { hasNotReadyForConnectionError } from '@/ConnectionManager';
 import debug from '@/logger';
 import hasPurgatory from '@/tools/hasPurgatory';
 
-import type { UA } from '@krivega/jssip';
 import type { EUseLicense } from '@/ApiManager';
 import type { TOnAddedTransceiver } from '@/CallManager/types';
-import type { TParametersConnection } from '@/ConnectionManager';
+import type { TParametersConnection, TConnectionConfigurationWithUa } from '@/ConnectionManager';
 import type { TContentHint } from '@/PresentationManager';
 import type { SipConnector } from '@/SipConnector';
 import type { TEventMap as TStatsEventMap } from '@/StatsManager';
 
-const handleError = (error: Error): { isSuccessful: boolean } => {
+const handleError = (error: Error): { configuration: undefined; isSuccessful: false } => {
   if (
     !isCanceledError(error) &&
     !hasCanceledError(error) &&
@@ -24,7 +23,7 @@ const handleError = (error: Error): { isSuccessful: boolean } => {
     throw error as Error;
   }
 
-  return { isSuccessful: false };
+  return { configuration: undefined, isSuccessful: false };
 };
 const hasVideoTrackReady = ({ kind, readyState }: MediaStreamTrack) => {
   return kind === 'video' && readyState === 'live';
@@ -204,13 +203,19 @@ class SipConnectorFacade implements IProxyMethods {
     options?: {
       hasReadyForConnection?: () => boolean;
     },
-  ): Promise<{ ua?: UA; isSuccessful: boolean }> => {
+  ): Promise<
+    | { configuration: TConnectionConfigurationWithUa; isSuccessful: true }
+    | { configuration: undefined; isSuccessful: false }
+  > => {
     return this.sipConnector
       .connect(parameters, options)
-      .then((ua) => {
+      .then((connectionConfigurationWithUa) => {
         debug('connectToServer then');
 
-        return { ua, isSuccessful: true };
+        return { configuration: connectionConfigurationWithUa, isSuccessful: true } as {
+          configuration: TConnectionConfigurationWithUa;
+          isSuccessful: true;
+        };
       })
       .catch(async (error: unknown) => {
         debug('connectToServer catch: error', error);

@@ -29,7 +29,7 @@ describe('webcast notify', () => {
   it('event webcast:started', async () => {
     expect.assertions(1);
 
-    const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
+    const result = await sipConnector.connect(dataForConnectionWithAuthorization);
 
     await sipConnector.call({ number, mediaStream });
 
@@ -40,14 +40,14 @@ describe('webcast notify', () => {
         resolve();
       });
 
-      JsSIP.triggerNewSipEvent(ua, webcastStartedHeaders);
+      JsSIP.triggerNewSipEvent(result.ua, webcastStartedHeaders);
     });
   });
 
   it('event webcast:stopped', async () => {
     expect.assertions(1);
 
-    const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
+    const result = await sipConnector.connect(dataForConnectionWithAuthorization);
 
     await sipConnector.call({ number, mediaStream });
 
@@ -58,7 +58,7 @@ describe('webcast notify', () => {
         resolve();
       });
 
-      JsSIP.triggerNewSipEvent(ua, webcastStoppedHeaders);
+      JsSIP.triggerNewSipEvent(result.ua, webcastStoppedHeaders);
     });
   });
 });

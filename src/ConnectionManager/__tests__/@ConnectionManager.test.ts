@@ -41,11 +41,11 @@ describe('ConnectionManager', () => {
 
   describe('connect', () => {
     it('должен успешно подключаться без регистрации', async () => {
-      const ua = await connectionManager.connect(parameters);
+      const result = await connectionManager.connect(parameters);
 
-      // Проверяем, что возвращён UA и он сохранён внутри ConnectionManager
-      expect(ua).toBeInstanceOf(UAMock);
-      expect(connectionManager.ua).toBe(ua);
+      // Проверяем, что возвращён результат с UA и он сохранён внутри ConnectionManager
+      expect(result.ua).toBeInstanceOf(UAMock);
+      expect(connectionManager.ua).toBe(result.ua);
 
       // Конфигурация установлена
       expect(connectionManager.isConfigured()).toBe(true);
@@ -76,10 +76,10 @@ describe('ConnectionManager', () => {
         sipWebSocketServerURL: WS_URL,
       };
 
-      const ua = await connectionManager.connect(parameters2);
+      const result = await connectionManager.connect(parameters2);
 
       // UA сохранён внутри менеджера
-      expect(connectionManager.ua).toBe(ua);
+      expect(connectionManager.ua).toBe(result.ua);
       // Регистрационная конфигурация установлена
       expect(connectionManager.isRegisterConfig).toBe(true);
       // UA успешно зарегистрирован
@@ -400,7 +400,16 @@ describe('ConnectionManager', () => {
 
       await connectionManager.connect(parameters);
 
-      expect(handleSucceeded).toHaveBeenCalledWith({ ua: connectionManager.ua });
+      expect(handleSucceeded).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ua: connectionManager.ua,
+          displayName: parameters.displayName,
+          register: parameters.register,
+          sipServerUrl: parameters.sipServerUrl,
+          user: parameters.user,
+          password: parameters.password,
+        }),
+      );
     });
 
     it('должен вызывать CONNECT_FAILED при ошибке подключения', async () => {

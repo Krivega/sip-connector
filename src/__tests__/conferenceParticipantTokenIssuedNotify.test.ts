@@ -27,7 +27,8 @@ describe('conference participant token issued notify', () => {
   it('event conference:participant-token-issued', async () => {
     expect.assertions(1);
 
-    const ua = await sipConnector.connect(dataForConnectionWithoutAuthorization);
+    const result = await sipConnector.connect(dataForConnectionWithoutAuthorization);
+    const { ua } = result;
 
     await sipConnector.call({ number, mediaStream });
 

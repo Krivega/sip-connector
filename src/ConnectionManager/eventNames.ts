@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
 import type {
-  UA,
   ConnectingEventUA,
   ConnectedEvent,
   DisconnectEvent,
@@ -12,6 +11,7 @@ import type {
   IncomingRequest,
 } from '@krivega/jssip';
 import type { TypedEvents } from 'events-constructor';
+import type { TConnectionConfigurationWithUa } from './ConnectionFlow';
 
 export enum EEvent {
   CONNECTING = 'connecting',
@@ -66,7 +66,7 @@ export type TEventMap = {
   newMessage: IncomingMessageEvent | OutgoingMessageEvent;
   sipEvent: { event: unknown; request: IncomingRequest };
   'connect-started': Record<string, never>;
-  'connect-succeeded': { ua: UA };
+  'connect-succeeded': TConnectionConfigurationWithUa;
   'connect-failed': unknown;
   'connect-parameters-resolve-failed': unknown;
 };

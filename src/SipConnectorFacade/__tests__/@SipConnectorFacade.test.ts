@@ -8,7 +8,7 @@ import resolveParameters from '@/ConnectionManager/utils/resolveParameters';
 import { doMockSipConnector } from '@/doMock';
 import SipConnectorFacade, { TEST_HOOKS } from '../@SipConnectorFacade';
 
-import type { UA } from '@krivega/jssip';
+import type { TConnectionConfigurationWithUa } from '@/ConnectionManager';
 import type { SipConnector } from '@/SipConnector';
 
 describe('SipConnectorFacade comprehensive', () => {
@@ -53,7 +53,9 @@ describe('SipConnectorFacade comprehensive', () => {
 
   describe('connectToServer', () => {
     it('должен успешно подключиться к серверу', async () => {
-      const connectSpy = jest.spyOn(sipConnector, 'connect').mockResolvedValue({} as unknown as UA);
+      const connectSpy = jest
+        .spyOn(sipConnector, 'connect')
+        .mockResolvedValue({} as unknown as TConnectionConfigurationWithUa);
 
       const result = await sipConnectorFacade.connectToServer({
         userAgent: 'Chrome',
@@ -68,7 +70,7 @@ describe('SipConnectorFacade comprehensive', () => {
       const expectedParameters = await resolveParameters(connectParameters);
 
       expect(result.isSuccessful).toBe(true);
-      expect(result.ua).toBeDefined();
+      expect(result.configuration).toBeDefined();
       expect(expectedParameters).toEqual({
         userAgent: 'Chrome',
         sipWebSocketServerURL: 'wss://sip.example.com/ws',

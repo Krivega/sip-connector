@@ -30,7 +30,8 @@ describe('participants moveRequests', () => {
     });
   });
   it('event participation:accepting-word-request', async () => {
-    const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
+    const result = await sipConnector.connect(dataForConnectionWithAuthorization);
+    const { ua } = result;
 
     await sipConnector.call({ number, mediaStream });
 
@@ -46,7 +47,8 @@ describe('participants moveRequests', () => {
   });
 
   it('event participation:cancelling-word-request', async () => {
-    const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
+    const result = await sipConnector.connect(dataForConnectionWithAuthorization);
+    const { ua } = result;
 
     await sipConnector.call({ number, mediaStream });
 
@@ -62,7 +64,8 @@ describe('participants moveRequests', () => {
   });
 
   it('event participant:move-request-to-stream', async () => {
-    const ua = await sipConnector.connect(dataForConnectionWithAuthorization);
+    const result = await sipConnector.connect(dataForConnectionWithAuthorization);
+    const { ua } = result;
 
     await sipConnector.call({ number, mediaStream });
 

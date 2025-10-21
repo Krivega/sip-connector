@@ -39,10 +39,19 @@ export type TParametersConnection = TOptionsExtraHeaders & {
   connectionRecoveryMaxInterval?: number;
 };
 
+export type TConnectionConfiguration = {
+  sipServerUrl?: string;
+  displayName?: string;
+  register?: boolean;
+  user?: string;
+  password?: string;
+};
+export type TConnectionConfigurationWithUa = TConnectionConfiguration & { ua: UA };
+
 export type TConnect = (
   parameters: TParametersConnection,
   options?: { callLimit?: number },
-) => Promise<UA>;
+) => Promise<TConnectionConfigurationWithUa>;
 
 export type TSet = (parameters: { displayName?: string }) => Promise<boolean>;
 
@@ -57,27 +66,20 @@ interface IDependencies {
   registrationManager: RegistrationManager;
   getUa: () => UA | undefined;
   setUa: (ua: UA | undefined) => void;
-  getConnectionConfiguration: () => {
-    sipServerUrl?: string;
-    displayName?: string;
-    register?: boolean;
-    user?: string;
-    password?: string;
-  };
-  setConnectionConfiguration: (config: {
-    sipServerUrl?: string;
-    displayName?: string;
-    register?: boolean;
-    user?: string;
-    password?: string;
-  }) => void;
-  updateConnectionConfiguration: (key: 'displayName', value: string) => void;
+  getConnectionConfiguration: () => TConnectionConfiguration;
+  setConnectionConfiguration: (config: TConnectionConfiguration) => void;
+  updateConnectionConfiguration: <K extends keyof TConnectionConfiguration>(
+    key: K,
+    value: TConnectionConfiguration[K],
+  ) => void;
   setSipServerUrl: (getSipServerUrl: TGetServerUrl) => void;
   setSocket: (socket: WebSocketInterface) => void;
 }
 
 export default class ConnectionFlow {
-  private cancelableConnectWithRepeatedCalls: ReturnType<typeof repeatedCallsAsync<UA>> | undefined;
+  private cancelableConnectWithRepeatedCalls:
+    | ReturnType<typeof repeatedCallsAsync<TConnectionConfigurationWithUa>>
+    | undefined;
 
   private readonly JsSIP: IDependencies['JsSIP'];
 
@@ -199,7 +201,7 @@ export default class ConnectionFlow {
 
     this.stateMachine.startConnect();
 
-    this.cancelableConnectWithRepeatedCalls = repeatedCallsAsync<UA>({
+    this.cancelableConnectWithRepeatedCalls = repeatedCallsAsync<TConnectionConfigurationWithUa>({
       targetFunction,
       isComplete,
       callLimit,
@@ -208,8 +210,9 @@ export default class ConnectionFlow {
     });
 
     return this.cancelableConnectWithRepeatedCalls.then((response?: unknown) => {
-      if (response instanceof this.JsSIP.UA) {
-        return response;
+      // @ts-expect-error
+      if ('ua' in response && response.ua instanceof this.JsSIP.UA) {
+        return response as TConnectionConfigurationWithUa;
       }
 
       throw response;
@@ -243,9 +246,16 @@ export default class ConnectionFlow {
   }
 
   private readonly connectInner: TConnect = async (parameters) => {
-    return this.initUa(parameters).then(async () => {
-      return this.start();
-    });
+    return this.initUa(parameters)
+      .then(async () => {
+        return this.start();
+      })
+      .then((ua) => {
+        return {
+          ...this.getConnectionConfiguration(),
+          ua,
+        };
+      });
   };
 
   private readonly initUa: TInitUa = async ({
