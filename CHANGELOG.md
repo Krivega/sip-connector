@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [19.4.0](https://github.com/Krivega/sip-connector/compare/v19.3.0...v19.4.0) (2025-10-21)
+
+### Features
+
+- enhance connection management with TConnectionConfiguration and TConnectionConfigurationWithUa types ([d248331](https://github.com/Krivega/sip-connector/commit/d248331a952d60992c0f622cd5b3fe734b035bde))
+
 ## [19.3.0](https://github.com/Krivega/sip-connector/compare/v19.2.2...v19.3.0) (2025-10-21)
 
 ### Features
