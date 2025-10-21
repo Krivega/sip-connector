@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 /// <reference types="jest" />
-import { resolveParameters } from '@/ConnectionManager';
+import resolveParameters from '@/ConnectionManager/utils/resolveParameters';
 import { doMockSipConnector } from '@/doMock';
 import {
   LOCKED_SIP_WEB_SOCKET_SERVER_URL,
@@ -65,17 +65,17 @@ describe('connectToServer', () => {
 
   it('registered sync', async () => {
     return sipConnectorFacade
-      .connectToServer({ ...dataForConnectionWithAuthorization, name: oneWord })
+      .connectToServer({ ...dataForConnectionWithAuthorization, user: oneWord })
       .then(async () => {
         return sipConnectorFacade.connectToServer({
           ...dataForConnectionWithAuthorization,
-          name: twoWord,
+          user: twoWord,
         });
       })
       .then(async () => {
         return sipConnectorFacade.connectToServer({
           ...dataForConnectionWithAuthorization,
-          name: thirdWord,
+          user: thirdWord,
         });
       })
       .then(() => {

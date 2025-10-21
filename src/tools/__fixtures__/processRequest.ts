@@ -35,17 +35,17 @@ const initUa = (
     sipWebSocketServerURL,
     remoteAddress,
     displayName,
-    name,
+    user,
     password,
-    isRegisteredUser,
+    register,
   }: {
     remoteAddress: string | undefined;
     sipServerUrl: string;
     displayName: string | undefined;
     sipWebSocketServerURL: string;
-    name: string;
+    user: string;
     password: string;
-    isRegisteredUser: boolean;
+    register: boolean;
   },
 ) => {
   const sipConnectorFacade = new SipConnectorFacade(sipConnector);
@@ -57,8 +57,8 @@ const initUa = (
           sipServerUrl,
           remoteAddress,
           sipWebSocketServerURL,
-          isRegisteredUser,
-          name,
+          register,
+          user,
           password,
         })
       ) {
@@ -67,9 +67,9 @@ const initUa = (
           sipServerUrl,
           sipWebSocketServerURL,
           displayName,
-          name,
+          user,
           password,
-          isRegisteredUser,
+          register,
           userAgent: 'Chrome',
         });
       }
@@ -90,9 +90,9 @@ const resolveInitUaPromised = (sipConnector: SipConnector) => {
     sipServerUrl: string;
     displayName: string | undefined;
     sipWebSocketServerURL: string;
-    name: string;
+    user: string;
     password: string;
-    isRegisteredUser: boolean;
+    register: boolean;
   }) => {
     return new Promise<boolean>((resolve, reject) => {
       initUa(sipConnector, resolve, reject, state);

@@ -21,8 +21,8 @@ export const LOCKED_SIP_WEB_SOCKET_SERVER_URL = 'LOCKED_SIP_WEB_SOCKET_SERVER_UR
 export const dataForConnectionWithAuthorization = {
   ...baseDataForConnection,
   password: PASSWORD_CORRECT,
-  name: user,
-  isRegisteredUser: true,
+  user,
+  register: true,
 };
 export const dataForConnectionWithAuthorizationWithDisplayName = {
   ...baseDataForConnection,
@@ -31,7 +31,7 @@ export const dataForConnectionWithAuthorizationWithDisplayName = {
 export const dataForConnectionWithoutAuthorization = {
   ...baseDataForConnection,
   displayName,
-  isRegisteredUser: false,
+  register: false,
 };
 export const dataForConnectionWithoutAuthorizationWithoutDisplayName = {
   ...dataForConnectionWithoutAuthorization,
@@ -48,7 +48,7 @@ export const dataForConnectionWithoutAuthorizationWithSipWebSocketServerUrlChang
 };
 export const dataForConnectionWithAuthorizationIncorrectUser = {
   ...dataForConnectionWithAuthorization,
-  name: NAME_INCORRECT,
+  user: NAME_INCORRECT,
 };
 export const dataForConnectionWithAuthorizationIncorrectPassword = {
   ...dataForConnectionWithAuthorization,

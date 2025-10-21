@@ -1,4 +1,4 @@
-import type { ConnectionManager } from '@/ConnectionManager';
+import type { ConnectionManager, TParametersConnection } from '@/ConnectionManager';
 import type { ConnectionQueueManager } from '@/ConnectionQueueManager';
 
 export interface IAutoConnectorOptions {
@@ -13,16 +13,11 @@ export type ISubscriber<T = void> = {
 };
 
 export type TParametersCheckTelephony = Parameters<ConnectionManager['checkTelephony']>[0];
-export type TParametersConnect = Parameters<ConnectionQueueManager['connect']>[0] extends
-  | (() => Promise<infer T>)
-  | infer T
-  ? T
-  : never;
 
 type TOptionsConnect = Parameters<ConnectionQueueManager['connect']>[1];
 
 export type TParametersAutoConnect = {
-  getParameters: () => Promise<TParametersConnect & TParametersCheckTelephony>;
+  getParameters: () => Promise<TParametersConnection & TParametersCheckTelephony>;
   options?: TOptionsConnect;
 };
 export type TAttemptStatus = {

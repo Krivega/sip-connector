@@ -2,7 +2,6 @@ import { CancelableRequest } from '@krivega/cancelable-promise';
 import { DelayRequester } from '@krivega/timeout-requester';
 
 import delayPromise from '@/__fixtures__/delayPromise';
-import { hasNotReadyForConnectionError } from '@/ConnectionManager';
 import { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import { doMockSipConnector } from '@/doMock';
 import logger from '@/logger';
@@ -12,11 +11,7 @@ import PingServerIfNotActiveCallRequester from '../PingServerIfNotActiveCallRequ
 import RegistrationFailedOutOfCallSubscriber from '../RegistrationFailedOutOfCallSubscriber';
 
 import type { SipConnector } from '@/SipConnector';
-import type {
-  IAutoConnectorOptions,
-  TParametersAutoConnect,
-  TParametersCheckTelephony,
-} from '../types';
+import type { IAutoConnectorOptions, TParametersAutoConnect } from '../types';
 
 const DELAY = 100;
 

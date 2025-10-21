@@ -124,7 +124,7 @@ describe('processRequest', () => {
 
     return processRequest(dataForConnectionWithAuthorization)
       .then(async () => {
-        return processRequest({ ...dataForConnectionWithAuthorization, name: '' });
+        return processRequest({ ...dataForConnectionWithAuthorization, user: '' });
       })
       .then((success) => {
         expect(success).toBe(false);
@@ -222,7 +222,7 @@ describe('processRequest', () => {
     return processRequest(dataForConnectionWithAuthorization)
       .then(async () => {
         // @ts-expect-error
-        return processRequest({ ...withNameChanged, name: thirdWord });
+        return processRequest({ ...withNameChanged, user: thirdWord });
       })
       .then((success) => {
         expect(success).toBe(true);
@@ -240,7 +240,7 @@ describe('processRequest', () => {
     return processRequest(dataForConnectionWithAuthorization)
       .then(async () => {
         // @ts-expect-error
-        return processRequest({ ...withNameChanged, name: '' });
+        return processRequest({ ...withNameChanged, user: '' });
       })
       .then((success) => {
         expect(success).toBe(false);
@@ -258,7 +258,7 @@ describe('processRequest', () => {
         // 300 -debounced value
         delayPromise(300).then(async () => {
           // @ts-expect-error
-          return processRequest({ ...withNameChanged, name: thirdWord });
+          return processRequest({ ...withNameChanged, user: thirdWord });
         }),
       ]).then(([result1, result2]) => {
         expect(result1.status).toBe('rejected');

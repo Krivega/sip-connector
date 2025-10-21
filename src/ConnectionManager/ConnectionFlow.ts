@@ -25,18 +25,18 @@ export type TOptionsExtraHeaders = {
 };
 
 export type TParametersConnection = TOptionsExtraHeaders & {
-  displayName?: string;
-  user?: string;
-  password?: string;
-  register?: boolean;
   sipServerUrl: string;
   sipWebSocketServerURL: string;
+  displayName?: string;
+  register?: boolean;
+  user?: string;
+  password?: string;
   remoteAddress?: string;
+  userAgent?: string;
   sessionTimers?: boolean;
   registerExpires?: number;
   connectionRecoveryMinInterval?: number;
   connectionRecoveryMaxInterval?: number;
-  userAgent?: string;
 };
 
 export type TConnect = (

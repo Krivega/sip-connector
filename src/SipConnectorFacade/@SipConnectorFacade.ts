@@ -3,13 +3,14 @@ import { isCanceledError } from '@krivega/cancelable-promise';
 import { hasCanceledError } from 'repeated-calls';
 import { debounce } from 'ts-debounce';
 
-import { hasNotReadyForConnectionError, resolveParameters } from '@/ConnectionManager';
+import { hasNotReadyForConnectionError } from '@/ConnectionManager';
 import debug from '@/logger';
 import hasPurgatory from '@/tools/hasPurgatory';
 
 import type { UA } from '@krivega/jssip';
 import type { EUseLicense } from '@/ApiManager';
 import type { TOnAddedTransceiver } from '@/CallManager/types';
+import type { TParametersConnection } from '@/ConnectionManager';
 import type { TContentHint } from '@/PresentationManager';
 import type { SipConnector } from '@/SipConnector';
 import type { TEventMap as TStatsEventMap } from '@/StatsManager';
@@ -78,17 +79,6 @@ export const TEST_HOOKS = {
   handleEnterRoomEvent,
   handleOnceRaceEvent,
   handleFailProgressEvent,
-};
-
-type TConnectToServerParameters = {
-  userAgent: string;
-  sipWebSocketServerURL: string;
-  sipServerUrl: string;
-  remoteAddress?: string;
-  displayName?: string;
-  name?: string;
-  password?: string;
-  isRegisteredUser?: boolean;
 };
 
 interface IProxyMethods {
@@ -210,41 +200,13 @@ class SipConnectorFacade implements IProxyMethods {
   }
 
   public connectToServer = async (
-    parameters: (() => Promise<TConnectToServerParameters>) | TConnectToServerParameters,
+    parameters: (() => Promise<TParametersConnection>) | TParametersConnection,
     options?: {
       hasReadyForConnection?: () => boolean;
     },
   ): Promise<{ ua?: UA; isSuccessful: boolean }> => {
-    const getParameters = async () => {
-      const parametersInner = await resolveParameters(parameters);
-
-      debug('connectToServer', parametersInner);
-
-      const {
-        userAgent,
-        sipWebSocketServerURL,
-        sipServerUrl,
-        remoteAddress,
-        displayName,
-        name,
-        password,
-        isRegisteredUser,
-      } = parametersInner;
-
-      return {
-        userAgent,
-        sipWebSocketServerURL,
-        sipServerUrl,
-        remoteAddress,
-        displayName,
-        password,
-        user: name,
-        register: isRegisteredUser,
-      };
-    };
-
     return this.sipConnector
-      .connect(getParameters, options)
+      .connect(parameters, options)
       .then((ua) => {
         debug('connectToServer then');
 

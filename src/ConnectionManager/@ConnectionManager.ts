@@ -13,11 +13,11 @@ import { createNotReadyForConnectionError, resolveParameters } from './utils';
 import type { RegisteredEvent, UA, UnRegisteredEvent, WebSocketInterface } from '@krivega/jssip';
 import type { TGetServerUrl } from '@/CallManager';
 import type { TJsSIP } from '@/types';
-import type { TConnect, TSet } from './ConnectionFlow';
+import type { TConnect, TParametersConnection, TSet } from './ConnectionFlow';
 import type { TEvents, TEventMap } from './eventNames';
 import type { TParametersCheckTelephony } from './SipOperations';
 
-type TConnectParameters = (() => Promise<Parameters<TConnect>[0]>) | Parameters<TConnect>[0];
+type TConnectParameters = (() => Promise<TParametersConnection>) | TParametersConnection;
 type TConnectOptions = Parameters<TConnect>[1] & {
   hasReadyForConnection?: () => boolean;
 };

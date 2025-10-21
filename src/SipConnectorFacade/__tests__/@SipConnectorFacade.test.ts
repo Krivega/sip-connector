@@ -4,7 +4,7 @@ import { dataForConnectionWithAuthorization } from '@/__fixtures__';
 import delayPromise from '@/__fixtures__/delayPromise';
 import JsSIP from '@/__fixtures__/jssip.mock';
 import remoteCallerData from '@/__fixtures__/remoteCallerData';
-import { resolveParameters } from '@/ConnectionManager';
+import resolveParameters from '@/ConnectionManager/utils/resolveParameters';
 import { doMockSipConnector } from '@/doMock';
 import SipConnectorFacade, { TEST_HOOKS } from '../@SipConnectorFacade';
 
@@ -59,9 +59,9 @@ describe('SipConnectorFacade comprehensive', () => {
         userAgent: 'Chrome',
         sipWebSocketServerURL: 'wss://sip.example.com/ws',
         sipServerUrl: 'sip.example.com',
-        name: 'testuser',
+        user: 'testuser',
         password: 'testpass',
-        isRegisteredUser: true,
+        register: true,
       });
 
       const connectParameters = connectSpy.mock.calls[0][0];

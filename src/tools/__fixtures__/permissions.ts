@@ -6,24 +6,24 @@ export const canConnectToServer = ({
   remoteAddress,
   sipServerUrl,
   sipWebSocketServerURL,
-  name,
+  user,
   password,
-  isRegisteredUser,
+  register,
 }: {
   remoteAddress: string | undefined;
   sipServerUrl: string | undefined;
   sipWebSocketServerURL: string | undefined;
-  name: string;
+  user: string;
   password: string;
-  isRegisteredUser: boolean;
+  register: boolean;
 }) => {
   const hasInitParameters =
     remoteAddress !== undefined &&
     sipServerUrl !== undefined &&
     sipWebSocketServerURL !== undefined;
 
-  if (isRegisteredUser) {
-    return hasInitParameters && hasNoEmptyString(name) && hasNoEmptyString(password);
+  if (register) {
+    return hasInitParameters && hasNoEmptyString(user) && hasNoEmptyString(password);
   }
 
   return hasInitParameters;

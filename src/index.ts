@@ -1,6 +1,7 @@
 export { EUseLicense } from './ApiManager';
 export { ECallCause, hasCanceledCallError } from './CallManager';
 export type { TCustomError } from './CallManager';
+export type { TParametersConnection } from './ConnectionManager';
 export { disableDebug, enableDebug } from './logger';
 export { hasCanceledStartPresentationError } from './PresentationManager';
 export type { TContentHint } from './PresentationManager';
