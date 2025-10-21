@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [19.3.0](https://github.com/Krivega/sip-connector/compare/v19.2.2...v19.3.0) (2025-10-21)
+
+### Features
+
+- introduce TParametersConnection type and update related components ([2c17717](https://github.com/Krivega/sip-connector/commit/2c177178e148cc8b5064dc663ff014752bcd9237))
+
 ### [19.2.2](https://github.com/Krivega/sip-connector/compare/v19.2.1...v19.2.2) (2025-10-17)
 
 ### Bug Fixes
