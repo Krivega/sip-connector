@@ -479,6 +479,57 @@ describe('ConnectionManager', () => {
       expect(handleParametersResolveFailed).not.toHaveBeenCalled();
       expect(handleFailed).toHaveBeenCalled();
     });
+
+    it('должен вызывать CONNECT_PARAMETERS_RESOLVE_SUCCESS при успешном разрешении параметров (объект)', async () => {
+      const handleParametersResolveSuccess = jest.fn();
+      const handleSucceeded = jest.fn();
+
+      connectionManager.on('connect-parameters-resolve-success', handleParametersResolveSuccess);
+      connectionManager.on('connect-succeeded', handleSucceeded);
+
+      await connectionManager.connect(parameters);
+
+      expect(handleParametersResolveSuccess).toHaveBeenCalledWith(parameters);
+      expect(handleSucceeded).toHaveBeenCalled();
+    });
+
+    it('должен вызывать CONNECT_PARAMETERS_RESOLVE_SUCCESS при успешном разрешении параметров (функция)', async () => {
+      const handleParametersResolveSuccess = jest.fn();
+      const handleSucceeded = jest.fn();
+
+      connectionManager.on('connect-parameters-resolve-success', handleParametersResolveSuccess);
+      connectionManager.on('connect-succeeded', handleSucceeded);
+
+      const getParameters = async () => {
+        return parameters;
+      };
+
+      await connectionManager.connect(getParameters);
+
+      expect(handleParametersResolveSuccess).toHaveBeenCalledWith(parameters);
+      expect(handleSucceeded).toHaveBeenCalled();
+    });
+
+    it('должен вызывать события в правильном порядке', async () => {
+      const eventOrder: string[] = [];
+      const handleStarted = jest.fn(() => {
+        return eventOrder.push('started');
+      });
+      const handleParametersResolveSuccess = jest.fn(() => {
+        return eventOrder.push('parameters-resolve-success');
+      });
+      const handleSucceeded = jest.fn(() => {
+        return eventOrder.push('succeeded');
+      });
+
+      connectionManager.on('connect-started', handleStarted);
+      connectionManager.on('connect-parameters-resolve-success', handleParametersResolveSuccess);
+      connectionManager.on('connect-succeeded', handleSucceeded);
+
+      await connectionManager.connect(parameters);
+
+      expect(eventOrder).toEqual(['started', 'parameters-resolve-success', 'succeeded']);
+    });
   });
 
   describe('getters', () => {

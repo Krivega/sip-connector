@@ -5,11 +5,11 @@ import { hasHandshakeWebsocketOpeningError } from '../utils/errors';
 import { parseDisplayName } from '../utils/utils';
 
 import type {
-  UA,
   DisconnectEvent,
-  WebSocketInterface,
   Socket,
+  UA,
   UnRegisteredEvent,
+  WebSocketInterface,
 } from '@krivega/jssip';
 import type { TGetServerUrl } from '../CallManager';
 import type { TJsSIP } from '../types';

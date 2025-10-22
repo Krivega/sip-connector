@@ -14,13 +14,13 @@ import type { RegisteredEvent, UA, UnRegisteredEvent, WebSocketInterface } from 
 import type { TGetServerUrl } from '@/CallManager';
 import type { TJsSIP } from '@/types';
 import type {
-  TConnectionConfiguration,
   TConnect,
+  TConnectionConfiguration,
+  TConnectionConfigurationWithUa,
   TParametersConnection,
   TSet,
-  TConnectionConfigurationWithUa,
 } from './ConnectionFlow';
-import type { TEvents, TEventMap } from './eventNames';
+import type { TEventMap, TEvents } from './eventNames';
 import type { TParametersCheckTelephony } from './SipOperations';
 
 type TConnectParameters = (() => Promise<TParametersConnection>) | TParametersConnection;
@@ -272,6 +272,11 @@ export default class ConnectionManager {
     this.events.trigger(EEvent.CONNECT_STARTED, {});
 
     return resolveParameters(parameters)
+      .then((data) => {
+        this.events.trigger(EEvent.CONNECT_PARAMETERS_RESOLVE_SUCCESS, data);
+
+        return data;
+      })
       .catch((error: unknown) => {
         this.events.trigger(EEvent.CONNECT_PARAMETERS_RESOLVE_FAILED, error);
 

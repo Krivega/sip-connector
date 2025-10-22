@@ -1,17 +1,17 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
 import type {
-  ConnectingEventUA,
   ConnectedEvent,
+  ConnectingEventUA,
   DisconnectEvent,
-  RegisteredEvent,
-  UnRegisteredEvent,
-  RTCSessionEvent,
   IncomingMessageEvent,
-  OutgoingMessageEvent,
   IncomingRequest,
+  OutgoingMessageEvent,
+  RegisteredEvent,
+  RTCSessionEvent,
+  UnRegisteredEvent,
 } from '@krivega/jssip';
 import type { TypedEvents } from 'events-constructor';
-import type { TConnectionConfigurationWithUa } from './ConnectionFlow';
+import type { TConnectionConfigurationWithUa, TParametersConnection } from './ConnectionFlow';
 
 export enum EEvent {
   CONNECTING = 'connecting',
@@ -27,6 +27,7 @@ export enum EEvent {
   CONNECT_STARTED = 'connect-started',
   CONNECT_SUCCEEDED = 'connect-succeeded',
   CONNECT_FAILED = 'connect-failed',
+  CONNECT_PARAMETERS_RESOLVE_SUCCESS = 'connect-parameters-resolve-success',
   CONNECT_PARAMETERS_RESOLVE_FAILED = 'connect-parameters-resolve-failed',
 }
 
@@ -47,6 +48,7 @@ const SYNTHETICS_EVENT_NAMES = [
   `${EEvent.CONNECT_STARTED}`,
   `${EEvent.CONNECT_SUCCEEDED}`,
   `${EEvent.CONNECT_FAILED}`,
+  `${EEvent.CONNECT_PARAMETERS_RESOLVE_SUCCESS}`,
   `${EEvent.CONNECT_PARAMETERS_RESOLVE_FAILED}`,
 ] as const;
 
@@ -68,6 +70,7 @@ export type TEventMap = {
   'connect-started': Record<string, never>;
   'connect-succeeded': TConnectionConfigurationWithUa;
   'connect-failed': unknown;
+  'connect-parameters-resolve-success': TParametersConnection;
   'connect-parameters-resolve-failed': unknown;
 };
 
