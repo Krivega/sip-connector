@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [19.6.0](https://github.com/Krivega/sip-connector/compare/v19.5.0...v19.6.0) (2025-10-22)
+
+### Features
+
+- enforce required fields in connection configuration ([8b8f59f](https://github.com/Krivega/sip-connector/commit/8b8f59fbaae2e61809163fdc762eccf09cdcc2ef))
+
 ## [19.5.0](https://github.com/Krivega/sip-connector/compare/v19.4.0...v19.5.0) (2025-10-22)
 
 ### Features
