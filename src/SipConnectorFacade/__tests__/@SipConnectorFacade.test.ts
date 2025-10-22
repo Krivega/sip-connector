@@ -58,6 +58,7 @@ describe('SipConnectorFacade comprehensive', () => {
         .mockResolvedValue({} as unknown as TConnectionConfigurationWithUa);
 
       const result = await sipConnectorFacade.connectToServer({
+        displayName: 'DISPLAY_NAME',
         userAgent: 'Chrome',
         sipWebSocketServerURL: 'wss://sip.example.com/ws',
         sipServerUrl: 'sip.example.com',
@@ -75,7 +76,7 @@ describe('SipConnectorFacade comprehensive', () => {
         userAgent: 'Chrome',
         sipWebSocketServerURL: 'wss://sip.example.com/ws',
         sipServerUrl: 'sip.example.com',
-        displayName: undefined,
+        displayName: 'DISPLAY_NAME',
         password: 'testpass',
         user: 'testuser',
         register: true,
@@ -90,6 +91,7 @@ describe('SipConnectorFacade comprehensive', () => {
 
       await expect(
         sipConnectorFacade.connectToServer({
+          displayName: 'DISPLAY_NAME',
           userAgent: 'Chrome',
           sipWebSocketServerURL: 'wss://sip.example.com/ws',
           sipServerUrl: 'sip.example.com',
@@ -127,6 +129,7 @@ describe('SipConnectorFacade comprehensive', () => {
 
       const facade = new SipConnectorFacadeIsolated(localSipConnector);
       const result = await facade.connectToServer({
+        displayName: 'DISPLAY_NAME',
         userAgent: 'Chrome',
         sipWebSocketServerURL: 'wss://sip.example.com/ws',
         sipServerUrl: 'sip.example.com',
@@ -163,6 +166,7 @@ describe('SipConnectorFacade comprehensive', () => {
 
       const facade = new SipConnectorFacadeIsolated(localSipConnector);
       const result = await facade.connectToServer({
+        displayName: 'DISPLAY_NAME',
         userAgent: 'Chrome',
         sipWebSocketServerURL: 'wss://sip.example.com/ws',
         sipServerUrl: 'sip.example.com',

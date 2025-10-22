@@ -56,13 +56,13 @@ describe('call', () => {
 
     expect(callConfiguration.number).toBe(number);
     expect(callConfiguration.answer).toBe(false);
-    expect(connectionConfiguration.sipServerUrl).toBe(
+    expect(connectionConfiguration?.sipServerUrl).toBe(
       dataForConnectionWithAuthorization.sipServerUrl,
     );
-    expect(connectionConfiguration.displayName).toBe('');
-    expect(connectionConfiguration.register).toBe(dataForConnectionWithAuthorization.register);
-    expect(connectionConfiguration.user).toBe(dataForConnectionWithAuthorization.user);
-    expect(connectionConfiguration.password).toBe(dataForConnectionWithAuthorization.password);
+    expect(connectionConfiguration?.displayName).toBe('DISPLAY_NAME');
+    expect(connectionConfiguration?.register).toBe(dataForConnectionWithAuthorization.register);
+    expect(connectionConfiguration?.user).toBe(dataForConnectionWithAuthorization.user);
+    expect(connectionConfiguration?.password).toBe(dataForConnectionWithAuthorization.password);
 
     return callPromise;
   });

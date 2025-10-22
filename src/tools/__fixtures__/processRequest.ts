@@ -41,7 +41,7 @@ const initUa = (
   }: {
     remoteAddress: string | undefined;
     sipServerUrl: string;
-    displayName: string | undefined;
+    displayName: string;
     sipWebSocketServerURL: string;
     user: string;
     password: string;
@@ -88,7 +88,7 @@ const resolveInitUaPromised = (sipConnector: SipConnector) => {
   return async (state: {
     remoteAddress: string | undefined;
     sipServerUrl: string;
-    displayName: string | undefined;
+    displayName: string;
     sipWebSocketServerURL: string;
     user: string;
     password: string;

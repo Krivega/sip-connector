@@ -6,9 +6,9 @@ import SipConnector from '../@SipConnector';
 import type {
   IncomingResponse,
   RegisteredEvent,
+  Socket,
   UA,
   UnRegisteredEvent,
-  Socket,
 } from '@krivega/jssip';
 import type { TConnectionConfigurationWithUa } from '@/ConnectionManager';
 import type { TJsSIP } from '@/types';
@@ -56,6 +56,7 @@ describe('SipConnector facade', () => {
     jest.spyOn(connectionQueueManager, 'disconnect').mockResolvedValue(undefined);
 
     await sipConnector.connect({
+      displayName: 'Any Name',
       register: false,
       sipServerUrl: 'sip.example.com',
       sipWebSocketServerURL: 'wss://sip.example.com/ws',
@@ -84,9 +85,13 @@ describe('SipConnector facade', () => {
       .spyOn(cm, 'tryRegister')
       .mockResolvedValue({ response: {} as IncomingResponse } as RegisteredEvent);
 
-    jest
-      .spyOn(cm, 'getConnectionConfiguration')
-      .mockReturnValue({ displayName: 'X' } as unknown as { displayName: string });
+    jest.spyOn(cm, 'getConnectionConfiguration').mockReturnValue({
+      displayName: 'X',
+      sipServerUrl: 'sip.example.com',
+    } as unknown as {
+      displayName: string;
+      sipServerUrl: string;
+    });
 
     await sipConnector.set({ displayName: 'Test' });
     await sipConnector.sendOptions('sip:test@example.com', 'test', ['X-Test: value']);
@@ -101,7 +106,10 @@ describe('SipConnector facade', () => {
     });
 
     expect(sipConnector.isConfigured()).toBe(true);
-    expect(sipConnector.getConnectionConfiguration()).toEqual({ displayName: 'X' });
+    expect(sipConnector.getConnectionConfiguration()).toEqual({
+      displayName: 'X',
+      sipServerUrl: 'sip.example.com',
+    });
     expect(sipConnector.getSipServerUrl('id')).toBe('id');
 
     expect(cm.register).toHaveBeenCalled();

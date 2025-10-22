@@ -28,6 +28,7 @@ describe('ConnectionQueueManager', () => {
   it('должен выполнять connect через очередь', async () => {
     const mockResult = {};
     const connectParams = {
+      displayName: 'Any Name',
       sipServerUrl: 'test.com',
       sipWebSocketServerURL: 'wss://test.com',
     };

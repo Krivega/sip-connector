@@ -14,6 +14,7 @@ const baseDataForConnection = {
   sipServerUrl: SIP_SERVER_URL,
   sipWebSocketServerURL: SIP_WEB_SOCKET_SERVER_URL,
   userAgent: 'Chrome',
+  displayName: 'DISPLAY_NAME',
 };
 
 export const LOCKED_SIP_WEB_SOCKET_SERVER_URL = 'LOCKED_SIP_WEB_SOCKET_SERVER_URL';
@@ -34,8 +35,9 @@ export const dataForConnectionWithoutAuthorization = {
   register: false,
 };
 export const dataForConnectionWithoutAuthorizationWithoutDisplayName = {
-  ...dataForConnectionWithoutAuthorization,
-  displayName: '',
+  ...baseDataForConnection,
+  displayName: 'DISPLAY_NAME',
+  register: false,
 };
 export const dataForConnectionWithoutAuthorizationWithSipServerUrlChanged = {
   ...dataForConnectionWithoutAuthorization,

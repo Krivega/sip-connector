@@ -20,7 +20,7 @@ export type TCreateUAParameters = UAConfigurationParams & {
 
 type TParametersCreateUaConfiguration = {
   sipWebSocketServerURL: string;
-  displayName?: string;
+  displayName: string;
   sipServerUrl: string;
   user?: string;
   register?: boolean;

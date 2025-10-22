@@ -87,19 +87,19 @@ describe('connect', () => {
     const result = await sipConnector.connect(dataForConnectionWithAuthorizationWithDisplayName);
     const connectionConfiguration = sipConnector.getConnectionConfiguration();
 
-    expect(connectionConfiguration.sipServerUrl).toBe(
+    expect(connectionConfiguration?.sipServerUrl).toBe(
       dataForConnectionWithAuthorizationWithDisplayName.sipServerUrl,
     );
-    expect(connectionConfiguration.displayName).toBe(
+    expect(connectionConfiguration?.displayName).toBe(
       dataForConnectionWithAuthorizationWithDisplayName.displayName,
     );
-    expect(connectionConfiguration.register).toBe(
+    expect(connectionConfiguration?.register).toBe(
       dataForConnectionWithAuthorizationWithDisplayName.register,
     );
-    expect(connectionConfiguration.user).toBe(
+    expect(connectionConfiguration?.user).toBe(
       dataForConnectionWithAuthorizationWithDisplayName.user,
     );
-    expect(connectionConfiguration.password).toBe(
+    expect(connectionConfiguration?.password).toBe(
       dataForConnectionWithAuthorizationWithDisplayName.password,
     );
     expect(result.ua.configuration).toEqual(uaConfigurationWithAuthorizationWithDisplayName);
@@ -113,15 +113,15 @@ describe('connect', () => {
     const { uri, ...configuration } = result.ua.configuration;
     const connectionConfiguration = sipConnector.getConnectionConfiguration();
 
-    expect(connectionConfiguration.sipServerUrl).toBe(
+    expect(connectionConfiguration?.sipServerUrl).toBe(
       dataForConnectionWithoutAuthorization.sipServerUrl,
     );
-    expect(connectionConfiguration.displayName).toBe(
+    expect(connectionConfiguration?.displayName).toBe(
       dataForConnectionWithoutAuthorization.displayName,
     );
-    expect(connectionConfiguration.register).toBe(dataForConnectionWithoutAuthorization.register);
-    expect(connectionConfiguration.user).toBe(undefined);
-    expect(connectionConfiguration.password).toBe(undefined);
+    expect(connectionConfiguration?.register).toBe(dataForConnectionWithoutAuthorization.register);
+    expect(connectionConfiguration?.user).toBe(undefined);
+    expect(connectionConfiguration?.password).toBe(undefined);
 
     expect(configuration).toEqual(uaConfigurationWithoutAuthorization);
   });
@@ -136,13 +136,13 @@ describe('connect', () => {
     const { uri, ...configuration } = result.ua.configuration;
     const connectionConfiguration = sipConnector.getConnectionConfiguration();
 
-    expect(connectionConfiguration.sipServerUrl).toBe(
+    expect(connectionConfiguration?.sipServerUrl).toBe(
       dataForConnectionWithoutAuthorizationWithoutDisplayName.sipServerUrl,
     );
-    expect(connectionConfiguration.displayName).toBe('');
-    expect(connectionConfiguration.register).toBe(false);
-    expect(connectionConfiguration.user).toBe(undefined);
-    expect(connectionConfiguration.password).toBe(undefined);
+    expect(connectionConfiguration?.displayName).toBe('DISPLAY_NAME');
+    expect(connectionConfiguration?.register).toBe(false);
+    expect(connectionConfiguration?.user).toBe(undefined);
+    expect(connectionConfiguration?.password).toBe(undefined);
     expect(configuration).toEqual(uaConfigurationWithoutAuthorizationWithoutDisplayName);
   });
 
@@ -157,13 +157,13 @@ describe('connect', () => {
 
     const connectionConfiguration = sipConnector.getConnectionConfiguration();
 
-    expect(connectionConfiguration.sipServerUrl).toBe(
+    expect(connectionConfiguration?.sipServerUrl).toBe(
       dataForConnectionWithAuthorization.sipServerUrl,
     );
-    expect(connectionConfiguration.displayName).toBe('');
-    expect(connectionConfiguration.register).toBe(dataForConnectionWithAuthorization.register);
-    expect(connectionConfiguration.user).toBe(dataForConnectionWithAuthorization.user);
-    expect(connectionConfiguration.password).toBe(dataForConnectionWithAuthorization.password);
+    expect(connectionConfiguration?.displayName).toBe('DISPLAY_NAME');
+    expect(connectionConfiguration?.register).toBe(dataForConnectionWithAuthorization.register);
+    expect(connectionConfiguration?.user).toBe(dataForConnectionWithAuthorization.user);
+    expect(connectionConfiguration?.password).toBe(dataForConnectionWithAuthorization.password);
   });
 
   it('должен устанавливать displayName после подключения с авторизацией', async () => {
@@ -174,7 +174,7 @@ describe('connect', () => {
       displayName: anotherDisplayName,
     });
 
-    expect(sipConnector.getConnectionConfiguration().displayName).toBe(anotherDisplayName);
+    expect(sipConnector.getConnectionConfiguration()?.displayName).toBe(anotherDisplayName);
   });
 
   it('должен отправлять базовые extraHeaders', async () => {

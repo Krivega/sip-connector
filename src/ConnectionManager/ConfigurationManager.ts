@@ -1,8 +1,8 @@
 import type { UA } from '@krivega/jssip';
 
 export interface IConnectionConfiguration {
-  sipServerUrl?: string;
-  displayName?: string;
+  sipServerUrl: string;
+  displayName: string;
   register?: boolean;
   user?: string;
   password?: string;
@@ -13,7 +13,7 @@ export interface ConfigurationManagerDependencies {
 }
 
 export default class ConfigurationManager {
-  private data: IConnectionConfiguration = {};
+  private data: IConnectionConfiguration | undefined;
 
   private readonly getUa: () => UA | undefined;
 
@@ -33,14 +33,24 @@ export default class ConfigurationManager {
   /**
    * Получает текущую конфигурацию подключения
    */
-  public get(): IConnectionConfiguration {
+  public get(): IConnectionConfiguration | undefined {
+    if (this.data === undefined) {
+      return undefined;
+    }
+
     return { ...this.data };
   }
 
   /**
    * Устанавливает конфигурацию подключения
    */
-  public set(data: IConnectionConfiguration): void {
+  public set(data: IConnectionConfiguration | undefined): void {
+    if (data === undefined) {
+      this.data = undefined;
+
+      return;
+    }
+
     this.data = { ...data };
   }
 
@@ -51,6 +61,10 @@ export default class ConfigurationManager {
     key: K,
     value: IConnectionConfiguration[K],
   ): void {
+    if (this.data === undefined) {
+      throw new Error('data is not exist');
+    }
+
     this.data[key] = value;
   }
 
@@ -58,48 +72,48 @@ export default class ConfigurationManager {
    * Очищает конфигурацию
    */
   public clear(): void {
-    this.data = {} as IConnectionConfiguration;
+    this.data = undefined;
   }
 
   /**
    * Проверяет, включена ли регистрация в конфигурации
    */
   public isRegister(): boolean {
-    return this.data.register === true;
+    return this.data?.register === true;
   }
 
   /**
    * Получает SIP сервер URL из конфигурации
    */
   public getSipServerUrl(): string | undefined {
-    return this.data.sipServerUrl;
+    return this.data?.sipServerUrl;
   }
 
   /**
    * Получает display name из конфигурации
    */
   public getDisplayName(): string | undefined {
-    return this.data.displayName;
+    return this.data?.displayName;
   }
 
   /**
    * Получает пользователя из конфигурации
    */
   public getUser(): string | undefined {
-    return this.data.user;
+    return this.data?.user;
   }
 
   /**
    * Получает пароль из конфигурации
    */
   public getPassword(): string | undefined {
-    return this.data.password;
+    return this.data?.password;
   }
 
   /**
    * Проверяет, включена ли регистрация
    */
   public isRegisterEnabled(): boolean {
-    return this.data.register === true;
+    return this.data?.register === true;
   }
 }

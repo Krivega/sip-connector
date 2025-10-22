@@ -10,6 +10,7 @@ export const SIP_WEB_SOCKET_SERVER_URL = 'SIP_WEB_SOCKET_SERVER_URL';
 const socket = new JsSIP.WebSocketInterface(SIP_WEB_SOCKET_SERVER_URL);
 
 const baseDataForConnection = {
+  displayName: 'DISPLAY_NAME',
   userAgent: 'Chrome',
   sipServerUrl: SIP_SERVER_URL,
   sipWebSocketServerURL: SIP_WEB_SOCKET_SERVER_URL,
@@ -17,6 +18,8 @@ const baseDataForConnection = {
 
 export const dataForConnectionWithoutAuthorizationWithoutDisplayName = {
   ...baseDataForConnection,
+  displayName: 'DISPLAY_NAME',
+  register: false,
 };
 export const dataForConnectionWithAuthorization = {
   ...baseDataForConnection,
@@ -47,7 +50,7 @@ export const uaConfigurationWithAuthorization = {
   ...baseUaConfiguration,
   password: PASSWORD_CORRECT,
   uri: new URI('sip', user, SIP_SERVER_URL),
-  display_name: '',
+  display_name: 'DISPLAY_NAME',
   register: true,
 };
 export const uaConfigurationWithAuthorizationWithDisplayName = {
@@ -64,7 +67,7 @@ export const uaConfigurationWithoutAuthorization = {
 };
 export const uaConfigurationWithoutAuthorizationWithoutDisplayName = {
   ...baseUaConfiguration,
-  display_name: '',
+  display_name: 'DISPLAY_NAME',
   register: false,
 };
 

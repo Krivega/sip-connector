@@ -116,6 +116,20 @@ describe('UAFactory', () => {
       expect(config.configuration.display_name).toBe('');
     });
 
+    it('должен использовать пустую строку как значение по умолчанию для displayName', () => {
+      const config = uaFactory.createConfiguration({
+        sipServerUrl: baseParameters.sipServerUrl,
+        sipWebSocketServerURL: baseParameters.sipWebSocketServerURL,
+        user: baseParameters.user,
+        password: baseParameters.password,
+        register: baseParameters.register,
+        // @ts-expect-error
+        displayName: undefined, // Принудительно передаем undefined для тестирования дефолта
+      });
+
+      expect(config.configuration.display_name).toBe('');
+    });
+
     it('должен обрабатывать userAgent', () => {
       const config = uaFactory.createConfiguration({
         ...baseParameters,
@@ -451,6 +465,7 @@ describe('UAFactory', () => {
 
     it('должен создавать UA без регистрации', () => {
       const parameters = {
+        displayName: 'Any Name',
         sipServerUrl: 'sip.example.com',
         sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
         register: false,

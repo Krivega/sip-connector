@@ -27,7 +27,7 @@ export type TOptionsExtraHeaders = {
 export type TParametersConnection = TOptionsExtraHeaders & {
   sipServerUrl: string;
   sipWebSocketServerURL: string;
-  displayName?: string;
+  displayName: string;
   register?: boolean;
   user?: string;
   password?: string;
@@ -40,8 +40,8 @@ export type TParametersConnection = TOptionsExtraHeaders & {
 };
 
 export type TConnectionConfiguration = {
-  sipServerUrl?: string;
-  displayName?: string;
+  sipServerUrl: string;
+  displayName: string;
   register?: boolean;
   user?: string;
   password?: string;
@@ -66,8 +66,8 @@ interface IDependencies {
   registrationManager: RegistrationManager;
   getUa: () => UA | undefined;
   setUa: (ua: UA | undefined) => void;
-  getConnectionConfiguration: () => TConnectionConfiguration;
-  setConnectionConfiguration: (config: TConnectionConfiguration) => void;
+  getConnectionConfiguration: () => TConnectionConfiguration | undefined;
+  setConnectionConfiguration: (config: TConnectionConfiguration | undefined) => void;
   updateConnectionConfiguration: <K extends keyof TConnectionConfiguration>(
     key: K,
     value: TConnectionConfiguration[K],
@@ -139,7 +139,7 @@ export default class ConnectionFlow {
       let changedDisplayName = false;
       const connectionConfiguration = this.getConnectionConfiguration();
 
-      if (displayName !== undefined && displayName !== connectionConfiguration.displayName) {
+      if (displayName !== undefined && displayName !== connectionConfiguration?.displayName) {
         changedDisplayName = ua.set('display_name', parseDisplayName(displayName));
         this.updateConnectionConfiguration('displayName', displayName);
       }
@@ -251,8 +251,14 @@ export default class ConnectionFlow {
         return this.start();
       })
       .then((ua) => {
+        const connectionConfiguration = this.getConnectionConfiguration();
+
+        if (connectionConfiguration === undefined) {
+          throw new Error('connectionConfiguration has not defined');
+        }
+
         return {
-          ...this.getConnectionConfiguration(),
+          ...connectionConfiguration,
           ua,
         };
       });
@@ -349,7 +355,7 @@ export default class ConnectionFlow {
       ) => {
         const connectionConfig = this.getConnectionConfiguration();
 
-        if (connectionConfig.register === true) {
+        if (connectionConfig?.register === true) {
           return this.registrationManager.subscribeToStartEvents(onSuccess, onError);
         }
 

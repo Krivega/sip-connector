@@ -481,8 +481,12 @@ describe('ConnectionManager', () => {
     });
 
     it('должен вызывать CONNECT_PARAMETERS_RESOLVE_SUCCESS при успешном разрешении параметров (объект)', async () => {
-      const handleParametersResolveSuccess = jest.fn();
-      const handleSucceeded = jest.fn();
+      const handleParametersResolveSuccess = jest.fn(() => {
+        return undefined;
+      });
+      const handleSucceeded = jest.fn(() => {
+        return undefined;
+      });
 
       connectionManager.on('connect-parameters-resolve-success', handleParametersResolveSuccess);
       connectionManager.on('connect-succeeded', handleSucceeded);
@@ -494,8 +498,12 @@ describe('ConnectionManager', () => {
     });
 
     it('должен вызывать CONNECT_PARAMETERS_RESOLVE_SUCCESS при успешном разрешении параметров (функция)', async () => {
-      const handleParametersResolveSuccess = jest.fn();
-      const handleSucceeded = jest.fn();
+      const handleParametersResolveSuccess = jest.fn(() => {
+        return undefined;
+      });
+      const handleSucceeded = jest.fn(() => {
+        return undefined;
+      });
 
       connectionManager.on('connect-parameters-resolve-success', handleParametersResolveSuccess);
       connectionManager.on('connect-succeeded', handleSucceeded);
@@ -546,10 +554,10 @@ describe('ConnectionManager', () => {
   });
 
   describe('configuration methods', () => {
-    it('должен возвращать конфигурацию соединения', () => {
+    it('должен возвращать пустую конфигурацию соединения', () => {
       const config = connectionManager.getConnectionConfiguration();
 
-      expect(config).toBeDefined();
+      expect(config).toBeUndefined();
     });
 
     it('должен проверять конфигурацию', () => {
