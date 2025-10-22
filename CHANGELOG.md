@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [19.5.0](https://github.com/Krivega/sip-connector/compare/v19.4.0...v19.5.0) (2025-10-22)
+
+### Features
+
+- add CONNECT_PARAMETERS_RESOLVE_SUCCESS event and enhance connection handling ([c74c19e](https://github.com/Krivega/sip-connector/commit/c74c19ec432e4067853e16ab963d90a11a3b20e2))
+
 ## [19.4.0](https://github.com/Krivega/sip-connector/compare/v19.3.0...v19.4.0) (2025-10-21)
 
 ### Features
