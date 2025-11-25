@@ -4,11 +4,16 @@ import type { ConnectionQueueManager } from '@/ConnectionQueueManager';
 export interface IAutoConnectorOptions {
   checkTelephonyRequestInterval?: number;
   timeoutBetweenAttempts?: number;
+  networkInterfacesSubscriber?: TNetworkInterfacesSubscriber;
   onBeforeRetry?: () => Promise<void>;
   canRetryOnError?: (error: unknown) => boolean;
 }
 export type ISubscriber<T = void> = {
   subscribe: (callback: (value: T) => void) => void;
+  unsubscribe: () => void;
+};
+export type TNetworkInterfacesSubscriber = {
+  subscribe: (parameters: { onChange: () => void; onRemove: () => void }) => void;
   unsubscribe: () => void;
 };
 
