@@ -15,7 +15,12 @@ import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
 import type { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import type { TEventMap, TEvents } from './eventNames';
-import type { IAutoConnectorOptions, TParametersAutoConnect } from './types';
+import type {
+  IAutoConnectorOptions,
+  TNetworkInterfacesSubscriber,
+  TParametersAutoConnect,
+  TResumeFromSleepModeSubscriber,
+} from './types';
 
 const DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS = 3000;
 const DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL = 15_000;
@@ -49,6 +54,10 @@ class AutoConnectorManager {
 
   private readonly canRetryOnError: (error: unknown) => boolean;
 
+  private readonly networkInterfacesSubscriber: TNetworkInterfacesSubscriber | undefined;
+
+  private readonly resumeFromSleepModeSubscriber: TResumeFromSleepModeSubscriber | undefined;
+
   public constructor(
     {
       connectionQueueManager,
@@ -68,6 +77,8 @@ class AutoConnectorManager {
     this.connectionManager = connectionManager;
     this.onBeforeRetry = onBeforeRetry;
     this.canRetryOnError = canRetryOnError;
+    this.networkInterfacesSubscriber = options?.networkInterfacesSubscriber;
+    this.resumeFromSleepModeSubscriber = options?.resumeFromSleepModeSubscriber;
 
     this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
     this.checkTelephonyRequester = new CheckTelephonyRequester({
@@ -103,12 +114,8 @@ class AutoConnectorManager {
   public stop() {
     logger('auto connector stop');
 
-    this.stopAttempts();
-    this.stopConnectTriggers();
-
-    this.connectionQueueManager.disconnect().catch((error: unknown) => {
-      logger('auto connector disconnect: error', error);
-    });
+    this.unsubscribeFromNetworkInterfaces();
+    this.shutdown();
   }
 
   public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
@@ -134,6 +141,16 @@ class AutoConnectorManager {
     this.events.off(eventName, handler);
   }
 
+  private shutdown() {
+    logger('shutdown');
+
+    this.stopAttempts();
+    this.stopConnectTriggers();
+    this.connectionQueueManager.disconnect().catch((error: unknown) => {
+      logger('auto connector disconnect: error', error);
+    });
+  }
+
   private stopAttempts() {
     if (this.attemptsState.isAttemptInProgress) {
       this.connectionQueueManager.stop();
@@ -147,9 +164,10 @@ class AutoConnectorManager {
   private stopConnectTriggers() {
     logger('stopConnectTriggers');
 
-    this.pingServerIfNotActiveCallRequester.stop();
+    this.stopPingServerIfNotActiveCallRequester();
     this.checkTelephonyRequester.stop();
     this.registrationFailedOutOfCallSubscriber.unsubscribe();
+    this.resumeFromSleepModeSubscriber?.unsubscribe();
   }
 
   private runCheckTelephony(parameters: TParametersAutoConnect) {
@@ -245,16 +263,19 @@ class AutoConnectorManager {
     logger('handleSucceededAttempt');
 
     this.subscribeToConnectTriggers(parameters);
+    this.subscribeToNetworkInterfaces(parameters);
 
     this.events.trigger(EEvent.SUCCESS);
   }
 
   private subscribeToConnectTriggers(parameters: TParametersAutoConnect) {
-    this.pingServerIfNotActiveCallRequester.start({
-      onFailRequest: () => {
-        logger('pingServer onFailRequest');
+    this.startPingServerIfNotActiveCallRequester(parameters);
 
-        this.start(parameters);
+    this.resumeFromSleepModeSubscriber?.subscribe({
+      onResume: () => {
+        logger('resumeFromSleepModeSubscriber onResume');
+
+        this.restartPingServerIfNotActiveCallRequester(parameters);
       },
     });
 
@@ -262,6 +283,46 @@ class AutoConnectorManager {
       logger('registrationFailedOutOfCallListener callback');
 
       this.start(parameters);
+    });
+  }
+
+  private subscribeToNetworkInterfaces(parameters: TParametersAutoConnect) {
+    this.unsubscribeFromNetworkInterfaces();
+
+    this.networkInterfacesSubscriber?.subscribe({
+      onChange: () => {
+        logger('networkInterfacesSubscriber onChange');
+
+        this.restartPingServerIfNotActiveCallRequester(parameters);
+      },
+      onNoAvailableInterfaces: () => {
+        logger('networkInterfacesSubscriber onNoAvailableInterfaces');
+
+        this.shutdown();
+      },
+    });
+  }
+
+  private unsubscribeFromNetworkInterfaces() {
+    this.networkInterfacesSubscriber?.unsubscribe();
+  }
+
+  private restartPingServerIfNotActiveCallRequester(parameters: TParametersAutoConnect) {
+    this.stopPingServerIfNotActiveCallRequester();
+    this.startPingServerIfNotActiveCallRequester(parameters);
+  }
+
+  private stopPingServerIfNotActiveCallRequester() {
+    this.pingServerIfNotActiveCallRequester.stop();
+  }
+
+  private startPingServerIfNotActiveCallRequester(parameters: TParametersAutoConnect) {
+    this.pingServerIfNotActiveCallRequester.start({
+      onFailRequest: () => {
+        logger('pingServer onFailRequest');
+
+        this.start(parameters);
+      },
     });
   }
 

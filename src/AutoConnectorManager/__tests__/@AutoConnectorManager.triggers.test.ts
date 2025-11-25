@@ -5,7 +5,12 @@ import PingServerIfNotActiveCallRequester from '../PingServerIfNotActiveCallRequ
 import RegistrationFailedOutOfCallSubscriber from '../RegistrationFailedOutOfCallSubscriber';
 
 import type { SipConnector } from '@/SipConnector';
-import type { IAutoConnectorOptions, TParametersAutoConnect } from '../types';
+import type {
+  IAutoConnectorOptions,
+  TNetworkInterfacesSubscriber,
+  TParametersAutoConnect,
+  TResumeFromSleepModeSubscriber,
+} from '../types';
 
 jest.mock('@/logger', () => {
   return jest.fn();
@@ -40,6 +45,34 @@ describe('AutoConnectorManager - Triggers', () => {
     );
   };
 
+  let emitChangeNetworkInterfacesMock: (() => void) | undefined;
+  let emitNoAvailableInterfacesMock: (() => void) | undefined;
+
+  const networkInterfacesSubscriberMock: TNetworkInterfacesSubscriber = {
+    subscribe: jest.fn(
+      ({
+        onChange,
+        onNoAvailableInterfaces,
+      }: {
+        onChange: () => void;
+        onNoAvailableInterfaces: () => void;
+      }) => {
+        emitChangeNetworkInterfacesMock = onChange;
+        emitNoAvailableInterfacesMock = onNoAvailableInterfaces;
+      },
+    ),
+    unsubscribe: jest.fn(),
+  };
+
+  let emitResumeMock: (() => void) | undefined;
+
+  const resumeFromSleepModeSubscriberMock: TResumeFromSleepModeSubscriber = {
+    subscribe: jest.fn(({ onResume }: { onResume: () => void }) => {
+      emitResumeMock = onResume;
+    }),
+    unsubscribe: jest.fn(),
+  };
+
   beforeEach(() => {
     sipConnector = doMockSipConnector();
     onBeforeRetryMock = jest.fn().mockResolvedValue(undefined);
@@ -51,6 +84,8 @@ describe('AutoConnectorManager - Triggers', () => {
     manager = createManager({
       onBeforeRetry: onBeforeRetryMock,
       timeoutBetweenAttempts: 100,
+      networkInterfacesSubscriber: networkInterfacesSubscriberMock,
+      resumeFromSleepModeSubscriber: resumeFromSleepModeSubscriberMock,
     });
   });
 
@@ -76,6 +111,131 @@ describe('AutoConnectorManager - Triggers', () => {
       expect(pingServerIfNotActiveCallStartSpy).toHaveBeenCalledWith({
         onFailRequest: expect.any(Function) as () => void,
       });
+    });
+
+    it('подписывается на resumeFromSleepModeSubscriber после успешного подключения', async () => {
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      expect(resumeFromSleepModeSubscriberMock.subscribe).toHaveBeenCalledWith({
+        onResume: expect.any(Function) as () => void,
+      });
+    });
+
+    it('отписывается от resumeFromSleepModeSubscriber после остановки подключения', async () => {
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      jest.clearAllMocks();
+
+      manager.stop();
+
+      expect(resumeFromSleepModeSubscriberMock.unsubscribe).toHaveBeenCalledTimes(1);
+    });
+
+    it('перезапускает ping server requester при resumeFromSleepModeSubscriber onResume', async () => {
+      const pingServerIfNotActiveCallStartSpy = jest.spyOn(
+        PingServerIfNotActiveCallRequester.prototype,
+        'start',
+      );
+      const pingServerIfNotActiveCallStopSpy = jest.spyOn(
+        PingServerIfNotActiveCallRequester.prototype,
+        'stop',
+      );
+
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      jest.clearAllMocks();
+
+      emitResumeMock?.();
+
+      expect(pingServerIfNotActiveCallStopSpy).toHaveBeenCalledTimes(1);
+      expect(pingServerIfNotActiveCallStartSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('подписывается на networkInterfacesSubscriber после успешного подключения', async () => {
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      expect(networkInterfacesSubscriberMock.subscribe).toHaveBeenCalledWith({
+        onChange: expect.any(Function) as () => void,
+        onNoAvailableInterfaces: expect.any(Function) as () => void,
+      });
+    });
+
+    it('отписывается от networkInterfacesSubscriber после остановки подключения', async () => {
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      jest.clearAllMocks();
+
+      manager.stop();
+
+      expect(networkInterfacesSubscriberMock.unsubscribe).toHaveBeenCalledTimes(1);
+    });
+
+    it('перезапускает ping server requester после смены сетевого интерфейса', async () => {
+      const pingServerIfNotActiveCallStartSpy = jest.spyOn(
+        PingServerIfNotActiveCallRequester.prototype,
+        'start',
+      );
+      const pingServerIfNotActiveCallStopSpy = jest.spyOn(
+        PingServerIfNotActiveCallRequester.prototype,
+        'stop',
+      );
+
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      jest.clearAllMocks();
+
+      emitChangeNetworkInterfacesMock?.();
+
+      expect(pingServerIfNotActiveCallStopSpy).toHaveBeenCalledTimes(1);
+      expect(pingServerIfNotActiveCallStartSpy).toHaveBeenCalledWith({
+        onFailRequest: expect.any(Function) as () => void,
+      });
+    });
+
+    it('вызывает shutdown после удаления всех сетевых интерфейсов', async () => {
+      // @ts-expect-error - приватный метод
+      const shutdownSpy = jest.spyOn(AutoConnectorManager.prototype, 'shutdown');
+
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      jest.clearAllMocks();
+
+      emitNoAvailableInterfacesMock?.();
+
+      expect(shutdownSpy).toHaveBeenCalled();
+    });
+
+    it('перезапускает ping server requester после удаления всех сетевых интерфейсов и восстановления нового сетевого интерфейса', async () => {
+      const pingServerIfNotActiveCallStartSpy = jest.spyOn(
+        PingServerIfNotActiveCallRequester.prototype,
+        'start',
+      );
+
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      emitNoAvailableInterfacesMock?.();
+
+      jest.clearAllMocks();
+
+      emitChangeNetworkInterfacesMock?.();
+
+      expect(pingServerIfNotActiveCallStartSpy).toHaveBeenCalled();
     });
 
     it('подписывается на registration failed out of call после подключения', async () => {
