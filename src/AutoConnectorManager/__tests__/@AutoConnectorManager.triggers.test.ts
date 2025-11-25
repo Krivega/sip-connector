@@ -9,6 +9,7 @@ import type {
   IAutoConnectorOptions,
   TNetworkInterfacesSubscriber,
   TParametersAutoConnect,
+  TSuspendSubscriber,
 } from '../types';
 
 jest.mock('@/logger', () => {
@@ -55,6 +56,19 @@ describe('AutoConnectorManager - Triggers', () => {
     unsubscribe: jest.fn(),
   };
 
+  let emitSuspendMock: (() => void) | undefined;
+  let emitResumeMock: (() => void) | undefined;
+
+  const suspendSubscriberMock: TSuspendSubscriber = {
+    subscribe: jest.fn(
+      ({ onSuspend, onResume }: { onSuspend: () => void; onResume: () => void }) => {
+        emitSuspendMock = onSuspend;
+        emitResumeMock = onResume;
+      },
+    ),
+    unsubscribe: jest.fn(),
+  };
+
   beforeEach(() => {
     sipConnector = doMockSipConnector();
     onBeforeRetryMock = jest.fn().mockResolvedValue(undefined);
@@ -67,6 +81,7 @@ describe('AutoConnectorManager - Triggers', () => {
       onBeforeRetry: onBeforeRetryMock,
       timeoutBetweenAttempts: 100,
       networkInterfacesSubscriber: networkInterfacesSubscriberMock,
+      suspendSubscriber: suspendSubscriberMock,
     });
   });
 
@@ -92,6 +107,59 @@ describe('AutoConnectorManager - Triggers', () => {
       expect(pingServerIfNotActiveCallStartSpy).toHaveBeenCalledWith({
         onFailRequest: expect.any(Function) as () => void,
       });
+    });
+
+    it('подписывается на suspendSubscriber после успешного подключения', async () => {
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      expect(suspendSubscriberMock.subscribe).toHaveBeenCalledWith({
+        onSuspend: expect.any(Function) as () => void,
+        onResume: expect.any(Function) as () => void,
+      });
+    });
+
+    it('отписывается от suspendSubscriber после остановки подключения', async () => {
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      expect(suspendSubscriberMock.unsubscribe).toHaveBeenCalledTimes(1);
+    });
+
+    it('останавливает ping server requester при suspendSubscriber onSuspend', async () => {
+      const pingServerIfNotActiveCallStopSpy = jest.spyOn(
+        PingServerIfNotActiveCallRequester.prototype,
+        'stop',
+      );
+
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      jest.clearAllMocks();
+
+      emitSuspendMock?.();
+
+      expect(pingServerIfNotActiveCallStopSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('запускает ping server requester при suspendSubscriber onResume', async () => {
+      const pingServerIfNotActiveCallStartSpy = jest.spyOn(
+        PingServerIfNotActiveCallRequester.prototype,
+        'start',
+      );
+
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      jest.clearAllMocks();
+
+      emitResumeMock?.();
+
+      expect(pingServerIfNotActiveCallStartSpy).toHaveBeenCalledTimes(1);
     });
 
     it('подписывается на networkInterfacesSubscriber после успешного подключения', async () => {
