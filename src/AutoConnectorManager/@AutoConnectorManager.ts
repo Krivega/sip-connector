@@ -19,7 +19,7 @@ import type {
   IAutoConnectorOptions,
   TNetworkInterfacesSubscriber,
   TParametersAutoConnect,
-  TResumeSubscriber,
+  TResumeFromSleepModeSubscriber,
 } from './types';
 
 const DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS = 3000;
@@ -56,7 +56,7 @@ class AutoConnectorManager {
 
   private readonly networkInterfacesSubscriber: TNetworkInterfacesSubscriber | undefined;
 
-  private readonly resumeSubscriber: TResumeSubscriber | undefined;
+  private readonly resumeFromSleepModeSubscriber: TResumeFromSleepModeSubscriber | undefined;
 
   public constructor(
     {
@@ -78,7 +78,7 @@ class AutoConnectorManager {
     this.onBeforeRetry = onBeforeRetry;
     this.canRetryOnError = canRetryOnError;
     this.networkInterfacesSubscriber = options?.networkInterfacesSubscriber;
-    this.resumeSubscriber = options?.resumeSubscriber;
+    this.resumeFromSleepModeSubscriber = options?.resumeFromSleepModeSubscriber;
 
     this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
     this.checkTelephonyRequester = new CheckTelephonyRequester({
@@ -167,7 +167,7 @@ class AutoConnectorManager {
     this.stopPingServerIfNotActiveCallRequester();
     this.checkTelephonyRequester.stop();
     this.registrationFailedOutOfCallSubscriber.unsubscribe();
-    this.resumeSubscriber?.unsubscribe();
+    this.resumeFromSleepModeSubscriber?.unsubscribe();
   }
 
   private runCheckTelephony(parameters: TParametersAutoConnect) {
@@ -271,9 +271,9 @@ class AutoConnectorManager {
   private subscribeToConnectTriggers(parameters: TParametersAutoConnect) {
     this.startPingServerIfNotActiveCallRequester(parameters);
 
-    this.resumeSubscriber?.subscribe({
+    this.resumeFromSleepModeSubscriber?.subscribe({
       onResume: () => {
-        logger('resumeSubscriber onResume');
+        logger('resumeFromSleepModeSubscriber onResume');
 
         this.restartPingServerIfNotActiveCallRequester(parameters);
       },

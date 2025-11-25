@@ -9,7 +9,7 @@ import type {
   IAutoConnectorOptions,
   TNetworkInterfacesSubscriber,
   TParametersAutoConnect,
-  TResumeSubscriber,
+  TResumeFromSleepModeSubscriber,
 } from '../types';
 
 jest.mock('@/logger', () => {
@@ -66,7 +66,7 @@ describe('AutoConnectorManager - Triggers', () => {
 
   let emitResumeMock: (() => void) | undefined;
 
-  const resumeSubscriberMock: TResumeSubscriber = {
+  const resumeFromSleepModeSubscriberMock: TResumeFromSleepModeSubscriber = {
     subscribe: jest.fn(({ onResume }: { onResume: () => void }) => {
       emitResumeMock = onResume;
     }),
@@ -85,7 +85,7 @@ describe('AutoConnectorManager - Triggers', () => {
       onBeforeRetry: onBeforeRetryMock,
       timeoutBetweenAttempts: 100,
       networkInterfacesSubscriber: networkInterfacesSubscriberMock,
-      resumeSubscriber: resumeSubscriberMock,
+      resumeFromSleepModeSubscriber: resumeFromSleepModeSubscriberMock,
     });
   });
 
@@ -113,17 +113,17 @@ describe('AutoConnectorManager - Triggers', () => {
       });
     });
 
-    it('подписывается на resumeSubscriber после успешного подключения', async () => {
+    it('подписывается на resumeFromSleepModeSubscriber после успешного подключения', async () => {
       manager.start(baseParameters);
 
       await manager.wait('success');
 
-      expect(resumeSubscriberMock.subscribe).toHaveBeenCalledWith({
+      expect(resumeFromSleepModeSubscriberMock.subscribe).toHaveBeenCalledWith({
         onResume: expect.any(Function) as () => void,
       });
     });
 
-    it('отписывается от resumeSubscriber после остановки подключения', async () => {
+    it('отписывается от resumeFromSleepModeSubscriber после остановки подключения', async () => {
       manager.start(baseParameters);
 
       await manager.wait('success');
@@ -132,10 +132,10 @@ describe('AutoConnectorManager - Triggers', () => {
 
       manager.stop();
 
-      expect(resumeSubscriberMock.unsubscribe).toHaveBeenCalledTimes(1);
+      expect(resumeFromSleepModeSubscriberMock.unsubscribe).toHaveBeenCalledTimes(1);
     });
 
-    it('перезапускает ping server requester при resumeSubscriber onResume', async () => {
+    it('перезапускает ping server requester при resumeFromSleepModeSubscriber onResume', async () => {
       const pingServerIfNotActiveCallStartSpy = jest.spyOn(
         PingServerIfNotActiveCallRequester.prototype,
         'start',

@@ -5,7 +5,7 @@ export interface IAutoConnectorOptions {
   checkTelephonyRequestInterval?: number;
   timeoutBetweenAttempts?: number;
   networkInterfacesSubscriber?: TNetworkInterfacesSubscriber;
-  resumeSubscriber?: TResumeSubscriber;
+  resumeFromSleepModeSubscriber?: TResumeFromSleepModeSubscriber;
   onBeforeRetry?: () => Promise<void>;
   canRetryOnError?: (error: unknown) => boolean;
 }
@@ -17,7 +17,7 @@ export type TNetworkInterfacesSubscriber = {
   subscribe: (parameters: { onChange: () => void; onNoAvailableInterfaces: () => void }) => void;
   unsubscribe: () => void;
 };
-export type TResumeSubscriber = {
+export type TResumeFromSleepModeSubscriber = {
   subscribe: ({ onResume }: { onResume: () => void }) => void;
   unsubscribe: () => void;
 };
