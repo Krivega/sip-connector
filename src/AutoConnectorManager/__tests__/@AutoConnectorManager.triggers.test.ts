@@ -5,7 +5,11 @@ import PingServerIfNotActiveCallRequester from '../PingServerIfNotActiveCallRequ
 import RegistrationFailedOutOfCallSubscriber from '../RegistrationFailedOutOfCallSubscriber';
 
 import type { SipConnector } from '@/SipConnector';
-import type { IAutoConnectorOptions, TParametersAutoConnect } from '../types';
+import type {
+  IAutoConnectorOptions,
+  TNetworkInterfacesSubscriber,
+  TParametersAutoConnect,
+} from '../types';
 
 jest.mock('@/logger', () => {
   return jest.fn();
@@ -40,6 +44,17 @@ describe('AutoConnectorManager - Triggers', () => {
     );
   };
 
+  let emitChangeNetworkInterfacesMock: (() => void) | undefined;
+  let emitRemoveNetworkInterfacesMock: (() => void) | undefined;
+
+  const networkInterfacesSubscriberMock: TNetworkInterfacesSubscriber = {
+    subscribe: jest.fn(({ onChange, onRemove }: { onChange: () => void; onRemove: () => void }) => {
+      emitChangeNetworkInterfacesMock = onChange;
+      emitRemoveNetworkInterfacesMock = onRemove;
+    }),
+    unsubscribe: jest.fn(),
+  };
+
   beforeEach(() => {
     sipConnector = doMockSipConnector();
     onBeforeRetryMock = jest.fn().mockResolvedValue(undefined);
@@ -51,6 +66,7 @@ describe('AutoConnectorManager - Triggers', () => {
     manager = createManager({
       onBeforeRetry: onBeforeRetryMock,
       timeoutBetweenAttempts: 100,
+      networkInterfacesSubscriber: networkInterfacesSubscriberMock,
     });
   });
 
@@ -76,6 +92,70 @@ describe('AutoConnectorManager - Triggers', () => {
       expect(pingServerIfNotActiveCallStartSpy).toHaveBeenCalledWith({
         onFailRequest: expect.any(Function) as () => void,
       });
+    });
+
+    it('подписывается на networkInterfacesSubscriber после успешного подключения', async () => {
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      expect(networkInterfacesSubscriberMock.subscribe).toHaveBeenCalledWith({
+        onChange: expect.any(Function) as () => void,
+        onRemove: expect.any(Function) as () => void,
+      });
+    });
+
+    it('отписывается от networkInterfacesSubscriber после остановки подключения', async () => {
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      jest.clearAllMocks();
+
+      manager.stop();
+
+      expect(networkInterfacesSubscriberMock.unsubscribe).toHaveBeenCalledTimes(1);
+    });
+
+    it('перезапускает ping server requester после смены сетевого интерфейса', async () => {
+      const pingServerIfNotActiveCallStartSpy = jest.spyOn(
+        PingServerIfNotActiveCallRequester.prototype,
+        'start',
+      );
+      const pingServerIfNotActiveCallStopSpy = jest.spyOn(
+        PingServerIfNotActiveCallRequester.prototype,
+        'stop',
+      );
+
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      jest.clearAllMocks();
+
+      emitChangeNetworkInterfacesMock?.();
+
+      expect(pingServerIfNotActiveCallStopSpy).toHaveBeenCalledTimes(1);
+      expect(pingServerIfNotActiveCallStartSpy).toHaveBeenCalledWith({
+        onFailRequest: expect.any(Function) as () => void,
+      });
+    });
+
+    it('останавливает ping server requester после смены сетевого интерфейса', async () => {
+      const pingServerIfNotActiveCallStopSpy = jest.spyOn(
+        PingServerIfNotActiveCallRequester.prototype,
+        'stop',
+      );
+
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      jest.clearAllMocks();
+
+      emitRemoveNetworkInterfacesMock?.();
+
+      expect(pingServerIfNotActiveCallStopSpy).toHaveBeenCalled();
     });
 
     it('подписывается на registration failed out of call после подключения', async () => {
