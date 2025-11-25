@@ -46,13 +46,21 @@ describe('AutoConnectorManager - Triggers', () => {
   };
 
   let emitChangeNetworkInterfacesMock: (() => void) | undefined;
-  let emitRemoveNetworkInterfacesMock: (() => void) | undefined;
+  let emitNoAvailableInterfacesMock: (() => void) | undefined;
 
   const networkInterfacesSubscriberMock: TNetworkInterfacesSubscriber = {
-    subscribe: jest.fn(({ onChange, onRemove }: { onChange: () => void; onRemove: () => void }) => {
-      emitChangeNetworkInterfacesMock = onChange;
-      emitRemoveNetworkInterfacesMock = onRemove;
-    }),
+    subscribe: jest.fn(
+      ({
+        onChange,
+        onNoAvailableInterfaces,
+      }: {
+        onChange: () => void;
+        onNoAvailableInterfaces: () => void;
+      }) => {
+        emitChangeNetworkInterfacesMock = onChange;
+        emitNoAvailableInterfacesMock = onNoAvailableInterfaces;
+      },
+    ),
     unsubscribe: jest.fn(),
   };
 
@@ -156,7 +164,7 @@ describe('AutoConnectorManager - Triggers', () => {
 
       expect(networkInterfacesSubscriberMock.subscribe).toHaveBeenCalledWith({
         onChange: expect.any(Function) as () => void,
-        onRemove: expect.any(Function) as () => void,
+        onNoAvailableInterfaces: expect.any(Function) as () => void,
       });
     });
 
@@ -196,11 +204,9 @@ describe('AutoConnectorManager - Triggers', () => {
       });
     });
 
-    it('останавливает ping server requester после смены сетевого интерфейса', async () => {
-      const pingServerIfNotActiveCallStopSpy = jest.spyOn(
-        PingServerIfNotActiveCallRequester.prototype,
-        'stop',
-      );
+    it('вызывает shutdown после удаления всех сетевых интерфейсов', async () => {
+      // @ts-expect-error - приватный метод
+      const shutdownSpy = jest.spyOn(AutoConnectorManager.prototype, 'shutdown');
 
       manager.start(baseParameters);
 
@@ -208,9 +214,28 @@ describe('AutoConnectorManager - Triggers', () => {
 
       jest.clearAllMocks();
 
-      emitRemoveNetworkInterfacesMock?.();
+      emitNoAvailableInterfacesMock?.();
 
-      expect(pingServerIfNotActiveCallStopSpy).toHaveBeenCalled();
+      expect(shutdownSpy).toHaveBeenCalled();
+    });
+
+    it('перезапускает ping server requester после удаления всех сетевых интерфейсов и восстановления нового сетевого интерфейса', async () => {
+      const pingServerIfNotActiveCallStartSpy = jest.spyOn(
+        PingServerIfNotActiveCallRequester.prototype,
+        'start',
+      );
+
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      emitNoAvailableInterfacesMock?.();
+
+      jest.clearAllMocks();
+
+      emitChangeNetworkInterfacesMock?.();
+
+      expect(pingServerIfNotActiveCallStartSpy).toHaveBeenCalled();
     });
 
     it('подписывается на registration failed out of call после подключения', async () => {

@@ -114,12 +114,8 @@ class AutoConnectorManager {
   public stop() {
     logger('auto connector stop');
 
-    this.stopAttempts();
-    this.stopConnectTriggers();
-
-    this.connectionQueueManager.disconnect().catch((error: unknown) => {
-      logger('auto connector disconnect: error', error);
-    });
+    this.unsubscribeFromNetworkInterfaces();
+    this.shutdown();
   }
 
   public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
@@ -145,6 +141,16 @@ class AutoConnectorManager {
     this.events.off(eventName, handler);
   }
 
+  private shutdown() {
+    logger('shutdown');
+
+    this.stopAttempts();
+    this.stopConnectTriggers();
+    this.connectionQueueManager.disconnect().catch((error: unknown) => {
+      logger('auto connector disconnect: error', error);
+    });
+  }
+
   private stopAttempts() {
     if (this.attemptsState.isAttemptInProgress) {
       this.connectionQueueManager.stop();
@@ -161,7 +167,6 @@ class AutoConnectorManager {
     this.stopPingServerIfNotActiveCallRequester();
     this.checkTelephonyRequester.stop();
     this.registrationFailedOutOfCallSubscriber.unsubscribe();
-    this.networkInterfacesSubscriber?.unsubscribe();
     this.resumeSubscriber?.unsubscribe();
   }
 
@@ -258,25 +263,13 @@ class AutoConnectorManager {
     logger('handleSucceededAttempt');
 
     this.subscribeToConnectTriggers(parameters);
+    this.subscribeToNetworkInterfaces(parameters);
 
     this.events.trigger(EEvent.SUCCESS);
   }
 
   private subscribeToConnectTriggers(parameters: TParametersAutoConnect) {
     this.startPingServerIfNotActiveCallRequester(parameters);
-
-    this.networkInterfacesSubscriber?.subscribe({
-      onChange: () => {
-        logger('networkInterfacesSubscriber onChange');
-
-        this.restartPingServerIfNotActiveCallRequester(parameters);
-      },
-      onRemove: () => {
-        logger('networkInterfacesSubscriber onRemove');
-
-        this.stopPingServerIfNotActiveCallRequester();
-      },
-    });
 
     this.resumeSubscriber?.subscribe({
       onResume: () => {
@@ -291,6 +284,27 @@ class AutoConnectorManager {
 
       this.start(parameters);
     });
+  }
+
+  private subscribeToNetworkInterfaces(parameters: TParametersAutoConnect) {
+    this.unsubscribeFromNetworkInterfaces();
+
+    this.networkInterfacesSubscriber?.subscribe({
+      onChange: () => {
+        logger('networkInterfacesSubscriber onChange');
+
+        this.restartPingServerIfNotActiveCallRequester(parameters);
+      },
+      onNoAvailableInterfaces: () => {
+        logger('networkInterfacesSubscriber onNoAvailableInterfaces');
+
+        this.shutdown();
+      },
+    });
+  }
+
+  private unsubscribeFromNetworkInterfaces() {
+    this.networkInterfacesSubscriber?.unsubscribe();
   }
 
   private restartPingServerIfNotActiveCallRequester(parameters: TParametersAutoConnect) {
