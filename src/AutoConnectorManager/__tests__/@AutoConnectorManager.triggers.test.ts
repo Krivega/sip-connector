@@ -125,6 +125,10 @@ describe('AutoConnectorManager - Triggers', () => {
 
       await manager.wait('success');
 
+      jest.clearAllMocks();
+
+      manager.stop();
+
       expect(suspendSubscriberMock.unsubscribe).toHaveBeenCalledTimes(1);
     });
 
