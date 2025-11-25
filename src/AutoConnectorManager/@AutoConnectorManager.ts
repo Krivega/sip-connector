@@ -19,7 +19,7 @@ import type {
   IAutoConnectorOptions,
   TNetworkInterfacesSubscriber,
   TParametersAutoConnect,
-  TSuspendSubscriber,
+  TResumeSubscriber,
 } from './types';
 
 const DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS = 3000;
@@ -56,7 +56,7 @@ class AutoConnectorManager {
 
   private readonly networkInterfacesSubscriber: TNetworkInterfacesSubscriber | undefined;
 
-  private readonly suspendSubscriber: TSuspendSubscriber | undefined;
+  private readonly resumeSubscriber: TResumeSubscriber | undefined;
 
   public constructor(
     {
@@ -78,7 +78,7 @@ class AutoConnectorManager {
     this.onBeforeRetry = onBeforeRetry;
     this.canRetryOnError = canRetryOnError;
     this.networkInterfacesSubscriber = options?.networkInterfacesSubscriber;
-    this.suspendSubscriber = options?.suspendSubscriber;
+    this.resumeSubscriber = options?.resumeSubscriber;
 
     this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
     this.checkTelephonyRequester = new CheckTelephonyRequester({
@@ -162,7 +162,7 @@ class AutoConnectorManager {
     this.checkTelephonyRequester.stop();
     this.registrationFailedOutOfCallSubscriber.unsubscribe();
     this.networkInterfacesSubscriber?.unsubscribe();
-    this.suspendSubscriber?.unsubscribe();
+    this.resumeSubscriber?.unsubscribe();
   }
 
   private runCheckTelephony(parameters: TParametersAutoConnect) {
@@ -269,8 +269,7 @@ class AutoConnectorManager {
       onChange: () => {
         logger('networkInterfacesSubscriber onChange');
 
-        this.stopPingServerIfNotActiveCallRequester();
-        this.startPingServerIfNotActiveCallRequester(parameters);
+        this.restartPingServerIfNotActiveCallRequester(parameters);
       },
       onRemove: () => {
         logger('networkInterfacesSubscriber onRemove');
@@ -279,16 +278,11 @@ class AutoConnectorManager {
       },
     });
 
-    this.suspendSubscriber?.subscribe({
-      onSuspend: () => {
-        logger('suspendSubscriber onSuspend');
-
-        this.stopPingServerIfNotActiveCallRequester();
-      },
+    this.resumeSubscriber?.subscribe({
       onResume: () => {
-        logger('suspendSubscriber onResume');
+        logger('resumeSubscriber onResume');
 
-        this.startPingServerIfNotActiveCallRequester(parameters);
+        this.restartPingServerIfNotActiveCallRequester(parameters);
       },
     });
 
@@ -297,6 +291,11 @@ class AutoConnectorManager {
 
       this.start(parameters);
     });
+  }
+
+  private restartPingServerIfNotActiveCallRequester(parameters: TParametersAutoConnect) {
+    this.stopPingServerIfNotActiveCallRequester();
+    this.startPingServerIfNotActiveCallRequester(parameters);
   }
 
   private stopPingServerIfNotActiveCallRequester() {
