@@ -295,8 +295,8 @@ class AutoConnectorManager {
 
         this.restartPingServerIfNotActiveCallRequester(parameters);
       },
-      onNoAvailableInterfaces: () => {
-        logger('networkInterfacesSubscriber onNoAvailableInterfaces');
+      onUnavailable: () => {
+        logger('networkInterfacesSubscriber onUnavailable');
 
         this.shutdown();
       },

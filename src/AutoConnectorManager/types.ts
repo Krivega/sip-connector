@@ -14,7 +14,7 @@ export type ISubscriber<T = void> = {
   unsubscribe: () => void;
 };
 export type TNetworkInterfacesSubscriber = {
-  subscribe: (parameters: { onChange: () => void; onNoAvailableInterfaces: () => void }) => void;
+  subscribe: (parameters: { onChange: () => void; onUnavailable: () => void }) => void;
   unsubscribe: () => void;
 };
 export type TResumeFromSleepModeSubscriber = {

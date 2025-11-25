@@ -50,15 +50,9 @@ describe('AutoConnectorManager - Triggers', () => {
 
   const networkInterfacesSubscriberMock: TNetworkInterfacesSubscriber = {
     subscribe: jest.fn(
-      ({
-        onChange,
-        onNoAvailableInterfaces,
-      }: {
-        onChange: () => void;
-        onNoAvailableInterfaces: () => void;
-      }) => {
+      ({ onChange, onUnavailable }: { onChange: () => void; onUnavailable: () => void }) => {
         emitChangeNetworkInterfacesMock = onChange;
-        emitNoAvailableInterfacesMock = onNoAvailableInterfaces;
+        emitNoAvailableInterfacesMock = onUnavailable;
       },
     ),
     unsubscribe: jest.fn(),
@@ -164,7 +158,7 @@ describe('AutoConnectorManager - Triggers', () => {
 
       expect(networkInterfacesSubscriberMock.subscribe).toHaveBeenCalledWith({
         onChange: expect.any(Function) as () => void,
-        onNoAvailableInterfaces: expect.any(Function) as () => void,
+        onUnavailable: expect.any(Function) as () => void,
       });
     });
 
