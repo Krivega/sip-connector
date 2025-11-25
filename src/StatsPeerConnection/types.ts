@@ -69,34 +69,6 @@ export type TOutboundRtp = RTCOutboundRtpStreamStats & {
   trackId?: string;
 };
 
-export type TTransport = RTCTransportStats & {
-  dtlsRole?: string;
-  iceLocalUsernameFragment?: string;
-  iceRole?: string;
-  iceState?: string;
-  packetsSent?: number;
-  remoteCertificateId?: string;
-  selectedCandidatePairChanges?: number;
-};
-
-export type TInboundRtp = RTCInboundRtpStreamStats & {
-  audioLevel?: number;
-  bytesReceived?: number;
-  decoderImplementation?: string;
-  framesDropped?: number;
-  framesReceived?: number;
-  headerBytesReceived?: number;
-  jitterBufferDelay?: number;
-  jitterBufferEmittedCount?: number;
-  keyFramesDecoded?: number;
-  fecPacketsDiscarded?: number;
-  fecPacketsReceived?: number;
-  jitterBufferMinimumDelay?: number;
-  jitterBufferTargetDelay?: number;
-  lastPacketReceivedTimestamp?: number;
-  totalSamplesReceived?: number;
-};
-
 export type TMediaSource = {
   audioLevel?: number;
   frames?: number;
@@ -159,17 +131,17 @@ export type TAdditional = {
   certificate?: TCertificate;
   localCandidate?: TCandidate;
   remoteCandidate?: TCandidate;
-  transport?: TTransport;
+  transport?: RTCTransportStats;
 };
 
 export type TInboundVideo = {
-  inboundRtp?: TInboundRtp;
+  inboundRtp?: RTCInboundRtpStreamStats;
   codec?: RTCRtpCodecParameters;
   synchronizationSources?: TMedia;
 };
 
 export type TInboundAudio = {
-  inboundRtp?: TInboundRtp;
+  inboundRtp?: RTCInboundRtpStreamStats;
   codec?: RTCRtpCodecParameters;
   remoteOutboundRtp?: TRemoteOutboundRtp;
   synchronizationSources?: TMedia;
@@ -194,7 +166,7 @@ export type TAudioStatistics = {
   [EStatsTypes.CODEC]?: RTCRtpCodecParameters;
   [EStatsTypes.MEDIA_SOURCE]?: TMediaSource;
   [EStatsTypes.REMOTE_INBOUND_RTP]?: TRemoteInboundRtp;
-  [EStatsTypes.INBOUND_RTP]?: TInboundRtp;
+  [EStatsTypes.INBOUND_RTP]?: RTCInboundRtpStreamStats;
   [EStatsTypes.REMOTE_OUTBOUND_RTP]?: TRemoteOutboundRtp;
 };
 
@@ -203,7 +175,7 @@ export type TVideoStatistics = {
   [EStatsTypes.CODEC]?: RTCRtpCodecParameters;
   [EStatsTypes.MEDIA_SOURCE]?: TMediaSource;
   [EStatsTypes.REMOTE_INBOUND_RTP]?: TRemoteInboundRtp;
-  [EStatsTypes.INBOUND_RTP]?: TInboundRtp;
+  [EStatsTypes.INBOUND_RTP]?: RTCInboundRtpStreamStats;
 };
 
 export type TParsedStatistics = {
@@ -211,5 +183,5 @@ export type TParsedStatistics = {
   [EStatsTypes.CERTIFICATE]?: TCertificate;
   [EStatsTypes.LOCAL_CANDIDATE]?: TCandidate;
   [EStatsTypes.REMOTE_CANDIDATE]?: TCandidate;
-  [EStatsTypes.TRANSPORT]?: TTransport;
+  [EStatsTypes.TRANSPORT]?: RTCTransportStats;
 };

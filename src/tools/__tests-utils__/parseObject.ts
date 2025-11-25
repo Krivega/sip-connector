@@ -6,7 +6,7 @@ const parseObject = <T = unknown>(object: T): T => {
 const removeUri = <T extends { uri?: string | undefined }>({
   uri,
   ...object
-}: T & { uri?: string }): Omit<T & { uri?: string | undefined }, 'uri'> => {
+}: T): Omit<T, 'uri'> => {
   return object;
 };
 
