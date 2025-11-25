@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [19.7.0](https://github.com/Krivega/sip-connector/compare/v19.6.0...v19.7.0) (2025-11-25)
+
+### Features
+
+- control ping server with network interfaces and puspend events ([#53](https://github.com/Krivega/sip-connector/issues/53)) ([515f0cc](https://github.com/Krivega/sip-connector/commit/515f0cc97e7df639c852889f23b975e09acfcc71))
+
 ## [19.6.0](https://github.com/Krivega/sip-connector/compare/v19.5.0...v19.6.0) (2025-10-22)
 
 ### Features
