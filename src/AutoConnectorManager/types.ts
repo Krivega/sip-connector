@@ -5,6 +5,7 @@ export interface IAutoConnectorOptions {
   checkTelephonyRequestInterval?: number;
   timeoutBetweenAttempts?: number;
   networkInterfacesSubscriber?: TNetworkInterfacesSubscriber;
+  suspendSubscriber?: TSuspendSubscriber;
   onBeforeRetry?: () => Promise<void>;
   canRetryOnError?: (error: unknown) => boolean;
 }
@@ -14,6 +15,10 @@ export type ISubscriber<T = void> = {
 };
 export type TNetworkInterfacesSubscriber = {
   subscribe: (parameters: { onChange: () => void; onRemove: () => void }) => void;
+  unsubscribe: () => void;
+};
+export type TSuspendSubscriber = {
+  subscribe: ({ onSuspend, onResume }: { onSuspend: () => void; onResume: () => void }) => void;
   unsubscribe: () => void;
 };
 
