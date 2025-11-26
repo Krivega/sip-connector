@@ -275,7 +275,7 @@ class AutoConnectorManager {
       onResume: () => {
         logger('resumeFromSleepModeSubscriber onResume');
 
-        this.restartPingServerIfNotActiveCallRequester(parameters);
+        this.start(parameters);
       },
     });
 
@@ -293,7 +293,7 @@ class AutoConnectorManager {
       onChange: () => {
         logger('networkInterfacesSubscriber onChange');
 
-        this.restartPingServerIfNotActiveCallRequester(parameters);
+        this.start(parameters);
       },
       onUnavailable: () => {
         logger('networkInterfacesSubscriber onUnavailable');
@@ -305,11 +305,6 @@ class AutoConnectorManager {
 
   private unsubscribeFromNetworkInterfaces() {
     this.networkInterfacesSubscriber?.unsubscribe();
-  }
-
-  private restartPingServerIfNotActiveCallRequester(parameters: TParametersAutoConnect) {
-    this.stopPingServerIfNotActiveCallRequester();
-    this.startPingServerIfNotActiveCallRequester(parameters);
   }
 
   private stopPingServerIfNotActiveCallRequester() {
