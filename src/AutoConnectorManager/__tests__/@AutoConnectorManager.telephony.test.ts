@@ -186,7 +186,8 @@ describe('AutoConnectorManager - Telephony', () => {
 
       await manager.wait('limit-reached-attempts');
 
-      const startSpy = jest.spyOn(manager, 'start');
+      // @ts-expect-error
+      const activateSpy = jest.spyOn(manager, 'activate');
 
       expect(disconnectSpy).toHaveBeenCalled();
       expect(sipConnector.connectionManager.isFailed).toBe(false);
@@ -195,7 +196,7 @@ describe('AutoConnectorManager - Telephony', () => {
 
       await manager.wait('before-attempt');
 
-      expect(startSpy).toHaveBeenCalledTimes(1);
+      expect(activateSpy).toHaveBeenCalledTimes(1);
     });
 
     describe('onBeforeRequest', () => {

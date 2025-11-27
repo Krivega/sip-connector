@@ -95,11 +95,12 @@ describe('AutoConnectorManager - Basic', () => {
     });
 
     it('start: сбрасывает состояния перед подключением', () => {
-      const stopSpy = jest.spyOn(manager, 'stop');
+      // @ts-expect-error
+      const shutdownSpy = jest.spyOn(manager, 'shutdown');
 
       manager.start(baseParameters);
 
-      expect(stopSpy).toHaveBeenCalled();
+      expect(shutdownSpy).toHaveBeenCalled();
     });
 
     it('start: не должна всплывать ошибка, если connect завершился с ошибкой', async () => {
