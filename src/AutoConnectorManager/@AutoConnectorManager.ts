@@ -105,16 +105,14 @@ class AutoConnectorManager {
   public start(parameters: TParametersAutoConnect) {
     logger('auto connector start');
 
-    this.stop();
-    this.connect(parameters).catch((error: unknown) => {
-      logger('auto connector failed to connect:', error);
-    });
+    this.activate(parameters);
+    this.subscribeToHardwareTriggers(parameters);
   }
 
   public stop() {
     logger('auto connector stop');
 
-    this.unsubscribeFromNetworkInterfaces();
+    this.unsubscribeFromHardwareTriggers();
     this.shutdown();
   }
 
@@ -139,6 +137,15 @@ class AutoConnectorManager {
 
   public off<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
     this.events.off(eventName, handler);
+  }
+
+  private activate(parameters: TParametersAutoConnect) {
+    logger('auto connector activate');
+
+    this.shutdown();
+    this.connect(parameters).catch((error: unknown) => {
+      logger('auto connector failed to connect:', error);
+    });
   }
 
   private shutdown() {
@@ -167,7 +174,6 @@ class AutoConnectorManager {
     this.stopPingServerIfNotActiveCallRequester();
     this.checkTelephonyRequester.stop();
     this.registrationFailedOutOfCallSubscriber.unsubscribe();
-    this.resumeFromSleepModeSubscriber?.unsubscribe();
   }
 
   private runCheckTelephony(parameters: TParametersAutoConnect) {
@@ -263,7 +269,6 @@ class AutoConnectorManager {
     logger('handleSucceededAttempt');
 
     this.subscribeToConnectTriggers(parameters);
-    this.subscribeToNetworkInterfaces(parameters);
 
     this.events.trigger(EEvent.SUCCESS);
   }
@@ -271,29 +276,23 @@ class AutoConnectorManager {
   private subscribeToConnectTriggers(parameters: TParametersAutoConnect) {
     this.startPingServerIfNotActiveCallRequester(parameters);
 
-    this.resumeFromSleepModeSubscriber?.subscribe({
-      onResume: () => {
-        logger('resumeFromSleepModeSubscriber onResume');
-
-        this.restartPingServerIfNotActiveCallRequester(parameters);
-      },
-    });
-
     this.registrationFailedOutOfCallSubscriber.subscribe(() => {
       logger('registrationFailedOutOfCallListener callback');
 
-      this.start(parameters);
+      this.activate(parameters);
     });
   }
 
-  private subscribeToNetworkInterfaces(parameters: TParametersAutoConnect) {
-    this.unsubscribeFromNetworkInterfaces();
+  private subscribeToHardwareTriggers(parameters: TParametersAutoConnect) {
+    this.unsubscribeFromHardwareTriggers();
+
+    logger('subscribeToHardwareTriggers');
 
     this.networkInterfacesSubscriber?.subscribe({
       onChange: () => {
         logger('networkInterfacesSubscriber onChange');
 
-        this.restartPingServerIfNotActiveCallRequester(parameters);
+        this.activate(parameters);
       },
       onUnavailable: () => {
         logger('networkInterfacesSubscriber onUnavailable');
@@ -301,15 +300,21 @@ class AutoConnectorManager {
         this.shutdown();
       },
     });
+
+    this.resumeFromSleepModeSubscriber?.subscribe({
+      onResume: () => {
+        logger('resumeFromSleepModeSubscriber onResume');
+
+        this.activate(parameters);
+      },
+    });
   }
 
-  private unsubscribeFromNetworkInterfaces() {
+  private unsubscribeFromHardwareTriggers() {
+    logger('unsubscribeFromHardwareTriggers');
+
     this.networkInterfacesSubscriber?.unsubscribe();
-  }
-
-  private restartPingServerIfNotActiveCallRequester(parameters: TParametersAutoConnect) {
-    this.stopPingServerIfNotActiveCallRequester();
-    this.startPingServerIfNotActiveCallRequester(parameters);
+    this.resumeFromSleepModeSubscriber?.unsubscribe();
   }
 
   private stopPingServerIfNotActiveCallRequester() {
@@ -321,7 +326,7 @@ class AutoConnectorManager {
       onFailRequest: () => {
         logger('pingServer onFailRequest');
 
-        this.start(parameters);
+        this.activate(parameters);
       },
     });
   }
@@ -332,7 +337,7 @@ class AutoConnectorManager {
     logger('connectIfDisconnected: isFailedOrDisconnected', isFailedOrDisconnected);
 
     if (isFailedOrDisconnected) {
-      this.start(parameters);
+      this.activate(parameters);
     } else {
       this.stopConnectTriggers();
       this.events.trigger(EEvent.SUCCESS);

@@ -46,13 +46,13 @@ describe('AutoConnectorManager - Triggers', () => {
   };
 
   let emitChangeNetworkInterfacesMock: (() => void) | undefined;
-  let emitNoAvailableInterfacesMock: (() => void) | undefined;
+  let emitUnavailableInterfacesMock: (() => void) | undefined;
 
   const networkInterfacesSubscriberMock: TNetworkInterfacesSubscriber = {
     subscribe: jest.fn(
       ({ onChange, onUnavailable }: { onChange: () => void; onUnavailable: () => void }) => {
         emitChangeNetworkInterfacesMock = onChange;
-        emitNoAvailableInterfacesMock = onUnavailable;
+        emitUnavailableInterfacesMock = onUnavailable;
       },
     ),
     unsubscribe: jest.fn(),
@@ -129,15 +129,9 @@ describe('AutoConnectorManager - Triggers', () => {
       expect(resumeFromSleepModeSubscriberMock.unsubscribe).toHaveBeenCalledTimes(1);
     });
 
-    it('перезапускает ping server requester при resumeFromSleepModeSubscriber onResume', async () => {
-      const pingServerIfNotActiveCallStartSpy = jest.spyOn(
-        PingServerIfNotActiveCallRequester.prototype,
-        'start',
-      );
-      const pingServerIfNotActiveCallStopSpy = jest.spyOn(
-        PingServerIfNotActiveCallRequester.prototype,
-        'stop',
-      );
+    it('перезапускает auto connector manager при resumeFromSleepModeSubscriber onResume', async () => {
+      // @ts-expect-error - доступ к приватному методу
+      const activateAutoConnectorManager = jest.spyOn(manager, 'activate');
 
       manager.start(baseParameters);
 
@@ -147,8 +141,32 @@ describe('AutoConnectorManager - Triggers', () => {
 
       emitResumeMock?.();
 
-      expect(pingServerIfNotActiveCallStopSpy).toHaveBeenCalledTimes(1);
-      expect(pingServerIfNotActiveCallStartSpy).toHaveBeenCalledTimes(1);
+      expect(activateAutoConnectorManager).toHaveBeenCalledTimes(1);
+    });
+
+    it('не отписывается от resumeFromSleepModeSubscriber при перезапуске auto connector manager', async () => {
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      jest.clearAllMocks();
+
+      emitResumeMock?.();
+
+      expect(resumeFromSleepModeSubscriberMock.unsubscribe).toHaveBeenCalledTimes(0);
+    });
+
+    it('перезапускает auto connector manager при resumeFromSleepModeSubscriber onResume до наступления success', async () => {
+      // @ts-expect-error - доступ к приватному методу
+      const activateAutoConnectorManager = jest.spyOn(manager, 'activate');
+
+      manager.start(baseParameters);
+
+      expect(activateAutoConnectorManager).toHaveBeenCalledTimes(1);
+
+      emitResumeMock?.();
+
+      expect(activateAutoConnectorManager).toHaveBeenCalledTimes(2);
     });
 
     it('подписывается на networkInterfacesSubscriber после успешного подключения', async () => {
@@ -174,15 +192,9 @@ describe('AutoConnectorManager - Triggers', () => {
       expect(networkInterfacesSubscriberMock.unsubscribe).toHaveBeenCalledTimes(1);
     });
 
-    it('перезапускает ping server requester после смены сетевого интерфейса', async () => {
-      const pingServerIfNotActiveCallStartSpy = jest.spyOn(
-        PingServerIfNotActiveCallRequester.prototype,
-        'start',
-      );
-      const pingServerIfNotActiveCallStopSpy = jest.spyOn(
-        PingServerIfNotActiveCallRequester.prototype,
-        'stop',
-      );
+    it('перезапускает auto connector manager после смены сетевого интерфейса', async () => {
+      // @ts-expect-error - доступ к приватному методу
+      const activateAutoConnectorManager = jest.spyOn(manager, 'activate');
 
       manager.start(baseParameters);
 
@@ -192,10 +204,7 @@ describe('AutoConnectorManager - Triggers', () => {
 
       emitChangeNetworkInterfacesMock?.();
 
-      expect(pingServerIfNotActiveCallStopSpy).toHaveBeenCalledTimes(1);
-      expect(pingServerIfNotActiveCallStartSpy).toHaveBeenCalledWith({
-        onFailRequest: expect.any(Function) as () => void,
-      });
+      expect(activateAutoConnectorManager).toHaveBeenCalledTimes(1);
     });
 
     it('вызывает shutdown после удаления всех сетевых интерфейсов', async () => {
@@ -208,28 +217,68 @@ describe('AutoConnectorManager - Triggers', () => {
 
       jest.clearAllMocks();
 
-      emitNoAvailableInterfacesMock?.();
+      emitUnavailableInterfacesMock?.();
 
       expect(shutdownSpy).toHaveBeenCalled();
     });
 
-    it('перезапускает ping server requester после удаления всех сетевых интерфейсов и восстановления нового сетевого интерфейса', async () => {
-      const pingServerIfNotActiveCallStartSpy = jest.spyOn(
-        PingServerIfNotActiveCallRequester.prototype,
-        'start',
-      );
+    it('перезапускает auto connector manager после удаления всех сетевых интерфейсов и восстановления нового сетевого интерфейса', async () => {
+      // @ts-expect-error - доступ к приватному методу
+      const activateAutoConnectorManager = jest.spyOn(manager, 'activate');
 
       manager.start(baseParameters);
 
       await manager.wait('success');
 
-      emitNoAvailableInterfacesMock?.();
+      emitUnavailableInterfacesMock?.();
 
       jest.clearAllMocks();
 
       emitChangeNetworkInterfacesMock?.();
 
-      expect(pingServerIfNotActiveCallStartSpy).toHaveBeenCalled();
+      expect(activateAutoConnectorManager).toHaveBeenCalled();
+    });
+
+    it('не отписывается от networkInterfacesSubscriber при перезапуске auto connector manager', async () => {
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      jest.clearAllMocks();
+
+      emitChangeNetworkInterfacesMock?.();
+
+      expect(networkInterfacesSubscriberMock.unsubscribe).toHaveBeenCalledTimes(0);
+    });
+
+    it('перезапускает auto connector manager при networkInterfacesSubscriber onChange до наступления success', async () => {
+      // @ts-expect-error - доступ к приватному методу
+      const activateAutoConnectorManager = jest.spyOn(manager, 'activate');
+
+      manager.start(baseParameters);
+
+      expect(activateAutoConnectorManager).toHaveBeenCalledTimes(1);
+
+      emitChangeNetworkInterfacesMock?.();
+
+      expect(activateAutoConnectorManager).toHaveBeenCalledTimes(2);
+    });
+
+    it('останавливает auto connector manager при networkInterfacesSubscriber onUnavailable до наступления success', async () => {
+      // @ts-expect-error - доступ к приватному методу
+      const activateAutoConnectorManager = jest.spyOn(manager, 'activate');
+      // @ts-expect-error - доступ к приватному методу
+      const shutdownAutoConnectorManager = jest.spyOn(manager, 'shutdown');
+
+      manager.start(baseParameters);
+
+      expect(activateAutoConnectorManager).toHaveBeenCalledTimes(1);
+      expect(shutdownAutoConnectorManager).toHaveBeenCalledTimes(1);
+
+      emitUnavailableInterfacesMock?.();
+
+      expect(activateAutoConnectorManager).toHaveBeenCalledTimes(1);
+      expect(shutdownAutoConnectorManager).toHaveBeenCalledTimes(2);
     });
 
     it('подписывается на registration failed out of call после подключения', async () => {
