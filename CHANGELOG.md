@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.7.1](https://github.com/Krivega/sip-connector/compare/v19.7.0...v19.7.1) (2025-11-27)
+
+### Bug Fixes
+
+- restart auto connector when changed network interface or resumed from sleep mode ([#54](https://github.com/Krivega/sip-connector/issues/54)) ([650fbc9](https://github.com/Krivega/sip-connector/commit/650fbc9ddd78adcb4c4597abb991c8328a2ffd1a))
+
 ## [19.7.0](https://github.com/Krivega/sip-connector/compare/v19.6.0...v19.7.0) (2025-11-25)
 
 ### Features
