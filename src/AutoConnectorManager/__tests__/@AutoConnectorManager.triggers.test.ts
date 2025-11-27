@@ -131,7 +131,7 @@ describe('AutoConnectorManager - Triggers', () => {
 
     it('перезапускает auto connector manager при resumeFromSleepModeSubscriber onResume', async () => {
       // @ts-expect-error - доступ к приватному методу
-      const activateAutoConnectorManager = jest.spyOn(manager, 'activate');
+      const activateAutoConnectorManager = jest.spyOn(manager, 'restartConnectionAttempts');
 
       manager.start(baseParameters);
 
@@ -158,7 +158,7 @@ describe('AutoConnectorManager - Triggers', () => {
 
     it('перезапускает auto connector manager при resumeFromSleepModeSubscriber onResume до наступления success', async () => {
       // @ts-expect-error - доступ к приватному методу
-      const activateAutoConnectorManager = jest.spyOn(manager, 'activate');
+      const activateAutoConnectorManager = jest.spyOn(manager, 'restartConnectionAttempts');
 
       manager.start(baseParameters);
 
@@ -194,7 +194,7 @@ describe('AutoConnectorManager - Triggers', () => {
 
     it('перезапускает auto connector manager после смены сетевого интерфейса', async () => {
       // @ts-expect-error - доступ к приватному методу
-      const activateAutoConnectorManager = jest.spyOn(manager, 'activate');
+      const activateAutoConnectorManager = jest.spyOn(manager, 'restartConnectionAttempts');
 
       manager.start(baseParameters);
 
@@ -224,7 +224,7 @@ describe('AutoConnectorManager - Triggers', () => {
 
     it('перезапускает auto connector manager после удаления всех сетевых интерфейсов и восстановления нового сетевого интерфейса', async () => {
       // @ts-expect-error - доступ к приватному методу
-      const activateAutoConnectorManager = jest.spyOn(manager, 'activate');
+      const activateAutoConnectorManager = jest.spyOn(manager, 'restartConnectionAttempts');
 
       manager.start(baseParameters);
 
@@ -253,7 +253,7 @@ describe('AutoConnectorManager - Triggers', () => {
 
     it('перезапускает auto connector manager при networkInterfacesSubscriber onChange до наступления success', async () => {
       // @ts-expect-error - доступ к приватному методу
-      const activateAutoConnectorManager = jest.spyOn(manager, 'activate');
+      const activateAutoConnectorManager = jest.spyOn(manager, 'restartConnectionAttempts');
 
       manager.start(baseParameters);
 
@@ -266,7 +266,7 @@ describe('AutoConnectorManager - Triggers', () => {
 
     it('останавливает auto connector manager при networkInterfacesSubscriber onUnavailable до наступления success', async () => {
       // @ts-expect-error - доступ к приватному методу
-      const activateAutoConnectorManager = jest.spyOn(manager, 'activate');
+      const activateAutoConnectorManager = jest.spyOn(manager, 'restartConnectionAttempts');
       // @ts-expect-error - доступ к приватному методу
       const shutdownAutoConnectorManager = jest.spyOn(manager, 'shutdown');
 

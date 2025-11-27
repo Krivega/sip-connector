@@ -105,7 +105,7 @@ class AutoConnectorManager {
   public start(parameters: TParametersAutoConnect) {
     logger('auto connector start');
 
-    this.activate(parameters);
+    this.restartConnectionAttempts(parameters);
     this.subscribeToHardwareTriggers(parameters);
   }
 
@@ -139,11 +139,11 @@ class AutoConnectorManager {
     this.events.off(eventName, handler);
   }
 
-  private activate(parameters: TParametersAutoConnect) {
-    logger('auto connector activate');
+  private restartConnectionAttempts(parameters: TParametersAutoConnect) {
+    logger('auto connector restart connection attempts');
 
     this.shutdown();
-    this.connect(parameters).catch((error: unknown) => {
+    this.attemptConnection(parameters).catch((error: unknown) => {
       logger('auto connector failed to connect:', error);
     });
   }
@@ -171,13 +171,13 @@ class AutoConnectorManager {
   private stopConnectTriggers() {
     logger('stopConnectTriggers');
 
-    this.stopPingServerIfNotActiveCallRequester();
+    this.stopPingRequester();
     this.checkTelephonyRequester.stop();
     this.registrationFailedOutOfCallSubscriber.unsubscribe();
   }
 
-  private runCheckTelephony(parameters: TParametersAutoConnect) {
-    logger('runCheckTelephony');
+  private startCheckTelephony(parameters: TParametersAutoConnect) {
+    logger('startCheckTelephony');
 
     this.checkTelephonyRequester.start({
       onBeforeRequest: async () => {
@@ -186,26 +186,24 @@ class AutoConnectorManager {
         return parameters.getParameters();
       },
       onSuccessRequest: () => {
-        logger('runCheckTelephony: onSuccessRequest');
+        logger('startCheckTelephony: onSuccessRequest');
 
         this.connectIfDisconnected(parameters);
       },
       onFailRequest: (error?: unknown) => {
-        logger('runCheckTelephony: onFailRequest', (error as Error).message);
+        logger('startCheckTelephony: onFailRequest', (error as Error).message);
       },
     });
   }
 
-  private async connect(parameters: TParametersAutoConnect) {
-    logger('connect: attempts.count', this.attemptsState.count);
+  private async attemptConnection(parameters: TParametersAutoConnect) {
+    logger('attemptConnection: attempts.count', this.attemptsState.count);
 
     this.events.trigger(EEvent.BEFORE_ATTEMPT, {});
     this.stopConnectTriggers();
 
-    const isLimitReached = this.attemptsState.hasLimitReached();
-
-    if (isLimitReached) {
-      logger('connect: isLimitReached!');
+    if (this.attemptsState.hasLimitReached()) {
+      logger('attemptConnection: limit reached');
 
       this.handleLimitReached(parameters);
 
@@ -215,14 +213,14 @@ class AutoConnectorManager {
     this.attemptsState.startAttempt();
     this.attemptsState.increment();
 
-    return this.processConnect(parameters);
+    return this.executeConnectionAttempt(parameters);
   }
 
-  private async processConnect(parameters: TParametersAutoConnect) {
+  private async executeConnectionAttempt(parameters: TParametersAutoConnect) {
     try {
       await this.connectionQueueManager.connect(parameters.getParameters, parameters.options);
 
-      logger('processConnect success');
+      logger('executeConnectionAttempt: success');
 
       this.handleSucceededAttempt(parameters);
     } catch (error) {
@@ -234,7 +232,7 @@ class AutoConnectorManager {
       }
 
       if (!this.canRetryOnError(error)) {
-        logger('processConnect: error does not allow retry', error);
+        logger('executeConnectionAttempt: error does not allow retry', error);
 
         this.attemptsState.finishAttempt();
         this.events.trigger(EEvent.STOP_ATTEMPTS_BY_ERROR, error);
@@ -243,7 +241,7 @@ class AutoConnectorManager {
       }
 
       if (hasConnectionPromiseIsNotActualError(error)) {
-        logger('processConnect: not actual error', error);
+        logger('executeConnectionAttempt: not actual error', error);
 
         this.attemptsState.finishAttempt();
         this.events.trigger(EEvent.CANCELLED_ATTEMPTS, error);
@@ -251,9 +249,9 @@ class AutoConnectorManager {
         return;
       }
 
-      logger('processConnect: error', error);
+      logger('executeConnectionAttempt: error', error);
 
-      this.reconnect(parameters);
+      this.scheduleReconnect(parameters);
     }
   }
 
@@ -262,7 +260,7 @@ class AutoConnectorManager {
 
     this.events.trigger(EEvent.LIMIT_REACHED_ATTEMPTS, new Error('Limit reached'));
 
-    this.runCheckTelephony(parameters);
+    this.startCheckTelephony(parameters);
   }
 
   private handleSucceededAttempt(parameters: TParametersAutoConnect) {
@@ -274,12 +272,12 @@ class AutoConnectorManager {
   }
 
   private subscribeToConnectTriggers(parameters: TParametersAutoConnect) {
-    this.startPingServerIfNotActiveCallRequester(parameters);
+    this.startPingRequester(parameters);
 
     this.registrationFailedOutOfCallSubscriber.subscribe(() => {
       logger('registrationFailedOutOfCallListener callback');
 
-      this.activate(parameters);
+      this.restartConnectionAttempts(parameters);
     });
   }
 
@@ -292,7 +290,7 @@ class AutoConnectorManager {
       onChange: () => {
         logger('networkInterfacesSubscriber onChange');
 
-        this.activate(parameters);
+        this.restartConnectionAttempts(parameters);
       },
       onUnavailable: () => {
         logger('networkInterfacesSubscriber onUnavailable');
@@ -305,7 +303,7 @@ class AutoConnectorManager {
       onResume: () => {
         logger('resumeFromSleepModeSubscriber onResume');
 
-        this.activate(parameters);
+        this.restartConnectionAttempts(parameters);
       },
     });
   }
@@ -317,47 +315,47 @@ class AutoConnectorManager {
     this.resumeFromSleepModeSubscriber?.unsubscribe();
   }
 
-  private stopPingServerIfNotActiveCallRequester() {
+  private stopPingRequester() {
     this.pingServerIfNotActiveCallRequester.stop();
   }
 
-  private startPingServerIfNotActiveCallRequester(parameters: TParametersAutoConnect) {
+  private startPingRequester(parameters: TParametersAutoConnect) {
     this.pingServerIfNotActiveCallRequester.start({
       onFailRequest: () => {
-        logger('pingServer onFailRequest');
+        logger('pingRequester: onFailRequest');
 
-        this.activate(parameters);
+        this.restartConnectionAttempts(parameters);
       },
     });
   }
 
   private connectIfDisconnected(parameters: TParametersAutoConnect) {
-    const isFailedOrDisconnected = this.hasFailedOrDisconnectedConnection();
+    const isUnavailable = this.isConnectionUnavailable();
 
-    logger('connectIfDisconnected: isFailedOrDisconnected', isFailedOrDisconnected);
+    logger('connectIfDisconnected: isUnavailable', isUnavailable);
 
-    if (isFailedOrDisconnected) {
-      this.activate(parameters);
+    if (isUnavailable) {
+      this.restartConnectionAttempts(parameters);
     } else {
       this.stopConnectTriggers();
       this.events.trigger(EEvent.SUCCESS);
     }
   }
 
-  private reconnect(parameters: TParametersAutoConnect) {
-    logger('reconnect');
+  private scheduleReconnect(parameters: TParametersAutoConnect) {
+    logger('scheduleReconnect');
 
     this.delayBetweenAttempts
       .request()
       .then(async () => {
-        logger('reconnect: delayBetweenAttempts success');
+        logger('scheduleReconnect: delayBetweenAttempts success');
 
         return this.cancelableRequestBeforeRetry.request();
       })
       .then(async () => {
-        logger('reconnect: onBeforeRetry success');
+        logger('scheduleReconnect: onBeforeRetry success');
 
-        return this.connect(parameters);
+        return this.attemptConnection(parameters);
       })
       .catch((error: unknown) => {
         const reconnectError = error instanceof Error ? error : new Error('Failed to reconnect');
@@ -370,11 +368,11 @@ class AutoConnectorManager {
           this.events.trigger(EEvent.FAILED_ALL_ATTEMPTS, reconnectError);
         }
 
-        logger('reconnect: error', error);
+        logger('scheduleReconnect: error', error);
       });
   }
 
-  private hasFailedOrDisconnectedConnection() {
+  private isConnectionUnavailable() {
     const { isFailed, isDisconnected, isIdle } = this.connectionManager;
 
     return isFailed || isDisconnected || isIdle;

@@ -67,7 +67,7 @@ describe('AutoConnectorManager - Reconnection', () => {
   describe('переподключение', () => {
     it('не делает переподключение, если отстутствуют параметры', async () => {
       // @ts-expect-error приватное свойство
-      const reconnectSpy = jest.spyOn(manager, 'reconnect');
+      const reconnectSpy = jest.spyOn(manager, 'scheduleReconnect');
       // @ts-ignore приватное свойство
       const connectSpy = jest.spyOn(manager.connectionQueueManager, 'connect');
       const errorGetParameters = new Error('getParameters is failed');
@@ -99,7 +99,7 @@ describe('AutoConnectorManager - Reconnection', () => {
       const handleCancelled = jest.fn();
 
       // @ts-expect-error приватное свойство
-      const reconnectSpy = jest.spyOn(manager, 'reconnect');
+      const reconnectSpy = jest.spyOn(manager, 'scheduleReconnect');
       // @ts-ignore приватное свойство
       const connectSpy = jest.spyOn(manager.connectionQueueManager, 'connect');
 

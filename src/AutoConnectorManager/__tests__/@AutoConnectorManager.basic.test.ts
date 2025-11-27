@@ -107,7 +107,7 @@ describe('AutoConnectorManager - Basic', () => {
       const error = new Error('Connect error');
 
       // @ts-ignore приватное свойство
-      jest.spyOn(manager, 'connect').mockRejectedValue(error);
+      jest.spyOn(manager, 'attemptConnection').mockRejectedValue(error);
 
       manager.start(baseParameters);
 
