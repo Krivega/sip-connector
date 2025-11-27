@@ -207,9 +207,12 @@ describe('AutoConnectorManager - Triggers', () => {
       expect(activateAutoConnectorManager).toHaveBeenCalledTimes(1);
     });
 
-    it('вызывает shutdown после удаления всех сетевых интерфейсов', async () => {
-      // @ts-expect-error - приватный метод
-      const shutdownSpy = jest.spyOn(AutoConnectorManager.prototype, 'shutdown');
+    it('вызывает stopConnectionFlow после удаления всех сетевых интерфейсов', async () => {
+      const stopConnectionFlowSpy = jest.spyOn(
+        AutoConnectorManager.prototype,
+        // @ts-expect-error - приватный метод
+        'stopConnectionFlow',
+      );
 
       manager.start(baseParameters);
 
@@ -219,7 +222,7 @@ describe('AutoConnectorManager - Triggers', () => {
 
       emitUnavailableInterfacesMock?.();
 
-      expect(shutdownSpy).toHaveBeenCalled();
+      expect(stopConnectionFlowSpy).toHaveBeenCalled();
     });
 
     it('перезапускает auto connector manager после удаления всех сетевых интерфейсов и восстановления нового сетевого интерфейса', async () => {
@@ -268,17 +271,17 @@ describe('AutoConnectorManager - Triggers', () => {
       // @ts-expect-error - доступ к приватному методу
       const activateAutoConnectorManager = jest.spyOn(manager, 'restartConnectionAttempts');
       // @ts-expect-error - доступ к приватному методу
-      const shutdownAutoConnectorManager = jest.spyOn(manager, 'shutdown');
+      const stopConnectionFlowAutoConnectorManager = jest.spyOn(manager, 'stopConnectionFlow');
 
       manager.start(baseParameters);
 
       expect(activateAutoConnectorManager).toHaveBeenCalledTimes(1);
-      expect(shutdownAutoConnectorManager).toHaveBeenCalledTimes(1);
+      expect(stopConnectionFlowAutoConnectorManager).toHaveBeenCalledTimes(1);
 
       emitUnavailableInterfacesMock?.();
 
       expect(activateAutoConnectorManager).toHaveBeenCalledTimes(1);
-      expect(shutdownAutoConnectorManager).toHaveBeenCalledTimes(2);
+      expect(stopConnectionFlowAutoConnectorManager).toHaveBeenCalledTimes(2);
     });
 
     it('подписывается на registration failed out of call после подключения', async () => {

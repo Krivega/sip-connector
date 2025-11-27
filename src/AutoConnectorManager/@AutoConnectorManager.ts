@@ -25,6 +25,11 @@ import type {
 const DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS = 3000;
 const DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL = 15_000;
 
+const ERROR_MESSAGES = {
+  LIMIT_REACHED: 'Limit reached',
+  FAILED_TO_RECONNECT: 'Failed to reconnect',
+} as const;
+
 const asyncNoop = async (): Promise<void> => {};
 
 const defaultCanRetryOnError = (_error: unknown): boolean => {
@@ -113,7 +118,7 @@ class AutoConnectorManager {
     logger('auto connector stop');
 
     this.unsubscribeFromHardwareTriggers();
-    this.shutdown();
+    this.stopConnectionFlow();
   }
 
   public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
@@ -142,14 +147,14 @@ class AutoConnectorManager {
   private restartConnectionAttempts(parameters: TParametersAutoConnect) {
     logger('auto connector restart connection attempts');
 
-    this.shutdown();
+    this.stopConnectionFlow();
     this.attemptConnection(parameters).catch((error: unknown) => {
       logger('auto connector failed to connect:', error);
     });
   }
 
-  private shutdown() {
-    logger('shutdown');
+  private stopConnectionFlow() {
+    logger('stopConnectionFlow');
 
     this.stopAttempts();
     this.stopConnectTriggers();
@@ -224,41 +229,45 @@ class AutoConnectorManager {
 
       this.handleSucceededAttempt(parameters);
     } catch (error) {
-      if (hasNotReadyForConnectionError(error)) {
-        this.attemptsState.finishAttempt();
-        this.handleSucceededAttempt(parameters);
-
-        return;
-      }
-
-      if (!this.canRetryOnError(error)) {
-        logger('executeConnectionAttempt: error does not allow retry', error);
-
-        this.attemptsState.finishAttempt();
-        this.events.trigger(EEvent.STOP_ATTEMPTS_BY_ERROR, error);
-
-        return;
-      }
-
-      if (hasConnectionPromiseIsNotActualError(error)) {
-        logger('executeConnectionAttempt: not actual error', error);
-
-        this.attemptsState.finishAttempt();
-        this.events.trigger(EEvent.CANCELLED_ATTEMPTS, error);
-
-        return;
-      }
-
-      logger('executeConnectionAttempt: error', error);
-
-      this.scheduleReconnect(parameters);
+      this.handleConnectionError(error, parameters);
     }
+  }
+
+  private handleConnectionError(error: unknown, parameters: TParametersAutoConnect) {
+    if (hasNotReadyForConnectionError(error)) {
+      this.attemptsState.finishAttempt();
+      this.handleSucceededAttempt(parameters);
+
+      return;
+    }
+
+    if (!this.canRetryOnError(error)) {
+      logger('executeConnectionAttempt: error does not allow retry', error);
+
+      this.attemptsState.finishAttempt();
+      this.events.trigger(EEvent.STOP_ATTEMPTS_BY_ERROR, error);
+
+      return;
+    }
+
+    if (hasConnectionPromiseIsNotActualError(error)) {
+      logger('executeConnectionAttempt: not actual error', error);
+
+      this.attemptsState.finishAttempt();
+      this.events.trigger(EEvent.CANCELLED_ATTEMPTS, error);
+
+      return;
+    }
+
+    logger('executeConnectionAttempt: error', error);
+
+    this.scheduleReconnect(parameters);
   }
 
   private handleLimitReached(parameters: TParametersAutoConnect) {
     this.attemptsState.finishAttempt();
 
-    this.events.trigger(EEvent.LIMIT_REACHED_ATTEMPTS, new Error('Limit reached'));
+    this.events.trigger(EEvent.LIMIT_REACHED_ATTEMPTS, new Error(ERROR_MESSAGES.LIMIT_REACHED));
 
     this.startCheckTelephony(parameters);
   }
@@ -295,7 +304,7 @@ class AutoConnectorManager {
       onUnavailable: () => {
         logger('networkInterfacesSubscriber onUnavailable');
 
-        this.shutdown();
+        this.stopConnectionFlow();
       },
     });
 
@@ -358,7 +367,8 @@ class AutoConnectorManager {
         return this.attemptConnection(parameters);
       })
       .catch((error: unknown) => {
-        const reconnectError = error instanceof Error ? error : new Error('Failed to reconnect');
+        const reconnectError =
+          error instanceof Error ? error : new Error(ERROR_MESSAGES.FAILED_TO_RECONNECT);
 
         this.attemptsState.finishAttempt();
 
