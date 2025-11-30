@@ -29,7 +29,6 @@ describe('presentation', () => {
       async (contentType: string, body?: string, options?: ExtraHeaders) => {
         if (
           options?.extraHeaders &&
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
           options.extraHeaders[0] === EHeader.MUST_STOP_PRESENTATION_P2P
         ) {
           throw new Error(failedToSendMustStopSendPresentationError);

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-enum-comparison */
 import { isCanceledError } from '@krivega/cancelable-promise';
 
 import { ECallCause } from './causes';
