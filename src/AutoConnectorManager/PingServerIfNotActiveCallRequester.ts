@@ -25,14 +25,20 @@ class PingServerIfNotActiveCallRequester {
     });
   }
 
-  public start({ onFailRequest }: { onFailRequest: () => void }) {
+  public start({
+    onFailRequest,
+    onSuccessRequest,
+  }: {
+    onFailRequest: () => void;
+    onSuccessRequest?: () => void;
+  }) {
     logger('start');
 
     this.disposeCallStatusChange = this.callManager.on('call-status-changed', () => {
-      this.handleCallStatusChange({ onFailRequest });
+      this.handleCallStatusChange({ onFailRequest, onSuccessRequest });
     });
 
-    this.handleCallStatusChange({ onFailRequest });
+    this.handleCallStatusChange({ onFailRequest, onSuccessRequest });
   }
 
   public stop() {
@@ -47,11 +53,17 @@ class PingServerIfNotActiveCallRequester {
     this.disposeCallStatusChange = undefined;
   }
 
-  private handleCallStatusChange({ onFailRequest }: { onFailRequest: () => void }) {
+  private handleCallStatusChange({
+    onFailRequest,
+    onSuccessRequest,
+  }: {
+    onFailRequest: () => void;
+    onSuccessRequest?: () => void;
+  }) {
     if (this.callManager.isCallActive) {
       this.pingServerRequester.stop();
     } else {
-      this.pingServerRequester.start({ onFailRequest });
+      this.pingServerRequester.start({ onFailRequest, onSuccessRequest });
     }
   }
 }

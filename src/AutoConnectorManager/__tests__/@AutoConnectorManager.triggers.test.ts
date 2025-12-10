@@ -104,6 +104,7 @@ describe('AutoConnectorManager - Triggers', () => {
 
       expect(pingServerIfNotActiveCallStartSpy).toHaveBeenCalledWith({
         onFailRequest: expect.any(Function) as () => void,
+        onSuccessRequest: expect.any(Function) as () => void,
       });
     });
 
@@ -316,6 +317,112 @@ describe('AutoConnectorManager - Triggers', () => {
       expect(connectSpy).toHaveBeenCalledTimes(1);
 
       onFailRequest();
+
+      await manager.wait('success');
+
+      expect(connectSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('не перезапускает подключение при onSuccessRequest в ping server, если соединение доступно', async () => {
+      const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
+      const startSpy = jest
+        .spyOn(PingServerIfNotActiveCallRequester.prototype, 'start')
+        .mockImplementation();
+
+      jest.spyOn(sipConnector.connectionManager, 'isFailed', 'get').mockReturnValue(false);
+      jest.spyOn(sipConnector.connectionManager, 'isDisconnected', 'get').mockReturnValue(false);
+      jest.spyOn(sipConnector.connectionManager, 'isIdle', 'get').mockReturnValue(false);
+
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      const { onSuccessRequest } = startSpy.mock.calls[0][0] as {
+        onSuccessRequest: () => void;
+      };
+
+      expect(connectSpy).toHaveBeenCalledTimes(1);
+
+      onSuccessRequest();
+
+      expect(connectSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('перезапускает подключение при onSuccessRequest в ping server, если соединение isFailed', async () => {
+      const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
+      const startSpy = jest
+        .spyOn(PingServerIfNotActiveCallRequester.prototype, 'start')
+        .mockImplementation();
+
+      jest.spyOn(sipConnector.connectionManager, 'isFailed', 'get').mockReturnValue(true);
+      jest.spyOn(sipConnector.connectionManager, 'isDisconnected', 'get').mockReturnValue(false);
+      jest.spyOn(sipConnector.connectionManager, 'isIdle', 'get').mockReturnValue(false);
+
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      const { onSuccessRequest } = startSpy.mock.calls[0][0] as {
+        onSuccessRequest: () => void;
+      };
+
+      expect(connectSpy).toHaveBeenCalledTimes(1);
+
+      onSuccessRequest();
+
+      await manager.wait('success');
+
+      expect(connectSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('перезапускает подключение при onSuccessRequest в ping server, если соединение disconnected', async () => {
+      const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
+      const startSpy = jest
+        .spyOn(PingServerIfNotActiveCallRequester.prototype, 'start')
+        .mockImplementation();
+
+      jest.spyOn(sipConnector.connectionManager, 'isFailed', 'get').mockReturnValue(false);
+      jest.spyOn(sipConnector.connectionManager, 'isDisconnected', 'get').mockReturnValue(true);
+      jest.spyOn(sipConnector.connectionManager, 'isIdle', 'get').mockReturnValue(false);
+
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      const { onSuccessRequest } = startSpy.mock.calls[0][0] as {
+        onSuccessRequest: () => void;
+      };
+
+      expect(connectSpy).toHaveBeenCalledTimes(1);
+
+      onSuccessRequest();
+
+      await manager.wait('success');
+
+      expect(connectSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('перезапускает подключение при onSuccessRequest в ping server, если соединение idle', async () => {
+      const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
+      const startSpy = jest
+        .spyOn(PingServerIfNotActiveCallRequester.prototype, 'start')
+        .mockImplementation();
+
+      jest.spyOn(sipConnector.connectionManager, 'isFailed', 'get').mockReturnValue(false);
+      jest.spyOn(sipConnector.connectionManager, 'isDisconnected', 'get').mockReturnValue(false);
+      jest.spyOn(sipConnector.connectionManager, 'isIdle', 'get').mockReturnValue(true);
+
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      const { onSuccessRequest } = startSpy.mock.calls[0][0] as {
+        onSuccessRequest: () => void;
+      };
+
+      expect(connectSpy).toHaveBeenCalledTimes(1);
+
+      onSuccessRequest();
 
       await manager.wait('success');
 

@@ -32,8 +32,16 @@ class PingServerRequester {
     });
   }
 
-  public start({ onFailRequest }: { onFailRequest: () => void }) {
-    this.pingServerByTimeoutWithFailCalls.start(undefined, { onFailRequest }).catch(logger);
+  public start({
+    onFailRequest,
+    onSuccessRequest,
+  }: {
+    onFailRequest: () => void;
+    onSuccessRequest?: () => void;
+  }) {
+    this.pingServerByTimeoutWithFailCalls
+      .start(undefined, { onFailRequest, onSuccessRequest })
+      .catch(logger);
   }
 
   public stop() {

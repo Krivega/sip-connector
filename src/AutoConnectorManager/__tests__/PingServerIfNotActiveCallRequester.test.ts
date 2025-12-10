@@ -105,7 +105,34 @@ describe('PingServerIfNotActiveCallRequester', () => {
       endCall();
 
       expect(startMock).toHaveBeenCalledTimes(2);
-      expect(startMock).toHaveBeenCalledWith(undefined, { onFailRequest });
+      expect(startMock).toHaveBeenCalledWith(undefined, {
+        onFailRequest,
+        onSuccessRequest: undefined,
+      });
+    });
+
+    it('передает onSuccessRequest в ping server requester', () => {
+      const onFailRequest = jest.fn();
+      const onSuccessRequest = jest.fn();
+
+      pingServerIfNotActiveCallRequester.start({ onFailRequest, onSuccessRequest });
+
+      expect(startMock).toHaveBeenCalledTimes(1);
+      expect(startMock).toHaveBeenCalledWith(undefined, { onFailRequest, onSuccessRequest });
+    });
+
+    it('передает onSuccessRequest при перезапуске пинга после окончания звонка', () => {
+      const onFailRequest = jest.fn();
+      const onSuccessRequest = jest.fn();
+
+      pingServerIfNotActiveCallRequester.start({ onFailRequest, onSuccessRequest });
+
+      startCall();
+      endCall();
+
+      expect(startMock).toHaveBeenCalledTimes(2);
+      expect(startMock).toHaveBeenNthCalledWith(1, undefined, { onFailRequest, onSuccessRequest });
+      expect(startMock).toHaveBeenNthCalledWith(2, undefined, { onFailRequest, onSuccessRequest });
     });
 
     it('останавливает пинг при активном звонке', () => {

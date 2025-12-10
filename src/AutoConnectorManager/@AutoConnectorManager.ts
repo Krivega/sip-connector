@@ -335,6 +335,13 @@ class AutoConnectorManager {
 
         this.restartConnectionAttempts(parameters);
       },
+      onSuccessRequest: () => {
+        if (this.isConnectionUnavailable()) {
+          logger('pingRequester: success ping with unavailable connection');
+
+          this.restartConnectionAttempts(parameters);
+        }
+      },
     });
   }
 
