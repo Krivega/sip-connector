@@ -57,7 +57,7 @@ describe('main cam control', () => {
         sipConnector.on('api:main-cam-control', resolve);
       },
     );
-    const { establishedRTCSession } = sipConnector.callManager;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersMainCamControl);
@@ -76,7 +76,7 @@ describe('main cam control', () => {
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
       sipConnector.on('api:admin-start-main-cam', resolve);
     });
-    const { establishedRTCSession } = sipConnector.callManager;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersAdminStartMainCam);
@@ -94,7 +94,7 @@ describe('main cam control', () => {
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
       sipConnector.on('api:admin-stop-main-cam', resolve);
     });
-    const { establishedRTCSession } = sipConnector;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersAdminStopMainCam);
@@ -115,7 +115,7 @@ describe('main cam control', () => {
       },
     );
 
-    const { establishedRTCSession } = sipConnector;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersResumeMainCam);
@@ -137,7 +137,7 @@ describe('main cam control', () => {
       },
     );
 
-    const { establishedRTCSession } = sipConnector;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersPauseMainCam);

@@ -1,6 +1,6 @@
 import type { RTCSession } from '@krivega/jssip';
 import type { TEvents } from './eventNames';
-import type { ICallStrategy, TCallConfiguration, TOntrack } from './types';
+import type { ICallStrategy, TCallConfiguration } from './types';
 
 export abstract class AbstractCallStrategy implements ICallStrategy {
   protected isPendingCall = false;
@@ -22,8 +22,10 @@ export abstract class AbstractCallStrategy implements ICallStrategy {
   // Свойства (getters)
   public abstract get requested(): boolean;
   public abstract get connection(): RTCPeerConnection | undefined;
-  public abstract get establishedRTCSession(): RTCSession | undefined;
   public abstract get isCallActive(): boolean;
+
+  public abstract getEstablishedRTCSession(): RTCSession | undefined;
+
   /**
    * Запуск исходящего звонка
    */
@@ -53,9 +55,6 @@ export abstract class AbstractCallStrategy implements ICallStrategy {
     mediaStream: Parameters<ICallStrategy['replaceMediaStream']>[0],
     options?: Parameters<ICallStrategy['replaceMediaStream']>[1],
   ): Promise<void>;
-
-  public abstract getEstablishedRTCSession(): RTCSession | undefined;
-
   /**
    * Получение конфигурации звонка
    */
@@ -83,8 +82,4 @@ export abstract class AbstractCallStrategy implements ICallStrategy {
     sendEncodings?: RTCRtpEncodingParameters[];
     degradationPreference?: RTCDegradationPreference;
   }): Promise<boolean>;
-  /**
-   * Внутренняя обработка звонка (например, для ontrack)
-   */
-  protected abstract handleCall(options: { ontrack?: TOntrack }): Promise<RTCPeerConnection>;
 }

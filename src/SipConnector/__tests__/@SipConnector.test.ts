@@ -340,8 +340,8 @@ describe('SipConnector facade', () => {
       sipConnector.requestedCall;
       // eslint-disable-next-line @typescript-eslint/no-unused-expressions
       sipConnector.connection;
-      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-      sipConnector.establishedRTCSession;
+
+      sipConnector.getEstablishedRTCSession();
       // eslint-disable-next-line @typescript-eslint/no-unused-expressions
       sipConnector.isCallActive;
       // eslint-disable-next-line @typescript-eslint/no-unused-expressions

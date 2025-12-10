@@ -140,10 +140,6 @@ class SipConnector {
     return this.callManager.connection;
   }
 
-  public get establishedRTCSession() {
-    return this.callManager.establishedRTCSession;
-  }
-
   public get isCallActive() {
     return this.callManager.isCallActive;
   }

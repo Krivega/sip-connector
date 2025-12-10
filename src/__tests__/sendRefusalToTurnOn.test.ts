@@ -31,8 +31,8 @@ describe('media state', () => {
     mockFunction = jest.fn(() => {});
 
     // @ts-expect-error
-    // eslint-disable-next-line require-atomic-updates
-    sipConnector.establishedRTCSession.sendInfo = mockFunction;
+
+    sipConnector.getEstablishedRTCSession().sendInfo = mockFunction;
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sipConnector.sendRefusalToTurnOnMic();
@@ -52,8 +52,8 @@ describe('media state', () => {
     mockFunction = jest.fn(() => {});
 
     // @ts-expect-error
-    // eslint-disable-next-line require-atomic-updates
-    sipConnector.establishedRTCSession.sendInfo = mockFunction;
+
+    sipConnector.getEstablishedRTCSession().sendInfo = mockFunction;
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sipConnector.sendRefusalToTurnOnCam();
@@ -73,7 +73,7 @@ describe('media state', () => {
     const ERROR_RESPONSE = 'Error response';
 
     // @ts-expect-error
-    sipConnector.establishedRTCSession.sendInfo = async () => {
+    sipConnector.getEstablishedRTCSession().sendInfo = async () => {
       throw new Error(ERROR_RESPONSE);
     };
 
@@ -92,7 +92,7 @@ describe('media state', () => {
     const ERROR_RESPONSE = 'Error response';
 
     // @ts-expect-error
-    sipConnector.establishedRTCSession.sendInfo = async () => {
+    sipConnector.getEstablishedRTCSession().sendInfo = async () => {
       throw new Error(ERROR_RESPONSE);
     };
 

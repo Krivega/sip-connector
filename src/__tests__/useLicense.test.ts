@@ -44,7 +44,7 @@ describe('use license', () => {
     const promise = new Promise<EUseLicense>((resolve) => {
       sipConnector.on('api:useLicense', resolve);
     });
-    const { establishedRTCSession } = sipConnector;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersUseLicenseAudio);
@@ -62,7 +62,7 @@ describe('use license', () => {
     const promise = new Promise<EUseLicense>((resolve) => {
       sipConnector.on('api:useLicense', resolve);
     });
-    const { establishedRTCSession } = sipConnector;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersUseLicenseVideo);
@@ -80,7 +80,7 @@ describe('use license', () => {
     const promise = new Promise<EUseLicense>((resolve) => {
       sipConnector.on('api:useLicense', resolve);
     });
-    const { establishedRTCSession } = sipConnector;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersUseLicenseAudioPlusPresentation);

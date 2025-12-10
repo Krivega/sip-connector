@@ -23,9 +23,9 @@ describe('presentation', () => {
   const declineStartPresentationError = createDeclineStartPresentationError();
 
   const mockFailToSendMustStopPresentationInfo = () => {
-    const actualSendInfo = sipConnector.callManager.establishedRTCSession!.sendInfo;
+    const actualSendInfo = sipConnector.callManager.getEstablishedRTCSession()!.sendInfo;
 
-    sipConnector.callManager.establishedRTCSession!.sendInfo = jest.fn(
+    sipConnector.callManager.getEstablishedRTCSession()!.sendInfo = jest.fn(
       async (contentType: string, body?: string, options?: ExtraHeaders) => {
         if (
           options?.extraHeaders &&
@@ -228,7 +228,10 @@ describe('presentation', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    const sendInfoMocked = jest.spyOn(sipConnector.callManager.establishedRTCSession!, 'sendInfo');
+    const sendInfoMocked = jest.spyOn(
+      sipConnector.callManager.getEstablishedRTCSession()!,
+      'sendInfo',
+    );
 
     await sipConnector.startPresentation(mediaStream, { isP2P: true });
 
@@ -247,7 +250,10 @@ describe('presentation', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    const sendInfoMocked = jest.spyOn(sipConnector.callManager.establishedRTCSession!, 'sendInfo');
+    const sendInfoMocked = jest.spyOn(
+      sipConnector.callManager.getEstablishedRTCSession()!,
+      'sendInfo',
+    );
 
     await sipConnector.startPresentation(mediaStream, { isP2P: false });
 

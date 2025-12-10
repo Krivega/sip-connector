@@ -39,7 +39,7 @@ describe('mic control', () => {
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
       sipConnector.on('api:admin-start-mic', resolve);
     });
-    const { establishedRTCSession } = sipConnector;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersAdminStartMic);
@@ -57,7 +57,7 @@ describe('mic control', () => {
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
       sipConnector.on('api:admin-stop-mic', resolve);
     });
-    const { establishedRTCSession } = sipConnector;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersAdminStopMic);

@@ -5,40 +5,44 @@ import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import UAMock from '@/__fixtures__/UA.mock';
 import { EVENT_NAMES } from '../eventNames';
-import { MCUCallStrategy } from '../MCUCallStrategy';
-import { RemoteStreamsManager } from '../RemoteStreamsManager';
+import { MCUSession } from '../MCUSession';
 
 import type { RTCSession, UA } from '@krivega/jssip';
 import type { TEventMap } from '../eventNames';
 
-// Вспомогательный тип для доступа к защищённым свойствам MCUCallStrategy
-interface MCUCallStrategyTestAccess {
+// Вспомогательный тип для доступа к защищённым свойствам MCUSession
+interface MCUSessionTestAccess {
   rtcSession?: unknown;
   isPendingCall?: boolean;
   isPendingAnswer?: boolean;
   callConfiguration?: Record<string, unknown>;
 }
 
-describe('MCUCallStrategy', () => {
+describe('MCUSession', () => {
   let events: TypedEvents<TEventMap>;
   let ua: UAMock;
-  let strategy: MCUCallStrategy;
+  let mcuSession: MCUSession;
   let getSipServerUrl: (number: string) => string;
   let mediaStream: MediaStream;
+  const handleReset = jest.fn();
 
   beforeEach(() => {
     events = new TypedEvents<TEventMap>(EVENT_NAMES);
     ua = new UAMock({ uri: 'sip:user@sipServerUrl', register: false, sockets: [] });
-    strategy = new MCUCallStrategy(events);
+    mcuSession = new MCUSession(events, { onReset: handleReset });
     getSipServerUrl = (number) => {
       return `sip:${number}@sipServerUrl`;
     };
     mediaStream = new MediaStream();
   });
 
+  afterEach(() => {
+    jest.resetAllMocks();
+  });
+
   it('startCall: создает звонок и возвращает peerconnection', async () => {
     const ontrack = jest.fn();
-    const promise = strategy.startCall(ua as unknown as UA, getSipServerUrl, {
+    const promise = mcuSession.startCall(ua as unknown as UA, getSipServerUrl, {
       number: '123',
       mediaStream,
       ontrack,
@@ -62,7 +66,7 @@ describe('MCUCallStrategy', () => {
 
     events.on('peerconnection', onPeerconnection);
 
-    const pc = (await strategy.startCall(ua as unknown as UA, getSipServerUrl, {
+    const pc = (await mcuSession.startCall(ua as unknown as UA, getSipServerUrl, {
       number: '123',
       mediaStream,
       ontrack,
@@ -81,21 +85,20 @@ describe('MCUCallStrategy', () => {
   it('endCall: вызывает reset и terminateAsync', async () => {
     const terminateAsync = jest.fn(async () => {});
 
-    // @ts-expect-error
-    (strategy.mcuSession as unknown as { rtcSession: RTCSession }).rtcSession = {
+    (mcuSession as unknown as { rtcSession: RTCSession }).rtcSession = {
       isEnded: () => {
         return false;
       },
       terminateAsync,
     } as unknown as RTCSession;
-    await strategy.endCall();
+    await mcuSession.endCall();
     expect(terminateAsync).toHaveBeenCalledWith({ cause: 'Canceled' });
   });
 
   it('endCall: если rtcSession нет, возвращает undefined', async () => {
     // @ts-expect-error
-    strategy.mcuSession.rtcSession = undefined;
-    await expect(strategy.endCall()).resolves.toBeUndefined();
+    mcuSession.rtcSession = undefined;
+    await expect(mcuSession.endCall()).resolves.toBeUndefined();
   });
 
   it('answerToIncomingCall: отклоняет при FAILED событии', async () => {
@@ -107,7 +110,7 @@ describe('MCUCallStrategy', () => {
       return rtcSession as unknown as RTCSession;
     };
 
-    const promise = strategy.answerToIncomingCall(getIncomingRTCSession, {
+    const promise = mcuSession.answerToIncomingCall(getIncomingRTCSession(), {
       mediaStream,
     });
 
@@ -131,7 +134,7 @@ describe('MCUCallStrategy', () => {
       return rtcSession as unknown as RTCSession;
     };
     const ontrack = jest.fn();
-    const promise = strategy.answerToIncomingCall(getIncomingRTCSession, {
+    const promise = mcuSession.answerToIncomingCall(getIncomingRTCSession(), {
       mediaStream,
       ontrack,
     });
@@ -148,25 +151,114 @@ describe('MCUCallStrategy', () => {
     expect(pc).toBeDefined();
   });
 
-  it('getRemoteStreams: возвращает undefined если нет connection', () => {
-    jest.spyOn(strategy, 'connection', 'get').mockReturnValue(undefined);
-    expect(strategy.getRemoteStreams()).toBeUndefined();
+  it('getRemoteTracks: возвращает undefined если нет connection', () => {
+    jest.spyOn(mcuSession, 'connection', 'get').mockReturnValue(undefined);
+    expect(mcuSession.getRemoteTracks()).toBeUndefined();
   });
 
-  it('getRemoteStreams: вызывает remoteStreamsManager', () => {
+  it('getRemoteTracks: возвращает массив треков когда есть connection и receivers', () => {
+    const videoTrack = createVideoMediaStreamTrackMock();
+    const audioTrack = createAudioMediaStreamTrackMock();
+    const getReceivers = jest.fn(() => {
+      return [{ track: videoTrack }, { track: audioTrack }];
+    });
     const connection = {
-      getReceivers: () => {
-        return [{ track: { kind: 'video', id: 'v1' } }];
-      },
+      getReceivers,
     } as unknown as RTCPeerConnection;
 
-    // @ts-expect-error
-    jest.spyOn(strategy.mcuSession, 'connection', 'get').mockReturnValue(connection);
+    jest.spyOn(mcuSession, 'connection', 'get').mockReturnValue(connection);
 
-    const spy = jest.spyOn(RemoteStreamsManager.prototype, 'generateStreams');
+    const result = mcuSession.getRemoteTracks();
 
-    strategy.getRemoteStreams();
-    expect(spy).toHaveBeenCalled();
+    expect(getReceivers).toHaveBeenCalledTimes(1);
+    expect(result).toEqual([videoTrack, audioTrack]);
+    expect(result).toHaveLength(2);
+  });
+
+  it('getRemoteTracks: возвращает пустой массив когда нет receivers', () => {
+    const getReceivers = jest.fn(() => {
+      return [];
+    });
+    const connection = {
+      getReceivers,
+    } as unknown as RTCPeerConnection;
+
+    jest.spyOn(mcuSession, 'connection', 'get').mockReturnValue(connection);
+
+    const result = mcuSession.getRemoteTracks();
+
+    expect(getReceivers).toHaveBeenCalledTimes(1);
+    expect(result).toEqual([]);
+    expect(result).toHaveLength(0);
+  });
+
+  it('getRemoteTracks: возвращает массив треков с одним треком', () => {
+    const videoTrack = createVideoMediaStreamTrackMock();
+    const getReceivers = jest.fn(() => {
+      return [{ track: videoTrack }];
+    });
+    const connection = {
+      getReceivers,
+    } as unknown as RTCPeerConnection;
+
+    jest.spyOn(mcuSession, 'connection', 'get').mockReturnValue(connection);
+
+    const result = mcuSession.getRemoteTracks();
+
+    expect(getReceivers).toHaveBeenCalledTimes(1);
+    expect(result).toEqual([videoTrack]);
+    expect(result).toHaveLength(1);
+    expect(result?.[0]?.kind).toBe('video');
+  });
+
+  it('getRemoteTracks: возвращает все треки включая undefined', () => {
+    const videoTrack = createVideoMediaStreamTrackMock();
+    const audioTrack = createAudioMediaStreamTrackMock();
+    const getReceivers = jest.fn(() => {
+      return [
+        { track: videoTrack },
+        { track: undefined },
+        { track: audioTrack },
+        { track: undefined },
+      ];
+    });
+    const connection = {
+      getReceivers,
+    } as unknown as RTCPeerConnection;
+
+    jest.spyOn(mcuSession, 'connection', 'get').mockReturnValue(connection);
+
+    const result = mcuSession.getRemoteTracks();
+
+    expect(getReceivers).toHaveBeenCalledTimes(1);
+    // Метод маппит все receivers, включая те, где track может быть undefined
+    // Проверяем, что результат содержит все треки, включая undefined
+    expect(result).toHaveLength(4);
+    expect(result?.[0]).toBe(videoTrack);
+    expect(result?.[1]).toBeUndefined();
+    expect(result?.[2]).toBe(audioTrack);
+    expect(result?.[3]).toBeUndefined();
+  });
+
+  it('getRemoteTracks: возвращает треки разных типов (audio и video)', () => {
+    const videoTrack = createVideoMediaStreamTrackMock();
+    const audioTrack = createAudioMediaStreamTrackMock();
+    const getReceivers = jest.fn(() => {
+      return [{ track: audioTrack }, { track: videoTrack }, { track: audioTrack }];
+    });
+    const connection = {
+      getReceivers,
+    } as unknown as RTCPeerConnection;
+
+    jest.spyOn(mcuSession, 'connection', 'get').mockReturnValue(connection);
+
+    const result = mcuSession.getRemoteTracks();
+
+    expect(getReceivers).toHaveBeenCalledTimes(1);
+    expect(result).toHaveLength(3);
+    expect(result?.[0]?.kind).toBe('audio');
+    expect(result?.[1]?.kind).toBe('video');
+    expect(result?.[2]?.kind).toBe('audio');
   });
 
   it('replaceMediaStream: заменяет поток', async () => {
@@ -176,9 +268,9 @@ describe('MCUCallStrategy', () => {
     });
 
     // @ts-expect-error
-    strategy.mcuSession.rtcSession = rtcSession as unknown as RTCSession;
+    mcuSession.rtcSession = rtcSession as unknown as RTCSession;
 
-    await strategy.replaceMediaStream(mediaStream);
+    await mcuSession.replaceMediaStream(mediaStream);
 
     expect(rtcSession.replaceMediaStream).toHaveBeenCalled();
   });
@@ -190,144 +282,186 @@ describe('MCUCallStrategy', () => {
       .spyOn(prepareMediaStreamModule, 'default')
       .mockReturnValue(undefined as unknown as MediaStream);
 
-    const strategyLocal = new MCUCallStrategy(events);
+    const mcuSessionLocal = new MCUSession(events, {
+      onReset: handleReset,
+    });
     const rtcSession = new RTCSessionMock({
       eventHandlers: {},
       originator: 'remote',
     });
 
     // @ts-expect-error
-    strategyLocal.mcuSession.rtcSession = rtcSession as unknown as RTCSession;
+    mcuSessionLocal.rtcSession = rtcSession as unknown as RTCSession;
 
-    await expect(strategyLocal.replaceMediaStream(mediaStream)).rejects.toThrow(
+    await expect(mcuSessionLocal.replaceMediaStream(mediaStream)).rejects.toThrow(
       'No preparedMediaStream',
     );
   });
 
   it('replaceMediaStream: бросает ошибку если нет rtcSession', async () => {
     // @ts-expect-error
-    strategy.mcuSession.rtcSession = undefined;
-    await expect(strategy.replaceMediaStream(mediaStream)).rejects.toThrow(
+    mcuSession.rtcSession = undefined;
+    await expect(mcuSession.replaceMediaStream(mediaStream)).rejects.toThrow(
       'No rtcSession established',
     );
   });
 
-  it('reset: очищает remoteStreamsManager', () => {
-    const spy = jest.spyOn(RemoteStreamsManager.prototype, 'reset');
+  it('reset: очищает rtcSession и вызывает onReset', () => {
+    const rtcSession = new RTCSessionMock({
+      eventHandlers: {},
+      originator: 'remote',
+    });
 
     // @ts-expect-error
-    strategy.reset();
+    mcuSession.rtcSession = rtcSession as unknown as RTCSession;
+
+    // @ts-expect-error
+    mcuSession.reset();
+    // @ts-expect-error
+    expect(mcuSession.rtcSession).toBeUndefined();
+    expect(handleReset).toHaveBeenCalled();
+  });
+
+  it('handleEnded: триггерит ENDED_FROM_SERVER и вызывает reset', () => {
+    const spy = jest.spyOn(mcuSession as unknown as { reset: () => void }, 'reset');
+    const trigger = jest.spyOn(events, 'trigger');
+
+    // @ts-expect-error
+    mcuSession.handleEnded({ originator: 'remote' });
+    expect(trigger).toHaveBeenCalledWith('ended:fromserver', expect.anything());
     expect(spy).toHaveBeenCalled();
   });
 });
 
-describe('MCUCallStrategy - дополнительные тесты для покрытия', () => {
+describe('MCUSession - дополнительные тесты для покрытия', () => {
   let events: TypedEvents<TEventMap>;
-  let strategy: MCUCallStrategy;
-  let strategyTest: MCUCallStrategyTestAccess;
+  let mcuSession: MCUSession;
+  let mcuSessionTest: MCUSessionTestAccess;
+  const handleReset = jest.fn();
 
   beforeEach(() => {
     events = new TypedEvents<TEventMap>(EVENT_NAMES);
-    strategy = new MCUCallStrategy(events);
-    strategyTest = strategy as unknown as MCUCallStrategyTestAccess;
+    mcuSession = new MCUSession(events, {
+      onReset: handleReset,
+    });
+    mcuSessionTest = mcuSession as unknown as MCUSessionTestAccess;
     jest.clearAllMocks();
   });
 
-  it('getRemoteStreams: вызывает generateAudioStreams если нет видео-треков', () => {
-    const connection = {
-      getReceivers: () => {
-        return [{ track: { kind: 'audio', id: 'a1' } }];
-      },
-    } as unknown as RTCPeerConnection;
-
-    // @ts-expect-error
-    jest.spyOn(strategy.mcuSession, 'connection', 'get').mockReturnValue(connection);
-
-    const spy = jest.spyOn(RemoteStreamsManager.prototype, 'generateAudioStreams');
-
-    strategy.getRemoteStreams();
-    expect(spy).toHaveBeenCalled();
+  afterEach(() => {
+    jest.resetAllMocks();
   });
 
-  it('requested: возвращает true если isPendingCall или isPendingAnswer', () => {
-    strategyTest.isPendingCall = true;
-    expect(strategy.requested).toBe(true);
-    strategyTest.isPendingCall = false;
-    strategyTest.isPendingAnswer = true;
-    expect(strategy.requested).toBe(true);
-    strategyTest.isPendingAnswer = false;
-    expect(strategy.requested).toBe(false);
+  it('handleCall: вызывает reject при FAILED', async () => {
+    // @ts-expect-error
+    const promise = mcuSession.handleCall({});
+
+    events.trigger('failed', {
+      originator: 'remote',
+      // @ts-expect-error
+      message: {},
+      cause: 'error',
+    });
+    await expect(promise).rejects.toBeDefined();
+  });
+
+  it('handleCall: resolve(undefined) если peerconnection не был установлен', async () => {
+    // @ts-expect-error
+    const promise = mcuSession.handleCall({});
+
+    events.trigger('confirmed', {});
+    await expect(promise).resolves.toBeUndefined();
+  });
+
+  it('handleCall: вызывает ontrack', async () => {
+    const ontrack = jest.fn();
+    // @ts-expect-error
+    const promise = mcuSession.handleCall({ ontrack });
+    const audioTrack = createAudioMediaStreamTrackMock();
+    const videoTrack = createVideoMediaStreamTrackMock();
+    const fakePeerconnection = new RTCPeerConnectionMock(undefined, [audioTrack, videoTrack]);
+
+    events.trigger('peerconnection', { peerconnection: fakePeerconnection });
+    events.trigger('confirmed', {});
+
+    await expect(promise).resolves.toBeDefined();
+  });
+
+  it('handleCall: не вызывает ontrack если он не передан', async () => {
+    // @ts-expect-error
+    const promise = mcuSession.handleCall({});
+    const audioTrack = createAudioMediaStreamTrackMock();
+    const videoTrack = createVideoMediaStreamTrackMock();
+    const fakePeerconnection = new RTCPeerConnectionMock(undefined, [audioTrack, videoTrack]);
+
+    events.trigger('peerconnection', { peerconnection: fakePeerconnection });
+    events.trigger('confirmed', {});
+
+    await expect(promise).resolves.toBeDefined();
+  });
+
+  it('handleCall: триггерит PEER_CONNECTION_ONTRACK без ontrack', async () => {
+    const triggerSpy = jest.spyOn(events, 'trigger');
+
+    // @ts-expect-error
+    const promise = mcuSession.handleCall({});
+    const audioTrack = createAudioMediaStreamTrackMock();
+    const fakePeerconnection = new RTCPeerConnectionMock(undefined, [audioTrack]);
+
+    events.trigger('peerconnection', { peerconnection: fakePeerconnection });
+
+    // инициируем track событие
+    fakePeerconnection.addTrack(audioTrack);
+
+    events.trigger('confirmed', {});
+
+    await expect(promise).resolves.toBeDefined();
+
+    expect(triggerSpy).toHaveBeenCalledWith('peerconnection:ontrack', expect.anything());
   });
 
   it('connection: возвращает rtcSession.connection', () => {
-    // @ts-expect-error
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    strategyTest.mcuSession.rtcSession = { connection: 'test' };
-    expect(strategy.connection).toBe('test');
+    mcuSessionTest.rtcSession = { connection: 'test' };
+    expect(mcuSession.connection).toBe('test');
   });
 
   it('establishedRTCSession: возвращает rtcSession если isEstablished', () => {
-    // @ts-expect-error
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    strategyTest.mcuSession.rtcSession = {
+    mcuSessionTest.rtcSession = {
       isEstablished: () => {
         return true;
       },
     };
-
-    // @ts-expect-error
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(strategy.getEstablishedRTCSession()).toBe(strategyTest.mcuSession.rtcSession);
-
-    // @ts-expect-error
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    strategyTest.mcuSession.rtcSession = {
+    expect(mcuSession.getEstablishedRTCSession()).toBe(mcuSessionTest.rtcSession);
+    mcuSessionTest.rtcSession = {
       isEstablished: () => {
         return false;
       },
     };
-    expect(strategy.getEstablishedRTCSession()).toBeUndefined();
+    expect(mcuSession.getEstablishedRTCSession()).toBeUndefined();
   });
 
   it('getEstablishedRTCSession: возвращает rtcSession если isEstablished', () => {
-    // @ts-expect-error
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    strategyTest.mcuSession.rtcSession = {
+    mcuSessionTest.rtcSession = {
       isEstablished: () => {
         return true;
       },
     };
-
-    // @ts-expect-error
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(strategy.getEstablishedRTCSession()).toBe(strategyTest.mcuSession.rtcSession);
-
-    // @ts-expect-error
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    strategyTest.mcuSession.rtcSession = {
+    expect(mcuSession.getEstablishedRTCSession()).toBe(mcuSessionTest.rtcSession);
+    mcuSessionTest.rtcSession = {
       isEstablished: () => {
         return false;
       },
     };
-    expect(strategy.getEstablishedRTCSession()).toBeUndefined();
-  });
-
-  it('getCallConfiguration: возвращает копию callConfiguration', () => {
-    strategyTest.callConfiguration = { number: '123', answer: true };
-    expect(strategy.getCallConfiguration()).toEqual({ number: '123', answer: true });
-    expect(strategy.getCallConfiguration()).not.toBe(strategyTest.callConfiguration);
+    expect(mcuSession.getEstablishedRTCSession()).toBeUndefined();
   });
 
   it('subscribeToSessionEvents: подписывает все события', () => {
     const rtcSession = { on: jest.fn() };
-    const subscribeToSessionEvents = Reflect.get(
-      // @ts-expect-error
-      strategy.mcuSession,
-      'subscribeToSessionEvents',
-    ) as (rtcSession: unknown) => void;
+    const subscribeToSessionEvents = Reflect.get(mcuSession, 'subscribeToSessionEvents') as (
+      rtcSession: unknown,
+    ) => void;
 
-    // @ts-expect-error
-    subscribeToSessionEvents.call(strategy.mcuSession, rtcSession);
+    subscribeToSessionEvents.call(mcuSession, rtcSession);
 
     // Получаем список событий, на которые реально подписывается метод
     // Обычно это Object.keys(EVENT_NAMES), но могут быть фильтры — уточняем:
@@ -360,15 +494,14 @@ describe('MCUCallStrategy - дополнительные тесты для по�
     });
 
     // Мокаем rtcSession
-    // @ts-expect-error
-    Object.defineProperty(strategy.mcuSession, 'rtcSession', {
+    Object.defineProperty(mcuSession, 'rtcSession', {
       get: () => {
         return rtcSession;
       },
       configurable: true,
     });
 
-    const result = await strategy.restartIce();
+    const result = await mcuSession.restartIce();
 
     expect(rtcSession.restartIce).toHaveBeenCalledTimes(1);
     expect(result).toBe(true);
@@ -381,8 +514,7 @@ describe('MCUCallStrategy - дополнительные тесты для по�
     });
 
     // Мокаем rtcSession
-    // @ts-expect-error
-    Object.defineProperty(strategy.mcuSession, 'rtcSession', {
+    Object.defineProperty(mcuSession, 'rtcSession', {
       get: () => {
         return rtcSession;
       },
@@ -395,22 +527,21 @@ describe('MCUCallStrategy - дополнительные тесты для по�
       rtcOfferConstraints: { offerToReceiveAudio: true },
     };
 
-    await strategy.restartIce(options);
+    await mcuSession.restartIce(options);
 
     expect(rtcSession.restartIce).toHaveBeenCalledWith(options);
   });
 
   it('restartIce: выбрасывает ошибку если нет rtcSession', async () => {
     // Мокаем rtcSession чтобы вернуть undefined
-    // @ts-expect-error
-    Object.defineProperty(strategy.mcuSession, 'rtcSession', {
+    Object.defineProperty(mcuSession, 'rtcSession', {
       get: () => {
         return undefined;
       },
       configurable: true,
     });
 
-    await expect(strategy.restartIce()).rejects.toThrow('No rtcSession established');
+    await expect(mcuSession.restartIce()).rejects.toThrow('No rtcSession established');
   });
 
   describe('addTransceiver', () => {
@@ -421,13 +552,12 @@ describe('MCUCallStrategy - дополнительные тесты для по�
       } as unknown as RTCSession;
 
       // Мокаем rtcSession
-      // @ts-expect-error
-      Object.defineProperty(strategy.mcuSession, 'rtcSession', {
+      Object.defineProperty(mcuSession, 'rtcSession', {
         value: mockRtcSession,
         configurable: true,
       });
 
-      const result = await strategy.addTransceiver('audio');
+      const result = await mcuSession.addTransceiver('audio');
 
       expect(mockRtcSession.addTransceiver).toHaveBeenCalledWith('audio', undefined);
       expect(result).toBe(mockTransceiver);
@@ -440,13 +570,12 @@ describe('MCUCallStrategy - дополнительные тесты для по�
       } as unknown as RTCSession;
 
       // Мокаем rtcSession
-      // @ts-expect-error
-      Object.defineProperty(strategy.mcuSession, 'rtcSession', {
+      Object.defineProperty(mcuSession, 'rtcSession', {
         value: mockRtcSession,
         configurable: true,
       });
 
-      const result = await strategy.addTransceiver('video');
+      const result = await mcuSession.addTransceiver('video');
 
       expect(mockRtcSession.addTransceiver).toHaveBeenCalledWith('video', undefined);
       expect(result).toBe(mockTransceiver);
@@ -464,13 +593,12 @@ describe('MCUCallStrategy - дополнительные тесты для по�
       } as unknown as RTCSession;
 
       // Мокаем rtcSession
-      // @ts-expect-error
-      Object.defineProperty(strategy.mcuSession, 'rtcSession', {
+      Object.defineProperty(mcuSession, 'rtcSession', {
         value: mockRtcSession,
         configurable: true,
       });
 
-      const result = await strategy.addTransceiver('video', options);
+      const result = await mcuSession.addTransceiver('video', options);
 
       expect(mockRtcSession.addTransceiver).toHaveBeenCalledWith('video', options);
       expect(result).toBe(mockTransceiver);
@@ -478,15 +606,14 @@ describe('MCUCallStrategy - дополнительные тесты для по�
 
     it('should throw error if no rtcSession established', async () => {
       // Мокаем rtcSession чтобы вернуть undefined
-      // @ts-expect-error
-      Object.defineProperty(strategy.mcuSession, 'rtcSession', {
+      Object.defineProperty(mcuSession, 'rtcSession', {
         get: () => {
           return undefined;
         },
         configurable: true,
       });
 
-      await expect(strategy.addTransceiver('audio')).rejects.toThrow('No rtcSession established');
+      await expect(mcuSession.addTransceiver('audio')).rejects.toThrow('No rtcSession established');
     });
 
     it('should handle rtcSession.addTransceiver rejection', async () => {
@@ -496,13 +623,12 @@ describe('MCUCallStrategy - дополнительные тесты для по�
       } as unknown as RTCSession;
 
       // Мокаем rtcSession
-      // @ts-expect-error
-      Object.defineProperty(strategy.mcuSession, 'rtcSession', {
+      Object.defineProperty(mcuSession, 'rtcSession', {
         value: mockRtcSession,
         configurable: true,
       });
 
-      await expect(strategy.addTransceiver('audio')).rejects.toThrow('Failed to add transceiver');
+      await expect(mcuSession.addTransceiver('audio')).rejects.toThrow('Failed to add transceiver');
       expect(mockRtcSession.addTransceiver).toHaveBeenCalledWith('audio', undefined);
     });
 
@@ -514,15 +640,14 @@ describe('MCUCallStrategy - дополнительные тесты для по�
       } as unknown as RTCSession;
 
       // Мокаем rtcSession
-      // @ts-expect-error
-      Object.defineProperty(strategy.mcuSession, 'rtcSession', {
+      Object.defineProperty(mcuSession, 'rtcSession', {
         value: mockRtcSession,
         configurable: true,
       });
 
       const options: RTCRtpTransceiverInit = { direction: 'sendonly' };
 
-      await strategy.addTransceiver('audio', options);
+      await mcuSession.addTransceiver('audio', options);
 
       expect(addTransceiverMock).toHaveBeenCalledWith('audio', options);
     });
@@ -535,8 +660,7 @@ describe('MCUCallStrategy - дополнительные тесты для по�
       } as unknown as RTCSession;
 
       // Мокаем rtcSession
-      // @ts-expect-error
-      Object.defineProperty(strategy.mcuSession, 'rtcSession', {
+      Object.defineProperty(mcuSession, 'rtcSession', {
         value: mockRtcSession,
         configurable: true,
       });
@@ -546,7 +670,7 @@ describe('MCUCallStrategy - дополнительные тесты для по�
         sendEncodings: [{ rid: 'high', maxBitrate: 2_000_000 }],
       };
 
-      await strategy.addTransceiver('video', options);
+      await mcuSession.addTransceiver('video', options);
 
       expect(addTransceiverMock).toHaveBeenCalledWith('video', options);
     });

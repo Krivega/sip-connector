@@ -3,7 +3,6 @@ import { TypedEvents } from 'events-constructor';
 import { EEvent, EVENT_NAMES } from './eventNames';
 import { MCUCallStrategy } from './MCUCallStrategy';
 
-import type { RTCSession } from '@krivega/jssip';
 import type { TEvents, TEventMap } from './eventNames';
 import type { ICallStrategy } from './types';
 
@@ -23,17 +22,17 @@ class CallManager {
     return this.strategy.requested;
   }
 
-  public get connection(): RTCPeerConnection | undefined {
+  public get connection(): ICallStrategy['connection'] {
     return this.strategy.connection;
-  }
-
-  public get establishedRTCSession(): RTCSession | undefined {
-    return this.strategy.establishedRTCSession;
   }
 
   public get isCallActive(): ICallStrategy['isCallActive'] {
     return this.strategy.isCallActive;
   }
+
+  public getEstablishedRTCSession: ICallStrategy['getEstablishedRTCSession'] = () => {
+    return this.strategy.getEstablishedRTCSession();
+  };
 
   public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
     return this.events.on(eventName, handler);
@@ -79,10 +78,6 @@ class CallManager {
 
   public answerToIncomingCall: ICallStrategy['answerToIncomingCall'] = async (...args) => {
     return this.strategy.answerToIncomingCall(...args);
-  };
-
-  public getEstablishedRTCSession: ICallStrategy['getEstablishedRTCSession'] = () => {
-    return this.strategy.getEstablishedRTCSession();
   };
 
   public getCallConfiguration: ICallStrategy['getCallConfiguration'] = () => {

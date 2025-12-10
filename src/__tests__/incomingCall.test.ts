@@ -80,7 +80,7 @@ describe('incoming call', () => {
           expect(peerconnection).toBeDefined();
           // @ts-expect-error
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          expect(sipConnector.establishedRTCSession.answer.mock.calls.length).toBe(1);
+          expect(sipConnector.getEstablishedRTCSession().answer.mock.calls.length).toBe(1);
 
           resolve();
         },
@@ -291,7 +291,7 @@ describe('incoming call', () => {
 
         // @ts-expect-error
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        const parameters = sipConnector.establishedRTCSession.answer.mock.calls[0][0] as {
+        const parameters = sipConnector.getEstablishedRTCSession().answer.mock.calls[0][0] as {
           directionVideo: string;
           directionAudio: string;
           mediaStream: MediaStream;
@@ -326,7 +326,7 @@ describe('incoming call', () => {
 
         // @ts-expect-error
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        const parameters = sipConnector.establishedRTCSession.answer.mock.calls[0][0] as {
+        const parameters = sipConnector.getEstablishedRTCSession().answer.mock.calls[0][0] as {
           directionVideo: string;
           directionAudio: string;
           mediaStream: MediaStream;
@@ -361,7 +361,7 @@ describe('incoming call', () => {
 
         // @ts-expect-error
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        const parameters = sipConnector.establishedRTCSession.answer.mock.calls[0][0] as {
+        const parameters = sipConnector.getEstablishedRTCSession().answer.mock.calls[0][0] as {
           directionVideo: string;
           directionAudio: string;
           mediaStream: MediaStream;
@@ -397,7 +397,7 @@ describe('incoming call', () => {
 
         // @ts-expect-error
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        const parameters = sipConnector.establishedRTCSession.answer.mock.calls[0][0] as {
+        const parameters = sipConnector.getEstablishedRTCSession().answer.mock.calls[0][0] as {
           directionVideo: string;
           directionAudio: string;
           mediaStream: MediaStream;

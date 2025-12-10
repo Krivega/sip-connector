@@ -36,7 +36,7 @@ describe('events', () => {
       [EHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE],
       [EHeader.CONTENT_SHARE_STATE, EShareState.AVAILABLE_SECOND_REMOTE_STREAM],
     ];
-    const { establishedRTCSession } = sipConnector.callManager;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, extraHeaders);
@@ -59,7 +59,7 @@ describe('events', () => {
       [EHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE],
       [EHeader.CONTENT_SHARE_STATE, EShareState.NOT_AVAILABLE_SECOND_REMOTE_STREAM],
     ];
-    const { establishedRTCSession } = sipConnector.callManager;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, extraHeaders);
@@ -82,7 +82,7 @@ describe('events', () => {
       [EHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE],
       [EHeader.CONTENT_SHARE_STATE, EShareState.MUST_STOP_PRESENTATION],
     ];
-    const { establishedRTCSession } = sipConnector.callManager;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, extraHeaders);

@@ -140,7 +140,7 @@ describe('call', () => {
 
     const callConfiguration = sipConnector.getCallConfiguration();
 
-    expect(sipConnector.callManager.establishedRTCSession).toBe(undefined);
+    expect(sipConnector.callManager.getEstablishedRTCSession()).toBe(undefined);
     expect(callConfiguration.number).toBe(undefined);
   });
 
@@ -163,7 +163,7 @@ describe('call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
-    sipConnector.callManager.establishedRTCSession?.terminate(); // end call from server
+    sipConnector.callManager.getEstablishedRTCSession()?.terminate(); // end call from server
 
     return expect(disconnectPromise).resolves.toBeUndefined();
   });
@@ -255,7 +255,7 @@ describe('call', () => {
 
     await sipConnector.call({ number, mediaStream, ontrack: mockFunction });
 
-    sipConnector.callManager.establishedRTCSession?.terminate(); // end call from server
+    sipConnector.callManager.getEstablishedRTCSession()?.terminate(); // end call from server
 
     return sipConnector.disconnect().then((result) => {
       expect(result).toBeUndefined();
@@ -280,7 +280,7 @@ describe('call', () => {
 
     expect(sipConnector.getRemoteStreams()).toBeDefined();
 
-    sipConnector.callManager.establishedRTCSession?.terminate(); // end call from server
+    sipConnector.callManager.getEstablishedRTCSession()?.terminate(); // end call from server
 
     await disconnectPromise;
 
@@ -302,7 +302,7 @@ describe('call', () => {
 
     // @ts-expect-error
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    sipConnector.callManager.establishedRTCSession?.terminateRemote();
+    sipConnector.callManager.getEstablishedRTCSession()?.terminateRemote();
 
     return expect(endedFromServer).resolves.toEqual(data);
   });

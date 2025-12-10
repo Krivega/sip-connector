@@ -23,7 +23,6 @@ describe('CallManager', () => {
     mockStrategy = {
       requested: false,
       connection: undefined,
-      establishedRTCSession: undefined,
       isCallActive: false,
       startCall: jest.fn(),
       endCall: jest.fn(),
@@ -100,9 +99,8 @@ describe('CallManager', () => {
     it('should return establishedRTCSession from strategy', () => {
       const mockSession = {} as RTCSession;
 
-      // @ts-expect-error
-      mockStrategy.establishedRTCSession = mockSession;
-      expect(callManager.establishedRTCSession).toBe(mockSession);
+      mockStrategy.getEstablishedRTCSession.mockReturnValue(mockSession);
+      expect(callManager.getEstablishedRTCSession()).toBe(mockSession);
     });
 
     it('should return isCallActive from strategy', () => {

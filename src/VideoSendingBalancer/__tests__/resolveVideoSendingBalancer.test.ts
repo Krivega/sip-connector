@@ -96,7 +96,7 @@ describe('resolveVideoSendingBalancer', () => {
       sender.setParameters = resolve;
     });
 
-    const { establishedRTCSession } = sipConnector;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersResumeMainCam);
@@ -143,7 +143,7 @@ describe('resolveVideoSendingBalancer', () => {
       sender.setParameters = resolve;
     });
 
-    const { establishedRTCSession } = sipConnector;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersPauseMainCam);
@@ -190,7 +190,7 @@ describe('resolveVideoSendingBalancer', () => {
       sender.setParameters = resolve;
     });
 
-    const { establishedRTCSession } = sipConnector;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersMaxMainCamResolution);

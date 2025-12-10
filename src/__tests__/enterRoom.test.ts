@@ -34,7 +34,7 @@ describe('enter room', () => {
       });
     });
 
-    const { establishedRTCSession } = sipConnector.callManager;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, enterRoomHeaders);

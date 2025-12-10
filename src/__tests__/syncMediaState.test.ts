@@ -107,7 +107,7 @@ describe('sync media state', () => {
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
       sipConnector.on('api:admin-start-main-cam', resolve);
     });
-    const { establishedRTCSession } = sipConnector;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersSyncForcedAdminStartMainCam);
@@ -125,7 +125,7 @@ describe('sync media state', () => {
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
       sipConnector.on('api:admin-start-main-cam', resolve);
     });
-    const { establishedRTCSession } = sipConnector;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersSyncNotForcedAdminStartMainCam);
@@ -143,7 +143,7 @@ describe('sync media state', () => {
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
       sipConnector.on('api:admin-stop-main-cam', resolve);
     });
-    const { establishedRTCSession } = sipConnector;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersSyncForcedAdminStopMainCam);
@@ -161,7 +161,7 @@ describe('sync media state', () => {
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
       sipConnector.on('api:admin-stop-main-cam', resolve);
     });
-    const { establishedRTCSession } = sipConnector;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersSyncNotForcedAdminStopMainCam);
@@ -179,7 +179,7 @@ describe('sync media state', () => {
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
       sipConnector.on('api:admin-start-mic', resolve);
     });
-    const { establishedRTCSession } = sipConnector;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersSyncForcedAdminStartMic);
@@ -197,7 +197,7 @@ describe('sync media state', () => {
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
       sipConnector.on('api:admin-start-mic', resolve);
     });
-    const { establishedRTCSession } = sipConnector;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersSyncNotForcedAdminStartMic);
@@ -215,7 +215,7 @@ describe('sync media state', () => {
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
       sipConnector.on('api:admin-stop-mic', resolve);
     });
-    const { establishedRTCSession } = sipConnector;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersSyncForcedAdminStopMic);
@@ -233,7 +233,7 @@ describe('sync media state', () => {
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
       sipConnector.on('api:admin-stop-mic', resolve);
     });
-    const { establishedRTCSession } = sipConnector;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersSyncNotForcedAdminStopMic);
@@ -251,7 +251,7 @@ describe('sync media state', () => {
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
       sipConnector.on('api:admin-force-sync-media-state', resolve);
     });
-    const { establishedRTCSession } = sipConnector;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersSyncForcedResumeMainCam);
@@ -269,7 +269,7 @@ describe('sync media state', () => {
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
       sipConnector.on('api:admin-force-sync-media-state', resolve);
     });
-    const { establishedRTCSession } = sipConnector;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersSyncNotForcedResumeMainCam);
@@ -287,7 +287,7 @@ describe('sync media state', () => {
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
       sipConnector.on('api:admin-force-sync-media-state', resolve);
     });
-    const { establishedRTCSession } = sipConnector;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersSyncForcedPauseMainCam);
@@ -305,7 +305,7 @@ describe('sync media state', () => {
     const promise = new Promise<{ isSyncForced: boolean }>((resolve) => {
       sipConnector.on('api:admin-force-sync-media-state', resolve);
     });
-    const { establishedRTCSession } = sipConnector;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersSyncNotForcedPauseMainCam);
@@ -323,7 +323,7 @@ describe('sync media state', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = sipConnector.waitSyncMediaState();
-    const { establishedRTCSession } = sipConnector;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersSyncForcedResumeMainCam);
@@ -341,7 +341,7 @@ describe('sync media state', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = sipConnector.waitSyncMediaState();
-    const { establishedRTCSession } = sipConnector;
+    const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
     if (establishedRTCSession) {
       JsSIP.triggerNewInfo(establishedRTCSession, headersSyncNotForcedResumeMainCam);

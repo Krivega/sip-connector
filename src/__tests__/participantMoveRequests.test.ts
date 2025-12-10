@@ -90,9 +90,11 @@ describe('participants moveRequests', () => {
 
         resolve();
       });
-
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      JsSIP.triggerNewInfo(sipConnector.establishedRTCSession!, moveRequestToSpectatorsHeaders);
+      JsSIP.triggerNewInfo(
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        sipConnector.getEstablishedRTCSession()!,
+        moveRequestToSpectatorsHeaders,
+      );
     });
   });
 });
