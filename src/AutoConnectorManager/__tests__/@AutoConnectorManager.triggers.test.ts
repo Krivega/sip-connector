@@ -1,7 +1,6 @@
 import { doMockSipConnector } from '@/doMock';
 import AutoConnectorManager from '../@AutoConnectorManager';
 import CheckTelephonyRequester from '../CheckTelephonyRequester';
-import PingServerIfNotActiveCallRequester from '../PingServerIfNotActiveCallRequester';
 import RegistrationFailedOutOfCallSubscriber from '../RegistrationFailedOutOfCallSubscriber';
 
 import type { SipConnector } from '@/SipConnector';
@@ -92,17 +91,15 @@ describe('AutoConnectorManager - Triggers', () => {
   });
 
   describe('подписчики и триггеры', () => {
-    it('запускает ping server requester после успешного подключения', async () => {
-      const pingServerIfNotActiveCallStartSpy = jest.spyOn(
-        PingServerIfNotActiveCallRequester.prototype,
-        'start',
-      );
+    it('запускает check telephony requester после успешного подключения', async () => {
+      const checkTelephonyStartSpy = jest.spyOn(CheckTelephonyRequester.prototype, 'start');
 
       manager.start(baseParameters);
 
       await manager.wait('success');
 
-      expect(pingServerIfNotActiveCallStartSpy).toHaveBeenCalledWith({
+      expect(checkTelephonyStartSpy).toHaveBeenCalledWith({
+        onBeforeRequest: expect.any(Function) as () => Promise<unknown>,
         onFailRequest: expect.any(Function) as () => void,
         onSuccessRequest: expect.any(Function) as () => void,
       });
@@ -300,11 +297,9 @@ describe('AutoConnectorManager - Triggers', () => {
       );
     });
 
-    it('запускает start при onFailRequest в ping server', async () => {
+    it('запускает start при onFailRequest в check telephony', async () => {
       const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
-      const startSpy = jest
-        .spyOn(PingServerIfNotActiveCallRequester.prototype, 'start')
-        .mockImplementation();
+      const startSpy = jest.spyOn(CheckTelephonyRequester.prototype, 'start').mockImplementation();
 
       manager.start(baseParameters);
 
@@ -323,11 +318,9 @@ describe('AutoConnectorManager - Triggers', () => {
       expect(connectSpy).toHaveBeenCalledTimes(2);
     });
 
-    it('не перезапускает подключение при onSuccessRequest в ping server, если соединение доступно', async () => {
+    it('не перезапускает подключение при onSuccessRequest в check telephony, если соединение доступно', async () => {
       const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
-      const startSpy = jest
-        .spyOn(PingServerIfNotActiveCallRequester.prototype, 'start')
-        .mockImplementation();
+      const startSpy = jest.spyOn(CheckTelephonyRequester.prototype, 'start').mockImplementation();
 
       jest.spyOn(sipConnector.connectionManager, 'isFailed', 'get').mockReturnValue(false);
       jest.spyOn(sipConnector.connectionManager, 'isDisconnected', 'get').mockReturnValue(false);
@@ -348,11 +341,9 @@ describe('AutoConnectorManager - Triggers', () => {
       expect(connectSpy).toHaveBeenCalledTimes(1);
     });
 
-    it('перезапускает подключение при onSuccessRequest в ping server, если соединение isFailed', async () => {
+    it('перезапускает подключение при onSuccessRequest в check telephony, если соединение isFailed', async () => {
       const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
-      const startSpy = jest
-        .spyOn(PingServerIfNotActiveCallRequester.prototype, 'start')
-        .mockImplementation();
+      const startSpy = jest.spyOn(CheckTelephonyRequester.prototype, 'start').mockImplementation();
 
       jest.spyOn(sipConnector.connectionManager, 'isFailed', 'get').mockReturnValue(true);
       jest.spyOn(sipConnector.connectionManager, 'isDisconnected', 'get').mockReturnValue(false);
@@ -375,11 +366,9 @@ describe('AutoConnectorManager - Triggers', () => {
       expect(connectSpy).toHaveBeenCalledTimes(2);
     });
 
-    it('перезапускает подключение при onSuccessRequest в ping server, если соединение disconnected', async () => {
+    it('перезапускает подключение при onSuccessRequest в check telephony, если соединение disconnected', async () => {
       const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
-      const startSpy = jest
-        .spyOn(PingServerIfNotActiveCallRequester.prototype, 'start')
-        .mockImplementation();
+      const startSpy = jest.spyOn(CheckTelephonyRequester.prototype, 'start').mockImplementation();
 
       jest.spyOn(sipConnector.connectionManager, 'isFailed', 'get').mockReturnValue(false);
       jest.spyOn(sipConnector.connectionManager, 'isDisconnected', 'get').mockReturnValue(true);
@@ -402,11 +391,9 @@ describe('AutoConnectorManager - Triggers', () => {
       expect(connectSpy).toHaveBeenCalledTimes(2);
     });
 
-    it('перезапускает подключение при onSuccessRequest в ping server, если соединение idle', async () => {
+    it('перезапускает подключение при onSuccessRequest в check telephony, если соединение idle', async () => {
       const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
-      const startSpy = jest
-        .spyOn(PingServerIfNotActiveCallRequester.prototype, 'start')
-        .mockImplementation();
+      const startSpy = jest.spyOn(CheckTelephonyRequester.prototype, 'start').mockImplementation();
 
       jest.spyOn(sipConnector.connectionManager, 'isFailed', 'get').mockReturnValue(false);
       jest.spyOn(sipConnector.connectionManager, 'isDisconnected', 'get').mockReturnValue(false);
@@ -451,10 +438,6 @@ describe('AutoConnectorManager - Triggers', () => {
     });
 
     it('stopConnectTriggers: останавливает все триггеры', () => {
-      const pingServerIfNotActiveCallStopSpy = jest.spyOn(
-        PingServerIfNotActiveCallRequester.prototype,
-        'stop',
-      );
       const checkTelephonyStopSpy = jest.spyOn(CheckTelephonyRequester.prototype, 'stop');
       const registrationFailedSubscriberUnsubscribeSpy = jest.spyOn(
         RegistrationFailedOutOfCallSubscriber.prototype,
@@ -464,7 +447,6 @@ describe('AutoConnectorManager - Triggers', () => {
       // @ts-expect-error
       manager.stopConnectTriggers();
 
-      expect(pingServerIfNotActiveCallStopSpy).toHaveBeenCalled();
       expect(checkTelephonyStopSpy).toHaveBeenCalled();
       expect(registrationFailedSubscriberUnsubscribeSpy).toHaveBeenCalled();
     });

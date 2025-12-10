@@ -7,6 +7,7 @@ import type {
   IncomingRequest,
   OutgoingMessageEvent,
   RegisteredEvent,
+  ReconnectionFailedEvent,
   RTCSessionEvent,
   UnRegisteredEvent,
 } from '@krivega/jssip';
@@ -22,6 +23,7 @@ export enum EEvent {
   REGISTERED = 'registered',
   UNREGISTERED = 'unregistered',
   REGISTRATION_FAILED = 'registrationFailed',
+  RECONNECTION_FAILED = 'reconnectionFailed',
   NEW_MESSAGE = 'newMessage',
   SIP_EVENT = 'sipEvent',
   CONNECT_STARTED = 'connect-started',
@@ -39,6 +41,7 @@ export const UA_EVENT_NAMES = [
   `${EEvent.REGISTERED}`,
   `${EEvent.UNREGISTERED}`,
   `${EEvent.REGISTRATION_FAILED}`,
+  `${EEvent.RECONNECTION_FAILED}`,
   `${EEvent.NEW_MESSAGE}`,
   `${EEvent.SIP_EVENT}`,
 ] as const;
@@ -65,6 +68,7 @@ export type TEventMap = {
   registered: RegisteredEvent;
   unregistered: UnRegisteredEvent;
   registrationFailed: UnRegisteredEvent;
+  reconnectionFailed: ReconnectionFailedEvent;
   newMessage: IncomingMessageEvent | OutgoingMessageEvent;
   sipEvent: { event: unknown; request: IncomingRequest };
   'connect-started': Record<string, never>;

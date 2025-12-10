@@ -2,13 +2,15 @@ import { CancelableRequest, isCanceledError } from '@krivega/cancelable-promise'
 import { DelayRequester, hasCanceledError } from '@krivega/timeout-requester';
 import { TypedEvents } from 'events-constructor';
 
-import { hasNotReadyForConnectionError } from '@/ConnectionManager';
+import {
+  DEFAULT_CONNECTION_RECOVERY_MAX_INTERVAL,
+  hasNotReadyForConnectionError,
+} from '@/ConnectionManager';
 import { hasConnectionPromiseIsNotActualError } from '@/ConnectionQueueManager';
 import logger from '@/logger';
 import AttemptsState from './AttemptsState';
 import CheckTelephonyRequester from './CheckTelephonyRequester';
 import { EEvent, EVENT_NAMES } from './eventNames';
-import PingServerIfNotActiveCallRequester from './PingServerIfNotActiveCallRequester';
 import RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCallSubscriber';
 
 import type { CallManager } from '@/CallManager';
@@ -24,6 +26,7 @@ import type {
 
 const DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS = 3000;
 const DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL = 15_000;
+const MILLISECONDS_IN_SECOND = 1000;
 
 const ERROR_MESSAGES = {
   LIMIT_REACHED: 'Limit reached',
@@ -45,8 +48,6 @@ class AutoConnectorManager {
 
   private readonly checkTelephonyRequester: CheckTelephonyRequester;
 
-  private readonly pingServerIfNotActiveCallRequester: PingServerIfNotActiveCallRequester;
-
   private readonly registrationFailedOutOfCallSubscriber: RegistrationFailedOutOfCallSubscriber;
 
   private readonly attemptsState: AttemptsState;
@@ -62,6 +63,10 @@ class AutoConnectorManager {
   private readonly networkInterfacesSubscriber: TNetworkInterfacesSubscriber | undefined;
 
   private readonly resumeFromSleepModeSubscriber: TResumeFromSleepModeSubscriber | undefined;
+
+  private readonly defaultConnectionRecoveryMaxInterval = DEFAULT_CONNECTION_RECOVERY_MAX_INTERVAL;
+
+  private disconnectedHandler: (() => void) | undefined;
 
   public constructor(
     {
@@ -89,10 +94,6 @@ class AutoConnectorManager {
     this.checkTelephonyRequester = new CheckTelephonyRequester({
       connectionManager,
       interval: options?.checkTelephonyRequestInterval ?? DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL,
-    });
-    this.pingServerIfNotActiveCallRequester = new PingServerIfNotActiveCallRequester({
-      connectionManager,
-      callManager,
     });
     this.registrationFailedOutOfCallSubscriber = new RegistrationFailedOutOfCallSubscriber({
       connectionManager,
@@ -176,9 +177,9 @@ class AutoConnectorManager {
   private stopConnectTriggers() {
     logger('stopConnectTriggers');
 
-    this.stopPingRequester();
     this.checkTelephonyRequester.stop();
     this.registrationFailedOutOfCallSubscriber.unsubscribe();
+    this.unsubscribeFromDisconnected();
   }
 
   private startCheckTelephony(parameters: TParametersAutoConnect) {
@@ -281,13 +282,79 @@ class AutoConnectorManager {
   }
 
   private subscribeToConnectTriggers(parameters: TParametersAutoConnect) {
-    this.startPingRequester(parameters);
+    this.unsubscribeFromDisconnected();
+
+    this.disconnectedHandler = () => {
+      logger('subscribeToConnectTriggers: disconnected event received');
+
+      this.handleDisconnected(parameters).catch((error: unknown) => {
+        logger('handleDisconnected: error', error);
+      });
+    };
+
+    this.connectionManager.on('disconnected', this.disconnectedHandler);
 
     this.registrationFailedOutOfCallSubscriber.subscribe(() => {
       logger('registrationFailedOutOfCallListener callback');
 
       this.restartConnectionAttempts(parameters);
     });
+  }
+
+  private async handleDisconnected(parameters: TParametersAutoConnect) {
+    logger('handleDisconnected: waiting for connected or timeout');
+
+    const connectedPromise = this.getConnectedPromise();
+
+    const connectionRecoveryTimeoutPromise = this.getConnectionRecoveryTimeoutPromise(parameters);
+
+    const result = await Promise.race([connectedPromise, connectionRecoveryTimeoutPromise]);
+
+    if (result === 'timeout') {
+      logger('handleDisconnected: restarting connection attempts due to timeout');
+
+      this.restartConnectionAttempts(parameters);
+    } else {
+      logger('handleDisconnected: connected before connection timeout');
+    }
+  }
+
+  private async getConnectedPromise() {
+    return this.connectionManager.wait('connected').then(() => {
+      logger('getConnectedPromise: connected event received');
+
+      return 'connected' as const;
+    });
+  }
+
+  private async getConnectionRecoveryTimeoutPromise(parameters: TParametersAutoConnect) {
+    const connectionRecoveryTimeout = await this.getConnectionRecoveryTimeout(parameters);
+
+    return new Promise<'timeout'>((resolve) => {
+      setTimeout(() => {
+        logger('getTimeoutPromise: timeout reached');
+
+        resolve('timeout' as const);
+      }, connectionRecoveryTimeout);
+    });
+  }
+
+  private async getConnectionRecoveryTimeout(parameters: TParametersAutoConnect) {
+    const { connectionRecoveryMaxInterval = this.defaultConnectionRecoveryMaxInterval } =
+      await parameters.getParameters();
+
+    const recoveryTimeout = connectionRecoveryMaxInterval * MILLISECONDS_IN_SECOND;
+
+    logger(`getConnectionRecoveryTimeout: calculated timeout ${recoveryTimeout}ms`);
+
+    return recoveryTimeout;
+  }
+
+  private unsubscribeFromDisconnected() {
+    if (this.disconnectedHandler) {
+      this.connectionManager.off('disconnected', this.disconnectedHandler);
+      this.disconnectedHandler = undefined;
+    }
   }
 
   private subscribeToHardwareTriggers(parameters: TParametersAutoConnect) {
@@ -322,27 +389,6 @@ class AutoConnectorManager {
 
     this.networkInterfacesSubscriber?.unsubscribe();
     this.resumeFromSleepModeSubscriber?.unsubscribe();
-  }
-
-  private stopPingRequester() {
-    this.pingServerIfNotActiveCallRequester.stop();
-  }
-
-  private startPingRequester(parameters: TParametersAutoConnect) {
-    this.pingServerIfNotActiveCallRequester.start({
-      onFailRequest: () => {
-        logger('pingRequester: onFailRequest');
-
-        this.restartConnectionAttempts(parameters);
-      },
-      onSuccessRequest: () => {
-        if (this.isConnectionUnavailable()) {
-          logger('pingRequester: success ping with unavailable connection');
-
-          this.restartConnectionAttempts(parameters);
-        }
-      },
-    });
   }
 
   private connectIfDisconnected(parameters: TParametersAutoConnect) {

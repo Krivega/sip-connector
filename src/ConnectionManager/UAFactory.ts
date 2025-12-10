@@ -1,6 +1,11 @@
 import { generateUserId, parseDisplayName, resolveSipUrl } from '@/utils/utils';
 import { UA_EVENT_NAMES } from './eventNames';
 import getExtraHeadersRemoteAddress from './getExtraHeadersRemoteAddress';
+import {
+  DEFAULT_CONNECTION_RECOVERY_MAX_INTERVAL,
+  DEFAULT_CONNECTION_RECOVERY_MIN_INTERVAL,
+  DEFAULT_REGISTER_EXPIRES,
+} from './utils';
 
 import type { UA, UAConfigurationParams, WebSocketInterface } from '@krivega/jssip';
 import type { TJsSIP } from '@/types';
@@ -100,9 +105,9 @@ export default class UAFactory {
     sipServerUrl,
     register = false,
     sessionTimers = false,
-    registerExpires = 300, // 5 minutes in sec
-    connectionRecoveryMinInterval = 2,
-    connectionRecoveryMaxInterval = 6,
+    registerExpires = DEFAULT_REGISTER_EXPIRES,
+    connectionRecoveryMinInterval = DEFAULT_CONNECTION_RECOVERY_MIN_INTERVAL,
+    connectionRecoveryMaxInterval = DEFAULT_CONNECTION_RECOVERY_MAX_INTERVAL,
     userAgent,
   }: TParametersCreateUaConfiguration): TUAConfiguration {
     UAFactory.validateParametersConnection({
