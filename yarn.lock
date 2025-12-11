@@ -1165,18 +1165,18 @@
     globals "^16.5.0"
     typescript "^5.9.3"
 
-"@krivega/jssip@^5.4.1":
-  version "5.4.1"
-  resolved "https://registry.yarnpkg.com/@krivega/jssip/-/jssip-5.4.1.tgz#b3b17db2272e13244a1d8ad2ca18b0b62542569d"
-  integrity sha512-VQP9CXrfU0kSCcK1FgrVi0oGT1oRmd+yL6h7VbY78qjnhH0C+ZpydEWD1+YOhM3O17aOYQwwQBZy1PBheYfTcA==
+"@krivega/jssip@^5.5.0":
+  version "5.5.0"
+  resolved "https://registry.yarnpkg.com/@krivega/jssip/-/jssip-5.5.0.tgz#309e6c3a41458bb95cb7dc93f0207895c5db0f9a"
+  integrity sha512-TBAcNDNI3jEbaFZQWNPP12+a5KFOFwvYRo2NmaXVHb7k2/UpRM7ZVDV1cZs/s8UwK1KINa5bkFuPzKrX6LrLrg==
   dependencies:
     "@types/debug" "^4.1.12"
     "@types/events" "^3.0.3"
-    "@types/node" "^24.5.0"
+    "@types/node" "^25.0.0"
     debug "^4.4.3"
     events "^3.3.0"
     sdp-transform "^2.15.0"
-    sequent-promises "^0.1.4"
+    sequent-promises "^2.0.1"
 
 "@krivega/timeout-requester@^1.0.0":
   version "1.0.0"
@@ -1613,10 +1613,17 @@
   resolved "https://registry.yarnpkg.com/@types/ms/-/ms-2.1.0.tgz#052aa67a48eccc4309d7f0191b7e41434b90bb78"
   integrity sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==
 
-"@types/node@*", "@types/node@^24.5.0":
+"@types/node@*":
   version "24.10.2"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-24.10.2.tgz#82a57476a19647d8f2c7750d0924788245e39b26"
   integrity sha512-WOhQTZ4G8xZ1tjJTvKOpyEVSGgOTvJAfDK3FNFgELyaTpzhdgHVHeqW8V+UJvzF5BT+/B54T/1S2K6gd9c7bbA==
+  dependencies:
+    undici-types "~7.16.0"
+
+"@types/node@^25.0.0":
+  version "25.0.0"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-25.0.0.tgz#c0e0022c3c7b41635c49322e6b3a0279fffa7d62"
+  integrity sha512-rl78HwuZlaDIUSeUKkmogkhebA+8K1Hy7tddZuJ3D0xV8pZSfsYGTsliGUol1JPzu9EKnTxPC4L1fiWouStRew==
   dependencies:
     undici-types "~7.16.0"
 
@@ -6161,11 +6168,6 @@ semver@~7.5.4:
   dependencies:
     lru-cache "^6.0.0"
 
-sequent-promises@^0.1.4:
-  version "0.1.4"
-  resolved "https://registry.yarnpkg.com/sequent-promises/-/sequent-promises-0.1.4.tgz#22ece4d3aea1ab0fac8e2169efd3d20655912327"
-  integrity sha512-k900gtmVFYMqvrj/s/8owoCz4xgW58IVKkErRoXQ8LSIhY3F2KBMpsCp+KqcB8cSGz6+1jSu7AX5cY8p2CwPIg==
-
 sequent-promises@^2.0.1:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/sequent-promises/-/sequent-promises-2.0.1.tgz#8fbe458e7f1415516528bf29622d84533d7e0d2c"
@@ -7245,10 +7247,10 @@ xmlchars@^2.2.0:
   resolved "https://registry.yarnpkg.com/xmlchars/-/xmlchars-2.2.0.tgz#060fe1bcb7f9c76fe2a17db86a9bc3ab894210cb"
   integrity sha512-JZnDKK8B0RCDw84FNdDAIpZK+JuJw+s7Lz8nksI7SIuU3UXJJslUthsi+uWBUYOwPFwW7W7PRLRfUKpxjtjFCw==
 
-xstate@^5.24.0:
-  version "5.24.0"
-  resolved "https://registry.yarnpkg.com/xstate/-/xstate-5.24.0.tgz#35836c708b74f729b95725418fbd257ea51a32db"
-  integrity sha512-h/213ThFfZbOefUWrLc9ZvYggEVBr0jrD2dNxErxNMLQfZRN19v+80TaXFho17hs8Q2E1mULtm/6nv12um0C4A==
+xstate@^5.25.0:
+  version "5.25.0"
+  resolved "https://registry.yarnpkg.com/xstate/-/xstate-5.25.0.tgz#34b36c4843a9db445ed608f0e8caf8c381d5bce2"
+  integrity sha512-yyWzfhVRoTHNLjLoMmdwZGagAYfmnzpm9gPjlX2MhJZsDojXGqRxODDOi4BsgGRKD46NZRAdcLp6CKOyvQS0Bw==
 
 xtend@~4.0.1:
   version "4.0.2"
