@@ -10,7 +10,13 @@ import SipOperations from './SipOperations';
 import UAFactory from './UAFactory';
 import { createNotReadyForConnectionError, resolveParameters } from './utils';
 
-import type { RegisteredEvent, UA, UnRegisteredEvent, WebSocketInterface } from '@krivega/jssip';
+import type {
+  RegisteredEvent,
+  Socket,
+  UA,
+  UnRegisteredEvent,
+  WebSocketInterface,
+} from '@krivega/jssip';
 import type { TGetServerUrl } from '@/CallManager';
 import type { TJsSIP } from '@/types';
 import type {
@@ -48,6 +54,8 @@ export default class ConnectionManager {
   private readonly configurationManager: ConfigurationManager;
 
   private readonly JsSIP: TJsSIP;
+
+  private wasConnecting = false;
 
   public constructor({ JsSIP }: { JsSIP: TJsSIP }) {
     this.JsSIP = JsSIP;
@@ -96,6 +104,8 @@ export default class ConnectionManager {
         this.socket = socket;
       },
     });
+
+    this.subscribeToReconnectionTracking();
   }
 
   public get requested() {
@@ -300,4 +310,36 @@ export default class ConnectionManager {
         throw connectError;
       });
   };
+
+  private subscribeToReconnectionTracking() {
+    this.events.on(EEvent.DISCONNECTED, () => {
+      if (this.stateMachine.isIdle) {
+        this.wasConnecting = false;
+
+        return;
+      }
+
+      if (this.wasConnecting) {
+        const transportSocket = this.ua
+          ? ((this.ua.transport as unknown as { socket?: Socket }).socket ?? ({} as Socket))
+          : ({} as Socket);
+
+        this.events.trigger(EEvent.RECONNECTION_FAILED, {
+          socket: transportSocket,
+          attempts: 1,
+          error: true,
+        });
+      }
+
+      this.wasConnecting = false;
+    });
+
+    this.events.on(EEvent.CONNECTING, () => {
+      this.wasConnecting = true;
+    });
+
+    this.events.on(EEvent.CONNECTED, () => {
+      this.wasConnecting = false;
+    });
+  }
 }
