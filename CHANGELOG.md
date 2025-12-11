@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [19.8.0](https://github.com/Krivega/sip-connector/compare/v19.7.1...v19.8.0) (2025-12-11)
+
+### Features
+
+- add event proxying for connection configuration in ConnectionFlow ([a96da0e](https://github.com/Krivega/sip-connector/commit/a96da0ed90b15fd7d648ea4d041249ab8b0eb84f))
+
+### Bug Fixes
+
+- update error handling in AutoConnectorManager to trigger stop attempts event ([9a19632](https://github.com/Krivega/sip-connector/commit/9a196325c04a52915472ff8282b5e8f55fc672db))
+
 ### [19.7.1](https://github.com/Krivega/sip-connector/compare/v19.7.0...v19.7.1) (2025-11-27)
 
 ### Bug Fixes
