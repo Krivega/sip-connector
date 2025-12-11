@@ -162,7 +162,7 @@ describe('AutoConnectorManager - Events', () => {
       expect(handleAttemptStatusChanged).not.toHaveBeenCalled();
     });
 
-    it('вызывает changed-attempt-status при hasNotReadyForConnectionError', async () => {
+    it('вызывает stop-attempts-by-error и changed-attempt-status при hasNotReadyForConnectionError', async () => {
       const handleAttemptStatusChanged = jest.fn();
 
       manager.on('changed-attempt-status', handleAttemptStatusChanged);
@@ -178,7 +178,7 @@ describe('AutoConnectorManager - Events', () => {
         },
       });
 
-      await manager.wait('success');
+      await manager.wait('stop-attempts-by-error');
 
       // При ошибке not ready for connection статус должен сброситься
       expect(handleAttemptStatusChanged).toHaveBeenCalledWith({ isInProgress: false });

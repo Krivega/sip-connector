@@ -8,4 +8,4 @@ export type {
   TEvent as TConnectionManagerEvent,
   TEvents as TConnectionManagerEvents,
 } from './eventNames';
-export { hasNotReadyForConnectionError } from './utils';
+export { hasNotReadyForConnectionError, createNotReadyForConnectionError } from './utils';

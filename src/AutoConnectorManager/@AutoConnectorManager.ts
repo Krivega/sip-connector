@@ -236,7 +236,7 @@ class AutoConnectorManager {
   private handleConnectionError(error: unknown, parameters: TParametersAutoConnect) {
     if (hasNotReadyForConnectionError(error)) {
       this.attemptsState.finishAttempt();
-      this.handleSucceededAttempt(parameters);
+      this.events.trigger(EEvent.STOP_ATTEMPTS_BY_ERROR, error);
 
       return;
     }

@@ -1,4 +1,4 @@
-import { hasNotReadyForConnectionError } from '@/ConnectionManager';
+import { createNotReadyForConnectionError } from '@/ConnectionManager';
 import { doMockSipConnector } from '@/doMock';
 import AutoConnectorManager from '../@AutoConnectorManager';
 import PingServerIfNotActiveCallRequester from '../PingServerIfNotActiveCallRequester';
@@ -76,7 +76,7 @@ describe('AutoConnectorManager - Connection', () => {
       expect(result).toEqual(parameters);
     });
 
-    it('должен вызывать событие success-attempt и подписываться на слушателей при ошибке not ready for connection', async () => {
+    it('должен вызывать stop-attempts-by-error и подписываться на слушателей при ошибке not ready for connection', async () => {
       expect.assertions(3);
 
       const pingServerIfNotActiveCallStartSpy = jest.spyOn(
@@ -99,17 +99,14 @@ describe('AutoConnectorManager - Connection', () => {
         },
       });
 
-      await manager.wait('success');
+      await manager.wait('stop-attempts-by-error');
 
       const connectResult = connectSpy.mock.results[0].value as Promise<Error>;
 
-      expect(pingServerIfNotActiveCallStartSpy).toHaveBeenCalled();
-      expect(registrationFailedSubscriberSpy).toHaveBeenCalled();
+      expect(pingServerIfNotActiveCallStartSpy).not.toHaveBeenCalled();
+      expect(registrationFailedSubscriberSpy).not.toHaveBeenCalled();
 
-      await connectResult.catch((error: unknown) => {
-        // eslint-disable-next-line jest/no-conditional-expect
-        expect(hasNotReadyForConnectionError(error)).toBe(true);
-      });
+      await expect(connectResult).rejects.toThrow(createNotReadyForConnectionError());
     });
   });
 });
