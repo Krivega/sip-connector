@@ -29,6 +29,7 @@ export enum EEvent {
   CONNECT_FAILED = 'connect-failed',
   CONNECT_PARAMETERS_RESOLVE_SUCCESS = 'connect-parameters-resolve-success',
   CONNECT_PARAMETERS_RESOLVE_FAILED = 'connect-parameters-resolve-failed',
+  CONNECTED_WITH_CONFIGURATION = 'connected-with-configuration',
 }
 
 export const UA_EVENT_NAMES = [
@@ -50,6 +51,7 @@ const SYNTHETICS_EVENT_NAMES = [
   `${EEvent.CONNECT_FAILED}`,
   `${EEvent.CONNECT_PARAMETERS_RESOLVE_SUCCESS}`,
   `${EEvent.CONNECT_PARAMETERS_RESOLVE_FAILED}`,
+  `${EEvent.CONNECTED_WITH_CONFIGURATION}`,
 ] as const;
 
 export const EVENT_NAMES = [...UA_EVENT_NAMES, ...SYNTHETICS_EVENT_NAMES] as const;
@@ -69,6 +71,7 @@ export type TEventMap = {
   sipEvent: { event: unknown; request: IncomingRequest };
   'connect-started': Record<string, never>;
   'connect-succeeded': TConnectionConfigurationWithUa;
+  'connected-with-configuration': TConnectionConfigurationWithUa;
   'connect-failed': unknown;
   'connect-parameters-resolve-success': TParametersConnection;
   'connect-parameters-resolve-failed': unknown;

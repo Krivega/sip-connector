@@ -118,6 +118,8 @@ export default class ConnectionFlow {
     this.updateConnectionConfiguration = dependencies.updateConnectionConfiguration;
     this.setSipServerUrl = dependencies.setSipServerUrl;
     this.setSocket = dependencies.setSocket;
+
+    this.proxyEvents();
   }
 
   public connect: TConnect = async (data, options) => {
@@ -385,5 +387,19 @@ export default class ConnectionFlow {
 
   private cancelConnectWithRepeatedCalls() {
     this.cancelableConnectWithRepeatedCalls?.cancel();
+  }
+
+  private proxyEvents() {
+    this.events.on(EEvent.CONNECTED, () => {
+      const connectionConfiguration = this.getConnectionConfiguration();
+      const ua = this.getUa();
+
+      if (connectionConfiguration !== undefined && ua !== undefined) {
+        this.events.trigger(EEvent.CONNECTED_WITH_CONFIGURATION, {
+          ...connectionConfiguration,
+          ua,
+        });
+      }
+    });
   }
 }
