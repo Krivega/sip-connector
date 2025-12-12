@@ -163,9 +163,7 @@ class AutoConnectorManager {
 
     this.stopAttempts();
     this.stopConnectTriggers();
-    await this.connectionQueueManager.disconnect().catch((error: unknown) => {
-      logger('auto connector disconnect: error', error);
-    });
+    await this.connectionQueueManager.disconnect();
   }
 
   private stopAttempts() {
