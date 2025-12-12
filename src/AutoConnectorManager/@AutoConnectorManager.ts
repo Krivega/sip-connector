@@ -118,7 +118,9 @@ class AutoConnectorManager {
     logger('auto connector stop');
 
     this.unsubscribeFromHardwareTriggers();
-    this.stopConnectionFlow();
+    this.stopConnectionFlow().catch((error: unknown) => {
+      logger('auto connector stop from stop method: error', error);
+    });
   }
 
   public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
@@ -147,13 +149,16 @@ class AutoConnectorManager {
   private restartConnectionAttempts(parameters: TParametersAutoConnect) {
     logger('auto connector restart connection attempts');
 
-    this.stopConnectionFlow();
-    this.attemptConnection(parameters).catch((error: unknown) => {
-      logger('auto connector failed to connect:', error);
-    });
+    this.stopConnectionFlow()
+      .then(async () => {
+        return this.attemptConnection(parameters);
+      })
+      .catch((error: unknown) => {
+        logger('auto connector failed to restart connection attempts:', error);
+      });
   }
 
-  private stopConnectionFlow() {
+  private async stopConnectionFlow() {
     logger('stopConnectionFlow');
 
     this.stopAttempts();
@@ -304,7 +309,12 @@ class AutoConnectorManager {
       onUnavailable: () => {
         logger('networkInterfacesSubscriber onUnavailable');
 
-        this.stopConnectionFlow();
+        this.stopConnectionFlow().catch((error: unknown) => {
+          logger(
+            'auto connector stop from networkInterfacesSubscriber onUnavailable: error',
+            error,
+          );
+        });
       },
     });
 

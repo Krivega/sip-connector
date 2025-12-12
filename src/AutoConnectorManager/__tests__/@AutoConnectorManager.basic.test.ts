@@ -2,6 +2,7 @@ import { CancelableRequest } from '@krivega/cancelable-promise';
 import { DelayRequester } from '@krivega/timeout-requester';
 
 import delayPromise from '@/__fixtures__/delayPromise';
+import flushPromises from '@/__fixtures__/flushPromises';
 import { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import { doMockSipConnector } from '@/doMock';
 import logger from '@/logger';
@@ -114,7 +115,7 @@ describe('AutoConnectorManager - Basic', () => {
       expect(loggerMock).toHaveBeenCalled();
     });
 
-    it('stop: останавливает все процессы', () => {
+    it('stop: останавливает все процессы', async () => {
       const connectQueueStopSpy = jest.spyOn(ConnectionQueueManager.prototype, 'stop');
       const delayBetweenAttemptsCancelRequestSpy = jest.spyOn(
         DelayRequester.prototype,
@@ -135,6 +136,8 @@ describe('AutoConnectorManager - Basic', () => {
       );
 
       manager.start(baseParameters);
+
+      await flushPromises();
 
       jest.clearAllMocks();
 
@@ -177,6 +180,8 @@ describe('AutoConnectorManager - Basic', () => {
       manager.on('before-attempt', handleBeforeAttempt);
       manager.start(baseParameters);
 
+      await flushPromises();
+
       expect(handleBeforeAttempt).toHaveBeenCalled();
     });
 
@@ -185,6 +190,8 @@ describe('AutoConnectorManager - Basic', () => {
 
       manager.on('changed-attempt-status', handleAttemptStatusChanged);
       manager.start(baseParameters);
+
+      await flushPromises();
 
       expect(handleAttemptStatusChanged).toHaveBeenCalledTimes(1);
       expect(handleAttemptStatusChanged).toHaveBeenCalledWith({ isInProgress: true });
@@ -224,11 +231,14 @@ describe('AutoConnectorManager - Basic', () => {
       manager.on('success', handleSuccess);
       manager.start(baseParameters);
 
+      await flushPromises();
+
       const { onSuccessRequest } = startSpy.mock.calls[0][0] as {
         onSuccessRequest: () => void;
       };
 
       // @ts-ignore приватное свойство
+      // eslint-disable-next-line require-atomic-updates
       manager.attemptsState.limitInner = 10;
 
       onSuccessRequest();

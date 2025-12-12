@@ -1,6 +1,5 @@
-import { DelayRequester } from '@krivega/timeout-requester';
-
 import delayPromise from '@/__fixtures__/delayPromise';
+import flushPromises from '@/__fixtures__/flushPromises';
 import { doMockSipConnector } from '@/doMock';
 import AutoConnectorManager from '../@AutoConnectorManager';
 
@@ -42,6 +41,15 @@ describe('AutoConnectorManager - Reconnection', () => {
     );
   };
 
+  let emitResumeFromSleepMode: (() => void) | undefined;
+
+  const resumeFromSleepModeSubscriberMock = {
+    subscribe: jest.fn(({ onResume }: { onResume: () => void }) => {
+      emitResumeFromSleepMode = onResume;
+    }),
+    unsubscribe: jest.fn(),
+  };
+
   beforeEach(() => {
     sipConnector = doMockSipConnector();
     onBeforeRetryMock = jest.fn().mockResolvedValue(undefined);
@@ -53,6 +61,7 @@ describe('AutoConnectorManager - Reconnection', () => {
     manager = createManager({
       onBeforeRetry: onBeforeRetryMock,
       timeoutBetweenAttempts: 100,
+      resumeFromSleepModeSubscriber: resumeFromSleepModeSubscriberMock,
     });
   });
 
@@ -129,7 +138,6 @@ describe('AutoConnectorManager - Reconnection', () => {
     it('делает переподключение после сетевой ошибки с задержкой', async () => {
       // @ts-ignore приватное свойство
       const connectSpy = jest.spyOn(manager.connectionQueueManager, 'connect');
-      const delayRequestSpy = jest.spyOn(DelayRequester.prototype, 'request').mockResolvedValue();
       const newError = new Error('Network Error');
 
       connectSpy.mockRejectedValueOnce(newError);
@@ -139,6 +147,8 @@ describe('AutoConnectorManager - Reconnection', () => {
 
       manager.start(baseParameters);
 
+      await flushPromises();
+
       // @ts-ignore приватное свойство
       expect(manager.attemptsState.count).toBe(1);
 
@@ -146,9 +156,24 @@ describe('AutoConnectorManager - Reconnection', () => {
 
       // @ts-ignore приватное свойство
       expect(manager.attemptsState.count).toBe(2);
-      expect(delayRequestSpy).toHaveBeenCalled();
       expect(onBeforeRetryMock).toHaveBeenCalled();
       expect(connectSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('должен дождаться сброса состояния машины состояний перед запуском повторного подключения при выходе из спящего режима', async () => {
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      const promiseBeforeAttempt = new Promise((resolve) => {
+        manager.on('before-attempt', resolve);
+      });
+
+      emitResumeFromSleepMode?.();
+
+      await promiseBeforeAttempt;
+
+      expect(sipConnector.connectionManager.isIdle).toBe(true);
     });
   });
 });

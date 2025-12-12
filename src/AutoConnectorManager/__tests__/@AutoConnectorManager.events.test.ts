@@ -1,4 +1,5 @@
 import delayPromise from '@/__fixtures__/delayPromise';
+import flushPromises from '@/__fixtures__/flushPromises';
 import { doMockSipConnector } from '@/doMock';
 import AutoConnectorManager from '../@AutoConnectorManager';
 
@@ -69,6 +70,8 @@ describe('AutoConnectorManager - Events', () => {
       manager.on('changed-attempt-status', handleAttemptStatusChanged);
       manager.start(baseParameters);
 
+      await flushPromises();
+
       expect(handleAttemptStatusChanged).toHaveBeenCalledWith({ isInProgress: true });
     });
 
@@ -79,6 +82,8 @@ describe('AutoConnectorManager - Events', () => {
 
       // Сначала запускаем попытку, чтобы статус стал true
       manager.start(baseParameters);
+
+      await flushPromises();
 
       // Очищаем предыдущие вызовы
       handleAttemptStatusChanged.mockClear();
@@ -95,6 +100,8 @@ describe('AutoConnectorManager - Events', () => {
 
       manager.on('changed-attempt-status', handleAttemptStatusChanged);
       manager.start(baseParameters);
+
+      await flushPromises();
 
       // Очищаем предыдущие вызовы
       handleAttemptStatusChanged.mockClear();
@@ -154,7 +161,9 @@ describe('AutoConnectorManager - Events', () => {
       manager.start(baseParameters);
 
       // Очищаем вызов startAttempt
-      handleAttemptStatusChanged.mockClear();
+      manager.once('changed-attempt-status', () => {
+        handleAttemptStatusChanged.mockClear();
+      });
 
       await manager.wait('success');
 

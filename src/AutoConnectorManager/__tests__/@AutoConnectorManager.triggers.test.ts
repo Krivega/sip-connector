@@ -1,3 +1,4 @@
+import flushPromises from '@/__fixtures__/flushPromises';
 import { doMockSipConnector } from '@/doMock';
 import AutoConnectorManager from '../@AutoConnectorManager';
 import CheckTelephonyRequester from '../CheckTelephonyRequester';
@@ -362,17 +363,19 @@ describe('AutoConnectorManager - Triggers', () => {
       expect(registrationFailedSubscriberUnsubscribeSpy).toHaveBeenCalled();
     });
 
-    it('остановка всех триггеров в начале подключения', () => {
+    it('остановка всех триггеров в начале подключения', async () => {
       // @ts-expect-error
       const stopConnectTriggersSpy = jest.spyOn(manager, 'stopConnectTriggers');
 
       manager.start(baseParameters);
 
+      await flushPromises();
+
       // 1-й раз останавливаются при вызове cancel в start
       expect(stopConnectTriggersSpy).toHaveBeenCalledTimes(2);
     });
 
-    it('остановка всех триггеров успешной проверки телефонии', () => {
+    it('остановка всех триггеров успешной проверки телефонии', async () => {
       jest.spyOn(sipConnector.connectionManager, 'isFailed', 'get').mockReturnValue(false);
       jest.spyOn(sipConnector.connectionManager, 'isDisconnected', 'get').mockReturnValue(false);
       jest.spyOn(sipConnector.connectionManager, 'isIdle', 'get').mockReturnValue(false);
@@ -385,6 +388,8 @@ describe('AutoConnectorManager - Triggers', () => {
       manager.attemptsState.limitInner = 0;
 
       manager.start(baseParameters);
+
+      await flushPromises();
 
       const { onSuccessRequest } = startSpy.mock.calls[0][0] as {
         onSuccessRequest: () => void;
