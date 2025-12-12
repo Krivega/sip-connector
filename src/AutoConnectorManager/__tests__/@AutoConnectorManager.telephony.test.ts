@@ -1,3 +1,4 @@
+import flushPromises from '@/__fixtures__/flushPromises';
 import { doMockSipConnector } from '@/doMock';
 import logger from '@/logger';
 import AutoConnectorManager from '../@AutoConnectorManager';
@@ -71,13 +72,17 @@ describe('AutoConnectorManager - Telephony', () => {
   });
 
   describe('проверка телефонии', () => {
-    it('запускает check telephony requester при достижении лимита попыток', () => {
+    it('запускает check telephony requester при достижении лимита попыток', async () => {
       const checkTelephonyStartSpy = jest.spyOn(CheckTelephonyRequester.prototype, 'start');
 
       // @ts-ignore приватное свойство
       manager.attemptsState.limitInner = 0;
 
       manager.start(baseParameters);
+
+      await new Promise((resolve) => {
+        manager.once('limit-reached-attempts', resolve);
+      });
 
       expect(checkTelephonyStartSpy).toHaveBeenCalledWith({
         onBeforeRequest: expect.any(Function) as () => Promise<TParametersCheckTelephony>,
@@ -86,13 +91,15 @@ describe('AutoConnectorManager - Telephony', () => {
       });
     });
 
-    it('логирует ошибку в onFailRequest при проверке телефонии', () => {
+    it('логирует ошибку в onFailRequest при проверке телефонии', async () => {
       const startSpy = jest.spyOn(CheckTelephonyRequester.prototype, 'start').mockImplementation();
 
       // @ts-ignore приватное свойство
       manager.attemptsState.limitInner = 0;
 
       manager.start(baseParameters);
+
+      await flushPromises();
 
       const { onFailRequest } = startSpy.mock.calls[0][0] as {
         onFailRequest: (error?: unknown) => void;
@@ -116,11 +123,14 @@ describe('AutoConnectorManager - Telephony', () => {
 
       manager.start(baseParameters);
 
+      await flushPromises();
+
       const { onSuccessRequest } = startSpy.mock.calls[0][0] as {
         onSuccessRequest: () => void;
       };
 
       // @ts-ignore приватное свойство
+      // eslint-disable-next-line require-atomic-updates
       manager.attemptsState.limitInner = 10;
 
       onSuccessRequest();
@@ -141,11 +151,14 @@ describe('AutoConnectorManager - Telephony', () => {
 
       manager.start(baseParameters);
 
+      await flushPromises();
+
       const { onSuccessRequest } = startSpy.mock.calls[0][0] as {
         onSuccessRequest: () => void;
       };
 
       // @ts-ignore приватное свойство
+      // eslint-disable-next-line require-atomic-updates
       manager.attemptsState.limitInner = 10;
 
       onSuccessRequest();
@@ -212,6 +225,8 @@ describe('AutoConnectorManager - Telephony', () => {
           getParameters: baseParameters.getParameters,
         });
 
+        await flushPromises();
+
         const { onBeforeRequest } = startSpy.mock.calls[0][0] as {
           onBeforeRequest: () => Promise<TParametersCheckTelephony>;
         };
@@ -232,6 +247,8 @@ describe('AutoConnectorManager - Telephony', () => {
         manager.start({
           getParameters: baseParameters.getParameters,
         });
+
+        await flushPromises();
 
         const { onBeforeRequest } = startSpy.mock.calls[0][0] as {
           onBeforeRequest: () => Promise<TParametersCheckTelephony>;
@@ -257,6 +274,8 @@ describe('AutoConnectorManager - Telephony', () => {
             throw error;
           },
         });
+
+        await flushPromises();
 
         const { onBeforeRequest } = startSpy.mock.calls[0][0] as {
           onBeforeRequest: () => Promise<TParametersCheckTelephony>;

@@ -1,3 +1,4 @@
+import flushPromises from '@/__fixtures__/flushPromises';
 import { createNotReadyForConnectionError } from '@/ConnectionManager';
 import { doMockSipConnector } from '@/doMock';
 import AutoConnectorManager from '../@AutoConnectorManager';
@@ -68,6 +69,8 @@ describe('AutoConnectorManager - Connection', () => {
       const connectSpy = jest.spyOn(manager.connectionQueueManager, 'connect');
 
       manager.start(baseParameters);
+
+      await flushPromises();
 
       const getParameters = connectSpy.mock.calls[0][0] as TParametersAutoConnect['getParameters'];
 
