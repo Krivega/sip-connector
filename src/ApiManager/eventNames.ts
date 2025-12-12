@@ -1,5 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
-import type { Events } from 'events-constructor';
+import type { TypedEvents } from 'events-constructor';
+import type { EUseLicense, EEventsMainCAM } from './constants';
+import type {
+  TChannels,
+  TParametersModeratorsList,
+  TParametersWebcast,
+  TParametersConferenceParticipantTokenIssued,
+  TRestartData,
+} from './types';
 
 export enum EEvent {
   CHANNELS_NOTIFY = 'channels:notify',
@@ -64,4 +72,36 @@ export const EVENT_NAMES = [
 ] as const;
 
 export type TEvent = (typeof EVENT_NAMES)[number];
-export type TEvents = Events<typeof EVENT_NAMES>;
+
+export type TEventMap = {
+  'channels:notify': TChannels;
+  'participant:added-to-list-moderators': TParametersModeratorsList;
+  'participant:removed-from-list-moderators': TParametersModeratorsList;
+  'participant:move-request-to-stream': TParametersModeratorsList;
+  'participant:move-request-to-spectators': Record<string, never>;
+  'participant:move-request-to-participants': Record<string, never>;
+  'participation:accepting-word-request': TParametersModeratorsList;
+  'participation:cancelling-word-request': TParametersModeratorsList;
+  'webcast:started': TParametersWebcast;
+  'webcast:stopped': TParametersWebcast;
+  'account:changed': Record<string, never>;
+  'account:deleted': Record<string, never>;
+  'conference:participant-token-issued': TParametersConferenceParticipantTokenIssued;
+  channels: TChannels;
+  enterRoom: { room: string; participantName: string };
+  shareState: Record<string, never>;
+  'main-cam-control': { mainCam?: EEventsMainCAM; resolutionMainCam?: string };
+  useLicense: EUseLicense;
+  'admin-start-main-cam': { isSyncForced: boolean };
+  'admin-stop-main-cam': { isSyncForced: boolean };
+  'admin-start-mic': { isSyncForced: boolean };
+  'admin-stop-mic': { isSyncForced: boolean };
+  'admin-force-sync-media-state': { isSyncForced: boolean };
+  availableSecondRemoteStream: Record<string, never>;
+  notAvailableSecondRemoteStream: Record<string, never>;
+  mustStopPresentation: Record<string, never>;
+  newDTMF: { originator: string };
+  restart: TRestartData;
+};
+
+export type TEvents = TypedEvents<TEventMap>;

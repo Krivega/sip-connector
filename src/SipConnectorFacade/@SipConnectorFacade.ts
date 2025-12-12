@@ -461,10 +461,10 @@ class SipConnectorFacade implements IProxyMethods {
     const subscribeEnterConference = () => {
       debug('subscribeEnterConference: onEnterConference', onEnterConference);
 
-      return this.sipConnector.on('api:enterRoom', (_room: string) => {
-        debug('enterRoom', { _room, isSuccessProgressCall });
+      return this.sipConnector.on('api:enterRoom', (event) => {
+        debug('enterRoom', { room: event.room, isSuccessProgressCall });
 
-        room = _room;
+        room = event.room;
 
         if (onEnterPurgatory ?? onEnterConference) {
           handleEnterRoomEvent(room, isSuccessProgressCall, {

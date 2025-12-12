@@ -52,7 +52,7 @@ describe('main cam control', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    const promise = new Promise<{ mainCam: EEventsMainCAM; resolutionMainCam: string }>(
+    const promise = new Promise<{ mainCam?: EEventsMainCAM; resolutionMainCam?: string }>(
       (resolve) => {
         sipConnector.on('api:main-cam-control', resolve);
       },
@@ -109,7 +109,7 @@ describe('main cam control', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    const promise = new Promise<{ mainCam: EEventsMainCAM; resolutionMainCam?: string }>(
+    const promise = new Promise<{ mainCam?: EEventsMainCAM; resolutionMainCam?: string }>(
       (resolve) => {
         sipConnector.on('api:main-cam-control', resolve);
       },
@@ -131,7 +131,7 @@ describe('main cam control', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    const promise = new Promise<{ mainCam: EEventsMainCAM; resolutionMainCam?: string }>(
+    const promise = new Promise<{ mainCam?: EEventsMainCAM; resolutionMainCam?: string }>(
       (resolve) => {
         sipConnector.on('api:main-cam-control', resolve);
       },

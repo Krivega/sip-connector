@@ -1,4 +1,4 @@
-import { Events } from 'events-constructor';
+import { TypedEvents } from 'events-constructor';
 
 import { ApiManager } from '@/ApiManager';
 import { AutoConnectorManager } from '@/AutoConnectorManager';
@@ -19,10 +19,10 @@ import type { TGetServerUrl } from '@/CallManager';
 import type { TContentHint, TOnAddedTransceiver } from '@/PresentationManager';
 import type { TJsSIP } from '@/types';
 import type { IBalancerOptions } from '@/VideoSendingBalancer';
-import type { TEvent } from './eventNames';
+import type { TEvent, TEventMap, TEvents } from './eventNames';
 
 class SipConnector {
-  public readonly events: Events<typeof EVENT_NAMES>;
+  public readonly events: TEvents;
 
   public readonly connectionManager: ConnectionManager;
 
@@ -65,7 +65,7 @@ class SipConnector {
     this.preferredMimeTypesVideoCodecs = preferredMimeTypesVideoCodecs;
     this.excludeMimeTypesVideoCodecs = excludeMimeTypesVideoCodecs;
 
-    this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
+    this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
     this.connectionManager = new ConnectionManager({ JsSIP });
     this.connectionQueueManager = new ConnectionQueueManager({
       connectionManager: this.connectionManager,
@@ -152,28 +152,27 @@ class SipConnector {
     return this.incomingCallManager.isAvailableIncomingCall;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public on<T>(eventName: TEvent, handler: (data: T) => void) {
-    return this.events.on<T>(eventName, handler);
+  public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+    return this.events.on(eventName, handler);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public once<T>(eventName: TEvent, handler: (data: T) => void) {
-    return this.events.once<T>(eventName, handler);
+  public once<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+    return this.events.once(eventName, handler);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public onceRace<T>(eventNames: TEvent[], handler: (data: T, eventName: string) => void) {
-    return this.events.onceRace<T>(eventNames, handler);
+  public onceRace<T extends keyof TEventMap>(
+    eventNames: T[],
+    handler: (data: TEventMap[T], eventName: string) => void,
+  ) {
+    return this.events.onceRace(eventNames, handler);
   }
 
-  public async wait<T>(eventName: TEvent): Promise<T> {
-    return this.events.wait<T>(eventName);
+  public async wait<T extends keyof TEventMap>(eventName: T): Promise<TEventMap[T]> {
+    return this.events.wait(eventName);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public off<T>(eventName: TEvent, handler: (data: T) => void) {
-    this.events.off<T>(eventName, handler);
+  public off<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+    this.events.off(eventName, handler);
   }
 
   public connect: ConnectionManager['connect'] = async (...args) => {

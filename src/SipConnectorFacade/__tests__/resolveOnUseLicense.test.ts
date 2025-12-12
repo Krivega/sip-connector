@@ -1,10 +1,9 @@
 /// <reference types="jest" />
+import { EUseLicense } from '@/ApiManager';
 import { doMockSipConnector } from '@/doMock';
 import SipConnectorFacade from '../@SipConnectorFacade';
 
 import type { SipConnector } from '@/SipConnector';
-
-const AUDIO_LICENSE = 'AUDIO';
 
 describe('media state: resolveOnUseLicense', () => {
   let sipConnector: SipConnector;
@@ -27,15 +26,15 @@ describe('media state: resolveOnUseLicense', () => {
 
     sipConnectorFacade.onUseLicense(handlerOnUseLicense);
 
-    sipConnector.apiManager.events.trigger('useLicense', AUDIO_LICENSE);
+    sipConnector.apiManager.events.trigger('useLicense', EUseLicense.AUDIO);
 
     expect(handlerOnUseLicense).toHaveBeenCalledTimes(1);
-    expect(handlerOnUseLicense).toHaveBeenCalledWith(AUDIO_LICENSE);
+    expect(handlerOnUseLicense).toHaveBeenCalledWith(EUseLicense.AUDIO);
 
-    sipConnector.apiManager.events.trigger('useLicense', AUDIO_LICENSE);
+    sipConnector.apiManager.events.trigger('useLicense', EUseLicense.AUDIO);
 
     expect(handlerOnUseLicense).toHaveBeenCalledTimes(2);
-    expect(handlerOnUseLicense).toHaveBeenCalledWith(AUDIO_LICENSE);
+    expect(handlerOnUseLicense).toHaveBeenCalledWith(EUseLicense.AUDIO);
   });
 
   it('#2 should unsubscribe media event', async () => {
@@ -43,13 +42,13 @@ describe('media state: resolveOnUseLicense', () => {
 
     offUseLicense = sipConnectorFacade.onUseLicense(handlerOnUseLicense);
 
-    sipConnector.apiManager.events.trigger('useLicense', AUDIO_LICENSE);
+    sipConnector.apiManager.events.trigger('useLicense', EUseLicense.AUDIO);
 
     expect(handlerOnUseLicense).toHaveBeenCalledTimes(1);
 
     offUseLicense();
 
-    sipConnector.apiManager.events.trigger('useLicense', AUDIO_LICENSE);
+    sipConnector.apiManager.events.trigger('useLicense', EUseLicense.AUDIO);
 
     expect(handlerOnUseLicense).toHaveBeenCalledTimes(1);
   });

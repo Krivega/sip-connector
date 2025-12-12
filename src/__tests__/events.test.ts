@@ -42,7 +42,7 @@ describe('events', () => {
       JsSIP.triggerNewInfo(establishedRTCSession, extraHeaders);
     }
 
-    return expect(promise).resolves.toBeUndefined();
+    return expect(promise).resolves.toEqual({});
   });
 
   it('notAvailableSecondRemoteStream', async () => {
@@ -65,7 +65,7 @@ describe('events', () => {
       JsSIP.triggerNewInfo(establishedRTCSession, extraHeaders);
     }
 
-    return expect(promise).resolves.toBeUndefined();
+    return expect(promise).resolves.toEqual({});
   });
 
   it('mustStopPresentation', async () => {
@@ -88,6 +88,6 @@ describe('events', () => {
       JsSIP.triggerNewInfo(establishedRTCSession, extraHeaders);
     }
 
-    return expect(promise).resolves.toBeUndefined();
+    return expect(promise).resolves.toEqual({});
   });
 });

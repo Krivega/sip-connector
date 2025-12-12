@@ -1,4 +1,4 @@
-import { Events } from 'events-constructor';
+import { TypedEvents } from 'events-constructor';
 import { hasCanceledError, repeatedCallsAsync } from 'repeated-calls';
 
 import prepareMediaStream from '@/tools/prepareMediaStream';
@@ -7,7 +7,7 @@ import { EEvent, EVENT_NAMES } from './eventNames';
 
 import type { RTCSession } from '@krivega/jssip';
 import type { CallManager } from '@/CallManager';
-import type { TEvent, TEvents } from './eventNames';
+import type { TEventMap, TEvents } from './eventNames';
 import type { TContentHint, TOnAddedTransceiver } from './types';
 
 const SEND_PRESENTATION_CALL_LIMIT = 1;
@@ -42,7 +42,7 @@ class PresentationManager {
   }) {
     this.callManager = callManager;
     this.maxBitrate = maxBitrate;
-    this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
+    this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
 
     this.subscribe();
   }
@@ -108,7 +108,9 @@ class PresentationManager {
           return rtcSession.stopPresentation(streamPresentationPrevious);
         })
         .catch((error: unknown) => {
-          this.events.trigger(EEvent.FAILED_PRESENTATION, error);
+          const presentationError = error instanceof Error ? error : new Error(String(error));
+
+          this.events.trigger(EEvent.FAILED_PRESENTATION, presentationError);
 
           throw error;
         });
@@ -163,28 +165,27 @@ class PresentationManager {
     this.cancelableSendPresentationWithRepeatedCalls?.stopRepeatedCalls();
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public on<T>(eventName: TEvent, handler: (data: T) => void) {
-    return this.events.on<T>(eventName, handler);
+  public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+    return this.events.on(eventName, handler);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public once<T>(eventName: TEvent, handler: (data: T) => void) {
-    return this.events.once<T>(eventName, handler);
+  public once<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+    return this.events.once(eventName, handler);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public onceRace<T>(eventNames: TEvent[], handler: (data: T, eventName: string) => void) {
-    return this.events.onceRace<T>(eventNames, handler);
+  public onceRace<T extends keyof TEventMap>(
+    eventNames: T[],
+    handler: (data: TEventMap[T], eventName: string) => void,
+  ) {
+    return this.events.onceRace(eventNames, handler);
   }
 
-  public async wait<T>(eventName: TEvent): Promise<T> {
-    return this.events.wait<T>(eventName);
+  public async wait<T extends keyof TEventMap>(eventName: T): Promise<TEventMap[T]> {
+    return this.events.wait(eventName);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public off<T>(eventName: TEvent, handler: (data: T) => void) {
-    this.events.off<T>(eventName, handler);
+  public off<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+    this.events.off(eventName, handler);
   }
 
   private subscribe() {
@@ -200,7 +201,7 @@ class PresentationManager {
     this.callManager.on('presentation:ended', (stream: MediaStream) => {
       this.events.trigger(EEvent.ENDED_PRESENTATION, stream);
     });
-    this.callManager.on('presentation:failed', (error: unknown) => {
+    this.callManager.on('presentation:failed', (error: Error) => {
       this.events.trigger(EEvent.FAILED_PRESENTATION, error);
     });
 
@@ -296,7 +297,9 @@ class PresentationManager {
       .catch((error: unknown) => {
         this.removeStreamPresentationCurrent();
 
-        this.events.trigger(EEvent.FAILED_PRESENTATION, error);
+        const presentationError = error instanceof Error ? error : new Error(String(error));
+
+        this.events.trigger(EEvent.FAILED_PRESENTATION, presentationError);
 
         throw error;
       });

@@ -8,6 +8,7 @@ import logger from '@/logger';
 import { TransceiverManager } from '../@TransceiverManager';
 
 import type { EndEvent } from '@krivega/jssip';
+import type { TRestartData } from '@/ApiManager';
 import type { TEventMap } from '@/CallManager';
 
 // Мокаем logger
@@ -586,10 +587,10 @@ describe('TransceiverManager', () => {
 
       // Триггерим событие restart от ApiManager
       apiManager.events.trigger('restart', {
-        tracksDirection: 'incoming',
+        tracksDirection: 'RECVONLY',
         audioTrackCount: 2,
         videoTrackCount: 1,
-      });
+      } as TRestartData);
 
       // Ждем выполнения асинхронной операции
       await new Promise((resolve) => {
@@ -605,10 +606,10 @@ describe('TransceiverManager', () => {
 
       // Триггерим событие restart от ApiManager
       apiManager.events.trigger('restart', {
-        tracksDirection: 'outgoing',
+        tracksDirection: 'SENDONLY',
         audioTrackCount: 1,
         videoTrackCount: 3,
-      });
+      } as TRestartData);
 
       // Ждем выполнения асинхронной операции
       await new Promise((resolve) => {
@@ -624,20 +625,20 @@ describe('TransceiverManager', () => {
 
       const testCases = [
         {
-          tracksDirection: 'incoming',
+          tracksDirection: 'RECVONLY',
           audioTrackCount: 0,
           videoTrackCount: 1,
-        },
+        } as TRestartData,
         {
-          tracksDirection: 'outgoing',
+          tracksDirection: 'SENDONLY',
           audioTrackCount: 2,
           videoTrackCount: 0,
-        },
+        } as TRestartData,
         {
-          tracksDirection: 'bidirectional',
+          tracksDirection: 'SENDRECV',
           audioTrackCount: 1,
           videoTrackCount: 1,
-        },
+        } as TRestartData,
       ];
 
       for (const testData of testCases) {
@@ -673,10 +674,10 @@ describe('TransceiverManager', () => {
 
         // Триггерим событие restart с videoTrackCount === 2
         apiManager.events.trigger('restart', {
-          tracksDirection: 'incoming',
+          tracksDirection: 'RECVONLY',
           audioTrackCount: 1,
           videoTrackCount: 2,
-        });
+        } as TRestartData);
 
         // Ждем выполнения асинхронной операции
         await new Promise((resolve) => {
@@ -707,10 +708,10 @@ describe('TransceiverManager', () => {
 
         // Триггерим событие restart с videoTrackCount === 2
         apiManager.events.trigger('restart', {
-          tracksDirection: 'incoming',
+          tracksDirection: 'RECVONLY',
           audioTrackCount: 1,
           videoTrackCount: 2,
-        });
+        } as TRestartData);
 
         // Ждем выполнения асинхронной операции
         await new Promise((resolve) => {
@@ -739,10 +740,10 @@ describe('TransceiverManager', () => {
 
         // Триггерим событие restart с videoTrackCount !== 2
         apiManager.events.trigger('restart', {
-          tracksDirection: 'incoming',
+          tracksDirection: 'RECVONLY',
           audioTrackCount: 1,
           videoTrackCount: 1, // Не равно 2
-        });
+        } as TRestartData);
 
         // Ждем выполнения асинхронной операции
         await new Promise((resolve) => {
@@ -772,10 +773,10 @@ describe('TransceiverManager', () => {
 
         // Триггерим событие restart с videoTrackCount === 2
         apiManager.events.trigger('restart', {
-          tracksDirection: 'incoming',
+          tracksDirection: 'RECVONLY',
           audioTrackCount: 1,
           videoTrackCount: 2,
-        });
+        } as TRestartData);
 
         // Ждем выполнения асинхронной операции
         await new Promise((resolve) => {
@@ -809,10 +810,10 @@ describe('TransceiverManager', () => {
 
         // Триггерим событие restart с videoTrackCount === 2
         apiManager.events.trigger('restart', {
-          tracksDirection: 'incoming',
+          tracksDirection: 'RECVONLY',
           audioTrackCount: 1,
           videoTrackCount: 2,
-        });
+        } as TRestartData);
 
         // Ждем выполнения асинхронной операции
         await new Promise((resolve) => {

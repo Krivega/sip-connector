@@ -1,23 +1,16 @@
-import { Events } from 'events-constructor';
+import { TypedEvents } from 'events-constructor';
 
 import { EEvent, EVENT_NAMES } from './eventNames';
 
 import type { IncomingRTCSessionEvent, OutgoingRTCSessionEvent, RTCSession } from '@krivega/jssip';
 import type { ConnectionManager } from '@/ConnectionManager';
-import type { TEvent, Originator } from './eventNames';
+import type { Originator, TEventMap, TEvents } from './eventNames';
 
 const BUSY_HERE_STATUS_CODE = 486;
 const REQUEST_TERMINATED_STATUS_CODE = 487;
 
-type TRemoteCallerData = {
-  displayName?: string;
-  host?: string;
-  incomingNumber?: string;
-  rtcSession?: RTCSession;
-};
-
 export default class IncomingCallManager {
-  public readonly events: Events<typeof EVENT_NAMES>;
+  public readonly events: TEvents;
 
   private incomingRTCSession?: RTCSession;
 
@@ -25,11 +18,11 @@ export default class IncomingCallManager {
 
   public constructor(connectionManager: ConnectionManager) {
     this.connectionManager = connectionManager;
-    this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
+    this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
     this.start();
   }
 
-  public get remoteCallerData(): TRemoteCallerData {
+  public get remoteCallerData(): TEventMap['incomingCall'] {
     return {
       displayName: this.incomingRTCSession?.remote_identity.display_name,
       host: this.incomingRTCSession?.remote_identity.uri.host,
@@ -91,28 +84,27 @@ export default class IncomingCallManager {
     return this.declineToIncomingCall({ statusCode: BUSY_HERE_STATUS_CODE });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public on<T>(eventName: TEvent, handler: (data: T) => void) {
-    return this.events.on<T>(eventName, handler);
+  public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+    return this.events.on(eventName, handler);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public once<T>(eventName: TEvent, handler: (data: T) => void) {
-    return this.events.once<T>(eventName, handler);
+  public once<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+    return this.events.once(eventName, handler);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public onceRace<T>(eventNames: TEvent[], handler: (data: T, eventName: string) => void) {
-    return this.events.onceRace<T>(eventNames, handler);
+  public onceRace<T extends keyof TEventMap>(
+    eventNames: T[],
+    handler: (data: TEventMap[T], eventName: string) => void,
+  ) {
+    return this.events.onceRace(eventNames, handler);
   }
 
-  public async wait<T>(eventName: TEvent): Promise<T> {
-    return this.events.wait<T>(eventName);
+  public async wait<T extends keyof TEventMap>(eventName: T): Promise<TEventMap[T]> {
+    return this.events.wait(eventName);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public off<T>(eventName: TEvent, handler: (data: T) => void) {
-    this.events.off<T>(eventName, handler);
+  public off<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+    this.events.off(eventName, handler);
   }
 
   private subscribe() {

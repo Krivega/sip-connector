@@ -506,7 +506,7 @@ describe('SipConnectorFacade comprehensive', () => {
       jest.spyOn(sipConnector, 'on').mockImplementation((event, handler) => {
         if (event === 'api:enterRoom') {
           setTimeout(() => {
-            (handler as (room: string) => void)('purgatory');
+            (handler as (args: { room: string }) => void)({ room: 'purgatory' });
           }, 0);
         }
 
@@ -536,7 +536,7 @@ describe('SipConnectorFacade comprehensive', () => {
       jest.spyOn(sipConnector, 'on').mockImplementation((event, handler) => {
         if (event === 'api:enterRoom') {
           setTimeout(() => {
-            (handler as (room: string) => void)('test-room');
+            (handler as (args: { room: string }) => void)({ room: 'test-room' });
           }, 0);
         }
 
@@ -566,7 +566,7 @@ describe('SipConnectorFacade comprehensive', () => {
       jest.spyOn(sipConnector, 'on').mockImplementation((event, handler) => {
         if (event === 'api:enterRoom') {
           setTimeout(() => {
-            (handler as (room: string) => void)('purgatory');
+            (handler as (args: { room: string }) => void)({ room: 'purgatory' });
           }, 0);
         }
 

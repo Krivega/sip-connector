@@ -75,7 +75,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
       callManager.events.trigger('newInfo', infoEvent);
-      expect(shareStateSpy).toHaveBeenCalledWith(undefined);
+      expect(shareStateSpy).toHaveBeenCalledWith({});
     });
 
     it('должен обрабатывать MAIN_CAM события', () => {
@@ -129,7 +129,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
       callManager.events.trigger('newInfo', infoEvent);
-      expect(participantSpy).toHaveBeenCalledWith(undefined);
+      expect(participantSpy).toHaveBeenCalledWith({});
     });
 
     it('должен обрабатывать CHANNELS события', () => {
@@ -218,7 +218,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
       callManager.events.trigger('newInfo', infoEvent);
-      expect(availableStreamSpy).toHaveBeenCalledWith(undefined);
+      expect(availableStreamSpy).toHaveBeenCalledWith({});
     });
 
     it('должен обрабатывать NOT_AVAILABLE_SECOND_REMOTE_STREAM', () => {
@@ -234,7 +234,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
       callManager.events.trigger('newInfo', infoEvent);
-      expect(notAvailableStreamSpy).toHaveBeenCalledWith(undefined);
+      expect(notAvailableStreamSpy).toHaveBeenCalledWith({});
     });
 
     it('должен обрабатывать MUST_STOP_PRESENTATION', () => {
@@ -247,7 +247,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
       callManager.events.trigger('newInfo', infoEvent);
-      expect(mustStopPresentationSpy).toHaveBeenCalledWith(undefined);
+      expect(mustStopPresentationSpy).toHaveBeenCalledWith({});
     });
 
     it('должен игнорировать неизвестные SHARE_STATE события', () => {
@@ -542,7 +542,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
       callManager.events.trigger('newInfo', infoEvent);
-      expect(spectatorSpy).toHaveBeenCalledWith(undefined);
+      expect(spectatorSpy).toHaveBeenCalledWith({});
     });
 
     it('должен обрабатывать PARTICIPANT состояние', () => {
@@ -555,7 +555,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
       callManager.events.trigger('newInfo', infoEvent);
-      expect(participantSpy).toHaveBeenCalledWith(undefined);
+      expect(participantSpy).toHaveBeenCalledWith({});
     });
 
     it('должен игнорировать неизвестные PARTICIPANT_STATE', () => {
@@ -595,7 +595,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
       callManager.events.trigger('newInfo', infoEvent);
-      expect(spectatorSpy).toHaveBeenCalledWith(undefined);
+      expect(spectatorSpy).toHaveBeenCalledWith({});
       expect(participantSpy).not.toHaveBeenCalled();
     });
   });

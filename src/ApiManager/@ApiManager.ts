@@ -1,4 +1,4 @@
-import { Events } from 'events-constructor';
+import { TypedEvents } from 'events-constructor';
 
 import logger from '@/logger';
 import { hasDeclineResponseFromServer } from '@/utils/errors';
@@ -24,7 +24,7 @@ import type {
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
 import type { ETracksDirection, EUseLicense } from './constants';
-import type { TEvent, TEvents } from './eventNames';
+import type { TEventMap, TEvents } from './eventNames';
 import type {
   TAcceptingWordRequestInfoNotify,
   TAddedToListModeratorsInfoNotify,
@@ -62,7 +62,7 @@ class ApiManager {
   }) {
     this.connectionManager = connectionManager;
     this.callManager = callManager;
-    this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
+    this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
 
     this.subscribe();
   }
@@ -239,28 +239,27 @@ class ApiManager {
       });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public on<T>(eventName: TEvent, handler: (data: T) => void) {
-    return this.events.on<T>(eventName, handler);
+  public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+    return this.events.on(eventName, handler);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public once<T>(eventName: TEvent, handler: (data: T) => void) {
-    return this.events.once<T>(eventName, handler);
+  public once<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+    return this.events.once(eventName, handler);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public onceRace<T>(eventNames: TEvent[], handler: (data: T, eventName: string) => void) {
-    return this.events.onceRace<T>(eventNames, handler);
+  public onceRace<T extends keyof TEventMap>(
+    eventNames: T[],
+    handler: (data: TEventMap[T], eventName: string) => void,
+  ) {
+    return this.events.onceRace(eventNames, handler);
   }
 
-  public async wait<T>(eventName: TEvent): Promise<T> {
-    return this.events.wait<T>(eventName);
+  public async wait<T extends keyof TEventMap>(eventName: T): Promise<TEventMap[T]> {
+    return this.events.wait(eventName);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public off<T>(eventName: TEvent, handler: (data: T) => void) {
-    this.events.off<T>(eventName, handler);
+  public off<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+    this.events.off(eventName, handler);
   }
 
   private readonly getEstablishedRTCSessionProtected = () => {
@@ -529,11 +528,11 @@ class ApiManager {
   };
 
   private readonly triggerAccountChangedNotify = () => {
-    this.events.trigger(EEvent.ACCOUNT_CHANGED, undefined);
+    this.events.trigger(EEvent.ACCOUNT_CHANGED, {});
   };
 
   private readonly triggerAccountDeletedNotify = () => {
-    this.events.trigger(EEvent.ACCOUNT_DELETED, undefined);
+    this.events.trigger(EEvent.ACCOUNT_DELETED, {});
   };
 
   private readonly triggerConferenceParticipantTokenIssued = ({
@@ -581,15 +580,15 @@ class ApiManager {
 
     switch (eventName) {
       case EShareState.AVAILABLE_SECOND_REMOTE_STREAM: {
-        this.events.trigger(EEvent.AVAILABLE_SECOND_REMOTE_STREAM, undefined);
+        this.events.trigger(EEvent.AVAILABLE_SECOND_REMOTE_STREAM, {});
         break;
       }
       case EShareState.NOT_AVAILABLE_SECOND_REMOTE_STREAM: {
-        this.events.trigger(EEvent.NOT_AVAILABLE_SECOND_REMOTE_STREAM, undefined);
+        this.events.trigger(EEvent.NOT_AVAILABLE_SECOND_REMOTE_STREAM, {});
         break;
       }
       case EShareState.MUST_STOP_PRESENTATION: {
-        this.events.trigger(EEvent.MUST_STOP_PRESENTATION, undefined);
+        this.events.trigger(EEvent.MUST_STOP_PRESENTATION, {});
         break;
       }
 
@@ -605,11 +604,11 @@ class ApiManager {
       | undefined;
 
     if (participantState === EParticipantType.SPECTATOR) {
-      this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS, undefined);
+      this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS, {});
     }
 
     if (participantState === EParticipantType.PARTICIPANT) {
-      this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS, undefined);
+      this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS, {});
     }
   };
 

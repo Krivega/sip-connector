@@ -227,7 +227,7 @@ describe('ApiManager (notify via sipEvent)', () => {
         event: {},
         request: mockRequest as unknown as IncomingRequest,
       });
-      expect(accountChangedSpy).toHaveBeenCalledWith(undefined);
+      expect(accountChangedSpy).toHaveBeenCalledWith({});
     });
 
     it('должен обрабатывать уведомление accountDeleted', () => {
@@ -242,7 +242,7 @@ describe('ApiManager (notify via sipEvent)', () => {
         event: {},
         request: mockRequest as unknown as IncomingRequest,
       });
-      expect(accountDeletedSpy).toHaveBeenCalledWith(undefined);
+      expect(accountDeletedSpy).toHaveBeenCalledWith({});
     });
   });
 
@@ -345,8 +345,8 @@ describe('ApiManager (notify via sipEvent)', () => {
           spy: participantMoveSpy,
           expected: { conference: 'conf7' },
         },
-        { cmd: 'accountChanged', data: {}, spy: accountChangedSpy, expected: undefined },
-        { cmd: 'accountDeleted', data: {}, spy: accountDeletedSpy, expected: undefined },
+        { cmd: 'accountChanged', data: {}, spy: accountChangedSpy, expected: {} },
+        { cmd: 'accountDeleted', data: {}, spy: accountDeletedSpy, expected: {} },
         {
           cmd: 'ConferenceParticipantTokenIssued',
           data: { body: { conference: 'conf8', participant: 'user1', jwt: 'token1' } },
@@ -398,7 +398,7 @@ describe('ApiManager (notify via sipEvent)', () => {
         outputChannels: 'output1',
       });
       expect(accountChangedSpy).toHaveBeenCalledTimes(1);
-      expect(accountChangedSpy).toHaveBeenCalledWith(undefined);
+      expect(accountChangedSpy).toHaveBeenCalledWith({});
     });
   });
 });

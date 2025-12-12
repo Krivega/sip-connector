@@ -21,7 +21,7 @@ describe('account notify', () => {
 
     return new Promise<void>((resolve) => {
       sipConnector.on('api:account:changed', (data) => {
-        expect(data).toBe(undefined);
+        expect(data).toEqual({});
 
         resolve();
       });
@@ -38,7 +38,7 @@ describe('account notify', () => {
 
     return new Promise<void>((resolve) => {
       sipConnector.on('api:account:deleted', (data) => {
-        expect(data).toBe(undefined);
+        expect(data).toEqual({});
 
         resolve();
       });

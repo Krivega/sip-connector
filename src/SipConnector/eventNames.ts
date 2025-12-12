@@ -7,7 +7,15 @@ import { EVENT_NAMES as PRESENTATION_MANAGER_EVENT_NAMES } from '@/PresentationM
 import { EVENT_NAMES as STATS_MANAGER_EVENT_NAMES } from '@/StatsManager/eventNames';
 import { EVENT_NAMES as VIDEO_BALANCER_MANAGER_EVENT_NAMES } from '@/VideoSendingBalancerManager/eventNames';
 
-import type { Events } from 'events-constructor';
+import type { TypedEvents } from 'events-constructor';
+import type { TEventMap as TApiManagerEventMap } from '@/ApiManager/eventNames';
+import type { TEventMap as TAutoConnectorManagerEventMap } from '@/AutoConnectorManager/eventNames';
+import type { TEventMap as TCallManagerEventMap } from '@/CallManager/eventNames';
+import type { TEventMap as TConnectionManagerEventMap } from '@/ConnectionManager/eventNames';
+import type { TEventMap as TIncomingCallManagerEventMap } from '@/IncomingCallManager/eventNames';
+import type { TEventMap as TPresentationManagerEventMap } from '@/PresentationManager/eventNames';
+import type { TEventMap as TStatsManagerEventMap } from '@/StatsPeerConnection/eventNames';
+import type { TEventMap as TVideoBalancerManagerEventMap } from '@/VideoSendingBalancerManager/eventNames';
 
 // Добавляем префиксы к событиям от разных менеджеров
 const AUTO_CONNECTOR_EVENTS = AUTO_CONNECTOR_MANAGER_EVENT_NAMES.map((eventName) => {
@@ -47,4 +55,19 @@ export const EVENT_NAMES = [
 ] as const;
 
 export type TEvent = (typeof EVENT_NAMES)[number];
-export type TEvents = Events<typeof EVENT_NAMES>;
+
+// Создаем TEventMap для SipConnector, объединяя все TEventMap с префиксами
+type PrefixedEventMap<T extends Record<string, unknown>, Prefix extends string> = {
+  [K in keyof T as `${Prefix}:${string & K}`]: T[K];
+};
+
+export type TEventMap = PrefixedEventMap<TAutoConnectorManagerEventMap, 'auto-connect'> &
+  PrefixedEventMap<TConnectionManagerEventMap, 'connection'> &
+  PrefixedEventMap<TCallManagerEventMap, 'call'> &
+  PrefixedEventMap<TApiManagerEventMap, 'api'> &
+  PrefixedEventMap<TIncomingCallManagerEventMap, 'incoming-call'> &
+  PrefixedEventMap<TPresentationManagerEventMap, 'presentation'> &
+  PrefixedEventMap<TStatsManagerEventMap, 'stats'> &
+  PrefixedEventMap<TVideoBalancerManagerEventMap, 'video-balancer'>;
+
+export type TEvents = TypedEvents<TEventMap>;

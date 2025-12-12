@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
-import type { Events } from 'events-constructor';
+import type { TypedEvents } from 'events-constructor';
 
 export enum EEvent {
   START_PRESENTATION = 'presentation:start',
@@ -18,4 +18,13 @@ export const EVENT_NAMES = [
 ] as const;
 
 export type TEvent = (typeof EVENT_NAMES)[number];
-export type TEvents = Events<typeof EVENT_NAMES>;
+
+export type TEventMap = {
+  'presentation:start': MediaStream;
+  'presentation:started': MediaStream;
+  'presentation:end': MediaStream;
+  'presentation:ended': MediaStream;
+  'presentation:failed': Error;
+};
+
+export type TEvents = TypedEvents<TEventMap>;

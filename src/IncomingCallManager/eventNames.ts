@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
+import type { RTCSession } from '@krivega/jssip';
+import type { TypedEvents } from 'events-constructor';
+
 export enum EEvent {
   INCOMING_CALL = 'incomingCall',
   DECLINED_INCOMING_CALL = 'declinedIncomingCall',
@@ -20,3 +23,19 @@ export const EVENT_NAMES = [
 ] as const;
 
 export type TEvent = (typeof EVENT_NAMES)[number];
+
+export type TRemoteCallerData = {
+  displayName?: string;
+  host?: string;
+  incomingNumber?: string;
+  rtcSession?: RTCSession;
+};
+
+export type TEventMap = {
+  incomingCall: TRemoteCallerData;
+  declinedIncomingCall: TRemoteCallerData;
+  terminatedIncomingCall: TRemoteCallerData;
+  failedIncomingCall: TRemoteCallerData;
+};
+
+export type TEvents = TypedEvents<TEventMap>;

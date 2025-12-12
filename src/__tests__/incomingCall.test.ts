@@ -60,9 +60,9 @@ describe('incoming call', () => {
           host,
           incomingNumber,
         }: {
-          displayName: string;
-          host: string;
-          incomingNumber: string;
+          displayName?: string;
+          host?: string;
+          incomingNumber?: string;
         }) => {
           expect(sipConnector.isAvailableIncomingCall).toBe(true);
           expect(displayName).toBe(remoteCallerData.displayName);
@@ -187,9 +187,9 @@ describe('incoming call', () => {
 
         return Promise.all([
           new Promise<{
-            displayName: string;
-            host: string;
-            incomingNumber: string;
+            displayName?: string;
+            host?: string;
+            incomingNumber?: string;
           }>((resolve) => {
             sipConnector.on('incoming-call:declinedIncomingCall', resolve);
           }),
@@ -222,9 +222,9 @@ describe('incoming call', () => {
     })
       .then(async () => {
         return new Promise<{
-          displayName: string;
-          host: string;
-          incomingNumber: string;
+          displayName?: string;
+          host?: string;
+          incomingNumber?: string;
         }>((resolve) => {
           sipConnector.on('incoming-call:failedIncomingCall', resolve);
 
@@ -255,9 +255,9 @@ describe('incoming call', () => {
     })
       .then(async () => {
         return new Promise<{
-          displayName: string;
-          host: string;
-          incomingNumber: string;
+          displayName?: string;
+          host?: string;
+          incomingNumber?: string;
         }>((resolve) => {
           sipConnector.on('incoming-call:terminatedIncomingCall', resolve);
 

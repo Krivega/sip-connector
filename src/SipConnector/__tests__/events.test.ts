@@ -28,16 +28,19 @@ describe('SipConnector events', () => {
     sipConnector.events.on('connection:connecting', mockHandler);
 
     // Эмитим событие
-    sipConnector.events.trigger('connection:connecting', { socket: {} as Socket });
+    sipConnector.events.trigger('connection:connecting', {
+      socket: {} as Socket,
+      attempts: 1,
+    });
 
     // Проверяем, что обработчик был вызван
-    expect(mockHandler).toHaveBeenCalledWith({ socket: {} as Socket });
+    expect(mockHandler).toHaveBeenCalledWith({ socket: {} as Socket, attempts: 1 });
 
     // Отписываемся от события
     sipConnector.events.off('connection:connecting', mockHandler);
 
     // Эмитим событие снова
-    sipConnector.events.trigger('connection:connecting', { socket: {} as Socket });
+    sipConnector.events.trigger('connection:connecting', { socket: {} as Socket, attempts: 1 });
 
     // Проверяем, что обработчик не был вызван снова
     expect(mockHandler).toHaveBeenCalledTimes(1);
@@ -113,9 +116,16 @@ describe('SipConnector events', () => {
       attempts: 1,
     });
     sipConnector.callManager.events.trigger('accepted', { data: 'call' });
-    sipConnector.apiManager.events.trigger('channels', { data: 'api' });
-    sipConnector.incomingCallManager.events.trigger('incomingCall', { data: 'incoming' });
-    sipConnector.presentationManager.events.trigger('presentation:start', { data: 'presentation' });
+    sipConnector.apiManager.events.trigger('channels', { inputChannels: '1', outputChannels: '2' });
+    sipConnector.incomingCallManager.events.trigger('incomingCall', {
+      displayName: 'incoming',
+      host: 'incoming',
+      incomingNumber: 'incoming',
+    });
+
+    const mediaStream = new MediaStream();
+
+    sipConnector.presentationManager.events.trigger('presentation:start', mediaStream);
     // @ts-expect-error
     sipConnector.statsManager.events.trigger('collected', stats);
 
@@ -126,9 +136,13 @@ describe('SipConnector events', () => {
       attempts: 1,
     });
     expect(callHandler).toHaveBeenCalledWith({ data: 'call' });
-    expect(apiHandler).toHaveBeenCalledWith({ data: 'api' });
-    expect(incomingCallHandler).toHaveBeenCalledWith({ data: 'incoming' });
-    expect(presentationHandler).toHaveBeenCalledWith({ data: 'presentation' });
+    expect(apiHandler).toHaveBeenCalledWith({ inputChannels: '1', outputChannels: '2' });
+    expect(incomingCallHandler).toHaveBeenCalledWith({
+      displayName: 'incoming',
+      host: 'incoming',
+      incomingNumber: 'incoming',
+    });
+    expect(presentationHandler).toHaveBeenCalledWith(mediaStream);
     expect(statsHandler).toHaveBeenCalledWith(stats);
 
     // Проверяем, что каждый обработчик был вызван только один раз

@@ -4,6 +4,7 @@ import JsSIP from '@/__fixtures__/jssip.mock';
 import SipConnector from '../@SipConnector';
 
 import type {
+  ConnectedEvent,
   IncomingResponse,
   RegisteredEvent,
   Socket,
@@ -30,6 +31,35 @@ describe('SipConnector facade', () => {
     sipConnector.connectionManager.events.trigger('connected', { socket: {} as Socket });
 
     expect(handler).toHaveBeenCalledWith({ socket: {} as Socket });
+  });
+
+  it('должен сохранять типы событий в bridgeEvents', () => {
+    // Этот тест проверяет, что типы сохраняются при использовании bridgeEvents
+    // Если типы не сохраняются, TypeScript не сможет вывести правильный тип для event
+    let receivedEvent: ConnectedEvent | undefined;
+
+    sipConnector.on('connection:connected', (event) => {
+      // Проверяем, что TypeScript может вывести правильный тип ConnectedEvent
+      // Если типы не сохраняются, event будет unknown, и эта проверка не сработает
+      // eslint-disable-next-line no-void
+      void (event satisfies ConnectedEvent);
+
+      // Сохраняем event для проверки
+      receivedEvent = event;
+
+      // Проверяем, что у event есть свойство socket (из ConnectedEvent)
+      expect(event).toHaveProperty('socket');
+    });
+
+    const testSocket = {} as Socket;
+    const testEvent: ConnectedEvent = { socket: testSocket };
+
+    // Тригерим событие
+    sipConnector.connectionManager.events.trigger('connected', testEvent);
+
+    // Проверяем, что обработчик был вызван с правильным типом
+    expect(receivedEvent).toBeDefined();
+    expect(receivedEvent).toEqual(testEvent);
   });
 
   it('должен проксировать методы AutoConnectorManager', async () => {
