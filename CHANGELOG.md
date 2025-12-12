@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.8.2](https://github.com/Krivega/sip-connector/compare/v19.8.1...v19.8.2) (2025-12-12)
+
+### Bug Fixes
+
+- handlers in onEnterPurgatory, onEnterConference in answerToIncomingCall and fix types events ([df6025c](https://github.com/Krivega/sip-connector/commit/df6025cd21f62690be2b65dd3e7330550155d24e))
+
 ### [19.8.1](https://github.com/Krivega/sip-connector/compare/v19.8.0...v19.8.1) (2025-12-11)
 
 ## [19.8.0](https://github.com/Krivega/sip-connector/compare/v19.7.1...v19.8.0) (2025-12-11)
