@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.8.3](https://github.com/Krivega/sip-connector/compare/v19.8.2...v19.8.3) (2025-12-12)
+
+### Bug Fixes
+
+- resolve promise race in restart connection attempts ([#56](https://github.com/Krivega/sip-connector/issues/56)) ([eed884a](https://github.com/Krivega/sip-connector/commit/eed884a5ff8c37ef84a28424132ece11e99df582))
+
 ### [19.8.2](https://github.com/Krivega/sip-connector/compare/v19.8.1...v19.8.2) (2025-12-12)
 
 ### Bug Fixes
