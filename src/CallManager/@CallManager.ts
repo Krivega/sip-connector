@@ -1,37 +1,57 @@
 import { TypedEvents } from 'events-constructor';
 
+import { hasVideoTracks } from '@/utils/utils';
 import { EEvent, EVENT_NAMES } from './eventNames';
-import { MCUCallStrategy } from './MCUCallStrategy';
+import { MCUSession } from './MCUSession';
+import { RemoteStreamsManager } from './RemoteStreamsManager';
 
+import type { RTCSession } from '@krivega/jssip';
 import type { TEvents, TEventMap } from './eventNames';
-import type { ICallStrategy } from './types';
+import type {
+  TStartCall,
+  TCallConfiguration,
+  TReplaceMediaStream,
+  TAnswerToIncomingCall,
+} from './types';
 
 class CallManager {
   public readonly events: TEvents;
 
-  private strategy: ICallStrategy;
+  protected isPendingCall = false;
 
-  public constructor(strategy?: ICallStrategy) {
+  protected isPendingAnswer = false;
+
+  protected rtcSession?: RTCSession;
+
+  protected remoteStreams: Record<string, MediaStream> = {};
+
+  protected readonly callConfiguration: TCallConfiguration = {};
+
+  private readonly remoteStreamsManager = new RemoteStreamsManager();
+
+  private readonly mcuSession: MCUSession;
+
+  public constructor() {
     this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
-    this.strategy = strategy ?? new MCUCallStrategy(this.events);
 
+    this.mcuSession = new MCUSession(this.events, { onReset: this.reset });
     this.subscribeCallStatusChange();
   }
 
-  public get requested(): boolean {
-    return this.strategy.requested;
+  public get requested() {
+    return this.isPendingCall || this.isPendingAnswer;
   }
 
-  public get connection(): ICallStrategy['connection'] {
-    return this.strategy.connection;
+  public get connection(): RTCPeerConnection | undefined {
+    return this.mcuSession.connection;
   }
 
-  public get isCallActive(): ICallStrategy['isCallActive'] {
-    return this.strategy.isCallActive;
+  public get isCallActive(): boolean {
+    return this.mcuSession.isCallActive;
   }
 
-  public getEstablishedRTCSession: ICallStrategy['getEstablishedRTCSession'] = () => {
-    return this.strategy.getEstablishedRTCSession();
+  public getEstablishedRTCSession = (): RTCSession | undefined => {
+    return this.mcuSession.getEstablishedRTCSession();
   };
 
   public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
@@ -64,40 +84,82 @@ class CallManager {
     this.events.off(eventName, handler);
   }
 
-  public setStrategy(strategy: ICallStrategy): void {
-    this.strategy = strategy;
+  public startCall: TStartCall = async (ua, getSipServerUrl, params) => {
+    this.isPendingCall = true;
+    this.callConfiguration.number = params.number;
+    this.callConfiguration.answer = false;
+
+    return this.mcuSession.startCall(ua, getSipServerUrl, params).finally(() => {
+      this.isPendingCall = false;
+    });
+  };
+
+  public async endCall(): Promise<void> {
+    return this.mcuSession.endCall();
   }
 
-  public startCall: ICallStrategy['startCall'] = async (...args) => {
-    return this.strategy.startCall(...args);
+  public answerToIncomingCall: TAnswerToIncomingCall = async (
+    extractIncomingRTCSession: () => RTCSession,
+    params,
+  ): Promise<RTCPeerConnection> => {
+    this.isPendingAnswer = true;
+
+    const rtcSession = extractIncomingRTCSession();
+
+    this.callConfiguration.answer = true;
+    this.callConfiguration.number = rtcSession.remote_identity.uri.user;
+
+    return this.mcuSession.answerToIncomingCall(rtcSession, params).finally(() => {
+      this.isPendingAnswer = false;
+    });
   };
 
-  public endCall: ICallStrategy['endCall'] = async () => {
-    return this.strategy.endCall();
-  };
+  public getCallConfiguration() {
+    return { ...this.callConfiguration };
+  }
 
-  public answerToIncomingCall: ICallStrategy['answerToIncomingCall'] = async (...args) => {
-    return this.strategy.answerToIncomingCall(...args);
-  };
+  public getRemoteStreams(): MediaStream[] | undefined {
+    const remoteTracks = this.mcuSession.getRemoteTracks();
 
-  public getCallConfiguration: ICallStrategy['getCallConfiguration'] = () => {
-    return this.strategy.getCallConfiguration();
-  };
+    if (!remoteTracks) {
+      return undefined;
+    }
 
-  public getRemoteStreams: ICallStrategy['getRemoteStreams'] = () => {
-    return this.strategy.getRemoteStreams();
-  };
+    if (hasVideoTracks(remoteTracks)) {
+      return this.remoteStreamsManager.generateStreams(remoteTracks);
+    }
 
-  public addTransceiver: ICallStrategy['addTransceiver'] = async (...args) => {
-    return this.strategy.addTransceiver(...args);
-  };
+    return this.remoteStreamsManager.generateAudioStreams(remoteTracks);
+  }
 
-  public replaceMediaStream: ICallStrategy['replaceMediaStream'] = async (...args) => {
-    return this.strategy.replaceMediaStream(...args);
-  };
+  public async replaceMediaStream(
+    mediaStream: Parameters<TReplaceMediaStream>[0],
+    options?: Parameters<TReplaceMediaStream>[1],
+  ): Promise<void> {
+    return this.mcuSession.replaceMediaStream(mediaStream, options);
+  }
 
-  public restartIce: ICallStrategy['restartIce'] = async (options) => {
-    return this.strategy.restartIce(options);
+  public async restartIce(options?: {
+    useUpdate?: boolean;
+    extraHeaders?: string[];
+    rtcOfferConstraints?: RTCOfferOptions;
+    sendEncodings?: RTCRtpEncodingParameters[];
+    degradationPreference?: RTCDegradationPreference;
+  }): Promise<boolean> {
+    return this.mcuSession.restartIce(options);
+  }
+
+  public async addTransceiver(
+    kind: 'audio' | 'video',
+    options?: RTCRtpTransceiverInit,
+  ): Promise<RTCRtpTransceiver> {
+    return this.mcuSession.addTransceiver(kind, options);
+  }
+
+  private readonly reset: () => void = () => {
+    this.remoteStreamsManager.reset();
+    this.callConfiguration.number = undefined;
+    this.callConfiguration.answer = false;
   };
 
   private subscribeCallStatusChange() {

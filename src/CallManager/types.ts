@@ -49,49 +49,28 @@ export type TCallConfiguration = {
   number?: string;
 };
 
-export interface ICallStrategy {
-  // Свойства (getters)
-  readonly requested: boolean;
-  readonly connection: RTCPeerConnection | undefined;
-  readonly isCallActive: boolean;
-  getEstablishedRTCSession: () => RTCSession | undefined;
-  // Методы
-  startCall: (
-    ua: UA,
-    getSipServerUrl: TGetServerUrl,
-    params: TParamsCall,
-  ) => Promise<RTCPeerConnection>;
-  endCall: () => Promise<void>;
-  answerToIncomingCall: (
-    extractIncomingRTCSession: () => RTCSession,
-    params: TParamsAnswerToIncomingCall,
-  ) => Promise<RTCPeerConnection>;
-  getCallConfiguration: () => TCallConfiguration;
-  getRemoteStreams: () => MediaStream[] | undefined;
-  addTransceiver: (
-    kind: 'audio' | 'video',
-    options?: RTCRtpTransceiverInit,
-  ) => Promise<RTCRtpTransceiver>;
-  replaceMediaStream: (
-    mediaStream: MediaStream,
-    options?: {
-      deleteExisting?: boolean;
-      addMissing?: boolean;
-      forceRenegotiation?: boolean;
-      contentHint?: TContentHint;
-      degradationPreference?: RTCDegradationPreference;
-      sendEncodings?: RTCRtpEncodingParameters[];
-      onAddedTransceiver?: TOnAddedTransceiver;
-    },
-  ) => Promise<void>;
-  restartIce: (options?: {
-    extraHeaders?: string[];
-    useUpdate?: boolean;
-    rtcOfferConstraints?: RTCOfferOptions;
-    sendEncodings?: RTCRtpEncodingParameters[];
+export type TStartCall = (
+  ua: UA,
+  getSipServerUrl: TGetServerUrl,
+  params: TParamsCall,
+) => Promise<RTCPeerConnection>;
+export type TReplaceMediaStream = (
+  mediaStream: MediaStream,
+  options?: {
+    deleteExisting?: boolean;
+    addMissing?: boolean;
+    forceRenegotiation?: boolean;
+    contentHint?: TContentHint;
     degradationPreference?: RTCDegradationPreference;
-  }) => Promise<boolean>;
-}
+    sendEncodings?: RTCRtpEncodingParameters[];
+    onAddedTransceiver?: TOnAddedTransceiver;
+  },
+) => Promise<void>;
+
+export type TAnswerToIncomingCall = (
+  extractIncomingRTCSession: () => RTCSession,
+  params: TParamsAnswerToIncomingCall,
+) => Promise<RTCPeerConnection>;
 
 export interface IMCUSession {
   // Свойства (getters)
@@ -99,14 +78,14 @@ export interface IMCUSession {
   readonly isCallActive: boolean;
   getEstablishedRTCSession: () => RTCSession | undefined;
   // Методы
-  startCall: ICallStrategy['startCall'];
+  startCall: TStartCall;
   endCall: () => Promise<void>;
   answerToIncomingCall: (
     incomingRTCSession: RTCSession,
     params: TParamsAnswerToIncomingCall,
   ) => Promise<RTCPeerConnection>;
   getRemoteTracks: () => MediaStreamTrack[] | undefined;
-  replaceMediaStream: ICallStrategy['replaceMediaStream'];
+  replaceMediaStream: TReplaceMediaStream;
   restartIce: (options?: {
     useUpdate?: boolean;
     extraHeaders?: string[];

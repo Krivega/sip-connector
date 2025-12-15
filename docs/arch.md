@@ -132,12 +132,12 @@
 **Ключевые возможности**:
 
 - Исходящие и входящие звонки
+- Управление WebRTC соединениями
 - Управление медиа-потоками
-- Управление RTCRtpTransceiver'ами
+- Интеграция с TransceiverManager
 - Перезапуск ICE-соединений
-- Поддержка различных стратегий (MCU/SFU)
-
-**Основные методы**:
+- Поддержка различных протоколов
+  **Основные методы**:
 
 - `startCall()` / `endCall()` - управление звонками
 - `getTransceivers()` / `addTransceiver()` - управление transceiver'ами
@@ -226,24 +226,6 @@
 
 ---
 
-### 11. **CallStrategy** (Стратегии звонков)
-
-**Назначение**: Различные стратегии для типов соединений (MCU/SFU).
-
-**Ключевые возможности**:
-
-- Паттерн Стратегия для разных типов звонков
-- Управление WebRTC соединениями
-- Интеграция с TransceiverManager
-- Поддержка различных протоколов
-
-**Реализации**:
-
-- `MCUCallStrategy` - для MCU соединений
-- `AbstractCallStrategy` - абстрактный базовый класс
-
----
-
 ## Диаграмма архитектуры
 
 ```mermaid
@@ -254,7 +236,7 @@ graph TB
 
         subgraph "Core Managers"
             C["ConnectionManager<br/>🔗 SIP Connections<br/>+ ConnectionStateMachine"]
-            D["CallManager<br/>📞 WebRTC Calls<br/>+ MCUCallStrategy"]
+            D["CallManager<br/>📞 WebRTC Calls"]
             E["ApiManager<br/>📡 Server API<br/>+ Restart Events"]
             F["PresentationManager<br/>🖥️ Screen Sharing"]
             G["IncomingCallManager<br/>📲 Incoming Calls"]
@@ -307,7 +289,8 @@ graph TB
 - `SipConnectorFacade` → `SipConnector` (фасад)
 - `SipConnector` → все менеджеры (координация)
 - `CallManager` → `TransceiverManager` (управление transceiver'ами)
-- `CallManager` → `MCUCallStrategy` (паттерн Стратегия)
+- `CallManager` → `MCUSession` (управление RTCSession)
+- `CallManager` → `RemoteStreamsManager` (организация входящих потоков)
 - `ConnectionQueueManager` → `ConnectionManager` (последовательность операций)
 - `AutoConnectorManager` → `ConnectionQueueManager`, `ConnectionManager`, `CallManager`
 - `TransceiverManager` → `CallManager`, `ApiManager` (обработка событий)
