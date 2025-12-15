@@ -74,7 +74,7 @@
     "@commitlint/cli": "^20.2.0",
     "@commitlint/config-conventional": "^20.2.0",
     "@eslint/compat": "^2.0.0",
-    "@krivega/eslint-config": "^1.1.1",
+    "@krivega/eslint-config": "^1.1.2",
     "@types/debug": "^4.1.12",
     "@types/dom-mediacapture-transform": "^0.1.11",
     "@types/jest": "^30.0.0",
@@ -93,7 +93,7 @@
     "typescript": "^5.9.3",
     "vite": "^7.2.7",
     "vite-plugin-dts": "^4.5.4",
-    "vite-tsconfig-paths": "^5.1.4"
+    "vite-tsconfig-paths": "^6.0.1"
   },
   "peerDependencies": {
     "@krivega/cancelable-promise": "^1.1.4",
