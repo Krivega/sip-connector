@@ -49,7 +49,6 @@ export enum EContentTypeReceived {
   NOTIFY = 'application/vinteo.webrtc.notify',
   SHARE_STATE = 'application/vinteo.webrtc.sharedesktop',
   MAIN_CAM = 'application/vinteo.webrtc.maincam',
-  RESTART = 'application/vinteo.webrtc.restart',
 }
 
 export enum EContentTypeSent {
@@ -83,10 +82,4 @@ export enum EUseLicense {
   AUDIO = 'AUDIO',
   VIDEO = 'VIDEO',
   AUDIOPLUSPRESENTATION = 'AUDIOPLUSPRESENTATION',
-}
-
-export enum ETracksDirection {
-  SENDRECV = 'SENDRECV',
-  SENDONLY = 'SENDONLY',
-  RECVONLY = 'RECVONLY',
 }

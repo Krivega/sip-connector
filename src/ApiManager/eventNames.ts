@@ -6,7 +6,6 @@ import type {
   TParametersModeratorsList,
   TParametersWebcast,
   TParametersConferenceParticipantTokenIssued,
-  TRestartData,
 } from './types';
 
 export enum EEvent {
@@ -37,7 +36,6 @@ export enum EEvent {
   NOT_AVAILABLE_SECOND_REMOTE_STREAM = 'notAvailableSecondRemoteStream',
   MUST_STOP_PRESENTATION = 'mustStopPresentation',
   NEW_DTMF = 'newDTMF',
-  RESTART = 'restart',
 }
 
 export const EVENT_NAMES = [
@@ -68,7 +66,6 @@ export const EVENT_NAMES = [
   `${EEvent.NOT_AVAILABLE_SECOND_REMOTE_STREAM}`,
   `${EEvent.MUST_STOP_PRESENTATION}`,
   `${EEvent.NEW_DTMF}`,
-  `${EEvent.RESTART}`,
 ] as const;
 
 export type TEvent = (typeof EVENT_NAMES)[number];
@@ -103,7 +100,6 @@ export type TEventMap = {
   notAvailableSecondRemoteStream: Record<string, never>;
   mustStopPresentation: Record<string, never>;
   newDTMF: { originator: string };
-  restart: TRestartData;
 };
 
 export type TEvents = TypedEvents<TEventMap>;

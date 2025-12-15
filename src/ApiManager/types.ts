@@ -1,5 +1,3 @@
-import type { ETracksDirection } from './constants';
-
 export enum ECMDNotify {
   CHANNELS = 'channels',
   WEBCAST_STARTED = 'WebcastStarted',
@@ -112,10 +110,4 @@ export type TOptionsInfoMediaState = {
 
 export type TOptionsExtraHeaders = {
   extraHeaders?: string[];
-};
-
-export type TRestartData = {
-  tracksDirection: ETracksDirection;
-  audioTrackCount: number;
-  videoTrackCount: number;
 };

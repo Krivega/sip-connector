@@ -1,6 +1,4 @@
-import logger from '@/logger';
-
-import type { ApiManager, TRestartData } from '@/ApiManager';
+import type { ApiManager } from '@/ApiManager';
 import type { CallManager } from '@/CallManager';
 import type { ITransceiverStorage } from './types';
 
@@ -19,17 +17,8 @@ export class TransceiverManager {
 
   private readonly callManager: CallManager;
 
-  private readonly apiManager: ApiManager;
-
-  public constructor({
-    callManager,
-    apiManager,
-  }: {
-    callManager: CallManager;
-    apiManager: ApiManager;
-  }) {
+  public constructor({ callManager }: { callManager: CallManager; apiManager: ApiManager }) {
     this.callManager = callManager;
-    this.apiManager = apiManager;
 
     this.subscribe();
   }
@@ -128,52 +117,11 @@ export class TransceiverManager {
     return this.getCount() === 0;
   }
 
-  /**
-   * Обрабатывает событие restart от ApiManager
-   */
-  public readonly handleRestart = (restartData: TRestartData) => {
-    this.updateTransceivers(restartData)
-      .catch((error: unknown) => {
-        logger('Failed to update transceivers', error);
-      })
-      .finally(() => {
-        this.callManager.restartIce().catch((error: unknown) => {
-          logger('Failed to restart ICE', error);
-        });
-      });
-  };
-
-  /**
-   * Обновляет transceiver'ы в соответствии с данными restart
-   */
-  private readonly updateTransceivers = async (restartData: TRestartData) => {
-    const { videoTrackCount } = restartData;
-
-    // Если videoTrackCount === 2 и отсутствует презентационный видео transceiver,
-    // добавляем его через addTransceiver
-    if (videoTrackCount === 2) {
-      const transceivers = this.getTransceivers();
-      const isPresentationVideo = transceivers.presentationVideo !== undefined;
-
-      if (!isPresentationVideo) {
-        await this.callManager
-          .addTransceiver('video', {
-            direction: 'recvonly',
-          })
-          .catch((error: unknown) => {
-            logger('Failed to add presentation video transceiver', error);
-          });
-      }
-    }
-  };
-
   private subscribe() {
     this.callManager.on('peerconnection:ontrack', this.handleTrack);
 
     this.callManager.on('failed', this.handleEnded);
     this.callManager.on('ended', this.handleEnded);
-
-    this.apiManager.on('restart', this.handleRestart);
   }
 
   private readonly handleTrack = (event: RTCTrackEvent) => {
