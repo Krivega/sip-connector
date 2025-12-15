@@ -602,9 +602,10 @@ class ApiManager {
     const participantState = request.getHeader(EHeader.CONTENT_PARTICIPANT_STATE) as
       | EParticipantType
       | undefined;
+    const audioId = request.getHeader(EHeader.AUDIO_ID);
 
     if (participantState === EParticipantType.SPECTATOR) {
-      this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS, {});
+      this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS, { audioId });
     }
 
     if (participantState === EParticipantType.PARTICIPANT) {

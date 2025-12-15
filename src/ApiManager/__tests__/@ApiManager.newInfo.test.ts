@@ -121,15 +121,17 @@ describe('ApiManager (NEW_INFO handling)', () => {
 
     it('должен обрабатывать PARTICIPANT_STATE события', () => {
       const participantSpy = jest.fn();
+      const audioId = '123';
 
       apiManager.on('participant:move-request-to-spectators', participantSpy);
       mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE);
       mockRequest.setHeader(EHeader.CONTENT_PARTICIPANT_STATE, EParticipantType.SPECTATOR);
+      mockRequest.setHeader(EHeader.AUDIO_ID, audioId);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
       callManager.events.trigger('newInfo', infoEvent);
-      expect(participantSpy).toHaveBeenCalledWith({});
+      expect(participantSpy).toHaveBeenCalledWith({ audioId });
     });
 
     it('должен обрабатывать CHANNELS события', () => {

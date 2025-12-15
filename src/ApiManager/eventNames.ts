@@ -78,7 +78,9 @@ export type TEventMap = {
   'participant:added-to-list-moderators': TParametersModeratorsList;
   'participant:removed-from-list-moderators': TParametersModeratorsList;
   'participant:move-request-to-stream': TParametersModeratorsList;
-  'participant:move-request-to-spectators': Record<string, never>;
+  'participant:move-request-to-spectators': {
+    audioId: string;
+  };
   'participant:move-request-to-participants': Record<string, never>;
   'participation:accepting-word-request': TParametersModeratorsList;
   'participation:cancelling-word-request': TParametersModeratorsList;
