@@ -1,22 +1,17 @@
 /* eslint-disable @typescript-eslint/class-methods-use-this */
 
-/* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
-
-import { Events } from 'events-constructor';
+import { MediaStreamTrackMock } from 'webrtc-mock';
 
 import RTCRtpSenderMock from './RTCRtpSenderMock';
 import RTCRtpTransceiverMock from './RTCRtpTransceiverMock';
 
 import type { RTCPeerConnectionDeprecated } from '@krivega/jssip';
-import type { MediaStreamTrackMock } from 'webrtc-mock';
 
 export enum EEvent {
   TRACK = 'track',
 }
 
-const EVENT_NAMES = [`${EEvent.TRACK}`] as const;
-
-class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
+class RTCPeerConnectionMock extends EventTarget implements RTCPeerConnectionDeprecated {
   public senders: RTCRtpSender[] = [];
 
   public receivers: RTCRtpReceiver[] = [];
@@ -73,18 +68,45 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
 
   public signalingState!: RTCSignalingState;
 
-  public events: Events<typeof EVENT_NAMES>;
+  public close = jest.fn();
 
-  public constructor(
-    // eslint-disable-next-line @typescript-eslint/default-param-last
-    _configuration?: RTCConfiguration,
-    // @ts-expect-error
-    tracks: MediaStreamTrackMock[],
-  ) {
-    this.events = new Events<typeof EVENT_NAMES>(EVENT_NAMES);
-    this.receivers = tracks.map((track) => {
-      return { track } as unknown as RTCRtpReceiver;
-    });
+  public setLocalDescription = jest.fn(
+    async (_description: RTCSessionDescriptionInit): Promise<void> => {},
+  );
+
+  public setRemoteDescription = jest.fn(
+    async (_description: RTCSessionDescriptionInit): Promise<void> => {},
+  );
+
+  public addTransceiver = jest.fn(
+    (_trackOrKind: MediaStreamTrack | string, _init?: RTCRtpTransceiverInit): RTCRtpTransceiver => {
+      return {} as RTCRtpTransceiver;
+    },
+  );
+
+  public createOffer = jest.fn(
+    async (
+      _successCallback?: unknown,
+      _failureCallback?: unknown,
+      _options?: unknown,
+    ): Promise<RTCSessionDescriptionInit> => {
+      return { type: 'offer', sdp: 'offer-sdp' };
+    },
+  ) as unknown as {
+    (options?: RTCOfferOptions): Promise<RTCSessionDescriptionInit>;
+    (
+      successCallback: RTCSessionDescriptionCallback,
+      failureCallback: RTCPeerConnectionErrorCallback,
+      options?: RTCOfferOptions,
+    ): Promise<void>;
+  };
+
+  public constructor(_configuration?: RTCConfiguration, tracks?: MediaStreamTrackMock[]) {
+    super();
+    this.receivers =
+      tracks?.map((track) => {
+        return { track } as unknown as RTCRtpReceiver;
+      }) ?? [];
   }
 
   public getRemoteStreams(): MediaStream[] {
@@ -92,17 +114,6 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
   }
 
   public async addIceCandidate(_candidate: RTCIceCandidate | RTCIceCandidateInit): Promise<void> {
-    throw new Error('Method not implemented.');
-  }
-
-  public addTransceiver(
-    _trackOrKind: MediaStreamTrack | string,
-    _init?: RTCRtpTransceiverInit,
-  ): RTCRtpTransceiver {
-    throw new Error('Method not implemented.');
-  }
-
-  public close(): void {
     throw new Error('Method not implemented.');
   }
 
@@ -123,20 +134,6 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
   }
 
   public createDataChannel(_label: string, _dataChannelDict?: RTCDataChannelInit): RTCDataChannel {
-    throw new Error('Method not implemented.');
-  }
-
-  public createOffer(options?: RTCOfferOptions): Promise<RTCSessionDescriptionInit>;
-  public createOffer(
-    successCallback: RTCSessionDescriptionCallback,
-    failureCallback: RTCPeerConnectionErrorCallback,
-    options?: RTCOfferOptions,
-  ): Promise<void>;
-  public async createOffer(
-    _successCallback?: unknown,
-    _failureCallback?: unknown,
-    _options?: unknown,
-  ): Promise<RTCSessionDescriptionInit | void> {
     throw new Error('Method not implemented.');
   }
 
@@ -164,46 +161,6 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
     throw new Error('Method not implemented.');
   }
 
-  public async setLocalDescription(_description: RTCSessionDescriptionInit): Promise<void> {
-    throw new Error('Method not implemented.');
-  }
-
-  public async setRemoteDescription(_description: RTCSessionDescriptionInit): Promise<void> {
-    throw new Error('Method not implemented.');
-  }
-
-  public addEventListener<K extends keyof RTCPeerConnectionEventMap>(
-    type: K,
-    listener: (this: RTCPeerConnection, event_: RTCPeerConnectionEventMap[K]) => unknown,
-    options?: AddEventListenerOptions | boolean,
-  ): void;
-  public addEventListener(
-    type: string,
-    listener: EventListenerOrEventListenerObject,
-    options?: AddEventListenerOptions | boolean,
-  ): void;
-  public addEventListener(type: unknown, listener: (data: unknown) => void, _options?: unknown) {
-    this.events.on(type as EEvent, listener);
-  }
-
-  public removeEventListener<K extends keyof RTCPeerConnectionEventMap>(
-    type: K,
-    listener: (this: RTCPeerConnection, event_: RTCPeerConnectionEventMap[K]) => unknown,
-    options?: EventListenerOptions | boolean,
-  ): void;
-  public removeEventListener(
-    type: string,
-    listener: EventListenerOrEventListenerObject,
-    options?: EventListenerOptions | boolean,
-  ): void;
-  public removeEventListener(type: unknown, listener: (data: unknown) => void, _options?: unknown) {
-    this.events.off(type as EEvent, listener);
-  }
-
-  public dispatchEvent(_event: Event): boolean {
-    throw new Error('Method not implemented.');
-  }
-
   public getReceivers = (): RTCRtpReceiver[] => {
     return this.receivers;
   };
@@ -221,7 +178,7 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
 
     this.senders.push(sender);
 
-    this.events.trigger(EEvent.TRACK, { track, transceiver });
+    this.dispatchTrackInternal(track);
 
     return sender;
   };
@@ -241,10 +198,24 @@ class RTCPeerConnectionMock implements RTCPeerConnectionDeprecated {
 
     this.senders.push(sender);
 
-    this.events.trigger(EEvent.TRACK, { track, transceiver });
+    this.dispatchTrackInternal(track);
 
     return sender;
   };
+
+  public dispatchTrack(kind: 'audio' | 'video'): void {
+    this.dispatchTrackInternal(new MediaStreamTrackMock(kind));
+  }
+
+  private dispatchTrackInternal(track: MediaStreamTrack): void {
+    const event = new Event(EEvent.TRACK) as RTCTrackEvent;
+
+    Object.defineProperty(event, 'track', {
+      value: track,
+    });
+
+    this.dispatchEvent(event);
+  }
 }
 
 export default RTCPeerConnectionMock;
