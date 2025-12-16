@@ -39,8 +39,11 @@
   ],
   "scripts": {
     "build": "vite build",
+    "build:demo": "vite build --config vite.demo.config.ts",
     "lint": "yarn lint:ts && yarn lint:js",
-    "lint:js": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0 --cache --cache-strategy=content",
+    "lint:js": "yarn lint:js:src && yarn lint:js:demo",
+    "lint:js:demo": "eslint demo --ext ts,tsx --report-unused-disable-directives --max-warnings 0 --cache --cache-strategy=content",
+    "lint:js:src": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0 --cache --cache-strategy=content",
     "lint:ts": "tsc",
     "prepare": "husky",
     "prepublishOnly": "yarn build",
@@ -50,6 +53,8 @@
     "release:major": "standard-version --release-as major && npm run release:publish && npm publish --access=public --registry=https://registry.npmjs.org/",
     "release:pre": "standard-version --prerelease && npm run release:publish && npm publish --tag prerelease --registry=https://registry.npmjs.org/",
     "release:publish": "git push --follow-tags",
+    "start": "vite --config vite.demo.config.ts",
+    "start:builded": "yarn build:demo && http-server demoDist -c-1 -o --cors",
     "test": "jest",
     "test:ci": "cross-env CI=true jest",
     "test:coverage": "yarn test:ci --no-cache --coverage",
@@ -78,7 +83,9 @@
     "@types/debug": "^4.1.12",
     "@types/dom-mediacapture-transform": "^0.1.11",
     "@types/jest": "^30.0.0",
+    "@vitejs/plugin-basic-ssl": "^2.1.0",
     "cross-env": "^10.1.0",
+    "http-server": "^14.1.1",
     "husky": "^9.1.7",
     "jest": "^30.2.0",
     "jest-environment-jsdom": "^30.2.0",
@@ -93,7 +100,8 @@
     "typescript": "^5.9.3",
     "vite": "^7.3.0",
     "vite-plugin-dts": "^4.5.4",
-    "vite-tsconfig-paths": "^6.0.1"
+    "vite-tsconfig-paths": "^6.0.1",
+    "webrtc-adapter": "^8.2.3"
   },
   "peerDependencies": {
     "@krivega/cancelable-promise": "^1.1.4",

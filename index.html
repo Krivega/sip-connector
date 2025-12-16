@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css" />
+
+    <title>Demo sip-connector call</title>
+  </head>
+  <body>
+    <main>
+      <form id="callForm">
+        <label for="serverAddress">
+          Адрес сервера
+          <input
+            type="text"
+            id="serverAddress"
+            name="serverAddress"
+            placeholder="sip.example.com"
+            required
+          />
+        </label>
+
+        <label for="displayName">
+          Отображаемое имя
+          <input
+            type="text"
+            id="displayName"
+            name="displayName"
+            placeholder="Иван Иванов"
+            required
+          />
+        </label>
+
+        <label>
+          <input type="checkbox" id="authEnabled" name="authEnabled" />
+          Авторизация
+        </label>
+
+        <label for="userNumber">
+          Номер пользователя
+          <input type="text" id="userNumber" name="userNumber" placeholder="1001" />
+        </label>
+
+        <label for="password">
+          Пароль
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="••••••••"
+            autocomplete="current-password"
+          />
+        </label>
+
+        <label for="conferenceNumber">
+          Номер конференции
+          <input
+            type="text"
+            id="conferenceNumber"
+            name="conferenceNumber"
+            placeholder="2001"
+            required
+          />
+        </label>
+      </form>
+
+      <section id="localVideoSection" style="display: none">
+        <h3>Локальное видео</h3>
+        <video style="max-height: 200px" id="localVideo" autoplay playsinline muted></video>
+      </section>
+
+      <section id="remoteStreamsSection" style="display: none">
+        <h3>Удаленные потоки</h3>
+        <div id="remoteStreamsContainer"></div>
+      </section>
+    </main>
+
+    <div
+      id="loaderOverlay"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+      "
+    ></div>
+
+    <style>
+      body {
+        padding-bottom: 100px;
+      }
+
+      .loader-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        background-color: white;
+        padding: 2rem;
+        border-radius: 8px;
+      }
+
+      .loader-spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .loader-message {
+        font-size: 1.1rem;
+        color: #333;
+      }
+
+      .floating-action-panel {
+        position: fixed;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 1rem;
+        z-index: 100;
+        background-color: white;
+        padding: 1rem 2rem;
+        border-radius: 8px;
+        box-shadow:
+          0 4px 6px rgba(0, 0, 0, 0.1),
+          0 2px 4px rgba(0, 0, 0, 0.06);
+      }
+
+      .floating-action-panel button {
+        min-width: 150px;
+      }
+
+      #remoteStreamsContainer {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+
+      .remote-stream-container {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background-color: #000;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .remote-stream-container video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .remote-stream-label {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent);
+        color: white;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        z-index: 10;
+      }
+    </style>
+
+    <div class="floating-action-panel">
+      <button id="callButton" type="button">Позвонить</button>
+      <button id="endCallButton" type="button" style="display: none">Завершить звонок</button>
+    </div>
+
+    <script type="module" src="demo/index.ts"></script>
+  </body>
+</html>
