@@ -174,6 +174,7 @@ export default class ConnectionFlow {
     }
 
     return disconnectedPromise.finally(() => {
+      ua?.removeAllListeners();
       this.setUa(undefined);
       this.stateMachine.reset(); // Возвращаем в idle состояние
     });
