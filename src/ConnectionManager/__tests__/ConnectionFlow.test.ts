@@ -332,6 +332,24 @@ describe('ConnectionFlow', () => {
       expect(setUa).toHaveBeenCalledWith(undefined);
       expect(resetSpy).toHaveBeenCalled();
     });
+
+    it('должен отписывать всех подсписчиков при наличии UA перед отключением', async () => {
+      const uaMock = uaFactory.createUAWithConfiguration(
+        {
+          register: false,
+          sipServerUrl: SIP_SERVER_URL,
+          displayName: 'Any Name',
+          sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+        },
+        events,
+      ).ua as unknown as UAMock;
+
+      uaInstance = uaMock;
+
+      await connectionFlow.disconnect();
+
+      expect(uaMock.removeAllListeners).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('hasEqualConnectionConfiguration', () => {
