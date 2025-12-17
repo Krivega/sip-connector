@@ -1,4 +1,3 @@
-import basicSsl from '@vitejs/plugin-basic-ssl';
 import { defineConfig } from 'vite';
 import tsConfigPaths from 'vite-tsconfig-paths';
 
@@ -7,6 +6,14 @@ export default defineConfig(() => {
     build: {
       outDir: 'demoDist',
     },
-    plugins: [basicSsl(), tsConfigPaths()],
+    plugins: [tsConfigPaths()],
+    server: {
+      https: {
+        key: './.cert/key.pem',
+        cert: './.cert/cert.pem',
+      },
+      host: true,
+      cors: false,
+    },
   };
 });

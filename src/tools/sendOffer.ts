@@ -26,7 +26,7 @@ type TSendOfferParams = {
   offer: RTCSessionDescriptionInit;
 };
 
-const ENDPOINT = '/api/v2/rtp2webrtc/offer/';
+const ENDPOINT = 'api/v2/rtp2webrtc/offer';
 
 /**
  * Отправляет SDP-offer на MCU и возвращает SDP-answer.
