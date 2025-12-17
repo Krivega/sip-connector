@@ -3,10 +3,12 @@ import { TypedEvents } from 'events-constructor';
 import { hasVideoTracks } from '@/utils/utils';
 import { EEvent, EVENT_NAMES } from './eventNames';
 import { MCUSession } from './MCUSession';
+import RecvSession from './RecvSession';
 import { RemoteStreamsManager } from './RemoteStreamsManager';
 
 import type { RTCSession } from '@krivega/jssip';
 import type { TEvents, TEventMap } from './eventNames';
+import type { TTools } from './RecvSession';
 import type {
   TStartCall,
   TCallConfiguration,
@@ -30,6 +32,8 @@ class CallManager {
   private readonly remoteStreamsManager = new RemoteStreamsManager();
 
   private readonly mcuSession: MCUSession;
+
+  private recvSession?: RecvSession;
 
   public constructor() {
     this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
@@ -149,10 +153,37 @@ class CallManager {
     return this.mcuSession.restartIce(options);
   }
 
+  public startRecvSession(audioId: string, sendOffer: TTools['sendOffer']): void {
+    const { number: conferenceNumber } = this.callConfiguration;
+
+    if (conferenceNumber === undefined) {
+      return;
+    }
+
+    this.recvSession?.close();
+
+    const config = {
+      quality: 'high' as const,
+      audioChannel: audioId,
+    };
+
+    const session = new RecvSession(config, { sendOffer });
+
+    this.recvSession = session;
+
+    // Ошибки получения дополнительных потоков не должны ломать основной звонок
+    session.call(conferenceNumber).catch(() => {
+      this.recvSession?.close();
+      this.recvSession = undefined;
+    });
+  }
+
   private readonly reset: () => void = () => {
     this.remoteStreamsManager.reset();
     this.callConfiguration.number = undefined;
     this.callConfiguration.answer = false;
+    this.recvSession?.close();
+    this.recvSession = undefined;
   };
 
   private subscribeCallStatusChange() {

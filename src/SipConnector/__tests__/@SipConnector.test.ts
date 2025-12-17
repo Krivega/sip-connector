@@ -452,4 +452,27 @@ describe('SipConnector facade', () => {
       expect(sipConnectorWithExcludeOnly.excludeMimeTypesVideoCodecs).toEqual(['video/H264']);
     });
   });
+
+  describe('RecvSession integration', () => {
+    it('должен вызывать startRecvSession в CallManager при событии spectator-with-audio-id', async () => {
+      const sipConnectorWithMocks = new SipConnector({ JsSIP: JsSIP as unknown as TJsSIP });
+      const audioId = 'audio-1';
+
+      const startRecvSessionMock = jest
+        .spyOn(sipConnectorWithMocks.callManager, 'startRecvSession')
+        .mockImplementation(() => {
+          // пустая реализация для теста
+        });
+
+      // Тригерим api-событие напрямую на уровне ApiManager
+      sipConnectorWithMocks.apiManager.events.trigger(
+        'participant:move-request-to-spectators-with-audio-id',
+        { audioId },
+      );
+
+      await Promise.resolve();
+
+      expect(startRecvSessionMock).toHaveBeenCalledWith(audioId, expect.any(Function));
+    });
+  });
 });

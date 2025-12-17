@@ -8,6 +8,7 @@ import { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import { IncomingCallManager } from '@/IncomingCallManager';
 import { PresentationManager } from '@/PresentationManager';
 import { StatsManager } from '@/StatsManager';
+import { sendOffer } from '@/tools';
 import setCodecPreferences from '@/tools/setCodecPreferences';
 import { VideoSendingBalancerManager } from '@/VideoSendingBalancerManager';
 import { ONE_MEGABIT_IN_BITS } from './constants';
@@ -422,6 +423,36 @@ class SipConnector {
     return this.apiManager.askPermissionToEnableCam(...args);
   }
 
+  private subscribeRecvSession() {
+    this.apiManager.on('participant:move-request-to-spectators-with-audio-id', ({ audioId }) => {
+      this.callManager.startRecvSession(audioId, this.sendOffer);
+    });
+  }
+
+  private readonly sendOffer = async (
+    params: {
+      conferenceNumber: string;
+      quality: 'low' | 'medium' | 'high';
+      audioChannel: string;
+    },
+    offer: RTCSessionDescriptionInit,
+  ): Promise<RTCSessionDescription> => {
+    const connectionConfiguration = this.connectionManager.getConnectionConfiguration();
+    const serverUrl = connectionConfiguration?.sipServerUrl;
+
+    if (serverUrl === undefined) {
+      throw new Error('No sipServerUrl for sendOffer');
+    }
+
+    return sendOffer({
+      serverUrl,
+      offer,
+      conferenceNumber: params.conferenceNumber,
+      quality: params.quality,
+      audio: params.audioChannel,
+    });
+  };
+
   private setCodecPreferences(transceiver: RTCRtpTransceiver) {
     setCodecPreferences(transceiver, {
       preferredMimeTypesVideoCodecs: this.preferredMimeTypesVideoCodecs,
@@ -438,6 +469,8 @@ class SipConnector {
     this.bridgeEvents('presentation', this.presentationManager);
     this.bridgeEvents('stats', this.statsManager);
     this.bridgeEvents('video-balancer', this.videoSendingBalancerManager);
+
+    this.subscribeRecvSession();
   }
 
   private readonly bridgeEvents = <T extends string>(
