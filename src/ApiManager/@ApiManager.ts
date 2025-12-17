@@ -600,7 +600,13 @@ class ApiManager {
     const audioId = request.getHeader(EHeader.AUDIO_ID);
 
     if (participantState === EParticipantType.SPECTATOR) {
-      this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS, { audioId });
+      if (audioId) {
+        this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS_WITH_AUDIO_ID, {
+          audioId,
+        });
+      } else {
+        this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS, {});
+      }
     }
 
     if (participantState === EParticipantType.PARTICIPANT) {
