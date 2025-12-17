@@ -119,11 +119,16 @@ describe('ApiManager (NEW_INFO handling)', () => {
       expect(licenseSpy).toHaveBeenCalledWith(EUseLicense.AUDIO);
     });
 
-    it('должен обрабатывать PARTICIPANT_STATE события', () => {
-      const participantSpy = jest.fn();
+    it('должен обрабатывать PARTICIPANT_STATE события с audioId', () => {
+      const spectatorSpy = jest.fn();
+      const spectatorWithAudioIdSpy = jest.fn();
       const audioId = '123';
 
-      apiManager.on('participant:move-request-to-spectators', participantSpy);
+      apiManager.on('participant:move-request-to-spectators', spectatorSpy);
+      apiManager.on(
+        'participant:move-request-to-spectators-with-audio-id',
+        spectatorWithAudioIdSpy,
+      );
       mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE);
       mockRequest.setHeader(EHeader.CONTENT_PARTICIPANT_STATE, EParticipantType.SPECTATOR);
       mockRequest.setHeader(EHeader.AUDIO_ID, audioId);
@@ -131,7 +136,8 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
       callManager.events.trigger('newInfo', infoEvent);
-      expect(participantSpy).toHaveBeenCalledWith({ audioId });
+      expect(spectatorSpy).not.toHaveBeenCalled();
+      expect(spectatorWithAudioIdSpy).toHaveBeenCalledWith({ audioId });
     });
 
     it('должен обрабатывать CHANNELS события', () => {
@@ -536,8 +542,13 @@ describe('ApiManager (NEW_INFO handling)', () => {
   describe('обработка PARTICIPANT_STATE событий', () => {
     it('должен обрабатывать SPECTATOR состояние', () => {
       const spectatorSpy = jest.fn();
+      const spectatorWithAudioIdSpy = jest.fn();
 
       apiManager.on('participant:move-request-to-spectators', spectatorSpy);
+      apiManager.on(
+        'participant:move-request-to-spectators-with-audio-id',
+        spectatorWithAudioIdSpy,
+      );
       mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE);
       mockRequest.setHeader(EHeader.CONTENT_PARTICIPANT_STATE, EParticipantType.SPECTATOR);
 
@@ -545,6 +556,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
 
       callManager.events.trigger('newInfo', infoEvent);
       expect(spectatorSpy).toHaveBeenCalledWith({});
+      expect(spectatorWithAudioIdSpy).not.toHaveBeenCalled();
     });
 
     it('должен обрабатывать PARTICIPANT состояние', () => {

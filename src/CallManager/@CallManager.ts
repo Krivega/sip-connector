@@ -149,13 +149,6 @@ class CallManager {
     return this.mcuSession.restartIce(options);
   }
 
-  public async addTransceiver(
-    kind: 'audio' | 'video',
-    options?: RTCRtpTransceiverInit,
-  ): Promise<RTCRtpTransceiver> {
-    return this.mcuSession.addTransceiver(kind, options);
-  }
-
   private readonly reset: () => void = () => {
     this.remoteStreamsManager.reset();
     this.callConfiguration.number = undefined;

@@ -1,6 +1,7 @@
-import ParticipantRoleManager, { type TParticipantRole } from './ParticipantRoleManager';
+import ParticipantRoleManager from './ParticipantRoleManager';
 import resolveServerParametersRequester from './resolveServerParametersRequester';
 import sipConnectorFacade from './sipConnectorFacade';
+import UseLicenseManager from './UseLicenseManager';
 
 import type {
   IParams as IServerParametersRequesterParams,
@@ -12,6 +13,8 @@ class Session {
 
   private readonly participantRoleManager: ParticipantRoleManager;
 
+  private readonly useLicenseManager: UseLicenseManager;
+
   public constructor({
     serverParametersRequesterParams,
   }: {
@@ -21,6 +24,7 @@ class Session {
       serverParametersRequesterParams,
     );
     this.participantRoleManager = new ParticipantRoleManager();
+    this.useLicenseManager = new UseLicenseManager();
   }
 
   public async startCall({
@@ -45,9 +49,13 @@ class Session {
     const serverParameters = await this.serverParametersRequester.request({
       serverUrl,
       isRegistered,
-    }); // Подписываемся на события изменения роли участника
+    });
 
+    // Подписываемся на события изменения роли участника
     this.participantRoleManager.subscribe();
+
+    // Подписываемся на события изменения лицензии
+    this.useLicenseManager.subscribe();
 
     await sipConnectorFacade.connectToServer({
       displayName,
@@ -74,15 +82,10 @@ class Session {
     this.participantRoleManager.unsubscribe();
     this.participantRoleManager.reset();
 
+    this.useLicenseManager.unsubscribe();
+    this.useLicenseManager.reset();
+
     await sipConnectorFacade.disconnectFromServer();
-  }
-
-  public getParticipantRole(): TParticipantRole {
-    return this.participantRoleManager.getRole();
-  }
-
-  public getParticipantRoleManager(): ParticipantRoleManager {
-    return this.participantRoleManager;
   }
 }
 

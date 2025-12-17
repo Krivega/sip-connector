@@ -206,17 +206,6 @@ export class MCUSession implements IMCUSession {
     return this.rtcSession.restartIce(options);
   }
 
-  public async addTransceiver(
-    kind: 'audio' | 'video',
-    options?: RTCRtpTransceiverInit,
-  ): Promise<RTCRtpTransceiver> {
-    if (!this.rtcSession) {
-      throw new Error('No rtcSession established');
-    }
-
-    return this.rtcSession.addTransceiver(kind, options);
-  }
-
   private readonly handleCall = async ({
     ontrack,
   }: {

@@ -8,6 +8,7 @@ type TDomIds = {
   remoteStreamsContainerId: string;
   callFormId: string;
   participantRoleId: string;
+  useLicenseId: string;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
@@ -70,6 +71,8 @@ class DOM {
 
   public participantRoleElement: HTMLElement;
 
+  public useLicenseElement: HTMLElement;
+
   public constructor({
     overlayId,
     callButtonId,
@@ -80,6 +83,7 @@ class DOM {
     remoteStreamsContainerId,
     callFormId,
     participantRoleId,
+    useLicenseId,
   }: TDomIds) {
     this.overlayElement = getElementById(overlayId);
     this.callButtonElement = getElementById<HTMLButtonElement>(callButtonId);
@@ -124,6 +128,7 @@ class DOM {
       this.formElement,
     );
     this.participantRoleElement = getElementById(participantRoleId);
+    this.useLicenseElement = getElementById(useLicenseId);
   }
 }
 
@@ -137,4 +142,5 @@ export const dom = new DOM({
   remoteStreamsContainerId: 'remoteStreamsContainer',
   callFormId: 'callForm',
   participantRoleId: 'participantRole',
+  useLicenseId: 'useLicense',
 });
