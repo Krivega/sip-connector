@@ -166,6 +166,7 @@ class App {
     (this.session ? this.session.stopCall() : Promise.resolve())
       .then(() => {
         this.session = undefined;
+
         // Останавливаем локальный медиа-поток
         this.localMediaStreamManager.stop();
 
@@ -207,8 +208,10 @@ class App {
 
     dom.localVideoSectionElement.style.display = shouldShowLocalVideo ? '' : 'none';
 
-    // Удаленные потоки показываем только когда звонок активен
-    dom.remoteStreamsSectionElement.style.display = state === 'active' ? '' : 'none';
+    // Общий контейнер для секций активного звонка показываем только когда звонок активен
+    const shouldShowActiveCallSection = state === 'active';
+
+    dom.activeCallSectionElement.style.display = shouldShowActiveCallSection ? '' : 'none';
   }
 
   /**

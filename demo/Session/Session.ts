@@ -1,3 +1,4 @@
+import ParticipantRoleManager, { type TParticipantRole } from './ParticipantRoleManager';
 import resolveServerParametersRequester from './resolveServerParametersRequester';
 import sipConnectorFacade from './sipConnectorFacade';
 
@@ -9,6 +10,8 @@ import type {
 class Session {
   private readonly serverParametersRequester: IServerParametersRequester;
 
+  private readonly participantRoleManager: ParticipantRoleManager;
+
   public constructor({
     serverParametersRequesterParams,
   }: {
@@ -17,6 +20,7 @@ class Session {
     this.serverParametersRequester = resolveServerParametersRequester(
       serverParametersRequesterParams,
     );
+    this.participantRoleManager = new ParticipantRoleManager();
   }
 
   public async startCall({
@@ -41,7 +45,9 @@ class Session {
     const serverParameters = await this.serverParametersRequester.request({
       serverUrl,
       isRegistered,
-    });
+    }); // Подписываемся на события изменения роли участника
+
+    this.participantRoleManager.subscribe();
 
     await sipConnectorFacade.connectToServer({
       displayName,
@@ -64,9 +70,19 @@ class Session {
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   public async stopCall(): Promise<void> {
+    this.participantRoleManager.unsubscribe();
+    this.participantRoleManager.reset();
+
     await sipConnectorFacade.disconnectFromServer();
+  }
+
+  public getParticipantRole(): TParticipantRole {
+    return this.participantRoleManager.getRole();
+  }
+
+  public getParticipantRoleManager(): ParticipantRoleManager {
+    return this.participantRoleManager;
   }
 }
 

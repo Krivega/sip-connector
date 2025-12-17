@@ -3,10 +3,11 @@ type TDomIds = {
   callButtonId: string;
   endCallButtonId: string;
   localVideoSectionId: string;
-  remoteStreamsSectionId: string;
+  activeCallSectionId: string;
   localVideoId: string;
   remoteStreamsContainerId: string;
   callFormId: string;
+  participantRoleId: string;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
@@ -43,7 +44,7 @@ class DOM {
 
   public localVideoSectionElement: HTMLElement;
 
-  public remoteStreamsSectionElement: HTMLElement;
+  public activeCallSectionElement: HTMLElement;
 
   public remoteStreamsContainerElement: HTMLElement;
 
@@ -67,21 +68,24 @@ class DOM {
 
   public passwordLabel: HTMLLabelElement;
 
+  public participantRoleElement: HTMLElement;
+
   public constructor({
     overlayId,
     callButtonId,
     endCallButtonId,
     localVideoSectionId,
-    remoteStreamsSectionId,
+    activeCallSectionId,
     localVideoId,
     remoteStreamsContainerId,
     callFormId,
+    participantRoleId,
   }: TDomIds) {
     this.overlayElement = getElementById(overlayId);
     this.callButtonElement = getElementById<HTMLButtonElement>(callButtonId);
     this.endCallButtonElement = getElementById<HTMLButtonElement>(endCallButtonId);
     this.localVideoSectionElement = getElementById(localVideoSectionId);
-    this.remoteStreamsSectionElement = getElementById(remoteStreamsSectionId);
+    this.activeCallSectionElement = getElementById(activeCallSectionId);
     this.remoteStreamsContainerElement = getElementById(remoteStreamsContainerId);
     this.localVideoElement = getElementById<HTMLVideoElement>(localVideoId);
     this.formElement = getElementById<HTMLFormElement>(callFormId);
@@ -119,6 +123,7 @@ class DOM {
       'label[for="password"]',
       this.formElement,
     );
+    this.participantRoleElement = getElementById(participantRoleId);
   }
 }
 
@@ -127,8 +132,9 @@ export const dom = new DOM({
   callButtonId: 'callButton',
   endCallButtonId: 'endCallButton',
   localVideoSectionId: 'localVideoSection',
-  remoteStreamsSectionId: 'remoteStreamsSection',
+  activeCallSectionId: 'activeCallSection',
   localVideoId: 'localVideo',
   remoteStreamsContainerId: 'remoteStreamsContainer',
   callFormId: 'callForm',
+  participantRoleId: 'participantRole',
 });
