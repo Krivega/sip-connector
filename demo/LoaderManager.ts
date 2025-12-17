@@ -1,24 +1,18 @@
+import { dom } from './dom';
+
 /**
  * Класс для управления overlay-лоадером
  * Отображает индикатор загрузки с текстовым сообщением
  */
-class LoaderManager {
-  private readonly overlay: HTMLElement | undefined = undefined;
 
+class LoaderManager {
   private messageElement: HTMLElement | undefined = undefined;
 
   /**
    * Создает экземпляр LoaderManager
    * @param overlayId - ID overlay элемента в DOM
    */
-  public constructor(overlayId: string) {
-    const overlayElement = document.querySelector<HTMLElement>(`#${overlayId}`);
-
-    if (!overlayElement) {
-      throw new Error(`Overlay element with id "${overlayId}" not found`);
-    }
-
-    this.overlay = overlayElement;
+  public constructor() {
     this.initializeOverlay();
   }
 
@@ -26,19 +20,18 @@ class LoaderManager {
    * Показывает лоадер с сообщением
    */
   public show(message = 'Загрузка...'): void {
-    if (this.overlay && this.messageElement) {
+    if (this.messageElement) {
       this.messageElement.textContent = message;
-      this.overlay.style.display = 'flex';
+      dom.overlayElement.style.display = 'flex';
     }
   }
 
   /**
    * Скрывает лоадер
    */
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   public hide(): void {
-    if (this.overlay) {
-      this.overlay.style.display = 'none';
-    }
+    dom.overlayElement.style.display = 'none';
   }
 
   /**
@@ -54,10 +47,6 @@ class LoaderManager {
    * Инициализирует структуру overlay
    */
   private initializeOverlay(): void {
-    if (!this.overlay) {
-      return;
-    }
-
     // Создаем контейнер для лоадера
     const loaderContainer = document.createElement('div');
 
@@ -78,10 +67,10 @@ class LoaderManager {
 
     loaderContainer.append(spinner);
     loaderContainer.append(messageElement);
-    this.overlay.append(loaderContainer);
+    dom.overlayElement.append(loaderContainer);
 
     // Изначально скрываем overlay
-    this.overlay.style.display = 'none';
+    dom.overlayElement.style.display = 'none';
   }
 }
 

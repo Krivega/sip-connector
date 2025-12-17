@@ -1,3 +1,4 @@
+import { dom } from './dom';
 import VideoPlayer from './VideoPlayer';
 
 /**
@@ -56,22 +57,6 @@ const createVideoElement = (streamId: string): HTMLVideoElement => {
 class RemoteMediaStreamManager {
   private readonly streams = new Map<string, IStreamInfo>();
 
-  private readonly container: HTMLElement;
-
-  /**
-   * Создает экземпляр RemoteMediaStreamManager
-   * @param containerId - ID контейнера для размещения видео-плееров
-   */
-  public constructor(containerId: string) {
-    const containerElement = document.querySelector<HTMLElement>(`#${containerId}`);
-
-    if (!containerElement) {
-      throw new Error(`Container with id "${containerId}" not found`);
-    }
-
-    this.container = containerElement;
-  }
-
   /**
    * Добавляет стрим и создает для него видео-плеер
    * @param streamId - Уникальный идентификатор стрима
@@ -91,7 +76,7 @@ class RemoteMediaStreamManager {
 
     container.append(videoElement);
     container.append(labelElement);
-    this.container.append(container);
+    dom.remoteStreamsContainerElement.append(container);
 
     const videoPlayer = new VideoPlayer(videoElement);
 

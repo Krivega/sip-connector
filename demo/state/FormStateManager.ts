@@ -1,25 +1,28 @@
+/* eslint-disable @typescript-eslint/class-methods-use-this */
 import FormState from './FormState';
+import { dom } from '../dom';
 
 import type { IFormState, TFormChangeHandler } from './FormState';
+
+const getElement = <K extends keyof IFormState>(field: K) => {
+  const elements = {
+    serverAddress: dom.serverAddressInput,
+    displayName: dom.displayNameInput,
+    authEnabled: dom.authEnabledInput,
+    userNumber: dom.userNumberInput,
+    password: dom.passwordInput,
+    conferenceNumber: dom.conferenceNumberInput,
+    userNumberLabel: dom.userNumberLabel,
+    passwordLabel: dom.passwordLabel,
+  };
+
+  return elements[field];
+};
 
 /**
  * Тип обработчика отправки формы
  */
 type TFormSubmitHandler = (state: IFormState, event: SubmitEvent) => void;
-
-/**
- * Интерфейс для хранения элементов формы
- */
-interface IFormElements {
-  serverAddress: HTMLInputElement;
-  displayName: HTMLInputElement;
-  authEnabled: HTMLInputElement;
-  userNumber: HTMLInputElement;
-  password: HTMLInputElement;
-  conferenceNumber: HTMLInputElement;
-  userNumberLabel: HTMLLabelElement;
-  passwordLabel: HTMLLabelElement;
-}
 
 /**
  * Класс для управления состоянием полей формы
@@ -28,26 +31,14 @@ interface IFormElements {
 class FormStateManager {
   private readonly formState: FormState;
 
-  private readonly form: HTMLFormElement;
-
-  private readonly elements: IFormElements;
-
   private readonly submitHandlers: Set<TFormSubmitHandler> = new Set<TFormSubmitHandler>();
 
   /**
    * Создает экземпляр FormStateManager
    * @param formId - ID формы в DOM
    */
-  public constructor(formId: string) {
-    const formElement = document.querySelector<HTMLFormElement>(`#${formId}`);
-
-    if (!formElement) {
-      throw new Error(`Form with id "${formId}" not found`);
-    }
-
-    this.form = formElement;
+  public constructor() {
     this.formState = new FormState();
-    this.elements = this.initializeElements();
     this.fillFields();
     this.subscribeToChanges();
     this.subscribeToSubmit();
@@ -64,7 +55,7 @@ class FormStateManager {
    * Устанавливает значение поля
    */
   public setField<K extends keyof IFormState>(field: K, value: IFormState[K]): void {
-    const element = this.elements[field];
+    const element = getElement(field);
 
     if (element.type === 'checkbox') {
       element.checked = value as boolean;
@@ -103,58 +94,16 @@ class FormStateManager {
    * Валидирует форму
    */
   public validate(): boolean {
-    return this.form.checkValidity();
+    return dom.formElement.checkValidity();
   }
 
   /**
    * Сбрасывает форму к начальному состоянию
    */
   public reset(): void {
-    this.form.reset();
+    dom.formElement.reset();
     this.formState.clearStorage();
     this.fillFields();
-  }
-
-  /**
-   * Инициализирует элементы формы из DOM
-   */
-  private initializeElements(): IFormElements {
-    const serverAddress = this.form.querySelector<HTMLInputElement>('input[name="serverAddress"]');
-    const displayName = this.form.querySelector<HTMLInputElement>('input[name="displayName"]');
-    const authEnabled = this.form.querySelector<HTMLInputElement>(
-      'input[type="checkbox"][name="authEnabled"]',
-    );
-    const userNumber = this.form.querySelector<HTMLInputElement>('input[name="userNumber"]');
-    const password = this.form.querySelector<HTMLInputElement>('input[name="password"]');
-    const conferenceNumber = this.form.querySelector<HTMLInputElement>(
-      'input[name="conferenceNumber"]',
-    );
-    const userNumberLabel = this.form.querySelector<HTMLLabelElement>('label[for="userNumber"]');
-    const passwordLabel = this.form.querySelector<HTMLLabelElement>('label[for="password"]');
-
-    if (
-      !serverAddress ||
-      !displayName ||
-      !authEnabled ||
-      !userNumber ||
-      !password ||
-      !conferenceNumber ||
-      !userNumberLabel ||
-      !passwordLabel
-    ) {
-      throw new Error('Required form elements not found');
-    }
-
-    return {
-      serverAddress,
-      displayName,
-      authEnabled,
-      userNumber,
-      password,
-      conferenceNumber,
-      userNumberLabel,
-      passwordLabel,
-    };
   }
 
   /**
@@ -163,12 +112,12 @@ class FormStateManager {
   private fillFields(): void {
     const state = this.getState();
 
-    this.elements.serverAddress.value = state.serverAddress;
-    this.elements.displayName.value = state.displayName;
-    this.elements.authEnabled.checked = state.authEnabled;
-    this.elements.userNumber.value = state.userNumber;
-    this.elements.password.value = state.password;
-    this.elements.conferenceNumber.value = state.conferenceNumber;
+    getElement('serverAddress').value = state.serverAddress;
+    getElement('displayName').value = state.displayName;
+    getElement('authEnabled').checked = state.authEnabled;
+    getElement('userNumber').value = state.userNumber;
+    getElement('password').value = state.password;
+    getElement('conferenceNumber').value = state.conferenceNumber;
 
     this.updateAuthFieldsVisibility();
     this.updateAuthFieldsRequired();
@@ -178,15 +127,15 @@ class FormStateManager {
    * Подписывается на изменения в полях формы
    */
   private subscribeToChanges(): void {
-    this.form.addEventListener('input', this.handleInputChange.bind(this));
-    this.form.addEventListener('change', this.handleInputChange.bind(this));
+    dom.formElement.addEventListener('input', this.handleInputChange.bind(this));
+    dom.formElement.addEventListener('change', this.handleInputChange.bind(this));
   }
 
   /**
    * Подписывается на отправку формы
    */
   private subscribeToSubmit(): void {
-    this.form.addEventListener('submit', this.handleSubmit.bind(this));
+    dom.formElement.addEventListener('submit', this.handleSubmit.bind(this));
   }
 
   /**
@@ -248,8 +197,8 @@ class FormStateManager {
   private updateAuthFieldsVisibility(): void {
     const state = this.formState.getState();
 
-    this.elements.userNumberLabel.style.display = state.authEnabled ? '' : 'none';
-    this.elements.passwordLabel.style.display = state.authEnabled ? '' : 'none';
+    dom.userNumberLabel.style.display = state.authEnabled ? '' : 'none';
+    dom.passwordLabel.style.display = state.authEnabled ? '' : 'none';
   }
 
   /**
@@ -260,11 +209,11 @@ class FormStateManager {
     const state = this.formState.getState();
 
     if (state.authEnabled) {
-      this.elements.userNumber.setAttribute('required', '');
-      this.elements.password.setAttribute('required', '');
+      getElement('userNumber').setAttribute('required', '');
+      getElement('password').setAttribute('required', '');
     } else {
-      this.elements.userNumber.removeAttribute('required');
-      this.elements.password.removeAttribute('required');
+      getElement('userNumber').removeAttribute('required');
+      getElement('password').removeAttribute('required');
     }
   }
 }

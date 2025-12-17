@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/class-methods-use-this */
 /* eslint-disable no-alert */
 import CallStateManager, { type TCallState } from './CallStateManager';
+import { dom } from './dom';
 import LoaderManager from './LoaderManager';
 import LocalMediaStreamManager from './LocalMediaStreamManager';
 import RemoteMediaStreamManager from './RemoteMediaStreamManager';
@@ -26,57 +28,17 @@ class App {
 
   private readonly callStateManager: CallStateManager;
 
-  private readonly callButton: HTMLButtonElement;
-
-  private readonly endCallButton: HTMLButtonElement;
-
-  private readonly localVideoSection: HTMLElement;
-
-  private readonly remoteStreamsSection: HTMLElement;
-
   private session: Session | undefined = undefined;
 
   /**
    * Создает экземпляр App
    */
   public constructor() {
-    this.formStateManager = new FormStateManager('callForm');
+    this.formStateManager = new FormStateManager();
     this.localMediaStreamManager = new LocalMediaStreamManager();
-    this.remoteMediaStreamManager = new RemoteMediaStreamManager('remoteStreamsContainer');
-    this.loaderManager = new LoaderManager('loaderOverlay');
+    this.remoteMediaStreamManager = new RemoteMediaStreamManager();
+    this.loaderManager = new LoaderManager();
     this.callStateManager = new CallStateManager();
-
-    const callButtonElement = document.querySelector('#callButton');
-
-    if (!callButtonElement || !(callButtonElement instanceof HTMLButtonElement)) {
-      throw new Error('Call button not found');
-    }
-
-    this.callButton = callButtonElement;
-
-    const endCallButtonElement = document.querySelector('#endCallButton');
-
-    if (!endCallButtonElement || !(endCallButtonElement instanceof HTMLButtonElement)) {
-      throw new Error('End call button not found');
-    }
-
-    this.endCallButton = endCallButtonElement;
-
-    const localVideoSectionElement = document.querySelector('#localVideoSection');
-
-    if (!localVideoSectionElement || !(localVideoSectionElement instanceof HTMLElement)) {
-      throw new Error('Local video section not found');
-    }
-
-    this.localVideoSection = localVideoSectionElement;
-
-    const remoteStreamsSectionElement = document.querySelector('#remoteStreamsSection');
-
-    if (!remoteStreamsSectionElement || !(remoteStreamsSectionElement instanceof HTMLElement)) {
-      throw new Error('Remote streams section not found');
-    }
-
-    this.remoteStreamsSection = remoteStreamsSectionElement;
 
     this.initialize();
   }
@@ -85,14 +47,8 @@ class App {
    * Инициализирует приложение
    */
   private initialize(): void {
-    const localVideoElement = document.querySelector<HTMLVideoElement>('#localVideo');
-
-    if (!localVideoElement) {
-      throw new Error('Local video element not found');
-    }
-
     // Подключаем видео-плеер к локальному медиа-менеджеру
-    const localVideoPlayer = new VideoPlayer(localVideoElement);
+    const localVideoPlayer = new VideoPlayer(dom.localVideoElement);
 
     this.localMediaStreamManager.setVideoPlayer(localVideoPlayer);
 
@@ -103,7 +59,7 @@ class App {
     });
 
     // Подписываемся на кнопку "Позвонить"
-    this.callButton.addEventListener('click', () => {
+    dom.callButtonElement.addEventListener('click', () => {
       this.handleFormSubmit();
     });
 
@@ -113,7 +69,7 @@ class App {
     });
 
     // Подписываемся на кнопку завершения звонка
-    this.endCallButton.addEventListener('click', () => {
+    dom.endCallButtonElement.addEventListener('click', () => {
       this.handleEndCall();
     });
   }
@@ -227,17 +183,18 @@ class App {
   /**
    * Обрабатывает изменения состояния звонка
    */
+
   private handleCallStateChange(state: TCallState): void {
     // Включаем/выключаем кнопку в зависимости от состояния
-    this.callButton.disabled = state !== 'idle';
-    this.endCallButton.disabled = state !== 'active';
+    dom.callButtonElement.disabled = state !== 'idle';
+    dom.endCallButtonElement.disabled = state !== 'active';
 
     if (state === 'active') {
-      this.callButton.style.display = 'none';
-      this.endCallButton.style.display = '';
+      dom.callButtonElement.style.display = 'none';
+      dom.endCallButtonElement.style.display = '';
     } else {
-      this.callButton.style.display = '';
-      this.endCallButton.style.display = 'none';
+      dom.callButtonElement.style.display = '';
+      dom.endCallButtonElement.style.display = 'none';
     }
 
     // Показываем/скрываем секции в зависимости от состояния
@@ -248,10 +205,10 @@ class App {
       state === 'calling' ||
       state === 'active';
 
-    this.localVideoSection.style.display = shouldShowLocalVideo ? '' : 'none';
+    dom.localVideoSectionElement.style.display = shouldShowLocalVideo ? '' : 'none';
 
     // Удаленные потоки показываем только когда звонок активен
-    this.remoteStreamsSection.style.display = state === 'active' ? '' : 'none';
+    dom.remoteStreamsSectionElement.style.display = state === 'active' ? '' : 'none';
   }
 
   /**
