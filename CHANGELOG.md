@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [19.9.0](https://github.com/Krivega/sip-connector/compare/v19.8.3...v19.9.0) (2025-12-17)
+
+### Features
+
+- add audioId to participant move request event and update related tests ([e0787d6](https://github.com/Krivega/sip-connector/commit/e0787d6ad7448d8c2bf318575e744e16a8286262))
+- add demo ([9490ba2](https://github.com/Krivega/sip-connector/commit/9490ba26fd670a758b23f33f9c9188312ad295cb))
+- add participant role management and update call UI with status display ([e508e23](https://github.com/Krivega/sip-connector/commit/e508e23e2e9539ed2acc4ce38e9985ebf78fd13e))
+- add use license management and update DOM structure with new license section ([ee04091](https://github.com/Krivega/sip-connector/commit/ee040915f4ea5875f8dd889938ef6d93c8344a75))
+- differentiate spectator move requests with and without audioId in ApiManager ([5e2a520](https://github.com/Krivega/sip-connector/commit/5e2a52001f678029416024cb291f1cfae461463f))
+- enhance RecvSession to add multiple video transceivers for content sharing ([296e52a](https://github.com/Krivega/sip-connector/commit/296e52a09136106ed537a35b8d8fbd67e2d257c0))
+- implement RecvSession for handling incoming media sessions with audio and video transceivers ([897f176](https://github.com/Krivega/sip-connector/commit/897f1765fffe624a44f3405d7d2d0afe04a3000b))
+
+### Bug Fixes
+
+- make audioId optional in move-request-to-spectators event type ([9f5c0ba](https://github.com/Krivega/sip-connector/commit/9f5c0ba95245f8604fcfa12c906b92e713d28a5a))
+- remove all ua listeners after disconnect ([#58](https://github.com/Krivega/sip-connector/issues/58)) ([312efd6](https://github.com/Krivega/sip-connector/commit/312efd65a581bf096e22567b6bda050926005ef2))
+
 ### [19.8.3](https://github.com/Krivega/sip-connector/compare/v19.8.2...v19.8.3) (2025-12-12)
 
 ### Bug Fixes
