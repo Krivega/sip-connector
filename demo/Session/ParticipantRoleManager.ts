@@ -4,7 +4,7 @@ import sipConnectorFacade from './sipConnectorFacade';
 /**
  * Тип роли участника
  */
-export type TParticipantRole = 'participant' | 'spectator' | undefined;
+export type TParticipantRole = 'participant' | 'spectator' | 'spectatorNew' | undefined;
 
 /**
  * Тип обработчика изменений роли участника
@@ -21,6 +21,8 @@ class ParticipantRoleManager {
   private readonly handlers: Set<TParticipantRoleHandler> = new Set<TParticipantRoleHandler>();
 
   private unsubscribeMoveToSpectators: (() => void) | undefined = undefined;
+
+  private unsubscribeMoveToSpectatorsNew: (() => void) | undefined = undefined;
 
   private unsubscribeMoveToParticipants: (() => void) | undefined = undefined;
 
@@ -40,10 +42,19 @@ class ParticipantRoleManager {
       this.setRole('spectator');
     });
 
+    // Подписываемся на событие перемещения в зрители для новых серверов
+    this.unsubscribeMoveToSpectatorsNew = sipConnectorFacade.on(
+      'api:participant:move-request-to-spectators-with-audio-id',
+      () => {
+        this.setRole('spectatorNew');
+      },
+    );
+
     // Подписываемся на событие перемещения в участники
     this.unsubscribeMoveToParticipants = sipConnectorFacade.onMoveToParticipants(() => {
       this.setRole('participant');
     });
+
     this.onChange(this.handleParticipantRoleChange);
   }
 
@@ -54,6 +65,11 @@ class ParticipantRoleManager {
     if (this.unsubscribeMoveToSpectators) {
       this.unsubscribeMoveToSpectators();
       this.unsubscribeMoveToSpectators = undefined;
+    }
+
+    if (this.unsubscribeMoveToSpectatorsNew) {
+      this.unsubscribeMoveToSpectatorsNew();
+      this.unsubscribeMoveToSpectatorsNew = undefined;
     }
 
     if (this.unsubscribeMoveToParticipants) {
@@ -122,6 +138,12 @@ class ParticipantRoleManager {
 
       case 'spectator': {
         roleText = 'Зритель';
+
+        break;
+      }
+
+      case 'spectatorNew': {
+        roleText = 'Зритель (NEW)';
 
         break;
       }

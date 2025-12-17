@@ -70,8 +70,6 @@ const sendOffer = async ({
     sdp: string;
   };
 
-  // const
-
   return {
     type: data.type,
     sdp: data.sdp,
