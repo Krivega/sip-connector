@@ -129,7 +129,7 @@ describe('connectToServer', () => {
             const sockets = Array.isArray(config.sockets) ? config.sockets : [config.sockets];
 
             expect((sockets[0] as { url: string }).url).toBe(
-              dataForConnectionWithoutAuthorizationWithSipServerUrlChanged.sipServerUrl,
+              `wss://${dataForConnectionWithoutAuthorizationWithSipServerUrlChanged.sipServerUrl}/webrtc/wss/`,
             );
 
             // Остальная конфигурация должна совпадать
@@ -146,7 +146,7 @@ describe('connectToServer', () => {
           .connectToServer(dataForConnectionWithoutAuthorizationWithSipServerUrlChanged)
           .then(() => {
             expect(sipConnector.socket!.url).toEqual(
-              dataForConnectionWithoutAuthorizationWithSipServerUrlChanged.sipServerUrl,
+              `wss://${dataForConnectionWithoutAuthorizationWithSipServerUrlChanged.sipServerUrl}/webrtc/wss/`,
             );
           });
       });

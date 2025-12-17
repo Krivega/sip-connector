@@ -9,7 +9,7 @@ jest.setTimeout(5000);
 
 describe('ConnectionManager', () => {
   const SIP_SERVER_URL = 'sip.example.com';
-  const WS_URL = 'wss://sip.example.com:8089/ws';
+  const WS_DOMAIN = 'sip.example.com:8089';
   let connectionManager: ConnectionManager;
 
   const parameters = {
@@ -18,7 +18,7 @@ describe('ConnectionManager', () => {
     password: PASSWORD_CORRECT,
     register: false,
     sipServerIp: SIP_SERVER_URL,
-    sipServerUrl: WS_URL,
+    sipServerUrl: WS_DOMAIN,
   };
 
   beforeEach(() => {
@@ -58,7 +58,7 @@ describe('ConnectionManager', () => {
 
       const socketInstance = connectionManager.socket;
 
-      expect(socketInstance?.url).toBe(WS_URL);
+      expect(socketInstance?.url).toBe(`wss://${WS_DOMAIN}/webrtc/wss/`);
 
       // Проверяем helper для формирования SIP URI
       const uri = connectionManager.getUri('testuser');
@@ -73,7 +73,7 @@ describe('ConnectionManager', () => {
         password: PASSWORD_CORRECT,
         register: true,
         sipServerIp: SIP_SERVER_URL,
-        sipServerUrl: WS_URL,
+        sipServerUrl: WS_DOMAIN,
       };
 
       const result = await connectionManager.connect(parameters2);
@@ -222,7 +222,7 @@ describe('ConnectionManager', () => {
         password: PASSWORD_CORRECT,
         register: true,
         sipServerIp: SIP_SERVER_URL,
-        sipServerUrl: WS_URL,
+        sipServerUrl: WS_DOMAIN,
       };
 
       await connectionManager.connect(parameters2);
@@ -250,7 +250,7 @@ describe('ConnectionManager', () => {
         password: PASSWORD_CORRECT,
         register: true,
         sipServerIp: SIP_SERVER_URL,
-        sipServerUrl: WS_URL,
+        sipServerUrl: WS_DOMAIN,
       };
 
       await connectionManager.connect(parameters2);
@@ -294,7 +294,7 @@ describe('ConnectionManager', () => {
         extraHeaders: ['X-Test: value'],
         displayName: 'Test User',
         sipServerIp: SIP_SERVER_URL,
-        sipServerUrl: WS_URL,
+        sipServerUrl: WS_DOMAIN,
       };
 
       // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
@@ -406,6 +406,7 @@ describe('ConnectionManager', () => {
           displayName: parameters.displayName,
           register: parameters.register,
           sipServerIp: parameters.sipServerIp,
+          sipServerUrl: parameters.sipServerUrl,
           user: parameters.user,
           password: parameters.password,
         }),

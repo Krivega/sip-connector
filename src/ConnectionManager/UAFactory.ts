@@ -116,7 +116,7 @@ export default class UAFactory {
     const authorizationUser = UAFactory.resolveAuthorizationUser(register, user);
     const getUri = resolveGetUri(sipServerIp);
     const uri = getUri(authorizationUser);
-    const socket = new this.JsSIP.WebSocketInterface(sipServerUrl);
+    const socket = new this.JsSIP.WebSocketInterface(`wss://${sipServerUrl}/webrtc/wss/`);
 
     return {
       configuration: {

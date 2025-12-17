@@ -370,7 +370,7 @@ describe('processRequest', () => {
         expect(success).toBe(true);
         // @ts-expect-error
         expect(parseObject(sipConnector.socket).url).toEqual(
-          dataForConnectionWithoutAuthorizationWithSipServerUrlChanged.sipServerUrl,
+          `wss://${dataForConnectionWithoutAuthorizationWithSipServerUrlChanged.sipServerUrl}/webrtc/wss/`,
         );
       });
   });

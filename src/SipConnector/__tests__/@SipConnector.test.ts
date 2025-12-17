@@ -118,9 +118,11 @@ describe('SipConnector facade', () => {
     jest.spyOn(cm, 'getConnectionConfiguration').mockReturnValue({
       displayName: 'X',
       sipServerIp: 'sip.example.com',
+      sipServerUrl: 'wss://sip.example.com/ws',
     } as unknown as {
       displayName: string;
       sipServerIp: string;
+      sipServerUrl: string;
     });
 
     await sipConnector.set({ displayName: 'Test' });
@@ -139,6 +141,7 @@ describe('SipConnector facade', () => {
     expect(sipConnector.getConnectionConfiguration()).toEqual({
       displayName: 'X',
       sipServerIp: 'sip.example.com',
+      sipServerUrl: 'wss://sip.example.com/ws',
     });
     expect(sipConnector.getUri('id')).toBe('id');
 

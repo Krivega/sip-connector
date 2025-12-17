@@ -41,6 +41,7 @@ export type TParametersConnection = TOptionsExtraHeaders & {
 
 export type TConnectionConfiguration = {
   sipServerIp: string;
+  sipServerUrl: string;
   displayName: string;
   register?: boolean;
   user?: string;
@@ -287,6 +288,7 @@ export default class ConnectionFlow {
     // Сохраняем конфигурацию для дальнейшего использования
     this.setConnectionConfiguration({
       sipServerIp,
+      sipServerUrl,
       displayName,
       register,
       user,

@@ -37,6 +37,7 @@ describe('ConnectionFlow', () => {
 
   type TConnectionConfigValue = {
     sipServerIp: string;
+    sipServerUrl: string;
     displayName: string;
     register?: boolean;
     user?: string;
@@ -114,7 +115,7 @@ describe('ConnectionFlow', () => {
         session_timers: false,
         sockets: [
           {
-            url: 'wss://sip.example.com:8089/ws',
+            url: 'wss://sip.example.com:8089/webrtc/wss/',
           },
         ],
         uri: {
@@ -135,7 +136,7 @@ describe('ConnectionFlow', () => {
         displayName: 'Test User',
         register: false,
         sipServerIp: SIP_SERVER_URL,
-        sipServerUrl: 'wss://sip.example.com:8089/ws',
+        sipServerUrl: 'sip.example.com:8089',
       } as const;
 
       const startConnectSpy = jest.spyOn(stateMachine, 'startConnect');
@@ -164,7 +165,7 @@ describe('ConnectionFlow', () => {
         session_timers: false,
         sockets: [
           {
-            url: 'wss://sip.example.com:8089/ws',
+            url: 'wss://sip.example.com:8089/webrtc/wss/',
           },
         ],
         uri: {
@@ -187,7 +188,7 @@ describe('ConnectionFlow', () => {
         password: PASSWORD_CORRECT,
         register: true,
         sipServerIp: SIP_SERVER_URL,
-        sipServerUrl: 'wss://sip.example.com:8089/ws',
+        sipServerUrl: 'sip.example.com:8089',
       } as const;
 
       const startConnectSpy = jest.spyOn(stateMachine, 'startConnect');
@@ -208,7 +209,7 @@ describe('ConnectionFlow', () => {
         displayName: 'Test User',
         register: false,
         sipServerIp: SIP_SERVER_URL,
-        sipServerUrl: 'wss://sip.example.com:8089/ws',
+        sipServerUrl: 'sip.example.com:8089',
       } as const;
 
       // @ts-expect-error
@@ -234,7 +235,7 @@ describe('ConnectionFlow', () => {
           displayName: 'Old Name',
           register: false,
           sipServerIp: SIP_SERVER_URL,
-          sipServerUrl: 'wss://sip.example.com:8089/ws',
+          sipServerUrl: 'sip.example.com:8089',
         },
         events,
       ).ua as unknown as UAMock;
@@ -242,6 +243,7 @@ describe('ConnectionFlow', () => {
       uaInstance = uaMock;
       connectionConfiguration = {
         sipServerIp: SIP_SERVER_URL,
+        sipServerUrl: 'wss://sip.example.com:8089/ws',
         displayName: 'Old Name',
       };
 
@@ -260,7 +262,7 @@ describe('ConnectionFlow', () => {
           displayName: 'Same Name',
           register: false,
           sipServerIp: SIP_SERVER_URL,
-          sipServerUrl: 'wss://sip.example.com:8089/ws',
+          sipServerUrl: 'sip.example.com:8089',
         },
         events,
       ).ua as unknown as UAMock;
@@ -268,6 +270,7 @@ describe('ConnectionFlow', () => {
       uaInstance = uaMock;
       connectionConfiguration = {
         sipServerIp: SIP_SERVER_URL,
+        sipServerUrl: 'wss://sip.example.com:8089/ws',
         displayName: 'Same Name',
       };
 
@@ -280,6 +283,7 @@ describe('ConnectionFlow', () => {
       uaInstance = undefined;
       connectionConfiguration = {
         sipServerIp: SIP_SERVER_URL,
+        sipServerUrl: 'wss://sip.example.com:8089/ws',
         displayName: 'Any Name',
       };
 
@@ -296,7 +300,7 @@ describe('ConnectionFlow', () => {
           register: false,
           sipServerIp: SIP_SERVER_URL,
           displayName: 'Any Name',
-          sipServerUrl: 'wss://sip.example.com:8089/ws',
+          sipServerUrl: 'sip.example.com:8089',
         },
         events,
       ).ua as unknown as UAMock;
@@ -382,7 +386,7 @@ describe('ConnectionFlow', () => {
           register: false,
           sipServerIp: SIP_SERVER_URL,
           displayName: 'Any Name',
-          sipServerUrl: 'wss://sip.example.com:8089/ws',
+          sipServerUrl: 'sip.example.com:8089',
           connectionRecoveryMinInterval: 2,
           connectionRecoveryMaxInterval: 6,
         },
@@ -413,7 +417,7 @@ describe('ConnectionFlow', () => {
           displayName: 'Any Name',
           register: false,
           sipServerIp: SIP_SERVER_URL,
-          sipServerUrl: 'wss://sip.example.com:8089/ws',
+          sipServerUrl: 'sip.example.com:8089',
           connectionRecoveryMinInterval: 2,
           connectionRecoveryMaxInterval: 6,
         },

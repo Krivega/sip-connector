@@ -7,7 +7,7 @@ export const displayName = 'displayName';
 export const SIP_SERVER_URL = 'SIP_SERVER_URL';
 export const SIP_WEB_SOCKET_SERVER_URL = 'SIP_WEB_SOCKET_SERVER_URL';
 
-const socket = new JsSIP.WebSocketInterface(SIP_WEB_SOCKET_SERVER_URL);
+const socket = new JsSIP.WebSocketInterface(`wss://${SIP_WEB_SOCKET_SERVER_URL}/webrtc/wss/`);
 
 const baseDataForConnection = {
   displayName: 'DISPLAY_NAME',

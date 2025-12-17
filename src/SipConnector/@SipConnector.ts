@@ -434,10 +434,10 @@ class SipConnector {
     offer: RTCSessionDescriptionInit,
   ): Promise<RTCSessionDescription> => {
     const connectionConfiguration = this.connectionManager.getConnectionConfiguration();
-    const serverUrl = connectionConfiguration?.sipServerIp;
+    const serverUrl = connectionConfiguration?.sipServerUrl;
 
     if (serverUrl === undefined) {
-      throw new Error('No sipServerIp for sendOffer');
+      throw new Error('No sipServerUrl for sendOffer');
     }
 
     return sendOffer({

@@ -63,7 +63,7 @@ const resolveServerParametersRequester = ({
           extraHeaders,
           remoteAddress,
           serverIp: ip,
-          sipServerUrl: `wss://${serverUrl}/webrtc/wss/`,
+          sipServerUrl: serverUrl,
           userAgent: tools.getUserAgent({
             isUnifiedSdpSemantic: unified,
             browserName,
