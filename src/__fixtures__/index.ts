@@ -12,8 +12,8 @@ const socket = new JsSIP.WebSocketInterface(SIP_WEB_SOCKET_SERVER_URL);
 const baseDataForConnection = {
   displayName: 'DISPLAY_NAME',
   userAgent: 'Chrome',
-  sipServerUrl: SIP_SERVER_URL,
-  sipWebSocketServerURL: SIP_WEB_SOCKET_SERVER_URL,
+  sipServerIp: SIP_SERVER_URL,
+  sipServerUrl: SIP_WEB_SOCKET_SERVER_URL,
 };
 
 export const dataForConnectionWithoutAuthorizationWithoutDisplayName = {

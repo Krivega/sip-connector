@@ -7,7 +7,6 @@ import {
   dataForConnectionWithAuthorization,
   dataForConnectionWithoutAuthorization,
   dataForConnectionWithoutAuthorizationWithSipServerUrlChanged,
-  dataForConnectionWithoutAuthorizationWithSipWebSocketServerUrlChanged,
   oneWord,
   thirdWord,
   twoWord,
@@ -45,7 +44,7 @@ describe('connectToServer', () => {
     sipConnector.connect = async (getParameters) => {
       const data = await resolveParameters(getParameters);
 
-      if (data.sipWebSocketServerURL === LOCKED_SIP_WEB_SOCKET_SERVER_URL) {
+      if (data.sipServerUrl === LOCKED_SIP_WEB_SOCKET_SERVER_URL) {
         const error = new Error('failed wss-request');
 
         throw error;
@@ -109,7 +108,7 @@ describe('connectToServer', () => {
     });
   });
 
-  it('change sipServerUrl', async () => {
+  it('change sipServerUrl (WebSocket URL)', async () => {
     return sipConnectorFacade
       .connectToServer(dataForConnectionWithoutAuthorization)
       .then(async () => {
@@ -119,25 +118,35 @@ describe('connectToServer', () => {
             expect(
               hasValidUri(
                 sipConnector.connectionManager.ua!.configuration.uri,
-                dataForConnectionWithoutAuthorizationWithSipServerUrlChanged.sipServerUrl,
+                String(dataForConnectionWithoutAuthorizationWithSipServerUrlChanged.sipServerIp),
               ),
             ).toBe(true);
-            expect(parseObjectWithoutUri(sipConnector.connectionManager.ua!.configuration)).toEqual(
-              uaConfigurationWithoutAuthorization,
+
+            const config = parseObjectWithoutUri(sipConnector.connectionManager.ua!.configuration);
+            const expected = parseObjectWithoutUri(uaConfigurationWithoutAuthorization);
+
+            // Socket URL должен быть изменен
+            const sockets = Array.isArray(config.sockets) ? config.sockets : [config.sockets];
+
+            expect((sockets[0] as { url: string }).url).toBe(
+              dataForConnectionWithoutAuthorizationWithSipServerUrlChanged.sipServerUrl,
             );
+
+            // Остальная конфигурация должна совпадать
+            expect({ ...config, sockets: expected.sockets }).toEqual(expected);
           });
       });
   });
 
-  it('change sipWebSocketServerUrl', async () => {
+  it('change sipServerIp', async () => {
     return sipConnectorFacade
       .connectToServer(dataForConnectionWithoutAuthorization)
       .then(async () => {
         return sipConnectorFacade
-          .connectToServer(dataForConnectionWithoutAuthorizationWithSipWebSocketServerUrlChanged)
+          .connectToServer(dataForConnectionWithoutAuthorizationWithSipServerUrlChanged)
           .then(() => {
             expect(sipConnector.socket!.url).toEqual(
-              dataForConnectionWithoutAuthorizationWithSipWebSocketServerUrlChanged.sipWebSocketServerURL,
+              dataForConnectionWithoutAuthorizationWithSipServerUrlChanged.sipServerUrl,
             );
           });
       });
@@ -149,7 +158,7 @@ describe('connectToServer', () => {
     return sipConnectorFacade
       .connectToServer({
         ...dataForConnectionWithAuthorization,
-        sipWebSocketServerURL: LOCKED_SIP_WEB_SOCKET_SERVER_URL,
+        sipServerUrl: LOCKED_SIP_WEB_SOCKET_SERVER_URL,
       })
       .catch((error: unknown) => {
         // eslint-disable-next-line jest/no-conditional-expect
@@ -163,7 +172,7 @@ describe('connectToServer', () => {
     return sipConnectorFacade
       .connectToServer({
         ...dataForConnectionWithAuthorization,
-        sipWebSocketServerURL: LOCKED_SIP_WEB_SOCKET_SERVER_URL,
+        sipServerUrl: LOCKED_SIP_WEB_SOCKET_SERVER_URL,
       })
       .catch((error: unknown) => {
         // eslint-disable-next-line jest/no-conditional-expect

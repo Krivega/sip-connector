@@ -56,8 +56,8 @@ describe('call', () => {
 
     expect(callConfiguration.number).toBe(number);
     expect(callConfiguration.answer).toBe(false);
-    expect(connectionConfiguration?.sipServerUrl).toBe(
-      dataForConnectionWithAuthorization.sipServerUrl,
+    expect(connectionConfiguration?.sipServerIp).toBe(
+      dataForConnectionWithAuthorization.sipServerIp,
     );
     expect(connectionConfiguration?.displayName).toBe('DISPLAY_NAME');
     expect(connectionConfiguration?.register).toBe(dataForConnectionWithAuthorization.register);

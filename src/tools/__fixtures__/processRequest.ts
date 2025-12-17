@@ -12,8 +12,8 @@ import type { SipConnector } from '@/SipConnector';
  * @param {Function} reject                              - The reject
  * @param {object}   params                              - Params for execution
  * @param {Function} params.fetchIpSipServer             - The fetch sip url
- * @param {string}   params.sipWebSocketServerURL        - The sip web socket server url
- * @param {string}   params.sipServerUrl                 - The sip server url
+ * @param {string}   params.sipServerUrl                 - The sip web socket server url
+ * @param {string}   params.sipServerIp                  - The sip server ip
  * @param {string}   params.displayName                  - The display name
  * @param {string}   params.name                         - The name
  * @param {string}   params.password                     - The password
@@ -22,7 +22,7 @@ import type { SipConnector } from '@/SipConnector';
  * @param {boolean}  params.displayNameChanged           - The display name changed
  * @param {boolean}  params.nameChanged                  - The name changed
  * @param {boolean}  params.passwordChanged              - The password changed
- * @param {boolean}  params.sipWebSocketServerURLChanged - The sip web socket server url changed
+ * @param {boolean}  params.sipServerUrlChanged          - The sip web socket server url changed
  *
  * @returns {Promise} initUa resolved success true|false
  */
@@ -31,8 +31,8 @@ const initUa = (
   resolve: (success: boolean) => void,
   reject: () => void,
   {
+    sipServerIp,
     sipServerUrl,
-    sipWebSocketServerURL,
     remoteAddress,
     displayName,
     user,
@@ -40,9 +40,9 @@ const initUa = (
     register,
   }: {
     remoteAddress: string | undefined;
-    sipServerUrl: string;
+    sipServerIp: string;
     displayName: string;
-    sipWebSocketServerURL: string;
+    sipServerUrl: string;
     user: string;
     password: string;
     register: boolean;
@@ -54,9 +54,9 @@ const initUa = (
     .then(async () => {
       if (
         canConnectToServer({
-          sipServerUrl,
+          sipServerIp,
           remoteAddress,
-          sipWebSocketServerURL,
+          sipServerUrl,
           register,
           user,
           password,
@@ -64,8 +64,8 @@ const initUa = (
       ) {
         return sipConnectorFacade.connectToServer({
           remoteAddress,
+          sipServerIp,
           sipServerUrl,
-          sipWebSocketServerURL,
           displayName,
           user,
           password,
@@ -87,9 +87,9 @@ const initUa = (
 const resolveInitUaPromised = (sipConnector: SipConnector) => {
   return async (state: {
     remoteAddress: string | undefined;
-    sipServerUrl: string;
+    sipServerIp: string;
     displayName: string;
-    sipWebSocketServerURL: string;
+    sipServerUrl: string;
     user: string;
     password: string;
     register: boolean;

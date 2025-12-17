@@ -9,7 +9,7 @@ export type TOnAddedTransceiver = (
   track: MediaStreamTrack,
   streams: MediaStream[],
 ) => Promise<void>;
-export type TGetServerUrl = (id: string) => string;
+export type TGetUri = (id: string) => string;
 
 type TOptionsExtraHeaders = {
   extraHeaders?: string[];
@@ -51,7 +51,7 @@ export type TCallConfiguration = {
 
 export type TStartCall = (
   ua: UA,
-  getSipServerUrl: TGetServerUrl,
+  getUri: TGetUri,
   params: TParamsCall,
 ) => Promise<RTCPeerConnection>;
 export type TReplaceMediaStream = (

@@ -88,12 +88,12 @@ class CallManager {
     this.events.off(eventName, handler);
   }
 
-  public startCall: TStartCall = async (ua, getSipServerUrl, params) => {
+  public startCall: TStartCall = async (ua, getUri, params) => {
     this.isPendingCall = true;
     this.callConfiguration.number = params.number;
     this.callConfiguration.answer = false;
 
-    return this.mcuSession.startCall(ua, getSipServerUrl, params).finally(() => {
+    return this.mcuSession.startCall(ua, getUri, params).finally(() => {
       this.isPendingCall = false;
     });
   };

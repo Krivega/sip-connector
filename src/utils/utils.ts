@@ -1,6 +1,6 @@
-export function resolveSipUrl(serverUrl: string): (string: string) => string {
+export function resolveGetUri(sipServerIp: string): (string: string) => string {
   return (id: string): string => {
-    return `sip:${id}@${serverUrl}`;
+    return `sip:${id}@${sipServerIp}`;
   };
 }
 

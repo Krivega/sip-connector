@@ -49,8 +49,8 @@ describe('UAFactory', () => {
 
   describe('createConfiguration', () => {
     const baseParameters = {
-      sipServerUrl: 'sip.example.com',
-      sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+      sipServerIp: 'sip.example.com',
+      sipServerUrl: 'wss://sip.example.com:8089/ws',
       user: 'testuser',
       password: 'testpass',
       displayName: 'Test User',
@@ -72,7 +72,7 @@ describe('UAFactory', () => {
       });
 
       expect(config.helpers.socket).toBeDefined();
-      expect(config.helpers.getSipServerUrl).toBeDefined();
+      expect(config.helpers.getUri).toBeDefined();
     });
 
     it('должен создавать конфигурацию без регистрации', () => {
@@ -118,8 +118,8 @@ describe('UAFactory', () => {
 
     it('должен использовать пустую строку как значение по умолчанию для displayName', () => {
       const config = uaFactory.createConfiguration({
+        sipServerIp: baseParameters.sipServerIp,
         sipServerUrl: baseParameters.sipServerUrl,
-        sipWebSocketServerURL: baseParameters.sipWebSocketServerURL,
         user: baseParameters.user,
         password: baseParameters.password,
         register: baseParameters.register,
@@ -176,6 +176,15 @@ describe('UAFactory', () => {
     });
 
     describe('валидация конфигурации', () => {
+      it('должен выбрасывать ошибку при отсутствии sipServerIp', () => {
+        expect(() => {
+          uaFactory.createConfiguration({
+            ...baseParameters,
+            sipServerIp: '',
+          });
+        }).toThrow('sipServerIp is required');
+      });
+
       it('должен выбрасывать ошибку при отсутствии sipServerUrl', () => {
         expect(() => {
           uaFactory.createConfiguration({
@@ -183,15 +192,6 @@ describe('UAFactory', () => {
             sipServerUrl: '',
           });
         }).toThrow('sipServerUrl is required');
-      });
-
-      it('должен выбрасывать ошибку при отсутствии sipWebSocketServerURL', () => {
-        expect(() => {
-          uaFactory.createConfiguration({
-            ...baseParameters,
-            sipWebSocketServerURL: '',
-          });
-        }).toThrow('sipWebSocketServerURL is required');
       });
 
       it('должен выбрасывать ошибку при регистрации без пароля', () => {
@@ -318,8 +318,8 @@ describe('UAFactory', () => {
 
   describe('createUAWithConfiguration', () => {
     const baseParameters = {
-      sipServerUrl: 'sip.example.com',
-      sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+      sipServerIp: 'sip.example.com',
+      sipServerUrl: 'wss://sip.example.com:8089/ws',
       user: 'testuser',
       password: 'testpass',
       displayName: 'Test User',
@@ -341,7 +341,7 @@ describe('UAFactory', () => {
       expect(result.ua).toBeDefined();
       expect(result.ua).toBeInstanceOf(jssip.UA);
       expect(result.helpers.socket).toBeDefined();
-      expect(result.helpers.getSipServerUrl).toBeDefined();
+      expect(result.helpers.getUri).toBeDefined();
     });
 
     it('должен создавать UA с remoteAddress', () => {
@@ -428,8 +428,8 @@ describe('UAFactory', () => {
   describe('интеграционные тесты', () => {
     it('должен создавать полную конфигурацию и UA', () => {
       const parameters = {
-        sipServerUrl: 'sip.example.com',
-        sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+        sipServerIp: 'sip.example.com',
+        sipServerUrl: 'wss://sip.example.com:8089/ws',
         user: 'testuser',
         password: 'testpass',
         displayName: 'Test User',
@@ -466,8 +466,8 @@ describe('UAFactory', () => {
     it('должен создавать UA без регистрации', () => {
       const parameters = {
         displayName: 'Any Name',
-        sipServerUrl: 'sip.example.com',
-        sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+        sipServerIp: 'sip.example.com',
+        sipServerUrl: 'wss://sip.example.com:8089/ws',
         register: false,
       };
 

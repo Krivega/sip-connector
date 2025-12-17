@@ -11,8 +11,8 @@ import { NAME_INCORRECT, PASSWORD_CORRECT, PASSWORD_CORRECT_2 } from '@/__fixtur
 
 const baseDataForConnection = {
   remoteAddress: '10.10.10.10',
-  sipServerUrl: SIP_SERVER_URL,
-  sipWebSocketServerURL: SIP_WEB_SOCKET_SERVER_URL,
+  sipServerIp: SIP_SERVER_URL,
+  sipServerUrl: SIP_WEB_SOCKET_SERVER_URL,
   userAgent: 'Chrome',
   displayName: 'DISPLAY_NAME',
 };
@@ -39,14 +39,14 @@ export const dataForConnectionWithoutAuthorizationWithoutDisplayName = {
   displayName: 'DISPLAY_NAME',
   register: false,
 };
+export const dataForConnectionWithoutAuthorizationWithSipServerIpChanged = {
+  ...dataForConnectionWithoutAuthorization,
+  sipServerIp: `${dataForConnectionWithoutAuthorization.sipServerIp}Changed`,
+};
 export const dataForConnectionWithoutAuthorizationWithSipServerUrlChanged = {
   ...dataForConnectionWithoutAuthorization,
   sipServerUrl: `${dataForConnectionWithoutAuthorization.sipServerUrl}Changed`,
-};
-export const dataForConnectionWithoutAuthorizationWithSipWebSocketServerUrlChanged = {
-  ...dataForConnectionWithoutAuthorization,
-  sipWebSocketServerURL: `${dataForConnectionWithoutAuthorization.sipWebSocketServerURL}Changed`,
-  sipWebSocketServerURLChanged: true,
+  sipServerUrlChanged: true,
 };
 export const dataForConnectionWithAuthorizationIncorrectUser = {
   ...dataForConnectionWithAuthorization,

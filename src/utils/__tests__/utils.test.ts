@@ -1,27 +1,27 @@
 /// <reference types="jest" />
-import { generateUserId, hasVideoTracks, parseDisplayName, resolveSipUrl } from '../utils';
+import { generateUserId, hasVideoTracks, parseDisplayName, resolveGetUri } from '../utils';
 
 describe('utils', () => {
-  describe('resolveSipUrl', () => {
+  describe('resolveGetUri', () => {
     it('should create sip URL with server and id', () => {
       const serverUrl = 'example.com';
-      const resolveUrl = resolveSipUrl(serverUrl);
+      const getUri = resolveGetUri(serverUrl);
 
-      expect(resolveUrl('user123')).toBe('sip:user123@example.com');
+      expect(getUri('user123')).toBe('sip:user123@example.com');
     });
 
     it('should work with different server URLs', () => {
       const serverUrl = 'sip.server.com';
-      const resolveUrl = resolveSipUrl(serverUrl);
+      const getUri = resolveGetUri(serverUrl);
 
-      expect(resolveUrl('testuser')).toBe('sip:testuser@sip.server.com');
+      expect(getUri('testuser')).toBe('sip:testuser@sip.server.com');
     });
 
     it('should work with empty id', () => {
       const serverUrl = 'example.com';
-      const resolveUrl = resolveSipUrl(serverUrl);
+      const getUri = resolveGetUri(serverUrl);
 
-      expect(resolveUrl('')).toBe('sip:@example.com');
+      expect(getUri('')).toBe('sip:@example.com');
     });
   });
 

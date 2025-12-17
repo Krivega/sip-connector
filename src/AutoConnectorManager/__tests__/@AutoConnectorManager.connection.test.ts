@@ -19,8 +19,8 @@ describe('AutoConnectorManager - Connection', () => {
 
   const parameters = {
     displayName: 'Test User',
-    sipServerUrl: 'sip://test.com',
-    sipWebSocketServerURL: 'wss://test.com',
+    sipServerIp: 'sip://test.com',
+    sipServerUrl: 'wss://test.com',
     register: false,
   };
 

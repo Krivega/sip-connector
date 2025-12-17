@@ -4,23 +4,21 @@ const hasNoEmptyString = (value?: string) => {
 
 export const canConnectToServer = ({
   remoteAddress,
+  sipServerIp,
   sipServerUrl,
-  sipWebSocketServerURL,
   user,
   password,
   register,
 }: {
   remoteAddress: string | undefined;
+  sipServerIp: string | undefined;
   sipServerUrl: string | undefined;
-  sipWebSocketServerURL: string | undefined;
   user: string;
   password: string;
   register: boolean;
 }) => {
   const hasInitParameters =
-    remoteAddress !== undefined &&
-    sipServerUrl !== undefined &&
-    sipWebSocketServerURL !== undefined;
+    remoteAddress !== undefined && sipServerIp !== undefined && sipServerUrl !== undefined;
 
   if (register) {
     return hasInitParameters && hasNoEmptyString(user) && hasNoEmptyString(password);

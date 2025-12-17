@@ -29,8 +29,8 @@ describe('ConnectionQueueManager', () => {
     const mockResult = {};
     const connectParams = {
       displayName: 'Any Name',
-      sipServerUrl: 'test.com',
-      sipWebSocketServerURL: 'wss://test.com',
+      sipServerIp: 'test.com',
+      sipServerUrl: 'wss://test.com',
     };
 
     const getParameters = async () => {

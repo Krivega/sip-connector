@@ -15,7 +15,7 @@ import { ONE_MEGABIT_IN_BITS } from './constants';
 import { EVENT_NAMES } from './eventNames';
 
 import type { IAutoConnectorOptions } from '@/AutoConnectorManager';
-import type { TGetServerUrl } from '@/CallManager';
+import type { TGetUri } from '@/CallManager';
 import type { TContentHint, TOnAddedTransceiver } from '@/PresentationManager';
 import type { TJsSIP } from '@/types';
 import type { IBalancerOptions } from '@/VideoSendingBalancer';
@@ -220,8 +220,8 @@ class SipConnector {
     return this.connectionManager.getConnectionConfiguration();
   };
 
-  public getSipServerUrl: TGetServerUrl = (id: string) => {
-    return this.connectionManager.getSipServerUrl(id);
+  public getUri: TGetUri = (id: string) => {
+    return this.connectionManager.getUri(id);
   };
 
   public startAutoConnect: AutoConnectorManager['start'] = (...args) => {
@@ -235,14 +235,10 @@ class SipConnector {
   public call = async (params: Parameters<CallManager['startCall']>[2]) => {
     const { onAddedTransceiver, ...rest } = params;
 
-    return this.callManager.startCall(
-      this.connectionManager.getUaProtected(),
-      this.getSipServerUrl,
-      {
-        ...rest,
-        onAddedTransceiver: this.resolveHandleAddTransceiver(onAddedTransceiver),
-      },
-    );
+    return this.callManager.startCall(this.connectionManager.getUaProtected(), this.getUri, {
+      ...rest,
+      onAddedTransceiver: this.resolveHandleAddTransceiver(onAddedTransceiver),
+    });
   };
 
   public hangUp: CallManager['endCall'] = async () => {
@@ -438,10 +434,10 @@ class SipConnector {
     offer: RTCSessionDescriptionInit,
   ): Promise<RTCSessionDescription> => {
     const connectionConfiguration = this.connectionManager.getConnectionConfiguration();
-    const serverUrl = connectionConfiguration?.sipServerUrl;
+    const serverUrl = connectionConfiguration?.sipServerIp;
 
     if (serverUrl === undefined) {
-      throw new Error('No sipServerUrl for sendOffer');
+      throw new Error('No sipServerIp for sendOffer');
     }
 
     return sendOffer({

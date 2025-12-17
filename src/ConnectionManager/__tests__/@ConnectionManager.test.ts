@@ -17,8 +17,8 @@ describe('ConnectionManager', () => {
     user: 'testuser',
     password: PASSWORD_CORRECT,
     register: false,
-    sipServerUrl: SIP_SERVER_URL,
-    sipWebSocketServerURL: WS_URL,
+    sipServerIp: SIP_SERVER_URL,
+    sipServerUrl: WS_URL,
   };
 
   beforeEach(() => {
@@ -61,9 +61,9 @@ describe('ConnectionManager', () => {
       expect(socketInstance?.url).toBe(WS_URL);
 
       // Проверяем helper для формирования SIP URI
-      const sipUri = connectionManager.getSipServerUrl('testuser');
+      const uri = connectionManager.getUri('testuser');
 
-      expect(sipUri).toBe(`sip:testuser@${SIP_SERVER_URL}`);
+      expect(uri).toBe(`sip:testuser@${SIP_SERVER_URL}`);
     });
 
     it('должен успешно подключаться c регистрацией', async () => {
@@ -72,8 +72,8 @@ describe('ConnectionManager', () => {
         user: 'testuser',
         password: PASSWORD_CORRECT,
         register: true,
-        sipServerUrl: SIP_SERVER_URL,
-        sipWebSocketServerURL: WS_URL,
+        sipServerIp: SIP_SERVER_URL,
+        sipServerUrl: WS_URL,
       };
 
       const result = await connectionManager.connect(parameters2);
@@ -221,8 +221,8 @@ describe('ConnectionManager', () => {
         user,
         password: PASSWORD_CORRECT,
         register: true,
-        sipServerUrl: SIP_SERVER_URL,
-        sipWebSocketServerURL: WS_URL,
+        sipServerIp: SIP_SERVER_URL,
+        sipServerUrl: WS_URL,
       };
 
       await connectionManager.connect(parameters2);
@@ -249,8 +249,8 @@ describe('ConnectionManager', () => {
         user: 'testuser',
         password: PASSWORD_CORRECT,
         register: true,
-        sipServerUrl: SIP_SERVER_URL,
-        sipWebSocketServerURL: WS_URL,
+        sipServerIp: SIP_SERVER_URL,
+        sipServerUrl: WS_URL,
       };
 
       await connectionManager.connect(parameters2);
@@ -293,8 +293,8 @@ describe('ConnectionManager', () => {
         body: 'test body',
         extraHeaders: ['X-Test: value'],
         displayName: 'Test User',
-        sipServerUrl: SIP_SERVER_URL,
-        sipWebSocketServerURL: WS_URL,
+        sipServerIp: SIP_SERVER_URL,
+        sipServerUrl: WS_URL,
       };
 
       // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
@@ -405,7 +405,7 @@ describe('ConnectionManager', () => {
           ua: connectionManager.ua,
           displayName: parameters.displayName,
           register: parameters.register,
-          sipServerUrl: parameters.sipServerUrl,
+          sipServerIp: parameters.sipServerIp,
           user: parameters.user,
           password: parameters.password,
         }),
@@ -575,10 +575,10 @@ describe('ConnectionManager', () => {
     });
   });
 
-  describe('getSipServerUrl', () => {
+  describe('getUri', () => {
     it('должен возвращать правильный SIP URL', () => {
       const id = 'testuser';
-      const result = connectionManager.getSipServerUrl(id);
+      const result = connectionManager.getUri(id);
 
       expect(result).toBe(id);
     });

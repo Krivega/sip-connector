@@ -11,7 +11,7 @@ import UAFactory from './UAFactory';
 import { createNotReadyForConnectionError, resolveParameters } from './utils';
 
 import type { RegisteredEvent, UA, UnRegisteredEvent, WebSocketInterface } from '@krivega/jssip';
-import type { TGetServerUrl } from '@/CallManager';
+import type { TGetUri } from '@/CallManager';
 import type { TJsSIP } from '@/types';
 import type {
   TConnect,
@@ -89,8 +89,8 @@ export default class ConnectionManager {
       setUa: (ua: UA | undefined) => {
         this.ua = ua;
       },
-      setSipServerUrl: (getSipServerUrl: TGetServerUrl) => {
-        this.getSipServerUrl = getSipServerUrl;
+      setGetUri: (getUri: TGetUri) => {
+        this.getUri = getUri;
       },
       setSocket: (socket: WebSocketInterface) => {
         this.socket = socket;
@@ -226,7 +226,7 @@ export default class ConnectionManager {
   }
 
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this
-  public getSipServerUrl: TGetServerUrl = (id: string) => {
+  public getUri: TGetUri = (id: string) => {
     return id;
   };
 

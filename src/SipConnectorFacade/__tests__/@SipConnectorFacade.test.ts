@@ -60,8 +60,8 @@ describe('SipConnectorFacade comprehensive', () => {
       const result = await sipConnectorFacade.connectToServer({
         displayName: 'DISPLAY_NAME',
         userAgent: 'Chrome',
-        sipWebSocketServerURL: 'wss://sip.example.com/ws',
-        sipServerUrl: 'sip.example.com',
+        sipServerUrl: 'wss://sip.example.com/ws',
+        sipServerIp: 'sip.example.com',
         user: 'testuser',
         password: 'testpass',
         register: true,
@@ -74,8 +74,8 @@ describe('SipConnectorFacade comprehensive', () => {
       expect(result.configuration).toBeDefined();
       expect(expectedParameters).toEqual({
         userAgent: 'Chrome',
-        sipWebSocketServerURL: 'wss://sip.example.com/ws',
-        sipServerUrl: 'sip.example.com',
+        sipServerUrl: 'wss://sip.example.com/ws',
+        sipServerIp: 'sip.example.com',
         displayName: 'DISPLAY_NAME',
         password: 'testpass',
         user: 'testuser',
@@ -93,8 +93,8 @@ describe('SipConnectorFacade comprehensive', () => {
         sipConnectorFacade.connectToServer({
           displayName: 'DISPLAY_NAME',
           userAgent: 'Chrome',
-          sipWebSocketServerURL: 'wss://sip.example.com/ws',
-          sipServerUrl: 'sip.example.com',
+          sipServerUrl: 'wss://sip.example.com/ws',
+          sipServerIp: 'sip.example.com',
         }),
       ).rejects.toThrow('Connection failed');
 
@@ -131,8 +131,8 @@ describe('SipConnectorFacade comprehensive', () => {
       const result = await facade.connectToServer({
         displayName: 'DISPLAY_NAME',
         userAgent: 'Chrome',
-        sipWebSocketServerURL: 'wss://sip.example.com/ws',
-        sipServerUrl: 'sip.example.com',
+        sipServerUrl: 'wss://sip.example.com/ws',
+        sipServerIp: 'sip.example.com',
       });
 
       expect(result.isSuccessful).toBe(false);
@@ -168,8 +168,8 @@ describe('SipConnectorFacade comprehensive', () => {
       const result = await facade.connectToServer({
         displayName: 'DISPLAY_NAME',
         userAgent: 'Chrome',
-        sipWebSocketServerURL: 'wss://sip.example.com/ws',
-        sipServerUrl: 'sip.example.com',
+        sipServerUrl: 'wss://sip.example.com/ws',
+        sipServerIp: 'sip.example.com',
       });
 
       expect(result.isSuccessful).toBe(false);

@@ -11,28 +11,28 @@ describe('validateApi', () => {
     sipConnector = doMockSipConnector();
   });
 
-  it('должен требовать sipServerUrl', async () => {
+  it('должен требовать sipServerIp', async () => {
     expect.assertions(1);
 
     // @ts-expect-error
     return sipConnector.connect({}).catch((error: unknown) => {
       // eslint-disable-next-line jest/no-conditional-expect
-      expect((error as Error).message).toBe('sipServerUrl is required');
+      expect((error as Error).message).toBe('sipServerIp is required');
     });
   });
 
-  it('должен требовать sipWebSocketServerURL', async () => {
+  it('должен требовать sipServerUrl', async () => {
     expect.assertions(1);
 
     return sipConnector
       .connect({
         ...dataForConnectionWithAuthorizationWithDisplayName,
         // @ts-expect-error
-        sipWebSocketServerURL: undefined,
+        sipServerIp: undefined,
       })
       .catch((error: unknown) => {
         // eslint-disable-next-line jest/no-conditional-expect
-        expect((error as Error).message).toBe('sipWebSocketServerURL is required');
+        expect((error as Error).message).toBe('sipServerIp is required');
       });
   });
 

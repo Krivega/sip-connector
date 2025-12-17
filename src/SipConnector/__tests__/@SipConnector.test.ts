@@ -88,8 +88,8 @@ describe('SipConnector facade', () => {
     await sipConnector.connect({
       displayName: 'Any Name',
       register: false,
-      sipServerUrl: 'sip.example.com',
-      sipWebSocketServerURL: 'wss://sip.example.com/ws',
+      sipServerIp: 'sip.example.com',
+      sipServerUrl: 'wss://sip.example.com/ws',
     });
     await sipConnector.disconnect();
 
@@ -117,10 +117,10 @@ describe('SipConnector facade', () => {
 
     jest.spyOn(cm, 'getConnectionConfiguration').mockReturnValue({
       displayName: 'X',
-      sipServerUrl: 'sip.example.com',
+      sipServerIp: 'sip.example.com',
     } as unknown as {
       displayName: string;
-      sipServerUrl: string;
+      sipServerIp: string;
     });
 
     await sipConnector.set({ displayName: 'Test' });
@@ -131,16 +131,16 @@ describe('SipConnector facade', () => {
     await sipConnector.tryRegister();
     await sipConnector.checkTelephony({
       displayName: 'Test',
-      sipServerUrl: 'sip.example.com',
-      sipWebSocketServerURL: 'wss://sip.example.com/ws',
+      sipServerIp: 'sip.example.com',
+      sipServerUrl: 'wss://sip.example.com/ws',
     });
 
     expect(sipConnector.isConfigured()).toBe(true);
     expect(sipConnector.getConnectionConfiguration()).toEqual({
       displayName: 'X',
-      sipServerUrl: 'sip.example.com',
+      sipServerIp: 'sip.example.com',
     });
-    expect(sipConnector.getSipServerUrl('id')).toBe('id');
+    expect(sipConnector.getUri('id')).toBe('id');
 
     expect(cm.register).toHaveBeenCalled();
     expect(cm.unregister).toHaveBeenCalled();
@@ -155,7 +155,7 @@ describe('SipConnector facade', () => {
     const cm = sipConnector.callManager;
 
     jest.spyOn(sipConnector.connectionManager, 'getUaProtected').mockReturnValue({} as UA);
-    jest.spyOn(sipConnector, 'getSipServerUrl').mockImplementation((id: string) => {
+    jest.spyOn(sipConnector, 'getUri').mockImplementation((id: string) => {
       return `sip:${id}@host`;
     });
 

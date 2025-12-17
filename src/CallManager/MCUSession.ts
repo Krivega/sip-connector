@@ -38,7 +38,7 @@ export class MCUSession implements IMCUSession {
 
   public startCall: IMCUSession['startCall'] = async (
     ua,
-    getSipServerUrl,
+    getUri,
     {
       number,
       mediaStream,
@@ -62,7 +62,7 @@ export class MCUSession implements IMCUSession {
           reject(error as Error);
         });
 
-      this.rtcSession = ua.call(getSipServerUrl(number), {
+      this.rtcSession = ua.call(getUri(number), {
         mediaStream: prepareMediaStream(mediaStream, {
           directionVideo,
           directionAudio,

@@ -15,7 +15,7 @@ export interface IServerParameters {
   serverIp: string;
   iceServers: TIceServer[];
   extraHeaders: string[];
-  sipWebSocketServerURL: string;
+  sipServerUrl: string;
   userAgent: string;
   remoteAddress: string;
 }
@@ -63,7 +63,7 @@ const resolveServerParametersRequester = ({
           extraHeaders,
           remoteAddress,
           serverIp: ip,
-          sipWebSocketServerURL: `wss://${serverUrl}/webrtc/wss/`,
+          sipServerUrl: `wss://${serverUrl}/webrtc/wss/`,
           userAgent: tools.getUserAgent({
             isUnifiedSdpSemantic: unified,
             browserName,

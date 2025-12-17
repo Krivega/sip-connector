@@ -36,7 +36,7 @@ describe('ConnectionFlow', () => {
   });
 
   type TConnectionConfigValue = {
-    sipServerUrl: string;
+    sipServerIp: string;
     displayName: string;
     register?: boolean;
     user?: string;
@@ -62,7 +62,7 @@ describe('ConnectionFlow', () => {
     },
   );
 
-  const setSipServerUrl = jest.fn();
+  const setGetUri = jest.fn();
   const setSocket = jest.fn();
 
   beforeEach(() => {
@@ -99,7 +99,7 @@ describe('ConnectionFlow', () => {
       getConnectionConfiguration,
       setConnectionConfiguration,
       updateConnectionConfiguration,
-      setSipServerUrl,
+      setGetUri,
       setSocket,
     });
   });
@@ -134,8 +134,8 @@ describe('ConnectionFlow', () => {
       const parameters = {
         displayName: 'Test User',
         register: false,
-        sipServerUrl: SIP_SERVER_URL,
-        sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+        sipServerIp: SIP_SERVER_URL,
+        sipServerUrl: 'wss://sip.example.com:8089/ws',
       } as const;
 
       const startConnectSpy = jest.spyOn(stateMachine, 'startConnect');
@@ -186,8 +186,8 @@ describe('ConnectionFlow', () => {
         user: 'testuser',
         password: PASSWORD_CORRECT,
         register: true,
-        sipServerUrl: SIP_SERVER_URL,
-        sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+        sipServerIp: SIP_SERVER_URL,
+        sipServerUrl: 'wss://sip.example.com:8089/ws',
       } as const;
 
       const startConnectSpy = jest.spyOn(stateMachine, 'startConnect');
@@ -207,8 +207,8 @@ describe('ConnectionFlow', () => {
       const parameters = {
         displayName: 'Test User',
         register: false,
-        sipServerUrl: SIP_SERVER_URL,
-        sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+        sipServerIp: SIP_SERVER_URL,
+        sipServerUrl: 'wss://sip.example.com:8089/ws',
       } as const;
 
       // @ts-expect-error
@@ -233,15 +233,15 @@ describe('ConnectionFlow', () => {
         {
           displayName: 'Old Name',
           register: false,
-          sipServerUrl: SIP_SERVER_URL,
-          sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+          sipServerIp: SIP_SERVER_URL,
+          sipServerUrl: 'wss://sip.example.com:8089/ws',
         },
         events,
       ).ua as unknown as UAMock;
 
       uaInstance = uaMock;
       connectionConfiguration = {
-        sipServerUrl: SIP_SERVER_URL,
+        sipServerIp: SIP_SERVER_URL,
         displayName: 'Old Name',
       };
 
@@ -259,15 +259,15 @@ describe('ConnectionFlow', () => {
         {
           displayName: 'Same Name',
           register: false,
-          sipServerUrl: SIP_SERVER_URL,
-          sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+          sipServerIp: SIP_SERVER_URL,
+          sipServerUrl: 'wss://sip.example.com:8089/ws',
         },
         events,
       ).ua as unknown as UAMock;
 
       uaInstance = uaMock;
       connectionConfiguration = {
-        sipServerUrl: SIP_SERVER_URL,
+        sipServerIp: SIP_SERVER_URL,
         displayName: 'Same Name',
       };
 
@@ -279,7 +279,7 @@ describe('ConnectionFlow', () => {
     it('должен выбрасывать ошибку, если UA не инициализирован', async () => {
       uaInstance = undefined;
       connectionConfiguration = {
-        sipServerUrl: SIP_SERVER_URL,
+        sipServerIp: SIP_SERVER_URL,
         displayName: 'Any Name',
       };
 
@@ -294,9 +294,9 @@ describe('ConnectionFlow', () => {
       const uaMock = uaFactory.createUAWithConfiguration(
         {
           register: false,
-          sipServerUrl: SIP_SERVER_URL,
+          sipServerIp: SIP_SERVER_URL,
           displayName: 'Any Name',
-          sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+          sipServerUrl: 'wss://sip.example.com:8089/ws',
         },
         events,
       ).ua as unknown as UAMock;
@@ -369,7 +369,7 @@ describe('ConnectionFlow', () => {
         configuration,
         helpers: {
           socket: sockets[0] as WebSocketInterface,
-          getSipServerUrl: (id: string) => {
+          getUri: (id: string) => {
             return `sip:${id}@${SIP_SERVER_URL}`;
           },
         },
@@ -380,9 +380,9 @@ describe('ConnectionFlow', () => {
       const uaMock = uaFactory.createUAWithConfiguration(
         {
           register: false,
-          sipServerUrl: SIP_SERVER_URL,
+          sipServerIp: SIP_SERVER_URL,
           displayName: 'Any Name',
-          sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+          sipServerUrl: 'wss://sip.example.com:8089/ws',
           connectionRecoveryMinInterval: 2,
           connectionRecoveryMaxInterval: 6,
         },
@@ -394,8 +394,8 @@ describe('ConnectionFlow', () => {
       const parameters = {
         displayName: 'Test User',
         register: false,
-        sipServerUrl: SIP_SERVER_URL,
-        sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+        sipServerIp: SIP_SERVER_URL,
+        sipServerUrl: 'wss://sip.example.com:8089/ws',
         connectionRecoveryMinInterval: 2,
         connectionRecoveryMaxInterval: 6,
       };
@@ -412,8 +412,8 @@ describe('ConnectionFlow', () => {
         {
           displayName: 'Any Name',
           register: false,
-          sipServerUrl: SIP_SERVER_URL,
-          sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+          sipServerIp: SIP_SERVER_URL,
+          sipServerUrl: 'wss://sip.example.com:8089/ws',
           connectionRecoveryMinInterval: 2,
           connectionRecoveryMaxInterval: 6,
         },
@@ -425,8 +425,8 @@ describe('ConnectionFlow', () => {
       const parameters = {
         displayName: 'Test User',
         register: false,
-        sipServerUrl: SIP_SERVER_URL,
-        sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+        sipServerIp: SIP_SERVER_URL,
+        sipServerUrl: 'wss://sip.example.com:8089/ws',
         connectionRecoveryMinInterval: 3,
         connectionRecoveryMaxInterval: 7,
       };
@@ -443,8 +443,8 @@ describe('ConnectionFlow', () => {
       const parameters = {
         displayName: 'Test User',
         register: false,
-        sipServerUrl: SIP_SERVER_URL,
-        sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+        sipServerIp: SIP_SERVER_URL,
+        sipServerUrl: 'wss://sip.example.com:8089/ws',
       };
 
       // @ts-expect-error - тестируем приватный метод
@@ -457,8 +457,8 @@ describe('ConnectionFlow', () => {
       const { configuration: baseConfig } = uaFactory.createConfiguration({
         displayName: 'Any Name',
         register: false,
-        sipServerUrl: SIP_SERVER_URL,
-        sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+        sipServerIp: SIP_SERVER_URL,
+        sipServerUrl: 'wss://sip.example.com:8089/ws',
         sessionTimers: true,
         registerExpires: 777,
         connectionRecoveryMinInterval: 4,
@@ -477,8 +477,8 @@ describe('ConnectionFlow', () => {
       const { configuration: baseConfig } = uaFactory.createConfiguration({
         displayName: 'Any Name',
         register: false,
-        sipServerUrl: SIP_SERVER_URL,
-        sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+        sipServerIp: SIP_SERVER_URL,
+        sipServerUrl: 'wss://sip.example.com:8089/ws',
         sessionTimers: false,
       });
 
@@ -494,8 +494,8 @@ describe('ConnectionFlow', () => {
       const { configuration: baseConfig } = uaFactory.createConfiguration({
         displayName: 'Any Name',
         register: false,
-        sipServerUrl: SIP_SERVER_URL,
-        sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+        sipServerIp: SIP_SERVER_URL,
+        sipServerUrl: 'wss://sip.example.com:8089/ws',
         registerExpires: 300,
       });
 
@@ -513,8 +513,8 @@ describe('ConnectionFlow', () => {
       const { configuration: baseConfig } = uaFactory.createConfiguration({
         displayName: 'Any Name',
         register: false,
-        sipServerUrl: SIP_SERVER_URL,
-        sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+        sipServerIp: SIP_SERVER_URL,
+        sipServerUrl: 'wss://sip.example.com:8089/ws',
         connectionRecoveryMinInterval: 2,
         connectionRecoveryMaxInterval: 6,
       });
@@ -533,8 +533,8 @@ describe('ConnectionFlow', () => {
       const { configuration: baseConfig } = uaFactory.createConfiguration({
         displayName: 'Any Name',
         register: false,
-        sipServerUrl: SIP_SERVER_URL,
-        sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+        sipServerIp: SIP_SERVER_URL,
+        sipServerUrl: 'wss://sip.example.com:8089/ws',
         connectionRecoveryMinInterval: 2,
         connectionRecoveryMaxInterval: 6,
       });
@@ -566,8 +566,8 @@ describe('ConnectionFlow', () => {
       const parameters = {
         displayName: 'Test User',
         register: false,
-        sipServerUrl: SIP_SERVER_URL,
-        sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+        sipServerIp: SIP_SERVER_URL,
+        sipServerUrl: 'wss://sip.example.com:8089/ws',
       };
 
       // Настраиваем UAMock чтобы он возвращал ошибку на всех попытках
@@ -585,8 +585,8 @@ describe('ConnectionFlow', () => {
       const parameters = {
         displayName: 'Test User',
         register: false,
-        sipServerUrl: SIP_SERVER_URL,
-        sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+        sipServerIp: SIP_SERVER_URL,
+        sipServerUrl: 'wss://sip.example.com:8089/ws',
       };
 
       // Мокаем getConnectionConfiguration чтобы он возвращал undefined

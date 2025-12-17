@@ -1,4 +1,4 @@
-import { generateUserId, parseDisplayName, resolveSipUrl } from '@/utils/utils';
+import { generateUserId, parseDisplayName, resolveGetUri } from '@/utils/utils';
 import { UA_EVENT_NAMES } from './eventNames';
 import getExtraHeadersRemoteAddress from './getExtraHeadersRemoteAddress';
 
@@ -9,7 +9,7 @@ export type TUAConfiguration = {
   configuration: UAConfigurationParams;
   helpers: {
     socket: WebSocketInterface;
-    getSipServerUrl: (id: string) => string;
+    getUri: (id: string) => string;
   };
 };
 
@@ -19,9 +19,9 @@ export type TCreateUAParameters = UAConfigurationParams & {
 };
 
 type TParametersCreateUaConfiguration = {
-  sipWebSocketServerURL: string;
-  displayName: string;
   sipServerUrl: string;
+  displayName: string;
+  sipServerIp: string;
   user?: string;
   register?: boolean;
   password?: string;
@@ -47,21 +47,21 @@ export default class UAFactory {
     register,
     password,
     user,
+    sipServerIp,
     sipServerUrl,
-    sipWebSocketServerURL,
   }: {
     register: boolean;
     password?: string;
     user?: string;
+    sipServerIp: string;
     sipServerUrl: string;
-    sipWebSocketServerURL: string;
   }): void {
-    if (!sipServerUrl) {
-      throw new Error('sipServerUrl is required');
+    if (!sipServerIp) {
+      throw new Error('sipServerIp is required');
     }
 
-    if (!sipWebSocketServerURL) {
-      throw new Error('sipWebSocketServerURL is required');
+    if (!sipServerUrl) {
+      throw new Error('sipServerUrl is required');
     }
 
     if (register && (password === undefined || password === '')) {
@@ -95,9 +95,9 @@ export default class UAFactory {
   public createConfiguration({
     user,
     password,
-    sipWebSocketServerURL,
-    displayName = '',
     sipServerUrl,
+    displayName = '',
+    sipServerIp,
     register = false,
     sessionTimers = false,
     registerExpires = 300, // 5 minutes in sec
@@ -109,14 +109,14 @@ export default class UAFactory {
       register,
       password,
       user,
+      sipServerIp,
       sipServerUrl,
-      sipWebSocketServerURL,
     });
 
     const authorizationUser = UAFactory.resolveAuthorizationUser(register, user);
-    const getSipServerUrl = resolveSipUrl(sipServerUrl);
-    const uri = getSipServerUrl(authorizationUser);
-    const socket = new this.JsSIP.WebSocketInterface(sipWebSocketServerURL);
+    const getUri = resolveGetUri(sipServerIp);
+    const uri = getUri(authorizationUser);
+    const socket = new this.JsSIP.WebSocketInterface(sipServerUrl);
 
     return {
       configuration: {
@@ -134,7 +134,7 @@ export default class UAFactory {
       },
       helpers: {
         socket,
-        getSipServerUrl,
+        getUri,
       },
     };
   }
