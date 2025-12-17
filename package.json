@@ -100,8 +100,8 @@
     "typescript": "^5.9.3",
     "vite": "^7.3.0",
     "vite-plugin-dts": "^4.5.4",
-    "vite-tsconfig-paths": "^6.0.1",
-    "webrtc-adapter": "^8.2.3"
+    "vite-tsconfig-paths": "^6.0.2",
+    "webrtc-adapter": "^9.0.3"
   },
   "peerDependencies": {
     "@krivega/cancelable-promise": "^1.1.4",
