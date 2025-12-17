@@ -93,8 +93,4 @@ export interface IMCUSession {
     sendEncodings?: RTCRtpEncodingParameters[];
     degradationPreference?: RTCDegradationPreference;
   }) => Promise<boolean>;
-  addTransceiver: (
-    kind: 'audio' | 'video',
-    options?: RTCRtpTransceiverInit,
-  ) => Promise<RTCRtpTransceiver>;
 }

@@ -9,7 +9,6 @@ import { IncomingCallManager } from '@/IncomingCallManager';
 import { PresentationManager } from '@/PresentationManager';
 import { StatsManager } from '@/StatsManager';
 import setCodecPreferences from '@/tools/setCodecPreferences';
-import { TransceiverManager } from '@/TransceiverManager';
 import { VideoSendingBalancerManager } from '@/VideoSendingBalancerManager';
 import { ONE_MEGABIT_IN_BITS } from './constants';
 import { EVENT_NAMES } from './eventNames';
@@ -41,8 +40,6 @@ class SipConnector {
   public readonly statsManager: StatsManager;
 
   public readonly videoSendingBalancerManager: VideoSendingBalancerManager;
-
-  public readonly transceiverManager: TransceiverManager;
 
   private readonly preferredMimeTypesVideoCodecs?: string[];
 
@@ -92,10 +89,6 @@ class SipConnector {
       },
       autoConnectorOptions,
     );
-    this.transceiverManager = new TransceiverManager({
-      callManager: this.callManager,
-      apiManager: this.apiManager,
-    });
     this.videoSendingBalancerManager = new VideoSendingBalancerManager(
       this.callManager,
       this.apiManager,

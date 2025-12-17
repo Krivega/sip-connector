@@ -63,7 +63,6 @@
 - `ConnectionQueueManager` - очередь операций
 - `AutoConnectorManager` - автоматическое переподключение
 - `IncomingCallManager` - входящие звонки
-- `TransceiverManager` - автоматическое управление RTCRtpTransceiver'ами с классификацией по kind и mid
 
 ---
 
@@ -134,13 +133,10 @@
 - Исходящие и входящие звонки
 - Управление WebRTC соединениями
 - Управление медиа-потоками
-- Интеграция с TransceiverManager
-- Перезапуск ICE-соединений
 - Поддержка различных протоколов
   **Основные методы**:
 
 - `startCall()` / `endCall()` - управление звонками
-- `getTransceivers()` / `addTransceiver()` - управление transceiver'ами
 - `replaceMediaStream()` - замена медиа-потоков
 - `restartIce()` - перезапуск соединения
 
@@ -206,26 +202,6 @@
 
 ---
 
-### 10. **TransceiverManager** (Управление transceiver'ами)
-
-**Назначение**: Отслеживание и классификация RTCRtpTransceiver'ов.
-
-**Ключевые возможности**:
-
-- Автоматическая классификация по `kind` трека и `mid` значению
-- Хранение основных transceiver'ов (аудио, видео, презентация)
-- Предотвращение перезаписи существующих transceiver'ов
-- Очистка при завершении звонков
-- Обработка событий restart для добавления презентационных transceiver'ов
-
-**Типы transceiver'ов**:
-
-- `mainAudio` - основной аудио поток (по `kind='audio'`)
-- `mainVideo` (mid='1') - основной видео поток
-- `presentationVideo` (mid='2') - презентационный поток
-
----
-
 ## Диаграмма архитектуры
 
 ```mermaid
@@ -242,7 +218,6 @@ graph TB
             G["IncomingCallManager<br/>📲 Incoming Calls"]
             H["StatsManager<br/>📊 WebRTC Stats<br/>+ StatsPeerConnection"]
             I["VideoSendingBalancerManager<br/>⚖️ Video Optimization<br/>+ Delayed Start"]
-            J["TransceiverManager<br/>🎛️ RTP Transceivers<br/>+ Auto Classification"]
             K["ConnectionQueueManager<br/>🔄 Sequential Operations"]
             L["AutoConnectorManager<br/>🔄 Auto Reconnection"]
         end
@@ -262,8 +237,6 @@ graph TB
         B --> G
         B --> H
         B --> I
-        B --> J
-        D --> J
         D --> N
         F --> N
         C --> M
@@ -274,7 +247,6 @@ graph TB
     end
 
     style I fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style J fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     style K fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     style L fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     style B fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
@@ -288,12 +260,10 @@ graph TB
 
 - `SipConnectorFacade` → `SipConnector` (фасад)
 - `SipConnector` → все менеджеры (координация)
-- `CallManager` → `TransceiverManager` (управление transceiver'ами)
 - `CallManager` → `MCUSession` (управление RTCSession)
 - `CallManager` → `RemoteStreamsManager` (организация входящих потоков)
 - `ConnectionQueueManager` → `ConnectionManager` (последовательность операций)
 - `AutoConnectorManager` → `ConnectionQueueManager`, `ConnectionManager`, `CallManager`
-- `TransceiverManager` → `CallManager`, `ApiManager` (обработка событий)
 - `VideoSendingBalancerManager` → `CallManager`, `ApiManager`
 
 ---
@@ -316,7 +286,6 @@ graph TB
 | **ConnectionManager**    | SIP соединения и регистрация                |
 | **AutoConnectorManager** | Автоматическое переподключение              |
 | **ApiManager**           | Серверное API и события restart             |
-| **TransceiverManager**   | Классификация RTCRtpTransceiver'ов          |
 
 ### Паттерны проектирования
 
@@ -464,11 +433,6 @@ await facade.sendMediaState({
   isEnabledCam: true,
   isEnabledMic: false,
 });
-
-// 6. Автоматическое управление
-// - TransceiverManager автоматически отслеживает transceiver'ы
-// - При restart событиях автоматически добавляется презентационный transceiver
-// - VideoBalancer автоматически оптимизирует качество через 10 секунд
 ```
 
 ---
