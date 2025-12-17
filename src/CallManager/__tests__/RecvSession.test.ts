@@ -46,14 +46,14 @@ describe('RecvSession', () => {
     jest.clearAllMocks();
   });
 
-  it('создает recvonly трансиверы для аудио и видео', () => {
+  it('создает recvonly трансиверы для основных аудио и видео, и 3 видео для презентации', () => {
     const config = createConfig();
     const tools = createTools();
 
     const session = new RecvSession(config, tools);
 
     expect(session).toBeDefined();
-    expect(session.peerConnection.addTransceiver).toHaveBeenCalledTimes(2);
+    expect(session.peerConnection.addTransceiver).toHaveBeenCalledTimes(5);
     expect(session.peerConnection.addTransceiver).toHaveBeenNthCalledWith(
       1,
       'audio',
@@ -61,6 +61,21 @@ describe('RecvSession', () => {
     );
     expect(session.peerConnection.addTransceiver).toHaveBeenNthCalledWith(
       2,
+      'video',
+      expect.objectContaining({ direction: 'recvonly' }),
+    );
+    expect(session.peerConnection.addTransceiver).toHaveBeenNthCalledWith(
+      3,
+      'video',
+      expect.objectContaining({ direction: 'recvonly' }),
+    );
+    expect(session.peerConnection.addTransceiver).toHaveBeenNthCalledWith(
+      4,
+      'video',
+      expect.objectContaining({ direction: 'recvonly' }),
+    );
+    expect(session.peerConnection.addTransceiver).toHaveBeenNthCalledWith(
+      5,
       'video',
       expect.objectContaining({ direction: 'recvonly' }),
     );

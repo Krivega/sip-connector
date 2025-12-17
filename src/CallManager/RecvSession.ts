@@ -85,8 +85,11 @@ class RecvSession {
   }
 
   private addTransceivers(): void {
-    this.addRecvOnlyTransceiver('audio');
-    this.addRecvOnlyTransceiver('video');
+    this.addRecvOnlyTransceiver('audio'); // main
+    this.addRecvOnlyTransceiver('video'); // main
+    this.addRecvOnlyTransceiver('video'); // contented
+    this.addRecvOnlyTransceiver('video'); // contented
+    this.addRecvOnlyTransceiver('video'); // contented
   }
 
   private addRecvOnlyTransceiver(kind: 'audio' | 'video'): RTCRtpTransceiver {
