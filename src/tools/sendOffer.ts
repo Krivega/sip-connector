@@ -55,9 +55,10 @@ const sendOffer = async ({
   const response = await fetch(url.toString(), {
     method: 'POST',
     headers: {
-      'Access-Control-Allow-Origin': '*',
       'Content-Type': 'application/json',
     },
+    referrerPolicy: 'no-referrer',
+    credentials: 'same-origin',
     body: JSON.stringify(offer),
   });
 
