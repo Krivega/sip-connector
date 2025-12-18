@@ -4,7 +4,7 @@ import { EEvent, SESSION_JSSIP_EVENT_NAMES } from './eventNames';
 
 import type { RTCSession, EndEvent } from '@krivega/jssip';
 import type { TEvents } from './eventNames';
-import type { TOntrack, IMCUSession } from './types';
+import type { IMCUSession } from './types';
 
 export class MCUSession implements IMCUSession {
   protected readonly events: TEvents;
@@ -43,7 +43,6 @@ export class MCUSession implements IMCUSession {
       number,
       mediaStream,
       extraHeaders = [],
-      ontrack,
       iceServers,
       directionVideo,
       directionAudio,
@@ -56,7 +55,7 @@ export class MCUSession implements IMCUSession {
     },
   ) => {
     return new Promise<RTCPeerConnection>((resolve, reject) => {
-      this.handleCall({ ontrack })
+      this.handleCall()
         .then(resolve)
         .catch((error: unknown) => {
           reject(error as Error);
@@ -111,7 +110,6 @@ export class MCUSession implements IMCUSession {
     rtcSession: RTCSession,
     {
       mediaStream,
-      ontrack,
       extraHeaders = [],
       iceServers,
       directionVideo,
@@ -129,7 +127,7 @@ export class MCUSession implements IMCUSession {
         this.rtcSession = rtcSession;
 
         this.subscribeToSessionEvents(rtcSession);
-        this.handleCall({ ontrack })
+        this.handleCall()
           .then(resolve)
           .catch((error: unknown) => {
             reject(error as Error);
@@ -160,19 +158,6 @@ export class MCUSession implements IMCUSession {
       }
     });
   };
-
-  public getRemoteTracks(): MediaStreamTrack[] | undefined {
-    if (!this.connection) {
-      return undefined;
-    }
-
-    const receivers = this.connection.getReceivers();
-    const remoteTracks = receivers.map(({ track }) => {
-      return track;
-    });
-
-    return remoteTracks;
-  }
 
   public async replaceMediaStream(
     mediaStream: Parameters<IMCUSession['replaceMediaStream']>[0],
@@ -206,11 +191,7 @@ export class MCUSession implements IMCUSession {
     return this.rtcSession.restartIce(options);
   }
 
-  private readonly handleCall = async ({
-    ontrack,
-  }: {
-    ontrack?: TOntrack;
-  }): Promise<RTCPeerConnection> => {
+  private readonly handleCall = async (): Promise<RTCPeerConnection> => {
     return new Promise((resolve, reject) => {
       const addStartedEventListeners = () => {
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
@@ -250,10 +231,6 @@ export class MCUSession implements IMCUSession {
 
         const handleTrack = (event: RTCTrackEvent) => {
           this.events.trigger(EEvent.PEER_CONNECTION_ONTRACK, event);
-
-          if (ontrack) {
-            ontrack(event);
-          }
         };
 
         peerconnection.addEventListener('track', handleTrack);

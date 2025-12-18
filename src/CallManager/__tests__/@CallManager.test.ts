@@ -42,23 +42,16 @@ describe('CallManager', () => {
   });
 
   it('getRemoteStreams: возвращает undefined если нет connection', () => {
-    jest.spyOn(callManager, 'connection', 'get').mockReturnValue(undefined);
-    expect(callManager.getRemoteStreams()).toBeUndefined();
+    jest.spyOn(RemoteStreamsManager.prototype, 'getStreams').mockReturnValue([]);
+
+    expect(callManager.getRemoteStreams()).toEqual([]);
   });
 
-  it('getRemoteStreams: вызывает remoteStreamsManager', () => {
-    const connection = {
-      getReceivers: () => {
-        return [{ track: { kind: 'video', id: 'v1' } }];
-      },
-    } as unknown as RTCPeerConnection;
+  it('getRemoteStreams: проксирует remoteStreamsManager.getStreams', () => {
+    const stream = new MediaStream();
+    const spy = jest.spyOn(RemoteStreamsManager.prototype, 'getStreams').mockReturnValue([stream]);
 
-    // @ts-expect-error
-    jest.spyOn(callManager.mcuSession, 'connection', 'get').mockReturnValue(connection);
-
-    const spy = jest.spyOn(RemoteStreamsManager.prototype, 'generateStreams');
-
-    callManager.getRemoteStreams();
+    expect(callManager.getRemoteStreams()).toEqual([stream]);
     expect(spy).toHaveBeenCalled();
   });
 
@@ -122,22 +115,6 @@ describe('CallManager - дополнительные тесты для покр�
     callManager = new CallManager();
     callManagerTest = callManager as unknown as CallManagerTestAccess;
     jest.clearAllMocks();
-  });
-
-  it('getRemoteStreams: вызывает generateAudioStreams если нет видео-треков', () => {
-    const connection = {
-      getReceivers: () => {
-        return [{ track: { kind: 'audio', id: 'a1' } }];
-      },
-    } as unknown as RTCPeerConnection;
-
-    // @ts-expect-error
-    jest.spyOn(callManager.mcuSession, 'connection', 'get').mockReturnValue(connection);
-
-    const spy = jest.spyOn(RemoteStreamsManager.prototype, 'generateAudioStreams');
-
-    callManager.getRemoteStreams();
-    expect(spy).toHaveBeenCalled();
   });
 
   it('requested: возвращает true если isPendingCall или isPendingAnswer', () => {

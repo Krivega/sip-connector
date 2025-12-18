@@ -24,11 +24,9 @@ describe('CallManager events', () => {
   });
 
   it('startCall: создает звонок и возвращает peerconnection', async () => {
-    const ontrack = jest.fn();
     const promise = callManager.startCall(ua as unknown as UA, getSipServerUrl, {
       number: '123',
       mediaStream,
-      ontrack,
     });
     const audioTrack = createAudioMediaStreamTrackMock();
     const videoTrack = createVideoMediaStreamTrackMock();
@@ -41,28 +39,6 @@ describe('CallManager events', () => {
 
     expect(pc).toBeDefined();
     expect(typeof pc).toBe('object');
-  });
-
-  it('startCall: подписывается на события peerconnection', async () => {
-    const ontrack = jest.fn();
-    const onPeerconnection = jest.fn();
-
-    callManager.on('peerconnection', onPeerconnection);
-
-    const pc = (await callManager.startCall(ua as unknown as UA, getSipServerUrl, {
-      number: '123',
-      mediaStream,
-      ontrack,
-    })) as RTCPeerConnectionMock;
-
-    expect(ontrack).toHaveBeenCalledTimes(0);
-    expect(onPeerconnection).toHaveBeenCalled();
-
-    const videoTrack = createVideoMediaStreamTrackMock();
-
-    pc.addTrack(videoTrack);
-
-    expect(ontrack).toHaveBeenCalledTimes(1);
   });
 
   it('answerToIncomingCall: отклоняет при FAILED событии', async () => {
@@ -96,10 +72,9 @@ describe('CallManager events', () => {
     const getIncomingRTCSession = () => {
       return rtcSession as unknown as RTCSession;
     };
-    const ontrack = jest.fn();
+
     const promise = callManager.answerToIncomingCall(getIncomingRTCSession, {
       mediaStream,
-      ontrack,
     });
 
     const audioTrack = createAudioMediaStreamTrackMock();

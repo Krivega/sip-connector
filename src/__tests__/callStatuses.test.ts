@@ -10,7 +10,6 @@ describe('call statuses', () => {
   let sipConnector: SipConnector;
   let mediaStream: MediaStream;
   let conference: string;
-  let mockFunction: jest.Mock<void>;
   let mockFunctionConnecting: jest.Mock<void>;
   let mockFunctionEnterRoom: jest.Mock<void>;
   let mockFunctionAccepted: jest.Mock<void>;
@@ -22,7 +21,6 @@ describe('call statuses', () => {
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },
     }) as MediaStream;
-    mockFunction = jest.fn(() => {});
     mockFunctionConnecting = jest.fn() as jest.Mock<void>;
     mockFunctionEnterRoom = jest.fn() as jest.Mock<void>;
     mockFunctionAccepted = jest.fn() as jest.Mock<void>;
@@ -62,7 +60,7 @@ describe('call statuses', () => {
     });
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    sipConnector.call({ number, mediaStream, ontrack: mockFunction });
+    sipConnector.call({ number, mediaStream });
 
     return promiseCallStatuses.then(() => {
       expect(conference).toBe(number);

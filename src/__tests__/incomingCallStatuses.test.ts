@@ -11,7 +11,6 @@ import type { SipConnector } from '../SipConnector';
 describe('incoming call statuses', () => {
   let sipConnector: SipConnector;
   let mediaStream: MediaStream;
-  let mockFunction: jest.Mock<void>;
   let mockFunctionConnecting: jest.Mock<void>;
   let mockFunctionAccepted: jest.Mock<void>;
   let mockFunctionConfirmed: jest.Mock<void>;
@@ -22,7 +21,6 @@ describe('incoming call statuses', () => {
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },
     }) as MediaStream;
-    mockFunction = jest.fn(() => {});
     mockFunctionConnecting = jest.fn() as jest.Mock<void>;
     mockFunctionAccepted = jest.fn() as jest.Mock<void>;
     mockFunctionConfirmed = jest.fn() as jest.Mock<void>;
@@ -56,7 +54,6 @@ describe('incoming call statuses', () => {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       sipConnector.answerToIncomingCall({
         mediaStream,
-        ontrack: mockFunction,
       });
     });
 

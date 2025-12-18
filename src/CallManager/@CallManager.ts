@@ -1,6 +1,5 @@
 import { TypedEvents } from 'events-constructor';
 
-import { hasVideoTracks } from '@/utils/utils';
 import { EEvent, EVENT_NAMES } from './eventNames';
 import { MCUSession } from './MCUSession';
 import RecvSession from './RecvSession';
@@ -16,6 +15,8 @@ import type {
   TAnswerToIncomingCall,
 } from './types';
 
+type TRemoteStreamsChangeType = 'added' | 'removed';
+
 class CallManager {
   public readonly events: TEvents;
 
@@ -24,8 +25,6 @@ class CallManager {
   protected isPendingAnswer = false;
 
   protected rtcSession?: RTCSession;
-
-  protected remoteStreams: Record<string, MediaStream> = {};
 
   protected readonly callConfiguration: TCallConfiguration = {};
 
@@ -40,6 +39,7 @@ class CallManager {
 
     this.mcuSession = new MCUSession(this.events, { onReset: this.reset });
     this.subscribeCallStatusChange();
+    this.subscribeRemoteTrackEvents();
   }
 
   public get requested() {
@@ -122,18 +122,8 @@ class CallManager {
     return { ...this.callConfiguration };
   }
 
-  public getRemoteStreams(): MediaStream[] | undefined {
-    const remoteTracks = this.mcuSession.getRemoteTracks();
-
-    if (!remoteTracks) {
-      return undefined;
-    }
-
-    if (hasVideoTracks(remoteTracks)) {
-      return this.remoteStreamsManager.generateStreams(remoteTracks);
-    }
-
-    return this.remoteStreamsManager.generateAudioStreams(remoteTracks);
+  public getRemoteStreams(): MediaStream[] {
+    return this.remoteStreamsManager.getStreams();
   }
 
   public async replaceMediaStream(
@@ -204,6 +194,49 @@ class CallManager {
     }
 
     return newStatus;
+  }
+
+  private subscribeRemoteTrackEvents() {
+    this.on(EEvent.PEER_CONNECTION_ONTRACK, this.handleRemoteTrackAdded);
+  }
+
+  private readonly handleRemoteTrackAdded = (event: RTCTrackEvent) => {
+    const streamHint = event.streams[0]?.id;
+
+    this.addRemoteTrack(event.track, streamHint);
+  };
+
+  private addRemoteTrack(track: MediaStreamTrack, streamHint?: string) {
+    const result = this.remoteStreamsManager.addTrack(track, {
+      streamHint,
+      onRemoved: (event) => {
+        this.emitRemoteStreamsChanged('removed', {
+          trackId: event.trackId,
+          participantId: event.participantId,
+        });
+      },
+    });
+
+    if (result.isAdded) {
+      this.emitRemoteStreamsChanged('added', {
+        trackId: track.id,
+        participantId: result.participantId,
+      });
+    }
+  }
+
+  private emitRemoteStreamsChanged(
+    changeType: TRemoteStreamsChangeType,
+    { trackId, participantId }: { trackId: string; participantId: string },
+  ) {
+    const streams = [...this.remoteStreamsManager.getStreams()];
+
+    this.events.trigger(EEvent.REMOTE_STREAMS_CHANGED, {
+      participantId,
+      changeType,
+      trackId,
+      streams,
+    });
   }
 }
 

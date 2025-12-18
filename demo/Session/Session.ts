@@ -15,6 +15,8 @@ class Session {
 
   private readonly useLicenseManager: UseLicenseManager;
 
+  private unsubscribeChangeRemoteStreams?: () => void;
+
   public constructor({
     serverParametersRequesterParams,
   }: {
@@ -69,16 +71,24 @@ class Session {
       extraHeaders: serverParameters.extraHeaders,
     });
 
+    this.unsubscribeChangeRemoteStreams = sipConnectorFacade.on(
+      'call:remote-streams-changed',
+      (event) => {
+        setRemoteStreams(event.streams);
+      },
+    );
+
     await sipConnectorFacade.callToServer({
       conference,
       mediaStream,
-      setRemoteStreams,
       extraHeaders: serverParameters.extraHeaders,
       iceServers: serverParameters.iceServers,
     });
   }
 
   public async stopCall(): Promise<void> {
+    this.unsubscribeChangeRemoteStreams?.();
+    this.unsubscribeChangeRemoteStreams = undefined;
     this.participantRoleManager.unsubscribe();
     this.participantRoleManager.reset();
 

@@ -2,8 +2,6 @@ import type { RTCSession, UA } from '@krivega/jssip';
 import type { TContentHint } from '@/PresentationManager';
 import type { Originator } from './eventNames';
 
-export type TOntrack = (event: RTCTrackEvent) => void;
-
 export type TOnAddedTransceiver = (
   transceiver: RTCRtpTransceiver,
   track: MediaStreamTrack,
@@ -18,7 +16,6 @@ type TOptionsExtraHeaders = {
 type TParamsAnswerToIncomingCall = {
   mediaStream: MediaStream;
   extraHeaders?: TOptionsExtraHeaders['extraHeaders'];
-  ontrack?: TOntrack;
   iceServers?: RTCIceServer[];
   directionVideo?: RTCRtpTransceiverDirection;
   directionAudio?: RTCRtpTransceiverDirection;
@@ -84,7 +81,6 @@ export interface IMCUSession {
     incomingRTCSession: RTCSession,
     params: TParamsAnswerToIncomingCall,
   ) => Promise<RTCPeerConnection>;
-  getRemoteTracks: () => MediaStreamTrack[] | undefined;
   replaceMediaStream: TReplaceMediaStream;
   restartIce: (options?: {
     useUpdate?: boolean;

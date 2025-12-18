@@ -236,7 +236,6 @@ class SipConnectorFacade implements IProxyMethods {
     offerToReceiveVideo?: boolean;
     directionVideo?: RTCRtpTransceiverDirection;
     directionAudio?: RTCRtpTransceiverDirection;
-    setRemoteStreams: (streams: MediaStream[]) => void;
     onBeforeProgressCall?: (conference: string) => void;
     onSuccessProgressCall?: (parameters_: { isPurgatory: boolean }) => void;
     onEnterPurgatory?: () => void;
@@ -258,7 +257,6 @@ class SipConnectorFacade implements IProxyMethods {
       offerToReceiveVideo,
       directionVideo,
       directionAudio,
-      setRemoteStreams,
       onBeforeProgressCall,
       onSuccessProgressCall,
       onEnterPurgatory,
@@ -268,14 +266,6 @@ class SipConnectorFacade implements IProxyMethods {
       onEndedCall,
       onAddedTransceiver,
     } = parameters;
-    const handleReadyRemoteStreamsDebounced = this.resolveHandleReadyRemoteStreamsDebounced({
-      onReadyRemoteStreams: setRemoteStreams,
-    });
-    const handleReadyRemoteStreams = this.resolveHandleReadyRemoteStreams({
-      onReadyRemoteStreams: () => {
-        handleReadyRemoteStreamsDebounced().catch(debug);
-      },
-    });
 
     debug('callToServer', parameters);
 
@@ -295,7 +285,6 @@ class SipConnectorFacade implements IProxyMethods {
         onAddedTransceiver,
         sendEncodings,
         number: conference,
-        ontrack: handleReadyRemoteStreams,
       });
     };
     let isSuccessProgressCall = false;
@@ -324,7 +313,6 @@ class SipConnectorFacade implements IProxyMethods {
       debug('onSuccess');
 
       isSuccessProgressCall = true;
-      handleReadyRemoteStreamsDebounced().catch(debug);
 
       if (onSuccessProgressCall) {
         onSuccessProgressCall({ isPurgatory: hasPurgatory(room) });
@@ -391,7 +379,6 @@ class SipConnectorFacade implements IProxyMethods {
     offerToReceiveVideo?: boolean;
     directionVideo?: RTCRtpTransceiverDirection;
     directionAudio?: RTCRtpTransceiverDirection;
-    setRemoteStreams: (streams: MediaStream[]) => void;
     onBeforeProgressCall?: (conference: string) => void;
     onSuccessProgressCall?: (parameters_: { isPurgatory: boolean }) => void;
     onFailProgressCall?: () => void;
@@ -412,7 +399,6 @@ class SipConnectorFacade implements IProxyMethods {
       offerToReceiveVideo,
       directionVideo,
       directionAudio,
-      setRemoteStreams,
       onBeforeProgressCall,
       onSuccessProgressCall,
       onEnterPurgatory,
@@ -422,14 +408,6 @@ class SipConnectorFacade implements IProxyMethods {
       onEndedCall,
       onAddedTransceiver,
     } = parameters;
-    const handleReadyRemoteStreamsDebounced = this.resolveHandleReadyRemoteStreamsDebounced({
-      onReadyRemoteStreams: setRemoteStreams,
-    });
-    const handleReadyRemoteStreams = this.resolveHandleReadyRemoteStreams({
-      onReadyRemoteStreams: () => {
-        handleReadyRemoteStreamsDebounced().catch(debug);
-      },
-    });
 
     debug('answerToIncomingCall', parameters);
 
@@ -446,7 +424,6 @@ class SipConnectorFacade implements IProxyMethods {
         degradationPreference,
         onAddedTransceiver,
         sendEncodings,
-        ontrack: handleReadyRemoteStreams,
       });
     };
 
@@ -481,7 +458,6 @@ class SipConnectorFacade implements IProxyMethods {
       debug('onSuccess');
 
       isSuccessProgressCall = true;
-      handleReadyRemoteStreamsDebounced().catch(debug);
 
       if (onSuccessProgressCall) {
         onSuccessProgressCall({ isPurgatory: hasPurgatory(room) });
@@ -668,10 +644,7 @@ class SipConnectorFacade implements IProxyMethods {
       const remoteStreams = this.sipConnector.getRemoteStreams();
 
       debug('remoteStreams', remoteStreams);
-
-      if (remoteStreams) {
-        onReadyRemoteStreams(remoteStreams);
-      }
+      onReadyRemoteStreams(remoteStreams);
     }, 200);
   };
 
