@@ -160,20 +160,43 @@ describe('AutoConnectorManager - Reconnection', () => {
       expect(connectSpy).toHaveBeenCalledTimes(2);
     });
 
-    it('должен дождаться сброса состояния машины состояний перед запуском повторного подключения при выходе из спящего режима', async () => {
+    it('должен дождаться сброса машины состояний перед запуском повторного подключения при выходе из спящего режима', async () => {
       manager.start(baseParameters);
 
       await manager.wait('success');
 
-      const promiseBeforeAttempt = new Promise((resolve) => {
-        manager.on('before-attempt', resolve);
-      });
+      // мокаем метод оставновки ua
+      const { ua } = sipConnector.connectionManager;
+
+      if (ua === undefined) {
+        throw new Error('ua is not defined');
+      }
+
+      ua.stop = jest.fn();
 
       emitResumeFromSleepMode?.();
 
-      await promiseBeforeAttempt;
+      // Ждем произвольное время, чтобы убедиться, что подключение не завершено
+      await delayPromise(DELAY);
 
-      expect(sipConnector.connectionManager.isIdle).toBe(true);
+      expect(sipConnector.connectionManager.connectionState).toBe('connected');
+
+      // триггерим событие отключения от ua
+      // @ts-ignore приватное свойство
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      ua.events.trigger('disconnected');
+
+      expect(sipConnector.connectionManager.connectionState).toBe('disconnected');
+
+      await manager.wait('before-attempt');
+
+      // проверка сброса состояния после успешного дисконнекта
+      expect(sipConnector.connectionManager.connectionState).toBe('idle');
+
+      // ждем успешного повторного подключения
+      await manager.wait('success');
+
+      expect(sipConnector.connectionManager.connectionState).toBe('connected');
     });
   });
 });
