@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [20.1.0](https://github.com/Krivega/sip-connector/compare/v20.0.0...v20.1.0) (2025-12-19)
+
+### Features
+
+- invoke stopPresentation on spectator move requests ([e6c0b71](https://github.com/Krivega/sip-connector/commit/e6c0b719f91ce0372d2562364b773c6e928861b2))
+
 ## [20.0.0](https://github.com/Krivega/sip-connector/compare/v19.9.0...v20.0.0) (2025-12-19)
 
 ### ⚠ BREAKING CHANGES
