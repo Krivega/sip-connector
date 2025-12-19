@@ -419,9 +419,15 @@ class SipConnector {
     return this.apiManager.askPermissionToEnableCam(...args);
   }
 
-  private subscribeRecvSession() {
+  private subscribeChangeRole() {
+    this.apiManager.on('participant:move-request-to-participants', () => {
+      this.callManager.setCallRoleParticipant();
+    });
+    this.apiManager.on('participant:move-request-to-spectators', () => {
+      this.callManager.setCallRoleViewer();
+    });
     this.apiManager.on('participant:move-request-to-spectators-with-audio-id', ({ audioId }) => {
-      this.callManager.startRecvSession(audioId, this.sendOffer);
+      this.callManager.setCallRoleViewerNew({ audioId, sendOffer: this.sendOffer });
     });
   }
 
@@ -466,7 +472,7 @@ class SipConnector {
     this.bridgeEvents('stats', this.statsManager);
     this.bridgeEvents('video-balancer', this.videoSendingBalancerManager);
 
-    this.subscribeRecvSession();
+    this.subscribeChangeRole();
   }
 
   private readonly bridgeEvents = <T extends string>(

@@ -160,16 +160,34 @@ describe('ConfigurationManager', () => {
       expect(configurationManager.getSipServerIp()).toBeUndefined();
     });
 
-    it('должен возвращать SIP сервер IP', () => {
-      const serverIp = 'sip.test.com';
+    it('должен возвращать serverIp', () => {
+      const sipServerIp = '192.168.0.1';
 
       configurationManager.set({
-        sipServerIp: serverIp,
+        sipServerIp,
         sipServerUrl: 'wss://sip.test.com/ws',
         displayName: 'Test User',
       });
 
-      expect(configurationManager.getSipServerIp()).toBe(serverIp);
+      expect(configurationManager.getSipServerIp()).toBe(sipServerIp);
+    });
+  });
+
+  describe('getSipServerUrl', () => {
+    it('должен возвращать undefined когда sipServerUrl не установлен', () => {
+      expect(configurationManager.getSipServerUrl()).toBeUndefined();
+    });
+
+    it('должен возвращать SIP сервер IP', () => {
+      const sipServerUrl = 'sip.test.com';
+
+      configurationManager.set({
+        sipServerUrl,
+        sipServerIp: '192.168.0.1',
+        displayName: 'Test User',
+      });
+
+      expect(configurationManager.getSipServerUrl()).toBe(sipServerUrl);
     });
   });
 

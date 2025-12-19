@@ -1,8 +1,72 @@
+import { createAudioMediaStreamTrackMock } from 'webrtc-mock';
+
+import flushPromises from '@/__fixtures__/flushPromises';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import CallManager from '../@CallManager';
 import { RemoteStreamsManager } from '../RemoteStreamsManager';
 
 import type { RTCSession } from '@krivega/jssip';
+import type { TCallRoleViewerNew } from '../types';
+
+const mockRecvSession = (() => {
+  const state: {
+    instance?: {
+      peerConnection: {
+        addEventListener: jest.Mock;
+        removeEventListener: jest.Mock;
+      };
+      call: jest.Mock;
+      close: jest.Mock;
+      config?: unknown;
+      tools?: unknown;
+    };
+  } = {};
+
+  const factory = () => {
+    const peerConnection = {
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+    };
+    const call = jest.fn().mockResolvedValue(undefined);
+    const close = jest.fn();
+
+    const inst: {
+      peerConnection: typeof peerConnection;
+      call: typeof call;
+      close: typeof close;
+      config?: unknown;
+      tools?: unknown;
+    } = { peerConnection, call, close };
+
+    state.instance = inst;
+
+    return inst;
+  };
+
+  return {
+    reset() {
+      state.instance = undefined;
+    },
+    get instance() {
+      return state.instance;
+    },
+    create: factory,
+  };
+})();
+
+jest.mock('../RecvSession', () => {
+  return {
+    __esModule: true,
+    default: jest.fn().mockImplementation((config, tools) => {
+      const inst = mockRecvSession.create();
+
+      inst.config = config;
+      inst.tools = tools;
+
+      return inst;
+    }),
+  };
+});
 
 // Вспомогательный тип для доступа к защищённым свойствам CallManager
 interface CallManagerTestAccess {
@@ -115,6 +179,7 @@ describe('CallManager - дополнительные тесты для покр�
     callManager = new CallManager();
     callManagerTest = callManager as unknown as CallManagerTestAccess;
     jest.clearAllMocks();
+    mockRecvSession.reset();
   });
 
   it('requested: возвращает true если isPendingCall или isPendingAnswer', () => {
@@ -244,5 +309,346 @@ describe('CallManager - дополнительные тесты для покр�
     });
 
     await expect(callManager.restartIce()).rejects.toThrow('No rtcSession established');
+  });
+
+  it('emitRemoteStreamsChanged: не эмитит, если менеджер не активный', () => {
+    const activeManager = {
+      getStreams: jest.fn().mockReturnValue([new MediaStream()]),
+    } as unknown as RemoteStreamsManager;
+    const inactiveManager = {} as RemoteStreamsManager;
+    const triggerSpy = jest.spyOn(callManager.events, 'trigger');
+
+    // Подменяем активный менеджер
+    // @ts-expect-error
+    jest.spyOn(callManager, 'getActiveStreamsManager').mockReturnValue(activeManager);
+
+    // Случай активного менеджера
+    // @ts-expect-error
+    callManager.emitRemoteStreamsChanged(activeManager, 'added', {
+      trackId: 't1',
+      participantId: 'p1',
+    });
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
+
+    // Случай неактивного менеджера — не должно быть нового эмита
+    // @ts-expect-error
+    callManager.emitRemoteStreamsChanged(inactiveManager, 'removed', {
+      trackId: 't2',
+      participantId: 'p2',
+    });
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('addRemoteTrack: не эмитит, если трек уже добавлен (isAdded=false)', () => {
+    const managerMock = {
+      addTrack: jest.fn().mockReturnValue({ isAdded: false }),
+    } as unknown as RemoteStreamsManager;
+    const emitSpy = jest.spyOn(
+      callManager,
+      // @ts-expect-error
+      'emitRemoteStreamsChanged',
+    );
+
+    // @ts-expect-error
+    callManager.addRemoteTrack(managerMock, createAudioMediaStreamTrackMock(), 'hint');
+
+    expect(managerMock.addTrack).toHaveBeenCalled();
+    expect(emitSpy).not.toHaveBeenCalled();
+  });
+
+  it('addRemoteTrack: эмитит изменение, если менеджер активный', () => {
+    const managerMock = {
+      addTrack: jest.fn().mockReturnValue({ isAdded: true, participantId: 'p1' }),
+      getStreams: jest.fn().mockReturnValue([new MediaStream()]),
+    } as unknown as RemoteStreamsManager;
+
+    // @ts-expect-error
+    jest.spyOn(callManager, 'getActiveStreamsManager').mockReturnValue(managerMock);
+
+    const emitSpy = jest.spyOn(
+      callManager,
+      // @ts-expect-error
+      'emitRemoteStreamsChanged',
+    );
+
+    const track = createAudioMediaStreamTrackMock();
+
+    // @ts-expect-error
+    callManager.addRemoteTrack(managerMock, track, 'hint');
+
+    expect(managerMock.addTrack).toHaveBeenCalledWith(
+      track,
+      expect.objectContaining({ streamHint: 'hint' }),
+    );
+    expect(emitSpy).toHaveBeenCalledWith(
+      managerMock,
+      'added',
+      expect.objectContaining({ trackId: track.id, participantId: 'p1' }),
+    );
+  });
+
+  it('addRemoteTrack: эмитит removed при удалении трека через onRemoved', () => {
+    let onRemovedCallback:
+      | ((event: { trackId: string; participantId: string }) => void)
+      | undefined;
+
+    const managerMock = {
+      addTrack: jest.fn().mockImplementation(
+        (
+          _track,
+          options?: {
+            streamHint?: string;
+            onRemoved?: (event: { trackId: string; participantId: string }) => void;
+          },
+        ) => {
+          // Сохраняем колбэк onRemoved для последующего вызова
+          onRemovedCallback = options?.onRemoved;
+
+          return { isAdded: true, participantId: 'p1' };
+        },
+      ),
+      getStreams: jest.fn().mockReturnValue([new MediaStream()]),
+    } as unknown as RemoteStreamsManager;
+
+    // @ts-expect-error
+    jest.spyOn(callManager, 'getActiveStreamsManager').mockReturnValue(managerMock);
+
+    const emitSpy = jest.spyOn(
+      callManager,
+      // @ts-expect-error
+      'emitRemoteStreamsChanged',
+    );
+
+    const track = createAudioMediaStreamTrackMock();
+
+    // @ts-expect-error
+    callManager.addRemoteTrack(managerMock, track, 'hint');
+
+    // Проверяем, что колбэк был сохранен
+    expect(onRemovedCallback).toBeDefined();
+
+    // Симулируем удаление трека через вызов колбэка onRemoved (строка 224)
+    if (onRemovedCallback) {
+      onRemovedCallback({ trackId: 'track-123', participantId: 'p1' });
+    }
+
+    // Проверяем, что emitRemoteStreamsChanged был вызван с 'removed'
+    expect(emitSpy).toHaveBeenCalledWith(managerMock, 'removed', {
+      trackId: 'track-123',
+      participantId: 'p1',
+    });
+  });
+
+  it('onRoleChanged: вызывает startRecvSession при входе в viewer_new и stopRecvSession при выходе', () => {
+    const stopSpy = jest
+      // @ts-expect-error
+      .spyOn(callManager, 'stopRecvSession');
+    const startSpy = jest
+      // @ts-expect-error
+      .spyOn(callManager, 'startRecvSession');
+
+    const viewerNewRole: TCallRoleViewerNew = {
+      type: 'viewer_new',
+      recvParams: {
+        audioId: 'a1',
+
+        sendOffer: async () => {
+          return {} as RTCSessionDescription;
+        },
+      },
+    };
+
+    // Вход в viewer_new
+    // @ts-expect-error
+    callManager.onRoleChanged({ previous: { type: 'participant' }, next: viewerNewRole });
+    expect(startSpy).toHaveBeenCalledWith('a1', viewerNewRole.recvParams.sendOffer);
+
+    startSpy.mockClear();
+
+    // Выход из viewer_new
+    // @ts-expect-error
+    callManager.onRoleChanged({ previous: viewerNewRole, next: { type: 'viewer' } });
+    expect(stopSpy).toHaveBeenCalled();
+    expect(startSpy).not.toHaveBeenCalled();
+  });
+
+  it('setCallRoleParticipant: делегирует в roleManager', () => {
+    const spy = jest.spyOn(
+      // @ts-expect-error
+      callManager.roleManager,
+      'setCallRoleParticipant',
+    );
+
+    callManager.setCallRoleParticipant();
+
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it('attachRecvSessionTracks: добавляет и снимает слушатель track', () => {
+    const addRemoteTrackSpy = jest
+      .spyOn(callManager as unknown as { addRemoteTrack: () => void }, 'addRemoteTrack')
+      .mockImplementation(() => {});
+    const peerConnection = {
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+    };
+    const session = { peerConnection } as unknown as { peerConnection: RTCPeerConnection };
+
+    // @ts-expect-error
+    callManager.attachRecvSessionTracks(session);
+
+    // capture handler
+    const [[, handler]] = peerConnection.addEventListener.mock.calls as [
+      [string, (event: RTCTrackEvent) => void],
+    ];
+
+    const track = createAudioMediaStreamTrackMock();
+
+    handler({ track, streams: [new MediaStream()] } as unknown as RTCTrackEvent);
+
+    expect(addRemoteTrackSpy).toHaveBeenCalledWith(
+      callManager['recvRemoteStreamsManager' as unknown as keyof CallManager],
+      track,
+      expect.any(String),
+    );
+
+    // dispose
+    (
+      callManager as unknown as { disposeRecvSessionTrackListener?: () => void }
+    ).disposeRecvSessionTrackListener?.();
+    expect(peerConnection.removeEventListener).toHaveBeenCalledWith('track', handler);
+  });
+
+  it('startRecvSession: не стартует без conferenceNumber', () => {
+    (
+      callManager as unknown as { startRecvSession: (id: string, sendOffer: () => void) => void }
+    ).startRecvSession('audio-id', jest.fn());
+
+    const RecvSessionModule = jest.requireMock('../RecvSession') as { default: jest.Mock };
+
+    expect(RecvSessionModule.default).not.toHaveBeenCalled();
+  });
+
+  it('startRecvSession: создаёт RecvSession, ресетит менеджер и вызывает call', async () => {
+    const cfg = Reflect.get(callManager as unknown as object, 'callConfiguration') as Record<
+      string,
+      unknown
+    >;
+
+    cfg.number = '123';
+
+    const recvManager = Reflect.get(
+      callManager as unknown as object,
+      'recvRemoteStreamsManager',
+    ) as RemoteStreamsManager;
+    const recvResetSpy = jest.spyOn(recvManager, 'reset');
+    const attachSpy = jest
+      .spyOn(
+        callManager as unknown as {
+          attachRecvSessionTracks: () => void;
+        },
+        'attachRecvSessionTracks',
+      )
+      .mockImplementation(() => {});
+    const stopSpy = jest
+      .spyOn(
+        callManager as unknown as {
+          stopRecvSession: () => void;
+        },
+        'stopRecvSession',
+      )
+      .mockImplementation(() => {});
+
+    (
+      callManager as unknown as { startRecvSession: (id: string, sendOffer: () => void) => void }
+    ).startRecvSession('audio-id', jest.fn());
+
+    expect(recvResetSpy).toHaveBeenCalled();
+    expect(attachSpy).toHaveBeenCalled();
+    expect(stopSpy).toHaveBeenCalledTimes(1); // initial stop before creating new session
+    expect(mockRecvSession.instance?.call).toHaveBeenCalledWith('123');
+    expect(mockRecvSession.instance?.config).toMatchObject({
+      audioChannel: 'audio-id',
+      quality: 'high',
+    });
+  });
+
+  it('startRecvSession: при ошибке call выполняет stopRecvSession', async () => {
+    const cfg = Reflect.get(callManager as unknown as object, 'callConfiguration') as Record<
+      string,
+      unknown
+    >;
+
+    cfg.number = '123';
+
+    const stopSpy = jest
+      .spyOn(
+        callManager as unknown as {
+          stopRecvSession: () => void;
+        },
+        'stopRecvSession',
+      )
+      .mockImplementation(() => {});
+
+    // Мокаем фабрику так, чтобы она возвращала экземпляр с call, который отклоняется
+    const RecvSessionModule = jest.requireMock('../RecvSession') as { default: jest.Mock };
+
+    RecvSessionModule.default.mockImplementationOnce((config, tools) => {
+      const inst = mockRecvSession.create();
+
+      inst.config = config;
+      inst.tools = tools;
+      // Устанавливаем мок на call, который отклоняется - это покрывает строку 299
+      inst.call = jest.fn().mockRejectedValueOnce(new Error('fail'));
+
+      return inst;
+    });
+
+    (
+      callManager as unknown as { startRecvSession: (id: string, sendOffer: () => void) => void }
+    ).startRecvSession('audio-id', jest.fn());
+
+    // Ждем завершения промиса и выполнения catch-блока на строке 299
+    // Используем несколько вызовов flushPromises и setTimeout для гарантии выполнения всех микротасок
+    await flushPromises();
+    await new Promise<void>((resolve) => {
+      setTimeout(() => {
+        resolve();
+      }, 0);
+    });
+    await flushPromises();
+    await flushPromises();
+
+    // stopRecvSession вызывается дважды: в начале startRecvSession (строка 285) и в catch-блоке (строка 299)
+    expect(stopSpy).toHaveBeenCalledTimes(2);
+    expect(mockRecvSession.instance?.call).toHaveBeenCalledWith('123');
+  });
+
+  it('stopRecvSession: закрывает сессию, сбрасывает слушатель и менеджер', () => {
+    const recvManager = Reflect.get(
+      callManager as unknown as object,
+      'recvRemoteStreamsManager',
+    ) as RemoteStreamsManager;
+    const recvManagerResetSpy = jest.spyOn(recvManager, 'reset');
+
+    // подготовим сессию
+    const closeSpy = jest.fn();
+
+    (callManager as unknown as { recvSession?: { close: () => void } }).recvSession = {
+      close: closeSpy,
+    };
+
+    (
+      callManager as unknown as { disposeRecvSessionTrackListener?: () => void }
+    ).disposeRecvSessionTrackListener = jest.fn();
+
+    (callManager as unknown as { stopRecvSession: () => void }).stopRecvSession();
+
+    expect(closeSpy).toHaveBeenCalled();
+    expect(Reflect.get(callManager as unknown as object, 'recvSession')).toBeUndefined();
+    expect(
+      Reflect.get(callManager as unknown as object, 'disposeRecvSessionTrackListener'),
+    ).toBeUndefined();
+    expect(recvManagerResetSpy).toHaveBeenCalled();
   });
 });

@@ -15,7 +15,7 @@ describe('sendOffer', () => {
   });
 
   it('должен отправлять POST запрос с корректным URL и телом и возвращать SDP answer', async () => {
-    expect.assertions(6);
+    expect.assertions(7);
 
     const serverUrl = 'dev.vinteo.com/';
     const conferenceNumber = '1008';
@@ -66,6 +66,10 @@ describe('sendOffer', () => {
       sdp: responseJson.sdp,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       toJSON: expect.any(Function),
+    });
+    expect(result.toJSON()).toEqual({
+      type: responseJson.type,
+      sdp: responseJson.sdp,
     });
   });
 

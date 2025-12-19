@@ -1,6 +1,7 @@
 import type { RTCSession, UA } from '@krivega/jssip';
 import type { TContentHint } from '@/PresentationManager';
 import type { Originator } from './eventNames';
+import type { TTools } from './RecvSession';
 
 export type TOnAddedTransceiver = (
   transceiver: RTCRtpTransceiver,
@@ -45,6 +46,14 @@ export type TCallConfiguration = {
   answer?: boolean;
   number?: string;
 };
+
+export type TCallRoleParticipant = { type: 'participant' };
+export type TCallRoleViewer = { type: 'viewer' };
+export type TCallRoleViewerNew = {
+  type: 'viewer_new';
+  recvParams: { audioId: string; sendOffer: TTools['sendOffer'] };
+};
+export type TCallRole = TCallRoleParticipant | TCallRoleViewer | TCallRoleViewerNew;
 
 export type TStartCall = (
   ua: UA,
