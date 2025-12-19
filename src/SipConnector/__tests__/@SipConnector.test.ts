@@ -586,6 +586,62 @@ describe('SipConnector facade', () => {
         ),
       ).rejects.toThrow('No sipServerUrl for sendOffer');
     });
+
+    it('должен корректно обрабатывать множественные вызовы события participant:move-request-to-spectators-with-audio-id с разными audioId', () => {
+      const setCallRoleViewerNewSpy = jest.spyOn(sipConnector.callManager, 'setCallRoleViewerNew');
+      const firstAudioId = 'test-audio-id-1';
+      const secondAudioId = 'test-audio-id-2';
+      const thirdAudioId = 'test-audio-id-3';
+
+      // Первый вызов события
+      sipConnector.apiManager.events.trigger(
+        'participant:move-request-to-spectators-with-audio-id',
+        {
+          audioId: firstAudioId,
+        },
+      );
+
+      expect(setCallRoleViewerNewSpy).toHaveBeenCalledTimes(1);
+      expect(setCallRoleViewerNewSpy).toHaveBeenNthCalledWith(1, {
+        audioId: firstAudioId,
+        sendOffer: expect.any(Function) as () => void,
+      });
+
+      // Второй вызов события с другим audioId
+      sipConnector.apiManager.events.trigger(
+        'participant:move-request-to-spectators-with-audio-id',
+        {
+          audioId: secondAudioId,
+        },
+      );
+
+      expect(setCallRoleViewerNewSpy).toHaveBeenCalledTimes(2);
+      expect(setCallRoleViewerNewSpy).toHaveBeenNthCalledWith(2, {
+        audioId: secondAudioId,
+        sendOffer: expect.any(Function) as () => void,
+      });
+
+      // Третий вызов события с еще одним другим audioId
+      sipConnector.apiManager.events.trigger(
+        'participant:move-request-to-spectators-with-audio-id',
+        {
+          audioId: thirdAudioId,
+        },
+      );
+
+      expect(setCallRoleViewerNewSpy).toHaveBeenCalledTimes(3);
+      expect(setCallRoleViewerNewSpy).toHaveBeenNthCalledWith(3, {
+        audioId: thirdAudioId,
+        sendOffer: expect.any(Function) as () => void,
+      });
+
+      // Проверяем, что все вызовы были с разными audioId
+      const allCalls = setCallRoleViewerNewSpy.mock.calls;
+
+      expect(allCalls[0][0].audioId).toBe(firstAudioId);
+      expect(allCalls[1][0].audioId).toBe(secondAudioId);
+      expect(allCalls[2][0].audioId).toBe(thirdAudioId);
+    });
   });
 
   describe('sendOffer', () => {

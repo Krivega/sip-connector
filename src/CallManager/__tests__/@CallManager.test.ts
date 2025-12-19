@@ -472,6 +472,51 @@ describe('CallManager - дополнительные тесты для покр�
     expect(startSpy).not.toHaveBeenCalled();
   });
 
+  it('onRoleChanged: перезапускает recv сессию при смене audioId в роли viewer_new', () => {
+    const startSpy = jest
+      // @ts-expect-error
+      .spyOn(callManager, 'startRecvSession')
+      // @ts-expect-error
+      .mockImplementation(() => {});
+
+    const firstViewerNewRole: TCallRoleViewerNew = {
+      type: 'viewer_new',
+      recvParams: {
+        audioId: 'a1',
+        sendOffer: async () => {
+          return {} as RTCSessionDescription;
+        },
+      },
+    };
+
+    const secondViewerNewRole: TCallRoleViewerNew = {
+      type: 'viewer_new',
+      recvParams: {
+        audioId: 'a2',
+        sendOffer: async () => {
+          return {} as RTCSessionDescription;
+        },
+      },
+    };
+
+    // Вход в viewer_new с первым audioId
+    // @ts-expect-error
+    callManager.onRoleChanged({ previous: { type: 'participant' }, next: firstViewerNewRole });
+    expect(startSpy).toHaveBeenCalledWith('a1', firstViewerNewRole.recvParams.sendOffer);
+    expect(startSpy).toHaveBeenCalledTimes(1);
+
+    startSpy.mockClear();
+
+    // Смена audioId в той же роли viewer_new
+    // @ts-expect-error
+    callManager.onRoleChanged({ previous: firstViewerNewRole, next: secondViewerNewRole });
+
+    // startRecvSession вызывается с новым audioId, что означает перезапуск сессии
+    // (startRecvSession внутри вызывает stopRecvSession перед созданием новой сессии)
+    expect(startSpy).toHaveBeenCalledTimes(1);
+    expect(startSpy).toHaveBeenCalledWith('a2', secondViewerNewRole.recvParams.sendOffer);
+  });
+
   it('setCallRoleParticipant: делегирует в roleManager', () => {
     const spy = jest.spyOn(
       // @ts-expect-error

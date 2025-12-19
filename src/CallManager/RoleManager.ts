@@ -55,27 +55,35 @@ export class RoleManager {
   }
 
   public setCallRoleParticipant() {
-    this.setRole(roleParticipant);
+    this.changeRole(roleParticipant);
   }
 
   public setCallRoleViewer() {
-    this.setRole(roleViewer);
+    this.changeRole(roleViewer);
   }
 
   public setCallRoleViewerNew(recvParams: TCallRoleViewerNew['recvParams']) {
-    this.setRole(createRoleViewerNew(recvParams));
+    this.changeRole(createRoleViewerNew(recvParams));
   }
 
-  public setRole(role: TCallRole) {
-    if (this.role.type === role.type) {
+  public changeRole(next: TCallRole) {
+    const currentRole = this.role;
+
+    // Если тип роли тот же, проверяем нужно ли обновить роль
+    // Для viewer_new проверяем изменился ли audioId
+    if (currentRole.type === next.type) {
+      if (
+        RoleManager.hasViewerNew(next) &&
+        RoleManager.hasViewerNew(currentRole) &&
+        currentRole.recvParams.audioId !== next.recvParams.audioId
+      ) {
+        this.setRole(next);
+      }
+
       return;
     }
 
-    const previous = this.role;
-
-    this.role = role;
-
-    this.onRoleChanged?.({ previous, next: role });
+    this.setRole(next);
   }
 
   public reset() {
@@ -101,5 +109,13 @@ export class RoleManager {
 
   public hasViewerNew() {
     return RoleManager.hasViewerNew(this.role);
+  }
+
+  private setRole(next: TCallRole) {
+    const previous = this.role;
+
+    this.role = next;
+
+    this.onRoleChanged?.({ previous, next });
   }
 }

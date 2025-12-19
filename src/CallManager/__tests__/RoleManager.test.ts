@@ -44,12 +44,12 @@ describe('RoleManager', () => {
     });
   });
 
-  it('setRole не вызывает onRoleChanged при той же роли', () => {
+  it('changeRole не вызывает onRoleChanged при той же роли', () => {
     const { mainManager, recvManager } = createManagers();
     const onRoleChanged = jest.fn();
     const roleManager = new RoleManager({ mainManager, recvManager }, onRoleChanged);
 
-    roleManager.setRole({ type: 'participant' });
+    roleManager.changeRole({ type: 'participant' });
 
     expect(onRoleChanged).not.toHaveBeenCalled();
     expect(roleManager.getRole()).toEqual({ type: 'participant' });
@@ -127,5 +127,129 @@ describe('RoleManager', () => {
         recvParams: { audioId: 'a', sendOffer: jest.fn() },
       }),
     ).toBe(true);
+  });
+
+  it('setCallRoleViewerNew вызывает onRoleChanged при смене audioId в той же роли viewer_new', () => {
+    const { mainManager, recvManager } = createManagers();
+    const onRoleChanged = jest.fn();
+    const roleManager = new RoleManager({ mainManager, recvManager }, onRoleChanged);
+    const firstRecvParams: TCallRoleViewerNew['recvParams'] = {
+      audioId: 'audio-1',
+      sendOffer: jest.fn() as unknown as TCallRoleViewerNew['recvParams']['sendOffer'],
+    };
+    const secondRecvParams: TCallRoleViewerNew['recvParams'] = {
+      audioId: 'audio-2',
+      sendOffer: jest.fn() as unknown as TCallRoleViewerNew['recvParams']['sendOffer'],
+    };
+
+    // Устанавливаем первую роль viewer_new
+    roleManager.setCallRoleViewerNew(firstRecvParams);
+    onRoleChanged.mockClear();
+
+    // Меняем audioId в той же роли
+    roleManager.setCallRoleViewerNew(secondRecvParams);
+
+    expect(roleManager.getRole()).toEqual({ type: 'viewer_new', recvParams: secondRecvParams });
+    expect(roleManager.hasViewerNew()).toBe(true);
+    expect(onRoleChanged).toHaveBeenCalledTimes(1);
+    expect(onRoleChanged).toHaveBeenCalledWith({
+      previous: { type: 'viewer_new', recvParams: firstRecvParams },
+      next: { type: 'viewer_new', recvParams: secondRecvParams },
+    });
+  });
+
+  it('setCallRoleViewerNew не вызывает onRoleChanged если audioId не изменился', () => {
+    const { mainManager, recvManager } = createManagers();
+    const onRoleChanged = jest.fn();
+    const roleManager = new RoleManager({ mainManager, recvManager }, onRoleChanged);
+    const recvParams: TCallRoleViewerNew['recvParams'] = {
+      audioId: 'audio-1',
+      sendOffer: jest.fn() as unknown as TCallRoleViewerNew['recvParams']['sendOffer'],
+    };
+
+    // Устанавливаем роль viewer_new
+    roleManager.setCallRoleViewerNew(recvParams);
+    onRoleChanged.mockClear();
+
+    // Пытаемся установить ту же роль с тем же audioId
+    roleManager.setCallRoleViewerNew(recvParams);
+
+    expect(roleManager.getRole()).toEqual({ type: 'viewer_new', recvParams });
+    expect(roleManager.hasViewerNew()).toBe(true);
+    expect(onRoleChanged).not.toHaveBeenCalled();
+  });
+
+  it('setCallRoleViewerNew обновляет роль с новым audioId', () => {
+    const { mainManager, recvManager } = createManagers();
+    const roleManager = new RoleManager({ mainManager, recvManager });
+    const firstRecvParams: TCallRoleViewerNew['recvParams'] = {
+      audioId: 'audio-1',
+      sendOffer: jest.fn() as unknown as TCallRoleViewerNew['recvParams']['sendOffer'],
+    };
+    const secondRecvParams: TCallRoleViewerNew['recvParams'] = {
+      audioId: 'audio-2',
+      sendOffer: jest.fn() as unknown as TCallRoleViewerNew['recvParams']['sendOffer'],
+    };
+
+    roleManager.setCallRoleViewerNew(firstRecvParams);
+    expect(roleManager.getRole()).toEqual({ type: 'viewer_new', recvParams: firstRecvParams });
+
+    roleManager.setCallRoleViewerNew(secondRecvParams);
+    expect(roleManager.getRole()).toEqual({ type: 'viewer_new', recvParams: secondRecvParams });
+  });
+
+  it('changeRole: при последовательных вызовах setCallRoleViewerNew с разными audioId previous корректно обновляется', () => {
+    const { mainManager, recvManager } = createManagers();
+    const onRoleChanged = jest.fn();
+    const roleManager = new RoleManager({ mainManager, recvManager }, onRoleChanged);
+    const firstRecvParams: TCallRoleViewerNew['recvParams'] = {
+      audioId: 'audio-1',
+      sendOffer: jest.fn() as unknown as TCallRoleViewerNew['recvParams']['sendOffer'],
+    };
+    const secondRecvParams: TCallRoleViewerNew['recvParams'] = {
+      audioId: 'audio-2',
+      sendOffer: jest.fn() as unknown as TCallRoleViewerNew['recvParams']['sendOffer'],
+    };
+    const thirdRecvParams: TCallRoleViewerNew['recvParams'] = {
+      audioId: 'audio-3',
+      sendOffer: jest.fn() as unknown as TCallRoleViewerNew['recvParams']['sendOffer'],
+    };
+
+    // Первый вызов: переход с participant на viewer_new с audio-1
+    roleManager.setCallRoleViewerNew(firstRecvParams);
+    expect(onRoleChanged).toHaveBeenCalledTimes(1);
+    expect(onRoleChanged).toHaveBeenNthCalledWith(1, {
+      previous: { type: 'participant' },
+      next: { type: 'viewer_new', recvParams: firstRecvParams },
+    });
+
+    // Второй вызов: смена audioId с audio-1 на audio-2
+    roleManager.setCallRoleViewerNew(secondRecvParams);
+    expect(onRoleChanged).toHaveBeenCalledTimes(2);
+    expect(onRoleChanged).toHaveBeenNthCalledWith(2, {
+      previous: { type: 'viewer_new', recvParams: firstRecvParams },
+      next: { type: 'viewer_new', recvParams: secondRecvParams },
+    });
+
+    // Третий вызов: смена audioId с audio-2 на audio-3
+    roleManager.setCallRoleViewerNew(thirdRecvParams);
+    expect(onRoleChanged).toHaveBeenCalledTimes(3);
+    expect(onRoleChanged).toHaveBeenNthCalledWith(3, {
+      previous: { type: 'viewer_new', recvParams: secondRecvParams },
+      next: { type: 'viewer_new', recvParams: thirdRecvParams },
+    });
+
+    // Проверяем, что previous всегда был предыдущей ролью, а не изначальной participant
+    const allCalls = onRoleChanged.mock.calls;
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    expect(allCalls[0]?.[0]?.previous).toEqual({ type: 'participant' });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    expect(allCalls[1]?.[0]?.previous).toEqual({ type: 'viewer_new', recvParams: firstRecvParams });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    expect(allCalls[2]?.[0]?.previous).toEqual({
+      type: 'viewer_new',
+      recvParams: secondRecvParams,
+    });
   });
 });
