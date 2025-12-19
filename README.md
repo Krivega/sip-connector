@@ -95,11 +95,11 @@ const facade = new SipConnectorFacade(sipConnector);
 // Подключение с объектом параметров
 await facade.connectToServer({
   userAgent: tools.getUserAgent({ appName: 'MyApp' }),
-  sipWebSocketServerURL: 'wss://sip.example.com/ws',
-  sipServerUrl: 'sip:example.com',
-  name: '1001', // SIP URI user part
+  sipServerUrl: 'sip.example.com', // WebSocket URL (путь /webrtc/wss/ добавляется автоматически)
+  sipServerIp: 'sip.example.com', // SIP сервер IP
+  user: '1001', // SIP URI user part
   password: 'secret',
-  isRegisteredUser: true, // Включить SIP REGISTER
+  register: true, // Включить SIP REGISTER
 });
 
 // Или с функцией для динамического получения параметров
@@ -108,11 +108,11 @@ await facade.connectToServer(async () => {
   const config = await fetchConnectionConfig();
   return {
     userAgent: tools.getUserAgent({ appName: 'MyApp' }),
-    sipWebSocketServerURL: config.websocketUrl,
-    sipServerUrl: config.sipUrl,
-    name: config.username,
+    sipServerUrl: config.websocketUrl, // Без пути /webrtc/wss/ - он добавляется автоматически
+    sipServerIp: config.sipServerIp,
+    user: config.username,
     password: config.password,
-    isRegisteredUser: true,
+    register: true,
   };
 });
 ```
@@ -126,14 +126,23 @@ const localStream = await navigator.mediaDevices.getUserMedia({
   video: true,
 });
 
+// Подписка на изменения удаленных потоков
+const unsubscribeRemoteStreams = sipConnector.on('call:remote-streams-changed', (event) => {
+  console.log('Изменение удаленных потоков:', {
+    participantId: event.participantId,
+    changeType: event.changeType, // 'added' | 'removed'
+    trackId: event.trackId,
+    streams: event.streams, // Актуальный массив всех удаленных потоков
+  });
+  
+  // Обновление UI с новыми потоками
+  updateRemoteStreamsDisplay(event.streams);
+});
+
 // Инициация звонка
 const pc = await facade.callToServer({
   conference: '12345',
   mediaStream: localStream,
-  setRemoteStreams: (streams) => {
-    // Обработка удаленных потоков
-    console.log('Получены удаленные потоки:', streams);
-  },
 });
 
 // Подписка на WebRTC-статистику

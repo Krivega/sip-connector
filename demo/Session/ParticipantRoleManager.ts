@@ -149,7 +149,7 @@ class ParticipantRoleManager {
       }
 
       case 'spectator': {
-        roleText = 'Зритель (NEW)';
+        roleText = 'Зритель';
 
         break;
       }
