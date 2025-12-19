@@ -48,12 +48,12 @@ export type TCallConfiguration = {
 };
 
 export type TCallRoleParticipant = { type: 'participant' };
-export type TCallRoleViewerSynthetic = { type: 'viewer_synthetic' };
-export type TCallRoleViewer = {
-  type: 'viewer';
+export type TCallRoleSpectatorSynthetic = { type: 'spectator_synthetic' };
+export type TCallRoleSpectator = {
+  type: 'spectator';
   recvParams: { audioId: string; sendOffer: TTools['sendOffer'] };
 };
-export type TCallRole = TCallRoleParticipant | TCallRoleViewerSynthetic | TCallRoleViewer;
+export type TCallRole = TCallRoleParticipant | TCallRoleSpectatorSynthetic | TCallRoleSpectator;
 
 export type TStartCall = (
   ua: UA,

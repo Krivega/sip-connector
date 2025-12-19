@@ -15,7 +15,7 @@ import type {
   TReplaceMediaStream,
   TAnswerToIncomingCall,
   TCallRole,
-  TCallRoleViewer,
+  TCallRoleSpectator,
 } from './types';
 
 type TRemoteStreamsChangeType = 'added' | 'removed';
@@ -150,12 +150,12 @@ class CallManager {
     this.roleManager.setCallRoleParticipant();
   }
 
-  public setCallRoleViewerSynthetic() {
-    this.roleManager.setCallRoleViewerSynthetic();
+  public setCallRoleSpectatorSynthetic() {
+    this.roleManager.setCallRoleSpectatorSynthetic();
   }
 
-  public setCallRoleViewer(recvParams: TCallRoleViewer['recvParams']) {
-    this.roleManager.setCallRoleViewer(recvParams);
+  public setCallRoleSpectator(recvParams: TCallRoleSpectator['recvParams']) {
+    this.roleManager.setCallRoleSpectator(recvParams);
   }
 
   public async replaceMediaStream(
@@ -311,11 +311,11 @@ class CallManager {
     previous: TCallRole;
     next: TCallRole;
   }) => {
-    if (RoleManager.hasViewer(previous) && !RoleManager.hasViewer(next)) {
+    if (RoleManager.hasSpectator(previous) && !RoleManager.hasSpectator(next)) {
       this.stopRecvSession();
     }
 
-    if (RoleManager.hasViewer(next)) {
+    if (RoleManager.hasSpectator(next)) {
       const params = next.recvParams;
 
       this.startRecvSession(params.audioId, params.sendOffer);

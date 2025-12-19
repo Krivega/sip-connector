@@ -424,10 +424,10 @@ class SipConnector {
       this.callManager.setCallRoleParticipant();
     });
     this.apiManager.on('participant:move-request-to-spectators-synthetic', () => {
-      this.callManager.setCallRoleViewerSynthetic();
+      this.callManager.setCallRoleSpectatorSynthetic();
     });
     this.apiManager.on('participant:move-request-to-spectators-with-audio-id', ({ audioId }) => {
-      this.callManager.setCallRoleViewer({ audioId, sendOffer: this.sendOffer });
+      this.callManager.setCallRoleSpectator({ audioId, sendOffer: this.sendOffer });
     });
   }
 

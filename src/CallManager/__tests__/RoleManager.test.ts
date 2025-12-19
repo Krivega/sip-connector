@@ -1,7 +1,7 @@
 import { RoleManager } from '../RoleManager';
 
 import type { RemoteStreamsManager } from '../RemoteStreamsManager';
-import type { TCallRoleViewer } from '../types';
+import type { TCallRoleSpectator } from '../types';
 
 const createManagers = () => {
   const mainManager: RemoteStreamsManager = { reset: jest.fn() } as unknown as RemoteStreamsManager;
@@ -18,29 +18,29 @@ describe('RoleManager', () => {
 
     expect(roleManager.getRole()).toEqual({ type: 'participant' });
     expect(roleManager.hasParticipant()).toBe(true);
-    expect(roleManager.hasViewerSynthetic()).toBe(false);
-    expect(roleManager.hasViewer()).toBe(false);
+    expect(roleManager.hasSpectatorSynthetic()).toBe(false);
+    expect(roleManager.hasSpectator()).toBe(false);
     expect(roleManager.getActiveManager()).toBe(mainManager);
     expect(onRoleChanged).not.toHaveBeenCalled();
   });
 
-  it('setCallRoleViewer переключает роль, сохраняет recvParams и активирует recvManager', () => {
+  it('setCallRoleSpectator переключает роль, сохраняет recvParams и активирует recvManager', () => {
     const { mainManager, recvManager } = createManagers();
     const onRoleChanged = jest.fn();
     const roleManager = new RoleManager({ mainManager, recvManager }, onRoleChanged);
-    const recvParams: TCallRoleViewer['recvParams'] = {
+    const recvParams: TCallRoleSpectator['recvParams'] = {
       audioId: 'audio-1',
-      sendOffer: jest.fn() as unknown as TCallRoleViewer['recvParams']['sendOffer'],
+      sendOffer: jest.fn() as unknown as TCallRoleSpectator['recvParams']['sendOffer'],
     };
 
-    roleManager.setCallRoleViewer(recvParams);
+    roleManager.setCallRoleSpectator(recvParams);
 
-    expect(roleManager.getRole()).toEqual({ type: 'viewer', recvParams });
-    expect(roleManager.hasViewer()).toBe(true);
+    expect(roleManager.getRole()).toEqual({ type: 'spectator', recvParams });
+    expect(roleManager.hasSpectator()).toBe(true);
     expect(roleManager.getActiveManager()).toBe(recvManager);
     expect(onRoleChanged).toHaveBeenCalledWith({
       previous: { type: 'participant' },
-      next: { type: 'viewer', recvParams },
+      next: { type: 'spectator', recvParams },
     });
   });
 
@@ -55,27 +55,27 @@ describe('RoleManager', () => {
     expect(roleManager.getRole()).toEqual({ type: 'participant' });
   });
 
-  it('setCallRoleViewerSynthetic переключает с viewer на viewer и активирует основной менеджер', () => {
+  it('setCallRoleSpectatorSynthetic переключает с spectator на spectator и активирует основной менеджер', () => {
     const { mainManager, recvManager } = createManagers();
     const onRoleChanged = jest.fn();
     const roleManager = new RoleManager({ mainManager, recvManager }, onRoleChanged);
-    const recvParams: TCallRoleViewer['recvParams'] = {
+    const recvParams: TCallRoleSpectator['recvParams'] = {
       audioId: 'audio-1',
-      sendOffer: jest.fn() as unknown as TCallRoleViewer['recvParams']['sendOffer'],
+      sendOffer: jest.fn() as unknown as TCallRoleSpectator['recvParams']['sendOffer'],
     };
 
-    roleManager.setCallRoleViewer(recvParams);
+    roleManager.setCallRoleSpectator(recvParams);
     onRoleChanged.mockClear();
 
-    roleManager.setCallRoleViewerSynthetic();
+    roleManager.setCallRoleSpectatorSynthetic();
 
-    expect(roleManager.getRole()).toEqual({ type: 'viewer_synthetic' });
-    expect(roleManager.hasViewerSynthetic()).toBe(true);
-    expect(roleManager.hasViewer()).toBe(false);
+    expect(roleManager.getRole()).toEqual({ type: 'spectator_synthetic' });
+    expect(roleManager.hasSpectatorSynthetic()).toBe(true);
+    expect(roleManager.hasSpectator()).toBe(false);
     expect(roleManager.getActiveManager()).toBe(mainManager);
     expect(onRoleChanged).toHaveBeenCalledWith({
-      previous: { type: 'viewer', recvParams },
-      next: { type: 'viewer_synthetic' },
+      previous: { type: 'spectator', recvParams },
+      next: { type: 'spectator_synthetic' },
     });
   });
 
@@ -84,7 +84,7 @@ describe('RoleManager', () => {
     const onRoleChanged = jest.fn();
     const roleManager = new RoleManager({ mainManager, recvManager }, onRoleChanged);
 
-    roleManager.setCallRoleViewerSynthetic();
+    roleManager.setCallRoleSpectatorSynthetic();
     onRoleChanged.mockClear();
 
     roleManager.setCallRoleParticipant();
@@ -93,7 +93,7 @@ describe('RoleManager', () => {
     expect(roleManager.hasParticipant()).toBe(true);
     expect(roleManager.getActiveManager()).toBe(mainManager);
     expect(onRoleChanged).toHaveBeenCalledWith({
-      previous: { type: 'viewer_synthetic' },
+      previous: { type: 'spectator_synthetic' },
       next: { type: 'participant' },
     });
   });
@@ -101,12 +101,12 @@ describe('RoleManager', () => {
   it('reset возвращает роль participant и сбрасывает recvManager', () => {
     const { mainManager, recvManager } = createManagers();
     const roleManager = new RoleManager({ mainManager, recvManager });
-    const recvParams: TCallRoleViewer['recvParams'] = {
+    const recvParams: TCallRoleSpectator['recvParams'] = {
       audioId: 'audio-1',
-      sendOffer: jest.fn() as unknown as TCallRoleViewer['recvParams']['sendOffer'],
+      sendOffer: jest.fn() as unknown as TCallRoleSpectator['recvParams']['sendOffer'],
     };
 
-    roleManager.setCallRoleViewer(recvParams);
+    roleManager.setCallRoleSpectator(recvParams);
     (recvManager.reset as jest.Mock).mockClear();
 
     roleManager.reset();
@@ -119,124 +119,124 @@ describe('RoleManager', () => {
 
   it('статические гард-функции корректно определяют роль', () => {
     expect(RoleManager.hasParticipant({ type: 'participant' })).toBe(true);
-    expect(RoleManager.hasViewerSynthetic({ type: 'participant' })).toBe(false);
-    expect(RoleManager.hasViewerSynthetic({ type: 'viewer_synthetic' })).toBe(true);
+    expect(RoleManager.hasSpectatorSynthetic({ type: 'participant' })).toBe(false);
+    expect(RoleManager.hasSpectatorSynthetic({ type: 'spectator_synthetic' })).toBe(true);
     expect(
-      RoleManager.hasViewer({
-        type: 'viewer',
+      RoleManager.hasSpectator({
+        type: 'spectator',
         recvParams: { audioId: 'a', sendOffer: jest.fn() },
       }),
     ).toBe(true);
   });
 
-  it('setCallRoleViewer вызывает onRoleChanged при смене audioId в той же роли viewer', () => {
+  it('setCallRoleSpectator вызывает onRoleChanged при смене audioId в той же роли spectator', () => {
     const { mainManager, recvManager } = createManagers();
     const onRoleChanged = jest.fn();
     const roleManager = new RoleManager({ mainManager, recvManager }, onRoleChanged);
-    const firstRecvParams: TCallRoleViewer['recvParams'] = {
+    const firstRecvParams: TCallRoleSpectator['recvParams'] = {
       audioId: 'audio-1',
-      sendOffer: jest.fn() as unknown as TCallRoleViewer['recvParams']['sendOffer'],
+      sendOffer: jest.fn() as unknown as TCallRoleSpectator['recvParams']['sendOffer'],
     };
-    const secondRecvParams: TCallRoleViewer['recvParams'] = {
+    const secondRecvParams: TCallRoleSpectator['recvParams'] = {
       audioId: 'audio-2',
-      sendOffer: jest.fn() as unknown as TCallRoleViewer['recvParams']['sendOffer'],
+      sendOffer: jest.fn() as unknown as TCallRoleSpectator['recvParams']['sendOffer'],
     };
 
-    // Устанавливаем первую роль viewer
-    roleManager.setCallRoleViewer(firstRecvParams);
+    // Устанавливаем первую роль spectator
+    roleManager.setCallRoleSpectator(firstRecvParams);
     onRoleChanged.mockClear();
 
     // Меняем audioId в той же роли
-    roleManager.setCallRoleViewer(secondRecvParams);
+    roleManager.setCallRoleSpectator(secondRecvParams);
 
-    expect(roleManager.getRole()).toEqual({ type: 'viewer', recvParams: secondRecvParams });
-    expect(roleManager.hasViewer()).toBe(true);
+    expect(roleManager.getRole()).toEqual({ type: 'spectator', recvParams: secondRecvParams });
+    expect(roleManager.hasSpectator()).toBe(true);
     expect(onRoleChanged).toHaveBeenCalledTimes(1);
     expect(onRoleChanged).toHaveBeenCalledWith({
-      previous: { type: 'viewer', recvParams: firstRecvParams },
-      next: { type: 'viewer', recvParams: secondRecvParams },
+      previous: { type: 'spectator', recvParams: firstRecvParams },
+      next: { type: 'spectator', recvParams: secondRecvParams },
     });
   });
 
-  it('setCallRoleViewer не вызывает onRoleChanged если audioId не изменился', () => {
+  it('setCallRoleSpectator не вызывает onRoleChanged если audioId не изменился', () => {
     const { mainManager, recvManager } = createManagers();
     const onRoleChanged = jest.fn();
     const roleManager = new RoleManager({ mainManager, recvManager }, onRoleChanged);
-    const recvParams: TCallRoleViewer['recvParams'] = {
+    const recvParams: TCallRoleSpectator['recvParams'] = {
       audioId: 'audio-1',
-      sendOffer: jest.fn() as unknown as TCallRoleViewer['recvParams']['sendOffer'],
+      sendOffer: jest.fn() as unknown as TCallRoleSpectator['recvParams']['sendOffer'],
     };
 
-    // Устанавливаем роль viewer
-    roleManager.setCallRoleViewer(recvParams);
+    // Устанавливаем роль spectator
+    roleManager.setCallRoleSpectator(recvParams);
     onRoleChanged.mockClear();
 
     // Пытаемся установить ту же роль с тем же audioId
-    roleManager.setCallRoleViewer(recvParams);
+    roleManager.setCallRoleSpectator(recvParams);
 
-    expect(roleManager.getRole()).toEqual({ type: 'viewer', recvParams });
-    expect(roleManager.hasViewer()).toBe(true);
+    expect(roleManager.getRole()).toEqual({ type: 'spectator', recvParams });
+    expect(roleManager.hasSpectator()).toBe(true);
     expect(onRoleChanged).not.toHaveBeenCalled();
   });
 
-  it('setCallRoleViewer обновляет роль с новым audioId', () => {
+  it('setCallRoleSpectator обновляет роль с новым audioId', () => {
     const { mainManager, recvManager } = createManagers();
     const roleManager = new RoleManager({ mainManager, recvManager });
-    const firstRecvParams: TCallRoleViewer['recvParams'] = {
+    const firstRecvParams: TCallRoleSpectator['recvParams'] = {
       audioId: 'audio-1',
-      sendOffer: jest.fn() as unknown as TCallRoleViewer['recvParams']['sendOffer'],
+      sendOffer: jest.fn() as unknown as TCallRoleSpectator['recvParams']['sendOffer'],
     };
-    const secondRecvParams: TCallRoleViewer['recvParams'] = {
+    const secondRecvParams: TCallRoleSpectator['recvParams'] = {
       audioId: 'audio-2',
-      sendOffer: jest.fn() as unknown as TCallRoleViewer['recvParams']['sendOffer'],
+      sendOffer: jest.fn() as unknown as TCallRoleSpectator['recvParams']['sendOffer'],
     };
 
-    roleManager.setCallRoleViewer(firstRecvParams);
-    expect(roleManager.getRole()).toEqual({ type: 'viewer', recvParams: firstRecvParams });
+    roleManager.setCallRoleSpectator(firstRecvParams);
+    expect(roleManager.getRole()).toEqual({ type: 'spectator', recvParams: firstRecvParams });
 
-    roleManager.setCallRoleViewer(secondRecvParams);
-    expect(roleManager.getRole()).toEqual({ type: 'viewer', recvParams: secondRecvParams });
+    roleManager.setCallRoleSpectator(secondRecvParams);
+    expect(roleManager.getRole()).toEqual({ type: 'spectator', recvParams: secondRecvParams });
   });
 
-  it('changeRole: при последовательных вызовах setCallRoleViewer с разными audioId previous корректно обновляется', () => {
+  it('changeRole: при последовательных вызовах setCallRoleSpectator с разными audioId previous корректно обновляется', () => {
     const { mainManager, recvManager } = createManagers();
     const onRoleChanged = jest.fn();
     const roleManager = new RoleManager({ mainManager, recvManager }, onRoleChanged);
-    const firstRecvParams: TCallRoleViewer['recvParams'] = {
+    const firstRecvParams: TCallRoleSpectator['recvParams'] = {
       audioId: 'audio-1',
-      sendOffer: jest.fn() as unknown as TCallRoleViewer['recvParams']['sendOffer'],
+      sendOffer: jest.fn() as unknown as TCallRoleSpectator['recvParams']['sendOffer'],
     };
-    const secondRecvParams: TCallRoleViewer['recvParams'] = {
+    const secondRecvParams: TCallRoleSpectator['recvParams'] = {
       audioId: 'audio-2',
-      sendOffer: jest.fn() as unknown as TCallRoleViewer['recvParams']['sendOffer'],
+      sendOffer: jest.fn() as unknown as TCallRoleSpectator['recvParams']['sendOffer'],
     };
-    const thirdRecvParams: TCallRoleViewer['recvParams'] = {
+    const thirdRecvParams: TCallRoleSpectator['recvParams'] = {
       audioId: 'audio-3',
-      sendOffer: jest.fn() as unknown as TCallRoleViewer['recvParams']['sendOffer'],
+      sendOffer: jest.fn() as unknown as TCallRoleSpectator['recvParams']['sendOffer'],
     };
 
-    // Первый вызов: переход с participant на viewer с audio-1
-    roleManager.setCallRoleViewer(firstRecvParams);
+    // Первый вызов: переход с participant на spectator с audio-1
+    roleManager.setCallRoleSpectator(firstRecvParams);
     expect(onRoleChanged).toHaveBeenCalledTimes(1);
     expect(onRoleChanged).toHaveBeenNthCalledWith(1, {
       previous: { type: 'participant' },
-      next: { type: 'viewer', recvParams: firstRecvParams },
+      next: { type: 'spectator', recvParams: firstRecvParams },
     });
 
     // Второй вызов: смена audioId с audio-1 на audio-2
-    roleManager.setCallRoleViewer(secondRecvParams);
+    roleManager.setCallRoleSpectator(secondRecvParams);
     expect(onRoleChanged).toHaveBeenCalledTimes(2);
     expect(onRoleChanged).toHaveBeenNthCalledWith(2, {
-      previous: { type: 'viewer', recvParams: firstRecvParams },
-      next: { type: 'viewer', recvParams: secondRecvParams },
+      previous: { type: 'spectator', recvParams: firstRecvParams },
+      next: { type: 'spectator', recvParams: secondRecvParams },
     });
 
     // Третий вызов: смена audioId с audio-2 на audio-3
-    roleManager.setCallRoleViewer(thirdRecvParams);
+    roleManager.setCallRoleSpectator(thirdRecvParams);
     expect(onRoleChanged).toHaveBeenCalledTimes(3);
     expect(onRoleChanged).toHaveBeenNthCalledWith(3, {
-      previous: { type: 'viewer', recvParams: secondRecvParams },
-      next: { type: 'viewer', recvParams: thirdRecvParams },
+      previous: { type: 'spectator', recvParams: secondRecvParams },
+      next: { type: 'spectator', recvParams: thirdRecvParams },
     });
 
     // Проверяем, что previous всегда был предыдущей ролью, а не изначальной participant
@@ -245,10 +245,10 @@ describe('RoleManager', () => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     expect(allCalls[0]?.[0]?.previous).toEqual({ type: 'participant' });
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(allCalls[1]?.[0]?.previous).toEqual({ type: 'viewer', recvParams: firstRecvParams });
+    expect(allCalls[1]?.[0]?.previous).toEqual({ type: 'spectator', recvParams: firstRecvParams });
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     expect(allCalls[2]?.[0]?.previous).toEqual({
-      type: 'viewer',
+      type: 'spectator',
       recvParams: secondRecvParams,
     });
   });

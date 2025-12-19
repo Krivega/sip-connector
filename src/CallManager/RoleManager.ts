@@ -2,8 +2,8 @@ import type { RemoteStreamsManager } from './RemoteStreamsManager';
 import type {
   TCallRole,
   TCallRoleParticipant,
-  TCallRoleViewerSynthetic,
-  TCallRoleViewer,
+  TCallRoleSpectatorSynthetic,
+  TCallRoleSpectator,
 } from './types';
 
 type TOnRoleChanged = (params: { previous: TCallRole; next: TCallRole }) => void;
@@ -11,13 +11,13 @@ type TOnRoleChanged = (params: { previous: TCallRole; next: TCallRole }) => void
 const roleParticipant: TCallRoleParticipant = {
   type: 'participant',
 };
-const roleViewerSynthetic: TCallRoleViewerSynthetic = {
-  type: 'viewer_synthetic',
+const roleSpectatorSynthetic: TCallRoleSpectatorSynthetic = {
+  type: 'spectator_synthetic',
 };
 
-const createRoleViewer = (recvParams: TCallRoleViewer['recvParams']): TCallRoleViewer => {
+const createRoleSpectator = (recvParams: TCallRoleSpectator['recvParams']): TCallRoleSpectator => {
   return {
-    type: 'viewer',
+    type: 'spectator',
     recvParams,
   };
 };
@@ -47,12 +47,12 @@ export class RoleManager {
     return role.type === 'participant';
   }
 
-  public static hasViewerSynthetic(role: TCallRole): role is TCallRoleViewerSynthetic {
-    return role.type === 'viewer_synthetic';
+  public static hasSpectatorSynthetic(role: TCallRole): role is TCallRoleSpectatorSynthetic {
+    return role.type === 'spectator_synthetic';
   }
 
-  public static hasViewer(role: TCallRole): role is TCallRoleViewer {
-    return role.type === 'viewer';
+  public static hasSpectator(role: TCallRole): role is TCallRoleSpectator {
+    return role.type === 'spectator';
   }
 
   public getRole(): TCallRole {
@@ -63,12 +63,12 @@ export class RoleManager {
     this.changeRole(roleParticipant);
   }
 
-  public setCallRoleViewerSynthetic() {
-    this.changeRole(roleViewerSynthetic);
+  public setCallRoleSpectatorSynthetic() {
+    this.changeRole(roleSpectatorSynthetic);
   }
 
-  public setCallRoleViewer(recvParams: TCallRoleViewer['recvParams']) {
-    this.changeRole(createRoleViewer(recvParams));
+  public setCallRoleSpectator(recvParams: TCallRoleSpectator['recvParams']) {
+    this.changeRole(createRoleSpectator(recvParams));
   }
 
   public changeRole(next: TCallRole) {
@@ -82,10 +82,10 @@ export class RoleManager {
     }
 
     // Если тип роли тот же, проверяем нужно ли обновить роль
-    // Для viewer_new проверяем изменился ли audioId
+    // Для spectator_new проверяем изменился ли audioId
     const shouldUpdate =
-      RoleManager.hasViewer(next) &&
-      RoleManager.hasViewer(currentRole) &&
+      RoleManager.hasSpectator(next) &&
+      RoleManager.hasSpectator(currentRole) &&
       currentRole.recvParams.audioId !== next.recvParams.audioId;
 
     if (shouldUpdate) {
@@ -99,7 +99,7 @@ export class RoleManager {
   }
 
   public getActiveManager(): RemoteStreamsManager {
-    if (this.hasViewer()) {
+    if (this.hasSpectator()) {
       return this.recvManager;
     }
 
@@ -110,12 +110,12 @@ export class RoleManager {
     return RoleManager.hasParticipant(this.role);
   }
 
-  public hasViewerSynthetic() {
-    return RoleManager.hasViewerSynthetic(this.role);
+  public hasSpectatorSynthetic() {
+    return RoleManager.hasSpectatorSynthetic(this.role);
   }
 
-  public hasViewer() {
-    return RoleManager.hasViewer(this.role);
+  public hasSpectator() {
+    return RoleManager.hasSpectator(this.role);
   }
 
   private setRole(next: TCallRole) {

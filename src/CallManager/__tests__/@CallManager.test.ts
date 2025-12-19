@@ -6,7 +6,7 @@ import CallManager from '../@CallManager';
 import { RemoteStreamsManager } from '../RemoteStreamsManager';
 
 import type { RTCSession } from '@krivega/jssip';
-import type { TCallRoleViewer } from '../types';
+import type { TCallRoleSpectator } from '../types';
 
 const mockRecvSession = (() => {
   const state: {
@@ -439,7 +439,7 @@ describe('CallManager - дополнительные тесты для покр�
     });
   });
 
-  it('onRoleChanged: вызывает startRecvSession при входе в viewer и stopRecvSession при выходе', () => {
+  it('onRoleChanged: вызывает startRecvSession при входе в spectator и stopRecvSession при выходе', () => {
     const stopSpy = jest
       // @ts-expect-error
       .spyOn(callManager, 'stopRecvSession');
@@ -447,8 +447,8 @@ describe('CallManager - дополнительные тесты для покр�
       // @ts-expect-error
       .spyOn(callManager, 'startRecvSession');
 
-    const viewerRole: TCallRoleViewer = {
-      type: 'viewer',
+    const spectatorRole: TCallRoleSpectator = {
+      type: 'spectator',
       recvParams: {
         audioId: 'a1',
 
@@ -458,29 +458,29 @@ describe('CallManager - дополнительные тесты для покр�
       },
     };
 
-    // Вход в viewer
+    // Вход в spectator
     // @ts-expect-error
-    callManager.onRoleChanged({ previous: { type: 'participant' }, next: viewerRole });
-    expect(startSpy).toHaveBeenCalledWith('a1', viewerRole.recvParams.sendOffer);
+    callManager.onRoleChanged({ previous: { type: 'participant' }, next: spectatorRole });
+    expect(startSpy).toHaveBeenCalledWith('a1', spectatorRole.recvParams.sendOffer);
 
     startSpy.mockClear();
 
-    // Выход из viewer
+    // Выход из spectator
     // @ts-expect-error
-    callManager.onRoleChanged({ previous: viewerRole, next: { type: 'viewer_synthetic' } });
+    callManager.onRoleChanged({ previous: spectatorRole, next: { type: 'spectator_synthetic' } });
     expect(stopSpy).toHaveBeenCalled();
     expect(startSpy).not.toHaveBeenCalled();
   });
 
-  it('onRoleChanged: перезапускает recv сессию при смене audioId в роли viewer', () => {
+  it('onRoleChanged: перезапускает recv сессию при смене audioId в роли spectator', () => {
     const startSpy = jest
       // @ts-expect-error
       .spyOn(callManager, 'startRecvSession')
       // @ts-expect-error
       .mockImplementation(() => {});
 
-    const firstViewerRole: TCallRoleViewer = {
-      type: 'viewer',
+    const firstSpectatorRole: TCallRoleSpectator = {
+      type: 'spectator',
       recvParams: {
         audioId: 'a1',
         sendOffer: async () => {
@@ -489,8 +489,8 @@ describe('CallManager - дополнительные тесты для покр�
       },
     };
 
-    const secondViewerRole: TCallRoleViewer = {
-      type: 'viewer',
+    const secondSpectatorRole: TCallRoleSpectator = {
+      type: 'spectator',
       recvParams: {
         audioId: 'a2',
         sendOffer: async () => {
@@ -499,22 +499,22 @@ describe('CallManager - дополнительные тесты для покр�
       },
     };
 
-    // Вход в viewer с первым audioId
+    // Вход в spectator с первым audioId
     // @ts-expect-error
-    callManager.onRoleChanged({ previous: { type: 'participant' }, next: firstViewerRole });
-    expect(startSpy).toHaveBeenCalledWith('a1', firstViewerRole.recvParams.sendOffer);
+    callManager.onRoleChanged({ previous: { type: 'participant' }, next: firstSpectatorRole });
+    expect(startSpy).toHaveBeenCalledWith('a1', firstSpectatorRole.recvParams.sendOffer);
     expect(startSpy).toHaveBeenCalledTimes(1);
 
     startSpy.mockClear();
 
-    // Смена audioId в той же роли viewer
+    // Смена audioId в той же роли spectator
     // @ts-expect-error
-    callManager.onRoleChanged({ previous: firstViewerRole, next: secondViewerRole });
+    callManager.onRoleChanged({ previous: firstSpectatorRole, next: secondSpectatorRole });
 
     // startRecvSession вызывается с новым audioId, что означает перезапуск сессии
     // (startRecvSession внутри вызывает stopRecvSession перед созданием новой сессии)
     expect(startSpy).toHaveBeenCalledTimes(1);
-    expect(startSpy).toHaveBeenCalledWith('a2', secondViewerRole.recvParams.sendOffer);
+    expect(startSpy).toHaveBeenCalledWith('a2', secondSpectatorRole.recvParams.sendOffer);
   });
 
   it('setCallRoleParticipant: делегирует в roleManager', () => {
