@@ -177,14 +177,10 @@ class CallManager {
 
   private readonly reset: () => void = () => {
     this.mainRemoteStreamsManager.reset();
-    this.recvRemoteStreamsManager.reset();
     this.callConfiguration.number = undefined;
     this.callConfiguration.answer = false;
-    this.recvSession?.close();
-    this.recvSession = undefined;
     this.roleManager.reset();
-    this.disposeRecvSessionTrackListener?.();
-    this.disposeRecvSessionTrackListener = undefined;
+    this.stopRecvSession();
   };
 
   private subscribeCallStatusChange() {
