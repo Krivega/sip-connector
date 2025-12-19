@@ -182,6 +182,54 @@
         min-width: 150px;
       }
 
+      #endCallButton {
+        background-color: #dc3545;
+        color: white;
+        border-color: #dc3545;
+      }
+
+      #endCallButton:hover {
+        background-color: #c82333;
+        border-color: #bd2130;
+      }
+
+      #callButton {
+        background-color: #28a745;
+        color: white;
+        border-color: #28a745;
+      }
+
+      #callButton:hover {
+        background-color: #218838;
+        border-color: #1e7e34;
+      }
+
+      #toggleCameraButton.enabled,
+      #toggleMicButton.enabled {
+        background-color: #6c757d;
+        color: white;
+        border-color: #6c757d;
+      }
+
+      #toggleCameraButton.enabled:hover,
+      #toggleMicButton.enabled:hover {
+        background-color: #5a6268;
+        border-color: #545b62;
+      }
+
+      #toggleCameraButton.disabled,
+      #toggleMicButton.disabled {
+        background-color: #17a2b8;
+        color: white;
+        border-color: #17a2b8;
+      }
+
+      #toggleCameraButton.disabled:hover,
+      #toggleMicButton.disabled:hover {
+        background-color: #138496;
+        border-color: #117a8b;
+      }
+
       #remoteStreamsContainer {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -220,6 +268,12 @@
     <div class="floating-action-panel">
       <button id="callButton" type="button">Позвонить</button>
       <button id="endCallButton" type="button" style="display: none">Завершить звонок</button>
+      <button id="toggleCameraButton" type="button" style="display: none">
+        <span id="toggleCameraButtonText">Выключить камеру</span>
+      </button>
+      <button id="toggleMicButton" type="button" style="display: none">
+        <span id="toggleMicButtonText">Выключить микрофон</span>
+      </button>
     </div>
 
     <script type="module" src="demo/index.ts"></script>

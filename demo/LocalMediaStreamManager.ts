@@ -103,6 +103,128 @@ class LocalMediaStreamManager {
 
     return this.mediaStream.getTracks();
   }
+
+  /**
+   * Включает камеру
+   */
+  public enableCamera(): void {
+    if (!this.mediaStream) {
+      throw new Error('MediaStream не инициализирован');
+    }
+
+    const { mediaStream } = { mediaStream: this.mediaStream };
+    const videoTracks = mediaStream.getVideoTracks();
+
+    // Если трек есть и он активен, просто размучиваем его
+    if (videoTracks.length > 0 && videoTracks[0].readyState === 'live') {
+      for (const track of videoTracks) {
+        track.enabled = true;
+      }
+    }
+  }
+
+  /**
+   * Выключает камеру
+   */
+  public disableCamera(): void {
+    if (!this.mediaStream) {
+      return;
+    }
+
+    const { mediaStream } = { mediaStream: this.mediaStream };
+    const videoTracks = mediaStream.getVideoTracks();
+
+    for (const track of videoTracks) {
+      track.enabled = false;
+    }
+  }
+
+  /**
+   * Включает микрофон
+   */
+  public enableMic(): void {
+    if (!this.mediaStream) {
+      throw new Error('MediaStream не инициализирован');
+    }
+
+    const { mediaStream } = { mediaStream: this.mediaStream };
+    const audioTracks = mediaStream.getAudioTracks();
+
+    // Если трек есть и он активен, просто размучиваем его
+    if (audioTracks.length > 0 && audioTracks[0].readyState === 'live') {
+      for (const track of audioTracks) {
+        track.enabled = true;
+      }
+    }
+  }
+
+  /**
+   * Выключает микрофон
+   */
+  public disableMic(): void {
+    if (!this.mediaStream) {
+      return;
+    }
+
+    const { mediaStream } = { mediaStream: this.mediaStream };
+    const audioTracks = mediaStream.getAudioTracks();
+
+    for (const track of audioTracks) {
+      track.enabled = false;
+    }
+  }
+
+  /**
+   * Проверяет, включена ли камера
+   */
+  public isCameraEnabled(): boolean {
+    if (!this.mediaStream) {
+      return false;
+    }
+
+    const videoTracks = this.mediaStream.getVideoTracks();
+
+    return videoTracks.length > 0 && videoTracks[0].readyState === 'live' && videoTracks[0].enabled;
+  }
+
+  /**
+   * Проверяет, включен ли микрофон
+   */
+  public isMicEnabled(): boolean {
+    if (!this.mediaStream) {
+      return false;
+    }
+
+    const audioTracks = this.mediaStream.getAudioTracks();
+
+    return audioTracks.length > 0 && audioTracks[0].readyState === 'live' && audioTracks[0].enabled;
+  }
+
+  /**
+   * Обрабатывает переключение камеры
+   */
+  public toggleCamera(): void {
+    const isCameraEnabled = this.isCameraEnabled();
+
+    if (isCameraEnabled) {
+      this.disableCamera();
+    } else {
+      this.enableCamera();
+    }
+  }
+
+  /**
+   * Обрабатывает переключение микрофона
+   */
+  public toggleMic(): void {
+    const isMicEnabled = this.isMicEnabled();
+
+    if (isMicEnabled) {
+      this.disableMic();
+    } else {
+      this.enableMic();
+    }
+  }
 }
 
 export default LocalMediaStreamManager;
