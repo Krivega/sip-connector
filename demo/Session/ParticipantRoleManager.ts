@@ -37,10 +37,21 @@ class ParticipantRoleManager {
    * Подписывается на события изменения роли участника
    */
   public subscribe(): void {
+    // Подписываемся на событие перемещения в участники
+    this.unsubscribeMoveToParticipants = sipConnectorFacade.on(
+      'api:participant:move-request-to-participants',
+      () => {
+        this.setRole('participant');
+      },
+    );
+
     // Подписываемся на событие перемещения в зрители
-    this.unsubscribeMoveToSpectators = sipConnectorFacade.onMoveToSpectators(() => {
-      this.setRole('spectator');
-    });
+    this.unsubscribeMoveToSpectators = sipConnectorFacade.on(
+      'api:participant:move-request-to-spectators-old',
+      () => {
+        this.setRole('spectator');
+      },
+    );
 
     // Подписываемся на событие перемещения в зрители для новых серверов
     this.unsubscribeMoveToSpectatorsNew = sipConnectorFacade.on(
@@ -49,11 +60,6 @@ class ParticipantRoleManager {
         this.setRole('spectatorNew');
       },
     );
-
-    // Подписываемся на событие перемещения в участники
-    this.unsubscribeMoveToParticipants = sipConnectorFacade.onMoveToParticipants(() => {
-      this.setRole('participant');
-    });
 
     this.onChange(this.handleParticipantRoleChange);
   }

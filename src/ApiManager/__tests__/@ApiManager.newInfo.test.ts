@@ -120,15 +120,17 @@ describe('ApiManager (NEW_INFO handling)', () => {
     });
 
     it('должен обрабатывать PARTICIPANT_STATE события с audioId', () => {
-      const spectatorSpy = jest.fn();
+      const spectatorOldSpy = jest.fn();
       const spectatorWithAudioIdSpy = jest.fn();
+      const spectatorSpy = jest.fn();
       const audioId = '123';
 
-      apiManager.on('participant:move-request-to-spectators', spectatorSpy);
+      apiManager.on('participant:move-request-to-spectators-old', spectatorOldSpy);
       apiManager.on(
         'participant:move-request-to-spectators-with-audio-id',
         spectatorWithAudioIdSpy,
       );
+      apiManager.on('participant:move-request-to-spectators', spectatorSpy);
       mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE);
       mockRequest.setHeader(EHeader.CONTENT_PARTICIPANT_STATE, EParticipantType.SPECTATOR);
       mockRequest.setHeader(EHeader.AUDIO_ID, audioId);
@@ -136,8 +138,9 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
       callManager.events.trigger('newInfo', infoEvent);
-      expect(spectatorSpy).not.toHaveBeenCalled();
+      expect(spectatorOldSpy).not.toHaveBeenCalled();
       expect(spectatorWithAudioIdSpy).toHaveBeenCalledWith({ audioId });
+      expect(spectatorSpy).toHaveBeenCalledWith({ isNew: true, audioId });
     });
 
     it('должен обрабатывать CHANNELS события', () => {
@@ -541,22 +544,25 @@ describe('ApiManager (NEW_INFO handling)', () => {
 
   describe('обработка PARTICIPANT_STATE событий', () => {
     it('должен обрабатывать SPECTATOR состояние', () => {
-      const spectatorSpy = jest.fn();
+      const spectatorOldSpy = jest.fn();
       const spectatorWithAudioIdSpy = jest.fn();
+      const spectatorSpy = jest.fn();
 
-      apiManager.on('participant:move-request-to-spectators', spectatorSpy);
+      apiManager.on('participant:move-request-to-spectators-old', spectatorOldSpy);
       apiManager.on(
         'participant:move-request-to-spectators-with-audio-id',
         spectatorWithAudioIdSpy,
       );
+      apiManager.on('participant:move-request-to-spectators', spectatorSpy);
       mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE);
       mockRequest.setHeader(EHeader.CONTENT_PARTICIPANT_STATE, EParticipantType.SPECTATOR);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
       callManager.events.trigger('newInfo', infoEvent);
-      expect(spectatorSpy).toHaveBeenCalledWith({});
+      expect(spectatorOldSpy).toHaveBeenCalledWith({});
       expect(spectatorWithAudioIdSpy).not.toHaveBeenCalled();
+      expect(spectatorSpy).toHaveBeenCalledWith({ isNew: false });
     });
 
     it('должен обрабатывать PARTICIPANT состояние', () => {
@@ -598,18 +604,26 @@ describe('ApiManager (NEW_INFO handling)', () => {
     });
 
     it('должен обрабатывать оба состояния одновременно', () => {
+      const spectatorOldSpy = jest.fn();
+      const spectatorWithAudioIdSpy = jest.fn();
       const spectatorSpy = jest.fn();
       const participantSpy = jest.fn();
 
+      apiManager.on('participant:move-request-to-spectators-old', spectatorOldSpy);
+      apiManager.on(
+        'participant:move-request-to-spectators-with-audio-id',
+        spectatorWithAudioIdSpy,
+      );
       apiManager.on('participant:move-request-to-spectators', spectatorSpy);
-      apiManager.on('participant:move-request-to-participants', participantSpy);
       mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE);
       mockRequest.setHeader(EHeader.CONTENT_PARTICIPANT_STATE, EParticipantType.SPECTATOR);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
       callManager.events.trigger('newInfo', infoEvent);
-      expect(spectatorSpy).toHaveBeenCalledWith({});
+      expect(spectatorOldSpy).toHaveBeenCalledWith({});
+      expect(spectatorWithAudioIdSpy).not.toHaveBeenCalled();
+      expect(spectatorSpy).toHaveBeenCalledWith({ isNew: false });
       expect(participantSpy).not.toHaveBeenCalled();
     });
   });

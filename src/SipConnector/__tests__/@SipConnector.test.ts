@@ -474,7 +474,7 @@ describe('SipConnector facade', () => {
       const setCallRoleViewerSpy = jest.spyOn(sipConnector.callManager, 'setCallRoleViewer');
 
       // Тригерим событие на уровне ApiManager
-      sipConnector.apiManager.events.trigger('participant:move-request-to-spectators', {});
+      sipConnector.apiManager.events.trigger('participant:move-request-to-spectators-old', {});
 
       expect(setCallRoleViewerSpy).toHaveBeenCalledTimes(1);
     });

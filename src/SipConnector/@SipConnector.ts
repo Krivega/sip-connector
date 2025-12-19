@@ -423,7 +423,7 @@ class SipConnector {
     this.apiManager.on('participant:move-request-to-participants', () => {
       this.callManager.setCallRoleParticipant();
     });
-    this.apiManager.on('participant:move-request-to-spectators', () => {
+    this.apiManager.on('participant:move-request-to-spectators-old', () => {
       this.callManager.setCallRoleViewer();
     });
     this.apiManager.on('participant:move-request-to-spectators-with-audio-id', ({ audioId }) => {
