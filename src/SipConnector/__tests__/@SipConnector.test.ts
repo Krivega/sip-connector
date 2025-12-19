@@ -485,6 +485,24 @@ describe('SipConnector facade', () => {
       expect(setCallRoleSpectatorSpy).toHaveBeenCalledTimes(1);
     });
 
+    it('должен вызывать stopPresentation при событии participant:move-request-to-spectators-synthetic', async () => {
+      const stopPresentationSpy = jest
+        .spyOn(sipConnector, 'stopPresentation')
+        .mockResolvedValue(undefined);
+
+      // Тригерим событие на уровне ApiManager
+      sipConnector.apiManager.events.trigger(
+        'participant:move-request-to-spectators-synthetic',
+        {},
+      );
+
+      // Ждем выполнения асинхронного вызова
+      await Promise.resolve();
+
+      expect(stopPresentationSpy).toHaveBeenCalledTimes(1);
+      expect(stopPresentationSpy).toHaveBeenCalledWith();
+    });
+
     it('должен вызывать setCallRoleSpectator с audioId и sendOffer при событии participant:move-request-to-spectators-with-audio-id', () => {
       const setCallRoleSpectatorSpy = jest.spyOn(sipConnector.callManager, 'setCallRoleSpectator');
       const audioId = 'test-audio-id';
@@ -502,6 +520,27 @@ describe('SipConnector facade', () => {
         audioId,
         sendOffer: expect.any(Function) as () => void,
       });
+    });
+
+    it('должен вызывать stopPresentation при событии participant:move-request-to-spectators-with-audio-id', async () => {
+      const stopPresentationSpy = jest
+        .spyOn(sipConnector, 'stopPresentation')
+        .mockResolvedValue(undefined);
+      const audioId = 'test-audio-id';
+
+      // Тригерим событие на уровне ApiManager
+      sipConnector.apiManager.events.trigger(
+        'participant:move-request-to-spectators-with-audio-id',
+        {
+          audioId,
+        },
+      );
+
+      // Ждем выполнения асинхронного вызова
+      await Promise.resolve();
+
+      expect(stopPresentationSpy).toHaveBeenCalledTimes(1);
+      expect(stopPresentationSpy).toHaveBeenCalledWith();
     });
 
     it('должен передавать функцию sendOffer в setCallRoleSpectator, которая вызывает sendOffer с правильными параметрами', async () => {
@@ -647,6 +686,65 @@ describe('SipConnector facade', () => {
       expect(allCalls[0][0].audioId).toBe(firstAudioId);
       expect(allCalls[1][0].audioId).toBe(secondAudioId);
       expect(allCalls[2][0].audioId).toBe(thirdAudioId);
+    });
+
+    it('должен безопасно обрабатывать stopPresentation, если презентация не запущена', async () => {
+      const stopPresentationSpy = jest
+        .spyOn(sipConnector, 'stopPresentation')
+        .mockResolvedValue(undefined);
+
+      // Тригерим событие без запущенной презентации
+      sipConnector.apiManager.events.trigger(
+        'participant:move-request-to-spectators-synthetic',
+        {},
+      );
+
+      // Ждем выполнения асинхронного вызова
+      await Promise.resolve();
+
+      expect(stopPresentationSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('должен вызывать stopPresentation даже если произошла ошибка', async () => {
+      const stopPresentationSpy = jest
+        .spyOn(sipConnector, 'stopPresentation')
+        .mockRejectedValue(new Error('Test error'));
+
+      // Тригерим событие
+      sipConnector.apiManager.events.trigger(
+        'participant:move-request-to-spectators-synthetic',
+        {},
+      );
+
+      // Ждем выполнения асинхронного вызова
+      await Promise.resolve();
+
+      expect(stopPresentationSpy).toHaveBeenCalledTimes(1);
+      // Проверяем, что ошибка была обработана и не проброшена дальше
+      expect(stopPresentationSpy).toHaveBeenCalledWith();
+    });
+
+    it('должен вызывать stopPresentation даже если произошла ошибка для participant:move-request-to-spectators-with-audio-id', async () => {
+      const stopPresentationSpy = jest
+        .spyOn(sipConnector, 'stopPresentation')
+        .mockRejectedValue(new Error('Test error'));
+      const audioId = 'test-audio-id';
+
+      // Тригерим событие
+      sipConnector.apiManager.events.trigger(
+        'participant:move-request-to-spectators-with-audio-id',
+        {
+          audioId,
+        },
+      );
+
+      // Ждем выполнения асинхронного вызова и обработки ошибки в catch (строка 435)
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(stopPresentationSpy).toHaveBeenCalledTimes(1);
+      // Проверяем, что ошибка была обработана и не проброшена дальше
+      expect(stopPresentationSpy).toHaveBeenCalledWith();
     });
   });
 
