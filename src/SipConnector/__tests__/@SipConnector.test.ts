@@ -1,6 +1,7 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 
 import JsSIP from '@/__fixtures__/jssip.mock';
+import * as tools from '@/tools';
 import SipConnector from '../@SipConnector';
 
 import type {
@@ -458,7 +459,10 @@ describe('SipConnector facade', () => {
 
   describe('subscribeChangeRole', () => {
     it('должен вызывать setCallRoleParticipant при событии participant:move-request-to-participants', () => {
-      const setCallRoleParticipantSpy = jest.spyOn(sipConnector.callManager, 'setCallRoleParticipant');
+      const setCallRoleParticipantSpy = jest.spyOn(
+        sipConnector.callManager,
+        'setCallRoleParticipant',
+      );
 
       // Тригерим событие на уровне ApiManager
       sipConnector.apiManager.events.trigger('participant:move-request-to-participants', {});
@@ -476,48 +480,44 @@ describe('SipConnector facade', () => {
     });
 
     it('должен вызывать setCallRoleViewerNew с audioId и sendOffer при событии participant:move-request-to-spectators-with-audio-id', () => {
-      const setCallRoleViewerNewSpy = jest.spyOn(
-        sipConnector.callManager,
-        'setCallRoleViewerNew',
-      );
+      const setCallRoleViewerNewSpy = jest.spyOn(sipConnector.callManager, 'setCallRoleViewerNew');
       const audioId = 'test-audio-id';
 
       // Тригерим событие на уровне ApiManager
-      sipConnector.apiManager.events.trigger('participant:move-request-to-spectators-with-audio-id', {
-        audioId,
-      });
+      sipConnector.apiManager.events.trigger(
+        'participant:move-request-to-spectators-with-audio-id',
+        {
+          audioId,
+        },
+      );
 
       expect(setCallRoleViewerNewSpy).toHaveBeenCalledTimes(1);
       expect(setCallRoleViewerNewSpy).toHaveBeenCalledWith({
         audioId,
-        sendOffer: expect.any(Function),
+        sendOffer: expect.any(Function) as () => void,
       });
     });
 
     it('должен передавать функцию sendOffer в setCallRoleViewerNew, которая вызывает sendOffer с правильными параметрами', async () => {
-      jest
-        .spyOn(sipConnector.connectionManager, 'getConnectionConfiguration')
-        .mockReturnValue({
-          sipServerUrl: 'wss://test.example.com/ws',
-        } as unknown as {
-          sipServerUrl: string;
-        });
+      jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
+        sipServerUrl: 'wss://test.example.com/ws',
+      } as unknown as TConnectionConfigurationWithUa);
 
-      const sendOfferSpy = jest.spyOn(require('@/tools'), 'sendOffer').mockResolvedValue({
+      const sendOfferSpy = jest.spyOn(tools, 'sendOffer').mockResolvedValue({
         type: 'answer',
         sdp: 'test-sdp',
       } as RTCSessionDescription);
 
-      const setCallRoleViewerNewSpy = jest.spyOn(
-        sipConnector.callManager,
-        'setCallRoleViewerNew',
-      );
+      const setCallRoleViewerNewSpy = jest.spyOn(sipConnector.callManager, 'setCallRoleViewerNew');
       const audioId = 'test-audio-id';
 
       // Тригерим событие
-      sipConnector.apiManager.events.trigger('participant:move-request-to-spectators-with-audio-id', {
-        audioId,
-      });
+      sipConnector.apiManager.events.trigger(
+        'participant:move-request-to-spectators-with-audio-id',
+        {
+          audioId,
+        },
+      );
 
       // Получаем переданную функцию sendOffer
       const callArgs = setCallRoleViewerNewSpy.mock.calls[0];
@@ -549,24 +549,20 @@ describe('SipConnector facade', () => {
     });
 
     it('должен выбрасывать ошибку в sendOffer, если sipServerUrl не определен', async () => {
-      jest
-        .spyOn(sipConnector.connectionManager, 'getConnectionConfiguration')
-        .mockReturnValue({
-          sipServerUrl: undefined,
-        } as unknown as {
-          sipServerUrl?: string;
-        });
+      jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
+        sipServerUrl: undefined,
+      } as unknown as TConnectionConfigurationWithUa);
 
-      const setCallRoleViewerNewSpy = jest.spyOn(
-        sipConnector.callManager,
-        'setCallRoleViewerNew',
-      );
+      const setCallRoleViewerNewSpy = jest.spyOn(sipConnector.callManager, 'setCallRoleViewerNew');
       const audioId = 'test-audio-id';
 
       // Тригерим событие
-      sipConnector.apiManager.events.trigger('participant:move-request-to-spectators-with-audio-id', {
-        audioId,
-      });
+      sipConnector.apiManager.events.trigger(
+        'participant:move-request-to-spectators-with-audio-id',
+        {
+          audioId,
+        },
+      );
 
       // Получаем переданную функцию sendOffer
       const callArgs = setCallRoleViewerNewSpy.mock.calls[0];
@@ -605,19 +601,16 @@ describe('SipConnector facade', () => {
       const expectedAnswer: RTCSessionDescription = {
         type: 'answer',
         sdp: 'test-answer-sdp',
+        toJSON() {
+          return { type: 'answer', sdp: 'test-answer-sdp' };
+        },
       };
 
-      jest
-        .spyOn(sipConnector.connectionManager, 'getConnectionConfiguration')
-        .mockReturnValue({
-          sipServerUrl: serverUrl,
-        } as unknown as {
-          sipServerUrl: string;
-        });
+      jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
+        sipServerUrl: serverUrl,
+      } as unknown as TConnectionConfigurationWithUa);
 
-      const sendOfferSpy = jest
-        .spyOn(require('@/tools'), 'sendOffer')
-        .mockResolvedValue(expectedAnswer);
+      const sendOfferSpy = jest.spyOn(tools, 'sendOffer').mockResolvedValue(expectedAnswer);
 
       // @ts-expect-error: доступ к приватному методу для тестирования
       const result = await sipConnector.sendOffer(
@@ -641,21 +634,17 @@ describe('SipConnector facade', () => {
     });
 
     it('должен выбрасывать ошибку, если sipServerUrl не определен', async () => {
-      jest
-        .spyOn(sipConnector.connectionManager, 'getConnectionConfiguration')
-        .mockReturnValue({
-          sipServerUrl: undefined,
-        } as unknown as {
-          sipServerUrl?: string;
-        });
+      jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
+        sipServerUrl: undefined,
+      } as unknown as TConnectionConfigurationWithUa);
 
       const offer: RTCSessionDescriptionInit = {
         type: 'offer',
         sdp: 'test-offer-sdp',
       };
 
-      // @ts-expect-error: доступ к приватному методу для тестирования
       await expect(
+        // @ts-expect-error: доступ к приватному методу для тестирования
         sipConnector.sendOffer(
           {
             conferenceNumber: 'conf-123',
@@ -674,25 +663,20 @@ describe('SipConnector facade', () => {
         sdp: 'test-offer-sdp',
       };
 
-      jest
-        .spyOn(sipConnector.connectionManager, 'getConnectionConfiguration')
-        .mockReturnValue({
-          sipServerUrl: serverUrl,
-        } as unknown as {
-          sipServerUrl: string;
-        });
+      jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
+        sipServerUrl: serverUrl,
+      } as unknown as TConnectionConfigurationWithUa);
 
-      const sendOfferSpy = jest
-        .spyOn(require('@/tools'), 'sendOffer')
-        .mockResolvedValue({
-          type: 'answer',
-          sdp: 'test-answer-sdp',
-        } as RTCSessionDescription);
+      const sendOfferSpy = jest.spyOn(tools, 'sendOffer').mockResolvedValue({
+        type: 'answer',
+        sdp: 'test-answer-sdp',
+      } as RTCSessionDescription);
 
-      const qualities: Array<'low' | 'medium' | 'high'> = ['low', 'medium', 'high'];
+      const qualities: ('low' | 'medium' | 'high')[] = ['low', 'medium', 'high'];
 
       for (const quality of qualities) {
         // @ts-expect-error: доступ к приватному методу для тестирования
+        // eslint-disable-next-line no-await-in-loop
         await sipConnector.sendOffer(
           {
             conferenceNumber: 'conf-123',
@@ -721,20 +705,14 @@ describe('SipConnector facade', () => {
         sdp: 'test-offer-sdp',
       };
 
-      jest
-        .spyOn(sipConnector.connectionManager, 'getConnectionConfiguration')
-        .mockReturnValue({
-          sipServerUrl: serverUrl,
-        } as unknown as {
-          sipServerUrl: string;
-        });
+      jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
+        sipServerUrl: serverUrl,
+      } as unknown as TConnectionConfigurationWithUa);
 
-      const sendOfferSpy = jest
-        .spyOn(require('@/tools'), 'sendOffer')
-        .mockResolvedValue({
-          type: 'answer',
-          sdp: 'test-answer-sdp',
-        } as RTCSessionDescription);
+      const sendOfferSpy = jest.spyOn(tools, 'sendOffer').mockResolvedValue({
+        type: 'answer',
+        sdp: 'test-answer-sdp',
+      } as RTCSessionDescription);
 
       // @ts-expect-error: доступ к приватному методу для тестирования
       await sipConnector.sendOffer(
@@ -762,20 +740,14 @@ describe('SipConnector facade', () => {
         sdp: 'custom-offer-sdp-content',
       };
 
-      jest
-        .spyOn(sipConnector.connectionManager, 'getConnectionConfiguration')
-        .mockReturnValue({
-          sipServerUrl: serverUrl,
-        } as unknown as {
-          sipServerUrl: string;
-        });
+      jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
+        sipServerUrl: serverUrl,
+      } as unknown as TConnectionConfigurationWithUa);
 
-      const sendOfferSpy = jest
-        .spyOn(require('@/tools'), 'sendOffer')
-        .mockResolvedValue({
-          type: 'answer',
-          sdp: 'test-answer-sdp',
-        } as RTCSessionDescription);
+      const sendOfferSpy = jest.spyOn(tools, 'sendOffer').mockResolvedValue({
+        type: 'answer',
+        sdp: 'test-answer-sdp',
+      } as RTCSessionDescription);
 
       // @ts-expect-error: доступ к приватному методу для тестирования
       await sipConnector.sendOffer(
@@ -801,11 +773,11 @@ describe('SipConnector facade', () => {
       const sipConnectorWithMocks = new SipConnector({ JsSIP: JsSIP as unknown as TJsSIP });
       const audioId = 'audio-1';
 
-      const startRecvSessionMock = jest
-        .spyOn(sipConnectorWithMocks.callManager, 'startRecvSession')
-        .mockImplementation(() => {
-          // пустая реализация для теста
-        });
+      const startRecvSessionMock = jest.spyOn(
+        sipConnectorWithMocks.callManager,
+        // @ts-expect-error
+        'startRecvSession',
+      );
 
       // Тригерим api-событие напрямую на уровне ApiManager
       sipConnectorWithMocks.apiManager.events.trigger(
