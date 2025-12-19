@@ -11,7 +11,6 @@ import {
   dataForConnectionWithAuthorizationPasswordChanged,
   dataForConnectionWithoutAuthorization,
   dataForConnectionWithoutAuthorizationWithSipServerUrlChanged,
-  dataForConnectionWithoutAuthorizationWithSipWebSocketServerUrlChanged,
   dataForConnectionWithoutAuthorizationWithoutDisplayName,
   thirdWord,
   uaConfigurationWithAuthorization,
@@ -228,7 +227,7 @@ describe('processRequest', () => {
         expect(success).toBe(true);
         expect(sipConnector.connectionManager.ua!.configuration.uri.user).toBe(thirdWord);
         expect(sipConnector.connectionManager.ua!.configuration.uri.host).toBe(
-          dataForConnectionWithAuthorization.sipServerUrl,
+          dataForConnectionWithAuthorization.sipServerIp,
         );
       });
   });
@@ -265,7 +264,7 @@ describe('processRequest', () => {
         expect(result2.status).toBe('fulfilled');
         expect(sipConnector.connectionManager.ua!.configuration.uri.user).toBe(thirdWord);
         expect(sipConnector.connectionManager.ua!.configuration.uri.host).toBe(
-          dataForConnectionWithAuthorization.sipServerUrl,
+          dataForConnectionWithAuthorization.sipServerIp,
         );
       });
     });
@@ -354,26 +353,24 @@ describe('processRequest', () => {
         expect(
           hasValidUri(
             sipConnector.connectionManager.ua!.configuration.uri,
-            dataForConnectionWithoutAuthorizationWithSipServerUrlChanged.sipServerUrl,
+            dataForConnectionWithoutAuthorizationWithSipServerUrlChanged.sipServerIp,
           ),
         ).toBe(true);
       });
   });
 
-  it('#20 change sipWebSocketServerURL', async () => {
+  it('#20 change sipServerUrl', async () => {
     expect.assertions(2);
 
     return processRequest(dataForConnectionWithoutAuthorization)
       .then(async () => {
-        return processRequest(
-          dataForConnectionWithoutAuthorizationWithSipWebSocketServerUrlChanged,
-        );
+        return processRequest(dataForConnectionWithoutAuthorizationWithSipServerUrlChanged);
       })
       .then((success) => {
         expect(success).toBe(true);
         // @ts-expect-error
         expect(parseObject(sipConnector.socket).url).toEqual(
-          dataForConnectionWithoutAuthorizationWithSipWebSocketServerUrlChanged.sipWebSocketServerURL,
+          `wss://${dataForConnectionWithoutAuthorizationWithSipServerUrlChanged.sipServerUrl}/webrtc/wss/`,
         );
       });
   });

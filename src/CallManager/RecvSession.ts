@@ -9,7 +9,7 @@ type TConfig = Pick<TSendOfferParams, 'quality' | 'audioChannel'> & {
   pcConfig?: RTCConfiguration;
 };
 
-type TTools = {
+export type TTools = {
   sendOffer: (
     params: TSendOfferParams & { conferenceNumber: TConferenceNumber },
     offer: RTCSessionDescriptionInit,

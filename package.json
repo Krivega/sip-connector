@@ -40,6 +40,7 @@
   "scripts": {
     "build": "vite build",
     "build:demo": "vite build --config vite.demo.config.ts",
+    "cert": "rm -rf .cert && mkdir -p .cert && mkcert -key-file ./.cert/key.pem -cert-file ./.cert/cert.pem 'localhost'",
     "lint": "yarn lint:ts && yarn lint:js",
     "lint:js": "yarn lint:js:src && yarn lint:js:demo",
     "lint:js:demo": "eslint demo --ext ts,tsx --report-unused-disable-directives --max-warnings 0 --cache --cache-strategy=content",
@@ -83,7 +84,6 @@
     "@types/debug": "^4.1.12",
     "@types/dom-mediacapture-transform": "^0.1.11",
     "@types/jest": "^30.0.0",
-    "@vitejs/plugin-basic-ssl": "^2.1.0",
     "cross-env": "^10.1.0",
     "http-server": "^14.1.1",
     "husky": "^9.1.7",

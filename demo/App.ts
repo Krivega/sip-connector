@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/class-methods-use-this */
 /* eslint-disable no-alert */
 import CallStateManager, { type TCallState } from './CallStateManager';
 import { dom } from './dom';
@@ -72,6 +71,16 @@ class App {
     dom.endCallButtonElement.addEventListener('click', () => {
       this.handleEndCall();
     });
+
+    // Подписываемся на кнопку переключения камеры
+    dom.toggleCameraButtonElement.addEventListener('click', () => {
+      this.handleToggleCamera();
+    });
+
+    // Подписываемся на кнопку переключения микрофона
+    dom.toggleMicButtonElement.addEventListener('click', () => {
+      this.handleToggleMic();
+    });
   }
 
   /**
@@ -141,6 +150,9 @@ class App {
 
       this.callStateManager.setState('active');
       this.loaderManager.hide();
+
+      // Обновляем состояние кнопок после успешного подключения
+      this.updateMediaButtonsState();
     } catch (error) {
       this.callStateManager.reset();
       this.loaderManager.hide();
@@ -193,9 +205,13 @@ class App {
     if (state === 'active') {
       dom.callButtonElement.style.display = 'none';
       dom.endCallButtonElement.style.display = '';
+      dom.toggleCameraButtonElement.style.display = '';
+      dom.toggleMicButtonElement.style.display = '';
     } else {
       dom.callButtonElement.style.display = '';
       dom.endCallButtonElement.style.display = 'none';
+      dom.toggleCameraButtonElement.style.display = 'none';
+      dom.toggleMicButtonElement.style.display = 'none';
     }
 
     // Показываем/скрываем секции в зависимости от состояния
@@ -212,6 +228,58 @@ class App {
     const shouldShowActiveCallSection = state === 'active';
 
     dom.activeCallSectionElement.style.display = shouldShowActiveCallSection ? '' : 'none';
+
+    // Обновляем состояние кнопок камеры и микрофона
+    this.updateMediaButtonsState();
+  }
+
+  /**
+   * Обновляет состояние кнопок камеры и микрофона
+   */
+  private updateMediaButtonsState(): void {
+    const isCameraEnabled = this.localMediaStreamManager.isCameraEnabled();
+    const isMicEnabled = this.localMediaStreamManager.isMicEnabled();
+
+    dom.toggleCameraButtonTextElement.textContent = isCameraEnabled
+      ? 'Выключить камеру'
+      : 'Включить камеру';
+
+    dom.toggleMicButtonTextElement.textContent = isMicEnabled
+      ? 'Выключить микрофон'
+      : 'Включить микрофон';
+
+    // Обновляем классы для стилизации
+    if (isCameraEnabled) {
+      dom.toggleCameraButtonElement.classList.add('enabled');
+      dom.toggleCameraButtonElement.classList.remove('disabled');
+    } else {
+      dom.toggleCameraButtonElement.classList.add('disabled');
+      dom.toggleCameraButtonElement.classList.remove('enabled');
+    }
+
+    if (isMicEnabled) {
+      dom.toggleMicButtonElement.classList.add('enabled');
+      dom.toggleMicButtonElement.classList.remove('disabled');
+    } else {
+      dom.toggleMicButtonElement.classList.add('disabled');
+      dom.toggleMicButtonElement.classList.remove('enabled');
+    }
+  }
+
+  /**
+   * Обрабатывает переключение камеры
+   */
+  private handleToggleCamera(): void {
+    this.localMediaStreamManager.toggleCamera();
+    this.updateMediaButtonsState();
+  }
+
+  /**
+   * Обрабатывает переключение микрофона
+   */
+  private handleToggleMic(): void {
+    this.localMediaStreamManager.toggleMic();
+    this.updateMediaButtonsState();
   }
 
   /**

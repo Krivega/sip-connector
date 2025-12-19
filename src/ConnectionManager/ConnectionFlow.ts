@@ -11,7 +11,7 @@ import type {
   UnRegisteredEvent,
   WebSocketInterface,
 } from '@krivega/jssip';
-import type { TGetServerUrl } from '../CallManager';
+import type { TGetUri } from '../CallManager';
 import type { TJsSIP } from '../types';
 import type ConnectionStateMachine from './ConnectionStateMachine';
 import type { TEvents } from './eventNames';
@@ -25,8 +25,8 @@ export type TOptionsExtraHeaders = {
 };
 
 export type TParametersConnection = TOptionsExtraHeaders & {
+  sipServerIp: string;
   sipServerUrl: string;
-  sipWebSocketServerURL: string;
   displayName: string;
   register?: boolean;
   user?: string;
@@ -40,6 +40,7 @@ export type TParametersConnection = TOptionsExtraHeaders & {
 };
 
 export type TConnectionConfiguration = {
+  sipServerIp: string;
   sipServerUrl: string;
   displayName: string;
   register?: boolean;
@@ -72,7 +73,7 @@ interface IDependencies {
     key: K,
     value: TConnectionConfiguration[K],
   ) => void;
-  setSipServerUrl: (getSipServerUrl: TGetServerUrl) => void;
+  setGetUri: (getUri: TGetUri) => void;
   setSocket: (socket: WebSocketInterface) => void;
 }
 
@@ -101,7 +102,7 @@ export default class ConnectionFlow {
 
   private readonly updateConnectionConfiguration: IDependencies['updateConnectionConfiguration'];
 
-  private readonly setSipServerUrl: IDependencies['setSipServerUrl'];
+  private readonly setGetUri: IDependencies['setGetUri'];
 
   private readonly setSocket: IDependencies['setSocket'];
 
@@ -116,7 +117,7 @@ export default class ConnectionFlow {
     this.getConnectionConfiguration = dependencies.getConnectionConfiguration;
     this.setConnectionConfiguration = dependencies.setConnectionConfiguration;
     this.updateConnectionConfiguration = dependencies.updateConnectionConfiguration;
-    this.setSipServerUrl = dependencies.setSipServerUrl;
+    this.setGetUri = dependencies.setGetUri;
     this.setSocket = dependencies.setSocket;
 
     this.proxyEvents();
@@ -270,8 +271,8 @@ export default class ConnectionFlow {
   private readonly initUa: TInitUa = async ({
     user,
     password,
+    sipServerIp,
     sipServerUrl,
-    sipWebSocketServerURL,
     remoteAddress,
     sessionTimers,
     registerExpires,
@@ -286,6 +287,7 @@ export default class ConnectionFlow {
 
     // Сохраняем конфигурацию для дальнейшего использования
     this.setConnectionConfiguration({
+      sipServerIp,
       sipServerUrl,
       displayName,
       register,
@@ -306,8 +308,8 @@ export default class ConnectionFlow {
       {
         user,
         password,
+        sipServerIp,
         sipServerUrl,
-        sipWebSocketServerURL,
         displayName,
         register,
         sessionTimers,
@@ -323,7 +325,7 @@ export default class ConnectionFlow {
 
     // Сохраняем UA и связанные объекты
     this.setUa(ua);
-    this.setSipServerUrl(helpers.getSipServerUrl);
+    this.setGetUri(helpers.getUri);
     this.setSocket(helpers.socket);
 
     return ua;

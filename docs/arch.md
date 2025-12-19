@@ -45,8 +45,8 @@
 
 - `auto-connect:*` - события автоматического переподключения
 - `connection:*` - события SIP соединения
-- `call:*` - события WebRTC звонков
-- `api:*` - события серверного API
+- `call:*` - события WebRTC звонков (включая `remote-streams-changed`)
+- `api:*` - события серверного API (включая `participant:move-request-to-spectators`)
 - `incoming-call:*` - события входящих звонков
 - `presentation:*` - события презентаций
 - `stats:*` - события статистики
@@ -134,11 +134,42 @@
 - Управление WebRTC соединениями
 - Управление медиа-потоками
 - Поддержка различных протоколов
-  **Основные методы**:
+- Отслеживание изменений удаленных потоков через события
+- Управление ролями участников (participant/spectator)
+
+**Основные методы**:
 
 - `startCall()` / `endCall()` - управление звонками
 - `replaceMediaStream()` - замена медиа-потоков
 - `restartIce()` - перезапуск соединения
+
+**События**:
+
+- `call:remote-streams-changed` - уведомление об изменении удаленных потоков (заменяет callback `setRemoteStreams`)
+
+**Внутренние компоненты**:
+
+- **MCUSession** - управление основным RTCSession для участников конференции
+  - Создание и управление SIP-звонками через @krivega/jssip
+  - Обработка событий peerconnection и track
+  - Управление жизненным циклом звонка
+
+- **RecvSession** - управление receive-only сессией для зрителей
+  - Создание отдельного RTCPeerConnection для приема потоков
+  - Поддержка receive-only transceiver'ов
+  - Используется при перемещении участника в режим spectator
+
+- **RemoteStreamsManager** (два экземпляра: main и recv)
+  - **MainRemoteStreamsManager** - управление потоками для участников
+  - **RecvRemoteStreamsManager** - управление потоками для зрителей
+  - Группировка треков по участникам и потокам
+  - Генерация событий `remote-streams-changed` при изменениях
+  - Отслеживание окончания треков и автоматическая очистка
+
+- **RoleManager** - управление ролями участника
+  - Переключение между ролями: `participant`, `spectator`, `spectator_synthetic`
+  - Выбор активного RemoteStreamsManager (main или recv)
+  - Управление жизненным циклом RecvSession при смене роли
 
 ---
 
@@ -153,6 +184,7 @@
 - Управление DTMF-сигналами
 - События restart для управления transceiver'ами
 - Синхронизация каналов
+- Обработка событий перемещения участников
 
 **Основные методы**:
 
@@ -160,6 +192,12 @@
 - `sendDTMF()` - отправка DTMF-сигналов
 - `waitChannels()` - ожидание каналов
 - `askPermissionToEnableCam()` - запрос разрешений
+
+**События участников**:
+
+- `api:participant:move-request-to-spectators` - перемещение в зрители (новый формат с `isSynthetic` или `audioId`)
+- `api:participant:move-request-to-spectators-synthetic` - перемещение в зрители (синтетическое событие для обратной совместимости)
+- `api:participant:move-request-to-participants` - перемещение в участники
 
 ---
 
@@ -212,7 +250,16 @@ graph TB
 
         subgraph "Core Managers"
             C["ConnectionManager<br/>🔗 SIP Connections<br/>+ ConnectionStateMachine"]
-            D["CallManager<br/>📞 WebRTC Calls"]
+
+            subgraph "CallManager Components"
+                D["CallManager<br/>📞 WebRTC Calls"]
+                D1["MCUSession<br/>📞 Main Session<br/>+ RTCSession Management"]
+                D2["RecvSession<br/>👁️ Spectator Session<br/>+ Receive-only Streams"]
+                D3["RemoteStreamsManager<br/>📡 Main Streams<br/>+ Track Management"]
+                D4["RemoteStreamsManager<br/>📡 Recv Streams<br/>+ Spectator Tracks"]
+                D5["RoleManager<br/>👤 Role Management<br/>+ Participant/Spectator"]
+            end
+
             E["ApiManager<br/>📡 Server API<br/>+ Restart Events"]
             F["PresentationManager<br/>🖥️ Screen Sharing"]
             G["IncomingCallManager<br/>📲 Incoming Calls"]
@@ -237,7 +284,19 @@ graph TB
         B --> G
         B --> H
         B --> I
-        D --> N
+
+        D --> D1
+        D --> D2
+        D --> D3
+        D --> D4
+        D --> D5
+        D1 --> N
+        D2 --> N
+        D3 --> N
+        D4 --> N
+        D5 --> D3
+        D5 --> D4
+
         F --> N
         C --> M
         K --> C
@@ -252,6 +311,11 @@ graph TB
     style B fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
     style F fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
     style H fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    style D1 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style D2 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style D3 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style D4 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style D5 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
 ```
 
 ## Взаимодействие компонентов
@@ -260,8 +324,14 @@ graph TB
 
 - `SipConnectorFacade` → `SipConnector` (фасад)
 - `SipConnector` → все менеджеры (координация)
-- `CallManager` → `MCUSession` (управление RTCSession)
-- `CallManager` → `RemoteStreamsManager` (организация входящих потоков)
+- `CallManager` → `MCUSession` (управление основным RTCSession для участников)
+- `CallManager` → `RecvSession` (управление receive-only сессией для зрителей)
+- `CallManager` → `RemoteStreamsManager` (два экземпляра: main и recv для организации входящих потоков)
+- `CallManager` → `RoleManager` (управление ролями: participant, spectator, spectator_synthetic)
+- `RoleManager` → `RemoteStreamsManager` (переключение между main и recv менеджерами)
+- `MCUSession` → WebRTC API (основные звонки)
+- `RecvSession` → WebRTC API (receive-only потоки для зрителей)
+- `RemoteStreamsManager` → WebRTC API (отслеживание треков, события `remote-streams-changed`)
 - `ConnectionQueueManager` → `ConnectionManager` (последовательность операций)
 - `AutoConnectorManager` → `ConnectionQueueManager`, `ConnectionManager`, `CallManager`
 - `VideoSendingBalancerManager` → `CallManager`, `ApiManager`
@@ -346,6 +416,7 @@ graph TB
 - Умное добавление презентационных потоков
 - Адаптивная балансировка видео
 - Последовательное выполнение операций
+- Автоматическое отслеживание изменений удаленных потоков через события
 
 **Расширяемость**:
 
@@ -404,12 +475,24 @@ const facade = new SipConnectorFacade(sipConnector);
 
 // 2. Подключение
 await facade.connectToServer({
-  sipWebSocketServerURL: 'wss://example.com/ws',
-  name: 'user123',
+  sipServerUrl: 'example.com', // Путь /webrtc/wss/ добавляется автоматически
+  sipServerIp: 'sip.example.com',
+  user: 'user123',
   password: 'secret',
+  register: true,
 });
 
-// 3. Звонок
+// 3. Подписка на изменения удаленных потоков
+const unsubscribeRemoteStreams = sipConnector.on('call:remote-streams-changed', (event) => {
+  console.log('Изменение удаленных потоков:', {
+    participantId: event.participantId,
+    changeType: event.changeType, // 'added' | 'removed'
+    trackId: event.trackId,
+  });
+  displayStreams(event.streams);
+});
+
+// 4. Звонок
 const mediaStream = await navigator.mediaDevices.getUserMedia({
   video: true,
   audio: true,
@@ -418,21 +501,23 @@ const mediaStream = await navigator.mediaDevices.getUserMedia({
 await facade.callToServer({
   conference: 'room123',
   mediaStream,
-  setRemoteStreams: (streams) => displayStreams(streams),
 });
 
-// 4. Презентация
+// 5. Презентация
 await facade.startPresentation({
   mediaStream: presentationStream,
   isP2P: false,
   contentHint: 'detail',
 });
 
-// 5. Управление медиа
+// 6. Управление медиа
 await facade.sendMediaState({
   isEnabledCam: true,
   isEnabledMic: false,
 });
+
+// 7. Очистка при завершении
+unsubscribeRemoteStreams();
 ```
 
 ---

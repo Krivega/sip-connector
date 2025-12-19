@@ -230,10 +230,9 @@ class RTCSessionMock extends BaseSession {
     }
 
     this.connection = new RTCPeerConnectionMock(undefined, tracks);
+    this.trigger('peerconnection', { peerconnection: this.connection });
 
     this.addStream(sendedStream);
-
-    this.trigger('peerconnection', { peerconnection: this.connection });
   }
 
   public connect(target: string, { mediaStream }: { mediaStream?: MediaStream } = {}) {
@@ -318,7 +317,7 @@ class RTCSessionMock extends BaseSession {
     action: 'getTracks' | 'getAudioTracks' | 'getVideoTracks' = 'getTracks',
   ) {
     stream[action]().forEach((track: MediaStreamTrack) => {
-      return this.connection.addTrack(track);
+      return this.connection.addTrack(track, stream);
     });
   }
 

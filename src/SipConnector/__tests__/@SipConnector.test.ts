@@ -1,6 +1,7 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 
 import JsSIP from '@/__fixtures__/jssip.mock';
+import * as tools from '@/tools';
 import SipConnector from '../@SipConnector';
 
 import type {
@@ -88,8 +89,8 @@ describe('SipConnector facade', () => {
     await sipConnector.connect({
       displayName: 'Any Name',
       register: false,
-      sipServerUrl: 'sip.example.com',
-      sipWebSocketServerURL: 'wss://sip.example.com/ws',
+      sipServerIp: 'sip.example.com',
+      sipServerUrl: 'wss://sip.example.com/ws',
     });
     await sipConnector.disconnect();
 
@@ -117,9 +118,11 @@ describe('SipConnector facade', () => {
 
     jest.spyOn(cm, 'getConnectionConfiguration').mockReturnValue({
       displayName: 'X',
-      sipServerUrl: 'sip.example.com',
+      sipServerIp: 'sip.example.com',
+      sipServerUrl: 'wss://sip.example.com/ws',
     } as unknown as {
       displayName: string;
+      sipServerIp: string;
       sipServerUrl: string;
     });
 
@@ -131,16 +134,17 @@ describe('SipConnector facade', () => {
     await sipConnector.tryRegister();
     await sipConnector.checkTelephony({
       displayName: 'Test',
-      sipServerUrl: 'sip.example.com',
-      sipWebSocketServerURL: 'wss://sip.example.com/ws',
+      sipServerIp: 'sip.example.com',
+      sipServerUrl: 'wss://sip.example.com/ws',
     });
 
     expect(sipConnector.isConfigured()).toBe(true);
     expect(sipConnector.getConnectionConfiguration()).toEqual({
       displayName: 'X',
-      sipServerUrl: 'sip.example.com',
+      sipServerIp: 'sip.example.com',
+      sipServerUrl: 'wss://sip.example.com/ws',
     });
-    expect(sipConnector.getSipServerUrl('id')).toBe('id');
+    expect(sipConnector.getUri('id')).toBe('id');
 
     expect(cm.register).toHaveBeenCalled();
     expect(cm.unregister).toHaveBeenCalled();
@@ -155,7 +159,7 @@ describe('SipConnector facade', () => {
     const cm = sipConnector.callManager;
 
     jest.spyOn(sipConnector.connectionManager, 'getUaProtected').mockReturnValue({} as UA);
-    jest.spyOn(sipConnector, 'getSipServerUrl').mockImplementation((id: string) => {
+    jest.spyOn(sipConnector, 'getUri').mockImplementation((id: string) => {
       return `sip:${id}@host`;
     });
 
@@ -450,6 +454,402 @@ describe('SipConnector facade', () => {
       expect(sipConnectorWithExcludeOnly.preferredMimeTypesVideoCodecs).toBeUndefined();
       // @ts-expect-error: доступ к приватным полям для тестирования
       expect(sipConnectorWithExcludeOnly.excludeMimeTypesVideoCodecs).toEqual(['video/H264']);
+    });
+  });
+
+  describe('subscribeChangeRole', () => {
+    it('должен вызывать setCallRoleParticipant при событии participant:move-request-to-participants', () => {
+      const setCallRoleParticipantSpy = jest.spyOn(
+        sipConnector.callManager,
+        'setCallRoleParticipant',
+      );
+
+      // Тригерим событие на уровне ApiManager
+      sipConnector.apiManager.events.trigger('participant:move-request-to-participants', {});
+
+      expect(setCallRoleParticipantSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('должен вызывать setCallRoleSpectatorSynthetic при событии participant:move-request-to-spectators', () => {
+      const setCallRoleSpectatorSpy = jest.spyOn(
+        sipConnector.callManager,
+        'setCallRoleSpectatorSynthetic',
+      );
+
+      // Тригерим событие на уровне ApiManager
+      sipConnector.apiManager.events.trigger(
+        'participant:move-request-to-spectators-synthetic',
+        {},
+      );
+
+      expect(setCallRoleSpectatorSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('должен вызывать setCallRoleSpectator с audioId и sendOffer при событии participant:move-request-to-spectators-with-audio-id', () => {
+      const setCallRoleSpectatorSpy = jest.spyOn(sipConnector.callManager, 'setCallRoleSpectator');
+      const audioId = 'test-audio-id';
+
+      // Тригерим событие на уровне ApiManager
+      sipConnector.apiManager.events.trigger(
+        'participant:move-request-to-spectators-with-audio-id',
+        {
+          audioId,
+        },
+      );
+
+      expect(setCallRoleSpectatorSpy).toHaveBeenCalledTimes(1);
+      expect(setCallRoleSpectatorSpy).toHaveBeenCalledWith({
+        audioId,
+        sendOffer: expect.any(Function) as () => void,
+      });
+    });
+
+    it('должен передавать функцию sendOffer в setCallRoleSpectator, которая вызывает sendOffer с правильными параметрами', async () => {
+      jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
+        sipServerUrl: 'wss://test.example.com/ws',
+      } as unknown as TConnectionConfigurationWithUa);
+
+      const sendOfferSpy = jest.spyOn(tools, 'sendOffer').mockResolvedValue({
+        type: 'answer',
+        sdp: 'test-sdp',
+      } as RTCSessionDescription);
+
+      const setCallRoleSpectatorSpy = jest.spyOn(sipConnector.callManager, 'setCallRoleSpectator');
+      const audioId = 'test-audio-id';
+
+      // Тригерим событие
+      sipConnector.apiManager.events.trigger(
+        'participant:move-request-to-spectators-with-audio-id',
+        {
+          audioId,
+        },
+      );
+
+      // Получаем переданную функцию sendOffer
+      const callArgs = setCallRoleSpectatorSpy.mock.calls[0];
+      const recvParams = callArgs[0];
+      const sendOfferFunction = recvParams.sendOffer;
+
+      // Вызываем функцию sendOffer
+      const offer: RTCSessionDescriptionInit = {
+        type: 'offer',
+        sdp: 'test-offer-sdp',
+      };
+
+      await sendOfferFunction(
+        {
+          conferenceNumber: 'conf-123',
+          quality: 'high',
+          audioChannel: audioId,
+        },
+        offer,
+      );
+
+      expect(sendOfferSpy).toHaveBeenCalledWith({
+        serverUrl: 'wss://test.example.com/ws',
+        offer,
+        conferenceNumber: 'conf-123',
+        quality: 'high',
+        audio: audioId,
+      });
+    });
+
+    it('должен выбрасывать ошибку в sendOffer, если sipServerUrl не определен', async () => {
+      jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
+        sipServerUrl: undefined,
+      } as unknown as TConnectionConfigurationWithUa);
+
+      const setCallRoleSpectatorSpy = jest.spyOn(sipConnector.callManager, 'setCallRoleSpectator');
+      const audioId = 'test-audio-id';
+
+      // Тригерим событие
+      sipConnector.apiManager.events.trigger(
+        'participant:move-request-to-spectators-with-audio-id',
+        {
+          audioId,
+        },
+      );
+
+      // Получаем переданную функцию sendOffer
+      const callArgs = setCallRoleSpectatorSpy.mock.calls[0];
+      const recvParams = callArgs[0];
+      const sendOfferFunction = recvParams.sendOffer;
+
+      // Вызываем функцию sendOffer и ожидаем ошибку
+      const offer: RTCSessionDescriptionInit = {
+        type: 'offer',
+        sdp: 'test-offer-sdp',
+      };
+
+      await expect(
+        sendOfferFunction(
+          {
+            conferenceNumber: 'conf-123',
+            quality: 'high',
+            audioChannel: audioId,
+          },
+          offer,
+        ),
+      ).rejects.toThrow('No sipServerUrl for sendOffer');
+    });
+
+    it('должен корректно обрабатывать множественные вызовы события participant:move-request-to-spectators-with-audio-id с разными audioId', () => {
+      const setCallRoleSpectatorSpy = jest.spyOn(sipConnector.callManager, 'setCallRoleSpectator');
+      const firstAudioId = 'test-audio-id-1';
+      const secondAudioId = 'test-audio-id-2';
+      const thirdAudioId = 'test-audio-id-3';
+
+      // Первый вызов события
+      sipConnector.apiManager.events.trigger(
+        'participant:move-request-to-spectators-with-audio-id',
+        {
+          audioId: firstAudioId,
+        },
+      );
+
+      expect(setCallRoleSpectatorSpy).toHaveBeenCalledTimes(1);
+      expect(setCallRoleSpectatorSpy).toHaveBeenNthCalledWith(1, {
+        audioId: firstAudioId,
+        sendOffer: expect.any(Function) as () => void,
+      });
+
+      // Второй вызов события с другим audioId
+      sipConnector.apiManager.events.trigger(
+        'participant:move-request-to-spectators-with-audio-id',
+        {
+          audioId: secondAudioId,
+        },
+      );
+
+      expect(setCallRoleSpectatorSpy).toHaveBeenCalledTimes(2);
+      expect(setCallRoleSpectatorSpy).toHaveBeenNthCalledWith(2, {
+        audioId: secondAudioId,
+        sendOffer: expect.any(Function) as () => void,
+      });
+
+      // Третий вызов события с еще одним другим audioId
+      sipConnector.apiManager.events.trigger(
+        'participant:move-request-to-spectators-with-audio-id',
+        {
+          audioId: thirdAudioId,
+        },
+      );
+
+      expect(setCallRoleSpectatorSpy).toHaveBeenCalledTimes(3);
+      expect(setCallRoleSpectatorSpy).toHaveBeenNthCalledWith(3, {
+        audioId: thirdAudioId,
+        sendOffer: expect.any(Function) as () => void,
+      });
+
+      // Проверяем, что все вызовы были с разными audioId
+      const allCalls = setCallRoleSpectatorSpy.mock.calls;
+
+      expect(allCalls[0][0].audioId).toBe(firstAudioId);
+      expect(allCalls[1][0].audioId).toBe(secondAudioId);
+      expect(allCalls[2][0].audioId).toBe(thirdAudioId);
+    });
+  });
+
+  describe('sendOffer', () => {
+    it('должен успешно вызывать sendOffer из tools с правильными параметрами', async () => {
+      const serverUrl = 'wss://test.example.com/ws';
+      const conferenceNumber = 'conf-123';
+      const quality = 'high' as const;
+      const audioChannel = 'audio-1';
+      const offer: RTCSessionDescriptionInit = {
+        type: 'offer',
+        sdp: 'test-offer-sdp',
+      };
+      const expectedAnswer: RTCSessionDescription = {
+        type: 'answer',
+        sdp: 'test-answer-sdp',
+        toJSON() {
+          return { type: 'answer', sdp: 'test-answer-sdp' };
+        },
+      };
+
+      jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
+        sipServerUrl: serverUrl,
+      } as unknown as TConnectionConfigurationWithUa);
+
+      const sendOfferSpy = jest.spyOn(tools, 'sendOffer').mockResolvedValue(expectedAnswer);
+
+      // @ts-expect-error: доступ к приватному методу для тестирования
+      const result = await sipConnector.sendOffer(
+        {
+          conferenceNumber,
+          quality,
+          audioChannel,
+        },
+        offer,
+      );
+
+      expect(sendOfferSpy).toHaveBeenCalledTimes(1);
+      expect(sendOfferSpy).toHaveBeenCalledWith({
+        serverUrl,
+        offer,
+        conferenceNumber,
+        quality,
+        audio: audioChannel,
+      });
+      expect(result).toEqual(expectedAnswer);
+    });
+
+    it('должен выбрасывать ошибку, если sipServerUrl не определен', async () => {
+      jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
+        sipServerUrl: undefined,
+      } as unknown as TConnectionConfigurationWithUa);
+
+      const offer: RTCSessionDescriptionInit = {
+        type: 'offer',
+        sdp: 'test-offer-sdp',
+      };
+
+      await expect(
+        // @ts-expect-error: доступ к приватному методу для тестирования
+        sipConnector.sendOffer(
+          {
+            conferenceNumber: 'conf-123',
+            quality: 'high',
+            audioChannel: 'audio-1',
+          },
+          offer,
+        ),
+      ).rejects.toThrow('No sipServerUrl for sendOffer');
+    });
+
+    it('должен корректно передавать все параметры качества (low, medium, high)', async () => {
+      const serverUrl = 'wss://test.example.com/ws';
+      const offer: RTCSessionDescriptionInit = {
+        type: 'offer',
+        sdp: 'test-offer-sdp',
+      };
+
+      jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
+        sipServerUrl: serverUrl,
+      } as unknown as TConnectionConfigurationWithUa);
+
+      const sendOfferSpy = jest.spyOn(tools, 'sendOffer').mockResolvedValue({
+        type: 'answer',
+        sdp: 'test-answer-sdp',
+      } as RTCSessionDescription);
+
+      const qualities: ('low' | 'medium' | 'high')[] = ['low', 'medium', 'high'];
+
+      for (const quality of qualities) {
+        // @ts-expect-error: доступ к приватному методу для тестирования
+        // eslint-disable-next-line no-await-in-loop
+        await sipConnector.sendOffer(
+          {
+            conferenceNumber: 'conf-123',
+            quality,
+            audioChannel: 'audio-1',
+          },
+          offer,
+        );
+
+        expect(sendOfferSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            quality,
+          }),
+        );
+      }
+
+      expect(sendOfferSpy).toHaveBeenCalledTimes(3);
+    });
+
+    it('должен корректно передавать conferenceNumber и audioChannel', async () => {
+      const serverUrl = 'wss://test.example.com/ws';
+      const conferenceNumber = 'test-conference-456';
+      const audioChannel = 'test-audio-channel-789';
+      const offer: RTCSessionDescriptionInit = {
+        type: 'offer',
+        sdp: 'test-offer-sdp',
+      };
+
+      jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
+        sipServerUrl: serverUrl,
+      } as unknown as TConnectionConfigurationWithUa);
+
+      const sendOfferSpy = jest.spyOn(tools, 'sendOffer').mockResolvedValue({
+        type: 'answer',
+        sdp: 'test-answer-sdp',
+      } as RTCSessionDescription);
+
+      // @ts-expect-error: доступ к приватному методу для тестирования
+      await sipConnector.sendOffer(
+        {
+          conferenceNumber,
+          quality: 'medium',
+          audioChannel,
+        },
+        offer,
+      );
+
+      expect(sendOfferSpy).toHaveBeenCalledWith({
+        serverUrl,
+        offer,
+        conferenceNumber,
+        quality: 'medium',
+        audio: audioChannel,
+      });
+    });
+
+    it('должен корректно передавать offer в sendOffer из tools', async () => {
+      const serverUrl = 'wss://test.example.com/ws';
+      const offer: RTCSessionDescriptionInit = {
+        type: 'offer',
+        sdp: 'custom-offer-sdp-content',
+      };
+
+      jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
+        sipServerUrl: serverUrl,
+      } as unknown as TConnectionConfigurationWithUa);
+
+      const sendOfferSpy = jest.spyOn(tools, 'sendOffer').mockResolvedValue({
+        type: 'answer',
+        sdp: 'test-answer-sdp',
+      } as RTCSessionDescription);
+
+      // @ts-expect-error: доступ к приватному методу для тестирования
+      await sipConnector.sendOffer(
+        {
+          conferenceNumber: 'conf-123',
+          quality: 'high',
+          audioChannel: 'audio-1',
+        },
+        offer,
+      );
+
+      expect(sendOfferSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          offer,
+        }),
+      );
+      expect(sendOfferSpy.mock.calls[0][0].offer).toEqual(offer);
+    });
+  });
+
+  describe('RecvSession integration', () => {
+    it('должен вызывать startRecvSession в CallManager при событии spectator-with-audio-id', async () => {
+      const sipConnectorWithMocks = new SipConnector({ JsSIP: JsSIP as unknown as TJsSIP });
+      const audioId = 'audio-1';
+
+      const startRecvSessionMock = jest.spyOn(
+        sipConnectorWithMocks.callManager,
+        // @ts-expect-error
+        'startRecvSession',
+      );
+
+      // Тригерим api-событие напрямую на уровне ApiManager
+      sipConnectorWithMocks.apiManager.events.trigger(
+        'participant:move-request-to-spectators-with-audio-id',
+        { audioId },
+      );
+
+      await Promise.resolve();
+
+      expect(startRecvSessionMock).toHaveBeenCalledWith(audioId, expect.any(Function));
     });
   });
 });

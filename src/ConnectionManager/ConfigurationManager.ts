@@ -1,6 +1,7 @@
 import type { UA } from '@krivega/jssip';
 
 export interface IConnectionConfiguration {
+  sipServerIp: string;
   sipServerUrl: string;
   displayName: string;
   register?: boolean;
@@ -83,7 +84,14 @@ export default class ConfigurationManager {
   }
 
   /**
-   * Получает SIP сервер URL из конфигурации
+   * Получает SIP сервер IP из конфигурации
+   */
+  public getSipServerIp(): string | undefined {
+    return this.data?.sipServerIp;
+  }
+
+  /**
+   * Получает SIP сервер URL (WebSocket) из конфигурации
    */
   public getSipServerUrl(): string | undefined {
     return this.data?.sipServerUrl;

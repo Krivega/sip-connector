@@ -4,7 +4,7 @@ import sipConnectorFacade from './sipConnectorFacade';
 /**
  * Тип роли участника
  */
-export type TParticipantRole = 'participant' | 'spectator' | undefined;
+export type TParticipantRole = 'participant' | 'spectatorSynthetic' | 'spectator' | undefined;
 
 /**
  * Тип обработчика изменений роли участника
@@ -19,6 +19,8 @@ class ParticipantRoleManager {
   private role: TParticipantRole = undefined;
 
   private readonly handlers: Set<TParticipantRoleHandler> = new Set<TParticipantRoleHandler>();
+
+  private unsubscribeMoveToSpectatorsSynthetic: (() => void) | undefined = undefined;
 
   private unsubscribeMoveToSpectators: (() => void) | undefined = undefined;
 
@@ -35,15 +37,30 @@ class ParticipantRoleManager {
    * Подписывается на события изменения роли участника
    */
   public subscribe(): void {
-    // Подписываемся на событие перемещения в зрители
-    this.unsubscribeMoveToSpectators = sipConnectorFacade.onMoveToSpectators(() => {
-      this.setRole('spectator');
-    });
-
     // Подписываемся на событие перемещения в участники
-    this.unsubscribeMoveToParticipants = sipConnectorFacade.onMoveToParticipants(() => {
-      this.setRole('participant');
-    });
+    this.unsubscribeMoveToParticipants = sipConnectorFacade.on(
+      'api:participant:move-request-to-participants',
+      () => {
+        this.setRole('participant');
+      },
+    );
+
+    // Подписываемся на событие перемещения в зрители для старых серверов
+    this.unsubscribeMoveToSpectatorsSynthetic = sipConnectorFacade.on(
+      'api:participant:move-request-to-spectators-synthetic',
+      () => {
+        this.setRole('spectatorSynthetic');
+      },
+    );
+
+    // Подписываемся на событие перемещения в зрители
+    this.unsubscribeMoveToSpectators = sipConnectorFacade.on(
+      'api:participant:move-request-to-spectators-with-audio-id',
+      () => {
+        this.setRole('spectator');
+      },
+    );
+
     this.onChange(this.handleParticipantRoleChange);
   }
 
@@ -51,6 +68,11 @@ class ParticipantRoleManager {
    * Отписывается от событий изменения роли участника
    */
   public unsubscribe(): void {
+    if (this.unsubscribeMoveToSpectatorsSynthetic) {
+      this.unsubscribeMoveToSpectatorsSynthetic();
+      this.unsubscribeMoveToSpectatorsSynthetic = undefined;
+    }
+
     if (this.unsubscribeMoveToSpectators) {
       this.unsubscribeMoveToSpectators();
       this.unsubscribeMoveToSpectators = undefined;
@@ -116,6 +138,12 @@ class ParticipantRoleManager {
     switch (role) {
       case 'participant': {
         roleText = 'Участник';
+
+        break;
+      }
+
+      case 'spectatorSynthetic': {
+        roleText = 'Зритель (синтетический)';
 
         break;
       }

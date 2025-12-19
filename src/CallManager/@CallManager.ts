@@ -1,18 +1,28 @@
 import { TypedEvents } from 'events-constructor';
 
-import { hasVideoTracks } from '@/utils/utils';
 import { EEvent, EVENT_NAMES } from './eventNames';
 import { MCUSession } from './MCUSession';
+import RecvSession from './RecvSession';
 import { RemoteStreamsManager } from './RemoteStreamsManager';
+import { RoleManager } from './RoleManager';
 
 import type { RTCSession } from '@krivega/jssip';
 import type { TEvents, TEventMap } from './eventNames';
+import type { TTools } from './RecvSession';
 import type {
   TStartCall,
   TCallConfiguration,
   TReplaceMediaStream,
   TAnswerToIncomingCall,
+  TCallRole,
+  TCallRoleSpectator,
 } from './types';
+
+type TRemoteStreamsChangeType = 'added' | 'removed';
+
+const getStreamHint = (event: RTCTrackEvent) => {
+  return event.streams[0]?.id;
+};
 
 class CallManager {
   public readonly events: TEvents;
@@ -23,19 +33,31 @@ class CallManager {
 
   protected rtcSession?: RTCSession;
 
-  protected remoteStreams: Record<string, MediaStream> = {};
-
   protected readonly callConfiguration: TCallConfiguration = {};
 
-  private readonly remoteStreamsManager = new RemoteStreamsManager();
+  private readonly mainRemoteStreamsManager = new RemoteStreamsManager();
+
+  private readonly recvRemoteStreamsManager = new RemoteStreamsManager();
+
+  private readonly roleManager = new RoleManager(
+    { mainManager: this.mainRemoteStreamsManager, recvManager: this.recvRemoteStreamsManager },
+    (params) => {
+      this.onRoleChanged(params);
+    },
+  );
 
   private readonly mcuSession: MCUSession;
 
+  private recvSession?: RecvSession;
+
+  private disposeRecvSessionTrackListener?: () => void;
+
   public constructor() {
     this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
-
     this.mcuSession = new MCUSession(this.events, { onReset: this.reset });
+
     this.subscribeCallStatusChange();
+    this.subscribeMcuRemoteTrackEvents();
   }
 
   public get requested() {
@@ -84,12 +106,12 @@ class CallManager {
     this.events.off(eventName, handler);
   }
 
-  public startCall: TStartCall = async (ua, getSipServerUrl, params) => {
+  public startCall: TStartCall = async (ua, getUri, params) => {
     this.isPendingCall = true;
     this.callConfiguration.number = params.number;
     this.callConfiguration.answer = false;
 
-    return this.mcuSession.startCall(ua, getSipServerUrl, params).finally(() => {
+    return this.mcuSession.startCall(ua, getUri, params).finally(() => {
       this.isPendingCall = false;
     });
   };
@@ -118,18 +140,22 @@ class CallManager {
     return { ...this.callConfiguration };
   }
 
-  public getRemoteStreams(): MediaStream[] | undefined {
-    const remoteTracks = this.mcuSession.getRemoteTracks();
+  public getRemoteStreams(): MediaStream[] {
+    const manager = this.getActiveStreamsManager();
 
-    if (!remoteTracks) {
-      return undefined;
-    }
+    return manager.getStreams();
+  }
 
-    if (hasVideoTracks(remoteTracks)) {
-      return this.remoteStreamsManager.generateStreams(remoteTracks);
-    }
+  public setCallRoleParticipant() {
+    this.roleManager.setCallRoleParticipant();
+  }
 
-    return this.remoteStreamsManager.generateAudioStreams(remoteTracks);
+  public setCallRoleSpectatorSynthetic() {
+    this.roleManager.setCallRoleSpectatorSynthetic();
+  }
+
+  public setCallRoleSpectator(recvParams: TCallRoleSpectator['recvParams']) {
+    this.roleManager.setCallRoleSpectator(recvParams);
   }
 
   public async replaceMediaStream(
@@ -150,9 +176,11 @@ class CallManager {
   }
 
   private readonly reset: () => void = () => {
-    this.remoteStreamsManager.reset();
+    this.mainRemoteStreamsManager.reset();
     this.callConfiguration.number = undefined;
     this.callConfiguration.answer = false;
+    this.roleManager.reset();
+    this.stopRecvSession();
   };
 
   private subscribeCallStatusChange() {
@@ -174,6 +202,125 @@ class CallManager {
 
     return newStatus;
   }
+
+  private subscribeMcuRemoteTrackEvents() {
+    this.on(EEvent.PEER_CONNECTION_ONTRACK, (event: RTCTrackEvent) => {
+      this.addRemoteTrack(this.mainRemoteStreamsManager, event.track, getStreamHint(event));
+    });
+  }
+
+  private addRemoteTrack(
+    manager: RemoteStreamsManager,
+    track: MediaStreamTrack,
+    streamHint?: string,
+  ) {
+    const result = manager.addTrack(track, {
+      streamHint,
+      onRemoved: (event) => {
+        this.emitRemoteStreamsChanged(manager, 'removed', {
+          trackId: event.trackId,
+          participantId: event.participantId,
+        });
+      },
+    });
+
+    if (!result.isAdded) {
+      return;
+    }
+
+    this.emitRemoteStreamsChanged(manager, 'added', {
+      trackId: track.id,
+      participantId: result.participantId,
+    });
+  }
+
+  private emitRemoteStreamsChanged(
+    manager: RemoteStreamsManager,
+    changeType: TRemoteStreamsChangeType,
+    { trackId, participantId }: { trackId: string; participantId: string },
+  ) {
+    const activeManager = this.getActiveStreamsManager();
+
+    if (manager !== activeManager) {
+      return;
+    }
+
+    const streams = [...activeManager.getStreams()];
+
+    this.events.trigger(EEvent.REMOTE_STREAMS_CHANGED, {
+      participantId,
+      changeType,
+      trackId,
+      streams,
+    });
+  }
+
+  private getActiveStreamsManager(): RemoteStreamsManager {
+    return this.roleManager.getActiveManager();
+  }
+
+  private attachRecvSessionTracks(session: RecvSession) {
+    const { peerConnection } = session;
+    const handleTrack = (event: RTCTrackEvent) => {
+      this.addRemoteTrack(this.recvRemoteStreamsManager, event.track, getStreamHint(event));
+    };
+
+    peerConnection.addEventListener('track', handleTrack);
+    this.disposeRecvSessionTrackListener = () => {
+      peerConnection.removeEventListener('track', handleTrack);
+    };
+  }
+
+  private startRecvSession(audioId: string, sendOffer: TTools['sendOffer']): void {
+    const { number: conferenceNumber } = this.callConfiguration;
+
+    if (conferenceNumber === undefined) {
+      return;
+    }
+
+    this.stopRecvSession();
+
+    const config = {
+      quality: 'high' as const,
+      audioChannel: audioId,
+    };
+
+    const session = new RecvSession(config, { sendOffer });
+
+    this.recvSession = session;
+    this.recvRemoteStreamsManager.reset();
+    this.attachRecvSessionTracks(session);
+
+    session.call(conferenceNumber).catch(() => {
+      this.stopRecvSession();
+    });
+  }
+
+  private stopRecvSession() {
+    this.recvSession?.close();
+    this.recvSession = undefined;
+    this.disposeRecvSessionTrackListener?.();
+    this.disposeRecvSessionTrackListener = undefined;
+    this.recvRemoteStreamsManager.reset();
+  }
+
+  private readonly onRoleChanged = ({
+    previous,
+    next,
+  }: {
+    previous: TCallRole;
+    next: TCallRole;
+  }) => {
+    if (RoleManager.hasSpectator(previous) && !RoleManager.hasSpectator(next)) {
+      this.stopRecvSession();
+    }
+
+    if (RoleManager.hasSpectator(next)) {
+      const params = next.recvParams;
+
+      this.startRecvSession(params.audioId, params.sendOffer);
+    }
+  };
 }
 
 export default CallManager;

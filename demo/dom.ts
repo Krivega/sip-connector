@@ -2,6 +2,10 @@ type TDomIds = {
   overlayId: string;
   callButtonId: string;
   endCallButtonId: string;
+  toggleCameraButtonId: string;
+  toggleMicButtonId: string;
+  toggleCameraButtonTextId: string;
+  toggleMicButtonTextId: string;
   localVideoSectionId: string;
   activeCallSectionId: string;
   localVideoId: string;
@@ -43,6 +47,14 @@ class DOM {
 
   public endCallButtonElement: HTMLButtonElement;
 
+  public toggleCameraButtonElement: HTMLButtonElement;
+
+  public toggleMicButtonElement: HTMLButtonElement;
+
+  public toggleCameraButtonTextElement: HTMLSpanElement;
+
+  public toggleMicButtonTextElement: HTMLSpanElement;
+
   public localVideoSectionElement: HTMLElement;
 
   public activeCallSectionElement: HTMLElement;
@@ -77,6 +89,10 @@ class DOM {
     overlayId,
     callButtonId,
     endCallButtonId,
+    toggleCameraButtonId,
+    toggleMicButtonId,
+    toggleCameraButtonTextId,
+    toggleMicButtonTextId,
     localVideoSectionId,
     activeCallSectionId,
     localVideoId,
@@ -88,6 +104,10 @@ class DOM {
     this.overlayElement = getElementById(overlayId);
     this.callButtonElement = getElementById<HTMLButtonElement>(callButtonId);
     this.endCallButtonElement = getElementById<HTMLButtonElement>(endCallButtonId);
+    this.toggleCameraButtonElement = getElementById<HTMLButtonElement>(toggleCameraButtonId);
+    this.toggleMicButtonElement = getElementById<HTMLButtonElement>(toggleMicButtonId);
+    this.toggleCameraButtonTextElement = getElementById<HTMLSpanElement>(toggleCameraButtonTextId);
+    this.toggleMicButtonTextElement = getElementById<HTMLSpanElement>(toggleMicButtonTextId);
     this.localVideoSectionElement = getElementById(localVideoSectionId);
     this.activeCallSectionElement = getElementById(activeCallSectionId);
     this.remoteStreamsContainerElement = getElementById(remoteStreamsContainerId);
@@ -136,6 +156,10 @@ export const dom = new DOM({
   overlayId: 'loaderOverlay',
   callButtonId: 'callButton',
   endCallButtonId: 'endCallButton',
+  toggleCameraButtonId: 'toggleCameraButton',
+  toggleMicButtonId: 'toggleMicButton',
+  toggleCameraButtonTextId: 'toggleCameraButtonText',
+  toggleMicButtonTextId: 'toggleMicButtonText',
   localVideoSectionId: 'localVideoSection',
   activeCallSectionId: 'activeCallSection',
   localVideoId: 'localVideo',

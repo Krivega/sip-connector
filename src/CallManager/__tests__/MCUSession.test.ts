@@ -41,11 +41,9 @@ describe('MCUSession', () => {
   });
 
   it('startCall: создает звонок и возвращает peerconnection', async () => {
-    const ontrack = jest.fn();
     const promise = mcuSession.startCall(ua as unknown as UA, getSipServerUrl, {
       number: '123',
       mediaStream,
-      ontrack,
     });
     const audioTrack = createAudioMediaStreamTrackMock();
     const videoTrack = createVideoMediaStreamTrackMock();
@@ -58,28 +56,6 @@ describe('MCUSession', () => {
 
     expect(pc).toBeDefined();
     expect(typeof pc).toBe('object');
-  });
-
-  it('startCall: подписывается на события peerconnection', async () => {
-    const ontrack = jest.fn();
-    const onPeerconnection = jest.fn();
-
-    events.on('peerconnection', onPeerconnection);
-
-    const pc = (await mcuSession.startCall(ua as unknown as UA, getSipServerUrl, {
-      number: '123',
-      mediaStream,
-      ontrack,
-    })) as RTCPeerConnectionMock;
-
-    expect(ontrack).toHaveBeenCalledTimes(0);
-    expect(onPeerconnection).toHaveBeenCalled();
-
-    const videoTrack = createVideoMediaStreamTrackMock();
-
-    pc.addTrack(videoTrack);
-
-    expect(ontrack).toHaveBeenCalledTimes(1);
   });
 
   it('endCall: вызывает reset и terminateAsync', async () => {
@@ -133,10 +109,9 @@ describe('MCUSession', () => {
     const getIncomingRTCSession = () => {
       return rtcSession as unknown as RTCSession;
     };
-    const ontrack = jest.fn();
+
     const promise = mcuSession.answerToIncomingCall(getIncomingRTCSession(), {
       mediaStream,
-      ontrack,
     });
 
     const audioTrack = createAudioMediaStreamTrackMock();
@@ -149,116 +124,6 @@ describe('MCUSession', () => {
     const pc = await promise;
 
     expect(pc).toBeDefined();
-  });
-
-  it('getRemoteTracks: возвращает undefined если нет connection', () => {
-    jest.spyOn(mcuSession, 'connection', 'get').mockReturnValue(undefined);
-    expect(mcuSession.getRemoteTracks()).toBeUndefined();
-  });
-
-  it('getRemoteTracks: возвращает массив треков когда есть connection и receivers', () => {
-    const videoTrack = createVideoMediaStreamTrackMock();
-    const audioTrack = createAudioMediaStreamTrackMock();
-    const getReceivers = jest.fn(() => {
-      return [{ track: videoTrack }, { track: audioTrack }];
-    });
-    const connection = {
-      getReceivers,
-    } as unknown as RTCPeerConnection;
-
-    jest.spyOn(mcuSession, 'connection', 'get').mockReturnValue(connection);
-
-    const result = mcuSession.getRemoteTracks();
-
-    expect(getReceivers).toHaveBeenCalledTimes(1);
-    expect(result).toEqual([videoTrack, audioTrack]);
-    expect(result).toHaveLength(2);
-  });
-
-  it('getRemoteTracks: возвращает пустой массив когда нет receivers', () => {
-    const getReceivers = jest.fn(() => {
-      return [];
-    });
-    const connection = {
-      getReceivers,
-    } as unknown as RTCPeerConnection;
-
-    jest.spyOn(mcuSession, 'connection', 'get').mockReturnValue(connection);
-
-    const result = mcuSession.getRemoteTracks();
-
-    expect(getReceivers).toHaveBeenCalledTimes(1);
-    expect(result).toEqual([]);
-    expect(result).toHaveLength(0);
-  });
-
-  it('getRemoteTracks: возвращает массив треков с одним треком', () => {
-    const videoTrack = createVideoMediaStreamTrackMock();
-    const getReceivers = jest.fn(() => {
-      return [{ track: videoTrack }];
-    });
-    const connection = {
-      getReceivers,
-    } as unknown as RTCPeerConnection;
-
-    jest.spyOn(mcuSession, 'connection', 'get').mockReturnValue(connection);
-
-    const result = mcuSession.getRemoteTracks();
-
-    expect(getReceivers).toHaveBeenCalledTimes(1);
-    expect(result).toEqual([videoTrack]);
-    expect(result).toHaveLength(1);
-    expect(result?.[0]?.kind).toBe('video');
-  });
-
-  it('getRemoteTracks: возвращает все треки включая undefined', () => {
-    const videoTrack = createVideoMediaStreamTrackMock();
-    const audioTrack = createAudioMediaStreamTrackMock();
-    const getReceivers = jest.fn(() => {
-      return [
-        { track: videoTrack },
-        { track: undefined },
-        { track: audioTrack },
-        { track: undefined },
-      ];
-    });
-    const connection = {
-      getReceivers,
-    } as unknown as RTCPeerConnection;
-
-    jest.spyOn(mcuSession, 'connection', 'get').mockReturnValue(connection);
-
-    const result = mcuSession.getRemoteTracks();
-
-    expect(getReceivers).toHaveBeenCalledTimes(1);
-    // Метод маппит все receivers, включая те, где track может быть undefined
-    // Проверяем, что результат содержит все треки, включая undefined
-    expect(result).toHaveLength(4);
-    expect(result?.[0]).toBe(videoTrack);
-    expect(result?.[1]).toBeUndefined();
-    expect(result?.[2]).toBe(audioTrack);
-    expect(result?.[3]).toBeUndefined();
-  });
-
-  it('getRemoteTracks: возвращает треки разных типов (audio и video)', () => {
-    const videoTrack = createVideoMediaStreamTrackMock();
-    const audioTrack = createAudioMediaStreamTrackMock();
-    const getReceivers = jest.fn(() => {
-      return [{ track: audioTrack }, { track: videoTrack }, { track: audioTrack }];
-    });
-    const connection = {
-      getReceivers,
-    } as unknown as RTCPeerConnection;
-
-    jest.spyOn(mcuSession, 'connection', 'get').mockReturnValue(connection);
-
-    const result = mcuSession.getRemoteTracks();
-
-    expect(getReceivers).toHaveBeenCalledTimes(1);
-    expect(result).toHaveLength(3);
-    expect(result?.[0]?.kind).toBe('audio');
-    expect(result?.[1]?.kind).toBe('video');
-    expect(result?.[2]?.kind).toBe('audio');
   });
 
   it('replaceMediaStream: заменяет поток', async () => {
@@ -371,20 +236,6 @@ describe('MCUSession - дополнительные тесты для покры
 
     events.trigger('confirmed', {});
     await expect(promise).resolves.toBeUndefined();
-  });
-
-  it('handleCall: вызывает ontrack', async () => {
-    const ontrack = jest.fn();
-    // @ts-expect-error
-    const promise = mcuSession.handleCall({ ontrack });
-    const audioTrack = createAudioMediaStreamTrackMock();
-    const videoTrack = createVideoMediaStreamTrackMock();
-    const fakePeerconnection = new RTCPeerConnectionMock(undefined, [audioTrack, videoTrack]);
-
-    events.trigger('peerconnection', { peerconnection: fakePeerconnection });
-    events.trigger('confirmed', {});
-
-    await expect(promise).resolves.toBeDefined();
   });
 
   it('handleCall: не вызывает ontrack если он не передан', async () => {

@@ -41,6 +41,7 @@ export enum EEvent {
   PEER_CONNECTION_ONTRACK = 'peerconnection:ontrack',
   ENDED_FROM_SERVER = 'ended:fromserver',
   CALL_STATUS_CHANGED = 'call-status-changed',
+  REMOTE_STREAMS_CHANGED = 'remote-streams-changed',
 }
 
 export enum Originator {
@@ -83,6 +84,7 @@ const SESSION_SYNTHETICS_EVENT_NAMES = [
   `${EEvent.PEER_CONNECTION_ONTRACK}`,
   `${EEvent.ENDED_FROM_SERVER}`,
   `${EEvent.CALL_STATUS_CHANGED}`,
+  `${EEvent.REMOTE_STREAMS_CHANGED}`,
 ] as const;
 
 export const EVENT_NAMES = [
@@ -130,6 +132,12 @@ export type TEventMap = {
   'peerconnection:ontrack': RTCTrackEvent;
   'ended:fromserver': EndEvent;
   'call-status-changed': { isCallActive: boolean };
+  'remote-streams-changed': {
+    participantId: string;
+    changeType: 'added' | 'removed';
+    trackId: string;
+    streams: MediaStream[];
+  };
 };
 
 export type TEvents = TypedEvents<TEventMap>;

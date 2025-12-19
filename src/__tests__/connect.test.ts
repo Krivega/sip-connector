@@ -72,7 +72,7 @@ describe('connect', () => {
 
     const result = await sipConnector.connect({
       ...dataForConnectionWithAuthorization,
-      sipServerUrl: sipServerUrlChanged,
+      sipServerIp: sipServerUrlChanged,
     });
 
     expect(result.ua.configuration).toEqual({
@@ -87,8 +87,8 @@ describe('connect', () => {
     const result = await sipConnector.connect(dataForConnectionWithAuthorizationWithDisplayName);
     const connectionConfiguration = sipConnector.getConnectionConfiguration();
 
-    expect(connectionConfiguration?.sipServerUrl).toBe(
-      dataForConnectionWithAuthorizationWithDisplayName.sipServerUrl,
+    expect(connectionConfiguration?.sipServerIp).toBe(
+      dataForConnectionWithAuthorizationWithDisplayName.sipServerIp,
     );
     expect(connectionConfiguration?.displayName).toBe(
       dataForConnectionWithAuthorizationWithDisplayName.displayName,
@@ -113,8 +113,8 @@ describe('connect', () => {
     const { uri, ...configuration } = result.ua.configuration;
     const connectionConfiguration = sipConnector.getConnectionConfiguration();
 
-    expect(connectionConfiguration?.sipServerUrl).toBe(
-      dataForConnectionWithoutAuthorization.sipServerUrl,
+    expect(connectionConfiguration?.sipServerIp).toBe(
+      dataForConnectionWithoutAuthorization.sipServerIp,
     );
     expect(connectionConfiguration?.displayName).toBe(
       dataForConnectionWithoutAuthorization.displayName,
@@ -136,8 +136,8 @@ describe('connect', () => {
     const { uri, ...configuration } = result.ua.configuration;
     const connectionConfiguration = sipConnector.getConnectionConfiguration();
 
-    expect(connectionConfiguration?.sipServerUrl).toBe(
-      dataForConnectionWithoutAuthorizationWithoutDisplayName.sipServerUrl,
+    expect(connectionConfiguration?.sipServerIp).toBe(
+      dataForConnectionWithoutAuthorizationWithoutDisplayName.sipServerIp,
     );
     expect(connectionConfiguration?.displayName).toBe('DISPLAY_NAME');
     expect(connectionConfiguration?.register).toBe(false);
@@ -157,8 +157,8 @@ describe('connect', () => {
 
     const connectionConfiguration = sipConnector.getConnectionConfiguration();
 
-    expect(connectionConfiguration?.sipServerUrl).toBe(
-      dataForConnectionWithAuthorization.sipServerUrl,
+    expect(connectionConfiguration?.sipServerIp).toBe(
+      dataForConnectionWithAuthorization.sipServerIp,
     );
     expect(connectionConfiguration?.displayName).toBe('DISPLAY_NAME');
     expect(connectionConfiguration?.register).toBe(dataForConnectionWithAuthorization.register);

@@ -216,8 +216,8 @@ describe('SipOperations', () => {
   describe('checkTelephony', () => {
     const checkTelephonyParams = {
       displayName: 'Test User',
-      sipServerUrl: 'sip.example.com',
-      sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+      sipServerIp: 'sip.example.com',
+      sipServerUrl: 'wss://sip.example.com:8089/ws',
       userAgent: 'Test UA',
       remoteAddress: '192.168.1.1',
       extraHeaders: ['X-Test-Header: value'],
@@ -262,7 +262,7 @@ describe('SipOperations', () => {
         },
         helpers: {
           socket: {} as Socket,
-          getSipServerUrl: jest.fn(),
+          getUri: jest.fn(),
         },
       });
 
@@ -283,10 +283,10 @@ describe('SipOperations', () => {
       await expect(checkPromise).resolves.toBeUndefined();
 
       expect(createConfigurationSpy).toHaveBeenCalledWith({
-        sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+        sipServerUrl: 'wss://sip.example.com:8089/ws',
         displayName: 'Test User',
         userAgent: 'Test UA',
-        sipServerUrl: 'sip.example.com',
+        sipServerIp: 'sip.example.com',
       });
 
       expect(createUASpy).toHaveBeenCalledWith({
@@ -333,7 +333,7 @@ describe('SipOperations', () => {
         },
         helpers: {
           socket: {} as Socket,
-          getSipServerUrl: jest.fn(),
+          getUri: jest.fn(),
         },
       });
 
@@ -355,8 +355,8 @@ describe('SipOperations', () => {
     it('должен создавать конфигурацию с минимальными параметрами', async () => {
       const minimalParams = {
         displayName: 'Test User',
-        sipServerUrl: 'sip.example.com',
-        sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+        sipServerIp: 'sip.example.com',
+        sipServerUrl: 'wss://sip.example.com:8089/ws',
       };
 
       const mockCreatedUA = new UAMock({
@@ -394,7 +394,7 @@ describe('SipOperations', () => {
         },
         helpers: {
           socket: {} as Socket,
-          getSipServerUrl: jest.fn(),
+          getUri: jest.fn(),
         },
       });
 
@@ -415,10 +415,10 @@ describe('SipOperations', () => {
       await expect(checkPromise).resolves.toBeUndefined();
 
       expect(createConfigurationSpy).toHaveBeenCalledWith({
-        sipWebSocketServerURL: 'wss://sip.example.com:8089/ws',
+        sipServerUrl: 'wss://sip.example.com:8089/ws',
         displayName: 'Test User',
         userAgent: undefined,
-        sipServerUrl: 'sip.example.com',
+        sipServerIp: 'sip.example.com',
       });
     });
   });

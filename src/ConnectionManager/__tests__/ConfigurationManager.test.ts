@@ -67,7 +67,8 @@ describe('ConfigurationManager', () => {
 
     it('должен возвращать копию конфигурации', () => {
       const testConfig: IConnectionConfiguration = {
-        sipServerUrl: 'sip.test.com',
+        sipServerIp: 'sip.test.com',
+        sipServerUrl: 'wss://sip.test.com/ws',
         displayName: 'Test User',
         register: true,
         user: 'testuser',
@@ -86,7 +87,8 @@ describe('ConfigurationManager', () => {
   describe('set', () => {
     it('должен устанавливать конфигурацию', () => {
       const testConfig: IConnectionConfiguration = {
-        sipServerUrl: 'sip.test.com',
+        sipServerIp: 'sip.test.com',
+        sipServerUrl: 'wss://sip.test.com/ws',
         displayName: 'Test User',
         register: true,
         user: 'testuser',
@@ -100,12 +102,14 @@ describe('ConfigurationManager', () => {
 
     it('должен перезаписывать существующую конфигурацию', () => {
       const initialConfig: IConnectionConfiguration = {
-        sipServerUrl: 'old.test.com',
+        sipServerIp: 'old.test.com',
+        sipServerUrl: 'wss://old.test.com/ws',
         displayName: 'Old User',
       };
 
       const newConfig: IConnectionConfiguration = {
-        sipServerUrl: 'new.test.com',
+        sipServerIp: 'new.test.com',
+        sipServerUrl: 'wss://new.test.com/ws',
         displayName: 'New User',
         register: true,
       };
@@ -126,7 +130,12 @@ describe('ConfigurationManager', () => {
       const displayName = 'Test User';
       const serverUrl = 'sip.test.com';
 
-      configurationManager.set({ sipServerUrl: serverUrl, displayName, register: true });
+      configurationManager.set({
+        sipServerIp: serverUrl,
+        sipServerUrl: 'wss://sip.test.com/ws',
+        displayName,
+        register: true,
+      });
 
       expect(configurationManager.isRegister()).toBe(true);
     });
@@ -135,23 +144,50 @@ describe('ConfigurationManager', () => {
       const displayName = 'Test User';
       const serverUrl = 'sip.test.com';
 
-      configurationManager.set({ sipServerUrl: serverUrl, displayName, register: false });
+      configurationManager.set({
+        sipServerIp: serverUrl,
+        sipServerUrl: 'wss://sip.test.com/ws',
+        displayName,
+        register: false,
+      });
 
       expect(configurationManager.isRegister()).toBe(false);
     });
   });
 
+  describe('getSipServerIp', () => {
+    it('должен возвращать undefined когда IP не установлен', () => {
+      expect(configurationManager.getSipServerIp()).toBeUndefined();
+    });
+
+    it('должен возвращать serverIp', () => {
+      const sipServerIp = '192.168.0.1';
+
+      configurationManager.set({
+        sipServerIp,
+        sipServerUrl: 'wss://sip.test.com/ws',
+        displayName: 'Test User',
+      });
+
+      expect(configurationManager.getSipServerIp()).toBe(sipServerIp);
+    });
+  });
+
   describe('getSipServerUrl', () => {
-    it('должен возвращать undefined когда URL не установлен', () => {
+    it('должен возвращать undefined когда sipServerUrl не установлен', () => {
       expect(configurationManager.getSipServerUrl()).toBeUndefined();
     });
 
-    it('должен возвращать SIP сервер URL', () => {
-      const serverUrl = 'sip.test.com';
+    it('должен возвращать SIP сервер IP', () => {
+      const sipServerUrl = 'sip.test.com';
 
-      configurationManager.set({ sipServerUrl: serverUrl, displayName: 'Test User' });
+      configurationManager.set({
+        sipServerUrl,
+        sipServerIp: '192.168.0.1',
+        displayName: 'Test User',
+      });
 
-      expect(configurationManager.getSipServerUrl()).toBe(serverUrl);
+      expect(configurationManager.getSipServerUrl()).toBe(sipServerUrl);
     });
   });
 
@@ -164,7 +200,11 @@ describe('ConfigurationManager', () => {
       const displayName = 'Test User';
       const serverUrl = 'sip.test.com';
 
-      configurationManager.set({ sipServerUrl: serverUrl, displayName });
+      configurationManager.set({
+        sipServerIp: serverUrl,
+        sipServerUrl: 'wss://sip.test.com/ws',
+        displayName,
+      });
 
       expect(configurationManager.getDisplayName()).toBe(displayName);
     });
@@ -180,7 +220,12 @@ describe('ConfigurationManager', () => {
       const displayName = 'Test User';
       const serverUrl = 'sip.test.com';
 
-      configurationManager.set({ sipServerUrl: serverUrl, displayName, user });
+      configurationManager.set({
+        sipServerIp: serverUrl,
+        sipServerUrl: 'wss://sip.test.com/ws',
+        displayName,
+        user,
+      });
 
       expect(configurationManager.getUser()).toBe(user);
     });
@@ -196,7 +241,12 @@ describe('ConfigurationManager', () => {
       const displayName = 'Test User';
       const serverUrl = 'sip.test.com';
 
-      configurationManager.set({ sipServerUrl: serverUrl, displayName, password });
+      configurationManager.set({
+        sipServerIp: serverUrl,
+        sipServerUrl: 'wss://sip.test.com/ws',
+        displayName,
+        password,
+      });
 
       expect(configurationManager.getPassword()).toBe(password);
     });
@@ -211,7 +261,12 @@ describe('ConfigurationManager', () => {
       const displayName = 'Test User';
       const serverUrl = 'sip.test.com';
 
-      configurationManager.set({ sipServerUrl: serverUrl, displayName, register: true });
+      configurationManager.set({
+        sipServerIp: serverUrl,
+        sipServerUrl: 'wss://sip.test.com/ws',
+        displayName,
+        register: true,
+      });
 
       expect(configurationManager.isRegisterEnabled()).toBe(true);
     });
@@ -220,7 +275,12 @@ describe('ConfigurationManager', () => {
       const displayName = 'Test User';
       const serverUrl = 'sip.test.com';
 
-      configurationManager.set({ sipServerUrl: serverUrl, displayName, register: false });
+      configurationManager.set({
+        sipServerIp: serverUrl,
+        sipServerUrl: 'wss://sip.test.com/ws',
+        displayName,
+        register: false,
+      });
 
       expect(configurationManager.isRegisterEnabled()).toBe(false);
     });
@@ -229,7 +289,8 @@ describe('ConfigurationManager', () => {
   describe('clear', () => {
     it('должен очищать конфигурацию', () => {
       const testConfig: IConnectionConfiguration = {
-        sipServerUrl: 'sip.test.com',
+        sipServerIp: 'sip.test.com',
+        sipServerUrl: 'wss://sip.test.com/ws',
         displayName: 'Test User',
         register: true,
         user: 'testuser',
@@ -244,7 +305,8 @@ describe('ConfigurationManager', () => {
 
     it('должен очищать все поля конфигурации', () => {
       const testConfig: IConnectionConfiguration = {
-        sipServerUrl: 'sip.test.com',
+        sipServerIp: 'sip.test.com',
+        sipServerUrl: 'wss://sip.test.com/ws',
         displayName: 'Test User',
         register: true,
         user: 'testuser',
@@ -254,7 +316,7 @@ describe('ConfigurationManager', () => {
       configurationManager.set(testConfig);
       configurationManager.clear();
 
-      expect(configurationManager.getSipServerUrl()).toBeUndefined();
+      expect(configurationManager.getSipServerIp()).toBeUndefined();
       expect(configurationManager.getDisplayName()).toBeUndefined();
       expect(configurationManager.getUser()).toBeUndefined();
       expect(configurationManager.getPassword()).toBeUndefined();
@@ -266,14 +328,15 @@ describe('ConfigurationManager', () => {
   describe('update', () => {
     it('должен обновлять конфигурацию', () => {
       const testConfig: IConnectionConfiguration = {
-        sipServerUrl: 'sip.test.com',
+        sipServerIp: 'sip.test.com',
+        sipServerUrl: 'wss://sip.test.com/ws',
         displayName: 'test user',
       };
 
       configurationManager.set(testConfig);
-      configurationManager.update('sipServerUrl', 'sip.test.com');
+      configurationManager.update('sipServerIp', 'sip.test.com');
 
-      expect(configurationManager.getSipServerUrl()).toBe('sip.test.com');
+      expect(configurationManager.getSipServerIp()).toBe('sip.test.com');
     });
 
     it('должен выбрасывать ошибку при попытке обновления когда data не существует', () => {
@@ -281,7 +344,7 @@ describe('ConfigurationManager', () => {
       configurationManager.clear();
 
       expect(() => {
-        configurationManager.update('sipServerUrl', 'new.url.com');
+        configurationManager.update('sipServerIp', 'new.url.com');
       }).toThrow('data is not exist');
     });
   });
@@ -289,7 +352,8 @@ describe('ConfigurationManager', () => {
   describe('Интеграционные сценарии', () => {
     it('должен корректно обрабатывать полную конфигурацию', () => {
       const fullConfig: IConnectionConfiguration = {
-        sipServerUrl: 'sip.test.com',
+        sipServerIp: 'sip.test.com',
+        sipServerUrl: 'wss://sip.test.com/ws',
         displayName: 'Test User',
         register: true,
         user: 'testuser',
@@ -298,7 +362,7 @@ describe('ConfigurationManager', () => {
 
       configurationManager.set(fullConfig);
 
-      expect(configurationManager.getSipServerUrl()).toBe('sip.test.com');
+      expect(configurationManager.getSipServerIp()).toBe('sip.test.com');
       expect(configurationManager.getDisplayName()).toBe('Test User');
       expect(configurationManager.getUser()).toBe('testuser');
       expect(configurationManager.getPassword()).toBe('testpass');
@@ -308,13 +372,14 @@ describe('ConfigurationManager', () => {
 
     it('должен корректно обрабатывать частичную конфигурацию', () => {
       const partialConfig: IConnectionConfiguration = {
-        sipServerUrl: 'sip.test.com',
+        sipServerIp: 'sip.test.com',
+        sipServerUrl: 'wss://sip.test.com/ws',
         displayName: 'Test User',
       };
 
       configurationManager.set(partialConfig);
 
-      expect(configurationManager.getSipServerUrl()).toBe('sip.test.com');
+      expect(configurationManager.getSipServerIp()).toBe('sip.test.com');
       expect(configurationManager.getDisplayName()).toBe('Test User');
       expect(configurationManager.getUser()).toBeUndefined();
       expect(configurationManager.getPassword()).toBeUndefined();
@@ -327,7 +392,7 @@ describe('ConfigurationManager', () => {
 
       configurationManager.set(emptyConfig);
 
-      expect(configurationManager.getSipServerUrl()).toBeUndefined();
+      expect(configurationManager.getSipServerIp()).toBeUndefined();
       expect(configurationManager.getDisplayName()).toBeUndefined();
       expect(configurationManager.getUser()).toBeUndefined();
       expect(configurationManager.getPassword()).toBeUndefined();
@@ -339,6 +404,7 @@ describe('ConfigurationManager', () => {
   describe('Граничные случаи', () => {
     it('должен корректно обрабатывать пустые строки', () => {
       const configWithEmptyStrings: IConnectionConfiguration = {
+        sipServerIp: '',
         sipServerUrl: '',
         displayName: '',
         user: '',
@@ -347,7 +413,7 @@ describe('ConfigurationManager', () => {
 
       configurationManager.set(configWithEmptyStrings);
 
-      expect(configurationManager.getSipServerUrl()).toBe('');
+      expect(configurationManager.getSipServerIp()).toBe('');
       expect(configurationManager.getDisplayName()).toBe('');
       expect(configurationManager.getUser()).toBe('');
       expect(configurationManager.getPassword()).toBe('');
@@ -355,7 +421,8 @@ describe('ConfigurationManager', () => {
 
     it('должен корректно обрабатывать undefined значения', () => {
       const configWithUndefined: IConnectionConfiguration = {
-        sipServerUrl: 'sip.test.com',
+        sipServerIp: 'sip.test.com',
+        sipServerUrl: 'wss://sip.test.com/ws',
         displayName: 'Test User',
         user: undefined,
         password: undefined,
@@ -364,7 +431,7 @@ describe('ConfigurationManager', () => {
 
       configurationManager.set(configWithUndefined);
 
-      expect(configurationManager.getSipServerUrl()).toBe('sip.test.com');
+      expect(configurationManager.getSipServerIp()).toBe('sip.test.com');
       expect(configurationManager.getDisplayName()).toBe('Test User');
       expect(configurationManager.getUser()).toBeUndefined();
       expect(configurationManager.getPassword()).toBeUndefined();

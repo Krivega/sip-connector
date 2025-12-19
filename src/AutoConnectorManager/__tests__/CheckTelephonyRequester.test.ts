@@ -53,8 +53,8 @@ describe('CheckTelephonyRequester', () => {
     const onFailRequestMock = jest.fn();
 
     const mockParameters: TParametersCheckTelephony = {
-      sipServerUrl: 'sip://test.com',
-      sipWebSocketServerURL: 'wss://test.com',
+      sipServerIp: 'sip://test.com',
+      sipServerUrl: 'wss://test.com',
       displayName: 'Test User',
     };
 

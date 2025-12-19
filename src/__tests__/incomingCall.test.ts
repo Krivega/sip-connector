@@ -14,7 +14,6 @@ import type { SipConnector } from '../SipConnector';
 describe('incoming call', () => {
   let sipConnector: SipConnector;
   let mediaStream: MediaStream;
-  let mockFunction = jest.fn() as jest.Mock<void>;
 
   beforeEach(() => {
     sipConnector = doMockSipConnector();
@@ -22,7 +21,6 @@ describe('incoming call', () => {
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },
     });
-    mockFunction = jest.fn() as jest.Mock<void>;
   });
 
   it('init', async () => {
@@ -73,7 +71,6 @@ describe('incoming call', () => {
 
           const peerconnection = await sipConnector.answerToIncomingCall({
             mediaStream,
-            ontrack: mockFunction,
           });
 
           expect(sipConnector.callManager.getCallConfiguration().answer).toBe(true);
@@ -122,7 +119,6 @@ describe('incoming call', () => {
 
         const peerconnection = await sipConnector.answerToIncomingCall({
           mediaStream,
-          ontrack: mockFunction,
         });
 
         // @ts-expect-error
@@ -153,7 +149,6 @@ describe('incoming call', () => {
 
         const peerconnection = await sipConnector.answerToIncomingCall({
           mediaStream,
-          ontrack: mockFunction,
         });
 
         // @ts-expect-error
@@ -286,7 +281,6 @@ describe('incoming call', () => {
         await delayPromise(100); // wait for to decline incoming call
         await sipConnector.answerToIncomingCall({
           mediaStream,
-          ontrack: mockFunction,
         });
 
         // @ts-expect-error
@@ -321,7 +315,6 @@ describe('incoming call', () => {
         await sipConnector.answerToIncomingCall({
           mediaStream,
           directionVideo: 'recvonly',
-          ontrack: mockFunction,
         });
 
         // @ts-expect-error
@@ -356,7 +349,6 @@ describe('incoming call', () => {
         await sipConnector.answerToIncomingCall({
           mediaStream,
           directionAudio: 'recvonly',
-          ontrack: mockFunction,
         });
 
         // @ts-expect-error
@@ -392,7 +384,6 @@ describe('incoming call', () => {
           mediaStream,
           directionVideo: 'recvonly',
           directionAudio: 'recvonly',
-          ontrack: mockFunction,
         });
 
         // @ts-expect-error

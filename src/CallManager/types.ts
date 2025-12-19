@@ -1,15 +1,14 @@
 import type { RTCSession, UA } from '@krivega/jssip';
 import type { TContentHint } from '@/PresentationManager';
 import type { Originator } from './eventNames';
-
-export type TOntrack = (event: RTCTrackEvent) => void;
+import type { TTools } from './RecvSession';
 
 export type TOnAddedTransceiver = (
   transceiver: RTCRtpTransceiver,
   track: MediaStreamTrack,
   streams: MediaStream[],
 ) => Promise<void>;
-export type TGetServerUrl = (id: string) => string;
+export type TGetUri = (id: string) => string;
 
 type TOptionsExtraHeaders = {
   extraHeaders?: string[];
@@ -18,7 +17,6 @@ type TOptionsExtraHeaders = {
 type TParamsAnswerToIncomingCall = {
   mediaStream: MediaStream;
   extraHeaders?: TOptionsExtraHeaders['extraHeaders'];
-  ontrack?: TOntrack;
   iceServers?: RTCIceServer[];
   directionVideo?: RTCRtpTransceiverDirection;
   directionAudio?: RTCRtpTransceiverDirection;
@@ -49,9 +47,17 @@ export type TCallConfiguration = {
   number?: string;
 };
 
+export type TCallRoleParticipant = { type: 'participant' };
+export type TCallRoleSpectatorSynthetic = { type: 'spectator_synthetic' };
+export type TCallRoleSpectator = {
+  type: 'spectator';
+  recvParams: { audioId: string; sendOffer: TTools['sendOffer'] };
+};
+export type TCallRole = TCallRoleParticipant | TCallRoleSpectatorSynthetic | TCallRoleSpectator;
+
 export type TStartCall = (
   ua: UA,
-  getSipServerUrl: TGetServerUrl,
+  getUri: TGetUri,
   params: TParamsCall,
 ) => Promise<RTCPeerConnection>;
 export type TReplaceMediaStream = (
@@ -84,7 +90,6 @@ export interface IMCUSession {
     incomingRTCSession: RTCSession,
     params: TParamsAnswerToIncomingCall,
   ) => Promise<RTCPeerConnection>;
-  getRemoteTracks: () => MediaStreamTrack[] | undefined;
   replaceMediaStream: TReplaceMediaStream;
   restartIce: (options?: {
     useUpdate?: boolean;

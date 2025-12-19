@@ -5,6 +5,7 @@ export { default as getUserAgent } from './getUserAgent';
 export { default as hasPurgatory, PURGATORY_CONFERENCE_NUMBER } from './hasPurgatory';
 export { default as prepareMediaStream } from './prepareMediaStream';
 export { default as sendDtmfAccumulated } from './sendDtmfFAccumulated';
+export { default as sendOffer } from './sendOffer';
 export { setEncodingsToSender, setParametersToSender } from './setParametersToSender';
 export type { TOnSetParameters, TResultSetParametersToSender } from './setParametersToSender';
 export { createSyncMediaState } from './syncMediaState';

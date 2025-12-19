@@ -159,6 +159,36 @@ describe('PresentationManager', () => {
     expect(spy).toHaveBeenCalledWith(testError);
   });
 
+  it('вызывает событие FAILED_PRESENTATION с new Error(String(error)) когда ошибка не является экземпляром Error в stopPresentation', async () => {
+    await manager.startPresentation(beforeStartPresentation, mediaStream);
+
+    // Устанавливаем ошибку, которая не является экземпляром Error (строка)
+    const nonErrorValue = 'string-error-message';
+
+    RTCSessionMock.setPresentationError(nonErrorValue as unknown as Error);
+
+    const spy = jest.fn();
+
+    manager.on('presentation:failed', spy);
+
+    await expect(manager.stopPresentation(beforeStopPresentation)).rejects.toBe(nonErrorValue);
+
+    // Проверяем, что событие было вызвано с новым Error, созданным из строки
+    // Событие может вызываться несколько раз (из RTCSessionMock и из PresentationManager)
+    expect(spy).toHaveBeenCalled();
+
+    const calledErrors = (spy.mock.calls as [Error][]).map((call) => {
+      return call[0] as Error;
+    });
+
+    // Проверяем, что хотя бы один вызов был с Error, созданным из строки (из PresentationManager)
+    const hasConvertedError = calledErrors.some((error) => {
+      return error instanceof Error && error.message === 'string-error-message';
+    });
+
+    expect(hasConvertedError).toBe(true);
+  });
+
   it('вызывает событие ENDED_PRESENTATION если нет rtcSession при stopPresentation', async () => {
     await manager.startPresentation(beforeStartPresentation, mediaStream);
     (
@@ -459,6 +489,44 @@ describe('PresentationManager', () => {
     expect(lastResult).toBeInstanceOf(Error);
     expect(lastResult?.message).toBe('fail-start');
     expect(spy).toHaveBeenCalledWith(lastResult);
+    expect(manager.streamPresentationCurrent).toBeUndefined();
+  });
+
+  it('startPresentation вызывает FAILED_PRESENTATION с new Error(String(error)) когда ошибка не является экземпляром Error', async () => {
+    // Устанавливаем ошибку, которая не является экземпляром Error (число)
+    const nonErrorValue = 404;
+
+    RTCSessionMock.setPresentationError(nonErrorValue as unknown as Error);
+
+    const spy = jest.fn();
+
+    manager.on('presentation:failed', spy);
+
+    let error: TReachedLimitError<Error> | undefined;
+
+    try {
+      await manager.startPresentation(beforeStartPresentation, mediaStream);
+    } catch (error_) {
+      error = error_ as unknown as TReachedLimitError<Error>;
+    }
+
+    if (error === undefined) {
+      throw new Error('error is undefined');
+    }
+
+    // Проверяем, что событие было вызвано с новым Error, созданным из числа
+    expect(spy).toHaveBeenCalled();
+
+    const calledErrors = (spy.mock.calls as [Error][]).map((call) => {
+      return call[0] as Error;
+    });
+
+    // Проверяем, что хотя бы один вызов был с Error, созданным из числа
+    const hasConvertedError = calledErrors.some((error_) => {
+      return error_ instanceof Error && error_.message === '404';
+    });
+
+    expect(hasConvertedError).toBe(true);
     expect(manager.streamPresentationCurrent).toBeUndefined();
   });
 

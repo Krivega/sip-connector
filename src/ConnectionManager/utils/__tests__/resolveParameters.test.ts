@@ -4,8 +4,8 @@ describe('resolveParameters', () => {
   it('должен возвращать объект, если передан объект', async () => {
     const parameters = {
       userAgent: 'test-agent',
-      sipWebSocketServerURL: 'wss://test.com',
-      sipServerUrl: 'sip://test.com',
+      sipServerUrl: 'wss://test.com',
+      sipServerIp: 'sip://test.com',
       user: 'test-user',
       register: true,
     };
@@ -18,8 +18,8 @@ describe('resolveParameters', () => {
   it('должен вызывать функцию и возвращать результат, если передана функция', async () => {
     const parameters = {
       userAgent: 'test-agent',
-      sipWebSocketServerURL: 'wss://test.com',
-      sipServerUrl: 'sip://test.com',
+      sipServerUrl: 'wss://test.com',
+      sipServerIp: 'sip://test.com',
       user: 'test-user',
       register: true,
     };
@@ -35,8 +35,8 @@ describe('resolveParameters', () => {
   it('должен обрабатывать асинхронную функцию', async () => {
     const parameters = {
       userAgent: 'test-agent',
-      sipWebSocketServerURL: 'wss://test.com',
-      sipServerUrl: 'sip://test.com',
+      sipServerUrl: 'wss://test.com',
+      sipServerIp: 'sip://test.com',
       user: 'test-user',
       register: true,
     };

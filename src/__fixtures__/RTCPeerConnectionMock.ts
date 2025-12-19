@@ -169,7 +169,7 @@ class RTCPeerConnectionMock extends EventTarget implements RTCPeerConnectionDepr
     return this.senders;
   };
 
-  public addTrack = (track: MediaStreamTrack, ..._streams: MediaStream[]) => {
+  public addTrack = (track: MediaStreamTrack, ...streams: MediaStream[]) => {
     const sender = new RTCRtpSenderMock({ track });
     const transceiver = new RTCRtpTransceiverMock(sender);
 
@@ -178,7 +178,7 @@ class RTCPeerConnectionMock extends EventTarget implements RTCPeerConnectionDepr
 
     this.senders.push(sender);
 
-    this.dispatchTrackInternal(track);
+    this.dispatchTrackInternal(track, ...streams);
 
     return sender;
   };
@@ -207,11 +207,14 @@ class RTCPeerConnectionMock extends EventTarget implements RTCPeerConnectionDepr
     this.dispatchTrackInternal(new MediaStreamTrackMock(kind));
   }
 
-  private dispatchTrackInternal(track: MediaStreamTrack): void {
+  private dispatchTrackInternal(track: MediaStreamTrack, ...streams: MediaStream[]): void {
     const event = new Event(EEvent.TRACK) as RTCTrackEvent;
 
     Object.defineProperty(event, 'track', {
       value: track,
+    });
+    Object.defineProperty(event, 'streams', {
+      value: streams.length === 0 ? [new MediaStream([track])] : streams,
     });
 
     this.dispatchEvent(event);

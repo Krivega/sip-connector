@@ -60,8 +60,8 @@ describe('SipConnectorFacade comprehensive', () => {
       const result = await sipConnectorFacade.connectToServer({
         displayName: 'DISPLAY_NAME',
         userAgent: 'Chrome',
-        sipWebSocketServerURL: 'wss://sip.example.com/ws',
-        sipServerUrl: 'sip.example.com',
+        sipServerUrl: 'wss://sip.example.com/ws',
+        sipServerIp: 'sip.example.com',
         user: 'testuser',
         password: 'testpass',
         register: true,
@@ -74,8 +74,8 @@ describe('SipConnectorFacade comprehensive', () => {
       expect(result.configuration).toBeDefined();
       expect(expectedParameters).toEqual({
         userAgent: 'Chrome',
-        sipWebSocketServerURL: 'wss://sip.example.com/ws',
-        sipServerUrl: 'sip.example.com',
+        sipServerUrl: 'wss://sip.example.com/ws',
+        sipServerIp: 'sip.example.com',
         displayName: 'DISPLAY_NAME',
         password: 'testpass',
         user: 'testuser',
@@ -93,8 +93,8 @@ describe('SipConnectorFacade comprehensive', () => {
         sipConnectorFacade.connectToServer({
           displayName: 'DISPLAY_NAME',
           userAgent: 'Chrome',
-          sipWebSocketServerURL: 'wss://sip.example.com/ws',
-          sipServerUrl: 'sip.example.com',
+          sipServerUrl: 'wss://sip.example.com/ws',
+          sipServerIp: 'sip.example.com',
         }),
       ).rejects.toThrow('Connection failed');
 
@@ -131,8 +131,8 @@ describe('SipConnectorFacade comprehensive', () => {
       const result = await facade.connectToServer({
         displayName: 'DISPLAY_NAME',
         userAgent: 'Chrome',
-        sipWebSocketServerURL: 'wss://sip.example.com/ws',
-        sipServerUrl: 'sip.example.com',
+        sipServerUrl: 'wss://sip.example.com/ws',
+        sipServerIp: 'sip.example.com',
       });
 
       expect(result.isSuccessful).toBe(false);
@@ -168,8 +168,8 @@ describe('SipConnectorFacade comprehensive', () => {
       const result = await facade.connectToServer({
         displayName: 'DISPLAY_NAME',
         userAgent: 'Chrome',
-        sipWebSocketServerURL: 'wss://sip.example.com/ws',
-        sipServerUrl: 'sip.example.com',
+        sipServerUrl: 'wss://sip.example.com/ws',
+        sipServerIp: 'sip.example.com',
       });
 
       expect(result.isSuccessful).toBe(false);
@@ -185,7 +185,6 @@ describe('SipConnectorFacade comprehensive', () => {
     const mockCallParams = {
       conference: 'test-conference',
       mediaStream: mockMediaStream,
-      setRemoteStreams: jest.fn(),
       onBeforeProgressCall: jest.fn(),
       onSuccessProgressCall: jest.fn(),
       onEnterPurgatory: jest.fn(),
@@ -287,7 +286,6 @@ describe('SipConnectorFacade comprehensive', () => {
       const paramsWithoutPurgatory = {
         conference: mockCallParams.conference,
         mediaStream: mockCallParams.mediaStream,
-        setRemoteStreams: mockCallParams.setRemoteStreams,
         onBeforeProgressCall: mockCallParams.onBeforeProgressCall,
         onSuccessProgressCall: mockCallParams.onSuccessProgressCall,
         onEnterConference,
@@ -318,7 +316,6 @@ describe('SipConnectorFacade comprehensive', () => {
       const paramsWithoutPurgatory = {
         conference: mockCallParams.conference,
         mediaStream: mockCallParams.mediaStream,
-        setRemoteStreams: mockCallParams.setRemoteStreams,
         onBeforeProgressCall: mockCallParams.onBeforeProgressCall,
         onSuccessProgressCall: mockCallParams.onSuccessProgressCall,
         onEnterConference,
@@ -344,41 +341,6 @@ describe('SipConnectorFacade comprehensive', () => {
       expect(onEnterConference).not.toHaveBeenCalled();
     });
 
-    it('должен дергать debounced обработчик при событии ontrack (покрытие 258 строки)', async () => {
-      jest.useFakeTimers();
-
-      const setRemoteStreams = jest.fn();
-      const params = {
-        conference: mockCallParams.conference,
-        mediaStream: mockMediaStream,
-        setRemoteStreams,
-      } as const;
-
-      jest.spyOn(sipConnector, 'getRemoteStreams').mockReturnValue([mockMediaStream]);
-
-      const callSpy = jest.spyOn(sipConnector, 'call');
-
-      callSpy.mockImplementation((async (options: unknown) => {
-        const callOptions = options as { ontrack?: (event: { track: MediaStreamTrack }) => void };
-
-        if (callOptions.ontrack) {
-          const videoTrack = { kind: 'video', readyState: 'live' } as MediaStreamTrack;
-
-          callOptions.ontrack({ track: videoTrack });
-        }
-
-        return {} as unknown as RTCPeerConnection;
-      }) as unknown as typeof sipConnector.call);
-
-      await sipConnectorFacade.callToServer(params as never);
-
-      jest.advanceTimersByTime(250);
-
-      expect(setRemoteStreams).toHaveBeenCalledWith([mockMediaStream]);
-
-      jest.useRealTimers();
-    });
-
     it('не должен вызывать handleEnterRoomEvent, когда onEnterPurgatory и onEnterConference не заданы', async () => {
       let enterHandler: ((args: { room: string }) => void) | undefined;
 
@@ -395,7 +357,6 @@ describe('SipConnectorFacade comprehensive', () => {
       await sipConnectorFacade.callToServer({
         conference: mockCallParams.conference,
         mediaStream: mockMediaStream,
-        setRemoteStreams: mockCallParams.setRemoteStreams,
       } as never);
 
       // триггерим enterRoom без установленных обработчиков onEnterPurgatory/onEnterConference
@@ -413,7 +374,6 @@ describe('SipConnectorFacade comprehensive', () => {
 
     const mockAnswerParams = {
       mediaStream: mockMediaStream,
-      setRemoteStreams: jest.fn(),
       onBeforeProgressCall: jest.fn(),
       onSuccessProgressCall: jest.fn(),
       onEnterPurgatory: jest.fn(),
@@ -494,7 +454,6 @@ describe('SipConnectorFacade comprehensive', () => {
       const onEnterPurgatory = jest.fn();
       const paramsWithPurgatory = {
         mediaStream: mockMediaStream,
-        setRemoteStreams: mockAnswerParams.setRemoteStreams,
         onBeforeProgressCall: mockAnswerParams.onBeforeProgressCall,
         onSuccessProgressCall: mockAnswerParams.onSuccessProgressCall,
         onEnterPurgatory,
@@ -524,7 +483,6 @@ describe('SipConnectorFacade comprehensive', () => {
       const onEnterConference = jest.fn();
       const paramsWithoutPurgatory = {
         mediaStream: mockMediaStream,
-        setRemoteStreams: mockAnswerParams.setRemoteStreams,
         onBeforeProgressCall: mockAnswerParams.onBeforeProgressCall,
         onSuccessProgressCall: mockAnswerParams.onSuccessProgressCall,
         onEnterConference,
@@ -554,7 +512,6 @@ describe('SipConnectorFacade comprehensive', () => {
       const onEnterConference = jest.fn();
       const paramsWithoutPurgatory = {
         mediaStream: mockMediaStream,
-        setRemoteStreams: mockAnswerParams.setRemoteStreams,
         onBeforeProgressCall: mockAnswerParams.onBeforeProgressCall,
         onSuccessProgressCall: mockAnswerParams.onSuccessProgressCall,
         onEnterConference,
@@ -578,40 +535,6 @@ describe('SipConnectorFacade comprehensive', () => {
       await delayPromise(10);
 
       expect(onEnterConference).not.toHaveBeenCalled();
-    });
-
-    it('должен дергать debounced обработчик при событии ontrack (answerToIncomingCall)', async () => {
-      jest.useFakeTimers();
-
-      const setRemoteStreams = jest.fn();
-      const params = {
-        mediaStream: mockMediaStream,
-        setRemoteStreams,
-      } as const;
-
-      jest.spyOn(sipConnector, 'getRemoteStreams').mockReturnValue([mockMediaStream]);
-
-      const answerSpy = jest.spyOn(sipConnector, 'answerToIncomingCall');
-
-      answerSpy.mockImplementation((async (options: unknown) => {
-        const answerOptions = options as { ontrack?: (event: { track: MediaStreamTrack }) => void };
-
-        if (answerOptions.ontrack) {
-          const videoTrack = { kind: 'video', readyState: 'live' } as MediaStreamTrack;
-
-          answerOptions.ontrack({ track: videoTrack });
-        }
-
-        return {} as unknown as RTCPeerConnection;
-      }) as unknown as typeof sipConnector.answerToIncomingCall);
-
-      await sipConnectorFacade.answerToIncomingCall(params as never);
-
-      jest.advanceTimersByTime(250);
-
-      expect(setRemoteStreams).toHaveBeenCalledWith([mockMediaStream]);
-
-      jest.useRealTimers();
     });
   });
 
@@ -888,7 +811,7 @@ describe('SipConnectorFacade comprehensive', () => {
         onReadyRemoteStreams,
       });
 
-      jest.spyOn(sipConnector, 'getRemoteStreams').mockReturnValue(undefined);
+      jest.spyOn(sipConnector, 'getRemoteStreams').mockReturnValue([]);
 
       // вызов
       debouncedHandler().catch(() => {
@@ -898,7 +821,8 @@ describe('SipConnectorFacade comprehensive', () => {
       // дебаунс 200мс
       jest.advanceTimersByTime(220);
 
-      expect(onReadyRemoteStreams).not.toHaveBeenCalled();
+      expect(onReadyRemoteStreams).toHaveBeenCalled();
+      expect(onReadyRemoteStreams).toHaveBeenCalledWith([]);
 
       jest.useRealTimers();
     });
@@ -1056,7 +980,6 @@ describe('SipConnectorFacade comprehensive', () => {
 
       await sipConnectorFacade.answerToIncomingCall({
         mediaStream: mockMediaStream,
-        setRemoteStreams: jest.fn(),
       } as never);
 
       enterHandler?.('test-room');

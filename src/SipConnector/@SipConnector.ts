@@ -8,13 +8,14 @@ import { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import { IncomingCallManager } from '@/IncomingCallManager';
 import { PresentationManager } from '@/PresentationManager';
 import { StatsManager } from '@/StatsManager';
+import { sendOffer } from '@/tools';
 import setCodecPreferences from '@/tools/setCodecPreferences';
 import { VideoSendingBalancerManager } from '@/VideoSendingBalancerManager';
 import { ONE_MEGABIT_IN_BITS } from './constants';
 import { EVENT_NAMES } from './eventNames';
 
 import type { IAutoConnectorOptions } from '@/AutoConnectorManager';
-import type { TGetServerUrl } from '@/CallManager';
+import type { TGetUri } from '@/CallManager';
 import type { TContentHint, TOnAddedTransceiver } from '@/PresentationManager';
 import type { TJsSIP } from '@/types';
 import type { IBalancerOptions } from '@/VideoSendingBalancer';
@@ -219,8 +220,8 @@ class SipConnector {
     return this.connectionManager.getConnectionConfiguration();
   };
 
-  public getSipServerUrl: TGetServerUrl = (id: string) => {
-    return this.connectionManager.getSipServerUrl(id);
+  public getUri: TGetUri = (id: string) => {
+    return this.connectionManager.getUri(id);
   };
 
   public startAutoConnect: AutoConnectorManager['start'] = (...args) => {
@@ -234,14 +235,10 @@ class SipConnector {
   public call = async (params: Parameters<CallManager['startCall']>[2]) => {
     const { onAddedTransceiver, ...rest } = params;
 
-    return this.callManager.startCall(
-      this.connectionManager.getUaProtected(),
-      this.getSipServerUrl,
-      {
-        ...rest,
-        onAddedTransceiver: this.resolveHandleAddTransceiver(onAddedTransceiver),
-      },
-    );
+    return this.callManager.startCall(this.connectionManager.getUaProtected(), this.getUri, {
+      ...rest,
+      onAddedTransceiver: this.resolveHandleAddTransceiver(onAddedTransceiver),
+    });
   };
 
   public hangUp: CallManager['endCall'] = async () => {
@@ -422,6 +419,42 @@ class SipConnector {
     return this.apiManager.askPermissionToEnableCam(...args);
   }
 
+  private subscribeChangeRole() {
+    this.apiManager.on('participant:move-request-to-participants', () => {
+      this.callManager.setCallRoleParticipant();
+    });
+    this.apiManager.on('participant:move-request-to-spectators-synthetic', () => {
+      this.callManager.setCallRoleSpectatorSynthetic();
+    });
+    this.apiManager.on('participant:move-request-to-spectators-with-audio-id', ({ audioId }) => {
+      this.callManager.setCallRoleSpectator({ audioId, sendOffer: this.sendOffer });
+    });
+  }
+
+  private readonly sendOffer = async (
+    params: {
+      conferenceNumber: string;
+      quality: 'low' | 'medium' | 'high';
+      audioChannel: string;
+    },
+    offer: RTCSessionDescriptionInit,
+  ): Promise<RTCSessionDescription> => {
+    const connectionConfiguration = this.connectionManager.getConnectionConfiguration();
+    const serverUrl = connectionConfiguration?.sipServerUrl;
+
+    if (serverUrl === undefined) {
+      throw new Error('No sipServerUrl for sendOffer');
+    }
+
+    return sendOffer({
+      serverUrl,
+      offer,
+      conferenceNumber: params.conferenceNumber,
+      quality: params.quality,
+      audio: params.audioChannel,
+    });
+  };
+
   private setCodecPreferences(transceiver: RTCRtpTransceiver) {
     setCodecPreferences(transceiver, {
       preferredMimeTypesVideoCodecs: this.preferredMimeTypesVideoCodecs,
@@ -438,6 +471,8 @@ class SipConnector {
     this.bridgeEvents('presentation', this.presentationManager);
     this.bridgeEvents('stats', this.statsManager);
     this.bridgeEvents('video-balancer', this.videoSendingBalancerManager);
+
+    this.subscribeChangeRole();
   }
 
   private readonly bridgeEvents = <T extends string>(

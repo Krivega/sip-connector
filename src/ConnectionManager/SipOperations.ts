@@ -5,8 +5,8 @@ import type UAFactory from './UAFactory';
 
 export type TParametersCheckTelephony = {
   displayName: string;
+  sipServerIp: string;
   sipServerUrl: string;
-  sipWebSocketServerURL: string;
   userAgent?: string;
   remoteAddress?: string;
   extraHeaders?: string[];
@@ -70,17 +70,17 @@ export default class SipOperations {
   public async checkTelephony({
     userAgent,
     displayName,
+    sipServerIp,
     sipServerUrl,
-    sipWebSocketServerURL,
     remoteAddress,
     extraHeaders,
   }: TParametersCheckTelephony): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void) => {
       const { configuration } = this.uaFactory.createConfiguration({
-        sipWebSocketServerURL,
+        sipServerUrl,
         displayName,
         userAgent,
-        sipServerUrl,
+        sipServerIp,
       });
 
       const ua = this.uaFactory.createUA({ ...configuration, remoteAddress, extraHeaders });
