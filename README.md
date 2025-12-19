@@ -134,7 +134,7 @@ const unsubscribeRemoteStreams = sipConnector.on('call:remote-streams-changed', 
     trackId: event.trackId,
     streams: event.streams, // Актуальный массив всех удаленных потоков
   });
-  
+
   // Обновление UI с новыми потоками
   updateRemoteStreamsDisplay(event.streams);
 });
@@ -157,6 +157,7 @@ const unsubscribeStats = facade.onStats(({ outbound, inbound }) => {
 ```typescript
 await facade.disconnectFromServer();
 unsubscribeStats();
+unsubscribeRemoteStreams();
 ```
 
 ---
@@ -166,15 +167,17 @@ unsubscribeStats();
 ### Обработка входящих вызовов
 
 ```typescript
+// Подписка на изменения удаленных потоков (до ответа на звонок)
+const unsubscribeRemoteStreams = sipConnector.on('call:remote-streams-changed', (event) => {
+  console.log('Изменение удаленных потоков:', event);
+  displayRemoteStreams(event.streams);
+});
+
 // Подписка на входящие события
 sipConnector.on('incoming-call:incomingCall', () => {
   // Автоматический ответ с локальным потоком
   facade.answerToIncomingCall({
     mediaStream: localStream,
-    setRemoteStreams: (streams) => {
-      // Отображение удаленных потоков
-      displayRemoteStreams(streams);
-    },
   });
 });
 ```
@@ -286,20 +289,40 @@ await facade.startPresentation({
 ### Отслеживание перемещений
 
 ```typescript
-// Подписка на перемещение в зрители
-const unsubscribeMoveToSpectators = facade.onMoveToSpectators(() => {
-  console.log('Участник перемещен в зрители');
-  updateParticipantRole('spectator');
-});
+// Подписка на перемещение в зрители (новый формат с audioId)
+const unsubscribeMoveToSpectators = sipConnector.on(
+  'api:participant:move-request-to-spectators',
+  (data) => {
+    if (data.isSynthetic) {
+      console.log('Участник перемещен в зрители (синтетическое событие)');
+    } else {
+      console.log('Участник перемещен в зрители с audioId:', data.audioId);
+    }
+    updateParticipantRole('spectator');
+  },
+);
+
+// Подписка на перемещение в зрители (старый формат для обратной совместимости)
+const unsubscribeMoveToSpectatorsSynthetic = sipConnector.on(
+  'api:participant:move-request-to-spectators-synthetic',
+  () => {
+    console.log('Участник перемещен в зрители (старый формат)');
+    updateParticipantRole('spectator');
+  },
+);
 
 // Подписка на перемещение в участники
-const unsubscribeMoveToParticipants = facade.onMoveToParticipants(() => {
-  console.log('Участник перемещен в участники');
-  updateParticipantRole('participant');
-});
+const unsubscribeMoveToParticipants = sipConnector.on(
+  'api:participant:move-request-to-participants',
+  () => {
+    console.log('Участник перемещен в участники');
+    updateParticipantRole('participant');
+  },
+);
 
 // Отписка при необходимости
 unsubscribeMoveToSpectators();
+unsubscribeMoveToSpectatorsSynthetic();
 unsubscribeMoveToParticipants();
 ```
 
@@ -326,7 +349,24 @@ facade.onUseLicense((license) => {
 ### Работа с удаленными потоками
 
 ```typescript
-// Получение текущих удаленных потоков
+// Подписка на изменения удаленных потоков
+let currentRemoteStreams: MediaStream[] = [];
+
+const unsubscribeRemoteStreams = sipConnector.on('call:remote-streams-changed', (event) => {
+  console.log('Изменение удаленных потоков:', {
+    participantId: event.participantId,
+    changeType: event.changeType, // 'added' | 'removed'
+    trackId: event.trackId,
+  });
+
+  // Обновляем текущие потоки
+  currentRemoteStreams = event.streams;
+
+  // Обновляем UI
+  updateStreamsDisplay(event.streams);
+});
+
+// Получение текущих удаленных потоков (синхронный метод)
 const remoteStreams = facade.getRemoteStreams();
 if (remoteStreams) {
   console.log('Активные удаленные потоки:', remoteStreams.length);
@@ -441,15 +481,15 @@ sipConnector.on('api:restart', (data) => {
 
 SDK использует **событийно-ориентированную архитектуру** с префиксами для группировки:
 
-| Префикс            | Описание                 | Примеры событий                           |
-| ------------------ | ------------------------ | ----------------------------------------- |
-| `connection:*`     | События подключения      | `connected`, `disconnected`               |
-| `call:*`           | События звонков          | `accepted`, `ended`, `failed`             |
-| `api:*`            | События от сервера       | `enterRoom`, `useLicense`, `restart`      |
-| `incoming-call:*`  | События входящих звонков | `incomingCall`                            |
-| `presentation:*`   | События презентаций      | `started`, `stopped`                      |
-| `stats:*`          | События статистики       | `collected`                               |
-| `video-balancer:*` | События балансировки     | `balancing-started`, `parameters-updated` |
+| Префикс            | Описание                 | Примеры событий                                                                |
+| ------------------ | ------------------------ | ------------------------------------------------------------------------------ |
+| `connection:*`     | События подключения      | `connected`, `disconnected`                                                    |
+| `call:*`           | События звонков          | `accepted`, `ended`, `failed`, `remote-streams-changed`                        |
+| `api:*`            | События от сервера       | `enterRoom`, `useLicense`, `restart`, `participant:move-request-to-spectators` |
+| `incoming-call:*`  | События входящих звонков | `incomingCall`                                                                 |
+| `presentation:*`   | События презентаций      | `started`, `stopped`                                                           |
+| `stats:*`          | События статистики       | `collected`                                                                    |
+| `video-balancer:*` | События балансировки     | `balancing-started`, `parameters-updated`                                      |
 
 ### Основные события
 
@@ -484,7 +524,49 @@ sipConnector.on('api:useLicense', (license) => {
 sipConnector.on('api:restart', (data) => {
   console.log('Событие restart от сервера:', data);
 });
+
+// Изменения удаленных потоков
+sipConnector.on('call:remote-streams-changed', (event) => {
+  console.log('Изменение удаленных потоков:', {
+    participantId: event.participantId,
+    changeType: event.changeType, // 'added' | 'removed'
+    trackId: event.trackId,
+    streams: event.streams,
+  });
+});
+
+// Перемещение участников
+sipConnector.on('api:participant:move-request-to-spectators', (data) => {
+  if (data.isSynthetic) {
+    console.log('Перемещение в зрители (синтетическое)');
+  } else {
+    console.log('Перемещение в зрители с audioId:', data.audioId);
+  }
+});
+
+sipConnector.on('api:participant:move-request-to-spectators-synthetic', () => {
+  console.log('Перемещение в зрители (старый формат для обратной совместимости)');
+});
 ```
+
+### Детальная таблица событий
+
+#### События звонков (`call:*`)
+
+| Событие                       | Описание                    | Данные                                                                                                 |
+| ----------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `call:accepted`               | Звонок принят               | -                                                                                                      |
+| `call:ended`                  | Звонок завершен             | `EndEvent`                                                                                             |
+| `call:failed`                 | Звонок завершился с ошибкой | `EndEvent`                                                                                             |
+| `call:remote-streams-changed` | Изменение удаленных потоков | `{ participantId: string, changeType: 'added' \| 'removed', trackId: string, streams: MediaStream[] }` |
+
+#### События участников (`api:participant:*`)
+
+| Событие                                                | Описание                       | Данные                                                             |
+| ------------------------------------------------------ | ------------------------------ | ------------------------------------------------------------------ |
+| `api:participant:move-request-to-spectators`           | Перемещение в зрители (новый)  | `{ isSynthetic: true } \| { isSynthetic: false, audioId: string }` |
+| `api:participant:move-request-to-spectators-synthetic` | Перемещение в зрители (старый) | -                                                                  |
+| `api:participant:move-request-to-participants`         | Перемещение в участники        | -                                                                  |
 
 ### Продвинутые паттерны
 
@@ -768,8 +850,11 @@ sipConnector.startAutoConnect({
   getParameters: async () => {
     return {
       displayName: 'displayName',
-      sipWebSocketServerURL: 'wss://example.com/ws',
-      sipServerUrl: 'sipServerUrl',
+      sipServerUrl: 'example.com', // Путь /webrtc/wss/ добавляется автоматически
+      sipServerIp: 'sip.example.com',
+      user: 'user',
+      password: 'password',
+      register: true,
     };
   },
   // Проверяет готовность к подключению
