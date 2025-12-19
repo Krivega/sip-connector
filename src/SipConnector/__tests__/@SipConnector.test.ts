@@ -470,17 +470,23 @@ describe('SipConnector facade', () => {
       expect(setCallRoleParticipantSpy).toHaveBeenCalledTimes(1);
     });
 
-    it('должен вызывать setCallRoleViewer при событии participant:move-request-to-spectators', () => {
-      const setCallRoleViewerSpy = jest.spyOn(sipConnector.callManager, 'setCallRoleViewer');
+    it('должен вызывать setCallRoleViewerSynthetic при событии participant:move-request-to-spectators', () => {
+      const setCallRoleViewerSpy = jest.spyOn(
+        sipConnector.callManager,
+        'setCallRoleViewerSynthetic',
+      );
 
       // Тригерим событие на уровне ApiManager
-      sipConnector.apiManager.events.trigger('participant:move-request-to-spectators-old', {});
+      sipConnector.apiManager.events.trigger(
+        'participant:move-request-to-spectators-synthetic',
+        {},
+      );
 
       expect(setCallRoleViewerSpy).toHaveBeenCalledTimes(1);
     });
 
-    it('должен вызывать setCallRoleViewerNew с audioId и sendOffer при событии participant:move-request-to-spectators-with-audio-id', () => {
-      const setCallRoleViewerNewSpy = jest.spyOn(sipConnector.callManager, 'setCallRoleViewerNew');
+    it('должен вызывать setCallRoleViewer с audioId и sendOffer при событии participant:move-request-to-spectators-with-audio-id', () => {
+      const setCallRoleViewerSpy = jest.spyOn(sipConnector.callManager, 'setCallRoleViewer');
       const audioId = 'test-audio-id';
 
       // Тригерим событие на уровне ApiManager
@@ -491,14 +497,14 @@ describe('SipConnector facade', () => {
         },
       );
 
-      expect(setCallRoleViewerNewSpy).toHaveBeenCalledTimes(1);
-      expect(setCallRoleViewerNewSpy).toHaveBeenCalledWith({
+      expect(setCallRoleViewerSpy).toHaveBeenCalledTimes(1);
+      expect(setCallRoleViewerSpy).toHaveBeenCalledWith({
         audioId,
         sendOffer: expect.any(Function) as () => void,
       });
     });
 
-    it('должен передавать функцию sendOffer в setCallRoleViewerNew, которая вызывает sendOffer с правильными параметрами', async () => {
+    it('должен передавать функцию sendOffer в setCallRoleViewer, которая вызывает sendOffer с правильными параметрами', async () => {
       jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
         sipServerUrl: 'wss://test.example.com/ws',
       } as unknown as TConnectionConfigurationWithUa);
@@ -508,7 +514,7 @@ describe('SipConnector facade', () => {
         sdp: 'test-sdp',
       } as RTCSessionDescription);
 
-      const setCallRoleViewerNewSpy = jest.spyOn(sipConnector.callManager, 'setCallRoleViewerNew');
+      const setCallRoleViewerSpy = jest.spyOn(sipConnector.callManager, 'setCallRoleViewer');
       const audioId = 'test-audio-id';
 
       // Тригерим событие
@@ -520,7 +526,7 @@ describe('SipConnector facade', () => {
       );
 
       // Получаем переданную функцию sendOffer
-      const callArgs = setCallRoleViewerNewSpy.mock.calls[0];
+      const callArgs = setCallRoleViewerSpy.mock.calls[0];
       const recvParams = callArgs[0];
       const sendOfferFunction = recvParams.sendOffer;
 
@@ -553,7 +559,7 @@ describe('SipConnector facade', () => {
         sipServerUrl: undefined,
       } as unknown as TConnectionConfigurationWithUa);
 
-      const setCallRoleViewerNewSpy = jest.spyOn(sipConnector.callManager, 'setCallRoleViewerNew');
+      const setCallRoleViewerSpy = jest.spyOn(sipConnector.callManager, 'setCallRoleViewer');
       const audioId = 'test-audio-id';
 
       // Тригерим событие
@@ -565,7 +571,7 @@ describe('SipConnector facade', () => {
       );
 
       // Получаем переданную функцию sendOffer
-      const callArgs = setCallRoleViewerNewSpy.mock.calls[0];
+      const callArgs = setCallRoleViewerSpy.mock.calls[0];
       const recvParams = callArgs[0];
       const sendOfferFunction = recvParams.sendOffer;
 
@@ -588,7 +594,7 @@ describe('SipConnector facade', () => {
     });
 
     it('должен корректно обрабатывать множественные вызовы события participant:move-request-to-spectators-with-audio-id с разными audioId', () => {
-      const setCallRoleViewerNewSpy = jest.spyOn(sipConnector.callManager, 'setCallRoleViewerNew');
+      const setCallRoleViewerSpy = jest.spyOn(sipConnector.callManager, 'setCallRoleViewer');
       const firstAudioId = 'test-audio-id-1';
       const secondAudioId = 'test-audio-id-2';
       const thirdAudioId = 'test-audio-id-3';
@@ -601,8 +607,8 @@ describe('SipConnector facade', () => {
         },
       );
 
-      expect(setCallRoleViewerNewSpy).toHaveBeenCalledTimes(1);
-      expect(setCallRoleViewerNewSpy).toHaveBeenNthCalledWith(1, {
+      expect(setCallRoleViewerSpy).toHaveBeenCalledTimes(1);
+      expect(setCallRoleViewerSpy).toHaveBeenNthCalledWith(1, {
         audioId: firstAudioId,
         sendOffer: expect.any(Function) as () => void,
       });
@@ -615,8 +621,8 @@ describe('SipConnector facade', () => {
         },
       );
 
-      expect(setCallRoleViewerNewSpy).toHaveBeenCalledTimes(2);
-      expect(setCallRoleViewerNewSpy).toHaveBeenNthCalledWith(2, {
+      expect(setCallRoleViewerSpy).toHaveBeenCalledTimes(2);
+      expect(setCallRoleViewerSpy).toHaveBeenNthCalledWith(2, {
         audioId: secondAudioId,
         sendOffer: expect.any(Function) as () => void,
       });
@@ -629,14 +635,14 @@ describe('SipConnector facade', () => {
         },
       );
 
-      expect(setCallRoleViewerNewSpy).toHaveBeenCalledTimes(3);
-      expect(setCallRoleViewerNewSpy).toHaveBeenNthCalledWith(3, {
+      expect(setCallRoleViewerSpy).toHaveBeenCalledTimes(3);
+      expect(setCallRoleViewerSpy).toHaveBeenNthCalledWith(3, {
         audioId: thirdAudioId,
         sendOffer: expect.any(Function) as () => void,
       });
 
       // Проверяем, что все вызовы были с разными audioId
-      const allCalls = setCallRoleViewerNewSpy.mock.calls;
+      const allCalls = setCallRoleViewerSpy.mock.calls;
 
       expect(allCalls[0][0].audioId).toBe(firstAudioId);
       expect(allCalls[1][0].audioId).toBe(secondAudioId);

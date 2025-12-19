@@ -86,7 +86,7 @@ describe('participants moveRequests', () => {
 
     return new Promise<void>((resolve) => {
       sipConnector.on('api:participant:move-request-to-spectators', (data) => {
-        expect(data).toEqual({ isNew: false });
+        expect(data).toEqual({ isSynthetic: true });
 
         resolve();
       });

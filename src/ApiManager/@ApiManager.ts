@@ -605,12 +605,12 @@ class ApiManager {
           audioId,
         });
         this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS, {
-          isNew: true,
+          isSynthetic: false,
           audioId,
         });
       } else {
-        this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS_OLD, {});
-        this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS, { isNew: false });
+        this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS_SYNTHETIC, {});
+        this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS, { isSynthetic: true });
       }
     }
 

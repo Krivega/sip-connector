@@ -125,7 +125,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const spectatorSpy = jest.fn();
       const audioId = '123';
 
-      apiManager.on('participant:move-request-to-spectators-old', spectatorOldSpy);
+      apiManager.on('participant:move-request-to-spectators-synthetic', spectatorOldSpy);
       apiManager.on(
         'participant:move-request-to-spectators-with-audio-id',
         spectatorWithAudioIdSpy,
@@ -140,7 +140,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
       callManager.events.trigger('newInfo', infoEvent);
       expect(spectatorOldSpy).not.toHaveBeenCalled();
       expect(spectatorWithAudioIdSpy).toHaveBeenCalledWith({ audioId });
-      expect(spectatorSpy).toHaveBeenCalledWith({ isNew: true, audioId });
+      expect(spectatorSpy).toHaveBeenCalledWith({ isSynthetic: false, audioId });
     });
 
     it('должен обрабатывать CHANNELS события', () => {
@@ -548,7 +548,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const spectatorWithAudioIdSpy = jest.fn();
       const spectatorSpy = jest.fn();
 
-      apiManager.on('participant:move-request-to-spectators-old', spectatorOldSpy);
+      apiManager.on('participant:move-request-to-spectators-synthetic', spectatorOldSpy);
       apiManager.on(
         'participant:move-request-to-spectators-with-audio-id',
         spectatorWithAudioIdSpy,
@@ -562,7 +562,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
       callManager.events.trigger('newInfo', infoEvent);
       expect(spectatorOldSpy).toHaveBeenCalledWith({});
       expect(spectatorWithAudioIdSpy).not.toHaveBeenCalled();
-      expect(spectatorSpy).toHaveBeenCalledWith({ isNew: false });
+      expect(spectatorSpy).toHaveBeenCalledWith({ isSynthetic: true });
     });
 
     it('должен обрабатывать PARTICIPANT состояние', () => {
@@ -609,7 +609,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const spectatorSpy = jest.fn();
       const participantSpy = jest.fn();
 
-      apiManager.on('participant:move-request-to-spectators-old', spectatorOldSpy);
+      apiManager.on('participant:move-request-to-spectators-synthetic', spectatorOldSpy);
       apiManager.on(
         'participant:move-request-to-spectators-with-audio-id',
         spectatorWithAudioIdSpy,
@@ -623,7 +623,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
       callManager.events.trigger('newInfo', infoEvent);
       expect(spectatorOldSpy).toHaveBeenCalledWith({});
       expect(spectatorWithAudioIdSpy).not.toHaveBeenCalled();
-      expect(spectatorSpy).toHaveBeenCalledWith({ isNew: false });
+      expect(spectatorSpy).toHaveBeenCalledWith({ isSynthetic: true });
       expect(participantSpy).not.toHaveBeenCalled();
     });
   });

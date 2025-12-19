@@ -14,7 +14,7 @@ export enum EEvent {
   PARTICIPANT_REMOVED_FROM_LIST_MODERATORS = 'participant:removed-from-list-moderators',
   PARTICIPANT_MOVE_REQUEST_TO_STREAM = 'participant:move-request-to-stream',
   PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS = 'participant:move-request-to-spectators',
-  PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS_OLD = 'participant:move-request-to-spectators-old',
+  PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS_SYNTHETIC = 'participant:move-request-to-spectators-synthetic',
   PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS_WITH_AUDIO_ID = 'participant:move-request-to-spectators-with-audio-id',
   PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS = 'participant:move-request-to-participants',
   PARTICIPATION_ACCEPTING_WORD_REQUEST = 'participation:accepting-word-request',
@@ -53,7 +53,7 @@ export const EVENT_NAMES = [
   `${EEvent.PARTICIPANT_ADDED_TO_LIST_MODERATORS}`,
   `${EEvent.PARTICIPANT_REMOVED_FROM_LIST_MODERATORS}`,
   `${EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS}`,
-  `${EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS_OLD}`,
+  `${EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS_SYNTHETIC}`,
   `${EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS_WITH_AUDIO_ID}`,
   `${EEvent.PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS}`,
   `${EEvent.CHANNELS}`,
@@ -82,13 +82,13 @@ export type TEventMap = {
   'participant:move-request-to-participants': Record<string, never>;
   'participant:move-request-to-spectators':
     | {
-        isNew: false;
+        isSynthetic: true;
       }
     | {
-        isNew: true;
+        isSynthetic: false;
         audioId: string;
       };
-  'participant:move-request-to-spectators-old': Record<string, never>;
+  'participant:move-request-to-spectators-synthetic': Record<string, never>;
   'participant:move-request-to-spectators-with-audio-id': {
     audioId: string;
   };

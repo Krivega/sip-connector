@@ -4,7 +4,7 @@ import sipConnectorFacade from './sipConnectorFacade';
 /**
  * Тип роли участника
  */
-export type TParticipantRole = 'participant' | 'spectator' | 'spectatorNew' | undefined;
+export type TParticipantRole = 'participant' | 'spectatorSynthetic' | 'spectator' | undefined;
 
 /**
  * Тип обработчика изменений роли участника
@@ -47,9 +47,9 @@ class ParticipantRoleManager {
 
     // Подписываемся на событие перемещения в зрители
     this.unsubscribeMoveToSpectators = sipConnectorFacade.on(
-      'api:participant:move-request-to-spectators-old',
+      'api:participant:move-request-to-spectators-synthetic',
       () => {
-        this.setRole('spectator');
+        this.setRole('spectatorSynthetic');
       },
     );
 
@@ -57,7 +57,7 @@ class ParticipantRoleManager {
     this.unsubscribeMoveToSpectatorsNew = sipConnectorFacade.on(
       'api:participant:move-request-to-spectators-with-audio-id',
       () => {
-        this.setRole('spectatorNew');
+        this.setRole('spectator');
       },
     );
 
@@ -142,13 +142,13 @@ class ParticipantRoleManager {
         break;
       }
 
-      case 'spectator': {
-        roleText = 'Зритель';
+      case 'spectatorSynthetic': {
+        roleText = 'Зритель (синтетический)';
 
         break;
       }
 
-      case 'spectatorNew': {
+      case 'spectator': {
         roleText = 'Зритель (NEW)';
 
         break;
