@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [20.0.0](https://github.com/Krivega/sip-connector/compare/v19.9.0...v20.0.0) (2025-12-19)
+
+### ⚠ BREAKING CHANGES
+
+- rename sipServerUrl -> sipServerIp, sipWebSocketServerURL -> sipServerUrl, The required path is now added to sipServerUrl(ex sipWebSocketServerURL), removed setRemoteStreams, ontrack
+
+### Features
+
+- implement new spectator mode ([#57](https://github.com/Krivega/sip-connector/issues/57)) ([33d5d79](https://github.com/Krivega/sip-connector/commit/33d5d79137f35c59c41b6c464afd3bb3accec00f))
+
 ## [19.9.0](https://github.com/Krivega/sip-connector/compare/v19.8.3...v19.9.0) (2025-12-17)
 
 ### Features
