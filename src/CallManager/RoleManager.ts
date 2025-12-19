@@ -69,21 +69,23 @@ export class RoleManager {
   public changeRole(next: TCallRole) {
     const currentRole = this.role;
 
-    // Если тип роли тот же, проверяем нужно ли обновить роль
-    // Для viewer_new проверяем изменился ли audioId
-    if (currentRole.type === next.type) {
-      if (
-        RoleManager.hasViewerNew(next) &&
-        RoleManager.hasViewerNew(currentRole) &&
-        currentRole.recvParams.audioId !== next.recvParams.audioId
-      ) {
-        this.setRole(next);
-      }
+    // Если тип роли изменился, обновляем роль
+    if (currentRole.type !== next.type) {
+      this.setRole(next);
 
       return;
     }
 
-    this.setRole(next);
+    // Если тип роли тот же, проверяем нужно ли обновить роль
+    // Для viewer_new проверяем изменился ли audioId
+    const shouldUpdate =
+      RoleManager.hasViewerNew(next) &&
+      RoleManager.hasViewerNew(currentRole) &&
+      currentRole.recvParams.audioId !== next.recvParams.audioId;
+
+    if (shouldUpdate) {
+      this.setRole(next);
+    }
   }
 
   public reset() {
