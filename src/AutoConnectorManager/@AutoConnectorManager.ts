@@ -115,7 +115,7 @@ class AutoConnectorManager {
     logger('auto connector start');
 
     this.restartConnectionAttempts(parameters);
-    this.subscribeToHardwareTriggers(parameters);
+    this.subscribeToNotActiveCall(parameters);
   }
 
   public stop() {
@@ -283,7 +283,7 @@ class AutoConnectorManager {
   private handleSucceededAttempt(parameters: TParametersAutoConnect) {
     logger('handleSucceededAttempt');
 
-    this.subscribeToNotActiveCall(parameters);
+    this.subscribeToConnectTriggers(parameters);
 
     this.events.trigger(EEvent.SUCCESS);
   }
@@ -306,7 +306,7 @@ class AutoConnectorManager {
       },
       onInactive: () => {
         logger('subscribeToNotActiveCall onInactive');
-        this.subscribeToConnectTriggers(parameters);
+        this.subscribeToHardwareTriggers(parameters);
       },
     });
   }
