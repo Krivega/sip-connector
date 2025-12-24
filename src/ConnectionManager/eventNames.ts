@@ -77,7 +77,7 @@ export type TEventMap = {
   'connect-failed': unknown;
   'connect-parameters-resolve-success': TParametersConnection;
   'connect-parameters-resolve-failed': unknown;
-  'disconnected-from-out-of-call': unknown;
+  'disconnected-from-out-of-call': never;
 };
 
 export type TEvents = TypedEvents<TEventMap>;
