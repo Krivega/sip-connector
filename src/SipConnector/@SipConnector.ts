@@ -419,6 +419,14 @@ class SipConnector {
     return this.apiManager.askPermissionToEnableCam(...args);
   }
 
+  private subscribeConnectionDisconnected() {
+    this.connectionManager.on('disconnected', (event) => {
+      if (!this.isCallActive) {
+        this.events.trigger('connection:disconnected', event);
+      }
+    });
+  }
+
   private subscribeChangeRole() {
     this.apiManager.on('participant:move-request-to-participants', () => {
       this.callManager.setCallRoleParticipant();
@@ -470,7 +478,7 @@ class SipConnector {
 
   private subscribe() {
     this.bridgeEvents('auto-connect', this.autoConnectorManager);
-    this.bridgeEvents('connection', this.connectionManager);
+    this.bridgeEvents('connection', this.connectionManager, { excludeEvents: ['disconnected'] });
     this.bridgeEvents('call', this.callManager);
     this.bridgeEvents('api', this.apiManager);
     this.bridgeEvents('incoming-call', this.incomingCallManager);
@@ -479,6 +487,7 @@ class SipConnector {
     this.bridgeEvents('video-balancer', this.videoSendingBalancerManager);
 
     this.subscribeChangeRole();
+    this.subscribeConnectionDisconnected();
   }
 
   private readonly bridgeEvents = <T extends string>(
@@ -489,8 +498,17 @@ class SipConnector {
       };
       on: (eventName: T, handler: (data: unknown) => void) => unknown;
     },
+    options?: {
+      excludeEvents?: T[];
+    },
   ): void => {
+    const excludeEvents = options?.excludeEvents ?? [];
+
     source.events.eachTriggers((_trigger, eventName) => {
+      if (excludeEvents.includes(eventName)) {
+        return;
+      }
+
       source.on(eventName, (event: unknown) => {
         this.events.trigger(`${prefix}:${eventName}` as TEvent, event);
       });

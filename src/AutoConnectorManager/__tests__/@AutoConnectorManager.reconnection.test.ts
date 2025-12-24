@@ -4,7 +4,12 @@ import { doMockSipConnector } from '@/doMock';
 import AutoConnectorManager from '../@AutoConnectorManager';
 
 import type { SipConnector } from '@/SipConnector';
-import type { IAutoConnectorOptions, TParametersAutoConnect } from '../types';
+import type {
+  IAutoConnectorOptions,
+  TNetworkInterfacesSubscriber,
+  TParametersAutoConnect,
+  TResumeFromSleepModeSubscriber,
+} from '../types';
 
 const DELAY = 100;
 
@@ -41,13 +46,26 @@ describe('AutoConnectorManager - Reconnection', () => {
     );
   };
 
+  let emitChangeNetworkInterfaces: (() => void) | undefined;
+
+  const networkInterfacesSubscriberMock: TNetworkInterfacesSubscriber = {
+    subscribe: jest.fn(({ onChange }: { onChange: () => void; onUnavailable: () => void }) => {
+      emitChangeNetworkInterfaces = onChange;
+    }),
+    unsubscribe: jest.fn(() => {
+      emitChangeNetworkInterfaces = undefined;
+    }),
+  };
+
   let emitResumeFromSleepMode: (() => void) | undefined;
 
-  const resumeFromSleepModeSubscriberMock = {
+  const resumeFromSleepModeSubscriberMock: TResumeFromSleepModeSubscriber = {
     subscribe: jest.fn(({ onResume }: { onResume: () => void }) => {
       emitResumeFromSleepMode = onResume;
     }),
-    unsubscribe: jest.fn(),
+    unsubscribe: jest.fn(() => {
+      emitResumeFromSleepMode = undefined;
+    }),
   };
 
   beforeEach(() => {
@@ -61,6 +79,7 @@ describe('AutoConnectorManager - Reconnection', () => {
     manager = createManager({
       onBeforeRetry: onBeforeRetryMock,
       timeoutBetweenAttempts: 100,
+      networkInterfacesSubscriber: networkInterfacesSubscriberMock,
       resumeFromSleepModeSubscriber: resumeFromSleepModeSubscriberMock,
     });
   });
@@ -197,6 +216,48 @@ describe('AutoConnectorManager - Reconnection', () => {
       await manager.wait('success');
 
       expect(sipConnector.connectionManager.connectionState).toBe('connected');
+    });
+  });
+
+  describe('переподключение при активном звонке', () => {
+    it('не должен делать рестарт при событии resumeFromSleepModeSubscriber onResume если активен звонок', async () => {
+      // @ts-expect-error приватное свойство
+      const restartSpy = jest.spyOn(manager, 'restartConnectionAttempts');
+
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      expect(restartSpy).toHaveBeenCalledTimes(1);
+
+      sipConnector.callManager.events.trigger('call-status-changed', { isCallActive: true });
+
+      await flushPromises();
+
+      emitResumeFromSleepMode?.();
+
+      await flushPromises();
+
+      expect(restartSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('не должен делать рестарт при событии networkInterfacesSubscriber onChange если активен звонок', async () => {
+      // @ts-expect-error приватное свойство
+      const restartSpy = jest.spyOn(manager, 'restartConnectionAttempts');
+
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      expect(restartSpy).toHaveBeenCalledTimes(1);
+
+      sipConnector.callManager.events.trigger('call-status-changed', { isCallActive: true });
+
+      emitChangeNetworkInterfaces?.();
+
+      await flushPromises();
+
+      expect(restartSpy).toHaveBeenCalledTimes(1);
     });
   });
 });

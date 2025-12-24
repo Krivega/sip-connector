@@ -8,6 +8,7 @@ import logger from '@/logger';
 import AttemptsState from './AttemptsState';
 import CheckTelephonyRequester from './CheckTelephonyRequester';
 import { EEvent, EVENT_NAMES } from './eventNames';
+import NotActiveCallSubscriber from './NotActiveCallSubscriber';
 import PingServerIfNotActiveCallRequester from './PingServerIfNotActiveCallRequester';
 import RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCallSubscriber';
 
@@ -63,6 +64,8 @@ class AutoConnectorManager {
 
   private readonly resumeFromSleepModeSubscriber: TResumeFromSleepModeSubscriber | undefined;
 
+  private readonly notActiveCallSubscriber: NotActiveCallSubscriber;
+
   public constructor(
     {
       connectionQueueManager,
@@ -105,6 +108,7 @@ class AutoConnectorManager {
     this.delayBetweenAttempts = new DelayRequester(
       options?.timeoutBetweenAttempts ?? DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS,
     );
+    this.notActiveCallSubscriber = new NotActiveCallSubscriber({ callManager });
   }
 
   public start(parameters: TParametersAutoConnect) {
@@ -117,6 +121,7 @@ class AutoConnectorManager {
   public stop() {
     logger('auto connector stop');
 
+    this.unsubscribeFromNotActiveCall();
     this.unsubscribeFromHardwareTriggers();
     this.stopConnectionFlow().catch((error: unknown) => {
       logger('auto connector stop from stop method: error', error);
@@ -278,7 +283,7 @@ class AutoConnectorManager {
   private handleSucceededAttempt(parameters: TParametersAutoConnect) {
     logger('handleSucceededAttempt');
 
-    this.subscribeToConnectTriggers(parameters);
+    this.subscribeToNotActiveCall(parameters);
 
     this.events.trigger(EEvent.SUCCESS);
   }
@@ -291,6 +296,23 @@ class AutoConnectorManager {
 
       this.restartConnectionAttempts(parameters);
     });
+  }
+
+  private subscribeToNotActiveCall(parameters: TParametersAutoConnect) {
+    this.notActiveCallSubscriber.subscribe({
+      onActive: () => {
+        logger('subscribeToNotActiveCall onActive');
+        this.unsubscribeFromHardwareTriggers();
+      },
+      onInactive: () => {
+        logger('subscribeToNotActiveCall onInactive');
+        this.subscribeToConnectTriggers(parameters);
+      },
+    });
+  }
+
+  private unsubscribeFromNotActiveCall() {
+    this.notActiveCallSubscriber.unsubscribe();
   }
 
   private subscribeToHardwareTriggers(parameters: TParametersAutoConnect) {

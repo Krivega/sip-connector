@@ -34,6 +34,51 @@ describe('SipConnector facade', () => {
     expect(handler).toHaveBeenCalledWith({ socket: {} as Socket });
   });
 
+  it('не должен проксировать событие connection:disconnected если активен звонок', async () => {
+    const handler = jest.fn();
+
+    jest.spyOn(sipConnector.connectionManager, 'getUaProtected').mockReturnValue({} as UA);
+    jest.spyOn(sipConnector, 'getUri').mockImplementation((id: string) => {
+      return `sip:${id}@host`;
+    });
+    jest
+      .spyOn(sipConnector.callManager, 'startCall')
+      .mockResolvedValue({} as unknown as RTCPeerConnection);
+    jest.spyOn(sipConnector.callManager, 'isCallActive', 'get').mockReturnValue(true);
+
+    const testStream = createMediaStreamMock({
+      audio: { deviceId: { exact: 'audioDeviceId' } },
+      video: { deviceId: { exact: 'videoDeviceId' } },
+    });
+
+    await sipConnector.call({
+      number: '123',
+      mediaStream: testStream,
+    } as unknown as { number: string; mediaStream: MediaStream });
+
+    sipConnector.on('connection:disconnected', handler);
+
+    sipConnector.connectionManager.events.trigger('disconnected', {
+      socket: {} as Socket,
+      error: false,
+    });
+
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('должен проксировать событие connection:disconnected если звонок не активен', () => {
+    const handler = jest.fn();
+
+    sipConnector.on('connection:disconnected', handler);
+
+    sipConnector.connectionManager.events.trigger('disconnected', {
+      socket: {} as Socket,
+      error: false,
+    });
+
+    expect(handler).toHaveBeenCalledWith({ socket: {} as Socket, error: false });
+  });
+
   it('должен сохранять типы событий в bridgeEvents', () => {
     // Этот тест проверяет, что типы сохраняются при использовании bridgeEvents
     // Если типы не сохраняются, TypeScript не сможет вывести правильный тип для event
