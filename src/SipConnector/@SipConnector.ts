@@ -420,9 +420,9 @@ class SipConnector {
   }
 
   private subscribeDisconnectedFromOutOfCall() {
-    this.connectionManager.on('disconnected', (event) => {
+    this.connectionManager.on('disconnected', () => {
       if (!this.isCallActive) {
-        this.events.trigger('connection:disconnected-from-out-of-call', event);
+        this.events.trigger('disconnected-from-out-of-call', {});
       }
     });
   }

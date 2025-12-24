@@ -34,7 +34,7 @@ describe('SipConnector facade', () => {
     expect(handler).toHaveBeenCalledWith({ socket: {} as Socket });
   });
 
-  it('не должен проксировать событие connection:disconnected как connection:disconnected-from-out-of-call если активен звонок', async () => {
+  it('не должен проксировать событие connection:disconnected как disconnected-from-out-of-call если активен звонок', async () => {
     const handler = jest.fn();
 
     jest.spyOn(sipConnector.connectionManager, 'getUaProtected').mockReturnValue({} as UA);
@@ -53,7 +53,7 @@ describe('SipConnector facade', () => {
       mediaStream: testStream,
     } as unknown as { number: string; mediaStream: MediaStream });
 
-    sipConnector.on('connection:disconnected-from-out-of-call', handler);
+    sipConnector.on('disconnected-from-out-of-call', handler);
 
     sipConnector.connectionManager.events.trigger('disconnected', {
       socket: {} as Socket,
@@ -63,12 +63,12 @@ describe('SipConnector facade', () => {
     expect(handler).toHaveBeenCalledTimes(0);
   });
 
-  it('должен проксировать событие connection:disconnected как connection:disconnected-from-out-of-call если не активен звонок', async () => {
+  it('должен проксировать событие connection:disconnected как disconnected-from-out-of-call если не активен звонок', async () => {
     const handler = jest.fn();
 
     jest.spyOn(sipConnector.callManager, 'isCallActive', 'get').mockReturnValue(false);
 
-    sipConnector.on('connection:disconnected-from-out-of-call', handler);
+    sipConnector.on('disconnected-from-out-of-call', handler);
 
     sipConnector.connectionManager.events.trigger('disconnected', {
       socket: {} as Socket,
