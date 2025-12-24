@@ -1,15 +1,14 @@
 import logger from '@/logger';
+import NotActiveCallSubscriber from './NotActiveCallSubscriber';
 import PingServerRequester from './PingServerRequester';
 
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
 
 class PingServerIfNotActiveCallRequester {
-  private readonly callManager: CallManager;
-
   private readonly pingServerRequester: PingServerRequester;
 
-  private disposeCallStatusChange: (() => void) | undefined;
+  private readonly notActiveCallSubscriber: NotActiveCallSubscriber;
 
   public constructor({
     connectionManager,
@@ -18,21 +17,24 @@ class PingServerIfNotActiveCallRequester {
     connectionManager: ConnectionManager;
     callManager: CallManager;
   }) {
-    this.callManager = callManager;
-
     this.pingServerRequester = new PingServerRequester({
       connectionManager,
     });
+
+    this.notActiveCallSubscriber = new NotActiveCallSubscriber({ callManager });
   }
 
   public start({ onFailRequest }: { onFailRequest: () => void }) {
     logger('start');
 
-    this.disposeCallStatusChange = this.callManager.on('call-status-changed', () => {
-      this.handleCallStatusChange({ onFailRequest });
+    this.notActiveCallSubscriber.subscribe({
+      onActive: () => {
+        this.pingServerRequester.stop();
+      },
+      onInactive: () => {
+        this.pingServerRequester.start({ onFailRequest });
+      },
     });
-
-    this.handleCallStatusChange({ onFailRequest });
   }
 
   public stop() {
@@ -43,16 +45,7 @@ class PingServerIfNotActiveCallRequester {
   }
 
   private unsubscribeCallStatusChange() {
-    this.disposeCallStatusChange?.();
-    this.disposeCallStatusChange = undefined;
-  }
-
-  private handleCallStatusChange({ onFailRequest }: { onFailRequest: () => void }) {
-    if (this.callManager.isCallActive) {
-      this.pingServerRequester.stop();
-    } else {
-      this.pingServerRequester.start({ onFailRequest });
-    }
+    this.notActiveCallSubscriber.unsubscribe();
   }
 }
 

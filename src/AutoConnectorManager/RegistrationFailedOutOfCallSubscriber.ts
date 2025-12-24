@@ -1,3 +1,5 @@
+import NotActiveCallSubscriber from './NotActiveCallSubscriber';
+
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
 import type { ISubscriber } from './types';
@@ -5,11 +7,11 @@ import type { ISubscriber } from './types';
 class RegistrationFailedOutOfCallSubscriber implements ISubscriber {
   private readonly connectionManager: ConnectionManager;
 
-  private readonly callManager: CallManager;
-
   private isRegistrationFailed = false;
 
   private disposers: (() => void)[] = [];
+
+  private readonly notActiveCallSubscriber: NotActiveCallSubscriber;
 
   public constructor({
     connectionManager,
@@ -20,7 +22,7 @@ class RegistrationFailedOutOfCallSubscriber implements ISubscriber {
   }) {
     this.connectionManager = connectionManager;
 
-    this.callManager = callManager;
+    this.notActiveCallSubscriber = new NotActiveCallSubscriber({ callManager });
   }
 
   public subscribe(callback: () => void) {
@@ -32,13 +34,17 @@ class RegistrationFailedOutOfCallSubscriber implements ISubscriber {
       }),
     );
 
-    this.disposers.push(
-      this.callManager.on('call-status-changed', ({ isCallActive }) => {
-        if (!isCallActive && this.isRegistrationFailed) {
+    this.notActiveCallSubscriber.subscribe({
+      onInactive: () => {
+        if (this.isRegistrationFailed) {
           callback();
         }
-      }),
-    );
+      },
+    });
+
+    this.disposers.push(() => {
+      this.notActiveCallSubscriber.unsubscribe();
+    });
   }
 
   public unsubscribe() {
