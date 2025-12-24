@@ -419,6 +419,14 @@ class SipConnector {
     return this.apiManager.askPermissionToEnableCam(...args);
   }
 
+  private subscribeDisconnectedFromOutOfCall() {
+    this.connectionManager.on('disconnected', () => {
+      if (!this.isCallActive) {
+        this.events.trigger('disconnected-from-out-of-call', {});
+      }
+    });
+  }
+
   private subscribeChangeRole() {
     this.apiManager.on('participant:move-request-to-participants', () => {
       this.callManager.setCallRoleParticipant();
@@ -479,6 +487,7 @@ class SipConnector {
     this.bridgeEvents('video-balancer', this.videoSendingBalancerManager);
 
     this.subscribeChangeRole();
+    this.subscribeDisconnectedFromOutOfCall();
   }
 
   private readonly bridgeEvents = <T extends string>(

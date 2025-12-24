@@ -34,6 +34,63 @@ describe('SipConnector facade', () => {
     expect(handler).toHaveBeenCalledWith({ socket: {} as Socket });
   });
 
+  it('не должен проксировать событие connection:disconnected как disconnected-from-out-of-call если активен звонок', async () => {
+    const handler = jest.fn();
+
+    jest.spyOn(sipConnector.connectionManager, 'getUaProtected').mockReturnValue({} as UA);
+    jest
+      .spyOn(sipConnector.callManager, 'startCall')
+      .mockResolvedValue({} as unknown as RTCPeerConnection);
+    jest.spyOn(sipConnector.callManager, 'isCallActive', 'get').mockReturnValue(true);
+
+    const testStream = createMediaStreamMock({
+      audio: { deviceId: { exact: 'audioDeviceId' } },
+      video: { deviceId: { exact: 'videoDeviceId' } },
+    });
+
+    await sipConnector.call({
+      number: '123',
+      mediaStream: testStream,
+    } as unknown as { number: string; mediaStream: MediaStream });
+
+    sipConnector.on('disconnected-from-out-of-call', handler);
+
+    sipConnector.connectionManager.events.trigger('disconnected', {
+      socket: {} as Socket,
+      error: false,
+    });
+
+    expect(handler).toHaveBeenCalledTimes(0);
+  });
+
+  it('должен проксировать событие connection:disconnected как disconnected-from-out-of-call если не активен звонок', async () => {
+    const handler = jest.fn();
+
+    jest.spyOn(sipConnector.callManager, 'isCallActive', 'get').mockReturnValue(false);
+
+    sipConnector.on('disconnected-from-out-of-call', handler);
+
+    sipConnector.connectionManager.events.trigger('disconnected', {
+      socket: {} as Socket,
+      error: false,
+    });
+
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it('должен проксировать событие connection:disconnected если звонок не активен', () => {
+    const handler = jest.fn();
+
+    sipConnector.on('connection:disconnected', handler);
+
+    sipConnector.connectionManager.events.trigger('disconnected', {
+      socket: {} as Socket,
+      error: false,
+    });
+
+    expect(handler).toHaveBeenCalledWith({ socket: {} as Socket, error: false });
+  });
+
   it('должен сохранять типы событий в bridgeEvents', () => {
     // Этот тест проверяет, что типы сохраняются при использовании bridgeEvents
     // Если типы не сохраняются, TypeScript не сможет вывести правильный тип для event

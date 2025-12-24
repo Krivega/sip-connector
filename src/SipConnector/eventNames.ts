@@ -43,6 +43,8 @@ const VIDEO_BALANCER_EVENTS = VIDEO_BALANCER_MANAGER_EVENT_NAMES.map((eventName)
   return `video-balancer:${eventName}` as const;
 });
 
+const SIP_CONNECTOR_EVENTS = ['disconnected-from-out-of-call'] as const;
+
 export const EVENT_NAMES = [
   ...AUTO_CONNECTOR_EVENTS,
   ...CONNECTION_EVENTS,
@@ -52,6 +54,7 @@ export const EVENT_NAMES = [
   ...PRESENTATION_EVENTS,
   ...STATS_EVENTS,
   ...VIDEO_BALANCER_EVENTS,
+  ...SIP_CONNECTOR_EVENTS,
 ] as const;
 
 export type TEvent = (typeof EVENT_NAMES)[number];
@@ -68,6 +71,8 @@ export type TEventMap = PrefixedEventMap<TAutoConnectorManagerEventMap, 'auto-co
   PrefixedEventMap<TIncomingCallManagerEventMap, 'incoming-call'> &
   PrefixedEventMap<TPresentationManagerEventMap, 'presentation'> &
   PrefixedEventMap<TStatsManagerEventMap, 'stats'> &
-  PrefixedEventMap<TVideoBalancerManagerEventMap, 'video-balancer'>;
+  PrefixedEventMap<TVideoBalancerManagerEventMap, 'video-balancer'> & {
+    'disconnected-from-out-of-call': Record<string, never>;
+  };
 
 export type TEvents = TypedEvents<TEventMap>;
