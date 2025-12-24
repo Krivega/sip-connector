@@ -422,7 +422,7 @@ class SipConnector {
   private subscribeConnectionDisconnected() {
     this.connectionManager.on('disconnected', (event) => {
       if (!this.isCallActive) {
-        this.events.trigger('connection:disconnected', event);
+        this.events.trigger('connection:disconnected-from-out-of-call', event);
       }
     });
   }
@@ -478,7 +478,7 @@ class SipConnector {
 
   private subscribe() {
     this.bridgeEvents('auto-connect', this.autoConnectorManager);
-    this.bridgeEvents('connection', this.connectionManager, { excludeEvents: ['disconnected'] });
+    this.bridgeEvents('connection', this.connectionManager);
     this.bridgeEvents('call', this.callManager);
     this.bridgeEvents('api', this.apiManager);
     this.bridgeEvents('incoming-call', this.incomingCallManager);
@@ -498,17 +498,8 @@ class SipConnector {
       };
       on: (eventName: T, handler: (data: unknown) => void) => unknown;
     },
-    options?: {
-      excludeEvents?: T[];
-    },
   ): void => {
-    const excludeEvents = options?.excludeEvents ?? [];
-
     source.events.eachTriggers((_trigger, eventName) => {
-      if (excludeEvents.includes(eventName)) {
-        return;
-      }
-
       source.on(eventName, (event: unknown) => {
         this.events.trigger(`${prefix}:${eventName}` as TEvent, event);
       });

@@ -34,13 +34,10 @@ describe('SipConnector facade', () => {
     expect(handler).toHaveBeenCalledWith({ socket: {} as Socket });
   });
 
-  it('не должен проксировать событие connection:disconnected если активен звонок', async () => {
+  it('не должен проксировать событие connection:disconnected как connection:disconnected-from-out-of-call если активен звонок', async () => {
     const handler = jest.fn();
 
     jest.spyOn(sipConnector.connectionManager, 'getUaProtected').mockReturnValue({} as UA);
-    jest.spyOn(sipConnector, 'getUri').mockImplementation((id: string) => {
-      return `sip:${id}@host`;
-    });
     jest
       .spyOn(sipConnector.callManager, 'startCall')
       .mockResolvedValue({} as unknown as RTCPeerConnection);
@@ -56,14 +53,29 @@ describe('SipConnector facade', () => {
       mediaStream: testStream,
     } as unknown as { number: string; mediaStream: MediaStream });
 
-    sipConnector.on('connection:disconnected', handler);
+    sipConnector.on('connection:disconnected-from-out-of-call', handler);
 
     sipConnector.connectionManager.events.trigger('disconnected', {
       socket: {} as Socket,
       error: false,
     });
 
-    expect(handler).not.toHaveBeenCalled();
+    expect(handler).toHaveBeenCalledTimes(0);
+  });
+
+  it('должен проксировать событие connection:disconnected как connection:disconnected-from-out-of-call если не активен звонок', async () => {
+    const handler = jest.fn();
+
+    jest.spyOn(sipConnector.callManager, 'isCallActive', 'get').mockReturnValue(false);
+
+    sipConnector.on('connection:disconnected-from-out-of-call', handler);
+
+    sipConnector.connectionManager.events.trigger('disconnected', {
+      socket: {} as Socket,
+      error: false,
+    });
+
+    expect(handler).toHaveBeenCalledTimes(1);
   });
 
   it('должен проксировать событие connection:disconnected если звонок не активен', () => {

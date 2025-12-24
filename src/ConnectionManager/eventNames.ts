@@ -30,6 +30,7 @@ export enum EEvent {
   CONNECT_PARAMETERS_RESOLVE_SUCCESS = 'connect-parameters-resolve-success',
   CONNECT_PARAMETERS_RESOLVE_FAILED = 'connect-parameters-resolve-failed',
   CONNECTED_WITH_CONFIGURATION = 'connected-with-configuration',
+  DISCONNECTED_FROM_OUT_OF_CALL = 'disconnected-from-out-of-call',
 }
 
 export const UA_EVENT_NAMES = [
@@ -52,6 +53,7 @@ const SYNTHETICS_EVENT_NAMES = [
   `${EEvent.CONNECT_PARAMETERS_RESOLVE_SUCCESS}`,
   `${EEvent.CONNECT_PARAMETERS_RESOLVE_FAILED}`,
   `${EEvent.CONNECTED_WITH_CONFIGURATION}`,
+  `${EEvent.DISCONNECTED_FROM_OUT_OF_CALL}`,
 ] as const;
 
 export const EVENT_NAMES = [...UA_EVENT_NAMES, ...SYNTHETICS_EVENT_NAMES] as const;
@@ -75,6 +77,7 @@ export type TEventMap = {
   'connect-failed': unknown;
   'connect-parameters-resolve-success': TParametersConnection;
   'connect-parameters-resolve-failed': unknown;
+  'disconnected-from-out-of-call': unknown;
 };
 
 export type TEvents = TypedEvents<TEventMap>;
