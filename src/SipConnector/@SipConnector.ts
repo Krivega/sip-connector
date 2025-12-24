@@ -422,6 +422,14 @@ class SipConnector {
     return this.apiManager.askPermissionToEnableCam(...args);
   }
 
+  private subscribeDisconnectedFromOutOfCall() {
+    this.connectionManager.on('disconnected', () => {
+      if (!this.isCallActive) {
+        this.events.trigger('disconnected-from-out-of-call', {});
+      }
+    });
+  }
+
   private setCodecPreferences(transceiver: RTCRtpTransceiver) {
     setCodecPreferences(transceiver, {
       preferredMimeTypesVideoCodecs: this.preferredMimeTypesVideoCodecs,
@@ -438,6 +446,8 @@ class SipConnector {
     this.bridgeEvents('presentation', this.presentationManager);
     this.bridgeEvents('stats', this.statsManager);
     this.bridgeEvents('video-balancer', this.videoSendingBalancerManager);
+
+    this.subscribeDisconnectedFromOutOfCall();
   }
 
   private readonly bridgeEvents = <T extends string>(
