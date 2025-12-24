@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [19.9.1](https://github.com/Krivega/sip-connector/compare/v19.9.0...v19.9.1) (2025-12-24)
+
+### Bug Fixes
+
+- do not disconnect or reconnect when call is active ([#60](https://github.com/Krivega/sip-connector/issues/60)) ([41a6acc](https://github.com/Krivega/sip-connector/commit/41a6acc8ef8049d928f0c43f7711317fe6d57a0c))
+
 ## [19.9.0](https://github.com/Krivega/sip-connector/compare/v19.8.3...v19.9.0) (2025-12-17)
 
 ### Features
