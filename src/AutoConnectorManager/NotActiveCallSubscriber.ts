@@ -9,24 +9,16 @@ class NotActiveCallSubscriber {
     this.callManager = callManager;
   }
 
-  public subscribe({ onActive, onInactive }: { onActive?: () => void; onInactive: () => void }) {
+  public subscribe(parameters: { onActive?: () => void; onInactive: () => void }) {
     this.unsubscribe();
 
-    if (this.callManager.isCallActive) {
-      onActive?.();
-    } else {
-      onInactive();
-    }
-
     this.disposers.push(
-      this.callManager.on('call-status-changed', ({ isCallActive }) => {
-        if (isCallActive) {
-          onActive?.();
-        } else {
-          onInactive();
-        }
+      this.callManager.on('call-status-changed', () => {
+        this.handleCallStatusChange(parameters);
       }),
     );
+
+    this.handleCallStatusChange(parameters);
   }
 
   public unsubscribe() {
@@ -34,6 +26,20 @@ class NotActiveCallSubscriber {
       disposer();
     });
     this.disposers = [];
+  }
+
+  private handleCallStatusChange({
+    onActive,
+    onInactive,
+  }: {
+    onActive?: () => void;
+    onInactive: () => void;
+  }) {
+    if (this.callManager.isCallActive) {
+      onActive?.();
+    } else {
+      onInactive();
+    }
   }
 }
 

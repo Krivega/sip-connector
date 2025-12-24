@@ -230,6 +230,7 @@ describe('AutoConnectorManager - Reconnection', () => {
 
       expect(restartSpy).toHaveBeenCalledTimes(1);
 
+      jest.spyOn(sipConnector.callManager, 'isCallActive', 'get').mockReturnValue(true);
       sipConnector.callManager.events.trigger('call-status-changed', { isCallActive: true });
 
       await flushPromises();
@@ -251,6 +252,7 @@ describe('AutoConnectorManager - Reconnection', () => {
 
       expect(restartSpy).toHaveBeenCalledTimes(1);
 
+      jest.spyOn(sipConnector.callManager, 'isCallActive', 'get').mockReturnValue(true);
       sipConnector.callManager.events.trigger('call-status-changed', { isCallActive: true });
 
       emitChangeNetworkInterfaces?.();
