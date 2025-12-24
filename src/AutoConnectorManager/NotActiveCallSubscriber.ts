@@ -12,7 +12,9 @@ class NotActiveCallSubscriber {
   public subscribe({ onActive, onInactive }: { onActive: () => void; onInactive: () => void }) {
     this.unsubscribe();
 
-    if (!this.callManager.isCallActive) {
+    if (this.callManager.isCallActive) {
+      onActive();
+    } else {
       onInactive();
     }
 

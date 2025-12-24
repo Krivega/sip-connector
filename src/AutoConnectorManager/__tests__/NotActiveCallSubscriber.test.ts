@@ -62,12 +62,12 @@ describe('NotActiveCallSubscriber', () => {
       expect(onInactive).toHaveBeenCalledTimes(1);
     });
 
-    it('не вызывает onInactive при подписке если isCallActive изначально true', () => {
+    it('не вызывает onActive при подписке если isCallActive изначально true', () => {
       jest.spyOn(sipConnector.callManager, 'isCallActive', 'get').mockReturnValue(true);
 
       subscriber.subscribe({ onActive, onInactive });
 
-      expect(onActive).not.toHaveBeenCalled();
+      expect(onActive).toHaveBeenCalledTimes(1);
       expect(onInactive).not.toHaveBeenCalled();
     });
 
@@ -90,12 +90,12 @@ describe('NotActiveCallSubscriber', () => {
 
       subscriber.subscribe({ onActive, onInactive });
 
-      expect(onActive).not.toHaveBeenCalled();
+      expect(onActive).toHaveBeenCalledTimes(1);
       expect(onInactive).not.toHaveBeenCalled();
 
       endCall();
 
-      expect(onActive).not.toHaveBeenCalled();
+      expect(onActive).toHaveBeenCalledTimes(1);
       expect(onInactive).toHaveBeenCalledTimes(1);
     });
 
