@@ -91,6 +91,63 @@ describe('SipConnector facade', () => {
     expect(handler).toHaveBeenCalledWith({ socket: {} as Socket, error: false });
   });
 
+  it('не должен проксировать событие connection:connected-with-configuration как connected-with-configuration-from-out-of-call если активен звонок', async () => {
+    const handler = jest.fn();
+
+    jest.spyOn(sipConnector.connectionManager, 'getUaProtected').mockReturnValue({} as UA);
+    jest
+      .spyOn(sipConnector.callManager, 'startCall')
+      .mockResolvedValue({} as unknown as RTCPeerConnection);
+    jest.spyOn(sipConnector.callManager, 'isCallActive', 'get').mockReturnValue(true);
+
+    const testStream = createMediaStreamMock({
+      audio: { deviceId: { exact: 'audioDeviceId' } },
+      video: { deviceId: { exact: 'videoDeviceId' } },
+    });
+
+    await sipConnector.call({
+      number: '123',
+      mediaStream: testStream,
+    } as unknown as { number: string; mediaStream: MediaStream });
+
+    sipConnector.on('connected-with-configuration-from-out-of-call', handler);
+
+    const testConfiguration = {
+      displayName: 'Test User',
+      sipServerIp: 'sip.example.com',
+      sipServerUrl: 'wss://sip.example.com/ws',
+    } as unknown as TConnectionConfigurationWithUa;
+
+    sipConnector.connectionManager.events.trigger(
+      'connected-with-configuration',
+      testConfiguration,
+    );
+
+    expect(handler).toHaveBeenCalledTimes(0);
+  });
+
+  it('должен проксировать событие connection:connected-with-configuration как connected-with-configuration-from-out-of-call если не активен звонок', async () => {
+    const handler = jest.fn();
+
+    jest.spyOn(sipConnector.callManager, 'isCallActive', 'get').mockReturnValue(false);
+
+    sipConnector.on('connected-with-configuration-from-out-of-call', handler);
+
+    const testConfiguration = {
+      displayName: 'Test User',
+      sipServerIp: 'sip.example.com',
+      sipServerUrl: 'wss://sip.example.com/ws',
+    } as unknown as TConnectionConfigurationWithUa;
+
+    sipConnector.connectionManager.events.trigger(
+      'connected-with-configuration',
+      testConfiguration,
+    );
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler).toHaveBeenCalledWith(testConfiguration);
+  });
+
   it('должен сохранять типы событий в bridgeEvents', () => {
     // Этот тест проверяет, что типы сохраняются при использовании bridgeEvents
     // Если типы не сохраняются, TypeScript не сможет вывести правильный тип для event
