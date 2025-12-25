@@ -11,6 +11,7 @@ import type { TypedEvents } from 'events-constructor';
 import type { TEventMap as TApiManagerEventMap } from '@/ApiManager/eventNames';
 import type { TEventMap as TAutoConnectorManagerEventMap } from '@/AutoConnectorManager/eventNames';
 import type { TEventMap as TCallManagerEventMap } from '@/CallManager/eventNames';
+import type { TConnectionConfigurationWithUa } from '@/ConnectionManager';
 import type { TEventMap as TConnectionManagerEventMap } from '@/ConnectionManager/eventNames';
 import type { TEventMap as TIncomingCallManagerEventMap } from '@/IncomingCallManager/eventNames';
 import type { TEventMap as TPresentationManagerEventMap } from '@/PresentationManager/eventNames';
@@ -43,7 +44,10 @@ const VIDEO_BALANCER_EVENTS = VIDEO_BALANCER_MANAGER_EVENT_NAMES.map((eventName)
   return `video-balancer:${eventName}` as const;
 });
 
-const SIP_CONNECTOR_EVENTS = ['disconnected-from-out-of-call'] as const;
+const SIP_CONNECTOR_EVENTS = [
+  'disconnected-from-out-of-call',
+  'connected-with-configuration-from-out-of-call',
+] as const;
 
 export const EVENT_NAMES = [
   ...AUTO_CONNECTOR_EVENTS,
@@ -73,6 +77,7 @@ export type TEventMap = PrefixedEventMap<TAutoConnectorManagerEventMap, 'auto-co
   PrefixedEventMap<TStatsManagerEventMap, 'stats'> &
   PrefixedEventMap<TVideoBalancerManagerEventMap, 'video-balancer'> & {
     'disconnected-from-out-of-call': Record<string, never>;
+    'connected-with-configuration-from-out-of-call': TConnectionConfigurationWithUa;
   };
 
 export type TEvents = TypedEvents<TEventMap>;

@@ -427,6 +427,14 @@ class SipConnector {
     });
   }
 
+  private subscribeConnectedWithConfigurationFromOutOfCall() {
+    this.connectionManager.on('connected-with-configuration', (configuration) => {
+      if (!this.isCallActive) {
+        this.events.trigger('connected-with-configuration-from-out-of-call', configuration);
+      }
+    });
+  }
+
   private subscribeChangeRole() {
     this.apiManager.on('participant:move-request-to-participants', () => {
       this.callManager.setCallRoleParticipant();
@@ -488,6 +496,7 @@ class SipConnector {
 
     this.subscribeChangeRole();
     this.subscribeDisconnectedFromOutOfCall();
+    this.subscribeConnectedWithConfigurationFromOutOfCall();
   }
 
   private readonly bridgeEvents = <T extends string>(
