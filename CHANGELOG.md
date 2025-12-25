@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [20.1.2](https://github.com/Krivega/sip-connector/compare/v20.1.1...v20.1.2) (2025-12-25)
+
+### Bug Fixes
+
+- add connected with configuration from out of call event ([#61](https://github.com/Krivega/sip-connector/issues/61)) ([25164ec](https://github.com/Krivega/sip-connector/commit/25164ecad8b4d22ebc98c9a132b0baaf9f2fbab7))
+
 ### [20.1.1](https://github.com/Krivega/sip-connector/compare/v20.1.0...v20.1.1) (2025-12-24)
 
 ### Bug Fixes
