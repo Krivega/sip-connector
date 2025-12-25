@@ -430,6 +430,14 @@ class SipConnector {
     });
   }
 
+  private subscribeConnectedWithConfigurationFromOutOfCall() {
+    this.connectionManager.on('connected-with-configuration', (configuration) => {
+      if (!this.isCallActive) {
+        this.events.trigger('connected-with-configuration-from-out-of-call', configuration);
+      }
+    });
+  }
+
   private setCodecPreferences(transceiver: RTCRtpTransceiver) {
     setCodecPreferences(transceiver, {
       preferredMimeTypesVideoCodecs: this.preferredMimeTypesVideoCodecs,
@@ -448,6 +456,7 @@ class SipConnector {
     this.bridgeEvents('video-balancer', this.videoSendingBalancerManager);
 
     this.subscribeDisconnectedFromOutOfCall();
+    this.subscribeConnectedWithConfigurationFromOutOfCall();
   }
 
   private readonly bridgeEvents = <T extends string>(
