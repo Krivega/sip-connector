@@ -68,6 +68,11 @@ type PrefixedEventMap<T extends Record<string, unknown>, Prefix extends string> 
   [K in keyof T as `${Prefix}:${string & K}`]: T[K];
 };
 
+type TSipConnectorEventMap = {
+  'disconnected-from-out-of-call': Record<string, never>;
+  'connected-with-configuration-from-out-of-call': TConnectionConfigurationWithUa;
+};
+
 export type TEventMap = PrefixedEventMap<TAutoConnectorManagerEventMap, 'auto-connect'> &
   PrefixedEventMap<TConnectionManagerEventMap, 'connection'> &
   PrefixedEventMap<TCallManagerEventMap, 'call'> &
@@ -75,9 +80,7 @@ export type TEventMap = PrefixedEventMap<TAutoConnectorManagerEventMap, 'auto-co
   PrefixedEventMap<TIncomingCallManagerEventMap, 'incoming-call'> &
   PrefixedEventMap<TPresentationManagerEventMap, 'presentation'> &
   PrefixedEventMap<TStatsManagerEventMap, 'stats'> &
-  PrefixedEventMap<TVideoBalancerManagerEventMap, 'video-balancer'> & {
-    'disconnected-from-out-of-call': Record<string, never>;
-    'connected-with-configuration-from-out-of-call': TConnectionConfigurationWithUa;
-  };
+  PrefixedEventMap<TVideoBalancerManagerEventMap, 'video-balancer'> &
+  TSipConnectorEventMap;
 
 export type TEvents = TypedEvents<TEventMap>;
