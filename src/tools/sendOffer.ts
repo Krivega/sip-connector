@@ -57,7 +57,6 @@ const sendOffer = async ({
     headers: {
       'Content-Type': 'application/json',
     },
-    referrerPolicy: 'no-referrer',
     credentials: 'same-origin',
     body: JSON.stringify(offer),
   });
