@@ -47,6 +47,7 @@ const VIDEO_BALANCER_EVENTS = VIDEO_BALANCER_MANAGER_EVENT_NAMES.map((eventName)
 const SIP_CONNECTOR_EVENTS = [
   'disconnected-from-out-of-call',
   'connected-with-configuration-from-out-of-call',
+  'stopped-presentation-by-server-command',
 ] as const;
 
 export const EVENT_NAMES = [
@@ -71,6 +72,7 @@ type PrefixedEventMap<T extends Record<string, unknown>, Prefix extends string> 
 type TSipConnectorEventMap = {
   'disconnected-from-out-of-call': Record<string, never>;
   'connected-with-configuration-from-out-of-call': TConnectionConfigurationWithUa;
+  'stopped-presentation-by-server-command': Record<string, never>;
 };
 
 export type TEventMap = PrefixedEventMap<TAutoConnectorManagerEventMap, 'auto-connect'> &

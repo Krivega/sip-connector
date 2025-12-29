@@ -435,7 +435,7 @@ class SipConnector {
     });
   }
 
-  private subscribeChangeRole() {
+  private subscribeToApiEvents() {
     this.apiManager.on('participant:move-request-to-participants', () => {
       this.callManager.setCallRoleParticipant();
     });
@@ -444,12 +444,20 @@ class SipConnector {
       this.stopPresentation().catch(() => {
         // Игнорируем ошибки при остановке презентации
       });
+      this.events.trigger('stopped-presentation-by-server-command', {});
     });
     this.apiManager.on('participant:move-request-to-spectators-with-audio-id', ({ audioId }) => {
       this.callManager.setCallRoleSpectator({ audioId, sendOffer: this.sendOffer });
       this.stopPresentation().catch(() => {
         // Игнорируем ошибки при остановке презентации
       });
+      this.events.trigger('stopped-presentation-by-server-command', {});
+    });
+    this.apiManager.on('mustStopPresentation', () => {
+      this.stopPresentation().catch(() => {
+        // Игнорируем ошибки при остановке презентации
+      });
+      this.events.trigger('stopped-presentation-by-server-command', {});
     });
   }
 
@@ -494,7 +502,7 @@ class SipConnector {
     this.bridgeEvents('stats', this.statsManager);
     this.bridgeEvents('video-balancer', this.videoSendingBalancerManager);
 
-    this.subscribeChangeRole();
+    this.subscribeToApiEvents();
     this.subscribeDisconnectedFromOutOfCall();
     this.subscribeConnectedWithConfigurationFromOutOfCall();
   }
