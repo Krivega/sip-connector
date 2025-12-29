@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [20.2.0](https://github.com/Krivega/sip-connector/compare/v20.1.2...v20.2.0) (2025-12-29)
+
+### Features
+
+- enhance event handling for presentation stop commands ([9ee8dae](https://github.com/Krivega/sip-connector/commit/9ee8dae8f4f17ae3dd1f1fce52be3d12e6328954))
+
 ### [20.1.2](https://github.com/Krivega/sip-connector/compare/v20.1.1...v20.1.2) (2025-12-25)
 
 ### Bug Fixes
