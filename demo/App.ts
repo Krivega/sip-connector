@@ -146,6 +146,9 @@ class App {
         setRemoteStreams: (streams: MediaStream[]) => {
           this.handleRemoteStreams(streams);
         },
+        onStatusesChange: (statuses) => {
+          this.updateSessionStatuses(statuses);
+        },
       });
 
       this.callStateManager.setState('active');
@@ -167,6 +170,19 @@ class App {
     streams.forEach((stream) => {
       this.remoteMediaStreamManager.addStream(stream.id, stream);
     });
+  }
+
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
+  private updateSessionStatuses(statuses: {
+    connection: string;
+    call: string;
+    incoming: string;
+    screenShare: string;
+  }): void {
+    dom.connectionStatusElement.textContent = statuses.connection;
+    dom.callStatusElement.textContent = statuses.call;
+    dom.incomingStatusElement.textContent = statuses.incoming;
+    dom.screenShareStatusElement.textContent = statuses.screenShare;
   }
 
   /**

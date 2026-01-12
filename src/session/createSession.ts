@@ -6,16 +6,21 @@ import { sessionMachine } from './rootMachine';
 import type { TSessionEventAdapterDeps } from './eventAdapter';
 import type { TSessionActor, TSessionSnapshot } from './rootMachine';
 
-type EqualityFunction<T> = (previous: T, next: T) => boolean;
-type Selector<T> = (snapshot: TSessionSnapshot) => T;
+type TEqualityFunction<T> = (previous: T, next: T) => boolean;
+type TSelector<T> = (snapshot: TSessionSnapshot) => T;
+
+type TSubscribeOverload = {
+  (listener: (snapshot: TSessionSnapshot) => void): () => void;
+  <T>(
+    selector: TSelector<T>,
+    listener: (value: T) => void,
+    equals?: TEqualityFunction<T>,
+  ): () => void;
+};
 
 export interface ISession {
   getSnapshot: () => TSessionSnapshot;
-  subscribe: <T>(
-    selector: Selector<T>,
-    listener: (value: T) => void,
-    equals?: EqualityFunction<T>,
-  ) => () => void;
+  subscribe: TSubscribeOverload;
   stop: () => void;
   actor: TSessionActor;
 }
@@ -30,11 +35,31 @@ export const createSession = (deps: TSessionEventAdapterDeps): ISession => {
 
   actor.start();
 
-  const subscribe = <T>(
-    selector: Selector<T>,
+  function subscribe(listener: (snapshot: TSessionSnapshot) => void): () => void;
+  function subscribe<T>(
+    selector: TSelector<T>,
     listener: (value: T) => void,
-    equals: EqualityFunction<T> = defaultEquals,
-  ) => {
+    equals?: TEqualityFunction<T>,
+  ): () => void;
+  function subscribe(
+    selectorOrListener: TSelector<unknown> | ((snapshot: TSessionSnapshot) => void),
+    maybeListener?: (value: unknown) => void,
+    maybeEquals?: TEqualityFunction<unknown>,
+  ) {
+    const hasSelector = typeof maybeListener === 'function';
+
+    const selector = hasSelector
+      ? (selectorOrListener as TSelector<unknown>)
+      : (snapshot: TSessionSnapshot) => {
+          return snapshot;
+        };
+    const listener = hasSelector
+      ? (maybeListener as (value: unknown) => void)
+      : (selectorOrListener as (value: unknown) => void);
+    const equals =
+      (hasSelector ? (maybeEquals as TEqualityFunction<unknown> | undefined) : undefined) ??
+      (defaultEquals as TEqualityFunction<unknown>);
+
     let current = selector(actor.getSnapshot());
 
     const subscription = actor.subscribe((snapshot) => {
@@ -51,7 +76,7 @@ export const createSession = (deps: TSessionEventAdapterDeps): ISession => {
     return () => {
       subscription.unsubscribe();
     };
-  };
+  }
 
   return {
     actor,

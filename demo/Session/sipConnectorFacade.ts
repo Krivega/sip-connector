@@ -1,6 +1,6 @@
 import JsSIP from '@krivega/jssip';
 
-import { SipConnector, SipConnectorFacade } from '../../src/index';
+import { SipConnector, SipConnectorFacade } from '../../src';
 
 const sipConnector = new SipConnector({
   JsSIP,
