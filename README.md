@@ -57,7 +57,7 @@ SDK построен по принципу **слоистой архитекту
 - Быстрый пример подписки:
 
 ```typescript
-import { selectConnectionStatus, selectCallStatus } from 'sip-connector/session';
+import { selectConnectionStatus, selectCallStatus } from 'sip-connector';
 
 const unsubscribe = sipConnector.session.subscribe(
   (snapshot) => ({
