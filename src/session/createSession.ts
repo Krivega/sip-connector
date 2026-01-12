@@ -1,39 +1,31 @@
 import { createActor } from 'xstate';
 
 import { attachSessionEventAdapter } from './eventAdapter';
-import { sipSessionMachine } from './rootMachine';
-import {
-  selectCallStatus,
-  selectConnectionStatus,
-  selectIncomingRemoteCaller,
-  selectIncomingStatus,
-  selectIsInCall,
-  selectScreenShareStatus,
-} from './selectors';
+import { sessionMachine } from './rootMachine';
 
 import type { TSessionEventAdapterDeps } from './eventAdapter';
-import type { TSipSessionActor, TSipSessionSnapshot } from './rootMachine';
+import type { TSessionActor, TSessionSnapshot } from './rootMachine';
 
 type EqualityFunction<T> = (previous: T, next: T) => boolean;
-type Selector<T> = (snapshot: TSipSessionSnapshot) => T;
+type Selector<T> = (snapshot: TSessionSnapshot) => T;
 
-export interface ISipSession {
-  getSnapshot: () => TSipSessionSnapshot;
+export interface ISession {
+  getSnapshot: () => TSessionSnapshot;
   subscribe: <T>(
     selector: Selector<T>,
     listener: (value: T) => void,
     equals?: EqualityFunction<T>,
   ) => () => void;
   stop: () => void;
-  actor: TSipSessionActor;
+  actor: TSessionActor;
 }
 
 const defaultEquals = <T>(previous: T, next: T) => {
   return Object.is(previous, next);
 };
 
-export const createSipSession = (deps: TSessionEventAdapterDeps): ISipSession => {
-  const actor = createActor(sipSessionMachine);
+export const createSession = (deps: TSessionEventAdapterDeps): ISession => {
+  const actor = createActor(sessionMachine);
   const detach = attachSessionEventAdapter(actor, deps);
 
   actor.start();
@@ -72,13 +64,4 @@ export const createSipSession = (deps: TSessionEventAdapterDeps): ISipSession =>
       actor.stop();
     },
   };
-};
-
-export const sessionSelectors = {
-  selectConnectionStatus,
-  selectCallStatus,
-  selectIncomingStatus,
-  selectIncomingRemoteCaller,
-  selectScreenShareStatus,
-  selectIsInCall,
 };

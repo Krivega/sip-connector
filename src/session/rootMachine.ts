@@ -6,12 +6,12 @@ import { incomingMachine } from './incomingMachine';
 import { screenShareMachine } from './screenShareMachine';
 
 import type { ActorRefFrom, SnapshotFrom } from 'xstate';
-import type { TSipSessionEvent } from './types';
+import type { TSessionEvent } from './types';
 
-export const sipSessionMachine = setup({
+export const sessionMachine = setup({
   types: {
     context: {} as Record<string, never>,
-    events: {} as TSipSessionEvent,
+    events: {} as TSessionEvent,
   },
   actors: {
     connection: connectionMachine,
@@ -26,7 +26,7 @@ export const sipSessionMachine = setup({
     forwardToScreenShare: forwardTo('screenShare'),
   },
 }).createMachine({
-  id: 'sipSession',
+  id: 'session',
   type: 'parallel',
   context: {},
   states: {
@@ -55,5 +55,5 @@ export const sipSessionMachine = setup({
   },
 });
 
-export type TSipSessionSnapshot = SnapshotFrom<typeof sipSessionMachine>;
-export type TSipSessionActor = ActorRefFrom<typeof sipSessionMachine>;
+export type TSessionSnapshot = SnapshotFrom<typeof sessionMachine>;
+export type TSessionActor = ActorRefFrom<typeof sessionMachine>;

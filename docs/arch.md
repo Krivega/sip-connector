@@ -440,7 +440,7 @@ stateDiagram-v2
 
 ### Слои
 
-- Корневой актор: `sipSessionMachine` (`type: 'parallel'`).
+- Корневой актор: `sessionMachine` (`type: 'parallel'`).
 - Дочерние машины: `connectionMachine`, `callMachine`, `incomingMachine`, `screenShareMachine`.
 - Фасад: `createSipSession()` или `sipConnector.session` — актор, `getSnapshot()`, `subscribe(selector, listener)` с типобезопасными селекторами.
 - Адаптер событий: подписывается на менеджеры и транслирует их события в доменные события машин.

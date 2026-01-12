@@ -15,11 +15,11 @@ export type { TJsSIP } from './types';
 export { default as getCodecFromSender } from './utils/getCodecFromSender';
 export { hasConnectionPromiseIsNotActualError } from './ConnectionQueueManager';
 export {
-  createSipSession,
+  createSession,
   sessionSelectors,
   ECallStatus,
   EConnectionStatus,
   EIncomingStatus,
   EScreenShareStatus,
 } from './session';
-export type { ISipSession, TSipSessionSnapshot } from './session';
+export type { ISession, TSessionSnapshot } from './session';

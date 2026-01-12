@@ -43,7 +43,7 @@ SDK построен по принципу **слоистой архитекту
 
 ### 🧭 Состояния сеанса (XState)
 
-- Единый актор `sipSessionMachine` агрегирует параллельные машины: `connection`, `call`, `incoming`, `screenShare`.
+- Единый актор `sessionMachine` агрегирует параллельные машины: `connection`, `call`, `incoming`, `screenShare`.
 - Клиент подписывается на статусы через `sipConnector.session.subscribe(selector, listener)` или читает снапшот через `sipConnector.session.getSnapshot()`.
 - Домены и статусы:
   - **connection**: `idle` → `connecting` → `initializing` → `connected` → `registered` → `disconnected` / `failed`.

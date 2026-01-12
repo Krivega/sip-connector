@@ -2,7 +2,7 @@ import type { SnapshotFrom } from 'xstate';
 import type { callMachine } from './callMachine';
 import type { connectionMachine } from './connectionMachine';
 import type { incomingMachine } from './incomingMachine';
-import type { TSipSessionSnapshot } from './rootMachine';
+import type { TSessionSnapshot } from './rootMachine';
 import type { screenShareMachine } from './screenShareMachine';
 
 type TChildKey = 'connection' | 'call' | 'incoming' | 'screenShare';
@@ -15,22 +15,22 @@ type TScreenShareSnapshot = SnapshotFrom<typeof screenShareMachine>;
 
 // Перегрузки функции для правильного вывода типов
 function getChildSnapshot(
-  snapshot: TSipSessionSnapshot,
+  snapshot: TSessionSnapshot,
   key: 'connection',
 ): TConnectionSnapshot | undefined;
-function getChildSnapshot(snapshot: TSipSessionSnapshot, key: 'call'): TCallSnapshot | undefined;
+function getChildSnapshot(snapshot: TSessionSnapshot, key: 'call'): TCallSnapshot | undefined;
 function getChildSnapshot(
-  snapshot: TSipSessionSnapshot,
+  snapshot: TSessionSnapshot,
   key: 'incoming',
 ): TIncomingSnapshot | undefined;
 function getChildSnapshot(
-  snapshot: TSipSessionSnapshot,
+  snapshot: TSessionSnapshot,
   key: 'screenShare',
 ): TScreenShareSnapshot | undefined;
 // Реализация
-function getChildSnapshot(snapshot: TSipSessionSnapshot, key: TChildKey) {
+function getChildSnapshot(snapshot: TSessionSnapshot, key: TChildKey) {
   const typedChildren = snapshot.children as Partial<
-    Record<TChildKey, TSipSessionSnapshot['children'][string]>
+    Record<TChildKey, TSessionSnapshot['children'][string]>
   >;
 
   const actor = typedChildren[key];

@@ -27,11 +27,7 @@ export default defineConfig(() => {
     ],
     build: {
       lib: {
-        entry: [
-          path.resolve('src', 'index.ts'),
-          path.resolve('src', 'doMock.ts'),
-          path.resolve('src', 'session.ts'),
-        ],
+        entry: [path.resolve('src', 'index.ts'), path.resolve('src', 'doMock.ts')],
         name: 'index',
         formats: ['es', 'cjs'],
         fileName: (format, entryName) => {

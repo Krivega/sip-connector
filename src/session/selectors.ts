@@ -2,29 +2,27 @@ import getChildSnapshot from './getChildSnapshot';
 import { ECallStatus, EConnectionStatus, EIncomingStatus, EScreenShareStatus } from './types';
 
 import type { TRemoteCallerData } from '@/IncomingCallManager/eventNames';
-import type { TSipSessionSnapshot } from './rootMachine';
+import type { TSessionSnapshot } from './rootMachine';
 
-export const selectConnectionStatus = (snapshot: TSipSessionSnapshot): EConnectionStatus => {
+const selectConnectionStatus = (snapshot: TSessionSnapshot): EConnectionStatus => {
   const childSnapshot = getChildSnapshot(snapshot, 'connection');
 
   return childSnapshot?.value ?? EConnectionStatus.IDLE;
 };
 
-export const selectCallStatus = (snapshot: TSipSessionSnapshot): ECallStatus => {
+const selectCallStatus = (snapshot: TSessionSnapshot): ECallStatus => {
   const childSnapshot = getChildSnapshot(snapshot, 'call');
 
   return childSnapshot?.value ?? ECallStatus.IDLE;
 };
 
-export const selectIncomingStatus = (snapshot: TSipSessionSnapshot): EIncomingStatus => {
+const selectIncomingStatus = (snapshot: TSessionSnapshot): EIncomingStatus => {
   const childSnapshot = getChildSnapshot(snapshot, 'incoming');
 
   return childSnapshot?.value ?? EIncomingStatus.IDLE;
 };
 
-export const selectIncomingRemoteCaller = (
-  snapshot: TSipSessionSnapshot,
-): TRemoteCallerData | undefined => {
+const selectIncomingRemoteCaller = (snapshot: TSessionSnapshot): TRemoteCallerData | undefined => {
   const childSnapshot = getChildSnapshot(snapshot, 'incoming');
 
   if (childSnapshot?.value !== EIncomingStatus.IDLE) {
@@ -34,14 +32,23 @@ export const selectIncomingRemoteCaller = (
   return undefined;
 };
 
-export const selectScreenShareStatus = (snapshot: TSipSessionSnapshot): EScreenShareStatus => {
+const selectScreenShareStatus = (snapshot: TSessionSnapshot): EScreenShareStatus => {
   const childSnapshot = getChildSnapshot(snapshot, 'screenShare');
 
   return childSnapshot?.value ?? EScreenShareStatus.IDLE;
 };
 
-export const selectIsInCall = (snapshot: TSipSessionSnapshot): boolean => {
+const selectIsInCall = (snapshot: TSessionSnapshot): boolean => {
   const status = selectCallStatus(snapshot);
 
   return status === ECallStatus.IN_CALL || status === ECallStatus.ACCEPTED;
+};
+
+export const sessionSelectors = {
+  selectConnectionStatus,
+  selectCallStatus,
+  selectIncomingStatus,
+  selectIncomingRemoteCaller,
+  selectScreenShareStatus,
+  selectIsInCall,
 };

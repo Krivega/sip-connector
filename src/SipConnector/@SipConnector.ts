@@ -7,7 +7,7 @@ import { ConnectionManager } from '@/ConnectionManager';
 import { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import { IncomingCallManager } from '@/IncomingCallManager';
 import { PresentationManager } from '@/PresentationManager';
-import { createSipSession } from '@/session';
+import { createSession } from '@/session';
 import { StatsManager } from '@/StatsManager';
 import { sendOffer } from '@/tools';
 import setCodecPreferences from '@/tools/setCodecPreferences';
@@ -18,7 +18,7 @@ import { EVENT_NAMES } from './eventNames';
 import type { IAutoConnectorOptions } from '@/AutoConnectorManager';
 import type { TGetUri } from '@/CallManager';
 import type { TContentHint, TOnAddedTransceiver } from '@/PresentationManager';
-import type { ISipSession } from '@/session';
+import type { ISession } from '@/session';
 import type { TJsSIP } from '@/types';
 import type { IBalancerOptions } from '@/VideoSendingBalancer';
 import type { TEvent, TEventMap, TEvents } from './eventNames';
@@ -44,7 +44,7 @@ class SipConnector {
 
   public readonly videoSendingBalancerManager: VideoSendingBalancerManager;
 
-  public readonly session: ISipSession;
+  public readonly session: ISession;
 
   private readonly preferredMimeTypesVideoCodecs?: string[];
 
@@ -99,7 +99,7 @@ class SipConnector {
       this.apiManager,
       videoBalancerOptions,
     );
-    this.session = createSipSession({
+    this.session = createSession({
       connectionEvents: this.connectionManager.events,
       callEvents: this.callManager.events,
       incomingCallEvents: this.incomingCallManager.events,

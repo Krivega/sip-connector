@@ -8,7 +8,7 @@ import type {
   TEventMap as TIncomingEventMap,
   TRemoteCallerData,
 } from '@/IncomingCallManager/eventNames';
-import type { TSipSessionActor } from './rootMachine';
+import type { TSessionActor } from './rootMachine';
 
 export type TSessionEventAdapterDeps = {
   connectionEvents: TConnectionEvents;
@@ -37,7 +37,7 @@ const subscribe = <TEventMap, K extends keyof TEventMap>(
 };
 
 export const attachSessionEventAdapter = (
-  actor: TSipSessionActor,
+  actor: TSessionActor,
   deps: TSessionEventAdapterDeps,
 ): (() => void) => {
   const subscriptions: Unsubscribe[] = [];
