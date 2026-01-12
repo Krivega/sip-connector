@@ -100,9 +100,9 @@ class SipConnector {
       videoBalancerOptions,
     );
     this.session = createSession({
-      connectionEvents: this.connectionManager.events,
-      callEvents: this.callManager.events,
-      incomingCallEvents: this.incomingCallManager.events,
+      connectionManager: this.connectionManager,
+      callManager: this.callManager,
+      incomingCallManager: this.incomingCallManager,
     });
     this.subscribe();
   }

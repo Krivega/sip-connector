@@ -14,9 +14,13 @@ import {
   type TEventMap as TIncomingEventMap,
 } from '@/IncomingCallManager/eventNames';
 import { attachSessionEventAdapter } from '../eventAdapter';
+import { ECallStatus, EConnectionStatus, EIncomingStatus, EScreenShareStatus } from '../machines';
 import { sessionMachine } from '../rootMachine';
 import { sessionSelectors } from '../selectors';
-import { ECallStatus, EConnectionStatus, EIncomingStatus, EScreenShareStatus } from '../types';
+
+import type { CallManager } from '@/CallManager';
+import type { ConnectionManager } from '@/ConnectionManager';
+import type { IncomingCallManager } from '@/IncomingCallManager';
 
 describe('sessionMachine', () => {
   it('handles direct domain events', () => {
@@ -88,9 +92,9 @@ describe('sessionMachine', () => {
     const actor = createActor(sessionMachine);
 
     const detach = attachSessionEventAdapter(actor, {
-      connectionEvents,
-      callEvents,
-      incomingCallEvents: incomingEvents,
+      connectionManager: connectionEvents as unknown as ConnectionManager,
+      callManager: callEvents as unknown as CallManager,
+      incomingCallManager: incomingEvents as unknown as IncomingCallManager,
     });
 
     actor.start();
@@ -105,6 +109,8 @@ describe('sessionMachine', () => {
       EConnectionStatus.CONNECTED,
     );
 
+    // @ts-expect-error - isAvailableIncomingCall is not a property of TypedEvents
+    incomingEvents.isAvailableIncomingCall = true;
     incomingEvents.trigger('incomingCall', {} as TIncomingEventMap['incomingCall']);
     expect(sessionSelectors.selectIncomingStatus(actor.getSnapshot())).toBe(
       EIncomingStatus.RINGING,

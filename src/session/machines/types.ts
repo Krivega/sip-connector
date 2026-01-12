@@ -69,5 +69,3 @@ export type TScreenShareEvent =
   | { type: 'SCREEN.ENDING' }
   | { type: 'SCREEN.ENDED' }
   | { type: 'SCREEN.FAILED'; error?: unknown };
-
-export type TSessionEvent = TConnectionEvent | TCallEvent | TIncomingEvent | TScreenShareEvent;

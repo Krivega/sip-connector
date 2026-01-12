@@ -1,5 +1,5 @@
 import getChildSnapshot from './getChildSnapshot';
-import { ECallStatus, EConnectionStatus, EIncomingStatus, EScreenShareStatus } from './types';
+import { ECallStatus, EConnectionStatus, EIncomingStatus, EScreenShareStatus } from './machines';
 
 import type { TRemoteCallerData } from '@/IncomingCallManager/eventNames';
 import type { TSessionSnapshot } from './rootMachine';
@@ -26,7 +26,7 @@ const selectIncomingRemoteCaller = (snapshot: TSessionSnapshot): TRemoteCallerDa
   const childSnapshot = getChildSnapshot(snapshot, 'incoming');
 
   if (childSnapshot?.value !== EIncomingStatus.IDLE) {
-    return (childSnapshot?.context as { remoteCallerData?: TRemoteCallerData }).remoteCallerData;
+    return childSnapshot?.context.remoteCallerData;
   }
 
   return undefined;

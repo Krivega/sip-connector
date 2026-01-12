@@ -1,12 +1,11 @@
 import { forwardTo, setup } from 'xstate';
 
-import { callMachine } from './callMachine';
-import { connectionMachine } from './connectionMachine';
-import { incomingMachine } from './incomingMachine';
-import { screenShareMachine } from './screenShareMachine';
+import { callMachine, connectionMachine, incomingMachine, screenShareMachine } from './machines';
 
 import type { ActorRefFrom, SnapshotFrom } from 'xstate';
-import type { TSessionEvent } from './types';
+import type { TCallEvent, TConnectionEvent, TIncomingEvent, TScreenShareEvent } from './machines';
+
+type TSessionEvent = TConnectionEvent | TCallEvent | TIncomingEvent | TScreenShareEvent;
 
 /**
  * Идентификаторы дочерних акторов (машин состояний).
@@ -39,7 +38,6 @@ const ACTORS_CONFIG = {
  */
 export const sessionMachine = setup({
   types: {
-    context: {} as Record<string, never>,
     events: {} as TSessionEvent,
   },
   /**
@@ -74,7 +72,6 @@ export const sessionMachine = setup({
    * Это позволяет независимо управлять разными аспектами сессии.
    */
   type: 'parallel',
-  context: {},
   /**
    * Параллельные регионы состояний.
    * Каждый регион содержит одну дочернюю машину, запущенную через invoke.
