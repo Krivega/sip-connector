@@ -390,6 +390,91 @@ graph TB
 
 ---
 
+## Модель состояний сеанса (XState)
+
+Sip-connector публикует единый XState-актор сеанса, агрегирующий параллельные машины по доменам: соединение, звонок, входящий звонок, шаринг экрана. Клиент получает только подписку на их статусы, бизнес-логика остаётся внутри sip-connector.
+
+```mermaid
+stateDiagram-v2
+    [*] --> session
+    state session {
+        state connection {
+            idle --> connecting: start
+            connecting --> initializing: initUa
+            initializing --> connected: uaConnected
+            connected --> registered: registered
+            registered --> disconnected: disconnected/unregistered
+            disconnected --> idle: reset
+            connected --> failed: failed
+            initializing --> failed: failed
+        }
+        state call {
+            idle --> connecting: call.connecting
+            connecting --> ringing: call.ringing
+            ringing --> accepted: call.accepted
+            accepted --> inCall: call.confirmed
+            inCall --> ended: call.ended
+            connecting --> failed: call.failed
+        }
+        state incoming {
+            idle --> ringing: incoming.ringing
+            ringing --> consumed: incoming.consumed
+            ringing --> declined: incoming.declined
+            ringing --> terminated: incoming.terminated
+            ringing --> failed: incoming.failed
+            consumed --> idle: incoming.clear
+            declined --> idle: incoming.clear
+            terminated --> idle: incoming.clear
+            failed --> idle: incoming.clear
+        }
+        state screenShare {
+            idle --> starting: screen.starting
+            starting --> active: screen.started
+            starting --> failed: screen.failed
+            active --> stopping: screen.ending
+            stopping --> idle: screen.ended
+            active --> failed: screen.failed
+        }
+    }
+```
+
+### Слои
+
+- Корневой актор: `sipSessionMachine` (`type: 'parallel'`).
+- Дочерние машины: `connectionMachine`, `callMachine`, `incomingMachine`, `screenShareMachine`.
+- Фасад: `createSipSession()` или `sipConnector.session` — актор, `getSnapshot()`, `subscribe(selector, listener)` с типобезопасными селекторами.
+- Адаптер событий: подписывается на менеджеры и транслирует их события в доменные события машин.
+
+### Доменные статусы и события
+
+| Домен       | Статусы                                                                                   | Источники событий                                                                                                                                               | Доменные события                                                                                                                                                                      |
+| ----------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Connection  | `idle`, `connecting`, `initializing`, `connected`, `registered`, `disconnected`, `failed` | `ConnectionManager.events` (`connect-started`, `connecting`, `connected`, `registered`, `unregistered`, `disconnected`, `registrationFailed`, `connect-failed`) | `CONNECTION.START`, `CONNECTION.INIT`, `CONNECTION.CONNECTED`, `CONNECTION.REGISTERED`, `CONNECTION.UNREGISTERED`, `CONNECTION.DISCONNECTED`, `CONNECTION.FAILED`, `CONNECTION.RESET` |
+| Call        | `idle`, `connecting`, `ringing`, `accepted`, `inCall`, `ended`, `failed`                  | `CallManager.events` (`connecting`, `progress`, `accepted`, `confirmed`, `ended`, `failed`)                                                                     | `CALL.CONNECTING`, `CALL.RINGING`, `CALL.ACCEPTED`, `CALL.CONFIRMED`, `CALL.ENDED`, `CALL.FAILED`                                                                                     |
+| Incoming    | `idle`, `ringing`, `consumed`, `declined`, `terminated`, `failed`                         | `IncomingCallManager.events` (`incomingCall`, `declinedIncomingCall`, `terminatedIncomingCall`, `failedIncomingCall`) + синтетика при ответе на входящий        | `INCOMING.RINGING`, `INCOMING.CONSUMED`, `INCOMING.DECLINED`, `INCOMING.TERMINATED`, `INCOMING.FAILED`, `INCOMING.CLEAR`                                                              |
+| ScreenShare | `idle`, `starting`, `active`, `stopping`, `failed`                                        | `CallManager.events` (`presentation:start\|started\|end\|ended\|failed`)                                                                                        | `SCREEN.STARTING`, `SCREEN.STARTED`, `SCREEN.ENDING`, `SCREEN.ENDED`, `SCREEN.FAILED`                                                                                                 |
+
+### API для клиентов
+
+- `createSipSession(deps)` / `sipConnector.session`: корневой актор и утилиты подписки.
+- `getSnapshot()` — текущее состояние всех доменов.
+- `subscribe(selector, listener)` — типобезопасная подписка на срез состояния (например, `selectConnectionStatus`).
+- `stop()` — отписка от адаптера и остановка актора.
+
+### Инварианты и гварды
+
+- `screenShare` может быть `active` только если `call` в `inCall`.
+- `incoming` сбрасывается в `idle` при `call.ended` или `call.failed`.
+- `connection` `failed` / `disconnected` приводит к `call` → `ended`, `screenShare` → `idle`.
+
+### Тестирование
+
+- Табличные тесты для переходов каждой машины.
+- Контрактный тест адаптера событий: события менеджеров → доменные события → ожидаемые статусы.
+- Smoke-тест фасада `createSipSession`: подписка, снапшоты, очистка.
+
+---
+
 ### Принципы проектирования
 
 **SOLID принципы**:

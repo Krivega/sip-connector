@@ -27,6 +27,12 @@
       "require": "./dist/index.cjs",
       "default": "./dist/index.js"
     },
+    "./session": {
+      "types": "./dist/session.d.ts",
+      "import": "./dist/session.js",
+      "require": "./dist/session.cjs",
+      "default": "./dist/session.js"
+    },
     "./doMock": {
       "types": "./dist/doMock.d.ts",
       "import": "./dist/doMock.js",

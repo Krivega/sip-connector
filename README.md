@@ -41,6 +41,44 @@ SDK построен по принципу **слоистой архитекту
 - **SipConnectorFacade** — высокоуровневый фасад с готовыми сценариями
 - **Специализированные менеджеры** — для статистики, участников, медиа-потоков, автоподключения
 
+### 🧭 Состояния сеанса (XState)
+
+- Единый актор `sipSessionMachine` агрегирует параллельные машины: `connection`, `call`, `incoming`, `screenShare`.
+- Клиент подписывается на статусы через `sipConnector.session.subscribe(selector, listener)` или читает снапшот через `sipConnector.session.getSnapshot()`.
+- Домены и статусы:
+  - **connection**: `idle` → `connecting` → `initializing` → `connected` → `registered` → `disconnected` / `failed`.
+  - **call**: `idle` → `connecting` → `ringing` → `accepted` → `inCall` → `ended` / `failed`.
+  - **incoming**: `idle` → `ringing` → `consumed` / `declined` / `terminated` / `failed` → `idle`.
+  - **screenShare**: `idle` → `starting` → `active` → `stopping` → `idle` (`failed` на ошибках).
+- События источников:
+  - `ConnectionManager.events`: `connect-started`, `connecting`, `connected`, `registered`, `unregistered`, `disconnected`, `registrationFailed`, `connect-failed`.
+  - `CallManager.events`: `connecting`, `progress`, `accepted`, `confirmed`, `ended`, `failed`, `presentation:start|started|end|ended|failed`.
+  - `IncomingCallManager.events`: `incomingCall`, `declinedIncomingCall`, `terminatedIncomingCall`, `failedIncomingCall`.
+- Быстрый пример подписки:
+
+```typescript
+import { selectConnectionStatus, selectCallStatus } from 'sip-connector/session';
+
+const unsubscribe = sipConnector.session.subscribe(
+  (snapshot) => ({
+    connection: selectConnectionStatus(snapshot),
+    call: selectCallStatus(snapshot),
+  }),
+  ({ connection, call }) => {
+    console.log('Connection:', connection, 'Call:', call);
+  },
+);
+
+// ...
+unsubscribe(); // Когда больше не нужно слушать
+```
+
+- Миграция клиента:
+  1. Включите фича-флаг и подключите `sipConnector.session` вместо локальной модели статусов.
+  2. Подпишитесь через селекторы и синхронизируйте store (MobX/MST/Redux) только по изменившимся срезам.
+  3. Принимая входящие звонки, используйте `selectIncomingStatus/RemoteCaller` и действуйте по `consumed/declined`.
+  4. Для UI статусов звонка используйте `selectCallStatus`, для блокировок по соединению — `selectConnectionStatus`.
+
 ---
 
 ## 🚀 Установка
@@ -684,7 +722,7 @@ statsCollector.on('collected', (stats) => {
 
 ## ⚡ Адаптивное опрашивание видеопотоков
 
-### Принцип работы
+### Принцип работы автоподключения
 
 SDK использует **адаптивное опрашивание** для мониторинга изменений в видеопотоках, что значительно снижает нагрузку на CPU:
 
