@@ -68,18 +68,6 @@ describe('SipConnector facade', () => {
     expect(spyRecover).toHaveBeenCalledTimes(1);
   });
 
-  it('должен сбросить мониторинг основного потока при завершении звонка', () => {
-    const spyResetMainStreamHealthMonitor = jest.spyOn(
-      // @ts-expect-error - доступ к приватному свойству
-      sipConnector.mainStreamHealthMonitor,
-      'reset',
-    );
-
-    sipConnector.callManager.events.trigger('ended', {} as EndEvent);
-
-    expect(spyResetMainStreamHealthMonitor).toHaveBeenCalledTimes(1);
-  });
-
   it('должен отменить восстановление основного потока при завершении звонка', () => {
     // @ts-expect-error - доступ к приватному свойству
     const spyCancelMainStreamRecovery = jest.spyOn(sipConnector.mainStreamRecovery, 'cancel');

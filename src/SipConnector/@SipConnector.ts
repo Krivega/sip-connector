@@ -525,7 +525,6 @@ class SipConnector {
 
   private subscribeCallManagerEvents() {
     this.callManager.on('ended', () => {
-      this.mainStreamHealthMonitor.reset();
       this.mainStreamRecovery.cancel();
     });
   }

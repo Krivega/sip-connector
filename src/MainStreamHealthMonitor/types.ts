@@ -7,5 +7,4 @@ type TDisposer = () => void;
 
 export type TMainStreamHealthMonitor = {
   on: <T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) => TDisposer;
-  reset: () => void;
 };

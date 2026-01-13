@@ -13,26 +13,6 @@ const createStatsEvents = () => {
   return new TypedEvents<TStatsEventMap>(['collected'] as const);
 };
 
-const createStats = ({
-  framesReceived,
-  framesDecoded,
-}: {
-  framesReceived?: number;
-  framesDecoded?: number;
-}): TStats => {
-  return {
-    outbound: { video: {}, secondVideo: {}, audio: {}, additional: {} },
-    inbound: {
-      video: {
-        inboundRtp: { framesReceived, framesDecoded } as unknown as RTCInboundRtpStreamStats,
-      },
-      secondVideo: {},
-      audio: {},
-      additional: {},
-    },
-  } as unknown as TStats;
-};
-
 describe('@MainStreamHealthMonitor', () => {
   let statsEvents: TypedEvents<TStatsEventMap>;
   let statsManager: StatsManager;
@@ -40,6 +20,7 @@ describe('@MainStreamHealthMonitor', () => {
 
   let mainStream: MediaStream;
   let track: ReturnType<typeof createVideoMediaStreamTrackMock>;
+  let isNotValidFramesStats: boolean;
 
   const handler = jest.fn();
 
@@ -47,7 +28,13 @@ describe('@MainStreamHealthMonitor', () => {
     mainStream = new MediaStream();
     track = createVideoMediaStreamTrackMock({ id: 'v1' });
     statsEvents = createStatsEvents();
-    statsManager = { on: statsEvents.on.bind(statsEvents) } as unknown as StatsManager;
+    isNotValidFramesStats = false;
+    statsManager = {
+      on: statsEvents.on.bind(statsEvents),
+      get isNotValidFramesStats() {
+        return isNotValidFramesStats;
+      },
+    } as unknown as StatsManager;
     callManager = {
       getMainStream: () => {
         return mainStream;
@@ -60,63 +47,44 @@ describe('@MainStreamHealthMonitor', () => {
   });
 
   describe('NO_INBOUND_FRAMES_EVENT_NAME', () => {
-    it('должен эмитить событие когда основной видеотрек muted, а inbound не получает и не декодирует кадры', () => {
+    it('должен эмитить событие когда основной видеотрек muted и StatsManager.isNotValidFramesStats возвращает true', () => {
       mainStream.addTrack(track);
 
       Object.defineProperty(track, 'muted', { value: true, configurable: true });
+      isNotValidFramesStats = true;
 
       const monitor = new MainStreamHeathMonitor(statsManager, callManager);
 
       monitor.on(NO_INBOUND_FRAMES_EVENT_NAME, handler);
-      statsEvents.trigger('collected', createStats({ framesReceived: 0, framesDecoded: 0 }));
+      statsEvents.trigger('collected', {} as TStats);
 
       expect(handler).toHaveBeenCalledTimes(1);
     });
 
-    it('должен эмитить событие когда основной видеотрек muted, а inbound не декодирует кадры', () => {
+    it('не должен эмитить событие когда StatsManager.isNotValidFramesStats возвращает false', () => {
       mainStream.addTrack(track);
 
       Object.defineProperty(track, 'muted', { value: true, configurable: true });
+      isNotValidFramesStats = false;
 
       const monitor = new MainStreamHeathMonitor(statsManager, callManager);
 
       monitor.on(NO_INBOUND_FRAMES_EVENT_NAME, handler);
-      statsEvents.trigger('collected', createStats({ framesReceived: 1, framesDecoded: 0 }));
+      statsEvents.trigger('collected', {} as TStats);
 
-      expect(handler).toHaveBeenCalledTimes(1);
+      expect(handler).toHaveBeenCalledTimes(0);
     });
 
     it('не должен эмитить событие когда основной видеотрек не muted', () => {
       mainStream.addTrack(track);
 
       Object.defineProperty(track, 'muted', { value: false, configurable: true });
+      isNotValidFramesStats = true;
 
       const monitor = new MainStreamHeathMonitor(statsManager, callManager);
 
       monitor.on(NO_INBOUND_FRAMES_EVENT_NAME, handler);
-      statsEvents.trigger('collected', createStats({ framesReceived: 0, framesDecoded: 0 }));
-
-      expect(handler).toHaveBeenCalledTimes(0);
-    });
-
-    it('не должен эмитить событие когда inbound получает и декодирует кадры кадры', () => {
-      mainStream.addTrack(track);
-
-      Object.defineProperty(track, 'muted', { value: true, configurable: true });
-
-      const monitor = new MainStreamHeathMonitor(statsManager, callManager);
-
-      monitor.on(NO_INBOUND_FRAMES_EVENT_NAME, handler);
-      statsEvents.trigger('collected', createStats({ framesReceived: 1, framesDecoded: 1 }));
-
-      expect(handler).toHaveBeenCalledTimes(0);
-    });
-
-    it('не должен эмитить событие когда нет inbound потоков', () => {
-      const monitor = new MainStreamHeathMonitor(statsManager, callManager);
-
-      monitor.on(NO_INBOUND_FRAMES_EVENT_NAME, handler);
-      statsEvents.trigger('collected', createStats({ framesReceived: 0, framesDecoded: 0 }));
+      statsEvents.trigger('collected', {} as TStats);
 
       expect(handler).toHaveBeenCalledTimes(0);
     });
@@ -125,74 +93,10 @@ describe('@MainStreamHealthMonitor', () => {
       const monitor = new MainStreamHeathMonitor(statsManager, callManager);
 
       monitor.on(NO_INBOUND_FRAMES_EVENT_NAME, handler);
-      statsEvents.trigger('collected', createStats({ framesReceived: 0, framesDecoded: 0 }));
+      isNotValidFramesStats = true;
+      statsEvents.trigger('collected', {} as TStats);
 
       expect(handler).toHaveBeenCalledTimes(0);
-    });
-
-    it('должен эмитить событие когда основной видеотрек muted, а inbound перестал получать кадры', () => {
-      mainStream.addTrack(track);
-
-      Object.defineProperty(track, 'muted', { value: true, configurable: true });
-
-      const monitor = new MainStreamHeathMonitor(statsManager, callManager);
-
-      monitor.on(NO_INBOUND_FRAMES_EVENT_NAME, handler);
-      statsEvents.trigger('collected', createStats({ framesReceived: 1, framesDecoded: 1 }));
-      statsEvents.trigger('collected', createStats({ framesReceived: 2, framesDecoded: 2 }));
-      statsEvents.trigger('collected', createStats({ framesReceived: 2, framesDecoded: 2 }));
-
-      expect(handler).toHaveBeenCalledTimes(1);
-    });
-
-    it('должен эмитить событие когда основной видеотрек muted, а inbound перестал декодировать кадры', () => {
-      mainStream.addTrack(track);
-
-      Object.defineProperty(track, 'muted', { value: true, configurable: true });
-
-      const monitor = new MainStreamHeathMonitor(statsManager, callManager);
-
-      monitor.on(NO_INBOUND_FRAMES_EVENT_NAME, handler);
-      statsEvents.trigger('collected', createStats({ framesReceived: 1, framesDecoded: 1 }));
-      statsEvents.trigger('collected', createStats({ framesReceived: 2, framesDecoded: 2 }));
-      statsEvents.trigger('collected', createStats({ framesReceived: 3, framesDecoded: 2 }));
-
-      expect(handler).toHaveBeenCalledTimes(1);
-    });
-
-    it('не должен эмитить событие когда основной видеотрек muted, а inbound продолжает получать и декодировать кадры', () => {
-      mainStream.addTrack(track);
-
-      Object.defineProperty(track, 'muted', { value: true, configurable: true });
-
-      const monitor = new MainStreamHeathMonitor(statsManager, callManager);
-
-      monitor.on(NO_INBOUND_FRAMES_EVENT_NAME, handler);
-      statsEvents.trigger('collected', createStats({ framesReceived: 1, framesDecoded: 1 }));
-      statsEvents.trigger('collected', createStats({ framesReceived: 2, framesDecoded: 2 }));
-      statsEvents.trigger('collected', createStats({ framesReceived: 3, framesDecoded: 3 }));
-
-      expect(handler).toHaveBeenCalledTimes(0);
-    });
-
-    it('reset: должен очистить данные о предыдущем состоянии основного потока', () => {
-      mainStream.addTrack(track);
-
-      Object.defineProperty(track, 'muted', { value: true, configurable: true });
-
-      const monitor = new MainStreamHeathMonitor(statsManager, callManager);
-
-      const stats = createStats({ framesReceived: 1, framesDecoded: 1 });
-
-      statsEvents.trigger('collected', stats);
-
-      // @ts-expect-error - доступ к приватному свойству
-      expect(monitor.previousStats).toEqual(stats);
-
-      monitor.reset();
-
-      // @ts-expect-error - доступ к приватному свойству
-      expect(monitor.previousStats).toBe(undefined);
     });
   });
 });
