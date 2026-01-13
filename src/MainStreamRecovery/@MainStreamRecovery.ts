@@ -38,7 +38,11 @@ class MainStreamRecovery implements TMainStreamRecovery {
   }
 
   private readonly requestRenegotiate = () => {
-    this.renegotiateRequester.cancelRequest();
+    if (this.renegotiateRequester.requested) {
+      logger('stopped: previous renegotiate is not finished yet');
+
+      return;
+    }
 
     logger('trying to renegotiate');
 

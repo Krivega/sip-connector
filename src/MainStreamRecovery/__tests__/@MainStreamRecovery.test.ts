@@ -32,13 +32,15 @@ describe('@MainStreamRecovery', () => {
     expect(callManager.renegotiate).toHaveBeenCalledTimes(1);
   });
 
-  it('должен пропускать повторный вызов recover если повторный вызов совершен раньше, чем истек переданный таймаут', () => {
+  it('должен пропускать повторный вызов recover если предыдущий запрос завершился и повторный вызов совершен раньше, чем истек переданный таймаут', async () => {
     const recovery = new MainStreamRecovery(callManager, 200);
 
     recovery.recover();
 
     expect(callManager.renegotiate).toHaveBeenCalledTimes(1);
 
+    // @ts-expect-error - подмена значения в приватном свойстве
+    recovery.renegotiateRequester.requested = false;
     jest.advanceTimersByTime(100);
 
     recovery.recover();
@@ -46,13 +48,31 @@ describe('@MainStreamRecovery', () => {
     expect(callManager.renegotiate).toHaveBeenCalledTimes(1);
   });
 
-  it('должен совершать повторный вызов recover если истек переданный таймаут', () => {
+  it('должен пропускать повторный вызов recover если предыдущий запрос не завершился и истек переданный таймаут', async () => {
     const recovery = new MainStreamRecovery(callManager, 200);
 
     recovery.recover();
 
     expect(callManager.renegotiate).toHaveBeenCalledTimes(1);
 
+    // @ts-expect-error - подмена значения в приватном свойстве
+    recovery.renegotiateRequester.requested = true;
+    jest.advanceTimersByTime(200);
+
+    recovery.recover();
+
+    expect(callManager.renegotiate).toHaveBeenCalledTimes(1);
+  });
+
+  it('должен совершать повторный вызов recover если предыдущий запрос завершился и истек переданный таймаут', async () => {
+    const recovery = new MainStreamRecovery(callManager, 200);
+
+    recovery.recover();
+
+    expect(callManager.renegotiate).toHaveBeenCalledTimes(1);
+
+    // @ts-expect-error - подмена значения в приватном свойстве
+    recovery.renegotiateRequester.requested = false;
     jest.advanceTimersByTime(200);
 
     recovery.recover();
