@@ -233,12 +233,22 @@
 - Управление битрейтом презентации
 - Обработка дублированных вызовов
 - Поддержка P2P и MCU режимов
+- Валидация переходов состояний через PresentationStateMachine
 
 **Основные методы**:
 
 - `startPresentation()` / `stopPresentation()` - управление презентациями
 - `updatePresentation()` - обновление потока
 - `cancelSendPresentationWithRepeatedCalls()` - отмена операций
+
+**Внутренние компоненты**:
+
+- **PresentationStateMachine** - управление состояниями демонстрации экрана (XState)
+  - Валидация переходов между состояниями
+  - Публичный API с геттерами: `isIdle`, `isStarting`, `isActive`, `isStopping`, `isFailed`, `isPending`, `isActiveOrPending`
+  - Типобезопасная обработка ошибок (lastError: Error | undefined)
+  - Методы: `reset()`, события: `SCREEN.STARTING`, `SCREEN.STARTED`, `SCREEN.ENDING`, `SCREEN.ENDED`, `SCREEN.FAILED`, `CALL.ENDED`, `CALL.FAILED`, `PRESENTATION.RESET`
+  - Полное логирование всех переходов состояний
 
 ---
 
@@ -442,6 +452,27 @@ graph TB
 - Автоматическая конвертация ошибок из unknown в Error
 - Логирование недопустимых переходов через console.warn
 
+#### **PresentationStateMachine** (Состояния демонстрации экрана)
+
+- Внутренний компонент PresentationManager
+- Управление состояниями демонстрации экрана через XState
+- Валидация допустимых операций с предотвращением некорректных переходов
+- Типобезопасная обработка ошибок (lastError: Error | undefined)
+- Публичный API:
+  - Геттеры состояний: `isIdle`, `isStarting`, `isActive`, `isStopping`, `isFailed`
+  - Комбинированные геттеры: `isPending` (starting/stopping), `isActiveOrPending` (active/starting/stopping)
+  - Геттер ошибки: `lastError`
+  - Методы управления: `reset()`
+- Корректный граф переходов:
+  - IDLE → STARTING → ACTIVE → STOPPING → IDLE
+  - Переходы в FAILED из STARTING/ACTIVE/STOPPING (через SCREEN.FAILED или CALL.FAILED)
+  - Переход RESET: FAILED → IDLE
+  - Убран нелогичный переход IDLE → FAILED (презентация не может зафейлиться до старта)
+  - Прерывание через CALL.ENDED из любого активного состояния (STARTING/ACTIVE/STOPPING)
+  - Фейл звонка (CALL.FAILED) обрабатывается во всех активных состояниях
+- Автоматическое создание Error из не-Error значений (JSON.stringify для объектов)
+- Полное логирование всех переходов состояний и недопустимых операций через console.warn
+
 ---
 
 ## Модель состояний сеанса (XState)
@@ -505,12 +536,17 @@ stateDiagram-v2
             failed --> idle: incoming.clear
         }
         state presentation {
-            idle --> starting: screen.starting
-            starting --> active: screen.started
-            starting --> failed: screen.failed
-            active --> stopping: screen.ending
-            stopping --> idle: screen.ended
-            active --> failed: screen.failed
+            idle --> starting: screenStarting
+            starting --> active: screenStarted
+            starting --> failed: screenFailed / callFailed
+            starting --> idle: screenEnded / callEnded
+            active --> stopping: screenEnding
+            active --> idle: screenEnded / callEnded
+            active --> failed: screenFailed / callFailed
+            stopping --> idle: screenEnded / callEnded
+            stopping --> failed: screenFailed / callFailed
+            failed --> starting: screenStarting
+            failed --> idle: reset / screenEnded
         }
     }
 ```
@@ -529,7 +565,7 @@ stateDiagram-v2
 | Connection   | `idle`, `connecting`, `initializing`, `connected`, `registered`, `disconnected`, `failed` | `ConnectionManager.events` (`connect-started`, `connecting`, `connect-parameters-resolve-success`, `connected`, `registered`, `unregistered`, `disconnected`, `registrationFailed`, `connect-failed`) | `START_CONNECT`, `START_INIT_UA`, `UA_CONNECTED`, `UA_REGISTERED`, `UA_UNREGISTERED`, `UA_DISCONNECTED`, `CONNECTION_FAILED`, `RESET` |
 | Call         | `idle`, `connecting`, `ringing`, `accepted`, `inCall`, `ended`, `failed`                  | `CallManager.events` (`connecting`, `progress`, `accepted`, `confirmed`, `ended`, `failed`)                                                                                                           | `CALL.CONNECTING`, `CALL.RINGING`, `CALL.ACCEPTED`, `CALL.CONFIRMED`, `CALL.ENDED`, `CALL.FAILED`, `CALL.RESET`                                                                       |
 | Incoming     | `idle`, `ringing`, `consumed`, `declined`, `terminated`, `failed`                         | `IncomingCallManager.events` (`incomingCall`, `declinedIncomingCall`, `terminatedIncomingCall`, `failedIncomingCall`) + синтетика при ответе на входящий                                              | `INCOMING.RINGING`, `INCOMING.CONSUMED`, `INCOMING.DECLINED`, `INCOMING.TERMINATED`, `INCOMING.FAILED`, `INCOMING.CLEAR`                                                              |
-| Presentation | `idle`, `starting`, `active`, `stopping`, `failed`                                        | `CallManager.events` (`presentation:start\|started\|end\|ended\|failed`), `ConnectionManager.events` (`disconnected`, `registrationFailed`, `connect-failed`)                                         | `SCREEN.STARTING`, `SCREEN.STARTED`, `SCREEN.ENDING`, `SCREEN.ENDED`, `SCREEN.FAILED`, `CALL.ENDED`, `CALL.FAILED`, `CONNECTION.DISCONNECTED`, `CONNECTION.FAILED`                    |
+| Presentation | `idle`, `starting`, `active`, `stopping`, `failed`                                        | `CallManager.events` (`presentation:start\|started\|end\|ended\|failed`), `ConnectionManager.events` (`disconnected`, `registrationFailed`, `connect-failed`)                                         | `SCREEN.STARTING`, `SCREEN.STARTED`, `SCREEN.ENDING`, `SCREEN.ENDED`, `SCREEN.FAILED`, `CALL.ENDED`, `CALL.FAILED`, `PRESENTATION.RESET`                    |
 
 ### API для клиентов
 

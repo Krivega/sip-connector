@@ -357,6 +357,26 @@ await facade.startPresentation({
 });
 ```
 
+### Управление состоянием презентации
+
+Доступ к состоянию через PresentationStateMachine:
+
+```typescript
+const presentationStateMachine = sipConnector.callManager.presentationStateMachine;
+
+// Проверка текущего состояния
+console.log('Состояние презентации:', presentationStateMachine.state);
+console.log('Активна:', presentationStateMachine.isActive);
+console.log('В процессе:', presentationStateMachine.isPending); // starting/stopping
+console.log('Активна или в процессе:', presentationStateMachine.isActiveOrPending);
+console.log('Ошибка:', presentationStateMachine.lastError);
+
+// Сброс состояния после ошибки
+if (presentationStateMachine.isFailed) {
+  presentationStateMachine.reset();
+}
+```
+
 ---
 
 ## 👥 Управление участниками конференции
