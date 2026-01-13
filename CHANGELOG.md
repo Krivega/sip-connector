@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [20.3.0](https://github.com/Krivega/sip-connector/compare/v20.2.1...v20.3.0) (2026-01-13)
+
+### Features
+
+- implement session management with XState ([#62](https://github.com/Krivega/sip-connector/issues/62)) ([8167595](https://github.com/Krivega/sip-connector/commit/81675956aa105300bb2ce392b62b16fa8e588f3e))
+
+### Bug Fixes
+
+- ensure consistent invocation of mayBeStopPresentationAndNotify method ([0f0f8ff](https://github.com/Krivega/sip-connector/commit/0f0f8ff5d2a43676e92cbeee04d11421639efdf8))
+- not trigger event "stopped-presentation-by-server-command" for inactive share ([#64](https://github.com/Krivega/sip-connector/issues/64)) ([3874cb2](https://github.com/Krivega/sip-connector/commit/3874cb261cb6a8d3c716c9abc0d059ba669fb3c1))
+
 ### [20.2.1](https://github.com/Krivega/sip-connector/compare/v20.2.0...v20.2.1) (2026-01-13)
 
 ### Bug Fixes
