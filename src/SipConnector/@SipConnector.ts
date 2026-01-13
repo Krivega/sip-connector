@@ -440,7 +440,7 @@ class SipConnector {
   }
 
   private mayBeTriggerStoppedPresentationByServerCommand() {
-    if (this.isPresentationInProcess) {
+    if (this.presentationManager.isPresentationInProcess) {
       this.events.trigger('stopped-presentation-by-server-command', {});
     }
   }
