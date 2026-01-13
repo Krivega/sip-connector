@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [20.4.0](https://github.com/Krivega/sip-connector/compare/v20.3.0...v20.4.0) (2026-01-13)
+
+### Features
+
+- introduce ConferenceStateManager for centralized conference state management ([528d066](https://github.com/Krivega/sip-connector/commit/528d06680f8a803b10a4d42fc00fc97f20e35873))
+
 ## [20.3.0](https://github.com/Krivega/sip-connector/compare/v20.2.1...v20.3.0) (2026-01-13)
 
 ### Features
