@@ -4,7 +4,7 @@ import logger from '@/logger';
 import { BaseStateMachine } from '@/tools/BaseStateMachine';
 
 import type { ActorRefFrom, SnapshotFrom } from 'xstate';
-import type { TEvents } from './events';
+import type { TEventMap, TEvents } from './events';
 
 // Определяем типы событий для XState машины
 export enum EEvents {
@@ -26,6 +26,8 @@ type TConnectionFailedEvent = {
 };
 
 type TConnectionMachineEvents = { type: TConnectionMachineEvent } | TConnectionFailedEvent;
+
+const ALL_MACHINE_EVENTS: TConnectionMachineEvent[] = Object.values(EEvents);
 
 interface IConnectionMachineContext {
   error?: Error;
@@ -466,12 +468,12 @@ export default class ConnectionStateMachine extends BaseStateMachine<
   public canTransition(event: TConnectionMachineEvent): boolean {
     const snapshot = this.getSnapshot();
 
-    return snapshot.can({ type: event } as TConnectionMachineEvents);
+    return snapshot.can({ type: event });
   }
 
   public getValidEvents(): TConnectionMachineEvent[] {
     // Возвращаем все события, которые машина может обработать в текущем состоянии
-    return Object.values(EEvents).filter((event) => {
+    return ALL_MACHINE_EVENTS.filter((event) => {
       return this.canTransition(event);
     });
   }
@@ -544,11 +546,18 @@ export default class ConnectionStateMachine extends BaseStateMachine<
     };
   }
 
-  private readonly handleRegistrationFailed = (): void => {
-    this.toFailed();
+  private readonly handleRegistrationFailed = (event: TEventMap['registrationFailed']): void => {
+    const { response } = event;
+
+    const statusCode = response.status_code || 'Unknown';
+    const reason = response.reason_phrase || 'Registration failed';
+
+    const error = new Error(`Registration failed: ${statusCode} ${reason}`);
+
+    this.toFailed(error);
   };
 
-  private readonly handleConnectFailed = (error: unknown): void => {
+  private readonly handleConnectFailed = (error: TEventMap['connect-failed']): void => {
     this.toFailed(error instanceof Error ? error : undefined);
   };
 }

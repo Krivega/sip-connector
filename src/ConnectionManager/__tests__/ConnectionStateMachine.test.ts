@@ -487,6 +487,50 @@ describe('ConnectionStateMachine', () => {
       expect(stateMachine.state).toBe(EState.IDLE);
     });
 
+    test('должен сохранять детальную информацию об ошибке регистрации', () => {
+      stateMachine.startConnect();
+      stateMachine.startInitUa();
+
+      // Ошибка регистрации с детальной информацией
+      events.trigger('registrationFailed', {
+        response: { status_code: 403, reason_phrase: 'Forbidden' } as IncomingResponse,
+      });
+
+      expect(stateMachine.state).toBe(EState.FAILED);
+      expect(stateMachine.isFailed).toBe(true);
+      expect(stateMachine.error).toBeDefined();
+      expect(stateMachine.error?.message).toBe('Registration failed: 403 Forbidden');
+
+      // После reset ошибка должна очиститься
+      stateMachine.reset();
+      expect(stateMachine.state).toBe(EState.IDLE);
+      expect(stateMachine.error).toBeUndefined();
+    });
+
+    test('должен корректно обрабатывать повторное подключение после ошибки регистрации', () => {
+      // Первая попытка с ошибкой
+      stateMachine.startConnect();
+      stateMachine.startInitUa();
+      events.trigger('registrationFailed', {
+        response: { status_code: 401, reason_phrase: 'Unauthorized' } as IncomingResponse,
+      });
+
+      expect(stateMachine.state).toBe(EState.FAILED);
+      expect(stateMachine.error?.message).toBe('Registration failed: 401 Unauthorized');
+
+      // Повторная попытка подключения
+      stateMachine.startConnect();
+      expect(stateMachine.state).toBe(EState.CONNECTING);
+      expect(stateMachine.error).toBeUndefined(); // ошибка должна очиститься
+
+      stateMachine.startInitUa();
+      events.trigger('connected', { socket: {} as Socket });
+      events.trigger('registered', { response: {} as IncomingResponse });
+
+      expect(stateMachine.state).toBe(EState.REGISTERED);
+      expect(stateMachine.error).toBeUndefined();
+    });
+
     test('должен корректно обрабатывать подключение без регистрации', () => {
       stateMachine.startConnect();
       stateMachine.startInitUa();
@@ -508,14 +552,52 @@ describe('ConnectionStateMachine', () => {
       expect(stateMachine.error).toBeUndefined();
     });
 
-    test('error должен сохраняться при переходе в FAILED через registrationFailed', () => {
+    test('error должен сохраняться при переходе в FAILED через registrationFailed с response', () => {
       stateMachine.startConnect();
 
-      events.trigger('registrationFailed', { response: {} as IncomingResponse });
+      events.trigger('registrationFailed', {
+        response: { status_code: 403, reason_phrase: 'Forbidden' } as IncomingResponse,
+      });
 
       expect(stateMachine.state).toBe(EState.FAILED);
-      // registrationFailed не передаёт Error напрямую, поэтому error будет undefined
-      expect(stateMachine.error).toBeUndefined();
+      expect(stateMachine.error).toBeDefined();
+      expect(stateMachine.error?.message).toBe('Registration failed: 403 Forbidden');
+    });
+
+    test('error должен создаваться с дефолтными значениями при неполном response', () => {
+      stateMachine.startConnect();
+
+      events.trigger('registrationFailed', {
+        response: {} as IncomingResponse,
+      });
+
+      expect(stateMachine.state).toBe(EState.FAILED);
+      expect(stateMachine.error).toBeDefined();
+      expect(stateMachine.error?.message).toBe('Registration failed: Unknown Registration failed');
+    });
+
+    test('error должен правильно обрабатывать response с только status_code', () => {
+      stateMachine.startConnect();
+
+      events.trigger('registrationFailed', {
+        response: { status_code: 401 } as IncomingResponse,
+      });
+
+      expect(stateMachine.state).toBe(EState.FAILED);
+      expect(stateMachine.error).toBeDefined();
+      expect(stateMachine.error?.message).toBe('Registration failed: 401 Registration failed');
+    });
+
+    test('error должен правильно обрабатывать response с только reason_phrase', () => {
+      stateMachine.startConnect();
+
+      events.trigger('registrationFailed', {
+        response: { reason_phrase: 'Service Unavailable' } as IncomingResponse,
+      });
+
+      expect(stateMachine.state).toBe(EState.FAILED);
+      expect(stateMachine.error).toBeDefined();
+      expect(stateMachine.error?.message).toBe('Registration failed: Unknown Service Unavailable');
     });
 
     test('error должен сохраняться при переходе в FAILED через connect-failed с Error', () => {
