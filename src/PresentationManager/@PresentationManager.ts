@@ -1,750 +1,363 @@
-import { createMediaStreamMock } from 'webrtc-mock';
+import { TypedEvents } from 'events-constructor';
+import { hasCanceledError, repeatedCallsAsync } from 'repeated-calls';
 
-import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
-import { CallManager } from '@/CallManager';
-import PresentationManager, { hasCanceledStartPresentationError } from '../@PresentationManager';
+import prepareMediaStream from '@/tools/prepareMediaStream';
+import { setMaxBitrateToSender } from '@/tools/setParametersToSender';
+import { EEvent, EVENT_NAMES } from './eventNames';
 
-import type { TReachedLimitError } from 'repeated-calls';
+import type { RTCSession } from '@krivega/jssip';
+import type { CallManager } from '@/CallManager';
+import type { TEventMap, TEvents } from './eventNames';
+import type { TContentHint, TOnAddedTransceiver } from './types';
 
-describe('PresentationManager', () => {
-  let callManager: CallManager;
-  let rtcSession: RTCSessionMock;
-  let manager: PresentationManager;
-  let mediaStream: MediaStream;
-  const beforeStartPresentation = jest.fn(async () => {});
-  const beforeStopPresentation = jest.fn(async () => {});
+const SEND_PRESENTATION_CALL_LIMIT = 1;
 
-  beforeEach(() => {
-    rtcSession = new RTCSessionMock({
-      eventHandlers: {},
-      originator: 'local',
-    });
-    callManager = new CallManager();
-    rtcSession.on('presentation:start', (data: MediaStream) => {
-      callManager.events.trigger('presentation:start', data);
-    });
-    rtcSession.on('presentation:started', (data: MediaStream) => {
-      callManager.events.trigger('presentation:started', data);
-    });
-    rtcSession.on('presentation:end', (data: MediaStream) => {
-      callManager.events.trigger('presentation:end', data);
-    });
-    rtcSession.on('presentation:ended', (data: MediaStream) => {
-      callManager.events.trigger('presentation:ended', data);
-    });
-    rtcSession.on('presentation:failed', (data: Error) => {
-      callManager.events.trigger('presentation:failed', data);
-    });
-    callManager.getEstablishedRTCSession = jest.fn().mockReturnValue(rtcSession);
-    mediaStream = createMediaStreamMock({
-      audio: { deviceId: { exact: 'audioDeviceId' } },
-      video: { deviceId: { exact: 'videoDeviceId' } },
-    });
-    manager = new PresentationManager({ callManager: callManager as unknown as CallManager });
-  });
+export const hasCanceledStartPresentationError = (error: unknown) => {
+  return hasCanceledError(error);
+};
 
-  afterEach(() => {
-    RTCSessionMock.resetPresentationError();
-    rtcSession.clear();
-    jest.clearAllMocks();
-  });
+class PresentationManager {
+  public readonly events: TEvents;
 
-  it('успешно стартует презентацию', async () => {
-    const spy = jest.fn();
+  public promisePendingStartPresentation?: Promise<MediaStream>;
 
-    manager.on('presentation:started', spy);
+  public promisePendingStopPresentation?: Promise<MediaStream | undefined>;
 
-    const result = await manager.startPresentation(beforeStartPresentation, mediaStream);
-    const { streamPresentationCurrent } = manager;
+  public streamPresentationCurrent?: MediaStream;
 
-    expect(result).toBeDefined();
-    expect(streamPresentationCurrent).toBeDefined();
-    expect(result.id).toBe(mediaStream.id);
+  private readonly maxBitrate?: number;
 
-    expect(spy).toHaveBeenCalled();
+  private cancelableSendPresentationWithRepeatedCalls:
+    | ReturnType<typeof repeatedCallsAsync<MediaStream>>
+    | undefined;
 
-    const mock = spy as jest.Mock;
+  private readonly callManager: CallManager;
 
-    expect(mock.mock.calls.length).toBeGreaterThan(0);
+  public constructor({
+    callManager,
+    maxBitrate,
+  }: {
+    callManager: CallManager;
+    maxBitrate?: number;
+  }) {
+    this.callManager = callManager;
+    this.maxBitrate = maxBitrate;
+    this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
 
-    const [[calledWith]] = mock.mock.calls as [[MediaStream]];
+    this.subscribe();
+  }
 
-    expect(calledWith).toBeDefined();
-    expect(calledWith.id).toBe(streamPresentationCurrent?.id);
-  });
+  public get isPendingPresentation(): boolean {
+    return !!this.promisePendingStartPresentation || !!this.promisePendingStopPresentation;
+  }
 
-  it('выбрасывает ошибку, если нет rtcSession', async () => {
-    (
-      callManager as unknown as { getEstablishedRTCSession: jest.Mock }
-    ).getEstablishedRTCSession.mockReturnValue(undefined);
-    await expect(manager.startPresentation(beforeStartPresentation, mediaStream)).rejects.toThrow(
-      'No rtcSession established',
-    );
-  });
+  public get isPresentationInProcess(): boolean {
+    return !!this.streamPresentationCurrent || this.isPendingPresentation;
+  }
 
-  it('выбрасывает ошибку, если презентация уже запущена', async () => {
-    await manager.startPresentation(beforeStartPresentation, mediaStream);
-    await expect(manager.startPresentation(beforeStartPresentation, mediaStream)).rejects.toThrow(
-      'Presentation is already started',
-    );
-  });
+  // eslint-disable-next-line @typescript-eslint/max-params
+  public async startPresentation(
+    beforeStartPresentation: () => Promise<void>,
+    stream: MediaStream,
+    {
+      isNeedReinvite,
+      contentHint,
+      sendEncodings,
+      onAddedTransceiver,
+    }: {
+      isNeedReinvite?: boolean;
+      contentHint?: TContentHint;
+      sendEncodings?: RTCRtpEncodingParameters[];
+      onAddedTransceiver?: TOnAddedTransceiver;
+    } = {},
+    options?: { callLimit: number },
+  ): Promise<MediaStream> {
+    const rtcSession = this.getRtcSessionProtected();
 
-  it('успешно останавливает презентацию', async () => {
-    await manager.startPresentation(beforeStartPresentation, mediaStream);
-
-    const { streamPresentationCurrent } = manager;
-
-    const spy = jest.fn();
-
-    manager.on('presentation:ended', spy);
-
-    const result = await manager.stopPresentation(beforeStopPresentation);
-
-    if (!result) {
-      throw new Error('result is undefined');
+    if (this.streamPresentationCurrent) {
+      throw new Error('Presentation is already started');
     }
 
-    expect(result.id).toBe(streamPresentationCurrent?.id);
-    expect(manager.streamPresentationCurrent).toBeUndefined();
-
-    expect(spy).toHaveBeenCalled();
-
-    const mock = spy as jest.Mock;
-
-    expect(mock.mock.calls.length).toBeGreaterThan(0);
-
-    const [[calledWith]] = mock.mock.calls as [[MediaStream]];
-
-    expect(calledWith).toBeDefined();
-    expect(calledWith.id).toBe(streamPresentationCurrent?.id);
-  });
-
-  it('корректно сбрасывает состояние после stopPresentation', async () => {
-    await manager.startPresentation(beforeStartPresentation, mediaStream);
-    await manager.stopPresentation(beforeStopPresentation);
-    expect(manager.promisePendingStartPresentation).toBeUndefined();
-    expect(manager.promisePendingStopPresentation).toBeUndefined();
-    expect(manager.streamPresentationCurrent).toBeUndefined();
-  });
-
-  it('вызывает событие FAILED_PRESENTATION при ошибке stopPresentation', async () => {
-    await manager.startPresentation(beforeStartPresentation, mediaStream);
-
-    const testError = new Error('fail');
-
-    RTCSessionMock.setPresentationError(testError);
-
-    const spy = jest.fn();
-
-    manager.on('presentation:failed', spy);
-
-    await expect(manager.stopPresentation(beforeStopPresentation)).rejects.toThrow('fail');
-
-    expect(spy).toHaveBeenCalledWith(testError);
-  });
-
-  it('вызывает событие FAILED_PRESENTATION в блоке catch при ошибке stopPresentation', async () => {
-    await manager.startPresentation(beforeStartPresentation, mediaStream);
-
-    const testError = new Error('fail-catch');
-
-    RTCSessionMock.setPresentationError(testError);
-
-    const spy = jest.fn();
-
-    manager.on('presentation:failed', spy);
-
-    await expect(manager.stopPresentation(beforeStopPresentation)).rejects.toThrow('fail-catch');
-
-    expect(spy).toHaveBeenCalledWith(testError);
-  });
-
-  it('вызывает событие FAILED_PRESENTATION с new Error(String(error)) когда ошибка не является экземпляром Error в stopPresentation', async () => {
-    await manager.startPresentation(beforeStartPresentation, mediaStream);
-
-    // Устанавливаем ошибку, которая не является экземпляром Error (строка)
-    const nonErrorValue = 'string-error-message';
-
-    RTCSessionMock.setPresentationError(nonErrorValue as unknown as Error);
-
-    const spy = jest.fn();
-
-    manager.on('presentation:failed', spy);
-
-    await expect(manager.stopPresentation(beforeStopPresentation)).rejects.toBe(nonErrorValue);
-
-    // Проверяем, что событие было вызвано с новым Error, созданным из строки
-    // Событие может вызываться несколько раз (из RTCSessionMock и из PresentationManager)
-    expect(spy).toHaveBeenCalled();
-
-    const calledErrors = (spy.mock.calls as [Error][]).map((call) => {
-      return call[0] as Error;
+    return this.sendPresentationWithDuplicatedCalls(beforeStartPresentation, {
+      rtcSession,
+      stream,
+      presentationOptions: {
+        isNeedReinvite,
+        contentHint,
+        sendEncodings,
+        onAddedTransceiver,
+      },
+      options,
     });
+  }
 
-    // Проверяем, что хотя бы один вызов был с Error, созданным из строки (из PresentationManager)
-    const hasConvertedError = calledErrors.some((error) => {
-      return error instanceof Error && error.message === 'string-error-message';
-    });
+  public async stopPresentation(
+    beforeStopPresentation: () => Promise<void>,
+  ): Promise<MediaStream | undefined> {
+    this.cancelSendPresentationWithRepeatedCalls();
 
-    expect(hasConvertedError).toBe(true);
-  });
+    const streamPresentationPrevious = this.streamPresentationCurrent;
+    let result: Promise<MediaStream | undefined> =
+      this.promisePendingStartPresentation ?? Promise.resolve<undefined>(undefined);
 
-  it('вызывает событие ENDED_PRESENTATION если нет rtcSession при stopPresentation', async () => {
-    await manager.startPresentation(beforeStartPresentation, mediaStream);
-    (
-      callManager as unknown as { getEstablishedRTCSession: jest.Mock }
-    ).getEstablishedRTCSession.mockReturnValue(undefined);
-
-    const { streamPresentationCurrent } = manager;
-
-    const spy = jest.fn();
-
-    manager.on('presentation:ended', spy);
-    await manager.stopPresentation(beforeStopPresentation);
-    expect(spy).toHaveBeenCalled();
-
-    const mock = spy as jest.Mock;
-
-    expect(mock.mock.calls.length).toBeGreaterThan(0);
-
-    const [[calledWith]] = mock.mock.calls as [[MediaStream]];
-
-    expect(calledWith).toBeDefined();
-    expect(calledWith.id).toBe(streamPresentationCurrent?.id);
-  });
-
-  it('вызывает событие ENDED_PRESENTATION когда есть streamPresentationPrevious но нет rtcSession', async () => {
-    await manager.startPresentation(beforeStartPresentation, mediaStream);
-
-    const { streamPresentationCurrent } = manager;
-
-    // Устанавливаем rtcSession в undefined
-    (
-      callManager as unknown as { getEstablishedRTCSession: jest.Mock }
-    ).getEstablishedRTCSession.mockReturnValue(undefined);
-
-    const spy = jest.fn();
-
-    manager.on('presentation:ended', spy);
-
-    const result = await manager.stopPresentation(beforeStopPresentation);
-
-    expect(result).toBeUndefined();
-    expect(spy).toHaveBeenCalledWith(streamPresentationCurrent);
-  });
-
-  it('успешно обновляет презентацию', async () => {
-    await manager.startPresentation(beforeStartPresentation, mediaStream);
-
-    const { streamPresentationCurrent } = manager;
-
-    const newStream = createMediaStreamMock({
-      audio: { deviceId: { exact: 'audioDeviceId2' } },
-      video: { deviceId: { exact: 'videoDeviceId2' } },
-    });
-
-    const spy = jest.fn();
-
-    manager.on('presentation:started', spy);
-
-    const result = await manager.updatePresentation(beforeStartPresentation, newStream);
-
-    const { streamPresentationCurrent: streamPresentationCurrent2 } = manager;
-
-    expect(result).toBeDefined();
-
-    if (!result) {
-      throw new Error('result is undefined');
+    if (this.promisePendingStartPresentation) {
+      await this.promisePendingStartPresentation.catch(() => {});
     }
 
-    if (!streamPresentationCurrent) {
-      throw new Error('streamPresentationCurrent is undefined');
+    const rtcSession = this.callManager.getEstablishedRTCSession();
+
+    if (rtcSession && streamPresentationPrevious) {
+      result = beforeStopPresentation()
+        .then(async () => {
+          return rtcSession.stopPresentation(streamPresentationPrevious);
+        })
+        .catch((error: unknown) => {
+          const presentationError = error instanceof Error ? error : new Error(String(error));
+
+          this.events.trigger(EEvent.FAILED_PRESENTATION, presentationError);
+
+          throw error;
+        });
+    } else if (streamPresentationPrevious) {
+      this.events.trigger(EEvent.ENDED_PRESENTATION, streamPresentationPrevious);
     }
 
-    if (!streamPresentationCurrent2) {
-      throw new Error('streamPresentationCurrent2 is undefined');
+    this.promisePendingStopPresentation = result;
+
+    return result.finally(() => {
+      this.resetPresentation();
+    });
+  }
+
+  public async updatePresentation(
+    beforeStartPresentation: () => Promise<void>,
+    stream: MediaStream,
+    {
+      contentHint,
+      sendEncodings,
+      onAddedTransceiver,
+    }: {
+      isP2P?: boolean;
+      contentHint?: TContentHint;
+      sendEncodings?: RTCRtpEncodingParameters[];
+      onAddedTransceiver?: TOnAddedTransceiver;
+    } = {},
+  ): Promise<MediaStream | undefined> {
+    const rtcSession = this.getRtcSessionProtected();
+
+    if (!this.streamPresentationCurrent) {
+      throw new Error('Presentation has not started yet');
     }
 
-    expect(streamPresentationCurrent.id).not.toBe(streamPresentationCurrent2.id);
-
-    expect(spy).toHaveBeenCalled();
-
-    const mock = spy as jest.Mock;
-
-    expect(mock.mock.calls.length).toBeGreaterThan(0);
-
-    const [[calledWith]] = mock.mock.calls as [[MediaStream]];
-
-    expect(calledWith).toBeDefined();
-    expect(calledWith.id).toBe(streamPresentationCurrent2.id);
-  });
-
-  it('выбрасывает ошибку при updatePresentation если нет rtcSession', async () => {
-    await manager.startPresentation(beforeStartPresentation, mediaStream);
-    (
-      callManager as unknown as { getEstablishedRTCSession: jest.Mock }
-    ).getEstablishedRTCSession.mockReturnValue(undefined);
-    await expect(manager.updatePresentation(beforeStartPresentation, mediaStream)).rejects.toThrow(
-      'No rtcSession established',
-    );
-  });
-
-  it('выбрасывает ошибку при updatePresentation если нет текущей презентации', async () => {
-    await expect(manager.updatePresentation(beforeStartPresentation, mediaStream)).rejects.toThrow(
-      'Presentation has not started yet',
-    );
-  });
-
-  it('on/once/off работают для событий', () => {
-    const handler = jest.fn();
-
-    manager.on('presentation:start', handler);
-    // @ts-ignore
-    manager.events.trigger('presentation:start', 'data');
-    expect(handler).toHaveBeenCalledWith('data');
-    manager.off('presentation:start', handler);
-    // @ts-ignore
-    manager.events.trigger('presentation:start', 'data2');
-    expect(handler).toHaveBeenCalledTimes(1);
-  });
-
-  it('promisePendingStartPresentation выставляется и сбрасывается', async () => {
-    expect(manager.promisePendingStartPresentation).toBeUndefined();
-
-    const p = manager.startPresentation(beforeStartPresentation, mediaStream);
-
-    expect(manager.promisePendingStartPresentation).toBeInstanceOf(Promise);
-    await p;
-    expect(manager.promisePendingStartPresentation).toBeUndefined();
-  });
-
-  it('promisePendingStopPresentation выставляется и сбрасывается', async () => {
-    await manager.startPresentation(beforeStartPresentation, mediaStream);
-    expect(manager.promisePendingStopPresentation).toBeUndefined();
-
-    const p = manager.stopPresentation(beforeStopPresentation);
-
-    expect(manager.promisePendingStopPresentation).toBeInstanceOf(Promise);
-    await p;
-    expect(manager.promisePendingStopPresentation).toBeUndefined();
-  });
-
-  it('isPendingPresentation корректно отражает состояние', async () => {
-    expect(manager.isPendingPresentation).toBe(false);
-
-    const p = manager.startPresentation(beforeStartPresentation, mediaStream);
-
-    expect(manager.isPendingPresentation).toBe(true);
-    await p;
-    expect(manager.isPendingPresentation).toBe(false);
-    await manager.stopPresentation(beforeStopPresentation);
-    await manager.startPresentation(beforeStartPresentation, mediaStream);
-
-    const p2 = manager.stopPresentation(beforeStopPresentation);
-
-    expect(manager.isPendingPresentation).toBe(true);
-    await p2;
-    expect(manager.isPendingPresentation).toBe(false);
-  });
-
-  describe('isPresentationInProcess', () => {
-    let promise: Promise<MediaStream | undefined>;
-
-    beforeEach(() => {
-      promise = Promise.resolve(undefined);
-    });
-
-    afterEach(() => {
-      promise.catch(() => {});
-    });
-
-    it('должен возвращать false, когда нет streamPresentationCurrent и isPendingPresentation false', () => {
-      expect(manager.streamPresentationCurrent).toBeUndefined();
-      expect(manager.isPendingPresentation).toBe(false);
-      expect(manager.isPresentationInProcess).toBe(false);
-    });
-
-    it('должен возвращать true во время запуска презентации', () => {
-      promise = manager.startPresentation(beforeStartPresentation, mediaStream);
-
-      expect(manager.isPendingPresentation).toBe(true);
-      expect(manager.isPresentationInProcess).toBe(true);
-    });
-
-    it('должен возвращать true, когда есть streamPresentationCurrent', async () => {
-      await manager.startPresentation(beforeStartPresentation, mediaStream);
-
-      expect(manager.streamPresentationCurrent).toBeDefined();
-      expect(manager.isPresentationInProcess).toBe(true);
-    });
-
-    it('должен возвращать true, когда есть streamPresentationCurrent и isPendingPresentation true', () => {
-      promise = manager.startPresentation(beforeStartPresentation, mediaStream);
-
-      expect(manager.streamPresentationCurrent).toBeDefined();
-      expect(manager.isPendingPresentation).toBe(true);
-      expect(manager.isPresentationInProcess).toBe(true);
-    });
-
-    it('должен возвращать true во время остановки презентации', async () => {
-      await manager.startPresentation(beforeStartPresentation, mediaStream);
-
-      promise = manager.stopPresentation(beforeStopPresentation);
-
-      expect(manager.isPendingPresentation).toBe(true);
-      expect(manager.isPresentationInProcess).toBe(true);
-    });
-
-    it('должен возвращать false после полной остановки презентации', async () => {
-      await manager.startPresentation(beforeStartPresentation, mediaStream);
-      await manager.stopPresentation(beforeStopPresentation);
-
-      expect(manager.streamPresentationCurrent).toBeUndefined();
-      expect(manager.isPendingPresentation).toBe(false);
-      expect(manager.isPresentationInProcess).toBe(false);
-    });
-  });
-
-  it('reset сбрасывает все состояния', async () => {
-    await manager.startPresentation(beforeStartPresentation, mediaStream);
-    // @ts-ignore
-    manager.reset();
-    expect(manager.promisePendingStartPresentation).toBeUndefined();
-    expect(manager.promisePendingStopPresentation).toBeUndefined();
-    expect(manager.streamPresentationCurrent).toBeUndefined();
-  });
-
-  it('hasCanceledStartPresentationError возвращает true для отменённой презентации', async () => {
-    // Запускаем презентацию, отменяем, ловим ошибку
-    const promise = manager.startPresentation(beforeStartPresentation, mediaStream);
-
-    manager.cancelSendPresentationWithRepeatedCalls();
-
-    let error: unknown = undefined;
-
-    try {
-      await promise;
-    } catch (error_) {
-      error = error_;
+    if (this.promisePendingStartPresentation) {
+      await this.promisePendingStartPresentation;
     }
 
-    expect(hasCanceledStartPresentationError(error)).toBe(true);
-  });
+    return this.sendPresentation(beforeStartPresentation, rtcSession, stream, {
+      contentHint,
+      isNeedReinvite: false,
+      sendEncodings,
+      onAddedTransceiver,
+    }).then(async (mediaStream) => {
+      await this.setMaxBitrate();
 
-  it('hasCanceledStartPresentationError возвращает false для обычной ошибки', () => {
-    expect(hasCanceledStartPresentationError(new Error('fail'))).toBe(false);
-  });
-
-  it('once работает для событий', () => {
-    const handler = jest.fn();
-
-    manager.once('presentation:start', handler);
-    // @ts-ignore
-    manager.events.trigger('presentation:start', 'once-data');
-    // @ts-ignore
-    manager.events.trigger('presentation:start', 'once-data2');
-    expect(handler).toHaveBeenCalledTimes(1);
-    expect(handler).toHaveBeenCalledWith('once-data');
-  });
-
-  it('onceRace работает для событий', () => {
-    const handler = jest.fn();
-
-    manager.onceRace(['presentation:start', 'presentation:end'], handler);
-    // @ts-ignore
-    manager.events.trigger('presentation:end', 'race-data');
-    expect(handler).toHaveBeenCalledTimes(1);
-
-    const calls = handler.mock.calls as [string, string][];
-
-    expect(calls[0][0]).toBe('race-data');
-    expect(['presentation:start', 'presentation:end']).toContain(calls[0][1]);
-  });
-
-  it('wait работает для событий', async () => {
-    setTimeout(() => {
-      // @ts-ignore
-      manager.events.trigger('presentation:start', 'wait-data');
-    }, 10);
-
-    const result = await manager.wait('presentation:start');
-
-    expect(result).toBe('wait-data');
-  });
-
-  it('handleEnded сбрасывает состояние при событии ended/failed', async () => {
-    await manager.startPresentation(beforeStartPresentation, mediaStream);
-    // эмулируем событие ended
-    // @ts-ignore
-    manager.handleEnded();
-    expect(manager.streamPresentationCurrent).toBeUndefined();
-    expect(manager.promisePendingStartPresentation).toBeUndefined();
-    expect(manager.promisePendingStopPresentation).toBeUndefined();
-  });
-
-  it('повторные вызовы startPresentation не дублируют презентацию', async () => {
-    await manager.startPresentation(beforeStartPresentation, mediaStream);
-    await expect(manager.startPresentation(beforeStartPresentation, mediaStream)).rejects.toThrow(
-      'Presentation is already started',
-    );
-  });
-
-  it('resetPresentation очищает все поля', async () => {
-    await manager.startPresentation(beforeStartPresentation, mediaStream);
-    // @ts-ignore
-    manager.resetPresentation();
-    expect(manager.streamPresentationCurrent).toBeUndefined();
-    expect(manager.promisePendingStartPresentation).toBeUndefined();
-    expect(manager.promisePendingStopPresentation).toBeUndefined();
-  });
-
-  it('removeStreamPresentationCurrent очищает streamPresentationCurrent', async () => {
-    await manager.startPresentation(beforeStartPresentation, mediaStream);
-    // @ts-ignore
-    manager.removeStreamPresentationCurrent();
-    expect(manager.streamPresentationCurrent).toBeUndefined();
-  });
-
-  it('updatePresentation сразу после startPresentation ожидает завершения старта', async () => {
-    // Запускаем startPresentation, не дожидаясь завершения, сразу вызываем updatePresentation
-    const startPromise = manager.startPresentation(beforeStartPresentation, mediaStream);
-    const newStream = createMediaStreamMock({
-      audio: { deviceId: { exact: 'audioDeviceId2' } },
-      video: { deviceId: { exact: 'videoDeviceId2' } },
+      return mediaStream;
     });
-    // updatePresentation должен дождаться завершения startPresentation
-    const updatePromise = manager.updatePresentation(beforeStartPresentation, newStream);
-    const [startResult, updateResult] = await Promise.all([startPromise, updatePromise]);
+  }
 
-    expect(startResult).toBeDefined();
-    expect(updateResult).toBeDefined();
-    expect(updateResult?.id).toBe(newStream.id);
-  });
+  public cancelSendPresentationWithRepeatedCalls() {
+    this.cancelableSendPresentationWithRepeatedCalls?.stopRepeatedCalls();
+  }
 
-  it('startPresentation вызывает FAILED_PRESENTATION и сбрасывает streamPresentationCurrent при ошибке', async () => {
-    const targetError = new Error('fail-start');
+  public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+    return this.events.on(eventName, handler);
+  }
 
-    RTCSessionMock.setPresentationError(targetError);
+  public once<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+    return this.events.once(eventName, handler);
+  }
 
-    const spy = jest.fn();
+  public onceRace<T extends keyof TEventMap>(
+    eventNames: T[],
+    handler: (data: TEventMap[T], eventName: string) => void,
+  ) {
+    return this.events.onceRace(eventNames, handler);
+  }
 
-    manager.on('presentation:failed', spy);
+  public async wait<T extends keyof TEventMap>(eventName: T): Promise<TEventMap[T]> {
+    return this.events.wait(eventName);
+  }
 
-    let error: TReachedLimitError<Error> | undefined;
+  public off<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+    this.events.off(eventName, handler);
+  }
 
-    try {
-      await manager.startPresentation(beforeStartPresentation, mediaStream);
-    } catch (error_) {
-      error = error_ as unknown as TReachedLimitError<Error>;
+  private subscribe() {
+    this.callManager.on('presentation:start', (stream: MediaStream) => {
+      this.events.trigger(EEvent.START_PRESENTATION, stream);
+    });
+    this.callManager.on('presentation:started', (stream: MediaStream) => {
+      this.events.trigger(EEvent.STARTED_PRESENTATION, stream);
+    });
+    this.callManager.on('presentation:end', (stream: MediaStream) => {
+      this.events.trigger(EEvent.END_PRESENTATION, stream);
+    });
+    this.callManager.on('presentation:ended', (stream: MediaStream) => {
+      this.events.trigger(EEvent.ENDED_PRESENTATION, stream);
+    });
+    this.callManager.on('presentation:failed', (error: Error) => {
+      this.events.trigger(EEvent.FAILED_PRESENTATION, error);
+    });
+
+    this.callManager.on('failed', this.handleEnded);
+    this.callManager.on('ended', this.handleEnded);
+  }
+
+  private async sendPresentationWithDuplicatedCalls(
+    beforeStartPresentation: () => Promise<void>,
+    {
+      rtcSession,
+      stream,
+      presentationOptions,
+      options = {
+        callLimit: SEND_PRESENTATION_CALL_LIMIT,
+      },
+    }: {
+      rtcSession: RTCSession;
+      stream: MediaStream;
+      presentationOptions: {
+        isNeedReinvite?: boolean;
+        contentHint?: TContentHint;
+        sendEncodings?: RTCRtpEncodingParameters[];
+        onAddedTransceiver?: TOnAddedTransceiver;
+      };
+      options?: { callLimit: number };
+    },
+  ) {
+    const targetFunction = async () => {
+      return this.sendPresentation(
+        beforeStartPresentation,
+        rtcSession,
+        stream,
+        presentationOptions,
+      );
+    };
+
+    const isComplete = (): boolean => {
+      return !!this.streamPresentationCurrent;
+    };
+
+    this.cancelableSendPresentationWithRepeatedCalls = repeatedCallsAsync<MediaStream>({
+      targetFunction,
+      isComplete,
+      isRejectAsValid: true,
+      ...options,
+    });
+
+    return this.cancelableSendPresentationWithRepeatedCalls.then((response?: unknown) => {
+      return response as MediaStream;
+    });
+  }
+
+  // eslint-disable-next-line @typescript-eslint/max-params
+  private async sendPresentation(
+    beforeStartPresentation: () => Promise<void>,
+    rtcSession: RTCSession,
+    stream: MediaStream,
+    {
+      isNeedReinvite = true,
+      contentHint = 'detail',
+      degradationPreference,
+      sendEncodings,
+      onAddedTransceiver,
+    }: {
+      isNeedReinvite?: boolean;
+      contentHint?: TContentHint;
+      degradationPreference?: RTCDegradationPreference;
+      sendEncodings?: RTCRtpEncodingParameters[];
+      onAddedTransceiver?: TOnAddedTransceiver;
+    },
+  ) {
+    const streamPresentationTarget = prepareMediaStream(stream, { contentHint });
+
+    if (streamPresentationTarget === undefined) {
+      throw new Error('No streamPresentationTarget');
     }
 
-    if (error === undefined) {
-      throw new Error('error is undefined');
+    this.streamPresentationCurrent = streamPresentationTarget;
+
+    const result = beforeStartPresentation()
+      .then(async () => {
+        return rtcSession.startPresentation(streamPresentationTarget, isNeedReinvite, {
+          degradationPreference,
+          sendEncodings,
+          onAddedTransceiver,
+        });
+      })
+      .then(this.setMaxBitrate)
+      .then(() => {
+        return stream;
+      })
+      .catch((error: unknown) => {
+        this.removeStreamPresentationCurrent();
+
+        const presentationError = error instanceof Error ? error : new Error(String(error));
+
+        this.events.trigger(EEvent.FAILED_PRESENTATION, presentationError);
+
+        throw error;
+      });
+
+    this.promisePendingStartPresentation = result;
+
+    return result.finally(() => {
+      this.promisePendingStartPresentation = undefined;
+    });
+  }
+
+  private readonly setMaxBitrate = async () => {
+    const { connection } = this.callManager;
+    const { streamPresentationCurrent } = this;
+    const { maxBitrate } = this;
+
+    if (!connection || !streamPresentationCurrent || maxBitrate === undefined) {
+      return;
     }
 
-    const lastResult: Error | undefined = error.values?.lastResult;
+    const senders = connection.getSenders();
 
-    expect(lastResult).toBeInstanceOf(Error);
-    expect(lastResult?.message).toBe('fail-start');
-    expect(spy).toHaveBeenCalledWith(lastResult);
-    expect(manager.streamPresentationCurrent).toBeUndefined();
-  });
+    await setMaxBitrateToSender(senders, streamPresentationCurrent, maxBitrate);
+  };
 
-  it('startPresentation вызывает FAILED_PRESENTATION с new Error(String(error)) когда ошибка не является экземпляром Error', async () => {
-    // Устанавливаем ошибку, которая не является экземпляром Error (число)
-    const nonErrorValue = 404;
+  private readonly getRtcSessionProtected = () => {
+    const rtcSession = this.callManager.getEstablishedRTCSession();
 
-    RTCSessionMock.setPresentationError(nonErrorValue as unknown as Error);
-
-    const spy = jest.fn();
-
-    manager.on('presentation:failed', spy);
-
-    let error: TReachedLimitError<Error> | undefined;
-
-    try {
-      await manager.startPresentation(beforeStartPresentation, mediaStream);
-    } catch (error_) {
-      error = error_ as unknown as TReachedLimitError<Error>;
+    if (!rtcSession) {
+      throw new Error('No rtcSession established');
     }
 
-    if (error === undefined) {
-      throw new Error('error is undefined');
-    }
+    return rtcSession;
+  };
 
-    // Проверяем, что событие было вызвано с новым Error, созданным из числа
-    expect(spy).toHaveBeenCalled();
+  private readonly handleEnded = () => {
+    this.reset();
+  };
 
-    const calledErrors = (spy.mock.calls as [Error][]).map((call) => {
-      return call[0] as Error;
-    });
+  private reset() {
+    this.cancelSendPresentationWithRepeatedCalls();
+    this.resetPresentation();
+  }
 
-    // Проверяем, что хотя бы один вызов был с Error, созданным из числа
-    const hasConvertedError = calledErrors.some((error_) => {
-      return error_ instanceof Error && error_.message === '404';
-    });
+  private resetPresentation() {
+    this.removeStreamPresentationCurrent();
 
-    expect(hasConvertedError).toBe(true);
-    expect(manager.streamPresentationCurrent).toBeUndefined();
-  });
+    this.promisePendingStartPresentation = undefined;
+    this.promisePendingStopPresentation = undefined;
+  }
 
-  it('startPresentation выбрасывает ошибку, если directionVideo и directionAudio === recvonly', async () => {
-    let error: TReachedLimitError<Error> | undefined;
+  private removeStreamPresentationCurrent() {
+    delete this.streamPresentationCurrent;
+  }
+}
 
-    try {
-      // @ts-expect-error для теста
-      await manager.startPresentation(beforeStartPresentation, undefined);
-    } catch (error_) {
-      error = error_ as unknown as TReachedLimitError<Error>;
-    }
-
-    if (error === undefined) {
-      throw new Error('error is undefined');
-    }
-
-    const lastResult: Error | undefined = error.values?.lastResult;
-
-    expect(lastResult?.message).toBe('No streamPresentationTarget');
-    expect(manager.streamPresentationCurrent).toBeUndefined();
-  });
-
-  it('stopPresentation без текущей презентации возвращает undefined', async () => {
-    const spyFailed = jest.fn();
-    const spyEnded = jest.fn();
-
-    manager.on('presentation:failed', spyFailed);
-    manager.on('presentation:ended', spyEnded);
-
-    // Вызов без стартовавшей презентации
-    const result = await manager.stopPresentation(beforeStopPresentation);
-
-    expect(result).toBeUndefined();
-    // Не должно быть текущей презентации
-    expect(manager.streamPresentationCurrent).toBeUndefined();
-    // Не должно вызываться события failed/ended, так как презентация не запускалась
-    expect(spyFailed).not.toHaveBeenCalled();
-    expect(spyEnded).not.toHaveBeenCalled();
-  });
-
-  it('startPresentation и stopPresentation без ожидания завершения вызывают события в правильном порядке', async () => {
-    const eventOrder: string[] = [];
-
-    // Подписываемся на все события презентации для отслеживания порядка
-    manager.on('presentation:start', () => {
-      eventOrder.push('presentation:start');
-    });
-
-    manager.on('presentation:started', () => {
-      eventOrder.push('presentation:started');
-    });
-
-    manager.on('presentation:end', () => {
-      eventOrder.push('presentation:end');
-    });
-
-    manager.on('presentation:ended', () => {
-      eventOrder.push('presentation:ended');
-    });
-
-    manager.on('presentation:failed', () => {
-      eventOrder.push('presentation:failed');
-    });
-
-    // Запускаем startPresentation, не дожидаясь завершения
-    const startPromise = manager.startPresentation(beforeStartPresentation, mediaStream);
-
-    // Сразу вызываем stopPresentation, не дожидаясь завершения startPresentation
-    const stopPromise = manager.stopPresentation(beforeStopPresentation);
-
-    // Ждем завершения обеих операций
-    const [startResult, stopResult] = await Promise.allSettled([startPromise, stopPromise]);
-
-    // Проверяем, что обе операции завершились успешно
-    expect(startResult).toBeDefined();
-    expect(stopResult).toBeDefined();
-    expect(startResult.status).toBe('rejected');
-    expect(stopResult.status).toBe('fulfilled');
-
-    // @ts-expect-error для теста
-    expect(hasCanceledStartPresentationError(startResult.reason)).toBe(true);
-    // @ts-expect-error для теста
-    expect(stopResult.value).toBeDefined();
-
-    // Проверяем правильный порядок событий
-    expect(eventOrder).toEqual([
-      'presentation:start',
-      'presentation:started',
-      'presentation:end',
-      'presentation:ended',
-    ]);
-
-    // Проверяем, что состояние сброшено
-    expect(manager.streamPresentationCurrent).toBeUndefined();
-    expect(manager.promisePendingStartPresentation).toBeUndefined();
-    expect(manager.promisePendingStopPresentation).toBeUndefined();
-  });
-
-  it('startPresentation и stopPresentation без ожидания завершения вызывают события в правильном порядке при ошибке', async () => {
-    const eventOrder: string[] = [];
-
-    // Подписываемся на все события презентации для отслеживания порядка
-    manager.on('presentation:start', () => {
-      eventOrder.push('presentation:start');
-    });
-
-    manager.on('presentation:started', () => {
-      eventOrder.push('presentation:started');
-    });
-
-    manager.on('presentation:end', () => {
-      eventOrder.push('presentation:end');
-    });
-
-    manager.on('presentation:ended', () => {
-      eventOrder.push('presentation:ended');
-    });
-
-    manager.on('presentation:failed', () => {
-      eventOrder.push('presentation:failed');
-    });
-
-    const testError = new Error('fail');
-
-    // запускаем ошибку
-    RTCSessionMock.setPresentationError(testError);
-
-    // Запускаем startPresentation, не дожидаясь завершения
-    const startPromise = manager.startPresentation(beforeStartPresentation, mediaStream);
-    // Сразу вызываем stopPresentation, не дожидаясь завершения startPresentation
-    const stopPromise = manager.stopPresentation(beforeStopPresentation);
-
-    // Ждем завершения обеих операций
-    const [startResult, stopResult] = await Promise.allSettled([startPromise, stopPromise]);
-
-    // Проверяем, что обе операции завершились успешно
-    expect(startResult).toBeDefined();
-    expect(stopResult).toBeDefined();
-    expect(startResult.status).toBe('rejected');
-    expect(stopResult.status).toBe('rejected');
-
-    // @ts-expect-error для теста
-    expect(hasCanceledStartPresentationError(startResult.reason)).toBe(true);
-    // @ts-expect-error для теста
-    expect(stopResult.reason).toBe(testError);
-
-    // Проверяем правильный порядок событий
-    expect(eventOrder).toEqual([
-      'presentation:start',
-      'presentation:failed',
-      'presentation:failed',
-      'presentation:end',
-      'presentation:failed',
-      'presentation:failed',
-    ]);
-
-    // Проверяем, что состояние сброшено
-    expect(manager.streamPresentationCurrent).toBeUndefined();
-    expect(manager.promisePendingStartPresentation).toBeUndefined();
-    expect(manager.promisePendingStopPresentation).toBeUndefined();
-  });
-});
+export default PresentationManager;
