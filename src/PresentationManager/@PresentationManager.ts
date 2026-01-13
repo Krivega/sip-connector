@@ -364,7 +364,7 @@ describe('PresentationManager', () => {
       expect(manager.isPresentationInProcess).toBe(false);
     });
 
-    it('должен возвращать true, когда isPendingPresentation true', () => {
+    it('должен возвращать true во время запуска презентации', () => {
       promise = manager.startPresentation(beforeStartPresentation, mediaStream);
 
       expect(manager.isPendingPresentation).toBe(true);
@@ -378,7 +378,7 @@ describe('PresentationManager', () => {
       expect(manager.isPresentationInProcess).toBe(true);
     });
 
-    it('должен возвращать true, когда и streamPresentationCurrent есть и isPendingPresentation true', () => {
+    it('должен возвращать true, когда есть streamPresentationCurrent и isPendingPresentation true', () => {
       promise = manager.startPresentation(beforeStartPresentation, mediaStream);
 
       expect(manager.streamPresentationCurrent).toBeDefined();
@@ -386,7 +386,7 @@ describe('PresentationManager', () => {
       expect(manager.isPresentationInProcess).toBe(true);
     });
 
-    it('должен возвращать true, во время остановки презентации', async () => {
+    it('должен возвращать true во время остановки презентации', async () => {
       await manager.startPresentation(beforeStartPresentation, mediaStream);
 
       promise = manager.stopPresentation(beforeStopPresentation);
@@ -395,7 +395,7 @@ describe('PresentationManager', () => {
       expect(manager.isPresentationInProcess).toBe(true);
     });
 
-    it('должен возвращать false, после полной остановки презентации', async () => {
+    it('должен возвращать false после полной остановки презентации', async () => {
       await manager.startPresentation(beforeStartPresentation, mediaStream);
       await manager.stopPresentation(beforeStopPresentation);
 
