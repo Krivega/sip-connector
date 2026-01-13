@@ -7,15 +7,15 @@ import { RemoteStreamsManager } from './RemoteStreamsManager';
 import { RoleManager } from './RoleManager';
 
 import type { RTCSession } from '@krivega/jssip';
-import type { TEvents, TEventMap } from './eventNames';
+import type { TEventMap, TEvents } from './eventNames';
 import type { TTools } from './RecvSession';
 import type {
-  TStartCall,
-  TCallConfiguration,
-  TReplaceMediaStream,
   TAnswerToIncomingCall,
+  TCallConfiguration,
   TCallRole,
   TCallRoleSpectator,
+  TReplaceMediaStream,
+  TStartCall,
 } from './types';
 
 type TRemoteStreamsChangeType = 'added' | 'removed';
@@ -118,6 +118,10 @@ class CallManager {
 
   public async endCall(): Promise<void> {
     return this.mcuSession.endCall();
+  }
+
+  public async renegotiate(): Promise<boolean> {
+    return this.mcuSession.renegotiate();
   }
 
   public answerToIncomingCall: TAnswerToIncomingCall = async (

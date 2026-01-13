@@ -105,6 +105,24 @@ describe('CallManager', () => {
     await expect(callManager.endCall()).resolves.toBeUndefined();
   });
 
+  it('renegotiate: должен вызывать renegotiate у rtcSession', async () => {
+    const renegotiate = jest.fn().mockResolvedValue(true);
+
+    // @ts-expect-error
+    callManager.mcuSession.rtcSession = { renegotiate } as unknown as RTCSession;
+
+    await expect(callManager.renegotiate()).resolves.toBe(true);
+
+    expect(renegotiate).toHaveBeenCalledTimes(1);
+  });
+
+  it('renegotiate: должен выбрасывать ошибку если rtcSession отсутствует', async () => {
+    // @ts-expect-error
+    callManager.mcuSession.rtcSession = undefined;
+
+    await expect(callManager.renegotiate()).rejects.toThrow('No rtcSession established');
+  });
+
   it('getRemoteStreams: возвращает undefined если нет connection', () => {
     jest.spyOn(RemoteStreamsManager.prototype, 'getStreams').mockReturnValue([]);
 

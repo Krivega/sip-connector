@@ -86,6 +86,7 @@ export interface IMCUSession {
   // Методы
   startCall: TStartCall;
   endCall: () => Promise<void>;
+  renegotiate: () => Promise<boolean>;
   answerToIncomingCall: (
     incomingRTCSession: RTCSession,
     params: TParamsAnswerToIncomingCall,

@@ -11,6 +11,8 @@ import { StatsManager } from '@/StatsManager';
 import { sendOffer } from '@/tools';
 import setCodecPreferences from '@/tools/setCodecPreferences';
 import { VideoSendingBalancerManager } from '@/VideoSendingBalancerManager';
+import { MainStreamHealthMonitor } from '../MainStreamHealthMonitor';
+import { MainStreamRecovery } from '../MainStreamRecovery';
 import { ONE_MEGABIT_IN_BITS } from './constants';
 import { EVENT_NAMES } from './eventNames';
 
@@ -41,6 +43,10 @@ class SipConnector {
   public readonly statsManager: StatsManager;
 
   public readonly videoSendingBalancerManager: VideoSendingBalancerManager;
+
+  private readonly mainStreamHealthMonitor: MainStreamHealthMonitor;
+
+  private readonly mainStreamRecovery: MainStreamRecovery;
 
   private readonly preferredMimeTypesVideoCodecs?: string[];
 
@@ -95,6 +101,8 @@ class SipConnector {
       this.apiManager,
       videoBalancerOptions,
     );
+    this.mainStreamHealthMonitor = new MainStreamHealthMonitor(this.statsManager, this.callManager);
+    this.mainStreamRecovery = new MainStreamRecovery(this.callManager);
     this.subscribe();
   }
 
@@ -505,6 +513,21 @@ class SipConnector {
     this.subscribeToApiEvents();
     this.subscribeDisconnectedFromOutOfCall();
     this.subscribeConnectedWithConfigurationFromOutOfCall();
+    this.subscribeToMainStreamHealthMonitorEvents();
+    this.subscribeCallManagerEvents();
+  }
+
+  private subscribeToMainStreamHealthMonitorEvents() {
+    this.mainStreamHealthMonitor.on('no-inbound-frames', () => {
+      this.mainStreamRecovery.recover();
+    });
+  }
+
+  private subscribeCallManagerEvents() {
+    this.callManager.on('ended', () => {
+      this.mainStreamHealthMonitor.reset();
+      this.mainStreamRecovery.cancel();
+    });
   }
 
   private readonly bridgeEvents = <T extends string>(

@@ -1,7 +1,7 @@
 import JsSIP from '@/__fixtures__/jssip.mock';
 import SipConnector from '../@SipConnector';
 
-import type { Socket, IncomingResponse } from '@krivega/jssip';
+import type { IncomingResponse, Socket } from '@krivega/jssip';
 import type { TJsSIP } from '@/types';
 
 describe('SipConnector events', () => {
@@ -103,6 +103,7 @@ describe('SipConnector events', () => {
         },
       },
       inbound: {
+        video: {},
         additional: {
           candidatePair: { availableIncomingBitrate: 1000 },
         },
