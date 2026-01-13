@@ -862,7 +862,7 @@ describe('SipConnector facade', () => {
     });
   });
 
-describe('stopped-presentation-by-server-command event', () => {
+  describe('stopped-presentation-by-server-command event', () => {
     let handler: jest.Mock;
     let stopPresentationSpy: jest.SpyInstance;
     let hasPresentationInProcessSpy: jest.SpyInstance;
