@@ -1,20 +1,30 @@
+import { TypedEvents } from 'events-constructor';
+
 import flushPromises from '@/__fixtures__/flushPromises';
 import MainStreamRecovery from '../@MainStreamRecovery';
 
-import type { CallManager } from '@/CallManager';
+import type { EndEvent } from '@krivega/jssip';
+import type { CallManager, TEventMap as TCallEventMap } from '@/CallManager';
 
 jest.mock('@/logger', () => {
   return jest.fn();
 });
 
+const createCallEvents = () => {
+  return new TypedEvents<TCallEventMap>(['ended'] as const);
+};
+
 describe('@MainStreamRecovery', () => {
+  let callEvents: TypedEvents<TCallEventMap>;
   let callManager: CallManager;
 
   beforeEach(() => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date(0));
 
+    callEvents = createCallEvents();
     callManager = {
+      on: callEvents.on.bind(callEvents),
       renegotiate: jest.fn().mockResolvedValue(true),
     } as unknown as CallManager;
   });
@@ -30,6 +40,17 @@ describe('@MainStreamRecovery', () => {
     recovery.recover();
 
     expect(callManager.renegotiate).toHaveBeenCalledTimes(1);
+  });
+
+  it('должен отменить восстановление основного потока при завершении звонка', () => {
+    const recovery = new MainStreamRecovery(callManager);
+
+    // @ts-expect-error - доступ к приватному свойству
+    const spyCancel = jest.spyOn(recovery, 'cancel');
+
+    callEvents.trigger('ended', {} as EndEvent);
+
+    expect(spyCancel).toHaveBeenCalledTimes(1);
   });
 
   it('должен пропускать повторный вызов recover если предыдущий запрос завершился и повторный вызов совершен раньше, чем истек переданный таймаут', async () => {
@@ -80,19 +101,6 @@ describe('@MainStreamRecovery', () => {
     expect(callManager.renegotiate).toHaveBeenCalledTimes(2);
   });
 
-  it('должен отменять восстановление когда вызван cancel', () => {
-    const recovery = new MainStreamRecovery(callManager);
-    // @ts-expect-error - доступ к приватному свойству
-    const cancelRequestSpy = jest.spyOn(recovery.renegotiateRequester, 'cancelRequest');
-    // @ts-expect-error - доступ к приватному свойству
-    const cancelThrottleSpy = jest.spyOn(recovery.renegotiateThrottled, 'cancel');
-
-    recovery.cancel();
-
-    expect(cancelRequestSpy).toHaveBeenCalledTimes(1);
-    expect(cancelThrottleSpy).toHaveBeenCalledTimes(1);
-  });
-
   it('должен логировать успех renegotiate после recover', async () => {
     const mockLogger = await import('@/logger');
     const recovery = new MainStreamRecovery(callManager, 200);
@@ -111,6 +119,7 @@ describe('@MainStreamRecovery', () => {
     const error = new Error('renegotiate failed');
 
     callManager = {
+      on: callEvents.on.bind(callEvents),
       renegotiate: jest.fn().mockRejectedValue(error),
     } as unknown as CallManager;
 

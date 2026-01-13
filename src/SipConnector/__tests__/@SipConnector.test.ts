@@ -7,7 +7,6 @@ import SipConnector from '../@SipConnector';
 
 import type {
   ConnectedEvent,
-  EndEvent,
   IncomingResponse,
   RegisteredEvent,
   Socket,
@@ -66,15 +65,6 @@ describe('SipConnector facade', () => {
     await flushPromises();
 
     expect(spyRecover).toHaveBeenCalledTimes(1);
-  });
-
-  it('должен отменить восстановление основного потока при завершении звонка', () => {
-    // @ts-expect-error - доступ к приватному свойству
-    const spyCancelMainStreamRecovery = jest.spyOn(sipConnector.mainStreamRecovery, 'cancel');
-
-    sipConnector.callManager.events.trigger('ended', {} as EndEvent);
-
-    expect(spyCancelMainStreamRecovery).toHaveBeenCalledTimes(1);
   });
 
   it('не должен проксировать событие connection:disconnected как disconnected-from-out-of-call если активен звонок', async () => {

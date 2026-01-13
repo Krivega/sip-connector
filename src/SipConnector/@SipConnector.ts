@@ -514,18 +514,11 @@ class SipConnector {
     this.subscribeDisconnectedFromOutOfCall();
     this.subscribeConnectedWithConfigurationFromOutOfCall();
     this.subscribeToMainStreamHealthMonitorEvents();
-    this.subscribeCallManagerEvents();
   }
 
   private subscribeToMainStreamHealthMonitorEvents() {
     this.mainStreamHealthMonitor.on('no-inbound-frames', () => {
       this.mainStreamRecovery.recover();
-    });
-  }
-
-  private subscribeCallManagerEvents() {
-    this.callManager.on('ended', () => {
-      this.mainStreamRecovery.cancel();
     });
   }
 
