@@ -5,9 +5,8 @@ import { EVENT_NAMES, NO_INBOUND_FRAMES_EVENT_NAME } from './eventNames';
 import type { CallManager } from '@/CallManager';
 import type { StatsManager } from '@/StatsManager';
 import type { TEventMap } from './eventNames';
-import type { TMainStreamHealthMonitor } from './types';
 
-class MainStreamHealthMonitor implements TMainStreamHealthMonitor {
+class MainStreamHealthMonitor {
   public readonly events: TypedEvents<TEventMap>;
 
   private readonly statsManager: StatsManager;
