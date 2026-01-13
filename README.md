@@ -41,6 +41,49 @@ SDK построен по принципу **слоистой архитекту
 - **SipConnectorFacade** — высокоуровневый фасад с готовыми сценариями
 - **Специализированные менеджеры** — для статистики, участников, медиа-потоков, автоподключения
 
+### 🧭 Состояния сеанса (XState)
+
+- Каждый доменный менеджер поднимает свой XState-актор: `connectionActor`, `callActor`, `incomingActor`, `presentationActor`.
+- Менеджеры сами кормят свои акторы событиями. Session — это тонкий агрегатор, который подписывается на `.subscribe` акторов менеджеров и отдает объединённый снапшот.
+- Клиент подписывается на статусы через `sipConnector.session.subscribe(selector, listener)` или читает снапшот через `sipConnector.session.getSnapshot()`.
+- Домены и статусы:
+  - **connection**: `idle` → `connecting` → `initializing` → `connected` → `registered` → `disconnected` / `failed` (с возможностью `RESET` в `idle`).
+  - **call**: `idle` → `connecting` → `ringing` → `accepted` → `inCall` → `ended` / `failed` (с возможностью `RESET` в `idle`).
+  - **incoming**: `idle` → `ringing` → `consumed` / `declined` / `terminated` / `failed` → `idle`.
+  - **presentation**: `idle` → `starting` → `active` → `stopping` → `idle` (`failed` на ошибках).
+- События источников:
+  - `ConnectionManager.events` → `connectionActor`: `connect-started`, `connecting`, `connect-parameters-resolve-success`, `connected`, `registered`, `unregistered`, `disconnected`, `registrationFailed`, `connect-failed`.
+  - `CallManager.events` → `callActor`: `connecting`, `progress`, `accepted`, `confirmed`, `ended`, `failed`, `presentation:start|started|end|ended|failed`.
+  - `IncomingCallManager.events` → `incomingActor`: `incomingCall`, `declinedIncomingCall`, `terminatedIncomingCall`, `failedIncomingCall`, а также `INCOMING.CONSUMED` при ответе на звонок и `INCOMING.CLEAR` при завершении звонка/потере соединения.
+  - `PresentationManager` прокидывает события презентации в `presentationActor` и реагирует на `CallManager`/`ConnectionManager` для корректного завершения статуса.
+- Машины состояний с валидацией:
+  - **ConnectionStateMachine**: Управляет переходами состояний SIP-соединения с валидацией допустимых операций и типобезопасной обработкой ошибок.
+  - **CallStateMachine**: Управляет переходами состояний звонков с валидацией, предотвращением недопустимых переходов и публичным API (геттеры `isIdle`, `isConnecting`, `isPending`, `isActive`, метод `reset()`).
+- Быстрый пример подписки:
+
+```typescript
+import { selectConnectionStatus, selectCallStatus } from 'sip-connector';
+
+const unsubscribe = sipConnector.session.subscribe(
+  (snapshot) => ({
+    connection: selectConnectionStatus(snapshot),
+    call: selectCallStatus(snapshot),
+  }),
+  ({ connection, call }) => {
+    console.log('Connection:', connection, 'Call:', call);
+  },
+);
+
+// ...
+unsubscribe(); // Когда больше не нужно слушать
+```
+
+- Миграция клиента:
+  1. Включите фича-флаг и подключите `sipConnector.session` вместо локальной модели статусов.
+  2. Подпишитесь через селекторы и синхронизируйте store (MobX/MST/Redux) только по изменившимся срезам.
+  3. Принимая входящие звонки, используйте `selectIncomingStatus/RemoteCaller` и действуйте по `consumed/declined`.
+  4. Для UI статусов звонка используйте `selectCallStatus`, для блокировок по соединению — `selectConnectionStatus`.
+
 ---
 
 ## 🚀 Установка
@@ -115,6 +158,24 @@ await facade.connectToServer(async () => {
     register: true,
   };
 });
+
+// Доступ к состоянию через ConnectionStateMachine (внутренний компонент)
+const connectionStateMachine = sipConnector.connectionManager.connectionStateMachine;
+
+// Проверка текущего состояния соединения
+console.log('Состояние соединения:', connectionStateMachine.state);
+console.log('Подключено:', connectionStateMachine.isActiveConnection); // true для connected/registered
+console.log('В процессе:', connectionStateMachine.isPending); // true для connecting/initializing
+console.log('Ошибка:', connectionStateMachine.error);
+
+// Получение списка допустимых событий
+const validEvents = connectionStateMachine.getValidEvents();
+console.log('Допустимые переходы:', validEvents);
+
+// Подписка на изменения состояния
+const unsubscribe = connectionStateMachine.onStateChange((state) => {
+  console.log('Новое состояние соединения:', state);
+});
 ```
 
 ### Шаг 3: Исходящий звонок
@@ -182,10 +243,30 @@ sipConnector.on('incoming-call:incomingCall', () => {
 });
 ```
 
+### Управление состоянием входящих звонков
+
+Доступ к состоянию через IncomingCallStateMachine:
+
+```typescript
+const incomingStateMachine = sipConnector.incomingCallManager.incomingCallStateMachine;
+
+// Проверка текущего состояния
+console.log('Состояние входящего:', incomingStateMachine.state);
+console.log('Звонок поступает:', incomingStateMachine.isRinging);
+console.log('Обработан:', incomingStateMachine.isFinished);
+console.log('Данные вызывающего:', incomingStateMachine.remoteCallerData);
+console.log('Причина завершения:', incomingStateMachine.lastReason);
+
+// Сброс состояния
+if (incomingStateMachine.isFinished) {
+  incomingStateMachine.reset();
+}
+```
+
 ### Управление состоянием звонка
 
 ```typescript
-// Отслеживание жизненного цикла звонка
+// Отслеживание жизненного цикла звонка через события
 sipConnector.on('call:accepted', () => {
   console.log('Звонок принят');
 });
@@ -197,6 +278,20 @@ sipConnector.on('call:ended', () => {
 sipConnector.on('call:failed', (error) => {
   console.error('Ошибка звонка:', error);
 });
+
+// Доступ к состоянию через CallStateMachine (внутренний компонент)
+const callStateMachine = sipConnector.callManager.callStateMachine;
+
+// Проверка текущего состояния
+console.log('Состояние звонка:', callStateMachine.state);
+console.log('Звонок активен:', callStateMachine.isActive); // true для accepted/inCall
+console.log('Ожидание:', callStateMachine.isPending); // true для connecting/ringing
+console.log('Последняя ошибка:', callStateMachine.lastError);
+
+// Сброс состояния после завершения
+if (callStateMachine.isEnded || callStateMachine.isFailed) {
+  callStateMachine.reset(); // Переход в IDLE
+}
 ```
 
 ---
@@ -280,6 +375,26 @@ await facade.startPresentation({
   isP2P: false,
   ...presentationSettings.textOptimized,
 });
+```
+
+### Управление состоянием презентации
+
+Доступ к состоянию через PresentationStateMachine:
+
+```typescript
+const presentationStateMachine = sipConnector.callManager.presentationStateMachine;
+
+// Проверка текущего состояния
+console.log('Состояние презентации:', presentationStateMachine.state);
+console.log('Активна:', presentationStateMachine.isActive);
+console.log('В процессе:', presentationStateMachine.isPending); // starting/stopping
+console.log('Активна или в процессе:', presentationStateMachine.isActiveOrPending);
+console.log('Ошибка:', presentationStateMachine.lastError);
+
+// Сброс состояния после ошибки
+if (presentationStateMachine.isFailed) {
+  presentationStateMachine.reset();
+}
 ```
 
 ---

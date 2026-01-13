@@ -120,6 +120,10 @@ export default class ConnectionManager {
     return this.stateMachine.isFailed;
   }
 
+  public get connectionActor() {
+    return this.stateMachine.actorRef;
+  }
+
   public get connectionState() {
     return this.stateMachine.state;
   }

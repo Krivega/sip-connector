@@ -13,6 +13,10 @@ type TDomIds = {
   callFormId: string;
   participantRoleId: string;
   useLicenseId: string;
+  connectionStatusId: string;
+  callStatusId: string;
+  incomingStatusId: string;
+  presentationStatusId: string;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
@@ -85,6 +89,14 @@ class DOM {
 
   public useLicenseElement: HTMLElement;
 
+  public connectionStatusElement: HTMLElement;
+
+  public callStatusElement: HTMLElement;
+
+  public incomingStatusElement: HTMLElement;
+
+  public presentationStatusElement: HTMLElement;
+
   public constructor({
     overlayId,
     callButtonId,
@@ -100,6 +112,10 @@ class DOM {
     callFormId,
     participantRoleId,
     useLicenseId,
+    connectionStatusId,
+    callStatusId,
+    incomingStatusId,
+    presentationStatusId,
   }: TDomIds) {
     this.overlayElement = getElementById(overlayId);
     this.callButtonElement = getElementById<HTMLButtonElement>(callButtonId);
@@ -149,6 +165,10 @@ class DOM {
     );
     this.participantRoleElement = getElementById(participantRoleId);
     this.useLicenseElement = getElementById(useLicenseId);
+    this.connectionStatusElement = getElementById(connectionStatusId);
+    this.callStatusElement = getElementById(callStatusId);
+    this.incomingStatusElement = getElementById(incomingStatusId);
+    this.presentationStatusElement = getElementById(presentationStatusId);
   }
 }
 
@@ -167,4 +187,8 @@ export const dom = new DOM({
   callFormId: 'callForm',
   participantRoleId: 'participantRole',
   useLicenseId: 'useLicense',
+  connectionStatusId: 'connectionStatus',
+  callStatusId: 'callStatus',
+  incomingStatusId: 'incomingStatus',
+  presentationStatusId: 'presentationStatus',
 });

@@ -1,9 +1,10 @@
-import { createActor, setup } from 'xstate';
+import { assign, setup } from 'xstate';
 
 import logger from '@/logger';
+import { BaseStateMachine } from '@/tools/BaseStateMachine';
 
-import type { ActorRefFrom } from 'xstate';
-import type { TEvents } from './events';
+import type { ActorRefFrom, SnapshotFrom } from 'xstate';
+import type { TEventMap, TEvents } from './events';
 
 // Определяем типы событий для XState машины
 export enum EEvents {
@@ -18,13 +19,18 @@ export enum EEvents {
 }
 
 type TConnectionMachineEvent = `${EEvents}`;
-type TConnectionMachineEvents = { type: TConnectionMachineEvent };
+
+type TConnectionFailedEvent = {
+  type: typeof EEvents.CONNECTION_FAILED;
+  error?: Error;
+};
+
+type TConnectionMachineEvents = { type: TConnectionMachineEvent } | TConnectionFailedEvent;
 
 const ALL_MACHINE_EVENTS: TConnectionMachineEvent[] = Object.values(EEvents);
 
 interface IConnectionMachineContext {
   error?: Error;
-  lastTransition?: string;
 }
 
 export enum EState {
@@ -40,6 +46,8 @@ export enum EState {
 enum EAction {
   LOG_TRANSITION = 'logTransition',
   LOG_STATE_CHANGE = 'logStateChange',
+  SET_ERROR = 'setError',
+  CLEAR_ERROR = 'clearError',
 }
 
 // Создаем XState машину с setup API для лучшей типизации
@@ -55,6 +63,20 @@ const connectionMachine = setup({
     [EAction.LOG_STATE_CHANGE]: (_, params: { state: string }) => {
       logger('ConnectionStateMachine state changed', params.state);
     },
+    [EAction.SET_ERROR]: assign({
+      error: ({ event }) => {
+        if (event.type === EEvents.CONNECTION_FAILED && 'error' in event) {
+          return event.error;
+        }
+
+        return undefined;
+      },
+    }),
+    [EAction.CLEAR_ERROR]: assign({
+      error: () => {
+        return undefined;
+      },
+    }),
   },
 }).createMachine({
   id: 'connection',
@@ -93,7 +115,7 @@ const connectionMachine = setup({
             params: {
               from: EState.CONNECTING,
               to: EState.INITIALIZING,
-              event: EEvents.START_INIT_UA, // TODO: remove
+              event: EEvents.START_INIT_UA,
             },
           },
         },
@@ -110,14 +132,17 @@ const connectionMachine = setup({
         },
         [EEvents.CONNECTION_FAILED]: {
           target: EState.FAILED,
-          actions: {
-            type: EAction.LOG_TRANSITION,
-            params: {
-              from: EState.CONNECTING,
-              to: EState.FAILED,
-              event: EEvents.CONNECTION_FAILED,
+          actions: [
+            {
+              type: EAction.LOG_TRANSITION,
+              params: {
+                from: EState.CONNECTING,
+                to: EState.FAILED,
+                event: EEvents.CONNECTION_FAILED,
+              },
             },
-          },
+            { type: EAction.SET_ERROR },
+          ],
         },
       },
     },
@@ -162,14 +187,17 @@ const connectionMachine = setup({
         },
         [EEvents.CONNECTION_FAILED]: {
           target: EState.FAILED,
-          actions: {
-            type: EAction.LOG_TRANSITION,
-            params: {
-              from: EState.INITIALIZING,
-              to: EState.FAILED,
-              event: EEvents.CONNECTION_FAILED,
+          actions: [
+            {
+              type: EAction.LOG_TRANSITION,
+              params: {
+                from: EState.INITIALIZING,
+                to: EState.FAILED,
+                event: EEvents.CONNECTION_FAILED,
+              },
             },
-          },
+            { type: EAction.SET_ERROR },
+          ],
         },
       },
     },
@@ -203,14 +231,17 @@ const connectionMachine = setup({
         },
         [EEvents.CONNECTION_FAILED]: {
           target: EState.FAILED,
-          actions: {
-            type: EAction.LOG_TRANSITION,
-            params: {
-              from: EState.CONNECTED,
-              to: EState.FAILED,
-              event: EEvents.CONNECTION_FAILED,
+          actions: [
+            {
+              type: EAction.LOG_TRANSITION,
+              params: {
+                from: EState.CONNECTED,
+                to: EState.FAILED,
+                event: EEvents.CONNECTION_FAILED,
+              },
             },
-          },
+            { type: EAction.SET_ERROR },
+          ],
         },
       },
     },
@@ -244,14 +275,17 @@ const connectionMachine = setup({
         },
         [EEvents.CONNECTION_FAILED]: {
           target: EState.FAILED,
-          actions: {
-            type: EAction.LOG_TRANSITION,
-            params: {
-              from: EState.REGISTERED,
-              to: EState.FAILED,
-              event: EEvents.CONNECTION_FAILED,
+          actions: [
+            {
+              type: EAction.LOG_TRANSITION,
+              params: {
+                from: EState.REGISTERED,
+                to: EState.FAILED,
+                event: EEvents.CONNECTION_FAILED,
+              },
             },
-          },
+            { type: EAction.SET_ERROR },
+          ],
         },
       },
     },
@@ -293,66 +327,66 @@ const connectionMachine = setup({
       on: {
         [EEvents.RESET]: {
           target: EState.IDLE,
-          actions: {
-            type: EAction.LOG_TRANSITION,
-            params: {
-              from: EState.FAILED,
-              to: EState.IDLE,
-              event: EEvents.RESET,
+          actions: [
+            {
+              type: EAction.LOG_TRANSITION,
+              params: {
+                from: EState.FAILED,
+                to: EState.IDLE,
+                event: EEvents.RESET,
+              },
             },
-          },
+            { type: EAction.CLEAR_ERROR },
+          ],
         },
         [EEvents.START_CONNECT]: {
           target: EState.CONNECTING,
-          actions: {
-            type: EAction.LOG_TRANSITION,
-            params: {
-              from: EState.FAILED,
-              to: EState.CONNECTING,
-              event: EEvents.START_CONNECT,
+          actions: [
+            {
+              type: EAction.LOG_TRANSITION,
+              params: {
+                from: EState.FAILED,
+                to: EState.CONNECTING,
+                event: EEvents.START_CONNECT,
+              },
             },
-          },
+            { type: EAction.CLEAR_ERROR },
+          ],
         },
       },
     },
   },
 });
 
-type TConnectionMachineActor = ActorRefFrom<typeof connectionMachine>;
+export type TConnectionSnapshot = SnapshotFrom<typeof connectionMachine>;
+export type TConnectionActor = ActorRefFrom<typeof connectionMachine>;
 
-export default class ConnectionStateMachine {
-  private readonly actor: TConnectionMachineActor;
-
+export default class ConnectionStateMachine extends BaseStateMachine<
+  typeof connectionMachine,
+  EState
+> {
   private readonly stateChangeListeners = new Set<(state: EState) => void>();
 
   private readonly events: TEvents;
 
   private unsubscribeFromEvents?: () => void;
 
-  private readonly actorSubscription?: { unsubscribe: () => void };
-
   public constructor(events: TEvents) {
+    super(connectionMachine);
     this.events = events;
 
-    this.actor = createActor(connectionMachine);
+    this.addSubscription(
+      this.subscribe((snapshot: TConnectionSnapshot) => {
+        const state = snapshot.value as EState;
 
-    this.actorSubscription = this.actor.subscribe((snapshot) => {
-      const state = snapshot.value as EState;
-
-      this.stateChangeListeners.forEach((listener) => {
-        listener(state);
-      });
-    });
-
-    // Запускаем актер
-    this.actor.start();
+        this.stateChangeListeners.forEach((listener) => {
+          listener(state);
+        });
+      }),
+    );
 
     // Подписываемся на события UA
     this.subscribeToEvents();
-  }
-
-  public get state(): EState {
-    return this.actor.getSnapshot().value as EState;
   }
 
   public get isIdle(): boolean {
@@ -381,6 +415,10 @@ export default class ConnectionStateMachine {
 
   public get isFailed(): boolean {
     return this.hasState(EState.FAILED);
+  }
+
+  public get error(): Error | undefined {
+    return this.getSnapshot().context.error;
   }
 
   public get isPending(): boolean {
@@ -413,9 +451,9 @@ export default class ConnectionStateMachine {
   }
 
   public destroy(): void {
+    this.stateChangeListeners.clear();
     this.unsubscribeFromEvents?.();
-    this.actorSubscription?.unsubscribe();
-    this.actor.stop();
+    this.stop();
   }
 
   public onStateChange(listener: (state: EState) => void): () => void {
@@ -428,9 +466,9 @@ export default class ConnectionStateMachine {
   }
 
   public canTransition(event: TConnectionMachineEvent): boolean {
-    const snapshot = this.actor.getSnapshot();
+    const snapshot = this.getSnapshot();
 
-    return snapshot.can({ type: event } as TConnectionMachineEvents);
+    return snapshot.can({ type: event });
   }
 
   public getValidEvents(): TConnectionMachineEvent[] {
@@ -441,12 +479,11 @@ export default class ConnectionStateMachine {
   }
 
   private hasState(state: EState): boolean {
-    return this.actor.getSnapshot().matches(state);
+    return this.getSnapshot().matches(state);
   }
 
-  private sendEvent(eventName: TConnectionMachineEvent): void {
-    const snapshot = this.actor.getSnapshot();
-    const event = { type: eventName };
+  private sendEvent(event: TConnectionMachineEvents): void {
+    const snapshot = this.getSnapshot();
 
     if (!snapshot.can(event)) {
       logger(
@@ -456,39 +493,39 @@ export default class ConnectionStateMachine {
       return;
     }
 
-    this.actor.send(event);
+    this.send(event);
   }
 
   private readonly toStartConnect = (): void => {
-    this.sendEvent(EEvents.START_CONNECT);
+    this.sendEvent({ type: EEvents.START_CONNECT });
   };
 
   private readonly toStartInitUa = (): void => {
-    this.sendEvent(EEvents.START_INIT_UA);
+    this.sendEvent({ type: EEvents.START_INIT_UA });
   };
 
   private readonly toConnected = (): void => {
-    this.sendEvent(EEvents.UA_CONNECTED);
+    this.sendEvent({ type: EEvents.UA_CONNECTED });
   };
 
   private readonly toRegistered = (): void => {
-    this.sendEvent(EEvents.UA_REGISTERED);
+    this.sendEvent({ type: EEvents.UA_REGISTERED });
   };
 
   private readonly toUnregistered = (): void => {
-    this.sendEvent(EEvents.UA_UNREGISTERED);
+    this.sendEvent({ type: EEvents.UA_UNREGISTERED });
   };
 
   private readonly toDisconnected = (): void => {
-    this.sendEvent(EEvents.UA_DISCONNECTED);
+    this.sendEvent({ type: EEvents.UA_DISCONNECTED });
   };
 
-  private readonly toFailed = (): void => {
-    this.sendEvent(EEvents.CONNECTION_FAILED);
+  private readonly toFailed = (error?: Error): void => {
+    this.sendEvent({ type: EEvents.CONNECTION_FAILED, error });
   };
 
   private readonly toIdle = (): void => {
-    this.sendEvent(EEvents.RESET);
+    this.sendEvent({ type: EEvents.RESET });
   };
 
   private subscribeToEvents(): void {
@@ -496,14 +533,31 @@ export default class ConnectionStateMachine {
     this.events.on('registered', this.toRegistered);
     this.events.on('unregistered', this.toUnregistered);
     this.events.on('disconnected', this.toDisconnected);
-    this.events.on('registrationFailed', this.toFailed);
+    this.events.on('registrationFailed', this.handleRegistrationFailed);
+    this.events.on('connect-failed', this.handleConnectFailed);
 
     this.unsubscribeFromEvents = () => {
       this.events.off('connected', this.toConnected);
       this.events.off('registered', this.toRegistered);
       this.events.off('unregistered', this.toUnregistered);
       this.events.off('disconnected', this.toDisconnected);
-      this.events.off('registrationFailed', this.toFailed);
+      this.events.off('registrationFailed', this.handleRegistrationFailed);
+      this.events.off('connect-failed', this.handleConnectFailed);
     };
   }
+
+  private readonly handleRegistrationFailed = (event: TEventMap['registrationFailed']): void => {
+    const { response } = event;
+
+    const statusCode = response.status_code || 'Unknown';
+    const reason = response.reason_phrase || 'Registration failed';
+
+    const error = new Error(`Registration failed: ${statusCode} ${reason}`);
+
+    this.toFailed(error);
+  };
+
+  private readonly handleConnectFailed = (error: TEventMap['connect-failed']): void => {
+    this.toFailed(error instanceof Error ? error : undefined);
+  };
 }

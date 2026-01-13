@@ -1,3 +1,4 @@
+import { CallStateMachine } from './CallStateMachine';
 import { createEvents, EEvent } from './events';
 import { MCUSession } from './MCUSession';
 import RecvSession from './RecvSession';
@@ -24,6 +25,8 @@ const getStreamHint = (event: RTCTrackEvent) => {
 
 class CallManager {
   public readonly events: TEvents;
+
+  public readonly callStateMachine: CallStateMachine;
 
   protected isPendingCall = false;
 
@@ -53,9 +56,14 @@ class CallManager {
   public constructor() {
     this.events = createEvents();
     this.mcuSession = new MCUSession(this.events, { onReset: this.reset });
+    this.callStateMachine = new CallStateMachine(this.events);
 
     this.subscribeCallStatusChange();
     this.subscribeMcuRemoteTrackEvents();
+  }
+
+  public get callActor() {
+    return this.callStateMachine.actorRef;
   }
 
   public get requested() {

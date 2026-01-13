@@ -6,6 +6,7 @@ import LocalMediaStreamManager from './LocalMediaStreamManager';
 import RemoteMediaStreamManager from './RemoteMediaStreamManager';
 import Session from './Session/Session';
 import FormStateManager from './state/FormStateManager';
+import Statuses from './Statuses';
 import getAppInfo from './utils/getAppInfo';
 import getBrowserInfo from './utils/getBrowserInfo';
 import VideoPlayer from './VideoPlayer';
@@ -38,6 +39,12 @@ class App {
     this.remoteMediaStreamManager = new RemoteMediaStreamManager();
     this.loaderManager = new LoaderManager();
     this.callStateManager = new CallStateManager();
+
+    const statusesManager = new Statuses();
+
+    statusesManager.subscribe((statuses) => {
+      this.updateSessionStatuses(statuses);
+    });
 
     this.initialize();
   }
@@ -167,6 +174,19 @@ class App {
     streams.forEach((stream) => {
       this.remoteMediaStreamManager.addStream(stream.id, stream);
     });
+  }
+
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
+  private updateSessionStatuses(statuses: {
+    connection: string;
+    call: string;
+    incoming: string;
+    presentation: string;
+  }): void {
+    dom.connectionStatusElement.textContent = statuses.connection;
+    dom.callStatusElement.textContent = statuses.call;
+    dom.incomingStatusElement.textContent = statuses.incoming;
+    dom.presentationStatusElement.textContent = statuses.presentation;
   }
 
   /**

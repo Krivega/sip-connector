@@ -117,6 +117,7 @@ import { ONE_MEGABIT_IN_BITS } from '@/SipConnector/constants';
 // Создание PresentationManager с фиксированным битрейтом
 const presentationManager = new PresentationManager({
   callManager,
+  connectionManager,
   maxBitrate: ONE_MEGABIT_IN_BITS, // 1 Мбит/с
 });
 

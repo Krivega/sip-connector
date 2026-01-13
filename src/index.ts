@@ -14,3 +14,11 @@ export { EMimeTypesVideoCodecs } from './types';
 export type { TJsSIP } from './types';
 export { default as getCodecFromSender } from './utils/getCodecFromSender';
 export { hasConnectionPromiseIsNotActualError } from './ConnectionQueueManager';
+export {
+  sessionSelectors,
+  ECallStatus,
+  EConnectionStatus,
+  EIncomingStatus,
+  EPresentationStatus,
+} from './session';
+export type { ISession, TSessionSnapshot } from './session';

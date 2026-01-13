@@ -3,6 +3,7 @@ import { hasCanceledError, repeatedCallsAsync } from 'repeated-calls';
 import prepareMediaStream from '@/tools/prepareMediaStream';
 import { setMaxBitrateToSender } from '@/tools/setParametersToSender';
 import { createEvents, EEvent } from './events';
+import { PresentationStateMachine } from './PresentationStateMachine';
 
 import type { RTCSession } from '@krivega/jssip';
 import type { CallManager } from '@/CallManager';
@@ -17,6 +18,8 @@ export const hasCanceledStartPresentationError = (error: unknown) => {
 
 class PresentationManager {
   public readonly events: TEvents;
+
+  public readonly presentationStateMachine: PresentationStateMachine;
 
   public promisePendingStartPresentation?: Promise<MediaStream>;
 
@@ -42,7 +45,12 @@ class PresentationManager {
     this.callManager = callManager;
     this.maxBitrate = maxBitrate;
     this.events = createEvents();
+    this.presentationStateMachine = new PresentationStateMachine(this.callManager.events);
     this.subscribe();
+  }
+
+  public get presentationActor() {
+    return this.presentationStateMachine.actorRef;
   }
 
   public get isPendingPresentation(): boolean {

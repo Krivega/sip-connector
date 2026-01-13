@@ -1,4 +1,5 @@
 import { createEvents, EEvent } from './events';
+import { IncomingCallStateMachine } from './IncomingCallStateMachine';
 
 import type { IncomingRTCSessionEvent, OutgoingRTCSessionEvent, RTCSession } from '@krivega/jssip';
 import type { ConnectionManager } from '@/ConnectionManager';
@@ -10,6 +11,8 @@ const REQUEST_TERMINATED_STATUS_CODE = 487;
 export default class IncomingCallManager {
   public readonly events: TEvents;
 
+  public readonly incomingStateMachine: IncomingCallStateMachine;
+
   private incomingRTCSession?: RTCSession;
 
   private readonly connectionManager: ConnectionManager;
@@ -17,7 +20,15 @@ export default class IncomingCallManager {
   public constructor(connectionManager: ConnectionManager) {
     this.connectionManager = connectionManager;
     this.events = createEvents();
+    this.incomingStateMachine = new IncomingCallStateMachine({
+      incomingEvents: this.events,
+      connectionEvents: this.connectionManager.events,
+    });
     this.start();
+  }
+
+  public get incomingActor() {
+    return this.incomingStateMachine.actorRef;
   }
 
   public get remoteCallerData(): TEventMap['incomingCall'] {
@@ -55,6 +66,7 @@ export default class IncomingCallManager {
   public extractIncomingRTCSession = (): RTCSession => {
     const incomingRTCSession = this.getIncomingRTCSession();
 
+    this.incomingStateMachine.toConsumed();
     this.removeIncomingSession();
 
     return incomingRTCSession;

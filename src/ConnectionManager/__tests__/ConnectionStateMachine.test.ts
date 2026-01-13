@@ -42,6 +42,7 @@ describe('ConnectionStateMachine', () => {
       expect(spyOn).toHaveBeenCalledWith('unregistered', expect.any(Function));
       expect(spyOn).toHaveBeenCalledWith('disconnected', expect.any(Function));
       expect(spyOn).toHaveBeenCalledWith('registrationFailed', expect.any(Function));
+      expect(spyOn).toHaveBeenCalledWith('connect-failed', expect.any(Function));
 
       newStateMachine.destroy();
     });
@@ -158,6 +159,73 @@ describe('ConnectionStateMachine', () => {
   });
 
   describe('Табличные переходы по доменным событиям', () => {
+    const transitions: {
+      title: string;
+      arrange: () => void;
+      expected: EState;
+    }[] = [
+      {
+        title: 'connected переводит из INITIALIZING в CONNECTED',
+        arrange: () => {
+          stateMachine.startConnect();
+          stateMachine.startInitUa();
+          events.trigger('connected', { socket: {} as Socket });
+        },
+        expected: EState.CONNECTED,
+      },
+      {
+        title: 'registered переводит из CONNECTED в REGISTERED',
+        arrange: () => {
+          stateMachine.startConnect();
+          stateMachine.startInitUa();
+          events.trigger('connected', { socket: {} as Socket });
+          events.trigger('registered', { response: {} as IncomingResponse });
+        },
+        expected: EState.REGISTERED,
+      },
+      {
+        title: 'registered переводит из INITIALIZING в REGISTERED',
+        arrange: () => {
+          stateMachine.startConnect();
+          stateMachine.startInitUa();
+          events.trigger('registered', { response: {} as IncomingResponse });
+        },
+        expected: EState.REGISTERED,
+      },
+      {
+        title: 'unregistered переводит из REGISTERED в CONNECTED',
+        arrange: () => {
+          stateMachine.startConnect();
+          stateMachine.startInitUa();
+          events.trigger('registered', { response: {} as IncomingResponse });
+          events.trigger('unregistered', { response: {} as IncomingResponse });
+        },
+        expected: EState.CONNECTED,
+      },
+      {
+        title: 'disconnected переводит в DISCONNECTED независимо от активного состояния',
+        arrange: () => {
+          stateMachine.startConnect();
+          events.trigger('disconnected', { socket: {} as Socket, error: false });
+        },
+        expected: EState.DISCONNECTED,
+      },
+      {
+        title: 'registrationFailed переводит в FAILED',
+        arrange: () => {
+          stateMachine.startConnect();
+          events.trigger('registrationFailed', { response: {} as IncomingResponse });
+        },
+        expected: EState.FAILED,
+      },
+    ];
+
+    test.each(transitions)('$title', ({ arrange, expected }) => {
+      arrange();
+
+      expect(stateMachine.state).toBe(expected);
+    });
+
     it('connected событие должно переводить из INITIALIZING в CONNECTED', () => {
       stateMachine.startConnect();
       stateMachine.startInitUa();
@@ -243,6 +311,18 @@ describe('ConnectionStateMachine', () => {
         'State transition: connection:connecting -> connection:failed (CONNECTION_FAILED)',
       );
     });
+
+    it('connect-failed событие должно переводить в FAILED', () => {
+      stateMachine.startConnect();
+      expect(stateMachine.state).toBe(EState.CONNECTING);
+
+      events.trigger('connect-failed', new Error('Connection failed'));
+
+      expect(stateMachine.state).toBe(EState.FAILED);
+      expect(mockLogger).toHaveBeenCalledWith(
+        'State transition: connection:connecting -> connection:failed (CONNECTION_FAILED)',
+      );
+    });
   });
 
   describe('Валидация переходов', () => {
@@ -316,7 +396,7 @@ describe('ConnectionStateMachine', () => {
 
       stateMachine.destroy();
 
-      expect(spyOff).toHaveBeenCalledTimes(5); // 5 событий: connected, registered, unregistered, disconnected, registrationFailed
+      expect(spyOff).toHaveBeenCalledTimes(6); // 6 событий: connected, registered, unregistered, disconnected, registrationFailed, connect-failed
     });
 
     it('должен корректно работать после destroy', () => {
@@ -327,6 +407,26 @@ describe('ConnectionStateMachine', () => {
 
       events.trigger('connected', { socket: {} as Socket });
       expect(stateMachine.state).toBe(currentState);
+    });
+
+    it('destroy должен очищать stateChangeListeners', () => {
+      const mockListener = jest.fn();
+
+      stateMachine.onStateChange(mockListener);
+      stateMachine.startConnect();
+      expect(mockListener).toHaveBeenCalledTimes(1);
+
+      stateMachine.destroy();
+
+      // Создаем новую машину и триггерим событие на старых events
+      const newStateMachine = new ConnectionStateMachine(events);
+
+      newStateMachine.startConnect();
+
+      // Старый слушатель не должен быть вызван снова
+      expect(mockListener).toHaveBeenCalledTimes(1);
+
+      newStateMachine.destroy();
     });
   });
 
@@ -387,6 +487,50 @@ describe('ConnectionStateMachine', () => {
       expect(stateMachine.state).toBe(EState.IDLE);
     });
 
+    it('должен сохранять детальную информацию об ошибке регистрации', () => {
+      stateMachine.startConnect();
+      stateMachine.startInitUa();
+
+      // Ошибка регистрации с детальной информацией
+      events.trigger('registrationFailed', {
+        response: { status_code: 403, reason_phrase: 'Forbidden' } as IncomingResponse,
+      });
+
+      expect(stateMachine.state).toBe(EState.FAILED);
+      expect(stateMachine.isFailed).toBe(true);
+      expect(stateMachine.error).toBeDefined();
+      expect(stateMachine.error?.message).toBe('Registration failed: 403 Forbidden');
+
+      // После reset ошибка должна очиститься
+      stateMachine.reset();
+      expect(stateMachine.state).toBe(EState.IDLE);
+      expect(stateMachine.error).toBeUndefined();
+    });
+
+    it('должен корректно обрабатывать повторное подключение после ошибки регистрации', () => {
+      // Первая попытка с ошибкой
+      stateMachine.startConnect();
+      stateMachine.startInitUa();
+      events.trigger('registrationFailed', {
+        response: { status_code: 401, reason_phrase: 'Unauthorized' } as IncomingResponse,
+      });
+
+      expect(stateMachine.state).toBe(EState.FAILED);
+      expect(stateMachine.error?.message).toBe('Registration failed: 401 Unauthorized');
+
+      // Повторная попытка подключения
+      stateMachine.startConnect();
+      expect(stateMachine.state).toBe(EState.CONNECTING);
+      expect(stateMachine.error).toBeUndefined(); // ошибка должна очиститься
+
+      stateMachine.startInitUa();
+      events.trigger('connected', { socket: {} as Socket });
+      events.trigger('registered', { response: {} as IncomingResponse });
+
+      expect(stateMachine.state).toBe(EState.REGISTERED);
+      expect(stateMachine.error).toBeUndefined();
+    });
+
     it('должен корректно обрабатывать подключение без регистрации', () => {
       stateMachine.startConnect();
       stateMachine.startInitUa();
@@ -400,6 +544,103 @@ describe('ConnectionStateMachine', () => {
       // Отключились
       events.trigger('disconnected', { socket: {} as Socket, error: false });
       expect(stateMachine.state).toBe(EState.DISCONNECTED);
+    });
+  });
+
+  describe('Контекст ошибки', () => {
+    it('error должен быть undefined в начальном состоянии', () => {
+      expect(stateMachine.error).toBeUndefined();
+    });
+
+    it('error должен сохраняться при переходе в FAILED через registrationFailed с response', () => {
+      stateMachine.startConnect();
+
+      events.trigger('registrationFailed', {
+        response: { status_code: 403, reason_phrase: 'Forbidden' } as IncomingResponse,
+      });
+
+      expect(stateMachine.state).toBe(EState.FAILED);
+      expect(stateMachine.error).toBeDefined();
+      expect(stateMachine.error?.message).toBe('Registration failed: 403 Forbidden');
+    });
+
+    it('error должен создаваться с дефолтными значениями при неполном response', () => {
+      stateMachine.startConnect();
+
+      events.trigger('registrationFailed', {
+        response: {} as IncomingResponse,
+      });
+
+      expect(stateMachine.state).toBe(EState.FAILED);
+      expect(stateMachine.error).toBeDefined();
+      expect(stateMachine.error?.message).toBe('Registration failed: Unknown Registration failed');
+    });
+
+    it('error должен правильно обрабатывать response с только status_code', () => {
+      stateMachine.startConnect();
+
+      events.trigger('registrationFailed', {
+        response: { status_code: 401 } as IncomingResponse,
+      });
+
+      expect(stateMachine.state).toBe(EState.FAILED);
+      expect(stateMachine.error).toBeDefined();
+      expect(stateMachine.error?.message).toBe('Registration failed: 401 Registration failed');
+    });
+
+    it('error должен правильно обрабатывать response с только reason_phrase', () => {
+      stateMachine.startConnect();
+
+      events.trigger('registrationFailed', {
+        response: { reason_phrase: 'Service Unavailable' } as IncomingResponse,
+      });
+
+      expect(stateMachine.state).toBe(EState.FAILED);
+      expect(stateMachine.error).toBeDefined();
+      expect(stateMachine.error?.message).toBe('Registration failed: Unknown Service Unavailable');
+    });
+
+    it('error должен сохраняться при переходе в FAILED через connect-failed с Error', () => {
+      const testError = new Error('Connection failed');
+
+      stateMachine.startConnect();
+
+      events.trigger('connect-failed', testError);
+
+      expect(stateMachine.state).toBe(EState.FAILED);
+      expect(stateMachine.error).toBe(testError);
+    });
+
+    it('error должен быть undefined при CONNECTION_FAILED без свойства error', () => {
+      stateMachine.startConnect();
+
+      // Отправляем CONNECTION_FAILED событие напрямую без свойства error
+      stateMachine.send({ type: EEvents.CONNECTION_FAILED });
+
+      expect(stateMachine.state).toBe(EState.FAILED);
+      expect(stateMachine.error).toBeUndefined();
+    });
+
+    it('error должен очищаться при reset из FAILED', () => {
+      stateMachine.startConnect();
+      events.trigger('registrationFailed', { response: {} as IncomingResponse });
+      expect(stateMachine.state).toBe(EState.FAILED);
+
+      stateMachine.reset();
+
+      expect(stateMachine.state).toBe(EState.IDLE);
+      expect(stateMachine.error).toBeUndefined();
+    });
+
+    it('error должен очищаться при startConnect из FAILED', () => {
+      stateMachine.startConnect();
+      events.trigger('registrationFailed', { response: {} as IncomingResponse });
+      expect(stateMachine.state).toBe(EState.FAILED);
+
+      stateMachine.startConnect();
+
+      expect(stateMachine.state).toBe(EState.CONNECTING);
+      expect(stateMachine.error).toBeUndefined();
     });
   });
 
