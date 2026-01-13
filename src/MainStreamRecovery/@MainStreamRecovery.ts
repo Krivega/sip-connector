@@ -35,13 +35,13 @@ class MainStreamRecovery {
   }
 
   private readonly requestRenegotiate = () => {
+    logger('trying to renegotiate');
+
     if (this.renegotiateRequester.requested) {
-      logger('stopped: previous renegotiate is not finished yet');
+      logger('previous renegotiate is not finished yet');
 
       return;
     }
-
-    logger('trying to renegotiate');
 
     this.renegotiateRequester
       .request()
