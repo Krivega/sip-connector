@@ -1,5 +1,5 @@
 import { CancelableRequest } from '@krivega/cancelable-promise';
-import throttle from 'lodash/throttle';
+import lodash from 'lodash';
 
 import logger from '@/logger';
 
@@ -18,7 +18,7 @@ class MainStreamRecovery implements TMainStreamRecovery {
     throttleRecoveryTimeout: number = DEFAULT_THROTTLE_RECOVERY_TIMEOUT_MS,
   ) {
     this.renegotiateRequester = new CancelableRequest(callManager.renegotiate.bind(callManager));
-    this.renegotiateThrottled = throttle(
+    this.renegotiateThrottled = lodash.throttle(
       this.requestRenegotiate.bind(this),
       throttleRecoveryTimeout,
     );
