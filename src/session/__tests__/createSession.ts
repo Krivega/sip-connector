@@ -207,4 +207,40 @@ describe('session aggregation', () => {
 
     stopAll();
   });
+
+  it('does not notify subscriber when equals returns true (else path)', () => {
+    const { session, callStateMachine, stopAll } = startSession();
+    const onCallStatus = jest.fn();
+
+    // Custom equals function that always returns true (values are considered equal)
+    // This covers the else path on line 69 where equals returns true
+    const alwaysEqual = jest.fn(() => {
+      return true;
+    });
+
+    const unsubscribe = session.subscribe(
+      sessionSelectors.selectCallStatus,
+      onCallStatus,
+      alwaysEqual,
+    );
+
+    // Initial state should be IDLE
+    expect(sessionSelectors.selectCallStatus(session.getSnapshot())).toBe(ECallStatus.IDLE);
+
+    // Change call state - equals will return true, so listener should NOT be called
+    callStateMachine.send({ type: 'CALL.CONNECTING' });
+
+    // equals should be called with previous (IDLE) and next (CONNECTING) values
+    expect(alwaysEqual).toHaveBeenCalledWith(ECallStatus.IDLE, ECallStatus.CONNECTING);
+    // But listener should NOT be called because equals returned true (else path)
+    expect(onCallStatus).not.toHaveBeenCalled();
+
+    // Change state again to verify equals is called but listener still not called
+    callStateMachine.send({ type: 'CALL.RINGING' });
+    expect(alwaysEqual).toHaveBeenCalledTimes(2);
+    expect(onCallStatus).not.toHaveBeenCalled();
+
+    unsubscribe();
+    stopAll();
+  });
 });
