@@ -13,7 +13,7 @@ describe('TrackMonitor', () => {
     jest.useRealTimers();
   });
 
-  test('calls callback on size change via polling', () => {
+  it('calls callback on size change via polling', () => {
     const { track, setWidth } = createMockTrack(640); // no resize event support
 
     const sender = new RTCRtpSenderMock({ track });
@@ -37,7 +37,7 @@ describe('TrackMonitor', () => {
     expect(callback).toHaveBeenCalledTimes(1);
   });
 
-  test('calls callback after replaceTrack and monitors new track', async () => {
+  it('calls callback after replaceTrack and monitors new track', async () => {
     const original = createMockTrack(640);
     const newTrackMock = createMockTrack(800);
 
@@ -69,7 +69,7 @@ describe('TrackMonitor', () => {
     expect(callback).toHaveBeenCalledTimes(2);
   });
 
-  test('calls callback on size change via polling (Safari fallback)', () => {
+  it('calls callback on size change via polling (Safari fallback)', () => {
     const { track, setWidth } = createMockTrack(640); // no resize event support
 
     const sender = new RTCRtpSenderMock({ track });
@@ -93,7 +93,7 @@ describe('TrackMonitor', () => {
     expect(callback).toHaveBeenCalledTimes(1);
   });
 
-  test('does nothing when connection is undefined', () => {
+  it('does nothing when connection is undefined', () => {
     const callback = jest.fn();
     const monitor = new TrackMonitor({ pollIntervalMs: 500 });
 
@@ -104,7 +104,7 @@ describe('TrackMonitor', () => {
     expect(callback).not.toHaveBeenCalled();
   });
 
-  test('does nothing when getSenders returns no video sender', () => {
+  it('does nothing when getSenders returns no video sender', () => {
     const connection = new RTCPeerConnectionMock(undefined, []);
 
     Object.defineProperty(connection, 'getSenders', {
@@ -121,7 +121,7 @@ describe('TrackMonitor', () => {
     expect(callback).not.toHaveBeenCalled();
   });
 
-  test('handles replaceTrack(null) and does not start polling for undefined track', async () => {
+  it('handles replaceTrack(null) and does not start polling for undefined track', async () => {
     const original = createMockTrack(640);
 
     const sender = new RTCRtpSenderMock({ track: original.track });
@@ -146,7 +146,7 @@ describe('TrackMonitor', () => {
   });
 
   describe('adaptive polling', () => {
-    test('doubles interval when no size changes detected', () => {
+    it('doubles interval when no size changes detected', () => {
       const { track } = createMockTrack(640);
 
       const sender = new RTCRtpSenderMock({ track });
@@ -176,7 +176,7 @@ describe('TrackMonitor', () => {
       setTimeoutSpy.mockRestore();
     });
 
-    test('interval сбрасывается после изменения размера', () => {
+    it('interval сбрасывается после изменения размера', () => {
       const { track, setWidth } = createMockTrack(640);
 
       const sender = new RTCRtpSenderMock({ track });

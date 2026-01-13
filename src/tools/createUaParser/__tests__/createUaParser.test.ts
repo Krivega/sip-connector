@@ -19,7 +19,7 @@ describe('createUaParser', () => {
     jest.resetAllMocks();
   });
 
-  test('isChrome = true, когда браузер Chrome и не Electron', () => {
+  it('isChrome = true, когда браузер Chrome и не Electron', () => {
     const { UAParser } = jest.requireMock('ua-parser-js') as {
       UAParser: jest.Mock;
     };
@@ -39,7 +39,7 @@ describe('createUaParser', () => {
     expect(api.isChrome).toBe(true);
   });
 
-  test('isChrome = true, когда не Chrome, но Electron', () => {
+  it('isChrome = true, когда не Chrome, но Electron', () => {
     const { UAParser } = jest.requireMock('ua-parser-js') as {
       UAParser: jest.Mock;
     };
@@ -59,7 +59,7 @@ describe('createUaParser', () => {
     expect(api.isChrome).toBe(true);
   });
 
-  test('isChrome = false, когда не Chrome и не Electron', () => {
+  it('isChrome = false, когда не Chrome и не Electron', () => {
     const { UAParser } = jest.requireMock('ua-parser-js') as {
       UAParser: jest.Mock;
     };
