@@ -1,10 +1,8 @@
-import { createActor } from 'xstate';
-
-import { attachSessionEventAdapter } from './eventAdapter';
-import { sessionMachine } from './rootMachine';
-
-import type { TSessionEventAdapterDeps } from './eventAdapter';
-import type { TSessionActor, TSessionSnapshot } from './rootMachine';
+import type { CallManager } from '@/CallManager';
+import type { ConnectionManager } from '@/ConnectionManager';
+import type { IncomingCallManager } from '@/IncomingCallManager';
+import type { PresentationManager } from '@/PresentationManager';
+import type { TSessionActors, TSessionSnapshot } from './types';
 
 type TEqualityFunction<T> = (previous: T, next: T) => boolean;
 type TSelector<T> = (snapshot: TSessionSnapshot) => T;
@@ -22,18 +20,65 @@ export interface ISession {
   getSnapshot: () => TSessionSnapshot;
   subscribe: TSubscribeOverload;
   stop: () => void;
-  actor: TSessionActor;
+  actors: TSessionActors;
+  actor: TSessionActors;
 }
 
 const defaultEquals = <T>(previous: T, next: T) => {
   return Object.is(previous, next);
 };
 
-export const createSession = (deps: TSessionEventAdapterDeps): ISession => {
-  const actor = createActor(sessionMachine);
-  const detach = attachSessionEventAdapter(actor, deps);
+type TSessionDeps = {
+  connectionManager: Pick<ConnectionManager, 'connectionActor'>;
+  callManager: Pick<CallManager, 'callActor'>;
+  incomingCallManager: Pick<IncomingCallManager, 'incomingActor'>;
+  presentationManager: Pick<PresentationManager, 'presentationActor'>;
+};
 
-  actor.start();
+const collectSnapshot = (actors: TSessionActors): TSessionSnapshot => {
+  return {
+    connection: actors.connection.getSnapshot(),
+    call: actors.call.getSnapshot(),
+    incoming: actors.incoming.getSnapshot(),
+    presentation: actors.presentation.getSnapshot(),
+  };
+};
+
+export const createSession = (deps: TSessionDeps): ISession => {
+  const actors: TSessionActors = {
+    connection: deps.connectionManager.connectionActor,
+    call: deps.callManager.callActor,
+    incoming: deps.incomingCallManager.incomingActor,
+    presentation: deps.presentationManager.presentationActor,
+  };
+
+  let currentSnapshot = collectSnapshot(actors);
+  const subscribers = new Set<{
+    selector: TSelector<unknown>;
+    listener: (value: unknown) => void;
+    equals: TEqualityFunction<unknown>;
+    current: unknown;
+  }>();
+
+  const notifySubscribers = () => {
+    currentSnapshot = collectSnapshot(actors);
+
+    for (const subscriber of subscribers) {
+      const next = subscriber.selector(currentSnapshot);
+
+      if (!subscriber.equals(subscriber.current, next)) {
+        subscriber.current = next;
+        subscriber.listener(next);
+      }
+    }
+  };
+
+  const actorSubscriptions = [
+    actors.connection.subscribe(notifySubscribers),
+    actors.call.subscribe(notifySubscribers),
+    actors.incoming.subscribe(notifySubscribers),
+    actors.presentation.subscribe(notifySubscribers),
+  ];
 
   function subscribe(listener: (snapshot: TSessionSnapshot) => void): () => void;
   function subscribe<T>(
@@ -50,8 +95,8 @@ export const createSession = (deps: TSessionEventAdapterDeps): ISession => {
 
     const selector = hasSelector
       ? (selectorOrListener as TSelector<unknown>)
-      : (snapshot: TSessionSnapshot) => {
-          return snapshot;
+      : (sessionSnapshot: TSessionSnapshot) => {
+          return sessionSnapshot;
         };
     const listener = hasSelector
       ? (maybeListener as (value: unknown) => void)
@@ -60,33 +105,33 @@ export const createSession = (deps: TSessionEventAdapterDeps): ISession => {
       (hasSelector ? (maybeEquals as TEqualityFunction<unknown> | undefined) : undefined) ??
       (defaultEquals as TEqualityFunction<unknown>);
 
-    let current = selector(actor.getSnapshot());
+    const current = selector(currentSnapshot);
+    const subscriber = {
+      selector,
+      listener,
+      equals,
+      current,
+    };
 
-    const subscription = actor.subscribe((snapshot) => {
-      const next = selector(snapshot);
-
-      if (equals(current, next)) {
-        return;
-      }
-
-      current = next;
-      listener(next);
-    });
+    subscribers.add(subscriber);
 
     return () => {
-      subscription.unsubscribe();
+      subscribers.delete(subscriber);
     };
   }
 
   return {
-    actor,
+    actor: actors,
+    actors,
     getSnapshot: () => {
-      return actor.getSnapshot();
+      return currentSnapshot;
     },
     subscribe,
     stop: () => {
-      detach();
-      actor.stop();
+      subscribers.clear();
+      actorSubscriptions.forEach((subscription) => {
+        subscription.unsubscribe();
+      });
     },
   };
 };

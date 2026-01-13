@@ -1,8 +1,8 @@
 import logger from '@/logger';
-import { EEvent } from './eventNames';
+import { EEvent } from './events';
 
 import type { RegisteredEvent, UA, UnRegisteredEvent, DisconnectEvent } from '@krivega/jssip';
-import type { TEvents } from './eventNames';
+import type { TEvents } from './events';
 
 interface IDependencies {
   events: TEvents;

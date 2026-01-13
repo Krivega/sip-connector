@@ -43,17 +43,19 @@ SDK построен по принципу **слоистой архитекту
 
 ### 🧭 Состояния сеанса (XState)
 
-- Единый актор `sessionMachine` агрегирует параллельные машины: `connection`, `call`, `incoming`, `screenShare` (машины находятся в соответствующих менеджерах: `ConnectionManager/CallManager/IncomingCallManager/PresentationManager`).
+- Каждый доменный менеджер поднимает свой XState-актор: `connectionActor`, `callActor`, `incomingActor`, `presentationActor`.
+- Менеджеры сами кормят свои акторы событиями. Session — это тонкий агрегатор, который подписывается на `.subscribe` акторов менеджеров и отдает объединённый снапшот.
 - Клиент подписывается на статусы через `sipConnector.session.subscribe(selector, listener)` или читает снапшот через `sipConnector.session.getSnapshot()`.
 - Домены и статусы:
   - **connection**: `idle` → `connecting` → `initializing` → `connected` → `registered` → `disconnected` / `failed`.
   - **call**: `idle` → `connecting` → `ringing` → `accepted` → `inCall` → `ended` / `failed`.
   - **incoming**: `idle` → `ringing` → `consumed` / `declined` / `terminated` / `failed` → `idle`.
-  - **screenShare**: `idle` → `starting` → `active` → `stopping` → `idle` (`failed` на ошибках).
+  - **presentation**: `idle` → `starting` → `active` → `stopping` → `idle` (`failed` на ошибках).
 - События источников:
-  - `ConnectionManager.events`: `connect-started`, `connecting`, `connected`, `registered`, `unregistered`, `disconnected`, `registrationFailed`, `connect-failed`.
-  - `CallManager.events`: `connecting`, `progress`, `accepted`, `confirmed`, `ended`, `failed`, `presentation:start|started|end|ended|failed`.
-  - `IncomingCallManager.events`: `incomingCall`, `declinedIncomingCall`, `terminatedIncomingCall`, `failedIncomingCall`.
+  - `ConnectionManager.events` → `connectionActor`: `connect-started`, `connecting`, `connect-parameters-resolve-success`, `connected`, `registered`, `unregistered`, `disconnected`, `registrationFailed`, `connect-failed`.
+  - `CallManager.events` → `callActor`: `connecting`, `progress`, `accepted`, `confirmed`, `ended`, `failed`, `presentation:start|started|end|ended|failed`.
+  - `IncomingCallManager.events` → `incomingActor`: `incomingCall`, `declinedIncomingCall`, `terminatedIncomingCall`, `failedIncomingCall`, а также `INCOMING.CONSUMED` при ответе на звонок и `INCOMING.CLEAR` при завершении звонка/потере соединения.
+  - `PresentationManager` прокидывает события презентации в `presentationActor` и реагирует на `CallManager`/`ConnectionManager` для корректного завершения статуса.
 - Быстрый пример подписки:
 
 ```typescript

@@ -1,10 +1,8 @@
-import { TypedEvents } from 'events-constructor';
-
 import logger from '@/logger';
 import ConfigurationManager from './ConfigurationManager';
 import ConnectionFlow from './ConnectionFlow';
 import ConnectionStateMachine from './ConnectionStateMachine';
-import { EEvent, EVENT_NAMES } from './eventNames';
+import { createEvents, EEvent } from './events';
 import RegistrationManager from './RegistrationManager';
 import SipOperations from './SipOperations';
 import UAFactory from './UAFactory';
@@ -20,7 +18,7 @@ import type {
   TParametersConnection,
   TSet,
 } from './ConnectionFlow';
-import type { TEventMap, TEvents } from './eventNames';
+import type { TEventMap, TEvents } from './events';
 import type { TParametersCheckTelephony } from './SipOperations';
 
 type TConnectParameters = (() => Promise<TParametersConnection>) | TParametersConnection;
@@ -52,7 +50,7 @@ export default class ConnectionManager {
   public constructor({ JsSIP }: { JsSIP: TJsSIP }) {
     this.JsSIP = JsSIP;
 
-    this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
+    this.events = createEvents();
     this.uaFactory = new UAFactory(JsSIP);
     this.registrationManager = new RegistrationManager({
       events: this.events,
@@ -120,6 +118,10 @@ export default class ConnectionManager {
 
   public get isFailed() {
     return this.stateMachine.isFailed;
+  }
+
+  public get connectionActor() {
+    return this.stateMachine.actorRef;
   }
 
   public get connectionState() {

@@ -1,2 +1,2 @@
 export { default as StatsManager } from './@StatsManager';
-export type { TEventMap } from './eventNames';
+export type { TEventMap } from './events';

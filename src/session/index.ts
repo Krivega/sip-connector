@@ -1,6 +1,6 @@
 export { createSession } from './createSession';
 export { sessionSelectors } from './selectors';
-export { ECallStatus, EConnectionStatus, EIncomingStatus, EScreenShareStatus } from './rootMachine';
+export { ECallStatus, EConnectionStatus, EIncomingStatus, EPresentationStatus } from './types';
 
 export type { ISession } from './createSession';
-export type { TSessionActor, TSessionSnapshot } from './rootMachine';
+export type { TSessionActors, TSessionSnapshot } from './types';

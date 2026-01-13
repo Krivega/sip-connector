@@ -4,7 +4,8 @@ import jssip from '@/__fixtures__/jssip.mock';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { ConnectionManager, EConnectionManagerEvent } from '@/ConnectionManager';
 import IncomingCallManager from '../@IncomingCallManager';
-import { Originator } from '../eventNames';
+import { Originator } from '../events';
+import { EState } from '../IncomingCallStateMachine';
 
 import type { RTCSession, IncomingRequest, OutgoingRequest } from '@krivega/jssip';
 import type { TJsSIP } from '@/types';
@@ -175,6 +176,64 @@ describe('IncomingCallManager', () => {
       expect(() => {
         incomingCallManager.getIncomingRTCSession();
       }).toThrow('No incomingRTCSession');
+    });
+  });
+
+  describe('extractIncomingRTCSession', () => {
+    it('должен возвращать RTC сессию и вызывать toConsumed', () => {
+      // Запускаем менеджер и устанавливаем входящий звонок
+      incomingCallManager.start();
+      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+        originator: Originator.REMOTE,
+        session: mockRTCSession,
+        request: {} as IncomingRequest,
+      });
+
+      // Проверяем, что состояние RINGING перед извлечением
+      expect(incomingCallManager.incomingStateMachine.state).toBe(EState.RINGING);
+      expect(incomingCallManager.isAvailableIncomingCall).toBe(true);
+
+      const session = incomingCallManager.extractIncomingRTCSession();
+
+      // Проверяем, что сессия возвращена
+      expect(session).toBe(mockRTCSession);
+
+      // Проверяем, что toConsumed был вызван (состояние изменилось на CONSUMED)
+      expect(incomingCallManager.incomingStateMachine.state).toBe(EState.CONSUMED);
+
+      // Проверяем, что сессия была удалена
+      expect(incomingCallManager.isAvailableIncomingCall).toBe(false);
+    });
+
+    it('должен выбрасывать ошибку когда нет входящей сессии', () => {
+      expect(() => {
+        incomingCallManager.extractIncomingRTCSession();
+      }).toThrow('No incomingRTCSession');
+    });
+
+    it('должен сохранять remoteCallerData в контексте при переходе в CONSUMED', () => {
+      // Запускаем менеджер и устанавливаем входящий звонок
+      incomingCallManager.start();
+      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+        originator: Originator.REMOTE,
+        session: mockRTCSession,
+        request: {} as IncomingRequest,
+      });
+
+      const session = incomingCallManager.extractIncomingRTCSession();
+
+      expect(session).toBe(mockRTCSession);
+
+      // Проверяем, что контекст содержит данные звонящего
+      const snapshot = incomingCallManager.incomingStateMachine.getSnapshot();
+
+      expect(snapshot.context.remoteCallerData).toEqual({
+        displayName: 'Test Caller',
+        host: 'test.com',
+        incomingNumber: 'testuser',
+        rtcSession: mockRTCSession,
+      });
+      expect(snapshot.context.lastReason).toBe(EState.CONSUMED);
     });
   });
 

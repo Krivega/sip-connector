@@ -16,7 +16,7 @@ type TDomIds = {
   connectionStatusId: string;
   callStatusId: string;
   incomingStatusId: string;
-  screenShareStatusId: string;
+  presentationStatusId: string;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
@@ -95,7 +95,7 @@ class DOM {
 
   public incomingStatusElement: HTMLElement;
 
-  public screenShareStatusElement: HTMLElement;
+  public presentationStatusElement: HTMLElement;
 
   public constructor({
     overlayId,
@@ -115,7 +115,7 @@ class DOM {
     connectionStatusId,
     callStatusId,
     incomingStatusId,
-    screenShareStatusId,
+    presentationStatusId,
   }: TDomIds) {
     this.overlayElement = getElementById(overlayId);
     this.callButtonElement = getElementById<HTMLButtonElement>(callButtonId);
@@ -168,7 +168,7 @@ class DOM {
     this.connectionStatusElement = getElementById(connectionStatusId);
     this.callStatusElement = getElementById(callStatusId);
     this.incomingStatusElement = getElementById(incomingStatusId);
-    this.screenShareStatusElement = getElementById(screenShareStatusId);
+    this.presentationStatusElement = getElementById(presentationStatusId);
   }
 }
 
@@ -190,5 +190,5 @@ export const dom = new DOM({
   connectionStatusId: 'connectionStatus',
   callStatusId: 'callStatus',
   incomingStatusId: 'incomingStatus',
-  screenShareStatusId: 'screenShareStatus',
+  presentationStatusId: 'presentationStatus',
 });

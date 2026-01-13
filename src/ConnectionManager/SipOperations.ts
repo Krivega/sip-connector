@@ -1,4 +1,4 @@
-import { EEvent } from './eventNames';
+import { EEvent } from './events';
 
 import type { UA, URI } from '@krivega/jssip';
 import type UAFactory from './UAFactory';

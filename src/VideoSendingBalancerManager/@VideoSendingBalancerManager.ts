@@ -1,13 +1,11 @@
-import { TypedEvents } from 'events-constructor';
-
 import debug from '@/logger';
 import { VideoSendingBalancer } from '@/VideoSendingBalancer';
-import { EVENT_NAMES } from './eventNames';
+import { createEvents } from './events';
 
 import type { ApiManager } from '@/ApiManager';
 import type { CallManager } from '@/CallManager';
 import type { IBalancerOptions } from '@/VideoSendingBalancer/types';
-import type { TEventMap, TEvents } from './eventNames';
+import type { TEventMap, TEvents } from './events';
 
 type TOptions = IBalancerOptions & {
   balancingStartDelay?: number;
@@ -35,7 +33,7 @@ class VideoSendingBalancerManager {
     apiManager: ApiManager,
     balancerOptions: TOptions = {},
   ) {
-    this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
+    this.events = createEvents();
     this.callManager = callManager;
     this.balancingStartDelay = balancerOptions.balancingStartDelay ?? 10_000;
 

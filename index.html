@@ -78,28 +78,6 @@
         </section>
 
         <section>
-          <h3>Статусы</h3>
-          <div
-            id="sessionStatuses"
-            style="
-              padding: 0.75rem 1rem;
-              background-color: #f7f7f7;
-              border-radius: 6px;
-              font-weight: 500;
-              color: #2c3e50;
-              display: grid;
-              grid-template-columns: 160px 1fr;
-              gap: 0.35rem 0.75rem;
-            "
-          >
-            <span>Connection</span><span id="connectionStatus">-</span>
-            <span>Call</span><span id="callStatus">-</span>
-            <span>Incoming</span><span id="incomingStatus">-</span>
-            <span>Screen share</span><span id="screenShareStatus">-</span>
-          </div>
-        </section>
-
-        <section>
           <h3>Статус</h3>
           <div
             id="participantRole"
@@ -126,6 +104,27 @@
             "
           ></div>
         </section>
+      </section>
+
+      <section>
+        <h3>Статусы</h3>
+        <div
+          id="sessionStatuses"
+          style="
+            padding: 0.75rem 1rem;
+            background-color: #f7f7f7;
+            border-radius: 6px;
+            font-weight: 500;
+            color: #2c3e50;
+            display: grid;
+            grid-template-columns: 160px 1fr;
+            gap: 0.35rem 0.75rem;
+          "
+        >
+          <span>Connection</span><span id="connectionStatus">-</span> <span>Call</span
+          ><span id="callStatus">-</span> <span>Incoming</span><span id="incomingStatus">-</span>
+          <span>Screen share</span><span id="presentationStatus">-</span>
+        </div>
       </section>
     </main>
 

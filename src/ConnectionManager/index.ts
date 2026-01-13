@@ -3,10 +3,11 @@ export { hasNotReadyForConnectionError, createNotReadyForConnectionError } from 
 export {
   EVENT_NAMES as CONNECTION_MANAGER_EVENT_NAMES,
   EEvent as EConnectionManagerEvent,
-} from './eventNames';
+  createEvents,
+} from './events';
 
 export type { TParametersConnection, TConnectionConfigurationWithUa } from './ConnectionFlow';
 export type {
   TEvent as TConnectionManagerEvent,
   TEvents as TConnectionManagerEvents,
-} from './eventNames';
+} from './events';

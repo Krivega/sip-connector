@@ -1,8 +1,10 @@
-import { createActor, setup, type ActorRefFrom } from 'xstate';
+import { setup } from 'xstate';
 
 import logger from '@/logger';
+import { BaseStateMachine } from '@/tools/BaseStateMachine';
 
-import type { TEvents } from './eventNames';
+import type { ActorRefFrom, SnapshotFrom } from 'xstate';
+import type { TEvents } from './events';
 
 // Определяем типы событий для XState машины
 export enum EEvents {
@@ -25,13 +27,13 @@ interface IConnectionMachineContext {
 }
 
 export enum EState {
-  IDLE = 'idle',
-  CONNECTING = 'connecting',
-  INITIALIZING = 'initializing',
-  CONNECTED = 'connected',
-  REGISTERED = 'registered',
-  DISCONNECTED = 'disconnected',
-  FAILED = 'failed',
+  IDLE = 'connection:idle',
+  CONNECTING = 'connection:connecting',
+  INITIALIZING = 'connection:initializing',
+  CONNECTED = 'connection:connected',
+  REGISTERED = 'connection:registered',
+  DISCONNECTED = 'connection:disconnected',
+  FAILED = 'connection:failed',
 }
 
 enum EAction {
@@ -315,41 +317,35 @@ const connectionMachine = setup({
   },
 });
 
-type TConnectionMachineActor = ActorRefFrom<typeof connectionMachine>;
+export type TConnectionSnapshot = SnapshotFrom<typeof connectionMachine>;
+export type TConnectionActor = ActorRefFrom<typeof connectionMachine>;
 
-export default class ConnectionStateMachine {
-  private readonly actor: TConnectionMachineActor;
-
+export default class ConnectionStateMachine extends BaseStateMachine<
+  typeof connectionMachine,
+  EState
+> {
   private readonly stateChangeListeners = new Set<(state: EState) => void>();
 
   private readonly events: TEvents;
 
   private unsubscribeFromEvents?: () => void;
 
-  private readonly actorSubscription?: { unsubscribe: () => void };
-
   public constructor(events: TEvents) {
+    super(connectionMachine);
     this.events = events;
 
-    this.actor = createActor(connectionMachine);
+    this.addSubscription(
+      this.subscribe((snapshot: TConnectionSnapshot) => {
+        const state = snapshot.value as EState;
 
-    this.actorSubscription = this.actor.subscribe((snapshot) => {
-      const state = snapshot.value as EState;
-
-      this.stateChangeListeners.forEach((listener) => {
-        listener(state);
-      });
-    });
-
-    // Запускаем актер
-    this.actor.start();
+        this.stateChangeListeners.forEach((listener) => {
+          listener(state);
+        });
+      }),
+    );
 
     // Подписываемся на события UA
     this.subscribeToEvents();
-  }
-
-  public get state(): EState {
-    return this.actor.getSnapshot().value as EState;
   }
 
   public get isIdle(): boolean {
@@ -411,8 +407,7 @@ export default class ConnectionStateMachine {
 
   public destroy(): void {
     this.unsubscribeFromEvents?.();
-    this.actorSubscription?.unsubscribe();
-    this.actor.stop();
+    this.stop();
   }
 
   public onStateChange(listener: (state: EState) => void): () => void {
@@ -425,7 +420,7 @@ export default class ConnectionStateMachine {
   }
 
   public canTransition(event: TConnectionMachineEvent): boolean {
-    const snapshot = this.actor.getSnapshot();
+    const snapshot = this.getSnapshot();
 
     return snapshot.can({ type: event } as TConnectionMachineEvents);
   }
@@ -438,11 +433,11 @@ export default class ConnectionStateMachine {
   }
 
   private hasState(state: EState): boolean {
-    return this.actor.getSnapshot().matches(state);
+    return this.getSnapshot().matches(state);
   }
 
   private sendEvent(eventName: TConnectionMachineEvent): void {
-    const snapshot = this.actor.getSnapshot();
+    const snapshot = this.getSnapshot();
     const event = { type: eventName };
 
     if (!snapshot.can(event)) {
@@ -453,7 +448,7 @@ export default class ConnectionStateMachine {
       return;
     }
 
-    this.actor.send(event);
+    this.send(event as TConnectionMachineEvents);
   }
 
   private readonly toStartConnect = (): void => {

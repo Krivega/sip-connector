@@ -1,6 +1,6 @@
 import { repeatedCallsAsync } from 'repeated-calls';
 
-import { EEvent } from './eventNames';
+import { EEvent } from './events';
 import { hasHandshakeWebsocketOpeningError } from '../utils/errors';
 import { parseDisplayName } from '../utils/utils';
 
@@ -14,7 +14,7 @@ import type {
 import type { TGetUri } from '../CallManager';
 import type { TJsSIP } from '../types';
 import type ConnectionStateMachine from './ConnectionStateMachine';
-import type { TEvents } from './eventNames';
+import type { TEvents } from './events';
 import type RegistrationManager from './RegistrationManager';
 import type UAFactory from './UAFactory';
 

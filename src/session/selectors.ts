@@ -1,41 +1,35 @@
-import getChildSnapshot from './getChildSnapshot';
-import { ECallStatus, EConnectionStatus, EIncomingStatus, EScreenShareStatus } from './rootMachine';
+import {
+  EIncomingStatus,
+  ECallStatus,
+  type EConnectionStatus,
+  type EPresentationStatus,
+  type TSessionSnapshot,
+} from './types';
 
-import type { TRemoteCallerData } from '@/IncomingCallManager/eventNames';
-import type { TSessionSnapshot } from './rootMachine';
+import type { TRemoteCallerData } from '@/IncomingCallManager';
 
 const selectConnectionStatus = (snapshot: TSessionSnapshot): EConnectionStatus => {
-  const childSnapshot = getChildSnapshot(snapshot, 'connection');
-
-  return childSnapshot?.value ?? EConnectionStatus.IDLE;
+  return snapshot.connection.value;
 };
 
 const selectCallStatus = (snapshot: TSessionSnapshot): ECallStatus => {
-  const childSnapshot = getChildSnapshot(snapshot, 'call');
-
-  return childSnapshot?.value ?? ECallStatus.IDLE;
+  return snapshot.call.value;
 };
 
 const selectIncomingStatus = (snapshot: TSessionSnapshot): EIncomingStatus => {
-  const childSnapshot = getChildSnapshot(snapshot, 'incoming');
-
-  return childSnapshot?.value ?? EIncomingStatus.IDLE;
+  return snapshot.incoming.value;
 };
 
 const selectIncomingRemoteCaller = (snapshot: TSessionSnapshot): TRemoteCallerData | undefined => {
-  const childSnapshot = getChildSnapshot(snapshot, 'incoming');
-
-  if (childSnapshot?.value !== EIncomingStatus.IDLE) {
-    return childSnapshot?.context.remoteCallerData;
+  if (snapshot.incoming.value !== EIncomingStatus.IDLE) {
+    return snapshot.incoming.context.remoteCallerData;
   }
 
   return undefined;
 };
 
-const selectScreenShareStatus = (snapshot: TSessionSnapshot): EScreenShareStatus => {
-  const childSnapshot = getChildSnapshot(snapshot, 'screenShare');
-
-  return childSnapshot?.value ?? EScreenShareStatus.IDLE;
+const selectPresentationStatus = (snapshot: TSessionSnapshot): EPresentationStatus => {
+  return snapshot.presentation.value;
 };
 
 const selectIsInCall = (snapshot: TSessionSnapshot): boolean => {
@@ -49,6 +43,6 @@ export const sessionSelectors = {
   selectCallStatus,
   selectIncomingStatus,
   selectIncomingRemoteCaller,
-  selectScreenShareStatus,
+  selectPresentationStatus,
   selectIsInCall,
 };

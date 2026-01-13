@@ -2,13 +2,11 @@ import ParticipantRoleManager from './ParticipantRoleManager';
 import resolveServerParametersRequester from './resolveServerParametersRequester';
 import sipConnectorFacade from './sipConnectorFacade';
 import UseLicenseManager from './UseLicenseManager';
-import { sessionSelectors } from '../../src';
 
 import type {
   IParams as IServerParametersRequesterParams,
   IServerParametersRequester,
 } from './resolveServerParametersRequester';
-import type { TSessionSnapshot } from '../../src';
 
 class Session {
   private readonly serverParametersRequester: IServerParametersRequester;
@@ -18,8 +16,6 @@ class Session {
   private readonly useLicenseManager: UseLicenseManager;
 
   private unsubscribeChangeRemoteStreams?: () => void;
-
-  private unsubscribeSessionStatuses?: () => void;
 
   public constructor({
     serverParametersRequesterParams,
@@ -42,7 +38,6 @@ class Session {
     conference,
     mediaStream,
     setRemoteStreams,
-    onStatusesChange,
   }: {
     serverUrl: string;
     isRegistered: boolean;
@@ -52,12 +47,6 @@ class Session {
     conference: string;
     mediaStream: MediaStream;
     setRemoteStreams: (streams: MediaStream[]) => void;
-    onStatusesChange: (params: {
-      connection: string;
-      call: string;
-      incoming: string;
-      screenShare: string;
-    }) => void;
   }): Promise<void> {
     const serverParameters = await this.serverParametersRequester.request({
       serverUrl,
@@ -89,15 +78,6 @@ class Session {
       },
     );
 
-    this.subscribeSessionStatuses((snapshot) => {
-      onStatusesChange({
-        connection: sessionSelectors.selectConnectionStatus(snapshot),
-        call: sessionSelectors.selectCallStatus(snapshot),
-        incoming: sessionSelectors.selectIncomingStatus(snapshot),
-        screenShare: sessionSelectors.selectScreenShareStatus(snapshot),
-      });
-    });
-
     await sipConnectorFacade.callToServer({
       conference,
       mediaStream,
@@ -109,8 +89,6 @@ class Session {
   public async stopCall(): Promise<void> {
     this.unsubscribeChangeRemoteStreams?.();
     this.unsubscribeChangeRemoteStreams = undefined;
-    this.unsubscribeSessionStatuses?.();
-    this.unsubscribeSessionStatuses = undefined;
     this.participantRoleManager.unsubscribe();
     this.participantRoleManager.reset();
 
@@ -118,15 +96,6 @@ class Session {
     this.useLicenseManager.reset();
 
     await sipConnectorFacade.disconnectFromServer();
-  }
-
-  private subscribeSessionStatuses(onSnapshot: (snapshot: TSessionSnapshot) => void) {
-    this.unsubscribeSessionStatuses?.();
-
-    const { session } = sipConnectorFacade.sipConnector;
-
-    onSnapshot(session.actor.getSnapshot());
-    this.unsubscribeSessionStatuses = session.subscribe(onSnapshot);
   }
 }
 

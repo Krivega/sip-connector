@@ -427,7 +427,7 @@ stateDiagram-v2
             terminated --> idle: incoming.clear
             failed --> idle: incoming.clear
         }
-        state screenShare {
+        state presentation {
             idle --> starting: screen.starting
             starting --> active: screen.started
             starting --> failed: screen.failed
@@ -440,32 +440,32 @@ stateDiagram-v2
 
 ### Слои
 
-- Корневой актор: `sessionMachine` (`type: 'parallel'`) в `src/session/rootMachine.ts`.
-- Дочерние машины определены в своих менеджерах: `ConnectionManager/sessionMachine.ts`, `CallManager/sessionMachine.ts`, `IncomingCallManager/sessionMachine.ts`, `PresentationManager/sessionMachine.ts`.
-- Фасад: `createSession()` / `sipConnector.session` — актор, `getSnapshot()`, `subscribe(selector, listener)` с типобезопасными селекторами.
-- Адаптер событий: подписывается на менеджеры и транслирует их события в доменные события машин.
+- Каждая машина поднимается внутри своего менеджера: `connectionActor`, `callActor`, `incomingActor`, `presentationActor`.
+- Session больше не маршрутизирует события (нет broadcast/`forwardTo`): менеджеры сами отправляют доменные события в свои акторы.
+- Агрегатор: `createSession()` / `sipConnector.session` подписывается на `.subscribe` акторов менеджеров и отдает объединённый снапшот + типобезопасные селекторы.
+- Нет отдельного eventAdapter: адаптация событий находится в менеджерах (`ConnectionManager`/`CallManager`/`IncomingCallManager`/`PresentationManager`).
 
 ### Доменные статусы и события
 
-| Домен       | Статусы                                                                                   | Источники событий                                                                                                                                               | Доменные события                                                                                                                                                                      |
-| ----------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Connection  | `idle`, `connecting`, `initializing`, `connected`, `registered`, `disconnected`, `failed` | `ConnectionManager.events` (`connect-started`, `connecting`, `connected`, `registered`, `unregistered`, `disconnected`, `registrationFailed`, `connect-failed`) | `CONNECTION.START`, `CONNECTION.INIT`, `CONNECTION.CONNECTED`, `CONNECTION.REGISTERED`, `CONNECTION.UNREGISTERED`, `CONNECTION.DISCONNECTED`, `CONNECTION.FAILED`, `CONNECTION.RESET` |
-| Call        | `idle`, `connecting`, `ringing`, `accepted`, `inCall`, `ended`, `failed`                  | `CallManager.events` (`connecting`, `progress`, `accepted`, `confirmed`, `ended`, `failed`)                                                                     | `CALL.CONNECTING`, `CALL.RINGING`, `CALL.ACCEPTED`, `CALL.CONFIRMED`, `CALL.ENDED`, `CALL.FAILED`                                                                                     |
-| Incoming    | `idle`, `ringing`, `consumed`, `declined`, `terminated`, `failed`                         | `IncomingCallManager.events` (`incomingCall`, `declinedIncomingCall`, `terminatedIncomingCall`, `failedIncomingCall`) + синтетика при ответе на входящий        | `INCOMING.RINGING`, `INCOMING.CONSUMED`, `INCOMING.DECLINED`, `INCOMING.TERMINATED`, `INCOMING.FAILED`, `INCOMING.CLEAR`                                                              |
-| ScreenShare | `idle`, `starting`, `active`, `stopping`, `failed`                                        | `CallManager.events` (`presentation:start\|started\|end\|ended\|failed`)                                                                                        | `SCREEN.STARTING`, `SCREEN.STARTED`, `SCREEN.ENDING`, `SCREEN.ENDED`, `SCREEN.FAILED`                                                                                                 |
+| Домен        | Статусы                                                                                   | Источники событий                                                                                                                                                                                     | Доменные события                                                                                                                                                                      |
+| ------------ | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Connection   | `idle`, `connecting`, `initializing`, `connected`, `registered`, `disconnected`, `failed` | `ConnectionManager.events` (`connect-started`, `connecting`, `connect-parameters-resolve-success`, `connected`, `registered`, `unregistered`, `disconnected`, `registrationFailed`, `connect-failed`) | `CONNECTION.START`, `CONNECTION.INIT`, `CONNECTION.CONNECTED`, `CONNECTION.REGISTERED`, `CONNECTION.UNREGISTERED`, `CONNECTION.DISCONNECTED`, `CONNECTION.FAILED`, `CONNECTION.RESET` |
+| Call         | `idle`, `connecting`, `ringing`, `accepted`, `inCall`, `ended`, `failed`                  | `CallManager.events` (`connecting`, `progress`, `accepted`, `confirmed`, `ended`, `failed`)                                                                                                           | `CALL.CONNECTING`, `CALL.RINGING`, `CALL.ACCEPTED`, `CALL.CONFIRMED`, `CALL.ENDED`, `CALL.FAILED`                                                                                     |
+| Incoming     | `idle`, `ringing`, `consumed`, `declined`, `terminated`, `failed`                         | `IncomingCallManager.events` (`incomingCall`, `declinedIncomingCall`, `terminatedIncomingCall`, `failedIncomingCall`) + синтетика при ответе на входящий                                              | `INCOMING.RINGING`, `INCOMING.CONSUMED`, `INCOMING.DECLINED`, `INCOMING.TERMINATED`, `INCOMING.FAILED`, `INCOMING.CLEAR`                                                              |
+| Presentation | `idle`, `starting`, `active`, `stopping`, `failed`                                        | `CallManager.events` (`presentation:start\|started\|end\|ended\|failed`), `ConnectionManager.events` (`disconnected`, `registrationFailed`, `connect-failed`)                                         | `SCREEN.STARTING`, `SCREEN.STARTED`, `SCREEN.ENDING`, `SCREEN.ENDED`, `SCREEN.FAILED`, `CALL.ENDED`, `CALL.FAILED`, `CONNECTION.DISCONNECTED`, `CONNECTION.FAILED`                    |
 
 ### API для клиентов
 
-- `createSipSession(deps)` / `sipConnector.session`: корневой актор и утилиты подписки.
+- `createSipSession(deps)` / `sipConnector.session`: агрегатор снапшотов акторов менеджеров и утилиты подписки.
 - `getSnapshot()` — текущее состояние всех доменов.
 - `subscribe(selector, listener)` — типобезопасная подписка на срез состояния (например, `selectConnectionStatus`).
-- `stop()` — отписка от адаптера и остановка актора.
+- `stop()` — очистка подписок на акторы менеджеров.
 
 ### Инварианты и гварды
 
-- `screenShare` может быть `active` только если `call` в `inCall`.
+- `presentation` может быть `active` только если `call` в `inCall`.
 - `incoming` сбрасывается в `idle` при `call.ended` или `call.failed`.
-- `connection` `failed` / `disconnected` приводит к `call` → `ended`, `screenShare` → `idle`.
+- `connection` `failed` / `disconnected` приводит к `call` → `ended`, `presentation` → `idle`.
 
 ### Тестирование
 

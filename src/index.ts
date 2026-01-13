@@ -19,6 +19,6 @@ export {
   ECallStatus,
   EConnectionStatus,
   EIncomingStatus,
-  EScreenShareStatus,
+  EPresentationStatus,
 } from './session';
 export type { ISession, TSessionSnapshot } from './session';

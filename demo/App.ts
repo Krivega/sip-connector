@@ -6,6 +6,7 @@ import LocalMediaStreamManager from './LocalMediaStreamManager';
 import RemoteMediaStreamManager from './RemoteMediaStreamManager';
 import Session from './Session/Session';
 import FormStateManager from './state/FormStateManager';
+import Statuses from './Statuses';
 import getAppInfo from './utils/getAppInfo';
 import getBrowserInfo from './utils/getBrowserInfo';
 import VideoPlayer from './VideoPlayer';
@@ -38,6 +39,12 @@ class App {
     this.remoteMediaStreamManager = new RemoteMediaStreamManager();
     this.loaderManager = new LoaderManager();
     this.callStateManager = new CallStateManager();
+
+    const statusesManager = new Statuses();
+
+    statusesManager.subscribe((statuses) => {
+      this.updateSessionStatuses(statuses);
+    });
 
     this.initialize();
   }
@@ -146,9 +153,6 @@ class App {
         setRemoteStreams: (streams: MediaStream[]) => {
           this.handleRemoteStreams(streams);
         },
-        onStatusesChange: (statuses) => {
-          this.updateSessionStatuses(statuses);
-        },
       });
 
       this.callStateManager.setState('active');
@@ -177,12 +181,12 @@ class App {
     connection: string;
     call: string;
     incoming: string;
-    screenShare: string;
+    presentation: string;
   }): void {
     dom.connectionStatusElement.textContent = statuses.connection;
     dom.callStatusElement.textContent = statuses.call;
     dom.incomingStatusElement.textContent = statuses.incoming;
-    dom.screenShareStatusElement.textContent = statuses.screenShare;
+    dom.presentationStatusElement.textContent = statuses.presentation;
   }
 
   /**

@@ -198,24 +198,24 @@ describe('AutoConnectorManager - Reconnection', () => {
       // Ждем произвольное время, чтобы убедиться, что подключение не завершено
       await delayPromise(DELAY);
 
-      expect(sipConnector.connectionManager.connectionState).toBe('connected');
+      expect(sipConnector.connectionManager.connectionState).toBe('connection:connected');
 
       // триггерим событие отключения от ua
       // @ts-ignore приватное свойство
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       ua.events.trigger('disconnected');
 
-      expect(sipConnector.connectionManager.connectionState).toBe('disconnected');
+      expect(sipConnector.connectionManager.connectionState).toBe('connection:disconnected');
 
       await manager.wait('before-attempt');
 
       // проверка сброса состояния после успешного дисконнекта
-      expect(sipConnector.connectionManager.connectionState).toBe('idle');
+      expect(sipConnector.connectionManager.connectionState).toBe('connection:idle');
 
       // ждем успешного повторного подключения
       await manager.wait('success');
 
-      expect(sipConnector.connectionManager.connectionState).toBe('connected');
+      expect(sipConnector.connectionManager.connectionState).toBe('connection:connected');
     });
   });
 

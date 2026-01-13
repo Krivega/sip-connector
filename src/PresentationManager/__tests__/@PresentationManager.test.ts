@@ -40,7 +40,10 @@ describe('PresentationManager', () => {
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },
     });
-    manager = new PresentationManager({ callManager: callManager as unknown as CallManager });
+
+    manager = new PresentationManager({
+      callManager: callManager as unknown as CallManager,
+    });
   });
 
   afterEach(() => {

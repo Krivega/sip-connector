@@ -1,9 +1,7 @@
-import { TypedEvents } from 'events-constructor';
-
 import delayPromise from '@/__fixtures__/delayPromise';
 import UAMock from '@/__fixtures__/UA.mock';
 import logger from '@/logger';
-import { EVENT_NAMES } from '../eventNames';
+import { createEvents } from '../events';
 import RegistrationManager from '../RegistrationManager';
 
 import type {
@@ -15,7 +13,7 @@ import type {
   Socket,
   WebSocketInterface,
 } from '@krivega/jssip';
-import type { UA_EVENT_NAMES, TEvents, TEventMap } from '../eventNames';
+import type { UA_EVENT_NAMES, TEvents } from '../events';
 
 jest.mock('@/logger', () => {
   return jest.fn();
@@ -92,7 +90,7 @@ describe('RegistrationManager', () => {
     // Создание моков
     mockUa = createUAMock();
     getUaMock = createGetUaMock(mockUa);
-    events = new TypedEvents<TEventMap>(EVENT_NAMES);
+    events = createEvents();
 
     // Создание экземпляра RegistrationManager
     registrationManager = new RegistrationManager({
