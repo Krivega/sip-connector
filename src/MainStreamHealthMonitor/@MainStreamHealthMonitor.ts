@@ -37,7 +37,7 @@ class MainStreamHealthMonitor implements TMainStreamHealthMonitor {
       return false;
     }
 
-    return mainVideoTrack.readyState === 'live' && mainVideoTrack.muted;
+    return mainVideoTrack.muted;
   }
 
   private get previousInboundRtp(): RTCInboundRtpStreamStats | undefined {

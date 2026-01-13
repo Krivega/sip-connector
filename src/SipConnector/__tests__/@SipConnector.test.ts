@@ -37,7 +37,7 @@ describe('SipConnector facade', () => {
     expect(handler).toHaveBeenCalledWith({ socket: {} as Socket });
   });
 
-  it('должен вызывать renegotiate когда основной входящий видеотрек live и muted и inbound не получает и не декодирует кадры', async () => {
+  it('должен вызывать renegotiate когда основной входящий видеотрек muted и inbound не получает и не декодирует кадры', async () => {
     const track = createMediaStreamMock({
       video: { deviceId: { exact: 'videoDeviceId' } },
     }).getVideoTracks()[0] as MediaStreamTrack;
@@ -46,7 +46,6 @@ describe('SipConnector facade', () => {
     stream.addTrack(track);
 
     Object.defineProperty(track, 'muted', { value: true, configurable: true });
-    Object.defineProperty(track, 'readyState', { value: 'live', configurable: true });
 
     jest.spyOn(sipConnector.callManager, 'getMainStream').mockReturnValue(stream);
 
