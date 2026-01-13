@@ -44,11 +44,11 @@ class SipConnector {
 
   public readonly videoSendingBalancerManager: VideoSendingBalancerManager;
 
+  public readonly session: ISession;
+
   private readonly mainStreamHealthMonitor: MainStreamHealthMonitor;
 
   private readonly mainStreamRecovery: MainStreamRecovery;
-
-  public readonly session: ISession;
 
   private readonly preferredMimeTypesVideoCodecs?: string[];
 
