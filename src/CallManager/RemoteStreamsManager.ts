@@ -46,6 +46,13 @@ export class RemoteStreamsManager {
 
   private readonly trackDisposers = new Map<string, () => void>();
 
+  public get mainStream(): MediaStream | undefined {
+    const streams: (MediaStream | undefined)[] = this.getStreams();
+    const [mainStream] = streams;
+
+    return mainStream;
+  }
+
   public reset() {
     this.participantGroups.clear();
     this.trackToGroup.clear();

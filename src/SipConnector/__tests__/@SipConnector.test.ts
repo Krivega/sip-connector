@@ -1,5 +1,6 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 
+import flushPromises from '@/__fixtures__/flushPromises';
 import JsSIP from '@/__fixtures__/jssip.mock';
 import * as tools from '@/tools';
 import SipConnector from '../@SipConnector';
@@ -13,6 +14,7 @@ import type {
   UnRegisteredEvent,
 } from '@krivega/jssip';
 import type { TConnectionConfigurationWithUa } from '@/ConnectionManager';
+import type { TInboundStats, TOutboundStats } from '@/StatsPeerConnection';
 import type { TJsSIP } from '@/types';
 
 describe('SipConnector facade', () => {
@@ -32,6 +34,37 @@ describe('SipConnector facade', () => {
     sipConnector.connectionManager.events.trigger('connected', { socket: {} as Socket });
 
     expect(handler).toHaveBeenCalledWith({ socket: {} as Socket });
+  });
+
+  it('должен вызывать renegotiate когда основной входящий видеотрек muted и inbound не получает и не декодирует кадры', async () => {
+    const track = createMediaStreamMock({
+      video: { deviceId: { exact: 'videoDeviceId' } },
+    }).getVideoTracks()[0] as MediaStreamTrack;
+    const stream = new MediaStream();
+
+    stream.addTrack(track);
+
+    Object.defineProperty(track, 'muted', { value: true, configurable: true });
+
+    jest.spyOn(sipConnector.callManager, 'getMainStream').mockReturnValue(stream);
+
+    // @ts-expect-error - доступ к приватному свойству
+    const spyRecover = jest.spyOn(sipConnector.mainStreamRecovery, 'recover');
+
+    sipConnector.statsManager.events.trigger('collected', {
+      outbound: { additional: {} },
+      inbound: {
+        video: { inboundRtp: { framesReceived: 0, framesDecoded: 0 } },
+        additional: {},
+      },
+    } as unknown as {
+      outbound: TOutboundStats;
+      inbound: TInboundStats;
+    });
+
+    await flushPromises();
+
+    expect(spyRecover).toHaveBeenCalledTimes(1);
   });
 
   it('не должен проксировать событие connection:disconnected как disconnected-from-out-of-call если активен звонок', async () => {

@@ -1,4 +1,5 @@
 import type { EStatsTypes } from './constants';
+import type { TEventMap } from './eventNames';
 
 export type TMedia = {
   trackIdentifier?: string;
@@ -185,3 +186,5 @@ export type TParsedStatistics = {
   [EStatsTypes.REMOTE_CANDIDATE]?: TCandidate;
   [EStatsTypes.TRANSPORT]?: RTCTransportStats;
 };
+
+export type TStats = TEventMap['collected'];

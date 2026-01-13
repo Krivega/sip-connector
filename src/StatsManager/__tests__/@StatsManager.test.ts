@@ -176,6 +176,94 @@ describe('StatsManager', () => {
     expect(manager.availableIncomingBitrate).toBeUndefined();
   });
 
+  describe('isNotValidFramesStats', () => {
+    const createStatsWithFrames = (
+      framesReceived: number | undefined,
+      framesDecoded: number | undefined,
+    ): typeof statisticsMockBase => {
+      return {
+        ...statisticsMockBase,
+        inbound: {
+          ...statisticsMockBase.inbound,
+          video: {
+            ...statisticsMockBase.inbound.video,
+            inboundRtp: {
+              ...statisticsMockBase.inbound.video.inboundRtp,
+              framesReceived,
+              framesDecoded,
+            },
+          },
+        },
+      } as typeof statisticsMockBase;
+    };
+
+    let callManager: CallManager;
+    let connectionManager: ConnectionManager;
+    let apiManager: ApiManager;
+    let manager: StatsManager;
+
+    beforeEach(() => {
+      callManager = new CallManager();
+      connectionManager = new ConnectionManager({ JsSIP: jssip as unknown as TJsSIP });
+      apiManager = new ApiManager({ connectionManager, callManager });
+      manager = new StatsManager({ callManager, apiManager });
+    });
+
+    it('должен возвращать true когда inbound не получает и не декодирует кадры', () => {
+      manager.statsPeerConnection.events.trigger('collected', createStatsWithFrames(0, 0));
+
+      expect(manager.isNotValidFramesStats).toBe(true);
+    });
+
+    it('должен возвращать true когда inbound не декодирует кадры', () => {
+      manager.statsPeerConnection.events.trigger('collected', createStatsWithFrames(1, 0));
+
+      expect(manager.isNotValidFramesStats).toBe(true);
+    });
+
+    it('не должен возвращать true когда inbound получает и декодирует кадры', () => {
+      manager.statsPeerConnection.events.trigger('collected', createStatsWithFrames(1, 1));
+
+      expect(manager.isNotValidFramesStats).toBe(false);
+    });
+
+    it('должен возвращать true когда inbound перестал получать кадры', () => {
+      manager.statsPeerConnection.events.trigger('collected', createStatsWithFrames(1, 1));
+      expect(manager.isNotValidFramesStats).toBe(false);
+
+      manager.statsPeerConnection.events.trigger('collected', createStatsWithFrames(2, 2));
+      expect(manager.isNotValidFramesStats).toBe(false);
+
+      manager.statsPeerConnection.events.trigger('collected', createStatsWithFrames(2, 2));
+
+      expect(manager.isNotValidFramesStats).toBe(true);
+    });
+
+    it('должен возвращать true когда inbound перестал декодировать кадры', () => {
+      manager.statsPeerConnection.events.trigger('collected', createStatsWithFrames(1, 1));
+      expect(manager.isNotValidFramesStats).toBe(false);
+
+      manager.statsPeerConnection.events.trigger('collected', createStatsWithFrames(2, 2));
+      expect(manager.isNotValidFramesStats).toBe(false);
+
+      manager.statsPeerConnection.events.trigger('collected', createStatsWithFrames(3, 2));
+
+      expect(manager.isNotValidFramesStats).toBe(true);
+    });
+
+    it('не должен возвращать true когда inbound продолжает получать и декодировать кадры', () => {
+      manager.statsPeerConnection.events.trigger('collected', createStatsWithFrames(1, 1));
+      expect(manager.isNotValidFramesStats).toBe(false);
+
+      manager.statsPeerConnection.events.trigger('collected', createStatsWithFrames(2, 2));
+      expect(manager.isNotValidFramesStats).toBe(false);
+
+      manager.statsPeerConnection.events.trigger('collected', createStatsWithFrames(3, 3));
+
+      expect(manager.isNotValidFramesStats).toBe(false);
+    });
+  });
+
   describe('hasAvailableIncomingBitrateChangedQuarter', () => {
     const cloneStatsWithBitrate = (value: number): typeof statisticsMockBase => {
       return {
