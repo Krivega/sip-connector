@@ -1,5 +1,5 @@
 import getChildSnapshot from './getChildSnapshot';
-import { ECallStatus, EConnectionStatus, EIncomingStatus, EScreenShareStatus } from './machines';
+import { ECallStatus, EConnectionStatus, EIncomingStatus, EScreenShareStatus } from './rootMachine';
 
 import type { TRemoteCallerData } from '@/IncomingCallManager/eventNames';
 import type { TSessionSnapshot } from './rootMachine';

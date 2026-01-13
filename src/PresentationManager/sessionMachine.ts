@@ -1,10 +1,23 @@
 import { assign, setup } from 'xstate';
 
-import { EScreenShareStatus } from './types';
+export enum EScreenShareStatus {
+  IDLE = 'screenShare:idle',
+  STARTING = 'screenShare:starting',
+  ACTIVE = 'screenShare:active',
+  STOPPING = 'screenShare:stopping',
+  FAILED = 'screenShare:failed',
+}
 
-import type { TScreenShareEvent, TCallEvent, TConnectionEvent } from './types';
-
-type TScreenShareMachineEvent = TScreenShareEvent | TCallEvent | TConnectionEvent;
+export type TScreenShareEvent =
+  | { type: 'SCREEN.STARTING' }
+  | { type: 'SCREEN.STARTED' }
+  | { type: 'SCREEN.ENDING' }
+  | { type: 'SCREEN.ENDED' }
+  | { type: 'SCREEN.FAILED'; error?: unknown }
+  | { type: 'CALL.ENDED' }
+  | { type: 'CALL.FAILED'; error?: unknown }
+  | { type: 'CONNECTION.DISCONNECTED' }
+  | { type: 'CONNECTION.FAILED'; error?: unknown };
 
 interface IScreenShareContext {
   lastError?: unknown;
@@ -13,7 +26,7 @@ interface IScreenShareContext {
 export const screenShareMachine = setup({
   types: {
     context: {} as IScreenShareContext,
-    events: {} as TScreenShareMachineEvent,
+    events: {} as TScreenShareEvent,
   },
   actions: {
     rememberError: assign(({ event }) => {

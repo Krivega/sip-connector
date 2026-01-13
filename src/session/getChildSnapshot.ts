@@ -1,10 +1,8 @@
 import type { SnapshotFrom } from 'xstate';
-import type {
-  callMachine,
-  connectionMachine,
-  incomingMachine,
-  screenShareMachine,
-} from './machines';
+import type { callMachine } from '@/CallManager/sessionMachine';
+import type { connectionMachine } from '@/ConnectionManager/sessionMachine';
+import type { incomingMachine } from '@/IncomingCallManager/sessionMachine';
+import type { screenShareMachine } from '@/PresentationManager/sessionMachine';
 import type { TSessionSnapshot } from './rootMachine';
 
 type TChildKey = 'connection' | 'call' | 'incoming' | 'screenShare';

@@ -1,11 +1,25 @@
 import { assign, setup } from 'xstate';
 
-import { EIncomingStatus } from './types';
+import type { TRemoteCallerData } from './eventNames';
 
-import type { TRemoteCallerData } from '@/IncomingCallManager/eventNames';
-import type { TIncomingEvent } from './types';
+export enum EIncomingStatus {
+  IDLE = 'incoming:idle',
+  RINGING = 'incoming:ringing',
+  CONSUMED = 'incoming:consumed',
+  DECLINED = 'incoming:declined',
+  TERMINATED = 'incoming:terminated',
+  FAILED = 'incoming:failed',
+}
 
-interface IncomingContext {
+export type TIncomingEvent =
+  | { type: 'INCOMING.RINGING'; data: TRemoteCallerData }
+  | { type: 'INCOMING.CONSUMED' }
+  | { type: 'INCOMING.DECLINED'; data: TRemoteCallerData }
+  | { type: 'INCOMING.TERMINATED'; data: TRemoteCallerData }
+  | { type: 'INCOMING.FAILED'; data: TRemoteCallerData }
+  | { type: 'INCOMING.CLEAR' };
+
+interface IIncomingContext {
   remoteCallerData?: TRemoteCallerData;
   lastReason?:
     | EIncomingStatus.CONSUMED
@@ -16,7 +30,7 @@ interface IncomingContext {
 
 export const incomingMachine = setup({
   types: {
-    context: {} as IncomingContext,
+    context: {} as IIncomingContext,
     events: {} as TIncomingEvent,
   },
   actions: {
@@ -33,33 +47,21 @@ export const incomingMachine = setup({
       }
 
       if (event.type === 'INCOMING.DECLINED') {
-        return {
-          remoteCallerData: event.data,
-          lastReason: EIncomingStatus.DECLINED,
-        };
+        return { remoteCallerData: event.data, lastReason: EIncomingStatus.DECLINED };
       }
 
       if (event.type === 'INCOMING.TERMINATED') {
-        return {
-          remoteCallerData: event.data,
-          lastReason: EIncomingStatus.TERMINATED,
-        };
+        return { remoteCallerData: event.data, lastReason: EIncomingStatus.TERMINATED };
       }
 
       if (event.type === 'INCOMING.FAILED') {
-        return {
-          remoteCallerData: event.data,
-          lastReason: EIncomingStatus.FAILED,
-        };
+        return { remoteCallerData: event.data, lastReason: EIncomingStatus.FAILED };
       }
 
       return {};
     }),
     clearIncoming: assign(() => {
-      return {
-        remoteCallerData: undefined,
-        lastReason: undefined,
-      };
+      return { remoteCallerData: undefined, lastReason: undefined };
     }),
   },
 }).createMachine({

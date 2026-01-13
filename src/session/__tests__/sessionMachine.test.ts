@@ -5,16 +5,19 @@ import {
   EVENT_NAMES as CALL_EVENT_NAMES,
   type TEventMap as TCallEventMap,
 } from '@/CallManager/eventNames';
+import { ECallStatus } from '@/CallManager/sessionMachine';
 import {
   EVENT_NAMES as CONNECTION_EVENT_NAMES,
   type TEventMap as TConnectionEventMap,
 } from '@/ConnectionManager/eventNames';
+import { EConnectionStatus } from '@/ConnectionManager/sessionMachine';
 import {
   EVENT_NAMES as INCOMING_EVENT_NAMES,
   type TEventMap as TIncomingEventMap,
 } from '@/IncomingCallManager/eventNames';
+import { EIncomingStatus } from '@/IncomingCallManager/sessionMachine';
+import { EScreenShareStatus } from '@/PresentationManager/sessionMachine';
 import { attachSessionEventAdapter } from '../eventAdapter';
-import { ECallStatus, EConnectionStatus, EIncomingStatus, EScreenShareStatus } from '../machines';
 import { sessionMachine } from '../rootMachine';
 import { sessionSelectors } from '../selectors';
 

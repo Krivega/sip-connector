@@ -1,8 +1,22 @@
 import { assign, setup } from 'xstate';
 
-import { ECallStatus } from './types';
+export enum ECallStatus {
+  IDLE = 'call:idle',
+  CONNECTING = 'call:connecting',
+  RINGING = 'call:ringing',
+  ACCEPTED = 'call:accepted',
+  IN_CALL = 'call:inCall',
+  ENDED = 'call:ended',
+  FAILED = 'call:failed',
+}
 
-import type { TCallEvent } from './types';
+export type TCallEvent =
+  | { type: 'CALL.CONNECTING' }
+  | { type: 'CALL.RINGING' }
+  | { type: 'CALL.ACCEPTED' }
+  | { type: 'CALL.CONFIRMED' }
+  | { type: 'CALL.ENDED' }
+  | { type: 'CALL.FAILED'; error?: unknown };
 
 interface ICallContext {
   lastError?: unknown;

@@ -1,9 +1,9 @@
-import { forwardTo, setup } from 'xstate';
+import { forwardTo, setup, type ActorRefFrom, type SnapshotFrom } from 'xstate';
 
-import { callMachine, connectionMachine, incomingMachine, screenShareMachine } from './machines';
-
-import type { ActorRefFrom, SnapshotFrom } from 'xstate';
-import type { TCallEvent, TConnectionEvent, TIncomingEvent, TScreenShareEvent } from './machines';
+import { callMachine, type TCallEvent } from '@/CallManager/sessionMachine';
+import { connectionMachine, type TConnectionEvent } from '@/ConnectionManager/sessionMachine';
+import { incomingMachine, type TIncomingEvent } from '@/IncomingCallManager/sessionMachine';
+import { screenShareMachine, type TScreenShareEvent } from '@/PresentationManager/sessionMachine';
 
 type TSessionEvent = TConnectionEvent | TCallEvent | TIncomingEvent | TScreenShareEvent;
 
@@ -135,3 +135,8 @@ export const sessionMachine = setup({
 
 export type TSessionSnapshot = SnapshotFrom<typeof sessionMachine>;
 export type TSessionActor = ActorRefFrom<typeof sessionMachine>;
+
+export { EConnectionStatus } from '@/ConnectionManager/sessionMachine';
+export { ECallStatus } from '@/CallManager/sessionMachine';
+export { EIncomingStatus } from '@/IncomingCallManager/sessionMachine';
+export { EScreenShareStatus } from '@/PresentationManager/sessionMachine';

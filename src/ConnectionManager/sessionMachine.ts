@@ -1,8 +1,24 @@
 import { assign, setup } from 'xstate';
 
-import { EConnectionStatus } from './types';
+export enum EConnectionStatus {
+  IDLE = 'connection:idle',
+  CONNECTING = 'connection:connecting',
+  INITIALIZING = 'connection:initializing',
+  CONNECTED = 'connection:connected',
+  REGISTERED = 'connection:registered',
+  DISCONNECTED = 'connection:disconnected',
+  FAILED = 'connection:failed',
+}
 
-import type { TConnectionEvent } from './types';
+export type TConnectionEvent =
+  | { type: 'CONNECTION.START' }
+  | { type: 'CONNECTION.INIT' }
+  | { type: 'CONNECTION.CONNECTED' }
+  | { type: 'CONNECTION.REGISTERED' }
+  | { type: 'CONNECTION.UNREGISTERED' }
+  | { type: 'CONNECTION.DISCONNECTED' }
+  | { type: 'CONNECTION.FAILED'; error?: unknown }
+  | { type: 'CONNECTION.RESET' };
 
 interface IConnectionContext {
   lastError?: unknown;

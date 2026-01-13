@@ -440,9 +440,9 @@ stateDiagram-v2
 
 ### Слои
 
-- Корневой актор: `sessionMachine` (`type: 'parallel'`).
-- Дочерние машины: `connectionMachine`, `callMachine`, `incomingMachine`, `screenShareMachine`.
-- Фасад: `createSipSession()` или `sipConnector.session` — актор, `getSnapshot()`, `subscribe(selector, listener)` с типобезопасными селекторами.
+- Корневой актор: `sessionMachine` (`type: 'parallel'`) в `src/session/rootMachine.ts`.
+- Дочерние машины определены в своих менеджерах: `ConnectionManager/sessionMachine.ts`, `CallManager/sessionMachine.ts`, `IncomingCallManager/sessionMachine.ts`, `PresentationManager/sessionMachine.ts`.
+- Фасад: `createSession()` / `sipConnector.session` — актор, `getSnapshot()`, `subscribe(selector, listener)` с типобезопасными селекторами.
 - Адаптер событий: подписывается на менеджеры и транслирует их события в доменные события машин.
 
 ### Доменные статусы и события
