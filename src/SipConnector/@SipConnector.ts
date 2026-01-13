@@ -138,10 +138,6 @@ class SipConnector {
     return this.callManager.isCallActive;
   }
 
-  public get isPresentationInProcess() {
-    return !!this.presentationManager.streamPresentationCurrent || this.presentationManager.isPendingPresentation;
-  }
-
   public get remoteCallerData(): IncomingCallManager['remoteCallerData'] {
     return this.incomingCallManager.remoteCallerData;
   }
