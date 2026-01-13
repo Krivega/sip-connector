@@ -4,6 +4,7 @@ import { IncomingCallStateMachine } from './IncomingCallStateMachine';
 import type { IncomingRTCSessionEvent, OutgoingRTCSessionEvent, RTCSession } from '@krivega/jssip';
 import type { ConnectionManager } from '@/ConnectionManager';
 import type { Originator, TEventMap, TEvents } from './events';
+import type { TIncomingActor } from './IncomingCallStateMachine';
 
 const BUSY_HERE_STATUS_CODE = 486;
 const REQUEST_TERMINATED_STATUS_CODE = 487;
@@ -27,7 +28,7 @@ export default class IncomingCallManager {
     this.start();
   }
 
-  public get incomingActor() {
+  public get incomingActor(): TIncomingActor {
     return this.incomingStateMachine.actorRef;
   }
 

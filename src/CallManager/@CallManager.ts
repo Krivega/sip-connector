@@ -7,6 +7,7 @@ import { RoleManager } from './RoleManager';
 
 import type { RTCSession } from '@krivega/jssip';
 import type { ConferenceStateManager } from '@/ConferenceStateManager';
+import type { TCallActor } from './CallStateMachine';
 import type { TEventMap, TEvents } from './events';
 import type { TTools } from './RecvSession';
 import type {
@@ -63,7 +64,7 @@ class CallManager {
     this.subscribeMcuRemoteTrackEvents();
   }
 
-  public get callActor() {
+  public get callActor(): TCallActor {
     return this.callStateMachine.actorRef;
   }
 

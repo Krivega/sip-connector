@@ -18,6 +18,7 @@ import type {
   TParametersConnection,
   TSet,
 } from './ConnectionFlow';
+import type { TConnectionActor } from './ConnectionStateMachine';
 import type { TEventMap, TEvents } from './events';
 import type { TParametersCheckTelephony } from './SipOperations';
 
@@ -120,7 +121,7 @@ export default class ConnectionManager {
     return this.stateMachine.isFailed;
   }
 
-  public get connectionActor() {
+  public get connectionActor(): TConnectionActor {
     return this.stateMachine.actorRef;
   }
 
