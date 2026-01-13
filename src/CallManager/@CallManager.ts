@@ -6,11 +6,11 @@ import { RemoteStreamsManager } from './RemoteStreamsManager';
 import { RoleManager } from './RoleManager';
 
 import type { RTCSession } from '@krivega/jssip';
+import type { ConferenceStateManager } from '@/ConferenceStateManager';
 import type { TEventMap, TEvents } from './events';
 import type { TTools } from './RecvSession';
 import type {
   TAnswerToIncomingCall,
-  TCallConfiguration,
   TCallRole,
   TCallRoleSpectator,
   TReplaceMediaStream,
@@ -34,7 +34,7 @@ class CallManager {
 
   protected rtcSession?: RTCSession;
 
-  protected readonly callConfiguration: TCallConfiguration = {};
+  private readonly conferenceStateManager: ConferenceStateManager;
 
   private readonly mainRemoteStreamsManager = new RemoteStreamsManager();
 
@@ -53,7 +53,8 @@ class CallManager {
 
   private disposeRecvSessionTrackListener?: () => void;
 
-  public constructor() {
+  public constructor(conferenceStateManager: ConferenceStateManager) {
+    this.conferenceStateManager = conferenceStateManager;
     this.events = createEvents();
     this.mcuSession = new MCUSession(this.events, { onReset: this.reset });
     this.callStateMachine = new CallStateMachine(this.events);
@@ -114,8 +115,7 @@ class CallManager {
 
   public startCall: TStartCall = async (ua, getUri, params) => {
     this.isPendingCall = true;
-    this.callConfiguration.number = params.number;
-    this.callConfiguration.answer = false;
+    this.conferenceStateManager.updateState({ number: params.number, answer: false });
 
     return this.mcuSession.startCall(ua, getUri, params).finally(() => {
       this.isPendingCall = false;
@@ -138,17 +138,15 @@ class CallManager {
 
     const rtcSession = extractIncomingRTCSession();
 
-    this.callConfiguration.answer = true;
-    this.callConfiguration.number = rtcSession.remote_identity.uri.user;
+    this.conferenceStateManager.updateState({
+      answer: true,
+      number: rtcSession.remote_identity.uri.user,
+    });
 
     return this.mcuSession.answerToIncomingCall(rtcSession, params).finally(() => {
       this.isPendingAnswer = false;
     });
   };
-
-  public getCallConfiguration() {
-    return { ...this.callConfiguration };
-  }
 
   public getMainStream(): MediaStream | undefined {
     const manager = this.getActiveStreamsManager();
@@ -193,8 +191,7 @@ class CallManager {
 
   private readonly reset: () => void = () => {
     this.mainRemoteStreamsManager.reset();
-    this.callConfiguration.number = undefined;
-    this.callConfiguration.answer = false;
+    this.conferenceStateManager.updateState({ number: undefined, answer: false });
     this.roleManager.reset();
     this.stopRecvSession();
   };
@@ -288,7 +285,7 @@ class CallManager {
   }
 
   private startRecvSession(audioId: string, sendOffer: TTools['sendOffer']): void {
-    const { number: conferenceNumber } = this.callConfiguration;
+    const conferenceNumber = this.conferenceStateManager.getNumber();
 
     if (conferenceNumber === undefined) {
       return;

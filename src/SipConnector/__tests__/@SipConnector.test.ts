@@ -318,9 +318,6 @@ describe('SipConnector facade', () => {
       .spyOn(cm, 'answerToIncomingCall')
       .mockResolvedValue({} as unknown as RTCPeerConnection);
     const getEstablished = jest.spyOn(cm, 'getEstablishedRTCSession').mockReturnValue(undefined);
-    const getCallConfig = jest
-      .spyOn(cm, 'getCallConfiguration')
-      .mockReturnValue({} as unknown as { number?: string });
     const getRemote = jest
       .spyOn(cm, 'getRemoteStreams')
       .mockReturnValue([] as unknown as MediaStream[]);
@@ -346,7 +343,6 @@ describe('SipConnector facade', () => {
     expect(endCall).toHaveBeenCalled();
     expect(answer).toHaveBeenCalled();
     expect(getEstablished).toHaveBeenCalled();
-    expect(getCallConfig).toHaveBeenCalled();
     expect(getRemote).toHaveBeenCalled();
     expect(replaceStream).toHaveBeenCalled();
   });

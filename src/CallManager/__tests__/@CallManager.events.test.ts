@@ -3,6 +3,7 @@ import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from
 import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import UAMock from '@/__fixtures__/UA.mock';
+import { ConferenceStateManager } from '@/ConferenceStateManager';
 import CallManager from '../@CallManager';
 import { EVENT_NAMES } from '../events';
 
@@ -16,7 +17,7 @@ describe('CallManager events', () => {
 
   beforeEach(() => {
     ua = new UAMock({ uri: 'sip:user@sipServerUrl', register: false, sockets: [] });
-    callManager = new CallManager();
+    callManager = new CallManager(new ConferenceStateManager());
     getSipServerUrl = (number) => {
       return `sip:${number}@sipServerUrl`;
     };

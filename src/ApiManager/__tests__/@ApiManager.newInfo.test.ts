@@ -1,5 +1,6 @@
 import jssip from '@/__fixtures__/jssip.mock';
 import { CallManager } from '@/CallManager';
+import { ConferenceStateManager } from '@/ConferenceStateManager';
 import { ConnectionManager } from '@/ConnectionManager';
 import ApiManager from '../@ApiManager';
 import { MockRequest } from '../__tests-utils__/helpers';
@@ -26,7 +27,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
     connectionManager = new ConnectionManager({
       JsSIP: jssip as unknown as TJsSIP,
     });
-    callManager = Object.assign(new CallManager(), {
+    callManager = Object.assign(new CallManager(new ConferenceStateManager()), {
       getEstablishedRTCSession: jest.fn(),
     });
     apiManager = new ApiManager({

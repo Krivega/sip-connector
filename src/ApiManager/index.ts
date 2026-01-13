@@ -12,3 +12,4 @@ export {
 export { createEvents } from './events';
 
 export type { TEventMap, TEvent as TApiEvent, TEvents as TApiEvents } from './events';
+export type { TChannels } from './types';

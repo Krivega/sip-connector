@@ -1,6 +1,7 @@
 import { ApiManager } from '@/ApiManager';
 import { AutoConnectorManager } from '@/AutoConnectorManager';
 import { CallManager } from '@/CallManager';
+import { ConferenceStateManager } from '@/ConferenceStateManager';
 import { ConnectionManager } from '@/ConnectionManager';
 import { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import { IncomingCallManager } from '@/IncomingCallManager';
@@ -29,6 +30,8 @@ class SipConnector {
   public readonly connectionManager: ConnectionManager;
 
   public readonly connectionQueueManager: ConnectionQueueManager;
+
+  public readonly conferenceStateManager: ConferenceStateManager;
 
   public readonly callManager: CallManager;
 
@@ -76,7 +79,8 @@ class SipConnector {
     this.connectionQueueManager = new ConnectionQueueManager({
       connectionManager: this.connectionManager,
     });
-    this.callManager = new CallManager();
+    this.conferenceStateManager = new ConferenceStateManager();
+    this.callManager = new CallManager(this.conferenceStateManager);
     this.apiManager = new ApiManager({
       connectionManager: this.connectionManager,
       callManager: this.callManager,
@@ -283,8 +287,13 @@ class SipConnector {
     return this.callManager.getEstablishedRTCSession();
   };
 
-  public getCallConfiguration: CallManager['getCallConfiguration'] = () => {
-    return this.callManager.getCallConfiguration();
+  public getCallConfiguration = () => {
+    const state = this.conferenceStateManager.getState();
+
+    return {
+      number: state.number,
+      answer: state.answer,
+    };
   };
 
   public getRemoteStreams: CallManager['getRemoteStreams'] = () => {
@@ -476,6 +485,20 @@ class SipConnector {
     this.apiManager.on('mustStopPresentation', () => {
       this.mayBeStopPresentationAndNotify();
     });
+
+    // Подписка на события для обновления ConferenceStateManager
+    this.apiManager.on('enterRoom', ({ room, participantName }) => {
+      this.conferenceStateManager.updateState({ room, participantName });
+    });
+    this.apiManager.on(
+      'conference:participant-token-issued',
+      ({ jwt, conference, participant }) => {
+        this.conferenceStateManager.updateState({ token: jwt, conference, participant });
+      },
+    );
+    this.apiManager.on('channels', (channels) => {
+      this.conferenceStateManager.updateState({ channels });
+    });
   }
 
   private readonly sendOffer = async (
@@ -493,9 +516,12 @@ class SipConnector {
       throw new Error('No sipServerUrl for sendOffer');
     }
 
+    const token = this.conferenceStateManager.getToken();
+
     return sendOffer({
       serverUrl,
       offer,
+      token,
       conferenceNumber: params.conferenceNumber,
       quality: params.quality,
       audio: params.audioChannel,

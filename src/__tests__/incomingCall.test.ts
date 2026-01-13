@@ -73,7 +73,7 @@ describe('incoming call', () => {
             mediaStream,
           });
 
-          expect(sipConnector.callManager.getCallConfiguration().answer).toBe(true);
+          expect(sipConnector.getCallConfiguration().answer).toBe(true);
           expect(peerconnection).toBeDefined();
           // @ts-expect-error
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access

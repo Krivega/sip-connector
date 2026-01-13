@@ -2,6 +2,7 @@ import { createAudioMediaStreamTrackMock } from 'webrtc-mock';
 
 import flushPromises from '@/__fixtures__/flushPromises';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
+import { ConferenceStateManager } from '@/ConferenceStateManager';
 import CallManager from '../@CallManager';
 import { RemoteStreamsManager } from '../RemoteStreamsManager';
 
@@ -73,15 +74,16 @@ interface CallManagerTestAccess {
   rtcSession?: unknown;
   isPendingCall?: boolean;
   isPendingAnswer?: boolean;
-  callConfiguration?: Record<string, unknown>;
 }
 
 describe('CallManager', () => {
   let callManager: CallManager;
+  let conferenceStateManager: ConferenceStateManager;
   let mediaStream: MediaStream;
 
   beforeEach(() => {
-    callManager = new CallManager();
+    conferenceStateManager = new ConferenceStateManager();
+    callManager = new CallManager(conferenceStateManager);
     mediaStream = new MediaStream();
   });
 
@@ -178,7 +180,7 @@ describe('CallManager', () => {
       .spyOn(prepareMediaStreamModule, 'default')
       .mockReturnValue(undefined as unknown as MediaStream);
 
-    const callManagerLocal = new CallManager();
+    const callManagerLocal = new CallManager(new ConferenceStateManager());
     const rtcSession = new RTCSessionMock({
       eventHandlers: {},
       originator: 'remote',
@@ -211,10 +213,12 @@ describe('CallManager', () => {
 
 describe('CallManager - дополнительные тесты для покрытия', () => {
   let callManager: CallManager;
+  let conferenceStateManager: ConferenceStateManager;
   let callManagerTest: CallManagerTestAccess;
 
   beforeEach(() => {
-    callManager = new CallManager();
+    conferenceStateManager = new ConferenceStateManager();
+    callManager = new CallManager(conferenceStateManager);
     callManagerTest = callManager as unknown as CallManagerTestAccess;
     jest.clearAllMocks();
     mockRecvSession.reset();
@@ -281,12 +285,6 @@ describe('CallManager - дополнительные тесты для покр�
       },
     };
     expect(callManager.getEstablishedRTCSession()).toBeUndefined();
-  });
-
-  it('getCallConfiguration: возвращает копию callConfiguration', () => {
-    callManagerTest.callConfiguration = { number: '123', answer: true };
-    expect(callManager.getCallConfiguration()).toEqual({ number: '123', answer: true });
-    expect(callManager.getCallConfiguration()).not.toBe(callManagerTest.callConfiguration);
   });
 
   it('restartIce: вызывает restartIce на rtcSession', async () => {
@@ -613,12 +611,7 @@ describe('CallManager - дополнительные тесты для покр�
   });
 
   it('startRecvSession: создаёт RecvSession, ресетит менеджер и вызывает call', async () => {
-    const cfg = Reflect.get(callManager as unknown as object, 'callConfiguration') as Record<
-      string,
-      unknown
-    >;
-
-    cfg.number = '123';
+    conferenceStateManager.updateState({ number: '123' });
 
     const recvManager = Reflect.get(
       callManager as unknown as object,
@@ -657,12 +650,7 @@ describe('CallManager - дополнительные тесты для покр�
   });
 
   it('startRecvSession: при ошибке call выполняет stopRecvSession', async () => {
-    const cfg = Reflect.get(callManager as unknown as object, 'callConfiguration') as Record<
-      string,
-      unknown
-    >;
-
-    cfg.number = '123';
+    conferenceStateManager.updateState({ number: '123' });
 
     const stopSpy = jest
       .spyOn(

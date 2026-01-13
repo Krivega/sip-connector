@@ -45,12 +45,12 @@ describe('call', () => {
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
-    expect(sipConnector.callManager.getCallConfiguration().answer).toBe(undefined);
+    expect(sipConnector.getCallConfiguration().answer).toBe(undefined);
 
     const number = '10000';
     const callPromise = sipConnector.call({ number, mediaStream });
     const connectionConfiguration = sipConnector.connectionManager.getConnectionConfiguration();
-    const callConfiguration = sipConnector.callManager.getCallConfiguration();
+    const callConfiguration = sipConnector.getCallConfiguration();
 
     expect(callConfiguration.number).toBe(number);
     expect(callConfiguration.answer).toBe(false);

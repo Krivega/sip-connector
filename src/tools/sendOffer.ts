@@ -24,6 +24,11 @@ type TSendOfferParams = {
    * SDP-offer, который нужно отправить на сервер.
    */
   offer: RTCSessionDescriptionInit;
+  /**
+   * JWT токен для авторизации API-запросов.
+   * Если передан, добавляется в заголовок Authorization: Bearer {token}.
+   */
+  token?: string;
 };
 
 const ENDPOINT = 'api/v2/rtp2webrtc/offer';
@@ -36,6 +41,8 @@ const ENDPOINT = 'api/v2/rtp2webrtc/offer';
  * Пример:
  *   https://dev.vinteo.com/api/v2/rtp2webrtc/offer/1008?quality=medium&audio=0
  *
+ * Если передан токен, добавляется заголовок Authorization: Bearer {token}.
+ *
  * Ожидается, что сервер вернёт JSON с полями { type, sdp }.
  */
 const sendOffer = async ({
@@ -44,6 +51,7 @@ const sendOffer = async ({
   quality,
   audio,
   offer,
+  token,
 }: TSendOfferParams): Promise<RTCSessionDescription> => {
   const url = new URL(
     `https://${serverUrl.replace(/\/$/, '')}/${ENDPOINT}/${encodeURIComponent(conferenceNumber)}`,
@@ -52,11 +60,17 @@ const sendOffer = async ({
   url.searchParams.set('quality', quality);
   url.searchParams.set('audio', String(audio));
 
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+
+  if (token !== undefined && token !== '') {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
   const response = await fetch(url.toString(), {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers,
     credentials: 'same-origin',
     body: JSON.stringify(offer),
   });

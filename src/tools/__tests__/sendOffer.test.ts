@@ -100,4 +100,124 @@ describe('sendOffer', () => {
     await expect(sendOffer(params)).rejects.toThrow('sendOffer failed with status 500');
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
+
+  it('должен добавлять заголовок Authorization, если передан токен', async () => {
+    expect.assertions(2);
+
+    const token = 'jwt-token-123';
+    const responseJson = {
+      type: 'answer' as RTCSdpType,
+      sdp: 'answer-sdp',
+    };
+
+    // @ts-expect-error: используем мок
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    global.fetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => {
+        return responseJson;
+      },
+    });
+
+    await sendOffer({
+      serverUrl: 'dev.vinteo.com',
+      conferenceNumber: '1008',
+      quality: 'medium',
+      audio: 0,
+      offer: {
+        type: 'offer',
+        sdp: 'test-sdp',
+      },
+      token,
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const calledOptions = (global.fetch as jest.Mock).mock.calls[0][1] as RequestInit;
+
+    expect(calledOptions.headers).toBeDefined();
+
+    const headers = calledOptions.headers as Record<string, string>;
+
+    expect(headers.Authorization).toBe(`Bearer ${token}`);
+  });
+
+  it('не должен добавлять заголовок Authorization, если токен не передан', async () => {
+    expect.assertions(2);
+
+    const responseJson = {
+      type: 'answer' as RTCSdpType,
+      sdp: 'answer-sdp',
+    };
+
+    // @ts-expect-error: используем мок
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    global.fetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => {
+        return responseJson;
+      },
+    });
+
+    await sendOffer({
+      serverUrl: 'dev.vinteo.com',
+      conferenceNumber: '1008',
+      quality: 'medium',
+      audio: 0,
+      offer: {
+        type: 'offer',
+        sdp: 'test-sdp',
+      },
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const calledOptions = (global.fetch as jest.Mock).mock.calls[0][1] as RequestInit;
+
+    expect(calledOptions.headers).toBeDefined();
+
+    const headers = calledOptions.headers as Record<string, string>;
+
+    expect(headers.Authorization).toBeUndefined();
+  });
+
+  it('не должен добавлять заголовок Authorization, если токен пустая строка', async () => {
+    expect.assertions(2);
+
+    const responseJson = {
+      type: 'answer' as RTCSdpType,
+      sdp: 'answer-sdp',
+    };
+
+    // @ts-expect-error: используем мок
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    global.fetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => {
+        return responseJson;
+      },
+    });
+
+    await sendOffer({
+      serverUrl: 'dev.vinteo.com',
+      conferenceNumber: '1008',
+      quality: 'medium',
+      audio: 0,
+      offer: {
+        type: 'offer',
+        sdp: 'test-sdp',
+      },
+      token: '',
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const calledOptions = (global.fetch as jest.Mock).mock.calls[0][1] as RequestInit;
+
+    expect(calledOptions.headers).toBeDefined();
+
+    const headers = calledOptions.headers as Record<string, string>;
+
+    expect(headers.Authorization).toBeUndefined();
+  });
 });

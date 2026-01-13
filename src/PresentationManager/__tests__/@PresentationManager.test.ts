@@ -2,6 +2,7 @@ import { createMediaStreamMock } from 'webrtc-mock';
 
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { CallManager } from '@/CallManager';
+import { ConferenceStateManager } from '@/ConferenceStateManager';
 import PresentationManager, { hasCanceledStartPresentationError } from '../@PresentationManager';
 
 import type { TReachedLimitError } from 'repeated-calls';
@@ -19,7 +20,7 @@ describe('PresentationManager', () => {
       eventHandlers: {},
       originator: 'local',
     });
-    callManager = new CallManager();
+    callManager = new CallManager(new ConferenceStateManager());
     rtcSession.on('presentation:start', (data: MediaStream) => {
       callManager.events.trigger('presentation:start', data);
     });
