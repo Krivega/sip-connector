@@ -111,6 +111,7 @@
     "@krivega/timeout-requester": "^1.0.0",
     "debug": "^4.4.3",
     "events-constructor": "^2.1.1",
+    "lodash": "^4.17.21",
     "repeated-calls": "^2.4.0",
     "sequent-promises": "^2.0.1",
     "stack-promises": "^2.0.4",
