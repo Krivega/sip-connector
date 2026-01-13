@@ -599,10 +599,14 @@ describe('SipConnector facade', () => {
       expect(setCallRoleSpectatorSpy).toHaveBeenCalledTimes(1);
     });
 
-    it('должен вызывать stopPresentation при событии participant:move-request-to-spectators-synthetic', async () => {
+    it('должен вызывать stopPresentation при событии participant:move-request-to-spectators-synthetic для активной презентации', async () => {
       const stopPresentationSpy = jest
         .spyOn(sipConnector, 'stopPresentation')
         .mockResolvedValue(undefined);
+
+      jest
+        .spyOn(sipConnector.presentationManager, 'isPresentationInProcess', 'get')
+        .mockReturnValue(true);
 
       // Тригерим событие на уровне ApiManager
       sipConnector.apiManager.events.trigger(
@@ -636,11 +640,15 @@ describe('SipConnector facade', () => {
       });
     });
 
-    it('должен вызывать stopPresentation при событии participant:move-request-to-spectators-with-audio-id', async () => {
+    it('должен вызывать stopPresentation при событии participant:move-request-to-spectators-with-audio-id для активной презентации', async () => {
       const stopPresentationSpy = jest
         .spyOn(sipConnector, 'stopPresentation')
         .mockResolvedValue(undefined);
       const audioId = 'test-audio-id';
+
+      jest
+        .spyOn(sipConnector.presentationManager, 'isPresentationInProcess', 'get')
+        .mockReturnValue(true);
 
       // Тригерим событие на уровне ApiManager
       sipConnector.apiManager.events.trigger(
@@ -807,6 +815,10 @@ describe('SipConnector facade', () => {
         .spyOn(sipConnector, 'stopPresentation')
         .mockResolvedValue(undefined);
 
+      jest
+        .spyOn(sipConnector.presentationManager, 'isPresentationInProcess', 'get')
+        .mockReturnValue(true);
+
       // Тригерим событие без запущенной презентации
       sipConnector.apiManager.events.trigger(
         'participant:move-request-to-spectators-synthetic',
@@ -823,6 +835,10 @@ describe('SipConnector facade', () => {
       const stopPresentationSpy = jest
         .spyOn(sipConnector, 'stopPresentation')
         .mockRejectedValue(new Error('Test error'));
+
+      jest
+        .spyOn(sipConnector.presentationManager, 'isPresentationInProcess', 'get')
+        .mockReturnValue(true);
 
       // Тригерим событие
       sipConnector.apiManager.events.trigger(
@@ -842,6 +858,11 @@ describe('SipConnector facade', () => {
       const stopPresentationSpy = jest
         .spyOn(sipConnector, 'stopPresentation')
         .mockRejectedValue(new Error('Test error'));
+
+      jest
+        .spyOn(sipConnector.presentationManager, 'isPresentationInProcess', 'get')
+        .mockReturnValue(true);
+
       const audioId = 'test-audio-id';
 
       // Тригерим событие
@@ -893,7 +914,7 @@ describe('SipConnector facade', () => {
         expect(handler).toHaveBeenCalledWith({});
       });
 
-      it('не должен триггерить событие stopped-presentation-by-server-command если презентация не активна', async () => {
+      it('не должен триггерить событие stopped-presentation-by-server-command и останавливать презентацию, если презентация не активна', async () => {
         hasPresentationInProcessSpy.mockReturnValue(false);
 
         sipConnector.on('stopped-presentation-by-server-command', handler);
@@ -905,7 +926,7 @@ describe('SipConnector facade', () => {
 
         await Promise.resolve();
 
-        expect(stopPresentationSpy).toHaveBeenCalledTimes(1);
+        expect(stopPresentationSpy).toHaveBeenCalledTimes(0);
         expect(handler).toHaveBeenCalledTimes(0);
       });
 
@@ -947,7 +968,7 @@ describe('SipConnector facade', () => {
         expect(handler).toHaveBeenCalledWith({});
       });
 
-      it('не должен триггерить событие stopped-presentation-by-server-command если презентация не активна', async () => {
+      it('не должен триггерить событие stopped-presentation-by-server-command и останавливать презентацию, если презентация не активна', async () => {
         const audioId = 'test-audio-id';
 
         hasPresentationInProcessSpy.mockReturnValue(false);
@@ -963,7 +984,7 @@ describe('SipConnector facade', () => {
 
         await Promise.resolve();
 
-        expect(stopPresentationSpy).toHaveBeenCalledTimes(1);
+        expect(stopPresentationSpy).toHaveBeenCalledTimes(0);
         expect(handler).toHaveBeenCalledTimes(0);
       });
 
@@ -1002,7 +1023,7 @@ describe('SipConnector facade', () => {
         expect(handler).toHaveBeenCalledWith({});
       });
 
-      it('не должен триггерить событие stopped-presentation-by-server-command если презентация не активна', async () => {
+      it('не должен триггерить событие stopped-presentation-by-server-command и останавливать презентацию, если презентация не активна', async () => {
         hasPresentationInProcessSpy.mockReturnValue(false);
 
         sipConnector.on('stopped-presentation-by-server-command', handler);
@@ -1011,7 +1032,7 @@ describe('SipConnector facade', () => {
 
         await Promise.resolve();
 
-        expect(stopPresentationSpy).toHaveBeenCalledTimes(1);
+        expect(stopPresentationSpy).toHaveBeenCalledTimes(0);
         expect(handler).toHaveBeenCalledTimes(0);
       });
 
