@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [20.4.1](https://github.com/Krivega/sip-connector/compare/v20.4.0...v20.4.1) (2026-01-13)
+
+### Bug Fixes
+
+- add type annotations for actor references in Call, Connection, Incoming Call, and Presentation Managers ([a5a9713](https://github.com/Krivega/sip-connector/commit/a5a9713aae4b8e53dc6d94429e89ef7770833093))
+
 ## [20.4.0](https://github.com/Krivega/sip-connector/compare/v20.3.0...v20.4.0) (2026-01-13)
 
 ### Features
