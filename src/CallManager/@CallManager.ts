@@ -1,13 +1,11 @@
-import { TypedEvents } from 'events-constructor';
-
-import { EEvent, EVENT_NAMES } from './eventNames';
+import { createEvents, EEvent } from './events';
 import { MCUSession } from './MCUSession';
 import RecvSession from './RecvSession';
 import { RemoteStreamsManager } from './RemoteStreamsManager';
 import { RoleManager } from './RoleManager';
 
 import type { RTCSession } from '@krivega/jssip';
-import type { TEventMap, TEvents } from './eventNames';
+import type { TEventMap, TEvents } from './events';
 import type { TTools } from './RecvSession';
 import type {
   TAnswerToIncomingCall,
@@ -53,7 +51,7 @@ class CallManager {
   private disposeRecvSessionTrackListener?: () => void;
 
   public constructor() {
-    this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
+    this.events = createEvents();
     this.mcuSession = new MCUSession(this.events, { onReset: this.reset });
 
     this.subscribeCallStatusChange();

@@ -4,7 +4,7 @@ import jssip from '@/__fixtures__/jssip.mock';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { ConnectionManager, EConnectionManagerEvent } from '@/ConnectionManager';
 import IncomingCallManager from '../@IncomingCallManager';
-import { Originator } from '../eventNames';
+import { Originator } from '../events';
 
 import type { RTCSession, IncomingRequest, OutgoingRequest } from '@krivega/jssip';
 import type { TJsSIP } from '@/types';

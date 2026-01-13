@@ -1,15 +1,14 @@
 import { CancelableRequest } from '@krivega/cancelable-promise';
 import { SetTimeoutRequest } from '@krivega/timeout-requester';
-import { TypedEvents } from 'events-constructor';
 
 import log from '@/logger';
 import { INTERVAL_COLLECT_STATISTICS } from './constants';
-import { EVENT_NAMES } from './eventNames';
+import { createEvents } from './events';
 import parseStatsReports from './parseStatsReports';
 import requestAllStatistics from './requestAllStatistics';
 import { now } from './utils';
 
-import type { TEventMap, TEvents } from './eventNames';
+import type { TEventMap, TEvents } from './events';
 
 const debug = (data: unknown) => {
   log(String(data));
@@ -26,7 +25,7 @@ class StatsPeerConnection {
   >(requestAllStatistics);
 
   public constructor() {
-    this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
+    this.events = createEvents();
     this.setTimeoutRequest = new SetTimeoutRequest();
   }
 

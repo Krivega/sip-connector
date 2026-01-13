@@ -1,13 +1,12 @@
-import { TypedEvents } from 'events-constructor';
 import { hasCanceledError, repeatedCallsAsync } from 'repeated-calls';
 
 import prepareMediaStream from '@/tools/prepareMediaStream';
 import { setMaxBitrateToSender } from '@/tools/setParametersToSender';
-import { EEvent, EVENT_NAMES } from './eventNames';
+import { createEvents, EEvent } from './events';
 
 import type { RTCSession } from '@krivega/jssip';
 import type { CallManager } from '@/CallManager';
-import type { TEventMap, TEvents } from './eventNames';
+import type { TEventMap, TEvents } from './events';
 import type { TContentHint, TOnAddedTransceiver } from './types';
 
 const SEND_PRESENTATION_CALL_LIMIT = 1;
@@ -42,8 +41,7 @@ class PresentationManager {
   }) {
     this.callManager = callManager;
     this.maxBitrate = maxBitrate;
-    this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
-
+    this.events = createEvents();
     this.subscribe();
   }
 

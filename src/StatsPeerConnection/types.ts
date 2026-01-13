@@ -1,5 +1,5 @@
 import type { EStatsTypes } from './constants';
-import type { TEventMap } from './eventNames';
+import type { TEventMap } from './events';
 
 export type TMedia = {
   trackIdentifier?: string;

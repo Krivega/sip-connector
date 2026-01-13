@@ -1,5 +1,3 @@
-import { TypedEvents } from 'events-constructor';
-
 import logger from '@/logger';
 import { hasDeclineResponseFromServer } from '@/utils/errors';
 import {
@@ -12,7 +10,7 @@ import {
   EParticipantType,
   EShareState,
 } from './constants';
-import { EEvent, EVENT_NAMES } from './eventNames';
+import { createEvents, EEvent } from './events';
 import { ECMDNotify } from './types';
 
 import type {
@@ -24,7 +22,7 @@ import type {
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
 import type { EUseLicense } from './constants';
-import type { TEventMap, TEvents } from './eventNames';
+import type { TEventMap, TEvents } from './events';
 import type {
   TAcceptingWordRequestInfoNotify,
   TAddedToListModeratorsInfoNotify,
@@ -61,7 +59,7 @@ class ApiManager {
   }) {
     this.connectionManager = connectionManager;
     this.callManager = callManager;
-    this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
+    this.events = createEvents();
 
     this.subscribe();
   }

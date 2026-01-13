@@ -1,14 +1,13 @@
-import { TypedEvents } from 'events-constructor';
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
 
 import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import UAMock from '@/__fixtures__/UA.mock';
-import { EVENT_NAMES } from '../eventNames';
+import { createEvents, EVENT_NAMES } from '../events';
 import { MCUSession } from '../MCUSession';
 
 import type { RTCSession, UA } from '@krivega/jssip';
-import type { TEventMap } from '../eventNames';
+import type { TEvents } from '../events';
 
 // Вспомогательный тип для доступа к защищённым свойствам MCUSession
 interface MCUSessionTestAccess {
@@ -19,7 +18,7 @@ interface MCUSessionTestAccess {
 }
 
 describe('MCUSession', () => {
-  let events: TypedEvents<TEventMap>;
+  let events: TEvents;
   let ua: UAMock;
   let mcuSession: MCUSession;
   let getSipServerUrl: (number: string) => string;
@@ -27,7 +26,7 @@ describe('MCUSession', () => {
   const handleReset = jest.fn();
 
   beforeEach(() => {
-    events = new TypedEvents<TEventMap>(EVENT_NAMES);
+    events = createEvents();
     ua = new UAMock({ uri: 'sip:user@sipServerUrl', register: false, sockets: [] });
     mcuSession = new MCUSession(events, { onReset: handleReset });
     getSipServerUrl = (number) => {
@@ -199,13 +198,13 @@ describe('MCUSession', () => {
 });
 
 describe('MCUSession - дополнительные тесты для покрытия', () => {
-  let events: TypedEvents<TEventMap>;
+  let events: TEvents;
   let mcuSession: MCUSession;
   let mcuSessionTest: MCUSessionTestAccess;
   const handleReset = jest.fn();
 
   beforeEach(() => {
-    events = new TypedEvents<TEventMap>(EVENT_NAMES);
+    events = createEvents();
     mcuSession = new MCUSession(events, {
       onReset: handleReset,
     });

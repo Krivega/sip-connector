@@ -1,10 +1,8 @@
-import { TypedEvents } from 'events-constructor';
-
-import { EEvent, EVENT_NAMES } from './eventNames';
+import { createEvents, EEvent } from './events';
 
 import type { IncomingRTCSessionEvent, OutgoingRTCSessionEvent, RTCSession } from '@krivega/jssip';
 import type { ConnectionManager } from '@/ConnectionManager';
-import type { Originator, TEventMap, TEvents } from './eventNames';
+import type { Originator, TEventMap, TEvents } from './events';
 
 const BUSY_HERE_STATUS_CODE = 486;
 const REQUEST_TERMINATED_STATUS_CODE = 487;
@@ -18,7 +16,7 @@ export default class IncomingCallManager {
 
   public constructor(connectionManager: ConnectionManager) {
     this.connectionManager = connectionManager;
-    this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
+    this.events = createEvents();
     this.start();
   }
 

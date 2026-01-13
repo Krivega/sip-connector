@@ -9,4 +9,6 @@ export {
   EShareState,
   EUseLicense,
 } from './constants';
-export type { TEvent as TApiEvent } from './eventNames';
+export { createEvents } from './events';
+
+export type { TEventMap, TEvent as TApiEvent, TEvents as TApiEvents } from './events';

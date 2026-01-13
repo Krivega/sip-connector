@@ -6,7 +6,7 @@ import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from
 import BaseSession from './BaseSession.mock';
 import RTCPeerConnectionMock from './RTCPeerConnectionMock';
 import { getRoomFromSipUrl } from './utils';
-import { Originator } from '../CallManager/eventNames';
+import { Originator } from '../CallManager/events';
 
 import type { IncomingInfoEvent } from '@krivega/jssip';
 import type { TEventHandlers } from './BaseSession.mock';

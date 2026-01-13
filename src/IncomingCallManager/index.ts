@@ -1,2 +1,4 @@
 export { default as IncomingCallManager } from './@IncomingCallManager';
-export type { TEvent as TIncomingCallEvent } from './eventNames';
+export { createEvents } from './events';
+
+export type { TEvent as TIncomingCallEvent, TRemoteCallerData } from './events';

@@ -1,5 +1,5 @@
 import { generateUserId, parseDisplayName, resolveGetUri } from '@/utils/utils';
-import { UA_EVENT_NAMES } from './eventNames';
+import { UA_EVENT_NAMES } from './events';
 import getExtraHeadersRemoteAddress from './getExtraHeadersRemoteAddress';
 
 import type { UA, UAConfigurationParams, WebSocketInterface } from '@krivega/jssip';

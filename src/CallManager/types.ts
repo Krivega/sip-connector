@@ -1,6 +1,6 @@
 import type { RTCSession, UA } from '@krivega/jssip';
 import type { TContentHint } from '@/PresentationManager';
-import type { Originator } from './eventNames';
+import type { Originator } from './events';
 import type { TTools } from './RecvSession';
 
 export type TOnAddedTransceiver = (

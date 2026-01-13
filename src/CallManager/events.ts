@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
+import { TypedEvents } from 'events-constructor';
+
 import type { IncomingInfoEvent, OutgoingInfoEvent, EndEvent } from '@krivega/jssip';
-import type { TypedEvents } from 'events-constructor';
 
 export enum EEvent {
   // rtcSession events
@@ -141,3 +142,7 @@ export type TEventMap = {
 };
 
 export type TEvents = TypedEvents<TEventMap>;
+
+export const createEvents = () => {
+  return new TypedEvents<TEventMap>(EVENT_NAMES);
+};

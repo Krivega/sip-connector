@@ -1,22 +1,23 @@
-import { EVENT_NAMES as API_MANAGER_EVENT_NAMES } from '@/ApiManager/eventNames';
-import { EVENT_NAMES as AUTO_CONNECTOR_MANAGER_EVENT_NAMES } from '@/AutoConnectorManager/eventNames';
-import { EVENT_NAMES as CALL_MANAGER_EVENT_NAMES } from '@/CallManager/eventNames';
-import { EVENT_NAMES as CONNECTION_MANAGER_EVENT_NAMES } from '@/ConnectionManager/eventNames';
-import { EVENT_NAMES as INCOMING_CALL_MANAGER_EVENT_NAMES } from '@/IncomingCallManager/eventNames';
-import { EVENT_NAMES as PRESENTATION_MANAGER_EVENT_NAMES } from '@/PresentationManager/eventNames';
-import { EVENT_NAMES as STATS_MANAGER_EVENT_NAMES } from '@/StatsManager/eventNames';
-import { EVENT_NAMES as VIDEO_BALANCER_MANAGER_EVENT_NAMES } from '@/VideoSendingBalancerManager/eventNames';
+import { TypedEvents } from 'events-constructor';
 
-import type { TypedEvents } from 'events-constructor';
-import type { TEventMap as TApiManagerEventMap } from '@/ApiManager/eventNames';
-import type { TEventMap as TAutoConnectorManagerEventMap } from '@/AutoConnectorManager/eventNames';
-import type { TEventMap as TCallManagerEventMap } from '@/CallManager/eventNames';
+import { EVENT_NAMES as API_MANAGER_EVENT_NAMES } from '@/ApiManager/events';
+import { EVENT_NAMES as AUTO_CONNECTOR_MANAGER_EVENT_NAMES } from '@/AutoConnectorManager/events';
+import { EVENT_NAMES as CALL_MANAGER_EVENT_NAMES } from '@/CallManager/events';
+import { EVENT_NAMES as CONNECTION_MANAGER_EVENT_NAMES } from '@/ConnectionManager/events';
+import { EVENT_NAMES as INCOMING_CALL_MANAGER_EVENT_NAMES } from '@/IncomingCallManager/events';
+import { EVENT_NAMES as PRESENTATION_MANAGER_EVENT_NAMES } from '@/PresentationManager/events';
+import { EVENT_NAMES as STATS_MANAGER_EVENT_NAMES } from '@/StatsManager/events';
+import { EVENT_NAMES as VIDEO_BALANCER_MANAGER_EVENT_NAMES } from '@/VideoSendingBalancerManager/events';
+
+import type { TEventMap as TApiManagerEventMap } from '@/ApiManager/events';
+import type { TEventMap as TAutoConnectorManagerEventMap } from '@/AutoConnectorManager/events';
+import type { TEventMap as TCallManagerEventMap } from '@/CallManager/events';
 import type { TConnectionConfigurationWithUa } from '@/ConnectionManager';
-import type { TEventMap as TConnectionManagerEventMap } from '@/ConnectionManager/eventNames';
-import type { TEventMap as TIncomingCallManagerEventMap } from '@/IncomingCallManager/eventNames';
-import type { TEventMap as TPresentationManagerEventMap } from '@/PresentationManager/eventNames';
-import type { TEventMap as TStatsManagerEventMap } from '@/StatsPeerConnection/eventNames';
-import type { TEventMap as TVideoBalancerManagerEventMap } from '@/VideoSendingBalancerManager/eventNames';
+import type { TEventMap as TConnectionManagerEventMap } from '@/ConnectionManager/events';
+import type { TEventMap as TIncomingCallManagerEventMap } from '@/IncomingCallManager/events';
+import type { TEventMap as TPresentationManagerEventMap } from '@/PresentationManager/events';
+import type { TEventMap as TStatsManagerEventMap } from '@/StatsPeerConnection/events';
+import type { TEventMap as TVideoBalancerManagerEventMap } from '@/VideoSendingBalancerManager/events';
 
 // Добавляем префиксы к событиям от разных менеджеров
 const AUTO_CONNECTOR_EVENTS = AUTO_CONNECTOR_MANAGER_EVENT_NAMES.map((eventName) => {
@@ -86,3 +87,7 @@ export type TEventMap = PrefixedEventMap<TAutoConnectorManagerEventMap, 'auto-co
   TSipConnectorEventMap;
 
 export type TEvents = TypedEvents<TEventMap>;
+
+export const createEvents = () => {
+  return new TypedEvents<TEventMap>(EVENT_NAMES);
+};

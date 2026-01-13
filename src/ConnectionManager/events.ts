@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
+import { TypedEvents } from 'events-constructor';
+
 import type {
   ConnectedEvent,
   ConnectingEventUA,
@@ -10,7 +12,6 @@ import type {
   RTCSessionEvent,
   UnRegisteredEvent,
 } from '@krivega/jssip';
-import type { TypedEvents } from 'events-constructor';
 import type { TConnectionConfigurationWithUa, TParametersConnection } from './ConnectionFlow';
 
 export enum EEvent {
@@ -78,3 +79,7 @@ export type TEventMap = {
 };
 
 export type TEvents = TypedEvents<TEventMap>;
+
+export const createEvents = () => {
+  return new TypedEvents<TEventMap>(EVENT_NAMES);
+};

@@ -1,5 +1,3 @@
-import { TypedEvents } from 'events-constructor';
-
 import delayPromise from '@/__fixtures__/delayPromise';
 import jssip from '@/__fixtures__/jssip.mock';
 import UAMock, {
@@ -8,13 +6,13 @@ import UAMock, {
 } from '@/__fixtures__/UA.mock';
 import ConnectionFlow from '../ConnectionFlow';
 import ConnectionStateMachine from '../ConnectionStateMachine';
-import { EVENT_NAMES } from '../eventNames';
+import { createEvents } from '../events';
 import RegistrationManager from '../RegistrationManager';
 import UAFactory from '../UAFactory';
 
 import type { Socket, UA, UAConfigurationParams, WebSocketInterface } from '@krivega/jssip';
 import type { TJsSIP } from '@/types';
-import type { TEventMap, TEvents } from '../eventNames';
+import type { TEvents } from '../events';
 
 const SIP_SERVER_URL = 'sip.example.com';
 const SIP_SERVER_IP = '192.168.0.1';
@@ -74,7 +72,7 @@ describe('ConnectionFlow', () => {
     connectionConfiguration = undefined;
     uaInstance = undefined;
 
-    events = new TypedEvents<TEventMap>(EVENT_NAMES);
+    events = createEvents();
     uaFactory = new UAFactory(jssip as unknown as TJsSIP);
     stateMachine = new ConnectionStateMachine(events);
     registrationManager = new RegistrationManager({

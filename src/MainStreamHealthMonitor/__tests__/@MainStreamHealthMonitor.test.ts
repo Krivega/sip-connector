@@ -1,19 +1,15 @@
-import { TypedEvents } from 'events-constructor';
 import { createVideoMediaStreamTrackMock } from 'webrtc-mock';
 
+import { createEvents as createStatsEvents } from '@/StatsPeerConnection';
 import MainStreamHeathMonitor from '../@MainStreamHealthMonitor';
-import { NO_INBOUND_FRAMES_EVENT_NAME } from '../eventNames';
+import { NO_INBOUND_FRAMES_EVENT_NAME } from '../events';
 
 import type { CallManager } from '@/CallManager';
 import type { StatsManager } from '@/StatsManager';
-import type { TStats, TEventMap as TStatsEventMap } from '@/StatsPeerConnection';
-
-const createStatsEvents = () => {
-  return new TypedEvents<TStatsEventMap>(['collected'] as const);
-};
+import type { TStats, TEvents } from '@/StatsPeerConnection';
 
 describe('@MainStreamHealthMonitor', () => {
-  let statsEvents: TypedEvents<TStatsEventMap>;
+  let statsEvents: TEvents;
   let statsManager: StatsManager;
   let callManager: CallManager;
 

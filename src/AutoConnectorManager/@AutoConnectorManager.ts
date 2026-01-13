@@ -1,13 +1,12 @@
 import { CancelableRequest, isCanceledError } from '@krivega/cancelable-promise';
 import { DelayRequester, hasCanceledError } from '@krivega/timeout-requester';
-import { TypedEvents } from 'events-constructor';
 
 import { hasNotReadyForConnectionError } from '@/ConnectionManager';
 import { hasConnectionPromiseIsNotActualError } from '@/ConnectionQueueManager';
 import logger from '@/logger';
 import AttemptsState from './AttemptsState';
 import CheckTelephonyRequester from './CheckTelephonyRequester';
-import { EEvent, EVENT_NAMES } from './eventNames';
+import { createEvents, EEvent } from './events';
 import NotActiveCallSubscriber from './NotActiveCallSubscriber';
 import PingServerIfNotActiveCallRequester from './PingServerIfNotActiveCallRequester';
 import RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCallSubscriber';
@@ -15,7 +14,7 @@ import RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCall
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
 import type { ConnectionQueueManager } from '@/ConnectionQueueManager';
-import type { TEventMap, TEvents } from './eventNames';
+import type { TEventMap, TEvents } from './events';
 import type {
   IAutoConnectorOptions,
   TNetworkInterfacesSubscriber,
@@ -88,7 +87,7 @@ class AutoConnectorManager {
     this.networkInterfacesSubscriber = options?.networkInterfacesSubscriber;
     this.resumeFromSleepModeSubscriber = options?.resumeFromSleepModeSubscriber;
 
-    this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
+    this.events = createEvents();
     this.checkTelephonyRequester = new CheckTelephonyRequester({
       connectionManager,
       interval: options?.checkTelephonyRequestInterval ?? DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL,

@@ -1,5 +1,3 @@
-import { TypedEvents } from 'events-constructor';
-
 import { ApiManager } from '@/ApiManager';
 import { AutoConnectorManager } from '@/AutoConnectorManager';
 import { CallManager } from '@/CallManager';
@@ -14,14 +12,14 @@ import { VideoSendingBalancerManager } from '@/VideoSendingBalancerManager';
 import { MainStreamHealthMonitor } from '../MainStreamHealthMonitor';
 import { MainStreamRecovery } from '../MainStreamRecovery';
 import { ONE_MEGABIT_IN_BITS } from './constants';
-import { EVENT_NAMES } from './eventNames';
+import { createEvents } from './events';
 
 import type { IAutoConnectorOptions } from '@/AutoConnectorManager';
 import type { TGetUri } from '@/CallManager';
 import type { TContentHint, TOnAddedTransceiver } from '@/PresentationManager';
 import type { TJsSIP } from '@/types';
 import type { IBalancerOptions } from '@/VideoSendingBalancer';
-import type { TEvent, TEventMap, TEvents } from './eventNames';
+import type { TEvent, TEventMap, TEvents } from './events';
 
 class SipConnector {
   public readonly events: TEvents;
@@ -69,7 +67,7 @@ class SipConnector {
     this.preferredMimeTypesVideoCodecs = preferredMimeTypesVideoCodecs;
     this.excludeMimeTypesVideoCodecs = excludeMimeTypesVideoCodecs;
 
-    this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
+    this.events = createEvents();
     this.connectionManager = new ConnectionManager({ JsSIP });
     this.connectionQueueManager = new ConnectionQueueManager({
       connectionManager: this.connectionManager,

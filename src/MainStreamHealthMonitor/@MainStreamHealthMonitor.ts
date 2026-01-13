@@ -1,13 +1,11 @@
-import { TypedEvents } from 'events-constructor';
-
-import { EVENT_NAMES, NO_INBOUND_FRAMES_EVENT_NAME } from './eventNames';
+import { createEvents, NO_INBOUND_FRAMES_EVENT_NAME } from './events';
 
 import type { CallManager } from '@/CallManager';
 import type { StatsManager } from '@/StatsManager';
-import type { TEventMap } from './eventNames';
+import type { TEventMap, TEvents } from './events';
 
 class MainStreamHealthMonitor {
-  public readonly events: TypedEvents<TEventMap>;
+  public readonly events: TEvents;
 
   private readonly statsManager: StatsManager;
 
@@ -16,7 +14,7 @@ class MainStreamHealthMonitor {
   public constructor(statsManager: StatsManager, callManager: CallManager) {
     this.statsManager = statsManager;
     this.callManager = callManager;
-    this.events = new TypedEvents<TEventMap>(EVENT_NAMES);
+    this.events = createEvents();
 
     this.subscribe();
   }

@@ -4,7 +4,7 @@ import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import UAMock from '@/__fixtures__/UA.mock';
 import CallManager from '../@CallManager';
-import { EVENT_NAMES } from '../eventNames';
+import { EVENT_NAMES } from '../events';
 
 import type { RTCSession, UA } from '@krivega/jssip';
 

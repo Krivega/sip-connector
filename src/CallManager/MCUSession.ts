@@ -1,9 +1,9 @@
 import prepareMediaStream from '@/tools/prepareMediaStream';
 import { ECallCause } from './causes';
-import { EEvent, SESSION_JSSIP_EVENT_NAMES } from './eventNames';
+import { EEvent, SESSION_JSSIP_EVENT_NAMES } from './events';
 
 import type { EndEvent, RTCSession } from '@krivega/jssip';
-import type { TEvents } from './eventNames';
+import type { TEvents } from './events';
 import type { IMCUSession } from './types';
 
 export class MCUSession implements IMCUSession {

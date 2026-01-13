@@ -1,8 +1,9 @@
-import { createActor, setup, type ActorRefFrom } from 'xstate';
+import { createActor, setup } from 'xstate';
 
 import logger from '@/logger';
 
-import type { TEvents } from './eventNames';
+import type { ActorRefFrom } from 'xstate';
+import type { TEvents } from './events';
 
 // Определяем типы событий для XState машины
 export enum EEvents {
@@ -19,19 +20,21 @@ export enum EEvents {
 type TConnectionMachineEvent = `${EEvents}`;
 type TConnectionMachineEvents = { type: TConnectionMachineEvent };
 
+const ALL_MACHINE_EVENTS: TConnectionMachineEvent[] = Object.values(EEvents);
+
 interface IConnectionMachineContext {
   error?: Error;
   lastTransition?: string;
 }
 
 export enum EState {
-  IDLE = 'idle',
-  CONNECTING = 'connecting',
-  INITIALIZING = 'initializing',
-  CONNECTED = 'connected',
-  REGISTERED = 'registered',
-  DISCONNECTED = 'disconnected',
-  FAILED = 'failed',
+  IDLE = 'connection:idle',
+  CONNECTING = 'connection:connecting',
+  INITIALIZING = 'connection:initializing',
+  CONNECTED = 'connection:connected',
+  REGISTERED = 'connection:registered',
+  DISCONNECTED = 'connection:disconnected',
+  FAILED = 'connection:failed',
 }
 
 enum EAction {
@@ -432,7 +435,7 @@ export default class ConnectionStateMachine {
 
   public getValidEvents(): TConnectionMachineEvent[] {
     // Возвращаем все события, которые машина может обработать в текущем состоянии
-    return Object.values(EEvents).filter((event) => {
+    return ALL_MACHINE_EVENTS.filter((event) => {
       return this.canTransition(event);
     });
   }
