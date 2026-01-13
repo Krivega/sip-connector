@@ -3,9 +3,7 @@ import { StatsPeerConnection } from '@/StatsPeerConnection';
 
 import type { ApiManager } from '@/ApiManager';
 import type { CallManager } from '@/CallManager';
-import type { TEventMap } from '@/StatsPeerConnection';
-
-type TStats = TEventMap['collected'];
+import type { TEventMap, TStats } from '@/StatsPeerConnection';
 
 class StatsManager {
   public readonly statsPeerConnection: StatsPeerConnection;

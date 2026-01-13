@@ -6,8 +6,7 @@ import { NO_INBOUND_FRAMES_EVENT_NAME } from '../eventNames';
 
 import type { CallManager } from '@/CallManager';
 import type { StatsManager } from '@/StatsManager';
-import type { TEventMap as TStatsEventMap } from '@/StatsPeerConnection';
-import type { TStats } from '../types';
+import type { TStats, TEventMap as TStatsEventMap } from '@/StatsPeerConnection';
 
 const createStatsEvents = () => {
   return new TypedEvents<TStatsEventMap>(['collected'] as const);
