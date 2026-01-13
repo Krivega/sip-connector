@@ -262,12 +262,23 @@
 - Управление данными вызывающего
 - Принятие и отклонение звонков
 - Извлечение RTCSession для CallManager
+- Валидация переходов состояний через IncomingCallStateMachine
 
 **Основные методы**:
 
 - `getIncomingRTCSession()` - получение сессии
 - `declineToIncomingCall()` - отклонение звонка
 - `busyIncomingCall()` - ответ "занято"
+
+**Внутренние компоненты**:
+
+- **IncomingCallStateMachine** - управление состояниями входящих SIP-звонков (XState)
+  - Валидация переходов между состояниями
+  - Публичный API с геттерами: `isIdle`, `isRinging`, `isConsumed`, `isDeclined`, `isTerminated`, `isFailed`, `isActive`, `isFinished`
+  - Хранение данных вызывающего абонента (remoteCallerData)
+  - Геттеры контекста: `remoteCallerData`, `lastReason`
+  - Методы: `reset()`, `toConsumed()`, события: `INCOMING.RINGING`, `INCOMING.CONSUMED`, `INCOMING.DECLINED`, `INCOMING.TERMINATED`, `INCOMING.FAILED`, `INCOMING.CLEAR`
+  - Полное логирование всех переходов состояний
 
 ---
 
@@ -473,6 +484,26 @@ graph TB
 - Автоматическое создание Error из не-Error значений (JSON.stringify для объектов)
 - Полное логирование всех переходов состояний и недопустимых операций через console.warn
 
+#### **IncomingCallStateMachine** (Состояния входящих звонков)
+
+- Внутренний компонент IncomingCallManager
+- Управление состояниями входящих SIP-звонков через XState
+- Валидация допустимых операций с предотвращением некорректных переходов
+- Хранение данных вызывающего абонента (remoteCallerData)
+- Публичный API:
+  - Геттеры состояний: `isIdle`, `isRinging`, `isConsumed`, `isDeclined`, `isTerminated`, `isFailed`
+  - Комбинированные геттеры: `isActive` (ringing), `isFinished` (consumed/declined/terminated/failed)
+  - Геттеры контекста: `remoteCallerData`, `lastReason`
+  - Методы управления: `reset()`, `toConsumed()`
+- Корректный граф переходов:
+  - IDLE → RINGING (новый входящий звонок)
+  - RINGING → CONSUMED (принят) / DECLINED (отклонен) / TERMINATED (обрыв) / FAILED (ошибка)
+  - Все финальные состояния → IDLE (через CLEAR)
+  - Все финальные состояния → RINGING (новый входящий звонок)
+  - Self-transition: RINGING → RINGING (повторный входящий звонок)
+- Автоматическая очистка при потере соединения (через ConnectionManager events: disconnected, registrationFailed, connect-failed)
+- Полное логирование всех переходов состояний и недопустимых операций через console.warn
+
 ---
 
 ## Модель состояний сеанса (XState)
@@ -525,15 +556,21 @@ stateDiagram-v2
             failed --> ended: call.ended
         }
         state incoming {
-            idle --> ringing: incoming.ringing
-            ringing --> consumed: incoming.consumed
-            ringing --> declined: incoming.declined
-            ringing --> terminated: incoming.terminated
-            ringing --> failed: incoming.failed
-            consumed --> idle: incoming.clear
-            declined --> idle: incoming.clear
-            terminated --> idle: incoming.clear
-            failed --> idle: incoming.clear
+            idle --> ringing: incomingRinging
+            ringing --> ringing: incomingRinging
+            ringing --> consumed: incomingConsumed
+            ringing --> declined: incomingDeclined
+            ringing --> terminated: incomingTerminated
+            ringing --> failed: incomingFailed
+            ringing --> idle: clear
+            consumed --> idle: clear
+            consumed --> ringing: incomingRinging
+            declined --> idle: clear
+            declined --> ringing: incomingRinging
+            terminated --> idle: clear
+            terminated --> ringing: incomingRinging
+            failed --> idle: clear
+            failed --> ringing: incomingRinging
         }
         state presentation {
             idle --> starting: screenStarting

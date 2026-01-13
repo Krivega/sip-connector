@@ -1,6 +1,7 @@
 import { assign, setup } from 'xstate';
 
 import { EEvent as EConnectionEvent } from '@/ConnectionManager/events';
+import logger from '@/logger';
 import { BaseStateMachine } from '@/tools/BaseStateMachine';
 
 import type { ActorRefFrom, SnapshotFrom } from 'xstate';
@@ -14,6 +15,14 @@ export enum EState {
   DECLINED = 'incoming:declined',
   TERMINATED = 'incoming:terminated',
   FAILED = 'incoming:failed',
+}
+
+enum EAction {
+  LOG_TRANSITION = 'logTransition',
+  LOG_STATE_CHANGE = 'logStateChange',
+  REMEMBER_INCOMING = 'rememberIncoming',
+  REMEMBER_REASON = 'rememberReason',
+  CLEAR_INCOMING = 'clearIncoming',
 }
 
 type TIncomingEvent =
@@ -35,12 +44,18 @@ const incomingMachine = setup({
     events: {} as TIncomingEvent,
   },
   actions: {
-    rememberIncoming: assign(({ event }) => {
+    [EAction.LOG_TRANSITION]: (_, params: { from: string; to: string; event: string }) => {
+      logger(`State transition: ${params.from} -> ${params.to} (${params.event})`);
+    },
+    [EAction.LOG_STATE_CHANGE]: (_, params: { state: string }) => {
+      logger('IncomingCallStateMachine state changed', params.state);
+    },
+    [EAction.REMEMBER_INCOMING]: assign(({ event }) => {
       const { data } = event as { data: TRemoteCallerData };
 
       return { remoteCallerData: data, lastReason: undefined };
     }),
-    rememberReason: assign(({ event, context }) => {
+    [EAction.REMEMBER_REASON]: assign(({ event, context }) => {
       if (event.type === 'INCOMING.CONSUMED') {
         return { remoteCallerData: context.remoteCallerData, lastReason: EState.CONSUMED };
       }
@@ -59,7 +74,7 @@ const incomingMachine = setup({
         lastReason: EState.FAILED,
       };
     }),
-    clearIncoming: assign(() => {
+    [EAction.CLEAR_INCOMING]: assign(() => {
       return { remoteCallerData: undefined, lastReason: undefined };
     }),
   },
@@ -69,90 +84,274 @@ const incomingMachine = setup({
   context: {},
   states: {
     [EState.IDLE]: {
+      entry: {
+        type: EAction.LOG_STATE_CHANGE,
+        params: { state: EState.IDLE },
+      },
       on: {
         'INCOMING.RINGING': {
           target: EState.RINGING,
-          actions: ['rememberIncoming'],
+          actions: [
+            EAction.REMEMBER_INCOMING,
+            {
+              type: EAction.LOG_TRANSITION,
+              params: {
+                from: EState.IDLE,
+                to: EState.RINGING,
+                event: 'INCOMING.RINGING',
+              },
+            },
+          ],
         },
         'INCOMING.CLEAR': {
           target: EState.IDLE,
-          actions: 'clearIncoming',
+          actions: [
+            EAction.CLEAR_INCOMING,
+            {
+              type: EAction.LOG_TRANSITION,
+              params: {
+                from: EState.IDLE,
+                to: EState.IDLE,
+                event: 'INCOMING.CLEAR',
+              },
+            },
+          ],
         },
       },
     },
     [EState.RINGING]: {
+      entry: {
+        type: EAction.LOG_STATE_CHANGE,
+        params: { state: EState.RINGING },
+      },
       on: {
         'INCOMING.RINGING': {
           target: EState.RINGING,
-          actions: ['rememberIncoming'],
+          actions: [
+            EAction.REMEMBER_INCOMING,
+            {
+              type: EAction.LOG_TRANSITION,
+              params: {
+                from: EState.RINGING,
+                to: EState.RINGING,
+                event: 'INCOMING.RINGING',
+              },
+            },
+          ],
         },
         'INCOMING.CONSUMED': {
           target: EState.CONSUMED,
-          actions: 'rememberReason',
+          actions: [
+            EAction.REMEMBER_REASON,
+            {
+              type: EAction.LOG_TRANSITION,
+              params: {
+                from: EState.RINGING,
+                to: EState.CONSUMED,
+                event: 'INCOMING.CONSUMED',
+              },
+            },
+          ],
         },
         'INCOMING.DECLINED': {
           target: EState.DECLINED,
-          actions: 'rememberReason',
+          actions: [
+            EAction.REMEMBER_REASON,
+            {
+              type: EAction.LOG_TRANSITION,
+              params: {
+                from: EState.RINGING,
+                to: EState.DECLINED,
+                event: 'INCOMING.DECLINED',
+              },
+            },
+          ],
         },
         'INCOMING.TERMINATED': {
           target: EState.TERMINATED,
-          actions: 'rememberReason',
+          actions: [
+            EAction.REMEMBER_REASON,
+            {
+              type: EAction.LOG_TRANSITION,
+              params: {
+                from: EState.RINGING,
+                to: EState.TERMINATED,
+                event: 'INCOMING.TERMINATED',
+              },
+            },
+          ],
         },
         'INCOMING.FAILED': {
           target: EState.FAILED,
-          actions: 'rememberReason',
+          actions: [
+            EAction.REMEMBER_REASON,
+            {
+              type: EAction.LOG_TRANSITION,
+              params: {
+                from: EState.RINGING,
+                to: EState.FAILED,
+                event: 'INCOMING.FAILED',
+              },
+            },
+          ],
         },
         'INCOMING.CLEAR': {
           target: EState.IDLE,
-          actions: 'clearIncoming',
+          actions: [
+            EAction.CLEAR_INCOMING,
+            {
+              type: EAction.LOG_TRANSITION,
+              params: {
+                from: EState.RINGING,
+                to: EState.IDLE,
+                event: 'INCOMING.CLEAR',
+              },
+            },
+          ],
         },
       },
     },
     [EState.CONSUMED]: {
+      entry: {
+        type: EAction.LOG_STATE_CHANGE,
+        params: { state: EState.CONSUMED },
+      },
       on: {
         'INCOMING.CLEAR': {
           target: EState.IDLE,
-          actions: 'clearIncoming',
+          actions: [
+            EAction.CLEAR_INCOMING,
+            {
+              type: EAction.LOG_TRANSITION,
+              params: {
+                from: EState.CONSUMED,
+                to: EState.IDLE,
+                event: 'INCOMING.CLEAR',
+              },
+            },
+          ],
         },
         'INCOMING.RINGING': {
           target: EState.RINGING,
-          actions: ['rememberIncoming'],
+          actions: [
+            EAction.REMEMBER_INCOMING,
+            {
+              type: EAction.LOG_TRANSITION,
+              params: {
+                from: EState.CONSUMED,
+                to: EState.RINGING,
+                event: 'INCOMING.RINGING',
+              },
+            },
+          ],
         },
       },
     },
     [EState.DECLINED]: {
+      entry: {
+        type: EAction.LOG_STATE_CHANGE,
+        params: { state: EState.DECLINED },
+      },
       on: {
         'INCOMING.CLEAR': {
           target: EState.IDLE,
-          actions: 'clearIncoming',
+          actions: [
+            EAction.CLEAR_INCOMING,
+            {
+              type: EAction.LOG_TRANSITION,
+              params: {
+                from: EState.DECLINED,
+                to: EState.IDLE,
+                event: 'INCOMING.CLEAR',
+              },
+            },
+          ],
         },
         'INCOMING.RINGING': {
           target: EState.RINGING,
-          actions: ['rememberIncoming'],
+          actions: [
+            EAction.REMEMBER_INCOMING,
+            {
+              type: EAction.LOG_TRANSITION,
+              params: {
+                from: EState.DECLINED,
+                to: EState.RINGING,
+                event: 'INCOMING.RINGING',
+              },
+            },
+          ],
         },
       },
     },
     [EState.TERMINATED]: {
+      entry: {
+        type: EAction.LOG_STATE_CHANGE,
+        params: { state: EState.TERMINATED },
+      },
       on: {
         'INCOMING.CLEAR': {
           target: EState.IDLE,
-          actions: 'clearIncoming',
+          actions: [
+            EAction.CLEAR_INCOMING,
+            {
+              type: EAction.LOG_TRANSITION,
+              params: {
+                from: EState.TERMINATED,
+                to: EState.IDLE,
+                event: 'INCOMING.CLEAR',
+              },
+            },
+          ],
         },
         'INCOMING.RINGING': {
           target: EState.RINGING,
-          actions: ['rememberIncoming'],
+          actions: [
+            EAction.REMEMBER_INCOMING,
+            {
+              type: EAction.LOG_TRANSITION,
+              params: {
+                from: EState.TERMINATED,
+                to: EState.RINGING,
+                event: 'INCOMING.RINGING',
+              },
+            },
+          ],
         },
       },
     },
     [EState.FAILED]: {
+      entry: {
+        type: EAction.LOG_STATE_CHANGE,
+        params: { state: EState.FAILED },
+      },
       on: {
         'INCOMING.CLEAR': {
           target: EState.IDLE,
-          actions: 'clearIncoming',
+          actions: [
+            EAction.CLEAR_INCOMING,
+            {
+              type: EAction.LOG_TRANSITION,
+              params: {
+                from: EState.FAILED,
+                to: EState.IDLE,
+                event: 'INCOMING.CLEAR',
+              },
+            },
+          ],
         },
         'INCOMING.RINGING': {
           target: EState.RINGING,
-          actions: ['rememberIncoming'],
+          actions: [
+            EAction.REMEMBER_INCOMING,
+            {
+              type: EAction.LOG_TRANSITION,
+              params: {
+                from: EState.FAILED,
+                to: EState.RINGING,
+                event: 'INCOMING.RINGING',
+              },
+            },
+          ],
         },
       },
     },
@@ -173,6 +372,70 @@ export class IncomingCallStateMachine extends BaseStateMachine<typeof incomingMa
 
     this.subscribeIncomingEvents(incomingEvents);
     this.subscribeConnectionEvents(connectionEvents);
+  }
+
+  public get isIdle(): boolean {
+    return this.state === EState.IDLE;
+  }
+
+  public get isRinging(): boolean {
+    return this.state === EState.RINGING;
+  }
+
+  public get isConsumed(): boolean {
+    return this.state === EState.CONSUMED;
+  }
+
+  public get isDeclined(): boolean {
+    return this.state === EState.DECLINED;
+  }
+
+  public get isTerminated(): boolean {
+    return this.state === EState.TERMINATED;
+  }
+
+  public get isFailed(): boolean {
+    return this.state === EState.FAILED;
+  }
+
+  public get isActive(): boolean {
+    return this.isRinging;
+  }
+
+  public get isFinished(): boolean {
+    return this.isConsumed || this.isDeclined || this.isTerminated || this.isFailed;
+  }
+
+  public get remoteCallerData(): TRemoteCallerData | undefined {
+    return this.getSnapshot().context.remoteCallerData;
+  }
+
+  public get lastReason():
+    | EState.CONSUMED
+    | EState.DECLINED
+    | EState.TERMINATED
+    | EState.FAILED
+    | undefined {
+    return this.getSnapshot().context.lastReason;
+  }
+
+  public reset(): void {
+    this.send({ type: 'INCOMING.CLEAR' });
+  }
+
+  public send(event: TIncomingEvent): void {
+    const snapshot = this.getSnapshot();
+
+    if (!snapshot.can(event)) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[IncomingCallStateMachine] Invalid transition: ${event.type} from ${this.state}. Event cannot be processed in current state.`,
+      );
+
+      return;
+    }
+
+    super.send(event);
   }
 
   public toConsumed() {

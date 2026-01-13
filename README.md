@@ -243,6 +243,26 @@ sipConnector.on('incoming-call:incomingCall', () => {
 });
 ```
 
+### Управление состоянием входящих звонков
+
+Доступ к состоянию через IncomingCallStateMachine:
+
+```typescript
+const incomingStateMachine = sipConnector.incomingCallManager.incomingCallStateMachine;
+
+// Проверка текущего состояния
+console.log('Состояние входящего:', incomingStateMachine.state);
+console.log('Звонок поступает:', incomingStateMachine.isRinging);
+console.log('Обработан:', incomingStateMachine.isFinished);
+console.log('Данные вызывающего:', incomingStateMachine.remoteCallerData);
+console.log('Причина завершения:', incomingStateMachine.lastReason);
+
+// Сброс состояния
+if (incomingStateMachine.isFinished) {
+  incomingStateMachine.reset();
+}
+```
+
 ### Управление состоянием звонка
 
 ```typescript
