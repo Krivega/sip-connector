@@ -21,10 +21,11 @@ type TCallEvent =
   | { type: 'CALL.ACCEPTED' }
   | { type: 'CALL.CONFIRMED' }
   | { type: 'CALL.ENDED' }
-  | { type: 'CALL.FAILED'; error?: unknown };
+  | { type: 'CALL.FAILED'; error?: unknown }
+  | { type: 'CALL.RESET' };
 
 interface ICallContext {
-  lastError?: unknown;
+  lastError?: Error;
 }
 
 const callMachine = setup({
@@ -34,9 +35,14 @@ const callMachine = setup({
   },
   actions: {
     rememberError: assign(({ event }) => {
-      return {
-        lastError: 'error' in event ? event.error : undefined,
-      };
+      if ('error' in event && event.error !== undefined) {
+        return {
+          lastError:
+            event.error instanceof Error ? event.error : new Error(JSON.stringify(event.error)),
+        };
+      }
+
+      return { lastError: undefined };
     }),
     resetError: assign({ lastError: undefined }),
   },
@@ -55,8 +61,6 @@ const callMachine = setup({
           target: EState.RINGING,
           actions: 'resetError',
         },
-        'CALL.ACCEPTED': EState.ACCEPTED,
-        'CALL.CONFIRMED': EState.IN_CALL,
       },
     },
     [EState.CONNECTING]: {
@@ -69,10 +73,6 @@ const callMachine = setup({
           target: EState.FAILED,
           actions: 'rememberError',
         },
-        'CALL.CONNECTING': {
-          target: EState.CONNECTING,
-          actions: 'resetError',
-        },
       },
     },
     [EState.RINGING]: {
@@ -83,10 +83,6 @@ const callMachine = setup({
         'CALL.FAILED': {
           target: EState.FAILED,
           actions: 'rememberError',
-        },
-        'CALL.CONNECTING': {
-          target: EState.CONNECTING,
-          actions: 'resetError',
         },
       },
     },
@@ -111,26 +107,24 @@ const callMachine = setup({
     },
     [EState.ENDED]: {
       on: {
+        'CALL.RESET': {
+          target: EState.IDLE,
+          actions: 'resetError',
+        },
         'CALL.CONNECTING': {
           target: EState.CONNECTING,
           actions: 'resetError',
         },
-        'CALL.RINGING': {
-          target: EState.RINGING,
-          actions: 'resetError',
-        },
-        'CALL.CONFIRMED': EState.IN_CALL,
-        'CALL.ACCEPTED': EState.ACCEPTED,
       },
     },
     [EState.FAILED]: {
       on: {
-        'CALL.CONNECTING': {
-          target: EState.CONNECTING,
+        'CALL.RESET': {
+          target: EState.IDLE,
           actions: 'resetError',
         },
-        'CALL.RINGING': {
-          target: EState.RINGING,
+        'CALL.CONNECTING': {
+          target: EState.CONNECTING,
           actions: 'resetError',
         },
         'CALL.ENDED': {
@@ -150,6 +144,65 @@ export class CallStateMachine extends BaseStateMachine<typeof callMachine, EStat
     super(callMachine);
 
     this.subscribeToEvents(events);
+  }
+
+  public get isIdle(): boolean {
+    return this.state === EState.IDLE;
+  }
+
+  public get isConnecting(): boolean {
+    return this.state === EState.CONNECTING;
+  }
+
+  public get isRinging(): boolean {
+    return this.state === EState.RINGING;
+  }
+
+  public get isAccepted(): boolean {
+    return this.state === EState.ACCEPTED;
+  }
+
+  public get isInCall(): boolean {
+    return this.state === EState.IN_CALL;
+  }
+
+  public get isEnded(): boolean {
+    return this.state === EState.ENDED;
+  }
+
+  public get isFailed(): boolean {
+    return this.state === EState.FAILED;
+  }
+
+  public get isActive(): boolean {
+    return this.isAccepted || this.isInCall;
+  }
+
+  public get isPending(): boolean {
+    return this.isConnecting || this.isRinging;
+  }
+
+  public get lastError(): Error | undefined {
+    return this.getSnapshot().context.lastError;
+  }
+
+  public reset(): void {
+    this.send({ type: 'CALL.RESET' });
+  }
+
+  public send(event: TCallEvent): void {
+    const snapshot = this.getSnapshot();
+
+    if (!snapshot.can(event)) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[CallStateMachine] Invalid transition: ${event.type} from ${this.state}. Event cannot be processed in current state.`,
+      );
+
+      return;
+    }
+
+    super.send(event);
   }
 
   private subscribeToEvents(events: TEvents) {

@@ -74,9 +74,10 @@
 
 - Создание и управление SIP User Agent
 - Регистрация/отмена регистрации на сервере
-- Управление состояниями соединения (XState)
+- Управление состояниями соединения через ConnectionStateMachine (XState)
 - WebSocket соединения
 - SIP-операции (OPTIONS, PING)
+- Валидация переходов состояний с логированием
 
 **Основные методы**:
 
@@ -84,6 +85,17 @@
 - `register()` / `unregister()` - регистрация на сервере
 - `sendOptions()` / `ping()` - SIP-операции
 - `checkTelephony()` - проверка телефонии
+
+**Внутренние компоненты**:
+
+- **ConnectionStateMachine** - управление состояниями SIP-соединения (XState)
+  - Валидация переходов между состояниями
+  - Публичный API с геттерами: `isIdle`, `isConnecting`, `isInitializing`, `isConnected`, `isRegistered`, `isDisconnected`, `isFailed`, `isPending`, `isPendingConnect`, `isPendingInitUa`, `isActiveConnection`
+  - Типобезопасная обработка ошибок (error: Error | undefined)
+  - Детальная информация об ошибках регистрации с status_code и reason_phrase
+  - Методы: `reset()`, `startConnect()`, `startInitUa()`, `onStateChange()`, `canTransition()`, `getValidEvents()`
+  - События: `START_CONNECT`, `START_INIT_UA`, `UA_CONNECTED`, `UA_REGISTERED`, `UA_UNREGISTERED`, `UA_DISCONNECTED`, `CONNECTION_FAILED`, `RESET`
+  - Автоматическое логирование всех переходов состояний
 
 ---
 
@@ -136,6 +148,7 @@
 - Поддержка различных протоколов
 - Отслеживание изменений удаленных потоков через события
 - Управление ролями участников (participant/spectator)
+- Валидация переходов состояний через CallStateMachine
 
 **Основные методы**:
 
@@ -148,6 +161,14 @@
 - `call:remote-streams-changed` - уведомление об изменении удаленных потоков (заменяет callback `setRemoteStreams`)
 
 **Внутренние компоненты**:
+
+- **CallStateMachine** - управление состояниями звонка (XState)
+  - Валидация переходов между состояниями
+  - Публичный API с геттерами: `isIdle`, `isConnecting`, `isRinging`, `isAccepted`, `isInCall`, `isEnded`, `isFailed`, `isPending`, `isActive`
+  - Типобезопасная обработка ошибок (lastError: Error)
+  - Метод `reset()` для перехода в начальное состояние
+  - События: `CALL.CONNECTING`, `CALL.RINGING`, `CALL.ACCEPTED`, `CALL.CONFIRMED`, `CALL.ENDED`, `CALL.FAILED`, `CALL.RESET`
+  - Предотвращение недопустимых переходов с логированием
 
 - **MCUSession** - управление основным RTCSession для участников конференции
   - Создание и управление SIP-звонками через @krivega/jssip
@@ -384,9 +405,42 @@ graph TB
 #### **ConnectionStateMachine** (Состояния соединения)
 
 - Внутренний компонент ConnectionManager
-- Управление состояниями SIP соединения (XState)
-- Валидация допустимых операций
-- Предотвращение некорректных переходов
+- Управление состояниями SIP соединения через XState
+- Валидация допустимых операций с предотвращением некорректных переходов
+- Типобезопасная обработка ошибок (error: Error | undefined)
+- Детальная информация об ошибках регистрации (status_code + reason_phrase)
+- Публичный API:
+  - Геттеры состояний: `isIdle`, `isConnecting`, `isInitializing`, `isConnected`, `isRegistered`, `isDisconnected`, `isFailed`
+  - Комбинированные геттеры: `isPending` (connecting/initializing), `isPendingConnect`, `isPendingInitUa`, `isActiveConnection` (connected/registered)
+  - Геттер ошибки: `error`
+  - Методы управления: `startConnect()`, `startInitUa()`, `reset()`
+  - Методы валидации: `canTransition()`, `getValidEvents()`
+  - Подписка на изменения: `onStateChange(listener)`
+- Корректный граф переходов:
+  - IDLE → CONNECTING → INITIALIZING → CONNECTED → REGISTERED
+  - Переходы в DISCONNECTED из CONNECTING/INITIALIZING/CONNECTED/REGISTERED
+  - Переходы в FAILED из CONNECTING/INITIALIZING/CONNECTED/REGISTERED
+  - Переходы RESET: DISCONNECTED→IDLE, FAILED→IDLE
+  - Прямой переход INITIALIZING → REGISTERED (для быстрой регистрации без явного connected)
+- Автоматическое создание Error из ошибок регистрации с форматом: "Registration failed: {status_code} {reason_phrase}"
+- Логирование всех переходов и недопустимых операций
+
+#### **CallStateMachine** (Состояния звонка)
+
+- Внутренний компонент CallManager
+- Управление состояниями звонка через XState
+- Валидация переходов с предотвращением недопустимых операций
+- Типобезопасная обработка ошибок (lastError: Error вместо unknown)
+- Публичный API:
+  - Геттеры состояний: `isIdle`, `isConnecting`, `isRinging`, `isAccepted`, `isInCall`, `isEnded`, `isFailed`
+  - Комбинированные геттеры: `isPending` (connecting/ringing), `isActive` (accepted/inCall)
+  - Геттер ошибки: `lastError`
+  - Метод сброса: `reset()` для перехода в IDLE
+- Корректный граф переходов:
+  - Удалены недопустимые переходы: RINGING→CONNECTING, self-переход CONNECTING→CONNECTING, IDLE→ACCEPTED/IN_CALL, ENDED→ACCEPTED/IN_CALL
+  - Добавлены переходы RESET: ENDED→IDLE, FAILED→IDLE
+- Автоматическая конвертация ошибок из unknown в Error
+- Логирование недопустимых переходов через console.warn
 
 ---
 
@@ -401,20 +455,43 @@ stateDiagram-v2
         state connection {
             idle --> connecting: start
             connecting --> initializing: initUa
+            connecting --> disconnected: disconnected
+            connecting --> failed: failed
             initializing --> connected: uaConnected
-            connected --> registered: registered
-            registered --> disconnected: disconnected/unregistered
-            disconnected --> idle: reset
-            connected --> failed: failed
+            initializing --> registered: uaRegistered
+            initializing --> disconnected: disconnected
             initializing --> failed: failed
+            connected --> registered: uaRegistered
+            connected --> disconnected: disconnected
+            connected --> failed: failed
+            registered --> connected: uaUnregistered
+            registered --> disconnected: disconnected
+            registered --> failed: failed
+            disconnected --> idle: reset
+            failed --> idle: reset
         }
         state call {
             idle --> connecting: call.connecting
+            idle --> ringing: call.ringing
             connecting --> ringing: call.ringing
-            ringing --> accepted: call.accepted
-            accepted --> inCall: call.confirmed
-            inCall --> ended: call.ended
+            connecting --> accepted: call.accepted
+            connecting --> inCall: call.confirmed
+            connecting --> ended: call.ended
             connecting --> failed: call.failed
+            ringing --> accepted: call.accepted
+            ringing --> inCall: call.confirmed
+            ringing --> ended: call.ended
+            ringing --> failed: call.failed
+            accepted --> inCall: call.confirmed
+            accepted --> ended: call.ended
+            accepted --> failed: call.failed
+            inCall --> ended: call.ended
+            inCall --> failed: call.failed
+            ended --> idle: call.reset
+            ended --> connecting: call.connecting
+            failed --> idle: call.reset
+            failed --> connecting: call.connecting
+            failed --> ended: call.ended
         }
         state incoming {
             idle --> ringing: incoming.ringing
@@ -449,8 +526,8 @@ stateDiagram-v2
 
 | Домен        | Статусы                                                                                   | Источники событий                                                                                                                                                                                     | Доменные события                                                                                                                                                                      |
 | ------------ | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Connection   | `idle`, `connecting`, `initializing`, `connected`, `registered`, `disconnected`, `failed` | `ConnectionManager.events` (`connect-started`, `connecting`, `connect-parameters-resolve-success`, `connected`, `registered`, `unregistered`, `disconnected`, `registrationFailed`, `connect-failed`) | `CONNECTION.START`, `CONNECTION.INIT`, `CONNECTION.CONNECTED`, `CONNECTION.REGISTERED`, `CONNECTION.UNREGISTERED`, `CONNECTION.DISCONNECTED`, `CONNECTION.FAILED`, `CONNECTION.RESET` |
-| Call         | `idle`, `connecting`, `ringing`, `accepted`, `inCall`, `ended`, `failed`                  | `CallManager.events` (`connecting`, `progress`, `accepted`, `confirmed`, `ended`, `failed`)                                                                                                           | `CALL.CONNECTING`, `CALL.RINGING`, `CALL.ACCEPTED`, `CALL.CONFIRMED`, `CALL.ENDED`, `CALL.FAILED`                                                                                     |
+| Connection   | `idle`, `connecting`, `initializing`, `connected`, `registered`, `disconnected`, `failed` | `ConnectionManager.events` (`connect-started`, `connecting`, `connect-parameters-resolve-success`, `connected`, `registered`, `unregistered`, `disconnected`, `registrationFailed`, `connect-failed`) | `START_CONNECT`, `START_INIT_UA`, `UA_CONNECTED`, `UA_REGISTERED`, `UA_UNREGISTERED`, `UA_DISCONNECTED`, `CONNECTION_FAILED`, `RESET` |
+| Call         | `idle`, `connecting`, `ringing`, `accepted`, `inCall`, `ended`, `failed`                  | `CallManager.events` (`connecting`, `progress`, `accepted`, `confirmed`, `ended`, `failed`)                                                                                                           | `CALL.CONNECTING`, `CALL.RINGING`, `CALL.ACCEPTED`, `CALL.CONFIRMED`, `CALL.ENDED`, `CALL.FAILED`, `CALL.RESET`                                                                       |
 | Incoming     | `idle`, `ringing`, `consumed`, `declined`, `terminated`, `failed`                         | `IncomingCallManager.events` (`incomingCall`, `declinedIncomingCall`, `terminatedIncomingCall`, `failedIncomingCall`) + синтетика при ответе на входящий                                              | `INCOMING.RINGING`, `INCOMING.CONSUMED`, `INCOMING.DECLINED`, `INCOMING.TERMINATED`, `INCOMING.FAILED`, `INCOMING.CLEAR`                                                              |
 | Presentation | `idle`, `starting`, `active`, `stopping`, `failed`                                        | `CallManager.events` (`presentation:start\|started\|end\|ended\|failed`), `ConnectionManager.events` (`disconnected`, `registrationFailed`, `connect-failed`)                                         | `SCREEN.STARTING`, `SCREEN.STARTED`, `SCREEN.ENDING`, `SCREEN.ENDED`, `SCREEN.FAILED`, `CALL.ENDED`, `CALL.FAILED`, `CONNECTION.DISCONNECTED`, `CONNECTION.FAILED`                    |
 
