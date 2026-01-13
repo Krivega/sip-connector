@@ -138,6 +138,10 @@ class SipConnector {
     return this.callManager.isCallActive;
   }
 
+  public get isPresentationInProcess() {
+    return !!this.presentationManager.streamPresentationCurrent || this.presentationManager.isPendingPresentation;
+  }
+
   public get remoteCallerData(): IncomingCallManager['remoteCallerData'] {
     return this.incomingCallManager.remoteCallerData;
   }
@@ -435,6 +439,12 @@ class SipConnector {
     });
   }
 
+  private mayBeTriggerStoppedPresentationByServerCommand() {
+    if (this.isPresentationInProcess) {
+      this.events.trigger('stopped-presentation-by-server-command', {});
+    }
+  }
+
   private subscribeToApiEvents() {
     this.apiManager.on('participant:move-request-to-participants', () => {
       this.callManager.setCallRoleParticipant();
@@ -444,20 +454,20 @@ class SipConnector {
       this.stopPresentation().catch(() => {
         // Игнорируем ошибки при остановке презентации
       });
-      this.events.trigger('stopped-presentation-by-server-command', {});
+      this.mayBeTriggerStoppedPresentationByServerCommand()
     });
     this.apiManager.on('participant:move-request-to-spectators-with-audio-id', ({ audioId }) => {
       this.callManager.setCallRoleSpectator({ audioId, sendOffer: this.sendOffer });
       this.stopPresentation().catch(() => {
         // Игнорируем ошибки при остановке презентации
       });
-      this.events.trigger('stopped-presentation-by-server-command', {});
+      this.mayBeTriggerStoppedPresentationByServerCommand()
     });
     this.apiManager.on('mustStopPresentation', () => {
       this.stopPresentation().catch(() => {
         // Игнорируем ошибки при остановке презентации
       });
-      this.events.trigger('stopped-presentation-by-server-command', {});
+      this.mayBeTriggerStoppedPresentationByServerCommand()
     });
   }
 
