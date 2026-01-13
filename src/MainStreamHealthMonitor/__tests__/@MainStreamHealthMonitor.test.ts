@@ -216,7 +216,7 @@ describe('@MainStreamHealthMonitor', () => {
       expect(handler).toHaveBeenCalledTimes(0);
     });
 
-    it('должен очистить данные о предыдущем состоянии основного потока когда звонок завершен', () => {
+    it('reset: должен очистить данные о предыдущем состоянии основного потока', () => {
       stream.addTrack(track);
 
       Object.defineProperty(track, 'muted', { value: true, configurable: true });
