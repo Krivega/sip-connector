@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 
-import { NameAddrHeader, URI, SessionStatus } from '@krivega/jssip';
+import { NameAddrHeader, SessionStatus, URI } from '@krivega/jssip';
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
 
 import BaseSession from './BaseSession.mock';
@@ -41,6 +41,10 @@ class RTCSessionMock extends BaseSession {
   public url?: string;
 
   public status_code?: number;
+
+  public renegotiate = jest.fn(async () => {
+    return true;
+  });
 
   /**
      * answer

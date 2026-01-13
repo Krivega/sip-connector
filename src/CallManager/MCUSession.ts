@@ -2,7 +2,7 @@ import prepareMediaStream from '@/tools/prepareMediaStream';
 import { ECallCause } from './causes';
 import { EEvent, SESSION_JSSIP_EVENT_NAMES } from './events';
 
-import type { RTCSession, EndEvent } from '@krivega/jssip';
+import type { EndEvent, RTCSession } from '@krivega/jssip';
 import type { TEvents } from './events';
 import type { IMCUSession } from './types';
 
@@ -35,6 +35,14 @@ export class MCUSession implements IMCUSession {
   public getEstablishedRTCSession = (): RTCSession | undefined => {
     return this.rtcSession?.isEstablished() === true ? this.rtcSession : undefined;
   };
+
+  public async renegotiate(): Promise<boolean> {
+    if (this.rtcSession === undefined) {
+      throw new Error('No rtcSession established');
+    }
+
+    return this.rtcSession.renegotiate();
+  }
 
   public startCall: IMCUSession['startCall'] = async (
     ua,

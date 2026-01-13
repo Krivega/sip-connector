@@ -3,20 +3,18 @@ import { StatsPeerConnection } from '@/StatsPeerConnection';
 
 import type { ApiManager } from '@/ApiManager';
 import type { CallManager } from '@/CallManager';
-import type { TEventMap } from '@/StatsPeerConnection';
-
-type TStats = TEventMap['collected'];
+import type { TEventMap, TStats } from '@/StatsPeerConnection';
 
 class StatsManager {
-  public availableIncomingBitrate: number | undefined;
-
   public readonly statsPeerConnection: StatsPeerConnection;
+
+  private availableStats: TStats | undefined;
+
+  private previousAvailableStats: TStats | undefined;
 
   private readonly callManager: CallManager;
 
   private readonly apiManager: ApiManager;
-
-  private previousAvailableIncomingBitrate: number | undefined;
 
   public constructor({
     callManager,
@@ -34,6 +32,56 @@ class StatsManager {
 
   public get events() {
     return this.statsPeerConnection.events;
+  }
+
+  public get availableIncomingBitrate(): number | undefined {
+    return this.availableStats?.inbound.additional.candidatePair?.availableIncomingBitrate;
+  }
+
+  public get isNotValidFramesStats(): boolean {
+    return !this.isFramesReceived || !this.isFramesDecoded;
+  }
+
+  private get previousAvailableIncomingBitrate(): number | undefined {
+    return this.previousAvailableStats?.inbound.additional.candidatePair?.availableIncomingBitrate;
+  }
+
+  private get previousInboundRtp(): RTCInboundRtpStreamStats | undefined {
+    return this.previousAvailableStats?.inbound.video.inboundRtp;
+  }
+
+  private get previousFramesReceived(): number | undefined {
+    return this.previousInboundRtp?.framesReceived;
+  }
+
+  private get previousFramesDecoded(): number | undefined {
+    return this.previousInboundRtp?.framesDecoded;
+  }
+
+  private get inboundRtp(): RTCInboundRtpStreamStats | undefined {
+    return this.availableStats?.inbound.video.inboundRtp;
+  }
+
+  private get framesReceived(): number | undefined {
+    return this.inboundRtp?.framesReceived;
+  }
+
+  private get framesDecoded(): number | undefined {
+    return this.inboundRtp?.framesDecoded;
+  }
+
+  private get isFramesReceived(): boolean {
+    const isFramesReceived = this.framesReceived !== undefined && this.framesReceived > 0;
+    const isNotSameValue = this.framesReceived !== this.previousFramesReceived;
+
+    return isFramesReceived && isNotSameValue;
+  }
+
+  private get isFramesDecoded(): boolean {
+    const isFramesDecoded = this.framesDecoded !== undefined && this.framesDecoded > 0;
+    const isNotSameValue = this.framesDecoded !== this.previousFramesDecoded;
+
+    return isFramesDecoded && isNotSameValue;
   }
 
   public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
@@ -84,8 +132,8 @@ class StatsManager {
   }
 
   private readonly handleStatsCollected = (data: TStats) => {
-    this.previousAvailableIncomingBitrate = this.availableIncomingBitrate;
-    this.availableIncomingBitrate = data.inbound.additional.candidatePair?.availableIncomingBitrate;
+    this.previousAvailableStats = this.availableStats;
+    this.availableStats = data;
 
     this.maybeSendStats();
   };
@@ -96,8 +144,8 @@ class StatsManager {
 
   private readonly handleEnded = () => {
     this.statsPeerConnection.stop();
-    this.availableIncomingBitrate = undefined;
-    this.previousAvailableIncomingBitrate = undefined;
+    this.availableStats = undefined;
+    this.previousAvailableStats = undefined;
   };
 
   private maybeSendStats() {

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [20.2.1](https://github.com/Krivega/sip-connector/compare/v20.2.0...v20.2.1) (2026-01-13)
+
+### Bug Fixes
+
+- renegotiate when main stream has stopped due to no received or decoded inbound frames ([#63](https://github.com/Krivega/sip-connector/issues/63)) ([4f98f77](https://github.com/Krivega/sip-connector/commit/4f98f774bc4eb7d9f71dd21d725490666ca52f06))
+
 ## [20.2.0](https://github.com/Krivega/sip-connector/compare/v20.1.2...v20.2.0) (2025-12-29)
 
 ### Features

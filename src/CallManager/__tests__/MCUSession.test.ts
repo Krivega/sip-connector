@@ -393,4 +393,27 @@ describe('MCUSession - дополнительные тесты для покры
 
     await expect(mcuSession.restartIce()).rejects.toThrow('No rtcSession established');
   });
+
+  it('renegotiate: должен вызвать renegotiate у rtcSession если тот существует', async () => {
+    const rtcSession = new RTCSessionMock({
+      eventHandlers: {},
+      originator: 'remote',
+    });
+
+    // Мокаем rtcSession
+    Object.defineProperty(mcuSession, 'rtcSession', {
+      get: () => {
+        return rtcSession;
+      },
+      configurable: true,
+    });
+
+    await mcuSession.renegotiate();
+
+    expect(rtcSession.renegotiate).toHaveBeenCalledTimes(1);
+  });
+
+  it('renegotiate: должен вернуть ошибку renegotiate при вызове если rtcSession не существует', async () => {
+    await expect(mcuSession.renegotiate()).rejects.toThrow('No rtcSession established');
+  });
 });
