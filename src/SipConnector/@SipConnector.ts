@@ -456,7 +456,7 @@ class SipConnector {
       this.stopPresentation().catch(() => {
         // Игнорируем ошибки при остановке презентации
       });
-      
+
       this.events.trigger('stopped-presentation-by-server-command', {});
     }
   }
@@ -467,14 +467,14 @@ class SipConnector {
     });
     this.apiManager.on('participant:move-request-to-spectators-synthetic', () => {
       this.callManager.setCallRoleSpectatorSynthetic();
-      this.mayBeStopPresentationAndNotify()
+      this.mayBeStopPresentationAndNotify();
     });
     this.apiManager.on('participant:move-request-to-spectators-with-audio-id', ({ audioId }) => {
       this.callManager.setCallRoleSpectator({ audioId, sendOffer: this.sendOffer });
-      this.mayBeStopPresentationAndNotify()
+      this.mayBeStopPresentationAndNotify();
     });
     this.apiManager.on('mustStopPresentation', () => {
-      this.mayBeStopPresentationAndNotify()
+      this.mayBeStopPresentationAndNotify();
     });
   }
 
