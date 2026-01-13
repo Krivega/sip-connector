@@ -632,10 +632,14 @@ describe('SipConnector facade', () => {
       expect(setCallRoleSpectatorSpy).toHaveBeenCalledTimes(1);
     });
 
-    it('должен вызывать stopPresentation при событии participant:move-request-to-spectators-synthetic', async () => {
+    it('должен вызывать stopPresentation при событии participant:move-request-to-spectators-synthetic для активной презентации', async () => {
       const stopPresentationSpy = jest
         .spyOn(sipConnector, 'stopPresentation')
         .mockResolvedValue(undefined);
+
+      jest
+        .spyOn(sipConnector.presentationManager, 'isPresentationInProcess', 'get')
+        .mockReturnValue(true);
 
       // Тригерим событие на уровне ApiManager
       sipConnector.apiManager.events.trigger(
@@ -669,11 +673,15 @@ describe('SipConnector facade', () => {
       });
     });
 
-    it('должен вызывать stopPresentation при событии participant:move-request-to-spectators-with-audio-id', async () => {
+    it('должен вызывать stopPresentation при событии participant:move-request-to-spectators-with-audio-id для активной презентации', async () => {
       const stopPresentationSpy = jest
         .spyOn(sipConnector, 'stopPresentation')
         .mockResolvedValue(undefined);
       const audioId = 'test-audio-id';
+
+      jest
+        .spyOn(sipConnector.presentationManager, 'isPresentationInProcess', 'get')
+        .mockReturnValue(true);
 
       // Тригерим событие на уровне ApiManager
       sipConnector.apiManager.events.trigger(
@@ -840,6 +848,10 @@ describe('SipConnector facade', () => {
         .spyOn(sipConnector, 'stopPresentation')
         .mockResolvedValue(undefined);
 
+      jest
+        .spyOn(sipConnector.presentationManager, 'isPresentationInProcess', 'get')
+        .mockReturnValue(true);
+
       // Тригерим событие без запущенной презентации
       sipConnector.apiManager.events.trigger(
         'participant:move-request-to-spectators-synthetic',
@@ -856,6 +868,10 @@ describe('SipConnector facade', () => {
       const stopPresentationSpy = jest
         .spyOn(sipConnector, 'stopPresentation')
         .mockRejectedValue(new Error('Test error'));
+
+      jest
+        .spyOn(sipConnector.presentationManager, 'isPresentationInProcess', 'get')
+        .mockReturnValue(true);
 
       // Тригерим событие
       sipConnector.apiManager.events.trigger(
@@ -875,6 +891,11 @@ describe('SipConnector facade', () => {
       const stopPresentationSpy = jest
         .spyOn(sipConnector, 'stopPresentation')
         .mockRejectedValue(new Error('Test error'));
+
+      jest
+        .spyOn(sipConnector.presentationManager, 'isPresentationInProcess', 'get')
+        .mockReturnValue(true);
+
       const audioId = 'test-audio-id';
 
       // Тригерим событие
@@ -896,131 +917,174 @@ describe('SipConnector facade', () => {
   });
 
   describe('stopped-presentation-by-server-command event', () => {
-    it('должен триггерить событие stopped-presentation-by-server-command при событии participant:move-request-to-spectators-synthetic', async () => {
-      const handler = jest.fn();
-      const stopPresentationSpy = jest
+    let handler: jest.Mock;
+    let stopPresentationSpy: jest.SpyInstance;
+    let hasPresentationInProcessSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      handler = jest.fn();
+      stopPresentationSpy = jest
         .spyOn(sipConnector, 'stopPresentation')
         .mockResolvedValue(undefined);
-
-      sipConnector.on('stopped-presentation-by-server-command', handler);
-
-      sipConnector.apiManager.events.trigger(
-        'participant:move-request-to-spectators-synthetic',
-        {},
-      );
-
-      await Promise.resolve();
-
-      expect(stopPresentationSpy).toHaveBeenCalledTimes(1);
-      expect(handler).toHaveBeenCalledTimes(1);
-      expect(handler).toHaveBeenCalledWith({});
+      hasPresentationInProcessSpy = jest
+        .spyOn(sipConnector.presentationManager, 'isPresentationInProcess', 'get')
+        .mockReturnValue(true);
     });
 
-    it('должен триггерить событие stopped-presentation-by-server-command при событии participant:move-request-to-spectators-with-audio-id', async () => {
-      const handler = jest.fn();
-      const stopPresentationSpy = jest
-        .spyOn(sipConnector, 'stopPresentation')
-        .mockResolvedValue(undefined);
-      const audioId = 'test-audio-id';
+    describe('при событии participant:move-request-to-spectators-synthetic', () => {
+      it('должен триггерить событие stopped-presentation-by-server-command', async () => {
+        sipConnector.on('stopped-presentation-by-server-command', handler);
 
-      sipConnector.on('stopped-presentation-by-server-command', handler);
+        sipConnector.apiManager.events.trigger(
+          'participant:move-request-to-spectators-synthetic',
+          {},
+        );
 
-      sipConnector.apiManager.events.trigger(
-        'participant:move-request-to-spectators-with-audio-id',
-        {
-          audioId,
-        },
-      );
+        await Promise.resolve();
 
-      await Promise.resolve();
+        expect(stopPresentationSpy).toHaveBeenCalledTimes(1);
+        expect(handler).toHaveBeenCalledTimes(1);
+        expect(handler).toHaveBeenCalledWith({});
+      });
 
-      expect(stopPresentationSpy).toHaveBeenCalledTimes(1);
-      expect(handler).toHaveBeenCalledTimes(1);
-      expect(handler).toHaveBeenCalledWith({});
+      it('не должен триггерить событие stopped-presentation-by-server-command и останавливать презентацию, если презентация не активна', async () => {
+        hasPresentationInProcessSpy.mockReturnValue(false);
+
+        sipConnector.on('stopped-presentation-by-server-command', handler);
+
+        sipConnector.apiManager.events.trigger(
+          'participant:move-request-to-spectators-synthetic',
+          {},
+        );
+
+        await Promise.resolve();
+
+        expect(stopPresentationSpy).toHaveBeenCalledTimes(0);
+        expect(handler).toHaveBeenCalledTimes(0);
+      });
+
+      it('должен триггерить событие stopped-presentation-by-server-command даже если stopPresentation выбрасывает ошибку', async () => {
+        stopPresentationSpy.mockRejectedValue(new Error('Test error'));
+
+        sipConnector.on('stopped-presentation-by-server-command', handler);
+
+        sipConnector.apiManager.events.trigger(
+          'participant:move-request-to-spectators-synthetic',
+          {},
+        );
+
+        await Promise.resolve();
+
+        expect(stopPresentationSpy).toHaveBeenCalledTimes(1);
+        expect(handler).toHaveBeenCalledTimes(1);
+        expect(handler).toHaveBeenCalledWith({});
+      });
     });
 
-    it('должен триггерить событие stopped-presentation-by-server-command при событии mustStopPresentation', async () => {
-      const handler = jest.fn();
-      const stopPresentationSpy = jest
-        .spyOn(sipConnector, 'stopPresentation')
-        .mockResolvedValue(undefined);
+    describe('при событии participant:move-request-to-spectators-with-audio-id', () => {
+      it('должен триггерить событие stopped-presentation-by-server-command', async () => {
+        const audioId = 'test-audio-id';
 
-      sipConnector.on('stopped-presentation-by-server-command', handler);
+        sipConnector.on('stopped-presentation-by-server-command', handler);
 
-      sipConnector.apiManager.events.trigger('mustStopPresentation', {});
+        sipConnector.apiManager.events.trigger(
+          'participant:move-request-to-spectators-with-audio-id',
+          {
+            audioId,
+          },
+        );
 
-      await Promise.resolve();
+        await Promise.resolve();
 
-      expect(stopPresentationSpy).toHaveBeenCalledTimes(1);
-      expect(handler).toHaveBeenCalledTimes(1);
-      expect(handler).toHaveBeenCalledWith({});
+        expect(stopPresentationSpy).toHaveBeenCalledTimes(1);
+        expect(handler).toHaveBeenCalledTimes(1);
+        expect(handler).toHaveBeenCalledWith({});
+      });
+
+      it('не должен триггерить событие stopped-presentation-by-server-command и останавливать презентацию, если презентация не активна', async () => {
+        const audioId = 'test-audio-id';
+
+        hasPresentationInProcessSpy.mockReturnValue(false);
+
+        sipConnector.on('stopped-presentation-by-server-command', handler);
+
+        sipConnector.apiManager.events.trigger(
+          'participant:move-request-to-spectators-with-audio-id',
+          {
+            audioId,
+          },
+        );
+
+        await Promise.resolve();
+
+        expect(stopPresentationSpy).toHaveBeenCalledTimes(0);
+        expect(handler).toHaveBeenCalledTimes(0);
+      });
+
+      it('должен триггерить событие stopped-presentation-by-server-command даже если stopPresentation выбрасывает ошибку', async () => {
+        const audioId = 'test-audio-id';
+
+        stopPresentationSpy.mockRejectedValue(new Error('Test error'));
+
+        sipConnector.on('stopped-presentation-by-server-command', handler);
+
+        sipConnector.apiManager.events.trigger(
+          'participant:move-request-to-spectators-with-audio-id',
+          {
+            audioId,
+          },
+        );
+
+        await Promise.resolve();
+
+        expect(stopPresentationSpy).toHaveBeenCalledTimes(1);
+        expect(handler).toHaveBeenCalledTimes(1);
+        expect(handler).toHaveBeenCalledWith({});
+      });
     });
 
-    it('должен триггерить событие stopped-presentation-by-server-command даже если stopPresentation выбрасывает ошибку для participant:move-request-to-spectators-synthetic', async () => {
-      const handler = jest.fn();
-      const stopPresentationSpy = jest
-        .spyOn(sipConnector, 'stopPresentation')
-        .mockRejectedValue(new Error('Test error'));
+    describe('при событии mustStopPresentation', () => {
+      it('должен триггерить событие stopped-presentation-by-server-command', async () => {
+        sipConnector.on('stopped-presentation-by-server-command', handler);
 
-      sipConnector.on('stopped-presentation-by-server-command', handler);
+        sipConnector.apiManager.events.trigger('mustStopPresentation', {});
 
-      sipConnector.apiManager.events.trigger(
-        'participant:move-request-to-spectators-synthetic',
-        {},
-      );
+        await Promise.resolve();
 
-      await Promise.resolve();
+        expect(stopPresentationSpy).toHaveBeenCalledTimes(1);
+        expect(handler).toHaveBeenCalledTimes(1);
+        expect(handler).toHaveBeenCalledWith({});
+      });
 
-      expect(stopPresentationSpy).toHaveBeenCalledTimes(1);
-      expect(handler).toHaveBeenCalledTimes(1);
-      expect(handler).toHaveBeenCalledWith({});
-    });
+      it('не должен триггерить событие stopped-presentation-by-server-command и останавливать презентацию, если презентация не активна', async () => {
+        hasPresentationInProcessSpy.mockReturnValue(false);
 
-    it('должен триггерить событие stopped-presentation-by-server-command даже если stopPresentation выбрасывает ошибку для participant:move-request-to-spectators-with-audio-id', async () => {
-      const handler = jest.fn();
-      const stopPresentationSpy = jest
-        .spyOn(sipConnector, 'stopPresentation')
-        .mockRejectedValue(new Error('Test error'));
-      const audioId = 'test-audio-id';
+        sipConnector.on('stopped-presentation-by-server-command', handler);
 
-      sipConnector.on('stopped-presentation-by-server-command', handler);
+        sipConnector.apiManager.events.trigger('mustStopPresentation', {});
 
-      sipConnector.apiManager.events.trigger(
-        'participant:move-request-to-spectators-with-audio-id',
-        {
-          audioId,
-        },
-      );
+        await Promise.resolve();
 
-      await Promise.resolve();
+        expect(stopPresentationSpy).toHaveBeenCalledTimes(0);
+        expect(handler).toHaveBeenCalledTimes(0);
+      });
 
-      expect(stopPresentationSpy).toHaveBeenCalledTimes(1);
-      expect(handler).toHaveBeenCalledTimes(1);
-      expect(handler).toHaveBeenCalledWith({});
-    });
+      it('должен триггерить событие stopped-presentation-by-server-command даже если stopPresentation выбрасывает ошибку', async () => {
+        stopPresentationSpy.mockRejectedValue(new Error('Test error'));
 
-    it('должен триггерить событие stopped-presentation-by-server-command даже если stopPresentation выбрасывает ошибку для mustStopPresentation', async () => {
-      const handler = jest.fn();
-      const stopPresentationSpy = jest
-        .spyOn(sipConnector, 'stopPresentation')
-        .mockRejectedValue(new Error('Test error'));
+        sipConnector.on('stopped-presentation-by-server-command', handler);
 
-      sipConnector.on('stopped-presentation-by-server-command', handler);
+        sipConnector.apiManager.events.trigger('mustStopPresentation', {});
 
-      sipConnector.apiManager.events.trigger('mustStopPresentation', {});
+        await Promise.resolve();
 
-      await Promise.resolve();
-
-      expect(stopPresentationSpy).toHaveBeenCalledTimes(1);
-      expect(handler).toHaveBeenCalledTimes(1);
-      expect(handler).toHaveBeenCalledWith({});
+        expect(stopPresentationSpy).toHaveBeenCalledTimes(1);
+        expect(handler).toHaveBeenCalledTimes(1);
+        expect(handler).toHaveBeenCalledWith({});
+      });
     });
 
     it('должен поддерживать once для события stopped-presentation-by-server-command', async () => {
-      const handler = jest.fn();
-
-      jest.spyOn(sipConnector, 'stopPresentation').mockResolvedValue(undefined);
-
       sipConnector.once('stopped-presentation-by-server-command', handler);
 
       sipConnector.apiManager.events.trigger('mustStopPresentation', {});
@@ -1036,8 +1100,6 @@ describe('SipConnector facade', () => {
     });
 
     it('должен поддерживать wait для события stopped-presentation-by-server-command', async () => {
-      jest.spyOn(sipConnector, 'stopPresentation').mockResolvedValue(undefined);
-
       const waitPromise = sipConnector.wait('stopped-presentation-by-server-command');
 
       sipConnector.apiManager.events.trigger('mustStopPresentation', {});

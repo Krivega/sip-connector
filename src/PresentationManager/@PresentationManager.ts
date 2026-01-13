@@ -49,6 +49,10 @@ class PresentationManager {
     return !!this.promisePendingStartPresentation || !!this.promisePendingStopPresentation;
   }
 
+  public get isPresentationInProcess(): boolean {
+    return !!this.streamPresentationCurrent || this.isPendingPresentation;
+  }
+
   // eslint-disable-next-line @typescript-eslint/max-params
   public async startPresentation(
     beforeStartPresentation: () => Promise<void>,

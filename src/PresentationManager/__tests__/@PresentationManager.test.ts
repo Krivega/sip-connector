@@ -350,6 +350,64 @@ describe('PresentationManager', () => {
     expect(manager.isPendingPresentation).toBe(false);
   });
 
+  describe('isPresentationInProcess', () => {
+    let promise: Promise<MediaStream | undefined>;
+
+    beforeEach(() => {
+      promise = Promise.resolve(undefined);
+    });
+
+    afterEach(() => {
+      promise.catch(() => {});
+    });
+
+    it('должен возвращать false, когда нет streamPresentationCurrent и isPendingPresentation false', () => {
+      expect(manager.streamPresentationCurrent).toBeUndefined();
+      expect(manager.isPendingPresentation).toBe(false);
+      expect(manager.isPresentationInProcess).toBe(false);
+    });
+
+    it('должен возвращать true во время запуска презентации', () => {
+      promise = manager.startPresentation(beforeStartPresentation, mediaStream);
+
+      expect(manager.isPendingPresentation).toBe(true);
+      expect(manager.isPresentationInProcess).toBe(true);
+    });
+
+    it('должен возвращать true, когда есть streamPresentationCurrent', async () => {
+      await manager.startPresentation(beforeStartPresentation, mediaStream);
+
+      expect(manager.streamPresentationCurrent).toBeDefined();
+      expect(manager.isPresentationInProcess).toBe(true);
+    });
+
+    it('должен возвращать true, когда есть streamPresentationCurrent и isPendingPresentation true', () => {
+      promise = manager.startPresentation(beforeStartPresentation, mediaStream);
+
+      expect(manager.streamPresentationCurrent).toBeDefined();
+      expect(manager.isPendingPresentation).toBe(true);
+      expect(manager.isPresentationInProcess).toBe(true);
+    });
+
+    it('должен возвращать true во время остановки презентации', async () => {
+      await manager.startPresentation(beforeStartPresentation, mediaStream);
+
+      promise = manager.stopPresentation(beforeStopPresentation);
+
+      expect(manager.isPendingPresentation).toBe(true);
+      expect(manager.isPresentationInProcess).toBe(true);
+    });
+
+    it('должен возвращать false после полной остановки презентации', async () => {
+      await manager.startPresentation(beforeStartPresentation, mediaStream);
+      await manager.stopPresentation(beforeStopPresentation);
+
+      expect(manager.streamPresentationCurrent).toBeUndefined();
+      expect(manager.isPendingPresentation).toBe(false);
+      expect(manager.isPresentationInProcess).toBe(false);
+    });
+  });
+
   it('reset сбрасывает все состояния', async () => {
     await manager.startPresentation(beforeStartPresentation, mediaStream);
     // @ts-ignore

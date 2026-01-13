@@ -441,29 +441,30 @@ class SipConnector {
     });
   }
 
+  private mayBeStopPresentationAndNotify() {
+    if (this.presentationManager.isPresentationInProcess) {
+      this.stopPresentation().catch(() => {
+        // Игнорируем ошибки при остановке презентации
+      });
+      
+      this.events.trigger('stopped-presentation-by-server-command', {});
+    }
+  }
+
   private subscribeToApiEvents() {
     this.apiManager.on('participant:move-request-to-participants', () => {
       this.callManager.setCallRoleParticipant();
     });
     this.apiManager.on('participant:move-request-to-spectators-synthetic', () => {
       this.callManager.setCallRoleSpectatorSynthetic();
-      this.stopPresentation().catch(() => {
-        // Игнорируем ошибки при остановке презентации
-      });
-      this.events.trigger('stopped-presentation-by-server-command', {});
+      this.mayBeStopPresentationAndNotify()
     });
     this.apiManager.on('participant:move-request-to-spectators-with-audio-id', ({ audioId }) => {
       this.callManager.setCallRoleSpectator({ audioId, sendOffer: this.sendOffer });
-      this.stopPresentation().catch(() => {
-        // Игнорируем ошибки при остановке презентации
-      });
-      this.events.trigger('stopped-presentation-by-server-command', {});
+      this.mayBeStopPresentationAndNotify()
     });
     this.apiManager.on('mustStopPresentation', () => {
-      this.stopPresentation().catch(() => {
-        // Игнорируем ошибки при остановке презентации
-      });
-      this.events.trigger('stopped-presentation-by-server-command', {});
+      this.mayBeStopPresentationAndNotify()
     });
   }
 
