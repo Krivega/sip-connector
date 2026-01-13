@@ -38,21 +38,19 @@ describe('@MainStreamHealthMonitor', () => {
   let statsManager: StatsManager;
   let callManager: CallManager;
 
-  let streams: MediaStream[];
-  let stream: MediaStream;
+  let mainStream: MediaStream;
   let track: ReturnType<typeof createVideoMediaStreamTrackMock>;
 
   const handler = jest.fn();
 
   beforeEach(() => {
-    stream = new MediaStream();
+    mainStream = new MediaStream();
     track = createVideoMediaStreamTrackMock({ id: 'v1' });
-    streams = [];
     statsEvents = createStatsEvents();
     statsManager = { on: statsEvents.on.bind(statsEvents) } as unknown as StatsManager;
     callManager = {
-      getRemoteStreams: () => {
-        return streams;
+      getMainStream: () => {
+        return mainStream;
       },
     } as unknown as CallManager;
   });
@@ -63,12 +61,10 @@ describe('@MainStreamHealthMonitor', () => {
 
   describe('NO_INBOUND_FRAMES_EVENT_NAME', () => {
     it('должен эмитить событие когда основной видеотрек live и muted, а inbound не получает кадры', () => {
-      stream.addTrack(track);
+      mainStream.addTrack(track);
 
       Object.defineProperty(track, 'muted', { value: true, configurable: true });
       Object.defineProperty(track, 'readyState', { value: 'live', configurable: true });
-
-      streams = [stream];
 
       const monitor = new MainStreamHeathMonitor(statsManager, callManager);
 
@@ -79,12 +75,10 @@ describe('@MainStreamHealthMonitor', () => {
     });
 
     it('должен эмитить событие когда основной видеотрек live и muted, а inbound не декодирует кадры', () => {
-      stream.addTrack(track);
+      mainStream.addTrack(track);
 
       Object.defineProperty(track, 'muted', { value: true, configurable: true });
       Object.defineProperty(track, 'readyState', { value: 'live', configurable: true });
-
-      streams = [stream];
 
       const monitor = new MainStreamHeathMonitor(statsManager, callManager);
 
@@ -95,12 +89,10 @@ describe('@MainStreamHealthMonitor', () => {
     });
 
     it('не должен эмитить событие когда основной видеотрек не live', () => {
-      stream.addTrack(track);
+      mainStream.addTrack(track);
 
       Object.defineProperty(track, 'muted', { value: true, configurable: true });
       Object.defineProperty(track, 'readyState', { value: 'ended', configurable: true });
-
-      streams = [stream];
 
       const monitor = new MainStreamHeathMonitor(statsManager, callManager);
 
@@ -111,12 +103,10 @@ describe('@MainStreamHealthMonitor', () => {
     });
 
     it('не должен эмитить событие когда основной видеотрек не muted', () => {
-      stream.addTrack(track);
+      mainStream.addTrack(track);
 
       Object.defineProperty(track, 'muted', { value: false, configurable: true });
       Object.defineProperty(track, 'readyState', { value: 'live', configurable: true });
-
-      streams = [stream];
 
       const monitor = new MainStreamHeathMonitor(statsManager, callManager);
 
@@ -127,12 +117,10 @@ describe('@MainStreamHealthMonitor', () => {
     });
 
     it('не должен эмитить событие когда inbound получает и декодирует кадры кадры', () => {
-      stream.addTrack(track);
+      mainStream.addTrack(track);
 
       Object.defineProperty(track, 'muted', { value: true, configurable: true });
       Object.defineProperty(track, 'readyState', { value: 'live', configurable: true });
-
-      streams = [stream];
 
       const monitor = new MainStreamHeathMonitor(statsManager, callManager);
 
@@ -152,8 +140,6 @@ describe('@MainStreamHealthMonitor', () => {
     });
 
     it('не должен эмитить событие когда в основном потоке нет видеотреков', () => {
-      streams = [stream];
-
       const monitor = new MainStreamHeathMonitor(statsManager, callManager);
 
       monitor.on(NO_INBOUND_FRAMES_EVENT_NAME, handler);
@@ -163,12 +149,10 @@ describe('@MainStreamHealthMonitor', () => {
     });
 
     it('должен эмитить событие когда основной видеотрек live и muted, а inbound перестал получать кадры', () => {
-      stream.addTrack(track);
+      mainStream.addTrack(track);
 
       Object.defineProperty(track, 'muted', { value: true, configurable: true });
       Object.defineProperty(track, 'readyState', { value: 'live', configurable: true });
-
-      streams = [stream];
 
       const monitor = new MainStreamHeathMonitor(statsManager, callManager);
 
@@ -181,12 +165,10 @@ describe('@MainStreamHealthMonitor', () => {
     });
 
     it('должен эмитить событие когда основной видеотрек live и muted, а inbound перестал декодировать кадры', () => {
-      stream.addTrack(track);
+      mainStream.addTrack(track);
 
       Object.defineProperty(track, 'muted', { value: true, configurable: true });
       Object.defineProperty(track, 'readyState', { value: 'live', configurable: true });
-
-      streams = [stream];
 
       const monitor = new MainStreamHeathMonitor(statsManager, callManager);
 
@@ -199,12 +181,10 @@ describe('@MainStreamHealthMonitor', () => {
     });
 
     it('не должен эмитить событие когда основной видеотрек live и muted, а inbound продолжает получать и декодировать кадры', () => {
-      stream.addTrack(track);
+      mainStream.addTrack(track);
 
       Object.defineProperty(track, 'muted', { value: true, configurable: true });
       Object.defineProperty(track, 'readyState', { value: 'live', configurable: true });
-
-      streams = [stream];
 
       const monitor = new MainStreamHeathMonitor(statsManager, callManager);
 
@@ -217,12 +197,10 @@ describe('@MainStreamHealthMonitor', () => {
     });
 
     it('reset: должен очистить данные о предыдущем состоянии основного потока', () => {
-      stream.addTrack(track);
+      mainStream.addTrack(track);
 
       Object.defineProperty(track, 'muted', { value: true, configurable: true });
       Object.defineProperty(track, 'readyState', { value: 'live', configurable: true });
-
-      streams = [stream];
 
       const monitor = new MainStreamHeathMonitor(statsManager, callManager);
 

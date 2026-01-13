@@ -48,7 +48,7 @@ describe('SipConnector facade', () => {
     Object.defineProperty(track, 'muted', { value: true, configurable: true });
     Object.defineProperty(track, 'readyState', { value: 'live', configurable: true });
 
-    jest.spyOn(sipConnector.callManager, 'getRemoteStreams').mockReturnValue([stream]);
+    jest.spyOn(sipConnector.callManager, 'getMainStream').mockReturnValue(stream);
 
     // @ts-expect-error - доступ к приватному свойству
     const spyRecover = jest.spyOn(sipConnector.mainStreamRecovery, 'recover');

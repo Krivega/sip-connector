@@ -144,6 +144,12 @@ class CallManager {
     return { ...this.callConfiguration };
   }
 
+  public getMainStream(): MediaStream | undefined {
+    const manager = this.getActiveStreamsManager();
+
+    return manager.mainStream;
+  }
+
   public getRemoteStreams(): MediaStream[] {
     const manager = this.getActiveStreamsManager();
 

@@ -295,4 +295,17 @@ describe('RemoteStreamsManager', () => {
     expect(changed).toBe(false);
     expect(manager.getStreams('p1')).toHaveLength(1);
   });
+
+  it('mainStream: должен вернуть основной поток при его наличии', () => {
+    const video = withLabel(createVideoMediaStreamTrackMock({ id: 'v1' }), 'p1');
+
+    manager.addTrack(video);
+
+    expect(manager.mainStream).toBeDefined();
+    expect(manager.mainStream?.getVideoTracks()).toEqual([video]);
+  });
+
+  it('mainStream: должен вернуть undefined при отсутствии основного видео-потока', () => {
+    expect(manager.mainStream).toBeUndefined();
+  });
 });

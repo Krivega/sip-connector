@@ -137,6 +137,26 @@ describe('CallManager', () => {
     expect(spy).toHaveBeenCalled();
   });
 
+  it('getMainStream: должен вернуть основной поток при его наличии', () => {
+    const stream = new MediaStream();
+
+    // @ts-expect-error - доступ к приватному методу для теста
+    jest.spyOn(callManager, 'getActiveStreamsManager').mockReturnValue({
+      mainStream: stream,
+    } as unknown as RemoteStreamsManager);
+
+    expect(callManager.getMainStream()).toBe(stream);
+  });
+
+  it('getMainStream: должен вернуть undefined при отсутствии основного потока', () => {
+    // @ts-expect-error - доступ к приватному методу для теста
+    jest.spyOn(callManager, 'getActiveStreamsManager').mockReturnValue({
+      mainStream: undefined,
+    } as unknown as RemoteStreamsManager);
+
+    expect(callManager.getMainStream()).toBeUndefined();
+  });
+
   it('replaceMediaStream: заменяет поток', async () => {
     const rtcSession = new RTCSessionMock({
       eventHandlers: {},

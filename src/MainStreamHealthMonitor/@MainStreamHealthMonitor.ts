@@ -24,15 +24,10 @@ class MainStreamHealthMonitor implements TMainStreamHealthMonitor {
     this.subscribe();
   }
 
-  private get mainStream(): MediaStream | undefined {
-    const streams: (MediaStream | undefined)[] = this.callManager.getRemoteStreams();
-    const [mainStream] = streams;
-
-    return mainStream;
-  }
-
   private get mainVideoTrack(): MediaStreamVideoTrack | undefined {
-    return this.mainStream?.getVideoTracks()[0];
+    const mainStream = this.callManager.getMainStream();
+
+    return mainStream?.getVideoTracks()[0];
   }
 
   private get isMutedMainVideoTrack(): boolean {
