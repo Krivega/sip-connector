@@ -12,6 +12,10 @@
 
 ### 📞 [События CallManager](./call-events.md)
 
+### 📥 [События IncomingCallManager](./incoming-call-events.md)
+
+### 🖥️ [События PresentationManager](./presentation-events.md)
+
 ### 🔄 [События AutoConnectorManager](./auto-connector-events.md)
 
 ### 🌐 [События ApiManager](./api-events.md)
