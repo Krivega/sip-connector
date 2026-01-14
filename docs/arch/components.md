@@ -265,6 +265,71 @@
 - Сбор WebRTC статистики через StatsPeerConnection
 - Мониторинг качества соединения
 - Отслеживание доступной входящей пропускной способности
+- Определение проблем с обработкой входящих фреймов
+
+**Основные методы**:
+
+- `availableIncomingBitrate` - получение доступной входящей пропускной способности
+- `isInvalidInboundFrames` - проверка проблем с обработкой фреймов (пакеты приходят, но фреймы не обрабатываются)
+- `isReceivingPackets` - проверка получения входящих пакетов
+
+**События**:
+
+- `collected` - генерируется при сборе новой статистики
+
+---
+
+## MainStreamHealthMonitor (Мониторинг здоровья потока)
+
+**Назначение**: Мониторинг здоровья основного входящего видеопотока.
+
+**Ключевые возможности**:
+
+- Обнаружение проблем с обработкой фреймов (пакеты приходят, но фреймы не обрабатываются)
+- Проверка состояния основного видеотрека (muted)
+- Генерация событий при обнаружении проблем
+
+**Основные методы**:
+
+- `on()` - подписка на события
+
+**События**:
+
+- `no-inbound-frames` - генерируется при отсутствии входящих кадров в основном потоке
+
+**Зависимости**:
+
+- `StatsManager` - для получения статистики (геттер `isInvalidInboundFrames`, событие `collected`)
+- `CallManager` - для получения основного видеопотока (метод `getMainStream()`)
+
+**Принцип работы**: Подписывается на события сбора статистики от StatsManager. При обнаружении проблемы (пакеты приходят, но фреймы не обрабатываются) и если основной видеотрек находится в состоянии muted, генерирует событие `no-inbound-frames`.
+
+---
+
+## MainStreamRecovery (Восстановление потока)
+
+**Назначение**: Автоматическое восстановление основного видеопотока при обнаружении проблем.
+
+**Ключевые возможности**:
+
+- Автоматический запуск renegotiate при обнаружении проблем
+- Throttling запросов renegotiate (по умолчанию 3000ms)
+- Предотвращение параллельных запросов renegotiate
+- Автоматическая отмена операций при окончании звонка
+
+**Основные методы**:
+
+- `recover()` - запуск процесса восстановления потока
+
+**Зависимости**:
+
+- `CallManager` - для выполнения renegotiate (метод `renegotiate()`)
+
+**Параметры конструктора**:
+
+- `throttleRecoveryTimeout` - интервал throttling для предотвращения частых renegotiate (по умолчанию 3000ms)
+
+**Принцип работы**: При вызове `recover()` выполняет throttled renegotiate через CallManager. Использует CancelableRequest для предотвращения параллельных запросов. Автоматически отменяет все операции при окончании звонка.
 
 ---
 
@@ -278,3 +343,38 @@
 - Адаптивное опрашивание изменений треков
 - Управление параметрами кодирования
 - Планирование и остановка балансировки
+
+---
+
+## Диаграмма потока мониторинга и восстановления
+
+Следующая диаграмма показывает взаимодействие компонентов при мониторинге здоровья основного видеопотока и его автоматическом восстановлении:
+
+```mermaid
+sequenceDiagram
+    participant StatsManager
+    participant MainStreamHealthMonitor
+    participant SipConnector
+    participant MainStreamRecovery
+    participant CallManager
+
+    loop Сбор статистики
+        StatsManager->>StatsManager: Сбор WebRTC статистики
+        StatsManager->>StatsManager: Проверка isInvalidInboundFrames<br/>(пакеты приходят, но фреймы не обрабатываются)
+        StatsManager->>MainStreamHealthMonitor: Событие 'collected'
+    end
+
+    MainStreamHealthMonitor->>MainStreamHealthMonitor: Проверка isInvalidInboundFrames
+    MainStreamHealthMonitor->>CallManager: Получение основного видеопотока
+    CallManager-->>MainStreamHealthMonitor: mainVideoTrack
+    MainStreamHealthMonitor->>MainStreamHealthMonitor: Проверка isMutedMainVideoTrack
+
+    alt Проблема обнаружена
+        MainStreamHealthMonitor->>SipConnector: Событие 'no-inbound-frames'
+        SipConnector->>MainStreamRecovery: recover()
+        MainStreamRecovery->>MainStreamRecovery: Throttling (3000ms)
+        MainStreamRecovery->>CallManager: renegotiate()
+        CallManager->>CallManager: Выполнение renegotiate
+        CallManager-->>MainStreamRecovery: Результат renegotiate
+    end
+```

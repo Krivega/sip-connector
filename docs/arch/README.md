@@ -24,6 +24,8 @@
 - PresentationManager (Презентации)
 - IncomingCallManager (Входящие звонки)
 - StatsManager (Статистика)
+- MainStreamHealthMonitor (Мониторинг здоровья основного потока)
+- MainStreamRecovery (Восстановление основного потока)
 - VideoSendingBalancerManager (Балансировка видео)
 
 ### 🔄 [Модель состояний (XState)](./state-machines.md)
