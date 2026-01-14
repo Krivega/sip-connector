@@ -539,6 +539,7 @@ class SipConnector {
     this.bridgeEvents('auto-connect', this.autoConnectorManager);
     this.bridgeEvents('connection', this.connectionManager);
     this.bridgeEvents('call', this.callManager);
+    this.bridgeEvents('conference-state', this.conferenceStateManager);
     this.bridgeEvents('api', this.apiManager);
     this.bridgeEvents('incoming-call', this.incomingCallManager);
     this.bridgeEvents('presentation', this.presentationManager);
