@@ -6,6 +6,8 @@
 
 ### 📡 [События ConnectionManager](./connection-events.md)
 
+### 🔄 [События AutoConnectorManager](./auto-connector-events.md)
+
 ---
 
 **Примечание**: Дополнительная документация доступна в [Рецепты](../recipes/README.md).
