@@ -1,6 +1,6 @@
 # События ConnectionManager
 
-ConnectionManager генерирует события на различных этапах жизненного цикла SIP-соединения. Все события доступны через префикс `connection:*` в `SipConnector`.
+`ConnectionManager` генерирует события на различных этапах жизненного цикла SIP-соединения. Все события доступны через префикс `connection:*` в `SipConnector`.
 
 ## События
 
@@ -25,7 +25,7 @@ ConnectionManager генерирует события на различных э
 
 ## Структуры данных
 
-### TParametersConnection
+### `TParametersConnection`
 
 ```typescript
 {
@@ -45,7 +45,7 @@ ConnectionManager генерирует события на различных э
 }
 ```
 
-### TConnectionConfigurationWithUa
+### `TConnectionConfigurationWithUa`
 
 ```typescript
 {

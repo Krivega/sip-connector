@@ -6,6 +6,8 @@
 
 ### 📡 [События ConnectionManager](./connection-events.md)
 
+### 📞 [События CallManager](./call-events.md)
+
 ### 🔄 [События AutoConnectorManager](./auto-connector-events.md)
 
 ---
