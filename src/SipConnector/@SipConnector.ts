@@ -49,7 +49,7 @@ class SipConnector {
 
   public readonly session: ISession;
 
-  private readonly mainStreamHealthMonitor: MainStreamHealthMonitor;
+  public readonly mainStreamHealthMonitor: MainStreamHealthMonitor;
 
   private readonly mainStreamRecovery: MainStreamRecovery;
 
@@ -544,6 +544,7 @@ class SipConnector {
     this.bridgeEvents('presentation', this.presentationManager);
     this.bridgeEvents('stats', this.statsManager);
     this.bridgeEvents('video-balancer', this.videoSendingBalancerManager);
+    this.bridgeEvents('main-stream-health', this.mainStreamHealthMonitor);
 
     this.subscribeToApiEvents();
     this.subscribeDisconnectedFromOutOfCall();

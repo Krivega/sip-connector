@@ -86,6 +86,7 @@ describe('SipConnector events', () => {
     const incomingCallHandler = jest.fn();
     const presentationHandler = jest.fn();
     const statsHandler = jest.fn();
+    const mainStreamHealthHandler = jest.fn();
 
     // Подписываемся на события от разных менеджеров
     sipConnector.events.on('auto-connect:success', autoConnectHandler);
@@ -95,6 +96,7 @@ describe('SipConnector events', () => {
     sipConnector.events.on('incoming-call:incomingCall', incomingCallHandler);
     sipConnector.events.on('presentation:presentation:start', presentationHandler);
     sipConnector.events.on('stats:collected', statsHandler);
+    sipConnector.events.on('main-stream-health:no-inbound-frames', mainStreamHealthHandler);
 
     const stats = {
       outbound: {
@@ -130,6 +132,8 @@ describe('SipConnector events', () => {
     // @ts-expect-error
     sipConnector.statsManager.events.trigger('collected', stats);
 
+    sipConnector.mainStreamHealthMonitor.events.trigger('no-inbound-frames', {});
+
     // Проверяем, что каждый обработчик был вызван с правильными данными
     expect(autoConnectHandler).toHaveBeenCalledWith(undefined);
     expect(connectionHandler).toHaveBeenCalledWith({
@@ -145,6 +149,7 @@ describe('SipConnector events', () => {
     });
     expect(presentationHandler).toHaveBeenCalledWith(mediaStream);
     expect(statsHandler).toHaveBeenCalledWith(stats);
+    expect(mainStreamHealthHandler).toHaveBeenCalledWith({});
 
     // Проверяем, что каждый обработчик был вызван только один раз
     expect(autoConnectHandler).toHaveBeenCalledTimes(1);
@@ -154,5 +159,6 @@ describe('SipConnector events', () => {
     expect(incomingCallHandler).toHaveBeenCalledTimes(1);
     expect(presentationHandler).toHaveBeenCalledTimes(1);
     expect(statsHandler).toHaveBeenCalledTimes(1);
+    expect(mainStreamHealthHandler).toHaveBeenCalledTimes(1);
   });
 });

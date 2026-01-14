@@ -5,6 +5,7 @@ import { AUTO_CONNECTOR_MANAGER_EVENT_NAMES } from '@/AutoConnectorManager';
 import { CALL_MANAGER_EVENT_NAMES } from '@/CallManager';
 import { CONNECTION_MANAGER_EVENT_NAMES } from '@/ConnectionManager';
 import { INCOMING_CALL_MANAGER_EVENT_NAMES } from '@/IncomingCallManager';
+import { MAIN_STREAM_HEALTH_MONITOR_EVENT_NAMES } from '@/MainStreamHealthMonitor';
 import { PRESENTATION_MANAGER_EVENT_NAMES } from '@/PresentationManager';
 import { STATS_MANAGER_EVENT_NAMES } from '@/StatsManager';
 import { VIDEO_SENDING_BALANCER_MANAGER_EVENT_NAMES } from '@/VideoSendingBalancerManager';
@@ -17,6 +18,7 @@ import type {
   TConnectionManagerEventMap,
 } from '@/ConnectionManager';
 import type { TIncomingCallManagerEventMap } from '@/IncomingCallManager';
+import type { TMainStreamHealthMonitorEventMap } from '@/MainStreamHealthMonitor';
 import type { TPresentationManagerEventMap } from '@/PresentationManager';
 import type { TStatsManagerEventMap } from '@/StatsManager';
 import type { TVideoSendingBalancerManagerEventMap } from '@/VideoSendingBalancerManager';
@@ -46,6 +48,9 @@ const STATS_EVENTS = STATS_MANAGER_EVENT_NAMES.map((eventName) => {
 const VIDEO_BALANCER_EVENTS = VIDEO_SENDING_BALANCER_MANAGER_EVENT_NAMES.map((eventName) => {
   return `video-balancer:${eventName}` as const;
 });
+const MAIN_STREAM_HEALTH_EVENTS = MAIN_STREAM_HEALTH_MONITOR_EVENT_NAMES.map((eventName) => {
+  return `main-stream-health:${eventName}` as const;
+});
 
 const SIP_CONNECTOR_EVENTS = [
   'disconnected-from-out-of-call',
@@ -62,6 +67,7 @@ export const EVENT_NAMES = [
   ...PRESENTATION_EVENTS,
   ...STATS_EVENTS,
   ...VIDEO_BALANCER_EVENTS,
+  ...MAIN_STREAM_HEALTH_EVENTS,
   ...SIP_CONNECTOR_EVENTS,
 ] as const;
 
@@ -86,6 +92,7 @@ export type TEventMap = PrefixedEventMap<TAutoConnectorManagerEventMap, 'auto-co
   PrefixedEventMap<TPresentationManagerEventMap, 'presentation'> &
   PrefixedEventMap<TStatsManagerEventMap, 'stats'> &
   PrefixedEventMap<TVideoSendingBalancerManagerEventMap, 'video-balancer'> &
+  PrefixedEventMap<TMainStreamHealthMonitorEventMap, 'main-stream-health'> &
   TSipConnectorEventMap;
 
 export type TEvents = TypedEvents<TEventMap>;
