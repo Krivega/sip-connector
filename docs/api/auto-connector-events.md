@@ -1,4 +1,4 @@
-# События AutoConnectorManager
+# События `AutoConnectorManager`
 
 `AutoConnectorManager` генерирует события в процессе автоматического переподключения к SIP-серверу. Все события доступны через префикс `auto-connect:*` в `SipConnector`.
 
