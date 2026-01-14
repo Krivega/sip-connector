@@ -1,0 +1,50 @@
+# API и экспорты
+
+## Основные классы
+
+```typescript
+import {
+  SipConnector, // Низкоуровневый API
+  SipConnectorFacade, // Высокоуровневый фасад
+  StatsPeerConnection, // Сбор статистики
+  // ... другие экспорты
+} from 'sip-connector';
+```
+
+## Методы управления соединением
+
+```typescript
+// SipConnectorFacade методы
+const facade = new SipConnectorFacade(sipConnector);
+
+// Замена медиа-потока
+await facade.replaceMediaStream(mediaStream, options);
+
+// Получение удаленных потоков
+const streams = facade.getRemoteStreams();
+
+// Перезапуск ICE-соединения (низкоуровневый API)
+await sipConnector.callManager.restartIce(options);
+```
+
+## Утилиты и типы
+
+```typescript
+import {
+  // Утилиты
+  tools, // getUserAgent, getExtraHeaders, hasPurgatory
+  hasAvailableStats, // Проверка доступности статистики
+
+  // Константы
+  EStatsTypes, // Типы статистики
+  EMimeTypesVideoCodecs, // MIME-типы кодеков
+  EUseLicense, // Типы лицензий
+
+  // Типы
+  type TContentHint, // Подсказки для кодирования
+  type TInboundStats, // Входящая статистика
+  type TOutboundStats, // Исходящая статистика
+  type TRestartData, // Данные события restart
+  type ITransceiverStorage, // Интерфейс хранения transceiver'ов
+} from 'sip-connector';
+```
