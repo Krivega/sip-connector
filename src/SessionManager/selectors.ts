@@ -1,7 +1,8 @@
 import {
   EIncomingStatus,
   ECallStatus,
-  type EConnectionStatus,
+  ESystemStatus,
+  EConnectionStatus,
   type EPresentationStatus,
   type TSessionSnapshot,
 } from './types';
@@ -38,6 +39,66 @@ const selectIsInCall = (snapshot: TSessionSnapshot): boolean => {
   return status === ECallStatus.IN_CALL || status === ECallStatus.ACCEPTED;
 };
 
+/**
+ * Селектор для определения комбинированного состояния системы
+ * на основе состояний Connection и Call машин
+ */
+const selectSystemStatus = (snapshot: TSessionSnapshot): ESystemStatus => {
+  const connectionStatus = selectConnectionStatus(snapshot);
+  const callStatus = selectCallStatus(snapshot);
+
+  // Приоритет: состояние соединения важнее состояния звонка
+  // Если соединение не установлено, звонок невозможен
+
+  // Соединение не установлено или отключено
+  if (
+    connectionStatus === EConnectionStatus.IDLE ||
+    connectionStatus === EConnectionStatus.DISCONNECTED
+  ) {
+    return ESystemStatus.DISCONNECTED;
+  }
+
+  // Ошибка соединения
+  if (connectionStatus === EConnectionStatus.FAILED) {
+    return ESystemStatus.CONNECTION_FAILED;
+  }
+
+  // Идет процесс подключения
+  if (
+    connectionStatus === EConnectionStatus.PREPARING ||
+    connectionStatus === EConnectionStatus.CONNECTING ||
+    connectionStatus === EConnectionStatus.CONNECTED ||
+    connectionStatus === EConnectionStatus.REGISTERED
+  ) {
+    return ESystemStatus.CONNECTING;
+  }
+
+  // Соединение установлено (ESTABLISHED)
+  // Теперь определяем состояние на основе звонка
+  switch (callStatus) {
+    case ECallStatus.IDLE: {
+      return ESystemStatus.READY;
+    }
+    case ECallStatus.CONNECTING: {
+      return ESystemStatus.CALL_CONNECTING;
+    }
+    case ECallStatus.ACCEPTED:
+    case ECallStatus.IN_CALL: {
+      return ESystemStatus.CALL_ACTIVE;
+    }
+    case ECallStatus.ENDED: {
+      return ESystemStatus.CALL_ENDED;
+    }
+    case ECallStatus.FAILED: {
+      return ESystemStatus.CALL_FAILED;
+    }
+    default: {
+      // Fallback на READY для неизвестных состояний call
+      return ESystemStatus.READY;
+    }
+  }
+};
+
 export const sessionSelectors = {
   selectConnectionStatus,
   selectCallStatus,
@@ -45,4 +106,5 @@ export const sessionSelectors = {
   selectIncomingRemoteCaller,
   selectPresentationStatus,
   selectIsInCall,
+  selectSystemStatus,
 };

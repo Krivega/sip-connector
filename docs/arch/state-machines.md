@@ -206,6 +206,67 @@ stateDiagram-v2
 - Автоматическая очистка при потере соединения (через ConnectionManager events: disconnected, registrationFailed, connect-failed)
 - Полное логирование всех переходов состояний и недопустимых операций через console.warn
 
+## Комбинированное состояние системы (ESystemStatus)
+
+Для упрощения работы клиентов с состоянием системы создан механизм комбинирования состояний Connection и Call машин в единое состояние `ESystemStatus`. Это позволяет клиенту однозначно определить текущее состояние системы без необходимости анализировать комбинации состояний вручную.
+
+### Логика приоритетов
+
+При определении комбинированного состояния применяется следующая логика приоритетов:
+
+1. **Состояние соединения имеет приоритет** — если соединение не установлено, звонок невозможен
+2. **Если connection IDLE/DISCONNECTED** → `DISCONNECTED`
+3. **Если connection FAILED** → `CONNECTION_FAILED`
+4. **Если connection PREPARING/CONNECTING/CONNECTED/REGISTERED** → `CONNECTING` (независимо от состояния call)
+5. **Если connection ESTABLISHED**:
+   - call IDLE → `READY`
+   - call CONNECTING → `CALL_CONNECTING`
+   - call ACCEPTED/IN_CALL → `CALL_ACTIVE`
+   - call ENDED → `CALL_ENDED`
+   - call FAILED → `CALL_FAILED`
+
+### Состояния ESystemStatus
+
+| Состояние | Описание | Условия |
+| :-------- | :------- | :------ |
+| `DISCONNECTED` | Система не подключена | connection: IDLE или DISCONNECTED |
+| `CONNECTING` | Идет процесс подключения | connection: PREPARING, CONNECTING, CONNECTED или REGISTERED |
+| `READY` | Соединение установлено, готово к звонкам | connection: ESTABLISHED, call: IDLE |
+| `CALL_CONNECTING` | Идет установка звонка | connection: ESTABLISHED, call: CONNECTING |
+| `CALL_ACTIVE` | Звонок активен | connection: ESTABLISHED, call: ACCEPTED или IN_CALL |
+| `CALL_ENDED` | Звонок завершен | connection: ESTABLISHED, call: ENDED |
+| `CONNECTION_FAILED` | Ошибка соединения | connection: FAILED |
+| `CALL_FAILED` | Ошибка звонка | connection: ESTABLISHED, call: FAILED |
+
+### Использование
+
+```typescript
+import { sessionSelectors, ESystemStatus } from '@krivega/sip-connector';
+
+// Подписка на комбинированное состояние
+sipConnector.session.subscribe(
+  sessionSelectors.selectSystemStatus,
+  (status) => {
+    switch (status) {
+      case ESystemStatus.READY:
+        // Система готова к звонкам
+        break;
+      case ESystemStatus.CALL_ACTIVE:
+        // Звонок активен
+        break;
+      // ... другие состояния
+    }
+  },
+);
+```
+
+### Преимущества
+
+- **Однозначность**: клиент получает одно значение вместо необходимости анализировать комбинацию двух состояний
+- **Приоритет соединения**: состояние соединения автоматически учитывается при определении состояния системы
+- **Типобезопасность**: enum обеспечивает проверку типов на этапе компиляции
+- **Простота использования**: один селектор вместо комбинации двух
+
 ## Тестирование
 
 - Табличные тесты для переходов каждой машины.

@@ -17,8 +17,6 @@ type TLog = {
 class LogsManager {
   private logs: TLog[] = [];
 
-  private expanded = false;
-
   private renderedLogsCount = 0;
 
   private filterText = '';
@@ -106,10 +104,6 @@ class LogsManager {
   }
 
   public subscribe(): void {
-    dom.toggleLogsButtonElement.addEventListener('click', () => {
-      this.toggleExpanded();
-    });
-
     dom.clearLogsButtonElement.addEventListener('click', () => {
       this.clearLogs();
     });
@@ -157,31 +151,21 @@ class LogsManager {
     this.updateUI();
   }
 
-  private readonly toggleExpanded = (): void => {
-    this.expanded = !this.expanded;
-    this.updateUI();
-  };
-
   private updateLogs(name: string, event: unknown): void {
     const now = Date.now();
 
     this.logs = [...this.logs, { name, event, timestamp: now, time: LogsManager.formatTime(now) }];
 
-    // Если список уже отрендерен, проверяем нужно ли добавить новый элемент
-    if (this.expanded) {
-      const lastLog = this.logs.at(-1);
+    const lastLog = this.logs.at(-1);
 
-      if (lastLog && this.shouldShowLog(lastLog)) {
-        // Если фильтр активен, перерисовываем весь список
-        if (this.filterText) {
-          this.renderLogsList();
-        } else if (this.renderedLogsCount < this.logs.length) {
-          // Если фильтра нет, просто добавляем новый элемент
-          this.appendNewLog(lastLog, this.logs.length - 1);
-        }
+    if (lastLog && this.shouldShowLog(lastLog)) {
+      // Если фильтр активен, перерисовываем весь список
+      if (this.filterText) {
+        this.renderLogsList();
+      } else if (this.renderedLogsCount < this.logs.length) {
+        // Если фильтра нет, просто добавляем новый элемент
+        this.appendNewLog(lastLog, this.logs.length - 1);
       }
-    } else {
-      this.updateUI();
     }
   }
 
@@ -390,9 +374,7 @@ class LogsManager {
   }
 
   private applyFilter(): void {
-    if (this.expanded) {
-      this.renderLogsList();
-    }
+    this.renderLogsList();
   }
 
   private renderLogsList(): void {
@@ -420,16 +402,9 @@ class LogsManager {
   }
 
   private updateUI(): void {
-    dom.logsContainerElement.style.display = '';
+    dom.show(dom.logsContainerElement);
 
-    dom.toggleLogsButtonElement.textContent = this.expanded ? 'close logs' : 'open logs';
-
-    if (this.expanded) {
-      this.renderLogsList();
-      dom.logsListElement.style.display = '';
-    } else {
-      dom.logsListElement.style.display = 'none';
-    }
+    this.renderLogsList();
   }
 }
 

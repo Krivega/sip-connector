@@ -12,6 +12,7 @@ class Statuses {
       call: string;
       incoming: string;
       presentation: string;
+      system: string;
     }) => void,
   ) {
     this.subscribeSessionStatuses((snapshot) => {
@@ -20,6 +21,7 @@ class Statuses {
         call: sessionSelectors.selectCallStatus(snapshot),
         incoming: sessionSelectors.selectIncomingStatus(snapshot),
         presentation: sessionSelectors.selectPresentationStatus(snapshot),
+        system: sessionSelectors.selectSystemStatus(snapshot),
       });
     });
   }

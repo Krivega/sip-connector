@@ -55,6 +55,27 @@ const unsubscribeMultiple = sipConnector.session.subscribe(
   },
 );
 
+// Подписка на комбинированное состояние системы
+import { ESystemStatus } from '@krivega/sip-connector';
+
+const unsubscribeSystem = sipConnector.session.subscribe(
+  sessionSelectors.selectSystemStatus,
+  (status) => {
+    switch (status) {
+      case ESystemStatus.READY:
+        console.log('Система готова к звонкам');
+        break;
+      case ESystemStatus.CALL_ACTIVE:
+        console.log('Звонок активен');
+        break;
+      case ESystemStatus.CONNECTING:
+        console.log('Идет подключение');
+        break;
+      // ... другие состояния
+    }
+  },
+);
+
 // ...
 unsubscribe(); // Когда больше не нужно слушать
 ```
@@ -67,6 +88,22 @@ unsubscribe(); // Когда больше не нужно слушать
 - `selectIncomingRemoteCaller` - данные входящего звонка
 - `selectPresentationStatus` - статус презентации
 - `selectIsInCall` - проверка, активен ли звонок
+- `selectSystemStatus` - комбинированное состояние системы (объединяет connection и call)
+
+### Комбинированное состояние системы (ESystemStatus)
+
+Селектор `selectSystemStatus` возвращает одно из следующих состояний, объединяющих состояния Connection и Call машин:
+
+- `DISCONNECTED` - система не подключена (connection: IDLE/DISCONNECTED)
+- `CONNECTING` - идет процесс подключения (connection: PREPARING/CONNECTING/CONNECTED/REGISTERED)
+- `READY` - соединение установлено, готово к звонкам (connection: ESTABLISHED, call: IDLE)
+- `CALL_CONNECTING` - идет установка звонка (connection: ESTABLISHED, call: CONNECTING)
+- `CALL_ACTIVE` - звонок активен (connection: ESTABLISHED, call: ACCEPTED/IN_CALL)
+- `CALL_ENDED` - звонок завершен (connection: ESTABLISHED, call: ENDED)
+- `CONNECTION_FAILED` - ошибка соединения (connection: FAILED)
+- `CALL_FAILED` - ошибка звонка (connection: ESTABLISHED, call: FAILED)
+
+Этот селектор позволяет клиенту однозначно определить текущее состояние системы без необходимости анализировать комбинации состояний Connection и Call вручную.
 
 ## Подписка на события
 
@@ -97,3 +134,4 @@ connection.subscribe((snapshot) => {
 2. Подпишитесь через селекторы и синхронизируйте store (MobX/MST/Redux) только по изменившимся срезам.
 3. Принимая входящие звонки, используйте `selectIncomingStatus/selectIncomingRemoteCaller` и действуйте по `consumed/declined`.
 4. Для UI статусов звонка используйте `selectCallStatus`, для блокировок по соединению — `selectConnectionStatus`.
+5. Для определения общего состояния системы используйте `selectSystemStatus` — это упростит логику UI и избавит от необходимости комбинировать состояния Connection и Call вручную.

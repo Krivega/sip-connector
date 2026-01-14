@@ -1,0 +1,221 @@
+body {
+  padding-bottom: 100px;
+}
+
+.loader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  background-color: white;
+  padding: 2rem;
+  border-radius: 8px;
+}
+
+.loader-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loader-message {
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.floating-action-panel {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 1rem;
+  z-index: 100;
+  background-color: white;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.1),
+    0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.floating-action-panel button {
+  min-width: 150px;
+}
+
+#endCallButton {
+  background-color: #dc3545;
+  color: white;
+  border-color: #dc3545;
+}
+
+#endCallButton:hover {
+  background-color: #c82333;
+  border-color: #bd2130;
+}
+
+#callButton {
+  background-color: #28a745;
+  color: white;
+  border-color: #28a745;
+}
+
+#callButton:hover {
+  background-color: #218838;
+  border-color: #1e7e34;
+}
+
+#toggleCameraButton.enabled,
+#toggleMicButton.enabled {
+  background-color: #6c757d;
+  color: white;
+  border-color: #6c757d;
+}
+
+#toggleCameraButton.enabled:hover,
+#toggleMicButton.enabled:hover {
+  background-color: #5a6268;
+  border-color: #545b62;
+}
+
+#toggleCameraButton.disabled,
+#toggleMicButton.disabled {
+  background-color: #17a2b8;
+  color: white;
+  border-color: #17a2b8;
+}
+
+#toggleCameraButton.disabled:hover,
+#toggleMicButton.disabled:hover {
+  background-color: #138496;
+  border-color: #117a8b;
+}
+
+#remoteStreamsContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.remote-stream-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background-color: #000;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.remote-stream-container video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.remote-stream-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent);
+  color: white;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  z-index: 10;
+}
+
+#logsContainer {
+  margin-top: 2rem;
+}
+
+#clearLogsButton {
+  background-color: #dc3545;
+  color: white;
+  border-color: #dc3545;
+}
+
+#clearLogsButton:hover {
+  background-color: #c82333;
+  border-color: #bd2130;
+}
+
+#logsList {
+  max-height: 600px;
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  font-size: 12px;
+  margin-top: 1rem;
+}
+
+.local-video {
+  max-height: 200px;
+}
+
+.status-box {
+  padding: 0.75rem 1rem;
+  background-color: #e8f4f8;
+  border-radius: 6px;
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.session-statuses {
+  padding: 0.75rem 1rem;
+  background-color: #f7f7f7;
+  border-radius: 6px;
+  font-weight: 500;
+  color: #2c3e50;
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 0.35rem 0.75rem;
+}
+
+.logs-controls {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filter-logs-input {
+  padding: 0.5rem;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  min-width: 200px;
+  margin-left: auto;
+}
+
+.loader-overlay {
+  display: flex;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.hidden {
+  display: none !important;
+}

@@ -187,11 +187,13 @@ class App {
     call: string;
     incoming: string;
     presentation: string;
+    system: string;
   }): void {
     dom.connectionStatusElement.textContent = statuses.connection;
     dom.callStatusElement.textContent = statuses.call;
     dom.incomingStatusElement.textContent = statuses.incoming;
     dom.presentationStatusElement.textContent = statuses.presentation;
+    dom.systemStatusElement.textContent = statuses.system;
   }
 
   /**
@@ -228,15 +230,15 @@ class App {
     dom.endCallButtonElement.disabled = state !== 'active';
 
     if (state === 'active') {
-      dom.callButtonElement.style.display = 'none';
-      dom.endCallButtonElement.style.display = '';
-      dom.toggleCameraButtonElement.style.display = '';
-      dom.toggleMicButtonElement.style.display = '';
+      dom.hide(dom.callButtonElement);
+      dom.show(dom.endCallButtonElement);
+      dom.show(dom.toggleCameraButtonElement);
+      dom.show(dom.toggleMicButtonElement);
     } else {
-      dom.callButtonElement.style.display = '';
-      dom.endCallButtonElement.style.display = 'none';
-      dom.toggleCameraButtonElement.style.display = 'none';
-      dom.toggleMicButtonElement.style.display = 'none';
+      dom.show(dom.callButtonElement);
+      dom.hide(dom.endCallButtonElement);
+      dom.hide(dom.toggleCameraButtonElement);
+      dom.hide(dom.toggleMicButtonElement);
     }
 
     // Показываем/скрываем секции в зависимости от состояния
@@ -247,12 +249,20 @@ class App {
       state === 'calling' ||
       state === 'active';
 
-    dom.localVideoSectionElement.style.display = shouldShowLocalVideo ? '' : 'none';
+    if (shouldShowLocalVideo) {
+      dom.show(dom.localVideoSectionElement);
+    } else {
+      dom.hide(dom.localVideoSectionElement);
+    }
 
     // Общий контейнер для секций активного звонка показываем только когда звонок активен
     const shouldShowActiveCallSection = state === 'active';
 
-    dom.activeCallSectionElement.style.display = shouldShowActiveCallSection ? '' : 'none';
+    if (shouldShowActiveCallSection) {
+      dom.show(dom.activeCallSectionElement);
+    } else {
+      dom.hide(dom.activeCallSectionElement);
+    }
 
     // Обновляем состояние кнопок камеры и микрофона
     this.updateMediaButtonsState();

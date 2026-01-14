@@ -197,8 +197,13 @@ class FormStateManager {
   private updateAuthFieldsVisibility(): void {
     const state = this.formState.getState();
 
-    dom.userNumberLabel.style.display = state.authEnabled ? '' : 'none';
-    dom.passwordLabel.style.display = state.authEnabled ? '' : 'none';
+    if (state.authEnabled) {
+      dom.show(dom.userNumberLabel);
+      dom.show(dom.passwordLabel);
+    } else {
+      dom.hide(dom.userNumberLabel);
+      dom.hide(dom.passwordLabel);
+    }
   }
 
   /**

@@ -39,6 +39,11 @@ import {
   EStatsTypes, // Типы статистики
   EMimeTypesVideoCodecs, // MIME-типы кодеков
   EUseLicense, // Типы лицензий
+  ESystemStatus, // Комбинированное состояние системы (Connection + Call)
+  ECallStatus, // Состояния звонка
+  EConnectionStatus, // Состояния соединения
+  EIncomingStatus, // Состояния входящего звонка
+  EPresentationStatus, // Состояния презентации
 
   // Типы
   type TContentHint, // Подсказки для кодирования

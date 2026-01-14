@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/class-methods-use-this */
 type TDomIds = {
   overlayId: string;
   callButtonId: string;
@@ -17,9 +18,9 @@ type TDomIds = {
   callStatusId: string;
   incomingStatusId: string;
   presentationStatusId: string;
+  systemStatusId: string;
   logsContainerId: string;
   logsListId: string;
-  toggleLogsButtonId: string;
   clearLogsButtonId: string;
   filterLogsInputId: string;
 };
@@ -102,11 +103,11 @@ class DOM {
 
   public presentationStatusElement: HTMLElement;
 
+  public systemStatusElement: HTMLElement;
+
   public logsContainerElement: HTMLElement;
 
   public logsListElement: HTMLElement;
-
-  public toggleLogsButtonElement: HTMLButtonElement;
 
   public clearLogsButtonElement: HTMLButtonElement;
 
@@ -131,9 +132,9 @@ class DOM {
     callStatusId,
     incomingStatusId,
     presentationStatusId,
+    systemStatusId,
     logsContainerId,
     logsListId,
-    toggleLogsButtonId,
     clearLogsButtonId,
     filterLogsInputId,
   }: TDomIds) {
@@ -189,11 +190,54 @@ class DOM {
     this.callStatusElement = getElementById(callStatusId);
     this.incomingStatusElement = getElementById(incomingStatusId);
     this.presentationStatusElement = getElementById(presentationStatusId);
+    this.systemStatusElement = getElementById(systemStatusId);
     this.logsContainerElement = getElementById(logsContainerId);
     this.logsListElement = getElementById(logsListId);
-    this.toggleLogsButtonElement = getElementById<HTMLButtonElement>(toggleLogsButtonId);
     this.clearLogsButtonElement = getElementById<HTMLButtonElement>(clearLogsButtonId);
     this.filterLogsInputElement = getElementById<HTMLInputElement>(filterLogsInputId);
+  }
+
+  /**
+   * Показывает элемент, удаляя класс hidden
+   */
+  public show(element: HTMLElement): void {
+    element.classList.remove('hidden');
+  }
+
+  /**
+   * Скрывает элемент, добавляя класс hidden
+   */
+  public hide(element: HTMLElement): void {
+    element.classList.add('hidden');
+  }
+
+  /**
+   * Переключает видимость элемента
+   * @param element - элемент для переключения
+   * @param force - если указан, принудительно показывает (true) или скрывает (false)
+   */
+  public toggle(element: HTMLElement, force?: boolean): void {
+    if (force === undefined) {
+      element.classList.toggle('hidden');
+    } else if (force) {
+      this.show(element);
+    } else {
+      this.hide(element);
+    }
+  }
+
+  /**
+   * Проверяет, скрыт ли элемент (имеет класс hidden)
+   */
+  public isHidden(element: HTMLElement): boolean {
+    return element.classList.contains('hidden');
+  }
+
+  /**
+   * Проверяет, видим ли элемент (не имеет класс hidden)
+   */
+  public isVisible(element: HTMLElement): boolean {
+    return !this.isHidden(element);
   }
 }
 
@@ -216,9 +260,9 @@ export const dom = new DOM({
   callStatusId: 'callStatus',
   incomingStatusId: 'incomingStatus',
   presentationStatusId: 'presentationStatus',
+  systemStatusId: 'systemStatus',
   logsContainerId: 'logsContainer',
   logsListId: 'logsList',
-  toggleLogsButtonId: 'toggleLogsButton',
   clearLogsButtonId: 'clearLogsButton',
   filterLogsInputId: 'filterLogsInput',
 });

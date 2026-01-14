@@ -22,7 +22,7 @@ class LoaderManager {
   public show(message = 'Загрузка...'): void {
     if (this.messageElement) {
       this.messageElement.textContent = message;
-      dom.overlayElement.style.display = 'flex';
+      dom.show(dom.overlayElement);
     }
   }
 
@@ -31,7 +31,7 @@ class LoaderManager {
    */
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   public hide(): void {
-    dom.overlayElement.style.display = 'none';
+    dom.hide(dom.overlayElement);
   }
 
   /**
@@ -70,7 +70,7 @@ class LoaderManager {
     dom.overlayElement.append(loaderContainer);
 
     // Изначально скрываем overlay
-    dom.overlayElement.style.display = 'none';
+    dom.hide(dom.overlayElement);
   }
 }
 

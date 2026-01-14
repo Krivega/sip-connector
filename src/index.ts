@@ -13,6 +13,7 @@ export {
   EConnectionStatus,
   EIncomingStatus,
   EPresentationStatus,
+  ESystemStatus,
 } from './SessionManager';
 export * as tools from './tools';
 export { EMimeTypesVideoCodecs } from './types';

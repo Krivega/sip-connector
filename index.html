@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css" />
+    <link rel="stylesheet" href="/styles.css" />
 
     <title>Demo sip-connector call</title>
   </head>
@@ -66,12 +67,12 @@
         </label>
       </form>
 
-      <section id="localVideoSection" style="display: none">
+      <section id="localVideoSection" class="hidden">
         <h3>Локальное видео</h3>
-        <video style="max-height: 200px" id="localVideo" autoplay playsinline muted></video>
+        <video class="local-video" id="localVideo" autoplay playsinline muted></video>
       </section>
 
-      <section id="activeCallSection" style="display: none">
+      <section id="activeCallSection" class="hidden">
         <section>
           <h3>Удаленные потоки</h3>
           <div id="remoteStreamsContainer"></div>
@@ -79,285 +80,49 @@
 
         <section>
           <h3>Статус</h3>
-          <div
-            id="participantRole"
-            style="
-              padding: 0.75rem 1rem;
-              background-color: #e8f4f8;
-              border-radius: 6px;
-              font-weight: 500;
-              color: #2c3e50;
-            "
-          ></div>
+          <div id="participantRole" class="status-box"></div>
         </section>
 
         <section>
           <h3>Лицензия</h3>
-          <div
-            id="useLicense"
-            style="
-              padding: 0.75rem 1rem;
-              background-color: #e8f4f8;
-              border-radius: 6px;
-              font-weight: 500;
-              color: #2c3e50;
-            "
-          ></div>
+          <div id="useLicense" class="status-box"></div>
         </section>
       </section>
 
       <section>
         <h3>Статусы</h3>
-        <div
-          id="sessionStatuses"
-          style="
-            padding: 0.75rem 1rem;
-            background-color: #f7f7f7;
-            border-radius: 6px;
-            font-weight: 500;
-            color: #2c3e50;
-            display: grid;
-            grid-template-columns: 160px 1fr;
-            gap: 0.35rem 0.75rem;
-          "
-        >
+        <div id="sessionStatuses" class="session-statuses">
           <span>Connection</span><span id="connectionStatus">-</span> <span>Call</span
           ><span id="callStatus">-</span> <span>Incoming</span><span id="incomingStatus">-</span>
-          <span>Screen share</span><span id="presentationStatus">-</span>
+          <span>Screen share</span><span id="presentationStatus">-</span> <span>System</span
+          ><span id="systemStatus">-</span>
         </div>
       </section>
 
-      <section id="logsContainer" style="display: none">
+      <section id="logsContainer" class="hidden">
         <h3>Логи событий</h3>
-        <div
-          style="
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-            align-items: center;
-          "
-        >
-          <button id="toggleLogsButton" type="button">open logs</button>
+        <div class="logs-controls">
           <button id="clearLogsButton" type="button">clear logs</button>
           <input
             id="filterLogsInput"
             type="text"
             placeholder="Имя события..."
-            style="
-              padding: 0.5rem;
-              border: 1px solid #dee2e6;
-              border-radius: 4px;
-              min-width: 200px;
-              margin-left: auto;
-            "
+            class="filter-logs-input"
           />
         </div>
-        <div id="logsList" style="display: none; margin-top: 1rem"></div>
+        <div id="logsList"></div>
       </section>
     </main>
 
-    <div
-      id="loaderOverlay"
-      style="
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
-        z-index: 1000;
-        justify-content: center;
-        align-items: center;
-        flex-direction: column;
-      "
-    ></div>
-
-    <style>
-      body {
-        padding-bottom: 100px;
-      }
-
-      .loader-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 1rem;
-        background-color: white;
-        padding: 2rem;
-        border-radius: 8px;
-      }
-
-      .loader-spinner {
-        width: 40px;
-        height: 40px;
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid #3498db;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
-
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
-      }
-
-      .loader-message {
-        font-size: 1.1rem;
-        color: #333;
-      }
-
-      .floating-action-panel {
-        position: fixed;
-        bottom: 2rem;
-        left: 50%;
-        transform: translateX(-50%);
-        display: flex;
-        gap: 1rem;
-        z-index: 100;
-        background-color: white;
-        padding: 1rem 2rem;
-        border-radius: 8px;
-        box-shadow:
-          0 4px 6px rgba(0, 0, 0, 0.1),
-          0 2px 4px rgba(0, 0, 0, 0.06);
-      }
-
-      .floating-action-panel button {
-        min-width: 150px;
-      }
-
-      #endCallButton {
-        background-color: #dc3545;
-        color: white;
-        border-color: #dc3545;
-      }
-
-      #endCallButton:hover {
-        background-color: #c82333;
-        border-color: #bd2130;
-      }
-
-      #callButton {
-        background-color: #28a745;
-        color: white;
-        border-color: #28a745;
-      }
-
-      #callButton:hover {
-        background-color: #218838;
-        border-color: #1e7e34;
-      }
-
-      #toggleCameraButton.enabled,
-      #toggleMicButton.enabled {
-        background-color: #6c757d;
-        color: white;
-        border-color: #6c757d;
-      }
-
-      #toggleCameraButton.enabled:hover,
-      #toggleMicButton.enabled:hover {
-        background-color: #5a6268;
-        border-color: #545b62;
-      }
-
-      #toggleCameraButton.disabled,
-      #toggleMicButton.disabled {
-        background-color: #17a2b8;
-        color: white;
-        border-color: #17a2b8;
-      }
-
-      #toggleCameraButton.disabled:hover,
-      #toggleMicButton.disabled:hover {
-        background-color: #138496;
-        border-color: #117a8b;
-      }
-
-      #remoteStreamsContainer {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 1rem;
-        margin-top: 1rem;
-      }
-
-      .remote-stream-container {
-        position: relative;
-        width: 100%;
-        aspect-ratio: 16 / 9;
-        background-color: #000;
-        border-radius: 8px;
-        overflow: hidden;
-      }
-
-      .remote-stream-container video {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-
-      .remote-stream-label {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent);
-        color: white;
-        padding: 0.5rem 1rem;
-        font-size: 0.9rem;
-        z-index: 10;
-      }
-
-      #logsContainer {
-        margin-top: 2rem;
-      }
-
-      #toggleLogsButton {
-        background-color: #6c757d;
-        color: white;
-        border-color: #6c757d;
-      }
-
-      #toggleLogsButton:hover {
-        background-color: #5a6268;
-        border-color: #545b62;
-      }
-
-      #clearLogsButton {
-        background-color: #dc3545;
-        color: white;
-        border-color: #dc3545;
-      }
-
-      #clearLogsButton:hover {
-        background-color: #c82333;
-        border-color: #bd2130;
-      }
-
-      #logsList {
-        max-height: 600px;
-        overflow-y: auto;
-        border: 1px solid #dee2e6;
-        border-radius: 6px;
-        padding: 1rem;
-        background-color: #f8f9fa;
-        font-size: 12px;
-      }
-    </style>
+    <div id="loaderOverlay" class="loader-overlay hidden"></div>
 
     <div class="floating-action-panel">
       <button id="callButton" type="button">Позвонить</button>
-      <button id="endCallButton" type="button" style="display: none">Завершить звонок</button>
-      <button id="toggleCameraButton" type="button" style="display: none">
+      <button id="endCallButton" type="button" class="hidden">Завершить звонок</button>
+      <button id="toggleCameraButton" type="button" class="hidden">
         <span id="toggleCameraButtonText">Выключить камеру</span>
       </button>
-      <button id="toggleMicButton" type="button" style="display: none">
+      <button id="toggleMicButton" type="button" class="hidden">
         <span id="toggleMicButtonText">Выключить микрофон</span>
       </button>
     </div>

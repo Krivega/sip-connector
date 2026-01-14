@@ -3,6 +3,7 @@ import { EState as EConnectionStatus } from '@/ConnectionManager/ConnectionState
 import { EState as EIncomingStatus } from '@/IncomingCallManager/IncomingCallStateMachine';
 import { EState as EPresentationStatus } from '@/PresentationManager/PresentationStateMachine';
 import { sessionSelectors } from '../selectors';
+import { ESystemStatus } from '../types';
 
 import type { TRemoteCallerData } from '@/IncomingCallManager';
 import type { TSessionSnapshot } from '../types';
@@ -324,6 +325,261 @@ describe('sessionSelectors', () => {
 
         expect(sessionSelectors.selectIsInCall(snapshot)).toBe(false);
       });
+    });
+  });
+
+  describe('selectSystemStatus', () => {
+    it('should return DISCONNECTED when connection is IDLE', () => {
+      const snapshot = createMockSnapshot({
+        connection: {
+          value: EConnectionStatus.IDLE,
+        } as never,
+        call: {
+          value: ECallStatus.IDLE,
+        } as never,
+      });
+
+      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.DISCONNECTED);
+    });
+
+    it('should return DISCONNECTED when connection is DISCONNECTED', () => {
+      const snapshot = createMockSnapshot({
+        connection: {
+          value: EConnectionStatus.DISCONNECTED,
+        } as never,
+        call: {
+          value: ECallStatus.IDLE,
+        } as never,
+      });
+
+      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.DISCONNECTED);
+    });
+
+    it('should return DISCONNECTED for IDLE/DISCONNECTED connection regardless of call status', () => {
+      const connectionStatuses = [EConnectionStatus.IDLE, EConnectionStatus.DISCONNECTED];
+      const callStatuses = [
+        ECallStatus.IDLE,
+        ECallStatus.CONNECTING,
+        ECallStatus.ACCEPTED,
+        ECallStatus.IN_CALL,
+        ECallStatus.ENDED,
+        ECallStatus.FAILED,
+      ];
+
+      connectionStatuses.forEach((connectionStatus) => {
+        callStatuses.forEach((callStatus) => {
+          const snapshot = createMockSnapshot({
+            connection: { value: connectionStatus } as never,
+            call: { value: callStatus } as never,
+          });
+
+          expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.DISCONNECTED);
+        });
+      });
+    });
+
+    it('should return CONNECTION_FAILED when connection is FAILED', () => {
+      const snapshot = createMockSnapshot({
+        connection: {
+          value: EConnectionStatus.FAILED,
+        } as never,
+        call: {
+          value: ECallStatus.IDLE,
+        } as never,
+      });
+
+      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CONNECTION_FAILED);
+    });
+
+    it('should return CONNECTION_FAILED for FAILED connection regardless of call status', () => {
+      const callStatuses = [
+        ECallStatus.IDLE,
+        ECallStatus.CONNECTING,
+        ECallStatus.ACCEPTED,
+        ECallStatus.IN_CALL,
+        ECallStatus.ENDED,
+        ECallStatus.FAILED,
+      ];
+
+      callStatuses.forEach((callStatus) => {
+        const snapshot = createMockSnapshot({
+          connection: { value: EConnectionStatus.FAILED } as never,
+          call: { value: callStatus } as never,
+        });
+
+        expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CONNECTION_FAILED);
+      });
+    });
+
+    it('should return CONNECTING when connection is PREPARING', () => {
+      const snapshot = createMockSnapshot({
+        connection: {
+          value: EConnectionStatus.PREPARING,
+        } as never,
+        call: {
+          value: ECallStatus.IDLE,
+        } as never,
+      });
+
+      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CONNECTING);
+    });
+
+    it('should return CONNECTING when connection is CONNECTING', () => {
+      const snapshot = createMockSnapshot({
+        connection: {
+          value: EConnectionStatus.CONNECTING,
+        } as never,
+        call: {
+          value: ECallStatus.IDLE,
+        } as never,
+      });
+
+      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CONNECTING);
+    });
+
+    it('should return CONNECTING when connection is CONNECTED', () => {
+      const snapshot = createMockSnapshot({
+        connection: {
+          value: EConnectionStatus.CONNECTED,
+        } as never,
+        call: {
+          value: ECallStatus.IDLE,
+        } as never,
+      });
+
+      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CONNECTING);
+    });
+
+    it('should return CONNECTING when connection is REGISTERED', () => {
+      const snapshot = createMockSnapshot({
+        connection: {
+          value: EConnectionStatus.REGISTERED,
+        } as never,
+        call: {
+          value: ECallStatus.IDLE,
+        } as never,
+      });
+
+      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CONNECTING);
+    });
+
+    it('should return CONNECTING for PREPARING/CONNECTING/CONNECTED/REGISTERED regardless of call status', () => {
+      const connectionStatuses = [
+        EConnectionStatus.PREPARING,
+        EConnectionStatus.CONNECTING,
+        EConnectionStatus.CONNECTED,
+        EConnectionStatus.REGISTERED,
+      ];
+      const callStatuses = [
+        ECallStatus.IDLE,
+        ECallStatus.CONNECTING,
+        ECallStatus.ACCEPTED,
+        ECallStatus.IN_CALL,
+        ECallStatus.ENDED,
+        ECallStatus.FAILED,
+      ];
+
+      connectionStatuses.forEach((connectionStatus) => {
+        callStatuses.forEach((callStatus) => {
+          const snapshot = createMockSnapshot({
+            connection: { value: connectionStatus } as never,
+            call: { value: callStatus } as never,
+          });
+
+          expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CONNECTING);
+        });
+      });
+    });
+
+    it('should return READY when connection is ESTABLISHED and call is IDLE', () => {
+      const snapshot = createMockSnapshot({
+        connection: {
+          value: EConnectionStatus.ESTABLISHED,
+        } as never,
+        call: {
+          value: ECallStatus.IDLE,
+        } as never,
+      });
+
+      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.READY);
+    });
+
+    it('should return CALL_CONNECTING when connection is ESTABLISHED and call is CONNECTING', () => {
+      const snapshot = createMockSnapshot({
+        connection: {
+          value: EConnectionStatus.ESTABLISHED,
+        } as never,
+        call: {
+          value: ECallStatus.CONNECTING,
+        } as never,
+      });
+
+      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CALL_CONNECTING);
+    });
+
+    it('should return CALL_ACTIVE when connection is ESTABLISHED and call is ACCEPTED', () => {
+      const snapshot = createMockSnapshot({
+        connection: {
+          value: EConnectionStatus.ESTABLISHED,
+        } as never,
+        call: {
+          value: ECallStatus.ACCEPTED,
+        } as never,
+      });
+
+      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CALL_ACTIVE);
+    });
+
+    it('should return CALL_ACTIVE when connection is ESTABLISHED and call is IN_CALL', () => {
+      const snapshot = createMockSnapshot({
+        connection: {
+          value: EConnectionStatus.ESTABLISHED,
+        } as never,
+        call: {
+          value: ECallStatus.IN_CALL,
+        } as never,
+      });
+
+      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CALL_ACTIVE);
+    });
+
+    it('should return CALL_ENDED when connection is ESTABLISHED and call is ENDED', () => {
+      const snapshot = createMockSnapshot({
+        connection: {
+          value: EConnectionStatus.ESTABLISHED,
+        } as never,
+        call: {
+          value: ECallStatus.ENDED,
+        } as never,
+      });
+
+      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CALL_ENDED);
+    });
+
+    it('should return CALL_FAILED when connection is ESTABLISHED and call is FAILED', () => {
+      const snapshot = createMockSnapshot({
+        connection: {
+          value: EConnectionStatus.ESTABLISHED,
+        } as never,
+        call: {
+          value: ECallStatus.FAILED,
+        } as never,
+      });
+
+      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CALL_FAILED);
+    });
+
+    it('should return READY as fallback for unknown call status when connection is ESTABLISHED', () => {
+      const snapshot = createMockSnapshot({
+        connection: {
+          value: EConnectionStatus.ESTABLISHED,
+        } as never,
+        call: {
+          value: 'unknown:call:status' as ECallStatus,
+        } as never,
+      });
+
+      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.READY);
     });
   });
 });

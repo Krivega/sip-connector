@@ -54,7 +54,7 @@ describe('SipConnector facade', () => {
     sipConnector.statsManager.events.trigger('collected', {
       outbound: { additional: {} },
       inbound: {
-        video: { inboundRtp: { framesReceived: 0, framesDecoded: 0 } },
+        video: { inboundRtp: { framesReceived: 0, framesDecoded: 0, packetsReceived: 500 } },
         additional: {},
       },
     } as unknown as {
