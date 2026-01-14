@@ -84,9 +84,9 @@ describe('SessionManager', () => {
       );
 
       callStateMachine.send({ type: 'CALL.CONNECTING' });
-      callStateMachine.send({ type: 'CALL.RINGING' });
-      expect(sessionSelectors.selectCallStatus(session.getSnapshot())).toBe(ECallStatus.RINGING);
+      expect(sessionSelectors.selectCallStatus(session.getSnapshot())).toBe(ECallStatus.CONNECTING);
 
+      callStateMachine.send({ type: 'CALL.ACCEPTED' });
       callStateMachine.send({ type: 'CALL.CONFIRMED' });
       expect(sessionSelectors.selectCallStatus(session.getSnapshot())).toBe(ECallStatus.IN_CALL);
 
@@ -127,11 +127,10 @@ describe('SessionManager', () => {
       const unsubscribe = session.subscribe(sessionSelectors.selectCallStatus, onCallStatus);
 
       callStateMachine.send({ type: 'CALL.CONNECTING' });
-      callStateMachine.send({ type: 'CALL.RINGING' });
-      callStateMachine.send({ type: 'CALL.RINGING' }); // duplicate should be ignored by equals
+      callStateMachine.send({ type: 'CALL.CONNECTING' }); // duplicate should be ignored by equals
 
-      expect(onCallStatus).toHaveBeenCalledTimes(2);
-      expect(onCallStatus).toHaveBeenLastCalledWith(ECallStatus.RINGING);
+      expect(onCallStatus).toHaveBeenCalledTimes(1);
+      expect(onCallStatus).toHaveBeenLastCalledWith(ECallStatus.CONNECTING);
 
       unsubscribe();
       stopAll();
@@ -203,7 +202,7 @@ describe('SessionManager', () => {
 
       // Unsubscribe and verify no more calls
       unsubscribe();
-      callStateMachine.send({ type: 'CALL.RINGING' });
+      callStateMachine.send({ type: 'CALL.ACCEPTED' });
       expect(callback).toHaveBeenCalledTimes(4);
 
       stopAll();
@@ -237,7 +236,7 @@ describe('SessionManager', () => {
       expect(onCallStatus).not.toHaveBeenCalled();
 
       // Change state again to verify equals is called but listener still not called
-      callStateMachine.send({ type: 'CALL.RINGING' });
+      callStateMachine.send({ type: 'CALL.ACCEPTED' });
       expect(alwaysEqual).toHaveBeenCalledTimes(2);
       expect(onCallStatus).not.toHaveBeenCalled();
 
@@ -276,7 +275,7 @@ describe('SessionManager', () => {
       expect(onCallStatus).not.toHaveBeenCalled();
 
       // Change state again to verify equals is called but listener still not called
-      callStateMachine.send({ type: 'CALL.RINGING' });
+      callStateMachine.send({ type: 'CALL.ACCEPTED' });
       expect(alwaysEqual).toHaveBeenCalledTimes(2);
       expect(onCallStatus).not.toHaveBeenCalled();
       unsubscribe();
@@ -294,7 +293,7 @@ describe('SessionManager', () => {
 
       session.off('snapshot-changed', handler);
 
-      callStateMachine.send({ type: 'CALL.RINGING' });
+      callStateMachine.send({ type: 'CALL.ACCEPTED' });
       expect(handler).toHaveBeenCalledTimes(1);
       stopAll();
     });

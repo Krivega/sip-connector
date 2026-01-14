@@ -43,10 +43,6 @@ sipConnector.on('call:connecting', () => {
   console.log('Идет подключение...');
 });
 
-sipConnector.on('call:ringing', () => {
-  console.log('Звонок звонит...');
-});
-
 sipConnector.on('call:confirmed', () => {
   console.log('Звонок установлен');
 });

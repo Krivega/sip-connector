@@ -30,7 +30,6 @@
   - Типобезопасная обработка ошибок (error: Error | undefined)
   - Детальная информация об ошибках регистрации с status_code и reason_phrase
   - Методы: `reset()`, `startConnect()`, `startInitUa()`, `onStateChange()`, `canTransition()`, `getValidEvents()`
-  - События: `START_CONNECT`, `START_INIT_UA`, `UA_CONNECTED`, `UA_REGISTERED`, `UA_UNREGISTERED`, `UA_DISCONNECTED`, `CONNECTION_FAILED`, `RESET`
   - Автоматическое логирование всех переходов состояний
 
 ---
@@ -92,18 +91,13 @@
 - `replaceMediaStream()` - замена медиа-потоков
 - `restartIce()` - перезапуск соединения
 
-**События**:
-
-- `call:remote-streams-changed` - уведомление об изменении удаленных потоков (заменяет callback `setRemoteStreams`)
-
 **Внутренние компоненты**:
 
 - **CallStateMachine** - управление состояниями звонка (XState)
   - Валидация переходов между состояниями
-  - Публичный API с геттерами: `isIdle`, `isConnecting`, `isRinging`, `isAccepted`, `isInCall`, `isEnded`, `isFailed`, `isPending`, `isActive`
+  - Публичный API с геттерами: `isIdle`, `isConnecting`, `isAccepted`, `isInCall`, `isEnded`, `isFailed`, `isPending`, `isActive`
   - Типобезопасная обработка ошибок (lastError: Error)
   - Метод `reset()` для перехода в начальное состояние
-  - События: `CALL.CONNECTING`, `CALL.RINGING`, `CALL.ACCEPTED`, `CALL.CONFIRMED`, `CALL.ENDED`, `CALL.FAILED`, `CALL.RESET`
   - Предотвращение недопустимых переходов с логированием
 
 - **MCUSession** - управление основным RTCSession для участников конференции
@@ -152,11 +146,6 @@
 - `reset()` - очистка состояния
 - Геттеры для удобного доступа: `getToken()`, `getRoom()`, `getParticipantName()`, `getChannels()`, `getConference()`, `getParticipant()`, `getNumber()`, `getAnswer()`
 
-**События**:
-
-- `state-changed` - уведомление об изменении состояния (содержит previous, current, updates)
-- `state-reset` - уведомление о сбросе состояния
-
 **Интеграция**:
 
 - Автоматически обновляется при получении событий от ApiManager:
@@ -177,7 +166,6 @@
 - Обработка команд от сервера
 - Отправка состояния медиа
 - Управление DTMF-сигналами
-- События restart для управления transceiver'ами
 - Синхронизация каналов
 - Обработка событий перемещения участников
 
@@ -187,12 +175,6 @@
 - `sendDTMF()` - отправка DTMF-сигналов
 - `waitChannels()` - ожидание каналов
 - `askPermissionToEnableCam()` - запрос разрешений
-
-**События участников**:
-
-- `api:participant:move-request-to-spectators` - перемещение в зрители (новый формат с `isSynthetic` или `audioId`)
-- `api:participant:move-request-to-spectators-synthetic` - перемещение в зрители (синтетическое событие для обратной совместимости)
-- `api:participant:move-request-to-participants` - перемещение в участники
 
 ---
 
@@ -221,7 +203,7 @@
   - Валидация переходов между состояниями
   - Публичный API с геттерами: `isIdle`, `isStarting`, `isActive`, `isStopping`, `isFailed`, `isPending`, `isActiveOrPending`
   - Типобезопасная обработка ошибок (lastError: Error | undefined)
-  - Методы: `reset()`, события: `SCREEN.STARTING`, `SCREEN.STARTED`, `SCREEN.ENDING`, `SCREEN.ENDED`, `SCREEN.FAILED`, `CALL.ENDED`, `CALL.FAILED`, `PRESENTATION.RESET`
+  - Методы: `reset()`
   - Полное логирование всех переходов состояний
 
 ---
@@ -251,7 +233,7 @@
   - Публичный API с геттерами: `isIdle`, `isRinging`, `isConsumed`, `isDeclined`, `isTerminated`, `isFailed`, `isActive`, `isFinished`
   - Хранение данных вызывающего абонента (remoteCallerData)
   - Геттеры контекста: `remoteCallerData`, `lastReason`
-  - Методы: `reset()`, `toConsumed()`, события: `INCOMING.RINGING`, `INCOMING.CONSUMED`, `INCOMING.DECLINED`, `INCOMING.TERMINATED`, `INCOMING.FAILED`, `INCOMING.CLEAR`
+  - Методы: `reset()`, `toConsumed()`
   - Полное логирование всех переходов состояний
 
 ---

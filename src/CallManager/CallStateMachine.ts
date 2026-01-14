@@ -8,7 +8,6 @@ import type { TEvents } from './events';
 export enum EState {
   IDLE = 'call:idle',
   CONNECTING = 'call:connecting',
-  RINGING = 'call:ringing',
   ACCEPTED = 'call:accepted',
   IN_CALL = 'call:inCall',
   ENDED = 'call:ended',
@@ -17,7 +16,6 @@ export enum EState {
 
 type TCallEvent =
   | { type: 'CALL.CONNECTING' }
-  | { type: 'CALL.RINGING' }
   | { type: 'CALL.ACCEPTED' }
   | { type: 'CALL.CONFIRMED' }
   | { type: 'CALL.ENDED' }
@@ -57,28 +55,11 @@ const callMachine = setup({
           target: EState.CONNECTING,
           actions: 'resetError',
         },
-        'CALL.RINGING': {
-          target: EState.RINGING,
-          actions: 'resetError',
-        },
       },
     },
     [EState.CONNECTING]: {
       on: {
-        'CALL.RINGING': EState.RINGING,
         'CALL.ACCEPTED': EState.ACCEPTED,
-        'CALL.CONFIRMED': EState.IN_CALL,
-        'CALL.ENDED': EState.ENDED,
-        'CALL.FAILED': {
-          target: EState.FAILED,
-          actions: 'rememberError',
-        },
-      },
-    },
-    [EState.RINGING]: {
-      on: {
-        'CALL.ACCEPTED': EState.ACCEPTED,
-        'CALL.CONFIRMED': EState.IN_CALL,
         'CALL.ENDED': EState.ENDED,
         'CALL.FAILED': {
           target: EState.FAILED,
@@ -154,10 +135,6 @@ export class CallStateMachine extends BaseStateMachine<typeof callMachine, EStat
     return this.state === EState.CONNECTING;
   }
 
-  public get isRinging(): boolean {
-    return this.state === EState.RINGING;
-  }
-
   public get isAccepted(): boolean {
     return this.state === EState.ACCEPTED;
   }
@@ -179,7 +156,7 @@ export class CallStateMachine extends BaseStateMachine<typeof callMachine, EStat
   }
 
   public get isPending(): boolean {
-    return this.isConnecting || this.isRinging;
+    return this.isConnecting;
   }
 
   public get lastError(): Error | undefined {
@@ -211,11 +188,7 @@ export class CallStateMachine extends BaseStateMachine<typeof callMachine, EStat
         this.send({ type: 'CALL.CONNECTING' });
       }),
     );
-    this.addSubscription(
-      events.on('progress', () => {
-        this.send({ type: 'CALL.RINGING' });
-      }),
-    );
+    // Убрана подписка на progress - событие не приходит в реальном flow
     this.addSubscription(
       events.on('accepted', () => {
         this.send({ type: 'CALL.ACCEPTED' });
