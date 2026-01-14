@@ -239,6 +239,32 @@ class DOM {
   public isVisible(element: HTMLElement): boolean {
     return !this.isHidden(element);
   }
+
+  public disable(element: HTMLElement): void {
+    element.classList.add('disabled');
+  }
+
+  public enable(element: HTMLElement): void {
+    element.classList.remove('disabled');
+  }
+
+  public isDisabled(element: HTMLElement): boolean {
+    return element.classList.contains('disabled');
+  }
+
+  public isEnabled(element: HTMLElement): boolean {
+    return !this.isDisabled(element);
+  }
+
+  public toggleDisabled(element: HTMLElement, force?: boolean): void {
+    if (force === undefined) {
+      element.classList.toggle('disabled');
+    } else if (force) {
+      this.disable(element);
+    } else {
+      this.enable(element);
+    }
+  }
 }
 
 export const dom = new DOM({

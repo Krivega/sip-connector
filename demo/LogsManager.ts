@@ -148,6 +148,7 @@ class LogsManager {
     this.renderedLogsCount = 0;
     this.filterText = '';
     dom.filterLogsInputElement.value = '';
+    dom.logsListElement.innerHTML = '';
     this.updateUI();
   }
 
@@ -167,6 +168,8 @@ class LogsManager {
         this.appendNewLog(lastLog, this.logs.length - 1);
       }
     }
+
+    this.updateUI();
   }
 
   // Safe serialization with circular handling and error-tolerant property access
@@ -378,12 +381,6 @@ class LogsManager {
   }
 
   private renderLogsList(): void {
-    if (this.logs.length === 0) {
-      dom.logsListElement.innerHTML = 'No logs';
-
-      return;
-    }
-
     // Очищаем список
     dom.logsListElement.innerHTML = '';
     this.renderedLogsCount = 0;
@@ -402,9 +399,10 @@ class LogsManager {
   }
 
   private updateUI(): void {
-    dom.show(dom.logsContainerElement);
+    const isEmpty = this.logs.length === 0;
 
-    this.renderLogsList();
+    dom.toggleDisabled(dom.clearLogsButtonElement, isEmpty);
+    dom.toggleDisabled(dom.filterLogsInputElement, isEmpty);
   }
 }
 

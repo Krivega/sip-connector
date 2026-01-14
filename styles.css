@@ -163,6 +163,10 @@ body {
   margin-top: 1rem;
 }
 
+#logsList:empty {
+  display: none;
+}
+
 .local-video {
   max-height: 200px;
 }
@@ -218,4 +222,11 @@ body {
 
 .hidden {
   display: none !important;
+}
+
+.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+  user-select: none;
 }
