@@ -93,7 +93,7 @@ export const EVENT_NAMES = [
   ...SESSION_SYNTHETICS_EVENT_NAMES,
 ] as const;
 
-export type TEvent = (typeof EVENT_NAMES)[number];
+export type TEventName = (typeof EVENT_NAMES)[number];
 
 export type TEventMap = {
   // RTCSession events

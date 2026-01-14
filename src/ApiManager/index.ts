@@ -9,7 +9,7 @@ export {
   EShareState,
   EUseLicense,
 } from './constants';
-export { createEvents } from './events';
+export { EVENT_NAMES as API_MANAGER_EVENT_NAMES } from './events';
 
-export type { TEventMap, TEvent as TApiEvent, TEvents as TApiEvents } from './events';
+export type { TEventMap as TApiManagerEventMap } from './events';
 export type { TChannels } from './types';

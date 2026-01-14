@@ -1,7 +1,7 @@
 import { CallStateMachine, EState } from '../CallStateMachine';
 import { createEvents } from '../events';
 
-import type { TEvent, TEvents } from '../events';
+import type { TEventName, TEvents } from '../events';
 
 describe('CallStateMachine', () => {
   let events: TEvents;
@@ -115,7 +115,7 @@ describe('CallStateMachine', () => {
     const scenarios: {
       title: string;
       steps: {
-        event: TEvent;
+        event: TEventName;
         payload?: unknown;
         expected: EState;
       }[];

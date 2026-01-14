@@ -8,6 +8,6 @@ export {
 
 export type { TParametersConnection, TConnectionConfigurationWithUa } from './ConnectionFlow';
 export type {
-  TEvent as TConnectionManagerEvent,
   TEvents as TConnectionManagerEvents,
+  TEventMap as TConnectionManagerEventMap,
 } from './events';

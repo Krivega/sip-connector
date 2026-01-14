@@ -15,8 +15,6 @@ export const EVENT_NAMES = [
   `${EEvent.PARAMETERS_UPDATED}`,
 ] as const;
 
-export type TEvent = (typeof EVENT_NAMES)[number];
-
 export type TEventMap = {
   'balancing-scheduled': { delay: number };
   'balancing-started': { delay: number };

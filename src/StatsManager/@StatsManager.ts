@@ -3,7 +3,7 @@ import { StatsPeerConnection } from '@/StatsPeerConnection';
 
 import type { ApiManager } from '@/ApiManager';
 import type { CallManager } from '@/CallManager';
-import type { TEventMap, TStats } from '@/StatsPeerConnection';
+import type { TStatsPeerConnectionEventMap, TStats } from '@/StatsPeerConnection';
 
 class StatsManager {
   public readonly statsPeerConnection: StatsPeerConnection;
@@ -84,26 +84,37 @@ class StatsManager {
     return isFramesDecoded && isNotSameValue;
   }
 
-  public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+  public on<T extends keyof TStatsPeerConnectionEventMap>(
+    eventName: T,
+    handler: (data: TStatsPeerConnectionEventMap[T]) => void,
+  ) {
     return this.statsPeerConnection.on(eventName, handler);
   }
 
-  public once<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+  public once<T extends keyof TStatsPeerConnectionEventMap>(
+    eventName: T,
+    handler: (data: TStatsPeerConnectionEventMap[T]) => void,
+  ) {
     return this.statsPeerConnection.once(eventName, handler);
   }
 
-  public onceRace<T extends keyof TEventMap>(
+  public onceRace<T extends keyof TStatsPeerConnectionEventMap>(
     eventNames: T[],
-    handler: (data: TEventMap[T], eventName: string) => void,
+    handler: (data: TStatsPeerConnectionEventMap[T], eventName: string) => void,
   ) {
     return this.statsPeerConnection.onceRace(eventNames, handler);
   }
 
-  public async wait<T extends keyof TEventMap>(eventName: T): Promise<TEventMap[T]> {
+  public async wait<T extends keyof TStatsPeerConnectionEventMap>(
+    eventName: T,
+  ): Promise<TStatsPeerConnectionEventMap[T]> {
     return this.statsPeerConnection.wait(eventName);
   }
 
-  public off<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
+  public off<T extends keyof TStatsPeerConnectionEventMap>(
+    eventName: T,
+    handler: (data: TStatsPeerConnectionEventMap[T]) => void,
+  ) {
     this.statsPeerConnection.off(eventName, handler);
   }
 

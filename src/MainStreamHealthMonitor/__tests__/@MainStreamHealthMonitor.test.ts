@@ -6,10 +6,10 @@ import { NO_INBOUND_FRAMES_EVENT_NAME } from '../events';
 
 import type { CallManager } from '@/CallManager';
 import type { StatsManager } from '@/StatsManager';
-import type { TStats, TEvents } from '@/StatsPeerConnection';
+import type { TStats, TStatsPeerConnectionEvents } from '@/StatsPeerConnection';
 
 describe('@MainStreamHealthMonitor', () => {
-  let statsEvents: TEvents;
+  let statsEvents: TStatsPeerConnectionEvents;
   let statsManager: StatsManager;
   let callManager: CallManager;
 

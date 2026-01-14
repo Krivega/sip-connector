@@ -17,8 +17,6 @@ export const EVENT_NAMES = [
   `${EEvent.FAILED_PRESENTATION}`,
 ] as const;
 
-export type TEvent = (typeof EVENT_NAMES)[number];
-
 export type TEventMap = {
   'presentation:start': MediaStream;
   'presentation:started': MediaStream;

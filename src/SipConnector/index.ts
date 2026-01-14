@@ -1,2 +1,3 @@
 export { default as SipConnector } from './@SipConnector';
-export type { TEvent, TEvents } from './events';
+
+export type { TEvents } from './events';

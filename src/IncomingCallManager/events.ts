@@ -23,8 +23,6 @@ export const EVENT_NAMES = [
   `${EEvent.FAILED_INCOMING_CALL}`,
 ] as const;
 
-export type TEvent = (typeof EVENT_NAMES)[number];
-
 export type TRemoteCallerData = {
   displayName?: string;
   host?: string;

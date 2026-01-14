@@ -73,8 +73,6 @@ export const EVENT_NAMES = [
   `${EEvent.NEW_DTMF}`,
 ] as const;
 
-export type TEvent = (typeof EVENT_NAMES)[number];
-
 export type TEventMap = {
   'channels:notify': TChannels;
   'participant:added-to-list-moderators': TParametersModeratorsList;

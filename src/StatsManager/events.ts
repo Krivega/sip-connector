@@ -1,2 +1,3 @@
-export type { TEventMap } from '@/StatsPeerConnection';
-export { EVENT_NAMES } from '@/StatsPeerConnection/events';
+export { STATS_PEER_CONNECTION_EVENT_NAMES as EVENT_NAMES } from '@/StatsPeerConnection';
+
+export type { TStatsPeerConnectionEventMap as TEventMap } from '@/StatsPeerConnection';

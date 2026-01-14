@@ -12,7 +12,7 @@ import type { TOnAddedTransceiver } from '@/CallManager/types';
 import type { TParametersConnection, TConnectionConfigurationWithUa } from '@/ConnectionManager';
 import type { TContentHint } from '@/PresentationManager';
 import type { SipConnector } from '@/SipConnector';
-import type { TEventMap as TStatsEventMap } from '@/StatsManager';
+import type { TStatsManagerEventMap } from '@/StatsManager';
 
 const handleError = (error: Error): { configuration: undefined; isSuccessful: false } => {
   if (
@@ -691,13 +691,13 @@ class SipConnectorFacade implements IProxyMethods {
     return this.sipConnector.on('api:participant:move-request-to-participants', handler);
   };
 
-  public onStats = (handler: (data: TStatsEventMap['collected']) => void): (() => void) => {
+  public onStats = (handler: (data: TStatsManagerEventMap['collected']) => void): (() => void) => {
     debug('onStats');
 
     return this.sipConnector.on('stats:collected', handler);
   };
 
-  public offStats = (handler: (data: TStatsEventMap['collected']) => void): void => {
+  public offStats = (handler: (data: TStatsManagerEventMap['collected']) => void): void => {
     debug('offStats');
 
     this.sipConnector.off('stats:collected', handler);

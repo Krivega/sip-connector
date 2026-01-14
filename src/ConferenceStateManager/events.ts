@@ -10,8 +10,6 @@ export enum EEvent {
 
 export const EVENT_NAMES = [`${EEvent.STATE_CHANGED}`, `${EEvent.STATE_RESET}`] as const;
 
-export type TEvent = (typeof EVENT_NAMES)[number];
-
 export type TEventMap = {
   'state-changed': {
     previous: TConferenceState;

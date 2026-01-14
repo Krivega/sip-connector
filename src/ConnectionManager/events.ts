@@ -57,8 +57,6 @@ const SYNTHETICS_EVENT_NAMES = [
 
 export const EVENT_NAMES = [...UA_EVENT_NAMES, ...SYNTHETICS_EVENT_NAMES] as const;
 
-export type TEvent = (typeof EVENT_NAMES)[number];
-
 export type TEventMap = {
   connecting: ConnectingEventUA;
   connected: ConnectedEvent;

@@ -1,23 +1,25 @@
 import { TypedEvents } from 'events-constructor';
 
-import { EVENT_NAMES as API_MANAGER_EVENT_NAMES } from '@/ApiManager/events';
-import { EVENT_NAMES as AUTO_CONNECTOR_MANAGER_EVENT_NAMES } from '@/AutoConnectorManager/events';
-import { EVENT_NAMES as CALL_MANAGER_EVENT_NAMES } from '@/CallManager/events';
-import { EVENT_NAMES as CONNECTION_MANAGER_EVENT_NAMES } from '@/ConnectionManager/events';
-import { EVENT_NAMES as INCOMING_CALL_MANAGER_EVENT_NAMES } from '@/IncomingCallManager/events';
-import { EVENT_NAMES as PRESENTATION_MANAGER_EVENT_NAMES } from '@/PresentationManager/events';
-import { EVENT_NAMES as STATS_MANAGER_EVENT_NAMES } from '@/StatsManager/events';
-import { EVENT_NAMES as VIDEO_BALANCER_MANAGER_EVENT_NAMES } from '@/VideoSendingBalancerManager/events';
+import { API_MANAGER_EVENT_NAMES } from '@/ApiManager';
+import { AUTO_CONNECTOR_MANAGER_EVENT_NAMES } from '@/AutoConnectorManager';
+import { CALL_MANAGER_EVENT_NAMES } from '@/CallManager';
+import { CONNECTION_MANAGER_EVENT_NAMES } from '@/ConnectionManager';
+import { INCOMING_CALL_MANAGER_EVENT_NAMES } from '@/IncomingCallManager';
+import { PRESENTATION_MANAGER_EVENT_NAMES } from '@/PresentationManager';
+import { STATS_MANAGER_EVENT_NAMES } from '@/StatsManager';
+import { VIDEO_SENDING_BALANCER_MANAGER_EVENT_NAMES } from '@/VideoSendingBalancerManager';
 
-import type { TEventMap as TApiManagerEventMap } from '@/ApiManager/events';
-import type { TEventMap as TAutoConnectorManagerEventMap } from '@/AutoConnectorManager/events';
-import type { TEventMap as TCallManagerEventMap } from '@/CallManager/events';
-import type { TConnectionConfigurationWithUa } from '@/ConnectionManager';
-import type { TEventMap as TConnectionManagerEventMap } from '@/ConnectionManager/events';
-import type { TEventMap as TIncomingCallManagerEventMap } from '@/IncomingCallManager/events';
-import type { TEventMap as TPresentationManagerEventMap } from '@/PresentationManager/events';
-import type { TEventMap as TStatsManagerEventMap } from '@/StatsPeerConnection/events';
-import type { TEventMap as TVideoBalancerManagerEventMap } from '@/VideoSendingBalancerManager/events';
+import type { TApiManagerEventMap } from '@/ApiManager';
+import type { TAutoConnectorManagerEventMap } from '@/AutoConnectorManager';
+import type { TCallManagerEventMap } from '@/CallManager';
+import type {
+  TConnectionConfigurationWithUa,
+  TConnectionManagerEventMap,
+} from '@/ConnectionManager';
+import type { TIncomingCallManagerEventMap } from '@/IncomingCallManager';
+import type { TPresentationManagerEventMap } from '@/PresentationManager';
+import type { TStatsManagerEventMap } from '@/StatsManager';
+import type { TVideoSendingBalancerManagerEventMap } from '@/VideoSendingBalancerManager';
 
 // Добавляем префиксы к событиям от разных менеджеров
 const AUTO_CONNECTOR_EVENTS = AUTO_CONNECTOR_MANAGER_EVENT_NAMES.map((eventName) => {
@@ -41,7 +43,7 @@ const PRESENTATION_EVENTS = PRESENTATION_MANAGER_EVENT_NAMES.map((eventName) => 
 const STATS_EVENTS = STATS_MANAGER_EVENT_NAMES.map((eventName) => {
   return `stats:${eventName}` as const;
 });
-const VIDEO_BALANCER_EVENTS = VIDEO_BALANCER_MANAGER_EVENT_NAMES.map((eventName) => {
+const VIDEO_BALANCER_EVENTS = VIDEO_SENDING_BALANCER_MANAGER_EVENT_NAMES.map((eventName) => {
   return `video-balancer:${eventName}` as const;
 });
 
@@ -63,7 +65,7 @@ export const EVENT_NAMES = [
   ...SIP_CONNECTOR_EVENTS,
 ] as const;
 
-export type TEvent = (typeof EVENT_NAMES)[number];
+export type TEventName = (typeof EVENT_NAMES)[number];
 
 // Создаем TEventMap для SipConnector, объединяя все TEventMap с префиксами
 type PrefixedEventMap<T extends Record<string, unknown>, Prefix extends string> = {
@@ -83,7 +85,7 @@ export type TEventMap = PrefixedEventMap<TAutoConnectorManagerEventMap, 'auto-co
   PrefixedEventMap<TIncomingCallManagerEventMap, 'incoming-call'> &
   PrefixedEventMap<TPresentationManagerEventMap, 'presentation'> &
   PrefixedEventMap<TStatsManagerEventMap, 'stats'> &
-  PrefixedEventMap<TVideoBalancerManagerEventMap, 'video-balancer'> &
+  PrefixedEventMap<TVideoSendingBalancerManagerEventMap, 'video-balancer'> &
   TSipConnectorEventMap;
 
 export type TEvents = TypedEvents<TEventMap>;

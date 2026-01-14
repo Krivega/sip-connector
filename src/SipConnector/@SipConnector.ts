@@ -22,7 +22,7 @@ import type { TContentHint, TOnAddedTransceiver } from '@/PresentationManager';
 import type { ISession } from '@/session';
 import type { TJsSIP } from '@/types';
 import type { IBalancerOptions } from '@/VideoSendingBalancer';
-import type { TEvent, TEventMap, TEvents } from './events';
+import type { TEventName, TEventMap, TEvents } from './events';
 
 class SipConnector {
   public readonly events: TEvents;
@@ -568,7 +568,7 @@ class SipConnector {
   ): void => {
     source.events.eachTriggers((_trigger, eventName) => {
       source.on(eventName, (event: unknown) => {
-        this.events.trigger(`${prefix}:${eventName}` as TEvent, event);
+        this.events.trigger(`${prefix}:${eventName}` as TEventName, event);
       });
     });
   };

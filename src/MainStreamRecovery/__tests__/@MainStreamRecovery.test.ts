@@ -1,21 +1,16 @@
-import { TypedEvents } from 'events-constructor';
-
 import flushPromises from '@/__fixtures__/flushPromises';
+import { createEvents as createCallEvents } from '@/CallManager';
 import MainStreamRecovery from '../@MainStreamRecovery';
 
 import type { EndEvent } from '@krivega/jssip';
-import type { CallManager, TEventMap as TCallEventMap } from '@/CallManager';
+import type { CallManager, TCallEvents } from '@/CallManager';
 
 jest.mock('@/logger', () => {
   return jest.fn();
 });
 
-const createCallEvents = () => {
-  return new TypedEvents<TCallEventMap>(['ended'] as const);
-};
-
 describe('@MainStreamRecovery', () => {
-  let callEvents: TypedEvents<TCallEventMap>;
+  let callEvents: TCallEvents;
   let callManager: CallManager;
 
   beforeEach(() => {
