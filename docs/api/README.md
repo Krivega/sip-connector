@@ -18,6 +18,8 @@
 
 ### 📊 [События StatsPeerConnection](./stats-events.md)
 
+### 🎛️ [События VideoSendingBalancerManager](./video-balancer-events.md)
+
 ### 🔄 [События AutoConnectorManager](./auto-connector-events.md)
 
 ### 🌐 [События ApiManager](./api-events.md)
