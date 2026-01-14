@@ -71,7 +71,7 @@ describe('SessionManager', () => {
 
       connectionStateMachine.send({ type: EConnectionEvents.START_CONNECT });
       expect(sessionSelectors.selectConnectionStatus(session.getSnapshot())).toBe(
-        EConnectionStatus.CONNECTING,
+        EConnectionStatus.PREPARING,
       );
 
       connectionStateMachine.send({ type: EConnectionEvents.START_INIT_UA });
@@ -163,7 +163,7 @@ describe('SessionManager', () => {
       expect(firstSnapshot).toHaveProperty('incoming');
       expect(firstSnapshot).toHaveProperty('presentation');
       expect(sessionSelectors.selectConnectionStatus(firstSnapshot)).toBe(
-        EConnectionStatus.CONNECTING,
+        EConnectionStatus.PREPARING,
       );
 
       // Change call state

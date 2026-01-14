@@ -108,8 +108,8 @@ describe('sessionSelectors', () => {
     it('should return different connection statuses', () => {
       const statuses = [
         EConnectionStatus.IDLE,
+        EConnectionStatus.PREPARING,
         EConnectionStatus.CONNECTING,
-        EConnectionStatus.INITIALIZING,
         EConnectionStatus.CONNECTED,
         EConnectionStatus.REGISTERED,
         EConnectionStatus.DISCONNECTED,
