@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [20.6.0](https://github.com/Krivega/sip-connector/compare/v20.5.0...v20.6.0) (2026-01-14)
+
+### Features
+
+- add system status management by introducing ESystemStatus and related selectors for combined connection and call states ([badebb0](https://github.com/Krivega/sip-connector/commit/badebb07e25f8c11954d99e7528ba8e769902caa))
+- enhance logs management by updating UI behavior and adding disabled state handling ([7d340b4](https://github.com/Krivega/sip-connector/commit/7d340b4274d2884530df7c39559b3954e7a8a9e0))
+
 ## [20.5.0](https://github.com/Krivega/sip-connector/compare/v20.4.1...v20.5.0) (2026-01-14)
 
 ### Features
