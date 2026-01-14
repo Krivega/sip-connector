@@ -25,7 +25,7 @@ describe('answerToIncomingCall', () => {
 
     await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
-    const promiseIncomingCall = sipConnector.wait('incoming-call:incomingCall');
+    const promiseIncomingCall = sipConnector.wait('incoming-call:ringing');
 
     // @ts-expect-error
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

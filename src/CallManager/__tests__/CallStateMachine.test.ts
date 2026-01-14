@@ -174,6 +174,7 @@ describe('CallStateMachine', () => {
     it('isInCall должен возвращать true только для IN_CALL', () => {
       expect(machine.isInCall).toBe(false);
       machine.send({ type: 'CALL.CONNECTING' });
+      machine.send({ type: 'CALL.ACCEPTED' });
       machine.send({ type: 'CALL.CONFIRMED' });
       expect(machine.isInCall).toBe(true);
     });

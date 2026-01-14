@@ -52,7 +52,7 @@ describe('incoming call', () => {
 
     return new Promise<void>((resolve) => {
       sipConnector.on(
-        'incoming-call:incomingCall',
+        'incoming-call:ringing',
         async ({
           displayName,
           host,
@@ -94,7 +94,7 @@ describe('incoming call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('incoming-call:incomingCall', async () => {
+      sipConnector.on('incoming-call:ringing', async () => {
         expect(sipConnector.isAvailableIncomingCall).toBe(true);
         expect(sipConnector.remoteCallerData.incomingNumber).toBe(remoteCallerData.incomingNumber);
         expect(sipConnector.remoteCallerData.host).toBe(remoteCallerData.host);
@@ -114,7 +114,7 @@ describe('incoming call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('incoming-call:incomingCall', async () => {
+      sipConnector.on('incoming-call:ringing', async () => {
         await delayPromise(100); // wait for to decline incoming call
 
         const peerconnection = await sipConnector.answerToIncomingCall({
@@ -140,7 +140,7 @@ describe('incoming call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('incoming-call:incomingCall', async () => {
+      sipConnector.on('incoming-call:ringing', async () => {
         await delayPromise(100); // wait for to decline incoming call
 
         // @ts-expect-error
@@ -170,7 +170,7 @@ describe('incoming call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise((resolve) => {
-      sipConnector.on('incoming-call:incomingCall', async () => {
+      sipConnector.on('incoming-call:ringing', async () => {
         return delayPromise(100).then(resolve);
       }); // wait for to decline incoming call);
 
@@ -208,7 +208,7 @@ describe('incoming call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise((resolve) => {
-      sipConnector.on('incoming-call:incomingCall', async () => {
+      sipConnector.on('incoming-call:ringing', async () => {
         return delayPromise(100).then(resolve);
       }); // wait for to decline incoming call);
 
@@ -241,7 +241,7 @@ describe('incoming call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise((resolve) => {
-      sipConnector.on('incoming-call:incomingCall', async () => {
+      sipConnector.on('incoming-call:ringing', async () => {
         return delayPromise(100).then(resolve);
       }); // wait for to decline incoming call);
 
@@ -277,7 +277,7 @@ describe('incoming call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('incoming-call:incomingCall', async () => {
+      sipConnector.on('incoming-call:ringing', async () => {
         await delayPromise(100); // wait for to decline incoming call
         await sipConnector.answerToIncomingCall({
           mediaStream,
@@ -310,7 +310,7 @@ describe('incoming call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('incoming-call:incomingCall', async () => {
+      sipConnector.on('incoming-call:ringing', async () => {
         await delayPromise(100); // wait for to decline incoming call
         await sipConnector.answerToIncomingCall({
           mediaStream,
@@ -344,7 +344,7 @@ describe('incoming call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('incoming-call:incomingCall', async () => {
+      sipConnector.on('incoming-call:ringing', async () => {
         await delayPromise(100); // wait for to decline incoming call
         await sipConnector.answerToIncomingCall({
           mediaStream,
@@ -378,7 +378,7 @@ describe('incoming call', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('incoming-call:incomingCall', async () => {
+      sipConnector.on('incoming-call:ringing', async () => {
         await delayPromise(100); // wait for to decline incoming call
         await sipConnector.answerToIncomingCall({
           mediaStream,

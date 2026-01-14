@@ -444,7 +444,7 @@ export class IncomingCallStateMachine extends BaseStateMachine<typeof incomingMa
 
   private subscribeIncomingEvents(events: TIncomingEvents) {
     this.addSubscription(
-      events.on('incomingCall', (data: TRemoteCallerData) => {
+      events.on('ringing', (data: TRemoteCallerData) => {
         this.send({ type: 'INCOMING.RINGING', data });
       }),
     );

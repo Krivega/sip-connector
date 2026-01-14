@@ -32,7 +32,7 @@ export default class IncomingCallManager {
     return this.incomingStateMachine.actorRef;
   }
 
-  public get remoteCallerData(): TEventMap['incomingCall'] {
+  public get remoteCallerData(): TEventMap['ringing'] {
     return {
       displayName: this.incomingRTCSession?.remote_identity.display_name,
       host: this.incomingRTCSession?.remote_identity.uri.host,
@@ -150,7 +150,7 @@ export default class IncomingCallManager {
       }
     });
 
-    this.events.trigger(EEvent.INCOMING_CALL, callerData);
+    this.events.trigger(EEvent.RINGING, callerData);
   }
 
   private removeIncomingSession(): void {

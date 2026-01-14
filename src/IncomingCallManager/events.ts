@@ -4,7 +4,7 @@ import { TypedEvents } from 'events-constructor';
 import type { RTCSession } from '@krivega/jssip';
 
 export enum EEvent {
-  INCOMING_CALL = 'incomingCall',
+  RINGING = 'ringing',
   DECLINED_INCOMING_CALL = 'declinedIncomingCall',
   TERMINATED_INCOMING_CALL = 'terminatedIncomingCall',
   FAILED_INCOMING_CALL = 'failedIncomingCall',
@@ -17,7 +17,7 @@ export enum Originator {
 }
 
 export const EVENT_NAMES = [
-  `${EEvent.INCOMING_CALL}`,
+  `${EEvent.RINGING}`,
   `${EEvent.DECLINED_INCOMING_CALL}`,
   `${EEvent.TERMINATED_INCOMING_CALL}`,
   `${EEvent.FAILED_INCOMING_CALL}`,
@@ -31,7 +31,7 @@ export type TRemoteCallerData = {
 };
 
 export type TEventMap = {
-  incomingCall: TRemoteCallerData;
+  ringing: TRemoteCallerData;
   declinedIncomingCall: TRemoteCallerData;
   terminatedIncomingCall: TRemoteCallerData;
   failedIncomingCall: TRemoteCallerData;
