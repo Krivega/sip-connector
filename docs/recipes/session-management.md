@@ -62,7 +62,7 @@ const unsubscribeSystem = sipConnector.session.subscribe(
   sessionSelectors.selectSystemStatus,
   (status) => {
     switch (status) {
-      case ESystemStatus.READY:
+      case ESystemStatus.READY_TO_CALL:
         console.log('Система готова к звонкам');
         break;
       case ESystemStatus.CALL_ACTIVE:
@@ -96,10 +96,9 @@ unsubscribe(); // Когда больше не нужно слушать
 
 - `DISCONNECTED` - система не подключена (connection: IDLE/DISCONNECTED)
 - `CONNECTING` - идет процесс подключения (connection: PREPARING/CONNECTING/CONNECTED/REGISTERED)
-- `READY` - соединение установлено, готово к звонкам (connection: ESTABLISHED, call: IDLE)
+- `READY_TO_CALL` - соединение установлено, готово к звонкам (connection: ESTABLISHED, call: IDLE или ENDED)
 - `CALL_CONNECTING` - идет установка звонка (connection: ESTABLISHED, call: CONNECTING)
 - `CALL_ACTIVE` - звонок активен (connection: ESTABLISHED, call: ACCEPTED/IN_CALL)
-- `CALL_ENDED` - звонок завершен (connection: ESTABLISHED, call: ENDED)
 - `CONNECTION_FAILED` - ошибка соединения (connection: FAILED)
 - `CALL_FAILED` - ошибка звонка (connection: ESTABLISHED, call: FAILED)
 

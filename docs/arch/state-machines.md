@@ -219,24 +219,23 @@ stateDiagram-v2
 3. **Если connection FAILED** → `CONNECTION_FAILED`
 4. **Если connection PREPARING/CONNECTING/CONNECTED/REGISTERED** → `CONNECTING` (независимо от состояния call)
 5. **Если connection ESTABLISHED**:
-   - call IDLE → `READY`
+   - call IDLE → `READY_TO_CALL`
    - call CONNECTING → `CALL_CONNECTING`
    - call ACCEPTED/IN_CALL → `CALL_ACTIVE`
-   - call ENDED → `CALL_ENDED`
+   - call ENDED → `READY_TO_CALL`
    - call FAILED → `CALL_FAILED`
 
 ### Состояния ESystemStatus
 
-| Состояние | Описание | Условия |
-| :-------- | :------- | :------ |
-| `DISCONNECTED` | Система не подключена | connection: IDLE или DISCONNECTED |
-| `CONNECTING` | Идет процесс подключения | connection: PREPARING, CONNECTING, CONNECTED или REGISTERED |
-| `READY` | Соединение установлено, готово к звонкам | connection: ESTABLISHED, call: IDLE |
-| `CALL_CONNECTING` | Идет установка звонка | connection: ESTABLISHED, call: CONNECTING |
-| `CALL_ACTIVE` | Звонок активен | connection: ESTABLISHED, call: ACCEPTED или IN_CALL |
-| `CALL_ENDED` | Звонок завершен | connection: ESTABLISHED, call: ENDED |
-| `CONNECTION_FAILED` | Ошибка соединения | connection: FAILED |
-| `CALL_FAILED` | Ошибка звонка | connection: ESTABLISHED, call: FAILED |
+| Состояние           | Описание                                 | Условия                                                     |
+| :------------------ | :--------------------------------------- | :---------------------------------------------------------- |
+| `DISCONNECTED`      | Система не подключена                    | connection: IDLE или DISCONNECTED                           |
+| `CONNECTING`        | Идет процесс подключения                 | connection: PREPARING, CONNECTING, CONNECTED или REGISTERED |
+| `READY_TO_CALL`     | Соединение установлено, готово к звонкам | connection: ESTABLISHED, call: IDLE или ENDED               |
+| `CALL_CONNECTING`   | Идет установка звонка                    | connection: ESTABLISHED, call: CONNECTING                   |
+| `CALL_ACTIVE`       | Звонок активен                           | connection: ESTABLISHED, call: ACCEPTED или IN_CALL         |
+| `CONNECTION_FAILED` | Ошибка соединения                        | connection: FAILED                                          |
+| `CALL_FAILED`       | Ошибка звонка                            | connection: ESTABLISHED, call: FAILED                       |
 
 ### Использование
 
@@ -244,20 +243,17 @@ stateDiagram-v2
 import { sessionSelectors, ESystemStatus } from '@krivega/sip-connector';
 
 // Подписка на комбинированное состояние
-sipConnector.session.subscribe(
-  sessionSelectors.selectSystemStatus,
-  (status) => {
-    switch (status) {
-      case ESystemStatus.READY:
-        // Система готова к звонкам
-        break;
-      case ESystemStatus.CALL_ACTIVE:
-        // Звонок активен
-        break;
-      // ... другие состояния
-    }
-  },
-);
+sipConnector.session.subscribe(sessionSelectors.selectSystemStatus, (status) => {
+  switch (status) {
+    case ESystemStatus.READY_TO_CALL:
+      // Система готова к звонкам
+      break;
+    case ESystemStatus.CALL_ACTIVE:
+      // Звонок активен
+      break;
+    // ... другие состояния
+  }
+});
 ```
 
 ### Преимущества

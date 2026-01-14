@@ -491,7 +491,7 @@ describe('sessionSelectors', () => {
       });
     });
 
-    it('should return READY when connection is ESTABLISHED and call is IDLE', () => {
+    it('should return READY_TO_CALL when connection is ESTABLISHED and call is IDLE', () => {
       const snapshot = createMockSnapshot({
         connection: {
           value: EConnectionStatus.ESTABLISHED,
@@ -501,7 +501,7 @@ describe('sessionSelectors', () => {
         } as never,
       });
 
-      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.READY);
+      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.READY_TO_CALL);
     });
 
     it('should return CALL_CONNECTING when connection is ESTABLISHED and call is CONNECTING', () => {
@@ -543,7 +543,7 @@ describe('sessionSelectors', () => {
       expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CALL_ACTIVE);
     });
 
-    it('should return CALL_ENDED when connection is ESTABLISHED and call is ENDED', () => {
+    it('should return READY_TO_CALL when connection is ESTABLISHED and call is ENDED', () => {
       const snapshot = createMockSnapshot({
         connection: {
           value: EConnectionStatus.ESTABLISHED,
@@ -553,7 +553,7 @@ describe('sessionSelectors', () => {
         } as never,
       });
 
-      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CALL_ENDED);
+      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.READY_TO_CALL);
     });
 
     it('should return CALL_FAILED when connection is ESTABLISHED and call is FAILED', () => {
@@ -569,7 +569,7 @@ describe('sessionSelectors', () => {
       expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CALL_FAILED);
     });
 
-    it('should return READY as fallback for unknown call status when connection is ESTABLISHED', () => {
+    it('should return READY_TO_CALL as fallback for unknown call status when connection is ESTABLISHED', () => {
       const snapshot = createMockSnapshot({
         connection: {
           value: EConnectionStatus.ESTABLISHED,
@@ -579,7 +579,7 @@ describe('sessionSelectors', () => {
         } as never,
       });
 
-      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.READY);
+      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.READY_TO_CALL);
     });
   });
 });

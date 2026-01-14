@@ -41,13 +41,11 @@ export enum ESystemStatus {
   /** Идет процесс подключения (preparing, connecting, connected, registered) */
   CONNECTING = 'system:connecting',
   /** Соединение установлено, готово к звонкам, но звонок не активен */
-  READY = 'system:ready',
+  READY_TO_CALL = 'system:readyToCall',
   /** Идет установка звонка (connection established, call connecting) */
   CALL_CONNECTING = 'system:callConnecting',
   /** Звонок активен (connection established, call accepted/inCall) */
   CALL_ACTIVE = 'system:callActive',
-  /** Звонок завершен (connection established, call ended) */
-  CALL_ENDED = 'system:callEnded',
   /** Ошибка соединения (connection failed) */
   CONNECTION_FAILED = 'system:connectionFailed',
   /** Ошибка звонка (connection established, call failed) */

@@ -77,7 +77,7 @@ const selectSystemStatus = (snapshot: TSessionSnapshot): ESystemStatus => {
   // Теперь определяем состояние на основе звонка
   switch (callStatus) {
     case ECallStatus.IDLE: {
-      return ESystemStatus.READY;
+      return ESystemStatus.READY_TO_CALL;
     }
     case ECallStatus.CONNECTING: {
       return ESystemStatus.CALL_CONNECTING;
@@ -87,14 +87,14 @@ const selectSystemStatus = (snapshot: TSessionSnapshot): ESystemStatus => {
       return ESystemStatus.CALL_ACTIVE;
     }
     case ECallStatus.ENDED: {
-      return ESystemStatus.CALL_ENDED;
+      return ESystemStatus.READY_TO_CALL;
     }
     case ECallStatus.FAILED: {
       return ESystemStatus.CALL_FAILED;
     }
     default: {
-      // Fallback на READY для неизвестных состояний call
-      return ESystemStatus.READY;
+      // Fallback на READY_TO_CALL для неизвестных состояний call
+      return ESystemStatus.READY_TO_CALL;
     }
   }
 };
