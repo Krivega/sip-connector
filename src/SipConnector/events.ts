@@ -8,6 +8,7 @@ import { CONNECTION_MANAGER_EVENT_NAMES } from '@/ConnectionManager';
 import { INCOMING_CALL_MANAGER_EVENT_NAMES } from '@/IncomingCallManager';
 import { MAIN_STREAM_HEALTH_MONITOR_EVENT_NAMES } from '@/MainStreamHealthMonitor';
 import { PRESENTATION_MANAGER_EVENT_NAMES } from '@/PresentationManager';
+import { SESSION_MANAGER_EVENT_NAMES } from '@/SessionManager';
 import { STATS_MANAGER_EVENT_NAMES } from '@/StatsManager';
 import { VIDEO_SENDING_BALANCER_MANAGER_EVENT_NAMES } from '@/VideoSendingBalancerManager';
 
@@ -22,6 +23,7 @@ import type {
 import type { TIncomingCallManagerEventMap } from '@/IncomingCallManager';
 import type { TMainStreamHealthMonitorEventMap } from '@/MainStreamHealthMonitor';
 import type { TPresentationManagerEventMap } from '@/PresentationManager';
+import type { TSessionManagerEventMap } from '@/SessionManager';
 import type { TStatsManagerEventMap } from '@/StatsManager';
 import type { TVideoSendingBalancerManagerEventMap } from '@/VideoSendingBalancerManager';
 
@@ -56,6 +58,9 @@ const VIDEO_BALANCER_EVENTS = VIDEO_SENDING_BALANCER_MANAGER_EVENT_NAMES.map((ev
 const MAIN_STREAM_HEALTH_EVENTS = MAIN_STREAM_HEALTH_MONITOR_EVENT_NAMES.map((eventName) => {
   return `main-stream-health:${eventName}` as const;
 });
+const SESSION_EVENTS = SESSION_MANAGER_EVENT_NAMES.map((eventName) => {
+  return `session:${eventName}` as const;
+});
 
 const SIP_CONNECTOR_EVENTS = [
   'disconnected-from-out-of-call',
@@ -74,6 +79,7 @@ export const EVENT_NAMES = [
   ...STATS_EVENTS,
   ...VIDEO_BALANCER_EVENTS,
   ...MAIN_STREAM_HEALTH_EVENTS,
+  ...SESSION_EVENTS,
   ...SIP_CONNECTOR_EVENTS,
 ] as const;
 
@@ -100,6 +106,7 @@ export type TEventMap = PrefixedEventMap<TAutoConnectorManagerEventMap, 'auto-co
   PrefixedEventMap<TStatsManagerEventMap, 'stats'> &
   PrefixedEventMap<TVideoSendingBalancerManagerEventMap, 'video-balancer'> &
   PrefixedEventMap<TMainStreamHealthMonitorEventMap, 'main-stream-health'> &
+  PrefixedEventMap<TSessionManagerEventMap, 'session'> &
   TSipConnectorEventMap;
 
 export type TEvents = TypedEvents<TEventMap>;

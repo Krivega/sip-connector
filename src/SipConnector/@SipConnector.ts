@@ -6,7 +6,7 @@ import { ConnectionManager } from '@/ConnectionManager';
 import { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import { IncomingCallManager } from '@/IncomingCallManager';
 import { PresentationManager } from '@/PresentationManager';
-import { createSession } from '@/session';
+import { SessionManager } from '@/SessionManager';
 import { StatsManager } from '@/StatsManager';
 import { sendOffer } from '@/tools';
 import setCodecPreferences from '@/tools/setCodecPreferences';
@@ -19,7 +19,6 @@ import { createEvents } from './events';
 import type { IAutoConnectorOptions } from '@/AutoConnectorManager';
 import type { TGetUri } from '@/CallManager';
 import type { TContentHint, TOnAddedTransceiver } from '@/PresentationManager';
-import type { ISession } from '@/session';
 import type { TJsSIP } from '@/types';
 import type { IBalancerOptions } from '@/VideoSendingBalancer';
 import type { TEventName, TEventMap, TEvents } from './events';
@@ -47,7 +46,7 @@ class SipConnector {
 
   public readonly videoSendingBalancerManager: VideoSendingBalancerManager;
 
-  public readonly session: ISession;
+  public readonly sessionManager: SessionManager;
 
   public readonly mainStreamHealthMonitor: MainStreamHealthMonitor;
 
@@ -109,7 +108,7 @@ class SipConnector {
     );
     this.mainStreamHealthMonitor = new MainStreamHealthMonitor(this.statsManager, this.callManager);
     this.mainStreamRecovery = new MainStreamRecovery(this.callManager);
-    this.session = createSession({
+    this.sessionManager = new SessionManager({
       connectionManager: this.connectionManager,
       callManager: this.callManager,
       incomingCallManager: this.incomingCallManager,
@@ -546,6 +545,7 @@ class SipConnector {
     this.bridgeEvents('stats', this.statsManager);
     this.bridgeEvents('video-balancer', this.videoSendingBalancerManager);
     this.bridgeEvents('main-stream-health', this.mainStreamHealthMonitor);
+    this.bridgeEvents('session', this.sessionManager);
 
     this.subscribeToApiEvents();
     this.subscribeDisconnectedFromOutOfCall();
