@@ -83,7 +83,7 @@ const unsubscribe = session.subscribe(
   (snapshot) => snapshot.connection.status,
   (status) => {
     console.log('Connection status changed:', status);
-  }
+  },
 );
 
 // Очистка подписок
@@ -170,15 +170,15 @@ await facade.askPermissionToEnableCam();
 // Подписка на входящие звонки
 sipConnector.on('incoming-call:ringing', async (event) => {
   console.log('Входящий звонок:', event.remoteCallerData);
-  
+
   // Принять звонок
   const mediaStream = await navigator.mediaDevices.getUserMedia({
     video: true,
     audio: true,
   });
-  
+
   await facade.answerToIncomingCall({ mediaStream });
-  
+
   // Или отклонить
   // await facade.declineToIncomingCall();
 });
