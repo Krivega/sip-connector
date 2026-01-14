@@ -6,7 +6,24 @@ import { BaseStateMachine } from '@/tools/BaseStateMachine';
 import type { ActorRefFrom, SnapshotFrom } from 'xstate';
 import type { TEventMap, TEvents } from './events';
 
-// Определяем типы событий для XState машины
+export enum EState {
+  IDLE = 'connection:idle',
+  PREPARING = 'connection:preparing',
+  CONNECTING = 'connection:connecting',
+  CONNECTED = 'connection:connected',
+  REGISTERED = 'connection:registered',
+  ESTABLISHED = 'connection:established',
+  DISCONNECTED = 'connection:disconnected',
+  FAILED = 'connection:failed',
+}
+
+enum EAction {
+  LOG_TRANSITION = 'logTransition',
+  LOG_STATE_CHANGE = 'logStateChange',
+  SET_ERROR = 'setError',
+  CLEAR_ERROR = 'clearError',
+}
+
 export enum EEvents {
   START_CONNECT = 'START_CONNECT',
   START_INIT_UA = 'START_INIT_UA',
@@ -31,23 +48,6 @@ const ALL_MACHINE_EVENTS: TConnectionMachineEvent[] = Object.values(EEvents);
 
 interface IConnectionMachineContext {
   error?: Error;
-}
-
-export enum EState {
-  IDLE = 'connection:idle',
-  PREPARING = 'connection:preparing',
-  CONNECTING = 'connection:connecting',
-  CONNECTED = 'connection:connected',
-  REGISTERED = 'connection:registered',
-  DISCONNECTED = 'connection:disconnected',
-  FAILED = 'connection:failed',
-}
-
-enum EAction {
-  LOG_TRANSITION = 'logTransition',
-  LOG_STATE_CHANGE = 'logStateChange',
-  SET_ERROR = 'setError',
-  CLEAR_ERROR = 'clearError',
 }
 
 // Создаем XState машину с setup API для лучшей типизации
@@ -206,6 +206,17 @@ const connectionMachine = setup({
         type: EAction.LOG_STATE_CHANGE,
         params: { state: EState.CONNECTED },
       },
+      always: {
+        target: EState.ESTABLISHED,
+        actions: {
+          type: EAction.LOG_TRANSITION,
+          params: {
+            from: EState.CONNECTED,
+            to: EState.ESTABLISHED,
+            event: 'always',
+          },
+        },
+      },
       on: {
         [EEvents.UA_REGISTERED]: {
           target: EState.REGISTERED,
@@ -229,26 +240,23 @@ const connectionMachine = setup({
             },
           },
         },
-        [EEvents.CONNECTION_FAILED]: {
-          target: EState.FAILED,
-          actions: [
-            {
-              type: EAction.LOG_TRANSITION,
-              params: {
-                from: EState.CONNECTED,
-                to: EState.FAILED,
-                event: EEvents.CONNECTION_FAILED,
-              },
-            },
-            { type: EAction.SET_ERROR },
-          ],
-        },
       },
     },
     [EState.REGISTERED]: {
       entry: {
         type: EAction.LOG_STATE_CHANGE,
         params: { state: EState.REGISTERED },
+      },
+      always: {
+        target: EState.ESTABLISHED,
+        actions: {
+          type: EAction.LOG_TRANSITION,
+          params: {
+            from: EState.REGISTERED,
+            to: EState.ESTABLISHED,
+            event: 'always',
+          },
+        },
       },
       on: {
         [EEvents.UA_UNREGISTERED]: {
@@ -273,19 +281,35 @@ const connectionMachine = setup({
             },
           },
         },
-        [EEvents.CONNECTION_FAILED]: {
-          target: EState.FAILED,
-          actions: [
-            {
-              type: EAction.LOG_TRANSITION,
-              params: {
-                from: EState.REGISTERED,
-                to: EState.FAILED,
-                event: EEvents.CONNECTION_FAILED,
-              },
+      },
+    },
+    [EState.ESTABLISHED]: {
+      entry: {
+        type: EAction.LOG_STATE_CHANGE,
+        params: { state: EState.ESTABLISHED },
+      },
+      on: {
+        [EEvents.UA_DISCONNECTED]: {
+          target: EState.DISCONNECTED,
+          actions: {
+            type: EAction.LOG_TRANSITION,
+            params: {
+              from: EState.ESTABLISHED,
+              to: EState.DISCONNECTED,
+              event: EEvents.UA_DISCONNECTED,
             },
-            { type: EAction.SET_ERROR },
-          ],
+          },
+        },
+        [EEvents.RESET]: {
+          target: EState.IDLE,
+          actions: {
+            type: EAction.LOG_TRANSITION,
+            params: {
+              from: EState.ESTABLISHED,
+              to: EState.IDLE,
+              event: EEvents.RESET,
+            },
+          },
         },
       },
     },
@@ -409,6 +433,10 @@ export default class ConnectionStateMachine extends BaseStateMachine<
     return this.hasState(EState.REGISTERED);
   }
 
+  public get isEstablished(): boolean {
+    return this.hasState(EState.ESTABLISHED);
+  }
+
   public get isDisconnected(): boolean {
     return this.hasState(EState.DISCONNECTED);
   }
@@ -434,7 +462,7 @@ export default class ConnectionStateMachine extends BaseStateMachine<
   }
 
   public get isActiveConnection(): boolean {
-    return this.isConnected || this.isRegistered;
+    return this.isEstablished || this.isConnected || this.isRegistered;
   }
 
   // Публичные методы для уведомления о начале операций

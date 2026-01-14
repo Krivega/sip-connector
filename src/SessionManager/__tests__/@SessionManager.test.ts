@@ -80,7 +80,7 @@ describe('SessionManager', () => {
       connectionStateMachine.send({ type: EConnectionEvents.UA_CONNECTED });
       connectionStateMachine.send({ type: EConnectionEvents.UA_REGISTERED });
       expect(sessionSelectors.selectConnectionStatus(session.getSnapshot())).toBe(
-        EConnectionStatus.REGISTERED,
+        EConnectionStatus.ESTABLISHED,
       );
 
       callStateMachine.send({ type: 'CALL.CONNECTING' });

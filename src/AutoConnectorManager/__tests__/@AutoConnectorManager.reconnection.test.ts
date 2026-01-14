@@ -198,7 +198,7 @@ describe('AutoConnectorManager - Reconnection', () => {
       // Ждем произвольное время, чтобы убедиться, что подключение не завершено
       await delayPromise(DELAY);
 
-      expect(sipConnector.connectionManager.connectionState).toBe('connection:connected');
+      expect(sipConnector.connectionManager.connectionState).toBe('connection:established');
 
       // триггерим событие отключения от ua
       // @ts-ignore приватное свойство
@@ -215,7 +215,7 @@ describe('AutoConnectorManager - Reconnection', () => {
       // ждем успешного повторного подключения
       await manager.wait('success');
 
-      expect(sipConnector.connectionManager.connectionState).toBe('connection:connected');
+      expect(sipConnector.connectionManager.connectionState).toBe('connection:established');
     });
   });
 

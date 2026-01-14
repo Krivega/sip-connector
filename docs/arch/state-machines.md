@@ -17,14 +17,18 @@ stateDiagram-v2
             connecting --> registered: uaRegistered
             connecting --> disconnected: disconnected
             connecting --> failed: failed
+            connected --> established: always
             connected --> registered: uaRegistered
             connected --> disconnected: disconnected
-            connected --> failed: failed
+            registered --> established: always
             registered --> connected: uaUnregistered
             registered --> disconnected: disconnected
-            registered --> failed: failed
+            established --> disconnected: disconnected
+            established --> idle: reset
             disconnected --> idle: reset
+            disconnected --> preparing: start
             failed --> idle: reset
+            failed --> preparing: start
         }
         state call {
             idle --> connecting: call.connecting
@@ -85,7 +89,7 @@ stateDiagram-v2
 
 | Домен        | Статусы                                                                                | Источники событий                                                                                                                                                                                     | Доменные события                                                                                                                         |
 | :----------- | :------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------- |
-| Connection   | `idle`, `preparing`, `connecting`, `connected`, `registered`, `disconnected`, `failed` | `ConnectionManager.events` (`connect-started`, `connecting`, `connect-parameters-resolve-success`, `connected`, `registered`, `unregistered`, `disconnected`, `registrationFailed`, `connect-failed`) | `START_CONNECT`, `START_INIT_UA`, `UA_CONNECTED`, `UA_REGISTERED`, `UA_UNREGISTERED`, `UA_DISCONNECTED`, `CONNECTION_FAILED`, `RESET`    |
+| Connection   | `idle`, `preparing`, `connecting`, `connected`, `registered`, `established`, `disconnected`, `failed` | `ConnectionManager.events` (`connect-started`, `connecting`, `connect-parameters-resolve-success`, `connected`, `registered`, `unregistered`, `disconnected`, `registrationFailed`, `connect-failed`) | `START_CONNECT`, `START_INIT_UA`, `UA_CONNECTED`, `UA_REGISTERED`, `UA_UNREGISTERED`, `UA_DISCONNECTED`, `CONNECTION_FAILED`, `RESET`    |
 | Call         | `idle`, `connecting`, `accepted`, `inCall`, `ended`, `failed`                          | `CallManager.events` (`connecting`, `accepted`, `confirmed`, `ended`, `failed`)                                                                                                                       | `CALL.CONNECTING`, `CALL.ACCEPTED`, `CALL.CONFIRMED`, `CALL.ENDED`, `CALL.FAILED`, `CALL.RESET`                                          |
 | Incoming     | `idle`, `ringing`, `consumed`, `declined`, `terminated`, `failed`                      | `IncomingCallManager.events` (`incomingCall`, `declinedIncomingCall`, `terminatedIncomingCall`, `failedIncomingCall`) + синтетика при ответе на входящий                                              | `INCOMING.RINGING`, `INCOMING.CONSUMED`, `INCOMING.DECLINED`, `INCOMING.TERMINATED`, `INCOMING.FAILED`, `INCOMING.CLEAR`                 |
 | Presentation | `idle`, `starting`, `active`, `stopping`, `failed`                                     | `CallManager.events` (`presentation:start\|started\|end\|ended\|failed`), `ConnectionManager.events` (`disconnected`, `registrationFailed`, `connect-failed`)                                         | `SCREEN.STARTING`, `SCREEN.STARTED`, `SCREEN.ENDING`, `SCREEN.ENDED`, `SCREEN.FAILED`, `CALL.ENDED`, `CALL.FAILED`, `PRESENTATION.RESET` |
@@ -116,20 +120,28 @@ stateDiagram-v2
 - **Логика состояний:**
   - `PREPARING` — подготовка к подключению (до инициализации UA, до вызова `ua.start()`)
   - `CONNECTING` — UA запущен, идет подключение (после `ua.start()`, когда приходят события `connecting`, `connected`, `registered`)
+  - `CONNECTED` — UA подключен к серверу (промежуточное состояние, автоматически переходит в `ESTABLISHED`)
+  - `REGISTERED` — UA зарегистрирован на сервере (промежуточное состояние, автоматически переходит в `ESTABLISHED`)
+  - `ESTABLISHED` — соединение установлено и готово к работе (финальное активное состояние, автоматически достигается из `CONNECTED` или `REGISTERED`)
   - Состояния переименованы для соответствия реальной последовательности операций: сначала подготовка, затем подключение UA
 - Публичный API:
-  - Геттеры состояний: `isIdle`, `isPreparing`, `isConnecting`, `isConnected`, `isRegistered`, `isDisconnected`, `isFailed`
-  - Комбинированные геттеры: `isPending` (preparing/connecting), `isPendingConnect`, `isPendingInitUa`, `isActiveConnection` (connected/registered)
+  - Геттеры состояний: `isIdle`, `isPreparing`, `isConnecting`, `isConnected`, `isRegistered`, `isEstablished`, `isDisconnected`, `isFailed`
+  - Комбинированные геттеры: `isPending` (preparing/connecting), `isPendingConnect`, `isPendingInitUa`, `isActiveConnection` (connected/registered/established)
   - Геттер ошибки: `error`
   - Методы управления: `startConnect()`, `startInitUa()`, `reset()`
   - Методы валидации: `canTransition()`, `getValidEvents()`
   - Подписка на изменения: `onStateChange(listener)`
 - Корректный граф переходов:
-  - IDLE → PREPARING → CONNECTING → CONNECTED → REGISTERED
-  - Переходы в DISCONNECTED из PREPARING/CONNECTING/CONNECTED/REGISTERED
-  - Переходы в FAILED из PREPARING/CONNECTING/CONNECTED/REGISTERED
-  - Переходы RESET: DISCONNECTED→IDLE, FAILED→IDLE
+  - IDLE → PREPARING → CONNECTING → CONNECTED → ESTABLISHED (автоматически)
+  - IDLE → PREPARING → CONNECTING → REGISTERED → ESTABLISHED (автоматически)
   - Прямой переход CONNECTING → REGISTERED (для быстрой регистрации без явного connected)
+  - Переход REGISTERED → CONNECTED → ESTABLISHED (через `UA_UNREGISTERED`, затем автоматически)
+  - Переходы в DISCONNECTED из PREPARING/CONNECTING/CONNECTED/REGISTERED/ESTABLISHED
+  - Переходы в FAILED из PREPARING/CONNECTING
+  - Переходы RESET: ESTABLISHED→IDLE, DISCONNECTED→IDLE, FAILED→IDLE
+  - Переходы из DISCONNECTED/FAILED: → PREPARING (повторное подключение через `START_CONNECT`)
+  - Автоматические переходы через `always`: CONNECTED → ESTABLISHED, REGISTERED → ESTABLISHED
+  - В состоянии ESTABLISHED события `UA_REGISTERED` и `UA_UNREGISTERED` игнорируются (нет обработчиков)
 - Автоматическое создание Error из ошибок регистрации с форматом: "Registration failed: {status_code} {reason_phrase}"
 - Логирование всех переходов и недопустимых операций
 
