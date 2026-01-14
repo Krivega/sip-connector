@@ -105,10 +105,6 @@ sipConnector.on('api:enterRoom', ({ room }) => {
 sipConnector.on('api:useLicense', (license) => {
   console.log('Лицензия:', license);
 });
-
-sipConnector.on('api:restart', (data) => {
-  console.log('Событие restart от сервера:', data);
-});
 ```
 
 ### Изменения удаленных потоков
