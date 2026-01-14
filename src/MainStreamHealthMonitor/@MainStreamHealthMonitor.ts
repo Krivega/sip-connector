@@ -46,7 +46,7 @@ class MainStreamHealthMonitor {
   };
 
   private readonly hasNoIncomingFrames = (): boolean => {
-    return this.statsManager.isNotValidFramesStats && this.isMutedMainVideoTrack;
+    return this.statsManager.isInvalidInboundFrames && this.isMutedMainVideoTrack;
   };
 
   private subscribe() {

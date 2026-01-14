@@ -15,7 +15,7 @@ describe('@MainStreamHealthMonitor', () => {
 
   let mainStream: MediaStream;
   let track: ReturnType<typeof createVideoMediaStreamTrackMock>;
-  let isNotValidFramesStats: boolean;
+  let isInvalidInboundFrames: boolean;
 
   const handler = jest.fn();
 
@@ -23,11 +23,11 @@ describe('@MainStreamHealthMonitor', () => {
     mainStream = new MediaStream();
     track = createVideoMediaStreamTrackMock({ id: 'v1' });
     statsEvents = createStatsEvents();
-    isNotValidFramesStats = false;
+    isInvalidInboundFrames = false;
     statsManager = {
       on: statsEvents.on.bind(statsEvents),
-      get isNotValidFramesStats() {
-        return isNotValidFramesStats;
+      get isInvalidInboundFrames() {
+        return isInvalidInboundFrames;
       },
     } as unknown as StatsManager;
     callManager = {
@@ -42,11 +42,11 @@ describe('@MainStreamHealthMonitor', () => {
   });
 
   describe('NO_INBOUND_FRAMES_EVENT_NAME', () => {
-    it('должен эмитить событие когда основной видеотрек muted и StatsManager.isNotValidFramesStats возвращает true', () => {
+    it('должен эмитить событие когда основной видеотрек muted и StatsManager.isInvalidInboundFrames возвращает true', () => {
       mainStream.addTrack(track);
 
       Object.defineProperty(track, 'muted', { value: true, configurable: true });
-      isNotValidFramesStats = true;
+      isInvalidInboundFrames = true;
 
       const monitor = new MainStreamHeathMonitor(statsManager, callManager);
 
@@ -56,11 +56,11 @@ describe('@MainStreamHealthMonitor', () => {
       expect(handler).toHaveBeenCalledTimes(1);
     });
 
-    it('не должен эмитить событие когда StatsManager.isNotValidFramesStats возвращает false', () => {
+    it('не должен эмитить событие когда StatsManager.isInvalidInboundFrames возвращает false', () => {
       mainStream.addTrack(track);
 
       Object.defineProperty(track, 'muted', { value: true, configurable: true });
-      isNotValidFramesStats = false;
+      isInvalidInboundFrames = false;
 
       const monitor = new MainStreamHeathMonitor(statsManager, callManager);
 
@@ -74,7 +74,7 @@ describe('@MainStreamHealthMonitor', () => {
       mainStream.addTrack(track);
 
       Object.defineProperty(track, 'muted', { value: false, configurable: true });
-      isNotValidFramesStats = true;
+      isInvalidInboundFrames = true;
 
       const monitor = new MainStreamHeathMonitor(statsManager, callManager);
 
@@ -88,7 +88,7 @@ describe('@MainStreamHealthMonitor', () => {
       const monitor = new MainStreamHeathMonitor(statsManager, callManager);
 
       monitor.on(NO_INBOUND_FRAMES_EVENT_NAME, handler);
-      isNotValidFramesStats = true;
+      isInvalidInboundFrames = true;
       statsEvents.trigger('collected', {} as TStats);
 
       expect(handler).toHaveBeenCalledTimes(0);
