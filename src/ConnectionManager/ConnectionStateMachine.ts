@@ -35,8 +35,8 @@ interface IConnectionMachineContext {
 
 export enum EState {
   IDLE = 'connection:idle',
+  PREPARING = 'connection:preparing',
   CONNECTING = 'connection:connecting',
-  INITIALIZING = 'connection:initializing',
   CONNECTED = 'connection:connected',
   REGISTERED = 'connection:registered',
   DISCONNECTED = 'connection:disconnected',
@@ -90,15 +90,59 @@ const connectionMachine = setup({
       },
       on: {
         [EEvents.START_CONNECT]: {
-          target: EState.CONNECTING,
+          target: EState.PREPARING,
           actions: {
             type: EAction.LOG_TRANSITION,
             params: {
               from: EState.IDLE,
-              to: EState.CONNECTING,
+              to: EState.PREPARING,
               event: EEvents.START_CONNECT,
             },
           },
+        },
+      },
+    },
+    [EState.PREPARING]: {
+      entry: {
+        type: EAction.LOG_STATE_CHANGE,
+        params: { state: EState.PREPARING },
+      },
+      on: {
+        [EEvents.START_INIT_UA]: {
+          target: EState.CONNECTING,
+          actions: {
+            type: EAction.LOG_TRANSITION,
+            params: {
+              from: EState.PREPARING,
+              to: EState.CONNECTING,
+              event: EEvents.START_INIT_UA,
+            },
+          },
+        },
+        [EEvents.UA_DISCONNECTED]: {
+          target: EState.DISCONNECTED,
+          actions: {
+            type: EAction.LOG_TRANSITION,
+            params: {
+              from: EState.PREPARING,
+              to: EState.DISCONNECTED,
+              event: EEvents.UA_DISCONNECTED,
+            },
+          },
+        },
+        [EEvents.CONNECTION_FAILED]: {
+          target: EState.FAILED,
+          actions: [
+            {
+              type: EAction.LOG_TRANSITION,
+              params: {
+                from: EState.PREPARING,
+                to: EState.FAILED,
+                event: EEvents.CONNECTION_FAILED,
+              },
+            },
+            { type: EAction.SET_ERROR },
+          ],
         },
       },
     },
@@ -108,14 +152,25 @@ const connectionMachine = setup({
         params: { state: EState.CONNECTING },
       },
       on: {
-        [EEvents.START_INIT_UA]: {
-          target: EState.INITIALIZING,
+        [EEvents.UA_CONNECTED]: {
+          target: EState.CONNECTED,
           actions: {
             type: EAction.LOG_TRANSITION,
             params: {
               from: EState.CONNECTING,
-              to: EState.INITIALIZING,
-              event: EEvents.START_INIT_UA,
+              to: EState.CONNECTED,
+              event: EEvents.UA_CONNECTED,
+            },
+          },
+        },
+        [EEvents.UA_REGISTERED]: {
+          target: EState.REGISTERED,
+          actions: {
+            type: EAction.LOG_TRANSITION,
+            params: {
+              from: EState.CONNECTING,
+              to: EState.REGISTERED,
+              event: EEvents.UA_REGISTERED,
             },
           },
         },
@@ -137,61 +192,6 @@ const connectionMachine = setup({
               type: EAction.LOG_TRANSITION,
               params: {
                 from: EState.CONNECTING,
-                to: EState.FAILED,
-                event: EEvents.CONNECTION_FAILED,
-              },
-            },
-            { type: EAction.SET_ERROR },
-          ],
-        },
-      },
-    },
-    [EState.INITIALIZING]: {
-      entry: {
-        type: EAction.LOG_STATE_CHANGE,
-        params: { state: EState.INITIALIZING },
-      },
-      on: {
-        [EEvents.UA_CONNECTED]: {
-          target: EState.CONNECTED,
-          actions: {
-            type: EAction.LOG_TRANSITION,
-            params: {
-              from: EState.INITIALIZING,
-              to: EState.CONNECTED,
-              event: EEvents.UA_CONNECTED,
-            },
-          },
-        },
-        [EEvents.UA_REGISTERED]: {
-          target: EState.REGISTERED,
-          actions: {
-            type: EAction.LOG_TRANSITION,
-            params: {
-              from: EState.INITIALIZING,
-              to: EState.REGISTERED,
-              event: EEvents.UA_REGISTERED,
-            },
-          },
-        },
-        [EEvents.UA_DISCONNECTED]: {
-          target: EState.DISCONNECTED,
-          actions: {
-            type: EAction.LOG_TRANSITION,
-            params: {
-              from: EState.INITIALIZING,
-              to: EState.DISCONNECTED,
-              event: EEvents.UA_DISCONNECTED,
-            },
-          },
-        },
-        [EEvents.CONNECTION_FAILED]: {
-          target: EState.FAILED,
-          actions: [
-            {
-              type: EAction.LOG_TRANSITION,
-              params: {
-                from: EState.INITIALIZING,
                 to: EState.FAILED,
                 event: EEvents.CONNECTION_FAILED,
               },
@@ -307,12 +307,12 @@ const connectionMachine = setup({
           },
         },
         [EEvents.START_CONNECT]: {
-          target: EState.CONNECTING,
+          target: EState.PREPARING,
           actions: {
             type: EAction.LOG_TRANSITION,
             params: {
               from: EState.DISCONNECTED,
-              to: EState.CONNECTING,
+              to: EState.PREPARING,
               event: EEvents.START_CONNECT,
             },
           },
@@ -340,13 +340,13 @@ const connectionMachine = setup({
           ],
         },
         [EEvents.START_CONNECT]: {
-          target: EState.CONNECTING,
+          target: EState.PREPARING,
           actions: [
             {
               type: EAction.LOG_TRANSITION,
               params: {
                 from: EState.FAILED,
-                to: EState.CONNECTING,
+                to: EState.PREPARING,
                 event: EEvents.START_CONNECT,
               },
             },
@@ -393,12 +393,12 @@ export default class ConnectionStateMachine extends BaseStateMachine<
     return this.hasState(EState.IDLE);
   }
 
-  public get isConnecting(): boolean {
-    return this.hasState(EState.CONNECTING);
+  public get isPreparing(): boolean {
+    return this.hasState(EState.PREPARING);
   }
 
-  public get isInitializing(): boolean {
-    return this.hasState(EState.INITIALIZING);
+  public get isConnecting(): boolean {
+    return this.hasState(EState.CONNECTING);
   }
 
   public get isConnected(): boolean {
@@ -422,15 +422,15 @@ export default class ConnectionStateMachine extends BaseStateMachine<
   }
 
   public get isPending(): boolean {
-    return this.isConnecting || this.isInitializing;
+    return this.isPreparing || this.isConnecting;
   }
 
   public get isPendingConnect(): boolean {
-    return this.isConnecting;
+    return this.isPreparing;
   }
 
   public get isPendingInitUa(): boolean {
-    return this.isInitializing;
+    return this.isConnecting;
   }
 
   public get isActiveConnection(): boolean {

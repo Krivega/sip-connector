@@ -29,11 +29,6 @@ describe('CallStateMachine', () => {
         expected: EState.CONNECTING,
       },
       {
-        title: 'CALL.RINGING из IDLE в RINGING',
-        event: { type: 'CALL.RINGING' },
-        expected: EState.RINGING,
-      },
-      {
         title: 'CALL.ENDED из CONNECTING в ENDED',
         arrange: () => {
           machine.send({ type: 'CALL.CONNECTING' });
@@ -58,25 +53,27 @@ describe('CallStateMachine', () => {
         expected: EState.FAILED,
       },
       {
-        title: 'CALL.CONFIRMED из RINGING в IN_CALL',
+        title: 'CALL.ACCEPTED из CONNECTING в ACCEPTED',
         arrange: () => {
-          machine.send({ type: 'CALL.RINGING' });
-        },
-        event: { type: 'CALL.CONFIRMED' },
-        expected: EState.IN_CALL,
-      },
-      {
-        title: 'CALL.ACCEPTED из RINGING в ACCEPTED',
-        arrange: () => {
-          machine.send({ type: 'CALL.RINGING' });
+          machine.send({ type: 'CALL.CONNECTING' });
         },
         event: { type: 'CALL.ACCEPTED' },
         expected: EState.ACCEPTED,
       },
       {
+        title: 'CALL.CONFIRMED из ACCEPTED в IN_CALL',
+        arrange: () => {
+          machine.send({ type: 'CALL.CONNECTING' });
+          machine.send({ type: 'CALL.ACCEPTED' });
+        },
+        event: { type: 'CALL.CONFIRMED' },
+        expected: EState.IN_CALL,
+      },
+      {
         title: 'CALL.ENDED из IN_CALL в ENDED',
         arrange: () => {
           machine.send({ type: 'CALL.CONNECTING' });
+          machine.send({ type: 'CALL.ACCEPTED' });
           machine.send({ type: 'CALL.CONFIRMED' });
         },
         event: { type: 'CALL.ENDED' },
@@ -86,6 +83,7 @@ describe('CallStateMachine', () => {
         title: 'CALL.FAILED из IN_CALL в FAILED',
         arrange: () => {
           machine.send({ type: 'CALL.CONNECTING' });
+          machine.send({ type: 'CALL.ACCEPTED' });
           machine.send({ type: 'CALL.CONFIRMED' });
         },
         event: { type: 'CALL.FAILED', error: new Error('fail') },
@@ -121,20 +119,18 @@ describe('CallStateMachine', () => {
       }[];
     }[] = [
       {
-        title: 'успешный звонок (connecting → ringing → accepted → confirmed → ended)',
+        title: 'успешный звонок (connecting → accepted → confirmed → ended)',
         steps: [
           { event: 'connecting', expected: EState.CONNECTING },
-          { event: 'progress', expected: EState.RINGING },
           { event: 'accepted', expected: EState.ACCEPTED },
           { event: 'confirmed', expected: EState.IN_CALL },
           { event: 'ended', expected: EState.ENDED },
         ],
       },
       {
-        title: 'ошибка звонка (connecting → ringing → failed)',
+        title: 'ошибка звонка (connecting → failed)',
         steps: [
           { event: 'connecting', expected: EState.CONNECTING },
-          { event: 'progress', expected: EState.RINGING },
           { event: 'failed', expected: EState.FAILED },
         ],
       },
@@ -168,12 +164,6 @@ describe('CallStateMachine', () => {
       expect(machine.isConnecting).toBe(true);
     });
 
-    it('isRinging должен возвращать true только для RINGING', () => {
-      expect(machine.isRinging).toBe(false);
-      machine.send({ type: 'CALL.RINGING' });
-      expect(machine.isRinging).toBe(true);
-    });
-
     it('isAccepted должен возвращать true только для ACCEPTED', () => {
       expect(machine.isAccepted).toBe(false);
       machine.send({ type: 'CALL.CONNECTING' });
@@ -184,6 +174,7 @@ describe('CallStateMachine', () => {
     it('isInCall должен возвращать true только для IN_CALL', () => {
       expect(machine.isInCall).toBe(false);
       machine.send({ type: 'CALL.CONNECTING' });
+      machine.send({ type: 'CALL.ACCEPTED' });
       machine.send({ type: 'CALL.CONFIRMED' });
       expect(machine.isInCall).toBe(true);
     });
@@ -202,11 +193,9 @@ describe('CallStateMachine', () => {
       expect(machine.isFailed).toBe(true);
     });
 
-    it('isPending должен возвращать true для CONNECTING и RINGING', () => {
+    it('isPending должен возвращать true только для CONNECTING', () => {
       expect(machine.isPending).toBe(false);
       machine.send({ type: 'CALL.CONNECTING' });
-      expect(machine.isPending).toBe(true);
-      machine.send({ type: 'CALL.RINGING' });
       expect(machine.isPending).toBe(true);
       machine.send({ type: 'CALL.ACCEPTED' });
       expect(machine.isPending).toBe(false);
@@ -307,16 +296,15 @@ describe('CallStateMachine', () => {
       consoleSpy.mockRestore();
     });
 
-    it('должен запрещать переход из RINGING в CONNECTING', () => {
+    it('должен запрещать переход CALL.CONFIRMED из CONNECTING', () => {
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
 
       machine.send({ type: 'CALL.CONNECTING' });
-      machine.send({ type: 'CALL.RINGING' });
-      expect(machine.state).toBe(EState.RINGING);
+      expect(machine.state).toBe(EState.CONNECTING);
 
-      machine.send({ type: 'CALL.CONNECTING' });
+      machine.send({ type: 'CALL.CONFIRMED' });
 
-      expect(machine.state).toBe(EState.RINGING);
+      expect(machine.state).toBe(EState.CONNECTING);
       expect(consoleSpy).toHaveBeenCalled();
 
       consoleSpy.mockRestore();
@@ -409,7 +397,6 @@ describe('CallStateMachine', () => {
       });
 
       machine.send({ type: 'CALL.CONNECTING' });
-      machine.send({ type: 'CALL.RINGING' });
       machine.send({ type: 'CALL.ACCEPTED' });
       machine.send({ type: 'CALL.CONFIRMED' });
       machine.send({ type: 'CALL.ENDED' });
@@ -417,7 +404,6 @@ describe('CallStateMachine', () => {
 
       expect(states).toEqual([
         EState.CONNECTING,
-        EState.RINGING,
         EState.ACCEPTED,
         EState.IN_CALL,
         EState.ENDED,
@@ -436,6 +422,7 @@ describe('CallStateMachine', () => {
       expect(machine.isConnecting).toBe(true);
       expect(machine.lastError).toBeUndefined();
 
+      machine.send({ type: 'CALL.ACCEPTED' });
       machine.send({ type: 'CALL.CONFIRMED' });
       expect(machine.isInCall).toBe(true);
 
@@ -443,7 +430,7 @@ describe('CallStateMachine', () => {
       expect(machine.isEnded).toBe(true);
     });
 
-    it('должен корректно проходить быстрый звонок без RINGING', () => {
+    it('должен корректно проходить быстрый звонок', () => {
       const states: EState[] = [];
 
       machine.subscribe((snapshot) => {
@@ -451,16 +438,16 @@ describe('CallStateMachine', () => {
       });
 
       machine.send({ type: 'CALL.CONNECTING' });
+      machine.send({ type: 'CALL.ACCEPTED' });
       machine.send({ type: 'CALL.CONFIRMED' });
       machine.send({ type: 'CALL.ENDED' });
 
-      expect(states).toEqual([EState.CONNECTING, EState.IN_CALL, EState.ENDED]);
+      expect(states).toEqual([EState.CONNECTING, EState.ACCEPTED, EState.IN_CALL, EState.ENDED]);
     });
 
     it('должен корректно обрабатывать раннее завершение звонка', () => {
       machine.send({ type: 'CALL.CONNECTING' });
-      machine.send({ type: 'CALL.RINGING' });
-      expect(machine.isRinging).toBe(true);
+      expect(machine.isConnecting).toBe(true);
 
       // Звонок завершился до принятия
       machine.send({ type: 'CALL.ENDED' });
@@ -476,9 +463,6 @@ describe('CallStateMachine', () => {
     it('должен корректно реагировать на события через events', () => {
       events.trigger('connecting', undefined);
       expect(machine.state).toBe(EState.CONNECTING);
-
-      events.trigger('progress', undefined);
-      expect(machine.state).toBe(EState.RINGING);
 
       events.trigger('accepted', undefined);
       expect(machine.state).toBe(EState.ACCEPTED);
@@ -505,9 +489,6 @@ describe('CallStateMachine', () => {
       // Проверяем полный flow через события
       events.trigger('connecting', undefined);
       expect(machine.isConnecting).toBe(true);
-
-      events.trigger('progress', undefined);
-      expect(machine.isRinging).toBe(true);
 
       events.trigger('accepted', undefined);
       expect(machine.isAccepted).toBe(true);

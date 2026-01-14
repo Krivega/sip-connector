@@ -108,8 +108,8 @@ describe('sessionSelectors', () => {
     it('should return different connection statuses', () => {
       const statuses = [
         EConnectionStatus.IDLE,
+        EConnectionStatus.PREPARING,
         EConnectionStatus.CONNECTING,
-        EConnectionStatus.INITIALIZING,
         EConnectionStatus.CONNECTED,
         EConnectionStatus.REGISTERED,
         EConnectionStatus.DISCONNECTED,
@@ -130,18 +130,17 @@ describe('sessionSelectors', () => {
     it('should return call status from snapshot', () => {
       const snapshot = createMockSnapshot({
         call: {
-          value: ECallStatus.RINGING,
+          value: ECallStatus.CONNECTING,
         } as never,
       });
 
-      expect(sessionSelectors.selectCallStatus(snapshot)).toBe(ECallStatus.RINGING);
+      expect(sessionSelectors.selectCallStatus(snapshot)).toBe(ECallStatus.CONNECTING);
     });
 
     it('should return different call statuses', () => {
       const statuses = [
         ECallStatus.IDLE,
         ECallStatus.CONNECTING,
-        ECallStatus.RINGING,
         ECallStatus.ACCEPTED,
         ECallStatus.IN_CALL,
         ECallStatus.ENDED,
@@ -314,7 +313,6 @@ describe('sessionSelectors', () => {
       const nonInCallStatuses = [
         ECallStatus.IDLE,
         ECallStatus.CONNECTING,
-        ECallStatus.RINGING,
         ECallStatus.ENDED,
         ECallStatus.FAILED,
       ];

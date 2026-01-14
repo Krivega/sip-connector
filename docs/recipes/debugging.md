@@ -57,7 +57,7 @@ const callStateMachine = sipConnector.callManager.callStateMachine;
 // Проверка текущего состояния
 console.log('Состояние звонка:', callStateMachine.state);
 console.log('Звонок активен:', callStateMachine.isActive); // true для accepted/inCall
-console.log('Ожидание:', callStateMachine.isPending); // true для connecting/ringing
+console.log('Ожидание:', callStateMachine.isPending); // true для connecting
 console.log('Последняя ошибка:', callStateMachine.lastError);
 
 // Сброс состояния после завершения

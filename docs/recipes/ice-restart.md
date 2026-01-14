@@ -24,35 +24,6 @@ try {
 }
 ```
 
-## Автоматический перезапуск по событию сервера
-
-SDK автоматически обрабатывает события `restart` от сервера и инициирует перезапуск ICE-соединения с интеллектуальным управлением transceiver'ами:
-
-```typescript
-// SDK автоматически подписывается на события restart от ApiManager
-// и выполняет следующие действия:
-// 1. Проверяет необходимость добавления презентационного transceiver'а
-// 2. Вызывает callManager.restartIce()
-
-// Мониторинг событий restart (опционально)
-sipConnector.on('api:restart', (data) => {
-  console.log('Получено событие restart от сервера:', {
-    tracksDirection: data.tracksDirection, // 'incoming', 'outgoing', 'bidirectional'
-    audioTrackCount: data.audioTrackCount,
-    videoTrackCount: data.videoTrackCount,
-  });
-
-  // SDK автоматически:
-  // - Добавит презентационный transceiver если videoTrackCount === 2
-  // - Вызовет restartIce()
-  console.log('ICE будет перезапущен автоматически');
-
-  if (data.videoTrackCount === 2) {
-    console.log('Может быть добавлен презентационный transceiver');
-  }
-});
-```
-
 ## Параметры перезапуска ICE
 
 | Параметр                | Тип      | Описание                                 | По умолчанию |

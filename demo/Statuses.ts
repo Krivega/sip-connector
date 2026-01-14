@@ -27,10 +27,10 @@ class Statuses {
   private subscribeSessionStatuses(onSnapshot: (snapshot: TSessionSnapshot) => void) {
     this.unsubscribeSessionStatuses?.();
 
-    const { session } = sipConnectorFacade.sipConnector;
+    const { sessionManager } = sipConnectorFacade.sipConnector;
 
-    onSnapshot(session.getSnapshot());
-    this.unsubscribeSessionStatuses = session.subscribe(onSnapshot);
+    onSnapshot(sessionManager.getSnapshot());
+    this.unsubscribeSessionStatuses = sessionManager.subscribe(onSnapshot);
   }
 }
 

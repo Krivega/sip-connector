@@ -10,7 +10,7 @@ const unsubscribeRemoteStreams = sipConnector.on('call:remote-streams-changed', 
 });
 
 // Подписка на входящие события
-sipConnector.on('incoming-call:incomingCall', () => {
+sipConnector.on('incoming-call:ringing', () => {
   // Автоматический ответ с локальным потоком
   facade.answerToIncomingCall({
     mediaStream: localStream,

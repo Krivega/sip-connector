@@ -24,9 +24,13 @@
 
 ### 👥 [События ConferenceStateManager](./conference-state-events.md)
 
+### 📋 [События SessionManager](./session-events.md)
+
 ### 🔄 [События AutoConnectorManager](./auto-connector-events.md)
 
 ### 🌐 [События ApiManager](./api-events.md)
+
+### 🔌 [События SipConnector](./sip-connector-events.md)
 
 ---
 

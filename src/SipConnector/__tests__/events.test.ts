@@ -97,7 +97,7 @@ describe('SipConnector events', () => {
     sipConnector.events.on('conference-state:state-changed', conferenceStateHandler);
     sipConnector.events.on('conference-state:state-reset', conferenceStateResetHandler);
     sipConnector.events.on('api:channels', apiHandler);
-    sipConnector.events.on('incoming-call:incomingCall', incomingCallHandler);
+    sipConnector.events.on('incoming-call:ringing', incomingCallHandler);
     sipConnector.events.on('presentation:presentation:start', presentationHandler);
     sipConnector.events.on('stats:collected', statsHandler);
     sipConnector.events.on('main-stream-health:no-inbound-frames', mainStreamHealthHandler);
@@ -130,7 +130,7 @@ describe('SipConnector events', () => {
       updates: { number: '123', answer: true },
     });
     sipConnector.conferenceStateManager.events.trigger('state-reset', {});
-    sipConnector.incomingCallManager.events.trigger('incomingCall', {
+    sipConnector.incomingCallManager.events.trigger('ringing', {
       displayName: 'incoming',
       host: 'incoming',
       incomingNumber: 'incoming',

@@ -13,11 +13,11 @@ export {
   EConnectionStatus,
   EIncomingStatus,
   EPresentationStatus,
-} from './session';
+} from './SessionManager';
 export * as tools from './tools';
 export { EMimeTypesVideoCodecs } from './types';
 
-export type { ISession, TSessionSnapshot } from './session';
+export type { TSessionSnapshot } from './SessionManager';
 export type { TCustomError } from './CallManager';
 export type { TParametersConnection, TConnectionConfigurationWithUa } from './ConnectionManager';
 export type { TInboundStats, TOutboundStats } from './StatsPeerConnection';

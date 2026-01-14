@@ -9,14 +9,14 @@ stateDiagram-v2
     [*] --> session
     state session {
         state connection {
-            idle --> connecting: start
-            connecting --> initializing: initUa
+            idle --> preparing: start
+            preparing --> connecting: initUa
+            preparing --> disconnected: disconnected
+            preparing --> failed: failed
+            connecting --> connected: uaConnected
+            connecting --> registered: uaRegistered
             connecting --> disconnected: disconnected
             connecting --> failed: failed
-            initializing --> connected: uaConnected
-            initializing --> registered: uaRegistered
-            initializing --> disconnected: disconnected
-            initializing --> failed: failed
             connected --> registered: uaRegistered
             connected --> disconnected: disconnected
             connected --> failed: failed
@@ -28,16 +28,9 @@ stateDiagram-v2
         }
         state call {
             idle --> connecting: call.connecting
-            idle --> ringing: call.ringing
-            connecting --> ringing: call.ringing
             connecting --> accepted: call.accepted
-            connecting --> inCall: call.confirmed
             connecting --> ended: call.ended
             connecting --> failed: call.failed
-            ringing --> accepted: call.accepted
-            ringing --> inCall: call.confirmed
-            ringing --> ended: call.ended
-            ringing --> failed: call.failed
             accepted --> inCall: call.confirmed
             accepted --> ended: call.ended
             accepted --> failed: call.failed
@@ -90,12 +83,12 @@ stateDiagram-v2
 
 ## Доменные статусы и события
 
-| Домен        | Статусы                                                                                   | Источники событий                                                                                                                                                                                     | Доменные события                                                                                                                         |
-| ------------ | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Connection   | `idle`, `connecting`, `initializing`, `connected`, `registered`, `disconnected`, `failed` | `ConnectionManager.events` (`connect-started`, `connecting`, `connect-parameters-resolve-success`, `connected`, `registered`, `unregistered`, `disconnected`, `registrationFailed`, `connect-failed`) | `START_CONNECT`, `START_INIT_UA`, `UA_CONNECTED`, `UA_REGISTERED`, `UA_UNREGISTERED`, `UA_DISCONNECTED`, `CONNECTION_FAILED`, `RESET`    |
-| Call         | `idle`, `connecting`, `ringing`, `accepted`, `inCall`, `ended`, `failed`                  | `CallManager.events` (`connecting`, `progress`, `accepted`, `confirmed`, `ended`, `failed`)                                                                                                           | `CALL.CONNECTING`, `CALL.RINGING`, `CALL.ACCEPTED`, `CALL.CONFIRMED`, `CALL.ENDED`, `CALL.FAILED`, `CALL.RESET`                          |
-| Incoming     | `idle`, `ringing`, `consumed`, `declined`, `terminated`, `failed`                         | `IncomingCallManager.events` (`incomingCall`, `declinedIncomingCall`, `terminatedIncomingCall`, `failedIncomingCall`) + синтетика при ответе на входящий                                              | `INCOMING.RINGING`, `INCOMING.CONSUMED`, `INCOMING.DECLINED`, `INCOMING.TERMINATED`, `INCOMING.FAILED`, `INCOMING.CLEAR`                 |
-| Presentation | `idle`, `starting`, `active`, `stopping`, `failed`                                        | `CallManager.events` (`presentation:start\|started\|end\|ended\|failed`), `ConnectionManager.events` (`disconnected`, `registrationFailed`, `connect-failed`)                                         | `SCREEN.STARTING`, `SCREEN.STARTED`, `SCREEN.ENDING`, `SCREEN.ENDED`, `SCREEN.FAILED`, `CALL.ENDED`, `CALL.FAILED`, `PRESENTATION.RESET` |
+| Домен        | Статусы                                                                                | Источники событий                                                                                                                                                                                     | Доменные события                                                                                                                         |
+| :----------- | :------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------- |
+| Connection   | `idle`, `preparing`, `connecting`, `connected`, `registered`, `disconnected`, `failed` | `ConnectionManager.events` (`connect-started`, `connecting`, `connect-parameters-resolve-success`, `connected`, `registered`, `unregistered`, `disconnected`, `registrationFailed`, `connect-failed`) | `START_CONNECT`, `START_INIT_UA`, `UA_CONNECTED`, `UA_REGISTERED`, `UA_UNREGISTERED`, `UA_DISCONNECTED`, `CONNECTION_FAILED`, `RESET`    |
+| Call         | `idle`, `connecting`, `accepted`, `inCall`, `ended`, `failed`                          | `CallManager.events` (`connecting`, `accepted`, `confirmed`, `ended`, `failed`)                                                                                                                       | `CALL.CONNECTING`, `CALL.ACCEPTED`, `CALL.CONFIRMED`, `CALL.ENDED`, `CALL.FAILED`, `CALL.RESET`                                          |
+| Incoming     | `idle`, `ringing`, `consumed`, `declined`, `terminated`, `failed`                      | `IncomingCallManager.events` (`incomingCall`, `declinedIncomingCall`, `terminatedIncomingCall`, `failedIncomingCall`) + синтетика при ответе на входящий                                              | `INCOMING.RINGING`, `INCOMING.CONSUMED`, `INCOMING.DECLINED`, `INCOMING.TERMINATED`, `INCOMING.FAILED`, `INCOMING.CLEAR`                 |
+| Presentation | `idle`, `starting`, `active`, `stopping`, `failed`                                     | `CallManager.events` (`presentation:start\|started\|end\|ended\|failed`), `ConnectionManager.events` (`disconnected`, `registrationFailed`, `connect-failed`)                                         | `SCREEN.STARTING`, `SCREEN.STARTED`, `SCREEN.ENDING`, `SCREEN.ENDED`, `SCREEN.FAILED`, `CALL.ENDED`, `CALL.FAILED`, `PRESENTATION.RESET` |
 
 ## API для клиентов
 
@@ -109,6 +102,7 @@ stateDiagram-v2
 - `presentation` может быть `active` только если `call` в `inCall`.
 - `incoming` сбрасывается в `idle` при `call.ended` или `call.failed`.
 - `connection` `failed` / `disconnected` приводит к `call` → `ended`, `presentation` → `idle`.
+- `call`: `CALL.CONFIRMED` обрабатывается только из состояния `accepted` (не из `connecting`).
 
 ## Детальное описание машин состояний
 
@@ -119,19 +113,23 @@ stateDiagram-v2
 - Валидация допустимых операций с предотвращением некорректных переходов
 - Типобезопасная обработка ошибок (error: Error | undefined)
 - Детальная информация об ошибках регистрации (status_code + reason_phrase)
+- **Логика состояний:**
+  - `PREPARING` — подготовка к подключению (до инициализации UA, до вызова `ua.start()`)
+  - `CONNECTING` — UA запущен, идет подключение (после `ua.start()`, когда приходят события `connecting`, `connected`, `registered`)
+  - Состояния переименованы для соответствия реальной последовательности операций: сначала подготовка, затем подключение UA
 - Публичный API:
-  - Геттеры состояний: `isIdle`, `isConnecting`, `isInitializing`, `isConnected`, `isRegistered`, `isDisconnected`, `isFailed`
-  - Комбинированные геттеры: `isPending` (connecting/initializing), `isPendingConnect`, `isPendingInitUa`, `isActiveConnection` (connected/registered)
+  - Геттеры состояний: `isIdle`, `isPreparing`, `isConnecting`, `isConnected`, `isRegistered`, `isDisconnected`, `isFailed`
+  - Комбинированные геттеры: `isPending` (preparing/connecting), `isPendingConnect`, `isPendingInitUa`, `isActiveConnection` (connected/registered)
   - Геттер ошибки: `error`
   - Методы управления: `startConnect()`, `startInitUa()`, `reset()`
   - Методы валидации: `canTransition()`, `getValidEvents()`
   - Подписка на изменения: `onStateChange(listener)`
 - Корректный граф переходов:
-  - IDLE → CONNECTING → INITIALIZING → CONNECTED → REGISTERED
-  - Переходы в DISCONNECTED из CONNECTING/INITIALIZING/CONNECTED/REGISTERED
-  - Переходы в FAILED из CONNECTING/INITIALIZING/CONNECTED/REGISTERED
+  - IDLE → PREPARING → CONNECTING → CONNECTED → REGISTERED
+  - Переходы в DISCONNECTED из PREPARING/CONNECTING/CONNECTED/REGISTERED
+  - Переходы в FAILED из PREPARING/CONNECTING/CONNECTED/REGISTERED
   - Переходы RESET: DISCONNECTED→IDLE, FAILED→IDLE
-  - Прямой переход INITIALIZING → REGISTERED (для быстрой регистрации без явного connected)
+  - Прямой переход CONNECTING → REGISTERED (для быстрой регистрации без явного connected)
 - Автоматическое создание Error из ошибок регистрации с форматом: "Registration failed: {status_code} {reason_phrase}"
 - Логирование всех переходов и недопустимых операций
 
@@ -142,13 +140,16 @@ stateDiagram-v2
 - Валидация переходов с предотвращением недопустимых операций
 - Типобезопасная обработка ошибок (lastError: Error вместо unknown)
 - Публичный API:
-  - Геттеры состояний: `isIdle`, `isConnecting`, `isRinging`, `isAccepted`, `isInCall`, `isEnded`, `isFailed`
-  - Комбинированные геттеры: `isPending` (connecting/ringing), `isActive` (accepted/inCall)
+  - Геттеры состояний: `isIdle`, `isConnecting`, `isAccepted`, `isInCall`, `isEnded`, `isFailed`
+  - Комбинированные геттеры: `isPending` (connecting), `isActive` (accepted/inCall)
   - Геттер ошибки: `lastError`
   - Метод сброса: `reset()` для перехода в IDLE
 - Корректный граф переходов:
-  - Удалены недопустимые переходы: RINGING→CONNECTING, self-переход CONNECTING→CONNECTING, IDLE→ACCEPTED/IN_CALL, ENDED→ACCEPTED/IN_CALL
-  - Добавлены переходы RESET: ENDED→IDLE, FAILED→IDLE
+  - IDLE → CONNECTING → ACCEPTED → IN_CALL → ENDED
+  - Переходы в ENDED/FAILED из любого активного состояния
+  - Переходы RESET: ENDED→IDLE, FAILED→IDLE
+  - Переходы из ENDED/FAILED: → CONNECTING (новый звонок)
+  - Инвариант: CALL.CONFIRMED обрабатывается только из ACCEPTED
 - Автоматическая конвертация ошибок из unknown в Error
 - Логирование недопустимых переходов через console.warn
 

@@ -41,7 +41,7 @@ describe('actionsProgressIncomingCall', () => {
     await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('incoming-call:incomingCall', async () => {
+      sipConnector.on('incoming-call:ringing', async () => {
         await sipConnectorFacade.answerToIncomingCall({
           ...dataCall,
           onBeforeProgressCall,
@@ -73,7 +73,7 @@ describe('actionsProgressIncomingCall', () => {
     await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('incoming-call:incomingCall', async () => {
+      sipConnector.on('incoming-call:ringing', async () => {
         try {
           await sipConnectorFacade.answerToIncomingCall({
             ...dataForFailedCall,
@@ -106,7 +106,7 @@ describe('actionsProgressIncomingCall', () => {
     await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('incoming-call:incomingCall', async () => {
+      sipConnector.on('incoming-call:ringing', async () => {
         await sipConnectorFacade.answerToIncomingCall({
           ...dataCall,
           onEndedCall,
@@ -135,7 +135,7 @@ describe('actionsProgressIncomingCall', () => {
     await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
     return new Promise<void>((resolve) => {
-      sipConnector.on('incoming-call:incomingCall', async () => {
+      sipConnector.on('incoming-call:ringing', async () => {
         await sipConnectorFacade.answerToIncomingCall({
           ...dataCall,
           onEndedCall,

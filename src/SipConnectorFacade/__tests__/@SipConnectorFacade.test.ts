@@ -966,7 +966,7 @@ describe('SipConnectorFacade comprehensive', () => {
 
       await sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization);
 
-      const promise = sipConnector.wait('incoming-call:incomingCall');
+      const promise = sipConnector.wait('incoming-call:ringing');
 
       JsSIP.triggerIncomingSession(
         // @ts-expect-error

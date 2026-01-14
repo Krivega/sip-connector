@@ -50,7 +50,7 @@ describe('incoming call statuses', () => {
       });
     });
 
-    sipConnector.on('incoming-call:incomingCall', () => {
+    sipConnector.on('incoming-call:ringing', () => {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       sipConnector.answerToIncomingCall({
         mediaStream,

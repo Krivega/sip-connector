@@ -43,10 +43,6 @@ sipConnector.on('call:connecting', () => {
   console.log('Идет подключение...');
 });
 
-sipConnector.on('call:ringing', () => {
-  console.log('Звонок звонит...');
-});
-
 sipConnector.on('call:confirmed', () => {
   console.log('Звонок установлен');
 });
@@ -104,10 +100,6 @@ sipConnector.on('api:enterRoom', ({ room }) => {
 
 sipConnector.on('api:useLicense', (license) => {
   console.log('Лицензия:', license);
-});
-
-sipConnector.on('api:restart', (data) => {
-  console.log('Событие restart от сервера:', data);
 });
 ```
 
