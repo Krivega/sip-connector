@@ -126,6 +126,35 @@
           <span>Screen share</span><span id="presentationStatus">-</span>
         </div>
       </section>
+
+      <section id="logsContainer" style="display: none">
+        <h3>Логи событий</h3>
+        <div
+          style="
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+          "
+        >
+          <button id="toggleLogsButton" type="button">open logs</button>
+          <button id="clearLogsButton" type="button">clear logs</button>
+          <input
+            id="filterLogsInput"
+            type="text"
+            placeholder="Имя события..."
+            style="
+              padding: 0.5rem;
+              border: 1px solid #dee2e6;
+              border-radius: 4px;
+              min-width: 200px;
+              margin-left: auto;
+            "
+          />
+        </div>
+        <div id="logsList" style="display: none; margin-top: 1rem"></div>
+      </section>
     </main>
 
     <div
@@ -283,6 +312,42 @@
         padding: 0.5rem 1rem;
         font-size: 0.9rem;
         z-index: 10;
+      }
+
+      #logsContainer {
+        margin-top: 2rem;
+      }
+
+      #toggleLogsButton {
+        background-color: #6c757d;
+        color: white;
+        border-color: #6c757d;
+      }
+
+      #toggleLogsButton:hover {
+        background-color: #5a6268;
+        border-color: #545b62;
+      }
+
+      #clearLogsButton {
+        background-color: #dc3545;
+        color: white;
+        border-color: #dc3545;
+      }
+
+      #clearLogsButton:hover {
+        background-color: #c82333;
+        border-color: #bd2130;
+      }
+
+      #logsList {
+        max-height: 600px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 1rem;
+        background-color: #f8f9fa;
+        font-size: 12px;
       }
     </style>
 

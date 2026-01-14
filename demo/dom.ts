@@ -17,6 +17,11 @@ type TDomIds = {
   callStatusId: string;
   incomingStatusId: string;
   presentationStatusId: string;
+  logsContainerId: string;
+  logsListId: string;
+  toggleLogsButtonId: string;
+  clearLogsButtonId: string;
+  filterLogsInputId: string;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
@@ -97,6 +102,16 @@ class DOM {
 
   public presentationStatusElement: HTMLElement;
 
+  public logsContainerElement: HTMLElement;
+
+  public logsListElement: HTMLElement;
+
+  public toggleLogsButtonElement: HTMLButtonElement;
+
+  public clearLogsButtonElement: HTMLButtonElement;
+
+  public filterLogsInputElement: HTMLInputElement;
+
   public constructor({
     overlayId,
     callButtonId,
@@ -116,6 +131,11 @@ class DOM {
     callStatusId,
     incomingStatusId,
     presentationStatusId,
+    logsContainerId,
+    logsListId,
+    toggleLogsButtonId,
+    clearLogsButtonId,
+    filterLogsInputId,
   }: TDomIds) {
     this.overlayElement = getElementById(overlayId);
     this.callButtonElement = getElementById<HTMLButtonElement>(callButtonId);
@@ -169,6 +189,11 @@ class DOM {
     this.callStatusElement = getElementById(callStatusId);
     this.incomingStatusElement = getElementById(incomingStatusId);
     this.presentationStatusElement = getElementById(presentationStatusId);
+    this.logsContainerElement = getElementById(logsContainerId);
+    this.logsListElement = getElementById(logsListId);
+    this.toggleLogsButtonElement = getElementById<HTMLButtonElement>(toggleLogsButtonId);
+    this.clearLogsButtonElement = getElementById<HTMLButtonElement>(clearLogsButtonId);
+    this.filterLogsInputElement = getElementById<HTMLInputElement>(filterLogsInputId);
   }
 }
 
@@ -191,4 +216,9 @@ export const dom = new DOM({
   callStatusId: 'callStatus',
   incomingStatusId: 'incomingStatus',
   presentationStatusId: 'presentationStatus',
+  logsContainerId: 'logsContainer',
+  logsListId: 'logsList',
+  toggleLogsButtonId: 'toggleLogsButton',
+  clearLogsButtonId: 'clearLogsButton',
+  filterLogsInputId: 'filterLogsInput',
 });

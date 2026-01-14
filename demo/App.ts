@@ -3,6 +3,7 @@ import CallStateManager, { type TCallState } from './CallStateManager';
 import { dom } from './dom';
 import LoaderManager from './LoaderManager';
 import LocalMediaStreamManager from './LocalMediaStreamManager';
+import LogsManager from './LogsManager';
 import RemoteMediaStreamManager from './RemoteMediaStreamManager';
 import Session from './Session/Session';
 import FormStateManager from './state/FormStateManager';
@@ -45,6 +46,10 @@ class App {
     statusesManager.subscribe((statuses) => {
       this.updateSessionStatuses(statuses);
     });
+
+    const logsManager = new LogsManager();
+
+    logsManager.subscribe();
 
     this.initialize();
   }
