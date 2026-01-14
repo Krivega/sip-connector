@@ -69,6 +69,8 @@
 - `ConnectionQueueManager` - очередь операций
 - `AutoConnectorManager` - автоматическое переподключение
 - `IncomingCallManager` - входящие звонки
+- `MainStreamHealthMonitor` - мониторинг здоровья потока
+- `MainStreamRecovery` - восстановление потока
 
 ## Диаграмма архитектуры
 
@@ -98,6 +100,8 @@ graph TB
             I["VideoSendingBalancerManager<br/>⚖️ Video Optimization<br/>+ Delayed Start"]
             K["ConnectionQueueManager<br/>🔄 Sequential Operations"]
             L["AutoConnectorManager<br/>🔄 Auto Reconnection"]
+            MSH["MainStreamHealthMonitor<br/>💚 Stream Health<br/>+ Frame Monitoring"]
+            MSR["MainStreamRecovery<br/>🔧 Stream Recovery<br/>+ Throttled Renegotiate"]
         end
 
         subgraph "Foundation"
@@ -116,6 +120,8 @@ graph TB
         B --> G
         B --> H
         B --> I
+        B --> MSH
+        B --> MSR
 
         D --> CS
         D --> D1
@@ -138,6 +144,11 @@ graph TB
         L --> K
         L --> C
         L --> D
+        MSH --> H
+        MSH --> D
+        MSH -.->|events| B
+        B -.->|recover| MSR
+        MSR --> D
     end
 
     style I fill:#e1f5fe,stroke:#01579b,stroke-width:2px
@@ -146,6 +157,8 @@ graph TB
     style B fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
     style F fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
     style H fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    style MSH fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style MSR fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
     style D1 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     style D2 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     style D3 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
@@ -175,6 +188,11 @@ graph TB
 - `ConnectionQueueManager` → `ConnectionManager` (последовательность операций)
 - `AutoConnectorManager` → `ConnectionQueueManager`, `ConnectionManager`, `CallManager`
 - `VideoSendingBalancerManager` → `CallManager`, `ApiManager`
+- `MainStreamHealthMonitor` → `StatsManager` (отслеживание состояния входящих фреймов)
+- `MainStreamHealthMonitor` → `CallManager` (отслеживание состояния основного входящего видео-трека)
+- `MainStreamRecovery` → `CallManager` (пересогласование настроек основного потока)
+- `SipConnector` → `MainStreamHealthMonitor` (отслеживание состояния основного потока; событие: `no-inbound-frames`)
+- `SipConnector` → `MainStreamRecovery` (восстановление основного входящего потока при стоп-кадре)
 
 ---
 

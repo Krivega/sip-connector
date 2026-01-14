@@ -177,10 +177,9 @@ describe('StatsManager', () => {
     expect(manager.availableIncomingBitrate).toBeUndefined();
   });
 
-  describe('isNotValidFramesStats', () => {
-    const createStatsWithFrames = (
-      framesReceived: number | undefined,
-      framesDecoded: number | undefined,
+  describe('isInvalidInboundFrames', () => {
+    const createStatsWithInboundRtp = (
+      inboundRtp: Partial<typeof statisticsMockBase.inbound.video.inboundRtp>,
     ): typeof statisticsMockBase => {
       return {
         ...statisticsMockBase,
@@ -190,8 +189,7 @@ describe('StatsManager', () => {
             ...statisticsMockBase.inbound.video,
             inboundRtp: {
               ...statisticsMockBase.inbound.video.inboundRtp,
-              framesReceived,
-              framesDecoded,
+              ...inboundRtp,
             },
           },
         },
@@ -210,58 +208,140 @@ describe('StatsManager', () => {
       manager = new StatsManager({ callManager, apiManager });
     });
 
-    it('должен возвращать true когда inbound не получает и не декодирует кадры', () => {
-      manager.statsPeerConnection.events.trigger('collected', createStatsWithFrames(0, 0));
+    it('должен возвращать true когда inbound не получает и не декодирует кадры и количество входящих пакетов РАВНО 500', () => {
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithInboundRtp({ framesReceived: 0, framesDecoded: 0, packetsReceived: 500 }),
+      );
 
-      expect(manager.isNotValidFramesStats).toBe(true);
+      expect(manager.isInvalidInboundFrames).toBe(true);
+    });
+
+    it('должен возвращать true когда inbound не получает и не декодирует кадры и количество входящих пакетов более 500', () => {
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithInboundRtp({ framesReceived: 0, framesDecoded: 0, packetsReceived: 501 }),
+      );
+
+      expect(manager.isInvalidInboundFrames).toBe(true);
     });
 
     it('должен возвращать true когда inbound не декодирует кадры', () => {
-      manager.statsPeerConnection.events.trigger('collected', createStatsWithFrames(1, 0));
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithInboundRtp({ framesReceived: 1, framesDecoded: 0, packetsReceived: 500 }),
+      );
 
-      expect(manager.isNotValidFramesStats).toBe(true);
+      expect(manager.isInvalidInboundFrames).toBe(true);
     });
 
-    it('не должен возвращать true когда inbound получает и декодирует кадры', () => {
-      manager.statsPeerConnection.events.trigger('collected', createStatsWithFrames(1, 1));
+    it('должен возвращать false когда inbound получил меньше 500 пакетов', () => {
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithInboundRtp({ framesReceived: 0, framesDecoded: 0, packetsReceived: 0 }),
+      );
 
-      expect(manager.isNotValidFramesStats).toBe(false);
+      expect(manager.isInvalidInboundFrames).toBe(false);
+
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithInboundRtp({ framesReceived: 0, framesDecoded: 0, packetsReceived: 499 }),
+      );
+
+      expect(manager.isInvalidInboundFrames).toBe(false);
+    });
+
+    it('должен возвращать false когда inbound получает и декодирует кадры', () => {
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithInboundRtp({ framesReceived: 1, framesDecoded: 1, packetsReceived: 500 }),
+      );
+
+      expect(manager.isInvalidInboundFrames).toBe(false);
     });
 
     it('должен возвращать true когда inbound перестал получать кадры', () => {
-      manager.statsPeerConnection.events.trigger('collected', createStatsWithFrames(1, 1));
-      expect(manager.isNotValidFramesStats).toBe(false);
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithInboundRtp({ framesReceived: 1, framesDecoded: 1, packetsReceived: 500 }),
+      );
+      expect(manager.isInvalidInboundFrames).toBe(false);
 
-      manager.statsPeerConnection.events.trigger('collected', createStatsWithFrames(2, 2));
-      expect(manager.isNotValidFramesStats).toBe(false);
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithInboundRtp({ framesReceived: 2, framesDecoded: 2, packetsReceived: 501 }),
+      );
+      expect(manager.isInvalidInboundFrames).toBe(false);
 
-      manager.statsPeerConnection.events.trigger('collected', createStatsWithFrames(2, 2));
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithInboundRtp({ framesReceived: 2, framesDecoded: 2, packetsReceived: 502 }),
+      );
 
-      expect(manager.isNotValidFramesStats).toBe(true);
+      expect(manager.isInvalidInboundFrames).toBe(true);
     });
 
     it('должен возвращать true когда inbound перестал декодировать кадры', () => {
-      manager.statsPeerConnection.events.trigger('collected', createStatsWithFrames(1, 1));
-      expect(manager.isNotValidFramesStats).toBe(false);
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithInboundRtp({ framesReceived: 1, framesDecoded: 1, packetsReceived: 500 }),
+      );
+      expect(manager.isInvalidInboundFrames).toBe(false);
 
-      manager.statsPeerConnection.events.trigger('collected', createStatsWithFrames(2, 2));
-      expect(manager.isNotValidFramesStats).toBe(false);
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithInboundRtp({ framesReceived: 2, framesDecoded: 2, packetsReceived: 501 }),
+      );
+      expect(manager.isInvalidInboundFrames).toBe(false);
 
-      manager.statsPeerConnection.events.trigger('collected', createStatsWithFrames(3, 2));
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithInboundRtp({ framesReceived: 3, framesDecoded: 2, packetsReceived: 502 }),
+      );
 
-      expect(manager.isNotValidFramesStats).toBe(true);
+      expect(manager.isInvalidInboundFrames).toBe(true);
     });
 
-    it('не должен возвращать true когда inbound продолжает получать и декодировать кадры', () => {
-      manager.statsPeerConnection.events.trigger('collected', createStatsWithFrames(1, 1));
-      expect(manager.isNotValidFramesStats).toBe(false);
+    it('должен возвращать false когда inbound продолжает получать и декодировать кадры', () => {
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithInboundRtp({ framesReceived: 1, framesDecoded: 1, packetsReceived: 500 }),
+      );
+      expect(manager.isInvalidInboundFrames).toBe(false);
 
-      manager.statsPeerConnection.events.trigger('collected', createStatsWithFrames(2, 2));
-      expect(manager.isNotValidFramesStats).toBe(false);
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithInboundRtp({ framesReceived: 2, framesDecoded: 2, packetsReceived: 501 }),
+      );
+      expect(manager.isInvalidInboundFrames).toBe(false);
 
-      manager.statsPeerConnection.events.trigger('collected', createStatsWithFrames(3, 3));
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithInboundRtp({ framesReceived: 3, framesDecoded: 3, packetsReceived: 502 }),
+      );
 
-      expect(manager.isNotValidFramesStats).toBe(false);
+      expect(manager.isInvalidInboundFrames).toBe(false);
+    });
+
+    it('должен возвращать false когда inbound перестал получать пакеты', () => {
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithInboundRtp({ framesReceived: 1, framesDecoded: 1, packetsReceived: 500 }),
+      );
+      expect(manager.isInvalidInboundFrames).toBe(false);
+
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithInboundRtp({ framesReceived: 2, framesDecoded: 2, packetsReceived: 501 }),
+      );
+      expect(manager.isInvalidInboundFrames).toBe(false);
+
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithInboundRtp({ framesReceived: 2, framesDecoded: 2, packetsReceived: 501 }),
+      );
+
+      expect(manager.isInvalidInboundFrames).toBe(false);
     });
   });
 

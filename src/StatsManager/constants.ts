@@ -1,0 +1,1 @@
+export const MIN_RECEIVED_MAIN_STREAM_PACKETS = 500;

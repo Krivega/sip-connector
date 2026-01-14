@@ -1,9 +1,10 @@
 import logger from '@/logger';
 import { StatsPeerConnection } from '@/StatsPeerConnection';
+import { MIN_RECEIVED_MAIN_STREAM_PACKETS } from './constants';
 
 import type { ApiManager } from '@/ApiManager';
 import type { CallManager } from '@/CallManager';
-import type { TStatsPeerConnectionEventMap, TStats } from '@/StatsPeerConnection';
+import type { TStats, TStatsPeerConnectionEventMap } from '@/StatsPeerConnection';
 
 class StatsManager {
   public readonly statsPeerConnection: StatsPeerConnection;
@@ -38,7 +39,11 @@ class StatsManager {
     return this.availableStats?.inbound.additional.candidatePair?.availableIncomingBitrate;
   }
 
-  public get isNotValidFramesStats(): boolean {
+  public get isInvalidInboundFrames(): boolean {
+    return this.isEmptyInboundFrames && this.isReceivingPackets;
+  }
+
+  private get isEmptyInboundFrames(): boolean {
     return !this.isFramesReceived || !this.isFramesDecoded;
   }
 
@@ -82,6 +87,23 @@ class StatsManager {
     const isNotSameValue = this.framesDecoded !== this.previousFramesDecoded;
 
     return isFramesDecoded && isNotSameValue;
+  }
+
+  private get packetsReceived(): number | undefined {
+    return this.inboundRtp?.packetsReceived;
+  }
+
+  private get previousPacketsReceived(): number | undefined {
+    return this.previousInboundRtp?.packetsReceived;
+  }
+
+  private get isReceivingPackets(): boolean {
+    const isReceivingPackets =
+      this.packetsReceived !== undefined &&
+      this.packetsReceived >= MIN_RECEIVED_MAIN_STREAM_PACKETS;
+    const isNotSameValue = this.packetsReceived !== this.previousPacketsReceived;
+
+    return isReceivingPackets && isNotSameValue;
   }
 
   public on<T extends keyof TStatsPeerConnectionEventMap>(
