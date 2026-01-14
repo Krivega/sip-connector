@@ -20,6 +20,10 @@
 
 ### 🎛️ [События VideoSendingBalancerManager](./video-balancer-events.md)
 
+### 💚 [События MainStreamHealthMonitor](./main-stream-health-events.md)
+
+### 👥 [События ConferenceStateManager](./conference-state-events.md)
+
 ### 🔄 [События AutoConnectorManager](./auto-connector-events.md)
 
 ### 🌐 [События ApiManager](./api-events.md)
