@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [20.5.0](https://github.com/Krivega/sip-connector/compare/v20.4.1...v20.5.0) (2026-01-14)
+
+### Features
+
+- add conference-state event handling to SipConnector and update event types ([b8aae2a](https://github.com/Krivega/sip-connector/commit/b8aae2a13e131e93345e070aec6dbefa97b7e82e))
+- add LogsManager for event logging and UI integration ([6f31c5c](https://github.com/Krivega/sip-connector/commit/6f31c5c14c19e1b49ecaa94a0a01048e86d9bf56))
+- integrate MainStreamHealthMonitor events into SipConnector and update event handling ([80571c0](https://github.com/Krivega/sip-connector/commit/80571c0b23c0f9c886a503259f6ab0da3b02b91d))
+- introduce SessionManager for session state management and update related documentation ([ec4142a](https://github.com/Krivega/sip-connector/commit/ec4142aa78c89921778611922cde6e205633d5fa))
+
+### Bug Fixes
+
+- do not recover main stream when no received packets ([#65](https://github.com/Krivega/sip-connector/issues/65)) ([ea0c366](https://github.com/Krivega/sip-connector/commit/ea0c3666e8414d06288c2999ce39d35253eb16c3))
+
 ### [20.4.1](https://github.com/Krivega/sip-connector/compare/v20.4.0...v20.4.1) (2026-01-13)
 
 ### Bug Fixes
