@@ -70,13 +70,17 @@ describe('RemoteStreamsManager', () => {
 
     const removed = manager.removeTrack(video.id);
 
-    expect(removed).toBe(true);
+    expect(removed.isRemovedTrack).toBe(true);
+    expect(removed.isRemovedStream).toBe(true);
     expect(manager.getStreams(video.id)).toHaveLength(0);
     expect(manager.getStreams()).toHaveLength(0);
   });
 
   it('removeTrack возвращает false для неизвестного трека', () => {
-    expect(manager.removeTrack('unknown')).toBe(false);
+    const result = manager.removeTrack('unknown');
+
+    expect(result.isRemovedTrack).toBe(false);
+    expect(result.isRemovedStream).toBe(false);
   });
 
   it('removeTrack удаляет только группу, не удаляя участника, если остались другие группы', () => {
@@ -88,7 +92,8 @@ describe('RemoteStreamsManager', () => {
 
     const removed = manager.removeTrack(video1.id);
 
-    expect(removed).toBe(true);
+    expect(removed.isRemovedTrack).toBe(true);
+    expect(removed.isRemovedStream).toBe(true);
     expect(manager.getStreams()).toHaveLength(1);
     expect(manager.getStreams()[0].getTracks()[0]?.id).toBe(video2.id);
   });
@@ -102,7 +107,8 @@ describe('RemoteStreamsManager', () => {
 
     const removed = manager.removeTrack(video1.id);
 
-    expect(removed).toBe(true);
+    expect(removed.isRemovedTrack).toBe(true);
+    expect(removed.isRemovedStream).toBe(false);
 
     const streams = manager.getStreams('group');
 
@@ -126,7 +132,8 @@ describe('RemoteStreamsManager', () => {
 
     const result = manager.removeTrack(video.id);
 
-    expect(result).toBe(false);
+    expect(result.isRemovedTrack).toBe(false);
+    expect(result.isRemovedStream).toBe(false);
     expect(onRemoved).not.toHaveBeenCalled();
   });
 
@@ -144,7 +151,8 @@ describe('RemoteStreamsManager', () => {
 
     const result = manager.removeTrack(video.id);
 
-    expect(result).toBe(true);
+    expect(result.isRemovedTrack).toBe(true);
+    expect(result.isRemovedStream).toBe(true);
     // группа p1 должна быть удалена, так как trackIds очищены
     expect(manager.getStreams('p1')).toHaveLength(0);
   });
@@ -180,7 +188,8 @@ describe('RemoteStreamsManager', () => {
 
     const removed = manager.removeTrack('tA');
 
-    expect(removed).toBe(true);
+    expect(removed.isRemovedTrack).toBe(true);
+    expect(removed.isRemovedStream).toBe(true);
     // осталась группа g2 => участник не удалён
     expect(manager.getStreams()).toHaveLength(1);
     expect(manager.getStreams()[0].getTracks()[0]?.id).toBe(trackB.id);
@@ -190,7 +199,10 @@ describe('RemoteStreamsManager', () => {
     // @ts-expect-error – тестируем внутреннее состояние
     manager.trackToGroup.set('ghost', { participantId: 'p1', groupId: 'g1' });
 
-    expect(manager.removeTrack('ghost')).toBe(false);
+    const result = manager.removeTrack('ghost');
+
+    expect(result.isRemovedTrack).toBe(false);
+    expect(result.isRemovedStream).toBe(false);
   });
 
   it('removeStaleTracks: возвращает false если участник не найден', () => {
@@ -267,8 +279,31 @@ describe('RemoteStreamsManager', () => {
 
     video.dispatchEvent(new Event('ended'));
 
-    expect(onRemoved).toHaveBeenCalledWith({ trackId: video.id, participantId: 'group' });
+    expect(onRemoved).toHaveBeenCalledWith({
+      trackId: video.id,
+      participantId: 'group',
+      isRemovedStream: true,
+    });
     expect(manager.getStreams()).toHaveLength(0);
+  });
+
+  it('onRemoved передает isRemovedStream: false когда в группе остаются другие треки', () => {
+    const video1 = withLabel(createVideoMediaStreamTrackMock({ id: 'v1' }), 'p1');
+    const video2 = withLabel(createVideoMediaStreamTrackMock({ id: 'v2' }), 'p1');
+    const onRemoved = jest.fn();
+
+    manager.addTrack(video1, { streamHint: 'group', onRemoved });
+    manager.addTrack(video2, { streamHint: 'group' });
+
+    video1.dispatchEvent(new Event('ended'));
+
+    expect(onRemoved).toHaveBeenCalledWith({
+      trackId: video1.id,
+      participantId: 'group',
+      isRemovedStream: false,
+    });
+    expect(manager.getStreams()).toHaveLength(1);
+    expect(manager.getStreams()[0].getTracks()[0]?.id).toBe(video2.id);
   });
 
   it('handleEnded не вызывает onRemoved, если removeTrack вернул false', () => {

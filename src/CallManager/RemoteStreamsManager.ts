@@ -69,7 +69,14 @@ export class RemoteStreamsManager {
       streamHint,
     }: {
       streamHint?: string;
-      onRemoved?: ({ trackId, participantId }: { trackId: string; participantId: string }) => void;
+      onRemoved?: ({
+        trackId,
+        participantId,
+      }: {
+        trackId: string;
+        isRemovedStream: boolean;
+        participantId: string;
+      }) => void;
     } = {},
   ):
     | {
@@ -107,8 +114,12 @@ export class RemoteStreamsManager {
 
       const removed = this.removeTrack(track.id);
 
-      if (removed) {
-        onRemoved?.({ trackId: track.id, participantId });
+      if (removed.isRemovedTrack) {
+        onRemoved?.({
+          participantId,
+          trackId: track.id,
+          isRemovedStream: removed.isRemovedStream,
+        });
       }
     };
 
@@ -120,13 +131,13 @@ export class RemoteStreamsManager {
     return { isAdded: true, participantId };
   }
 
-  public removeTrack(trackId: string): boolean {
+  public removeTrack(trackId: string): { isRemovedTrack: boolean; isRemovedStream: boolean } {
     this.disposeTrackListener(trackId);
 
     const groupInfo = this.trackToGroup.get(trackId);
 
     if (!groupInfo) {
-      return false;
+      return { isRemovedTrack: false, isRemovedStream: false };
     }
 
     const { participantId, groupId } = groupInfo;
@@ -136,7 +147,7 @@ export class RemoteStreamsManager {
     if (!group) {
       this.trackToGroup.delete(trackId);
 
-      return false;
+      return { isRemovedTrack: false, isRemovedStream: false };
     }
 
     const trackToRemove = group.stream.getTracks().find((streamTrack) => {
@@ -150,7 +161,9 @@ export class RemoteStreamsManager {
     group.trackIds.delete(trackId);
     this.trackToGroup.delete(trackId);
 
-    if (group.trackIds.size === 0) {
+    const isRemovedStream = group.trackIds.size === 0;
+
+    if (isRemovedStream) {
       participantGroups?.delete(groupId);
 
       if (participantGroups?.size === 0) {
@@ -158,7 +171,7 @@ export class RemoteStreamsManager {
       }
     }
 
-    return true;
+    return { isRemovedTrack: true, isRemovedStream };
   }
 
   public removeStaleTracks(participantId: string, keepTrackIds: string[]): boolean {
@@ -180,7 +193,7 @@ export class RemoteStreamsManager {
       staleTrackIds.forEach((staleTrackId) => {
         const removed = this.removeTrack(staleTrackId);
 
-        didChange ||= removed;
+        didChange ||= removed.isRemovedTrack;
       });
     });
 

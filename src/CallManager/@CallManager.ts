@@ -273,6 +273,7 @@ class CallManager {
     const streams = tools.getRemoteStreams();
 
     this.emitEventChangedRemoteTracks(streams, changeType, { trackId, participantId });
+    this.emitEventChangedRemoteStreams(streams);
   }
 
   private emitEventChangedRemoteTracks(

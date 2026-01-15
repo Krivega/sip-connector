@@ -361,13 +361,14 @@ describe('CallManager - дополнительные тесты для покр�
     } as unknown as RemoteStreamsManager;
     const inactiveManager = {} as RemoteStreamsManager;
     const triggerSpy = jest.spyOn(callManager.events, 'trigger');
+    const mainStream = new MediaStream();
 
     // Мокаем getActiveStreamsManagerTools для возврата активного менеджера
     // @ts-expect-error
     callManager.getActiveStreamsManagerTools = jest.fn().mockReturnValue({
       manager: activeManager,
       getRemoteStreams: () => {
-        return { mainStream: new MediaStream() };
+        return { mainStream };
       },
     });
 
@@ -377,7 +378,22 @@ describe('CallManager - дополнительные тесты для покр�
       trackId: 't1',
       participantId: 'p1',
     });
-    expect(triggerSpy).toHaveBeenCalledTimes(1);
+    expect(triggerSpy).toHaveBeenCalledTimes(2);
+    expect(triggerSpy).toHaveBeenCalledWith(
+      'remote-tracks-changed',
+      expect.objectContaining({
+        streams: { mainStream },
+        changeType: 'added',
+        participantId: 'p1',
+        trackId: 't1',
+      }),
+    );
+    expect(triggerSpy).toHaveBeenCalledWith(
+      'remote-streams-changed',
+      expect.objectContaining({
+        streams: { mainStream },
+      }),
+    );
 
     // Случай неактивного менеджера — не должно быть нового эмита
     // @ts-expect-error
@@ -385,7 +401,7 @@ describe('CallManager - дополнительные тесты для покр�
       trackId: 't2',
       participantId: 'p2',
     });
-    expect(triggerSpy).toHaveBeenCalledTimes(1);
+    expect(triggerSpy).toHaveBeenCalledTimes(2);
   });
 
   it('addRemoteTrack: не эмитит, если трек уже добавлен (isAdded=false)', () => {
