@@ -1,4 +1,4 @@
-import { EUseLicense } from '../../src/index';
+import { EUseLicense } from '@/index';
 import { dom } from '../dom';
 import sipConnectorFacade from './sipConnectorFacade';
 

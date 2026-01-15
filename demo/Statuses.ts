@@ -1,7 +1,7 @@
-import { sessionSelectors } from '../src';
+import { sessionSelectors } from '@/index';
 import sipConnectorFacade from './Session/sipConnectorFacade';
 
-import type { TSessionSnapshot } from '../src';
+import type { TSessionSnapshot } from '@/index';
 
 class Statuses {
   private unsubscribeSessionStatuses?: () => void;

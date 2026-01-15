@@ -1,5 +1,5 @@
+import { tools } from '@/index';
 import resolveRequestSipServerIp from './resolveRequestSipServerIp';
-import { tools } from '../../src/index';
 
 import type { TIceServer } from '../types';
 
