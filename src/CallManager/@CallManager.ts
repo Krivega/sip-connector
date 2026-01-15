@@ -243,6 +243,8 @@ class CallManager {
       streamHint,
       onRemoved: (event) => {
         this.handleChangedRemoteTracks(manager, 'removed', {
+          isRemovedStream: event.isRemovedStream,
+          isAddedStream: false,
           trackId: event.trackId,
           participantId: event.participantId,
         });
@@ -254,6 +256,8 @@ class CallManager {
     }
 
     this.handleChangedRemoteTracks(manager, 'added', {
+      isRemovedStream: false,
+      isAddedStream: result.isAddedStream,
       trackId: track.id,
       participantId: result.participantId,
     });
@@ -262,7 +266,12 @@ class CallManager {
   private handleChangedRemoteTracks(
     manager: RemoteStreamsManager,
     changeType: TRemoteTracksChangeType,
-    { trackId, participantId }: { trackId: string; participantId: string },
+    {
+      trackId,
+      participantId,
+      isRemovedStream,
+      isAddedStream,
+    }: { trackId: string; participantId: string; isRemovedStream: boolean; isAddedStream: boolean },
   ) {
     const tools = this.getActiveStreamsManagerTools();
 
@@ -273,7 +282,10 @@ class CallManager {
     const streams = tools.getRemoteStreams();
 
     this.emitEventChangedRemoteTracks(streams, changeType, { trackId, participantId });
-    this.emitEventChangedRemoteStreams(streams);
+
+    if (isAddedStream || isRemovedStream) {
+      this.emitEventChangedRemoteStreams(streams);
+    }
   }
 
   private emitEventChangedRemoteTracks(

@@ -375,6 +375,8 @@ describe('CallManager - дополнительные тесты для покр�
     // Случай активного менеджера
     // @ts-expect-error
     callManager.handleChangedRemoteTracks(activeManager, 'added', {
+      isAddedStream: true,
+      isRemovedStream: true,
       trackId: 't1',
       participantId: 'p1',
     });
@@ -406,7 +408,7 @@ describe('CallManager - дополнительные тесты для покр�
 
   it('addRemoteTrack: не эмитит, если трек уже добавлен (isAdded=false)', () => {
     const managerMock = {
-      addTrack: jest.fn().mockReturnValue({ isAdded: false }),
+      addTrack: jest.fn().mockReturnValue({ isAddedTrack: false, isAddedStream: false }),
     } as unknown as RemoteStreamsManager;
     const emitSpy = jest.spyOn(
       callManager,
@@ -423,7 +425,9 @@ describe('CallManager - дополнительные тесты для покр�
 
   it('addRemoteTrack: эмитит изменение, если менеджер активный', () => {
     const managerMock = {
-      addTrack: jest.fn().mockReturnValue({ isAdded: true, participantId: 'p1' }),
+      addTrack: jest
+        .fn()
+        .mockReturnValue({ isAddedTrack: true, isAddedStream: true, participantId: 'p1' }),
       getStreams: jest.fn().mockReturnValue([new MediaStream()]),
     } as unknown as RemoteStreamsManager;
 
@@ -448,7 +452,12 @@ describe('CallManager - дополнительные тесты для покр�
     expect(emitSpy).toHaveBeenCalledWith(
       managerMock,
       'added',
-      expect.objectContaining({ trackId: track.id, participantId: 'p1' }),
+      expect.objectContaining({
+        isAddedStream: true,
+        isRemovedStream: false,
+        trackId: track.id,
+        participantId: 'p1',
+      }),
     );
   });
 
@@ -469,7 +478,7 @@ describe('CallManager - дополнительные тесты для покр�
           // Сохраняем колбэк onRemoved для последующего вызова
           onRemovedCallback = options?.onRemoved;
 
-          return { isAdded: true, participantId: 'p1' };
+          return { isAddedTrack: true, isAddedStream: true, participantId: 'p1' };
         },
       ),
       getStreams: jest.fn().mockReturnValue([new MediaStream()]),
@@ -499,6 +508,8 @@ describe('CallManager - дополнительные тесты для покр�
 
     // Проверяем, что handleChangedRemoteTracks был вызван с 'removed'
     expect(emitSpy).toHaveBeenCalledWith(managerMock, 'removed', {
+      isAddedStream: false,
+      isRemovedStream: undefined,
       trackId: 'track-123',
       participantId: 'p1',
     });
@@ -795,5 +806,163 @@ describe('CallManager - дополнительные тесты для покр�
       Reflect.get(callManager as unknown as object, 'disposeRecvSessionTrackListener'),
     ).toBeUndefined();
     expect(recvManagerResetSpy).toHaveBeenCalled();
+  });
+
+  it('remote-streams-changed: вызывается при добавлении нового потока (isAddedStream: true)', () => {
+    const activeManager = {
+      getStreams: jest.fn().mockReturnValue([new MediaStream()]),
+    } as unknown as RemoteStreamsManager;
+    const triggerSpy = jest.spyOn(callManager.events, 'trigger');
+    const mainStream = new MediaStream();
+
+    // Мокаем getActiveStreamsManagerTools для возврата активного менеджера
+    // @ts-expect-error
+    callManager.getActiveStreamsManagerTools = jest.fn().mockReturnValue({
+      manager: activeManager,
+      getRemoteStreams: () => {
+        return { mainStream };
+      },
+    });
+
+    // @ts-expect-error
+    callManager.handleChangedRemoteTracks(activeManager, 'added', {
+      isAddedStream: true,
+      isRemovedStream: false,
+      trackId: 't1',
+      participantId: 'p1',
+    });
+
+    expect(triggerSpy).toHaveBeenCalledTimes(2);
+    expect(triggerSpy).toHaveBeenCalledWith(
+      'remote-tracks-changed',
+      expect.objectContaining({
+        streams: { mainStream },
+        changeType: 'added',
+        participantId: 'p1',
+        trackId: 't1',
+      }),
+    );
+    expect(triggerSpy).toHaveBeenCalledWith(
+      'remote-streams-changed',
+      expect.objectContaining({
+        streams: { mainStream },
+      }),
+    );
+  });
+
+  it('remote-streams-changed: НЕ вызывается при добавлении трека в существующий поток (isAddedStream: false)', () => {
+    const activeManager = {
+      getStreams: jest.fn().mockReturnValue([new MediaStream()]),
+    } as unknown as RemoteStreamsManager;
+    const triggerSpy = jest.spyOn(callManager.events, 'trigger');
+    const mainStream = new MediaStream();
+
+    // Мокаем getActiveStreamsManagerTools для возврата активного менеджера
+    // @ts-expect-error
+    callManager.getActiveStreamsManagerTools = jest.fn().mockReturnValue({
+      manager: activeManager,
+      getRemoteStreams: () => {
+        return { mainStream };
+      },
+    });
+
+    // @ts-expect-error
+    callManager.handleChangedRemoteTracks(activeManager, 'added', {
+      isAddedStream: false,
+      isRemovedStream: false,
+      trackId: 't1',
+      participantId: 'p1',
+    });
+
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
+    expect(triggerSpy).toHaveBeenCalledWith(
+      'remote-tracks-changed',
+      expect.objectContaining({
+        streams: { mainStream },
+        changeType: 'added',
+        participantId: 'p1',
+        trackId: 't1',
+      }),
+    );
+    expect(triggerSpy).not.toHaveBeenCalledWith('remote-streams-changed', expect.anything());
+  });
+
+  it('remote-streams-changed: вызывается при удалении потока (isRemovedStream: true)', () => {
+    const activeManager = {
+      getStreams: jest.fn().mockReturnValue([new MediaStream()]),
+    } as unknown as RemoteStreamsManager;
+    const triggerSpy = jest.spyOn(callManager.events, 'trigger');
+    const mainStream = new MediaStream();
+
+    // Мокаем getActiveStreamsManagerTools для возврата активного менеджера
+    // @ts-expect-error
+    callManager.getActiveStreamsManagerTools = jest.fn().mockReturnValue({
+      manager: activeManager,
+      getRemoteStreams: () => {
+        return { mainStream };
+      },
+    });
+
+    // @ts-expect-error
+    callManager.handleChangedRemoteTracks(activeManager, 'removed', {
+      isAddedStream: false,
+      isRemovedStream: true,
+      trackId: 't1',
+      participantId: 'p1',
+    });
+
+    expect(triggerSpy).toHaveBeenCalledTimes(2);
+    expect(triggerSpy).toHaveBeenCalledWith(
+      'remote-tracks-changed',
+      expect.objectContaining({
+        streams: { mainStream },
+        changeType: 'removed',
+        participantId: 'p1',
+        trackId: 't1',
+      }),
+    );
+    expect(triggerSpy).toHaveBeenCalledWith(
+      'remote-streams-changed',
+      expect.objectContaining({
+        streams: { mainStream },
+      }),
+    );
+  });
+
+  it('remote-streams-changed: НЕ вызывается при удалении трека из потока (isRemovedStream: false)', () => {
+    const activeManager = {
+      getStreams: jest.fn().mockReturnValue([new MediaStream()]),
+    } as unknown as RemoteStreamsManager;
+    const triggerSpy = jest.spyOn(callManager.events, 'trigger');
+    const mainStream = new MediaStream();
+
+    // Мокаем getActiveStreamsManagerTools для возврата активного менеджера
+    // @ts-expect-error
+    callManager.getActiveStreamsManagerTools = jest.fn().mockReturnValue({
+      manager: activeManager,
+      getRemoteStreams: () => {
+        return { mainStream };
+      },
+    });
+
+    // @ts-expect-error
+    callManager.handleChangedRemoteTracks(activeManager, 'removed', {
+      isAddedStream: false,
+      isRemovedStream: false,
+      trackId: 't1',
+      participantId: 'p1',
+    });
+
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
+    expect(triggerSpy).toHaveBeenCalledWith(
+      'remote-tracks-changed',
+      expect.objectContaining({
+        streams: { mainStream },
+        changeType: 'removed',
+        participantId: 'p1',
+        trackId: 't1',
+      }),
+    );
+    expect(triggerSpy).not.toHaveBeenCalledWith('remote-streams-changed', expect.anything());
   });
 });
