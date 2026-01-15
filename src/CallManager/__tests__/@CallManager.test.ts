@@ -128,35 +128,43 @@ describe('CallManager', () => {
   it('getRemoteStreams: возвращает undefined если нет connection', () => {
     jest.spyOn(RemoteStreamsManager.prototype, 'getStreams').mockReturnValue([]);
 
-    expect(callManager.getRemoteStreams()).toEqual([]);
+    expect(callManager.getRemoteStreams()).toEqual({});
   });
 
   it('getRemoteStreams: проксирует remoteStreamsManager.getStreams', () => {
     const stream = new MediaStream();
     const spy = jest.spyOn(RemoteStreamsManager.prototype, 'getStreams').mockReturnValue([stream]);
 
-    expect(callManager.getRemoteStreams()).toEqual([stream]);
+    expect(callManager.getRemoteStreams()).toEqual({ mainStream: stream });
     expect(spy).toHaveBeenCalled();
   });
 
-  it('getMainStream: должен вернуть основной поток при его наличии', () => {
+  it('getMainRemoteStream: должен вернуть основной поток при его наличии', () => {
     const stream = new MediaStream();
 
-    // @ts-expect-error - доступ к приватному методу для теста
-    jest.spyOn(callManager, 'getActiveStreamsManager').mockReturnValue({
-      mainStream: stream,
-    } as unknown as RemoteStreamsManager);
+    jest
+      .spyOn(callManager.getStreamsManagerProvider(), 'getActiveStreamsManagerTools')
+      .mockReturnValue({
+        manager: {} as RemoteStreamsManager,
+        getRemoteStreams: () => {
+          return { mainStream: stream };
+        },
+      });
 
-    expect(callManager.getMainStream()).toBe(stream);
+    expect(callManager.getMainRemoteStream()).toBe(stream);
   });
 
-  it('getMainStream: должен вернуть undefined при отсутствии основного потока', () => {
-    // @ts-expect-error - доступ к приватному методу для теста
-    jest.spyOn(callManager, 'getActiveStreamsManager').mockReturnValue({
-      mainStream: undefined,
-    } as unknown as RemoteStreamsManager);
+  it('getMainRemoteStream: должен вернуть undefined при отсутствии основного потока', () => {
+    jest
+      .spyOn(callManager.getStreamsManagerProvider(), 'getActiveStreamsManagerTools')
+      .mockReturnValue({
+        manager: {} as RemoteStreamsManager,
+        getRemoteStreams: () => {
+          return { mainStream: undefined };
+        },
+      });
 
-    expect(callManager.getMainStream()).toBeUndefined();
+    expect(callManager.getMainRemoteStream()).toBeUndefined();
   });
 
   it('replaceMediaStream: заменяет поток', async () => {
@@ -354,9 +362,14 @@ describe('CallManager - дополнительные тесты для покр�
     const inactiveManager = {} as RemoteStreamsManager;
     const triggerSpy = jest.spyOn(callManager.events, 'trigger');
 
-    // Подменяем активный менеджер
+    // Мокаем getActiveStreamsManagerTools для возврата активного менеджера
     // @ts-expect-error
-    jest.spyOn(callManager, 'getActiveStreamsManager').mockReturnValue(activeManager);
+    callManager.getActiveStreamsManagerTools = jest.fn().mockReturnValue({
+      manager: activeManager,
+      getRemoteStreams: () => {
+        return { mainStream: new MediaStream() };
+      },
+    });
 
     // Случай активного менеджера
     // @ts-expect-error
@@ -399,7 +412,7 @@ describe('CallManager - дополнительные тесты для покр�
     } as unknown as RemoteStreamsManager;
 
     // @ts-expect-error
-    jest.spyOn(callManager, 'getActiveStreamsManager').mockReturnValue(managerMock);
+    callManager.mainRemoteStreamsManager = managerMock;
 
     const emitSpy = jest.spyOn(
       callManager,
@@ -447,7 +460,7 @@ describe('CallManager - дополнительные тесты для покр�
     } as unknown as RemoteStreamsManager;
 
     // @ts-expect-error
-    jest.spyOn(callManager, 'getActiveStreamsManager').mockReturnValue(managerMock);
+    callManager.mainRemoteStreamsManager = managerMock;
 
     const emitSpy = jest.spyOn(
       callManager,

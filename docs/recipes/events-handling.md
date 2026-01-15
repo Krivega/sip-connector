@@ -116,25 +116,6 @@ sipConnector.on('call:remote-streams-changed', (event) => {
 });
 ```
 
-## Детальная таблица событий
-
-### События звонков (`call:*`)
-
-| Событие                       | Описание                    | Данные                                                                                                 |
-| ----------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `call:accepted`               | Звонок принят               | -                                                                                                      |
-| `call:ended`                  | Звонок завершен             | `EndEvent`                                                                                             |
-| `call:failed`                 | Звонок завершился с ошибкой | `EndEvent`                                                                                             |
-| `call:remote-streams-changed` | Изменение удаленных потоков | `{ participantId: string, changeType: 'added' \| 'removed', trackId: string, streams: MediaStream[] }` |
-
-### События участников (`api:participant:*`)
-
-| Событие                                                | Описание                       | Данные                                                             |
-| ------------------------------------------------------ | ------------------------------ | ------------------------------------------------------------------ |
-| `api:participant:move-request-to-spectators`           | Перемещение в зрители (новый)  | `{ isSynthetic: true } \| { isSynthetic: false, audioId: string }` |
-| `api:participant:move-request-to-spectators-synthetic` | Перемещение в зрители (старый) | -                                                                  |
-| `api:participant:move-request-to-participants`         | Перемещение в участники        | -                                                                  |
-
 ## Продвинутые паттерны
 
 ```typescript

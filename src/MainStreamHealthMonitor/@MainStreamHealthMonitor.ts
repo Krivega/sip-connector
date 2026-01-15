@@ -20,7 +20,7 @@ class MainStreamHealthMonitor {
   }
 
   private get mainVideoTrack(): MediaStreamVideoTrack | undefined {
-    const mainStream = this.callManager.getMainStream();
+    const mainStream = this.callManager.getMainRemoteStream();
 
     return mainStream?.getVideoTracks()[0];
   }

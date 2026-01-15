@@ -46,7 +46,7 @@ describe('SipConnector facade', () => {
 
     Object.defineProperty(track, 'muted', { value: true, configurable: true });
 
-    jest.spyOn(sipConnector.callManager, 'getMainStream').mockReturnValue(stream);
+    jest.spyOn(sipConnector.callManager, 'getMainRemoteStream').mockReturnValue(stream);
 
     // @ts-expect-error - доступ к приватному свойству
     const spyRecover = jest.spyOn(sipConnector.mainStreamRecovery, 'recover');
@@ -318,9 +318,7 @@ describe('SipConnector facade', () => {
       .spyOn(cm, 'answerToIncomingCall')
       .mockResolvedValue({} as unknown as RTCPeerConnection);
     const getEstablished = jest.spyOn(cm, 'getEstablishedRTCSession').mockReturnValue(undefined);
-    const getRemote = jest
-      .spyOn(cm, 'getRemoteStreams')
-      .mockReturnValue([] as unknown as MediaStream[]);
+    const getRemote = jest.spyOn(cm, 'getRemoteStreams').mockReturnValue({});
     const replaceStream = jest.spyOn(cm, 'replaceMediaStream').mockResolvedValue(undefined);
 
     const testStream = createMediaStreamMock({

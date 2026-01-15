@@ -51,7 +51,16 @@
   participantId: string;
   changeType: 'added' | 'removed';
   trackId: string;
-  streams: MediaStream[];
+  streams: TRemoteStreams;
+}
+```
+
+### `TRemoteStreams`
+
+```typescript
+{
+  mainStream?: MediaStream;
+  contentedStream?: MediaStream;
 }
 ```
 

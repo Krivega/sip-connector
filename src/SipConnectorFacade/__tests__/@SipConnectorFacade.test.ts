@@ -784,13 +784,13 @@ describe('SipConnectorFacade comprehensive', () => {
     });
 
     beforeEach(() => {
-      jest.spyOn(sipConnector, 'getRemoteStreams').mockReturnValue([mockMediaStream]);
+      jest.spyOn(sipConnector, 'getRemoteStreams').mockReturnValue({ mainStream: mockMediaStream });
     });
 
     it('должен получить удаленные потоки', () => {
       const result = sipConnectorFacade.getRemoteStreams();
 
-      expect(result).toEqual([mockMediaStream]);
+      expect(result).toEqual({ mainStream: mockMediaStream });
       expect(sipConnector.getRemoteStreams).toHaveBeenCalled();
     });
 
@@ -811,7 +811,7 @@ describe('SipConnectorFacade comprehensive', () => {
         onReadyRemoteStreams,
       });
 
-      jest.spyOn(sipConnector, 'getRemoteStreams').mockReturnValue([]);
+      jest.spyOn(sipConnector, 'getRemoteStreams').mockReturnValue({});
 
       // вызов
       debouncedHandler().catch(() => {
@@ -822,7 +822,7 @@ describe('SipConnectorFacade comprehensive', () => {
       jest.advanceTimersByTime(220);
 
       expect(onReadyRemoteStreams).toHaveBeenCalled();
-      expect(onReadyRemoteStreams).toHaveBeenCalledWith([]);
+      expect(onReadyRemoteStreams).toHaveBeenCalledWith({});
 
       jest.useRealTimers();
     });

@@ -2,6 +2,7 @@ import type { RTCSession, UA } from '@krivega/jssip';
 import type { TContentHint } from '@/PresentationManager';
 import type { Originator } from './events';
 import type { TTools } from './RecvSession';
+import type { RemoteStreamsManager } from './RemoteStreamsManager';
 
 export type TOnAddedTransceiver = (
   transceiver: RTCRtpTransceiver,
@@ -100,3 +101,15 @@ export interface IMCUSession {
     degradationPreference?: RTCDegradationPreference;
   }) => Promise<boolean>;
 }
+
+export type TRemoteStreams = {
+  mainStream?: MediaStream;
+  contentedStream?: MediaStream;
+};
+
+export type TGetRemoteStreams = () => TRemoteStreams;
+
+export type TStreamsManagerTools = {
+  manager: RemoteStreamsManager;
+  getRemoteStreams: TGetRemoteStreams;
+};

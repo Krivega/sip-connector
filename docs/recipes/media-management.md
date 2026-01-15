@@ -32,31 +32,26 @@ await facade.askPermissionToEnableCam();
 ## Работа с удаленными потоками
 
 ```typescript
-// Подписка на изменения удаленных потоков
-let currentRemoteStreams: MediaStream[] = [];
-
 const unsubscribeRemoteStreams = sipConnector.on('call:remote-streams-changed', (event) => {
   console.log('Изменение удаленных потоков:', {
     participantId: event.participantId,
     changeType: event.changeType, // 'added' | 'removed'
     trackId: event.trackId,
   });
-
-  // Обновляем текущие потоки
-  currentRemoteStreams = event.streams;
-
   // Обновляем UI
   updateStreamsDisplay(event.streams);
 });
 
 // Получение текущих удаленных потоков (синхронный метод)
-const remoteStreams = facade.getRemoteStreams();
-if (remoteStreams) {
-  console.log('Активные удаленные потоки:', remoteStreams.length);
-  remoteStreams.forEach((stream) => {
-    displayStream(stream);
-  });
-}
+const { mainStream, contentedStream } = facade.getRemoteStreams();
+const remoteStreams = [mainStream, contentedStream].filter((stream) => {
+  return stream !== undefined;
+});
+
+console.log('Активные удаленные потоки:', remoteStreams.length);
+remoteStreams.forEach((stream) => {
+  displayStream(stream);
+});
 ```
 
 ## Обработка готовых потоков

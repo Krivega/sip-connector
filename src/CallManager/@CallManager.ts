@@ -4,6 +4,7 @@ import { MCUSession } from './MCUSession';
 import RecvSession from './RecvSession';
 import { RemoteStreamsManager } from './RemoteStreamsManager';
 import { RoleManager } from './RoleManager';
+import { StreamsManagerProvider } from './StreamsManagerProvider';
 
 import type { RTCSession } from '@krivega/jssip';
 import type { ConferenceStateManager } from '@/ConferenceStateManager';
@@ -16,9 +17,15 @@ import type {
   TCallRoleSpectator,
   TReplaceMediaStream,
   TStartCall,
+  TGetRemoteStreams,
 } from './types';
 
 type TRemoteStreamsChangeType = 'added' | 'removed';
+
+type TStreamsManagerTools = {
+  manager: RemoteStreamsManager;
+  getRemoteStreams: TGetRemoteStreams;
+};
 
 const getStreamHint = (event: RTCTrackEvent) => {
   return event.streams[0]?.id;
@@ -41,12 +48,11 @@ class CallManager {
 
   private readonly recvRemoteStreamsManager = new RemoteStreamsManager();
 
-  private readonly roleManager = new RoleManager(
-    { mainManager: this.mainRemoteStreamsManager, recvManager: this.recvRemoteStreamsManager },
-    (params) => {
-      this.onRoleChanged(params);
-    },
-  );
+  private readonly streamsManagerProvider: StreamsManagerProvider;
+
+  private readonly roleManager = new RoleManager((params) => {
+    this.onRoleChanged(params);
+  });
 
   private readonly mcuSession: MCUSession;
 
@@ -59,6 +65,10 @@ class CallManager {
     this.events = createEvents();
     this.mcuSession = new MCUSession(this.events, { onReset: this.reset });
     this.callStateMachine = new CallStateMachine(this.events);
+    this.streamsManagerProvider = new StreamsManagerProvider(
+      this.mainRemoteStreamsManager,
+      this.recvRemoteStreamsManager,
+    );
 
     this.subscribeCallStatusChange();
     this.subscribeMcuRemoteTrackEvents();
@@ -78,6 +88,11 @@ class CallManager {
 
   public get isCallActive(): boolean {
     return this.mcuSession.isCallActive;
+  }
+
+  // For testing purposes
+  public getStreamsManagerProvider(): StreamsManagerProvider {
+    return this.streamsManagerProvider;
   }
 
   public getEstablishedRTCSession = (): RTCSession | undefined => {
@@ -149,16 +164,16 @@ class CallManager {
     });
   };
 
-  public getMainStream(): MediaStream | undefined {
-    const manager = this.getActiveStreamsManager();
+  public getMainRemoteStream(): MediaStream | undefined {
+    const { mainStream } = this.getRemoteStreams();
 
-    return manager.mainStream;
+    return mainStream;
   }
 
-  public getRemoteStreams(): MediaStream[] {
-    const manager = this.getActiveStreamsManager();
+  public getRemoteStreams() {
+    const { getRemoteStreams } = this.getActiveStreamsManagerTools();
 
-    return manager.getStreams();
+    return getRemoteStreams();
   }
 
   public setCallRoleParticipant() {
@@ -194,6 +209,7 @@ class CallManager {
     this.mainRemoteStreamsManager.reset();
     this.conferenceStateManager.updateState({ number: undefined, answer: false });
     this.roleManager.reset();
+    this.recvRemoteStreamsManager.reset();
     this.stopRecvSession();
   };
 
@@ -253,13 +269,13 @@ class CallManager {
     changeType: TRemoteStreamsChangeType,
     { trackId, participantId }: { trackId: string; participantId: string },
   ) {
-    const activeManager = this.getActiveStreamsManager();
+    const tools = this.getActiveStreamsManagerTools();
 
-    if (manager !== activeManager) {
+    if (manager !== tools.manager) {
       return;
     }
 
-    const streams = [...activeManager.getStreams()];
+    const streams = tools.getRemoteStreams();
 
     this.events.trigger(EEvent.REMOTE_STREAMS_CHANGED, {
       participantId,
@@ -269,8 +285,10 @@ class CallManager {
     });
   }
 
-  private getActiveStreamsManager(): RemoteStreamsManager {
-    return this.roleManager.getActiveManager();
+  private getActiveStreamsManagerTools(): TStreamsManagerTools {
+    return this.streamsManagerProvider.getActiveStreamsManagerTools(
+      this.roleManager.hasSpectator(),
+    );
   }
 
   private attachRecvSessionTracks(session: RecvSession) {

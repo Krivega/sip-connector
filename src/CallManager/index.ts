@@ -7,5 +7,5 @@ export {
 } from './events';
 export { default as hasCanceledCallError } from './hasCanceledCallError';
 
-export type { TCustomError, TGetUri } from './types';
+export type { TCustomError, TGetUri, TOnAddedTransceiver, TRemoteStreams } from './types';
 export type { TEventMap as TCallManagerEventMap, TEvents as TCallEvents } from './events';

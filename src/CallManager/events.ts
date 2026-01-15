@@ -2,6 +2,7 @@
 import { TypedEvents } from 'events-constructor';
 
 import type { IncomingInfoEvent, OutgoingInfoEvent, EndEvent } from '@krivega/jssip';
+import type { TRemoteStreams } from './types';
 
 export enum EEvent {
   // rtcSession events
@@ -141,7 +142,7 @@ export type TEventMap = {
     participantId: string;
     changeType: 'added' | 'removed';
     trackId: string;
-    streams: MediaStream[];
+    streams: TRemoteStreams;
   };
 };
 

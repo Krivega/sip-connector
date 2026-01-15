@@ -3,6 +3,7 @@ import resolveServerParametersRequester from './resolveServerParametersRequester
 import sipConnectorFacade from './sipConnectorFacade';
 import UseLicenseManager from './UseLicenseManager';
 
+import type { TRemoteStreams } from '@/index';
 import type {
   IParams as IServerParametersRequesterParams,
   IServerParametersRequester,
@@ -46,7 +47,7 @@ class Session {
     password: string;
     conference: string;
     mediaStream: MediaStream;
-    setRemoteStreams: (streams: MediaStream[]) => void;
+    setRemoteStreams: (streams: TRemoteStreams) => void;
   }): Promise<void> {
     const serverParameters = await this.serverParametersRequester.request({
       serverUrl,
