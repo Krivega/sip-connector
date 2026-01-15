@@ -48,10 +48,10 @@
 
 ```typescript
 {
-  participantId: string;
-  changeType: 'added' | 'removed';
-  trackId: string;
   streams: TRemoteStreams;
+  changeType: TRemoteStreamsChangeType;
+  participantId?: string;
+  trackId?: string;
 }
 ```
 
@@ -62,6 +62,12 @@
   mainStream?: MediaStream;
   contentedStream?: MediaStream;
 }
+```
+
+### `TRemoteStreamsChangeType`
+
+```typescript
+'added' | 'removed' | 'updated';
 ```
 
 ### `EndEvent`

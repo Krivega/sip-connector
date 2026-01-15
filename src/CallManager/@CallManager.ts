@@ -17,15 +17,9 @@ import type {
   TCallRoleSpectator,
   TReplaceMediaStream,
   TStartCall,
-  TGetRemoteStreams,
+  TStreamsManagerTools,
+  TRemoteStreamsChangeType,
 } from './types';
-
-type TRemoteStreamsChangeType = 'added' | 'removed';
-
-type TStreamsManagerTools = {
-  manager: RemoteStreamsManager;
-  getRemoteStreams: TGetRemoteStreams;
-};
 
 const getStreamHint = (event: RTCTrackEvent) => {
   return event.streams[0]?.id;
@@ -267,7 +261,7 @@ class CallManager {
   private emitRemoteStreamsChanged(
     manager: RemoteStreamsManager,
     changeType: TRemoteStreamsChangeType,
-    { trackId, participantId }: { trackId: string; participantId: string },
+    { trackId, participantId }: { trackId?: string; participantId?: string } = {},
   ) {
     const tools = this.getActiveStreamsManagerTools();
 
@@ -278,10 +272,10 @@ class CallManager {
     const streams = tools.getRemoteStreams();
 
     this.events.trigger(EEvent.REMOTE_STREAMS_CHANGED, {
-      participantId,
+      streams,
       changeType,
       trackId,
-      streams,
+      participantId,
     });
   }
 
@@ -345,6 +339,7 @@ class CallManager {
   }) => {
     if (RoleManager.hasSpectator(previous) && !RoleManager.hasSpectator(next)) {
       this.stopRecvSession();
+      this.emitRemoteStreamsChanged(this.mainRemoteStreamsManager, 'updated');
     }
 
     if (RoleManager.hasSpectator(next)) {

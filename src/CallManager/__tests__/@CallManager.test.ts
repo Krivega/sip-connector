@@ -521,6 +521,53 @@ describe('CallManager - дополнительные тесты для покр�
     expect(startSpy).not.toHaveBeenCalled();
   });
 
+  it('onRoleChanged: вызывает emitRemoteStreamsChanged с типом updated при выходе из роли spectator', () => {
+    const emitSpy = jest.spyOn(
+      callManager,
+      // @ts-expect-error
+      'emitRemoteStreamsChanged',
+    );
+
+    const spectatorRole: TCallRoleSpectator = {
+      type: 'spectator',
+      recvParams: {
+        audioId: 'a1',
+        sendOffer: async () => {
+          return {} as RTCSessionDescription;
+        },
+      },
+    };
+
+    // Выход из spectator в spectator_synthetic
+    // @ts-expect-error
+    callManager.onRoleChanged({ previous: spectatorRole, next: { type: 'spectator_synthetic' } });
+
+    expect(emitSpy).toHaveBeenCalledWith(
+      // @ts-expect-error
+      callManager.mainRemoteStreamsManager,
+      'updated',
+    );
+
+    emitSpy.mockClear();
+
+    // Выход из spectator в participant
+    // @ts-expect-error
+    callManager.onRoleChanged({ previous: spectatorRole, next: { type: 'participant' } });
+
+    expect(emitSpy).toHaveBeenCalledWith(
+      // @ts-expect-error
+      callManager.mainRemoteStreamsManager,
+      'updated',
+    );
+
+    emitSpy.mockClear();
+
+    // Вход в spectator (не должно вызывать emitRemoteStreamsChanged)
+    // @ts-expect-error
+    callManager.onRoleChanged({ previous: { type: 'participant' }, next: spectatorRole });
+    expect(emitSpy).not.toHaveBeenCalled();
+  });
+
   it('onRoleChanged: перезапускает recv сессию при смене audioId в роли spectator', () => {
     const startSpy = jest
       // @ts-expect-error

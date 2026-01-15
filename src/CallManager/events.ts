@@ -2,7 +2,7 @@
 import { TypedEvents } from 'events-constructor';
 
 import type { IncomingInfoEvent, OutgoingInfoEvent, EndEvent } from '@krivega/jssip';
-import type { TRemoteStreams } from './types';
+import type { TRemoteStreams, TRemoteStreamsChangeType } from './types';
 
 export enum EEvent {
   // rtcSession events
@@ -139,10 +139,10 @@ export type TEventMap = {
   'ended:fromserver': EndEvent;
   'call-status-changed': { isCallActive: boolean };
   'remote-streams-changed': {
-    participantId: string;
-    changeType: 'added' | 'removed';
-    trackId: string;
     streams: TRemoteStreams;
+    changeType: TRemoteStreamsChangeType;
+    participantId?: string;
+    trackId?: string;
   };
 };
 
