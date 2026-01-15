@@ -575,10 +575,8 @@ export default class ConnectionStateMachine extends BaseStateMachine<
   }
 
   private readonly handleRegistrationFailed = (event: TEventMap['registrationFailed']): void => {
-    const { response } = event;
-
-    const statusCode = response.status_code || 'Unknown';
-    const reason = response.reason_phrase || 'Registration failed';
+    const statusCode = event.response?.status_code ?? 'Unknown';
+    const reason = event.response?.reason_phrase ?? 'Registration failed';
 
     const error = new Error(`Registration failed: ${statusCode} ${reason}`);
 

@@ -11,6 +11,7 @@ import type {
   RegisteredEvent,
   RTCSessionEvent,
   UnRegisteredEvent,
+  RegistrationFailedEvent,
 } from '@krivega/jssip';
 import type { TConnectionConfigurationWithUa, TParametersConnection } from './ConnectionFlow';
 
@@ -65,7 +66,7 @@ export type TEventMap = {
   newRTCSession: RTCSessionEvent;
   registered: RegisteredEvent;
   unregistered: UnRegisteredEvent;
-  registrationFailed: UnRegisteredEvent;
+  registrationFailed: RegistrationFailedEvent;
   newMessage: IncomingMessageEvent | OutgoingMessageEvent;
   sipEvent: { event: unknown; request: IncomingRequest };
   'connect-started': Record<string, never>;

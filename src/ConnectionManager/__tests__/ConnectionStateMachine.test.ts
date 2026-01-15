@@ -1,3 +1,5 @@
+import { C } from '@krivega/jssip';
+
 import logger from '@/logger';
 import ConnectionStateMachine, { EEvents, EState } from '../ConnectionStateMachine';
 import { createEvents } from '../events';
@@ -183,7 +185,7 @@ describe('ConnectionStateMachine', () => {
 
     it('reset должен переводить из FAILED в IDLE', () => {
       stateMachine.startConnect();
-      events.trigger('registrationFailed', { response: {} as IncomingResponse });
+      events.trigger('registrationFailed', { cause: C.causes.AUTHENTICATION_ERROR });
       expect(stateMachine.state).toBe(EState.FAILED);
 
       stateMachine.reset();
@@ -250,7 +252,7 @@ describe('ConnectionStateMachine', () => {
         title: 'registrationFailed переводит в FAILED',
         arrange: () => {
           stateMachine.startConnect();
-          events.trigger('registrationFailed', { response: {} as IncomingResponse });
+          events.trigger('registrationFailed', { cause: C.causes.AUTHENTICATION_ERROR });
         },
         expected: EState.FAILED,
       },
@@ -371,7 +373,7 @@ describe('ConnectionStateMachine', () => {
       stateMachine.startConnect();
       expect(stateMachine.state).toBe(EState.PREPARING);
 
-      events.trigger('registrationFailed', { response: {} as IncomingResponse });
+      events.trigger('registrationFailed', { cause: C.causes.AUTHENTICATION_ERROR });
 
       expect(stateMachine.state).toBe(EState.FAILED);
       expect(mockLogger).toHaveBeenCalledWith(
@@ -547,7 +549,7 @@ describe('ConnectionStateMachine', () => {
       stateMachine.startInitUa();
 
       // Ошибка регистрации
-      events.trigger('registrationFailed', { response: {} as IncomingResponse });
+      events.trigger('registrationFailed', { cause: C.causes.AUTHENTICATION_ERROR });
       expect(stateMachine.state).toBe(EState.FAILED);
       expect(stateMachine.isFailed).toBe(true);
 
@@ -564,6 +566,7 @@ describe('ConnectionStateMachine', () => {
       // Ошибка регистрации с детальной информацией
       events.trigger('registrationFailed', {
         response: { status_code: 403, reason_phrase: 'Forbidden' } as IncomingResponse,
+        cause: C.causes.AUTHENTICATION_ERROR,
       });
 
       expect(stateMachine.state).toBe(EState.FAILED);
@@ -583,6 +586,7 @@ describe('ConnectionStateMachine', () => {
       stateMachine.startInitUa();
       events.trigger('registrationFailed', {
         response: { status_code: 401, reason_phrase: 'Unauthorized' } as IncomingResponse,
+        cause: C.causes.AUTHENTICATION_ERROR,
       });
 
       expect(stateMachine.state).toBe(EState.FAILED);
@@ -627,6 +631,7 @@ describe('ConnectionStateMachine', () => {
 
       events.trigger('registrationFailed', {
         response: { status_code: 403, reason_phrase: 'Forbidden' } as IncomingResponse,
+        cause: C.causes.AUTHENTICATION_ERROR,
       });
 
       expect(stateMachine.state).toBe(EState.FAILED);
@@ -637,10 +642,7 @@ describe('ConnectionStateMachine', () => {
     it('error должен создаваться с дефолтными значениями при неполном response', () => {
       stateMachine.startConnect();
 
-      events.trigger('registrationFailed', {
-        response: {} as IncomingResponse,
-      });
-
+      events.trigger('registrationFailed', { cause: C.causes.AUTHENTICATION_ERROR });
       expect(stateMachine.state).toBe(EState.FAILED);
       expect(stateMachine.error).toBeDefined();
       expect(stateMachine.error?.message).toBe('Registration failed: Unknown Registration failed');
@@ -651,6 +653,7 @@ describe('ConnectionStateMachine', () => {
 
       events.trigger('registrationFailed', {
         response: { status_code: 401 } as IncomingResponse,
+        cause: C.causes.AUTHENTICATION_ERROR,
       });
 
       expect(stateMachine.state).toBe(EState.FAILED);
@@ -663,6 +666,7 @@ describe('ConnectionStateMachine', () => {
 
       events.trigger('registrationFailed', {
         response: { reason_phrase: 'Service Unavailable' } as IncomingResponse,
+        cause: C.causes.AUTHENTICATION_ERROR,
       });
 
       expect(stateMachine.state).toBe(EState.FAILED);
@@ -693,7 +697,7 @@ describe('ConnectionStateMachine', () => {
 
     it('error должен очищаться при reset из FAILED', () => {
       stateMachine.startConnect();
-      events.trigger('registrationFailed', { response: {} as IncomingResponse });
+      events.trigger('registrationFailed', { cause: C.causes.AUTHENTICATION_ERROR });
       expect(stateMachine.state).toBe(EState.FAILED);
 
       stateMachine.reset();
@@ -704,7 +708,7 @@ describe('ConnectionStateMachine', () => {
 
     it('error должен очищаться при startConnect из FAILED', () => {
       stateMachine.startConnect();
-      events.trigger('registrationFailed', { response: {} as IncomingResponse });
+      events.trigger('registrationFailed', { cause: C.causes.AUTHENTICATION_ERROR });
       expect(stateMachine.state).toBe(EState.FAILED);
 
       stateMachine.startConnect();
@@ -758,7 +762,7 @@ describe('ConnectionStateMachine', () => {
 
       // Переводим в FAILED
       stateMachine.startConnect();
-      events.trigger('registrationFailed', { response: {} as IncomingResponse });
+      events.trigger('registrationFailed', { cause: C.causes.AUTHENTICATION_ERROR });
       expect(stateMachine.isFailed).toBe(true);
       expect(stateMachine.state).toBe(EState.FAILED);
     });

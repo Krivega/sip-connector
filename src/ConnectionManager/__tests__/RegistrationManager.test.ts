@@ -8,10 +8,10 @@ import type {
   RegisteredEvent,
   UA,
   UAEventMap,
-  UnRegisteredEvent,
   DisconnectEvent,
   Socket,
   WebSocketInterface,
+  RegistrationFailedEvent,
 } from '@krivega/jssip';
 import type { UA_EVENT_NAMES, TEvents } from '../events';
 
@@ -22,7 +22,7 @@ jest.mock('@/logger', () => {
 // Типы для тестовых данных
 interface ITestEventData {
   mockRegisteredEvent: RegisteredEvent;
-  mockUnregisteredEvent: UnRegisteredEvent;
+  mockRegistrationFailedEvent: RegistrationFailedEvent;
   mockError: Error;
 }
 
@@ -35,12 +35,12 @@ const createTestEventData = (): ITestEventData => {
         reason_phrase: 'OK',
       },
     } as unknown as RegisteredEvent,
-    mockUnregisteredEvent: {
+    mockRegistrationFailedEvent: {
       response: {
         status_code: 200,
         reason_phrase: 'OK',
       },
-    } as unknown as UnRegisteredEvent,
+    } as unknown as RegistrationFailedEvent,
     mockError: new Error('Test error'),
   };
 };
@@ -131,7 +131,7 @@ describe('RegistrationManager', () => {
       triggerEventWithDelay(
         mockUa,
         'registrationFailed',
-        testData.mockError as unknown as UnRegisteredEvent,
+        testData.mockError as unknown as RegistrationFailedEvent,
       );
 
       await expect(registrationManager.register()).rejects.toThrow('Test error');
@@ -160,11 +160,11 @@ describe('RegistrationManager', () => {
 
   describe('unregister', () => {
     it('должен успешно отменять регистрацию UA', async () => {
-      triggerEventWithDelay(mockUa, 'unregistered', testData.mockUnregisteredEvent);
+      triggerEventWithDelay(mockUa, 'unregistered', testData.mockRegistrationFailedEvent);
 
       const result = await registrationManager.unregister();
 
-      expect(result).toEqual(testData.mockUnregisteredEvent);
+      expect(result).toEqual(testData.mockRegistrationFailedEvent);
     });
   });
 
@@ -172,7 +172,7 @@ describe('RegistrationManager', () => {
     it('должен успешно перерегистрировать UA', async () => {
       // Эмулируем успешную отмену регистрации, затем регистрацию
       setTimeout(() => {
-        mockUa.trigger('unregistered', testData.mockUnregisteredEvent);
+        mockUa.trigger('unregistered', testData.mockRegistrationFailedEvent);
         setTimeout(() => {
           mockUa.trigger('registered', testData.mockRegisteredEvent);
         }, 5);
@@ -244,13 +244,13 @@ describe('RegistrationManager', () => {
 
       registrationManager.subscribeToStartEvents(onSuccessSpy, onErrorSpy);
 
-      const mockRegistrationFailedEvent: UnRegisteredEvent = {
+      const mockRegistrationFailedEvent: RegistrationFailedEvent = {
         response: {
           status_code: 401,
           reason_phrase: 'Unauthorized',
         },
         cause: 'Authentication failed',
-      } as unknown as UnRegisteredEvent;
+      } as unknown as RegistrationFailedEvent;
 
       events.trigger('registrationFailed', mockRegistrationFailedEvent);
 
@@ -289,13 +289,13 @@ describe('RegistrationManager', () => {
       // Эмулируем события
       events.trigger('registered', testData.mockRegisteredEvent);
 
-      const mockRegistrationFailedEvent: UnRegisteredEvent = {
+      const mockRegistrationFailedEvent: RegistrationFailedEvent = {
         response: {
           status_code: 401,
           reason_phrase: 'Unauthorized',
         },
         cause: 'Authentication failed',
-      } as unknown as UnRegisteredEvent;
+      } as unknown as RegistrationFailedEvent;
 
       events.trigger('registrationFailed', mockRegistrationFailedEvent);
 
@@ -386,13 +386,13 @@ describe('RegistrationManager', () => {
       registrationManager.subscribeToStartEvents(onSuccessSpy, onErrorSpy);
 
       // Эмулируем ошибку
-      const mockRegistrationFailedEvent: UnRegisteredEvent = {
+      const mockRegistrationFailedEvent: RegistrationFailedEvent = {
         response: {
           status_code: 401,
           reason_phrase: 'Unauthorized',
         },
         cause: 'Authentication failed',
-      } as unknown as UnRegisteredEvent;
+      } as unknown as RegistrationFailedEvent;
 
       events.trigger('registrationFailed', mockRegistrationFailedEvent);
 
@@ -415,13 +415,13 @@ describe('RegistrationManager', () => {
       // Эмулируем события с пустыми данными
       events.trigger('registered', testData.mockRegisteredEvent);
 
-      const mockRegistrationFailedEvent: UnRegisteredEvent = {
+      const mockRegistrationFailedEvent: RegistrationFailedEvent = {
         response: {
           status_code: 401,
           reason_phrase: 'Unauthorized',
         },
         cause: 'Authentication failed',
-      } as unknown as UnRegisteredEvent;
+      } as unknown as RegistrationFailedEvent;
 
       events.trigger('registrationFailed', mockRegistrationFailedEvent);
 
