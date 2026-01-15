@@ -31,7 +31,7 @@ describe('@MainStreamHealthMonitor', () => {
       },
     } as unknown as StatsManager;
     callManager = {
-      getMainStream: () => {
+      getMainRemoteStream: () => {
         return mainStream;
       },
     } as unknown as CallManager;

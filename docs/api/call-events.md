@@ -40,7 +40,7 @@
 | `call:peerconnection:ontrack`                    | Генерируется при получении нового медиа-трека             | `RTCTrackEvent`                                   |
 | `call:ended:fromserver`                          | Генерируется при завершении звонка от сервера             | `EndEvent`                                        |
 | `call:call-status-changed`                       | Генерируется при изменении статуса звонка                 | `{ isCallActive: boolean }`                       |
-| `call:remote-streams-changed`                    | Генерируется при изменении удаленных медиа-потоков        | `TRemoteStreamsChangedEvent`                      |
+| `call:remote-tracks-changed`                     | Генерируется при изменении удаленных медиа-потоков        | `TRemoteStreamsChangedEvent`                      |
 
 ## Структуры данных
 
@@ -48,11 +48,26 @@
 
 ```typescript
 {
-  participantId: string;
-  changeType: 'added' | 'removed';
-  trackId: string;
-  streams: MediaStream[];
+  streams: TRemoteStreams;
+  changeType: TRemoteStreamsChangeType;
+  participantId?: string;
+  trackId?: string;
 }
+```
+
+### `TRemoteStreams`
+
+```typescript
+{
+  mainStream?: MediaStream;
+  contentedStream?: MediaStream;
+}
+```
+
+### `TRemoteStreamsChangeType`
+
+```typescript
+'added' | 'removed' | 'updated';
 ```
 
 ### `EndEvent`

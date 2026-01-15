@@ -8,7 +8,7 @@ import debug from '@/logger';
 import hasPurgatory from '@/tools/hasPurgatory';
 
 import type { EUseLicense } from '@/ApiManager';
-import type { TOnAddedTransceiver } from '@/CallManager/types';
+import type { TOnAddedTransceiver, TRemoteStreams } from '@/CallManager';
 import type { TParametersConnection, TConnectionConfigurationWithUa } from '@/ConnectionManager';
 import type { TContentHint } from '@/PresentationManager';
 import type { SipConnector } from '@/SipConnector';
@@ -638,7 +638,7 @@ class SipConnectorFacade implements IProxyMethods {
   public resolveHandleReadyRemoteStreamsDebounced = ({
     onReadyRemoteStreams,
   }: {
-    onReadyRemoteStreams: (streams: MediaStream[]) => void;
+    onReadyRemoteStreams: (streams: TRemoteStreams) => void;
   }) => {
     return debounce(() => {
       const remoteStreams = this.sipConnector.getRemoteStreams();
@@ -661,7 +661,7 @@ class SipConnectorFacade implements IProxyMethods {
     };
   };
 
-  public getRemoteStreams = (): MediaStream[] | undefined => {
+  public getRemoteStreams = (): TRemoteStreams => {
     debug('getRemoteStreams');
 
     return this.sipConnector.getRemoteStreams();

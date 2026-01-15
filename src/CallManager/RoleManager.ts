@@ -1,4 +1,3 @@
-import type { RemoteStreamsManager } from './RemoteStreamsManager';
 import type {
   TCallRole,
   TCallRoleParticipant,
@@ -25,21 +24,9 @@ const createRoleSpectator = (recvParams: TCallRoleSpectator['recvParams']): TCal
 export class RoleManager {
   private role: TCallRole = roleParticipant;
 
-  private readonly mainManager: RemoteStreamsManager;
-
-  private readonly recvManager: RemoteStreamsManager;
-
   private readonly onRoleChanged?: TOnRoleChanged;
 
-  public constructor(
-    {
-      mainManager,
-      recvManager,
-    }: { mainManager: RemoteStreamsManager; recvManager: RemoteStreamsManager },
-    onRoleChanged?: TOnRoleChanged,
-  ) {
-    this.mainManager = mainManager;
-    this.recvManager = recvManager;
+  public constructor(onRoleChanged?: TOnRoleChanged) {
     this.onRoleChanged = onRoleChanged;
   }
 
@@ -95,15 +82,6 @@ export class RoleManager {
 
   public reset() {
     this.role = roleParticipant;
-    this.recvManager.reset();
-  }
-
-  public getActiveManager(): RemoteStreamsManager {
-    if (this.hasSpectator()) {
-      return this.recvManager;
-    }
-
-    return this.mainManager;
   }
 
   public hasParticipant() {

@@ -50,7 +50,7 @@
 
 - `auto-connect:*` - события автоматического переподключения
 - `connection:*` - события SIP соединения
-- `call:*` - события WebRTC звонков (включая `remote-streams-changed`)
+- `call:*` - события WebRTC звонков (включая `remote-tracks-changed`)
 - `api:*` - события серверного API (включая `participant:move-request-to-spectators`)
 - `incoming-call:*` - события входящих звонков
 - `presentation:*` - события презентаций
@@ -184,7 +184,7 @@ graph TB
 - `SipConnector` → `sendOffer` (передача токена из ConferenceStateManager в API-запросы)
 - `MCUSession` → WebRTC API (основные звонки)
 - `RecvSession` → WebRTC API (receive-only потоки для зрителей)
-- `RemoteStreamsManager` → WebRTC API (отслеживание треков, события `remote-streams-changed`)
+- `RemoteStreamsManager` → WebRTC API (отслеживание треков)
 - `ConnectionQueueManager` → `ConnectionManager` (последовательность операций)
 - `AutoConnectorManager` → `ConnectionQueueManager`, `ConnectionManager`, `CallManager`
 - `VideoSendingBalancerManager` → `CallManager`, `ApiManager`

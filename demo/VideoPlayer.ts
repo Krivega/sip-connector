@@ -11,6 +11,7 @@ class VideoPlayer {
    */
   public constructor(videoElement: HTMLVideoElement) {
     this.videoElement = videoElement;
+    this.setMuted(true);
   }
 
   /**

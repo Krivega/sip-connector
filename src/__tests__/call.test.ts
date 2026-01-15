@@ -108,7 +108,7 @@ describe('call', () => {
   });
 
   it('getRemoteStreams', async () => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     const number = '10000';
 
@@ -117,7 +117,8 @@ describe('call', () => {
 
     const remoteStreams = sipConnector.getRemoteStreams();
 
-    expect(remoteStreams.length).toBe(1);
+    expect(remoteStreams.mainStream).toBeDefined();
+    expect(remoteStreams.contentedStream).toBeUndefined();
   });
 
   it('hangUp', async () => {
@@ -259,7 +260,7 @@ describe('call', () => {
 
     await disconnectPromise;
 
-    expect(sipConnector.getRemoteStreams()).toEqual([]);
+    expect(sipConnector.getRemoteStreams()).toEqual({});
   });
 
   it('end call from server', async () => {

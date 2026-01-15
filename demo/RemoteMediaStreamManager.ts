@@ -57,6 +57,48 @@ const createVideoElement = (streamId: string): HTMLVideoElement => {
 class RemoteMediaStreamManager {
   private readonly streams = new Map<string, IStreamInfo>();
 
+  public setStreams(streams: { streamId: string; stream: MediaStream }[]) {
+    // Создаем множества для быстрого поиска
+    const currentIds = new Set(this.getStreamIds());
+    const newIds = new Set(
+      streams.map((s) => {
+        return s.streamId;
+      }),
+    );
+
+    // Ранняя проверка: если наборы идентичны, ничего не делаем
+    if (
+      currentIds.size === newIds.size &&
+      [...currentIds].every((id) => {
+        return newIds.has(id);
+      })
+    ) {
+      return;
+    }
+
+    // Добавляем новые стримы и обновляем измененные
+    for (const { streamId, stream } of streams) {
+      if (currentIds.has(streamId)) {
+        // Существующий стрим - проверяем, изменился ли он
+        const existingStream = this.getStream(streamId);
+
+        if (existingStream !== stream) {
+          this.updateStream(streamId, stream);
+        }
+      } else {
+        // Новый стрим
+        this.addStream(streamId, stream);
+      }
+    }
+
+    // Удаляем отсутствующие стримы
+    for (const id of currentIds) {
+      if (!newIds.has(id)) {
+        this.removeStream(id);
+      }
+    }
+  }
+
   /**
    * Добавляет стрим и создает для него видео-плеер
    * @param streamId - Уникальный идентификатор стрима
@@ -89,6 +131,34 @@ class RemoteMediaStreamManager {
       container,
       label: labelElement,
     });
+  }
+
+  /**
+   * Обновляет стрим без пересоздания DOM элементов
+   * @param streamId - Уникальный идентификатор стрима
+   * @param stream - Новый MediaStream
+   */
+  public updateStream(streamId: string, stream: MediaStream): void {
+    const streamInfo = this.streams.get(streamId);
+
+    if (!streamInfo) {
+      // Если стрим не существует, добавляем его
+      this.addStream(streamId, stream);
+
+      return;
+    }
+
+    // Обновляем стрим в VideoPlayer без пересоздания DOM
+    streamInfo.videoPlayer.setStream(stream);
+    streamInfo.stream = stream;
+
+    // Обновляем подпись, если она изменилась
+    const newLabel = stream.getVideoTracks()[0]?.label ?? streamId;
+    const currentLabel = streamInfo.label.textContent;
+
+    if (currentLabel !== newLabel) {
+      streamInfo.label.textContent = newLabel;
+    }
   }
 
   /**

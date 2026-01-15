@@ -9,7 +9,7 @@ SDK использует **событийно-ориентированную а�
 | Префикс            | Описание                 | Примеры событий                                                                |
 | ------------------ | ------------------------ | ------------------------------------------------------------------------------ |
 | `connection:*`     | События подключения      | `connected`, `disconnected`                                                    |
-| `call:*`           | События звонков          | `accepted`, `ended`, `failed`, `remote-streams-changed`                        |
+| `call:*`           | События звонков          | `accepted`, `ended`, `failed`, `remote-tracks-changed`                         |
 | `api:*`            | События от сервера       | `enterRoom`, `useLicense`, `restart`, `participant:move-request-to-spectators` |
 | `incoming-call:*`  | События входящих звонков | `incomingCall`                                                                 |
 | `presentation:*`   | События презентаций      | `started`, `stopped`                                                           |
@@ -106,7 +106,7 @@ sipConnector.on('api:useLicense', (license) => {
 ### Изменения удаленных потоков
 
 ```typescript
-sipConnector.on('call:remote-streams-changed', (event) => {
+sipConnector.on('call:remote-tracks-changed', (event) => {
   console.log('Изменение удаленных потоков:', {
     participantId: event.participantId,
     changeType: event.changeType, // 'added' | 'removed'
@@ -115,25 +115,6 @@ sipConnector.on('call:remote-streams-changed', (event) => {
   });
 });
 ```
-
-## Детальная таблица событий
-
-### События звонков (`call:*`)
-
-| Событие                       | Описание                    | Данные                                                                                                 |
-| ----------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `call:accepted`               | Звонок принят               | -                                                                                                      |
-| `call:ended`                  | Звонок завершен             | `EndEvent`                                                                                             |
-| `call:failed`                 | Звонок завершился с ошибкой | `EndEvent`                                                                                             |
-| `call:remote-streams-changed` | Изменение удаленных потоков | `{ participantId: string, changeType: 'added' \| 'removed', trackId: string, streams: MediaStream[] }` |
-
-### События участников (`api:participant:*`)
-
-| Событие                                                | Описание                       | Данные                                                             |
-| ------------------------------------------------------ | ------------------------------ | ------------------------------------------------------------------ |
-| `api:participant:move-request-to-spectators`           | Перемещение в зрители (новый)  | `{ isSynthetic: true } \| { isSynthetic: false, audioId: string }` |
-| `api:participant:move-request-to-spectators-synthetic` | Перемещение в зрители (старый) | -                                                                  |
-| `api:participant:move-request-to-participants`         | Перемещение в участники        | -                                                                  |
 
 ## Продвинутые паттерны
 

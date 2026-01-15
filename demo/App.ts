@@ -13,6 +13,7 @@ import getAppInfo from './utils/getAppInfo';
 import getBrowserInfo from './utils/getBrowserInfo';
 import VideoPlayer from './VideoPlayer';
 
+import type { TRemoteStreams } from '@/index';
 import type { IFormState } from './state/FormState';
 
 /**
@@ -167,7 +168,7 @@ class App {
         user: state.userNumber,
         password: state.password,
         conference: state.conferenceNumber,
-        setRemoteStreams: (streams: MediaStream[]) => {
+        setRemoteStreams: (streams: TRemoteStreams) => {
           this.handleRemoteStreams(streams);
         },
       });
@@ -187,10 +188,16 @@ class App {
   /**
    * Обрабатывает получение удаленных потоков
    */
-  private handleRemoteStreams(streams: MediaStream[]): void {
-    streams.forEach((stream) => {
-      this.remoteMediaStreamManager.addStream(stream.id, stream);
-    });
+  private handleRemoteStreams({ mainStream, contentedStream }: TRemoteStreams): void {
+    const streams = [mainStream, contentedStream]
+      .filter((stream) => {
+        return stream !== undefined;
+      })
+      .map((stream) => {
+        return { streamId: stream.id, stream };
+      });
+
+    this.remoteMediaStreamManager.setStreams(streams);
   }
 
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this
