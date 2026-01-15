@@ -249,7 +249,7 @@ class CallManager {
       },
     });
 
-    if (!result.isAdded) {
+    if (!result.isAddedTrack) {
       return;
     }
 

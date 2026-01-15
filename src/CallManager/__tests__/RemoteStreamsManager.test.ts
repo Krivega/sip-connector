@@ -32,7 +32,7 @@ describe('RemoteStreamsManager', () => {
     const result = manager.addTrack(video);
     const streams = manager.getStreams('p1');
 
-    expect(result).toEqual({ isAdded: true, participantId: 'p1' });
+    expect(result).toEqual({ isAddedTrack: true, isAddedStream: true, participantId: 'p1' });
     expect(streams).toHaveLength(1);
     expect(streams[0].getTracks()).toEqual([video]);
   });
@@ -43,8 +43,8 @@ describe('RemoteStreamsManager', () => {
     const first = manager.addTrack(video);
     const second = manager.addTrack(video);
 
-    expect(first.isAdded).toBe(true);
-    expect(second.isAdded).toBe(false);
+    expect(first.isAddedTrack).toBe(true);
+    expect(second.isAddedTrack).toBe(false);
     expect(manager.getStreams()).toHaveLength(1);
   });
 
@@ -102,8 +102,11 @@ describe('RemoteStreamsManager', () => {
     const video1 = withLabel(createVideoMediaStreamTrackMock({ id: 'v1' }), 'p1');
     const video2 = withLabel(createVideoMediaStreamTrackMock({ id: 'v2' }), 'p1');
 
-    manager.addTrack(video1, { streamHint: 'group' });
-    manager.addTrack(video2, { streamHint: 'group' });
+    const result1 = manager.addTrack(video1, { streamHint: 'group' });
+    const result2 = manager.addTrack(video2, { streamHint: 'group' });
+
+    expect(result1).toEqual({ isAddedTrack: true, isAddedStream: true, participantId: 'group' });
+    expect(result2).toEqual({ isAddedTrack: true, isAddedStream: false, participantId: 'group' });
 
     const removed = manager.removeTrack(video1.id);
 
@@ -237,7 +240,7 @@ describe('RemoteStreamsManager', () => {
 
     const result = manager.addTrack(video);
 
-    expect(result.isAdded).toBe(true);
+    expect(result.isAddedTrack).toBe(true);
   });
 
   it('использует msid из getSettings для participantId', () => {
@@ -245,7 +248,7 @@ describe('RemoteStreamsManager', () => {
 
     const result = manager.addTrack(video);
 
-    expect(result).toEqual({ isAdded: true, participantId: 'msid-1' });
+    expect(result).toEqual({ isAddedTrack: true, isAddedStream: true, participantId: 'msid-1' });
   });
 
   it('один участник может иметь несколько групп (несколько потоков)', () => {
@@ -255,8 +258,8 @@ describe('RemoteStreamsManager', () => {
     const result1 = manager.addTrack(video1, { streamHint: 'group-1' });
     const result2 = manager.addTrack(video2, { streamHint: 'group-2' });
 
-    expect(result1).toEqual({ isAdded: true, participantId: 'group-1' });
-    expect(result2).toEqual({ isAdded: true, participantId: 'group-2' });
+    expect(result1).toEqual({ isAddedTrack: true, isAddedStream: true, participantId: 'group-1' });
+    expect(result2).toEqual({ isAddedTrack: true, isAddedStream: true, participantId: 'group-2' });
 
     const streams = manager.getStreams();
 

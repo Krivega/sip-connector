@@ -80,19 +80,23 @@ export class RemoteStreamsManager {
     } = {},
   ):
     | {
-        isAdded: true;
+        isAddedTrack: true;
+        isAddedStream: boolean;
         participantId: string;
       }
-    | { isAdded: false } {
+    | { isAddedTrack: false; isAddedStream: false } {
     const participantId = resolveParticipantId(track, streamHint);
     const groupId = resolveStreamGroupId(track, streamHint);
 
     if (this.trackToGroup.has(track.id)) {
-      return { isAdded: false };
+      return { isAddedTrack: false, isAddedStream: false };
     }
 
     const participantGroups = this.getParticipantGroups(participantId);
-    let group = participantGroups.get(groupId);
+    const existingGroup = participantGroups.get(groupId);
+    const isAddedStream = !existingGroup;
+
+    let group = existingGroup;
 
     if (!group) {
       group = {
@@ -128,7 +132,7 @@ export class RemoteStreamsManager {
       track.removeEventListener('ended', handleEnded);
     });
 
-    return { isAdded: true, participantId };
+    return { isAddedTrack: true, isAddedStream, participantId };
   }
 
   public removeTrack(trackId: string): { isRemovedTrack: boolean; isRemovedStream: boolean } {
