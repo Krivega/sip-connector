@@ -4,6 +4,7 @@ import { dom } from './dom';
 import LoaderManager from './LoaderManager';
 import LocalMediaStreamManager from './LocalMediaStreamManager';
 import LogsManager from './LogsManager';
+import PresentationManager from './PresentationManager';
 import RemoteMediaStreamManager from './RemoteMediaStreamManager';
 import Session from './Session/Session';
 import FormStateManager from './state/FormStateManager';
@@ -24,6 +25,8 @@ class App {
 
   private readonly localMediaStreamManager: LocalMediaStreamManager;
 
+  private readonly presentationManager: PresentationManager;
+
   private readonly remoteMediaStreamManager: RemoteMediaStreamManager;
 
   private readonly loaderManager: LoaderManager;
@@ -38,6 +41,7 @@ class App {
   public constructor() {
     this.formStateManager = new FormStateManager();
     this.localMediaStreamManager = new LocalMediaStreamManager();
+    this.presentationManager = new PresentationManager();
     this.remoteMediaStreamManager = new RemoteMediaStreamManager();
     this.loaderManager = new LoaderManager();
     this.callStateManager = new CallStateManager();
@@ -63,6 +67,10 @@ class App {
     const localVideoPlayer = new VideoPlayer(dom.localVideoElement);
 
     this.localMediaStreamManager.setVideoPlayer(localVideoPlayer);
+
+    const presentationVideoPlayer = new VideoPlayer(dom.presentationVideoElement);
+
+    this.presentationManager.setVideoPlayer(presentationVideoPlayer);
 
     // Подписываемся на отправку формы по Enter
     this.formStateManager.onSubmit((_state, event) => {
@@ -106,9 +114,13 @@ class App {
       return;
     }
 
-    this.startCall(state).catch((error: unknown) => {
-      this.handleError(error);
-    });
+    this.startCall(state)
+      .then(() => {
+        this.presentationManager.activate();
+      })
+      .catch((error: unknown) => {
+        this.handleError(error);
+      });
   }
 
   /**
@@ -212,6 +224,9 @@ class App {
     (this.session ? this.session.stopCall() : Promise.resolve())
       .then(() => {
         this.session = undefined;
+
+        // Сбрасываем состояние презентации
+        this.presentationManager.deactivate();
 
         // Останавливаем локальный медиа-поток
         this.localMediaStreamManager.stop();

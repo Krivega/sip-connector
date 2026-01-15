@@ -23,6 +23,15 @@ type TDomIds = {
   logsListId: string;
   clearLogsButtonId: string;
   filterLogsInputId: string;
+  presentationStressTestingSectionId: string;
+  presentationStressMaxAttemptsCountId: string;
+  presentationStressDelayBetweenAttemptsId: string;
+  presentationStressDelayBetweenStartAndStopId: string;
+  startPresentationId: string;
+  startStressTestingPresentationId: string;
+  startStressTestingPresentationTextId: string;
+  stopPresentationId: string;
+  presentationVideoId: string;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
@@ -57,6 +66,14 @@ class DOM {
 
   public endCallButtonElement: HTMLButtonElement;
 
+  public startPresentationElement: HTMLButtonElement;
+
+  public startStressTestingPresentationElement: HTMLButtonElement;
+
+  public startStressTestingPresentationTextElement: HTMLSpanElement;
+
+  public stopPresentationElement: HTMLButtonElement;
+
   public toggleCameraButtonElement: HTMLButtonElement;
 
   public toggleMicButtonElement: HTMLButtonElement;
@@ -72,6 +89,8 @@ class DOM {
   public remoteStreamsContainerElement: HTMLElement;
 
   public localVideoElement: HTMLVideoElement;
+
+  public presentationVideoElement: HTMLVideoElement;
 
   public formElement: HTMLFormElement;
 
@@ -113,6 +132,14 @@ class DOM {
 
   public filterLogsInputElement: HTMLInputElement;
 
+  public presentationStressTestingSectionElement: HTMLElement;
+
+  public presentationStressMaxAttemptsCountInputElement: HTMLInputElement;
+
+  public presentationStressDelayBetweenAttemptsInputElement: HTMLInputElement;
+
+  public presentationStressDelayBetweenStartAndStopInputElement: HTMLInputElement;
+
   public constructor({
     overlayId,
     callButtonId,
@@ -137,10 +164,27 @@ class DOM {
     logsListId,
     clearLogsButtonId,
     filterLogsInputId,
+    presentationStressTestingSectionId,
+    presentationStressMaxAttemptsCountId,
+    presentationStressDelayBetweenAttemptsId,
+    presentationStressDelayBetweenStartAndStopId,
+    startPresentationId,
+    startStressTestingPresentationId,
+    startStressTestingPresentationTextId,
+    stopPresentationId,
+    presentationVideoId,
   }: TDomIds) {
     this.overlayElement = getElementById(overlayId);
     this.callButtonElement = getElementById<HTMLButtonElement>(callButtonId);
     this.endCallButtonElement = getElementById<HTMLButtonElement>(endCallButtonId);
+    this.startPresentationElement = getElementById<HTMLButtonElement>(startPresentationId);
+    this.startStressTestingPresentationElement = getElementById<HTMLButtonElement>(
+      startStressTestingPresentationId,
+    );
+    this.startStressTestingPresentationTextElement = getElementById<HTMLSpanElement>(
+      startStressTestingPresentationTextId,
+    );
+    this.stopPresentationElement = getElementById<HTMLButtonElement>(stopPresentationId);
     this.toggleCameraButtonElement = getElementById<HTMLButtonElement>(toggleCameraButtonId);
     this.toggleMicButtonElement = getElementById<HTMLButtonElement>(toggleMicButtonId);
     this.toggleCameraButtonTextElement = getElementById<HTMLSpanElement>(toggleCameraButtonTextId);
@@ -149,6 +193,7 @@ class DOM {
     this.activeCallSectionElement = getElementById(activeCallSectionId);
     this.remoteStreamsContainerElement = getElementById(remoteStreamsContainerId);
     this.localVideoElement = getElementById<HTMLVideoElement>(localVideoId);
+    this.presentationVideoElement = getElementById<HTMLVideoElement>(presentationVideoId);
     this.formElement = getElementById<HTMLFormElement>(callFormId);
 
     // Инициализируем элементы формы
@@ -195,6 +240,19 @@ class DOM {
     this.logsListElement = getElementById(logsListId);
     this.clearLogsButtonElement = getElementById<HTMLButtonElement>(clearLogsButtonId);
     this.filterLogsInputElement = getElementById<HTMLInputElement>(filterLogsInputId);
+
+    this.presentationStressTestingSectionElement = getElementById(
+      presentationStressTestingSectionId,
+    );
+    this.presentationStressMaxAttemptsCountInputElement = getElementById<HTMLInputElement>(
+      presentationStressMaxAttemptsCountId,
+    );
+    this.presentationStressDelayBetweenAttemptsInputElement = getElementById<HTMLInputElement>(
+      presentationStressDelayBetweenAttemptsId,
+    );
+    this.presentationStressDelayBetweenStartAndStopInputElement = getElementById<HTMLInputElement>(
+      presentationStressDelayBetweenStartAndStopId,
+    );
   }
 
   /**
@@ -271,6 +329,10 @@ export const dom = new DOM({
   overlayId: 'loaderOverlay',
   callButtonId: 'callButton',
   endCallButtonId: 'endCallButton',
+  startPresentationId: 'startPresentationButton',
+  startStressTestingPresentationId: 'startStressTestingPresentationButton',
+  startStressTestingPresentationTextId: 'startStressTestingPresentationText',
+  stopPresentationId: 'stopPresentationButton',
   toggleCameraButtonId: 'toggleCameraButton',
   toggleMicButtonId: 'toggleMicButton',
   toggleCameraButtonTextId: 'toggleCameraButtonText',
@@ -278,6 +340,7 @@ export const dom = new DOM({
   localVideoSectionId: 'localVideoSection',
   activeCallSectionId: 'activeCallSection',
   localVideoId: 'localVideo',
+  presentationVideoId: 'presentationVideo',
   remoteStreamsContainerId: 'remoteStreamsContainer',
   callFormId: 'callForm',
   participantRoleId: 'participantRole',
@@ -291,4 +354,8 @@ export const dom = new DOM({
   logsListId: 'logsList',
   clearLogsButtonId: 'clearLogsButton',
   filterLogsInputId: 'filterLogsInput',
+  presentationStressTestingSectionId: 'presentationStressTestingSection',
+  presentationStressMaxAttemptsCountId: 'presentationStressMaxAttemptsCount',
+  presentationStressDelayBetweenAttemptsId: 'presentationStressDelayBetweenAttempts',
+  presentationStressDelayBetweenStartAndStopId: 'presentationStressDelayBetweenStartAndStop',
 });

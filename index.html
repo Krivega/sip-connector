@@ -67,9 +67,53 @@
         </label>
       </form>
 
+      <section id="presentationStressTestingSection" class="hidden">
+        <h3>Настройки стрессового тестирования презентации</h3>
+
+        <label for="presentationStressMaxAttemptsCount">
+          Количество попыток
+          <input
+            type="number"
+            id="presentationStressMaxAttemptsCount"
+            name="presentationStressMaxAttemptsCount"
+            min="1"
+            step="1"
+            inputmode="numeric"
+            value="50"
+          />
+        </label>
+
+        <label for="presentationStressDelayBetweenAttempts">
+          Задержка между попытками (мс)
+          <input
+            type="number"
+            id="presentationStressDelayBetweenAttempts"
+            name="presentationStressDelayBetweenAttempts"
+            min="0"
+            step="1"
+            inputmode="numeric"
+            value="300"
+          />
+        </label>
+
+        <label for="presentationStressDelayBetweenStartAndStop">
+          Задержка между стартом и стопом (мс)
+          <input
+            type="number"
+            id="presentationStressDelayBetweenStartAndStop"
+            name="presentationStressDelayBetweenStartAndStop"
+            min="0"
+            step="1"
+            inputmode="numeric"
+            value="500"
+          />
+        </label>
+      </section>
+
       <section id="localVideoSection" class="hidden">
         <h3>Локальное видео</h3>
         <video class="local-video" id="localVideo" autoplay playsinline muted></video>
+        <video class="local-video hidden" id="presentationVideo" autoplay playsinline muted></video>
       </section>
 
       <section id="activeCallSection" class="hidden">
@@ -124,6 +168,11 @@
       </button>
       <button id="toggleMicButton" type="button" class="hidden">
         <span id="toggleMicButtonText">Выключить микрофон</span>
+      </button>
+      <button id="startPresentationButton" type="button" class="hidden">Начать презентацию</button>
+      <button id="stopPresentationButton" type="button" class="hidden">Завершить презентацию</button>
+      <button id="startStressTestingPresentationButton" type="button" class="hidden">
+        <span id="startStressTestingPresentationText">Начать стрессовое тестирование презентации</span>
       </button>
     </div>
 
