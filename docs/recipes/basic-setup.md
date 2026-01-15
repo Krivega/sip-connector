@@ -23,7 +23,7 @@ await facade.connectToServer({
 });
 
 // 3. Подписка на изменения удаленных потоков
-const unsubscribeRemoteStreams = sipConnector.on('call:remote-streams-changed', (event) => {
+const unsubscribeRemoteStreams = sipConnector.on('call:remote-tracks-changed', (event) => {
   console.log('Изменение удаленных потоков:', {
     participantId: event.participantId,
     changeType: event.changeType, // 'added' | 'removed'
@@ -145,7 +145,7 @@ const localStream = await navigator.mediaDevices.getUserMedia({
 });
 
 // Подписка на изменения удаленных потоков
-const unsubscribeRemoteStreams = sipConnector.on('call:remote-streams-changed', (event) => {
+const unsubscribeRemoteStreams = sipConnector.on('call:remote-tracks-changed', (event) => {
   console.log('Изменение удаленных потоков:', {
     participantId: event.participantId,
     changeType: event.changeType, // 'added' | 'removed'

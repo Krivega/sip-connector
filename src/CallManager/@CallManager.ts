@@ -241,7 +241,7 @@ class CallManager {
     const result = manager.addTrack(track, {
       streamHint,
       onRemoved: (event) => {
-        this.emitRemoteStreamsChanged(manager, 'removed', {
+        this.emitRemoteTracksChanged(manager, 'removed', {
           trackId: event.trackId,
           participantId: event.participantId,
         });
@@ -252,13 +252,13 @@ class CallManager {
       return;
     }
 
-    this.emitRemoteStreamsChanged(manager, 'added', {
+    this.emitRemoteTracksChanged(manager, 'added', {
       trackId: track.id,
       participantId: result.participantId,
     });
   }
 
-  private emitRemoteStreamsChanged(
+  private emitRemoteTracksChanged(
     manager: RemoteStreamsManager,
     changeType: TRemoteStreamsChangeType,
     { trackId, participantId }: { trackId?: string; participantId?: string } = {},
@@ -271,7 +271,7 @@ class CallManager {
 
     const streams = tools.getRemoteStreams();
 
-    this.events.trigger(EEvent.REMOTE_STREAMS_CHANGED, {
+    this.events.trigger(EEvent.REMOTE_TRACKS_CHANGED, {
       streams,
       changeType,
       trackId,
@@ -339,7 +339,7 @@ class CallManager {
   }) => {
     if (RoleManager.hasSpectator(previous) && !RoleManager.hasSpectator(next)) {
       this.stopRecvSession();
-      this.emitRemoteStreamsChanged(this.mainRemoteStreamsManager, 'updated');
+      this.emitRemoteTracksChanged(this.mainRemoteStreamsManager, 'updated');
     }
 
     if (RoleManager.hasSpectator(next)) {

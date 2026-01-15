@@ -73,7 +73,7 @@ class Session {
     });
 
     this.unsubscribeChangeRemoteStreams = sipConnectorFacade.on(
-      'call:remote-streams-changed',
+      'call:remote-tracks-changed',
       (event) => {
         setRemoteStreams(event.streams);
       },

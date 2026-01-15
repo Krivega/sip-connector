@@ -9,7 +9,7 @@ SDK использует **событийно-ориентированную а�
 | Префикс            | Описание                 | Примеры событий                                                                |
 | ------------------ | ------------------------ | ------------------------------------------------------------------------------ |
 | `connection:*`     | События подключения      | `connected`, `disconnected`                                                    |
-| `call:*`           | События звонков          | `accepted`, `ended`, `failed`, `remote-streams-changed`                        |
+| `call:*`           | События звонков          | `accepted`, `ended`, `failed`, `remote-tracks-changed`                         |
 | `api:*`            | События от сервера       | `enterRoom`, `useLicense`, `restart`, `participant:move-request-to-spectators` |
 | `incoming-call:*`  | События входящих звонков | `incomingCall`                                                                 |
 | `presentation:*`   | События презентаций      | `started`, `stopped`                                                           |
@@ -106,7 +106,7 @@ sipConnector.on('api:useLicense', (license) => {
 ### Изменения удаленных потоков
 
 ```typescript
-sipConnector.on('call:remote-streams-changed', (event) => {
+sipConnector.on('call:remote-tracks-changed', (event) => {
   console.log('Изменение удаленных потоков:', {
     participantId: event.participantId,
     changeType: event.changeType, // 'added' | 'removed'
