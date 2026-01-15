@@ -50,8 +50,8 @@
 
 - `auto-connect:*` - события автоматического переподключения
 - `connection:*` - события SIP соединения
-- `call:*` - события WebRTC звонков (включая `remote-tracks-changed`)
-- `api:*` - события серверного API (включая `participant:move-request-to-spectators`)
+- `call:*` - события WebRTC звонков
+- `api:*` - события серверного API
 - `incoming-call:*` - события входящих звонков
 - `presentation:*` - события презентаций
 - `stats:*` - события статистики

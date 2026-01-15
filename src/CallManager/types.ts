@@ -114,4 +114,4 @@ export type TStreamsManagerTools = {
   getRemoteStreams: TGetRemoteStreams;
 };
 
-export type TRemoteStreamsChangeType = 'added' | 'removed' | 'updated';
+export type TRemoteTracksChangeType = 'added' | 'removed' | 'updated';

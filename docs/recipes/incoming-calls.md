@@ -4,7 +4,7 @@
 
 ```typescript
 // Подписка на изменения удаленных потоков (до ответа на звонок)
-const unsubscribeRemoteStreams = sipConnector.on('call:remote-tracks-changed', (event) => {
+const unsubscribeRemoteStreams = sipConnector.on('call:remote-streams-changed', (event) => {
   console.log('Изменение удаленных потоков:', event);
   displayRemoteStreams(event.streams);
 });

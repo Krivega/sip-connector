@@ -355,7 +355,7 @@ describe('CallManager - дополнительные тесты для покр�
     await expect(callManager.restartIce()).rejects.toThrow('No rtcSession established');
   });
 
-  it('emitRemoteTracksChanged: не эмитит, если менеджер не активный', () => {
+  it('handleChangedRemoteTracks: не эмитит, если менеджер не активный', () => {
     const activeManager = {
       getStreams: jest.fn().mockReturnValue([new MediaStream()]),
     } as unknown as RemoteStreamsManager;
@@ -373,7 +373,7 @@ describe('CallManager - дополнительные тесты для покр�
 
     // Случай активного менеджера
     // @ts-expect-error
-    callManager.emitRemoteTracksChanged(activeManager, 'added', {
+    callManager.handleChangedRemoteTracks(activeManager, 'added', {
       trackId: 't1',
       participantId: 'p1',
     });
@@ -381,7 +381,7 @@ describe('CallManager - дополнительные тесты для покр�
 
     // Случай неактивного менеджера — не должно быть нового эмита
     // @ts-expect-error
-    callManager.emitRemoteTracksChanged(inactiveManager, 'removed', {
+    callManager.handleChangedRemoteTracks(inactiveManager, 'removed', {
       trackId: 't2',
       participantId: 'p2',
     });
@@ -395,7 +395,7 @@ describe('CallManager - дополнительные тесты для покр�
     const emitSpy = jest.spyOn(
       callManager,
       // @ts-expect-error
-      'emitRemoteTracksChanged',
+      'handleChangedRemoteTracks',
     );
 
     // @ts-expect-error
@@ -417,7 +417,7 @@ describe('CallManager - дополнительные тесты для покр�
     const emitSpy = jest.spyOn(
       callManager,
       // @ts-expect-error
-      'emitRemoteTracksChanged',
+      'handleChangedRemoteTracks',
     );
 
     const track = createAudioMediaStreamTrackMock();
@@ -465,7 +465,7 @@ describe('CallManager - дополнительные тесты для покр�
     const emitSpy = jest.spyOn(
       callManager,
       // @ts-expect-error
-      'emitRemoteTracksChanged',
+      'handleChangedRemoteTracks',
     );
 
     const track = createAudioMediaStreamTrackMock();
@@ -481,7 +481,7 @@ describe('CallManager - дополнительные тесты для покр�
       onRemovedCallback({ trackId: 'track-123', participantId: 'p1' });
     }
 
-    // Проверяем, что emitRemoteTracksChanged был вызван с 'removed'
+    // Проверяем, что handleChangedRemoteTracks был вызван с 'removed'
     expect(emitSpy).toHaveBeenCalledWith(managerMock, 'removed', {
       trackId: 'track-123',
       participantId: 'p1',
@@ -521,11 +521,11 @@ describe('CallManager - дополнительные тесты для покр�
     expect(startSpy).not.toHaveBeenCalled();
   });
 
-  it('onRoleChanged: вызывает emitRemoteTracksChanged с типом updated при выходе из роли spectator', () => {
+  it('onRoleChanged: вызывает emitEventChangedRemoteStreams с типом updated при выходе из роли spectator', () => {
     const emitSpy = jest.spyOn(
       callManager,
       // @ts-expect-error
-      'emitRemoteTracksChanged',
+      'emitEventChangedRemoteStreams',
     );
 
     const spectatorRole: TCallRoleSpectator = {
@@ -544,8 +544,7 @@ describe('CallManager - дополнительные тесты для покр�
 
     expect(emitSpy).toHaveBeenCalledWith(
       // @ts-expect-error
-      callManager.mainRemoteStreamsManager,
-      'updated',
+      callManager.streamsManagerProvider.getMainRemoteStreamsManagerTools().getRemoteStreams(),
     );
 
     emitSpy.mockClear();
@@ -556,13 +555,12 @@ describe('CallManager - дополнительные тесты для покр�
 
     expect(emitSpy).toHaveBeenCalledWith(
       // @ts-expect-error
-      callManager.mainRemoteStreamsManager,
-      'updated',
+      callManager.streamsManagerProvider.getMainRemoteStreamsManagerTools().getRemoteStreams(),
     );
 
     emitSpy.mockClear();
 
-    // Вход в spectator (не должно вызывать emitRemoteTracksChanged)
+    // Вход в spectator (не должно вызывать handleChangedRemoteTracks)
     // @ts-expect-error
     callManager.onRoleChanged({ previous: { type: 'participant' }, next: spectatorRole });
     expect(emitSpy).not.toHaveBeenCalled();

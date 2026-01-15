@@ -18,7 +18,8 @@ import type {
   TReplaceMediaStream,
   TStartCall,
   TStreamsManagerTools,
-  TRemoteStreamsChangeType,
+  TRemoteTracksChangeType,
+  TRemoteStreams,
 } from './types';
 
 const getStreamHint = (event: RTCTrackEvent) => {
@@ -241,7 +242,7 @@ class CallManager {
     const result = manager.addTrack(track, {
       streamHint,
       onRemoved: (event) => {
-        this.emitRemoteTracksChanged(manager, 'removed', {
+        this.handleChangedRemoteTracks(manager, 'removed', {
           trackId: event.trackId,
           participantId: event.participantId,
         });
@@ -252,16 +253,16 @@ class CallManager {
       return;
     }
 
-    this.emitRemoteTracksChanged(manager, 'added', {
+    this.handleChangedRemoteTracks(manager, 'added', {
       trackId: track.id,
       participantId: result.participantId,
     });
   }
 
-  private emitRemoteTracksChanged(
+  private handleChangedRemoteTracks(
     manager: RemoteStreamsManager,
-    changeType: TRemoteStreamsChangeType,
-    { trackId, participantId }: { trackId?: string; participantId?: string } = {},
+    changeType: TRemoteTracksChangeType,
+    { trackId, participantId }: { trackId: string; participantId: string },
   ) {
     const tools = this.getActiveStreamsManagerTools();
 
@@ -271,12 +272,24 @@ class CallManager {
 
     const streams = tools.getRemoteStreams();
 
+    this.emitEventChangedRemoteTracks(streams, changeType, { trackId, participantId });
+  }
+
+  private emitEventChangedRemoteTracks(
+    streams: TRemoteStreams,
+    changeType: TRemoteTracksChangeType,
+    { trackId, participantId }: { trackId: string; participantId: string },
+  ) {
     this.events.trigger(EEvent.REMOTE_TRACKS_CHANGED, {
       streams,
       changeType,
       trackId,
       participantId,
     });
+  }
+
+  private emitEventChangedRemoteStreams(streams: TRemoteStreams) {
+    this.events.trigger(EEvent.REMOTE_STREAMS_CHANGED, { streams });
   }
 
   private getActiveStreamsManagerTools(): TStreamsManagerTools {
@@ -339,7 +352,7 @@ class CallManager {
   }) => {
     if (RoleManager.hasSpectator(previous) && !RoleManager.hasSpectator(next)) {
       this.stopRecvSession();
-      this.emitRemoteTracksChanged(this.mainRemoteStreamsManager, 'updated');
+      this.emitEventChangedRemoteStreams(this.getRemoteStreams());
     }
 
     if (RoleManager.hasSpectator(next)) {

@@ -6,15 +6,15 @@
 
 SDK использует **событийно-ориентированную архитектуру** с префиксами для группировки:
 
-| Префикс            | Описание                 | Примеры событий                                                                |
-| ------------------ | ------------------------ | ------------------------------------------------------------------------------ |
-| `connection:*`     | События подключения      | `connected`, `disconnected`                                                    |
-| `call:*`           | События звонков          | `accepted`, `ended`, `failed`, `remote-tracks-changed`                         |
-| `api:*`            | События от сервера       | `enterRoom`, `useLicense`, `restart`, `participant:move-request-to-spectators` |
-| `incoming-call:*`  | События входящих звонков | `incomingCall`                                                                 |
-| `presentation:*`   | События презентаций      | `started`, `stopped`                                                           |
-| `stats:*`          | События статистики       | `collected`                                                                    |
-| `video-balancer:*` | События балансировки     | `balancing-started`, `parameters-updated`                                      |
+| Префикс            | Описание                 |
+| ------------------ | ------------------------ |
+| `connection:*`     | События подключения      |
+| `call:*`           | События звонков          |
+| `api:*`            | События от сервера       |
+| `incoming-call:*`  | События входящих звонков |
+| `presentation:*`   | События презентаций      |
+| `stats:*`          | События статистики       |
+| `video-balancer:*` | События балансировки     |
 
 ## Основные события
 
@@ -106,11 +106,8 @@ sipConnector.on('api:useLicense', (license) => {
 ### Изменения удаленных потоков
 
 ```typescript
-sipConnector.on('call:remote-tracks-changed', (event) => {
+sipConnector.on('call:remote-streams-changed', (event) => {
   console.log('Изменение удаленных потоков:', {
-    participantId: event.participantId,
-    changeType: event.changeType, // 'added' | 'removed'
-    trackId: event.trackId,
     streams: event.streams,
   });
 });

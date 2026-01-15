@@ -32,12 +32,7 @@ await facade.askPermissionToEnableCam();
 ## Работа с удаленными потоками
 
 ```typescript
-const unsubscribeRemoteStreams = sipConnector.on('call:remote-tracks-changed', (event) => {
-  console.log('Изменение удаленных потоков:', {
-    participantId: event.participantId,
-    changeType: event.changeType, // 'added' | 'removed'
-    trackId: event.trackId,
-  });
+const unsubscribeRemoteStreams = sipConnector.on('call:remote-streams-changed', (event) => {
   // Обновляем UI
   updateStreamsDisplay(event.streams);
 });
