@@ -11,11 +11,7 @@ class PresentationManager {
 
   private stressTestingState: TStressTestingState = 'stopped';
 
-  private presentationStream: MediaStream | undefined = undefined;
-
   private videoPlayer: VideoPlayer | undefined = undefined;
-
-  private unsubscribeEndedVideoTrack: (() => void) | undefined = undefined;
 
   private unsubscribeSipConnectorEvents: (() => void) | undefined = undefined;
 
@@ -34,6 +30,10 @@ class PresentationManager {
 
   private get isStartedStressTesting() {
     return this.stressTestingState === 'started';
+  }
+
+  private get isIdle() {
+    return this.state === 'idle';
   }
 
   private get isNotReady() {
@@ -58,7 +58,7 @@ class PresentationManager {
   }
 
   public deactivate(): void {
-    this.resetPresentation({ isStopPresentationTracks: true });
+    this.resetPresentation();
     this.setStoppedStressTesting();
     this.setIdle();
     this.updateUi();
@@ -68,15 +68,11 @@ class PresentationManager {
     this.videoPlayer = videoPlayer;
   }
 
-  private subscribeSipConnectorEvents({
-    isStopPresentationTracks,
-  }: {
-    isStopPresentationTracks: boolean;
-  }): void {
+  private subscribeSipConnectorEvents(): void {
     this.unsubscribeSipConnectorEvents?.();
 
     const handleStoppedPresentation = () => {
-      this.resetPresentation({ isStopPresentationTracks });
+      this.resetPresentation();
     };
 
     const offStoppedByServerCommand = sipConnectorFacade.on(
@@ -104,9 +100,7 @@ class PresentationManager {
       return;
     }
 
-    this.stop({
-      isStopPresentationTracks: true,
-    }).catch((error: unknown) => {
+    this.stop().catch((error: unknown) => {
       console.log('failed to stop presentation', error);
     });
   };
@@ -118,9 +112,7 @@ class PresentationManager {
 
     this.updateUi();
 
-    this.start({
-      isStopPresentationTracks: true,
-    }).catch((error: unknown) => {
+    this.start().catch((error: unknown) => {
       console.log('failed to start presentation', error);
     });
   };
@@ -147,9 +139,9 @@ class PresentationManager {
   };
 
   private async startStressTesting({
-    maxAttemptsCount = 50,
-    delayBetweenAttempts = 300,
-    delayBetweenStartAndStop = 1000,
+    maxAttemptsCount = 10,
+    delayBetweenAttempts = 0,
+    delayBetweenStartAndStop = 500,
   }: {
     maxAttemptsCount?: number;
     delayBetweenAttempts?: number;
@@ -171,13 +163,19 @@ class PresentationManager {
     const runAttempt = async () => {
       attemptsCount += 1;
 
+      dom.startStressTestingPresentationTextElement.innerHTML = `Попытка ${attemptsCount} из ${maxAttemptsCount}...`;
+
+      const [sourceVideoTrack] = presentationStream.getVideoTracks();
+      const clonedTrack = sourceVideoTrack.clone(); // ключевой момент
+      const attemptStream = new MediaStream([clonedTrack]);
+
       console.log('stress testing - attempt:', attemptsCount);
 
-      await this.startByMediaStream({ presentationStream, isStopPresentationTracks: false });
+      await this.startByMediaStream({ presentationStream: attemptStream });
 
       await wait(delayBetweenStartAndStop);
 
-      await this.stop({ isStopPresentationTracks: false });
+      await this.stop();
 
       if (attemptsCount < maxAttemptsCount) {
         await wait(delayBetweenAttempts);
@@ -194,34 +192,24 @@ class PresentationManager {
     });
   }
 
-  private async start({
-    isStopPresentationTracks,
-  }: {
-    isStopPresentationTracks: boolean;
-  }): Promise<void> {
+  private async start(): Promise<void> {
     const presentationStream = await navigator.mediaDevices.getDisplayMedia({
       video: true,
       audio: false,
     });
 
-    await this.startByMediaStream({ presentationStream, isStopPresentationTracks });
+    await this.startByMediaStream({ presentationStream });
   }
 
   private async startByMediaStream({
     presentationStream,
-    isStopPresentationTracks,
   }: {
     presentationStream: MediaStream;
-    isStopPresentationTracks: boolean;
   }): Promise<void> {
     this.setStarting();
     this.updateUi();
 
     try {
-      this.presentationStream = presentationStream;
-
-      this.subscribeEndedVideoTrack({ presentationStream, isStopPresentationTracks });
-
       this.videoPlayer?.setStream(presentationStream);
       this.videoPlayer?.setPlaying(true);
 
@@ -230,54 +218,22 @@ class PresentationManager {
         isP2P: false,
       });
 
-      this.subscribeSipConnectorEvents({ isStopPresentationTracks });
+      this.subscribeSipConnectorEvents();
 
       this.setStarted();
       this.updateUi();
 
       console.log('presentation started');
     } catch (error: unknown) {
-      this.resetPresentation({ isStopPresentationTracks });
+      this.resetPresentation();
 
       throw error;
     }
   }
 
-  private subscribeEndedVideoTrack({
-    presentationStream,
-    isStopPresentationTracks,
-  }: {
-    presentationStream: MediaStream;
-    isStopPresentationTracks: boolean;
-  }) {
-    this.unsubscribeEndedVideoTrack?.();
-
-    const [videoTrack] = presentationStream.getVideoTracks();
-
-    const handleEnded = () => {
-      this.resetPresentation({ isStopPresentationTracks });
-    };
-
-    videoTrack.addEventListener('ended', handleEnded, { once: true });
-
-    this.unsubscribeEndedVideoTrack = () => {
-      videoTrack.removeEventListener('ended', handleEnded);
-    };
-  }
-
-  private readonly resetPresentation = ({
-    isStopPresentationTracks,
-  }: {
-    isStopPresentationTracks: boolean;
-  }) => {
+  private readonly resetPresentation = () => {
     this.unsubscribeSipConnectorEvents?.();
-    this.unsubscribeEndedVideoTrack?.();
 
-    if (isStopPresentationTracks) {
-      this.stopPresentationTracks();
-    }
-
-    this.resetPresentationStream();
     this.setReady();
     this.updateUi();
 
@@ -287,6 +243,7 @@ class PresentationManager {
   private updateUi() {
     this.updateStartPresentationElement();
     this.updateStartStressTestingPresentationElement();
+    this.updateStartStressTestingPresentationTextElement();
     this.updateStopPresentationElement();
     this.updatePresentationVideoElement();
   }
@@ -308,40 +265,37 @@ class PresentationManager {
   }
 
   private updateStartStressTestingPresentationElement() {
-    if (this.isReady) {
-      dom.startStressTestingPresentationElement.classList.remove('hidden');
-    } else {
+    dom.startStressTestingPresentationElement.disabled = !!this.isStartedStressTesting;
+
+    if (this.isIdle) {
       dom.startStressTestingPresentationElement.classList.add('hidden');
+    } else {
+      dom.startStressTestingPresentationElement.classList.remove('hidden');
+    }
+  }
+
+  private updateStartStressTestingPresentationTextElement() {
+    if (this.isNotStartedStressTesting) {
+      dom.startStressTestingPresentationTextElement.innerHTML =
+        'Начать стрессовое тестирование презентации';
+    }
+
+    if (this.isIdle) {
+      dom.startStressTestingPresentationElement.classList.add('hidden');
+    } else {
+      dom.startStressTestingPresentationElement.classList.remove('hidden');
     }
   }
 
   private updatePresentationVideoElement() {
-    if (this.isStarted && this.isNotStartedStressTesting) {
+    if (this.isStarted) {
       dom.presentationVideoElement.classList.remove('hidden');
     } else {
       dom.presentationVideoElement.classList.add('hidden');
     }
   }
 
-  private resetPresentationStream() {
-    this.setPresentationStream(undefined);
-  }
-
-  private setPresentationStream(presentationStream: MediaStream | undefined) {
-    this.presentationStream = presentationStream;
-  }
-
-  private stopPresentationTracks() {
-    this.presentationStream?.getTracks().forEach((track) => {
-      track.stop();
-    });
-  }
-
-  private async stop({
-    isStopPresentationTracks,
-  }: {
-    isStopPresentationTracks: boolean;
-  }): Promise<void> {
+  private async stop(): Promise<void> {
     if (this.isNotStarted) {
       return;
     }
@@ -354,7 +308,7 @@ class PresentationManager {
 
       console.log('presentation stopped');
     } finally {
-      this.resetPresentation({ isStopPresentationTracks });
+      this.resetPresentation();
     }
   }
 

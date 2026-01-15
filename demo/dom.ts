@@ -25,6 +25,7 @@ type TDomIds = {
   filterLogsInputId: string;
   startPresentationId: string;
   startStressTestingPresentationId: string;
+  startStressTestingPresentationTextId: string;
   stopPresentationId: string;
   presentationVideoId: string;
 };
@@ -64,6 +65,8 @@ class DOM {
   public startPresentationElement: HTMLButtonElement;
 
   public startStressTestingPresentationElement: HTMLButtonElement;
+
+  public startStressTestingPresentationTextElement: HTMLElement;
 
   public stopPresentationElement: HTMLButtonElement;
 
@@ -151,6 +154,7 @@ class DOM {
     filterLogsInputId,
     startPresentationId,
     startStressTestingPresentationId,
+    startStressTestingPresentationTextId,
     stopPresentationId,
     presentationVideoId,
   }: TDomIds) {
@@ -160,6 +164,9 @@ class DOM {
     this.startPresentationElement = getElementById<HTMLButtonElement>(startPresentationId);
     this.startStressTestingPresentationElement = getElementById<HTMLButtonElement>(
       startStressTestingPresentationId,
+    );
+    this.startStressTestingPresentationTextElement = getElementById<HTMLButtonElement>(
+      startStressTestingPresentationTextId,
     );
     this.stopPresentationElement = getElementById<HTMLButtonElement>(stopPresentationId);
     this.toggleCameraButtonElement = getElementById<HTMLButtonElement>(toggleCameraButtonId);
@@ -295,6 +302,7 @@ export const dom = new DOM({
   endCallButtonId: 'endCallButton',
   startPresentationId: 'startPresentationButton',
   startStressTestingPresentationId: 'startStressTestingPresentationButton',
+  startStressTestingPresentationTextId: 'startStressTestingPresentationText',
   stopPresentationId: 'stopPresentationButton',
   toggleCameraButtonId: 'toggleCameraButton',
   toggleMicButtonId: 'toggleMicButton',
