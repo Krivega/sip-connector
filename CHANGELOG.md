@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [21.0.0](https://github.com/Krivega/sip-connector/compare/v20.6.1...v21.0.0) (2026-01-15)
+
+### ⚠ BREAKING CHANGES
+
+- rename event remote-streams-changed to remote-tracks-changed
+- update remote stream handling to use TRemoteStreams type and improve stream management logic
+
+### Features
+
+- add event remote-streams-changed ([1148315](https://github.com/Krivega/sip-connector/commit/1148315c08ae0c6f4ee13465bdbd9a0f1d6c014e))
+- add isAddedStream to addTrack return type ([ec32f30](https://github.com/Krivega/sip-connector/commit/ec32f30bfc1bdba5c7e7b54cdf4342117a12f999))
+- add presentation tools in demo ([#66](https://github.com/Krivega/sip-connector/issues/66)) ([618498c](https://github.com/Krivega/sip-connector/commit/618498c8fd91a7cd077cafaeb797c2600f5ecb4f))
+
+### Bug Fixes
+
+- enhance remote streams management by introducing TRemoteStreamsChangeType and updating event structure ([66c2f70](https://github.com/Krivega/sip-connector/commit/66c2f707321d69a6ecfa92de41da5e99ad213abb))
+- rename event remote-streams-changed to remote-tracks-changed ([f0d3bd4](https://github.com/Krivega/sip-connector/commit/f0d3bd41265bbef4ec29e9bc2591348827840f31))
+- update remote stream handling to use TRemoteStreams type and improve stream management logic ([e3a51b1](https://github.com/Krivega/sip-connector/commit/e3a51b12c349af2209d109762bfce7635d24812f))
+
 ### [20.6.1](https://github.com/Krivega/sip-connector/compare/v20.6.0...v20.6.1) (2026-01-15)
 
 ### Bug Fixes
