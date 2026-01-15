@@ -23,6 +23,9 @@ type TDomIds = {
   logsListId: string;
   clearLogsButtonId: string;
   filterLogsInputId: string;
+  startPresentationId: string;
+  stopPresentationId: string;
+  presentationVideoId: string;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
@@ -57,6 +60,10 @@ class DOM {
 
   public endCallButtonElement: HTMLButtonElement;
 
+  public startPresentationElement: HTMLButtonElement;
+
+  public stopPresentationElement: HTMLButtonElement;
+
   public toggleCameraButtonElement: HTMLButtonElement;
 
   public toggleMicButtonElement: HTMLButtonElement;
@@ -72,6 +79,8 @@ class DOM {
   public remoteStreamsContainerElement: HTMLElement;
 
   public localVideoElement: HTMLVideoElement;
+
+  public presentationVideoElement: HTMLVideoElement;
 
   public formElement: HTMLFormElement;
 
@@ -137,10 +146,15 @@ class DOM {
     logsListId,
     clearLogsButtonId,
     filterLogsInputId,
+    startPresentationId,
+    stopPresentationId,
+    presentationVideoId,
   }: TDomIds) {
     this.overlayElement = getElementById(overlayId);
     this.callButtonElement = getElementById<HTMLButtonElement>(callButtonId);
     this.endCallButtonElement = getElementById<HTMLButtonElement>(endCallButtonId);
+    this.startPresentationElement = getElementById<HTMLButtonElement>(startPresentationId);
+    this.stopPresentationElement = getElementById<HTMLButtonElement>(stopPresentationId);
     this.toggleCameraButtonElement = getElementById<HTMLButtonElement>(toggleCameraButtonId);
     this.toggleMicButtonElement = getElementById<HTMLButtonElement>(toggleMicButtonId);
     this.toggleCameraButtonTextElement = getElementById<HTMLSpanElement>(toggleCameraButtonTextId);
@@ -149,6 +163,7 @@ class DOM {
     this.activeCallSectionElement = getElementById(activeCallSectionId);
     this.remoteStreamsContainerElement = getElementById(remoteStreamsContainerId);
     this.localVideoElement = getElementById<HTMLVideoElement>(localVideoId);
+    this.presentationVideoElement = getElementById<HTMLVideoElement>(presentationVideoId);
     this.formElement = getElementById<HTMLFormElement>(callFormId);
 
     // Инициализируем элементы формы
@@ -271,6 +286,8 @@ export const dom = new DOM({
   overlayId: 'loaderOverlay',
   callButtonId: 'callButton',
   endCallButtonId: 'endCallButton',
+  startPresentationId: 'startPresentationButton',
+  stopPresentationId: 'stopPresentationButton',
   toggleCameraButtonId: 'toggleCameraButton',
   toggleMicButtonId: 'toggleMicButton',
   toggleCameraButtonTextId: 'toggleCameraButtonText',
@@ -278,6 +295,7 @@ export const dom = new DOM({
   localVideoSectionId: 'localVideoSection',
   activeCallSectionId: 'activeCallSection',
   localVideoId: 'localVideo',
+  presentationVideoId: 'presentationVideo',
   remoteStreamsContainerId: 'remoteStreamsContainer',
   callFormId: 'callForm',
   participantRoleId: 'participantRole',
