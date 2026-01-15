@@ -138,15 +138,13 @@ class PresentationManager {
       });
   };
 
-  private async startStressTesting({
-    maxAttemptsCount = 10,
-    delayBetweenAttempts = 0,
-    delayBetweenStartAndStop = 500,
-  }: {
-    maxAttemptsCount?: number;
-    delayBetweenAttempts?: number;
-    delayBetweenStartAndStop?: number;
-  } = {}): Promise<void> {
+  private async startStressTesting(): Promise<void> {
+    const maxAttemptsCount = dom.presentationStressMaxAttemptsCountInputElement.valueAsNumber;
+    const delayBetweenAttempts =
+      dom.presentationStressDelayBetweenAttemptsInputElement.valueAsNumber;
+    const delayBetweenStartAndStop =
+      dom.presentationStressDelayBetweenStartAndStopInputElement.valueAsNumber;
+
     const presentationStream = await navigator.mediaDevices.getDisplayMedia({
       video: true,
       audio: false,
@@ -163,7 +161,7 @@ class PresentationManager {
     const runAttempt = async () => {
       attemptsCount += 1;
 
-      dom.startStressTestingPresentationTextElement.innerHTML = `Попытка ${attemptsCount} из ${maxAttemptsCount}...`;
+      dom.startStressTestingPresentationTextElement.textContent = `Попытка ${attemptsCount} из ${maxAttemptsCount}...`;
 
       const [sourceVideoTrack] = presentationStream.getVideoTracks();
       const clonedTrack = sourceVideoTrack.clone(); // ключевой момент
@@ -246,31 +244,36 @@ class PresentationManager {
     this.updateStartStressTestingPresentationTextElement();
     this.updateStopPresentationElement();
     this.updatePresentationVideoElement();
+    this.updatePresentationStressTestingSection();
   }
 
   private updateStopPresentationElement() {
     if (this.isStarted && this.isNotStartedStressTesting) {
-      dom.stopPresentationElement.classList.remove('hidden');
+      dom.show(dom.stopPresentationElement);
     } else {
-      dom.stopPresentationElement.classList.add('hidden');
+      dom.hide(dom.stopPresentationElement);
     }
   }
 
   private updateStartPresentationElement() {
     if (this.isReady && this.isNotStartedStressTesting) {
-      dom.startPresentationElement.classList.remove('hidden');
+      dom.show(dom.startPresentationElement);
     } else {
-      dom.startPresentationElement.classList.add('hidden');
+      dom.hide(dom.startPresentationElement);
     }
   }
 
   private updateStartStressTestingPresentationElement() {
-    dom.startStressTestingPresentationElement.disabled = !!this.isStartedStressTesting;
+    if (this.isStartedStressTesting) {
+      dom.disable(dom.startStressTestingPresentationElement);
+    } else {
+      dom.enable(dom.startStressTestingPresentationElement);
+    }
 
     if (this.isIdle) {
-      dom.startStressTestingPresentationElement.classList.add('hidden');
+      dom.hide(dom.startStressTestingPresentationElement);
     } else {
-      dom.startStressTestingPresentationElement.classList.remove('hidden');
+      dom.show(dom.startStressTestingPresentationElement);
     }
   }
 
@@ -281,17 +284,25 @@ class PresentationManager {
     }
 
     if (this.isIdle) {
-      dom.startStressTestingPresentationElement.classList.add('hidden');
+      dom.hide(dom.startStressTestingPresentationElement);
     } else {
-      dom.startStressTestingPresentationElement.classList.remove('hidden');
+      dom.show(dom.startStressTestingPresentationElement);
     }
   }
 
   private updatePresentationVideoElement() {
     if (this.isStarted) {
-      dom.presentationVideoElement.classList.remove('hidden');
+      dom.show(dom.presentationVideoElement);
     } else {
-      dom.presentationVideoElement.classList.add('hidden');
+      dom.hide(dom.presentationVideoElement);
+    }
+  }
+
+  private updatePresentationStressTestingSection() {
+    if (this.isIdle) {
+      dom.hide(dom.presentationStressTestingSectionElement);
+    } else {
+      dom.show(dom.presentationStressTestingSectionElement);
     }
   }
 

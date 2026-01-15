@@ -23,6 +23,10 @@ type TDomIds = {
   logsListId: string;
   clearLogsButtonId: string;
   filterLogsInputId: string;
+  presentationStressTestingSectionId: string;
+  presentationStressMaxAttemptsCountId: string;
+  presentationStressDelayBetweenAttemptsId: string;
+  presentationStressDelayBetweenStartAndStopId: string;
   startPresentationId: string;
   startStressTestingPresentationId: string;
   startStressTestingPresentationTextId: string;
@@ -66,7 +70,7 @@ class DOM {
 
   public startStressTestingPresentationElement: HTMLButtonElement;
 
-  public startStressTestingPresentationTextElement: HTMLElement;
+  public startStressTestingPresentationTextElement: HTMLSpanElement;
 
   public stopPresentationElement: HTMLButtonElement;
 
@@ -128,6 +132,14 @@ class DOM {
 
   public filterLogsInputElement: HTMLInputElement;
 
+  public presentationStressTestingSectionElement: HTMLElement;
+
+  public presentationStressMaxAttemptsCountInputElement: HTMLInputElement;
+
+  public presentationStressDelayBetweenAttemptsInputElement: HTMLInputElement;
+
+  public presentationStressDelayBetweenStartAndStopInputElement: HTMLInputElement;
+
   public constructor({
     overlayId,
     callButtonId,
@@ -152,6 +164,10 @@ class DOM {
     logsListId,
     clearLogsButtonId,
     filterLogsInputId,
+    presentationStressTestingSectionId,
+    presentationStressMaxAttemptsCountId,
+    presentationStressDelayBetweenAttemptsId,
+    presentationStressDelayBetweenStartAndStopId,
     startPresentationId,
     startStressTestingPresentationId,
     startStressTestingPresentationTextId,
@@ -165,7 +181,7 @@ class DOM {
     this.startStressTestingPresentationElement = getElementById<HTMLButtonElement>(
       startStressTestingPresentationId,
     );
-    this.startStressTestingPresentationTextElement = getElementById<HTMLButtonElement>(
+    this.startStressTestingPresentationTextElement = getElementById<HTMLSpanElement>(
       startStressTestingPresentationTextId,
     );
     this.stopPresentationElement = getElementById<HTMLButtonElement>(stopPresentationId);
@@ -224,6 +240,19 @@ class DOM {
     this.logsListElement = getElementById(logsListId);
     this.clearLogsButtonElement = getElementById<HTMLButtonElement>(clearLogsButtonId);
     this.filterLogsInputElement = getElementById<HTMLInputElement>(filterLogsInputId);
+
+    this.presentationStressTestingSectionElement = getElementById(
+      presentationStressTestingSectionId,
+    );
+    this.presentationStressMaxAttemptsCountInputElement = getElementById<HTMLInputElement>(
+      presentationStressMaxAttemptsCountId,
+    );
+    this.presentationStressDelayBetweenAttemptsInputElement = getElementById<HTMLInputElement>(
+      presentationStressDelayBetweenAttemptsId,
+    );
+    this.presentationStressDelayBetweenStartAndStopInputElement = getElementById<HTMLInputElement>(
+      presentationStressDelayBetweenStartAndStopId,
+    );
   }
 
   /**
@@ -325,4 +354,8 @@ export const dom = new DOM({
   logsListId: 'logsList',
   clearLogsButtonId: 'clearLogsButton',
   filterLogsInputId: 'filterLogsInput',
+  presentationStressTestingSectionId: 'presentationStressTestingSection',
+  presentationStressMaxAttemptsCountId: 'presentationStressMaxAttemptsCount',
+  presentationStressDelayBetweenAttemptsId: 'presentationStressDelayBetweenAttempts',
+  presentationStressDelayBetweenStartAndStopId: 'presentationStressDelayBetweenStartAndStop',
 });
