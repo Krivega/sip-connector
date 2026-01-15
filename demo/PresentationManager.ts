@@ -283,7 +283,7 @@ class PresentationManager {
         'Начать стрессовое тестирование презентации';
     }
 
-    if (this.isIdle) {
+    if (this.isIdle || (this.isNotStartedStressTesting && this.isStarted)) {
       dom.hide(dom.startStressTestingPresentationElement);
     } else {
       dom.show(dom.startStressTestingPresentationElement);
