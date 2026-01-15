@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { dom } from './dom';
 import sipConnectorFacade from './Session/sipConnectorFacade';
 
