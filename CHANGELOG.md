@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [20.6.1](https://github.com/Krivega/sip-connector/compare/v20.6.0...v20.6.1) (2026-01-15)
+
+### Bug Fixes
+
+- update dependencies and improve registration failure handling in connection manager ([d8b5f4b](https://github.com/Krivega/sip-connector/commit/d8b5f4bad7d5d16dbea0e3d250a7af998a9ad311))
+
 ## [20.6.0](https://github.com/Krivega/sip-connector/compare/v20.5.0...v20.6.0) (2026-01-14)
 
 ### Features
