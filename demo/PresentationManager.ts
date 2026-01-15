@@ -12,6 +12,10 @@ class PresentationManager {
 
   private videoPlayer: VideoPlayer | undefined = undefined;
 
+  private unsubscribeEndedVideoTrack: (() => void) | undefined = undefined;
+
+  private unsubscribeSipConnectorEvents: (() => void) | undefined = undefined;
+
   public constructor() {
     dom.startPresentationElement.addEventListener('click', this.handleStart.bind(this));
     dom.stopPresentationElement.addEventListener('click', this.handleStop.bind(this));
@@ -53,15 +57,28 @@ class PresentationManager {
   private subscribe(): void {
     this.unsubscribe();
 
-    sipConnectorFacade.on('stopped-presentation-by-server-command', this.reset.bind(this));
-    sipConnectorFacade.on('presentation:presentation:failed', this.reset.bind(this));
-    sipConnectorFacade.on('presentation:presentation:ended', this.reset.bind(this));
+    const offStoppedByServerCommand = sipConnectorFacade.on(
+      'stopped-presentation-by-server-command',
+      this.reset,
+    );
+    const offPresentationFailed = sipConnectorFacade.on(
+      'presentation:presentation:failed',
+      this.reset,
+    );
+    const offPresentationEnded = sipConnectorFacade.on(
+      'presentation:presentation:ended',
+      this.reset,
+    );
+
+    this.unsubscribeSipConnectorEvents = () => {
+      offStoppedByServerCommand();
+      offPresentationFailed();
+      offPresentationEnded();
+    };
   }
 
   private unsubscribe(): void {
-    sipConnectorFacade.off('stopped-presentation-by-server-command', this.reset.bind(this));
-    sipConnectorFacade.off('presentation:presentation:failed', this.reset.bind(this));
-    sipConnectorFacade.off('presentation:presentation:ended', this.reset.bind(this));
+    this.unsubscribeSipConnectorEvents?.();
   }
 
   private readonly handleStop = () => {
@@ -85,23 +102,27 @@ class PresentationManager {
   };
 
   private async start(): Promise<void> {
+    const presentationStream = await navigator.mediaDevices.getDisplayMedia({
+      video: true,
+      audio: false,
+    });
+
+    await this.startByMediaStream(presentationStream);
+  }
+
+  private async startByMediaStream(mediaStream: MediaStream): Promise<void> {
     this.setStarting();
 
     try {
-      this.presentationStream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: false,
-      });
+      this.presentationStream = mediaStream;
 
-      const [videoTrack] = this.presentationStream.getVideoTracks();
+      this.subscribeEndedVideoTrack(mediaStream);
 
-      videoTrack.addEventListener('ended', this.reset.bind(this), { once: true });
-
-      this.videoPlayer?.setStream(this.presentationStream);
+      this.videoPlayer?.setStream(mediaStream);
       this.videoPlayer?.setPlaying(true);
 
       await sipConnectorFacade.startPresentation({
-        mediaStream: this.presentationStream,
+        mediaStream,
         isP2P: false,
       });
 
@@ -117,7 +138,20 @@ class PresentationManager {
     }
   }
 
-  private reset(): void {
+  private subscribeEndedVideoTrack(mediaStream: MediaStream) {
+    this.unsubscribeEndedVideoTrack?.();
+
+    const [videoTrack] = mediaStream.getVideoTracks();
+
+    videoTrack.addEventListener('ended', this.reset, { once: true });
+
+    this.unsubscribeEndedVideoTrack = () => {
+      videoTrack.removeEventListener('ended', this.reset);
+    };
+  }
+
+  private readonly reset = () => {
+    this.unsubscribeEndedVideoTrack?.();
     this.stopPresentationTracks();
     this.resetPresentationStream();
     this.setIdle();
@@ -127,7 +161,7 @@ class PresentationManager {
     dom.startPresentationElement.classList.remove('hidden');
     dom.stopPresentationElement.classList.add('hidden');
     dom.presentationVideoElement.classList.add('hidden');
-  }
+  };
 
   private resetPresentationStream() {
     this.setPresentationStream(undefined);
