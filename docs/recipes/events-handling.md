@@ -94,11 +94,11 @@ sipConnector.on('api:participant:move-request-to-spectators', (event) => {
 ### API события
 
 ```typescript
-sipConnector.on('api:enterRoom', ({ room }) => {
+sipConnector.on('api:enter-room', ({ room }) => {
   console.log('Вход в комнату:', room);
 });
 
-sipConnector.on('api:useLicense', (license) => {
+sipConnector.on('api:use-license', (license) => {
   console.log('Лицензия:', license);
 });
 ```
@@ -123,6 +123,6 @@ sipConnector.onceRace(['call:ended', 'call:failed'], (_payload, eventName) => {
 });
 
 // Ожидание конкретного события
-const roomData = await sipConnector.wait('api:enterRoom');
+const roomData = await sipConnector.wait('api:enter-room');
 console.log('Данные комнаты:', roomData);
 ```

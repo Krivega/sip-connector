@@ -53,10 +53,10 @@ describe('media state: create state', () => {
 
     // #1.2 should subscribe to media state commands
 
-    sipConnector.apiManager.events.trigger('admin-start-main-cam', mediaStateEventPayloadForced);
-    sipConnector.apiManager.events.trigger('admin-stop-main-cam', mediaStateEventPayloadForced);
-    sipConnector.apiManager.events.trigger('admin-start-mic', mediaStateEventPayloadForced);
-    sipConnector.apiManager.events.trigger('admin-stop-mic', mediaStateEventPayloadForced);
+    sipConnector.apiManager.events.trigger('admin:start-main-cam', mediaStateEventPayloadForced);
+    sipConnector.apiManager.events.trigger('admin:stop-main-cam', mediaStateEventPayloadForced);
+    sipConnector.apiManager.events.trigger('admin:start-mic', mediaStateEventPayloadForced);
+    sipConnector.apiManager.events.trigger('admin:stop-mic', mediaStateEventPayloadForced);
 
     expect(onStartMainCamForced).toHaveBeenCalledTimes(1);
     expect(onStartMainCamNotForced).toHaveBeenCalledTimes(0);
@@ -67,10 +67,10 @@ describe('media state: create state', () => {
     expect(onStopMicForced).toHaveBeenCalledTimes(1);
     expect(onStopMicNotForced).toHaveBeenCalledTimes(0);
 
-    sipConnector.apiManager.events.trigger('admin-start-main-cam', mediaStateEventPayloadNotForced);
-    sipConnector.apiManager.events.trigger('admin-stop-main-cam', mediaStateEventPayloadNotForced);
-    sipConnector.apiManager.events.trigger('admin-start-mic', mediaStateEventPayloadNotForced);
-    sipConnector.apiManager.events.trigger('admin-stop-mic', mediaStateEventPayloadNotForced);
+    sipConnector.apiManager.events.trigger('admin:start-main-cam', mediaStateEventPayloadNotForced);
+    sipConnector.apiManager.events.trigger('admin:stop-main-cam', mediaStateEventPayloadNotForced);
+    sipConnector.apiManager.events.trigger('admin:start-mic', mediaStateEventPayloadNotForced);
+    sipConnector.apiManager.events.trigger('admin:stop-mic', mediaStateEventPayloadNotForced);
 
     expect(onStartMainCamForced).toHaveBeenCalledTimes(1);
     expect(onStartMainCamNotForced).toHaveBeenCalledTimes(1);
@@ -98,15 +98,15 @@ describe('media state: create state', () => {
 
     state.stop();
 
-    sipConnector.apiManager.events.trigger('admin-start-main-cam', mediaStateEventPayloadForced);
-    sipConnector.apiManager.events.trigger('admin-stop-main-cam', mediaStateEventPayloadForced);
-    sipConnector.apiManager.events.trigger('admin-start-mic', mediaStateEventPayloadForced);
-    sipConnector.apiManager.events.trigger('admin-stop-mic', mediaStateEventPayloadForced);
+    sipConnector.apiManager.events.trigger('admin:start-main-cam', mediaStateEventPayloadForced);
+    sipConnector.apiManager.events.trigger('admin:stop-main-cam', mediaStateEventPayloadForced);
+    sipConnector.apiManager.events.trigger('admin:start-mic', mediaStateEventPayloadForced);
+    sipConnector.apiManager.events.trigger('admin:stop-mic', mediaStateEventPayloadForced);
 
-    sipConnector.apiManager.events.trigger('admin-start-main-cam', mediaStateEventPayloadNotForced);
-    sipConnector.apiManager.events.trigger('admin-stop-main-cam', mediaStateEventPayloadNotForced);
-    sipConnector.apiManager.events.trigger('admin-start-mic', mediaStateEventPayloadNotForced);
-    sipConnector.apiManager.events.trigger('admin-stop-mic', mediaStateEventPayloadNotForced);
+    sipConnector.apiManager.events.trigger('admin:start-main-cam', mediaStateEventPayloadNotForced);
+    sipConnector.apiManager.events.trigger('admin:stop-main-cam', mediaStateEventPayloadNotForced);
+    sipConnector.apiManager.events.trigger('admin:start-mic', mediaStateEventPayloadNotForced);
+    sipConnector.apiManager.events.trigger('admin:stop-mic', mediaStateEventPayloadNotForced);
 
     expect(onStartMainCamForced).toHaveBeenCalledTimes(0);
     expect(onStartMainCamNotForced).toHaveBeenCalledTimes(0);

@@ -96,7 +96,7 @@ describe('SipConnector events', () => {
     sipConnector.events.on('call:accepted', callHandler);
     sipConnector.events.on('conference-state:state-changed', conferenceStateHandler);
     sipConnector.events.on('conference-state:state-reset', conferenceStateResetHandler);
-    sipConnector.events.on('api:channels', apiHandler);
+    sipConnector.events.on('api:channels:all', apiHandler);
     sipConnector.events.on('incoming-call:ringing', incomingCallHandler);
     sipConnector.events.on('presentation:presentation:start', presentationHandler);
     sipConnector.events.on('stats:collected', statsHandler);
@@ -123,7 +123,10 @@ describe('SipConnector events', () => {
       attempts: 1,
     });
     sipConnector.callManager.events.trigger('accepted', { data: 'call' });
-    sipConnector.apiManager.events.trigger('channels', { inputChannels: '1', outputChannels: '2' });
+    sipConnector.apiManager.events.trigger('channels:all', {
+      inputChannels: '1',
+      outputChannels: '2',
+    });
     sipConnector.conferenceStateManager.events.trigger('state-changed', {
       previous: {},
       current: { number: '123', answer: true },

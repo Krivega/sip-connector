@@ -65,7 +65,7 @@ class ApiManager {
   }
 
   public async waitChannels(): Promise<TChannels> {
-    return this.wait(EEvent.CHANNELS);
+    return this.wait(EEvent.CHANNELS_ALL);
   }
 
   public async waitSyncMediaState(): Promise<{ isSyncForced: boolean }> {
@@ -273,7 +273,7 @@ class ApiManager {
     this.connectionManager.on('sipEvent', this.handleSipEvent);
     this.callManager.on('newInfo', this.handleNewInfo);
     this.callManager.on('newDTMF', (event) => {
-      this.events.trigger('newDTMF', event);
+      this.events.trigger(EEvent.NEW_DTMF, event);
     });
   }
 
@@ -553,7 +553,7 @@ class ApiManager {
         outputChannels,
       };
 
-      this.events.trigger(EEvent.CHANNELS, headersChannels);
+      this.events.trigger(EEvent.CHANNELS_ALL, headersChannels);
     }
   };
 
@@ -573,15 +573,15 @@ class ApiManager {
 
     switch (eventName) {
       case EShareState.AVAILABLE_SECOND_REMOTE_STREAM: {
-        this.events.trigger(EEvent.AVAILABLE_SECOND_REMOTE_STREAM, {});
+        this.events.trigger(EEvent.CONTENTED_STREAM_AVAILABLE, {});
         break;
       }
       case EShareState.NOT_AVAILABLE_SECOND_REMOTE_STREAM: {
-        this.events.trigger(EEvent.NOT_AVAILABLE_SECOND_REMOTE_STREAM, {});
+        this.events.trigger(EEvent.CONTENTED_STREAM_NOT_AVAILABLE, {});
         break;
       }
       case EShareState.MUST_STOP_PRESENTATION: {
-        this.events.trigger(EEvent.MUST_STOP_PRESENTATION, {});
+        this.events.trigger(EEvent.PRESENTATION_MUST_STOP, {});
         break;
       }
 

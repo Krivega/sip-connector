@@ -1041,7 +1041,7 @@ describe('SipConnector facade', () => {
       it('должен триггерить событие stopped-presentation-by-server-command', async () => {
         sipConnector.on('stopped-presentation-by-server-command', handler);
 
-        sipConnector.apiManager.events.trigger('mustStopPresentation', {});
+        sipConnector.apiManager.events.trigger('presentation:must-stop', {});
 
         await Promise.resolve();
 
@@ -1055,7 +1055,7 @@ describe('SipConnector facade', () => {
 
         sipConnector.on('stopped-presentation-by-server-command', handler);
 
-        sipConnector.apiManager.events.trigger('mustStopPresentation', {});
+        sipConnector.apiManager.events.trigger('presentation:must-stop', {});
 
         await Promise.resolve();
 
@@ -1068,7 +1068,7 @@ describe('SipConnector facade', () => {
 
         sipConnector.on('stopped-presentation-by-server-command', handler);
 
-        sipConnector.apiManager.events.trigger('mustStopPresentation', {});
+        sipConnector.apiManager.events.trigger('presentation:must-stop', {});
 
         await Promise.resolve();
 
@@ -1081,13 +1081,13 @@ describe('SipConnector facade', () => {
     it('должен поддерживать once для события stopped-presentation-by-server-command', async () => {
       sipConnector.once('stopped-presentation-by-server-command', handler);
 
-      sipConnector.apiManager.events.trigger('mustStopPresentation', {});
+      sipConnector.apiManager.events.trigger('presentation:must-stop', {});
       await Promise.resolve();
 
       expect(handler).toHaveBeenCalledTimes(1);
       expect(handler).toHaveBeenCalledWith({});
 
-      sipConnector.apiManager.events.trigger('mustStopPresentation', {});
+      sipConnector.apiManager.events.trigger('presentation:must-stop', {});
       await Promise.resolve();
 
       expect(handler).toHaveBeenCalledTimes(1);
@@ -1096,7 +1096,7 @@ describe('SipConnector facade', () => {
     it('должен поддерживать wait для события stopped-presentation-by-server-command', async () => {
       const waitPromise = sipConnector.wait('stopped-presentation-by-server-command');
 
-      sipConnector.apiManager.events.trigger('mustStopPresentation', {});
+      sipConnector.apiManager.events.trigger('presentation:must-stop', {});
       await Promise.resolve();
 
       const result = await waitPromise;

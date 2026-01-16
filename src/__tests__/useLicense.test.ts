@@ -42,7 +42,7 @@ describe('use license', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<EUseLicense>((resolve) => {
-      sipConnector.on('api:useLicense', resolve);
+      sipConnector.on('api:use-license', resolve);
     });
     const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
@@ -60,7 +60,7 @@ describe('use license', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<EUseLicense>((resolve) => {
-      sipConnector.on('api:useLicense', resolve);
+      sipConnector.on('api:use-license', resolve);
     });
     const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
@@ -78,7 +78,7 @@ describe('use license', () => {
     await sipConnector.call({ number, mediaStream });
 
     const promise = new Promise<EUseLicense>((resolve) => {
-      sipConnector.on('api:useLicense', resolve);
+      sipConnector.on('api:use-license', resolve);
     });
     const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 

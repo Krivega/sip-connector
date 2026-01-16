@@ -603,7 +603,7 @@ describe('ApiManager (core)', () => {
     it('должен корректно обрабатывать отсутствующие заголовки в ENTER_ROOM', () => {
       const enterRoomSpy = jest.fn();
 
-      apiManager.on('enterRoom', enterRoomSpy);
+      apiManager.on('enter-room', enterRoomSpy);
       mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -615,7 +615,7 @@ describe('ApiManager (core)', () => {
     it('должен корректно обрабатывать отсутствующие заголовки в CHANNELS', () => {
       const channelsSpy = jest.fn();
 
-      apiManager.on('channels', channelsSpy);
+      apiManager.on('channels:all', channelsSpy);
       mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);

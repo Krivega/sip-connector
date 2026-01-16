@@ -10,6 +10,15 @@ import type {
 } from './types';
 
 export enum EEvent {
+  ENTER_ROOM = 'enter-room',
+  MAIN_CAM_CONTROL = 'main-cam-control',
+  USE_LICENSE = 'use-license',
+  NEW_DTMF = 'new-dtmf',
+  CONFERENCE_PARTICIPANT_TOKEN_ISSUED = 'conference:participant-token-issued',
+  CONTENTED_STREAM_AVAILABLE = 'contented-stream:available',
+  CONTENTED_STREAM_NOT_AVAILABLE = 'contented-stream:not-available',
+  PRESENTATION_MUST_STOP = 'presentation:must-stop',
+  CHANNELS_ALL = 'channels:all',
   CHANNELS_NOTIFY = 'channels:notify',
   PARTICIPANT_ADDED_TO_LIST_MODERATORS = 'participant:added-to-list-moderators',
   PARTICIPANT_REMOVED_FROM_LIST_MODERATORS = 'participant:removed-from-list-moderators',
@@ -24,54 +33,54 @@ export enum EEvent {
   WEBCAST_STOPPED = 'webcast:stopped',
   ACCOUNT_CHANGED = 'account:changed',
   ACCOUNT_DELETED = 'account:deleted',
-  CONFERENCE_PARTICIPANT_TOKEN_ISSUED = 'conference:participant-token-issued',
-  CHANNELS = 'channels',
-  ENTER_ROOM = 'enterRoom',
-  MAIN_CAM_CONTROL = 'main-cam-control',
-  USE_LICENSE = 'useLicense',
-  ADMIN_START_MAIN_CAM = 'admin-start-main-cam',
-  ADMIN_STOP_MAIN_CAM = 'admin-stop-main-cam',
-  ADMIN_START_MIC = 'admin-start-mic',
-  ADMIN_STOP_MIC = 'admin-stop-mic',
-  ADMIN_FORCE_SYNC_MEDIA_STATE = 'admin-force-sync-media-state',
-  AVAILABLE_SECOND_REMOTE_STREAM = 'availableSecondRemoteStream',
-  NOT_AVAILABLE_SECOND_REMOTE_STREAM = 'notAvailableSecondRemoteStream',
-  MUST_STOP_PRESENTATION = 'mustStopPresentation',
-  NEW_DTMF = 'newDTMF',
+  ADMIN_START_MAIN_CAM = 'admin:start-main-cam',
+  ADMIN_STOP_MAIN_CAM = 'admin:stop-main-cam',
+  ADMIN_START_MIC = 'admin:start-mic',
+  ADMIN_STOP_MIC = 'admin:stop-mic',
+  ADMIN_FORCE_SYNC_MEDIA_STATE = 'admin:force-sync-media-state',
 }
 
 export const EVENT_NAMES = [
-  `${EEvent.PARTICIPATION_ACCEPTING_WORD_REQUEST}`,
-  `${EEvent.PARTICIPATION_CANCELLING_WORD_REQUEST}`,
-  `${EEvent.PARTICIPANT_MOVE_REQUEST_TO_STREAM}`,
-  `${EEvent.CHANNELS_NOTIFY}`,
+  `${EEvent.ENTER_ROOM}`,
+  `${EEvent.MAIN_CAM_CONTROL}`,
+  `${EEvent.USE_LICENSE}`,
+  `${EEvent.NEW_DTMF}`,
   `${EEvent.CONFERENCE_PARTICIPANT_TOKEN_ISSUED}`,
-  `${EEvent.ACCOUNT_CHANGED}`,
-  `${EEvent.ACCOUNT_DELETED}`,
-  `${EEvent.WEBCAST_STARTED}`,
-  `${EEvent.WEBCAST_STOPPED}`,
+  `${EEvent.CONTENTED_STREAM_AVAILABLE}`,
+  `${EEvent.CONTENTED_STREAM_NOT_AVAILABLE}`,
+  `${EEvent.PRESENTATION_MUST_STOP}`,
+  `${EEvent.CHANNELS_ALL}`,
+  `${EEvent.CHANNELS_NOTIFY}`,
   `${EEvent.PARTICIPANT_ADDED_TO_LIST_MODERATORS}`,
   `${EEvent.PARTICIPANT_REMOVED_FROM_LIST_MODERATORS}`,
+  `${EEvent.PARTICIPANT_MOVE_REQUEST_TO_STREAM}`,
   `${EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS}`,
   `${EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS_SYNTHETIC}`,
   `${EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS_WITH_AUDIO_ID}`,
   `${EEvent.PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS}`,
-  `${EEvent.CHANNELS}`,
-  `${EEvent.ENTER_ROOM}`,
-  `${EEvent.MAIN_CAM_CONTROL}`,
-  `${EEvent.USE_LICENSE}`,
+  `${EEvent.PARTICIPATION_ACCEPTING_WORD_REQUEST}`,
+  `${EEvent.PARTICIPATION_CANCELLING_WORD_REQUEST}`,
+  `${EEvent.WEBCAST_STARTED}`,
+  `${EEvent.WEBCAST_STOPPED}`,
+  `${EEvent.ACCOUNT_CHANGED}`,
+  `${EEvent.ACCOUNT_DELETED}`,
   `${EEvent.ADMIN_START_MAIN_CAM}`,
   `${EEvent.ADMIN_STOP_MAIN_CAM}`,
   `${EEvent.ADMIN_START_MIC}`,
   `${EEvent.ADMIN_STOP_MIC}`,
   `${EEvent.ADMIN_FORCE_SYNC_MEDIA_STATE}`,
-  `${EEvent.AVAILABLE_SECOND_REMOTE_STREAM}`,
-  `${EEvent.NOT_AVAILABLE_SECOND_REMOTE_STREAM}`,
-  `${EEvent.MUST_STOP_PRESENTATION}`,
-  `${EEvent.NEW_DTMF}`,
 ] as const;
 
 export type TEventMap = {
+  'enter-room': { room: string; participantName: string };
+  'main-cam-control': { mainCam?: EEventsMainCAM; resolutionMainCam?: string };
+  'use-license': EUseLicense;
+  'new-dtmf': { originator: string };
+  'conference:participant-token-issued': TParametersConferenceParticipantTokenIssued;
+  'contented-stream:available': Record<string, never>;
+  'contented-stream:not-available': Record<string, never>;
+  'presentation:must-stop': Record<string, never>;
+  'channels:all': TChannels;
   'channels:notify': TChannels;
   'participant:added-to-list-moderators': TParametersModeratorsList;
   'participant:removed-from-list-moderators': TParametersModeratorsList;
@@ -95,20 +104,11 @@ export type TEventMap = {
   'webcast:stopped': TParametersWebcast;
   'account:changed': Record<string, never>;
   'account:deleted': Record<string, never>;
-  'conference:participant-token-issued': TParametersConferenceParticipantTokenIssued;
-  channels: TChannels;
-  enterRoom: { room: string; participantName: string };
-  'main-cam-control': { mainCam?: EEventsMainCAM; resolutionMainCam?: string };
-  useLicense: EUseLicense;
-  'admin-start-main-cam': { isSyncForced: boolean };
-  'admin-stop-main-cam': { isSyncForced: boolean };
-  'admin-start-mic': { isSyncForced: boolean };
-  'admin-stop-mic': { isSyncForced: boolean };
-  'admin-force-sync-media-state': { isSyncForced: boolean };
-  availableSecondRemoteStream: Record<string, never>;
-  notAvailableSecondRemoteStream: Record<string, never>;
-  mustStopPresentation: Record<string, never>;
-  newDTMF: { originator: string };
+  'admin:start-main-cam': { isSyncForced: boolean };
+  'admin:stop-main-cam': { isSyncForced: boolean };
+  'admin:start-mic': { isSyncForced: boolean };
+  'admin:stop-mic': { isSyncForced: boolean };
+  'admin:force-sync-media-state': { isSyncForced: boolean };
 };
 
 export type TEvents = TypedEvents<TEventMap>;

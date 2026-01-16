@@ -26,12 +26,12 @@ describe('media state: resolveOnUseLicense', () => {
 
     sipConnectorFacade.onUseLicense(handlerOnUseLicense);
 
-    sipConnector.apiManager.events.trigger('useLicense', EUseLicense.AUDIO);
+    sipConnector.apiManager.events.trigger('use-license', EUseLicense.AUDIO);
 
     expect(handlerOnUseLicense).toHaveBeenCalledTimes(1);
     expect(handlerOnUseLicense).toHaveBeenCalledWith(EUseLicense.AUDIO);
 
-    sipConnector.apiManager.events.trigger('useLicense', EUseLicense.AUDIO);
+    sipConnector.apiManager.events.trigger('use-license', EUseLicense.AUDIO);
 
     expect(handlerOnUseLicense).toHaveBeenCalledTimes(2);
     expect(handlerOnUseLicense).toHaveBeenCalledWith(EUseLicense.AUDIO);
@@ -42,13 +42,13 @@ describe('media state: resolveOnUseLicense', () => {
 
     offUseLicense = sipConnectorFacade.onUseLicense(handlerOnUseLicense);
 
-    sipConnector.apiManager.events.trigger('useLicense', EUseLicense.AUDIO);
+    sipConnector.apiManager.events.trigger('use-license', EUseLicense.AUDIO);
 
     expect(handlerOnUseLicense).toHaveBeenCalledTimes(1);
 
     offUseLicense();
 
-    sipConnector.apiManager.events.trigger('useLicense', EUseLicense.AUDIO);
+    sipConnector.apiManager.events.trigger('use-license', EUseLicense.AUDIO);
 
     expect(handlerOnUseLicense).toHaveBeenCalledTimes(1);
   });

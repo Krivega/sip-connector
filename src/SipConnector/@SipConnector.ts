@@ -481,12 +481,12 @@ class SipConnector {
       this.callManager.setCallRoleSpectator({ audioId, sendOffer: this.sendOffer });
       this.mayBeStopPresentationAndNotify();
     });
-    this.apiManager.on('mustStopPresentation', () => {
+    this.apiManager.on('presentation:must-stop', () => {
       this.mayBeStopPresentationAndNotify();
     });
 
     // Подписка на события для обновления ConferenceStateManager
-    this.apiManager.on('enterRoom', ({ room, participantName }) => {
+    this.apiManager.on('enter-room', ({ room, participantName }) => {
       this.conferenceStateManager.updateState({ room, participantName });
     });
     this.apiManager.on(
@@ -495,7 +495,7 @@ class SipConnector {
         this.conferenceStateManager.updateState({ token: jwt, conference, participant });
       },
     );
-    this.apiManager.on('channels', (channels) => {
+    this.apiManager.on('channels:all', (channels) => {
       this.conferenceStateManager.updateState({ channels });
     });
   }

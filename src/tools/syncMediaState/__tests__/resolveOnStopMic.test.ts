@@ -28,12 +28,12 @@ describe('media state: resolveOnStopMic', () => {
     expect.assertions(4);
 
     onStopMic(handlerOnStopMic);
-    sipConnector.apiManager.events.trigger('admin-stop-mic', syncModeForced);
+    sipConnector.apiManager.events.trigger('admin:stop-mic', syncModeForced);
 
     expect(handlerOnStopMic).toHaveBeenCalledTimes(1);
     expect(handlerOnStopMic).toHaveBeenCalledWith(syncModeForced);
 
-    sipConnector.apiManager.events.trigger('admin-stop-mic', syncModeNotForced);
+    sipConnector.apiManager.events.trigger('admin:stop-mic', syncModeNotForced);
 
     expect(handlerOnStopMic).toHaveBeenCalledTimes(2);
     expect(handlerOnStopMic).toHaveBeenCalledWith(syncModeNotForced);
@@ -43,13 +43,13 @@ describe('media state: resolveOnStopMic', () => {
     expect.assertions(2);
 
     offStopMic = onStopMic(handlerOnStopMic);
-    sipConnector.apiManager.events.trigger('admin-stop-mic', syncModeForced);
+    sipConnector.apiManager.events.trigger('admin:stop-mic', syncModeForced);
 
     expect(handlerOnStopMic).toHaveBeenCalledTimes(1);
 
     offStopMic();
 
-    sipConnector.apiManager.events.trigger('admin-stop-mic', syncModeForced);
+    sipConnector.apiManager.events.trigger('admin:stop-mic', syncModeForced);
 
     expect(handlerOnStopMic).toHaveBeenCalledTimes(1);
   });

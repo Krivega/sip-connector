@@ -211,7 +211,7 @@ describe('SipConnectorFacade comprehensive', () => {
 
     it('должен обработать успешный прогресс звонка', async () => {
       jest.spyOn(sipConnector, 'on').mockImplementation((event, handler) => {
-        if (event === 'api:enterRoom') {
+        if (event === 'api:enter-room') {
           // Симулируем событие enterRoom
           setTimeout(() => {
             handler({ room: 'test-room' });
@@ -234,7 +234,7 @@ describe('SipConnectorFacade comprehensive', () => {
 
     it('должен обработать вход в purgatory', async () => {
       jest.spyOn(sipConnector, 'on').mockImplementation((event, handler) => {
-        if (event === 'api:enterRoom') {
+        if (event === 'api:enter-room') {
           // Симулируем событие enterRoom с purgatory
           setTimeout(() => {
             handler({ room: 'purgatory' });
@@ -295,7 +295,7 @@ describe('SipConnectorFacade comprehensive', () => {
       };
 
       jest.spyOn(sipConnector, 'on').mockImplementation((event, handler) => {
-        if (event === 'api:enterRoom') {
+        if (event === 'api:enter-room') {
           setTimeout(() => {
             handler({ room: 'test-room' });
           }, 0);
@@ -325,7 +325,7 @@ describe('SipConnectorFacade comprehensive', () => {
       };
 
       jest.spyOn(sipConnector, 'on').mockImplementation((event, handler) => {
-        if (event === 'api:enterRoom') {
+        if (event === 'api:enter-room') {
           setTimeout(() => {
             handler({ room: 'purgatory' });
           }, 0);
@@ -345,7 +345,7 @@ describe('SipConnectorFacade comprehensive', () => {
       let enterHandler: ((args: { room: string }) => void) | undefined;
 
       jest.spyOn(sipConnector, 'on').mockImplementation((event, handler) => {
-        if (event === 'api:enterRoom') {
+        if (event === 'api:enter-room') {
           enterHandler = handler as (args: { room: string }) => void;
         }
 
@@ -463,7 +463,7 @@ describe('SipConnectorFacade comprehensive', () => {
       } as const;
 
       jest.spyOn(sipConnector, 'on').mockImplementation((event, handler) => {
-        if (event === 'api:enterRoom') {
+        if (event === 'api:enter-room') {
           setTimeout(() => {
             (handler as (args: { room: string }) => void)({ room: 'purgatory' });
           }, 0);
@@ -492,7 +492,7 @@ describe('SipConnectorFacade comprehensive', () => {
       } as const;
 
       jest.spyOn(sipConnector, 'on').mockImplementation((event, handler) => {
-        if (event === 'api:enterRoom') {
+        if (event === 'api:enter-room') {
           setTimeout(() => {
             (handler as (args: { room: string }) => void)({ room: 'test-room' });
           }, 0);
@@ -521,7 +521,7 @@ describe('SipConnectorFacade comprehensive', () => {
       } as const;
 
       jest.spyOn(sipConnector, 'on').mockImplementation((event, handler) => {
-        if (event === 'api:enterRoom') {
+        if (event === 'api:enter-room') {
           setTimeout(() => {
             (handler as (args: { room: string }) => void)({ room: 'purgatory' });
           }, 0);
@@ -725,7 +725,7 @@ describe('SipConnectorFacade comprehensive', () => {
       const handler = jest.fn();
       const unsubscribe = sipConnectorFacade.onUseLicense(handler);
 
-      expect(sipConnector.on).toHaveBeenCalledWith('api:useLicense', handler);
+      expect(sipConnector.on).toHaveBeenCalledWith('api:use-license', handler);
       expect(typeof unsubscribe).toBe('function');
     });
 
@@ -733,7 +733,7 @@ describe('SipConnectorFacade comprehensive', () => {
       const handler = jest.fn();
       const unsubscribe = sipConnectorFacade.onMustStopPresentation(handler);
 
-      expect(sipConnector.on).toHaveBeenCalledWith('api:mustStopPresentation', handler);
+      expect(sipConnector.on).toHaveBeenCalledWith('api:presentation:must-stop', handler);
       expect(typeof unsubscribe).toBe('function');
     });
 
@@ -957,7 +957,7 @@ describe('SipConnectorFacade comprehensive', () => {
       let enterHandler: ((room: string) => void) | undefined;
 
       jest.spyOn(sipConnector, 'on').mockImplementation((event, handler) => {
-        if (event === 'api:enterRoom') {
+        if (event === 'api:enter-room') {
           enterHandler = handler as (room: string) => void;
         }
 

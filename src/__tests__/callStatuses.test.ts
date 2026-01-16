@@ -42,7 +42,7 @@ describe('call statuses', () => {
       sipConnector.on('call:connecting', () => {
         mockFunctionConnecting();
 
-        sipConnector.on('api:enterRoom', ({ room }: { room: string }) => {
+        sipConnector.on('api:enter-room', ({ room }: { room: string }) => {
           conference = room;
 
           mockFunctionEnterRoom();

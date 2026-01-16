@@ -293,7 +293,7 @@ class SipConnectorFacade implements IProxyMethods {
     const subscribeEnterConference = () => {
       debug('subscribeEnterConference: onEnterConference', onEnterConference);
 
-      return this.sipConnector.on('api:enterRoom', ({ room: _room }: { room: string }) => {
+      return this.sipConnector.on('api:enter-room', ({ room: _room }: { room: string }) => {
         debug('enterRoom', { _room, isSuccessProgressCall });
 
         room = _room;
@@ -438,7 +438,7 @@ class SipConnectorFacade implements IProxyMethods {
     const subscribeEnterConference = () => {
       debug('subscribeEnterConference: onEnterConference', onEnterConference);
 
-      return this.sipConnector.on('api:enterRoom', (event) => {
+      return this.sipConnector.on('api:enter-room', (event) => {
         debug('enterRoom', { room: event.room, isSuccessProgressCall });
 
         room = event.room;
@@ -670,13 +670,13 @@ class SipConnectorFacade implements IProxyMethods {
   public onUseLicense = (handler: (license: EUseLicense) => void): (() => void) => {
     debug('onUseLicense');
 
-    return this.sipConnector.on('api:useLicense', handler);
+    return this.sipConnector.on('api:use-license', handler);
   };
 
   public onMustStopPresentation = (handler: () => void): (() => void) => {
     debug('onMustStopPresentation');
 
-    return this.sipConnector.on('api:mustStopPresentation', handler);
+    return this.sipConnector.on('api:presentation:must-stop', handler);
   };
 
   public onMoveToSpectators = (handler: () => void): (() => void) => {
