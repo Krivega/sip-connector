@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [22.0.0](https://github.com/Krivega/sip-connector/compare/v21.0.0...v22.0.0) (2026-01-16)
+
+### ⚠ BREAKING CHANGES
+
+- standardize API event naming conventions and update event handling logic
+
+- standardize API event naming conventions and update event handling logic ([3baa622](https://github.com/Krivega/sip-connector/commit/3baa622395603c15e3707bc14059ced306551635))
+
 ## [21.0.0](https://github.com/Krivega/sip-connector/compare/v20.6.1...v21.0.0) (2026-01-15)
 
 ### ⚠ BREAKING CHANGES
