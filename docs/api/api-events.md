@@ -23,7 +23,6 @@
 | `api:conference:participant-token-issued`                  | Генерируется при выдаче токена участника конференции          | `TParametersConferenceParticipantTokenIssued`                      |
 | `api:channels`                                             | Генерируется при получении информации о каналах               | `TChannels`                                                        |
 | `api:enterRoom`                                            | Генерируется при входе в комнату                              | `{ room: string; participantName: string }`                        |
-| `api:shareState`                                           | Генерируется при изменении состояния демонстрации             | `Record<string, never>`                                            |
 | `api:main-cam-control`                                     | Генерируется при управлении главной камерой                   | `{ mainCam?: EEventsMainCAM; resolutionMainCam?: string }`         |
 | `api:useLicense`                                           | Генерируется при использовании лицензии                       | `EUseLicense`                                                      |
 | `api:admin-start-main-cam`                                 | Генерируется при административном включении главной камеры    | `{ isSyncForced: boolean }`                                        |

@@ -14,7 +14,6 @@ export const SIP_EVENT = 'sipEvent';
 export const AVAILABLE_SECOND_REMOTE_STREAM_EVENT = 'availableSecondRemoteStream';
 export const NOT_AVAILABLE_SECOND_REMOTE_STREAM_EVENT = 'notAvailableSecondRemoteStream';
 export const MUST_STOP_PRESENTATION_EVENT = 'mustStopPresentation';
-export const SHARE_STATE = 'shareState';
 export const ENTER_ROOM = 'enterRoom';
 export const USE_LICENSE = 'useLicense';
 export const PEER_CONNECTION_CONFIRMED = 'peerconnection:confirmed';

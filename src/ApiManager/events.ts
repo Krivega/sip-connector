@@ -27,7 +27,6 @@ export enum EEvent {
   CONFERENCE_PARTICIPANT_TOKEN_ISSUED = 'conference:participant-token-issued',
   CHANNELS = 'channels',
   ENTER_ROOM = 'enterRoom',
-  SHARE_STATE = 'shareState',
   MAIN_CAM_CONTROL = 'main-cam-control',
   USE_LICENSE = 'useLicense',
   ADMIN_START_MAIN_CAM = 'admin-start-main-cam',
@@ -59,7 +58,6 @@ export const EVENT_NAMES = [
   `${EEvent.PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS}`,
   `${EEvent.CHANNELS}`,
   `${EEvent.ENTER_ROOM}`,
-  `${EEvent.SHARE_STATE}`,
   `${EEvent.MAIN_CAM_CONTROL}`,
   `${EEvent.USE_LICENSE}`,
   `${EEvent.ADMIN_START_MAIN_CAM}`,
@@ -100,7 +98,6 @@ export type TEventMap = {
   'conference:participant-token-issued': TParametersConferenceParticipantTokenIssued;
   channels: TChannels;
   enterRoom: { room: string; participantName: string };
-  shareState: Record<string, never>;
   'main-cam-control': { mainCam?: EEventsMainCAM; resolutionMainCam?: string };
   useLicense: EUseLicense;
   'admin-start-main-cam': { isSyncForced: boolean };
