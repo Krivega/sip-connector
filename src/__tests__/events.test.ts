@@ -3,7 +3,7 @@ import { createMediaStreamMock } from 'webrtc-mock';
 
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
-import { EContentTypeReceived, EHeader, EShareState } from '../ApiManager';
+import { EContentTypeReceived, EKeyHeader, EShareStateSendAndReceive } from '../ApiManager';
 import { doMockSipConnector } from '../doMock';
 
 import type { SipConnector } from '../SipConnector';
@@ -33,8 +33,8 @@ describe('events', () => {
     await sipConnector.call({ number, mediaStream });
 
     const extraHeaders: [string, string][] = [
-      [EHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE],
-      [EHeader.CONTENT_SHARE_STATE, EShareState.AVAILABLE_SECOND_REMOTE_STREAM],
+      [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE],
+      [EKeyHeader.CONTENT_SHARE_STATE, EShareStateSendAndReceive.AVAILABLE_CONTENTED_STREAM],
     ];
     const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
@@ -56,8 +56,8 @@ describe('events', () => {
     await sipConnector.call({ number, mediaStream });
 
     const extraHeaders: [string, string][] = [
-      [EHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE],
-      [EHeader.CONTENT_SHARE_STATE, EShareState.NOT_AVAILABLE_SECOND_REMOTE_STREAM],
+      [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE],
+      [EKeyHeader.CONTENT_SHARE_STATE, EShareStateSendAndReceive.NOT_AVAILABLE_CONTENTED_STREAM],
     ];
     const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
@@ -79,8 +79,8 @@ describe('events', () => {
     await sipConnector.call({ number, mediaStream });
 
     const extraHeaders: [string, string][] = [
-      [EHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE],
-      [EHeader.CONTENT_SHARE_STATE, EShareState.MUST_STOP_PRESENTATION],
+      [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE],
+      [EKeyHeader.CONTENT_SHARE_STATE, EShareStateSendAndReceive.MUST_STOP_PRESENTATION],
     ];
     const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 

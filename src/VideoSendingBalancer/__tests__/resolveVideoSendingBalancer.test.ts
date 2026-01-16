@@ -4,7 +4,7 @@ import { createMediaStreamMock, createVideoMediaStreamTrackMock } from 'webrtc-m
 import { dataForConnectionWithAuthorization } from '@/__fixtures__';
 import JsSIP from '@/__fixtures__/jssip.mock';
 import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
-import { EContentTypeReceived, EEventsMainCAM, EHeader } from '@/ApiManager';
+import { EContentTypeReceived, EEventsMainCAM, EKeyHeader } from '@/ApiManager';
 import { doMockSipConnector } from '@/doMock';
 import findVideoSender from '@/utils/findVideoSender';
 import { resolveVideoSendingBalancer } from '../@VideoSendingBalancer';
@@ -26,19 +26,19 @@ const CODEC_AV1 = 'video/AV1';
 const FACTOR_CODEC_AV1 = 0.6;
 
 const headersResumeMainCam: [string, string][] = [
-  [EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
-  [EHeader.MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM],
+  [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
+  [EKeyHeader.MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM],
 ];
 
 const headersPauseMainCam: [string, string][] = [
-  [EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
-  [EHeader.MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM],
+  [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
+  [EKeyHeader.MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM],
 ];
 
 const headersMaxMainCamResolution: [string, string][] = [
-  [EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
-  [EHeader.MAIN_CAM, EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION],
-  [EHeader.MAIN_CAM_RESOLUTION, `${sdWidth}x${sdHeight}`],
+  [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
+  [EKeyHeader.MAIN_CAM, EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION],
+  [EKeyHeader.MAIN_CAM_RESOLUTION, `${sdWidth}x${sdHeight}`],
 ];
 
 describe('resolveVideoSendingBalancer', () => {

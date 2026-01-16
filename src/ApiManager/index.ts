@@ -6,7 +6,8 @@ export {
   EEventsMic,
   EEventsSyncMediaState,
   EHeader,
-  EShareState,
+  EKeyHeader,
+  EShareStateSendAndReceive,
   EUseLicense,
 } from './constants';
 export { EVENT_NAMES as API_MANAGER_EVENT_NAMES } from './events';

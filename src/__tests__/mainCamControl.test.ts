@@ -3,35 +3,35 @@ import { createMediaStreamMock } from 'webrtc-mock';
 
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
-import { EContentTypeReceived, EEventsMainCAM, EHeader } from '../ApiManager';
+import { EContentTypeReceived, EEventsMainCAM, EKeyHeader } from '../ApiManager';
 import { doMockSipConnector } from '../doMock';
 
 import type { SipConnector } from '../SipConnector';
 
 const headersMainCamControl: [string, string][] = [
-  [EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
-  [EHeader.MAIN_CAM, EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION],
-  [EHeader.MAIN_CAM_RESOLUTION, '720'],
+  [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
+  [EKeyHeader.MAIN_CAM, EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION],
+  [EKeyHeader.MAIN_CAM_RESOLUTION, '720'],
 ];
 
 const headersAdminStartMainCam: [string, string][] = [
-  [EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
-  [EHeader.MAIN_CAM, EEventsMainCAM.ADMIN_START_MAIN_CAM],
+  [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
+  [EKeyHeader.MAIN_CAM, EEventsMainCAM.ADMIN_START_MAIN_CAM],
 ];
 
 const headersAdminStopMainCam: [string, string][] = [
-  [EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
-  [EHeader.MAIN_CAM, EEventsMainCAM.ADMIN_STOP_MAIN_CAM],
+  [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
+  [EKeyHeader.MAIN_CAM, EEventsMainCAM.ADMIN_STOP_MAIN_CAM],
 ];
 
 const headersResumeMainCam: [string, string][] = [
-  [EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
-  [EHeader.MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM],
+  [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
+  [EKeyHeader.MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM],
 ];
 
 const headersPauseMainCam: [string, string][] = [
-  [EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
-  [EHeader.MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM],
+  [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
+  [EKeyHeader.MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM],
 ];
 
 describe('main cam control', () => {

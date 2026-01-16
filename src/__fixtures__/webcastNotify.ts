@@ -1,4 +1,4 @@
-import { EContentTypeReceived, EHeader } from '../ApiManager';
+import { EContentTypeReceived, EKeyHeader } from '../ApiManager';
 
 const webcastStarted = {
   cmd: 'WebcastStarted',
@@ -6,8 +6,8 @@ const webcastStarted = {
 };
 
 export const webcastStartedHeaders: [string, string][] = [
-  [EHeader.CONTENT_TYPE, EContentTypeReceived.NOTIFY],
-  [EHeader.NOTIFY, JSON.stringify(webcastStarted)],
+  [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.NOTIFY],
+  [EKeyHeader.NOTIFY, JSON.stringify(webcastStarted)],
 ];
 
 export const webcastStartedData = {
@@ -21,8 +21,8 @@ const webcastStopped = {
 };
 
 export const webcastStoppedHeaders: [string, string][] = [
-  [EHeader.CONTENT_TYPE, EContentTypeReceived.NOTIFY],
-  [EHeader.NOTIFY, JSON.stringify(webcastStopped)],
+  [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.NOTIFY],
+  [EKeyHeader.NOTIFY, JSON.stringify(webcastStopped)],
 ];
 
 export const webcastStoppedData = {

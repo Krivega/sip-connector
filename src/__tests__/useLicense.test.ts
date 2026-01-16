@@ -3,24 +3,24 @@ import { createMediaStreamMock } from 'webrtc-mock';
 
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
-import { EContentTypeReceived, EHeader, EUseLicense } from '../ApiManager';
+import { EContentTypeReceived, EKeyHeader, EUseLicense } from '../ApiManager';
 import { doMockSipConnector } from '../doMock';
 
 import type { SipConnector } from '../SipConnector';
 
 const headersUseLicenseAudio: [string, string][] = [
-  [EHeader.CONTENT_TYPE, EContentTypeReceived.USE_LICENSE],
-  [EHeader.CONTENT_USE_LICENSE, EUseLicense.AUDIO],
+  [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.USE_LICENSE],
+  [EKeyHeader.CONTENT_USE_LICENSE, EUseLicense.AUDIO],
 ];
 
 const headersUseLicenseVideo: [string, string][] = [
-  [EHeader.CONTENT_TYPE, EContentTypeReceived.USE_LICENSE],
-  [EHeader.CONTENT_USE_LICENSE, EUseLicense.VIDEO],
+  [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.USE_LICENSE],
+  [EKeyHeader.CONTENT_USE_LICENSE, EUseLicense.VIDEO],
 ];
 
 const headersUseLicenseAudioPlusPresentation: [string, string][] = [
-  [EHeader.CONTENT_TYPE, EContentTypeReceived.USE_LICENSE],
-  [EHeader.CONTENT_USE_LICENSE, EUseLicense.AUDIOPLUSPRESENTATION],
+  [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.USE_LICENSE],
+  [EKeyHeader.CONTENT_USE_LICENSE, EUseLicense.AUDIOPLUSPRESENTATION],
 ];
 
 describe('use license', () => {

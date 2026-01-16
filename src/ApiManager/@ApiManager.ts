@@ -3,12 +3,13 @@ import { hasDeclineResponseFromServer } from '@/utils/errors';
 import {
   EContentTypeReceived,
   EContentTypeSent,
+  EShareStateSendAndReceive,
   EEventsMainCAM,
   EEventsMic,
   EEventsSyncMediaState,
-  EHeader,
   EParticipantType,
-  EShareState,
+  EHeader,
+  EKeyHeader,
 } from './constants';
 import { createEvents, EEvent } from './events';
 import { ECMDNotify } from './types';
@@ -102,8 +103,8 @@ class ApiManager {
   public async sendChannels({ inputChannels, outputChannels }: TChannels): Promise<void> {
     const rtcSession = this.getEstablishedRTCSessionProtected();
 
-    const headerInputChannels = `${EHeader.INPUT_CHANNELS}: ${inputChannels}`;
-    const headerOutputChannels = `${EHeader.OUTPUT_CHANNELS}: ${outputChannels}`;
+    const headerInputChannels = `${EKeyHeader.INPUT_CHANNELS}: ${inputChannels}`;
+    const headerOutputChannels = `${EKeyHeader.OUTPUT_CHANNELS}: ${outputChannels}`;
     const extraHeaders: TOptionsExtraHeaders['extraHeaders'] = [
       headerInputChannels,
       headerOutputChannels,
@@ -118,9 +119,9 @@ class ApiManager {
   ): Promise<void> {
     const rtcSession = this.getEstablishedRTCSessionProtected();
 
-    const headerMediaState = `${EHeader.MEDIA_STATE}: currentstate`;
-    const headerCam = `${EHeader.MAIN_CAM_STATE}: ${Number(cam)}`;
-    const headerMic = `${EHeader.MIC_STATE}: ${Number(mic)}`;
+    const headerMediaState = `${EKeyHeader.MEDIA_STATE}: currentstate`;
+    const headerCam = `${EKeyHeader.MAIN_CAM_STATE}: ${Number(cam)}`;
+    const headerMic = `${EKeyHeader.MIC_STATE}: ${Number(mic)}`;
     const extraHeaders: TOptionsExtraHeaders['extraHeaders'] = [
       headerMediaState,
       headerCam,
@@ -141,7 +142,7 @@ class ApiManager {
   }): Promise<void> {
     const rtcSession = this.getEstablishedRTCSessionProtected();
 
-    const headerAvailableIncomingBitrate = `${EHeader.AVAILABLE_INCOMING_BITRATE}: ${availableIncomingBitrate}`;
+    const headerAvailableIncomingBitrate = `${EKeyHeader.AVAILABLE_INCOMING_BITRATE}: ${availableIncomingBitrate}`;
     const extraHeaders: TOptionsExtraHeaders['extraHeaders'] = [headerAvailableIncomingBitrate];
 
     return rtcSession.sendInfo(EContentTypeSent.STATS, undefined, {
@@ -160,7 +161,7 @@ class ApiManager {
     const typeCamOnServer = 1;
     const typeToSend = type === 'mic' ? typeMicOnServer : typeCamOnServer;
 
-    const headerMediaType = `${EHeader.MEDIA_TYPE}: ${typeToSend}`;
+    const headerMediaType = `${EKeyHeader.MEDIA_TYPE}: ${typeToSend}`;
     const extraHeaders: TOptionsExtraHeaders['extraHeaders'] = [headerMediaType];
 
     return rtcSession.sendInfo(EContentTypeSent.REFUSAL, undefined, {
@@ -178,43 +179,35 @@ class ApiManager {
     return this.sendRefusalToTurnOn('cam', { noTerminateWhenError: true, ...options });
   }
 
-  public async sendMustStopPresentationP2P(): Promise<void> {
+  public async sendAvailableContentedStream(): Promise<void> {
     const rtcSession = this.getEstablishedRTCSessionProtected();
 
-    await rtcSession.sendInfo(EContentTypeSent.SHARE_STATE, undefined, {
-      extraHeaders: [EHeader.MUST_STOP_PRESENTATION_P2P],
-    });
-  }
-
-  public async sendStoppedPresentationP2P(): Promise<void> {
-    const rtcSession = this.getEstablishedRTCSessionProtected();
-
-    await rtcSession.sendInfo(EContentTypeSent.SHARE_STATE, undefined, {
-      extraHeaders: [EHeader.STOP_PRESENTATION_P2P],
-    });
-  }
-
-  public async sendStoppedPresentation(): Promise<void> {
-    const rtcSession = this.getEstablishedRTCSessionProtected();
-
-    await rtcSession.sendInfo(EContentTypeSent.SHARE_STATE, undefined, {
-      extraHeaders: [EHeader.STOP_PRESENTATION],
-    });
-  }
-
-  public async askPermissionToStartPresentationP2P(): Promise<void> {
-    const rtcSession = this.getEstablishedRTCSessionProtected();
-
-    await rtcSession.sendInfo(EContentTypeSent.SHARE_STATE, undefined, {
-      extraHeaders: [EHeader.START_PRESENTATION_P2P],
+    await rtcSession.sendInfo(EContentTypeReceived.SHARE_STATE, undefined, {
+      extraHeaders: [EHeader.AVAILABLE_CONTENTED_STREAM],
     });
   }
 
   public async askPermissionToStartPresentation(): Promise<void> {
     const rtcSession = this.getEstablishedRTCSessionProtected();
 
-    await rtcSession.sendInfo(EContentTypeSent.SHARE_STATE, undefined, {
-      extraHeaders: [EHeader.START_PRESENTATION],
+    await rtcSession.sendInfo(EContentTypeReceived.SHARE_STATE, undefined, {
+      extraHeaders: [EHeader.ACK_PERMISSION_TO_START_PRESENTATION],
+    });
+  }
+
+  public async sendStoppedPresentation(): Promise<void> {
+    const rtcSession = this.getEstablishedRTCSessionProtected();
+
+    await rtcSession.sendInfo(EContentTypeReceived.SHARE_STATE, undefined, {
+      extraHeaders: [EHeader.STOPPED_CLIENT_PRESENTATION],
+    });
+  }
+
+  public async sendNotAvailableContentedStream(): Promise<void> {
+    const rtcSession = this.getEstablishedRTCSessionProtected();
+
+    await rtcSession.sendInfo(EContentTypeReceived.SHARE_STATE, undefined, {
+      extraHeaders: [EHeader.NOT_AVAILABLE_CONTENTED_STREAM],
     });
   }
 
@@ -283,7 +276,7 @@ class ApiManager {
 
   private readonly maybeHandleNotify = (request: IncomingRequest) => {
     try {
-      const headerNotify = request.getHeader(EHeader.NOTIFY);
+      const headerNotify = request.getHeader(EKeyHeader.NOTIFY);
 
       if (headerNotify) {
         const headerNotifyParsed = JSON.parse(headerNotify) as TInfoNotify;
@@ -387,7 +380,7 @@ class ApiManager {
     const { request } = info;
 
     const typedRequest = request as IncomingRequest;
-    const contentType = typedRequest.getHeader(EHeader.CONTENT_TYPE) as
+    const contentType = typedRequest.getHeader(EKeyHeader.CONTENT_TYPE) as
       | EContentTypeReceived
       | undefined;
 
@@ -422,7 +415,6 @@ class ApiManager {
           this.maybeTriggerParticipantMoveRequest(typedRequest);
           break;
         }
-
         default: {
           break;
         }
@@ -544,8 +536,8 @@ class ApiManager {
   };
 
   private readonly maybeTriggerChannels = (request: IncomingRequest) => {
-    const inputChannels = request.getHeader(EHeader.INPUT_CHANNELS);
-    const outputChannels = request.getHeader(EHeader.OUTPUT_CHANNELS);
+    const inputChannels = request.getHeader(EKeyHeader.INPUT_CHANNELS);
+    const outputChannels = request.getHeader(EKeyHeader.OUTPUT_CHANNELS);
 
     if (inputChannels && outputChannels) {
       const headersChannels: TChannels = {
@@ -558,29 +550,31 @@ class ApiManager {
   };
 
   private readonly triggerEnterRoom = (request: IncomingRequest) => {
-    const room = request.getHeader(EHeader.CONTENT_ENTER_ROOM);
-    const participantName = request.getHeader(EHeader.PARTICIPANT_NAME);
+    const room = request.getHeader(EKeyHeader.CONTENT_ENTER_ROOM);
+    const participantName = request.getHeader(EKeyHeader.PARTICIPANT_NAME);
 
     this.events.trigger(EEvent.ENTER_ROOM, { room, participantName });
   };
 
   private readonly triggerShareState = (request: IncomingRequest) => {
-    const eventName = request.getHeader(EHeader.CONTENT_SHARE_STATE) as EShareState | undefined;
+    const eventName = request.getHeader(EKeyHeader.CONTENT_SHARE_STATE) as
+      | EShareStateSendAndReceive
+      | undefined;
 
     if (eventName === undefined) {
       return;
     }
 
     switch (eventName) {
-      case EShareState.AVAILABLE_SECOND_REMOTE_STREAM: {
+      case EShareStateSendAndReceive.AVAILABLE_CONTENTED_STREAM: {
         this.events.trigger(EEvent.CONTENTED_STREAM_AVAILABLE, {});
         break;
       }
-      case EShareState.NOT_AVAILABLE_SECOND_REMOTE_STREAM: {
+      case EShareStateSendAndReceive.NOT_AVAILABLE_CONTENTED_STREAM: {
         this.events.trigger(EEvent.CONTENTED_STREAM_NOT_AVAILABLE, {});
         break;
       }
-      case EShareState.MUST_STOP_PRESENTATION: {
+      case EShareStateSendAndReceive.MUST_STOP_PRESENTATION: {
         this.events.trigger(EEvent.PRESENTATION_MUST_STOP, {});
         break;
       }
@@ -592,10 +586,10 @@ class ApiManager {
   };
 
   private readonly maybeTriggerParticipantMoveRequest = (request: IncomingRequest) => {
-    const participantState = request.getHeader(EHeader.CONTENT_PARTICIPANT_STATE) as
+    const participantState = request.getHeader(EKeyHeader.CONTENT_PARTICIPANT_STATE) as
       | EParticipantType
       | undefined;
-    const audioId = request.getHeader(EHeader.AUDIO_ID);
+    const audioId = request.getHeader(EKeyHeader.AUDIO_ID);
 
     if (participantState === EParticipantType.SPECTATOR) {
       if (audioId) {
@@ -618,8 +612,8 @@ class ApiManager {
   };
 
   private readonly triggerMainCamControl = (request: IncomingRequest) => {
-    const mainCam = request.getHeader(EHeader.MAIN_CAM) as EEventsMainCAM | undefined;
-    const syncState = request.getHeader(EHeader.MEDIA_SYNC) as EEventsSyncMediaState | undefined;
+    const mainCam = request.getHeader(EKeyHeader.MAIN_CAM) as EEventsMainCAM | undefined;
+    const syncState = request.getHeader(EKeyHeader.MEDIA_SYNC) as EEventsSyncMediaState | undefined;
     const isSyncForced = syncState === EEventsSyncMediaState.ADMIN_SYNC_FORCED;
 
     if (mainCam === EEventsMainCAM.ADMIN_START_MAIN_CAM) {
@@ -641,7 +635,7 @@ class ApiManager {
       this.events.trigger(EEvent.ADMIN_FORCE_SYNC_MEDIA_STATE, { isSyncForced });
     }
 
-    const resolutionMainCam = request.getHeader(EHeader.MAIN_CAM_RESOLUTION);
+    const resolutionMainCam = request.getHeader(EKeyHeader.MAIN_CAM_RESOLUTION);
 
     this.events.trigger(EEvent.MAIN_CAM_CONTROL, {
       mainCam,
@@ -650,8 +644,8 @@ class ApiManager {
   };
 
   private readonly triggerMicControl = (request: IncomingRequest) => {
-    const mic = request.getHeader(EHeader.MIC) as EEventsMic | undefined;
-    const syncState = request.getHeader(EHeader.MEDIA_SYNC) as EEventsSyncMediaState | undefined;
+    const mic = request.getHeader(EKeyHeader.MIC) as EEventsMic | undefined;
+    const syncState = request.getHeader(EKeyHeader.MEDIA_SYNC) as EEventsSyncMediaState | undefined;
     const isSyncForced = syncState === EEventsSyncMediaState.ADMIN_SYNC_FORCED;
 
     if (mic === EEventsMic.ADMIN_START_MIC) {
@@ -662,7 +656,7 @@ class ApiManager {
   };
 
   private readonly triggerUseLicense = (request: IncomingRequest) => {
-    const license: EUseLicense = request.getHeader(EHeader.CONTENT_USE_LICENSE) as EUseLicense;
+    const license: EUseLicense = request.getHeader(EKeyHeader.CONTENT_USE_LICENSE) as EUseLicense;
 
     this.events.trigger(EEvent.USE_LICENSE, license);
   };

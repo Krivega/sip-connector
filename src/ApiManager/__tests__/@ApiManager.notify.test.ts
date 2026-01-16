@@ -5,7 +5,7 @@ import { ConnectionManager } from '@/ConnectionManager';
 import logger from '@/logger';
 import ApiManager from '../@ApiManager';
 import { MockRequest } from '../__tests-utils__/helpers';
-import { EHeader } from '../constants';
+import { EKeyHeader } from '../constants';
 
 import type { IncomingRequest } from '@krivega/jssip';
 import type { TJsSIP } from '@/types';
@@ -55,7 +55,7 @@ describe('ApiManager (notify via sipEvent)', () => {
 
       const notifyData = { cmd: 'channels', input: 'input1', output: 'output1' };
 
-      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EKeyHeader.NOTIFY, JSON.stringify(notifyData));
       connectionManager.events.trigger('sipEvent', {
         event: {},
         request: mockRequest as unknown as IncomingRequest,
@@ -69,7 +69,7 @@ describe('ApiManager (notify via sipEvent)', () => {
     it('должен логировать неизвестные команды', () => {
       const notifyData = { cmd: 'unknown_command', data: 'test' };
 
-      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EKeyHeader.NOTIFY, JSON.stringify(notifyData));
       connectionManager.events.trigger('sipEvent', {
         event: {},
         request: mockRequest as unknown as IncomingRequest,
@@ -90,7 +90,7 @@ describe('ApiManager (notify via sipEvent)', () => {
         output: 'output_channel_1,output_channel_2',
       };
 
-      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EKeyHeader.NOTIFY, JSON.stringify(notifyData));
       connectionManager.events.trigger('sipEvent', {
         event: {},
         request: mockRequest as unknown as IncomingRequest,
@@ -110,7 +110,7 @@ describe('ApiManager (notify via sipEvent)', () => {
 
       const notifyData = { cmd: 'WebcastStarted', body: { conference: 'conf123', type: 'video' } };
 
-      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EKeyHeader.NOTIFY, JSON.stringify(notifyData));
       connectionManager.events.trigger('sipEvent', {
         event: {},
         request: mockRequest as unknown as IncomingRequest,
@@ -125,7 +125,7 @@ describe('ApiManager (notify via sipEvent)', () => {
 
       const notifyData = { cmd: 'WebcastStopped', body: { conference: 'conf123', type: 'video' } };
 
-      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EKeyHeader.NOTIFY, JSON.stringify(notifyData));
       connectionManager.events.trigger('sipEvent', {
         event: {},
         request: mockRequest as unknown as IncomingRequest,
@@ -142,7 +142,7 @@ describe('ApiManager (notify via sipEvent)', () => {
 
       const notifyData = { cmd: 'addedToListModerators', conference: 'conf123' };
 
-      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EKeyHeader.NOTIFY, JSON.stringify(notifyData));
       connectionManager.events.trigger('sipEvent', {
         event: {},
         request: mockRequest as unknown as IncomingRequest,
@@ -157,7 +157,7 @@ describe('ApiManager (notify via sipEvent)', () => {
 
       const notifyData = { cmd: 'removedFromListModerators', conference: 'conf123' };
 
-      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EKeyHeader.NOTIFY, JSON.stringify(notifyData));
       connectionManager.events.trigger('sipEvent', {
         event: {},
         request: mockRequest as unknown as IncomingRequest,
@@ -174,7 +174,7 @@ describe('ApiManager (notify via sipEvent)', () => {
 
       const notifyData = { cmd: 'ParticipationRequestAccepted', body: { conference: 'conf123' } };
 
-      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EKeyHeader.NOTIFY, JSON.stringify(notifyData));
       connectionManager.events.trigger('sipEvent', {
         event: {},
         request: mockRequest as unknown as IncomingRequest,
@@ -189,7 +189,7 @@ describe('ApiManager (notify via sipEvent)', () => {
 
       const notifyData = { cmd: 'ParticipationRequestRejected', body: { conference: 'conf123' } };
 
-      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EKeyHeader.NOTIFY, JSON.stringify(notifyData));
       connectionManager.events.trigger('sipEvent', {
         event: {},
         request: mockRequest as unknown as IncomingRequest,
@@ -206,7 +206,7 @@ describe('ApiManager (notify via sipEvent)', () => {
 
       const notifyData = { cmd: 'ParticipantMovedToWebcast', body: { conference: 'conf123' } };
 
-      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EKeyHeader.NOTIFY, JSON.stringify(notifyData));
       connectionManager.events.trigger('sipEvent', {
         event: {},
         request: mockRequest as unknown as IncomingRequest,
@@ -223,7 +223,7 @@ describe('ApiManager (notify via sipEvent)', () => {
 
       const notifyData = { cmd: 'accountChanged' };
 
-      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EKeyHeader.NOTIFY, JSON.stringify(notifyData));
       connectionManager.events.trigger('sipEvent', {
         event: {},
         request: mockRequest as unknown as IncomingRequest,
@@ -238,7 +238,7 @@ describe('ApiManager (notify via sipEvent)', () => {
 
       const notifyData = { cmd: 'accountDeleted' };
 
-      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EKeyHeader.NOTIFY, JSON.stringify(notifyData));
       connectionManager.events.trigger('sipEvent', {
         event: {},
         request: mockRequest as unknown as IncomingRequest,
@@ -258,7 +258,7 @@ describe('ApiManager (notify via sipEvent)', () => {
         body: { conference: 'conf123', participant: 'user456', jwt: 'jwt_token_here' },
       };
 
-      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EKeyHeader.NOTIFY, JSON.stringify(notifyData));
       connectionManager.events.trigger('sipEvent', {
         event: {},
         request: mockRequest as unknown as IncomingRequest,
@@ -359,7 +359,7 @@ describe('ApiManager (notify via sipEvent)', () => {
       testCases.forEach(({ cmd, data, spy, expected }) => {
         const notifyData = { cmd, ...data };
 
-        mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
+        mockRequest.setHeader(EKeyHeader.NOTIFY, JSON.stringify(notifyData));
         connectionManager.events.trigger('sipEvent', {
           event: {},
           request: mockRequest as unknown as IncomingRequest,
@@ -379,7 +379,7 @@ describe('ApiManager (notify via sipEvent)', () => {
 
       const notifyData1 = { cmd: 'channels', input: 'input1', output: 'output1' };
 
-      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData1));
+      mockRequest.setHeader(EKeyHeader.NOTIFY, JSON.stringify(notifyData1));
       connectionManager.events.trigger('sipEvent', {
         event: {},
         request: mockRequest as unknown as IncomingRequest,
@@ -387,7 +387,7 @@ describe('ApiManager (notify via sipEvent)', () => {
 
       const notifyData2 = { cmd: 'accountChanged' };
 
-      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData2));
+      mockRequest.setHeader(EKeyHeader.NOTIFY, JSON.stringify(notifyData2));
       connectionManager.events.trigger('sipEvent', {
         event: {},
         request: mockRequest as unknown as IncomingRequest,

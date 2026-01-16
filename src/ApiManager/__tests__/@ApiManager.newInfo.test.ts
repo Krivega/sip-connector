@@ -9,9 +9,9 @@ import {
   EEventsMainCAM,
   EEventsMic,
   EEventsSyncMediaState,
-  EHeader,
+  EKeyHeader,
   EParticipantType,
-  EShareState,
+  EShareStateSendAndReceive,
   EUseLicense,
 } from '../constants';
 
@@ -53,9 +53,9 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const enterRoomSpy = jest.fn();
 
       apiManager.on('enter-room', enterRoomSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
-      mockRequest.setHeader(EHeader.CONTENT_ENTER_ROOM, 'room123');
-      mockRequest.setHeader(EHeader.PARTICIPANT_NAME, 'user123');
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
+      mockRequest.setHeader(EKeyHeader.CONTENT_ENTER_ROOM, 'room123');
+      mockRequest.setHeader(EKeyHeader.PARTICIPANT_NAME, 'user123');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -67,10 +67,10 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const shareStateSpy = jest.fn();
 
       apiManager.on('contented-stream:available', shareStateSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
       mockRequest.setHeader(
-        EHeader.CONTENT_SHARE_STATE,
-        EShareState.AVAILABLE_SECOND_REMOTE_STREAM,
+        EKeyHeader.CONTENT_SHARE_STATE,
+        EShareStateSendAndReceive.AVAILABLE_CONTENTED_STREAM,
       );
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -83,9 +83,9 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const mainCamSpy = jest.fn();
 
       apiManager.on('admin:start-main-cam', mainCamSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
-      mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.ADMIN_START_MAIN_CAM);
-      mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EKeyHeader.MAIN_CAM, EEventsMainCAM.ADMIN_START_MAIN_CAM);
+      mockRequest.setHeader(EKeyHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -97,9 +97,9 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const micSpy = jest.fn();
 
       apiManager.on('admin:start-mic', micSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MIC);
-      mockRequest.setHeader(EHeader.MIC, EEventsMic.ADMIN_START_MIC);
-      mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MIC);
+      mockRequest.setHeader(EKeyHeader.MIC, EEventsMic.ADMIN_START_MIC);
+      mockRequest.setHeader(EKeyHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -111,8 +111,8 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const licenseSpy = jest.fn();
 
       apiManager.on('use-license', licenseSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.USE_LICENSE);
-      mockRequest.setHeader(EHeader.CONTENT_USE_LICENSE, EUseLicense.AUDIO);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.USE_LICENSE);
+      mockRequest.setHeader(EKeyHeader.CONTENT_USE_LICENSE, EUseLicense.AUDIO);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -132,9 +132,9 @@ describe('ApiManager (NEW_INFO handling)', () => {
         spectatorWithAudioIdSpy,
       );
       apiManager.on('participant:move-request-to-spectators', spectatorSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE);
-      mockRequest.setHeader(EHeader.CONTENT_PARTICIPANT_STATE, EParticipantType.SPECTATOR);
-      mockRequest.setHeader(EHeader.AUDIO_ID, audioId);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE);
+      mockRequest.setHeader(EKeyHeader.CONTENT_PARTICIPANT_STATE, EParticipantType.SPECTATOR);
+      mockRequest.setHeader(EKeyHeader.AUDIO_ID, audioId);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -148,9 +148,9 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const channelsSpy = jest.fn();
 
       apiManager.on('channels:all', channelsSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
-      mockRequest.setHeader(EHeader.INPUT_CHANNELS, 'input1,input2');
-      mockRequest.setHeader(EHeader.OUTPUT_CHANNELS, 'output1,output2');
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
+      mockRequest.setHeader(EKeyHeader.INPUT_CHANNELS, 'input1,input2');
+      mockRequest.setHeader(EKeyHeader.OUTPUT_CHANNELS, 'output1,output2');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -165,7 +165,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const anySpy = jest.fn();
 
       apiManager.on('channels:all', anySpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, 'unknown/type');
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, 'unknown/type');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -177,11 +177,11 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const channelsSpy = jest.fn();
 
       apiManager.on('channels:notify', channelsSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.NOTIFY);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.NOTIFY);
 
       const notifyData = { cmd: 'channels', input: 'input1', output: 'output1' };
 
-      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EKeyHeader.NOTIFY, JSON.stringify(notifyData));
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -207,7 +207,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const anySpy = jest.fn();
 
       apiManager.on('channels:all', anySpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, 'unknown/content-type');
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, 'unknown/content-type');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -221,10 +221,10 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const availableStreamSpy = jest.fn();
 
       apiManager.on('contented-stream:available', availableStreamSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
       mockRequest.setHeader(
-        EHeader.CONTENT_SHARE_STATE,
-        EShareState.AVAILABLE_SECOND_REMOTE_STREAM,
+        EKeyHeader.CONTENT_SHARE_STATE,
+        EShareStateSendAndReceive.AVAILABLE_CONTENTED_STREAM,
       );
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -237,10 +237,10 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const notAvailableStreamSpy = jest.fn();
 
       apiManager.on('contented-stream:not-available', notAvailableStreamSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
       mockRequest.setHeader(
-        EHeader.CONTENT_SHARE_STATE,
-        EShareState.NOT_AVAILABLE_SECOND_REMOTE_STREAM,
+        EKeyHeader.CONTENT_SHARE_STATE,
+        EShareStateSendAndReceive.NOT_AVAILABLE_CONTENTED_STREAM,
       );
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -253,8 +253,11 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const mustStopPresentationSpy = jest.fn();
 
       apiManager.on('presentation:must-stop', mustStopPresentationSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
-      mockRequest.setHeader(EHeader.CONTENT_SHARE_STATE, EShareState.MUST_STOP_PRESENTATION);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
+      mockRequest.setHeader(
+        EKeyHeader.CONTENT_SHARE_STATE,
+        EShareStateSendAndReceive.MUST_STOP_PRESENTATION,
+      );
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -266,8 +269,8 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const anySpy = jest.fn();
 
       apiManager.on('contented-stream:available', anySpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
-      mockRequest.setHeader(EHeader.CONTENT_SHARE_STATE, 'unknown_state');
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
+      mockRequest.setHeader(EKeyHeader.CONTENT_SHARE_STATE, 'unknown_state');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -279,7 +282,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const anySpy = jest.fn();
 
       apiManager.on('contented-stream:available', anySpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -291,8 +294,8 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const anySpy = jest.fn();
 
       apiManager.on('contented-stream:available', anySpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
-      mockRequest.setHeader(EHeader.CONTENT_SHARE_STATE, 'unknown_share_state');
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
+      mockRequest.setHeader(EKeyHeader.CONTENT_SHARE_STATE, 'unknown_share_state');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -306,9 +309,9 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const adminStartSpy = jest.fn();
 
       apiManager.on('admin:start-main-cam', adminStartSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
-      mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.ADMIN_START_MAIN_CAM);
-      mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EKeyHeader.MAIN_CAM, EEventsMainCAM.ADMIN_START_MAIN_CAM);
+      mockRequest.setHeader(EKeyHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -320,9 +323,9 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const adminStopSpy = jest.fn();
 
       apiManager.on('admin:stop-main-cam', adminStopSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
-      mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.ADMIN_STOP_MAIN_CAM);
-      mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_NOT_FORCED);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EKeyHeader.MAIN_CAM, EEventsMainCAM.ADMIN_STOP_MAIN_CAM);
+      mockRequest.setHeader(EKeyHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_NOT_FORCED);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -334,9 +337,9 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const syncSpy = jest.fn();
 
       apiManager.on('admin:force-sync-media-state', syncSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
-      mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM);
-      mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EKeyHeader.MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM);
+      mockRequest.setHeader(EKeyHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -348,9 +351,9 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const syncSpy = jest.fn();
 
       apiManager.on('admin:force-sync-media-state', syncSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
-      mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM);
-      mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EKeyHeader.MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM);
+      mockRequest.setHeader(EKeyHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -364,8 +367,8 @@ describe('ApiManager (NEW_INFO handling)', () => {
 
       apiManager.on('admin:force-sync-media-state', syncSpy);
       apiManager.on('main-cam-control', mainCamControlSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
-      mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EKeyHeader.MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -383,8 +386,8 @@ describe('ApiManager (NEW_INFO handling)', () => {
 
       apiManager.on('admin:force-sync-media-state', syncSpy);
       apiManager.on('main-cam-control', mainCamControlSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
-      mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EKeyHeader.MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -400,9 +403,9 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const mainCamControlSpy = jest.fn();
 
       apiManager.on('main-cam-control', mainCamControlSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
-      mockRequest.setHeader(EHeader.MAIN_CAM, 'UNKNOWN_MAIN_CAM_EVENT');
-      mockRequest.setHeader(EHeader.MAIN_CAM_RESOLUTION, '1920x1080');
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EKeyHeader.MAIN_CAM, 'UNKNOWN_MAIN_CAM_EVENT');
+      mockRequest.setHeader(EKeyHeader.MAIN_CAM_RESOLUTION, '1920x1080');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -417,8 +420,8 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const mainCamControlSpy = jest.fn();
 
       apiManager.on('main-cam-control', mainCamControlSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
-      mockRequest.setHeader(EHeader.MAIN_CAM, 'UNKNOWN_MAIN_CAM_EVENT');
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EKeyHeader.MAIN_CAM, 'UNKNOWN_MAIN_CAM_EVENT');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -435,9 +438,9 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const adminStartSpy = jest.fn();
 
       apiManager.on('admin:start-mic', adminStartSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MIC);
-      mockRequest.setHeader(EHeader.MIC, EEventsMic.ADMIN_START_MIC);
-      mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MIC);
+      mockRequest.setHeader(EKeyHeader.MIC, EEventsMic.ADMIN_START_MIC);
+      mockRequest.setHeader(EKeyHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -449,9 +452,9 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const adminStopSpy = jest.fn();
 
       apiManager.on('admin:stop-mic', adminStopSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MIC);
-      mockRequest.setHeader(EHeader.MIC, EEventsMic.ADMIN_STOP_MIC);
-      mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_NOT_FORCED);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MIC);
+      mockRequest.setHeader(EKeyHeader.MIC, EEventsMic.ADMIN_STOP_MIC);
+      mockRequest.setHeader(EKeyHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_NOT_FORCED);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -463,8 +466,8 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const anySpy = jest.fn();
 
       apiManager.on('admin:start-mic', anySpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MIC);
-      mockRequest.setHeader(EHeader.MIC, 'unknown_mic_event');
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MIC);
+      mockRequest.setHeader(EKeyHeader.MIC, 'unknown_mic_event');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -476,8 +479,8 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const anySpy = jest.fn();
 
       apiManager.on('admin:start-mic', anySpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MIC);
-      mockRequest.setHeader(EHeader.MIC, 'unknown_mic_event');
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MIC);
+      mockRequest.setHeader(EKeyHeader.MIC, 'unknown_mic_event');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -491,9 +494,9 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const channelsSpy = jest.fn();
 
       apiManager.on('channels:all', channelsSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
-      mockRequest.setHeader(EHeader.INPUT_CHANNELS, 'input1,input2');
-      mockRequest.setHeader(EHeader.OUTPUT_CHANNELS, 'output1,output2');
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
+      mockRequest.setHeader(EKeyHeader.INPUT_CHANNELS, 'input1,input2');
+      mockRequest.setHeader(EKeyHeader.OUTPUT_CHANNELS, 'output1,output2');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -508,8 +511,8 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const channelsSpy = jest.fn();
 
       apiManager.on('channels:all', channelsSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
-      mockRequest.setHeader(EHeader.OUTPUT_CHANNELS, 'output1,output2');
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
+      mockRequest.setHeader(EKeyHeader.OUTPUT_CHANNELS, 'output1,output2');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -521,8 +524,8 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const channelsSpy = jest.fn();
 
       apiManager.on('channels:all', channelsSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
-      mockRequest.setHeader(EHeader.INPUT_CHANNELS, 'input1,input2');
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
+      mockRequest.setHeader(EKeyHeader.INPUT_CHANNELS, 'input1,input2');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -534,7 +537,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const channelsSpy = jest.fn();
 
       apiManager.on('channels:all', channelsSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -555,8 +558,8 @@ describe('ApiManager (NEW_INFO handling)', () => {
         spectatorWithAudioIdSpy,
       );
       apiManager.on('participant:move-request-to-spectators', spectatorSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE);
-      mockRequest.setHeader(EHeader.CONTENT_PARTICIPANT_STATE, EParticipantType.SPECTATOR);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE);
+      mockRequest.setHeader(EKeyHeader.CONTENT_PARTICIPANT_STATE, EParticipantType.SPECTATOR);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -570,8 +573,8 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const participantSpy = jest.fn();
 
       apiManager.on('participant:move-request-to-participants', participantSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE);
-      mockRequest.setHeader(EHeader.CONTENT_PARTICIPANT_STATE, EParticipantType.PARTICIPANT);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE);
+      mockRequest.setHeader(EKeyHeader.CONTENT_PARTICIPANT_STATE, EParticipantType.PARTICIPANT);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -583,8 +586,8 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const anySpy = jest.fn();
 
       apiManager.on('participant:move-request-to-spectators', anySpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE);
-      mockRequest.setHeader(EHeader.CONTENT_PARTICIPANT_STATE, 'unknown_state');
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE);
+      mockRequest.setHeader(EKeyHeader.CONTENT_PARTICIPANT_STATE, 'unknown_state');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -596,7 +599,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const anySpy = jest.fn();
 
       apiManager.on('participant:move-request-to-spectators', anySpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -616,8 +619,8 @@ describe('ApiManager (NEW_INFO handling)', () => {
         spectatorWithAudioIdSpy,
       );
       apiManager.on('participant:move-request-to-spectators', spectatorSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE);
-      mockRequest.setHeader(EHeader.CONTENT_PARTICIPANT_STATE, EParticipantType.SPECTATOR);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.PARTICIPANT_STATE);
+      mockRequest.setHeader(EKeyHeader.CONTENT_PARTICIPANT_STATE, EParticipantType.SPECTATOR);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 

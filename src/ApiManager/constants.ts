@@ -1,4 +1,43 @@
-export enum EHeader {
+/* eslint-disable @typescript-eslint/prefer-literal-enum-member */
+
+export enum EParticipantType {
+  SPECTATOR = 'SPECTATOR',
+  PARTICIPANT = 'PARTICIPANT',
+}
+
+export enum EContentTypeReceived {
+  SHARE_STATE = 'application/vinteo.webrtc.sharedesktop',
+  MAIN_CAM = 'application/vinteo.webrtc.maincam',
+  ENTER_ROOM = 'application/vinteo.webrtc.roomname',
+  MIC = 'application/vinteo.webrtc.mic',
+  USE_LICENSE = 'application/vinteo.webrtc.uselic',
+  PARTICIPANT_STATE = 'application/vinteo.webrtc.partstate',
+  NOTIFY = 'application/vinteo.webrtc.notify',
+}
+
+export enum EContentTypeSent {
+  SHARE_STATE = 'application/vinteo.webrtc.sharedesktop',
+  MAIN_CAM = 'application/vinteo.webrtc.maincam',
+  CHANNELS = 'application/vinteo.webrtc.channels',
+  MEDIA_STATE = 'application/vinteo.webrtc.mediastate',
+  REFUSAL = 'application/vinteo.webrtc.refusal',
+  STATS = 'application/vinteo.webrtc.stats',
+}
+
+export enum EEventsMainCAM {
+  PAUSE_MAIN_CAM = 'PAUSEMAINCAM',
+  RESUME_MAIN_CAM = 'RESUMEMAINCAM',
+  MAX_MAIN_CAM_RESOLUTION = 'MAXMAINCAMRESOLUTION',
+  ADMIN_STOP_MAIN_CAM = 'ADMINSTOPMAINCAM',
+  ADMIN_START_MAIN_CAM = 'ADMINSTARTMAINCAM',
+}
+
+export enum EEventsMic {
+  ADMIN_STOP_MIC = 'ADMINSTOPMIC',
+  ADMIN_START_MIC = 'ADMINSTARTMIC',
+}
+
+export enum EKeyHeader {
   CONTENT_TYPE = 'content-type',
   CONTENT_ENTER_ROOM = 'x-webrtc-enter-room',
   CONTENT_USE_LICENSE = 'X-WEBRTC-USE-LICENSE',
@@ -17,12 +56,6 @@ export enum EHeader {
   NOTIFY = 'X-VINTEO-NOTIFY',
   CONTENT_ENABLE_MEDIA_DEVICE = 'X-WEBRTC-REQUEST-ENABLE-MEDIA-DEVICE',
   CONTENT_SHARE_STATE = 'x-webrtc-share-state',
-  MUST_STOP_PRESENTATION_P2P = 'x-webrtc-share-state: YOUMUSTSTOPSENDCONTENT',
-  START_PRESENTATION_P2P = 'x-webrtc-share-state: YOUCANRECEIVECONTENT',
-  STOP_PRESENTATION_P2P = 'x-webrtc-share-state: CONTENTEND',
-  STOP_PRESENTATION = 'x-webrtc-share-state: STOPPRESENTATION',
-  START_PRESENTATION = 'x-webrtc-share-state: LETMESTARTPRESENTATION',
-  ENABLE_MAIN_CAM = 'X-WEBRTC-REQUEST-ENABLE-MEDIA-DEVICE: LETMESTARTMAINCAM',
   AVAILABLE_INCOMING_BITRATE = 'X-WEBRTC-AVAILABLE-INCOMING-BITRATE',
   AUDIO_TRACK_COUNT = 'X-WEBRTC-AUDIO-TRACK-COUNT',
   VIDEO_TRACK_COUNT = 'X-WEBRTC-VIDEO-TRACK-COUNT',
@@ -30,47 +63,24 @@ export enum EHeader {
   AUDIO_ID = 'X-WEBRTC-AUDIOID',
 }
 
-export enum EShareState {
-  AVAILABLE_SECOND_REMOTE_STREAM = 'YOUCANRECEIVECONTENT',
-  NOT_AVAILABLE_SECOND_REMOTE_STREAM = 'CONTENTEND',
+enum EShareStateSend {
+  ACK_PERMISSION_TO_START_PRESENTATION = 'LETMESTARTPRESENTATION',
+  STOPPED_CLIENT_PRESENTATION = 'STOPPRESENTATION',
+}
+
+export enum EShareStateSendAndReceive {
+  AVAILABLE_CONTENTED_STREAM = 'YOUCANRECEIVECONTENT',
+  NOT_AVAILABLE_CONTENTED_STREAM = 'CONTENTEND',
   MUST_STOP_PRESENTATION = 'YOUMUSTSTOPSENDCONTENT',
 }
 
-export enum EParticipantType {
-  SPECTATOR = 'SPECTATOR',
-  PARTICIPANT = 'PARTICIPANT',
-}
+export enum EHeader {
+  AVAILABLE_CONTENTED_STREAM = `${EKeyHeader.CONTENT_SHARE_STATE}: ${EShareStateSendAndReceive.AVAILABLE_CONTENTED_STREAM}`,
+  NOT_AVAILABLE_CONTENTED_STREAM = `${EKeyHeader.CONTENT_SHARE_STATE}: ${EShareStateSendAndReceive.NOT_AVAILABLE_CONTENTED_STREAM}`,
+  ACK_PERMISSION_TO_START_PRESENTATION = `${EKeyHeader.CONTENT_SHARE_STATE}: ${EShareStateSend.ACK_PERMISSION_TO_START_PRESENTATION}`,
+  STOPPED_CLIENT_PRESENTATION = `${EKeyHeader.CONTENT_SHARE_STATE}: ${EShareStateSend.STOPPED_CLIENT_PRESENTATION}`,
 
-export enum EContentTypeReceived {
-  ENTER_ROOM = 'application/vinteo.webrtc.roomname',
-  MIC = 'application/vinteo.webrtc.mic',
-  USE_LICENSE = 'application/vinteo.webrtc.uselic',
-  PARTICIPANT_STATE = 'application/vinteo.webrtc.partstate',
-  NOTIFY = 'application/vinteo.webrtc.notify',
-  SHARE_STATE = 'application/vinteo.webrtc.sharedesktop',
-  MAIN_CAM = 'application/vinteo.webrtc.maincam',
-}
-
-export enum EContentTypeSent {
-  CHANNELS = 'application/vinteo.webrtc.channels',
-  MEDIA_STATE = 'application/vinteo.webrtc.mediastate',
-  REFUSAL = 'application/vinteo.webrtc.refusal',
-  SHARE_STATE = 'application/vinteo.webrtc.sharedesktop',
-  MAIN_CAM = 'application/vinteo.webrtc.maincam',
-  STATS = 'application/vinteo.webrtc.stats',
-}
-
-export enum EEventsMainCAM {
-  PAUSE_MAIN_CAM = 'PAUSEMAINCAM',
-  RESUME_MAIN_CAM = 'RESUMEMAINCAM',
-  MAX_MAIN_CAM_RESOLUTION = 'MAXMAINCAMRESOLUTION',
-  ADMIN_STOP_MAIN_CAM = 'ADMINSTOPMAINCAM',
-  ADMIN_START_MAIN_CAM = 'ADMINSTARTMAINCAM',
-}
-
-export enum EEventsMic {
-  ADMIN_STOP_MIC = 'ADMINSTOPMIC',
-  ADMIN_START_MIC = 'ADMINSTARTMIC',
+  ENABLE_MAIN_CAM = `${EKeyHeader.CONTENT_ENABLE_MEDIA_DEVICE}: LETMESTARTMAINCAM`,
 }
 
 export enum EEventsSyncMediaState {

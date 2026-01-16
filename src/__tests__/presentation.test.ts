@@ -27,7 +27,7 @@ describe('presentation', () => {
 
     sipConnector.callManager.getEstablishedRTCSession()!.sendInfo = jest.fn(
       async (contentType: string, body?: string, options?: ExtraHeaders) => {
-        if (options?.extraHeaders?.[0] === EHeader.MUST_STOP_PRESENTATION_P2P) {
+        if (options?.extraHeaders?.[0] === EHeader.ACK_PERMISSION_TO_START_PRESENTATION) {
           throw new Error(failedToSendMustStopSendPresentationError);
         }
 
@@ -220,7 +220,7 @@ describe('presentation', () => {
   });
 
   it('should be stopped incoming presentation before outgoing presentation started when isP2P is truthy', async () => {
-    expect.assertions(3);
+    expect.assertions(2);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
@@ -232,12 +232,9 @@ describe('presentation', () => {
 
     await sipConnector.startPresentation(mediaStream, { isP2P: true });
 
-    expect(sendInfoMocked).toHaveBeenCalledTimes(2);
+    expect(sendInfoMocked).toHaveBeenCalledTimes(1);
     expect(sendInfoMocked).toHaveBeenNthCalledWith(1, EContentTypeReceived.SHARE_STATE, undefined, {
-      extraHeaders: [EHeader.MUST_STOP_PRESENTATION_P2P],
-    });
-    expect(sendInfoMocked).toHaveBeenNthCalledWith(2, EContentTypeReceived.SHARE_STATE, undefined, {
-      extraHeaders: [EHeader.START_PRESENTATION_P2P],
+      extraHeaders: [EHeader.AVAILABLE_CONTENTED_STREAM],
     });
   });
 
@@ -256,11 +253,11 @@ describe('presentation', () => {
 
     expect(sendInfoMocked).toHaveBeenCalledTimes(1);
     expect(sendInfoMocked).toHaveBeenNthCalledWith(1, EContentTypeReceived.SHARE_STATE, undefined, {
-      extraHeaders: [EHeader.START_PRESENTATION],
+      extraHeaders: [EHeader.ACK_PERMISSION_TO_START_PRESENTATION],
     });
   });
 
-  it('should be failed presentation when sending HEADER_MUST_STOP_PRESENTATION_P2P info fails', async () => {
+  it('should be failed presentation when sending ACK_PERMISSION_TO_START_PRESENTATION info fails', async () => {
     expect.assertions(1);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
@@ -270,7 +267,7 @@ describe('presentation', () => {
 
     let rejectedError = new Error('rejectedError');
 
-    await sipConnector.startPresentation(mediaStream, { isP2P: true }).catch((error: unknown) => {
+    await sipConnector.startPresentation(mediaStream, { isP2P: false }).catch((error: unknown) => {
       rejectedError = error as Error;
     });
 

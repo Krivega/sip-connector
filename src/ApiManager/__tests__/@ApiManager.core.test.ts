@@ -14,6 +14,7 @@ import {
   EEventsMainCAM,
   EEventsSyncMediaState,
   EHeader,
+  EKeyHeader,
 } from '../constants';
 
 import type { IncomingRequest } from '@krivega/jssip';
@@ -110,7 +111,7 @@ describe('ApiManager (core)', () => {
 
       const notifyData = { cmd: 'channels', input: 'input1', output: 'output1' };
 
-      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EKeyHeader.NOTIFY, JSON.stringify(notifyData));
       connectionManager.events.trigger('sipEvent', {
         event: {},
         request: mockRequest as unknown as IncomingRequest,
@@ -126,9 +127,9 @@ describe('ApiManager (core)', () => {
     it('должен ждать события channels', async () => {
       const waitPromise = apiManager.waitChannels();
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
-      mockRequest.setHeader(EHeader.INPUT_CHANNELS, 'input1,input2');
-      mockRequest.setHeader(EHeader.OUTPUT_CHANNELS, 'output1,output2');
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
+      mockRequest.setHeader(EKeyHeader.INPUT_CHANNELS, 'input1,input2');
+      mockRequest.setHeader(EKeyHeader.OUTPUT_CHANNELS, 'output1,output2');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -142,9 +143,9 @@ describe('ApiManager (core)', () => {
     it('должен ждать события sync media state', async () => {
       const waitPromise = apiManager.waitSyncMediaState();
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
-      mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM);
-      mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EKeyHeader.MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM);
+      mockRequest.setHeader(EKeyHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -158,9 +159,9 @@ describe('ApiManager (core)', () => {
     it('должен ждать события sync media state с не принудительной синхронизацией', async () => {
       const waitPromise = apiManager.waitSyncMediaState();
 
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
-      mockRequest.setHeader(EHeader.MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM);
-      mockRequest.setHeader(EHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_NOT_FORCED);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EKeyHeader.MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM);
+      mockRequest.setHeader(EKeyHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_NOT_FORCED);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -182,8 +183,8 @@ describe('ApiManager (core)', () => {
       });
       expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.CHANNELS, undefined, {
         extraHeaders: [
-          `${EHeader.INPUT_CHANNELS}: input1,input2`,
-          `${EHeader.OUTPUT_CHANNELS}: output1,output2`,
+          `${EKeyHeader.INPUT_CHANNELS}: input1,input2`,
+          `${EKeyHeader.OUTPUT_CHANNELS}: output1,output2`,
         ],
       });
     });
@@ -195,9 +196,9 @@ describe('ApiManager (core)', () => {
       expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.MEDIA_STATE, undefined, {
         noTerminateWhenError: false,
         extraHeaders: [
-          `${EHeader.MEDIA_STATE}: currentstate`,
-          `${EHeader.MAIN_CAM_STATE}: 1`,
-          `${EHeader.MIC_STATE}: 0`,
+          `${EKeyHeader.MEDIA_STATE}: currentstate`,
+          `${EKeyHeader.MAIN_CAM_STATE}: 1`,
+          `${EKeyHeader.MIC_STATE}: 0`,
         ],
       });
     });
@@ -209,9 +210,9 @@ describe('ApiManager (core)', () => {
       expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.MEDIA_STATE, undefined, {
         noTerminateWhenError: true,
         extraHeaders: [
-          `${EHeader.MEDIA_STATE}: currentstate`,
-          `${EHeader.MAIN_CAM_STATE}: 0`,
-          `${EHeader.MIC_STATE}: 1`,
+          `${EKeyHeader.MEDIA_STATE}: currentstate`,
+          `${EKeyHeader.MAIN_CAM_STATE}: 0`,
+          `${EKeyHeader.MIC_STATE}: 1`,
         ],
       });
     });
@@ -222,7 +223,7 @@ describe('ApiManager (core)', () => {
       await apiManager.sendStats({ availableIncomingBitrate: 12_345 });
       expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.STATS, undefined, {
         noTerminateWhenError: true,
-        extraHeaders: [`${EHeader.AVAILABLE_INCOMING_BITRATE}: 12345`],
+        extraHeaders: [`${EKeyHeader.AVAILABLE_INCOMING_BITRATE}: 12345`],
       });
     });
 
@@ -232,7 +233,7 @@ describe('ApiManager (core)', () => {
       await apiManager.sendRefusalToTurnOn('mic', { noTerminateWhenError: false });
       expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.REFUSAL, undefined, {
         noTerminateWhenError: false,
-        extraHeaders: [`${EHeader.MEDIA_TYPE}: 0`],
+        extraHeaders: [`${EKeyHeader.MEDIA_TYPE}: 0`],
       });
     });
 
@@ -242,7 +243,7 @@ describe('ApiManager (core)', () => {
       await apiManager.sendRefusalToTurnOn('cam', { noTerminateWhenError: false });
       expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.REFUSAL, undefined, {
         noTerminateWhenError: false,
-        extraHeaders: [`${EHeader.MEDIA_TYPE}: 1`],
+        extraHeaders: [`${EKeyHeader.MEDIA_TYPE}: 1`],
       });
     });
 
@@ -252,7 +253,7 @@ describe('ApiManager (core)', () => {
       await apiManager.sendRefusalToTurnOn('mic');
       expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.REFUSAL, undefined, {
         noTerminateWhenError: true,
-        extraHeaders: [`${EHeader.MEDIA_TYPE}: 0`],
+        extraHeaders: [`${EKeyHeader.MEDIA_TYPE}: 0`],
       });
     });
 
@@ -262,7 +263,7 @@ describe('ApiManager (core)', () => {
       await apiManager.sendRefusalToTurnOn('cam');
       expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.REFUSAL, undefined, {
         noTerminateWhenError: true,
-        extraHeaders: [`${EHeader.MEDIA_TYPE}: 1`],
+        extraHeaders: [`${EKeyHeader.MEDIA_TYPE}: 1`],
       });
     });
 
@@ -272,7 +273,7 @@ describe('ApiManager (core)', () => {
       await apiManager.sendRefusalToTurnOnMic({ noTerminateWhenError: false });
       expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.REFUSAL, undefined, {
         noTerminateWhenError: false,
-        extraHeaders: [`${EHeader.MEDIA_TYPE}: 0`],
+        extraHeaders: [`${EKeyHeader.MEDIA_TYPE}: 0`],
       });
     });
 
@@ -282,25 +283,7 @@ describe('ApiManager (core)', () => {
       await apiManager.sendRefusalToTurnOnCam({ noTerminateWhenError: false });
       expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.REFUSAL, undefined, {
         noTerminateWhenError: false,
-        extraHeaders: [`${EHeader.MEDIA_TYPE}: 1`],
-      });
-    });
-
-    it('должен отправлять must stop presentation p2p', async () => {
-      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
-
-      await apiManager.sendMustStopPresentationP2P();
-      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.SHARE_STATE, undefined, {
-        extraHeaders: [EHeader.MUST_STOP_PRESENTATION_P2P],
-      });
-    });
-
-    it('должен отправлять stopped presentation p2p', async () => {
-      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
-
-      await apiManager.sendStoppedPresentationP2P();
-      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.SHARE_STATE, undefined, {
-        extraHeaders: [EHeader.STOP_PRESENTATION_P2P],
+        extraHeaders: [`${EKeyHeader.MEDIA_TYPE}: 1`],
       });
     });
 
@@ -308,17 +291,26 @@ describe('ApiManager (core)', () => {
       const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
 
       await apiManager.sendStoppedPresentation();
-      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.SHARE_STATE, undefined, {
-        extraHeaders: [EHeader.STOP_PRESENTATION],
+      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeReceived.SHARE_STATE, undefined, {
+        extraHeaders: [EHeader.STOPPED_CLIENT_PRESENTATION],
       });
     });
 
-    it('должен запрашивать разрешение на запуск презентации p2p', async () => {
+    it('должен отправлять available contented stream', async () => {
       const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
 
-      await apiManager.askPermissionToStartPresentationP2P();
-      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.SHARE_STATE, undefined, {
-        extraHeaders: [EHeader.START_PRESENTATION_P2P],
+      await apiManager.sendAvailableContentedStream();
+      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeReceived.SHARE_STATE, undefined, {
+        extraHeaders: [EHeader.AVAILABLE_CONTENTED_STREAM],
+      });
+    });
+
+    it('должен отправлять not available contented stream', async () => {
+      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
+
+      await apiManager.sendNotAvailableContentedStream();
+      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeReceived.SHARE_STATE, undefined, {
+        extraHeaders: [EHeader.NOT_AVAILABLE_CONTENTED_STREAM],
       });
     });
 
@@ -326,8 +318,8 @@ describe('ApiManager (core)', () => {
       const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
 
       await apiManager.askPermissionToStartPresentation();
-      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.SHARE_STATE, undefined, {
-        extraHeaders: [EHeader.START_PRESENTATION],
+      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeReceived.SHARE_STATE, undefined, {
+        extraHeaders: [EHeader.ACK_PERMISSION_TO_START_PRESENTATION],
       });
     });
 
@@ -431,34 +423,10 @@ describe('ApiManager (core)', () => {
       );
     });
 
-    it('должен выбрасывать ошибку при отсутствии rtcSession в sendMustStopPresentationP2P', async () => {
-      callManager.getEstablishedRTCSession.mockReturnValue(undefined);
-      apiManager = new ApiManager({ connectionManager, callManager });
-      await expect(apiManager.sendMustStopPresentationP2P()).rejects.toThrow(
-        'No rtcSession established',
-      );
-    });
-
-    it('должен выбрасывать ошибку при отсутствии rtcSession в sendStoppedPresentationP2P', async () => {
-      callManager.getEstablishedRTCSession.mockReturnValue(undefined);
-      apiManager = new ApiManager({ connectionManager, callManager });
-      await expect(apiManager.sendStoppedPresentationP2P()).rejects.toThrow(
-        'No rtcSession established',
-      );
-    });
-
     it('должен выбрасывать ошибку при отсутствии rtcSession в sendStoppedPresentation', async () => {
       callManager.getEstablishedRTCSession.mockReturnValue(undefined);
       apiManager = new ApiManager({ connectionManager, callManager });
       await expect(apiManager.sendStoppedPresentation()).rejects.toThrow(
-        'No rtcSession established',
-      );
-    });
-
-    it('должен выбрасывать ошибку при отсутствии rtcSession в askPermissionToStartPresentationP2P', async () => {
-      callManager.getEstablishedRTCSession.mockReturnValue(undefined);
-      apiManager = new ApiManager({ connectionManager, callManager });
-      await expect(apiManager.askPermissionToStartPresentationP2P()).rejects.toThrow(
         'No rtcSession established',
       );
     });
@@ -572,7 +540,7 @@ describe('ApiManager (core)', () => {
 
   describe('обработка ошибок', () => {
     it('должен корректно обрабатывать некорректный JSON в заголовке', () => {
-      mockRequest.setHeader(EHeader.NOTIFY, 'invalid json');
+      mockRequest.setHeader(EKeyHeader.NOTIFY, 'invalid json');
       expect(() => {
         connectionManager.events.trigger('sipEvent', {
           event: {},
@@ -589,7 +557,7 @@ describe('ApiManager (core)', () => {
 
       const notifyData = { cmd: 'channels' } as const;
 
-      mockRequest.setHeader(EHeader.NOTIFY, JSON.stringify(notifyData));
+      mockRequest.setHeader(EKeyHeader.NOTIFY, JSON.stringify(notifyData));
       connectionManager.events.trigger('sipEvent', {
         event: {},
         request: mockRequest as unknown as IncomingRequest,
@@ -604,7 +572,7 @@ describe('ApiManager (core)', () => {
       const enterRoomSpy = jest.fn();
 
       apiManager.on('enter-room', enterRoomSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -616,7 +584,7 @@ describe('ApiManager (core)', () => {
       const channelsSpy = jest.fn();
 
       apiManager.on('channels:all', channelsSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -628,7 +596,7 @@ describe('ApiManager (core)', () => {
       const mainCamControlSpy = jest.fn();
 
       apiManager.on('main-cam-control', mainCamControlSpy);
-      mockRequest.setHeader(EHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -640,7 +608,7 @@ describe('ApiManager (core)', () => {
     });
 
     it('должен корректно обрабатывать ошибку парсинга JSON в maybeHandleNotify', () => {
-      mockRequest.setHeader(EHeader.NOTIFY, 'invalid json');
+      mockRequest.setHeader(EKeyHeader.NOTIFY, 'invalid json');
       expect(() => {
         connectionManager.events.trigger('sipEvent', {
           event: {},

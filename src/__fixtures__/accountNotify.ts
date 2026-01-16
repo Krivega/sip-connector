@@ -1,12 +1,12 @@
-import { EContentTypeReceived, EHeader } from '../ApiManager';
+import { EContentTypeReceived, EKeyHeader } from '../ApiManager';
 
 const accountChanged = {
   cmd: 'accountChanged',
 };
 
 export const accountChangedHeaders: [string, string][] = [
-  [EHeader.CONTENT_TYPE, EContentTypeReceived.NOTIFY],
-  [EHeader.NOTIFY, JSON.stringify(accountChanged)],
+  [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.NOTIFY],
+  [EKeyHeader.NOTIFY, JSON.stringify(accountChanged)],
 ];
 
 const accountDeleted = {
@@ -14,6 +14,6 @@ const accountDeleted = {
 };
 
 export const accountDeletedHeaders: [string, string][] = [
-  [EHeader.CONTENT_TYPE, EContentTypeReceived.NOTIFY],
-  [EHeader.NOTIFY, JSON.stringify(accountDeleted)],
+  [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.NOTIFY],
+  [EKeyHeader.NOTIFY, JSON.stringify(accountDeleted)],
 ];

@@ -319,12 +319,9 @@ class SipConnector {
 
     return this.presentationManager.startPresentation(
       async () => {
-        if (isP2P === true) {
-          await this.apiManager.sendMustStopPresentationP2P();
-          await this.apiManager.askPermissionToStartPresentationP2P();
-        } else {
-          await this.apiManager.askPermissionToStartPresentation();
-        }
+        await (isP2P === true
+          ? this.apiManager.sendAvailableContentedStream()
+          : this.apiManager.askPermissionToStartPresentation());
       },
       mediaStream,
       {
@@ -342,7 +339,7 @@ class SipConnector {
 
     return this.presentationManager.stopPresentation(async () => {
       await (isP2P === true
-        ? this.apiManager.sendMustStopPresentationP2P()
+        ? this.apiManager.sendNotAvailableContentedStream()
         : this.apiManager.sendStoppedPresentation());
     });
   }
@@ -362,12 +359,9 @@ class SipConnector {
 
     return this.presentationManager.updatePresentation(
       async () => {
-        if (isP2P === true) {
-          await this.apiManager.sendMustStopPresentationP2P();
-          await this.apiManager.askPermissionToStartPresentationP2P();
-        } else {
-          await this.apiManager.askPermissionToStartPresentation();
-        }
+        await (isP2P === true
+          ? this.apiManager.sendAvailableContentedStream()
+          : this.apiManager.askPermissionToStartPresentation());
       },
       mediaStream,
       {
@@ -407,34 +401,6 @@ class SipConnector {
 
   public async sendRefusalToTurnOnCam(...args: Parameters<ApiManager['sendRefusalToTurnOnCam']>) {
     return this.apiManager.sendRefusalToTurnOnCam(...args);
-  }
-
-  public async sendMustStopPresentationP2P(
-    ...args: Parameters<ApiManager['sendMustStopPresentationP2P']>
-  ) {
-    return this.apiManager.sendMustStopPresentationP2P(...args);
-  }
-
-  public async sendStoppedPresentationP2P(
-    ...args: Parameters<ApiManager['sendStoppedPresentationP2P']>
-  ) {
-    return this.apiManager.sendStoppedPresentationP2P(...args);
-  }
-
-  public async sendStoppedPresentation(...args: Parameters<ApiManager['sendStoppedPresentation']>) {
-    return this.apiManager.sendStoppedPresentation(...args);
-  }
-
-  public async askPermissionToStartPresentationP2P(
-    ...args: Parameters<ApiManager['askPermissionToStartPresentationP2P']>
-  ) {
-    return this.apiManager.askPermissionToStartPresentationP2P(...args);
-  }
-
-  public async askPermissionToStartPresentation(
-    ...args: Parameters<ApiManager['askPermissionToStartPresentation']>
-  ) {
-    return this.apiManager.askPermissionToStartPresentation(...args);
   }
 
   public async askPermissionToEnableCam(

@@ -17,7 +17,7 @@ import type { TConnectionConfigurationWithUa } from '@/ConnectionManager';
 import type { TInboundStats, TOutboundStats } from '@/StatsPeerConnection';
 import type { TJsSIP } from '@/types';
 
-describe('SipConnector facade', () => {
+describe('SipConnector', () => {
   let sipConnector: SipConnector;
 
   beforeEach(() => {
@@ -378,21 +378,6 @@ describe('SipConnector facade', () => {
     const sendRefusalToTurnOnCam = jest
       .spyOn(api, 'sendRefusalToTurnOnCam')
       .mockResolvedValue(undefined);
-    const sendMustStopPresentationP2P = jest
-      .spyOn(api, 'sendMustStopPresentationP2P')
-      .mockResolvedValue(undefined);
-    const sendStoppedPresentationP2P = jest
-      .spyOn(api, 'sendStoppedPresentationP2P')
-      .mockResolvedValue(undefined);
-    const sendStoppedPresentation = jest
-      .spyOn(api, 'sendStoppedPresentation')
-      .mockResolvedValue(undefined);
-    const askPermissionToStartPresentationP2P = jest
-      .spyOn(api, 'askPermissionToStartPresentationP2P')
-      .mockResolvedValue(undefined);
-    const askPermissionToStartPresentation = jest
-      .spyOn(api, 'askPermissionToStartPresentation')
-      .mockResolvedValue(undefined);
     const askPermissionToEnableCam = jest
       .spyOn(api, 'askPermissionToEnableCam')
       .mockResolvedValue(undefined);
@@ -405,11 +390,6 @@ describe('SipConnector facade', () => {
     await sipConnector.sendRefusalToTurnOn('cam');
     await sipConnector.sendRefusalToTurnOnMic();
     await sipConnector.sendRefusalToTurnOnCam();
-    await sipConnector.sendMustStopPresentationP2P();
-    await sipConnector.sendStoppedPresentationP2P();
-    await sipConnector.sendStoppedPresentation();
-    await sipConnector.askPermissionToStartPresentationP2P();
-    await sipConnector.askPermissionToStartPresentation();
     await sipConnector.askPermissionToEnableCam();
 
     expect(waitChannels).toHaveBeenCalled();
@@ -420,15 +400,10 @@ describe('SipConnector facade', () => {
     expect(sendRefusalToTurnOn).toHaveBeenCalled();
     expect(sendRefusalToTurnOnMic).toHaveBeenCalled();
     expect(sendRefusalToTurnOnCam).toHaveBeenCalled();
-    expect(sendMustStopPresentationP2P).toHaveBeenCalled();
-    expect(sendStoppedPresentationP2P).toHaveBeenCalled();
-    expect(sendStoppedPresentation).toHaveBeenCalled();
-    expect(askPermissionToStartPresentationP2P).toHaveBeenCalled();
-    expect(askPermissionToStartPresentation).toHaveBeenCalled();
     expect(askPermissionToEnableCam).toHaveBeenCalled();
   });
 
-  it('должен корректно обрабатывать start/stop/update презентацию с ветками isP2P', async () => {
+  it('должен корректно обрабатывать startPresentation isP2P=false', async () => {
     const stream = createMediaStreamMock({
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },
@@ -437,11 +412,11 @@ describe('SipConnector facade', () => {
     const askPermissionToStartPresentation = jest
       .spyOn(sipConnector.apiManager, 'askPermissionToStartPresentation')
       .mockResolvedValue(undefined);
-    const askPermissionToStartPresentationP2P = jest
-      .spyOn(sipConnector.apiManager, 'askPermissionToStartPresentationP2P')
+    const sendAvailableContentedStream = jest
+      .spyOn(sipConnector.apiManager, 'sendAvailableContentedStream')
       .mockResolvedValue(undefined);
-    const sendMustStopPresentationP2P = jest
-      .spyOn(sipConnector.apiManager, 'sendMustStopPresentationP2P')
+    const sendNotAvailableContentedStream = jest
+      .spyOn(sipConnector.apiManager, 'sendNotAvailableContentedStream')
       .mockResolvedValue(undefined);
     const sendStoppedPresentation = jest
       .spyOn(sipConnector.apiManager, 'sendStoppedPresentation')
@@ -457,12 +432,62 @@ describe('SipConnector facade', () => {
       });
 
     await sipConnector.startPresentation(stream, { isP2P: false });
+
     expect(askPermissionToStartPresentation).toHaveBeenCalled();
-    expect(askPermissionToStartPresentationP2P).not.toHaveBeenCalled();
+    expect(sendAvailableContentedStream).not.toHaveBeenCalled();
+    expect(sendNotAvailableContentedStream).not.toHaveBeenCalled();
+    expect(sendStoppedPresentation).not.toHaveBeenCalled();
+  });
+
+  it('должен корректно обрабатывать startPresentation isP2P=true', async () => {
+    const stream = createMediaStreamMock({
+      audio: { deviceId: { exact: 'audioDeviceId' } },
+      video: { deviceId: { exact: 'videoDeviceId' } },
+    });
+
+    const askPermissionToStartPresentation = jest
+      .spyOn(sipConnector.apiManager, 'askPermissionToStartPresentation')
+      .mockResolvedValue(undefined);
+    const sendAvailableContentedStream = jest
+      .spyOn(sipConnector.apiManager, 'sendAvailableContentedStream')
+      .mockResolvedValue(undefined);
+    const sendNotAvailableContentedStream = jest
+      .spyOn(sipConnector.apiManager, 'sendNotAvailableContentedStream')
+      .mockResolvedValue(undefined);
+    const sendStoppedPresentation = jest
+      .spyOn(sipConnector.apiManager, 'sendStoppedPresentation')
+      .mockResolvedValue(undefined);
+
+    jest
+      .spyOn(sipConnector.presentationManager, 'startPresentation')
+      // eslint-disable-next-line @typescript-eslint/max-params
+      .mockImplementation(async (callback, s, _rest, _options) => {
+        await callback();
+
+        return s;
+      });
 
     await sipConnector.startPresentation(stream, { isP2P: true });
-    expect(sendMustStopPresentationP2P).toHaveBeenCalled();
-    expect(askPermissionToStartPresentationP2P).toHaveBeenCalled();
+
+    expect(askPermissionToStartPresentation).not.toHaveBeenCalled();
+    expect(sendAvailableContentedStream).toHaveBeenCalled();
+    expect(sendNotAvailableContentedStream).not.toHaveBeenCalled();
+    expect(sendStoppedPresentation).not.toHaveBeenCalled();
+  });
+
+  it('должен корректно обрабатывать stopPresentation isP2P=false', async () => {
+    const askPermissionToStartPresentation = jest
+      .spyOn(sipConnector.apiManager, 'askPermissionToStartPresentation')
+      .mockResolvedValue(undefined);
+    const sendAvailableContentedStream = jest
+      .spyOn(sipConnector.apiManager, 'sendAvailableContentedStream')
+      .mockResolvedValue(undefined);
+    const sendNotAvailableContentedStream = jest
+      .spyOn(sipConnector.apiManager, 'sendNotAvailableContentedStream')
+      .mockResolvedValue(undefined);
+    const sendStoppedPresentation = jest
+      .spyOn(sipConnector.apiManager, 'sendStoppedPresentation')
+      .mockResolvedValue(undefined);
 
     jest
       .spyOn(sipConnector.presentationManager, 'stopPresentation')
@@ -473,10 +498,61 @@ describe('SipConnector facade', () => {
       });
 
     await sipConnector.stopPresentation({ isP2P: false });
+
+    expect(askPermissionToStartPresentation).not.toHaveBeenCalled();
+    expect(sendAvailableContentedStream).not.toHaveBeenCalled();
+    expect(sendNotAvailableContentedStream).not.toHaveBeenCalled();
     expect(sendStoppedPresentation).toHaveBeenCalled();
+  });
+
+  it('должен корректно обрабатывать stopPresentation isP2P=true', async () => {
+    const askPermissionToStartPresentation = jest
+      .spyOn(sipConnector.apiManager, 'askPermissionToStartPresentation')
+      .mockResolvedValue(undefined);
+    const sendAvailableContentedStream = jest
+      .spyOn(sipConnector.apiManager, 'sendAvailableContentedStream')
+      .mockResolvedValue(undefined);
+    const sendNotAvailableContentedStream = jest
+      .spyOn(sipConnector.apiManager, 'sendNotAvailableContentedStream')
+      .mockResolvedValue(undefined);
+    const sendStoppedPresentation = jest
+      .spyOn(sipConnector.apiManager, 'sendStoppedPresentation')
+      .mockResolvedValue(undefined);
+
+    jest
+      .spyOn(sipConnector.presentationManager, 'stopPresentation')
+      .mockImplementation(async (callback) => {
+        await callback();
+
+        return undefined;
+      });
 
     await sipConnector.stopPresentation({ isP2P: true });
-    expect(sendMustStopPresentationP2P).toHaveBeenCalledTimes(2);
+
+    expect(askPermissionToStartPresentation).not.toHaveBeenCalled();
+    expect(sendAvailableContentedStream).not.toHaveBeenCalled();
+    expect(sendNotAvailableContentedStream).toHaveBeenCalled();
+    expect(sendStoppedPresentation).not.toHaveBeenCalled();
+  });
+
+  it('должен корректно обрабатывать updatePresentation isP2P=false', async () => {
+    const stream = createMediaStreamMock({
+      audio: { deviceId: { exact: 'audioDeviceId' } },
+      video: { deviceId: { exact: 'videoDeviceId' } },
+    });
+
+    const askPermissionToStartPresentation = jest
+      .spyOn(sipConnector.apiManager, 'askPermissionToStartPresentation')
+      .mockResolvedValue(undefined);
+    const sendAvailableContentedStream = jest
+      .spyOn(sipConnector.apiManager, 'sendAvailableContentedStream')
+      .mockResolvedValue(undefined);
+    const sendNotAvailableContentedStream = jest
+      .spyOn(sipConnector.apiManager, 'sendNotAvailableContentedStream')
+      .mockResolvedValue(undefined);
+    const sendStoppedPresentation = jest
+      .spyOn(sipConnector.apiManager, 'sendStoppedPresentation')
+      .mockResolvedValue(undefined);
 
     jest
       .spyOn(sipConnector.presentationManager, 'updatePresentation')
@@ -487,10 +563,46 @@ describe('SipConnector facade', () => {
       });
 
     await sipConnector.updatePresentation(stream, { isP2P: false });
-    expect(askPermissionToStartPresentation).toHaveBeenCalledTimes(2);
+
+    expect(askPermissionToStartPresentation).toHaveBeenCalled();
+    expect(sendAvailableContentedStream).not.toHaveBeenCalled();
+    expect(sendNotAvailableContentedStream).not.toHaveBeenCalled();
+    expect(sendStoppedPresentation).not.toHaveBeenCalled();
+  });
+
+  it('должен корректно обрабатывать updatePresentation isP2P=true', async () => {
+    const stream = createMediaStreamMock({
+      audio: { deviceId: { exact: 'audioDeviceId' } },
+      video: { deviceId: { exact: 'videoDeviceId' } },
+    });
+
+    const askPermissionToStartPresentation = jest
+      .spyOn(sipConnector.apiManager, 'askPermissionToStartPresentation')
+      .mockResolvedValue(undefined);
+    const sendAvailableContentedStream = jest
+      .spyOn(sipConnector.apiManager, 'sendAvailableContentedStream')
+      .mockResolvedValue(undefined);
+    const sendNotAvailableContentedStream = jest
+      .spyOn(sipConnector.apiManager, 'sendNotAvailableContentedStream')
+      .mockResolvedValue(undefined);
+    const sendStoppedPresentation = jest
+      .spyOn(sipConnector.apiManager, 'sendStoppedPresentation')
+      .mockResolvedValue(undefined);
+
+    jest
+      .spyOn(sipConnector.presentationManager, 'updatePresentation')
+      .mockImplementation(async (callback) => {
+        await callback();
+
+        return undefined;
+      });
 
     await sipConnector.updatePresentation(stream, { isP2P: true });
-    expect(askPermissionToStartPresentationP2P).toHaveBeenCalledTimes(2);
+
+    expect(askPermissionToStartPresentation).not.toHaveBeenCalled();
+    expect(sendAvailableContentedStream).toHaveBeenCalled();
+    expect(sendNotAvailableContentedStream).not.toHaveBeenCalled();
+    expect(sendStoppedPresentation).not.toHaveBeenCalled();
   });
 
   it('должен иметь доступ к геттерам и не кидать ошибки', () => {
