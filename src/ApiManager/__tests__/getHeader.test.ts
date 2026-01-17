@@ -594,6 +594,17 @@ describe('getHeader', () => {
 
       expect(result).toBe(123.45);
     });
+
+    it('должен возвращать undefined для неизвестного header (default case)', () => {
+      // Создаем "неизвестный" header через type assertion для покрытия default case
+      const unknownHeader = 'unknown-header' as unknown as EKeyHeader;
+
+      mockRequest.setHeader(unknownHeader, 'some-value');
+
+      const result = getHeader(mockRequest as unknown as IncomingRequest, unknownHeader);
+
+      expect(result).toBe(undefined);
+    });
   });
 
   describe('Case insensitivity', () => {

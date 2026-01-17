@@ -1,3 +1,4 @@
+/* eslint-disable default-case */
 import logger from '@/logger';
 import { hasDeclineResponseFromServer } from '@/utils/errors';
 import {
@@ -413,9 +414,6 @@ class ApiManager {
           this.maybeTriggerParticipantMoveRequest(typedRequest);
           break;
         }
-        default: {
-          break;
-        }
       }
     }
   };
@@ -576,10 +574,6 @@ class ApiManager {
       }
       case EShareStateSendAndReceive.MUST_STOP_PRESENTATION: {
         this.events.trigger(EEvent.PRESENTATION_MUST_STOP, {});
-        break;
-      }
-
-      default: {
         break;
       }
     }

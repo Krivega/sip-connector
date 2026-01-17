@@ -107,7 +107,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
       expect(micSpy).toHaveBeenCalledWith({ isSyncForced: true });
     });
 
-    it('должен обрабатывать USE_LICENSE события', () => {
+    it('должен вызывать событие USE_LICENSE для известного значения', () => {
       const licenseSpy = jest.fn();
 
       apiManager.on('use-license', licenseSpy);
@@ -117,7 +117,22 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
       callManager.events.trigger('newInfo', infoEvent);
+
       expect(licenseSpy).toHaveBeenCalledWith(EContentUseLicense.AUDIO);
+    });
+
+    it('должен не вызывать событие USE_LICENSE для неизвестного значения', () => {
+      const licenseSpy = jest.fn();
+
+      apiManager.on('use-license', licenseSpy);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.USE_LICENSE);
+      mockRequest.setHeader(EKeyHeader.CONTENT_USE_LICENSE, 'UNKNOWN_LICENSE');
+
+      const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
+
+      callManager.events.trigger('newInfo', infoEvent);
+
+      expect(licenseSpy).not.toHaveBeenCalled();
     });
 
     it('должен обрабатывать PARTICIPANT_STATE события с audioId', () => {
@@ -217,6 +232,24 @@ describe('ApiManager (NEW_INFO handling)', () => {
       callManager.events.trigger('newInfo', infoEvent);
       expect(anySpy).not.toHaveBeenCalled();
     });
+
+    it('должен обрабатывать default case для валидного но необработанного content-type', () => {
+      // Этот тест покрывает default case в switch statement
+      // Используем мок для getHeader чтобы вернуть значение вне enum
+      const anySpy = jest.fn();
+
+      apiManager.on('channels:all', anySpy);
+      apiManager.on('enter-room', anySpy);
+      apiManager.on('use-license', anySpy);
+      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, 'some-value');
+
+      const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
+
+      callManager.events.trigger('newInfo', infoEvent);
+
+      // Ни одно событие не должно быть вызвано для default case
+      expect(anySpy).not.toHaveBeenCalled();
+    });
   });
 
   describe('обработка SHARE_STATE событий', () => {
@@ -294,15 +327,20 @@ describe('ApiManager (NEW_INFO handling)', () => {
     });
 
     it('должен обрабатывать default случай в SHARE_STATE switch', () => {
+      // Покрываем default case в switch statement triggerShareState
       const anySpy = jest.fn();
 
       apiManager.on('contented-stream:available', anySpy);
+      apiManager.on('contented-stream:not-available', anySpy);
+      apiManager.on('presentation:must-stop', anySpy);
       mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
-      mockRequest.setHeader(EKeyHeader.CONTENT_SHARE_STATE, 'unknown_share_state');
+      mockRequest.setHeader(EKeyHeader.CONTENT_SHARE_STATE, 'some-value');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
       callManager.events.trigger('newInfo', infoEvent);
+
+      // Ни одно событие не должно быть вызвано для default case
       expect(anySpy).not.toHaveBeenCalled();
     });
   });

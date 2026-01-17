@@ -20,12 +20,8 @@ const isValidString = (value: unknown): value is string => {
 
 const findEnumValue = <T extends Record<string, string>>(
   enumObject: T,
-  value: unknown,
+  value: string,
 ): T[keyof T] | undefined => {
-  if (typeof value !== 'string') {
-    return undefined;
-  }
-
   const lowerValue = value.toLowerCase();
   const foundEntry = Object.entries(enumObject).find(([, enumValue]) => {
     return typeof enumValue === 'string' && enumValue.toLowerCase() === lowerValue;
@@ -79,31 +75,31 @@ export const getHeader = <T extends EKeyHeader>(
     case EKeyHeader.AVAILABLE_INCOMING_BITRATE:
     case EKeyHeader.AUDIO_TRACK_COUNT:
     case EKeyHeader.VIDEO_TRACK_COUNT: {
-      return parseNumberValue(lowerValue) as EValueHeader<T>;
+      return parseNumberValue(lowerValue) as EValueHeader<T> | undefined;
     }
     case EKeyHeader.CONTENT_SHARE_CODEC: {
-      return findEnumValue(EContentShareCodec, lowerValue) as EValueHeader<T>;
+      return findEnumValue(EContentShareCodec, lowerValue) as EValueHeader<T> | undefined;
     }
     case EKeyHeader.CONTENT_TYPE: {
-      return findEnumValue(EContentTypeReceived, lowerValue) as EValueHeader<T>;
+      return findEnumValue(EContentTypeReceived, lowerValue) as EValueHeader<T> | undefined;
     }
     case EKeyHeader.CONTENT_USE_LICENSE: {
-      return findEnumValue(EContentUseLicense, lowerValue) as EValueHeader<T>;
+      return findEnumValue(EContentUseLicense, lowerValue) as EValueHeader<T> | undefined;
     }
     case EKeyHeader.MAIN_CAM: {
-      return findEnumValue(EContentMainCAM, lowerValue) as EValueHeader<T>;
+      return findEnumValue(EContentMainCAM, lowerValue) as EValueHeader<T> | undefined;
     }
     case EKeyHeader.MIC: {
-      return findEnumValue(EContentMic, lowerValue) as EValueHeader<T>;
+      return findEnumValue(EContentMic, lowerValue) as EValueHeader<T> | undefined;
     }
     case EKeyHeader.MEDIA_SYNC: {
-      return findEnumValue(EContentSyncMediaState, lowerValue) as EValueHeader<T>;
+      return findEnumValue(EContentSyncMediaState, lowerValue) as EValueHeader<T> | undefined;
     }
     case EKeyHeader.CONTENT_PARTICIPANT_STATE: {
-      return findEnumValue(EContentParticipantType, lowerValue) as EValueHeader<T>;
+      return findEnumValue(EContentParticipantType, lowerValue) as EValueHeader<T> | undefined;
     }
     case EKeyHeader.CONTENT_SHARE_STATE: {
-      return findEnumValue(EShareStateSendAndReceive, lowerValue) as EValueHeader<T>;
+      return findEnumValue(EShareStateSendAndReceive, lowerValue) as EValueHeader<T> | undefined;
     }
     default: {
       return undefined;
