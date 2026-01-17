@@ -6,12 +6,12 @@
 
 | Имя события                                                | Описание                                                      | Тип данных                                                         |
 | ---------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `api:enter-room`                                           | Генерируется при входе в комнату                              | `{ room: string; participantName: string }`                        |
-| `api:main-cam-control`                                     | Генерируется при управлении главной камерой                   | `{ mainCam?: EEventsMainCAM; resolutionMainCam?: string }`         |
-| `api:use-license`                                          | Генерируется при использовании лицензии                       | `EUseLicense`                                                      |
+| `api:enter-room`                                           | Генерируется при входе в комнату                              | `{ room: string; participantName?: string }`                       |
+| `api:main-cam-control`                                     | Генерируется при управлении главной камерой                   | `{ mainCam?: EContentMainCAM; resolutionMainCam?: string }`        |
+| `api:use-license`                                          | Генерируется при использовании лицензии                       | `EContentUseLicense`                                               |
 | `api:new-dtmf`                                             | Генерируется при получении DTMF сигнала                       | `{ originator: string }`                                           |
 | `api:conference:participant-token-issued`                  | Генерируется при выдаче токена участника конференции          | `TParametersConferenceParticipantTokenIssued`                      |
-| `api:contented-stream:available`                           | Генерируется при доступности второго удаленного потока        | `Record<string, never>`                                            |
+| `api:contented-stream:available`                           | Генерируется при доступности второго удаленного потока        | `{ codec?: EContentShareCodec }`                                   |
 | `api:contented-stream:not-available`                       | Генерируется при недоступности второго удаленного потока      | `Record<string, never>`                                            |
 | `api:presentation:must-stop`                               | Генерируется при требовании остановить презентацию            | `Record<string, never>`                                            |
 | `api:channels:all`                                         | Генерируется при получении информации о каналах               | `TChannels`                                                        |
@@ -73,10 +73,10 @@
 }
 ```
 
-### `EEventsMainCAM`
+### `EContentMainCAM`
 
 ```typescript
-enum EEventsMainCAM {
+enum EContentMainCAM {
   PAUSE_MAIN_CAM = 'PAUSEMAINCAM',
   RESUME_MAIN_CAM = 'RESUMEMAINCAM',
   MAX_MAIN_CAM_RESOLUTION = 'MAXMAINCAMRESOLUTION',
@@ -85,12 +85,23 @@ enum EEventsMainCAM {
 }
 ```
 
-### `EUseLicense`
+### `EContentUseLicense`
 
 ```typescript
-enum EUseLicense {
+enum EContentUseLicense {
   AUDIO = 'AUDIO',
   VIDEO = 'VIDEO',
   AUDIOPLUSPRESENTATION = 'AUDIOPLUSPRESENTATION',
+}
+```
+
+### `EContentShareCodec`
+
+```typescript
+enum EContentShareCodec {
+  H264 = 'H264',
+  VP8 = 'VP8',
+  VP9 = 'VP9',
+  AV1 = 'AV1',
 }
 ```

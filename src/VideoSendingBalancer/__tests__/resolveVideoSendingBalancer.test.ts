@@ -4,7 +4,7 @@ import { createMediaStreamMock, createVideoMediaStreamTrackMock } from 'webrtc-m
 import { dataForConnectionWithAuthorization } from '@/__fixtures__';
 import JsSIP from '@/__fixtures__/jssip.mock';
 import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
-import { EContentTypeReceived, EEventsMainCAM, EKeyHeader } from '@/ApiManager';
+import { EContentTypeReceived, EContentMainCAM, EKeyHeader } from '@/ApiManager';
 import { doMockSipConnector } from '@/doMock';
 import findVideoSender from '@/utils/findVideoSender';
 import { resolveVideoSendingBalancer } from '../@VideoSendingBalancer';
@@ -27,17 +27,17 @@ const FACTOR_CODEC_AV1 = 0.6;
 
 const headersResumeMainCam: [string, string][] = [
   [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
-  [EKeyHeader.MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM],
+  [EKeyHeader.MAIN_CAM, EContentMainCAM.RESUME_MAIN_CAM],
 ];
 
 const headersPauseMainCam: [string, string][] = [
   [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
-  [EKeyHeader.MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM],
+  [EKeyHeader.MAIN_CAM, EContentMainCAM.PAUSE_MAIN_CAM],
 ];
 
 const headersMaxMainCamResolution: [string, string][] = [
   [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
-  [EKeyHeader.MAIN_CAM, EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION],
+  [EKeyHeader.MAIN_CAM, EContentMainCAM.MAX_MAIN_CAM_RESOLUTION],
   [EKeyHeader.MAIN_CAM_RESOLUTION, `${sdWidth}x${sdHeight}`],
 ];
 
@@ -273,7 +273,7 @@ describe('resolveVideoSendingBalancer', () => {
 
       // @ts-expect-error
       balancer.serverHeaders = {
-        mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
+        mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
         resolutionMainCam: `${targetWidth}x${targeHight}`,
       };
 
@@ -318,7 +318,7 @@ describe('resolveVideoSendingBalancer', () => {
 
       // @ts-expect-error
       balancer.serverHeaders = {
-        mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
+        mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
         resolutionMainCam: `${targetWidth}x${targeHight}`,
       };
 
@@ -358,7 +358,7 @@ describe('resolveVideoSendingBalancer', () => {
 
       // @ts-expect-error
       balancer.serverHeaders = {
-        mainCam: EEventsMainCAM.PAUSE_MAIN_CAM,
+        mainCam: EContentMainCAM.PAUSE_MAIN_CAM,
         resolutionMainCam: '',
       };
 
@@ -401,7 +401,7 @@ describe('resolveVideoSendingBalancer', () => {
 
       // @ts-expect-error
       balancer.serverHeaders = {
-        mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
+        mainCam: EContentMainCAM.RESUME_MAIN_CAM,
       };
 
       await balancer.balance();
@@ -411,7 +411,7 @@ describe('resolveVideoSendingBalancer', () => {
       // @ts-expect-error
       // eslint-disable-next-line require-atomic-updates
       balancer.serverHeaders = {
-        mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
+        mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
         resolutionMainCam: `${targetWidth}x${targeHight}`,
       };
 
@@ -422,7 +422,7 @@ describe('resolveVideoSendingBalancer', () => {
       // @ts-expect-error
       // eslint-disable-next-line require-atomic-updates
       balancer.serverHeaders = {
-        mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
+        mainCam: EContentMainCAM.RESUME_MAIN_CAM,
       };
 
       const result = await balancer.balance();
@@ -478,7 +478,7 @@ describe('resolveVideoSendingBalancer', () => {
 
       // @ts-expect-error
       balancer.serverHeaders = {
-        mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
+        mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
         resolutionMainCam: `${targetWidth}x${targeHight}`,
       };
 
@@ -530,7 +530,7 @@ describe('resolveVideoSendingBalancer', () => {
 
       // @ts-expect-error
       balancer.serverHeaders = {
-        mainCam: EEventsMainCAM.PAUSE_MAIN_CAM,
+        mainCam: EContentMainCAM.PAUSE_MAIN_CAM,
         resolutionMainCam: '',
       };
 
@@ -585,7 +585,7 @@ describe('resolveVideoSendingBalancer', () => {
 
       // @ts-expect-error
       balancer.serverHeaders = {
-        mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
+        mainCam: EContentMainCAM.RESUME_MAIN_CAM,
       };
 
       await balancer.balance();
@@ -595,7 +595,7 @@ describe('resolveVideoSendingBalancer', () => {
       // @ts-expect-error
       // eslint-disable-next-line require-atomic-updates
       balancer.serverHeaders = {
-        mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
+        mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
         resolutionMainCam: `${targetWidth}x${targeHight}`,
       };
 
@@ -606,7 +606,7 @@ describe('resolveVideoSendingBalancer', () => {
       // @ts-expect-error
       // eslint-disable-next-line require-atomic-updates
       balancer.serverHeaders = {
-        mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
+        mainCam: EContentMainCAM.RESUME_MAIN_CAM,
       };
 
       const result = await balancer.balance();

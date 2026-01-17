@@ -1,4 +1,4 @@
-import type { EEventsMainCAM } from '@/ApiManager';
+import type { EContentMainCAM } from '@/ApiManager';
 import type { TOnSetParameters, TResultSetParametersToSender } from '@/tools';
 
 // Конфигурация балансировщика
@@ -9,7 +9,7 @@ export interface IBalancerOptions {
 
 // Заголовки от сервера
 export interface IMainCamHeaders {
-  mainCam?: EEventsMainCAM;
+  mainCam?: EContentMainCAM;
   resolutionMainCam?: string;
 }
 

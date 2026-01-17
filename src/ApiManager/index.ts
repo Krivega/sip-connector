@@ -2,13 +2,13 @@ export { default as ApiManager } from './@ApiManager';
 export {
   EContentTypeReceived,
   EContentTypeSent,
-  EEventsMainCAM,
-  EEventsMic,
-  EEventsSyncMediaState,
+  EContentMainCAM,
+  EContentMic,
+  EContentSyncMediaState,
   EHeader,
   EKeyHeader,
   EShareStateSendAndReceive,
-  EUseLicense,
+  EContentUseLicense,
 } from './constants';
 export { EVENT_NAMES as API_MANAGER_EVENT_NAMES } from './events';
 

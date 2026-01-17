@@ -3,24 +3,24 @@ import { createMediaStreamMock } from 'webrtc-mock';
 
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
-import { EContentTypeReceived, EKeyHeader, EUseLicense } from '../ApiManager';
+import { EContentTypeReceived, EKeyHeader, EContentUseLicense } from '../ApiManager';
 import { doMockSipConnector } from '../doMock';
 
 import type { SipConnector } from '../SipConnector';
 
 const headersUseLicenseAudio: [string, string][] = [
   [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.USE_LICENSE],
-  [EKeyHeader.CONTENT_USE_LICENSE, EUseLicense.AUDIO],
+  [EKeyHeader.CONTENT_USE_LICENSE, EContentUseLicense.AUDIO],
 ];
 
 const headersUseLicenseVideo: [string, string][] = [
   [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.USE_LICENSE],
-  [EKeyHeader.CONTENT_USE_LICENSE, EUseLicense.VIDEO],
+  [EKeyHeader.CONTENT_USE_LICENSE, EContentUseLicense.VIDEO],
 ];
 
 const headersUseLicenseAudioPlusPresentation: [string, string][] = [
   [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.USE_LICENSE],
-  [EKeyHeader.CONTENT_USE_LICENSE, EUseLicense.AUDIOPLUSPRESENTATION],
+  [EKeyHeader.CONTENT_USE_LICENSE, EContentUseLicense.AUDIOPLUSPRESENTATION],
 ];
 
 describe('use license', () => {
@@ -41,7 +41,7 @@ describe('use license', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    const promise = new Promise<EUseLicense>((resolve) => {
+    const promise = new Promise<EContentUseLicense>((resolve) => {
       sipConnector.on('api:use-license', resolve);
     });
     const establishedRTCSession = sipConnector.getEstablishedRTCSession();
@@ -50,8 +50,8 @@ describe('use license', () => {
       JsSIP.triggerNewInfo(establishedRTCSession, headersUseLicenseAudio);
     }
 
-    return promise.then((license: EUseLicense) => {
-      expect(license).toBe(EUseLicense.AUDIO);
+    return promise.then((license: EContentUseLicense) => {
+      expect(license).toBe(EContentUseLicense.AUDIO);
     });
   });
 
@@ -59,7 +59,7 @@ describe('use license', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    const promise = new Promise<EUseLicense>((resolve) => {
+    const promise = new Promise<EContentUseLicense>((resolve) => {
       sipConnector.on('api:use-license', resolve);
     });
     const establishedRTCSession = sipConnector.getEstablishedRTCSession();
@@ -68,8 +68,8 @@ describe('use license', () => {
       JsSIP.triggerNewInfo(establishedRTCSession, headersUseLicenseVideo);
     }
 
-    return promise.then((license: EUseLicense) => {
-      expect(license).toBe(EUseLicense.VIDEO);
+    return promise.then((license: EContentUseLicense) => {
+      expect(license).toBe(EContentUseLicense.VIDEO);
     });
   });
 
@@ -77,7 +77,7 @@ describe('use license', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    const promise = new Promise<EUseLicense>((resolve) => {
+    const promise = new Promise<EContentUseLicense>((resolve) => {
       sipConnector.on('api:use-license', resolve);
     });
     const establishedRTCSession = sipConnector.getEstablishedRTCSession();
@@ -86,8 +86,8 @@ describe('use license', () => {
       JsSIP.triggerNewInfo(establishedRTCSession, headersUseLicenseAudioPlusPresentation);
     }
 
-    return promise.then((license: EUseLicense) => {
-      expect(license).toBe(EUseLicense.AUDIOPLUSPRESENTATION);
+    return promise.then((license: EContentUseLicense) => {
+      expect(license).toBe(EContentUseLicense.AUDIOPLUSPRESENTATION);
     });
   });
 });

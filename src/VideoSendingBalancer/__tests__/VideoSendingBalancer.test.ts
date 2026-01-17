@@ -6,7 +6,7 @@ import { createVideoMediaStreamTrackMock } from 'webrtc-mock';
 import delayPromise from '@/__fixtures__/delayPromise';
 import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
-import { EEventsMainCAM } from '@/ApiManager';
+import { EContentMainCAM } from '@/ApiManager';
 import { doMockSipConnector } from '@/doMock';
 import logger from '@/logger';
 import VideoSendingBalancer, { resolveVideoSendingBalancer } from '../@VideoSendingBalancer';
@@ -123,7 +123,7 @@ describe('VideoSendingBalancer', () => {
 
       // Имитируем событие
       const testHeaders: IMainCamHeaders = {
-        mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
+        mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
         resolutionMainCam: '1920x1080',
       };
 
@@ -156,7 +156,7 @@ describe('VideoSendingBalancer', () => {
 
       // @ts-expect-error
       balancer.serverHeaders = {
-        mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
+        mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
         resolutionMainCam: '1920x1080',
       };
 
@@ -174,7 +174,7 @@ describe('VideoSendingBalancer', () => {
 
       // @ts-expect-error
       balancer.serverHeaders = {
-        mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
+        mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
         resolutionMainCam: '1920x1080',
       };
 
@@ -207,7 +207,7 @@ describe('VideoSendingBalancer', () => {
 
       // @ts-expect-error
       balancer.serverHeaders = {
-        mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
+        mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
         resolutionMainCam: '1920x1080',
       };
 
@@ -236,7 +236,7 @@ describe('VideoSendingBalancer', () => {
       balancer.subscribe();
 
       const testHeaders: IMainCamHeaders = {
-        mainCam: EEventsMainCAM.PAUSE_MAIN_CAM,
+        mainCam: EContentMainCAM.PAUSE_MAIN_CAM,
         resolutionMainCam: '1280x720',
       };
 
@@ -270,22 +270,22 @@ describe('VideoSendingBalancer', () => {
       // Тестируем разные типы событий
       const events = [
         {
-          mainCam: EEventsMainCAM.PAUSE_MAIN_CAM,
+          mainCam: EContentMainCAM.PAUSE_MAIN_CAM,
           resolutionMainCam: '640x480',
         },
         {
-          mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
+          mainCam: EContentMainCAM.RESUME_MAIN_CAM,
           resolutionMainCam: '1920x1080',
         },
         {
-          mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
+          mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
           resolutionMainCam: '3840x2160',
         },
         {
-          mainCam: EEventsMainCAM.ADMIN_STOP_MAIN_CAM,
+          mainCam: EContentMainCAM.ADMIN_STOP_MAIN_CAM,
         },
         {
-          mainCam: EEventsMainCAM.ADMIN_START_MAIN_CAM,
+          mainCam: EContentMainCAM.ADMIN_START_MAIN_CAM,
           resolutionMainCam: '1920x1080',
         },
       ];
@@ -326,7 +326,7 @@ describe('VideoSendingBalancer', () => {
 
       // Событие
       const testHeaders: IMainCamHeaders = {
-        mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
+        mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
         resolutionMainCam: '1920x1080',
       };
 
@@ -393,7 +393,7 @@ describe('VideoSendingBalancer', () => {
 
       // Событие без resolutionMainCam
       const headersWithoutResolution: IMainCamHeaders = {
-        mainCam: EEventsMainCAM.PAUSE_MAIN_CAM,
+        mainCam: EContentMainCAM.PAUSE_MAIN_CAM,
       };
 
       expect(eventHandler).toBeDefined();
@@ -577,7 +577,7 @@ describe('VideoSendingBalancer', () => {
       balancer.subscribe();
 
       const testHeaders: IMainCamHeaders = {
-        mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
+        mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
         resolutionMainCam: '1920x1080',
       };
 

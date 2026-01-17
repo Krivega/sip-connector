@@ -11,8 +11,8 @@ import { MockRequest } from '../__tests-utils__/helpers';
 import {
   EContentTypeReceived,
   EContentTypeSent,
-  EEventsMainCAM,
-  EEventsSyncMediaState,
+  EContentMainCAM,
+  EContentSyncMediaState,
   EHeader,
   EKeyHeader,
 } from '../constants';
@@ -144,8 +144,8 @@ describe('ApiManager (core)', () => {
       const waitPromise = apiManager.waitSyncMediaState();
 
       mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
-      mockRequest.setHeader(EKeyHeader.MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM);
-      mockRequest.setHeader(EKeyHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_FORCED);
+      mockRequest.setHeader(EKeyHeader.MAIN_CAM, EContentMainCAM.RESUME_MAIN_CAM);
+      mockRequest.setHeader(EKeyHeader.MEDIA_SYNC, EContentSyncMediaState.ADMIN_SYNC_FORCED);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -160,8 +160,8 @@ describe('ApiManager (core)', () => {
       const waitPromise = apiManager.waitSyncMediaState();
 
       mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM);
-      mockRequest.setHeader(EKeyHeader.MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM);
-      mockRequest.setHeader(EKeyHeader.MEDIA_SYNC, EEventsSyncMediaState.ADMIN_SYNC_NOT_FORCED);
+      mockRequest.setHeader(EKeyHeader.MAIN_CAM, EContentMainCAM.PAUSE_MAIN_CAM);
+      mockRequest.setHeader(EKeyHeader.MEDIA_SYNC, EContentSyncMediaState.ADMIN_SYNC_NOT_FORCED);
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -577,7 +577,8 @@ describe('ApiManager (core)', () => {
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
       callManager.events.trigger('newInfo', infoEvent);
-      expect(enterRoomSpy).toHaveBeenCalledWith({ room: undefined, participantName: undefined });
+      // Когда заголовки отсутствуют, событие не должно триггериться
+      expect(enterRoomSpy).not.toHaveBeenCalled();
     });
 
     it('должен корректно обрабатывать отсутствующие заголовки в CHANNELS', () => {

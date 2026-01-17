@@ -7,7 +7,7 @@ import { hasNotReadyForConnectionError } from '@/ConnectionManager';
 import debug from '@/logger';
 import hasPurgatory from '@/tools/hasPurgatory';
 
-import type { EUseLicense } from '@/ApiManager';
+import type { EContentUseLicense } from '@/ApiManager';
 import type { TOnAddedTransceiver, TRemoteStreams } from '@/CallManager';
 import type { TParametersConnection, TConnectionConfigurationWithUa } from '@/ConnectionManager';
 import type { TContentHint } from '@/PresentationManager';
@@ -667,7 +667,7 @@ class SipConnectorFacade implements IProxyMethods {
     return this.sipConnector.getRemoteStreams();
   };
 
-  public onUseLicense = (handler: (license: EUseLicense) => void): (() => void) => {
+  public onUseLicense = (handler: (license: EContentUseLicense) => void): (() => void) => {
     debug('onUseLicense');
 
     return this.sipConnector.on('api:use-license', handler);

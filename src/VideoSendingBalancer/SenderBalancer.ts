@@ -1,4 +1,4 @@
-import { EEventsMainCAM } from '@/ApiManager';
+import { EContentMainCAM } from '@/ApiManager';
 import hasIncludesString from '@/utils/hasIncludesString';
 import { calcMaxBitrateByWidthAndCodec, getMaximumBitrate, getMinimumBitrate } from './calcBitrate';
 import { calcScaleResolutionDownBy } from './calcResolution';
@@ -106,21 +106,21 @@ export class SenderBalancer {
     const { mainCam, resolutionMainCam } = headers;
 
     switch (mainCam) {
-      case EEventsMainCAM.PAUSE_MAIN_CAM: {
+      case EContentMainCAM.PAUSE_MAIN_CAM: {
         return this.downgradeResolutionSender(context);
       }
-      case EEventsMainCAM.RESUME_MAIN_CAM: {
+      case EContentMainCAM.RESUME_MAIN_CAM: {
         return this.setBitrateByTrackResolution(context);
       }
-      case EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION: {
+      case EContentMainCAM.MAX_MAIN_CAM_RESOLUTION: {
         if (resolutionMainCam !== undefined) {
           return this.setResolutionSender(resolutionMainCam, context);
         }
 
         return this.setBitrateByTrackResolution(context);
       }
-      case EEventsMainCAM.ADMIN_STOP_MAIN_CAM:
-      case EEventsMainCAM.ADMIN_START_MAIN_CAM:
+      case EContentMainCAM.ADMIN_STOP_MAIN_CAM:
+      case EContentMainCAM.ADMIN_START_MAIN_CAM:
       case undefined: {
         return this.setBitrateByTrackResolution(context);
       }

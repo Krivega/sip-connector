@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/prefer-literal-enum-member */
 
-export enum EParticipantType {
+export enum EContentParticipantType {
   SPECTATOR = 'SPECTATOR',
   PARTICIPANT = 'PARTICIPANT',
 }
@@ -24,7 +24,7 @@ export enum EContentTypeSent {
   STATS = 'application/vinteo.webrtc.stats',
 }
 
-export enum EEventsMainCAM {
+export enum EContentMainCAM {
   PAUSE_MAIN_CAM = 'PAUSEMAINCAM',
   RESUME_MAIN_CAM = 'RESUMEMAINCAM',
   MAX_MAIN_CAM_RESOLUTION = 'MAXMAINCAMRESOLUTION',
@@ -32,9 +32,16 @@ export enum EEventsMainCAM {
   ADMIN_START_MAIN_CAM = 'ADMINSTARTMAINCAM',
 }
 
-export enum EEventsMic {
+export enum EContentMic {
   ADMIN_STOP_MIC = 'ADMINSTOPMIC',
   ADMIN_START_MIC = 'ADMINSTARTMIC',
+}
+
+export enum EContentShareCodec {
+  H264 = 'H264',
+  VP8 = 'VP8',
+  VP9 = 'VP9',
+  AV1 = 'AV1',
 }
 
 export enum EKeyHeader {
@@ -56,6 +63,7 @@ export enum EKeyHeader {
   NOTIFY = 'X-VINTEO-NOTIFY',
   CONTENT_ENABLE_MEDIA_DEVICE = 'X-WEBRTC-REQUEST-ENABLE-MEDIA-DEVICE',
   CONTENT_SHARE_STATE = 'x-webrtc-share-state',
+  CONTENT_SHARE_CODEC = 'x-webrtc-share-codec',
   AVAILABLE_INCOMING_BITRATE = 'X-WEBRTC-AVAILABLE-INCOMING-BITRATE',
   AUDIO_TRACK_COUNT = 'X-WEBRTC-AUDIO-TRACK-COUNT',
   VIDEO_TRACK_COUNT = 'X-WEBRTC-VIDEO-TRACK-COUNT',
@@ -83,13 +91,43 @@ export enum EHeader {
   ENABLE_MAIN_CAM = `${EKeyHeader.CONTENT_ENABLE_MEDIA_DEVICE}: LETMESTARTMAINCAM`,
 }
 
-export enum EEventsSyncMediaState {
+export enum EContentSyncMediaState {
   ADMIN_SYNC_FORCED = '1',
   ADMIN_SYNC_NOT_FORCED = '0',
 }
 
-export enum EUseLicense {
+export enum EContentUseLicense {
   AUDIO = 'AUDIO',
   VIDEO = 'VIDEO',
   AUDIOPLUSPRESENTATION = 'AUDIOPLUSPRESENTATION',
 }
+
+// Маппинг типов для каждого header
+type THeaderValueMap = {
+  [EKeyHeader.CONTENT_ENTER_ROOM]: string;
+  [EKeyHeader.PARTICIPANT_NAME]: string;
+  [EKeyHeader.CONTENT_SHARE_CODEC]: EContentShareCodec;
+  [EKeyHeader.CONTENT_TYPE]: EContentTypeReceived;
+  [EKeyHeader.CONTENT_USE_LICENSE]: EContentUseLicense;
+  [EKeyHeader.INPUT_CHANNELS]: string;
+  [EKeyHeader.OUTPUT_CHANNELS]: string;
+  [EKeyHeader.MAIN_CAM]: EContentMainCAM;
+  [EKeyHeader.MIC]: EContentMic;
+  [EKeyHeader.MEDIA_SYNC]: EContentSyncMediaState;
+  [EKeyHeader.MAIN_CAM_RESOLUTION]: string;
+  [EKeyHeader.MEDIA_STATE]: string;
+  [EKeyHeader.MEDIA_TYPE]: number;
+  [EKeyHeader.MAIN_CAM_STATE]: number;
+  [EKeyHeader.MIC_STATE]: number;
+  [EKeyHeader.CONTENT_PARTICIPANT_STATE]: EContentParticipantType;
+  [EKeyHeader.NOTIFY]: string;
+  [EKeyHeader.CONTENT_ENABLE_MEDIA_DEVICE]: string;
+  [EKeyHeader.CONTENT_SHARE_STATE]: EShareStateSendAndReceive;
+  [EKeyHeader.AVAILABLE_INCOMING_BITRATE]: number;
+  [EKeyHeader.AUDIO_TRACK_COUNT]: number;
+  [EKeyHeader.VIDEO_TRACK_COUNT]: number;
+  [EKeyHeader.TRACKS_DIRECTION]: string;
+  [EKeyHeader.AUDIO_ID]: string;
+};
+
+export type EValueHeader<T extends EKeyHeader> = THeaderValueMap[T];

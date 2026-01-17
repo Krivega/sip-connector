@@ -3,35 +3,35 @@ import { createMediaStreamMock } from 'webrtc-mock';
 
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
-import { EContentTypeReceived, EEventsMainCAM, EKeyHeader } from '../ApiManager';
+import { EContentTypeReceived, EContentMainCAM, EKeyHeader } from '../ApiManager';
 import { doMockSipConnector } from '../doMock';
 
 import type { SipConnector } from '../SipConnector';
 
 const headersMainCamControl: [string, string][] = [
   [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
-  [EKeyHeader.MAIN_CAM, EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION],
+  [EKeyHeader.MAIN_CAM, EContentMainCAM.MAX_MAIN_CAM_RESOLUTION],
   [EKeyHeader.MAIN_CAM_RESOLUTION, '720'],
 ];
 
 const headersAdminStartMainCam: [string, string][] = [
   [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
-  [EKeyHeader.MAIN_CAM, EEventsMainCAM.ADMIN_START_MAIN_CAM],
+  [EKeyHeader.MAIN_CAM, EContentMainCAM.ADMIN_START_MAIN_CAM],
 ];
 
 const headersAdminStopMainCam: [string, string][] = [
   [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
-  [EKeyHeader.MAIN_CAM, EEventsMainCAM.ADMIN_STOP_MAIN_CAM],
+  [EKeyHeader.MAIN_CAM, EContentMainCAM.ADMIN_STOP_MAIN_CAM],
 ];
 
 const headersResumeMainCam: [string, string][] = [
   [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
-  [EKeyHeader.MAIN_CAM, EEventsMainCAM.RESUME_MAIN_CAM],
+  [EKeyHeader.MAIN_CAM, EContentMainCAM.RESUME_MAIN_CAM],
 ];
 
 const headersPauseMainCam: [string, string][] = [
   [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
-  [EKeyHeader.MAIN_CAM, EEventsMainCAM.PAUSE_MAIN_CAM],
+  [EKeyHeader.MAIN_CAM, EContentMainCAM.PAUSE_MAIN_CAM],
 ];
 
 describe('main cam control', () => {
@@ -52,7 +52,7 @@ describe('main cam control', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    const promise = new Promise<{ mainCam?: EEventsMainCAM; resolutionMainCam?: string }>(
+    const promise = new Promise<{ mainCam?: EContentMainCAM; resolutionMainCam?: string }>(
       (resolve) => {
         sipConnector.on('api:main-cam-control', resolve);
       },
@@ -64,7 +64,7 @@ describe('main cam control', () => {
     }
 
     return promise.then(({ mainCam, resolutionMainCam }) => {
-      expect(mainCam).toBe(EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION);
+      expect(mainCam).toBe(EContentMainCAM.MAX_MAIN_CAM_RESOLUTION);
       expect(resolutionMainCam).toBe('720');
     });
   });
@@ -109,7 +109,7 @@ describe('main cam control', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    const promise = new Promise<{ mainCam?: EEventsMainCAM; resolutionMainCam?: string }>(
+    const promise = new Promise<{ mainCam?: EContentMainCAM; resolutionMainCam?: string }>(
       (resolve) => {
         sipConnector.on('api:main-cam-control', resolve);
       },
@@ -122,8 +122,8 @@ describe('main cam control', () => {
     }
 
     await promise.then(({ mainCam, resolutionMainCam }) => {
-      expect(mainCam).toBe(EEventsMainCAM.RESUME_MAIN_CAM);
-      expect(resolutionMainCam).toBe('');
+      expect(mainCam).toBe(EContentMainCAM.RESUME_MAIN_CAM);
+      expect(resolutionMainCam).toBe(undefined);
     });
   });
 
@@ -131,7 +131,7 @@ describe('main cam control', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    const promise = new Promise<{ mainCam?: EEventsMainCAM; resolutionMainCam?: string }>(
+    const promise = new Promise<{ mainCam?: EContentMainCAM; resolutionMainCam?: string }>(
       (resolve) => {
         sipConnector.on('api:main-cam-control', resolve);
       },
@@ -144,8 +144,8 @@ describe('main cam control', () => {
     }
 
     await promise.then(({ mainCam, resolutionMainCam }) => {
-      expect(mainCam).toBe(EEventsMainCAM.PAUSE_MAIN_CAM);
-      expect(resolutionMainCam).toBe('');
+      expect(mainCam).toBe(EContentMainCAM.PAUSE_MAIN_CAM);
+      expect(resolutionMainCam).toBe(undefined);
     });
   });
 });

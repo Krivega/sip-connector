@@ -1,4 +1,4 @@
-export { EUseLicense } from './ApiManager';
+export { EContentUseLicense } from './ApiManager';
 export { ECallCause, hasCanceledCallError } from './CallManager';
 export { disableDebug, enableDebug } from './logger';
 export { hasCanceledStartPresentationError } from './PresentationManager';

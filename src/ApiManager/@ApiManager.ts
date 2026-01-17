@@ -4,14 +4,15 @@ import {
   EContentTypeReceived,
   EContentTypeSent,
   EShareStateSendAndReceive,
-  EEventsMainCAM,
-  EEventsMic,
-  EEventsSyncMediaState,
-  EParticipantType,
+  EContentMainCAM,
+  EContentMic,
+  EContentSyncMediaState,
+  EContentParticipantType,
   EHeader,
   EKeyHeader,
 } from './constants';
 import { createEvents, EEvent } from './events';
+import { getHeader } from './getHeader';
 import { ECMDNotify } from './types';
 
 import type {
@@ -22,7 +23,6 @@ import type {
 } from '@krivega/jssip';
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
-import type { EUseLicense } from './constants';
 import type { TEventMap, TEvents } from './events';
 import type {
   TAcceptingWordRequestInfoNotify,
@@ -380,9 +380,7 @@ class ApiManager {
     const { request } = info;
 
     const typedRequest = request as IncomingRequest;
-    const contentType = typedRequest.getHeader(EKeyHeader.CONTENT_TYPE) as
-      | EContentTypeReceived
-      | undefined;
+    const contentType = getHeader(typedRequest, EKeyHeader.CONTENT_TYPE);
 
     if (contentType !== undefined) {
       switch (contentType) {
@@ -536,10 +534,10 @@ class ApiManager {
   };
 
   private readonly maybeTriggerChannels = (request: IncomingRequest) => {
-    const inputChannels = request.getHeader(EKeyHeader.INPUT_CHANNELS);
-    const outputChannels = request.getHeader(EKeyHeader.OUTPUT_CHANNELS);
+    const inputChannels = getHeader(request, EKeyHeader.INPUT_CHANNELS);
+    const outputChannels = getHeader(request, EKeyHeader.OUTPUT_CHANNELS);
 
-    if (inputChannels && outputChannels) {
+    if (inputChannels !== undefined && outputChannels !== undefined) {
       const headersChannels: TChannels = {
         inputChannels,
         outputChannels,
@@ -550,16 +548,16 @@ class ApiManager {
   };
 
   private readonly triggerEnterRoom = (request: IncomingRequest) => {
-    const room = request.getHeader(EKeyHeader.CONTENT_ENTER_ROOM);
-    const participantName = request.getHeader(EKeyHeader.PARTICIPANT_NAME);
+    const room = getHeader(request, EKeyHeader.CONTENT_ENTER_ROOM);
+    const participantName = getHeader(request, EKeyHeader.PARTICIPANT_NAME);
 
-    this.events.trigger(EEvent.ENTER_ROOM, { room, participantName });
+    if (room !== undefined) {
+      this.events.trigger(EEvent.ENTER_ROOM, { room, participantName });
+    }
   };
 
   private readonly triggerShareState = (request: IncomingRequest) => {
-    const eventName = request.getHeader(EKeyHeader.CONTENT_SHARE_STATE) as
-      | EShareStateSendAndReceive
-      | undefined;
+    const eventName = getHeader(request, EKeyHeader.CONTENT_SHARE_STATE);
 
     if (eventName === undefined) {
       return;
@@ -567,7 +565,9 @@ class ApiManager {
 
     switch (eventName) {
       case EShareStateSendAndReceive.AVAILABLE_CONTENTED_STREAM: {
-        this.events.trigger(EEvent.CONTENTED_STREAM_AVAILABLE, {});
+        const codec = getHeader(request, EKeyHeader.CONTENT_SHARE_CODEC);
+
+        this.events.trigger(EEvent.CONTENTED_STREAM_AVAILABLE, { codec });
         break;
       }
       case EShareStateSendAndReceive.NOT_AVAILABLE_CONTENTED_STREAM: {
@@ -586,13 +586,14 @@ class ApiManager {
   };
 
   private readonly maybeTriggerParticipantMoveRequest = (request: IncomingRequest) => {
-    const participantState = request.getHeader(EKeyHeader.CONTENT_PARTICIPANT_STATE) as
-      | EParticipantType
-      | undefined;
-    const audioId = request.getHeader(EKeyHeader.AUDIO_ID);
+    const participantState = getHeader(request, EKeyHeader.CONTENT_PARTICIPANT_STATE);
+    const audioId = getHeader(request, EKeyHeader.AUDIO_ID);
 
-    if (participantState === EParticipantType.SPECTATOR) {
-      if (audioId) {
+    if (participantState === EContentParticipantType.SPECTATOR) {
+      if (audioId === undefined) {
+        this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS_SYNTHETIC, {});
+        this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS, { isSynthetic: true });
+      } else {
         this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS_WITH_AUDIO_ID, {
           audioId,
         });
@@ -600,42 +601,39 @@ class ApiManager {
           isSynthetic: false,
           audioId,
         });
-      } else {
-        this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS_SYNTHETIC, {});
-        this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS, { isSynthetic: true });
       }
     }
 
-    if (participantState === EParticipantType.PARTICIPANT) {
+    if (participantState === EContentParticipantType.PARTICIPANT) {
       this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS, {});
     }
   };
 
   private readonly triggerMainCamControl = (request: IncomingRequest) => {
-    const mainCam = request.getHeader(EKeyHeader.MAIN_CAM) as EEventsMainCAM | undefined;
-    const syncState = request.getHeader(EKeyHeader.MEDIA_SYNC) as EEventsSyncMediaState | undefined;
-    const isSyncForced = syncState === EEventsSyncMediaState.ADMIN_SYNC_FORCED;
+    const mainCam = getHeader(request, EKeyHeader.MAIN_CAM);
+    const syncState = getHeader(request, EKeyHeader.MEDIA_SYNC);
+    const isSyncForced = syncState === EContentSyncMediaState.ADMIN_SYNC_FORCED;
 
-    if (mainCam === EEventsMainCAM.ADMIN_START_MAIN_CAM) {
+    if (mainCam === EContentMainCAM.ADMIN_START_MAIN_CAM) {
       this.events.trigger(EEvent.ADMIN_START_MAIN_CAM, { isSyncForced });
 
       return;
     }
 
-    if (mainCam === EEventsMainCAM.ADMIN_STOP_MAIN_CAM) {
+    if (mainCam === EContentMainCAM.ADMIN_STOP_MAIN_CAM) {
       this.events.trigger(EEvent.ADMIN_STOP_MAIN_CAM, { isSyncForced });
 
       return;
     }
 
     if (
-      (mainCam === EEventsMainCAM.RESUME_MAIN_CAM || mainCam === EEventsMainCAM.PAUSE_MAIN_CAM) &&
+      (mainCam === EContentMainCAM.RESUME_MAIN_CAM || mainCam === EContentMainCAM.PAUSE_MAIN_CAM) &&
       syncState !== undefined
     ) {
       this.events.trigger(EEvent.ADMIN_FORCE_SYNC_MEDIA_STATE, { isSyncForced });
     }
 
-    const resolutionMainCam = request.getHeader(EKeyHeader.MAIN_CAM_RESOLUTION);
+    const resolutionMainCam = getHeader(request, EKeyHeader.MAIN_CAM_RESOLUTION);
 
     this.events.trigger(EEvent.MAIN_CAM_CONTROL, {
       mainCam,
@@ -644,21 +642,23 @@ class ApiManager {
   };
 
   private readonly triggerMicControl = (request: IncomingRequest) => {
-    const mic = request.getHeader(EKeyHeader.MIC) as EEventsMic | undefined;
-    const syncState = request.getHeader(EKeyHeader.MEDIA_SYNC) as EEventsSyncMediaState | undefined;
-    const isSyncForced = syncState === EEventsSyncMediaState.ADMIN_SYNC_FORCED;
+    const mic = getHeader(request, EKeyHeader.MIC);
+    const syncState = getHeader(request, EKeyHeader.MEDIA_SYNC);
+    const isSyncForced = syncState === EContentSyncMediaState.ADMIN_SYNC_FORCED;
 
-    if (mic === EEventsMic.ADMIN_START_MIC) {
+    if (mic === EContentMic.ADMIN_START_MIC) {
       this.events.trigger(EEvent.ADMIN_START_MIC, { isSyncForced });
-    } else if (mic === EEventsMic.ADMIN_STOP_MIC) {
+    } else if (mic === EContentMic.ADMIN_STOP_MIC) {
       this.events.trigger(EEvent.ADMIN_STOP_MIC, { isSyncForced });
     }
   };
 
   private readonly triggerUseLicense = (request: IncomingRequest) => {
-    const license: EUseLicense = request.getHeader(EKeyHeader.CONTENT_USE_LICENSE) as EUseLicense;
+    const license = getHeader(request, EKeyHeader.CONTENT_USE_LICENSE);
 
-    this.events.trigger(EEvent.USE_LICENSE, license);
+    if (license !== undefined) {
+      this.events.trigger(EEvent.USE_LICENSE, license);
+    }
   };
 }
 

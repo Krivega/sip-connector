@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
-import { EEventsMainCAM } from '@/ApiManager';
+import { EContentMainCAM } from '@/ApiManager';
 import { SenderBalancer } from '../SenderBalancer';
 
 import type { ICodecProvider, IMainCamHeaders, IParametersSetter, ISenderFinder } from '../types';
@@ -134,7 +134,7 @@ describe('SenderBalancer', () => {
 
     it('должен обработать PAUSE_MAIN_CAM', async () => {
       const headers: IMainCamHeaders = {
-        mainCam: EEventsMainCAM.PAUSE_MAIN_CAM,
+        mainCam: EContentMainCAM.PAUSE_MAIN_CAM,
       };
 
       mockParametersSetter.setEncodingsToSender.mockResolvedValue({
@@ -159,7 +159,7 @@ describe('SenderBalancer', () => {
 
     it('должен обработать RESUME_MAIN_CAM', async () => {
       const headers: IMainCamHeaders = {
-        mainCam: EEventsMainCAM.RESUME_MAIN_CAM,
+        mainCam: EContentMainCAM.RESUME_MAIN_CAM,
       };
 
       mockParametersSetter.setEncodingsToSender.mockResolvedValue({
@@ -184,7 +184,7 @@ describe('SenderBalancer', () => {
 
     it('должен обработать MAX_MAIN_CAM_RESOLUTION с resolutionMainCam', async () => {
       const headers: IMainCamHeaders = {
-        mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
+        mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
         resolutionMainCam: '1280x720',
       };
 
@@ -210,7 +210,7 @@ describe('SenderBalancer', () => {
 
     it('должен обработать MAX_MAIN_CAM_RESOLUTION без resolutionMainCam', async () => {
       const headers: IMainCamHeaders = {
-        mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
+        mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
       };
 
       mockParametersSetter.setEncodingsToSender.mockResolvedValue({
@@ -235,7 +235,7 @@ describe('SenderBalancer', () => {
 
     it('должен обработать ADMIN_STOP_MAIN_CAM', async () => {
       const headers: IMainCamHeaders = {
-        mainCam: EEventsMainCAM.ADMIN_STOP_MAIN_CAM,
+        mainCam: EContentMainCAM.ADMIN_STOP_MAIN_CAM,
       };
 
       mockParametersSetter.setEncodingsToSender.mockResolvedValue({
@@ -260,7 +260,7 @@ describe('SenderBalancer', () => {
 
     it('должен обработать ADMIN_START_MAIN_CAM', async () => {
       const headers: IMainCamHeaders = {
-        mainCam: EEventsMainCAM.ADMIN_START_MAIN_CAM,
+        mainCam: EContentMainCAM.ADMIN_START_MAIN_CAM,
       };
 
       mockParametersSetter.setEncodingsToSender.mockResolvedValue({
@@ -308,7 +308,7 @@ describe('SenderBalancer', () => {
 
     it('должен обработать неизвестный mainCam', async () => {
       const headers: IMainCamHeaders = {
-        mainCam: 'UNKNOWN_COMMAND' as EEventsMainCAM,
+        mainCam: 'UNKNOWN_COMMAND' as EContentMainCAM,
       };
 
       mockParametersSetter.setEncodingsToSender.mockResolvedValue({
@@ -363,7 +363,7 @@ describe('SenderBalancer', () => {
 
     it('должен обработать пустую строку resolutionMainCam', async () => {
       const headers: IMainCamHeaders = {
-        mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
+        mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
         resolutionMainCam: '',
       };
 
@@ -389,7 +389,7 @@ describe('SenderBalancer', () => {
 
     it('должен обработать некорректный формат resolutionMainCam', async () => {
       const headers: IMainCamHeaders = {
-        mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
+        mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
         resolutionMainCam: 'invalid-format',
       };
 
@@ -415,7 +415,7 @@ describe('SenderBalancer', () => {
 
     it('должен обработать resolutionMainCam с нечисловыми значениями', async () => {
       const headers: IMainCamHeaders = {
-        mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
+        mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
         resolutionMainCam: 'abcxdef',
       };
 
@@ -441,7 +441,7 @@ describe('SenderBalancer', () => {
 
     it('должен обработать resolutionMainCam с одним числом', async () => {
       const headers: IMainCamHeaders = {
-        mainCam: EEventsMainCAM.MAX_MAIN_CAM_RESOLUTION,
+        mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
         resolutionMainCam: '1280',
       };
 

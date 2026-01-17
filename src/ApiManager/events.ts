@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
 import { TypedEvents } from 'events-constructor';
 
-import type { EUseLicense, EEventsMainCAM } from './constants';
+import type { EContentShareCodec, EContentUseLicense, EContentMainCAM } from './constants';
 import type {
   TChannels,
   TParametersModeratorsList,
@@ -72,12 +72,12 @@ export const EVENT_NAMES = [
 ] as const;
 
 export type TEventMap = {
-  'enter-room': { room: string; participantName: string };
-  'main-cam-control': { mainCam?: EEventsMainCAM; resolutionMainCam?: string };
-  'use-license': EUseLicense;
+  'enter-room': { room: string; participantName?: string };
+  'main-cam-control': { mainCam?: EContentMainCAM; resolutionMainCam?: string };
+  'use-license': EContentUseLicense;
   'new-dtmf': { originator: string };
   'conference:participant-token-issued': TParametersConferenceParticipantTokenIssued;
-  'contented-stream:available': Record<string, never>;
+  'contented-stream:available': { codec?: EContentShareCodec };
   'contented-stream:not-available': Record<string, never>;
   'presentation:must-stop': Record<string, never>;
   'channels:all': TChannels;

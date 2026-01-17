@@ -1,18 +1,18 @@
-import { EUseLicense } from '@/index';
+import { EContentUseLicense } from '@/index';
 import { dom } from '../dom';
 import sipConnectorFacade from './sipConnectorFacade';
 
 /**
  * Тип обработчика изменений лицензии
  */
-type TUseLicenseHandler = (license: EUseLicense) => void;
+type TUseLicenseHandler = (license: EContentUseLicense) => void;
 
 /**
  * Класс для управления состоянием лицензии
  * Отслеживает текущую лицензию использования (AUDIO/VIDEO/AUDIOPLUSPRESENTATION) и подписывается на события
  */
 class UseLicenseManager {
-  private license: EUseLicense | undefined = undefined;
+  private license: EContentUseLicense | undefined = undefined;
 
   private readonly handlers: Set<TUseLicenseHandler> = new Set<TUseLicenseHandler>();
 
@@ -21,7 +21,7 @@ class UseLicenseManager {
   /**
    * Возвращает текущую лицензию
    */
-  public getLicense(): EUseLicense | undefined {
+  public getLicense(): EContentUseLicense | undefined {
     return this.license;
   }
 
@@ -30,7 +30,7 @@ class UseLicenseManager {
    */
   public subscribe(): void {
     // Подписываемся на событие изменения лицензии
-    this.unsubscribeUseLicense = sipConnectorFacade.onUseLicense((license: EUseLicense) => {
+    this.unsubscribeUseLicense = sipConnectorFacade.onUseLicense((license: EContentUseLicense) => {
       this.setLicense(license);
     });
     this.onChange(this.handleUseLicenseChange);
@@ -68,7 +68,7 @@ class UseLicenseManager {
   /**
    * Устанавливает новую лицензию
    */
-  private setLicense(newLicense: EUseLicense | undefined): void {
+  private setLicense(newLicense: EContentUseLicense | undefined): void {
     if (this.license !== newLicense) {
       this.license = newLicense;
       this.notifyHandlers();
@@ -95,23 +95,23 @@ class UseLicenseManager {
    * Обрабатывает изменения лицензии
    */
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this
-  private readonly handleUseLicenseChange = (license: EUseLicense): void => {
+  private readonly handleUseLicenseChange = (license: EContentUseLicense): void => {
     let licenseText = '';
 
     switch (license) {
-      case EUseLicense.AUDIO: {
+      case EContentUseLicense.AUDIO: {
         licenseText = 'Аудио';
 
         break;
       }
 
-      case EUseLicense.VIDEO: {
+      case EContentUseLicense.VIDEO: {
         licenseText = 'Видео';
 
         break;
       }
 
-      case EUseLicense.AUDIOPLUSPRESENTATION: {
+      case EContentUseLicense.AUDIOPLUSPRESENTATION: {
         licenseText = 'Аудио + Презентация';
 
         break;
