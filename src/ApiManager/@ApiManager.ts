@@ -2,8 +2,8 @@
 import logger from '@/logger';
 import { hasDeclineResponseFromServer } from '@/utils/errors';
 import {
-  EContentTypeReceived,
   EContentTypeSent,
+  EContentTypeReceived,
   EContentedStreamSendAndReceive,
   EContentMainCAM,
   EContentMic,
@@ -183,7 +183,7 @@ class ApiManager {
   public async sendAvailableContentedStream(): Promise<void> {
     const rtcSession = this.getEstablishedRTCSessionProtected();
 
-    await rtcSession.sendInfo(EContentTypeReceived.SHARE_STATE, undefined, {
+    await rtcSession.sendInfo(EContentTypeSent.SHARE_STATE, undefined, {
       extraHeaders: [EHeader.AVAILABLE_CONTENTED_STREAM],
     });
   }
@@ -191,7 +191,7 @@ class ApiManager {
   public async askPermissionToStartPresentation(): Promise<void> {
     const rtcSession = this.getEstablishedRTCSessionProtected();
 
-    await rtcSession.sendInfo(EContentTypeReceived.SHARE_STATE, undefined, {
+    await rtcSession.sendInfo(EContentTypeSent.SHARE_STATE, undefined, {
       extraHeaders: [EHeader.ACK_PERMISSION_TO_START_PRESENTATION],
     });
   }
@@ -199,7 +199,7 @@ class ApiManager {
   public async sendStoppedPresentation(): Promise<void> {
     const rtcSession = this.getEstablishedRTCSessionProtected();
 
-    await rtcSession.sendInfo(EContentTypeReceived.SHARE_STATE, undefined, {
+    await rtcSession.sendInfo(EContentTypeSent.SHARE_STATE, undefined, {
       extraHeaders: [EHeader.STOPPED_CLIENT_PRESENTATION],
     });
   }
@@ -207,7 +207,7 @@ class ApiManager {
   public async sendNotAvailableContentedStream(): Promise<void> {
     const rtcSession = this.getEstablishedRTCSessionProtected();
 
-    await rtcSession.sendInfo(EContentTypeReceived.SHARE_STATE, undefined, {
+    await rtcSession.sendInfo(EContentTypeSent.SHARE_STATE, undefined, {
       extraHeaders: [EHeader.NOT_AVAILABLE_CONTENTED_STREAM],
     });
   }
