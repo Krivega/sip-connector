@@ -7,7 +7,7 @@ export {
   EContentSyncMediaState,
   EHeader,
   EKeyHeader,
-  EShareStateSendAndReceive,
+  EContentedStreamSendAndReceive,
   EContentUseLicense,
 } from './constants';
 export { EVENT_NAMES as API_MANAGER_EVENT_NAMES } from './events';

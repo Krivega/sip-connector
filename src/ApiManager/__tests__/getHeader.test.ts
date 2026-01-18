@@ -1,14 +1,14 @@
 import { MockRequest } from '../__tests-utils__/helpers';
 import {
   EKeyHeader,
-  EContentShareCodec,
+  EContentedStreamCodec,
   EContentTypeReceived,
   EContentUseLicense,
   EContentMainCAM,
   EContentMic,
   EContentSyncMediaState,
   EContentParticipantType,
-  EShareStateSendAndReceive,
+  EContentedStreamSendAndReceive,
 } from '../constants';
 import { getHeader } from '../getHeader';
 
@@ -214,66 +214,66 @@ describe('getHeader', () => {
 
   describe('Enum headers - CONTENT_SHARE_CODEC', () => {
     it('должен возвращать H264 для валидного значения', () => {
-      mockRequest.setHeader(EKeyHeader.CONTENT_SHARE_CODEC, 'H264');
+      mockRequest.setHeader(EKeyHeader.CONTENTED_STREAM_CODEC, 'H264');
 
       const result = getHeader(
         mockRequest as unknown as IncomingRequest,
-        EKeyHeader.CONTENT_SHARE_CODEC,
+        EKeyHeader.CONTENTED_STREAM_CODEC,
       );
 
-      expect(result).toBe(EContentShareCodec.H264);
+      expect(result).toBe(EContentedStreamCodec.H264);
     });
 
     it('должен возвращать VP8 для валидного значения', () => {
-      mockRequest.setHeader(EKeyHeader.CONTENT_SHARE_CODEC, 'VP8');
+      mockRequest.setHeader(EKeyHeader.CONTENTED_STREAM_CODEC, 'VP8');
 
       const result = getHeader(
         mockRequest as unknown as IncomingRequest,
-        EKeyHeader.CONTENT_SHARE_CODEC,
+        EKeyHeader.CONTENTED_STREAM_CODEC,
       );
 
-      expect(result).toBe(EContentShareCodec.VP8);
+      expect(result).toBe(EContentedStreamCodec.VP8);
     });
 
     it('должен возвращать VP9 для валидного значения', () => {
-      mockRequest.setHeader(EKeyHeader.CONTENT_SHARE_CODEC, 'VP9');
+      mockRequest.setHeader(EKeyHeader.CONTENTED_STREAM_CODEC, 'VP9');
 
       const result = getHeader(
         mockRequest as unknown as IncomingRequest,
-        EKeyHeader.CONTENT_SHARE_CODEC,
+        EKeyHeader.CONTENTED_STREAM_CODEC,
       );
 
-      expect(result).toBe(EContentShareCodec.VP9);
+      expect(result).toBe(EContentedStreamCodec.VP9);
     });
 
     it('должен возвращать AV1 для валидного значения', () => {
-      mockRequest.setHeader(EKeyHeader.CONTENT_SHARE_CODEC, 'AV1');
+      mockRequest.setHeader(EKeyHeader.CONTENTED_STREAM_CODEC, 'AV1');
 
       const result = getHeader(
         mockRequest as unknown as IncomingRequest,
-        EKeyHeader.CONTENT_SHARE_CODEC,
+        EKeyHeader.CONTENTED_STREAM_CODEC,
       );
 
-      expect(result).toBe(EContentShareCodec.AV1);
+      expect(result).toBe(EContentedStreamCodec.AV1);
     });
 
     it('должен работать с lowercase значениями', () => {
-      mockRequest.setHeader(EKeyHeader.CONTENT_SHARE_CODEC, 'h264');
+      mockRequest.setHeader(EKeyHeader.CONTENTED_STREAM_CODEC, 'h264');
 
       const result = getHeader(
         mockRequest as unknown as IncomingRequest,
-        EKeyHeader.CONTENT_SHARE_CODEC,
+        EKeyHeader.CONTENTED_STREAM_CODEC,
       );
 
-      expect(result).toBe(EContentShareCodec.H264);
+      expect(result).toBe(EContentedStreamCodec.H264);
     });
 
     it('должен возвращать undefined для неизвестного кодека', () => {
-      mockRequest.setHeader(EKeyHeader.CONTENT_SHARE_CODEC, 'UNKNOWN_CODEC');
+      mockRequest.setHeader(EKeyHeader.CONTENTED_STREAM_CODEC, 'UNKNOWN_CODEC');
 
       const result = getHeader(
         mockRequest as unknown as IncomingRequest,
-        EKeyHeader.CONTENT_SHARE_CODEC,
+        EKeyHeader.CONTENTED_STREAM_CODEC,
       );
 
       expect(result).toBeUndefined();
@@ -473,49 +473,49 @@ describe('getHeader', () => {
     });
   });
 
-  describe('Enum headers - CONTENT_SHARE_STATE', () => {
+  describe('Enum headers - CONTENTED_STREAM_STATE', () => {
     it('должен возвращать AVAILABLE_CONTENTED_STREAM для валидного значения', () => {
-      mockRequest.setHeader(EKeyHeader.CONTENT_SHARE_STATE, 'YOUCANRECEIVECONTENT');
+      mockRequest.setHeader(EKeyHeader.CONTENTED_STREAM_STATE, 'YOUCANRECEIVECONTENT');
 
       const result = getHeader(
         mockRequest as unknown as IncomingRequest,
-        EKeyHeader.CONTENT_SHARE_STATE,
+        EKeyHeader.CONTENTED_STREAM_STATE,
       );
 
-      expect(result).toBe(EShareStateSendAndReceive.AVAILABLE_CONTENTED_STREAM);
+      expect(result).toBe(EContentedStreamSendAndReceive.AVAILABLE_CONTENTED_STREAM);
     });
 
     it('должен возвращать NOT_AVAILABLE_CONTENTED_STREAM для валидного значения', () => {
-      mockRequest.setHeader(EKeyHeader.CONTENT_SHARE_STATE, 'CONTENTEND');
+      mockRequest.setHeader(EKeyHeader.CONTENTED_STREAM_STATE, 'CONTENTEND');
 
       const result = getHeader(
         mockRequest as unknown as IncomingRequest,
-        EKeyHeader.CONTENT_SHARE_STATE,
+        EKeyHeader.CONTENTED_STREAM_STATE,
       );
 
-      expect(result).toBe(EShareStateSendAndReceive.NOT_AVAILABLE_CONTENTED_STREAM);
+      expect(result).toBe(EContentedStreamSendAndReceive.NOT_AVAILABLE_CONTENTED_STREAM);
     });
 
     it('должен возвращать MUST_STOP_PRESENTATION для валидного значения', () => {
-      mockRequest.setHeader(EKeyHeader.CONTENT_SHARE_STATE, 'YOUMUSTSTOPSENDCONTENT');
+      mockRequest.setHeader(EKeyHeader.CONTENTED_STREAM_STATE, 'YOUMUSTSTOPSENDCONTENT');
 
       const result = getHeader(
         mockRequest as unknown as IncomingRequest,
-        EKeyHeader.CONTENT_SHARE_STATE,
+        EKeyHeader.CONTENTED_STREAM_STATE,
       );
 
-      expect(result).toBe(EShareStateSendAndReceive.MUST_STOP_PRESENTATION);
+      expect(result).toBe(EContentedStreamSendAndReceive.MUST_STOP_PRESENTATION);
     });
 
     it('должен работать с lowercase значениями', () => {
-      mockRequest.setHeader(EKeyHeader.CONTENT_SHARE_STATE, 'youcanreceivecontent');
+      mockRequest.setHeader(EKeyHeader.CONTENTED_STREAM_STATE, 'youcanreceivecontent');
 
       const result = getHeader(
         mockRequest as unknown as IncomingRequest,
-        EKeyHeader.CONTENT_SHARE_STATE,
+        EKeyHeader.CONTENTED_STREAM_STATE,
       );
 
-      expect(result).toBe(EShareStateSendAndReceive.AVAILABLE_CONTENTED_STREAM);
+      expect(result).toBe(EContentedStreamSendAndReceive.AVAILABLE_CONTENTED_STREAM);
     });
   });
 
@@ -645,36 +645,36 @@ describe('getHeader', () => {
 
     describe('Enum headers - all case variations', () => {
       it('CONTENT_SHARE_CODEC: должен обрабатывать h264 (lowercase)', () => {
-        mockRequest.setHeader(EKeyHeader.CONTENT_SHARE_CODEC, 'h264');
+        mockRequest.setHeader(EKeyHeader.CONTENTED_STREAM_CODEC, 'h264');
 
         const result = getHeader(
           mockRequest as unknown as IncomingRequest,
-          EKeyHeader.CONTENT_SHARE_CODEC,
+          EKeyHeader.CONTENTED_STREAM_CODEC,
         );
 
-        expect(result).toBe(EContentShareCodec.H264);
+        expect(result).toBe(EContentedStreamCodec.H264);
       });
 
       it('CONTENT_SHARE_CODEC: должен обрабатывать H264 (uppercase)', () => {
-        mockRequest.setHeader(EKeyHeader.CONTENT_SHARE_CODEC, 'H264');
+        mockRequest.setHeader(EKeyHeader.CONTENTED_STREAM_CODEC, 'H264');
 
         const result = getHeader(
           mockRequest as unknown as IncomingRequest,
-          EKeyHeader.CONTENT_SHARE_CODEC,
+          EKeyHeader.CONTENTED_STREAM_CODEC,
         );
 
-        expect(result).toBe(EContentShareCodec.H264);
+        expect(result).toBe(EContentedStreamCodec.H264);
       });
 
       it('CONTENT_SHARE_CODEC: должен обрабатывать H264 (mixed case)', () => {
-        mockRequest.setHeader(EKeyHeader.CONTENT_SHARE_CODEC, 'h264');
+        mockRequest.setHeader(EKeyHeader.CONTENTED_STREAM_CODEC, 'h264');
 
         const result = getHeader(
           mockRequest as unknown as IncomingRequest,
-          EKeyHeader.CONTENT_SHARE_CODEC,
+          EKeyHeader.CONTENTED_STREAM_CODEC,
         );
 
-        expect(result).toBe(EContentShareCodec.H264);
+        expect(result).toBe(EContentedStreamCodec.H264);
       });
 
       it('CONTENT_USE_LICENSE: должен обрабатывать audio (lowercase)', () => {
@@ -852,48 +852,48 @@ describe('getHeader', () => {
         expect(result).toBe(EContentParticipantType.PARTICIPANT);
       });
 
-      it('CONTENT_SHARE_STATE: должен обрабатывать youcanreceivecontent (lowercase)', () => {
-        mockRequest.setHeader(EKeyHeader.CONTENT_SHARE_STATE, 'youcanreceivecontent');
+      it('CONTENTED_STREAM_STATE: должен обрабатывать youcanreceivecontent (lowercase)', () => {
+        mockRequest.setHeader(EKeyHeader.CONTENTED_STREAM_STATE, 'youcanreceivecontent');
 
         const result = getHeader(
           mockRequest as unknown as IncomingRequest,
-          EKeyHeader.CONTENT_SHARE_STATE,
+          EKeyHeader.CONTENTED_STREAM_STATE,
         );
 
-        expect(result).toBe(EShareStateSendAndReceive.AVAILABLE_CONTENTED_STREAM);
+        expect(result).toBe(EContentedStreamSendAndReceive.AVAILABLE_CONTENTED_STREAM);
       });
 
-      it('CONTENT_SHARE_STATE: должен обрабатывать YOUCANRECEIVECONTENT (uppercase)', () => {
-        mockRequest.setHeader(EKeyHeader.CONTENT_SHARE_STATE, 'YOUCANRECEIVECONTENT');
+      it('CONTENTED_STREAM_STATE: должен обрабатывать YOUCANRECEIVECONTENT (uppercase)', () => {
+        mockRequest.setHeader(EKeyHeader.CONTENTED_STREAM_STATE, 'YOUCANRECEIVECONTENT');
 
         const result = getHeader(
           mockRequest as unknown as IncomingRequest,
-          EKeyHeader.CONTENT_SHARE_STATE,
+          EKeyHeader.CONTENTED_STREAM_STATE,
         );
 
-        expect(result).toBe(EShareStateSendAndReceive.AVAILABLE_CONTENTED_STREAM);
+        expect(result).toBe(EContentedStreamSendAndReceive.AVAILABLE_CONTENTED_STREAM);
       });
 
-      it('CONTENT_SHARE_STATE: должен обрабатывать YouCanReceiveContent (mixed case)', () => {
-        mockRequest.setHeader(EKeyHeader.CONTENT_SHARE_STATE, 'YouCanReceiveContent');
+      it('CONTENTED_STREAM_STATE: должен обрабатывать YouCanReceiveContent (mixed case)', () => {
+        mockRequest.setHeader(EKeyHeader.CONTENTED_STREAM_STATE, 'YouCanReceiveContent');
 
         const result = getHeader(
           mockRequest as unknown as IncomingRequest,
-          EKeyHeader.CONTENT_SHARE_STATE,
+          EKeyHeader.CONTENTED_STREAM_STATE,
         );
 
-        expect(result).toBe(EShareStateSendAndReceive.AVAILABLE_CONTENTED_STREAM);
+        expect(result).toBe(EContentedStreamSendAndReceive.AVAILABLE_CONTENTED_STREAM);
       });
 
-      it('CONTENT_SHARE_STATE: должен обрабатывать contentend (lowercase)', () => {
-        mockRequest.setHeader(EKeyHeader.CONTENT_SHARE_STATE, 'contentend');
+      it('CONTENTED_STREAM_STATE: должен обрабатывать contentend (lowercase)', () => {
+        mockRequest.setHeader(EKeyHeader.CONTENTED_STREAM_STATE, 'contentend');
 
         const result = getHeader(
           mockRequest as unknown as IncomingRequest,
-          EKeyHeader.CONTENT_SHARE_STATE,
+          EKeyHeader.CONTENTED_STREAM_STATE,
         );
 
-        expect(result).toBe(EShareStateSendAndReceive.NOT_AVAILABLE_CONTENTED_STREAM);
+        expect(result).toBe(EContentedStreamSendAndReceive.NOT_AVAILABLE_CONTENTED_STREAM);
       });
 
       it('CONTENT_TYPE: должен обрабатывать application/vinteo.webrtc.maincam (lowercase)', () => {

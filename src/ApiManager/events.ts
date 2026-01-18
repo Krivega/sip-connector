@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
 import { TypedEvents } from 'events-constructor';
 
-import type { EContentShareCodec, EContentUseLicense, EContentMainCAM } from './constants';
+import type { EContentedStreamCodec, EContentUseLicense, EContentMainCAM } from './constants';
 import type {
   TChannels,
   TParametersModeratorsList,
@@ -77,7 +77,7 @@ export type TEventMap = {
   'use-license': EContentUseLicense;
   'new-dtmf': { originator: string };
   'conference:participant-token-issued': TParametersConferenceParticipantTokenIssued;
-  'contented-stream:available': { codec?: EContentShareCodec };
+  'contented-stream:available': { codec?: EContentedStreamCodec };
   'contented-stream:not-available': Record<string, never>;
   'presentation:must-stop': Record<string, never>;
   'channels:all': TChannels;

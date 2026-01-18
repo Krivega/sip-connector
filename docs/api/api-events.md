@@ -11,7 +11,7 @@
 | `api:use-license`                                          | Генерируется при использовании лицензии                       | `EContentUseLicense`                                               |
 | `api:new-dtmf`                                             | Генерируется при получении DTMF сигнала                       | `{ originator: string }`                                           |
 | `api:conference:participant-token-issued`                  | Генерируется при выдаче токена участника конференции          | `TParametersConferenceParticipantTokenIssued`                      |
-| `api:contented-stream:available`                           | Генерируется при доступности второго удаленного потока        | `{ codec?: EContentShareCodec }`                                   |
+| `api:contented-stream:available`                           | Генерируется при доступности второго удаленного потока        | `{ codec?: EContentedStreamCodec }`                                |
 | `api:contented-stream:not-available`                       | Генерируется при недоступности второго удаленного потока      | `Record<string, never>`                                            |
 | `api:presentation:must-stop`                               | Генерируется при требовании остановить презентацию            | `Record<string, never>`                                            |
 | `api:channels:all`                                         | Генерируется при получении информации о каналах               | `TChannels`                                                        |
@@ -95,10 +95,10 @@ enum EContentUseLicense {
 }
 ```
 
-### `EContentShareCodec`
+### `EContentedStreamCodec`
 
 ```typescript
-enum EContentShareCodec {
+enum EContentedStreamCodec {
   H264 = 'H264',
   VP8 = 'VP8',
   VP9 = 'VP9',

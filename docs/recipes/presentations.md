@@ -35,7 +35,7 @@ await facade.updatePresentation({
 });
 
 // Остановка презентации
-await facade.stopShareSipConnector();
+await facade.stopPresentation();
 ```
 
 ## Настройки качества презентации

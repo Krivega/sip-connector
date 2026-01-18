@@ -556,8 +556,8 @@ class SipConnectorFacade implements IProxyMethods {
     });
   };
 
-  public stopShareSipConnector = async ({ isP2P = false }: { isP2P?: boolean } = {}) => {
-    debug('stopShareSipConnector');
+  public stopPresentation = async ({ isP2P = false }: { isP2P?: boolean } = {}) => {
+    debug('stopPresentation');
 
     return this.sipConnector
       .stopPresentation({

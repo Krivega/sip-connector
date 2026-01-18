@@ -316,7 +316,7 @@ class PresentationManager {
     this.updateUi();
 
     try {
-      await sipConnectorFacade.stopShareSipConnector({ isP2P: false });
+      await sipConnectorFacade.stopPresentation({ isP2P: false });
 
       console.log('presentation stopped');
     } finally {

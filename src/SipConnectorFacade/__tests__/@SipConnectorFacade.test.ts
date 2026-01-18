@@ -609,7 +609,7 @@ describe('SipConnectorFacade comprehensive', () => {
     });
 
     it('должен остановить презентацию', async () => {
-      await sipConnectorFacade.stopShareSipConnector({ isP2P: true });
+      await sipConnectorFacade.stopPresentation({ isP2P: true });
 
       expect(sipConnector.stopPresentation).toHaveBeenCalledWith({ isP2P: true });
     });
@@ -617,13 +617,11 @@ describe('SipConnectorFacade comprehensive', () => {
     it('должен обработать ошибку остановки презентации', async () => {
       jest.spyOn(sipConnector, 'stopPresentation').mockRejectedValue(new Error('Stop failed'));
 
-      await expect(
-        sipConnectorFacade.stopShareSipConnector({ isP2P: false }),
-      ).resolves.toBeUndefined();
+      await expect(sipConnectorFacade.stopPresentation({ isP2P: false })).resolves.toBeUndefined();
     });
 
     it('должен остановить презентацию с параметрами по умолчанию', async () => {
-      await sipConnectorFacade.stopShareSipConnector();
+      await sipConnectorFacade.stopPresentation();
 
       expect(sipConnector.stopPresentation).toHaveBeenCalledWith({ isP2P: false });
     });

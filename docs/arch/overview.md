@@ -25,7 +25,7 @@
 
 - `connectToServer()` / `disconnectFromServer()` - управление соединением
 - `callToServer()` / `answerToIncomingCall()` - управление звонками
-- `startPresentation()` / `stopShareSipConnector()` - управление презентациями
+- `startPresentation()` / `stopPresentation()` - управление презентациями
 - `updatePresentation()` - обновление презентации
 - `getRemoteStreams()` - получение удаленных потоков
 - `sendMediaState()` - отправка состояния медиа

@@ -46,7 +46,7 @@ unsubscribeMoveToParticipants();
 // Принудительная остановка презентации
 facade.onMustStopPresentation(() => {
   console.log('Администратор требует остановить презентацию');
-  facade.stopShareSipConnector();
+  facade.stopPresentation();
 });
 
 // Мониторинг лицензий

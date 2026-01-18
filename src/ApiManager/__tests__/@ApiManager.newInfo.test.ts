@@ -11,7 +11,7 @@ import {
   EContentSyncMediaState,
   EKeyHeader,
   EContentParticipantType,
-  EShareStateSendAndReceive,
+  EContentedStreamSendAndReceive,
   EContentUseLicense,
 } from '../constants';
 
@@ -69,8 +69,8 @@ describe('ApiManager (NEW_INFO handling)', () => {
       apiManager.on('contented-stream:available', shareStateSpy);
       mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
       mockRequest.setHeader(
-        EKeyHeader.CONTENT_SHARE_STATE,
-        EShareStateSendAndReceive.AVAILABLE_CONTENTED_STREAM,
+        EKeyHeader.CONTENTED_STREAM_STATE,
+        EContentedStreamSendAndReceive.AVAILABLE_CONTENTED_STREAM,
       );
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -259,8 +259,8 @@ describe('ApiManager (NEW_INFO handling)', () => {
       apiManager.on('contented-stream:available', availableStreamSpy);
       mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
       mockRequest.setHeader(
-        EKeyHeader.CONTENT_SHARE_STATE,
-        EShareStateSendAndReceive.AVAILABLE_CONTENTED_STREAM,
+        EKeyHeader.CONTENTED_STREAM_STATE,
+        EContentedStreamSendAndReceive.AVAILABLE_CONTENTED_STREAM,
       );
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -275,8 +275,8 @@ describe('ApiManager (NEW_INFO handling)', () => {
       apiManager.on('contented-stream:not-available', notAvailableStreamSpy);
       mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
       mockRequest.setHeader(
-        EKeyHeader.CONTENT_SHARE_STATE,
-        EShareStateSendAndReceive.NOT_AVAILABLE_CONTENTED_STREAM,
+        EKeyHeader.CONTENTED_STREAM_STATE,
+        EContentedStreamSendAndReceive.NOT_AVAILABLE_CONTENTED_STREAM,
       );
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -291,8 +291,8 @@ describe('ApiManager (NEW_INFO handling)', () => {
       apiManager.on('presentation:must-stop', mustStopPresentationSpy);
       mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
       mockRequest.setHeader(
-        EKeyHeader.CONTENT_SHARE_STATE,
-        EShareStateSendAndReceive.MUST_STOP_PRESENTATION,
+        EKeyHeader.CONTENTED_STREAM_STATE,
+        EContentedStreamSendAndReceive.MUST_STOP_PRESENTATION,
       );
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
@@ -306,7 +306,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
 
       apiManager.on('contented-stream:available', anySpy);
       mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
-      mockRequest.setHeader(EKeyHeader.CONTENT_SHARE_STATE, 'unknown_state');
+      mockRequest.setHeader(EKeyHeader.CONTENTED_STREAM_STATE, 'unknown_state');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
@@ -334,7 +334,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
       apiManager.on('contented-stream:not-available', anySpy);
       apiManager.on('presentation:must-stop', anySpy);
       mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE);
-      mockRequest.setHeader(EKeyHeader.CONTENT_SHARE_STATE, 'some-value');
+      mockRequest.setHeader(EKeyHeader.CONTENTED_STREAM_STATE, 'some-value');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 

@@ -3,7 +3,7 @@ import { createMediaStreamMock } from 'webrtc-mock';
 
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import JsSIP from '../__fixtures__/jssip.mock';
-import { EContentTypeReceived, EKeyHeader, EShareStateSendAndReceive } from '../ApiManager';
+import { EContentTypeReceived, EKeyHeader, EContentedStreamSendAndReceive } from '../ApiManager';
 import { doMockSipConnector } from '../doMock';
 
 import type { SipConnector } from '../SipConnector';
@@ -34,7 +34,10 @@ describe('events', () => {
 
     const extraHeaders: [string, string][] = [
       [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE],
-      [EKeyHeader.CONTENT_SHARE_STATE, EShareStateSendAndReceive.AVAILABLE_CONTENTED_STREAM],
+      [
+        EKeyHeader.CONTENTED_STREAM_STATE,
+        EContentedStreamSendAndReceive.AVAILABLE_CONTENTED_STREAM,
+      ],
     ];
     const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
@@ -57,7 +60,10 @@ describe('events', () => {
 
     const extraHeaders: [string, string][] = [
       [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE],
-      [EKeyHeader.CONTENT_SHARE_STATE, EShareStateSendAndReceive.NOT_AVAILABLE_CONTENTED_STREAM],
+      [
+        EKeyHeader.CONTENTED_STREAM_STATE,
+        EContentedStreamSendAndReceive.NOT_AVAILABLE_CONTENTED_STREAM,
+      ],
     ];
     const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 
@@ -80,7 +86,7 @@ describe('events', () => {
 
     const extraHeaders: [string, string][] = [
       [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.SHARE_STATE],
-      [EKeyHeader.CONTENT_SHARE_STATE, EShareStateSendAndReceive.MUST_STOP_PRESENTATION],
+      [EKeyHeader.CONTENTED_STREAM_STATE, EContentedStreamSendAndReceive.MUST_STOP_PRESENTATION],
     ];
     const establishedRTCSession = sipConnector.getEstablishedRTCSession();
 

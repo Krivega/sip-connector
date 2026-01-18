@@ -4,7 +4,7 @@ import { hasDeclineResponseFromServer } from '@/utils/errors';
 import {
   EContentTypeReceived,
   EContentTypeSent,
-  EShareStateSendAndReceive,
+  EContentedStreamSendAndReceive,
   EContentMainCAM,
   EContentMic,
   EContentSyncMediaState,
@@ -395,7 +395,7 @@ class ApiManager {
           break;
         }
         case EContentTypeReceived.SHARE_STATE: {
-          this.triggerShareState(typedRequest);
+          this.triggerContentedStreamState(typedRequest);
           break;
         }
         case EContentTypeReceived.MAIN_CAM: {
@@ -554,25 +554,25 @@ class ApiManager {
     }
   };
 
-  private readonly triggerShareState = (request: IncomingRequest) => {
-    const eventName = getHeader(request, EKeyHeader.CONTENT_SHARE_STATE);
+  private readonly triggerContentedStreamState = (request: IncomingRequest) => {
+    const header = getHeader(request, EKeyHeader.CONTENTED_STREAM_STATE);
 
-    if (eventName === undefined) {
+    if (header === undefined) {
       return;
     }
 
-    switch (eventName) {
-      case EShareStateSendAndReceive.AVAILABLE_CONTENTED_STREAM: {
-        const codec = getHeader(request, EKeyHeader.CONTENT_SHARE_CODEC);
+    switch (header) {
+      case EContentedStreamSendAndReceive.AVAILABLE_CONTENTED_STREAM: {
+        const codec = getHeader(request, EKeyHeader.CONTENTED_STREAM_CODEC);
 
         this.events.trigger(EEvent.CONTENTED_STREAM_AVAILABLE, { codec });
         break;
       }
-      case EShareStateSendAndReceive.NOT_AVAILABLE_CONTENTED_STREAM: {
+      case EContentedStreamSendAndReceive.NOT_AVAILABLE_CONTENTED_STREAM: {
         this.events.trigger(EEvent.CONTENTED_STREAM_NOT_AVAILABLE, {});
         break;
       }
-      case EShareStateSendAndReceive.MUST_STOP_PRESENTATION: {
+      case EContentedStreamSendAndReceive.MUST_STOP_PRESENTATION: {
         this.events.trigger(EEvent.PRESENTATION_MUST_STOP, {});
         break;
       }
