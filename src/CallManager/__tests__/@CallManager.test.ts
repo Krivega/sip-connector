@@ -3,6 +3,7 @@ import { createAudioMediaStreamTrackMock } from 'webrtc-mock';
 import flushPromises from '@/__fixtures__/flushPromises';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { ConferenceStateManager } from '@/ConferenceStateManager';
+import { ContentedStreamManager } from '@/ContentedStreamManager';
 import CallManager from '../@CallManager';
 import { RemoteStreamsManager } from '../RemoteStreamsManager';
 
@@ -83,7 +84,7 @@ describe('CallManager', () => {
 
   beforeEach(() => {
     conferenceStateManager = new ConferenceStateManager();
-    callManager = new CallManager(conferenceStateManager);
+    callManager = new CallManager(conferenceStateManager, new ContentedStreamManager());
     mediaStream = new MediaStream();
   });
 
@@ -236,7 +237,10 @@ describe('CallManager', () => {
       .spyOn(prepareMediaStreamModule, 'default')
       .mockReturnValue(undefined as unknown as MediaStream);
 
-    const callManagerLocal = new CallManager(new ConferenceStateManager());
+    const callManagerLocal = new CallManager(
+      new ConferenceStateManager(),
+      new ContentedStreamManager(),
+    );
     const rtcSession = new RTCSessionMock({
       eventHandlers: {},
       originator: 'remote',
@@ -274,7 +278,7 @@ describe('CallManager - дополнительные тесты для покр�
 
   beforeEach(() => {
     conferenceStateManager = new ConferenceStateManager();
-    callManager = new CallManager(conferenceStateManager);
+    callManager = new CallManager(conferenceStateManager, new ContentedStreamManager());
     callManagerTest = callManager as unknown as CallManagerTestAccess;
     jest.clearAllMocks();
     mockRecvSession.reset();
@@ -617,9 +621,15 @@ describe('CallManager - дополнительные тесты для покр�
     // @ts-expect-error
     callManager.onRoleChanged({ previous: spectatorRole, next: { type: 'spectator_synthetic' } });
 
+    const stateInfo = {
+      isAvailable: true,
+    };
+
     expect(emitSpy).toHaveBeenCalledWith(
       // @ts-expect-error
-      callManager.streamsManagerProvider.getMainRemoteStreamsManagerTools().getRemoteStreams(),
+      callManager.streamsManagerProvider
+        .getMainRemoteStreamsManagerTools({ stateInfo })
+        .getRemoteStreams(),
     );
 
     emitSpy.mockClear();
@@ -630,7 +640,9 @@ describe('CallManager - дополнительные тесты для покр�
 
     expect(emitSpy).toHaveBeenCalledWith(
       // @ts-expect-error
-      callManager.streamsManagerProvider.getMainRemoteStreamsManagerTools().getRemoteStreams(),
+      callManager.streamsManagerProvider
+        .getMainRemoteStreamsManagerTools({ stateInfo })
+        .getRemoteStreams(),
     );
 
     emitSpy.mockClear();

@@ -115,4 +115,164 @@ describe('BaseStateMachine', () => {
       expect(machine.state).toBe(stateChanges.at(-1));
     });
   });
+
+  describe('onStateChange', () => {
+    it('should call listener when state changes', () => {
+      const machine = new TestStateMachine();
+      const listener = jest.fn();
+
+      machine.onStateChange(listener);
+      machine.send({ type: 'GO' });
+
+      expect(listener).toHaveBeenCalledTimes(1);
+      expect(listener).toHaveBeenCalledWith('active');
+    });
+
+    it('should not call listener for initial state', () => {
+      const machine = new TestStateMachine();
+      const listener = jest.fn();
+
+      machine.onStateChange(listener);
+
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    it('should call listener with correct state on multiple transitions', () => {
+      const machine = new TestStateMachine();
+      const listener = jest.fn();
+      const states: ('idle' | 'active')[] = [];
+
+      machine.onStateChange((state) => {
+        states.push(state);
+        listener(state);
+      });
+
+      machine.send({ type: 'GO' }); // idle -> active
+      machine.send({ type: 'GO' }); // active -> active (self-transition)
+
+      expect(listener).toHaveBeenCalledTimes(2);
+      expect(states).toEqual(['active', 'active']);
+    });
+
+    it('should support multiple listeners', () => {
+      const machine = new TestStateMachine();
+      const listener1 = jest.fn();
+      const listener2 = jest.fn();
+      const listener3 = jest.fn();
+
+      machine.onStateChange(listener1);
+      machine.onStateChange(listener2);
+      machine.onStateChange(listener3);
+
+      machine.send({ type: 'GO' });
+
+      expect(listener1).toHaveBeenCalledWith('active');
+      expect(listener2).toHaveBeenCalledWith('active');
+      expect(listener3).toHaveBeenCalledWith('active');
+    });
+
+    it('should return unsubscribe function', () => {
+      const machine = new TestStateMachine();
+      const listener = jest.fn();
+
+      const unsubscribe = machine.onStateChange(listener);
+
+      expect(typeof unsubscribe).toBe('function');
+    });
+
+    it('should stop calling listener after unsubscribe', () => {
+      const machine = new TestStateMachine();
+      const listener = jest.fn();
+
+      const unsubscribe = machine.onStateChange(listener);
+
+      machine.send({ type: 'GO' }); // Should call listener
+      expect(listener).toHaveBeenCalledTimes(1);
+
+      unsubscribe(); // Unsubscribe
+
+      machine.send({ type: 'GO' }); // Should NOT call listener
+      expect(listener).toHaveBeenCalledTimes(1); // Still 1
+    });
+
+    it('should allow selective unsubscribe with multiple listeners', () => {
+      const machine = new TestStateMachine();
+      const listener1 = jest.fn();
+      const listener2 = jest.fn();
+      const listener3 = jest.fn();
+
+      const unsubscribe1 = machine.onStateChange(listener1);
+      const unsubscribe2 = machine.onStateChange(listener2);
+
+      machine.onStateChange(listener3);
+
+      machine.send({ type: 'GO' });
+      expect(listener1).toHaveBeenCalledTimes(1);
+      expect(listener2).toHaveBeenCalledTimes(1);
+      expect(listener3).toHaveBeenCalledTimes(1);
+
+      unsubscribe1();
+
+      machine.send({ type: 'GO' });
+      expect(listener1).toHaveBeenCalledTimes(1); // Not called again
+      expect(listener2).toHaveBeenCalledTimes(2); // Called
+      expect(listener3).toHaveBeenCalledTimes(2); // Called
+
+      unsubscribe2();
+
+      machine.send({ type: 'GO' });
+      expect(listener1).toHaveBeenCalledTimes(1); // Still not called
+      expect(listener2).toHaveBeenCalledTimes(2); // Not called again
+      expect(listener3).toHaveBeenCalledTimes(3); // Called
+    });
+
+    it('should clear all listeners on stop', () => {
+      const machine = new TestStateMachine();
+      const listener1 = jest.fn();
+      const listener2 = jest.fn();
+
+      machine.onStateChange(listener1);
+      machine.onStateChange(listener2);
+
+      machine.send({ type: 'GO' });
+      expect(listener1).toHaveBeenCalledTimes(1);
+      expect(listener2).toHaveBeenCalledTimes(1);
+
+      machine.stop();
+
+      machine.send({ type: 'GO' });
+      expect(listener1).toHaveBeenCalledTimes(1); // Not called after stop
+      expect(listener2).toHaveBeenCalledTimes(1); // Not called after stop
+    });
+
+    it('should handle unsubscribe being called multiple times', () => {
+      const machine = new TestStateMachine();
+      const listener = jest.fn();
+
+      const unsubscribe = machine.onStateChange(listener);
+
+      unsubscribe();
+      unsubscribe(); // Should not throw
+
+      machine.send({ type: 'GO' });
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    it('should work independently from subscribe method', () => {
+      const machine = new TestStateMachine();
+      const subscribeListener = jest.fn();
+      const stateChangeListener = jest.fn();
+
+      machine.subscribe(subscribeListener);
+      machine.onStateChange(stateChangeListener);
+
+      machine.send({ type: 'GO' });
+
+      // subscribe listener receives snapshot
+      expect(subscribeListener).toHaveBeenCalledWith(expect.objectContaining({ value: 'active' }));
+
+      // onStateChange listener receives just the state string
+      expect(stateChangeListener).toHaveBeenCalledWith('active');
+    });
+  });
 });

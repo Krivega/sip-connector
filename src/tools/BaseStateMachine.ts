@@ -10,9 +10,22 @@ export abstract class BaseStateMachine<TMachine extends AnyStateMachine, EState 
 
   private readonly subscriptions: TUnsubscribe[] = [];
 
+  private readonly stateChangeListeners = new Set<(state: EState) => void>();
+
   protected constructor(machine: TMachine) {
     this.actor = createActor(machine);
     this.actor.start();
+
+    this.addSubscription(
+      this.subscribe((snapshot: SnapshotFrom<TMachine>) => {
+        // @ts-expect-error
+        const state = snapshot.value as unknown as EState;
+
+        this.stateChangeListeners.forEach((listener) => {
+          listener(state);
+        });
+      }),
+    );
   }
 
   public get actorRef(): Actor<TMachine> {
@@ -39,7 +52,17 @@ export abstract class BaseStateMachine<TMachine extends AnyStateMachine, EState 
     return subscription;
   }
 
+  public onStateChange(listener: (state: EState) => void): () => void {
+    this.stateChangeListeners.add(listener);
+
+    // Возвращаем функцию для отписки
+    return () => {
+      this.stateChangeListeners.delete(listener);
+    };
+  }
+
   public stop() {
+    this.stateChangeListeners.clear();
     this.subscriptions.forEach((unsubscribe) => {
       unsubscribe();
     });

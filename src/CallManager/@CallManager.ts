@@ -8,6 +8,7 @@ import { StreamsManagerProvider } from './StreamsManagerProvider';
 
 import type { RTCSession } from '@krivega/jssip';
 import type { ConferenceStateManager } from '@/ConferenceStateManager';
+import type { ContentedStreamManager } from '@/ContentedStreamManager';
 import type { TCallActor } from './CallStateMachine';
 import type { TEventMap, TEvents } from './events';
 import type { TTools } from './RecvSession';
@@ -24,6 +25,19 @@ import type {
 
 const getStreamHint = (event: RTCTrackEvent) => {
   return event.streams[0]?.id;
+};
+
+const hasStreamsEqual = (streams1?: TRemoteStreams, streams2?: TRemoteStreams): boolean => {
+  if (!streams1 || !streams2) {
+    return streams1 === streams2;
+  }
+
+  const mainStreamId1 = streams1.mainStream?.id;
+  const mainStreamId2 = streams2.mainStream?.id;
+  const contentedStreamId1 = streams1.contentedStream?.id;
+  const contentedStreamId2 = streams2.contentedStream?.id;
+
+  return mainStreamId1 === mainStreamId2 && contentedStreamId1 === contentedStreamId2;
 };
 
 class CallManager {
@@ -45,6 +59,8 @@ class CallManager {
 
   private readonly streamsManagerProvider: StreamsManagerProvider;
 
+  private readonly contentedStreamManager: ContentedStreamManager;
+
   private readonly roleManager = new RoleManager((params) => {
     this.onRoleChanged(params);
   });
@@ -55,8 +71,14 @@ class CallManager {
 
   private disposeRecvSessionTrackListener?: () => void;
 
-  public constructor(conferenceStateManager: ConferenceStateManager) {
+  private lastEmittedStreams?: TRemoteStreams;
+
+  public constructor(
+    conferenceStateManager: ConferenceStateManager,
+    contentedStreamManager: ContentedStreamManager,
+  ) {
     this.conferenceStateManager = conferenceStateManager;
+    this.contentedStreamManager = contentedStreamManager;
     this.events = createEvents();
     this.mcuSession = new MCUSession(this.events, { onReset: this.reset });
     this.callStateMachine = new CallStateMachine(this.events);
@@ -67,6 +89,7 @@ class CallManager {
 
     this.subscribeCallStatusChange();
     this.subscribeMcuRemoteTrackEvents();
+    this.subscribeContentedStreamEvents();
   }
 
   public get callActor(): TCallActor {
@@ -88,6 +111,10 @@ class CallManager {
   // For testing purposes
   public getStreamsManagerProvider(): StreamsManagerProvider {
     return this.streamsManagerProvider;
+  }
+
+  public getContentedStreamManager(): ContentedStreamManager {
+    return this.contentedStreamManager;
   }
 
   public getEstablishedRTCSession = (): RTCSession | undefined => {
@@ -214,6 +241,7 @@ class CallManager {
     this.roleManager.reset();
     this.recvRemoteStreamsManager.reset();
     this.stopRecvSession();
+    this.lastEmittedStreams = undefined;
   };
 
   private subscribeCallStatusChange() {
@@ -310,15 +338,20 @@ class CallManager {
   }
 
   private emitEventChangedRemoteStreams(streams: TRemoteStreams) {
+    // Проверяем, изменились ли streams с предыдущего вызова
+    if (hasStreamsEqual(this.lastEmittedStreams, streams)) {
+      return; // Не эмитим событие, если streams не изменились
+    }
+
+    this.lastEmittedStreams = streams;
     this.events.trigger(EEvent.REMOTE_STREAMS_CHANGED, { streams });
   }
 
   private getActiveStreamsManagerTools(): TStreamsManagerTools {
-    if (this.roleManager.hasSpectator()) {
-      return this.streamsManagerProvider.getRecvRemoteStreamsManagerTools();
-    }
-
-    return this.streamsManagerProvider.getMainRemoteStreamsManagerTools();
+    return this.streamsManagerProvider.getActiveStreamsManagerTools({
+      isSpectator: this.roleManager.hasSpectator(),
+      stateInfo: this.contentedStreamManager.getStateInfo(),
+    });
   }
 
   private attachRecvSessionTracks(session: RecvSession) {
@@ -384,6 +417,16 @@ class CallManager {
       this.startRecvSession(params.audioId, params.sendOffer);
     }
   };
+
+  private subscribeContentedStreamEvents() {
+    this.contentedStreamManager.on('available', () => {
+      this.emitEventChangedRemoteStreams(this.getRemoteStreams());
+    });
+
+    this.contentedStreamManager.on('not-available', () => {
+      this.emitEventChangedRemoteStreams(this.getRemoteStreams());
+    });
+  }
 }
 
 export default CallManager;

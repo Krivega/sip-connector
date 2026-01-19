@@ -4,6 +4,7 @@ import { CallManager } from '@/CallManager';
 import { ConferenceStateManager } from '@/ConferenceStateManager';
 import { ConnectionManager } from '@/ConnectionManager';
 import { ConnectionQueueManager } from '@/ConnectionQueueManager';
+import { ContentedStreamManager } from '@/ContentedStreamManager';
 import { IncomingCallManager } from '@/IncomingCallManager';
 import { PresentationManager } from '@/PresentationManager';
 import { SessionManager } from '@/SessionManager';
@@ -31,6 +32,8 @@ class SipConnector {
   public readonly connectionQueueManager: ConnectionQueueManager;
 
   public readonly conferenceStateManager: ConferenceStateManager;
+
+  public readonly contentedStreamManager: ContentedStreamManager;
 
   public readonly callManager: CallManager;
 
@@ -74,16 +77,14 @@ class SipConnector {
     this.excludeMimeTypesVideoCodecs = excludeMimeTypesVideoCodecs;
 
     this.events = createEvents();
+    this.apiManager = new ApiManager();
     this.connectionManager = new ConnectionManager({ JsSIP });
     this.connectionQueueManager = new ConnectionQueueManager({
       connectionManager: this.connectionManager,
     });
     this.conferenceStateManager = new ConferenceStateManager();
-    this.callManager = new CallManager(this.conferenceStateManager);
-    this.apiManager = new ApiManager({
-      connectionManager: this.connectionManager,
-      callManager: this.callManager,
-    });
+    this.contentedStreamManager = new ContentedStreamManager();
+    this.callManager = new CallManager(this.conferenceStateManager, this.contentedStreamManager);
     this.incomingCallManager = new IncomingCallManager(this.connectionManager);
     this.presentationManager = new PresentationManager({
       callManager: this.callManager,
@@ -113,6 +114,12 @@ class SipConnector {
       callManager: this.callManager,
       incomingCallManager: this.incomingCallManager,
       presentationManager: this.presentationManager,
+    });
+
+    this.contentedStreamManager.subscribeToApiEvents(this.apiManager);
+    this.apiManager.subscribe({
+      connectionManager: this.connectionManager,
+      callManager: this.callManager,
     });
     this.subscribe();
   }

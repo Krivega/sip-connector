@@ -48,22 +48,26 @@ import type {
 class ApiManager {
   public readonly events: TEvents;
 
-  private readonly connectionManager: ConnectionManager;
+  private callManager?: CallManager;
 
-  private readonly callManager: CallManager;
+  public constructor() {
+    this.events = createEvents();
+  }
 
-  public constructor({
+  public subscribe({
     connectionManager,
     callManager,
   }: {
     connectionManager: ConnectionManager;
     callManager: CallManager;
-  }) {
-    this.connectionManager = connectionManager;
+  }): void {
     this.callManager = callManager;
-    this.events = createEvents();
 
-    this.subscribe();
+    connectionManager.on('sipEvent', this.handleSipEvent);
+    callManager.on('newInfo', this.handleNewInfo);
+    callManager.on('newDTMF', ({ originator }) => {
+      this.events.trigger(EEvent.NEW_DTMF, { originator });
+    });
   }
 
   public async waitChannels(): Promise<TChannels> {
@@ -88,7 +92,7 @@ class ApiManager {
         return;
       }
 
-      this.callManager.once('newDTMF', ({ originator }) => {
+      this.callManager?.once('newDTMF', ({ originator }) => {
         if (originator === 'local') {
           resolve();
         }
@@ -254,7 +258,7 @@ class ApiManager {
   }
 
   private readonly getEstablishedRTCSessionProtected = () => {
-    const rtcSession = this.callManager.getEstablishedRTCSession();
+    const rtcSession = this.callManager?.getEstablishedRTCSession();
 
     if (!rtcSession) {
       throw new Error('No rtcSession established');
@@ -262,14 +266,6 @@ class ApiManager {
 
     return rtcSession;
   };
-
-  private subscribe(): void {
-    this.connectionManager.on('sipEvent', this.handleSipEvent);
-    this.callManager.on('newInfo', this.handleNewInfo);
-    this.callManager.on('newDTMF', (event) => {
-      this.events.trigger(EEvent.NEW_DTMF, event);
-    });
-  }
 
   private readonly handleSipEvent = ({ request }: { request: IncomingRequest }) => {
     this.maybeHandleNotify(request);
