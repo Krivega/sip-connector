@@ -4,6 +4,7 @@ import { MCUSession } from './MCUSession';
 import RecvSession from './RecvSession';
 import { RemoteStreamsManager } from './RemoteStreamsManager';
 import { RoleManager } from './RoleManager';
+import { StreamsChangeTracker } from './StreamsChangeTracker';
 import { StreamsManagerProvider } from './StreamsManagerProvider';
 
 import type { RTCSession } from '@krivega/jssip';
@@ -25,19 +26,6 @@ import type {
 
 const getStreamHint = (event: RTCTrackEvent) => {
   return event.streams[0]?.id;
-};
-
-const hasStreamsEqual = (streams1?: TRemoteStreams, streams2?: TRemoteStreams): boolean => {
-  if (!streams1 || !streams2) {
-    return streams1 === streams2;
-  }
-
-  const mainStreamId1 = streams1.mainStream?.id;
-  const mainStreamId2 = streams2.mainStream?.id;
-  const contentedStreamId1 = streams1.contentedStream?.id;
-  const contentedStreamId2 = streams2.contentedStream?.id;
-
-  return mainStreamId1 === mainStreamId2 && contentedStreamId1 === contentedStreamId2;
 };
 
 class CallManager {
@@ -71,7 +59,7 @@ class CallManager {
 
   private disposeRecvSessionTrackListener?: () => void;
 
-  private lastEmittedStreams?: TRemoteStreams;
+  private readonly streamsChangeTracker = new StreamsChangeTracker();
 
   public constructor(
     conferenceStateManager: ConferenceStateManager,
@@ -241,7 +229,7 @@ class CallManager {
     this.roleManager.reset();
     this.recvRemoteStreamsManager.reset();
     this.stopRecvSession();
-    this.lastEmittedStreams = undefined;
+    this.streamsChangeTracker.reset();
   };
 
   private subscribeCallStatusChange() {
@@ -339,11 +327,11 @@ class CallManager {
 
   private emitEventChangedRemoteStreams(streams: TRemoteStreams) {
     // Проверяем, изменились ли streams с предыдущего вызова
-    if (hasStreamsEqual(this.lastEmittedStreams, streams)) {
+    if (!this.streamsChangeTracker.hasChanged(streams)) {
       return; // Не эмитим событие, если streams не изменились
     }
 
-    this.lastEmittedStreams = streams;
+    this.streamsChangeTracker.updateLastEmittedStreams(streams);
     this.events.trigger(EEvent.REMOTE_STREAMS_CHANGED, { streams });
   }
 
