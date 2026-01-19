@@ -31,22 +31,6 @@ describe('StreamsManagerProvider', () => {
     provider = new StreamsManagerProvider(mainManager, recvManager);
   });
 
-  describe('getActiveStreamsManagerTools', () => {
-    it('должен вернуть main manager tools для participant (isSpectator=false)', () => {
-      const result = provider.getActiveStreamsManagerTools(false);
-
-      expect(result.manager).toBe(mainManager);
-      expect(typeof result.getRemoteStreams).toBe('function');
-    });
-
-    it('должен вернуть recv manager tools для spectator (isSpectator=true)', () => {
-      const result = provider.getActiveStreamsManagerTools(true);
-
-      expect(result.manager).toBe(recvManager);
-      expect(typeof result.getRemoteStreams).toBe('function');
-    });
-  });
-
   describe('getMainRemoteStreamsManagerTools', () => {
     it('должен вернуть main manager и функцию getRemoteStreams', () => {
       const result = provider.getMainRemoteStreamsManagerTools();

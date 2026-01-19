@@ -23,14 +23,6 @@ export class StreamsManagerProvider {
     this.recvRemoteStreamsManager = recvRemoteStreamsManager;
   }
 
-  public getActiveStreamsManagerTools(isSpectator: boolean): TStreamsManagerTools {
-    if (isSpectator) {
-      return this.getRecvRemoteStreamsManagerTools();
-    }
-
-    return this.getMainRemoteStreamsManagerTools();
-  }
-
   public getMainRemoteStreamsManagerTools(): TStreamsManagerTools {
     const manager = this.mainRemoteStreamsManager;
     const getRemoteStreams = (): ReturnType<TGetRemoteStreams> => {

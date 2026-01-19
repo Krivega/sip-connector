@@ -306,9 +306,11 @@ class CallManager {
   }
 
   private getActiveStreamsManagerTools(): TStreamsManagerTools {
-    return this.streamsManagerProvider.getActiveStreamsManagerTools(
-      this.roleManager.hasSpectator(),
-    );
+    if (this.roleManager.hasSpectator()) {
+      return this.streamsManagerProvider.getRecvRemoteStreamsManagerTools();
+    }
+
+    return this.streamsManagerProvider.getMainRemoteStreamsManagerTools();
   }
 
   private attachRecvSessionTracks(session: RecvSession) {
