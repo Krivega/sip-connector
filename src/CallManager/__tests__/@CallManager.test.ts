@@ -167,6 +167,28 @@ describe('CallManager', () => {
     expect(callManager.getMainRemoteStream()).toBeUndefined();
   });
 
+  it('getMainRemoteStream: должен вернуть поток из recvSession для наблюдателя', () => {
+    const stream = new MediaStream();
+
+    const sendOffer = jest.fn().mockResolvedValue(undefined);
+
+    callManager.setCallRoleSpectator({
+      audioId: 'audio-1',
+      sendOffer,
+    } as TCallRoleSpectator['recvParams']);
+
+    jest
+      .spyOn(callManager.getStreamsManagerProvider(), 'getRecvRemoteStreamsManagerTools')
+      .mockReturnValue({
+        manager: {} as RemoteStreamsManager,
+        getRemoteStreams: () => {
+          return { mainStream: stream };
+        },
+      });
+
+    expect(callManager.getMainRemoteStream()).toBe(stream);
+  });
+
   describe('getActivePeerConnection', () => {
     it('возвращает peerConnection из mcuSession для участника', () => {
       const peerConnection = {} as RTCPeerConnection;
