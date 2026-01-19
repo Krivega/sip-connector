@@ -131,6 +131,30 @@
           <h3>Лицензия</h3>
           <div id="useLicense" class="status-box"></div>
         </section>
+
+        <section id="callStatsSection">
+          <h3>Статистика звонка</h3>
+          <div class="call-stats-tabs">
+            <button id="callStatsTabAudio" type="button" class="call-stats-tab">Audio</button>
+            <button id="callStatsTabMainStream" type="button" class="call-stats-tab is-active">
+              Main stream
+            </button>
+            <button id="callStatsTabContentedStream" type="button" class="call-stats-tab">
+              Contented stream
+            </button>
+          </div>
+          <div class="call-stats-panels">
+            <div id="callStatsAudioPanel" class="call-stats-panel">
+              <div id="callStatsAudio"></div>
+            </div>
+            <div id="callStatsMainStreamPanel" class="call-stats-panel is-active">
+              <div id="callStatsMainStream"></div>
+            </div>
+            <div id="callStatsContentedStreamPanel" class="call-stats-panel">
+              <div id="callStatsContentedStream"></div>
+            </div>
+          </div>
+        </section>
       </section>
 
       <section>

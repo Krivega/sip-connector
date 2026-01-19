@@ -19,6 +19,16 @@ type TDomIds = {
   incomingStatusId: string;
   presentationStatusId: string;
   systemStatusId: string;
+  callStatsSectionId: string;
+  callStatsTabAudioId: string;
+  callStatsTabMainStreamId: string;
+  callStatsTabContentedStreamId: string;
+  callStatsAudioPanelId: string;
+  callStatsMainStreamPanelId: string;
+  callStatsContentedStreamPanelId: string;
+  callStatsAudioId: string;
+  callStatsMainStreamId: string;
+  callStatsContentedStreamId: string;
   logsContainerId: string;
   logsListId: string;
   clearLogsButtonId: string;
@@ -124,6 +134,26 @@ class DOM {
 
   public systemStatusElement: HTMLElement;
 
+  public callStatsSectionElement: HTMLElement;
+
+  public callStatsTabAudioButtonElement: HTMLButtonElement;
+
+  public callStatsTabMainStreamButtonElement: HTMLButtonElement;
+
+  public callStatsTabContentedStreamButtonElement: HTMLButtonElement;
+
+  public callStatsAudioPanelElement: HTMLElement;
+
+  public callStatsMainStreamPanelElement: HTMLElement;
+
+  public callStatsContentedStreamPanelElement: HTMLElement;
+
+  public callStatsAudioElement: HTMLElement;
+
+  public callStatsMainStreamElement: HTMLElement;
+
+  public callStatsContentedStreamElement: HTMLElement;
+
   public logsContainerElement: HTMLElement;
 
   public logsListElement: HTMLElement;
@@ -160,6 +190,16 @@ class DOM {
     incomingStatusId,
     presentationStatusId,
     systemStatusId,
+    callStatsSectionId,
+    callStatsTabAudioId,
+    callStatsTabMainStreamId,
+    callStatsTabContentedStreamId,
+    callStatsAudioPanelId,
+    callStatsMainStreamPanelId,
+    callStatsContentedStreamPanelId,
+    callStatsAudioId,
+    callStatsMainStreamId,
+    callStatsContentedStreamId,
     logsContainerId,
     logsListId,
     clearLogsButtonId,
@@ -236,6 +276,19 @@ class DOM {
     this.incomingStatusElement = getElementById(incomingStatusId);
     this.presentationStatusElement = getElementById(presentationStatusId);
     this.systemStatusElement = getElementById(systemStatusId);
+    this.callStatsSectionElement = getElementById(callStatsSectionId);
+    this.callStatsTabAudioButtonElement = getElementById<HTMLButtonElement>(callStatsTabAudioId);
+    this.callStatsTabMainStreamButtonElement =
+      getElementById<HTMLButtonElement>(callStatsTabMainStreamId);
+    this.callStatsTabContentedStreamButtonElement = getElementById<HTMLButtonElement>(
+      callStatsTabContentedStreamId,
+    );
+    this.callStatsAudioPanelElement = getElementById(callStatsAudioPanelId);
+    this.callStatsMainStreamPanelElement = getElementById(callStatsMainStreamPanelId);
+    this.callStatsContentedStreamPanelElement = getElementById(callStatsContentedStreamPanelId);
+    this.callStatsAudioElement = getElementById(callStatsAudioId);
+    this.callStatsMainStreamElement = getElementById(callStatsMainStreamId);
+    this.callStatsContentedStreamElement = getElementById(callStatsContentedStreamId);
     this.logsContainerElement = getElementById(logsContainerId);
     this.logsListElement = getElementById(logsListId);
     this.clearLogsButtonElement = getElementById<HTMLButtonElement>(clearLogsButtonId);
@@ -350,6 +403,16 @@ export const dom = new DOM({
   incomingStatusId: 'incomingStatus',
   presentationStatusId: 'presentationStatus',
   systemStatusId: 'systemStatus',
+  callStatsSectionId: 'callStatsSection',
+  callStatsTabAudioId: 'callStatsTabAudio',
+  callStatsTabMainStreamId: 'callStatsTabMainStream',
+  callStatsTabContentedStreamId: 'callStatsTabContentedStream',
+  callStatsAudioPanelId: 'callStatsAudioPanel',
+  callStatsMainStreamPanelId: 'callStatsMainStreamPanel',
+  callStatsContentedStreamPanelId: 'callStatsContentedStreamPanel',
+  callStatsAudioId: 'callStatsAudio',
+  callStatsMainStreamId: 'callStatsMainStream',
+  callStatsContentedStreamId: 'callStatsContentedStream',
   logsContainerId: 'logsContainer',
   logsListId: 'logsList',
   clearLogsButtonId: 'clearLogsButton',
