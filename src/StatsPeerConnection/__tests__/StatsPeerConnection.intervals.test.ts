@@ -1,3 +1,4 @@
+import flushPromises from '@/__fixtures__/flushPromises';
 import StatsPeerConnection from '../@StatsPeerConnection';
 import { INTERVAL_COLLECT_STATISTICS } from '../constants';
 import mockedNow from '../utils/now';
@@ -55,12 +56,12 @@ describe('StatsPeerConnection intervals by elapsed time', () => {
     });
 
     // @ts-expect-error
-    statsPeerConnection.collectStatistics(createPeerConnection(), {
+    statsPeerConnection.collectStatistics(createPeerConnection, {
       onError: undefined,
     });
 
     // wait microtasks
-    await Promise.resolve();
+    await flushPromises();
 
     expect(startSpy).toHaveBeenCalledTimes(1);
 
@@ -94,11 +95,11 @@ describe('StatsPeerConnection intervals by elapsed time', () => {
     });
 
     // @ts-expect-error
-    statsPeerConnection.collectStatistics(createPeerConnection(), {
+    statsPeerConnection.collectStatistics(createPeerConnection, {
       onError: undefined,
     });
 
-    await Promise.resolve();
+    await flushPromises();
 
     expect(startSpy).toHaveBeenCalledTimes(1);
 
@@ -132,11 +133,11 @@ describe('StatsPeerConnection intervals by elapsed time', () => {
     });
 
     // @ts-expect-error
-    statsPeerConnection.collectStatistics(createPeerConnection(), {
+    statsPeerConnection.collectStatistics(createPeerConnection, {
       onError: undefined,
     });
 
-    await Promise.resolve();
+    await flushPromises();
 
     expect(startSpy).toHaveBeenCalledTimes(1);
 
@@ -157,7 +158,7 @@ describe('StatsPeerConnection intervals by elapsed time', () => {
       .mockRejectedValue(new Error('failure'));
 
     // @ts-expect-error
-    statsPeerConnection.collectStatistics(createPeerConnection(), {
+    statsPeerConnection.collectStatistics(createPeerConnection, {
       onError: undefined,
     });
 

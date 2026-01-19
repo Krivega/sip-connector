@@ -1,5 +1,6 @@
 /* eslint-disable no-alert */
 import CallStateManager, { type TCallState } from './CallStateManager';
+import CallStatsManager from './CallStatsManager';
 import { dom } from './dom';
 import LoaderManager from './LoaderManager';
 import LocalMediaStreamManager from './LocalMediaStreamManager';
@@ -33,6 +34,8 @@ class App {
 
   private readonly callStateManager: CallStateManager;
 
+  private readonly callStatsManager: CallStatsManager;
+
   private session: Session | undefined = undefined;
 
   /**
@@ -45,6 +48,7 @@ class App {
     this.remoteMediaStreamManager = new RemoteMediaStreamManager();
     this.loaderManager = new LoaderManager();
     this.callStateManager = new CallStateManager();
+    this.callStatsManager = new CallStatsManager();
 
     const statusesManager = new Statuses();
 
@@ -55,6 +59,7 @@ class App {
     const logsManager = new LogsManager();
 
     logsManager.subscribe();
+    this.callStatsManager.subscribe();
 
     this.initialize();
   }

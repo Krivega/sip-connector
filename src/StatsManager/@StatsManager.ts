@@ -171,8 +171,8 @@ class StatsManager {
     this.maybeSendStats();
   };
 
-  private readonly handleStarted = (peerConnection: RTCPeerConnection) => {
-    this.statsPeerConnection.start(peerConnection);
+  private readonly handleStarted = () => {
+    this.statsPeerConnection.start(this.callManager.getActivePeerConnection);
   };
 
   private readonly handleEnded = () => {

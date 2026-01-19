@@ -141,6 +141,49 @@ body {
   margin-top: 2rem;
 }
 
+.call-stats-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.call-stats-tab {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid #cbd5f5;
+  border-radius: 999px;
+  background-color: #f1f5f9;
+  color: #1e293b;
+  font-size: 12px;
+}
+
+.call-stats-tab.is-active {
+  background-color: #1f2937;
+  color: #e2e8f0;
+  border-color: #1f2937;
+}
+
+.call-stats-panels {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.75rem;
+  background-color: #f8fafc;
+}
+
+.call-stats-panels .session-statuses {
+  grid-template-columns: 240px minmax(0, 1fr);
+  word-break: break-word;
+}
+
+.call-stats-panel {
+  display: none;
+}
+
+.call-stats-panel.is-active {
+  display: block;
+}
+
+
 #clearLogsButton {
   background-color: #dc3545;
   color: white;

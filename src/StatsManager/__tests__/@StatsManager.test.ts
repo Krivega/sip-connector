@@ -41,11 +41,20 @@ describe('StatsManager', () => {
     const stopSpy = jest.spyOn(manager.statsPeerConnection, 'stop');
 
     const pc = new RTCPeerConnectionMock(undefined, [audioTrack, videoTrack]);
+    const getActivePeerConnectionSpy = jest
+      .spyOn(callManager, 'getActivePeerConnection')
+      .mockReturnValue(pc);
 
     // start collecting after confirmed
     callManager.events.trigger('peerconnection:confirmed', pc);
 
-    expect(startSpy).toHaveBeenCalledWith(pc);
+    expect(startSpy).toHaveBeenCalledWith(callManager.getActivePeerConnection);
+    expect(startSpy).toHaveBeenCalledTimes(1);
+
+    const getPeerConnection = startSpy.mock.calls[0]?.[0];
+
+    expect(getPeerConnection()).toBe(pc);
+    expect(getActivePeerConnectionSpy).toHaveBeenCalledTimes(1);
     // stopped before start
     expect(stopSpy).toHaveBeenCalledTimes(1);
 

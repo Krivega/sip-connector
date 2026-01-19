@@ -144,7 +144,7 @@ describe('CallManager', () => {
     const stream = new MediaStream();
 
     jest
-      .spyOn(callManager.getStreamsManagerProvider(), 'getActiveStreamsManagerTools')
+      .spyOn(callManager.getStreamsManagerProvider(), 'getMainRemoteStreamsManagerTools')
       .mockReturnValue({
         manager: {} as RemoteStreamsManager,
         getRemoteStreams: () => {
@@ -157,7 +157,7 @@ describe('CallManager', () => {
 
   it('getMainRemoteStream: должен вернуть undefined при отсутствии основного потока', () => {
     jest
-      .spyOn(callManager.getStreamsManagerProvider(), 'getActiveStreamsManagerTools')
+      .spyOn(callManager.getStreamsManagerProvider(), 'getMainRemoteStreamsManagerTools')
       .mockReturnValue({
         manager: {} as RemoteStreamsManager,
         getRemoteStreams: () => {
@@ -166,6 +166,54 @@ describe('CallManager', () => {
       });
 
     expect(callManager.getMainRemoteStream()).toBeUndefined();
+  });
+
+  it('getMainRemoteStream: должен вернуть поток из recvSession для наблюдателя', () => {
+    const stream = new MediaStream();
+
+    const sendOffer = jest.fn().mockResolvedValue(undefined);
+
+    callManager.setCallRoleSpectator({
+      audioId: 'audio-1',
+      sendOffer,
+    } as TCallRoleSpectator['recvParams']);
+
+    jest
+      .spyOn(callManager.getStreamsManagerProvider(), 'getRecvRemoteStreamsManagerTools')
+      .mockReturnValue({
+        manager: {} as RemoteStreamsManager,
+        getRemoteStreams: () => {
+          return { mainStream: stream };
+        },
+      });
+
+    expect(callManager.getMainRemoteStream()).toBe(stream);
+  });
+
+  describe('getActivePeerConnection', () => {
+    it('возвращает peerConnection из mcuSession для участника', () => {
+      const peerConnection = {} as RTCPeerConnection;
+
+      // @ts-expect-error
+      callManager.mcuSession.rtcSession = { connection: peerConnection };
+
+      expect(callManager.getActivePeerConnection()).toBeDefined();
+      expect(callManager.getActivePeerConnection()).toBe(peerConnection);
+    });
+
+    it('возвращает peerConnection из recvSession для наблюдателя', () => {
+      conferenceStateManager.updateState({ number: '100' });
+
+      const sendOffer = jest.fn().mockResolvedValue(undefined);
+
+      callManager.setCallRoleSpectator({
+        audioId: 'audio-1',
+        sendOffer,
+      } as TCallRoleSpectator['recvParams']);
+
+      expect(callManager.getActivePeerConnection()).toBeDefined();
+      expect(callManager.getActivePeerConnection()).toBe(mockRecvSession.instance?.peerConnection);
+    });
   });
 
   it('replaceMediaStream: заменяет поток', async () => {
