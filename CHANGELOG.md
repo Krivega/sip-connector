@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [23.0.0](https://github.com/Krivega/sip-connector/compare/v22.0.0...v23.0.0) (2026-01-19)
+
+### ⚠ BREAKING CHANGES
+
+- replace EHeader with EKeyHeader for consistent header management and update event handling logic
+
+### Features
+
+- add codec to `api:contented-stream:available` event and refactor types ([4dee373](https://github.com/Krivega/sip-connector/commit/4dee3738607b76c07b3bb0a0d52d399aea710202))
+- add ContentedStreamManager ([46f6ba5](https://github.com/Krivega/sip-connector/commit/46f6ba5bca6eb5756afa2d68ce4fae4b8753c5e5))
+- implement deduplication for remote-streams-changed events and enhance event handling in CallManager ([ea26ccb](https://github.com/Krivega/sip-connector/commit/ea26ccba2f21df03055bf22fa5774a670c79f1ce))
+- introduce StreamsChangeTracker for efficient remote streams comparison and event emission in CallManager ([9b3c51b](https://github.com/Krivega/sip-connector/commit/9b3c51be81409ad4be1b66f5c0fcc99681c758b2))
+
+### Bug Fixes
+
+- collect stats from recv-session for spectator ([#67](https://github.com/Krivega/sip-connector/issues/67)) ([7bf159e](https://github.com/Krivega/sip-connector/commit/7bf159eb9fee448a8117aa4f671c61064553059a))
+- update sendInfo calls in ApiManager to use EContentTypeSent for SHARE_STATE ([49f9ed0](https://github.com/Krivega/sip-connector/commit/49f9ed003fc523f8b3a8dbc5d5a0769f83bed7cb))
+
+- replace EHeader with EKeyHeader for consistent header management and update event handling logic ([dcf97ca](https://github.com/Krivega/sip-connector/commit/dcf97ca43027625e51013c64eefce25acdd29431))
+
 ## [22.0.0](https://github.com/Krivega/sip-connector/compare/v21.0.0...v22.0.0) (2026-01-16)
 
 ### ⚠ BREAKING CHANGES
