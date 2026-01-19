@@ -8,6 +8,7 @@ import { StreamsManagerProvider } from './StreamsManagerProvider';
 
 import type { RTCSession } from '@krivega/jssip';
 import type { ConferenceStateManager } from '@/ConferenceStateManager';
+import type { ContentedStreamManager } from '@/ContentedStreamManager';
 import type { TCallActor } from './CallStateMachine';
 import type { TEventMap, TEvents } from './events';
 import type { TTools } from './RecvSession';
@@ -45,6 +46,8 @@ class CallManager {
 
   private readonly streamsManagerProvider: StreamsManagerProvider;
 
+  private readonly contentedStreamManager: ContentedStreamManager;
+
   private readonly roleManager = new RoleManager((params) => {
     this.onRoleChanged(params);
   });
@@ -55,8 +58,12 @@ class CallManager {
 
   private disposeRecvSessionTrackListener?: () => void;
 
-  public constructor(conferenceStateManager: ConferenceStateManager) {
+  public constructor(
+    conferenceStateManager: ConferenceStateManager,
+    contentedStreamManager: ContentedStreamManager,
+  ) {
     this.conferenceStateManager = conferenceStateManager;
+    this.contentedStreamManager = contentedStreamManager;
     this.events = createEvents();
     this.mcuSession = new MCUSession(this.events, { onReset: this.reset });
     this.callStateMachine = new CallStateMachine(this.events);
@@ -67,6 +74,7 @@ class CallManager {
 
     this.subscribeCallStatusChange();
     this.subscribeMcuRemoteTrackEvents();
+    this.subscribeContentedStreamEvents();
   }
 
   public get callActor(): TCallActor {
@@ -88,6 +96,10 @@ class CallManager {
   // For testing purposes
   public getStreamsManagerProvider(): StreamsManagerProvider {
     return this.streamsManagerProvider;
+  }
+
+  public getContentedStreamManager(): ContentedStreamManager {
+    return this.contentedStreamManager;
   }
 
   public getEstablishedRTCSession = (): RTCSession | undefined => {
@@ -306,9 +318,10 @@ class CallManager {
   }
 
   private getActiveStreamsManagerTools(): TStreamsManagerTools {
-    return this.streamsManagerProvider.getActiveStreamsManagerTools(
-      this.roleManager.hasSpectator(),
-    );
+    return this.streamsManagerProvider.getActiveStreamsManagerTools({
+      isSpectator: this.roleManager.hasSpectator(),
+      stateInfo: this.contentedStreamManager.getStateInfo(),
+    });
   }
 
   private attachRecvSessionTracks(session: RecvSession) {
@@ -374,6 +387,16 @@ class CallManager {
       this.startRecvSession(params.audioId, params.sendOffer);
     }
   };
+
+  private subscribeContentedStreamEvents() {
+    this.contentedStreamManager.on('available', () => {
+      this.emitEventChangedRemoteStreams(this.getRemoteStreams());
+    });
+
+    this.contentedStreamManager.on('not-available', () => {
+      this.emitEventChangedRemoteStreams(this.getRemoteStreams());
+    });
+  }
 }
 
 export default CallManager;

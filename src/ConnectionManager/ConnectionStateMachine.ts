@@ -389,8 +389,6 @@ export default class ConnectionStateMachine extends BaseStateMachine<
   typeof connectionMachine,
   EState
 > {
-  private readonly stateChangeListeners = new Set<(state: EState) => void>();
-
   private readonly events: TEvents;
 
   private unsubscribeFromEvents?: () => void;
@@ -398,16 +396,6 @@ export default class ConnectionStateMachine extends BaseStateMachine<
   public constructor(events: TEvents) {
     super(connectionMachine);
     this.events = events;
-
-    this.addSubscription(
-      this.subscribe((snapshot: TConnectionSnapshot) => {
-        const state = snapshot.value as EState;
-
-        this.stateChangeListeners.forEach((listener) => {
-          listener(state);
-        });
-      }),
-    );
 
     // Подписываемся на события UA
     this.subscribeToEvents();
@@ -479,18 +467,8 @@ export default class ConnectionStateMachine extends BaseStateMachine<
   }
 
   public destroy(): void {
-    this.stateChangeListeners.clear();
     this.unsubscribeFromEvents?.();
     this.stop();
-  }
-
-  public onStateChange(listener: (state: EState) => void): () => void {
-    this.stateChangeListeners.add(listener);
-
-    // Возвращаем функцию для отписки
-    return () => {
-      this.stateChangeListeners.delete(listener);
-    };
   }
 
   public canTransition(event: TConnectionMachineEvent): boolean {

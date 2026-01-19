@@ -3,7 +3,9 @@ import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from
 import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import UAMock from '@/__fixtures__/UA.mock';
+import { EContentedStreamCodec } from '@/ApiManager';
 import { ConferenceStateManager } from '@/ConferenceStateManager';
+import { ContentedStreamManager } from '@/ContentedStreamManager';
 import CallManager from '../@CallManager';
 import { EVENT_NAMES } from '../events';
 
@@ -17,7 +19,7 @@ describe('CallManager events', () => {
 
   beforeEach(() => {
     ua = new UAMock({ uri: 'sip:user@sipServerUrl', register: false, sockets: [] });
-    callManager = new CallManager(new ConferenceStateManager());
+    callManager = new CallManager(new ConferenceStateManager(), new ContentedStreamManager());
     getSipServerUrl = (number) => {
       return `sip:${number}@sipServerUrl`;
     };
@@ -151,5 +153,58 @@ describe('CallManager events', () => {
 
     callManager.events.trigger('confirmed', {});
     expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  describe('subscribeContentedStreamEvents', () => {
+    it('должен вызвать событие remote-streams-changed при available от ContentedStreamManager', () => {
+      const handler = jest.fn();
+
+      callManager.on('remote-streams-changed', handler);
+
+      const contentedStreamManager = callManager.getContentedStreamManager();
+
+      contentedStreamManager.events.trigger('available', { codec: EContentedStreamCodec.H264 });
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(handler).toHaveBeenCalledWith({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        streams: expect.objectContaining({
+          mainStream: undefined,
+          contentedStream: undefined,
+        }),
+      });
+    });
+
+    it('должен вызвать событие remote-streams-changed при not-available от ContentedStreamManager', () => {
+      const handler = jest.fn();
+
+      callManager.on('remote-streams-changed', handler);
+
+      const contentedStreamManager = callManager.getContentedStreamManager();
+
+      contentedStreamManager.events.trigger('not-available', {});
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(handler).toHaveBeenCalledWith({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        streams: expect.objectContaining({
+          mainStream: undefined,
+          contentedStream: undefined,
+        }),
+      });
+    });
+
+    it('должен вызвать событие remote-streams-changed для обоих событий ContentedStreamManager', () => {
+      const handler = jest.fn();
+
+      callManager.on('remote-streams-changed', handler);
+
+      const contentedStreamManager = callManager.getContentedStreamManager();
+
+      contentedStreamManager.events.trigger('available', { codec: EContentedStreamCodec.VP8 });
+      contentedStreamManager.events.trigger('not-available', {});
+
+      expect(handler).toHaveBeenCalledTimes(2);
+    });
   });
 });

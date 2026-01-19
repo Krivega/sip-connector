@@ -1,3 +1,4 @@
+import type { TContentedStreamStateInfo } from '@/ContentedStreamManager';
 import type { RemoteStreamsManager } from './RemoteStreamsManager';
 import type { TGetRemoteStreams, TStreamsManagerTools } from './types';
 
@@ -23,15 +24,25 @@ export class StreamsManagerProvider {
     this.recvRemoteStreamsManager = recvRemoteStreamsManager;
   }
 
-  public getActiveStreamsManagerTools(isSpectator: boolean): TStreamsManagerTools {
+  public getActiveStreamsManagerTools({
+    isSpectator,
+    stateInfo,
+  }: {
+    isSpectator: boolean;
+    stateInfo: TContentedStreamStateInfo;
+  }): TStreamsManagerTools {
     if (isSpectator) {
-      return this.getRecvRemoteStreamsManagerTools();
+      return this.getRecvRemoteStreamsManagerTools({ stateInfo });
     }
 
-    return this.getMainRemoteStreamsManagerTools();
+    return this.getMainRemoteStreamsManagerTools({ stateInfo });
   }
 
-  public getMainRemoteStreamsManagerTools(): TStreamsManagerTools {
+  public getMainRemoteStreamsManagerTools({
+    stateInfo,
+  }: {
+    stateInfo: TContentedStreamStateInfo;
+  }): TStreamsManagerTools {
     const manager = this.mainRemoteStreamsManager;
     const getRemoteStreams = (): ReturnType<TGetRemoteStreams> => {
       const streams = manager.getStreams();
@@ -41,10 +52,12 @@ export class StreamsManagerProvider {
         return !hasContendedStreamForParticipant(stream);
       });
 
-      // Находим поток с треками, содержащими "dual" в label
-      const contentedStream = streams.find((stream) => {
-        return hasContendedStreamForParticipant(stream);
-      });
+      // Используем централизованное состояние вместо детекции по трекам
+      const contentedStream = stateInfo.isAvailable
+        ? streams.find((stream) => {
+            return hasContendedStreamForParticipant(stream);
+          })
+        : undefined;
 
       return { mainStream, contentedStream };
     };
@@ -52,14 +65,18 @@ export class StreamsManagerProvider {
     return { manager, getRemoteStreams };
   }
 
-  public getRecvRemoteStreamsManagerTools(): TStreamsManagerTools {
+  public getRecvRemoteStreamsManagerTools({
+    stateInfo,
+  }: {
+    stateInfo: TContentedStreamStateInfo;
+  }): TStreamsManagerTools {
     const manager = this.recvRemoteStreamsManager;
     const getRemoteStreams = (): ReturnType<TGetRemoteStreams> => {
       const mainStreams = manager.getStreams(PARTICIPANT_ID_SPECTATOR_MAIN_STREAM);
 
       const mainStream = mainStreams[0];
 
-      return { mainStream, contentedStream: undefined };
+      return { mainStream, contentedStream: stateInfo.isAvailable ? mainStreams[1] : undefined };
     };
 
     return { manager, getRemoteStreams };

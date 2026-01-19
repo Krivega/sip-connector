@@ -1,17 +1,15 @@
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
 
+import { createManagers } from '@/__fixtures__/createManagers';
 import delayPromise from '@/__fixtures__/delayPromise';
-import jssip from '@/__fixtures__/jssip.mock';
 import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import { ApiManager } from '@/ApiManager';
 import { CallManager } from '@/CallManager';
 import { ConferenceStateManager } from '@/ConferenceStateManager';
-import { ConnectionManager } from '@/ConnectionManager';
+import { ContentedStreamManager } from '@/ContentedStreamManager';
 import logger from '@/logger';
 import { StatsManager } from '@/StatsManager';
 import { statisticsMockBase } from '@/StatsPeerConnection/__fixtures__/callStaticsState';
-
-import type { TJsSIP } from '@/types';
 
 const audioTrack = createAudioMediaStreamTrackMock();
 const videoTrack = createVideoMediaStreamTrackMock();
@@ -23,11 +21,7 @@ jest.mock('@/logger', () => {
 
 describe('StatsManager', () => {
   it('подписывается на события CallManager при создании', () => {
-    const callManager = new CallManager(new ConferenceStateManager());
-    const apiManager = new ApiManager({
-      connectionManager: new ConnectionManager({ JsSIP: jssip as unknown as TJsSIP }),
-      callManager,
-    });
+    const { callManager, apiManager } = createManagers();
     const onSpy = jest.spyOn(callManager, 'on');
 
     // eslint-disable-next-line no-new
@@ -40,11 +34,7 @@ describe('StatsManager', () => {
   });
 
   it('запускает сбор статистики при peerconnection:confirmed и останавливает при ended/failed', () => {
-    const callManager = new CallManager(new ConferenceStateManager());
-    const apiManager = new ApiManager({
-      connectionManager: new ConnectionManager({ JsSIP: jssip as unknown as TJsSIP }),
-      callManager,
-    });
+    const { callManager, apiManager } = createManagers();
     const manager = new StatsManager({ callManager, apiManager });
 
     const startSpy = jest.spyOn(manager.statsPeerConnection, 'start');
@@ -79,11 +69,7 @@ describe('StatsManager', () => {
   });
 
   it('проксирует методы событий к StatsPeerConnection', async () => {
-    const callManager = new CallManager(new ConferenceStateManager());
-    const apiManager = new ApiManager({
-      connectionManager: new ConnectionManager({ JsSIP: jssip as unknown as TJsSIP }),
-      callManager,
-    });
+    const { callManager, apiManager } = createManagers();
     const manager = new StatsManager({ callManager, apiManager });
 
     const handler = jest.fn();
@@ -122,11 +108,10 @@ describe('StatsManager', () => {
   });
 
   it('обновляет availableIncomingBitrate при событии collected', () => {
-    const callManager = new CallManager(new ConferenceStateManager());
-    const apiManager = new ApiManager({
-      connectionManager: new ConnectionManager({ JsSIP: jssip as unknown as TJsSIP }),
-      callManager,
-    });
+    const conferenceStateManager = new ConferenceStateManager();
+    const contentedStreamManager = new ContentedStreamManager();
+    const callManager = new CallManager(conferenceStateManager, contentedStreamManager);
+    const apiManager = new ApiManager();
     const manager = new StatsManager({ callManager, apiManager });
 
     expect(manager.availableIncomingBitrate).toBeUndefined();
@@ -140,11 +125,10 @@ describe('StatsManager', () => {
   });
 
   it('сбрасывает availableIncomingBitrate при ended и failed', () => {
-    const callManager = new CallManager(new ConferenceStateManager());
-    const apiManager = new ApiManager({
-      connectionManager: new ConnectionManager({ JsSIP: jssip as unknown as TJsSIP }),
-      callManager,
-    });
+    const conferenceStateManager = new ConferenceStateManager();
+    const contentedStreamManager = new ContentedStreamManager();
+    const callManager = new CallManager(conferenceStateManager, contentedStreamManager);
+    const apiManager = new ApiManager();
     const manager = new StatsManager({ callManager, apiManager });
 
     // установим значение через collected
@@ -196,15 +180,11 @@ describe('StatsManager', () => {
       } as typeof statisticsMockBase;
     };
 
-    let callManager: CallManager;
-    let connectionManager: ConnectionManager;
-    let apiManager: ApiManager;
     let manager: StatsManager;
 
     beforeEach(() => {
-      callManager = new CallManager(new ConferenceStateManager());
-      connectionManager = new ConnectionManager({ JsSIP: jssip as unknown as TJsSIP });
-      apiManager = new ApiManager({ connectionManager, callManager });
+      const { callManager, apiManager } = createManagers();
+
       manager = new StatsManager({ callManager, apiManager });
     });
 
@@ -363,11 +343,10 @@ describe('StatsManager', () => {
     };
 
     it('возвращает false, если нет предыдущего или текущего значения', () => {
-      const callManager = new CallManager(new ConferenceStateManager());
-      const apiManager = new ApiManager({
-        connectionManager: new ConnectionManager({ JsSIP: jssip as unknown as TJsSIP }),
-        callManager,
-      });
+      const conferenceStateManager = new ConferenceStateManager();
+      const contentedStreamManager = new ContentedStreamManager();
+      const callManager = new CallManager(conferenceStateManager, contentedStreamManager);
+      const apiManager = new ApiManager();
       const manager = new StatsManager({ callManager, apiManager });
 
       expect(manager.hasAvailableIncomingBitrateChangedQuarter()).toBe(false);
@@ -380,11 +359,10 @@ describe('StatsManager', () => {
     });
 
     it('возвращает false, если изменение меньше 25%', () => {
-      const callManager = new CallManager(new ConferenceStateManager());
-      const apiManager = new ApiManager({
-        connectionManager: new ConnectionManager({ JsSIP: jssip as unknown as TJsSIP }),
-        callManager,
-      });
+      const conferenceStateManager = new ConferenceStateManager();
+      const contentedStreamManager = new ContentedStreamManager();
+      const callManager = new CallManager(conferenceStateManager, contentedStreamManager);
+      const apiManager = new ApiManager();
       const manager = new StatsManager({ callManager, apiManager });
 
       const base = statisticsMockBase.inbound.additional.candidatePair.availableIncomingBitrate;
@@ -396,11 +374,10 @@ describe('StatsManager', () => {
     });
 
     it('возвращает true, если изменение равно или больше 25% (рост)', () => {
-      const callManager = new CallManager(new ConferenceStateManager());
-      const apiManager = new ApiManager({
-        connectionManager: new ConnectionManager({ JsSIP: jssip as unknown as TJsSIP }),
-        callManager,
-      });
+      const conferenceStateManager = new ConferenceStateManager();
+      const contentedStreamManager = new ContentedStreamManager();
+      const callManager = new CallManager(conferenceStateManager, contentedStreamManager);
+      const apiManager = new ApiManager();
       const manager = new StatsManager({ callManager, apiManager });
 
       const base = statisticsMockBase.inbound.additional.candidatePair.availableIncomingBitrate;
@@ -412,11 +389,10 @@ describe('StatsManager', () => {
     });
 
     it('возвращает true, если изменение равно или больше 25% (падение)', () => {
-      const callManager = new CallManager(new ConferenceStateManager());
-      const apiManager = new ApiManager({
-        connectionManager: new ConnectionManager({ JsSIP: jssip as unknown as TJsSIP }),
-        callManager,
-      });
+      const conferenceStateManager = new ConferenceStateManager();
+      const contentedStreamManager = new ContentedStreamManager();
+      const callManager = new CallManager(conferenceStateManager, contentedStreamManager);
+      const apiManager = new ApiManager();
       const manager = new StatsManager({ callManager, apiManager });
 
       const base = statisticsMockBase.inbound.additional.candidatePair.availableIncomingBitrate;
@@ -428,11 +404,10 @@ describe('StatsManager', () => {
     });
 
     it('если предыдущее 0 и текущее > 0 — возвращает true', () => {
-      const callManager = new CallManager(new ConferenceStateManager());
-      const apiManager = new ApiManager({
-        connectionManager: new ConnectionManager({ JsSIP: jssip as unknown as TJsSIP }),
-        callManager,
-      });
+      const conferenceStateManager = new ConferenceStateManager();
+      const contentedStreamManager = new ContentedStreamManager();
+      const callManager = new CallManager(conferenceStateManager, contentedStreamManager);
+      const apiManager = new ApiManager();
       const manager = new StatsManager({ callManager, apiManager });
 
       manager.statsPeerConnection.events.trigger('collected', cloneStatsWithBitrate(0));
@@ -464,7 +439,9 @@ describe('StatsManager', () => {
     });
 
     it('не отправляет stats на первом collected (нет previous)', () => {
-      const callManager = new CallManager(new ConferenceStateManager());
+      const conferenceStateManager = new ConferenceStateManager();
+      const contentedStreamManager = new ContentedStreamManager();
+      const callManager = new CallManager(conferenceStateManager, contentedStreamManager);
       const apiManager = {
         sendStats: jest.fn().mockResolvedValue(undefined),
       } as unknown as ApiManager;
@@ -478,7 +455,9 @@ describe('StatsManager', () => {
     });
 
     it('не отправляет stats если изменение < 25%', () => {
-      const callManager = new CallManager(new ConferenceStateManager());
+      const conferenceStateManager = new ConferenceStateManager();
+      const contentedStreamManager = new ContentedStreamManager();
+      const callManager = new CallManager(conferenceStateManager, contentedStreamManager);
       const apiManager = {
         sendStats: jest.fn().mockResolvedValue(undefined),
       } as unknown as ApiManager;
@@ -493,7 +472,9 @@ describe('StatsManager', () => {
     });
 
     it('отправляет stats если изменение >= 25%', () => {
-      const callManager = new CallManager(new ConferenceStateManager());
+      const conferenceStateManager = new ConferenceStateManager();
+      const contentedStreamManager = new ContentedStreamManager();
+      const callManager = new CallManager(conferenceStateManager, contentedStreamManager);
       const apiManager = {
         sendStats: jest.fn().mockResolvedValue(undefined),
       } as unknown as ApiManager;
@@ -510,7 +491,9 @@ describe('StatsManager', () => {
     });
 
     it('отправляет stats если prev=0 и current>0', () => {
-      const callManager = new CallManager(new ConferenceStateManager());
+      const conferenceStateManager = new ConferenceStateManager();
+      const contentedStreamManager = new ContentedStreamManager();
+      const callManager = new CallManager(conferenceStateManager, contentedStreamManager);
       const apiManager = {
         sendStats: jest.fn().mockResolvedValue(undefined),
       } as unknown as ApiManager;
@@ -525,7 +508,9 @@ describe('StatsManager', () => {
     });
 
     it('логирует ошибку если sendStats отклоняется', async () => {
-      const callManager = new CallManager(new ConferenceStateManager());
+      const conferenceStateManager = new ConferenceStateManager();
+      const contentedStreamManager = new ContentedStreamManager();
+      const callManager = new CallManager(conferenceStateManager, contentedStreamManager);
       const error = new Error('boom');
       const apiManager = { sendStats: jest.fn().mockRejectedValue(error) } as unknown as ApiManager;
       const manager = new StatsManager({ callManager, apiManager });
