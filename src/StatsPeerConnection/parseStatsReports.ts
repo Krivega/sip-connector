@@ -210,8 +210,6 @@ const parseStatsReports = ({
     synchronizationSources,
   });
 
-  console.log('🚀 ~ parseStatsReports ~ inbound:', inbound);
-
   return {
     outbound,
     inbound,
