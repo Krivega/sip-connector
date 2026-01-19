@@ -34,7 +34,7 @@ class StatsPeerConnection {
   }
 
   public start(
-    peerConnection: RTCPeerConnection,
+    getPeerConnection: () => RTCPeerConnection | undefined,
     {
       interval = INTERVAL_COLLECT_STATISTICS,
       onError = debug,
@@ -45,7 +45,7 @@ class StatsPeerConnection {
   ) {
     this.stop();
     this.setTimeoutRequest.request(() => {
-      this.collectStatistics(peerConnection, {
+      this.collectStatistics(getPeerConnection, {
         onError,
       });
     }, interval);
@@ -80,7 +80,7 @@ class StatsPeerConnection {
   }
 
   private readonly collectStatistics = (
-    peerConnection: RTCPeerConnection,
+    getPeerConnection: () => RTCPeerConnection | undefined,
     {
       onError,
     }: {
@@ -89,8 +89,7 @@ class StatsPeerConnection {
   ) => {
     const startTime = now();
 
-    this.requesterAllStatistics
-      .request(peerConnection)
+    this.requestAllStatistics(getPeerConnection)
       .then((allStatistics) => {
         this.events.trigger('collected', parseStatsReports(allStatistics));
 
@@ -107,7 +106,7 @@ class StatsPeerConnection {
           interval = INTERVAL_COLLECT_STATISTICS * 2;
         }
 
-        this.start(peerConnection, {
+        this.start(getPeerConnection, {
           onError,
           interval,
         });
@@ -117,6 +116,18 @@ class StatsPeerConnection {
           onError(error);
         }
       });
+  };
+
+  private readonly requestAllStatistics = async (
+    getPeerConnection: () => RTCPeerConnection | undefined,
+  ) => {
+    const peerConnection = getPeerConnection();
+
+    if (peerConnection === undefined) {
+      throw new Error('failed to collect statistics: peerConnection is not defined');
+    }
+
+    return this.requesterAllStatistics.request(peerConnection);
   };
 }
 

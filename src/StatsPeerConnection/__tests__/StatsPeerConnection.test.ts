@@ -20,6 +20,10 @@ describe('StatsPeerConnection', () => {
   let onCollectedMocked: jest.Mock;
   let startMocked: jest.SpyInstance;
 
+  const getPeerConnection = () => {
+    return peerConnectionMocked;
+  };
+
   beforeEach(() => {
     statsPeerConnection = new StatsPeerConnection();
 
@@ -50,10 +54,10 @@ describe('StatsPeerConnection', () => {
     } as unknown as RTCPeerConnection;
   });
 
-  it('should be called onCollected callback by timeout', async () => {
+  it('должен вызывать onCollected по таймеру', async () => {
     expect.assertions(2);
 
-    statsPeerConnection.start(peerConnectionMocked);
+    statsPeerConnection.start(getPeerConnection);
     statsPeerConnection.on('collected', onCollectedMocked);
 
     await delayPromise(INTERVAL_COLLECT_STATISTICS);
@@ -65,10 +69,10 @@ describe('StatsPeerConnection', () => {
     expect(onCollectedMocked).toHaveBeenCalledTimes(2);
   });
 
-  it('should be canceled request by timeout when statistics has requested and requests has stopped', async () => {
+  it('должен отменять запрос по таймеру после запроса статистики и остановки', async () => {
     expect.assertions(1);
 
-    statsPeerConnection.start(peerConnectionMocked);
+    statsPeerConnection.start(getPeerConnection);
     statsPeerConnection.on('collected', onCollectedMocked);
 
     await promiseGetStats;
@@ -80,14 +84,14 @@ describe('StatsPeerConnection', () => {
     expect(onCollectedMocked).toHaveBeenCalledTimes(0);
   });
 
-  it('should be canceled request by timeout when onCollected callback has called and requests has stopped', async () => {
+  it('должен отменять запрос по таймеру после onCollected и остановки', async () => {
     expect.assertions(1);
 
     const [promiseOnCollected, resolvePromiseOnCollected] = resolveMockPromise();
 
     statsPeerConnection.on('collected', onCollectedMocked);
     statsPeerConnection.on('collected', resolvePromiseOnCollected);
-    statsPeerConnection.start(peerConnectionMocked);
+    statsPeerConnection.start(getPeerConnection);
 
     await promiseOnCollected;
 
@@ -98,11 +102,11 @@ describe('StatsPeerConnection', () => {
     expect(onCollectedMocked).toHaveBeenCalledTimes(1);
   });
 
-  it('should be canceled previous timeout when start has called again', async () => {
+  it('должен отменять предыдущий таймер при повторном start', async () => {
     expect.assertions(2);
 
-    statsPeerConnection.start(peerConnectionMocked);
-    statsPeerConnection.start(peerConnectionMocked);
+    statsPeerConnection.start(getPeerConnection);
+    statsPeerConnection.start(getPeerConnection);
 
     expect(startMocked).toHaveBeenCalledTimes(2);
 
@@ -113,17 +117,17 @@ describe('StatsPeerConnection', () => {
     expect(startMocked).toHaveBeenCalledTimes(2);
   });
 
-  it('should be canceled previous timeout when statistics has requested and start has called again', async () => {
+  it('должен отменять предыдущий таймер при повторном start после запроса статистики', async () => {
     expect.assertions(2);
 
-    statsPeerConnection.start(peerConnectionMocked);
+    statsPeerConnection.start(getPeerConnection);
 
     await promiseGetStats;
 
     // eslint-disable-next-line require-atomic-updates
     [promiseGetStats, resolvePromiseGetStats] = resolveMockPromise();
 
-    statsPeerConnection.start(peerConnectionMocked);
+    statsPeerConnection.start(getPeerConnection);
 
     await promiseGetStats;
 
@@ -136,10 +140,10 @@ describe('StatsPeerConnection', () => {
     expect(startMocked).toHaveBeenCalledTimes(2);
   });
 
-  it('requested should be false by default and true after start', () => {
+  it('requested должен быть false по умолчанию и true после start', () => {
     expect(statsPeerConnection.requested).toBe(false);
 
-    statsPeerConnection.start(peerConnectionMocked);
+    statsPeerConnection.start(getPeerConnection);
 
     expect(statsPeerConnection.requested).toBe(true);
 
@@ -148,7 +152,7 @@ describe('StatsPeerConnection', () => {
     expect(statsPeerConnection.requested).toBe(false);
   });
 
-  it('should be canceled request by timeout when onCollected callback has called and start has called again', async () => {
+  it('должен отменять запрос по таймеру после onCollected и повторного start', async () => {
     expect.assertions(2);
 
     statsPeerConnection.on('collected', onCollectedMocked);
@@ -156,14 +160,14 @@ describe('StatsPeerConnection', () => {
     const [promiseOnCollected, resolvePromiseOnCollected] = resolveMockPromise();
 
     statsPeerConnection.on('collected', resolvePromiseOnCollected);
-    statsPeerConnection.start(peerConnectionMocked);
+    statsPeerConnection.start(getPeerConnection);
 
     await promiseOnCollected;
 
     const [secondPromiseOnCollected, secondResolvePromiseOnCollected] = resolveMockPromise();
 
     statsPeerConnection.on('collected', secondResolvePromiseOnCollected);
-    statsPeerConnection.start(peerConnectionMocked);
+    statsPeerConnection.start(getPeerConnection);
 
     await secondPromiseOnCollected;
 
@@ -176,7 +180,7 @@ describe('StatsPeerConnection', () => {
     expect(onCollectedMocked).toHaveBeenCalledTimes(2);
   });
 
-  it('off should unsubscribe a specific handler', async () => {
+  it('off должен отписывать конкретный обработчик', async () => {
     expect.assertions(1);
 
     const [onCollectedCalled, resolveOnCollectedCalled] = resolveMockPromise();
@@ -190,7 +194,7 @@ describe('StatsPeerConnection', () => {
     statsPeerConnection.off('collected', handlerToRemove);
 
     // start collection and wait for one emit
-    statsPeerConnection.start(peerConnectionMocked);
+    statsPeerConnection.start(getPeerConnection);
 
     await onCollectedCalled;
 
@@ -200,13 +204,13 @@ describe('StatsPeerConnection', () => {
     statsPeerConnection.stop();
   });
 
-  it('once should handle only the first collected event', async () => {
+  it('once должен обрабатывать только первое событие collected', async () => {
     expect.assertions(1);
 
     const onceHandler = jest.fn();
 
     statsPeerConnection.once('collected', onceHandler);
-    statsPeerConnection.start(peerConnectionMocked);
+    statsPeerConnection.start(getPeerConnection);
 
     await delayPromise(INTERVAL_COLLECT_STATISTICS);
     await delayPromise(INTERVAL_COLLECT_STATISTICS);
@@ -216,7 +220,7 @@ describe('StatsPeerConnection', () => {
     statsPeerConnection.stop();
   });
 
-  it('onceRace should be called once with eventName', async () => {
+  it('onceRace должен вызываться один раз с eventName', async () => {
     expect.assertions(2);
 
     const [eventNamePromise, resolveEventName] = resolveMockPromise<string>();
@@ -225,7 +229,7 @@ describe('StatsPeerConnection', () => {
     });
 
     statsPeerConnection.onceRace(['collected'], raceHandler);
-    statsPeerConnection.start(peerConnectionMocked);
+    statsPeerConnection.start(getPeerConnection);
 
     const eventName = await eventNamePromise;
 
@@ -237,12 +241,12 @@ describe('StatsPeerConnection', () => {
     statsPeerConnection.stop();
   });
 
-  it('wait should resolve with collected payload once', async () => {
+  it('wait должен один раз резолвиться с payload для collected', async () => {
     expect.assertions(2);
 
     const waitPromise = statsPeerConnection.wait('collected');
 
-    statsPeerConnection.start(peerConnectionMocked);
+    statsPeerConnection.start(getPeerConnection);
 
     const payload = await waitPromise;
 
@@ -250,5 +254,26 @@ describe('StatsPeerConnection', () => {
     expect(payload).toHaveProperty('inbound');
 
     statsPeerConnection.stop();
+  });
+
+  it('должен вызывать onError при отсутствии peerConnection', async () => {
+    expect.assertions(3);
+
+    const onErrorMocked = jest.fn();
+    const getUndefinedPeerConnection = () => {
+      return undefined;
+    };
+
+    statsPeerConnection.start(getUndefinedPeerConnection, { onError: onErrorMocked });
+    statsPeerConnection.on('collected', onCollectedMocked);
+
+    await delayPromise(INTERVAL_COLLECT_STATISTICS);
+
+    expect(onCollectedMocked).toHaveBeenCalledTimes(0);
+    expect(onErrorMocked).toHaveBeenCalledTimes(1);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    expect(onErrorMocked.mock.calls[0][0].message).toBe(
+      'failed to collect statistics: peerConnection is not defined',
+    );
   });
 });

@@ -171,6 +171,14 @@ class CallManager {
     return getRemoteStreams();
   }
 
+  public readonly getActivePeerConnection = () => {
+    if (this.roleManager.hasSpectator()) {
+      return this.recvSession?.peerConnection;
+    }
+
+    return this.mcuSession.connection;
+  };
+
   public setCallRoleParticipant() {
     this.roleManager.setCallRoleParticipant();
   }
