@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [23.1.1](https://github.com/Krivega/sip-connector/compare/v23.1.0...v23.1.1) (2026-01-20)
+
+### Bug Fixes
+
+- recv contentedStream after start presentation ([872f0c2](https://github.com/Krivega/sip-connector/commit/872f0c2f392534a0be413dfe4adc99a66369fb29))
+
 ## [23.1.0](https://github.com/Krivega/sip-connector/compare/v23.0.0...v23.1.0) (2026-01-20)
 
 ### Features
