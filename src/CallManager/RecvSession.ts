@@ -58,6 +58,8 @@ class RecvSession {
 
     await this.negotiate(conferenceNumber);
 
+    this.setConferenceNumber(conferenceNumber);
+
     await tracksPromise;
   }
 
@@ -69,8 +71,6 @@ class RecvSession {
     );
 
     await this.setRemoteDescription(answer);
-
-    this.setConferenceNumber(conferenceNumber);
 
     return true;
   }
