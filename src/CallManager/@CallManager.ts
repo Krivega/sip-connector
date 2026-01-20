@@ -153,6 +153,10 @@ class CallManager {
   }
 
   public async renegotiate(): Promise<boolean> {
+    if (this.roleManager.hasSpectator() && this.recvSession !== undefined) {
+      return this.recvSession.renegotiate();
+    }
+
     return this.mcuSession.renegotiate();
   }
 
