@@ -50,7 +50,7 @@ class RecvSession {
       throw new Error('Conference number is not defined');
     }
 
-    await this.negotiate(this.conferenceNumber);
+    return this.negotiate(this.conferenceNumber);
   }
 
   public async call(conferenceNumber: TConferenceNumber): Promise<void> {
@@ -61,7 +61,7 @@ class RecvSession {
     await tracksPromise;
   }
 
-  private async negotiate(conferenceNumber: TConferenceNumber) {
+  private async negotiate(conferenceNumber: TConferenceNumber): Promise<boolean> {
     const offer = await this.createOffer();
     const answer = await this.tools.sendOffer(
       { conferenceNumber, quality: this.config.quality, audioChannel: this.config.audioChannel },
@@ -71,6 +71,8 @@ class RecvSession {
     await this.setRemoteDescription(answer);
 
     this.setConferenceNumber(conferenceNumber);
+
+    return true;
   }
 
   private setConferenceNumber(conferenceNumber: TConferenceNumber) {

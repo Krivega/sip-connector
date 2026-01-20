@@ -132,13 +132,16 @@ describe('RecvSession', () => {
     dispatchTrack(session, 'video');
 
     await callPromise;
-    await session.renegotiate();
+
+    const renegotiateResult = await session.renegotiate();
 
     expect(session.peerConnection.createOffer).toHaveBeenCalledTimes(2);
 
     expect(session.peerConnection.setLocalDescription).toHaveBeenCalledTimes(2);
 
     expect(session.peerConnection.setRemoteDescription).toHaveBeenCalledTimes(2);
+
+    expect(renegotiateResult).toBe(true);
 
     expect(tools.sendOffer).toHaveBeenNthCalledWith(
       2,
