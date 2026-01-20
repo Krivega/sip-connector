@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [23.1.0](https://github.com/Krivega/sip-connector/compare/v23.0.0...v23.1.0) (2026-01-20)
+
+### Features
+
+- enhance StreamsManagerProvider to support contented streams based on codec availability ([853a8f5](https://github.com/Krivega/sip-connector/commit/853a8f5a95d9a91a71d4c05c89b086f0a305ec62))
+
+### Bug Fixes
+
+- renegotiate connection for spectator when main stream is not receiving frames ([#68](https://github.com/Krivega/sip-connector/issues/68)) ([3852e57](https://github.com/Krivega/sip-connector/commit/3852e57182352ac17696d2874b04d4f0c2fd721d))
+
 ## [23.0.0](https://github.com/Krivega/sip-connector/compare/v22.0.0...v23.0.0) (2026-01-19)
 
 ### ⚠ BREAKING CHANGES
