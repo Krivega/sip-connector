@@ -112,6 +112,40 @@ describe('RecvSession', () => {
     );
   });
 
+  it('renegotiate: пересогласует с переданным conferenceNumber', async () => {
+    const config = createConfig();
+    const tools = createTools();
+    const session = new RecvSession(config, tools);
+    const conferenceNumber = '123';
+
+    const callPromise = session.call(conferenceNumber);
+
+    dispatchTrack(session, 'audio');
+    dispatchTrack(session, 'video');
+
+    await callPromise;
+
+    const renegotiateResult = await session.renegotiate(conferenceNumber);
+
+    expect(session.peerConnection.createOffer).toHaveBeenCalledTimes(2);
+
+    expect(session.peerConnection.setLocalDescription).toHaveBeenCalledTimes(2);
+
+    expect(session.peerConnection.setRemoteDescription).toHaveBeenCalledTimes(2);
+
+    expect(renegotiateResult).toBe(true);
+
+    expect(tools.sendOffer).toHaveBeenNthCalledWith(
+      2,
+      {
+        conferenceNumber,
+        quality: config.quality,
+        audioChannel: config.audioChannel,
+      },
+      expect.objectContaining({ type: 'offer', sdp: 'offer-sdp' }),
+    );
+  });
+
   it('возвращает настройки и peerConnection', () => {
     const config = createConfig();
     const tools = createTools();

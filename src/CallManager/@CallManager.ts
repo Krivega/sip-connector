@@ -153,7 +153,11 @@ class CallManager {
   }
 
   public async renegotiate(): Promise<boolean> {
-    return this.mcuSession.renegotiate();
+    if (this.roleManager.hasSpectator()) {
+      return this.renegotiateRecvSession();
+    }
+
+    return this.renegotiateMcuSession();
   }
 
   public answerToIncomingCall: TAnswerToIncomingCall = async (
@@ -414,6 +418,20 @@ class CallManager {
     this.contentedStreamManager.on('not-available', () => {
       this.emitEventChangedRemoteStreams(this.getRemoteStreams());
     });
+  }
+
+  private async renegotiateRecvSession() {
+    const conferenceNumber = this.conferenceStateManager.getNumber();
+
+    if (conferenceNumber === undefined || this.recvSession === undefined) {
+      return false;
+    }
+
+    return this.recvSession.renegotiate(conferenceNumber);
+  }
+
+  private async renegotiateMcuSession() {
+    return this.mcuSession.renegotiate();
   }
 }
 

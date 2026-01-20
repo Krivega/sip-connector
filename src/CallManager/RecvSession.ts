@@ -44,6 +44,13 @@ class RecvSession {
 
   public async call(conferenceNumber: TConferenceNumber): Promise<void> {
     const tracksPromise = this.waitForTracks();
+
+    await this.renegotiate(conferenceNumber);
+
+    await tracksPromise;
+  }
+
+  public async renegotiate(conferenceNumber: TConferenceNumber): Promise<boolean> {
     const offer = await this.createOffer();
     const answer = await this.tools.sendOffer(
       { conferenceNumber, quality: this.config.quality, audioChannel: this.config.audioChannel },
@@ -51,7 +58,8 @@ class RecvSession {
     );
 
     await this.setRemoteDescription(answer);
-    await tracksPromise;
+
+    return true;
   }
 
   private async createOffer(): Promise<RTCSessionDescriptionInit> {

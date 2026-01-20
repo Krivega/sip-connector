@@ -18,6 +18,7 @@ const mockRecvSession = (() => {
         removeEventListener: jest.Mock;
       };
       call: jest.Mock;
+      renegotiate: jest.Mock;
       close: jest.Mock;
       config?: unknown;
       tools?: unknown;
@@ -30,15 +31,17 @@ const mockRecvSession = (() => {
       removeEventListener: jest.fn(),
     };
     const call = jest.fn().mockResolvedValue(undefined);
+    const renegotiate = jest.fn().mockResolvedValue(true);
     const close = jest.fn();
 
     const inst: {
       peerConnection: typeof peerConnection;
       call: typeof call;
+      renegotiate: typeof renegotiate;
       close: typeof close;
       config?: unknown;
       tools?: unknown;
-    } = { peerConnection, call, close };
+    } = { peerConnection, call, renegotiate, close };
 
     state.instance = inst;
 
@@ -124,6 +127,82 @@ describe('CallManager', () => {
     callManager.mcuSession.rtcSession = undefined;
 
     await expect(callManager.renegotiate()).rejects.toThrow('No rtcSession established');
+  });
+
+  it('renegotiate: должен вернуть false если rtcSession отсутствует', async () => {
+    const sendOffer = jest.fn().mockResolvedValue(undefined);
+
+    callManager.setCallRoleSpectator({
+      audioId: 'audio-1',
+      sendOffer,
+    } as TCallRoleSpectator['recvParams']);
+
+    const mcuRenegotiateSpy = jest
+      .spyOn(
+        (callManager as unknown as { mcuSession: { renegotiate: () => Promise<boolean> } })
+          .mcuSession,
+        'renegotiate',
+      )
+      .mockResolvedValue(true);
+
+    await expect(callManager.renegotiate()).resolves.toBe(false);
+
+    expect(mockRecvSession.instance).toBeUndefined();
+    expect(mcuRenegotiateSpy).not.toHaveBeenCalled();
+  });
+
+  it('renegotiate: должен пересогласовать recvSession для наблюдателя', async () => {
+    conferenceStateManager.updateState({ number: '100' });
+
+    const sendOffer = jest.fn().mockResolvedValue(undefined);
+
+    callManager.setCallRoleSpectator({
+      audioId: 'audio-1',
+      sendOffer,
+    } as TCallRoleSpectator['recvParams']);
+
+    const mcuRenegotiateSpy = jest
+      .spyOn(
+        (callManager as unknown as { mcuSession: { renegotiate: () => Promise<boolean> } })
+          .mcuSession,
+        'renegotiate',
+      )
+      .mockResolvedValue(true);
+
+    await expect(callManager.renegotiate()).resolves.toBe(true);
+
+    expect(mockRecvSession.instance?.renegotiate).toHaveBeenCalledTimes(1);
+    expect(mockRecvSession.instance?.renegotiate).toHaveBeenCalledWith('100');
+    expect(mcuRenegotiateSpy).not.toHaveBeenCalled();
+  });
+
+  it('renegotiate: должен вернуть ошибку при пересогласовании для наблюдателя если renegotiate вернул ошибку', async () => {
+    conferenceStateManager.updateState({ number: '100' });
+
+    const sendOffer = jest.fn().mockResolvedValue(undefined);
+
+    callManager.setCallRoleSpectator({
+      audioId: 'audio-1',
+      sendOffer,
+    } as TCallRoleSpectator['recvParams']);
+
+    const error = new Error('renegotiate failed');
+
+    mockRecvSession.instance?.renegotiate.mockRejectedValueOnce(error);
+
+    const mcuRenegotiateSpy = jest
+      .spyOn(
+        (callManager as unknown as { mcuSession: { renegotiate: () => Promise<boolean> } })
+          .mcuSession,
+        'renegotiate',
+      )
+      .mockResolvedValue(true);
+
+    await expect(callManager.renegotiate()).rejects.toThrow('renegotiate failed');
+
+    expect(mockRecvSession.instance?.renegotiate).toHaveBeenCalledTimes(1);
+    expect(mockRecvSession.instance?.renegotiate).toHaveBeenCalledWith('100');
+    expect(mcuRenegotiateSpy).not.toHaveBeenCalled();
   });
 
   it('getRemoteStreams: возвращает undefined если нет connection', () => {
