@@ -1,7 +1,6 @@
 import { EventEmitter } from 'node:events';
 
-import NameAddrHeader from '@krivega/jssip/lib/NameAddrHeader';
-import URI from '@krivega/jssip/lib/URI';
+import { NameAddrHeader, URI } from '@krivega/jssip';
 
 import Request from './Request.mock';
 import Session from './RTCSessionMock';

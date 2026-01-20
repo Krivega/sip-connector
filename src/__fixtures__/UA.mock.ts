@@ -1,3 +1,5 @@
+import { EventEmitter } from 'node:events';
+
 import { C, URI } from '@krivega/jssip';
 import { Events } from 'events-constructor';
 
@@ -13,8 +15,11 @@ import type {
   Socket,
   UAConfiguration,
   UAConfigurationParams,
+  UAContact,
   UAEventMap,
+  UAStatus,
 } from '@krivega/jssip';
+import type Message from '@krivega/jssip/src/Message';
 import type { TEventHandlers } from './BaseSession.mock';
 
 export const PASSWORD_CORRECT = 'PASSWORD_CORRECT';
@@ -51,7 +56,8 @@ const responseFailed = {
   reason_phrase: 'Unauthorized',
 } as unknown as IncomingResponse;
 
-class UA implements IUA {
+// eslint-disable-next-line unicorn/prefer-event-target
+class UA extends EventEmitter implements IUA {
   private static isAvailableTelephony = true;
 
   private static startError?: DisconnectEvent;
@@ -64,7 +70,7 @@ class UA implements IUA {
 
   public readonly registratorInner!: Registrator;
 
-  // @ts-expect-error – Jest создаёт функцию-замок.
+  // @ts-expect-error
   public call = jest.fn(
     (
       url: string,
@@ -137,6 +143,8 @@ class UA implements IUA {
     return this;
   });
 
+  public configuration: UAConfiguration;
+
   private startedTimeout?: ReturnType<typeof setTimeout>;
 
   private stopedTimeout?: ReturnType<typeof setTimeout>;
@@ -147,9 +155,8 @@ class UA implements IUA {
 
   private isConnectedInner?: boolean;
 
-  private configuration: UAConfiguration;
-
   public constructor(_configuration: UAConfigurationParams) {
+    super();
     this.events = new Events<readonly (keyof UAEventMap)[]>(UA_JSSIP_EVENT_NAMES);
 
     const [scheme, infoUri] = _configuration.uri.split(':');
@@ -162,6 +169,30 @@ class UA implements IUA {
 
     this.configuration = configuration;
     this.registratorInner = new Registrator();
+  }
+
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
+  public get C(): typeof UAStatus {
+    throw new Error('Method not implemented.');
+  }
+
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
+  public get status(): UAStatus {
+    throw new Error('Method not implemented.');
+  }
+
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
+  public get contact(): UAContact {
+    throw new Error('Method not implemented.');
+  }
+
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
+  public get transport(): unknown {
+    throw new Error('Method not implemented.');
+  }
+
+  public static C(): UAStatus {
+    throw new Error('Method not implemented.');
   }
 
   public static setStartError(
@@ -196,6 +227,21 @@ class UA implements IUA {
     this.events.on<Parameters<UAEventMap[T]>[0]>(eventName, handler);
 
     return this;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
+  public sendMessage(): Message {
+    throw new Error('Method not implemented.');
+  }
+
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
+  public normalizeTarget(): URI | undefined {
+    throw new Error('Method not implemented.');
+  }
+
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this, @typescript-eslint/no-unnecessary-type-parameters
+  public get<T extends keyof UAConfiguration>(): UAConfiguration[T] {
+    throw new Error('Method not implemented.');
   }
 
   public off<T extends keyof UAEventMap>(eventName: T, handler: UAEventMap[T]) {

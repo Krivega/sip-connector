@@ -63,7 +63,7 @@
   },
   "dependencies": {
     "@krivega/cancelable-promise": "^1.1.4",
-    "@krivega/jssip": "^5.5.2",
+    "@krivega/jssip": "^5.5.5",
     "@krivega/timeout-requester": "^1.0.0",
     "debug": "^4.4.3",
     "events-constructor": "^2.1.1",
@@ -107,7 +107,7 @@
   },
   "peerDependencies": {
     "@krivega/cancelable-promise": "^1.1.4",
-    "@krivega/jssip": "^5.5.2",
+    "@krivega/jssip": "^5.5.5",
     "@krivega/timeout-requester": "^1.0.0",
     "debug": "^4.4.3",
     "events-constructor": "^2.1.1",

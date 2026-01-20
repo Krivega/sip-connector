@@ -1,4 +1,4 @@
-import { IncomingRequest } from '@krivega/jssip/lib/SIPMessage';
+import { IncomingRequest } from '@krivega/jssip';
 
 type TExtraHeaders = [string, string][];
 
