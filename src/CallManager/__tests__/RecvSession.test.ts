@@ -112,6 +112,63 @@ describe('RecvSession', () => {
     );
   });
 
+  it('renegotiate: бросает ошибку если номер конференции не задан', async () => {
+    const config = createConfig();
+    const tools = createTools();
+    const session = new RecvSession(config, tools);
+
+    await expect(session.renegotiate()).rejects.toThrow('Conference number is not defined');
+  });
+
+  it('renegotiate: пересогласует с сохраненным conferenceNumber', async () => {
+    const config = createConfig();
+    const tools = createTools();
+    const session = new RecvSession(config, tools);
+    const conferenceNumber = '123';
+
+    const callPromise = session.call(conferenceNumber);
+
+    dispatchTrack(session, 'audio');
+    dispatchTrack(session, 'video');
+
+    await callPromise;
+    await session.renegotiate();
+
+    expect(session.peerConnection.createOffer).toHaveBeenCalledTimes(2);
+
+    expect(session.peerConnection.setLocalDescription).toHaveBeenCalledTimes(2);
+
+    expect(session.peerConnection.setRemoteDescription).toHaveBeenCalledTimes(2);
+
+    expect(tools.sendOffer).toHaveBeenNthCalledWith(
+      2,
+      {
+        conferenceNumber,
+        quality: config.quality,
+        audioChannel: config.audioChannel,
+      },
+      expect.objectContaining({ type: 'offer', sdp: 'offer-sdp' }),
+    );
+  });
+
+  it('renegotiate: после close снова требует conferenceNumber', async () => {
+    const config = createConfig();
+    const tools = createTools();
+    const session = new RecvSession(config, tools);
+    const conferenceNumber = '123';
+
+    const callPromise = session.call(conferenceNumber);
+
+    dispatchTrack(session, 'audio');
+    dispatchTrack(session, 'video');
+
+    await callPromise;
+
+    session.close();
+
+    await expect(session.renegotiate()).rejects.toThrow('Conference number is not defined');
+  });
+
   it('возвращает настройки и peerConnection', () => {
     const config = createConfig();
     const tools = createTools();
