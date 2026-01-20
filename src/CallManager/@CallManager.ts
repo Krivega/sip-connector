@@ -421,11 +421,13 @@ class CallManager {
   }
 
   private async renegotiateRecvSession() {
-    if (this.recvSession === undefined) {
+    const conferenceNumber = this.conferenceStateManager.getNumber();
+
+    if (conferenceNumber === undefined || this.recvSession === undefined) {
       return false;
     }
 
-    return this.recvSession.renegotiate();
+    return this.recvSession.renegotiate(conferenceNumber);
   }
 
   private async renegotiateMcuSession() {

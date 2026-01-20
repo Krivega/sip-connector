@@ -172,6 +172,7 @@ describe('CallManager', () => {
     await expect(callManager.renegotiate()).resolves.toBe(true);
 
     expect(mockRecvSession.instance?.renegotiate).toHaveBeenCalledTimes(1);
+    expect(mockRecvSession.instance?.renegotiate).toHaveBeenCalledWith('100');
     expect(mcuRenegotiateSpy).not.toHaveBeenCalled();
   });
 
@@ -200,6 +201,7 @@ describe('CallManager', () => {
     await expect(callManager.renegotiate()).rejects.toThrow('renegotiate failed');
 
     expect(mockRecvSession.instance?.renegotiate).toHaveBeenCalledTimes(1);
+    expect(mockRecvSession.instance?.renegotiate).toHaveBeenCalledWith('100');
     expect(mcuRenegotiateSpy).not.toHaveBeenCalled();
   });
 

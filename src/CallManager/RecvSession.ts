@@ -23,8 +23,6 @@ class RecvSession {
 
   private readonly connection: RTCPeerConnection;
 
-  private conferenceNumber: TConferenceNumber | undefined = undefined;
-
   public constructor(config: TConfig, tools: TTools) {
     this.config = config;
     this.tools = tools;
@@ -41,29 +39,18 @@ class RecvSession {
   }
 
   public close(): void {
-    this.resetConferenceNumber();
     this.connection.close();
-  }
-
-  public async renegotiate() {
-    if (this.conferenceNumber === undefined) {
-      throw new Error('Conference number is not defined');
-    }
-
-    return this.negotiate(this.conferenceNumber);
   }
 
   public async call(conferenceNumber: TConferenceNumber): Promise<void> {
     const tracksPromise = this.waitForTracks();
 
-    await this.negotiate(conferenceNumber);
-
-    this.setConferenceNumber(conferenceNumber);
+    await this.renegotiate(conferenceNumber);
 
     await tracksPromise;
   }
 
-  private async negotiate(conferenceNumber: TConferenceNumber): Promise<boolean> {
+  public async renegotiate(conferenceNumber: TConferenceNumber): Promise<boolean> {
     const offer = await this.createOffer();
     const answer = await this.tools.sendOffer(
       { conferenceNumber, quality: this.config.quality, audioChannel: this.config.audioChannel },
@@ -73,14 +60,6 @@ class RecvSession {
     await this.setRemoteDescription(answer);
 
     return true;
-  }
-
-  private setConferenceNumber(conferenceNumber: TConferenceNumber) {
-    this.conferenceNumber = conferenceNumber;
-  }
-
-  private resetConferenceNumber() {
-    this.conferenceNumber = undefined;
   }
 
   private async createOffer(): Promise<RTCSessionDescriptionInit> {
