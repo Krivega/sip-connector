@@ -60,7 +60,7 @@ export class StreamsManagerProvider {
       // Используем централизованное состояние вместо детекции по трекам
       const contentedStream = stateInfo.isAvailable
         ? streams.find((stream) => {
-            return hasContendedStreamForParticipant(stream);
+            return stream !== mainStream;
           })
         : undefined;
 

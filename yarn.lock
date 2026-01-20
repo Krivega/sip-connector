@@ -1165,10 +1165,10 @@
     globals "^17.0.0"
     typescript "^5.9.3"
 
-"@krivega/jssip@^5.5.5":
-  version "5.5.5"
-  resolved "https://registry.yarnpkg.com/@krivega/jssip/-/jssip-5.5.5.tgz#fe348e76a26f403ff9378f25855e6df7e0407db9"
-  integrity sha512-PxTr/XYih9q5aLTa0zDZuBgmS5y3L7xpt7x0I9/s9KroTLqmJNk6Skh5r6mRkGU0vIT/2V8lmG+QQ6tJc0G/7w==
+"@krivega/jssip@^5.6.0":
+  version "5.6.0"
+  resolved "https://registry.yarnpkg.com/@krivega/jssip/-/jssip-5.6.0.tgz#4fd75478a41e20f712afbb11120ba67f49fd0b10"
+  integrity sha512-vgIs1XS58DFvtmhqoj/6fQy8ufrKgQpM8+oaX2GY/2GAXB1hfS2uGxRzxCbT3tJFJ7CQJtuf5maXx0roDkXsvg==
   dependencies:
     debug "^4.4.3"
     events "^3.3.0"
