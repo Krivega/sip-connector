@@ -1,5 +1,6 @@
 import { createVideoMediaStreamTrackMock } from 'webrtc-mock';
 
+import { EContentedStreamCodec } from '@/ApiManager';
 import { RemoteStreamsManager } from '../RemoteStreamsManager';
 import { StreamsManagerProvider } from '../StreamsManagerProvider';
 
@@ -151,41 +152,81 @@ describe('StreamsManagerProvider', () => {
       expect(typeof result.getRemoteStreams).toBe('function');
     });
 
-    it('getRemoteStreams должен вернуть mainStream из default participant и contentedStream когда isAvailable=true', () => {
+    it('getRemoteStreams должен вернуть mainStream из default participant и contentedStream когда isAvailable=true и codec указан', () => {
       const recvTrack1 = withMsid(createVideoMediaStreamTrackMock({ id: 'recv1' }), 'main-stream');
-      const recvTrack2 = withMsid(
-        createVideoMediaStreamTrackMock({ id: 'recv2' }),
+      const contentedTrack = withMsid(
+        createVideoMediaStreamTrackMock({ id: 'contented' }),
         'contented-stream',
       );
 
-      // Добавляем треки в recv manager с явным указанием streamHint = 'default'
-      // Это создаст два разных потока для participantId 'default'
+      // Добавляем main track для participantId 'default'
       recvManager.addTrack(recvTrack1, { streamHint: 'default' });
-      recvManager.addTrack(recvTrack2, { streamHint: 'default' });
+      // Добавляем contented track для participantId 'content_vp8'
+      recvManager.addTrack(contentedTrack, { streamHint: 'content_vp8' });
 
       const result = provider.getRecvRemoteStreamsManagerTools({
-        stateInfo: { isAvailable: true },
+        stateInfo: { isAvailable: true, codec: EContentedStreamCodec.VP8 },
       });
       const streams = result.getRemoteStreams();
 
       expect(streams.mainStream).toBeDefined();
       expect(streams.mainStream?.getTracks()).toEqual([recvTrack1]);
       expect(streams.contentedStream).toBeDefined();
-      expect(streams.contentedStream?.getTracks()).toEqual([recvTrack2]);
+      expect(streams.contentedStream?.getTracks()).toEqual([contentedTrack]);
     });
 
-    it('getRemoteStreams должен вернуть mainStream и undefined contentedStream когда isAvailable=false', () => {
+    it('getRemoteStreams должен работать с разными кодеками (H264)', () => {
       const recvTrack1 = withMsid(createVideoMediaStreamTrackMock({ id: 'recv1' }), 'main-stream');
-      const recvTrack2 = withMsid(
-        createVideoMediaStreamTrackMock({ id: 'recv2' }),
+      const contentedTrack = withMsid(
+        createVideoMediaStreamTrackMock({ id: 'contented' }),
         'contented-stream',
       );
 
       recvManager.addTrack(recvTrack1, { streamHint: 'default' });
-      recvManager.addTrack(recvTrack2, { streamHint: 'default' });
+      recvManager.addTrack(contentedTrack, { streamHint: 'content_h264' });
+
+      const result = provider.getRecvRemoteStreamsManagerTools({
+        stateInfo: { isAvailable: true, codec: EContentedStreamCodec.H264 },
+      });
+      const streams = result.getRemoteStreams();
+
+      expect(streams.mainStream).toBeDefined();
+      expect(streams.contentedStream).toBeDefined();
+      expect(streams.contentedStream?.getTracks()).toEqual([contentedTrack]);
+    });
+
+    it('getRemoteStreams должен вернуть mainStream и undefined contentedStream когда isAvailable=false', () => {
+      const recvTrack1 = withMsid(createVideoMediaStreamTrackMock({ id: 'recv1' }), 'main-stream');
+      const contentedTrack = withMsid(
+        createVideoMediaStreamTrackMock({ id: 'contented' }),
+        'contented-stream',
+      );
+
+      recvManager.addTrack(recvTrack1, { streamHint: 'default' });
+      recvManager.addTrack(contentedTrack, { streamHint: 'content_vp8' });
 
       const result = provider.getRecvRemoteStreamsManagerTools({
         stateInfo: { isAvailable: false },
+      });
+      const streams = result.getRemoteStreams();
+
+      expect(streams.mainStream).toBeDefined();
+      expect(streams.mainStream?.getTracks()).toEqual([recvTrack1]);
+      expect(streams.contentedStream).toBeUndefined();
+    });
+
+    it('getRemoteStreams должен вернуть undefined contentedStream когда codec не указан', () => {
+      const recvTrack1 = withMsid(createVideoMediaStreamTrackMock({ id: 'recv1' }), 'main-stream');
+      const contentedTrack = withMsid(
+        createVideoMediaStreamTrackMock({ id: 'contented' }),
+        'contented-stream',
+      );
+
+      recvManager.addTrack(recvTrack1, { streamHint: 'default' });
+      recvManager.addTrack(contentedTrack, { streamHint: 'content_vp8' });
+
+      const result = provider.getRecvRemoteStreamsManagerTools({
+        stateInfo: { isAvailable: true },
       });
       const streams = result.getRemoteStreams();
 
@@ -200,6 +241,21 @@ describe('StreamsManagerProvider', () => {
       const streams = result.getRemoteStreams();
 
       expect(streams.mainStream).toBeUndefined();
+      expect(streams.contentedStream).toBeUndefined();
+    });
+
+    it('getRemoteStreams должен вернуть undefined contentedStream если нет потока для указанного codec', () => {
+      const recvTrack1 = withMsid(createVideoMediaStreamTrackMock({ id: 'recv1' }), 'main-stream');
+
+      recvManager.addTrack(recvTrack1, { streamHint: 'default' });
+      // Не добавляем contented track
+
+      const result = provider.getRecvRemoteStreamsManagerTools({
+        stateInfo: { isAvailable: true, codec: EContentedStreamCodec.VP8 },
+      });
+      const streams = result.getRemoteStreams();
+
+      expect(streams.mainStream).toBeDefined();
       expect(streams.contentedStream).toBeUndefined();
     });
   });

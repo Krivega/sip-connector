@@ -4,6 +4,11 @@ import type { TGetRemoteStreams, TStreamsManagerTools } from './types';
 
 const PARTICIPANT_ID_SPECTATOR_MAIN_STREAM = 'default';
 const LABEL_PARTICIPANT_CONTENTED_TRACK = 'dual';
+const PREFIX_LABEL_SPECTATOR_CONTENTED_TRACK = 'content_';
+
+const getParticipantIdSpectatorContented = (codec: string) => {
+  return `${PREFIX_LABEL_SPECTATOR_CONTENTED_TRACK}${codec.toLowerCase()}`;
+};
 
 const hasContendedStreamForParticipant = (stream: MediaStream) => {
   return [...stream.getTracks()].some((track) => {
@@ -75,10 +80,26 @@ export class StreamsManagerProvider {
       const mainStreams = manager.getStreams(PARTICIPANT_ID_SPECTATOR_MAIN_STREAM);
 
       const mainStream = mainStreams[0];
+      const contentedStream = this.getRecvRemoteContentedStream({ stateInfo });
 
-      return { mainStream, contentedStream: stateInfo.isAvailable ? mainStreams[1] : undefined };
+      return { mainStream, contentedStream };
     };
 
     return { manager, getRemoteStreams };
+  }
+
+  private getRecvRemoteContentedStream({
+    stateInfo,
+  }: {
+    stateInfo: TContentedStreamStateInfo;
+  }): MediaStream | undefined {
+    if (!stateInfo.isAvailable || stateInfo.codec === undefined) {
+      return undefined;
+    }
+
+    const participantId = getParticipantIdSpectatorContented(stateInfo.codec);
+    const streams = this.recvRemoteStreamsManager.getStreams(participantId);
+
+    return streams[0];
   }
 }
