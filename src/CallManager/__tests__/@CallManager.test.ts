@@ -129,6 +129,28 @@ describe('CallManager', () => {
     await expect(callManager.renegotiate()).rejects.toThrow('No rtcSession established');
   });
 
+  it('renegotiate: должен вернуть false если rtcSession отсутствует', async () => {
+    const sendOffer = jest.fn().mockResolvedValue(undefined);
+
+    callManager.setCallRoleSpectator({
+      audioId: 'audio-1',
+      sendOffer,
+    } as TCallRoleSpectator['recvParams']);
+
+    const mcuRenegotiateSpy = jest
+      .spyOn(
+        (callManager as unknown as { mcuSession: { renegotiate: () => Promise<boolean> } })
+          .mcuSession,
+        'renegotiate',
+      )
+      .mockResolvedValue(true);
+
+    await expect(callManager.renegotiate()).resolves.toBe(false);
+
+    expect(mockRecvSession.instance).toBeUndefined();
+    expect(mcuRenegotiateSpy).not.toHaveBeenCalled();
+  });
+
   it('renegotiate: должен пересогласовать recvSession для наблюдателя', async () => {
     conferenceStateManager.updateState({ number: '100' });
 

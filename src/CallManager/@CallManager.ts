@@ -153,11 +153,11 @@ class CallManager {
   }
 
   public async renegotiate(): Promise<boolean> {
-    if (this.roleManager.hasSpectator() && this.recvSession !== undefined) {
-      return this.recvSession.renegotiate();
+    if (this.roleManager.hasSpectator()) {
+      return this.renegotiateRecvSession();
     }
 
-    return this.mcuSession.renegotiate();
+    return this.renegotiateMcuSession();
   }
 
   public answerToIncomingCall: TAnswerToIncomingCall = async (
@@ -418,6 +418,18 @@ class CallManager {
     this.contentedStreamManager.on('not-available', () => {
       this.emitEventChangedRemoteStreams(this.getRemoteStreams());
     });
+  }
+
+  private async renegotiateRecvSession() {
+    if (this.recvSession === undefined) {
+      return false;
+    }
+
+    return this.recvSession.renegotiate();
+  }
+
+  private async renegotiateMcuSession() {
+    return this.mcuSession.renegotiate();
   }
 }
 
