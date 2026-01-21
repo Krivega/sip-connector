@@ -545,7 +545,7 @@ class ApiManager {
     const room = getHeader(request, EKeyHeader.CONTENT_ENTER_ROOM);
     const participantName = getHeader(request, EKeyHeader.PARTICIPANT_NAME);
 
-    if (room !== undefined) {
+    if (room !== undefined && participantName !== undefined) {
       this.events.trigger(EEvent.ENTER_ROOM, { room, participantName });
     }
   };

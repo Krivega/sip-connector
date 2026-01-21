@@ -38,7 +38,7 @@ describe('media state', () => {
     sipConnector.sendRefusalToTurnOnMic();
 
     expect(mockFunction).toHaveBeenCalledWith(EContentTypeSent.REFUSAL, undefined, {
-      extraHeaders: ['X-Vinteo-Media-Type: 0'],
+      extraHeaders: ['x-vinteo-media-type: 0'],
       noTerminateWhenError: true,
     });
   });
@@ -59,7 +59,7 @@ describe('media state', () => {
     sipConnector.sendRefusalToTurnOnCam();
 
     expect(mockFunction).toHaveBeenCalledWith(EContentTypeSent.REFUSAL, undefined, {
-      extraHeaders: ['X-Vinteo-Media-Type: 1'],
+      extraHeaders: ['x-vinteo-media-type: 1'],
       noTerminateWhenError: true,
     });
   });

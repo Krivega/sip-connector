@@ -19,6 +19,13 @@ type TDomIds = {
   incomingStatusId: string;
   presentationStatusId: string;
   systemStatusId: string;
+  conferenceStateRoomId: string;
+  conferenceStateParticipantNameId: string;
+  conferenceStateTokenId: string;
+  conferenceStateConferenceId: string;
+  conferenceStateParticipantId: string;
+  conferenceStateNumberId: string;
+  conferenceStateAnswerId: string;
   callStatsSectionId: string;
   callStatsTabAudioId: string;
   callStatsTabMainStreamId: string;
@@ -134,6 +141,20 @@ class DOM {
 
   public systemStatusElement: HTMLElement;
 
+  public conferenceStateRoomElement: HTMLElement;
+
+  public conferenceStateParticipantNameElement: HTMLElement;
+
+  public conferenceStateTokenElement: HTMLElement;
+
+  public conferenceStateConferenceElement: HTMLElement;
+
+  public conferenceStateParticipantElement: HTMLElement;
+
+  public conferenceStateNumberElement: HTMLElement;
+
+  public conferenceStateAnswerElement: HTMLElement;
+
   public callStatsSectionElement: HTMLElement;
 
   public callStatsTabAudioButtonElement: HTMLButtonElement;
@@ -190,6 +211,13 @@ class DOM {
     incomingStatusId,
     presentationStatusId,
     systemStatusId,
+    conferenceStateRoomId,
+    conferenceStateParticipantNameId,
+    conferenceStateTokenId,
+    conferenceStateConferenceId,
+    conferenceStateParticipantId,
+    conferenceStateNumberId,
+    conferenceStateAnswerId,
     callStatsSectionId,
     callStatsTabAudioId,
     callStatsTabMainStreamId,
@@ -276,6 +304,13 @@ class DOM {
     this.incomingStatusElement = getElementById(incomingStatusId);
     this.presentationStatusElement = getElementById(presentationStatusId);
     this.systemStatusElement = getElementById(systemStatusId);
+    this.conferenceStateRoomElement = getElementById(conferenceStateRoomId);
+    this.conferenceStateParticipantNameElement = getElementById(conferenceStateParticipantNameId);
+    this.conferenceStateTokenElement = getElementById(conferenceStateTokenId);
+    this.conferenceStateConferenceElement = getElementById(conferenceStateConferenceId);
+    this.conferenceStateParticipantElement = getElementById(conferenceStateParticipantId);
+    this.conferenceStateNumberElement = getElementById(conferenceStateNumberId);
+    this.conferenceStateAnswerElement = getElementById(conferenceStateAnswerId);
     this.callStatsSectionElement = getElementById(callStatsSectionId);
     this.callStatsTabAudioButtonElement = getElementById<HTMLButtonElement>(callStatsTabAudioId);
     this.callStatsTabMainStreamButtonElement =
@@ -403,6 +438,13 @@ export const dom = new DOM({
   incomingStatusId: 'incomingStatus',
   presentationStatusId: 'presentationStatus',
   systemStatusId: 'systemStatus',
+  conferenceStateRoomId: 'conferenceStateRoom',
+  conferenceStateParticipantNameId: 'conferenceStateParticipantName',
+  conferenceStateTokenId: 'conferenceStateToken',
+  conferenceStateConferenceId: 'conferenceStateConference',
+  conferenceStateParticipantId: 'conferenceStateParticipant',
+  conferenceStateNumberId: 'conferenceStateNumber',
+  conferenceStateAnswerId: 'conferenceStateAnswer',
   callStatsSectionId: 'callStatsSection',
   callStatsTabAudioId: 'callStatsTabAudio',
   callStatsTabMainStreamId: 'callStatsTabMainStream',

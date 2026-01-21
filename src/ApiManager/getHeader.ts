@@ -48,7 +48,7 @@ export const getHeader = <T extends EKeyHeader>(
   request: IncomingRequest,
   header: T,
 ): EValueHeader<T> | undefined => {
-  const value = request.getHeader(header);
+  const value = request.getHeader(header.toLowerCase());
 
   if (!isValidString(value)) {
     return undefined;

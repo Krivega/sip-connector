@@ -471,6 +471,9 @@ class SipConnector {
     this.apiManager.on('channels:all', (channels) => {
       this.conferenceStateManager.updateState({ channels });
     });
+    this.callManager.on('ended', () => {
+      this.conferenceStateManager.reset();
+    });
   }
 
   private readonly sendOffer = async (

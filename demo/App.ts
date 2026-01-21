@@ -1,6 +1,7 @@
 /* eslint-disable no-alert */
 import CallStateManager, { type TCallState } from './CallStateManager';
 import CallStatsManager from './CallStatsManager';
+import ConferenceStateDisplay from './ConferenceStateDisplay';
 import { dom } from './dom';
 import LoaderManager from './LoaderManager';
 import LocalMediaStreamManager from './LocalMediaStreamManager';
@@ -54,6 +55,12 @@ class App {
 
     statusesManager.subscribe((statuses) => {
       this.updateSessionStatuses(statuses);
+    });
+
+    const conferenceStateDisplay = new ConferenceStateDisplay();
+
+    conferenceStateDisplay.subscribe((state) => {
+      this.updateConferenceState(state);
     });
 
     const logsManager = new LogsManager();
@@ -218,6 +225,25 @@ class App {
     dom.incomingStatusElement.textContent = statuses.incoming;
     dom.presentationStatusElement.textContent = statuses.presentation;
     dom.systemStatusElement.textContent = statuses.system;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
+  private updateConferenceState(state: {
+    room: string;
+    participantName: string;
+    token: string;
+    conference: string;
+    participant: string;
+    number: string;
+    answer: string;
+  }): void {
+    dom.conferenceStateRoomElement.textContent = state.room;
+    dom.conferenceStateParticipantNameElement.textContent = state.participantName;
+    dom.conferenceStateTokenElement.textContent = state.token;
+    dom.conferenceStateConferenceElement.textContent = state.conference;
+    dom.conferenceStateParticipantElement.textContent = state.participant;
+    dom.conferenceStateNumberElement.textContent = state.number;
+    dom.conferenceStateAnswerElement.textContent = state.answer;
   }
 
   /**

@@ -28,8 +28,8 @@ describe('enter room', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    const promise = new Promise<{ room: string; participantName?: string }>((resolve) => {
-      sipConnector.on('api:enter-room', (data: { room: string; participantName?: string }) => {
+    const promise = new Promise<{ room: string; participantName: string }>((resolve) => {
+      sipConnector.on('api:enter-room', (data: { room: string; participantName: string }) => {
         resolve(data);
       });
     });
