@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [23.1.2](https://github.com/Krivega/sip-connector/compare/v23.1.1...v23.1.2) (2026-01-21)
+
+### Bug Fixes
+
+- participantName in enter room event ([8a1f133](https://github.com/Krivega/sip-connector/commit/8a1f133761466d5c0b642becdd0f29adf3fef2a9))
+
 ### [23.1.1](https://github.com/Krivega/sip-connector/compare/v23.1.0...v23.1.1) (2026-01-20)
 
 ### Bug Fixes
