@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [23.2.0](https://github.com/Krivega/sip-connector/compare/v23.1.2...v23.2.0) (2026-01-24)
+
+### Features
+
+- set min bitrate for sprectator ([2047c54](https://github.com/Krivega/sip-connector/commit/2047c5425701f5ed74b9f8d6ef296a8fbdf4aa79))
+
 ### [23.1.2](https://github.com/Krivega/sip-connector/compare/v23.1.1...v23.1.2) (2026-01-21)
 
 ### Bug Fixes
