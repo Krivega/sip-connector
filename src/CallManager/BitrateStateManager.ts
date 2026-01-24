@@ -1,7 +1,7 @@
 import setParametersToSender from '@/tools/setParametersToSender/setParametersToSender';
-import { getMinimumBitrate as getMinimumBitrateVideo } from '@/VideoSendingBalancer';
 
-const MINIMUM_AUDIO_BITRATE = 8000; // 8 kbps для аудио
+const MINIMUM_AUDIO_BITRATE = 10; // 0.1 kbps для аудио
+const MINIMUM_VIDEO_BITRATE = 10; // 0.1 kbps для видео
 
 /**
  * Находит все RTCRtpSender'ы для указанного типа медиа
@@ -16,7 +16,7 @@ const getSendersByKind = (
 };
 
 const getMinimumBitrate = (kind: 'audio' | 'video'): number => {
-  return kind === 'audio' ? MINIMUM_AUDIO_BITRATE : getMinimumBitrateVideo();
+  return kind === 'audio' ? MINIMUM_AUDIO_BITRATE : MINIMUM_VIDEO_BITRATE;
 };
 
 type TSenderWithTrack = RTCRtpSender & { track: MediaStreamTrack & { kind: 'audio' | 'video' } };

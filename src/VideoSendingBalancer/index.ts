@@ -3,4 +3,3 @@ export {
   resolveVideoSendingBalancer,
   default as VideoSendingBalancer,
 } from './@VideoSendingBalancer';
-export { getMinimumBitrate } from './calcBitrate';

@@ -1,8 +1,7 @@
 /// <reference types="jest" />
-import { getMinimumBitrate as getMinimumBitrateVideo } from '@/VideoSendingBalancer';
 import BitrateStateManager from '../BitrateStateManager';
 
-const MINIMUM_BITRATE_VIDEO = getMinimumBitrateVideo();
+const MINIMUM_BITRATE_VIDEO = 10;
 
 describe('BitrateStateManager', () => {
   let manager: BitrateStateManager;
