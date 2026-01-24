@@ -400,25 +400,32 @@ class CallManager {
   }) => {
     const isPreviousSpectator = RoleManager.hasSpectator(previous);
     const isNextSpectator = RoleManager.hasSpectator(next);
+    const isNextSpectatorSynthetic = RoleManager.hasSpectatorSynthetic(next);
+    const isPreviousSpectatorSynthetic = RoleManager.hasSpectatorSynthetic(previous);
+    const isNextAnySpectator = isNextSpectator || isNextSpectatorSynthetic;
+    const isPreviousAnySpectator = isPreviousSpectator || isPreviousSpectatorSynthetic;
 
     if (isPreviousSpectator && !isNextSpectator) {
-      // Переход из роли зрителя в роль участника:
-      // восстанавливаем исходные значения битрейта отправителей
-      this.mcuSession.restoreBitrateForSenders();
       this.stopRecvSession();
       this.emitEventChangedRemoteStreams(this.getRemoteStreams());
     }
 
     if (isNextSpectator) {
-      if (!isPreviousSpectator) {
-        // Переход из роли участника в роль зрителя:
-        // ограничиваем битрейт отправителей до минимального значения
-        this.mcuSession.setMinBitrateForSenders();
-      }
-
       const params = next.recvParams;
 
       this.startRecvSession(params.audioId, params.sendOffer);
+    }
+
+    if (isPreviousAnySpectator && !isNextAnySpectator) {
+      // Переход из роли зрителя в роль участника:
+      // восстанавливаем исходные значения битрейта отправителей
+      this.mcuSession.restoreBitrateForSenders();
+    }
+
+    if (isNextAnySpectator && !isPreviousAnySpectator) {
+      // Переход из роли участника в роль зрителя:
+      // ограничиваем битрейт отправителей до минимального значения
+      this.mcuSession.setMinBitrateForSenders();
     }
   };
 
