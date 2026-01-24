@@ -8,7 +8,7 @@ import CallManager from '../@CallManager';
 import { RemoteStreamsManager } from '../RemoteStreamsManager';
 
 import type { RTCSession } from '@krivega/jssip';
-import type { TCallRoleSpectator } from '../types';
+import type { TCallRoleSpectator, TCallRoleSpectatorSynthetic } from '../types';
 
 const mockRecvSession = (() => {
   const state: {
@@ -770,6 +770,86 @@ describe('CallManager - дополнительные тесты для покр�
     // смена роли spectator -> spectator с другим audioId
     // @ts-expect-error
     callManager.onRoleChanged({ previous: firstSpectatorRole, next: secondSpectatorRole });
+
+    expect(setMinSpy).not.toHaveBeenCalled();
+    expect(restoreSpy).not.toHaveBeenCalled();
+  });
+
+  it('onRoleChanged: устанавливает минимальный битрейт при входе в spectator_synthetic', () => {
+    const spectatorSyntheticRole: TCallRoleSpectatorSynthetic = {
+      type: 'spectator_synthetic',
+    };
+
+    const setMinSpy = jest
+      // @ts-expect-error
+      .spyOn(callManager.mcuSession, 'setMinBitrateForSenders')
+      .mockImplementation(() => {});
+    const restoreSpy = jest
+      // @ts-expect-error
+      .spyOn(callManager.mcuSession, 'restoreBitrateForSenders')
+      .mockImplementation(() => {});
+
+    // Вход в spectator_synthetic из participant
+    // @ts-expect-error
+    callManager.onRoleChanged({ previous: { type: 'participant' }, next: spectatorSyntheticRole });
+
+    expect(setMinSpy).toHaveBeenCalledTimes(1);
+    expect(setMinSpy).toHaveBeenCalledWith();
+    expect(restoreSpy).not.toHaveBeenCalled();
+  });
+
+  it('onRoleChanged: восстанавливает битрейт при выходе из spectator_synthetic', () => {
+    const spectatorSyntheticRole: TCallRoleSpectatorSynthetic = {
+      type: 'spectator_synthetic',
+    };
+
+    const setMinSpy = jest
+      // @ts-expect-error
+      .spyOn(callManager.mcuSession, 'setMinBitrateForSenders')
+      .mockImplementation(() => {});
+    const restoreSpy = jest
+      // @ts-expect-error
+      .spyOn(callManager.mcuSession, 'restoreBitrateForSenders')
+      .mockImplementation(() => {});
+
+    // Выход из spectator_synthetic в participant
+    // @ts-expect-error
+    callManager.onRoleChanged({ previous: spectatorSyntheticRole, next: { type: 'participant' } });
+
+    expect(restoreSpy).toHaveBeenCalledTimes(1);
+    expect(restoreSpy).toHaveBeenCalledWith();
+    expect(setMinSpy).not.toHaveBeenCalled();
+  });
+
+  it('onRoleChanged: не трогает битрейт при переходе между spectator и spectator_synthetic', () => {
+    const spectatorRole: TCallRoleSpectator = {
+      type: 'spectator',
+      recvParams: {
+        audioId: 'a1',
+        sendOffer: async () => {
+          return {} as RTCSessionDescription;
+        },
+      },
+    };
+    const spectatorSyntheticRole: TCallRoleSpectatorSynthetic = {
+      type: 'spectator_synthetic',
+    };
+
+    const setMinSpy = jest
+      // @ts-expect-error
+      .spyOn(callManager.mcuSession, 'setMinBitrateForSenders')
+      .mockImplementation(() => {});
+    const restoreSpy = jest
+      // @ts-expect-error
+      .spyOn(callManager.mcuSession, 'restoreBitrateForSenders')
+      .mockImplementation(() => {});
+
+    // spectator -> spectator_synthetic
+    // @ts-expect-error
+    callManager.onRoleChanged({ previous: spectatorRole, next: spectatorSyntheticRole });
+    // spectator_synthetic -> spectator
+    // @ts-expect-error
+    callManager.onRoleChanged({ previous: spectatorSyntheticRole, next: spectatorRole });
 
     expect(setMinSpy).not.toHaveBeenCalled();
     expect(restoreSpy).not.toHaveBeenCalled();
