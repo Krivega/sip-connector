@@ -100,6 +100,8 @@ export interface IMCUSession {
     sendEncodings?: RTCRtpEncodingParameters[];
     degradationPreference?: RTCDegradationPreference;
   }) => Promise<boolean>;
+  setMinBitrateForSenders: (kinds?: 'audio' | 'video' | 'all') => void;
+  restoreBitrateForSenders: (kinds?: 'audio' | 'video' | 'all') => void;
 }
 
 export type TRemoteStreams = {

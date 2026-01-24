@@ -1,4 +1,6 @@
-import prepareMediaStream from '@/tools/prepareMediaStream';
+import { logError } from '@/logger';
+import { prepareMediaStream } from '@/tools';
+import BitrateStateManager from './BitrateStateManager';
 import { ECallCause } from './causes';
 import { EEvent, SESSION_JSSIP_EVENT_NAMES } from './events';
 
@@ -14,6 +16,9 @@ export class MCUSession implements IMCUSession {
   private readonly disposers = new Set<() => void>();
 
   private readonly onReset: () => void;
+
+  // Менеджер состояния битрейта
+  private readonly bitrateStateManager = new BitrateStateManager();
 
   public constructor(events: TEvents, { onReset }: { onReset: () => void }) {
     this.events = events;
@@ -199,6 +204,26 @@ export class MCUSession implements IMCUSession {
     return this.rtcSession.restartIce(options);
   }
 
+  /**
+   * Устанавливает минимальный битрейт для указанных типов потоков
+   * @param kinds - типы потоков ('audio' | 'video' | 'all')
+   */
+  public setMinBitrateForSenders(kinds: 'audio' | 'video' | 'all' = 'all'): void {
+    this.bitrateStateManager.setMinBitrateForSenders(this.connection, kinds).catch(() => {
+      logError('MCUSession.setMinBitrateForSenders', new Error('Failed to set min bitrate'));
+    });
+  }
+
+  /**
+   * Восстанавливает предыдущий битрейт для указанных типов потоков
+   * @param kinds - типы потоков ('audio' | 'video' | 'all')
+   */
+  public restoreBitrateForSenders(kinds: 'audio' | 'video' | 'all' = 'all'): void {
+    this.bitrateStateManager.restoreBitrateForSenders(this.connection, kinds).catch(() => {
+      logError('MCUSession.restoreBitrateForSenders', new Error('Failed to restore bitrate'));
+    });
+  }
+
   private readonly handleCall = async (): Promise<RTCPeerConnection> => {
     return new Promise((resolve, reject) => {
       const addStartedEventListeners = () => {
@@ -297,6 +322,7 @@ export class MCUSession implements IMCUSession {
   private readonly reset: () => void = () => {
     delete this.rtcSession;
     this.unsubscribeFromSessionEvents();
+    this.bitrateStateManager.clearAll();
     this.onReset();
   };
 }

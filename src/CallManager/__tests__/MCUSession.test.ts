@@ -1,8 +1,10 @@
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
 
+import flushPromises from '@/__fixtures__/flushPromises';
 import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import UAMock from '@/__fixtures__/UA.mock';
+import * as loggerModule from '@/logger';
 import { createEvents, EVENT_NAMES } from '../events';
 import { MCUSession } from '../MCUSession';
 
@@ -202,6 +204,7 @@ describe('MCUSession - дополнительные тесты для покры
   let mcuSession: MCUSession;
   let mcuSessionTest: MCUSessionTestAccess;
   const handleReset = jest.fn();
+  let connectionMock: RTCPeerConnectionMock;
 
   beforeEach(() => {
     events = createEvents();
@@ -209,6 +212,7 @@ describe('MCUSession - дополнительные тесты для покры
       onReset: handleReset,
     });
     mcuSessionTest = mcuSession as unknown as MCUSessionTestAccess;
+    connectionMock = new RTCPeerConnectionMock();
     jest.clearAllMocks();
   });
 
@@ -415,5 +419,96 @@ describe('MCUSession - дополнительные тесты для покры
 
   it('renegotiate: должен вернуть ошибку renegotiate при вызове если rtcSession не существует', async () => {
     await expect(mcuSession.renegotiate()).rejects.toThrow('No rtcSession established');
+  });
+
+  it('setMinBitrateForSenders: delegates to BitrateStateManager with current connection', async () => {
+    // @ts-expect-error
+    const setMinBitrateSpy = jest.spyOn(mcuSession.bitrateStateManager, 'setMinBitrateForSenders');
+
+    Object.defineProperty(mcuSession, 'connection', {
+      get: () => {
+        return connectionMock as unknown as RTCPeerConnection;
+      },
+    });
+
+    // вызов с явным параметром
+    mcuSession.setMinBitrateForSenders('audio');
+
+    await flushPromises();
+
+    expect(setMinBitrateSpy).toHaveBeenCalledTimes(1);
+    expect(setMinBitrateSpy).toHaveBeenCalledWith(connectionMock, 'audio');
+
+    // вызов без параметров, должен использовать default 'all'
+    mcuSession.setMinBitrateForSenders();
+
+    await flushPromises();
+
+    expect(setMinBitrateSpy).toHaveBeenCalledTimes(2);
+    expect(setMinBitrateSpy).toHaveBeenLastCalledWith(connectionMock, 'all');
+  });
+
+  it('restoreBitrateForSenders: delegates to BitrateStateManager with current connection', async () => {
+    // @ts-expect-error
+    const restoreSpy = jest.spyOn(mcuSession.bitrateStateManager, 'restoreBitrateForSenders');
+
+    Object.defineProperty(mcuSession, 'connection', {
+      get: () => {
+        return connectionMock as unknown as RTCPeerConnection;
+      },
+    });
+
+    // вызов с явным параметром
+    mcuSession.restoreBitrateForSenders('video');
+
+    await flushPromises();
+
+    expect(restoreSpy).toHaveBeenCalledTimes(1);
+    expect(restoreSpy).toHaveBeenCalledWith(connectionMock, 'video');
+
+    // вызов без параметров, должен использовать default 'all'
+    mcuSession.restoreBitrateForSenders();
+
+    await flushPromises();
+
+    expect(restoreSpy).toHaveBeenCalledTimes(2);
+    expect(restoreSpy).toHaveBeenLastCalledWith(connectionMock, 'all');
+  });
+
+  it('setMinBitrateForSenders: логирует ошибку если BitrateStateManager отклоняет промис', async () => {
+    const loggerSpy = jest.spyOn(loggerModule, 'logError').mockImplementation(() => {});
+
+    // @ts-expect-error
+    const bitrateManager = mcuSession.bitrateStateManager;
+
+    jest
+      .spyOn(bitrateManager, 'setMinBitrateForSenders')
+      .mockRejectedValueOnce(new Error('test-set-min-bitrate'));
+
+    mcuSession.setMinBitrateForSenders();
+
+    await flushPromises();
+
+    expect(loggerSpy).toHaveBeenCalledWith('MCUSession.setMinBitrateForSenders', expect.any(Error));
+  });
+
+  it('restoreBitrateForSenders: логирует ошибку если BitrateStateManager отклоняет промис', async () => {
+    const loggerSpy = jest.spyOn(loggerModule, 'logError').mockImplementation(() => {});
+
+    // @ts-expect-error
+    const bitrateManager = mcuSession.bitrateStateManager;
+
+    jest
+      .spyOn(bitrateManager, 'restoreBitrateForSenders')
+      .mockRejectedValueOnce(new Error('test-restore-bitrate'));
+
+    mcuSession.restoreBitrateForSenders();
+
+    await flushPromises();
+
+    expect(loggerSpy).toHaveBeenCalledWith(
+      'MCUSession.restoreBitrateForSenders',
+      expect.any(Error),
+    );
   });
 });

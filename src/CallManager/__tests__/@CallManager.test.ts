@@ -679,6 +679,102 @@ describe('CallManager - дополнительные тесты для покр�
     expect(startSpy).not.toHaveBeenCalled();
   });
 
+  it('onRoleChanged: устанавливает минимальный битрейт при входе в spectator', () => {
+    const spectatorRole: TCallRoleSpectator = {
+      type: 'spectator',
+      recvParams: {
+        audioId: 'a1',
+        sendOffer: async () => {
+          return {} as RTCSessionDescription;
+        },
+      },
+    };
+
+    const setMinSpy = jest
+      // @ts-expect-error
+      .spyOn(callManager.mcuSession, 'setMinBitrateForSenders')
+      .mockImplementation(() => {});
+    const restoreSpy = jest
+      // @ts-expect-error
+      .spyOn(callManager.mcuSession, 'restoreBitrateForSenders')
+      .mockImplementation(() => {});
+
+    // Вход в spectator из participant
+    // @ts-expect-error
+    callManager.onRoleChanged({ previous: { type: 'participant' }, next: spectatorRole });
+
+    expect(setMinSpy).toHaveBeenCalledTimes(1);
+    expect(setMinSpy).toHaveBeenCalledWith();
+    expect(restoreSpy).not.toHaveBeenCalled();
+  });
+
+  it('onRoleChanged: восстанавливает битрейт при выходе из spectator', () => {
+    const spectatorRole: TCallRoleSpectator = {
+      type: 'spectator',
+      recvParams: {
+        audioId: 'a1',
+        sendOffer: async () => {
+          return {} as RTCSessionDescription;
+        },
+      },
+    };
+
+    const setMinSpy = jest
+      // @ts-expect-error
+      .spyOn(callManager.mcuSession, 'setMinBitrateForSenders')
+      .mockImplementation(() => {});
+    const restoreSpy = jest
+      // @ts-expect-error
+      .spyOn(callManager.mcuSession, 'restoreBitrateForSenders')
+      .mockImplementation(() => {});
+
+    // Выход из spectator в participant
+    // @ts-expect-error
+    callManager.onRoleChanged({ previous: spectatorRole, next: { type: 'participant' } });
+
+    expect(restoreSpy).toHaveBeenCalledTimes(1);
+    expect(restoreSpy).toHaveBeenCalledWith();
+    expect(setMinSpy).not.toHaveBeenCalled();
+  });
+
+  it('onRoleChanged: не трогает битрейт при смене audioId в spectator', () => {
+    const firstSpectatorRole: TCallRoleSpectator = {
+      type: 'spectator',
+      recvParams: {
+        audioId: 'a1',
+        sendOffer: async () => {
+          return {} as RTCSessionDescription;
+        },
+      },
+    };
+
+    const secondSpectatorRole: TCallRoleSpectator = {
+      type: 'spectator',
+      recvParams: {
+        audioId: 'a2',
+        sendOffer: async () => {
+          return {} as RTCSessionDescription;
+        },
+      },
+    };
+
+    const setMinSpy = jest
+      // @ts-expect-error
+      .spyOn(callManager.mcuSession, 'setMinBitrateForSenders')
+      .mockImplementation(() => {});
+    const restoreSpy = jest
+      // @ts-expect-error
+      .spyOn(callManager.mcuSession, 'restoreBitrateForSenders')
+      .mockImplementation(() => {});
+
+    // смена роли spectator -> spectator с другим audioId
+    // @ts-expect-error
+    callManager.onRoleChanged({ previous: firstSpectatorRole, next: secondSpectatorRole });
+
+    expect(setMinSpy).not.toHaveBeenCalled();
+    expect(restoreSpy).not.toHaveBeenCalled();
+  });
+
   it('onRoleChanged: вызывает emitEventChangedRemoteStreams с типом updated при выходе из роли spectator', () => {
     const emitSpy = jest.spyOn(
       callManager,
