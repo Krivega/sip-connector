@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [23.2.1](https://github.com/Krivega/sip-connector/compare/v23.2.0...v23.2.1) (2026-01-24)
+
+### Bug Fixes
+
+- improve spectator role handling by adding synthetic spectator checks and bitrate adjustments ([09f3697](https://github.com/Krivega/sip-connector/commit/09f3697a00129196f2ac52e3f4caa0cf53f31108))
+
 ## [23.2.0](https://github.com/Krivega/sip-connector/compare/v23.1.2...v23.2.0) (2026-01-24)
 
 ### Features
