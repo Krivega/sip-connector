@@ -1,8 +1,8 @@
 /// <reference types="jest" />
-import BitrateStateManager from '../BitrateStateManager';
-
-const MINIMUM_BITRATE_AUDIO = 0;
-const MINIMUM_BITRATE_VIDEO = 0;
+import BitrateStateManager, {
+  MINIMUM_BITRATE_AUDIO,
+  MINIMUM_BITRATE_VIDEO,
+} from '../BitrateStateManager';
 
 describe('BitrateStateManager', () => {
   let manager: BitrateStateManager;
