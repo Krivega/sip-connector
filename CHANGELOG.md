@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [23.2.3](https://github.com/Krivega/sip-connector/compare/v23.2.2...v23.2.3) (2026-01-26)
+
+### Bug Fixes
+
+- set minimum bitrate values to zero for audio and video in BitrateStateManager ([0e8a78e](https://github.com/Krivega/sip-connector/commit/0e8a78eeeaa5a2c8c7dd65285b5dcde7c865013a))
+
 ### [23.2.2](https://github.com/Krivega/sip-connector/compare/v23.2.1...v23.2.2) (2026-01-24)
 
 ### Bug Fixes
