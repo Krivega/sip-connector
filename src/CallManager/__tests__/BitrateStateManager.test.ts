@@ -1,7 +1,8 @@
 /// <reference types="jest" />
 import BitrateStateManager from '../BitrateStateManager';
 
-const MINIMUM_BITRATE_VIDEO = 10;
+const MINIMUM_BITRATE_AUDIO = 0;
+const MINIMUM_BITRATE_VIDEO = 0;
 
 describe('BitrateStateManager', () => {
   let manager: BitrateStateManager;
@@ -128,7 +129,7 @@ describe('BitrateStateManager', () => {
         RTCRtpSendParameters,
       ];
 
-      expect(audioParams.encodings[0].maxBitrate).toBe(8000);
+      expect(audioParams.encodings[0].maxBitrate).toBe(MINIMUM_BITRATE_AUDIO);
       expect(videoParams.encodings[0].maxBitrate).toBe(MINIMUM_BITRATE_VIDEO);
 
       // убедимся, что исходные значения сохранились для последующего восстановления

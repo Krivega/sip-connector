@@ -209,9 +209,11 @@ export class MCUSession implements IMCUSession {
    * @param kinds - типы потоков ('audio' | 'video' | 'all')
    */
   public setMinBitrateForSenders(kinds: 'audio' | 'video' | 'all' = 'all'): void {
-    this.bitrateStateManager.setMinBitrateForSenders(this.connection, kinds).catch(() => {
-      logError('MCUSession.setMinBitrateForSenders', new Error('Failed to set min bitrate'));
-    });
+    this.bitrateStateManager
+      .setMinBitrateForSenders(this.connection, kinds)
+      .catch((error: unknown) => {
+        logError('MCUSession.setMinBitrateForSenders', error as Error);
+      });
   }
 
   /**
@@ -219,9 +221,11 @@ export class MCUSession implements IMCUSession {
    * @param kinds - типы потоков ('audio' | 'video' | 'all')
    */
   public restoreBitrateForSenders(kinds: 'audio' | 'video' | 'all' = 'all'): void {
-    this.bitrateStateManager.restoreBitrateForSenders(this.connection, kinds).catch(() => {
-      logError('MCUSession.restoreBitrateForSenders', new Error('Failed to restore bitrate'));
-    });
+    this.bitrateStateManager
+      .restoreBitrateForSenders(this.connection, kinds)
+      .catch((error: unknown) => {
+        logError('MCUSession.restoreBitrateForSenders', error as Error);
+      });
   }
 
   private readonly handleCall = async (): Promise<RTCPeerConnection> => {

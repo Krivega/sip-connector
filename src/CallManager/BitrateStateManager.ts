@@ -1,7 +1,7 @@
 import setParametersToSender from '@/tools/setParametersToSender/setParametersToSender';
 
-const MINIMUM_AUDIO_BITRATE = 10; // 0.1 kbps для аудио
-const MINIMUM_VIDEO_BITRATE = 10; // 0.1 kbps для видео
+const MINIMUM_AUDIO_BITRATE = 0;
+const MINIMUM_VIDEO_BITRATE = 0;
 
 /**
  * Находит все RTCRtpSender'ы для указанного типа медиа
@@ -111,6 +111,7 @@ export default class BitrateStateManager {
         };
 
         await setParametersToSender(sender, targetParameters);
+
         // Очищаем сохраненные параметры после восстановления
         this.clearSavedBitrate(sender);
       }
