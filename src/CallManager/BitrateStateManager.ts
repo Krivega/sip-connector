@@ -71,10 +71,6 @@ export default class BitrateStateManager {
         }),
       };
 
-      console.log(
-        '🚀 temp  ~ BitrateStateManager.ts:76 ~ BitrateStateManager ~ setMinBitrateForSenders ~ targetParameters:',
-        targetParameters,
-      );
       await setParametersToSender(sender, targetParameters);
     });
 
