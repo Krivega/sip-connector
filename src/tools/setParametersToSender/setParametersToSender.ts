@@ -8,6 +8,7 @@ import type { TResultSetParametersToSender } from './types';
 const setParametersToSender = async (
   sender: RTCRtpSender,
   parametersTarget: TRtpSendParameters,
+  { isResetAllowed }: { isResetAllowed?: boolean } = {},
 ): Promise<TResultSetParametersToSender> => {
   const parametersCurrent: RTCRtpSendParameters = sender.getParameters();
   // eslint-disable-next-line unicorn/prefer-structured-clone
@@ -15,7 +16,7 @@ const setParametersToSender = async (
     JSON.stringify(parametersCurrent),
   ) as RTCRtpSendParameters;
 
-  configureEncodings(parametersCurrent, parametersTarget);
+  configureEncodings(parametersCurrent, parametersTarget, { isResetAllowed });
   configureDegradationPreference(parametersCurrent, parametersTarget);
 
   const isChanged = hasChangedRTCRtpSendParameters(parametersInitial, parametersCurrent);

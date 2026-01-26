@@ -110,7 +110,7 @@ export default class BitrateStateManager {
           encodings: savedEncodings,
         };
 
-        await setParametersToSender(sender, targetParameters);
+        await setParametersToSender(sender, targetParameters, { isResetAllowed: true });
 
         // Очищаем сохраненные параметры после восстановления
         this.clearSavedBitrate(sender);

@@ -16,11 +16,12 @@ const performUpdateMaxBitrate = (
 const configureMaxBitrate = (
   encodingCurrent: RTCRtpEncodingParameters,
   maxBitrate?: number,
+  { isResetAllowed = false }: { isResetAllowed?: boolean } = {},
 ): RTCRtpEncodingParameters => {
   const maxBitrateCurrent = encodingCurrent.maxBitrate;
   const maxBitrateTarget = performUpdateMaxBitrate(maxBitrate, maxBitrateCurrent);
 
-  if (maxBitrateTarget !== undefined) {
+  if (maxBitrateTarget !== undefined || isResetAllowed) {
     encodingCurrent.maxBitrate = maxBitrateTarget;
   }
 

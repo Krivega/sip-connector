@@ -7,6 +7,7 @@ import type { TRtpSendParameters } from '@/types';
 const configureEncodings = (
   parametersCurrent: RTCRtpSendParameters,
   parametersTarget: TRtpSendParameters,
+  { isResetAllowed }: { isResetAllowed?: boolean } = {},
 ) => {
   const countEncodingsTarget = parametersTarget.encodings?.length ?? 0;
 
@@ -20,7 +21,7 @@ const configureEncodings = (
     const maxBitrate = encodingTarget?.maxBitrate;
     const scaleResolutionDownBy = encodingTarget?.scaleResolutionDownBy;
 
-    configureMaxBitrate(encoding, maxBitrate);
+    configureMaxBitrate(encoding, maxBitrate, { isResetAllowed });
     configureScaleResolutionDownBy(encoding, scaleResolutionDownBy);
   });
 
