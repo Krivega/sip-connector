@@ -26,9 +26,9 @@ type TSendOfferParams = {
   offer: RTCSessionDescriptionInit;
   /**
    * JWT токен для авторизации API-запросов.
-   * Если передан, добавляется в заголовок Authorization: Bearer {token}.
+   * Добавляется в заголовок Authorization: Bearer {token}.
    */
-  token?: string;
+  token: string;
 };
 
 const ENDPOINT = 'api/v2/rtp2webrtc/offer';
@@ -62,11 +62,8 @@ const sendOffer = async ({
 
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
   };
-
-  if (token !== undefined && token !== '') {
-    headers.Authorization = `Bearer ${token}`;
-  }
 
   const response = await fetch(url.toString(), {
     method: 'POST',

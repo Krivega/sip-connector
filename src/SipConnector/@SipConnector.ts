@@ -493,6 +493,10 @@ class SipConnector {
 
     const token = this.conferenceStateManager.getToken();
 
+    if (token === undefined) {
+      throw new Error('No token for sendOffer');
+    }
+
     return sendOffer({
       serverUrl,
       offer,
