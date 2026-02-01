@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [23.3.1](https://github.com/Krivega/sip-connector/compare/v23.3.0...v23.3.1) (2026-02-01)
+
+### Bug Fixes
+
+- ensure token is required for sendOffer and handle missing token error ([5e8b61e](https://github.com/Krivega/sip-connector/commit/5e8b61e25c0690cf1f16b58652ee2f2243d03fe3))
+
 ## [23.3.0](https://github.com/Krivega/sip-connector/compare/v23.2.6...v23.3.0) (2026-02-01)
 
 ### Features
