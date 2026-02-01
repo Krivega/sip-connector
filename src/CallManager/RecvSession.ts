@@ -1,4 +1,9 @@
+import { repeatedCallsAsync } from 'repeated-calls';
+
 type TConferenceNumber = string;
+
+const SEND_OFFER_CALL_LIMIT = 10;
+const SEND_OFFER_DELAY_BETWEEN_CALLS = 100;
 
 type TSendOfferParams = {
   quality: 'low' | 'medium' | 'high';
@@ -17,6 +22,10 @@ export type TTools = {
 };
 
 class RecvSession {
+  private cancelableSendOfferWithRepeatedCalls:
+    | ReturnType<typeof repeatedCallsAsync<RTCSessionDescription, Error, false>>
+    | undefined;
+
   private readonly config: TConfig;
 
   private readonly tools: TTools;
@@ -39,6 +48,7 @@ class RecvSession {
   }
 
   public close(): void {
+    this.cancelSendOfferWithRepeatedCalls();
     this.connection.close();
   }
 
@@ -52,12 +62,44 @@ class RecvSession {
 
   public async renegotiate(conferenceNumber: TConferenceNumber): Promise<boolean> {
     const offer = await this.createOffer();
-    const answer = await this.tools.sendOffer(
-      { conferenceNumber, quality: this.config.quality, audioChannel: this.config.audioChannel },
-      offer,
-    );
 
-    await this.setRemoteDescription(answer);
+    const targetFunction = async (): Promise<RTCSessionDescription> => {
+      return this.tools.sendOffer(
+        {
+          conferenceNumber,
+          quality: this.config.quality,
+          audioChannel: this.config.audioChannel,
+        },
+        offer,
+      );
+    };
+
+    const isComplete = (response: RTCSessionDescription | Error): boolean => {
+      return !(response instanceof Error);
+    };
+
+    this.cancelableSendOfferWithRepeatedCalls = repeatedCallsAsync<
+      RTCSessionDescription,
+      Error,
+      false
+    >({
+      targetFunction,
+      isComplete,
+      callLimit: SEND_OFFER_CALL_LIMIT,
+      delay: SEND_OFFER_DELAY_BETWEEN_CALLS,
+      isRejectAsValid: true,
+      isCheckBeforeCall: false,
+    });
+
+    const result = await this.cancelableSendOfferWithRepeatedCalls
+      .then((response) => {
+        return response as RTCSessionDescription;
+      })
+      .finally(() => {
+        this.cancelableSendOfferWithRepeatedCalls = undefined;
+      });
+
+    await this.setRemoteDescription(result);
 
     return true;
   }
@@ -106,6 +148,10 @@ class RecvSession {
     };
 
     return this.connection.addTransceiver(kind, init);
+  }
+
+  private cancelSendOfferWithRepeatedCalls(): void {
+    this.cancelableSendOfferWithRepeatedCalls?.cancel();
   }
 }
 

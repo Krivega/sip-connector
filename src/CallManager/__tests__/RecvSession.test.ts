@@ -1,3 +1,6 @@
+import { hasCanceledError, hasReachedLimitError } from 'repeated-calls';
+
+import delayPromise from '@/__fixtures__/delayPromise';
 import RecvSession from '../RecvSession';
 
 import type RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
@@ -163,5 +166,115 @@ describe('RecvSession', () => {
     session.close();
 
     expect(session.peerConnection.close).toHaveBeenCalledTimes(1);
+  });
+
+  describe('repeatedCallsAsync sendOffer', () => {
+    const SEND_OFFER_CALL_LIMIT = 10;
+
+    it('повторяет вызов sendOffer при ошибке и завершается успехом', async () => {
+      const config = createConfig();
+      const sendOfferMock = jest.fn(
+        async (
+          params: {
+            conferenceNumber: string;
+            quality: 'low' | 'medium' | 'high';
+            audioChannel: string;
+          },
+          offer: RTCSessionDescriptionInit,
+        ) => {
+          return {
+            ...offer,
+            type: 'answer',
+            params,
+            toJSON: () => {
+              return { ...offer, type: 'answer', params };
+            },
+          } as RTCSessionDescription;
+        },
+      );
+      const tools = createTools({ sendOffer: sendOfferMock });
+      const session = new RecvSession(config, tools);
+      const conferenceNumber = '123';
+
+      sendOfferMock
+        .mockRejectedValueOnce(new Error('network error'))
+        .mockRejectedValueOnce(new Error('timeout'))
+        .mockImplementationOnce(
+          async (
+            params: {
+              conferenceNumber: string;
+              quality: 'low' | 'medium' | 'high';
+              audioChannel: string;
+            },
+            offer: RTCSessionDescriptionInit,
+          ) => {
+            return {
+              ...offer,
+              type: 'answer',
+              params,
+              toJSON: () => {
+                return { ...offer, type: 'answer', params };
+              },
+            } as RTCSessionDescription;
+          },
+        );
+
+      const result = await session.renegotiate(conferenceNumber);
+
+      expect(result).toBe(true);
+      expect(sendOfferMock).toHaveBeenCalledTimes(3);
+      expect(session.peerConnection.setRemoteDescription).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'answer', sdp: 'offer-sdp' }),
+      );
+    });
+
+    it('повторяет вызов sendOffer до лимита попыток, затем выбрасывает ошибку', async () => {
+      const config = createConfig();
+      const sendOfferMock = jest.fn().mockRejectedValue(new Error('server error'));
+      const tools = createTools({ sendOffer: sendOfferMock });
+      const session = new RecvSession(config, tools);
+      const conferenceNumber = '123';
+
+      const error = await session.renegotiate(conferenceNumber).then(
+        () => {
+          throw new Error('expected renegotiate to reject');
+        },
+        (error_: unknown) => {
+          return error_;
+        },
+      );
+
+      expect(hasReachedLimitError(error)).toBe(true);
+      expect(sendOfferMock).toHaveBeenCalledTimes(SEND_OFFER_CALL_LIMIT);
+    });
+
+    it('close() отменяет повторные вызовы sendOffer при выполняющемся renegotiate', async () => {
+      const config = createConfig();
+      const sendOfferMock = jest.fn(async () => {
+        return new Promise<RTCSessionDescription>(() => {
+          // никогда не резолвится
+        });
+      });
+      const tools = createTools({ sendOffer: sendOfferMock });
+      const session = new RecvSession(config, tools);
+      const conferenceNumber = '123';
+
+      const renegotiatePromise = session.renegotiate(conferenceNumber);
+
+      await delayPromise(0);
+      session.close();
+
+      const error = await renegotiatePromise.then(
+        () => {
+          throw new Error('expected renegotiate to reject');
+        },
+        (error_: unknown) => {
+          return error_;
+        },
+      );
+
+      expect(hasCanceledError(error)).toBe(true);
+      expect(sendOfferMock).toHaveBeenCalled();
+    });
   });
 });
