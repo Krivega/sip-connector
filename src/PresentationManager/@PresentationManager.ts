@@ -20,7 +20,7 @@ export const hasCanceledStartPresentationError = (error: unknown) => {
 class PresentationManager {
   public readonly events: TEvents;
 
-  public readonly presentationStateMachine: PresentationStateMachine;
+  public readonly stateMachine: PresentationStateMachine;
 
   public promisePendingStartPresentation?: Promise<MediaStream>;
 
@@ -46,12 +46,12 @@ class PresentationManager {
     this.callManager = callManager;
     this.maxBitrate = maxBitrate;
     this.events = createEvents();
-    this.presentationStateMachine = new PresentationStateMachine(this.callManager.events);
+    this.stateMachine = new PresentationStateMachine(this.callManager.events);
     this.subscribe();
   }
 
   public get presentationActor(): TPresentationActor {
-    return this.presentationStateMachine.actorRef;
+    return this.stateMachine.actorRef;
   }
 
   public get isPendingPresentation(): boolean {

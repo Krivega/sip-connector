@@ -86,7 +86,7 @@ await facade.startPresentation({
 Доступ к состоянию через PresentationStateMachine:
 
 ```typescript
-const presentationStateMachine = sipConnector.callManager.presentationStateMachine;
+const presentationStateMachine = sipConnector.callManager.stateMachine;
 
 // Проверка текущего состояния
 console.log('Состояние презентации:', presentationStateMachine.state);

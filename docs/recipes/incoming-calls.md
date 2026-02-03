@@ -43,7 +43,7 @@ sipConnector.on('incoming-call:ringing', async (event) => {
 Доступ к состоянию через IncomingCallStateMachine:
 
 ```typescript
-const incomingStateMachine = sipConnector.incomingCallManager.incomingCallStateMachine;
+const incomingStateMachine = sipConnector.incomingCallManager.stateMachine;
 
 // Проверка текущего состояния
 console.log('Состояние входящего:', incomingStateMachine.state);

@@ -12,7 +12,7 @@ const REQUEST_TERMINATED_STATUS_CODE = 487;
 export default class IncomingCallManager {
   public readonly events: TEvents;
 
-  public readonly incomingStateMachine: IncomingCallStateMachine;
+  public readonly stateMachine: IncomingCallStateMachine;
 
   private incomingRTCSession?: RTCSession;
 
@@ -21,7 +21,7 @@ export default class IncomingCallManager {
   public constructor(connectionManager: ConnectionManager) {
     this.connectionManager = connectionManager;
     this.events = createEvents();
-    this.incomingStateMachine = new IncomingCallStateMachine({
+    this.stateMachine = new IncomingCallStateMachine({
       incomingEvents: this.events,
       connectionEvents: this.connectionManager.events,
     });
@@ -29,7 +29,7 @@ export default class IncomingCallManager {
   }
 
   public get incomingActor(): TIncomingActor {
-    return this.incomingStateMachine.actorRef;
+    return this.stateMachine.actorRef;
   }
 
   public get remoteCallerData(): TEventMap['ringing'] {
@@ -67,7 +67,7 @@ export default class IncomingCallManager {
   public extractIncomingRTCSession = (): RTCSession => {
     const incomingRTCSession = this.getIncomingRTCSession();
 
-    this.incomingStateMachine.toConsumed();
+    this.stateMachine.toConsumed();
     this.removeIncomingSession();
 
     return incomingRTCSession;

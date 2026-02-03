@@ -31,7 +31,7 @@ const getStreamHint = (event: RTCTrackEvent) => {
 class CallManager {
   public readonly events: TEvents;
 
-  public readonly callStateMachine: CallStateMachine;
+  public readonly stateMachine: CallStateMachine;
 
   protected isPendingCall = false;
 
@@ -69,7 +69,7 @@ class CallManager {
     this.contentedStreamManager = contentedStreamManager;
     this.events = createEvents();
     this.mcuSession = new MCUSession(this.events, { onReset: this.reset });
-    this.callStateMachine = new CallStateMachine(this.events);
+    this.stateMachine = new CallStateMachine(this.events);
     this.streamsManagerProvider = new StreamsManagerProvider(
       this.mainRemoteStreamsManager,
       this.recvRemoteStreamsManager,
@@ -81,7 +81,7 @@ class CallManager {
   }
 
   public get callActor(): TCallActor {
-    return this.callStateMachine.actorRef;
+    return this.stateMachine.actorRef;
   }
 
   public get requested() {
