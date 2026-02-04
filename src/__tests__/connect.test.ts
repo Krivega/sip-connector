@@ -147,11 +147,9 @@ describe('connect', () => {
   });
 
   it('должен сохранять connectionConfiguration после подключения', async () => {
-    expect.assertions(6);
+    expect.assertions(5);
 
     const connectPromise = sipConnector.connect(dataForConnectionWithAuthorization);
-
-    expect(sipConnector.getCallConfiguration().answer).toBe(undefined);
 
     await connectPromise;
 

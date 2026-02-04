@@ -333,7 +333,6 @@ describe('SipConnector', () => {
     await sipConnector.answerToIncomingCall({ mediaStream: testStream });
 
     sipConnector.getEstablishedRTCSession();
-    sipConnector.getCallConfiguration();
     sipConnector.getRemoteStreams();
     await sipConnector.replaceMediaStream(testStream);
 
@@ -811,7 +810,7 @@ describe('SipConnector', () => {
         sipServerUrl: 'wss://test.example.com/ws',
       } as unknown as TConnectionConfigurationWithUa);
 
-      jest.spyOn(sipConnector.conferenceStateManager, 'getToken').mockReturnValue(testToken);
+      jest.spyOn(sipConnector.callManager, 'getToken').mockReturnValue(testToken);
 
       const sendOfferSpy = jest.spyOn(tools, 'sendOffer').mockResolvedValue({
         type: 'answer',
@@ -1245,7 +1244,7 @@ describe('SipConnector', () => {
         sipServerUrl: serverUrl,
       } as unknown as TConnectionConfigurationWithUa);
 
-      jest.spyOn(sipConnector.conferenceStateManager, 'getToken').mockReturnValue(testToken);
+      jest.spyOn(sipConnector.callManager, 'getToken').mockReturnValue(testToken);
 
       const sendOfferSpy = jest.spyOn(tools, 'sendOffer').mockResolvedValue(expectedAnswer);
 
@@ -1299,7 +1298,7 @@ describe('SipConnector', () => {
         sipServerUrl: 'wss://test.example.com/ws',
       } as unknown as TConnectionConfigurationWithUa);
 
-      jest.spyOn(sipConnector.conferenceStateManager, 'getToken').mockReturnValue(undefined);
+      jest.spyOn(sipConnector.callManager, 'getToken').mockReturnValue(undefined);
 
       const offer: RTCSessionDescriptionInit = {
         type: 'offer',
@@ -1331,7 +1330,7 @@ describe('SipConnector', () => {
         sipServerUrl: serverUrl,
       } as unknown as TConnectionConfigurationWithUa);
 
-      jest.spyOn(sipConnector.conferenceStateManager, 'getToken').mockReturnValue(testToken);
+      jest.spyOn(sipConnector.callManager, 'getToken').mockReturnValue(testToken);
 
       const sendOfferSpy = jest.spyOn(tools, 'sendOffer').mockResolvedValue({
         type: 'answer',
@@ -1376,7 +1375,7 @@ describe('SipConnector', () => {
         sipServerUrl: serverUrl,
       } as unknown as TConnectionConfigurationWithUa);
 
-      jest.spyOn(sipConnector.conferenceStateManager, 'getToken').mockReturnValue(testToken);
+      jest.spyOn(sipConnector.callManager, 'getToken').mockReturnValue(testToken);
 
       const sendOfferSpy = jest.spyOn(tools, 'sendOffer').mockResolvedValue({
         type: 'answer',
@@ -1415,7 +1414,7 @@ describe('SipConnector', () => {
         sipServerUrl: serverUrl,
       } as unknown as TConnectionConfigurationWithUa);
 
-      jest.spyOn(sipConnector.conferenceStateManager, 'getToken').mockReturnValue(testToken);
+      jest.spyOn(sipConnector.callManager, 'getToken').mockReturnValue(testToken);
 
       const sendOfferSpy = jest.spyOn(tools, 'sendOffer').mockResolvedValue({
         type: 'answer',

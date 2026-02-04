@@ -60,8 +60,7 @@
 **Управляемые компоненты**:
 
 - `ConnectionManager` - SIP-соединения (включает ConnectionStateMachine)
-- `ConferenceStateManager` - состояние конференции и звонка
-- `CallManager` - WebRTC-звонки
+- `CallManager` - WebRTC-звонки (включает CallStateMachine: состояние звонка и конференции — number, answer, room, participantName, token, conference, participant)
 - `ApiManager` - серверное API
 - `PresentationManager` - презентации
 - `StatsManager` - статистика
@@ -82,10 +81,9 @@ graph TB
 
         subgraph "Core Managers"
             C["ConnectionManager<br/>🔗 SIP Connections<br/>+ ConnectionStateMachine"]
-            CS["ConferenceStateManager<br/>📋 Conference State<br/>+ Token, Room, Channels"]
 
             subgraph "CallManager Components"
-                D["CallManager<br/>📞 WebRTC Calls"]
+                D["CallManager<br/>📞 WebRTC Calls<br/>+ CallStateMachine (room, token, number, answer)"]
                 D1["MCUSession<br/>📞 Main Session<br/>+ RTCSession Management"]
                 D2["RecvSession<br/>👁️ Spectator Session<br/>+ Receive-only Streams"]
                 D3["RemoteStreamsManager<br/>📡 Main Streams<br/>+ Track Management"]
@@ -111,7 +109,6 @@ graph TB
 
         A --> B
         B --> C
-        B --> CS
         B --> K
         B --> L
         B --> D
@@ -123,7 +120,7 @@ graph TB
         B --> MSH
         B --> MSR
 
-        D --> CS
+        E -.->|enter-room, participant-token| D
         D --> D1
         D --> D2
         D --> D3
@@ -136,7 +133,6 @@ graph TB
         D5 --> D3
         D5 --> D4
         E -.->|events| B
-        B -.->|updates| CS
 
         F --> N
         C --> M
@@ -172,16 +168,15 @@ graph TB
 
 - `SipConnectorFacade` → `SipConnector` (фасад)
 - `SipConnector` → все менеджеры (координация)
-- `SipConnector` → `ConferenceStateManager` (создание и управление состоянием конференции)
-- `CallManager` → `ConferenceStateManager` (хранение данных звонка: number, answer)
+- `CallManager` → `CallStateMachine` (состояние звонка и конференции: number, answer, room, participantName, token, conference, participant; подписка на ApiManager: enter-room, conference:participant-token-issued)
 - `CallManager` → `MCUSession` (управление основным RTCSession для участников)
 - `CallManager` → `RecvSession` (управление receive-only сессией для зрителей)
 - `CallManager` → `RemoteStreamsManager` (два экземпляра: main и recv для организации входящих потоков)
 - `CallManager` → `RoleManager` (управление ролями: participant, spectator, spectator_synthetic)
 - `RoleManager` → `RemoteStreamsManager` (переключение между main и recv менеджерами)
-- `ApiManager` → `SipConnector` (события: enterRoom, conference:participant-token-issued, channels)
-- `SipConnector` → `ConferenceStateManager` (обновление состояния при получении событий от ApiManager)
-- `SipConnector` → `sendOffer` (передача токена из ConferenceStateManager в API-запросы)
+- `ApiManager` → `SipConnector` (события: enter-room, conference:participant-token-issued, channels)
+- `ApiManager` → `CallManager.stateMachine` (события enter-room и conference:participant-token-issued передаются в CallStateMachine)
+- `SipConnector.sendOffer` → `CallManager.getToken()` (токен для API-запросов берётся из контекста CallStateMachine)
 - `MCUSession` → WebRTC API (основные звонки)
 - `RecvSession` → WebRTC API (receive-only потоки для зрителей)
 - `RemoteStreamsManager` → WebRTC API (отслеживание треков)

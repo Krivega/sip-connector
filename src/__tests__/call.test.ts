@@ -2,7 +2,6 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
-import delayPromise from '../__fixtures__/delayPromise';
 import { FAILED_CONFERENCE_NUMBER } from '../__fixtures__/jssip.mock';
 import { hasCanceledCallError } from '../CallManager';
 import { doMockSipConnector } from '../doMock';
@@ -41,19 +40,14 @@ describe('call', () => {
   });
 
   it('connectionConfiguration after call', async () => {
-    expect.assertions(8);
+    expect.assertions(5);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
-
-    expect(sipConnector.getCallConfiguration().answer).toBe(undefined);
 
     const number = '10000';
     const callPromise = sipConnector.call({ number, mediaStream });
     const connectionConfiguration = sipConnector.connectionManager.getConnectionConfiguration();
-    const callConfiguration = sipConnector.getCallConfiguration();
 
-    expect(callConfiguration.number).toBe(number);
-    expect(callConfiguration.answer).toBe(false);
     expect(connectionConfiguration?.sipServerIp).toBe(
       dataForConnectionWithAuthorization.sipServerIp,
     );
@@ -119,28 +113,6 @@ describe('call', () => {
 
     expect(remoteStreams.mainStream).toBeDefined();
     expect(remoteStreams.contentedStream).toBeUndefined();
-  });
-
-  it('hangUp', async () => {
-    expect.assertions(2);
-
-    const number = '10000';
-
-    const endedPromise = new Promise((resolve) => {
-      sipConnector.once('call:ended', resolve);
-    });
-
-    await sipConnector.connect(dataForConnectionWithAuthorization);
-    await sipConnector.call({ number, mediaStream });
-
-    await sipConnector.hangUp();
-    await endedPromise;
-    await delayPromise(100); // wait restore rtcSession
-
-    const callConfiguration = sipConnector.getCallConfiguration();
-
-    expect(sipConnector.callManager.getEstablishedRTCSession()).toBe(undefined);
-    expect(callConfiguration.number).toBe(undefined);
   });
 
   it('disconnect after end call from server', async () => {

@@ -8,7 +8,6 @@ import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import UAMock from '@/__fixtures__/UA.mock';
 import { EContentedStreamCodec } from '@/ApiManager';
-import { ConferenceStateManager } from '@/ConferenceStateManager';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
 import CallManager from '../@CallManager';
 import { EVENT_NAMES } from '../events';
@@ -23,7 +22,7 @@ describe('CallManager events', () => {
 
   beforeEach(() => {
     ua = new UAMock({ uri: 'sip:user@sipServerUrl', register: false, sockets: [] });
-    callManager = new CallManager(new ConferenceStateManager(), new ContentedStreamManager());
+    callManager = new CallManager(new ContentedStreamManager());
     getSipServerUrl = (number) => {
       return `sip:${number}@sipServerUrl`;
     };

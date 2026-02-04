@@ -46,7 +46,7 @@ describe('incoming call', () => {
   });
 
   it('answer', async () => {
-    expect.assertions(7);
+    expect.assertions(6);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
@@ -73,7 +73,6 @@ describe('incoming call', () => {
             mediaStream,
           });
 
-          expect(sipConnector.getCallConfiguration().answer).toBe(true);
           expect(peerconnection).toBeDefined();
           // @ts-expect-error
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access

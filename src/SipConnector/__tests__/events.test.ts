@@ -82,8 +82,6 @@ describe('SipConnector events', () => {
     const autoConnectHandler = jest.fn();
     const connectionHandler = jest.fn();
     const callHandler = jest.fn();
-    const conferenceStateHandler = jest.fn();
-    const conferenceStateResetHandler = jest.fn();
     const apiHandler = jest.fn();
     const incomingCallHandler = jest.fn();
     const presentationHandler = jest.fn();
@@ -94,8 +92,6 @@ describe('SipConnector events', () => {
     sipConnector.events.on('auto-connect:success', autoConnectHandler);
     sipConnector.events.on('connection:connecting', connectionHandler);
     sipConnector.events.on('call:accepted', callHandler);
-    sipConnector.events.on('conference-state:state-changed', conferenceStateHandler);
-    sipConnector.events.on('conference-state:state-reset', conferenceStateResetHandler);
     sipConnector.events.on('api:channels:all', apiHandler);
     sipConnector.events.on('incoming-call:ringing', incomingCallHandler);
     sipConnector.events.on('presentation:presentation:start', presentationHandler);
@@ -127,12 +123,6 @@ describe('SipConnector events', () => {
       inputChannels: '1',
       outputChannels: '2',
     });
-    sipConnector.conferenceStateManager.events.trigger('state-changed', {
-      previous: {},
-      current: { number: '123', answer: true },
-      updates: { number: '123', answer: true },
-    });
-    sipConnector.conferenceStateManager.events.trigger('state-reset', {});
     sipConnector.incomingCallManager.events.trigger('ringing', {
       displayName: 'incoming',
       host: 'incoming',
@@ -154,15 +144,6 @@ describe('SipConnector events', () => {
       attempts: 1,
     });
     expect(callHandler).toHaveBeenCalledWith({ data: 'call' });
-    expect(conferenceStateHandler).toHaveBeenCalledWith({
-      previous: {},
-      current: { number: '123', answer: true },
-      updates: { number: '123', answer: true },
-    });
-    expect(conferenceStateResetHandler).toHaveBeenCalledWith({});
-    // channels вызывает updateState, который триггерит state-changed
-    // поэтому conferenceStateHandler вызывается дважды: один раз напрямую, один раз через channels
-    expect(conferenceStateHandler).toHaveBeenCalledTimes(2);
     expect(apiHandler).toHaveBeenCalledWith({ inputChannels: '1', outputChannels: '2' });
     expect(incomingCallHandler).toHaveBeenCalledWith({
       displayName: 'incoming',
@@ -177,46 +158,10 @@ describe('SipConnector events', () => {
     expect(autoConnectHandler).toHaveBeenCalledTimes(1);
     expect(connectionHandler).toHaveBeenCalledTimes(1);
     expect(callHandler).toHaveBeenCalledTimes(1);
-    // conferenceStateHandler вызывается дважды: один раз напрямую, один раз через channels->updateState
-    expect(conferenceStateResetHandler).toHaveBeenCalledTimes(1);
     expect(apiHandler).toHaveBeenCalledTimes(1);
     expect(incomingCallHandler).toHaveBeenCalledTimes(1);
     expect(presentationHandler).toHaveBeenCalledTimes(1);
     expect(statsHandler).toHaveBeenCalledTimes(1);
     expect(mainStreamHealthHandler).toHaveBeenCalledTimes(1);
-  });
-
-  it('should handle conference-state events correctly', () => {
-    const stateChangedHandler = jest.fn();
-    const stateResetHandler = jest.fn();
-
-    // Подписываемся на события conference-state
-    sipConnector.events.on('conference-state:state-changed', stateChangedHandler);
-    sipConnector.events.on('conference-state:state-reset', stateResetHandler);
-
-    // Эмитим события
-    const previousState = { number: '123' };
-    const currentState = { number: '123', answer: true };
-    const updates = { answer: true };
-
-    sipConnector.conferenceStateManager.events.trigger('state-changed', {
-      previous: previousState,
-      current: currentState,
-      updates,
-    });
-
-    sipConnector.conferenceStateManager.events.trigger('state-reset', {});
-
-    // Проверяем, что обработчики были вызваны с правильными данными
-    expect(stateChangedHandler).toHaveBeenCalledWith({
-      previous: previousState,
-      current: currentState,
-      updates,
-    });
-    expect(stateResetHandler).toHaveBeenCalledWith({});
-
-    // Проверяем, что каждый обработчик был вызван только один раз
-    expect(stateChangedHandler).toHaveBeenCalledTimes(1);
-    expect(stateResetHandler).toHaveBeenCalledTimes(1);
   });
 });

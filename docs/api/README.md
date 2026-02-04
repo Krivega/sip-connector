@@ -22,8 +22,6 @@
 
 ### 💚 [События MainStreamHealthMonitor](./main-stream-health-events.md)
 
-### 👥 [События ConferenceStateManager](./conference-state-events.md)
-
 ### 📋 [События SessionManager](./session-events.md)
 
 ### 🔄 [События AutoConnectorManager](./auto-connector-events.md)

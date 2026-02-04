@@ -3,7 +3,6 @@ import { TypedEvents } from 'events-constructor';
 import { API_MANAGER_EVENT_NAMES } from '@/ApiManager';
 import { AUTO_CONNECTOR_MANAGER_EVENT_NAMES } from '@/AutoConnectorManager';
 import { CALL_MANAGER_EVENT_NAMES } from '@/CallManager';
-import { CONFERENCE_STATE_MANAGER_EVENT_NAMES } from '@/ConferenceStateManager';
 import { CONNECTION_MANAGER_EVENT_NAMES } from '@/ConnectionManager';
 import { INCOMING_CALL_MANAGER_EVENT_NAMES } from '@/IncomingCallManager';
 import { MAIN_STREAM_HEALTH_MONITOR_EVENT_NAMES } from '@/MainStreamHealthMonitor';
@@ -15,7 +14,6 @@ import { VIDEO_SENDING_BALANCER_MANAGER_EVENT_NAMES } from '@/VideoSendingBalanc
 import type { TApiManagerEventMap } from '@/ApiManager';
 import type { TAutoConnectorManagerEventMap } from '@/AutoConnectorManager';
 import type { TCallManagerEventMap } from '@/CallManager';
-import type { TConferenceStateManagerEventMap } from '@/ConferenceStateManager';
 import type {
   TConnectionConfigurationWithUa,
   TConnectionManagerEventMap,
@@ -36,9 +34,6 @@ const CONNECTION_EVENTS = CONNECTION_MANAGER_EVENT_NAMES.map((eventName) => {
 });
 const CALL_EVENTS = CALL_MANAGER_EVENT_NAMES.map((eventName) => {
   return `call:${eventName}` as const;
-});
-const CONFERENCE_STATE_EVENTS = CONFERENCE_STATE_MANAGER_EVENT_NAMES.map((eventName) => {
-  return `conference-state:${eventName}` as const;
 });
 const API_EVENTS = API_MANAGER_EVENT_NAMES.map((eventName) => {
   return `api:${eventName}` as const;
@@ -72,7 +67,6 @@ export const EVENT_NAMES = [
   ...AUTO_CONNECTOR_EVENTS,
   ...CONNECTION_EVENTS,
   ...CALL_EVENTS,
-  ...CONFERENCE_STATE_EVENTS,
   ...API_EVENTS,
   ...INCOMING_CALL_EVENTS,
   ...PRESENTATION_EVENTS,
@@ -99,7 +93,6 @@ type TSipConnectorEventMap = {
 export type TEventMap = PrefixedEventMap<TAutoConnectorManagerEventMap, 'auto-connect'> &
   PrefixedEventMap<TConnectionManagerEventMap, 'connection'> &
   PrefixedEventMap<TCallManagerEventMap, 'call'> &
-  PrefixedEventMap<TConferenceStateManagerEventMap, 'conference-state'> &
   PrefixedEventMap<TApiManagerEventMap, 'api'> &
   PrefixedEventMap<TIncomingCallManagerEventMap, 'incoming-call'> &
   PrefixedEventMap<TPresentationManagerEventMap, 'presentation'> &

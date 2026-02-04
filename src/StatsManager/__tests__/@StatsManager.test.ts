@@ -5,7 +5,6 @@ import delayPromise from '@/__fixtures__/delayPromise';
 import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import { ApiManager } from '@/ApiManager';
 import { CallManager } from '@/CallManager';
-import { ConferenceStateManager } from '@/ConferenceStateManager';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
 import logger from '@/logger';
 import { StatsManager } from '@/StatsManager';
@@ -117,9 +116,8 @@ describe('StatsManager', () => {
   });
 
   it('обновляет availableIncomingBitrate при событии collected', () => {
-    const conferenceStateManager = new ConferenceStateManager();
     const contentedStreamManager = new ContentedStreamManager();
-    const callManager = new CallManager(conferenceStateManager, contentedStreamManager);
+    const callManager = new CallManager(contentedStreamManager);
     const apiManager = new ApiManager();
     const manager = new StatsManager({ callManager, apiManager });
 
@@ -134,9 +132,8 @@ describe('StatsManager', () => {
   });
 
   it('сбрасывает availableIncomingBitrate при ended и failed', () => {
-    const conferenceStateManager = new ConferenceStateManager();
     const contentedStreamManager = new ContentedStreamManager();
-    const callManager = new CallManager(conferenceStateManager, contentedStreamManager);
+    const callManager = new CallManager(contentedStreamManager);
     const apiManager = new ApiManager();
     const manager = new StatsManager({ callManager, apiManager });
 
@@ -352,9 +349,8 @@ describe('StatsManager', () => {
     };
 
     it('возвращает false, если нет предыдущего или текущего значения', () => {
-      const conferenceStateManager = new ConferenceStateManager();
       const contentedStreamManager = new ContentedStreamManager();
-      const callManager = new CallManager(conferenceStateManager, contentedStreamManager);
+      const callManager = new CallManager(contentedStreamManager);
       const apiManager = new ApiManager();
       const manager = new StatsManager({ callManager, apiManager });
 
@@ -368,9 +364,8 @@ describe('StatsManager', () => {
     });
 
     it('возвращает false, если изменение меньше 25%', () => {
-      const conferenceStateManager = new ConferenceStateManager();
       const contentedStreamManager = new ContentedStreamManager();
-      const callManager = new CallManager(conferenceStateManager, contentedStreamManager);
+      const callManager = new CallManager(contentedStreamManager);
       const apiManager = new ApiManager();
       const manager = new StatsManager({ callManager, apiManager });
 
@@ -383,9 +378,8 @@ describe('StatsManager', () => {
     });
 
     it('возвращает true, если изменение равно или больше 25% (рост)', () => {
-      const conferenceStateManager = new ConferenceStateManager();
       const contentedStreamManager = new ContentedStreamManager();
-      const callManager = new CallManager(conferenceStateManager, contentedStreamManager);
+      const callManager = new CallManager(contentedStreamManager);
       const apiManager = new ApiManager();
       const manager = new StatsManager({ callManager, apiManager });
 
@@ -398,9 +392,8 @@ describe('StatsManager', () => {
     });
 
     it('возвращает true, если изменение равно или больше 25% (падение)', () => {
-      const conferenceStateManager = new ConferenceStateManager();
       const contentedStreamManager = new ContentedStreamManager();
-      const callManager = new CallManager(conferenceStateManager, contentedStreamManager);
+      const callManager = new CallManager(contentedStreamManager);
       const apiManager = new ApiManager();
       const manager = new StatsManager({ callManager, apiManager });
 
@@ -413,9 +406,8 @@ describe('StatsManager', () => {
     });
 
     it('если предыдущее 0 и текущее > 0 — возвращает true', () => {
-      const conferenceStateManager = new ConferenceStateManager();
       const contentedStreamManager = new ContentedStreamManager();
-      const callManager = new CallManager(conferenceStateManager, contentedStreamManager);
+      const callManager = new CallManager(contentedStreamManager);
       const apiManager = new ApiManager();
       const manager = new StatsManager({ callManager, apiManager });
 
@@ -448,9 +440,8 @@ describe('StatsManager', () => {
     });
 
     it('не отправляет stats на первом collected (нет previous)', () => {
-      const conferenceStateManager = new ConferenceStateManager();
       const contentedStreamManager = new ContentedStreamManager();
-      const callManager = new CallManager(conferenceStateManager, contentedStreamManager);
+      const callManager = new CallManager(contentedStreamManager);
       const apiManager = {
         sendStats: jest.fn().mockResolvedValue(undefined),
       } as unknown as ApiManager;
@@ -464,9 +455,8 @@ describe('StatsManager', () => {
     });
 
     it('не отправляет stats если изменение < 25%', () => {
-      const conferenceStateManager = new ConferenceStateManager();
       const contentedStreamManager = new ContentedStreamManager();
-      const callManager = new CallManager(conferenceStateManager, contentedStreamManager);
+      const callManager = new CallManager(contentedStreamManager);
       const apiManager = {
         sendStats: jest.fn().mockResolvedValue(undefined),
       } as unknown as ApiManager;
@@ -481,9 +471,8 @@ describe('StatsManager', () => {
     });
 
     it('отправляет stats если изменение >= 25%', () => {
-      const conferenceStateManager = new ConferenceStateManager();
       const contentedStreamManager = new ContentedStreamManager();
-      const callManager = new CallManager(conferenceStateManager, contentedStreamManager);
+      const callManager = new CallManager(contentedStreamManager);
       const apiManager = {
         sendStats: jest.fn().mockResolvedValue(undefined),
       } as unknown as ApiManager;
@@ -500,9 +489,8 @@ describe('StatsManager', () => {
     });
 
     it('отправляет stats если prev=0 и current>0', () => {
-      const conferenceStateManager = new ConferenceStateManager();
       const contentedStreamManager = new ContentedStreamManager();
-      const callManager = new CallManager(conferenceStateManager, contentedStreamManager);
+      const callManager = new CallManager(contentedStreamManager);
       const apiManager = {
         sendStats: jest.fn().mockResolvedValue(undefined),
       } as unknown as ApiManager;
@@ -517,9 +505,8 @@ describe('StatsManager', () => {
     });
 
     it('логирует ошибку если sendStats отклоняется', async () => {
-      const conferenceStateManager = new ConferenceStateManager();
       const contentedStreamManager = new ContentedStreamManager();
-      const callManager = new CallManager(conferenceStateManager, contentedStreamManager);
+      const callManager = new CallManager(contentedStreamManager);
       const error = new Error('boom');
       const apiManager = { sendStats: jest.fn().mockRejectedValue(error) } as unknown as ApiManager;
       const manager = new StatsManager({ callManager, apiManager });

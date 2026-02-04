@@ -19,9 +19,7 @@ type TConnectingContext = {
   number: string;
   answer: boolean;
 };
-type TInRoomContext = {
-  number: string;
-  answer: boolean;
+type TInRoomContext = TConnectingContext & {
   room: string;
   participantName: string;
   token: string; // jwt
@@ -73,7 +71,7 @@ const hasInRoomContext = (context: TContext): context is TInRoomContext => {
 
 const initialContext: TIdleContext = {};
 
-const clearCallContext = (): Partial<TInRoomContext> => {
+const clearCallContext = (): Partial<TContext> => {
   return {
     number: undefined,
     answer: undefined,
@@ -266,6 +264,26 @@ export class CallStateMachine extends BaseStateMachine<typeof callMachine, EStat
 
     if ('error' in context) {
       return context.error;
+    }
+
+    return undefined;
+  }
+
+  public get number() {
+    const { context } = this;
+
+    if ('number' in context) {
+      return context.number;
+    }
+
+    return undefined;
+  }
+
+  public get token() {
+    const { context } = this;
+
+    if ('token' in context) {
+      return context.token;
     }
 
     return undefined;

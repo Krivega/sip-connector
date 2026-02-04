@@ -2,7 +2,6 @@ import delayPromise from '@/__fixtures__/delayPromise';
 import jssip from '@/__fixtures__/jssip.mock';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { CallManager } from '@/CallManager';
-import { ConferenceStateManager } from '@/ConferenceStateManager';
 import { ConnectionManager } from '@/ConnectionManager';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
 import logger from '@/logger';
@@ -38,12 +37,9 @@ describe('ApiManager (core)', () => {
     connectionManager = new ConnectionManager({
       JsSIP: jssip as unknown as TJsSIP,
     });
-    callManager = Object.assign(
-      new CallManager(new ConferenceStateManager(), new ContentedStreamManager()),
-      {
-        getEstablishedRTCSession: jest.fn(),
-      },
-    );
+    callManager = Object.assign(new CallManager(new ContentedStreamManager()), {
+      getEstablishedRTCSession: jest.fn(),
+    });
     rtcSession = new RTCSessionMock({
       eventHandlers: {},
       originator: 'local',

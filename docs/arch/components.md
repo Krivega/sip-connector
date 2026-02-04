@@ -84,6 +84,8 @@
 - Отслеживание изменений удаленных потоков через события
 - Управление ролями участников (participant/spectator)
 - Валидация переходов состояний через CallStateMachine
+- Хранение данных конференции: room, participantName, channels, token (jwt), conference, participant
+- Хранение данных звонка: number, answer (перенесены из callConfiguration)
 
 **Основные методы**:
 
@@ -120,39 +122,6 @@
   - Переключение между ролями: `participant`, `spectator`, `spectator_synthetic`
   - Выбор активного RemoteStreamsManager (main или recv)
   - Управление жизненным циклом RecvSession при смене роли
-
-**Зависимости**:
-
-- `ConferenceStateManager` - для хранения состояния звонка (number, answer)
-
----
-
-## ConferenceStateManager (Состояние конференции)
-
-**Назначение**: Централизованное хранение состояния конференции и звонка.
-
-**Ключевые возможности**:
-
-- Хранение данных конференции: room, participantName, channels, token (jwt), conference, participant
-- Хранение данных звонка: number, answer (перенесены из callConfiguration)
-- Реактивные обновления через систему событий
-- Автоматическое обновление состояния при получении событий от ApiManager
-
-**Основные методы**:
-
-- `getState()` - получение readonly копии состояния
-- `updateState(updates)` - обновление состояния с триггером события
-- `reset()` - очистка состояния
-- Геттеры для удобного доступа: `getToken()`, `getRoom()`, `getParticipantName()`, `getChannels()`, `getConference()`, `getParticipant()`, `getNumber()`, `getAnswer()`
-
-**Интеграция**:
-
-- Автоматически обновляется при получении событий от ApiManager:
-  - `enterRoom` → обновляет `{ room, participantName }`
-  - `conference:participant-token-issued` → обновляет `{ token: jwt, conference, participant }`
-  - `channels` → обновляет `{ channels }`
-- Используется CallManager для хранения данных звонка
-- Используется SipConnector для передачи токена в API-запросы (sendOffer)
 
 ---
 

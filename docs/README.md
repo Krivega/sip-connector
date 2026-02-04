@@ -31,7 +31,6 @@
   - StatsPeerConnection
   - VideoSendingBalancerManager
   - MainStreamHealthMonitor
-  - ConferenceStateManager
   - SessionManager
   - AutoConnectorManager
   - ApiManager

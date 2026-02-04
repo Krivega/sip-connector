@@ -3,7 +3,6 @@ import { createAudioMediaStreamTrackMock } from 'webrtc-mock';
 import { createManagers } from '@/__fixtures__/createManagers';
 import flushPromises from '@/__fixtures__/flushPromises';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
-import { ConferenceStateManager } from '@/ConferenceStateManager';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
 import CallManager from '../@CallManager';
 import { RemoteStreamsManager } from '../RemoteStreamsManager';
@@ -83,14 +82,12 @@ interface CallManagerTestAccess {
 
 describe('CallManager', () => {
   let callManager: CallManager;
-  let conferenceStateManager: ConferenceStateManager;
   let mediaStream: MediaStream;
 
   beforeEach(() => {
     const managers = createManagers();
 
     callManager = managers.callManager;
-    conferenceStateManager = managers.conferenceStateManager;
 
     mediaStream = new MediaStream();
   });
@@ -156,7 +153,7 @@ describe('CallManager', () => {
   });
 
   it('renegotiate: должен пересогласовать recvSession для наблюдателя', async () => {
-    conferenceStateManager.updateState({ number: '100' });
+    jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('100');
 
     const sendOffer = jest.fn().mockResolvedValue(undefined);
 
@@ -181,7 +178,7 @@ describe('CallManager', () => {
   });
 
   it('renegotiate: должен вернуть ошибку при пересогласовании для наблюдателя если renegotiate вернул ошибку', async () => {
-    conferenceStateManager.updateState({ number: '100' });
+    jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('100');
 
     const sendOffer = jest.fn().mockResolvedValue(undefined);
 
@@ -285,7 +282,7 @@ describe('CallManager', () => {
     });
 
     it('возвращает peerConnection из recvSession для наблюдателя', () => {
-      conferenceStateManager.updateState({ number: '100' });
+      jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('100');
 
       const sendOffer = jest.fn().mockResolvedValue(undefined);
 
@@ -320,10 +317,7 @@ describe('CallManager', () => {
       .spyOn(prepareMediaStreamModule, 'default')
       .mockReturnValue(undefined as unknown as MediaStream);
 
-    const callManagerLocal = new CallManager(
-      new ConferenceStateManager(),
-      new ContentedStreamManager(),
-    );
+    const callManagerLocal = new CallManager(new ContentedStreamManager());
     const rtcSession = new RTCSessionMock({
       eventHandlers: {},
       originator: 'remote',
@@ -356,12 +350,10 @@ describe('CallManager', () => {
 
 describe('CallManager - дополнительные тесты для покрытия', () => {
   let callManager: CallManager;
-  let conferenceStateManager: ConferenceStateManager;
   let callManagerTest: CallManagerTestAccess;
 
   beforeEach(() => {
-    conferenceStateManager = new ConferenceStateManager();
-    callManager = new CallManager(conferenceStateManager, new ContentedStreamManager());
+    callManager = new CallManager(new ContentedStreamManager());
     callManagerTest = callManager as unknown as CallManagerTestAccess;
     jest.clearAllMocks();
     mockRecvSession.reset();
@@ -1015,7 +1007,7 @@ describe('CallManager - дополнительные тесты для покр�
   });
 
   it('startRecvSession: создаёт RecvSession, ресетит менеджер и вызывает call', async () => {
-    conferenceStateManager.updateState({ number: '123' });
+    jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('123');
 
     const recvManager = Reflect.get(
       callManager as unknown as object,
@@ -1054,7 +1046,7 @@ describe('CallManager - дополнительные тесты для покр�
   });
 
   it('startRecvSession: при ошибке call выполняет stopRecvSession', async () => {
-    conferenceStateManager.updateState({ number: '123' });
+    jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('123');
 
     const stopSpy = jest
       .spyOn(

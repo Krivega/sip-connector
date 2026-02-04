@@ -9,7 +9,6 @@ import { StreamsManagerProvider } from './StreamsManagerProvider';
 
 import type { RTCSession } from '@krivega/jssip';
 import type { ApiManager } from '@/ApiManager';
-import type { ConferenceStateManager } from '@/ConferenceStateManager';
 import type { ContentedStreamManager } from '@/ContentedStreamManager';
 import type { TEventMap, TEvents } from './events';
 import type { TTools } from './RecvSession';
@@ -39,8 +38,6 @@ class CallManager {
 
   protected rtcSession?: RTCSession;
 
-  private readonly conferenceStateManager: ConferenceStateManager;
-
   private readonly mainRemoteStreamsManager = new RemoteStreamsManager();
 
   private readonly recvRemoteStreamsManager = new RemoteStreamsManager();
@@ -61,11 +58,7 @@ class CallManager {
 
   private readonly streamsChangeTracker = new StreamsChangeTracker();
 
-  public constructor(
-    conferenceStateManager: ConferenceStateManager,
-    contentedStreamManager: ContentedStreamManager,
-  ) {
-    this.conferenceStateManager = conferenceStateManager;
+  public constructor(contentedStreamManager: ContentedStreamManager) {
     this.contentedStreamManager = contentedStreamManager;
     this.events = createEvents();
     this.mcuSession = new MCUSession(this.events, { onReset: this.reset });
@@ -141,7 +134,6 @@ class CallManager {
 
   public startCall: TStartCall = async (ua, getUri, params) => {
     this.isPendingCall = true;
-    this.conferenceStateManager.updateState({ number: params.number, answer: false });
 
     this.events.emit('start-call', {
       number: params.number,
@@ -173,11 +165,6 @@ class CallManager {
 
     const rtcSession = extractIncomingRTCSession();
 
-    this.conferenceStateManager.updateState({
-      number: rtcSession.remote_identity.uri.user,
-      answer: true,
-    });
-
     this.events.emit('start-call', {
       answer: true,
       number: rtcSession.remote_identity.uri.user,
@@ -198,6 +185,10 @@ class CallManager {
     const { getRemoteStreams } = this.getActiveStreamsManagerTools();
 
     return getRemoteStreams();
+  }
+
+  public getToken() {
+    return this.stateMachine.token;
   }
 
   public readonly getActivePeerConnection = () => {
@@ -239,7 +230,6 @@ class CallManager {
 
   private readonly reset: () => void = () => {
     this.mainRemoteStreamsManager.reset();
-    this.conferenceStateManager.updateState({ number: undefined, answer: false });
     this.roleManager.reset();
     this.recvRemoteStreamsManager.reset();
     this.stopRecvSession();
@@ -369,7 +359,7 @@ class CallManager {
   }
 
   private startRecvSession(audioId: string, sendOffer: TTools['sendOffer']): void {
-    const conferenceNumber = this.conferenceStateManager.getNumber();
+    const conferenceNumber = this.stateMachine.number;
 
     if (conferenceNumber === undefined) {
       return;
@@ -450,7 +440,7 @@ class CallManager {
   }
 
   private async renegotiateRecvSession() {
-    const conferenceNumber = this.conferenceStateManager.getNumber();
+    const conferenceNumber = this.stateMachine.number;
 
     if (conferenceNumber === undefined || this.recvSession === undefined) {
       return false;
