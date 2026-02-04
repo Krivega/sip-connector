@@ -450,6 +450,7 @@ class SipConnector {
   private readonly sendOffer = async (
     params: {
       conferenceNumber: string;
+      token: string;
       quality: 'low' | 'medium' | 'high';
       audioChannel: string;
     },
@@ -462,16 +463,10 @@ class SipConnector {
       throw new Error('No sipServerUrl for sendOffer');
     }
 
-    const token = this.callManager.getToken();
-
-    if (token === undefined) {
-      throw new Error('No token for sendOffer');
-    }
-
     return sendOffer({
       serverUrl,
       offer,
-      token,
+      token: params.token,
       conferenceNumber: params.conferenceNumber,
       quality: params.quality,
       audio: params.audioChannel,

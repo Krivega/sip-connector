@@ -16,7 +16,7 @@ type TConfig = Pick<TSendOfferParams, 'quality' | 'audioChannel'> & {
 
 export type TTools = {
   sendOffer: (
-    params: TSendOfferParams & { conferenceNumber: TConferenceNumber },
+    params: TSendOfferParams & { conferenceNumber: TConferenceNumber; token: string },
     offer: RTCSessionDescriptionInit,
   ) => Promise<RTCSessionDescription>;
 };
@@ -52,21 +52,34 @@ class RecvSession {
     this.connection.close();
   }
 
-  public async call(conferenceNumber: TConferenceNumber): Promise<void> {
+  public async call({
+    conferenceNumber,
+    token,
+  }: {
+    conferenceNumber: TConferenceNumber;
+    token: string;
+  }): Promise<void> {
     const tracksPromise = this.waitForTracks();
 
-    await this.renegotiate(conferenceNumber);
+    await this.renegotiate({ conferenceNumber, token });
 
     await tracksPromise;
   }
 
-  public async renegotiate(conferenceNumber: TConferenceNumber): Promise<boolean> {
+  public async renegotiate({
+    conferenceNumber,
+    token,
+  }: {
+    conferenceNumber: TConferenceNumber;
+    token: string;
+  }): Promise<boolean> {
     const offer = await this.createOffer();
 
     const targetFunction = async (): Promise<RTCSessionDescription> => {
       return this.tools.sendOffer(
         {
           conferenceNumber,
+          token,
           quality: this.config.quality,
           audioChannel: this.config.audioChannel,
         },

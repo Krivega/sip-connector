@@ -86,6 +86,7 @@
 - Валидация переходов состояний через CallStateMachine
 - Хранение данных конференции: room, participantName, channels, token (jwt), conference, participant
 - Хранение данных звонка: number, answer (перенесены из callConfiguration)
+- Отложенный старт RecvSession при гонке событий с сервером (паттерн «отложенная команда» через DeferredCommandRunner)
 
 **Основные методы**:
 
@@ -111,6 +112,14 @@
   - Создание отдельного RTCPeerConnection для приема потоков
   - Поддержка receive-only transceiver'ов
   - Используется при перемещении участника в режим spectator
+  - Запуск требует наличия токена (sendOffer вызывается с токеном из CallStateMachine)
+
+- **DeferredCommandRunner** - паттерн отложенной команды для запуска RecvSession
+  - Устраняет гонку событий: `participant:move-request-to-spectators-with-audio-id` может прийти раньше `conference:participant-token-issued`
+  - При отсутствии токена (состояние CONNECTING) команда «запустить RecvSession» сохраняется и подписывается на переход CallStateMachine в IN_ROOM
+  - При переходе в IN_ROOM команда выполняется (вызывается startRecvSession); при переходе в FAILED/IDLE — отменяется без выполнения
+  - Методы: `set(command)` — отложить команду, `cancel()` — отменить подписку и очистить команду
+  - Вызов `cancel()` при смене роли с зрителя на участника и при reset CallManager
 
 - **RemoteStreamsManager** (два экземпляра: main и recv)
   - **MainRemoteStreamsManager** - управление потоками для участников

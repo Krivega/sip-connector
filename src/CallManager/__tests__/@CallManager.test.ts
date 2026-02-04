@@ -7,7 +7,7 @@ import { ContentedStreamManager } from '@/ContentedStreamManager';
 import CallManager from '../@CallManager';
 import { RemoteStreamsManager } from '../RemoteStreamsManager';
 
-import type { RTCSession } from '@krivega/jssip';
+import type { EndEvent, RTCSession } from '@krivega/jssip';
 import type { TCallRoleSpectator, TCallRoleSpectatorSynthetic } from '../types';
 
 const mockRecvSession = (() => {
@@ -90,6 +90,7 @@ describe('CallManager', () => {
     callManager = managers.callManager;
 
     mediaStream = new MediaStream();
+    mockRecvSession.reset();
   });
 
   it('endCall: вызывает reset и terminateAsync', async () => {
@@ -154,6 +155,7 @@ describe('CallManager', () => {
 
   it('renegotiate: должен пересогласовать recvSession для наблюдателя', async () => {
     jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('100');
+    jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue('token');
 
     const sendOffer = jest.fn().mockResolvedValue(undefined);
 
@@ -173,12 +175,16 @@ describe('CallManager', () => {
     await expect(callManager.renegotiate()).resolves.toBe(true);
 
     expect(mockRecvSession.instance?.renegotiate).toHaveBeenCalledTimes(1);
-    expect(mockRecvSession.instance?.renegotiate).toHaveBeenCalledWith('100');
+    expect(mockRecvSession.instance?.renegotiate).toHaveBeenCalledWith({
+      conferenceNumber: '100',
+      token: 'token',
+    });
     expect(mcuRenegotiateSpy).not.toHaveBeenCalled();
   });
 
   it('renegotiate: должен вернуть ошибку при пересогласовании для наблюдателя если renegotiate вернул ошибку', async () => {
     jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('100');
+    jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue('token');
 
     const sendOffer = jest.fn().mockResolvedValue(undefined);
 
@@ -202,7 +208,10 @@ describe('CallManager', () => {
     await expect(callManager.renegotiate()).rejects.toThrow('renegotiate failed');
 
     expect(mockRecvSession.instance?.renegotiate).toHaveBeenCalledTimes(1);
-    expect(mockRecvSession.instance?.renegotiate).toHaveBeenCalledWith('100');
+    expect(mockRecvSession.instance?.renegotiate).toHaveBeenCalledWith({
+      conferenceNumber: '100',
+      token: 'token',
+    });
     expect(mcuRenegotiateSpy).not.toHaveBeenCalled();
   });
 
@@ -251,6 +260,8 @@ describe('CallManager', () => {
   it('getMainRemoteStream: должен вернуть поток из recvSession для наблюдателя', () => {
     const stream = new MediaStream();
 
+    jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue('token');
+
     const sendOffer = jest.fn().mockResolvedValue(undefined);
 
     callManager.setCallRoleSpectator({
@@ -283,6 +294,7 @@ describe('CallManager', () => {
 
     it('возвращает peerConnection из recvSession для наблюдателя', () => {
       jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('100');
+      jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue('token');
 
       const sendOffer = jest.fn().mockResolvedValue(undefined);
 
@@ -345,6 +357,77 @@ describe('CallManager', () => {
     // @ts-expect-error
     callManager.reset();
     expect(spy).toHaveBeenCalled();
+  });
+
+  describe('deferred RecvSession command (race with conference:participant-token-issued)', () => {
+    it('откладывает startRecvSession при CONNECTING без токена и выполняет после перехода в IN_ROOM', () => {
+      const { callManager: cm, apiManager } = createManagers();
+      const sendOffer = jest.fn().mockResolvedValue({} as RTCSessionDescription);
+
+      cm.events.trigger('start-call', { number: '100', answer: false });
+      expect(cm.stateMachine.state).toBe('call:connecting');
+      expect(cm.getToken()).toBeUndefined();
+
+      cm.setCallRoleSpectator({
+        audioId: 'audio-1',
+        sendOffer,
+      } as TCallRoleSpectator['recvParams']);
+
+      expect(mockRecvSession.instance).toBeUndefined();
+
+      apiManager.events.trigger('enter-room', { room: 'r1', participantName: 'p1' });
+      apiManager.events.trigger('conference:participant-token-issued', {
+        jwt: 'token1',
+        conference: 'c1',
+        participant: 'part1',
+      });
+
+      expect(cm.stateMachine.state).toBe('call:inRoom');
+      expect(mockRecvSession.instance).toBeDefined();
+      expect(mockRecvSession.instance?.call).toHaveBeenCalledWith({
+        conferenceNumber: '100',
+        token: 'token1',
+      });
+    });
+
+    it('отменяет отложенную команду при смене роли на участника до прихода токена', () => {
+      const { callManager: cm, apiManager } = createManagers();
+      const sendOffer = jest.fn().mockResolvedValue({} as RTCSessionDescription);
+
+      cm.events.trigger('start-call', { number: '100', answer: false });
+      cm.setCallRoleSpectator({
+        audioId: 'audio-1',
+        sendOffer,
+      } as TCallRoleSpectator['recvParams']);
+
+      cm.setCallRoleParticipant();
+
+      apiManager.events.trigger('enter-room', { room: 'r1', participantName: 'p1' });
+      apiManager.events.trigger('conference:participant-token-issued', {
+        jwt: 'token1',
+        conference: 'c1',
+        participant: 'part1',
+      });
+
+      expect(cm.stateMachine.state).toBe('call:inRoom');
+      expect(mockRecvSession.instance).toBeUndefined();
+    });
+
+    it('отменяет отложенную команду при переходе в FAILED до прихода токена', () => {
+      const { callManager: cm } = createManagers();
+      const sendOffer = jest.fn().mockResolvedValue({} as RTCSessionDescription);
+
+      cm.events.trigger('start-call', { number: '100', answer: false });
+      cm.setCallRoleSpectator({
+        audioId: 'audio-1',
+        sendOffer,
+      } as TCallRoleSpectator['recvParams']);
+
+      cm.events.trigger('failed', new Error('call failed') as unknown as EndEvent);
+      expect(cm.stateMachine.state).toBe('call:failed');
+
+      expect(mockRecvSession.instance).toBeUndefined();
+    });
   });
 });
 
@@ -646,6 +729,9 @@ describe('CallManager - дополнительные тесты для покр�
     const stopSpy = jest
       // @ts-expect-error
       .spyOn(callManager, 'stopRecvSession');
+
+    jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue('token');
+
     const startSpy = jest
       // @ts-expect-error
       .spyOn(callManager, 'startRecvSession');
@@ -664,7 +750,10 @@ describe('CallManager - дополнительные тесты для покр�
     // Вход в spectator
     // @ts-expect-error
     callManager.onRoleChanged({ previous: { type: 'participant' }, next: spectatorRole });
-    expect(startSpy).toHaveBeenCalledWith('a1', spectatorRole.recvParams.sendOffer);
+    expect(startSpy).toHaveBeenCalledWith('a1', {
+      sendOffer: spectatorRole.recvParams.sendOffer,
+      token: 'token',
+    });
 
     startSpy.mockClear();
 
@@ -931,10 +1020,15 @@ describe('CallManager - дополнительные тесты для покр�
       },
     };
 
+    jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue('token');
+
     // Вход в spectator с первым audioId
     // @ts-expect-error
     callManager.onRoleChanged({ previous: { type: 'participant' }, next: firstSpectatorRole });
-    expect(startSpy).toHaveBeenCalledWith('a1', firstSpectatorRole.recvParams.sendOffer);
+    expect(startSpy).toHaveBeenCalledWith('a1', {
+      sendOffer: firstSpectatorRole.recvParams.sendOffer,
+      token: 'token',
+    });
     expect(startSpy).toHaveBeenCalledTimes(1);
 
     startSpy.mockClear();
@@ -946,7 +1040,10 @@ describe('CallManager - дополнительные тесты для покр�
     // startRecvSession вызывается с новым audioId, что означает перезапуск сессии
     // (startRecvSession внутри вызывает stopRecvSession перед созданием новой сессии)
     expect(startSpy).toHaveBeenCalledTimes(1);
-    expect(startSpy).toHaveBeenCalledWith('a2', secondSpectatorRole.recvParams.sendOffer);
+    expect(startSpy).toHaveBeenCalledWith('a2', {
+      sendOffer: secondSpectatorRole.recvParams.sendOffer,
+      token: 'token',
+    });
   });
 
   it('setCallRoleParticipant: делегирует в roleManager', () => {
@@ -1032,13 +1129,18 @@ describe('CallManager - дополнительные тесты для покр�
       .mockImplementation(() => {});
 
     (
-      callManager as unknown as { startRecvSession: (id: string, sendOffer: () => void) => void }
-    ).startRecvSession('audio-id', jest.fn());
+      callManager as unknown as {
+        startRecvSession: (id: string, params: { sendOffer: () => void; token: string }) => void;
+      }
+    ).startRecvSession('audio-id', { sendOffer: jest.fn(), token: 'test-token' });
 
     expect(recvResetSpy).toHaveBeenCalled();
     expect(attachSpy).toHaveBeenCalled();
     expect(stopSpy).toHaveBeenCalledTimes(1); // initial stop before creating new session
-    expect(mockRecvSession.instance?.call).toHaveBeenCalledWith('123');
+    expect(mockRecvSession.instance?.call).toHaveBeenCalledWith({
+      conferenceNumber: '123',
+      token: 'test-token',
+    });
     expect(mockRecvSession.instance?.config).toMatchObject({
       audioChannel: 'audio-id',
       quality: 'high',
@@ -1072,8 +1174,10 @@ describe('CallManager - дополнительные тесты для покр�
     });
 
     (
-      callManager as unknown as { startRecvSession: (id: string, sendOffer: () => void) => void }
-    ).startRecvSession('audio-id', jest.fn());
+      callManager as unknown as {
+        startRecvSession: (id: string, params: { sendOffer: () => void; token: string }) => void;
+      }
+    ).startRecvSession('audio-id', { sendOffer: jest.fn(), token: 'test-token' });
 
     // Ждем завершения промиса и выполнения catch-блока на строке 299
     // Используем несколько вызовов flushPromises и setTimeout для гарантии выполнения всех микротасок
@@ -1088,7 +1192,10 @@ describe('CallManager - дополнительные тесты для покр�
 
     // stopRecvSession вызывается дважды: в начале startRecvSession (строка 285) и в catch-блоке (строка 299)
     expect(stopSpy).toHaveBeenCalledTimes(2);
-    expect(mockRecvSession.instance?.call).toHaveBeenCalledWith('123');
+    expect(mockRecvSession.instance?.call).toHaveBeenCalledWith({
+      conferenceNumber: '123',
+      token: 'test-token',
+    });
   });
 
   it('stopRecvSession: закрывает сессию, сбрасывает слушатель и менеджер', () => {

@@ -810,8 +810,6 @@ describe('SipConnector', () => {
         sipServerUrl: 'wss://test.example.com/ws',
       } as unknown as TConnectionConfigurationWithUa);
 
-      jest.spyOn(sipConnector.callManager, 'getToken').mockReturnValue(testToken);
-
       const sendOfferSpy = jest.spyOn(tools, 'sendOffer').mockResolvedValue({
         type: 'answer',
         sdp: 'test-sdp',
@@ -843,6 +841,7 @@ describe('SipConnector', () => {
         {
           conferenceNumber: 'conf-123',
           quality: 'high',
+          token: testToken,
           audioChannel: audioId,
         },
         offer,
@@ -889,6 +888,7 @@ describe('SipConnector', () => {
         sendOfferFunction(
           {
             conferenceNumber: 'conf-123',
+            token: 'testToken',
             quality: 'high',
             audioChannel: audioId,
           },
@@ -1244,14 +1244,13 @@ describe('SipConnector', () => {
         sipServerUrl: serverUrl,
       } as unknown as TConnectionConfigurationWithUa);
 
-      jest.spyOn(sipConnector.callManager, 'getToken').mockReturnValue(testToken);
-
       const sendOfferSpy = jest.spyOn(tools, 'sendOffer').mockResolvedValue(expectedAnswer);
 
       // @ts-expect-error: доступ к приватному методу для тестирования
       const result = await sipConnector.sendOffer(
         {
           conferenceNumber,
+          token: testToken,
           quality,
           audioChannel,
         },
@@ -1262,9 +1261,9 @@ describe('SipConnector', () => {
       expect(sendOfferSpy).toHaveBeenCalledWith({
         serverUrl,
         offer,
-        token: testToken,
         conferenceNumber,
         quality,
+        token: testToken,
         audio: audioChannel,
       });
       expect(result).toEqual(expectedAnswer);
@@ -1285,6 +1284,7 @@ describe('SipConnector', () => {
         sipConnector.sendOffer(
           {
             conferenceNumber: 'conf-123',
+            token: 'testToken',
             quality: 'high',
             audioChannel: 'audio-1',
           },
@@ -1310,6 +1310,7 @@ describe('SipConnector', () => {
         sipConnector.sendOffer(
           {
             conferenceNumber: 'conf-123',
+            token: 'testToken',
             quality: 'high',
             audioChannel: 'audio-1',
           },
@@ -1414,8 +1415,6 @@ describe('SipConnector', () => {
         sipServerUrl: serverUrl,
       } as unknown as TConnectionConfigurationWithUa);
 
-      jest.spyOn(sipConnector.callManager, 'getToken').mockReturnValue(testToken);
-
       const sendOfferSpy = jest.spyOn(tools, 'sendOffer').mockResolvedValue({
         type: 'answer',
         sdp: 'test-answer-sdp',
@@ -1425,6 +1424,7 @@ describe('SipConnector', () => {
       await sipConnector.sendOffer(
         {
           conferenceNumber: 'conf-123',
+          token: testToken,
           quality: 'high',
           audioChannel: 'audio-1',
         },

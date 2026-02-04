@@ -18,7 +18,7 @@
 - ConnectionManager (SIP-соединения)
 - ConnectionQueueManager (Очередь операций)
 - AutoConnectorManager (Автоматическое переподключение)
-- CallManager (WebRTC-звонки, состояние конференции)
+- CallManager (WebRTC-звонки, состояние конференции, отложенная команда для RecvSession)
 - ApiManager (Серверное API)
 - PresentationManager (Презентации)
 - IncomingCallManager (Входящие звонки)

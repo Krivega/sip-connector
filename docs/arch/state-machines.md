@@ -159,6 +159,7 @@ stateDiagram-v2
   - FAILED → IDLE (CALL.RESET), FAILED → CONNECTING (CALL.CONNECTING)
 - Внутреннее состояние EVALUATE: переход в IN_ROOM/CONNECTING/FAILED/IDLE по контексту после действий
 - Логирование недопустимых переходов через console.warn
+- **Зависимость для перевода в зрители**: запуск RecvSession (и вызов sendOffer) возможен только при наличии токена (состояние IN_ROOM). При гонке событий (`participant:move-request-to-spectators-with-audio-id` приходит до `conference:participant-token-issued`) CallManager использует DeferredCommandRunner: команда откладывается и выполняется при переходе в IN_ROOM.
 
 ### PresentationStateMachine (Состояния демонстрации экрана)
 

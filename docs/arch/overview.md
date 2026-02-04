@@ -60,7 +60,7 @@
 **Управляемые компоненты**:
 
 - `ConnectionManager` - SIP-соединения (включает ConnectionStateMachine)
-- `CallManager` - WebRTC-звонки (включает CallStateMachine: состояние звонка и конференции — number, answer, room, participantName, token, conference, participant)
+- `CallManager` - WebRTC-звонки (включает CallStateMachine, DeferredCommandRunner для отложенного старта RecvSession при гонке событий с сервером)
 - `ApiManager` - серверное API
 - `PresentationManager` - презентации
 - `StatsManager` - статистика
@@ -83,12 +83,13 @@ graph TB
             C["ConnectionManager<br/>🔗 SIP Connections<br/>+ ConnectionStateMachine"]
 
             subgraph "CallManager Components"
-                D["CallManager<br/>📞 WebRTC Calls<br/>+ CallStateMachine (room, token, number, answer)"]
+                D["CallManager<br/>📞 WebRTC Calls<br/>+ CallStateMachine, DeferredCommandRunner"]
                 D1["MCUSession<br/>📞 Main Session<br/>+ RTCSession Management"]
                 D2["RecvSession<br/>👁️ Spectator Session<br/>+ Receive-only Streams"]
                 D3["RemoteStreamsManager<br/>📡 Main Streams<br/>+ Track Management"]
                 D4["RemoteStreamsManager<br/>📡 Recv Streams<br/>+ Spectator Tracks"]
                 D5["RoleManager<br/>👤 Role Management<br/>+ Participant/Spectator"]
+                D6["DeferredCommandRunner<br/>⏳ Pending Start RecvSession<br/>+ Token race handling"]
             end
 
             E["ApiManager<br/>📡 Server API<br/>+ Restart Events"]
@@ -126,6 +127,7 @@ graph TB
         D --> D3
         D --> D4
         D --> D5
+        D --> D6
         D1 --> N
         D2 --> N
         D3 --> N
@@ -160,6 +162,7 @@ graph TB
     style D3 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     style D4 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     style D5 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style D6 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
 ```
 
 ## Взаимодействие компонентов
@@ -171,6 +174,7 @@ graph TB
 - `CallManager` → `CallStateMachine` (состояние звонка и конференции: number, answer, room, participantName, token, conference, participant; подписка на ApiManager: enter-room, conference:participant-token-issued)
 - `CallManager` → `MCUSession` (управление основным RTCSession для участников)
 - `CallManager` → `RecvSession` (управление receive-only сессией для зрителей)
+- `CallManager` → `DeferredCommandRunner` (отложенная команда запуска RecvSession: при приходе `participant:move-request-to-spectators-with-audio-id` до `conference:participant-token-issued` команда сохраняется и выполняется после перехода CallStateMachine в IN_ROOM)
 - `CallManager` → `RemoteStreamsManager` (два экземпляра: main и recv для организации входящих потоков)
 - `CallManager` → `RoleManager` (управление ролями: participant, spectator, spectator_synthetic)
 - `RoleManager` → `RemoteStreamsManager` (переключение между main и recv менеджерами)

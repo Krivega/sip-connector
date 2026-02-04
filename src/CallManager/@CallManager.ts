@@ -1,4 +1,5 @@
-import { CallStateMachine } from './CallStateMachine';
+import { CallStateMachine, EState } from './CallStateMachine';
+import { DeferredCommandRunner } from './DeferredCommandRunner';
 import { createEvents, EEvent } from './events';
 import { MCUSession } from './MCUSession';
 import RecvSession from './RecvSession';
@@ -56,6 +57,11 @@ class CallManager {
 
   private disposeRecvSessionTrackListener?: () => void;
 
+  private readonly deferredStartRecvSessionRunner: DeferredCommandRunner<
+    TCallRoleSpectator['recvParams'],
+    EState
+  >;
+
   private readonly streamsChangeTracker = new StreamsChangeTracker();
 
   public constructor(contentedStreamManager: ContentedStreamManager) {
@@ -67,6 +73,29 @@ class CallManager {
       this.mainRemoteStreamsManager,
       this.recvRemoteStreamsManager,
     );
+    this.deferredStartRecvSessionRunner = new DeferredCommandRunner<
+      TCallRoleSpectator['recvParams'],
+      EState
+    >({
+      subscribe: (listener) => {
+        return this.stateMachine.onStateChange(listener);
+      },
+      isReady: (state) => {
+        return state === EState.IN_ROOM;
+      },
+      isCancelled: (state) => {
+        return state === EState.FAILED || state === EState.IDLE;
+      },
+      onExecute: (command) => {
+        // isReady(state) === true означает IN_ROOM, контекст гарантированно содержит token
+        const { token } = this.stateMachine.context as { token: string };
+
+        this.startRecvSession(command.audioId, {
+          sendOffer: command.sendOffer,
+          token,
+        });
+      },
+    });
 
     this.subscribeCallStatusChange();
     this.subscribeMcuRemoteTrackEvents();
@@ -233,6 +262,7 @@ class CallManager {
     this.roleManager.reset();
     this.recvRemoteStreamsManager.reset();
     this.stopRecvSession();
+    this.deferredStartRecvSessionRunner.cancel();
     this.streamsChangeTracker.reset();
   };
 
@@ -358,7 +388,10 @@ class CallManager {
     };
   }
 
-  private startRecvSession(audioId: string, sendOffer: TTools['sendOffer']): void {
+  private startRecvSession(
+    audioId: string,
+    { sendOffer, token }: { sendOffer: TTools['sendOffer']; token: string },
+  ): void {
     const conferenceNumber = this.stateMachine.number;
 
     if (conferenceNumber === undefined) {
@@ -378,7 +411,7 @@ class CallManager {
     this.recvRemoteStreamsManager.reset();
     this.attachRecvSessionTracks(session);
 
-    session.call(conferenceNumber).catch(() => {
+    session.call({ conferenceNumber, token }).catch(() => {
       this.stopRecvSession();
     });
   }
@@ -407,13 +440,25 @@ class CallManager {
 
     if (isPreviousSpectator && !isNextSpectator) {
       this.stopRecvSession();
+      this.deferredStartRecvSessionRunner.cancel();
       this.emitEventChangedRemoteStreams(this.getRemoteStreams());
     }
 
     if (isNextSpectator) {
       const params = next.recvParams;
+      const { token } = this.stateMachine;
 
-      this.startRecvSession(params.audioId, params.sendOffer);
+      if (token === undefined) {
+        this.deferredStartRecvSessionRunner.set({
+          audioId: params.audioId,
+          sendOffer: params.sendOffer,
+        });
+      } else {
+        this.startRecvSession(params.audioId, {
+          token,
+          sendOffer: params.sendOffer,
+        });
+      }
     }
 
     if (isPreviousAnySpectator && !isNextAnySpectator) {
@@ -441,12 +486,13 @@ class CallManager {
 
   private async renegotiateRecvSession() {
     const conferenceNumber = this.stateMachine.number;
+    const { token } = this.stateMachine;
 
-    if (conferenceNumber === undefined || this.recvSession === undefined) {
+    if (conferenceNumber === undefined || token === undefined || this.recvSession === undefined) {
       return false;
     }
 
-    return this.recvSession.renegotiate(conferenceNumber);
+    return this.recvSession.renegotiate({ conferenceNumber, token });
   }
 
   private async renegotiateMcuSession() {
