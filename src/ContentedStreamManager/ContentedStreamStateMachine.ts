@@ -2,7 +2,6 @@ import { assign, setup } from 'xstate';
 
 import { BaseStateMachine } from '@/tools/BaseStateMachine';
 
-import type { ActorRefFrom, SnapshotFrom } from 'xstate';
 import type { TApiManagerEvents, EContentedStreamCodec } from '@/ApiManager';
 import type { TContentedStreamStateInfo } from './types';
 
@@ -16,13 +15,13 @@ type TContentedStreamEvent =
   | { type: 'CONTENTED_STREAM.NOT_AVAILABLE' }
   | { type: 'CONTENTED_STREAM.RESET' };
 
-interface IContentedStreamContext {
+type TContext = {
   codec?: EContentedStreamCodec;
-}
+};
 
 const contentedStreamMachine = setup({
   types: {
-    context: {} as IContentedStreamContext,
+    context: {} as TContext,
     events: {} as TContentedStreamEvent,
   },
   actions: {
@@ -68,12 +67,12 @@ const contentedStreamMachine = setup({
   },
 });
 
-export type TContentedStreamSnapshot = SnapshotFrom<typeof contentedStreamMachine>;
-export type TContentedStreamActor = ActorRefFrom<typeof contentedStreamMachine>;
+export type TContentedStreamSnapshot = { value: EState; context: TContext };
 
 export class ContentedStreamStateMachine extends BaseStateMachine<
   typeof contentedStreamMachine,
-  EState
+  EState,
+  TContext
 > {
   public constructor() {
     super(contentedStreamMachine);
@@ -103,7 +102,7 @@ export class ContentedStreamStateMachine extends BaseStateMachine<
   }
 
   public send(event: TContentedStreamEvent): void {
-    const snapshot = this.getSnapshot();
+    const snapshot = this.actor.getSnapshot();
 
     if (!snapshot.can(event)) {
       // eslint-disable-next-line no-console

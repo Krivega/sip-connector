@@ -1,15 +1,37 @@
+import { createApiManagerEvents } from '@/ApiManager';
 import { CallStateMachine, EState } from '../CallStateMachine';
 import { createEvents } from '../events';
 
+import type { EndEvent } from '@krivega/jssip';
+import type { TApiManagerEvents } from '@/ApiManager';
 import type { TEventName, TEvents } from '../events';
 
 describe('CallStateMachine', () => {
+  let apiManagerEvents: TApiManagerEvents;
   let events: TEvents;
   let machine: CallStateMachine;
 
+  const connectPayload = { number: '100', answer: false };
+  const token1Payload = { jwt: 'jwt1', conference: 'conf-1', participant: 'p-1' };
+  const token1Context = {
+    token: token1Payload.jwt,
+    conference: token1Payload.conference,
+    participant: token1Payload.participant,
+  };
+  const token2Payload = { jwt: 'jwt2', conference: 'conf-2', participant: 'p-2' };
+  const token2Context = {
+    token: token2Payload.jwt,
+    conference: token2Payload.conference,
+    participant: token2Payload.participant,
+  };
+  const room1Payload = { room: 'room-1', participantName: 'User' };
+  const room2Payload = { room: 'room-2', participantName: 'User2' };
+
   beforeEach(() => {
+    apiManagerEvents = createApiManagerEvents();
     events = createEvents();
     machine = new CallStateMachine(events);
+    machine.subscribeToApiEvents(apiManagerEvents);
   });
 
   afterEach(() => {
@@ -20,83 +42,63 @@ describe('CallStateMachine', () => {
     const transitions: {
       title: string;
       arrange?: () => void;
-      event: { type: string; error?: unknown };
+      event: { type: string } & Record<string, unknown>;
       expected: EState;
     }[] = [
       {
         title: 'CALL.CONNECTING из IDLE в CONNECTING',
-        event: { type: 'CALL.CONNECTING' },
+        event: { type: 'CALL.CONNECTING', ...connectPayload },
         expected: EState.CONNECTING,
       },
       {
-        title: 'CALL.ENDED из CONNECTING в ENDED',
+        title: 'CALL.ENTER_ROOM в CONNECTING оставляет CONNECTING',
         arrange: () => {
-          machine.send({ type: 'CALL.CONNECTING' });
+          machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
         },
-        event: { type: 'CALL.ENDED' },
-        expected: EState.ENDED,
+        event: { type: 'CALL.ENTER_ROOM', ...room1Payload },
+        expected: EState.CONNECTING,
+      },
+      {
+        title: 'CALL.TOKEN_ISSUED в CONNECTING оставляет CONNECTING',
+        arrange: () => {
+          machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+        },
+        event: { type: 'CALL.TOKEN_ISSUED', ...token1Payload },
+        expected: EState.CONNECTING,
       },
       {
         title: 'CALL.FAILED из CONNECTING в FAILED',
         arrange: () => {
-          machine.send({ type: 'CALL.CONNECTING' });
+          machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
         },
-        event: { type: 'CALL.FAILED', error: new Error('fail') },
+        event: { type: 'CALL.FAILED', error: new Error('fail') as unknown as EndEvent },
         expected: EState.FAILED,
       },
       {
-        title: 'CALL.FAILED без error из CONNECTING в FAILED (coverage lastError undefined)',
+        title: 'CALL.RESET из CONNECTING в IDLE',
         arrange: () => {
-          machine.send({ type: 'CALL.CONNECTING' });
+          machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
         },
-        event: { type: 'CALL.FAILED' },
-        expected: EState.FAILED,
+        event: { type: 'CALL.RESET' },
+        expected: EState.IDLE,
       },
       {
-        title: 'CALL.ACCEPTED из CONNECTING в ACCEPTED',
+        title: 'CALL.CONNECTING из FAILED возвращает в CONNECTING',
         arrange: () => {
-          machine.send({ type: 'CALL.CONNECTING' });
+          machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+          machine.send({ type: 'CALL.FAILED', error: new Error('fail') as unknown as EndEvent });
         },
-        event: { type: 'CALL.ACCEPTED' },
-        expected: EState.ACCEPTED,
-      },
-      {
-        title: 'CALL.CONFIRMED из ACCEPTED в IN_CALL',
-        arrange: () => {
-          machine.send({ type: 'CALL.CONNECTING' });
-          machine.send({ type: 'CALL.ACCEPTED' });
-        },
-        event: { type: 'CALL.CONFIRMED' },
-        expected: EState.IN_CALL,
-      },
-      {
-        title: 'CALL.ENDED из IN_CALL в ENDED',
-        arrange: () => {
-          machine.send({ type: 'CALL.CONNECTING' });
-          machine.send({ type: 'CALL.ACCEPTED' });
-          machine.send({ type: 'CALL.CONFIRMED' });
-        },
-        event: { type: 'CALL.ENDED' },
-        expected: EState.ENDED,
-      },
-      {
-        title: 'CALL.FAILED из IN_CALL в FAILED',
-        arrange: () => {
-          machine.send({ type: 'CALL.CONNECTING' });
-          machine.send({ type: 'CALL.ACCEPTED' });
-          machine.send({ type: 'CALL.CONFIRMED' });
-        },
-        event: { type: 'CALL.FAILED', error: new Error('fail') },
-        expected: EState.FAILED,
-      },
-      {
-        title: 'CALL.CONNECTING из ENDED возвращает в CONNECTING',
-        arrange: () => {
-          machine.send({ type: 'CALL.CONNECTING' });
-          machine.send({ type: 'CALL.ENDED' });
-        },
-        event: { type: 'CALL.CONNECTING' },
+        event: { type: 'CALL.CONNECTING', number: '200', answer: true },
         expected: EState.CONNECTING,
+      },
+      {
+        title: 'CALL.RESET из FAILED оставляет FAILED',
+        arrange: () => {
+          machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+          machine.send({ type: 'CALL.FAILED', error: new Error('fail') as unknown as EndEvent });
+        },
+        event: { type: 'CALL.RESET' },
+        expected: EState.FAILED,
       },
     ];
 
@@ -119,25 +121,16 @@ describe('CallStateMachine', () => {
       }[];
     }[] = [
       {
-        title: 'успешный звонок (connecting → accepted → confirmed → ended)',
+        title: 'звонок (start-call → ended)',
         steps: [
-          { event: 'connecting', expected: EState.CONNECTING },
-          { event: 'accepted', expected: EState.ACCEPTED },
-          { event: 'confirmed', expected: EState.IN_CALL },
-          { event: 'ended', expected: EState.ENDED },
+          { event: 'start-call', payload: connectPayload, expected: EState.CONNECTING },
+          { event: 'ended', expected: EState.IDLE },
         ],
       },
       {
-        title: 'ошибка звонка (connecting → failed)',
+        title: 'ошибка звонка (start-call → failed)',
         steps: [
-          { event: 'connecting', expected: EState.CONNECTING },
-          { event: 'failed', expected: EState.FAILED },
-        ],
-      },
-      {
-        title: 'ошибка звонка без error (connecting → failed)',
-        steps: [
-          { event: 'connecting', expected: EState.CONNECTING },
+          { event: 'start-call', payload: connectPayload, expected: EState.CONNECTING },
           { event: 'failed', expected: EState.FAILED },
         ],
       },
@@ -154,116 +147,66 @@ describe('CallStateMachine', () => {
   describe('Геттеры состояний', () => {
     it('isIdle должен возвращать true только для IDLE', () => {
       expect(machine.isIdle).toBe(true);
-      machine.send({ type: 'CALL.CONNECTING' });
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
       expect(machine.isIdle).toBe(false);
     });
 
     it('isConnecting должен возвращать true только для CONNECTING', () => {
       expect(machine.isConnecting).toBe(false);
-      machine.send({ type: 'CALL.CONNECTING' });
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
       expect(machine.isConnecting).toBe(true);
     });
 
-    it('isAccepted должен возвращать true только для ACCEPTED', () => {
-      expect(machine.isAccepted).toBe(false);
-      machine.send({ type: 'CALL.CONNECTING' });
-      machine.send({ type: 'CALL.ACCEPTED' });
-      expect(machine.isAccepted).toBe(true);
-    });
-
-    it('isInCall должен возвращать true только для IN_CALL', () => {
-      expect(machine.isInCall).toBe(false);
-      machine.send({ type: 'CALL.CONNECTING' });
-      machine.send({ type: 'CALL.ACCEPTED' });
-      machine.send({ type: 'CALL.CONFIRMED' });
-      expect(machine.isInCall).toBe(true);
-    });
-
-    it('isEnded должен возвращать true только для ENDED', () => {
-      expect(machine.isEnded).toBe(false);
-      machine.send({ type: 'CALL.CONNECTING' });
-      machine.send({ type: 'CALL.ENDED' });
-      expect(machine.isEnded).toBe(true);
+    it('isInRoom должен возвращать true только для IN_ROOM', () => {
+      expect(machine.isInRoom).toBe(false);
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+      expect(machine.isInRoom).toBe(true);
     });
 
     it('isFailed должен возвращать true только для FAILED', () => {
       expect(machine.isFailed).toBe(false);
-      machine.send({ type: 'CALL.CONNECTING' });
-      machine.send({ type: 'CALL.FAILED' });
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.FAILED', error: new Error('fail') as unknown as EndEvent });
       expect(machine.isFailed).toBe(true);
     });
 
     it('isPending должен возвращать true только для CONNECTING', () => {
       expect(machine.isPending).toBe(false);
-      machine.send({ type: 'CALL.CONNECTING' });
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
       expect(machine.isPending).toBe(true);
-      machine.send({ type: 'CALL.ACCEPTED' });
-      expect(machine.isPending).toBe(false);
     });
 
-    it('isActive должен возвращать true для ACCEPTED и IN_CALL', () => {
+    it('isActive должен возвращать true только для IN_ROOM', () => {
       expect(machine.isActive).toBe(false);
-      machine.send({ type: 'CALL.CONNECTING' });
-      machine.send({ type: 'CALL.ACCEPTED' });
-      expect(machine.isActive).toBe(true);
-      machine.send({ type: 'CALL.CONFIRMED' });
-      expect(machine.isActive).toBe(true);
-      machine.send({ type: 'CALL.ENDED' });
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
       expect(machine.isActive).toBe(false);
     });
   });
 
   describe('Обработка ошибок', () => {
-    it('lastError должен быть undefined в начальном состоянии', () => {
-      expect(machine.lastError).toBeUndefined();
+    it('error должен быть undefined в начальном состоянии', () => {
+      expect(machine.error).toBeUndefined();
     });
 
-    it('lastError должен сохранять Error при CALL.FAILED', () => {
+    it('error должен сохранять Error при CALL.FAILED', () => {
       const testError = new Error('Connection failed');
 
-      machine.send({ type: 'CALL.CONNECTING' });
-      machine.send({ type: 'CALL.FAILED', error: testError });
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.FAILED', error: testError as unknown as EndEvent });
 
       expect(machine.state).toBe(EState.FAILED);
-      expect(machine.lastError).toBe(testError);
-      expect(machine.lastError?.message).toBe('Connection failed');
+      expect(machine.error).toBe(testError);
+      expect(machine.error?.message).toBe('Connection failed');
     });
 
-    it('lastError должен конвертировать non-Error в Error', () => {
-      machine.send({ type: 'CALL.CONNECTING' });
-      machine.send({ type: 'CALL.FAILED', error: 'String error' });
+    it('error должен конвертировать non-Error в Error', () => {
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.FAILED', error: 'String error' as unknown as EndEvent });
 
-      expect(machine.lastError).toBeInstanceOf(Error);
-      expect(machine.lastError?.message).toBe('"String error"');
-    });
-
-    it('lastError должен быть undefined при CALL.FAILED без error', () => {
-      machine.send({ type: 'CALL.CONNECTING' });
-      machine.send({ type: 'CALL.FAILED' });
-
-      expect(machine.state).toBe(EState.FAILED);
-      expect(machine.lastError).toBeUndefined();
-    });
-
-    it('lastError должен очищаться при reset', () => {
-      machine.send({ type: 'CALL.CONNECTING' });
-      machine.send({ type: 'CALL.FAILED', error: new Error('Test') });
-      expect(machine.lastError).toBeDefined();
-
-      machine.reset();
-
-      expect(machine.state).toBe(EState.IDLE);
-      expect(machine.lastError).toBeUndefined();
-    });
-
-    it('lastError должен очищаться при новом звонке из FAILED', () => {
-      machine.send({ type: 'CALL.CONNECTING' });
-      machine.send({ type: 'CALL.FAILED', error: new Error('First error') });
-
-      machine.send({ type: 'CALL.CONNECTING' });
-
-      expect(machine.state).toBe(EState.CONNECTING);
-      expect(machine.lastError).toBeUndefined();
+      expect(machine.error).toBeInstanceOf(Error);
+      expect(machine.error?.message).toBe('"String error"');
     });
   });
 
@@ -271,12 +214,11 @@ describe('CallStateMachine', () => {
     it('должен игнорировать недопустимые переходы с предупреждением', () => {
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
 
-      // Попытка перехода из IDLE в ACCEPTED (недопустимо)
-      machine.send({ type: 'CALL.ACCEPTED' });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
 
       expect(machine.state).toBe(EState.IDLE);
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Invalid transition: CALL.ACCEPTED from call:idle'),
+        expect.stringContaining('Invalid transition: CALL.ENTER_ROOM from call:idle'),
       );
 
       consoleSpy.mockRestore();
@@ -285,24 +227,10 @@ describe('CallStateMachine', () => {
     it('должен игнорировать повторные CALL.CONNECTING в CONNECTING', () => {
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
 
-      machine.send({ type: 'CALL.CONNECTING' });
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
       expect(machine.state).toBe(EState.CONNECTING);
 
-      machine.send({ type: 'CALL.CONNECTING' });
-
-      expect(machine.state).toBe(EState.CONNECTING);
-      expect(consoleSpy).toHaveBeenCalled();
-
-      consoleSpy.mockRestore();
-    });
-
-    it('должен запрещать переход CALL.CONFIRMED из CONNECTING', () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-
-      machine.send({ type: 'CALL.CONNECTING' });
-      expect(machine.state).toBe(EState.CONNECTING);
-
-      machine.send({ type: 'CALL.CONFIRMED' });
+      machine.send({ type: 'CALL.CONNECTING', number: '200', answer: true });
 
       expect(machine.state).toBe(EState.CONNECTING);
       expect(consoleSpy).toHaveBeenCalled();
@@ -310,205 +238,163 @@ describe('CallStateMachine', () => {
       consoleSpy.mockRestore();
     });
 
-    it('должен запрещать прямой переход из ENDED в IN_CALL', () => {
+    it('должен игнорировать CALL.TOKEN_ISSUED в IDLE', () => {
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
 
-      machine.send({ type: 'CALL.CONNECTING' });
-      machine.send({ type: 'CALL.ENDED' });
-      expect(machine.state).toBe(EState.ENDED);
-
-      machine.send({ type: 'CALL.CONFIRMED' });
-
-      expect(machine.state).toBe(EState.ENDED);
-      expect(consoleSpy).toHaveBeenCalled();
-
-      consoleSpy.mockRestore();
-    });
-
-    it('должен запрещать прямой переход из IDLE в IN_CALL', () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-
-      machine.send({ type: 'CALL.CONFIRMED' });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
 
       expect(machine.state).toBe(EState.IDLE);
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Invalid transition: CALL.CONFIRMED from call:idle'),
+        expect.stringContaining('Invalid transition: CALL.TOKEN_ISSUED from call:idle'),
       );
 
       consoleSpy.mockRestore();
     });
   });
 
-  describe('Событие CALL.RESET', () => {
-    it('должен переводить из FAILED в IDLE', () => {
-      machine.send({ type: 'CALL.CONNECTING' });
-      machine.send({ type: 'CALL.FAILED', error: new Error('Test') });
-      expect(machine.state).toBe(EState.FAILED);
-
-      machine.reset();
-
-      expect(machine.state).toBe(EState.IDLE);
-      expect(machine.lastError).toBeUndefined();
-    });
-
-    it('должен переводить из ENDED в IDLE', () => {
-      machine.send({ type: 'CALL.CONNECTING' });
-      machine.send({ type: 'CALL.ENDED' });
-      expect(machine.state).toBe(EState.ENDED);
-
-      machine.reset();
-
-      expect(machine.state).toBe(EState.IDLE);
-    });
-
-    it('должен очищать ошибку при reset', () => {
-      machine.send({ type: 'CALL.CONNECTING' });
-      machine.send({ type: 'CALL.FAILED', error: new Error('Test error') });
-      expect(machine.lastError).toBeDefined();
-
-      machine.reset();
-
-      expect(machine.lastError).toBeUndefined();
-    });
-
-    it('должен игнорировать CALL.RESET в неподходящих состояниях', () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-
-      // В IDLE нельзя сделать RESET
-      machine.send({ type: 'CALL.RESET' });
-      expect(machine.state).toBe(EState.IDLE);
-
-      // В CONNECTING нельзя сделать RESET
-      machine.send({ type: 'CALL.CONNECTING' });
-      machine.send({ type: 'CALL.RESET' });
-      expect(machine.state).toBe(EState.CONNECTING);
-
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
-    });
-  });
-
-  describe('Полный жизненный цикл звонка', () => {
-    it('должен корректно проходить успешный звонок', () => {
-      const states: EState[] = [];
-
-      machine.subscribe((snapshot) => {
-        states.push(snapshot.value as EState);
-      });
-
-      machine.send({ type: 'CALL.CONNECTING' });
-      machine.send({ type: 'CALL.ACCEPTED' });
-      machine.send({ type: 'CALL.CONFIRMED' });
-      machine.send({ type: 'CALL.ENDED' });
-      machine.reset();
-
-      expect(states).toEqual([
-        EState.CONNECTING,
-        EState.ACCEPTED,
-        EState.IN_CALL,
-        EState.ENDED,
-        EState.IDLE,
-      ]);
-    });
-
-    it('должен корректно обрабатывать ошибку и повторный звонок', () => {
-      machine.send({ type: 'CALL.CONNECTING' });
-      machine.send({ type: 'CALL.FAILED', error: new Error('First attempt') });
-      expect(machine.isFailed).toBe(true);
-      expect(machine.lastError?.message).toBe('First attempt');
-
-      // Повторная попытка
-      machine.send({ type: 'CALL.CONNECTING' });
-      expect(machine.isConnecting).toBe(true);
-      expect(machine.lastError).toBeUndefined();
-
-      machine.send({ type: 'CALL.ACCEPTED' });
-      machine.send({ type: 'CALL.CONFIRMED' });
-      expect(machine.isInCall).toBe(true);
-
-      machine.send({ type: 'CALL.ENDED' });
-      expect(machine.isEnded).toBe(true);
-    });
-
-    it('должен корректно проходить быстрый звонок', () => {
-      const states: EState[] = [];
-
-      machine.subscribe((snapshot) => {
-        states.push(snapshot.value as EState);
-      });
-
-      machine.send({ type: 'CALL.CONNECTING' });
-      machine.send({ type: 'CALL.ACCEPTED' });
-      machine.send({ type: 'CALL.CONFIRMED' });
-      machine.send({ type: 'CALL.ENDED' });
-
-      expect(states).toEqual([EState.CONNECTING, EState.ACCEPTED, EState.IN_CALL, EState.ENDED]);
-    });
-
-    it('должен корректно обрабатывать раннее завершение звонка', () => {
-      machine.send({ type: 'CALL.CONNECTING' });
-      expect(machine.isConnecting).toBe(true);
-
-      // Звонок завершился до принятия
-      machine.send({ type: 'CALL.ENDED' });
-      expect(machine.isEnded).toBe(true);
-
-      // Можем начать новый звонок
-      machine.send({ type: 'CALL.CONNECTING' });
-      expect(machine.isConnecting).toBe(true);
-    });
-  });
-
   describe('Интеграция с событиями CallManager', () => {
     it('должен корректно реагировать на события через events', () => {
-      events.trigger('connecting', undefined);
+      events.trigger('start-call', connectPayload);
+
       expect(machine.state).toBe(EState.CONNECTING);
-
-      events.trigger('accepted', undefined);
-      expect(machine.state).toBe(EState.ACCEPTED);
-
-      events.trigger('confirmed', undefined);
-      expect(machine.state).toBe(EState.IN_CALL);
+      expect(machine.context).toEqual(connectPayload);
 
       events.trigger('ended', {} as never);
-      expect(machine.state).toBe(EState.ENDED);
+
+      expect(machine.state).toBe(EState.IDLE);
+      expect(machine.context).toEqual({});
     });
 
     it('должен сохранять ошибку из события failed', () => {
-      events.trigger('connecting', undefined);
+      events.trigger('start-call', connectPayload);
 
-      const error = new Error('Call failed');
+      const error = new Error('Call failed') as unknown as EndEvent;
 
       events.trigger('failed', error as never);
 
       expect(machine.state).toBe(EState.FAILED);
-      expect(machine.lastError).toBe(error);
+      expect(machine.error).toBe(error);
+      expect(machine.context).toEqual({ error });
+    });
+  });
+
+  describe('Интеграция с событиями ApiManager', () => {
+    it('должен обновлять данные из "enter-room"', () => {
+      events.trigger('start-call', connectPayload);
+      apiManagerEvents.trigger('enter-room', room1Payload);
+
+      expect(machine.state).toBe(EState.CONNECTING);
+      expect(machine.context).toEqual({ ...connectPayload, ...room1Payload });
+
+      apiManagerEvents.trigger('enter-room', room2Payload);
+
+      expect(machine.state).toBe(EState.CONNECTING);
+      expect(machine.context).toEqual({ ...connectPayload, ...room2Payload });
     });
 
-    it('должен корректно обрабатывать события в правильном порядке', () => {
-      // Проверяем полный flow через события
-      events.trigger('connecting', undefined);
-      expect(machine.isConnecting).toBe(true);
+    it('должен обновлять данные из "conference:participant-token-issued"', () => {
+      events.trigger('start-call', connectPayload);
+      apiManagerEvents.trigger('conference:participant-token-issued', token1Payload);
 
-      events.trigger('accepted', undefined);
-      expect(machine.isAccepted).toBe(true);
+      expect(machine.state).toBe(EState.CONNECTING);
+      expect(machine.context).toEqual({ ...connectPayload, ...token1Context });
 
-      events.trigger('confirmed', undefined);
-      expect(machine.isInCall).toBe(true);
+      apiManagerEvents.trigger('conference:participant-token-issued', token2Payload);
 
-      events.trigger('ended', {} as never);
-      expect(machine.isEnded).toBe(true);
+      expect(machine.state).toBe(EState.CONNECTING);
+      expect(machine.context).toEqual({ ...connectPayload, ...token2Context });
     });
 
-    it('должен игнорировать недопустимые события через валидацию', () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+    it('должен переходить в IN_ROOM по наличию всех данных', () => {
+      events.trigger('start-call', connectPayload);
+      apiManagerEvents.trigger('enter-room', room1Payload);
+      apiManagerEvents.trigger('conference:participant-token-issued', token1Payload);
 
-      // Попытка accepted без connecting
-      events.trigger('accepted', undefined);
-      expect(machine.state).toBe(EState.IDLE);
-      expect(consoleSpy).toHaveBeenCalled();
+      expect(machine.state).toBe(EState.IN_ROOM);
+      expect(machine.context).toEqual({ ...connectPayload, ...room1Payload, ...token1Context });
+    });
 
-      consoleSpy.mockRestore();
+    it('должен обновлять данные в IN_ROOM', () => {
+      events.trigger('start-call', connectPayload);
+      apiManagerEvents.trigger('enter-room', room1Payload);
+      apiManagerEvents.trigger('conference:participant-token-issued', token1Payload);
+
+      expect(machine.state).toBe(EState.IN_ROOM);
+      expect(machine.context).toEqual({ ...connectPayload, ...room1Payload, ...token1Context });
+
+      apiManagerEvents.trigger('conference:participant-token-issued', token2Payload);
+
+      expect(machine.state).toBe(EState.IN_ROOM);
+      expect(machine.context).toEqual({ ...connectPayload, ...room1Payload, ...token2Context });
+
+      apiManagerEvents.trigger('enter-room', room2Payload);
+
+      expect(machine.state).toBe(EState.IN_ROOM);
+      expect(machine.context).toEqual({ ...connectPayload, ...room2Payload, ...token2Context });
+    });
+  });
+
+  describe('assign actions (defensive branch: event.type mismatch)', () => {
+    type AssignAction = { assignment: (args: { event: unknown; context: unknown }) => unknown };
+    type ActorWithSnapshot = {
+      actor: {
+        getSnapshot: () => {
+          machine: {
+            implementations: {
+              actions: {
+                setConnecting?: AssignAction;
+                setRoomInfo?: AssignAction;
+                setTokenInfo?: AssignAction;
+                setError?: AssignAction;
+              };
+            };
+          };
+        };
+      };
+    };
+
+    const getSnapshot = () => {
+      return (machine as unknown as ActorWithSnapshot).actor.getSnapshot();
+    };
+
+    it('setConnecting: возвращает context при event.type !== CALL.CONNECTING', () => {
+      const context = {};
+      const result = getSnapshot().machine.implementations.actions.setConnecting?.assignment({
+        context,
+        event: { type: 'CALL.ENTER_ROOM', room: 'r', participantName: 'p' },
+      });
+
+      expect(result).toBe(context);
+    });
+
+    it('setRoomInfo: возвращает context при event.type !== CALL.ENTER_ROOM', () => {
+      const context = {};
+      const result = getSnapshot().machine.implementations.actions.setRoomInfo?.assignment({
+        context,
+        event: { type: 'CALL.CONNECTING', number: '1', answer: false },
+      });
+
+      expect(result).toBe(context);
+    });
+
+    it('setTokenInfo: возвращает context при event.type !== CALL.TOKEN_ISSUED', () => {
+      const context = {};
+      const result = getSnapshot().machine.implementations.actions.setTokenInfo?.assignment({
+        context,
+        event: { type: 'CALL.ENTER_ROOM', room: 'r', participantName: 'p' },
+      });
+
+      expect(result).toBe(context);
+    });
+
+    it('setError: возвращает context при event.type !== CALL.FAILED', () => {
+      const context = {};
+      const result = getSnapshot().machine.implementations.actions.setError?.assignment({
+        context,
+        event: { type: 'CALL.RESET' },
+      });
+
+      expect(result).toBe(context);
     });
   });
 });

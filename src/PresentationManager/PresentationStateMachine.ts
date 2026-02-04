@@ -4,7 +4,6 @@ import { ECallEvent } from '@/CallManager';
 import logger from '@/logger';
 import { BaseStateMachine } from '@/tools/BaseStateMachine';
 
-import type { ActorRefFrom, SnapshotFrom } from 'xstate';
 import type { TCallEvents } from '@/CallManager';
 
 export enum EState {
@@ -32,13 +31,13 @@ type TPresentationEvent =
   | { type: 'CALL.FAILED'; error?: unknown }
   | { type: 'PRESENTATION.RESET' };
 
-interface IPresentationContext {
+type TContext = {
   lastError?: Error;
-}
+};
 
 const presentationMachine = setup({
   types: {
-    context: {} as IPresentationContext,
+    context: {} as TContext,
     events: {} as TPresentationEvent,
   },
   actions: {
@@ -354,10 +353,13 @@ const presentationMachine = setup({
   },
 });
 
-export type TPresentationSnapshot = SnapshotFrom<typeof presentationMachine>;
-export type TPresentationActor = ActorRefFrom<typeof presentationMachine>;
+export type TPresentationSnapshot = { value: EState; context: TContext };
 
-export class PresentationStateMachine extends BaseStateMachine<typeof presentationMachine, EState> {
+export class PresentationStateMachine extends BaseStateMachine<
+  typeof presentationMachine,
+  EState,
+  TContext
+> {
   public constructor(callEvents: TCallEvents) {
     super(presentationMachine);
 
@@ -401,7 +403,7 @@ export class PresentationStateMachine extends BaseStateMachine<typeof presentati
   }
 
   public send(event: TPresentationEvent): void {
-    const snapshot = this.getSnapshot();
+    const snapshot = this.actor.getSnapshot();
 
     if (!snapshot.can(event)) {
       // eslint-disable-next-line no-console

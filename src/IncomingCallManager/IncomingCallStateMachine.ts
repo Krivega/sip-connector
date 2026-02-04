@@ -4,7 +4,6 @@ import { EEvent as EConnectionEvent } from '@/ConnectionManager/events';
 import logger from '@/logger';
 import { BaseStateMachine } from '@/tools/BaseStateMachine';
 
-import type { ActorRefFrom, SnapshotFrom } from 'xstate';
 import type { TEvents as TConnectionEvents } from '@/ConnectionManager/events';
 import type { TEvents as TIncomingEvents, TRemoteCallerData } from './events';
 
@@ -33,14 +32,14 @@ type TIncomingEvent =
   | { type: 'INCOMING.FAILED'; data: TRemoteCallerData }
   | { type: 'INCOMING.CLEAR' };
 
-interface IIncomingContext {
+type TContext = {
   remoteCallerData?: TRemoteCallerData;
   lastReason?: EState.CONSUMED | EState.DECLINED | EState.TERMINATED | EState.FAILED;
-}
+};
 
 const incomingMachine = setup({
   types: {
-    context: {} as IIncomingContext,
+    context: {} as TContext,
     events: {} as TIncomingEvent,
   },
   actions: {
@@ -358,15 +357,18 @@ const incomingMachine = setup({
   },
 });
 
-export type TIncomingSnapshot = SnapshotFrom<typeof incomingMachine>;
-export type TIncomingActor = ActorRefFrom<typeof incomingMachine>;
+export type TIncomingSnapshot = { value: EState; context: TContext };
 
 type TDeps = {
   incomingEvents: TIncomingEvents;
   connectionEvents: TConnectionEvents;
 };
 
-export class IncomingCallStateMachine extends BaseStateMachine<typeof incomingMachine, EState> {
+export class IncomingCallStateMachine extends BaseStateMachine<
+  typeof incomingMachine,
+  EState,
+  TContext
+> {
   public constructor({ incomingEvents, connectionEvents }: TDeps) {
     super(incomingMachine);
 
@@ -424,7 +426,7 @@ export class IncomingCallStateMachine extends BaseStateMachine<typeof incomingMa
   }
 
   public send(event: TIncomingEvent): void {
-    const snapshot = this.getSnapshot();
+    const snapshot = this.actor.getSnapshot();
 
     if (!snapshot.can(event)) {
       // eslint-disable-next-line no-console

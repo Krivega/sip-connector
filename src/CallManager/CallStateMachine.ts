@@ -2,47 +2,138 @@ import { assign, setup } from 'xstate';
 
 import { BaseStateMachine } from '@/tools/BaseStateMachine';
 
-import type { ActorRefFrom, SnapshotFrom } from 'xstate';
+import type { EndEvent } from '@krivega/jssip';
+import type { TApiManagerEvents } from '@/ApiManager';
 import type { TEvents } from './events';
 
 export enum EState {
   IDLE = 'call:idle',
   CONNECTING = 'call:connecting',
-  ACCEPTED = 'call:accepted',
-  IN_CALL = 'call:inCall',
-  ENDED = 'call:ended',
+  IN_ROOM = 'call:inRoom',
   FAILED = 'call:failed',
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+type TIdleContext = {};
+type TConnectingContext = {
+  number: string;
+  answer: boolean;
+};
+type TInRoomContext = {
+  number: string;
+  answer: boolean;
+  room: string;
+  participantName: string;
+  token: string; // jwt
+  conference: string;
+  participant: string;
+};
+type TFailedContext = {
+  error: EndEvent;
+};
+type TContext = TIdleContext | TConnectingContext | TInRoomContext | TFailedContext;
+
 type TCallEvent =
-  | { type: 'CALL.CONNECTING' }
-  | { type: 'CALL.ACCEPTED' }
-  | { type: 'CALL.CONFIRMED' }
-  | { type: 'CALL.ENDED' }
-  | { type: 'CALL.FAILED'; error?: unknown }
+  | { type: 'CALL.CONNECTING'; number: string; answer: boolean }
+  | { type: 'CALL.ENTER_ROOM'; room: string; participantName: string }
+  | { type: 'CALL.TOKEN_ISSUED'; token: string; conference: string; participant: string }
+  | { type: 'CALL.FAILED'; error: EndEvent }
   | { type: 'CALL.RESET' };
 
-interface ICallContext {
-  lastError?: Error;
-}
+const EVALUATE = 'evaluate' as const;
+
+const isNonEmptyString = (value?: string): value is string => {
+  return typeof value === 'string' && value.length > 0;
+};
+
+const hasConnectingContext = (context: TContext): context is TConnectingContext => {
+  return (
+    'number' in context && isNonEmptyString(context.number) && typeof context.answer === 'boolean'
+  );
+};
+
+const hasRoomContext = (context: TContext) => {
+  return (
+    'room' in context && isNonEmptyString(context.room) && isNonEmptyString(context.participantName)
+  );
+};
+
+const hasTokenContext = (context: TContext) => {
+  return (
+    'token' in context &&
+    isNonEmptyString(context.token) &&
+    isNonEmptyString(context.conference) &&
+    isNonEmptyString(context.participant)
+  );
+};
+
+const hasInRoomContext = (context: TContext): context is TInRoomContext => {
+  return hasConnectingContext(context) && hasRoomContext(context) && hasTokenContext(context);
+};
+
+const initialContext: TIdleContext = {};
+
+const clearCallContext = (): Partial<TInRoomContext> => {
+  return {
+    number: undefined,
+    answer: undefined,
+    room: undefined,
+    participantName: undefined,
+    token: undefined,
+    conference: undefined,
+    participant: undefined,
+  };
+};
 
 const callMachine = setup({
   types: {
-    context: {} as ICallContext,
+    context: initialContext as TContext,
     events: {} as TCallEvent,
   },
   actions: {
-    rememberError: assign(({ event }) => {
-      if ('error' in event && event.error !== undefined) {
-        return {
-          lastError:
-            event.error instanceof Error ? event.error : new Error(JSON.stringify(event.error)),
-        };
+    setConnecting: assign(({ event, context }) => {
+      if (event.type !== 'CALL.CONNECTING') {
+        return context;
       }
 
-      return { lastError: undefined };
+      return {
+        ...clearCallContext(),
+        number: event.number,
+        answer: event.answer,
+      };
     }),
-    resetError: assign({ lastError: undefined }),
+    setRoomInfo: assign(({ event, context }) => {
+      if (event.type !== 'CALL.ENTER_ROOM') {
+        return context;
+      }
+
+      return {
+        room: event.room,
+        participantName: event.participantName,
+      };
+    }),
+    setTokenInfo: assign(({ event, context }) => {
+      if (event.type !== 'CALL.TOKEN_ISSUED') {
+        return context;
+      }
+
+      return {
+        token: event.token,
+        conference: event.conference,
+        participant: event.participant,
+      };
+    }),
+    setError: assign(({ event, context }) => {
+      if (event.type !== 'CALL.FAILED') {
+        return context;
+      }
+
+      return {
+        ...clearCallContext(),
+        error: event.error instanceof Error ? event.error : new Error(JSON.stringify(event.error)),
+      };
+    }),
+    reset: assign(clearCallContext()),
   },
 }).createMachine({
   id: 'call',
@@ -52,75 +143,94 @@ const callMachine = setup({
     [EState.IDLE]: {
       on: {
         'CALL.CONNECTING': {
-          target: EState.CONNECTING,
-          actions: 'resetError',
+          target: EVALUATE,
+          actions: 'setConnecting',
         },
       },
     },
     [EState.CONNECTING]: {
       on: {
-        'CALL.ACCEPTED': EState.ACCEPTED,
-        'CALL.ENDED': EState.ENDED,
-        'CALL.FAILED': {
-          target: EState.FAILED,
-          actions: 'rememberError',
+        'CALL.ENTER_ROOM': {
+          target: EVALUATE,
+          actions: 'setRoomInfo',
         },
-      },
-    },
-    [EState.ACCEPTED]: {
-      on: {
-        'CALL.CONFIRMED': EState.IN_CALL,
-        'CALL.ENDED': EState.ENDED,
-        'CALL.FAILED': {
-          target: EState.FAILED,
-          actions: 'rememberError',
+        'CALL.TOKEN_ISSUED': {
+          target: EVALUATE,
+          actions: 'setTokenInfo',
         },
-      },
-    },
-    [EState.IN_CALL]: {
-      on: {
-        'CALL.ENDED': EState.ENDED,
         'CALL.FAILED': {
-          target: EState.FAILED,
-          actions: 'rememberError',
+          target: EVALUATE,
+          actions: 'setError',
         },
-      },
-    },
-    [EState.ENDED]: {
-      on: {
         'CALL.RESET': {
-          target: EState.IDLE,
-          actions: 'resetError',
+          target: EVALUATE,
+          actions: 'reset',
         },
-        'CALL.CONNECTING': {
-          target: EState.CONNECTING,
-          actions: 'resetError',
+      },
+    },
+    [EState.IN_ROOM]: {
+      on: {
+        'CALL.ENTER_ROOM': {
+          target: EVALUATE,
+          actions: 'setRoomInfo',
+        },
+        'CALL.TOKEN_ISSUED': {
+          target: EVALUATE,
+          actions: 'setTokenInfo',
+        },
+        'CALL.FAILED': {
+          target: EVALUATE,
+          actions: 'setError',
+        },
+        'CALL.RESET': {
+          target: EVALUATE,
+          actions: 'reset',
         },
       },
     },
     [EState.FAILED]: {
       on: {
-        'CALL.RESET': {
-          target: EState.IDLE,
-          actions: 'resetError',
-        },
         'CALL.CONNECTING': {
-          target: EState.CONNECTING,
-          actions: 'resetError',
+          target: EVALUATE,
+          actions: 'setConnecting',
         },
-        'CALL.ENDED': {
-          target: EState.ENDED,
-          actions: 'resetError',
+        'CALL.RESET': {
+          target: EVALUATE,
+          actions: 'reset',
         },
       },
+    },
+    [EVALUATE]: {
+      always: [
+        {
+          target: EState.IN_ROOM,
+          guard: ({ context }) => {
+            return hasInRoomContext(context);
+          },
+        },
+        {
+          target: EState.CONNECTING,
+          guard: ({ context }) => {
+            return hasConnectingContext(context);
+          },
+        },
+        {
+          target: EState.FAILED,
+          guard: ({ context }) => {
+            return 'error' in context;
+          },
+        },
+        {
+          target: EState.IDLE,
+        },
+      ],
     },
   },
 });
 
-export type TCallSnapshot = SnapshotFrom<typeof callMachine>;
-export type TCallActor = ActorRefFrom<typeof callMachine>;
+export type TCallSnapshot = { value: EState; context: TContext };
 
-export class CallStateMachine extends BaseStateMachine<typeof callMachine, EState> {
+export class CallStateMachine extends BaseStateMachine<typeof callMachine, EState, TContext> {
   public constructor(events: TEvents) {
     super(callMachine);
 
@@ -135,16 +245,8 @@ export class CallStateMachine extends BaseStateMachine<typeof callMachine, EStat
     return this.state === EState.CONNECTING;
   }
 
-  public get isAccepted(): boolean {
-    return this.state === EState.ACCEPTED;
-  }
-
-  public get isInCall(): boolean {
-    return this.state === EState.IN_CALL;
-  }
-
-  public get isEnded(): boolean {
-    return this.state === EState.ENDED;
+  public get isInRoom(): boolean {
+    return this.state === EState.IN_ROOM;
   }
 
   public get isFailed(): boolean {
@@ -152,15 +254,21 @@ export class CallStateMachine extends BaseStateMachine<typeof callMachine, EStat
   }
 
   public get isActive(): boolean {
-    return this.isAccepted || this.isInCall;
+    return this.isInRoom;
   }
 
   public get isPending(): boolean {
     return this.isConnecting;
   }
 
-  public get lastError(): Error | undefined {
-    return this.getSnapshot().context.lastError;
+  public get error() {
+    const { context } = this;
+
+    if ('error' in context) {
+      return context.error;
+    }
+
+    return undefined;
   }
 
   public reset(): void {
@@ -168,7 +276,7 @@ export class CallStateMachine extends BaseStateMachine<typeof callMachine, EStat
   }
 
   public send(event: TCallEvent): void {
-    const snapshot = this.getSnapshot();
+    const snapshot = this.actor.getSnapshot();
 
     if (!snapshot.can(event)) {
       // eslint-disable-next-line no-console
@@ -182,31 +290,37 @@ export class CallStateMachine extends BaseStateMachine<typeof callMachine, EStat
     super.send(event);
   }
 
+  public subscribeToApiEvents(apiManager: TApiManagerEvents): void {
+    this.addSubscription(
+      apiManager.on('enter-room', ({ room, participantName }) => {
+        this.send({ type: 'CALL.ENTER_ROOM', room, participantName });
+      }),
+    );
+    this.addSubscription(
+      apiManager.on(
+        'conference:participant-token-issued',
+        ({ jwt: token, conference, participant }) => {
+          this.send({ type: 'CALL.TOKEN_ISSUED', token, conference, participant });
+        },
+      ),
+    );
+  }
+
   private subscribeToEvents(events: TEvents) {
     this.addSubscription(
-      events.on('connecting', () => {
-        this.send({ type: 'CALL.CONNECTING' });
+      events.on('start-call', ({ number, answer }) => {
+        this.send({ type: 'CALL.CONNECTING', number, answer });
       }),
     );
-    // Убрана подписка на progress - событие не приходит в реальном flow
-    this.addSubscription(
-      events.on('accepted', () => {
-        this.send({ type: 'CALL.ACCEPTED' });
-      }),
-    );
-    this.addSubscription(
-      events.on('confirmed', () => {
-        this.send({ type: 'CALL.CONFIRMED' });
-      }),
-    );
+
     this.addSubscription(
       events.on('ended', () => {
-        this.send({ type: 'CALL.ENDED' });
+        this.send({ type: 'CALL.RESET' });
       }),
     );
     this.addSubscription(
-      events.on('failed', (error) => {
-        this.send({ type: 'CALL.FAILED', error });
+      events.on('failed', (event) => {
+        this.send({ type: 'CALL.FAILED', error: event });
       }),
     );
   }

@@ -173,7 +173,7 @@ describe('CallManager events', () => {
       message: {},
       cause: 'error',
     });
-    callManager.callStateMachine.reset();
+    callManager.stateMachine.reset();
     callManager.events.trigger('connecting', {});
     callManager.events.trigger('accepted', {});
     callManager.events.trigger('confirmed', {});

@@ -1,7 +1,8 @@
 import { createEvents as createCallEvents } from '@/CallManager';
 import { CallStateMachine, EState as ECallStatus } from '@/CallManager/CallStateMachine';
 import { createEvents as createConnectionEvents } from '@/ConnectionManager';
-import ConnectionStateMachine, {
+import {
+  ConnectionStateMachine,
   EState as EConnectionStatus,
   EEvents as EConnectionEvents,
 } from '@/ConnectionManager/ConnectionStateMachine';
@@ -33,10 +34,10 @@ const startSession = () => {
   const presentationStateMachine = new PresentationStateMachine(callEvents);
 
   const session = new SessionManager({
-    connectionManager: { connectionActor: connectionStateMachine.actorRef },
-    callManager: { callActor: callStateMachine.actorRef },
-    incomingCallManager: { incomingActor: incomingStateMachine.actorRef },
-    presentationManager: { presentationActor: presentationStateMachine.actorRef },
+    connectionManager: { stateMachine: connectionStateMachine },
+    callManager: { stateMachine: callStateMachine },
+    incomingCallManager: { stateMachine: incomingStateMachine },
+    presentationManager: { stateMachine: presentationStateMachine },
   });
 
   const stopAll = () => {
@@ -83,12 +84,21 @@ describe('SessionManager', () => {
         EConnectionStatus.ESTABLISHED,
       );
 
-      callStateMachine.send({ type: 'CALL.CONNECTING' });
+      callStateMachine.send({ type: 'CALL.CONNECTING', number: '100', answer: false });
       expect(sessionSelectors.selectCallStatus(session.getSnapshot())).toBe(ECallStatus.CONNECTING);
 
-      callStateMachine.send({ type: 'CALL.ACCEPTED' });
-      callStateMachine.send({ type: 'CALL.CONFIRMED' });
-      expect(sessionSelectors.selectCallStatus(session.getSnapshot())).toBe(ECallStatus.IN_CALL);
+      callStateMachine.send({
+        type: 'CALL.ENTER_ROOM',
+        room: 'room',
+        participantName: 'participantName',
+      });
+      callStateMachine.send({
+        type: 'CALL.TOKEN_ISSUED',
+        token: 'token',
+        conference: 'conference',
+        participant: 'participant',
+      });
+      expect(sessionSelectors.selectCallStatus(session.getSnapshot())).toBe(ECallStatus.IN_ROOM);
 
       incomingStateMachine.send({
         type: 'INCOMING.RINGING',
@@ -126,8 +136,8 @@ describe('SessionManager', () => {
 
       const unsubscribe = session.subscribe(sessionSelectors.selectCallStatus, onCallStatus);
 
-      callStateMachine.send({ type: 'CALL.CONNECTING' });
-      callStateMachine.send({ type: 'CALL.CONNECTING' }); // duplicate should be ignored by equals
+      callStateMachine.send({ type: 'CALL.CONNECTING', number: '100', answer: false });
+      callStateMachine.send({ type: 'CALL.CONNECTING', number: '200', answer: true }); // duplicate should be ignored by equals
 
       expect(onCallStatus).toHaveBeenCalledTimes(1);
       expect(onCallStatus).toHaveBeenLastCalledWith(ECallStatus.CONNECTING);
@@ -166,7 +176,7 @@ describe('SessionManager', () => {
       );
 
       // Change call state
-      callStateMachine.send({ type: 'CALL.CONNECTING' });
+      callStateMachine.send({ type: 'CALL.CONNECTING', number: '100', answer: false });
       expect(callback).toHaveBeenCalledTimes(2);
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -202,7 +212,17 @@ describe('SessionManager', () => {
 
       // Unsubscribe and verify no more calls
       unsubscribe();
-      callStateMachine.send({ type: 'CALL.ACCEPTED' });
+      callStateMachine.send({
+        type: 'CALL.ENTER_ROOM',
+        room: 'room',
+        participantName: 'participantName',
+      });
+      callStateMachine.send({
+        type: 'CALL.TOKEN_ISSUED',
+        token: 'token',
+        conference: 'conference',
+        participant: 'participant',
+      });
       expect(callback).toHaveBeenCalledTimes(4);
 
       stopAll();
@@ -228,7 +248,7 @@ describe('SessionManager', () => {
       expect(sessionSelectors.selectCallStatus(session.getSnapshot())).toBe(ECallStatus.IDLE);
 
       // Change call state - equals will return true, so listener should NOT be called
-      callStateMachine.send({ type: 'CALL.CONNECTING' });
+      callStateMachine.send({ type: 'CALL.CONNECTING', number: '100', answer: false });
 
       // equals should be called with previous (IDLE) and next (CONNECTING) values
       expect(alwaysEqual).toHaveBeenCalledWith(ECallStatus.IDLE, ECallStatus.CONNECTING);
@@ -236,8 +256,18 @@ describe('SessionManager', () => {
       expect(onCallStatus).not.toHaveBeenCalled();
 
       // Change state again to verify equals is called but listener still not called
-      callStateMachine.send({ type: 'CALL.ACCEPTED' });
-      expect(alwaysEqual).toHaveBeenCalledTimes(2);
+      callStateMachine.send({
+        type: 'CALL.ENTER_ROOM',
+        room: 'room',
+        participantName: 'participantName',
+      });
+      callStateMachine.send({
+        type: 'CALL.TOKEN_ISSUED',
+        token: 'token',
+        conference: 'conference',
+        participant: 'participant',
+      });
+      expect(alwaysEqual).toHaveBeenCalledTimes(3);
       expect(onCallStatus).not.toHaveBeenCalled();
 
       unsubscribe();
@@ -267,7 +297,7 @@ describe('SessionManager', () => {
       expect(sessionSelectors.selectCallStatus(session.getSnapshot())).toBe(ECallStatus.IDLE);
 
       // Change call state - equals will return true, so listener should NOT be called
-      callStateMachine.send({ type: 'CALL.CONNECTING' });
+      callStateMachine.send({ type: 'CALL.CONNECTING', number: '100', answer: false });
 
       // equals should be called with previous (IDLE) and next (CONNECTING) values
       expect(alwaysEqual).toHaveBeenCalledWith(ECallStatus.IDLE, ECallStatus.CONNECTING);
@@ -275,8 +305,18 @@ describe('SessionManager', () => {
       expect(onCallStatus).not.toHaveBeenCalled();
 
       // Change state again to verify equals is called but listener still not called
-      callStateMachine.send({ type: 'CALL.ACCEPTED' });
-      expect(alwaysEqual).toHaveBeenCalledTimes(2);
+      callStateMachine.send({
+        type: 'CALL.ENTER_ROOM',
+        room: 'room',
+        participantName: 'participantName',
+      });
+      callStateMachine.send({
+        type: 'CALL.TOKEN_ISSUED',
+        token: 'token',
+        conference: 'conference',
+        participant: 'participant',
+      });
+      expect(alwaysEqual).toHaveBeenCalledTimes(3);
       expect(onCallStatus).not.toHaveBeenCalled();
       unsubscribe();
       stopAll();
@@ -288,12 +328,22 @@ describe('SessionManager', () => {
 
       session.on('snapshot-changed', handler);
 
-      callStateMachine.send({ type: 'CALL.CONNECTING' });
+      callStateMachine.send({ type: 'CALL.CONNECTING', number: '100', answer: false });
       expect(handler).toHaveBeenCalledTimes(1);
 
       session.off('snapshot-changed', handler);
 
-      callStateMachine.send({ type: 'CALL.ACCEPTED' });
+      callStateMachine.send({
+        type: 'CALL.ENTER_ROOM',
+        room: 'room',
+        participantName: 'participantName',
+      });
+      callStateMachine.send({
+        type: 'CALL.TOKEN_ISSUED',
+        token: 'token',
+        conference: 'conference',
+        participant: 'participant',
+      });
       expect(handler).toHaveBeenCalledTimes(1);
       stopAll();
     });
@@ -301,11 +351,11 @@ describe('SessionManager', () => {
     it('provides access to actors', () => {
       const { session, stopAll } = startSession();
 
-      expect(session.actors).toBeDefined();
-      expect(session.actors.connection).toBeDefined();
-      expect(session.actors.call).toBeDefined();
-      expect(session.actors.incoming).toBeDefined();
-      expect(session.actors.presentation).toBeDefined();
+      expect(session.machines).toBeDefined();
+      expect(session.machines.connection).toBeDefined();
+      expect(session.machines.call).toBeDefined();
+      expect(session.machines.incoming).toBeDefined();
+      expect(session.machines.presentation).toBeDefined();
 
       stopAll();
     });

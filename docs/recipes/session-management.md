@@ -83,11 +83,11 @@ unsubscribe(); // Когда больше не нужно слушать
 ## Доступные селекторы
 
 - `selectConnectionStatus` - статус соединения
-- `selectCallStatus` - статус звонка
+- `selectCallStatus` - статус звонка (ECallStatus: IDLE, CONNECTING, IN_ROOM, FAILED)
 - `selectIncomingStatus` - статус входящего звонка
 - `selectIncomingRemoteCaller` - данные входящего звонка
 - `selectPresentationStatus` - статус презентации
-- `selectIsInCall` - проверка, активен ли звонок
+- `selectIsInCall` - проверка, активен ли звонок (call в состоянии IN_ROOM)
 - `selectSystemStatus` - комбинированное состояние системы (объединяет connection и call)
 
 ### Комбинированное состояние системы (ESystemStatus)
@@ -96,9 +96,9 @@ unsubscribe(); // Когда больше не нужно слушать
 
 - `DISCONNECTED` - система не подключена (connection: IDLE/DISCONNECTED)
 - `CONNECTING` - идет процесс подключения (connection: PREPARING/CONNECTING/CONNECTED/REGISTERED)
-- `READY_TO_CALL` - соединение установлено, готово к звонкам (connection: ESTABLISHED, call: IDLE или ENDED)
+- `READY_TO_CALL` - соединение установлено, готово к звонкам (connection: ESTABLISHED, call: IDLE)
 - `CALL_CONNECTING` - идет установка звонка (connection: ESTABLISHED, call: CONNECTING)
-- `CALL_ACTIVE` - звонок активен (connection: ESTABLISHED, call: ACCEPTED/IN_CALL)
+- `CALL_ACTIVE` - звонок активен (connection: ESTABLISHED, call: IN_ROOM)
 - `CONNECTION_FAILED` - ошибка соединения (connection: FAILED)
 - `CALL_FAILED` - ошибка звонка (connection: ESTABLISHED, call: FAILED)
 
@@ -114,14 +114,14 @@ sipConnector.on('session:snapshot-changed', ({ previous, current }) => {
 });
 ```
 
-## Доступ к акторам
+## Доступ к машинам состояний
 
-Для прямого доступа к акторам XState:
+Для прямого доступа к машинам состояний (XState):
 
 ```typescript
-const { connection, call, incoming, presentation } = sipConnector.session.actors;
+const { connection, call, incoming, presentation } = sipConnector.session.machines;
 
-// Прямой доступ к актору соединения
+// Подписка на снапшот машины соединения
 connection.subscribe((snapshot) => {
   console.log('Connection snapshot:', snapshot);
 });

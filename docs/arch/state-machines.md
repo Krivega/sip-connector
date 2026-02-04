@@ -32,19 +32,13 @@ stateDiagram-v2
         }
         state call {
             idle --> connecting: call.connecting
-            connecting --> accepted: call.accepted
-            connecting --> ended: call.ended
+            connecting --> inRoom: call.enterRoom / call.tokenIssued
             connecting --> failed: call.failed
-            accepted --> inCall: call.confirmed
-            accepted --> ended: call.ended
-            accepted --> failed: call.failed
-            inCall --> ended: call.ended
-            inCall --> failed: call.failed
-            ended --> idle: call.reset
-            ended --> connecting: call.connecting
+            connecting --> idle: call.reset
+            inRoom --> idle: call.reset
+            inRoom --> failed: call.failed
             failed --> idle: call.reset
             failed --> connecting: call.connecting
-            failed --> ended: call.ended
         }
         state incoming {
             idle --> ringing: incomingRinging
@@ -81,32 +75,32 @@ stateDiagram-v2
 
 ## Слои
 
-- Каждая машина поднимается внутри своего менеджера: `connectionActor`, `callActor`, `incomingActor`, `presentationActor`.
-- Менеджеры сами отправляют доменные события в свои акторы.
-- Агрегатор: `createSession()` / `sipConnector.session` подписывается на `.subscribe` акторов менеджеров и отдает объединённый снапшот + типобезопасные селекторы.
+- Каждая машина состояний поднимается внутри своего менеджера: `connectionManager.stateMachine`, `callManager.stateMachine`, `incomingCallManager.stateMachine`, `presentationManager.stateMachine`.
+- Менеджеры сами отправляют доменные события в свои машины.
+- Агрегатор: `sipConnector.session` подписывается на `.subscribe` машин менеджеров и отдаёт объединённый снапшот + типобезопасные селекторы.
 
 ## Доменные статусы и события
 
 | Домен        | Статусы                                                                                               | Источники событий                                                                                                                                                                                     | Доменные события                                                                                                                         |
 | :----------- | :---------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------- |
 | Connection   | `idle`, `preparing`, `connecting`, `connected`, `registered`, `established`, `disconnected`, `failed` | `ConnectionManager.events` (`connect-started`, `connecting`, `connect-parameters-resolve-success`, `connected`, `registered`, `unregistered`, `disconnected`, `registrationFailed`, `connect-failed`) | `START_CONNECT`, `START_INIT_UA`, `UA_CONNECTED`, `UA_REGISTERED`, `UA_UNREGISTERED`, `UA_DISCONNECTED`, `CONNECTION_FAILED`, `RESET`    |
-| Call         | `idle`, `connecting`, `accepted`, `inCall`, `ended`, `failed`                                         | `CallManager.events` (`connecting`, `accepted`, `confirmed`, `ended`, `failed`)                                                                                                                       | `CALL.CONNECTING`, `CALL.ACCEPTED`, `CALL.CONFIRMED`, `CALL.ENDED`, `CALL.FAILED`, `CALL.RESET`                                          |
+| Call         | `idle`, `connecting`, `inRoom`, `failed`                                                              | `CallManager.events` (`start-call`, `enter-room`, `conference:participant-token-issued`, `ended`, `failed`)                                                                                           | `CALL.CONNECTING`, `CALL.ENTER_ROOM`, `CALL.TOKEN_ISSUED`, `CALL.FAILED`, `CALL.RESET`                                                   |
 | Incoming     | `idle`, `ringing`, `consumed`, `declined`, `terminated`, `failed`                                     | `IncomingCallManager.events` (`incomingCall`, `declinedIncomingCall`, `terminatedIncomingCall`, `failedIncomingCall`) + синтетика при ответе на входящий                                              | `INCOMING.RINGING`, `INCOMING.CONSUMED`, `INCOMING.DECLINED`, `INCOMING.TERMINATED`, `INCOMING.FAILED`, `INCOMING.CLEAR`                 |
 | Presentation | `idle`, `starting`, `active`, `stopping`, `failed`                                                    | `CallManager.events` (`presentation:start\|started\|end\|ended\|failed`), `ConnectionManager.events` (`disconnected`, `registrationFailed`, `connect-failed`)                                         | `SCREEN.STARTING`, `SCREEN.STARTED`, `SCREEN.ENDING`, `SCREEN.ENDED`, `SCREEN.FAILED`, `CALL.ENDED`, `CALL.FAILED`, `PRESENTATION.RESET` |
 
 ## API для клиентов
 
-- `createSipSession(deps)` / `sipConnector.session`: агрегатор снапшотов акторов менеджеров и утилиты подписки.
+- `sipConnector.session`: агрегатор снапшотов машин менеджеров и утилиты подписки.
 - `getSnapshot()` — текущее состояние всех доменов.
 - `subscribe(selector, listener)` — типобезопасная подписка на срез состояния (например, `selectConnectionStatus`).
-- `stop()` — очистка подписок на акторы менеджеров.
+- `stop()` — очистка подписок на машины менеджеров.
+- Доступ к машинам: `sipConnector.session.machines` (connection, call, incoming, presentation).
 
 ## Инварианты и гварды
 
-- `presentation` может быть `active` только если `call` в `inCall`.
-- `incoming` сбрасывается в `idle` при `call.ended` или `call.failed`.
-- `connection` `failed` / `disconnected` приводит к `call` → `ended`, `presentation` → `idle`.
-- `call`: `CALL.CONFIRMED` обрабатывается только из состояния `accepted` (не из `connecting`).
+- `presentation` может быть `active` только если `call` в `inRoom`.
+- `incoming` сбрасывается в `idle` при сбросе/завершении звонка (`CALL.RESET`, `CALL.FAILED`).
+- `connection` `failed` / `disconnected` приводит к сбросу `call` и `presentation` → `idle`.
 
 ## Детальное описание машин состояний
 
@@ -149,20 +143,21 @@ stateDiagram-v2
 
 - Внутренний компонент CallManager
 - Управление состояниями звонка через XState
-- Валидация переходов с предотвращением недопустимых операций
-- Типобезопасная обработка ошибок (lastError: Error вместо unknown)
+- Валидация переходов с предотвращением недопустимых операций (проверка `snapshot.can(event)` перед отправкой)
+- Типобезопасная обработка ошибок (error: Error в контексте FAILED)
+- События: `CALL.CONNECTING`, `CALL.ENTER_ROOM`, `CALL.TOKEN_ISSUED`, `CALL.FAILED`, `CALL.RESET`
 - Публичный API:
-  - Геттеры состояний: `isIdle`, `isConnecting`, `isAccepted`, `isInCall`, `isEnded`, `isFailed`
-  - Комбинированные геттеры: `isPending` (connecting), `isActive` (accepted/inCall)
-  - Геттер ошибки: `lastError`
-  - Метод сброса: `reset()` для перехода в IDLE
+  - Геттеры состояний: `isIdle`, `isConnecting`, `isInRoom`, `isFailed`
+  - Комбинированные геттеры: `isPending` (connecting), `isActive` (inRoom)
+  - Геттер ошибки: `error`
+  - Методы: `reset()`, `send(event)`, `subscribeToApiEvents(apiManager)` для привязки к API (enter-room, conference:participant-token-issued)
 - Корректный граф переходов:
-  - IDLE → CONNECTING → ACCEPTED → IN_CALL → ENDED
-  - Переходы в ENDED/FAILED из любого активного состояния
-  - Переходы RESET: ENDED→IDLE, FAILED→IDLE
-  - Переходы из ENDED/FAILED: → CONNECTING (новый звонок)
-  - Инвариант: CALL.CONFIRMED обрабатывается только из ACCEPTED
-- Автоматическая конвертация ошибок из unknown в Error
+  - IDLE → CONNECTING (CALL.CONNECTING)
+  - CONNECTING → IN_ROOM (при получении room + participantName и token/conference/participant через CALL.ENTER_ROOM и CALL.TOKEN_ISSUED)
+  - CONNECTING → FAILED (CALL.FAILED), CONNECTING → IDLE (CALL.RESET)
+  - IN_ROOM → IDLE (CALL.RESET), IN_ROOM → FAILED (CALL.FAILED)
+  - FAILED → IDLE (CALL.RESET), FAILED → CONNECTING (CALL.CONNECTING)
+- Внутреннее состояние EVALUATE: переход в IN_ROOM/CONNECTING/FAILED/IDLE по контексту после действий
 - Логирование недопустимых переходов через console.warn
 
 ### PresentationStateMachine (Состояния демонстрации экрана)
@@ -221,8 +216,7 @@ stateDiagram-v2
 5. **Если connection ESTABLISHED**:
    - call IDLE → `READY_TO_CALL`
    - call CONNECTING → `CALL_CONNECTING`
-   - call ACCEPTED/IN_CALL → `CALL_ACTIVE`
-   - call ENDED → `READY_TO_CALL`
+   - call IN_ROOM → `CALL_ACTIVE`
    - call FAILED → `CALL_FAILED`
 
 ### Состояния ESystemStatus
@@ -231,9 +225,9 @@ stateDiagram-v2
 | :------------------ | :--------------------------------------- | :---------------------------------------------------------- |
 | `DISCONNECTED`      | Система не подключена                    | connection: IDLE или DISCONNECTED                           |
 | `CONNECTING`        | Идет процесс подключения                 | connection: PREPARING, CONNECTING, CONNECTED или REGISTERED |
-| `READY_TO_CALL`     | Соединение установлено, готово к звонкам | connection: ESTABLISHED, call: IDLE или ENDED               |
+| `READY_TO_CALL`     | Соединение установлено, готово к звонкам | connection: ESTABLISHED, call: IDLE                         |
 | `CALL_CONNECTING`   | Идет установка звонка                    | connection: ESTABLISHED, call: CONNECTING                   |
-| `CALL_ACTIVE`       | Звонок активен                           | connection: ESTABLISHED, call: ACCEPTED или IN_CALL         |
+| `CALL_ACTIVE`       | Звонок активен                           | connection: ESTABLISHED, call: IN_ROOM                      |
 | `CONNECTION_FAILED` | Ошибка соединения                        | connection: FAILED                                          |
 | `CALL_FAILED`       | Ошибка звонка                            | connection: ESTABLISHED, call: FAILED                       |
 
@@ -267,4 +261,4 @@ sipConnector.session.subscribe(sessionSelectors.selectSystemStatus, (status) => 
 
 - Табличные тесты для переходов каждой машины.
 - Контрактный тест адаптера событий: события менеджеров → доменные события → ожидаемые статусы.
-- Smoke-тест фасада `createSipSession`: подписка, снапшоты, очистка.
+- Smoke-тест фасада `sipConnector.session`: подписка, снапшоты, доступ к машинам, очистка.

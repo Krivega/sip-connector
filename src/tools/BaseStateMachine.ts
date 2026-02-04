@@ -5,7 +5,11 @@ import type { Actor, AnyStateMachine, EventFrom, SnapshotFrom } from 'xstate';
 type TUnsubscribe = () => void;
 type TTeardown = TUnsubscribe | { unsubscribe: () => void };
 
-export abstract class BaseStateMachine<TMachine extends AnyStateMachine, EState extends string> {
+export abstract class BaseStateMachine<
+  TMachine extends AnyStateMachine,
+  EState extends string,
+  TContext extends Record<string, unknown>,
+> {
   protected readonly actor: Actor<TMachine>;
 
   private readonly subscriptions: TUnsubscribe[] = [];
@@ -28,12 +32,12 @@ export abstract class BaseStateMachine<TMachine extends AnyStateMachine, EState 
     );
   }
 
-  public get actorRef(): Actor<TMachine> {
-    return this.actor;
+  public get state(): EState {
+    return this.getSnapshot().value;
   }
 
-  public get state(): EState {
-    return (this.getSnapshot() as unknown as { value: EState }).value;
+  public get context(): TContext {
+    return this.getSnapshot().context;
   }
 
   public send(event: EventFrom<TMachine>) {
@@ -41,7 +45,7 @@ export abstract class BaseStateMachine<TMachine extends AnyStateMachine, EState 
   }
 
   public getSnapshot() {
-    return this.actor.getSnapshot();
+    return this.actor.getSnapshot() as unknown as { value: EState; context: TContext };
   }
 
   public subscribe(listener: (snapshot: SnapshotFrom<TMachine>) => void) {

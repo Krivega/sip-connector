@@ -6,7 +6,7 @@ import type { ConnectionManager } from '@/ConnectionManager';
 import type { IncomingCallManager } from '@/IncomingCallManager';
 import type { PresentationManager } from '@/PresentationManager';
 import type { TEventMap, TEvents } from './events';
-import type { TSessionActors, TSessionSnapshot } from './types';
+import type { TSessionMachines, TSessionSnapshot } from './types';
 
 type TEqualityFunction<T> = (previous: T, next: T) => boolean;
 type TSelector<T> = (snapshot: TSessionSnapshot) => T;
@@ -16,25 +16,25 @@ const defaultEquals = <T>(previous: T, next: T) => {
 };
 
 type TSessionManagerDeps = {
-  connectionManager: Pick<ConnectionManager, 'connectionActor'>;
-  callManager: Pick<CallManager, 'callActor'>;
-  incomingCallManager: Pick<IncomingCallManager, 'incomingActor'>;
-  presentationManager: Pick<PresentationManager, 'presentationActor'>;
+  connectionManager: Pick<ConnectionManager, 'stateMachine'>;
+  callManager: Pick<CallManager, 'stateMachine'>;
+  incomingCallManager: Pick<IncomingCallManager, 'stateMachine'>;
+  presentationManager: Pick<PresentationManager, 'stateMachine'>;
 };
 
-const collectSnapshot = (actors: TSessionActors): TSessionSnapshot => {
+const collectSnapshot = (machines: TSessionMachines): TSessionSnapshot => {
   return {
-    connection: actors.connection.getSnapshot(),
-    call: actors.call.getSnapshot(),
-    incoming: actors.incoming.getSnapshot(),
-    presentation: actors.presentation.getSnapshot(),
+    connection: machines.connection.getSnapshot(),
+    call: machines.call.getSnapshot(),
+    incoming: machines.incoming.getSnapshot(),
+    presentation: machines.presentation.getSnapshot(),
   };
 };
 
 class SessionManager {
   public readonly events: TEvents;
 
-  public readonly actors: TSessionActors;
+  public readonly machines: TSessionMachines;
 
   private currentSnapshot: TSessionSnapshot;
 
@@ -50,20 +50,20 @@ class SessionManager {
   public constructor(deps: TSessionManagerDeps) {
     this.events = createEvents();
 
-    this.actors = {
-      connection: deps.connectionManager.connectionActor,
-      call: deps.callManager.callActor,
-      incoming: deps.incomingCallManager.incomingActor,
-      presentation: deps.presentationManager.presentationActor,
+    this.machines = {
+      connection: deps.connectionManager.stateMachine,
+      call: deps.callManager.stateMachine,
+      incoming: deps.incomingCallManager.stateMachine,
+      presentation: deps.presentationManager.stateMachine,
     };
 
-    this.currentSnapshot = collectSnapshot(this.actors);
+    this.currentSnapshot = collectSnapshot(this.machines);
 
     this.actorSubscriptions.push(
-      this.actors.connection.subscribe(this.notifySubscribers),
-      this.actors.call.subscribe(this.notifySubscribers),
-      this.actors.incoming.subscribe(this.notifySubscribers),
-      this.actors.presentation.subscribe(this.notifySubscribers),
+      this.machines.connection.subscribe(this.notifySubscribers),
+      this.machines.call.subscribe(this.notifySubscribers),
+      this.machines.incoming.subscribe(this.notifySubscribers),
+      this.machines.presentation.subscribe(this.notifySubscribers),
     );
   }
 
@@ -129,7 +129,7 @@ class SessionManager {
   private readonly notifySubscribers = () => {
     const previousSnapshot = this.currentSnapshot;
 
-    this.currentSnapshot = collectSnapshot(this.actors);
+    this.currentSnapshot = collectSnapshot(this.machines);
 
     for (const subscriber of this.subscribers) {
       const next = subscriber.selector(this.currentSnapshot);

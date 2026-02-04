@@ -10,4 +10,4 @@ export {
 } from './types';
 
 export type { TEventMap as TSessionManagerEventMap } from './events';
-export type { TSessionActors, TSessionSnapshot } from './types';
+export type { TSessionMachines, TSessionSnapshot } from './types';

@@ -116,6 +116,7 @@ class SipConnector {
       presentationManager: this.presentationManager,
     });
 
+    this.callManager.subscribeToApiEvents(this.apiManager);
     this.contentedStreamManager.subscribeToApiEvents(this.apiManager);
     this.apiManager.subscribe({
       connectionManager: this.connectionManager,

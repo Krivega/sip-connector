@@ -8,7 +8,6 @@ import { PresentationStateMachine } from './PresentationStateMachine';
 import type { RTCSession } from '@krivega/jssip';
 import type { CallManager } from '@/CallManager';
 import type { TEventMap, TEvents } from './events';
-import type { TPresentationActor } from './PresentationStateMachine';
 import type { TContentHint, TOnAddedTransceiver } from './types';
 
 const SEND_PRESENTATION_CALL_LIMIT = 1;
@@ -48,10 +47,6 @@ class PresentationManager {
     this.events = createEvents();
     this.stateMachine = new PresentationStateMachine(this.callManager.events);
     this.subscribe();
-  }
-
-  public get presentationActor(): TPresentationActor {
-    return this.stateMachine.actorRef;
   }
 
   public get isPendingPresentation(): boolean {

@@ -20,6 +20,8 @@ export const createManagers = () => {
     callManager,
   });
 
+  callManager.subscribeToApiEvents(apiManager);
+
   return {
     conferenceStateManager,
     connectionManager,

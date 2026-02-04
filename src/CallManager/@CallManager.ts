@@ -8,9 +8,9 @@ import { StreamsChangeTracker } from './StreamsChangeTracker';
 import { StreamsManagerProvider } from './StreamsManagerProvider';
 
 import type { RTCSession } from '@krivega/jssip';
+import type { ApiManager } from '@/ApiManager';
 import type { ConferenceStateManager } from '@/ConferenceStateManager';
 import type { ContentedStreamManager } from '@/ContentedStreamManager';
-import type { TCallActor } from './CallStateMachine';
 import type { TEventMap, TEvents } from './events';
 import type { TTools } from './RecvSession';
 import type {
@@ -80,10 +80,6 @@ class CallManager {
     this.subscribeContentedStreamEvents();
   }
 
-  public get callActor(): TCallActor {
-    return this.stateMachine.actorRef;
-  }
-
   public get requested() {
     return this.isPendingCall || this.isPendingAnswer;
   }
@@ -139,9 +135,18 @@ class CallManager {
     this.events.off(eventName, handler);
   }
 
+  public subscribeToApiEvents(apiManager: ApiManager): void {
+    this.stateMachine.subscribeToApiEvents(apiManager.events);
+  }
+
   public startCall: TStartCall = async (ua, getUri, params) => {
     this.isPendingCall = true;
     this.conferenceStateManager.updateState({ number: params.number, answer: false });
+
+    this.events.emit('start-call', {
+      number: params.number,
+      answer: false,
+    });
 
     return this.mcuSession.startCall(ua, getUri, params).finally(() => {
       this.isPendingCall = false;
@@ -169,6 +174,11 @@ class CallManager {
     const rtcSession = extractIncomingRTCSession();
 
     this.conferenceStateManager.updateState({
+      number: rtcSession.remote_identity.uri.user,
+      answer: true,
+    });
+
+    this.events.emit('start-call', {
       answer: true,
       number: rtcSession.remote_identity.uri.user,
     });

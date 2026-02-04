@@ -36,7 +36,7 @@ const selectPresentationStatus = (snapshot: TSessionSnapshot): EPresentationStat
 const selectIsInCall = (snapshot: TSessionSnapshot): boolean => {
   const status = selectCallStatus(snapshot);
 
-  return status === ECallStatus.IN_CALL || status === ECallStatus.ACCEPTED;
+  return status === ECallStatus.IN_ROOM;
 };
 
 /**
@@ -82,12 +82,8 @@ const selectSystemStatus = (snapshot: TSessionSnapshot): ESystemStatus => {
     case ECallStatus.CONNECTING: {
       return ESystemStatus.CALL_CONNECTING;
     }
-    case ECallStatus.ACCEPTED:
-    case ECallStatus.IN_CALL: {
+    case ECallStatus.IN_ROOM: {
       return ESystemStatus.CALL_ACTIVE;
-    }
-    case ECallStatus.ENDED: {
-      return ESystemStatus.READY_TO_CALL;
     }
     case ECallStatus.FAILED: {
       return ESystemStatus.CALL_FAILED;

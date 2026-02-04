@@ -14,81 +14,21 @@ describe('sessionSelectors', () => {
       connection: {
         value: EConnectionStatus.IDLE,
         context: {},
-        output: undefined,
-        status: 'active',
-        children: {},
-        tags: new Set(),
-        machine: {} as never,
-        // @ts-expect-error
-        _event: { type: '' },
-        _sessionId: '',
-        historyValue: {} as never,
-        history: undefined,
-        actions: [],
-        activities: {},
-        meta: {},
-        events: [],
-        _internalQueue: [],
         ...overrides.connection,
       },
       call: {
         value: ECallStatus.IDLE,
         context: {},
-        output: undefined,
-        status: 'active',
-        children: {},
-        tags: new Set(),
-        machine: {} as never,
-        // @ts-expect-error
-        _event: { type: '' },
-        _sessionId: '',
-        historyValue: {} as never,
-        history: undefined,
-        actions: [],
-        activities: {},
-        meta: {},
-        events: [],
-        _internalQueue: [],
         ...overrides.call,
       },
       incoming: {
         value: EIncomingStatus.IDLE,
         context: {},
-        output: undefined,
-        status: 'active',
-        children: {},
-        tags: new Set(),
-        machine: {} as never,
-        // @ts-expect-error
-        _event: { type: '' },
-        _sessionId: '',
-        historyValue: {} as never,
-        history: undefined,
-        actions: [],
-        activities: {},
-        meta: {},
-        events: [],
-        _internalQueue: [],
         ...overrides.incoming,
       },
       presentation: {
         value: EPresentationStatus.IDLE,
         context: {},
-        output: undefined,
-        status: 'active',
-        children: {},
-        tags: new Set(),
-        machine: {} as never,
-        // @ts-expect-error
-        _event: { type: '' },
-        _sessionId: '',
-        historyValue: {} as never,
-        history: undefined,
-        actions: [],
-        activities: {},
-        meta: {},
-        events: [],
-        _internalQueue: [],
         ...overrides.presentation,
       },
       ...overrides,
@@ -142,9 +82,7 @@ describe('sessionSelectors', () => {
       const statuses = [
         ECallStatus.IDLE,
         ECallStatus.CONNECTING,
-        ECallStatus.ACCEPTED,
-        ECallStatus.IN_CALL,
-        ECallStatus.ENDED,
+        ECallStatus.IN_ROOM,
         ECallStatus.FAILED,
       ];
 
@@ -290,33 +228,18 @@ describe('sessionSelectors', () => {
   });
 
   describe('selectIsInCall', () => {
-    it('should return true when call status is IN_CALL', () => {
+    it('should return true when call status is IN_ROOM', () => {
       const snapshot = createMockSnapshot({
         call: {
-          value: ECallStatus.IN_CALL,
+          value: ECallStatus.IN_ROOM,
         } as never,
       });
 
       expect(sessionSelectors.selectIsInCall(snapshot)).toBe(true);
     });
 
-    it('should return true when call status is ACCEPTED', () => {
-      const snapshot = createMockSnapshot({
-        call: {
-          value: ECallStatus.ACCEPTED,
-        } as never,
-      });
-
-      expect(sessionSelectors.selectIsInCall(snapshot)).toBe(true);
-    });
-
-    it('should return false when call status is not IN_CALL or ACCEPTED', () => {
-      const nonInCallStatuses = [
-        ECallStatus.IDLE,
-        ECallStatus.CONNECTING,
-        ECallStatus.ENDED,
-        ECallStatus.FAILED,
-      ];
+    it('should return false when call status is not IN_ROOM, ACCEPTED or CONFIRMED', () => {
+      const nonInCallStatuses = [ECallStatus.IDLE, ECallStatus.CONNECTING, ECallStatus.FAILED];
 
       nonInCallStatuses.forEach((status) => {
         const snapshot = createMockSnapshot({
@@ -360,9 +283,7 @@ describe('sessionSelectors', () => {
       const callStatuses = [
         ECallStatus.IDLE,
         ECallStatus.CONNECTING,
-        ECallStatus.ACCEPTED,
-        ECallStatus.IN_CALL,
-        ECallStatus.ENDED,
+        ECallStatus.IN_ROOM,
         ECallStatus.FAILED,
       ];
 
@@ -395,9 +316,7 @@ describe('sessionSelectors', () => {
       const callStatuses = [
         ECallStatus.IDLE,
         ECallStatus.CONNECTING,
-        ECallStatus.ACCEPTED,
-        ECallStatus.IN_CALL,
-        ECallStatus.ENDED,
+        ECallStatus.IN_ROOM,
         ECallStatus.FAILED,
       ];
 
@@ -473,9 +392,7 @@ describe('sessionSelectors', () => {
       const callStatuses = [
         ECallStatus.IDLE,
         ECallStatus.CONNECTING,
-        ECallStatus.ACCEPTED,
-        ECallStatus.IN_CALL,
-        ECallStatus.ENDED,
+        ECallStatus.IN_ROOM,
         ECallStatus.FAILED,
       ];
 
@@ -517,43 +434,17 @@ describe('sessionSelectors', () => {
       expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CALL_CONNECTING);
     });
 
-    it('should return CALL_ACTIVE when connection is ESTABLISHED and call is ACCEPTED', () => {
+    it('should return CALL_ACTIVE when connection is ESTABLISHED and call is IN_ROOM', () => {
       const snapshot = createMockSnapshot({
         connection: {
           value: EConnectionStatus.ESTABLISHED,
         } as never,
         call: {
-          value: ECallStatus.ACCEPTED,
+          value: ECallStatus.IN_ROOM,
         } as never,
       });
 
       expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CALL_ACTIVE);
-    });
-
-    it('should return CALL_ACTIVE when connection is ESTABLISHED and call is IN_CALL', () => {
-      const snapshot = createMockSnapshot({
-        connection: {
-          value: EConnectionStatus.ESTABLISHED,
-        } as never,
-        call: {
-          value: ECallStatus.IN_CALL,
-        } as never,
-      });
-
-      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CALL_ACTIVE);
-    });
-
-    it('should return READY_TO_CALL when connection is ESTABLISHED and call is ENDED', () => {
-      const snapshot = createMockSnapshot({
-        connection: {
-          value: EConnectionStatus.ESTABLISHED,
-        } as never,
-        call: {
-          value: ECallStatus.ENDED,
-        } as never,
-      });
-
-      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.READY_TO_CALL);
     });
 
     it('should return CALL_FAILED when connection is ESTABLISHED and call is FAILED', () => {

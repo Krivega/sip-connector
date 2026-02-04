@@ -1,7 +1,7 @@
 import logger from '@/logger';
 import ConfigurationManager from './ConfigurationManager';
 import ConnectionFlow from './ConnectionFlow';
-import ConnectionStateMachine from './ConnectionStateMachine';
+import { ConnectionStateMachine } from './ConnectionStateMachine';
 import { createEvents, EEvent } from './events';
 import RegistrationManager from './RegistrationManager';
 import SipOperations from './SipOperations';
@@ -18,7 +18,6 @@ import type {
   TParametersConnection,
   TSet,
 } from './ConnectionFlow';
-import type { TConnectionActor } from './ConnectionStateMachine';
 import type { TEventMap, TEvents } from './events';
 import type { TParametersCheckTelephony } from './SipOperations';
 
@@ -30,6 +29,8 @@ type TConnectOptions = Parameters<TConnect>[1] & {
 export default class ConnectionManager {
   public readonly events: TEvents;
 
+  public readonly stateMachine: ConnectionStateMachine;
+
   public ua?: UA;
 
   public socket?: WebSocketInterface;
@@ -37,8 +38,6 @@ export default class ConnectionManager {
   private readonly uaFactory: UAFactory;
 
   private readonly registrationManager: RegistrationManager;
-
-  private readonly stateMachine: ConnectionStateMachine;
 
   private readonly connectionFlow: ConnectionFlow;
 
@@ -119,10 +118,6 @@ export default class ConnectionManager {
 
   public get isFailed() {
     return this.stateMachine.isFailed;
-  }
-
-  public get connectionActor(): TConnectionActor {
-    return this.stateMachine.actorRef;
   }
 
   public get connectionState() {

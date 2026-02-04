@@ -3,31 +3,37 @@ import { setup } from 'xstate';
 import { BaseStateMachine } from '@/tools/BaseStateMachine';
 
 type TTestEvent = { type: 'GO' };
+enum EState {
+  idle = 'idle',
+  active = 'active',
+}
+
+type TContext = Record<string, never>;
 
 const testMachine = setup({
   types: {
-    context: {} as Record<string, never>,
+    context: {} as TContext,
     events: {} as TTestEvent,
   },
 }).createMachine({
   id: 'base-state-machine-test',
-  initial: 'idle',
+  initial: EState.idle,
   context: {},
   states: {
-    idle: {
+    [EState.idle]: {
       on: {
-        GO: 'active',
+        GO: EState.active,
       },
     },
-    active: {
+    [EState.active]: {
       on: {
-        GO: 'active',
+        GO: EState.active,
       },
     },
   },
 });
 
-class TestStateMachine extends BaseStateMachine<typeof testMachine, 'idle' | 'active'> {
+class TestStateMachine extends BaseStateMachine<typeof testMachine, EState, TContext> {
   public constructor() {
     super(testMachine);
   }
@@ -60,6 +66,13 @@ describe('BaseStateMachine', () => {
     machine.send({ type: 'GO' });
 
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('should return context', () => {
+    const machine = new TestStateMachine();
+
+    expect(machine.context).toEqual({});
+    expect(machine.context).toEqual(machine.getSnapshot().context);
   });
 
   describe('state getter', () => {

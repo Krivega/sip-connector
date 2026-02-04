@@ -1,7 +1,7 @@
 import { C } from '@krivega/jssip';
 
 import logger from '@/logger';
-import ConnectionStateMachine, { EEvents, EState } from '../ConnectionStateMachine';
+import { ConnectionStateMachine, EEvents, EState } from '../ConnectionStateMachine';
 import { createEvents } from '../events';
 
 import type { Socket, IncomingResponse } from '@krivega/jssip';

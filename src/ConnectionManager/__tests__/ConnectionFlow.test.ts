@@ -5,7 +5,7 @@ import UAMock, {
   createWebsocketHandshakeTimeoutError,
 } from '@/__fixtures__/UA.mock';
 import ConnectionFlow from '../ConnectionFlow';
-import ConnectionStateMachine from '../ConnectionStateMachine';
+import { ConnectionStateMachine } from '../ConnectionStateMachine';
 import { createEvents } from '../events';
 import RegistrationManager from '../RegistrationManager';
 import UAFactory from '../UAFactory';

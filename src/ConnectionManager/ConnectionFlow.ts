@@ -13,7 +13,7 @@ import type {
 } from '@krivega/jssip';
 import type { TGetUri } from '../CallManager';
 import type { TJsSIP } from '../types';
-import type ConnectionStateMachine from './ConnectionStateMachine';
+import type { ConnectionStateMachine } from './ConnectionStateMachine';
 import type { TEvents } from './events';
 import type RegistrationManager from './RegistrationManager';
 import type UAFactory from './UAFactory';

@@ -3,7 +3,6 @@ import { assign, setup } from 'xstate';
 import logger from '@/logger';
 import { BaseStateMachine } from '@/tools/BaseStateMachine';
 
-import type { ActorRefFrom, SnapshotFrom } from 'xstate';
 import type { TEventMap, TEvents } from './events';
 
 export enum EState {
@@ -46,14 +45,14 @@ type TConnectionMachineEvents = { type: TConnectionMachineEvent } | TConnectionF
 
 const ALL_MACHINE_EVENTS: TConnectionMachineEvent[] = Object.values(EEvents);
 
-interface IConnectionMachineContext {
+type TContext = {
   error?: Error;
-}
+};
 
 // Создаем XState машину с setup API для лучшей типизации
 const connectionMachine = setup({
   types: {
-    context: {} as IConnectionMachineContext,
+    context: {} as TContext,
     events: {} as TConnectionMachineEvents,
   },
   actions: {
@@ -382,12 +381,12 @@ const connectionMachine = setup({
   },
 });
 
-export type TConnectionSnapshot = SnapshotFrom<typeof connectionMachine>;
-export type TConnectionActor = ActorRefFrom<typeof connectionMachine>;
+export type TConnectionSnapshot = { value: EState; context: TContext };
 
-export default class ConnectionStateMachine extends BaseStateMachine<
+export class ConnectionStateMachine extends BaseStateMachine<
   typeof connectionMachine,
-  EState
+  EState,
+  TContext
 > {
   private readonly events: TEvents;
 
@@ -472,7 +471,7 @@ export default class ConnectionStateMachine extends BaseStateMachine<
   }
 
   public canTransition(event: TConnectionMachineEvent): boolean {
-    const snapshot = this.getSnapshot();
+    const snapshot = this.actor.getSnapshot();
 
     return snapshot.can({ type: event });
   }
@@ -485,11 +484,11 @@ export default class ConnectionStateMachine extends BaseStateMachine<
   }
 
   private hasState(state: EState): boolean {
-    return this.getSnapshot().matches(state);
+    return this.actor.getSnapshot().matches(state);
   }
 
   private sendEvent(event: TConnectionMachineEvents): void {
-    const snapshot = this.getSnapshot();
+    const snapshot = this.actor.getSnapshot();
 
     if (!snapshot.can(event)) {
       logger(

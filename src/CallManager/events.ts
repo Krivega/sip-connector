@@ -39,6 +39,7 @@ export enum EEvent {
   FAILED_PRESENTATION = 'presentation:failed',
 
   // synthetic events
+  START_CALL = 'start-call',
   PEER_CONNECTION_CONFIRMED = 'peerconnection:confirmed',
   PEER_CONNECTION_ONTRACK = 'peerconnection:ontrack',
   ENDED_FROM_SERVER = 'ended:fromserver',
@@ -87,6 +88,7 @@ export const SESSION_JSSIP_EVENT_NAMES = [
 ] as const;
 
 const SESSION_SYNTHETICS_EVENT_NAMES = [
+  `${EEvent.START_CALL}`,
   `${EEvent.PEER_CONNECTION_CONFIRMED}`,
   `${EEvent.PEER_CONNECTION_ONTRACK}`,
   `${EEvent.ENDED_FROM_SERVER}`,
@@ -136,6 +138,10 @@ export type TEventMap = {
   'presentation:ended': MediaStream;
   'presentation:failed': Error;
   // synthetic events
+  'start-call': {
+    number: string;
+    answer: boolean;
+  };
   'peerconnection:confirmed': RTCPeerConnection;
   'peerconnection:ontrack': RTCTrackEvent;
   'ended:fromserver': EndEvent;

@@ -1,5 +1,6 @@
 import { createAudioMediaStreamTrackMock } from 'webrtc-mock';
 
+import { createManagers } from '@/__fixtures__/createManagers';
 import flushPromises from '@/__fixtures__/flushPromises';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { ConferenceStateManager } from '@/ConferenceStateManager';
@@ -86,8 +87,11 @@ describe('CallManager', () => {
   let mediaStream: MediaStream;
 
   beforeEach(() => {
-    conferenceStateManager = new ConferenceStateManager();
-    callManager = new CallManager(conferenceStateManager, new ContentedStreamManager());
+    const managers = createManagers();
+
+    callManager = managers.callManager;
+    conferenceStateManager = managers.conferenceStateManager;
+
     mediaStream = new MediaStream();
   });
 

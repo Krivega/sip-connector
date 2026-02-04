@@ -1,15 +1,15 @@
-import type { TCallActor, TCallSnapshot } from '@/CallManager/CallStateMachine';
+import type { CallStateMachine, TCallSnapshot } from '@/CallManager/CallStateMachine';
 import type {
-  TConnectionActor,
+  ConnectionStateMachine,
   TConnectionSnapshot,
 } from '@/ConnectionManager/ConnectionStateMachine';
 import type {
-  TIncomingActor,
+  IncomingCallStateMachine,
   TIncomingSnapshot,
 } from '@/IncomingCallManager/IncomingCallStateMachine';
 import type {
-  TPresentationActor,
   TPresentationSnapshot,
+  PresentationStateMachine,
 } from '@/PresentationManager/PresentationStateMachine';
 
 export type TSessionSnapshot = {
@@ -19,11 +19,11 @@ export type TSessionSnapshot = {
   presentation: TPresentationSnapshot;
 };
 
-export type TSessionActors = {
-  connection: TConnectionActor;
-  call: TCallActor;
-  incoming: TIncomingActor;
-  presentation: TPresentationActor;
+export type TSessionMachines = {
+  connection: ConnectionStateMachine;
+  call: CallStateMachine;
+  incoming: IncomingCallStateMachine;
+  presentation: PresentationStateMachine;
 };
 
 export { EState as ECallStatus } from '@/CallManager/CallStateMachine';
