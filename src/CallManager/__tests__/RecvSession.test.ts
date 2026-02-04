@@ -26,6 +26,7 @@ describe('RecvSession', () => {
         async (
           params: {
             conferenceNumber: string;
+            token: string;
             quality: 'low' | 'medium' | 'high';
             audioChannel: string;
           },
@@ -89,8 +90,9 @@ describe('RecvSession', () => {
     const tools = createTools();
     const session = new RecvSession(config, tools);
     const conferenceNumber = '123';
+    const token = 'test-token';
 
-    const callPromise = session.call(conferenceNumber);
+    const callPromise = session.call({ conferenceNumber, token });
 
     // эмитим оба трека, чтобы завершить ожидание
     dispatchTrack(session, 'audio');
@@ -105,6 +107,7 @@ describe('RecvSession', () => {
     expect(tools.sendOffer).toHaveBeenCalledWith(
       {
         conferenceNumber,
+        token,
         quality: config.quality,
         audioChannel: config.audioChannel,
       },
@@ -120,15 +123,16 @@ describe('RecvSession', () => {
     const tools = createTools();
     const session = new RecvSession(config, tools);
     const conferenceNumber = '123';
+    const token = 'test-token';
 
-    const callPromise = session.call(conferenceNumber);
+    const callPromise = session.call({ conferenceNumber, token });
 
     dispatchTrack(session, 'audio');
     dispatchTrack(session, 'video');
 
     await callPromise;
 
-    const renegotiateResult = await session.renegotiate(conferenceNumber);
+    const renegotiateResult = await session.renegotiate({ conferenceNumber, token });
 
     expect(session.peerConnection.createOffer).toHaveBeenCalledTimes(2);
 
@@ -142,6 +146,7 @@ describe('RecvSession', () => {
       2,
       {
         conferenceNumber,
+        token,
         quality: config.quality,
         audioChannel: config.audioChannel,
       },
@@ -177,6 +182,7 @@ describe('RecvSession', () => {
         async (
           params: {
             conferenceNumber: string;
+            token: string;
             quality: 'low' | 'medium' | 'high';
             audioChannel: string;
           },
@@ -195,6 +201,7 @@ describe('RecvSession', () => {
       const tools = createTools({ sendOffer: sendOfferMock });
       const session = new RecvSession(config, tools);
       const conferenceNumber = '123';
+      const token = 'test-token';
 
       sendOfferMock
         .mockRejectedValueOnce(new Error('network error'))
@@ -203,6 +210,7 @@ describe('RecvSession', () => {
           async (
             params: {
               conferenceNumber: string;
+              token: string;
               quality: 'low' | 'medium' | 'high';
               audioChannel: string;
             },
@@ -219,7 +227,7 @@ describe('RecvSession', () => {
           },
         );
 
-      const result = await session.renegotiate(conferenceNumber);
+      const result = await session.renegotiate({ conferenceNumber, token });
 
       expect(result).toBe(true);
       expect(sendOfferMock).toHaveBeenCalledTimes(3);
@@ -234,8 +242,9 @@ describe('RecvSession', () => {
       const tools = createTools({ sendOffer: sendOfferMock });
       const session = new RecvSession(config, tools);
       const conferenceNumber = '123';
+      const token = 'test-token';
 
-      const error = await session.renegotiate(conferenceNumber).then(
+      const error = await session.renegotiate({ conferenceNumber, token }).then(
         () => {
           throw new Error('expected renegotiate to reject');
         },
@@ -258,8 +267,9 @@ describe('RecvSession', () => {
       const tools = createTools({ sendOffer: sendOfferMock });
       const session = new RecvSession(config, tools);
       const conferenceNumber = '123';
+      const token = 'test-token';
 
-      const renegotiatePromise = session.renegotiate(conferenceNumber);
+      const renegotiatePromise = session.renegotiate({ conferenceNumber, token });
 
       await delayPromise(0);
       session.close();

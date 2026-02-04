@@ -8,5 +8,7 @@ export { default as sendDtmfAccumulated } from './sendDtmfFAccumulated';
 export { default as sendOffer } from './sendOffer';
 export { setEncodingsToSender, setParametersToSender } from './setParametersToSender';
 export { createSyncMediaState } from './syncMediaState';
+export { DeferredCommandRunner } from './DeferredCommandRunner';
 
+export type { TDeferredCommandRunnerOptions } from './DeferredCommandRunner';
 export type { TOnSetParameters, TResultSetParametersToSender } from './setParametersToSender';
