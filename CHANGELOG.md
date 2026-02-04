@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [24.0.0](https://github.com/Krivega/sip-connector/compare/v23.3.1...v24.0.0) (2026-02-04)
+
+### ⚠ BREAKING CHANGES
+
+- remove ConferenceStateManager and integrate its functionality into CallManager and CallStateMachine
+
+### Features
+
+- enhance RecvSession and SipConnector tests to include token handling ([905e29f](https://github.com/Krivega/sip-connector/commit/905e29f1e045befc3afef55dbf63011cdc62a48d))
+- implement DeferredCommandRunner for delayed execution of RecvSession start; handle token race conditions in CallManager ([2bbbcb9](https://github.com/Krivega/sip-connector/commit/2bbbcb9e6727e8a909eef0fc81bc53ea8f17e7bf))
+
+- remove ConferenceStateManager and integrate its functionality into CallManager and CallStateMachine ([c86481a](https://github.com/Krivega/sip-connector/commit/c86481a4decc85c217a26a0e31a210973fb8d9b0))
+
 ### [23.3.1](https://github.com/Krivega/sip-connector/compare/v23.3.0...v23.3.1) (2026-02-01)
 
 ### Bug Fixes
