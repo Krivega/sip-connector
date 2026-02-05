@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [24.0.1](https://github.com/Krivega/sip-connector/compare/v24.0.0...v24.0.1) (2026-02-05)
+
+### Bug Fixes
+
+- update IncomingCallManager to enforce required fields for remote caller data ([f53de19](https://github.com/Krivega/sip-connector/commit/f53de1905ddc00f40c7e51bcda32ebaba561cd82))
+
 ## [24.0.0](https://github.com/Krivega/sip-connector/compare/v23.3.1...v24.0.0) (2026-02-04)
 
 ### ⚠ BREAKING CHANGES
