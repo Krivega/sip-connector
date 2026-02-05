@@ -64,12 +64,7 @@ describe('IncomingCallManager', () => {
     it('должен возвращать пустые данные когда нет входящего звонка', () => {
       const data = incomingCallManager.remoteCallerData;
 
-      expect(data).toEqual({
-        displayName: undefined,
-        host: undefined,
-        incomingNumber: undefined,
-        rtcSession: undefined,
-      });
+      expect(data).toBe(undefined);
     });
 
     it('должен возвращать данные звонящего когда есть входящий звонок', () => {
@@ -467,7 +462,7 @@ describe('IncomingCallManager', () => {
         request: {} as IncomingRequest,
       });
 
-      expect(incomingCallManager.remoteCallerData.incomingNumber).toBe('caller1');
+      expect(incomingCallManager.remoteCallerData?.incomingNumber).toBe('caller1');
 
       // Второй звонок (заменяет первый)
       connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
@@ -476,7 +471,7 @@ describe('IncomingCallManager', () => {
         request: {} as IncomingRequest,
       });
 
-      expect(incomingCallManager.remoteCallerData.incomingNumber).toBe('caller2');
+      expect(incomingCallManager.remoteCallerData?.incomingNumber).toBe('caller2');
     });
   });
 
@@ -496,8 +491,8 @@ describe('IncomingCallManager', () => {
         request: {} as IncomingRequest,
       });
 
-      expect(incomingCallManager.remoteCallerData.displayName).toBeUndefined();
-      expect(incomingCallManager.remoteCallerData.incomingNumber).toBe('testuser');
+      expect(incomingCallManager.remoteCallerData?.displayName).toBeUndefined();
+      expect(incomingCallManager.remoteCallerData?.incomingNumber).toBe('testuser');
     });
 
     it('должен корректно обрабатывать сессию без uri.user', () => {
@@ -515,8 +510,8 @@ describe('IncomingCallManager', () => {
         request: {} as IncomingRequest,
       });
 
-      expect(incomingCallManager.remoteCallerData.incomingNumber).toBe('');
-      expect(incomingCallManager.remoteCallerData.displayName).toBe('Test Caller');
+      expect(incomingCallManager.remoteCallerData?.incomingNumber).toBe('');
+      expect(incomingCallManager.remoteCallerData?.displayName).toBe('Test Caller');
     });
 
     it('должен корректно обрабатывать ошибки в declineToIncomingCall', async () => {

@@ -1,3 +1,4 @@
+import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { EState as ECallStatus } from '@/CallManager/CallStateMachine';
 import { EState as EConnectionStatus } from '@/ConnectionManager/ConnectionStateMachine';
 import { EState as EIncomingStatus } from '@/IncomingCallManager/IncomingCallStateMachine';
@@ -9,6 +10,7 @@ import type { TRemoteCallerData } from '@/IncomingCallManager';
 import type { TSessionSnapshot } from '../types';
 
 describe('sessionSelectors', () => {
+  const rtcSession = new RTCSessionMock({ eventHandlers: {}, originator: 'remote' });
   const createMockSnapshot = (overrides: Partial<TSessionSnapshot> = {}): TSessionSnapshot => {
     return {
       connection: {
@@ -144,6 +146,7 @@ describe('sessionSelectors', () => {
         incomingNumber: '101',
         displayName: 'Test User',
         host: 'test.com',
+        rtcSession,
       };
 
       const snapshot = createMockSnapshot({
@@ -161,6 +164,9 @@ describe('sessionSelectors', () => {
     it('should return remoteCallerData for all non-IDLE incoming statuses', () => {
       const remoteCallerData: TRemoteCallerData = {
         incomingNumber: '102',
+        displayName: 'Test User',
+        host: 'test.com',
+        rtcSession,
       };
 
       const nonIdleStatuses = [

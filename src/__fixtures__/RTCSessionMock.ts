@@ -83,12 +83,6 @@ class RTCSessionMock extends BaseSession {
     return true;
   });
 
-  public addTransceiver = jest.fn(
-    (_trackOrKind: MediaStreamTrack | string, _init?: RTCRtpTransceiverInit): RTCRtpTransceiver => {
-      return {} as RTCRtpTransceiver;
-    },
-  );
-
   public restartIce = jest.fn(
     async (_options?: {
       useUpdate?: boolean;

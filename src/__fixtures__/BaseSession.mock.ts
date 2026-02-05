@@ -19,6 +19,8 @@ import type {
   TerminateOptions,
   URI,
   C as constants,
+  RTCSessionEventMap,
+  TDegradationPreference,
 } from '@krivega/jssip';
 
 export type TEventHandlers = Record<string, (data: unknown) => void>;
@@ -33,6 +35,16 @@ class BaseSession implements RTCSession {
   public remote_identity!: NameAddrHeader;
 
   public mutedOptions = { audio: false, video: false };
+
+  public addTransceiver = jest.fn(
+    async (
+      _trackOrKind: MediaStreamTrack | 'audio' | 'video',
+      _init?: RTCRtpTransceiverInit,
+      _options?: { degradationPreference?: TDegradationPreference },
+    ): Promise<RTCRtpTransceiver> => {
+      return {} as RTCRtpTransceiver;
+    },
+  );
 
   public constructor({
     originator = 'local',
@@ -73,13 +85,11 @@ class BaseSession implements RTCSession {
     throw new Error('Method not implemented.');
   }
 
-  // @ts-expect-error
-  public get C(): SessionStatus {
+  public get C(): typeof SessionStatus {
     throw new Error('Method not implemented.');
   }
 
-  // @ts-expect-error
-  public get causes(): constants.causes {
+  public get causes(): typeof constants.causes {
     throw new Error('Method not implemented.');
   }
 
@@ -246,14 +256,17 @@ class BaseSession implements RTCSession {
   }
 
   // @ts-expect-error
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  public on<T>(eventName: (typeof SESSION_JSSIP_EVENT_NAMES)[number], handler: (data: T) => void) {
-    if (SESSION_JSSIP_EVENT_NAMES.includes(eventName)) {
-      this.events.on(eventName, handler);
+  public on: RTCSession['on'] = <T extends keyof RTCSessionEventMap>(
+    type: T,
+    listener: RTCSessionEventMap[T],
+  ) => {
+    if (SESSION_JSSIP_EVENT_NAMES.includes(type)) {
+      // @ts-expect-error
+      this.events.on(type, listener);
     }
 
-    return this;
-  }
+    return this as unknown as RTCSession;
+  };
 
   public trigger(eventName: (typeof SESSION_JSSIP_EVENT_NAMES)[number], data?: unknown) {
     this.events.trigger(eventName, data);

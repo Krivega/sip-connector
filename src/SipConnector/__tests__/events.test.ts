@@ -1,10 +1,15 @@
 import JsSIP from '@/__fixtures__/jssip.mock';
+import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import SipConnector from '../@SipConnector';
 
 import type { IncomingResponse, Socket } from '@krivega/jssip';
 import type { TJsSIP } from '@/types';
 
 describe('SipConnector events', () => {
+  const rtcSession = new RTCSessionMock({
+    eventHandlers: {},
+    originator: 'remote',
+  });
   let sipConnector: SipConnector;
 
   beforeEach(() => {
@@ -127,6 +132,7 @@ describe('SipConnector events', () => {
       displayName: 'incoming',
       host: 'incoming',
       incomingNumber: 'incoming',
+      rtcSession,
     });
 
     const mediaStream = new MediaStream();
@@ -149,6 +155,7 @@ describe('SipConnector events', () => {
       displayName: 'incoming',
       host: 'incoming',
       incomingNumber: 'incoming',
+      rtcSession,
     });
     expect(presentationHandler).toHaveBeenCalledWith(mediaStream);
     expect(statsHandler).toHaveBeenCalledWith(stats);

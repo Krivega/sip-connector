@@ -70,7 +70,6 @@ class UA extends EventEmitter implements IUA {
 
   public readonly registratorInner!: Registrator;
 
-  // @ts-expect-error
   public call = jest.fn(
     (
       url: string,

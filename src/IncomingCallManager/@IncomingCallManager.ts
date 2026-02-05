@@ -3,10 +3,19 @@ import { IncomingCallStateMachine } from './IncomingCallStateMachine';
 
 import type { IncomingRTCSessionEvent, OutgoingRTCSessionEvent, RTCSession } from '@krivega/jssip';
 import type { ConnectionManager } from '@/ConnectionManager';
-import type { Originator, TEventMap, TEvents } from './events';
+import type { Originator, TEventMap, TEvents, TRemoteCallerData } from './events';
 
 const BUSY_HERE_STATUS_CODE = 486;
 const REQUEST_TERMINATED_STATUS_CODE = 487;
+
+const getRemoteCallerData = (incomingRTCSession: RTCSession): TRemoteCallerData => {
+  return {
+    displayName: incomingRTCSession.remote_identity.display_name,
+    host: incomingRTCSession.remote_identity.uri.host,
+    incomingNumber: incomingRTCSession.remote_identity.uri.user,
+    rtcSession: incomingRTCSession,
+  };
+};
 
 export default class IncomingCallManager {
   public readonly events: TEvents;
@@ -27,13 +36,12 @@ export default class IncomingCallManager {
     this.start();
   }
 
-  public get remoteCallerData(): TEventMap['ringing'] {
-    return {
-      displayName: this.incomingRTCSession?.remote_identity.display_name,
-      host: this.incomingRTCSession?.remote_identity.uri.host,
-      incomingNumber: this.incomingRTCSession?.remote_identity.uri.user,
-      rtcSession: this.incomingRTCSession,
-    };
+  public get remoteCallerData(): TEventMap['ringing'] | undefined {
+    if (!this.incomingRTCSession) {
+      return undefined;
+    }
+
+    return getRemoteCallerData(this.incomingRTCSession);
   }
 
   public get isAvailableIncomingCall(): boolean {
@@ -74,7 +82,7 @@ export default class IncomingCallManager {
     return new Promise<void>((resolve, reject) => {
       try {
         const incomingRTCSession = this.getIncomingRTCSession();
-        const callerData = this.remoteCallerData;
+        const callerData = getRemoteCallerData(incomingRTCSession);
 
         this.removeIncomingSession();
         this.events.trigger(EEvent.DECLINED_INCOMING_CALL, callerData);
@@ -133,7 +141,7 @@ export default class IncomingCallManager {
   private setIncomingSession(rtcSession: RTCSession): void {
     this.incomingRTCSession = rtcSession;
 
-    const callerData = this.remoteCallerData;
+    const callerData = getRemoteCallerData(rtcSession);
 
     rtcSession.on('failed', (event: { originator: `${Originator}` }) => {
       this.removeIncomingSession();

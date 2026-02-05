@@ -1,3 +1,4 @@
+import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { createEvents as createConnectionEvents } from '@/ConnectionManager';
 import { createEvents as createIncomingEvents } from '../events';
 import { IncomingCallStateMachine, EState } from '../IncomingCallStateMachine';
@@ -11,7 +12,12 @@ describe('IncomingCallStateMachine', () => {
   let connectionEvents: TConnectionManagerEvents;
   let machine: IncomingCallStateMachine;
 
-  const sampleCaller: TRemoteCallerData = { incomingNumber: '101' };
+  const sampleCaller: TRemoteCallerData = {
+    displayName: 'Test Caller',
+    host: 'test.com',
+    incomingNumber: '101',
+    rtcSession: new RTCSessionMock({ eventHandlers: {}, originator: 'remote' }),
+  };
 
   beforeEach(() => {
     incomingEvents = createIncomingEvents();

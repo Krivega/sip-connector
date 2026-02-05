@@ -1,3 +1,4 @@
+import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { createEvents as createCallEvents } from '@/CallManager';
 import { CallStateMachine, EState as ECallStatus } from '@/CallManager/CallStateMachine';
 import { createEvents as createConnectionEvents } from '@/ConnectionManager';
@@ -59,6 +60,8 @@ const startSession = () => {
 };
 
 describe('SessionManager', () => {
+  const rtcSession = new RTCSessionMock({ eventHandlers: {}, originator: 'remote' });
+
   describe('session aggregation', () => {
     it('reads snapshots directly from manager actors', () => {
       const {
@@ -102,7 +105,7 @@ describe('SessionManager', () => {
 
       incomingStateMachine.send({
         type: 'INCOMING.RINGING',
-        data: { incomingNumber: '101' },
+        data: { incomingNumber: '101', displayName: 'Test Caller', host: 'test.com', rtcSession },
       });
       expect(sessionSelectors.selectIncomingStatus(session.getSnapshot())).toBe(
         EIncomingStatus.RINGING,
@@ -188,7 +191,7 @@ describe('SessionManager', () => {
       // Change incoming state
       incomingStateMachine.send({
         type: 'INCOMING.RINGING',
-        data: { incomingNumber: '101' },
+        data: { incomingNumber: '101', displayName: 'Test Caller', host: 'test.com', rtcSession },
       });
       expect(callback).toHaveBeenCalledTimes(3);
 

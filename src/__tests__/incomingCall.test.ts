@@ -95,9 +95,9 @@ describe('incoming call', () => {
     return new Promise<void>((resolve) => {
       sipConnector.on('incoming-call:ringing', async () => {
         expect(sipConnector.isAvailableIncomingCall).toBe(true);
-        expect(sipConnector.remoteCallerData.incomingNumber).toBe(remoteCallerData.incomingNumber);
-        expect(sipConnector.remoteCallerData.host).toBe(remoteCallerData.host);
-        expect(sipConnector.remoteCallerData.displayName).toBe(remoteCallerData.displayName);
+        expect(sipConnector.remoteCallerData?.incomingNumber).toBe(remoteCallerData.incomingNumber);
+        expect(sipConnector.remoteCallerData?.host).toBe(remoteCallerData.host);
+        expect(sipConnector.remoteCallerData?.displayName).toBe(remoteCallerData.displayName);
 
         resolve();
       });

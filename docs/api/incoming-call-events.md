@@ -17,9 +17,9 @@
 
 ```typescript
 {
-  displayName?: string;
-  host?: string;
-  incomingNumber?: string;
-  rtcSession?: RTCSession;
+  displayName: string;
+  host: string;
+  incomingNumber: string;
+  rtcSession: RTCSession;
 }
 ```

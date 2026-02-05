@@ -430,7 +430,7 @@ class SipConnectorFacade implements IProxyMethods {
     const getIncomingNumber = (): string | undefined => {
       const { remoteCallerData } = this.sipConnector;
 
-      return remoteCallerData.incomingNumber;
+      return remoteCallerData?.incomingNumber;
     };
     let isSuccessProgressCall = false;
     let room: string;
