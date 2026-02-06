@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [25.0.0](https://github.com/Krivega/sip-connector/compare/v24.0.1...v25.0.0) (2026-02-06)
+
+### ⚠ BREAKING CHANGES
+
+- remove TConnectionConfigurationWithUa and add authorizationUser to TConnectionConfiguration
+
+### Bug Fixes
+
+- remove TConnectionConfigurationWithUa and add authorizationUser to TConnectionConfiguration ([c2b683b](https://github.com/Krivega/sip-connector/commit/c2b683b37666705a1244c926c1da2ff42adf70d1))
+
 ### [24.0.1](https://github.com/Krivega/sip-connector/compare/v24.0.0...v24.0.1) (2026-02-05)
 
 ### Bug Fixes
