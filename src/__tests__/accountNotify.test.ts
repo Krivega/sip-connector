@@ -16,10 +16,17 @@ describe('account notify', () => {
   it('event account:changed', async () => {
     expect.assertions(1);
 
-    const result = await sipConnector.connect(dataForConnectionWithAuthorization);
-    const { ua } = result;
+    await sipConnector.connect(dataForConnectionWithAuthorization);
 
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
+      const { ua } = sipConnector.connectionManager;
+
+      if (!ua) {
+        reject(new Error('UA not initialized'));
+
+        return;
+      }
+
       sipConnector.on('api:account:changed', (data) => {
         expect(data).toEqual({});
 
@@ -33,10 +40,17 @@ describe('account notify', () => {
   it('event account:deleted', async () => {
     expect.assertions(1);
 
-    const result = await sipConnector.connect(dataForConnectionWithAuthorization);
-    const { ua } = result;
+    await sipConnector.connect(dataForConnectionWithAuthorization);
 
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
+      const { ua } = sipConnector.connectionManager;
+
+      if (!ua) {
+        reject(new Error('UA not initialized'));
+
+        return;
+      }
+
       sipConnector.on('api:account:deleted', (data) => {
         expect(data).toEqual({});
 

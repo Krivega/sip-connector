@@ -1,20 +1,21 @@
 import type { UA } from '@krivega/jssip';
 
-export interface IConnectionConfiguration {
+export type TConnectionConfiguration = {
   sipServerIp: string;
   sipServerUrl: string;
   displayName: string;
+  authorizationUser: string;
   register?: boolean;
   user?: string;
   password?: string;
-}
+};
 
 export interface ConfigurationManagerDependencies {
   getUa: () => UA | undefined;
 }
 
 export default class ConfigurationManager {
-  private data: IConnectionConfiguration | undefined;
+  private data: TConnectionConfiguration | undefined;
 
   private readonly getUa: () => UA | undefined;
 
@@ -34,7 +35,7 @@ export default class ConfigurationManager {
   /**
    * Получает текущую конфигурацию подключения
    */
-  public get(): IConnectionConfiguration | undefined {
+  public get(): TConnectionConfiguration | undefined {
     if (this.data === undefined) {
       return undefined;
     }
@@ -45,7 +46,7 @@ export default class ConfigurationManager {
   /**
    * Устанавливает конфигурацию подключения
    */
-  public set(data: IConnectionConfiguration | undefined): void {
+  public set(data: TConnectionConfiguration | undefined): void {
     if (data === undefined) {
       this.data = undefined;
 
@@ -58,9 +59,9 @@ export default class ConfigurationManager {
   /**
    * Обновляет конфигурацию подключения
    */
-  public update<K extends keyof IConnectionConfiguration>(
+  public update<K extends keyof TConnectionConfiguration>(
     key: K,
-    value: IConnectionConfiguration[K],
+    value: TConnectionConfiguration[K],
   ): void {
     if (this.data === undefined) {
       throw new Error('data is not exist');

@@ -28,17 +28,24 @@ describe('channels notify', () => {
   it('wait channels notify event authorized', async () => {
     expect.assertions(1);
 
-    const result = await sipConnector.connect(dataForConnectionWithAuthorization);
-    const { ua } = result;
+    await sipConnector.connect(dataForConnectionWithAuthorization);
 
     await sipConnector.call({ number, mediaStream });
 
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
       sipConnector.on('api:channels:notify', (channels) => {
         expect(channels).toEqual(channelsData);
 
         resolve();
       });
+
+      const { ua } = sipConnector.connectionManager;
+
+      if (!ua) {
+        reject(new Error('UA not initialized'));
+
+        return;
+      }
 
       JsSIP.triggerNewSipEvent(ua, channelsHeaders);
     });
@@ -47,12 +54,19 @@ describe('channels notify', () => {
   it('wait channels notify event unauthorized', async () => {
     expect.assertions(1);
 
-    const result = await sipConnector.connect(dataForConnectionWithoutAuthorization);
-    const { ua } = result;
+    await sipConnector.connect(dataForConnectionWithoutAuthorization);
 
     await sipConnector.call({ number, mediaStream });
 
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
+      const { ua } = sipConnector.connectionManager;
+
+      if (!ua) {
+        reject(new Error('UA not initialized'));
+
+        return;
+      }
+
       sipConnector.on('api:channels:notify', (channels) => {
         expect(channels).toEqual(channelsData);
 

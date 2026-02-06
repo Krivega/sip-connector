@@ -27,12 +27,19 @@ describe('conference participant token issued notify', () => {
   it('event conference:participant-token-issued', async () => {
     expect.assertions(1);
 
-    const result = await sipConnector.connect(dataForConnectionWithoutAuthorization);
-    const { ua } = result;
+    await sipConnector.connect(dataForConnectionWithoutAuthorization);
 
     await sipConnector.call({ number, mediaStream });
 
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
+      const { ua } = sipConnector.connectionManager;
+
+      if (!ua) {
+        reject(new Error('UA not initialized'));
+
+        return;
+      }
+
       sipConnector.on('api:conference:participant-token-issued', (data) => {
         expect(data).toEqual(conferenceParticipantTokenIssuedData);
 

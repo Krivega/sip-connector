@@ -13,7 +13,7 @@ import type {
   UA,
   UnRegisteredEvent,
 } from '@krivega/jssip';
-import type { TConnectionConfigurationWithUa } from '@/ConnectionManager';
+import type { TConnectionConfiguration } from '@/ConnectionManager';
 import type { TInboundStats, TOutboundStats } from '@/StatsPeerConnection';
 import type { TJsSIP } from '@/types';
 
@@ -145,11 +145,12 @@ describe('SipConnector', () => {
 
     sipConnector.on('connected-with-configuration-from-out-of-call', handler);
 
-    const testConfiguration = {
+    const testConfiguration: TConnectionConfiguration = {
       displayName: 'Test User',
       sipServerIp: 'sip.example.com',
       sipServerUrl: 'wss://sip.example.com/ws',
-    } as unknown as TConnectionConfigurationWithUa;
+      authorizationUser: 'test-user',
+    };
 
     sipConnector.connectionManager.events.trigger(
       'connected-with-configuration',
@@ -166,11 +167,12 @@ describe('SipConnector', () => {
 
     sipConnector.on('connected-with-configuration-from-out-of-call', handler);
 
-    const testConfiguration = {
+    const testConfiguration: TConnectionConfiguration = {
       displayName: 'Test User',
       sipServerIp: 'sip.example.com',
       sipServerUrl: 'wss://sip.example.com/ws',
-    } as unknown as TConnectionConfigurationWithUa;
+      authorizationUser: 'test-user',
+    };
 
     sipConnector.connectionManager.events.trigger(
       'connected-with-configuration',
@@ -230,7 +232,7 @@ describe('SipConnector', () => {
 
     jest
       .spyOn(connectionQueueManager, 'connect')
-      .mockResolvedValue({} as unknown as TConnectionConfigurationWithUa);
+      .mockResolvedValue({} as unknown as TConnectionConfiguration);
     jest.spyOn(connectionQueueManager, 'disconnect').mockResolvedValue(undefined);
 
     await sipConnector.connect({
@@ -263,15 +265,14 @@ describe('SipConnector', () => {
       .spyOn(cm, 'tryRegister')
       .mockResolvedValue({ response: {} as IncomingResponse } as RegisteredEvent);
 
-    jest.spyOn(cm, 'getConnectionConfiguration').mockReturnValue({
+    const testConfiguration: TConnectionConfiguration = {
       displayName: 'X',
       sipServerIp: 'sip.example.com',
       sipServerUrl: 'wss://sip.example.com/ws',
-    } as unknown as {
-      displayName: string;
-      sipServerIp: string;
-      sipServerUrl: string;
-    });
+      authorizationUser: 'test-user',
+    };
+
+    jest.spyOn(cm, 'getConnectionConfiguration').mockReturnValue(testConfiguration);
 
     await sipConnector.set({ displayName: 'Test' });
     await sipConnector.sendOptions('sip:test@example.com', 'test', ['X-Test: value']);
@@ -288,6 +289,7 @@ describe('SipConnector', () => {
     expect(sipConnector.isConfigured()).toBe(true);
     expect(sipConnector.getConnectionConfiguration()).toEqual({
       displayName: 'X',
+      authorizationUser: 'test-user',
       sipServerIp: 'sip.example.com',
       sipServerUrl: 'wss://sip.example.com/ws',
     });
@@ -808,7 +810,7 @@ describe('SipConnector', () => {
 
       jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
         sipServerUrl: 'wss://test.example.com/ws',
-      } as unknown as TConnectionConfigurationWithUa);
+      } as unknown as TConnectionConfiguration);
 
       const sendOfferSpy = jest.spyOn(tools, 'sendOffer').mockResolvedValue({
         type: 'answer',
@@ -860,7 +862,7 @@ describe('SipConnector', () => {
     it('должен выбрасывать ошибку в sendOffer, если sipServerUrl не определен', async () => {
       jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
         sipServerUrl: undefined,
-      } as unknown as TConnectionConfigurationWithUa);
+      } as unknown as TConnectionConfiguration);
 
       const setCallRoleSpectatorSpy = jest.spyOn(sipConnector.callManager, 'setCallRoleSpectator');
       const audioId = 'test-audio-id';
@@ -1242,7 +1244,7 @@ describe('SipConnector', () => {
 
       jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
         sipServerUrl: serverUrl,
-      } as unknown as TConnectionConfigurationWithUa);
+      } as unknown as TConnectionConfiguration);
 
       const sendOfferSpy = jest.spyOn(tools, 'sendOffer').mockResolvedValue(expectedAnswer);
 
@@ -1272,7 +1274,7 @@ describe('SipConnector', () => {
     it('должен выбрасывать ошибку, если sipServerUrl не определен', async () => {
       jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
         sipServerUrl: undefined,
-      } as unknown as TConnectionConfigurationWithUa);
+      } as unknown as TConnectionConfiguration);
 
       const offer: RTCSessionDescriptionInit = {
         type: 'offer',
@@ -1303,7 +1305,7 @@ describe('SipConnector', () => {
 
       jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
         sipServerUrl: serverUrl,
-      } as unknown as TConnectionConfigurationWithUa);
+      } as unknown as TConnectionConfiguration);
 
       jest.spyOn(sipConnector.callManager, 'getToken').mockReturnValue(testToken);
 
@@ -1349,7 +1351,7 @@ describe('SipConnector', () => {
 
       jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
         sipServerUrl: serverUrl,
-      } as unknown as TConnectionConfigurationWithUa);
+      } as unknown as TConnectionConfiguration);
 
       jest.spyOn(sipConnector.callManager, 'getToken').mockReturnValue(testToken);
 
@@ -1389,7 +1391,7 @@ describe('SipConnector', () => {
 
       jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
         sipServerUrl: serverUrl,
-      } as unknown as TConnectionConfigurationWithUa);
+      } as unknown as TConnectionConfiguration);
 
       const sendOfferSpy = jest.spyOn(tools, 'sendOffer').mockResolvedValue({
         type: 'answer',

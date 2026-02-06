@@ -19,8 +19,8 @@
 | `connection:connect-started`                    | Генерируется при начале процесса подключения (до инициализации UA)              | `Record<string, never>`                        |
 | `connection:connect-parameters-resolve-success` | Генерируется при успешном разрешении параметров подключения                     | `TParametersConnection`                        |
 | `connection:connect-parameters-resolve-failed`  | Генерируется при ошибке разрешения параметров подключения                       | `unknown`                                      |
-| `connection:connect-succeeded`                  | Генерируется при успешном завершении процесса подключения                       | `TConnectionConfigurationWithUa`               |
-| `connection:connected-with-configuration`       | Генерируется при установлении соединения с полной конфигурацией                 | `TConnectionConfigurationWithUa`               |
+| `connection:connect-succeeded`                  | Генерируется при успешном завершении процесса подключения                       | `TConnectionConfiguration`                     |
+| `connection:connected-with-configuration`       | Генерируется при установлении соединения с полной конфигурацией                 | `TConnectionConfiguration`                     |
 | `connection:connect-failed`                     | Генерируется при неудачной попытке подключения                                  | `unknown`                                      |
 
 ## Структуры данных
@@ -45,16 +45,16 @@
 }
 ```
 
-### `TConnectionConfigurationWithUa`
+### `TConnectionConfiguration`
 
 ```typescript
 {
   sipServerIp: string;
   sipServerUrl: string;
   displayName: string;
+  authorizationUser: string;
   register: boolean;
   user?: string;
   password?: string;
-  ua: UA; // JsSIP User Agent instance
 }
 ```

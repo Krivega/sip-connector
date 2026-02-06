@@ -13,7 +13,8 @@ import type {
   UnRegisteredEvent,
   RegistrationFailedEvent,
 } from '@krivega/jssip';
-import type { TConnectionConfigurationWithUa, TParametersConnection } from './ConnectionFlow';
+import type { TConnectionConfiguration } from './ConfigurationManager';
+import type { TParametersConnection } from './ConnectionFlow';
 
 export enum EEvent {
   CONNECTING = 'connecting',
@@ -70,8 +71,8 @@ export type TEventMap = {
   newMessage: IncomingMessageEvent | OutgoingMessageEvent;
   sipEvent: { event: unknown; request: IncomingRequest };
   'connect-started': Record<string, never>;
-  'connect-succeeded': TConnectionConfigurationWithUa;
-  'connected-with-configuration': TConnectionConfigurationWithUa;
+  'connect-succeeded': TConnectionConfiguration;
+  'connected-with-configuration': TConnectionConfiguration;
   'connect-failed': unknown;
   'connect-parameters-resolve-success': TParametersConnection;
   'connect-parameters-resolve-failed': unknown;

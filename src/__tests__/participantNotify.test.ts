@@ -30,17 +30,24 @@ describe('participant notify', () => {
   it('wait participant notify event added-to-list-moderators', async () => {
     expect.assertions(1);
 
-    const result = await sipConnector.connect(dataForConnectionWithAuthorization);
-    const { ua } = result;
+    await sipConnector.connect(dataForConnectionWithAuthorization);
 
     await sipConnector.call({ number, mediaStream });
 
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
       sipConnector.on('api:participant:added-to-list-moderators', (data) => {
         expect(data).toEqual(addedToListModeratorsData);
 
         resolve();
       });
+
+      const { ua } = sipConnector.connectionManager;
+
+      if (!ua) {
+        reject(new Error('UA not initialized'));
+
+        return;
+      }
 
       JsSIP.triggerNewSipEvent(ua, addedToListModeratorsHeaders);
     });
@@ -49,12 +56,19 @@ describe('participant notify', () => {
   it('wait participant notify event removed-from-list-moderators', async () => {
     expect.assertions(1);
 
-    const result = await sipConnector.connect(dataForConnectionWithAuthorization);
-    const { ua } = result;
+    await sipConnector.connect(dataForConnectionWithAuthorization);
 
     await sipConnector.call({ number, mediaStream });
 
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
+      const { ua } = sipConnector.connectionManager;
+
+      if (!ua) {
+        reject(new Error('UA not initialized'));
+
+        return;
+      }
+
       sipConnector.on('api:participant:removed-from-list-moderators', (data) => {
         expect(data).toEqual(removedFromListModeratorsData);
 

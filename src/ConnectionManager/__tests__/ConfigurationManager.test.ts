@@ -2,7 +2,7 @@ import UAMock from '@/__fixtures__/UA.mock';
 import ConfigurationManager from '../ConfigurationManager';
 
 import type { UA, WebSocketInterface } from '@krivega/jssip';
-import type { IConnectionConfiguration } from '../ConfigurationManager';
+import type { TConnectionConfiguration } from '../ConfigurationManager';
 
 describe('ConfigurationManager', () => {
   let configurationManager: ConfigurationManager;
@@ -66,10 +66,11 @@ describe('ConfigurationManager', () => {
     });
 
     it('должен возвращать копию конфигурации', () => {
-      const testConfig: IConnectionConfiguration = {
+      const testConfig: TConnectionConfiguration = {
         sipServerIp: 'sip.test.com',
         sipServerUrl: 'wss://sip.test.com/ws',
         displayName: 'Test User',
+        authorizationUser: 'testuser',
         register: true,
         user: 'testuser',
         password: 'testpass',
@@ -86,10 +87,11 @@ describe('ConfigurationManager', () => {
 
   describe('set', () => {
     it('должен устанавливать конфигурацию', () => {
-      const testConfig: IConnectionConfiguration = {
+      const testConfig: TConnectionConfiguration = {
         sipServerIp: 'sip.test.com',
         sipServerUrl: 'wss://sip.test.com/ws',
         displayName: 'Test User',
+        authorizationUser: 'testuser',
         register: true,
         user: 'testuser',
         password: 'testpass',
@@ -101,16 +103,18 @@ describe('ConfigurationManager', () => {
     });
 
     it('должен перезаписывать существующую конфигурацию', () => {
-      const initialConfig: IConnectionConfiguration = {
+      const initialConfig: TConnectionConfiguration = {
         sipServerIp: 'old.test.com',
         sipServerUrl: 'wss://old.test.com/ws',
         displayName: 'Old User',
+        authorizationUser: 'testuser',
       };
 
-      const newConfig: IConnectionConfiguration = {
+      const newConfig: TConnectionConfiguration = {
         sipServerIp: 'new.test.com',
         sipServerUrl: 'wss://new.test.com/ws',
         displayName: 'New User',
+        authorizationUser: 'testuser2',
         register: true,
       };
 
@@ -135,6 +139,7 @@ describe('ConfigurationManager', () => {
         sipServerUrl: 'wss://sip.test.com/ws',
         displayName,
         register: true,
+        authorizationUser: 'testuser',
       });
 
       expect(configurationManager.isRegister()).toBe(true);
@@ -145,10 +150,11 @@ describe('ConfigurationManager', () => {
       const serverUrl = 'sip.test.com';
 
       configurationManager.set({
+        displayName,
         sipServerIp: serverUrl,
         sipServerUrl: 'wss://sip.test.com/ws',
-        displayName,
         register: false,
+        authorizationUser: 'testuser',
       });
 
       expect(configurationManager.isRegister()).toBe(false);
@@ -167,6 +173,7 @@ describe('ConfigurationManager', () => {
         sipServerIp,
         sipServerUrl: 'wss://sip.test.com/ws',
         displayName: 'Test User',
+        authorizationUser: 'testuser',
       });
 
       expect(configurationManager.getSipServerIp()).toBe(sipServerIp);
@@ -185,6 +192,7 @@ describe('ConfigurationManager', () => {
         sipServerUrl,
         sipServerIp: '192.168.0.1',
         displayName: 'Test User',
+        authorizationUser: 'testuser',
       });
 
       expect(configurationManager.getSipServerUrl()).toBe(sipServerUrl);
@@ -201,9 +209,10 @@ describe('ConfigurationManager', () => {
       const serverUrl = 'sip.test.com';
 
       configurationManager.set({
+        displayName,
         sipServerIp: serverUrl,
         sipServerUrl: 'wss://sip.test.com/ws',
-        displayName,
+        authorizationUser: 'testuser',
       });
 
       expect(configurationManager.getDisplayName()).toBe(displayName);
@@ -223,6 +232,7 @@ describe('ConfigurationManager', () => {
       configurationManager.set({
         sipServerIp: serverUrl,
         sipServerUrl: 'wss://sip.test.com/ws',
+        authorizationUser: 'testuser',
         displayName,
         user,
       });
@@ -244,6 +254,7 @@ describe('ConfigurationManager', () => {
       configurationManager.set({
         sipServerIp: serverUrl,
         sipServerUrl: 'wss://sip.test.com/ws',
+        authorizationUser: 'testuser',
         displayName,
         password,
       });
@@ -262,10 +273,11 @@ describe('ConfigurationManager', () => {
       const serverUrl = 'sip.test.com';
 
       configurationManager.set({
+        displayName,
         sipServerIp: serverUrl,
         sipServerUrl: 'wss://sip.test.com/ws',
-        displayName,
         register: true,
+        authorizationUser: 'testuser',
       });
 
       expect(configurationManager.isRegisterEnabled()).toBe(true);
@@ -276,9 +288,10 @@ describe('ConfigurationManager', () => {
       const serverUrl = 'sip.test.com';
 
       configurationManager.set({
+        displayName,
         sipServerIp: serverUrl,
         sipServerUrl: 'wss://sip.test.com/ws',
-        displayName,
+        authorizationUser: 'testuser',
         register: false,
       });
 
@@ -288,13 +301,14 @@ describe('ConfigurationManager', () => {
 
   describe('clear', () => {
     it('должен очищать конфигурацию', () => {
-      const testConfig: IConnectionConfiguration = {
+      const testConfig: TConnectionConfiguration = {
         sipServerIp: 'sip.test.com',
         sipServerUrl: 'wss://sip.test.com/ws',
         displayName: 'Test User',
         register: true,
         user: 'testuser',
         password: 'testpass',
+        authorizationUser: 'testuser',
       };
 
       configurationManager.set(testConfig);
@@ -304,13 +318,14 @@ describe('ConfigurationManager', () => {
     });
 
     it('должен очищать все поля конфигурации', () => {
-      const testConfig: IConnectionConfiguration = {
+      const testConfig: TConnectionConfiguration = {
         sipServerIp: 'sip.test.com',
         sipServerUrl: 'wss://sip.test.com/ws',
         displayName: 'Test User',
         register: true,
         user: 'testuser',
         password: 'testpass',
+        authorizationUser: 'testuser',
       };
 
       configurationManager.set(testConfig);
@@ -327,10 +342,11 @@ describe('ConfigurationManager', () => {
 
   describe('update', () => {
     it('должен обновлять конфигурацию', () => {
-      const testConfig: IConnectionConfiguration = {
+      const testConfig: TConnectionConfiguration = {
         sipServerIp: 'sip.test.com',
         sipServerUrl: 'wss://sip.test.com/ws',
         displayName: 'test user',
+        authorizationUser: 'testuser',
       };
 
       configurationManager.set(testConfig);
@@ -351,13 +367,14 @@ describe('ConfigurationManager', () => {
 
   describe('Интеграционные сценарии', () => {
     it('должен корректно обрабатывать полную конфигурацию', () => {
-      const fullConfig: IConnectionConfiguration = {
+      const fullConfig: TConnectionConfiguration = {
         sipServerIp: 'sip.test.com',
         sipServerUrl: 'wss://sip.test.com/ws',
         displayName: 'Test User',
         register: true,
         user: 'testuser',
         password: 'testpass',
+        authorizationUser: 'testuser',
       };
 
       configurationManager.set(fullConfig);
@@ -371,10 +388,11 @@ describe('ConfigurationManager', () => {
     });
 
     it('должен корректно обрабатывать частичную конфигурацию', () => {
-      const partialConfig: IConnectionConfiguration = {
+      const partialConfig: TConnectionConfiguration = {
         sipServerIp: 'sip.test.com',
         sipServerUrl: 'wss://sip.test.com/ws',
         displayName: 'Test User',
+        authorizationUser: 'testuser',
       };
 
       configurationManager.set(partialConfig);
@@ -403,12 +421,13 @@ describe('ConfigurationManager', () => {
 
   describe('Граничные случаи', () => {
     it('должен корректно обрабатывать пустые строки', () => {
-      const configWithEmptyStrings: IConnectionConfiguration = {
+      const configWithEmptyStrings: TConnectionConfiguration = {
         sipServerIp: '',
         sipServerUrl: '',
         displayName: '',
         user: '',
         password: '',
+        authorizationUser: '',
       };
 
       configurationManager.set(configWithEmptyStrings);
@@ -420,10 +439,11 @@ describe('ConfigurationManager', () => {
     });
 
     it('должен корректно обрабатывать undefined значения', () => {
-      const configWithUndefined: IConnectionConfiguration = {
+      const configWithUndefined: TConnectionConfiguration = {
         sipServerIp: 'sip.test.com',
         sipServerUrl: 'wss://sip.test.com/ws',
         displayName: 'Test User',
+        authorizationUser: 'testuser',
         user: undefined,
         password: undefined,
         register: undefined,

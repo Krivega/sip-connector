@@ -30,51 +30,72 @@ describe('participants moveRequests', () => {
     });
   });
   it('event participation:accepting-word-request', async () => {
-    const result = await sipConnector.connect(dataForConnectionWithAuthorization);
-    const { ua } = result;
+    await sipConnector.connect(dataForConnectionWithAuthorization);
 
     await sipConnector.call({ number, mediaStream });
 
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
       sipConnector.on('api:participation:accepting-word-request', (data) => {
         expect(data).toEqual(acceptingWordRequestData);
 
         resolve();
       });
 
+      const { ua } = sipConnector.connectionManager;
+
+      if (!ua) {
+        reject(new Error('UA not initialized'));
+
+        return;
+      }
+
       JsSIP.triggerNewSipEvent(ua, acceptingWordRequestHeaders);
     });
   });
 
   it('event participation:cancelling-word-request', async () => {
-    const result = await sipConnector.connect(dataForConnectionWithAuthorization);
-    const { ua } = result;
+    await sipConnector.connect(dataForConnectionWithAuthorization);
 
     await sipConnector.call({ number, mediaStream });
 
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
       sipConnector.on('api:participation:cancelling-word-request', (data) => {
         expect(data).toEqual(cancellingWordRequestData);
 
         resolve();
       });
 
+      const { ua } = sipConnector.connectionManager;
+
+      if (!ua) {
+        reject(new Error('UA not initialized'));
+
+        return;
+      }
+
       JsSIP.triggerNewSipEvent(ua, cancellingWordRequestHeaders);
     });
   });
 
   it('event participant:move-request-to-stream', async () => {
-    const result = await sipConnector.connect(dataForConnectionWithAuthorization);
-    const { ua } = result;
+    await sipConnector.connect(dataForConnectionWithAuthorization);
 
     await sipConnector.call({ number, mediaStream });
 
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
       sipConnector.on('api:participant:move-request-to-stream', (data) => {
         expect(data).toEqual(moveRequestToStreamData);
 
         resolve();
       });
+
+      const { ua } = sipConnector.connectionManager;
+
+      if (!ua) {
+        reject(new Error('UA not initialized'));
+
+        return;
+      }
 
       JsSIP.triggerNewSipEvent(ua, moveRequestToStreamHeaders);
     });

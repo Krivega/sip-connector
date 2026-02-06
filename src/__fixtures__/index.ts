@@ -26,6 +26,7 @@ export const dataForConnectionWithAuthorization = {
   user,
   password: PASSWORD_CORRECT,
   register: true,
+  authorizationUser: user,
 };
 export const dataForConnectionWithAuthorizationWithDisplayName = {
   ...dataForConnectionWithAuthorization,
@@ -34,6 +35,7 @@ export const dataForConnectionWithAuthorizationWithDisplayName = {
 export const dataForConnectionWithoutAuthorization = {
   ...baseDataForConnection,
   displayName,
+  authorizationUser: user,
   register: false,
 };
 

@@ -6,7 +6,8 @@ export {
   createEvents,
 } from './events';
 
-export type { TParametersConnection, TConnectionConfigurationWithUa } from './ConnectionFlow';
+export type { TParametersConnection } from './ConnectionFlow';
+export type { TConnectionConfiguration } from './ConfigurationManager';
 export type {
   TEvents as TConnectionManagerEvents,
   TEventMap as TConnectionManagerEventMap,

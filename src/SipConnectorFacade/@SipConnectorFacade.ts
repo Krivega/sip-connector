@@ -9,7 +9,7 @@ import hasPurgatory from '@/tools/hasPurgatory';
 
 import type { EContentUseLicense } from '@/ApiManager';
 import type { TOnAddedTransceiver, TRemoteStreams } from '@/CallManager';
-import type { TParametersConnection, TConnectionConfigurationWithUa } from '@/ConnectionManager';
+import type { TParametersConnection, TConnectionConfiguration } from '@/ConnectionManager';
 import type { TContentHint } from '@/PresentationManager';
 import type { SipConnector } from '@/SipConnector';
 import type { TStatsManagerEventMap } from '@/StatsManager';
@@ -204,7 +204,7 @@ class SipConnectorFacade implements IProxyMethods {
       hasReadyForConnection?: () => boolean;
     },
   ): Promise<
-    | { configuration: TConnectionConfigurationWithUa; isSuccessful: true }
+    | { configuration: TConnectionConfiguration; isSuccessful: true }
     | { configuration: undefined; isSuccessful: false }
   > => {
     return this.sipConnector
@@ -213,7 +213,7 @@ class SipConnectorFacade implements IProxyMethods {
         debug('connectToServer then');
 
         return { configuration: connectionConfigurationWithUa, isSuccessful: true } as {
-          configuration: TConnectionConfigurationWithUa;
+          configuration: TConnectionConfiguration;
           isSuccessful: true;
         };
       })

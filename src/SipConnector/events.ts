@@ -14,10 +14,7 @@ import { VIDEO_SENDING_BALANCER_MANAGER_EVENT_NAMES } from '@/VideoSendingBalanc
 import type { TApiManagerEventMap } from '@/ApiManager';
 import type { TAutoConnectorManagerEventMap } from '@/AutoConnectorManager';
 import type { TCallManagerEventMap } from '@/CallManager';
-import type {
-  TConnectionConfigurationWithUa,
-  TConnectionManagerEventMap,
-} from '@/ConnectionManager';
+import type { TConnectionConfiguration, TConnectionManagerEventMap } from '@/ConnectionManager';
 import type { TIncomingCallManagerEventMap } from '@/IncomingCallManager';
 import type { TMainStreamHealthMonitorEventMap } from '@/MainStreamHealthMonitor';
 import type { TPresentationManagerEventMap } from '@/PresentationManager';
@@ -86,7 +83,7 @@ type PrefixedEventMap<T extends Record<string, unknown>, Prefix extends string> 
 
 type TSipConnectorEventMap = {
   'disconnected-from-out-of-call': Record<string, never>;
-  'connected-with-configuration-from-out-of-call': TConnectionConfigurationWithUa;
+  'connected-with-configuration-from-out-of-call': TConnectionConfiguration;
   'stopped-presentation-by-server-command': Record<string, never>;
 };
 

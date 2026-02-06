@@ -12,6 +12,7 @@ import UAFactory from '../UAFactory';
 
 import type { Socket, UA, UAConfigurationParams, WebSocketInterface } from '@krivega/jssip';
 import type { TJsSIP } from '@/types';
+import type { TConnectionConfiguration } from '../ConfigurationManager';
 import type { TEvents } from '../events';
 
 const SIP_SERVER_URL = 'sip.example.com';
@@ -34,15 +35,7 @@ describe('ConnectionFlow', () => {
     uaInstance = ua as UAMock | undefined;
   });
 
-  type TConnectionConfigValue = {
-    sipServerIp: string;
-    sipServerUrl: string;
-    displayName: string;
-    register?: boolean;
-    user?: string;
-    password?: string;
-  };
-  type TConnectionConfig = TConnectionConfigValue | undefined;
+  type TConnectionConfig = TConnectionConfiguration | undefined;
 
   let connectionConfiguration: TConnectionConfig = undefined;
 
@@ -55,7 +48,7 @@ describe('ConnectionFlow', () => {
   });
 
   const updateConnectionConfiguration = jest.fn(
-    <K extends keyof TConnectionConfigValue>(key: K, value: TConnectionConfigValue[K]) => {
+    <K extends keyof TConnectionConfiguration>(key: K, value: TConnectionConfiguration[K]) => {
       if (connectionConfiguration) {
         connectionConfiguration[key] = value;
       }
@@ -89,7 +82,6 @@ describe('ConnectionFlow', () => {
     });
 
     connectionFlow = new ConnectionFlow({
-      JsSIP: jssip as unknown as TJsSIP,
       events,
       uaFactory,
       stateMachine,
@@ -141,15 +133,15 @@ describe('ConnectionFlow', () => {
       const startConnectSpy = jest.spyOn(stateMachine, 'startConnect');
       const startInitUaSpy = jest.spyOn(stateMachine, 'startInitUa');
 
-      const result = await connectionFlow.connect(parameters);
+      await connectionFlow.connect(parameters);
 
       // копируем юзер из результата в конфигурацию, чтобы тест прошел
       // так как user генерируется случайно
       // @ts-expect-error
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, no-underscore-dangle
-      configuration.uri._user = result.ua.configuration.uri._user;
+      configuration.uri._user = getUa()?.configuration.uri._user;
 
-      expect(result.ua.configuration).toEqual(configuration);
+      expect(getUa()?.configuration).toEqual(configuration);
       expect(setUa).toHaveBeenCalled();
       expect(startConnectSpy).toHaveBeenCalled();
       expect(startInitUaSpy).toHaveBeenCalled();
@@ -193,9 +185,9 @@ describe('ConnectionFlow', () => {
       const startConnectSpy = jest.spyOn(stateMachine, 'startConnect');
       const startInitUaSpy = jest.spyOn(stateMachine, 'startInitUa');
 
-      const result = await connectionFlow.connect(parameters);
+      await connectionFlow.connect(parameters);
 
-      expect(result.ua.configuration).toEqual(configuration);
+      expect(getUa()?.configuration).toEqual(configuration);
       expect(setUa).toHaveBeenCalled();
       expect(startConnectSpy).toHaveBeenCalled();
       expect(startInitUaSpy).toHaveBeenCalled();
@@ -244,6 +236,7 @@ describe('ConnectionFlow', () => {
         sipServerIp: SIP_SERVER_IP,
         sipServerUrl: SIP_SERVER_URL,
         displayName: 'Old Name',
+        authorizationUser: 'testuser',
       };
 
       const setSpy = jest.spyOn(uaMock, 'set');
@@ -271,6 +264,7 @@ describe('ConnectionFlow', () => {
         sipServerIp: SIP_SERVER_IP,
         sipServerUrl: SIP_SERVER_URL,
         displayName: 'Same Name',
+        authorizationUser: 'testuser',
       };
 
       await expect(connectionFlow.set({ displayName: 'Same Name' })).rejects.toThrow(
@@ -284,6 +278,7 @@ describe('ConnectionFlow', () => {
         sipServerIp: SIP_SERVER_IP,
         sipServerUrl: SIP_SERVER_URL,
         displayName: 'Any Name',
+        authorizationUser: 'testuser',
       };
 
       await expect(connectionFlow.set({ displayName: 'Another Name' })).rejects.toThrow(

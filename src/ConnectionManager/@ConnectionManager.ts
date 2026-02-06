@@ -11,13 +11,8 @@ import { createNotReadyForConnectionError, resolveParameters } from './utils';
 import type { RegisteredEvent, UA, UnRegisteredEvent, WebSocketInterface } from '@krivega/jssip';
 import type { TGetUri } from '@/CallManager';
 import type { TJsSIP } from '@/types';
-import type {
-  TConnect,
-  TConnectionConfiguration,
-  TConnectionConfigurationWithUa,
-  TParametersConnection,
-  TSet,
-} from './ConnectionFlow';
+import type { TConnectionConfiguration } from './ConfigurationManager';
+import type { TConnect, TParametersConnection, TSet } from './ConnectionFlow';
 import type { TEventMap, TEvents } from './events';
 import type { TParametersCheckTelephony } from './SipOperations';
 
@@ -45,11 +40,7 @@ export default class ConnectionManager {
 
   private readonly configurationManager: ConfigurationManager;
 
-  private readonly JsSIP: TJsSIP;
-
   public constructor({ JsSIP }: { JsSIP: TJsSIP }) {
-    this.JsSIP = JsSIP;
-
     this.events = createEvents();
     this.uaFactory = new UAFactory(JsSIP);
     this.registrationManager = new RegistrationManager({
@@ -68,7 +59,6 @@ export default class ConnectionManager {
     });
 
     this.connectionFlow = new ConnectionFlow({
-      JsSIP: this.JsSIP,
       events: this.events,
       uaFactory: this.uaFactory,
       stateMachine: this.stateMachine,
@@ -135,7 +125,7 @@ export default class ConnectionManager {
   public connect = async (
     parameters: TConnectParameters,
     options?: TConnectOptions,
-  ): Promise<TConnectionConfigurationWithUa> => {
+  ): Promise<TConnectionConfiguration> => {
     return this.disconnect()
       .catch((error: unknown) => {
         logger('connect: disconnect error', error);

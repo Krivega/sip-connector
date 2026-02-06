@@ -12,7 +12,7 @@ import type {
   WebSocketInterface,
 } from '@krivega/jssip';
 import type { TGetUri } from '../CallManager';
-import type { TJsSIP } from '../types';
+import type { TConnectionConfiguration } from './ConfigurationManager';
 import type { ConnectionStateMachine } from './ConnectionStateMachine';
 import type { TEvents } from './events';
 import type RegistrationManager from './RegistrationManager';
@@ -39,20 +39,10 @@ export type TParametersConnection = TOptionsExtraHeaders & {
   connectionRecoveryMaxInterval?: number;
 };
 
-export type TConnectionConfiguration = {
-  sipServerIp: string;
-  sipServerUrl: string;
-  displayName: string;
-  register?: boolean;
-  user?: string;
-  password?: string;
-};
-export type TConnectionConfigurationWithUa = TConnectionConfiguration & { ua: UA };
-
 export type TConnect = (
   parameters: TParametersConnection,
   options?: { callLimit?: number },
-) => Promise<TConnectionConfigurationWithUa>;
+) => Promise<TConnectionConfiguration>;
 
 export type TSet = (parameters: { displayName?: string }) => Promise<boolean>;
 
@@ -60,7 +50,6 @@ type TInitUa = (parameters: TParametersConnection) => Promise<UA>;
 type TStart = () => Promise<UA>;
 
 interface IDependencies {
-  JsSIP: TJsSIP;
   events: TEvents;
   uaFactory: UAFactory;
   stateMachine: ConnectionStateMachine;
@@ -79,10 +68,8 @@ interface IDependencies {
 
 export default class ConnectionFlow {
   private cancelableConnectWithRepeatedCalls:
-    | ReturnType<typeof repeatedCallsAsync<TConnectionConfigurationWithUa>>
+    | ReturnType<typeof repeatedCallsAsync<TConnectionConfiguration>>
     | undefined;
-
-  private readonly JsSIP: IDependencies['JsSIP'];
 
   private readonly events: IDependencies['events'];
 
@@ -107,7 +94,6 @@ export default class ConnectionFlow {
   private readonly setSocket: IDependencies['setSocket'];
 
   public constructor(dependencies: IDependencies) {
-    this.JsSIP = dependencies.JsSIP;
     this.events = dependencies.events;
     this.uaFactory = dependencies.uaFactory;
     this.stateMachine = dependencies.stateMachine;
@@ -205,7 +191,7 @@ export default class ConnectionFlow {
 
     this.stateMachine.startConnect();
 
-    this.cancelableConnectWithRepeatedCalls = repeatedCallsAsync<TConnectionConfigurationWithUa>({
+    this.cancelableConnectWithRepeatedCalls = repeatedCallsAsync<TConnectionConfiguration>({
       targetFunction,
       isComplete,
       callLimit,
@@ -214,9 +200,8 @@ export default class ConnectionFlow {
     });
 
     return this.cancelableConnectWithRepeatedCalls.then((response?: unknown) => {
-      // @ts-expect-error
-      if ('ua' in response && response.ua instanceof this.JsSIP.UA) {
-        return response as TConnectionConfigurationWithUa;
+      if (typeof response === 'object' && response !== null && 'authorizationUser' in response) {
+        return response as TConnectionConfiguration;
       }
 
       throw response;
@@ -254,17 +239,14 @@ export default class ConnectionFlow {
       .then(async () => {
         return this.start();
       })
-      .then((ua) => {
+      .then(() => {
         const connectionConfiguration = this.getConnectionConfiguration();
 
         if (connectionConfiguration === undefined) {
           throw new Error('connectionConfiguration has not defined');
         }
 
-        return {
-          ...connectionConfiguration,
-          ua,
-        };
+        return connectionConfiguration;
       });
   };
 
@@ -284,16 +266,6 @@ export default class ConnectionFlow {
     extraHeaders = [],
   }) => {
     this.stateMachine.startInitUa();
-
-    // Сохраняем конфигурацию для дальнейшего использования
-    this.setConnectionConfiguration({
-      sipServerIp,
-      sipServerUrl,
-      displayName,
-      register,
-      user,
-      password,
-    });
 
     // Отключаем текущее соединение, если оно есть
     const currentUa = this.getUa();
@@ -322,6 +294,19 @@ export default class ConnectionFlow {
       },
       this.events,
     );
+
+    const authorizationUser = ua.configuration.uri.user;
+
+    // Сохраняем конфигурацию для дальнейшего использования
+    this.setConnectionConfiguration({
+      sipServerIp,
+      sipServerUrl,
+      displayName,
+      authorizationUser,
+      register,
+      user,
+      password,
+    });
 
     // Сохраняем UA и связанные объекты
     this.setUa(ua);
@@ -395,13 +380,9 @@ export default class ConnectionFlow {
   private proxyEvents() {
     this.events.on(EEvent.CONNECTED, () => {
       const connectionConfiguration = this.getConnectionConfiguration();
-      const ua = this.getUa();
 
-      if (connectionConfiguration !== undefined && ua !== undefined) {
-        this.events.trigger(EEvent.CONNECTED_WITH_CONFIGURATION, {
-          ...connectionConfiguration,
-          ua,
-        });
+      if (connectionConfiguration !== undefined) {
+        this.events.trigger(EEvent.CONNECTED_WITH_CONFIGURATION, connectionConfiguration);
       }
     });
   }

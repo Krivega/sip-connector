@@ -13,7 +13,7 @@ import {
   uaConfigurationWithoutAuthorizationWithoutDisplayName,
 } from '../__fixtures__';
 import UAMock, { createWebsocketHandshakeTimeoutError } from '../__fixtures__/UA.mock';
-import { doMockSipConnector, JsSIP } from '../doMock';
+import { doMockSipConnector } from '../doMock';
 import { uriWithName } from '../tools/__fixtures__/connectToServer';
 
 import type { SipConnector } from '../SipConnector';
@@ -37,9 +37,11 @@ describe('connect', () => {
   it('должен подключать пользователя с авторизацией', async () => {
     expect.assertions(1);
 
-    const result = await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.connect(dataForConnectionWithAuthorization);
 
-    expect(result.ua.configuration).toEqual(uaConfigurationWithAuthorization);
+    expect(sipConnector.connectionManager.ua?.configuration).toEqual(
+      uaConfigurationWithAuthorization,
+    );
   });
 
   it('должен отклонять подключение с неправильным паролем', async () => {
@@ -70,12 +72,12 @@ describe('connect', () => {
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
-    const result = await sipConnector.connect({
+    await sipConnector.connect({
       ...dataForConnectionWithAuthorization,
       sipServerIp: sipServerUrlChanged,
     });
 
-    expect(result.ua.configuration).toEqual({
+    expect(sipConnector.connectionManager.ua?.configuration).toEqual({
       ...uaConfigurationWithAuthorization,
       uri: uriWithName(uaConfigurationWithAuthorization.uri.user, sipServerUrlChanged),
     });
@@ -84,7 +86,8 @@ describe('connect', () => {
   it('должен подключать пользователя с авторизацией и displayName', async () => {
     expect.assertions(6);
 
-    const result = await sipConnector.connect(dataForConnectionWithAuthorizationWithDisplayName);
+    await sipConnector.connect(dataForConnectionWithAuthorizationWithDisplayName);
+
     const connectionConfiguration = sipConnector.getConnectionConfiguration();
 
     expect(connectionConfiguration?.sipServerIp).toBe(
@@ -102,15 +105,17 @@ describe('connect', () => {
     expect(connectionConfiguration?.password).toBe(
       dataForConnectionWithAuthorizationWithDisplayName.password,
     );
-    expect(result.ua.configuration).toEqual(uaConfigurationWithAuthorizationWithDisplayName);
+    expect(sipConnector.connectionManager.ua?.configuration).toEqual(
+      uaConfigurationWithAuthorizationWithDisplayName,
+    );
   });
 
   it('должен подключать пользователя без авторизации', async () => {
     expect.assertions(6);
 
-    const result = await sipConnector.connect(dataForConnectionWithoutAuthorization);
+    await sipConnector.connect(dataForConnectionWithoutAuthorization);
 
-    const { uri, ...configuration } = result.ua.configuration;
+    const { uri, ...configuration } = sipConnector.connectionManager.ua?.configuration ?? {};
     const connectionConfiguration = sipConnector.getConnectionConfiguration();
 
     expect(connectionConfiguration?.sipServerIp).toBe(
@@ -129,11 +134,9 @@ describe('connect', () => {
   it('должен подключать пользователя без авторизации и displayName', async () => {
     expect.assertions(6);
 
-    const result = await sipConnector.connect(
-      dataForConnectionWithoutAuthorizationWithoutDisplayName,
-    );
+    await sipConnector.connect(dataForConnectionWithoutAuthorizationWithoutDisplayName);
 
-    const { uri, ...configuration } = result.ua.configuration;
+    const { uri, ...configuration } = sipConnector.connectionManager.ua?.configuration ?? {};
     const connectionConfiguration = sipConnector.getConnectionConfiguration();
 
     expect(connectionConfiguration?.sipServerIp).toBe(
@@ -178,22 +181,24 @@ describe('connect', () => {
   it('должен отправлять базовые extraHeaders', async () => {
     expect.assertions(1);
 
-    const result = await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.connect(dataForConnectionWithAuthorization);
 
     // @ts-expect-error
-    expect(result.ua.registrator().extraHeaders).toEqual([]);
+    expect(sipConnector.connectionManager.ua?.registrator().extraHeaders).toEqual([]);
   });
 
   it('должен отправлять extraHeaders с remoteAddress', async () => {
     expect.assertions(1);
 
-    const result = await sipConnector.connect({
+    await sipConnector.connect({
       ...dataForConnectionWithAuthorization,
       remoteAddress,
     });
 
     // @ts-expect-error
-    expect(result.ua.registrator().extraHeaders).toEqual(extraHeadersRemoteAddress);
+    expect(sipConnector.connectionManager.ua?.registrator().extraHeaders).toEqual(
+      extraHeadersRemoteAddress,
+    );
   });
 
   it('должен отправлять расширенные extraHeaders', async () => {
@@ -201,13 +206,13 @@ describe('connect', () => {
 
     const extraHeaders = ['test'];
 
-    const result = await sipConnector.connect({
+    await sipConnector.connect({
       ...dataForConnectionWithAuthorization,
       extraHeaders,
     });
 
     // @ts-expect-error
-    expect(result.ua.registrator().extraHeaders).toEqual(extraHeaders);
+    expect(sipConnector.connectionManager.ua?.registrator().extraHeaders).toEqual(extraHeaders);
   });
 
   it('должен отправлять расширенные extraHeaders с remoteAddress', async () => {
@@ -215,14 +220,14 @@ describe('connect', () => {
 
     const extraHeaders = ['test'];
 
-    const result = await sipConnector.connect({
+    await sipConnector.connect({
       ...dataForConnectionWithAuthorization,
       remoteAddress,
       extraHeaders,
     });
 
     // @ts-expect-error
-    expect(result.ua.registrator().extraHeaders).toEqual([
+    expect(sipConnector.connectionManager.ua?.registrator().extraHeaders).toEqual([
       ...extraHeadersRemoteAddress,
       ...extraHeaders,
     ]);
@@ -232,7 +237,6 @@ describe('connect', () => {
     expect.assertions(2);
 
     UAMock.setStartError(websocketHandshakeTimeoutError);
-    JsSIP.UA = UAMock;
 
     const requestConnectMocked = jest.spyOn(
       // @ts-expect-error
@@ -258,8 +262,6 @@ describe('connect', () => {
 
     UAMock.setStartError(websocketHandshakeTimeoutError, { count: 2 });
 
-    JsSIP.UA = UAMock;
-
     const requestConnectMocked = jest.spyOn(
       // @ts-expect-error
       sipConnector.connectionManager.connectionFlow,
@@ -267,11 +269,13 @@ describe('connect', () => {
       'connectInner',
     );
 
-    const result = await sipConnector.connect(dataForConnectionWithAuthorization, {
+    await sipConnector.connect(dataForConnectionWithAuthorization, {
       callLimit: connectCallLimit,
     });
 
-    expect(result.ua.configuration).toEqual(uaConfigurationWithAuthorization);
+    expect(sipConnector.connectionManager.ua?.configuration).toEqual(
+      uaConfigurationWithAuthorization,
+    );
     expect(requestConnectMocked).toHaveBeenCalledTimes(2);
   });
 });

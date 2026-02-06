@@ -29,36 +29,52 @@ describe('webcast notify', () => {
   it('event webcast:started', async () => {
     expect.assertions(1);
 
-    const result = await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.connect(dataForConnectionWithAuthorization);
 
     await sipConnector.call({ number, mediaStream });
 
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
       sipConnector.on('api:webcast:started', (data) => {
         expect(data).toEqual(webcastStartedData);
 
         resolve();
       });
 
-      JsSIP.triggerNewSipEvent(result.ua, webcastStartedHeaders);
+      const { ua } = sipConnector.connectionManager;
+
+      if (!ua) {
+        reject(new Error('UA not initialized'));
+
+        return;
+      }
+
+      JsSIP.triggerNewSipEvent(ua, webcastStartedHeaders);
     });
   });
 
   it('event webcast:stopped', async () => {
     expect.assertions(1);
 
-    const result = await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.connect(dataForConnectionWithAuthorization);
 
     await sipConnector.call({ number, mediaStream });
 
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
       sipConnector.on('api:webcast:stopped', (data) => {
         expect(data).toEqual(webcastStoppedData);
 
         resolve();
       });
 
-      JsSIP.triggerNewSipEvent(result.ua, webcastStoppedHeaders);
+      const { ua } = sipConnector.connectionManager;
+
+      if (!ua) {
+        reject(new Error('UA not initialized'));
+
+        return;
+      }
+
+      JsSIP.triggerNewSipEvent(ua, webcastStoppedHeaders);
     });
   });
 });

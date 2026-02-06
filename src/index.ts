@@ -20,7 +20,7 @@ export { EMimeTypesVideoCodecs } from './types';
 
 export type { TSessionSnapshot } from './SessionManager';
 export type { TCustomError, TRemoteStreams } from './CallManager';
-export type { TParametersConnection, TConnectionConfigurationWithUa } from './ConnectionManager';
+export type { TParametersConnection, TConnectionConfiguration } from './ConnectionManager';
 export type { TInboundStats, TOutboundStats } from './StatsPeerConnection';
 export type { TContentHint } from './PresentationManager';
 export type { TJsSIP } from './types';

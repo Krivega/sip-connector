@@ -41,11 +41,7 @@ describe('ConnectionManager', () => {
 
   describe('connect', () => {
     it('должен успешно подключаться без регистрации', async () => {
-      const result = await connectionManager.connect(parameters);
-
-      // Проверяем, что возвращён результат с UA и он сохранён внутри ConnectionManager
-      expect(result.ua).toBeInstanceOf(UAMock);
-      expect(connectionManager.ua).toBe(result.ua);
+      await connectionManager.connect(parameters);
 
       // Конфигурация установлена
       expect(connectionManager.isConfigured()).toBe(true);
@@ -76,10 +72,8 @@ describe('ConnectionManager', () => {
         sipServerUrl: WS_DOMAIN,
       };
 
-      const result = await connectionManager.connect(parameters2);
+      await connectionManager.connect(parameters2);
 
-      // UA сохранён внутри менеджера
-      expect(connectionManager.ua).toBe(result.ua);
       // Регистрационная конфигурация установлена
       expect(connectionManager.isRegisterConfig).toBe(true);
       // UA успешно зарегистрирован
@@ -402,7 +396,6 @@ describe('ConnectionManager', () => {
 
       expect(handleSucceeded).toHaveBeenCalledWith(
         expect.objectContaining({
-          ua: connectionManager.ua,
           displayName: parameters.displayName,
           register: parameters.register,
           sipServerIp: parameters.sipServerIp,
