@@ -5,9 +5,11 @@ import flushPromises from '@/__fixtures__/flushPromises';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
 import CallManager from '../@CallManager';
+import { resolveRecvQuality } from '../quality';
 import { RemoteStreamsManager } from '../RemoteStreamsManager';
 
 import type { EndEvent, RTCSession } from '@krivega/jssip';
+import type { TRecvQuality } from '../quality';
 import type { TCallRoleSpectator, TCallRoleSpectatorSynthetic } from '../types';
 
 const mockRecvSession = (() => {
@@ -20,6 +22,8 @@ const mockRecvSession = (() => {
       call: jest.Mock;
       renegotiate: jest.Mock;
       close: jest.Mock;
+      setQuality: jest.Mock;
+      getEffectiveQuality: jest.Mock;
       config?: unknown;
       tools?: unknown;
     };
@@ -33,15 +37,19 @@ const mockRecvSession = (() => {
     const call = jest.fn().mockResolvedValue(undefined);
     const renegotiate = jest.fn().mockResolvedValue(true);
     const close = jest.fn();
+    const setQuality = jest.fn().mockResolvedValue(true);
+    const getEffectiveQuality = jest.fn().mockReturnValue('high');
 
     const inst: {
       peerConnection: typeof peerConnection;
       call: typeof call;
       renegotiate: typeof renegotiate;
       close: typeof close;
+      setQuality: typeof setQuality;
+      getEffectiveQuality: typeof getEffectiveQuality;
       config?: unknown;
       tools?: unknown;
-    } = { peerConnection, call, renegotiate, close };
+    } = { peerConnection, call, renegotiate, close, setQuality, getEffectiveQuality };
 
     state.instance = inst;
 
@@ -64,9 +72,22 @@ jest.mock('../RecvSession', () => {
     __esModule: true,
     default: jest.fn().mockImplementation((config, tools) => {
       const inst = mockRecvSession.create();
+      const configTyped = config as { quality: TRecvQuality; audioChannel: string };
 
-      inst.config = config;
+      inst.config = { ...configTyped, effectiveQuality: resolveRecvQuality(configTyped.quality) };
       inst.tools = tools;
+      inst.getEffectiveQuality = jest.fn(() => {
+        return resolveRecvQuality((inst.config as { quality: TRecvQuality }).quality);
+      });
+      inst.setQuality = jest.fn(async (quality: TRecvQuality) => {
+        inst.config = {
+          ...(inst.config as object),
+          quality,
+          effectiveQuality: resolveRecvQuality(quality),
+        };
+
+        return true;
+      });
 
       return inst;
     }),
@@ -111,6 +132,67 @@ describe('CallManager', () => {
     // @ts-expect-error
     callManager.mcuSession.rtcSession = undefined;
     await expect(callManager.endCall()).resolves.toBeUndefined();
+  });
+
+  it('getRecvQuality: возвращает текущее качество', () => {
+    expect(callManager.getRecvQuality()).toBe('auto');
+  });
+
+  it('setRecvQuality: при роли participant не применяет качество', async () => {
+    callManager.setCallRoleParticipant();
+
+    const result = await callManager.setRecvQuality('low');
+
+    expect(result).toBe(false);
+    expect(mockRecvSession.instance).toBeUndefined();
+  });
+
+  it('setRecvQuality: при отсутствии recvSession возвращает false', async () => {
+    jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue(undefined);
+    callManager.setCallRoleSpectator({ audioId: '1', sendOffer: jest.fn() });
+
+    const result = await callManager.setRecvQuality('low');
+
+    expect(result).toBe(false);
+    expect(mockRecvSession.instance).toBeUndefined();
+  });
+
+  it('setRecvQuality: при роли spectator применяет качество через RecvSession', async () => {
+    jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('123');
+    jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue('test-token');
+
+    callManager.setCallRoleSpectator({ audioId: '1', sendOffer: jest.fn() });
+
+    const result = await callManager.setRecvQuality('low');
+
+    expect(result).toBe(true);
+    expect(mockRecvSession.instance?.setQuality).toHaveBeenCalledWith('low');
+  });
+
+  it('setRecvQuality: возвращает false при отсутствии effective change', async () => {
+    jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('123');
+    jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue('test-token');
+
+    callManager.setCallRoleSpectator({ audioId: '1', sendOffer: jest.fn() });
+
+    mockRecvSession.instance?.setQuality.mockResolvedValueOnce(false);
+
+    const result = await callManager.setRecvQuality('low');
+
+    expect(result).toBe(false);
+  });
+
+  it('setRecvQuality: при ошибке внутри RecvSession пробрасывает исключение', async () => {
+    jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('123');
+    jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue('test-token');
+
+    callManager.setCallRoleSpectator({ audioId: '1', sendOffer: jest.fn() });
+
+    const error = new Error('recv-session-fail');
+
+    mockRecvSession.instance?.setQuality.mockRejectedValueOnce(error);
+
+    await expect(callManager.setRecvQuality('low')).rejects.toThrow('recv-session-fail');
   });
 
   it('renegotiate: должен вызывать renegotiate у rtcSession', async () => {
@@ -1143,7 +1225,8 @@ describe('CallManager - дополнительные тесты для покр�
     });
     expect(mockRecvSession.instance?.config).toMatchObject({
       audioChannel: 'audio-id',
-      quality: 'high',
+      quality: 'auto',
+      effectiveQuality: 'high',
     });
   });
 

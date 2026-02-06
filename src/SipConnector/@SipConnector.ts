@@ -17,7 +17,7 @@ import { ONE_MEGABIT_IN_BITS } from './constants';
 import { createEvents } from './events';
 
 import type { IAutoConnectorOptions } from '@/AutoConnectorManager';
-import type { TGetUri } from '@/CallManager';
+import type { TGetUri, TRecvQuality } from '@/CallManager';
 import type { TContentHint, TOnAddedTransceiver } from '@/PresentationManager';
 import type { TJsSIP } from '@/types';
 import type { IBalancerOptions } from '@/VideoSendingBalancer';
@@ -292,6 +292,14 @@ class SipConnector {
 
   public getRemoteStreams: CallManager['getRemoteStreams'] = () => {
     return this.callManager.getRemoteStreams();
+  };
+
+  public getRecvQuality: CallManager['getRecvQuality'] = () => {
+    return this.callManager.getRecvQuality();
+  };
+
+  public setRecvQuality: CallManager['setRecvQuality'] = async (quality: TRecvQuality) => {
+    return this.callManager.setRecvQuality(quality);
   };
 
   public replaceMediaStream: CallManager['replaceMediaStream'] = async (...args) => {

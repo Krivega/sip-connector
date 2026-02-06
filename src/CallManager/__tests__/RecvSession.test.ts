@@ -108,7 +108,7 @@ describe('RecvSession', () => {
       {
         conferenceNumber,
         token,
-        quality: config.quality,
+        quality: session.getEffectiveQuality(),
         audioChannel: config.audioChannel,
       },
       expect.objectContaining({ type: 'offer', sdp: 'offer-sdp' }),
@@ -147,7 +147,7 @@ describe('RecvSession', () => {
       {
         conferenceNumber,
         token,
-        quality: config.quality,
+        quality: session.getEffectiveQuality(),
         audioChannel: config.audioChannel,
       },
       expect.objectContaining({ type: 'offer', sdp: 'offer-sdp' }),
@@ -159,8 +159,19 @@ describe('RecvSession', () => {
     const tools = createTools();
     const session = new RecvSession(config, tools);
 
-    expect(session.settings).toEqual(config);
+    expect(session.settings).toEqual({
+      ...config,
+      effectiveQuality: session.getEffectiveQuality(),
+    });
     expect(session.peerConnection).toBe(session.peerConnection);
+  });
+
+  it('getQuality: возвращает запрошенное качество', () => {
+    const config = createConfig({ quality: 'auto' });
+    const tools = createTools();
+    const session = new RecvSession(config, tools);
+
+    expect(session.getQuality()).toBe('auto');
   });
 
   it('закрывает peerConnection', () => {
@@ -286,5 +297,36 @@ describe('RecvSession', () => {
       expect(hasCanceledError(error)).toBe(true);
       expect(sendOfferMock).toHaveBeenCalled();
     });
+  });
+
+  it('setQuality: пересогласует только при изменении effectiveQuality', async () => {
+    const config = createConfig({ quality: 'auto' });
+    const tools = createTools();
+    const session = new RecvSession(config, tools);
+    const conferenceNumber = '123';
+    const token = 'test-token';
+
+    const callPromise = session.call({ conferenceNumber, token });
+
+    dispatchTrack(session, 'audio');
+    dispatchTrack(session, 'video');
+    await callPromise;
+
+    const renegotiateSpy = jest.spyOn(session, 'renegotiate');
+
+    const noChange = await session.setQuality('high');
+    const hasChange = await session.setQuality('low');
+
+    expect(noChange).toBe(false);
+    expect(hasChange).toBe(true);
+    expect(renegotiateSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('setQuality: возвращает false без lastCallParams', async () => {
+    const config = createConfig();
+    const tools = createTools();
+    const session = new RecvSession(config, tools);
+
+    await expect(session.setQuality('low')).resolves.toBe(false);
   });
 });

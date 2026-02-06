@@ -2,6 +2,7 @@
 import { TypedEvents } from 'events-constructor';
 
 import type { IncomingInfoEvent, OutgoingInfoEvent, EndEvent } from '@krivega/jssip';
+import type { TEffectiveQuality, TRecvQuality } from './quality';
 import type { TRemoteStreams, TRemoteTracksChangeType } from './types';
 
 export enum EEvent {
@@ -46,6 +47,8 @@ export enum EEvent {
   CALL_STATUS_CHANGED = 'call-status-changed',
   REMOTE_TRACKS_CHANGED = 'remote-tracks-changed',
   REMOTE_STREAMS_CHANGED = 'remote-streams-changed',
+  RECV_QUALITY_REQUESTED = 'recv-quality-requested',
+  RECV_QUALITY_CHANGED = 'recv-quality-changed',
 }
 
 export enum Originator {
@@ -95,6 +98,8 @@ const SESSION_SYNTHETICS_EVENT_NAMES = [
   `${EEvent.CALL_STATUS_CHANGED}`,
   `${EEvent.REMOTE_TRACKS_CHANGED}`,
   `${EEvent.REMOTE_STREAMS_CHANGED}`,
+  `${EEvent.RECV_QUALITY_REQUESTED}`,
+  `${EEvent.RECV_QUALITY_CHANGED}`,
 ] as const;
 
 export const EVENT_NAMES = [
@@ -103,6 +108,12 @@ export const EVENT_NAMES = [
 ] as const;
 
 export type TEventName = (typeof EVENT_NAMES)[number];
+
+export type TRecvQualityChangeReason =
+  | 'not-spectator'
+  | 'no-session'
+  | 'no-effective-change'
+  | 'renegotiate-failed';
 
 export type TEventMap = {
   // RTCSession events
@@ -154,6 +165,18 @@ export type TEventMap = {
   };
   'remote-streams-changed': {
     streams: TRemoteStreams;
+  };
+  'recv-quality-requested': {
+    quality: TRecvQuality;
+    previous?: TRecvQuality;
+    source: 'api' | 'internal';
+  };
+  'recv-quality-changed': {
+    previous?: TRecvQuality;
+    next: TRecvQuality;
+    applied: boolean;
+    effectiveQuality?: TEffectiveQuality;
+    reason?: TRecvQualityChangeReason;
   };
 };
 

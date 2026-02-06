@@ -1,18 +1,35 @@
 import { repeatedCallsAsync } from 'repeated-calls';
 
+import { resolveRecvQuality } from './quality';
+
+import type { TEffectiveQuality, TRecvQuality } from './quality';
+
 type TConferenceNumber = string;
 
 const SEND_OFFER_CALL_LIMIT = 10;
 const SEND_OFFER_DELAY_BETWEEN_CALLS = 100;
 
 type TSendOfferParams = {
-  quality: 'low' | 'medium' | 'high';
+  quality: TEffectiveQuality;
   audioChannel: string;
 };
 
-type TConfig = Pick<TSendOfferParams, 'quality' | 'audioChannel'> & {
+type TConfigInput = {
+  quality: TRecvQuality;
+  audioChannel: string;
   pcConfig?: RTCConfiguration;
 };
+
+type TConfig = TConfigInput & {
+  effectiveQuality: TEffectiveQuality;
+};
+
+type TCallParams = {
+  conferenceNumber: TConferenceNumber;
+  token: string;
+};
+
+type TLastCallParams = TCallParams;
 
 export type TTools = {
   sendOffer: (
@@ -32,8 +49,13 @@ class RecvSession {
 
   private readonly connection: RTCPeerConnection;
 
-  public constructor(config: TConfig, tools: TTools) {
-    this.config = config;
+  private lastCallParams?: TLastCallParams;
+
+  public constructor(config: TConfigInput, tools: TTools) {
+    this.config = {
+      ...config,
+      effectiveQuality: resolveRecvQuality(config.quality),
+    };
     this.tools = tools;
     this.connection = new RTCPeerConnection(config.pcConfig);
     this.addTransceivers();
@@ -47,18 +69,39 @@ class RecvSession {
     return this.connection;
   }
 
+  public getQuality(): TRecvQuality {
+    return this.config.quality;
+  }
+
+  public getEffectiveQuality(): TEffectiveQuality {
+    return this.config.effectiveQuality;
+  }
+
+  public async setQuality(quality: TRecvQuality): Promise<boolean> {
+    const previousEffective = this.config.effectiveQuality;
+
+    this.config.quality = quality;
+    this.config.effectiveQuality = resolveRecvQuality(quality);
+
+    if (this.config.effectiveQuality === previousEffective) {
+      return false;
+    }
+
+    if (!this.lastCallParams) {
+      return false;
+    }
+
+    await this.renegotiate(this.lastCallParams);
+
+    return true;
+  }
+
   public close(): void {
     this.cancelSendOfferWithRepeatedCalls();
     this.connection.close();
   }
 
-  public async call({
-    conferenceNumber,
-    token,
-  }: {
-    conferenceNumber: TConferenceNumber;
-    token: string;
-  }): Promise<void> {
+  public async call({ conferenceNumber, token }: TCallParams): Promise<void> {
     const tracksPromise = this.waitForTracks();
 
     await this.renegotiate({ conferenceNumber, token });
@@ -66,13 +109,9 @@ class RecvSession {
     await tracksPromise;
   }
 
-  public async renegotiate({
-    conferenceNumber,
-    token,
-  }: {
-    conferenceNumber: TConferenceNumber;
-    token: string;
-  }): Promise<boolean> {
+  public async renegotiate({ conferenceNumber, token }: TCallParams): Promise<boolean> {
+    this.lastCallParams = { conferenceNumber, token };
+
     const offer = await this.createOffer();
 
     const targetFunction = async (): Promise<RTCSessionDescription> => {
@@ -80,7 +119,7 @@ class RecvSession {
         {
           conferenceNumber,
           token,
-          quality: this.config.quality,
+          quality: this.config.effectiveQuality,
           audioChannel: this.config.audioChannel,
         },
         offer,

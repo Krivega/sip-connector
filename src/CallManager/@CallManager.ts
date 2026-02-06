@@ -12,6 +12,7 @@ import type { RTCSession } from '@krivega/jssip';
 import type { ApiManager } from '@/ApiManager';
 import type { ContentedStreamManager } from '@/ContentedStreamManager';
 import type { TEventMap, TEvents } from './events';
+import type { TRecvQuality } from './quality';
 import type { TTools } from './RecvSession';
 import type {
   TAnswerToIncomingCall,
@@ -56,6 +57,8 @@ class CallManager {
   private recvSession?: RecvSession;
 
   private disposeRecvSessionTrackListener?: () => void;
+
+  private recvQuality: TRecvQuality = 'auto';
 
   private readonly deferredStartRecvSessionRunner: DeferredCommandRunner<
     TCallRoleSpectator['recvParams'],
@@ -220,6 +223,10 @@ class CallManager {
     return this.stateMachine.token;
   }
 
+  public getRecvQuality(): TRecvQuality {
+    return this.recvQuality;
+  }
+
   public readonly getActivePeerConnection = () => {
     if (this.roleManager.hasSpectator()) {
       return this.recvSession?.peerConnection;
@@ -255,6 +262,67 @@ class CallManager {
     degradationPreference?: RTCDegradationPreference;
   }): Promise<boolean> {
     return this.mcuSession.restartIce(options);
+  }
+
+  public async setRecvQuality(quality: TRecvQuality): Promise<boolean> {
+    const previous = this.recvQuality;
+
+    this.recvQuality = quality;
+
+    this.events.trigger(EEvent.RECV_QUALITY_REQUESTED, {
+      quality,
+      previous,
+      source: 'api',
+    });
+
+    if (!this.roleManager.hasSpectator()) {
+      this.events.trigger(EEvent.RECV_QUALITY_CHANGED, {
+        previous,
+        next: quality,
+        applied: false,
+        reason: 'not-spectator',
+      });
+
+      return false;
+    }
+
+    if (!this.recvSession) {
+      this.events.trigger(EEvent.RECV_QUALITY_CHANGED, {
+        previous,
+        next: quality,
+        applied: false,
+        reason: 'no-session',
+      });
+
+      return false;
+    }
+
+    try {
+      const applied = await this.recvSession.setQuality(quality);
+      const effectiveQuality = this.recvSession.getEffectiveQuality();
+
+      this.events.trigger(EEvent.RECV_QUALITY_CHANGED, {
+        previous,
+        next: quality,
+        applied,
+        effectiveQuality,
+        reason: applied ? undefined : 'no-effective-change',
+      });
+
+      return applied;
+    } catch (error) {
+      const effectiveQuality = this.recvSession.getEffectiveQuality();
+
+      this.events.trigger(EEvent.RECV_QUALITY_CHANGED, {
+        previous,
+        next: quality,
+        applied: false,
+        effectiveQuality,
+        reason: 'renegotiate-failed',
+      });
+
+      throw error;
+    }
   }
 
   private readonly reset: () => void = () => {
@@ -400,8 +468,9 @@ class CallManager {
 
     this.stopRecvSession();
 
+    const quality = this.recvQuality;
     const config = {
-      quality: 'high' as const,
+      quality,
       audioChannel: audioId,
     };
 
@@ -411,7 +480,9 @@ class CallManager {
     this.recvRemoteStreamsManager.reset();
     this.attachRecvSessionTracks(session);
 
-    session.call({ conferenceNumber, token }).catch(() => {
+    const callPromise = session.call({ conferenceNumber, token });
+
+    callPromise.catch(() => {
       this.stopRecvSession();
     });
   }
