@@ -373,23 +373,25 @@ class CallManager {
   };
 
   private subscribeCallStatusChange() {
-    let { isCallActive } = this;
-
     const { ACCEPTED, CONFIRMED, ENDED, FAILED } = EEvent;
+    const onStatusChanged = this.createCallStatusChangeListener();
 
-    this.onRace([ACCEPTED, CONFIRMED, ENDED, FAILED], () => {
-      isCallActive = this.maybeTriggerCallStatus(isCallActive);
-    });
+    this.onRace([ACCEPTED, CONFIRMED, ENDED, FAILED], onStatusChanged);
   }
 
-  private maybeTriggerCallStatus(isCallActive: boolean) {
-    const newStatus = this.isCallActive;
+  /** Хранит prev/next и эмитит CALL_STATUS_CHANGED только при реальном изменении. */
+  private createCallStatusChangeListener(): () => void {
+    let prevIsCallActive = this.isCallActive;
 
-    if (newStatus !== isCallActive) {
-      this.events.trigger(EEvent.CALL_STATUS_CHANGED, { isCallActive: newStatus });
-    }
+    return () => {
+      const nextIsCallActive = this.isCallActive;
 
-    return newStatus;
+      if (nextIsCallActive !== prevIsCallActive) {
+        this.events.trigger(EEvent.CALL_STATUS_CHANGED, { isCallActive: nextIsCallActive });
+      }
+
+      prevIsCallActive = nextIsCallActive;
+    };
   }
 
   private subscribeMcuRemoteTrackEvents() {
