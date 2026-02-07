@@ -38,8 +38,6 @@ class CallManager {
 
   protected isPendingAnswer = false;
 
-  protected rtcSession?: RTCSession;
-
   private readonly mainRemoteStreamsManager = new RemoteStreamsManager();
 
   private readonly recvRemoteStreamsManager = new RemoteStreamsManager();
@@ -511,20 +509,13 @@ class CallManager {
     previous: TCallRole;
     next: TCallRole;
   }) => {
-    const isPreviousSpectator = RoleManager.hasSpectator(previous);
-    const isNextSpectator = RoleManager.hasSpectator(next);
-    const isNextSpectatorSynthetic = RoleManager.hasSpectatorSynthetic(next);
-    const isPreviousSpectatorSynthetic = RoleManager.hasSpectatorSynthetic(previous);
-    const isNextAnySpectator = isNextSpectator || isNextSpectatorSynthetic;
-    const isPreviousAnySpectator = isPreviousSpectator || isPreviousSpectatorSynthetic;
-
-    if (isPreviousSpectator && !isNextSpectator) {
+    if (RoleManager.isExitingSpectatorRole(previous, next)) {
       this.stopRecvSession();
       this.deferredStartRecvSessionRunner.cancel();
       this.emitEventChangedRemoteStreams(this.getRemoteStreams());
     }
 
-    if (isNextSpectator) {
+    if (RoleManager.isEnteringSpectatorRole(previous, next)) {
       const params = next.recvParams;
       const { token } = this.stateMachine;
 
@@ -541,15 +532,13 @@ class CallManager {
       }
     }
 
-    if (isPreviousAnySpectator && !isNextAnySpectator) {
-      // Переход из роли зрителя в роль участника:
-      // восстанавливаем исходные значения битрейта отправителей
+    if (RoleManager.isExitingAnySpectatorRole(previous, next)) {
+      // Выход из роли зрителя: восстанавливаем битрейт отправителей
       this.mcuSession.restoreBitrateForSenders();
     }
 
-    if (isNextAnySpectator && !isPreviousAnySpectator) {
-      // Переход из роли участника в роль зрителя:
-      // ограничиваем битрейт отправителей до минимального значения
+    if (RoleManager.isEnteringAnySpectatorRole(previous, next)) {
+      // Вход в роль зрителя: ограничиваем битрейт отправителей
       this.mcuSession.setMinBitrateForSenders();
     }
   };

@@ -42,6 +42,31 @@ export class RoleManager {
     return role.type === 'spectator';
   }
 
+  public static isExitingSpectatorRole(prev: TCallRole, next: TCallRole): boolean {
+    return RoleManager.hasSpectator(prev) && !RoleManager.hasSpectator(next);
+  }
+
+  public static isEnteringSpectatorRole(
+    _prev: TCallRole,
+    next: TCallRole,
+  ): next is TCallRoleSpectator {
+    return RoleManager.hasSpectator(next);
+  }
+
+  public static isExitingAnySpectatorRole(prev: TCallRole, next: TCallRole): boolean {
+    const prevAny = RoleManager.hasSpectator(prev) || RoleManager.hasSpectatorSynthetic(prev);
+    const nextAny = RoleManager.hasSpectator(next) || RoleManager.hasSpectatorSynthetic(next);
+
+    return prevAny && !nextAny;
+  }
+
+  public static isEnteringAnySpectatorRole(prev: TCallRole, next: TCallRole): boolean {
+    const prevAny = RoleManager.hasSpectator(prev) || RoleManager.hasSpectatorSynthetic(prev);
+    const nextAny = RoleManager.hasSpectator(next) || RoleManager.hasSpectatorSynthetic(next);
+
+    return !prevAny && nextAny;
+  }
+
   public getRole(): TCallRole {
     return this.role;
   }
