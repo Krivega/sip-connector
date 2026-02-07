@@ -4,9 +4,11 @@ import BitrateStateManager from './BitrateStateManager';
 import { ECallCause } from './causes';
 import { EEvent, SESSION_JSSIP_EVENT_NAMES } from './events';
 
-import type { EndEvent, RTCSession } from '@krivega/jssip';
+import type { EndEvent, RTCSession, RenegotiateOptions } from '@krivega/jssip';
 import type { TEvents } from './events';
 import type { IMCUSession } from './types';
+
+export type TRestartIceOptions = RenegotiateOptions;
 
 export class MCUSession implements IMCUSession {
   protected readonly events: TEvents;
@@ -190,13 +192,7 @@ export class MCUSession implements IMCUSession {
     return this.rtcSession.replaceMediaStream(preparedMediaStream, options);
   }
 
-  public async restartIce(options?: {
-    useUpdate?: boolean;
-    extraHeaders?: string[];
-    rtcOfferConstraints?: RTCOfferOptions;
-    sendEncodings?: RTCRtpEncodingParameters[];
-    degradationPreference?: RTCDegradationPreference;
-  }): Promise<boolean> {
+  public async restartIce(options?: TRestartIceOptions): Promise<boolean> {
     if (!this.rtcSession) {
       throw new Error('No rtcSession established');
     }

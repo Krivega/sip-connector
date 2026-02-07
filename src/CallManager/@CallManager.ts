@@ -12,6 +12,7 @@ import type { RTCSession } from '@krivega/jssip';
 import type { ApiManager } from '@/ApiManager';
 import type { ContentedStreamManager } from '@/ContentedStreamManager';
 import type { TEventMap, TEvents, TRecvQualityChangeReason } from './events';
+import type { TRestartIceOptions } from './MCUSession';
 import type { TEffectiveQuality, TRecvQuality } from './quality';
 import type { TTools } from './RecvSession';
 import type {
@@ -272,13 +273,7 @@ class CallManager {
     return this.mcuSession.replaceMediaStream(mediaStream, options);
   }
 
-  public async restartIce(options?: {
-    useUpdate?: boolean;
-    extraHeaders?: string[];
-    rtcOfferConstraints?: RTCOfferOptions;
-    sendEncodings?: RTCRtpEncodingParameters[];
-    degradationPreference?: RTCDegradationPreference;
-  }): Promise<boolean> {
+  public async restartIce(options?: TRestartIceOptions): Promise<boolean> {
     return this.mcuSession.restartIce(options);
   }
 
