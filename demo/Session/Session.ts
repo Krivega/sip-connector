@@ -1,4 +1,5 @@
 import ParticipantRoleManager from './ParticipantRoleManager';
+import RecvQualityManager from './RecvQualityManager';
 import resolveServerParametersRequester from './resolveServerParametersRequester';
 import sipConnectorFacade from './sipConnectorFacade';
 import UseLicenseManager from './UseLicenseManager';
@@ -16,6 +17,8 @@ class Session {
 
   private readonly useLicenseManager: UseLicenseManager;
 
+  private readonly recvQualityManager: RecvQualityManager;
+
   private unsubscribeChangeRemoteStreams?: () => void;
 
   public constructor({
@@ -28,6 +31,7 @@ class Session {
     );
     this.participantRoleManager = new ParticipantRoleManager();
     this.useLicenseManager = new UseLicenseManager();
+    this.recvQualityManager = new RecvQualityManager();
   }
 
   public async startCall({
@@ -59,6 +63,9 @@ class Session {
 
     // Подписываемся на события изменения лицензии
     this.useLicenseManager.subscribe();
+
+    // Подписываемся на изменение качества приема
+    this.recvQualityManager.subscribe();
 
     await sipConnectorFacade.connectToServer({
       displayName,
@@ -95,7 +102,8 @@ class Session {
 
     this.useLicenseManager.unsubscribe();
     this.useLicenseManager.reset();
-
+    this.recvQualityManager.unsubscribe();
+    this.recvQualityManager.reset();
     await sipConnectorFacade.disconnectFromServer();
   }
 }

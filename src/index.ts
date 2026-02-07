@@ -19,7 +19,7 @@ export * as tools from './tools';
 export { EMimeTypesVideoCodecs } from './types';
 
 export type { TSessionSnapshot } from './SessionManager';
-export type { TCustomError, TRemoteStreams } from './CallManager';
+export type { TCustomError, TRemoteStreams, TRecvQuality, TEffectiveQuality } from './CallManager';
 export type { TParametersConnection, TConnectionConfiguration } from './ConnectionManager';
 export type { TInboundStats, TOutboundStats } from './StatsPeerConnection';
 export type { TContentHint } from './PresentationManager';

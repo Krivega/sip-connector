@@ -374,10 +374,10 @@ class App {
    * Обрабатывает ошибки
    */
   private handleError(error: unknown): void {
-    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
 
     // eslint-disable-next-line no-console
-    console.error('Ошибка:', errorMessage);
+    console.error('Ошибка:', error);
 
     // Можно добавить отображение ошибки пользователю
     alert(`Ошибка: ${errorMessage}`);

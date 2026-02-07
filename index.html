@@ -129,13 +129,13 @@
       <section>
         <h3>Состояние конференции</h3>
         <div id="conferenceState" class="conference-state">
-          <span>Room</span><span id="conferenceStateRoom">-</span>
-          <span>Participant Name</span><span id="conferenceStateParticipantName">-</span>
-          <span>Token</span><span id="conferenceStateToken">-</span>
-          <span>Conference</span><span id="conferenceStateConference">-</span>
-          <span>Participant</span><span id="conferenceStateParticipant">-</span>
-          <span>Number</span><span id="conferenceStateNumber">-</span>
-          <span>Answer</span><span id="conferenceStateAnswer">-</span>
+          <span>Room</span><span id="conferenceStateRoom">-</span> <span>Participant Name</span
+          ><span id="conferenceStateParticipantName">-</span> <span>Token</span
+          ><span id="conferenceStateToken">-</span> <span>Conference</span
+          ><span id="conferenceStateConference">-</span> <span>Participant</span
+          ><span id="conferenceStateParticipant">-</span> <span>Number</span
+          ><span id="conferenceStateNumber">-</span> <span>Answer</span
+          ><span id="conferenceStateAnswer">-</span>
         </div>
       </section>
 
@@ -148,6 +148,21 @@
         <section>
           <h3>Статус</h3>
           <div id="participantRole" class="status-box"></div>
+        </section>
+
+        <section>
+          <h3>Качество приема (зритель)</h3>
+          <label for="recvQualitySelect">
+            Качество
+            <select id="recvQualitySelect" name="recvQualitySelect">
+              <option value="auto" selected>auto</option>
+              <option value="high">high</option>
+              <option value="medium">medium</option>
+              <option value="low">low</option>
+            </select>
+          </label>
+          <button id="applyRecvQualityButton" type="button">Применить</button>
+          <div id="recvQualityStatus" class="status-box"></div>
         </section>
 
         <section>
@@ -207,9 +222,13 @@
         <span id="toggleMicButtonText">Выключить микрофон</span>
       </button>
       <button id="startPresentationButton" type="button" class="hidden">Начать презентацию</button>
-      <button id="stopPresentationButton" type="button" class="hidden">Завершить презентацию</button>
+      <button id="stopPresentationButton" type="button" class="hidden">
+        Завершить презентацию
+      </button>
       <button id="startStressTestingPresentationButton" type="button" class="hidden">
-        <span id="startStressTestingPresentationText">Начать стрессовое тестирование презентации</span>
+        <span id="startStressTestingPresentationText"
+          >Начать стрессовое тестирование презентации</span
+        >
       </button>
     </div>
 

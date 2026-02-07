@@ -36,6 +36,9 @@ type TDomIds = {
   callStatsAudioId: string;
   callStatsMainStreamId: string;
   callStatsContentedStreamId: string;
+  recvQualitySelectId: string;
+  applyRecvQualityButtonId: string;
+  recvQualityStatusId: string;
   logsContainerId: string;
   logsListId: string;
   clearLogsButtonId: string;
@@ -175,6 +178,12 @@ class DOM {
 
   public callStatsContentedStreamElement: HTMLElement;
 
+  public recvQualitySelectElement: HTMLSelectElement;
+
+  public applyRecvQualityButtonElement: HTMLButtonElement;
+
+  public recvQualityStatusElement: HTMLElement;
+
   public logsContainerElement: HTMLElement;
 
   public logsListElement: HTMLElement;
@@ -228,6 +237,9 @@ class DOM {
     callStatsAudioId,
     callStatsMainStreamId,
     callStatsContentedStreamId,
+    recvQualitySelectId,
+    applyRecvQualityButtonId,
+    recvQualityStatusId,
     logsContainerId,
     logsListId,
     clearLogsButtonId,
@@ -324,6 +336,10 @@ class DOM {
     this.callStatsAudioElement = getElementById(callStatsAudioId);
     this.callStatsMainStreamElement = getElementById(callStatsMainStreamId);
     this.callStatsContentedStreamElement = getElementById(callStatsContentedStreamId);
+    this.recvQualitySelectElement = getElementById<HTMLSelectElement>(recvQualitySelectId);
+    this.applyRecvQualityButtonElement =
+      getElementById<HTMLButtonElement>(applyRecvQualityButtonId);
+    this.recvQualityStatusElement = getElementById(recvQualityStatusId);
     this.logsContainerElement = getElementById(logsContainerId);
     this.logsListElement = getElementById(logsListId);
     this.clearLogsButtonElement = getElementById<HTMLButtonElement>(clearLogsButtonId);
@@ -455,6 +471,9 @@ export const dom = new DOM({
   callStatsAudioId: 'callStatsAudio',
   callStatsMainStreamId: 'callStatsMainStream',
   callStatsContentedStreamId: 'callStatsContentedStream',
+  recvQualitySelectId: 'recvQualitySelect',
+  applyRecvQualityButtonId: 'applyRecvQualityButton',
+  recvQualityStatusId: 'recvQualityStatus',
   logsContainerId: 'logsContainer',
   logsListId: 'logsList',
   clearLogsButtonId: 'clearLogsButton',
