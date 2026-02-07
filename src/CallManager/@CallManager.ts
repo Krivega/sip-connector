@@ -301,13 +301,22 @@ class CallManager {
       const applied = await this.recvSession.setQuality(quality);
       const effectiveQuality = this.recvSession.getEffectiveQuality();
 
-      this.events.trigger(EEvent.RECV_QUALITY_CHANGED, {
-        previous,
-        next: quality,
-        applied,
-        effectiveQuality,
-        reason: applied ? undefined : 'no-effective-change',
-      });
+      if (applied) {
+        this.events.trigger(EEvent.RECV_QUALITY_CHANGED, {
+          previous,
+          effectiveQuality,
+          next: quality,
+          applied: true,
+        });
+      } else {
+        this.events.trigger(EEvent.RECV_QUALITY_CHANGED, {
+          previous,
+          effectiveQuality,
+          next: quality,
+          applied: false,
+          reason: 'no-effective-change',
+        });
+      }
 
       return applied;
     } catch (error) {
@@ -315,9 +324,9 @@ class CallManager {
 
       this.events.trigger(EEvent.RECV_QUALITY_CHANGED, {
         previous,
+        effectiveQuality,
         next: quality,
         applied: false,
-        effectiveQuality,
         reason: 'renegotiate-failed',
       });
 

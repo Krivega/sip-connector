@@ -100,13 +100,20 @@ type TEffectiveQuality = 'low' | 'medium' | 'high';
 ### `TRecvQualityChangedEvent` (событие `call:recv-quality-changed`)
 
 ```typescript
-{
-  previous?: TRecvQuality;
-  next: TRecvQuality;
-  applied: boolean;
-  effectiveQuality?: TEffectiveQuality;
-  reason?: TRecvQualityChangeReason;
-}
+| {
+    applied: true;
+    reason?: undefined;
+    effectiveQuality: TEffectiveQuality;
+    previous: TRecvQuality;
+    next: TRecvQuality;
+  }
+| {
+    applied: false;
+    reason: TRecvQualityChangeReason;
+    effectiveQuality?: TEffectiveQuality;
+    previous: TRecvQuality;
+    next: TRecvQuality;
+  };
 ```
 
 ### `EndEvent`

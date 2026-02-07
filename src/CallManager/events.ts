@@ -171,13 +171,21 @@ export type TEventMap = {
     previous?: TRecvQuality;
     source: 'api' | 'internal';
   };
-  'recv-quality-changed': {
-    previous?: TRecvQuality;
-    next: TRecvQuality;
-    applied: boolean;
-    effectiveQuality?: TEffectiveQuality;
-    reason?: TRecvQualityChangeReason;
-  };
+  'recv-quality-changed':
+    | {
+        applied: true;
+        reason?: undefined;
+        effectiveQuality: TEffectiveQuality;
+        previous: TRecvQuality;
+        next: TRecvQuality;
+      }
+    | {
+        applied: false;
+        reason: TRecvQualityChangeReason;
+        effectiveQuality?: TEffectiveQuality;
+        previous: TRecvQuality;
+        next: TRecvQuality;
+      };
 };
 
 export type TEvents = TypedEvents<TEventMap>;
