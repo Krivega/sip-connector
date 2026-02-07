@@ -329,4 +329,76 @@ describe('RecvSession', () => {
 
     await expect(session.setQuality('low')).resolves.toBe(false);
   });
+
+  describe('applyQuality', () => {
+    it('возвращает { applied: true, effectiveQuality } при успешном изменении качества', async () => {
+      const config = createConfig({ quality: 'auto' });
+      const tools = createTools();
+      const session = new RecvSession(config, tools);
+      const conferenceNumber = '123';
+      const token = 'test-token';
+
+      const callPromise = session.call({ conferenceNumber, token });
+
+      dispatchTrack(session, 'audio');
+      dispatchTrack(session, 'video');
+      await callPromise;
+
+      const result = await session.applyQuality('low');
+
+      expect(result).toEqual({ applied: true, effectiveQuality: 'low' });
+      expect(session.getQuality()).toBe('low');
+      expect(session.getEffectiveQuality()).toBe('low');
+    });
+
+    it('возвращает { applied: false, effectiveQuality } при отсутствии effective change', async () => {
+      const config = createConfig({ quality: 'auto' });
+      const tools = createTools();
+      const session = new RecvSession(config, tools);
+      const conferenceNumber = '123';
+      const token = 'test-token';
+
+      const callPromise = session.call({ conferenceNumber, token });
+
+      dispatchTrack(session, 'audio');
+      dispatchTrack(session, 'video');
+      await callPromise;
+
+      const result = await session.applyQuality('high');
+
+      expect(result).toEqual({ applied: false, effectiveQuality: 'high' });
+      expect(session.getEffectiveQuality()).toBe('high');
+    });
+
+    it('возвращает { applied: false, effectiveQuality } без lastCallParams', async () => {
+      const config = createConfig({ quality: 'high' });
+      const tools = createTools();
+      const session = new RecvSession(config, tools);
+
+      const result = await session.applyQuality('low');
+
+      expect(result).toEqual({ applied: false, effectiveQuality: 'low' });
+      expect(session.getQuality()).toBe('low');
+      expect(session.getEffectiveQuality()).toBe('low');
+    });
+
+    it('effectiveQuality совпадает с getEffectiveQuality() после вызова', async () => {
+      const config = createConfig({ quality: 'medium' });
+      const tools = createTools();
+      const session = new RecvSession(config, tools);
+      const conferenceNumber = '123';
+      const token = 'test-token';
+
+      const callPromise = session.call({ conferenceNumber, token });
+
+      dispatchTrack(session, 'audio');
+      dispatchTrack(session, 'video');
+      await callPromise;
+
+      const result = await session.applyQuality('high');
+
+      expect(result.effectiveQuality).toBe(session.getEffectiveQuality());
+      expect(result.effectiveQuality).toBe('high');
+    });
+  });
 });

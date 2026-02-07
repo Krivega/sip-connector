@@ -23,6 +23,7 @@ const mockRecvSession = (() => {
       renegotiate: jest.Mock;
       close: jest.Mock;
       setQuality: jest.Mock;
+      applyQuality: jest.Mock;
       getEffectiveQuality: jest.Mock;
       config?: unknown;
       tools?: unknown;
@@ -39,6 +40,7 @@ const mockRecvSession = (() => {
     const close = jest.fn();
     const setQuality = jest.fn().mockResolvedValue(true);
     const getEffectiveQuality = jest.fn().mockReturnValue('high');
+    const applyQuality = jest.fn().mockResolvedValue({ applied: true, effectiveQuality: 'high' });
 
     const inst: {
       peerConnection: typeof peerConnection;
@@ -46,10 +48,11 @@ const mockRecvSession = (() => {
       renegotiate: typeof renegotiate;
       close: typeof close;
       setQuality: typeof setQuality;
+      applyQuality: typeof applyQuality;
       getEffectiveQuality: typeof getEffectiveQuality;
       config?: unknown;
       tools?: unknown;
-    } = { peerConnection, call, renegotiate, close, setQuality, getEffectiveQuality };
+    } = { peerConnection, call, renegotiate, close, setQuality, applyQuality, getEffectiveQuality };
 
     state.instance = inst;
 
@@ -166,7 +169,7 @@ describe('CallManager', () => {
     const result = await callManager.setRecvQuality('low');
 
     expect(result).toBe(true);
-    expect(mockRecvSession.instance?.setQuality).toHaveBeenCalledWith('low');
+    expect(mockRecvSession.instance?.applyQuality).toHaveBeenCalledWith('low');
   });
 
   it('setRecvQuality: возвращает false при отсутствии effective change', async () => {
@@ -175,7 +178,10 @@ describe('CallManager', () => {
 
     callManager.setCallRoleSpectator({ audioId: '1', sendOffer: jest.fn() });
 
-    mockRecvSession.instance?.setQuality.mockResolvedValueOnce(false);
+    mockRecvSession.instance?.applyQuality.mockResolvedValueOnce({
+      applied: false,
+      effectiveQuality: 'high',
+    });
 
     const result = await callManager.setRecvQuality('low');
 
@@ -190,7 +196,7 @@ describe('CallManager', () => {
 
     const error = new Error('recv-session-fail');
 
-    mockRecvSession.instance?.setQuality.mockRejectedValueOnce(error);
+    mockRecvSession.instance?.applyQuality.mockRejectedValueOnce(error);
 
     await expect(callManager.setRecvQuality('low')).rejects.toThrow('recv-session-fail');
   });

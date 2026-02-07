@@ -96,6 +96,16 @@ class RecvSession {
     return true;
   }
 
+  public async applyQuality(quality: TRecvQuality): Promise<{
+    applied: boolean;
+    effectiveQuality: TEffectiveQuality;
+  }> {
+    const applied = await this.setQuality(quality);
+    const effectiveQuality = this.getEffectiveQuality();
+
+    return { applied, effectiveQuality };
+  }
+
   public close(): void {
     this.cancelSendOfferWithRepeatedCalls();
     this.connection.close();

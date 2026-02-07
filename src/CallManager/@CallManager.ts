@@ -11,8 +11,8 @@ import { StreamsManagerProvider } from './StreamsManagerProvider';
 import type { RTCSession } from '@krivega/jssip';
 import type { ApiManager } from '@/ApiManager';
 import type { ContentedStreamManager } from '@/ContentedStreamManager';
-import type { TEventMap, TEvents } from './events';
-import type { TRecvQuality } from './quality';
+import type { TEventMap, TEvents, TRecvQualityChangeReason } from './events';
+import type { TEffectiveQuality, TRecvQuality } from './quality';
 import type { TTools } from './RecvSession';
 import type {
   TAnswerToIncomingCall,
@@ -24,6 +24,14 @@ import type {
   TRemoteTracksChangeType,
   TRemoteStreams,
 } from './types';
+
+type TRecvQualityChangedOptions =
+  | { applied: true; effectiveQuality: TEffectiveQuality }
+  | {
+      applied: false;
+      reason: TRecvQualityChangeReason;
+      effectiveQuality?: TEffectiveQuality;
+    };
 
 const getStreamHint = (event: RTCTrackEvent) => {
   return event.streams[0]?.id;
@@ -278,17 +286,10 @@ class CallManager {
     const previous = this.recvQuality;
 
     this.recvQuality = quality;
-
-    this.events.trigger(EEvent.RECV_QUALITY_REQUESTED, {
-      quality,
-      previous,
-      source: 'api',
-    });
+    this.emitRecvQualityRequested(quality, previous);
 
     if (!this.roleManager.hasSpectator()) {
-      this.events.trigger(EEvent.RECV_QUALITY_CHANGED, {
-        previous,
-        next: quality,
+      this.emitRecvQualityChanged(previous, quality, {
         applied: false,
         reason: 'not-spectator',
       });
@@ -296,10 +297,10 @@ class CallManager {
       return false;
     }
 
-    if (!this.recvSession) {
-      this.events.trigger(EEvent.RECV_QUALITY_CHANGED, {
-        previous,
-        next: quality,
+    const { recvSession } = this;
+
+    if (!recvSession) {
+      this.emitRecvQualityChanged(previous, quality, {
         applied: false,
         reason: 'no-session',
       });
@@ -308,40 +309,58 @@ class CallManager {
     }
 
     try {
-      const applied = await this.recvSession.setQuality(quality);
-      const effectiveQuality = this.recvSession.getEffectiveQuality();
+      const result = await recvSession.applyQuality(quality);
 
-      if (applied) {
-        this.events.trigger(EEvent.RECV_QUALITY_CHANGED, {
-          previous,
-          effectiveQuality,
-          next: quality,
-          applied: true,
-        });
-      } else {
-        this.events.trigger(EEvent.RECV_QUALITY_CHANGED, {
-          previous,
-          effectiveQuality,
-          next: quality,
-          applied: false,
-          reason: 'no-effective-change',
-        });
-      }
-
-      return applied;
-    } catch (error) {
-      const effectiveQuality = this.recvSession.getEffectiveQuality();
-
-      this.events.trigger(EEvent.RECV_QUALITY_CHANGED, {
+      this.emitRecvQualityChanged(
         previous,
-        effectiveQuality,
-        next: quality,
+        quality,
+        result.applied
+          ? { applied: true, effectiveQuality: result.effectiveQuality }
+          : {
+              applied: false,
+              reason: 'no-effective-change',
+              effectiveQuality: result.effectiveQuality,
+            },
+      );
+
+      return result.applied;
+    } catch (error) {
+      const effectiveQuality = recvSession.getEffectiveQuality();
+
+      this.emitRecvQualityChanged(previous, quality, {
         applied: false,
         reason: 'renegotiate-failed',
+        effectiveQuality,
       });
 
       throw error;
     }
+  }
+
+  private emitRecvQualityRequested(quality: TRecvQuality, previous: TRecvQuality): void {
+    this.events.trigger(EEvent.RECV_QUALITY_REQUESTED, {
+      quality,
+      previous,
+      source: 'api',
+    });
+  }
+
+  private emitRecvQualityChanged(
+    previous: TRecvQuality,
+    next: TRecvQuality,
+    options: TRecvQualityChangedOptions,
+  ): void {
+    const event: TEventMap['recv-quality-changed'] = options.applied
+      ? { previous, next, applied: true, effectiveQuality: options.effectiveQuality }
+      : {
+          previous,
+          next,
+          applied: false,
+          reason: options.reason,
+          effectiveQuality: options.effectiveQuality,
+        };
+
+    this.events.trigger(EEvent.RECV_QUALITY_CHANGED, event);
   }
 
   private readonly reset: () => void = () => {
