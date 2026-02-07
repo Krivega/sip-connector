@@ -19,13 +19,15 @@ type TConnectingContext = {
   number: string;
   answer: boolean;
 };
-type TInRoomContext = TConnectingContext & {
+
+export type TInRoomContext = TConnectingContext & {
   room: string;
   participantName: string;
   token: string; // jwt
   conference: string;
   participant: string;
 };
+
 type TFailedContext = {
   error: EndEvent;
 };
@@ -245,6 +247,13 @@ export class CallStateMachine extends BaseStateMachine<typeof callMachine, EStat
 
   public get isInRoom(): boolean {
     return this.state === EState.IN_ROOM;
+  }
+
+  /** Контекст в состоянии IN_ROOM; undefined в остальных состояниях. Использовать вместо каста context. */
+  public get inRoomContext(): TInRoomContext | undefined {
+    const { context } = this;
+
+    return hasInRoomContext(context) ? context : undefined;
   }
 
   public get isFailed(): boolean {

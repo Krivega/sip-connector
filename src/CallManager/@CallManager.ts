@@ -29,6 +29,19 @@ const getStreamHint = (event: RTCTrackEvent) => {
   return event.streams[0]?.id;
 };
 
+/** Для тестов и использования в deferred runner: возвращает token или выбрасывает при отсутствии inRoomContext. */
+export function getInRoomTokenOrThrow(stateMachine: CallStateMachine): string {
+  const { inRoomContext } = stateMachine;
+
+  if (inRoomContext === undefined) {
+    throw new Error(
+      '[CallManager] Invariant: inRoomContext expected when deferred runner executes (state IN_ROOM)',
+    );
+  }
+
+  return inRoomContext.token;
+}
+
 class CallManager {
   public readonly events: TEvents;
 
@@ -88,8 +101,7 @@ class CallManager {
         return state === EState.FAILED || state === EState.IDLE;
       },
       onExecute: (command) => {
-        // isReady(state) === true означает IN_ROOM, контекст гарантированно содержит token
-        const { token } = this.stateMachine.context as { token: string };
+        const token = getInRoomTokenOrThrow(this.stateMachine);
 
         this.startRecvSession(command.audioId, {
           sendOffer: command.sendOffer,

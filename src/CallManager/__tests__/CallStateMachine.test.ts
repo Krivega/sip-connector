@@ -185,6 +185,123 @@ describe('CallStateMachine', () => {
     });
   });
 
+  describe('inRoomContext', () => {
+    it('возвращает undefined в IDLE', () => {
+      expect(machine.inRoomContext).toBeUndefined();
+    });
+
+    it('возвращает undefined в CONNECTING без room и token', () => {
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+
+      expect(machine.inRoomContext).toBeUndefined();
+    });
+
+    it('возвращает undefined в CONNECTING с room без token', () => {
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+
+      expect(machine.inRoomContext).toBeUndefined();
+    });
+
+    it('возвращает undefined в FAILED', () => {
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.FAILED', error: new Error('fail') as unknown as EndEvent });
+
+      expect(machine.inRoomContext).toBeUndefined();
+    });
+
+    it('возвращает контекст типа TInRoomContext в IN_ROOM со всеми полями', () => {
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      machine.send({
+        type: 'CALL.TOKEN_ISSUED',
+        token: token1Context.token,
+        conference: token1Context.conference,
+        participant: token1Context.participant,
+      });
+
+      expect(machine.state).toBe(EState.IN_ROOM);
+
+      const context = machine.inRoomContext;
+
+      expect(context).toBeDefined();
+      expect(context).toMatchObject({
+        ...connectPayload,
+        ...room1Payload,
+        ...token1Context,
+      });
+      expect(context?.number).toBe(connectPayload.number);
+      expect(context?.answer).toBe(connectPayload.answer);
+      expect(context?.room).toBe(room1Payload.room);
+      expect(context?.participantName).toBe(room1Payload.participantName);
+      expect(context?.token).toBe(token1Context.token);
+      expect(context?.conference).toBe(token1Context.conference);
+      expect(context?.participant).toBe(token1Context.participant);
+    });
+
+    it('возвращает обновлённый контекст при смене room в IN_ROOM', () => {
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      machine.send({
+        type: 'CALL.TOKEN_ISSUED',
+        token: token1Context.token,
+        conference: token1Context.conference,
+        participant: token1Context.participant,
+      });
+
+      expect(machine.inRoomContext?.room).toBe(room1Payload.room);
+
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room2Payload });
+
+      expect(machine.inRoomContext).toBeDefined();
+      expect(machine.inRoomContext?.room).toBe(room2Payload.room);
+      expect(machine.inRoomContext?.participantName).toBe(room2Payload.participantName);
+    });
+
+    it('возвращает обновлённый контекст при смене token в IN_ROOM', () => {
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      machine.send({
+        type: 'CALL.TOKEN_ISSUED',
+        token: token1Context.token,
+        conference: token1Context.conference,
+        participant: token1Context.participant,
+      });
+
+      expect(machine.inRoomContext?.token).toBe(token1Context.token);
+
+      machine.send({
+        type: 'CALL.TOKEN_ISSUED',
+        token: token2Context.token,
+        conference: token2Context.conference,
+        participant: token2Context.participant,
+      });
+
+      expect(machine.inRoomContext).toBeDefined();
+      expect(machine.inRoomContext?.token).toBe(token2Context.token);
+      expect(machine.inRoomContext?.conference).toBe(token2Context.conference);
+      expect(machine.inRoomContext?.participant).toBe(token2Context.participant);
+    });
+
+    it('возвращает undefined после перехода из IN_ROOM в IDLE по RESET', () => {
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      machine.send({
+        type: 'CALL.TOKEN_ISSUED',
+        token: token1Context.token,
+        conference: token1Context.conference,
+        participant: token1Context.participant,
+      });
+
+      expect(machine.inRoomContext).toBeDefined();
+
+      machine.send({ type: 'CALL.RESET' });
+
+      expect(machine.state).toBe(EState.IDLE);
+      expect(machine.inRoomContext).toBeUndefined();
+    });
+  });
+
   describe('Обработка ошибок', () => {
     it('error должен быть undefined в начальном состоянии', () => {
       expect(machine.error).toBeUndefined();

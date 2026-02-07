@@ -4,7 +4,7 @@ import { createManagers } from '@/__fixtures__/createManagers';
 import flushPromises from '@/__fixtures__/flushPromises';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
-import CallManager from '../@CallManager';
+import CallManager, { getInRoomTokenOrThrow } from '../@CallManager';
 import { resolveRecvQuality } from '../quality';
 import { RemoteStreamsManager } from '../RemoteStreamsManager';
 
@@ -509,6 +509,38 @@ describe('CallManager', () => {
       expect(cm.stateMachine.state).toBe('call:failed');
 
       expect(mockRecvSession.instance).toBeUndefined();
+    });
+
+    it('getInRoomTokenOrThrow: выбрасывает ошибку при отсутствии inRoomContext', () => {
+      const stateMachine = {
+        get inRoomContext() {
+          return undefined;
+        },
+      } as Parameters<typeof getInRoomTokenOrThrow>[0];
+
+      expect(() => {
+        getInRoomTokenOrThrow(stateMachine);
+      }).toThrow(
+        '[CallManager] Invariant: inRoomContext expected when deferred runner executes (state IN_ROOM)',
+      );
+    });
+
+    it('getInRoomTokenOrThrow: возвращает token при наличии inRoomContext', () => {
+      const stateMachine = {
+        get inRoomContext() {
+          return {
+            token: 'jwt-token',
+            number: '',
+            answer: false,
+            room: '',
+            participantName: '',
+            conference: '',
+            participant: '',
+          };
+        },
+      } as Parameters<typeof getInRoomTokenOrThrow>[0];
+
+      expect(getInRoomTokenOrThrow(stateMachine)).toBe('jwt-token');
     });
   });
 });
