@@ -465,6 +465,10 @@ class CallManager {
     });
   }
 
+  private readonly emitEventChangedRemoteStreamsConnected = (): void => {
+    this.emitEventChangedRemoteStreams(this.getRemoteStreams());
+  };
+
   private emitEventChangedRemoteStreams(streams: TRemoteStreams) {
     // Проверяем, изменились ли streams с предыдущего вызова
     if (!this.streamsChangeTracker.hasChanged(streams)) {
@@ -543,7 +547,7 @@ class CallManager {
     if (RoleManager.isExitingSpectatorRole(previous, next)) {
       this.stopRecvSession();
       this.deferredStartRecvSessionRunner.cancel();
-      this.emitEventChangedRemoteStreams(this.getRemoteStreams());
+      this.emitEventChangedRemoteStreamsConnected();
     }
 
     if (RoleManager.isEnteringSpectatorRole(previous, next)) {
@@ -575,13 +579,8 @@ class CallManager {
   };
 
   private subscribeContentedStreamEvents() {
-    this.contentedStreamManager.on('available', () => {
-      this.emitEventChangedRemoteStreams(this.getRemoteStreams());
-    });
-
-    this.contentedStreamManager.on('not-available', () => {
-      this.emitEventChangedRemoteStreams(this.getRemoteStreams());
-    });
+    this.contentedStreamManager.on('available', this.emitEventChangedRemoteStreamsConnected);
+    this.contentedStreamManager.on('not-available', this.emitEventChangedRemoteStreamsConnected);
   }
 
   private async renegotiateRecvSession() {
