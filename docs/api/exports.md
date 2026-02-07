@@ -27,6 +27,16 @@ const streams = facade.getRemoteStreams();
 await sipConnector.callManager.restartIce(options);
 ```
 
+## Управление качеством приема (режим зрителя)
+
+```typescript
+// Установка качества приема (только режим зрителя)
+await sipConnector.setRecvQuality('auto'); // low | medium | high | auto
+
+// Текущее запрошенное качество
+const quality = sipConnector.getRecvQuality();
+```
+
 ## Утилиты и типы
 
 ```typescript

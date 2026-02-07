@@ -43,6 +43,8 @@
 | `call:call-status-changed`                       | Генерируется при изменении статуса звонка                           | `{ isCallActive: boolean }`                       |
 | `call:remote-tracks-changed`                     | Генерируется при изменении треков в удаленных медиа-потоках         | `TRemoteTracksChangedEvent`                       |
 | `call:remote-streams-changed`                    | Генерируется при изменении удаленных медиа-потоков                  | `{ streams: TRemoteStreams }`                     |
+| `call:recv-quality-requested`                    | Запрос на изменение качества приема (только режим зрителя)          | `TRecvQualityRequestedEvent`                      |
+| `call:recv-quality-changed`                      | Результат изменения качества приема (только режим зрителя)          | `TRecvQualityChangedEvent`                        |
 
 ## Структуры данных
 
@@ -70,6 +72,41 @@
 
 ```typescript
 'added' | 'removed' | 'updated';
+```
+
+### `TRecvQuality` / `TEffectiveQuality`
+
+```typescript
+type TRecvQuality = 'low' | 'medium' | 'high' | 'auto';
+type TEffectiveQuality = 'low' | 'medium' | 'high';
+```
+
+### `TRecvQualityChangeReason`
+
+```typescript
+'not-spectator' | 'no-session' | 'no-effective-change' | 'renegotiate-failed';
+```
+
+### `TRecvQualityRequestedEvent` (событие `call:recv-quality-requested`)
+
+```typescript
+{
+  quality: TRecvQuality;
+  previous?: TRecvQuality;
+  source: 'api' | 'internal';
+}
+```
+
+### `TRecvQualityChangedEvent` (событие `call:recv-quality-changed`)
+
+```typescript
+{
+  previous?: TRecvQuality;
+  next: TRecvQuality;
+  applied: boolean;
+  effectiveQuality?: TEffectiveQuality;
+  reason?: TRecvQualityChangeReason;
+}
 ```
 
 ### `EndEvent`

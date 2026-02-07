@@ -113,6 +113,18 @@ sipConnector.on('call:remote-streams-changed', (event) => {
 });
 ```
 
+### Изменения качества приема (режим зрителя)
+
+```typescript
+sipConnector.on('call:recv-quality-requested', (event) => {
+  console.log('Запрос качества:', event.quality);
+});
+
+sipConnector.on('call:recv-quality-changed', (event) => {
+  console.log('Результат применения качества:', event);
+});
+```
+
 ## Продвинутые паттерны
 
 ```typescript

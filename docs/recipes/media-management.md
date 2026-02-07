@@ -49,6 +49,24 @@ remoteStreams.forEach((stream) => {
 });
 ```
 
+## Качество приема (режим зрителя)
+
+> Управление доступно только в режиме зрителя. В режиме участника `quality` не применяется.
+
+```typescript
+// Установка качества приема
+await sipConnector.setRecvQuality('auto'); // low | medium | high | auto
+
+// Получить текущее запрошенное качество
+const quality = sipConnector.getRecvQuality();
+console.log('Requested quality:', quality);
+
+// Реакция на изменение качества
+const unsubscribe = sipConnector.on('call:recv-quality-changed', (event) => {
+  console.log('Quality change result:', event);
+});
+```
+
 ## Обработка готовых потоков
 
 ```typescript
