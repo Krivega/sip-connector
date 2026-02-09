@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [25.1.0](https://github.com/Krivega/sip-connector/compare/v25.0.0...v25.1.0) (2026-02-09)
+
+### Features
+
+- add getInRoomTokenOrThrow function and inRoomContext getter to CallStateMachine ([b28d411](https://github.com/Krivega/sip-connector/commit/b28d411dc22dc77954f688dfc1bafcdbfa54979e))
+- add reception quality management UI and functionality, including new elements ([72582ec](https://github.com/Krivega/sip-connector/commit/72582ecc257832204faff77e47352870aa4f377a))
+- add recvQuality management to CallManager and RecvSession, including event triggers ([a389dab](https://github.com/Krivega/sip-connector/commit/a389dab58573a227e822360ad873370836c6dc97))
+- enhance documentation for recvQuality management, including new events and usage examples ([2c4fb58](https://github.com/Krivega/sip-connector/commit/2c4fb58ae70d2df11e6b5604c0fd79c477798c7f))
+
 ## [25.0.0](https://github.com/Krivega/sip-connector/compare/v24.0.1...v25.0.0) (2026-02-06)
 
 ### ⚠ BREAKING CHANGES
