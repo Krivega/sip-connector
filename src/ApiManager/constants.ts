@@ -69,6 +69,7 @@ export enum EKeyHeader {
   VIDEO_TRACK_COUNT = 'x-webrtc-video-track-count',
   TRACKS_DIRECTION = 'x-webrtc-tracks-direction',
   AUDIO_ID = 'x-webrtc-audioid',
+  BEARER_TOKEN = 'x-bearer-token',
 }
 
 enum EContentContentedStreamSend {
@@ -128,6 +129,7 @@ type THeaderValueMap = {
   [EKeyHeader.VIDEO_TRACK_COUNT]: number;
   [EKeyHeader.TRACKS_DIRECTION]: string;
   [EKeyHeader.AUDIO_ID]: string;
+  [EKeyHeader.BEARER_TOKEN]: string | undefined;
 };
 
 export type EValueHeader<T extends EKeyHeader> = THeaderValueMap[T];

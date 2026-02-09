@@ -15,14 +15,10 @@ describe('CallStateMachine', () => {
   const token1Payload = { jwt: 'jwt1', conference: 'conf-1', participant: 'p-1' };
   const token1Context = {
     token: token1Payload.jwt,
-    conference: token1Payload.conference,
-    participant: token1Payload.participant,
   };
   const token2Payload = { jwt: 'jwt2', conference: 'conf-2', participant: 'p-2' };
   const token2Context = {
     token: token2Payload.jwt,
-    conference: token2Payload.conference,
-    participant: token2Payload.participant,
   };
   const room1Payload = { room: 'room-1', participantName: 'User' };
   const room2Payload = { room: 'room-2', participantName: 'User2' };
@@ -161,7 +157,7 @@ describe('CallStateMachine', () => {
       expect(machine.isInRoom).toBe(false);
       machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
       machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
-      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', token: token1Context.token });
       expect(machine.isInRoom).toBe(true);
     });
 
@@ -216,8 +212,6 @@ describe('CallStateMachine', () => {
       machine.send({
         type: 'CALL.TOKEN_ISSUED',
         token: token1Context.token,
-        conference: token1Context.conference,
-        participant: token1Context.participant,
       });
 
       expect(machine.state).toBe(EState.IN_ROOM);
@@ -235,8 +229,6 @@ describe('CallStateMachine', () => {
       expect(context?.room).toBe(room1Payload.room);
       expect(context?.participantName).toBe(room1Payload.participantName);
       expect(context?.token).toBe(token1Context.token);
-      expect(context?.conference).toBe(token1Context.conference);
-      expect(context?.participant).toBe(token1Context.participant);
     });
 
     it('возвращает обновлённый контекст при смене room в IN_ROOM', () => {
@@ -245,8 +237,6 @@ describe('CallStateMachine', () => {
       machine.send({
         type: 'CALL.TOKEN_ISSUED',
         token: token1Context.token,
-        conference: token1Context.conference,
-        participant: token1Context.participant,
       });
 
       expect(machine.inRoomContext?.room).toBe(room1Payload.room);
@@ -264,8 +254,6 @@ describe('CallStateMachine', () => {
       machine.send({
         type: 'CALL.TOKEN_ISSUED',
         token: token1Context.token,
-        conference: token1Context.conference,
-        participant: token1Context.participant,
       });
 
       expect(machine.inRoomContext?.token).toBe(token1Context.token);
@@ -273,14 +261,10 @@ describe('CallStateMachine', () => {
       machine.send({
         type: 'CALL.TOKEN_ISSUED',
         token: token2Context.token,
-        conference: token2Context.conference,
-        participant: token2Context.participant,
       });
 
       expect(machine.inRoomContext).toBeDefined();
       expect(machine.inRoomContext?.token).toBe(token2Context.token);
-      expect(machine.inRoomContext?.conference).toBe(token2Context.conference);
-      expect(machine.inRoomContext?.participant).toBe(token2Context.participant);
     });
 
     it('возвращает undefined после перехода из IN_ROOM в IDLE по RESET', () => {
@@ -289,8 +273,6 @@ describe('CallStateMachine', () => {
       machine.send({
         type: 'CALL.TOKEN_ISSUED',
         token: token1Context.token,
-        conference: token1Context.conference,
-        participant: token1Context.participant,
       });
 
       expect(machine.inRoomContext).toBeDefined();
@@ -448,6 +430,21 @@ describe('CallStateMachine', () => {
 
       expect(machine.state).toBe(EState.IN_ROOM);
       expect(machine.context).toEqual({ ...connectPayload, ...room2Payload, ...token2Context });
+    });
+
+    it('должен переходить в IN_ROOM по enter-room с bearerToken', () => {
+      const bearerToken = 'jwt-from-enter-room';
+
+      events.trigger('start-call', connectPayload);
+      apiManagerEvents.trigger('enter-room', { ...room1Payload, bearerToken });
+
+      expect(machine.state).toBe(EState.IN_ROOM);
+      expect(machine.context).toEqual({
+        ...connectPayload,
+        ...room1Payload,
+        token: bearerToken,
+      });
+      expect(machine.inRoomContext?.token).toBe(bearerToken);
     });
   });
 

@@ -122,6 +122,14 @@ describe('getHeader', () => {
 
       expect(result).toBe('letmestartmaincam');
     });
+
+    it('должен возвращать строку в lowercase для BEARER_TOKEN', () => {
+      mockRequest.setHeader(EKeyHeader.BEARER_TOKEN, 'AbCd123.XyZ-Token');
+
+      const result = getHeader(mockRequest as unknown as IncomingRequest, EKeyHeader.BEARER_TOKEN);
+
+      expect(result).toBe('abcd123.xyz-token');
+    });
   });
 
   describe('Number headers', () => {

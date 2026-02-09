@@ -58,11 +58,16 @@ describe('ApiManager (NEW_INFO handling)', () => {
       mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
       mockRequest.setHeader(EKeyHeader.CONTENT_ENTER_ROOM, 'room123');
       mockRequest.setHeader(EKeyHeader.PARTICIPANT_NAME, 'user123');
+      mockRequest.setHeader(EKeyHeader.BEARER_TOKEN, 'token123');
 
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
       callManager.events.trigger('newInfo', infoEvent);
-      expect(enterRoomSpy).toHaveBeenCalledWith({ room: 'room123', participantName: 'user123' });
+      expect(enterRoomSpy).toHaveBeenCalledWith({
+        room: 'room123',
+        participantName: 'user123',
+        bearerToken: 'token123',
+      });
     });
 
     it('должен обрабатывать SHARE_STATE события', () => {

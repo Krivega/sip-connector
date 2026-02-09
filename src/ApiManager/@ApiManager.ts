@@ -363,7 +363,6 @@ class ApiManager {
       default: {
         logger('unknown cmd', header);
       }
-      // No default
     }
   };
 
@@ -544,9 +543,10 @@ class ApiManager {
   private readonly triggerEnterRoom = (request: IncomingRequest) => {
     const room = getHeader(request, EKeyHeader.CONTENT_ENTER_ROOM);
     const participantName = getHeader(request, EKeyHeader.PARTICIPANT_NAME);
+    const bearerToken = getHeader(request, EKeyHeader.BEARER_TOKEN);
 
     if (room !== undefined && participantName !== undefined) {
-      this.events.trigger(EEvent.ENTER_ROOM, { room, participantName });
+      this.events.trigger(EEvent.ENTER_ROOM, { room, participantName, bearerToken });
     }
   };
 

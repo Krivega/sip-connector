@@ -66,7 +66,8 @@ export const getHeader = <T extends EKeyHeader>(
     case EKeyHeader.MAIN_CAM_RESOLUTION:
     case EKeyHeader.MEDIA_STATE:
     case EKeyHeader.NOTIFY:
-    case EKeyHeader.CONTENT_ENABLE_MEDIA_DEVICE: {
+    case EKeyHeader.CONTENT_ENABLE_MEDIA_DEVICE:
+    case EKeyHeader.BEARER_TOKEN: {
       return lowerValue as EValueHeader<T>;
     }
     case EKeyHeader.MEDIA_TYPE:

@@ -35,8 +35,8 @@ type TContext = TIdleContext | TConnectingContext | TInRoomContext | TFailedCont
 
 type TCallEvent =
   | { type: 'CALL.CONNECTING'; number: string; answer: boolean }
-  | { type: 'CALL.ENTER_ROOM'; room: string; participantName: string }
-  | { type: 'CALL.TOKEN_ISSUED'; token: string; conference: string; participant: string }
+  | { type: 'CALL.ENTER_ROOM'; room: string; participantName: string; token?: string }
+  | { type: 'CALL.TOKEN_ISSUED'; token: string }
   | { type: 'CALL.FAILED'; error: EndEvent }
   | { type: 'CALL.RESET' };
 
@@ -59,12 +59,7 @@ const hasRoomContext = (context: TContext) => {
 };
 
 const hasTokenContext = (context: TContext) => {
-  return (
-    'token' in context &&
-    isNonEmptyString(context.token) &&
-    isNonEmptyString(context.conference) &&
-    isNonEmptyString(context.participant)
-  );
+  return 'token' in context && isNonEmptyString(context.token);
 };
 
 const hasInRoomContext = (context: TContext): context is TInRoomContext => {
@@ -80,8 +75,6 @@ const clearCallContext = (): Partial<TContext> => {
     room: undefined,
     participantName: undefined,
     token: undefined,
-    conference: undefined,
-    participant: undefined,
   };
 };
 
@@ -107,10 +100,16 @@ const callMachine = setup({
         return context;
       }
 
-      return {
+      const nextContext: Partial<TInRoomContext> = {
         room: event.room,
         participantName: event.participantName,
       };
+
+      if (event.token !== undefined) {
+        nextContext.token = event.token;
+      }
+
+      return nextContext;
     }),
     setTokenInfo: assign(({ event, context }) => {
       if (event.type !== 'CALL.TOKEN_ISSUED') {
@@ -119,8 +118,6 @@ const callMachine = setup({
 
       return {
         token: event.token,
-        conference: event.conference,
-        participant: event.participant,
       };
     }),
     setError: assign(({ event, context }) => {
@@ -319,17 +316,14 @@ export class CallStateMachine extends BaseStateMachine<typeof callMachine, EStat
 
   public subscribeToApiEvents(apiManager: TApiManagerEvents): void {
     this.addSubscription(
-      apiManager.on('enter-room', ({ room, participantName }) => {
-        this.send({ type: 'CALL.ENTER_ROOM', room, participantName });
+      apiManager.on('enter-room', ({ room, participantName, bearerToken }) => {
+        this.send({ type: 'CALL.ENTER_ROOM', room, participantName, token: bearerToken });
       }),
     );
     this.addSubscription(
-      apiManager.on(
-        'conference:participant-token-issued',
-        ({ jwt: token, conference, participant }) => {
-          this.send({ type: 'CALL.TOKEN_ISSUED', token, conference, participant });
-        },
-      ),
+      apiManager.on('conference:participant-token-issued', ({ jwt: token }) => {
+        this.send({ type: 'CALL.TOKEN_ISSUED', token });
+      }),
     );
   }
 

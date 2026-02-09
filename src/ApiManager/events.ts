@@ -72,7 +72,7 @@ export const EVENT_NAMES = [
 ] as const;
 
 export type TEventMap = {
-  'enter-room': { room: string; participantName: string };
+  'enter-room': { room: string; participantName: string; bearerToken?: string };
   'main-cam-control': { mainCam?: EContentMainCAM; resolutionMainCam?: string };
   'use-license': EContentUseLicense;
   'new-dtmf': { originator: string };
