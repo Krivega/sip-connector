@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [25.2.0](https://github.com/Krivega/sip-connector/compare/v25.1.0...v25.2.0) (2026-02-09)
+
+### Features
+
+- enhance enter-room event to include optional bearerToken for improved authentication ([249f610](https://github.com/Krivega/sip-connector/commit/249f610b0eb1fd5706da473731a6e33cf8129265))
+
 ## [25.1.0](https://github.com/Krivega/sip-connector/compare/v25.0.0...v25.1.0) (2026-02-09)
 
 ### Features
