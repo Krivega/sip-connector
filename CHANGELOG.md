@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [25.2.1](https://github.com/Krivega/sip-connector/compare/v25.2.0...v25.2.1) (2026-02-09)
+
+### Bug Fixes
+
+- update getHeader to return the original value for BEARER_TOKEN instead of lowercase ([f473637](https://github.com/Krivega/sip-connector/commit/f473637f50f827356481aa502011a9ed84c11ad5))
+
 ## [25.2.0](https://github.com/Krivega/sip-connector/compare/v25.1.0...v25.2.0) (2026-02-09)
 
 ### Features
