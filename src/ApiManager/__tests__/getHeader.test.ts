@@ -123,12 +123,14 @@ describe('getHeader', () => {
       expect(result).toBe('letmestartmaincam');
     });
 
-    it('должен возвращать строку в lowercase для BEARER_TOKEN', () => {
-      mockRequest.setHeader(EKeyHeader.BEARER_TOKEN, 'AbCd123.XyZ-Token');
+    it('должен возвращать строку без изменений для BEARER_TOKEN', () => {
+      const token = 'AbCd123.XyZ-Token';
+
+      mockRequest.setHeader(EKeyHeader.BEARER_TOKEN, token);
 
       const result = getHeader(mockRequest as unknown as IncomingRequest, EKeyHeader.BEARER_TOKEN);
 
-      expect(result).toBe('abcd123.xyz-token');
+      expect(result).toBe(token);
     });
   });
 

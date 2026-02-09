@@ -57,6 +57,9 @@ export const getHeader = <T extends EKeyHeader>(
   const lowerValue = value.toLowerCase();
 
   switch (header) {
+    case EKeyHeader.BEARER_TOKEN: {
+      return value as EValueHeader<T>;
+    }
     case EKeyHeader.CONTENT_ENTER_ROOM:
     case EKeyHeader.PARTICIPANT_NAME:
     case EKeyHeader.INPUT_CHANNELS:
@@ -66,8 +69,7 @@ export const getHeader = <T extends EKeyHeader>(
     case EKeyHeader.MAIN_CAM_RESOLUTION:
     case EKeyHeader.MEDIA_STATE:
     case EKeyHeader.NOTIFY:
-    case EKeyHeader.CONTENT_ENABLE_MEDIA_DEVICE:
-    case EKeyHeader.BEARER_TOKEN: {
+    case EKeyHeader.CONTENT_ENABLE_MEDIA_DEVICE: {
       return lowerValue as EValueHeader<T>;
     }
     case EKeyHeader.MEDIA_TYPE:
