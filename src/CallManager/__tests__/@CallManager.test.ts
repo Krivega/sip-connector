@@ -138,7 +138,10 @@ describe('CallManager', () => {
   });
 
   it('getRecvQuality: возвращает текущее качество', () => {
-    expect(callManager.getRecvQuality()).toBe('auto');
+    expect(callManager.getRecvQuality()).toEqual({
+      recvQuality: 'auto',
+      effectiveQuality: undefined,
+    });
   });
 
   it('setRecvQuality: при роли participant не применяет качество', async () => {

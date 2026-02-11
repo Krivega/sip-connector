@@ -242,8 +242,13 @@ class CallManager {
     return this.stateMachine.token;
   }
 
-  public getRecvQuality(): TRecvQuality {
-    return this.recvQuality;
+  public getRecvQuality(): { effectiveQuality?: TEffectiveQuality; recvQuality: TRecvQuality } {
+    const effectiveQuality = this.recvSession?.getEffectiveQuality();
+
+    return {
+      recvQuality: this.recvQuality,
+      effectiveQuality,
+    };
   }
 
   public readonly getActivePeerConnection = () => {

@@ -321,7 +321,9 @@ describe('SipConnector', () => {
       .mockResolvedValue({} as unknown as RTCPeerConnection);
     const getEstablished = jest.spyOn(cm, 'getEstablishedRTCSession').mockReturnValue(undefined);
     const getRemote = jest.spyOn(cm, 'getRemoteStreams').mockReturnValue({});
-    const getRecvQuality = jest.spyOn(cm, 'getRecvQuality').mockReturnValue('high');
+    const getRecvQuality = jest
+      .spyOn(cm, 'getRecvQuality')
+      .mockReturnValue({ recvQuality: 'high' });
     const setRecvQuality = jest.spyOn(cm, 'setRecvQuality').mockResolvedValue(true);
     const replaceStream = jest.spyOn(cm, 'replaceMediaStream').mockResolvedValue(undefined);
 

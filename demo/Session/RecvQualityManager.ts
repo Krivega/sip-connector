@@ -37,10 +37,10 @@ class RecvQualityManager {
 
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   private syncCurrentQuality(): void {
-    const quality = sipConnectorFacade.sipConnector.getRecvQuality();
+    const { recvQuality } = sipConnectorFacade.sipConnector.getRecvQuality();
 
-    dom.recvQualitySelectElement.value = quality;
-    dom.recvQualityStatusElement.textContent = `Текущее: ${quality}`;
+    dom.recvQualitySelectElement.value = recvQuality;
+    dom.recvQualityStatusElement.textContent = `Текущее: ${recvQuality}`;
   }
 
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this
