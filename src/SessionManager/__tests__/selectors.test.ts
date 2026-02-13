@@ -258,6 +258,54 @@ describe('sessionSelectors', () => {
   });
 
   describe('selectSystemStatus', () => {
+    it('should return CALL_ACTIVE for IN_ROOM regardless of connection status (check is done first)', () => {
+      const allConnectionStatuses = [
+        EConnectionStatus.IDLE,
+        EConnectionStatus.PREPARING,
+        EConnectionStatus.CONNECTING,
+        EConnectionStatus.CONNECTED,
+        EConnectionStatus.REGISTERED,
+        EConnectionStatus.ESTABLISHED,
+        EConnectionStatus.DISCONNECTED,
+        EConnectionStatus.FAILED,
+      ];
+
+      allConnectionStatuses.forEach((connectionStatus) => {
+        const snapshot = createMockSnapshot({
+          connection: { value: connectionStatus } as never,
+          call: { value: ECallStatus.IN_ROOM } as never,
+        });
+
+        expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CALL_ACTIVE);
+      });
+    });
+
+    it('should return CALL_ACTIVE for IN_ROOM regardless of incoming and presentation status', () => {
+      const incomingStatuses = [
+        EIncomingStatus.IDLE,
+        EIncomingStatus.RINGING,
+        EIncomingStatus.CONSUMED,
+      ];
+      const presentationStatuses = [
+        EPresentationStatus.IDLE,
+        EPresentationStatus.STARTING,
+        EPresentationStatus.ACTIVE,
+      ];
+
+      incomingStatuses.forEach((incomingStatus) => {
+        presentationStatuses.forEach((presentationStatus) => {
+          const snapshot = createMockSnapshot({
+            connection: { value: EConnectionStatus.FAILED } as never,
+            call: { value: ECallStatus.IN_ROOM } as never,
+            incoming: { value: incomingStatus } as never,
+            presentation: { value: presentationStatus } as never,
+          });
+
+          expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CALL_ACTIVE);
+        });
+      });
+    });
+
     it('should return DISCONNECTED when connection is IDLE', () => {
       const snapshot = createMockSnapshot({
         connection: {
@@ -330,13 +378,8 @@ describe('sessionSelectors', () => {
       expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CONNECTION_FAILED);
     });
 
-    it('should return CONNECTION_FAILED for FAILED connection regardless of call status', () => {
-      const callStatuses = [
-        ECallStatus.IDLE,
-        ECallStatus.CONNECTING,
-        ECallStatus.IN_ROOM,
-        ECallStatus.FAILED,
-      ];
+    it('should return CONNECTION_FAILED for FAILED connection unless call is IN_ROOM', () => {
+      const callStatuses = [ECallStatus.IDLE, ECallStatus.CONNECTING, ECallStatus.FAILED];
 
       callStatuses.forEach((callStatus) => {
         const snapshot = createMockSnapshot({
@@ -400,19 +443,14 @@ describe('sessionSelectors', () => {
       expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CONNECTING);
     });
 
-    it('should return CONNECTING for PREPARING/CONNECTING/CONNECTED/REGISTERED regardless of call status', () => {
+    it('should return CONNECTING for PREPARING/CONNECTING/CONNECTED/REGISTERED unless call is IN_ROOM', () => {
       const connectionStatuses = [
         EConnectionStatus.PREPARING,
         EConnectionStatus.CONNECTING,
         EConnectionStatus.CONNECTED,
         EConnectionStatus.REGISTERED,
       ];
-      const callStatuses = [
-        ECallStatus.IDLE,
-        ECallStatus.CONNECTING,
-        ECallStatus.IN_ROOM,
-        ECallStatus.FAILED,
-      ];
+      const callStatuses = [ECallStatus.IDLE, ECallStatus.CONNECTING, ECallStatus.FAILED];
 
       connectionStatuses.forEach((connectionStatus) => {
         callStatuses.forEach((callStatus) => {

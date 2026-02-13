@@ -44,22 +44,20 @@ const selectIsInCall = (snapshot: TSessionSnapshot): boolean => {
  * на основе состояний Connection и Call машин
  */
 const selectSystemStatus = (snapshot: TSessionSnapshot): ESystemStatus => {
-  const connectionStatus = selectConnectionStatus(snapshot);
   const callStatus = selectCallStatus(snapshot);
 
-  // Приоритет: состояние соединения важнее состояния звонка
-  // Если соединение не установлено, звонок невозможен
+  // В активном звонке общий статус всегда CALL_ACTIVE независимо от connection/incoming/presentation
+  if (callStatus === ECallStatus.IN_ROOM) {
+    return ESystemStatus.CALL_ACTIVE;
+  }
+
+  const connectionStatus = selectConnectionStatus(snapshot);
 
   // Соединение не установлено или отключено
-  // Во время активного звонка общий статус не меняется при disconnected
   if (
     connectionStatus === EConnectionStatus.IDLE ||
     connectionStatus === EConnectionStatus.DISCONNECTED
   ) {
-    if (callStatus === ECallStatus.IN_ROOM) {
-      return ESystemStatus.CALL_ACTIVE;
-    }
-
     return ESystemStatus.DISCONNECTED;
   }
 
@@ -86,9 +84,6 @@ const selectSystemStatus = (snapshot: TSessionSnapshot): ESystemStatus => {
     }
     case ECallStatus.CONNECTING: {
       return ESystemStatus.CALL_CONNECTING;
-    }
-    case ECallStatus.IN_ROOM: {
-      return ESystemStatus.CALL_ACTIVE;
     }
     case ECallStatus.FAILED: {
       return ESystemStatus.CALL_FAILED;
