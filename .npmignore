@@ -62,6 +62,13 @@ typings/
 # Optional REPL history
 .node_repl_history
 
+# Test artifacts inside dist (not needed for consumers)
+dist/**/__tests-utils__
+dist/**/__test__
+dist/**/*.test.d.ts
+dist/**/*.test.js
+dist/**/*.test.cjs
+
 # Output of 'npm pack'
 *.tgz
 
