@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [25.2.4](https://github.com/Krivega/sip-connector/compare/v25.2.3...v25.2.4) (2026-02-13)
+
+### Bug Fixes
+
+- ensure selectSystemStatus returns CALL_ACTIVE for IN_ROOM regardless of connection and incoming/presentation statuses ([c2685f6](https://github.com/Krivega/sip-connector/commit/c2685f616818d0aa72a5f82159be64b75a758a7d))
+
 ### [25.2.3](https://github.com/Krivega/sip-connector/compare/v25.2.2...v25.2.3) (2026-02-13)
 
 ### Bug Fixes
