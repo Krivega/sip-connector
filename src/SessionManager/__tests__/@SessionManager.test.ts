@@ -18,9 +18,9 @@ import {
 } from '@/PresentationManager/PresentationStateMachine';
 import SessionManager from '../@SessionManager';
 import { sessionSelectors } from '../selectors';
+import { ESystemStatus } from '../types';
 
 import type { TSessionSnapshot } from '../types';
-import { ESystemStatus } from '../types';
 
 const startSession = () => {
   const connectionEvents = createConnectionEvents();
@@ -229,12 +229,7 @@ describe('SessionManager', () => {
     });
 
     it('keeps system status CALL_ACTIVE when connection becomes disconnected while in call', () => {
-      const {
-        session,
-        connectionStateMachine,
-        callStateMachine,
-        stopAll,
-      } = startSession();
+      const { session, connectionStateMachine, callStateMachine, stopAll } = startSession();
 
       connectionStateMachine.send({ type: EConnectionEvents.START_CONNECT });
       connectionStateMachine.send({ type: EConnectionEvents.START_INIT_UA });
