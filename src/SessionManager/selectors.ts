@@ -51,10 +51,15 @@ const selectSystemStatus = (snapshot: TSessionSnapshot): ESystemStatus => {
   // Если соединение не установлено, звонок невозможен
 
   // Соединение не установлено или отключено
+  // Во время активного звонка общий статус не меняется при disconnected
   if (
     connectionStatus === EConnectionStatus.IDLE ||
     connectionStatus === EConnectionStatus.DISCONNECTED
   ) {
+    if (callStatus === ECallStatus.IN_ROOM) {
+      return ESystemStatus.CALL_ACTIVE;
+    }
+
     return ESystemStatus.DISCONNECTED;
   }
 

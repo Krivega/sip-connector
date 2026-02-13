@@ -20,6 +20,7 @@ import SessionManager from '../@SessionManager';
 import { sessionSelectors } from '../selectors';
 
 import type { TSessionSnapshot } from '../types';
+import { ESystemStatus } from '../types';
 
 const startSession = () => {
   const connectionEvents = createConnectionEvents();
@@ -223,6 +224,47 @@ describe('SessionManager', () => {
         token: 'token',
       });
       expect(callback).toHaveBeenCalledTimes(4);
+
+      stopAll();
+    });
+
+    it('keeps system status CALL_ACTIVE when connection becomes disconnected while in call', () => {
+      const {
+        session,
+        connectionStateMachine,
+        callStateMachine,
+        stopAll,
+      } = startSession();
+
+      connectionStateMachine.send({ type: EConnectionEvents.START_CONNECT });
+      connectionStateMachine.send({ type: EConnectionEvents.START_INIT_UA });
+      connectionStateMachine.send({ type: EConnectionEvents.UA_CONNECTED });
+      connectionStateMachine.send({ type: EConnectionEvents.UA_REGISTERED });
+
+      callStateMachine.send({ type: 'CALL.CONNECTING', number: '100', answer: false });
+      callStateMachine.send({
+        type: 'CALL.ENTER_ROOM',
+        room: 'room',
+        participantName: 'participantName',
+      });
+      callStateMachine.send({
+        type: 'CALL.TOKEN_ISSUED',
+        token: 'token',
+      });
+
+      expect(sessionSelectors.selectSystemStatus(session.getSnapshot())).toBe(
+        ESystemStatus.CALL_ACTIVE,
+      );
+      expect(sessionSelectors.selectCallStatus(session.getSnapshot())).toBe(ECallStatus.IN_ROOM);
+
+      connectionStateMachine.send({ type: EConnectionEvents.UA_DISCONNECTED });
+
+      expect(sessionSelectors.selectConnectionStatus(session.getSnapshot())).toBe(
+        EConnectionStatus.DISCONNECTED,
+      );
+      expect(sessionSelectors.selectSystemStatus(session.getSnapshot())).toBe(
+        ESystemStatus.CALL_ACTIVE,
+      );
 
       stopAll();
     });

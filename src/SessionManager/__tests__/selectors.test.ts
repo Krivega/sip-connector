@@ -284,17 +284,16 @@ describe('sessionSelectors', () => {
       expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.DISCONNECTED);
     });
 
-    it('should return DISCONNECTED for IDLE/DISCONNECTED connection regardless of call status', () => {
+    it('should return DISCONNECTED for IDLE/DISCONNECTED connection unless call is IN_ROOM', () => {
       const connectionStatuses = [EConnectionStatus.IDLE, EConnectionStatus.DISCONNECTED];
-      const callStatuses = [
+      const callStatusesForDisconnected = [
         ECallStatus.IDLE,
         ECallStatus.CONNECTING,
-        ECallStatus.IN_ROOM,
         ECallStatus.FAILED,
       ];
 
       connectionStatuses.forEach((connectionStatus) => {
-        callStatuses.forEach((callStatus) => {
+        callStatusesForDisconnected.forEach((callStatus) => {
           const snapshot = createMockSnapshot({
             connection: { value: connectionStatus } as never,
             call: { value: callStatus } as never,
@@ -302,6 +301,19 @@ describe('sessionSelectors', () => {
 
           expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.DISCONNECTED);
         });
+      });
+    });
+
+    it('should return CALL_ACTIVE when connection is DISCONNECTED but call is IN_ROOM', () => {
+      const connectionStatuses = [EConnectionStatus.IDLE, EConnectionStatus.DISCONNECTED];
+
+      connectionStatuses.forEach((connectionStatus) => {
+        const snapshot = createMockSnapshot({
+          connection: { value: connectionStatus } as never,
+          call: { value: ECallStatus.IN_ROOM } as never,
+        });
+
+        expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CALL_ACTIVE);
       });
     });
 
