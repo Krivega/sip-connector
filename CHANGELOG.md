@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [25.2.3](https://github.com/Krivega/sip-connector/compare/v25.2.2...v25.2.3) (2026-02-13)
+
+### Bug Fixes
+
+- ensure system status remains CALL_ACTIVE when connection is DISCONNECTED during an active call ([eb1a939](https://github.com/Krivega/sip-connector/commit/eb1a9397438ab81f68b1cd278ecd3822999be970))
+
 ### [25.2.2](https://github.com/Krivega/sip-connector/compare/v25.2.1...v25.2.2) (2026-02-11)
 
 ### [25.2.1](https://github.com/Krivega/sip-connector/compare/v25.2.0...v25.2.1) (2026-02-09)
