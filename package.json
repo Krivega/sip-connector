@@ -76,15 +76,12 @@
     "webrtc-mock": "^1.2.1",
     "xstate": "^5.28.0"
   },
-  "resolutions": {
-    "eslint": "9.39.2"
-  },
   "devDependencies": {
     "@babel/preset-typescript": "^7.28.5",
     "@commitlint/cli": "^20.4.1",
     "@commitlint/config-conventional": "^20.4.1",
     "@eslint/compat": "^2.0.2",
-    "@krivega/eslint-config": "^1.1.13",
+    "@krivega/eslint-config": "^1.1.14",
     "@types/debug": "^4.1.12",
     "@types/dom-mediacapture-transform": "^0.1.11",
     "@types/jest": "^30.0.0",
