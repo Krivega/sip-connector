@@ -15,12 +15,13 @@ type TSendOfferParams = {
 };
 
 type TConfigInput = {
-  quality: TRecvQuality;
   audioChannel: string;
+  quality?: TRecvQuality;
   pcConfig?: RTCConfiguration;
 };
 
 type TConfig = TConfigInput & {
+  quality: TRecvQuality;
   effectiveQuality: TEffectiveQuality;
 };
 
@@ -52,9 +53,12 @@ class RecvSession {
   private lastCallParams?: TLastCallParams;
 
   public constructor(config: TConfigInput, tools: TTools) {
+    const quality = config.quality ?? 'auto';
+
     this.config = {
       ...config,
-      effectiveQuality: resolveRecvQuality(config.quality),
+      quality,
+      effectiveQuality: resolveRecvQuality(quality),
     };
     this.tools = tools;
     this.connection = new RTCPeerConnection(config.pcConfig);
@@ -78,20 +82,24 @@ class RecvSession {
   }
 
   public async setQuality(quality: TRecvQuality): Promise<boolean> {
-    const previousEffective = this.config.effectiveQuality;
-
-    this.config.quality = quality;
-    this.config.effectiveQuality = resolveRecvQuality(quality);
-
-    if (this.config.effectiveQuality === previousEffective) {
-      return false;
-    }
-
     if (!this.lastCallParams) {
       return false;
     }
 
-    await this.renegotiate(this.lastCallParams);
+    const previousEffective = this.config.effectiveQuality;
+    const previousQuality = this.config.quality;
+    const effectiveQuality = resolveRecvQuality(quality);
+
+    if (quality === previousQuality && effectiveQuality === previousEffective) {
+      return false;
+    }
+
+    this.config.quality = quality;
+    this.config.effectiveQuality = effectiveQuality;
+
+    if (effectiveQuality !== previousEffective) {
+      await this.renegotiate(this.lastCallParams);
+    }
 
     return true;
   }

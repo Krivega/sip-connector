@@ -116,12 +116,22 @@ sipConnector.on('call:remote-streams-changed', (event) => {
 ### Изменения качества приема (режим зрителя)
 
 ```typescript
-sipConnector.on('call:recv-quality-requested', (event) => {
-  console.log('Запрос качества:', event.quality);
+// Событие запуска recv-сессии (необходимо дождаться перед использованием setRecvQuality/getRecvQuality)
+sipConnector.on('call:recv-session-started', () => {
+  console.log('Recv-сессия запущена, можно управлять качеством');
 });
 
+// Событие остановки recv-сессии
+sipConnector.on('call:recv-session-ended', () => {
+  console.log('Recv-сессия остановлена');
+});
+
+// Изменение качества приема
 sipConnector.on('call:recv-quality-changed', (event) => {
   console.log('Результат применения качества:', event);
+  console.log('Предыдущее качество:', event.previousQuality);
+  console.log('Новое качество:', event.quality);
+  console.log('Эффективное качество:', event.effectiveQuality);
 });
 ```
 

@@ -323,7 +323,7 @@ describe('SipConnector', () => {
     const getRemote = jest.spyOn(cm, 'getRemoteStreams').mockReturnValue({});
     const getRecvQuality = jest
       .spyOn(cm, 'getRecvQuality')
-      .mockReturnValue({ recvQuality: 'high' });
+      .mockReturnValue({ quality: 'high', effectiveQuality: 'high' });
     const setRecvQuality = jest.spyOn(cm, 'setRecvQuality').mockResolvedValue(true);
     const replaceStream = jest.spyOn(cm, 'replaceMediaStream').mockResolvedValue(undefined);
 

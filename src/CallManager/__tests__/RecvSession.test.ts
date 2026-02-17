@@ -174,6 +174,17 @@ describe('RecvSession', () => {
     expect(session.getQuality()).toBe('auto');
   });
 
+  it('использует quality по умолчанию "auto", если quality не передан', () => {
+    const config = { audioChannel: '1' };
+    const tools = createTools();
+    const session = new RecvSession(config, tools);
+
+    expect(session.getQuality()).toBe('auto');
+    expect(session.getEffectiveQuality()).toBe('high');
+    expect(session.settings.quality).toBe('auto');
+    expect(session.settings.effectiveQuality).toBe('high');
+  });
+
   it('закрывает peerConnection', () => {
     const config = createConfig();
     const tools = createTools();
@@ -314,11 +325,15 @@ describe('RecvSession', () => {
 
     const renegotiateSpy = jest.spyOn(session, 'renegotiate');
 
-    const noChange = await session.setQuality('high');
-    const hasChange = await session.setQuality('low');
+    // quality меняется с 'auto' на 'high', но effectiveQuality остается 'high'
+    // поэтому renegotiate не вызывается, но метод возвращает true (quality изменился)
+    const noEffectiveChange = await session.setQuality('high');
+    // quality меняется с 'high' на 'low', effectiveQuality тоже меняется
+    // поэтому renegotiate вызывается
+    const hasEffectiveChange = await session.setQuality('low');
 
-    expect(noChange).toBe(false);
-    expect(hasChange).toBe(true);
+    expect(noEffectiveChange).toBe(true);
+    expect(hasEffectiveChange).toBe(true);
     expect(renegotiateSpy).toHaveBeenCalledTimes(1);
   });
 
@@ -328,6 +343,30 @@ describe('RecvSession', () => {
     const session = new RecvSession(config, tools);
 
     await expect(session.setQuality('low')).resolves.toBe(false);
+  });
+
+  it('setQuality: возвращает false если quality и effectiveQuality не изменились', async () => {
+    const config = createConfig({ quality: 'high' });
+    const tools = createTools();
+    const session = new RecvSession(config, tools);
+    const conferenceNumber = '123';
+    const token = 'test-token';
+
+    const callPromise = session.call({ conferenceNumber, token });
+
+    dispatchTrack(session, 'audio');
+    dispatchTrack(session, 'video');
+    await callPromise;
+
+    const renegotiateSpy = jest.spyOn(session, 'renegotiate');
+
+    // Вызываем setQuality с тем же значением, что уже установлено
+    const result = await session.setQuality('high');
+
+    expect(result).toBe(false);
+    expect(renegotiateSpy).not.toHaveBeenCalled();
+    expect(session.getQuality()).toBe('high');
+    expect(session.getEffectiveQuality()).toBe('high');
   });
 
   describe('applyQuality', () => {
@@ -351,7 +390,7 @@ describe('RecvSession', () => {
       expect(session.getEffectiveQuality()).toBe('low');
     });
 
-    it('возвращает { applied: false, effectiveQuality } при отсутствии effective change', async () => {
+    it('возвращает { applied: true, effectiveQuality } при изменении quality, даже если effectiveQuality не меняется', async () => {
       const config = createConfig({ quality: 'auto' });
       const tools = createTools();
       const session = new RecvSession(config, tools);
@@ -364,9 +403,12 @@ describe('RecvSession', () => {
       dispatchTrack(session, 'video');
       await callPromise;
 
+      // quality меняется с 'auto' на 'high', но effectiveQuality остается 'high'
+      // метод возвращает applied: true, потому что quality изменился
       const result = await session.applyQuality('high');
 
-      expect(result).toEqual({ applied: false, effectiveQuality: 'high' });
+      expect(result).toEqual({ applied: true, effectiveQuality: 'high' });
+      expect(session.getQuality()).toBe('high');
       expect(session.getEffectiveQuality()).toBe('high');
     });
 
@@ -375,11 +417,12 @@ describe('RecvSession', () => {
       const tools = createTools();
       const session = new RecvSession(config, tools);
 
+      // Без lastCallParams setQuality возвращает false и не обновляет конфигурацию
       const result = await session.applyQuality('low');
 
-      expect(result).toEqual({ applied: false, effectiveQuality: 'low' });
-      expect(session.getQuality()).toBe('low');
-      expect(session.getEffectiveQuality()).toBe('low');
+      expect(result).toEqual({ applied: false, effectiveQuality: 'high' });
+      expect(session.getQuality()).toBe('high');
+      expect(session.getEffectiveQuality()).toBe('high');
     });
 
     it('effectiveQuality совпадает с getEffectiveQuality() после вызова', async () => {

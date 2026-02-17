@@ -29,7 +29,12 @@ await sipConnector.callManager.restartIce(options);
 
 ## Управление качеством приема (режим зрителя)
 
+> ⚠️ **Важно**: Перед использованием `setRecvQuality`/`getRecvQuality` необходимо дождаться события `'call:recv-session-started'`.
+
 ```typescript
+// Ожидание запуска recv-сессии
+await sipConnector.wait('call:recv-session-started');
+
 // Установка качества приема (только режим зрителя)
 await sipConnector.setRecvQuality('auto'); // low | medium | high | auto
 

@@ -47,7 +47,8 @@ export enum EEvent {
   CALL_STATUS_CHANGED = 'call-status-changed',
   REMOTE_TRACKS_CHANGED = 'remote-tracks-changed',
   REMOTE_STREAMS_CHANGED = 'remote-streams-changed',
-  RECV_QUALITY_REQUESTED = 'recv-quality-requested',
+  RECV_SESSION_STARTED = 'recv-session-started',
+  RECV_SESSION_ENDED = 'recv-session-ended',
   RECV_QUALITY_CHANGED = 'recv-quality-changed',
 }
 
@@ -98,7 +99,8 @@ const SESSION_SYNTHETICS_EVENT_NAMES = [
   `${EEvent.CALL_STATUS_CHANGED}`,
   `${EEvent.REMOTE_TRACKS_CHANGED}`,
   `${EEvent.REMOTE_STREAMS_CHANGED}`,
-  `${EEvent.RECV_QUALITY_REQUESTED}`,
+  `${EEvent.RECV_SESSION_STARTED}`,
+  `${EEvent.RECV_SESSION_ENDED}`,
   `${EEvent.RECV_QUALITY_CHANGED}`,
 ] as const;
 
@@ -108,12 +110,6 @@ export const EVENT_NAMES = [
 ] as const;
 
 export type TEventName = (typeof EVENT_NAMES)[number];
-
-export type TRecvQualityChangeReason =
-  | 'not-spectator'
-  | 'no-session'
-  | 'no-effective-change'
-  | 'renegotiate-failed';
 
 export type TEventMap = {
   // RTCSession events
@@ -166,26 +162,13 @@ export type TEventMap = {
   'remote-streams-changed': {
     streams: TRemoteStreams;
   };
-  'recv-quality-requested': {
+  'recv-session-started': never;
+  'recv-session-ended': never;
+  'recv-quality-changed': {
+    effectiveQuality: TEffectiveQuality;
+    previousQuality: TRecvQuality;
     quality: TRecvQuality;
-    previous?: TRecvQuality;
-    source: 'api' | 'internal';
   };
-  'recv-quality-changed':
-    | {
-        applied: true;
-        reason?: undefined;
-        effectiveQuality: TEffectiveQuality;
-        previous: TRecvQuality;
-        next: TRecvQuality;
-      }
-    | {
-        applied: false;
-        reason: TRecvQualityChangeReason;
-        effectiveQuality?: TEffectiveQuality;
-        previous: TRecvQuality;
-        next: TRecvQuality;
-      };
 };
 
 export type TEvents = TypedEvents<TEventMap>;

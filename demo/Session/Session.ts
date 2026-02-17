@@ -76,7 +76,6 @@ class Session {
       sipServerUrl: serverParameters.sipServerUrl,
       remoteAddress: serverParameters.remoteAddress,
       userAgent: serverParameters.userAgent,
-      extraHeaders: serverParameters.extraHeaders,
     });
 
     this.unsubscribeChangeRemoteStreams = sipConnectorFacade.on(

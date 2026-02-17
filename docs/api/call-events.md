@@ -45,7 +45,8 @@
 | `call:call-status-changed`                       | Генерируется при изменении статуса звонка                           | `{ isCallActive: boolean }`                       |
 | `call:remote-tracks-changed`                     | Генерируется при изменении треков в удаленных медиа-потоках         | `TRemoteTracksChangedEvent`                       |
 | `call:remote-streams-changed`                    | Генерируется при изменении удаленных медиа-потоков                  | `{ streams: TRemoteStreams }`                     |
-| `call:recv-quality-requested`                    | Запрос на изменение качества приема (только режим зрителя)          | `TRecvQualityRequestedEvent`                      |
+| `call:recv-session-started`                      | Генерируется при успешном запуске recv-сессии (режим зрителя)       | `never`                                           |
+| `call:recv-session-ended`                        | Генерируется при остановке recv-сессии (режим зрителя)              | `never`                                           |
 | `call:recv-quality-changed`                      | Результат изменения качества приема (только режим зрителя)          | `TRecvQualityChangedEvent`                        |
 
 ## Структуры данных
@@ -83,39 +84,14 @@ type TRecvQuality = 'low' | 'medium' | 'high' | 'auto';
 type TEffectiveQuality = 'low' | 'medium' | 'high';
 ```
 
-### `TRecvQualityChangeReason`
-
-```typescript
-'not-spectator' | 'no-session' | 'no-effective-change' | 'renegotiate-failed';
-```
-
-### `TRecvQualityRequestedEvent` (событие `call:recv-quality-requested`)
-
-```typescript
-{
-  quality: TRecvQuality;
-  previous?: TRecvQuality;
-  source: 'api' | 'internal';
-}
-```
-
 ### `TRecvQualityChangedEvent` (событие `call:recv-quality-changed`)
 
 ```typescript
-| {
-    applied: true;
-    reason?: undefined;
-    effectiveQuality: TEffectiveQuality;
-    previous: TRecvQuality;
-    next: TRecvQuality;
-  }
-| {
-    applied: false;
-    reason: TRecvQualityChangeReason;
-    effectiveQuality?: TEffectiveQuality;
-    previous: TRecvQuality;
-    next: TRecvQuality;
-  };
+{
+  previousQuality: TRecvQuality;
+  quality: TRecvQuality;
+  effectiveQuality: TEffectiveQuality;
+}
 ```
 
 ### `EndEvent`

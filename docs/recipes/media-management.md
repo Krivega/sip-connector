@@ -53,7 +53,13 @@ remoteStreams.forEach((stream) => {
 
 > Управление доступно только в режиме зрителя. В режиме участника `quality` не применяется.
 
+> ⚠️ **Важно**: Перед использованием `setRecvQuality`/`getRecvQuality` необходимо дождаться события `'call:recv-session-started'`. До этого момента recv-сессия не создана, и методы могут вернуть `undefined` или `false`.
+
 ```typescript
+// Ожидание запуска recv-сессии
+await sipConnector.wait('call:recv-session-started');
+
+// Теперь можно использовать методы управления качеством
 // Установка качества приема
 await sipConnector.setRecvQuality('auto'); // low | medium | high | auto
 
@@ -64,6 +70,9 @@ console.log('Requested quality:', quality);
 // Реакция на изменение качества
 const unsubscribe = sipConnector.on('call:recv-quality-changed', (event) => {
   console.log('Quality change result:', event);
+  console.log('Previous quality:', event.previousQuality);
+  console.log('New quality:', event.quality);
+  console.log('Effective quality:', event.effectiveQuality);
 });
 ```
 

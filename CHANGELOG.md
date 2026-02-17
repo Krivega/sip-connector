@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [25.4.0](https://github.com/Krivega/sip-connector/compare/v25.3.0...v25.4.0) (2026-02-17)
+
+### Features
+
+- enhance recv quality management and event handling ([bc110d0](https://github.com/Krivega/sip-connector/commit/bc110d0dcdf94b65472f4244232dcfdb96440b15))
+
+### Bug Fixes
+
+- remove extraHeaders from session initialization to streamline parameters ([4b9aae0](https://github.com/Krivega/sip-connector/commit/4b9aae035c6cae887218c93a6c3f9d6e0068f5ee))
+
 ## [25.3.0](https://github.com/Krivega/sip-connector/compare/v25.2.5...v25.3.0) (2026-02-16)
 
 ### Features

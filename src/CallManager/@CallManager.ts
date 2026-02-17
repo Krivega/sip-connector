@@ -11,7 +11,7 @@ import { StreamsManagerProvider } from './StreamsManagerProvider';
 import type { RTCSession } from '@krivega/jssip';
 import type { ApiManager } from '@/ApiManager';
 import type { ContentedStreamManager } from '@/ContentedStreamManager';
-import type { TEventMap, TEvents, TRecvQualityChangeReason } from './events';
+import type { TEventMap, TEvents } from './events';
 import type { TRestartIceOptions } from './MCUSession';
 import type { TEffectiveQuality, TRecvQuality } from './quality';
 import type { TTools } from './RecvSession';
@@ -25,14 +25,6 @@ import type {
   TRemoteTracksChangeType,
   TRemoteStreams,
 } from './types';
-
-type TRecvQualityChangedOptions =
-  | { applied: true; effectiveQuality: TEffectiveQuality }
-  | {
-      applied: false;
-      reason: TRecvQualityChangeReason;
-      effectiveQuality?: TEffectiveQuality;
-    };
 
 const getStreamHint = (event: RTCTrackEvent) => {
   return event.streams[0]?.id;
@@ -77,8 +69,6 @@ class CallManager {
   private recvSession?: RecvSession;
 
   private disposeRecvSessionTrackListener?: () => void;
-
-  private recvQuality: TRecvQuality = 'auto';
 
   private readonly deferredStartRecvSessionRunner: DeferredCommandRunner<
     TCallRoleSpectator['recvParams'],
@@ -254,11 +244,20 @@ class CallManager {
     return this.stateMachine.token;
   }
 
-  public getRecvQuality(): { effectiveQuality?: TEffectiveQuality; recvQuality: TRecvQuality } {
-    const effectiveQuality = this.recvSession?.getEffectiveQuality();
+  public getRecvQuality():
+    | { effectiveQuality: TEffectiveQuality; quality: TRecvQuality }
+    | undefined {
+    const { recvSession } = this;
+
+    if (recvSession === undefined) {
+      return undefined;
+    }
+
+    const effectiveQuality = recvSession.getEffectiveQuality();
+    const quality = recvSession.getQuality();
 
     return {
-      recvQuality: this.recvQuality,
+      quality,
       effectiveQuality,
     };
   }
@@ -295,84 +294,24 @@ class CallManager {
   }
 
   public async setRecvQuality(quality: TRecvQuality): Promise<boolean> {
-    const previous = this.recvQuality;
-
-    this.recvQuality = quality;
-    this.emitRecvQualityRequested(quality, previous);
-
-    if (!this.roleManager.hasSpectator()) {
-      this.emitRecvQualityChanged(previous, quality, {
-        applied: false,
-        reason: 'not-spectator',
-      });
-
-      return false;
-    }
-
     const { recvSession } = this;
 
-    if (!recvSession) {
-      this.emitRecvQualityChanged(previous, quality, {
-        applied: false,
-        reason: 'no-session',
-      });
-
+    if (!this.roleManager.hasSpectator() || !recvSession) {
       return false;
     }
 
-    try {
-      const result = await recvSession.applyQuality(quality);
+    const previousQuality = recvSession.getQuality();
+    const result = await recvSession.applyQuality(quality);
 
-      this.emitRecvQualityChanged(
-        previous,
+    if (result.applied) {
+      this.events.trigger(EEvent.RECV_QUALITY_CHANGED, {
+        previousQuality,
         quality,
-        result.applied
-          ? { applied: true, effectiveQuality: result.effectiveQuality }
-          : {
-              applied: false,
-              reason: 'no-effective-change',
-              effectiveQuality: result.effectiveQuality,
-            },
-      );
-
-      return result.applied;
-    } catch (error) {
-      const effectiveQuality = recvSession.getEffectiveQuality();
-
-      this.emitRecvQualityChanged(previous, quality, {
-        applied: false,
-        reason: 'renegotiate-failed',
-        effectiveQuality,
+        effectiveQuality: result.effectiveQuality,
       });
-
-      throw error;
     }
-  }
 
-  private emitRecvQualityRequested(quality: TRecvQuality, previous: TRecvQuality): void {
-    this.events.trigger(EEvent.RECV_QUALITY_REQUESTED, {
-      quality,
-      previous,
-      source: 'api',
-    });
-  }
-
-  private emitRecvQualityChanged(
-    previous: TRecvQuality,
-    next: TRecvQuality,
-    options: TRecvQualityChangedOptions,
-  ): void {
-    const event: TEventMap['recv-quality-changed'] = options.applied
-      ? { previous, next, applied: true, effectiveQuality: options.effectiveQuality }
-      : {
-          previous,
-          next,
-          applied: false,
-          reason: options.reason,
-          effectiveQuality: options.effectiveQuality,
-        };
-
-    this.events.trigger(EEvent.RECV_QUALITY_CHANGED, event);
+    return result.applied;
   }
 
   private readonly reset: () => void = () => {
@@ -524,9 +463,7 @@ class CallManager {
 
     this.stopRecvSession();
 
-    const quality = this.recvQuality;
     const config = {
-      quality,
       audioChannel: audioId,
     };
 
@@ -538,9 +475,13 @@ class CallManager {
 
     const callPromise = session.call({ conferenceNumber, token });
 
-    callPromise.catch(() => {
-      this.stopRecvSession();
-    });
+    callPromise
+      .then(() => {
+        this.events.emit('recv-session-started');
+      })
+      .catch(() => {
+        this.stopRecvSession();
+      });
   }
 
   private stopRecvSession() {
@@ -549,6 +490,8 @@ class CallManager {
     this.disposeRecvSessionTrackListener?.();
     this.disposeRecvSessionTrackListener = undefined;
     this.recvRemoteStreamsManager.reset();
+
+    this.events.emit('recv-session-ended');
   }
 
   private readonly onRoleChanged = ({

@@ -4,15 +4,15 @@ import sipConnectorFacade from './sipConnectorFacade';
 import type { TEffectiveQuality, TRecvQuality } from '@/index';
 
 type TRecvQualityChangedEvent = {
-  previous?: TRecvQuality;
-  next: TRecvQuality;
-  applied: boolean;
-  effectiveQuality?: TEffectiveQuality;
-  reason?: string;
+  effectiveQuality: TEffectiveQuality;
+  previousQuality: TRecvQuality;
+  quality: TRecvQuality;
 };
 
 class RecvQualityManager {
   private unsubscribeQualityChanged?: () => void;
+
+  private unsubscribeRecvSessionStarted?: () => void;
 
   public subscribe(): void {
     dom.applyRecvQualityButtonElement.addEventListener('click', this.handleApplyClick);
@@ -20,13 +20,18 @@ class RecvQualityManager {
       'call:recv-quality-changed',
       this.handleQualityChanged,
     );
-    this.syncCurrentQuality();
+    this.unsubscribeRecvSessionStarted = sipConnectorFacade.on(
+      'call:recv-session-started',
+      this.syncCurrentQuality,
+    );
   }
 
   public unsubscribe(): void {
     dom.applyRecvQualityButtonElement.removeEventListener('click', this.handleApplyClick);
     this.unsubscribeQualityChanged?.();
     this.unsubscribeQualityChanged = undefined;
+    this.unsubscribeRecvSessionStarted?.();
+    this.unsubscribeRecvSessionStarted = undefined;
   }
 
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this
@@ -36,23 +41,24 @@ class RecvQualityManager {
   }
 
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this
-  private syncCurrentQuality(): void {
-    const { recvQuality } = sipConnectorFacade.sipConnector.getRecvQuality();
+  private readonly syncCurrentQuality = (prefix = 'Текущее'): void => {
+    const recvQuality = sipConnectorFacade.sipConnector.getRecvQuality();
 
-    dom.recvQualitySelectElement.value = recvQuality;
-    dom.recvQualityStatusElement.textContent = `Текущее: ${recvQuality}`;
-  }
+    dom.recvQualitySelectElement.value = recvQuality?.quality ?? 'undefined';
+    dom.recvQualityStatusElement.textContent = `${prefix}: ${recvQuality?.quality} (${recvQuality?.effectiveQuality})`;
+  };
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   private readonly handleApplyClick = (): void => {
     const quality = dom.recvQualitySelectElement.value as TRecvQuality;
 
     sipConnectorFacade.sipConnector
       .setRecvQuality(quality)
       .then((applied) => {
-        dom.recvQualityStatusElement.textContent = applied
-          ? `Применено: ${quality}`
-          : `Не применено: ${quality}`;
+        if (applied) {
+          this.syncCurrentQuality('Применено');
+        } else {
+          dom.recvQualityStatusElement.textContent = `Не применено: ${quality}`;
+        }
       })
       .catch(() => {
         dom.recvQualityStatusElement.textContent = 'Ошибка применения качества';
@@ -61,9 +67,7 @@ class RecvQualityManager {
 
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   private readonly handleQualityChanged = (event: TRecvQualityChangedEvent): void => {
-    dom.recvQualityStatusElement.textContent = event.applied
-      ? `Применено: ${event.next} (${event.effectiveQuality})`
-      : `Не применено: ${event.next} (${event.reason})`;
+    dom.recvQualityStatusElement.textContent = `Применено: ${event.quality} (${event.effectiveQuality})`;
   };
 }
 
