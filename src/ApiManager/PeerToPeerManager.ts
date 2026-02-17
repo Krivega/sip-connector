@@ -52,7 +52,7 @@ class PeerToPeerManager {
 
     const extraHeaders: string[] = [
       `${EKeyHeader.CONTENT_ENTER_ROOM}: ${this.peerToPeerRoom}`,
-      `${EKeyHeader.PARTICIPANT_NAME}: ${this.user}`,
+      `${EKeyHeader.PARTICIPANT_NAME}: ${this.number}`,
       `${EKeyHeader.IS_DIRECT_PEER_TO_PEER}: true`,
     ];
 

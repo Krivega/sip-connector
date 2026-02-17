@@ -84,7 +84,7 @@ describe('PeerToPeerManager', () => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Jest matcher
           extraHeaders: expect.arrayContaining([
             `${EKeyHeader.CONTENT_ENTER_ROOM}: p2p200touser`,
-            `${EKeyHeader.PARTICIPANT_NAME}: user`,
+            `${EKeyHeader.PARTICIPANT_NAME}: 200`,
             `${EKeyHeader.IS_DIRECT_PEER_TO_PEER}: true`,
           ]),
         }),
@@ -174,7 +174,7 @@ describe('PeerToPeerManager', () => {
         expect.objectContaining({
           extraHeaders: [
             `${EKeyHeader.CONTENT_ENTER_ROOM}: p2puserto200`,
-            `${EKeyHeader.PARTICIPANT_NAME}: user`,
+            `${EKeyHeader.PARTICIPANT_NAME}: 200`,
             `${EKeyHeader.IS_DIRECT_PEER_TO_PEER}: true`,
           ],
         }),
@@ -196,7 +196,7 @@ describe('PeerToPeerManager', () => {
         expect.objectContaining({
           extraHeaders: [
             `${EKeyHeader.CONTENT_ENTER_ROOM}: p2p200touser`,
-            `${EKeyHeader.PARTICIPANT_NAME}: user`,
+            `${EKeyHeader.PARTICIPANT_NAME}: 200`,
             `${EKeyHeader.IS_DIRECT_PEER_TO_PEER}: true`,
           ],
         }),
