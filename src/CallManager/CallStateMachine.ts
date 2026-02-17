@@ -36,7 +36,7 @@ export type TP2PRoomContext = TConnectingContext & {
 export type TDirectP2PRoomContext = TConnectingContext & {
   room: string;
   participantName: string;
-  isDirectPeerToPeer?: boolean;
+  isDirectPeerToPeer: true;
 };
 
 export type TInRoomContext = TConnectingContext & {
