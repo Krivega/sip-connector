@@ -69,7 +69,7 @@ describe('PeerToPeerManager', () => {
       });
     });
 
-    it('должен вызывать maybeSendPeerToPeerRoom когда инициатор', async () => {
+    it('должен вызывать maybeSendDirectPeerToPeerRoom когда инициатор', async () => {
       callManager.events.trigger('start-call', { number: '200', answer: false });
 
       const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
@@ -86,12 +86,13 @@ describe('PeerToPeerManager', () => {
           extraHeaders: expect.arrayContaining([
             `${EKeyHeader.CONTENT_ENTER_ROOM}: p2puserto200`,
             `${EKeyHeader.PARTICIPANT_NAME}: user`,
+            `${EKeyHeader.IS_DIRECT_PEER_TO_PEER}: true`,
           ]),
         }),
       );
     });
 
-    it('не должен вызывать maybeSendPeerToPeerRoom когда принимающая сторона', async () => {
+    it('не должен вызывать maybeSendDirectPeerToPeerRoom когда принимающая сторона', async () => {
       callManager.events.trigger('start-call', { number: '200', answer: true });
 
       const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
@@ -112,7 +113,7 @@ describe('PeerToPeerManager', () => {
       });
     });
 
-    it('должен вызывать maybeSendPeerToPeerRoom когда принимающая сторона', async () => {
+    it('должен вызывать maybeSendDirectPeerToPeerRoom когда принимающая сторона', async () => {
       callManager.events.trigger('start-call', { number: '200', answer: true });
 
       const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
@@ -129,12 +130,13 @@ describe('PeerToPeerManager', () => {
           extraHeaders: expect.arrayContaining([
             `${EKeyHeader.CONTENT_ENTER_ROOM}: p2p200touser`,
             `${EKeyHeader.PARTICIPANT_NAME}: user`,
+            `${EKeyHeader.IS_DIRECT_PEER_TO_PEER}: true`,
           ]),
         }),
       );
     });
 
-    it('не должен вызывать maybeSendPeerToPeerRoom когда инициатор', async () => {
+    it('не должен вызывать maybeSendDirectPeerToPeerRoom когда инициатор', async () => {
       callManager.events.trigger('start-call', { number: '200', answer: false });
 
       const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
@@ -147,7 +149,7 @@ describe('PeerToPeerManager', () => {
     });
   });
 
-  describe('maybeSendPeerToPeerRoom', () => {
+  describe('maybeSendDirectPeerToPeerRoom', () => {
     beforeEach(() => {
       peerToPeerManager.subscribe({
         connectionManager,
@@ -155,7 +157,7 @@ describe('PeerToPeerManager', () => {
       });
     });
 
-    it('не должен отправлять комнату если нет peerToPeerRoom', async () => {
+    it('не должен отправлять комнату если нет directPeerToPeerRoom', async () => {
       jest.spyOn(connectionManager, 'getUaProtected').mockReturnValue({
         configuration: {
           uri: {
@@ -230,6 +232,7 @@ describe('PeerToPeerManager', () => {
           extraHeaders: [
             `${EKeyHeader.CONTENT_ENTER_ROOM}: p2puserto200`,
             `${EKeyHeader.PARTICIPANT_NAME}: user`,
+            `${EKeyHeader.IS_DIRECT_PEER_TO_PEER}: true`,
           ],
         }),
       );
@@ -251,6 +254,7 @@ describe('PeerToPeerManager', () => {
           extraHeaders: [
             `${EKeyHeader.CONTENT_ENTER_ROOM}: p2p200touser`,
             `${EKeyHeader.PARTICIPANT_NAME}: user`,
+            `${EKeyHeader.IS_DIRECT_PEER_TO_PEER}: true`,
           ],
         }),
       );
@@ -350,7 +354,10 @@ describe('PeerToPeerManager', () => {
         undefined,
         expect.objectContaining({
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Jest matcher
-          extraHeaders: expect.arrayContaining([`${EKeyHeader.CONTENT_ENTER_ROOM}: p2puserto200`]),
+          extraHeaders: expect.arrayContaining([
+            `${EKeyHeader.CONTENT_ENTER_ROOM}: p2puserto200`,
+            `${EKeyHeader.IS_DIRECT_PEER_TO_PEER}: true`,
+          ]),
         }),
       );
     });
@@ -369,7 +376,10 @@ describe('PeerToPeerManager', () => {
         undefined,
         expect.objectContaining({
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Jest matcher
-          extraHeaders: expect.arrayContaining([`${EKeyHeader.CONTENT_ENTER_ROOM}: p2p200touser`]),
+          extraHeaders: expect.arrayContaining([
+            `${EKeyHeader.CONTENT_ENTER_ROOM}: p2p200touser`,
+            `${EKeyHeader.IS_DIRECT_PEER_TO_PEER}: true`,
+          ]),
         }),
       );
     });

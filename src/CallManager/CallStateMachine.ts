@@ -12,6 +12,7 @@ export enum EState {
   CONNECTING = 'call:connecting',
   PURGATORY = 'call:purgatory',
   P2P_ROOM = 'call:p2pRoom',
+  DIRECT_P2P_ROOM = 'call:directP2pRoom',
   IN_ROOM = 'call:inRoom',
 }
 
@@ -32,6 +33,12 @@ export type TP2PRoomContext = TConnectingContext & {
   participantName: string;
 };
 
+export type TDirectP2PRoomContext = TConnectingContext & {
+  room: string;
+  participantName: string;
+  isDirectPeerToPeer?: boolean;
+};
+
 export type TInRoomContext = TConnectingContext & {
   room: string;
   participantName: string;
@@ -45,11 +52,18 @@ type TContext =
   | TConnectingContext
   | TPurgatoryContext
   | TP2PRoomContext
+  | TDirectP2PRoomContext
   | TInRoomContext;
 
 type TCallEvent =
   | { type: 'CALL.CONNECTING'; number: string; answer: boolean }
-  | { type: 'CALL.ENTER_ROOM'; room: string; participantName: string; token?: string }
+  | {
+      type: 'CALL.ENTER_ROOM';
+      room: string;
+      participantName: string;
+      token?: string;
+      isDirectPeerToPeer?: boolean;
+    }
   | { type: 'CALL.TOKEN_ISSUED'; token: string }
   | { type: 'CALL.RESET' };
 
@@ -75,8 +89,12 @@ const hasTokenContext = (context: TContext) => {
   return 'token' in context && isNonEmptyString(context.token);
 };
 
-const hasNoTokenRoom = (room?: string): boolean => {
-  return hasPurgatory(room) || hasPeerToPeer(room);
+const hasDirectPeerToPeer = ({ isDirectPeerToPeer }: { isDirectPeerToPeer?: boolean }): boolean => {
+  return isDirectPeerToPeer === true;
+};
+
+const hasNoTokenRoom = (event: { room?: string; isDirectPeerToPeer?: boolean }): boolean => {
+  return hasPurgatory(event.room) || hasPeerToPeer(event.room) || hasDirectPeerToPeer(event);
 };
 
 const hasPurgatoryContext = (context: TContext): context is TPurgatoryContext => {
@@ -99,6 +117,20 @@ const hasP2PRoomContext = (context: TContext): context is TP2PRoomContext => {
   );
 };
 
+const hasDirectPeerToPeerContext = (context: TContext): boolean => {
+  return 'isDirectPeerToPeer' in context && hasDirectPeerToPeer(context);
+};
+
+const hasDirectP2PRoomContext = (context: TContext): context is TDirectP2PRoomContext => {
+  return (
+    hasConnectingContext(context) &&
+    hasRoomContext(context) &&
+    !hasTokenContext(context) &&
+    'room' in context &&
+    hasDirectPeerToPeerContext(context)
+  );
+};
+
 const hasInRoomContext = (context: TContext): context is TInRoomContext => {
   return hasConnectingContext(context) && hasRoomContext(context) && hasTokenContext(context);
 };
@@ -112,6 +144,7 @@ const clearCallContext = (): Partial<TContext> => {
     room: undefined,
     participantName: undefined,
     token: undefined,
+    isDirectPeerToPeer: undefined,
   };
 };
 
@@ -137,15 +170,24 @@ const callMachine = setup({
         return context;
       }
 
-      const nextContext: Partial<TInRoomContext> = {
+      const nextContext: {
+        room: string;
+        participantName: string;
+        token?: string;
+        isDirectPeerToPeer?: boolean;
+      } = {
         room: event.room,
         participantName: event.participantName,
       };
 
       if (event.token !== undefined) {
         nextContext.token = event.token;
-      } else if (hasNoTokenRoom(event.room)) {
+      } else if (hasNoTokenRoom(event)) {
         nextContext.token = undefined;
+      }
+
+      if (event.isDirectPeerToPeer !== undefined) {
+        nextContext.isDirectPeerToPeer = event.isDirectPeerToPeer;
       }
 
       return nextContext;
@@ -215,6 +257,12 @@ const callMachine = setup({
           },
         },
         {
+          target: EState.DIRECT_P2P_ROOM,
+          guard: ({ context }) => {
+            return hasDirectP2PRoomContext(context);
+          },
+        },
+        {
           target: EState.P2P_ROOM,
           guard: ({ context }) => {
             return hasP2PRoomContext(context);
@@ -269,6 +317,22 @@ const callMachine = setup({
         },
       },
     },
+    [EState.DIRECT_P2P_ROOM]: {
+      on: {
+        'CALL.ENTER_ROOM': {
+          target: EVALUATE,
+          actions: 'setRoomInfo',
+        },
+        'CALL.TOKEN_ISSUED': {
+          target: EVALUATE,
+          actions: 'setTokenInfo',
+        },
+        'CALL.RESET': {
+          target: EVALUATE,
+          actions: 'reset',
+        },
+      },
+    },
   },
 });
 
@@ -297,6 +361,10 @@ export class CallStateMachine extends BaseStateMachine<typeof callMachine, EStat
     return this.state === EState.P2P_ROOM;
   }
 
+  public get isDirectP2PRoom(): boolean {
+    return this.state === EState.DIRECT_P2P_ROOM;
+  }
+
   public get isInRoom(): boolean {
     return this.state === EState.IN_ROOM;
   }
@@ -309,7 +377,7 @@ export class CallStateMachine extends BaseStateMachine<typeof callMachine, EStat
   }
 
   public get isActive(): boolean {
-    return this.isInRoom || this.isInPurgatory || this.isP2PRoom;
+    return this.isInRoom || this.isInPurgatory || this.isP2PRoom || this.isDirectP2PRoom;
   }
 
   public get isPending(): boolean {
@@ -367,8 +435,14 @@ export class CallStateMachine extends BaseStateMachine<typeof callMachine, EStat
 
   public subscribeToApiEvents(apiManager: TApiManagerEvents): void {
     this.addSubscription(
-      apiManager.on('enter-room', ({ room, participantName, bearerToken }) => {
-        this.send({ type: 'CALL.ENTER_ROOM', room, participantName, token: bearerToken });
+      apiManager.on('enter-room', ({ room, participantName, bearerToken, isDirectPeerToPeer }) => {
+        this.send({
+          type: 'CALL.ENTER_ROOM',
+          room,
+          participantName,
+          token: bearerToken,
+          isDirectPeerToPeer,
+        });
       }),
     );
     this.addSubscription(

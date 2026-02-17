@@ -44,6 +44,20 @@ const parseNumberValue = (value: string): number | undefined => {
   return Number(value);
 };
 
+const parseBooleanValue = (value: string): boolean | undefined => {
+  const lower = value.toLowerCase();
+
+  if (lower === 'true' || lower === '1') {
+    return true;
+  }
+
+  if (lower === 'false' || lower === '0') {
+    return false;
+  }
+
+  return undefined;
+};
+
 export const getHeader = <T extends EKeyHeader>(
   request: IncomingRequest,
   header: T,
@@ -105,6 +119,9 @@ export const getHeader = <T extends EKeyHeader>(
       return findEnumValue(EContentedStreamSendAndReceive, lowerValue) as
         | EValueHeader<T>
         | undefined;
+    }
+    case EKeyHeader.IS_DIRECT_PEER_TO_PEER: {
+      return parseBooleanValue(lowerValue) as EValueHeader<T> | undefined;
     }
     default: {
       return undefined;

@@ -70,6 +70,7 @@ export enum EKeyHeader {
   TRACKS_DIRECTION = 'x-webrtc-tracks-direction',
   AUDIO_ID = 'x-webrtc-audioid',
   BEARER_TOKEN = 'x-bearer-token',
+  IS_DIRECT_PEER_TO_PEER = 'x-webrtc-is-direct-p2p',
 }
 
 enum EContentContentedStreamSend {
@@ -130,6 +131,7 @@ type THeaderValueMap = {
   [EKeyHeader.TRACKS_DIRECTION]: string;
   [EKeyHeader.AUDIO_ID]: string;
   [EKeyHeader.BEARER_TOKEN]: string | undefined;
+  [EKeyHeader.IS_DIRECT_PEER_TO_PEER]: boolean;
 };
 
 export type EValueHeader<T extends EKeyHeader> = THeaderValueMap[T];

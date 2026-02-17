@@ -1,4 +1,4 @@
-import { EContentTypeReceived, EKeyHeader } from '@/ApiManager';
+import { EContentTypeReceived } from '@/ApiManager';
 import { DeferredCommandRunner } from '@/tools';
 import { CallStateMachine, EState } from './CallStateMachine';
 import { createEvents, EEvent } from './events';
@@ -315,12 +315,7 @@ class CallManager {
     return result.applied;
   }
 
-  public sendEnterRoom(room: string, participantName: string): void {
-    const extraHeaders: string[] = [
-      `${EKeyHeader.CONTENT_ENTER_ROOM}: ${room}`,
-      `${EKeyHeader.PARTICIPANT_NAME}: ${participantName}`,
-    ];
-
+  public sendEnterRoom(extraHeaders: string[]): void {
     this.sendInfo(EContentTypeReceived.ENTER_ROOM, undefined, { extraHeaders }).catch(
       (error: unknown) => {
         this.emitFailedCall(error);

@@ -134,6 +134,63 @@ describe('getHeader', () => {
     });
   });
 
+  describe('IS_DIRECT_PEER_TO_PEER (boolean)', () => {
+    it('должен возвращать true для "true"', () => {
+      mockRequest.setHeader(EKeyHeader.IS_DIRECT_PEER_TO_PEER, 'true');
+
+      const result = getHeader(
+        mockRequest as unknown as IncomingRequest,
+        EKeyHeader.IS_DIRECT_PEER_TO_PEER,
+      );
+
+      expect(result).toBe(true);
+    });
+
+    it('должен возвращать true для "1"', () => {
+      mockRequest.setHeader(EKeyHeader.IS_DIRECT_PEER_TO_PEER, '1');
+
+      const result = getHeader(
+        mockRequest as unknown as IncomingRequest,
+        EKeyHeader.IS_DIRECT_PEER_TO_PEER,
+      );
+
+      expect(result).toBe(true);
+    });
+
+    it('должен возвращать false для "false"', () => {
+      mockRequest.setHeader(EKeyHeader.IS_DIRECT_PEER_TO_PEER, 'false');
+
+      const result = getHeader(
+        mockRequest as unknown as IncomingRequest,
+        EKeyHeader.IS_DIRECT_PEER_TO_PEER,
+      );
+
+      expect(result).toBe(false);
+    });
+
+    it('должен возвращать false для "0"', () => {
+      mockRequest.setHeader(EKeyHeader.IS_DIRECT_PEER_TO_PEER, '0');
+
+      const result = getHeader(
+        mockRequest as unknown as IncomingRequest,
+        EKeyHeader.IS_DIRECT_PEER_TO_PEER,
+      );
+
+      expect(result).toBe(false);
+    });
+
+    it('должен возвращать undefined для невалидного значения', () => {
+      mockRequest.setHeader(EKeyHeader.IS_DIRECT_PEER_TO_PEER, 'yes');
+
+      const result = getHeader(
+        mockRequest as unknown as IncomingRequest,
+        EKeyHeader.IS_DIRECT_PEER_TO_PEER,
+      );
+
+      expect(result).toBeUndefined();
+    });
+  });
+
   describe('Number headers', () => {
     it('должен возвращать число для MEDIA_TYPE', () => {
       mockRequest.setHeader(EKeyHeader.MEDIA_TYPE, '1');

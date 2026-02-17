@@ -548,9 +548,15 @@ class ApiManager {
     const room = getHeader(request, EKeyHeader.CONTENT_ENTER_ROOM);
     const participantName = getHeader(request, EKeyHeader.PARTICIPANT_NAME);
     const bearerToken = getHeader(request, EKeyHeader.BEARER_TOKEN);
+    const isDirectPeerToPeer = getHeader(request, EKeyHeader.IS_DIRECT_PEER_TO_PEER);
 
     if (room !== undefined && participantName !== undefined) {
-      this.events.trigger(EEvent.ENTER_ROOM, { room, participantName, bearerToken });
+      this.events.trigger(EEvent.ENTER_ROOM, {
+        room,
+        participantName,
+        bearerToken,
+        isDirectPeerToPeer,
+      });
     }
   };
 
