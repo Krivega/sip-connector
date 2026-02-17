@@ -148,14 +148,6 @@ class CallManager {
     return this.stateMachine.isCallAnswerer;
   }
 
-  public get currentRoom(): string | undefined {
-    return this.stateMachine.currentRoom;
-  }
-
-  public get isEstablishedRTCSession(): boolean {
-    return this.getEstablishedRTCSession() !== undefined;
-  }
-
   // For testing purposes
   public getStreamsManagerProvider(): StreamsManagerProvider {
     return this.streamsManagerProvider;

@@ -59,31 +59,27 @@ class ApiManager {
   }
 
   private get peerToPeerRoom(): string | undefined {
-    if (this.caller === undefined || this.callee === undefined) {
+    if (this.user === undefined || this.number === undefined) {
       return undefined;
     }
 
-    return `p2p${this.caller}to${this.callee}`;
+    if (this.isCallInitiator) {
+      return `p2p${this.user}to${this.number}`;
+    }
+
+    return `p2p${this.number}to${this.user}`;
   }
 
-  private get caller(): string | undefined {
+  private get user(): string | undefined {
     return this.connectionManager?.user;
   }
 
-  private get callee(): string | undefined {
+  private get number(): string | undefined {
     return this.callManager?.number;
-  }
-
-  private get currentRoom(): string | undefined {
-    return this.callManager?.currentRoom;
   }
 
   private get displayName(): string | undefined {
     return this.connectionManager?.displayName;
-  }
-
-  private get isAvailableToSendPeerToPeerRoom(): boolean {
-    return this.isCallInitiator && this.isEstablishedRTCSession;
   }
 
   private get isCallInitiator(): boolean {
@@ -92,10 +88,6 @@ class ApiManager {
 
   private get isCallAnswerer(): boolean {
     return Boolean(this.callManager?.isCallAnswerer);
-  }
-
-  private get isEstablishedRTCSession(): boolean {
-    return Boolean(this.callManager?.isEstablishedRTCSession);
   }
 
   private static createSyntheticLocalEndEvent(error: unknown): EndEvent {
@@ -121,6 +113,7 @@ class ApiManager {
     callManager.on('newDTMF', ({ originator }) => {
       this.events.trigger(EEvent.NEW_DTMF, { originator });
     });
+    callManager.on('accepted', this.handleAccepted);
     callManager.on('confirmed', this.handleConfirmed);
   }
 
@@ -435,7 +428,6 @@ class ApiManager {
     if (contentType !== undefined) {
       switch (contentType) {
         case EContentTypeReceived.ENTER_ROOM: {
-          this.maybeRetransmitEnterRoom(typedRequest);
           this.triggerEnterRoom(typedRequest);
           this.maybeTriggerChannels(typedRequest);
           break;
@@ -465,18 +457,6 @@ class ApiManager {
           break;
         }
       }
-    }
-  };
-
-  private readonly maybeRetransmitEnterRoom = (request: IncomingRequest) => {
-    const room = getHeader(request, EKeyHeader.CONTENT_ENTER_ROOM);
-    const isValidRoom = room !== undefined && room !== this.currentRoom;
-    const isValidData = isValidRoom && this.displayName !== undefined;
-
-    if (isValidData && this.isCallAnswerer) {
-      this.sendEnterRoom(room, this.displayName).catch((error: unknown) => {
-        this.callManager?.events.trigger('failed', ApiManager.createSyntheticLocalEndEvent(error));
-      });
     }
   };
 
@@ -718,8 +698,14 @@ class ApiManager {
     }
   };
 
+  private readonly handleAccepted = (): void => {
+    if (this.isCallInitiator) {
+      this.maybeSendPeerToPeerRoom();
+    }
+  };
+
   private readonly handleConfirmed = (): void => {
-    if (this.isAvailableToSendPeerToPeerRoom) {
+    if (this.isCallAnswerer) {
       this.maybeSendPeerToPeerRoom();
     }
   };

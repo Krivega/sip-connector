@@ -1,5 +1,4 @@
 import jssip from '@/__fixtures__/jssip.mock';
-import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { CallManager } from '@/CallManager';
 import { ConnectionManager } from '@/ConnectionManager';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
@@ -16,7 +15,6 @@ import {
   EContentUseLicense,
 } from '../constants';
 
-import type { IncomingInfoEvent } from '@krivega/jssip';
 import type { TJsSIP } from '@/types';
 
 describe('ApiManager (NEW_INFO handling)', () => {
@@ -71,88 +69,6 @@ describe('ApiManager (NEW_INFO handling)', () => {
         participantName: 'user123',
         bearerToken: 'token123',
       });
-    });
-
-    it('ретранслирует enter-room через sendInfo когда room не совпадает с currentRoom и сессия установлена', () => {
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
-      const rtcSession = new RTCSessionMock({ eventHandlers: {}, originator: 'local' });
-      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
-
-      callManager.getEstablishedRTCSession.mockReturnValue(rtcSession);
-      jest
-        .spyOn(connectionManager, 'getConnectionConfiguration')
-        .mockReturnValue({ user: 'u', displayName: 'participant' } as never);
-      callManager.events.trigger('start-call', { number: '1', answer: true });
-      apiManager.events.trigger('enter-room', {
-        room: 'room-current',
-        participantName: 'participantName',
-      });
-      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
-      mockRequest.setHeader(EKeyHeader.CONTENT_ENTER_ROOM, 'room-other');
-      mockRequest.setHeader(EKeyHeader.PARTICIPANT_NAME, 'Participant');
-
-      const infoEvent = MockRequest.createInfoEvent('remote', mockRequest) as IncomingInfoEvent;
-
-      callManager.events.trigger('newInfo', infoEvent);
-
-      expect(sendInfoSpy).toHaveBeenCalledWith(
-        EContentTypeReceived.ENTER_ROOM,
-        undefined,
-        expect.objectContaining({
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Jest matcher
-          extraHeaders: expect.arrayContaining([
-            `${EKeyHeader.CONTENT_ENTER_ROOM}: room-other`,
-            `${EKeyHeader.PARTICIPANT_NAME}: participant`,
-          ]),
-        }),
-      );
-      consoleWarnSpy.mockRestore();
-    });
-
-    it('не ретранслирует enter-room когда room совпадает с currentRoom', () => {
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
-      const rtcSession = new RTCSessionMock({ eventHandlers: {}, originator: 'local' });
-      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
-
-      callManager.getEstablishedRTCSession.mockReturnValue(rtcSession);
-      callManager.events.trigger('start-call', { number: '1', answer: true });
-      apiManager.events.trigger('enter-room', {
-        room: 'room-same',
-        participantName: 'participantName',
-      });
-      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
-      mockRequest.setHeader(EKeyHeader.CONTENT_ENTER_ROOM, 'room-same');
-      mockRequest.setHeader(EKeyHeader.PARTICIPANT_NAME, 'P');
-
-      const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
-
-      callManager.events.trigger('newInfo', infoEvent);
-
-      expect(sendInfoSpy).not.toHaveBeenCalled();
-      consoleWarnSpy.mockRestore();
-    });
-
-    it('не ретранслирует enter-room когда isCallInitiator (инициатор звонка)', () => {
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
-      const rtcSession = new RTCSessionMock({ eventHandlers: {}, originator: 'local' });
-      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
-
-      callManager.getEstablishedRTCSession.mockReturnValue(rtcSession);
-      jest
-        .spyOn(connectionManager, 'getConnectionConfiguration')
-        .mockReturnValue({ user: 'u', displayName: 'participant' } as never);
-      callManager.events.trigger('start-call', { number: '1', answer: false });
-      apiManager.events.trigger('enter-room', { room: 'room-current', participantName: 'P' });
-      mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
-      mockRequest.setHeader(EKeyHeader.CONTENT_ENTER_ROOM, 'room-other');
-      mockRequest.setHeader(EKeyHeader.PARTICIPANT_NAME, 'Participant');
-
-      const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
-
-      callManager.events.trigger('newInfo', infoEvent);
-
-      expect(sendInfoSpy).not.toHaveBeenCalled();
-      consoleWarnSpy.mockRestore();
     });
 
     it('должен обрабатывать SHARE_STATE события', () => {

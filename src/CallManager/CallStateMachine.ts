@@ -336,12 +336,6 @@ export class CallStateMachine extends BaseStateMachine<typeof callMachine, EStat
     return undefined;
   }
 
-  public get currentRoom(): string | undefined {
-    const { context } = this;
-
-    return 'room' in context ? context.room : undefined;
-  }
-
   public get isCallInitiator(): boolean {
     return !this.isCallAnswerer;
   }
