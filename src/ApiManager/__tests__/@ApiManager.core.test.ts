@@ -79,7 +79,7 @@ describe('ApiManager (core)', () => {
       expect(onSpy).toHaveBeenCalledWith('newInfo', expect.any(Function));
     });
 
-    it('должен подписываться на accepted и confirmed при создании', () => {
+    it('должен подписываться на confirmed при создании', () => {
       const onSpy = jest.spyOn(callManager, 'on');
 
       apiManager = new ApiManager();
@@ -88,7 +88,6 @@ describe('ApiManager (core)', () => {
         callManager,
       });
 
-      expect(onSpy).toHaveBeenCalledWith('accepted', expect.any(Function));
       expect(onSpy).toHaveBeenCalledWith('confirmed', expect.any(Function));
     });
   });

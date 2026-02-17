@@ -26,10 +26,6 @@ class PeerToPeerManager {
     return Boolean(this.callManager?.isCallInitiator);
   }
 
-  private get isCallAnswerer(): boolean {
-    return Boolean(this.callManager?.isCallAnswerer);
-  }
-
   private get peerToPeerRoom(): string | undefined {
     if (this.user === undefined || this.number === undefined) {
       return undefined;
@@ -52,23 +48,10 @@ class PeerToPeerManager {
     this.connectionManager = connectionManager;
     this.callManager = callManager;
 
-    callManager.on('accepted', this.handleAccepted);
-    callManager.on('confirmed', this.handleConfirmed);
+    callManager.on('confirmed', this.maybeSendDirectPeerToPeerRoom);
   }
 
-  private readonly handleAccepted = (): void => {
-    if (this.isCallInitiator) {
-      this.maybeSendDirectPeerToPeerRoom();
-    }
-  };
-
-  private readonly handleConfirmed = (): void => {
-    if (this.isCallAnswerer) {
-      this.maybeSendDirectPeerToPeerRoom();
-    }
-  };
-
-  private maybeSendDirectPeerToPeerRoom(): void {
+  private readonly maybeSendDirectPeerToPeerRoom = () => {
     if (this.peerToPeerRoom === undefined || this.user === undefined) {
       return;
     }
@@ -80,7 +63,7 @@ class PeerToPeerManager {
     ];
 
     this.callManager?.sendEnterRoom(extraHeaders);
-  }
+  };
 }
 
 export default PeerToPeerManager;

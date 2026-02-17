@@ -39,7 +39,7 @@ describe('PeerToPeerManager', () => {
   });
 
   describe('subscribe', () => {
-    it('должен подписываться на accepted и confirmed события', () => {
+    it('должен подписываться на confirmed события', () => {
       const onSpy = jest.spyOn(callManager, 'on');
 
       peerToPeerManager.subscribe({
@@ -47,7 +47,6 @@ describe('PeerToPeerManager', () => {
         callManager,
       });
 
-      expect(onSpy).toHaveBeenCalledWith('accepted', expect.any(Function));
       expect(onSpy).toHaveBeenCalledWith('confirmed', expect.any(Function));
     });
 
@@ -58,50 +57,6 @@ describe('PeerToPeerManager', () => {
       });
 
       expect(callManager.getEstablishedRTCSession).toBeDefined();
-    });
-  });
-
-  describe('handleAccepted', () => {
-    beforeEach(() => {
-      peerToPeerManager.subscribe({
-        connectionManager,
-        callManager,
-      });
-    });
-
-    it('должен вызывать maybeSendDirectPeerToPeerRoom когда инициатор', async () => {
-      callManager.events.trigger('start-call', { number: '200', answer: false });
-
-      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
-
-      callManager.events.trigger('accepted', {});
-
-      await delayPromise(0);
-
-      expect(sendInfoSpy).toHaveBeenCalledWith(
-        EContentTypeReceived.ENTER_ROOM,
-        undefined,
-        expect.objectContaining({
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Jest matcher
-          extraHeaders: expect.arrayContaining([
-            `${EKeyHeader.CONTENT_ENTER_ROOM}: p2puserto200`,
-            `${EKeyHeader.PARTICIPANT_NAME}: user`,
-            `${EKeyHeader.IS_DIRECT_PEER_TO_PEER}: true`,
-          ]),
-        }),
-      );
-    });
-
-    it('не должен вызывать maybeSendDirectPeerToPeerRoom когда принимающая сторона', async () => {
-      callManager.events.trigger('start-call', { number: '200', answer: true });
-
-      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
-
-      callManager.events.trigger('accepted', {});
-
-      await delayPromise(0);
-
-      expect(sendInfoSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -134,18 +89,6 @@ describe('PeerToPeerManager', () => {
           ]),
         }),
       );
-    });
-
-    it('не должен вызывать maybeSendDirectPeerToPeerRoom когда инициатор', async () => {
-      callManager.events.trigger('start-call', { number: '200', answer: false });
-
-      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
-
-      callManager.events.trigger('confirmed', {});
-
-      await delayPromise(0);
-
-      expect(sendInfoSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -216,12 +159,12 @@ describe('PeerToPeerManager', () => {
       });
     });
 
-    it('должен отправлять ENTER_ROOM с правильными заголовками когда инициатор', async () => {
+    it('должен отправлять ENTER_ROOM с правильными заголовками', async () => {
       callManager.events.trigger('start-call', { number: '200', answer: false });
 
       const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
 
-      callManager.events.trigger('accepted', {});
+      callManager.events.trigger('confirmed', {});
 
       await delayPromise(0);
 
@@ -340,29 +283,7 @@ describe('PeerToPeerManager', () => {
       });
     });
 
-    it('должен формировать p2p{user}to{number} когда инициатор', async () => {
-      callManager.events.trigger('start-call', { number: '200', answer: false });
-
-      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
-
-      callManager.events.trigger('accepted', {});
-
-      await delayPromise(0);
-
-      expect(sendInfoSpy).toHaveBeenCalledWith(
-        EContentTypeReceived.ENTER_ROOM,
-        undefined,
-        expect.objectContaining({
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Jest matcher
-          extraHeaders: expect.arrayContaining([
-            `${EKeyHeader.CONTENT_ENTER_ROOM}: p2puserto200`,
-            `${EKeyHeader.IS_DIRECT_PEER_TO_PEER}: true`,
-          ]),
-        }),
-      );
-    });
-
-    it('должен формировать p2p{number}to{user} когда принимающая сторона', async () => {
+    it('должен формировать p2p{number}to{user}', async () => {
       callManager.events.trigger('start-call', { number: '200', answer: true });
 
       const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
