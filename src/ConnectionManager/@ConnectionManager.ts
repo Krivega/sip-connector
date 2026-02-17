@@ -218,6 +218,16 @@ export default class ConnectionManager {
     return id;
   };
 
+  public getUser(): string | undefined {
+    try {
+      const ua = this.getUaProtected();
+
+      return ua.configuration.uri.user;
+    } catch {
+      return undefined;
+    }
+  }
+
   public readonly getUaProtected = () => {
     if (!this.ua) {
       throw new Error('UA not initialized');

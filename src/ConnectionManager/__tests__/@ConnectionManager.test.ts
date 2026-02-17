@@ -595,4 +595,28 @@ describe('ConnectionManager', () => {
       }).not.toThrow();
     });
   });
+
+  describe('getUser', () => {
+    it('должен возвращать undefined, когда UA не инициализирован', () => {
+      expect(connectionManager.getUser()).toBeUndefined();
+    });
+
+    it('должен возвращать user из UA configuration, когда UA инициализирован', async () => {
+      await connectionManager.connect(parameters);
+
+      const user = connectionManager.getUser();
+
+      expect(user).toBe(connectionManager.ua?.configuration.uri.user);
+      expect(user).toBeDefined();
+    });
+
+    it('должен возвращать undefined при ошибке получения UA', () => {
+      // Мокаем getUaProtected чтобы он выбрасывал ошибку
+      jest.spyOn(connectionManager, 'getUaProtected').mockImplementation(() => {
+        throw new Error('UA not initialized');
+      });
+
+      expect(connectionManager.getUser()).toBeUndefined();
+    });
+  });
 });

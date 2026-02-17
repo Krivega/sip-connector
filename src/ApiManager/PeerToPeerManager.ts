@@ -9,13 +9,7 @@ class PeerToPeerManager {
   private callManager?: CallManager;
 
   private get user(): string | undefined {
-    try {
-      const ua = this.connectionManager?.getUaProtected();
-
-      return ua?.configuration.uri.user;
-    } catch {
-      return undefined;
-    }
+    return this.connectionManager?.getUser();
   }
 
   private get number(): string | undefined {
