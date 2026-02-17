@@ -1,9 +1,5 @@
-import { EContentTypeReceived, EKeyHeader } from './constants';
-
-import type { EndEvent, IncomingRequest, IncomingResponse, RTCSession } from '@krivega/jssip';
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
-import type { TOptionsExtraHeaders } from './types';
 
 class PeerToPeerManager {
   private connectionManager?: ConnectionManager;
@@ -44,14 +40,6 @@ class PeerToPeerManager {
     return `p2p${this.number}to${this.user}`;
   }
 
-  private static createSyntheticLocalEndEvent(error: unknown): EndEvent {
-    return {
-      originator: 'local',
-      cause: error instanceof Error ? error.message : String(error),
-      message: {} as IncomingRequest | IncomingResponse,
-    };
-  }
-
   public subscribe({
     connectionManager,
     callManager,
@@ -83,32 +71,7 @@ class PeerToPeerManager {
       return;
     }
 
-    this.sendEnterRoom(this.peerToPeerRoom, this.user).catch((error: unknown) => {
-      this.callManager?.events.trigger(
-        'failed',
-        PeerToPeerManager.createSyntheticLocalEndEvent(error),
-      );
-    });
-  }
-
-  private async sendEnterRoom(room: string, participantName: string): Promise<void> {
-    const rtcSession = this.getEstablishedRTCSessionProtected();
-    const extraHeaders: TOptionsExtraHeaders['extraHeaders'] = [
-      `${EKeyHeader.CONTENT_ENTER_ROOM}: ${room}`,
-      `${EKeyHeader.PARTICIPANT_NAME}: ${participantName}`,
-    ];
-
-    return rtcSession.sendInfo(EContentTypeReceived.ENTER_ROOM, undefined, { extraHeaders });
-  }
-
-  private getEstablishedRTCSessionProtected(): RTCSession {
-    const rtcSession = this.callManager?.getEstablishedRTCSession();
-
-    if (!rtcSession) {
-      throw new Error('No rtcSession established');
-    }
-
-    return rtcSession;
+    this.callManager?.sendEnterRoom(this.peerToPeerRoom, this.user);
   }
 }
 

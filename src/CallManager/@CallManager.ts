@@ -1,3 +1,4 @@
+import { EContentTypeReceived, EKeyHeader } from '@/ApiManager';
 import { DeferredCommandRunner } from '@/tools';
 import { CallStateMachine, EState } from './CallStateMachine';
 import { createEvents, EEvent } from './events';
@@ -8,7 +9,7 @@ import { RoleManager } from './RoleManager';
 import { StreamsChangeTracker } from './StreamsChangeTracker';
 import { StreamsManagerProvider } from './StreamsManagerProvider';
 
-import type { RTCSession } from '@krivega/jssip';
+import type { ExtraHeaders, IncomingRequest, IncomingResponse, RTCSession } from '@krivega/jssip';
 import type { ApiManager } from '@/ApiManager';
 import type { ContentedStreamManager } from '@/ContentedStreamManager';
 import type { TEventMap, TEvents } from './events';
@@ -312,6 +313,53 @@ class CallManager {
     }
 
     return result.applied;
+  }
+
+  public sendEnterRoom(room: string, participantName: string): void {
+    const extraHeaders: string[] = [
+      `${EKeyHeader.CONTENT_ENTER_ROOM}: ${room}`,
+      `${EKeyHeader.PARTICIPANT_NAME}: ${participantName}`,
+    ];
+
+    this.sendInfo(EContentTypeReceived.ENTER_ROOM, undefined, { extraHeaders }).catch(
+      (error: unknown) => {
+        this.emitFailedCall(error);
+      },
+    );
+  }
+
+  private async sendInfo(
+    contentType: string,
+    body?: string,
+    options?: ExtraHeaders & {
+      noTerminateWhenError?: boolean;
+    },
+  ): Promise<void> {
+    try {
+      const rtcSessionProtected = this.getEstablishedRTCSessionProtected();
+
+      await rtcSessionProtected.sendInfo(contentType, body, options);
+    } catch (error: unknown) {
+      throw error as Error;
+    }
+  }
+
+  private getEstablishedRTCSessionProtected(): RTCSession {
+    const rtcSession = this.getEstablishedRTCSession();
+
+    if (!rtcSession) {
+      throw new Error('No rtcSession established');
+    }
+
+    return rtcSession;
+  }
+
+  private emitFailedCall(error: unknown) {
+    this.events.trigger(EEvent.FAILED, {
+      originator: 'local',
+      cause: error instanceof Error ? error.message : String(error),
+      message: {} as IncomingRequest | IncomingResponse,
+    });
   }
 
   private readonly reset: () => void = () => {
