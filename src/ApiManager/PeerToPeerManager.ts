@@ -11,15 +11,17 @@ class PeerToPeerManager {
   private callManager?: CallManager;
 
   private get user(): string | undefined {
-    return this.connectionManager?.user;
+    try {
+      const ua = this.connectionManager?.getUaProtected();
+
+      return ua?.configuration.uri.user;
+    } catch {
+      return undefined;
+    }
   }
 
   private get number(): string | undefined {
     return this.callManager?.number;
-  }
-
-  private get displayName(): string | undefined {
-    return this.connectionManager?.displayName;
   }
 
   private get isCallInitiator(): boolean {
@@ -77,11 +79,11 @@ class PeerToPeerManager {
   };
 
   private maybeSendPeerToPeerRoom(): void {
-    if (this.peerToPeerRoom === undefined || this.displayName === undefined) {
+    if (this.peerToPeerRoom === undefined || this.user === undefined) {
       return;
     }
 
-    this.sendEnterRoom(this.peerToPeerRoom, this.displayName).catch((error: unknown) => {
+    this.sendEnterRoom(this.peerToPeerRoom, this.user).catch((error: unknown) => {
       this.callManager?.events.trigger(
         'failed',
         PeerToPeerManager.createSyntheticLocalEndEvent(error),

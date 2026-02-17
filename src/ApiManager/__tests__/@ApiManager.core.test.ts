@@ -95,9 +95,14 @@ describe('ApiManager (core)', () => {
 
   describe('maybeSendPeerToPeerRoom: обработка ошибок sendEnterRoom', () => {
     it('при ошибке sendInfo (Error) триггерит failed с cause из error.message', async () => {
-      jest
-        .spyOn(connectionManager, 'getConnectionConfiguration')
-        .mockReturnValue({ user: 'u', displayName: 'D' } as never);
+      jest.spyOn(connectionManager, 'getUaProtected').mockReturnValue({
+        configuration: {
+          uri: {
+            user: 'u',
+          },
+          display_name: 'D',
+        },
+      } as never);
 
       callManager.events.trigger('start-call', { number: '200', answer: true });
 
@@ -121,9 +126,14 @@ describe('ApiManager (core)', () => {
     });
 
     it('при ошибке sendInfo (не Error) триггерит failed с cause из String(error)', async () => {
-      jest
-        .spyOn(connectionManager, 'getConnectionConfiguration')
-        .mockReturnValue({ user: 'u', displayName: 'D' } as never);
+      jest.spyOn(connectionManager, 'getUaProtected').mockReturnValue({
+        configuration: {
+          uri: {
+            user: 'u',
+          },
+          display_name: 'D',
+        },
+      } as never);
 
       callManager.events.trigger('start-call', { number: '200', answer: true });
 

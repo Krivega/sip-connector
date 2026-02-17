@@ -28,6 +28,14 @@ describe('PeerToPeerManager', () => {
     });
     callManager.getEstablishedRTCSession.mockReturnValue(rtcSession);
     peerToPeerManager = new PeerToPeerManager();
+
+    jest.spyOn(connectionManager, 'getUaProtected').mockReturnValue({
+      configuration: {
+        uri: {
+          user: 'user',
+        },
+      },
+    } as never);
   });
 
   describe('subscribe', () => {
@@ -55,9 +63,6 @@ describe('PeerToPeerManager', () => {
 
   describe('handleAccepted', () => {
     beforeEach(() => {
-      jest
-        .spyOn(connectionManager, 'getConnectionConfiguration')
-        .mockReturnValue({ user: 'u', displayName: 'D' } as never);
       peerToPeerManager.subscribe({
         connectionManager,
         callManager,
@@ -79,8 +84,8 @@ describe('PeerToPeerManager', () => {
         expect.objectContaining({
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Jest matcher
           extraHeaders: expect.arrayContaining([
-            `${EKeyHeader.CONTENT_ENTER_ROOM}: p2puto200`,
-            `${EKeyHeader.PARTICIPANT_NAME}: D`,
+            `${EKeyHeader.CONTENT_ENTER_ROOM}: p2puserto200`,
+            `${EKeyHeader.PARTICIPANT_NAME}: user`,
           ]),
         }),
       );
@@ -101,9 +106,6 @@ describe('PeerToPeerManager', () => {
 
   describe('handleConfirmed', () => {
     beforeEach(() => {
-      jest
-        .spyOn(connectionManager, 'getConnectionConfiguration')
-        .mockReturnValue({ user: 'u', displayName: 'D' } as never);
       peerToPeerManager.subscribe({
         connectionManager,
         callManager,
@@ -125,8 +127,8 @@ describe('PeerToPeerManager', () => {
         expect.objectContaining({
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Jest matcher
           extraHeaders: expect.arrayContaining([
-            `${EKeyHeader.CONTENT_ENTER_ROOM}: p2p200tou`,
-            `${EKeyHeader.PARTICIPANT_NAME}: D`,
+            `${EKeyHeader.CONTENT_ENTER_ROOM}: p2p200touser`,
+            `${EKeyHeader.PARTICIPANT_NAME}: user`,
           ]),
         }),
       );
@@ -154,9 +156,13 @@ describe('PeerToPeerManager', () => {
     });
 
     it('не должен отправлять комнату если нет peerToPeerRoom', async () => {
-      jest
-        .spyOn(connectionManager, 'getConnectionConfiguration')
-        .mockReturnValue({ user: undefined, displayName: 'D' } as never);
+      jest.spyOn(connectionManager, 'getUaProtected').mockReturnValue({
+        configuration: {
+          uri: {
+            user: undefined,
+          },
+        },
+      } as never);
 
       callManager.events.trigger('start-call', { number: '200', answer: true });
 
@@ -169,10 +175,14 @@ describe('PeerToPeerManager', () => {
       expect(sendInfoSpy).not.toHaveBeenCalled();
     });
 
-    it('не должен отправлять комнату если нет displayName', async () => {
-      jest
-        .spyOn(connectionManager, 'getConnectionConfiguration')
-        .mockReturnValue({ user: 'u', displayName: undefined } as never);
+    it('не должен отправлять комнату если нет user', async () => {
+      jest.spyOn(connectionManager, 'getUaProtected').mockReturnValue({
+        configuration: {
+          uri: {
+            user: undefined,
+          },
+        },
+      } as never);
 
       callManager.events.trigger('start-call', { number: '200', answer: true });
 
@@ -186,10 +196,6 @@ describe('PeerToPeerManager', () => {
     });
 
     it('не должен отправлять комнату если нет number', async () => {
-      jest
-        .spyOn(connectionManager, 'getConnectionConfiguration')
-        .mockReturnValue({ user: 'u', displayName: 'D' } as never);
-
       const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
 
       callManager.events.trigger('confirmed', {});
@@ -202,9 +208,6 @@ describe('PeerToPeerManager', () => {
 
   describe('sendEnterRoom', () => {
     beforeEach(() => {
-      jest
-        .spyOn(connectionManager, 'getConnectionConfiguration')
-        .mockReturnValue({ user: 'u', displayName: 'D' } as never);
       peerToPeerManager.subscribe({
         connectionManager,
         callManager,
@@ -225,8 +228,8 @@ describe('PeerToPeerManager', () => {
         undefined,
         expect.objectContaining({
           extraHeaders: [
-            `${EKeyHeader.CONTENT_ENTER_ROOM}: p2puto200`,
-            `${EKeyHeader.PARTICIPANT_NAME}: D`,
+            `${EKeyHeader.CONTENT_ENTER_ROOM}: p2puserto200`,
+            `${EKeyHeader.PARTICIPANT_NAME}: user`,
           ],
         }),
       );
@@ -246,8 +249,8 @@ describe('PeerToPeerManager', () => {
         undefined,
         expect.objectContaining({
           extraHeaders: [
-            `${EKeyHeader.CONTENT_ENTER_ROOM}: p2p200tou`,
-            `${EKeyHeader.PARTICIPANT_NAME}: D`,
+            `${EKeyHeader.CONTENT_ENTER_ROOM}: p2p200touser`,
+            `${EKeyHeader.PARTICIPANT_NAME}: user`,
           ],
         }),
       );
@@ -276,9 +279,6 @@ describe('PeerToPeerManager', () => {
 
   describe('обработка ошибок sendEnterRoom', () => {
     beforeEach(() => {
-      jest
-        .spyOn(connectionManager, 'getConnectionConfiguration')
-        .mockReturnValue({ user: 'u', displayName: 'D' } as never);
       peerToPeerManager.subscribe({
         connectionManager,
         callManager,
@@ -330,9 +330,6 @@ describe('PeerToPeerManager', () => {
 
   describe('формирование имени комнаты', () => {
     beforeEach(() => {
-      jest
-        .spyOn(connectionManager, 'getConnectionConfiguration')
-        .mockReturnValue({ user: 'u', displayName: 'D' } as never);
       peerToPeerManager.subscribe({
         connectionManager,
         callManager,
@@ -353,7 +350,7 @@ describe('PeerToPeerManager', () => {
         undefined,
         expect.objectContaining({
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Jest matcher
-          extraHeaders: expect.arrayContaining([`${EKeyHeader.CONTENT_ENTER_ROOM}: p2puto200`]),
+          extraHeaders: expect.arrayContaining([`${EKeyHeader.CONTENT_ENTER_ROOM}: p2puserto200`]),
         }),
       );
     });
@@ -372,7 +369,7 @@ describe('PeerToPeerManager', () => {
         undefined,
         expect.objectContaining({
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Jest matcher
-          extraHeaders: expect.arrayContaining([`${EKeyHeader.CONTENT_ENTER_ROOM}: p2p200tou`]),
+          extraHeaders: expect.arrayContaining([`${EKeyHeader.CONTENT_ENTER_ROOM}: p2p200touser`]),
         }),
       );
     });
