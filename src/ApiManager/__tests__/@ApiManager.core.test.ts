@@ -379,6 +379,230 @@ describe('ApiManager (core)', () => {
       expect(hasDeclineResponseFromServerSpy).toHaveBeenCalledWith(otherError);
     });
 
+    describe('исходящий peer-to-peer (confirmed)', () => {
+      it('при confirmed инициатор отправляет ENTER_ROOM через сессию с room p2p[caller]to[callee] и displayName', () => {
+        const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
+
+        jest
+          .spyOn(connectionManager, 'getConnectionConfiguration')
+          .mockReturnValue({ user: 'caller1', displayName: 'Caller Display' } as never);
+        callManager.events.trigger('start-call', { number: '100', answer: false });
+
+        callManager.events.trigger('confirmed', {} as never);
+
+        expect(sendInfoSpy).toHaveBeenCalledWith(
+          EContentTypeReceived.ENTER_ROOM,
+          undefined,
+          expect.objectContaining({
+            extraHeaders: [
+              `${EKeyHeader.CONTENT_ENTER_ROOM}: p2pcaller1to100`,
+              `${EKeyHeader.PARTICIPANT_NAME}: Caller Display`,
+            ],
+          }),
+        );
+      });
+
+      it('при confirmed без сессии не вызывается sendInfo', () => {
+        const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
+
+        callManager.getEstablishedRTCSession.mockReturnValue(undefined);
+        jest
+          .spyOn(connectionManager, 'getConnectionConfiguration')
+          .mockReturnValue({ user: 'u', displayName: 'D' } as never);
+        callManager.events.trigger('start-call', { number: '100', answer: false });
+
+        callManager.events.trigger('confirmed', {} as never);
+
+        expect(sendInfoSpy).not.toHaveBeenCalled();
+      });
+
+      it('при confirmed без caller/displayName не вызывается sendInfo', () => {
+        const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
+
+        jest.spyOn(connectionManager, 'getConnectionConfiguration').mockReturnValue(undefined);
+        callManager.events.trigger('start-call', { number: '100', answer: false });
+
+        callManager.events.trigger('confirmed', {} as never);
+
+        expect(sendInfoSpy).not.toHaveBeenCalled();
+      });
+
+      it('при confirmed принимающая сторона не вызывает sendInfo', () => {
+        const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
+
+        jest
+          .spyOn(connectionManager, 'getConnectionConfiguration')
+          .mockReturnValue({ user: 'u', displayName: 'D' } as never);
+        callManager.events.trigger('start-call', { number: '200', answer: true });
+
+        callManager.events.trigger('confirmed', {} as never);
+
+        expect(sendInfoSpy).not.toHaveBeenCalled();
+      });
+
+      it('должен триггерить failed с createSyntheticLocalEndEvent при ошибке confirmed', async () => {
+        const failedSpy = jest.fn();
+
+        callManager.events.on('failed', failedSpy);
+        jest
+          .spyOn(connectionManager, 'getConnectionConfiguration')
+          .mockReturnValue({ user: 'u', displayName: 'D' } as never);
+        jest.spyOn(rtcSession, 'sendInfo').mockRejectedValue(new Error('p2p send failed'));
+        callManager.events.trigger('start-call', { number: '100', answer: false });
+
+        callManager.events.trigger('confirmed', {} as never);
+
+        await delayPromise(0);
+
+        expect(failedSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            originator: 'local',
+            cause: 'p2p send failed',
+          }),
+        );
+      });
+    });
+
+    describe('входящий room (ретрансляция enter-room при newInfo)', () => {
+      beforeEach(() => {
+        callManager.subscribeToApiEvents(apiManager);
+      });
+
+      it('ретранслирует enter-room через sendInfo когда room не совпадает с currentRoom и сессия установлена', () => {
+        const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
+
+        jest
+          .spyOn(connectionManager, 'getConnectionConfiguration')
+          .mockReturnValue({ user: 'u', displayName: 'participant' } as never);
+        callManager.events.trigger('start-call', { number: '1', answer: true });
+        apiManager.events.trigger('enter-room', {
+          room: 'room-current',
+          participantName: 'participantName',
+        });
+        mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
+        mockRequest.setHeader(EKeyHeader.CONTENT_ENTER_ROOM, 'room-other');
+        mockRequest.setHeader(EKeyHeader.PARTICIPANT_NAME, 'Participant');
+
+        const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
+
+        callManager.events.trigger('newInfo', infoEvent);
+
+        expect(sendInfoSpy).toHaveBeenCalledWith(
+          EContentTypeReceived.ENTER_ROOM,
+          undefined,
+          expect.objectContaining({
+            extraHeaders: [
+              `${EKeyHeader.CONTENT_ENTER_ROOM}: room-other`,
+              `${EKeyHeader.PARTICIPANT_NAME}: participant`,
+            ],
+          }),
+        );
+      });
+
+      it('не ретранслирует когда room совпадает с currentRoom', () => {
+        const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
+
+        callManager.events.trigger('start-call', { number: '1', answer: true });
+        apiManager.events.trigger('enter-room', {
+          room: 'room-same',
+          participantName: 'participantName',
+        });
+        mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
+        mockRequest.setHeader(EKeyHeader.CONTENT_ENTER_ROOM, 'room-same');
+        mockRequest.setHeader(EKeyHeader.PARTICIPANT_NAME, 'P');
+
+        const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
+
+        callManager.events.trigger('newInfo', infoEvent);
+
+        expect(sendInfoSpy).not.toHaveBeenCalled();
+      });
+
+      it('не ретранслирует enter-room когда isOffer (инициатор звонка)', () => {
+        const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
+
+        jest
+          .spyOn(connectionManager, 'getConnectionConfiguration')
+          .mockReturnValue({ user: 'u', displayName: 'participant' } as never);
+        callManager.events.trigger('start-call', { number: '1', answer: false });
+        apiManager.events.trigger('enter-room', {
+          room: 'room-current',
+          participantName: 'participantName',
+        });
+        mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
+        mockRequest.setHeader(EKeyHeader.CONTENT_ENTER_ROOM, 'room-other');
+        mockRequest.setHeader(EKeyHeader.PARTICIPANT_NAME, 'Participant');
+
+        const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
+
+        callManager.events.trigger('newInfo', infoEvent);
+
+        expect(sendInfoSpy).not.toHaveBeenCalled();
+      });
+
+      it('должен триггерить failed с createSyntheticLocalEndEvent при ошибке ретрансляции enter-room', async () => {
+        const failedSpy = jest.fn();
+
+        callManager.events.on('failed', failedSpy);
+        jest
+          .spyOn(connectionManager, 'getConnectionConfiguration')
+          .mockReturnValue({ user: 'u', displayName: 'participant' } as never);
+        jest.spyOn(rtcSession, 'sendInfo').mockRejectedValue(new Error('send failed'));
+        callManager.events.trigger('start-call', { number: '1', answer: true });
+        apiManager.events.trigger('enter-room', {
+          room: 'room-current',
+          participantName: 'participantName',
+        });
+        mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
+        mockRequest.setHeader(EKeyHeader.CONTENT_ENTER_ROOM, 'room-other');
+        mockRequest.setHeader(EKeyHeader.PARTICIPANT_NAME, 'Participant');
+
+        const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
+
+        callManager.events.trigger('newInfo', infoEvent);
+
+        await delayPromise(0);
+
+        expect(failedSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            originator: 'local',
+            cause: 'send failed',
+          }),
+        );
+      });
+
+      it('должен триггерить failed с cause через String(error) при ошибке ретрансляции enter-room', async () => {
+        const failedSpy = jest.fn();
+
+        callManager.events.on('failed', failedSpy);
+        jest
+          .spyOn(connectionManager, 'getConnectionConfiguration')
+          .mockReturnValue({ user: 'u', displayName: 'participant' } as never);
+        jest.spyOn(rtcSession, 'sendInfo').mockRejectedValue('plain string error');
+        callManager.events.trigger('start-call', { number: '1', answer: true });
+        apiManager.events.trigger('enter-room', {
+          room: 'room-current',
+          participantName: 'participantName',
+        });
+        mockRequest.setHeader(EKeyHeader.CONTENT_TYPE, EContentTypeReceived.ENTER_ROOM);
+        mockRequest.setHeader(EKeyHeader.CONTENT_ENTER_ROOM, 'room-other');
+        mockRequest.setHeader(EKeyHeader.PARTICIPANT_NAME, 'Participant');
+
+        const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
+
+        callManager.events.trigger('newInfo', infoEvent);
+
+        await delayPromise(0);
+
+        expect(failedSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            originator: 'local',
+            cause: 'plain string error',
+          }),
+        );
+      });
+    });
+
     it('должен выбрасывать ошибку при отсутствии rtcSession в sendChannels', async () => {
       callManager.getEstablishedRTCSession.mockReturnValue(undefined);
       apiManager = new ApiManager();

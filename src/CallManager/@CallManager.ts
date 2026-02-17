@@ -136,6 +136,26 @@ class CallManager {
     return this.mcuSession.isCallActive;
   }
 
+  public get number(): string | undefined {
+    return this.stateMachine.number;
+  }
+
+  public get isOffer(): boolean {
+    return this.stateMachine.isOffer;
+  }
+
+  public get isAnswer(): boolean {
+    return this.stateMachine.isAnswer;
+  }
+
+  public get currentRoom(): string | undefined {
+    return this.stateMachine.currentRoom;
+  }
+
+  public get isEstablishedRTCSession(): boolean {
+    return this.getEstablishedRTCSession() !== undefined;
+  }
+
   // For testing purposes
   public getStreamsManagerProvider(): StreamsManagerProvider {
     return this.streamsManagerProvider;
@@ -186,7 +206,7 @@ class CallManager {
   public startCall: TStartCall = async (ua, getUri, params) => {
     this.isPendingCall = true;
 
-    this.events.emit('start-call', {
+    this.events.emit(EEvent.START_CALL, {
       number: params.number,
       answer: false,
     });
@@ -216,7 +236,7 @@ class CallManager {
 
     const rtcSession = extractIncomingRTCSession();
 
-    this.events.emit('start-call', {
+    this.events.emit(EEvent.START_CALL, {
       answer: true,
       number: rtcSession.remote_identity.uri.user,
     });

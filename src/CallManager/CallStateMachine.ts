@@ -1,6 +1,7 @@
 import { assign, setup } from 'xstate';
 
 import { BaseStateMachine } from '@/tools/BaseStateMachine';
+import hasPeerToPeer from '@/tools/hasPeerToPeer';
 import hasPurgatory from '@/tools/hasPurgatory';
 
 import type { TApiManagerEvents } from '@/ApiManager';
@@ -10,6 +11,7 @@ export enum EState {
   IDLE = 'call:idle',
   CONNECTING = 'call:connecting',
   PURGATORY = 'call:purgatory',
+  P2P_ROOM = 'call:p2pRoom',
   IN_ROOM = 'call:inRoom',
 }
 
@@ -25,6 +27,11 @@ export type TPurgatoryContext = TConnectingContext & {
   participantName: string;
 };
 
+export type TP2PRoomContext = TConnectingContext & {
+  room: string;
+  participantName: string;
+};
+
 export type TInRoomContext = TConnectingContext & {
   room: string;
   participantName: string;
@@ -33,7 +40,12 @@ export type TInRoomContext = TConnectingContext & {
   participant: string;
 };
 
-type TContext = TIdleContext | TConnectingContext | TPurgatoryContext | TInRoomContext;
+type TContext =
+  | TIdleContext
+  | TConnectingContext
+  | TPurgatoryContext
+  | TP2PRoomContext
+  | TInRoomContext;
 
 type TCallEvent =
   | { type: 'CALL.CONNECTING'; number: string; answer: boolean }
@@ -63,6 +75,10 @@ const hasTokenContext = (context: TContext) => {
   return 'token' in context && isNonEmptyString(context.token);
 };
 
+const hasNoTokenRoom = (room?: string): boolean => {
+  return hasPurgatory(room) || hasPeerToPeer(room);
+};
+
 const hasPurgatoryContext = (context: TContext): context is TPurgatoryContext => {
   return (
     hasConnectingContext(context) &&
@@ -70,6 +86,16 @@ const hasPurgatoryContext = (context: TContext): context is TPurgatoryContext =>
     !hasTokenContext(context) &&
     'room' in context &&
     hasPurgatory(context.room)
+  );
+};
+
+const hasP2PRoomContext = (context: TContext): context is TP2PRoomContext => {
+  return (
+    hasConnectingContext(context) &&
+    hasRoomContext(context) &&
+    !hasTokenContext(context) &&
+    'room' in context &&
+    hasPeerToPeer(context.room)
   );
 };
 
@@ -118,7 +144,7 @@ const callMachine = setup({
 
       if (event.token !== undefined) {
         nextContext.token = event.token;
-      } else if (hasPurgatory(event.room)) {
+      } else if (hasNoTokenRoom(event.room)) {
         nextContext.token = undefined;
       }
 
@@ -189,6 +215,12 @@ const callMachine = setup({
           },
         },
         {
+          target: EState.P2P_ROOM,
+          guard: ({ context }) => {
+            return hasP2PRoomContext(context);
+          },
+        },
+        {
           target: EState.PURGATORY,
           guard: ({ context }) => {
             return hasPurgatoryContext(context);
@@ -206,6 +238,22 @@ const callMachine = setup({
       ],
     },
     [EState.PURGATORY]: {
+      on: {
+        'CALL.ENTER_ROOM': {
+          target: EVALUATE,
+          actions: 'setRoomInfo',
+        },
+        'CALL.TOKEN_ISSUED': {
+          target: EVALUATE,
+          actions: 'setTokenInfo',
+        },
+        'CALL.RESET': {
+          target: EVALUATE,
+          actions: 'reset',
+        },
+      },
+    },
+    [EState.P2P_ROOM]: {
       on: {
         'CALL.ENTER_ROOM': {
           target: EVALUATE,
@@ -245,6 +293,10 @@ export class CallStateMachine extends BaseStateMachine<typeof callMachine, EStat
     return this.state === EState.PURGATORY;
   }
 
+  public get isP2PRoom(): boolean {
+    return this.state === EState.P2P_ROOM;
+  }
+
   public get isInRoom(): boolean {
     return this.state === EState.IN_ROOM;
   }
@@ -257,7 +309,7 @@ export class CallStateMachine extends BaseStateMachine<typeof callMachine, EStat
   }
 
   public get isActive(): boolean {
-    return this.isInRoom || this.isInPurgatory;
+    return this.isInRoom || this.isInPurgatory || this.isP2PRoom;
   }
 
   public get isPending(): boolean {
@@ -282,6 +334,22 @@ export class CallStateMachine extends BaseStateMachine<typeof callMachine, EStat
     }
 
     return undefined;
+  }
+
+  public get currentRoom(): string | undefined {
+    const { context } = this;
+
+    return 'room' in context ? context.room : undefined;
+  }
+
+  public get isOffer(): boolean {
+    return !this.isAnswer;
+  }
+
+  public get isAnswer(): boolean {
+    const { context } = this;
+
+    return 'answer' in context ? context.answer : false;
   }
 
   public reset(): void {

@@ -122,6 +122,14 @@ export default class ConnectionManager {
     return this.configurationManager.isRegister();
   }
 
+  public get user(): string | undefined {
+    return this.getConnectionConfiguration()?.user;
+  }
+
+  public get displayName(): string | undefined {
+    return this.getConnectionConfiguration()?.displayName;
+  }
+
   public connect = async (
     parameters: TConnectParameters,
     options?: TConnectOptions,

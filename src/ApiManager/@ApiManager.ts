@@ -17,8 +17,10 @@ import { getHeader } from './getHeader';
 import { ECMDNotify } from './types';
 
 import type {
+  EndEvent,
   IncomingInfoEvent,
   IncomingRequest,
+  IncomingResponse,
   OutgoingInfoEvent,
   RTCSession,
 } from '@krivega/jssip';
@@ -50,8 +52,58 @@ class ApiManager {
 
   private callManager?: CallManager;
 
+  private connectionManager?: ConnectionManager;
+
   public constructor() {
     this.events = createEvents();
+  }
+
+  private get peerToPeerRoom(): string | undefined {
+    if (this.caller === undefined || this.callee === undefined) {
+      return undefined;
+    }
+
+    return `p2p${this.caller}to${this.callee}`;
+  }
+
+  private get caller(): string | undefined {
+    return this.connectionManager?.user;
+  }
+
+  private get callee(): string | undefined {
+    return this.callManager?.number;
+  }
+
+  private get currentRoom(): string | undefined {
+    return this.callManager?.currentRoom;
+  }
+
+  private get displayName(): string | undefined {
+    return this.connectionManager?.displayName;
+  }
+
+  private get isAvailableToSendPeerToPeerRoom(): boolean {
+    return this.isOffer && this.isEstablishedRTCSession;
+  }
+
+  private get isOffer(): boolean {
+    return Boolean(this.callManager?.isOffer);
+  }
+
+  private get isAnswer(): boolean {
+    return Boolean(this.callManager?.isAnswer);
+  }
+
+  private get isEstablishedRTCSession(): boolean {
+    return Boolean(this.callManager?.isEstablishedRTCSession);
+  }
+
+  private static createSyntheticLocalEndEvent(error: unknown): EndEvent {
+    return {
+      originator: 'local',
+      cause: error instanceof Error ? error.message : String(error),
+      message: {} as IncomingRequest | IncomingResponse,
+    };
   }
 
   public subscribe({
@@ -61,6 +113,7 @@ class ApiManager {
     connectionManager: ConnectionManager;
     callManager: CallManager;
   }): void {
+    this.connectionManager = connectionManager;
     this.callManager = callManager;
 
     connectionManager.on('sipEvent', this.handleSipEvent);
@@ -68,6 +121,7 @@ class ApiManager {
     callManager.on('newDTMF', ({ originator }) => {
       this.events.trigger(EEvent.NEW_DTMF, { originator });
     });
+    callManager.on('confirmed', this.handleConfirmed);
   }
 
   public async waitChannels(): Promise<TChannels> {
@@ -381,6 +435,7 @@ class ApiManager {
     if (contentType !== undefined) {
       switch (contentType) {
         case EContentTypeReceived.ENTER_ROOM: {
+          this.maybeRetransmitEnterRoom(typedRequest);
           this.triggerEnterRoom(typedRequest);
           this.maybeTriggerChannels(typedRequest);
           break;
@@ -410,6 +465,18 @@ class ApiManager {
           break;
         }
       }
+    }
+  };
+
+  private readonly maybeRetransmitEnterRoom = (request: IncomingRequest) => {
+    const room = getHeader(request, EKeyHeader.CONTENT_ENTER_ROOM);
+    const isValidRoom = room !== undefined && room !== this.currentRoom;
+    const isValidData = isValidRoom && this.displayName !== undefined;
+
+    if (isValidData && this.isAnswer) {
+      this.sendEnterRoom(room, this.displayName).catch((error: unknown) => {
+        this.callManager?.events.trigger('failed', ApiManager.createSyntheticLocalEndEvent(error));
+      });
     }
   };
 
@@ -650,6 +717,32 @@ class ApiManager {
       this.events.trigger(EEvent.USE_LICENSE, license);
     }
   };
+
+  private readonly handleConfirmed = (): void => {
+    if (this.isAvailableToSendPeerToPeerRoom) {
+      this.maybeSendPeerToPeerRoom();
+    }
+  };
+
+  private maybeSendPeerToPeerRoom() {
+    if (this.peerToPeerRoom === undefined || this.displayName === undefined) {
+      return;
+    }
+
+    this.sendEnterRoom(this.peerToPeerRoom, this.displayName).catch((error: unknown) => {
+      this.callManager?.events.trigger('failed', ApiManager.createSyntheticLocalEndEvent(error));
+    });
+  }
+
+  private async sendEnterRoom(room: string, participantName: string): Promise<void> {
+    const rtcSession = this.getEstablishedRTCSessionProtected();
+    const extraHeaders: TOptionsExtraHeaders['extraHeaders'] = [
+      `${EKeyHeader.CONTENT_ENTER_ROOM}: ${room}`,
+      `${EKeyHeader.PARTICIPANT_NAME}: ${participantName}`,
+    ];
+
+    return rtcSession.sendInfo(EContentTypeReceived.ENTER_ROOM, undefined, { extraHeaders });
+  }
 }
 
 export default ApiManager;
