@@ -94,8 +94,10 @@ sipConnector.on('api:participant:move-request-to-spectators', (event) => {
 ### API события
 
 ```typescript
-sipConnector.on('api:enter-room', ({ room }) => {
+sipConnector.on('api:enter-room', ({ room, participantName, bearerToken, isDirectPeerToPeer }) => {
   console.log('Вход в комнату:', room);
+  console.log('Имя участника:', participantName);
+  console.log('Direct P2P:', isDirectPeerToPeer);
 });
 
 sipConnector.on('api:use-license', (license) => {

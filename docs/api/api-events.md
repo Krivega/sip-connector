@@ -6,7 +6,7 @@
 
 | Имя события                                                | Описание                                                      | Тип данных                                                         |
 | ---------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `api:enter-room`                                           | Генерируется при входе в комнату                              | `{ room: string; participantName: string; bearerToken?: string }`  |
+| `api:enter-room`                                           | Генерируется при входе в комнату                              | `{ room: string; participantName: string; bearerToken?: string; isDirectPeerToPeer?: boolean }`  |
 | `api:main-cam-control`                                     | Генерируется при управлении главной камерой                   | `{ mainCam?: EContentMainCAM; resolutionMainCam?: string }`        |
 | `api:use-license`                                          | Генерируется при использовании лицензии                       | `EContentUseLicense`                                               |
 | `api:new-dtmf`                                             | Генерируется при получении DTMF сигнала                       | `{ originator: string }`                                           |
