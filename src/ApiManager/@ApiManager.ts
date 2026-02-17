@@ -83,15 +83,15 @@ class ApiManager {
   }
 
   private get isAvailableToSendPeerToPeerRoom(): boolean {
-    return this.isOffer && this.isEstablishedRTCSession;
+    return this.isCallInitiator && this.isEstablishedRTCSession;
   }
 
-  private get isOffer(): boolean {
-    return Boolean(this.callManager?.isOffer);
+  private get isCallInitiator(): boolean {
+    return Boolean(this.callManager?.isCallInitiator);
   }
 
-  private get isAnswer(): boolean {
-    return Boolean(this.callManager?.isAnswer);
+  private get isCallAnswerer(): boolean {
+    return Boolean(this.callManager?.isCallAnswerer);
   }
 
   private get isEstablishedRTCSession(): boolean {
@@ -473,7 +473,7 @@ class ApiManager {
     const isValidRoom = room !== undefined && room !== this.currentRoom;
     const isValidData = isValidRoom && this.displayName !== undefined;
 
-    if (isValidData && this.isAnswer) {
+    if (isValidData && this.isCallAnswerer) {
       this.sendEnterRoom(room, this.displayName).catch((error: unknown) => {
         this.callManager?.events.trigger('failed', ApiManager.createSyntheticLocalEndEvent(error));
       });

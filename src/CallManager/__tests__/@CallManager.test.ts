@@ -582,7 +582,7 @@ describe('CallManager - дополнительные тесты для покр�
     expect(callManager.connection).toBe('test');
   });
 
-  describe('number, isOffer, currentRoom', () => {
+  describe('number, isCallInitiator, currentRoom', () => {
     it('number: возвращает number из контекста после start-call (инициатор)', () => {
       const managers = createManagers();
       const cm = managers.callManager;
@@ -601,22 +601,22 @@ describe('CallManager - дополнительные тесты для покр�
       expect(cm.number).toBe('200');
     });
 
-    it('isOffer: возвращает true для инициатора', () => {
+    it('isCallInitiator: возвращает true для инициатора', () => {
       const managers = createManagers();
       const cm = managers.callManager;
 
       cm.events.trigger('start-call', { number: '100', answer: false });
 
-      expect(cm.isOffer).toBe(true);
+      expect(cm.isCallInitiator).toBe(true);
     });
 
-    it('isOffer: возвращает false для принимающей стороны', () => {
+    it('isCallInitiator: возвращает false для принимающей стороны', () => {
       const managers = createManagers();
       const cm = managers.callManager;
 
       cm.events.trigger('start-call', { number: '100', answer: true });
 
-      expect(cm.isOffer).toBe(false);
+      expect(cm.isCallInitiator).toBe(false);
     });
 
     it('currentRoom: возвращает undefined без enter-room', () => {

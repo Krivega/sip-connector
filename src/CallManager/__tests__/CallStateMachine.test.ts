@@ -403,17 +403,17 @@ describe('CallStateMachine', () => {
     });
   });
 
-  describe('isOffer', () => {
+  describe('isCallInitiator', () => {
     it('возвращает true при answer: false (инициатор)', () => {
       machine.send({ type: 'CALL.CONNECTING', number: '100', answer: false });
 
-      expect(machine.isOffer).toBe(true);
+      expect(machine.isCallInitiator).toBe(true);
     });
 
     it('возвращает false при answer: true (принимающая сторона)', () => {
       machine.send({ type: 'CALL.CONNECTING', number: '100', answer: true });
 
-      expect(machine.isOffer).toBe(false);
+      expect(machine.isCallInitiator).toBe(false);
     });
   });
 

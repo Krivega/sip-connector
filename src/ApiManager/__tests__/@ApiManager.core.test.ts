@@ -518,7 +518,7 @@ describe('ApiManager (core)', () => {
         expect(sendInfoSpy).not.toHaveBeenCalled();
       });
 
-      it('не ретранслирует enter-room когда isOffer (инициатор звонка)', () => {
+      it('не ретранслирует enter-room когда isCallInitiator (инициатор звонка)', () => {
         const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
 
         jest

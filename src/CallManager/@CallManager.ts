@@ -140,12 +140,12 @@ class CallManager {
     return this.stateMachine.number;
   }
 
-  public get isOffer(): boolean {
-    return this.stateMachine.isOffer;
+  public get isCallInitiator(): boolean {
+    return this.stateMachine.isCallInitiator;
   }
 
-  public get isAnswer(): boolean {
-    return this.stateMachine.isAnswer;
+  public get isCallAnswerer(): boolean {
+    return this.stateMachine.isCallAnswerer;
   }
 
   public get currentRoom(): string | undefined {

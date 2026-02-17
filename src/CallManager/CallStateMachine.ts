@@ -342,11 +342,11 @@ export class CallStateMachine extends BaseStateMachine<typeof callMachine, EStat
     return 'room' in context ? context.room : undefined;
   }
 
-  public get isOffer(): boolean {
-    return !this.isAnswer;
+  public get isCallInitiator(): boolean {
+    return !this.isCallAnswerer;
   }
 
-  public get isAnswer(): boolean {
+  public get isCallAnswerer(): boolean {
     const { context } = this;
 
     return 'answer' in context ? context.answer : false;

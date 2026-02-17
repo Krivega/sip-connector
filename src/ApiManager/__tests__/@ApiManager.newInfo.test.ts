@@ -132,7 +132,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
       consoleWarnSpy.mockRestore();
     });
 
-    it('не ретранслирует enter-room когда isOffer (инициатор звонка)', () => {
+    it('не ретранслирует enter-room когда isCallInitiator (инициатор звонка)', () => {
       const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
       const rtcSession = new RTCSessionMock({ eventHandlers: {}, originator: 'local' });
       const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
