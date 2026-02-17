@@ -41,7 +41,6 @@ await facade.callToServer({
 // 5. Презентация
 await facade.startPresentation({
   mediaStream: presentationStream,
-  isP2P: false,
   contentHint: 'detail',
 });
 

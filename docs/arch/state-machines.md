@@ -33,12 +33,20 @@ stateDiagram-v2
         state call {
             idle --> connecting: call.connecting
             connecting --> purgatory: call.enterRoom(room=purgatory, no token)
+            connecting --> p2pRoom: call.enterRoom(room matches p2p pattern, no token)
+            connecting --> directP2pRoom: call.enterRoom(isDirectPeerToPeer=true or room matches directP2p pattern, no token)
             connecting --> inRoom: call.enterRoom+token / call.tokenIssued
             connecting --> failed: call.failed
             connecting --> idle: call.reset
             purgatory --> inRoom: call.enterRoom+token / call.tokenIssued
             purgatory --> idle: call.reset
+            p2pRoom --> inRoom: call.enterRoom+token / call.tokenIssued
+            p2pRoom --> idle: call.reset
+            directP2pRoom --> inRoom: call.enterRoom+token / call.tokenIssued
+            directP2pRoom --> idle: call.reset
             inRoom --> purgatory: call.enterRoom(room=purgatory, no token)
+            inRoom --> p2pRoom: call.enterRoom(room matches p2p pattern, no token)
+            inRoom --> directP2pRoom: call.enterRoom(isDirectPeerToPeer=true or room matches directP2p pattern, no token)
             inRoom --> idle: call.reset
             inRoom --> failed: call.failed
             failed --> idle: call.reset
@@ -88,7 +96,7 @@ stateDiagram-v2
 | Домен        | Статусы                                                                                               | Источники событий                                                                                                                                                                                     | Доменные события                                                                                                                      |
 | :----------- | :---------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------ |
 | Connection   | `idle`, `preparing`, `connecting`, `connected`, `registered`, `established`, `disconnected`, `failed` | `ConnectionManager.events` (`connect-started`, `connecting`, `connect-parameters-resolve-success`, `connected`, `registered`, `unregistered`, `disconnected`, `registrationFailed`, `connect-failed`) | `START_CONNECT`, `START_INIT_UA`, `UA_CONNECTED`, `UA_REGISTERED`, `UA_UNREGISTERED`, `UA_DISCONNECTED`, `CONNECTION_FAILED`, `RESET` |
-| Call         | `idle`, `connecting`, `purgatory`, `inRoom`                                                           | `CallManager.events` (`start-call`, `enter-room`, `conference:participant-token-issued`, `ended`, `failed`)                                                                                           | `CALL.CONNECTING`, `CALL.ENTER_ROOM`, `CALL.TOKEN_ISSUED`, `CALL.RESET`                                                               |
+| Call         | `idle`, `connecting`, `purgatory`, `p2pRoom`, `directP2pRoom`, `inRoom`                               | `CallManager.events` (`start-call`, `enter-room`, `conference:participant-token-issued`, `ended`, `failed`)                                                                                           | `CALL.CONNECTING`, `CALL.ENTER_ROOM`, `CALL.TOKEN_ISSUED`, `CALL.RESET`                                                               |
 | Incoming     | `idle`, `ringing`, `consumed`, `declined`, `terminated`, `failed`                                     | `IncomingCallManager.events` (`incomingCall`, `declinedIncomingCall`, `terminatedIncomingCall`, `failedIncomingCall`) + синтетика при ответе на входящий                                              | `INCOMING.RINGING`, `INCOMING.CONSUMED`, `INCOMING.DECLINED`, `INCOMING.TERMINATED`, `INCOMING.FAILED`, `INCOMING.CLEAR`              |
 | Presentation | `idle`, `starting`, `active`, `stopping`, `failed`                                                    | `CallManager.events` (`presentation:start\|started\|end\|ended\|failed`), `ConnectionManager.events` (`disconnected`, `registrationFailed`, `connect-failed`)                                         | `SCREEN.STARTING`, `SCREEN.STARTED`, `SCREEN.ENDING`, `SCREEN.ENDED`, `SCREEN.FAILED`, `PRESENTATION.RESET`                           |
 
@@ -150,19 +158,31 @@ stateDiagram-v2
 - Валидация переходов с предотвращением недопустимых операций (проверка `snapshot.can(event)` перед отправкой)
 - События: `CALL.CONNECTING`, `CALL.ENTER_ROOM`, `CALL.TOKEN_ISSUED`, `CALL.RESET`. Событие `failed` от CallManager.events приводит к отправке `CALL.RESET` (переход в IDLE).
 - Публичный API:
-  - Геттеры состояний: `isIdle`, `isConnecting`, `isInPurgatory`, `isInRoom`
-  - Комбинированные геттеры: `isPending` (connecting), `isActive` (inRoom или purgatory)
+  - Геттеры состояний: `isIdle`, `isConnecting`, `isInPurgatory`, `isP2PRoom`, `isDirectP2PRoom`, `isInRoom`
+  - Комбинированные геттеры: `isPending` (connecting), `isActive` (inRoom, purgatory, p2pRoom или directP2pRoom)
   - Геттер контекста: `inRoomContext`. Методы: `reset()`, `send(event)`, `subscribeToApiEvents(apiManager)` для привязки к API (enter-room, conference:participant-token-issued)
 - Корректный граф переходов:
   - IDLE → CONNECTING (CALL.CONNECTING)
   - CONNECTING → PURGATORY (при CALL.ENTER_ROOM с room=purgatory без token)
+  - CONNECTING → P2P_ROOM (при CALL.ENTER_ROOM с room, соответствующим паттерну `/^p2p.+to.+$/i`, без token)
+  - CONNECTING → DIRECT_P2P_ROOM (при CALL.ENTER_ROOM с `isDirectPeerToPeer=true` или room, соответствующим паттерну `/^directP2P.+to.+$/i`, без token)
   - CONNECTING → IN_ROOM (при получении room + participantName и token через CALL.ENTER_ROOM и CALL.TOKEN_ISSUED)
   - CONNECTING → IDLE (CALL.RESET; в т.ч. при событии `ended` или `failed`)
   - PURGATORY → IN_ROOM (при появлении token: CALL.ENTER_ROOM с bearerToken — можно сменить комнату; или CALL.TOKEN_ISSUED — room остаётся purgatory)
   - PURGATORY → IDLE (CALL.RESET)
+  - P2P_ROOM → IN_ROOM (при появлении token через CALL.ENTER_ROOM с bearerToken или CALL.TOKEN_ISSUED)
+  - P2P_ROOM → IDLE (CALL.RESET)
+  - DIRECT_P2P_ROOM → IN_ROOM (при появлении token через CALL.ENTER_ROOM с bearerToken или CALL.TOKEN_ISSUED)
+  - DIRECT_P2P_ROOM → IDLE (CALL.RESET)
   - IN_ROOM → PURGATORY (при CALL.ENTER_ROOM с room=purgatory без token; в setRoomInfo token сбрасывается только для room=purgatory)
+  - IN_ROOM → P2P_ROOM (при CALL.ENTER_ROOM с room, соответствующим паттерну `/^p2p.+to.+$/i`, без token)
+  - IN_ROOM → DIRECT_P2P_ROOM (при CALL.ENTER_ROOM с `isDirectPeerToPeer=true` или room, соответствующим паттерну `/^directP2P.+to.+$/i`, без token)
   - IN_ROOM → IDLE (CALL.RESET)
-- Внутреннее состояние EVALUATE: переход в IN_ROOM/PURGATORY/CONNECTING/IDLE по контексту после действий
+- Внутреннее состояние EVALUATE: переход в IN_ROOM/DIRECT_P2P_ROOM/P2P_ROOM/PURGATORY/CONNECTING/IDLE по контексту после действий
+- Логика определения состояний:
+  - **DIRECT_P2P_ROOM**: приоритет выше P2P_ROOM; определяется по флагу `isDirectPeerToPeer=true` в событии `enter-room` или по паттерну имени комнаты `/^directP2P.+to.+$/i`
+  - **P2P_ROOM**: определяется по паттерну имени комнаты `/^p2p.+to.+$/i` (без префикса `direct`)
+  - Оба состояния P2P не требуют токена (как и PURGATORY), но могут перейти в IN_ROOM при получении токена
 - Логирование недопустимых переходов через console.warn
 - **Зависимость для перевода в зрители**: запуск RecvSession (и вызов sendOffer) возможен только при наличии токена (состояние IN_ROOM). При гонке событий (`participant:move-request-to-spectators-with-audio-id` приходит до `conference:participant-token-issued`) CallManager использует DeferredCommandRunner: команда откладывается и выполняется при переходе в IN_ROOM.
 
@@ -221,7 +241,7 @@ stateDiagram-v2
 5. **Если connection ESTABLISHED**:
    - call IDLE → `READY_TO_CALL`
    - call CONNECTING → `CALL_CONNECTING`
-   - call PURGATORY или call IN_ROOM → `CALL_ACTIVE`
+   - call PURGATORY, call P2P_ROOM, call DIRECT_P2P_ROOM или call IN_ROOM → `CALL_ACTIVE`
    - неизвестный call status → fallback `READY_TO_CALL`
 
 ### Состояния ESystemStatus
@@ -232,7 +252,7 @@ stateDiagram-v2
 | `CONNECTING`        | Идет процесс подключения                 | connection: PREPARING, CONNECTING, CONNECTED или REGISTERED |
 | `READY_TO_CALL`     | Соединение установлено, готово к звонкам | connection: ESTABLISHED, call: IDLE                         |
 | `CALL_CONNECTING`   | Идет установка звонка                    | connection: ESTABLISHED, call: CONNECTING                   |
-| `CALL_ACTIVE`       | Звонок активен                           | connection: ESTABLISHED, call: IN_ROOM или PURGATORY        |
+| `CALL_ACTIVE`       | Звонок активен                           | connection: ESTABLISHED, call: IN_ROOM, PURGATORY, P2P_ROOM или DIRECT_P2P_ROOM |
 | `CONNECTION_FAILED` | Ошибка соединения                        | connection: FAILED                                          |
 
 ### Использование
