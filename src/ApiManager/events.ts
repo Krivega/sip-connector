@@ -38,6 +38,7 @@ export enum EEvent {
   ADMIN_START_MIC = 'admin:start-mic',
   ADMIN_STOP_MIC = 'admin:stop-mic',
   ADMIN_FORCE_SYNC_MEDIA_STATE = 'admin:force-sync-media-state',
+  FAILED_SEND_ROOM_DIRECT_P2P = 'failed-send-room-direct-p2p',
 }
 
 export const EVENT_NAMES = [
@@ -69,6 +70,7 @@ export const EVENT_NAMES = [
   `${EEvent.ADMIN_START_MIC}`,
   `${EEvent.ADMIN_STOP_MIC}`,
   `${EEvent.ADMIN_FORCE_SYNC_MEDIA_STATE}`,
+  `${EEvent.FAILED_SEND_ROOM_DIRECT_P2P}`,
 ] as const;
 
 export type TEventMap = {
@@ -114,6 +116,7 @@ export type TEventMap = {
   'admin:start-mic': { isSyncForced: boolean };
   'admin:stop-mic': { isSyncForced: boolean };
   'admin:force-sync-media-state': { isSyncForced: boolean };
+  'failed-send-room-direct-p2p': { error: unknown };
 };
 
 export type TEvents = TypedEvents<TEventMap>;

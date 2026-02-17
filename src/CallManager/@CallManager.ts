@@ -1,4 +1,3 @@
-import { EContentTypeReceived } from '@/ApiManager';
 import { DeferredCommandRunner } from '@/tools';
 import { CallStateMachine, EState } from './CallStateMachine';
 import { createEvents, EEvent } from './events';
@@ -9,7 +8,7 @@ import { RoleManager } from './RoleManager';
 import { StreamsChangeTracker } from './StreamsChangeTracker';
 import { StreamsManagerProvider } from './StreamsManagerProvider';
 
-import type { ExtraHeaders, IncomingRequest, IncomingResponse, RTCSession } from '@krivega/jssip';
+import type { IncomingRequest, IncomingResponse, RTCSession } from '@krivega/jssip';
 import type { ApiManager } from '@/ApiManager';
 import type { ContentedStreamManager } from '@/ContentedStreamManager';
 import type { TEventMap, TEvents } from './events';
@@ -315,49 +314,10 @@ class CallManager {
     return result.applied;
   }
 
-  public sendEnterRoom(extraHeaders: string[]): void {
-    this.sendInfo(EContentTypeReceived.ENTER_ROOM, undefined, { extraHeaders }).catch(
-      async (error: unknown) => {
-        await this.handleSendEnterRoomError(error);
-      },
-    );
-  }
+  public async endCallWithError(error: unknown): Promise<void> {
+    this.emitFailedCall(error);
 
-  private async handleSendEnterRoomError(enterRoomError: unknown): Promise<void> {
-    this.emitFailedCall(enterRoomError);
-
-    try {
-      await this.endCall();
-    } catch (endCallError: unknown) {
-      // eslint-disable-next-line no-console
-      console.warn('[CallManager] Failed to end call after sendEnterRoom:', endCallError);
-    }
-  }
-
-  private async sendInfo(
-    contentType: string,
-    body?: string,
-    options?: ExtraHeaders & {
-      noTerminateWhenError?: boolean;
-    },
-  ): Promise<void> {
-    try {
-      const rtcSessionProtected = this.getEstablishedRTCSessionProtected();
-
-      await rtcSessionProtected.sendInfo(contentType, body, options);
-    } catch (error: unknown) {
-      throw error as Error;
-    }
-  }
-
-  private getEstablishedRTCSessionProtected(): RTCSession {
-    const rtcSession = this.getEstablishedRTCSession();
-
-    if (!rtcSession) {
-      throw new Error('No rtcSession established');
-    }
-
-    return rtcSession;
+    await this.endCall();
   }
 
   private emitFailedCall(error: unknown) {

@@ -67,6 +67,38 @@ describe('SipConnector', () => {
     expect(spyRecover).toHaveBeenCalledTimes(1);
   });
 
+  it('при событии failed-send-room-direct-p2p вызывает callManager.endCallWithError', async () => {
+    const sendError = new Error('send enter room failed');
+    const endCallWithErrorSpy = jest
+      .spyOn(sipConnector.callManager, 'endCallWithError')
+      .mockResolvedValue();
+
+    sipConnector.apiManager.events.trigger('failed-send-room-direct-p2p', { error: sendError });
+
+    await flushPromises();
+
+    expect(endCallWithErrorSpy).toHaveBeenCalledWith(sendError);
+  });
+
+  it('при событии failed-send-room-direct-p2p логирует предупреждение если endCallWithError отклоняется', async () => {
+    const sendError = new Error('send enter room failed');
+    const endCallError = new Error('end call failed');
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+    jest.spyOn(sipConnector.callManager, 'endCallWithError').mockRejectedValue(endCallError);
+
+    sipConnector.apiManager.events.trigger('failed-send-room-direct-p2p', { error: sendError });
+
+    await flushPromises();
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      'Failed to end call after endCallWithError:',
+      endCallError,
+    );
+
+    warnSpy.mockRestore();
+  });
+
   it('не должен проксировать событие connection:disconnected как disconnected-from-out-of-call если активен звонок', async () => {
     const handler = jest.fn();
 

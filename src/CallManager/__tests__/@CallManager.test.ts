@@ -3,7 +3,6 @@ import { createAudioMediaStreamTrackMock } from 'webrtc-mock';
 import { createManagers } from '@/__fixtures__/createManagers';
 import flushPromises from '@/__fixtures__/flushPromises';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
-import { EContentTypeReceived } from '@/ApiManager';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
 import CallManager, { getInRoomTokenOrThrow } from '../@CallManager';
 import { EEvent } from '../events';
@@ -879,182 +878,66 @@ describe('CallManager - дополнительные тесты для покр�
     await expect(callManager.restartIce()).rejects.toThrow('No rtcSession established');
   });
 
-  describe('sendEnterRoom', () => {
-    it('вызывает sendInfo с ENTER_ROOM и переданными extraHeaders', async () => {
-      const rtcSession = new RTCSessionMock({
-        eventHandlers: {},
-        originator: 'remote',
-      });
-
-      const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
-
-      // @ts-expect-error
-      Object.defineProperty(callManager.mcuSession, 'rtcSession', {
-        get: () => {
-          return rtcSession;
-        },
-        configurable: true,
-      });
-
-      const extraHeaders = ['X-Room: room1', 'X-Participant: user'];
-
-      callManager.sendEnterRoom(extraHeaders);
-
-      await flushPromises();
-
-      expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeReceived.ENTER_ROOM, undefined, {
-        extraHeaders,
-      });
+  describe('endCallWithError', () => {
+    beforeEach(() => {
+      jest.spyOn(console, 'warn').mockImplementation();
     });
 
-    it('при ошибке sendInfo триггерит failed', async () => {
-      const rtcSession = new RTCSessionMock({
-        eventHandlers: {},
-        originator: 'remote',
-      });
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
 
-      const sendError = new Error('send failed');
-
-      jest.spyOn(rtcSession, 'sendInfo').mockRejectedValue(sendError);
-
-      // @ts-expect-error
-      Object.defineProperty(callManager.mcuSession, 'rtcSession', {
-        get: () => {
-          return rtcSession;
-        },
-        configurable: true,
-      });
-
+    it('триггерит failed с cause из error', async () => {
+      const error = new Error('call failed');
       const failedSpy = jest.fn();
 
       callManager.events.on(EEvent.FAILED, failedSpy);
 
-      callManager.sendEnterRoom(['X-Room: room1']);
-
-      await flushPromises();
+      await callManager.endCallWithError(error);
 
       expect(failedSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           originator: 'local',
-          cause: 'send failed',
+          cause: 'call failed',
         }),
       );
     });
 
-    it('при ошибке sendInfo завершает звонок через endCall', async () => {
-      const rtcSession = new RTCSessionMock({
-        eventHandlers: {},
-        originator: 'remote',
-      });
-
-      const sendError = new Error('send failed');
-      const endCallSpy = jest.fn().mockResolvedValue(undefined);
-
-      jest.spyOn(rtcSession, 'sendInfo').mockRejectedValue(sendError);
-      jest.spyOn(rtcSession, 'isEstablished').mockReturnValue(true);
-
-      // @ts-expect-error
-      Object.defineProperty(callManager.mcuSession, 'rtcSession', {
-        get: () => {
-          return rtcSession;
-        },
-        configurable: true,
-      });
-
-      // @ts-expect-error
-      jest.spyOn(callManager.mcuSession, 'endCall').mockImplementation(endCallSpy);
-
-      callManager.sendEnterRoom(['X-Room: room1']);
-
-      await flushPromises();
-
-      expect(endCallSpy).toHaveBeenCalled();
-    });
-
-    it('при ошибке sendInfo и успешном endCall завершает звонок корректно', async () => {
-      const rtcSession = new RTCSessionMock({
-        eventHandlers: {},
-        originator: 'remote',
-      });
-
-      const sendError = new Error('send failed');
-      const endCallSpy = jest.fn().mockResolvedValue(undefined);
+    it('триггерит failed с cause из String(error) для не-Error', async () => {
       const failedSpy = jest.fn();
-
-      jest.spyOn(rtcSession, 'sendInfo').mockRejectedValue(sendError);
-      jest.spyOn(rtcSession, 'isEstablished').mockReturnValue(true);
-
-      // @ts-expect-error
-      Object.defineProperty(callManager.mcuSession, 'rtcSession', {
-        get: () => {
-          return rtcSession;
-        },
-        configurable: true,
-      });
-
-      // @ts-expect-error
-      jest.spyOn(callManager.mcuSession, 'endCall').mockImplementation(endCallSpy);
 
       callManager.events.on(EEvent.FAILED, failedSpy);
 
-      callManager.sendEnterRoom(['X-Room: room1']);
-
-      await flushPromises();
+      await callManager.endCallWithError('network error');
 
       expect(failedSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           originator: 'local',
-          cause: 'send failed',
+          cause: 'network error',
         }),
       );
+    });
+
+    it('вызывает endCall после эмита failed', async () => {
+      const endCallSpy = jest.fn().mockResolvedValue(undefined);
+
+      // @ts-expect-error доступ к приватному члену для теста
+      jest.spyOn(callManager.mcuSession, 'endCall').mockImplementation(endCallSpy);
+
+      await callManager.endCallWithError(new Error('test'));
+
       expect(endCallSpy).toHaveBeenCalled();
     });
 
-    it('при ошибке sendInfo и ошибке endCall не падает, но логирует предупреждение', async () => {
-      const rtcSession = new RTCSessionMock({
-        eventHandlers: {},
-        originator: 'remote',
-      });
-
-      const sendError = new Error('send failed');
+    it('при ошибке endCall пробрасывает ошибку', async () => {
       const endCallError = new Error('end call failed');
-      const endCallSpy = jest.fn().mockRejectedValue(endCallError);
-      const failedSpy = jest.fn();
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
 
-      jest.spyOn(rtcSession, 'sendInfo').mockRejectedValue(sendError);
-      jest.spyOn(rtcSession, 'isEstablished').mockReturnValue(true);
+      // @ts-expect-error доступ к приватному члену для теста
+      jest.spyOn(callManager.mcuSession, 'endCall').mockRejectedValue(endCallError);
 
-      // @ts-expect-error
-      Object.defineProperty(callManager.mcuSession, 'rtcSession', {
-        get: () => {
-          return rtcSession;
-        },
-        configurable: true,
-      });
-
-      // @ts-expect-error
-      jest.spyOn(callManager.mcuSession, 'endCall').mockImplementation(endCallSpy);
-
-      callManager.events.on(EEvent.FAILED, failedSpy);
-
-      callManager.sendEnterRoom(['X-Room: room1']);
-
-      await flushPromises();
-
-      expect(failedSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          originator: 'local',
-          cause: 'send failed',
-        }),
+      await expect(callManager.endCallWithError(new Error('test'))).rejects.toThrow(
+        'end call failed',
       );
-      expect(endCallSpy).toHaveBeenCalled();
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        '[CallManager] Failed to end call after sendEnterRoom:',
-        endCallError,
-      );
-
-      consoleWarnSpy.mockRestore();
     });
   });
 

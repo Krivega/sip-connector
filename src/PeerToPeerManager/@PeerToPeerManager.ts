@@ -1,9 +1,12 @@
 import { EKeyHeader } from '@/ApiManager';
 
+import type { ApiManager } from '@/ApiManager';
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
 
 class PeerToPeerManager {
+  private apiManager?: ApiManager;
+
   private connectionManager?: ConnectionManager;
 
   private callManager?: CallManager;
@@ -33,12 +36,15 @@ class PeerToPeerManager {
   }
 
   public subscribe({
+    apiManager,
     connectionManager,
     callManager,
   }: {
+    apiManager: ApiManager;
     connectionManager: ConnectionManager;
     callManager: CallManager;
   }): void {
+    this.apiManager = apiManager;
     this.connectionManager = connectionManager;
     this.callManager = callManager;
 
@@ -46,7 +52,9 @@ class PeerToPeerManager {
   }
 
   private readonly maybeSendDirectPeerToPeerRoom = () => {
-    if (this.peerToPeerRoom === undefined || this.user === undefined) {
+    const { peerToPeerRoom, number, apiManager } = this;
+
+    if (peerToPeerRoom === undefined || number === undefined || apiManager === undefined) {
       return;
     }
 
@@ -56,7 +64,7 @@ class PeerToPeerManager {
       `${EKeyHeader.IS_DIRECT_PEER_TO_PEER}: true`,
     ];
 
-    this.callManager?.sendEnterRoom(extraHeaders);
+    apiManager.sendEnterRoom(extraHeaders);
   };
 }
 

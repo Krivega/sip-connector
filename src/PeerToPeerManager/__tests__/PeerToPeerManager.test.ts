@@ -1,15 +1,19 @@
 import delayPromise from '@/__fixtures__/delayPromise';
 import jssip from '@/__fixtures__/jssip.mock';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
+import { ApiManager, EContentTypeReceived, EKeyHeader } from '@/ApiManager';
+import { EEvent } from '@/ApiManager/events';
 import { CallManager } from '@/CallManager';
 import { ConnectionManager } from '@/ConnectionManager';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
-import { EContentTypeReceived, EKeyHeader } from '../constants';
-import PeerToPeerManager from '../PeerToPeerManager';
+import { PeerToPeerManager } from '@/PeerToPeerManager';
 
 import type { TJsSIP } from '@/types';
 
+const { FAILED_SEND_ROOM_DIRECT_P2P } = EEvent;
+
 describe('PeerToPeerManager', () => {
+  let apiManager: ApiManager;
   let connectionManager: ConnectionManager;
   let callManager: CallManager & { getEstablishedRTCSession: jest.Mock };
   let peerToPeerManager: PeerToPeerManager;
@@ -27,6 +31,11 @@ describe('PeerToPeerManager', () => {
       originator: 'local',
     });
     callManager.getEstablishedRTCSession.mockReturnValue(rtcSession);
+    apiManager = new ApiManager();
+    apiManager.subscribe({
+      connectionManager,
+      callManager,
+    });
     peerToPeerManager = new PeerToPeerManager();
 
     jest.spyOn(connectionManager, 'getUaProtected').mockReturnValue({
@@ -43,6 +52,7 @@ describe('PeerToPeerManager', () => {
       const onSpy = jest.spyOn(callManager, 'on');
 
       peerToPeerManager.subscribe({
+        apiManager,
         connectionManager,
         callManager,
       });
@@ -52,6 +62,7 @@ describe('PeerToPeerManager', () => {
 
     it('должен сохранять connectionManager и callManager', () => {
       peerToPeerManager.subscribe({
+        apiManager,
         connectionManager,
         callManager,
       });
@@ -63,6 +74,7 @@ describe('PeerToPeerManager', () => {
   describe('handleConfirmed', () => {
     beforeEach(() => {
       peerToPeerManager.subscribe({
+        apiManager,
         connectionManager,
         callManager,
       });
@@ -95,6 +107,7 @@ describe('PeerToPeerManager', () => {
   describe('maybeSendDirectPeerToPeerRoom', () => {
     beforeEach(() => {
       peerToPeerManager.subscribe({
+        apiManager,
         connectionManager,
         callManager,
       });
@@ -154,6 +167,7 @@ describe('PeerToPeerManager', () => {
   describe('sendEnterRoom', () => {
     beforeEach(() => {
       peerToPeerManager.subscribe({
+        apiManager,
         connectionManager,
         callManager,
       });
@@ -203,13 +217,13 @@ describe('PeerToPeerManager', () => {
       );
     });
 
-    it('должен выбрасывать ошибку когда отсутствует rtcSession', async () => {
+    it('должен эмитить failed-send-room-direct-p2p когда отсутствует rtcSession', async () => {
       callManager.getEstablishedRTCSession.mockReturnValue(undefined);
       callManager.events.trigger('start-call', { number: '200', answer: true });
 
       const failedSpy = jest.fn();
 
-      callManager.events.on('failed', failedSpy);
+      apiManager.on(FAILED_SEND_ROOM_DIRECT_P2P, failedSpy);
 
       callManager.events.trigger('confirmed', {});
 
@@ -217,8 +231,8 @@ describe('PeerToPeerManager', () => {
 
       expect(failedSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          originator: 'local',
-          cause: 'No rtcSession established',
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Jest matcher
+          error: expect.objectContaining({ message: 'No rtcSession established' }),
         }),
       );
     });
@@ -227,12 +241,13 @@ describe('PeerToPeerManager', () => {
   describe('обработка ошибок sendEnterRoom', () => {
     beforeEach(() => {
       peerToPeerManager.subscribe({
+        apiManager,
         connectionManager,
         callManager,
       });
     });
 
-    it('должен триггерить failed с cause из error.message при ошибке sendInfo (Error)', async () => {
+    it('должен эмитить failed-send-room-direct-p2p с error при ошибке sendInfo (Error)', async () => {
       callManager.events.trigger('start-call', { number: '200', answer: true });
 
       const sendError = new Error('send failed');
@@ -241,43 +256,34 @@ describe('PeerToPeerManager', () => {
 
       const failedSpy = jest.fn();
 
-      callManager.events.on('failed', failedSpy);
+      apiManager.on(FAILED_SEND_ROOM_DIRECT_P2P, failedSpy);
 
       callManager.events.trigger('confirmed', {});
       await delayPromise(0);
 
-      expect(failedSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          originator: 'local',
-          cause: 'send failed',
-        }),
-      );
+      expect(failedSpy).toHaveBeenCalledWith({ error: sendError });
     });
 
-    it('должен триггерить failed с cause из String(error) при ошибке sendInfo (не Error)', async () => {
+    it('должен эмитить failed-send-room-direct-p2p с error при ошибке sendInfo (не Error)', async () => {
       callManager.events.trigger('start-call', { number: '200', answer: true });
 
       jest.spyOn(rtcSession, 'sendInfo').mockRejectedValue('network error');
 
       const failedSpy = jest.fn();
 
-      callManager.events.on('failed', failedSpy);
+      apiManager.on(FAILED_SEND_ROOM_DIRECT_P2P, failedSpy);
 
       callManager.events.trigger('confirmed', {});
       await delayPromise(0);
 
-      expect(failedSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          originator: 'local',
-          cause: 'network error',
-        }),
-      );
+      expect(failedSpy).toHaveBeenCalledWith({ error: 'network error' });
     });
   });
 
   describe('формирование имени комнаты', () => {
     beforeEach(() => {
       peerToPeerManager.subscribe({
+        apiManager,
         connectionManager,
         callManager,
       });

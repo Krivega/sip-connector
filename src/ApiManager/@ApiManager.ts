@@ -14,7 +14,6 @@ import {
 } from './constants';
 import { createEvents, EEvent } from './events';
 import { getHeader } from './getHeader';
-import PeerToPeerManager from './PeerToPeerManager';
 import { ECMDNotify } from './types';
 
 import type {
@@ -51,8 +50,6 @@ class ApiManager {
 
   private callManager?: CallManager;
 
-  private readonly peerToPeerManager = new PeerToPeerManager();
-
   public constructor() {
     this.events = createEvents();
   }
@@ -71,7 +68,6 @@ class ApiManager {
     callManager.on('newDTMF', ({ originator }) => {
       this.events.trigger(EEvent.NEW_DTMF, { originator });
     });
-    this.peerToPeerManager.subscribe({ connectionManager, callManager });
   }
 
   public async waitChannels(): Promise<TChannels> {
@@ -120,6 +116,12 @@ class ApiManager {
     ];
 
     return rtcSession.sendInfo(EContentTypeSent.CHANNELS, undefined, { extraHeaders });
+  }
+
+  public sendEnterRoom(extraHeaders: string[]): void {
+    this.sendEnterRoomProtected(extraHeaders).catch((error: unknown) => {
+      this.events.trigger(EEvent.FAILED_SEND_ROOM_DIRECT_P2P, { error });
+    });
   }
 
   public async sendMediaState(
@@ -660,6 +662,12 @@ class ApiManager {
       this.events.trigger(EEvent.USE_LICENSE, license);
     }
   };
+
+  private async sendEnterRoomProtected(extraHeaders: string[]): Promise<void> {
+    const rtcSession = this.getEstablishedRTCSessionProtected();
+
+    return rtcSession.sendInfo(EContentTypeReceived.ENTER_ROOM, undefined, { extraHeaders });
+  }
 }
 
 export default ApiManager;

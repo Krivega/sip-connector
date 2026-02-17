@@ -5,6 +5,7 @@ import { ConnectionManager } from '@/ConnectionManager';
 import { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
 import { IncomingCallManager } from '@/IncomingCallManager';
+import { PeerToPeerManager } from '@/PeerToPeerManager';
 import { PresentationManager } from '@/PresentationManager';
 import { SessionManager } from '@/SessionManager';
 import { StatsManager } from '@/StatsManager';
@@ -49,6 +50,8 @@ class SipConnector {
   public readonly sessionManager: SessionManager;
 
   public readonly mainStreamHealthMonitor: MainStreamHealthMonitor;
+
+  private readonly peerToPeerManager: PeerToPeerManager;
 
   private readonly mainStreamRecovery: MainStreamRecovery;
 
@@ -117,6 +120,12 @@ class SipConnector {
     this.apiManager.subscribe({
       connectionManager: this.connectionManager,
       callManager: this.callManager,
+    });
+    this.peerToPeerManager = new PeerToPeerManager();
+    this.peerToPeerManager.subscribe({
+      connectionManager: this.connectionManager,
+      callManager: this.callManager,
+      apiManager: this.apiManager,
     });
     this.subscribe();
   }
@@ -450,6 +459,17 @@ class SipConnector {
     });
     this.apiManager.on('presentation:must-stop', () => {
       this.mayBeStopPresentationAndNotify();
+    });
+
+    this.apiManager.on('failed-send-room-direct-p2p', ({ error }: { error: unknown }) => {
+      this.endCallWithError(error);
+    });
+  }
+
+  private endCallWithError(error: unknown) {
+    this.callManager.endCallWithError(error).catch((endCallError: unknown) => {
+      // eslint-disable-next-line no-console
+      console.warn('Failed to end call after endCallWithError:', endCallError);
     });
   }
 
