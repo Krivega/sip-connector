@@ -214,7 +214,6 @@ class PresentationManager {
 
       await sipConnectorFacade.startPresentation({
         mediaStream: presentationStream,
-        isP2P: false,
       });
 
       this.subscribeSipConnectorEvents();
@@ -316,7 +315,7 @@ class PresentationManager {
     this.updateUi();
 
     try {
-      await sipConnectorFacade.stopPresentation({ isP2P: false });
+      await sipConnectorFacade.stopPresentation();
 
       console.log('presentation stopped');
     } finally {

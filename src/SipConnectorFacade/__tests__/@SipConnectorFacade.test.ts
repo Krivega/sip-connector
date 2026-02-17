@@ -571,7 +571,6 @@ describe('SipConnectorFacade comprehensive', () => {
     it('должен запустить презентацию', async () => {
       const result = await sipConnectorFacade.startPresentation({
         mediaStream: mockMediaStream,
-        isP2P: false,
         contentHint: 'detail',
         degradationPreference: 'maintain-framerate',
         sendEncodings: [],
@@ -580,7 +579,6 @@ describe('SipConnectorFacade comprehensive', () => {
 
       expect(result).toBe(mockMediaStream);
       expect(sipConnector.startPresentation).toHaveBeenCalledWith(mockMediaStream, {
-        isP2P: false,
         contentHint: 'detail',
         callLimit: 10,
         degradationPreference: 'maintain-framerate',
@@ -592,7 +590,6 @@ describe('SipConnectorFacade comprehensive', () => {
     it('должен обновить презентацию', async () => {
       const result = await sipConnectorFacade.updatePresentation({
         mediaStream: mockMediaStream,
-        isP2P: true,
         contentHint: 'motion',
         degradationPreference: 'maintain-resolution',
         sendEncodings: [],
@@ -600,7 +597,6 @@ describe('SipConnectorFacade comprehensive', () => {
 
       expect(result).toBe(mockMediaStream);
       expect(sipConnector.updatePresentation).toHaveBeenCalledWith(mockMediaStream, {
-        isP2P: true,
         contentHint: 'motion',
         degradationPreference: 'maintain-resolution',
         sendEncodings: [],
@@ -609,21 +605,15 @@ describe('SipConnectorFacade comprehensive', () => {
     });
 
     it('должен остановить презентацию', async () => {
-      await sipConnectorFacade.stopPresentation({ isP2P: true });
+      await sipConnectorFacade.stopPresentation();
 
-      expect(sipConnector.stopPresentation).toHaveBeenCalledWith({ isP2P: true });
+      expect(sipConnector.stopPresentation).toHaveBeenCalledWith();
     });
 
     it('должен обработать ошибку остановки презентации', async () => {
       jest.spyOn(sipConnector, 'stopPresentation').mockRejectedValue(new Error('Stop failed'));
 
-      await expect(sipConnectorFacade.stopPresentation({ isP2P: false })).resolves.toBeUndefined();
-    });
-
-    it('должен остановить презентацию с параметрами по умолчанию', async () => {
-      await sipConnectorFacade.stopPresentation();
-
-      expect(sipConnector.stopPresentation).toHaveBeenCalledWith({ isP2P: false });
+      await expect(sipConnectorFacade.stopPresentation()).resolves.toBeUndefined();
     });
   });
 

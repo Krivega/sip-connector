@@ -503,14 +503,12 @@ class SipConnectorFacade implements IProxyMethods {
 
   public updatePresentation = async ({
     mediaStream,
-    isP2P,
     contentHint,
     degradationPreference,
     sendEncodings,
     onAddedTransceiver,
   }: {
     mediaStream: MediaStream;
-    isP2P: boolean;
     contentHint?: TContentHint;
     degradationPreference?: RTCDegradationPreference;
     sendEncodings?: RTCRtpEncodingParameters[];
@@ -519,7 +517,6 @@ class SipConnectorFacade implements IProxyMethods {
     debug('updatePresentation');
 
     return this.sipConnector.updatePresentation(mediaStream, {
-      isP2P,
       contentHint,
       degradationPreference,
       onAddedTransceiver,
@@ -529,7 +526,6 @@ class SipConnectorFacade implements IProxyMethods {
 
   public startPresentation = async ({
     mediaStream,
-    isP2P,
     contentHint,
     degradationPreference,
     sendEncodings,
@@ -537,7 +533,6 @@ class SipConnectorFacade implements IProxyMethods {
     onAddedTransceiver,
   }: {
     mediaStream: MediaStream;
-    isP2P: boolean;
     contentHint?: TContentHint;
     degradationPreference?: RTCDegradationPreference;
     sendEncodings?: RTCRtpEncodingParameters[];
@@ -547,7 +542,6 @@ class SipConnectorFacade implements IProxyMethods {
     debug('startPresentation');
 
     return this.sipConnector.startPresentation(mediaStream, {
-      isP2P,
       contentHint,
       callLimit,
       degradationPreference,
@@ -556,16 +550,12 @@ class SipConnectorFacade implements IProxyMethods {
     });
   };
 
-  public stopPresentation = async ({ isP2P = false }: { isP2P?: boolean } = {}) => {
+  public stopPresentation = async () => {
     debug('stopPresentation');
 
-    return this.sipConnector
-      .stopPresentation({
-        isP2P,
-      })
-      .catch((error: unknown) => {
-        debug(error as Error);
-      });
+    return this.sipConnector.stopPresentation().catch((error: unknown) => {
+      debug(error as Error);
+    });
   };
 
   public sendRefusalToTurnOnMic = async (): Promise<void> => {

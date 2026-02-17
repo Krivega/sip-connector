@@ -139,7 +139,6 @@ class PresentationManager {
       sendEncodings,
       onAddedTransceiver,
     }: {
-      isP2P?: boolean;
       contentHint?: TContentHint;
       sendEncodings?: RTCRtpEncodingParameters[];
       onAddedTransceiver?: TOnAddedTransceiver;

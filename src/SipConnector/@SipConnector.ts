@@ -169,6 +169,10 @@ class SipConnector {
     return this.incomingCallManager.isAvailableIncomingCall;
   }
 
+  private get isDirectP2PRoom(): boolean {
+    return this.callManager.isDirectP2PRoom;
+  }
+
   public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
     return this.events.on(eventName, handler);
   }
@@ -309,7 +313,6 @@ class SipConnector {
   public async startPresentation(
     mediaStream: MediaStream,
     options: {
-      isP2P?: boolean;
       isNeedReinvite?: boolean;
       contentHint?: TContentHint;
       degradationPreference?: RTCDegradationPreference;
@@ -318,11 +321,11 @@ class SipConnector {
       callLimit?: number;
     } = {},
   ): Promise<MediaStream> {
-    const { isP2P, callLimit, onAddedTransceiver, ...rest } = options;
+    const { callLimit, onAddedTransceiver, ...rest } = options;
 
     return this.presentationManager.startPresentation(
       async () => {
-        await (isP2P === true
+        await (this.isDirectP2PRoom
           ? this.apiManager.sendAvailableContentedStream()
           : this.apiManager.askPermissionToStartPresentation());
       },
@@ -335,13 +338,9 @@ class SipConnector {
     );
   }
 
-  public async stopPresentation(
-    options: { isP2P?: boolean } = {},
-  ): Promise<MediaStream | undefined> {
-    const { isP2P } = options;
-
+  public async stopPresentation(): Promise<MediaStream | undefined> {
     return this.presentationManager.stopPresentation(async () => {
-      await (isP2P === true
+      await (this.isDirectP2PRoom
         ? this.apiManager.sendNotAvailableContentedStream()
         : this.apiManager.sendStoppedPresentation());
     });
@@ -350,7 +349,6 @@ class SipConnector {
   public async updatePresentation(
     mediaStream: MediaStream,
     options: {
-      isP2P?: boolean;
       isNeedReinvite?: boolean;
       contentHint?: TContentHint;
       degradationPreference?: RTCDegradationPreference;
@@ -358,11 +356,11 @@ class SipConnector {
       onAddedTransceiver?: TOnAddedTransceiver;
     } = {},
   ): Promise<MediaStream | undefined> {
-    const { isP2P, onAddedTransceiver, ...rest } = options;
+    const { onAddedTransceiver, ...rest } = options;
 
     return this.presentationManager.updatePresentation(
       async () => {
-        await (isP2P === true
+        await (this.isDirectP2PRoom
           ? this.apiManager.sendAvailableContentedStream()
           : this.apiManager.askPermissionToStartPresentation());
       },

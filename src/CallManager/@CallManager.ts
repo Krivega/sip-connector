@@ -139,6 +139,10 @@ class CallManager {
     return this.stateMachine.isCallAnswerer;
   }
 
+  public get isDirectP2PRoom(): boolean {
+    return this.stateMachine.isDirectP2PRoom;
+  }
+
   // For testing purposes
   public getStreamsManagerProvider(): StreamsManagerProvider {
     return this.streamsManagerProvider;

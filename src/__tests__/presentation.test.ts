@@ -219,18 +219,23 @@ describe('presentation', () => {
     });
   });
 
-  it('should be stopped incoming presentation before outgoing presentation started when isP2P is truthy', async () => {
+  it('should be stopped incoming presentation before outgoing presentation started when in DIRECT_P2P_ROOM', async () => {
     expect.assertions(2);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
+    sipConnector.apiManager.events.trigger('enter-room', {
+      room: 'directP2P111to200',
+      participantName: 'User',
+      isDirectPeerToPeer: true,
+    });
 
     const sendInfoMocked = jest.spyOn(
       sipConnector.callManager.getEstablishedRTCSession()!,
       'sendInfo',
     );
 
-    await sipConnector.startPresentation(mediaStream, { isP2P: true });
+    await sipConnector.startPresentation(mediaStream);
 
     expect(sendInfoMocked).toHaveBeenCalledTimes(1);
     expect(sendInfoMocked).toHaveBeenNthCalledWith(1, EContentTypeReceived.SHARE_STATE, undefined, {
@@ -238,18 +243,23 @@ describe('presentation', () => {
     });
   });
 
-  it('should be stopped incoming presentation before outgoing presentation started when isP2P is falsy', async () => {
+  it('should be stopped incoming presentation before outgoing presentation started when not in DIRECT_P2P_ROOM', async () => {
     expect.assertions(2);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
+    sipConnector.apiManager.events.trigger('enter-room', {
+      room: 'room-1',
+      participantName: 'User',
+      bearerToken: 'token',
+    });
 
     const sendInfoMocked = jest.spyOn(
       sipConnector.callManager.getEstablishedRTCSession()!,
       'sendInfo',
     );
 
-    await sipConnector.startPresentation(mediaStream, { isP2P: false });
+    await sipConnector.startPresentation(mediaStream);
 
     expect(sendInfoMocked).toHaveBeenCalledTimes(1);
     expect(sendInfoMocked).toHaveBeenNthCalledWith(1, EContentTypeReceived.SHARE_STATE, undefined, {
@@ -262,12 +272,17 @@ describe('presentation', () => {
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
+    sipConnector.apiManager.events.trigger('enter-room', {
+      room: 'room-1',
+      participantName: 'User',
+      bearerToken: 'token',
+    });
 
     mockFailToSendMustStopPresentationInfo();
 
     let rejectedError = new Error('rejectedError');
 
-    await sipConnector.startPresentation(mediaStream, { isP2P: false }).catch((error: unknown) => {
+    await sipConnector.startPresentation(mediaStream).catch((error: unknown) => {
       rejectedError = error as Error;
     });
 
