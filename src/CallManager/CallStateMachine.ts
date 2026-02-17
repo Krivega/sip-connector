@@ -408,7 +408,7 @@ export class CallStateMachine extends BaseStateMachine<typeof callMachine, EStat
     return !this.isCallAnswerer;
   }
 
-  private get isCallAnswerer(): boolean {
+  public get isCallAnswerer(): boolean {
     const { context } = this;
 
     return 'answer' in context ? context.answer : false;

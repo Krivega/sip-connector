@@ -394,6 +394,24 @@ describe('CallStateMachine', () => {
     });
   });
 
+  describe('isCallAnswerer', () => {
+    it('возвращает false когда в контексте нет поля answer', () => {
+      expect(machine.isCallAnswerer).toBe(false);
+    });
+
+    it('возвращает true при answer: true', () => {
+      machine.send({ type: 'CALL.CONNECTING', number: '100', answer: true });
+
+      expect(machine.isCallAnswerer).toBe(true);
+    });
+
+    it('возвращает false при answer: false', () => {
+      machine.send({ type: 'CALL.CONNECTING', number: '100', answer: false });
+
+      expect(machine.isCallAnswerer).toBe(false);
+    });
+  });
+
   describe('Валидация переходов', () => {
     it('должен игнорировать недопустимые переходы с предупреждением', () => {
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();

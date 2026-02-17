@@ -317,10 +317,21 @@ class CallManager {
 
   public sendEnterRoom(extraHeaders: string[]): void {
     this.sendInfo(EContentTypeReceived.ENTER_ROOM, undefined, { extraHeaders }).catch(
-      (error: unknown) => {
-        this.emitFailedCall(error);
+      async (error: unknown) => {
+        await this.handleSendEnterRoomError(error);
       },
     );
+  }
+
+  private async handleSendEnterRoomError(enterRoomError: unknown): Promise<void> {
+    this.emitFailedCall(enterRoomError);
+
+    try {
+      await this.endCall();
+    } catch (endCallError: unknown) {
+      // eslint-disable-next-line no-console
+      console.warn('[CallManager] Failed to end call after sendEnterRoom:', endCallError);
+    }
   }
 
   private async sendInfo(
