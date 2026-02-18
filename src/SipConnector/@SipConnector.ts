@@ -5,6 +5,7 @@ import { ConnectionManager } from '@/ConnectionManager';
 import { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
 import { IncomingCallManager } from '@/IncomingCallManager';
+import logger from '@/logger';
 import { PeerToPeerManager } from '@/PeerToPeerManager';
 import { PresentationManager } from '@/PresentationManager';
 import { SessionManager } from '@/SessionManager';
@@ -468,8 +469,7 @@ class SipConnector {
 
   private endCallWithError(error: unknown) {
     this.callManager.endCallWithError(error).catch((endCallError: unknown) => {
-      // eslint-disable-next-line no-console
-      console.warn('Failed to end call after endCallWithError:', endCallError);
+      logger('Failed to end call after endCallWithError:', endCallError);
     });
   }
 

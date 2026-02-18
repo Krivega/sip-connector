@@ -2,6 +2,7 @@ import { createMediaStreamMock } from 'webrtc-mock';
 
 import flushPromises from '@/__fixtures__/flushPromises';
 import JsSIP from '@/__fixtures__/jssip.mock';
+import logger from '@/logger';
 import * as tools from '@/tools';
 import SipConnector from '../@SipConnector';
 
@@ -16,6 +17,10 @@ import type {
 import type { TConnectionConfiguration } from '@/ConnectionManager';
 import type { TInboundStats, TOutboundStats } from '@/StatsPeerConnection';
 import type { TJsSIP } from '@/types';
+
+jest.mock('@/logger', () => {
+  return jest.fn();
+});
 
 describe('SipConnector', () => {
   let sipConnector: SipConnector;
@@ -83,7 +88,6 @@ describe('SipConnector', () => {
   it('при событии failed-send-room-direct-p2p логирует предупреждение если endCallWithError отклоняется', async () => {
     const sendError = new Error('send enter room failed');
     const endCallError = new Error('end call failed');
-    const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
 
     jest.spyOn(sipConnector.callManager, 'endCallWithError').mockRejectedValue(endCallError);
 
@@ -91,12 +95,7 @@ describe('SipConnector', () => {
 
     await flushPromises();
 
-    expect(warnSpy).toHaveBeenCalledWith(
-      'Failed to end call after endCallWithError:',
-      endCallError,
-    );
-
-    warnSpy.mockRestore();
+    expect(logger).toHaveBeenCalledWith('Failed to end call after endCallWithError:', endCallError);
   });
 
   it('не должен проксировать событие connection:disconnected как disconnected-from-out-of-call если активен звонок', async () => {
