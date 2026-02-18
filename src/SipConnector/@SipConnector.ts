@@ -1,3 +1,5 @@
+import { C as JsSIP_C, IncomingResponse } from '@krivega/jssip';
+
 import { ApiManager } from '@/ApiManager';
 import { AutoConnectorManager } from '@/AutoConnectorManager';
 import { CallManager } from '@/CallManager';
@@ -463,13 +465,15 @@ class SipConnector {
     });
 
     this.apiManager.on('failed-send-room-direct-p2p', ({ error }: { error: unknown }) => {
-      this.endCallWithError(error);
-    });
-  }
+      const message = new IncomingResponse();
 
-  private endCallWithError(error: unknown) {
-    this.callManager.endCallWithError(error).catch((endCallError: unknown) => {
-      logger('Failed to end call after endCallWithError:', endCallError);
+      message.body = error instanceof Error ? error.message : String(error);
+
+      const cause = JsSIP_C.causes.INTERNAL_ERROR;
+
+      this.callManager.failed(message, cause).catch((endCallError: unknown) => {
+        logger('Failed to end call after failed:', endCallError);
+      });
     });
   }
 

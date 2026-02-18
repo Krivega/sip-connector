@@ -8,7 +8,7 @@ import { RoleManager } from './RoleManager';
 import { StreamsChangeTracker } from './StreamsChangeTracker';
 import { StreamsManagerProvider } from './StreamsManagerProvider';
 
-import type { IncomingRequest, IncomingResponse, RTCSession } from '@krivega/jssip';
+import type { IncomingResponse, RTCSession } from '@krivega/jssip';
 import type { ApiManager } from '@/ApiManager';
 import type { ContentedStreamManager } from '@/ContentedStreamManager';
 import type { TEventMap, TEvents } from './events';
@@ -314,18 +314,14 @@ class CallManager {
     return result.applied;
   }
 
-  public async endCallWithError(error: unknown): Promise<void> {
-    this.emitFailedCall(error);
+  public async failed(message: IncomingResponse, cause: string): Promise<void> {
+    this.emitFailedCall(message, cause);
 
     await this.endCall();
   }
 
-  private emitFailedCall(error: unknown) {
-    this.events.trigger(EEvent.FAILED, {
-      originator: 'local',
-      cause: error instanceof Error ? error.message : String(error),
-      message: {} as IncomingRequest | IncomingResponse,
-    });
+  private emitFailedCall(message: IncomingResponse, cause: string) {
+    this.events.trigger(EEvent.FAILED, { message, cause, originator: 'local' });
   }
 
   private readonly reset: () => void = () => {

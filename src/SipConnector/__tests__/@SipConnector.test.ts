@@ -1,3 +1,4 @@
+import { C, IncomingResponse } from '@krivega/jssip';
 import { createMediaStreamMock } from 'webrtc-mock';
 
 import flushPromises from '@/__fixtures__/flushPromises';
@@ -8,7 +9,6 @@ import SipConnector from '../@SipConnector';
 
 import type {
   ConnectedEvent,
-  IncomingResponse,
   RegisteredEvent,
   Socket,
   UA,
@@ -72,30 +72,50 @@ describe('SipConnector', () => {
     expect(spyRecover).toHaveBeenCalledTimes(1);
   });
 
-  it('при событии failed-send-room-direct-p2p вызывает callManager.endCallWithError', async () => {
-    const sendError = new Error('send enter room failed');
-    const endCallWithErrorSpy = jest
-      .spyOn(sipConnector.callManager, 'endCallWithError')
-      .mockResolvedValue();
+  it('при событии failed-send-room-direct-p2p вызывает callManager.failed с message и cause', async () => {
+    const failedSpy = jest.spyOn(sipConnector.callManager, 'failed').mockResolvedValue();
 
-    sipConnector.apiManager.events.trigger('failed-send-room-direct-p2p', { error: sendError });
+    sipConnector.apiManager.events.trigger('failed-send-room-direct-p2p', {
+      error: new Error('send room failed'),
+    });
 
     await flushPromises();
 
-    expect(endCallWithErrorSpy).toHaveBeenCalledWith(sendError);
+    expect(failedSpy).toHaveBeenCalledTimes(1);
+
+    const [message, cause] = failedSpy.mock.calls[0];
+
+    expect(message).toBeInstanceOf(IncomingResponse);
+    expect(message.body).toBe('send room failed');
+    expect(cause).toBe(C.causes.INTERNAL_ERROR);
   });
 
-  it('при событии failed-send-room-direct-p2p логирует предупреждение если endCallWithError отклоняется', async () => {
-    const sendError = new Error('send enter room failed');
-    const endCallError = new Error('end call failed');
+  it('при событии failed-send-room-direct-p2p передаёт в message.body String(error) для не-Error', async () => {
+    const failedSpy = jest.spyOn(sipConnector.callManager, 'failed').mockResolvedValue();
 
-    jest.spyOn(sipConnector.callManager, 'endCallWithError').mockRejectedValue(endCallError);
-
-    sipConnector.apiManager.events.trigger('failed-send-room-direct-p2p', { error: sendError });
+    sipConnector.apiManager.events.trigger('failed-send-room-direct-p2p', {
+      error: 'network error',
+    });
 
     await flushPromises();
 
-    expect(logger).toHaveBeenCalledWith('Failed to end call after endCallWithError:', endCallError);
+    const [message] = failedSpy.mock.calls[0];
+
+    expect(message.body).toBe('network error');
+  });
+
+  it('при событии failed-send-room-direct-p2p логирует предупреждение если failed отклоняется', async () => {
+    const endCallError = new Error('end call failed');
+
+    jest.spyOn(sipConnector.callManager, 'failed').mockRejectedValue(endCallError);
+
+    sipConnector.apiManager.events.trigger('failed-send-room-direct-p2p', {
+      error: new Error('send room failed'),
+    });
+
+    await flushPromises();
+
+    expect(logger).toHaveBeenCalledWith('Failed to end call after failed:', endCallError);
   });
 
   it('не должен проксировать событие connection:disconnected как disconnected-from-out-of-call если активен звонок', async () => {

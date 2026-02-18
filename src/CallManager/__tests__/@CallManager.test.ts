@@ -1,3 +1,4 @@
+import { IncomingResponse } from '@krivega/jssip';
 import { createAudioMediaStreamTrackMock } from 'webrtc-mock';
 
 import { createManagers } from '@/__fixtures__/createManagers';
@@ -9,7 +10,7 @@ import { EEvent } from '../events';
 import { resolveRecvQuality } from '../quality';
 import { RemoteStreamsManager } from '../RemoteStreamsManager';
 
-import type { EndEvent, RTCSession } from '@krivega/jssip';
+import type { RTCSession } from '@krivega/jssip';
 import type { TRecvQuality } from '../quality';
 import type { TCallRoleSpectator, TCallRoleSpectatorSynthetic } from '../types';
 
@@ -668,7 +669,11 @@ describe('CallManager', () => {
         sendOffer,
       } as TCallRoleSpectator['recvParams']);
 
-      cm.events.trigger('failed', new Error('call failed') as unknown as EndEvent);
+      cm.events.trigger('failed', {
+        originator: 'local',
+        message: new IncomingResponse(),
+        cause: 'call failed',
+      });
       expect(cm.stateMachine.state).toBe('call:idle');
 
       expect(mockRecvSession.instance).toBeUndefined();
@@ -878,42 +883,22 @@ describe('CallManager - дополнительные тесты для покр�
     await expect(callManager.restartIce()).rejects.toThrow('No rtcSession established');
   });
 
-  describe('endCallWithError', () => {
-    beforeEach(() => {
-      jest.spyOn(console, 'warn').mockImplementation();
-    });
+  describe('failed', () => {
+    const message = new IncomingResponse();
 
-    afterEach(() => {
-      jest.restoreAllMocks();
-    });
-
-    it('триггерит failed с cause из error', async () => {
-      const error = new Error('call failed');
+    it('триггерит failed с переданными message и cause', async () => {
+      const cause = 'call failed';
       const failedSpy = jest.fn();
 
       callManager.events.on(EEvent.FAILED, failedSpy);
 
-      await callManager.endCallWithError(error);
+      await callManager.failed(message, cause);
 
       expect(failedSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           originator: 'local',
-          cause: 'call failed',
-        }),
-      );
-    });
-
-    it('триггерит failed с cause из String(error) для не-Error', async () => {
-      const failedSpy = jest.fn();
-
-      callManager.events.on(EEvent.FAILED, failedSpy);
-
-      await callManager.endCallWithError('network error');
-
-      expect(failedSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          originator: 'local',
-          cause: 'network error',
+          message,
+          cause,
         }),
       );
     });
@@ -924,7 +909,7 @@ describe('CallManager - дополнительные тесты для покр�
       // @ts-expect-error доступ к приватному члену для теста
       jest.spyOn(callManager.mcuSession, 'endCall').mockImplementation(endCallSpy);
 
-      await callManager.endCallWithError(new Error('test'));
+      await callManager.failed(message, 'test');
 
       expect(endCallSpy).toHaveBeenCalled();
     });
@@ -935,9 +920,7 @@ describe('CallManager - дополнительные тесты для покр�
       // @ts-expect-error доступ к приватному члену для теста
       jest.spyOn(callManager.mcuSession, 'endCall').mockRejectedValue(endCallError);
 
-      await expect(callManager.endCallWithError(new Error('test'))).rejects.toThrow(
-        'end call failed',
-      );
+      await expect(callManager.failed(message, 'test')).rejects.toThrow('end call failed');
     });
   });
 
