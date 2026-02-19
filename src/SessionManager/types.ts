@@ -1,4 +1,4 @@
-import type { CallStateMachine, TCallSnapshot } from '@/CallManager/CallStateMachine';
+import type { CallStateMachine, TCallSnapshot } from '@/CallManager';
 import type {
   ConnectionStateMachine,
   TConnectionSnapshot,

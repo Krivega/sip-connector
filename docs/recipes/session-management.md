@@ -94,6 +94,7 @@ unsubscribe(); // Когда больше не нужно слушать
 ## Доступные селекторы
 
 - `selectConnectionStatus` - статус соединения
+- `selectCallState` - снапшот машины звонка (value + context)
 - `selectCallStatus` - статус звонка (ECallStatus: IDLE, CONNECTING, IN_ROOM)
 - `selectIncomingStatus` - статус входящего звонка
 - `selectIncomingRemoteCaller` - данные входящего звонка

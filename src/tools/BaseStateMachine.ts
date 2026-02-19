@@ -9,6 +9,7 @@ export abstract class BaseStateMachine<
   TMachine extends AnyStateMachine,
   EState extends string,
   TContext extends Record<string, unknown>,
+  TSnapshot extends { value: EState; context: TContext } = { value: EState; context: TContext },
 > {
   protected readonly actor: Actor<TMachine>;
 
@@ -45,7 +46,7 @@ export abstract class BaseStateMachine<
   }
 
   public getSnapshot() {
-    return this.actor.getSnapshot() as unknown as { value: EState; context: TContext };
+    return this.actor.getSnapshot() as unknown as TSnapshot;
   }
 
   public subscribe(listener: (snapshot: SnapshotFrom<TMachine>) => void) {

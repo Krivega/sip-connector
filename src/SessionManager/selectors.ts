@@ -7,6 +7,10 @@ const selectConnectionStatus = (snapshot: TSessionSnapshot): EConnectionStatus =
   return snapshot.connection.value;
 };
 
+const selectCallState = (snapshot: TSessionSnapshot): TSessionSnapshot['call'] => {
+  return snapshot.call;
+};
+
 const selectCallStatus = (snapshot: TSessionSnapshot): ECallStatus => {
   return snapshot.call.value;
 };
@@ -101,6 +105,7 @@ const selectSystemStatus = (snapshot: TSessionSnapshot): ESystemStatus => {
 
 export const sessionSelectors = {
   selectConnectionStatus,
+  selectCallState,
   selectCallStatus,
   selectIncomingStatus,
   selectIncomingRemoteCaller,

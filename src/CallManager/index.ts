@@ -10,3 +10,5 @@ export { default as hasCanceledCallError } from './hasCanceledCallError';
 export type { TCustomError, TGetUri, TOnAddedTransceiver, TRemoteStreams } from './types';
 export type { TEventMap as TCallManagerEventMap, TEvents as TCallEvents } from './events';
 export type { TEffectiveQuality, TRecvQuality } from './quality';
+export type { TSnapshot as TCallSnapshot } from './CallStateMachine';
+export type { CallStateMachine } from './CallStateMachine';

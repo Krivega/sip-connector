@@ -70,6 +70,40 @@ describe('sessionSelectors', () => {
     });
   });
 
+  describe('selectCallState', () => {
+    it('возвращает объект call из snapshot', () => {
+      const call = {
+        value: ECallStatus.CONNECTING,
+        context: { number: '100', answer: false },
+      };
+      const snapshot = createMockSnapshot({ call: call as never });
+
+      expect(sessionSelectors.selectCallState(snapshot)).toBe(call);
+    });
+
+    it('возвращает call с value и context из snapshot', () => {
+      const call = {
+        value: ECallStatus.IN_ROOM,
+        context: {
+          number: '100',
+          answer: false,
+          room: 'room-1',
+          participantName: 'User',
+          token: 'jwt',
+          conference: 'conf',
+          participant: 'part',
+        },
+      };
+      const snapshot = createMockSnapshot({ call: call as never });
+
+      const result = sessionSelectors.selectCallState(snapshot);
+
+      expect(result).toEqual(call);
+      expect(result.value).toBe(ECallStatus.IN_ROOM);
+      expect(result.context).toEqual(call.context);
+    });
+  });
+
   describe('selectCallStatus', () => {
     it('should return call status from snapshot', () => {
       const snapshot = createMockSnapshot({

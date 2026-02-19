@@ -17,8 +17,8 @@ export enum EState {
   DISCONNECTING = 'call:disconnecting',
 }
 
-type TIdleContext = { pendingDisconnect?: true };
-type TConnectingContext = {
+export type TIdleContext = { pendingDisconnect?: true };
+export type TConnectingContext = {
   number: string;
   answer: boolean;
 };
@@ -379,9 +379,21 @@ const callMachine = setup({
   },
 });
 
-export type TCallSnapshot = { value: EState; context: TContext };
+export type TSnapshot =
+  | { value: EState.IDLE; context: TIdleContext }
+  | { value: EState.CONNECTING; context: TConnectingContext }
+  | { value: EState.PURGATORY; context: TPurgatoryContext }
+  | { value: EState.P2P_ROOM; context: TP2PRoomContext }
+  | { value: EState.DIRECT_P2P_ROOM; context: TDirectP2PRoomContext }
+  | { value: EState.IN_ROOM; context: TInRoomContext }
+  | { value: EState.DISCONNECTING; context: TIdleContext };
 
-export class CallStateMachine extends BaseStateMachine<typeof callMachine, EState, TContext> {
+export class CallStateMachine extends BaseStateMachine<
+  typeof callMachine,
+  EState,
+  TContext,
+  TSnapshot
+> {
   public constructor(events: TEvents) {
     super(callMachine);
 

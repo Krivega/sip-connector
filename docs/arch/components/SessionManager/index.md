@@ -122,6 +122,7 @@ type TSessionMachines = {
 SessionManager предоставляет набор готовых селекторов через `sessionSelectors`:
 
 - `selectConnectionStatus` — статус соединения (`EConnectionStatus`)
+- `selectCallState` — снапшот машины звонка (`TSessionSnapshot['call']`: `{ value: ECallStatus; context: TContext }`)
 - `selectCallStatus` — статус звонка (`ECallStatus`)
 - `selectIncomingStatus` — статус входящего звонка (`EIncomingStatus`)
 - `selectIncomingRemoteCaller` — данные вызывающего абонента (`TRemoteCallerData | undefined`)
