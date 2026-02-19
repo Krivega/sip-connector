@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [26.2.1](https://github.com/Krivega/sip-connector/compare/v26.2.0...v26.2.1) (2026-02-19)
+
+### Bug Fixes
+
+- update media sending availability logic for spectators ([309c857](https://github.com/Krivega/sip-connector/commit/309c8575ffd4acf8c12124209e37d6a79c266321))
+
 ## [26.2.0](https://github.com/Krivega/sip-connector/compare/v26.1.1...v26.2.0) (2026-02-19)
 
 ### Features
