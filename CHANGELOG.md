@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [26.2.0](https://github.com/Krivega/sip-connector/compare/v26.1.1...v26.2.0) (2026-02-19)
+
+### Features
+
+- add selector for getting call state snapshot ([#70](https://github.com/Krivega/sip-connector/issues/70)) ([56c8b5e](https://github.com/Krivega/sip-connector/commit/56c8b5e6756a703a5d1da3102b0b01724a0de4bb))
+
 ### [26.1.1](https://github.com/Krivega/sip-connector/compare/v26.1.0...v26.1.1) (2026-02-19)
 
 ### Bug Fixes
