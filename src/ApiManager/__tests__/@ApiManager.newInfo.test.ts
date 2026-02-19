@@ -168,11 +168,11 @@ describe('ApiManager (NEW_INFO handling)', () => {
       callManager.events.trigger('newInfo', infoEvent);
       expect(spectatorOldSpy).not.toHaveBeenCalled();
       expect(spectatorWithAudioIdSpy).toHaveBeenCalledWith({
-        isAvailableSendingMedia: true,
+        isAvailableSendingMedia: false,
         audioId,
       });
       expect(spectatorSpy).toHaveBeenCalledWith({
-        isAvailableSendingMedia: true,
+        isAvailableSendingMedia: false,
         isSynthetic: false,
         audioId,
       });
@@ -626,10 +626,10 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
       callManager.events.trigger('newInfo', infoEvent);
-      expect(spectatorOldSpy).toHaveBeenCalledWith({ isAvailableSendingMedia: true });
+      expect(spectatorOldSpy).toHaveBeenCalledWith({ isAvailableSendingMedia: false });
       expect(spectatorWithAudioIdSpy).not.toHaveBeenCalled();
       expect(spectatorSpy).toHaveBeenCalledWith({
-        isAvailableSendingMedia: true,
+        isAvailableSendingMedia: false,
         isSynthetic: true,
       });
     });
@@ -696,10 +696,10 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
       callManager.events.trigger('newInfo', infoEvent);
-      expect(spectatorOldSpy).toHaveBeenCalledWith({ isAvailableSendingMedia: true });
+      expect(spectatorOldSpy).toHaveBeenCalledWith({ isAvailableSendingMedia: false });
       expect(spectatorWithAudioIdSpy).not.toHaveBeenCalled();
       expect(spectatorSpy).toHaveBeenCalledWith({
-        isAvailableSendingMedia: true,
+        isAvailableSendingMedia: false,
         isSynthetic: true,
       });
       expect(participantSpy).not.toHaveBeenCalled();
@@ -728,7 +728,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
       });
     });
 
-    it('должен устанавливать isAvailableSendingMedia=true когда spectatorMode=undefined', () => {
+    it('не должен устанавливать isAvailableSendingMedia=true когда spectatorMode=undefined', () => {
       const spectatorOldSpy = jest.fn();
       const spectatorSpy = jest.fn();
 
@@ -744,9 +744,9 @@ describe('ApiManager (NEW_INFO handling)', () => {
       const infoEvent = MockRequest.createInfoEvent('remote', mockRequest);
 
       callManager.events.trigger('newInfo', infoEvent);
-      expect(spectatorOldSpy).toHaveBeenCalledWith({ isAvailableSendingMedia: true });
+      expect(spectatorOldSpy).toHaveBeenCalledWith({ isAvailableSendingMedia: false });
       expect(spectatorSpy).toHaveBeenCalledWith({
-        isAvailableSendingMedia: true,
+        isAvailableSendingMedia: false,
         isSynthetic: true,
       });
     });

@@ -122,8 +122,8 @@ enum EContentSpectatorMode {
 
 Булево поле, указывающее, доступна ли отправка медиа для участника в режиме зрителя.
 
-- `true` — если `spectatorMode === BY_STATE_CAM` или `spectatorMode === undefined` (отправка медиа разрешена в зависимости от состояния камеры)
-- `false` — если `spectatorMode === SPECTATOR_MANUAL` или `spectatorMode === SPECTATOR_FORCED` (отправка медиа запрещена)
+- `true` — если `spectatorMode === BY_STATE_CAM` (отправка медиа разрешена в зависимости от состояния камеры)
+- `false` — если `spectatorMode === SPECTATOR_MANUAL` или `spectatorMode === SPECTATOR_FORCED` (отправка медиа запрещена) или `spectatorMode === undefined`
 
 Это поле присутствует в следующих событиях:
 

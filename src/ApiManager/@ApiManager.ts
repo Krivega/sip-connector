@@ -594,8 +594,7 @@ class ApiManager {
     const spectatorMode = getHeader(request, EKeyHeader.SPECTATOR_MODE);
 
     if (participantState === EContentParticipantType.SPECTATOR) {
-      const isAvailableSendingMedia =
-        spectatorMode === EContentSpectatorMode.BY_STATE_CAM || spectatorMode === undefined;
+      const isAvailableSendingMedia = spectatorMode === EContentSpectatorMode.BY_STATE_CAM;
 
       if (audioId === undefined) {
         this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS_SYNTHETIC, {

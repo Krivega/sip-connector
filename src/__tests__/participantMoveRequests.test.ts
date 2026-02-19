@@ -107,7 +107,7 @@ describe('participants moveRequests', () => {
 
     return new Promise<void>((resolve) => {
       sipConnector.on('api:participant:move-request-to-spectators', (data) => {
-        expect(data).toEqual({ isAvailableSendingMedia: true, isSynthetic: true });
+        expect(data).toEqual({ isAvailableSendingMedia: false, isSynthetic: true });
 
         resolve();
       });
