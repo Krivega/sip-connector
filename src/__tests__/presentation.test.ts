@@ -337,48 +337,7 @@ describe('presentation', () => {
     expect(stream).toBeInstanceOf(MediaStream);
   });
 
-  // TODO: because of removed cancelable promises, this test is skipped
-  // eslint-disable-next-line jest/no-disabled-tests
-  it.skip('should cancel requests send presentation after stop presentation', async () => {
-    expect.assertions(4);
-
-    SessionMock.setStartPresentationError(declineStartPresentationError);
-
-    await sipConnector.connect(dataForConnectionWithAuthorization);
-    await sipConnector.call({ number, mediaStream });
-
-    // @ts-expect-error
-    const sendPresentationMocked = jest.spyOn(sipConnector.presentationManager, 'sendPresentation');
-    const cancelSendPresentationWithRepeatedCallsMocked = jest.spyOn(
-      sipConnector.presentationManager,
-      'cancelSendPresentationWithRepeatedCalls',
-    );
-
-    const promiseStartPresentation = sipConnector.startPresentation(mediaStream, {
-      callLimit: errorStartPresentationCount,
-    });
-
-    try {
-      await sipConnector.stopPresentation();
-    } catch (error) {
-      // eslint-disable-next-line jest/no-conditional-expect
-      expect(error).toEqual(declineStartPresentationError);
-    }
-
-    try {
-      await promiseStartPresentation;
-    } catch (error) {
-      // eslint-disable-next-line jest/no-conditional-expect
-      expect(error).toEqual(new Error('canceled'));
-    }
-
-    expect(sendPresentationMocked).toHaveBeenCalledTimes(1);
-    expect(cancelSendPresentationWithRepeatedCallsMocked).toHaveBeenCalledTimes(1);
-  });
-
-  // TODO: because of removed cancelable promises, this test is skipped
-  // eslint-disable-next-line jest/no-disabled-tests
-  it.skip('should cancel requests send presentation after hang up call', async () => {
+  it('should cancel requests send presentation after hang up call', async () => {
     expect.assertions(3);
 
     SessionMock.setStartPresentationError(declineStartPresentationError);
@@ -407,6 +366,6 @@ describe('presentation', () => {
     }
 
     expect(sendPresentationMocked).toHaveBeenCalledTimes(1);
-    expect(cancelSendPresentationWithRepeatedCallsMocked).toHaveBeenCalledTimes(3);
+    expect(cancelSendPresentationWithRepeatedCallsMocked).toHaveBeenCalledTimes(1);
   });
 });
