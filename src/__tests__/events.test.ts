@@ -71,7 +71,7 @@ describe('events', () => {
       JsSIP.triggerNewInfo(establishedRTCSession, extraHeaders);
     }
 
-    return expect(promise).resolves.toEqual({});
+    return expect(promise).resolves.toEqual(undefined);
   });
 
   it('mustStopPresentation', async () => {
@@ -94,6 +94,6 @@ describe('events', () => {
       JsSIP.triggerNewInfo(establishedRTCSession, extraHeaders);
     }
 
-    return expect(promise).resolves.toEqual({});
+    return expect(promise).resolves.toEqual(undefined);
   });
 });

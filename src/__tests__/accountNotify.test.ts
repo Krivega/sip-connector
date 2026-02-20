@@ -18,7 +18,7 @@ describe('account notify', () => {
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
-    return new Promise<void>((resolve, reject) => {
+    const promise = new Promise<void>((resolve, reject) => {
       const { ua } = sipConnector.connectionManager;
 
       if (!ua) {
@@ -27,14 +27,14 @@ describe('account notify', () => {
         return;
       }
 
-      sipConnector.on('api:account:changed', (data) => {
-        expect(data).toEqual({});
-
+      sipConnector.on('api:account:changed', () => {
         resolve();
       });
 
       JsSIP.triggerNewSipEvent(ua, accountChangedHeaders);
     });
+
+    await expect(promise).resolves.toBeUndefined();
   });
 
   it('event account:deleted', async () => {
@@ -42,7 +42,7 @@ describe('account notify', () => {
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
-    return new Promise<void>((resolve, reject) => {
+    const promise = new Promise<void>((resolve, reject) => {
       const { ua } = sipConnector.connectionManager;
 
       if (!ua) {
@@ -51,13 +51,13 @@ describe('account notify', () => {
         return;
       }
 
-      sipConnector.on('api:account:deleted', (data) => {
-        expect(data).toEqual({});
-
+      sipConnector.on('api:account:deleted', () => {
         resolve();
       });
 
       JsSIP.triggerNewSipEvent(ua, accountDeletedHeaders);
     });
+
+    await expect(promise).resolves.toBeUndefined();
   });
 });

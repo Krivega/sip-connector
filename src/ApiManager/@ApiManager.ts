@@ -511,11 +511,11 @@ class ApiManager {
   };
 
   private readonly triggerAccountChangedNotify = () => {
-    this.events.trigger(EEvent.ACCOUNT_CHANGED, {});
+    this.events.trigger(EEvent.ACCOUNT_CHANGED);
   };
 
   private readonly triggerAccountDeletedNotify = () => {
-    this.events.trigger(EEvent.ACCOUNT_DELETED, {});
+    this.events.trigger(EEvent.ACCOUNT_DELETED);
   };
 
   private readonly triggerConferenceParticipantTokenIssued = ({
@@ -578,11 +578,11 @@ class ApiManager {
         break;
       }
       case EContentedStreamSendAndReceive.NOT_AVAILABLE_CONTENTED_STREAM: {
-        this.events.trigger(EEvent.CONTENTED_STREAM_NOT_AVAILABLE, {});
+        this.events.trigger(EEvent.CONTENTED_STREAM_NOT_AVAILABLE);
         break;
       }
       case EContentedStreamSendAndReceive.MUST_STOP_PRESENTATION: {
-        this.events.trigger(EEvent.PRESENTATION_MUST_STOP, {});
+        this.events.trigger(EEvent.PRESENTATION_MUST_STOP);
         break;
       }
     }
@@ -618,7 +618,7 @@ class ApiManager {
     }
 
     if (participantState === EContentParticipantType.PARTICIPANT) {
-      this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS, {});
+      this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS);
     }
   };
 

@@ -312,7 +312,7 @@ describe('ContentedStreamStateMachine', () => {
       expect(machine.state).toBe(EState.AVAILABLE);
       expect(machine.codec).toBe('H264');
 
-      apiManagerEvents.trigger('contented-stream:not-available', {});
+      apiManagerEvents.trigger('contented-stream:not-available');
       expect(machine.state).toBe(EState.NOT_AVAILABLE);
       expect(machine.codec).toBeUndefined();
     });
@@ -343,7 +343,7 @@ describe('ContentedStreamStateMachine', () => {
       expect(machine.isAvailable).toBe(true);
       expect(machine.codec).toBe('VP8');
 
-      apiManagerEvents.trigger('contented-stream:not-available', {});
+      apiManagerEvents.trigger('contented-stream:not-available');
       expect(machine.isNotAvailable).toBe(true);
       expect(machine.codec).toBeUndefined();
     });
@@ -352,7 +352,7 @@ describe('ContentedStreamStateMachine', () => {
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
 
       // Попытка not-available в NOT_AVAILABLE состоянии (недопустимо)
-      apiManagerEvents.trigger('contented-stream:not-available', {});
+      apiManagerEvents.trigger('contented-stream:not-available');
       expect(machine.state).toBe(EState.NOT_AVAILABLE);
       expect(consoleSpy).toHaveBeenCalled();
 

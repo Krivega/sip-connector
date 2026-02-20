@@ -145,7 +145,7 @@ describe('ContentedStreamManager', () => {
       });
 
       // Теперь триггерим not-available
-      apiManager.events.trigger('contented-stream:not-available', {});
+      apiManager.events.trigger('contented-stream:not-available');
 
       expect(handler).toHaveBeenCalledWith({});
     });
@@ -203,7 +203,7 @@ describe('ContentedStreamManager', () => {
       ]);
 
       // Not available
-      apiManager.events.trigger('contented-stream:not-available', {});
+      apiManager.events.trigger('contented-stream:not-available');
       expect(manager.isAvailable).toBe(false);
       expect(manager.codec).toBeUndefined();
       expect(notAvailableEvents).toEqual([{}]);

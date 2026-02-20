@@ -669,7 +669,20 @@ class SipConnectorFacade implements IProxyMethods {
     return this.sipConnector.on('api:presentation:must-stop', handler);
   };
 
-  public onMoveToSpectators = (handler: () => void): (() => void) => {
+  public onMoveToSpectators = (
+    handler: (
+      event:
+        | {
+            isAvailableSendingMedia: boolean;
+            isSynthetic: true;
+          }
+        | {
+            isAvailableSendingMedia: boolean;
+            isSynthetic: false;
+            audioId: string;
+          },
+    ) => void,
+  ): (() => void) => {
     debug('onMoveToSpectators');
 
     return this.sipConnector.on('api:participant:move-request-to-spectators', handler);

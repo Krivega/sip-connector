@@ -85,14 +85,14 @@ export type TEventMap = {
   'new-dtmf': { originator: string };
   'conference:participant-token-issued': TParametersConferenceParticipantTokenIssued;
   'contented-stream:available': { codec?: EContentedStreamCodec };
-  'contented-stream:not-available': Record<string, never>;
-  'presentation:must-stop': Record<string, never>;
+  'contented-stream:not-available': never;
+  'presentation:must-stop': never;
   'channels:all': TChannels;
   'channels:notify': TChannels;
   'participant:added-to-list-moderators': TParametersModeratorsList;
   'participant:removed-from-list-moderators': TParametersModeratorsList;
   'participant:move-request-to-stream': TParametersModeratorsList;
-  'participant:move-request-to-participants': Record<string, never>;
+  'participant:move-request-to-participants': never;
   'participant:move-request-to-spectators':
     | {
         isAvailableSendingMedia: boolean;
@@ -114,8 +114,8 @@ export type TEventMap = {
   'participation:cancelling-word-request': TParametersModeratorsList;
   'webcast:started': TParametersWebcast;
   'webcast:stopped': TParametersWebcast;
-  'account:changed': Record<string, never>;
-  'account:deleted': Record<string, never>;
+  'account:changed': never;
+  'account:deleted': never;
   'admin:start-main-cam': { isSyncForced: boolean };
   'admin:stop-main-cam': { isSyncForced: boolean };
   'admin:start-mic': { isSyncForced: boolean };
