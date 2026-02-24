@@ -3,10 +3,10 @@ type TDomIds = {
   overlayId: string;
   callButtonId: string;
   endCallButtonId: string;
-  toggleCameraButtonId: string;
-  toggleMicButtonId: string;
-  toggleCameraButtonTextId: string;
-  toggleMicButtonTextId: string;
+  muteCameraButtonId: string;
+  unmuteCameraButtonId: string;
+  muteMicButtonId: string;
+  unmuteMicButtonId: string;
   localVideoSectionId: string;
   activeCallSectionId: string;
   localVideoId: string;
@@ -93,13 +93,13 @@ class DOM {
 
   public stopPresentationElement: HTMLButtonElement;
 
-  public toggleCameraButtonElement: HTMLButtonElement;
+  public muteCameraButtonElement: HTMLButtonElement;
 
-  public toggleMicButtonElement: HTMLButtonElement;
+  public unmuteCameraButtonElement: HTMLButtonElement;
 
-  public toggleCameraButtonTextElement: HTMLSpanElement;
+  public muteMicButtonElement: HTMLButtonElement;
 
-  public toggleMicButtonTextElement: HTMLSpanElement;
+  public unmuteMicButtonElement: HTMLButtonElement;
 
   public localVideoSectionElement: HTMLElement;
 
@@ -201,10 +201,10 @@ class DOM {
     overlayId,
     callButtonId,
     endCallButtonId,
-    toggleCameraButtonId,
-    toggleMicButtonId,
-    toggleCameraButtonTextId,
-    toggleMicButtonTextId,
+    muteCameraButtonId,
+    unmuteCameraButtonId,
+    muteMicButtonId,
+    unmuteMicButtonId,
     localVideoSectionId,
     activeCallSectionId,
     localVideoId,
@@ -261,10 +261,10 @@ class DOM {
       startStressTestingPresentationTextId,
     );
     this.stopPresentationElement = getElementById<HTMLButtonElement>(stopPresentationId);
-    this.toggleCameraButtonElement = getElementById<HTMLButtonElement>(toggleCameraButtonId);
-    this.toggleMicButtonElement = getElementById<HTMLButtonElement>(toggleMicButtonId);
-    this.toggleCameraButtonTextElement = getElementById<HTMLSpanElement>(toggleCameraButtonTextId);
-    this.toggleMicButtonTextElement = getElementById<HTMLSpanElement>(toggleMicButtonTextId);
+    this.muteCameraButtonElement = getElementById<HTMLButtonElement>(muteCameraButtonId);
+    this.unmuteCameraButtonElement = getElementById<HTMLButtonElement>(unmuteCameraButtonId);
+    this.muteMicButtonElement = getElementById<HTMLButtonElement>(muteMicButtonId);
+    this.unmuteMicButtonElement = getElementById<HTMLButtonElement>(unmuteMicButtonId);
     this.localVideoSectionElement = getElementById(localVideoSectionId);
     this.activeCallSectionElement = getElementById(activeCallSectionId);
     this.remoteStreamsContainerElement = getElementById(remoteStreamsContainerId);
@@ -427,14 +427,14 @@ export const dom = new DOM({
   overlayId: 'loaderOverlay',
   callButtonId: 'callButton',
   endCallButtonId: 'endCallButton',
+  muteCameraButtonId: 'muteCameraButton',
+  unmuteCameraButtonId: 'unmuteCameraButton',
   startPresentationId: 'startPresentationButton',
   startStressTestingPresentationId: 'startStressTestingPresentationButton',
   startStressTestingPresentationTextId: 'startStressTestingPresentationText',
   stopPresentationId: 'stopPresentationButton',
-  toggleCameraButtonId: 'toggleCameraButton',
-  toggleMicButtonId: 'toggleMicButton',
-  toggleCameraButtonTextId: 'toggleCameraButtonText',
-  toggleMicButtonTextId: 'toggleMicButtonText',
+  muteMicButtonId: 'muteMicButton',
+  unmuteMicButtonId: 'unmuteMicButton',
   localVideoSectionId: 'localVideoSection',
   activeCallSectionId: 'activeCallSection',
   localVideoId: 'localVideo',

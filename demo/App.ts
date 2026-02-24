@@ -105,13 +105,21 @@ class App {
       this.handleEndCall();
     });
 
-    // Подписываемся на кнопку переключения камеры
-    dom.toggleCameraButtonElement.addEventListener('click', () => {
+    // Подписываемся на кнопки включения/выключения камеры
+    dom.muteCameraButtonElement.addEventListener('click', () => {
       this.handleToggleCamera();
     });
 
-    // Подписываемся на кнопку переключения микрофона
-    dom.toggleMicButtonElement.addEventListener('click', () => {
+    dom.unmuteCameraButtonElement.addEventListener('click', () => {
+      this.handleToggleCamera();
+    });
+
+    // Подписываемся на кнопки включения/выключения микрофона
+    dom.muteMicButtonElement.addEventListener('click', () => {
+      this.handleToggleMic();
+    });
+
+    dom.unmuteMicButtonElement.addEventListener('click', () => {
       this.handleToggleMic();
     });
 
@@ -183,11 +191,15 @@ class App {
           participantRoleState?.role === 'participant' ||
           participantRoleState?.isAvailableSendingMedia === true
         ) {
-          dom.toggleMicButtonElement.classList.remove('disabled');
-          dom.toggleCameraButtonElement.classList.remove('disabled');
+          dom.muteMicButtonElement.classList.remove('disabled');
+          dom.unmuteMicButtonElement.classList.remove('disabled');
+          dom.muteCameraButtonElement.classList.remove('disabled');
+          dom.unmuteCameraButtonElement.classList.remove('disabled');
         } else {
-          dom.toggleMicButtonElement.classList.add('disabled');
-          dom.toggleCameraButtonElement.classList.add('disabled');
+          dom.muteMicButtonElement.classList.add('disabled');
+          dom.unmuteMicButtonElement.classList.add('disabled');
+          dom.muteCameraButtonElement.classList.add('disabled');
+          dom.unmuteCameraButtonElement.classList.add('disabled');
         }
 
         if (
@@ -313,13 +325,9 @@ class App {
     if (state === 'active') {
       dom.hide(dom.callButtonElement);
       dom.show(dom.endCallButtonElement);
-      dom.show(dom.toggleCameraButtonElement);
-      dom.show(dom.toggleMicButtonElement);
     } else {
       dom.show(dom.callButtonElement);
       dom.hide(dom.endCallButtonElement);
-      dom.hide(dom.toggleCameraButtonElement);
-      dom.hide(dom.toggleMicButtonElement);
     }
 
     // Показываем/скрываем секции в зависимости от состояния
@@ -353,28 +361,40 @@ class App {
    * Обновляет состояние кнопок камеры и микрофона
    */
   private updateMediaButtonsState(): void {
+    const isCallActive = this.callStateManager.isActive();
+
+    if (isCallActive) {
+      this.updateCamButtonsState();
+      this.updateMicButtonsState();
+    } else {
+      dom.hide(dom.muteCameraButtonElement);
+      dom.hide(dom.unmuteCameraButtonElement);
+      dom.hide(dom.muteMicButtonElement);
+      dom.hide(dom.unmuteMicButtonElement);
+    }
+  }
+
+  private updateCamButtonsState(): void {
     const isEnabledCam = this.localMediaStreamManager.isEnabledCam();
+
+    if (isEnabledCam) {
+      dom.show(dom.muteCameraButtonElement);
+      dom.hide(dom.unmuteCameraButtonElement);
+    } else {
+      dom.show(dom.unmuteCameraButtonElement);
+      dom.hide(dom.muteCameraButtonElement);
+    }
+  }
+
+  private updateMicButtonsState(): void {
     const isEnabledMic = this.localMediaStreamManager.isEnabledMic();
 
-    dom.toggleCameraButtonTextElement.textContent = isEnabledCam
-      ? 'Выключить камеру'
-      : 'Включить камеру';
-
-    dom.toggleMicButtonTextElement.textContent = isEnabledMic
-      ? 'Выключить микрофон'
-      : 'Включить микрофон';
-
-    // Обновляем классы для стилизации
-    if (isEnabledCam) {
-      dom.toggleCameraButtonElement.classList.add('enabled');
-    } else {
-      dom.toggleCameraButtonElement.classList.remove('enabled');
-    }
-
     if (isEnabledMic) {
-      dom.toggleMicButtonElement.classList.add('enabled');
+      dom.show(dom.muteMicButtonElement);
+      dom.hide(dom.unmuteMicButtonElement);
     } else {
-      dom.toggleMicButtonElement.classList.remove('enabled');
+      dom.show(dom.unmuteMicButtonElement);
+      dom.hide(dom.muteMicButtonElement);
     }
   }
 

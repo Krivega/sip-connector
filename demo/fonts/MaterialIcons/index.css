@@ -1,0 +1,13 @@
+/* fallback */
+@font-face {
+  font-display: swap;
+  font-family: 'Material Icons';
+  font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  font-style: normal;
+  font-weight: 400;
+  src:
+    local('Material Icons'),
+    local('MaterialIcons-Regular'),
+    url('./MaterialIcons.woff2') format('woff2');
+}
