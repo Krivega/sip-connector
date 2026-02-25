@@ -679,6 +679,51 @@ describe('CallManager', () => {
       expect(mockRecvSession.instance).toBeUndefined();
     });
 
+    it('выполнение отложенной команды проглатывает ошибку startRecvSessionForced при ошибке call', async () => {
+      const { callManager: cm, apiManager } = createManagers();
+
+      // Мокаем RecvSession так, чтобы call отклонялся при первом создании сессии
+      const RecvSessionModule = jest.requireMock('../RecvSession') as { default: jest.Mock };
+
+      RecvSessionModule.default.mockImplementationOnce((config, tools) => {
+        const inst = mockRecvSession.create();
+
+        inst.config = config;
+        inst.tools = tools;
+        inst.call = jest.fn().mockRejectedValueOnce(new Error('fail'));
+
+        return inst;
+      });
+
+      cm.events.trigger('start-call', { number: '100', answer: false });
+      expect(cm.stateMachine.state).toBe('call:connecting');
+      expect(cm.getToken()).toBeUndefined();
+
+      cm.setCallRoleSpectator({
+        audioId: 'audio-1',
+      } as TCallRoleSpectator['recvParams']);
+
+      // До прихода токена сессия не создаётся
+      expect(mockRecvSession.instance).toBeUndefined();
+
+      // Приход токена инициирует выполнение отложенной команды,
+      // внутри которой startRecvSessionForced возвращает отклонённый промис.
+      // Ошибка проглатывается catch(() => {}), тест не падает.
+      apiManager.events.trigger('enter-room', { room: 'r1', participantName: 'p1' });
+      apiManager.events.trigger('conference:participant-token-issued', {
+        jwt: 'token1',
+        conference: 'c1',
+        participant: 'part1',
+      });
+
+      await flushPromises();
+
+      expect(mockRecvSession.instance?.call).toHaveBeenCalledWith({
+        conferenceNumber: '100',
+        token: 'token1',
+      });
+    });
+
     it('getInRoomTokenOrThrow: выбрасывает ошибку при отсутствии inRoomContext', () => {
       const stateMachine = {
         get inRoomContext() {
@@ -1338,8 +1383,9 @@ describe('CallManager - дополнительные тесты для покр�
     const startSpy = jest
       // @ts-expect-error
       .spyOn(callManager, 'startRecvSession')
-      // @ts-expect-error
-      .mockImplementation(() => {});
+      // @ts-expect-error — возвращаем Promise, т.к. onRoleChanged вызывает .catch() на результате
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
+      .mockImplementation(async () => {});
 
     const firstSpectatorRole: TCallRoleSpectator = {
       type: 'spectator',
@@ -1377,6 +1423,31 @@ describe('CallManager - дополнительные тесты для покр�
     expect(startSpy).toHaveBeenCalledWith('a2', {
       token: 'token',
     });
+  });
+
+  it('onRoleChanged: проглатывает ошибку startRecvSession при входе в spectator', async () => {
+    const startSpy = jest
+      // @ts-expect-error
+      .spyOn(callManager, 'startRecvSession')
+      // @ts-expect-error — возвращаем отклонённый Promise, чтобы сработал catch(() => {}) в onRoleChanged
+      .mockRejectedValueOnce(new Error('fail'));
+
+    const spectatorRole: TCallRoleSpectator = {
+      type: 'spectator',
+      recvParams: {
+        audioId: 'a1',
+      },
+    };
+
+    jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue('token');
+
+    // @ts-expect-error
+    callManager.onRoleChanged({ previous: { type: 'participant' }, next: spectatorRole });
+
+    // Ждём обработки отклонённого промиса и выполнения catch(() => {})
+    await flushPromises();
+
+    expect(startSpy).toHaveBeenCalledTimes(1);
   });
 
   it('setCallRoleParticipant: делегирует в roleManager', () => {
@@ -1551,14 +1622,14 @@ describe('CallManager - дополнительные тесты для покр�
       return inst;
     });
 
-    (
+    const startPromise = (
       callManager as unknown as {
-        startRecvSession: (id: string, params: { token: string }) => void;
+        startRecvSession: (id: string, params: { token: string }) => Promise<void>;
       }
     ).startRecvSession('audio-id', { token: 'test-token' });
 
-    // Ждем завершения промиса и выполнения catch-блока на строке 299
-    // Используем несколько вызовов flushPromises и setTimeout для гарантии выполнения всех микротасок
+    // Ждем завершения промиса и выполнения catch-блока
+    await startPromise.catch(() => {});
     await flushPromises();
     await new Promise<void>((resolve) => {
       setTimeout(() => {
@@ -1566,9 +1637,8 @@ describe('CallManager - дополнительные тесты для покр�
       }, 0);
     });
     await flushPromises();
-    await flushPromises();
 
-    // stopRecvSession вызывается дважды: в начале startRecvSession (строка 285) и в catch-блоке (строка 299)
+    // stopRecvSession вызывается дважды: в начале startRecvSession и в catch при ошибке call
     expect(stopSpy).toHaveBeenCalledTimes(2);
     expect(mockRecvSession.instance?.call).toHaveBeenCalledWith({
       conferenceNumber: '123',
@@ -1598,13 +1668,14 @@ describe('CallManager - дополнительные тесты для покр�
       return inst;
     });
 
-    (
+    const startPromise = (
       callManager as unknown as {
-        startRecvSession: (id: string, params: { token: string }) => void;
+        startRecvSession: (id: string, params: { token: string }) => Promise<void>;
       }
     ).startRecvSession('audio-id', { token: 'test-token' });
 
     // Ждем завершения промиса и выполнения catch-блока
+    await startPromise.catch(() => {});
     await flushPromises();
     await new Promise<void>((resolve) => {
       setTimeout(() => {
@@ -1612,10 +1683,9 @@ describe('CallManager - дополнительные тесты для покр�
       }, 0);
     });
     await flushPromises();
-    await flushPromises();
 
     expect(startedEventHandler).not.toHaveBeenCalled();
-    expect(endedEventHandler).toHaveBeenCalledTimes(2); // один раз в начале startRecvSession, второй раз в catch
+    expect(endedEventHandler).toHaveBeenCalledTimes(2); // один раз в начале startRecvSession, второй раз в catch при ошибке call
   });
 
   it('stopRecvSession: закрывает сессию, сбрасывает слушатель и менеджер', () => {

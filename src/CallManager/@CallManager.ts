@@ -106,11 +106,7 @@ class CallManager {
         return state === EState.IDLE;
       },
       onExecute: (command) => {
-        const token = getInRoomTokenOrThrow(this.stateMachine);
-
-        this.startRecvSession(command.audioId, {
-          token,
-        });
+        this.startRecvSessionForced({ audioId: command.audioId }).catch(() => {});
       },
     });
 
@@ -474,7 +470,15 @@ class CallManager {
     };
   }
 
-  private startRecvSession(audioId: string, { token }: { token: string }): void {
+  private async startRecvSessionForced(params: { audioId: string }) {
+    const token = getInRoomTokenOrThrow(this.stateMachine);
+
+    return this.startRecvSession(params.audioId, {
+      token,
+    });
+  }
+
+  private async startRecvSession(audioId: string, { token }: { token: string }): Promise<void> {
     const conferenceNumber = this.stateMachine.number;
 
     if (conferenceNumber === undefined) {
@@ -495,12 +499,13 @@ class CallManager {
 
     const callPromise = session.call({ conferenceNumber, token });
 
-    callPromise
+    return callPromise
       .then(() => {
         this.events.emit('recv-session-started');
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         this.stopRecvSession();
+        throw error;
       });
   }
 
@@ -538,7 +543,7 @@ class CallManager {
       } else {
         this.startRecvSession(params.audioId, {
           token,
-        });
+        }).catch(() => {});
       }
     }
 
