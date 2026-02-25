@@ -375,6 +375,7 @@ describe('SipConnector', () => {
     const getRecvQuality = jest
       .spyOn(cm, 'getRecvQuality')
       .mockReturnValue({ quality: 'high', effectiveQuality: 'high' });
+    const applyQuality = jest.spyOn(cm, 'applyQuality').mockResolvedValue(true);
     const setRecvQuality = jest.spyOn(cm, 'setRecvQuality').mockResolvedValue(true);
     const replaceStream = jest.spyOn(cm, 'replaceMediaStream').mockResolvedValue(undefined);
 
@@ -392,6 +393,7 @@ describe('SipConnector', () => {
     sipConnector.getEstablishedRTCSession();
     sipConnector.getRemoteStreams();
     sipConnector.getRecvQuality();
+    await sipConnector.applyQuality('low');
     await sipConnector.setRecvQuality('low');
     await sipConnector.replaceMediaStream(testStream);
 
@@ -401,6 +403,7 @@ describe('SipConnector', () => {
     expect(getEstablished).toHaveBeenCalled();
     expect(getRemote).toHaveBeenCalled();
     expect(getRecvQuality).toHaveBeenCalled();
+    expect(applyQuality).toHaveBeenCalledWith('low');
     expect(setRecvQuality).toHaveBeenCalledWith('low');
     expect(replaceStream).toHaveBeenCalled();
   });

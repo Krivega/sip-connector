@@ -106,7 +106,7 @@ class CallManager {
         return state === EState.IDLE;
       },
       onExecute: (command) => {
-        this.startRecvSessionForced({ audioId: command.audioId }).catch(() => {});
+        this.startRecvSessionForced({ audioChannel: command.audioId }).catch(() => {});
       },
     });
 
@@ -308,8 +308,32 @@ class CallManager {
     }
 
     const previousQuality = recvSession.getQuality();
+    const audioChannel = recvSession.getAudioChannel();
 
-    // const applied = await this.startRecvSessionForced({ quality });
+    const { session, callResult } = await this.startRecvSessionForced({ audioChannel, quality });
+
+    if (callResult) {
+      const effectiveQuality = session.getEffectiveQuality();
+
+      this.events.trigger(EEvent.RECV_QUALITY_CHANGED, {
+        previousQuality,
+        quality,
+        effectiveQuality,
+      });
+    }
+
+    return callResult;
+  }
+
+  public async applyQuality(quality: TRecvQuality): Promise<boolean> {
+    const { recvSession } = this;
+
+    if (!this.roleManager.hasSpectator() || !recvSession) {
+      return false;
+    }
+
+    const previousQuality = recvSession.getQuality();
+
     const result = await recvSession.applyQuality(quality);
 
     if (result.applied) {
@@ -470,11 +494,11 @@ class CallManager {
     };
   }
 
-  private async startRecvSessionForced(params: { audioId: string; quality?: TRecvQuality }) {
+  private async startRecvSessionForced(params: { audioChannel: string; quality?: TRecvQuality }) {
     const token = getInRoomTokenOrThrow(this.stateMachine);
 
     return this.startRecvSession(
-      { audioChannel: params.audioId, quality: params.quality },
+      { audioChannel: params.audioChannel, quality: params.quality },
       {
         token,
       },
@@ -484,11 +508,13 @@ class CallManager {
   private async startRecvSession(
     { audioChannel, quality }: { audioChannel: string; quality?: TRecvQuality },
     { token }: { token: string },
-  ): Promise<boolean> {
+  ): Promise<
+    { session: RecvSession; callResult: boolean } | { session: undefined; callResult: false }
+  > {
     const conferenceNumber = this.stateMachine.number;
 
     if (conferenceNumber === undefined) {
-      return false;
+      return { session: undefined, callResult: false };
     }
 
     this.stopRecvSession();
@@ -510,7 +536,7 @@ class CallManager {
       .then((result) => {
         this.events.emit('recv-session-started');
 
-        return result;
+        return { session, callResult: result };
       })
       .catch((error: unknown) => {
         this.stopRecvSession();

@@ -321,6 +321,10 @@ class SipConnector {
     return this.callManager.setRecvQuality(quality);
   };
 
+  public applyQuality: CallManager['applyQuality'] = async (quality: TRecvQuality) => {
+    return this.callManager.applyQuality(quality);
+  };
+
   public replaceMediaStream: CallManager['replaceMediaStream'] = async (...args) => {
     return this.callManager.replaceMediaStream(...args);
   };
