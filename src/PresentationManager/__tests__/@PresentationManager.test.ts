@@ -20,7 +20,12 @@ describe('PresentationManager', () => {
       eventHandlers: {},
       originator: 'local',
     });
-    callManager = new CallManager(new ContentedStreamManager());
+    callManager = new CallManager(
+      { contentedStreamManager: new ContentedStreamManager() },
+      {
+        sendOffer: jest.fn().mockResolvedValue({} as RTCSessionDescription),
+      },
+    );
     rtcSession.on('presentation:start', (data: MediaStream) => {
       callManager.events.trigger('presentation:start', data);
     });

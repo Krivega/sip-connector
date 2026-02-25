@@ -22,7 +22,12 @@ describe('CallManager events', () => {
 
   beforeEach(() => {
     ua = new UAMock({ uri: 'sip:user@sipServerUrl', register: false, sockets: [] });
-    callManager = new CallManager(new ContentedStreamManager());
+    callManager = new CallManager(
+      { contentedStreamManager: new ContentedStreamManager() },
+      {
+        sendOffer: jest.fn().mockResolvedValue({} as RTCSessionDescription),
+      },
+    );
     getSipServerUrl = (number) => {
       return `sip:${number}@sipServerUrl`;
     };

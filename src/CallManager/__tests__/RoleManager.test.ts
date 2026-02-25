@@ -19,7 +19,6 @@ describe('RoleManager', () => {
     const roleManager = new RoleManager(onRoleChanged);
     const recvParams: TCallRoleSpectator['recvParams'] = {
       audioId: 'audio-1',
-      sendOffer: jest.fn() as unknown as TCallRoleSpectator['recvParams']['sendOffer'],
     };
 
     roleManager.setCallRoleSpectator(recvParams);
@@ -47,7 +46,6 @@ describe('RoleManager', () => {
     const roleManager = new RoleManager(onRoleChanged);
     const recvParams: TCallRoleSpectator['recvParams'] = {
       audioId: 'audio-1',
-      sendOffer: jest.fn() as unknown as TCallRoleSpectator['recvParams']['sendOffer'],
     };
 
     roleManager.setCallRoleSpectator(recvParams);
@@ -85,7 +83,6 @@ describe('RoleManager', () => {
     const roleManager = new RoleManager();
     const recvParams: TCallRoleSpectator['recvParams'] = {
       audioId: 'audio-1',
-      sendOffer: jest.fn() as unknown as TCallRoleSpectator['recvParams']['sendOffer'],
     };
 
     roleManager.setCallRoleSpectator(recvParams);
@@ -103,7 +100,7 @@ describe('RoleManager', () => {
     expect(
       RoleManager.hasSpectator({
         type: 'spectator',
-        recvParams: { audioId: 'a', sendOffer: jest.fn() },
+        recvParams: { audioId: 'a' },
       }),
     ).toBe(true);
   });
@@ -113,11 +110,9 @@ describe('RoleManager', () => {
     const roleManager = new RoleManager(onRoleChanged);
     const firstRecvParams: TCallRoleSpectator['recvParams'] = {
       audioId: 'audio-1',
-      sendOffer: jest.fn() as unknown as TCallRoleSpectator['recvParams']['sendOffer'],
     };
     const secondRecvParams: TCallRoleSpectator['recvParams'] = {
       audioId: 'audio-2',
-      sendOffer: jest.fn() as unknown as TCallRoleSpectator['recvParams']['sendOffer'],
     };
 
     // Устанавливаем первую роль spectator
@@ -141,7 +136,6 @@ describe('RoleManager', () => {
     const roleManager = new RoleManager(onRoleChanged);
     const recvParams: TCallRoleSpectator['recvParams'] = {
       audioId: 'audio-1',
-      sendOffer: jest.fn() as unknown as TCallRoleSpectator['recvParams']['sendOffer'],
     };
 
     // Устанавливаем роль spectator
@@ -160,11 +154,9 @@ describe('RoleManager', () => {
     const roleManager = new RoleManager();
     const firstRecvParams: TCallRoleSpectator['recvParams'] = {
       audioId: 'audio-1',
-      sendOffer: jest.fn() as unknown as TCallRoleSpectator['recvParams']['sendOffer'],
     };
     const secondRecvParams: TCallRoleSpectator['recvParams'] = {
       audioId: 'audio-2',
-      sendOffer: jest.fn() as unknown as TCallRoleSpectator['recvParams']['sendOffer'],
     };
 
     roleManager.setCallRoleSpectator(firstRecvParams);
@@ -179,15 +171,12 @@ describe('RoleManager', () => {
     const roleManager = new RoleManager(onRoleChanged);
     const firstRecvParams: TCallRoleSpectator['recvParams'] = {
       audioId: 'audio-1',
-      sendOffer: jest.fn() as unknown as TCallRoleSpectator['recvParams']['sendOffer'],
     };
     const secondRecvParams: TCallRoleSpectator['recvParams'] = {
       audioId: 'audio-2',
-      sendOffer: jest.fn() as unknown as TCallRoleSpectator['recvParams']['sendOffer'],
     };
     const thirdRecvParams: TCallRoleSpectator['recvParams'] = {
       audioId: 'audio-3',
-      sendOffer: jest.fn() as unknown as TCallRoleSpectator['recvParams']['sendOffer'],
     };
 
     // Первый вызов: переход с participant на spectator с audio-1

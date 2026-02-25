@@ -86,7 +86,10 @@ class SipConnector {
       connectionManager: this.connectionManager,
     });
     this.contentedStreamManager = new ContentedStreamManager();
-    this.callManager = new CallManager(this.contentedStreamManager);
+    this.callManager = new CallManager(
+      { contentedStreamManager: this.contentedStreamManager },
+      { sendOffer: this.sendOffer },
+    );
     this.incomingCallManager = new IncomingCallManager(this.connectionManager);
     this.presentationManager = new PresentationManager({
       callManager: this.callManager,
@@ -457,7 +460,7 @@ class SipConnector {
       this.mayBeStopPresentationAndNotify();
     });
     this.apiManager.on('participant:move-request-to-spectators-with-audio-id', ({ audioId }) => {
-      this.callManager.setCallRoleSpectator({ audioId, sendOffer: this.sendOffer });
+      this.callManager.setCallRoleSpectator({ audioId });
       this.mayBeStopPresentationAndNotify();
     });
     this.apiManager.on('presentation:must-stop', () => {

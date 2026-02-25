@@ -8,7 +8,10 @@ import type { TJsSIP } from '@/types';
 
 export const createManagers = () => {
   const contentedStreamManager = new ContentedStreamManager();
-  const callManager = new CallManager(contentedStreamManager);
+  const toolsCallManager = {
+    sendOffer: jest.fn().mockResolvedValue({} as RTCSessionDescription),
+  };
+  const callManager = new CallManager({ contentedStreamManager }, toolsCallManager);
 
   const connectionManager = new ConnectionManager({ JsSIP: jssip as unknown as TJsSIP });
   const apiManager = new ApiManager();
@@ -25,5 +28,6 @@ export const createManagers = () => {
     contentedStreamManager,
     callManager,
     apiManager,
+    toolsCallManager,
   };
 };

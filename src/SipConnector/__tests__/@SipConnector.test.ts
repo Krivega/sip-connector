@@ -874,7 +874,7 @@ describe('SipConnector', () => {
       expect(stopPresentationSpy).toHaveBeenCalledWith();
     });
 
-    it('должен вызывать setCallRoleSpectator с audioId и sendOffer при событии participant:move-request-to-spectators-with-audio-id', () => {
+    it('должен вызывать setCallRoleSpectator с audioId при событии participant:move-request-to-spectators-with-audio-id', () => {
       const setCallRoleSpectatorSpy = jest.spyOn(sipConnector.callManager, 'setCallRoleSpectator');
       const audioId = 'test-audio-id';
 
@@ -890,7 +890,6 @@ describe('SipConnector', () => {
       expect(setCallRoleSpectatorSpy).toHaveBeenCalledTimes(1);
       expect(setCallRoleSpectatorSpy).toHaveBeenCalledWith({
         audioId,
-        sendOffer: expect.any(Function) as () => void,
       });
     });
 
@@ -920,8 +919,9 @@ describe('SipConnector', () => {
       expect(stopPresentationSpy).toHaveBeenCalledWith();
     });
 
-    it('должен передавать функцию sendOffer в setCallRoleSpectator, которая вызывает sendOffer с правильными параметрами', async () => {
+    it('должен передавать функцию sendOffer в CallManager при создании, которая вызывает sendOffer с правильными параметрами', async () => {
       const testToken = 'test-token';
+      const audioId = 'test-audio-id';
 
       jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
         sipServerUrl: 'wss://test.example.com/ws',
@@ -932,30 +932,14 @@ describe('SipConnector', () => {
         sdp: 'test-sdp',
       } as RTCSessionDescription);
 
-      const setCallRoleSpectatorSpy = jest.spyOn(sipConnector.callManager, 'setCallRoleSpectator');
-      const audioId = 'test-audio-id';
-
-      // Тригерим событие
-      sipConnector.apiManager.events.trigger(
-        'participant:move-request-to-spectators-with-audio-id',
-        {
-          isAvailableSendingMedia: true,
-          audioId,
-        },
-      );
-
-      // Получаем переданную функцию sendOffer
-      const callArgs = setCallRoleSpectatorSpy.mock.calls[0];
-      const recvParams = callArgs[0];
-      const sendOfferFunction = recvParams.sendOffer;
-
-      // Вызываем функцию sendOffer
       const offer: RTCSessionDescriptionInit = {
         type: 'offer',
         sdp: 'test-offer-sdp',
       };
 
-      await sendOfferFunction(
+      // sendOffer передаётся в CallManager при создании SipConnector; вызываем его напрямую
+      // @ts-expect-error: доступ к приватному методу для тестирования
+      await sipConnector.sendOffer(
         {
           conferenceNumber: 'conf-123',
           quality: 'high',
@@ -980,36 +964,19 @@ describe('SipConnector', () => {
         sipServerUrl: undefined,
       } as unknown as TConnectionConfiguration);
 
-      const setCallRoleSpectatorSpy = jest.spyOn(sipConnector.callManager, 'setCallRoleSpectator');
-      const audioId = 'test-audio-id';
-
-      // Тригерим событие
-      sipConnector.apiManager.events.trigger(
-        'participant:move-request-to-spectators-with-audio-id',
-        {
-          isAvailableSendingMedia: true,
-          audioId,
-        },
-      );
-
-      // Получаем переданную функцию sendOffer
-      const callArgs = setCallRoleSpectatorSpy.mock.calls[0];
-      const recvParams = callArgs[0];
-      const sendOfferFunction = recvParams.sendOffer;
-
-      // Вызываем функцию sendOffer и ожидаем ошибку
       const offer: RTCSessionDescriptionInit = {
         type: 'offer',
         sdp: 'test-offer-sdp',
       };
 
       await expect(
-        sendOfferFunction(
+        // @ts-expect-error: доступ к приватному методу для тестирования
+        sipConnector.sendOffer(
           {
             conferenceNumber: 'conf-123',
             token: 'testToken',
             quality: 'high',
-            audioChannel: audioId,
+            audioChannel: 'test-audio-id',
           },
           offer,
         ),
@@ -1034,7 +1001,6 @@ describe('SipConnector', () => {
       expect(setCallRoleSpectatorSpy).toHaveBeenCalledTimes(1);
       expect(setCallRoleSpectatorSpy).toHaveBeenNthCalledWith(1, {
         audioId: firstAudioId,
-        sendOffer: expect.any(Function) as () => void,
       });
 
       // Второй вызов события с другим audioId
@@ -1049,7 +1015,6 @@ describe('SipConnector', () => {
       expect(setCallRoleSpectatorSpy).toHaveBeenCalledTimes(2);
       expect(setCallRoleSpectatorSpy).toHaveBeenNthCalledWith(2, {
         audioId: secondAudioId,
-        sendOffer: expect.any(Function) as () => void,
       });
 
       // Третий вызов события с еще одним другим audioId
@@ -1064,7 +1029,6 @@ describe('SipConnector', () => {
       expect(setCallRoleSpectatorSpy).toHaveBeenCalledTimes(3);
       expect(setCallRoleSpectatorSpy).toHaveBeenNthCalledWith(3, {
         audioId: thirdAudioId,
-        sendOffer: expect.any(Function) as () => void,
       });
 
       // Проверяем, что все вызовы были с разными audioId
@@ -1567,7 +1531,6 @@ describe('SipConnector', () => {
       expect(startRecvSessionMock).toHaveBeenCalledWith(
         audioId,
         expect.objectContaining({
-          sendOffer: expect.any(Function) as () => void,
           token: testToken,
         }),
       );

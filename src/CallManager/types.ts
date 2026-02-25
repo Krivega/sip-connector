@@ -1,7 +1,6 @@
 import type { RTCSession, UA } from '@krivega/jssip';
 import type { TContentHint } from '@/PresentationManager';
 import type { Originator } from './events';
-import type { TTools } from './RecvSession';
 import type { RemoteStreamsManager } from './RemoteStreamsManager';
 
 export type TOnAddedTransceiver = (
@@ -52,7 +51,7 @@ export type TCallRoleParticipant = { type: 'participant' };
 export type TCallRoleSpectatorSynthetic = { type: 'spectator_synthetic' };
 export type TCallRoleSpectator = {
   type: 'spectator';
-  recvParams: { audioId: string; sendOffer: TTools['sendOffer'] };
+  recvParams: { audioId: string };
 };
 export type TCallRole = TCallRoleParticipant | TCallRoleSpectatorSynthetic | TCallRoleSpectator;
 

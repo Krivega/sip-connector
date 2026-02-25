@@ -38,7 +38,13 @@ describe('ApiManager (core)', () => {
     connectionManager = new ConnectionManager({
       JsSIP: jssip as unknown as TJsSIP,
     });
-    callManager = Object.assign(new CallManager(new ContentedStreamManager()), {
+
+    const contentedStreamManager = new ContentedStreamManager();
+    const tools = {
+      sendOffer: jest.fn().mockResolvedValue({} as RTCSessionDescription),
+    };
+
+    callManager = Object.assign(new CallManager({ contentedStreamManager }, tools), {
       getEstablishedRTCSession: jest.fn(),
     });
     rtcSession = new RTCSessionMock({

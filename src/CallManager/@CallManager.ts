@@ -60,6 +60,8 @@ class CallManager {
 
   private readonly contentedStreamManager: ContentedStreamManager;
 
+  private readonly tools: TTools;
+
   private readonly roleManager = new RoleManager((params) => {
     this.onRoleChanged(params);
   });
@@ -77,8 +79,12 @@ class CallManager {
 
   private readonly streamsChangeTracker = new StreamsChangeTracker();
 
-  public constructor(contentedStreamManager: ContentedStreamManager) {
+  public constructor(
+    { contentedStreamManager }: { contentedStreamManager: ContentedStreamManager },
+    tools: TTools,
+  ) {
     this.contentedStreamManager = contentedStreamManager;
+    this.tools = tools;
     this.events = createEvents();
     this.mcuSession = new MCUSession(this.events, { onReset: this.reset });
     this.stateMachine = new CallStateMachine(this.events);
@@ -103,7 +109,6 @@ class CallManager {
         const token = getInRoomTokenOrThrow(this.stateMachine);
 
         this.startRecvSession(command.audioId, {
-          sendOffer: command.sendOffer,
           token,
         });
       },
@@ -307,6 +312,8 @@ class CallManager {
     }
 
     const previousQuality = recvSession.getQuality();
+
+    // await this.startRecvSession();
     const result = await recvSession.applyQuality(quality);
 
     if (result.applied) {
@@ -467,10 +474,7 @@ class CallManager {
     };
   }
 
-  private startRecvSession(
-    audioId: string,
-    { sendOffer, token }: { sendOffer: TTools['sendOffer']; token: string },
-  ): void {
+  private startRecvSession(audioId: string, { token }: { token: string }): void {
     const conferenceNumber = this.stateMachine.number;
 
     if (conferenceNumber === undefined) {
@@ -483,7 +487,7 @@ class CallManager {
       audioChannel: audioId,
     };
 
-    const session = new RecvSession(config, { sendOffer });
+    const session = new RecvSession(config, { sendOffer: this.tools.sendOffer });
 
     this.recvSession = session;
     this.recvRemoteStreamsManager.reset();
@@ -530,12 +534,10 @@ class CallManager {
       if (token === undefined) {
         this.deferredStartRecvSessionRunner.set({
           audioId: params.audioId,
-          sendOffer: params.sendOffer,
         });
       } else {
         this.startRecvSession(params.audioId, {
           token,
-          sendOffer: params.sendOffer,
         });
       }
     }
