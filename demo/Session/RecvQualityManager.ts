@@ -76,7 +76,10 @@ class RecvQualityManager {
           dom.recvQualityStatusElement.textContent = `Не применено: ${quality}`;
         }
       })
-      .catch(() => {
+      .catch((error: unknown) => {
+        // eslint-disable-next-line no-console
+        console.log('setRecvQuality error:', error);
+
         dom.recvQualityStatusElement.textContent = 'Ошибка применения качества';
       })
       .finally(() => {
