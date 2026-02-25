@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [26.3.0](https://github.com/Krivega/sip-connector/compare/v26.2.2...v26.3.0) (2026-02-25)
+
+### Features
+
+- add getAudioChannel method to RecvSession and corresponding tests ([942d90f](https://github.com/Krivega/sip-connector/commit/942d90f0500ca821fe284ffc122e67500585f1b2))
+
+### Bug Fixes
+
+- improve error handling in RecvQualityManager by logging errors during quality setting ([419514a](https://github.com/Krivega/sip-connector/commit/419514a76012c6f7149e395ef5d52aea097c61f5))
+- rename setRecvQuality to applyQuality and change logic for setRecvQuality ([2fdfd51](https://github.com/Krivega/sip-connector/commit/2fdfd51bdc1d7d7a7795dcc5c895cfcc291b8493))
+
 ### [26.2.2](https://github.com/Krivega/sip-connector/compare/v26.2.1...v26.2.2) (2026-02-20)
 
 ### [26.2.1](https://github.com/Krivega/sip-connector/compare/v26.2.0...v26.2.1) (2026-02-19)
