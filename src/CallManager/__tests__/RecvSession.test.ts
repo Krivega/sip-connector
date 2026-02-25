@@ -50,6 +50,18 @@ describe('RecvSession', () => {
     jest.clearAllMocks();
   });
 
+  it('инициализация: возвращает audioChannel, quality и effectiveQuality', () => {
+    const config = createConfig();
+    const tools = createTools();
+
+    const session = new RecvSession(config, tools);
+
+    expect(session).toBeDefined();
+    expect(session.getAudioChannel()).toBe(config.audioChannel);
+    expect(session.getQuality()).toBe(config.quality);
+    expect(session.getEffectiveQuality()).toBe(config.quality);
+  });
+
   it('создает recvonly трансиверы для основных аудио и видео, и 3 видео для презентации', () => {
     const config = createConfig();
     const tools = createTools();

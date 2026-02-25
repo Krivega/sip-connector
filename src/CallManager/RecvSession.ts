@@ -92,6 +92,10 @@ class RecvSession {
     return this.connection;
   }
 
+  public getAudioChannel(): string {
+    return this.config.audioChannel;
+  }
+
   public getQuality(): TRecvQuality {
     return this.config.quality;
   }
