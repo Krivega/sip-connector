@@ -156,14 +156,16 @@ class RecvSession {
    * @param conferenceNumber - номер конференции
    * @param token - токен авторизации
    */
-  public async call({ conferenceNumber, token }: TCallParams): Promise<void> {
+  public async call({ conferenceNumber, token }: TCallParams): Promise<boolean> {
     // Начинаем ожидание треков параллельно с renegotiate
     const tracksPromise = this.waitForTracks();
 
-    await this.renegotiate({ conferenceNumber, token });
+    const result = await this.renegotiate({ conferenceNumber, token });
 
     // Ждём получения всех необходимых треков (audio + video)
     await tracksPromise;
+
+    return result;
   }
 
   /**

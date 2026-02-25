@@ -1529,7 +1529,7 @@ describe('SipConnector', () => {
       await Promise.resolve();
 
       expect(startRecvSessionMock).toHaveBeenCalledWith(
-        audioId,
+        { audioChannel: audioId },
         expect.objectContaining({
           token: testToken,
         }),

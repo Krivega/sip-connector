@@ -309,7 +309,7 @@ class CallManager {
 
     const previousQuality = recvSession.getQuality();
 
-    // await this.startRecvSession();
+    // const applied = await this.startRecvSessionForced({ quality });
     const result = await recvSession.applyQuality(quality);
 
     if (result.applied) {
@@ -470,25 +470,32 @@ class CallManager {
     };
   }
 
-  private async startRecvSessionForced(params: { audioId: string }) {
+  private async startRecvSessionForced(params: { audioId: string; quality?: TRecvQuality }) {
     const token = getInRoomTokenOrThrow(this.stateMachine);
 
-    return this.startRecvSession(params.audioId, {
-      token,
-    });
+    return this.startRecvSession(
+      { audioChannel: params.audioId, quality: params.quality },
+      {
+        token,
+      },
+    );
   }
 
-  private async startRecvSession(audioId: string, { token }: { token: string }): Promise<void> {
+  private async startRecvSession(
+    { audioChannel, quality }: { audioChannel: string; quality?: TRecvQuality },
+    { token }: { token: string },
+  ): Promise<boolean> {
     const conferenceNumber = this.stateMachine.number;
 
     if (conferenceNumber === undefined) {
-      return;
+      return false;
     }
 
     this.stopRecvSession();
 
     const config = {
-      audioChannel: audioId,
+      audioChannel,
+      quality,
     };
 
     const session = new RecvSession(config, { sendOffer: this.tools.sendOffer });
@@ -500,8 +507,10 @@ class CallManager {
     const callPromise = session.call({ conferenceNumber, token });
 
     return callPromise
-      .then(() => {
+      .then((result) => {
         this.events.emit('recv-session-started');
+
+        return result;
       })
       .catch((error: unknown) => {
         this.stopRecvSession();
@@ -541,9 +550,12 @@ class CallManager {
           audioId: params.audioId,
         });
       } else {
-        this.startRecvSession(params.audioId, {
-          token,
-        }).catch(() => {});
+        this.startRecvSession(
+          { audioChannel: params.audioId },
+          {
+            token,
+          },
+        ).catch(() => {});
       }
     }
 
