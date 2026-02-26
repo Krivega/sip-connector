@@ -30,12 +30,12 @@ describe('Logger', () => {
     enableDebug();
 
     expect(mockEnableDebug).toHaveBeenCalledTimes(1);
-    expect(mockEnableDebug).toHaveBeenCalledWith('sip-connector');
+    expect(mockEnableDebug).toHaveBeenCalledWith('sip-connector:*');
 
     disableDebug();
 
     expect(mockEnableDebug).toHaveBeenCalledTimes(2);
-    expect(mockEnableDebug).toHaveBeenCalledWith('-sip-connector');
+    expect(mockEnableDebug).toHaveBeenCalledWith('-sip-connector:*');
   });
 
   it('logError: должен логировать ошибку', () => {

@@ -1,6 +1,6 @@
 import debug from 'debug';
 
-const NAME = 'sip-connector';
+const NAME = 'demo';
 
 const logger = debug(NAME);
 
@@ -13,7 +13,7 @@ export const enableDebug = () => {
 };
 
 export const disableDebug = () => {
-  debug.enable(`-${NAME}:*`);
+  debug.enable(`-${NAME}`);
 };
 
 export default logger;
