@@ -333,7 +333,10 @@ class CallManager {
       return true;
     }
 
-    const { session, callResult } = await this.startRecvSessionForced({ audioChannel, quality });
+    const { session, callResult } = await this.startRecvSessionForced(
+      { audioChannel, quality },
+      { silent: true },
+    );
 
     if (callResult) {
       const effectiveQuality = session.getEffectiveQuality();
@@ -517,20 +520,24 @@ class CallManager {
     };
   }
 
-  private async startRecvSessionForced(params: { audioChannel: string; quality?: TRecvQuality }) {
+  private async startRecvSessionForced(
+    params: { audioChannel: string; quality?: TRecvQuality },
+    { silent }: { silent?: boolean } = {},
+  ) {
     const token = getInRoomTokenOrThrow(this.stateMachine);
 
     return this.startRecvSession(
       { audioChannel: params.audioChannel, quality: params.quality },
       {
         token,
+        silent,
       },
     );
   }
 
   private async startRecvSession(
     { audioChannel, quality }: { audioChannel: string; quality?: TRecvQuality },
-    { token }: { token: string },
+    { token, silent }: { token: string; silent?: boolean },
   ): Promise<
     { session: RecvSession; callResult: boolean } | { session: undefined; callResult: false }
   > {
@@ -540,7 +547,7 @@ class CallManager {
       return { session: undefined, callResult: false };
     }
 
-    this.stopRecvSession();
+    this.stopRecvSession({ silent });
 
     const config = {
       audioChannel,
@@ -557,7 +564,9 @@ class CallManager {
 
     return callPromise
       .then((result) => {
-        this.events.emit('recv-session-started');
+        if (silent !== true) {
+          this.events.emit('recv-session-started');
+        }
 
         return { session, callResult: result };
       })
@@ -567,7 +576,7 @@ class CallManager {
       });
   }
 
-  private stopRecvSession() {
+  private stopRecvSession({ silent }: { silent?: boolean } = {}) {
     const isActive = Boolean(this.recvSession);
 
     this.recvSession?.close();
@@ -576,7 +585,7 @@ class CallManager {
     this.disposeRecvSessionTrackListener = undefined;
     this.recvRemoteStreamsManager.reset();
 
-    if (isActive) {
+    if (isActive && silent !== true) {
       this.events.emit('recv-session-ended');
     }
   }

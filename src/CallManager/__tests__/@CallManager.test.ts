@@ -357,15 +357,89 @@ describe('CallManager', () => {
     const result = await callManager.setRecvQuality('low');
 
     expect(result).toBe(true);
-    expect(startRecvSessionForcedSpy).toHaveBeenCalledWith({
-      audioChannel: 'audio-1',
-      quality: 'low',
-    });
+    expect(startRecvSessionForcedSpy).toHaveBeenCalledWith(
+      {
+        audioChannel: 'audio-1',
+        quality: 'low',
+      },
+      { silent: true },
+    );
     expect(eventHandler).toHaveBeenCalledWith({
       previousQuality,
       quality: 'low',
       effectiveQuality,
     });
+  });
+
+  it('setRecvQuality: при рестарте recvSession не эмитит recv-session-started и recv-session-ended (silent)', async () => {
+    jest
+      .spyOn(
+        (
+          callManager as unknown as {
+            roleManager: { hasSpectator: () => boolean };
+          }
+        ).roleManager,
+        'hasSpectator',
+      )
+      .mockReturnValue(true);
+
+    (
+      callManager as unknown as {
+        recvSession?: {
+          getQuality: () => TRecvQuality;
+          getEffectiveQuality: () => TRecvQuality;
+          getAudioChannel: () => string;
+        };
+      }
+    ).recvSession = {
+      getQuality: jest.fn(() => {
+        return 'auto';
+      }),
+      getEffectiveQuality: jest.fn(() => {
+        return 'high';
+      }),
+      getAudioChannel: jest.fn(() => {
+        return 'audio-1';
+      }),
+    };
+
+    const startRecvSessionForcedSpy = jest.spyOn(
+      callManager as unknown as {
+        startRecvSessionForced: (
+          params: unknown,
+          options?: { silent?: boolean },
+        ) => Promise<{
+          session: { getEffectiveQuality: () => 'low' };
+          callResult: boolean;
+        }>;
+      },
+      'startRecvSessionForced',
+    );
+
+    startRecvSessionForcedSpy.mockResolvedValue({
+      session: {
+        getEffectiveQuality: () => {
+          return 'low';
+        },
+      },
+      callResult: true,
+    });
+
+    const recvSessionStartedHandler = jest.fn();
+    const recvSessionEndedHandler = jest.fn();
+
+    callManager.on(EEvent.RECV_SESSION_STARTED, recvSessionStartedHandler);
+    callManager.on(EEvent.RECV_SESSION_ENDED, recvSessionEndedHandler);
+
+    const result = await callManager.setRecvQuality('low');
+
+    expect(result).toBe(true);
+    expect(startRecvSessionForcedSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ audioChannel: 'audio-1', quality: 'low' }),
+      { silent: true },
+    );
+    expect(recvSessionStartedHandler).not.toHaveBeenCalled();
+    expect(recvSessionEndedHandler).not.toHaveBeenCalled();
   });
 
   it('setRecvQuality: не триггерит recv-quality-changed и возвращает false при неуспешном рестарте', async () => {
@@ -1959,14 +2033,46 @@ describe('CallManager - дополнительные тесты для покр�
 
     // Ждем завершения промиса call
     await flushPromises();
-    await new Promise<void>((resolve) => {
-      setTimeout(() => {
-        resolve();
-      }, 0);
-    });
-    await flushPromises();
 
     expect(eventHandler).toHaveBeenCalledTimes(1);
+  });
+
+  it('startRecvSession: при silent: true не эмитит recv-session-started', async () => {
+    jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('123');
+
+    jest
+      .spyOn(
+        callManager as unknown as {
+          attachRecvSessionTracks: () => void;
+        },
+        'attachRecvSessionTracks',
+      )
+      .mockImplementation(() => {});
+    jest
+      .spyOn(
+        callManager as unknown as {
+          stopRecvSession: () => void;
+        },
+        'stopRecvSession',
+      )
+      .mockImplementation(() => {});
+
+    const eventHandler = jest.fn();
+
+    callManager.on(EEvent.RECV_SESSION_STARTED, eventHandler);
+
+    (
+      callManager as unknown as {
+        startRecvSession: (
+          params: { audioChannel: string },
+          options: { token: string; silent?: boolean },
+        ) => void;
+      }
+    ).startRecvSession({ audioChannel: 'audio-id' }, { token: 'test-token', silent: true });
+
+    await flushPromises();
+
+    expect(eventHandler).not.toHaveBeenCalled();
   });
 
   it('startRecvSession: при ошибке call выполняет stopRecvSession', async () => {
@@ -2003,12 +2109,6 @@ describe('CallManager - дополнительные тесты для покр�
 
     // Ждем завершения промиса и выполнения catch-блока
     await startPromise.catch(() => {});
-    await flushPromises();
-    await new Promise<void>((resolve) => {
-      setTimeout(() => {
-        resolve();
-      }, 0);
-    });
     await flushPromises();
 
     // stopRecvSession вызывается дважды: в начале startRecvSession и в catch при ошибке call
@@ -2049,12 +2149,6 @@ describe('CallManager - дополнительные тесты для покр�
 
     // Ждем завершения промиса и выполнения catch-блока
     await startPromise.catch(() => {});
-    await flushPromises();
-    await new Promise<void>((resolve) => {
-      setTimeout(() => {
-        resolve();
-      }, 0);
-    });
     await flushPromises();
 
     expect(startedEventHandler).not.toHaveBeenCalled();
