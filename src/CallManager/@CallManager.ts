@@ -2,6 +2,7 @@ import { DeferredCommandRunner } from '@/tools';
 import { CallStateMachine, EState } from './CallStateMachine';
 import { createEvents, EEvent } from './events';
 import { MCUSession } from './MCUSession';
+import { resolveRecvQuality } from './quality';
 import RecvSession from './RecvSession';
 import { RemoteStreamsManager } from './RemoteStreamsManager';
 import { RoleManager } from './RoleManager';
@@ -308,7 +309,29 @@ class CallManager {
     }
 
     const previousQuality = recvSession.getQuality();
+    const previousEffectiveQuality = recvSession.getEffectiveQuality();
     const audioChannel = recvSession.getAudioChannel();
+
+    const targetEffectiveQuality = resolveRecvQuality(quality);
+
+    // Если качество не изменилось, ничего не делаем
+    if (quality === previousQuality && targetEffectiveQuality === previousEffectiveQuality) {
+      return false;
+    }
+
+    // Не пересоздаем RecvSession если не изменилось effectiveQuality
+    // (например, 'auto' -> 'high' не требует пересоздания RecvSession, если effectiveQuality уже 'high')
+    if (targetEffectiveQuality === previousEffectiveQuality) {
+      await recvSession.setQuality(quality); // для обновления quality. renegotiate не будет вызван
+
+      this.events.trigger(EEvent.RECV_QUALITY_CHANGED, {
+        previousQuality,
+        quality,
+        effectiveQuality: previousEffectiveQuality,
+      });
+
+      return true;
+    }
 
     const { session, callResult } = await this.startRecvSessionForced({ audioChannel, quality });
 

@@ -119,19 +119,19 @@ class RecvSession {
 
     const previousEffective = this.config.effectiveQuality;
     const previousQuality = this.config.quality;
-    const effectiveQuality = resolveRecvQuality(quality);
+    const targetEffectiveQuality = resolveRecvQuality(quality);
 
     // Если качество не изменилось, ничего не делаем
-    if (quality === previousQuality && effectiveQuality === previousEffective) {
+    if (quality === previousQuality && targetEffectiveQuality === previousEffective) {
       return false;
     }
 
     this.config.quality = quality;
-    this.config.effectiveQuality = effectiveQuality;
+    this.config.effectiveQuality = targetEffectiveQuality;
 
     // Пересогласовываем только если изменилось effectiveQuality
     // (например, 'auto' -> 'high' не требует renegotiate, если effectiveQuality уже 'high')
-    if (effectiveQuality !== previousEffective) {
+    if (targetEffectiveQuality !== previousEffective) {
       await this.renegotiate(this.lastCallParams);
     }
 
