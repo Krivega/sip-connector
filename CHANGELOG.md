@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [26.3.1](https://github.com/Krivega/sip-connector/compare/v26.3.0...v26.3.1) (2026-02-26)
+
+### Bug Fixes
+
+- enhance setRecvQuality logic to prevent unnecessary RecvSession recreation and emit events correctly ([b9d8d9f](https://github.com/Krivega/sip-connector/commit/b9d8d9fa9027e166e9e7b4c0eafde60352fbc2ac))
+- ensure recv-session-ended event is emitted only if the session was active ([9055653](https://github.com/Krivega/sip-connector/commit/90556536458aae0b7db80711eed42a04f6b073fc))
+
 ## [26.3.0](https://github.com/Krivega/sip-connector/compare/v26.2.2...v26.3.0) (2026-02-25)
 
 ### Features
