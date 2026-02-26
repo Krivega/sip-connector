@@ -1909,7 +1909,7 @@ describe('CallManager - дополнительные тесты для покр�
     await flushPromises();
 
     expect(startedEventHandler).not.toHaveBeenCalled();
-    expect(endedEventHandler).toHaveBeenCalledTimes(2); // один раз в начале startRecvSession, второй раз в catch при ошибке call
+    expect(endedEventHandler).toHaveBeenCalledTimes(1); // один раз в catch при ошибке call
   });
 
   it('stopRecvSession: закрывает сессию, сбрасывает слушатель и менеджер', () => {

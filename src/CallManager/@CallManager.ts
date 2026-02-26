@@ -545,13 +545,17 @@ class CallManager {
   }
 
   private stopRecvSession() {
+    const isActive = Boolean(this.recvSession);
+
     this.recvSession?.close();
     this.recvSession = undefined;
     this.disposeRecvSessionTrackListener?.();
     this.disposeRecvSessionTrackListener = undefined;
     this.recvRemoteStreamsManager.reset();
 
-    this.events.emit('recv-session-ended');
+    if (isActive) {
+      this.events.emit('recv-session-ended');
+    }
   }
 
   private readonly onRoleChanged = ({
