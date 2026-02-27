@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [26.4.0](https://github.com/Krivega/sip-connector/compare/v26.3.2...v26.4.0) (2026-02-27)
+
+### Features
+
+- enhance StatsManager and VideoSendingBalancerManager with new session event handling ([5caa22b](https://github.com/Krivega/sip-connector/commit/5caa22b2e61e172501c0ff0b44d2ae926d1ae251))
+- implement session management for viewer mode in VideoSendingBalancerManager ([46bb5dc](https://github.com/Krivega/sip-connector/commit/46bb5dc1cdfb744d183f1168184b80749e2fb782))
+
+### Bug Fixes
+
+- improve error handling in startRecvSession to include detailed failure responses ([07768e9](https://github.com/Krivega/sip-connector/commit/07768e9b9c05e57ab466f4832df22bd98a1d64e2))
+
 ### [26.3.2](https://github.com/Krivega/sip-connector/compare/v26.3.1...v26.3.2) (2026-02-26)
 
 ### Bug Fixes
