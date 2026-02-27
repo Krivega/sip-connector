@@ -32,6 +32,9 @@ describe('StatsManager', () => {
 
     // assert
     expect(onSpy).toHaveBeenCalledWith('peerconnection:confirmed', expect.any(Function));
+    expect(onSpy).toHaveBeenCalledWith('recv-session-started', expect.any(Function));
+    expect(onSpy).toHaveBeenCalledWith('recv-session-ended', expect.any(Function));
+    expect(onSpy).toHaveBeenCalledWith('recv-quality-changed', expect.any(Function));
     expect(onSpy).toHaveBeenCalledWith('failed', expect.any(Function));
     expect(onSpy).toHaveBeenCalledWith('ended', expect.any(Function));
   });
@@ -78,6 +81,34 @@ describe('StatsManager', () => {
       cause: 'error',
     });
     expect(stopSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it('перезапускает сбор статистики при recv-session-started и recv-session-ended', () => {
+    const { callManager, apiManager } = createManagers();
+    const manager = new StatsManager({ callManager, apiManager });
+    const startSpy = jest.spyOn(manager.statsPeerConnection, 'start');
+    const pc = new RTCPeerConnectionMock(undefined, [audioTrack, videoTrack]);
+
+    jest.spyOn(callManager, 'getActivePeerConnection').mockReturnValue(pc);
+
+    callManager.events.trigger('peerconnection:confirmed', pc);
+    expect(startSpy).toHaveBeenCalledTimes(1);
+
+    callManager.events.trigger('recv-session-started');
+    expect(startSpy).toHaveBeenCalledTimes(2);
+    expect(startSpy).toHaveBeenCalledWith(callManager.getActivePeerConnection);
+
+    callManager.events.trigger('recv-session-ended');
+    expect(startSpy).toHaveBeenCalledTimes(3);
+    expect(startSpy).toHaveBeenCalledWith(callManager.getActivePeerConnection);
+
+    callManager.events.trigger('recv-quality-changed', {
+      effectiveQuality: 'low',
+      previousQuality: 'auto',
+      quality: 'low',
+    });
+    expect(startSpy).toHaveBeenCalledTimes(4);
+    expect(startSpy).toHaveBeenCalledWith(callManager.getActivePeerConnection);
   });
 
   it('проксирует методы событий к StatsPeerConnection', async () => {

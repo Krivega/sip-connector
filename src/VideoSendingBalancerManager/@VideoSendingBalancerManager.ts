@@ -124,6 +124,7 @@ class VideoSendingBalancerManager {
     this.callManager.on('peerconnection:confirmed', this.handleCallStarted);
     this.callManager.on('recv-session-started', this.handleRecvSessionStarted);
     this.callManager.on('recv-session-ended', this.handleRecvSessionEnded);
+    this.callManager.on('recv-quality-changed', this.handleRecvQualityChanged);
 
     // Подписываемся на окончание звонка
     this.callManager.on('ended', this.handleCallEnded);
@@ -144,6 +145,10 @@ class VideoSendingBalancerManager {
 
   private readonly handleRecvSessionEnded = (): void => {
     this.scheduleBalancingStart();
+  };
+
+  private readonly handleRecvQualityChanged = (): void => {
+    this.stopBalancing();
   };
 
   private scheduleBalancingStart(): void {

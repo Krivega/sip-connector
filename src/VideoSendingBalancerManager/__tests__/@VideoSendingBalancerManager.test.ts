@@ -192,6 +192,19 @@ describe('VideoSendingBalancerManager', () => {
       expect(videoSendingBalancerManager.isBalancingActive).toBe(false);
     });
 
+    it('should stop balancing when recv-quality-changed (viewer mode)', async () => {
+      await videoSendingBalancerManager.startBalancing();
+      expect(videoSendingBalancerManager.isBalancingActive).toBe(true);
+
+      callManager.events.trigger('recv-quality-changed', {
+        effectiveQuality: 'low',
+        previousQuality: 'auto',
+        quality: 'low',
+      });
+
+      expect(videoSendingBalancerManager.isBalancingActive).toBe(false);
+    });
+
     it('should schedule balancing when recv-session-ended (exit viewer mode)', async () => {
       callManager.events.trigger('peerconnection:confirmed', mockConnection);
       expect(videoSendingBalancerManager.isBalancingScheduled).toBe(true);

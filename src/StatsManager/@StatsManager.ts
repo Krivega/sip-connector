@@ -159,6 +159,9 @@ class StatsManager {
 
   private subscribe() {
     this.callManager.on('peerconnection:confirmed', this.handleStarted);
+    this.callManager.on('recv-session-started', this.handleRecvSessionStarted);
+    this.callManager.on('recv-session-ended', this.handleRecvSessionEnded);
+    this.callManager.on('recv-quality-changed', this.handleRecvQualityChanged);
     this.callManager.on('failed', this.handleEnded);
     this.callManager.on('ended', this.handleEnded);
     this.statsPeerConnection.on('collected', this.handleStatsCollected);
@@ -172,6 +175,18 @@ class StatsManager {
   };
 
   private readonly handleStarted = () => {
+    this.statsPeerConnection.start(this.callManager.getActivePeerConnection);
+  };
+
+  private readonly handleRecvSessionStarted = () => {
+    this.statsPeerConnection.start(this.callManager.getActivePeerConnection);
+  };
+
+  private readonly handleRecvSessionEnded = () => {
+    this.statsPeerConnection.start(this.callManager.getActivePeerConnection);
+  };
+
+  private readonly handleRecvQualityChanged = () => {
     this.statsPeerConnection.start(this.callManager.getActivePeerConnection);
   };
 
