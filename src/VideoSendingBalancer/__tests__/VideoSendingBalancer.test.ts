@@ -166,6 +166,54 @@ describe('VideoSendingBalancer', () => {
       // @ts-expect-error
       expect(balancer.serverHeaders).toBeUndefined();
     });
+
+    it('должен восстановить параметры отправителя при unsubscribe после balance с PAUSE_MAIN_CAM', async () => {
+      const setParametersSpy = jest.spyOn(mockSender, 'setParameters');
+
+      balancer.subscribe();
+      // @ts-expect-error
+      balancer.serverHeaders = { mainCam: EContentMainCAM.PAUSE_MAIN_CAM };
+      await balancer.balance();
+
+      const pauseCall = setParametersSpy.mock.calls.find((call) => {
+        const encoding = call[0].encodings[0];
+
+        return encoding.scaleResolutionDownBy === 200;
+      });
+
+      expect(pauseCall).toBeDefined();
+
+      balancer.unsubscribe();
+      await delayPromise(100);
+
+      const resetCall = setParametersSpy.mock.calls.find((call) => {
+        const encoding = call[0].encodings[0];
+
+        return encoding.scaleResolutionDownBy === 1;
+      });
+
+      expect(resetCall).toBeDefined();
+    });
+
+    it('должен обработать ошибку senderBalancer.reset при unsubscribe без падения', async () => {
+      const getStatsSpy = jest.spyOn(mockSender, 'getStats');
+      const statsOk = new Map([['codec', { type: 'codec', mimeType: 'video/h264' }]]);
+
+      getStatsSpy.mockResolvedValueOnce(statsOk).mockRejectedValueOnce(new Error('reset error'));
+
+      balancer.subscribe();
+      // @ts-expect-error
+      balancer.serverHeaders = { mainCam: EContentMainCAM.PAUSE_MAIN_CAM };
+      await balancer.balance();
+
+      expect(() => {
+        balancer.unsubscribe();
+      }).not.toThrow();
+
+      await delayPromise(100);
+
+      expect(logger).toHaveBeenCalledWith('reset sender encodings: error', expect.any(Error));
+    });
   });
 
   describe('reset', () => {
@@ -181,6 +229,63 @@ describe('VideoSendingBalancer', () => {
       balancer.reset();
       // @ts-expect-error
       expect(balancer.serverHeaders).toBeUndefined();
+    });
+
+    it('должен восстановить параметры отправителя после balance с PAUSE_MAIN_CAM', async () => {
+      const setParametersSpy = jest.spyOn(mockSender, 'setParameters');
+
+      // @ts-expect-error
+      balancer.serverHeaders = { mainCam: EContentMainCAM.PAUSE_MAIN_CAM };
+      await balancer.balance();
+
+      const pauseCall = setParametersSpy.mock.calls.find((call) => {
+        const encoding = call[0].encodings[0];
+
+        return encoding.scaleResolutionDownBy === 200;
+      });
+
+      expect(pauseCall).toBeDefined();
+
+      balancer.reset();
+      await delayPromise(50);
+
+      const resetCall = setParametersSpy.mock.calls.find((call) => {
+        const encoding = call[0].encodings[0];
+
+        return encoding.scaleResolutionDownBy === 1;
+      });
+
+      expect(resetCall).toBeDefined();
+    });
+
+    it('должен не падать при reset без connection', () => {
+      Object.defineProperty(sipConnector, 'connection', {
+        value: undefined,
+        writable: true,
+      });
+
+      expect(() => {
+        balancer.reset();
+      }).not.toThrow();
+    });
+
+    it('должен обработать ошибку senderBalancer.reset без падения', async () => {
+      const getStatsSpy = jest.spyOn(mockSender, 'getStats');
+      const statsOk = new Map([['codec', { type: 'codec', mimeType: 'video/h264' }]]);
+
+      getStatsSpy.mockResolvedValueOnce(statsOk).mockRejectedValueOnce(new Error('reset error'));
+
+      // @ts-expect-error
+      balancer.serverHeaders = { mainCam: EContentMainCAM.PAUSE_MAIN_CAM };
+      await balancer.balance();
+
+      expect(() => {
+        balancer.reset();
+      }).not.toThrow();
+
+      await delayPromise(50);
+
+      expect(logger).toHaveBeenCalledWith('reset sender encodings: error', expect.any(Error));
     });
   });
 

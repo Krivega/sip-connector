@@ -95,6 +95,38 @@ export class SenderBalancer {
   }
 
   /**
+   * Сбрасывает все эффекты балансировки — восстанавливает параметры на основе разрешения трека
+   * @param connection - RTCPeerConnection для получения отправителей
+   * @returns Promise с результатом сброса
+   */
+  public async reset(
+    connection: RTCPeerConnection,
+  ): Promise<TResultSetParametersToSender & { sender: RTCRtpSender | undefined }> {
+    const senders = connection.getSenders();
+    const sender = this.senderFinder.findVideoSender(senders);
+
+    if (!sender?.track) {
+      return { ...this.resultNoChanged, sender };
+    }
+
+    const codec = await this.codecProvider.getCodecFromSender(sender);
+
+    if (hasIncludesString(codec, this.ignoreForCodec)) {
+      return { ...this.resultNoChanged, sender };
+    }
+
+    const context: IBalancingContext = {
+      sender,
+      codec,
+      videoTrack: sender.track as MediaStreamVideoTrack,
+    };
+
+    const result = await this.setBitrateByTrackResolution(context);
+
+    return { ...result, sender };
+  }
+
+  /**
    * Обрабатывает отправитель в зависимости от команды управления
    * @param context - Контекст балансировки
    * @returns Promise с результатом обработки

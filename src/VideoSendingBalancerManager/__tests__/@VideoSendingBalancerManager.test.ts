@@ -179,6 +179,30 @@ describe('VideoSendingBalancerManager', () => {
 
       expect(videoSendingBalancerManager.isBalancingActive).toBe(false);
     });
+
+    it('should stop balancing when recv-session-started (viewer mode)', async () => {
+      const stoppedPromise = videoSendingBalancerManager.wait('balancing-stopped');
+
+      await videoSendingBalancerManager.startBalancing();
+      expect(videoSendingBalancerManager.isBalancingActive).toBe(true);
+
+      callManager.events.trigger('recv-session-started');
+
+      await stoppedPromise;
+      expect(videoSendingBalancerManager.isBalancingActive).toBe(false);
+    });
+
+    it('should schedule balancing when recv-session-ended (exit viewer mode)', async () => {
+      callManager.events.trigger('peerconnection:confirmed', mockConnection);
+      expect(videoSendingBalancerManager.isBalancingScheduled).toBe(true);
+
+      videoSendingBalancerManager.stopBalancing();
+      expect(videoSendingBalancerManager.isBalancingScheduled).toBe(false);
+
+      callManager.events.trigger('recv-session-ended');
+
+      expect(videoSendingBalancerManager.isBalancingScheduled).toBe(true);
+    });
   });
 
   it('should not call balance again if balancing already active', async () => {

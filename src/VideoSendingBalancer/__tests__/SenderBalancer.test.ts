@@ -123,6 +123,7 @@ describe('SenderBalancer', () => {
 
       expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalled();
       expect(result.isChanged).toBe(true);
+      expect(result.sender).toBe(mockSender);
     });
   });
 
@@ -324,6 +325,142 @@ describe('SenderBalancer', () => {
       await senderBalancer.balance(mockConnection, headers);
 
       expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
+        mockSender,
+        expect.objectContaining({
+          scaleResolutionDownBy: 1,
+        }),
+      );
+    });
+  });
+
+  describe('reset', () => {
+    it('должен вернуть resultNoChanged если sender не найден', async () => {
+      mockSenderFinder.findVideoSender.mockReturnValue(undefined);
+
+      const result = await senderBalancer.reset(mockConnection);
+
+      expect(result.isChanged).toBe(false);
+      expect(mockParametersSetter.setEncodingsToSender).not.toHaveBeenCalled();
+    });
+
+    it('должен вернуть resultNoChanged если sender не имеет track', async () => {
+      const senderWithoutTrack = new RTCRtpSenderMock({ track: undefined });
+
+      mockSenderFinder.findVideoSender.mockReturnValue(senderWithoutTrack);
+
+      const result = await senderBalancer.reset(mockConnection);
+
+      expect(result.isChanged).toBe(false);
+      expect(mockParametersSetter.setEncodingsToSender).not.toHaveBeenCalled();
+    });
+
+    it('должен вернуть resultNoChanged если codec игнорируется', async () => {
+      mockSenderFinder.findVideoSender.mockReturnValue(mockSender);
+      mockCodecProvider.getCodecFromSender.mockResolvedValue('vp8');
+
+      const balancerWithIgnore = new SenderBalancer(
+        {
+          senderFinder: mockSenderFinder,
+          codecProvider: mockCodecProvider,
+          parametersSetter: mockParametersSetter,
+        },
+        { ignoreForCodec: 'vp8' },
+      );
+
+      const result = await balancerWithIgnore.reset(mockConnection);
+
+      expect(result.isChanged).toBe(false);
+      expect(mockParametersSetter.setEncodingsToSender).not.toHaveBeenCalled();
+    });
+
+    it('должен восстановить параметры на основе разрешения трека', async () => {
+      mockSenderFinder.findVideoSender.mockReturnValue(mockSender);
+      mockCodecProvider.getCodecFromSender.mockResolvedValue('h264');
+      mockParametersSetter.setEncodingsToSender.mockResolvedValue({
+        isChanged: true,
+        parameters: {
+          encodings: [{ scaleResolutionDownBy: 1, maxBitrate: 2_000_000 }],
+          transactionId: '',
+          codecs: [],
+          headerExtensions: [],
+        },
+      });
+
+      const result = await senderBalancer.reset(mockConnection);
+
+      expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
+        mockSender,
+        expect.objectContaining({
+          scaleResolutionDownBy: 1,
+        }),
+      );
+      expect(result.sender).toBe(mockSender);
+    });
+
+    it('должен обработать undefined width в getSettings', async () => {
+      mockSenderFinder.findVideoSender.mockReturnValue(mockSender);
+      mockCodecProvider.getCodecFromSender.mockResolvedValue('h264');
+      (mockVideoTrack.getSettings as jest.Mock).mockReturnValue({ width: undefined, height: 1080 });
+      mockParametersSetter.setEncodingsToSender.mockResolvedValue({
+        isChanged: true,
+        parameters: {
+          encodings: [{ scaleResolutionDownBy: 1, maxBitrate: 4_000_000 }],
+          transactionId: '',
+          codecs: [],
+          headerExtensions: [],
+        },
+      });
+
+      await senderBalancer.reset(mockConnection);
+
+      expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
+        mockSender,
+        expect.objectContaining({
+          scaleResolutionDownBy: 1,
+          maxBitrate: 4_000_000,
+        }),
+      );
+    });
+
+    it('должен отменить эффекты balance с PAUSE_MAIN_CAM', async () => {
+      mockSenderFinder.findVideoSender.mockReturnValue(mockSender);
+      mockCodecProvider.getCodecFromSender.mockResolvedValue('h264');
+      mockParametersSetter.setEncodingsToSender
+        .mockResolvedValueOnce({
+          isChanged: true,
+          parameters: {
+            encodings: [{ scaleResolutionDownBy: 200, maxBitrate: 125_000 }],
+            transactionId: '',
+            codecs: [],
+            headerExtensions: [],
+          },
+        })
+        .mockResolvedValueOnce({
+          isChanged: true,
+          parameters: {
+            encodings: [{ scaleResolutionDownBy: 1, maxBitrate: 2_000_000 }],
+            transactionId: '',
+            codecs: [],
+            headerExtensions: [],
+          },
+        });
+
+      await senderBalancer.balance(mockConnection, {
+        mainCam: EContentMainCAM.PAUSE_MAIN_CAM,
+      });
+
+      expect(mockParametersSetter.setEncodingsToSender).toHaveBeenNthCalledWith(
+        1,
+        mockSender,
+        expect.objectContaining({
+          scaleResolutionDownBy: 200,
+        }),
+      );
+
+      await senderBalancer.reset(mockConnection);
+
+      expect(mockParametersSetter.setEncodingsToSender).toHaveBeenNthCalledWith(
+        2,
         mockSender,
         expect.objectContaining({
           scaleResolutionDownBy: 1,

@@ -66,16 +66,30 @@ class VideoSendingBalancer {
    */
   public unsubscribe(): void {
     this.eventHandler.unsubscribe();
-    this.parametersSetterWithQueue.stop();
     this.reset();
   }
 
   /**
-   * Сбрасывает состояние балансировщика
+   * Сбрасывает состояние балансировщика и восстанавливает параметры отправителя
    */
   public reset(): void {
-    delete this.serverHeaders;
-    this.trackMonitor.unsubscribe();
+    this.clearState();
+
+    const connection = this.getConnection();
+
+    if (connection) {
+      // eslint-disable-next-line no-void
+      void this.senderBalancer
+        .reset(connection)
+        .catch((error: unknown) => {
+          debug('reset sender encodings: error', error);
+        })
+        .finally(() => {
+          this.parametersSetterWithQueue.stop();
+        });
+    } else {
+      this.parametersSetterWithQueue.stop();
+    }
   }
 
   /**
@@ -98,6 +112,11 @@ class VideoSendingBalancer {
     });
 
     return result;
+  }
+
+  private clearState(): void {
+    delete this.serverHeaders;
+    this.trackMonitor.unsubscribe();
   }
 
   /**
