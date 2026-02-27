@@ -1,3 +1,5 @@
+import { C as JsSIP_C, IncomingResponse } from '@krivega/jssip';
+
 import { DeferredCommandRunner } from '@/tools';
 import { CallStateMachine, EState } from './CallStateMachine';
 import { createEvents, EEvent } from './events';
@@ -9,7 +11,7 @@ import { RoleManager } from './RoleManager';
 import { StreamsChangeTracker } from './StreamsChangeTracker';
 import { StreamsManagerProvider } from './StreamsManagerProvider';
 
-import type { IncomingResponse, RTCSession } from '@krivega/jssip';
+import type { RTCSession } from '@krivega/jssip';
 import type { ApiManager } from '@/ApiManager';
 import type { ContentedStreamManager } from '@/ContentedStreamManager';
 import type { TEventMap, TEvents } from './events';
@@ -570,8 +572,16 @@ class CallManager {
 
         return { session, callResult: result };
       })
-      .catch((error: unknown) => {
+      .catch(async (error: unknown) => {
         this.stopRecvSession();
+
+        const message = new IncomingResponse();
+
+        message.body = error instanceof Error ? error.message : String(error);
+
+        const cause = JsSIP_C.causes.INTERNAL_ERROR;
+
+        await this.failed(message, cause);
         throw error;
       });
   }
