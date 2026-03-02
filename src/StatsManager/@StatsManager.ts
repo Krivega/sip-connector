@@ -1,3 +1,4 @@
+import { EventEmitterProxy } from '@/EventEmitterProxy';
 import logger from '@/logger';
 import { StatsPeerConnection } from '@/StatsPeerConnection';
 import { MIN_RECEIVED_MAIN_STREAM_PACKETS } from './constants';
@@ -6,7 +7,7 @@ import type { ApiManager } from '@/ApiManager';
 import type { CallManager } from '@/CallManager';
 import type { TStats, TStatsPeerConnectionEventMap } from '@/StatsPeerConnection';
 
-class StatsManager {
+class StatsManager extends EventEmitterProxy<TStatsPeerConnectionEventMap> {
   public readonly statsPeerConnection: StatsPeerConnection;
 
   private availableStats: TStats | undefined;
@@ -24,15 +25,14 @@ class StatsManager {
     callManager: CallManager;
     apiManager: ApiManager;
   }) {
+    const statsPeerConnection = new StatsPeerConnection();
+
+    super(statsPeerConnection.events);
+    this.statsPeerConnection = statsPeerConnection;
     this.callManager = callManager;
     this.apiManager = apiManager;
-    this.statsPeerConnection = new StatsPeerConnection();
 
     this.subscribe();
-  }
-
-  public get events() {
-    return this.statsPeerConnection.events;
   }
 
   public get availableIncomingBitrate(): number | undefined {
@@ -104,40 +104,6 @@ class StatsManager {
     const isNotSameValue = this.packetsReceived !== this.previousPacketsReceived;
 
     return isReceivingPackets && isNotSameValue;
-  }
-
-  public on<T extends keyof TStatsPeerConnectionEventMap>(
-    eventName: T,
-    handler: (data: TStatsPeerConnectionEventMap[T]) => void,
-  ) {
-    return this.statsPeerConnection.on(eventName, handler);
-  }
-
-  public once<T extends keyof TStatsPeerConnectionEventMap>(
-    eventName: T,
-    handler: (data: TStatsPeerConnectionEventMap[T]) => void,
-  ) {
-    return this.statsPeerConnection.once(eventName, handler);
-  }
-
-  public onceRace<T extends keyof TStatsPeerConnectionEventMap>(
-    eventNames: T[],
-    handler: (data: TStatsPeerConnectionEventMap[T], eventName: string) => void,
-  ) {
-    return this.statsPeerConnection.onceRace(eventNames, handler);
-  }
-
-  public async wait<T extends keyof TStatsPeerConnectionEventMap>(
-    eventName: T,
-  ): Promise<TStatsPeerConnectionEventMap[T]> {
-    return this.statsPeerConnection.wait(eventName);
-  }
-
-  public off<T extends keyof TStatsPeerConnectionEventMap>(
-    eventName: T,
-    handler: (data: TStatsPeerConnectionEventMap[T]) => void,
-  ) {
-    this.statsPeerConnection.off(eventName, handler);
   }
 
   public hasAvailableIncomingBitrateChangedQuarter() {

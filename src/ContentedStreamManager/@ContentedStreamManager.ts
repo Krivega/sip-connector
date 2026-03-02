@@ -1,17 +1,17 @@
+import { EventEmitterProxy } from '@/EventEmitterProxy';
 import { ContentedStreamStateMachine } from './ContentedStreamStateMachine';
 import { createEvents, EEvent } from './events';
 
 import type { ApiManager, EContentedStreamCodec } from '@/ApiManager';
-import type { TEventMap, TEvents } from './events';
+import type { TEventMap } from './events';
 import type { TContentedStreamStateInfo } from './types';
 
-class ContentedStreamManager {
-  public readonly events: TEvents;
-
+class ContentedStreamManager extends EventEmitterProxy<TEventMap> {
   public readonly stateMachine: ContentedStreamStateMachine;
 
   public constructor() {
-    this.events = createEvents();
+    super(createEvents());
+
     this.stateMachine = new ContentedStreamStateMachine();
 
     this.proxyEvents();
@@ -31,18 +31,6 @@ class ContentedStreamManager {
 
   public reset(): void {
     this.stateMachine.reset();
-  }
-
-  public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    return this.events.on(eventName, handler);
-  }
-
-  public once<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    return this.events.once(eventName, handler);
-  }
-
-  public off<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    this.events.off(eventName, handler);
   }
 
   public subscribeToApiEvents(apiManager: ApiManager): void {

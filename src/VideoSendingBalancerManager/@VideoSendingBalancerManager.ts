@@ -1,3 +1,4 @@
+import { EventEmitterProxy } from '@/EventEmitterProxy';
 import debug from '@/logger';
 import { VideoSendingBalancer } from '@/VideoSendingBalancer';
 import { createEvents } from './events';
@@ -5,7 +6,7 @@ import { createEvents } from './events';
 import type { ApiManager } from '@/ApiManager';
 import type { CallManager } from '@/CallManager';
 import type { IBalancerOptions } from '@/VideoSendingBalancer/types';
-import type { TEventMap, TEvents } from './events';
+import type { TEventMap } from './events';
 
 type TOptions = IBalancerOptions & {
   balancingStartDelay?: number;
@@ -15,10 +16,8 @@ type TOptions = IBalancerOptions & {
  * Менеджер для управления VideoSendingBalancer
  * Автоматически запускает балансировку через 10 секунд после начала звонка
  */
-class VideoSendingBalancerManager {
+class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
   public isBalancingActive = false;
-
-  public readonly events: TEvents;
 
   private readonly callManager: CallManager;
 
@@ -33,7 +32,8 @@ class VideoSendingBalancerManager {
     apiManager: ApiManager,
     balancerOptions: TOptions = {},
   ) {
-    this.events = createEvents();
+    super(createEvents());
+
     this.callManager = callManager;
     this.balancingStartDelay = balancerOptions.balancingStartDelay ?? 10_000;
 
@@ -94,29 +94,6 @@ class VideoSendingBalancerManager {
    */
   public async balance() {
     return this.videoSendingBalancer.balance();
-  }
-
-  public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    return this.events.on(eventName, handler);
-  }
-
-  public once<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    return this.events.once(eventName, handler);
-  }
-
-  public onceRace<T extends keyof TEventMap>(
-    eventNames: T[],
-    handler: (data: TEventMap[T], eventName: string) => void,
-  ) {
-    return this.events.onceRace(eventNames, handler);
-  }
-
-  public async wait<T extends keyof TEventMap>(eventName: T): Promise<TEventMap[T]> {
-    return this.events.wait(eventName);
-  }
-
-  public off<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    this.events.off(eventName, handler);
   }
 
   private subscribe(): void {

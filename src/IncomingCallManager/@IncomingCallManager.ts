@@ -1,9 +1,10 @@
+import { EventEmitterProxy } from '@/EventEmitterProxy';
 import { createEvents, EEvent } from './events';
 import { IncomingCallStateMachine } from './IncomingCallStateMachine';
 
 import type { IncomingRTCSessionEvent, OutgoingRTCSessionEvent, RTCSession } from '@krivega/jssip';
 import type { ConnectionManager } from '@/ConnectionManager';
-import type { Originator, TEventMap, TEvents, TRemoteCallerData } from './events';
+import type { Originator, TEventMap, TRemoteCallerData } from './events';
 
 const BUSY_HERE_STATUS_CODE = 486;
 const REQUEST_TERMINATED_STATUS_CODE = 487;
@@ -17,9 +18,7 @@ const getRemoteCallerData = (incomingRTCSession: RTCSession): TRemoteCallerData 
   };
 };
 
-export default class IncomingCallManager {
-  public readonly events: TEvents;
-
+export default class IncomingCallManager extends EventEmitterProxy<TEventMap> {
   public readonly stateMachine: IncomingCallStateMachine;
 
   private incomingRTCSession?: RTCSession;
@@ -27,8 +26,8 @@ export default class IncomingCallManager {
   private readonly connectionManager: ConnectionManager;
 
   public constructor(connectionManager: ConnectionManager) {
+    super(createEvents());
     this.connectionManager = connectionManager;
-    this.events = createEvents();
     this.stateMachine = new IncomingCallStateMachine({
       incomingEvents: this.events,
       connectionEvents: this.connectionManager.events,
@@ -96,29 +95,6 @@ export default class IncomingCallManager {
 
   public async busyIncomingCall(): Promise<void> {
     return this.declineToIncomingCall({ statusCode: BUSY_HERE_STATUS_CODE });
-  }
-
-  public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    return this.events.on(eventName, handler);
-  }
-
-  public once<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    return this.events.once(eventName, handler);
-  }
-
-  public onceRace<T extends keyof TEventMap>(
-    eventNames: T[],
-    handler: (data: TEventMap[T], eventName: string) => void,
-  ) {
-    return this.events.onceRace(eventNames, handler);
-  }
-
-  public async wait<T extends keyof TEventMap>(eventName: T): Promise<TEventMap[T]> {
-    return this.events.wait(eventName);
-  }
-
-  public off<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    this.events.off(eventName, handler);
   }
 
   private subscribe() {

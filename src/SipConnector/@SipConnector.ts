@@ -6,6 +6,7 @@ import { CallManager } from '@/CallManager';
 import { ConnectionManager } from '@/ConnectionManager';
 import { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
+import { EventEmitterProxy } from '@/EventEmitterProxy';
 import { IncomingCallManager } from '@/IncomingCallManager';
 import logger from '@/logger';
 import { PeerToPeerManager } from '@/PeerToPeerManager';
@@ -25,11 +26,9 @@ import type { TGetUri, TRecvQuality } from '@/CallManager';
 import type { TContentHint, TOnAddedTransceiver } from '@/PresentationManager';
 import type { TJsSIP } from '@/types';
 import type { IBalancerOptions } from '@/VideoSendingBalancer';
-import type { TEventName, TEventMap, TEvents } from './events';
+import type { TEventName, TEventMap } from './events';
 
-class SipConnector {
-  public readonly events: TEvents;
-
+class SipConnector extends EventEmitterProxy<TEventMap> {
   public readonly connectionManager: ConnectionManager;
 
   public readonly connectionQueueManager: ConnectionQueueManager;
@@ -76,10 +75,10 @@ class SipConnector {
       autoConnectorOptions?: IAutoConnectorOptions;
     } = {},
   ) {
+    super(createEvents());
+
     this.preferredMimeTypesVideoCodecs = preferredMimeTypesVideoCodecs;
     this.excludeMimeTypesVideoCodecs = excludeMimeTypesVideoCodecs;
-
-    this.events = createEvents();
     this.apiManager = new ApiManager();
     this.connectionManager = new ConnectionManager({ JsSIP });
     this.connectionQueueManager = new ConnectionQueueManager({
@@ -186,29 +185,6 @@ class SipConnector {
 
   private get isDirectP2PRoom(): boolean {
     return this.callManager.isDirectP2PRoom;
-  }
-
-  public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    return this.events.on(eventName, handler);
-  }
-
-  public once<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    return this.events.once(eventName, handler);
-  }
-
-  public onceRace<T extends keyof TEventMap>(
-    eventNames: T[],
-    handler: (data: TEventMap[T], eventName: string) => void,
-  ) {
-    return this.events.onceRace(eventNames, handler);
-  }
-
-  public async wait<T extends keyof TEventMap>(eventName: T): Promise<TEventMap[T]> {
-    return this.events.wait(eventName);
-  }
-
-  public off<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    this.events.off(eventName, handler);
   }
 
   public connect: ConnectionManager['connect'] = async (...args) => {

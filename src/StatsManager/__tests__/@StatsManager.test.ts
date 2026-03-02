@@ -118,17 +118,17 @@ describe('StatsManager', () => {
     const handler = jest.fn();
     const eventName = 'collected' as const;
 
-    const onSpy = jest.spyOn(manager.statsPeerConnection, 'on');
+    const onSpy = jest.spyOn(manager.statsPeerConnection.events, 'on');
 
     manager.on(eventName, handler);
     expect(onSpy).toHaveBeenCalledWith(eventName, handler);
 
-    const onceSpy = jest.spyOn(manager.statsPeerConnection, 'once');
+    const onceSpy = jest.spyOn(manager.statsPeerConnection.events, 'once');
 
     manager.once(eventName, handler);
     expect(onceSpy).toHaveBeenCalledWith(eventName, handler);
 
-    const onceRaceSpy = jest.spyOn(manager.statsPeerConnection, 'onceRace');
+    const onceRaceSpy = jest.spyOn(manager.statsPeerConnection.events, 'onceRace');
 
     manager.onceRace([eventName], (data, eventName_) => {
       handler(data, eventName_);
@@ -137,14 +137,14 @@ describe('StatsManager', () => {
 
     const fakeEventData = { outbound: {}, inbound: {} };
     const waitSpy = jest
-      .spyOn(manager.statsPeerConnection, 'wait')
+      .spyOn(manager.statsPeerConnection.events, 'wait')
       // @ts-expect-error
       .mockResolvedValue(fakeEventData);
 
     await expect(manager.wait(eventName)).resolves.toBe(fakeEventData);
     expect(waitSpy).toHaveBeenCalledWith(eventName);
 
-    const offSpy = jest.spyOn(manager.statsPeerConnection, 'off');
+    const offSpy = jest.spyOn(manager.statsPeerConnection.events, 'off');
 
     manager.off(eventName, handler);
     expect(offSpy).toHaveBeenCalled();

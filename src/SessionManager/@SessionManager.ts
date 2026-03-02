@@ -1,3 +1,4 @@
+import { EventEmitterProxy } from '@/EventEmitterProxy';
 import { createEvents, EEvent } from './events';
 
 import type { Subscription } from 'xstate';
@@ -5,7 +6,7 @@ import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
 import type { IncomingCallManager } from '@/IncomingCallManager';
 import type { PresentationManager } from '@/PresentationManager';
-import type { TEventMap, TEvents } from './events';
+import type { TEventMap } from './events';
 import type { TSessionMachines, TSessionSnapshot } from './types';
 
 type TEqualityFunction<T> = (previous: T, next: T) => boolean;
@@ -31,9 +32,7 @@ const collectSnapshot = (machines: TSessionMachines): TSessionSnapshot => {
   };
 };
 
-class SessionManager {
-  public readonly events: TEvents;
-
+class SessionManager extends EventEmitterProxy<TEventMap> {
   public readonly machines: TSessionMachines;
 
   private currentSnapshot: TSessionSnapshot;
@@ -48,7 +47,7 @@ class SessionManager {
   private readonly actorSubscriptions: Subscription[] = [];
 
   public constructor(deps: TSessionManagerDeps) {
-    this.events = createEvents();
+    super(createEvents());
 
     this.machines = {
       connection: deps.connectionManager.stateMachine,
@@ -116,14 +115,6 @@ class SessionManager {
     this.actorSubscriptions.forEach((subscription) => {
       subscription.unsubscribe();
     });
-  }
-
-  public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    return this.events.on(eventName, handler);
-  }
-
-  public off<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    this.events.off(eventName, handler);
   }
 
   private readonly notifySubscribers = () => {

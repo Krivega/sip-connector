@@ -1,3 +1,4 @@
+import { EventEmitterProxy } from '@/EventEmitterProxy';
 import logger from '@/logger';
 import ConfigurationManager from './ConfigurationManager';
 import ConnectionFlow from './ConnectionFlow';
@@ -13,7 +14,7 @@ import type { TGetUri } from '@/CallManager';
 import type { TJsSIP } from '@/types';
 import type { TConnectionConfiguration } from './ConfigurationManager';
 import type { TConnect, TParametersConnection, TSet } from './ConnectionFlow';
-import type { TEventMap, TEvents } from './events';
+import type { TEventMap } from './events';
 import type { TParametersCheckTelephony } from './SipOperations';
 
 type TConnectParameters = (() => Promise<TParametersConnection>) | TParametersConnection;
@@ -21,9 +22,7 @@ type TConnectOptions = Parameters<TConnect>[1] & {
   hasReadyForConnection?: () => boolean;
 };
 
-export default class ConnectionManager {
-  public readonly events: TEvents;
-
+export default class ConnectionManager extends EventEmitterProxy<TEventMap> {
   public readonly stateMachine: ConnectionStateMachine;
 
   public ua?: UA;
@@ -41,7 +40,8 @@ export default class ConnectionManager {
   private readonly configurationManager: ConfigurationManager;
 
   public constructor({ JsSIP }: { JsSIP: TJsSIP }) {
-    this.events = createEvents();
+    super(createEvents());
+
     this.uaFactory = new UAFactory(JsSIP);
     this.registrationManager = new RegistrationManager({
       events: this.events,
@@ -177,29 +177,6 @@ export default class ConnectionManager {
   public checkTelephony = async (parameters: TParametersCheckTelephony) => {
     return this.sipOperations.checkTelephony(parameters);
   };
-
-  public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    return this.events.on(eventName, handler);
-  }
-
-  public once<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    return this.events.once(eventName, handler);
-  }
-
-  public onceRace<T extends keyof TEventMap>(
-    eventNames: T[],
-    handler: (data: TEventMap[T], eventName: string) => void,
-  ) {
-    return this.events.onceRace(eventNames, handler);
-  }
-
-  public async wait<T extends keyof TEventMap>(eventName: T): Promise<TEventMap[T]> {
-    return this.events.wait(eventName);
-  }
-
-  public off<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    this.events.off(eventName, handler);
-  }
 
   public isConfigured() {
     return this.configurationManager.isConfigured();

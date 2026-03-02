@@ -1,4 +1,5 @@
 /* eslint-disable default-case */
+import { EventEmitterProxy } from '@/EventEmitterProxy';
 import logger from '@/logger';
 import { hasDeclineResponseFromServer } from '@/utils/errors';
 import {
@@ -25,7 +26,7 @@ import type {
 } from '@krivega/jssip';
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
-import type { TEventMap, TEvents } from './events';
+import type { TEventMap } from './events';
 import type {
   TAcceptingWordRequestInfoNotify,
   TAddedToListModeratorsInfoNotify,
@@ -46,13 +47,11 @@ import type {
   TWebcastStoppedInfoNotify,
 } from './types';
 
-class ApiManager {
-  public readonly events: TEvents;
-
+class ApiManager extends EventEmitterProxy<TEventMap> {
   private callManager?: CallManager;
 
   public constructor() {
-    this.events = createEvents();
+    super(createEvents());
   }
 
   public subscribe({
@@ -239,29 +238,6 @@ class ApiManager {
           throw error;
         }
       });
-  }
-
-  public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    return this.events.on(eventName, handler);
-  }
-
-  public once<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    return this.events.once(eventName, handler);
-  }
-
-  public onceRace<T extends keyof TEventMap>(
-    eventNames: T[],
-    handler: (data: TEventMap[T], eventName: string) => void,
-  ) {
-    return this.events.onceRace(eventNames, handler);
-  }
-
-  public async wait<T extends keyof TEventMap>(eventName: T): Promise<TEventMap[T]> {
-    return this.events.wait(eventName);
-  }
-
-  public off<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    this.events.off(eventName, handler);
   }
 
   private readonly getEstablishedRTCSessionProtected = () => {

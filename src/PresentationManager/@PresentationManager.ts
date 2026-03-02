@@ -1,5 +1,6 @@
 import { hasCanceledError, repeatedCallsAsync } from 'repeated-calls';
 
+import { EventEmitterProxy } from '@/EventEmitterProxy';
 import prepareMediaStream from '@/tools/prepareMediaStream';
 import { setMaxBitrateToSender } from '@/tools/setParametersToSender';
 import { createEvents, EEvent } from './events';
@@ -7,7 +8,7 @@ import { PresentationStateMachine } from './PresentationStateMachine';
 
 import type { RTCSession } from '@krivega/jssip';
 import type { CallManager } from '@/CallManager';
-import type { TEventMap, TEvents } from './events';
+import type { TEventMap } from './events';
 import type { TContentHint, TOnAddedTransceiver } from './types';
 
 const SEND_PRESENTATION_CALL_LIMIT = 1;
@@ -16,9 +17,7 @@ export const hasCanceledStartPresentationError = (error: unknown) => {
   return hasCanceledError(error);
 };
 
-class PresentationManager {
-  public readonly events: TEvents;
-
+class PresentationManager extends EventEmitterProxy<TEventMap> {
   public readonly stateMachine: PresentationStateMachine;
 
   public promisePendingStartPresentation?: Promise<MediaStream>;
@@ -42,9 +41,10 @@ class PresentationManager {
     callManager: CallManager;
     maxBitrate?: number;
   }) {
+    super(createEvents());
+
     this.callManager = callManager;
     this.maxBitrate = maxBitrate;
-    this.events = createEvents();
     this.stateMachine = new PresentationStateMachine(this.callManager.events);
     this.subscribe();
   }
@@ -168,29 +168,6 @@ class PresentationManager {
 
   public cancelSendPresentationWithRepeatedCalls() {
     this.cancelableSendPresentationWithRepeatedCalls?.stopRepeatedCalls();
-  }
-
-  public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    return this.events.on(eventName, handler);
-  }
-
-  public once<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    return this.events.once(eventName, handler);
-  }
-
-  public onceRace<T extends keyof TEventMap>(
-    eventNames: T[],
-    handler: (data: TEventMap[T], eventName: string) => void,
-  ) {
-    return this.events.onceRace(eventNames, handler);
-  }
-
-  public async wait<T extends keyof TEventMap>(eventName: T): Promise<TEventMap[T]> {
-    return this.events.wait(eventName);
-  }
-
-  public off<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    this.events.off(eventName, handler);
   }
 
   private subscribe() {

@@ -3,6 +3,7 @@ import { DelayRequester, hasCanceledError } from '@krivega/timeout-requester';
 
 import { hasNotReadyForConnectionError } from '@/ConnectionManager';
 import { hasConnectionPromiseIsNotActualError } from '@/ConnectionQueueManager';
+import { EventEmitterProxy } from '@/EventEmitterProxy';
 import logger from '@/logger';
 import AttemptsState from './AttemptsState';
 import CheckTelephonyRequester from './CheckTelephonyRequester';
@@ -14,7 +15,7 @@ import RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCall
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
 import type { ConnectionQueueManager } from '@/ConnectionQueueManager';
-import type { TEventMap, TEvents } from './events';
+import type { TEventMap } from './events';
 import type {
   IAutoConnectorOptions,
   TNetworkInterfacesSubscriber,
@@ -36,9 +37,7 @@ const defaultCanRetryOnError = (_error: unknown): boolean => {
   return true;
 };
 
-class AutoConnectorManager {
-  public readonly events: TEvents;
-
+class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   private readonly connectionManager: ConnectionManager;
 
   private readonly connectionQueueManager: ConnectionQueueManager;
@@ -77,6 +76,8 @@ class AutoConnectorManager {
     },
     options?: IAutoConnectorOptions,
   ) {
+    super(createEvents());
+
     const onBeforeRetry = options?.onBeforeRetry ?? asyncNoop;
     const canRetryOnError = options?.canRetryOnError ?? defaultCanRetryOnError;
 
@@ -87,7 +88,6 @@ class AutoConnectorManager {
     this.networkInterfacesSubscriber = options?.networkInterfacesSubscriber;
     this.resumeFromSleepModeSubscriber = options?.resumeFromSleepModeSubscriber;
 
-    this.events = createEvents();
     this.checkTelephonyRequester = new CheckTelephonyRequester({
       connectionManager,
       interval: options?.checkTelephonyRequestInterval ?? DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL,
@@ -125,29 +125,6 @@ class AutoConnectorManager {
     this.stopConnectionFlow().catch((error: unknown) => {
       logger('auto connector stop from stop method: error', error);
     });
-  }
-
-  public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    return this.events.on(eventName, handler);
-  }
-
-  public once<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    return this.events.once(eventName, handler);
-  }
-
-  public onceRace<T extends keyof TEventMap>(
-    eventNames: T[],
-    handler: (data: TEventMap[T], eventName: string) => void,
-  ) {
-    return this.events.onceRace(eventNames, handler);
-  }
-
-  public async wait<T extends keyof TEventMap>(eventName: T): Promise<TEventMap[T]> {
-    return this.events.wait(eventName);
-  }
-
-  public off<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    this.events.off(eventName, handler);
   }
 
   private restartConnectionAttempts(parameters: TParametersAutoConnect) {

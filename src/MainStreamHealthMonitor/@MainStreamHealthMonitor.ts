@@ -1,20 +1,19 @@
+import { EventEmitterProxy } from '@/EventEmitterProxy';
 import { createEvents, NO_INBOUND_FRAMES_EVENT_NAME } from './events';
 
 import type { CallManager } from '@/CallManager';
 import type { StatsManager } from '@/StatsManager';
-import type { TEventMap, TEvents } from './events';
+import type { TEventMap } from './events';
 
-class MainStreamHealthMonitor {
-  public readonly events: TEvents;
-
+class MainStreamHealthMonitor extends EventEmitterProxy<TEventMap> {
   private readonly statsManager: StatsManager;
 
   private readonly callManager: CallManager;
 
   public constructor(statsManager: StatsManager, callManager: CallManager) {
+    super(createEvents());
     this.statsManager = statsManager;
     this.callManager = callManager;
-    this.events = createEvents();
 
     this.subscribe();
   }
@@ -33,10 +32,6 @@ class MainStreamHealthMonitor {
     }
 
     return mainVideoTrack.muted;
-  }
-
-  public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    return this.events.on(eventName, handler);
   }
 
   private readonly handleStatsCollected = () => {

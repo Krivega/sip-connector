@@ -1,5 +1,6 @@
 import { C as JsSIP_C, IncomingResponse } from '@krivega/jssip';
 
+import { EventEmitterProxy } from '@/EventEmitterProxy';
 import { DeferredCommandRunner } from '@/tools';
 import { CallStateMachine, EState } from './CallStateMachine';
 import { createEvents, EEvent } from './events';
@@ -14,7 +15,7 @@ import { StreamsManagerProvider } from './StreamsManagerProvider';
 import type { RTCSession } from '@krivega/jssip';
 import type { ApiManager } from '@/ApiManager';
 import type { ContentedStreamManager } from '@/ContentedStreamManager';
-import type { TEventMap, TEvents } from './events';
+import type { TEventMap } from './events';
 import type { TRestartIceOptions } from './MCUSession';
 import type { TEffectiveQuality, TRecvQuality } from './quality';
 import type { TTools } from './RecvSession';
@@ -46,9 +47,7 @@ export function getInRoomTokenOrThrow(stateMachine: CallStateMachine): string {
   return inRoomContext.token;
 }
 
-class CallManager {
-  public readonly events: TEvents;
-
+class CallManager extends EventEmitterProxy<TEventMap> {
   public readonly stateMachine: CallStateMachine;
 
   protected isPendingCall = false;
@@ -86,9 +85,10 @@ class CallManager {
     { contentedStreamManager }: { contentedStreamManager: ContentedStreamManager },
     tools: TTools,
   ) {
+    super(createEvents());
+
     this.contentedStreamManager = contentedStreamManager;
     this.tools = tools;
-    this.events = createEvents();
     this.mcuSession = new MCUSession(this.events, { onReset: this.reset });
     this.stateMachine = new CallStateMachine(this.events);
     this.streamsManagerProvider = new StreamsManagerProvider(
@@ -158,36 +158,6 @@ class CallManager {
   public getEstablishedRTCSession = (): RTCSession | undefined => {
     return this.mcuSession.getEstablishedRTCSession();
   };
-
-  public on<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    return this.events.on(eventName, handler);
-  }
-
-  public onRace<T extends keyof TEventMap>(
-    eventNames: T[],
-    handler: (data: TEventMap[T], eventName: string) => void,
-  ) {
-    return this.events.onRace(eventNames, handler);
-  }
-
-  public once<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    return this.events.once(eventName, handler);
-  }
-
-  public onceRace<T extends keyof TEventMap>(
-    eventNames: T[],
-    handler: (data: TEventMap[T], eventName: string) => void,
-  ) {
-    return this.events.onceRace(eventNames, handler);
-  }
-
-  public async wait<T extends keyof TEventMap>(eventName: T): Promise<TEventMap[T]> {
-    return this.events.wait(eventName);
-  }
-
-  public off<T extends keyof TEventMap>(eventName: T, handler: (data: TEventMap[T]) => void) {
-    this.events.off(eventName, handler);
-  }
 
   public subscribeToApiEvents(apiManager: ApiManager): void {
     this.stateMachine.subscribeToApiEvents(apiManager.events);
