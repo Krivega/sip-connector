@@ -9,6 +9,7 @@ export type TMedia = {
 export type TSynchronizationSources = {
   audio: TMedia;
   video: TMedia;
+  secondVideo?: TMedia;
 };
 
 export type TCandidatePair = RTCIceCandidatePairStats & {

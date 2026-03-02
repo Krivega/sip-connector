@@ -31,9 +31,15 @@ const requestAllStatistics = async (peerConnection: RTCPeerConnection) => {
     item: videoReceivers[0]?.getSynchronizationSources()[0],
   };
 
+  const synchronizationSourceSecondVideo = {
+    trackIdentifier: videoReceivers[1]?.track.id,
+    item: videoReceivers[1]?.getSynchronizationSources()[0],
+  };
+
   const synchronizationSources: TSynchronizationSources = {
     audio: synchronizationSourceAudio,
     video: synchronizationSourceFirstVideo,
+    secondVideo: synchronizationSourceSecondVideo,
   };
 
   return Promise.all<RTCStatsReport | undefined>([

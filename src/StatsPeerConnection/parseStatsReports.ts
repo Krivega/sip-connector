@@ -165,7 +165,8 @@ const getInboundStatisticsReport = ({
     }),
     secondVideo: getInboundVideoStatisticsReport({
       videoReceiversStats: videoReceiverSecondStats,
-      synchronizationSourcesVideo: synchronizationSources.video,
+      synchronizationSourcesVideo:
+        synchronizationSources.secondVideo ?? synchronizationSources.video,
     }),
     audio: getInboundAudioStatisticsReport({
       audioReceiverStats,

@@ -92,6 +92,11 @@ describe('requestAllStatistics', () => {
       trackIdentifier: 'video1-track-id',
       item: { ssrc: 'v1-ssrc' },
     });
+
+    expect(result.synchronizationSources.secondVideo).toEqual({
+      trackIdentifier: 'video2-track-id',
+      item: { ssrc: 'v2-ssrc' },
+    });
   });
 
   it('#2 handles missing second video sender/receiver (undefined stats and sync present for first only)', async () => {
@@ -136,6 +141,11 @@ describe('requestAllStatistics', () => {
       trackIdentifier: 'video1-track-id',
       item: { ssrc: 'v1-ssrc' },
     });
+
+    expect(result.synchronizationSources.secondVideo).toEqual({
+      trackIdentifier: undefined,
+      item: undefined,
+    });
   });
 
   it('#3 handles absence of receivers and senders gracefully', async () => {
@@ -163,6 +173,11 @@ describe('requestAllStatistics', () => {
     });
 
     expect(result.synchronizationSources.video).toEqual({
+      trackIdentifier: undefined,
+      item: undefined,
+    });
+
+    expect(result.synchronizationSources.secondVideo).toEqual({
       trackIdentifier: undefined,
       item: undefined,
     });

@@ -932,6 +932,14 @@ export const synchronizationSources = {
       timestamp: 543_543_534_634,
     },
   },
+  secondVideo: {
+    trackIdentifier: 'trackIdentifier secondVideo',
+    item: {
+      rtpTimestamp: 3_456_789,
+      source: 34_567_890,
+      timestamp: 654_654_654_654,
+    },
+  },
 };
 
 const additional = {

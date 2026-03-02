@@ -22,7 +22,7 @@ describe('parseStatsReports', () => {
 
     expect(inbound.audio.synchronizationSources).toEqual(synchronizationSources.audio);
     expect(inbound.video.synchronizationSources).toEqual(synchronizationSources.video);
-    expect(inbound.secondVideo.synchronizationSources).toEqual(synchronizationSources.video);
+    expect(inbound.secondVideo.synchronizationSources).toEqual(synchronizationSources.secondVideo);
 
     expect(inbound.audio.codec).toBe(undefined);
     expect(inbound.audio.inboundRtp).toBe(undefined);
@@ -399,5 +399,62 @@ describe('parseStatsReports', () => {
       audioSenderStats[EStatsTypes.REMOTE_CANDIDATE],
     );
     expect(outbound.additional.transport).toBe(audioSenderStats.transport);
+  });
+
+  it('#9 secondVideo falls back to first video sync sources when secondVideo not provided', () => {
+    const firstVideoSyncSources = {
+      trackIdentifier: 'first-video-track-id',
+      item: {
+        rtpTimestamp: 100,
+        source: 1_111_111,
+        timestamp: 1_000_000,
+      },
+    };
+
+    const synchronizationSourcesFirstVideoOnly = {
+      audio: synchronizationSources.audio,
+      video: firstVideoSyncSources,
+    };
+
+    const { inbound } = parseStatsReports({
+      synchronizationSources: synchronizationSourcesFirstVideoOnly,
+      videoReceiverFirstStats: addObjectToMap(videoReceiverFirstStats),
+      videoReceiverSecondStats: addObjectToMap(videoReceiverSecondStats),
+    });
+
+    expect(inbound.video.synchronizationSources).toEqual(firstVideoSyncSources);
+
+    expect(inbound.secondVideo.synchronizationSources).toEqual(firstVideoSyncSources);
+    expect(inbound.secondVideo.synchronizationSources?.trackIdentifier).toBe(
+      'first-video-track-id',
+    );
+    expect(inbound.secondVideo.synchronizationSources?.item?.source).toBe(1_111_111);
+  });
+
+  it('#10 secondVideo receives its own sync sources when provided', () => {
+    const firstVideoSyncSources = {
+      trackIdentifier: 'first-video-track-id',
+      item: { rtpTimestamp: 100, source: 1_111_111, timestamp: 1_000_000 },
+    };
+
+    const secondVideoSyncSources = {
+      trackIdentifier: 'second-video-track-id',
+      item: { rtpTimestamp: 200, source: 2_222_222, timestamp: 2_000_000 },
+    };
+
+    const synchronizationSourcesWithSecondVideo = {
+      audio: synchronizationSources.audio,
+      video: firstVideoSyncSources,
+      secondVideo: secondVideoSyncSources,
+    };
+
+    const { inbound } = parseStatsReports({
+      synchronizationSources: synchronizationSourcesWithSecondVideo,
+      videoReceiverFirstStats: addObjectToMap(videoReceiverFirstStats),
+      videoReceiverSecondStats: addObjectToMap(videoReceiverSecondStats),
+    });
+
+    expect(inbound.video.synchronizationSources).toEqual(firstVideoSyncSources);
+    expect(inbound.secondVideo.synchronizationSources).toEqual(secondVideoSyncSources);
   });
 });
