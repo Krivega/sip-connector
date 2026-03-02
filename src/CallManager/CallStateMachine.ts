@@ -64,7 +64,7 @@ type TCallEvent =
       token?: string;
       isDirectPeerToPeer?: boolean;
     }
-  | { type: 'CALL.TOKEN_ISSUED'; token: string }
+  | { type: 'CALL.TOKEN_ISSUED'; token: string; conference: string; participant: string }
   | { type: 'CALL.START_DISCONNECT' }
   | { type: 'CALL.RESET' };
 
@@ -145,6 +145,8 @@ const clearCallContext = (): Partial<TContext> & Partial<TIdleContext> => {
     room: undefined,
     participantName: undefined,
     token: undefined,
+    conference: undefined,
+    participant: undefined,
     isDirectPeerToPeer: undefined,
     pendingDisconnect: undefined,
   };
@@ -201,6 +203,8 @@ const callMachine = setup({
 
       return {
         token: event.token,
+        conference: event.conference,
+        participant: event.participant,
       };
     }),
     reset: assign(clearCallContext()),
@@ -501,9 +505,12 @@ export class CallStateMachine extends BaseStateMachine<
       }),
     );
     this.addSubscription(
-      apiManager.on('conference:participant-token-issued', ({ jwt: token }) => {
-        this.send({ type: 'CALL.TOKEN_ISSUED', token });
-      }),
+      apiManager.on(
+        'conference:participant-token-issued',
+        ({ jwt: token, conference, participant }) => {
+          this.send({ type: 'CALL.TOKEN_ISSUED', token, conference, participant });
+        },
+      ),
     );
   }
 
