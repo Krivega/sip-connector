@@ -1,4 +1,5 @@
-import { EventEmitterProxy } from '@/EventEmitterProxy';
+import { EventEmitterProxy } from 'events-constructor';
+
 import logger from '@/logger';
 import { StatsPeerConnection } from '@/StatsPeerConnection';
 import { MIN_RECEIVED_MAIN_STREAM_PACKETS } from './constants';

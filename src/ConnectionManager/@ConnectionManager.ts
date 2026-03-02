@@ -1,4 +1,5 @@
-import { EventEmitterProxy } from '@/EventEmitterProxy';
+import { EventEmitterProxy } from 'events-constructor';
+
 import logger from '@/logger';
 import ConfigurationManager from './ConfigurationManager';
 import ConnectionFlow from './ConnectionFlow';

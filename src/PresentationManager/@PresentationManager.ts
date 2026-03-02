@@ -1,6 +1,6 @@
+import { EventEmitterProxy } from 'events-constructor';
 import { hasCanceledError, repeatedCallsAsync } from 'repeated-calls';
 
-import { EventEmitterProxy } from '@/EventEmitterProxy';
 import prepareMediaStream from '@/tools/prepareMediaStream';
 import { setMaxBitrateToSender } from '@/tools/setParametersToSender';
 import { createEvents, EEvent } from './events';

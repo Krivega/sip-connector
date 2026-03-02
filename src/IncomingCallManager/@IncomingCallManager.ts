@@ -1,4 +1,5 @@
-import { EventEmitterProxy } from '@/EventEmitterProxy';
+import { EventEmitterProxy } from 'events-constructor';
+
 import { createEvents, EEvent } from './events';
 import { IncomingCallStateMachine } from './IncomingCallStateMachine';
 

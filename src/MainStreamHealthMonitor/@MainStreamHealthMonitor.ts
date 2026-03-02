@@ -1,4 +1,5 @@
-import { EventEmitterProxy } from '@/EventEmitterProxy';
+import { EventEmitterProxy } from 'events-constructor';
+
 import { createEvents, NO_INBOUND_FRAMES_EVENT_NAME } from './events';
 
 import type { CallManager } from '@/CallManager';

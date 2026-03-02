@@ -1,9 +1,9 @@
 import { CancelableRequest, isCanceledError } from '@krivega/cancelable-promise';
 import { DelayRequester, hasCanceledError } from '@krivega/timeout-requester';
+import { EventEmitterProxy } from 'events-constructor';
 
 import { hasNotReadyForConnectionError } from '@/ConnectionManager';
 import { hasConnectionPromiseIsNotActualError } from '@/ConnectionQueueManager';
-import { EventEmitterProxy } from '@/EventEmitterProxy';
 import logger from '@/logger';
 import AttemptsState from './AttemptsState';
 import CheckTelephonyRequester from './CheckTelephonyRequester';

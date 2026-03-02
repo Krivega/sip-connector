@@ -1,7 +1,7 @@
 import { CancelableRequest } from '@krivega/cancelable-promise';
 import { SetTimeoutRequest } from '@krivega/timeout-requester';
+import { EventEmitterProxy } from 'events-constructor';
 
-import { EventEmitterProxy } from '@/EventEmitterProxy';
 import log from '@/logger';
 import { INTERVAL_COLLECT_STATISTICS } from './constants';
 import { createEvents } from './events';

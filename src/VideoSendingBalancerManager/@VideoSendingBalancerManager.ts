@@ -1,4 +1,5 @@
-import { EventEmitterProxy } from '@/EventEmitterProxy';
+import { EventEmitterProxy } from 'events-constructor';
+
 import debug from '@/logger';
 import { VideoSendingBalancer } from '@/VideoSendingBalancer';
 import { createEvents } from './events';

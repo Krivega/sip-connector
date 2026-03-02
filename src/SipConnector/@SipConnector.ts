@@ -1,4 +1,5 @@
 import { C as JsSIP_C, IncomingResponse } from '@krivega/jssip';
+import { EventEmitterProxy } from 'events-constructor';
 
 import { ApiManager } from '@/ApiManager';
 import { AutoConnectorManager } from '@/AutoConnectorManager';
@@ -6,7 +7,6 @@ import { CallManager } from '@/CallManager';
 import { ConnectionManager } from '@/ConnectionManager';
 import { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
-import { EventEmitterProxy } from '@/EventEmitterProxy';
 import { IncomingCallManager } from '@/IncomingCallManager';
 import logger from '@/logger';
 import { PeerToPeerManager } from '@/PeerToPeerManager';

@@ -1,4 +1,5 @@
-import { EventEmitterProxy } from '@/EventEmitterProxy';
+import { EventEmitterProxy } from 'events-constructor';
+
 import { ContentedStreamStateMachine } from './ContentedStreamStateMachine';
 import { createEvents, EEvent } from './events';
 

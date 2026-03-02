@@ -1,6 +1,6 @@
 import { C as JsSIP_C, IncomingResponse } from '@krivega/jssip';
+import { EventEmitterProxy } from 'events-constructor';
 
-import { EventEmitterProxy } from '@/EventEmitterProxy';
 import { DeferredCommandRunner } from '@/tools';
 import { CallStateMachine, EState } from './CallStateMachine';
 import { createEvents, EEvent } from './events';

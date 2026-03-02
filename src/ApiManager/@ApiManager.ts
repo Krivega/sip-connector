@@ -1,5 +1,6 @@
 /* eslint-disable default-case */
-import { EventEmitterProxy } from '@/EventEmitterProxy';
+import { EventEmitterProxy } from 'events-constructor';
+
 import logger from '@/logger';
 import { hasDeclineResponseFromServer } from '@/utils/errors';
 import {
