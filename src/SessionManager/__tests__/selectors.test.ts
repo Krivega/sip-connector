@@ -102,6 +102,30 @@ describe('sessionSelectors', () => {
       expect(result.value).toBe(ECallStatus.IN_ROOM);
       expect(result.context).toEqual(call.context);
     });
+
+    it('возвращает token, conference и participant из context при IN_ROOM (данные из participant-token-issued)', () => {
+      const token = 'jwt-from-token-issued';
+      const conference = 'conf-123';
+      const participant = 'part-456';
+      const call = {
+        value: ECallStatus.IN_ROOM,
+        context: {
+          number: '100',
+          answer: false,
+          room: 'room-1',
+          participantName: 'User',
+          token,
+          conference,
+          participant,
+        },
+      };
+      const snapshot = createMockSnapshot({ call: call as never });
+
+      const result = sessionSelectors.selectCallState(snapshot);
+
+      expect(result).toEqual(call);
+      expect(result.context).toMatchObject({ token, conference, participant });
+    });
   });
 
   describe('selectCallStatus', () => {

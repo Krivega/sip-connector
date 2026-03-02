@@ -15,10 +15,14 @@ describe('CallStateMachine', () => {
   const token1Payload = { jwt: 'jwt1', conference: 'conf-1', participant: 'p-1' };
   const token1Context = {
     token: token1Payload.jwt,
+    conference: token1Payload.conference,
+    participant: token1Payload.participant,
   };
   const token2Payload = { jwt: 'jwt2', conference: 'conf-2', participant: 'p-2' };
   const token2Context = {
     token: token2Payload.jwt,
+    conference: token2Payload.conference,
+    participant: token2Payload.participant,
   };
   const room1Payload = { room: 'room-1', participantName: 'User' };
   const room2Payload = { room: 'room-2', participantName: 'User2' };
@@ -66,7 +70,7 @@ describe('CallStateMachine', () => {
         arrange: () => {
           machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
         },
-        event: { type: 'CALL.TOKEN_ISSUED', ...token1Payload },
+        event: { type: 'CALL.TOKEN_ISSUED', ...token1Context },
         expected: EState.CONNECTING,
       },
       {
@@ -141,7 +145,7 @@ describe('CallStateMachine', () => {
         arrange: () => {
           machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
           machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
-          machine.send({ type: 'CALL.TOKEN_ISSUED', token: token1Context.token });
+          machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
         },
         event: { type: 'CALL.START_DISCONNECT' },
         expected: EState.DISCONNECTING,
@@ -178,7 +182,7 @@ describe('CallStateMachine', () => {
         arrange: () => {
           machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
           machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
-          machine.send({ type: 'CALL.TOKEN_ISSUED', token: token1Context.token });
+          machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
           machine.send({ type: 'CALL.START_DISCONNECT' });
         },
         event: { type: 'CALL.RESET' },
@@ -247,7 +251,7 @@ describe('CallStateMachine', () => {
       expect(machine.isInRoom).toBe(false);
       machine.send({ type: 'CALL.ENTER_ROOM', ...purgatoryPayload });
       expect(machine.isInRoom).toBe(false);
-      machine.send({ type: 'CALL.TOKEN_ISSUED', token: token1Context.token });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
       expect(machine.isInRoom).toBe(true);
     });
 
@@ -257,7 +261,7 @@ describe('CallStateMachine', () => {
       expect(machine.isInPurgatory).toBe(false);
       machine.send({ type: 'CALL.ENTER_ROOM', ...purgatoryPayload });
       expect(machine.isInPurgatory).toBe(true);
-      machine.send({ type: 'CALL.TOKEN_ISSUED', token: token1Context.token });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
       expect(machine.isInPurgatory).toBe(false);
     });
 
@@ -267,7 +271,7 @@ describe('CallStateMachine', () => {
       expect(machine.isP2PRoom).toBe(false);
       machine.send({ type: 'CALL.ENTER_ROOM', ...p2pRoomPayload });
       expect(machine.isP2PRoom).toBe(true);
-      machine.send({ type: 'CALL.TOKEN_ISSUED', token: token1Context.token });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
       expect(machine.isP2PRoom).toBe(false);
     });
 
@@ -277,7 +281,7 @@ describe('CallStateMachine', () => {
       expect(machine.isDirectP2PRoom).toBe(false);
       machine.send({ type: 'CALL.ENTER_ROOM', ...directP2pRoomPayload });
       expect(machine.isDirectP2PRoom).toBe(true);
-      machine.send({ type: 'CALL.TOKEN_ISSUED', token: token1Context.token });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
       expect(machine.isDirectP2PRoom).toBe(false);
     });
 
@@ -285,7 +289,7 @@ describe('CallStateMachine', () => {
       expect(machine.isDisconnecting).toBe(false);
       machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
       machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
-      machine.send({ type: 'CALL.TOKEN_ISSUED', token: token1Context.token });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
       expect(machine.isDisconnecting).toBe(false);
       machine.send({ type: 'CALL.START_DISCONNECT' });
       expect(machine.isDisconnecting).toBe(true);
@@ -298,7 +302,7 @@ describe('CallStateMachine', () => {
       expect(machine.isActive).toBe(false);
       machine.send({ type: 'CALL.ENTER_ROOM', ...purgatoryPayload });
       expect(machine.isActive).toBe(true);
-      machine.send({ type: 'CALL.TOKEN_ISSUED', token: token1Context.token });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
       expect(machine.isActive).toBe(true);
       machine.send({ type: 'CALL.RESET' });
       machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
@@ -364,7 +368,7 @@ describe('CallStateMachine', () => {
     it('возвращает undefined в DISCONNECTING (не IN_ROOM)', () => {
       machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
       machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
-      machine.send({ type: 'CALL.TOKEN_ISSUED', token: token1Context.token });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
       expect(machine.state).toBe(EState.IN_ROOM);
       expect(machine.inRoomContext).toBeDefined();
 
@@ -378,10 +382,7 @@ describe('CallStateMachine', () => {
     it('возвращает контекст типа TInRoomContext в IN_ROOM со всеми полями', () => {
       machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
       machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
-      machine.send({
-        type: 'CALL.TOKEN_ISSUED',
-        token: token1Context.token,
-      });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
 
       expect(machine.state).toBe(EState.IN_ROOM);
 
@@ -403,10 +404,7 @@ describe('CallStateMachine', () => {
     it('возвращает обновлённый контекст при смене room в IN_ROOM', () => {
       machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
       machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
-      machine.send({
-        type: 'CALL.TOKEN_ISSUED',
-        token: token1Context.token,
-      });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
 
       expect(machine.inRoomContext?.room).toBe(room1Payload.room);
 
@@ -420,17 +418,11 @@ describe('CallStateMachine', () => {
     it('возвращает обновлённый контекст при смене token в IN_ROOM', () => {
       machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
       machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
-      machine.send({
-        type: 'CALL.TOKEN_ISSUED',
-        token: token1Context.token,
-      });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
 
       expect(machine.inRoomContext?.token).toBe(token1Context.token);
 
-      machine.send({
-        type: 'CALL.TOKEN_ISSUED',
-        token: token2Context.token,
-      });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token2Context });
 
       expect(machine.inRoomContext).toBeDefined();
       expect(machine.inRoomContext?.token).toBe(token2Context.token);
@@ -439,10 +431,7 @@ describe('CallStateMachine', () => {
     it('возвращает undefined после перехода из IN_ROOM в IDLE по RESET', () => {
       machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
       machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
-      machine.send({
-        type: 'CALL.TOKEN_ISSUED',
-        token: token1Context.token,
-      });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
 
       expect(machine.inRoomContext).toBeDefined();
 
@@ -552,7 +541,7 @@ describe('CallStateMachine', () => {
     it('должен переходить в DISCONNECTING при событии end-call из IN_ROOM', () => {
       events.trigger('start-call', connectPayload);
       machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
-      machine.send({ type: 'CALL.TOKEN_ISSUED', token: token1Context.token });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
       expect(machine.state).toBe(EState.IN_ROOM);
 
       events.trigger('end-call');
@@ -582,7 +571,7 @@ describe('CallStateMachine', () => {
     it('должен переходить в IDLE из DISCONNECTING при событии ended', () => {
       events.trigger('start-call', connectPayload);
       machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
-      machine.send({ type: 'CALL.TOKEN_ISSUED', token: token1Context.token });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
       events.trigger('end-call');
       expect(machine.state).toBe(EState.DISCONNECTING);
 
@@ -595,7 +584,7 @@ describe('CallStateMachine', () => {
     it('должен переходить в IDLE из DISCONNECTING при событии failed', () => {
       events.trigger('start-call', connectPayload);
       machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
-      machine.send({ type: 'CALL.TOKEN_ISSUED', token: token1Context.token });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
       events.trigger('end-call');
       expect(machine.state).toBe(EState.DISCONNECTING);
 
@@ -779,7 +768,7 @@ describe('CallStateMachine', () => {
       machine.send({ type: 'CALL.ENTER_ROOM', ...purgatoryPayload });
       expect(machine.state).toBe(EState.PURGATORY);
 
-      machine.send({ type: 'CALL.TOKEN_ISSUED', token: token1Context.token });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
 
       expect(machine.state).toBe(EState.IN_ROOM);
       expect(machine.inRoomContext?.token).toBe(token1Context.token);
@@ -805,7 +794,7 @@ describe('CallStateMachine', () => {
     it('IN_ROOM -> PURGATORY: по CALL.ENTER_ROOM с room purgatory без token', () => {
       machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
       machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
-      machine.send({ type: 'CALL.TOKEN_ISSUED', token: token1Context.token });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
       expect(machine.state).toBe(EState.IN_ROOM);
 
       machine.send({ type: 'CALL.ENTER_ROOM', ...purgatoryPayload });
@@ -825,7 +814,7 @@ describe('CallStateMachine', () => {
       machine.send({ type: 'CALL.ENTER_ROOM', ...p2pRoomPayload });
       expect(machine.state).toBe(EState.P2P_ROOM);
 
-      machine.send({ type: 'CALL.TOKEN_ISSUED', token: token1Context.token });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
 
       expect(machine.state).toBe(EState.IN_ROOM);
       expect(machine.inRoomContext?.token).toBe(token1Context.token);
@@ -851,7 +840,7 @@ describe('CallStateMachine', () => {
     it('IN_ROOM -> P2P_ROOM: по CALL.ENTER_ROOM с p2p комнатой без token', () => {
       machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
       machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
-      machine.send({ type: 'CALL.TOKEN_ISSUED', token: token1Context.token });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
       expect(machine.state).toBe(EState.IN_ROOM);
 
       machine.send({ type: 'CALL.ENTER_ROOM', ...p2pRoomPayload });
@@ -871,7 +860,7 @@ describe('CallStateMachine', () => {
       machine.send({ type: 'CALL.ENTER_ROOM', ...directP2pRoomPayload });
       expect(machine.state).toBe(EState.DIRECT_P2P_ROOM);
 
-      machine.send({ type: 'CALL.TOKEN_ISSUED', token: token1Context.token });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
 
       expect(machine.state).toBe(EState.IN_ROOM);
       expect(machine.inRoomContext?.token).toBe(token1Context.token);
@@ -897,7 +886,7 @@ describe('CallStateMachine', () => {
     it('IN_ROOM -> DIRECT_P2P_ROOM: по CALL.ENTER_ROOM с p2p комнатой без token', () => {
       machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
       machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
-      machine.send({ type: 'CALL.TOKEN_ISSUED', token: token1Context.token });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
       expect(machine.state).toBe(EState.IN_ROOM);
 
       machine.send({ type: 'CALL.ENTER_ROOM', ...directP2pRoomPayload });
