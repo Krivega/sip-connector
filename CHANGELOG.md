@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [26.5.0](https://github.com/Krivega/sip-connector/compare/v26.4.1...v26.5.0) (2026-03-02)
+
+### Features
+
+- add support for second video synchronization sources ([644a427](https://github.com/Krivega/sip-connector/commit/644a4270bd380869f5e140d2d034675873e4ed2d))
+
 ### [26.4.1](https://github.com/Krivega/sip-connector/compare/v26.4.0...v26.4.1) (2026-03-02)
 
 ### Bug Fixes
