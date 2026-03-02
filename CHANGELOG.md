@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [26.4.1](https://github.com/Krivega/sip-connector/compare/v26.4.0...v26.4.1) (2026-03-02)
+
+### Bug Fixes
+
+- set conference and participant fields in call state ([#71](https://github.com/Krivega/sip-connector/issues/71)) ([873349b](https://github.com/Krivega/sip-connector/commit/873349bedc915345b9ebe14a3f5021f144b4a89f))
+
 ## [26.4.0](https://github.com/Krivega/sip-connector/compare/v26.3.2...v26.4.0) (2026-02-27)
 
 ### Features
