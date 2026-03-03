@@ -30,6 +30,40 @@ import type {
   TRemoteStreams,
 } from './types';
 
+const UDP_PROTOCOL = 'udp' as const;
+
+const getLocalCandidatesFromReceiver = (receiver: RTCRtpReceiver): RTCIceCandidate[] => {
+  if (receiver.transport?.iceTransport) {
+    // @ts-expect-error
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
+    return receiver.transport.iceTransport.getLocalCandidates();
+  }
+
+  return [];
+};
+
+const getLocalCandidatesFromPeerConnection = (
+  peerConnection: RTCPeerConnection,
+): RTCIceCandidate[] => {
+  const receivers = peerConnection.getReceivers();
+
+  return receivers.flatMap(getLocalCandidatesFromReceiver);
+};
+
+const getLocalPortsFromPeerConnection = (peerConnection: RTCPeerConnection): number[] => {
+  const allLocalCandidates = getLocalCandidatesFromPeerConnection(peerConnection);
+
+  const localCandidatesWithValidPort = allLocalCandidates.filter(({ protocol, port }) => {
+    return port !== null && UDP_PROTOCOL === protocol;
+  });
+
+  const localPorts = localCandidatesWithValidPort.map(({ port }) => {
+    return port;
+  }) as number[];
+
+  return [...new Set(localPorts)];
+};
+
 const getStreamHint = (event: RTCTrackEvent) => {
   return event.streams[0]?.id;
 };
@@ -144,6 +178,16 @@ class CallManager extends EventEmitterProxy<TEventMap> {
 
   public get isDisconnecting(): boolean {
     return this.stateMachine.isDisconnecting;
+  }
+
+  public get localPorts(): number[] {
+    const peerConnection = this.getActivePeerConnection();
+
+    if (!peerConnection) {
+      return [];
+    }
+
+    return getLocalPortsFromPeerConnection(peerConnection);
   }
 
   // For testing purposes

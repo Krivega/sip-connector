@@ -187,6 +187,10 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     return this.callManager.isDirectP2PRoom;
   }
 
+  private get localPorts() {
+    return this.callManager.localPorts;
+  }
+
   public connect: ConnectionManager['connect'] = async (...args) => {
     return this.connectionQueueManager.connect(...args);
   };

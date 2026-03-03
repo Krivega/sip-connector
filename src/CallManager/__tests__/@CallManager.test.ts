@@ -969,6 +969,67 @@ describe('CallManager', () => {
     expect(callManager.getMainRemoteStream()).toBe(stream);
   });
 
+  describe('localPorts', () => {
+    it('возвращает пустой массив при отсутствии активного peerConnection', () => {
+      expect(callManager.localPorts).toEqual([]);
+    });
+
+    it('возвращает уникальные udp-порты из локальных ICE-кандидатов', () => {
+      const peerConnection = {
+        getReceivers: jest.fn(() => {
+          const createReceiver = (candidates: RTCIceCandidate[]) => {
+            return {
+              // transport и iceTransport не входят в стандартный тип RTCRtpReceiver,
+              // они используются только для тестового доступа к локальным кандидатам.
+              transport: {
+                iceTransport: {
+                  getLocalCandidates: jest.fn(() => {
+                    return candidates;
+                  }),
+                },
+              },
+            } as unknown as RTCRtpReceiver;
+          };
+
+          const candidates1 = [
+            { protocol: 'udp', port: 10_000 } as RTCIceCandidate,
+            { protocol: 'udp', port: 10_001 } as RTCIceCandidate,
+            { protocol: 'tcp', port: 20_000 } as RTCIceCandidate,
+            // eslint-disable-next-line unicorn/no-null
+            { protocol: 'udp', port: null } as RTCIceCandidate,
+          ];
+
+          const candidates2 = [
+            { protocol: 'udp', port: 10_001 } as RTCIceCandidate,
+            { protocol: 'udp', port: 10_002 } as RTCIceCandidate,
+          ];
+
+          return [createReceiver(candidates1), createReceiver(candidates2)];
+        }),
+      } as unknown as RTCPeerConnection;
+
+      jest.spyOn(callManager, 'getActivePeerConnection').mockReturnValue(peerConnection);
+
+      expect(callManager.localPorts).toEqual([10_000, 10_001, 10_002]);
+    });
+
+    it('возвращает пустой массив, если у receivers нет iceTransport', () => {
+      const peerConnection = {
+        getReceivers: jest.fn(() => {
+          const receiverWithoutIceTransport = {
+            transport: {},
+          } as unknown as RTCRtpReceiver;
+
+          return [receiverWithoutIceTransport];
+        }),
+      } as unknown as RTCPeerConnection;
+
+      jest.spyOn(callManager, 'getActivePeerConnection').mockReturnValue(peerConnection);
+
+      expect(callManager.localPorts).toEqual([]);
+    });
+  });
+
   describe('getActivePeerConnection', () => {
     it('возвращает peerConnection из mcuSession для участника', () => {
       const peerConnection = {} as RTCPeerConnection;

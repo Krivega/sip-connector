@@ -408,6 +408,18 @@ describe('SipConnector', () => {
     expect(replaceStream).toHaveBeenCalled();
   });
 
+  it('localPorts: проксирует геттер CallManager.localPorts', () => {
+    const localPortsSpy = jest
+      .spyOn(sipConnector.callManager, 'localPorts', 'get')
+      .mockReturnValue([10_000, 10_001]);
+
+    // @ts-expect-error - доступ к приватному геттеру
+    const ports = sipConnector.localPorts;
+
+    expect(localPortsSpy).toHaveBeenCalledTimes(1);
+    expect(ports).toEqual([10_000, 10_001]);
+  });
+
   it('должен проксировать методы IncomingCallManager', async () => {
     const decline = jest
       .spyOn(sipConnector.incomingCallManager, 'declineToIncomingCall')
