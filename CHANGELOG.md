@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [26.6.0](https://github.com/Krivega/sip-connector/compare/v26.5.0...v26.6.0) (2026-03-03)
+
+### Features
+
+- enhance statistics collection and event handling in StatsManager and StatsPeerConnection ([bb30e02](https://github.com/Krivega/sip-connector/commit/bb30e02eb43dbba729b304cd97f9409123bc0b38))
+
 ## [26.5.0](https://github.com/Krivega/sip-connector/compare/v26.4.1...v26.5.0) (2026-03-02)
 
 ### Features
