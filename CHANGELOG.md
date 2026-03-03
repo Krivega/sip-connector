@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [26.7.0](https://github.com/Krivega/sip-connector/compare/v26.6.0...v26.7.0) (2026-03-03)
+
+### Features
+
+- add localPorts functionality to CallManager and SipConnector ([45e76a2](https://github.com/Krivega/sip-connector/commit/45e76a2adfd04f769f3bf4ab5cba4a0415a4a900))
+
 ## [26.6.0](https://github.com/Krivega/sip-connector/compare/v26.5.0...v26.6.0) (2026-03-03)
 
 ### Features
