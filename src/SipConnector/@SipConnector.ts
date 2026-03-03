@@ -175,6 +175,10 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     return this.callManager.isCallActive;
   }
 
+  public get localPorts() {
+    return this.callManager.localPorts;
+  }
+
   public get remoteCallerData(): IncomingCallManager['remoteCallerData'] {
     return this.incomingCallManager.remoteCallerData;
   }
@@ -185,10 +189,6 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
 
   private get isDirectP2PRoom(): boolean {
     return this.callManager.isDirectP2PRoom;
-  }
-
-  private get localPorts() {
-    return this.callManager.localPorts;
   }
 
   public connect: ConnectionManager['connect'] = async (...args) => {

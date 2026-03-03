@@ -413,7 +413,6 @@ describe('SipConnector', () => {
       .spyOn(sipConnector.callManager, 'localPorts', 'get')
       .mockReturnValue([10_000, 10_001]);
 
-    // @ts-expect-error - доступ к приватному геттеру
     const ports = sipConnector.localPorts;
 
     expect(localPortsSpy).toHaveBeenCalledTimes(1);
