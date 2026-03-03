@@ -5,13 +5,17 @@ import type { TInboundStats, TOutboundStats } from './types';
 
 enum EEvent {
   COLLECTED = 'collected',
+  STOPPED = 'stopped',
 }
 
 export type TEventMap = {
   collected: { outbound: TOutboundStats; inbound: TInboundStats };
+  stopped: {
+    reason: 'recv-session-started' | 'recv-session-ended' | 'recv-quality-changed' | 'call-ended';
+  };
 };
 
-export const EVENT_NAMES = [`${EEvent.COLLECTED}`] as const;
+export const EVENT_NAMES = [`${EEvent.COLLECTED}`, `${EEvent.STOPPED}`] as const;
 
 export type TEvents = TypedEvents<TEventMap>;
 

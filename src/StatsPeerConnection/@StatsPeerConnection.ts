@@ -43,25 +43,37 @@ class StatsPeerConnection extends EventEmitterProxy<TEventMap> {
       interval?: number;
     } = {},
   ) {
-    this.stop();
     this.setTimeoutRequest.request(() => {
       this.collectStatistics(getPeerConnection, {
         onError,
+        onSuccess: (params: { interval: number }) => {
+          this.start(getPeerConnection, {
+            onError,
+            interval: params.interval,
+          });
+        },
       });
     }, interval);
   }
 
-  public stop() {
+  public stop({
+    reason,
+  }: {
+    reason: 'recv-session-started' | 'recv-session-ended' | 'recv-quality-changed' | 'call-ended';
+  }) {
     this.setTimeoutRequest.cancelRequest();
     this.requesterAllStatistics.cancelRequest();
+    this.events.trigger('stopped', { reason });
   }
 
   private readonly collectStatistics = (
     getPeerConnection: () => RTCPeerConnection | undefined,
     {
       onError,
+      onSuccess,
     }: {
       onError?: (error: unknown) => void;
+      onSuccess: ({ interval }: { interval: number }) => void;
     },
   ) => {
     const startTime = now();
@@ -83,10 +95,7 @@ class StatsPeerConnection extends EventEmitterProxy<TEventMap> {
           interval = INTERVAL_COLLECT_STATISTICS * 2;
         }
 
-        this.start(getPeerConnection, {
-          onError,
-          interval,
-        });
+        onSuccess({ interval });
       })
       .catch((error: unknown) => {
         if (onError) {

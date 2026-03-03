@@ -33,7 +33,7 @@ describe('StatsPeerConnection intervals by elapsed time', () => {
   });
   it('sets interval x4 when elapsed > 48 (covers line 90)', async () => {
     const statsPeerConnection = new StatsPeerConnection();
-    const startSpy = jest.spyOn(statsPeerConnection, 'start');
+    const onSuccess = jest.fn();
 
     // First call to now() → startTime; second call → endTime
     (mockedNow as jest.Mock)
@@ -58,23 +58,21 @@ describe('StatsPeerConnection intervals by elapsed time', () => {
     // @ts-expect-error
     statsPeerConnection.collectStatistics(createPeerConnection, {
       onError: undefined,
+      onSuccess,
     });
 
     // wait microtasks
     await flushPromises();
 
-    expect(startSpy).toHaveBeenCalledTimes(1);
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+    expect(onSuccess).toHaveBeenCalledWith({ interval: INTERVAL_COLLECT_STATISTICS * 4 });
 
-    const [, options] = startSpy.mock.calls[0];
-
-    expect(options?.interval).toBe(INTERVAL_COLLECT_STATISTICS * 4);
-
-    statsPeerConnection.stop();
+    statsPeerConnection.stop({ reason: 'call-ended' });
   });
 
   it('sets interval x2 when 16 < elapsed ≤ 32 (covers line 94)', async () => {
     const statsPeerConnection = new StatsPeerConnection();
-    const startSpy = jest.spyOn(statsPeerConnection, 'start');
+    const onSuccess = jest.fn();
 
     (mockedNow as jest.Mock)
       .mockReturnValueOnce(2000) // startTime
@@ -97,22 +95,20 @@ describe('StatsPeerConnection intervals by elapsed time', () => {
     // @ts-expect-error
     statsPeerConnection.collectStatistics(createPeerConnection, {
       onError: undefined,
+      onSuccess,
     });
 
     await flushPromises();
 
-    expect(startSpy).toHaveBeenCalledTimes(1);
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+    expect(onSuccess).toHaveBeenCalledWith({ interval: INTERVAL_COLLECT_STATISTICS * 2 });
 
-    const [, options] = startSpy.mock.calls[0];
-
-    expect(options?.interval).toBe(INTERVAL_COLLECT_STATISTICS * 2);
-
-    statsPeerConnection.stop();
+    statsPeerConnection.stop({ reason: 'call-ended' });
   });
 
   it('sets interval x3 when 32 < elapsed ≤ 48 (covers line 92)', async () => {
     const statsPeerConnection = new StatsPeerConnection();
-    const startSpy = jest.spyOn(statsPeerConnection, 'start');
+    const onSuccess = jest.fn();
 
     (mockedNow as jest.Mock)
       .mockReturnValueOnce(3000) // startTime
@@ -135,22 +131,20 @@ describe('StatsPeerConnection intervals by elapsed time', () => {
     // @ts-expect-error
     statsPeerConnection.collectStatistics(createPeerConnection, {
       onError: undefined,
+      onSuccess,
     });
 
     await flushPromises();
 
-    expect(startSpy).toHaveBeenCalledTimes(1);
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+    expect(onSuccess).toHaveBeenCalledWith({ interval: INTERVAL_COLLECT_STATISTICS * 3 });
 
-    const [, options] = startSpy.mock.calls[0];
-
-    expect(options?.interval).toBe(INTERVAL_COLLECT_STATISTICS * 3);
-
-    statsPeerConnection.stop();
+    statsPeerConnection.stop({ reason: 'call-ended' });
   });
 
   it('handles rejection without onError (covers else path in catch at line 103)', async () => {
     const statsPeerConnection = new StatsPeerConnection();
-    const startSpy = jest.spyOn(statsPeerConnection, 'start');
+    const onSuccess = jest.fn();
 
     // @ts-expect-error
     statsPeerConnection.requesterAllStatistics.request = jest
@@ -160,13 +154,14 @@ describe('StatsPeerConnection intervals by elapsed time', () => {
     // @ts-expect-error
     statsPeerConnection.collectStatistics(createPeerConnection, {
       onError: undefined,
+      onSuccess,
     });
 
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(startSpy).not.toHaveBeenCalled();
+    expect(onSuccess).not.toHaveBeenCalled();
 
-    statsPeerConnection.stop();
+    statsPeerConnection.stop({ reason: 'call-ended' });
   });
 });

@@ -77,7 +77,7 @@ describe('StatsPeerConnection', () => {
 
     await promiseGetStats;
 
-    statsPeerConnection.stop();
+    statsPeerConnection.stop({ reason: 'call-ended' });
 
     await delayPromise(INTERVAL_COLLECT_STATISTICS);
 
@@ -95,7 +95,7 @@ describe('StatsPeerConnection', () => {
 
     await promiseOnCollected;
 
-    statsPeerConnection.stop();
+    statsPeerConnection.stop({ reason: 'call-ended' });
 
     await delayPromise(INTERVAL_COLLECT_STATISTICS);
 
@@ -110,7 +110,7 @@ describe('StatsPeerConnection', () => {
 
     expect(startMocked).toHaveBeenCalledTimes(2);
 
-    statsPeerConnection.stop();
+    statsPeerConnection.stop({ reason: 'call-ended' });
 
     await delayPromise(INTERVAL_COLLECT_STATISTICS);
 
@@ -133,7 +133,7 @@ describe('StatsPeerConnection', () => {
 
     expect(startMocked).toHaveBeenCalledTimes(2);
 
-    statsPeerConnection.stop();
+    statsPeerConnection.stop({ reason: 'call-ended' });
 
     await delayPromise(INTERVAL_COLLECT_STATISTICS);
 
@@ -147,7 +147,7 @@ describe('StatsPeerConnection', () => {
 
     expect(statsPeerConnection.requested).toBe(true);
 
-    statsPeerConnection.stop();
+    statsPeerConnection.stop({ reason: 'call-ended' });
 
     expect(statsPeerConnection.requested).toBe(false);
   });
@@ -173,7 +173,7 @@ describe('StatsPeerConnection', () => {
 
     expect(onCollectedMocked).toHaveBeenCalledTimes(2);
 
-    statsPeerConnection.stop();
+    statsPeerConnection.stop({ reason: 'call-ended' });
 
     await delayPromise(INTERVAL_COLLECT_STATISTICS);
 
@@ -201,7 +201,7 @@ describe('StatsPeerConnection', () => {
     // removed handler should not be called
     expect(handlerToRemove).not.toHaveBeenCalled();
 
-    statsPeerConnection.stop();
+    statsPeerConnection.stop({ reason: 'call-ended' });
   });
 
   it('once должен обрабатывать только первое событие collected', async () => {
@@ -217,7 +217,7 @@ describe('StatsPeerConnection', () => {
 
     expect(onceHandler).toHaveBeenCalledTimes(1);
 
-    statsPeerConnection.stop();
+    statsPeerConnection.stop({ reason: 'call-ended' });
   });
 
   it('onceRace должен вызываться один раз с eventName', async () => {
@@ -238,7 +238,7 @@ describe('StatsPeerConnection', () => {
     await delayPromise(INTERVAL_COLLECT_STATISTICS);
     expect(raceHandler).toHaveBeenCalledTimes(1);
 
-    statsPeerConnection.stop();
+    statsPeerConnection.stop({ reason: 'call-ended' });
   });
 
   it('wait должен один раз резолвиться с payload для collected', async () => {
@@ -253,7 +253,7 @@ describe('StatsPeerConnection', () => {
     expect(payload).toHaveProperty('outbound');
     expect(payload).toHaveProperty('inbound');
 
-    statsPeerConnection.stop();
+    statsPeerConnection.stop({ reason: 'call-ended' });
   });
 
   it('должен вызывать onError при отсутствии peerConnection', async () => {

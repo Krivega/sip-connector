@@ -61,8 +61,7 @@ describe('StatsManager', () => {
 
     expect(getPeerConnection()).toBe(pc);
     expect(getActivePeerConnectionSpy).toHaveBeenCalledTimes(1);
-    // stopped before start
-    expect(stopSpy).toHaveBeenCalledTimes(1);
+    expect(stopSpy).toHaveBeenCalledTimes(0);
 
     // stop on ended
     callManager.events.trigger('ended', {
@@ -71,7 +70,7 @@ describe('StatsManager', () => {
       message: {},
       cause: 'error',
     });
-    expect(stopSpy).toHaveBeenCalledTimes(2);
+    expect(stopSpy).toHaveBeenCalledTimes(1);
 
     // stop on failed as well
     callManager.events.trigger('failed', {
@@ -80,7 +79,7 @@ describe('StatsManager', () => {
       message: {},
       cause: 'error',
     });
-    expect(stopSpy).toHaveBeenCalledTimes(3);
+    expect(stopSpy).toHaveBeenCalledTimes(2);
   });
 
   it('перезапускает сбор статистики при recv-session-started и recv-session-ended', () => {

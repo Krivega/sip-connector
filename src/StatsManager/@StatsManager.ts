@@ -125,7 +125,7 @@ class StatsManager extends EventEmitterProxy<TStatsPeerConnectionEventMap> {
   }
 
   private subscribe() {
-    this.callManager.on('peerconnection:confirmed', this.handleStarted);
+    this.callManager.on('peerconnection:confirmed', this.start);
     this.callManager.on('recv-session-started', this.handleRecvSessionStarted);
     this.callManager.on('recv-session-ended', this.handleRecvSessionEnded);
     this.callManager.on('recv-quality-changed', this.handleRecvQualityChanged);
@@ -141,26 +141,37 @@ class StatsManager extends EventEmitterProxy<TStatsPeerConnectionEventMap> {
     this.maybeSendStats();
   };
 
-  private readonly handleStarted = () => {
+  private readonly start = () => {
     this.statsPeerConnection.start(this.callManager.getActivePeerConnection);
   };
 
-  private readonly handleRecvSessionStarted = () => {
+  private readonly stop = (
+    reason: 'recv-session-started' | 'recv-session-ended' | 'recv-quality-changed' | 'call-ended',
+  ) => {
+    this.statsPeerConnection.stop({ reason });
+    this.availableStats = undefined;
+    this.previousAvailableStats = undefined;
+  };
+
+  private restart(reason: 'recv-session-started' | 'recv-session-ended' | 'recv-quality-changed') {
+    this.stop(reason);
     this.statsPeerConnection.start(this.callManager.getActivePeerConnection);
+  }
+
+  private readonly handleRecvSessionStarted = () => {
+    this.restart('recv-session-started');
   };
 
   private readonly handleRecvSessionEnded = () => {
-    this.statsPeerConnection.start(this.callManager.getActivePeerConnection);
+    this.restart('recv-session-ended');
   };
 
   private readonly handleRecvQualityChanged = () => {
-    this.statsPeerConnection.start(this.callManager.getActivePeerConnection);
+    this.restart('recv-quality-changed');
   };
 
   private readonly handleEnded = () => {
-    this.statsPeerConnection.stop();
-    this.availableStats = undefined;
-    this.previousAvailableStats = undefined;
+    this.stop('call-ended');
   };
 
   private maybeSendStats() {

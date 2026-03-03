@@ -37,8 +37,17 @@ if (hasAvailableStats()) {
     analyzeConnectionQuality(outbound, inbound);
   });
 
-  // Запуск сбора статистики с адаптивным интервалом
-  statsCollector.start(peerConnection);
+  // Реакция на остановку сбора статистики
+  statsCollector.on('stopped', ({ reason }) => {
+    console.log('Сбор статистики остановлен. Причина:', reason);
+  });
+
+  // Запуск сбора статистики с адаптивным интервалом.
+  // В `start` передаётся функция, возвращающая актуальный RTCPeerConnection.
+  statsCollector.start(() => peerConnection);
+
+  // Явная остановка (например, при завершении звонка вручную)
+  statsCollector.stop({ reason: 'call-ended' });
 }
 ```
 
