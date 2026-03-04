@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [26.8.0](https://github.com/Krivega/sip-connector/compare/v26.7.0...v26.8.0) (2026-03-04)
+
+### Features
+
+- enhance BitrateStateManager to support dynamic maxBitrate for audio and video ([71c4835](https://github.com/Krivega/sip-connector/commit/71c4835b89849893ad290315d3efeb9799af3ee4))
+- enhance SipConnector with video balancer options and codec preferences ([c36e216](https://github.com/Krivega/sip-connector/commit/c36e2162db206eb7c80bf0e742fe514312428333))
+
 ## [26.7.0](https://github.com/Krivega/sip-connector/compare/v26.6.0...v26.7.0) (2026-03-03)
 
 ### Features
