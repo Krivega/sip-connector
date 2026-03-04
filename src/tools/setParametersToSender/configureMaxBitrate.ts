@@ -22,7 +22,7 @@ const configureMaxBitrate = (
   const maxBitrateTarget = performUpdateMaxBitrate(maxBitrate, maxBitrateCurrent);
 
   if (maxBitrateTarget !== undefined || isResetAllowed) {
-    encodingCurrent.maxBitrate = maxBitrateTarget;
+    encodingCurrent.maxBitrate = maxBitrateTarget ?? maxBitrate;
   }
 
   return encodingCurrent;

@@ -1,7 +1,13 @@
 import { setParametersToSender } from '@/tools/setParametersToSender';
+import getCodecFromSender from '@/utils/getCodecFromSender';
+import {
+  getMinimumBitrateByWidthAndCodec,
+  getMaximumBitrateByWidthAndCodec,
+} from '@/VideoSendingBalancer';
 
 export const MINIMUM_BITRATE_AUDIO = 6000; // 6 kbps
 export const MINIMUM_BITRATE_VIDEO = 1000; // 1 kbps
+export const MAXIMUM_BITRATE_AUDIO = 520_000; // 520 kbps
 
 /**
  * Находит все RTCRtpSender'ы для указанного типа медиа
@@ -15,8 +21,8 @@ const getSendersByKind = (
   });
 };
 
-const getMinimumBitrate = (kind: 'audio' | 'video'): number => {
-  return kind === 'audio' ? MINIMUM_BITRATE_AUDIO : MINIMUM_BITRATE_VIDEO;
+const getMinimumBitrate = (kind: 'audio' | 'video', codec?: string): number => {
+  return kind === 'audio' ? MINIMUM_BITRATE_AUDIO : getMinimumBitrateByWidthAndCodec(codec);
 };
 
 type TSenderWithTrack = RTCRtpSender & { track: MediaStreamTrack & { kind: 'audio' | 'video' } };
@@ -105,9 +111,26 @@ export default class BitrateStateManager {
 
       if (savedEncodings) {
         const currentParameters = sender.getParameters();
+        const isVideo = sender.track?.kind === 'video';
+        const codec = isVideo ? await getCodecFromSender(sender) : undefined; // Для audio codec не используется, но getCodecFromSender вызывается (включая getStats()). Это лишняя нагрузка.
         const targetParameters: RTCRtpSendParameters = {
           ...currentParameters,
-          encodings: savedEncodings,
+          encodings: savedEncodings.map((encoding) => {
+            const maxBitrate = isVideo
+              ? getMaximumBitrateByWidthAndCodec(codec)
+              : MAXIMUM_BITRATE_AUDIO;
+
+            return {
+              ...encoding,
+
+              // В Safari и некоторых браузерах encodings изначально не содержат maxBitrate.
+              // setMinBitrateForSenders сохраняет currentParameters в previousBitrates как есть,
+              // поэтому туда попадают encodings с maxBitrate: undefined.
+              // Без проверки restoreBitrateForSenders применил бы undefined вместо восстановления битрейта.
+              // Подставляем дефолт: MAXIMUM_BITRATE_AUDIO для audio, getMaximumBitrateByWidthAndCodec для video.
+              maxBitrate: encoding.maxBitrate ?? maxBitrate,
+            };
+          }),
         };
 
         await setParametersToSender(sender, targetParameters, { isResetAllowed: true });

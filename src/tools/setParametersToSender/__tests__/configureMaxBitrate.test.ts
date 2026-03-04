@@ -68,4 +68,41 @@ describe('configureMaxBitrate', () => {
 
     expect(result).toEqual(encodingCurrent);
   });
+
+  it('should preserve maxBitrate when target equals current and isResetAllowed is true', () => {
+    const encodingCurrent: RTCRtpEncodingParameters = {
+      maxBitrate: 1_000_000,
+    };
+    const maxBitrateTarget = 1_000_000;
+
+    const result = configureMaxBitrate(encodingCurrent, maxBitrateTarget, {
+      isResetAllowed: true,
+    });
+
+    expect(result.maxBitrate).toBe(1_000_000);
+  });
+
+  it('should set maxBitrate when current is empty, target is provided and isResetAllowed is true', () => {
+    const encodingCurrent: RTCRtpEncodingParameters = {};
+    const maxBitrateTarget = 2_000_000;
+
+    const result = configureMaxBitrate(encodingCurrent, maxBitrateTarget, {
+      isResetAllowed: true,
+    });
+
+    expect(result.maxBitrate).toBe(2_000_000);
+  });
+
+  it('should update maxBitrate when target differs from current and isResetAllowed is true', () => {
+    const encodingCurrent: RTCRtpEncodingParameters = {
+      maxBitrate: 1_000_000,
+    };
+    const maxBitrateTarget = 3_000_000;
+
+    const result = configureMaxBitrate(encodingCurrent, maxBitrateTarget, {
+      isResetAllowed: true,
+    });
+
+    expect(result.maxBitrate).toBe(3_000_000);
+  });
 });

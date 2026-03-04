@@ -1,8 +1,12 @@
 /// <reference types="jest" />
+import getCodecFromSender from '@/utils/getCodecFromSender';
 import BitrateStateManager, {
+  MAXIMUM_BITRATE_AUDIO,
   MINIMUM_BITRATE_AUDIO,
   MINIMUM_BITRATE_VIDEO,
 } from '../BitrateStateManager';
+
+jest.mock('@/utils/getCodecFromSender');
 
 describe('BitrateStateManager', () => {
   let manager: BitrateStateManager;
@@ -130,7 +134,8 @@ describe('BitrateStateManager', () => {
       ];
 
       expect(audioParams.encodings[0].maxBitrate).toBe(MINIMUM_BITRATE_AUDIO);
-      expect(videoParams.encodings[0].maxBitrate).toBe(MINIMUM_BITRATE_VIDEO);
+      // getMinimumBitrateByWidthAndCodec(undefined) возвращает 60000 (MINIMUM_BITRATE для video)
+      expect(videoParams.encodings[0].maxBitrate).toBe(60_000);
 
       // убедимся, что исходные значения сохранились для последующего восстановления
       const savedAudio = manager.getSavedBitrate(audioSender);
@@ -329,6 +334,122 @@ describe('BitrateStateManager', () => {
       await manager.restoreBitrateForSenders(connection, 'audio');
 
       expect(audioSender.setParameters).not.toHaveBeenCalled();
+    });
+
+    it('should save encodings with undefined maxBitrate (Safari-like behavior)', () => {
+      manager.saveCurrentBitrate(mockSender, {
+        encodings: [{ maxBitrate: undefined }, { rid: '1' }],
+      } as RTCRtpSendParameters);
+
+      const saved = manager.getSavedBitrate(mockSender);
+
+      expect(saved).toBeDefined();
+      expect(saved?.[0].maxBitrate).toBeUndefined();
+      expect(saved?.[1].maxBitrate).toBeUndefined();
+    });
+
+    it('should use MAXIMUM_BITRATE_AUDIO when restoring audio with saved encodings without maxBitrate', async () => {
+      const audioSender = {
+        track: { kind: 'audio' } as MediaStreamTrack,
+        getParameters: jest.fn(() => {
+          return {
+            encodings: [{ maxBitrate: MINIMUM_BITRATE_AUDIO }],
+          } as RTCRtpSendParameters;
+        }),
+        setParameters: jest.fn(async () => {
+          return undefined;
+        }),
+      } as unknown as RTCRtpSender;
+
+      const connection = {
+        getSenders: () => {
+          return [audioSender];
+        },
+      } as unknown as RTCPeerConnection;
+
+      manager.saveCurrentBitrate(audioSender, {
+        encodings: [{ maxBitrate: undefined }],
+      } as RTCRtpSendParameters);
+
+      await manager.restoreBitrateForSenders(connection, 'audio');
+
+      const [restoreParams] = (audioSender.setParameters as jest.Mock).mock.calls[0] as [
+        RTCRtpSendParameters,
+      ];
+
+      expect(restoreParams.encodings[0].maxBitrate).toBe(MAXIMUM_BITRATE_AUDIO);
+    });
+
+    it('should use getMaximumBitrateByWidthAndCodec when restoring video with saved encodings without maxBitrate', async () => {
+      const codec = 'video/VP8';
+
+      jest.mocked(getCodecFromSender).mockResolvedValue(codec);
+
+      const videoSender = {
+        track: { kind: 'video' } as MediaStreamTrack,
+        getParameters: jest.fn(() => {
+          return {
+            encodings: [{ maxBitrate: MINIMUM_BITRATE_VIDEO }],
+          } as RTCRtpSendParameters;
+        }),
+        setParameters: jest.fn(async () => {
+          return undefined;
+        }),
+      } as unknown as RTCRtpSender;
+
+      const connection = {
+        getSenders: () => {
+          return [videoSender];
+        },
+      } as unknown as RTCPeerConnection;
+
+      manager.saveCurrentBitrate(videoSender, {
+        encodings: [{ maxBitrate: undefined }],
+      } as RTCRtpSendParameters);
+
+      await manager.restoreBitrateForSenders(connection, 'video');
+
+      const [restoreParams] = (videoSender.setParameters as jest.Mock).mock.calls[0] as [
+        RTCRtpSendParameters,
+      ];
+
+      // getMaximumBitrateByWidthAndCodec('video/VP8') возвращает 4_000_000 (MAXIMUM_BITRATE для VP8)
+      expect(restoreParams.encodings[0].maxBitrate).toBe(4_000_000);
+      expect(getCodecFromSender).toHaveBeenCalledWith(videoSender);
+    });
+
+    it('should preserve existing maxBitrate when restoring with saved encodings that have maxBitrate', async () => {
+      const audioSender = {
+        track: { kind: 'audio' } as MediaStreamTrack,
+        getParameters: jest.fn(() => {
+          return {
+            encodings: [{ maxBitrate: MINIMUM_BITRATE_AUDIO }],
+          } as RTCRtpSendParameters;
+        }),
+        setParameters: jest.fn(async () => {
+          return undefined;
+        }),
+      } as unknown as RTCRtpSender;
+
+      const connection = {
+        getSenders: () => {
+          return [audioSender];
+        },
+      } as unknown as RTCPeerConnection;
+
+      const originalBitrate = 300_000;
+
+      manager.saveCurrentBitrate(audioSender, {
+        encodings: [{ maxBitrate: originalBitrate }],
+      } as RTCRtpSendParameters);
+
+      await manager.restoreBitrateForSenders(connection, 'audio');
+
+      const [restoreParams] = (audioSender.setParameters as jest.Mock).mock.calls[0] as [
+        RTCRtpSendParameters,
+      ];
+
+      expect(restoreParams.encodings[0].maxBitrate).toBe(originalBitrate);
     });
   });
 });
