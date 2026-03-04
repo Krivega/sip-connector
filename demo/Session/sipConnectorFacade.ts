@@ -8,14 +8,9 @@ enableDebugDemo();
 
 const debug = logger.extend('sipConnector event');
 
-const sipConnector = new SipConnector(
-  {
-    JsSIP,
-  },
-  {
-    videoBalancerOptions: { ignoreForCodec: 'h264' },
-  },
-);
+const sipConnector = new SipConnector({
+  JsSIP,
+});
 
 sipConnector.events.eachTriggers((_trigger, eventName) => {
   sipConnector.on(eventName, (...args) => {
