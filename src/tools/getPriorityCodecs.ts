@@ -1,5 +1,5 @@
 import { createUaParser } from '@/tools/createUaParser';
-import { EMimeTypesVideoCodecs } from 'sip-connector';
+import { EMimeTypesVideoCodecs } from '../types';
 
 const YANDEX_BROWSER_VERSION_WITH_FIXED_H264_CODEC = {
   major: 25,
