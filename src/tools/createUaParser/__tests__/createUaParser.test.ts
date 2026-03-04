@@ -1,3 +1,4 @@
+// <reference types="jest" />
 import createUaParser from '../createUaParser';
 import isElectronEnvironment from '../isElectronEnvironment';
 
@@ -20,14 +21,18 @@ describe('createUaParser', () => {
   });
 
   it('isChrome = true, когда браузер Chrome и не Electron', () => {
-    const { UAParser } = jest.requireMock('ua-parser-js') as {
-      UAParser: jest.Mock;
-    };
+    const { UAParser } = jest.requireMock('ua-parser-js') as { UAParser: jest.Mock };
 
     UAParser.mockImplementation(() => {
       return {
         getBrowser: () => {
-          return { name: 'Chrome' };
+          return { name: 'Chrome', version: '100.0.0' };
+        },
+        getOS: () => {
+          return { name: 'Windows' };
+        },
+        getDevice: () => {
+          return { type: 'desktop' };
         },
       };
     });
@@ -40,14 +45,18 @@ describe('createUaParser', () => {
   });
 
   it('isChrome = true, когда не Chrome, но Electron', () => {
-    const { UAParser } = jest.requireMock('ua-parser-js') as {
-      UAParser: jest.Mock;
-    };
+    const { UAParser } = jest.requireMock('ua-parser-js') as { UAParser: jest.Mock };
 
     UAParser.mockImplementation(() => {
       return {
         getBrowser: () => {
-          return { name: 'Firefox' };
+          return { name: 'Firefox', version: '100.0.0' };
+        },
+        getOS: () => {
+          return { name: 'Windows' };
+        },
+        getDevice: () => {
+          return { type: 'desktop' };
         },
       };
     });
@@ -60,14 +69,18 @@ describe('createUaParser', () => {
   });
 
   it('isChrome = false, когда не Chrome и не Electron', () => {
-    const { UAParser } = jest.requireMock('ua-parser-js') as {
-      UAParser: jest.Mock;
-    };
+    const { UAParser } = jest.requireMock('ua-parser-js') as { UAParser: jest.Mock };
 
     UAParser.mockImplementation(() => {
       return {
         getBrowser: () => {
-          return { name: 'Safari' };
+          return { name: 'Safari', version: '100.0.0' };
+        },
+        getOS: () => {
+          return { name: 'Windows' };
+        },
+        getDevice: () => {
+          return { type: 'desktop' };
         },
       };
     });

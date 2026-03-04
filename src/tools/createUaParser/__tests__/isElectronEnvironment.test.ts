@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import isElectronEnvironment from '../isElectronEnvironment';
 
 describe('isElectronEnvironment', () => {

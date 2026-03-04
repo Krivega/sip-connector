@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 /* eslint-disable jest/expect-expect */
 /* eslint-disable import/first */
 // Мокаем хелпер setCodecPreferences до импорта SipConnector

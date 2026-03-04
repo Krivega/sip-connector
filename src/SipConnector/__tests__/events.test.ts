@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import JsSIP from '@/__fixtures__/jssip.mock';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import SipConnector from '../@SipConnector';

@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 /* eslint-disable import/first */
 // Мокаем хелпер до импорта SipConnector
 jest.mock('@/tools/setCodecPreferences', () => {
@@ -7,6 +8,7 @@ jest.mock('@/tools/setCodecPreferences', () => {
 import JsSIP from '@/__fixtures__/jssip.mock';
 import { doMockSipConnector } from '@/doMock';
 import SipConnector from '../@SipConnector';
+import { PREFERRED_MIME_TYPES_VIDEO_CODECS } from '../constants';
 
 const setCodecPreferencesMock = jest.requireMock('@/tools/setCodecPreferences') as jest.Mock;
 
@@ -42,7 +44,7 @@ describe('SipConnector.setCodecPreferences', () => {
     });
   });
 
-  it('calls helper with undefined preferences when options not passed', () => {
+  it('calls helper with default preferences when options not passed', () => {
     const sipConnector = doMockSipConnector();
 
     const mockTransceiver = {} as RTCRtpTransceiver;
@@ -54,7 +56,7 @@ describe('SipConnector.setCodecPreferences', () => {
     ).setCodecPreferences(mockTransceiver);
 
     expect(setCodecPreferencesMock).toHaveBeenCalledWith(mockTransceiver, {
-      preferredMimeTypesVideoCodecs: undefined,
+      preferredMimeTypesVideoCodecs: PREFERRED_MIME_TYPES_VIDEO_CODECS,
       excludeMimeTypesVideoCodecs: undefined,
     });
   });

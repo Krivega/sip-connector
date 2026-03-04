@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import { C, IncomingResponse } from '@krivega/jssip';
 import { createMediaStreamMock } from 'webrtc-mock';
 
@@ -6,6 +7,7 @@ import JsSIP from '@/__fixtures__/jssip.mock';
 import logger from '@/logger';
 import * as tools from '@/tools';
 import SipConnector from '../@SipConnector';
+import { PREFERRED_MIME_TYPES_VIDEO_CODECS } from '../constants';
 
 import type {
   ConnectedEvent,
@@ -787,11 +789,13 @@ describe('SipConnector', () => {
       expect(sipConnectorWithCodecs.excludeMimeTypesVideoCodecs).toEqual(['video/H264']);
     });
 
-    it('должен создать SipConnector без предпочтений кодеков', () => {
+    it('должен создать SipConnector без явных предпочтений кодеков и использовать значения по умолчанию', () => {
       const sipConnectorWithoutCodecs = new SipConnector({ JsSIP: JsSIP as unknown as TJsSIP });
 
       // @ts-expect-error: доступ к приватным полям для тестирования
-      expect(sipConnectorWithoutCodecs.preferredMimeTypesVideoCodecs).toBeUndefined();
+      expect(sipConnectorWithoutCodecs.preferredMimeTypesVideoCodecs).toBe(
+        PREFERRED_MIME_TYPES_VIDEO_CODECS,
+      );
       // @ts-expect-error: доступ к приватным полям для тестирования
       expect(sipConnectorWithoutCodecs.excludeMimeTypesVideoCodecs).toBeUndefined();
     });
@@ -834,7 +838,9 @@ describe('SipConnector', () => {
       );
 
       // @ts-expect-error: доступ к приватным полям для тестирования
-      expect(sipConnectorWithExcludeOnly.preferredMimeTypesVideoCodecs).toBeUndefined();
+      expect(sipConnectorWithExcludeOnly.preferredMimeTypesVideoCodecs).toBe(
+        PREFERRED_MIME_TYPES_VIDEO_CODECS,
+      );
       // @ts-expect-error: доступ к приватным полям для тестирования
       expect(sipConnectorWithExcludeOnly.excludeMimeTypesVideoCodecs).toEqual(['video/H264']);
     });

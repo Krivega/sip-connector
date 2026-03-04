@@ -18,7 +18,11 @@ import setCodecPreferences from '@/tools/setCodecPreferences';
 import { VideoSendingBalancerManager } from '@/VideoSendingBalancerManager';
 import { MainStreamHealthMonitor } from '../MainStreamHealthMonitor';
 import { MainStreamRecovery } from '../MainStreamRecovery';
-import { ONE_MEGABIT_IN_BITS } from './constants';
+import {
+  ONE_MEGABIT_IN_BITS,
+  PREFERRED_MIME_TYPES_VIDEO_CODECS,
+  VIDEO_BALANCER_OPTIONS,
+} from './constants';
 import { createEvents } from './events';
 
 import type { IAutoConnectorOptions } from '@/AutoConnectorManager';
@@ -77,7 +81,8 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
   ) {
     super(createEvents());
 
-    this.preferredMimeTypesVideoCodecs = preferredMimeTypesVideoCodecs;
+    this.preferredMimeTypesVideoCodecs =
+      preferredMimeTypesVideoCodecs ?? PREFERRED_MIME_TYPES_VIDEO_CODECS;
     this.excludeMimeTypesVideoCodecs = excludeMimeTypesVideoCodecs;
     this.apiManager = new ApiManager();
     this.connectionManager = new ConnectionManager({ JsSIP });
@@ -109,7 +114,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     this.videoSendingBalancerManager = new VideoSendingBalancerManager(
       this.callManager,
       this.apiManager,
-      videoBalancerOptions,
+      videoBalancerOptions ?? VIDEO_BALANCER_OPTIONS,
     );
     this.mainStreamHealthMonitor = new MainStreamHealthMonitor(this.statsManager, this.callManager);
     this.mainStreamRecovery = new MainStreamRecovery(this.callManager);
