@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [26.11.0](https://github.com/Krivega/sip-connector/compare/v26.10.0...v26.11.0) (2026-03-19)
+
+### Features
+
+- auto-recover recvSession for Spectator ([d0228cc](https://github.com/Krivega/sip-connector/commit/d0228ccf609606db6f9efd88d6c5099703988ddb))
+- implement restartRecvSession method in CallManager ([8a32d40](https://github.com/Krivega/sip-connector/commit/8a32d40fb47e091af979f599ef04413ae9cec690))
+
 ## [26.10.0](https://github.com/Krivega/sip-connector/compare/v26.9.1...v26.10.0) (2026-03-19)
 
 ### Features
