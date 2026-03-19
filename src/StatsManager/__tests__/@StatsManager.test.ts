@@ -364,7 +364,7 @@ describe('StatsManager', () => {
       expect(manager.isInvalidInboundFrames).toBe(false);
     });
 
-    describe('isInboundVideoFrozen', () => {
+    describe('isInboundVideoStalled', () => {
       it('должен возвращать false когда входящий трафик еще не начинался', () => {
         manager.statsPeerConnection.events.trigger(
           'collected',
@@ -386,7 +386,7 @@ describe('StatsManager', () => {
           }),
         );
 
-        expect(manager.isInboundVideoFrozen).toBe(false);
+        expect(manager.isInboundVideoStalled).toBe(false);
       });
 
       it('должен возвращать true когда inbound video перестает получать пакеты и байты', () => {
@@ -420,7 +420,7 @@ describe('StatsManager', () => {
           }),
         );
 
-        expect(manager.isInboundVideoFrozen).toBe(true);
+        expect(manager.isInboundVideoStalled).toBe(true);
       });
 
       it('должен возвращать false когда inbound video продолжает получать пакеты и байты', () => {
@@ -454,7 +454,7 @@ describe('StatsManager', () => {
           }),
         );
 
-        expect(manager.isInboundVideoFrozen).toBe(false);
+        expect(manager.isInboundVideoStalled).toBe(false);
       });
 
       it('должен возвращать false когда перестают приходить только пакеты', () => {
@@ -488,7 +488,7 @@ describe('StatsManager', () => {
           }),
         );
 
-        expect(manager.isInboundVideoFrozen).toBe(false);
+        expect(manager.isInboundVideoStalled).toBe(false);
       });
 
       it('должен возвращать false когда перестают приходить только байты', () => {
@@ -522,7 +522,7 @@ describe('StatsManager', () => {
           }),
         );
 
-        expect(manager.isInboundVideoFrozen).toBe(false);
+        expect(manager.isInboundVideoStalled).toBe(false);
       });
     });
   });

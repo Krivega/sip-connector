@@ -44,7 +44,7 @@ class StatsManager extends EventEmitterProxy<TStatsPeerConnectionEventMap> {
     return this.isEmptyInboundFrames && this.isReceivingPackets;
   }
 
-  public get isInboundVideoFrozen(): boolean {
+  public get isInboundVideoStalled(): boolean {
     if (
       this.packetsReceived === undefined ||
       this.previousPacketsReceived === undefined ||

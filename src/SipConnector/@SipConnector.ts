@@ -523,8 +523,8 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
   private subscribeToMainStreamHealthMonitorEvents() {
     this.mainStreamHealthMonitor.on(
       'no-inbound-frames',
-      ({ isMutedMainVideoTrack, isInvalidInboundFrames, isInboundVideoFrozen }) => {
-        if (isInboundVideoFrozen && this.callManager.hasSpectator()) {
+      ({ isMutedMainVideoTrack, isInvalidInboundFrames, isInboundVideoStalled }) => {
+        if (isInboundVideoStalled && this.callManager.hasSpectator()) {
           this.mainStreamRecovery.recover();
         } else if (isMutedMainVideoTrack && isInvalidInboundFrames) {
           this.mainStreamRecovery.recover();

@@ -145,7 +145,7 @@ describe('SipConnector events', () => {
     sipConnector.mainStreamHealthMonitor.events.trigger('no-inbound-frames', {
       isMutedMainVideoTrack: false,
       isInvalidInboundFrames: false,
-      isInboundVideoFrozen: false,
+      isInboundVideoStalled: false,
     });
 
     // Проверяем, что каждый обработчик был вызван с правильными данными
@@ -167,7 +167,7 @@ describe('SipConnector events', () => {
     expect(mainStreamHealthHandler).toHaveBeenCalledWith({
       isMutedMainVideoTrack: false,
       isInvalidInboundFrames: false,
-      isInboundVideoFrozen: false,
+      isInboundVideoStalled: false,
     });
 
     // Проверяем, что каждый обработчик был вызван только один раз

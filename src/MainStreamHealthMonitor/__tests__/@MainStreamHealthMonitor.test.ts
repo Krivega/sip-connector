@@ -16,7 +16,7 @@ describe('@MainStreamHealthMonitor', () => {
   let mainStream: MediaStream;
   let track: ReturnType<typeof createVideoMediaStreamTrackMock>;
   let isInvalidInboundFrames: boolean;
-  let isInboundVideoFrozen: boolean;
+  let isInboundVideoStalled: boolean;
 
   const handler = jest.fn();
 
@@ -25,14 +25,14 @@ describe('@MainStreamHealthMonitor', () => {
     track = createVideoMediaStreamTrackMock({ id: 'v1' });
     statsEvents = createStatsEvents();
     isInvalidInboundFrames = false;
-    isInboundVideoFrozen = false;
+    isInboundVideoStalled = false;
     statsManager = {
       on: statsEvents.on.bind(statsEvents),
       get isInvalidInboundFrames() {
         return isInvalidInboundFrames;
       },
-      get isInboundVideoFrozen() {
-        return isInboundVideoFrozen;
+      get isInboundVideoStalled() {
+        return isInboundVideoStalled;
       },
     } as unknown as StatsManager;
     callManager = {
@@ -63,7 +63,7 @@ describe('@MainStreamHealthMonitor', () => {
       expect(handler.mock.calls[0]?.[0]).toEqual({
         isMutedMainVideoTrack: true,
         isInvalidInboundFrames: true,
-        isInboundVideoFrozen: false,
+        isInboundVideoStalled: false,
       });
     });
 
@@ -83,7 +83,7 @@ describe('@MainStreamHealthMonitor', () => {
       expect(handler.mock.calls[0]?.[0]).toEqual({
         isMutedMainVideoTrack: true,
         isInvalidInboundFrames: false,
-        isInboundVideoFrozen: false,
+        isInboundVideoStalled: false,
       });
     });
 
@@ -103,7 +103,7 @@ describe('@MainStreamHealthMonitor', () => {
       expect(handler.mock.calls[0]?.[0]).toEqual({
         isMutedMainVideoTrack: false,
         isInvalidInboundFrames: true,
-        isInboundVideoFrozen: false,
+        isInboundVideoStalled: false,
       });
     });
 
@@ -119,7 +119,7 @@ describe('@MainStreamHealthMonitor', () => {
       expect(handler.mock.calls[0]?.[0]).toEqual({
         isMutedMainVideoTrack: false,
         isInvalidInboundFrames: true,
-        isInboundVideoFrozen: false,
+        isInboundVideoStalled: false,
       });
     });
   });
