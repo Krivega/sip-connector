@@ -22,7 +22,7 @@ sequenceDiagram
     MainStreamHealthMonitor->>MainStreamHealthMonitor: Проверка isMutedMainVideoTrack
 
     alt Проблема обнаружена
-        MainStreamHealthMonitor->>SipConnector: Событие 'no-inbound-frames'
+        MainStreamHealthMonitor->>SipConnector: Событие 'no-inbound-frames' и isMutedMainVideoTrack===true
         SipConnector->>MainStreamRecovery: recover()
         MainStreamRecovery->>MainStreamRecovery: Throttling (3000ms)
         MainStreamRecovery->>CallManager: renegotiate()

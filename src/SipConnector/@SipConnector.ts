@@ -521,8 +521,10 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
   }
 
   private subscribeToMainStreamHealthMonitorEvents() {
-    this.mainStreamHealthMonitor.on('no-inbound-frames', () => {
-      this.mainStreamRecovery.recover();
+    this.mainStreamHealthMonitor.on('no-inbound-frames', ({ isMutedMainVideoTrack }) => {
+      if (isMutedMainVideoTrack || this.callManager.hasSpectator()) {
+        this.mainStreamRecovery.recover();
+      }
     });
   }
 

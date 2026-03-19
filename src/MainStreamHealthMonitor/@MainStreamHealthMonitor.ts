@@ -37,12 +37,14 @@ class MainStreamHealthMonitor extends EventEmitterProxy<TEventMap> {
 
   private readonly handleStatsCollected = () => {
     if (this.hasNoIncomingFrames()) {
-      this.events.trigger(NO_INBOUND_FRAMES_EVENT_NAME, {});
+      this.events.trigger(NO_INBOUND_FRAMES_EVENT_NAME, {
+        isMutedMainVideoTrack: this.isMutedMainVideoTrack,
+      });
     }
   };
 
   private readonly hasNoIncomingFrames = (): boolean => {
-    return this.statsManager.isInvalidInboundFrames && this.isMutedMainVideoTrack;
+    return this.statsManager.isInvalidInboundFrames;
   };
 
   private subscribe() {

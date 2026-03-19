@@ -142,7 +142,9 @@ describe('SipConnector events', () => {
     // @ts-expect-error
     sipConnector.statsManager.events.trigger('collected', stats);
 
-    sipConnector.mainStreamHealthMonitor.events.trigger('no-inbound-frames', {});
+    sipConnector.mainStreamHealthMonitor.events.trigger('no-inbound-frames', {
+      isMutedMainVideoTrack: false,
+    });
 
     // Проверяем, что каждый обработчик был вызван с правильными данными
     expect(autoConnectHandler).toHaveBeenCalledWith(undefined);
@@ -160,7 +162,7 @@ describe('SipConnector events', () => {
     });
     expect(presentationHandler).toHaveBeenCalledWith(mediaStream);
     expect(statsHandler).toHaveBeenCalledWith(stats);
-    expect(mainStreamHealthHandler).toHaveBeenCalledWith({});
+    expect(mainStreamHealthHandler).toHaveBeenCalledWith({ isMutedMainVideoTrack: false });
 
     // Проверяем, что каждый обработчик был вызван только один раз
     expect(autoConnectHandler).toHaveBeenCalledTimes(1);

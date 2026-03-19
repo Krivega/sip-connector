@@ -81,17 +81,21 @@ describe('@MainStreamHealthMonitor', () => {
       monitor.on(NO_INBOUND_FRAMES_EVENT_NAME, handler);
       statsEvents.trigger('collected', {} as TStats);
 
-      expect(handler).toHaveBeenCalledTimes(0);
+      expect(handler).toHaveBeenCalledTimes(1);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(handler.mock.calls[0]?.[0]).toEqual({ isMutedMainVideoTrack: false });
     });
 
-    it('не должен эмитить событие когда в основном потоке нет видеотреков', () => {
+    it('должен эмитить событие когда в основном потоке нет видеотреков', () => {
       const monitor = new MainStreamHeathMonitor(statsManager, callManager);
 
       monitor.on(NO_INBOUND_FRAMES_EVENT_NAME, handler);
       isInvalidInboundFrames = true;
       statsEvents.trigger('collected', {} as TStats);
 
-      expect(handler).toHaveBeenCalledTimes(0);
+      expect(handler).toHaveBeenCalledTimes(1);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(handler.mock.calls[0]?.[0]).toEqual({ isMutedMainVideoTrack: false });
     });
   });
 });
