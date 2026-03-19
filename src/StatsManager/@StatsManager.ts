@@ -54,11 +54,12 @@ class StatsManager extends EventEmitterProxy<TStatsPeerConnectionEventMap> {
       return false;
     }
 
-    const hasEnoughPackets = this.packetsReceived >= MIN_RECEIVED_MAIN_STREAM_PACKETS;
+    const hasInboundTrafficBefore =
+      this.previousPacketsReceived > 0 || this.previousBytesReceived > 0;
     const havePacketsStopped = this.packetsReceived === this.previousPacketsReceived;
     const haveBytesStopped = this.bytesReceived === this.previousBytesReceived;
 
-    return hasEnoughPackets && havePacketsStopped && haveBytesStopped;
+    return hasInboundTrafficBefore && havePacketsStopped && haveBytesStopped;
   }
 
   private get isEmptyInboundFrames(): boolean {

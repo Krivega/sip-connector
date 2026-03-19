@@ -365,13 +365,37 @@ describe('StatsManager', () => {
     });
 
     describe('isInboundVideoFrozen', () => {
+      it('должен возвращать false когда входящий трафик еще не начинался', () => {
+        manager.statsPeerConnection.events.trigger(
+          'collected',
+          createStatsWithInboundRtp({
+            framesReceived: 0,
+            framesDecoded: 0,
+            packetsReceived: 0,
+            bytesReceived: 0,
+          }),
+        );
+
+        manager.statsPeerConnection.events.trigger(
+          'collected',
+          createStatsWithInboundRtp({
+            framesReceived: 0,
+            framesDecoded: 0,
+            packetsReceived: 0,
+            bytesReceived: 0,
+          }),
+        );
+
+        expect(manager.isInboundVideoFrozen).toBe(false);
+      });
+
       it('должен возвращать true когда inbound video перестает получать пакеты и байты', () => {
         manager.statsPeerConnection.events.trigger(
           'collected',
           createStatsWithInboundRtp({
             framesReceived: 1,
             framesDecoded: 1,
-            packetsReceived: 500,
+            packetsReceived: 1,
             bytesReceived: 1000,
           }),
         );
@@ -381,7 +405,7 @@ describe('StatsManager', () => {
           createStatsWithInboundRtp({
             framesReceived: 2,
             framesDecoded: 2,
-            packetsReceived: 501,
+            packetsReceived: 2,
             bytesReceived: 1200,
           }),
         );
@@ -391,7 +415,7 @@ describe('StatsManager', () => {
           createStatsWithInboundRtp({
             framesReceived: 2,
             framesDecoded: 2,
-            packetsReceived: 501,
+            packetsReceived: 2,
             bytesReceived: 1200,
           }),
         );
@@ -405,7 +429,7 @@ describe('StatsManager', () => {
           createStatsWithInboundRtp({
             framesReceived: 1,
             framesDecoded: 1,
-            packetsReceived: 500,
+            packetsReceived: 1,
             bytesReceived: 1000,
           }),
         );
@@ -415,7 +439,7 @@ describe('StatsManager', () => {
           createStatsWithInboundRtp({
             framesReceived: 2,
             framesDecoded: 2,
-            packetsReceived: 501,
+            packetsReceived: 2,
             bytesReceived: 1200,
           }),
         );
@@ -425,7 +449,7 @@ describe('StatsManager', () => {
           createStatsWithInboundRtp({
             framesReceived: 3,
             framesDecoded: 3,
-            packetsReceived: 502,
+            packetsReceived: 3,
             bytesReceived: 1400,
           }),
         );
@@ -439,7 +463,7 @@ describe('StatsManager', () => {
           createStatsWithInboundRtp({
             framesReceived: 1,
             framesDecoded: 1,
-            packetsReceived: 500,
+            packetsReceived: 1,
             bytesReceived: 1000,
           }),
         );
@@ -449,7 +473,7 @@ describe('StatsManager', () => {
           createStatsWithInboundRtp({
             framesReceived: 2,
             framesDecoded: 2,
-            packetsReceived: 501,
+            packetsReceived: 2,
             bytesReceived: 1200,
           }),
         );
@@ -459,7 +483,7 @@ describe('StatsManager', () => {
           createStatsWithInboundRtp({
             framesReceived: 2,
             framesDecoded: 2,
-            packetsReceived: 501,
+            packetsReceived: 2,
             bytesReceived: 1300,
           }),
         );
@@ -473,7 +497,7 @@ describe('StatsManager', () => {
           createStatsWithInboundRtp({
             framesReceived: 1,
             framesDecoded: 1,
-            packetsReceived: 500,
+            packetsReceived: 1,
             bytesReceived: 1000,
           }),
         );
@@ -483,7 +507,7 @@ describe('StatsManager', () => {
           createStatsWithInboundRtp({
             framesReceived: 2,
             framesDecoded: 2,
-            packetsReceived: 501,
+            packetsReceived: 2,
             bytesReceived: 1200,
           }),
         );
@@ -493,7 +517,7 @@ describe('StatsManager', () => {
           createStatsWithInboundRtp({
             framesReceived: 3,
             framesDecoded: 3,
-            packetsReceived: 502,
+            packetsReceived: 3,
             bytesReceived: 1200,
           }),
         );
