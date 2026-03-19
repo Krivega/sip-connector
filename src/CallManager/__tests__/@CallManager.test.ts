@@ -251,6 +251,150 @@ describe('CallManager', () => {
     await expect(callManager.applyQuality('low')).rejects.toThrow('recv-session-fail');
   });
 
+  it('restartRecvSession: при роли participant не перезапускает recvSession', async () => {
+    const startRecvSessionForcedSpy = jest.spyOn(
+      callManager as unknown as {
+        startRecvSessionForced: (params: { audioChannel: string; quality?: TRecvQuality }) => void;
+      },
+      'startRecvSessionForced',
+    );
+
+    callManager.setCallRoleParticipant();
+
+    const result = await callManager.restartRecvSession();
+
+    expect(result).toBe(false);
+    expect(startRecvSessionForcedSpy).not.toHaveBeenCalled();
+  });
+
+  it('restartRecvSession: при отсутствии recvSession возвращает false', async () => {
+    jest
+      .spyOn(
+        (
+          callManager as unknown as {
+            roleManager: { hasSpectator: () => boolean };
+          }
+        ).roleManager,
+        'hasSpectator',
+      )
+      .mockReturnValue(true);
+
+    const startRecvSessionForcedSpy = jest.spyOn(
+      callManager as unknown as {
+        startRecvSessionForced: (params: { audioChannel: string; quality?: TRecvQuality }) => void;
+      },
+      'startRecvSessionForced',
+    );
+
+    const result = await callManager.restartRecvSession();
+
+    expect(result).toBe(false);
+    expect(startRecvSessionForcedSpy).not.toHaveBeenCalled();
+  });
+
+  it('restartRecvSession: перезапускает recvSession с предыдущими параметрами в silent режиме', async () => {
+    jest
+      .spyOn(
+        (
+          callManager as unknown as {
+            roleManager: { hasSpectator: () => boolean };
+          }
+        ).roleManager,
+        'hasSpectator',
+      )
+      .mockReturnValue(true);
+
+    (
+      callManager as unknown as {
+        recvSession?: {
+          getQuality: () => TRecvQuality;
+          getAudioChannel: () => string;
+        };
+      }
+    ).recvSession = {
+      getQuality: jest.fn(() => {
+        return 'medium';
+      }),
+      getAudioChannel: jest.fn(() => {
+        return 'audio-1';
+      }),
+    };
+
+    const startRecvSessionForcedSpy = jest.spyOn(
+      callManager as unknown as {
+        startRecvSessionForced: (
+          params: { audioChannel: string; quality?: TRecvQuality },
+          options?: { silent?: boolean },
+        ) => Promise<{ session: unknown; callResult: boolean }>;
+      },
+      'startRecvSessionForced',
+    );
+
+    startRecvSessionForcedSpy.mockResolvedValue({
+      session: {},
+      callResult: true,
+    });
+
+    const recvSessionStartedHandler = jest.fn();
+    const recvSessionEndedHandler = jest.fn();
+
+    callManager.on(EEvent.RECV_SESSION_STARTED, recvSessionStartedHandler);
+    callManager.on(EEvent.RECV_SESSION_ENDED, recvSessionEndedHandler);
+
+    const result = await callManager.restartRecvSession();
+
+    expect(result).toBe(true);
+    expect(startRecvSessionForcedSpy).toHaveBeenCalledWith(
+      { audioChannel: 'audio-1', quality: 'medium' },
+      { silent: true },
+    );
+    expect(recvSessionStartedHandler).not.toHaveBeenCalled();
+    expect(recvSessionEndedHandler).not.toHaveBeenCalled();
+  });
+
+  it('restartRecvSession: пробрасывает ошибку, если startRecvSessionForced отклоняется', async () => {
+    jest
+      .spyOn(
+        (
+          callManager as unknown as {
+            roleManager: { hasSpectator: () => boolean };
+          }
+        ).roleManager,
+        'hasSpectator',
+      )
+      .mockReturnValue(true);
+
+    (
+      callManager as unknown as {
+        recvSession?: {
+          getQuality: () => TRecvQuality;
+          getAudioChannel: () => string;
+        };
+      }
+    ).recvSession = {
+      getQuality: jest.fn(() => {
+        return 'high';
+      }),
+      getAudioChannel: jest.fn(() => {
+        return 'audio-1';
+      }),
+    };
+
+    jest
+      .spyOn(
+        callManager as unknown as {
+          startRecvSessionForced: (
+            params: { audioChannel: string; quality?: TRecvQuality },
+            options?: { silent?: boolean },
+          ) => Promise<unknown>;
+        },
+        'startRecvSessionForced',
+      )
+      .mockRejectedValueOnce(new Error('restart recv failed'));
+
+    await expect(callManager.restartRecvSession()).rejects.toThrow('restart recv failed');
+  });
+
   it('setRecvQuality: при роли participant не перезапускает recvSession', async () => {
     const startRecvSessionForcedSpy = jest.spyOn(
       callManager as unknown as {

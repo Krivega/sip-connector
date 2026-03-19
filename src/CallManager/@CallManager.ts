@@ -321,6 +321,23 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     return this.mcuSession.restartIce(options);
   }
 
+  public async restartRecvSession(): Promise<boolean> {
+    const { recvSession } = this;
+
+    if (!this.hasSpectator() || !recvSession) {
+      return false;
+    }
+
+    const audioChannel = recvSession.getAudioChannel();
+    const quality = recvSession.getQuality();
+    const { callResult } = await this.startRecvSessionForced(
+      { audioChannel, quality },
+      { silent: true },
+    );
+
+    return callResult;
+  }
+
   public async setRecvQuality(quality: TRecvQuality): Promise<boolean> {
     const { recvSession } = this;
 
