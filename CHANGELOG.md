@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [26.9.0](https://github.com/Krivega/sip-connector/compare/v26.8.0...v26.9.0) (2026-03-19)
+
+### Features
+
+- add iceServers from MCUSession to RecvSession ([5d4390f](https://github.com/Krivega/sip-connector/commit/5d4390fa0d82856d8347df9ef55ddd0b34f32ec0))
+
 ## [26.8.0](https://github.com/Krivega/sip-connector/compare/v26.7.0...v26.8.0) (2026-03-04)
 
 ### Features
