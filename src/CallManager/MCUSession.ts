@@ -19,6 +19,8 @@ export class MCUSession implements IMCUSession {
 
   private readonly onReset: () => void;
 
+  private pcConfig?: { iceServers?: RTCIceServer[] };
+
   // Менеджер состояния битрейта
   private readonly bitrateStateManager = new BitrateStateManager();
 
@@ -42,6 +44,10 @@ export class MCUSession implements IMCUSession {
   public getEstablishedRTCSession = (): RTCSession | undefined => {
     return this.rtcSession?.isEstablished() === true ? this.rtcSession : undefined;
   };
+
+  public getPcConfig(): { iceServers?: RTCIceServer[] } | undefined {
+    return this.pcConfig;
+  }
 
   public async renegotiate(): Promise<boolean> {
     if (this.rtcSession === undefined) {
@@ -76,6 +82,7 @@ export class MCUSession implements IMCUSession {
           reject(error as Error);
         });
 
+      this.pcConfig = { iceServers };
       this.rtcSession = ua.call(getUri(number), {
         mediaStream: prepareMediaStream(mediaStream, {
           directionVideo,
@@ -148,6 +155,7 @@ export class MCUSession implements IMCUSession {
             reject(error as Error);
           });
 
+        this.pcConfig = { iceServers };
         rtcSession.answer({
           pcConfig: {
             iceServers,
@@ -321,6 +329,7 @@ export class MCUSession implements IMCUSession {
 
   private readonly reset: () => void = () => {
     delete this.rtcSession;
+    delete this.pcConfig;
     this.unsubscribeFromSessionEvents();
     this.bitrateStateManager.clearAll();
     this.onReset();

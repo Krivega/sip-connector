@@ -2062,6 +2062,61 @@ describe('CallManager - дополнительные тесты для покр�
     });
   });
 
+  it('startRecvSession: передаёт pcConfig из mcuSession.getPcConfig() в RecvSession', () => {
+    const iceServers: RTCIceServer[] = [{ urls: 'stun:stun.example.com' }];
+
+    jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('123');
+
+    const getPcConfigSpy = jest
+      // @ts-expect-error mcuSession is private
+      .spyOn(callManager.mcuSession, 'getPcConfig')
+      .mockReturnValue({ iceServers });
+
+    jest
+      .spyOn(
+        callManager as unknown as { attachRecvSessionTracks: () => void },
+        'attachRecvSessionTracks',
+      )
+      .mockImplementation(() => {});
+    jest
+      .spyOn(callManager as unknown as { stopRecvSession: () => void }, 'stopRecvSession')
+      .mockImplementation(() => {});
+
+    (
+      callManager as unknown as {
+        startRecvSession: (params: { audioChannel: string }, { token }: { token: string }) => void;
+      }
+    ).startRecvSession({ audioChannel: 'audio-id' }, { token: 'test-token' });
+
+    expect(getPcConfigSpy).toHaveBeenCalled();
+    expect(mockRecvSession.instance?.config).toMatchObject({
+      pcConfig: { iceServers },
+    });
+  });
+
+  it('startRecvSession: передаёт pcConfig: undefined когда getPcConfig возвращает undefined', () => {
+    jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('123');
+    // @ts-expect-error mcuSession is private
+    jest.spyOn(callManager.mcuSession, 'getPcConfig').mockReturnValue(undefined);
+    jest
+      .spyOn(
+        callManager as unknown as { attachRecvSessionTracks: () => void },
+        'attachRecvSessionTracks',
+      )
+      .mockImplementation(() => {});
+    jest
+      .spyOn(callManager as unknown as { stopRecvSession: () => void }, 'stopRecvSession')
+      .mockImplementation(() => {});
+
+    (
+      callManager as unknown as {
+        startRecvSession: (params: { audioChannel: string }, { token }: { token: string }) => void;
+      }
+    ).startRecvSession({ audioChannel: 'audio-id' }, { token: 'test-token' });
+
+    expect(mockRecvSession.instance?.config).toHaveProperty('pcConfig', undefined);
+  });
+
   it('startRecvSession: триггерит событие recv-session-started при успешном завершении call', async () => {
     jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('123');
 

@@ -83,6 +83,7 @@ export interface IMCUSession {
   readonly connection: RTCPeerConnection | undefined;
   readonly isCallActive: boolean;
   getEstablishedRTCSession: () => RTCSession | undefined;
+  getPcConfig: () => { iceServers?: RTCIceServer[] } | undefined;
   // Методы
   startCall: TStartCall;
   endCall: () => Promise<void>;

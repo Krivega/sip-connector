@@ -14,6 +14,7 @@ import type { TEvents } from '../events';
 // Вспомогательный тип для доступа к защищённым свойствам MCUSession
 interface MCUSessionTestAccess {
   rtcSession?: unknown;
+  pcConfig?: { iceServers?: RTCIceServer[] };
   isPendingCall?: boolean;
   isPendingAnswer?: boolean;
   callConfiguration?: Record<string, unknown>;
@@ -186,6 +187,79 @@ describe('MCUSession', () => {
     // @ts-expect-error
     expect(mcuSession.rtcSession).toBeUndefined();
     expect(handleReset).toHaveBeenCalled();
+  });
+
+  it('getPcConfig: возвращает undefined до начала звонка', () => {
+    expect(mcuSession.getPcConfig()).toBeUndefined();
+  });
+
+  it('startCall: сохраняет iceServers в pcConfig', async () => {
+    const iceServers: RTCIceServer[] = [{ urls: 'stun:stun.example.com' }];
+
+    const promise = mcuSession.startCall(ua as unknown as UA, getSipServerUrl, {
+      number: '123',
+      mediaStream,
+      iceServers,
+    });
+
+    expect(mcuSession.getPcConfig()).toEqual({ iceServers });
+
+    const audioTrack = createAudioMediaStreamTrackMock();
+    const videoTrack = createVideoMediaStreamTrackMock();
+    const fakePeerconnection = new RTCPeerConnectionMock(undefined, [audioTrack, videoTrack]);
+
+    events.trigger('peerconnection', { peerconnection: fakePeerconnection });
+    events.trigger('confirmed', {});
+
+    await promise;
+  });
+
+  it('answerToIncomingCall: сохраняет iceServers в pcConfig', async () => {
+    const iceServers: RTCIceServer[] = [{ urls: 'stun:stun.l.google.com:19302' }];
+    const rtcSession = new RTCSessionMock({
+      eventHandlers: {},
+      originator: 'remote',
+    });
+
+    const promise = mcuSession.answerToIncomingCall(rtcSession as unknown as RTCSession, {
+      mediaStream,
+      iceServers,
+    });
+
+    expect(mcuSession.getPcConfig()).toEqual({ iceServers });
+
+    const audioTrack = createAudioMediaStreamTrackMock();
+    const videoTrack = createVideoMediaStreamTrackMock();
+    const fakePeerconnection = new RTCPeerConnectionMock(undefined, [audioTrack, videoTrack]);
+
+    events.trigger('peerconnection', { peerconnection: fakePeerconnection });
+    events.trigger('confirmed', {});
+
+    await promise;
+  });
+
+  it('reset: очищает pcConfig', async () => {
+    const iceServers: RTCIceServer[] = [{ urls: 'stun:stun.test.com' }];
+    const promise = mcuSession.startCall(ua as unknown as UA, getSipServerUrl, {
+      number: '123',
+      mediaStream,
+      iceServers,
+    });
+
+    const audioTrack = createAudioMediaStreamTrackMock();
+    const videoTrack = createVideoMediaStreamTrackMock();
+    const fakePeerconnection = new RTCPeerConnectionMock(undefined, [audioTrack, videoTrack]);
+
+    events.trigger('peerconnection', { peerconnection: fakePeerconnection });
+    events.trigger('confirmed', {});
+
+    await promise;
+
+    expect(mcuSession.getPcConfig()).toEqual({ iceServers });
+
+    await mcuSession.endCall();
+
+    expect(mcuSession.getPcConfig()).toBeUndefined();
   });
 
   it('handleEnded: триггерит ENDED_FROM_SERVER и вызывает reset', () => {

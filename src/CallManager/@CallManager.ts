@@ -568,6 +568,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     const config = {
       audioChannel,
       quality,
+      pcConfig: this.mcuSession.getPcConfig(),
     };
 
     const session = new RecvSession(config, { sendOffer: this.tools.sendOffer });
