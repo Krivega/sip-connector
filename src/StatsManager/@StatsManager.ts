@@ -99,12 +99,12 @@ class StatsManager extends EventEmitterProxy<TStatsPeerConnectionEventMap> {
   }
 
   private get isReceivingPackets(): boolean {
-    const isReceivingPackets =
+    const isReceivingMoreThanMinPackets =
       this.packetsReceived !== undefined &&
       this.packetsReceived >= MIN_RECEIVED_MAIN_STREAM_PACKETS;
     const isNotSameValue = this.packetsReceived !== this.previousPacketsReceived;
 
-    return isReceivingPackets && isNotSameValue;
+    return isReceivingMoreThanMinPackets && isNotSameValue;
   }
 
   public hasAvailableIncomingBitrateChangedQuarter() {
