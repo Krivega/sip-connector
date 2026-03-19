@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [26.11.1](https://github.com/Krivega/sip-connector/compare/v26.11.0...v26.11.1) (2026-03-19)
+
+### Bug Fixes
+
+- update isInboundVideoFrozen logic to check for inbound traffic before determining frozen state ([6d97984](https://github.com/Krivega/sip-connector/commit/6d9798469186bea478f879defdcd35f183a46621))
+
 ## [26.11.0](https://github.com/Krivega/sip-connector/compare/v26.10.0...v26.11.0) (2026-03-19)
 
 ### Features
