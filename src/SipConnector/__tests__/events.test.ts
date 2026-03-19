@@ -144,6 +144,8 @@ describe('SipConnector events', () => {
 
     sipConnector.mainStreamHealthMonitor.events.trigger('no-inbound-frames', {
       isMutedMainVideoTrack: false,
+      isInvalidInboundFrames: false,
+      isInboundVideoFrozen: false,
     });
 
     // Проверяем, что каждый обработчик был вызван с правильными данными
@@ -162,7 +164,11 @@ describe('SipConnector events', () => {
     });
     expect(presentationHandler).toHaveBeenCalledWith(mediaStream);
     expect(statsHandler).toHaveBeenCalledWith(stats);
-    expect(mainStreamHealthHandler).toHaveBeenCalledWith({ isMutedMainVideoTrack: false });
+    expect(mainStreamHealthHandler).toHaveBeenCalledWith({
+      isMutedMainVideoTrack: false,
+      isInvalidInboundFrames: false,
+      isInboundVideoFrozen: false,
+    });
 
     // Проверяем, что каждый обработчик был вызван только один раз
     expect(autoConnectHandler).toHaveBeenCalledTimes(1);
@@ -172,6 +178,6 @@ describe('SipConnector events', () => {
     expect(incomingCallHandler).toHaveBeenCalledTimes(1);
     expect(presentationHandler).toHaveBeenCalledTimes(1);
     expect(statsHandler).toHaveBeenCalledTimes(1);
-    expect(mainStreamHealthHandler).toHaveBeenCalledTimes(1);
+    expect(mainStreamHealthHandler).toHaveBeenCalledTimes(2);
   });
 });

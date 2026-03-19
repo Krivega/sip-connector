@@ -44,6 +44,23 @@ class StatsManager extends EventEmitterProxy<TStatsPeerConnectionEventMap> {
     return this.isEmptyInboundFrames && this.isReceivingPackets;
   }
 
+  public get isInboundVideoFrozen(): boolean {
+    if (
+      this.packetsReceived === undefined ||
+      this.previousPacketsReceived === undefined ||
+      this.bytesReceived === undefined ||
+      this.previousBytesReceived === undefined
+    ) {
+      return false;
+    }
+
+    const hasEnoughPackets = this.packetsReceived >= MIN_RECEIVED_MAIN_STREAM_PACKETS;
+    const havePacketsStopped = this.packetsReceived === this.previousPacketsReceived;
+    const haveBytesStopped = this.bytesReceived === this.previousBytesReceived;
+
+    return hasEnoughPackets && havePacketsStopped && haveBytesStopped;
+  }
+
   private get isEmptyInboundFrames(): boolean {
     return !this.isFramesReceived || !this.isFramesDecoded;
   }
@@ -96,6 +113,14 @@ class StatsManager extends EventEmitterProxy<TStatsPeerConnectionEventMap> {
 
   private get previousPacketsReceived(): number | undefined {
     return this.previousInboundRtp?.packetsReceived;
+  }
+
+  private get bytesReceived(): number | undefined {
+    return this.inboundRtp?.bytesReceived;
+  }
+
+  private get previousBytesReceived(): number | undefined {
+    return this.previousInboundRtp?.bytesReceived;
   }
 
   private get isReceivingPackets(): boolean {

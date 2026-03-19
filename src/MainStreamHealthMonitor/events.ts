@@ -7,6 +7,8 @@ export const EVENT_NAMES = [NO_INBOUND_FRAMES_EVENT_NAME] as const;
 export type TEventMap = {
   [NO_INBOUND_FRAMES_EVENT_NAME]: {
     isMutedMainVideoTrack: boolean;
+    isInvalidInboundFrames: boolean;
+    isInboundVideoFrozen: boolean;
   };
 };
 

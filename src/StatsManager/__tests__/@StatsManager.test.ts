@@ -363,6 +363,144 @@ describe('StatsManager', () => {
 
       expect(manager.isInvalidInboundFrames).toBe(false);
     });
+
+    describe('isInboundVideoFrozen', () => {
+      it('должен возвращать true когда inbound video перестает получать пакеты и байты', () => {
+        manager.statsPeerConnection.events.trigger(
+          'collected',
+          createStatsWithInboundRtp({
+            framesReceived: 1,
+            framesDecoded: 1,
+            packetsReceived: 500,
+            bytesReceived: 1000,
+          }),
+        );
+
+        manager.statsPeerConnection.events.trigger(
+          'collected',
+          createStatsWithInboundRtp({
+            framesReceived: 2,
+            framesDecoded: 2,
+            packetsReceived: 501,
+            bytesReceived: 1200,
+          }),
+        );
+
+        manager.statsPeerConnection.events.trigger(
+          'collected',
+          createStatsWithInboundRtp({
+            framesReceived: 2,
+            framesDecoded: 2,
+            packetsReceived: 501,
+            bytesReceived: 1200,
+          }),
+        );
+
+        expect(manager.isInboundVideoFrozen).toBe(true);
+      });
+
+      it('должен возвращать false когда inbound video продолжает получать пакеты и байты', () => {
+        manager.statsPeerConnection.events.trigger(
+          'collected',
+          createStatsWithInboundRtp({
+            framesReceived: 1,
+            framesDecoded: 1,
+            packetsReceived: 500,
+            bytesReceived: 1000,
+          }),
+        );
+
+        manager.statsPeerConnection.events.trigger(
+          'collected',
+          createStatsWithInboundRtp({
+            framesReceived: 2,
+            framesDecoded: 2,
+            packetsReceived: 501,
+            bytesReceived: 1200,
+          }),
+        );
+
+        manager.statsPeerConnection.events.trigger(
+          'collected',
+          createStatsWithInboundRtp({
+            framesReceived: 3,
+            framesDecoded: 3,
+            packetsReceived: 502,
+            bytesReceived: 1400,
+          }),
+        );
+
+        expect(manager.isInboundVideoFrozen).toBe(false);
+      });
+
+      it('должен возвращать false когда перестают приходить только пакеты', () => {
+        manager.statsPeerConnection.events.trigger(
+          'collected',
+          createStatsWithInboundRtp({
+            framesReceived: 1,
+            framesDecoded: 1,
+            packetsReceived: 500,
+            bytesReceived: 1000,
+          }),
+        );
+
+        manager.statsPeerConnection.events.trigger(
+          'collected',
+          createStatsWithInboundRtp({
+            framesReceived: 2,
+            framesDecoded: 2,
+            packetsReceived: 501,
+            bytesReceived: 1200,
+          }),
+        );
+
+        manager.statsPeerConnection.events.trigger(
+          'collected',
+          createStatsWithInboundRtp({
+            framesReceived: 2,
+            framesDecoded: 2,
+            packetsReceived: 501,
+            bytesReceived: 1300,
+          }),
+        );
+
+        expect(manager.isInboundVideoFrozen).toBe(false);
+      });
+
+      it('должен возвращать false когда перестают приходить только байты', () => {
+        manager.statsPeerConnection.events.trigger(
+          'collected',
+          createStatsWithInboundRtp({
+            framesReceived: 1,
+            framesDecoded: 1,
+            packetsReceived: 500,
+            bytesReceived: 1000,
+          }),
+        );
+
+        manager.statsPeerConnection.events.trigger(
+          'collected',
+          createStatsWithInboundRtp({
+            framesReceived: 2,
+            framesDecoded: 2,
+            packetsReceived: 501,
+            bytesReceived: 1200,
+          }),
+        );
+
+        manager.statsPeerConnection.events.trigger(
+          'collected',
+          createStatsWithInboundRtp({
+            framesReceived: 3,
+            framesDecoded: 3,
+            packetsReceived: 502,
+            bytesReceived: 1200,
+          }),
+        );
+
+        expect(manager.isInboundVideoFrozen).toBe(false);
+      });
+    });
   });
 
   describe('hasAvailableIncomingBitrateChangedQuarter', () => {

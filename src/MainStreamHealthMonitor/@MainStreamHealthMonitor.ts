@@ -35,16 +35,20 @@ class MainStreamHealthMonitor extends EventEmitterProxy<TEventMap> {
     return mainVideoTrack.muted;
   }
 
-  private readonly handleStatsCollected = () => {
-    if (this.hasNoIncomingFrames()) {
-      this.events.trigger(NO_INBOUND_FRAMES_EVENT_NAME, {
-        isMutedMainVideoTrack: this.isMutedMainVideoTrack,
-      });
-    }
-  };
-
-  private readonly hasNoIncomingFrames = (): boolean => {
+  private get isInvalidInboundFrames(): boolean {
     return this.statsManager.isInvalidInboundFrames;
+  }
+
+  private get isInboundVideoFrozen(): boolean {
+    return this.statsManager.isInboundVideoFrozen;
+  }
+
+  private readonly handleStatsCollected = () => {
+    this.events.trigger(NO_INBOUND_FRAMES_EVENT_NAME, {
+      isMutedMainVideoTrack: this.isMutedMainVideoTrack,
+      isInvalidInboundFrames: this.isInvalidInboundFrames,
+      isInboundVideoFrozen: this.isInboundVideoFrozen,
+    });
   };
 
   private subscribe() {

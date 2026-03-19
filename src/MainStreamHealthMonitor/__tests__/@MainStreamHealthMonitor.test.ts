@@ -16,6 +16,7 @@ describe('@MainStreamHealthMonitor', () => {
   let mainStream: MediaStream;
   let track: ReturnType<typeof createVideoMediaStreamTrackMock>;
   let isInvalidInboundFrames: boolean;
+  let isInboundVideoFrozen: boolean;
 
   const handler = jest.fn();
 
@@ -24,10 +25,14 @@ describe('@MainStreamHealthMonitor', () => {
     track = createVideoMediaStreamTrackMock({ id: 'v1' });
     statsEvents = createStatsEvents();
     isInvalidInboundFrames = false;
+    isInboundVideoFrozen = false;
     statsManager = {
       on: statsEvents.on.bind(statsEvents),
       get isInvalidInboundFrames() {
         return isInvalidInboundFrames;
+      },
+      get isInboundVideoFrozen() {
+        return isInboundVideoFrozen;
       },
     } as unknown as StatsManager;
     callManager = {
@@ -54,9 +59,15 @@ describe('@MainStreamHealthMonitor', () => {
       statsEvents.trigger('collected', {} as TStats);
 
       expect(handler).toHaveBeenCalledTimes(1);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(handler.mock.calls[0]?.[0]).toEqual({
+        isMutedMainVideoTrack: true,
+        isInvalidInboundFrames: true,
+        isInboundVideoFrozen: false,
+      });
     });
 
-    it('не должен эмитить событие когда StatsManager.isInvalidInboundFrames возвращает false', () => {
+    it('должен эмитить событие когда StatsManager.isInvalidInboundFrames возвращает false', () => {
       mainStream.addTrack(track);
 
       Object.defineProperty(track, 'muted', { value: true, configurable: true });
@@ -67,10 +78,16 @@ describe('@MainStreamHealthMonitor', () => {
       monitor.on(NO_INBOUND_FRAMES_EVENT_NAME, handler);
       statsEvents.trigger('collected', {} as TStats);
 
-      expect(handler).toHaveBeenCalledTimes(0);
+      expect(handler).toHaveBeenCalledTimes(1);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(handler.mock.calls[0]?.[0]).toEqual({
+        isMutedMainVideoTrack: true,
+        isInvalidInboundFrames: false,
+        isInboundVideoFrozen: false,
+      });
     });
 
-    it('не должен эмитить событие когда основной видеотрек не muted', () => {
+    it('должен эмитить событие когда основной видеотрек не muted', () => {
       mainStream.addTrack(track);
 
       Object.defineProperty(track, 'muted', { value: false, configurable: true });
@@ -83,7 +100,11 @@ describe('@MainStreamHealthMonitor', () => {
 
       expect(handler).toHaveBeenCalledTimes(1);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      expect(handler.mock.calls[0]?.[0]).toEqual({ isMutedMainVideoTrack: false });
+      expect(handler.mock.calls[0]?.[0]).toEqual({
+        isMutedMainVideoTrack: false,
+        isInvalidInboundFrames: true,
+        isInboundVideoFrozen: false,
+      });
     });
 
     it('должен эмитить событие когда в основном потоке нет видеотреков', () => {
@@ -95,7 +116,11 @@ describe('@MainStreamHealthMonitor', () => {
 
       expect(handler).toHaveBeenCalledTimes(1);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      expect(handler.mock.calls[0]?.[0]).toEqual({ isMutedMainVideoTrack: false });
+      expect(handler.mock.calls[0]?.[0]).toEqual({
+        isMutedMainVideoTrack: false,
+        isInvalidInboundFrames: true,
+        isInboundVideoFrozen: false,
+      });
     });
   });
 });
