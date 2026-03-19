@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [26.10.0](https://github.com/Krivega/sip-connector/compare/v26.9.1...v26.10.0) (2026-03-19)
+
+### Features
+
+- auto-recover recvSession for Spectator ([cea9caf](https://github.com/Krivega/sip-connector/commit/cea9cafa169eb0b9af7fb1f9b52ab134f354fbce))
+
 ### [26.9.1](https://github.com/Krivega/sip-connector/compare/v26.9.0...v26.9.1) (2026-03-19)
 
 ## [26.9.0](https://github.com/Krivega/sip-connector/compare/v26.8.0...v26.9.0) (2026-03-19)
