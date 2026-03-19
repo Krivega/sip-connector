@@ -227,7 +227,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   }
 
   public async renegotiate(): Promise<boolean> {
-    if (this.roleManager.hasSpectator()) {
+    if (this.hasSpectator()) {
       return this.renegotiateRecvSession();
     }
 
@@ -287,12 +287,16 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   }
 
   public readonly getActivePeerConnection = () => {
-    if (this.roleManager.hasSpectator()) {
+    if (this.hasSpectator()) {
       return this.recvSession?.peerConnection;
     }
 
     return this.mcuSession.connection;
   };
+
+  public hasSpectator(): boolean {
+    return this.roleManager.hasSpectator();
+  }
 
   public setCallRoleParticipant() {
     this.roleManager.setCallRoleParticipant();
@@ -320,7 +324,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   public async setRecvQuality(quality: TRecvQuality): Promise<boolean> {
     const { recvSession } = this;
 
-    if (!this.roleManager.hasSpectator() || !recvSession) {
+    if (!this.hasSpectator() || !recvSession) {
       return false;
     }
 
@@ -370,7 +374,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   public async applyQuality(quality: TRecvQuality): Promise<boolean> {
     const { recvSession } = this;
 
-    if (!this.roleManager.hasSpectator() || !recvSession) {
+    if (!this.hasSpectator() || !recvSession) {
       return false;
     }
 
@@ -519,7 +523,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
 
   private getActiveStreamsManagerTools(): TStreamsManagerTools {
     return this.streamsManagerProvider.getActiveStreamsManagerTools({
-      isSpectator: this.roleManager.hasSpectator(),
+      isSpectator: this.hasSpectator(),
       stateInfo: this.contentedStreamManager.getStateInfo(),
     });
   }
