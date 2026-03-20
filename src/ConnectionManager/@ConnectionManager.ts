@@ -40,7 +40,14 @@ export default class ConnectionManager extends EventEmitterProxy<TEventMap> {
 
   private readonly configurationManager: ConfigurationManager;
 
-  public constructor({ JsSIP }: { JsSIP: TJsSIP }) {
+  public constructor(
+    { JsSIP }: { JsSIP: TJsSIP },
+    {
+      numberOfConnectionAttempts,
+    }: {
+      numberOfConnectionAttempts?: number;
+    } = {},
+  ) {
     super(createEvents());
 
     this.uaFactory = new UAFactory(JsSIP);
@@ -59,32 +66,35 @@ export default class ConnectionManager extends EventEmitterProxy<TEventMap> {
       getUaProtected: this.getUaProtected,
     });
 
-    this.connectionFlow = new ConnectionFlow({
-      events: this.events,
-      uaFactory: this.uaFactory,
-      stateMachine: this.stateMachine,
-      registrationManager: this.registrationManager,
-      getUa: this.getUa,
-      getConnectionConfiguration: this.getConnectionConfiguration,
-      setConnectionConfiguration: (config) => {
-        this.configurationManager.set(config);
+    this.connectionFlow = new ConnectionFlow(
+      {
+        events: this.events,
+        uaFactory: this.uaFactory,
+        stateMachine: this.stateMachine,
+        registrationManager: this.registrationManager,
+        getUa: this.getUa,
+        getConnectionConfiguration: this.getConnectionConfiguration,
+        setConnectionConfiguration: (config) => {
+          this.configurationManager.set(config);
+        },
+        updateConnectionConfiguration: <K extends keyof TConnectionConfiguration>(
+          key: K,
+          value: TConnectionConfiguration[K],
+        ) => {
+          this.configurationManager.update(key, value);
+        },
+        setUa: (ua: UA | undefined) => {
+          this.ua = ua;
+        },
+        setGetUri: (getUri: TGetUri) => {
+          this.getUri = getUri;
+        },
+        setSocket: (socket: WebSocketInterface) => {
+          this.socket = socket;
+        },
       },
-      updateConnectionConfiguration: <K extends keyof TConnectionConfiguration>(
-        key: K,
-        value: TConnectionConfiguration[K],
-      ) => {
-        this.configurationManager.update(key, value);
-      },
-      setUa: (ua: UA | undefined) => {
-        this.ua = ua;
-      },
-      setGetUri: (getUri: TGetUri) => {
-        this.getUri = getUri;
-      },
-      setSocket: (socket: WebSocketInterface) => {
-        this.socket = socket;
-      },
-    });
+      { numberOfConnectionAttempts },
+    );
   }
 
   public get requested() {

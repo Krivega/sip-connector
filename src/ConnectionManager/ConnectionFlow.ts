@@ -18,7 +18,7 @@ import type { TEvents } from './events';
 import type RegistrationManager from './RegistrationManager';
 import type UAFactory from './UAFactory';
 
-const DELAYED_REPEATED_CALLS_CONNECT_LIMIT = 3;
+const NUMBER_OF_CONNECTION_ATTEMPTS = 3;
 
 export type TOptionsExtraHeaders = {
   extraHeaders?: string[];
@@ -41,7 +41,7 @@ export type TParametersConnection = TOptionsExtraHeaders & {
 
 export type TConnect = (
   parameters: TParametersConnection,
-  options?: { callLimit?: number },
+  options?: { numberOfConnectionAttempts?: number },
 ) => Promise<TConnectionConfiguration>;
 
 export type TSet = (parameters: { displayName?: string }) => Promise<boolean>;
@@ -71,10 +71,20 @@ export default class ConnectionFlow {
     | ReturnType<typeof repeatedCallsAsync<TConnectionConfiguration>>
     | undefined;
 
+  private readonly numberOfConnectionAttempts: number;
+
   private readonly dependencies: IDependencies;
 
-  public constructor(dependencies: IDependencies) {
+  public constructor(
+    dependencies: IDependencies,
+    {
+      numberOfConnectionAttempts = NUMBER_OF_CONNECTION_ATTEMPTS,
+    }: {
+      numberOfConnectionAttempts?: number;
+    } = {},
+  ) {
     this.dependencies = dependencies;
+    this.numberOfConnectionAttempts = numberOfConnectionAttempts;
 
     this.proxyEvents();
   }
@@ -143,7 +153,7 @@ export default class ConnectionFlow {
 
   private readonly connectWithDuplicatedCalls: TConnect = async (
     data,
-    { callLimit = DELAYED_REPEATED_CALLS_CONNECT_LIMIT } = {},
+    { numberOfConnectionAttempts = this.numberOfConnectionAttempts } = {},
   ) => {
     const targetFunction = async () => {
       return this.connectInner(data);
@@ -164,7 +174,7 @@ export default class ConnectionFlow {
     this.cancelableConnectWithRepeatedCalls = repeatedCallsAsync<TConnectionConfiguration>({
       targetFunction,
       isComplete,
-      callLimit,
+      callLimit: numberOfConnectionAttempts,
       isRejectAsValid: true,
       isCheckBeforeCall: false,
     });

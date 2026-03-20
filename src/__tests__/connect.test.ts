@@ -13,15 +13,16 @@ import {
   uaConfigurationWithoutAuthorizationWithoutDisplayName,
 } from '../__fixtures__';
 import UAMock, { createWebsocketHandshakeTimeoutError } from '../__fixtures__/UA.mock';
-import { doMockSipConnector } from '../doMock';
+import { doMockSipConnector, JsSIP } from '../doMock';
+import { SipConnector } from '../SipConnector';
 import { uriWithName } from '../tools/__fixtures__/connectToServer';
 
-import type { SipConnector } from '../SipConnector';
+import type { TJsSIP } from '../types';
 
 const wrongPassword = 'wrongPassword';
 const websocketHandshakeTimeoutError = createWebsocketHandshakeTimeoutError(SIP_SERVER_URL);
 
-const connectCallLimit = 3;
+const numberOfConnectionAttempts = 3;
 
 describe('connect', () => {
   let sipConnector: SipConnector;
@@ -247,14 +248,14 @@ describe('connect', () => {
 
     try {
       await sipConnector.connect(dataForConnectionWithoutAuthorization, {
-        callLimit: connectCallLimit,
+        numberOfConnectionAttempts,
       });
     } catch (error) {
       // eslint-disable-next-line jest/no-conditional-expect
       expect(error).toEqual(new Error('call limit (3) is reached'));
     }
 
-    expect(requestConnectMocked).toHaveBeenCalledTimes(connectCallLimit);
+    expect(requestConnectMocked).toHaveBeenCalledTimes(numberOfConnectionAttempts);
   });
 
   it('должен завершать процесс подключения после 2 неудачных попыток с ошибкой 1006', async () => {
@@ -270,12 +271,73 @@ describe('connect', () => {
     );
 
     await sipConnector.connect(dataForConnectionWithAuthorization, {
-      callLimit: connectCallLimit,
+      numberOfConnectionAttempts,
     });
 
     expect(sipConnector.connectionManager.ua?.configuration).toEqual(
       uaConfigurationWithAuthorization,
     );
     expect(requestConnectMocked).toHaveBeenCalledTimes(2);
+  });
+
+  it('должен использовать callLimit из конструктора SipConnector', async () => {
+    expect.assertions(2);
+
+    const callLimit = 5;
+
+    const sipConnectorWithCallLimit = new SipConnector(
+      { JsSIP: JsSIP as unknown as TJsSIP },
+      { numberOfConnectionAttempts: callLimit },
+    );
+
+    UAMock.setStartError(websocketHandshakeTimeoutError);
+
+    const requestConnectMocked = jest.spyOn(
+      // @ts-expect-error - тестируем приватный метод
+      sipConnectorWithCallLimit.connectionManager.connectionFlow,
+      // @ts-expect-error - тестируем приватный метод
+      'connectInner',
+    );
+
+    try {
+      await sipConnectorWithCallLimit.connect(dataForConnectionWithoutAuthorization);
+    } catch (error) {
+      // eslint-disable-next-line jest/no-conditional-expect
+      expect(error).toEqual(new Error(`call limit (${callLimit}) is reached`));
+    }
+
+    expect(requestConnectMocked).toHaveBeenCalledTimes(callLimit);
+  });
+
+  it('должен переопределять callLimit опциями connect в SipConnector', async () => {
+    expect.assertions(2);
+
+    const constructorCallLimit = 5;
+    const callLimit = 2;
+
+    const sipConnectorWithConstructorCallLimit = new SipConnector(
+      { JsSIP: JsSIP as unknown as TJsSIP },
+      { numberOfConnectionAttempts: constructorCallLimit },
+    );
+
+    UAMock.setStartError(websocketHandshakeTimeoutError);
+
+    const requestConnectMocked = jest.spyOn(
+      // @ts-expect-error - тестируем приватный метод
+      sipConnectorWithConstructorCallLimit.connectionManager.connectionFlow,
+      // @ts-expect-error - тестируем приватный метод
+      'connectInner',
+    );
+
+    try {
+      await sipConnectorWithConstructorCallLimit.connect(dataForConnectionWithoutAuthorization, {
+        numberOfConnectionAttempts: callLimit,
+      });
+    } catch (error) {
+      // eslint-disable-next-line jest/no-conditional-expect
+      expect(error).toEqual(new Error(`call limit (${callLimit}) is reached`));
+    }
+
+    expect(requestConnectMocked).toHaveBeenCalledTimes(callLimit);
   });
 });

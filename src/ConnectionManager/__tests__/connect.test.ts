@@ -22,7 +22,7 @@ import type { TJsSIP } from '@/types';
 const wrongPassword = 'wrongPassword';
 const websocketHandshakeTimeoutError = createWebsocketHandshakeTimeoutError(SIP_SERVER_URL);
 
-const connectCallLimit = 3;
+const numberOfConnectionAttempts = 3;
 
 describe('connect', () => {
   let connectionManager: ConnectionManager;
@@ -242,14 +242,14 @@ describe('connect', () => {
 
     try {
       await connectionManager.connect(dataForConnectionWithoutAuthorization, {
-        callLimit: connectCallLimit,
+        numberOfConnectionAttempts,
       });
     } catch (error) {
       // eslint-disable-next-line jest/no-conditional-expect
       expect(error).toEqual(new Error('call limit (3) is reached'));
     }
 
-    expect(requestConnectMocked).toHaveBeenCalledTimes(connectCallLimit);
+    expect(requestConnectMocked).toHaveBeenCalledTimes(numberOfConnectionAttempts);
   });
 
   it('должен завершать процесс подключения после 2 неудачных попыток с ошибкой 1006', async () => {
@@ -261,7 +261,7 @@ describe('connect', () => {
     const requestConnectMocked = jest.spyOn(connectionManager.connectionFlow, 'connectInner');
 
     await connectionManager.connect(dataForConnectionWithAuthorization, {
-      callLimit: connectCallLimit,
+      numberOfConnectionAttempts,
     });
 
     expect(connectionManager.ua?.configuration).toEqual(uaConfigurationWithAuthorization);

@@ -72,11 +72,13 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       excludeMimeTypesVideoCodecs,
       videoBalancerOptions,
       autoConnectorOptions,
+      numberOfConnectionAttempts,
     }: {
       preferredMimeTypesVideoCodecs?: string[];
       excludeMimeTypesVideoCodecs?: string[];
       videoBalancerOptions?: IBalancerOptions;
       autoConnectorOptions?: IAutoConnectorOptions;
+      numberOfConnectionAttempts?: number;
     } = {},
   ) {
     super(createEvents());
@@ -85,7 +87,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       preferredMimeTypesVideoCodecs ?? PREFERRED_MIME_TYPES_VIDEO_CODECS;
     this.excludeMimeTypesVideoCodecs = excludeMimeTypesVideoCodecs;
     this.apiManager = new ApiManager();
-    this.connectionManager = new ConnectionManager({ JsSIP });
+    this.connectionManager = new ConnectionManager({ JsSIP }, { numberOfConnectionAttempts });
     this.connectionQueueManager = new ConnectionQueueManager({
       connectionManager: this.connectionManager,
     });
