@@ -1,7 +1,6 @@
 # sip-connector
 
 [![npm](https://img.shields.io/npm/v/sip-connector?style=flat-square)](https://www.npmjs.com/package/sip-connector)
-![npm bundle size](https://img.shields.io/bundlephobia/minzip/sip-connector?style=flat-square)
 [![Demo](https://img.shields.io/badge/demo-online-brightgreen?style=flat-square)](https://Krivega.github.io/sip-connector/)
 [![Documentation](https://img.shields.io/badge/docs-available-blue?style=flat-square)](./docs/README.md)
 
@@ -34,12 +33,13 @@ SDK предоставляет комплексное решение для:
 - **Улучшенная статистика**: Расширенные возможности сбора и анализа WebRTC статистики
   |
 
+### Demo
+
+- **Demo**: [https://Krivega.github.io/sip-connector/](https://Krivega.github.io/sip-connector/)
+
+Это интерактивный пример, который помогает наглядно продемонстрировать основные возможности библиотеки `sip-connector`: установление SIP-сессий и звонков, работу с WebRTC-медиа-потоками, поддержку “презентаций” (второго потока), а также базовую событийную логику и мониторинг WebRTC-статистики.
+
 ---
-
-## Демо
-
-- [Demo](https://Krivega.github.io/sip-connector/)
-- Это интерактивный пример, который помогает наглядно продемонстрировать основные возможности библиотеки `sip-connector`: установление SIP-сессий и звонков, работу с WebRTC-медиа-потоками, поддержку “презентаций” (второго потока), а также базовую событийную логику и мониторинг WebRTC-статистики.
 
 ## 🚀 Установка
 
