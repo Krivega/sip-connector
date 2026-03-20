@@ -8,6 +8,7 @@
 | --------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | `main-stream-health:health-snapshot`                | На каждом сэмпле health-monitoring после очередного `stats:collected` | `THealthSnapshot`                                                                      |
 | `main-stream-health:inbound-video-problem-detected` | Когда проблема подтверждается несколькими подряд проблемными сэмплами | `THealthSnapshot & { reason: TProblemReason; consecutiveProblemSamplesCount: number }` |
+| `main-stream-health:inbound-video-problem-resolved` | Когда ранее подтвержденная проблема исчезла и snapshot стал healthy   | `THealthSnapshot & { reason: TProblemReason }`                                         |
 
 ## `THealthSnapshot`
 
@@ -39,3 +40,8 @@ type TProblemReason =
 ## Текущее поведение восстановления
 
 `SipConnector` подписывается на `main-stream-health:inbound-video-problem-detected` и запускает `MainStreamRecovery.recover()`. Восстановление выполняется через throttled `renegotiate`, без автоматического `endCall`.
+
+Для клиентских приложений типичный паттерн такой:
+
+- на `main-stream-health:inbound-video-problem-detected` показать предупреждение;
+- на `main-stream-health:inbound-video-problem-resolved` скрыть предупреждение.

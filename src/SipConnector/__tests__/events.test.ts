@@ -94,6 +94,7 @@ describe('SipConnector events', () => {
     const statsHandler = jest.fn();
     const mainStreamHealthHandler = jest.fn();
     const mainStreamProblemHandler = jest.fn();
+    const mainStreamProblemResolvedHandler = jest.fn();
 
     // Подписываемся на события от разных менеджеров
     sipConnector.events.on('auto-connect:success', autoConnectHandler);
@@ -107,6 +108,10 @@ describe('SipConnector events', () => {
     sipConnector.events.on(
       'main-stream-health:inbound-video-problem-detected',
       mainStreamProblemHandler,
+    );
+    sipConnector.events.on(
+      'main-stream-health:inbound-video-problem-resolved',
+      mainStreamProblemResolvedHandler,
     );
 
     const stats = {
@@ -161,6 +166,13 @@ describe('SipConnector events', () => {
       isNoInboundVideoTraffic: false,
       isInboundVideoStalled: true,
     });
+    sipConnector.mainStreamHealthMonitor.events.trigger('inbound-video-problem-resolved', {
+      reason: 'inbound-video-stalled',
+      isMutedMainVideoTrack: false,
+      isInvalidInboundFrames: false,
+      isNoInboundVideoTraffic: false,
+      isInboundVideoStalled: false,
+    });
 
     // Проверяем, что каждый обработчик был вызван с правильными данными
     expect(autoConnectHandler).toHaveBeenCalledWith(undefined);
@@ -192,6 +204,13 @@ describe('SipConnector events', () => {
       isNoInboundVideoTraffic: false,
       isInboundVideoStalled: true,
     });
+    expect(mainStreamProblemResolvedHandler).toHaveBeenCalledWith({
+      reason: 'inbound-video-stalled',
+      isMutedMainVideoTrack: false,
+      isInvalidInboundFrames: false,
+      isNoInboundVideoTraffic: false,
+      isInboundVideoStalled: false,
+    });
 
     // Проверяем, что каждый обработчик был вызван только один раз
     expect(autoConnectHandler).toHaveBeenCalledTimes(1);
@@ -203,5 +222,6 @@ describe('SipConnector events', () => {
     expect(statsHandler).toHaveBeenCalledTimes(1);
     expect(mainStreamHealthHandler).toHaveBeenCalledTimes(2);
     expect(mainStreamProblemHandler).toHaveBeenCalledTimes(1);
+    expect(mainStreamProblemResolvedHandler).toHaveBeenCalledTimes(1);
   });
 });

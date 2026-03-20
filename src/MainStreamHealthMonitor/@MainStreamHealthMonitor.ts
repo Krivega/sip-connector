@@ -4,6 +4,7 @@ import {
   createEvents,
   INBOUND_VIDEO_PROBLEM_DETECTED_EVENT_NAME,
   HEALTH_SNAPSHOT_EVENT_NAME,
+  INBOUND_VIDEO_PROBLEM_RESOLVED_EVENT_NAME,
 } from './events';
 
 import type { CallManager } from '@/CallManager';
@@ -92,6 +93,7 @@ class MainStreamHealthMonitor extends EventEmitterProxy<TEventMap> {
     const problemReason = MainStreamHealthMonitor.resolveProblemReason(healthSnapshot);
 
     if (problemReason === undefined) {
+      this.maybeEmitResolvedProblem(healthSnapshot);
       this.resetProblemDetectionState();
 
       return;
@@ -132,6 +134,17 @@ class MainStreamHealthMonitor extends EventEmitterProxy<TEventMap> {
     this.currentProblemReason = problemReason;
     this.consecutiveProblemSamplesCount = 1;
     this.hasEmittedCurrentProblem = false;
+  };
+
+  private readonly maybeEmitResolvedProblem = (healthSnapshot: THealthSnapshot) => {
+    if (!this.hasEmittedCurrentProblem || this.currentProblemReason === undefined) {
+      return;
+    }
+
+    this.events.trigger(INBOUND_VIDEO_PROBLEM_RESOLVED_EVENT_NAME, {
+      ...healthSnapshot,
+      reason: this.currentProblemReason,
+    });
   };
 
   private readonly resetProblemDetectionState = () => {

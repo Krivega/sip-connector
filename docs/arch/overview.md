@@ -192,7 +192,7 @@ graph TB
 - `MainStreamHealthMonitor` → `StatsManager` (построение health snapshot по WebRTC stats)
 - `MainStreamHealthMonitor` → `CallManager` (отслеживание состояния основного входящего видео-трека)
 - `MainStreamRecovery` → `CallManager` (пересогласование настроек основного потока)
-- `SipConnector` → `MainStreamHealthMonitor` (реакция на события `health-snapshot` и `inbound-video-problem-detected`)
+- `SipConnector` → `MainStreamHealthMonitor` (реакция на события `health-snapshot`, `inbound-video-problem-detected` и `inbound-video-problem-resolved`)
 - `SipConnector` → `MainStreamRecovery` (восстановление основного входящего потока через `recover()` -> `renegotiate()`)
 
 ---

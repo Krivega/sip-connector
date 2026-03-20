@@ -2,7 +2,11 @@ import { createVideoMediaStreamTrackMock } from 'webrtc-mock';
 
 import { createEvents as createStatsEvents } from '@/StatsPeerConnection';
 import MainStreamHeathMonitor from '../@MainStreamHealthMonitor';
-import { INBOUND_VIDEO_PROBLEM_DETECTED_EVENT_NAME, HEALTH_SNAPSHOT_EVENT_NAME } from '../events';
+import {
+  HEALTH_SNAPSHOT_EVENT_NAME,
+  INBOUND_VIDEO_PROBLEM_DETECTED_EVENT_NAME,
+  INBOUND_VIDEO_PROBLEM_RESOLVED_EVENT_NAME,
+} from '../events';
 
 import type { CallManager } from '@/CallManager';
 import type { StatsManager } from '@/StatsManager';
@@ -198,6 +202,45 @@ describe('@MainStreamHealthMonitor', () => {
         isNoInboundVideoTraffic: true,
         isInboundVideoStalled: false,
       });
+    });
+  });
+
+  describe('INBOUND_VIDEO_PROBLEM_RESOLVED_EVENT_NAME', () => {
+    it('должен эмитить событие когда подтвержденная проблема уходит', () => {
+      const monitor = new MainStreamHeathMonitor(statsManager, callManager);
+
+      monitor.on(INBOUND_VIDEO_PROBLEM_RESOLVED_EVENT_NAME, handler);
+
+      isInboundVideoStalled = true;
+      statsEvents.trigger('collected', {} as TStats);
+      statsEvents.trigger('collected', {} as TStats);
+
+      isInboundVideoStalled = false;
+      statsEvents.trigger('collected', {} as TStats);
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(handler.mock.calls[0]?.[0]).toEqual({
+        reason: 'inbound-video-stalled',
+        isMutedMainVideoTrack: false,
+        isInvalidInboundFrames: false,
+        isNoInboundVideoTraffic: false,
+        isInboundVideoStalled: false,
+      });
+    });
+
+    it('не должен эмитить событие когда проблема еще не была подтверждена', () => {
+      const monitor = new MainStreamHeathMonitor(statsManager, callManager);
+
+      monitor.on(INBOUND_VIDEO_PROBLEM_RESOLVED_EVENT_NAME, handler);
+
+      isNoInboundVideoTraffic = true;
+      statsEvents.trigger('collected', {} as TStats);
+
+      isNoInboundVideoTraffic = false;
+      statsEvents.trigger('collected', {} as TStats);
+
+      expect(handler).toHaveBeenCalledTimes(0);
     });
   });
 });

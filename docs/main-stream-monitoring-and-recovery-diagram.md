@@ -47,3 +47,4 @@ sequenceDiagram
 - `SipConnector` не завершает звонок автоматически.
 - При подтвержденной проблеме выполняется `MainStreamRecovery.recover()`.
 - `MainStreamRecovery` делает throttled `renegotiate`.
+- Когда ранее подтвержденная проблема уходит, `MainStreamHealthMonitor` эмитит `inbound-video-problem-resolved`, и клиент может скрыть предупреждение.
