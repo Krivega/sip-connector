@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [26.15.0](https://github.com/Krivega/sip-connector/compare/v26.14.0...v26.15.0) (2026-03-20)
+
+### Features
+
+- implement inbound video problem reset event in MainStreamHealthMonitor ([87c98b4](https://github.com/Krivega/sip-connector/commit/87c98b41c57f2449848166c496bd786312636858))
+
 ## [26.14.0](https://github.com/Krivega/sip-connector/compare/v26.13.0...v26.14.0) (2026-03-20)
 
 ### Features
