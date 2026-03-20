@@ -49,6 +49,7 @@ npm install sip-connector
 - **Архитектура**: [Детальное описание внутренней структуры](./docs/arch/README.md)
 - **Тестирование**: [Руководство по тестированию](./docs/testing.md)
 - **Совместимость браузеров**: [Поддержка браузеров и WebRTC](./docs/browser-compatibility.md)
+- **Демо (GitHub Pages)**: после включения Pages в настройках репозитория — `https://Krivega.github.io/sip-connector/`
 
 ---
 
