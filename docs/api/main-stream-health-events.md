@@ -1,9 +1,41 @@
 # События `MainStreamHealthMonitor`
 
-`MainStreamHealthMonitor` генерирует события при мониторинге здоровья основного видеопотока. Все события доступны через префикс `main-stream-health:*` в `SipConnector`.
+`MainStreamHealthMonitor` публикует снимок состояния основного входящего видеопотока и отдельное событие об устойчивой проблеме. Все события доступны через префикс `main-stream-health:*` в `SipConnector`.
 
 ## События
 
-| Имя события                            | Описание                                                      | Тип данных                           |
-| -------------------------------------- | ------------------------------------------------------------- | ------------------------------------ |
-| `main-stream-health:no-inbound-frames` | Генерируется при отсутствии входящих кадров в основном потоке | `{ isMutedMainVideoTrack: boolean;}` |
+| Имя события                                         | Когда генерируется                                                    | Тип данных                                                                             |
+| --------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `main-stream-health:health-snapshot`                | На каждом сэмпле health-monitoring после очередного `stats:collected` | `THealthSnapshot`                                                                      |
+| `main-stream-health:inbound-video-problem-detected` | Когда проблема подтверждается несколькими подряд проблемными сэмплами | `THealthSnapshot & { reason: TProblemReason; consecutiveProblemSamplesCount: number }` |
+
+## `THealthSnapshot`
+
+```ts
+type THealthSnapshot = {
+  isMutedMainVideoTrack: boolean;
+  isInvalidInboundFrames: boolean;
+  isNoInboundVideoTraffic: boolean;
+  isInboundVideoStalled: boolean;
+};
+```
+
+Поля:
+
+- `isMutedMainVideoTrack` - основной remote video track находится в `muted`.
+- `isInvalidInboundFrames` - пакеты уже приходят, но кадры не приходят или не декодируются.
+- `isNoInboundVideoTraffic` - входящий видеотрафик отсутствует: `packetsReceived === 0 && bytesReceived === 0`.
+- `isInboundVideoStalled` - видеотрафик уже был, но `packetsReceived` и `bytesReceived` перестали расти.
+
+## `TProblemReason`
+
+```ts
+type TProblemReason =
+  | 'invalid-inbound-frames'
+  | 'no-inbound-video-traffic'
+  | 'inbound-video-stalled';
+```
+
+## Текущее поведение восстановления
+
+`SipConnector` подписывается на `main-stream-health:inbound-video-problem-detected` и запускает `MainStreamRecovery.recover()`. Восстановление выполняется через throttled `renegotiate`, без автоматического `endCall`.

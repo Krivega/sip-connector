@@ -525,6 +525,48 @@ describe('StatsManager', () => {
         expect(manager.isInboundVideoStalled).toBe(false);
       });
     });
+
+    describe('isNoInboundVideoTraffic', () => {
+      it('должен возвращать true когда inbound video не получает пакеты и байты', () => {
+        manager.statsPeerConnection.events.trigger(
+          'collected',
+          createStatsWithInboundRtp({
+            framesReceived: 0,
+            framesDecoded: 0,
+            packetsReceived: 0,
+            bytesReceived: 0,
+          }),
+        );
+
+        expect(manager.isNoInboundVideoTraffic).toBe(true);
+      });
+
+      it('должен возвращать false когда inbound video получает пакеты или байты', () => {
+        manager.statsPeerConnection.events.trigger(
+          'collected',
+          createStatsWithInboundRtp({
+            framesReceived: 0,
+            framesDecoded: 0,
+            packetsReceived: 1,
+            bytesReceived: 0,
+          }),
+        );
+
+        expect(manager.isNoInboundVideoTraffic).toBe(false);
+
+        manager.statsPeerConnection.events.trigger(
+          'collected',
+          createStatsWithInboundRtp({
+            framesReceived: 0,
+            framesDecoded: 0,
+            packetsReceived: 0,
+            bytesReceived: 1,
+          }),
+        );
+
+        expect(manager.isNoInboundVideoTraffic).toBe(false);
+      });
+    });
   });
 
   describe('hasAvailableIncomingBitrateChangedQuarter', () => {

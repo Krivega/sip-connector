@@ -43,7 +43,7 @@ describe('SipConnector', () => {
     expect(handler).toHaveBeenCalledWith({ socket: {} as Socket });
   });
 
-  it('должен вызывать renegotiate когда основной входящий видеотрек muted и inbound не получает и не декодирует кадры', async () => {
+  it('должен вызывать renegotiate когда monitor фиксирует устойчивую проблему invalid inbound frames', async () => {
     const track = createMediaStreamMock({
       video: { deviceId: { exact: 'videoDeviceId' } },
     }).getVideoTracks()[0] as MediaStreamTrack;
@@ -61,7 +61,65 @@ describe('SipConnector', () => {
     sipConnector.statsManager.events.trigger('collected', {
       outbound: { additional: {} },
       inbound: {
-        video: { inboundRtp: { framesReceived: 0, framesDecoded: 0, packetsReceived: 500 } },
+        video: {
+          inboundRtp: {
+            framesReceived: 0,
+            framesDecoded: 0,
+            packetsReceived: 500,
+            bytesReceived: 0,
+          },
+        },
+        additional: {},
+      },
+    } as unknown as {
+      outbound: TOutboundStats;
+      inbound: TInboundStats;
+    });
+    sipConnector.statsManager.events.trigger('collected', {
+      outbound: { additional: {} },
+      inbound: {
+        video: {
+          inboundRtp: {
+            framesReceived: 0,
+            framesDecoded: 0,
+            packetsReceived: 501,
+            bytesReceived: 0,
+          },
+        },
+        additional: {},
+      },
+    } as unknown as {
+      outbound: TOutboundStats;
+      inbound: TInboundStats;
+    });
+
+    await flushPromises();
+
+    expect(spyRecover).toHaveBeenCalledTimes(1);
+  });
+
+  it('должен вызывать renegotiate когда monitor фиксирует устойчивую проблему no inbound video traffic', async () => {
+    // @ts-expect-error - доступ к приватному свойству
+    const spyRecover = jest.spyOn(sipConnector.mainStreamRecovery, 'recover');
+
+    sipConnector.statsManager.events.trigger('collected', {
+      outbound: { additional: {} },
+      inbound: {
+        video: {
+          inboundRtp: { framesReceived: 0, framesDecoded: 0, packetsReceived: 0, bytesReceived: 0 },
+        },
+        additional: {},
+      },
+    } as unknown as {
+      outbound: TOutboundStats;
+      inbound: TInboundStats;
+    });
+    sipConnector.statsManager.events.trigger('collected', {
+      outbound: { additional: {} },
+      inbound: {
+        video: {
+          inboundRtp: { framesReceived: 0, framesDecoded: 0, packetsReceived: 0, bytesReceived: 0 },
+        },
         additional: {},
       },
     } as unknown as {

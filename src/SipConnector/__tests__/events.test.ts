@@ -93,6 +93,7 @@ describe('SipConnector events', () => {
     const presentationHandler = jest.fn();
     const statsHandler = jest.fn();
     const mainStreamHealthHandler = jest.fn();
+    const mainStreamProblemHandler = jest.fn();
 
     // Подписываемся на события от разных менеджеров
     sipConnector.events.on('auto-connect:success', autoConnectHandler);
@@ -102,7 +103,11 @@ describe('SipConnector events', () => {
     sipConnector.events.on('incoming-call:ringing', incomingCallHandler);
     sipConnector.events.on('presentation:presentation:start', presentationHandler);
     sipConnector.events.on('stats:collected', statsHandler);
-    sipConnector.events.on('main-stream-health:no-inbound-frames', mainStreamHealthHandler);
+    sipConnector.events.on('main-stream-health:health-snapshot', mainStreamHealthHandler);
+    sipConnector.events.on(
+      'main-stream-health:inbound-video-problem-detected',
+      mainStreamProblemHandler,
+    );
 
     const stats = {
       outbound: {
@@ -142,10 +147,19 @@ describe('SipConnector events', () => {
     // @ts-expect-error
     sipConnector.statsManager.events.trigger('collected', stats);
 
-    sipConnector.mainStreamHealthMonitor.events.trigger('no-inbound-frames', {
+    sipConnector.mainStreamHealthMonitor.events.trigger('health-snapshot', {
       isMutedMainVideoTrack: false,
       isInvalidInboundFrames: false,
+      isNoInboundVideoTraffic: false,
       isInboundVideoStalled: false,
+    });
+    sipConnector.mainStreamHealthMonitor.events.trigger('inbound-video-problem-detected', {
+      reason: 'inbound-video-stalled',
+      consecutiveProblemSamplesCount: 2,
+      isMutedMainVideoTrack: false,
+      isInvalidInboundFrames: false,
+      isNoInboundVideoTraffic: false,
+      isInboundVideoStalled: true,
     });
 
     // Проверяем, что каждый обработчик был вызван с правильными данными
@@ -167,7 +181,16 @@ describe('SipConnector events', () => {
     expect(mainStreamHealthHandler).toHaveBeenCalledWith({
       isMutedMainVideoTrack: false,
       isInvalidInboundFrames: false,
+      isNoInboundVideoTraffic: false,
       isInboundVideoStalled: false,
+    });
+    expect(mainStreamProblemHandler).toHaveBeenCalledWith({
+      reason: 'inbound-video-stalled',
+      consecutiveProblemSamplesCount: 2,
+      isMutedMainVideoTrack: false,
+      isInvalidInboundFrames: false,
+      isNoInboundVideoTraffic: false,
+      isInboundVideoStalled: true,
     });
 
     // Проверяем, что каждый обработчик был вызван только один раз
@@ -179,5 +202,6 @@ describe('SipConnector events', () => {
     expect(presentationHandler).toHaveBeenCalledTimes(1);
     expect(statsHandler).toHaveBeenCalledTimes(1);
     expect(mainStreamHealthHandler).toHaveBeenCalledTimes(2);
+    expect(mainStreamProblemHandler).toHaveBeenCalledTimes(1);
   });
 });

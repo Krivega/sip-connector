@@ -1,14 +1,30 @@
 import { TypedEvents } from 'events-constructor';
 
-export const NO_INBOUND_FRAMES_EVENT_NAME = 'no-inbound-frames' as const;
+export const HEALTH_SNAPSHOT_EVENT_NAME = 'health-snapshot' as const;
+export const INBOUND_VIDEO_PROBLEM_DETECTED_EVENT_NAME = 'inbound-video-problem-detected' as const;
 
-export const EVENT_NAMES = [NO_INBOUND_FRAMES_EVENT_NAME] as const;
+export const EVENT_NAMES = [
+  HEALTH_SNAPSHOT_EVENT_NAME,
+  INBOUND_VIDEO_PROBLEM_DETECTED_EVENT_NAME,
+] as const;
+
+export type TProblemReason =
+  | 'invalid-inbound-frames'
+  | 'no-inbound-video-traffic'
+  | 'inbound-video-stalled';
+
+export type THealthSnapshot = {
+  isMutedMainVideoTrack: boolean;
+  isInvalidInboundFrames: boolean;
+  isNoInboundVideoTraffic: boolean;
+  isInboundVideoStalled: boolean;
+};
 
 export type TEventMap = {
-  [NO_INBOUND_FRAMES_EVENT_NAME]: {
-    isMutedMainVideoTrack: boolean;
-    isInvalidInboundFrames: boolean;
-    isInboundVideoStalled: boolean;
+  [HEALTH_SNAPSHOT_EVENT_NAME]: THealthSnapshot;
+  [INBOUND_VIDEO_PROBLEM_DETECTED_EVENT_NAME]: THealthSnapshot & {
+    consecutiveProblemSamplesCount: number;
+    reason: TProblemReason;
   };
 };
 

@@ -2,7 +2,7 @@ import { createVideoMediaStreamTrackMock } from 'webrtc-mock';
 
 import { createEvents as createStatsEvents } from '@/StatsPeerConnection';
 import MainStreamHeathMonitor from '../@MainStreamHealthMonitor';
-import { NO_INBOUND_FRAMES_EVENT_NAME } from '../events';
+import { INBOUND_VIDEO_PROBLEM_DETECTED_EVENT_NAME, HEALTH_SNAPSHOT_EVENT_NAME } from '../events';
 
 import type { CallManager } from '@/CallManager';
 import type { StatsManager } from '@/StatsManager';
@@ -16,6 +16,7 @@ describe('@MainStreamHealthMonitor', () => {
   let mainStream: MediaStream;
   let track: ReturnType<typeof createVideoMediaStreamTrackMock>;
   let isInvalidInboundFrames: boolean;
+  let isNoInboundVideoTraffic: boolean;
   let isInboundVideoStalled: boolean;
 
   const handler = jest.fn();
@@ -25,17 +26,22 @@ describe('@MainStreamHealthMonitor', () => {
     track = createVideoMediaStreamTrackMock({ id: 'v1' });
     statsEvents = createStatsEvents();
     isInvalidInboundFrames = false;
+    isNoInboundVideoTraffic = false;
     isInboundVideoStalled = false;
     statsManager = {
       on: statsEvents.on.bind(statsEvents),
       get isInvalidInboundFrames() {
         return isInvalidInboundFrames;
       },
+      get isNoInboundVideoTraffic() {
+        return isNoInboundVideoTraffic;
+      },
       get isInboundVideoStalled() {
         return isInboundVideoStalled;
       },
     } as unknown as StatsManager;
     callManager = {
+      on: jest.fn(),
       getMainRemoteStream: () => {
         return mainStream;
       },
@@ -46,7 +52,7 @@ describe('@MainStreamHealthMonitor', () => {
     jest.clearAllMocks();
   });
 
-  describe('NO_INBOUND_FRAMES_EVENT_NAME', () => {
+  describe('HEALTH_SNAPSHOT_EVENT_NAME', () => {
     it('должен эмитить событие когда основной видеотрек muted и StatsManager.isInvalidInboundFrames возвращает true', () => {
       mainStream.addTrack(track);
 
@@ -55,7 +61,7 @@ describe('@MainStreamHealthMonitor', () => {
 
       const monitor = new MainStreamHeathMonitor(statsManager, callManager);
 
-      monitor.on(NO_INBOUND_FRAMES_EVENT_NAME, handler);
+      monitor.on(HEALTH_SNAPSHOT_EVENT_NAME, handler);
       statsEvents.trigger('collected', {} as TStats);
 
       expect(handler).toHaveBeenCalledTimes(1);
@@ -63,6 +69,7 @@ describe('@MainStreamHealthMonitor', () => {
       expect(handler.mock.calls[0]?.[0]).toEqual({
         isMutedMainVideoTrack: true,
         isInvalidInboundFrames: true,
+        isNoInboundVideoTraffic: false,
         isInboundVideoStalled: false,
       });
     });
@@ -75,7 +82,7 @@ describe('@MainStreamHealthMonitor', () => {
 
       const monitor = new MainStreamHeathMonitor(statsManager, callManager);
 
-      monitor.on(NO_INBOUND_FRAMES_EVENT_NAME, handler);
+      monitor.on(HEALTH_SNAPSHOT_EVENT_NAME, handler);
       statsEvents.trigger('collected', {} as TStats);
 
       expect(handler).toHaveBeenCalledTimes(1);
@@ -83,6 +90,7 @@ describe('@MainStreamHealthMonitor', () => {
       expect(handler.mock.calls[0]?.[0]).toEqual({
         isMutedMainVideoTrack: true,
         isInvalidInboundFrames: false,
+        isNoInboundVideoTraffic: false,
         isInboundVideoStalled: false,
       });
     });
@@ -95,7 +103,7 @@ describe('@MainStreamHealthMonitor', () => {
 
       const monitor = new MainStreamHeathMonitor(statsManager, callManager);
 
-      monitor.on(NO_INBOUND_FRAMES_EVENT_NAME, handler);
+      monitor.on(HEALTH_SNAPSHOT_EVENT_NAME, handler);
       statsEvents.trigger('collected', {} as TStats);
 
       expect(handler).toHaveBeenCalledTimes(1);
@@ -103,6 +111,7 @@ describe('@MainStreamHealthMonitor', () => {
       expect(handler.mock.calls[0]?.[0]).toEqual({
         isMutedMainVideoTrack: false,
         isInvalidInboundFrames: true,
+        isNoInboundVideoTraffic: false,
         isInboundVideoStalled: false,
       });
     });
@@ -110,7 +119,7 @@ describe('@MainStreamHealthMonitor', () => {
     it('должен эмитить событие когда в основном потоке нет видеотреков', () => {
       const monitor = new MainStreamHeathMonitor(statsManager, callManager);
 
-      monitor.on(NO_INBOUND_FRAMES_EVENT_NAME, handler);
+      monitor.on(HEALTH_SNAPSHOT_EVENT_NAME, handler);
       isInvalidInboundFrames = true;
       statsEvents.trigger('collected', {} as TStats);
 
@@ -119,6 +128,74 @@ describe('@MainStreamHealthMonitor', () => {
       expect(handler.mock.calls[0]?.[0]).toEqual({
         isMutedMainVideoTrack: false,
         isInvalidInboundFrames: true,
+        isNoInboundVideoTraffic: false,
+        isInboundVideoStalled: false,
+      });
+    });
+  });
+
+  describe('INBOUND_VIDEO_PROBLEM_DETECTED_EVENT_NAME', () => {
+    it('должен эмитить событие после двух подряд сэмплов stalled inbound video', () => {
+      isInboundVideoStalled = true;
+
+      const monitor = new MainStreamHeathMonitor(statsManager, callManager);
+
+      monitor.on(INBOUND_VIDEO_PROBLEM_DETECTED_EVENT_NAME, handler);
+      statsEvents.trigger('collected', {} as TStats);
+      statsEvents.trigger('collected', {} as TStats);
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(handler.mock.calls[0]?.[0]).toEqual({
+        reason: 'inbound-video-stalled',
+        consecutiveProblemSamplesCount: 2,
+        isMutedMainVideoTrack: false,
+        isInvalidInboundFrames: false,
+        isNoInboundVideoTraffic: false,
+        isInboundVideoStalled: true,
+      });
+    });
+
+    it('не должен эмитить событие повторно пока длится одна и та же проблема', () => {
+      isInboundVideoStalled = true;
+
+      const monitor = new MainStreamHeathMonitor(statsManager, callManager);
+
+      monitor.on(INBOUND_VIDEO_PROBLEM_DETECTED_EVENT_NAME, handler);
+      statsEvents.trigger('collected', {} as TStats);
+      statsEvents.trigger('collected', {} as TStats);
+      statsEvents.trigger('collected', {} as TStats);
+
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it('должен сбрасывать последовательность после healthy состояния', () => {
+      const monitor = new MainStreamHeathMonitor(statsManager, callManager);
+
+      monitor.on(INBOUND_VIDEO_PROBLEM_DETECTED_EVENT_NAME, handler);
+
+      isNoInboundVideoTraffic = true;
+      statsEvents.trigger('collected', {} as TStats);
+      statsEvents.trigger('collected', {} as TStats);
+
+      isNoInboundVideoTraffic = false;
+      statsEvents.trigger('collected', {} as TStats);
+
+      isNoInboundVideoTraffic = true;
+      statsEvents.trigger('collected', {} as TStats);
+
+      expect(handler).toHaveBeenCalledTimes(1);
+
+      statsEvents.trigger('collected', {} as TStats);
+
+      expect(handler).toHaveBeenCalledTimes(2);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(handler.mock.calls[1]?.[0]).toEqual({
+        reason: 'no-inbound-video-traffic',
+        consecutiveProblemSamplesCount: 2,
+        isMutedMainVideoTrack: false,
+        isInvalidInboundFrames: false,
+        isNoInboundVideoTraffic: true,
         isInboundVideoStalled: false,
       });
     });

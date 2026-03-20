@@ -523,16 +523,10 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
   }
 
   private subscribeToMainStreamHealthMonitorEvents() {
-    this.mainStreamHealthMonitor.on(
-      'no-inbound-frames',
-      ({ isMutedMainVideoTrack, isInvalidInboundFrames, isInboundVideoStalled }) => {
-        if (isInboundVideoStalled && this.callManager.hasSpectator()) {
-          this.mainStreamRecovery.recover();
-        } else if (isMutedMainVideoTrack && isInvalidInboundFrames) {
-          this.mainStreamRecovery.recover();
-        }
-      },
-    );
+    this.mainStreamHealthMonitor.on('inbound-video-problem-detected', ({ reason }) => {
+      logger('detected inbound video problem', { reason });
+      this.mainStreamRecovery.recover();
+    });
   }
 
   private readonly bridgeEvents = <T extends string>(

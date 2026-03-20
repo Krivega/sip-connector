@@ -41,7 +41,7 @@
 
 - Управление настройками кодеков
 - Координация между всеми менеджерами
-- Событийная система с префиксами (auto-connect:, connection:, call:, api:, incoming-call:, presentation:, stats:, video-balancer:)
+- Событийная система с префиксами (auto-connect:, connection:, call:, api:, incoming-call:, presentation:, stats:, video-balancer:, main-stream-health:, session:)
 - Автоматическая балансировка видео
 - Обработка событий restart от сервера
 - Проксирование методов менеджеров
@@ -56,6 +56,8 @@
 - `presentation:*` - события презентаций
 - `stats:*` - события статистики
 - `video-balancer:*` - события балансировки видео
+- `main-stream-health:*` - события мониторинга и восстановления основного входящего видеопотока
+- `session:*` - события управления серверной сессией
 
 **Управляемые компоненты**:
 
@@ -68,8 +70,8 @@
 - `ConnectionQueueManager` - очередь операций
 - `AutoConnectorManager` - автоматическое переподключение
 - `IncomingCallManager` - входящие звонки
-- `MainStreamHealthMonitor` - мониторинг здоровья потока
-- `MainStreamRecovery` - восстановление потока
+- `MainStreamHealthMonitor` - мониторинг здоровья потока и детекция устойчивых проблем
+- `MainStreamRecovery` - восстановление потока через throttled renegotiate
 
 ## Диаграмма архитектуры
 
@@ -99,7 +101,7 @@ graph TB
             I["VideoSendingBalancerManager<br/>⚖️ Video Optimization<br/>+ Delayed Start"]
             K["ConnectionQueueManager<br/>🔄 Sequential Operations"]
             L["AutoConnectorManager<br/>🔄 Auto Reconnection"]
-            MSH["MainStreamHealthMonitor<br/>💚 Stream Health<br/>+ Frame Monitoring"]
+            MSH["MainStreamHealthMonitor<br/>💚 Stream Health<br/>+ Health Snapshot<br/>+ Problem Detection"]
             MSR["MainStreamRecovery<br/>🔧 Stream Recovery<br/>+ Throttled Renegotiate"]
         end
 
@@ -187,11 +189,11 @@ graph TB
 - `ConnectionQueueManager` → `ConnectionManager` (последовательность операций)
 - `AutoConnectorManager` → `ConnectionQueueManager`, `ConnectionManager`, `CallManager`
 - `VideoSendingBalancerManager` → `CallManager`, `ApiManager`
-- `MainStreamHealthMonitor` → `StatsManager` (отслеживание состояния входящих фреймов)
+- `MainStreamHealthMonitor` → `StatsManager` (построение health snapshot по WebRTC stats)
 - `MainStreamHealthMonitor` → `CallManager` (отслеживание состояния основного входящего видео-трека)
 - `MainStreamRecovery` → `CallManager` (пересогласование настроек основного потока)
-- `SipConnector` → `MainStreamHealthMonitor` (отслеживание состояния основного потока; событие: `no-inbound-frames`)
-- `SipConnector` → `MainStreamRecovery` (восстановление основного входящего потока при стоп-кадре)
+- `SipConnector` → `MainStreamHealthMonitor` (реакция на события `health-snapshot` и `inbound-video-problem-detected`)
+- `SipConnector` → `MainStreamRecovery` (восстановление основного входящего потока через `recover()` -> `renegotiate()`)
 
 ---
 
