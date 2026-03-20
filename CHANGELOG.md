@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [26.14.0](https://github.com/Krivega/sip-connector/compare/v26.13.0...v26.14.0) (2026-03-20)
+
+### Features
+
+- add ROOM_PENDING_AUTH state to CallManager for handling room access without token ([e7e6b96](https://github.com/Krivega/sip-connector/commit/e7e6b96b6a45400add8081c204a42df37ae72746))
+
 ## [26.13.0](https://github.com/Krivega/sip-connector/compare/v26.12.0...v26.13.0) (2026-03-20)
 
 ### Features
