@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [26.12.0](https://github.com/Krivega/sip-connector/compare/v26.11.1...v26.12.0) (2026-03-20)
+
+### Features
+
+- add GitHub Pages deployment workflow and demo link to README ([f415f05](https://github.com/Krivega/sip-connector/commit/f415f05bfdda53cb71ef558e25cd1bea9b704f55))
+- add numberOfConnectionAttempts parameter to ConnectionManager ([0d8696f](https://github.com/Krivega/sip-connector/commit/0d8696f6788ae1dabfa929654c860bba29a949df))
+- enhance MainStreamHealthMonitor with health snapshot and problem detection ([91f4870](https://github.com/Krivega/sip-connector/commit/91f48701467cb043df17c5f95125dde45c429fec))
+
 ### [26.11.1](https://github.com/Krivega/sip-connector/compare/v26.11.0...v26.11.1) (2026-03-19)
 
 ### Bug Fixes
