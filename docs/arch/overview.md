@@ -173,10 +173,10 @@ graph TB
 
 - `SipConnectorFacade` → `SipConnector` (фасад)
 - `SipConnector` → все менеджеры (координация)
-- `CallManager` → `CallStateMachine` (состояние звонка и конференции: number, answer, room, participantName, token, conference, participant; подписка на ApiManager: enter-room, conference:participant-token-issued)
+- `CallManager` → `CallStateMachine` (состояние звонка и конференции: number, answer, room, participantName, token, conference, participant; обычная комната без token фиксируется в отдельном состоянии `ROOM_PENDING_AUTH`; подписка на ApiManager: enter-room, conference:participant-token-issued)
 - `CallManager` → `MCUSession` (управление основным RTCSession для участников)
 - `CallManager` → `RecvSession` (управление receive-only сессией для зрителей)
-- `CallManager` → `DeferredCommandRunner` (отложенная команда запуска RecvSession: при приходе `participant:move-request-to-spectators-with-audio-id` до `conference:participant-token-issued` команда сохраняется и выполняется после перехода CallStateMachine в IN_ROOM)
+- `CallManager` → `DeferredCommandRunner` (отложенная команда запуска RecvSession: при приходе `participant:move-request-to-spectators-with-audio-id` до `conference:participant-token-issued` команда сохраняется и выполняется после перехода CallStateMachine в IN_ROOM; `ROOM_PENDING_AUTH` само по себе недостаточно для JWT-зависимых операций)
 - `CallManager` → `RemoteStreamsManager` (два экземпляра: main и recv для организации входящих потоков)
 - `CallManager` → `RoleManager` (управление ролями: participant, spectator, spectator_synthetic)
 - `RoleManager` → `RemoteStreamsManager` (переключение между main и recv менеджерами)

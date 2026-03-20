@@ -1269,6 +1269,9 @@ describe('CallManager', () => {
       expect(mockRecvSession.instance).toBeUndefined();
 
       apiManager.events.trigger('enter-room', { room: 'r1', participantName: 'p1' });
+      expect(cm.stateMachine.state).toBe('call:roomPendingAuth');
+      expect(mockRecvSession.instance).toBeUndefined();
+
       apiManager.events.trigger('conference:participant-token-issued', {
         jwt: 'token1',
         conference: 'c1',

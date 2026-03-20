@@ -36,6 +36,7 @@ const selectIsInCall = (snapshot: TSessionSnapshot): boolean => {
 
   return (
     status === ECallStatus.IN_ROOM ||
+    status === ECallStatus.ROOM_PENDING_AUTH ||
     status === ECallStatus.PURGATORY ||
     status === ECallStatus.P2P_ROOM ||
     status === ECallStatus.DIRECT_P2P_ROOM
@@ -52,6 +53,7 @@ const selectSystemStatus = (snapshot: TSessionSnapshot): ESystemStatus => {
   // В активном звонке общий статус всегда CALL_ACTIVE независимо от connection/incoming/presentation
   if (
     callStatus === ECallStatus.IN_ROOM ||
+    callStatus === ECallStatus.ROOM_PENDING_AUTH ||
     callStatus === ECallStatus.PURGATORY ||
     callStatus === ECallStatus.P2P_ROOM ||
     callStatus === ECallStatus.DIRECT_P2P_ROOM

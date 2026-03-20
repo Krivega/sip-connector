@@ -33,10 +33,17 @@ stateDiagram-v2
         }
         state call {
             idle --> connecting: call.connecting
+            connecting --> roomPendingAuth: call.enterRoom(regular room, no token)
             connecting --> purgatory: call.enterRoom(room=purgatory, no token)
             connecting --> p2pRoom: call.enterRoom(room matches p2p pattern, no token)
             connecting --> directP2pRoom: call.enterRoom(isDirectPeerToPeer=true or room matches directP2p pattern, no token)
             connecting --> inRoom: call.enterRoom+token / call.tokenIssued
+            roomPendingAuth --> inRoom: call.enterRoom+token / call.tokenIssued
+            roomPendingAuth --> purgatory: call.enterRoom(room=purgatory, no token)
+            roomPendingAuth --> p2pRoom: call.enterRoom(room matches p2p pattern, no token)
+            roomPendingAuth --> directP2pRoom: call.enterRoom(isDirectPeerToPeer=true or room matches directP2p pattern, no token)
+            roomPendingAuth --> disconnecting: call.endCall
+            roomPendingAuth --> idle: call.reset
             connecting --> disconnecting: call.endCall
             connecting --> failed: call.failed
             connecting --> idle: call.reset
@@ -103,7 +110,7 @@ stateDiagram-v2
 | Домен        | Статусы                                                                                                      | Источники событий                                                                                                                                                                                                      | Доменные события                                                                                                                     |
 | :----------- | :----------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------- |
 | Connection   | `idle`, `preparing`, `connecting`, `connected`, `registered`, `established`, `disconnecting`, `disconnected` | `ConnectionManager.events` (`connect-started`, `connecting`, `connect-parameters-resolve-success`, `connected`, `registered`, `unregistered`, `disconnecting`, `disconnected`, `registrationFailed`, `connect-failed`) | `START_CONNECT`, `START_INIT_UA`, `START_DISCONNECT`, `UA_CONNECTED`, `UA_REGISTERED`, `UA_UNREGISTERED`, `UA_DISCONNECTED`, `RESET` |
-| Call         | `idle`, `connecting`, `purgatory`, `p2pRoom`, `directP2pRoom`, `inRoom`, `disconnecting`                     | `CallManager.events` (`start-call`, `end-call`, `enter-room`, `conference:participant-token-issued`, `ended`, `failed`)                                                                                                | `CALL.CONNECTING`, `CALL.ENTER_ROOM`, `CALL.TOKEN_ISSUED`, `CALL.START_DISCONNECT`, `CALL.RESET`                                     |
+| Call         | `idle`, `connecting`, `roomPendingAuth`, `purgatory`, `p2pRoom`, `directP2pRoom`, `inRoom`, `disconnecting`  | `CallManager.events` (`start-call`, `end-call`, `enter-room`, `conference:participant-token-issued`, `ended`, `failed`)                                                                                                | `CALL.CONNECTING`, `CALL.ENTER_ROOM`, `CALL.TOKEN_ISSUED`, `CALL.START_DISCONNECT`, `CALL.RESET`                                     |
 | Incoming     | `idle`, `ringing`, `consumed`, `declined`, `terminated`, `failed`                                            | `IncomingCallManager.events` (`incomingCall`, `declinedIncomingCall`, `terminatedIncomingCall`, `failedIncomingCall`) + синтетика при ответе на входящий                                                               | `INCOMING.RINGING`, `INCOMING.CONSUMED`, `INCOMING.DECLINED`, `INCOMING.TERMINATED`, `INCOMING.FAILED`, `INCOMING.CLEAR`             |
 | Presentation | `idle`, `starting`, `active`, `stopping`, `failed`                                                           | `CallManager.events` (`presentation:start\|started\|end\|ended\|failed`), `ConnectionManager.events` (`disconnected`, `registrationFailed`, `connect-failed`)                                                          | `SCREEN.STARTING`, `SCREEN.STARTED`, `SCREEN.ENDING`, `SCREEN.ENDED`, `SCREEN.FAILED`, `PRESENTATION.RESET`                          |
 
@@ -117,7 +124,7 @@ stateDiagram-v2
 
 ## Инварианты и гварды
 
-- `presentation` может быть `active` только если `call` в `inRoom`.
+- `presentation` может быть `active` только если `call` в активном room-состоянии; JWT-зависимые операции по-прежнему требуют `inRoom`.
 - `incoming` сбрасывается в `idle` при сбросе/завершении звонка (`CALL.RESET`; событие `ended` или `failed` приводит к CALL.RESET).
 - `connection` `disconnecting` / `disconnected` приводит к сбросу `call` и `presentation` → `idle`.
 

@@ -143,6 +143,7 @@ describe('sessionSelectors', () => {
       const statuses = [
         ECallStatus.IDLE,
         ECallStatus.CONNECTING,
+        ECallStatus.ROOM_PENDING_AUTH,
         ECallStatus.PURGATORY,
         ECallStatus.P2P_ROOM,
         ECallStatus.DIRECT_P2P_ROOM,
@@ -296,6 +297,16 @@ describe('sessionSelectors', () => {
   });
 
   describe('selectIsInCall', () => {
+    it('should return true when call status is ROOM_PENDING_AUTH', () => {
+      const snapshot = createMockSnapshot({
+        call: {
+          value: ECallStatus.ROOM_PENDING_AUTH,
+        } as never,
+      });
+
+      expect(sessionSelectors.selectIsInCall(snapshot)).toBe(true);
+    });
+
     it('should return true when call status is IN_ROOM', () => {
       const snapshot = createMockSnapshot({
         call: {
@@ -354,7 +365,7 @@ describe('sessionSelectors', () => {
   });
 
   describe('selectSystemStatus', () => {
-    it('should return CALL_ACTIVE for IN_ROOM, PURGATORY, P2P_ROOM or DIRECT_P2P_ROOM regardless of connection status (check is done first)', () => {
+    it('should return CALL_ACTIVE for ROOM_PENDING_AUTH, IN_ROOM, PURGATORY, P2P_ROOM or DIRECT_P2P_ROOM regardless of connection status (check is done first)', () => {
       const allConnectionStatuses = [
         EConnectionStatus.IDLE,
         EConnectionStatus.PREPARING,
@@ -366,6 +377,7 @@ describe('sessionSelectors', () => {
         EConnectionStatus.DISCONNECTED,
       ];
       const activeCallStatuses = [
+        ECallStatus.ROOM_PENDING_AUTH,
         ECallStatus.IN_ROOM,
         ECallStatus.PURGATORY,
         ECallStatus.P2P_ROOM,
@@ -384,7 +396,7 @@ describe('sessionSelectors', () => {
       });
     });
 
-    it('should return CALL_ACTIVE for IN_ROOM regardless of incoming and presentation status', () => {
+    it('should return CALL_ACTIVE for ROOM_PENDING_AUTH regardless of incoming and presentation status', () => {
       const incomingStatuses = [
         EIncomingStatus.IDLE,
         EIncomingStatus.RINGING,
@@ -400,7 +412,7 @@ describe('sessionSelectors', () => {
         presentationStatuses.forEach((presentationStatus) => {
           const snapshot = createMockSnapshot({
             connection: { value: EConnectionStatus.DISCONNECTED } as never,
-            call: { value: ECallStatus.IN_ROOM } as never,
+            call: { value: ECallStatus.ROOM_PENDING_AUTH } as never,
             incoming: { value: incomingStatus } as never,
             presentation: { value: presentationStatus } as never,
           });
@@ -478,7 +490,7 @@ describe('sessionSelectors', () => {
       });
     });
 
-    it('should return CALL_ACTIVE when connection is IDLE/DISCONNECTING/DISCONNECTED but call is IN_ROOM', () => {
+    it('should return CALL_ACTIVE when connection is IDLE/DISCONNECTING/DISCONNECTED but call is ROOM_PENDING_AUTH', () => {
       const connectionStatuses = [
         EConnectionStatus.IDLE,
         EConnectionStatus.DISCONNECTING,
@@ -488,7 +500,7 @@ describe('sessionSelectors', () => {
       connectionStatuses.forEach((connectionStatus) => {
         const snapshot = createMockSnapshot({
           connection: { value: connectionStatus } as never,
-          call: { value: ECallStatus.IN_ROOM } as never,
+          call: { value: ECallStatus.ROOM_PENDING_AUTH } as never,
         });
 
         expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CALL_ACTIVE);
@@ -607,13 +619,13 @@ describe('sessionSelectors', () => {
       expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CALL_DISCONNECTING);
     });
 
-    it('should return CALL_ACTIVE when connection is ESTABLISHED and call is IN_ROOM', () => {
+    it('should return CALL_ACTIVE when connection is ESTABLISHED and call is ROOM_PENDING_AUTH', () => {
       const snapshot = createMockSnapshot({
         connection: {
           value: EConnectionStatus.ESTABLISHED,
         } as never,
         call: {
-          value: ECallStatus.IN_ROOM,
+          value: ECallStatus.ROOM_PENDING_AUTH,
         } as never,
       });
 

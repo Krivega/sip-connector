@@ -58,12 +58,13 @@ describe('CallStateMachine', () => {
         expected: EState.CONNECTING,
       },
       {
-        title: 'CALL.ENTER_ROOM в CONNECTING оставляет CONNECTING',
+        title:
+          'CALL.ENTER_ROOM в CONNECTING переводит в ROOM_PENDING_AUTH для обычной комнаты без token',
         arrange: () => {
           machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
         },
         event: { type: 'CALL.ENTER_ROOM', ...room1Payload },
-        expected: EState.CONNECTING,
+        expected: EState.ROOM_PENDING_AUTH,
       },
       {
         title: 'CALL.TOKEN_ISSUED в CONNECTING оставляет CONNECTING',
@@ -101,6 +102,15 @@ describe('CallStateMachine', () => {
         title: 'CALL.RESET из CONNECTING в IDLE',
         arrange: () => {
           machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+        },
+        event: { type: 'CALL.RESET' },
+        expected: EState.IDLE,
+      },
+      {
+        title: 'CALL.RESET из ROOM_PENDING_AUTH в IDLE',
+        arrange: () => {
+          machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+          machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
         },
         event: { type: 'CALL.RESET' },
         expected: EState.IDLE,
@@ -146,6 +156,15 @@ describe('CallStateMachine', () => {
           machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
           machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
           machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+        },
+        event: { type: 'CALL.START_DISCONNECT' },
+        expected: EState.DISCONNECTING,
+      },
+      {
+        title: 'CALL.START_DISCONNECT из ROOM_PENDING_AUTH в DISCONNECTING',
+        arrange: () => {
+          machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+          machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
         },
         event: { type: 'CALL.START_DISCONNECT' },
         expected: EState.DISCONNECTING,
@@ -255,6 +274,16 @@ describe('CallStateMachine', () => {
       expect(machine.isInRoom).toBe(true);
     });
 
+    it('isRoomPendingAuth должен возвращать true только для ROOM_PENDING_AUTH', () => {
+      expect(machine.isRoomPendingAuth).toBe(false);
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      expect(machine.isRoomPendingAuth).toBe(false);
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      expect(machine.isRoomPendingAuth).toBe(true);
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+      expect(machine.isRoomPendingAuth).toBe(false);
+    });
+
     it('isInPurgatory должен возвращать true только для PURGATORY', () => {
       expect(machine.isInPurgatory).toBe(false);
       machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
@@ -296,10 +325,14 @@ describe('CallStateMachine', () => {
       machine.send({ type: 'CALL.RESET' });
       expect(machine.isDisconnecting).toBe(false);
     });
-    it('isActive должен возвращать true для IN_ROOM, PURGATORY, P2P_ROOM и DIRECT_P2P_ROOM', () => {
+    it('isActive должен возвращать true для ROOM_PENDING_AUTH, IN_ROOM, PURGATORY, P2P_ROOM и DIRECT_P2P_ROOM', () => {
       expect(machine.isActive).toBe(false);
       machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
       expect(machine.isActive).toBe(false);
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      expect(machine.isActive).toBe(true);
+      machine.send({ type: 'CALL.RESET' });
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
       machine.send({ type: 'CALL.ENTER_ROOM', ...purgatoryPayload });
       expect(machine.isActive).toBe(true);
       machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
@@ -326,10 +359,11 @@ describe('CallStateMachine', () => {
       expect(machine.inRoomContext).toBeUndefined();
     });
 
-    it('возвращает undefined в CONNECTING с room без token', () => {
+    it('возвращает undefined в ROOM_PENDING_AUTH без token', () => {
       machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
       machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
 
+      expect(machine.state).toBe(EState.ROOM_PENDING_AUTH);
       expect(machine.inRoomContext).toBeUndefined();
     });
 
@@ -600,12 +634,12 @@ describe('CallStateMachine', () => {
       events.trigger('start-call', connectPayload);
       apiManagerEvents.trigger('enter-room', room1Payload);
 
-      expect(machine.state).toBe(EState.CONNECTING);
+      expect(machine.state).toBe(EState.ROOM_PENDING_AUTH);
       expect(machine.context).toEqual({ ...connectPayload, ...room1Payload });
 
       apiManagerEvents.trigger('enter-room', room2Payload);
 
-      expect(machine.state).toBe(EState.CONNECTING);
+      expect(machine.state).toBe(EState.ROOM_PENDING_AUTH);
       expect(machine.context).toEqual({ ...connectPayload, ...room2Payload });
     });
 
@@ -805,6 +839,33 @@ describe('CallStateMachine', () => {
         ...purgatoryPayload,
       });
       expect(machine.inRoomContext).toBeUndefined();
+    });
+  });
+
+  describe('Переходы ROOM_PENDING_AUTH ↔ IN_ROOM', () => {
+    it('ROOM_PENDING_AUTH -> IN_ROOM: по CALL.TOKEN_ISSUED', () => {
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      expect(machine.state).toBe(EState.ROOM_PENDING_AUTH);
+
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+
+      expect(machine.state).toBe(EState.IN_ROOM);
+      expect(machine.inRoomContext?.token).toBe(token1Context.token);
+      expect(machine.inRoomContext?.room).toBe(room1Payload.room);
+    });
+
+    it('IN_ROOM сохраняет token при повторном CALL.ENTER_ROOM без token для обычной комнаты', () => {
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+      expect(machine.state).toBe(EState.IN_ROOM);
+
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room2Payload });
+
+      expect(machine.state).toBe(EState.IN_ROOM);
+      expect(machine.inRoomContext?.token).toBe(token1Context.token);
+      expect(machine.inRoomContext?.room).toBe(room2Payload.room);
     });
   });
 

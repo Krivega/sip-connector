@@ -18,6 +18,7 @@
 
 - `isIdle` — проверка состояния IDLE
 - `isConnecting` — проверка состояния CONNECTING
+- `isRoomPendingAuth` — проверка состояния ROOM_PENDING_AUTH
 - `isInPurgatory` — проверка состояния PURGATORY
 - `isP2PRoom` — проверка состояния P2P_ROOM
 - `isDirectP2PRoom` — проверка состояния DIRECT_P2P_ROOM
@@ -27,7 +28,7 @@
 ### Комбинированные геттеры
 
 - `isPending` — проверка состояний connecting/disconnecting
-- `isActive` — проверка активных состояний (inRoom, purgatory, p2pRoom или directP2pRoom)
+- `isActive` — проверка активных состояний (roomPendingAuth, inRoom, purgatory, p2pRoom или directP2pRoom)
 
 ### Геттер контекста
 
@@ -50,9 +51,19 @@
 - **CONNECTING → PURGATORY** — при `CALL.ENTER_ROOM` с room=purgatory без token
 - **CONNECTING → P2P_ROOM** — при `CALL.ENTER_ROOM` с room, соответствующим паттерну `/^p2p.+to.+$/i`, без token
 - **CONNECTING → DIRECT_P2P_ROOM** — при `CALL.ENTER_ROOM` с `isDirectPeerToPeer=true` или room, соответствующим паттерну `/^directP2P.+to.+$/i`, без token
+- **CONNECTING → ROOM_PENDING_AUTH** — при `CALL.ENTER_ROOM` для обычной комнаты без token
 - **CONNECTING → IN_ROOM** — при получении room + participantName и token через `CALL.ENTER_ROOM` и `CALL.TOKEN_ISSUED`
 - **CONNECTING → DISCONNECTING** — при `CALL.START_DISCONNECT` или событии `end-call`
 - **CONNECTING → IDLE** — при `CALL.RESET` (в т.ч. при событии `ended` или `failed`)
+
+### Из ROOM_PENDING_AUTH
+
+- **ROOM_PENDING_AUTH → IN_ROOM** — при появлении token через `CALL.ENTER_ROOM` с bearerToken или `CALL.TOKEN_ISSUED`
+- **ROOM_PENDING_AUTH → PURGATORY** — при `CALL.ENTER_ROOM` с room=purgatory без token
+- **ROOM_PENDING_AUTH → P2P_ROOM** — при `CALL.ENTER_ROOM` с p2p-room без token
+- **ROOM_PENDING_AUTH → DIRECT_P2P_ROOM** — при `CALL.ENTER_ROOM` с `isDirectPeerToPeer=true` или direct p2p-room без token
+- **ROOM_PENDING_AUTH → DISCONNECTING** — при `CALL.START_DISCONNECT` или событии `end-call`
+- **ROOM_PENDING_AUTH → IDLE** — при `CALL.RESET`
 
 ### Из PURGATORY
 
@@ -111,13 +122,17 @@ EVALUATE также может перейти в IN_ROOM, DIRECT_P2P_ROOM, P2P_R
 
 Определяется по паттерну имени комнаты `/^p2p.+to.+$/i` (без префикса `direct`).
 
+### ROOM_PENDING_AUTH
+
+Определяется для обычной комнаты, когда `room` и `participantName` уже известны, но `token` ещё не выдан. Это валидное активное состояние звонка, но не состояние готовности для `RecvSession`.
+
 ### Общие правила для P2P состояний
 
 Оба состояния P2P не требуют токена (как и PURGATORY), но могут перейти в IN_ROOM при получении токена.
 
 ## Зависимость для перевода в зрители
 
-Запуск RecvSession (и вызов sendOffer) возможен только при наличии токена (состояние IN_ROOM).
+Запуск RecvSession (и вызов sendOffer) возможен только при наличии токена (состояние IN_ROOM). Состояние ROOM_PENDING_AUTH не считается достаточным для JWT-зависимых операций.
 
 При гонке событий (`participant:move-request-to-spectators-with-audio-id` приходит до `conference:participant-token-issued`) CallManager использует `DeferredCommandRunner`: команда откладывается и выполняется при переходе в IN_ROOM.
 

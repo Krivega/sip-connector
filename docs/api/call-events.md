@@ -10,6 +10,7 @@
 | `call:end-call`                                  | Генерируется при начале процесса отключения звонка (вызов endCall)  | `never`                                           |
 | `call:peerconnection`                            | Генерируется при создании RTCPeerConnection                         | `{ peerconnection: RTCPeerConnection }`           |
 | `call:connecting`                                | Генерируется при начале процесса подключения звонка                 | `unknown`                                         |
+| `call:roomPendingAuth`                           | Генерируется при входе в обычную комнату без token                  | `unknown`                                         |
 | `call:purgatory`                                 | Генерируется при входе в комнату ожидания (purgatory) без token     | `unknown`                                         |
 | `call:inRoom`                                    | Генерируется при входе в комнату конференции с token                | `unknown`                                         |
 | `call:sending`                                   | Генерируется при отправке SIP INVITE                                | `unknown`                                         |

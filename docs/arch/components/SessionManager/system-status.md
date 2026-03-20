@@ -6,7 +6,7 @@
 
 При определении комбинированного состояния применяется следующая логика приоритетов:
 
-1. **Активный звонок имеет наивысший приоритет** — если call в активном состоянии (IN_ROOM, PURGATORY, P2P_ROOM, DIRECT_P2P_ROOM), возвращается `CALL_ACTIVE` независимо от состояния connection
+1. **Активный звонок имеет наивысший приоритет** — если call в активном состоянии (ROOM_PENDING_AUTH, IN_ROOM, PURGATORY, P2P_ROOM, DIRECT_P2P_ROOM), возвращается `CALL_ACTIVE` независимо от состояния connection
 
 2. **Если connection IDLE/DISCONNECTED** → `DISCONNECTED`
 
@@ -18,20 +18,22 @@
    - call IDLE → `READY_TO_CALL`
    - call CONNECTING → `CALL_CONNECTING`
    - call DISCONNECTING → `CALL_DISCONNECTING`
-   - call PURGATORY, call P2P_ROOM, call DIRECT_P2P_ROOM или call IN_ROOM → `CALL_ACTIVE` (обработано в пункте 1)
+   - call ROOM_PENDING_AUTH, call PURGATORY, call P2P_ROOM, call DIRECT_P2P_ROOM или call IN_ROOM → `CALL_ACTIVE` (обработано в пункте 1)
    - неизвестный call status → fallback `READY_TO_CALL`
 
 ## Состояния ESystemStatus
 
-| Состояние            | Описание                                 | Условия                                                                         |
-| :------------------- | :--------------------------------------- | :------------------------------------------------------------------------------ |
-| `DISCONNECTED`       | Система не подключена                    | connection: IDLE или DISCONNECTED                                               |
-| `DISCONNECTING`      | Идет процесс отключения                  | connection: DISCONNECTING                                                       |
-| `CONNECTING`         | Идет процесс подключения                 | connection: PREPARING, CONNECTING, CONNECTED или REGISTERED                     |
-| `READY_TO_CALL`      | Соединение установлено, готово к звонкам | connection: ESTABLISHED, call: IDLE                                             |
-| `CALL_CONNECTING`    | Идет установка звонка                    | connection: ESTABLISHED, call: CONNECTING                                       |
-| `CALL_DISCONNECTING` | Идет процесс отключения звонка           | connection: ESTABLISHED, call: DISCONNECTING                                    |
-| `CALL_ACTIVE`        | Звонок активен                           | connection: ESTABLISHED, call: IN_ROOM, PURGATORY, P2P_ROOM или DIRECT_P2P_ROOM |
+| Состояние            | Описание                                 | Условия                                                     |
+| :------------------- | :--------------------------------------- | :---------------------------------------------------------- |
+| `DISCONNECTED`       | Система не подключена                    | connection: IDLE или DISCONNECTED                           |
+| `DISCONNECTING`      | Идет процесс отключения                  | connection: DISCONNECTING                                   |
+| `CONNECTING`         | Идет процесс подключения                 | connection: PREPARING, CONNECTING, CONNECTED или REGISTERED |
+| `READY_TO_CALL`      | Соединение установлено, готово к звонкам | connection: ESTABLISHED, call: IDLE                         |
+| `CALL_CONNECTING`    | Идет установка звонка                    | connection: ESTABLISHED, call: CONNECTING                   |
+| `CALL_DISCONNECTING` | Идет процесс отключения звонка           | connection: ESTABLISHED, call: DISCONNECTING                |
+| `CALL_ACTIVE`        | Звонок активен                           | connection: ESTABLISHED, call в активном room-состоянии     |
+
+Активные room-состояния для `CALL_ACTIVE`: `ROOM_PENDING_AUTH`, `IN_ROOM`, `PURGATORY`, `P2P_ROOM`, `DIRECT_P2P_ROOM`.
 
 ## Использование
 

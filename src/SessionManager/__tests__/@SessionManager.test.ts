@@ -96,6 +96,9 @@ describe('SessionManager', () => {
         room: 'room',
         participantName: 'participantName',
       });
+      expect(sessionSelectors.selectCallStatus(session.getSnapshot())).toBe(
+        ECallStatus.ROOM_PENDING_AUTH,
+      );
       callStateMachine.send({
         type: 'CALL.TOKEN_ISSUED',
         token: 'token',

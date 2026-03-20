@@ -10,6 +10,7 @@ import type { TEvents } from './events';
 export enum EState {
   IDLE = 'call:idle',
   CONNECTING = 'call:connecting',
+  ROOM_PENDING_AUTH = 'call:roomPendingAuth',
   PURGATORY = 'call:purgatory',
   P2P_ROOM = 'call:p2pRoom',
   DIRECT_P2P_ROOM = 'call:directP2pRoom',
@@ -33,6 +34,11 @@ export type TP2PRoomContext = TConnectingContext & {
   participantName: string;
 };
 
+export type TRoomPendingAuthContext = TConnectingContext & {
+  room: string;
+  participantName: string;
+};
+
 export type TDirectP2PRoomContext = TConnectingContext & {
   room: string;
   participantName: string;
@@ -50,6 +56,7 @@ export type TInRoomContext = TConnectingContext & {
 type TContext =
   | TIdleContext
   | TConnectingContext
+  | TRoomPendingAuthContext
   | TPurgatoryContext
   | TP2PRoomContext
   | TDirectP2PRoomContext
@@ -129,6 +136,18 @@ const hasDirectP2PRoomContext = (context: TContext): context is TDirectP2PRoomCo
     !hasTokenContext(context) &&
     'room' in context &&
     hasDirectPeerToPeerContext(context)
+  );
+};
+
+const hasRoomPendingAuthContext = (context: TContext): context is TRoomPendingAuthContext => {
+  return (
+    hasConnectingContext(context) &&
+    hasRoomContext(context) &&
+    !hasTokenContext(context) &&
+    'room' in context &&
+    !hasPurgatory(context.room) &&
+    !hasPeerToPeer(context.room) &&
+    !hasDirectPeerToPeerContext(context)
   );
 };
 
@@ -248,6 +267,26 @@ const callMachine = setup({
         },
       },
     },
+    [EState.ROOM_PENDING_AUTH]: {
+      on: {
+        'CALL.ENTER_ROOM': {
+          target: EVALUATE,
+          actions: 'setRoomInfo',
+        },
+        'CALL.TOKEN_ISSUED': {
+          target: EVALUATE,
+          actions: 'setTokenInfo',
+        },
+        'CALL.START_DISCONNECT': {
+          target: EVALUATE,
+          actions: 'prepareDisconnect',
+        },
+        'CALL.RESET': {
+          target: EVALUATE,
+          actions: 'reset',
+        },
+      },
+    },
     [EState.IN_ROOM]: {
       on: {
         'CALL.ENTER_ROOM': {
@@ -299,6 +338,12 @@ const callMachine = setup({
           target: EState.PURGATORY,
           guard: ({ context }) => {
             return hasPurgatoryContext(context);
+          },
+        },
+        {
+          target: EState.ROOM_PENDING_AUTH,
+          guard: ({ context }) => {
+            return hasRoomPendingAuthContext(context);
           },
         },
         {
@@ -386,6 +431,7 @@ const callMachine = setup({
 export type TSnapshot =
   | { value: EState.IDLE; context: TIdleContext }
   | { value: EState.CONNECTING; context: TConnectingContext }
+  | { value: EState.ROOM_PENDING_AUTH; context: TRoomPendingAuthContext }
   | { value: EState.PURGATORY; context: TPurgatoryContext }
   | { value: EState.P2P_ROOM; context: TP2PRoomContext }
   | { value: EState.DIRECT_P2P_ROOM; context: TDirectP2PRoomContext }
@@ -410,6 +456,10 @@ export class CallStateMachine extends BaseStateMachine<
 
   public get isConnecting(): boolean {
     return this.state === EState.CONNECTING;
+  }
+
+  public get isRoomPendingAuth(): boolean {
+    return this.state === EState.ROOM_PENDING_AUTH;
   }
 
   public get isInPurgatory(): boolean {
@@ -440,7 +490,13 @@ export class CallStateMachine extends BaseStateMachine<
   }
 
   public get isActive(): boolean {
-    return this.isInRoom || this.isInPurgatory || this.isP2PRoom || this.isDirectP2PRoom;
+    return (
+      this.isInRoom ||
+      this.isRoomPendingAuth ||
+      this.isInPurgatory ||
+      this.isP2PRoom ||
+      this.isDirectP2PRoom
+    );
   }
 
   public get number() {

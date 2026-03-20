@@ -95,11 +95,11 @@ unsubscribe(); // Когда больше не нужно слушать
 
 - `selectConnectionStatus` - статус соединения
 - `selectCallState` - снапшот машины звонка (value + context)
-- `selectCallStatus` - статус звонка (ECallStatus: IDLE, CONNECTING, IN_ROOM)
+- `selectCallStatus` - статус звонка (ECallStatus: IDLE, CONNECTING, ROOM_PENDING_AUTH, IN_ROOM и др.)
 - `selectIncomingStatus` - статус входящего звонка
 - `selectIncomingRemoteCaller` - данные входящего звонка
 - `selectPresentationStatus` - статус презентации
-- `selectIsInCall` - проверка, активен ли звонок (call в состоянии IN_ROOM)
+- `selectIsInCall` - проверка, активен ли звонок (call в активном room-состоянии: ROOM_PENDING_AUTH, IN_ROOM, PURGATORY, P2P_ROOM, DIRECT_P2P_ROOM)
 - `selectSystemStatus` - комбинированное состояние системы (объединяет connection и call)
 
 ### Комбинированное состояние системы (ESystemStatus)
@@ -112,7 +112,9 @@ unsubscribe(); // Когда больше не нужно слушать
 - `READY_TO_CALL` - соединение установлено, готово к звонкам (connection: ESTABLISHED, call: IDLE)
 - `CALL_CONNECTING` - идет установка звонка (connection: ESTABLISHED, call: CONNECTING)
 - `CALL_DISCONNECTING` - идет процесс отключения звонка (connection: ESTABLISHED, call: DISCONNECTING)
-- `CALL_ACTIVE` - звонок активен (connection: ESTABLISHED, call: IN_ROOM, PURGATORY, P2P_ROOM или DIRECT_P2P_ROOM)
+- `CALL_ACTIVE` - звонок активен (connection: ESTABLISHED, call: ROOM_PENDING_AUTH, IN_ROOM, PURGATORY, P2P_ROOM или DIRECT_P2P_ROOM)
+
+`ROOM_PENDING_AUTH` означает, что обычная комната уже известна, но `token` ещё не выдан. Это валидное состояние активного звонка для UI и селекторов, но не сигнал готовности к JWT-зависимым операциям.
 
 Этот селектор позволяет клиенту однозначно определить текущее состояние системы без необходимости анализировать комбинации состояний Connection и Call вручную.
 

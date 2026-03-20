@@ -28,7 +28,7 @@
 Управление состояниями звонка (XState)
 
 - Валидация переходов между состояниями
-- Публичный API с геттерами: `isIdle`, `isConnecting`, `isInPurgatory`, `isP2PRoom`, `isDirectP2PRoom`, `isInRoom`, `isDisconnecting`, `isPending`, `isActive`
+- Публичный API с геттерами: `isIdle`, `isConnecting`, `isRoomPendingAuth`, `isInPurgatory`, `isP2PRoom`, `isDirectP2PRoom`, `isInRoom`, `isDisconnecting`, `isPending`, `isActive`
 - Геттер контекста: `inRoomContext` (возвращает контекст только в состоянии IN_ROOM)
 - Методы: `reset()`, `send(event)`, `subscribeToApiEvents(apiManager)`
 - При вызове `endCall()` переход в состояние `DISCONNECTING` через EVALUATE (событие `end-call` → `CALL.START_DISCONNECT` → `EVALUATE` с action `prepareDisconnect` → `DISCONNECTING`). Контекст очищается при переходе
@@ -59,7 +59,7 @@
 Паттерн отложенной команды для запуска RecvSession
 
 - Устраняет гонку событий: `participant:move-request-to-spectators-with-audio-id` может прийти раньше `conference:participant-token-issued`
-- При отсутствии токена (состояние CONNECTING) команда «запустить RecvSession» сохраняется и подписывается на переход CallStateMachine в IN_ROOM
+- При отсутствии токена (состояние CONNECTING или ROOM_PENDING_AUTH) команда «запустить RecvSession» сохраняется и подписывается на переход CallStateMachine в IN_ROOM
 - При переходе в IN_ROOM команда выполняется (вызывается startRecvSession); при переходе в IDLE (ended/failed → CALL.RESET) — отменяется без выполнения
 - Методы: `set(command)` — отложить команду, `cancel()` — отменить подписку и очистить команду
 - Вызов `cancel()` при смене роли с зрителя на участника и при reset CallManager
