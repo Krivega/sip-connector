@@ -3,13 +3,14 @@ import { EventEmitterProxy } from 'events-constructor';
 import {
   createEvents,
   INBOUND_VIDEO_PROBLEM_DETECTED_EVENT_NAME,
+  INBOUND_VIDEO_PROBLEM_RESET_EVENT_NAME,
   HEALTH_SNAPSHOT_EVENT_NAME,
   INBOUND_VIDEO_PROBLEM_RESOLVED_EVENT_NAME,
 } from './events';
 
 import type { CallManager } from '@/CallManager';
 import type { StatsManager } from '@/StatsManager';
-import type { TEventMap, THealthSnapshot, TProblemReason } from './events';
+import type { TEventMap, THealthSnapshot, TProblemReason, TProblemResetCause } from './events';
 
 const MIN_CONSECUTIVE_PROBLEM_SAMPLES_COUNT = 2;
 
@@ -116,12 +117,15 @@ class MainStreamHealthMonitor extends EventEmitterProxy<TEventMap> {
 
   private subscribe() {
     this.statsManager.on('collected', this.handleStatsCollected);
-    this.callManager.on('peerconnection:confirmed', this.resetProblemDetectionState);
-    this.callManager.on('recv-session-started', this.resetProblemDetectionState);
-    this.callManager.on('recv-session-ended', this.resetProblemDetectionState);
-    this.callManager.on('recv-quality-changed', this.resetProblemDetectionState);
-    this.callManager.on('failed', this.resetProblemDetectionState);
-    this.callManager.on('ended', this.resetProblemDetectionState);
+    this.callManager.on(
+      'peerconnection:confirmed',
+      this.handleProblemReset('peerconnection:confirmed'),
+    );
+    this.callManager.on('recv-session-started', this.handleProblemReset('recv-session-started'));
+    this.callManager.on('recv-session-ended', this.handleProblemReset('recv-session-ended'));
+    this.callManager.on('recv-quality-changed', this.handleProblemReset('recv-quality-changed'));
+    this.callManager.on('failed', this.handleProblemReset('failed'));
+    this.callManager.on('ended', this.handleProblemReset('ended'));
   }
 
   private readonly updateProblemDetectionState = (problemReason: TProblemReason) => {
@@ -144,6 +148,24 @@ class MainStreamHealthMonitor extends EventEmitterProxy<TEventMap> {
     this.events.trigger(INBOUND_VIDEO_PROBLEM_RESOLVED_EVENT_NAME, {
       ...healthSnapshot,
       reason: this.currentProblemReason,
+    });
+  };
+
+  private readonly handleProblemReset = (resetCause: TProblemResetCause) => {
+    return () => {
+      this.maybeEmitResetProblem(resetCause);
+      this.resetProblemDetectionState();
+    };
+  };
+
+  private readonly maybeEmitResetProblem = (resetCause: TProblemResetCause) => {
+    if (!this.hasEmittedCurrentProblem || this.currentProblemReason === undefined) {
+      return;
+    }
+
+    this.events.trigger(INBOUND_VIDEO_PROBLEM_RESET_EVENT_NAME, {
+      reason: this.currentProblemReason,
+      resetCause,
     });
   };
 

@@ -1,19 +1,25 @@
 import { createVideoMediaStreamTrackMock } from 'webrtc-mock';
 
+import {
+  createEvents as createCallEvents,
+  type CallManager,
+  type TCallEvents,
+} from '@/CallManager';
 import { createEvents as createStatsEvents } from '@/StatsPeerConnection';
 import MainStreamHeathMonitor from '../@MainStreamHealthMonitor';
 import {
   HEALTH_SNAPSHOT_EVENT_NAME,
   INBOUND_VIDEO_PROBLEM_DETECTED_EVENT_NAME,
+  INBOUND_VIDEO_PROBLEM_RESET_EVENT_NAME,
   INBOUND_VIDEO_PROBLEM_RESOLVED_EVENT_NAME,
 } from '../events';
 
-import type { CallManager } from '@/CallManager';
 import type { StatsManager } from '@/StatsManager';
 import type { TStats, TStatsPeerConnectionEvents } from '@/StatsPeerConnection';
 
 describe('@MainStreamHealthMonitor', () => {
   let statsEvents: TStatsPeerConnectionEvents;
+  let callEvents: TCallEvents;
   let statsManager: StatsManager;
   let callManager: CallManager;
 
@@ -29,6 +35,7 @@ describe('@MainStreamHealthMonitor', () => {
     mainStream = new MediaStream();
     track = createVideoMediaStreamTrackMock({ id: 'v1' });
     statsEvents = createStatsEvents();
+    callEvents = createCallEvents();
     isInvalidInboundFrames = false;
     isNoInboundVideoTraffic = false;
     isInboundVideoStalled = false;
@@ -45,7 +52,7 @@ describe('@MainStreamHealthMonitor', () => {
       },
     } as unknown as StatsManager;
     callManager = {
-      on: jest.fn(),
+      on: callEvents.on.bind(callEvents),
       getMainRemoteStream: () => {
         return mainStream;
       },
@@ -239,6 +246,45 @@ describe('@MainStreamHealthMonitor', () => {
 
       isNoInboundVideoTraffic = false;
       statsEvents.trigger('collected', {} as TStats);
+
+      expect(handler).toHaveBeenCalledTimes(0);
+    });
+  });
+
+  describe('INBOUND_VIDEO_PROBLEM_RESET_EVENT_NAME', () => {
+    it('должен эмитить событие когда подтвержденная проблема сбрасывается из-за ended', () => {
+      const monitor = new MainStreamHeathMonitor(statsManager, callManager);
+
+      monitor.on(INBOUND_VIDEO_PROBLEM_RESET_EVENT_NAME, handler);
+
+      isNoInboundVideoTraffic = true;
+      statsEvents.trigger('collected', {} as TStats);
+      statsEvents.trigger('collected', {} as TStats);
+
+      callEvents.trigger('ended', {
+        originator: 'local',
+        // @ts-expect-error test payload
+        message: {},
+        cause: 'error',
+      });
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(handler.mock.calls[0]?.[0]).toEqual({
+        reason: 'no-inbound-video-traffic',
+        resetCause: 'ended',
+      });
+    });
+
+    it('не должен эмитить событие когда проблема еще не была подтверждена', () => {
+      const monitor = new MainStreamHeathMonitor(statsManager, callManager);
+
+      monitor.on(INBOUND_VIDEO_PROBLEM_RESET_EVENT_NAME, handler);
+
+      isNoInboundVideoTraffic = true;
+      statsEvents.trigger('collected', {} as TStats);
+
+      callEvents.trigger('recv-session-started');
 
       expect(handler).toHaveBeenCalledTimes(0);
     });

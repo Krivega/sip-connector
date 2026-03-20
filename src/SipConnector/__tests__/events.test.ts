@@ -95,6 +95,7 @@ describe('SipConnector events', () => {
     const mainStreamHealthHandler = jest.fn();
     const mainStreamProblemHandler = jest.fn();
     const mainStreamProblemResolvedHandler = jest.fn();
+    const mainStreamProblemResetHandler = jest.fn();
 
     // Подписываемся на события от разных менеджеров
     sipConnector.events.on('auto-connect:success', autoConnectHandler);
@@ -112,6 +113,10 @@ describe('SipConnector events', () => {
     sipConnector.events.on(
       'main-stream-health:inbound-video-problem-resolved',
       mainStreamProblemResolvedHandler,
+    );
+    sipConnector.events.on(
+      'main-stream-health:inbound-video-problem-reset',
+      mainStreamProblemResetHandler,
     );
 
     const stats = {
@@ -173,6 +178,10 @@ describe('SipConnector events', () => {
       isNoInboundVideoTraffic: false,
       isInboundVideoStalled: false,
     });
+    sipConnector.mainStreamHealthMonitor.events.trigger('inbound-video-problem-reset', {
+      reason: 'inbound-video-stalled',
+      resetCause: 'recv-session-started',
+    });
 
     // Проверяем, что каждый обработчик был вызван с правильными данными
     expect(autoConnectHandler).toHaveBeenCalledWith(undefined);
@@ -211,6 +220,10 @@ describe('SipConnector events', () => {
       isNoInboundVideoTraffic: false,
       isInboundVideoStalled: false,
     });
+    expect(mainStreamProblemResetHandler).toHaveBeenCalledWith({
+      reason: 'inbound-video-stalled',
+      resetCause: 'recv-session-started',
+    });
 
     // Проверяем, что каждый обработчик был вызван только один раз
     expect(autoConnectHandler).toHaveBeenCalledTimes(1);
@@ -223,5 +236,6 @@ describe('SipConnector events', () => {
     expect(mainStreamHealthHandler).toHaveBeenCalledTimes(2);
     expect(mainStreamProblemHandler).toHaveBeenCalledTimes(1);
     expect(mainStreamProblemResolvedHandler).toHaveBeenCalledTimes(1);
+    expect(mainStreamProblemResetHandler).toHaveBeenCalledTimes(1);
   });
 });

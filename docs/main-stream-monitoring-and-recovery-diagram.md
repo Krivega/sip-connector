@@ -48,3 +48,4 @@ sequenceDiagram
 - При подтвержденной проблеме выполняется `MainStreamRecovery.recover()`.
 - `MainStreamRecovery` делает throttled `renegotiate`.
 - Когда ранее подтвержденная проблема уходит, `MainStreamHealthMonitor` эмитит `inbound-video-problem-resolved`, и клиент может скрыть предупреждение.
+- Когда контекст мониторинга сбрасывается (`ended`, `recv-session-started`, `recv-quality-changed` и т.п.), `MainStreamHealthMonitor` эмитит `inbound-video-problem-reset`.
