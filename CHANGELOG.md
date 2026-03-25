@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [26.15.1](https://github.com/Krivega/sip-connector/compare/v26.15.0...v26.15.1) (2026-03-25)
+
+### Bug Fixes
+
+- enhance conference participant token handling with validation and tests ([5e96fe0](https://github.com/Krivega/sip-connector/commit/5e96fe0d25a6bd039835940245d7963d620e8874))
+
 ## [26.15.0](https://github.com/Krivega/sip-connector/compare/v26.14.0...v26.15.0) (2026-03-20)
 
 ### Features
