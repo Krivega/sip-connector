@@ -15,6 +15,8 @@ const externalDependencies = [
 ];
 
 export default defineConfig(() => {
+  process.env.VITE_APP_VERSION = packageJson.version;
+
   return {
     publicDir: false,
     plugins: [
