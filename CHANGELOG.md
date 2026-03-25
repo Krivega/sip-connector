@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [26.15.3](https://github.com/Krivega/sip-connector/compare/v26.15.2...v26.15.3) (2026-03-25)
+
+### Bug Fixes
+
+- use room for conference in room state ([45b5a4b](https://github.com/Krivega/sip-connector/commit/45b5a4b2da8d8ded1e3aebf76a43adef8810c3ed))
+
 ### [26.15.2](https://github.com/Krivega/sip-connector/compare/v26.15.1...v26.15.2) (2026-03-25)
 
 ### [26.15.1](https://github.com/Krivega/sip-connector/compare/v26.15.0...v26.15.1) (2026-03-25)
