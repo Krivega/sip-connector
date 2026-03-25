@@ -16,13 +16,13 @@ describe('CallStateMachine', () => {
   const token1Context = {
     token: token1Payload.jwt,
     conference: token1Payload.conference,
-    participant: token1Payload.participant,
+    participantName: token1Payload.participant,
   };
   const token2Payload = { jwt: 'jwt2', conference: 'conf-2', participant: 'p-2' };
   const token2Context = {
     token: token2Payload.jwt,
     conference: token2Payload.conference,
-    participant: token2Payload.participant,
+    participantName: token2Payload.participant,
   };
   const room1Payload = { room: 'room-1', participantName: 'User' };
   const room2Payload = { room: 'room-2', participantName: 'User2' };
@@ -97,6 +97,15 @@ describe('CallStateMachine', () => {
         },
         event: { type: 'CALL.ENTER_ROOM', ...directP2pRoomPayload },
         expected: EState.DIRECT_P2P_ROOM,
+      },
+      {
+        title:
+          'CALL.ENTER_ROOM с token в CONNECTING переводит в IN_ROOM (ожидание авторизации по token не требуется)',
+        arrange: () => {
+          machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+        },
+        event: { type: 'CALL.ENTER_ROOM', ...room1Payload, token: 'jwt-with-enter-room' },
+        expected: EState.IN_ROOM,
       },
       {
         title: 'CALL.RESET из CONNECTING в IDLE',
@@ -425,14 +434,16 @@ describe('CallStateMachine', () => {
       expect(context).toBeDefined();
       expect(context).toMatchObject({
         ...connectPayload,
-        ...room1Payload,
+        room: room1Payload.room,
         ...token1Context,
       });
       expect(context?.number).toBe(connectPayload.number);
       expect(context?.answer).toBe(connectPayload.answer);
       expect(context?.room).toBe(room1Payload.room);
-      expect(context?.participantName).toBe(room1Payload.participantName);
+      expect(context?.participantName).toBe(token1Context.participantName);
       expect(context?.token).toBe(token1Context.token);
+      expect(context?.conference).toBe(token1Context.conference);
+      expect(context).not.toHaveProperty('participant');
     });
 
     it('возвращает обновлённый контекст при смене room в IN_ROOM', () => {
@@ -681,7 +692,12 @@ describe('CallStateMachine', () => {
       apiManagerEvents.trigger('enter-room', room2Payload);
 
       expect(machine.state).toBe(EState.IN_ROOM);
-      expect(machine.context).toEqual({ ...connectPayload, ...room2Payload, ...token2Context });
+      expect(machine.context).toMatchObject({
+        ...connectPayload,
+        ...room2Payload,
+        token: token2Context.token,
+        conference: token2Context.conference,
+      });
     });
 
     it('должен переходить в IN_ROOM по enter-room с bearerToken', () => {
@@ -691,12 +707,14 @@ describe('CallStateMachine', () => {
       apiManagerEvents.trigger('enter-room', { ...room1Payload, bearerToken });
 
       expect(machine.state).toBe(EState.IN_ROOM);
-      expect(machine.context).toEqual({
+      expect(machine.context).toMatchObject({
         ...connectPayload,
         ...room1Payload,
         token: bearerToken,
+        conference: room1Payload.room,
       });
       expect(machine.inRoomContext?.token).toBe(bearerToken);
+      expect(machine.inRoomContext?.conference).toBe(room1Payload.room);
     });
 
     it('должен переходить в PURGATORY по enter-room с room purgatory без token', () => {
@@ -843,6 +861,18 @@ describe('CallStateMachine', () => {
   });
 
   describe('Переходы ROOM_PENDING_AUTH ↔ IN_ROOM', () => {
+    it('ENTER_ROOM без token оставляет ROOM_PENDING_AUTH и не задаёт conference в контексте', () => {
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+
+      expect(machine.state).toBe(EState.ROOM_PENDING_AUTH);
+      expect(machine.context).toMatchObject({ ...connectPayload, ...room1Payload });
+      expect(
+        (machine.context as { conference?: string; token?: string }).conference,
+      ).toBeUndefined();
+      expect((machine.context as { conference?: string; token?: string }).token).toBeUndefined();
+    });
+
     it('ROOM_PENDING_AUTH -> IN_ROOM: по CALL.TOKEN_ISSUED', () => {
       machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
       machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
@@ -1001,6 +1031,43 @@ describe('CallStateMachine', () => {
       });
 
       expect(result).toBe(context);
+    });
+
+    it('setRoomInfo: при CALL.ENTER_ROOM с token задаёт conference равным room', () => {
+      const context = { ...connectPayload };
+      const room = 'room-as-conference';
+      const token = 'jwt-inline';
+
+      const result = getSnapshot().machine.implementations.actions.setRoomInfo?.assignment({
+        context,
+        event: {
+          type: 'CALL.ENTER_ROOM',
+          room,
+          participantName: 'Alice',
+          token,
+        },
+      });
+
+      expect(result).toEqual({
+        room,
+        participantName: 'Alice',
+        token,
+        conference: room,
+      });
+    });
+
+    it('setRoomInfo: при CALL.ENTER_ROOM без token для обычной комнаты не задаёт token и conference', () => {
+      const context = { ...connectPayload };
+
+      const result = getSnapshot().machine.implementations.actions.setRoomInfo?.assignment({
+        context,
+        event: { type: 'CALL.ENTER_ROOM', ...room1Payload },
+      });
+
+      expect(result).toEqual({
+        room: room1Payload.room,
+        participantName: room1Payload.participantName,
+      });
     });
 
     it('setTokenInfo: возвращает context при event.type !== CALL.TOKEN_ISSUED', () => {

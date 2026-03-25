@@ -1394,7 +1394,6 @@ describe('CallManager', () => {
             room: '',
             participantName: '',
             conference: '',
-            participant: '',
           };
         },
       } as Parameters<typeof getInRoomTokenOrThrow>[0];

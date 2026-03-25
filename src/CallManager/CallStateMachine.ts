@@ -48,10 +48,9 @@ export type TDirectP2PRoomContext = TConnectingContext & {
 
 export type TInRoomContext = TConnectingContext & {
   room: string;
-  participantName: string;
   token: string; // jwt
   conference: string;
-  participant: string;
+  participantName: string;
 };
 
 type TContext =
@@ -72,7 +71,7 @@ type TCallEvent =
       token?: string;
       isDirectPeerToPeer?: boolean;
     }
-  | { type: 'CALL.TOKEN_ISSUED'; token: string; conference: string; participant: string }
+  | { type: 'CALL.TOKEN_ISSUED'; token: string; conference: string; participantName: string }
   | { type: 'CALL.START_DISCONNECT' }
   | { type: 'CALL.RESET' };
 
@@ -158,7 +157,6 @@ const clearCallContext = (): Partial<TContext> & Partial<TIdleContext> => {
     participantName: undefined,
     token: undefined,
     conference: undefined,
-    participant: undefined,
     isDirectPeerToPeer: undefined,
     pendingDisconnect: undefined,
   };
@@ -190,6 +188,7 @@ const callMachine = setup({
         room: string;
         participantName: string;
         token?: string;
+        conference?: string;
         isDirectPeerToPeer?: boolean;
       } = {
         room: event.room,
@@ -198,8 +197,10 @@ const callMachine = setup({
 
       if (isValidString(event.token)) {
         nextContext.token = event.token;
+        nextContext.conference = event.room;
       } else if (hasNoTokenRoom(event)) {
         nextContext.token = undefined;
+        nextContext.conference = undefined;
       }
 
       if (isValidBoolean(event.isDirectPeerToPeer)) {
@@ -216,7 +217,7 @@ const callMachine = setup({
       return {
         token: event.token,
         conference: event.conference,
-        participant: event.participant,
+        participantName: event.participantName,
       };
     }),
     reset: assign(clearCallContext()),
@@ -545,9 +546,9 @@ export class CallStateMachine extends BaseStateMachine<
     this.addSubscription(
       apiManager.on('enter-room', ({ room, participantName, bearerToken, isDirectPeerToPeer }) => {
         this.send({
-          type: 'CALL.ENTER_ROOM',
           room,
           participantName,
+          type: 'CALL.ENTER_ROOM',
           token: bearerToken,
           isDirectPeerToPeer,
         });
@@ -557,7 +558,7 @@ export class CallStateMachine extends BaseStateMachine<
       apiManager.on(
         'conference:participant-token-issued',
         ({ jwt: token, conference, participant }) => {
-          this.send({ type: 'CALL.TOKEN_ISSUED', token, conference, participant });
+          this.send({ type: 'CALL.TOKEN_ISSUED', token, conference, participantName: participant });
         },
       ),
     );
