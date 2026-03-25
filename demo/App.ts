@@ -8,7 +8,7 @@ import { LocalMediaStreamManager } from './LocalMediaStreamManager';
 import LogsManager from './LogsManager';
 import PresentationManager from './PresentationManager';
 import RemoteMediaStreamManager from './RemoteMediaStreamManager';
-import { Session } from './Session';
+import { Session, sipConnectorFacade } from './Session';
 import FormStateManager from './state/FormStateManager';
 import Statuses from './Statuses';
 import getAppInfo from './utils/getAppInfo';
@@ -23,6 +23,8 @@ import type { IFormState } from './state/FormState';
  * Объединяет все компоненты для работы SIP-звонков
  */
 class App {
+  public readonly sipConnectorFacade = sipConnectorFacade;
+
   private readonly formStateManager: FormStateManager;
 
   private readonly localMediaStreamManager: LocalMediaStreamManager;

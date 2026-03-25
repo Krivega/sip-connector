@@ -9,9 +9,9 @@ class VideoPlayer {
    * Создает экземпляр VideoPlayer
    * @param videoId - ID video элемента в DOM
    */
-  public constructor(videoElement: HTMLVideoElement) {
+  public constructor(videoElement: HTMLVideoElement, { muted }: { muted?: boolean } = {}) {
     this.videoElement = videoElement;
-    this.setMuted(true);
+    this.setMuted(muted ?? true);
   }
 
   /**

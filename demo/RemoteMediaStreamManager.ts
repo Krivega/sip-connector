@@ -120,7 +120,7 @@ class RemoteMediaStreamManager {
     container.append(labelElement);
     dom.remoteStreamsContainerElement.append(container);
 
-    const videoPlayer = new VideoPlayer(videoElement);
+    const videoPlayer = new VideoPlayer(videoElement, { muted: false });
 
     videoPlayer.setStream(stream);
     videoPlayer.setPlaying(true);
