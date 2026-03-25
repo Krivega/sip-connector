@@ -15,7 +15,7 @@ import {
   EKeyHeader,
   EContentSpectatorMode,
 } from './constants';
-import { createEvents, EEvent } from './events';
+import { createEvents, EEvent, isValueConferenceParticipantTokenIssued } from './events';
 import { getHeader } from './getHeader';
 import { ECMDNotify } from './types';
 
@@ -272,58 +272,42 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
   private readonly handleNotify = (header: TInfoNotify) => {
     switch (header.cmd) {
       case ECMDNotify.CHANNELS: {
-        const channelsInfo = header as TChannelsInfoNotify;
-
-        this.triggerChannelsNotify(channelsInfo);
+        this.triggerChannelsNotify(header);
 
         break;
       }
       case ECMDNotify.WEBCAST_STARTED: {
-        const webcastInfo = header as TWebcastInfoNotify;
-
-        this.triggerWebcastStartedNotify(webcastInfo);
+        this.triggerWebcastStartedNotify(header);
 
         break;
       }
       case ECMDNotify.WEBCAST_STOPPED: {
-        const webcastInfo = header as TWebcastStoppedInfoNotify;
-
-        this.triggerWebcastStoppedNotify(webcastInfo);
+        this.triggerWebcastStoppedNotify(header);
 
         break;
       }
       case ECMDNotify.ADDED_TO_LIST_MODERATORS: {
-        const data = header as TAddedToListModeratorsInfoNotify;
-
-        this.triggerAddedToListModeratorsNotify(data);
+        this.triggerAddedToListModeratorsNotify(header);
 
         break;
       }
       case ECMDNotify.REMOVED_FROM_LIST_MODERATORS: {
-        const data = header as TRemovedFromListModeratorsInfoNotify;
-
-        this.triggerRemovedFromListModeratorsNotify(data);
+        this.triggerRemovedFromListModeratorsNotify(header);
 
         break;
       }
       case ECMDNotify.ACCEPTING_WORD_REQUEST: {
-        const data = header as TAcceptingWordRequestInfoNotify;
-
-        this.triggerParticipationAcceptingWordRequest(data);
+        this.triggerParticipationAcceptingWordRequest(header);
 
         break;
       }
       case ECMDNotify.CANCELLING_WORD_REQUEST: {
-        const data = header as TCancellingWordRequestInfoNotify;
-
-        this.triggerParticipationCancellingWordRequest(data);
+        this.triggerParticipationCancellingWordRequest(header);
 
         break;
       }
       case ECMDNotify.MOVE_REQUEST_TO_STREAM: {
-        const data = header as TMoveRequestToStreamInfoNotify;
-
-        this.triggerParticipantMoveRequestToStream(data);
+        this.triggerParticipantMoveRequestToStream(header);
 
         break;
       }
@@ -338,9 +322,7 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
         break;
       }
       case ECMDNotify.CONFERENCE_PARTICIPANT_TOKEN_ISSUED: {
-        const data = header as TConferenceParticipantTokenIssued;
-
-        this.triggerConferenceParticipantTokenIssued(data);
+        this.maybeTriggerConferenceParticipantTokenIssued(header);
 
         break;
       }
@@ -495,7 +477,7 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
     this.events.trigger(EEvent.ACCOUNT_DELETED);
   };
 
-  private readonly triggerConferenceParticipantTokenIssued = ({
+  private readonly maybeTriggerConferenceParticipantTokenIssued = ({
     body: { conference, participant, jwt },
   }: TConferenceParticipantTokenIssued) => {
     const headersConferenceParticipantTokenIssued: TParametersConferenceParticipantTokenIssued = {
@@ -503,6 +485,10 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
       participant,
       jwt,
     };
+
+    if (!isValueConferenceParticipantTokenIssued(headersConferenceParticipantTokenIssued)) {
+      return;
+    }
 
     this.events.trigger(
       EEvent.CONFERENCE_PARTICIPANT_TOKEN_ISSUED,

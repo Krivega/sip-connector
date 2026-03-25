@@ -3,6 +3,7 @@ import { assign, setup } from 'xstate';
 import { BaseStateMachine } from '@/tools/BaseStateMachine';
 import hasPeerToPeer from '@/tools/hasPeerToPeer';
 import hasPurgatory from '@/tools/hasPurgatory';
+import { isValidBoolean, isValidString } from '@/utils/validators';
 
 import type { TApiManagerEvents } from '@/ApiManager';
 import type { TEvents } from './events';
@@ -77,24 +78,16 @@ type TCallEvent =
 
 const EVALUATE = 'evaluate' as const;
 
-const isNonEmptyString = (value?: string): value is string => {
-  return typeof value === 'string' && value.length > 0;
-};
-
 const hasConnectingContext = (context: TContext): context is TConnectingContext => {
-  return (
-    'number' in context && isNonEmptyString(context.number) && typeof context.answer === 'boolean'
-  );
+  return 'number' in context && isValidString(context.number) && isValidBoolean(context.answer);
 };
 
 const hasRoomContext = (context: TContext) => {
-  return (
-    'room' in context && isNonEmptyString(context.room) && isNonEmptyString(context.participantName)
-  );
+  return 'room' in context && isValidString(context.room) && isValidString(context.participantName);
 };
 
 const hasTokenContext = (context: TContext) => {
-  return 'token' in context && isNonEmptyString(context.token);
+  return 'token' in context && isValidString(context.token);
 };
 
 const hasDirectPeerToPeer = ({ isDirectPeerToPeer }: { isDirectPeerToPeer?: boolean }): boolean => {
@@ -203,13 +196,13 @@ const callMachine = setup({
         participantName: event.participantName,
       };
 
-      if (event.token !== undefined) {
+      if (isValidString(event.token)) {
         nextContext.token = event.token;
       } else if (hasNoTokenRoom(event)) {
         nextContext.token = undefined;
       }
 
-      if (event.isDirectPeerToPeer !== undefined) {
+      if (isValidBoolean(event.isDirectPeerToPeer)) {
         nextContext.isDirectPeerToPeer = event.isDirectPeerToPeer;
       }
 

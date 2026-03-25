@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
 import { TypedEvents } from 'events-constructor';
 
+import { isValidObject, isValidString } from '@/utils/validators';
+
 import type { EContentedStreamCodec, EContentUseLicense, EContentMainCAM } from './constants';
 import type {
   TChannels,
@@ -128,4 +130,20 @@ export type TEvents = TypedEvents<TEventMap>;
 
 export const createEvents = () => {
   return new TypedEvents<TEventMap>(EVENT_NAMES);
+};
+
+export const isValueConferenceParticipantTokenIssued = (event: unknown): boolean => {
+  if (!isValidObject(event)) {
+    return false;
+  }
+
+  if (
+    !isValidString(event.conference) ||
+    !isValidString(event.participant) ||
+    !isValidString(event.jwt)
+  ) {
+    return false;
+  }
+
+  return true;
 };

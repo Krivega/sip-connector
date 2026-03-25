@@ -1,3 +1,4 @@
+import { isValidString } from '@/utils/validators';
 import {
   EContentedStreamCodec,
   EContentTypeReceived,
@@ -13,11 +14,6 @@ import {
 
 import type { IncomingRequest } from '@krivega/jssip';
 import type { EValueHeader } from './constants';
-
-// Helper functions for validation
-const isValidString = (value: unknown): value is string => {
-  return typeof value === 'string' && value.trim().length > 0;
-};
 
 const findEnumValue = <T extends Record<string, string>>(
   enumObject: T,

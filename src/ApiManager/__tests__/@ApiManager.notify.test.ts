@@ -277,6 +277,84 @@ describe('ApiManager (notify via sipEvent)', () => {
         jwt: 'jwt_token_here',
       });
     });
+
+    it('должен игнорировать уведомление ConferenceParticipantTokenIssued с некорректными данными', () => {
+      const tokenIssuedSpy = jest.fn();
+
+      apiManager.on('conference:participant-token-issued', tokenIssuedSpy);
+
+      const invalidNotifies: unknown[] = [
+        // body отсутствует / не объект
+        { cmd: 'ConferenceParticipantTokenIssued' },
+        { cmd: 'ConferenceParticipantTokenIssued', body: undefined },
+        { cmd: 'ConferenceParticipantTokenIssued', body: [] },
+        { cmd: 'ConferenceParticipantTokenIssued', body: 'invalid' },
+        { cmd: 'ConferenceParticipantTokenIssued', body: 123 },
+
+        // отсутствующие поля
+        {
+          cmd: 'ConferenceParticipantTokenIssued',
+          body: { conference: 'conf123', participant: 'user456' },
+        },
+        {
+          cmd: 'ConferenceParticipantTokenIssued',
+          body: { conference: 'conf123', jwt: 'jwt_token_here' },
+        },
+        {
+          cmd: 'ConferenceParticipantTokenIssued',
+          body: { participant: 'user456', jwt: 'jwt_token_here' },
+        },
+
+        // пустые / пробельные строки
+        {
+          cmd: 'ConferenceParticipantTokenIssued',
+          body: { conference: '', participant: 'user456', jwt: 'jwt_token_here' },
+        },
+        {
+          cmd: 'ConferenceParticipantTokenIssued',
+          body: { conference: '   ', participant: 'user456', jwt: 'jwt_token_here' },
+        },
+        {
+          cmd: 'ConferenceParticipantTokenIssued',
+          body: { conference: 'conf123', participant: '', jwt: 'jwt_token_here' },
+        },
+        {
+          cmd: 'ConferenceParticipantTokenIssued',
+          body: { conference: 'conf123', participant: '   ', jwt: 'jwt_token_here' },
+        },
+        {
+          cmd: 'ConferenceParticipantTokenIssued',
+          body: { conference: 'conf123', participant: 'user456', jwt: '' },
+        },
+        {
+          cmd: 'ConferenceParticipantTokenIssued',
+          body: { conference: 'conf123', participant: 'user456', jwt: '   ' },
+        },
+
+        // неверные типы полей
+        {
+          cmd: 'ConferenceParticipantTokenIssued',
+          body: { conference: 123, participant: 'user456', jwt: 'jwt_token_here' },
+        },
+        {
+          cmd: 'ConferenceParticipantTokenIssued',
+          body: { conference: 'conf123', participant: 456, jwt: 'jwt_token_here' },
+        },
+        {
+          cmd: 'ConferenceParticipantTokenIssued',
+          body: { conference: 'conf123', participant: 'user456', jwt: true },
+        },
+      ];
+
+      invalidNotifies.forEach((notifyData) => {
+        mockRequest.setHeader(EKeyHeader.NOTIFY, JSON.stringify(notifyData));
+        connectionManager.events.trigger('sipEvent', {
+          event: {},
+          request: mockRequest as unknown as IncomingRequest,
+        });
+        expect(tokenIssuedSpy).not.toHaveBeenCalled();
+      });
+    });
   });
 
   describe('обработка всех типов уведомлений', () => {
