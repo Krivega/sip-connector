@@ -56,7 +56,7 @@ class BaseSession implements RTCSession {
     remoteIdentity: NameAddrHeader;
   }) {
     this.originator = originator;
-    this.events = new Events<typeof SESSION_JSSIP_EVENT_NAMES>(SESSION_JSSIP_EVENT_NAMES);
+    this.events = new Events(SESSION_JSSIP_EVENT_NAMES);
     this.initEvents(eventHandlers);
     this.remote_identity = remoteIdentity;
   }

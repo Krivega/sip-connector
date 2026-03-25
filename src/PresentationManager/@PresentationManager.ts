@@ -100,7 +100,7 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
 
     const streamPresentationPrevious = this.streamPresentationCurrent;
     let result: Promise<MediaStream | undefined> =
-      this.promisePendingStartPresentation ?? Promise.resolve<undefined>(undefined);
+      this.promisePendingStartPresentation ?? Promise.resolve(undefined);
 
     if (this.promisePendingStartPresentation) {
       await this.promisePendingStartPresentation.catch(() => {});

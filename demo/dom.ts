@@ -257,7 +257,7 @@ class DOM {
     this.startStressTestingPresentationElement = getElementById<HTMLButtonElement>(
       startStressTestingPresentationId,
     );
-    this.startStressTestingPresentationTextElement = getElementById<HTMLSpanElement>(
+    this.startStressTestingPresentationTextElement = getElementById(
       startStressTestingPresentationTextId,
     );
     this.stopPresentationElement = getElementById<HTMLButtonElement>(stopPresentationId);

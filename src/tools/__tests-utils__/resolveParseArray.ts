@@ -4,7 +4,7 @@ const resolveParseArray = <T extends object>(parameter: keyof T) => {
   return (array: T[]) => {
     return array
       .map((item: T) => {
-        return parseObject<T>(item);
+        return parseObject(item);
       })
       .sort((previous: T, next: T) => {
         const previousValue = previous[parameter];
