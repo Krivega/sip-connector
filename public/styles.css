@@ -4,6 +4,24 @@ body {
   padding-bottom: 100px;
 }
 
+#callForm label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+#callForm label > input {
+  margin: 0;
+}
+
+#callForm label > input[type='checkbox'] {
+  width: fit-content;
+}
+
+#callForm .form-label-text {
+  font-weight: 500;
+}
+
 .icon {
   display: inline-block;
   direction: ltr;
