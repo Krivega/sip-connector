@@ -46,6 +46,9 @@ type TDomIds = {
   presentationStressMaxAttemptsCountId: string;
   presentationStressDelayBetweenAttemptsId: string;
   presentationStressDelayBetweenStartAndStopId: string;
+  mainStreamSettingsFormId: string;
+  minConsecutiveProblemSamplesCountId: string;
+  throttleRecoveryTimeoutId: string;
   startPresentationId: string;
   startStressTestingPresentationId: string;
   startStressTestingPresentationTextId: string;
@@ -197,6 +200,12 @@ class DOM {
 
   public presentationStressDelayBetweenStartAndStopInputElement: HTMLInputElement;
 
+  public mainStreamSettingsFormElement: HTMLFormElement;
+
+  public minConsecutiveProblemSamplesCountInputElement: HTMLInputElement;
+
+  public throttleRecoveryTimeoutInputElement: HTMLInputElement;
+
   public constructor({
     overlayId,
     callButtonId,
@@ -244,6 +253,9 @@ class DOM {
     presentationStressMaxAttemptsCountId,
     presentationStressDelayBetweenAttemptsId,
     presentationStressDelayBetweenStartAndStopId,
+    mainStreamSettingsFormId,
+    minConsecutiveProblemSamplesCountId,
+    throttleRecoveryTimeoutId,
     startPresentationId,
     startStressTestingPresentationId,
     startStressTestingPresentationTextId,
@@ -351,6 +363,12 @@ class DOM {
     this.presentationStressDelayBetweenStartAndStopInputElement = getElementById<HTMLInputElement>(
       presentationStressDelayBetweenStartAndStopId,
     );
+    this.mainStreamSettingsFormElement = getElementById<HTMLFormElement>(mainStreamSettingsFormId);
+    this.minConsecutiveProblemSamplesCountInputElement = getElementById<HTMLInputElement>(
+      minConsecutiveProblemSamplesCountId,
+    );
+    this.throttleRecoveryTimeoutInputElement =
+      getElementById<HTMLInputElement>(throttleRecoveryTimeoutId);
   }
 
   /**
@@ -475,4 +493,7 @@ export const dom = new DOM({
   presentationStressMaxAttemptsCountId: 'presentationStressMaxAttemptsCount',
   presentationStressDelayBetweenAttemptsId: 'presentationStressDelayBetweenAttempts',
   presentationStressDelayBetweenStartAndStopId: 'presentationStressDelayBetweenStartAndStop',
+  mainStreamSettingsFormId: 'mainStreamSettingsForm',
+  minConsecutiveProblemSamplesCountId: 'minConsecutiveProblemSamplesCount',
+  throttleRecoveryTimeoutId: 'throttleRecoveryTimeout',
 });

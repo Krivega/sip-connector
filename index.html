@@ -11,61 +11,64 @@
   </head>
   <body>
     <main>
-      <form id="callForm">
-        <label for="serverAddress">
-          Адрес сервера
-          <input
-            type="text"
-            id="serverAddress"
-            name="serverAddress"
-            placeholder="sip.example.com"
-            required
-          />
-        </label>
+      <section>
+        <h3>Настройки звонка</h3>
+        <form id="callForm">
+          <label for="serverAddress">
+            Адрес сервера
+            <input
+              type="text"
+              id="serverAddress"
+              name="serverAddress"
+              placeholder="sip.example.com"
+              required
+            />
+          </label>
 
-        <label for="displayName">
-          Отображаемое имя
-          <input
-            type="text"
-            id="displayName"
-            name="displayName"
-            placeholder="Иван Иванов"
-            required
-          />
-        </label>
+          <label for="displayName">
+            Отображаемое имя
+            <input
+              type="text"
+              id="displayName"
+              name="displayName"
+              placeholder="Иван Иванов"
+              required
+            />
+          </label>
 
-        <label>
-          <input type="checkbox" id="authEnabled" name="authEnabled" />
-          Авторизация
-        </label>
+          <label>
+            <input type="checkbox" id="authEnabled" name="authEnabled" />
+            Авторизация
+          </label>
 
-        <label for="userNumber">
-          Номер пользователя
-          <input type="text" id="userNumber" name="userNumber" placeholder="1001" />
-        </label>
+          <label for="userNumber">
+            Номер пользователя
+            <input type="text" id="userNumber" name="userNumber" placeholder="1001" />
+          </label>
 
-        <label for="password">
-          Пароль
-          <input
-            type="password"
-            id="password"
-            name="password"
-            placeholder="••••••••"
-            autocomplete="current-password"
-          />
-        </label>
+          <label for="password">
+            Пароль
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="••••••••"
+              autocomplete="current-password"
+            />
+          </label>
 
-        <label for="conferenceNumber">
-          Номер конференции
-          <input
-            type="text"
-            id="conferenceNumber"
-            name="conferenceNumber"
-            placeholder="2001"
-            required
-          />
-        </label>
-      </form>
+          <label for="conferenceNumber">
+            Номер конференции
+            <input
+              type="text"
+              id="conferenceNumber"
+              name="conferenceNumber"
+              placeholder="2001"
+              required
+            />
+          </label>
+        </form>
+      </section>
 
       <section id="presentationStressTestingSection" class="hidden">
         <h3>Настройки стрессового тестирования презентации</h3>
@@ -108,6 +111,41 @@
             value="500"
           />
         </label>
+      </section>
+
+      <section id="mainStreamSettingsSection">
+        <h3>Настройки восстановления main stream</h3>
+        <form id="mainStreamSettingsForm">
+          <label for="minConsecutiveProblemSamplesCount">
+            Сколько подряд «плохих» сэмплов нужно для детекта проблемы
+            <input
+              type="number"
+              id="minConsecutiveProblemSamplesCount"
+              name="minConsecutiveProblemSamplesCount"
+              min="1"
+              step="1"
+              inputmode="numeric"
+              value="2"
+              required
+            />
+          </label>
+
+          <label for="throttleRecoveryTimeout">
+            Минимальный интервал между попытками восстановления (мс)
+            <input
+              type="number"
+              id="throttleRecoveryTimeout"
+              name="throttleRecoveryTimeout"
+              min="1"
+              step="1"
+              inputmode="numeric"
+              value="3000"
+              required
+            />
+          </label>
+
+          <button id="applyMainStreamSettingsButton" type="submit">Применить настройки</button>
+        </form>
       </section>
 
       <section id="localVideoSection" class="hidden">

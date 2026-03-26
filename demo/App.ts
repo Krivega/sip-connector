@@ -97,6 +97,11 @@ class App {
       this.handleFormSubmit();
     });
 
+    dom.mainStreamSettingsFormElement.addEventListener('submit', (event) => {
+      event.preventDefault();
+      this.handleMainStreamSettingsSubmit();
+    });
+
     // Подписываемся на изменения состояния звонка
     this.callStateManager.onChange((state) => {
       this.handleCallStateChange(state);
@@ -149,6 +154,43 @@ class App {
       .catch((error: unknown) => {
         this.handleError(error);
       });
+  }
+
+  private handleMainStreamSettingsSubmit(): void {
+    const minConsecutiveProblemSamplesCount = Number.parseInt(
+      dom.minConsecutiveProblemSamplesCountInputElement.value,
+      10,
+    );
+    const throttleRecoveryTimeout = Number.parseInt(
+      dom.throttleRecoveryTimeoutInputElement.value,
+      10,
+    );
+
+    if (
+      !Number.isInteger(minConsecutiveProblemSamplesCount) ||
+      minConsecutiveProblemSamplesCount < 1
+    ) {
+      alert('minConsecutiveProblemSamplesCount должен быть положительным целым числом');
+
+      return;
+    }
+
+    if (!Number.isInteger(throttleRecoveryTimeout) || throttleRecoveryTimeout < 1) {
+      alert('throttleRecoveryTimeout должен быть положительным целым числом');
+
+      return;
+    }
+
+    try {
+      this.sipConnectorFacade.sipConnector.setMinConsecutiveProblemSamplesCount(
+        minConsecutiveProblemSamplesCount,
+      );
+      this.sipConnectorFacade.sipConnector.setThrottleRecoveryTimeout(throttleRecoveryTimeout);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      alert(`Ошибка применения настроек восстановления: ${errorMessage}`);
+    }
   }
 
   /**
