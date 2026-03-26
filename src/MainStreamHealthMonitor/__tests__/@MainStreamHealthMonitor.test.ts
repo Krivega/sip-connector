@@ -63,6 +63,37 @@ describe('@MainStreamHealthMonitor', () => {
     jest.clearAllMocks();
   });
 
+  describe('validation', () => {
+    it('должен бросать ошибку в конструкторе для невалидного minConsecutiveProblemSamplesCount', () => {
+      expect(() => {
+        // eslint-disable-next-line no-new
+        new MainStreamHeathMonitor(statsManager, callManager, 0);
+      }).toThrow('minConsecutiveProblemSamplesCount should be a positive integer');
+      expect(() => {
+        // eslint-disable-next-line no-new
+        new MainStreamHeathMonitor(statsManager, callManager, -1);
+      }).toThrow('minConsecutiveProblemSamplesCount should be a positive integer');
+      expect(() => {
+        // eslint-disable-next-line no-new
+        new MainStreamHeathMonitor(statsManager, callManager, 1.5);
+      }).toThrow('minConsecutiveProblemSamplesCount should be a positive integer');
+    });
+
+    it('должен бросать ошибку в setter для невалидного minConsecutiveProblemSamplesCount', () => {
+      const monitor = new MainStreamHeathMonitor(statsManager, callManager);
+
+      expect(() => {
+        monitor.setMinConsecutiveProblemSamplesCount(0);
+      }).toThrow('minConsecutiveProblemSamplesCount should be a positive integer');
+      expect(() => {
+        monitor.setMinConsecutiveProblemSamplesCount(-1);
+      }).toThrow('minConsecutiveProblemSamplesCount should be a positive integer');
+      expect(() => {
+        monitor.setMinConsecutiveProblemSamplesCount(1.5);
+      }).toThrow('minConsecutiveProblemSamplesCount should be a positive integer');
+    });
+  });
+
   describe('HEALTH_SNAPSHOT_EVENT_NAME', () => {
     it('должен эмитить событие когда основной видеотрек muted и StatsManager.isInvalidInboundFrames возвращает true', () => {
       mainStream.addTrack(track);

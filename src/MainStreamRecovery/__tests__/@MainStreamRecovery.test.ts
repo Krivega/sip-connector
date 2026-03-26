@@ -29,6 +29,37 @@ describe('@MainStreamRecovery', () => {
     jest.useRealTimers();
   });
 
+  describe('validation', () => {
+    it('должен бросать ошибку в конструкторе для невалидного throttleRecoveryTimeout', () => {
+      expect(() => {
+        // eslint-disable-next-line no-new
+        new MainStreamRecovery(callManager, 0);
+      }).toThrow('throttleRecoveryTimeout should be a positive integer');
+      expect(() => {
+        // eslint-disable-next-line no-new
+        new MainStreamRecovery(callManager, -1);
+      }).toThrow('throttleRecoveryTimeout should be a positive integer');
+      expect(() => {
+        // eslint-disable-next-line no-new
+        new MainStreamRecovery(callManager, 1.5);
+      }).toThrow('throttleRecoveryTimeout should be a positive integer');
+    });
+
+    it('должен бросать ошибку в setter для невалидного throttleRecoveryTimeout', () => {
+      const recovery = new MainStreamRecovery(callManager);
+
+      expect(() => {
+        recovery.setThrottleRecoveryTimeout(0);
+      }).toThrow('throttleRecoveryTimeout should be a positive integer');
+      expect(() => {
+        recovery.setThrottleRecoveryTimeout(-1);
+      }).toThrow('throttleRecoveryTimeout should be a positive integer');
+      expect(() => {
+        recovery.setThrottleRecoveryTimeout(1.5);
+      }).toThrow('throttleRecoveryTimeout should be a positive integer');
+    });
+  });
+
   it('должен вызывать renegotiate когда вызван recover', () => {
     const recovery = new MainStreamRecovery(callManager);
 

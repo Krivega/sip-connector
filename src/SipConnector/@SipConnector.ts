@@ -73,12 +73,16 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       videoBalancerOptions,
       autoConnectorOptions,
       numberOfConnectionAttempts,
+      minConsecutiveProblemSamplesCount,
+      throttleRecoveryTimeout,
     }: {
       preferredMimeTypesVideoCodecs?: string[];
       excludeMimeTypesVideoCodecs?: string[];
       videoBalancerOptions?: IBalancerOptions;
       autoConnectorOptions?: IAutoConnectorOptions;
       numberOfConnectionAttempts?: number;
+      minConsecutiveProblemSamplesCount?: number;
+      throttleRecoveryTimeout?: number;
     } = {},
   ) {
     super(createEvents());
@@ -118,8 +122,12 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       this.apiManager,
       videoBalancerOptions ?? VIDEO_BALANCER_OPTIONS,
     );
-    this.mainStreamHealthMonitor = new MainStreamHealthMonitor(this.statsManager, this.callManager);
-    this.mainStreamRecovery = new MainStreamRecovery(this.callManager);
+    this.mainStreamHealthMonitor = new MainStreamHealthMonitor(
+      this.statsManager,
+      this.callManager,
+      minConsecutiveProblemSamplesCount,
+    );
+    this.mainStreamRecovery = new MainStreamRecovery(this.callManager, throttleRecoveryTimeout);
     this.sessionManager = new SessionManager({
       connectionManager: this.connectionManager,
       callManager: this.callManager,
@@ -415,6 +423,16 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
   ) {
     return this.apiManager.askPermissionToEnableCam(...args);
   }
+
+  public setMinConsecutiveProblemSamplesCount = (minConsecutiveProblemSamplesCount: number) => {
+    this.mainStreamHealthMonitor.setMinConsecutiveProblemSamplesCount(
+      minConsecutiveProblemSamplesCount,
+    );
+  };
+
+  public setThrottleRecoveryTimeout = (throttleRecoveryTimeout: number) => {
+    this.mainStreamRecovery.setThrottleRecoveryTimeout(throttleRecoveryTimeout);
+  };
 
   private subscribeDisconnectedFromOutOfCall() {
     this.connectionManager.on('disconnected', () => {

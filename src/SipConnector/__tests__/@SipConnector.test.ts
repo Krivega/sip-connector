@@ -43,6 +43,31 @@ describe('SipConnector', () => {
     expect(handler).toHaveBeenCalledWith({ socket: {} as Socket });
   });
 
+  it('должен обновлять minConsecutiveProblemSamplesCount через публичный метод SipConnector', () => {
+    const setMinConsecutiveProblemSamplesCountSpy = jest.spyOn(
+      sipConnector.mainStreamHealthMonitor,
+      'setMinConsecutiveProblemSamplesCount',
+    );
+
+    sipConnector.setMinConsecutiveProblemSamplesCount(3);
+
+    expect(setMinConsecutiveProblemSamplesCountSpy).toHaveBeenCalledTimes(1);
+    expect(setMinConsecutiveProblemSamplesCountSpy).toHaveBeenCalledWith(3);
+  });
+
+  it('должен обновлять throttleRecoveryTimeout через публичный метод SipConnector', () => {
+    const setThrottleRecoveryTimeoutSpy = jest.spyOn(
+      // @ts-expect-error - доступ к приватному свойству
+      sipConnector.mainStreamRecovery,
+      'setThrottleRecoveryTimeout',
+    );
+
+    sipConnector.setThrottleRecoveryTimeout(5000);
+
+    expect(setThrottleRecoveryTimeoutSpy).toHaveBeenCalledTimes(1);
+    expect(setThrottleRecoveryTimeoutSpy).toHaveBeenCalledWith(5000);
+  });
+
   it('должен вызывать renegotiate когда monitor фиксирует устойчивую проблему invalid inbound frames', async () => {
     const track = createMediaStreamMock({
       video: { deviceId: { exact: 'videoDeviceId' } },

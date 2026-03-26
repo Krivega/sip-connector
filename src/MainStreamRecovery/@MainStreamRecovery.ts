@@ -19,7 +19,7 @@ const DEFAULT_THROTTLE_RECOVERY_TIMEOUT_MS = 3000;
 class MainStreamRecovery {
   private readonly renegotiateRequester: CancelableRequest<void, boolean>;
 
-  private readonly renegotiateThrottled: (() => void) & { cancel: () => void };
+  private renegotiateThrottled: (() => void) & { cancel: () => void };
 
   private readonly callManager: CallManager;
 
@@ -31,14 +31,22 @@ class MainStreamRecovery {
     this.callManager = callManager;
     this.renegotiateRequester = new CancelableRequest(callManager.renegotiate.bind(callManager));
 
-    // `renegotiateThrottled` ограничивает частоту вызовов `requestRenegotiate()`.
-    this.renegotiateThrottled = lodash.throttle(
-      this.requestRenegotiate.bind(this),
-      throttleRecoveryTimeout,
-    );
+    this.renegotiateThrottled = this.createRenegotiateThrottled(throttleRecoveryTimeout);
 
     // Подписываемся на завершение звонка, чтобы остановить попытки recovery.
     this.subscribe();
+  }
+
+  private static assertValidThrottleRecoveryTimeout(throttleRecoveryTimeout: number): void {
+    if (!Number.isInteger(throttleRecoveryTimeout) || throttleRecoveryTimeout < 1) {
+      throw new Error('throttleRecoveryTimeout should be a positive integer');
+    }
+  }
+
+  public setThrottleRecoveryTimeout(throttleRecoveryTimeout: number): void {
+    MainStreamRecovery.assertValidThrottleRecoveryTimeout(throttleRecoveryTimeout);
+    this.renegotiateThrottled.cancel();
+    this.renegotiateThrottled = this.createRenegotiateThrottled(throttleRecoveryTimeout);
   }
 
   // Запускает recovery: фактически вызывает throttled-версию requestRenegotiate.
@@ -68,6 +76,15 @@ class MainStreamRecovery {
         logger('failed to renegotiate main media stream', error);
       });
   };
+
+  private createRenegotiateThrottled(
+    throttleRecoveryTimeout: number,
+  ): (() => void) & { cancel: () => void } {
+    MainStreamRecovery.assertValidThrottleRecoveryTimeout(throttleRecoveryTimeout);
+
+    // `renegotiateThrottled` ограничивает частоту вызовов `requestRenegotiate()`.
+    return lodash.throttle(this.requestRenegotiate.bind(this), throttleRecoveryTimeout);
+  }
 
   // На завершение вызова: отменяем throttling и (если есть) in-flight renegotiate.
   private subscribe() {

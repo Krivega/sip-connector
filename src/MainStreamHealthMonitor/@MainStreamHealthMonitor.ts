@@ -12,12 +12,14 @@ import type { CallManager } from '@/CallManager';
 import type { StatsManager } from '@/StatsManager';
 import type { TEventMap, THealthSnapshot, TProblemReason, TProblemResetCause } from './events';
 
-const MIN_CONSECUTIVE_PROBLEM_SAMPLES_COUNT = 2;
+const DEFAULT_MIN_CONSECUTIVE_PROBLEM_SAMPLES_COUNT = 2;
 
 class MainStreamHealthMonitor extends EventEmitterProxy<TEventMap> {
   private readonly statsManager: StatsManager;
 
   private readonly callManager: CallManager;
+
+  private minConsecutiveProblemSamplesCount: number;
 
   private consecutiveProblemSamplesCount = 0;
 
@@ -25,10 +27,18 @@ class MainStreamHealthMonitor extends EventEmitterProxy<TEventMap> {
 
   private hasEmittedCurrentProblem = false;
 
-  public constructor(statsManager: StatsManager, callManager: CallManager) {
+  public constructor(
+    statsManager: StatsManager,
+    callManager: CallManager,
+    minConsecutiveProblemSamplesCount: number = DEFAULT_MIN_CONSECUTIVE_PROBLEM_SAMPLES_COUNT,
+  ) {
     super(createEvents());
     this.statsManager = statsManager;
     this.callManager = callManager;
+    MainStreamHealthMonitor.assertValidMinConsecutiveProblemSamplesCount(
+      minConsecutiveProblemSamplesCount,
+    );
+    this.minConsecutiveProblemSamplesCount = minConsecutiveProblemSamplesCount;
 
     this.subscribe();
   }
@@ -86,6 +96,25 @@ class MainStreamHealthMonitor extends EventEmitterProxy<TEventMap> {
     return undefined;
   }
 
+  private static assertValidMinConsecutiveProblemSamplesCount(
+    minConsecutiveProblemSamplesCount: number,
+  ): void {
+    if (
+      !Number.isInteger(minConsecutiveProblemSamplesCount) ||
+      minConsecutiveProblemSamplesCount < 1
+    ) {
+      throw new Error('minConsecutiveProblemSamplesCount should be a positive integer');
+    }
+  }
+
+  public setMinConsecutiveProblemSamplesCount(minConsecutiveProblemSamplesCount: number): void {
+    MainStreamHealthMonitor.assertValidMinConsecutiveProblemSamplesCount(
+      minConsecutiveProblemSamplesCount,
+    );
+    this.minConsecutiveProblemSamplesCount = minConsecutiveProblemSamplesCount;
+    this.resetProblemDetectionState();
+  }
+
   private readonly handleStatsCollected = () => {
     const { healthSnapshot } = this;
 
@@ -103,7 +132,7 @@ class MainStreamHealthMonitor extends EventEmitterProxy<TEventMap> {
     this.updateProblemDetectionState(problemReason);
 
     if (
-      this.consecutiveProblemSamplesCount >= MIN_CONSECUTIVE_PROBLEM_SAMPLES_COUNT &&
+      this.consecutiveProblemSamplesCount >= this.minConsecutiveProblemSamplesCount &&
       !this.hasEmittedCurrentProblem
     ) {
       this.events.trigger(INBOUND_VIDEO_PROBLEM_DETECTED_EVENT_NAME, {
