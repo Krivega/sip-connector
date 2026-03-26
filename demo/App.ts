@@ -1,4 +1,3 @@
-/* eslint-disable no-alert */
 import CallStateManager, { type TCallState } from './CallStateManager';
 import CallStatsManager from './CallStatsManager';
 import ConferenceStateDisplay from './ConferenceStateDisplay';
@@ -6,6 +5,7 @@ import { dom } from './dom';
 import LoaderManager from './LoaderManager';
 import { LocalMediaStreamManager } from './LocalMediaStreamManager';
 import LogsManager from './LogsManager';
+import NotificationManager from './NotificationManager';
 import PresentationManager from './PresentationManager';
 import RemoteMediaStreamManager from './RemoteMediaStreamManager';
 import { Session, sipConnectorFacade } from './Session';
@@ -24,6 +24,8 @@ import type { IFormState } from './state/FormState';
  */
 class App {
   public readonly sipConnectorFacade = sipConnectorFacade;
+
+  private readonly notificationManager: NotificationManager;
 
   private readonly formStateManager: FormStateManager;
 
@@ -45,6 +47,7 @@ class App {
    * Создает экземпляр App
    */
   public constructor() {
+    this.notificationManager = new NotificationManager();
     this.formStateManager = new FormStateManager();
     this.localMediaStreamManager = new LocalMediaStreamManager();
     this.presentationManager = new PresentationManager();
@@ -69,6 +72,25 @@ class App {
 
     logsManager.subscribe();
     this.callStatsManager.subscribe();
+
+    const idNotificationInboundVideoProblemDetected = 'inbound-video-problem-detected';
+
+    sipConnectorFacade.on(
+      'main-stream-health:inbound-video-problem-detected',
+      ({ reason, consecutiveProblemSamplesCount }) => {
+        this.notificationManager.show({
+          type: 'error',
+          message: `Обнаружена проблема: ${reason} (подряд ${consecutiveProblemSamplesCount} раз)`,
+          id: idNotificationInboundVideoProblemDetected,
+        });
+      },
+    );
+    sipConnectorFacade.on('main-stream-health:inbound-video-problem-resolved', () => {
+      this.notificationManager.hide(idNotificationInboundVideoProblemDetected);
+    });
+    sipConnectorFacade.on('main-stream-health:inbound-video-problem-reset', () => {
+      this.notificationManager.hide(idNotificationInboundVideoProblemDetected);
+    });
 
     this.initialize();
   }
@@ -170,13 +192,21 @@ class App {
       !Number.isInteger(minConsecutiveProblemSamplesCount) ||
       minConsecutiveProblemSamplesCount < 1
     ) {
-      alert('minConsecutiveProblemSamplesCount должен быть положительным целым числом');
+      this.notificationManager.show({
+        type: 'warning',
+        message: 'Порог детекта проблемы должен быть положительным целым числом',
+        isAutoHide: true,
+      });
 
       return;
     }
 
     if (!Number.isInteger(throttleRecoveryTimeout) || throttleRecoveryTimeout < 1) {
-      alert('throttleRecoveryTimeout должен быть положительным целым числом');
+      this.notificationManager.show({
+        type: 'warning',
+        message: 'Интервал восстановления должен быть положительным целым числом (мс)',
+        isAutoHide: true,
+      });
 
       return;
     }
@@ -186,10 +216,20 @@ class App {
         minConsecutiveProblemSamplesCount,
       );
       this.sipConnectorFacade.sipConnector.setThrottleRecoveryTimeout(throttleRecoveryTimeout);
+
+      this.notificationManager.show({
+        type: 'success',
+        message: 'Настройки восстановления применены',
+        isAutoHide: true,
+      });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
 
-      alert(`Ошибка применения настроек восстановления: ${errorMessage}`);
+      this.notificationManager.show({
+        type: 'error',
+        message: `Ошибка применения настроек восстановления: ${errorMessage}`,
+        isAutoHide: true,
+      });
     }
   }
 
@@ -467,8 +507,10 @@ class App {
     // eslint-disable-next-line no-console
     console.error('Ошибка:', error);
 
-    // Можно добавить отображение ошибки пользователю
-    alert(`Ошибка: ${errorMessage}`);
+    this.notificationManager.show({
+      type: 'error',
+      message: `Ошибка: ${errorMessage}`,
+    });
 
     this.callStateManager.reset();
     this.loaderManager.hide();
