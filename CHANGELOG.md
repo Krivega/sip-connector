@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [26.16.0](https://github.com/Krivega/sip-connector/compare/v26.15.3...v26.16.0) (2026-03-26)
+
+### Features
+
+- add configurable parameters for problem detection and recovery in MainStreamHealthMonitor and MainStreamRecovery ([af97fc8](https://github.com/Krivega/sip-connector/commit/af97fc801d159aaee1505840b13afba9db4fd007))
+- **demo:** enhance stress testing presentation functionality with collapsible sections and status updates ([4aa246b](https://github.com/Krivega/sip-connector/commit/4aa246b99c20ffba22c20d445685a974f8e91b75))
+- **demo:** implement main stream settings form for problem detection and recovery configuration ([3972bc6](https://github.com/Krivega/sip-connector/commit/3972bc6a59842a0cc39f815293d8f6df863c2eb4))
+
 ### [26.15.3](https://github.com/Krivega/sip-connector/compare/v26.15.2...v26.15.3) (2026-03-25)
 
 ### Bug Fixes
