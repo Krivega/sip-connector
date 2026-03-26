@@ -218,26 +218,30 @@ body {
   border-color: #1e7e34;
 }
 
-#muteMicButton {
-  background-color: #6c757d;
-  color: white;
-  border-color: #6c757d;
-}
-
-#muteMicButton:hover {
-  background-color: #5a6268;
-  border-color: #545b62;
-}
-
-#unmuteMicButton {
+#muteMicButton,
+#muteCameraButton {
   background-color: #17a2b8;
   color: white;
   border-color: #17a2b8;
 }
 
-#unmuteMicButton:hover {
+#muteMicButton:hover,
+#muteCameraButton:hover {
   background-color: #138496;
   border-color: #117a8b;
+}
+
+#unmuteMicButton,
+#unmuteCameraButton {
+  background-color: #6c757d;
+  color: white;
+  border-color: #6c757d;
+}
+
+#unmuteMicButton:hover,
+#unmuteCameraButton:hover {
+  background-color: #5a6268;
+  border-color: #545b62;
 }
 
 #remoteStreamsContainer {
@@ -442,4 +446,18 @@ body {
   cursor: not-allowed;
   pointer-events: none;
   user-select: none;
+}
+
+.section-collapsible > summary {
+  cursor: pointer;
+  user-select: none;
+}
+
+.section-collapsible > summary::-webkit-details-marker {
+  display: none;
+}
+
+.section-collapsible > summary h3 {
+  display: inline;
+  margin: 0;
 }

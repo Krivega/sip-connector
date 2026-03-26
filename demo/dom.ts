@@ -51,7 +51,8 @@ type TDomIds = {
   throttleRecoveryTimeoutId: string;
   startPresentationId: string;
   startStressTestingPresentationId: string;
-  startStressTestingPresentationTextId: string;
+  stopStressTestingPresentationButton: string;
+  stressTestingPresentationStatusId: string;
   stopPresentationId: string;
   presentationVideoId: string;
 };
@@ -92,7 +93,9 @@ class DOM {
 
   public startStressTestingPresentationElement: HTMLButtonElement;
 
-  public startStressTestingPresentationTextElement: HTMLSpanElement;
+  public stopStressTestingPresentationButton: HTMLButtonElement;
+
+  public stressTestingPresentationStatusElement: HTMLElement;
 
   public stopPresentationElement: HTMLButtonElement;
 
@@ -258,7 +261,8 @@ class DOM {
     throttleRecoveryTimeoutId,
     startPresentationId,
     startStressTestingPresentationId,
-    startStressTestingPresentationTextId,
+    stopStressTestingPresentationButton,
+    stressTestingPresentationStatusId,
     stopPresentationId,
     presentationVideoId,
   }: TDomIds) {
@@ -269,9 +273,10 @@ class DOM {
     this.startStressTestingPresentationElement = getElementById<HTMLButtonElement>(
       startStressTestingPresentationId,
     );
-    this.startStressTestingPresentationTextElement = getElementById(
-      startStressTestingPresentationTextId,
+    this.stopStressTestingPresentationButton = getElementById<HTMLButtonElement>(
+      stopStressTestingPresentationButton,
     );
+    this.stressTestingPresentationStatusElement = getElementById(stressTestingPresentationStatusId);
     this.stopPresentationElement = getElementById<HTMLButtonElement>(stopPresentationId);
     this.muteCameraButtonElement = getElementById<HTMLButtonElement>(muteCameraButtonId);
     this.unmuteCameraButtonElement = getElementById<HTMLButtonElement>(unmuteCameraButtonId);
@@ -449,7 +454,8 @@ export const dom = new DOM({
   unmuteCameraButtonId: 'unmuteCameraButton',
   startPresentationId: 'startPresentationButton',
   startStressTestingPresentationId: 'startStressTestingPresentationButton',
-  startStressTestingPresentationTextId: 'startStressTestingPresentationText',
+  stopStressTestingPresentationButton: 'stopStressTestingPresentationButton',
+  stressTestingPresentationStatusId: 'stressTestingPresentationStatus',
   stopPresentationId: 'stopPresentationButton',
   muteMicButtonId: 'muteMicButton',
   unmuteMicButtonId: 'unmuteMicButton',

@@ -71,177 +71,218 @@
       </section>
 
       <section id="presentationStressTestingSection" class="hidden">
-        <h3>Настройки стрессового тестирования презентации</h3>
+        <details class="section-collapsible">
+          <summary><h3>Настройки стрессового тестирования презентации</h3></summary>
 
-        <label for="presentationStressMaxAttemptsCount">
-          Количество попыток
-          <input
-            type="number"
-            id="presentationStressMaxAttemptsCount"
-            name="presentationStressMaxAttemptsCount"
-            min="1"
-            step="1"
-            inputmode="numeric"
-            value="50"
-          />
-        </label>
+          <label for="presentationStressMaxAttemptsCount">
+            Количество попыток
+            <input
+              type="number"
+              id="presentationStressMaxAttemptsCount"
+              name="presentationStressMaxAttemptsCount"
+              min="1"
+              step="1"
+              inputmode="numeric"
+              value="50"
+            />
+          </label>
 
-        <label for="presentationStressDelayBetweenAttempts">
-          Задержка между попытками (мс)
-          <input
-            type="number"
-            id="presentationStressDelayBetweenAttempts"
-            name="presentationStressDelayBetweenAttempts"
-            min="0"
-            step="1"
-            inputmode="numeric"
-            value="300"
-          />
-        </label>
+          <label for="presentationStressDelayBetweenAttempts">
+            Задержка между попытками (мс)
+            <input
+              type="number"
+              id="presentationStressDelayBetweenAttempts"
+              name="presentationStressDelayBetweenAttempts"
+              min="0"
+              step="1"
+              inputmode="numeric"
+              value="300"
+            />
+          </label>
 
-        <label for="presentationStressDelayBetweenStartAndStop">
-          Задержка между стартом и стопом (мс)
-          <input
-            type="number"
-            id="presentationStressDelayBetweenStartAndStop"
-            name="presentationStressDelayBetweenStartAndStop"
-            min="0"
-            step="1"
-            inputmode="numeric"
-            value="500"
-          />
-        </label>
+          <label for="presentationStressDelayBetweenStartAndStop">
+            Задержка между стартом и стопом (мс)
+            <input
+              type="number"
+              id="presentationStressDelayBetweenStartAndStop"
+              name="presentationStressDelayBetweenStartAndStop"
+              min="0"
+              step="1"
+              inputmode="numeric"
+              value="500"
+            />
+          </label>
+
+          <span id="stressTestingPresentationStatus"></span>
+
+          <button id="startStressTestingPresentationButton" type="submit">
+            Начать стрессовое тестирование презентации
+          </button>
+          <button id="stopStressTestingPresentationButton" type="submit">
+            Остановить стрессовое тестирование презентации
+          </button>
+        </details>
       </section>
 
       <section id="mainStreamSettingsSection">
-        <h3>Настройки восстановления main stream</h3>
-        <form id="mainStreamSettingsForm">
-          <label for="minConsecutiveProblemSamplesCount">
-            Сколько подряд «плохих» сэмплов нужно для детекта проблемы
-            <input
-              type="number"
-              id="minConsecutiveProblemSamplesCount"
-              name="minConsecutiveProblemSamplesCount"
-              min="1"
-              step="1"
-              inputmode="numeric"
-              value="2"
-              required
-            />
-          </label>
+        <details class="section-collapsible">
+          <summary><h3>Настройки восстановления main stream</h3></summary>
+          <form id="mainStreamSettingsForm">
+            <label for="minConsecutiveProblemSamplesCount">
+              Сколько подряд «плохих» сэмплов нужно для детекта проблемы
+              <input
+                type="number"
+                id="minConsecutiveProblemSamplesCount"
+                name="minConsecutiveProblemSamplesCount"
+                min="1"
+                step="1"
+                inputmode="numeric"
+                value="2"
+                required
+              />
+            </label>
 
-          <label for="throttleRecoveryTimeout">
-            Минимальный интервал между попытками восстановления (мс)
-            <input
-              type="number"
-              id="throttleRecoveryTimeout"
-              name="throttleRecoveryTimeout"
-              min="1"
-              step="1"
-              inputmode="numeric"
-              value="3000"
-              required
-            />
-          </label>
+            <label for="throttleRecoveryTimeout">
+              Минимальный интервал между попытками восстановления (мс)
+              <input
+                type="number"
+                id="throttleRecoveryTimeout"
+                name="throttleRecoveryTimeout"
+                min="1"
+                step="1"
+                inputmode="numeric"
+                value="3000"
+                required
+              />
+            </label>
 
-          <button id="applyMainStreamSettingsButton" type="submit">Применить настройки</button>
-        </form>
+            <button id="applyMainStreamSettingsButton" type="submit">Применить настройки</button>
+          </form>
+        </details>
       </section>
 
       <section id="localVideoSection" class="hidden">
-        <h3>Локальное видео</h3>
-        <video class="local-video" id="localVideo" autoplay playsinline muted></video>
-        <video class="local-video hidden" id="presentationVideo" autoplay playsinline muted></video>
+        <details class="section-collapsible" open>
+          <summary><h3>Локальное видео</h3></summary>
+          <video class="local-video" id="localVideo" autoplay playsinline muted></video>
+          <video
+            class="local-video hidden"
+            id="presentationVideo"
+            autoplay
+            playsinline
+            muted
+          ></video>
+        </details>
       </section>
 
       <section>
-        <h3>Статусы</h3>
-        <div id="sessionStatuses" class="session-statuses">
-          <span>Connection</span><span id="connectionStatus">-</span> <span>Call</span
-          ><span id="callStatus">-</span> <span>Incoming</span><span id="incomingStatus">-</span>
-          <span>Screen share</span><span id="presentationStatus">-</span> <span>System</span
-          ><span id="systemStatus">-</span>
-        </div>
+        <details class="section-collapsible">
+          <summary><h3>Статусы</h3></summary>
+          <div id="sessionStatuses" class="session-statuses">
+            <span>Connection</span><span id="connectionStatus">-</span> <span>Call</span
+            ><span id="callStatus">-</span> <span>Incoming</span><span id="incomingStatus">-</span>
+            <span>Screen share</span><span id="presentationStatus">-</span> <span>System</span
+            ><span id="systemStatus">-</span>
+          </div>
+        </details>
       </section>
 
       <section>
-        <h3>Состояние конференции</h3>
-        <div id="conferenceState" class="conference-state">
-          <span>Room</span><span id="conferenceStateRoom">-</span> <span>Participant Name</span
-          ><span id="conferenceStateParticipantName">-</span> <span>Token</span
-          ><span id="conferenceStateToken">-</span> <span>Conference</span
-          ><span id="conferenceStateConference">-</span> <span>Participant</span
-          ><span id="conferenceStateParticipant">-</span> <span>Number</span
-          ><span id="conferenceStateNumber">-</span> <span>Answer</span
-          ><span id="conferenceStateAnswer">-</span>
-        </div>
+        <details class="section-collapsible">
+          <summary><h3>Состояние конференции</h3></summary>
+          <div id="conferenceState" class="conference-state">
+            <span>Room</span><span id="conferenceStateRoom">-</span> <span>Participant Name</span
+            ><span id="conferenceStateParticipantName">-</span> <span>Token</span
+            ><span id="conferenceStateToken">-</span> <span>Conference</span
+            ><span id="conferenceStateConference">-</span> <span>Participant</span
+            ><span id="conferenceStateParticipant">-</span> <span>Number</span
+            ><span id="conferenceStateNumber">-</span> <span>Answer</span
+            ><span id="conferenceStateAnswer">-</span>
+          </div>
+        </details>
       </section>
 
       <section id="activeCallSection" class="hidden">
-        <section>
-          <h3>Удаленные потоки</h3>
-          <div id="remoteStreamsContainer"></div>
-        </section>
+        <details class="section-collapsible" open>
+          <summary><h3>Активный звонок</h3></summary>
 
-        <section>
-          <h3>Статус</h3>
-          <div id="participantRole" class="status-box"></div>
-        </section>
+          <section>
+            <details class="section-collapsible" open>
+              <summary><h3>Удаленные потоки</h3></summary>
+              <div id="remoteStreamsContainer"></div>
+            </details>
+          </section>
 
-        <section>
-          <h3>Качество приема (зритель)</h3>
-          <fieldset id="recvQualityRadios" class="recv-quality-radios">
-            <legend>Качество</legend>
-            <label><input type="radio" name="recvQuality" value="auto" checked /> auto</label>
-            <label><input type="radio" name="recvQuality" value="high" /> high</label>
-            <label><input type="radio" name="recvQuality" value="medium" /> medium</label>
-            <label><input type="radio" name="recvQuality" value="low" /> low</label>
-          </fieldset>
-          <div id="recvQualityStatus" class="status-box"></div>
-        </section>
+          <section>
+            <details class="section-collapsible" open>
+              <summary><h3>Статус</h3></summary>
+              <div id="participantRole" class="status-box"></div>
+            </details>
+          </section>
 
-        <section>
-          <h3>Лицензия</h3>
-          <div id="useLicense" class="status-box"></div>
-        </section>
+          <section>
+            <details class="section-collapsible" open>
+              <summary><h3>Качество приема (зритель)</h3></summary>
+              <fieldset id="recvQualityRadios" class="recv-quality-radios">
+                <legend>Качество</legend>
+                <label><input type="radio" name="recvQuality" value="auto" checked /> auto</label>
+                <label><input type="radio" name="recvQuality" value="high" /> high</label>
+                <label><input type="radio" name="recvQuality" value="medium" /> medium</label>
+                <label><input type="radio" name="recvQuality" value="low" /> low</label>
+              </fieldset>
+              <div id="recvQualityStatus" class="status-box"></div>
+            </details>
+          </section>
 
-        <section id="callStatsSection">
-          <h3>Статистика звонка</h3>
-          <div class="call-stats-tabs">
-            <button id="callStatsTabAudio" type="button" class="call-stats-tab">Audio</button>
-            <button id="callStatsTabMainStream" type="button" class="call-stats-tab is-active">
-              Main stream
-            </button>
-            <button id="callStatsTabContentedStream" type="button" class="call-stats-tab">
-              Contented stream
-            </button>
-          </div>
-          <div class="call-stats-panels">
-            <div id="callStatsAudioPanel" class="call-stats-panel">
-              <div id="callStatsAudio"></div>
-            </div>
-            <div id="callStatsMainStreamPanel" class="call-stats-panel is-active">
-              <div id="callStatsMainStream"></div>
-            </div>
-            <div id="callStatsContentedStreamPanel" class="call-stats-panel">
-              <div id="callStatsContentedStream"></div>
-            </div>
-          </div>
-        </section>
+          <section>
+            <details class="section-collapsible" open>
+              <summary><h3>Лицензия</h3></summary>
+              <div id="useLicense" class="status-box"></div>
+            </details>
+          </section>
+
+          <section id="callStatsSection">
+            <details class="section-collapsible" open>
+              <summary><h3>Статистика звонка</h3></summary>
+              <div class="call-stats-tabs">
+                <button id="callStatsTabAudio" type="button" class="call-stats-tab">Audio</button>
+                <button id="callStatsTabMainStream" type="button" class="call-stats-tab is-active">
+                  Main stream
+                </button>
+                <button id="callStatsTabContentedStream" type="button" class="call-stats-tab">
+                  Contented stream
+                </button>
+              </div>
+              <div class="call-stats-panels">
+                <div id="callStatsAudioPanel" class="call-stats-panel">
+                  <div id="callStatsAudio"></div>
+                </div>
+                <div id="callStatsMainStreamPanel" class="call-stats-panel is-active">
+                  <div id="callStatsMainStream"></div>
+                </div>
+                <div id="callStatsContentedStreamPanel" class="call-stats-panel">
+                  <div id="callStatsContentedStream"></div>
+                </div>
+              </div>
+            </details>
+          </section>
+        </details>
       </section>
 
       <section id="logsContainer">
-        <h3>Логи событий</h3>
-        <div class="logs-controls">
-          <button id="clearLogsButton" type="button">clear logs</button>
-          <input
-            id="filterLogsInput"
-            type="text"
-            placeholder="Имя события..."
-            class="filter-logs-input"
-          />
-        </div>
-        <div id="logsList"></div>
+        <details class="section-collapsible">
+          <summary><h3>Логи событий</h3></summary>
+          <div class="logs-controls">
+            <button id="clearLogsButton" type="button">clear logs</button>
+            <input
+              id="filterLogsInput"
+              type="text"
+              placeholder="Имя события..."
+              class="filter-logs-input"
+            />
+          </div>
+          <div id="logsList"></div>
+        </details>
       </section>
     </main>
 
@@ -267,7 +308,7 @@
         title="Выключить камеру"
         aria-label="Выключить камеру"
       >
-        <span class="icon icon--size-regular" aria-hidden="true">videocam_off</span>
+        <span class="icon icon--size-regular" aria-hidden="true">videocam</span>
       </button>
       <button
         id="unmuteCameraButton"
@@ -276,7 +317,7 @@
         title="Включить камеру"
         aria-label="Включить камеру"
       >
-        <span class="icon icon--size-regular" aria-hidden="true">videocam</span>
+        <span class="icon icon--size-regular" aria-hidden="true">videocam_off</span>
       </button>
       <button
         id="muteMicButton"
@@ -285,7 +326,7 @@
         title="Выключить микрофон"
         aria-label="Выключить микрофон"
       >
-        <span class="icon icon--size-regular" aria-hidden="true">mic_off</span>
+        <span class="icon icon--size-regular" aria-hidden="true">mic</span>
       </button>
       <button
         id="unmuteMicButton"
@@ -294,7 +335,7 @@
         title="Включить микрофон"
         aria-label="Включить микрофон"
       >
-        <span class="icon icon--size-regular" aria-hidden="true">mic</span>
+        <span class="icon icon--size-regular" aria-hidden="true">mic_off</span>
       </button>
       <button
         id="startPresentationButton"
@@ -313,16 +354,6 @@
         aria-label="Завершить презентацию"
       >
         <span class="icon icon--size-regular" aria-hidden="true">stop_screen_share</span>
-      </button>
-      <button
-        id="startStressTestingPresentationButton"
-        type="button"
-        class="hidden"
-        title="Начать стрессовое тестирование презентации"
-        aria-label="Начать стрессовое тестирование презентации"
-      >
-        <span class="icon icon--size-regular" aria-hidden="true">science</span>
-        <span id="startStressTestingPresentationText" class="floating-action-panel__label"></span>
       </button>
     </div>
 

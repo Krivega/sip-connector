@@ -23,6 +23,7 @@ class PresentationManager {
       this.handleStartStressTesting,
     );
     dom.stopPresentationElement.addEventListener('click', this.handleStop);
+    dom.stopStressTestingPresentationButton.addEventListener('click', this.handleStopStressTesting);
   }
 
   private get isNotStartedStressTesting() {
@@ -139,6 +140,16 @@ class PresentationManager {
       });
   };
 
+  private readonly handleStopStressTesting = () => {
+    if (this.isNotStartedStressTesting) {
+      return;
+    }
+
+    this.stopStressTesting().catch((error: unknown) => {
+      console.log('failed to stop stress testing presentation', error);
+    });
+  };
+
   private async startStressTesting(): Promise<void> {
     const maxAttemptsCount = dom.presentationStressMaxAttemptsCountInputElement.valueAsNumber;
     const delayBetweenAttempts =
@@ -162,7 +173,7 @@ class PresentationManager {
     const runAttempt = async () => {
       attemptsCount += 1;
 
-      dom.startStressTestingPresentationTextElement.textContent = `Попытка ${attemptsCount} из ${maxAttemptsCount}...`;
+      dom.stressTestingPresentationStatusElement.textContent = `Попытка ${attemptsCount} из ${maxAttemptsCount}...`;
 
       const [sourceVideoTrack] = presentationStream.getVideoTracks();
       const clonedTrack = sourceVideoTrack.clone(); // ключевой момент
@@ -189,6 +200,12 @@ class PresentationManager {
         videoTrack.stop();
       });
     });
+  }
+
+  private async stopStressTesting(): Promise<void> {
+    await this.stop();
+
+    this.setStoppedStressTesting();
   }
 
   private async start(): Promise<void> {
@@ -240,8 +257,7 @@ class PresentationManager {
 
   private updateUi() {
     this.updateStartPresentationElement();
-    this.updateStartStressTestingPresentationElement();
-    this.updateStartStressTestingPresentationTextElement();
+    this.updateStressTestingPresentationButtons();
     this.updateStopPresentationElement();
     this.updatePresentationVideoElement();
     this.updatePresentationStressTestingSection();
@@ -263,31 +279,28 @@ class PresentationManager {
     }
   }
 
-  private updateStartStressTestingPresentationElement() {
+  private updateStressTestingPresentationButtons() {
+    if (this.isNotStartedStressTesting) {
+      dom.hide(dom.stopStressTestingPresentationButton);
+      dom.show(dom.startStressTestingPresentationElement);
+      dom.hide(dom.stressTestingPresentationStatusElement);
+    } else {
+      dom.show(dom.stopStressTestingPresentationButton);
+      dom.hide(dom.startStressTestingPresentationElement);
+      dom.show(dom.stressTestingPresentationStatusElement);
+    }
+
     if (this.isStartedStressTesting) {
       dom.disable(dom.startStressTestingPresentationElement);
     } else {
       dom.enable(dom.startStressTestingPresentationElement);
     }
 
-    if (this.isIdle) {
-      dom.hide(dom.startStressTestingPresentationElement);
-    } else {
-      dom.show(dom.startStressTestingPresentationElement);
-    }
-  }
-
-  private updateStartStressTestingPresentationTextElement() {
-    if (this.isNotStartedStressTesting) {
-      dom.startStressTestingPresentationTextElement.innerHTML =
-        'Начать стрессовое тестирование презентации';
-    }
-
-    if (this.isIdle || (this.isNotStartedStressTesting && this.isStarted)) {
-      dom.hide(dom.startStressTestingPresentationElement);
-    } else {
-      dom.show(dom.startStressTestingPresentationElement);
-    }
+    // if (this.isIdle) {
+    //   dom.hide(dom.startStressTestingPresentationElement);
+    // } else {
+    //   dom.show(dom.startStressTestingPresentationElement);
+    // }
   }
 
   private updatePresentationVideoElement() {
