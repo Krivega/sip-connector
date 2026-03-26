@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [26.17.0](https://github.com/Krivega/sip-connector/compare/v26.16.0...v26.17.0) (2026-03-26)
+
+### Features
+
+- **demo:** add notification system for user alerts and status messages ([8dfd473](https://github.com/Krivega/sip-connector/commit/8dfd47335fb06a936ab6c2876211514cd24e21de))
+
 ## [26.16.0](https://github.com/Krivega/sip-connector/compare/v26.15.3...v26.16.0) (2026-03-26)
 
 ### Features
