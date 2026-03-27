@@ -20,6 +20,15 @@ const getElementById = (id: string): HTMLElement => {
   return element;
 };
 
+const formatTime = (date: Date): string => {
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
+
+  return `${hours}:${minutes}:${seconds}.${milliseconds}`;
+};
+
 class NotificationManager {
   private readonly container: HTMLElement;
 
@@ -47,6 +56,12 @@ class NotificationManager {
     element.setAttribute('role', type === 'error' ? 'alert' : 'status');
     element.dataset.notificationId = id;
 
+    const existingTimeElement = element.querySelector<HTMLElement>('.notification__time');
+    const timeElement = existingTimeElement ?? document.createElement('div');
+
+    timeElement.className = 'notification__time';
+    timeElement.textContent = formatTime(new Date());
+
     const existingTextElement = element.querySelector<HTMLElement>('.notification__text');
     const textElement = existingTextElement ?? document.createElement('div');
 
@@ -68,7 +83,7 @@ class NotificationManager {
     }
 
     if (!existingElement) {
-      element.append(textElement, closeButton);
+      element.append(timeElement, textElement, closeButton);
       this.container.append(element);
     }
 

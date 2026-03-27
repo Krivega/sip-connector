@@ -476,23 +476,40 @@ body {
 .notification {
   display: grid;
   grid-template-columns: 1fr auto;
+  grid-template-areas:
+    'time close'
+    'text close';
   gap: 0.75rem;
   align-items: start;
   padding: 0.75rem 0.9rem;
   border-radius: 10px;
   border: 1px solid #e2e8f0;
+  border-left-width: 6px;
   background: white;
+  color: #0f172a;
   box-shadow:
     0 10px 20px rgba(0, 0, 0, 0.12),
     0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
+.notification__time {
+  grid-area: time;
+  font-size: 12px;
+  line-height: 1;
+  color: rgba(15, 23, 42, 0.62);
+  font-variant-numeric: tabular-nums;
+}
+
 .notification__text {
+  grid-area: text;
   word-break: break-word;
   line-height: 1.25rem;
+  color: inherit;
+  font-weight: 500;
 }
 
 .notification__close {
+  grid-area: close;
   min-width: 0;
   padding: 0.15rem 0.5rem;
   line-height: 1;
@@ -507,21 +524,25 @@ body {
 }
 
 .notification--success {
-  border-color: rgba(34, 197, 94, 0.35);
-  background: rgba(34, 197, 94, 0.06);
+  border-color: #16a34a;
+  background: #f0fdf4;
+  color: #14532d;
 }
 
 .notification--info {
-  border-color: rgba(2, 136, 209, 0.35);
-  background: rgba(2, 136, 209, 0.06);
+  border-color: #0284c7;
+  background: #f0f9ff;
+  color: #0c4a6e;
 }
 
 .notification--warning {
-  border-color: rgba(245, 158, 11, 0.45);
-  background: rgba(245, 158, 11, 0.08);
+  border-color: #d97706;
+  background: #fffbeb;
+  color: #7c2d12;
 }
 
 .notification--error {
-  border-color: rgba(239, 68, 68, 0.45);
-  background: rgba(239, 68, 68, 0.08);
+  border-color: #dc2626;
+  background: #fef2f2;
+  color: #7f1d1d;
 }

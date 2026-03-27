@@ -85,6 +85,14 @@ class App {
         });
       },
     );
+    sipConnectorFacade.on('main-stream-health:health-snapshot', (healthSnapshot) => {
+      this.notificationManager.show({
+        type: 'info',
+        message: `Текущее состояние основного входящего видеопотока: ${healthSnapshot.isMutedMainVideoTrack ? 'muted' : 'unmuted'}, ${healthSnapshot.isInvalidInboundFrames ? 'invalid-inbound-frames' : 'valid-inbound-frames'}, ${healthSnapshot.isNoInboundVideoTraffic ? 'no-inbound-video-traffic' : 'inbound-video-traffic'}, ${healthSnapshot.isInboundVideoStalled ? 'inbound-video-stalled' : 'inbound-video-not-stalled'}`,
+        isAutoHide: true,
+        timeoutMs: 3000,
+      });
+    });
     sipConnectorFacade.on('main-stream-health:inbound-video-problem-resolved', () => {
       this.notificationManager.hide(idNotificationInboundVideoProblemDetected);
     });
