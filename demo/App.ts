@@ -86,9 +86,21 @@ class App {
       },
     );
     sipConnectorFacade.on('main-stream-health:health-snapshot', (healthSnapshot) => {
+      const problemStatuses = Object.entries(healthSnapshot).filter(([_key, value]) => {
+        return value;
+      });
+
+      if (problemStatuses.length === 0) {
+        return;
+      }
+
       this.notificationManager.show({
         type: 'info',
-        message: `Текущее состояние основного входящего видеопотока: ${healthSnapshot.isMutedMainVideoTrack ? 'muted' : 'unmuted'}, ${healthSnapshot.isInvalidInboundFrames ? 'invalid-inbound-frames' : 'valid-inbound-frames'}, ${healthSnapshot.isNoInboundVideoTraffic ? 'no-inbound-video-traffic' : 'inbound-video-traffic'}, ${healthSnapshot.isInboundVideoStalled ? 'inbound-video-stalled' : 'inbound-video-not-stalled'}`,
+        message: `Текущее состояние основного входящего видеопотока: ${problemStatuses
+          .map(([key]) => {
+            return key;
+          })
+          .join(', ')}`,
         isAutoHide: true,
         timeoutMs: 3000,
       });
