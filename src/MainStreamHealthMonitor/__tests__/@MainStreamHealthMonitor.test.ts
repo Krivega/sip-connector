@@ -1,10 +1,6 @@
 import { createVideoMediaStreamTrackMock } from 'webrtc-mock';
 
-import {
-  createEvents as createCallEvents,
-  type CallManager,
-  type TCallEvents,
-} from '@/CallManager';
+import { createEvents as createCallEvents } from '@/CallManager';
 import { createEvents as createStatsEvents } from '@/StatsPeerConnection';
 import MainStreamHeathMonitor from '../@MainStreamHealthMonitor';
 import {
@@ -14,8 +10,11 @@ import {
   INBOUND_VIDEO_PROBLEM_RESOLVED_EVENT_NAME,
 } from '../events';
 
+import type { CallManager, TCallEvents } from '@/CallManager';
 import type { StatsManager } from '@/StatsManager';
 import type { TStats, TStatsPeerConnectionEvents } from '@/StatsPeerConnection';
+
+const MIN_CONSECUTIVE_PROBLEM_SAMPLES_COUNT = 2;
 
 describe('@MainStreamHealthMonitor', () => {
   let statsEvents: TStatsPeerConnectionEvents;
@@ -80,7 +79,11 @@ describe('@MainStreamHealthMonitor', () => {
     });
 
     it('должен бросать ошибку в setter для невалидного minConsecutiveProblemSamplesCount', () => {
-      const monitor = new MainStreamHeathMonitor(statsManager, callManager);
+      const monitor = new MainStreamHeathMonitor(
+        statsManager,
+        callManager,
+        MIN_CONSECUTIVE_PROBLEM_SAMPLES_COUNT,
+      );
 
       expect(() => {
         monitor.setMinConsecutiveProblemSamplesCount(0);
@@ -101,7 +104,11 @@ describe('@MainStreamHealthMonitor', () => {
       Object.defineProperty(track, 'muted', { value: true, configurable: true });
       isInvalidInboundFrames = true;
 
-      const monitor = new MainStreamHeathMonitor(statsManager, callManager);
+      const monitor = new MainStreamHeathMonitor(
+        statsManager,
+        callManager,
+        MIN_CONSECUTIVE_PROBLEM_SAMPLES_COUNT,
+      );
 
       monitor.on(HEALTH_SNAPSHOT_EVENT_NAME, handler);
       statsEvents.trigger('collected', {} as TStats);
@@ -122,7 +129,11 @@ describe('@MainStreamHealthMonitor', () => {
       Object.defineProperty(track, 'muted', { value: true, configurable: true });
       isInvalidInboundFrames = false;
 
-      const monitor = new MainStreamHeathMonitor(statsManager, callManager);
+      const monitor = new MainStreamHeathMonitor(
+        statsManager,
+        callManager,
+        MIN_CONSECUTIVE_PROBLEM_SAMPLES_COUNT,
+      );
 
       monitor.on(HEALTH_SNAPSHOT_EVENT_NAME, handler);
       statsEvents.trigger('collected', {} as TStats);
@@ -143,7 +154,11 @@ describe('@MainStreamHealthMonitor', () => {
       Object.defineProperty(track, 'muted', { value: false, configurable: true });
       isInvalidInboundFrames = true;
 
-      const monitor = new MainStreamHeathMonitor(statsManager, callManager);
+      const monitor = new MainStreamHeathMonitor(
+        statsManager,
+        callManager,
+        MIN_CONSECUTIVE_PROBLEM_SAMPLES_COUNT,
+      );
 
       monitor.on(HEALTH_SNAPSHOT_EVENT_NAME, handler);
       statsEvents.trigger('collected', {} as TStats);
@@ -159,7 +174,11 @@ describe('@MainStreamHealthMonitor', () => {
     });
 
     it('должен эмитить событие когда в основном потоке нет видеотреков', () => {
-      const monitor = new MainStreamHeathMonitor(statsManager, callManager);
+      const monitor = new MainStreamHeathMonitor(
+        statsManager,
+        callManager,
+        MIN_CONSECUTIVE_PROBLEM_SAMPLES_COUNT,
+      );
 
       monitor.on(HEALTH_SNAPSHOT_EVENT_NAME, handler);
       isInvalidInboundFrames = true;
@@ -180,7 +199,11 @@ describe('@MainStreamHealthMonitor', () => {
     it('должен эмитить событие после двух подряд сэмплов stalled inbound video', () => {
       isInboundVideoStalled = true;
 
-      const monitor = new MainStreamHeathMonitor(statsManager, callManager);
+      const monitor = new MainStreamHeathMonitor(
+        statsManager,
+        callManager,
+        MIN_CONSECUTIVE_PROBLEM_SAMPLES_COUNT,
+      );
 
       monitor.on(INBOUND_VIDEO_PROBLEM_DETECTED_EVENT_NAME, handler);
       statsEvents.trigger('collected', {} as TStats);
@@ -201,7 +224,11 @@ describe('@MainStreamHealthMonitor', () => {
     it('не должен эмитить событие повторно пока длится одна и та же проблема', () => {
       isInboundVideoStalled = true;
 
-      const monitor = new MainStreamHeathMonitor(statsManager, callManager);
+      const monitor = new MainStreamHeathMonitor(
+        statsManager,
+        callManager,
+        MIN_CONSECUTIVE_PROBLEM_SAMPLES_COUNT,
+      );
 
       monitor.on(INBOUND_VIDEO_PROBLEM_DETECTED_EVENT_NAME, handler);
       statsEvents.trigger('collected', {} as TStats);
@@ -212,7 +239,11 @@ describe('@MainStreamHealthMonitor', () => {
     });
 
     it('должен сбрасывать последовательность после healthy состояния', () => {
-      const monitor = new MainStreamHeathMonitor(statsManager, callManager);
+      const monitor = new MainStreamHeathMonitor(
+        statsManager,
+        callManager,
+        MIN_CONSECUTIVE_PROBLEM_SAMPLES_COUNT,
+      );
 
       monitor.on(INBOUND_VIDEO_PROBLEM_DETECTED_EVENT_NAME, handler);
 
@@ -245,7 +276,11 @@ describe('@MainStreamHealthMonitor', () => {
 
   describe('INBOUND_VIDEO_PROBLEM_RESOLVED_EVENT_NAME', () => {
     it('должен эмитить событие когда подтвержденная проблема уходит', () => {
-      const monitor = new MainStreamHeathMonitor(statsManager, callManager);
+      const monitor = new MainStreamHeathMonitor(
+        statsManager,
+        callManager,
+        MIN_CONSECUTIVE_PROBLEM_SAMPLES_COUNT,
+      );
 
       monitor.on(INBOUND_VIDEO_PROBLEM_RESOLVED_EVENT_NAME, handler);
 
@@ -268,7 +303,11 @@ describe('@MainStreamHealthMonitor', () => {
     });
 
     it('не должен эмитить событие когда проблема еще не была подтверждена', () => {
-      const monitor = new MainStreamHeathMonitor(statsManager, callManager);
+      const monitor = new MainStreamHeathMonitor(
+        statsManager,
+        callManager,
+        MIN_CONSECUTIVE_PROBLEM_SAMPLES_COUNT,
+      );
 
       monitor.on(INBOUND_VIDEO_PROBLEM_RESOLVED_EVENT_NAME, handler);
 
@@ -284,7 +323,11 @@ describe('@MainStreamHealthMonitor', () => {
 
   describe('INBOUND_VIDEO_PROBLEM_RESET_EVENT_NAME', () => {
     it('должен эмитить событие когда подтвержденная проблема сбрасывается из-за ended', () => {
-      const monitor = new MainStreamHeathMonitor(statsManager, callManager);
+      const monitor = new MainStreamHeathMonitor(
+        statsManager,
+        callManager,
+        MIN_CONSECUTIVE_PROBLEM_SAMPLES_COUNT,
+      );
 
       monitor.on(INBOUND_VIDEO_PROBLEM_RESET_EVENT_NAME, handler);
 

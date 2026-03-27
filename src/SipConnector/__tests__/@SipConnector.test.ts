@@ -83,6 +83,8 @@ describe('SipConnector', () => {
     // @ts-expect-error - доступ к приватному свойству
     const spyRecover = jest.spyOn(sipConnector.mainStreamRecovery, 'recover');
 
+    sipConnector.setMinConsecutiveProblemSamplesCount(2);
+
     sipConnector.statsManager.events.trigger('collected', {
       outbound: { additional: {} },
       inbound: {
@@ -126,6 +128,8 @@ describe('SipConnector', () => {
   it('должен вызывать renegotiate когда monitor фиксирует устойчивую проблему no inbound video traffic', async () => {
     // @ts-expect-error - доступ к приватному свойству
     const spyRecover = jest.spyOn(sipConnector.mainStreamRecovery, 'recover');
+
+    sipConnector.setMinConsecutiveProblemSamplesCount(2);
 
     sipConnector.statsManager.events.trigger('collected', {
       outbound: { additional: {} },

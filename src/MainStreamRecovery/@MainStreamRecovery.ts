@@ -5,7 +5,7 @@ import logger from '@/logger';
 
 import type { CallManager } from '@/CallManager';
 
-const DEFAULT_THROTTLE_RECOVERY_TIMEOUT_MS = 3000;
+const DEFAULT_THROTTLE_RECOVERY_TIMEOUT_MS = 4000;
 
 /**
  * Алгоритм восстановления "main stream":

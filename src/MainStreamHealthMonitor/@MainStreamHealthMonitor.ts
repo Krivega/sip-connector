@@ -12,7 +12,7 @@ import type { CallManager } from '@/CallManager';
 import type { StatsManager } from '@/StatsManager';
 import type { TEventMap, THealthSnapshot, TProblemReason, TProblemResetCause } from './events';
 
-const DEFAULT_MIN_CONSECUTIVE_PROBLEM_SAMPLES_COUNT = 2;
+const DEFAULT_MIN_CONSECUTIVE_PROBLEM_SAMPLES_COUNT = 3;
 
 class MainStreamHealthMonitor extends EventEmitterProxy<TEventMap> {
   private readonly statsManager: StatsManager;
