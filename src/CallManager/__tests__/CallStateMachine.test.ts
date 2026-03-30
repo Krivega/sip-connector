@@ -427,6 +427,82 @@ describe('CallStateMachine', () => {
     });
   });
 
+  describe('getSnapshot: нормализованный контекст (согласован с typed-геттерами)', () => {
+    it('в PURGATORY после TOKEN_ISSUED сырой context содержит JWT, публичный snapshot — без полей token/conferenceForToken', () => {
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...purgatoryPayload });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+      expect(machine.state).toBe(EState.PURGATORY);
+      expect((machine.context as { token?: string }).token).toBe(token1Context.token);
+      expect((machine.context as { conferenceForToken?: string }).conferenceForToken).toBe(
+        token1Context.conferenceForToken,
+      );
+
+      const snap = machine.getSnapshot();
+
+      expect(snap.value).toBe(EState.PURGATORY);
+      expect('token' in snap.context).toBe(false);
+      expect('conferenceForToken' in snap.context).toBe(false);
+      expect(snap.context).toEqual(machine.purgatoryContext);
+    });
+
+    it('в P2P_ROOM при TOKEN_ISSUED для другой конференции сырой context с JWT; snapshot без JWT и как p2pRoomContext', () => {
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...p2pRoomPayload });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+      expect(machine.state).toBe(EState.P2P_ROOM);
+      expect((machine.context as { token?: string }).token).toBeDefined();
+
+      const snap = machine.getSnapshot();
+
+      expect(snap.value).toBe(EState.P2P_ROOM);
+      expect('token' in snap.context).toBe(false);
+      expect(snap.context).toEqual(machine.p2pRoomContext);
+    });
+
+    it('в ROOM_PENDING_AUTH при JWT для другой конференции сырой context хранит token; snapshot без JWT', () => {
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      expect(machine.state).toBe(EState.ROOM_PENDING_AUTH);
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token2Context });
+      expect(machine.state).toBe(EState.ROOM_PENDING_AUTH);
+      expect((machine.context as { token?: string }).token).toBeDefined();
+
+      const snap = machine.getSnapshot();
+
+      expect(snap.value).toBe(EState.ROOM_PENDING_AUTH);
+      expect('token' in snap.context).toBe(false);
+      expect(snap.context).toEqual(machine.roomPendingAuthContext);
+    });
+
+    it('в IN_ROOM snapshot.context совпадает с inRoomContext и содержит валидный token', () => {
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+      expect(machine.state).toBe(EState.IN_ROOM);
+
+      const snap = machine.getSnapshot();
+
+      expect(snap.context).toEqual(machine.inRoomContext);
+      expect((snap.context as { token: string }).token).toBe(token1Context.token);
+    });
+
+    it('subscribe передаёт в listener тот же нормализованный context, что и getSnapshot()', () => {
+      let lastContext: unknown;
+      const subscription = machine.subscribe((snapshot) => {
+        lastContext = snapshot.context;
+      });
+
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...purgatoryPayload });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+
+      expect(lastContext).toEqual(machine.getSnapshot().context);
+      expect('token' in (lastContext as object)).toBe(false);
+      subscription.unsubscribe();
+    });
+  });
+
   /**
    * Интеграционные проверки: геттеры дают undefined, когда **состояние** уже не то
    * (например `connectingContext` вне CONNECTING). Обычные переходы это покрывают.
