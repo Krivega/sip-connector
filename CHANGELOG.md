@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [26.18.1](https://github.com/Krivega/sip-connector/compare/v26.18.0...v26.18.1) (2026-03-30)
+
+### Bug Fixes
+
+- **CallStateMachine:** check conferenceForToken in room ([41d8283](https://github.com/Krivega/sip-connector/commit/41d8283a871534e58ebc567151c1364178a1ea10))
+
 ## [26.18.0](https://github.com/Krivega/sip-connector/compare/v26.17.0...v26.18.0) (2026-03-27)
 
 ### Features
