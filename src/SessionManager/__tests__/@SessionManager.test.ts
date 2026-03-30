@@ -102,7 +102,7 @@ describe('SessionManager', () => {
       callStateMachine.send({
         type: 'CALL.TOKEN_ISSUED',
         token: 'token',
-        conference: 'conference',
+        conferenceForToken: 'room',
         participantName: 'participantName',
       });
       expect(sessionSelectors.selectCallStatus(session.getSnapshot())).toBe(ECallStatus.IN_ROOM);
@@ -227,7 +227,7 @@ describe('SessionManager', () => {
       callStateMachine.send({
         type: 'CALL.TOKEN_ISSUED',
         token: 'token',
-        conference: 'conference',
+        conferenceForToken: 'room',
         participantName: 'participantName',
       });
       expect(callback).toHaveBeenCalledTimes(4);
@@ -252,7 +252,7 @@ describe('SessionManager', () => {
       callStateMachine.send({
         type: 'CALL.TOKEN_ISSUED',
         token: 'token',
-        conference: 'conference',
+        conferenceForToken: 'room',
         participantName: 'participantName',
       });
 
@@ -309,7 +309,7 @@ describe('SessionManager', () => {
       callStateMachine.send({
         type: 'CALL.TOKEN_ISSUED',
         token: 'token',
-        conference: 'conference',
+        conferenceForToken: 'room',
         participantName: 'participantName',
       });
       expect(alwaysEqual).toHaveBeenCalledTimes(3);
@@ -358,7 +358,7 @@ describe('SessionManager', () => {
       callStateMachine.send({
         type: 'CALL.TOKEN_ISSUED',
         token: 'token',
-        conference: 'conference',
+        conferenceForToken: 'room',
         participantName: 'participantName',
       });
       expect(alwaysEqual).toHaveBeenCalledTimes(3);
@@ -386,7 +386,7 @@ describe('SessionManager', () => {
       callStateMachine.send({
         type: 'CALL.TOKEN_ISSUED',
         token: 'token',
-        conference: 'conference',
+        conferenceForToken: 'room',
         participantName: 'participantName',
       });
       expect(handler).toHaveBeenCalledTimes(1);

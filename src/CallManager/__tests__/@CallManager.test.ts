@@ -1274,7 +1274,7 @@ describe('CallManager', () => {
 
       apiManager.events.trigger('conference:participant-token-issued', {
         jwt: 'token1',
-        conference: 'c1',
+        conference: 'r1',
         participant: 'part1',
       });
 
@@ -1299,7 +1299,7 @@ describe('CallManager', () => {
       apiManager.events.trigger('enter-room', { room: 'r1', participantName: 'p1' });
       apiManager.events.trigger('conference:participant-token-issued', {
         jwt: 'token1',
-        conference: 'c1',
+        conference: 'r1',
         participant: 'part1',
       });
 
@@ -1358,7 +1358,7 @@ describe('CallManager', () => {
       apiManager.events.trigger('enter-room', { room: 'r1', participantName: 'p1' });
       apiManager.events.trigger('conference:participant-token-issued', {
         jwt: 'token1',
-        conference: 'c1',
+        conference: 'r1',
         participant: 'part1',
       });
 
@@ -1393,7 +1393,7 @@ describe('CallManager', () => {
             answer: false,
             room: '',
             participantName: '',
-            conference: '',
+            conferenceForToken: '',
           };
         },
       } as Parameters<typeof getInRoomTokenOrThrow>[0];

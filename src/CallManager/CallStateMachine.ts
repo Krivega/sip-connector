@@ -25,33 +25,25 @@ export type TConnectingContext = {
   answer: boolean;
 };
 
-export type TPurgatoryContext = TConnectingContext & {
+type TRoomContext = {
   room: string;
   participantName: string;
 };
 
-export type TP2PRoomContext = TConnectingContext & {
-  room: string;
-  participantName: string;
-};
+export type TPurgatoryContext = TConnectingContext & TRoomContext;
 
-export type TRoomPendingAuthContext = TConnectingContext & {
-  room: string;
-  participantName: string;
-};
+export type TP2PRoomContext = TConnectingContext & TRoomContext;
 
-export type TDirectP2PRoomContext = TConnectingContext & {
-  room: string;
-  participantName: string;
-  isDirectPeerToPeer: true;
-};
+export type TRoomPendingAuthContext = TConnectingContext & TRoomContext;
 
-export type TInRoomContext = TConnectingContext & {
-  room: string;
-  token: string; // jwt
-  conference: string;
-  participantName: string;
-};
+export type TDirectP2PRoomContext = TConnectingContext &
+  TRoomContext & { isDirectPeerToPeer: true };
+
+export type TInRoomContext = TConnectingContext &
+  TRoomContext & {
+    token: string; // jwt
+    conferenceForToken: string;
+  };
 
 type TContext =
   | TIdleContext
@@ -71,7 +63,12 @@ type TCallEvent =
       token?: string;
       isDirectPeerToPeer?: boolean;
     }
-  | { type: 'CALL.TOKEN_ISSUED'; token: string; conference: string; participantName: string }
+  | {
+      type: 'CALL.TOKEN_ISSUED';
+      token: string;
+      conferenceForToken: string;
+      participantName: string;
+    }
   | { type: 'CALL.START_DISCONNECT' }
   | { type: 'CALL.RESET' };
 
@@ -89,6 +86,24 @@ const hasTokenContext = (context: TContext) => {
   return 'token' in context && isValidString(context.token);
 };
 
+const hasConferenceTokenContext = (context: TContext) => {
+  return (
+    hasTokenContext(context) &&
+    'conferenceForToken' in context &&
+    isValidString(context.conferenceForToken)
+  );
+};
+
+const hasMatchingConferenceToken = (context: TContext) => {
+  if (!hasConferenceTokenContext(context) || !('room' in context) || !isValidString(context.room)) {
+    return false;
+  }
+
+  const { conferenceForToken } = context as { conferenceForToken: string };
+
+  return conferenceForToken === context.room;
+};
+
 const hasDirectPeerToPeer = ({ isDirectPeerToPeer }: { isDirectPeerToPeer?: boolean }): boolean => {
   return isDirectPeerToPeer === true;
 };
@@ -97,35 +112,34 @@ const hasNoTokenRoom = (event: { room?: string; isDirectPeerToPeer?: boolean }):
   return hasPurgatory(event.room) || hasPeerToPeer(event.room) || hasDirectPeerToPeer(event);
 };
 
-const hasPurgatoryContext = (context: TContext): context is TPurgatoryContext => {
+const hasDirectPeerToPeerContext = (context: TContext): boolean => {
+  return 'isDirectPeerToPeer' in context && hasDirectPeerToPeer(context);
+};
+
+/** Поля контекста для комнаты purgatory (токен из TOKEN_ISSUED может уже лежать в context — это не переводит в IN_ROOM). */
+const hasPurgatoryRoomSnapshot = (context: TContext): context is TPurgatoryContext => {
   return (
     hasConnectingContext(context) &&
     hasRoomContext(context) &&
-    !hasTokenContext(context) &&
     'room' in context &&
     hasPurgatory(context.room)
   );
 };
 
-const hasP2PRoomContext = (context: TContext): context is TP2PRoomContext => {
+const hasP2PRoomSnapshot = (context: TContext): context is TP2PRoomContext => {
   return (
     hasConnectingContext(context) &&
     hasRoomContext(context) &&
-    !hasTokenContext(context) &&
     'room' in context &&
-    hasPeerToPeer(context.room)
+    hasPeerToPeer(context.room) &&
+    !hasDirectPeerToPeerContext(context)
   );
 };
 
-const hasDirectPeerToPeerContext = (context: TContext): boolean => {
-  return 'isDirectPeerToPeer' in context && hasDirectPeerToPeer(context);
-};
-
-const hasDirectP2PRoomContext = (context: TContext): context is TDirectP2PRoomContext => {
+const hasDirectP2PRoomSnapshot = (context: TContext): context is TDirectP2PRoomContext => {
   return (
     hasConnectingContext(context) &&
     hasRoomContext(context) &&
-    !hasTokenContext(context) &&
     'room' in context &&
     hasDirectPeerToPeerContext(context)
   );
@@ -135,16 +149,34 @@ const hasRoomPendingAuthContext = (context: TContext): context is TRoomPendingAu
   return (
     hasConnectingContext(context) &&
     hasRoomContext(context) &&
-    !hasTokenContext(context) &&
     'room' in context &&
     !hasPurgatory(context.room) &&
     !hasPeerToPeer(context.room) &&
-    !hasDirectPeerToPeerContext(context)
+    !hasDirectPeerToPeerContext(context) &&
+    !hasMatchingConferenceToken(context)
   );
 };
 
+/** IN_ROOM только если `conferenceForToken === room` (в т.ч. после enter-room с bearer, где conference задаётся как room). */
 const hasInRoomContext = (context: TContext): context is TInRoomContext => {
-  return hasConnectingContext(context) && hasRoomContext(context) && hasTokenContext(context);
+  return (
+    hasConnectingContext(context) &&
+    hasRoomContext(context) &&
+    hasConferenceTokenContext(context) &&
+    hasMatchingConferenceToken(context)
+  );
+};
+
+const shouldRemainInPurgatoryState = (context: TContext): boolean => {
+  return hasPurgatoryRoomSnapshot(context) && !hasInRoomContext(context);
+};
+
+const shouldRemainInP2PRoomState = (context: TContext): boolean => {
+  return hasP2PRoomSnapshot(context) && !hasInRoomContext(context);
+};
+
+const shouldRemainInDirectP2PRoomState = (context: TContext): boolean => {
+  return hasDirectP2PRoomSnapshot(context) && !hasInRoomContext(context);
 };
 
 const initialContext: TIdleContext = {};
@@ -156,7 +188,7 @@ const clearCallContext = (): Partial<TContext> & Partial<TIdleContext> => {
     room: undefined,
     participantName: undefined,
     token: undefined,
-    conference: undefined,
+    conferenceForToken: undefined,
     isDirectPeerToPeer: undefined,
     pendingDisconnect: undefined,
   };
@@ -188,7 +220,7 @@ const callMachine = setup({
         room: string;
         participantName: string;
         token?: string;
-        conference?: string;
+        conferenceForToken?: string;
         isDirectPeerToPeer?: boolean;
       } = {
         room: event.room,
@@ -197,10 +229,10 @@ const callMachine = setup({
 
       if (isValidString(event.token)) {
         nextContext.token = event.token;
-        nextContext.conference = event.room;
+        nextContext.conferenceForToken = event.room;
       } else if (hasNoTokenRoom(event)) {
         nextContext.token = undefined;
-        nextContext.conference = undefined;
+        nextContext.conferenceForToken = undefined;
       }
 
       if (isValidBoolean(event.isDirectPeerToPeer)) {
@@ -216,7 +248,7 @@ const callMachine = setup({
 
       return {
         token: event.token,
-        conference: event.conference,
+        conferenceForToken: event.conferenceForToken,
         participantName: event.participantName,
       };
     }),
@@ -319,19 +351,19 @@ const callMachine = setup({
         {
           target: EState.DIRECT_P2P_ROOM,
           guard: ({ context }) => {
-            return hasDirectP2PRoomContext(context);
+            return shouldRemainInDirectP2PRoomState(context);
           },
         },
         {
           target: EState.P2P_ROOM,
           guard: ({ context }) => {
-            return hasP2PRoomContext(context);
+            return shouldRemainInP2PRoomState(context);
           },
         },
         {
           target: EState.PURGATORY,
           guard: ({ context }) => {
-            return hasPurgatoryContext(context);
+            return shouldRemainInPurgatoryState(context);
           },
         },
         {
@@ -476,11 +508,139 @@ export class CallStateMachine extends BaseStateMachine<
     return this.state === EState.DISCONNECTING;
   }
 
-  /** Контекст в состоянии IN_ROOM; undefined в остальных состояниях. Использовать вместо каста context. */
+  /** Только в IDLE. См. `context` у актора для сырого значения. */
+  public get idleContext(): TIdleContext | undefined {
+    if (this.state !== EState.IDLE) {
+      return undefined;
+    }
+
+    return this.context as TIdleContext;
+  }
+
+  /** Только в CONNECTING: номер и ответ; без полей комнаты и токена в типе. */
+  public get connectingContext(): TConnectingContext | undefined {
+    if (this.state !== EState.CONNECTING) {
+      return undefined;
+    }
+
+    const { context } = this;
+
+    if (!hasConnectingContext(context)) {
+      return undefined;
+    }
+
+    return {
+      number: context.number,
+      answer: context.answer,
+    };
+  }
+
+  /**
+   * Только в ROOM_PENDING_AUTH и при выполнении условий ожидания авторизации для обычной комнаты.
+   * В сыром `context` могут быть лишние поля (например JWT до выравнивания с `room`).
+   */
+  public get roomPendingAuthContext(): TRoomPendingAuthContext | undefined {
+    if (this.state !== EState.ROOM_PENDING_AUTH) {
+      return undefined;
+    }
+
+    const { context } = this;
+
+    if (!hasRoomPendingAuthContext(context)) {
+      return undefined;
+    }
+
+    return {
+      number: context.number,
+      answer: context.answer,
+      room: context.room,
+      participantName: context.participantName,
+    };
+  }
+
+  /** Только в PURGATORY. */
+  public get purgatoryContext(): TPurgatoryContext | undefined {
+    if (this.state !== EState.PURGATORY) {
+      return undefined;
+    }
+
+    const { context } = this;
+
+    if (!hasPurgatoryRoomSnapshot(context)) {
+      return undefined;
+    }
+
+    return {
+      number: context.number,
+      answer: context.answer,
+      room: context.room,
+      participantName: context.participantName,
+    };
+  }
+
+  /** Только в P2P_ROOM. */
+  public get p2pRoomContext(): TP2PRoomContext | undefined {
+    if (this.state !== EState.P2P_ROOM) {
+      return undefined;
+    }
+
+    const { context } = this;
+
+    if (!hasP2PRoomSnapshot(context)) {
+      return undefined;
+    }
+
+    return {
+      number: context.number,
+      answer: context.answer,
+      room: context.room,
+      participantName: context.participantName,
+    };
+  }
+
+  /** Только в DIRECT_P2P_ROOM. */
+  public get directP2pRoomContext(): TDirectP2PRoomContext | undefined {
+    if (this.state !== EState.DIRECT_P2P_ROOM) {
+      return undefined;
+    }
+
+    const { context } = this;
+
+    if (!hasDirectP2PRoomSnapshot(context)) {
+      return undefined;
+    }
+
+    return {
+      number: context.number,
+      answer: context.answer,
+      room: context.room,
+      participantName: context.participantName,
+      isDirectPeerToPeer: true,
+    };
+  }
+
+  /**
+   * Валидный для использования контекст звонка в комнате: только в IN_ROOM и только если
+   * `conferenceForToken` согласован с `room` (для обычных комнат). Сырой `context` может
+   * содержать устаревший JWT или несовпадающий `conferenceForToken` — полагаться на него напрямую нельзя.
+   */
   public get inRoomContext(): TInRoomContext | undefined {
     const { context } = this;
 
+    if (this.state !== EState.IN_ROOM) {
+      return undefined;
+    }
+
     return hasInRoomContext(context) ? context : undefined;
+  }
+
+  /** Только в DISCONNECTING (контекст сброшен, опционально `pendingDisconnect`). */
+  public get disconnectingContext(): TIdleContext | undefined {
+    if (this.state !== EState.DISCONNECTING) {
+      return undefined;
+    }
+
+    return this.context as TIdleContext;
   }
 
   public get isActive(): boolean {
@@ -504,13 +664,7 @@ export class CallStateMachine extends BaseStateMachine<
   }
 
   public get token() {
-    const { context } = this;
-
-    if ('token' in context) {
-      return context.token;
-    }
-
-    return undefined;
+    return this.inRoomContext?.token;
   }
 
   public get isCallInitiator(): boolean {
@@ -518,9 +672,7 @@ export class CallStateMachine extends BaseStateMachine<
   }
 
   public get isCallAnswerer(): boolean {
-    const { context } = this;
-
-    return 'answer' in context ? context.answer : false;
+    return this.connectingContext?.answer ?? false;
   }
 
   public reset(): void {
@@ -548,9 +700,9 @@ export class CallStateMachine extends BaseStateMachine<
         this.send({
           room,
           participantName,
+          isDirectPeerToPeer,
           type: 'CALL.ENTER_ROOM',
           token: bearerToken,
-          isDirectPeerToPeer,
         });
       }),
     );
@@ -558,7 +710,12 @@ export class CallStateMachine extends BaseStateMachine<
       apiManager.on(
         'conference:participant-token-issued',
         ({ jwt: token, conference, participant }) => {
-          this.send({ type: 'CALL.TOKEN_ISSUED', token, conference, participantName: participant });
+          this.send({
+            token,
+            type: 'CALL.TOKEN_ISSUED',
+            conferenceForToken: conference,
+            participantName: participant,
+          });
         },
       ),
     );
