@@ -74,14 +74,14 @@
     "ts-debounce": "^4.0.0",
     "ua-parser-js": "^2.0.9",
     "webrtc-mock": "^1.2.1",
-    "xstate": "^5.29.0"
+    "xstate": "^5.30.0"
   },
   "devDependencies": {
     "@babel/preset-typescript": "^7.28.5",
     "@commitlint/cli": "^20.5.0",
     "@commitlint/config-conventional": "^20.5.0",
     "@eslint/compat": "^2.0.3",
-    "@krivega/eslint-config": "^1.1.18",
+    "@krivega/eslint-config": "^1.1.20",
     "@types/debug": "^4.1.13",
     "@types/dom-mediacapture-transform": "^0.1.11",
     "@types/jest": "^30.0.0",
@@ -118,7 +118,7 @@
     "ts-debounce": "^4.0.0",
     "ua-parser-js": "^2.0.9",
     "webrtc-mock": "^1.2.1",
-    "xstate": "^5.29.0"
+    "xstate": "^5.30.0"
   },
   "packageManager": "yarn@1.22.22"
 }
