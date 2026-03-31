@@ -1,14 +1,13 @@
 import sipConnectorFacade from './Session/sipConnectorFacade';
 
 type TConferenceState = {
-  // Данные конференции
+  number?: string;
+  answer?: boolean;
   room?: string;
   participantName?: string;
   token?: string; // jwt
-  conference?: string;
-  participant?: string;
-  number?: string;
-  answer?: boolean;
+  conferenceForToken?: string;
+  pendingDisconnect?: boolean;
 };
 
 class ConferenceStateDisplay {
@@ -19,21 +18,22 @@ class ConferenceStateDisplay {
       room: string;
       participantName: string;
       token: string;
-      conference: string;
-      participant: string;
+      conferenceForToken: string;
       number: string;
       answer: string;
+      pendingDisconnect: string;
     }) => void,
   ) {
     this.subscribeConferenceState((state) => {
       onStateChange({
         room: state.room ?? '-',
-        participantName: state.participantName ?? '-',
         token: state.token === undefined ? '-' : `${state.token.slice(0, 20)}...`,
-        conference: state.conference ?? '-',
-        participant: state.participant ?? '-',
+        conferenceForToken: state.conferenceForToken ?? '-',
+        participantName: state.participantName ?? '-',
         number: state.number ?? '-',
         answer: state.answer === undefined ? '-' : String(state.answer),
+        pendingDisconnect:
+          state.pendingDisconnect === undefined ? '-' : String(state.pendingDisconnect),
       });
     });
   }
@@ -49,12 +49,13 @@ class ConferenceStateDisplay {
     const { stateMachine } = sipConnectorFacade.sipConnector.callManager;
 
     // Показываем текущее состояние
-    this.currentState = stateMachine.getSnapshot().context as TConferenceState;
+    this.currentState = stateMachine.getSnapshot().context.raw;
+
     onStateChange(this.currentState);
     stateMachine.subscribe((snapshot) => {
-      const current = snapshot.context as TConferenceState;
+      const current = snapshot.context;
 
-      this.currentState = current;
+      this.currentState = current.raw;
       onStateChange(this.currentState);
     });
   }

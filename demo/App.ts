@@ -376,18 +376,18 @@ class App {
     room: string;
     participantName: string;
     token: string;
-    conference: string;
-    participant: string;
+    conferenceForToken: string;
     number: string;
     answer: string;
+    pendingDisconnect: string;
   }): void {
     dom.conferenceStateRoomElement.textContent = state.room;
     dom.conferenceStateParticipantNameElement.textContent = state.participantName;
     dom.conferenceStateTokenElement.textContent = state.token;
-    dom.conferenceStateConferenceElement.textContent = state.conference;
-    dom.conferenceStateParticipantElement.textContent = state.participant;
+    dom.conferenceStateConferenceForTokenElement.textContent = state.conferenceForToken;
     dom.conferenceStateNumberElement.textContent = state.number;
     dom.conferenceStateAnswerElement.textContent = state.answer;
+    dom.conferenceStatePendingDisconnectElement.textContent = state.pendingDisconnect;
   }
 
   /**

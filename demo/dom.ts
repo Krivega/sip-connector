@@ -22,8 +22,8 @@ type TDomIds = {
   conferenceStateRoomId: string;
   conferenceStateParticipantNameId: string;
   conferenceStateTokenId: string;
-  conferenceStateConferenceId: string;
-  conferenceStateParticipantId: string;
+  conferenceStateConferenceForTokenId: string;
+  conferenceStatePendingDisconnectId: string;
   conferenceStateNumberId: string;
   conferenceStateAnswerId: string;
   callStatsSectionId: string;
@@ -155,9 +155,9 @@ class DOM {
 
   public conferenceStateTokenElement: HTMLElement;
 
-  public conferenceStateConferenceElement: HTMLElement;
+  public conferenceStateConferenceForTokenElement: HTMLElement;
 
-  public conferenceStateParticipantElement: HTMLElement;
+  public conferenceStatePendingDisconnectElement: HTMLElement;
 
   public conferenceStateNumberElement: HTMLElement;
 
@@ -232,8 +232,8 @@ class DOM {
     conferenceStateRoomId,
     conferenceStateParticipantNameId,
     conferenceStateTokenId,
-    conferenceStateConferenceId,
-    conferenceStateParticipantId,
+    conferenceStateConferenceForTokenId,
+    conferenceStatePendingDisconnectId,
     conferenceStateNumberId,
     conferenceStateAnswerId,
     callStatsSectionId,
@@ -332,8 +332,12 @@ class DOM {
     this.conferenceStateRoomElement = getElementById(conferenceStateRoomId);
     this.conferenceStateParticipantNameElement = getElementById(conferenceStateParticipantNameId);
     this.conferenceStateTokenElement = getElementById(conferenceStateTokenId);
-    this.conferenceStateConferenceElement = getElementById(conferenceStateConferenceId);
-    this.conferenceStateParticipantElement = getElementById(conferenceStateParticipantId);
+    this.conferenceStateConferenceForTokenElement = getElementById(
+      conferenceStateConferenceForTokenId,
+    );
+    this.conferenceStatePendingDisconnectElement = getElementById(
+      conferenceStatePendingDisconnectId,
+    );
     this.conferenceStateNumberElement = getElementById(conferenceStateNumberId);
     this.conferenceStateAnswerElement = getElementById(conferenceStateAnswerId);
     this.callStatsSectionElement = getElementById(callStatsSectionId);
@@ -475,8 +479,8 @@ export const dom = new DOM({
   conferenceStateRoomId: 'conferenceStateRoom',
   conferenceStateParticipantNameId: 'conferenceStateParticipantName',
   conferenceStateTokenId: 'conferenceStateToken',
-  conferenceStateConferenceId: 'conferenceStateConference',
-  conferenceStateParticipantId: 'conferenceStateParticipant',
+  conferenceStateConferenceForTokenId: 'conferenceStateConferenceForToken',
+  conferenceStatePendingDisconnectId: 'conferenceStatePendingDisconnect',
   conferenceStateNumberId: 'conferenceStateNumber',
   conferenceStateAnswerId: 'conferenceStateAnswer',
   callStatsSectionId: 'callStatsSection',
