@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [26.18.2](https://github.com/Krivega/sip-connector/compare/v26.18.1...v26.18.2) (2026-03-31)
+
+### Bug Fixes
+
+- normalize snapshot context for call state ([#72](https://github.com/Krivega/sip-connector/issues/72)) ([e232cd7](https://github.com/Krivega/sip-connector/commit/e232cd753b873877e82e705b75eff71e54985077))
+
 ### [26.18.1](https://github.com/Krivega/sip-connector/compare/v26.18.0...v26.18.1) (2026-03-30)
 
 ### Bug Fixes
