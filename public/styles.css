@@ -311,7 +311,7 @@ body {
   background-color: #f8fafc;
 }
 
-.call-stats-panels .session-statuses {
+.call-stats-panels .session-stats {
   grid-template-columns: 240px minmax(0, 1fr);
   word-break: break-word;
 }
@@ -385,7 +385,7 @@ body {
   color: #2c3e50;
 }
 
-.session-statuses {
+.session-stats {
   padding: 0.75rem 1rem;
   background-color: #f7f7f7;
   border-radius: 6px;
@@ -396,15 +396,22 @@ body {
   gap: 0.35rem 0.75rem;
 }
 
+.session-statuses {
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
+  background-color: #f7f7f7;
+  border-radius: 6px;
+  font-weight: 500;
+  color: #2c3e50;
+}
+
 .conference-state {
-  padding: 0.75rem 1rem;
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
   background-color: #f0f8f7;
   border-radius: 6px;
   font-weight: 500;
   color: #2c3e50;
-  display: grid;
-  grid-template-columns: 160px 1fr;
-  gap: 0.35rem 0.75rem;
 }
 
 .logs-controls {
@@ -455,11 +462,6 @@ body {
 
 .section-collapsible > summary::-webkit-details-marker {
   display: none;
-}
-
-.section-collapsible > summary h3 {
-  display: inline;
-  margin: 0;
 }
 
 .notifications-container {

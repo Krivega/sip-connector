@@ -72,7 +72,7 @@
 
       <section id="presentationStressTestingSection" class="hidden">
         <details class="section-collapsible">
-          <summary><h3>Настройки стрессового тестирования презентации</h3></summary>
+          <summary>Настройки стрессового тестирования презентации</summary>
 
           <label for="presentationStressMaxAttemptsCount">
             Количество попыток
@@ -126,7 +126,7 @@
 
       <section id="mainStreamSettingsSection">
         <details class="section-collapsible">
-          <summary><h3>Настройки восстановления main stream</h3></summary>
+          <summary>Настройки восстановления main stream</summary>
           <form id="mainStreamSettingsForm">
             <label for="minConsecutiveProblemSamplesCount">
               Сколько подряд «плохих» сэмплов нужно для детекта проблемы
@@ -163,7 +163,7 @@
 
       <section id="localVideoSection" class="hidden">
         <details class="section-collapsible" open>
-          <summary><h3>Локальное видео</h3></summary>
+          <summary>Локальное видео</summary>
           <video class="local-video" id="localVideo" autoplay playsinline muted></video>
           <video
             class="local-video hidden"
@@ -177,52 +177,53 @@
 
       <section>
         <details class="section-collapsible">
-          <summary><h3>Статусы</h3></summary>
-          <div id="sessionStatuses" class="session-statuses">
-            <span>Connection</span><span id="connectionStatus">-</span> <span>Call</span
-            ><span id="callStatus">-</span> <span>Incoming</span><span id="incomingStatus">-</span>
-            <span>Screen share</span><span id="presentationStatus">-</span> <span>System</span
-            ><span id="systemStatus">-</span>
-          </div>
+          <summary>Статусы</summary>
+          <ul id="sessionStatuses" class="session-statuses">
+            <li><b>Connection:</b> <span id="connectionStatus">-</span></li>
+            <li><b>Call:</b> <span id="callStatus">-</span></li>
+            <li><b>Incoming:</b> <span id="incomingStatus">-</span></li>
+            <li><b>Screen share:</b> <span id="presentationStatus">-</span></li>
+            <li><b>System:</b> <span id="systemStatus">-</span></li>
+          </ul>
         </details>
       </section>
 
       <section>
         <details class="section-collapsible">
-          <summary><h3>Состояние конференции</h3></summary>
-          <div id="conferenceState" class="conference-state">
-            <span>Room</span><span id="conferenceStateRoom">-</span> <span>Participant Name</span
-            ><span id="conferenceStateParticipantName">-</span> <span>Token</span
-            ><span id="conferenceStateToken">-</span> <span>Conference</span
-            ><span id="conferenceStateConference">-</span> <span>Participant</span
-            ><span id="conferenceStateParticipant">-</span> <span>Number</span
-            ><span id="conferenceStateNumber">-</span> <span>Answer</span
-            ><span id="conferenceStateAnswer">-</span>
-          </div>
+          <summary>Состояние конференции</summary>
+          <ul id="conferenceState" class="conference-state">
+            <li><b>Room:</b> <span id="conferenceStateRoom">-</span></li>
+            <li><b>Participant Name:</b> <span id="conferenceStateParticipantName">-</span></li>
+            <li><b>Token:</b> <span id="conferenceStateToken">-</span></li>
+            <li><b>Conference:</b> <span id="conferenceStateConference">-</span></li>
+            <li><b>Participant:</b> <span id="conferenceStateParticipant">-</span></li>
+            <li><b>Number:</b> <span id="conferenceStateNumber">-</span></li>
+            <li><b>Answer:</b> <span id="conferenceStateAnswer">-</span></li>
+          </ul>
         </details>
       </section>
 
       <section id="activeCallSection" class="hidden">
         <details class="section-collapsible" open>
-          <summary><h3>Активный звонок</h3></summary>
+          <summary>Активный звонок</summary>
 
           <section>
             <details class="section-collapsible" open>
-              <summary><h3>Удаленные потоки</h3></summary>
+              <summary>Удаленные потоки</summary>
               <div id="remoteStreamsContainer"></div>
             </details>
           </section>
 
           <section>
             <details class="section-collapsible" open>
-              <summary><h3>Статус</h3></summary>
+              <summary>Статус</summary>
               <div id="participantRole" class="status-box"></div>
             </details>
           </section>
 
           <section>
             <details class="section-collapsible" open>
-              <summary><h3>Качество приема (зритель)</h3></summary>
+              <summary>Качество приема (зритель)</summary>
               <fieldset id="recvQualityRadios" class="recv-quality-radios">
                 <legend>Качество</legend>
                 <label><input type="radio" name="recvQuality" value="auto" checked /> auto</label>
@@ -236,14 +237,14 @@
 
           <section>
             <details class="section-collapsible" open>
-              <summary><h3>Лицензия</h3></summary>
+              <summary>Лицензия</summary>
               <div id="useLicense" class="status-box"></div>
             </details>
           </section>
 
           <section id="callStatsSection">
             <details class="section-collapsible" open>
-              <summary><h3>Статистика звонка</h3></summary>
+              <summary>Статистика звонка</summary>
               <div class="call-stats-tabs">
                 <button id="callStatsTabAudio" type="button" class="call-stats-tab">Audio</button>
                 <button id="callStatsTabMainStream" type="button" class="call-stats-tab is-active">
@@ -271,7 +272,7 @@
 
       <section id="logsContainer">
         <details class="section-collapsible">
-          <summary><h3>Логи событий</h3></summary>
+          <summary>Логи событий</summary>
           <div class="logs-controls">
             <button id="clearLogsButton" type="button">clear logs</button>
             <input

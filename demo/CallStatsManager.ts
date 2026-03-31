@@ -111,7 +111,7 @@ class CallStatsManager {
   private renderSection(htmlElement: HTMLElement, data: unknown): void {
     const table = document.createElement('div');
 
-    table.classList.add('session-statuses');
+    table.classList.add('session-stats');
 
     const rows = this.flattenStats(data);
 
