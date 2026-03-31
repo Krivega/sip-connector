@@ -20,7 +20,10 @@ describe('sessionSelectors', () => {
       },
       call: {
         value: ECallStatus.IDLE,
-        context: {},
+        context: {
+          raw: {},
+          state: {},
+        },
         ...overrides.call,
       },
       incoming: {

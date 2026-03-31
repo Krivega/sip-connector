@@ -45,7 +45,7 @@ export type TInRoomContext = TConnectingContext &
     conferenceForToken: string;
   };
 
-type TContext =
+type TBaseContext =
   | TIdleContext
   | TConnectingContext
   | TRoomPendingAuthContext
@@ -53,6 +53,16 @@ type TContext =
   | TP2PRoomContext
   | TDirectP2PRoomContext
   | TInRoomContext;
+
+type TContext = {
+  raw: TBaseContext;
+  state: TBaseContext;
+};
+
+type TSnapshotContext<TState extends TBaseContext> = {
+  raw: TBaseContext;
+  state: TState;
+};
 
 type TCallEvent =
   | { type: 'CALL.CONNECTING'; number: string; answer: boolean }
@@ -74,19 +84,19 @@ type TCallEvent =
 
 const EVALUATE = 'evaluate' as const;
 
-const hasConnectingContext = (context: TContext): context is TConnectingContext => {
+const hasConnectingContext = (context: TBaseContext): context is TConnectingContext => {
   return 'number' in context && isValidString(context.number) && isValidBoolean(context.answer);
 };
 
-const hasRoomContext = (context: TContext) => {
+const hasRoomContext = (context: TBaseContext) => {
   return 'room' in context && isValidString(context.room) && isValidString(context.participantName);
 };
 
-const hasTokenContext = (context: TContext) => {
+const hasTokenContext = (context: TBaseContext) => {
   return 'token' in context && isValidString(context.token);
 };
 
-const hasConferenceTokenContext = (context: TContext) => {
+const hasConferenceTokenContext = (context: TBaseContext) => {
   return (
     hasTokenContext(context) &&
     'conferenceForToken' in context &&
@@ -94,7 +104,7 @@ const hasConferenceTokenContext = (context: TContext) => {
   );
 };
 
-const hasMatchingConferenceToken = (context: TContext) => {
+const hasMatchingConferenceToken = (context: TBaseContext) => {
   if (!hasConferenceTokenContext(context) || !('room' in context) || !isValidString(context.room)) {
     return false;
   }
@@ -112,12 +122,12 @@ const hasNoTokenRoom = (event: { room?: string; isDirectPeerToPeer?: boolean }):
   return hasPurgatory(event.room) || hasPeerToPeer(event.room) || hasDirectPeerToPeer(event);
 };
 
-const hasDirectPeerToPeerContext = (context: TContext): boolean => {
+const hasDirectPeerToPeerContext = (context: TBaseContext): boolean => {
   return 'isDirectPeerToPeer' in context && hasDirectPeerToPeer(context);
 };
 
 /** Поля контекста для комнаты purgatory (токен из TOKEN_ISSUED может уже лежать в context — это не переводит в IN_ROOM). */
-const hasPurgatoryRoomSnapshot = (context: TContext): context is TPurgatoryContext => {
+const hasPurgatoryRoomSnapshot = (context: TBaseContext): context is TPurgatoryContext => {
   return (
     hasConnectingContext(context) &&
     hasRoomContext(context) &&
@@ -126,7 +136,7 @@ const hasPurgatoryRoomSnapshot = (context: TContext): context is TPurgatoryConte
   );
 };
 
-const hasP2PRoomSnapshot = (context: TContext): context is TP2PRoomContext => {
+const hasP2PRoomSnapshot = (context: TBaseContext): context is TP2PRoomContext => {
   return (
     hasConnectingContext(context) &&
     hasRoomContext(context) &&
@@ -136,7 +146,7 @@ const hasP2PRoomSnapshot = (context: TContext): context is TP2PRoomContext => {
   );
 };
 
-const hasDirectP2PRoomSnapshot = (context: TContext): context is TDirectP2PRoomContext => {
+const hasDirectP2PRoomSnapshot = (context: TBaseContext): context is TDirectP2PRoomContext => {
   return (
     hasConnectingContext(context) &&
     hasRoomContext(context) &&
@@ -145,7 +155,7 @@ const hasDirectP2PRoomSnapshot = (context: TContext): context is TDirectP2PRoomC
   );
 };
 
-const hasRoomPendingAuthContext = (context: TContext): context is TRoomPendingAuthContext => {
+const hasRoomPendingAuthContext = (context: TBaseContext): context is TRoomPendingAuthContext => {
   return (
     hasConnectingContext(context) &&
     hasRoomContext(context) &&
@@ -158,7 +168,7 @@ const hasRoomPendingAuthContext = (context: TContext): context is TRoomPendingAu
 };
 
 /** IN_ROOM только если `conferenceForToken === room` (в т.ч. после enter-room с bearer, где conference задаётся как room). */
-const hasInRoomContext = (context: TContext): context is TInRoomContext => {
+const hasInRoomContext = (context: TBaseContext): context is TInRoomContext => {
   return (
     hasConnectingContext(context) &&
     hasRoomContext(context) &&
@@ -167,36 +177,88 @@ const hasInRoomContext = (context: TContext): context is TInRoomContext => {
   );
 };
 
-const shouldRemainInPurgatoryState = (context: TContext): boolean => {
+const shouldRemainInPurgatoryState = (context: TBaseContext): boolean => {
   return hasPurgatoryRoomSnapshot(context) && !hasInRoomContext(context);
 };
 
-const shouldRemainInP2PRoomState = (context: TContext): boolean => {
+const shouldRemainInP2PRoomState = (context: TBaseContext): boolean => {
   return hasP2PRoomSnapshot(context) && !hasInRoomContext(context);
 };
 
-const shouldRemainInDirectP2PRoomState = (context: TContext): boolean => {
+const shouldRemainInDirectP2PRoomState = (context: TBaseContext): boolean => {
   return hasDirectP2PRoomSnapshot(context) && !hasInRoomContext(context);
 };
 
-const initialContext: TIdleContext = {};
+type TRoomState = {
+  number: string;
+  answer: boolean;
+  room: string;
+  participantName: string;
+};
 
-const clearCallContext = (): Partial<TContext> & Partial<TIdleContext> => {
+const buildRoomStateContext = (raw: TBaseContext): TRoomState => {
+  const roomContext = raw as TRoomState;
+
   return {
-    number: undefined,
-    answer: undefined,
-    room: undefined,
-    participantName: undefined,
-    token: undefined,
-    conferenceForToken: undefined,
-    isDirectPeerToPeer: undefined,
-    pendingDisconnect: undefined,
+    number: roomContext.number,
+    answer: roomContext.answer,
+    room: roomContext.room,
+    participantName: roomContext.participantName,
   };
+};
+
+export const buildStateContext = (state: EState, raw: TBaseContext): TBaseContext => {
+  switch (state) {
+    case EState.IDLE:
+    case EState.DISCONNECTING: {
+      return {};
+    }
+    case EState.CONNECTING: {
+      const connectingContext = raw as TConnectingContext;
+
+      return {
+        number: connectingContext.number,
+        answer: connectingContext.answer,
+      };
+    }
+    case EState.ROOM_PENDING_AUTH:
+    case EState.PURGATORY:
+    case EState.P2P_ROOM: {
+      return buildRoomStateContext(raw);
+    }
+    case EState.DIRECT_P2P_ROOM: {
+      return {
+        ...buildRoomStateContext(raw),
+        isDirectPeerToPeer: true,
+      };
+    }
+    case EState.IN_ROOM: {
+      const inRoomContext = raw as TInRoomContext;
+
+      return {
+        ...buildRoomStateContext(raw),
+        token: inRoomContext.token,
+        conferenceForToken: inRoomContext.conferenceForToken,
+      };
+    }
+    default: {
+      return {};
+    }
+  }
+};
+
+const initialContext: TContext = {
+  raw: {},
+  state: {},
+};
+
+const clearRawContext = (): TBaseContext => {
+  return {};
 };
 
 const callMachine = setup({
   types: {
-    context: initialContext as TContext,
+    context: initialContext,
     events: {} as TCallEvent,
   },
   actions: {
@@ -206,9 +268,11 @@ const callMachine = setup({
       }
 
       return {
-        ...clearCallContext(),
-        number: event.number,
-        answer: event.answer,
+        raw: {
+          ...clearRawContext(),
+          number: event.number,
+          answer: event.answer,
+        },
       };
     }),
     setRoomInfo: assign(({ event, context }) => {
@@ -216,7 +280,7 @@ const callMachine = setup({
         return context;
       }
 
-      const nextContext: {
+      const nextRaw: {
         room: string;
         participantName: string;
         token?: string;
@@ -228,18 +292,23 @@ const callMachine = setup({
       };
 
       if (isValidString(event.token)) {
-        nextContext.token = event.token;
-        nextContext.conferenceForToken = event.room;
+        nextRaw.token = event.token;
+        nextRaw.conferenceForToken = event.room;
       } else if (hasNoTokenRoom(event)) {
-        nextContext.token = undefined;
-        nextContext.conferenceForToken = undefined;
+        nextRaw.token = undefined;
+        nextRaw.conferenceForToken = undefined;
       }
 
       if (isValidBoolean(event.isDirectPeerToPeer)) {
-        nextContext.isDirectPeerToPeer = event.isDirectPeerToPeer;
+        nextRaw.isDirectPeerToPeer = event.isDirectPeerToPeer;
       }
 
-      return nextContext;
+      return {
+        raw: {
+          ...context.raw,
+          ...nextRaw,
+        },
+      };
     }),
     setTokenInfo: assign(({ event, context }) => {
       if (event.type !== 'CALL.TOKEN_ISSUED') {
@@ -247,23 +316,54 @@ const callMachine = setup({
       }
 
       return {
-        token: event.token,
-        conferenceForToken: event.conferenceForToken,
-        participantName: event.participantName,
+        raw: {
+          ...context.raw,
+          token: event.token,
+          conferenceForToken: event.conferenceForToken,
+          participantName: event.participantName,
+        },
       };
     }),
-    reset: assign(clearCallContext()),
+    reset: assign(() => {
+      return { raw: clearRawContext() };
+    }),
     prepareDisconnect: assign(() => {
       return {
-        ...clearCallContext(),
-        pendingDisconnect: true as const,
+        raw: {
+          ...clearRawContext(),
+          pendingDisconnect: true as const,
+        },
       };
+    }),
+    syncIdleStateContext: assign(({ context }) => {
+      return { state: buildStateContext(EState.IDLE, context.raw) };
+    }),
+    syncConnectingStateContext: assign(({ context }) => {
+      return { state: buildStateContext(EState.CONNECTING, context.raw) };
+    }),
+    syncRoomPendingAuthStateContext: assign(({ context }) => {
+      return { state: buildStateContext(EState.ROOM_PENDING_AUTH, context.raw) };
+    }),
+    syncPurgatoryStateContext: assign(({ context }) => {
+      return { state: buildStateContext(EState.PURGATORY, context.raw) };
+    }),
+    syncP2PRoomStateContext: assign(({ context }) => {
+      return { state: buildStateContext(EState.P2P_ROOM, context.raw) };
+    }),
+    syncDirectP2PRoomStateContext: assign(({ context }) => {
+      return { state: buildStateContext(EState.DIRECT_P2P_ROOM, context.raw) };
+    }),
+    syncInRoomStateContext: assign(({ context }) => {
+      return { state: buildStateContext(EState.IN_ROOM, context.raw) };
+    }),
+    syncDisconnectingStateContext: assign(({ context }) => {
+      return { state: buildStateContext(EState.DISCONNECTING, context.raw) };
     }),
   },
 }).createMachine({
   id: 'call',
   initial: EState.IDLE,
-  context: {},
+  context: initialContext,
   states: {
     [EState.IDLE]: {
       on: {
@@ -338,48 +438,55 @@ const callMachine = setup({
         {
           target: EState.DISCONNECTING,
           guard: ({ context }) => {
-            return (context as TIdleContext).pendingDisconnect === true;
+            return (context.raw as TIdleContext).pendingDisconnect === true;
           },
-          actions: 'reset',
+          actions: ['reset', 'syncDisconnectingStateContext'],
         },
         {
           target: EState.IN_ROOM,
           guard: ({ context }) => {
-            return hasInRoomContext(context);
+            return hasInRoomContext(context.raw);
           },
+          actions: 'syncInRoomStateContext',
         },
         {
           target: EState.DIRECT_P2P_ROOM,
           guard: ({ context }) => {
-            return shouldRemainInDirectP2PRoomState(context);
+            return shouldRemainInDirectP2PRoomState(context.raw);
           },
+          actions: 'syncDirectP2PRoomStateContext',
         },
         {
           target: EState.P2P_ROOM,
           guard: ({ context }) => {
-            return shouldRemainInP2PRoomState(context);
+            return shouldRemainInP2PRoomState(context.raw);
           },
+          actions: 'syncP2PRoomStateContext',
         },
         {
           target: EState.PURGATORY,
           guard: ({ context }) => {
-            return shouldRemainInPurgatoryState(context);
+            return shouldRemainInPurgatoryState(context.raw);
           },
+          actions: 'syncPurgatoryStateContext',
         },
         {
           target: EState.ROOM_PENDING_AUTH,
           guard: ({ context }) => {
-            return hasRoomPendingAuthContext(context);
+            return hasRoomPendingAuthContext(context.raw);
           },
+          actions: 'syncRoomPendingAuthStateContext',
         },
         {
           target: EState.CONNECTING,
           guard: ({ context }) => {
-            return hasConnectingContext(context);
+            return hasConnectingContext(context.raw);
           },
+          actions: 'syncConnectingStateContext',
         },
         {
           target: EState.IDLE,
+          actions: 'syncIdleStateContext',
         },
       ],
     },
@@ -455,14 +562,14 @@ const callMachine = setup({
 });
 
 export type TSnapshot =
-  | { value: EState.IDLE; context: TIdleContext }
-  | { value: EState.CONNECTING; context: TConnectingContext }
-  | { value: EState.ROOM_PENDING_AUTH; context: TRoomPendingAuthContext }
-  | { value: EState.PURGATORY; context: TPurgatoryContext }
-  | { value: EState.P2P_ROOM; context: TP2PRoomContext }
-  | { value: EState.DIRECT_P2P_ROOM; context: TDirectP2PRoomContext }
-  | { value: EState.IN_ROOM; context: TInRoomContext }
-  | { value: EState.DISCONNECTING; context: TIdleContext };
+  | { value: EState.IDLE; context: TSnapshotContext<TIdleContext> }
+  | { value: EState.CONNECTING; context: TSnapshotContext<TConnectingContext> }
+  | { value: EState.ROOM_PENDING_AUTH; context: TSnapshotContext<TRoomPendingAuthContext> }
+  | { value: EState.PURGATORY; context: TSnapshotContext<TPurgatoryContext> }
+  | { value: EState.P2P_ROOM; context: TSnapshotContext<TP2PRoomContext> }
+  | { value: EState.DIRECT_P2P_ROOM; context: TSnapshotContext<TDirectP2PRoomContext> }
+  | { value: EState.IN_ROOM; context: TSnapshotContext<TInRoomContext> }
+  | { value: EState.DISCONNECTING; context: TSnapshotContext<TIdleContext> };
 
 export class CallStateMachine extends BaseStateMachine<
   typeof callMachine,
@@ -514,7 +621,7 @@ export class CallStateMachine extends BaseStateMachine<
       return undefined;
     }
 
-    return this.context as TIdleContext;
+    return this.context.state as TIdleContext;
   }
 
   /** Только в CONNECTING: номер и ответ; без полей комнаты и токена в типе. */
@@ -523,16 +630,7 @@ export class CallStateMachine extends BaseStateMachine<
       return undefined;
     }
 
-    const { context } = this;
-
-    if (!hasConnectingContext(context)) {
-      return undefined;
-    }
-
-    return {
-      number: context.number,
-      answer: context.answer,
-    };
+    return this.context.state as TConnectingContext;
   }
 
   /**
@@ -544,18 +642,7 @@ export class CallStateMachine extends BaseStateMachine<
       return undefined;
     }
 
-    const { context } = this;
-
-    if (!hasRoomPendingAuthContext(context)) {
-      return undefined;
-    }
-
-    return {
-      number: context.number,
-      answer: context.answer,
-      room: context.room,
-      participantName: context.participantName,
-    };
+    return this.context.state as TRoomPendingAuthContext;
   }
 
   /** Только в PURGATORY. */
@@ -564,18 +651,7 @@ export class CallStateMachine extends BaseStateMachine<
       return undefined;
     }
 
-    const { context } = this;
-
-    if (!hasPurgatoryRoomSnapshot(context)) {
-      return undefined;
-    }
-
-    return {
-      number: context.number,
-      answer: context.answer,
-      room: context.room,
-      participantName: context.participantName,
-    };
+    return this.context.state as TPurgatoryContext;
   }
 
   /** Только в P2P_ROOM. */
@@ -584,18 +660,7 @@ export class CallStateMachine extends BaseStateMachine<
       return undefined;
     }
 
-    const { context } = this;
-
-    if (!hasP2PRoomSnapshot(context)) {
-      return undefined;
-    }
-
-    return {
-      number: context.number,
-      answer: context.answer,
-      room: context.room,
-      participantName: context.participantName,
-    };
+    return this.context.state as TP2PRoomContext;
   }
 
   /** Только в DIRECT_P2P_ROOM. */
@@ -604,19 +669,7 @@ export class CallStateMachine extends BaseStateMachine<
       return undefined;
     }
 
-    const { context } = this;
-
-    if (!hasDirectP2PRoomSnapshot(context)) {
-      return undefined;
-    }
-
-    return {
-      number: context.number,
-      answer: context.answer,
-      room: context.room,
-      participantName: context.participantName,
-      isDirectPeerToPeer: true,
-    };
+    return this.context.state as TDirectP2PRoomContext;
   }
 
   /**
@@ -625,13 +678,11 @@ export class CallStateMachine extends BaseStateMachine<
    * содержать устаревший JWT или несовпадающий `conferenceForToken` — полагаться на него напрямую нельзя.
    */
   public get inRoomContext(): TInRoomContext | undefined {
-    const { context } = this;
-
     if (this.state !== EState.IN_ROOM) {
       return undefined;
     }
 
-    return hasInRoomContext(context) ? context : undefined;
+    return this.context.state as TInRoomContext;
   }
 
   /** Только в DISCONNECTING (контекст сброшен, опционально `pendingDisconnect`). */
@@ -640,7 +691,7 @@ export class CallStateMachine extends BaseStateMachine<
       return undefined;
     }
 
-    return this.context as TIdleContext;
+    return this.context.state as TIdleContext;
   }
 
   public get isActive(): boolean {
@@ -654,10 +705,10 @@ export class CallStateMachine extends BaseStateMachine<
   }
 
   public get number() {
-    const { context } = this;
+    const { raw } = this.context;
 
-    if ('number' in context) {
-      return context.number;
+    if ('number' in raw) {
+      return raw.number;
     }
 
     return undefined;
