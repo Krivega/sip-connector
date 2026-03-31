@@ -1,6 +1,6 @@
 import { createApiManagerEvents } from '@/ApiManager';
 import { PURGATORY_CONFERENCE_NUMBER } from '@/tools/hasPurgatory';
-import { CallStateMachine, EState } from '../CallStateMachine';
+import { buildStateContext, CallStateMachine, EState } from '../CallStateMachine';
 import { createEvents } from '../events';
 
 import type { TApiManagerEvents } from '@/ApiManager';
@@ -44,6 +44,14 @@ describe('CallStateMachine', () => {
   afterEach(() => {
     machine.stop();
   });
+
+  const getRawContext = () => {
+    return machine.context.raw as Record<string, unknown>;
+  };
+
+  const getStateContext = () => {
+    return machine.context.state as Record<string, unknown>;
+  };
 
   describe('Табличные переходы по доменным событиям', () => {
     const transitions: {
@@ -433,17 +441,18 @@ describe('CallStateMachine', () => {
       machine.send({ type: 'CALL.ENTER_ROOM', ...purgatoryPayload });
       machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
       expect(machine.state).toBe(EState.PURGATORY);
-      expect((machine.context as { token?: string }).token).toBe(token1Context.token);
-      expect((machine.context as { conferenceForToken?: string }).conferenceForToken).toBe(
-        token1Context.conferenceForToken,
-      );
+      expect(getRawContext()).toMatchObject({
+        token: token1Context.token,
+        conferenceForToken: token1Context.conferenceForToken,
+      });
 
       const snap = machine.getSnapshot();
 
       expect(snap.value).toBe(EState.PURGATORY);
-      expect('token' in snap.context).toBe(false);
-      expect('conferenceForToken' in snap.context).toBe(false);
-      expect(snap.context).toEqual(machine.purgatoryContext);
+      expect('token' in snap.context.state).toBe(false);
+      expect('conferenceForToken' in snap.context.state).toBe(false);
+      expect(snap.context.raw).toEqual(machine.context.raw);
+      expect(snap.context.state).toEqual(machine.purgatoryContext);
     });
 
     it('в P2P_ROOM при TOKEN_ISSUED для другой конференции сырой context с JWT; snapshot без JWT и как p2pRoomContext', () => {
@@ -451,13 +460,14 @@ describe('CallStateMachine', () => {
       machine.send({ type: 'CALL.ENTER_ROOM', ...p2pRoomPayload });
       machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
       expect(machine.state).toBe(EState.P2P_ROOM);
-      expect((machine.context as { token?: string }).token).toBeDefined();
+      expect(getRawContext()).toMatchObject({ token: token1Context.token });
 
       const snap = machine.getSnapshot();
 
       expect(snap.value).toBe(EState.P2P_ROOM);
-      expect('token' in snap.context).toBe(false);
-      expect(snap.context).toEqual(machine.p2pRoomContext);
+      expect('token' in snap.context.state).toBe(false);
+      expect(snap.context.raw).toEqual(machine.context.raw);
+      expect(snap.context.state).toEqual(machine.p2pRoomContext);
     });
 
     it('в ROOM_PENDING_AUTH при JWT для другой конференции сырой context хранит token; snapshot без JWT', () => {
@@ -466,13 +476,14 @@ describe('CallStateMachine', () => {
       expect(machine.state).toBe(EState.ROOM_PENDING_AUTH);
       machine.send({ type: 'CALL.TOKEN_ISSUED', ...token2Context });
       expect(machine.state).toBe(EState.ROOM_PENDING_AUTH);
-      expect((machine.context as { token?: string }).token).toBeDefined();
+      expect(getRawContext()).toMatchObject({ token: token2Context.token });
 
       const snap = machine.getSnapshot();
 
       expect(snap.value).toBe(EState.ROOM_PENDING_AUTH);
-      expect('token' in snap.context).toBe(false);
-      expect(snap.context).toEqual(machine.roomPendingAuthContext);
+      expect('token' in snap.context.state).toBe(false);
+      expect(snap.context.raw).toEqual(machine.context.raw);
+      expect(snap.context.state).toEqual(machine.roomPendingAuthContext);
     });
 
     it('в IN_ROOM snapshot.context совпадает с inRoomContext и содержит валидный token', () => {
@@ -483,8 +494,8 @@ describe('CallStateMachine', () => {
 
       const snap = machine.getSnapshot();
 
-      expect(snap.context).toEqual(machine.inRoomContext);
-      expect((snap.context as { token: string }).token).toBe(token1Context.token);
+      expect(snap.context.state).toEqual(machine.inRoomContext);
+      expect((snap.context.state as { token: string }).token).toBe(token1Context.token);
     });
 
     it('subscribe передаёт в listener тот же нормализованный context, что и getSnapshot()', () => {
@@ -498,7 +509,7 @@ describe('CallStateMachine', () => {
       machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
 
       expect(lastContext).toEqual(machine.getSnapshot().context);
-      expect('token' in (lastContext as object)).toBe(false);
+      expect('token' in (lastContext as { state: object }).state).toBe(false);
       subscription.unsubscribe();
     });
   });
@@ -865,12 +876,13 @@ describe('CallStateMachine', () => {
 
       expect(machine.state).toBe(EState.ROOM_PENDING_AUTH);
       expect(machine.inRoomContext).toBeUndefined();
-      expect(machine.context).toMatchObject({
+      expect(getRawContext()).toMatchObject({
         ...connectPayload,
         ...room2Payload,
         token: token1Context.token,
         conferenceForToken: token1Context.conferenceForToken,
       });
+      expect(getStateContext()).toEqual({ ...connectPayload, ...room2Payload });
     });
 
     it('возвращает обновлённый контекст при смене token в IN_ROOM', () => {
@@ -983,12 +995,14 @@ describe('CallStateMachine', () => {
       events.trigger('start-call', connectPayload);
 
       expect(machine.state).toBe(EState.CONNECTING);
-      expect(machine.context).toEqual(connectPayload);
+      expect(getRawContext()).toEqual(connectPayload);
+      expect(getStateContext()).toEqual(connectPayload);
 
       events.trigger('ended', {} as never);
 
       expect(machine.state).toBe(EState.IDLE);
-      expect(machine.context).toEqual({});
+      expect(getRawContext()).toEqual({});
+      expect(getStateContext()).toEqual({});
     });
 
     it('должен переходить в IDLE при событии failed', () => {
@@ -997,7 +1011,8 @@ describe('CallStateMachine', () => {
       events.trigger('failed', undefined as never);
 
       expect(machine.state).toBe(EState.IDLE);
-      expect(machine.context).toEqual({});
+      expect(getRawContext()).toEqual({});
+      expect(getStateContext()).toEqual({});
     });
 
     it('должен переходить в DISCONNECTING при событии end-call из IN_ROOM', () => {
@@ -1040,7 +1055,8 @@ describe('CallStateMachine', () => {
       events.trigger('ended', {} as never);
 
       expect(machine.state).toBe(EState.IDLE);
-      expect(machine.context).toEqual({});
+      expect(getRawContext()).toEqual({});
+      expect(getStateContext()).toEqual({});
     });
 
     it('должен переходить в IDLE из DISCONNECTING при событии failed', () => {
@@ -1053,7 +1069,8 @@ describe('CallStateMachine', () => {
       events.trigger('failed', undefined as never);
 
       expect(machine.state).toBe(EState.IDLE);
-      expect(machine.context).toEqual({});
+      expect(getRawContext()).toEqual({});
+      expect(getStateContext()).toEqual({});
     });
   });
 
@@ -1063,12 +1080,14 @@ describe('CallStateMachine', () => {
       apiManagerEvents.trigger('enter-room', room1Payload);
 
       expect(machine.state).toBe(EState.ROOM_PENDING_AUTH);
-      expect(machine.context).toEqual({ ...connectPayload, ...room1Payload });
+      expect(getRawContext()).toEqual({ ...connectPayload, ...room1Payload });
+      expect(getStateContext()).toEqual({ ...connectPayload, ...room1Payload });
 
       apiManagerEvents.trigger('enter-room', room2Payload);
 
       expect(machine.state).toBe(EState.ROOM_PENDING_AUTH);
-      expect(machine.context).toEqual({ ...connectPayload, ...room2Payload });
+      expect(getRawContext()).toEqual({ ...connectPayload, ...room2Payload });
+      expect(getStateContext()).toEqual({ ...connectPayload, ...room2Payload });
     });
 
     it('должен обновлять данные из "conference:participant-token-issued"', () => {
@@ -1076,12 +1095,14 @@ describe('CallStateMachine', () => {
       apiManagerEvents.trigger('conference:participant-token-issued', token1Payload);
 
       expect(machine.state).toBe(EState.CONNECTING);
-      expect(machine.context).toEqual({ ...connectPayload, ...token1Context });
+      expect(getRawContext()).toEqual({ ...connectPayload, ...token1Context });
+      expect(getStateContext()).toEqual(connectPayload);
 
       apiManagerEvents.trigger('conference:participant-token-issued', token2Payload);
 
       expect(machine.state).toBe(EState.CONNECTING);
-      expect(machine.context).toEqual({ ...connectPayload, ...token2Context });
+      expect(getRawContext()).toEqual({ ...connectPayload, ...token2Context });
+      expect(getStateContext()).toEqual(connectPayload);
     });
 
     it('должен переходить в IN_ROOM по наличию всех данных', () => {
@@ -1090,7 +1111,8 @@ describe('CallStateMachine', () => {
       apiManagerEvents.trigger('conference:participant-token-issued', token1Payload);
 
       expect(machine.state).toBe(EState.IN_ROOM);
-      expect(machine.context).toEqual({ ...connectPayload, ...room1Payload, ...token1Context });
+      expect(getRawContext()).toEqual({ ...connectPayload, ...room1Payload, ...token1Context });
+      expect(getStateContext()).toEqual({ ...connectPayload, ...room1Payload, ...token1Context });
     });
 
     it('должен оставаться в ROOM_PENDING_AUTH, если conference из токена не совпадает с room', () => {
@@ -1105,12 +1127,13 @@ describe('CallStateMachine', () => {
       });
 
       expect(machine.state).toBe(EState.ROOM_PENDING_AUTH);
-      expect(machine.context).toMatchObject({
+      expect(getRawContext()).toMatchObject({
         ...connectPayload,
         ...room1Payload,
         token: 'jwt-mismatch',
         conferenceForToken: 'other-conference',
       });
+      expect(getStateContext()).toEqual({ ...connectPayload, ...room1Payload });
     });
 
     it('должен переходить из ROOM_PENDING_AUTH в IN_ROOM, если сначала conference токена ≠ room, затем пришёл токен с conference === room', () => {
@@ -1129,7 +1152,8 @@ describe('CallStateMachine', () => {
       apiManagerEvents.trigger('conference:participant-token-issued', token1Payload);
 
       expect(machine.state).toBe(EState.IN_ROOM);
-      expect(machine.context).toEqual({ ...connectPayload, ...room1Payload, ...token1Context });
+      expect(getRawContext()).toEqual({ ...connectPayload, ...room1Payload, ...token1Context });
+      expect(getStateContext()).toEqual({ ...connectPayload, ...room1Payload, ...token1Context });
     });
 
     it('должен обновлять данные в IN_ROOM', () => {
@@ -1138,7 +1162,8 @@ describe('CallStateMachine', () => {
       apiManagerEvents.trigger('conference:participant-token-issued', token1Payload);
 
       expect(machine.state).toBe(EState.IN_ROOM);
-      expect(machine.context).toEqual({ ...connectPayload, ...room1Payload, ...token1Context });
+      expect(getRawContext()).toEqual({ ...connectPayload, ...room1Payload, ...token1Context });
+      expect(getStateContext()).toEqual({ ...connectPayload, ...room1Payload, ...token1Context });
 
       apiManagerEvents.trigger('conference:participant-token-issued', {
         ...token2Payload,
@@ -1151,7 +1176,12 @@ describe('CallStateMachine', () => {
       };
 
       expect(machine.state).toBe(EState.IN_ROOM);
-      expect(machine.context).toEqual({
+      expect(getRawContext()).toEqual({
+        ...connectPayload,
+        ...room1Payload,
+        ...token2AlignedWithRoom1Context,
+      });
+      expect(getStateContext()).toEqual({
         ...connectPayload,
         ...room1Payload,
         ...token2AlignedWithRoom1Context,
@@ -1160,12 +1190,13 @@ describe('CallStateMachine', () => {
       apiManagerEvents.trigger('enter-room', room2Payload);
 
       expect(machine.state).toBe(EState.ROOM_PENDING_AUTH);
-      expect(machine.context).toMatchObject({
+      expect(getRawContext()).toMatchObject({
         ...connectPayload,
         ...room2Payload,
         token: token2Context.token,
         conferenceForToken: room1Payload.room,
       });
+      expect(getStateContext()).toEqual({ ...connectPayload, ...room2Payload });
     });
 
     it('должен переходить в IN_ROOM по enter-room с bearerToken', () => {
@@ -1175,7 +1206,13 @@ describe('CallStateMachine', () => {
       apiManagerEvents.trigger('enter-room', { ...room1Payload, bearerToken });
 
       expect(machine.state).toBe(EState.IN_ROOM);
-      expect(machine.context).toMatchObject({
+      expect(getRawContext()).toMatchObject({
+        ...connectPayload,
+        ...room1Payload,
+        token: bearerToken,
+        conferenceForToken: room1Payload.room,
+      });
+      expect(getStateContext()).toEqual({
         ...connectPayload,
         ...room1Payload,
         token: bearerToken,
@@ -1190,10 +1227,11 @@ describe('CallStateMachine', () => {
       apiManagerEvents.trigger('enter-room', purgatoryPayload);
 
       expect(machine.state).toBe(EState.PURGATORY);
-      expect(machine.context).toMatchObject({
+      expect(getRawContext()).toMatchObject({
         ...connectPayload,
         ...purgatoryPayload,
       });
+      expect(getStateContext()).toEqual({ ...connectPayload, ...purgatoryPayload });
     });
 
     it('conference:participant-token-issued из PURGATORY не переводит в IN_ROOM (только enter-room с bearer)', () => {
@@ -1204,11 +1242,12 @@ describe('CallStateMachine', () => {
       apiManagerEvents.trigger('conference:participant-token-issued', token1Payload);
 
       expect(machine.state).toBe(EState.PURGATORY);
-      expect(machine.context).toMatchObject({
+      expect(getRawContext()).toMatchObject({
         ...connectPayload,
         ...purgatoryPayload,
         ...token1Context,
       });
+      expect(getStateContext()).toEqual(machine.purgatoryContext as Record<string, unknown>);
       expect(machine.inRoomContext).toBeUndefined();
     });
 
@@ -1230,10 +1269,11 @@ describe('CallStateMachine', () => {
       apiManagerEvents.trigger('enter-room', p2pRoomPayload);
 
       expect(machine.state).toBe(EState.P2P_ROOM);
-      expect(machine.context).toMatchObject({
+      expect(getRawContext()).toMatchObject({
         ...connectPayload,
         ...p2pRoomPayload,
       });
+      expect(getStateContext()).toEqual({ ...connectPayload, ...p2pRoomPayload });
     });
 
     it('должен переходить в DIRECT_P2P_ROOM по enter-room с p2p комнатой без token', () => {
@@ -1241,10 +1281,11 @@ describe('CallStateMachine', () => {
       apiManagerEvents.trigger('enter-room', directP2pRoomPayload);
 
       expect(machine.state).toBe(EState.DIRECT_P2P_ROOM);
-      expect(machine.context).toMatchObject({
+      expect(getRawContext()).toMatchObject({
         ...connectPayload,
         ...directP2pRoomPayload,
       });
+      expect(getStateContext()).toEqual({ ...connectPayload, ...directP2pRoomPayload });
     });
 
     it('должен переходить в DIRECT_P2P_ROOM по enter-room с флагом isDirectPeerToPeer даже без p2p имени комнаты', () => {
@@ -1255,7 +1296,12 @@ describe('CallStateMachine', () => {
       });
 
       expect(machine.state).toBe(EState.DIRECT_P2P_ROOM);
-      expect(machine.context).toMatchObject({
+      expect(getRawContext()).toMatchObject({
+        ...connectPayload,
+        ...room1Payload,
+        isDirectPeerToPeer: true,
+      });
+      expect(getStateContext()).toEqual({
         ...connectPayload,
         ...room1Payload,
         isDirectPeerToPeer: true,
@@ -1270,11 +1316,12 @@ describe('CallStateMachine', () => {
       apiManagerEvents.trigger('conference:participant-token-issued', token1Payload);
 
       expect(machine.state).toBe(EState.P2P_ROOM);
-      expect(machine.context).toMatchObject({
+      expect(getRawContext()).toMatchObject({
         ...connectPayload,
         ...p2pRoomPayload,
         ...token1Context,
       });
+      expect(getStateContext()).toEqual(machine.p2pRoomContext as Record<string, unknown>);
       expect(machine.inRoomContext).toBeUndefined();
     });
 
@@ -1302,11 +1349,12 @@ describe('CallStateMachine', () => {
 
       expect(machine.state).toBe(EState.PURGATORY);
       expect(machine.inRoomContext).toBeUndefined();
-      expect(machine.context).toMatchObject({
+      expect(getRawContext()).toMatchObject({
         ...connectPayload,
         ...purgatoryPayload,
         ...token1Context,
       });
+      expect(getStateContext()).toEqual(machine.purgatoryContext as Record<string, unknown>);
     });
 
     it('PURGATORY -> IN_ROOM: по CALL.ENTER_ROOM с bearerToken', () => {
@@ -1334,10 +1382,11 @@ describe('CallStateMachine', () => {
       machine.send({ type: 'CALL.ENTER_ROOM', ...purgatoryPayload });
 
       expect(machine.state).toBe(EState.PURGATORY);
-      expect(machine.context).toMatchObject({
+      expect(getRawContext()).toMatchObject({
         ...connectPayload,
         ...purgatoryPayload,
       });
+      expect(getStateContext()).toEqual({ ...connectPayload, ...purgatoryPayload });
       expect(machine.inRoomContext).toBeUndefined();
     });
   });
@@ -1348,13 +1397,10 @@ describe('CallStateMachine', () => {
       machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
 
       expect(machine.state).toBe(EState.ROOM_PENDING_AUTH);
-      expect(machine.context).toMatchObject({ ...connectPayload, ...room1Payload });
-      expect(
-        (machine.context as { conferenceForToken?: string; token?: string }).conferenceForToken,
-      ).toBeUndefined();
-      expect(
-        (machine.context as { conferenceForToken?: string; token?: string }).token,
-      ).toBeUndefined();
+      expect(getRawContext()).toMatchObject({ ...connectPayload, ...room1Payload });
+      expect(getStateContext()).toEqual({ ...connectPayload, ...room1Payload });
+      expect(getRawContext().conferenceForToken).toBeUndefined();
+      expect(getRawContext().token).toBeUndefined();
     });
 
     it('ROOM_PENDING_AUTH -> IN_ROOM: по CALL.TOKEN_ISSUED', () => {
@@ -1379,10 +1425,9 @@ describe('CallStateMachine', () => {
 
       expect(machine.state).toBe(EState.ROOM_PENDING_AUTH);
       expect(machine.inRoomContext).toBeUndefined();
-      expect((machine.context as { token?: string; room?: string }).token).toBe(
-        token1Context.token,
-      );
-      expect((machine.context as { room?: string }).room).toBe(room2Payload.room);
+      expect(getRawContext().token).toBe(token1Context.token);
+      expect(getRawContext().room).toBe(room2Payload.room);
+      expect(getStateContext()).toEqual({ ...connectPayload, ...room2Payload });
 
       machine.send({ type: 'CALL.TOKEN_ISSUED', ...token2Context });
 
@@ -1402,11 +1447,12 @@ describe('CallStateMachine', () => {
 
       expect(machine.state).toBe(EState.P2P_ROOM);
       expect(machine.inRoomContext).toBeUndefined();
-      expect(machine.context).toMatchObject({
+      expect(getRawContext()).toMatchObject({
         ...connectPayload,
         ...p2pRoomPayload,
         ...token1Context,
       });
+      expect(getStateContext()).toEqual(machine.p2pRoomContext as Record<string, unknown>);
     });
 
     it('P2P_ROOM -> IN_ROOM: по CALL.ENTER_ROOM с bearerToken', () => {
@@ -1434,10 +1480,11 @@ describe('CallStateMachine', () => {
       machine.send({ type: 'CALL.ENTER_ROOM', ...p2pRoomPayload });
 
       expect(machine.state).toBe(EState.P2P_ROOM);
-      expect(machine.context).toMatchObject({
+      expect(getRawContext()).toMatchObject({
         ...connectPayload,
         ...p2pRoomPayload,
       });
+      expect(getStateContext()).toEqual({ ...connectPayload, ...p2pRoomPayload });
       expect(machine.inRoomContext).toBeUndefined();
     });
   });
@@ -1484,10 +1531,11 @@ describe('CallStateMachine', () => {
       machine.send({ type: 'CALL.ENTER_ROOM', ...directP2pRoomPayload });
 
       expect(machine.state).toBe(EState.DIRECT_P2P_ROOM);
-      expect(machine.context).toMatchObject({
+      expect(getRawContext()).toMatchObject({
         ...connectPayload,
         ...directP2pRoomPayload,
       });
+      expect(getStateContext()).toEqual({ ...connectPayload, ...directP2pRoomPayload });
       expect(machine.inRoomContext).toBeUndefined();
     });
   });
@@ -1515,7 +1563,7 @@ describe('CallStateMachine', () => {
     };
 
     it('setConnecting: возвращает context при event.type !== CALL.CONNECTING', () => {
-      const context = {};
+      const context = { raw: {}, state: {} };
       const result = getSnapshot().machine.implementations.actions.setConnecting?.assignment({
         context,
         event: { type: 'CALL.ENTER_ROOM', room: 'room', participantName: 'participantName' },
@@ -1525,7 +1573,7 @@ describe('CallStateMachine', () => {
     });
 
     it('setRoomInfo: возвращает context при event.type !== CALL.ENTER_ROOM', () => {
-      const context = {};
+      const context = { raw: {}, state: {} };
       const result = getSnapshot().machine.implementations.actions.setRoomInfo?.assignment({
         context,
         event: { type: 'CALL.CONNECTING', number: '1', answer: false },
@@ -1535,7 +1583,7 @@ describe('CallStateMachine', () => {
     });
 
     it('setRoomInfo: при CALL.ENTER_ROOM с token задаёт conference равным room', () => {
-      const context = { ...connectPayload };
+      const context = { raw: { ...connectPayload }, state: { ...connectPayload } };
       const room = 'room-as-conference';
       const token = 'jwt-inline';
 
@@ -1550,15 +1598,18 @@ describe('CallStateMachine', () => {
       });
 
       expect(result).toEqual({
-        room,
-        participantName: 'Alice',
-        token,
-        conferenceForToken: room,
+        raw: {
+          ...connectPayload,
+          room,
+          participantName: 'Alice',
+          token,
+          conferenceForToken: room,
+        },
       });
     });
 
     it('setRoomInfo: при CALL.ENTER_ROOM без token для обычной комнаты не задаёт token и conference', () => {
-      const context = { ...connectPayload };
+      const context = { raw: { ...connectPayload }, state: { ...connectPayload } };
 
       const result = getSnapshot().machine.implementations.actions.setRoomInfo?.assignment({
         context,
@@ -1566,19 +1617,34 @@ describe('CallStateMachine', () => {
       });
 
       expect(result).toEqual({
-        room: room1Payload.room,
-        participantName: room1Payload.participantName,
+        raw: {
+          ...connectPayload,
+          room: room1Payload.room,
+          participantName: room1Payload.participantName,
+        },
       });
     });
 
     it('setTokenInfo: возвращает context при event.type !== CALL.TOKEN_ISSUED', () => {
-      const context = {};
+      const context = { raw: {}, state: {} };
       const result = getSnapshot().machine.implementations.actions.setTokenInfo?.assignment({
         context,
         event: { type: 'CALL.ENTER_ROOM', room: 'room', participantName: 'participantName' },
       });
 
       expect(result).toBe(context);
+    });
+  });
+
+  describe('buildStateContext', () => {
+    it('default: возвращает пустой объект для неизвестного state', () => {
+      // @ts-expect-error: unknown state
+      const result = buildStateContext('unknown', {
+        ...connectPayload,
+        ...token1Context,
+      });
+
+      expect(result).toEqual({});
     });
   });
 });
