@@ -1,10 +1,11 @@
 import { createApiManagerEvents } from '@/ApiManager';
 import { PURGATORY_CONFERENCE_NUMBER } from '@/tools/hasPurgatory';
-import { buildStateContext, CallStateMachine, EState } from '../CallStateMachine';
-import { createEvents } from '../events';
+import { createEvents } from '../../events';
+import { CallStateMachine } from '../CallStateMachine';
+import { EState } from '../types';
 
 import type { TApiManagerEvents } from '@/ApiManager';
-import type { TEventName, TEvents } from '../events';
+import type { TEventName, TEvents } from '../../events';
 
 describe('CallStateMachine', () => {
   let apiManagerEvents: TApiManagerEvents;
@@ -1633,18 +1634,6 @@ describe('CallStateMachine', () => {
       });
 
       expect(result).toBe(context);
-    });
-  });
-
-  describe('buildStateContext', () => {
-    it('default: возвращает пустой объект для неизвестного state', () => {
-      // @ts-expect-error: unknown state
-      const result = buildStateContext('unknown', {
-        ...connectPayload,
-        ...token1Context,
-      });
-
-      expect(result).toEqual({});
     });
   });
 });
