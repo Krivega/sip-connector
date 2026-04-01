@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [26.18.3](https://github.com/Krivega/sip-connector/compare/v26.18.2...v26.18.3) (2026-04-01)
+
+### Bug Fixes
+
+- **demo:** enhance conference state display with additional fields and updated variable names ([90add82](https://github.com/Krivega/sip-connector/commit/90add821ccb460fce038f3203c5964fa73c9d36d))
+- update purgatory handling in state checks and tests ([#73](https://github.com/Krivega/sip-connector/issues/73)) ([449de1c](https://github.com/Krivega/sip-connector/commit/449de1c27814acfe0b6b5cb8a232420f63cf01f4))
+
 ### [26.18.2](https://github.com/Krivega/sip-connector/compare/v26.18.1...v26.18.2) (2026-03-31)
 
 ### Bug Fixes
