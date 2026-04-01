@@ -1235,7 +1235,24 @@ describe('CallStateMachine', () => {
       expect(getStateContext()).toEqual({ ...connectPayload, ...purgatoryPayload });
     });
 
-    it('conference:participant-token-issued из PURGATORY не переводит в IN_ROOM (только enter-room с bearer)', () => {
+    it('enter-room с bearerToken для purgatory не переводит в IN_ROOM', () => {
+      const bearerToken = 'jwt-for-purgatory';
+
+      events.trigger('start-call', connectPayload);
+      apiManagerEvents.trigger('enter-room', { ...purgatoryPayload, bearerToken });
+
+      expect(machine.state).toBe(EState.PURGATORY);
+      expect(getRawContext()).toMatchObject({
+        ...connectPayload,
+        ...purgatoryPayload,
+        token: bearerToken,
+        conferenceForToken: purgatoryPayload.room,
+      });
+      expect(getStateContext()).toEqual({ ...connectPayload, ...purgatoryPayload });
+      expect(machine.inRoomContext).toBeUndefined();
+    });
+
+    it('conference:participant-token-issued из PURGATORY не переводит в IN_ROOM', () => {
       events.trigger('start-call', connectPayload);
       apiManagerEvents.trigger('enter-room', purgatoryPayload);
       expect(machine.state).toBe(EState.PURGATORY);

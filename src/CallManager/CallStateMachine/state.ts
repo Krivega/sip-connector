@@ -56,6 +56,7 @@ const hasDirectPeerToPeerContext = (context: TBaseContext): boolean => {
 const hasInRoomContext = (raw: TBaseContext): boolean => {
   return (
     hasAnyRoomContext(raw) &&
+    !hasPurgatory(raw.room) &&
     hasConferenceTokenContext(raw) &&
     hasMatchingConferenceTokenContext(raw)
   );

@@ -58,7 +58,7 @@ describe('STATE_DESCRIPTORS', () => {
       expect(STATE_DESCRIPTORS[EState.PURGATORY].buildContext(raw)).toEqual(raw);
     });
 
-    it('guard отклоняет purgatory, если это уже IN_ROOM по совпадению conferenceForToken и room', () => {
+    it('guard принимает purgatory, даже если token совпадает с room', () => {
       const raw = {
         ...connectingContext,
         room: PURGATORY_CONFERENCE_NUMBER,
@@ -67,7 +67,7 @@ describe('STATE_DESCRIPTORS', () => {
         conferenceForToken: PURGATORY_CONFERENCE_NUMBER,
       };
 
-      expect(STATE_DESCRIPTORS[EState.PURGATORY].guard(raw)).toBe(false);
+      expect(STATE_DESCRIPTORS[EState.PURGATORY].guard(raw)).toBe(true);
     });
   });
 
@@ -111,6 +111,18 @@ describe('STATE_DESCRIPTORS', () => {
 
       expect(STATE_DESCRIPTORS[EState.IN_ROOM].guard(raw)).toBe(true);
       expect(STATE_DESCRIPTORS[EState.IN_ROOM].buildContext(raw)).toEqual(raw);
+    });
+
+    it('guard отклоняет purgatory даже при conferenceForToken === room', () => {
+      const raw = {
+        ...connectingContext,
+        room: PURGATORY_CONFERENCE_NUMBER,
+        participantName: 'User',
+        token: 'jwt-1',
+        conferenceForToken: PURGATORY_CONFERENCE_NUMBER,
+      };
+
+      expect(STATE_DESCRIPTORS[EState.IN_ROOM].guard(raw)).toBe(false);
     });
 
     it('guard отклоняет при несовпадающих conferenceForToken и room', () => {
