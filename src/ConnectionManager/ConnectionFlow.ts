@@ -98,6 +98,7 @@ export default class ConnectionFlow {
 
   public connect: TConnect = async (parameters, options) => {
     this.dependencies.events.trigger('connect-started', {});
+    this.cancelRequests();
 
     return resolveParameters(parameters)
       .then((data) => {
@@ -111,8 +112,6 @@ export default class ConnectionFlow {
         throw error;
       })
       .then(async (data) => {
-        this.cancelRequests();
-
         return this.connectWithDuplicatedCalls(data, options);
       })
       .then((connectionConfigurationWithUa) => {
