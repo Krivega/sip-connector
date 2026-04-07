@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [26.19.0](https://github.com/Krivega/sip-connector/compare/v26.18.3...v26.19.0) (2026-04-07)
+
+### Features
+
+- **ConnectionFlow:** invoke stateMachine.startConnect before triggering connect-started event ([ee41011](https://github.com/Krivega/sip-connector/commit/ee410113e5786f1ee35a9d54d3b5779eff526dc0))
+
+### Bug Fixes
+
+- **ConnectionFlow:** ensure cancellation of requests during connection process ([5823cfc](https://github.com/Krivega/sip-connector/commit/5823cfc25f95658eb4f1333153b374ba23b243f4))
+
 ### [26.18.3](https://github.com/Krivega/sip-connector/compare/v26.18.2...v26.18.3) (2026-04-01)
 
 ### Bug Fixes
