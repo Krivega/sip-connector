@@ -2,7 +2,7 @@ import { NameAddrHeader, URI } from '@krivega/jssip';
 
 import jssip from '@/__fixtures__/jssip.mock';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
-import { ConnectionManager, EConnectionManagerEvent } from '@/ConnectionManager';
+import { ConnectionManager } from '@/ConnectionManager';
 import IncomingCallManager from '../@IncomingCallManager';
 import { Originator } from '../events';
 import { EState } from '../IncomingCallStateMachine';
@@ -80,7 +80,7 @@ describe('IncomingCallManager', () => {
 
       // Запускаем менеджер и эмулируем входящий звонок
       incomingCallManager.start();
-      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+      connectionManager.events.trigger('newRTCSession', {
         originator: Originator.REMOTE,
         session,
         request: {} as IncomingRequest,
@@ -105,7 +105,7 @@ describe('IncomingCallManager', () => {
     it('должен возвращать true когда есть входящий звонок', () => {
       // Запускаем менеджер и эмулируем входящий звонок
       incomingCallManager.start();
-      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+      connectionManager.events.trigger('newRTCSession', {
         originator: Originator.REMOTE,
         session: mockRTCSession,
         request: {} as IncomingRequest,
@@ -121,10 +121,7 @@ describe('IncomingCallManager', () => {
 
       incomingCallManager.start();
 
-      expect(spyOn).toHaveBeenCalledWith(
-        EConnectionManagerEvent.NEW_RTC_SESSION,
-        expect.any(Function),
-      );
+      expect(spyOn).toHaveBeenCalledWith('newRTCSession', expect.any(Function));
     });
   });
 
@@ -134,7 +131,7 @@ describe('IncomingCallManager', () => {
 
       // Запускаем менеджер и устанавливаем входящий звонок
       incomingCallManager.start();
-      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+      connectionManager.events.trigger('newRTCSession', {
         originator: Originator.REMOTE,
         session: mockRTCSession,
         request: {} as IncomingRequest,
@@ -144,10 +141,7 @@ describe('IncomingCallManager', () => {
 
       incomingCallManager.stop();
 
-      expect(spyOff).toHaveBeenCalledWith(
-        EConnectionManagerEvent.NEW_RTC_SESSION,
-        expect.any(Function),
-      );
+      expect(spyOff).toHaveBeenCalledWith('newRTCSession', expect.any(Function));
       expect(incomingCallManager.isAvailableIncomingCall).toBe(false);
     });
   });
@@ -156,7 +150,7 @@ describe('IncomingCallManager', () => {
     it('должен возвращать RTC сессию когда она существует', () => {
       // Запускаем менеджер и устанавливаем входящий звонок
       incomingCallManager.start();
-      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+      connectionManager.events.trigger('newRTCSession', {
         originator: Originator.REMOTE,
         session: mockRTCSession,
         request: {} as IncomingRequest,
@@ -178,7 +172,7 @@ describe('IncomingCallManager', () => {
     it('должен возвращать RTC сессию и вызывать toConsumed', () => {
       // Запускаем менеджер и устанавливаем входящий звонок
       incomingCallManager.start();
-      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+      connectionManager.events.trigger('newRTCSession', {
         originator: Originator.REMOTE,
         session: mockRTCSession,
         request: {} as IncomingRequest,
@@ -209,7 +203,7 @@ describe('IncomingCallManager', () => {
     it('должен сохранять remoteCallerData в контексте при переходе в CONSUMED', () => {
       // Запускаем менеджер и устанавливаем входящий звонок
       incomingCallManager.start();
-      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+      connectionManager.events.trigger('newRTCSession', {
         originator: Originator.REMOTE,
         session: mockRTCSession,
         request: {} as IncomingRequest,
@@ -240,7 +234,7 @@ describe('IncomingCallManager', () => {
 
       // Запускаем менеджер и устанавливаем входящий звонок
       incomingCallManager.start();
-      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+      connectionManager.events.trigger('newRTCSession', {
         originator: Originator.REMOTE,
         session: mockRTCSession,
         request: {} as IncomingRequest,
@@ -262,7 +256,7 @@ describe('IncomingCallManager', () => {
 
       // Запускаем менеджер и устанавливаем входящий звонок
       incomingCallManager.start();
-      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+      connectionManager.events.trigger('newRTCSession', {
         originator: Originator.REMOTE,
         session: mockRTCSession,
         request: {} as IncomingRequest,
@@ -283,7 +277,7 @@ describe('IncomingCallManager', () => {
     it('должен отклонять входящий звонок с кодом BUSY_HERE', async () => {
       // Запускаем менеджер и устанавливаем входящий звонок
       incomingCallManager.start();
-      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+      connectionManager.events.trigger('newRTCSession', {
         originator: Originator.REMOTE,
         session: mockRTCSession,
         request: {} as IncomingRequest,
@@ -302,7 +296,7 @@ describe('IncomingCallManager', () => {
 
       incomingCallManager.start();
 
-      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+      connectionManager.events.trigger('newRTCSession', {
         originator: Originator.REMOTE,
         session: mockRTCSession,
         request: {} as IncomingRequest,
@@ -324,7 +318,7 @@ describe('IncomingCallManager', () => {
 
       incomingCallManager.start();
 
-      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+      connectionManager.events.trigger('newRTCSession', {
         originator: Originator.LOCAL,
         session: mockRTCSession,
         request: {} as OutgoingRequest,
@@ -343,7 +337,7 @@ describe('IncomingCallManager', () => {
 
       // Запускаем менеджер и устанавливаем входящий звонок
       incomingCallManager.start();
-      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+      connectionManager.events.trigger('newRTCSession', {
         originator: Originator.REMOTE,
         session: mockRTCSession,
         request: {} as IncomingRequest,
@@ -376,7 +370,7 @@ describe('IncomingCallManager', () => {
 
       // Запускаем менеджер и устанавливаем входящий звонок
       incomingCallManager.start();
-      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+      connectionManager.events.trigger('newRTCSession', {
         originator: Originator.REMOTE,
         session: mockRTCSession,
         request: {} as IncomingRequest,
@@ -414,7 +408,7 @@ describe('IncomingCallManager', () => {
       incomingCallManager.start();
 
       // Входящий звонок
-      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+      connectionManager.events.trigger('newRTCSession', {
         originator: Originator.REMOTE,
         session: mockRTCSession,
         request: {} as IncomingRequest,
@@ -456,7 +450,7 @@ describe('IncomingCallManager', () => {
       incomingCallManager.start();
 
       // Первый звонок
-      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+      connectionManager.events.trigger('newRTCSession', {
         originator: Originator.REMOTE,
         session: session1,
         request: {} as IncomingRequest,
@@ -465,7 +459,7 @@ describe('IncomingCallManager', () => {
       expect(incomingCallManager.remoteCallerData?.incomingNumber).toBe('caller1');
 
       // Второй звонок (заменяет первый)
-      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+      connectionManager.events.trigger('newRTCSession', {
         originator: Originator.REMOTE,
         session: session2,
         request: {} as IncomingRequest,
@@ -485,7 +479,7 @@ describe('IncomingCallManager', () => {
 
       incomingCallManager.start();
 
-      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+      connectionManager.events.trigger('newRTCSession', {
         originator: Originator.REMOTE,
         session: sessionWithoutDisplayName,
         request: {} as IncomingRequest,
@@ -504,7 +498,7 @@ describe('IncomingCallManager', () => {
 
       incomingCallManager.start();
 
-      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+      connectionManager.events.trigger('newRTCSession', {
         originator: Originator.REMOTE,
         session: sessionWithoutUser,
         request: {} as IncomingRequest,
@@ -531,7 +525,7 @@ describe('IncomingCallManager', () => {
 
       // Запускаем менеджер и устанавливаем входящий звонок
       incomingCallManager.start();
-      connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+      connectionManager.events.trigger('newRTCSession', {
         originator: Originator.REMOTE,
         session: sessionWithError,
         request: {} as IncomingRequest,
@@ -560,7 +554,7 @@ describe('API событий IncomingCallManager', () => {
 
     incomingCallManager.on('ringing', handler);
     incomingCallManager.start();
-    connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+    connectionManager.events.trigger('newRTCSession', {
       originator: Originator.REMOTE,
       session: mockRTCSession,
       request: {} as IncomingRequest,
@@ -574,12 +568,12 @@ describe('API событий IncomingCallManager', () => {
 
     incomingCallManager.once('ringing', handler);
     incomingCallManager.start();
-    connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+    connectionManager.events.trigger('newRTCSession', {
       originator: Originator.REMOTE,
       session: mockRTCSession,
       request: {} as IncomingRequest,
     });
-    connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+    connectionManager.events.trigger('newRTCSession', {
       originator: Originator.REMOTE,
       session: mockRTCSession,
       request: {} as IncomingRequest,
@@ -592,7 +586,7 @@ describe('API событий IncomingCallManager', () => {
 
     incomingCallManager.onceRace(['ringing', 'declinedIncomingCall'], handler);
     incomingCallManager.start();
-    connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+    connectionManager.events.trigger('newRTCSession', {
       originator: Originator.REMOTE,
       session: mockRTCSession,
       request: {} as IncomingRequest,
@@ -612,7 +606,7 @@ describe('API событий IncomingCallManager', () => {
 
     const promise = incomingCallManager.wait('ringing');
 
-    connectionManager.events.trigger(EConnectionManagerEvent.NEW_RTC_SESSION, {
+    connectionManager.events.trigger('newRTCSession', {
       originator: Originator.REMOTE,
       session: mockRTCSession,
       request: {} as IncomingRequest,

@@ -1,6 +1,5 @@
 import { assign, setup } from 'xstate';
 
-import { EEvent as EConnectionEvent } from '@/ConnectionManager/events';
 import logger from '@/logger';
 import { BaseStateMachine } from '@/tools/BaseStateMachine';
 
@@ -469,17 +468,17 @@ export class IncomingCallStateMachine extends BaseStateMachine<
 
   private subscribeConnectionEvents(events: TConnectionEvents) {
     this.addSubscription(
-      events.on(EConnectionEvent.DISCONNECTED, () => {
+      events.on('disconnected', () => {
         this.toClearIncoming();
       }),
     );
     this.addSubscription(
-      events.on(EConnectionEvent.REGISTRATION_FAILED, () => {
+      events.on('registrationFailed', () => {
         this.toClearIncoming();
       }),
     );
     this.addSubscription(
-      events.on(EConnectionEvent.CONNECT_FAILED, () => {
+      events.on('connect-failed', () => {
         this.toClearIncoming();
       }),
     );

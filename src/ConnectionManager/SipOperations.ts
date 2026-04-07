@@ -1,5 +1,3 @@
-import { EEvent } from './events';
-
 import type { UA, URI } from '@krivega/jssip';
 import type UAFactory from './UAFactory';
 
@@ -91,17 +89,17 @@ export default class SipOperations {
         reject(error);
       };
 
-      ua.once(EEvent.DISCONNECTED, rejectWithError);
+      ua.once('disconnected', rejectWithError);
 
       const stopAndResolveAfterDisconnect = () => {
         ua.removeAllListeners();
-        ua.once(EEvent.DISCONNECTED, () => {
+        ua.once('disconnected', () => {
           resolve();
         });
         ua.stop();
       };
 
-      ua.once(EEvent.CONNECTED, stopAndResolveAfterDisconnect);
+      ua.once('connected', stopAndResolveAfterDisconnect);
 
       ua.start();
     });

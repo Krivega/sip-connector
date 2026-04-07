@@ -1,6 +1,5 @@
 import { repeatedCallsAsync } from 'repeated-calls';
 
-import { EEvent } from './events';
 import { hasHandshakeWebsocketOpeningError } from '../utils/errors';
 import { parseDisplayName } from '../utils/utils';
 
@@ -124,10 +123,10 @@ export default class ConnectionFlow {
   };
 
   public disconnect = async () => {
-    this.dependencies.events.trigger(EEvent.DISCONNECTING, {});
+    this.dependencies.events.trigger('disconnecting', {});
 
     const disconnectedPromise = new Promise<void>((resolve) => {
-      this.dependencies.events.once(EEvent.DISCONNECTED, () => {
+      this.dependencies.events.once('disconnected', () => {
         resolve();
       });
     });
@@ -137,7 +136,7 @@ export default class ConnectionFlow {
     if (ua) {
       ua.stop();
     } else {
-      this.dependencies.events.trigger(EEvent.DISCONNECTED, { socket: {} as Socket, error: false });
+      this.dependencies.events.trigger('disconnected', { socket: {} as Socket, error: false });
     }
 
     return disconnectedPromise.finally(() => {
@@ -330,8 +329,8 @@ export default class ConnectionFlow {
           return this.dependencies.registrationManager.subscribeToStartEvents(onSuccess, onError);
         }
 
-        const successEvent = EEvent.CONNECTED;
-        const errorEvents = [EEvent.DISCONNECTED] as const;
+        const successEvent = 'connected';
+        const errorEvents = ['disconnected'] as const;
 
         // Подписываемся на события
         this.dependencies.events.on(successEvent, onSuccess);
@@ -359,14 +358,11 @@ export default class ConnectionFlow {
   }
 
   private proxyEvents() {
-    this.dependencies.events.on(EEvent.CONNECTED, () => {
+    this.dependencies.events.on('connected', () => {
       const connectionConfiguration = this.dependencies.getConnectionConfiguration();
 
       if (connectionConfiguration !== undefined) {
-        this.dependencies.events.trigger(
-          EEvent.CONNECTED_WITH_CONFIGURATION,
-          connectionConfiguration,
-        );
+        this.dependencies.events.trigger('connected-with-configuration', connectionConfiguration);
       }
     });
   }

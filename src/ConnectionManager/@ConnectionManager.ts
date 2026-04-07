@@ -4,7 +4,7 @@ import logger from '@/logger';
 import ConfigurationManager from './ConfigurationManager';
 import ConnectionFlow from './ConnectionFlow';
 import { ConnectionStateMachine } from './ConnectionStateMachine';
-import { createEvents, EEvent } from './events';
+import { createEvents } from './events';
 import RegistrationManager from './RegistrationManager';
 import SipOperations from './SipOperations';
 import UAFactory from './UAFactory';
@@ -255,16 +255,16 @@ export default class ConnectionManager extends EventEmitterProxy<TEventMap> {
     parameters: TConnectParameters,
     options?: TConnectOptions,
   ) => {
-    this.events.trigger(EEvent.CONNECT_STARTED, {});
+    this.events.trigger('connect-started', {});
 
     return resolveParameters(parameters)
       .then((data) => {
-        this.events.trigger(EEvent.CONNECT_PARAMETERS_RESOLVE_SUCCESS, data);
+        this.events.trigger('connect-parameters-resolve-success', data);
 
         return data;
       })
       .catch((error: unknown) => {
-        this.events.trigger(EEvent.CONNECT_PARAMETERS_RESOLVE_FAILED, error);
+        this.events.trigger('connect-parameters-resolve-failed', error);
 
         throw error;
       })
@@ -272,7 +272,7 @@ export default class ConnectionManager extends EventEmitterProxy<TEventMap> {
         return this.connectionFlow.connect(data, options);
       })
       .then((connectionConfigurationWithUa) => {
-        this.events.trigger(EEvent.CONNECT_SUCCEEDED, {
+        this.events.trigger('connect-succeeded', {
           ...connectionConfigurationWithUa,
         });
 
@@ -281,7 +281,7 @@ export default class ConnectionManager extends EventEmitterProxy<TEventMap> {
       .catch((error: unknown) => {
         const connectError: unknown = error ?? new Error('Failed to connect to server');
 
-        this.events.trigger(EEvent.CONNECT_FAILED, connectError);
+        this.events.trigger('connect-failed', connectError);
 
         throw connectError;
       });

@@ -16,7 +16,7 @@ import type {
 import type { TConnectionConfiguration } from './ConfigurationManager';
 import type { TParametersConnection } from './ConnectionFlow';
 
-export enum EEvent {
+enum EEvent {
   CONNECTING = 'connecting',
   CONNECTED = 'connected',
   DISCONNECTED = 'disconnected',
