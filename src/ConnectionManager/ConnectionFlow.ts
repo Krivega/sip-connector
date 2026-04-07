@@ -97,6 +97,7 @@ export default class ConnectionFlow {
   }
 
   public connect: TConnect = async (parameters, options) => {
+    this.dependencies.stateMachine.startConnect();
     this.dependencies.events.trigger('connect-started', {});
     this.cancelRequests();
 
@@ -203,8 +204,6 @@ export default class ConnectionFlow {
 
       return isValidResponse || isValidError;
     };
-
-    this.dependencies.stateMachine.startConnect();
 
     this.cancelableConnectWithRepeatedCalls = repeatedCallsAsync<TConnectionConfiguration>({
       targetFunction,

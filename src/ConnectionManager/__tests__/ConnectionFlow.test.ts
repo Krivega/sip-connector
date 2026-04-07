@@ -237,6 +237,21 @@ describe('ConnectionFlow', () => {
   });
 
   describe('connect events', () => {
+    it('должен вызывать stateMachine.startConnect до события connect-started', async () => {
+      const startConnectSpy = jest.spyOn(stateMachine, 'startConnect');
+      const handleStarted = jest.fn();
+
+      events.on('connect-started', handleStarted);
+
+      await connectionFlow.connect(baseConnectParameters);
+
+      expect(startConnectSpy).toHaveBeenCalledTimes(1);
+      expect(handleStarted).toHaveBeenCalledTimes(1);
+      expect(startConnectSpy.mock.invocationCallOrder[0]).toBeLessThan(
+        handleStarted.mock.invocationCallOrder[0],
+      );
+    });
+
     it('должен вызывать CONNECT_STARTED при запуске подключения', async () => {
       const handleStarted = jest.fn();
 
