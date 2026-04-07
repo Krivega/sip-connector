@@ -3,7 +3,7 @@ import { TypedEvents } from 'events-constructor';
 
 import type { RTCSession } from '@krivega/jssip';
 
-export enum EEvent {
+enum EEvent {
   RINGING = 'ringing',
   DECLINED_INCOMING_CALL = 'declinedIncomingCall',
   TERMINATED_INCOMING_CALL = 'terminatedIncomingCall',

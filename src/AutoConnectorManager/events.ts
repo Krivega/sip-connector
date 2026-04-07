@@ -3,7 +3,7 @@ import { TypedEvents } from 'events-constructor';
 
 import type { TAttemptStatus } from './types';
 
-export enum EEvent {
+enum EEvent {
   BEFORE_ATTEMPT = 'before-attempt',
   SUCCESS = 'success',
   FAILED_ALL_ATTEMPTS = 'failed-all-attempts',

@@ -2,15 +2,12 @@ import delayPromise from '@/__fixtures__/delayPromise';
 import jssip from '@/__fixtures__/jssip.mock';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { ApiManager, EContentTypeReceived, EKeyHeader } from '@/ApiManager';
-import { EEvent } from '@/ApiManager/events';
 import { CallManager } from '@/CallManager';
 import { ConnectionManager } from '@/ConnectionManager';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
 import { PeerToPeerManager } from '@/PeerToPeerManager';
 
 import type { TJsSIP } from '@/types';
-
-const { FAILED_SEND_ROOM_DIRECT_P2P } = EEvent;
 
 describe('PeerToPeerManager', () => {
   let apiManager: ApiManager;
@@ -229,7 +226,7 @@ describe('PeerToPeerManager', () => {
 
       const failedSpy = jest.fn();
 
-      apiManager.on(FAILED_SEND_ROOM_DIRECT_P2P, failedSpy);
+      apiManager.on('failed-send-room-direct-p2p', failedSpy);
 
       callManager.events.trigger('confirmed', {});
 
@@ -262,7 +259,7 @@ describe('PeerToPeerManager', () => {
 
       const failedSpy = jest.fn();
 
-      apiManager.on(FAILED_SEND_ROOM_DIRECT_P2P, failedSpy);
+      apiManager.on('failed-send-room-direct-p2p', failedSpy);
 
       callManager.events.trigger('confirmed', {});
       await delayPromise(0);
@@ -277,7 +274,7 @@ describe('PeerToPeerManager', () => {
 
       const failedSpy = jest.fn();
 
-      apiManager.on(FAILED_SEND_ROOM_DIRECT_P2P, failedSpy);
+      apiManager.on('failed-send-room-direct-p2p', failedSpy);
 
       callManager.events.trigger('confirmed', {});
       await delayPromise(0);

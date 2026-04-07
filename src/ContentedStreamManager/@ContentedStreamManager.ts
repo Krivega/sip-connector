@@ -1,7 +1,7 @@
 import { EventEmitterProxy } from 'events-constructor';
 
 import { ContentedStreamStateMachine } from './ContentedStreamStateMachine';
-import { createEvents, EEvent } from './events';
+import { createEvents } from './events';
 
 import type { ApiManager, EContentedStreamCodec } from '@/ApiManager';
 import type { TEventMap } from './events';
@@ -43,9 +43,9 @@ class ContentedStreamManager extends EventEmitterProxy<TEventMap> {
       const stateInfo = this.getStateInfo();
 
       if (stateInfo.isAvailable) {
-        this.events.trigger(EEvent.AVAILABLE, { codec: stateInfo.codec });
+        this.events.trigger('available', { codec: stateInfo.codec });
       } else {
-        this.events.trigger(EEvent.NOT_AVAILABLE, {});
+        this.events.trigger('not-available', {});
       }
     });
   }

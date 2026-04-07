@@ -1,6 +1,6 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 
-import { createEvents as createCallEvents, ECallEvent } from '@/CallManager';
+import { createEvents as createCallEvents } from '@/CallManager';
 import { PresentationStateMachine, EState } from '../PresentationStateMachine';
 
 import type { TCallEvents } from '@/CallManager';
@@ -545,16 +545,16 @@ describe('PresentationStateMachine', () => {
 
   describe('Интеграция с событиями CallManager', () => {
     it('триггеры callEvents.trigger() корректно обрабатываются', () => {
-      callEvents.trigger(ECallEvent.START_PRESENTATION, mediaStream);
+      callEvents.trigger('presentation:start', mediaStream);
       expect(machine.state).toBe(EState.STARTING);
 
-      callEvents.trigger(ECallEvent.STARTED_PRESENTATION, mediaStream);
+      callEvents.trigger('presentation:started', mediaStream);
       expect(machine.state).toBe(EState.ACTIVE);
 
-      callEvents.trigger(ECallEvent.END_PRESENTATION, mediaStream);
+      callEvents.trigger('presentation:end', mediaStream);
       expect(machine.state).toBe(EState.STOPPING);
 
-      callEvents.trigger(ECallEvent.ENDED_PRESENTATION, mediaStream);
+      callEvents.trigger('presentation:ended', mediaStream);
       expect(machine.state).toBe(EState.IDLE);
     });
 
@@ -562,7 +562,7 @@ describe('PresentationStateMachine', () => {
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
 
       // Попытка перейти в ACTIVE напрямую из IDLE
-      callEvents.trigger(ECallEvent.STARTED_PRESENTATION, mediaStream);
+      callEvents.trigger('presentation:started', mediaStream);
 
       expect(machine.state).toBe(EState.IDLE);
       expect(consoleSpy).toHaveBeenCalledWith(
@@ -580,29 +580,29 @@ describe('PresentationStateMachine', () => {
       };
 
       // STARTING → FAILED
-      callEvents.trigger(ECallEvent.START_PRESENTATION, mediaStream);
+      callEvents.trigger('presentation:start', mediaStream);
       // @ts-expect-error
-      callEvents.trigger(ECallEvent.FAILED, error);
+      callEvents.trigger('presentation:failed', error);
       expect(machine.state).toBe(EState.FAILED);
       expect(machine.lastError).toEqual(new Error(JSON.stringify(error)));
 
       machine.reset();
 
       // ACTIVE → FAILED
-      callEvents.trigger(ECallEvent.START_PRESENTATION, mediaStream);
-      callEvents.trigger(ECallEvent.STARTED_PRESENTATION, mediaStream);
+      callEvents.trigger('presentation:start', mediaStream);
+      callEvents.trigger('presentation:started', mediaStream);
       // @ts-expect-error
-      callEvents.trigger(ECallEvent.FAILED, error);
+      callEvents.trigger('presentation:failed', error);
       expect(machine.state).toBe(EState.FAILED);
 
       machine.reset();
 
       // STOPPING → FAILED
-      callEvents.trigger(ECallEvent.START_PRESENTATION, mediaStream);
-      callEvents.trigger(ECallEvent.STARTED_PRESENTATION, mediaStream);
-      callEvents.trigger(ECallEvent.END_PRESENTATION, mediaStream);
+      callEvents.trigger('presentation:start', mediaStream);
+      callEvents.trigger('presentation:started', mediaStream);
+      callEvents.trigger('presentation:end', mediaStream);
       // @ts-expect-error
-      callEvents.trigger(ECallEvent.FAILED, error);
+      callEvents.trigger('presentation:failed', error);
       expect(machine.state).toBe(EState.FAILED);
     });
   });
@@ -610,26 +610,26 @@ describe('PresentationStateMachine', () => {
   describe('Контракт адаптера событий менеджеров', () => {
     it('обрабатывает цепочку событий от менеджеров', () => {
       // start sharing
-      callEvents.trigger(ECallEvent.START_PRESENTATION, mediaStream);
+      callEvents.trigger('presentation:start', mediaStream);
       expect(machine.state).toBe(EState.STARTING);
       expect(getContext().lastError).toBeUndefined();
 
       // started
-      callEvents.trigger(ECallEvent.STARTED_PRESENTATION, mediaStream);
+      callEvents.trigger('presentation:started', mediaStream);
       expect(machine.state).toBe(EState.ACTIVE);
 
       // end request
-      callEvents.trigger(ECallEvent.END_PRESENTATION, mediaStream);
+      callEvents.trigger('presentation:end', mediaStream);
       expect(machine.state).toBe(EState.STOPPING);
 
       // ended -> idle
-      callEvents.trigger(ECallEvent.ENDED_PRESENTATION, mediaStream);
+      callEvents.trigger('presentation:ended', mediaStream);
       expect(machine.state).toBe(EState.IDLE);
 
       // new start and failure from call
-      callEvents.trigger(ECallEvent.START_PRESENTATION, mediaStream);
-      callEvents.trigger(ECallEvent.STARTED_PRESENTATION, mediaStream);
-      callEvents.trigger(ECallEvent.FAILED_PRESENTATION, new Error('call failed'));
+      callEvents.trigger('presentation:start', mediaStream);
+      callEvents.trigger('presentation:started', mediaStream);
+      callEvents.trigger('presentation:failed', new Error('call failed'));
       expect(machine.state).toBe(EState.FAILED);
       expect(getContext().lastError).toBeInstanceOf(Error);
     });

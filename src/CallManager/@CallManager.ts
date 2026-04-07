@@ -3,7 +3,7 @@ import { EventEmitterProxy } from 'events-constructor';
 
 import { DeferredCommandRunner } from '@/tools';
 import { CallStateMachine, EState } from './CallStateMachine';
-import { createEvents, EEvent } from './events';
+import { createEvents } from './events';
 import { MCUSession } from './MCUSession';
 import { resolveRecvQuality } from './quality';
 import RecvSession from './RecvSession';
@@ -210,7 +210,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   public startCall: TStartCall = async (ua, getUri, params) => {
     this.isPendingCall = true;
 
-    this.events.emit(EEvent.START_CALL, {
+    this.events.emit('start-call', {
       number: params.number,
       answer: false,
     });
@@ -221,7 +221,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   };
 
   public async endCall(): Promise<void> {
-    this.events.emit(EEvent.END_CALL);
+    this.events.emit('end-call');
 
     return this.mcuSession.endCall();
   }
@@ -242,7 +242,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
 
     const rtcSession = extractIncomingRTCSession();
 
-    this.events.emit(EEvent.START_CALL, {
+    this.events.emit('start-call', {
       answer: true,
       number: rtcSession.remote_identity.uri.user,
     });
@@ -361,7 +361,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     if (targetEffectiveQuality === previousEffectiveQuality) {
       await recvSession.setQuality(quality); // для обновления quality. renegotiate не будет вызван
 
-      this.events.trigger(EEvent.RECV_QUALITY_CHANGED, {
+      this.events.trigger('recv-quality-changed', {
         previousQuality,
         quality,
         effectiveQuality: previousEffectiveQuality,
@@ -378,7 +378,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     if (callResult) {
       const effectiveQuality = session.getEffectiveQuality();
 
-      this.events.trigger(EEvent.RECV_QUALITY_CHANGED, {
+      this.events.trigger('recv-quality-changed', {
         previousQuality,
         quality,
         effectiveQuality,
@@ -400,7 +400,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     const result = await recvSession.applyQuality(quality);
 
     if (result.applied) {
-      this.events.trigger(EEvent.RECV_QUALITY_CHANGED, {
+      this.events.trigger('recv-quality-changed', {
         previousQuality,
         quality,
         effectiveQuality: result.effectiveQuality,
@@ -417,7 +417,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   }
 
   private emitFailedCall(message: IncomingResponse, cause: string) {
-    this.events.trigger(EEvent.FAILED, { message, cause, originator: 'local' });
+    this.events.trigger('failed', { message, cause, originator: 'local' });
   }
 
   private readonly reset: () => void = () => {
@@ -430,10 +430,9 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   };
 
   private subscribeCallStatusChange() {
-    const { ACCEPTED, CONFIRMED, ENDED, FAILED } = EEvent;
     const onStatusChanged = this.createCallStatusChangeListener();
 
-    this.onRace([ACCEPTED, CONFIRMED, ENDED, FAILED], onStatusChanged);
+    this.onRace(['accepted', 'confirmed', 'ended', 'failed'], onStatusChanged);
   }
 
   /** Хранит prev/next и эмитит CALL_STATUS_CHANGED только при реальном изменении. */
@@ -444,7 +443,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
       const nextIsCallActive = this.isCallActive;
 
       if (nextIsCallActive !== prevIsCallActive) {
-        this.events.trigger(EEvent.CALL_STATUS_CHANGED, { isCallActive: nextIsCallActive });
+        this.events.trigger('call-status-changed', { isCallActive: nextIsCallActive });
       }
 
       prevIsCallActive = nextIsCallActive;
@@ -452,7 +451,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   }
 
   private subscribeMcuRemoteTrackEvents() {
-    this.on(EEvent.PEER_CONNECTION_ONTRACK, (event: RTCTrackEvent) => {
+    this.on('peerconnection:ontrack', (event: RTCTrackEvent) => {
       this.addRemoteTrack(this.mainRemoteStreamsManager, event.track, getStreamHint(event));
     });
   }
@@ -516,7 +515,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     changeType: TRemoteTracksChangeType,
     { trackId, participantId }: { trackId: string; participantId: string },
   ) {
-    this.events.trigger(EEvent.REMOTE_TRACKS_CHANGED, {
+    this.events.trigger('remote-tracks-changed', {
       streams,
       changeType,
       trackId,
@@ -535,7 +534,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     }
 
     this.streamsChangeTracker.updateLastEmittedStreams(streams);
-    this.events.trigger(EEvent.REMOTE_STREAMS_CHANGED, { streams });
+    this.events.trigger('remote-streams-changed', { streams });
   }
 
   private getActiveStreamsManagerTools(): TStreamsManagerTools {

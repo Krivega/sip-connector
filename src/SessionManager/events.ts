@@ -3,7 +3,7 @@ import { TypedEvents } from 'events-constructor';
 
 import type { TSessionSnapshot } from './types';
 
-export enum EEvent {
+enum EEvent {
   SNAPSHOT_CHANGED = 'snapshot-changed',
 }
 

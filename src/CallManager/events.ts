@@ -5,7 +5,7 @@ import type { IncomingInfoEvent, OutgoingInfoEvent, EndEvent } from '@krivega/js
 import type { TEffectiveQuality, TRecvQuality } from './quality';
 import type { TRemoteStreams, TRemoteTracksChangeType } from './types';
 
-export enum EEvent {
+enum EEvent {
   // rtcSession events
   PEER_CONNECTION = 'peerconnection',
   CONNECTING = 'connecting',

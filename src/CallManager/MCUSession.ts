@@ -2,7 +2,7 @@ import { logError } from '@/logger';
 import { prepareMediaStream } from '@/tools';
 import BitrateStateManager from './BitrateStateManager';
 import { ECallCause } from './causes';
-import { EEvent, SESSION_JSSIP_EVENT_NAMES } from './events';
+import { SESSION_JSSIP_EVENT_NAMES } from './events';
 
 import type { EndEvent, RTCSession, RenegotiateOptions } from '@krivega/jssip';
 import type { TEvents } from './events';
@@ -27,8 +27,8 @@ export class MCUSession implements IMCUSession {
   public constructor(events: TEvents, { onReset }: { onReset: () => void }) {
     this.events = events;
     this.onReset = onReset;
-    events.on(EEvent.FAILED, this.handleEnded);
-    events.on(EEvent.ENDED, this.handleEnded);
+    events.on('failed', this.handleEnded);
+    events.on('ended', this.handleEnded);
   }
 
   public get connection(): RTCPeerConnection | undefined {
@@ -236,27 +236,27 @@ export class MCUSession implements IMCUSession {
     return new Promise((resolve, reject) => {
       const addStartedEventListeners = () => {
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        this.events.on(EEvent.PEER_CONNECTION, handlePeerConnection);
+        this.events.on('peerconnection', handlePeerConnection);
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        this.events.on(EEvent.CONFIRMED, handleConfirmed);
+        this.events.on('confirmed', handleConfirmed);
       };
       const removeStartedEventListeners = () => {
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        this.events.off(EEvent.PEER_CONNECTION, handlePeerConnection);
+        this.events.off('peerconnection', handlePeerConnection);
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        this.events.off(EEvent.CONFIRMED, handleConfirmed);
+        this.events.off('confirmed', handleConfirmed);
       };
       const addEndedEventListeners = () => {
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        this.events.on(EEvent.FAILED, handleEnded);
+        this.events.on('failed', handleEnded);
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        this.events.on(EEvent.ENDED, handleEnded);
+        this.events.on('ended', handleEnded);
       };
       const removeEndedEventListeners = () => {
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        this.events.off(EEvent.FAILED, handleEnded);
+        this.events.off('failed', handleEnded);
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        this.events.off(EEvent.ENDED, handleEnded);
+        this.events.off('ended', handleEnded);
       };
       const handleEnded = (error: EndEvent) => {
         removeStartedEventListeners();
@@ -271,7 +271,7 @@ export class MCUSession implements IMCUSession {
         savedPeerconnection = peerconnection;
 
         const handleTrack = (event: RTCTrackEvent) => {
-          this.events.trigger(EEvent.PEER_CONNECTION_ONTRACK, event);
+          this.events.trigger('peerconnection:ontrack', event);
         };
 
         peerconnection.addEventListener('track', handleTrack);
@@ -282,7 +282,7 @@ export class MCUSession implements IMCUSession {
       };
       const handleConfirmed = () => {
         if (savedPeerconnection !== undefined) {
-          this.events.trigger(EEvent.PEER_CONNECTION_CONFIRMED, savedPeerconnection);
+          this.events.trigger('peerconnection:confirmed', savedPeerconnection);
         }
 
         removeStartedEventListeners();
@@ -321,7 +321,7 @@ export class MCUSession implements IMCUSession {
     const { originator } = event;
 
     if (originator === 'remote') {
-      this.events.trigger(EEvent.ENDED_FROM_SERVER, event);
+      this.events.trigger('ended:fromserver', event);
     }
 
     this.reset();

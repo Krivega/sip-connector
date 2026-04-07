@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
 import { TypedEvents } from 'events-constructor';
 
-export enum EEvent {
+enum EEvent {
   BALANCING_SCHEDULED = 'balancing-scheduled',
   BALANCING_STARTED = 'balancing-started',
   BALANCING_STOPPED = 'balancing-stopped',

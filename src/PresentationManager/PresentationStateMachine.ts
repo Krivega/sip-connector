@@ -1,6 +1,5 @@
 import { assign, setup } from 'xstate';
 
-import { ECallEvent } from '@/CallManager';
 import logger from '@/logger';
 import { BaseStateMachine } from '@/tools/BaseStateMachine';
 
@@ -419,38 +418,38 @@ export class PresentationStateMachine extends BaseStateMachine<
 
   private subscribeCallEvents(events: TCallEvents) {
     this.addSubscription(
-      events.on(ECallEvent.START_PRESENTATION, () => {
+      events.on('presentation:start', () => {
         this.send({ type: 'SCREEN.STARTING' });
       }),
     );
     this.addSubscription(
-      events.on(ECallEvent.STARTED_PRESENTATION, () => {
+      events.on('presentation:started', () => {
         this.send({ type: 'SCREEN.STARTED' });
       }),
     );
     this.addSubscription(
-      events.on(ECallEvent.END_PRESENTATION, () => {
+      events.on('presentation:end', () => {
         this.send({ type: 'SCREEN.ENDING' });
       }),
     );
     this.addSubscription(
-      events.on(ECallEvent.ENDED_PRESENTATION, () => {
+      events.on('presentation:ended', () => {
         this.send({ type: 'SCREEN.ENDED' });
       }),
     );
     this.addSubscription(
-      events.on(ECallEvent.FAILED_PRESENTATION, (error) => {
+      events.on('presentation:failed', (error) => {
         this.send({ type: 'SCREEN.FAILED', error });
       }),
     );
 
     this.addSubscription(
-      events.on(ECallEvent.ENDED, () => {
+      events.on('ended', () => {
         this.send({ type: 'CALL.ENDED' });
       }),
     );
     this.addSubscription(
-      events.on(ECallEvent.FAILED, (error) => {
+      events.on('failed', (error) => {
         this.send({ type: 'CALL.FAILED', error });
       }),
     );

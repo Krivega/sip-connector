@@ -11,7 +11,7 @@ import type {
   TParametersConferenceParticipantTokenIssued,
 } from './types';
 
-export enum EEvent {
+enum EEvent {
   ENTER_ROOM = 'enter-room',
   MAIN_CAM_CONTROL = 'main-cam-control',
   USE_LICENSE = 'use-license',

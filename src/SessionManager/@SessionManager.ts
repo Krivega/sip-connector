@@ -1,6 +1,6 @@
 import { EventEmitterProxy } from 'events-constructor';
 
-import { createEvents, EEvent } from './events';
+import { createEvents } from './events';
 
 import type { Subscription } from 'xstate';
 import type { CallManager } from '@/CallManager';
@@ -132,7 +132,7 @@ class SessionManager extends EventEmitterProxy<TEventMap> {
       }
     }
 
-    this.events.trigger(EEvent.SNAPSHOT_CHANGED, {
+    this.events.trigger('snapshot-changed', {
       previous: previousSnapshot,
       current: this.currentSnapshot,
     });

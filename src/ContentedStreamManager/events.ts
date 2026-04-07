@@ -2,7 +2,7 @@ import { TypedEvents } from 'events-constructor';
 
 import type { EContentedStreamCodec } from '@/ApiManager';
 
-export enum EEvent {
+enum EEvent {
   AVAILABLE = 'available',
   NOT_AVAILABLE = 'not-available',
 }

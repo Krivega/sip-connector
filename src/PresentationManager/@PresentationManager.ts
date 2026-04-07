@@ -3,7 +3,7 @@ import { hasCanceledError, repeatedCallsAsync } from 'repeated-calls';
 
 import prepareMediaStream from '@/tools/prepareMediaStream';
 import { setMaxBitrateToSender } from '@/tools/setParametersToSender';
-import { createEvents, EEvent } from './events';
+import { createEvents } from './events';
 import { PresentationStateMachine } from './PresentationStateMachine';
 
 import type { RTCSession } from '@krivega/jssip';
@@ -116,12 +116,12 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
         .catch((error: unknown) => {
           const presentationError = error instanceof Error ? error : new Error(String(error));
 
-          this.events.trigger(EEvent.FAILED_PRESENTATION, presentationError);
+          this.events.trigger('presentation:failed', presentationError);
 
           throw error;
         });
     } else if (streamPresentationPrevious) {
-      this.events.trigger(EEvent.ENDED_PRESENTATION, streamPresentationPrevious);
+      this.events.trigger('presentation:ended', streamPresentationPrevious);
     }
 
     this.promisePendingStopPresentation = result;
@@ -172,19 +172,19 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
 
   private subscribe() {
     this.callManager.on('presentation:start', (stream: MediaStream) => {
-      this.events.trigger(EEvent.START_PRESENTATION, stream);
+      this.events.trigger('presentation:start', stream);
     });
     this.callManager.on('presentation:started', (stream: MediaStream) => {
-      this.events.trigger(EEvent.STARTED_PRESENTATION, stream);
+      this.events.trigger('presentation:started', stream);
     });
     this.callManager.on('presentation:end', (stream: MediaStream) => {
-      this.events.trigger(EEvent.END_PRESENTATION, stream);
+      this.events.trigger('presentation:end', stream);
     });
     this.callManager.on('presentation:ended', (stream: MediaStream) => {
-      this.events.trigger(EEvent.ENDED_PRESENTATION, stream);
+      this.events.trigger('presentation:ended', stream);
     });
     this.callManager.on('presentation:failed', (error: Error) => {
-      this.events.trigger(EEvent.FAILED_PRESENTATION, error);
+      this.events.trigger('presentation:failed', error);
     });
 
     this.callManager.on('failed', this.handleEnded);
@@ -281,7 +281,7 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
 
         const presentationError = error instanceof Error ? error : new Error(String(error));
 
-        this.events.trigger(EEvent.FAILED_PRESENTATION, presentationError);
+        this.events.trigger('presentation:failed', presentationError);
 
         throw error;
       });

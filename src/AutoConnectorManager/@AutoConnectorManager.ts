@@ -7,7 +7,7 @@ import { hasConnectionPromiseIsNotActualError } from '@/ConnectionQueueManager';
 import logger from '@/logger';
 import AttemptsState from './AttemptsState';
 import CheckTelephonyRequester from './CheckTelephonyRequester';
-import { createEvents, EEvent } from './events';
+import { createEvents } from './events';
 import NotActiveCallSubscriber from './NotActiveCallSubscriber';
 import PingServerIfNotActiveCallRequester from './PingServerIfNotActiveCallRequester';
 import RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCallSubscriber';
@@ -188,7 +188,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   private async attemptConnection(parameters: TParametersAutoConnect) {
     logger('attemptConnection: attempts.count', this.attemptsState.count);
 
-    this.events.trigger(EEvent.BEFORE_ATTEMPT, {});
+    this.events.trigger('before-attempt', {});
     this.stopConnectTriggers();
 
     if (this.attemptsState.hasLimitReached()) {
@@ -220,7 +220,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   private handleConnectionError(error: unknown, parameters: TParametersAutoConnect) {
     if (hasNotReadyForConnectionError(error)) {
       this.attemptsState.finishAttempt();
-      this.events.trigger(EEvent.STOP_ATTEMPTS_BY_ERROR, error);
+      this.events.trigger('stop-attempts-by-error', error);
 
       return;
     }
@@ -229,7 +229,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
       logger('executeConnectionAttempt: error does not allow retry', error);
 
       this.attemptsState.finishAttempt();
-      this.events.trigger(EEvent.STOP_ATTEMPTS_BY_ERROR, error);
+      this.events.trigger('stop-attempts-by-error', error);
 
       return;
     }
@@ -238,7 +238,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
       logger('executeConnectionAttempt: not actual error', error);
 
       this.attemptsState.finishAttempt();
-      this.events.trigger(EEvent.CANCELLED_ATTEMPTS, error);
+      this.events.trigger('cancelled-attempts', error);
 
       return;
     }
@@ -251,7 +251,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   private handleLimitReached(parameters: TParametersAutoConnect) {
     this.attemptsState.finishAttempt();
 
-    this.events.trigger(EEvent.LIMIT_REACHED_ATTEMPTS, new Error(ERROR_MESSAGES.LIMIT_REACHED));
+    this.events.trigger('limit-reached-attempts', new Error(ERROR_MESSAGES.LIMIT_REACHED));
 
     this.startCheckTelephony(parameters);
   }
@@ -261,7 +261,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
 
     this.subscribeToConnectTriggers(parameters);
 
-    this.events.trigger(EEvent.SUCCESS);
+    this.events.trigger('success');
   }
 
   private subscribeToConnectTriggers(parameters: TParametersAutoConnect) {
@@ -353,7 +353,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
       this.restartConnectionAttempts(parameters);
     } else {
       this.stopConnectTriggers();
-      this.events.trigger(EEvent.SUCCESS);
+      this.events.trigger('success');
     }
   }
 
@@ -379,9 +379,9 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
         this.attemptsState.finishAttempt();
 
         if (isCanceledError(error) || hasCanceledError(error as Error)) {
-          this.events.trigger(EEvent.CANCELLED_ATTEMPTS, reconnectError);
+          this.events.trigger('cancelled-attempts', reconnectError);
         } else {
-          this.events.trigger(EEvent.FAILED_ALL_ATTEMPTS, reconnectError);
+          this.events.trigger('failed-all-attempts', reconnectError);
         }
 
         logger('scheduleReconnect: error', error);
@@ -395,7 +395,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   }
 
   private readonly emitStatusChange = ({ isInProgress }: { isInProgress: boolean }) => {
-    this.events.trigger(EEvent.CHANGED_ATTEMPT_STATUS, { isInProgress });
+    this.events.trigger('changed-attempt-status', { isInProgress });
   };
 }
 

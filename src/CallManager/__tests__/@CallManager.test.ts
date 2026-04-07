@@ -6,7 +6,6 @@ import flushPromises from '@/__fixtures__/flushPromises';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
 import CallManager, { getInRoomTokenOrThrow } from '../@CallManager';
-import { EEvent } from '../events';
 import { resolveRecvQuality } from '../quality';
 import { RemoteStreamsManager } from '../RemoteStreamsManager';
 
@@ -338,8 +337,8 @@ describe('CallManager', () => {
     const recvSessionStartedHandler = jest.fn();
     const recvSessionEndedHandler = jest.fn();
 
-    callManager.on(EEvent.RECV_SESSION_STARTED, recvSessionStartedHandler);
-    callManager.on(EEvent.RECV_SESSION_ENDED, recvSessionEndedHandler);
+    callManager.on('recv-session-started', recvSessionStartedHandler);
+    callManager.on('recv-session-ended', recvSessionEndedHandler);
 
     const result = await callManager.restartRecvSession();
 
@@ -496,7 +495,7 @@ describe('CallManager', () => {
 
     const eventHandler = jest.fn();
 
-    callManager.on(EEvent.RECV_QUALITY_CHANGED, eventHandler);
+    callManager.on('recv-quality-changed', eventHandler);
 
     const result = await callManager.setRecvQuality('low');
 
@@ -572,8 +571,8 @@ describe('CallManager', () => {
     const recvSessionStartedHandler = jest.fn();
     const recvSessionEndedHandler = jest.fn();
 
-    callManager.on(EEvent.RECV_SESSION_STARTED, recvSessionStartedHandler);
-    callManager.on(EEvent.RECV_SESSION_ENDED, recvSessionEndedHandler);
+    callManager.on('recv-session-started', recvSessionStartedHandler);
+    callManager.on('recv-session-ended', recvSessionEndedHandler);
 
     const result = await callManager.setRecvQuality('low');
 
@@ -639,7 +638,7 @@ describe('CallManager', () => {
 
     const eventHandler = jest.fn();
 
-    callManager.on(EEvent.RECV_QUALITY_CHANGED, eventHandler);
+    callManager.on('recv-quality-changed', eventHandler);
 
     const result = await callManager.setRecvQuality('high');
 
@@ -740,7 +739,7 @@ describe('CallManager', () => {
 
     const eventHandler = jest.fn();
 
-    callManager.on(EEvent.RECV_QUALITY_CHANGED, eventHandler);
+    callManager.on('recv-quality-changed', eventHandler);
 
     const result = await callManager.setRecvQuality('low');
 
@@ -797,7 +796,7 @@ describe('CallManager', () => {
 
     const eventHandler = jest.fn();
 
-    callManager.on(EEvent.RECV_QUALITY_CHANGED, eventHandler);
+    callManager.on('recv-quality-changed', eventHandler);
 
     const result = await callManager.setRecvQuality('high');
 
@@ -842,7 +841,7 @@ describe('CallManager', () => {
 
       const eventHandler = jest.fn();
 
-      callManager.on(EEvent.RECV_QUALITY_CHANGED, eventHandler);
+      callManager.on('recv-quality-changed', eventHandler);
 
       // Устанавливаем начальное качество 'auto' (effectiveQuality: 'high')
       mockRecvSession.instance?.getQuality.mockReturnValue('auto');
@@ -869,7 +868,7 @@ describe('CallManager', () => {
 
       const eventHandler = jest.fn();
 
-      callManager.on(EEvent.RECV_QUALITY_CHANGED, eventHandler);
+      callManager.on('recv-quality-changed', eventHandler);
 
       mockRecvSession.instance?.applyQuality.mockResolvedValueOnce({
         applied: false,
@@ -889,7 +888,7 @@ describe('CallManager', () => {
 
       const eventHandler = jest.fn();
 
-      callManager.on(EEvent.RECV_QUALITY_CHANGED, eventHandler);
+      callManager.on('recv-quality-changed', eventHandler);
 
       mockRecvSession.instance?.getQuality.mockReturnValue('auto');
       mockRecvSession.instance?.applyQuality.mockResolvedValueOnce({
@@ -914,7 +913,7 @@ describe('CallManager', () => {
 
       const eventHandler = jest.fn();
 
-      callManager.on(EEvent.RECV_QUALITY_CHANGED, eventHandler);
+      callManager.on('recv-quality-changed', eventHandler);
 
       mockRecvSession.instance?.getQuality.mockReturnValue('high');
       mockRecvSession.instance?.applyQuality.mockResolvedValueOnce({
@@ -939,7 +938,7 @@ describe('CallManager', () => {
 
       const eventHandler = jest.fn();
 
-      callManager.on(EEvent.RECV_QUALITY_CHANGED, eventHandler);
+      callManager.on('recv-quality-changed', eventHandler);
 
       mockRecvSession.instance?.getQuality.mockReturnValue('low');
       mockRecvSession.instance?.applyQuality.mockResolvedValueOnce({
@@ -1585,7 +1584,7 @@ describe('CallManager - дополнительные тесты для покр�
       const cause = 'call failed';
       const failedSpy = jest.fn();
 
-      callManager.events.on(EEvent.FAILED, failedSpy);
+      callManager.events.on('failed', failedSpy);
 
       await callManager.failed(message, cause);
 
@@ -2285,7 +2284,7 @@ describe('CallManager - дополнительные тесты для покр�
 
     const eventHandler = jest.fn();
 
-    callManager.on(EEvent.RECV_SESSION_STARTED, eventHandler);
+    callManager.on('recv-session-started', eventHandler);
 
     (
       callManager as unknown as {
@@ -2321,7 +2320,7 @@ describe('CallManager - дополнительные тесты для покр�
 
     const eventHandler = jest.fn();
 
-    callManager.on(EEvent.RECV_SESSION_STARTED, eventHandler);
+    callManager.on('recv-session-started', eventHandler);
 
     (
       callManager as unknown as {
@@ -2395,8 +2394,8 @@ describe('CallManager - дополнительные тесты для покр�
     const startedEventHandler = jest.fn();
     const endedEventHandler = jest.fn();
 
-    callManager.on(EEvent.RECV_SESSION_STARTED, startedEventHandler);
-    callManager.on(EEvent.RECV_SESSION_ENDED, endedEventHandler);
+    callManager.on('recv-session-started', startedEventHandler);
+    callManager.on('recv-session-ended', endedEventHandler);
 
     // Мокаем фабрику так, чтобы она возвращала экземпляр с call, который отклоняется
     const RecvSessionModule = jest.requireMock('../RecvSession') as { default: jest.Mock };
@@ -2487,7 +2486,7 @@ describe('CallManager - дополнительные тесты для покр�
   it('stopRecvSession: триггерит событие recv-session-ended', () => {
     const eventHandler = jest.fn();
 
-    callManager.on(EEvent.RECV_SESSION_ENDED, eventHandler);
+    callManager.on('recv-session-ended', eventHandler);
 
     // подготовим сессию
     const closeSpy = jest.fn();

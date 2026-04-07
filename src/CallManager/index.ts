@@ -1,10 +1,6 @@
 export { default as CallManager } from './@CallManager';
 export { ECallCause } from './causes';
-export {
-  EEvent as ECallEvent,
-  createEvents,
-  EVENT_NAMES as CALL_MANAGER_EVENT_NAMES,
-} from './events';
+export { createEvents, EVENT_NAMES as CALL_MANAGER_EVENT_NAMES } from './events';
 export { default as hasCanceledCallError } from './hasCanceledCallError';
 
 export type { TCustomError, TGetUri, TOnAddedTransceiver, TRemoteStreams } from './types';

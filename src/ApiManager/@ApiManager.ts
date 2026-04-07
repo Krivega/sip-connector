@@ -15,7 +15,7 @@ import {
   EKeyHeader,
   EContentSpectatorMode,
 } from './constants';
-import { createEvents, EEvent, isValueConferenceParticipantTokenIssued } from './events';
+import { createEvents, isValueConferenceParticipantTokenIssued } from './events';
 import { getHeader } from './getHeader';
 import { ECMDNotify } from './types';
 
@@ -67,16 +67,16 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
     connectionManager.on('sipEvent', this.handleSipEvent);
     callManager.on('newInfo', this.handleNewInfo);
     callManager.on('newDTMF', ({ originator }) => {
-      this.events.trigger(EEvent.NEW_DTMF, { originator });
+      this.events.trigger('new-dtmf', { originator });
     });
   }
 
   public async waitChannels(): Promise<TChannels> {
-    return this.wait(EEvent.CHANNELS_ALL);
+    return this.wait('channels:all');
   }
 
   public async waitSyncMediaState(): Promise<{ isSyncForced: boolean }> {
-    return this.wait(EEvent.ADMIN_FORCE_SYNC_MEDIA_STATE);
+    return this.wait('admin:force-sync-media-state');
   }
 
   public async sendDTMF(tone: number | string): Promise<void> {
@@ -121,7 +121,7 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
 
   public sendEnterRoom(extraHeaders: string[]): void {
     this.sendEnterRoomProtected(extraHeaders).catch((error: unknown) => {
-      this.events.trigger(EEvent.FAILED_SEND_ROOM_DIRECT_P2P, { error });
+      this.events.trigger('failed-send-room-direct-p2p', { error });
     });
   }
 
@@ -388,7 +388,7 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
       outputChannels,
     };
 
-    this.events.trigger(EEvent.CHANNELS_NOTIFY, data);
+    this.events.trigger('channels:notify', data);
   };
 
   private readonly triggerWebcastStartedNotify = ({
@@ -399,7 +399,7 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
       type,
     };
 
-    this.events.trigger(EEvent.WEBCAST_STARTED, headersParametersWebcast);
+    this.events.trigger('webcast:started', headersParametersWebcast);
   };
 
   private readonly triggerWebcastStoppedNotify = ({
@@ -410,7 +410,7 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
       type,
     };
 
-    this.events.trigger(EEvent.WEBCAST_STOPPED, headersParametersWebcast);
+    this.events.trigger('webcast:stopped', headersParametersWebcast);
   };
 
   private readonly triggerAddedToListModeratorsNotify = ({
@@ -420,10 +420,7 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
       conference,
     };
 
-    this.events.trigger(
-      EEvent.PARTICIPANT_ADDED_TO_LIST_MODERATORS,
-      headersParametersModeratorsList,
-    );
+    this.events.trigger('participant:added-to-list-moderators', headersParametersModeratorsList);
   };
 
   private readonly triggerRemovedFromListModeratorsNotify = ({
@@ -434,7 +431,7 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
     };
 
     this.events.trigger(
-      EEvent.PARTICIPANT_REMOVED_FROM_LIST_MODERATORS,
+      'participant:removed-from-list-moderators',
       headersParametersModeratorsList,
     );
   };
@@ -446,7 +443,7 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
       conference,
     };
 
-    this.events.trigger(EEvent.PARTICIPATION_ACCEPTING_WORD_REQUEST, data);
+    this.events.trigger('participation:accepting-word-request', data);
   };
 
   private readonly triggerParticipationCancellingWordRequest = ({
@@ -456,7 +453,7 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
       conference,
     };
 
-    this.events.trigger(EEvent.PARTICIPATION_CANCELLING_WORD_REQUEST, data);
+    this.events.trigger('participation:cancelling-word-request', data);
   };
 
   private readonly triggerParticipantMoveRequestToStream = ({
@@ -466,15 +463,15 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
       conference,
     };
 
-    this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_STREAM, data);
+    this.events.trigger('participant:move-request-to-stream', data);
   };
 
   private readonly triggerAccountChangedNotify = () => {
-    this.events.trigger(EEvent.ACCOUNT_CHANGED);
+    this.events.trigger('account:changed');
   };
 
   private readonly triggerAccountDeletedNotify = () => {
-    this.events.trigger(EEvent.ACCOUNT_DELETED);
+    this.events.trigger('account:deleted');
   };
 
   private readonly maybeTriggerConferenceParticipantTokenIssued = ({
@@ -491,7 +488,7 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
     }
 
     this.events.trigger(
-      EEvent.CONFERENCE_PARTICIPANT_TOKEN_ISSUED,
+      'conference:participant-token-issued',
       headersConferenceParticipantTokenIssued,
     );
   };
@@ -506,7 +503,7 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
         outputChannels,
       };
 
-      this.events.trigger(EEvent.CHANNELS_ALL, headersChannels);
+      this.events.trigger('channels:all', headersChannels);
     }
   };
 
@@ -517,7 +514,7 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
     const isDirectPeerToPeer = getHeader(request, EKeyHeader.IS_DIRECT_PEER_TO_PEER);
 
     if (room !== undefined && participantName !== undefined) {
-      this.events.trigger(EEvent.ENTER_ROOM, {
+      this.events.trigger('enter-room', {
         room,
         participantName,
         bearerToken,
@@ -537,15 +534,15 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
       case EContentedStreamSendAndReceive.AVAILABLE_CONTENTED_STREAM: {
         const codec = getHeader(request, EKeyHeader.CONTENTED_STREAM_CODEC);
 
-        this.events.trigger(EEvent.CONTENTED_STREAM_AVAILABLE, { codec });
+        this.events.trigger('contented-stream:available', { codec });
         break;
       }
       case EContentedStreamSendAndReceive.NOT_AVAILABLE_CONTENTED_STREAM: {
-        this.events.trigger(EEvent.CONTENTED_STREAM_NOT_AVAILABLE);
+        this.events.trigger('contented-stream:not-available');
         break;
       }
       case EContentedStreamSendAndReceive.MUST_STOP_PRESENTATION: {
-        this.events.trigger(EEvent.PRESENTATION_MUST_STOP);
+        this.events.trigger('presentation:must-stop');
         break;
       }
     }
@@ -560,19 +557,19 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
       const isAvailableSendingMedia = spectatorMode === EContentSpectatorMode.BY_STATE_CAM;
 
       if (audioId === undefined) {
-        this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS_SYNTHETIC, {
+        this.events.trigger('participant:move-request-to-spectators-synthetic', {
           isAvailableSendingMedia,
         });
-        this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS, {
+        this.events.trigger('participant:move-request-to-spectators', {
           isAvailableSendingMedia,
           isSynthetic: true,
         });
       } else {
-        this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS_WITH_AUDIO_ID, {
+        this.events.trigger('participant:move-request-to-spectators-with-audio-id', {
           isAvailableSendingMedia,
           audioId,
         });
-        this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_SPECTATORS, {
+        this.events.trigger('participant:move-request-to-spectators', {
           isAvailableSendingMedia,
           isSynthetic: false,
           audioId,
@@ -581,7 +578,7 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
     }
 
     if (participantState === EContentParticipantType.PARTICIPANT) {
-      this.events.trigger(EEvent.PARTICIPANT_MOVE_REQUEST_TO_PARTICIPANTS);
+      this.events.trigger('participant:move-request-to-participants');
     }
   };
 
@@ -591,13 +588,13 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
     const isSyncForced = syncState === EContentSyncMediaState.ADMIN_SYNC_FORCED;
 
     if (mainCam === EContentMainCAM.ADMIN_START_MAIN_CAM) {
-      this.events.trigger(EEvent.ADMIN_START_MAIN_CAM, { isSyncForced });
+      this.events.trigger('admin:start-main-cam', { isSyncForced });
 
       return;
     }
 
     if (mainCam === EContentMainCAM.ADMIN_STOP_MAIN_CAM) {
-      this.events.trigger(EEvent.ADMIN_STOP_MAIN_CAM, { isSyncForced });
+      this.events.trigger('admin:stop-main-cam', { isSyncForced });
 
       return;
     }
@@ -606,12 +603,12 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
       (mainCam === EContentMainCAM.RESUME_MAIN_CAM || mainCam === EContentMainCAM.PAUSE_MAIN_CAM) &&
       syncState !== undefined
     ) {
-      this.events.trigger(EEvent.ADMIN_FORCE_SYNC_MEDIA_STATE, { isSyncForced });
+      this.events.trigger('admin:force-sync-media-state', { isSyncForced });
     }
 
     const resolutionMainCam = getHeader(request, EKeyHeader.MAIN_CAM_RESOLUTION);
 
-    this.events.trigger(EEvent.MAIN_CAM_CONTROL, {
+    this.events.trigger('main-cam-control', {
       mainCam,
       resolutionMainCam,
     });
@@ -623,9 +620,9 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
     const isSyncForced = syncState === EContentSyncMediaState.ADMIN_SYNC_FORCED;
 
     if (mic === EContentMic.ADMIN_START_MIC) {
-      this.events.trigger(EEvent.ADMIN_START_MIC, { isSyncForced });
+      this.events.trigger('admin:start-mic', { isSyncForced });
     } else if (mic === EContentMic.ADMIN_STOP_MIC) {
-      this.events.trigger(EEvent.ADMIN_STOP_MIC, { isSyncForced });
+      this.events.trigger('admin:stop-mic', { isSyncForced });
     }
   };
 
@@ -633,7 +630,7 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
     const license = getHeader(request, EKeyHeader.CONTENT_USE_LICENSE);
 
     if (license !== undefined) {
-      this.events.trigger(EEvent.USE_LICENSE, license);
+      this.events.trigger('use-license', license);
     }
   };
 

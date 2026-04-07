@@ -1,6 +1,6 @@
 import { EventEmitterProxy } from 'events-constructor';
 
-import { createEvents, EEvent } from './events';
+import { createEvents } from './events';
 import { IncomingCallStateMachine } from './IncomingCallStateMachine';
 
 import type { IncomingRTCSessionEvent, OutgoingRTCSessionEvent, RTCSession } from '@krivega/jssip';
@@ -85,7 +85,7 @@ export default class IncomingCallManager extends EventEmitterProxy<TEventMap> {
         const callerData = getRemoteCallerData(incomingRTCSession);
 
         this.removeIncomingSession();
-        this.events.trigger(EEvent.DECLINED_INCOMING_CALL, callerData);
+        this.events.trigger('declinedIncomingCall', callerData);
         incomingRTCSession.terminate({ status_code: statusCode });
         resolve();
       } catch (error) {
@@ -124,13 +124,13 @@ export default class IncomingCallManager extends EventEmitterProxy<TEventMap> {
       this.removeIncomingSession();
 
       if (event.originator === 'local') {
-        this.events.trigger(EEvent.TERMINATED_INCOMING_CALL, callerData);
+        this.events.trigger('terminatedIncomingCall', callerData);
       } else {
-        this.events.trigger(EEvent.FAILED_INCOMING_CALL, callerData);
+        this.events.trigger('failedIncomingCall', callerData);
       }
     });
 
-    this.events.trigger(EEvent.RINGING, callerData);
+    this.events.trigger('ringing', callerData);
   }
 
   private removeIncomingSession(): void {

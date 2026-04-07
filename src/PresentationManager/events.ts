@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
 import { TypedEvents } from 'events-constructor';
 
-export enum EEvent {
+enum EEvent {
   START_PRESENTATION = 'presentation:start',
   STARTED_PRESENTATION = 'presentation:started',
   END_PRESENTATION = 'presentation:end',
