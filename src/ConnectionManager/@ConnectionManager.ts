@@ -8,7 +8,7 @@ import { createEvents } from './events';
 import RegistrationManager from './RegistrationManager';
 import SipOperations from './SipOperations';
 import UAFactory from './UAFactory';
-import { createNotReadyForConnectionError, resolveParameters } from './utils';
+import { createNotReadyForConnectionError } from './utils';
 
 import type { RegisteredEvent, UA, UnRegisteredEvent, WebSocketInterface } from '@krivega/jssip';
 import type { TGetUri } from '@/CallManager';
@@ -238,7 +238,7 @@ export default class ConnectionManager extends EventEmitterProxy<TEventMap> {
       throw createNotReadyForConnectionError();
     }
 
-    return this.processConnect(parameters, options).catch(async (error: unknown) => {
+    return this.connectionFlow.connect(parameters, options).catch(async (error: unknown) => {
       const typedError = error as Error;
 
       return this.disconnect()
@@ -249,41 +249,5 @@ export default class ConnectionManager extends EventEmitterProxy<TEventMap> {
           throw typedError;
         });
     });
-  };
-
-  private readonly processConnect = async (
-    parameters: TConnectParameters,
-    options?: TConnectOptions,
-  ) => {
-    this.events.trigger('connect-started', {});
-
-    return resolveParameters(parameters)
-      .then((data) => {
-        this.events.trigger('connect-parameters-resolve-success', data);
-
-        return data;
-      })
-      .catch((error: unknown) => {
-        this.events.trigger('connect-parameters-resolve-failed', error);
-
-        throw error;
-      })
-      .then(async (data) => {
-        return this.connectionFlow.connect(data, options);
-      })
-      .then((connectionConfigurationWithUa) => {
-        this.events.trigger('connect-succeeded', {
-          ...connectionConfigurationWithUa,
-        });
-
-        return connectionConfigurationWithUa;
-      })
-      .catch((error: unknown) => {
-        const connectError: unknown = error ?? new Error('Failed to connect to server');
-
-        this.events.trigger('connect-failed', connectError);
-
-        throw connectError;
-      });
   };
 }

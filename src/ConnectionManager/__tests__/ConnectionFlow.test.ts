@@ -18,6 +18,14 @@ import type { TEvents } from '../events';
 const SIP_SERVER_URL = 'sip.example.com';
 const SIP_SERVER_IP = '192.168.0.1';
 const websocketHandshakeTimeoutError = createWebsocketHandshakeTimeoutError(SIP_SERVER_URL);
+const baseConnectParameters = {
+  displayName: 'Test User',
+  user: 'testuser',
+  password: PASSWORD_CORRECT,
+  register: false,
+  sipServerIp: SIP_SERVER_IP,
+  sipServerUrl: SIP_SERVER_URL,
+} as const;
 
 describe('ConnectionFlow', () => {
   let events: TEvents;
@@ -215,6 +223,197 @@ describe('ConnectionFlow', () => {
       await delayPromise(1000);
 
       expect(requestConnectMocked).toHaveBeenCalledTimes(2);
+    });
+
+    it('должен подключаться с параметрами из функции', async () => {
+      const getParameters = async () => {
+        return baseConnectParameters;
+      };
+
+      await connectionFlow.connect(getParameters);
+
+      expect(getUa()).toBeDefined();
+    });
+  });
+
+  describe('connect events', () => {
+    it('должен вызывать CONNECT_STARTED при запуске подключения', async () => {
+      const handleStarted = jest.fn();
+
+      events.on('connect-started', handleStarted);
+
+      await connectionFlow.connect(baseConnectParameters);
+
+      expect(handleStarted).toHaveBeenCalled();
+    });
+
+    it('должен вызывать CONNECT_SUCCEEDED при успешном подключении', async () => {
+      const handleSucceeded = jest.fn();
+
+      events.on('connect-succeeded', handleSucceeded);
+
+      await connectionFlow.connect(baseConnectParameters);
+
+      expect(handleSucceeded).toHaveBeenCalledWith(
+        expect.objectContaining({
+          displayName: baseConnectParameters.displayName,
+          register: baseConnectParameters.register,
+          sipServerIp: baseConnectParameters.sipServerIp,
+          sipServerUrl: baseConnectParameters.sipServerUrl,
+          user: baseConnectParameters.user,
+          password: baseConnectParameters.password,
+        }),
+      );
+    });
+
+    it('должен вызывать CONNECT_FAILED при ошибке подключения', async () => {
+      const connectWithDuplicatedCallsSpy = jest.spyOn(
+        connectionFlow as unknown as {
+          connectWithDuplicatedCalls: (...args: unknown[]) => Promise<unknown>;
+        },
+        'connectWithDuplicatedCalls',
+      );
+
+      connectWithDuplicatedCallsSpy.mockRejectedValue(new Error('Connect is failed'));
+
+      const handleFailed = jest.fn();
+
+      events.on('connect-failed', handleFailed);
+
+      await connectionFlow.connect(baseConnectParameters).catch(() => {});
+
+      expect(handleFailed).toHaveBeenCalled();
+    });
+
+    it('должен вызывать CONNECT_FAILED, если функция с параметрами вернула ошибку', async () => {
+      const handleFailed = jest.fn();
+
+      events.on('connect-failed', handleFailed);
+
+      const getParameters = async () => {
+        throw new Error('Get parameters is failed');
+      };
+
+      await connectionFlow.connect(getParameters).catch(() => {});
+
+      expect(handleFailed).toHaveBeenCalled();
+    });
+
+    it('должен вызывать CONNECT_PARAMETERS_RESOLVE_FAILED при ошибке в resolveParameters', async () => {
+      const handleParametersResolveFailed = jest.fn();
+      const handleFailed = jest.fn();
+
+      events.on('connect-parameters-resolve-failed', handleParametersResolveFailed);
+      events.on('connect-failed', handleFailed);
+
+      const getParameters = async () => {
+        throw new Error('Get parameters is failed');
+      };
+
+      await connectionFlow.connect(getParameters).catch(() => {});
+
+      expect(handleParametersResolveFailed).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'Get parameters is failed',
+        }),
+      );
+      expect(handleFailed).toHaveBeenCalled();
+    });
+
+    it('не должен вызывать CONNECT_PARAMETERS_RESOLVE_FAILED при ошибке в connectWithDuplicatedCalls', async () => {
+      const connectWithDuplicatedCallsSpy = jest.spyOn(
+        connectionFlow as unknown as {
+          connectWithDuplicatedCalls: (...args: unknown[]) => Promise<unknown>;
+        },
+        'connectWithDuplicatedCalls',
+      );
+
+      connectWithDuplicatedCallsSpy.mockRejectedValue(new Error('Connect is failed'));
+
+      const handleParametersResolveFailed = jest.fn();
+      const handleFailed = jest.fn();
+
+      events.on('connect-parameters-resolve-failed', handleParametersResolveFailed);
+      events.on('connect-failed', handleFailed);
+
+      await connectionFlow.connect(baseConnectParameters).catch(() => {});
+
+      expect(handleParametersResolveFailed).not.toHaveBeenCalled();
+      expect(handleFailed).toHaveBeenCalled();
+    });
+
+    it('должен вызывать CONNECT_PARAMETERS_RESOLVE_SUCCESS при успешном разрешении параметров (объект)', async () => {
+      const handleParametersResolveSuccess = jest.fn(() => {
+        return undefined;
+      });
+      const handleSucceeded = jest.fn(() => {
+        return undefined;
+      });
+
+      events.on('connect-parameters-resolve-success', handleParametersResolveSuccess);
+      events.on('connect-succeeded', handleSucceeded);
+
+      await connectionFlow.connect(baseConnectParameters);
+
+      expect(handleParametersResolveSuccess).toHaveBeenCalledWith(baseConnectParameters);
+      expect(handleSucceeded).toHaveBeenCalled();
+    });
+
+    it('должен вызывать CONNECT_PARAMETERS_RESOLVE_SUCCESS при успешном разрешении параметров (функция)', async () => {
+      const handleParametersResolveSuccess = jest.fn(() => {
+        return undefined;
+      });
+      const handleSucceeded = jest.fn(() => {
+        return undefined;
+      });
+
+      events.on('connect-parameters-resolve-success', handleParametersResolveSuccess);
+      events.on('connect-succeeded', handleSucceeded);
+
+      const getParameters = async () => {
+        return baseConnectParameters;
+      };
+
+      await connectionFlow.connect(getParameters);
+
+      expect(handleParametersResolveSuccess).toHaveBeenCalledWith(baseConnectParameters);
+      expect(handleSucceeded).toHaveBeenCalled();
+    });
+
+    it('должен вызывать события в правильном порядке', async () => {
+      const eventOrder: string[] = [];
+      const handleStarted = jest.fn(() => {
+        return eventOrder.push('started');
+      });
+      const handleParametersResolveSuccess = jest.fn(() => {
+        return eventOrder.push('parameters-resolve-success');
+      });
+      const handleSucceeded = jest.fn(() => {
+        return eventOrder.push('succeeded');
+      });
+
+      events.on('connect-started', handleStarted);
+      events.on('connect-parameters-resolve-success', handleParametersResolveSuccess);
+      events.on('connect-succeeded', handleSucceeded);
+
+      await connectionFlow.connect(baseConnectParameters);
+
+      expect(eventOrder).toEqual(['started', 'parameters-resolve-success', 'succeeded']);
+    });
+
+    it('должен возвращать новую ошибку, если подключение завершилось с несуществующей ошибкой', async () => {
+      const connectWithDuplicatedCallsSpy = jest.spyOn(
+        connectionFlow as unknown as {
+          connectWithDuplicatedCalls: (...args: unknown[]) => Promise<unknown>;
+        },
+        'connectWithDuplicatedCalls',
+      );
+
+      connectWithDuplicatedCallsSpy.mockRejectedValue(undefined);
+
+      await expect(connectionFlow.connect(baseConnectParameters)).rejects.toThrow(
+        'Failed to connect to server',
+      );
     });
   });
 

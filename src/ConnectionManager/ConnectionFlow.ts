@@ -1,5 +1,6 @@
 import { repeatedCallsAsync } from 'repeated-calls';
 
+import { resolveParameters } from './utils';
 import { hasHandshakeWebsocketOpeningError } from '../utils/errors';
 import { parseDisplayName } from '../utils/utils';
 
@@ -38,7 +39,14 @@ export type TParametersConnection = TOptionsExtraHeaders & {
   connectionRecoveryMaxInterval?: number;
 };
 
+type TConnectParameters = (() => Promise<TParametersConnection>) | TParametersConnection;
+
 export type TConnect = (
+  parameters: TConnectParameters,
+  options?: { numberOfConnectionAttempts?: number },
+) => Promise<TConnectionConfiguration>;
+
+type TConnectResolved = (
   parameters: TParametersConnection,
   options?: { numberOfConnectionAttempts?: number },
 ) => Promise<TConnectionConfiguration>;
@@ -88,10 +96,39 @@ export default class ConnectionFlow {
     this.proxyEvents();
   }
 
-  public connect: TConnect = async (data, options) => {
-    this.cancelRequests();
+  public connect: TConnect = async (parameters, options) => {
+    this.dependencies.events.trigger('connect-started', {});
 
-    return this.connectWithDuplicatedCalls(data, options);
+    return resolveParameters(parameters)
+      .then((data) => {
+        this.dependencies.events.trigger('connect-parameters-resolve-success', data);
+
+        return data;
+      })
+      .catch((error: unknown) => {
+        this.dependencies.events.trigger('connect-parameters-resolve-failed', error);
+
+        throw error;
+      })
+      .then(async (data) => {
+        this.cancelRequests();
+
+        return this.connectWithDuplicatedCalls(data, options);
+      })
+      .then((connectionConfigurationWithUa) => {
+        this.dependencies.events.trigger('connect-succeeded', {
+          ...connectionConfigurationWithUa,
+        });
+
+        return connectionConfigurationWithUa;
+      })
+      .catch((error: unknown) => {
+        const connectError: unknown = error ?? new Error('Failed to connect to server');
+
+        this.dependencies.events.trigger('connect-failed', connectError);
+
+        throw connectError;
+      });
   };
 
   public set: TSet = async ({ displayName }: { displayName?: string }): Promise<boolean> => {
@@ -150,7 +187,7 @@ export default class ConnectionFlow {
     this.cancelConnectWithRepeatedCalls();
   }
 
-  private readonly connectWithDuplicatedCalls: TConnect = async (
+  private readonly connectWithDuplicatedCalls: TConnectResolved = async (
     data,
     { numberOfConnectionAttempts = this.numberOfConnectionAttempts } = {},
   ) => {
@@ -214,7 +251,7 @@ export default class ConnectionFlow {
     );
   }
 
-  private readonly connectInner: TConnect = async (parameters) => {
+  private readonly connectInner: TConnectResolved = async (parameters) => {
     return this.initUa(parameters)
       .then(async () => {
         return this.start();

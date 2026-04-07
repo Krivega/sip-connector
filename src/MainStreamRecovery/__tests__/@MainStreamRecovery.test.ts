@@ -15,7 +15,7 @@ describe('@MainStreamRecovery', () => {
 
   beforeEach(() => {
     jest.useFakeTimers();
-    jest.setSystemTime(new Date(0));
+    jest.setSystemTime(0);
 
     callEvents = createCallEvents();
     callManager = {
