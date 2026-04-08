@@ -134,6 +134,14 @@ class App {
       this.handleFormSubmit();
     });
 
+    dom.connectButtonElement.addEventListener('click', () => {
+      this.handleConnectOnly();
+    });
+
+    dom.disconnectButtonElement.addEventListener('click', () => {
+      this.handleDisconnectOnly();
+    });
+
     // Подписываемся на кнопку "Позвонить"
     dom.callButtonElement.addEventListener('click', () => {
       this.handleFormSubmit();
@@ -189,9 +197,64 @@ class App {
       return;
     }
 
-    this.startCall(state)
+    Promise.resolve()
+      .then(async () => {
+        if (this.session?.hasConnected() === true) {
+          return undefined;
+        }
+
+        return this.connect(state);
+      })
+      .then(async () => {
+        return this.callToServer(state);
+      })
       .then(() => {
         this.presentationManager.activate();
+      })
+      .catch((error: unknown) => {
+        this.handleError(error);
+      });
+  }
+
+  private handleConnectOnly(): void {
+    const state = this.formStateManager.getState();
+
+    if (!this.formStateManager.validate()) {
+      return;
+    }
+
+    if (this.session?.hasConnected() === true) {
+      return;
+    }
+
+    Promise.resolve()
+      .then(async () => {
+        return this.connect(state);
+      })
+      .catch((error: unknown) => {
+        this.handleError(error);
+      });
+  }
+
+  private handleDisconnectOnly(): void {
+    const { session } = this;
+
+    if (session === undefined) {
+      return;
+    }
+
+    if (!session.hasConnected()) {
+      return;
+    }
+
+    this.loaderManager.show('Отключение от сервера...');
+
+    Promise.resolve()
+      .then(async () => {
+        await session.disconnectFromServer();
+        this.session = undefined;
+        this.callStateManager.reset();
+        this.loaderManager.hide();
       })
       .catch((error: unknown) => {
         this.handleError(error);
@@ -253,32 +316,17 @@ class App {
     }
   }
 
-  /**
-   * Запускает процесс звонка
-   */
-  private async startCall(state: IFormState): Promise<void> {
-    this.callStateManager.setState('initializing');
-    this.loaderManager.show('Инициализация медиа...');
+  private async callToServer(state: IFormState): Promise<void> {
+    const { session } = this;
+
+    if (!session) {
+      throw new Error('Session is not initialized. Call connect() first.');
+    }
 
     try {
+      this.loaderManager.show('Инициализация медиа...');
       // Инициализируем локальный медиа-поток
       await this.localMediaStreamManager.initialize();
-
-      this.callStateManager.setState('connecting');
-      this.loaderManager.setMessage('Подключение к серверу...');
-
-      // Создаем сессию
-      const browserInfo = getBrowserInfo();
-      const appInfo = getAppInfo();
-
-      this.session = new Session({
-        serverParametersRequesterParams: {
-          appVersion: appInfo.appVersion,
-          appName: appInfo.appName,
-          browserName: browserInfo.name,
-          browserVersion: browserInfo.version,
-        },
-      });
 
       this.callStateManager.setState('calling');
       this.loaderManager.setMessage('Установление звонка...');
@@ -290,7 +338,7 @@ class App {
         throw new Error('MediaStream не инициализирован');
       }
 
-      this.session.onChangeParticipantRole((participantRoleState) => {
+      session.onChangeParticipantRole((participantRoleState) => {
         if (
           participantRoleState?.role === 'participant' ||
           participantRoleState?.isAvailableSendingMedia === true
@@ -316,13 +364,8 @@ class App {
         this.updateMediaButtonsState();
       });
 
-      await this.session.startCall({
+      await session.callToServer({
         mediaStream,
-        serverUrl: state.serverAddress,
-        isRegistered: state.authEnabled,
-        displayName: state.displayName,
-        user: state.userNumber,
-        password: state.password,
         conference: state.conferenceNumber,
         setRemoteStreams: (streams: TRemoteStreams) => {
           this.handleRemoteStreams(streams);
@@ -330,6 +373,44 @@ class App {
       });
 
       this.callStateManager.setState('active');
+      this.loaderManager.hide();
+
+      // Обновляем состояние кнопок после успешного подключения
+      this.updateMediaButtonsState();
+    } catch (error) {
+      this.callStateManager.reset();
+      this.loaderManager.hide();
+      throw error;
+    }
+  }
+
+  private async connect(state: IFormState): Promise<void> {
+    try {
+      this.callStateManager.setState('connecting');
+      this.loaderManager.setMessage('Подключение к серверу...');
+
+      // Создаем сессию
+      const browserInfo = getBrowserInfo();
+      const appInfo = getAppInfo();
+
+      this.session = new Session({
+        serverParametersRequesterParams: {
+          appVersion: appInfo.appVersion,
+          appName: appInfo.appName,
+          browserName: browserInfo.name,
+          browserVersion: browserInfo.version,
+        },
+      });
+
+      await this.session.connect({
+        serverUrl: state.serverAddress,
+        isRegistered: state.authEnabled,
+        displayName: state.displayName,
+        user: state.userNumber,
+        password: state.password,
+      });
+
+      this.callStateManager.setState('connected');
       this.loaderManager.hide();
 
       // Обновляем состояние кнопок после успешного подключения
@@ -396,18 +477,17 @@ class App {
   private handleEndCall() {
     this.loaderManager.show('Завершение звонка...');
     this.callStateManager.setState('idle');
+    // Сбрасываем состояние презентации
+    this.presentationManager.deactivate();
+
+    // Останавливаем локальный медиа-поток
+    this.localMediaStreamManager.stop();
+
+    // Очищаем удаленные потоки
+    this.remoteMediaStreamManager.clear();
     (this.session ? this.session.stopCall() : Promise.resolve())
       .then(() => {
         this.session = undefined;
-
-        // Сбрасываем состояние презентации
-        this.presentationManager.deactivate();
-
-        // Останавливаем локальный медиа-поток
-        this.localMediaStreamManager.stop();
-
-        // Очищаем удаленные потоки
-        this.remoteMediaStreamManager.clear();
 
         this.loaderManager.hide();
       })
@@ -422,9 +502,28 @@ class App {
    */
 
   private handleCallStateChange(state: TCallState): void {
-    // Включаем/выключаем кнопку в зависимости от состояния
-    dom.callButtonElement.disabled = state !== 'idle';
+    const isConnecting = state === 'connecting';
+    const isConnected = state === 'connected';
+    const isCallInProgress = state === 'calling' || state === 'active';
+
+    dom.callButtonElement.disabled = isCallInProgress;
     dom.endCallButtonElement.disabled = state !== 'active';
+    dom.connectButtonElement.disabled = isConnecting;
+    dom.disconnectButtonElement.disabled = isConnecting;
+
+    if (state === 'idle') {
+      dom.show(dom.connectButtonElement);
+      dom.hide(dom.disconnectButtonElement);
+    } else if (isConnecting) {
+      dom.show(dom.connectButtonElement);
+      dom.hide(dom.disconnectButtonElement);
+    } else if (isConnected) {
+      dom.hide(dom.connectButtonElement);
+      dom.show(dom.disconnectButtonElement);
+    } else {
+      dom.hide(dom.connectButtonElement);
+      dom.hide(dom.disconnectButtonElement);
+    }
 
     if (state === 'active') {
       dom.hide(dom.callButtonElement);
@@ -436,11 +535,7 @@ class App {
 
     // Показываем/скрываем секции в зависимости от состояния
     // Локальное видео показываем когда идет процесс
-    const shouldShowLocalVideo =
-      state === 'initializing' ||
-      state === 'connecting' ||
-      state === 'calling' ||
-      state === 'active';
+    const shouldShowLocalVideo = isCallInProgress;
 
     if (shouldShowLocalVideo) {
       dom.show(dom.localVideoSectionElement);

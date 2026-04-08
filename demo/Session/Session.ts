@@ -9,6 +9,7 @@ import type { TParticipantRoleHandler } from './ParticipantRoleManager';
 import type {
   IParams as IServerParametersRequesterParams,
   IServerParametersRequester,
+  IServerParameters,
 } from './resolveServerParametersRequester';
 
 export class Session {
@@ -19,6 +20,8 @@ export class Session {
   private readonly useLicenseManager: UseLicenseManager;
 
   private readonly recvQualityManager: RecvQualityManager;
+
+  private serverParameters: IServerParameters | undefined;
 
   private unsubscribeChangeRemoteStreams?: () => void;
 
@@ -35,38 +38,29 @@ export class Session {
     this.recvQualityManager = new RecvQualityManager();
   }
 
-  public async startCall({
+  public hasConnected(): boolean {
+    return this.serverParameters !== undefined;
+  }
+
+  public async connect({
     serverUrl,
     isRegistered,
     displayName,
     user,
     password,
-    conference,
-    mediaStream,
-    setRemoteStreams,
   }: {
     serverUrl: string;
     isRegistered: boolean;
     displayName: string;
     user: string;
     password: string;
-    conference: string;
-    mediaStream: MediaStream;
-    setRemoteStreams: (streams: TRemoteStreams) => void;
   }): Promise<void> {
     const serverParameters = await this.serverParametersRequester.request({
       serverUrl,
       isRegistered,
     });
 
-    // Подписываемся на события изменения роли участника
-    this.participantRoleManager.subscribe();
-
-    // Подписываемся на события изменения лицензии
-    this.useLicenseManager.subscribe();
-
-    // Подписываемся на изменение качества приема
-    this.recvQualityManager.subscribe();
+    this.serverParameters = serverParameters;
 
     await sipConnectorFacade.connectToServer({
       displayName,
@@ -78,6 +72,29 @@ export class Session {
       remoteAddress: serverParameters.remoteAddress,
       userAgent: serverParameters.userAgent,
     });
+  }
+
+  public async callToServer({
+    conference,
+    mediaStream,
+    setRemoteStreams,
+  }: {
+    conference: string;
+    mediaStream: MediaStream;
+    setRemoteStreams: (streams: TRemoteStreams) => void;
+  }): Promise<void> {
+    if (this.serverParameters === undefined) {
+      throw new Error('Server parameters are not initialized. Call connect() first.');
+    }
+
+    // Подписываемся на события изменения роли участника
+    this.participantRoleManager.subscribe();
+
+    // Подписываемся на события изменения лицензии
+    this.useLicenseManager.subscribe();
+
+    // Подписываемся на изменение качества приема
+    this.recvQualityManager.subscribe();
 
     this.unsubscribeChangeRemoteStreams = sipConnectorFacade.on(
       'call:remote-streams-changed',
@@ -89,9 +106,18 @@ export class Session {
     await sipConnectorFacade.callToServer({
       conference,
       mediaStream,
-      extraHeaders: serverParameters.extraHeaders,
-      iceServers: serverParameters.iceServers,
+      extraHeaders: this.serverParameters.extraHeaders,
+      iceServers: this.serverParameters.iceServers,
     });
+  }
+
+  public async disconnectFromServer(): Promise<void> {
+    if (this.serverParameters === undefined) {
+      throw new Error('Server parameters are not initialized. Call connect() first.');
+    }
+
+    await sipConnectorFacade.disconnectFromServer();
+    this.serverParameters = undefined;
   }
 
   public async stopCall(): Promise<void> {
@@ -104,7 +130,7 @@ export class Session {
     this.useLicenseManager.reset();
     this.recvQualityManager.unsubscribe();
     this.recvQualityManager.reset();
-    await sipConnectorFacade.disconnectFromServer();
+    await this.disconnectFromServer();
   }
 
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this

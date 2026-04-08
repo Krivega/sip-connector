@@ -196,15 +196,28 @@ body {
   border: 0;
 }
 
-#endCallButton {
+#endCallButton,
+#disconnectButton {
   background-color: #dc3545;
   color: white;
   border-color: #dc3545;
 }
 
-#endCallButton:hover {
+#endCallButton:hover,
+#disconnectButton:hover {
   background-color: #c82333;
   border-color: #bd2130;
+}
+
+#connectButton {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+#connectButton:hover {
+  background-color: #0069d9;
+  border-color: #0062cc;
 }
 
 #callButton {

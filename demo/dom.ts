@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/class-methods-use-this */
 type TDomIds = {
   overlayId: string;
+  connectButtonId: string;
+  disconnectButtonId: string;
   callButtonId: string;
   endCallButtonId: string;
   muteCameraButtonId: string;
@@ -84,6 +86,10 @@ const querySelectorByParent = <T extends Element = HTMLElement>(
 
 class DOM {
   public overlayElement: HTMLElement;
+
+  public connectButtonElement: HTMLButtonElement;
+
+  public disconnectButtonElement: HTMLButtonElement;
 
   public callButtonElement: HTMLButtonElement;
 
@@ -211,6 +217,8 @@ class DOM {
 
   public constructor({
     overlayId,
+    connectButtonId,
+    disconnectButtonId,
     callButtonId,
     endCallButtonId,
     muteCameraButtonId,
@@ -267,6 +275,8 @@ class DOM {
     presentationVideoId,
   }: TDomIds) {
     this.overlayElement = getElementById(overlayId);
+    this.connectButtonElement = getElementById<HTMLButtonElement>(connectButtonId);
+    this.disconnectButtonElement = getElementById<HTMLButtonElement>(disconnectButtonId);
     this.callButtonElement = getElementById<HTMLButtonElement>(callButtonId);
     this.endCallButtonElement = getElementById<HTMLButtonElement>(endCallButtonId);
     this.startPresentationElement = getElementById<HTMLButtonElement>(startPresentationId);
@@ -452,6 +462,8 @@ class DOM {
 
 export const dom = new DOM({
   overlayId: 'loaderOverlay',
+  connectButtonId: 'connectButton',
+  disconnectButtonId: 'disconnectButton',
   callButtonId: 'callButton',
   endCallButtonId: 'endCallButton',
   muteCameraButtonId: 'muteCameraButton',

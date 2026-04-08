@@ -1,7 +1,7 @@
 /**
  * Тип состояния звонка
  */
-export type TCallState = 'idle' | 'initializing' | 'connecting' | 'calling' | 'active';
+export type TCallState = 'idle' | 'connecting' | 'connected' | 'calling' | 'active';
 
 /**
  * Тип обработчика изменений состояния звонка
