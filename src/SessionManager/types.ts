@@ -1,4 +1,4 @@
-import type { CallStateMachine, TCallSnapshot } from '@/CallManager';
+import type { ICallStateMachine, TCallSnapshot } from '@/CallManager';
 import type {
   ConnectionStateMachine,
   TConnectionSnapshot,
@@ -21,7 +21,7 @@ export type TSessionSnapshot = {
 
 export type TSessionMachines = {
   connection: ConnectionStateMachine;
-  call: CallStateMachine;
+  call: ICallStateMachine;
   incoming: IncomingCallStateMachine;
   presentation: PresentationStateMachine;
 };

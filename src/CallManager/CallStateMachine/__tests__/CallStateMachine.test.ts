@@ -1,16 +1,17 @@
 import { createApiManagerEvents } from '@/ApiManager';
 import { PURGATORY_CONFERENCE_NUMBER } from '@/tools/hasPurgatory';
 import { createEvents } from '../../events';
-import { CallStateMachine } from '../CallStateMachine';
+import { createCallStateMachine } from '../CallStateMachine';
 import { EState } from '../types';
 
 import type { TApiManagerEvents } from '@/ApiManager';
 import type { TEventName, TEvents } from '../../events';
+import type { ICallStateMachine } from '../CallStateMachine';
 
 describe('CallStateMachine', () => {
   let apiManagerEvents: TApiManagerEvents;
   let events: TEvents;
-  let machine: CallStateMachine;
+  let machine: ICallStateMachine;
 
   const connectPayload = { number: '100', answer: false };
   const token1Payload = { jwt: 'jwt1', conference: 'room-1', participant: 'p-1' };
@@ -38,7 +39,7 @@ describe('CallStateMachine', () => {
   beforeEach(() => {
     apiManagerEvents = createApiManagerEvents();
     events = createEvents();
-    machine = new CallStateMachine(events);
+    machine = createCallStateMachine(events);
     machine.subscribeToApiEvents(apiManagerEvents);
   });
 

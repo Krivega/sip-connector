@@ -1,6 +1,6 @@
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { createEvents as createCallEvents } from '@/CallManager';
-import { CallStateMachine, EState as ECallStatus } from '@/CallManager/CallStateMachine';
+import { createCallStateMachine, EState as ECallStatus } from '@/CallManager/CallStateMachine';
 import { createEvents as createConnectionEvents } from '@/ConnectionManager';
 import {
   ConnectionStateMachine,
@@ -28,7 +28,7 @@ const startSession = () => {
   const incomingEvents = createIncomingEvents();
 
   const connectionStateMachine = new ConnectionStateMachine(connectionEvents);
-  const callStateMachine = new CallStateMachine(callEvents);
+  const callStateMachine = createCallStateMachine(callEvents);
   const incomingStateMachine = new IncomingCallStateMachine({
     incomingEvents,
     connectionEvents,

@@ -2,7 +2,7 @@ import { C as JsSIP_C, IncomingResponse } from '@krivega/jssip';
 import { EventEmitterProxy } from 'events-constructor';
 
 import { DeferredCommandRunner } from '@/tools';
-import { CallStateMachine, EState } from './CallStateMachine';
+import { createCallStateMachine, EState } from './CallStateMachine';
 import { createEvents } from './events';
 import { MCUSession } from './MCUSession';
 import { resolveRecvQuality } from './quality';
@@ -15,6 +15,7 @@ import { StreamsManagerProvider } from './StreamsManagerProvider';
 import type { RTCSession } from '@krivega/jssip';
 import type { ApiManager } from '@/ApiManager';
 import type { ContentedStreamManager } from '@/ContentedStreamManager';
+import type { ICallStateMachine } from './CallStateMachine';
 import type { TEventMap } from './events';
 import type { TRestartIceOptions } from './MCUSession';
 import type { TEffectiveQuality, TRecvQuality } from './quality';
@@ -69,7 +70,7 @@ const getStreamHint = (event: RTCTrackEvent) => {
 };
 
 /** Для тестов и использования в deferred runner: возвращает token или выбрасывает при отсутствии inRoomContext. */
-export function getInRoomTokenOrThrow(stateMachine: CallStateMachine): string {
+export function getInRoomTokenOrThrow(stateMachine: ICallStateMachine): string {
   const { inRoomContext } = stateMachine;
 
   if (inRoomContext === undefined) {
@@ -82,7 +83,7 @@ export function getInRoomTokenOrThrow(stateMachine: CallStateMachine): string {
 }
 
 class CallManager extends EventEmitterProxy<TEventMap> {
-  public readonly stateMachine: CallStateMachine;
+  public readonly stateMachine: ICallStateMachine;
 
   protected isPendingCall = false;
 
@@ -124,7 +125,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     this.contentedStreamManager = contentedStreamManager;
     this.tools = tools;
     this.mcuSession = new MCUSession(this.events, { onReset: this.reset });
-    this.stateMachine = new CallStateMachine(this.events);
+    this.stateMachine = createCallStateMachine(this.events);
     this.streamsManagerProvider = new StreamsManagerProvider(
       this.mainRemoteStreamsManager,
       this.recvRemoteStreamsManager,
