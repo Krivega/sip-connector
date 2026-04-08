@@ -28,6 +28,7 @@
   - [State Machine](./components/IncomingCallManager/state-machine.md) - IncomingCallStateMachine
 - [ConnectionQueueManager](./components/ConnectionQueueManager/index.md) - Очередь операций подключения
 - [AutoConnectorManager](./components/AutoConnectorManager/index.md) - Автоматическое переподключение
+  - [Машина состояний (XState)](../architecture/auto-connector-state-machine.md) — `AutoConnectorStateMachine`
 - [ApiManager](./components/ApiManager/index.md) - Обработка SIP INFO сообщений и взаимодействие с сервером
 
 **Вспомогательные компоненты:**

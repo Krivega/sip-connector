@@ -1,3 +1,5 @@
+import { DelayRequester } from '@krivega/timeout-requester';
+
 import delayPromise from '@/__fixtures__/delayPromise';
 import flushPromises from '@/__fixtures__/flushPromises';
 import { doMockSipConnector } from '@/doMock';
@@ -94,8 +96,7 @@ describe('AutoConnectorManager - Reconnection', () => {
 
   describe('переподключение', () => {
     it('не делает переподключение, если отстутствуют параметры', async () => {
-      // @ts-expect-error приватное свойство
-      const reconnectSpy = jest.spyOn(manager, 'scheduleReconnect');
+      const reconnectSpy = jest.spyOn(DelayRequester.prototype, 'request');
       // @ts-ignore приватное свойство
       const connectSpy = jest.spyOn(manager.connectionQueueManager, 'connect');
       const errorGetParameters = new Error('getParameters is failed');
@@ -126,8 +127,7 @@ describe('AutoConnectorManager - Reconnection', () => {
     it('не делает переподключение, если промис не актуален', async () => {
       const handleCancelled = jest.fn();
 
-      // @ts-expect-error приватное свойство
-      const reconnectSpy = jest.spyOn(manager, 'scheduleReconnect');
+      const reconnectSpy = jest.spyOn(DelayRequester.prototype, 'request');
       // @ts-ignore приватное свойство
       const connectSpy = jest.spyOn(manager.connectionQueueManager, 'connect');
 

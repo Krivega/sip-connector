@@ -107,8 +107,8 @@ describe('AutoConnectorManager - Basic', () => {
     it('start: не должна всплывать ошибка, если connect завершился с ошибкой', async () => {
       const error = new Error('Connect error');
 
-      // @ts-ignore приватное свойство
-      jest.spyOn(manager, 'attemptConnection').mockRejectedValue(error);
+      // @ts-expect-error приватное свойство
+      jest.spyOn(manager, 'stopConnectionFlow').mockRejectedValue(error);
 
       manager.start(baseParameters);
 
