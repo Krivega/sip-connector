@@ -146,6 +146,7 @@ stateDiagram-v2
 ## Детальное описание машин состояний
 
 - [ConnectionStateMachine](./components/ConnectionManager/state-machine.md) — управление состояниями SIP соединения
+- [AutoConnectorManager](./components/AutoConnectorManager/state-machine.md) — управление автоматическим подключением
 - [CallStateMachine](./components/CallManager/state-machine.md) — управление состояниями звонка
 - [PresentationStateMachine](./components/PresentationManager/state-machine.md) — управление состояниями демонстрации экрана
 - [IncomingCallStateMachine](./components/IncomingCallManager/state-machine.md) — управление состояниями входящих звонков

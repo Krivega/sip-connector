@@ -53,7 +53,7 @@ npm install sip-connector
 
 - **API Reference**: [Справочная документация по API](./docs/api/README.md)
 - **Рецепты**: [Практические примеры и рецепты использования](./docs/recipes/README.md)
-- **Архитектура**: [Детальное описание внутренней структуры](./docs/arch/README.md)
+- **Архитектура**: [Детальное описание внутренней структуры](./docs/architecture/README.md)
 - **Тестирование**: [Руководство по тестированию](./docs/testing.md)
 - **Совместимость браузеров**: [Поддержка браузеров и WebRTC](./docs/browser-compatibility.md)
 

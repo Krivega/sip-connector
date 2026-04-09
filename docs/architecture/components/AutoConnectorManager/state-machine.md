@@ -1,6 +1,6 @@
 # AutoConnectorManager: машина состояний (XState)
 
-Документ описывает оркестрацию автоподключения в [`AutoConnectorManager`](../../src/AutoConnectorManager/@AutoConnectorManager.ts) через модуль [`AutoConnectorStateMachine`](../../src/AutoConnectorManager/AutoConnectorStateMachine/AutoConnectorStateMachine.ts) и фабрику [`createAutoConnectorMachine`](../../src/AutoConnectorManager/AutoConnectorStateMachine/createAutoConnectorMachine.ts).
+Документ описывает оркестрацию автоподключения в [`AutoConnectorManager`](../../../../src/AutoConnectorManager/@AutoConnectorManager.ts) через модуль [`AutoConnectorStateMachine`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/AutoConnectorStateMachine.ts) и фабрику [`createAutoConnectorMachine`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/createAutoConnectorMachine.ts).
 
 ## Назначение
 
@@ -55,11 +55,11 @@ stateDiagram-v2
 
 ## Как расширять
 
-1. Добавить новое событие в [`types.ts`](../../src/AutoConnectorManager/AutoConnectorStateMachine/types.ts) и обработать переходы в `createAutoConnectorMachine.ts`.
+1. Добавить новое событие в [`types.ts`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/types.ts) и обработать переходы в `createAutoConnectorMachine.ts`.
 2. Побочные эффекты выносить в `TAutoConnectorMachineDeps`, а не в сами переходы, чтобы сохранить тестируемость.
 3. При изменении переходов обновляйте эту диаграмму и прогоняйте `yarn test src/AutoConnectorManager` и контрактные тесты событий.
 
 ## Связанные файлы
 
-- Реализация машины: [`createAutoConnectorMachine.ts`](../../src/AutoConnectorManager/AutoConnectorStateMachine/createAutoConnectorMachine.ts)
-- Обёртка актора: [`AutoConnectorStateMachine.ts`](../../src/AutoConnectorManager/AutoConnectorStateMachine/AutoConnectorStateMachine.ts)
+- Реализация машины: [`createAutoConnectorMachine.ts`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/createAutoConnectorMachine.ts)
+- Обёртка актора: [`AutoConnectorStateMachine.ts`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/AutoConnectorStateMachine.ts)
