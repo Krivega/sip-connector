@@ -6,7 +6,7 @@ import type { TParametersAutoConnect } from '../types';
 
 type TMachine = ReturnType<typeof createAutoConnectorMachine>;
 
-type TAutoConnectorSnapshot = {
+export type TAutoConnectorSnapshot = {
   value: EAutoConnectorState;
   context: TAutoConnectorContext;
 };

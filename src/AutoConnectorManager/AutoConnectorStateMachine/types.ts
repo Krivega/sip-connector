@@ -8,20 +8,20 @@ export const AUTO_CONNECTOR_STATE_IDS = {
   WAITING_BEFORE_RETRY: 'waitingBeforeRetry',
   CONNECTED_MONITORING: 'connectedMonitoring',
   TELEPHONY_CHECKING: 'telephonyChecking',
-  STANDBY: 'standby',
-  HALTED_BY_ERROR: 'haltedByError',
-  CANCELLED: 'cancelled',
-  FAILED: 'failed',
+  ERROR_TERMINAL: 'errorTerminal',
 } as const;
 
 export type EAutoConnectorState =
   (typeof AUTO_CONNECTOR_STATE_IDS)[keyof typeof AUTO_CONNECTOR_STATE_IDS];
 
 export type TAfterDisconnect = 'attempt' | 'idle';
+export type TStopReason = 'halted' | 'cancelled' | 'failed';
 
 export type TAutoConnectorContext = {
   parameters: TParametersAutoConnect | undefined;
   afterDisconnect: TAfterDisconnect;
+  stopReason: TStopReason | undefined;
+  lastError: unknown;
 };
 
 export type TAutoConnectorEvent =

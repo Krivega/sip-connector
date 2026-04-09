@@ -16,4 +16,6 @@ export const disableDebug = () => {
   debug.enable(`-${NAME}`);
 };
 
+export { default as debugResolve } from 'debug';
+
 export default logger;

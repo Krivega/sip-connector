@@ -36,7 +36,7 @@
   - ApiManager
   - SipConnector
 
-### [Архитектура](./arch/README.md)
+### [Архитектура](./architecture/README.md)
 
 Детальное описание внутренней структуры библиотеки, принципов проектирования и архитектурных решений.
 
@@ -76,7 +76,7 @@ docs/
 │   ├── connection-events.md
 │   ├── call-events.md
 │   └── ...
-├── arch/                        # Архитектурная документация
+├── architecture/                        # Архитектурная документация
 │   ├── overview.md
 │   ├── components.md
 │   ├── state-machines.md

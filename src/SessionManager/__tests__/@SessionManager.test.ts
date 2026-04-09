@@ -1,4 +1,5 @@
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
+import { createAutoConnectorStateMachine } from '@/AutoConnectorManager/AutoConnectorStateMachine';
 import { createEvents as createCallEvents } from '@/CallManager';
 import { createCallStateMachine, EState as ECallStatus } from '@/CallManager/CallStateMachine';
 import { createEvents as createConnectionEvents } from '@/ConnectionManager';
@@ -22,6 +23,34 @@ import { ESystemStatus } from '../types';
 
 import type { TSessionSnapshot } from '../types';
 
+const createAutoConnectorMachineDeps = () => {
+  return {
+    canRetryOnError: () => {
+      return true;
+    },
+    stopConnectionFlow: jest.fn(async () => {}),
+    connect: jest.fn(async () => {}),
+    delayBetweenAttempts: jest.fn(async () => {}),
+    onBeforeRetryRequest: jest.fn(async () => {}),
+    hasLimitReached: () => {
+      return false;
+    },
+    emitBeforeAttempt: jest.fn(),
+    stopConnectTriggers: jest.fn(),
+    startAttempt: jest.fn(),
+    incrementAttempt: jest.fn(),
+    finishAttempt: jest.fn(),
+    emitLimitReachedAttempts: jest.fn(),
+    startCheckTelephony: jest.fn(),
+    onConnectSucceeded: jest.fn(),
+    onStopAttemptsByError: jest.fn(),
+    emitCancelledAttemptsRaw: jest.fn(),
+    emitCancelledAttemptsWrapped: jest.fn(),
+    onFailedAllAttempts: jest.fn(),
+    onTelephonyStillConnected: jest.fn(),
+  };
+};
+
 const startSession = () => {
   const connectionEvents = createConnectionEvents();
   const callEvents = createCallEvents();
@@ -34,12 +63,16 @@ const startSession = () => {
     connectionEvents,
   });
   const presentationStateMachine = new PresentationStateMachine(callEvents);
+  const autoConnectorStateMachine = createAutoConnectorStateMachine(
+    createAutoConnectorMachineDeps(),
+  );
 
   const session = new SessionManager({
     connectionManager: { stateMachine: connectionStateMachine },
     callManager: { stateMachine: callStateMachine },
     incomingCallManager: { stateMachine: incomingStateMachine },
     presentationManager: { stateMachine: presentationStateMachine },
+    autoConnectorManager: { stateMachine: autoConnectorStateMachine },
   });
 
   const stopAll = () => {
@@ -48,6 +81,7 @@ const startSession = () => {
     callStateMachine.stop();
     incomingStateMachine.stop();
     presentationStateMachine.stop();
+    autoConnectorStateMachine.stop();
   };
 
   return {
@@ -56,6 +90,7 @@ const startSession = () => {
     callStateMachine,
     incomingStateMachine,
     presentationStateMachine,
+    autoConnectorStateMachine,
     stopAll,
   };
 };
@@ -401,6 +436,7 @@ describe('SessionManager', () => {
       expect(session.machines.call).toBeDefined();
       expect(session.machines.incoming).toBeDefined();
       expect(session.machines.presentation).toBeDefined();
+      expect(session.machines.autoConnector).toBeDefined();
 
       stopAll();
     });

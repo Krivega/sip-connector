@@ -18,6 +18,7 @@
   call: TCallSnapshot;
   incoming: TIncomingSnapshot;
   presentation: TPresentationSnapshot;
+  autoConnector: TAutoConnectorSnapshot;
 }
 ```
 
@@ -27,6 +28,7 @@
 - `call` - состояние звонка (CallStateMachine)
 - `incoming` - состояние входящего звонка (IncomingCallStateMachine)
 - `presentation` - состояние презентации (PresentationStateMachine)
+- `autoConnector` - состояние авто-переподключения (AutoConnectorStateMachine)
 
 ## Пример использования
 

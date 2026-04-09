@@ -21,6 +21,8 @@ type TDomIds = {
   incomingStatusId: string;
   presentationStatusId: string;
   systemStatusId: string;
+  autoConnectorManagerStatusId: string;
+  sessionStatusesDiagramsId: string;
   conferenceStateRoomId: string;
   conferenceStateParticipantNameId: string;
   conferenceStateTokenId: string;
@@ -57,6 +59,71 @@ type TDomIds = {
   stressTestingPresentationStatusId: string;
   stopPresentationId: string;
   presentationVideoId: string;
+};
+
+export type TStatusCategory =
+  | 'connection'
+  | 'autoConnectorManager'
+  | 'call'
+  | 'incoming'
+  | 'presentation'
+  | 'system';
+
+const STATUS_DIAGRAMS: Record<TStatusCategory, readonly string[]> = {
+  connection: [
+    'connection:idle',
+    'connection:preparing',
+    'connection:connecting',
+    'connection:connected',
+    'connection:registered',
+    'connection:established',
+    'connection:disconnecting',
+    'connection:disconnected',
+  ],
+  autoConnectorManager: [
+    'idle',
+    'disconnecting',
+    'attemptingGate',
+    'attemptingConnect',
+    'waitingBeforeRetry',
+    'connectedMonitoring',
+    'telephonyChecking',
+    'errorTerminal',
+  ],
+  call: [
+    'call:idle',
+    'call:connecting',
+    'call:roomPendingAuth',
+    'call:purgatory',
+    'call:p2pRoom',
+    'call:directP2pRoom',
+    'call:inRoom',
+    'call:disconnecting',
+  ],
+  incoming: [
+    'incoming:idle',
+    'incoming:ringing',
+    'incoming:consumed',
+    'incoming:declined',
+    'incoming:terminated',
+    'incoming:failed',
+  ],
+  presentation: [
+    'presentation:idle',
+    'presentation:starting',
+    'presentation:active',
+    'presentation:stopping',
+    'presentation:failed',
+  ],
+  system: [
+    'system:disconnected',
+    'system:disconnecting',
+    'system:connecting',
+    'system:readyToCall',
+    'system:callConnecting',
+    'system:callDisconnecting',
+    'system:callActive',
+  ],
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
@@ -155,6 +222,10 @@ class DOM {
 
   public systemStatusElement: HTMLElement;
 
+  public autoConnectorManagerStatusElement: HTMLElement;
+
+  public sessionStatusesDiagramsElement: HTMLElement;
+
   public conferenceStateRoomElement: HTMLElement;
 
   public conferenceStateParticipantNameElement: HTMLElement;
@@ -237,6 +308,8 @@ class DOM {
     incomingStatusId,
     presentationStatusId,
     systemStatusId,
+    autoConnectorManagerStatusId,
+    sessionStatusesDiagramsId,
     conferenceStateRoomId,
     conferenceStateParticipantNameId,
     conferenceStateTokenId,
@@ -339,6 +412,8 @@ class DOM {
     this.incomingStatusElement = getElementById(incomingStatusId);
     this.presentationStatusElement = getElementById(presentationStatusId);
     this.systemStatusElement = getElementById(systemStatusId);
+    this.autoConnectorManagerStatusElement = getElementById(autoConnectorManagerStatusId);
+    this.sessionStatusesDiagramsElement = getElementById(sessionStatusesDiagramsId);
     this.conferenceStateRoomElement = getElementById(conferenceStateRoomId);
     this.conferenceStateParticipantNameElement = getElementById(conferenceStateParticipantNameId);
     this.conferenceStateTokenElement = getElementById(conferenceStateTokenId);
@@ -458,6 +533,40 @@ class DOM {
       this.enable(element);
     }
   }
+
+  public renderSessionStatusDiagrams(): void {
+    const template = (Object.entries(STATUS_DIAGRAMS) as [TStatusCategory, readonly string[]][])
+      .map(([category, states]) => {
+        const nodesMarkup = states
+          .map((state) => {
+            return `<span class="status-diagram__node" data-status-category="${category}" data-status-value="${state}">${state}</span>`;
+          })
+          .join('<span class="status-diagram__arrow">→</span>');
+
+        return `<div class="status-diagram"><div class="status-diagram__title">${category}</div><div class="status-diagram__nodes">${nodesMarkup}</div></div>`;
+      })
+      .join('');
+
+    this.sessionStatusesDiagramsElement.innerHTML = template;
+  }
+
+  public setActiveSessionStatusNode(category: TStatusCategory, statusValue: string): void {
+    const selectorByCategory = `.status-diagram__node[data-status-category="${category}"]`;
+    const nodes =
+      this.sessionStatusesDiagramsElement.querySelectorAll<HTMLElement>(selectorByCategory);
+
+    nodes.forEach((node) => {
+      node.classList.remove('status-diagram__node--active');
+    });
+
+    const activeNode = this.sessionStatusesDiagramsElement.querySelector<HTMLElement>(
+      `.status-diagram__node[data-status-category="${category}"][data-status-value="${statusValue}"]`,
+    );
+
+    if (activeNode) {
+      activeNode.classList.add('status-diagram__node--active');
+    }
+  }
 }
 
 export const dom = new DOM({
@@ -488,6 +597,8 @@ export const dom = new DOM({
   incomingStatusId: 'incomingStatus',
   presentationStatusId: 'presentationStatus',
   systemStatusId: 'systemStatus',
+  autoConnectorManagerStatusId: 'autoConnectorManagerStatus',
+  sessionStatusesDiagramsId: 'sessionStatusesDiagrams',
   conferenceStateRoomId: 'conferenceStateRoom',
   conferenceStateParticipantNameId: 'conferenceStateParticipantName',
   conferenceStateTokenId: 'conferenceStateToken',

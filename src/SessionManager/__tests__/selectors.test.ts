@@ -1,4 +1,5 @@
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
+import { AUTO_CONNECTOR_STATE_IDS } from '@/AutoConnectorManager/AutoConnectorStateMachine/types';
 import { EState as ECallStatus } from '@/CallManager/CallStateMachine';
 import { EState as EConnectionStatus } from '@/ConnectionManager/ConnectionStateMachine';
 import { EState as EIncomingStatus } from '@/IncomingCallManager/IncomingCallStateMachine';
@@ -35,6 +36,16 @@ describe('sessionSelectors', () => {
         value: EPresentationStatus.IDLE,
         context: {},
         ...overrides.presentation,
+      },
+      autoConnector: {
+        value: AUTO_CONNECTOR_STATE_IDS.IDLE,
+        context: {
+          parameters: undefined,
+          afterDisconnect: 'idle',
+          stopReason: undefined,
+          lastError: undefined,
+        },
+        ...overrides.autoConnector,
       },
       ...overrides,
     };
@@ -458,6 +469,114 @@ describe('sessionSelectors', () => {
         } as never,
         call: {
           value: ECallStatus.IDLE,
+        } as never,
+      });
+
+      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.DISCONNECTING);
+    });
+
+    it('should return CONNECTING when autoConnector is ATTEMPTING_CONNECT even if connection is IDLE', () => {
+      const snapshot = createMockSnapshot({
+        connection: { value: EConnectionStatus.IDLE } as never,
+        call: { value: ECallStatus.IDLE } as never,
+        autoConnector: {
+          value: AUTO_CONNECTOR_STATE_IDS.ATTEMPTING_CONNECT,
+          context: {
+            parameters: undefined,
+            afterDisconnect: 'idle',
+            stopReason: undefined,
+            lastError: undefined,
+          },
+        } as never,
+      });
+
+      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CONNECTING);
+    });
+
+    it('should return CONNECTING when autoConnector is ATTEMPTING_GATE even if connection is IDLE', () => {
+      const snapshot = createMockSnapshot({
+        connection: { value: EConnectionStatus.IDLE } as never,
+        call: { value: ECallStatus.IDLE } as never,
+        autoConnector: {
+          value: AUTO_CONNECTOR_STATE_IDS.ATTEMPTING_GATE,
+          context: {
+            parameters: undefined,
+            afterDisconnect: 'idle',
+            stopReason: undefined,
+            lastError: undefined,
+          },
+        } as never,
+      });
+
+      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CONNECTING);
+    });
+
+    it('should return CONNECTING when autoConnector is WAITING_BEFORE_RETRY even if connection is IDLE', () => {
+      const snapshot = createMockSnapshot({
+        connection: { value: EConnectionStatus.IDLE } as never,
+        call: { value: ECallStatus.IDLE } as never,
+        autoConnector: {
+          value: AUTO_CONNECTOR_STATE_IDS.WAITING_BEFORE_RETRY,
+          context: {
+            parameters: undefined,
+            afterDisconnect: 'idle',
+            stopReason: undefined,
+            lastError: undefined,
+          },
+        } as never,
+      });
+
+      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CONNECTING);
+    });
+
+    it('should return DISCONNECTING when connection is DISCONNECTING even if autoConnector is ATTEMPTING_CONNECT', () => {
+      const snapshot = createMockSnapshot({
+        connection: { value: EConnectionStatus.DISCONNECTING } as never,
+        call: { value: ECallStatus.IDLE } as never,
+        autoConnector: {
+          value: AUTO_CONNECTOR_STATE_IDS.ATTEMPTING_CONNECT,
+          context: {
+            parameters: undefined,
+            afterDisconnect: 'idle',
+            stopReason: undefined,
+            lastError: undefined,
+          },
+        } as never,
+      });
+
+      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.DISCONNECTING);
+    });
+
+    it('should return DISCONNECTING when connection is DISCONNECTING even if autoConnector is ATTEMPTING_GATE', () => {
+      const snapshot = createMockSnapshot({
+        connection: { value: EConnectionStatus.DISCONNECTING } as never,
+        call: { value: ECallStatus.IDLE } as never,
+        autoConnector: {
+          value: AUTO_CONNECTOR_STATE_IDS.ATTEMPTING_GATE,
+          context: {
+            parameters: undefined,
+            afterDisconnect: 'idle',
+            stopReason: undefined,
+            lastError: undefined,
+          },
+        } as never,
+      });
+
+      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.DISCONNECTING);
+    });
+
+    it('should return DISCONNECTING when connection is DISCONNECTING even if autoConnector is WAITING_BEFORE_RETRY', () => {
+      const snapshot = createMockSnapshot({
+        connection: { value: EConnectionStatus.DISCONNECTING } as never,
+        call: { value: ECallStatus.IDLE } as never,
+        autoConnector: {
+          value: AUTO_CONNECTOR_STATE_IDS.WAITING_BEFORE_RETRY,
+          context: {
+            parameters: undefined,
+            afterDisconnect: 'idle',
+            stopReason: undefined,
+            lastError: undefined,
+          },
         } as never,
       });
 

@@ -4,6 +4,15 @@ body {
   padding-bottom: 100px;
 }
 
+button:disabled,
+button[disabled],
+.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+  user-select: none;
+}
+
 #callForm label {
   display: flex;
   flex-direction: column;
@@ -410,12 +419,53 @@ body {
 }
 
 .session-statuses {
-  padding-top: 1.5rem;
-  padding-bottom: 1.5rem;
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
   background-color: #f7f7f7;
   border-radius: 6px;
-  font-weight: 500;
   color: #2c3e50;
+}
+
+.status-diagram {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.status-diagram__title {
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.status-diagram__nodes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.status-diagram__node {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid #cbd5f5;
+  border-radius: 999px;
+  background-color: #eef2ff;
+  color: #334155;
+  font-size: 12px;
+  line-height: 1.1;
+}
+
+.status-diagram__node--active {
+  border-color: #0f766e;
+  background-color: #d1fae5;
+  color: #065f46;
+  font-weight: 700;
+}
+
+.status-diagram__arrow {
+  color: #64748b;
+  font-size: 12px;
 }
 
 .conference-state {
@@ -459,13 +509,6 @@ body {
 
 .hidden {
   display: none !important;
-}
-
-.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  pointer-events: none;
-  user-select: none;
 }
 
 .section-collapsible > summary {

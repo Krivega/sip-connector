@@ -3,6 +3,7 @@ import { EventEmitterProxy } from 'events-constructor';
 import { createEvents } from './events';
 
 import type { Subscription } from 'xstate';
+import type { AutoConnectorManager } from '@/AutoConnectorManager';
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
 import type { IncomingCallManager } from '@/IncomingCallManager';
@@ -22,6 +23,7 @@ type TSessionManagerDeps = {
   callManager: Pick<CallManager, 'stateMachine'>;
   incomingCallManager: Pick<IncomingCallManager, 'stateMachine'>;
   presentationManager: Pick<PresentationManager, 'stateMachine'>;
+  autoConnectorManager: Pick<AutoConnectorManager, 'stateMachine'>;
 };
 
 const collectSnapshot = (machines: TSessionMachines): TSessionSnapshot => {
@@ -30,6 +32,7 @@ const collectSnapshot = (machines: TSessionMachines): TSessionSnapshot => {
     call: machines.call.getSnapshot(),
     incoming: machines.incoming.getSnapshot(),
     presentation: machines.presentation.getSnapshot(),
+    autoConnector: machines.autoConnector.getSnapshot(),
   };
 };
 
@@ -55,6 +58,7 @@ class SessionManager extends EventEmitterProxy<TEventMap> {
       call: deps.callManager.stateMachine,
       incoming: deps.incomingCallManager.stateMachine,
       presentation: deps.presentationManager.stateMachine,
+      autoConnector: deps.autoConnectorManager.stateMachine,
     };
 
     this.currentSnapshot = collectSnapshot(this.machines);
@@ -64,6 +68,7 @@ class SessionManager extends EventEmitterProxy<TEventMap> {
       this.machines.call.subscribe(this.notifySubscribers),
       this.machines.incoming.subscribe(this.notifySubscribers),
       this.machines.presentation.subscribe(this.notifySubscribers),
+      this.machines.autoConnector.subscribe(this.notifySubscribers),
     );
   }
 

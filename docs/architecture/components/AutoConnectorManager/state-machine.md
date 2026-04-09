@@ -1,0 +1,74 @@
+# AutoConnectorManager: машина состояний (XState)
+
+Документ описывает оркестрацию автоподключения в [`AutoConnectorManager`](../../../../src/AutoConnectorManager/@AutoConnectorManager.ts) через модуль [`AutoConnectorStateMachine`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/AutoConnectorStateMachine.ts) и фабрику [`createAutoConnectorMachine`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/createAutoConnectorMachine.ts).
+
+## Назначение
+
+- Явно задать допустимые фазы реконнекта, ретраев, проверки телефонии и остановки.
+- Сохранить прежние публичные события (`before-attempt`, `success`, `limit-reached-attempts`, и т.д.) через действия и колбэки `deps`.
+- Отклонять недопустимые события в текущей фазе (см. `send` в `AutoConnectorStateMachine`).
+
+## Состояния
+
+| Состояние             | Смысл                                                                                        |
+| --------------------- | -------------------------------------------------------------------------------------------- |
+| `idle`                | Автоконнектор не выполняет флоу подключения.                                                 |
+| `disconnecting`       | Выполняется `stopConnectionFlow` (остановка попыток, триггеров, `disconnect`).               |
+| `attemptingGate`      | Перед попыткой: `before-attempt`, остановка триггеров; проверка лимита попыток.              |
+| `attemptingConnect`   | Вызов `connectionQueueManager.connect`.                                                      |
+| `waitingBeforeRetry`  | Задержка `timeoutBetweenAttempts` и `onBeforeRetry` перед следующей попыткой.                |
+| `connectedMonitoring` | Успешное подключение; активны ping и подписка на регистрацию.                                |
+| `telephonyChecking`   | Лимит попыток; работает `CheckTelephonyRequester`.                                           |
+| `errorTerminal`       | Общий терминальный режим для остановленных попыток; причина хранится в `context.stopReason`. |
+
+## События
+
+- `AUTO.RESTART` — начать цикл: остановить текущий флоу и попытаться подключиться (используется из `start` и `restartConnectionAttempts`).
+- `AUTO.STOP` — остановить флоу (`afterDisconnect: idle`). В `idle` обрабатывается как безопасный no-op (остаёмся в `idle`).
+- `FLOW.RESTART` — перезапуск из мониторинга (ping / внутренние триггеры), параметры берутся из контекста.
+- `TELEPHONY.RESULT` с `stillConnected` — возврат в `connectedMonitoring` после успешной проверки телефонии при уже подключённом клиенте. Если нужен полный рестарт, менеджер вызывает `restartConnectionAttempts` (как в исходной логике `connectIfDisconnected`).
+
+## Диаграмма потока
+
+```mermaid
+stateDiagram-v2
+  [*] --> idle
+  idle --> disconnecting: AUTO_RESTART
+  disconnecting --> attemptingGate: onDone_attempt
+  disconnecting --> idle: onDone_idle
+  attemptingGate --> telephonyChecking: limitReached
+  attemptingGate --> attemptingConnect: notLimit
+  attemptingConnect --> connectedMonitoring: connect_ok
+  attemptingConnect --> errorTerminal: nonRetryable
+  attemptingConnect --> errorTerminal: notActual
+  attemptingConnect --> waitingBeforeRetry: retryable
+  waitingBeforeRetry --> attemptingGate: delay_ok
+  waitingBeforeRetry --> errorTerminal: cancelled
+  waitingBeforeRetry --> errorTerminal: fatal
+  connectedMonitoring --> disconnecting: FLOW_RESTART_or_AUTO_RESTART_or_AUTO_STOP
+  telephonyChecking --> connectedMonitoring: TELEPHONY_RESULT_stillConnected
+  errorTerminal --> disconnecting: AUTO_STOP_or_AUTO_RESTART
+```
+
+## Что упростили
+
+- Убрано промежуточное состояние `standby`: после `check-telephony` машина возвращается в тот же режим `connectedMonitoring`, в котором уже живёт успешный `connect`.
+- Три терминальных состояния (`haltedByError`, `cancelled`, `failed`) объединены в одно `errorTerminal`.
+- Диагностика причины остановки не потеряна: машина сохраняет её в `context.stopReason` (`halted`, `cancelled`, `failed`), а наружу по-прежнему эмитит прежние события (`stop-attempts-by-error`, `cancelled-attempts`, `failed-all-attempts`).
+
+## Комментарии к логике
+
+- В `attemptingConnect.onError` порядок guard'ов важен: сначала отсекаются ошибки без права на retry, потом отменённые/неактуальные попытки, и только после этого машина идёт в `waitingBeforeRetry`.
+- В `waitingBeforeRetry.onError` отдельно различаются управляемая отмена цепочки (`cancelled-attempts`) и фатальная ошибка подготовки ретрая (`failed-all-attempts`).
+- Переход `telephonyChecking -> connectedMonitoring` означает: соединение уже восстановилось без нового `connect`, поэтому нужен только возврат в режим мониторинга и событие `success`.
+
+## Как расширять
+
+1. Добавить новое событие в [`types.ts`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/types.ts) и обработать переходы в `createAutoConnectorMachine.ts`.
+2. Побочные эффекты выносить в `TAutoConnectorMachineDeps`, а не в сами переходы, чтобы сохранить тестируемость.
+3. При изменении переходов обновляйте эту диаграмму и прогоняйте `yarn test src/AutoConnectorManager` и контрактные тесты событий.
+
+## Связанные файлы
+
+- Реализация машины: [`createAutoConnectorMachine.ts`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/createAutoConnectorMachine.ts)
+- Обёртка актора: [`AutoConnectorStateMachine.ts`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/AutoConnectorStateMachine.ts)

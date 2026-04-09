@@ -178,13 +178,15 @@
       <section>
         <details class="section-collapsible">
           <summary>Статусы</summary>
-          <ul id="sessionStatuses" class="session-statuses">
-            <li><b>Connection:</b> <span id="connectionStatus">-</span></li>
-            <li><b>Call:</b> <span id="callStatus">-</span></li>
-            <li><b>Incoming:</b> <span id="incomingStatus">-</span></li>
-            <li><b>Screen share:</b> <span id="presentationStatus">-</span></li>
-            <li><b>System:</b> <span id="systemStatus">-</span></li>
-          </ul>
+          <div id="sessionStatusesDiagrams" class="session-statuses"></div>
+          <div class="hidden">
+            <span id="connectionStatus"></span>
+            <span id="autoConnectorManagerStatus"></span>
+            <span id="callStatus"></span>
+            <span id="incomingStatus"></span>
+            <span id="presentationStatus"></span>
+            <span id="systemStatus"></span>
+          </div>
         </details>
       </section>
 
