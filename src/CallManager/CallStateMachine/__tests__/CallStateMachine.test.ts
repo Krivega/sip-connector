@@ -268,6 +268,26 @@ describe('CallStateMachine', () => {
         expect(machine.state).toBe(step.expected);
       }
     });
+
+    it('переходит в PRESENTATION_CALL только после confirmed при isPresentationCall=true', () => {
+      events.trigger('start-call', { ...connectPayload, isPresentationCall: true });
+
+      expect(machine.state).toBe(EState.CONNECTING);
+
+      events.trigger('confirmed', undefined as never);
+
+      expect(machine.state).toBe(EState.PRESENTATION_CALL);
+    });
+
+    it('не переходит в PRESENTATION_CALL без isPresentationCall', () => {
+      events.trigger('start-call', connectPayload);
+
+      expect(machine.state).toBe(EState.CONNECTING);
+
+      events.trigger('confirmed', undefined as never);
+
+      expect(machine.state).toBe(EState.CONNECTING);
+    });
   });
 
   describe('Геттеры состояний', () => {

@@ -1,7 +1,7 @@
 import { C as JsSIP_C, IncomingResponse } from '@krivega/jssip';
 import { EventEmitterProxy } from 'events-constructor';
 
-import { ApiManager } from '@/ApiManager';
+import { ApiManager, hasPresentationCall } from '@/ApiManager';
 import { AutoConnectorManager } from '@/AutoConnectorManager';
 import { CallManager } from '@/CallManager';
 import { ConnectionManager } from '@/ConnectionManager';
@@ -206,6 +206,14 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     return this.callManager.isDirectP2PRoom;
   }
 
+  private get isPresentationCall(): boolean {
+    return this.callManager.isPresentationCall;
+  }
+
+  private get isOptionalPresentationPermission(): boolean {
+    return this.isDirectP2PRoom || this.isPresentationCall;
+  }
+
   public connect: ConnectionManager['connect'] = async (...args) => {
     return this.connectionQueueManager.connect(...args);
   };
@@ -269,11 +277,15 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     this.autoConnectorManager.stop();
   };
 
-  public call = async (params: Parameters<CallManager['startCall']>[2]) => {
+  public call = async (
+    params: Omit<Parameters<CallManager['startCall']>[2], 'isPresentationCall'>,
+  ) => {
     const { onAddedTransceiver, ...rest } = params;
+    const isPresentationCall = hasPresentationCall(rest.extraHeaders);
 
     return this.callManager.startCall(this.connectionManager.getUaProtected(), this.getUri, {
       ...rest,
+      isPresentationCall,
       onAddedTransceiver: this.resolveHandleAddTransceiver(onAddedTransceiver),
     });
   };
@@ -339,7 +351,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
 
     return this.presentationManager.startPresentation(
       async () => {
-        await (this.isDirectP2PRoom
+        await (this.isOptionalPresentationPermission
           ? this.apiManager.sendAvailableContentedStream()
           : this.apiManager.askPermissionToStartPresentation());
       },
@@ -354,7 +366,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
 
   public async stopPresentation(): Promise<MediaStream | undefined> {
     return this.presentationManager.stopPresentation(async () => {
-      await (this.isDirectP2PRoom
+      await (this.isOptionalPresentationPermission
         ? this.apiManager.sendNotAvailableContentedStream()
         : this.apiManager.sendStoppedPresentation());
     });
@@ -374,7 +386,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
 
     return this.presentationManager.updatePresentation(
       async () => {
-        await (this.isDirectP2PRoom
+        await (this.isOptionalPresentationPermission
           ? this.apiManager.sendAvailableContentedStream()
           : this.apiManager.askPermissionToStartPresentation());
       },

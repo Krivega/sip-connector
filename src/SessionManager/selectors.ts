@@ -39,7 +39,8 @@ const selectIsInCall = (snapshot: TSessionSnapshot): boolean => {
     status === ECallStatus.ROOM_PENDING_AUTH ||
     status === ECallStatus.PURGATORY ||
     status === ECallStatus.P2P_ROOM ||
-    status === ECallStatus.DIRECT_P2P_ROOM
+    status === ECallStatus.DIRECT_P2P_ROOM ||
+    status === ECallStatus.PRESENTATION_CALL
   );
 };
 
@@ -56,7 +57,8 @@ const selectSystemStatus = (snapshot: TSessionSnapshot): ESystemStatus => {
     callStatus === ECallStatus.ROOM_PENDING_AUTH ||
     callStatus === ECallStatus.PURGATORY ||
     callStatus === ECallStatus.P2P_ROOM ||
-    callStatus === ECallStatus.DIRECT_P2P_ROOM
+    callStatus === ECallStatus.DIRECT_P2P_ROOM ||
+    callStatus === ECallStatus.PRESENTATION_CALL
   ) {
     return ESystemStatus.CALL_ACTIVE;
   }

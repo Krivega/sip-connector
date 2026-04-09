@@ -30,6 +30,7 @@ type TParamsAnswerToIncomingCall = {
 
 export type TParamsCall = TParamsAnswerToIncomingCall & {
   number: string;
+  isPresentationCall?: boolean;
 };
 
 export type TCustomError = Error & {

@@ -9,7 +9,6 @@ describe('getExtraHeaders', () => {
       isMutedAudio: false,
       isMutedVideo: false,
       isRegistered: false,
-      isPresentationCall: false,
     });
 
     expect(extraHeaders).toEqual([

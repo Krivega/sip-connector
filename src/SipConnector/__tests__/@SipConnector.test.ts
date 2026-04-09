@@ -497,6 +497,37 @@ describe('SipConnector', () => {
     expect(replaceStream).toHaveBeenCalled();
   });
 
+  it('call: вычисляет и пробрасывает isPresentationCall в callManager.startCall', async () => {
+    jest.spyOn(sipConnector.connectionManager, 'getUaProtected').mockReturnValue({} as UA);
+    jest.spyOn(sipConnector, 'getUri').mockImplementation((id: string) => {
+      return `sip:${id}@host`;
+    });
+
+    const startCall = jest
+      .spyOn(sipConnector.callManager, 'startCall')
+      .mockResolvedValue({} as unknown as RTCPeerConnection);
+
+    const stream = createMediaStreamMock({
+      audio: { deviceId: { exact: 'audioDeviceId' } },
+      video: { deviceId: { exact: 'videoDeviceId' } },
+    });
+
+    await sipConnector.call({
+      number: '100',
+      mediaStream: stream,
+      extraHeaders: ['X-Vinteo-Presentation-Call: yes'],
+    });
+
+    expect(startCall).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.any(Function),
+      expect.objectContaining({
+        number: '100',
+        isPresentationCall: true,
+      }),
+    );
+  });
+
   it('localPorts: проксирует геттер CallManager.localPorts', () => {
     const localPortsSpy = jest
       .spyOn(sipConnector.callManager, 'localPorts', 'get')
@@ -650,6 +681,36 @@ describe('SipConnector', () => {
     expect(sendAvailableContentedStream).toHaveBeenCalled();
     expect(sendNotAvailableContentedStream).not.toHaveBeenCalled();
     expect(sendStoppedPresentation).not.toHaveBeenCalled();
+  });
+
+  it('не должен запрашивать разрешение на начало презентации если presentation-call', async () => {
+    const stream = createMediaStreamMock({
+      audio: { deviceId: { exact: 'audioDeviceId' } },
+      video: { deviceId: { exact: 'videoDeviceId' } },
+    });
+
+    jest.spyOn(sipConnector.callManager, 'isDirectP2PRoom', 'get').mockReturnValue(false);
+    jest.spyOn(sipConnector.callManager, 'isPresentationCall', 'get').mockReturnValue(true);
+
+    const askPermissionToStartPresentation = jest
+      .spyOn(sipConnector.apiManager, 'askPermissionToStartPresentation')
+      .mockResolvedValue(undefined);
+    const sendAvailableContentedStream = jest
+      .spyOn(sipConnector.apiManager, 'sendAvailableContentedStream')
+      .mockResolvedValue(undefined);
+
+    jest
+      .spyOn(sipConnector.presentationManager, 'startPresentation')
+      .mockImplementation(async (callback, s) => {
+        await callback();
+
+        return s;
+      });
+
+    await sipConnector.startPresentation(stream);
+
+    expect(sendAvailableContentedStream).toHaveBeenCalled();
+    expect(askPermissionToStartPresentation).not.toHaveBeenCalled();
   });
 
   it('должен корректно обрабатывать stopPresentation когда не в DIRECT_P2P_ROOM', async () => {

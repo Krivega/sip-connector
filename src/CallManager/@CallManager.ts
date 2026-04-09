@@ -177,6 +177,10 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     return this.stateMachine.isDirectP2PRoom;
   }
 
+  public get isPresentationCall(): boolean {
+    return this.stateMachine.isPresentationCall;
+  }
+
   public get isDisconnecting(): boolean {
     return this.stateMachine.isDisconnecting;
   }
@@ -212,6 +216,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     this.isPendingCall = true;
 
     this.events.emit('start-call', {
+      isPresentationCall: params.isPresentationCall,
       number: params.number,
       answer: false,
     });

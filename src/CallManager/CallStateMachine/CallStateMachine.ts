@@ -17,7 +17,12 @@ type TSnapshotContext<TState extends TBaseContext> = {
 };
 
 type TCallEvent =
-  | { type: 'CALL.CONNECTING'; number: string; answer: boolean }
+  | {
+      type: 'CALL.CONNECTING';
+      number: string;
+      answer: boolean;
+      isPresentationCall?: boolean;
+    }
   | {
       type: 'CALL.ENTER_ROOM';
       room: string;
@@ -31,12 +36,17 @@ type TCallEvent =
       conferenceForToken: string;
       participantName: string;
     }
+  | { type: 'CALL.PRESENTATION_CALL' }
   | { type: 'CALL.START_DISCONNECT' }
   | { type: 'CALL.RESET' };
 
 export type TSnapshot =
   | { value: EState.IDLE; context: TSnapshotContext<TContextMap[EState.IDLE]> }
   | { value: EState.CONNECTING; context: TSnapshotContext<TContextMap[EState.CONNECTING]> }
+  | {
+      value: EState.PRESENTATION_CALL;
+      context: TSnapshotContext<TContextMap[EState.PRESENTATION_CALL]>;
+    }
   | {
       value: EState.ROOM_PENDING_AUTH;
       context: TSnapshotContext<TContextMap[EState.ROOM_PENDING_AUTH]>;
@@ -65,6 +75,10 @@ class CallStateMachine extends BaseStateMachine<TMachine, EState, TContext, TSna
 
   public get isConnecting(): boolean {
     return this.state === EState.CONNECTING;
+  }
+
+  public get isPresentationCall(): boolean {
+    return this.state === EState.PRESENTATION_CALL;
   }
 
   public get isRoomPendingAuth(): boolean {
@@ -173,6 +187,7 @@ class CallStateMachine extends BaseStateMachine<TMachine, EState, TContext, TSna
   public get isActive(): boolean {
     return (
       this.isInRoom ||
+      this.isPresentationCall ||
       this.isRoomPendingAuth ||
       this.isInPurgatory ||
       this.isP2PRoom ||
@@ -250,8 +265,14 @@ class CallStateMachine extends BaseStateMachine<TMachine, EState, TContext, TSna
 
   private subscribeToEvents(events: TEvents) {
     this.addSubscription(
-      events.on('start-call', ({ number, answer }) => {
-        this.send({ type: 'CALL.CONNECTING', number, answer });
+      events.on('start-call', ({ number, answer, isPresentationCall }) => {
+        this.send({ type: 'CALL.CONNECTING', number, answer, isPresentationCall });
+      }),
+    );
+
+    this.addSubscription(
+      events.on('confirmed', () => {
+        this.send({ type: 'CALL.PRESENTATION_CALL' });
       }),
     );
 

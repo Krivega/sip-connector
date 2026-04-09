@@ -1,6 +1,7 @@
 export enum EState {
   IDLE = 'call:idle',
   CONNECTING = 'call:connecting',
+  PRESENTATION_CALL = 'call:presentationCall',
   ROOM_PENDING_AUTH = 'call:roomPendingAuth',
   PURGATORY = 'call:purgatory',
   P2P_ROOM = 'call:p2pRoom',
@@ -21,6 +22,12 @@ export type TContextMap = {
   [EState.CONNECTING]: {
     number: string;
     answer: boolean;
+    isPresentationCall?: boolean;
+  };
+  [EState.PRESENTATION_CALL]: {
+    number: string;
+    answer: boolean;
+    isPresentationCall: true;
   };
   [EState.ROOM_PENDING_AUTH]: TAnyRoomState;
   [EState.PURGATORY]: TAnyRoomState;

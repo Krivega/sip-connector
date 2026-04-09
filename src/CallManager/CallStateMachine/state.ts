@@ -53,6 +53,18 @@ const hasDirectPeerToPeerContext = (context: TBaseContext): boolean => {
   return 'isDirectPeerToPeer' in context && hasDirectPeerToPeer(context);
 };
 
+const hasPresentationCall = ({ isPresentationCall }: { isPresentationCall?: boolean }): boolean => {
+  return isPresentationCall === true;
+};
+
+const hasPresentationCallContext = (
+  context: TBaseContext,
+): context is TContextMap[EState.PRESENTATION_CALL] => {
+  return (
+    hasConnectingContext(context) && 'isPresentationCall' in context && hasPresentationCall(context)
+  );
+};
+
 const hasInRoomContext = (raw: TBaseContext): boolean => {
   return (
     hasAnyRoomContext(raw) &&
@@ -85,9 +97,17 @@ export const STATE_DESCRIPTORS = {
   [EState.CONNECTING]: {
     guard: hasConnectingContext,
     buildContext: (raw: TBaseContext) => {
-      const { number, answer } = raw as TContextMap[EState.CONNECTING];
+      const { number, answer, isPresentationCall } = raw as TContextMap[EState.CONNECTING];
 
-      return { number, answer };
+      return { number, answer, isPresentationCall };
+    },
+  },
+  [EState.PRESENTATION_CALL]: {
+    guard: hasPresentationCallContext,
+    buildContext: (raw: TBaseContext) => {
+      const { number, answer } = raw as TContextMap[EState.PRESENTATION_CALL];
+
+      return { number, answer, isPresentationCall: true };
     },
   },
   [EState.ROOM_PENDING_AUTH]: {

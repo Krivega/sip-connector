@@ -13,6 +13,7 @@ export {
   EContentedStreamCodec,
 } from './constants';
 export { EVENT_NAMES as API_MANAGER_EVENT_NAMES } from './events';
+export { default as hasPresentationCall } from './hasPresentationCall';
 
 export type { TEventMap as TApiManagerEventMap, TEvents as TApiManagerEvents } from './events';
 export type { TChannels } from './types';
