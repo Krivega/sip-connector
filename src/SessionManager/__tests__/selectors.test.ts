@@ -42,6 +42,8 @@ describe('sessionSelectors', () => {
         context: {
           parameters: undefined,
           afterDisconnect: 'idle',
+          stopReason: undefined,
+          lastError: undefined,
         },
         ...overrides.autoConnector,
       },
@@ -482,6 +484,8 @@ describe('sessionSelectors', () => {
           context: {
             parameters: undefined,
             afterDisconnect: 'idle',
+            stopReason: undefined,
+            lastError: undefined,
           },
         } as never,
       });
@@ -498,6 +502,8 @@ describe('sessionSelectors', () => {
           context: {
             parameters: undefined,
             afterDisconnect: 'idle',
+            stopReason: undefined,
+            lastError: undefined,
           },
         } as never,
       });
@@ -514,6 +520,8 @@ describe('sessionSelectors', () => {
           context: {
             parameters: undefined,
             afterDisconnect: 'idle',
+            stopReason: undefined,
+            lastError: undefined,
           },
         } as never,
       });
@@ -530,6 +538,8 @@ describe('sessionSelectors', () => {
           context: {
             parameters: undefined,
             afterDisconnect: 'idle',
+            stopReason: undefined,
+            lastError: undefined,
           },
         } as never,
       });
@@ -546,6 +556,8 @@ describe('sessionSelectors', () => {
           context: {
             parameters: undefined,
             afterDisconnect: 'idle',
+            stopReason: undefined,
+            lastError: undefined,
           },
         } as never,
       });
@@ -562,6 +574,8 @@ describe('sessionSelectors', () => {
           context: {
             parameters: undefined,
             afterDisconnect: 'idle',
+            stopReason: undefined,
+            lastError: undefined,
           },
         } as never,
       });

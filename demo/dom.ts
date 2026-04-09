@@ -88,10 +88,7 @@ const STATUS_DIAGRAMS: Record<TStatusCategory, readonly string[]> = {
     'waitingBeforeRetry',
     'connectedMonitoring',
     'telephonyChecking',
-    'standby',
-    'haltedByError',
-    'cancelled',
-    'failed',
+    'errorTerminal',
   ],
   call: [
     'call:idle',
