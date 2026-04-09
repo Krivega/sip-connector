@@ -1,3 +1,4 @@
+import { debugResolve } from '../logger';
 import ParticipantRoleManager from './ParticipantRoleManager';
 import RecvQualityManager from './RecvQualityManager';
 import resolveServerParametersRequester from './resolveServerParametersRequester';
@@ -11,6 +12,8 @@ import type {
   IServerParametersRequester,
   IServerParameters,
 } from './resolveServerParametersRequester';
+
+const debug = debugResolve('demo:session');
 
 export class Session {
   private readonly serverParametersRequester: IServerParametersRequester;
@@ -55,12 +58,16 @@ export class Session {
     user: string;
     password: string;
   }): Promise<void> {
+    debug('connect', { serverUrl, isRegistered, displayName, user, password });
+
     sipConnectorFacade.startAutoConnect({
       getParameters: async () => {
         const serverParameters = await this.serverParametersRequester.request({
           serverUrl,
           isRegistered,
         });
+
+        debug('serverParameters', serverParameters);
 
         this.serverParameters = serverParameters;
 
@@ -88,6 +95,8 @@ export class Session {
     setRemoteStreams: (streams: TRemoteStreams) => void;
   }): Promise<void> {
     const { serverParameters } = this;
+
+    debug('callToServer', { conference, mediaStream, serverParameters });
 
     if (serverParameters === undefined || !sipConnectorFacade.isConfigured()) {
       throw new Error('Server parameters are not initialized. Call connect() first.');
@@ -144,11 +153,7 @@ export class Session {
     isEnabledCam: boolean;
     isEnabledMic: boolean;
   }) {
-    // eslint-disable-next-line no-console
-    console.log('Session ~ sendMediaState:', {
-      isEnabledCam,
-      isEnabledMic,
-    });
+    debug('sendMediaState', { isEnabledCam, isEnabledMic });
 
     return sipConnectorFacade.sendMediaState({ isEnabledCam, isEnabledMic });
   }
