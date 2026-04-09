@@ -1,9 +1,10 @@
-import CallStateManager, { type TCallState } from './CallStateManager';
+import CallStateManager from './CallStateManager';
 import CallStatsManager from './CallStatsManager';
 import ConferenceStateDisplay from './ConferenceStateDisplay';
 import { dom } from './dom';
 import LoaderManager from './LoaderManager';
 import { LocalMediaStreamManager } from './LocalMediaStreamManager';
+import { debugResolve } from './logger';
 import LogsManager from './LogsManager';
 import NotificationManager from './NotificationManager';
 import PresentationManager from './PresentationManager';
@@ -16,7 +17,10 @@ import getBrowserInfo from './utils/getBrowserInfo';
 import VideoPlayer from './VideoPlayer';
 
 import type { TRemoteStreams } from '@/index';
+import type { TCallState } from './CallStateManager';
 import type { IFormState } from './state/FormState';
+
+const debug = debugResolve('demo:app');
 
 /**
  * Главный класс приложения
@@ -41,6 +45,8 @@ class App {
 
   private readonly callStatsManager: CallStatsManager;
 
+  private readonly statusesManager: Statuses;
+
   private session: Session | undefined = undefined;
 
   /**
@@ -55,12 +61,7 @@ class App {
     this.loaderManager = new LoaderManager();
     this.callStateManager = new CallStateManager();
     this.callStatsManager = new CallStatsManager();
-
-    const statusesManager = new Statuses();
-
-    statusesManager.subscribe((statuses) => {
-      this.updateSessionStatuses(statuses);
-    });
+    this.statusesManager = new Statuses();
 
     const conferenceStateDisplay = new ConferenceStateDisplay();
 
@@ -185,6 +186,11 @@ class App {
         this.handleError(error);
       });
     });
+
+    dom.renderSessionStatusDiagrams();
+    this.statusesManager.subscribe((statuses) => {
+      this.updateSessionStatuses(statuses);
+    });
   }
 
   /**
@@ -240,10 +246,6 @@ class App {
     const { session } = this;
 
     if (session === undefined) {
-      return;
-    }
-
-    if (!session.hasConnected()) {
       return;
     }
 
@@ -446,12 +448,14 @@ class App {
     system: string;
     autoConnectorManager: string;
   }): void {
-    dom.connectionStatusElement.textContent = statuses.connection;
-    dom.callStatusElement.textContent = statuses.call;
-    dom.incomingStatusElement.textContent = statuses.incoming;
-    dom.presentationStatusElement.textContent = statuses.presentation;
-    dom.systemStatusElement.textContent = statuses.system;
-    dom.autoConnectorManagerStatusElement.textContent = statuses.autoConnectorManager;
+    debug('updateSessionStatuses', statuses);
+
+    dom.setActiveSessionStatusNode('connection', statuses.connection);
+    dom.setActiveSessionStatusNode('autoConnectorManager', statuses.autoConnectorManager);
+    dom.setActiveSessionStatusNode('call', statuses.call);
+    dom.setActiveSessionStatusNode('incoming', statuses.incoming);
+    dom.setActiveSessionStatusNode('presentation', statuses.presentation);
+    dom.setActiveSessionStatusNode('system', statuses.system);
   }
 
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this
@@ -464,6 +468,7 @@ class App {
     answer: string;
     pendingDisconnect: string;
   }): void {
+    debug('updateConferenceState', state);
     dom.conferenceStateRoomElement.textContent = state.room;
     dom.conferenceStateParticipantNameElement.textContent = state.participantName;
     dom.conferenceStateTokenElement.textContent = state.token;
@@ -621,8 +626,7 @@ class App {
   private handleError(error: unknown): void {
     const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
 
-    // eslint-disable-next-line no-console
-    console.error('Ошибка:', error);
+    debug('Ошибка:', error);
 
     this.notificationManager.show({
       type: 'error',

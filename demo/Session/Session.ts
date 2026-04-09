@@ -55,22 +55,26 @@ export class Session {
     user: string;
     password: string;
   }): Promise<void> {
-    const serverParameters = await this.serverParametersRequester.request({
-      serverUrl,
-      isRegistered,
-    });
+    sipConnectorFacade.startAutoConnect({
+      getParameters: async () => {
+        const serverParameters = await this.serverParametersRequester.request({
+          serverUrl,
+          isRegistered,
+        });
 
-    this.serverParameters = serverParameters;
+        this.serverParameters = serverParameters;
 
-    await sipConnectorFacade.connectToServer({
-      displayName,
-      user,
-      password,
-      register: isRegistered,
-      sipServerIp: serverParameters.serverIp,
-      sipServerUrl: serverParameters.sipServerUrl,
-      remoteAddress: serverParameters.remoteAddress,
-      userAgent: serverParameters.userAgent,
+        return {
+          displayName,
+          user,
+          password,
+          register: isRegistered,
+          sipServerIp: serverParameters.serverIp,
+          sipServerUrl: serverParameters.sipServerUrl,
+          remoteAddress: serverParameters.remoteAddress,
+          userAgent: serverParameters.userAgent,
+        };
+      },
     });
   }
 
@@ -83,7 +87,9 @@ export class Session {
     mediaStream: MediaStream;
     setRemoteStreams: (streams: TRemoteStreams) => void;
   }): Promise<void> {
-    if (this.serverParameters === undefined) {
+    const { serverParameters } = this;
+
+    if (serverParameters === undefined || !sipConnectorFacade.isConfigured()) {
       throw new Error('Server parameters are not initialized. Call connect() first.');
     }
 
@@ -106,16 +112,13 @@ export class Session {
     await sipConnectorFacade.callToServer({
       conference,
       mediaStream,
-      extraHeaders: this.serverParameters.extraHeaders,
-      iceServers: this.serverParameters.iceServers,
+      extraHeaders: serverParameters.extraHeaders,
+      iceServers: serverParameters.iceServers,
     });
   }
 
   public async disconnectFromServer(): Promise<void> {
-    if (this.serverParameters === undefined) {
-      throw new Error('Server parameters are not initialized. Call connect() first.');
-    }
-
+    sipConnectorFacade.stopAutoConnect();
     await sipConnectorFacade.disconnectFromServer();
     this.serverParameters = undefined;
   }

@@ -28,12 +28,19 @@ class Statuses {
     });
   }
 
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
+  private getStatuses() {
+    const { sessionManager } = sipConnectorFacade.sipConnector;
+
+    return sessionManager.getSnapshot();
+  }
+
   private subscribeSessionStatuses(onSnapshot: (snapshot: TSessionSnapshot) => void) {
     this.unsubscribeSessionStatuses?.();
+    onSnapshot(this.getStatuses());
 
     const { sessionManager } = sipConnectorFacade.sipConnector;
 
-    onSnapshot(sessionManager.getSnapshot());
     this.unsubscribeSessionStatuses = sessionManager.subscribe(onSnapshot);
   }
 }
