@@ -15,6 +15,7 @@ import { wrapReconnectError } from './wrapReconnectError';
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
 import type { ConnectionQueueManager } from '@/ConnectionQueueManager';
+import type { AutoConnectorStateMachine } from './AutoConnectorStateMachine';
 import type { TEventMap } from './events';
 import type {
   IAutoConnectorOptions,
@@ -38,6 +39,8 @@ const defaultCanRetryOnError = (_error: unknown): boolean => {
 };
 
 class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
+  public readonly stateMachine: AutoConnectorStateMachine;
+
   private readonly connectionManager: ConnectionManager;
 
   private readonly connectionQueueManager: ConnectionQueueManager;
@@ -63,8 +66,6 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   private readonly resumeFromSleepModeSubscriber: TResumeFromSleepModeSubscriber | undefined;
 
   private readonly notActiveCallSubscriber: NotActiveCallSubscriber;
-
-  private readonly autoConnectorStateMachine: ReturnType<typeof createAutoConnectorStateMachine>;
 
   public constructor(
     {
@@ -111,7 +112,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
     );
     this.notActiveCallSubscriber = new NotActiveCallSubscriber({ callManager });
 
-    this.autoConnectorStateMachine = createAutoConnectorStateMachine(this.createMachineDeps());
+    this.stateMachine = createAutoConnectorStateMachine(this.createMachineDeps());
   }
 
   public start(parameters: TParametersAutoConnect) {
@@ -126,7 +127,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
 
     this.unsubscribeFromNotActiveCall();
     this.unsubscribeFromHardwareTriggers();
-    this.autoConnectorStateMachine.toStop();
+    this.stateMachine.toStop();
   }
 
   private createMachineDeps() {
@@ -168,14 +169,14 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
         this.events.trigger('limit-reached-attempts', new Error(ERROR_MESSAGES.LIMIT_REACHED));
       },
       startCheckTelephony: () => {
-        const { parameters } = this.autoConnectorStateMachine.context;
+        const { parameters } = this.stateMachine.context;
 
         // Контекст машины всегда содержит parameters перед этими шагами (assignRestart).
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- см. выше
         this.startCheckTelephony(parameters!);
       },
       onConnectSucceeded: () => {
-        const { parameters } = this.autoConnectorStateMachine.context;
+        const { parameters } = this.stateMachine.context;
 
         logger('handleSucceededAttempt');
 
@@ -208,7 +209,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   private restartConnectionAttempts(parameters: TParametersAutoConnect) {
     logger('auto connector restart connection attempts');
 
-    this.autoConnectorStateMachine.toRestart(parameters);
+    this.stateMachine.toRestart(parameters);
   }
 
   private async stopConnectionFlow() {
@@ -256,7 +257,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
         if (isUnavailable) {
           this.restartConnectionAttempts(parameters);
         } else {
-          this.autoConnectorStateMachine.toTelephonyResultStillConnected();
+          this.stateMachine.toTelephonyResultStillConnected();
         }
       },
       onFailRequest: (error?: unknown) => {
@@ -306,7 +307,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
       onUnavailable: () => {
         logger('networkInterfacesSubscriber onUnavailable');
 
-        this.autoConnectorStateMachine.toStop();
+        this.stateMachine.toStop();
       },
     });
 
@@ -335,7 +336,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
       onFailRequest: () => {
         logger('pingRequester: onFailRequest');
 
-        this.autoConnectorStateMachine.toFlowRestart();
+        this.stateMachine.toFlowRestart();
       },
     });
   }

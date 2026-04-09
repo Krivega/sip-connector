@@ -133,6 +133,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       callManager: this.callManager,
       incomingCallManager: this.incomingCallManager,
       presentationManager: this.presentationManager,
+      autoConnectorManager: this.autoConnectorManager,
     });
 
     this.callManager.subscribeToApiEvents(this.apiManager);

@@ -13,6 +13,7 @@ class Statuses {
       incoming: string;
       presentation: string;
       system: string;
+      autoConnectorManager: string;
     }) => void,
   ) {
     this.subscribeSessionStatuses((snapshot) => {
@@ -22,6 +23,7 @@ class Statuses {
         incoming: sessionSelectors.selectIncomingStatus(snapshot),
         presentation: sessionSelectors.selectPresentationStatus(snapshot),
         system: sessionSelectors.selectSystemStatus(snapshot),
+        autoConnectorManager: snapshot.autoConnector.value,
       });
     });
   }

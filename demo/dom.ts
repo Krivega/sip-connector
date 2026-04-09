@@ -21,6 +21,7 @@ type TDomIds = {
   incomingStatusId: string;
   presentationStatusId: string;
   systemStatusId: string;
+  autoConnectorManagerStatusId: string;
   conferenceStateRoomId: string;
   conferenceStateParticipantNameId: string;
   conferenceStateTokenId: string;
@@ -155,6 +156,8 @@ class DOM {
 
   public systemStatusElement: HTMLElement;
 
+  public autoConnectorManagerStatusElement: HTMLElement;
+
   public conferenceStateRoomElement: HTMLElement;
 
   public conferenceStateParticipantNameElement: HTMLElement;
@@ -237,6 +240,7 @@ class DOM {
     incomingStatusId,
     presentationStatusId,
     systemStatusId,
+    autoConnectorManagerStatusId,
     conferenceStateRoomId,
     conferenceStateParticipantNameId,
     conferenceStateTokenId,
@@ -339,6 +343,7 @@ class DOM {
     this.incomingStatusElement = getElementById(incomingStatusId);
     this.presentationStatusElement = getElementById(presentationStatusId);
     this.systemStatusElement = getElementById(systemStatusId);
+    this.autoConnectorManagerStatusElement = getElementById(autoConnectorManagerStatusId);
     this.conferenceStateRoomElement = getElementById(conferenceStateRoomId);
     this.conferenceStateParticipantNameElement = getElementById(conferenceStateParticipantNameId);
     this.conferenceStateTokenElement = getElementById(conferenceStateTokenId);
@@ -488,6 +493,7 @@ export const dom = new DOM({
   incomingStatusId: 'incomingStatus',
   presentationStatusId: 'presentationStatus',
   systemStatusId: 'systemStatus',
+  autoConnectorManagerStatusId: 'autoConnectorManagerStatus',
   conferenceStateRoomId: 'conferenceStateRoom',
   conferenceStateParticipantNameId: 'conferenceStateParticipantName',
   conferenceStateTokenId: 'conferenceStateToken',

@@ -1,4 +1,5 @@
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
+import { AUTO_CONNECTOR_STATE_IDS } from '@/AutoConnectorManager/AutoConnectorStateMachine/types';
 import { EState as ECallStatus } from '@/CallManager/CallStateMachine';
 import { EState as EConnectionStatus } from '@/ConnectionManager/ConnectionStateMachine';
 import { EState as EIncomingStatus } from '@/IncomingCallManager/IncomingCallStateMachine';
@@ -35,6 +36,14 @@ describe('sessionSelectors', () => {
         value: EPresentationStatus.IDLE,
         context: {},
         ...overrides.presentation,
+      },
+      autoConnector: {
+        value: AUTO_CONNECTOR_STATE_IDS.IDLE,
+        context: {
+          parameters: undefined,
+          afterDisconnect: 'idle',
+        },
+        ...overrides.autoConnector,
       },
       ...overrides,
     };

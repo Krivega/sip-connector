@@ -444,12 +444,14 @@ class App {
     incoming: string;
     presentation: string;
     system: string;
+    autoConnectorManager: string;
   }): void {
     dom.connectionStatusElement.textContent = statuses.connection;
     dom.callStatusElement.textContent = statuses.call;
     dom.incomingStatusElement.textContent = statuses.incoming;
     dom.presentationStatusElement.textContent = statuses.presentation;
     dom.systemStatusElement.textContent = statuses.system;
+    dom.autoConnectorManagerStatusElement.textContent = statuses.autoConnectorManager;
   }
 
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this
