@@ -1,6 +1,6 @@
 # Модель состояний сеанса (XState)
 
-Sip-connector публикует единый XState-актор сеанса, агрегирующий параллельные машины по доменам: соединение, звонок, входящий звонок, шаринг экрана. Клиент получает только подписку на их статусы, бизнес-логика остаётся внутри sip-connector.
+Sip-connector публикует единый XState-актор сеанса, агрегирующий параллельные машины по доменам: соединение, звонок, входящий звонок, шаринг экрана и auto-connector. Клиент получает только подписку на их статусы, бизнес-логика остаётся внутри sip-connector.
 
 ## Диаграмма состояний
 
@@ -96,23 +96,38 @@ stateDiagram-v2
             failed --> starting: screenStarting
             failed --> idle: reset / screenEnded
         }
+        state autoConnector {
+            idle --> disconnecting: auto.restart
+            disconnecting --> attemptingGate: stopConnectionFlow.done
+            attemptingGate --> attemptingConnect: gate.opened
+            attemptingConnect --> connectedMonitoring: connect.success
+            attemptingConnect --> waitingBeforeRetry: connect.retryableError
+            waitingBeforeRetry --> disconnecting: retry.timeout
+            attemptingConnect --> telephonyChecking: attempts.limitReached
+            telephonyChecking --> connectedMonitoring: telephony.stillConnected
+            telephonyChecking --> failed: telephony.fatalError
+            failed --> idle: auto.stop
+            connectedMonitoring --> disconnecting: flow.restart
+            connectedMonitoring --> idle: auto.stop
+        }
     }
 ```
 
 ## Слои
 
-- Каждая машина состояний поднимается внутри своего менеджера: `connectionManager.stateMachine`, `callManager.stateMachine`, `incomingCallManager.stateMachine`, `presentationManager.stateMachine`.
+- Каждая машина состояний поднимается внутри своего менеджера: `connectionManager.stateMachine`, `callManager.stateMachine`, `incomingCallManager.stateMachine`, `presentationManager.stateMachine`, `autoConnectorManager.stateMachine`.
 - Менеджеры сами отправляют доменные события в свои машины.
 - Агрегатор: `sipConnector.session` подписывается на `.subscribe` машин менеджеров и отдаёт объединённый снапшот + типобезопасные селекторы.
 
 ## Доменные статусы и события
 
-| Домен        | Статусы                                                                                                      | Источники событий                                                                                                                                                                                                      | Доменные события                                                                                                                     |
-| :----------- | :----------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------- |
-| Connection   | `idle`, `preparing`, `connecting`, `connected`, `registered`, `established`, `disconnecting`, `disconnected` | `ConnectionManager.events` (`connect-started`, `connecting`, `connect-parameters-resolve-success`, `connected`, `registered`, `unregistered`, `disconnecting`, `disconnected`, `registrationFailed`, `connect-failed`) | `START_CONNECT`, `START_INIT_UA`, `START_DISCONNECT`, `UA_CONNECTED`, `UA_REGISTERED`, `UA_UNREGISTERED`, `UA_DISCONNECTED`, `RESET` |
-| Call         | `idle`, `connecting`, `roomPendingAuth`, `purgatory`, `p2pRoom`, `directP2pRoom`, `inRoom`, `disconnecting`  | `CallManager.events` (`start-call`, `end-call`, `enter-room`, `conference:participant-token-issued`, `ended`, `failed`)                                                                                                | `CALL.CONNECTING`, `CALL.ENTER_ROOM`, `CALL.TOKEN_ISSUED`, `CALL.START_DISCONNECT`, `CALL.RESET`                                     |
-| Incoming     | `idle`, `ringing`, `consumed`, `declined`, `terminated`, `failed`                                            | `IncomingCallManager.events` (`incomingCall`, `declinedIncomingCall`, `terminatedIncomingCall`, `failedIncomingCall`) + синтетика при ответе на входящий                                                               | `INCOMING.RINGING`, `INCOMING.CONSUMED`, `INCOMING.DECLINED`, `INCOMING.TERMINATED`, `INCOMING.FAILED`, `INCOMING.CLEAR`             |
-| Presentation | `idle`, `starting`, `active`, `stopping`, `failed`                                                           | `CallManager.events` (`presentation:start\|started\|end\|ended\|failed`), `ConnectionManager.events` (`disconnected`, `registrationFailed`, `connect-failed`)                                                          | `SCREEN.STARTING`, `SCREEN.STARTED`, `SCREEN.ENDING`, `SCREEN.ENDED`, `SCREEN.FAILED`, `PRESENTATION.RESET`                          |
+| Домен         | Статусы                                                                                                                                                                             | Источники событий                                                                                                                                                                                                      | Доменные события                                                                                                                     |
+| :------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------- |
+| Connection    | `idle`, `preparing`, `connecting`, `connected`, `registered`, `established`, `disconnecting`, `disconnected`                                                                        | `ConnectionManager.events` (`connect-started`, `connecting`, `connect-parameters-resolve-success`, `connected`, `registered`, `unregistered`, `disconnecting`, `disconnected`, `registrationFailed`, `connect-failed`) | `START_CONNECT`, `START_INIT_UA`, `START_DISCONNECT`, `UA_CONNECTED`, `UA_REGISTERED`, `UA_UNREGISTERED`, `UA_DISCONNECTED`, `RESET` |
+| Call          | `idle`, `connecting`, `roomPendingAuth`, `purgatory`, `p2pRoom`, `directP2pRoom`, `inRoom`, `disconnecting`                                                                         | `CallManager.events` (`start-call`, `end-call`, `enter-room`, `conference:participant-token-issued`, `ended`, `failed`)                                                                                                | `CALL.CONNECTING`, `CALL.ENTER_ROOM`, `CALL.TOKEN_ISSUED`, `CALL.START_DISCONNECT`, `CALL.RESET`                                     |
+| Incoming      | `idle`, `ringing`, `consumed`, `declined`, `terminated`, `failed`                                                                                                                   | `IncomingCallManager.events` (`incomingCall`, `declinedIncomingCall`, `terminatedIncomingCall`, `failedIncomingCall`) + синтетика при ответе на входящий                                                               | `INCOMING.RINGING`, `INCOMING.CONSUMED`, `INCOMING.DECLINED`, `INCOMING.TERMINATED`, `INCOMING.FAILED`, `INCOMING.CLEAR`             |
+| Presentation  | `idle`, `starting`, `active`, `stopping`, `failed`                                                                                                                                  | `CallManager.events` (`presentation:start\|started\|end\|ended\|failed`), `ConnectionManager.events` (`disconnected`, `registrationFailed`, `connect-failed`)                                                          | `SCREEN.STARTING`, `SCREEN.STARTED`, `SCREEN.ENDING`, `SCREEN.ENDED`, `SCREEN.FAILED`, `PRESENTATION.RESET`                          |
+| AutoConnector | `idle`, `disconnecting`, `attemptingGate`, `attemptingConnect`, `waitingBeforeRetry`, `connectedMonitoring`, `telephonyChecking`, `standby`, `haltedByError`, `cancelled`, `failed` | `AutoConnectorManager` (внутренние триггеры перезапуска/остановки, результаты connect/telephony/check)                                                                                                                 | `AUTO.RESTART`, `AUTO.STOP`, `FLOW.RESTART`, `TELEPHONY.RESULT`                                                                      |
 
 ## API для клиентов
 
@@ -120,7 +135,7 @@ stateDiagram-v2
 - `getSnapshot()` — текущее состояние всех доменов.
 - `subscribe(selector, listener)` — типобезопасная подписка на срез состояния (например, `selectConnectionStatus`).
 - `stop()` — очистка подписок на машины менеджеров.
-- Доступ к машинам: `sipConnector.session.machines` (connection, call, incoming, presentation).
+- Доступ к машинам: `sipConnector.session.machines` (connection, call, incoming, presentation, autoConnector).
 
 ## Инварианты и гварды
 
@@ -137,7 +152,7 @@ stateDiagram-v2
 
 ## Комбинированное состояние системы
 
-См. [ESystemStatus](./components/SessionManager/system-status.md) — механизм комбинирования состояний Connection и Call машин в единое состояние для упрощения работы клиентов.
+См. [ESystemStatus](./components/SessionManager/system-status.md) — механизм комбинирования состояний Connection, Call и AutoConnector машин в единое состояние для упрощения работы клиентов.
 
 ## Тестирование
 

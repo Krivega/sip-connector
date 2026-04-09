@@ -1,3 +1,4 @@
+import { AUTO_CONNECTOR_STATE_IDS } from '@/AutoConnectorManager/AutoConnectorStateMachine/types';
 import { EIncomingStatus, ECallStatus, ESystemStatus, EConnectionStatus } from './types';
 
 import type { TRemoteCallerData } from '@/IncomingCallManager';
@@ -45,7 +46,7 @@ const selectIsInCall = (snapshot: TSessionSnapshot): boolean => {
 
 /**
  * Селектор для определения комбинированного состояния системы
- * на основе состояний Connection и Call машин
+ * на основе состояний Connection, Call и AutoConnector машин
  */
 const selectSystemStatus = (snapshot: TSessionSnapshot): ESystemStatus => {
   const callStatus = selectCallStatus(snapshot);
@@ -63,17 +64,26 @@ const selectSystemStatus = (snapshot: TSessionSnapshot): ESystemStatus => {
 
   const connectionStatus = selectConnectionStatus(snapshot);
 
+  // Идет процесс отключения
+  if (connectionStatus === EConnectionStatus.DISCONNECTING) {
+    return ESystemStatus.DISCONNECTING;
+  }
+
+  // AutoConnector выполняет попытку соединения (например при IDLE у connection)
+  if (
+    snapshot.autoConnector.value === AUTO_CONNECTOR_STATE_IDS.ATTEMPTING_CONNECT ||
+    snapshot.autoConnector.value === AUTO_CONNECTOR_STATE_IDS.ATTEMPTING_GATE ||
+    snapshot.autoConnector.value === AUTO_CONNECTOR_STATE_IDS.WAITING_BEFORE_RETRY
+  ) {
+    return ESystemStatus.CONNECTING;
+  }
+
   // Соединение не установлено или отключено
   if (
     connectionStatus === EConnectionStatus.IDLE ||
     connectionStatus === EConnectionStatus.DISCONNECTED
   ) {
     return ESystemStatus.DISCONNECTED;
-  }
-
-  // Идет процесс отключения
-  if (connectionStatus === EConnectionStatus.DISCONNECTING) {
-    return ESystemStatus.DISCONNECTING;
   }
 
   // Идет процесс подключения

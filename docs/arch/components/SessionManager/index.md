@@ -1,6 +1,6 @@
 # SessionManager (Агрегатор состояний сеанса)
 
-**Назначение**: Предоставляет единый интерфейс для работы с состоянием всех машин состояний (connection, call, incoming, presentation) через XState. Агрегирует снапшоты всех машин и предоставляет типобезопасные селекторы для подписки на изменения.
+**Назначение**: Предоставляет единый интерфейс для работы с состоянием всех машин состояний (connection, call, incoming, presentation, autoConnector) через XState. Агрегирует снапшоты всех машин и предоставляет типобезопасные селекторы для подписки на изменения.
 
 ## Ключевые возможности
 
@@ -13,12 +13,13 @@
 
 ## Архитектура
 
-SessionManager является фасадом над четырьмя машинами состояний:
+SessionManager является фасадом над пятью машинами состояний:
 
 - `connection` — ConnectionStateMachine (состояния SIP соединения)
 - `call` — CallStateMachine (состояния звонка)
 - `incoming` — IncomingCallStateMachine (состояния входящих звонков)
 - `presentation` — PresentationStateMachine (состояния демонстрации экрана)
+- `autoConnector` — AutoConnectorStateMachine (состояния авто-переподключения)
 
 Каждая машина поднимается внутри своего менеджера и управляется им. SessionManager подписывается на изменения всех машин и агрегирует их снапшоты.
 
@@ -41,6 +42,7 @@ console.log(snapshot.connection.value); // EConnectionStatus
 console.log(snapshot.call.value); // ECallStatus
 console.log(snapshot.incoming.value); // EIncomingStatus
 console.log(snapshot.presentation.value); // EPresentationStatus
+console.log(snapshot.autoConnector.value); // EAutoConnectorState
 ```
 
 #### `subscribe(listener): () => void`
@@ -101,6 +103,7 @@ type TSessionSnapshot = {
   call: TCallSnapshot;
   incoming: TIncomingSnapshot;
   presentation: TPresentationSnapshot;
+  autoConnector: TAutoConnectorSnapshot;
 };
 ```
 
@@ -114,6 +117,7 @@ type TSessionMachines = {
   call: CallStateMachine;
   incoming: IncomingCallStateMachine;
   presentation: PresentationStateMachine;
+  autoConnector: AutoConnectorStateMachine;
 };
 ```
 
@@ -132,7 +136,7 @@ SessionManager предоставляет набор готовых селект
 
 ### Комбинированное состояние системы (ESystemStatus)
 
-Селектор `selectSystemStatus` объединяет состояния Connection и Call машин в единое состояние для упрощения работы клиентов.
+Селектор `selectSystemStatus` объединяет состояния Connection, Call и AutoConnector машин в единое состояние для упрощения работы клиентов.
 
 Подробнее см. [Комбинированное состояние системы](./system-status.md).
 
@@ -203,11 +207,15 @@ const unsubscribe = sipConnector.session.subscribe(
 ### Прямой доступ к машинам
 
 ```typescript
-const { connection, call } = sipConnector.session.machines;
+const { connection, call, autoConnector } = sipConnector.session.machines;
 
 // Подписка на снапшот конкретной машины
 connection.subscribe((snapshot) => {
   console.log('Connection snapshot:', snapshot);
+});
+
+autoConnector.subscribe((snapshot) => {
+  console.log('AutoConnector snapshot:', snapshot);
 });
 ```
 
@@ -284,5 +292,6 @@ SessionManager зависит от:
 - `CallManager.stateMachine`
 - `IncomingCallManager.stateMachine`
 - `PresentationManager.stateMachine`
+- `AutoConnectorManager.stateMachine`
 
 Все машины должны быть инициализированы до создания SessionManager.
