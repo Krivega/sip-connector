@@ -74,7 +74,12 @@ const hasPresentationCall = (extraHeaders?: string[]): boolean => {
 const hasPresentationCallContext = (
   context: TBaseContext,
 ): context is TContextMap[EState.PRESENTATION_CALL] => {
-  return 'extraHeaders' in context && hasPresentationCall(context.extraHeaders);
+  return (
+    'extraHeaders' in context &&
+    hasPresentationCall(context.extraHeaders) &&
+    'isConfirmed' in context &&
+    context.isConfirmed === true
+  );
 };
 
 const hasInRoomContext = (raw: TBaseContext): boolean => {

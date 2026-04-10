@@ -23,6 +23,7 @@ export type TContextMap = {
     number: string;
     answer: boolean;
     extraHeaders?: string[];
+    isConfirmed?: true;
   };
   [EState.PRESENTATION_CALL]: {
     number: string;

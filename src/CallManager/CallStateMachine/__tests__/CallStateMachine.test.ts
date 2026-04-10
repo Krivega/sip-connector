@@ -269,27 +269,31 @@ describe('CallStateMachine', () => {
       }
     });
 
-    it('переходит в PRESENTATION_CALL только после confirmed если заголовок "x-vinteo-presentation-call: yes" присутствует в extraHeaders', () => {
+    it('должен перейти в PRESENTATION_CALL после confirmed если в extraHeaders есть presentation-заголовок', () => {
       events.trigger('start-call', {
         ...connectPayload,
         extraHeaders: ['X-Vinteo-Presentation-Call: yes'],
       });
 
       expect(machine.state).toBe(EState.CONNECTING);
+      expect(getRawContext().isConfirmed).toBeUndefined();
 
       events.trigger('confirmed', undefined as never);
 
       expect(machine.state).toBe(EState.PRESENTATION_CALL);
+      expect(getRawContext().isConfirmed).toBe(true);
     });
 
-    it('не переходит в PRESENTATION_CALL если заголовок "x-vinteo-presentation-call: yes" отсутствует в extraHeaders', () => {
+    it('не должен перейти в PRESENTATION_CALL после confirmed если в extraHeaders нет presentation-заголовка', () => {
       events.trigger('start-call', { ...connectPayload, extraHeaders: ['X-Test: 1'] });
 
       expect(machine.state).toBe(EState.CONNECTING);
+      expect(getRawContext().isConfirmed).toBeUndefined();
 
       events.trigger('confirmed', undefined as never);
 
       expect(machine.state).toBe(EState.CONNECTING);
+      expect(getRawContext().isConfirmed).toBe(true);
     });
   });
 

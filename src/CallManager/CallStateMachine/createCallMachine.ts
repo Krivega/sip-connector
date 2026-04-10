@@ -122,6 +122,18 @@ export const createCallMachine = () => {
           },
         };
       }),
+      setConfirmed: assign(({ event, context }) => {
+        if (event.type !== 'CALL.PRESENTATION_CALL') {
+          return context;
+        }
+
+        return {
+          raw: {
+            ...context.raw,
+            isConfirmed: true as const,
+          },
+        };
+      }),
       reset: assign(() => {
         return { raw: clearRawContext() };
       }),
@@ -156,10 +168,8 @@ export const createCallMachine = () => {
         }),
         on: {
           'CALL.PRESENTATION_CALL': {
-            target: EState.PRESENTATION_CALL,
-            guard: ({ context }) => {
-              return STATE_DESCRIPTORS[EState.PRESENTATION_CALL].guard(context.raw);
-            },
+            target: EVALUATE,
+            actions: 'setConfirmed',
           },
           'CALL.ENTER_ROOM': {
             target: EVALUATE,
@@ -231,6 +241,12 @@ export const createCallMachine = () => {
             target: EState.DISCONNECTING,
             guard: ({ context }) => {
               return STATE_DESCRIPTORS[EState.DISCONNECTING].guard(context.raw);
+            },
+          },
+          {
+            target: EState.PRESENTATION_CALL,
+            guard: ({ context }) => {
+              return STATE_DESCRIPTORS[EState.PRESENTATION_CALL].guard(context.raw);
             },
           },
           {
