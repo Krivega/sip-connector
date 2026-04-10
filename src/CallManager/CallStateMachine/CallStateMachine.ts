@@ -21,7 +21,7 @@ type TCallEvent =
       type: 'CALL.CONNECTING';
       number: string;
       answer: boolean;
-      isPresentationCall?: boolean;
+      extraHeaders?: string[];
     }
   | {
       type: 'CALL.ENTER_ROOM';
@@ -265,8 +265,8 @@ class CallStateMachine extends BaseStateMachine<TMachine, EState, TContext, TSna
 
   private subscribeToEvents(events: TEvents) {
     this.addSubscription(
-      events.on('start-call', ({ number, answer, isPresentationCall }) => {
-        this.send({ type: 'CALL.CONNECTING', number, answer, isPresentationCall });
+      events.on('start-call', ({ number, answer, extraHeaders }) => {
+        this.send({ type: 'CALL.CONNECTING', number, answer, extraHeaders });
       }),
     );
 

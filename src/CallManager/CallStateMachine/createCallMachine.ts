@@ -18,7 +18,7 @@ type TCallEvent =
       type: 'CALL.CONNECTING';
       number: string;
       answer: boolean;
-      isPresentationCall?: boolean;
+      extraHeaders?: string[];
     }
   | {
       type: 'CALL.ENTER_ROOM';
@@ -69,7 +69,7 @@ export const createCallMachine = () => {
             ...clearRawContext(),
             number: event.number,
             answer: event.answer,
-            isPresentationCall: event.isPresentationCall,
+            extraHeaders: event.extraHeaders,
           },
         };
       }),

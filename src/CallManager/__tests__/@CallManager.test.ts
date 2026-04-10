@@ -139,7 +139,7 @@ describe('CallManager', () => {
   });
 
   describe('startCall', () => {
-    it('определяет isPresentationCall из extraHeaders и передает его в start-call', async () => {
+    it('передает extraHeaders в start-call', async () => {
       const eventHandler = jest.fn();
       const peerConnection = {} as RTCPeerConnection;
       const mediaStreamLocal = new MediaStream();
@@ -161,35 +161,7 @@ describe('CallManager', () => {
       await callManager.startCall(ua, getUri, params);
 
       expect(eventHandler).toHaveBeenCalledWith({
-        isPresentationCall: true,
-        number: '100',
-        answer: false,
-      });
-    });
-
-    it('передает isPresentationCall: false в start-call если заголовок отсутствует', async () => {
-      const eventHandler = jest.fn();
-      const peerConnection = {} as RTCPeerConnection;
-      const mediaStreamLocal = new MediaStream();
-      const ua = {} as Parameters<CallManager['startCall']>[0];
-      const getUri = jest.fn(() => {
-        return 'sip:100@domain.test';
-      }) as Parameters<CallManager['startCall']>[1];
-      const params = {
-        number: '100',
-        mediaStream: mediaStreamLocal,
-        extraHeaders: ['X-Test: 1'],
-      };
-
-      callManager.on('start-call', eventHandler);
-
-      // @ts-expect-error доступ к приватному члену для теста
-      jest.spyOn(callManager.mcuSession, 'startCall').mockResolvedValue(peerConnection);
-
-      await callManager.startCall(ua, getUri, params);
-
-      expect(eventHandler).toHaveBeenCalledWith({
-        isPresentationCall: false,
+        extraHeaders: ['X-Test: 1', 'X-Vinteo-Presentation-Call: yes'],
         number: '100',
         answer: false,
       });

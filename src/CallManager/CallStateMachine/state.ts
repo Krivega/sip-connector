@@ -1,12 +1,19 @@
 import hasPeerToPeer from '@/tools/hasPeerToPeer';
 import hasPurgatory from '@/tools/hasPurgatory';
-import { isValidBoolean, isValidString } from '@/utils/validators';
+import { hasValidExtraHeaders, isValidBoolean, isValidString } from '@/utils/validators';
 import { EState } from './types';
 
 import type { TBaseContext, TContextMap, TAnyRoomState } from './types';
 
 const hasConnectingContext = (context: TBaseContext): context is TContextMap[EState.CONNECTING] => {
-  return 'number' in context && isValidString(context.number) && isValidBoolean(context.answer);
+  return (
+    'number' in context &&
+    isValidString(context.number) &&
+    isValidBoolean(context.answer) &&
+    (!('extraHeaders' in context) ||
+      context.extraHeaders === undefined ||
+      hasValidExtraHeaders(context.extraHeaders))
+  );
 };
 
 const hasRoomContext = (
@@ -53,16 +60,21 @@ const hasDirectPeerToPeerContext = (context: TBaseContext): boolean => {
   return 'isDirectPeerToPeer' in context && hasDirectPeerToPeer(context);
 };
 
-const hasPresentationCall = ({ isPresentationCall }: { isPresentationCall?: boolean }): boolean => {
-  return isPresentationCall === true;
+const PRESENTATION_CALL_HEADER = 'x-vinteo-presentation-call: yes';
+
+const hasPresentationCall = (extraHeaders?: string[]): boolean => {
+  return (
+    Array.isArray(extraHeaders) &&
+    extraHeaders.some((header) => {
+      return header.trim().toLowerCase() === PRESENTATION_CALL_HEADER;
+    })
+  );
 };
 
 const hasPresentationCallContext = (
   context: TBaseContext,
 ): context is TContextMap[EState.PRESENTATION_CALL] => {
-  return (
-    hasConnectingContext(context) && 'isPresentationCall' in context && hasPresentationCall(context)
-  );
+  return 'extraHeaders' in context && hasPresentationCall(context.extraHeaders);
 };
 
 const hasInRoomContext = (raw: TBaseContext): boolean => {
@@ -97,9 +109,9 @@ export const STATE_DESCRIPTORS = {
   [EState.CONNECTING]: {
     guard: hasConnectingContext,
     buildContext: (raw: TBaseContext) => {
-      const { number, answer, isPresentationCall } = raw as TContextMap[EState.CONNECTING];
+      const { number, answer, extraHeaders } = raw as TContextMap[EState.CONNECTING];
 
-      return { number, answer, isPresentationCall };
+      return { number, answer, extraHeaders };
     },
   },
   [EState.PRESENTATION_CALL]: {

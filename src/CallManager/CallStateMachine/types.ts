@@ -22,7 +22,7 @@ export type TContextMap = {
   [EState.CONNECTING]: {
     number: string;
     answer: boolean;
-    isPresentationCall?: boolean;
+    extraHeaders?: string[];
   };
   [EState.PRESENTATION_CALL]: {
     number: string;

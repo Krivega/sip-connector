@@ -269,8 +269,11 @@ describe('CallStateMachine', () => {
       }
     });
 
-    it('переходит в PRESENTATION_CALL только после confirmed при isPresentationCall=true', () => {
-      events.trigger('start-call', { ...connectPayload, isPresentationCall: true });
+    it('переходит в PRESENTATION_CALL только после confirmed если заголовок "x-vinteo-presentation-call: yes" присутствует в extraHeaders', () => {
+      events.trigger('start-call', {
+        ...connectPayload,
+        extraHeaders: ['X-Vinteo-Presentation-Call: yes'],
+      });
 
       expect(machine.state).toBe(EState.CONNECTING);
 
@@ -279,8 +282,8 @@ describe('CallStateMachine', () => {
       expect(machine.state).toBe(EState.PRESENTATION_CALL);
     });
 
-    it('не переходит в PRESENTATION_CALL без isPresentationCall', () => {
-      events.trigger('start-call', connectPayload);
+    it('не переходит в PRESENTATION_CALL если заголовок "x-vinteo-presentation-call: yes" отсутствует в extraHeaders', () => {
+      events.trigger('start-call', { ...connectPayload, extraHeaders: ['X-Test: 1'] });
 
       expect(machine.state).toBe(EState.CONNECTING);
 

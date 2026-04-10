@@ -4,7 +4,6 @@ import { EventEmitterProxy } from 'events-constructor';
 import { DeferredCommandRunner } from '@/tools';
 import { createCallStateMachine, EState } from './CallStateMachine';
 import { createEvents } from './events';
-import hasPresentationCall from './hasPresentationCall';
 import { MCUSession } from './MCUSession';
 import { resolveRecvQuality } from './quality';
 import RecvSession from './RecvSession';
@@ -216,10 +215,8 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   public startCall: TStartCall = async (ua, getUri, params) => {
     this.isPendingCall = true;
 
-    const isPresentationCall = hasPresentationCall(params.extraHeaders);
-
     this.events.emit('start-call', {
-      isPresentationCall,
+      extraHeaders: params.extraHeaders,
       number: params.number,
       answer: false,
     });
