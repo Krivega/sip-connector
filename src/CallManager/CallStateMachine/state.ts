@@ -6,14 +6,7 @@ import { EState } from './types';
 import type { TBaseContext, TContextMap, TAnyRoomState } from './types';
 
 const hasConnectingContext = (context: TBaseContext): context is TContextMap[EState.CONNECTING] => {
-  return (
-    'number' in context &&
-    isValidString(context.number) &&
-    isValidBoolean(context.answer) &&
-    (!('extraHeaders' in context) ||
-      context.extraHeaders === undefined ||
-      hasValidExtraHeaders(context.extraHeaders))
-  );
+  return 'number' in context && isValidString(context.number) && isValidBoolean(context.answer);
 };
 
 const hasRoomContext = (
@@ -64,7 +57,7 @@ const PRESENTATION_CALL_HEADER = 'x-vinteo-presentation-call: yes';
 
 const hasPresentationCall = (extraHeaders?: string[]): boolean => {
   return (
-    Array.isArray(extraHeaders) &&
+    hasValidExtraHeaders(extraHeaders) &&
     extraHeaders.some((header) => {
       return header.trim().toLowerCase() === PRESENTATION_CALL_HEADER;
     })
