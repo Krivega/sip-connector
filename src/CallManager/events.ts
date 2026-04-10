@@ -150,6 +150,7 @@ export type TEventMap = {
   'start-call': {
     number: string;
     answer: boolean;
+    extraHeaders?: string[];
   };
   'end-call': never;
   'peerconnection:confirmed': RTCPeerConnection;

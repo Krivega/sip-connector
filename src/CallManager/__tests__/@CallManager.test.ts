@@ -138,6 +138,36 @@ describe('CallManager', () => {
     mockRecvSession.reset();
   });
 
+  describe('startCall', () => {
+    it('передает extraHeaders в start-call', async () => {
+      const eventHandler = jest.fn();
+      const peerConnection = {} as RTCPeerConnection;
+      const mediaStreamLocal = new MediaStream();
+      const ua = {} as Parameters<CallManager['startCall']>[0];
+      const getUri = jest.fn(() => {
+        return 'sip:100@domain.test';
+      }) as Parameters<CallManager['startCall']>[1];
+      const params = {
+        number: '100',
+        mediaStream: mediaStreamLocal,
+        extraHeaders: ['X-Test: 1', 'X-Vinteo-Presentation-Call: yes'],
+      };
+
+      callManager.on('start-call', eventHandler);
+
+      // @ts-expect-error доступ к приватному члену для теста
+      jest.spyOn(callManager.mcuSession, 'startCall').mockResolvedValue(peerConnection);
+
+      await callManager.startCall(ua, getUri, params);
+
+      expect(eventHandler).toHaveBeenCalledWith({
+        extraHeaders: ['X-Test: 1', 'X-Vinteo-Presentation-Call: yes'],
+        number: '100',
+        answer: false,
+      });
+    });
+  });
+
   it('endCall: вызывает reset и terminateAsync', async () => {
     const terminateAsync = jest.fn(async () => {});
 

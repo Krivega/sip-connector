@@ -161,6 +161,7 @@ describe('sessionSelectors', () => {
         ECallStatus.PURGATORY,
         ECallStatus.P2P_ROOM,
         ECallStatus.DIRECT_P2P_ROOM,
+        ECallStatus.PRESENTATION_CALL,
         ECallStatus.IN_ROOM,
         ECallStatus.DISCONNECTING,
       ];
@@ -361,6 +362,16 @@ describe('sessionSelectors', () => {
       expect(sessionSelectors.selectIsInCall(snapshot)).toBe(true);
     });
 
+    it('should return true when call status is PRESENTATION_CALL', () => {
+      const snapshot = createMockSnapshot({
+        call: {
+          value: ECallStatus.PRESENTATION_CALL,
+        } as never,
+      });
+
+      expect(sessionSelectors.selectIsInCall(snapshot)).toBe(true);
+    });
+
     it('should return false when call status is IDLE, CONNECTING or DISCONNECTING', () => {
       const nonInCallStatuses = [
         ECallStatus.IDLE,
@@ -396,6 +407,7 @@ describe('sessionSelectors', () => {
         ECallStatus.PURGATORY,
         ECallStatus.P2P_ROOM,
         ECallStatus.DIRECT_P2P_ROOM,
+        ECallStatus.PRESENTATION_CALL,
       ];
 
       allConnectionStatuses.forEach((connectionStatus) => {
@@ -427,6 +439,32 @@ describe('sessionSelectors', () => {
           const snapshot = createMockSnapshot({
             connection: { value: EConnectionStatus.DISCONNECTED } as never,
             call: { value: ECallStatus.ROOM_PENDING_AUTH } as never,
+            incoming: { value: incomingStatus } as never,
+            presentation: { value: presentationStatus } as never,
+          });
+
+          expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CALL_ACTIVE);
+        });
+      });
+    });
+
+    it('should return CALL_ACTIVE for PRESENTATION_CALL regardless of incoming and presentation status', () => {
+      const incomingStatuses = [
+        EIncomingStatus.IDLE,
+        EIncomingStatus.RINGING,
+        EIncomingStatus.CONSUMED,
+      ];
+      const presentationStatuses = [
+        EPresentationStatus.IDLE,
+        EPresentationStatus.STARTING,
+        EPresentationStatus.ACTIVE,
+      ];
+
+      incomingStatuses.forEach((incomingStatus) => {
+        presentationStatuses.forEach((presentationStatus) => {
+          const snapshot = createMockSnapshot({
+            connection: { value: EConnectionStatus.DISCONNECTED } as never,
+            call: { value: ECallStatus.PRESENTATION_CALL } as never,
             incoming: { value: incomingStatus } as never,
             presentation: { value: presentationStatus } as never,
           });

@@ -14,7 +14,12 @@ type TContext = {
 };
 
 type TCallEvent =
-  | { type: 'CALL.CONNECTING'; number: string; answer: boolean }
+  | {
+      type: 'CALL.CONNECTING';
+      number: string;
+      answer: boolean;
+      extraHeaders?: string[];
+    }
   | {
       type: 'CALL.ENTER_ROOM';
       room: string;
@@ -28,6 +33,7 @@ type TCallEvent =
       conferenceForToken: string;
       participantName: string;
     }
+  | { type: 'CALL.PRESENTATION_CALL' }
   | { type: 'CALL.START_DISCONNECT' }
   | { type: 'CALL.RESET' };
 
@@ -63,6 +69,7 @@ export const createCallMachine = () => {
             ...clearRawContext(),
             number: event.number,
             answer: event.answer,
+            extraHeaders: event.extraHeaders,
           },
         };
       }),
@@ -115,6 +122,18 @@ export const createCallMachine = () => {
           },
         };
       }),
+      setConfirmed: assign(({ event, context }) => {
+        if (event.type !== 'CALL.PRESENTATION_CALL') {
+          return context;
+        }
+
+        return {
+          raw: {
+            ...context.raw,
+            isConfirmed: true as const,
+          },
+        };
+      }),
       reset: assign(() => {
         return { raw: clearRawContext() };
       }),
@@ -148,6 +167,10 @@ export const createCallMachine = () => {
           return { state: STATE_DESCRIPTORS[EState.CONNECTING].buildContext(context.raw) };
         }),
         on: {
+          'CALL.PRESENTATION_CALL': {
+            target: EVALUATE,
+            actions: 'setConfirmed',
+          },
           'CALL.ENTER_ROOM': {
             target: EVALUATE,
             actions: 'setRoomInfo',
@@ -218,6 +241,12 @@ export const createCallMachine = () => {
             target: EState.DISCONNECTING,
             guard: ({ context }) => {
               return STATE_DESCRIPTORS[EState.DISCONNECTING].guard(context.raw);
+            },
+          },
+          {
+            target: EState.PRESENTATION_CALL,
+            guard: ({ context }) => {
+              return STATE_DESCRIPTORS[EState.PRESENTATION_CALL].guard(context.raw);
             },
           },
           {
@@ -297,6 +326,21 @@ export const createCallMachine = () => {
             target: EVALUATE,
             actions: 'setTokenInfo',
           },
+          'CALL.START_DISCONNECT': {
+            target: EVALUATE,
+            actions: 'prepareDisconnect',
+          },
+          'CALL.RESET': {
+            target: EVALUATE,
+            actions: 'reset',
+          },
+        },
+      },
+      [EState.PRESENTATION_CALL]: {
+        entry: assign(({ context }) => {
+          return { state: STATE_DESCRIPTORS[EState.PRESENTATION_CALL].buildContext(context.raw) };
+        }),
+        on: {
           'CALL.START_DISCONNECT': {
             target: EVALUATE,
             actions: 'prepareDisconnect',

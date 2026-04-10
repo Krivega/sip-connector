@@ -1,6 +1,6 @@
 import hasPeerToPeer from '@/tools/hasPeerToPeer';
 import hasPurgatory from '@/tools/hasPurgatory';
-import { isValidBoolean, isValidString } from '@/utils/validators';
+import { hasValidExtraHeaders, isValidBoolean, isValidString } from '@/utils/validators';
 import { EState } from './types';
 
 import type { TBaseContext, TContextMap, TAnyRoomState } from './types';
@@ -53,6 +53,28 @@ const hasDirectPeerToPeerContext = (context: TBaseContext): boolean => {
   return 'isDirectPeerToPeer' in context && hasDirectPeerToPeer(context);
 };
 
+const PRESENTATION_CALL_HEADER = 'x-vinteo-presentation-call: yes';
+
+const hasPresentationCall = (extraHeaders?: string[]): boolean => {
+  return (
+    hasValidExtraHeaders(extraHeaders) &&
+    extraHeaders.some((header) => {
+      return header.trim().toLowerCase() === PRESENTATION_CALL_HEADER;
+    })
+  );
+};
+
+const hasPresentationCallContext = (
+  context: TBaseContext,
+): context is TContextMap[EState.PRESENTATION_CALL] => {
+  return (
+    'extraHeaders' in context &&
+    hasPresentationCall(context.extraHeaders) &&
+    'isConfirmed' in context &&
+    context.isConfirmed === true
+  );
+};
+
 const hasInRoomContext = (raw: TBaseContext): boolean => {
   return (
     hasAnyRoomContext(raw) &&
@@ -85,7 +107,15 @@ export const STATE_DESCRIPTORS = {
   [EState.CONNECTING]: {
     guard: hasConnectingContext,
     buildContext: (raw: TBaseContext) => {
-      const { number, answer } = raw as TContextMap[EState.CONNECTING];
+      const { number, answer, extraHeaders } = raw as TContextMap[EState.CONNECTING];
+
+      return { number, answer, extraHeaders };
+    },
+  },
+  [EState.PRESENTATION_CALL]: {
+    guard: hasPresentationCallContext,
+    buildContext: (raw: TBaseContext) => {
+      const { number, answer } = raw as TContextMap[EState.PRESENTATION_CALL];
 
       return { number, answer };
     },

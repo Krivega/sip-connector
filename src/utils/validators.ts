@@ -10,3 +10,12 @@ export const isValidObject = (value: unknown): value is Record<string, unknown> 
 export const isValidBoolean = (value: unknown): value is boolean => {
   return typeof value === 'boolean';
 };
+
+export const hasValidExtraHeaders = (extraHeaders: unknown): extraHeaders is string[] => {
+  return (
+    Array.isArray(extraHeaders) &&
+    extraHeaders.every((header) => {
+      return typeof header === 'string';
+    })
+  );
+};

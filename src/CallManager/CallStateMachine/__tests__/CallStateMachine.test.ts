@@ -268,6 +268,33 @@ describe('CallStateMachine', () => {
         expect(machine.state).toBe(step.expected);
       }
     });
+
+    it('должен перейти в PRESENTATION_CALL после confirmed если в extraHeaders есть presentation-заголовок', () => {
+      events.trigger('start-call', {
+        ...connectPayload,
+        extraHeaders: ['X-Vinteo-Presentation-Call: yes'],
+      });
+
+      expect(machine.state).toBe(EState.CONNECTING);
+      expect(getRawContext().isConfirmed).toBeUndefined();
+
+      events.trigger('confirmed', undefined as never);
+
+      expect(machine.state).toBe(EState.PRESENTATION_CALL);
+      expect(getRawContext().isConfirmed).toBe(true);
+    });
+
+    it('не должен перейти в PRESENTATION_CALL после confirmed если в extraHeaders нет presentation-заголовка', () => {
+      events.trigger('start-call', { ...connectPayload, extraHeaders: ['X-Test: 1'] });
+
+      expect(machine.state).toBe(EState.CONNECTING);
+      expect(getRawContext().isConfirmed).toBeUndefined();
+
+      events.trigger('confirmed', undefined as never);
+
+      expect(machine.state).toBe(EState.CONNECTING);
+      expect(getRawContext().isConfirmed).toBe(true);
+    });
   });
 
   describe('Геттеры состояний', () => {
@@ -1570,6 +1597,7 @@ describe('CallStateMachine', () => {
                 setConnecting?: AssignAction;
                 setRoomInfo?: AssignAction;
                 setTokenInfo?: AssignAction;
+                setConfirmed?: AssignAction;
               };
             };
           };
@@ -1647,6 +1675,16 @@ describe('CallStateMachine', () => {
     it('setTokenInfo: возвращает context при event.type !== CALL.TOKEN_ISSUED', () => {
       const context = { raw: {}, state: {} };
       const result = getSnapshot().machine.implementations.actions.setTokenInfo?.assignment({
+        context,
+        event: { type: 'CALL.ENTER_ROOM', room: 'room', participantName: 'participantName' },
+      });
+
+      expect(result).toBe(context);
+    });
+
+    it('setConfirmed: не должен изменять context если event.type не CALL.PRESENTATION_CALL', () => {
+      const context = { raw: { ...connectPayload }, state: { ...connectPayload } };
+      const result = getSnapshot().machine.implementations.actions.setConfirmed?.assignment({
         context,
         event: { type: 'CALL.ENTER_ROOM', room: 'room', participantName: 'participantName' },
       });
