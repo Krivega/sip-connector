@@ -107,7 +107,7 @@ export const STATE_DESCRIPTORS = {
     buildContext: (raw: TBaseContext) => {
       const { number, answer } = raw as TContextMap[EState.PRESENTATION_CALL];
 
-      return { number, answer, isPresentationCall: true };
+      return { number, answer };
     },
   },
   [EState.ROOM_PENDING_AUTH]: {

@@ -27,7 +27,6 @@ export type TContextMap = {
   [EState.PRESENTATION_CALL]: {
     number: string;
     answer: boolean;
-    isPresentationCall: true;
   };
   [EState.ROOM_PENDING_AUTH]: TAnyRoomState;
   [EState.PURGATORY]: TAnyRoomState;
