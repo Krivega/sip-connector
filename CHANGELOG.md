@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [26.20.0](https://github.com/Krivega/sip-connector/compare/v26.19.0...v26.20.0) (2026-04-10)
+
+### Features
+
+- **auto-connector:** add XState machine and architecture doc for reconnect flow ([7d1bbcb](https://github.com/Krivega/sip-connector/commit/7d1bbcb6e3a222c0c51848ebcaf4fe046c413710))
+- **ConnectionFlow:** add connect and disconnect buttons with corresponding event handlers and update session management ([aacf53b](https://github.com/Krivega/sip-connector/commit/aacf53bb7774742885b113bbbfe9a7fcfb4ec072))
+- **demo:** implement session status diagrams and update status management in the app ([cd9a635](https://github.com/Krivega/sip-connector/commit/cd9a6357cc87f7ba914287c84aae1b5888083cab))
+- **session:** add debug logging for connection and media state management ([eae4203](https://github.com/Krivega/sip-connector/commit/eae4203be2713fa0f5762c3b8b149aa04cb584a2))
+- **session:** enhance system status selector to include AutoConnector states and add corresponding tests ([9475d49](https://github.com/Krivega/sip-connector/commit/9475d49051182c6bcad979521761e35f894b135f))
+- **session:** expose AutoConnector state in SessionManager snapshot ([f09c9b8](https://github.com/Krivega/sip-connector/commit/f09c9b81a7a6d18a105d61f8d9010f460eb821b3))
+
+### Bug Fixes
+
+- add new route for presentation call in call manager ([#74](https://github.com/Krivega/sip-connector/issues/74)) ([88d725a](https://github.com/Krivega/sip-connector/commit/88d725aa50914c8a8cdae9ffb15485bf2e9622b9))
+
 ## [26.19.0](https://github.com/Krivega/sip-connector/compare/v26.18.3...v26.19.0) (2026-04-07)
 
 ### Features
