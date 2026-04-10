@@ -1597,6 +1597,7 @@ describe('CallStateMachine', () => {
                 setConnecting?: AssignAction;
                 setRoomInfo?: AssignAction;
                 setTokenInfo?: AssignAction;
+                setConfirmed?: AssignAction;
               };
             };
           };
@@ -1674,6 +1675,16 @@ describe('CallStateMachine', () => {
     it('setTokenInfo: возвращает context при event.type !== CALL.TOKEN_ISSUED', () => {
       const context = { raw: {}, state: {} };
       const result = getSnapshot().machine.implementations.actions.setTokenInfo?.assignment({
+        context,
+        event: { type: 'CALL.ENTER_ROOM', room: 'room', participantName: 'participantName' },
+      });
+
+      expect(result).toBe(context);
+    });
+
+    it('setConfirmed: не должен изменять context если event.type не CALL.PRESENTATION_CALL', () => {
+      const context = { raw: { ...connectPayload }, state: { ...connectPayload } };
+      const result = getSnapshot().machine.implementations.actions.setConfirmed?.assignment({
         context,
         event: { type: 'CALL.ENTER_ROOM', room: 'room', participantName: 'participantName' },
       });
