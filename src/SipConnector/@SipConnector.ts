@@ -1,7 +1,7 @@
 import { C as JsSIP_C, IncomingResponse } from '@krivega/jssip';
 import { EventEmitterProxy } from 'events-constructor';
 
-import { ApiManager, hasPresentationCall } from '@/ApiManager';
+import { ApiManager } from '@/ApiManager';
 import { AutoConnectorManager } from '@/AutoConnectorManager';
 import { CallManager } from '@/CallManager';
 import { ConnectionManager } from '@/ConnectionManager';
@@ -282,11 +282,9 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     params: Omit<Parameters<CallManager['startCall']>[2], 'isPresentationCall'>,
   ) => {
     const { onAddedTransceiver, ...rest } = params;
-    const isPresentationCall = hasPresentationCall(rest.extraHeaders);
 
     return this.callManager.startCall(this.connectionManager.getUaProtected(), this.getUri, {
       ...rest,
-      isPresentationCall,
       onAddedTransceiver: this.resolveHandleAddTransceiver(onAddedTransceiver),
     });
   };

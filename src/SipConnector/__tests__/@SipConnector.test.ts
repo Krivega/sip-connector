@@ -497,37 +497,6 @@ describe('SipConnector', () => {
     expect(replaceStream).toHaveBeenCalled();
   });
 
-  it('call: вычисляет и пробрасывает isPresentationCall в callManager.startCall', async () => {
-    jest.spyOn(sipConnector.connectionManager, 'getUaProtected').mockReturnValue({} as UA);
-    jest.spyOn(sipConnector, 'getUri').mockImplementation((id: string) => {
-      return `sip:${id}@host`;
-    });
-
-    const startCall = jest
-      .spyOn(sipConnector.callManager, 'startCall')
-      .mockResolvedValue({} as unknown as RTCPeerConnection);
-
-    const stream = createMediaStreamMock({
-      audio: { deviceId: { exact: 'audioDeviceId' } },
-      video: { deviceId: { exact: 'videoDeviceId' } },
-    });
-
-    await sipConnector.call({
-      number: '100',
-      mediaStream: stream,
-      extraHeaders: ['X-Vinteo-Presentation-Call: yes'],
-    });
-
-    expect(startCall).toHaveBeenCalledWith(
-      expect.any(Object),
-      expect.any(Function),
-      expect.objectContaining({
-        number: '100',
-        isPresentationCall: true,
-      }),
-    );
-  });
-
   it('localPorts: проксирует геттер CallManager.localPorts', () => {
     const localPortsSpy = jest
       .spyOn(sipConnector.callManager, 'localPorts', 'get')
