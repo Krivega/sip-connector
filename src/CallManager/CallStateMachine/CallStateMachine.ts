@@ -1,6 +1,7 @@
 import { BaseStateMachine } from '@/tools/BaseStateMachine';
 import { createCallMachine } from './createCallMachine';
-import { CALL_MACHINE_EVALUATE_STATE, EState } from './types';
+import { shouldResetInRoomCredentialsPrevious } from './inRoomCredentialsPreviousReset';
+import { EState } from './types';
 
 import type { TApiManagerEvents } from '@/ApiManager';
 import type { TEvents } from '../events';
@@ -276,8 +277,8 @@ class CallStateMachine extends BaseStateMachine<TMachine, EState, TContext, TSna
         return;
       }
 
-      // Не сбрасываем на `evaluate` — см. п. 3-4 в JSDoc выше.
-      if (snapshot.value !== CALL_MACHINE_EVALUATE_STATE) {
+      // Не сбрасываем на `evaluate` — см. п. 3-4 в JSDoc и `shouldResetInRoomCredentialsPrevious`.
+      if (shouldResetInRoomCredentialsPrevious(snapshot.value)) {
         previous = undefined;
       }
     });

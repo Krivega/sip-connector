@@ -2,11 +2,13 @@ import { createApiManagerEvents } from '@/ApiManager';
 import { PURGATORY_CONFERENCE_NUMBER } from '@/tools/hasPurgatory';
 import { createEvents } from '../../events';
 import { createCallStateMachine } from '../CallStateMachine';
-import { EState } from '../types';
+import { CALL_MACHINE_EVALUATE_STATE, EState } from '../types';
 
+import type { SnapshotFrom } from 'xstate';
 import type { TApiManagerEvents } from '@/ApiManager';
 import type { TEventName, TEvents } from '../../events';
 import type { ICallStateMachine } from '../CallStateMachine';
+import type { createCallMachine } from '../createCallMachine';
 
 describe('CallStateMachine', () => {
   let apiManagerEvents: TApiManagerEvents;
@@ -598,6 +600,37 @@ describe('CallStateMachine', () => {
       expect(callback).toHaveBeenCalledTimes(1);
     });
 
+    it('снимок evaluate (как у актора) не сбрасывает previous: ложная ветка if на месте вызова', () => {
+      const subscribeSpy = jest.spyOn(machine, 'subscribe');
+      const callback = jest.fn();
+
+      machine.onInRoomCredentialsChange(callback);
+
+      const credentialsListener = subscribeSpy.mock.calls.at(-1)?.[0];
+
+      if (credentialsListener === undefined) {
+        throw new Error('credentialsListener is undefined');
+      }
+
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+
+      expect(machine.state).toBe(EState.IN_ROOM);
+      expect(callback).toHaveBeenCalledTimes(1);
+
+      credentialsListener({
+        value: CALL_MACHINE_EVALUATE_STATE,
+        context: machine.getSnapshot().context,
+      } as SnapshotFrom<ReturnType<typeof createCallMachine>>);
+
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+
+      expect(callback).toHaveBeenCalledTimes(1);
+
+      subscribeSpy.mockRestore();
+    });
+
     it('сбрасывает отслеживание после выхода в IDLE и снова вызывает при новом IN_ROOM', () => {
       const callback = jest.fn();
 
@@ -1092,6 +1125,46 @@ describe('CallStateMachine', () => {
 
       expect(machine.state).toBe(EState.IDLE);
       expect(machine.inRoomContext).toBeUndefined();
+    });
+  });
+
+  describe('number', () => {
+    it('возвращает undefined в IDLE, когда в raw нет поля number', () => {
+      expect(machine.number).toBeUndefined();
+    });
+
+    it('возвращает номер из raw при наличии number', () => {
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+
+      expect(machine.number).toBe(connectPayload.number);
+    });
+  });
+
+  describe('reset', () => {
+    it('вызывает send с CALL.RESET', () => {
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+
+      const sendSpy = jest.spyOn(machine, 'send');
+
+      machine.reset();
+
+      expect(sendSpy).toHaveBeenCalledWith({ type: 'CALL.RESET' });
+
+      sendSpy.mockRestore();
+    });
+  });
+
+  describe('token', () => {
+    it('возвращает undefined вне IN_ROOM', () => {
+      expect(machine.token).toBeUndefined();
+    });
+
+    it('в IN_ROOM возвращает JWT из inRoomContext', () => {
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+
+      expect(machine.token).toBe(token1Context.token);
     });
   });
 
