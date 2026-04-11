@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [26.21.0](https://github.com/Krivega/sip-connector/compare/v26.20.0...v26.21.0) (2026-04-11)
+
+### Features
+
+- **CallManager:** refactor session management to utilize in-room credentials for token and conference number ([5b95416](https://github.com/Krivega/sip-connector/commit/5b9541649786dd24774c6caad05e2a7623dd522a))
+- **CallStateMachine:** add getInRoomCredentials method to retrieve token and conferenceForToken in IN_ROOM state with corresponding tests ([0a38276](https://github.com/Krivega/sip-connector/commit/0a3827602cf59970ec4b18897f8ec323fa1f60b1))
+- **CallStateMachine:** implement onInRoomCredentialsChange method to track token and conference changes in IN_ROOM state ([e69d179](https://github.com/Krivega/sip-connector/commit/e69d179e5b179073460164bca8b160fd7d998475))
+- **CallStateMachine:** introduce shouldResetInRoomCredentialsPrevious function and update state handling logic ([d30ebd7](https://github.com/Krivega/sip-connector/commit/d30ebd7d3da8e232275db31804d1270c7d1c83e5))
+
 ## [26.20.0](https://github.com/Krivega/sip-connector/compare/v26.19.0...v26.20.0) (2026-04-10)
 
 ### Features
