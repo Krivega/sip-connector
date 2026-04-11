@@ -109,6 +109,8 @@ class CallManager extends EventEmitterProxy<TEventMap> {
 
   private disposeRecvSessionTrackListener?: () => void;
 
+  private disposeInRoomCredentialsListener?: () => void;
+
   private readonly deferredStartRecvSessionRunner: DeferredCommandRunner<
     TCallRoleSpectator['recvParams'],
     EState
@@ -566,12 +568,9 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     params: { audioChannel: string; quality?: TRecvQuality },
     { silent }: { silent?: boolean } = {},
   ) {
-    const token = getInRoomTokenOrThrow(this.stateMachine);
-
     return this.startRecvSession(
       { audioChannel: params.audioChannel, quality: params.quality },
       {
-        token,
         silent,
       },
     );
@@ -579,13 +578,15 @@ class CallManager extends EventEmitterProxy<TEventMap> {
 
   private async startRecvSession(
     { audioChannel, quality }: { audioChannel: string; quality?: TRecvQuality },
-    { token, silent }: { token: string; silent?: boolean },
+    { silent }: { silent?: boolean } = {},
   ): Promise<
     { session: RecvSession; callResult: boolean } | { session: undefined; callResult: false }
   > {
-    const conferenceNumber = this.stateMachine.number;
+    this.disposeInRoomCredentialsListener?.();
 
-    if (conferenceNumber === undefined) {
+    const credentials = this.stateMachine.getInRoomCredentials();
+
+    if (credentials === undefined) {
       return { session: undefined, callResult: false };
     }
 
@@ -603,12 +604,23 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     this.recvRemoteStreamsManager.reset();
     this.attachRecvSessionTracks(session);
 
-    const callPromise = session.call({ conferenceNumber, token });
+    const callPromise = session.call({
+      conferenceNumber: credentials.conferenceForToken,
+      token: credentials.token,
+    });
 
     return callPromise
       .then((result) => {
         if (silent !== true) {
           this.events.emit('recv-session-started');
+        }
+
+        if (result) {
+          this.disposeInRoomCredentialsListener = this.stateMachine.onInRoomCredentialsChange(
+            () => {
+              this.renegotiateRecvSession().catch(() => {});
+            },
+          );
         }
 
         return { session, callResult: result };
@@ -629,6 +641,9 @@ class CallManager extends EventEmitterProxy<TEventMap> {
 
   private stopRecvSession({ silent }: { silent?: boolean } = {}) {
     const isActive = Boolean(this.recvSession);
+
+    this.disposeInRoomCredentialsListener?.();
+    this.disposeInRoomCredentialsListener = undefined;
 
     this.recvSession?.close();
     this.recvSession = undefined;
@@ -656,19 +671,13 @@ class CallManager extends EventEmitterProxy<TEventMap> {
 
     if (RoleManager.isEnteringSpectatorRole(previous, next)) {
       const params = next.recvParams;
-      const { token } = this.stateMachine;
 
-      if (token === undefined) {
+      if (this.stateMachine.getInRoomCredentials() === undefined) {
         this.deferredStartRecvSessionRunner.set({
           audioId: params.audioId,
         });
       } else {
-        this.startRecvSession(
-          { audioChannel: params.audioId },
-          {
-            token,
-          },
-        ).catch(() => {});
+        this.startRecvSession({ audioChannel: params.audioId }).catch(() => {});
       }
     }
 
@@ -689,14 +698,16 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   }
 
   private async renegotiateRecvSession() {
-    const conferenceNumber = this.stateMachine.number;
-    const { token } = this.stateMachine;
+    const credentials = this.stateMachine.getInRoomCredentials();
 
-    if (conferenceNumber === undefined || token === undefined || this.recvSession === undefined) {
+    if (credentials === undefined || this.recvSession === undefined) {
       return false;
     }
 
-    return this.recvSession.renegotiate({ conferenceNumber, token });
+    return this.recvSession.renegotiate({
+      conferenceNumber: credentials.conferenceForToken,
+      token: credentials.token,
+    });
   }
 
   private async renegotiateMcuSession() {

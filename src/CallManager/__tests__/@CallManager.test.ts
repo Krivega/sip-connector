@@ -37,7 +37,7 @@ const mockRecvSession = (() => {
       addEventListener: jest.fn(),
       removeEventListener: jest.fn(),
     };
-    const call = jest.fn().mockResolvedValue(undefined);
+    const call = jest.fn().mockResolvedValue(true);
     const renegotiate = jest.fn().mockResolvedValue(true);
     const close = jest.fn();
     const setQuality = jest.fn().mockResolvedValue(true);
@@ -117,6 +117,13 @@ jest.mock('../RecvSession', () => {
     }),
   };
 });
+
+const mockGetInRoomCredentials = (
+  callManager: CallManager,
+  credentials: { token: string; conferenceForToken: string } | undefined,
+) => {
+  return jest.spyOn(callManager.stateMachine, 'getInRoomCredentials').mockReturnValue(credentials);
+};
 
 // Вспомогательный тип для доступа к защищённым свойствам CallManager
 interface CallManagerTestAccess {
@@ -205,8 +212,10 @@ describe('CallManager', () => {
   });
 
   it('getRecvQuality: возвращает текущее качество', () => {
-    jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('123');
-    jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue('test-token');
+    mockGetInRoomCredentials(callManager, {
+      token: 'test-token',
+      conferenceForToken: '123',
+    });
 
     callManager.setCallRoleSpectator({ audioId: '1' });
 
@@ -230,7 +239,7 @@ describe('CallManager', () => {
   });
 
   it('applyQuality: при отсутствии recvSession возвращает false', async () => {
-    jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue(undefined);
+    mockGetInRoomCredentials(callManager, undefined);
     callManager.setCallRoleSpectator({ audioId: '1' });
 
     const result = await callManager.applyQuality('low');
@@ -240,8 +249,10 @@ describe('CallManager', () => {
   });
 
   it('applyQuality: при роли spectator применяет качество через RecvSession', async () => {
-    jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('123');
-    jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue('test-token');
+    mockGetInRoomCredentials(callManager, {
+      token: 'test-token',
+      conferenceForToken: '123',
+    });
 
     callManager.setCallRoleSpectator({ audioId: '1' });
 
@@ -252,8 +263,10 @@ describe('CallManager', () => {
   });
 
   it('applyQuality: возвращает false при отсутствии effective change', async () => {
-    jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('123');
-    jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue('test-token');
+    mockGetInRoomCredentials(callManager, {
+      token: 'test-token',
+      conferenceForToken: '123',
+    });
 
     callManager.setCallRoleSpectator({ audioId: '1' });
 
@@ -268,8 +281,10 @@ describe('CallManager', () => {
   });
 
   it('applyQuality: при ошибке внутри RecvSession пробрасывает исключение', async () => {
-    jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('123');
-    jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue('test-token');
+    mockGetInRoomCredentials(callManager, {
+      token: 'test-token',
+      conferenceForToken: '123',
+    });
 
     callManager.setCallRoleSpectator({ audioId: '1' });
 
@@ -864,8 +879,10 @@ describe('CallManager', () => {
 
   describe('applyQuality: событие recv-quality-changed', () => {
     it('триггерит событие recv-quality-changed при успешном изменении качества', async () => {
-      jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('123');
-      jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue('test-token');
+      mockGetInRoomCredentials(callManager, {
+        token: 'test-token',
+        conferenceForToken: '123',
+      });
 
       callManager.setCallRoleSpectator({ audioId: '1' });
 
@@ -891,8 +908,10 @@ describe('CallManager', () => {
     });
 
     it('не триггерит событие recv-quality-changed когда applied === false', async () => {
-      jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('123');
-      jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue('test-token');
+      mockGetInRoomCredentials(callManager, {
+        token: 'test-token',
+        conferenceForToken: '123',
+      });
 
       callManager.setCallRoleSpectator({ audioId: '1' });
 
@@ -911,8 +930,10 @@ describe('CallManager', () => {
     });
 
     it('событие recv-quality-changed содержит правильные данные при изменении с auto на low', async () => {
-      jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('123');
-      jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue('test-token');
+      mockGetInRoomCredentials(callManager, {
+        token: 'test-token',
+        conferenceForToken: '123',
+      });
 
       callManager.setCallRoleSpectator({ audioId: '1' });
 
@@ -936,8 +957,10 @@ describe('CallManager', () => {
     });
 
     it('событие recv-quality-changed содержит правильные данные при изменении с high на medium', async () => {
-      jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('123');
-      jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue('test-token');
+      mockGetInRoomCredentials(callManager, {
+        token: 'test-token',
+        conferenceForToken: '123',
+      });
 
       callManager.setCallRoleSpectator({ audioId: '1' });
 
@@ -961,8 +984,10 @@ describe('CallManager', () => {
     });
 
     it('событие recv-quality-changed содержит правильные данные при изменении с low на auto', async () => {
-      jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('123');
-      jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue('test-token');
+      mockGetInRoomCredentials(callManager, {
+        token: 'test-token',
+        conferenceForToken: '123',
+      });
 
       callManager.setCallRoleSpectator({ audioId: '1' });
 
@@ -1024,8 +1049,7 @@ describe('CallManager', () => {
   });
 
   it('renegotiate: должен пересогласовать recvSession для наблюдателя', async () => {
-    jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('100');
-    jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue('token');
+    mockGetInRoomCredentials(callManager, { token: 'token', conferenceForToken: '100' });
 
     callManager.setCallRoleSpectator({
       audioId: 'audio-1',
@@ -1050,8 +1074,7 @@ describe('CallManager', () => {
   });
 
   it('renegotiate: должен вернуть ошибку при пересогласовании для наблюдателя если renegotiate вернул ошибку', async () => {
-    jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('100');
-    jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue('token');
+    mockGetInRoomCredentials(callManager, { token: 'token', conferenceForToken: '100' });
 
     callManager.setCallRoleSpectator({
       audioId: 'audio-1',
@@ -1124,7 +1147,7 @@ describe('CallManager', () => {
   it('getMainRemoteStream: должен вернуть поток из recvSession для наблюдателя', () => {
     const stream = new MediaStream();
 
-    jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue('token');
+    mockGetInRoomCredentials(callManager, { token: 'token', conferenceForToken: '100' });
 
     callManager.setCallRoleSpectator({
       audioId: 'audio-1',
@@ -1215,8 +1238,7 @@ describe('CallManager', () => {
     });
 
     it('возвращает peerConnection из recvSession для наблюдателя', () => {
-      jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('100');
-      jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue('token');
+      mockGetInRoomCredentials(callManager, { token: 'token', conferenceForToken: '100' });
 
       callManager.setCallRoleSpectator({
         audioId: 'audio-1',
@@ -1310,7 +1332,7 @@ describe('CallManager', () => {
       expect(cm.stateMachine.state).toBe('call:inRoom');
       expect(mockRecvSession.instance).toBeDefined();
       expect(mockRecvSession.instance?.call).toHaveBeenCalledWith({
-        conferenceNumber: '100',
+        conferenceNumber: 'r1',
         token: 'token1',
       });
     });
@@ -1394,7 +1416,7 @@ describe('CallManager', () => {
       await flushPromises();
 
       expect(mockRecvSession.instance?.call).toHaveBeenCalledWith({
-        conferenceNumber: '100',
+        conferenceNumber: 'r1',
         token: 'token1',
       });
     });
@@ -1813,7 +1835,7 @@ describe('CallManager - дополнительные тесты для покр�
       // @ts-expect-error
       .spyOn(callManager, 'stopRecvSession');
 
-    jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue('token');
+    mockGetInRoomCredentials(callManager, { token: 'token', conferenceForToken: '100' });
 
     const startSpy = jest
       // @ts-expect-error
@@ -1829,12 +1851,7 @@ describe('CallManager - дополнительные тесты для покр�
     // Вход в spectator
     // @ts-expect-error
     callManager.onRoleChanged({ previous: { type: 'participant' }, next: spectatorRole });
-    expect(startSpy).toHaveBeenCalledWith(
-      { audioChannel: 'a1' },
-      {
-        token: 'token',
-      },
-    );
+    expect(startSpy).toHaveBeenCalledWith({ audioChannel: 'a1' });
 
     startSpy.mockClear();
 
@@ -2078,17 +2095,12 @@ describe('CallManager - дополнительные тесты для покр�
       },
     };
 
-    jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue('token');
+    mockGetInRoomCredentials(callManager, { token: 'token', conferenceForToken: '100' });
 
     // Вход в spectator с первым audioId
     // @ts-expect-error
     callManager.onRoleChanged({ previous: { type: 'participant' }, next: firstSpectatorRole });
-    expect(startSpy).toHaveBeenCalledWith(
-      { audioChannel: 'a1' },
-      {
-        token: 'token',
-      },
-    );
+    expect(startSpy).toHaveBeenCalledWith({ audioChannel: 'a1' });
     expect(startSpy).toHaveBeenCalledTimes(1);
 
     startSpy.mockClear();
@@ -2100,12 +2112,7 @@ describe('CallManager - дополнительные тесты для покр�
     // startRecvSession вызывается с новым audioId, что означает перезапуск сессии
     // (startRecvSession внутри вызывает stopRecvSession перед созданием новой сессии)
     expect(startSpy).toHaveBeenCalledTimes(1);
-    expect(startSpy).toHaveBeenCalledWith(
-      { audioChannel: 'a2' },
-      {
-        token: 'token',
-      },
-    );
+    expect(startSpy).toHaveBeenCalledWith({ audioChannel: 'a2' });
   });
 
   it('onRoleChanged: проглатывает ошибку startRecvSession при входе в spectator', async () => {
@@ -2122,7 +2129,7 @@ describe('CallManager - дополнительные тесты для покр�
       },
     };
 
-    jest.spyOn(callManager.stateMachine, 'token', 'get').mockReturnValue('token');
+    mockGetInRoomCredentials(callManager, { token: 'token', conferenceForToken: '100' });
 
     // @ts-expect-error
     callManager.onRoleChanged({ previous: { type: 'participant' }, next: spectatorRole });
@@ -2180,12 +2187,14 @@ describe('CallManager - дополнительные тесты для покр�
     expect(peerConnection.removeEventListener).toHaveBeenCalledWith('track', handler);
   });
 
-  it('startRecvSession: не стартует без conferenceNumber', () => {
-    (
+  it('startRecvSession: не стартует без учётных данных комнаты', async () => {
+    mockGetInRoomCredentials(callManager, undefined);
+
+    await (
       callManager as unknown as {
-        startRecvSession: (id: string, params: { token: string }) => void;
+        startRecvSession: (params: { audioChannel: string }) => Promise<unknown>;
       }
-    ).startRecvSession('audio-id', { token: 'test-token' });
+    ).startRecvSession({ audioChannel: 'audio-id' });
 
     const RecvSessionModule = jest.requireMock('../RecvSession') as { default: jest.Mock };
 
@@ -2193,7 +2202,10 @@ describe('CallManager - дополнительные тесты для покр�
   });
 
   it('startRecvSession: создаёт RecvSession, ресетит менеджер и вызывает call', async () => {
-    jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('123');
+    mockGetInRoomCredentials(callManager, {
+      token: 'test-token',
+      conferenceForToken: 'conf-for-token-123',
+    });
 
     const recvManager = Reflect.get(
       callManager as unknown as object,
@@ -2217,17 +2229,17 @@ describe('CallManager - дополнительные тесты для покр�
       )
       .mockImplementation(() => {});
 
-    (
+    await (
       callManager as unknown as {
-        startRecvSession: (params: { audioChannel: string }, { token }: { token: string }) => void;
+        startRecvSession: (params: { audioChannel: string }) => Promise<unknown>;
       }
-    ).startRecvSession({ audioChannel: 'audio-id' }, { token: 'test-token' });
+    ).startRecvSession({ audioChannel: 'audio-id' });
 
     expect(recvResetSpy).toHaveBeenCalled();
     expect(attachSpy).toHaveBeenCalled();
     expect(stopSpy).toHaveBeenCalledTimes(1); // initial stop before creating new session
     expect(mockRecvSession.instance?.call).toHaveBeenCalledWith({
-      conferenceNumber: '123',
+      conferenceNumber: 'conf-for-token-123',
       token: 'test-token',
     });
     expect(mockRecvSession.instance?.config).toMatchObject({
@@ -2237,10 +2249,13 @@ describe('CallManager - дополнительные тесты для покр�
     });
   });
 
-  it('startRecvSession: передаёт pcConfig из mcuSession.getPcConfig() в RecvSession', () => {
+  it('startRecvSession: передаёт pcConfig из mcuSession.getPcConfig() в RecvSession', async () => {
     const iceServers: RTCIceServer[] = [{ urls: 'stun:stun.example.com' }];
 
-    jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('123');
+    mockGetInRoomCredentials(callManager, {
+      token: 'test-token',
+      conferenceForToken: '123',
+    });
 
     const getPcConfigSpy = jest
       // @ts-expect-error mcuSession is private
@@ -2257,11 +2272,11 @@ describe('CallManager - дополнительные тесты для покр�
       .spyOn(callManager as unknown as { stopRecvSession: () => void }, 'stopRecvSession')
       .mockImplementation(() => {});
 
-    (
+    await (
       callManager as unknown as {
-        startRecvSession: (params: { audioChannel: string }, { token }: { token: string }) => void;
+        startRecvSession: (params: { audioChannel: string }) => Promise<unknown>;
       }
-    ).startRecvSession({ audioChannel: 'audio-id' }, { token: 'test-token' });
+    ).startRecvSession({ audioChannel: 'audio-id' });
 
     expect(getPcConfigSpy).toHaveBeenCalled();
     expect(mockRecvSession.instance?.config).toMatchObject({
@@ -2269,8 +2284,11 @@ describe('CallManager - дополнительные тесты для покр�
     });
   });
 
-  it('startRecvSession: передаёт pcConfig: undefined когда getPcConfig возвращает undefined', () => {
-    jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('123');
+  it('startRecvSession: передаёт pcConfig: undefined когда getPcConfig возвращает undefined', async () => {
+    mockGetInRoomCredentials(callManager, {
+      token: 'test-token',
+      conferenceForToken: '123',
+    });
     // @ts-expect-error mcuSession is private
     jest.spyOn(callManager.mcuSession, 'getPcConfig').mockReturnValue(undefined);
     jest
@@ -2283,17 +2301,20 @@ describe('CallManager - дополнительные тесты для покр�
       .spyOn(callManager as unknown as { stopRecvSession: () => void }, 'stopRecvSession')
       .mockImplementation(() => {});
 
-    (
+    await (
       callManager as unknown as {
-        startRecvSession: (params: { audioChannel: string }, { token }: { token: string }) => void;
+        startRecvSession: (params: { audioChannel: string }) => Promise<unknown>;
       }
-    ).startRecvSession({ audioChannel: 'audio-id' }, { token: 'test-token' });
+    ).startRecvSession({ audioChannel: 'audio-id' });
 
     expect(mockRecvSession.instance?.config).toHaveProperty('pcConfig', undefined);
   });
 
   it('startRecvSession: триггерит событие recv-session-started при успешном завершении call', async () => {
-    jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('123');
+    mockGetInRoomCredentials(callManager, {
+      token: 'test-token',
+      conferenceForToken: '123',
+    });
 
     jest
       .spyOn(
@@ -2316,11 +2337,11 @@ describe('CallManager - дополнительные тесты для покр�
 
     callManager.on('recv-session-started', eventHandler);
 
-    (
+    await (
       callManager as unknown as {
-        startRecvSession: (id: string, params: { token: string }) => void;
+        startRecvSession: (params: { audioChannel: string }) => Promise<unknown>;
       }
-    ).startRecvSession('audio-id', { token: 'test-token' });
+    ).startRecvSession({ audioChannel: 'audio-id' });
 
     // Ждем завершения промиса call
     await flushPromises();
@@ -2329,7 +2350,10 @@ describe('CallManager - дополнительные тесты для покр�
   });
 
   it('startRecvSession: при silent: true не эмитит recv-session-started', async () => {
-    jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('123');
+    mockGetInRoomCredentials(callManager, {
+      token: 'test-token',
+      conferenceForToken: '123',
+    });
 
     jest
       .spyOn(
@@ -2352,14 +2376,14 @@ describe('CallManager - дополнительные тесты для покр�
 
     callManager.on('recv-session-started', eventHandler);
 
-    (
+    await (
       callManager as unknown as {
         startRecvSession: (
           params: { audioChannel: string },
-          options: { token: string; silent?: boolean },
-        ) => void;
+          options: { silent?: boolean },
+        ) => Promise<unknown>;
       }
-    ).startRecvSession({ audioChannel: 'audio-id' }, { token: 'test-token', silent: true });
+    ).startRecvSession({ audioChannel: 'audio-id' }, { silent: true });
 
     await flushPromises();
 
@@ -2367,7 +2391,10 @@ describe('CallManager - дополнительные тесты для покр�
   });
 
   it('startRecvSession: при ошибке call выполняет stopRecvSession и endCall', async () => {
-    jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('123');
+    mockGetInRoomCredentials(callManager, {
+      token: 'test-token',
+      conferenceForToken: '123',
+    });
 
     const stopSpy = jest
       .spyOn(
@@ -2396,9 +2423,9 @@ describe('CallManager - дополнительные тесты для покр�
 
     const startPromise = (
       callManager as unknown as {
-        startRecvSession: (id: string, params: { token: string }) => Promise<void>;
+        startRecvSession: (params: { audioChannel: string }) => Promise<void>;
       }
-    ).startRecvSession('audio-id', { token: 'test-token' });
+    ).startRecvSession({ audioChannel: 'audio-id' });
 
     // Ждем завершения промиса и выполнения catch-блока
     await startPromise.catch(() => {});
@@ -2418,7 +2445,10 @@ describe('CallManager - дополнительные тесты для покр�
   });
 
   it('startRecvSession: не триггерит событие recv-session-started при ошибке call', async () => {
-    jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('123');
+    mockGetInRoomCredentials(callManager, {
+      token: 'test-token',
+      conferenceForToken: '123',
+    });
     jest.spyOn(callManager, 'failed').mockResolvedValue();
 
     const startedEventHandler = jest.fn();
@@ -2442,9 +2472,9 @@ describe('CallManager - дополнительные тесты для покр�
 
     const startPromise = (
       callManager as unknown as {
-        startRecvSession: (id: string, params: { token: string }) => Promise<void>;
+        startRecvSession: (params: { audioChannel: string }) => Promise<void>;
       }
-    ).startRecvSession('audio-id', { token: 'test-token' });
+    ).startRecvSession({ audioChannel: 'audio-id' });
 
     // Ждем завершения промиса и выполнения catch-блока
     await startPromise.catch(() => {});
@@ -2455,7 +2485,10 @@ describe('CallManager - дополнительные тесты для покр�
   });
 
   it('startRecvSession: при ошибке не-Error использует String(error) для body', async () => {
-    jest.spyOn(callManager.stateMachine, 'number', 'get').mockReturnValue('123');
+    mockGetInRoomCredentials(callManager, {
+      token: 'test-token',
+      conferenceForToken: '123',
+    });
     jest.spyOn(callManager, 'failed').mockResolvedValue();
 
     const RecvSessionModule = jest.requireMock('../RecvSession') as { default: jest.Mock };
@@ -2472,9 +2505,9 @@ describe('CallManager - дополнительные тесты для покр�
 
     const startPromise = (
       callManager as unknown as {
-        startRecvSession: (id: string, params: { token: string }) => Promise<void>;
+        startRecvSession: (params: { audioChannel: string }) => Promise<void>;
       }
-    ).startRecvSession('audio-id', { token: 'test-token' });
+    ).startRecvSession({ audioChannel: 'audio-id' });
 
     await startPromise.catch(() => {});
     await flushPromises();
@@ -2483,6 +2516,153 @@ describe('CallManager - дополнительные тесты для покр�
       expect.objectContaining({ body: 'non-error value' }),
       JsSIP_C.causes.INTERNAL_ERROR,
     );
+  });
+
+  it('startRecvSession: после успешного call подписывается на onInRoomCredentialsChange и вызывает renegotiateRecvSession', async () => {
+    mockGetInRoomCredentials(callManager, {
+      token: 'test-token',
+      conferenceForToken: '123',
+    });
+
+    let credentialsListener:
+      | ((payload: { token: string; conferenceForToken: string }) => void)
+      | undefined;
+
+    jest
+      .spyOn(callManager.stateMachine, 'onInRoomCredentialsChange')
+      .mockImplementation((callback) => {
+        credentialsListener = callback;
+
+        return jest.fn();
+      });
+
+    jest
+      .spyOn(
+        callManager as unknown as { attachRecvSessionTracks: () => void },
+        'attachRecvSessionTracks',
+      )
+      .mockImplementation(() => {});
+    jest
+      .spyOn(callManager as unknown as { stopRecvSession: () => void }, 'stopRecvSession')
+      .mockImplementation(() => {});
+
+    const renegotiateSpy = jest
+      .spyOn(
+        callManager as unknown as { renegotiateRecvSession: () => Promise<boolean> },
+        'renegotiateRecvSession',
+      )
+      .mockResolvedValue(true);
+
+    await (
+      callManager as unknown as {
+        startRecvSession: (params: { audioChannel: string }) => Promise<unknown>;
+      }
+    ).startRecvSession({ audioChannel: 'audio-id' });
+
+    await flushPromises();
+
+    expect(callManager.stateMachine.onInRoomCredentialsChange).toHaveBeenCalled();
+    expect(credentialsListener).toBeDefined();
+
+    credentialsListener?.({ token: 'new-token', conferenceForToken: '456' });
+
+    await flushPromises();
+
+    expect(renegotiateSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('startRecvSession: при отклонении renegotiateRecvSession в обработчике смены credentials ошибка поглощается', async () => {
+    mockGetInRoomCredentials(callManager, {
+      token: 'test-token',
+      conferenceForToken: '123',
+    });
+
+    let credentialsListener:
+      | ((payload: { token: string; conferenceForToken: string }) => void)
+      | undefined;
+
+    jest
+      .spyOn(callManager.stateMachine, 'onInRoomCredentialsChange')
+      .mockImplementation((callback) => {
+        credentialsListener = callback;
+
+        return jest.fn();
+      });
+
+    jest
+      .spyOn(
+        callManager as unknown as { attachRecvSessionTracks: () => void },
+        'attachRecvSessionTracks',
+      )
+      .mockImplementation(() => {});
+    jest
+      .spyOn(callManager as unknown as { stopRecvSession: () => void }, 'stopRecvSession')
+      .mockImplementation(() => {});
+
+    const renegotiateSpy = jest
+      .spyOn(
+        callManager as unknown as { renegotiateRecvSession: () => Promise<boolean> },
+        'renegotiateRecvSession',
+      )
+      .mockRejectedValue(new Error('renegotiate failed'));
+
+    await (
+      callManager as unknown as {
+        startRecvSession: (params: { audioChannel: string }) => Promise<unknown>;
+      }
+    ).startRecvSession({ audioChannel: 'audio-id' });
+
+    await flushPromises();
+
+    credentialsListener?.({ token: 'new-token', conferenceForToken: '456' });
+
+    await flushPromises();
+
+    expect(renegotiateSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('startRecvSession: при call с результатом false не подписывается на onInRoomCredentialsChange', async () => {
+    mockGetInRoomCredentials(callManager, {
+      token: 'test-token',
+      conferenceForToken: '123',
+    });
+
+    const RecvSessionModule = jest.requireMock('../RecvSession') as { default: jest.Mock };
+
+    RecvSessionModule.default.mockImplementationOnce((config, tools) => {
+      const inst = mockRecvSession.create();
+
+      inst.config = config;
+      inst.tools = tools;
+      inst.call = jest.fn().mockResolvedValue(false);
+
+      return inst;
+    });
+
+    const onCredentialsChangeSpy = jest.spyOn(
+      callManager.stateMachine,
+      'onInRoomCredentialsChange',
+    );
+
+    jest
+      .spyOn(
+        callManager as unknown as { attachRecvSessionTracks: () => void },
+        'attachRecvSessionTracks',
+      )
+      .mockImplementation(() => {});
+    jest
+      .spyOn(callManager as unknown as { stopRecvSession: () => void }, 'stopRecvSession')
+      .mockImplementation(() => {});
+
+    await (
+      callManager as unknown as {
+        startRecvSession: (params: { audioChannel: string }) => Promise<unknown>;
+      }
+    ).startRecvSession({ audioChannel: 'audio-id' });
+
+    await flushPromises();
+
+    expect(onCredentialsChangeSpy).not.toHaveBeenCalled();
   });
 
   it('stopRecvSession: закрывает сессию, сбрасывает слушатель и менеджер', () => {

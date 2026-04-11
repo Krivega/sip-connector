@@ -1642,14 +1642,13 @@ describe('SipConnector', () => {
     it('должен вызывать startRecvSession в CallManager при событии spectator-with-audio-id', async () => {
       const sipConnectorWithMocks = new SipConnector({ JsSIP: JsSIP as unknown as TJsSIP });
       const audioId = 'audio-1';
-      const testToken = 'test-token';
 
       jest
-        .spyOn(sipConnectorWithMocks.callManager.stateMachine, 'token', 'get')
-        .mockReturnValue(testToken);
-      jest
-        .spyOn(sipConnectorWithMocks.callManager.stateMachine, 'number', 'get')
-        .mockReturnValue('123');
+        .spyOn(sipConnectorWithMocks.callManager.stateMachine, 'getInRoomCredentials')
+        .mockReturnValue({
+          token: 'test-token',
+          conferenceForToken: '123',
+        });
 
       const startRecvSessionMock = jest.spyOn(
         sipConnectorWithMocks.callManager,
@@ -1663,14 +1662,9 @@ describe('SipConnector', () => {
         { isAvailableSendingMedia: true, audioId },
       );
 
-      await Promise.resolve();
+      await flushPromises();
 
-      expect(startRecvSessionMock).toHaveBeenCalledWith(
-        { audioChannel: audioId },
-        expect.objectContaining({
-          token: testToken,
-        }),
-      );
+      expect(startRecvSessionMock).toHaveBeenCalledWith({ audioChannel: audioId });
     });
   });
 });
