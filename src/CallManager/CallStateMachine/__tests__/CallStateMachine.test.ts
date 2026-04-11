@@ -631,6 +631,68 @@ describe('CallStateMachine', () => {
     });
   });
 
+  describe('getInRoomCredentials', () => {
+    it('возвращает undefined вне IN_ROOM', () => {
+      expect(machine.getInRoomCredentials()).toBeUndefined();
+
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      expect(machine.getInRoomCredentials()).toBeUndefined();
+
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      expect(machine.state).toBe(EState.ROOM_PENDING_AUTH);
+      expect(machine.getInRoomCredentials()).toBeUndefined();
+    });
+
+    it('в IN_ROOM возвращает token и conferenceForToken, согласованные с inRoomContext', () => {
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+
+      expect(machine.state).toBe(EState.IN_ROOM);
+
+      const credentials = machine.getInRoomCredentials();
+      const roomContext = machine.inRoomContext;
+
+      expect(credentials).toEqual({
+        token: token1Context.token,
+        conferenceForToken: token1Context.conferenceForToken,
+      });
+      expect(credentials).toEqual({
+        token: roomContext?.token,
+        conferenceForToken: roomContext?.conferenceForToken,
+      });
+    });
+
+    it('возвращает undefined в DISCONNECTING после IN_ROOM', () => {
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+      expect(machine.getInRoomCredentials()).toBeDefined();
+
+      machine.send({ type: 'CALL.START_DISCONNECT' });
+
+      expect(machine.state).toBe(EState.DISCONNECTING);
+      expect(machine.getInRoomCredentials()).toBeUndefined();
+    });
+
+    it('обновляет пару при смене JWT в IN_ROOM', () => {
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+      expect(machine.getInRoomCredentials()).toEqual({
+        token: token1Context.token,
+        conferenceForToken: token1Context.conferenceForToken,
+      });
+
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1RefreshContext });
+
+      expect(machine.getInRoomCredentials()).toEqual({
+        token: token1RefreshContext.token,
+        conferenceForToken: token1RefreshContext.conferenceForToken,
+      });
+    });
+  });
+
   /**
    * Интеграционные проверки: геттеры дают undefined, когда **состояние** уже не то
    * (например `connectingContext` вне CONNECTING). Обычные переходы это покрывают.

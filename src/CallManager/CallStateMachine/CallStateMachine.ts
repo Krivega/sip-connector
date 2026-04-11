@@ -218,6 +218,22 @@ class CallStateMachine extends BaseStateMachine<TMachine, EState, TContext, TSna
   }
 
   /**
+   * Пара `token` и `conferenceForToken` из нормализованного контекста комнаты.
+   * Только в `IN_ROOM` (как `inRoomContext`); иначе `undefined`.
+   */
+  public getInRoomCredentials():
+    | Pick<TContextMap[EState.IN_ROOM], 'token' | 'conferenceForToken'>
+    | undefined {
+    const context = this.inRoomContext;
+
+    if (context === undefined) {
+      return undefined;
+    }
+
+    return { token: context.token, conferenceForToken: context.conferenceForToken };
+  }
+
+  /**
    * Подписка на изменение пары `token` + `conferenceForToken` в нормализованном контексте `IN_ROOM`
    * (то же, что отдаёт `inRoomContext`).
    *
