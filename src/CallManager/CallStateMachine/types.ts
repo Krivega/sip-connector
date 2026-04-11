@@ -1,3 +1,6 @@
+/** Внутреннее состояние XState между переходами (`evaluate`). Не входит в `EState`. */
+export const CALL_MACHINE_EVALUATE_STATE = 'evaluate' as const;
+
 export enum EState {
   IDLE = 'call:idle',
   CONNECTING = 'call:connecting',

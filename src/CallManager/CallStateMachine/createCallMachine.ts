@@ -4,7 +4,7 @@ import hasPeerToPeer from '@/tools/hasPeerToPeer';
 import hasPurgatory from '@/tools/hasPurgatory';
 import { isValidBoolean, isValidString } from '@/utils/validators';
 import { STATE_DESCRIPTORS, hasDirectPeerToPeer } from './state';
-import { EState } from './types';
+import { CALL_MACHINE_EVALUATE_STATE as EVALUATE, EState } from './types';
 
 import type { TBaseContext } from './types';
 
@@ -36,8 +36,6 @@ type TCallEvent =
   | { type: 'CALL.PRESENTATION_CALL' }
   | { type: 'CALL.START_DISCONNECT' }
   | { type: 'CALL.RESET' };
-
-const EVALUATE = 'evaluate' as const;
 
 const hasNoTokenRoom = (event: { room?: string; isDirectPeerToPeer?: boolean }): boolean => {
   return hasPurgatory(event.room) || hasPeerToPeer(event.room) || hasDirectPeerToPeer(event);

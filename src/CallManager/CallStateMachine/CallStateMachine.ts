@@ -1,6 +1,6 @@
 import { BaseStateMachine } from '@/tools/BaseStateMachine';
 import { createCallMachine } from './createCallMachine';
-import { EState } from './types';
+import { CALL_MACHINE_EVALUATE_STATE, EState } from './types';
 
 import type { TApiManagerEvents } from '@/ApiManager';
 import type { TEvents } from '../events';
@@ -215,6 +215,60 @@ class CallStateMachine extends BaseStateMachine<TMachine, EState, TContext, TSna
 
   public get isCallAnswerer(): boolean {
     return this.connectingContext?.answer ?? false;
+  }
+
+  /**
+   * Подписка на изменение пары `token` + `conferenceForToken` в нормализованном контексте `IN_ROOM`
+   * (то же, что отдаёт `inRoomContext`).
+   *
+   * **Алгоритм (состояние только в замыкании подписки):**
+   *
+   * 1. Храним `previous` — последнюю пару учётных данных, о которой уже уведомили (`undefined` до
+   *    первого осмысленного уведомления).
+   * 2. На каждом снимке актора: если `value === IN_ROOM`, читаем актуальную пару из
+   *    `snapshot.context.state` и сравниваем с `previous`. При отличии хотя бы одного поля —
+   *    вызываем `listener`, затем записываем в `previous` новую пару (чтобы не слать дубликаты).
+   * 3. Обновление токена в комнате в машине идёт через переход в служебное состояние `evaluate`
+   *    и обратно в `IN_ROOM`. Пока мы «проезжаем» `evaluate`, сбрасывать `previous` нельзя: иначе
+   *    при возврате в `IN_ROOM` с **теми же** `token`/`conferenceForToken` пара снова считалась бы
+   *    «новой» и listener вызвался бы повторно.
+   * 4. Если снимок не `IN_ROOM` и не `evaluate` (выход в другой доменный state: disconnect, другой
+   *    режим комнаты, IDLE и т.д.) — сбрасываем `previous`, чтобы при следующем входе в `IN_ROOM`
+   *    снова отдать актуальную пару, а не сравнивать с устаревшими данными прошлого сеанса.
+   */
+  public onInRoomCredentialsChange(
+    listener: (payload: { token: string; conferenceForToken: string }) => void,
+  ): () => void {
+    /** Последняя пара, о которой уже вызывали `listener` (не путать с «предыдущим снимком» актора). */
+    let previous: { token: string; conferenceForToken: string } | undefined;
+
+    const subscription = this.subscribe((snapshot) => {
+      if (snapshot.value === EState.IN_ROOM) {
+        const state = snapshot.context.state as TContextMap[EState.IN_ROOM];
+        const next = { token: state.token, conferenceForToken: state.conferenceForToken };
+
+        const prevToken = previous?.token;
+        const prevConference = previous?.conferenceForToken;
+        const credentialsChanged =
+          prevToken !== next.token || prevConference !== next.conferenceForToken;
+
+        if (credentialsChanged) {
+          previous = next;
+          listener(next);
+        }
+
+        return;
+      }
+
+      // Не сбрасываем на `evaluate` — см. п. 3-4 в JSDoc выше.
+      if (snapshot.value !== CALL_MACHINE_EVALUATE_STATE) {
+        previous = undefined;
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }
 
   public reset(): void {

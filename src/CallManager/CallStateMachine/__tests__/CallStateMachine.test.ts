@@ -26,6 +26,12 @@ describe('CallStateMachine', () => {
     conferenceForToken: token2Payload.conference,
     participantName: token2Payload.participant,
   };
+  const token1RefreshPayload = { jwt: 'jwt-refreshed', conference: 'room-1', participant: 'p-1' };
+  const token1RefreshContext = {
+    token: token1RefreshPayload.jwt,
+    conferenceForToken: token1RefreshPayload.conference,
+    participantName: token1RefreshPayload.participant,
+  };
   const room1Payload = { room: 'room-1', participantName: 'User' };
   const room2Payload = { room: 'room-2', participantName: 'User2' };
   const purgatoryPayload = { room: PURGATORY_CONFERENCE_NUMBER, participantName: 'User' };
@@ -540,6 +546,88 @@ describe('CallStateMachine', () => {
       expect(lastContext).toEqual(machine.getSnapshot().context);
       expect('token' in (lastContext as { state: object }).state).toBe(false);
       subscription.unsubscribe();
+    });
+  });
+
+  describe('onInRoomCredentialsChange', () => {
+    it('вызывает listener при первом входе в IN_ROOM с валидными учётными данными', () => {
+      const callback = jest.fn();
+      const off = machine.onInRoomCredentialsChange(callback);
+
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+
+      expect(machine.state).toBe(EState.IN_ROOM);
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith({
+        token: token1Context.token,
+        conferenceForToken: token1Context.conferenceForToken,
+      });
+      off();
+    });
+
+    it('вызывает listener снова при смене JWT в IN_ROOM (тот же conference)', () => {
+      const callback = jest.fn();
+
+      machine.onInRoomCredentialsChange(callback);
+
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1RefreshContext });
+
+      expect(machine.state).toBe(EState.IN_ROOM);
+      expect(callback).toHaveBeenCalledTimes(2);
+      expect(callback).toHaveBeenLastCalledWith({
+        token: token1RefreshContext.token,
+        conferenceForToken: token1RefreshContext.conferenceForToken,
+      });
+    });
+
+    it('не дублирует вызов при повторном TOKEN_ISSUED с теми же token и conference', () => {
+      const callback = jest.fn();
+
+      machine.onInRoomCredentialsChange(callback);
+
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+
+      expect(callback).toHaveBeenCalledTimes(1);
+    });
+
+    it('сбрасывает отслеживание после выхода в IDLE и снова вызывает при новом IN_ROOM', () => {
+      const callback = jest.fn();
+
+      machine.onInRoomCredentialsChange(callback);
+
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+      machine.send({ type: 'CALL.RESET' });
+
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload, participantName: 'U2' });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+
+      expect(callback).toHaveBeenCalledTimes(2);
+    });
+
+    it('отписка отключает дальнейшие уведомления', () => {
+      const callback = jest.fn();
+      const off = machine.onInRoomCredentialsChange(callback);
+
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+      expect(callback).toHaveBeenCalledTimes(1);
+
+      off();
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1RefreshContext });
+
+      expect(callback).toHaveBeenCalledTimes(1);
     });
   });
 
