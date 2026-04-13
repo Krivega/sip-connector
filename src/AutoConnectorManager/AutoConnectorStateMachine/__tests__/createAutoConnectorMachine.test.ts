@@ -2,7 +2,7 @@ import { assign, createActor } from 'xstate';
 
 import { createNotReadyForConnectionError } from '@/ConnectionManager';
 import { createAutoConnectorMachine } from '../createAutoConnectorMachine';
-import { AUTO_CONNECTOR_STATE_IDS } from '../types';
+import { EState } from '../types';
 
 import type { TParametersAutoConnect } from '../../types';
 
@@ -92,7 +92,7 @@ describe('createAutoConnectorMachine', () => {
     actor.start();
     actor.send({ type: 'AUTO.STOP' });
 
-    expect(actor.getSnapshot().value).toBe(AUTO_CONNECTOR_STATE_IDS.IDLE);
+    expect(actor.getSnapshot().value).toBe(EState.IDLE);
     expect(deps.stopConnectionFlow).not.toHaveBeenCalled();
   });
 
@@ -129,7 +129,7 @@ describe('createAutoConnectorMachine', () => {
 
     expect(deps.emitLimitReachedAttempts).toHaveBeenCalled();
     expect(deps.startCheckTelephony).toHaveBeenCalled();
-    expect(actor.getSnapshot().value).toBe(AUTO_CONNECTOR_STATE_IDS.TELEPHONY_CHECKING);
+    expect(actor.getSnapshot().value).toBe(EState.TELEPHONY_CHECKING);
   });
 
   it('из telephonyChecking возвращается в connectedMonitoring без standby', async () => {
@@ -148,7 +148,7 @@ describe('createAutoConnectorMachine', () => {
 
     actor.send({ type: 'TELEPHONY.RESULT', outcome: 'stillConnected' });
 
-    expect(actor.getSnapshot().value).toBe(AUTO_CONNECTOR_STATE_IDS.CONNECTED_MONITORING);
+    expect(actor.getSnapshot().value).toBe(EState.CONNECTED_MONITORING);
     expect(deps.onTelephonyStillConnected).toHaveBeenCalled();
   });
 
@@ -167,7 +167,7 @@ describe('createAutoConnectorMachine', () => {
 
     await settleMachine();
 
-    expect(actor.getSnapshot().value).toBe(AUTO_CONNECTOR_STATE_IDS.ERROR_TERMINAL);
+    expect(actor.getSnapshot().value).toBe(EState.ERROR_TERMINAL);
     expect(actor.getSnapshot().context.stopReason).toBe('halted');
     expect(deps.finishAttempt).toHaveBeenCalled();
     expect(deps.onStopAttemptsByError).toHaveBeenCalledWith(error);
@@ -188,7 +188,7 @@ describe('createAutoConnectorMachine', () => {
 
     await settleMachine();
 
-    expect(actor.getSnapshot().value).toBe(AUTO_CONNECTOR_STATE_IDS.ERROR_TERMINAL);
+    expect(actor.getSnapshot().value).toBe(EState.ERROR_TERMINAL);
     expect(actor.getSnapshot().context.stopReason).toBe('cancelled');
     expect(deps.emitCancelledAttemptsRaw).toHaveBeenCalledWith(error);
   });
@@ -212,7 +212,7 @@ describe('createAutoConnectorMachine', () => {
     await settleMachine();
     await settleMachine();
 
-    expect(actor.getSnapshot().value).toBe(AUTO_CONNECTOR_STATE_IDS.ERROR_TERMINAL);
+    expect(actor.getSnapshot().value).toBe(EState.ERROR_TERMINAL);
     expect(actor.getSnapshot().context.stopReason).toBe('cancelled');
     expect(deps.emitCancelledAttemptsWrapped).toHaveBeenCalledWith(error);
   });
@@ -236,7 +236,7 @@ describe('createAutoConnectorMachine', () => {
     await settleMachine();
     await settleMachine();
 
-    expect(actor.getSnapshot().value).toBe(AUTO_CONNECTOR_STATE_IDS.ERROR_TERMINAL);
+    expect(actor.getSnapshot().value).toBe(EState.ERROR_TERMINAL);
     expect(actor.getSnapshot().context.stopReason).toBe('failed');
     expect(deps.onFailedAllAttempts).toHaveBeenCalledWith(error);
   });
@@ -271,7 +271,7 @@ describe('createAutoConnectorMachine', () => {
     await settleMachine();
     await settleMachine();
 
-    expect(actor.getSnapshot().value).toBe(AUTO_CONNECTOR_STATE_IDS.ERROR_TERMINAL);
+    expect(actor.getSnapshot().value).toBe(EState.ERROR_TERMINAL);
     expect(actor.getSnapshot().context.stopReason).toBeUndefined();
     expect(deps.onFailedAllAttempts).not.toHaveBeenCalled();
     expect(deps.emitCancelledAttemptsWrapped).not.toHaveBeenCalled();
@@ -311,7 +311,7 @@ describe('createAutoConnectorMachine', () => {
     await settleMachine();
     await settleMachine();
 
-    expect(actor.getSnapshot().value).toBe(AUTO_CONNECTOR_STATE_IDS.ERROR_TERMINAL);
+    expect(actor.getSnapshot().value).toBe(EState.ERROR_TERMINAL);
     expect(deps.onStopAttemptsByError).toHaveBeenCalledWith(
       expect.objectContaining({
         message: 'Auto connector parameters are missing in attemptingConnect state',

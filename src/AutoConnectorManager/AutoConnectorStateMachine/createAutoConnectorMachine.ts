@@ -1,11 +1,7 @@
 import { createAutoConnectorMachineSetup } from './createAutoConnectorMachineSetup';
-import { AUTO_CONNECTOR_STATE_IDS } from './types';
+import { EState } from './types';
 
-import type {
-  EAutoConnectorState,
-  TAutoConnectorContext,
-  TAutoConnectorMachineDeps,
-} from './types';
+import type { TAutoConnectorContext, TAutoConnectorMachineDeps } from './types';
 
 /** Начальный контекст до первого `AUTO.RESTART`. */
 const initialContext = (): TAutoConnectorContext => {
@@ -18,32 +14,28 @@ const initialContext = (): TAutoConnectorContext => {
 };
 
 type TStopRestartTransitions = {
-  'AUTO.STOP': { target: EAutoConnectorState; actions: 'assignStop' };
-  'AUTO.RESTART': { target: EAutoConnectorState; actions: 'assignRestart' };
+  'AUTO.STOP': { target: EState; actions: 'assignStop' };
+  'AUTO.RESTART': { target: EState; actions: 'assignRestart' };
 };
 
-const withStopAndRestart = (
-  target: EAutoConnectorState = AUTO_CONNECTOR_STATE_IDS.DISCONNECTING,
-): TStopRestartTransitions => {
+const withStopAndRestart = (): TStopRestartTransitions => {
   return {
     'AUTO.STOP': {
-      target,
+      target: EState.DISCONNECTING,
       actions: 'assignStop' as const,
     },
     'AUTO.RESTART': {
-      target,
+      target: EState.DISCONNECTING,
       actions: 'assignRestart' as const,
     },
   };
 };
 
-const withStopRestartAndFlowRestart = (
-  target: EAutoConnectorState = AUTO_CONNECTOR_STATE_IDS.DISCONNECTING,
-) => {
+const withStopRestartAndFlowRestart = () => {
   return {
-    ...withStopAndRestart(target),
+    ...withStopAndRestart(),
     'FLOW.RESTART': {
-      target,
+      target: EState.DISCONNECTING,
       actions: 'assignFlowRestart' as const,
     },
   };
@@ -57,21 +49,21 @@ const withStopRestartAndFlowRestart = (
 export const createAutoConnectorMachine = (deps: TAutoConnectorMachineDeps) => {
   return createAutoConnectorMachineSetup(deps).createMachine({
     id: 'autoConnector',
-    initial: AUTO_CONNECTOR_STATE_IDS.IDLE,
+    initial: EState.IDLE,
     context: initialContext,
     states: {
       /** Ожидание: допустимы рестарт флоу или внешний стоп без побочных эффектов. */
-      [AUTO_CONNECTOR_STATE_IDS.IDLE]: {
+      [EState.IDLE]: {
         on: {
           'AUTO.STOP': {
-            target: AUTO_CONNECTOR_STATE_IDS.IDLE,
+            target: EState.IDLE,
           },
           'AUTO.RESTART': {
-            target: AUTO_CONNECTOR_STATE_IDS.DISCONNECTING,
+            target: EState.DISCONNECTING,
             actions: 'assignRestart',
           },
           'FLOW.RESTART': {
-            target: AUTO_CONNECTOR_STATE_IDS.DISCONNECTING,
+            target: EState.DISCONNECTING,
             actions: 'assignFlowRestart',
           },
         },
@@ -80,7 +72,7 @@ export const createAutoConnectorMachine = (deps: TAutoConnectorMachineDeps) => {
        * Безопасная остановка: invoke `stopConnectionFlow`.
        * Повторный `AUTO.STOP` с `reenter` перезапускает invoke (например сеть недоступна до `success`).
        */
-      [AUTO_CONNECTOR_STATE_IDS.DISCONNECTING]: {
+      [EState.DISCONNECTING]: {
         invoke: {
           // `id` — имя (identity) конкретного invoke внутри этого состояния.
           // Полезно для отладки, трейсинга и invoke-событий вида `xstate.done.actor.<id>`.
@@ -96,21 +88,21 @@ export const createAutoConnectorMachine = (deps: TAutoConnectorMachineDeps) => {
           onDone: [
             {
               guard: 'shouldGoIdleAfterDisconnect',
-              target: AUTO_CONNECTOR_STATE_IDS.IDLE,
+              target: EState.IDLE,
             },
             {
               guard: 'shouldAttemptAfterDisconnect',
-              target: AUTO_CONNECTOR_STATE_IDS.ATTEMPTING_GATE,
+              target: EState.ATTEMPTING_GATE,
             },
           ],
           onError: {
             actions: 'logRestartFailed',
-            target: AUTO_CONNECTOR_STATE_IDS.IDLE,
+            target: EState.IDLE,
           },
         },
         on: {
           'AUTO.STOP': {
-            target: AUTO_CONNECTOR_STATE_IDS.DISCONNECTING,
+            target: EState.DISCONNECTING,
             // Принудительно пере-входим в то же состояние, чтобы заново запустить invoke `stopConnectionFlow`.
             // Без `reenter: true` повторный STOP в текущем состоянии не перезапустил бы actor остановки.
             reenter: true,
@@ -127,16 +119,16 @@ export const createAutoConnectorMachine = (deps: TAutoConnectorMachineDeps) => {
       /**
        * Перед новой попыткой: событие `before-attempt` и сброс триггеров; ветвление по лимиту.
        */
-      [AUTO_CONNECTOR_STATE_IDS.ATTEMPTING_GATE]: {
+      [EState.ATTEMPTING_GATE]: {
         entry: 'entryAttemptingGate',
         always: [
           {
             guard: 'isLimitReached',
-            target: AUTO_CONNECTOR_STATE_IDS.TELEPHONY_CHECKING,
+            target: EState.TELEPHONY_CHECKING,
             actions: 'onLimitReachedTransition',
           },
           {
-            target: AUTO_CONNECTOR_STATE_IDS.ATTEMPTING_CONNECT,
+            target: EState.ATTEMPTING_CONNECT,
           },
         ],
         on: withStopAndRestart(),
@@ -147,7 +139,7 @@ export const createAutoConnectorMachine = (deps: TAutoConnectorMachineDeps) => {
        * - promise is not actual -> терминальное состояние с `cancelled-attempts`;
        * - всё остальное -> `waitingBeforeRetry`.
        */
-      [AUTO_CONNECTOR_STATE_IDS.ATTEMPTING_CONNECT]: {
+      [EState.ATTEMPTING_CONNECT]: {
         entry: 'entryAttemptingConnect',
         invoke: {
           // `id` остаётся стабильным идентификатором этого invoke-блока в состоянии.
@@ -159,7 +151,7 @@ export const createAutoConnectorMachine = (deps: TAutoConnectorMachineDeps) => {
           },
           // `connect` завершился без ошибки -> считаем подключение установленным и переходим в мониторинг.
           onDone: {
-            target: AUTO_CONNECTOR_STATE_IDS.CONNECTED_MONITORING,
+            target: EState.CONNECTED_MONITORING,
             actions: 'onConnectDone',
           },
           /**
@@ -187,7 +179,7 @@ export const createAutoConnectorMachine = (deps: TAutoConnectorMachineDeps) => {
             },
             {
               // 4) Все остальные ошибки считаем retryable и идём в backoff/ожидание.
-              target: AUTO_CONNECTOR_STATE_IDS.WAITING_BEFORE_RETRY,
+              target: EState.WAITING_BEFORE_RETRY,
             },
           ],
         },
@@ -198,7 +190,7 @@ export const createAutoConnectorMachine = (deps: TAutoConnectorMachineDeps) => {
        * Здесь различаем отмену управляемой цепочки (`cancelled-attempts`) и реальную
        * фатальную ошибку подготовки ретрая (`failed-all-attempts`).
        */
-      [AUTO_CONNECTOR_STATE_IDS.WAITING_BEFORE_RETRY]: {
+      [EState.WAITING_BEFORE_RETRY]: {
         invoke: {
           // `id` для invoke шага ожидания перед retry.
           id: 'waitBeforeRetry',
@@ -206,7 +198,7 @@ export const createAutoConnectorMachine = (deps: TAutoConnectorMachineDeps) => {
           src: 'waitBeforeRetry',
           // Успешно прошли delay + onBeforeRetry -> возвращаемся к шлюзу следующей попытки.
           onDone: {
-            target: AUTO_CONNECTOR_STATE_IDS.ATTEMPTING_GATE,
+            target: EState.ATTEMPTING_GATE,
           },
           /**
            * Здесь тот же принцип: ветки `onError` проверяются сверху вниз,
@@ -229,25 +221,25 @@ export const createAutoConnectorMachine = (deps: TAutoConnectorMachineDeps) => {
         on: withStopAndRestart(),
       },
       /** Подключение установлено; ожидание внешних событий (стоп, рестарт, ping). */
-      [AUTO_CONNECTOR_STATE_IDS.CONNECTED_MONITORING]: {
+      [EState.CONNECTED_MONITORING]: {
         on: withStopRestartAndFlowRestart(),
       },
       /**
        * После лимита: работает check-telephony; если соединение уже живо, возвращаемся
        * в обычный monitoring-режим без промежуточного состояния `standby`.
        */
-      [AUTO_CONNECTOR_STATE_IDS.TELEPHONY_CHECKING]: {
+      [EState.TELEPHONY_CHECKING]: {
         on: {
           'AUTO.STOP': {
-            target: AUTO_CONNECTOR_STATE_IDS.DISCONNECTING,
+            target: EState.DISCONNECTING,
             actions: 'assignStop',
           },
           'AUTO.RESTART': {
-            target: AUTO_CONNECTOR_STATE_IDS.DISCONNECTING,
+            target: EState.DISCONNECTING,
             actions: 'assignRestart',
           },
           'TELEPHONY.RESULT': {
-            target: AUTO_CONNECTOR_STATE_IDS.CONNECTED_MONITORING,
+            target: EState.CONNECTED_MONITORING,
             actions: 'onTelephonyStillConnected',
           },
         },
@@ -257,7 +249,7 @@ export const createAutoConnectorMachine = (deps: TAutoConnectorMachineDeps) => {
        * Конкретная причина хранится в `context.stopReason`, а наружу по-прежнему
        * эмитятся прежние события в `entry`, сразу после входа в состояние.
        */
-      [AUTO_CONNECTOR_STATE_IDS.ERROR_TERMINAL]: {
+      [EState.ERROR_TERMINAL]: {
         entry: 'emitTerminalOutcome',
         on: withStopAndRestart(),
       },

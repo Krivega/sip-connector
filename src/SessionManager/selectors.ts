@@ -1,4 +1,4 @@
-import { AUTO_CONNECTOR_STATE_IDS } from '@/AutoConnectorManager/AutoConnectorStateMachine';
+import { EAutoConnectorState } from '@/AutoConnectorManager/AutoConnectorStateMachine';
 import { EIncomingStatus, ECallStatus, ESystemStatus, EConnectionStatus } from './types';
 
 import type { TRemoteCallerData } from '@/IncomingCallManager';
@@ -73,9 +73,9 @@ const selectSystemStatus = (snapshot: TSessionSnapshot): ESystemStatus => {
 
   // AutoConnector выполняет попытку соединения (например при IDLE у connection)
   if (
-    snapshot.autoConnector.value === AUTO_CONNECTOR_STATE_IDS.ATTEMPTING_CONNECT ||
-    snapshot.autoConnector.value === AUTO_CONNECTOR_STATE_IDS.ATTEMPTING_GATE ||
-    snapshot.autoConnector.value === AUTO_CONNECTOR_STATE_IDS.WAITING_BEFORE_RETRY
+    snapshot.autoConnector.value === EAutoConnectorState.ATTEMPTING_CONNECT ||
+    snapshot.autoConnector.value === EAutoConnectorState.ATTEMPTING_GATE ||
+    snapshot.autoConnector.value === EAutoConnectorState.WAITING_BEFORE_RETRY
   ) {
     return ESystemStatus.CONNECTING;
   }

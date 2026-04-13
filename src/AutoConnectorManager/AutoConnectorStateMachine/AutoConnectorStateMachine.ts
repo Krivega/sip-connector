@@ -1,19 +1,19 @@
 import { BaseStateMachine } from '@/tools/BaseStateMachine';
 import { createAutoConnectorMachine } from './createAutoConnectorMachine';
 
-import type { EAutoConnectorState, TAutoConnectorContext, TAutoConnectorEvent } from './types';
+import type { EState, TAutoConnectorContext, TAutoConnectorEvent } from './types';
 import type { TParametersAutoConnect } from '../types';
 
 type TMachine = ReturnType<typeof createAutoConnectorMachine>;
 
 export type TAutoConnectorSnapshot = {
-  value: EAutoConnectorState;
+  value: EState;
   context: TAutoConnectorContext;
 };
 
 export class AutoConnectorStateMachine extends BaseStateMachine<
   TMachine,
-  EAutoConnectorState,
+  EState,
   TAutoConnectorContext,
   TAutoConnectorSnapshot
 > {
