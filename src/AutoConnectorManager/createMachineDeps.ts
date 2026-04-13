@@ -1,7 +1,7 @@
 import logger from '@/logger';
 import { wrapReconnectError } from './wrapReconnectError';
 
-import type { TAutoConnectorMachineDeps } from './AutoConnectorStateMachine/createAutoConnectorMachine';
+import type { TAutoConnectorMachineDeps } from './AutoConnectorStateMachine';
 import type { TParametersAutoConnect } from './types';
 
 type TCreateMachineDepsParameters = {

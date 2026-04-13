@@ -1,64 +1,11 @@
-import { isCanceledError } from '@krivega/cancelable-promise';
-import { hasCanceledError } from '@krivega/timeout-requester';
-import { assign, fromPromise, setup } from 'xstate';
-
-import { hasNotReadyForConnectionError } from '@/ConnectionManager';
-import { hasConnectionPromiseIsNotActualError } from '@/ConnectionQueueManager';
-import logger from '@/logger';
-import { getInvokeError } from './getInvokeError';
+import { createAutoConnectorMachineSetup } from './createAutoConnectorMachineSetup';
 import { AUTO_CONNECTOR_STATE_IDS } from './types';
 
-import type { EAutoConnectorState, TAutoConnectorContext, TAutoConnectorEvent } from './types';
-import type { TParametersAutoConnect } from '../types';
-
-const debug = (message: string, ...args: unknown[]) => {
-  logger(`[AutoConnectorMachine] ${message}`, ...args);
-};
-
-/**
- * Внешние зависимости машины автоподключения: реализуются в `AutoConnectorManager`, чтобы машина
- * оставалась декларативной. Экспортируемый фабричный метод — `createAutoConnectorMachine`.
- */
-export type TAutoConnectorMachineDeps = {
-  /** Правило из опций: можно ли переподключаться после этой ошибки. */
-  canRetryOnError: (error: unknown) => boolean;
-  /** Полная остановка текущего флоу: сброс попыток, стоп триггеров, `disconnect` очереди. */
-  stopConnectionFlow: () => Promise<void>;
-  /** Один вызов `connectionQueueManager.connect` с параметрами из контекста. */
-  connect: (parameters: TParametersAutoConnect) => Promise<void>;
-  /** Ожидание `timeoutBetweenAttempts` перед следующей попыткой. */
-  delayBetweenAttempts: () => Promise<void>;
-  /** Колбэк `onBeforeRetry` перед повторной попыткой (после задержки). */
-  onBeforeRetryRequest: () => Promise<void>;
-  /** Достигнут ли лимит попыток подряд (`AttemptsState`). */
-  hasLimitReached: () => boolean;
-  /** Событие `before-attempt` наружу. */
-  emitBeforeAttempt: () => void;
-  /** Остановка ping, check-telephony, registration-failed подписок. */
-  stopConnectTriggers: () => void;
-  /** Пометить попытку как начатую (статус «в процессе»). */
-  startAttempt: () => void;
-  /** Увеличить счётчик попыток. */
-  incrementAttempt: () => void;
-  /** Завершить попытку (снять флаг «в процессе»). */
-  finishAttempt: () => void;
-  /** Событие `limit-reached-attempts`. */
-  emitLimitReachedAttempts: () => void;
-  /** Запуск периодической проверки телефонии после лимита. */
-  startCheckTelephony: () => void;
-  /** Успешный `connect`: подписки на мониторинг и `success`. */
-  onConnectSucceeded: () => void;
-  /** Ошибка без ретрая: `stop-attempts-by-error`. */
-  onStopAttemptsByError: (error: unknown) => void;
-  /** Отмена с передачей исходной ошибки (например «неактуальный» промис). */
-  emitCancelledAttemptsRaw: (error: unknown) => void;
-  /** Отмена с нормализацией ошибки в `Error` (цепочка задержки / beforeRetry). */
-  emitCancelledAttemptsWrapped: (error: unknown) => void;
-  /** Исчерпание попыток после ошибки в цепочке ретрая: `failed-all-attempts`. */
-  onFailedAllAttempts: (error: unknown) => void;
-  /** Уже подключены: остановить триггеры и `success` (ветка check-telephony). */
-  onTelephonyStillConnected: () => void;
-};
+import type {
+  EAutoConnectorState,
+  TAutoConnectorContext,
+  TAutoConnectorMachineDeps,
+} from './types';
 
 /** Начальный контекст до первого `AUTO.RESTART`. */
 const initialContext = (): TAutoConnectorContext => {
@@ -108,224 +55,7 @@ const withStopRestartAndFlowRestart = (
  * @param deps — колбэки из менеджера; см. описание полей у `TAutoConnectorMachineDeps`.
  */
 export const createAutoConnectorMachine = (deps: TAutoConnectorMachineDeps) => {
-  return setup({
-    types: {
-      context: {} as TAutoConnectorContext,
-      events: {} as TAutoConnectorEvent,
-    },
-    /** Асинхронные шаги: остановка флоу, коннект, задержка + beforeRetry. */
-    actors: {
-      /** Invoke при входе в `disconnecting`: единый «срез» текущего подключения. */
-      stopConnectionFlow: fromPromise(async () => {
-        debug('stopConnectionFlow');
-        await deps.stopConnectionFlow();
-      }),
-      /** Invoke в `attemptingConnect`: реальный SIP/WebSocket connect. */
-      connect: fromPromise(async ({ input }: { input: TParametersAutoConnect | undefined }) => {
-        debug('connect', input);
-
-        if (!input) {
-          throw new Error('Auto connector parameters are missing in attemptingConnect state');
-        }
-
-        await deps.connect(input);
-      }),
-      /** Invoke в `waitingBeforeRetry`: сначала задержка между попытками, затем `onBeforeRetry`. */
-      waitBeforeRetry: fromPromise(async () => {
-        debug('waitBeforeRetry');
-        await deps.delayBetweenAttempts();
-        await deps.onBeforeRetryRequest();
-      }),
-    },
-    /** Условия переходов после `disconnect`, классификация ошибок `connect` и ретрая. */
-    guards: {
-      /** После `stopConnectionFlow` уходим в `idle` (полная остановка / ошибка остановки). */
-      shouldGoIdleAfterDisconnect: ({ context }) => {
-        return context.afterDisconnect === 'idle';
-      },
-      /** После `stopConnectionFlow` продолжаем цикл: к шлюзу попытки. */
-      shouldAttemptAfterDisconnect: ({ context }) => {
-        return context.afterDisconnect === 'attempt';
-      },
-      /** Лимит попыток исчерпан — переход к режиму check-telephony. */
-      isLimitReached: () => {
-        return deps.hasLimitReached();
-      },
-      /** Ошибка «ещё не готовы к подключению» — без ретрая. */
-      isNotReadyForConnection: ({ event }) => {
-        return hasNotReadyForConnectionError(getInvokeError(event));
-      },
-      /** Политика опций запрещает повтор для этой ошибки. */
-      isNoRetryPolicy: ({ event }) => {
-        return !deps.canRetryOnError(getInvokeError(event));
-      },
-      /** Промис коннекта снят очередью (`stack-promises`) — отмена попыток. */
-      isNotActualPromise: ({ event }) => {
-        return hasConnectionPromiseIsNotActualError(getInvokeError(event));
-      },
-      /** Отмена задержки или `onBeforeRetry` (cancelable / timeout-requester). */
-      isWaitRetryCancelled: ({ event }) => {
-        const error = getInvokeError(event);
-
-        return isCanceledError(error) || hasCanceledError(error as Error);
-      },
-    },
-    /** Синхронные побочные эффекты и обновление контекста (`assign`). */
-    actions: {
-      /** Лог при падении invoke `stopConnectionFlow` при рестарте. */
-      logRestartFailed: ({ event }) => {
-        debug('auto connector failed to restart connection attempts:', getInvokeError(event));
-      },
-      /** Сохранить параметры подключения и намерение продолжить попытки после `disconnect`. */
-      assignRestart: assign({
-        parameters: ({ event }) => {
-          return (event as { type: 'AUTO.RESTART'; parameters: TParametersAutoConnect }).parameters;
-        },
-        afterDisconnect: () => {
-          return 'attempt' as const;
-        },
-        stopReason: () => {
-          return undefined;
-        },
-        lastError: () => {
-          return undefined;
-        },
-      }),
-      /** Рестарт мониторинга без смены `parameters` (ping / внутренний перезапуск). */
-      assignFlowRestart: assign({
-        afterDisconnect: 'attempt' as const,
-        stopReason: () => {
-          return undefined;
-        },
-        lastError: () => {
-          return undefined;
-        },
-      }),
-      /** Пользовательский или внешний стоп: после `disconnect` уйти в `idle`. */
-      assignStop: assign({
-        afterDisconnect: 'idle' as const,
-        stopReason: () => {
-          return undefined;
-        },
-        lastError: () => {
-          return undefined;
-        },
-      }),
-      /** Начало цикла попытки: событие «перед попыткой» и сброс внешних триггеров. */
-      entryAttemptingGate: () => {
-        debug('entryAttemptingGate');
-        deps.emitBeforeAttempt();
-        deps.stopConnectTriggers();
-      },
-      /** Учёт попытки в `AttemptsState` непосредственно перед `connect`. */
-      entryAttemptingConnect: () => {
-        debug('entryAttemptingConnect');
-        deps.startAttempt();
-        deps.incrementAttempt();
-      },
-      /** Лимит: завершить попытку, событие лимита, запуск опроса телефонии. */
-      onLimitReachedTransition: () => {
-        debug('onLimitReachedTransition');
-        deps.finishAttempt();
-        deps.emitLimitReachedAttempts();
-        deps.startCheckTelephony();
-      },
-      /** Успешный invoke `connect`. */
-      onConnectDone: () => {
-        debug('onConnectDone');
-        deps.onConnectSucceeded();
-      },
-      assignHaltedError: assign({
-        stopReason: () => {
-          return 'halted' as const;
-        },
-        lastError: ({ event }: { event: unknown }) => {
-          const error = getInvokeError(event as never);
-
-          debug('assignHaltedError', error);
-
-          return error as unknown;
-        },
-      }),
-      assignCancelledNotActualError: assign({
-        stopReason: () => {
-          return 'cancelled' as const;
-        },
-        lastError: ({ event }: { event: unknown }) => {
-          const error = getInvokeError(event as never);
-
-          debug('assignCancelledNotActualError', error);
-
-          return error as unknown;
-        },
-      }),
-      assignWaitRetryCancelledError: assign({
-        stopReason: () => {
-          return 'cancelled' as const;
-        },
-        lastError: ({ event }: { event: unknown }) => {
-          const error = getInvokeError(event as never);
-
-          debug('assignWaitRetryCancelledError', error);
-
-          return error as unknown;
-        },
-      }),
-      assignWaitRetryFailedError: assign({
-        stopReason: () => {
-          return 'failed' as const;
-        },
-        lastError: ({ event }: { event: unknown }) => {
-          const error = getInvokeError(event as never);
-
-          debug('assignWaitRetryFailedError', error);
-
-          return error as unknown;
-        },
-      }),
-      /**
-       * Внешние события эмитятся уже после входа в `errorTerminal`.
-       * Так машина хранит одну терминальную вершину, но не теряет различие причин остановки.
-       */
-      emitTerminalOutcome: ({ context }) => {
-        deps.finishAttempt();
-
-        if (context.stopReason === 'halted') {
-          deps.onStopAttemptsByError(context.lastError);
-
-          return;
-        }
-
-        if (context.stopReason === 'cancelled') {
-          if (hasConnectionPromiseIsNotActualError(context.lastError)) {
-            deps.emitCancelledAttemptsRaw(context.lastError);
-          } else {
-            deps.emitCancelledAttemptsWrapped(context.lastError);
-          }
-
-          return;
-        }
-
-        if (context.stopReason === 'failed') {
-          deps.onFailedAllAttempts(context.lastError);
-
-          return;
-        }
-
-        /* istanbul ignore next -- errorTerminal is entered only after assign*Error actions */
-        debug('emitTerminalOutcome without stopReason', context.lastError);
-      },
-      /**
-       * Режим check-telephony: соединение уже есть — только `success` и стоп триггеров.
-       * После упрощения графа это тот же «monitoring» режим, просто вход в него происходит
-       * без нового вызова `connect`.
-       */
-      onTelephonyStillConnected: () => {
-        debug('onTelephonyStillConnected');
-        deps.onTelephonyStillConnected();
-      },
-    },
-  }).createMachine({
+  return createAutoConnectorMachineSetup(deps).createMachine({
     id: 'autoConnector',
     initial: AUTO_CONNECTOR_STATE_IDS.IDLE,
     context: initialContext,
@@ -352,8 +82,17 @@ export const createAutoConnectorMachine = (deps: TAutoConnectorMachineDeps) => {
        */
       [AUTO_CONNECTOR_STATE_IDS.DISCONNECTING]: {
         invoke: {
+          // `id` — имя (identity) конкретного invoke внутри этого состояния.
+          // Полезно для отладки, трейсинга и invoke-событий вида `xstate.done.actor.<id>`.
           id: 'stopConnectionFlow',
+          // `src` — ключ actor-реализации из `setup({ actors: ... })`.
+          // Здесь берётся `actors.stopConnectionFlow` из `createAutoConnectorMachineSetup`.
           src: 'stopConnectionFlow',
+          /**
+           * Успешный `disconnect` маршрутизируем по контексту:
+           * - `afterDisconnect = idle` -> полная остановка;
+           * - `afterDisconnect = attempt` -> продолжаем цикл реконнекта.
+           */
           onDone: [
             {
               guard: 'shouldGoIdleAfterDisconnect',
@@ -372,6 +111,8 @@ export const createAutoConnectorMachine = (deps: TAutoConnectorMachineDeps) => {
         on: {
           'AUTO.STOP': {
             target: AUTO_CONNECTOR_STATE_IDS.DISCONNECTING,
+            // Принудительно пере-входим в то же состояние, чтобы заново запустить invoke `stopConnectionFlow`.
+            // Без `reenter: true` повторный STOP в текущем состоянии не перезапустил бы actor остановки.
             reenter: true,
             actions: 'assignStop',
           },
@@ -409,32 +150,43 @@ export const createAutoConnectorMachine = (deps: TAutoConnectorMachineDeps) => {
       [AUTO_CONNECTOR_STATE_IDS.ATTEMPTING_CONNECT]: {
         entry: 'entryAttemptingConnect',
         invoke: {
+          // `id` остаётся стабильным идентификатором этого invoke-блока в состоянии.
           id: 'connect',
+          // `src` указывает, какой actor запускать при входе в состояние.
           src: 'connect',
           input: ({ context }: { context: TAutoConnectorContext }) => {
             return context.parameters;
           },
+          // `connect` завершился без ошибки -> считаем подключение установленным и переходим в мониторинг.
           onDone: {
             target: AUTO_CONNECTOR_STATE_IDS.CONNECTED_MONITORING,
             actions: 'onConnectDone',
           },
+          /**
+           * Важно: `onError`-ветки проверяются сверху вниз.
+           * XState берёт ПЕРВУЮ ветку, у которой guard вернул true.
+           */
           onError: [
             {
+              // 1) Инвариант/стейт не готов к connect -> retry бессмысленен, останавливаемся.
               guard: 'isNotReadyForConnection',
               target: 'errorTerminal',
               actions: 'assignHaltedError',
             },
             {
+              // 2) Политика опций явно запрещает retry для этой ошибки.
               guard: 'isNoRetryPolicy',
               target: 'errorTerminal',
               actions: 'assignHaltedError',
             },
             {
+              // 3) Текущий connect устарел (появился более свежий запрос) -> cancelled.
               guard: 'isNotActualPromise',
               target: 'errorTerminal',
               actions: 'assignCancelledNotActualError',
             },
             {
+              // 4) Все остальные ошибки считаем retryable и идём в backoff/ожидание.
               target: AUTO_CONNECTOR_STATE_IDS.WAITING_BEFORE_RETRY,
             },
           ],
@@ -448,18 +200,27 @@ export const createAutoConnectorMachine = (deps: TAutoConnectorMachineDeps) => {
        */
       [AUTO_CONNECTOR_STATE_IDS.WAITING_BEFORE_RETRY]: {
         invoke: {
+          // `id` для invoke шага ожидания перед retry.
           id: 'waitBeforeRetry',
+          // `src` ссылается на actor из setup (`actors.waitBeforeRetry`).
           src: 'waitBeforeRetry',
+          // Успешно прошли delay + onBeforeRetry -> возвращаемся к шлюзу следующей попытки.
           onDone: {
             target: AUTO_CONNECTOR_STATE_IDS.ATTEMPTING_GATE,
           },
+          /**
+           * Здесь тот же принцип: ветки `onError` проверяются сверху вниз,
+           * срабатывает первая подходящая.
+           */
           onError: [
             {
+              // Отмена управляемой цепочки (cancel token / timeout requester stop).
               guard: 'isWaitRetryCancelled',
               target: 'errorTerminal',
               actions: 'assignWaitRetryCancelledError',
             },
             {
+              // Любая иная ошибка подготовки retry считается фатальной.
               target: 'errorTerminal',
               actions: 'assignWaitRetryFailedError',
             },

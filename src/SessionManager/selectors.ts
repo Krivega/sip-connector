@@ -1,4 +1,4 @@
-import { AUTO_CONNECTOR_STATE_IDS } from '@/AutoConnectorManager/AutoConnectorStateMachine/types';
+import { AUTO_CONNECTOR_STATE_IDS } from '@/AutoConnectorManager/AutoConnectorStateMachine';
 import { EIncomingStatus, ECallStatus, ESystemStatus, EConnectionStatus } from './types';
 
 import type { TRemoteCallerData } from '@/IncomingCallManager';

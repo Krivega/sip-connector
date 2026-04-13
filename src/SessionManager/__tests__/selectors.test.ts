@@ -1,5 +1,5 @@
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
-import { AUTO_CONNECTOR_STATE_IDS } from '@/AutoConnectorManager/AutoConnectorStateMachine/types';
+import { AUTO_CONNECTOR_STATE_IDS } from '@/AutoConnectorManager/AutoConnectorStateMachine';
 import { EState as ECallStatus } from '@/CallManager/CallStateMachine';
 import { EState as EConnectionStatus } from '@/ConnectionManager/ConnectionStateMachine';
 import { EState as EIncomingStatus } from '@/IncomingCallManager/IncomingCallStateMachine';
