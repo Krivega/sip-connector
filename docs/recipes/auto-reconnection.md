@@ -60,21 +60,24 @@ sipConnector.stopAutoConnect();
 | --------------------------------- | --------- |
 | `start`                           | `0`       |
 | `telephony-disconnected`          | `1`       |
+| `telephony-check-failed`          | `1`       |
 | `sleep-resume`                    | `2`       |
 | `registration-failed-out-of-call` | `3`       |
 | `network-change`                  | `4`       |
 
 ## События автоподключения
 
-| Событие                               | Описание                                         | Данные                      |
-| ------------------------------------- | ------------------------------------------------ | --------------------------- |
-| `auto-connect:before-attempt`         | Начало очередной попытки подключения             | `{}`                        |
-| `auto-connect:success`                | Успешное подключение или подтверждение связи     | `undefined`                 |
-| `auto-connect:failed-all-attempts`    | Ошибка в цепочке ретрая (фатальный сценарий)     | `Error`                     |
-| `auto-connect:cancelled-attempts`     | Попытки отменены (например, неактуальный flow)   | `unknown` / `Error`         |
-| `auto-connect:stop-attempts-by-error` | Остановка без ретрая (`canRetryOnError=false`)   | `unknown`                   |
-| `auto-connect:limit-reached-attempts` | Достигнут лимит попыток, включён check-telephony | `Error('Limit reached')`    |
-| `auto-connect:changed-attempt-status` | Изменение статуса попытки                        | `{ isInProgress: boolean }` |
+| Событие                                  | Описание                                         | Данные                                                                            |
+| ---------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------- |
+| `auto-connect:before-attempt`            | Начало очередной попытки подключения             | `{}`                                                                              |
+| `auto-connect:success`                   | Успешное подключение или подтверждение связи     | `undefined`                                                                       |
+| `auto-connect:failed-all-attempts`       | Ошибка в цепочке ретрая (фатальный сценарий)     | `Error`                                                                           |
+| `auto-connect:cancelled-attempts`        | Попытки отменены (например, неактуальный flow)   | `unknown` / `Error`                                                               |
+| `auto-connect:stop-attempts-by-error`    | Остановка без ретрая (`canRetryOnError=false`)   | `unknown`                                                                         |
+| `auto-connect:limit-reached-attempts`    | Достигнут лимит попыток, включён check-telephony | `Error('Limit reached')`                                                          |
+| `auto-connect:changed-attempt-status`    | Изменение статуса попытки                        | `{ isInProgress: boolean }`                                                       |
+| `auto-connect:telephony-check-failure`   | Ошибка проверки телефонии + решение policy       | `{ failCount, escalationLevel, shouldRequestReconnect, nextRetryDelayMs, error }` |
+| `auto-connect:telephony-check-escalated` | Эскалация деградации проверки телефонии          | `{ failCount, escalationLevel, error }`                                           |
 
 ## Подписка на события автоподключения
 
@@ -100,3 +103,43 @@ sipConnector.on('auto-connect:cancelled-attempts', (error) => {
   console.log('Попытка подключения отменена:', error);
 });
 ```
+
+## Базовые operational профили telephonyFailPolicy
+
+### Production (устойчивость, меньше шума)
+
+```typescript
+autoConnectorOptions: {
+  telephonyFailPolicy: {
+    baseRetryDelayMs: 2000,
+    maxRetryDelayMs: 60000,
+    warningThreshold: 3,
+    criticalThreshold: 6,
+  },
+}
+```
+
+- Рекомендуемая последовательность backoff: `2s -> 4s -> 8s -> 16s -> 32s -> 60s (cap)`.
+- `warning` с 3-го fail, `critical` с 6-го fail.
+
+### Stage (быстрая диагностика регрессий)
+
+```typescript
+autoConnectorOptions: {
+  telephonyFailPolicy: {
+    baseRetryDelayMs: 1000,
+    maxRetryDelayMs: 15000,
+    warningThreshold: 2,
+    criticalThreshold: 4,
+  },
+}
+```
+
+- Рекомендуемая последовательность backoff: `1s -> 2s -> 4s -> 8s -> 15s (cap)`.
+- Более ранняя эскалация помогает быстрее заметить проблемы перед релизом.
+
+## Когда тюнинговать policy
+
+- Если в production часто появляется `auto-connect:telephony-check-escalated` с `critical`, увеличивайте `criticalThreshold` и/или `maxRetryDelayMs`.
+- Если восстановление после кратких сетевых просадок слишком медленное, уменьшайте `baseRetryDelayMs`.
+- Если слишком много ложных предупреждений (`warning`) на нестабильной сети, увеличивайте `warningThreshold`.

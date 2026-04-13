@@ -12,6 +12,7 @@ import NotActiveCallSubscriber from './NotActiveCallSubscriber';
 import PingServerIfNotActiveCallRequester from './PingServerIfNotActiveCallRequester';
 import ReconnectRequestCoalescer from './ReconnectRequestCoalescer';
 import RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCallSubscriber';
+import TelephonyFailPolicy from './TelephonyFailPolicy';
 
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
@@ -73,6 +74,8 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
     coalesceWindowMs: RECONNECT_COALESCE_WINDOW_MS,
   });
 
+  private readonly telephonyFailPolicy: TelephonyFailPolicy;
+
   public constructor(
     {
       connectionQueueManager,
@@ -117,6 +120,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
       options?.timeoutBetweenAttempts ?? DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS,
     );
     this.notActiveCallSubscriber = new NotActiveCallSubscriber({ callManager });
+    this.telephonyFailPolicy = new TelephonyFailPolicy(options?.telephonyFailPolicy);
 
     this.stateMachine = createAutoConnectorStateMachine(
       createMachineDeps({
@@ -258,6 +262,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
       },
       onSuccessRequest: () => {
         logger('startCheckTelephony: onSuccessRequest');
+        this.telephonyFailPolicy.reset();
 
         const isUnavailable = this.isConnectionUnavailable();
 
@@ -270,7 +275,28 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
         }
       },
       onFailRequest: (error?: unknown) => {
-        // Ошибку проверки телефонии не эскалируем в рестарт: остаёмся в цикле периодических проверок.
+        const decision = this.telephonyFailPolicy.registerFailure();
+
+        this.events.trigger('telephony-check-failure', {
+          failCount: decision.failCount,
+          escalationLevel: decision.escalationLevel,
+          shouldRequestReconnect: decision.shouldRequestReconnect,
+          nextRetryDelayMs: decision.nextRetryDelayMs,
+          error,
+        });
+
+        if (decision.escalationLevel !== 'none' && decision.hasEscalated) {
+          this.events.trigger('telephony-check-escalated', {
+            failCount: decision.failCount,
+            escalationLevel: decision.escalationLevel,
+            error,
+          });
+        }
+
+        if (decision.shouldRequestReconnect) {
+          this.requestReconnect(parameters, 'telephony-check-failed');
+        }
+
         logger('startCheckTelephony: onFailRequest', (error as Error).message);
       },
     });

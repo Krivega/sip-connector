@@ -8,6 +8,14 @@ export interface IAutoConnectorOptions {
   resumeFromSleepModeSubscriber?: TResumeFromSleepModeSubscriber;
   onBeforeRetry?: () => Promise<void>;
   canRetryOnError?: (error: unknown) => boolean;
+  telephonyFailPolicy?: Partial<ITelephonyFailPolicyOptions>;
+}
+
+export interface ITelephonyFailPolicyOptions {
+  baseRetryDelayMs: number;
+  maxRetryDelayMs: number;
+  warningThreshold: number;
+  criticalThreshold: number;
 }
 export type ISubscriber<T = void> = {
   subscribe: (callback: (value: T) => void) => void;
@@ -40,6 +48,7 @@ export const RECONNECT_REASONS = {
   SLEEP_RESUME: 'sleep-resume',
   REGISTRATION_FAILED_OUT_OF_CALL: 'registration-failed-out-of-call',
   TELEPHONY_DISCONNECTED: 'telephony-disconnected',
+  TELEPHONY_CHECK_FAILED: 'telephony-check-failed',
 } as const;
 
 export type TReconnectReason = (typeof RECONNECT_REASONS)[keyof typeof RECONNECT_REASONS];
@@ -48,6 +57,7 @@ export type TReconnectReason = (typeof RECONNECT_REASONS)[keyof typeof RECONNECT
 export const RECONNECT_REASON_PRIORITY: Record<TReconnectReason, number> = {
   [RECONNECT_REASONS.START]: 0,
   [RECONNECT_REASONS.TELEPHONY_DISCONNECTED]: 1,
+  [RECONNECT_REASONS.TELEPHONY_CHECK_FAILED]: 1,
   [RECONNECT_REASONS.SLEEP_RESUME]: 2,
   [RECONNECT_REASONS.REGISTRATION_FAILED_OUT_OF_CALL]: 3,
   [RECONNECT_REASONS.NETWORK_CHANGE]: 4,

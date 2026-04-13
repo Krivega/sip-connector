@@ -112,6 +112,94 @@ describe('AutoConnectorManager - Telephony', () => {
       expect(loggerMock).toHaveBeenCalled();
     });
 
+    it('эмитит telephony-check-failure и эскалирует warning/critical', async () => {
+      const startSpy = jest.spyOn(CheckTelephonyRequester.prototype, 'start').mockImplementation();
+      const failureHandler = jest.fn();
+      const escalatedHandler = jest.fn();
+
+      manager = createManager({
+        telephonyFailPolicy: {
+          baseRetryDelayMs: 0,
+          maxRetryDelayMs: 0,
+          warningThreshold: 2,
+          criticalThreshold: 3,
+        },
+      });
+
+      const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
+
+      manager.on('telephony-check-failure', failureHandler);
+      manager.on('telephony-check-escalated', escalatedHandler);
+
+      // @ts-ignore приватное свойство
+      manager.attemptsState.limitInner = 0;
+
+      manager.start(baseParameters);
+
+      await flushPromises();
+
+      const { onFailRequest } = startSpy.mock.calls[0][0] as {
+        onFailRequest: (error?: unknown) => void;
+      };
+      const error = new Error('Check telephony error');
+
+      jest.clearAllMocks();
+
+      onFailRequest(error);
+      onFailRequest(error);
+      onFailRequest(error);
+
+      expect(failureHandler).toHaveBeenCalledTimes(3);
+      expect(escalatedHandler).toHaveBeenCalledTimes(2);
+      expect(escalatedHandler).toHaveBeenNthCalledWith(1, {
+        failCount: 2,
+        escalationLevel: 'warning',
+        error,
+      });
+      expect(escalatedHandler).toHaveBeenNthCalledWith(2, {
+        failCount: 3,
+        escalationLevel: 'critical',
+        error,
+      });
+      expect(restartSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('учитывает backoff и не делает лишний reconnect в окне retry', async () => {
+      const startSpy = jest.spyOn(CheckTelephonyRequester.prototype, 'start').mockImplementation();
+
+      manager = createManager({
+        telephonyFailPolicy: {
+          baseRetryDelayMs: 1000,
+          maxRetryDelayMs: 5000,
+          warningThreshold: 2,
+          criticalThreshold: 3,
+        },
+      });
+
+      const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
+
+      // @ts-ignore приватное свойство
+      manager.attemptsState.limitInner = 0;
+
+      manager.start(baseParameters);
+
+      await flushPromises();
+
+      const { onFailRequest } = startSpy.mock.calls[0][0] as {
+        onFailRequest: (error?: unknown) => void;
+      };
+
+      jest.clearAllMocks();
+
+      jest.spyOn(Date, 'now').mockReturnValue(1000);
+      onFailRequest(new Error('First fail'));
+      expect(restartSpy).toHaveBeenCalledTimes(1);
+
+      (Date.now as jest.Mock).mockReturnValue(1100);
+      onFailRequest(new Error('Second fail'));
+      expect(restartSpy).toHaveBeenCalledTimes(1);
+    });
+
     it('при успешной проверке запускает start в случае, если соединение isDisconnected', async () => {
       jest.spyOn(sipConnector.connectionManager, 'isDisconnected', 'get').mockReturnValue(true);
 

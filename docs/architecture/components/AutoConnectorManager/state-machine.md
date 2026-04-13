@@ -64,6 +64,7 @@ stateDiagram-v2
 - Переход `telephonyChecking -> connectedMonitoring` означает: соединение уже восстановилось без нового `connect`, поэтому нужен только возврат в режим мониторинга и событие `success`.
 - Ошибка в `CheckTelephonyRequester.onFailRequest` не переводит машину в другое состояние: политика «только логирование и продолжение периодических проверок».
 - `requestReconnect` использует «умный coalescing» в коротком окне: запрос с той же или меньшей важностью подавляется, а более приоритетная причина допускается. Карта приоритетов вынесена в [`types.ts`](../../../../src/AutoConnectorManager/types.ts) (`RECONNECT_REASON_PRIORITY`).
+- Ошибки `check-telephony` обрабатываются отдельной policy-моделью [`TelephonyFailPolicy.ts`](../../../../src/AutoConnectorManager/TelephonyFailPolicy.ts): считает fail-цепочку, применяет retry/backoff, поднимает escalation (`warning`/`critical`) и эмитит метрики-события.
 
 ## Coalescing-компонент
 
@@ -84,3 +85,4 @@ stateDiagram-v2
 - Реализация машины: [`createAutoConnectorMachine.ts`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/createAutoConnectorMachine.ts)
 - Обёртка актора: [`AutoConnectorStateMachine.ts`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/AutoConnectorStateMachine.ts)
 - Адаптер зависимостей машины: [`createMachineDeps.ts`](../../../../src/AutoConnectorManager/createMachineDeps.ts)
+- Operational-профили policy: [auto-reconnection.md](../../recipes/auto-reconnection.md#базовые-operational-профили-telephonyfailpolicy)
