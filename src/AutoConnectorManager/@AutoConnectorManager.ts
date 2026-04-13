@@ -152,6 +152,14 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   }
 
   private requestReconnect(parameters: TParametersAutoConnect, reason: TReconnectReason) {
+    if (!this.shouldRequestReconnect(reason)) {
+      return;
+    }
+
+    this.stateMachine.toRestart(parameters);
+  }
+
+  private shouldRequestReconnect(reason: TReconnectReason) {
     const decision = this.reconnectCoalescer.register(reason);
 
     if (!decision.shouldRequest) {
@@ -162,14 +170,15 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
         coalescedByPriority: decision.coalescedByPriority,
       });
 
-      return;
+      return false;
     }
 
     logger(`auto connector reconnect requested: ${reason}`, {
       state: String(this.stateMachine.state),
       generation: decision.generation,
     });
-    this.stateMachine.toRestart(parameters);
+
+    return true;
   }
 
   private resetReconnectCoalescingState() {
