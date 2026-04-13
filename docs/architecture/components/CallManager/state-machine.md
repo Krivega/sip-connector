@@ -50,7 +50,7 @@
 
 ### Из CONNECTING
 
-- **CONNECTING → PRESENTATION_CALL** — при `CALL.PRESENTATION_CALL` (событие `confirmed`), если при старте звонка в `CALL.CONNECTING` были переданы `extraHeaders`, содержащие заголовок `x-vinteo-presentation-call: yes` (без учёта регистра и пробелов по краям строки заголовка). В типизированном контексте остаются только `number` и `answer`
+- **CONNECTING → PRESENTATION_CALL** — при `CALL.PRESENTATION_CALL` (событие `confirmed`), если при старте звонка в `CALL.CONNECTING` были переданы `extraHeaders`, содержащие заголовок `x-vinteo-presentation-call: yes` (без учёта регистра и пробелов по краям строки заголовка). Это работает как для `startCall`, так и для `answerToIncomingCall`. В типизированном контексте остаются только `number` и `answer`
 - **CONNECTING → PURGATORY** — при `CALL.ENTER_ROOM` с room=purgatory без token
 - **CONNECTING → P2P_ROOM** — при `CALL.ENTER_ROOM` с room, соответствующим паттерну `/^p2p.+to.+$/i`, без token
 - **CONNECTING → DIRECT_P2P_ROOM** — при `CALL.ENTER_ROOM` с `isDirectPeerToPeer=true` или room, соответствующим паттерну `/^directP2P.+to.+$/i`, без token
@@ -136,7 +136,7 @@ EVALUATE также может перейти в PRESENTATION_CALL, IN_ROOM, DIR
 
 ### PRESENTATION_CALL
 
-Отдельное состояние исходящего звонка «presentation call»: переход из **CONNECTING** только при связке «заголовок `x-vinteo-presentation-call: yes` в `extraHeaders` при `CALL.CONNECTING`» + «`CALL.PRESENTATION_CALL` после установления сессии». Контекст машины — `number` и `answer`; полей комнаты и JWT в этом состоянии нет.
+Отдельное состояние звонка «presentation call»: переход из **CONNECTING** только при связке «заголовок `x-vinteo-presentation-call: yes` в `extraHeaders` при `CALL.CONNECTING`» + «`CALL.PRESENTATION_CALL` после установления сессии». Это применимо как к `startCall`, так и к `answerToIncomingCall`. Контекст машины — `number` и `answer`; полей комнаты и JWT в этом состоянии нет.
 
 ### ROOM_PENDING_AUTH
 
