@@ -21,6 +21,8 @@
 - `replaceMediaStream()` - замена медиа-потоков
 - `restartIce()` - перезапуск соединения
 
+`startCall()` и `answerToIncomingCall()` прокидывают `extraHeaders` в synthetic-событие `start-call`; это позволяет CallStateMachine перейти в `PRESENTATION_CALL` после `confirmed`, если передан заголовок `x-vinteo-presentation-call: yes`.
+
 ## Внутренние компоненты
 
 ### CallStateMachine

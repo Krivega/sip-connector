@@ -252,6 +252,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
 
     this.events.emit('start-call', {
       answer: true,
+      extraHeaders: params.extraHeaders,
       number: rtcSession.remote_identity.uri.user,
     });
 

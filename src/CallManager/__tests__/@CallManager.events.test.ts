@@ -105,6 +105,93 @@ describe('CallManager events', () => {
     expect(pc).toBeDefined();
   });
 
+  it('answerToIncomingCall: передает extraHeaders в start-call', async () => {
+    const rtcSession = new RTCSessionMock({
+      eventHandlers: {},
+      originator: 'remote',
+    });
+    const getIncomingRTCSession = () => {
+      return rtcSession as unknown as RTCSession;
+    };
+    const startCallHandler = jest.fn();
+
+    callManager.on('start-call', startCallHandler);
+
+    const promise = callManager.answerToIncomingCall(getIncomingRTCSession, {
+      mediaStream,
+      extraHeaders: ['X-Test: 1', 'X-Vinteo-Presentation-Call: yes'],
+    });
+
+    const audioTrack = createAudioMediaStreamTrackMock();
+    const videoTrack = createVideoMediaStreamTrackMock();
+    const fakePeerconnection = new RTCPeerConnectionMock(undefined, [audioTrack, videoTrack]);
+
+    callManager.events.trigger('connecting', {});
+    callManager.events.trigger('peerconnection', { peerconnection: fakePeerconnection });
+    callManager.events.trigger('accepted', {});
+    callManager.events.trigger('confirmed', {});
+
+    await promise;
+
+    expect(startCallHandler).toHaveBeenCalledWith({
+      answer: true,
+      extraHeaders: ['X-Test: 1', 'X-Vinteo-Presentation-Call: yes'],
+      number: rtcSession.remote_identity.uri.user,
+    });
+  });
+
+  it('answerToIncomingCall: переходит в PRESENTATION_CALL после confirmed при presentation header', async () => {
+    const rtcSession = new RTCSessionMock({
+      eventHandlers: {},
+      originator: 'remote',
+    });
+    const getIncomingRTCSession = () => {
+      return rtcSession as unknown as RTCSession;
+    };
+
+    const promise = callManager.answerToIncomingCall(getIncomingRTCSession, {
+      mediaStream,
+      extraHeaders: ['X-Vinteo-Presentation-Call: yes'],
+    });
+
+    callManager.events.trigger('connecting', {});
+    expect(callManager.stateMachine.state).toBe('call:connecting');
+
+    callManager.events.trigger('confirmed', {});
+
+    expect(callManager.stateMachine.state).toBe('call:presentationCall');
+
+    const pc = await promise;
+
+    expect(pc).toBeDefined();
+  });
+
+  it('answerToIncomingCall: остается в CONNECTING после confirmed без presentation header', async () => {
+    const rtcSession = new RTCSessionMock({
+      eventHandlers: {},
+      originator: 'remote',
+    });
+    const getIncomingRTCSession = () => {
+      return rtcSession as unknown as RTCSession;
+    };
+
+    const promise = callManager.answerToIncomingCall(getIncomingRTCSession, {
+      mediaStream,
+      extraHeaders: ['X-Test: 1'],
+    });
+
+    callManager.events.trigger('connecting', {});
+    expect(callManager.stateMachine.state).toBe('call:connecting');
+
+    callManager.events.trigger('confirmed', {});
+
+    expect(callManager.stateMachine.state).toBe('call:connecting');
+
+    const pc = await promise;
+
+    expect(pc).toBeDefined();
+  });
+
   it('subscribeToSessionEvents: подписывает все события', () => {
     const rtcSession = { on: jest.fn() };
     const subscribeToSessionEvents = Reflect.get(
