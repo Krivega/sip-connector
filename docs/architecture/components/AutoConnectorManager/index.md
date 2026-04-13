@@ -10,7 +10,7 @@
 - Проверка доступности телефонии
 - Мониторинг состояния соединения
 - Управление событиями попыток подключения
-- Единая точка запросов на рестарт (`requestReconnect`) с причиной (`start`, `network-change`, `sleep-resume`, ...)
+- Единая точка запросов на рестарт (`requestReconnect`) с причиной (`start`, `telephony-disconnected`, `registration-failed-out-of-call`, ...)
 - Operational-правила coalescing и приоритеты причин: [рецепт автопереподключения](../../../recipes/auto-reconnection.md#приоритеты-причин-рестарта-coalescing)
 
 ## Архитектура компонентов

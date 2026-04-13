@@ -8,7 +8,6 @@ import { createAutoConnectorStateMachine } from './AutoConnectorStateMachine';
 import CheckTelephonyRequester from './CheckTelephonyRequester';
 import { createMachineDeps } from './createMachineDeps';
 import { createEvents } from './events';
-import NotActiveCallSubscriber from './NotActiveCallSubscriber';
 import PingServerIfNotActiveCallRequester from './PingServerIfNotActiveCallRequester';
 import ReconnectRequestCoalescer from './ReconnectRequestCoalescer';
 import RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCallSubscriber';
@@ -37,8 +36,6 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   public readonly stateMachine: AutoConnectorStateMachine;
 
   private readonly runtime: AutoConnectorRuntime;
-
-  private readonly notActiveCallSubscriber: NotActiveCallSubscriber;
 
   private readonly reconnectCoalescer = new ReconnectRequestCoalescer({
     coalesceWindowMs: RECONNECT_COALESCE_WINDOW_MS,
@@ -77,8 +74,6 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
       options?.timeoutBetweenAttempts ?? DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS,
     );
 
-    this.notActiveCallSubscriber = new NotActiveCallSubscriber({ callManager });
-
     const telephonyFailPolicy = new TelephonyFailPolicy(options?.telephonyFailPolicy);
 
     this.runtime = new AutoConnectorRuntime({
@@ -90,8 +85,6 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
       attemptsState,
       delayBetweenAttempts,
       telephonyFailPolicy,
-      networkInterfacesSubscriber: options?.networkInterfacesSubscriber,
-      resumeFromSleepModeSubscriber: options?.resumeFromSleepModeSubscriber,
       emitters: {
         emitBeforeAttempt: () => {
           this.events.trigger('before-attempt', {});
@@ -126,9 +119,6 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
         requestFlowRestart: () => {
           this.stateMachine.toFlowRestart();
         },
-        requestStop: () => {
-          this.stateMachine.toStop();
-        },
         notifyTelephonyStillConnected: () => {
           this.stateMachine.toTelephonyResultStillConnected();
         },
@@ -147,14 +137,11 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
     logger('auto connector start');
 
     this.requestReconnect(parameters, 'start');
-    this.subscribeToNotActiveCall(parameters);
   }
 
   public stop() {
     logger('auto connector stop');
 
-    this.unsubscribeFromNotActiveCall();
-    this.runtime.unsubscribeFromHardwareTriggers();
     this.resetReconnectCoalescingState();
     this.stateMachine.toStop();
   }
@@ -187,23 +174,6 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
 
   private resetReconnectCoalescingState() {
     this.reconnectCoalescer.reset();
-  }
-
-  private subscribeToNotActiveCall(parameters: TParametersAutoConnect) {
-    this.notActiveCallSubscriber.subscribe({
-      onActive: () => {
-        logger('subscribeToNotActiveCall onActive');
-        this.runtime.unsubscribeFromHardwareTriggers();
-      },
-      onInactive: () => {
-        logger('subscribeToNotActiveCall onInactive');
-        this.runtime.subscribeToHardwareTriggers(parameters);
-      },
-    });
-  }
-
-  private unsubscribeFromNotActiveCall() {
-    this.notActiveCallSubscriber.unsubscribe();
   }
 
   private readonly emitStatusChange = ({ isInProgress }: { isInProgress: boolean }) => {

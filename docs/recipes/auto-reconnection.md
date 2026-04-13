@@ -46,7 +46,7 @@ sipConnector.stopAutoConnect();
 - **Мониторинг состояния**: Отслеживает состояние регистрации и звонков
 - **Адаптивные задержки**: Использует настраиваемые интервалы между попытками
 - **Очистка кэша**: Возможность настраивать очистку кэша через хук
-- **Причины реконнекта**: Все внешние рестарты проходят через единый `requestReconnect` (например: `start`, `network-change`, `sleep-resume`)
+- **Причины реконнекта**: Все внешние рестарты проходят через единый `requestReconnect` (например: `start`, `telephony-disconnected`, `registration-failed-out-of-call`)
 
 ## Приоритеты причин рестарта (coalescing)
 
@@ -60,9 +60,7 @@ sipConnector.stopAutoConnect();
 | `start`                           | `0`       |
 | `telephony-disconnected`          | `1`       |
 | `telephony-check-failed`          | `1`       |
-| `sleep-resume`                    | `2`       |
 | `registration-failed-out-of-call` | `3`       |
-| `network-change`                  | `4`       |
 
 ## События автоподключения
 

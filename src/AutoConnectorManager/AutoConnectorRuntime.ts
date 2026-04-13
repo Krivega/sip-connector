@@ -9,12 +9,7 @@ import type { TEventMap } from './events';
 import type PingServerIfNotActiveCallRequester from './PingServerIfNotActiveCallRequester';
 import type RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCallSubscriber';
 import type TelephonyFailPolicy from './TelephonyFailPolicy';
-import type {
-  TNetworkInterfacesSubscriber,
-  TParametersAutoConnect,
-  TReconnectReason,
-  TResumeFromSleepModeSubscriber,
-} from './types';
+import type { TParametersAutoConnect, TReconnectReason } from './types';
 
 type TStopReason = 'halted' | 'cancelled' | 'failed' | undefined;
 
@@ -32,7 +27,6 @@ type TEmitters = {
 type TReconnectActions = {
   requestReconnect: (parameters: TParametersAutoConnect, reason: TReconnectReason) => void;
   requestFlowRestart: () => void;
-  requestStop: () => void;
   notifyTelephonyStillConnected: () => void;
 };
 
@@ -45,8 +39,6 @@ type TAutoConnectorRuntimeParams = {
   attemptsState: AttemptsState;
   delayBetweenAttempts: DelayRequester;
   telephonyFailPolicy: TelephonyFailPolicy;
-  networkInterfacesSubscriber: TNetworkInterfacesSubscriber | undefined;
-  resumeFromSleepModeSubscriber: TResumeFromSleepModeSubscriber | undefined;
   emitters: TEmitters;
   reconnectActions: TReconnectActions;
 };
@@ -68,10 +60,6 @@ export class AutoConnectorRuntime {
 
   private readonly telephonyFailPolicy: TelephonyFailPolicy;
 
-  private readonly networkInterfacesSubscriber: TNetworkInterfacesSubscriber | undefined;
-
-  private readonly resumeFromSleepModeSubscriber: TResumeFromSleepModeSubscriber | undefined;
-
   private readonly emitters: TEmitters;
 
   private readonly reconnectActions: TReconnectActions;
@@ -85,8 +73,6 @@ export class AutoConnectorRuntime {
     this.attemptsState = params.attemptsState;
     this.delayBetweenAttempts = params.delayBetweenAttempts;
     this.telephonyFailPolicy = params.telephonyFailPolicy;
-    this.networkInterfacesSubscriber = params.networkInterfacesSubscriber;
-    this.resumeFromSleepModeSubscriber = params.resumeFromSleepModeSubscriber;
     this.emitters = params.emitters;
     this.reconnectActions = params.reconnectActions;
   }
@@ -175,37 +161,6 @@ export class AutoConnectorRuntime {
     logger('onTelephonyStillConnected');
     this.stopConnectTriggers();
     this.emitters.emitSuccess();
-  }
-
-  public subscribeToHardwareTriggers(parameters: TParametersAutoConnect) {
-    this.unsubscribeFromHardwareTriggers();
-
-    logger('subscribeToHardwareTriggers');
-
-    this.networkInterfacesSubscriber?.subscribe({
-      onChange: () => {
-        logger('networkInterfacesSubscriber onChange');
-        this.reconnectActions.requestReconnect(parameters, 'network-change');
-      },
-      onUnavailable: () => {
-        logger('networkInterfacesSubscriber onUnavailable');
-        this.reconnectActions.requestStop();
-      },
-    });
-
-    this.resumeFromSleepModeSubscriber?.subscribe({
-      onResume: () => {
-        logger('resumeFromSleepModeSubscriber onResume');
-        this.reconnectActions.requestReconnect(parameters, 'sleep-resume');
-      },
-    });
-  }
-
-  public unsubscribeFromHardwareTriggers() {
-    logger('unsubscribeFromHardwareTriggers');
-
-    this.networkInterfacesSubscriber?.unsubscribe();
-    this.resumeFromSleepModeSubscriber?.unsubscribe();
   }
 
   public stopConnectTriggers() {

@@ -6,12 +6,7 @@ import { doMockSipConnector } from '@/doMock';
 import AutoConnectorManager from '../@AutoConnectorManager';
 
 import type { SipConnector } from '@/SipConnector';
-import type {
-  IAutoConnectorOptions,
-  TNetworkInterfacesSubscriber,
-  TParametersAutoConnect,
-  TResumeFromSleepModeSubscriber,
-} from '../types';
+import type { IAutoConnectorOptions, TParametersAutoConnect } from '../types';
 
 const DELAY = 100;
 
@@ -47,28 +42,6 @@ describe('AutoConnectorManager - Reconnection', () => {
     );
   };
 
-  let emitChangeNetworkInterfaces: (() => void) | undefined;
-
-  const networkInterfacesSubscriberMock: TNetworkInterfacesSubscriber = {
-    subscribe: jest.fn(({ onChange }: { onChange: () => void; onUnavailable: () => void }) => {
-      emitChangeNetworkInterfaces = onChange;
-    }),
-    unsubscribe: jest.fn(() => {
-      emitChangeNetworkInterfaces = undefined;
-    }),
-  };
-
-  let emitResumeFromSleepMode: (() => void) | undefined;
-
-  const resumeFromSleepModeSubscriberMock: TResumeFromSleepModeSubscriber = {
-    subscribe: jest.fn(({ onResume }: { onResume: () => void }) => {
-      emitResumeFromSleepMode = onResume;
-    }),
-    unsubscribe: jest.fn(() => {
-      emitResumeFromSleepMode = undefined;
-    }),
-  };
-
   beforeEach(() => {
     sipConnector = doMockSipConnector();
 
@@ -78,8 +51,6 @@ describe('AutoConnectorManager - Reconnection', () => {
 
     manager = createManager({
       timeoutBetweenAttempts: 100,
-      networkInterfacesSubscriber: networkInterfacesSubscriberMock,
-      resumeFromSleepModeSubscriber: resumeFromSleepModeSubscriberMock,
     });
   });
 
@@ -158,91 +129,6 @@ describe('AutoConnectorManager - Reconnection', () => {
       await manager.wait('success');
 
       expect(connectSpy).toHaveBeenCalledTimes(2);
-    });
-
-    it('должен дождаться сброса машины состояний перед запуском повторного подключения при выходе из спящего режима', async () => {
-      manager.start(baseParameters);
-
-      await manager.wait('success');
-
-      // мокаем метод оставновки ua
-      const { ua } = sipConnector.connectionManager;
-
-      if (ua === undefined) {
-        throw new Error('ua is not defined');
-      }
-
-      ua.stop = jest.fn();
-
-      emitResumeFromSleepMode?.();
-
-      // Ждем произвольное время, чтобы убедиться, что подключение не завершено
-      await delayPromise(DELAY);
-
-      // После resume вызывается disconnect(): состояние либо ещё established, либо уже disconnecting
-      const state = sipConnector.connectionManager.connectionState;
-
-      expect(['connection:established', 'connection:disconnecting']).toContain(state);
-
-      // триггерим событие отключения от ua
-
-      const uaWithEvents = ua as unknown as { events: { trigger: (eventName: string) => void } };
-
-      uaWithEvents.events.trigger('disconnected');
-
-      expect(sipConnector.connectionManager.connectionState).toBe('connection:disconnected');
-
-      await manager.wait('before-attempt');
-
-      // проверка сброса состояния после успешного дисконнекта
-      expect(sipConnector.connectionManager.connectionState).toBe('connection:idle');
-
-      // ждем успешного повторного подключения
-      await manager.wait('success');
-
-      expect(sipConnector.connectionManager.connectionState).toBe('connection:established');
-    });
-  });
-
-  describe('переподключение при активном звонке', () => {
-    it('не должен делать рестарт при событии resumeFromSleepModeSubscriber onResume если активен звонок', async () => {
-      const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
-
-      manager.start(baseParameters);
-
-      await manager.wait('success');
-
-      expect(connectSpy).toHaveBeenCalledTimes(1);
-
-      jest.spyOn(sipConnector.callManager, 'isCallActive', 'get').mockReturnValue(true);
-      sipConnector.callManager.events.trigger('call-status-changed', { isCallActive: true });
-
-      await flushPromises();
-
-      emitResumeFromSleepMode?.();
-
-      await flushPromises();
-
-      expect(connectSpy).toHaveBeenCalledTimes(1);
-    });
-
-    it('не должен делать рестарт при событии networkInterfacesSubscriber onChange если активен звонок', async () => {
-      const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
-
-      manager.start(baseParameters);
-
-      await manager.wait('success');
-
-      expect(connectSpy).toHaveBeenCalledTimes(1);
-
-      jest.spyOn(sipConnector.callManager, 'isCallActive', 'get').mockReturnValue(true);
-      sipConnector.callManager.events.trigger('call-status-changed', { isCallActive: true });
-
-      emitChangeNetworkInterfaces?.();
-
-      await flushPromises();
-
-      expect(connectSpy).toHaveBeenCalledTimes(1);
     });
   });
 });

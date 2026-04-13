@@ -18,8 +18,6 @@ describe('AutoConnectorRuntime', () => {
       } as never,
       delayBetweenAttempts: {} as never,
       telephonyFailPolicy: {} as never,
-      networkInterfacesSubscriber: undefined,
-      resumeFromSleepModeSubscriber: undefined,
       emitters: {
         emitBeforeAttempt: jest.fn(),
         emitLimitReachedAttempts: jest.fn(),
@@ -33,7 +31,6 @@ describe('AutoConnectorRuntime', () => {
       reconnectActions: {
         requestReconnect: jest.fn(),
         requestFlowRestart: jest.fn(),
-        requestStop: jest.fn(),
         notifyTelephonyStillConnected: jest.fn(),
       },
     });

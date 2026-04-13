@@ -24,39 +24,39 @@ describe('ReconnectRequestCoalescer', () => {
   it('схлопывает одинаковую причину в пределах окна', () => {
     const coalescer = new ReconnectRequestCoalescer({ coalesceWindowMs: 250 });
 
-    coalescer.register('network-change');
+    coalescer.register('telephony-check-failed');
 
-    expect(coalescer.register('network-change')).toEqual({
+    expect(coalescer.register('telephony-check-failed')).toEqual({
       shouldRequest: false,
       generation: 1,
-      coalescedBy: 'network-change',
-      currentPriority: 4,
-      coalescedByPriority: 4,
+      coalescedBy: 'telephony-check-failed',
+      currentPriority: 1,
+      coalescedByPriority: 1,
     });
   });
 
   it('пропускает более приоритетную причину в пределах окна', () => {
     const coalescer = new ReconnectRequestCoalescer({ coalesceWindowMs: 250 });
 
-    coalescer.register('sleep-resume');
+    coalescer.register('telephony-disconnected');
 
-    expect(coalescer.register('network-change')).toEqual({
+    expect(coalescer.register('registration-failed-out-of-call')).toEqual({
       shouldRequest: true,
       generation: 2,
-      currentPriority: 4,
+      currentPriority: 3,
     });
   });
 
   it('после reset начинает новую серию без схлопывания', () => {
     const coalescer = new ReconnectRequestCoalescer({ coalesceWindowMs: 250 });
 
-    coalescer.register('network-change');
+    coalescer.register('telephony-check-failed');
     coalescer.reset();
 
-    expect(coalescer.register('sleep-resume')).toEqual({
+    expect(coalescer.register('registration-failed-out-of-call')).toEqual({
       shouldRequest: true,
       generation: 2,
-      currentPriority: 2,
+      currentPriority: 3,
     });
   });
 });
