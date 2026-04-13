@@ -314,8 +314,7 @@ describe('AutoConnectorManager - Basic', () => {
 
       await delayPromise(DELAY);
 
-      // @ts-expect-error имитация отмены запроса
-      manager.cancelableRequestBeforeRetry.cancelRequest();
+      manager.cancelPendingRetry();
 
       await manager.wait('cancelled-attempts');
 
@@ -336,8 +335,7 @@ describe('AutoConnectorManager - Basic', () => {
 
       await delayPromise(DELAY);
 
-      // @ts-expect-error имитация отмены запроса
-      manager.delayBetweenAttempts.cancelRequest();
+      manager.cancelPendingRetry();
 
       await manager.wait('cancelled-attempts');
 

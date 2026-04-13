@@ -200,6 +200,12 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
     this.stateMachine.toStop();
   }
 
+  // Test hook: allows deterministic cancellation of pending retry flow.
+  public cancelPendingRetry() {
+    this.delayBetweenAttempts.cancelRequest();
+    this.cancelableRequestBeforeRetry.cancelRequest();
+  }
+
   private requestReconnect(parameters: TParametersAutoConnect, reason: TReconnectReason) {
     const decision = this.reconnectCoalescer.register(reason);
 
@@ -238,8 +244,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
       this.connectionQueueManager.stop();
     }
 
-    this.delayBetweenAttempts.cancelRequest();
-    this.cancelableRequestBeforeRetry.cancelRequest();
+    this.cancelPendingRetry();
     this.attemptsState.reset();
   }
 
