@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [26.22.0](https://github.com/Krivega/sip-connector/compare/v26.21.0...v26.22.0) (2026-04-13)
+
+### Features
+
+- allow presentation call for answer to incoming call ([#75](https://github.com/Krivega/sip-connector/issues/75)) ([b505849](https://github.com/Krivega/sip-connector/commit/b5058491af994d896388cbb724e1b9b94ee66020))
+- **AutoConnectorManager:** add cancelPendingRetry method to streamline retry cancellation process ([64fc1f4](https://github.com/Krivega/sip-connector/commit/64fc1f4cbde8cea15c23b6afd9e820f4421d2f6d))
+- **AutoConnectorManager:** implement coalescing mechanism for reconnect requests to optimize connection handling ([7ba351a](https://github.com/Krivega/sip-connector/commit/7ba351a91ded7bc69f505abe4da6ae3a8b0c9d10))
+- **AutoConnectorManager:** implement unified requestReconnect mechanism and enhance state machine dependencies for improved reconnection handling ([d90221e](https://github.com/Krivega/sip-connector/commit/d90221e960480f3973faaada67d107aac04e1083))
+- **AutoConnectorManager:** introduce TelephonyFailPolicy for enhanced error handling and reconnection logic ([e9705ef](https://github.com/Krivega/sip-connector/commit/e9705ef74d0710ba7e7968a367cb62ea743ae693))
+
 ## [26.21.0](https://github.com/Krivega/sip-connector/compare/v26.20.0...v26.21.0) (2026-04-11)
 
 ### Features
