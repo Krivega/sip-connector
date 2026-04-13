@@ -136,7 +136,7 @@ EVALUATE также может перейти в PRESENTATION_CALL, IN_ROOM, DIR
 
 ### PRESENTATION_CALL
 
-Отдельное состояние исходящего звонка «presentation call»: переход из **CONNECTING** только при связке «заголовок `x-vinteo-presentation-call: yes` в `extraHeaders` при `CALL.CONNECTING`» + «`CALL.PRESENTATION_CALL` после установления сессии». Контекст машины — `number` и `answer`; полей комнаты и JWT в этом состоянии нет.
+Отдельное состояние звонка «presentation call»: переход из **CONNECTING** только при связке «заголовок `x-vinteo-presentation-call: yes` в `extraHeaders` при `CALL.CONNECTING`» + «`CALL.PRESENTATION_CALL` после установления сессии». Это применимо как к `startCall`, так и к `answerToIncomingCall`. Контекст машины — `number` и `answer`; полей комнаты и JWT в этом состоянии нет.
 
 ### ROOM_PENDING_AUTH
 

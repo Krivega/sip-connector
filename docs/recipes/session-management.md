@@ -114,7 +114,7 @@ unsubscribe(); // Когда больше не нужно слушать
 - `CALL_DISCONNECTING` - идет процесс отключения звонка (connection: ESTABLISHED, call: DISCONNECTING)
 - `CALL_ACTIVE` - звонок активен (connection: ESTABLISHED, call: PRESENTATION_CALL, ROOM_PENDING_AUTH, IN_ROOM, PURGATORY, P2P_ROOM или DIRECT_P2P_ROOM)
 
-`PRESENTATION_CALL` — подтверждённый исходящий звонок в режиме presentation (после `confirmed` при заголовке `x-vinteo-presentation-call` на старте); в контексте call нет комнаты и JWT.
+`PRESENTATION_CALL` — подтверждённый звонок в режиме presentation (после `confirmed` при заголовке `x-vinteo-presentation-call` на старте); состояние может возникать как в `startCall`, так и в `answerToIncomingCall`. В контексте call нет комнаты и JWT.
 
 `ROOM_PENDING_AUTH` означает, что обычная комната уже известна, но `token` ещё не выдан. Это валидное состояние активного звонка для UI и селекторов, но не сигнал готовности к JWT-зависимым операциям.
 
