@@ -186,7 +186,7 @@ export const createAutoConnectorMachine = (deps: TAutoConnectorMachineDeps) => {
         on: withStopAndRestart(),
       },
       /**
-       * Задержка и `onBeforeRetry` перед следующим заходом в `attemptingGate`.
+       * Задержка перед следующим заходом в `attemptingGate`.
        * Здесь различаем отмену управляемой цепочки (`cancelled-attempts`) и реальную
        * фатальную ошибку подготовки ретрая (`failed-all-attempts`).
        */
@@ -196,7 +196,7 @@ export const createAutoConnectorMachine = (deps: TAutoConnectorMachineDeps) => {
           id: 'waitBeforeRetry',
           // `src` ссылается на actor из setup (`actors.waitBeforeRetry`).
           src: 'waitBeforeRetry',
-          // Успешно прошли delay + onBeforeRetry -> возвращаемся к шлюзу следующей попытки.
+          // Успешно прошли delay -> возвращаемся к шлюзу следующей попытки.
           onDone: {
             target: EState.ATTEMPTING_GATE,
           },

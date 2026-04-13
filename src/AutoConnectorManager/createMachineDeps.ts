@@ -9,7 +9,6 @@ type TCreateMachineDepsParameters = {
   stopConnectionFlow: () => Promise<void>;
   connect: (parameters: TParametersAutoConnect) => Promise<void>;
   delayBetweenAttempts: () => Promise<void>;
-  onBeforeRetryRequest: () => Promise<void>;
   hasLimitReached: () => boolean;
   emitBeforeAttempt: () => void;
   stopConnectTriggers: () => void;
@@ -38,7 +37,6 @@ export const createMachineDeps = (
     stopConnectionFlow: params.stopConnectionFlow,
     connect: params.connect,
     delayBetweenAttempts: params.delayBetweenAttempts,
-    onBeforeRetryRequest: params.onBeforeRetryRequest,
     hasLimitReached: params.hasLimitReached,
     emitBeforeAttempt: params.emitBeforeAttempt,
     stopConnectTriggers: params.stopConnectTriggers,

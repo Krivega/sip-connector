@@ -26,7 +26,6 @@ jest.mock('@/logger', () => {
 describe('AutoConnectorManager - Basic', () => {
   let sipConnector: SipConnector;
   let manager: AutoConnectorManager;
-  let onBeforeRetryMock: jest.Mock;
 
   const parameters = {
     displayName: 'Test User',
@@ -54,14 +53,12 @@ describe('AutoConnectorManager - Basic', () => {
 
   beforeEach(() => {
     sipConnector = doMockSipConnector();
-    onBeforeRetryMock = jest.fn().mockResolvedValue(undefined);
 
     baseParameters = {
       getParameters: getConnectParametersMock,
     };
 
     manager = createManager({
-      onBeforeRetry: onBeforeRetryMock,
       timeoutBetweenAttempts: 100,
     });
   });
@@ -69,21 +66,6 @@ describe('AutoConnectorManager - Basic', () => {
   afterEach(() => {
     jest.clearAllMocks();
     jest.restoreAllMocks();
-  });
-
-  describe('инициализация', () => {
-    it('использует asyncNoop, если onBeforeRetry не передан', async () => {
-      const handleSuccess = jest.fn();
-
-      manager = createManager();
-      manager.on('success', handleSuccess);
-
-      manager.start(baseParameters);
-
-      await manager.wait('success');
-
-      expect(handleSuccess).toHaveBeenCalledTimes(1);
-    });
   });
 
   describe('start и stop', () => {
@@ -266,7 +248,7 @@ describe('AutoConnectorManager - Basic', () => {
       const error = new Error('Unknown error');
 
       jest.spyOn(sipConnector.connectionQueueManager, 'connect').mockRejectedValue(error);
-      onBeforeRetryMock.mockRejectedValue(error);
+      jest.spyOn(DelayRequester.prototype, 'request').mockRejectedValue(error);
 
       manager.on('failed-all-attempts', handleFailed);
       manager.start(baseParameters);
@@ -291,30 +273,6 @@ describe('AutoConnectorManager - Basic', () => {
       await delayPromise(DELAY);
 
       sipConnector.connectionQueueManager.stop();
-
-      await manager.wait('cancelled-attempts');
-
-      expect(handleCancelled).toHaveBeenCalled();
-    });
-
-    it('вызывает cancelled-attempt при отмене onBeforeRetry', async () => {
-      const handleCancelled = jest.fn();
-
-      jest.spyOn(sipConnector.connectionQueueManager, 'connect').mockRejectedValue(undefined);
-
-      manager = createManager({
-        onBeforeRetry: async () => {
-          await delayPromise(DELAY * 10);
-        },
-        timeoutBetweenAttempts: 1,
-      });
-
-      manager.on('cancelled-attempts', handleCancelled);
-      manager.start(baseParameters);
-
-      await delayPromise(DELAY);
-
-      manager.cancelPendingRetry();
 
       await manager.wait('cancelled-attempts');
 

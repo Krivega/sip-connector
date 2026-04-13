@@ -43,8 +43,6 @@ export type TAutoConnectorMachineDeps = {
   connect: (parameters: TParametersAutoConnect) => Promise<void>;
   /** Ожидание `timeoutBetweenAttempts` перед следующей попыткой. */
   delayBetweenAttempts: () => Promise<void>;
-  /** Колбэк `onBeforeRetry` перед повторной попыткой (после задержки). */
-  onBeforeRetryRequest: () => Promise<void>;
   /** Достигнут ли лимит попыток подряд (`AttemptsState`). */
   hasLimitReached: () => boolean;
   /** Событие `before-attempt` наружу. */

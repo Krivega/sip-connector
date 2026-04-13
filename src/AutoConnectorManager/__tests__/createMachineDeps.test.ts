@@ -28,7 +28,6 @@ const createBaseParams = () => {
     stopConnectionFlow: jest.fn(async () => {}),
     connect: jest.fn(async () => {}),
     delayBetweenAttempts: jest.fn(async () => {}),
-    onBeforeRetryRequest: jest.fn(async () => {}),
     hasLimitReached: jest.fn(() => {
       return false;
     }),

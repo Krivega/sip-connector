@@ -24,7 +24,6 @@ jest.mock('@/logger', () => {
 describe('AutoConnectorManager - Telephony', () => {
   let sipConnector: SipConnector;
   let manager: AutoConnectorManager;
-  let onBeforeRetryMock: jest.Mock;
 
   const parameters = {
     displayName: 'Test User',
@@ -52,14 +51,12 @@ describe('AutoConnectorManager - Telephony', () => {
 
   beforeEach(() => {
     sipConnector = doMockSipConnector();
-    onBeforeRetryMock = jest.fn().mockResolvedValue(undefined);
 
     baseParameters = {
       getParameters: getConnectParametersMock,
     };
 
     manager = createManager({
-      onBeforeRetry: onBeforeRetryMock,
       timeoutBetweenAttempts: 100,
     });
   });
@@ -276,30 +273,6 @@ describe('AutoConnectorManager - Telephony', () => {
     });
 
     describe('onBeforeRequest', () => {
-      it('вызывает onBeforeRetry перед getParameters', async () => {
-        const startSpy = jest
-          .spyOn(CheckTelephonyRequester.prototype, 'start')
-          .mockImplementation();
-        const hasLimitReachedSpy = jest
-          .spyOn(AttemptsState.prototype, 'hasLimitReached')
-          .mockReturnValue(true);
-
-        manager.start({
-          getParameters: baseParameters.getParameters,
-        });
-
-        await flushPromises();
-
-        const { onBeforeRequest } = startSpy.mock.calls[0][0] as {
-          onBeforeRequest: () => Promise<TParametersCheckTelephony>;
-        };
-
-        await onBeforeRequest();
-
-        expect(onBeforeRetryMock).toHaveBeenCalledTimes(1);
-        hasLimitReachedSpy.mockRestore();
-      });
-
       it('возвращает данные при успешном getParameters', async () => {
         const startSpy = jest
           .spyOn(CheckTelephonyRequester.prototype, 'start')
@@ -347,7 +320,6 @@ describe('AutoConnectorManager - Telephony', () => {
         };
 
         await expect(onBeforeRequest()).rejects.toThrow(error);
-        expect(onBeforeRetryMock).toHaveBeenCalledTimes(1);
         hasLimitReachedSpy.mockRestore();
       });
     });

@@ -1,3 +1,5 @@
+import { DelayRequester } from '@krivega/timeout-requester';
+
 import delayPromise from '@/__fixtures__/delayPromise';
 import flushPromises from '@/__fixtures__/flushPromises';
 import { doMockSipConnector } from '@/doMock';
@@ -16,7 +18,6 @@ jest.mock('@/logger', () => {
 describe('AutoConnectorManager - Events', () => {
   let sipConnector: SipConnector;
   let manager: AutoConnectorManager;
-  let onBeforeRetryMock: jest.Mock;
 
   const parameters = {
     displayName: 'Test User',
@@ -44,14 +45,12 @@ describe('AutoConnectorManager - Events', () => {
 
   beforeEach(() => {
     sipConnector = doMockSipConnector();
-    onBeforeRetryMock = jest.fn().mockResolvedValue(undefined);
 
     baseParameters = {
       getParameters: getConnectParametersMock,
     };
 
     manager = createManager({
-      onBeforeRetry: onBeforeRetryMock,
       timeoutBetweenAttempts: 100,
     });
   });
@@ -226,7 +225,7 @@ describe('AutoConnectorManager - Events', () => {
 
       // Мокаем ошибку подключения
       jest.spyOn(sipConnector.connectionQueueManager, 'connect').mockRejectedValue(error);
-      onBeforeRetryMock.mockRejectedValue(error);
+      jest.spyOn(DelayRequester.prototype, 'request').mockRejectedValue(error);
 
       manager.start(baseParameters);
 

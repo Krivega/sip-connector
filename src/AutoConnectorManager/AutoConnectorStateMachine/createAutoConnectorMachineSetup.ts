@@ -41,11 +41,10 @@ export const createAutoConnectorMachineSetup = (deps: TAutoConnectorMachineDeps)
 
         await deps.connect(input);
       }),
-      /** Invoke в `waitingBeforeRetry`: сначала задержка между попытками, затем `onBeforeRetry`. */
+      /** Invoke в `waitingBeforeRetry`: сначала задержка между попытками. */
       waitBeforeRetry: fromPromise(async () => {
         debug('waitBeforeRetry');
         await deps.delayBetweenAttempts();
-        await deps.onBeforeRetryRequest();
       }),
     },
     /** Условия переходов после `disconnect`, классификация ошибок `connect` и ретрая. */
@@ -74,7 +73,7 @@ export const createAutoConnectorMachineSetup = (deps: TAutoConnectorMachineDeps)
       isNotActualPromise: ({ event }) => {
         return hasConnectionPromiseIsNotActualError(getInvokeError(event));
       },
-      /** Отмена задержки или `onBeforeRetry` (cancelable / timeout-requester). */
+      /** Отмена задержки (cancelable / timeout-requester). */
       isWaitRetryCancelled: ({ event }) => {
         const error = getInvokeError(event);
 

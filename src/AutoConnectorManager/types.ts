@@ -6,7 +6,6 @@ export interface IAutoConnectorOptions {
   timeoutBetweenAttempts?: number;
   networkInterfacesSubscriber?: TNetworkInterfacesSubscriber;
   resumeFromSleepModeSubscriber?: TResumeFromSleepModeSubscriber;
-  onBeforeRetry?: () => Promise<void>;
   canRetryOnError?: (error: unknown) => boolean;
   telephonyFailPolicy?: Partial<ITelephonyFailPolicyOptions>;
 }

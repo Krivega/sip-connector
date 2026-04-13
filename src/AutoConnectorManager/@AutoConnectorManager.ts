@@ -1,4 +1,3 @@
-import { CancelableRequest } from '@krivega/cancelable-promise';
 import { DelayRequester } from '@krivega/timeout-requester';
 import { EventEmitterProxy } from 'events-constructor';
 
@@ -35,8 +34,6 @@ const ERROR_MESSAGES = {
   LIMIT_REACHED: 'Limit reached',
 } as const;
 
-const asyncNoop = async (): Promise<void> => {};
-
 const defaultCanRetryOnError = (_error: unknown): boolean => {
   return true;
 };
@@ -57,12 +54,6 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   private readonly attemptsState: AttemptsState;
 
   private readonly delayBetweenAttempts: DelayRequester;
-
-  private readonly cancelableRequestBeforeRetry: CancelableRequest<void, void>;
-
-  private readonly onBeforeRetry: () => Promise<void>;
-
-  private readonly canRetryOnError: (error: unknown) => boolean;
 
   private readonly networkInterfacesSubscriber: TNetworkInterfacesSubscriber | undefined;
 
@@ -90,13 +81,8 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   ) {
     super(createEvents());
 
-    const onBeforeRetry = options?.onBeforeRetry ?? asyncNoop;
-    const canRetryOnError = options?.canRetryOnError ?? defaultCanRetryOnError;
-
     this.connectionQueueManager = connectionQueueManager;
     this.connectionManager = connectionManager;
-    this.onBeforeRetry = onBeforeRetry;
-    this.canRetryOnError = canRetryOnError;
     this.networkInterfacesSubscriber = options?.networkInterfacesSubscriber;
     this.resumeFromSleepModeSubscriber = options?.resumeFromSleepModeSubscriber;
 
@@ -115,7 +101,6 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
     this.attemptsState = new AttemptsState({
       onStatusChange: this.emitStatusChange,
     });
-    this.cancelableRequestBeforeRetry = new CancelableRequest(onBeforeRetry);
     this.delayBetweenAttempts = new DelayRequester(
       options?.timeoutBetweenAttempts ?? DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS,
     );
@@ -124,7 +109,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
 
     this.stateMachine = createAutoConnectorStateMachine(
       createMachineDeps({
-        canRetryOnError: this.canRetryOnError,
+        canRetryOnError: options?.canRetryOnError ?? defaultCanRetryOnError,
         stopConnectionFlow: async () => {
           await this.stopConnectionFlow();
         },
@@ -134,14 +119,8 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
         delayBetweenAttempts: async () => {
           await this.delayBetweenAttempts.request();
         },
-        onBeforeRetryRequest: async () => {
-          await this.cancelableRequestBeforeRetry.request();
-        },
         hasLimitReached: () => {
           return this.attemptsState.hasLimitReached();
-        },
-        emitBeforeAttempt: () => {
-          this.events.trigger('before-attempt', {});
         },
         stopConnectTriggers: () => {
           this.stopConnectTriggers();
@@ -155,9 +134,6 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
         finishAttempt: () => {
           this.attemptsState.finishAttempt();
         },
-        emitLimitReachedAttempts: () => {
-          this.events.trigger('limit-reached-attempts', new Error(ERROR_MESSAGES.LIMIT_REACHED));
-        },
         getParametersFromContext: () => {
           return this.stateMachine.context.parameters;
         },
@@ -166,6 +142,12 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
         },
         subscribeToConnectTriggers: (parameters: TParametersAutoConnect) => {
           this.subscribeToConnectTriggers(parameters);
+        },
+        emitBeforeAttempt: () => {
+          this.events.trigger('before-attempt', {});
+        },
+        emitLimitReachedAttempts: () => {
+          this.events.trigger('limit-reached-attempts', new Error(ERROR_MESSAGES.LIMIT_REACHED));
         },
         emitSuccess: () => {
           logger('handleSucceededAttempt');
@@ -203,7 +185,6 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   // Test hook: allows deterministic cancellation of pending retry flow.
   public cancelPendingRetry() {
     this.delayBetweenAttempts.cancelRequest();
-    this.cancelableRequestBeforeRetry.cancelRequest();
   }
 
   private requestReconnect(parameters: TParametersAutoConnect, reason: TReconnectReason) {
@@ -261,9 +242,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
 
     this.checkTelephonyRequester.start({
       onBeforeRequest: async () => {
-        await this.onBeforeRetry();
-
-        return parameters.getParameters();
+        return parameters.getParameters(); // TODO: зачем этот параметр?
       },
       onSuccessRequest: () => {
         logger('startCheckTelephony: onSuccessRequest');

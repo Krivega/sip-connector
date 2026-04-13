@@ -16,7 +16,7 @@
 | `disconnecting`       | Выполняется `stopConnectionFlow` (остановка попыток, триггеров, `disconnect`).               |
 | `attemptingGate`      | Перед попыткой: `before-attempt`, остановка триггеров; проверка лимита попыток.              |
 | `attemptingConnect`   | Вызов `connectionQueueManager.connect`.                                                      |
-| `waitingBeforeRetry`  | Задержка `timeoutBetweenAttempts` и `onBeforeRetry` перед следующей попыткой.                |
+| `waitingBeforeRetry`  | Задержка `timeoutBetweenAttempts` перед следующей попыткой.                                  |
 | `connectedMonitoring` | Успешное подключение; активны ping и подписка на регистрацию.                                |
 | `telephonyChecking`   | Лимит попыток; работает `CheckTelephonyRequester`.                                           |
 | `errorTerminal`       | Общий терминальный режим для остановленных попыток; причина хранится в `context.stopReason`. |

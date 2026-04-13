@@ -41,7 +41,6 @@ const createDeps = (overrides: Partial<Parameters<typeof createAutoConnectorMach
     stopConnectionFlow: jest.fn(async () => {}),
     connect: jest.fn(async () => {}),
     delayBetweenAttempts: jest.fn(async () => {}),
-    onBeforeRetryRequest: jest.fn(async () => {}),
     hasLimitReached: () => {
       return false;
     },
@@ -199,7 +198,7 @@ describe('createAutoConnectorMachine', () => {
       connect: jest.fn(async () => {
         throw new Error('retryable');
       }),
-      onBeforeRetryRequest: jest.fn(async () => {
+      delayBetweenAttempts: jest.fn(async () => {
         throw error;
       }),
     });
@@ -223,7 +222,7 @@ describe('createAutoConnectorMachine', () => {
       connect: jest.fn(async () => {
         throw new Error('retryable');
       }),
-      onBeforeRetryRequest: jest.fn(async () => {
+      delayBetweenAttempts: jest.fn(async () => {
         throw error;
       }),
     });
@@ -247,7 +246,7 @@ describe('createAutoConnectorMachine', () => {
       connect: jest.fn(async () => {
         throw new Error('retryable');
       }),
-      onBeforeRetryRequest: jest.fn(async () => {
+      delayBetweenAttempts: jest.fn(async () => {
         throw error;
       }),
     });

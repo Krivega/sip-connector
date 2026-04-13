@@ -22,7 +22,6 @@ jest.mock('@/logger', () => {
 describe('AutoConnectorManager - Reconnection', () => {
   let sipConnector: SipConnector;
   let manager: AutoConnectorManager;
-  let onBeforeRetryMock: jest.Mock;
 
   const parameters = {
     displayName: 'Test User',
@@ -72,14 +71,12 @@ describe('AutoConnectorManager - Reconnection', () => {
 
   beforeEach(() => {
     sipConnector = doMockSipConnector();
-    onBeforeRetryMock = jest.fn().mockResolvedValue(undefined);
 
     baseParameters = {
       getParameters: getConnectParametersMock,
     };
 
     manager = createManager({
-      onBeforeRetry: onBeforeRetryMock,
       timeoutBetweenAttempts: 100,
       networkInterfacesSubscriber: networkInterfacesSubscriberMock,
       resumeFromSleepModeSubscriber: resumeFromSleepModeSubscriberMock,
@@ -160,7 +157,6 @@ describe('AutoConnectorManager - Reconnection', () => {
 
       await manager.wait('success');
 
-      expect(onBeforeRetryMock).toHaveBeenCalled();
       expect(connectSpy).toHaveBeenCalledTimes(2);
     });
 

@@ -10,7 +10,6 @@ const sipConnector = new SipConnector(
   { JsSIP },
   {
     autoConnectorOptions: {
-      onBeforeRetry, // Очистка кэша перед переподключением
       timeoutBetweenAttempts: 3000, // Задержка между попытками
       checkTelephonyRequestInterval: 15000, // Интервал проверки телефонии
     },

@@ -31,7 +31,6 @@ const createAutoConnectorMachineDeps = () => {
     stopConnectionFlow: jest.fn(async () => {}),
     connect: jest.fn(async () => {}),
     delayBetweenAttempts: jest.fn(async () => {}),
-    onBeforeRetryRequest: jest.fn(async () => {}),
     hasLimitReached: () => {
       return false;
     },
