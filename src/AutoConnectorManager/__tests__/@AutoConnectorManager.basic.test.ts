@@ -217,7 +217,7 @@ describe('AutoConnectorManager - Basic', () => {
 
       await flushPromises();
 
-      const { onSuccessRequest } = startSpy.mock.calls[0][0] as {
+      const { onSuccessRequest } = startSpy.mock.calls[0][1] as {
         onSuccessRequest: () => void;
       };
 

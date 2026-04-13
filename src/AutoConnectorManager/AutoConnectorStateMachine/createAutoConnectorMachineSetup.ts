@@ -18,6 +18,15 @@ const debug = (message: string, ...args: unknown[]) => {
   logger(`[AutoConnectorMachine] ${message}`, ...args);
 };
 
+const getRequiredParameters = (context: TAutoConnectorContext, actionName: string) => {
+  /* istanbul ignore next -- graph invariants require parameters before reaching these actions */
+  if (!context.parameters) {
+    throw new Error(`Auto connector parameters are missing in ${actionName} action`);
+  }
+
+  return context.parameters;
+};
+
 export const createAutoConnectorMachineSetup = (deps: TAutoConnectorMachineDeps) => {
   return setup({
     types: {
@@ -123,27 +132,19 @@ export const createAutoConnectorMachineSetup = (deps: TAutoConnectorMachineDeps)
       }),
       /** Начало цикла попытки: событие «перед попыткой» и сброс внешних триггеров. */
       entryAttemptingGate: () => {
-        debug('entryAttemptingGate');
-        deps.emitBeforeAttempt();
-        deps.stopConnectTriggers();
+        deps.beforeAttempt();
       },
       /** Учёт попытки в `AttemptsState` непосредственно перед `connect`. */
       entryAttemptingConnect: () => {
-        debug('entryAttemptingConnect');
-        deps.startAttempt();
-        deps.incrementAttempt();
+        deps.beforeConnectAttempt();
       },
       /** Лимит: завершить попытку, событие лимита, запуск опроса телефонии. */
-      onLimitReachedTransition: () => {
-        debug('onLimitReachedTransition');
-        deps.finishAttempt();
-        deps.emitLimitReachedAttempts();
-        deps.startCheckTelephony();
+      onLimitReachedTransition: ({ context }) => {
+        deps.onLimitReached(getRequiredParameters(context, 'onLimitReachedTransition'));
       },
       /** Успешный invoke `connect`. */
-      onConnectDone: () => {
-        debug('onConnectDone');
-        deps.onConnectSucceeded();
+      onConnectDone: ({ context }) => {
+        deps.onConnectSucceeded(getRequiredParameters(context, 'onConnectDone'));
       },
       assignHaltedError: assign({
         stopReason: () => {
@@ -198,32 +199,10 @@ export const createAutoConnectorMachineSetup = (deps: TAutoConnectorMachineDeps)
        * Так машина хранит одну терминальную вершину, но не теряет различие причин остановки.
        */
       emitTerminalOutcome: ({ context }) => {
-        deps.finishAttempt();
-
-        if (context.stopReason === 'halted') {
-          deps.onStopAttemptsByError(context.lastError);
-
-          return;
-        }
-
-        if (context.stopReason === 'cancelled') {
-          if (hasConnectionPromiseIsNotActualError(context.lastError)) {
-            deps.emitCancelledAttemptsRaw(context.lastError);
-          } else {
-            deps.emitCancelledAttemptsWrapped(context.lastError);
-          }
-
-          return;
-        }
-
-        if (context.stopReason === 'failed') {
-          deps.onFailedAllAttempts(context.lastError);
-
-          return;
-        }
-
-        /* istanbul ignore next -- errorTerminal is entered only after assign*Error actions */
-        debug('emitTerminalOutcome without stopReason', context.lastError);
+        deps.emitTerminalOutcome({
+          stopReason: context.stopReason,
+          lastError: context.lastError,
+        });
       },
       /**
        * Режим check-telephony: соединение уже есть — только `success` и стоп триггеров.
@@ -231,7 +210,6 @@ export const createAutoConnectorMachineSetup = (deps: TAutoConnectorMachineDeps)
        * без нового вызова `connect`.
        */
       onTelephonyStillConnected: () => {
-        debug('onTelephonyStillConnected');
         deps.onTelephonyStillConnected();
       },
     },

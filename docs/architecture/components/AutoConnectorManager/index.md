@@ -15,9 +15,10 @@
 
 ## Архитектура компонентов
 
-- `@AutoConnectorManager.ts` — фасад и оркестрация внешних триггеров.
-- `AutoConnectorStateMachine/*` — декларативная машина состояний XState.
-- `createMachineDeps.ts` — адаптер между машиной и побочными эффектами менеджера.
+- `@AutoConnectorManager.ts` — фасад: публичный API (`start`/`stop`) и coalescing запросов на рестарт.
+- `AutoConnectorStateMachine/*` — декларативная машина состояний XState (policy и переходы).
+- `AutoConnectorRuntime.ts` — единая оркестрация побочных эффектов (attempts, connect/disconnect, triggers, telephony).
+- `createMachineDeps.ts` — тонкий адаптер между машиной и runtime, включая нормализацию terminal-ошибок.
 - `CheckTelephonyRequester`, `PingServerIfNotActiveCallRequester`, `RegistrationFailedOutOfCallSubscriber` — инфраструктурные наблюдатели и периодические проверки.
 
 ## Основные методы

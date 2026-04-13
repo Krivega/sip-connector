@@ -79,11 +79,13 @@ describe('AutoConnectorManager - Telephony', () => {
         manager.once('limit-reached-attempts', resolve);
       });
 
-      expect(checkTelephonyStartSpy).toHaveBeenCalledWith({
-        onBeforeRequest: expect.any(Function) as () => Promise<TParametersCheckTelephony>,
-        onSuccessRequest: expect.any(Function) as () => void,
-        onFailRequest: expect.any(Function) as (error?: unknown) => void,
-      });
+      expect(checkTelephonyStartSpy).toHaveBeenCalledWith(
+        expect.any(Function) as () => Promise<TParametersCheckTelephony>,
+        {
+          onSuccessRequest: expect.any(Function) as () => void,
+          onFailRequest: expect.any(Function) as (error?: unknown) => void,
+        },
+      );
 
       hasLimitReachedSpy.mockRestore();
     });
@@ -98,7 +100,7 @@ describe('AutoConnectorManager - Telephony', () => {
 
       await flushPromises();
 
-      const { onFailRequest } = startSpy.mock.calls[0][0] as {
+      const { onFailRequest } = startSpy.mock.calls[0][1] as {
         onFailRequest: (error?: unknown) => void;
       };
 
@@ -136,7 +138,7 @@ describe('AutoConnectorManager - Telephony', () => {
 
       await flushPromises();
 
-      const { onFailRequest } = startSpy.mock.calls[0][0] as {
+      const { onFailRequest } = startSpy.mock.calls[0][1] as {
         onFailRequest: (error?: unknown) => void;
       };
       const error = new Error('Check telephony error');
@@ -185,7 +187,7 @@ describe('AutoConnectorManager - Telephony', () => {
 
       await flushPromises();
 
-      const { onFailRequest } = startSpy.mock.calls[0][0] as {
+      const { onFailRequest } = startSpy.mock.calls[0][1] as {
         onFailRequest: (error?: unknown) => void;
       };
 
@@ -221,7 +223,7 @@ describe('AutoConnectorManager - Telephony', () => {
 
       await flushPromises();
 
-      const { onSuccessRequest } = startSpy.mock.calls[0][0] as {
+      const { onSuccessRequest } = startSpy.mock.calls[0][1] as {
         onSuccessRequest: () => void;
       };
 
@@ -287,9 +289,8 @@ describe('AutoConnectorManager - Telephony', () => {
 
         await flushPromises();
 
-        const { onBeforeRequest } = startSpy.mock.calls[0][0] as {
-          onBeforeRequest: () => Promise<TParametersCheckTelephony>;
-        };
+        const onBeforeRequest = startSpy.mock
+          .calls[0][0] as () => Promise<TParametersCheckTelephony>;
 
         const result = await onBeforeRequest();
 
@@ -315,9 +316,8 @@ describe('AutoConnectorManager - Telephony', () => {
 
         await flushPromises();
 
-        const { onBeforeRequest } = startSpy.mock.calls[0][0] as {
-          onBeforeRequest: () => Promise<TParametersCheckTelephony>;
-        };
+        const onBeforeRequest = startSpy.mock
+          .calls[0][0] as () => Promise<TParametersCheckTelephony>;
 
         await expect(onBeforeRequest()).rejects.toThrow(error);
         hasLimitReachedSpy.mockRestore();

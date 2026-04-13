@@ -25,18 +25,11 @@ const minimalDeps = (): Parameters<typeof createAutoConnectorMachine>[0] => {
     hasLimitReached: () => {
       return false;
     },
-    emitBeforeAttempt: jest.fn(),
-    stopConnectTriggers: jest.fn(),
-    startAttempt: jest.fn(),
-    incrementAttempt: jest.fn(),
-    finishAttempt: jest.fn(),
-    emitLimitReachedAttempts: jest.fn(),
-    startCheckTelephony: jest.fn(),
+    beforeAttempt: jest.fn(),
+    beforeConnectAttempt: jest.fn(),
+    onLimitReached: jest.fn(),
     onConnectSucceeded: jest.fn(),
-    onStopAttemptsByError: jest.fn(),
-    emitCancelledAttemptsRaw: jest.fn(),
-    emitCancelledAttemptsWrapped: jest.fn(),
-    onFailedAllAttempts: jest.fn(),
+    emitTerminalOutcome: jest.fn(),
     onTelephonyStillConnected: jest.fn(),
   };
 };

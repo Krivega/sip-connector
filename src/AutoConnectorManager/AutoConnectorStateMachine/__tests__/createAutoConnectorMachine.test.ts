@@ -44,18 +44,11 @@ const createDeps = (overrides: Partial<Parameters<typeof createAutoConnectorMach
     hasLimitReached: () => {
       return false;
     },
-    emitBeforeAttempt: jest.fn(),
-    stopConnectTriggers: jest.fn(),
-    startAttempt: jest.fn(),
-    incrementAttempt: jest.fn(),
-    finishAttempt: jest.fn(),
-    emitLimitReachedAttempts: jest.fn(),
-    startCheckTelephony: jest.fn(),
+    beforeAttempt: jest.fn(),
+    beforeConnectAttempt: jest.fn(),
+    onLimitReached: jest.fn(),
     onConnectSucceeded: jest.fn(),
-    onStopAttemptsByError: jest.fn(),
-    emitCancelledAttemptsRaw: jest.fn(),
-    emitCancelledAttemptsWrapped: jest.fn(),
-    onFailedAllAttempts: jest.fn(),
+    emitTerminalOutcome: jest.fn(),
     onTelephonyStillConnected: jest.fn(),
     ...overrides,
   };
@@ -79,7 +72,7 @@ describe('createAutoConnectorMachine', () => {
     await settleMachine();
 
     expect(deps.stopConnectionFlow).toHaveBeenCalled();
-    expect(deps.emitBeforeAttempt).toHaveBeenCalled();
+    expect(deps.beforeAttempt).toHaveBeenCalled();
     expect(deps.connect).toHaveBeenCalled();
   });
 
@@ -126,8 +119,7 @@ describe('createAutoConnectorMachine', () => {
 
     await settleMachine();
 
-    expect(deps.emitLimitReachedAttempts).toHaveBeenCalled();
-    expect(deps.startCheckTelephony).toHaveBeenCalled();
+    expect(deps.onLimitReached).toHaveBeenCalledWith(parameters);
     expect(actor.getSnapshot().value).toBe(EState.TELEPHONY_CHECKING);
   });
 
@@ -168,8 +160,10 @@ describe('createAutoConnectorMachine', () => {
 
     expect(actor.getSnapshot().value).toBe(EState.ERROR_TERMINAL);
     expect(actor.getSnapshot().context.stopReason).toBe('halted');
-    expect(deps.finishAttempt).toHaveBeenCalled();
-    expect(deps.onStopAttemptsByError).toHaveBeenCalledWith(error);
+    expect(deps.emitTerminalOutcome).toHaveBeenCalledWith({
+      stopReason: 'halted',
+      lastError: error,
+    });
   });
 
   it('неактуальный promise переводит в errorTerminal с причиной cancelled', async () => {
@@ -189,7 +183,10 @@ describe('createAutoConnectorMachine', () => {
 
     expect(actor.getSnapshot().value).toBe(EState.ERROR_TERMINAL);
     expect(actor.getSnapshot().context.stopReason).toBe('cancelled');
-    expect(deps.emitCancelledAttemptsRaw).toHaveBeenCalledWith(error);
+    expect(deps.emitTerminalOutcome).toHaveBeenCalledWith({
+      stopReason: 'cancelled',
+      lastError: error,
+    });
   });
 
   it('отмена waitBeforeRetry переводит в errorTerminal с причиной cancelled', async () => {
@@ -213,7 +210,10 @@ describe('createAutoConnectorMachine', () => {
 
     expect(actor.getSnapshot().value).toBe(EState.ERROR_TERMINAL);
     expect(actor.getSnapshot().context.stopReason).toBe('cancelled');
-    expect(deps.emitCancelledAttemptsWrapped).toHaveBeenCalledWith(error);
+    expect(deps.emitTerminalOutcome).toHaveBeenCalledWith({
+      stopReason: 'cancelled',
+      lastError: error,
+    });
   });
 
   it('фатальная ошибка waitBeforeRetry переводит в errorTerminal с причиной failed', async () => {
@@ -237,7 +237,10 @@ describe('createAutoConnectorMachine', () => {
 
     expect(actor.getSnapshot().value).toBe(EState.ERROR_TERMINAL);
     expect(actor.getSnapshot().context.stopReason).toBe('failed');
-    expect(deps.onFailedAllAttempts).toHaveBeenCalledWith(error);
+    expect(deps.emitTerminalOutcome).toHaveBeenCalledWith({
+      stopReason: 'failed',
+      lastError: error,
+    });
   });
 
   it('defensive branch: errorTerminal выдерживает вход без stopReason', async () => {
@@ -272,10 +275,10 @@ describe('createAutoConnectorMachine', () => {
 
     expect(actor.getSnapshot().value).toBe(EState.ERROR_TERMINAL);
     expect(actor.getSnapshot().context.stopReason).toBeUndefined();
-    expect(deps.onFailedAllAttempts).not.toHaveBeenCalled();
-    expect(deps.emitCancelledAttemptsWrapped).not.toHaveBeenCalled();
-    expect(deps.emitCancelledAttemptsRaw).not.toHaveBeenCalled();
-    expect(deps.onStopAttemptsByError).not.toHaveBeenCalled();
+    expect(deps.emitTerminalOutcome).toHaveBeenCalledWith({
+      stopReason: undefined,
+      lastError: error,
+    });
   });
 
   it('переводит в errorTerminal, если параметры потеряны перед attemptingConnect', async () => {
@@ -311,7 +314,12 @@ describe('createAutoConnectorMachine', () => {
     await settleMachine();
 
     expect(actor.getSnapshot().value).toBe(EState.ERROR_TERMINAL);
-    expect(deps.onStopAttemptsByError).toHaveBeenCalledWith(
+    expect(deps.emitTerminalOutcome).toHaveBeenCalled();
+
+    const terminalError: unknown = actor.getSnapshot().context.lastError;
+
+    expect(terminalError).toBeInstanceOf(Error);
+    expect(terminalError).toEqual(
       expect.objectContaining({
         message: 'Auto connector parameters are missing in attemptingConnect state',
       }),

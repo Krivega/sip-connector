@@ -3,6 +3,7 @@ import { EventEmitterProxy } from 'events-constructor';
 
 import logger from '@/logger';
 import AttemptsState from './AttemptsState';
+import { AutoConnectorRuntime } from './AutoConnectorRuntime';
 import { createAutoConnectorStateMachine } from './AutoConnectorStateMachine';
 import CheckTelephonyRequester from './CheckTelephonyRequester';
 import { createMachineDeps } from './createMachineDeps';
@@ -18,13 +19,7 @@ import type { ConnectionManager } from '@/ConnectionManager';
 import type { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import type { AutoConnectorStateMachine } from './AutoConnectorStateMachine';
 import type { TEventMap } from './events';
-import type {
-  IAutoConnectorOptions,
-  TNetworkInterfacesSubscriber,
-  TParametersAutoConnect,
-  TReconnectReason,
-  TResumeFromSleepModeSubscriber,
-} from './types';
+import type { IAutoConnectorOptions, TParametersAutoConnect, TReconnectReason } from './types';
 
 const DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS = 3000;
 const DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL = 15_000;
@@ -41,31 +36,13 @@ const defaultCanRetryOnError = (_error: unknown): boolean => {
 class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   public readonly stateMachine: AutoConnectorStateMachine;
 
-  private readonly connectionManager: ConnectionManager;
-
-  private readonly connectionQueueManager: ConnectionQueueManager;
-
-  private readonly checkTelephonyRequester: CheckTelephonyRequester;
-
-  private readonly pingServerIfNotActiveCallRequester: PingServerIfNotActiveCallRequester;
-
-  private readonly registrationFailedOutOfCallSubscriber: RegistrationFailedOutOfCallSubscriber;
-
-  private readonly attemptsState: AttemptsState;
-
-  private readonly delayBetweenAttempts: DelayRequester;
-
-  private readonly networkInterfacesSubscriber: TNetworkInterfacesSubscriber | undefined;
-
-  private readonly resumeFromSleepModeSubscriber: TResumeFromSleepModeSubscriber | undefined;
+  private readonly runtime: AutoConnectorRuntime;
 
   private readonly notActiveCallSubscriber: NotActiveCallSubscriber;
 
   private readonly reconnectCoalescer = new ReconnectRequestCoalescer({
     coalesceWindowMs: RECONNECT_COALESCE_WINDOW_MS,
   });
-
-  private readonly telephonyFailPolicy: TelephonyFailPolicy;
 
   public constructor(
     {
@@ -81,68 +58,41 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   ) {
     super(createEvents());
 
-    this.connectionQueueManager = connectionQueueManager;
-    this.connectionManager = connectionManager;
-    this.networkInterfacesSubscriber = options?.networkInterfacesSubscriber;
-    this.resumeFromSleepModeSubscriber = options?.resumeFromSleepModeSubscriber;
-
-    this.checkTelephonyRequester = new CheckTelephonyRequester({
+    const checkTelephonyRequester = new CheckTelephonyRequester({
       connectionManager,
       interval: options?.checkTelephonyRequestInterval ?? DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL,
     });
-    this.pingServerIfNotActiveCallRequester = new PingServerIfNotActiveCallRequester({
+    const pingServerIfNotActiveCallRequester = new PingServerIfNotActiveCallRequester({
       connectionManager,
       callManager,
     });
-    this.registrationFailedOutOfCallSubscriber = new RegistrationFailedOutOfCallSubscriber({
+    const registrationFailedOutOfCallSubscriber = new RegistrationFailedOutOfCallSubscriber({
       connectionManager,
       callManager,
     });
-    this.attemptsState = new AttemptsState({
+    const attemptsState = new AttemptsState({
       onStatusChange: this.emitStatusChange,
     });
-    this.delayBetweenAttempts = new DelayRequester(
+    const delayBetweenAttempts = new DelayRequester(
       options?.timeoutBetweenAttempts ?? DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS,
     );
-    this.notActiveCallSubscriber = new NotActiveCallSubscriber({ callManager });
-    this.telephonyFailPolicy = new TelephonyFailPolicy(options?.telephonyFailPolicy);
 
-    this.stateMachine = createAutoConnectorStateMachine(
-      createMachineDeps({
-        canRetryOnError: options?.canRetryOnError ?? defaultCanRetryOnError,
-        stopConnectionFlow: async () => {
-          await this.stopConnectionFlow();
-        },
-        connect: async (parameters: TParametersAutoConnect) => {
-          await this.connectionQueueManager.connect(parameters.getParameters, parameters.options);
-        },
-        delayBetweenAttempts: async () => {
-          await this.delayBetweenAttempts.request();
-        },
-        hasLimitReached: () => {
-          return this.attemptsState.hasLimitReached();
-        },
-        stopConnectTriggers: () => {
-          this.stopConnectTriggers();
-        },
-        startAttempt: () => {
-          this.attemptsState.startAttempt();
-        },
-        incrementAttempt: () => {
-          this.attemptsState.increment();
-        },
-        finishAttempt: () => {
-          this.attemptsState.finishAttempt();
-        },
-        getParametersFromContext: () => {
-          return this.stateMachine.context.parameters;
-        },
-        startCheckTelephony: (parameters: TParametersAutoConnect) => {
-          this.startCheckTelephony(parameters);
-        },
-        subscribeToConnectTriggers: (parameters: TParametersAutoConnect) => {
-          this.subscribeToConnectTriggers(parameters);
-        },
+    this.notActiveCallSubscriber = new NotActiveCallSubscriber({ callManager });
+
+    const telephonyFailPolicy = new TelephonyFailPolicy(options?.telephonyFailPolicy);
+
+    this.runtime = new AutoConnectorRuntime({
+      connectionManager,
+      connectionQueueManager,
+      checkTelephonyRequester,
+      pingServerIfNotActiveCallRequester,
+      registrationFailedOutOfCallSubscriber,
+      attemptsState,
+      delayBetweenAttempts,
+      telephonyFailPolicy,
+      networkInterfacesSubscriber: options?.networkInterfacesSubscriber,
+      resumeFromSleepModeSubscriber: options?.resumeFromSleepModeSubscriber,
+      emitters: {
         emitBeforeAttempt: () => {
           this.events.trigger('before-attempt', {});
         },
@@ -162,6 +112,33 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
         emitFailedAllAttempts: (error: Error) => {
           this.events.trigger('failed-all-attempts', error);
         },
+        emitTelephonyCheckFailure: (payload) => {
+          this.events.trigger('telephony-check-failure', payload);
+        },
+        emitTelephonyCheckEscalated: (payload) => {
+          this.events.trigger('telephony-check-escalated', payload);
+        },
+      },
+      reconnectActions: {
+        requestReconnect: (parameters: TParametersAutoConnect, reason: TReconnectReason) => {
+          this.requestReconnect(parameters, reason);
+        },
+        requestFlowRestart: () => {
+          this.stateMachine.toFlowRestart();
+        },
+        requestStop: () => {
+          this.stateMachine.toStop();
+        },
+        notifyTelephonyStillConnected: () => {
+          this.stateMachine.toTelephonyResultStillConnected();
+        },
+      },
+    });
+
+    this.stateMachine = createAutoConnectorStateMachine(
+      createMachineDeps({
+        runtime: this.runtime,
+        canRetryOnError: options?.canRetryOnError ?? defaultCanRetryOnError,
       }),
     );
   }
@@ -177,14 +154,14 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
     logger('auto connector stop');
 
     this.unsubscribeFromNotActiveCall();
-    this.unsubscribeFromHardwareTriggers();
+    this.runtime.unsubscribeFromHardwareTriggers();
     this.resetReconnectCoalescingState();
     this.stateMachine.toStop();
   }
 
   // Test hook: allows deterministic cancellation of pending retry flow.
   public cancelPendingRetry() {
-    this.delayBetweenAttempts.cancelRequest();
+    this.runtime.cancelPendingRetry();
   }
 
   private requestReconnect(parameters: TParametersAutoConnect, reason: TReconnectReason) {
@@ -212,159 +189,21 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
     this.reconnectCoalescer.reset();
   }
 
-  private async stopConnectionFlow() {
-    logger('stopConnectionFlow');
-
-    this.stopAttempts();
-    this.stopConnectTriggers();
-    await this.connectionQueueManager.disconnect();
-  }
-
-  private stopAttempts() {
-    if (this.attemptsState.isAttemptInProgress) {
-      this.connectionQueueManager.stop();
-    }
-
-    this.cancelPendingRetry();
-    this.attemptsState.reset();
-  }
-
-  private stopConnectTriggers() {
-    logger('stopConnectTriggers');
-
-    this.stopPingRequester();
-    this.checkTelephonyRequester.stop();
-    this.registrationFailedOutOfCallSubscriber.unsubscribe();
-  }
-
-  private startCheckTelephony(parameters: TParametersAutoConnect) {
-    logger('startCheckTelephony');
-
-    this.checkTelephonyRequester.start({
-      onBeforeRequest: async () => {
-        return parameters.getParameters(); // TODO: зачем этот параметр?
-      },
-      onSuccessRequest: () => {
-        logger('startCheckTelephony: onSuccessRequest');
-        this.telephonyFailPolicy.reset();
-
-        const isUnavailable = this.isConnectionUnavailable();
-
-        logger('connectIfDisconnected: isUnavailable', isUnavailable);
-
-        if (isUnavailable) {
-          this.requestReconnect(parameters, 'telephony-disconnected');
-        } else {
-          this.stateMachine.toTelephonyResultStillConnected();
-        }
-      },
-      onFailRequest: (error?: unknown) => {
-        const decision = this.telephonyFailPolicy.registerFailure();
-
-        this.events.trigger('telephony-check-failure', {
-          failCount: decision.failCount,
-          escalationLevel: decision.escalationLevel,
-          shouldRequestReconnect: decision.shouldRequestReconnect,
-          nextRetryDelayMs: decision.nextRetryDelayMs,
-          error,
-        });
-
-        if (decision.escalationLevel !== 'none' && decision.hasEscalated) {
-          this.events.trigger('telephony-check-escalated', {
-            failCount: decision.failCount,
-            escalationLevel: decision.escalationLevel,
-            error,
-          });
-        }
-
-        if (decision.shouldRequestReconnect) {
-          this.requestReconnect(parameters, 'telephony-check-failed');
-        }
-
-        logger('startCheckTelephony: onFailRequest', (error as Error).message);
-      },
-    });
-  }
-
-  private subscribeToConnectTriggers(parameters: TParametersAutoConnect) {
-    this.startPingRequester(parameters);
-
-    this.registrationFailedOutOfCallSubscriber.subscribe(() => {
-      logger('registrationFailedOutOfCallListener callback');
-
-      this.requestReconnect(parameters, 'registration-failed-out-of-call');
-    });
-  }
-
   private subscribeToNotActiveCall(parameters: TParametersAutoConnect) {
     this.notActiveCallSubscriber.subscribe({
       onActive: () => {
         logger('subscribeToNotActiveCall onActive');
-        this.unsubscribeFromHardwareTriggers();
+        this.runtime.unsubscribeFromHardwareTriggers();
       },
       onInactive: () => {
         logger('subscribeToNotActiveCall onInactive');
-        this.subscribeToHardwareTriggers(parameters);
+        this.runtime.subscribeToHardwareTriggers(parameters);
       },
     });
   }
 
   private unsubscribeFromNotActiveCall() {
     this.notActiveCallSubscriber.unsubscribe();
-  }
-
-  private subscribeToHardwareTriggers(parameters: TParametersAutoConnect) {
-    this.unsubscribeFromHardwareTriggers();
-
-    logger('subscribeToHardwareTriggers');
-
-    this.networkInterfacesSubscriber?.subscribe({
-      onChange: () => {
-        logger('networkInterfacesSubscriber onChange');
-
-        this.requestReconnect(parameters, 'network-change');
-      },
-      onUnavailable: () => {
-        logger('networkInterfacesSubscriber onUnavailable');
-
-        this.stateMachine.toStop();
-      },
-    });
-
-    this.resumeFromSleepModeSubscriber?.subscribe({
-      onResume: () => {
-        logger('resumeFromSleepModeSubscriber onResume');
-
-        this.requestReconnect(parameters, 'sleep-resume');
-      },
-    });
-  }
-
-  private unsubscribeFromHardwareTriggers() {
-    logger('unsubscribeFromHardwareTriggers');
-
-    this.networkInterfacesSubscriber?.unsubscribe();
-    this.resumeFromSleepModeSubscriber?.unsubscribe();
-  }
-
-  private stopPingRequester() {
-    this.pingServerIfNotActiveCallRequester.stop();
-  }
-
-  private startPingRequester(_parameters: TParametersAutoConnect) {
-    this.pingServerIfNotActiveCallRequester.start({
-      onFailRequest: () => {
-        logger('pingRequester: onFailRequest');
-
-        this.stateMachine.toFlowRestart();
-      },
-    });
-  }
-
-  private isConnectionUnavailable() {
-    const { isDisconnected, isIdle } = this.connectionManager;
-
-    return isDisconnected || isIdle;
   }
 
   private readonly emitStatusChange = ({ isInProgress }: { isInProgress: boolean }) => {

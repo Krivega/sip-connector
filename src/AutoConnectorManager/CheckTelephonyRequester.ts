@@ -12,7 +12,7 @@ class CheckTelephonyRequester {
   private checkTelephonyByTimeout: ReturnType<typeof resolveRequesterByTimeout> | undefined =
     undefined;
 
-  private cancelableBeforeRequest: CancelableRequest<void, TParametersCheckTelephony> | undefined =
+  private cancelableGetParameters: CancelableRequest<void, TParametersCheckTelephony> | undefined =
     undefined;
 
   public constructor({
@@ -26,28 +26,29 @@ class CheckTelephonyRequester {
     this.interval = interval;
   }
 
-  public start({
-    onBeforeRequest,
-    onSuccessRequest,
-    onFailRequest,
-  }: {
-    onBeforeRequest: () => Promise<TParametersCheckTelephony>;
-    onSuccessRequest: () => void;
-    onFailRequest: () => void;
-  }) {
+  public start(
+    getParameters: () => Promise<TParametersCheckTelephony>,
+    {
+      onSuccessRequest,
+      onFailRequest,
+    }: {
+      onSuccessRequest: () => void;
+      onFailRequest: () => void;
+    },
+  ) {
     this.stop();
 
-    this.cancelableBeforeRequest = new CancelableRequest(onBeforeRequest);
+    this.cancelableGetParameters = new CancelableRequest(getParameters);
 
     this.checkTelephonyByTimeout = resolveRequesterByTimeout({
       isDontStopOnFail: true,
       requestInterval: this.interval,
       request: async () => {
-        if (!this.cancelableBeforeRequest) {
-          throw new Error('cancelableBeforeRequest is not defined');
+        if (!this.cancelableGetParameters) {
+          throw new Error('cancelableGetParameters is not defined');
         }
 
-        const parameters = await this.cancelableBeforeRequest.request();
+        const parameters = await this.cancelableGetParameters.request();
 
         return this.connectionManager.checkTelephony(parameters);
       },
@@ -66,8 +67,8 @@ class CheckTelephonyRequester {
     this.checkTelephonyByTimeout?.stop();
     this.checkTelephonyByTimeout = undefined;
 
-    this.cancelableBeforeRequest?.cancelRequest();
-    this.cancelableBeforeRequest = undefined;
+    this.cancelableGetParameters?.cancelRequest();
+    this.cancelableGetParameters = undefined;
   }
 }
 

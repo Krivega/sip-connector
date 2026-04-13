@@ -49,7 +49,7 @@ describe('CheckTelephonyRequester', () => {
   });
 
   describe('start', () => {
-    const onBeforeRequestMock = jest.fn();
+    const getParametersMock = jest.fn();
     const onSuccessRequestMock = jest.fn();
     const onFailRequestMock = jest.fn();
 
@@ -60,7 +60,7 @@ describe('CheckTelephonyRequester', () => {
     };
 
     beforeEach(() => {
-      onBeforeRequestMock.mockResolvedValue(mockParameters);
+      getParametersMock.mockResolvedValue(mockParameters);
     });
 
     afterEach(() => {
@@ -70,8 +70,7 @@ describe('CheckTelephonyRequester', () => {
     it('вызывает stop перед началом нового запроса', () => {
       const stopSpy = jest.spyOn(checkTelephonyRequester, 'stop');
 
-      checkTelephonyRequester.start({
-        onBeforeRequest: onBeforeRequestMock,
+      checkTelephonyRequester.start(getParametersMock, {
         onSuccessRequest: onSuccessRequestMock,
         onFailRequest: onFailRequestMock,
       });
@@ -80,8 +79,7 @@ describe('CheckTelephonyRequester', () => {
     });
 
     it('создает resolveRequesterByTimeout с корректными параметрами', () => {
-      checkTelephonyRequester.start({
-        onBeforeRequest: onBeforeRequestMock,
+      checkTelephonyRequester.start(getParametersMock, {
         onSuccessRequest: onSuccessRequestMock,
         onFailRequest: onFailRequestMock,
       });
@@ -101,11 +99,10 @@ describe('CheckTelephonyRequester', () => {
       expect(typeof config.request).toBe('function');
     });
 
-    it('создает cancelableBeforeRequest при start', () => {
+    it('создает cancelableGetParameters при start', () => {
       const cancelRequestSpy = jest.spyOn(CancelableRequest.prototype, 'cancelRequest');
 
-      checkTelephonyRequester.start({
-        onBeforeRequest: onBeforeRequestMock,
+      checkTelephonyRequester.start(getParametersMock, {
         onSuccessRequest: onSuccessRequestMock,
         onFailRequest: onFailRequestMock,
       });
@@ -116,8 +113,7 @@ describe('CheckTelephonyRequester', () => {
     });
 
     it('запускает checkTelephonyByTimeout с корректными callbacks', () => {
-      checkTelephonyRequester.start({
-        onBeforeRequest: onBeforeRequestMock,
+      checkTelephonyRequester.start(getParametersMock, {
         onSuccessRequest: onSuccessRequestMock,
         onFailRequest: onFailRequestMock,
       });
@@ -134,8 +130,7 @@ describe('CheckTelephonyRequester', () => {
         .spyOn(sipConnector.connectionManager, 'checkTelephony')
         .mockResolvedValue(undefined);
 
-      checkTelephonyRequester.start({
-        onBeforeRequest: onBeforeRequestMock,
+      checkTelephonyRequester.start(getParametersMock, {
         onSuccessRequest: onSuccessRequestMock,
         onFailRequest: onFailRequestMock,
       });
@@ -146,7 +141,7 @@ describe('CheckTelephonyRequester', () => {
 
       await config.request();
 
-      expect(onBeforeRequestMock).toHaveBeenCalledTimes(1);
+      expect(getParametersMock).toHaveBeenCalledTimes(1);
       expect(checkTelephonySpy).toHaveBeenCalledTimes(1);
       expect(checkTelephonySpy).toHaveBeenCalledWith(mockParameters);
     });
@@ -154,8 +149,7 @@ describe('CheckTelephonyRequester', () => {
     it('onSuccessRequest оборачивает вызов stop и оригинальный onSuccessRequest', () => {
       const stopSpy = jest.spyOn(checkTelephonyRequester, 'stop');
 
-      checkTelephonyRequester.start({
-        onBeforeRequest: onBeforeRequestMock,
+      checkTelephonyRequester.start(getParametersMock, {
         onSuccessRequest: onSuccessRequestMock,
         onFailRequest: onFailRequestMock,
       });
@@ -175,10 +169,9 @@ describe('CheckTelephonyRequester', () => {
     it('обрабатывает ошибки в onBeforeRequest', async () => {
       const error = new Error('onBeforeRequest failed');
 
-      onBeforeRequestMock.mockRejectedValue(error);
+      getParametersMock.mockRejectedValue(error);
 
-      checkTelephonyRequester.start({
-        onBeforeRequest: onBeforeRequestMock,
+      checkTelephonyRequester.start(getParametersMock, {
         onSuccessRequest: onSuccessRequestMock,
         onFailRequest: onFailRequestMock,
       });
@@ -197,8 +190,7 @@ describe('CheckTelephonyRequester', () => {
         .spyOn(sipConnector.connectionManager, 'checkTelephony')
         .mockRejectedValue(checkTelephonyError);
 
-      checkTelephonyRequester.start({
-        onBeforeRequest: onBeforeRequestMock,
+      checkTelephonyRequester.start(getParametersMock, {
         onSuccessRequest: onSuccessRequestMock,
         onFailRequest: onFailRequestMock,
       });
@@ -210,9 +202,8 @@ describe('CheckTelephonyRequester', () => {
       await expect(config.request()).rejects.toThrow('Check telephony failed');
     });
 
-    it('должен вернуть ошибку, если cancelableBeforeRequest не определен', async () => {
-      checkTelephonyRequester.start({
-        onBeforeRequest: onBeforeRequestMock,
+    it('должен вернуть ошибку, если cancelableGetParameters не определен', async () => {
+      checkTelephonyRequester.start(getParametersMock, {
         onSuccessRequest: onSuccessRequestMock,
         onFailRequest: onFailRequestMock,
       });
@@ -223,14 +214,13 @@ describe('CheckTelephonyRequester', () => {
         { request: () => Promise<void> },
       ];
 
-      await expect(config.request()).rejects.toThrow('cancelableBeforeRequest is not defined');
+      await expect(config.request()).rejects.toThrow('cancelableGetParameters is not defined');
     });
   });
 
   describe('stop', () => {
     it('останавливает и сбрасывает checkTelephonyByTimeout если он существует', () => {
-      checkTelephonyRequester.start({
-        onBeforeRequest: jest.fn().mockResolvedValue({}),
+      checkTelephonyRequester.start(jest.fn().mockResolvedValue({}), {
         onSuccessRequest: jest.fn(),
         onFailRequest: jest.fn(),
       });
@@ -246,11 +236,10 @@ describe('CheckTelephonyRequester', () => {
       expect(stopMock).not.toHaveBeenCalled();
     });
 
-    it('отменяет cancelableBeforeRequest при stop', () => {
+    it('отменяет cancelableGetParameters при stop', () => {
       const cancelRequestSpy = jest.spyOn(CancelableRequest.prototype, 'cancelRequest');
 
-      checkTelephonyRequester.start({
-        onBeforeRequest: jest.fn().mockResolvedValue({}),
+      checkTelephonyRequester.start(jest.fn().mockResolvedValue({}), {
         onSuccessRequest: jest.fn(),
         onFailRequest: jest.fn(),
       });
@@ -261,8 +250,7 @@ describe('CheckTelephonyRequester', () => {
     });
 
     it('может быть вызван несколько раз без ошибок', () => {
-      checkTelephonyRequester.start({
-        onBeforeRequest: jest.fn().mockResolvedValue({}),
+      checkTelephonyRequester.start(jest.fn().mockResolvedValue({}), {
         onSuccessRequest: jest.fn(),
         onFailRequest: jest.fn(),
       });

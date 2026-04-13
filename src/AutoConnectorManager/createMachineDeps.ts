@@ -1,83 +1,71 @@
-import logger from '@/logger';
+import { hasConnectionPromiseIsNotActualError } from '@/ConnectionQueueManager';
 import { wrapReconnectError } from './wrapReconnectError';
 
+import type { AutoConnectorRuntime } from './AutoConnectorRuntime';
 import type { TAutoConnectorMachineDeps } from './AutoConnectorStateMachine';
 import type { TParametersAutoConnect } from './types';
 
 type TCreateMachineDepsParameters = {
+  runtime: AutoConnectorRuntime;
   canRetryOnError: (error: unknown) => boolean;
-  stopConnectionFlow: () => Promise<void>;
-  connect: (parameters: TParametersAutoConnect) => Promise<void>;
-  delayBetweenAttempts: () => Promise<void>;
-  hasLimitReached: () => boolean;
-  emitBeforeAttempt: () => void;
-  stopConnectTriggers: () => void;
-  startAttempt: () => void;
-  incrementAttempt: () => void;
-  finishAttempt: () => void;
-  emitLimitReachedAttempts: () => void;
-  getParametersFromContext: () => TParametersAutoConnect | undefined;
-  startCheckTelephony: (parameters: TParametersAutoConnect) => void;
-  subscribeToConnectTriggers: (parameters: TParametersAutoConnect) => void;
-  emitSuccess: () => void;
-  emitStopAttemptsByError: (error: unknown) => void;
-  emitCancelledAttempts: (error: unknown) => void;
-  emitFailedAllAttempts: (error: Error) => void;
-};
-
-const logMissingParameters = (step: string) => {
-  logger(`[AutoConnectorManager] ${step}: context.parameters is undefined`);
 };
 
 export const createMachineDeps = (
   params: TCreateMachineDepsParameters,
 ): TAutoConnectorMachineDeps => {
+  const toTerminalError = ({
+    stopReason,
+    lastError,
+  }: {
+    stopReason: 'halted' | 'cancelled' | 'failed' | undefined;
+    lastError: unknown;
+  }) => {
+    if (stopReason === 'cancelled' && !hasConnectionPromiseIsNotActualError(lastError)) {
+      return wrapReconnectError(lastError);
+    }
+
+    if (stopReason === 'failed') {
+      return wrapReconnectError(lastError);
+    }
+
+    return lastError;
+  };
+
   return {
     canRetryOnError: params.canRetryOnError,
-    stopConnectionFlow: params.stopConnectionFlow,
-    connect: params.connect,
-    delayBetweenAttempts: params.delayBetweenAttempts,
-    hasLimitReached: params.hasLimitReached,
-    emitBeforeAttempt: params.emitBeforeAttempt,
-    stopConnectTriggers: params.stopConnectTriggers,
-    startAttempt: params.startAttempt,
-    incrementAttempt: params.incrementAttempt,
-    finishAttempt: params.finishAttempt,
-    emitLimitReachedAttempts: params.emitLimitReachedAttempts,
-    startCheckTelephony: () => {
-      const machineParameters = params.getParametersFromContext();
-
-      if (!machineParameters) {
-        logMissingParameters('startCheckTelephony');
-
-        return;
-      }
-
-      params.startCheckTelephony(machineParameters);
+    stopConnectionFlow: async () => {
+      await params.runtime.stopConnectionFlow();
     },
-    onConnectSucceeded: () => {
-      const machineParameters = params.getParametersFromContext();
-
-      if (!machineParameters) {
-        logMissingParameters('onConnectSucceeded');
-
-        return;
-      }
-
-      params.subscribeToConnectTriggers(machineParameters);
-      params.emitSuccess();
+    connect: async (parameters: TParametersAutoConnect) => {
+      await params.runtime.connect(parameters);
     },
-    onStopAttemptsByError: params.emitStopAttemptsByError,
-    emitCancelledAttemptsRaw: params.emitCancelledAttempts,
-    emitCancelledAttemptsWrapped: (error: unknown) => {
-      params.emitCancelledAttempts(wrapReconnectError(error));
+    delayBetweenAttempts: async () => {
+      await params.runtime.delayBeforeRetry();
     },
-    onFailedAllAttempts: (error: unknown) => {
-      params.emitFailedAllAttempts(wrapReconnectError(error));
+    hasLimitReached: () => {
+      return params.runtime.hasLimitReached();
+    },
+    beforeAttempt: () => {
+      params.runtime.beforeAttempt();
+    },
+    beforeConnectAttempt: () => {
+      params.runtime.beforeConnectAttempt();
+    },
+    onLimitReached: (parameters: TParametersAutoConnect) => {
+      params.runtime.onLimitReached(parameters);
+    },
+    onConnectSucceeded: (parameters: TParametersAutoConnect) => {
+      params.runtime.onConnectSucceeded(parameters);
+    },
+    emitTerminalOutcome: ({ stopReason, lastError }) => {
+      params.runtime.emitTerminalOutcome({
+        stopReason,
+        // Нормализуем только те ветки, где контракт событий требует Error-объект.
+        lastError: toTerminalError({ stopReason, lastError }),
+      });
     },
     onTelephonyStillConnected: () => {
-      params.stopConnectTriggers();
-      params.emitSuccess();
+      params.runtime.onTelephonyStillConnected();
     },
   };
 };

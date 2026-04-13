@@ -1,11 +1,7 @@
-import logger from '@/logger';
 import { createMachineDeps } from '../createMachineDeps';
 
+import type { AutoConnectorRuntime } from '../AutoConnectorRuntime';
 import type { TParametersAutoConnect } from '../types';
-
-jest.mock('@/logger', () => {
-  return jest.fn();
-});
 
 const createParameters = (): TParametersAutoConnect => {
   return {
@@ -21,84 +17,102 @@ const createParameters = (): TParametersAutoConnect => {
 };
 
 const createBaseParams = () => {
-  return {
-    canRetryOnError: jest.fn(() => {
-      return true;
-    }),
+  const runtime = {
     stopConnectionFlow: jest.fn(async () => {}),
     connect: jest.fn(async () => {}),
-    delayBetweenAttempts: jest.fn(async () => {}),
+    delayBeforeRetry: jest.fn(async () => {}),
     hasLimitReached: jest.fn(() => {
       return false;
     }),
-    emitBeforeAttempt: jest.fn(),
-    stopConnectTriggers: jest.fn(),
-    startAttempt: jest.fn(),
-    incrementAttempt: jest.fn(),
-    finishAttempt: jest.fn(),
-    emitLimitReachedAttempts: jest.fn(),
-    getParametersFromContext: jest.fn(() => {
-      return createParameters();
+    beforeAttempt: jest.fn(),
+    beforeConnectAttempt: jest.fn(),
+    onLimitReached: jest.fn(),
+    onConnectSucceeded: jest.fn(),
+    emitTerminalOutcome: jest.fn(),
+    onTelephonyStillConnected: jest.fn(),
+  };
+
+  return {
+    runtime: runtime as unknown as AutoConnectorRuntime,
+    canRetryOnError: jest.fn(() => {
+      return true;
     }),
-    startCheckTelephony: jest.fn(),
-    subscribeToConnectTriggers: jest.fn(),
-    emitSuccess: jest.fn(),
-    emitStopAttemptsByError: jest.fn(),
-    emitCancelledAttempts: jest.fn(),
-    emitFailedAllAttempts: jest.fn(),
   };
 };
 
 describe('createMachineDeps', () => {
-  it('не запускает check-telephony, если параметры отсутствуют в контексте', () => {
+  it('прокидывает onLimitReached в runtime с параметрами', () => {
     const params = createBaseParams();
-
-    // @ts-expect-error
-    params.getParametersFromContext.mockReturnValue(undefined);
-
     const deps = createMachineDeps(params);
+    const machineParameters = createParameters();
 
-    deps.startCheckTelephony();
+    deps.onLimitReached(machineParameters);
 
-    expect(params.startCheckTelephony).not.toHaveBeenCalled();
-    expect(logger).toHaveBeenCalledWith(
-      '[AutoConnectorManager] startCheckTelephony: context.parameters is undefined',
-    );
+    expect(params.runtime.onLimitReached).toHaveBeenCalledWith(machineParameters);
   });
 
-  it('не включает connect triggers, если параметры отсутствуют в контексте', () => {
+  it('прокидывает onConnectSucceeded в runtime с параметрами', () => {
     const params = createBaseParams();
-
-    // @ts-expect-error
-    params.getParametersFromContext.mockReturnValue(undefined);
-
     const deps = createMachineDeps(params);
+    const machineParameters = createParameters();
 
-    deps.onConnectSucceeded();
+    deps.onConnectSucceeded(machineParameters);
 
-    expect(params.subscribeToConnectTriggers).not.toHaveBeenCalled();
-    expect(params.emitSuccess).not.toHaveBeenCalled();
-    expect(logger).toHaveBeenCalledWith(
-      '[AutoConnectorManager] onConnectSucceeded: context.parameters is undefined',
-    );
+    expect(params.runtime.onConnectSucceeded).toHaveBeenCalledWith(machineParameters);
   });
 
-  it('пробрасывает триггеры success при telephony still connected', () => {
+  it('пробрасывает telephony still connected в runtime', () => {
     const params = createBaseParams();
     const deps = createMachineDeps(params);
 
     deps.onTelephonyStillConnected();
 
-    expect(params.stopConnectTriggers).toHaveBeenCalledTimes(1);
-    expect(params.emitSuccess).toHaveBeenCalledTimes(1);
+    expect(params.runtime.onTelephonyStillConnected).toHaveBeenCalledTimes(1);
   });
 
-  it('заворачивает неизвестную ошибку в onFailedAllAttempts', () => {
+  it('в cancelled ветке нормализует неизвестную ошибку', () => {
     const params = createBaseParams();
     const deps = createMachineDeps(params);
 
-    deps.onFailedAllAttempts('unexpected error');
+    deps.emitTerminalOutcome({
+      stopReason: 'cancelled',
+      lastError: 'unexpected error',
+    });
 
-    expect(params.emitFailedAllAttempts).toHaveBeenCalledWith(new Error('Failed to reconnect'));
+    expect(params.runtime.emitTerminalOutcome).toHaveBeenCalledWith({
+      stopReason: 'cancelled',
+      lastError: new Error('Failed to reconnect'),
+    });
+  });
+
+  it('в cancelled ветке оставляет not-actual error без обертки', () => {
+    const params = createBaseParams();
+    const deps = createMachineDeps(params);
+    const notActualError = new Error('Connection promise is not actual');
+
+    deps.emitTerminalOutcome({
+      stopReason: 'cancelled',
+      lastError: notActualError,
+    });
+
+    expect(params.runtime.emitTerminalOutcome).toHaveBeenCalledWith({
+      stopReason: 'cancelled',
+      lastError: notActualError,
+    });
+  });
+
+  it('в failed ветке нормализует ошибку в Error', () => {
+    const params = createBaseParams();
+    const deps = createMachineDeps(params);
+
+    deps.emitTerminalOutcome({
+      stopReason: 'failed',
+      lastError: 'unexpected error',
+    });
+
+    expect(params.runtime.emitTerminalOutcome).toHaveBeenCalledWith({
+      stopReason: 'failed',
+      lastError: new Error('Failed to reconnect'),
+    });
   });
 });

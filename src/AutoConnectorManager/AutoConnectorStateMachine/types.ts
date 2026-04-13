@@ -45,30 +45,19 @@ export type TAutoConnectorMachineDeps = {
   delayBetweenAttempts: () => Promise<void>;
   /** Достигнут ли лимит попыток подряд (`AttemptsState`). */
   hasLimitReached: () => boolean;
-  /** Событие `before-attempt` наружу. */
-  emitBeforeAttempt: () => void;
-  /** Остановка ping, check-telephony, registration-failed подписок. */
-  stopConnectTriggers: () => void;
-  /** Пометить попытку как начатую (статус «в процессе»). */
-  startAttempt: () => void;
-  /** Увеличить счётчик попыток. */
-  incrementAttempt: () => void;
-  /** Завершить попытку (снять флаг «в процессе»). */
-  finishAttempt: () => void;
-  /** Событие `limit-reached-attempts`. */
-  emitLimitReachedAttempts: () => void;
-  /** Запуск периодической проверки телефонии после лимита. */
-  startCheckTelephony: () => void;
+  /** Перед новой попыткой: before-attempt и остановка connect-триггеров. */
+  beforeAttempt: () => void;
+  /** Вход в attemptingConnect: отметка начала попытки и инкремент счётчика. */
+  beforeConnectAttempt: () => void;
+  /** Обработчик ветки лимита попыток. */
+  onLimitReached: (parameters: TParametersAutoConnect) => void;
   /** Успешный `connect`: подписки на мониторинг и `success`. */
-  onConnectSucceeded: () => void;
-  /** Ошибка без ретрая: `stop-attempts-by-error`. */
-  onStopAttemptsByError: (error: unknown) => void;
-  /** Отмена с передачей исходной ошибки (например «неактуальный» промис). */
-  emitCancelledAttemptsRaw: (error: unknown) => void;
-  /** Отмена с нормализацией ошибки в `Error` (цепочка задержки / beforeRetry). */
-  emitCancelledAttemptsWrapped: (error: unknown) => void;
-  /** Исчерпание попыток после ошибки в цепочке ретрая: `failed-all-attempts`. */
-  onFailedAllAttempts: (error: unknown) => void;
+  onConnectSucceeded: (parameters: TParametersAutoConnect) => void;
+  /** Терминальный выход: завершение попытки + эмит итогового события. */
+  emitTerminalOutcome: (context: {
+    stopReason: TStopReason | undefined;
+    lastError: unknown;
+  }) => void;
   /** Уже подключены: остановить триггеры и `success` (ветка check-telephony). */
   onTelephonyStillConnected: () => void;
 };

@@ -1,11 +1,11 @@
 # AutoConnectorManager: машина состояний (XState)
 
-Документ описывает оркестрацию автоподключения в [`AutoConnectorManager`](../../../../src/AutoConnectorManager/@AutoConnectorManager.ts) через модуль [`AutoConnectorStateMachine`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/AutoConnectorStateMachine.ts) и фабрику [`createAutoConnectorMachine`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/createAutoConnectorMachine.ts).
+Документ описывает оркестрацию автоподключения в [`AutoConnectorManager`](../../../../src/AutoConnectorManager/@AutoConnectorManager.ts) через модуль [`AutoConnectorStateMachine`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/AutoConnectorStateMachine.ts), runtime-слой [`AutoConnectorRuntime`](../../../../src/AutoConnectorManager/AutoConnectorRuntime.ts) и фабрику [`createAutoConnectorMachine`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/createAutoConnectorMachine.ts).
 
 ## Назначение
 
 - Явно задать допустимые фазы реконнекта, ретраев, проверки телефонии и остановки.
-- Сохранить прежние публичные события (`before-attempt`, `success`, `limit-reached-attempts`, и т.д.) через действия и колбэки `deps`.
+- Сохранить прежние публичные события (`before-attempt`, `success`, `limit-reached-attempts`, и т.д.) через действия и колбэки `deps`, которые делегируют в `AutoConnectorRuntime`.
 - Отклонять недопустимые события в текущей фазе (см. `send` в `AutoConnectorStateMachine`).
 
 ## Состояния
@@ -55,6 +55,7 @@ stateDiagram-v2
 - Убрано промежуточное состояние `standby`: после `check-telephony` машина возвращается в тот же режим `connectedMonitoring`, в котором уже живёт успешный `connect`.
 - Три терминальных состояния (`haltedByError`, `cancelled`, `failed`) объединены в одно `errorTerminal`.
 - Диагностика причины остановки не потеряна: машина сохраняет её в `context.stopReason` (`halted`, `cancelled`, `failed`), а наружу по-прежнему эмитит прежние события (`stop-attempts-by-error`, `cancelled-attempts`, `failed-all-attempts`).
+- Убрана скрытая связка с `stateMachine.context` из адаптера: `createMachineDeps` больше не вытягивает параметры из контекста, а получает их явно из machine actions.
 
 ## Комментарии к логике
 
@@ -65,6 +66,7 @@ stateDiagram-v2
 - Ошибка в `CheckTelephonyRequester.onFailRequest` не переводит машину в другое состояние: политика «только логирование и продолжение периодических проверок».
 - `requestReconnect` использует «умный coalescing» в коротком окне: запрос с той же или меньшей важностью подавляется, а более приоритетная причина допускается. Карта приоритетов вынесена в [`types.ts`](../../../../src/AutoConnectorManager/types.ts) (`RECONNECT_REASON_PRIORITY`).
 - Ошибки `check-telephony` обрабатываются отдельной policy-моделью [`TelephonyFailPolicy.ts`](../../../../src/AutoConnectorManager/TelephonyFailPolicy.ts): считает fail-цепочку, применяет retry/backoff, поднимает escalation (`warning`/`critical`) и эмитит метрики-события.
+- Сложные побочные эффекты (`stopConnectionFlow`, `onLimitReached`, терминальные эмиты, connect triggers) вынесены в `AutoConnectorRuntime`, а machine actions сведены к вызову одного runtime-сценария.
 
 ## Coalescing-компонент
 
@@ -77,12 +79,13 @@ stateDiagram-v2
 ## Как расширять
 
 1. Добавить новое событие в [`types.ts`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/types.ts) и обработать переходы в `createAutoConnectorMachine.ts`.
-2. Побочные эффекты выносить в `TAutoConnectorMachineDeps`, а не в сами переходы, чтобы сохранить тестируемость.
+2. Побочные эффекты выносить в `AutoConnectorRuntime`, а в `TAutoConnectorMachineDeps` оставлять только тонкую адаптацию вызовов машины к runtime.
 3. При изменении переходов обновляйте эту диаграмму и прогоняйте `yarn test src/AutoConnectorManager` и контрактные тесты событий.
 
 ## Связанные файлы
 
 - Реализация машины: [`createAutoConnectorMachine.ts`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/createAutoConnectorMachine.ts)
 - Обёртка актора: [`AutoConnectorStateMachine.ts`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/AutoConnectorStateMachine.ts)
+- Runtime-побочные эффекты: [`AutoConnectorRuntime.ts`](../../../../src/AutoConnectorManager/AutoConnectorRuntime.ts)
 - Адаптер зависимостей машины: [`createMachineDeps.ts`](../../../../src/AutoConnectorManager/createMachineDeps.ts)
 - Operational-профили policy: [auto-reconnection.md](../../recipes/auto-reconnection.md#базовые-operational-профили-telephonyfailpolicy)
