@@ -131,8 +131,7 @@ describe('AutoConnectorManager - Triggers', () => {
     });
 
     it('перезапускает auto connector manager при resumeFromSleepModeSubscriber onResume', async () => {
-      // @ts-expect-error - доступ к приватному методу
-      const activateAutoConnectorManager = jest.spyOn(manager, 'restartConnectionAttempts');
+      const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
 
       manager.start(baseParameters);
 
@@ -142,7 +141,7 @@ describe('AutoConnectorManager - Triggers', () => {
 
       emitResumeMock?.();
 
-      expect(activateAutoConnectorManager).toHaveBeenCalledTimes(1);
+      expect(restartSpy).toHaveBeenCalledTimes(1);
     });
 
     it('не отписывается от resumeFromSleepModeSubscriber при перезапуске auto connector manager', async () => {
@@ -158,16 +157,15 @@ describe('AutoConnectorManager - Triggers', () => {
     });
 
     it('перезапускает auto connector manager при resumeFromSleepModeSubscriber onResume до наступления success', async () => {
-      // @ts-expect-error - доступ к приватному методу
-      const activateAutoConnectorManager = jest.spyOn(manager, 'restartConnectionAttempts');
+      const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
 
       manager.start(baseParameters);
 
-      expect(activateAutoConnectorManager).toHaveBeenCalledTimes(1);
+      expect(restartSpy).toHaveBeenCalledTimes(1);
 
       emitResumeMock?.();
 
-      expect(activateAutoConnectorManager).toHaveBeenCalledTimes(2);
+      expect(restartSpy).toHaveBeenCalledTimes(2);
     });
 
     it('подписывается на networkInterfacesSubscriber после успешного подключения', async () => {
@@ -194,8 +192,7 @@ describe('AutoConnectorManager - Triggers', () => {
     });
 
     it('перезапускает auto connector manager после смены сетевого интерфейса', async () => {
-      // @ts-expect-error - доступ к приватному методу
-      const activateAutoConnectorManager = jest.spyOn(manager, 'restartConnectionAttempts');
+      const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
 
       manager.start(baseParameters);
 
@@ -205,15 +202,11 @@ describe('AutoConnectorManager - Triggers', () => {
 
       emitChangeNetworkInterfacesMock?.();
 
-      expect(activateAutoConnectorManager).toHaveBeenCalledTimes(1);
+      expect(restartSpy).toHaveBeenCalledTimes(1);
     });
 
     it('вызывает stopConnectionFlow после удаления всех сетевых интерфейсов', async () => {
-      const stopConnectionFlowSpy = jest.spyOn(
-        AutoConnectorManager.prototype,
-        // @ts-expect-error - приватный метод
-        'stopConnectionFlow',
-      );
+      const disconnectSpy = jest.spyOn(sipConnector.connectionQueueManager, 'disconnect');
 
       manager.start(baseParameters);
 
@@ -223,12 +216,13 @@ describe('AutoConnectorManager - Triggers', () => {
 
       emitUnavailableInterfacesMock?.();
 
-      expect(stopConnectionFlowSpy).toHaveBeenCalled();
+      await flushPromises();
+
+      expect(disconnectSpy).toHaveBeenCalled();
     });
 
     it('перезапускает auto connector manager после удаления всех сетевых интерфейсов и восстановления нового сетевого интерфейса', async () => {
-      // @ts-expect-error - доступ к приватному методу
-      const activateAutoConnectorManager = jest.spyOn(manager, 'restartConnectionAttempts');
+      const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
 
       manager.start(baseParameters);
 
@@ -240,7 +234,7 @@ describe('AutoConnectorManager - Triggers', () => {
 
       emitChangeNetworkInterfacesMock?.();
 
-      expect(activateAutoConnectorManager).toHaveBeenCalled();
+      expect(restartSpy).toHaveBeenCalled();
     });
 
     it('не отписывается от networkInterfacesSubscriber при перезапуске auto connector manager', async () => {
@@ -256,33 +250,30 @@ describe('AutoConnectorManager - Triggers', () => {
     });
 
     it('перезапускает auto connector manager при networkInterfacesSubscriber onChange до наступления success', async () => {
-      // @ts-expect-error - доступ к приватному методу
-      const activateAutoConnectorManager = jest.spyOn(manager, 'restartConnectionAttempts');
+      const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
 
       manager.start(baseParameters);
 
-      expect(activateAutoConnectorManager).toHaveBeenCalledTimes(1);
+      expect(restartSpy).toHaveBeenCalledTimes(1);
 
       emitChangeNetworkInterfacesMock?.();
 
-      expect(activateAutoConnectorManager).toHaveBeenCalledTimes(2);
+      expect(restartSpy).toHaveBeenCalledTimes(2);
     });
 
     it('останавливает auto connector manager при networkInterfacesSubscriber onUnavailable до наступления success', async () => {
-      // @ts-expect-error - доступ к приватному методу
-      const activateAutoConnectorManager = jest.spyOn(manager, 'restartConnectionAttempts');
-      // @ts-expect-error - доступ к приватному методу
-      const stopConnectionFlowAutoConnectorManager = jest.spyOn(manager, 'stopConnectionFlow');
+      const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
+      const stopSpy = jest.spyOn(manager.stateMachine, 'toStop');
 
       manager.start(baseParameters);
 
-      expect(activateAutoConnectorManager).toHaveBeenCalledTimes(1);
-      expect(stopConnectionFlowAutoConnectorManager).toHaveBeenCalledTimes(1);
+      expect(restartSpy).toHaveBeenCalledTimes(1);
+      expect(stopSpy).toHaveBeenCalledTimes(0);
 
       emitUnavailableInterfacesMock?.();
 
-      expect(activateAutoConnectorManager).toHaveBeenCalledTimes(1);
-      expect(stopConnectionFlowAutoConnectorManager).toHaveBeenCalledTimes(2);
+      expect(restartSpy).toHaveBeenCalledTimes(1);
+      expect(stopSpy).toHaveBeenCalledTimes(1);
     });
 
     it('подписывается на registration failed out of call после подключения', async () => {

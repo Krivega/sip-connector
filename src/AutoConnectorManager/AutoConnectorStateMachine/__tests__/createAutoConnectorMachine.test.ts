@@ -278,4 +278,44 @@ describe('createAutoConnectorMachine', () => {
     expect(deps.emitCancelledAttemptsRaw).not.toHaveBeenCalled();
     expect(deps.onStopAttemptsByError).not.toHaveBeenCalled();
   });
+
+  it('переводит в errorTerminal, если параметры потеряны перед attemptingConnect', async () => {
+    const deps = createDeps({
+      canRetryOnError: () => {
+        return false;
+      },
+    });
+    const machine = createAutoConnectorMachine(deps).provide({
+      actions: {
+        assignRestart: assign({
+          parameters: () => {
+            return undefined;
+          },
+          afterDisconnect: () => {
+            return 'attempt';
+          },
+          stopReason: () => {
+            return undefined;
+          },
+          lastError: () => {
+            return undefined;
+          },
+        }),
+      },
+    });
+    const actor = createActor(machine);
+
+    actor.start();
+    actor.send({ type: 'AUTO.RESTART', parameters });
+
+    await settleMachine();
+    await settleMachine();
+
+    expect(actor.getSnapshot().value).toBe(AUTO_CONNECTOR_STATE_IDS.ERROR_TERMINAL);
+    expect(deps.onStopAttemptsByError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Auto connector parameters are missing in attemptingConnect state',
+      }),
+    );
+  });
 });

@@ -19,7 +19,7 @@ const debug = (message: string, ...args: unknown[]) => {
  * Внешние зависимости машины автоподключения: реализуются в `AutoConnectorManager`, чтобы машина
  * оставалась декларативной. Экспортируемый фабричный метод — `createAutoConnectorMachine`.
  */
-type TAutoConnectorMachineDeps = {
+export type TAutoConnectorMachineDeps = {
   /** Правило из опций: можно ли переподключаться после этой ошибки. */
   canRetryOnError: (error: unknown) => boolean;
   /** Полная остановка текущего флоу: сброс попыток, стоп триггеров, `disconnect` очереди. */
@@ -121,8 +121,13 @@ export const createAutoConnectorMachine = (deps: TAutoConnectorMachineDeps) => {
         await deps.stopConnectionFlow();
       }),
       /** Invoke в `attemptingConnect`: реальный SIP/WebSocket connect. */
-      connect: fromPromise(async ({ input }: { input: TParametersAutoConnect }) => {
+      connect: fromPromise(async ({ input }: { input: TParametersAutoConnect | undefined }) => {
         debug('connect', input);
+
+        if (!input) {
+          throw new Error('Auto connector parameters are missing in attemptingConnect state');
+        }
+
         await deps.connect(input);
       }),
       /** Invoke в `waitingBeforeRetry`: сначала задержка между попытками, затем `onBeforeRetry`. */
@@ -407,9 +412,7 @@ export const createAutoConnectorMachine = (deps: TAutoConnectorMachineDeps) => {
           id: 'connect',
           src: 'connect',
           input: ({ context }: { context: TAutoConnectorContext }) => {
-            // Параметры задаются assignRestart до входа в attemptingConnect.
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- инвариант контекста
-            return context.parameters!;
+            return context.parameters;
           },
           onDone: {
             target: AUTO_CONNECTOR_STATE_IDS.CONNECTED_MONITORING,

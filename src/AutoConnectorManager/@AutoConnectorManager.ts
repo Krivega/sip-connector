@@ -6,11 +6,11 @@ import logger from '@/logger';
 import AttemptsState from './AttemptsState';
 import { createAutoConnectorStateMachine } from './AutoConnectorStateMachine';
 import CheckTelephonyRequester from './CheckTelephonyRequester';
+import { createMachineDeps } from './createMachineDeps';
 import { createEvents } from './events';
 import NotActiveCallSubscriber from './NotActiveCallSubscriber';
 import PingServerIfNotActiveCallRequester from './PingServerIfNotActiveCallRequester';
 import RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCallSubscriber';
-import { wrapReconnectError } from './wrapReconnectError';
 
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
@@ -21,6 +21,7 @@ import type {
   IAutoConnectorOptions,
   TNetworkInterfacesSubscriber,
   TParametersAutoConnect,
+  TReconnectReason,
   TResumeFromSleepModeSubscriber,
 } from './types';
 
@@ -29,7 +30,6 @@ const DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL = 15_000;
 
 const ERROR_MESSAGES = {
   LIMIT_REACHED: 'Limit reached',
-  FAILED_TO_RECONNECT: 'Failed to reconnect',
 } as const;
 
 const asyncNoop = async (): Promise<void> => {};
@@ -112,13 +112,72 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
     );
     this.notActiveCallSubscriber = new NotActiveCallSubscriber({ callManager });
 
-    this.stateMachine = createAutoConnectorStateMachine(this.createMachineDeps());
+    this.stateMachine = createAutoConnectorStateMachine(
+      createMachineDeps({
+        canRetryOnError: this.canRetryOnError,
+        stopConnectionFlow: async () => {
+          await this.stopConnectionFlow();
+        },
+        connect: async (parameters: TParametersAutoConnect) => {
+          await this.connectionQueueManager.connect(parameters.getParameters, parameters.options);
+        },
+        delayBetweenAttempts: async () => {
+          await this.delayBetweenAttempts.request();
+        },
+        onBeforeRetryRequest: async () => {
+          await this.cancelableRequestBeforeRetry.request();
+        },
+        hasLimitReached: () => {
+          return this.attemptsState.hasLimitReached();
+        },
+        emitBeforeAttempt: () => {
+          this.events.trigger('before-attempt', {});
+        },
+        stopConnectTriggers: () => {
+          this.stopConnectTriggers();
+        },
+        startAttempt: () => {
+          this.attemptsState.startAttempt();
+        },
+        incrementAttempt: () => {
+          this.attemptsState.increment();
+        },
+        finishAttempt: () => {
+          this.attemptsState.finishAttempt();
+        },
+        emitLimitReachedAttempts: () => {
+          this.events.trigger('limit-reached-attempts', new Error(ERROR_MESSAGES.LIMIT_REACHED));
+        },
+        getParametersFromContext: () => {
+          return this.stateMachine.context.parameters;
+        },
+        startCheckTelephony: (parameters: TParametersAutoConnect) => {
+          this.startCheckTelephony(parameters);
+        },
+        subscribeToConnectTriggers: (parameters: TParametersAutoConnect) => {
+          this.subscribeToConnectTriggers(parameters);
+        },
+        emitSuccess: () => {
+          logger('handleSucceededAttempt');
+          this.events.trigger('success');
+        },
+        emitStopAttemptsByError: (error: unknown) => {
+          this.events.trigger('stop-attempts-by-error', error);
+        },
+        emitCancelledAttempts: (error: unknown) => {
+          this.events.trigger('cancelled-attempts', error);
+        },
+        emitFailedAllAttempts: (error: Error) => {
+          this.events.trigger('failed-all-attempts', error);
+        },
+      }),
+    );
   }
 
   public start(parameters: TParametersAutoConnect) {
     logger('auto connector start');
 
-    this.restartConnectionAttempts(parameters);
+    this.requestReconnect(parameters, 'start');
     this.subscribeToNotActiveCall(parameters);
   }
 
@@ -130,85 +189,10 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
     this.stateMachine.toStop();
   }
 
-  private createMachineDeps() {
-    return {
-      canRetryOnError: (error: unknown) => {
-        return this.canRetryOnError(error);
-      },
-      stopConnectionFlow: async () => {
-        await this.stopConnectionFlow();
-      },
-      connect: async (parameters: TParametersAutoConnect) => {
-        await this.connectionQueueManager.connect(parameters.getParameters, parameters.options);
-      },
-      delayBetweenAttempts: async () => {
-        await this.delayBetweenAttempts.request();
-      },
-      onBeforeRetryRequest: async () => {
-        await this.cancelableRequestBeforeRetry.request();
-      },
-      hasLimitReached: () => {
-        return this.attemptsState.hasLimitReached();
-      },
-      emitBeforeAttempt: () => {
-        this.events.trigger('before-attempt', {});
-      },
-      stopConnectTriggers: () => {
-        this.stopConnectTriggers();
-      },
-      startAttempt: () => {
-        this.attemptsState.startAttempt();
-      },
-      incrementAttempt: () => {
-        this.attemptsState.increment();
-      },
-      finishAttempt: () => {
-        this.attemptsState.finishAttempt();
-      },
-      emitLimitReachedAttempts: () => {
-        this.events.trigger('limit-reached-attempts', new Error(ERROR_MESSAGES.LIMIT_REACHED));
-      },
-      startCheckTelephony: () => {
-        const { parameters } = this.stateMachine.context;
-
-        // Контекст машины всегда содержит parameters перед этими шагами (assignRestart).
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- см. выше
-        this.startCheckTelephony(parameters!);
-      },
-      onConnectSucceeded: () => {
-        const { parameters } = this.stateMachine.context;
-
-        logger('handleSucceededAttempt');
-
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- см. startCheckTelephony
-        this.subscribeToConnectTriggers(parameters!);
-
-        this.events.trigger('success');
-      },
-      onStopAttemptsByError: (error: unknown) => {
-        this.events.trigger('stop-attempts-by-error', error);
-      },
-      emitCancelledAttemptsRaw: (error: unknown) => {
-        this.events.trigger('cancelled-attempts', error);
-      },
-      emitCancelledAttemptsWrapped: (error: unknown) => {
-        this.events.trigger('cancelled-attempts', wrapReconnectError(error));
-      },
-      onFailedAllAttempts: (error: unknown) => {
-        this.events.trigger('failed-all-attempts', wrapReconnectError(error));
-      },
-      onTelephonyStillConnected: () => {
-        logger('connectIfDisconnected: isUnavailable', false);
-
-        this.stopConnectTriggers();
-        this.events.trigger('success');
-      },
-    };
-  }
-
-  private restartConnectionAttempts(parameters: TParametersAutoConnect) {
-    logger('auto connector restart connection attempts');
-
+  private requestReconnect(parameters: TParametersAutoConnect, reason: TReconnectReason) {
+    logger(`auto connector reconnect requested: ${reason}`, {
+      state: String(this.stateMachine.state),
+    });
     this.stateMachine.toRestart(parameters);
   }
 
@@ -255,12 +239,13 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
         logger('connectIfDisconnected: isUnavailable', isUnavailable);
 
         if (isUnavailable) {
-          this.restartConnectionAttempts(parameters);
+          this.requestReconnect(parameters, 'telephony-disconnected');
         } else {
           this.stateMachine.toTelephonyResultStillConnected();
         }
       },
       onFailRequest: (error?: unknown) => {
+        // Ошибку проверки телефонии не эскалируем в рестарт: остаёмся в цикле периодических проверок.
         logger('startCheckTelephony: onFailRequest', (error as Error).message);
       },
     });
@@ -272,7 +257,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
     this.registrationFailedOutOfCallSubscriber.subscribe(() => {
       logger('registrationFailedOutOfCallListener callback');
 
-      this.restartConnectionAttempts(parameters);
+      this.requestReconnect(parameters, 'registration-failed-out-of-call');
     });
   }
 
@@ -302,7 +287,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
       onChange: () => {
         logger('networkInterfacesSubscriber onChange');
 
-        this.restartConnectionAttempts(parameters);
+        this.requestReconnect(parameters, 'network-change');
       },
       onUnavailable: () => {
         logger('networkInterfacesSubscriber onUnavailable');
@@ -315,7 +300,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
       onResume: () => {
         logger('resumeFromSleepModeSubscriber onResume');
 
-        this.restartConnectionAttempts(parameters);
+        this.requestReconnect(parameters, 'sleep-resume');
       },
     });
   }

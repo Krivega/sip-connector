@@ -33,3 +33,13 @@ export type TParametersAutoConnect = {
 export type TAttemptStatus = {
   isInProgress: boolean;
 };
+
+export const RECONNECT_REASONS = {
+  START: 'start',
+  NETWORK_CHANGE: 'network-change',
+  SLEEP_RESUME: 'sleep-resume',
+  REGISTRATION_FAILED_OUT_OF_CALL: 'registration-failed-out-of-call',
+  TELEPHONY_DISCONNECTED: 'telephony-disconnected',
+} as const;
+
+export type TReconnectReason = (typeof RECONNECT_REASONS)[keyof typeof RECONNECT_REASONS];

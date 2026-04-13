@@ -224,8 +224,7 @@ describe('AutoConnectorManager - Reconnection', () => {
 
   describe('переподключение при активном звонке', () => {
     it('не должен делать рестарт при событии resumeFromSleepModeSubscriber onResume если активен звонок', async () => {
-      // @ts-expect-error приватное свойство
-      const restartSpy = jest.spyOn(manager, 'restartConnectionAttempts');
+      const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
 
       manager.start(baseParameters);
 
@@ -246,8 +245,7 @@ describe('AutoConnectorManager - Reconnection', () => {
     });
 
     it('не должен делать рестарт при событии networkInterfacesSubscriber onChange если активен звонок', async () => {
-      // @ts-expect-error приватное свойство
-      const restartSpy = jest.spyOn(manager, 'restartConnectionAttempts');
+      const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
 
       manager.start(baseParameters);
 

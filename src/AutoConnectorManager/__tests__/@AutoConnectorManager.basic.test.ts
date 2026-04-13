@@ -96,19 +96,17 @@ describe('AutoConnectorManager - Basic', () => {
     });
 
     it('start: сбрасывает состояния перед подключением', () => {
-      // @ts-expect-error
-      const stopConnectionFlowSpy = jest.spyOn(manager, 'stopConnectionFlow');
+      const disconnectSpy = jest.spyOn(sipConnector.connectionQueueManager, 'disconnect');
 
       manager.start(baseParameters);
 
-      expect(stopConnectionFlowSpy).toHaveBeenCalled();
+      expect(disconnectSpy).toHaveBeenCalled();
     });
 
     it('start: не должна всплывать ошибка, если connect завершился с ошибкой', async () => {
       const error = new Error('Connect error');
 
-      // @ts-expect-error приватное свойство
-      jest.spyOn(manager, 'stopConnectionFlow').mockRejectedValue(error);
+      jest.spyOn(sipConnector.connectionQueueManager, 'disconnect').mockRejectedValue(error);
 
       manager.start(baseParameters);
 

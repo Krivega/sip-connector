@@ -47,21 +47,19 @@ sipConnector.stopAutoConnect();
 - **Мониторинг состояния**: Отслеживает состояние регистрации и звонков
 - **Адаптивные задержки**: Использует настраиваемые интервалы между попытками
 - **Очистка кэша**: Возможность настраивать очистку кэша через хук
+- **Причины реконнекта**: Все внешние рестарты проходят через единый `requestReconnect` (например: `start`, `network-change`, `sleep-resume`)
 
 ## События автоподключения
 
-| Событие                               | Описание                       | Данные                              |
-| ------------------------------------- | ------------------------------ | ----------------------------------- |
-| `auto-connect:connecting`             | Начало подключения             | -                                   |
-| `auto-connect:connected`              | Успешное подключение           | `{ ua: UA, isRegistered: boolean }` |
-| `auto-connect:disconnecting`          | Начало отключения              | -                                   |
-| `auto-connect:disconnected`           | Отключение завершено           | -                                   |
-| `auto-connect:failed`                 | Ошибка подключения             | `Error`                             |
-| `auto-connect:before-attempt`         | Начало попытки подключения     | -                                   |
-| `auto-connect:succeeded-attempt`      | Успешная попытка подключения   | -                                   |
-| `auto-connect:failed-attempt`         | Неудачная попытка подключения  | `Error`                             |
-| `auto-connect:cancelled-attempt`      | Отмененная попытка подключения | `Error`                             |
-| `auto-connect:changed-attempt-status` | Изменение статуса попытки      | `{ isInProgress: boolean }`         |
+| Событие                               | Описание                                         | Данные                      |
+| ------------------------------------- | ------------------------------------------------ | --------------------------- |
+| `auto-connect:before-attempt`         | Начало очередной попытки подключения             | `{}`                        |
+| `auto-connect:success`                | Успешное подключение или подтверждение связи     | `undefined`                 |
+| `auto-connect:failed-all-attempts`    | Ошибка в цепочке ретрая (фатальный сценарий)     | `Error`                     |
+| `auto-connect:cancelled-attempts`     | Попытки отменены (например, неактуальный flow)   | `unknown` / `Error`         |
+| `auto-connect:stop-attempts-by-error` | Остановка без ретрая (`canRetryOnError=false`)   | `unknown`                   |
+| `auto-connect:limit-reached-attempts` | Достигнут лимит попыток, включён check-telephony | `Error('Limit reached')`    |
+| `auto-connect:changed-attempt-status` | Изменение статуса попытки                        | `{ isInProgress: boolean }` |
 
 ## Подписка на события автоподключения
 
@@ -75,15 +73,15 @@ sipConnector.on('auto-connect:before-attempt', () => {
   console.log('Начало попытки подключения');
 });
 
-sipConnector.on('auto-connect:succeeded-attempt', () => {
-  console.log('Попытка подключения успешна');
+sipConnector.on('auto-connect:success', () => {
+  console.log('Подключение успешно');
 });
 
-sipConnector.on('auto-connect:failed-attempt', (error) => {
-  console.log('Попытка подключения неудачна:', error);
+sipConnector.on('auto-connect:failed-all-attempts', (error) => {
+  console.log('Цепочка переподключения завершилась с ошибкой:', error);
 });
 
-sipConnector.on('auto-connect:cancelled-attempt', (error) => {
+sipConnector.on('auto-connect:cancelled-attempts', (error) => {
   console.log('Попытка подключения отменена:', error);
 });
 ```

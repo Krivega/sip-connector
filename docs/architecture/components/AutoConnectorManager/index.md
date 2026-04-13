@@ -10,6 +10,14 @@
 - Проверка доступности телефонии
 - Мониторинг состояния соединения
 - Управление событиями попыток подключения
+- Единая точка запросов на рестарт (`requestReconnect`) с причиной (`start`, `network-change`, `sleep-resume`, ...)
+
+## Архитектура компонентов
+
+- `@AutoConnectorManager.ts` — фасад и оркестрация внешних триггеров.
+- `AutoConnectorStateMachine/*` — декларативная машина состояний XState.
+- `createMachineDeps.ts` — адаптер между машиной и побочными эффектами менеджера.
+- `CheckTelephonyRequester`, `PingServerIfNotActiveCallRequester`, `RegistrationFailedOutOfCallSubscriber` — инфраструктурные наблюдатели и периодические проверки.
 
 ## Основные методы
 
