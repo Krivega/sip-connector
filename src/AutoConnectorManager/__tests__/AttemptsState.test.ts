@@ -22,16 +22,15 @@ describe('AttemptsState', () => {
   });
 
   it('increment: не увеличивает count, если count >= limit', () => {
-    // @ts-ignore приватное свойство
-    attemptsState.limitInner = 1;
+    for (let i = 0; i < attemptsState.limit; i += 1) {
+      attemptsState.increment();
+    }
+
+    expect(attemptsState.count).toBe(attemptsState.limit);
 
     attemptsState.increment();
 
-    expect(attemptsState.count).toBe(1);
-
-    attemptsState.increment();
-
-    expect(attemptsState.count).toBe(1);
+    expect(attemptsState.count).toBe(attemptsState.limit);
   });
 
   it('startAttempt: устанавливает isAttemptInProgress в true', () => {
@@ -59,12 +58,11 @@ describe('AttemptsState', () => {
   });
 
   it('hasLimitReached: проверяет достижение лимита', () => {
-    // @ts-ignore приватное свойство
-    attemptsState.limitInner = 1;
-
     expect(attemptsState.hasLimitReached()).toBe(false);
 
-    attemptsState.increment();
+    for (let i = 0; i < attemptsState.limit; i += 1) {
+      attemptsState.increment();
+    }
 
     expect(attemptsState.hasLimitReached()).toBe(true);
 

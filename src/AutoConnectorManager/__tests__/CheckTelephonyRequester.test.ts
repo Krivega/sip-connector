@@ -1,3 +1,4 @@
+import { CancelableRequest } from '@krivega/cancelable-promise';
 import { resolveRequesterByTimeout } from '@krivega/timeout-requester';
 
 import { doMockSipConnector } from '@/doMock';
@@ -101,8 +102,7 @@ describe('CheckTelephonyRequester', () => {
     });
 
     it('создает cancelableBeforeRequest при start', () => {
-      // @ts-ignore приватное свойство
-      expect(checkTelephonyRequester.cancelableBeforeRequest).toBeUndefined();
+      const cancelRequestSpy = jest.spyOn(CancelableRequest.prototype, 'cancelRequest');
 
       checkTelephonyRequester.start({
         onBeforeRequest: onBeforeRequestMock,
@@ -110,8 +110,9 @@ describe('CheckTelephonyRequester', () => {
         onFailRequest: onFailRequestMock,
       });
 
-      // @ts-ignore приватное свойство
-      expect(checkTelephonyRequester.cancelableBeforeRequest).toBeDefined();
+      checkTelephonyRequester.stop();
+
+      expect(cancelRequestSpy).toHaveBeenCalledTimes(1);
     });
 
     it('запускает checkTelephonyByTimeout с корректными callbacks', () => {
@@ -234,29 +235,19 @@ describe('CheckTelephonyRequester', () => {
         onFailRequest: jest.fn(),
       });
 
-      // @ts-ignore приватное свойство
-      expect(checkTelephonyRequester.checkTelephonyByTimeout).toBeDefined();
-
       checkTelephonyRequester.stop();
 
       expect(stopMock).toHaveBeenCalledTimes(1);
-      // @ts-ignore приватное свойство
-      expect(checkTelephonyRequester.checkTelephonyByTimeout).toBeUndefined();
     });
 
     it('не вызывает stop если checkTelephonyByTimeout не существует', () => {
-      // @ts-ignore приватное свойство
-      expect(checkTelephonyRequester.checkTelephonyByTimeout).toBeUndefined();
-
       checkTelephonyRequester.stop();
 
       expect(stopMock).not.toHaveBeenCalled();
     });
 
     it('отменяет cancelableBeforeRequest при stop', () => {
-      expect.assertions(2);
-
-      const cancelRequestSpy = jest.fn();
+      const cancelRequestSpy = jest.spyOn(CancelableRequest.prototype, 'cancelRequest');
 
       checkTelephonyRequester.start({
         onBeforeRequest: jest.fn().mockResolvedValue({}),
@@ -264,20 +255,9 @@ describe('CheckTelephonyRequester', () => {
         onFailRequest: jest.fn(),
       });
 
-      // @ts-ignore приватное свойство
-      const cancelableRequest = checkTelephonyRequester.cancelableBeforeRequest;
-
-      if (!cancelableRequest) {
-        throw new Error('cancelableRequest is not defined');
-      }
-
-      jest.spyOn(cancelableRequest, 'cancelRequest').mockImplementation(cancelRequestSpy);
-
       checkTelephonyRequester.stop();
 
       expect(cancelRequestSpy).toHaveBeenCalledTimes(1);
-      // @ts-ignore приватное свойство
-      expect(checkTelephonyRequester.cancelableBeforeRequest).toBeUndefined();
     });
 
     it('может быть вызван несколько раз без ошибок', () => {

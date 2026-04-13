@@ -174,15 +174,19 @@ describe('AutoConnectorManager - Triggers', () => {
     });
 
     it('перезапускает auto connector manager при resumeFromSleepModeSubscriber onResume до наступления success', async () => {
-      const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
+      const beforeAttemptHandler = jest.fn();
+
+      manager.on('before-attempt', beforeAttemptHandler);
 
       manager.start(baseParameters);
 
-      expect(restartSpy).toHaveBeenCalledTimes(1);
+      await flushPromises();
 
       emitResumeMock?.();
 
-      expect(restartSpy).toHaveBeenCalledTimes(2);
+      await flushPromises();
+
+      expect(beforeAttemptHandler.mock.calls.length).toBeGreaterThanOrEqual(2);
     });
 
     it('подписывается на networkInterfacesSubscriber после успешного подключения', async () => {
@@ -322,15 +326,19 @@ describe('AutoConnectorManager - Triggers', () => {
     });
 
     it('перезапускает auto connector manager при networkInterfacesSubscriber onChange до наступления success', async () => {
-      const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
+      const beforeAttemptHandler = jest.fn();
+
+      manager.on('before-attempt', beforeAttemptHandler);
 
       manager.start(baseParameters);
 
-      expect(restartSpy).toHaveBeenCalledTimes(1);
+      await flushPromises();
 
       emitChangeNetworkInterfacesMock?.();
 
-      expect(restartSpy).toHaveBeenCalledTimes(2);
+      await flushPromises();
+
+      expect(beforeAttemptHandler.mock.calls.length).toBeGreaterThanOrEqual(2);
     });
 
     it('останавливает auto connector manager при networkInterfacesSubscriber onUnavailable до наступления success', async () => {

@@ -189,9 +189,10 @@ describe('AutoConnectorManager - Reconnection', () => {
       expect(['connection:established', 'connection:disconnecting']).toContain(state);
 
       // триггерим событие отключения от ua
-      // @ts-ignore приватное свойство
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      ua.events.trigger('disconnected');
+
+      const uaWithEvents = ua as unknown as { events: { trigger: (eventName: string) => void } };
+
+      uaWithEvents.events.trigger('disconnected');
 
       expect(sipConnector.connectionManager.connectionState).toBe('connection:disconnected');
 
@@ -209,13 +210,13 @@ describe('AutoConnectorManager - Reconnection', () => {
 
   describe('переподключение при активном звонке', () => {
     it('не должен делать рестарт при событии resumeFromSleepModeSubscriber onResume если активен звонок', async () => {
-      const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
+      const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
 
       manager.start(baseParameters);
 
       await manager.wait('success');
 
-      expect(restartSpy).toHaveBeenCalledTimes(1);
+      expect(connectSpy).toHaveBeenCalledTimes(1);
 
       jest.spyOn(sipConnector.callManager, 'isCallActive', 'get').mockReturnValue(true);
       sipConnector.callManager.events.trigger('call-status-changed', { isCallActive: true });
@@ -226,17 +227,17 @@ describe('AutoConnectorManager - Reconnection', () => {
 
       await flushPromises();
 
-      expect(restartSpy).toHaveBeenCalledTimes(1);
+      expect(connectSpy).toHaveBeenCalledTimes(1);
     });
 
     it('не должен делать рестарт при событии networkInterfacesSubscriber onChange если активен звонок', async () => {
-      const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
+      const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
 
       manager.start(baseParameters);
 
       await manager.wait('success');
 
-      expect(restartSpy).toHaveBeenCalledTimes(1);
+      expect(connectSpy).toHaveBeenCalledTimes(1);
 
       jest.spyOn(sipConnector.callManager, 'isCallActive', 'get').mockReturnValue(true);
       sipConnector.callManager.events.trigger('call-status-changed', { isCallActive: true });
@@ -245,7 +246,7 @@ describe('AutoConnectorManager - Reconnection', () => {
 
       await flushPromises();
 
-      expect(restartSpy).toHaveBeenCalledTimes(1);
+      expect(connectSpy).toHaveBeenCalledTimes(1);
     });
   });
 });
