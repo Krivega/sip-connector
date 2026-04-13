@@ -63,6 +63,15 @@ stateDiagram-v2
 - В `waitingBeforeRetry.onError` отдельно различаются управляемая отмена цепочки (`cancelled-attempts`) и фатальная ошибка подготовки ретрая (`failed-all-attempts`).
 - Переход `telephonyChecking -> connectedMonitoring` означает: соединение уже восстановилось без нового `connect`, поэтому нужен только возврат в режим мониторинга и событие `success`.
 - Ошибка в `CheckTelephonyRequester.onFailRequest` не переводит машину в другое состояние: политика «только логирование и продолжение периодических проверок».
+- `requestReconnect` использует «умный coalescing» в коротком окне: запрос с той же или меньшей важностью подавляется, а более приоритетная причина допускается. Карта приоритетов вынесена в [`types.ts`](../../../../src/AutoConnectorManager/types.ts) (`RECONNECT_REASON_PRIORITY`).
+
+## Coalescing-компонент
+
+- За coalescing и `generation` отвечает отдельный класс [`ReconnectRequestCoalescer.ts`](../../../../src/AutoConnectorManager/ReconnectRequestCoalescer.ts).
+- Контракт метода `register(reason)`:
+  - `shouldRequest: true` — менеджер отправляет `AUTO.RESTART` в машину;
+  - `shouldRequest: false` — запрос считается схлопнутым, в лог попадают `coalescedBy` и приоритеты.
+- Метод `reset()` очищает coalescing-состояние при `stop()`, чтобы новая сессия стартовала без «истории» предыдущих рестартов.
 
 ## Как расширять
 

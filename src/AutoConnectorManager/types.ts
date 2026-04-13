@@ -43,3 +43,16 @@ export const RECONNECT_REASONS = {
 } as const;
 
 export type TReconnectReason = (typeof RECONNECT_REASONS)[keyof typeof RECONNECT_REASONS];
+
+// Чем выше число, тем выше приоритет причины в окне coalescing.
+export const RECONNECT_REASON_PRIORITY: Record<TReconnectReason, number> = {
+  [RECONNECT_REASONS.START]: 0,
+  [RECONNECT_REASONS.TELEPHONY_DISCONNECTED]: 1,
+  [RECONNECT_REASONS.SLEEP_RESUME]: 2,
+  [RECONNECT_REASONS.REGISTRATION_FAILED_OUT_OF_CALL]: 3,
+  [RECONNECT_REASONS.NETWORK_CHANGE]: 4,
+} as const;
+
+export const getReconnectReasonPriority = (reason: TReconnectReason): number => {
+  return RECONNECT_REASON_PRIORITY[reason];
+};

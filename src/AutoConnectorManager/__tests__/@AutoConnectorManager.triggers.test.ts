@@ -144,6 +144,21 @@ describe('AutoConnectorManager - Triggers', () => {
       expect(restartSpy).toHaveBeenCalledTimes(1);
     });
 
+    it('схлопывает повторные onResume в коротком окне', async () => {
+      const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
+
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      jest.clearAllMocks();
+
+      emitResumeMock?.();
+      emitResumeMock?.();
+
+      expect(restartSpy).toHaveBeenCalledTimes(1);
+    });
+
     it('не отписывается от resumeFromSleepModeSubscriber при перезапуске auto connector manager', async () => {
       manager.start(baseParameters);
 
@@ -203,6 +218,51 @@ describe('AutoConnectorManager - Triggers', () => {
       emitChangeNetworkInterfacesMock?.();
 
       expect(restartSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('схлопывает повторные onChange по одному интерфейсу в коротком окне', async () => {
+      const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
+
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      jest.clearAllMocks();
+
+      emitChangeNetworkInterfacesMock?.();
+      emitChangeNetworkInterfacesMock?.();
+
+      expect(restartSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('подавляет менее приоритетную причину в окне coalescing', async () => {
+      const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
+
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      jest.clearAllMocks();
+
+      emitChangeNetworkInterfacesMock?.(); // network-change, высокий приоритет
+      emitResumeMock?.(); // sleep-resume, ниже приоритет
+
+      expect(restartSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('пропускает более приоритетную причину в окне coalescing', async () => {
+      const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
+
+      manager.start(baseParameters);
+
+      await manager.wait('success');
+
+      jest.clearAllMocks();
+
+      emitResumeMock?.(); // sleep-resume, ниже приоритет
+      emitChangeNetworkInterfacesMock?.(); // network-change, выше приоритет
+
+      expect(restartSpy).toHaveBeenCalledTimes(2);
     });
 
     it('вызывает stopConnectionFlow после удаления всех сетевых интерфейсов', async () => {

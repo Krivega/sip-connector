@@ -10,6 +10,7 @@ import { createMachineDeps } from './createMachineDeps';
 import { createEvents } from './events';
 import NotActiveCallSubscriber from './NotActiveCallSubscriber';
 import PingServerIfNotActiveCallRequester from './PingServerIfNotActiveCallRequester';
+import ReconnectRequestCoalescer from './ReconnectRequestCoalescer';
 import RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCallSubscriber';
 
 import type { CallManager } from '@/CallManager';
@@ -27,6 +28,7 @@ import type {
 
 const DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS = 3000;
 const DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL = 15_000;
+const RECONNECT_COALESCE_WINDOW_MS = 250;
 
 const ERROR_MESSAGES = {
   LIMIT_REACHED: 'Limit reached',
@@ -66,6 +68,10 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   private readonly resumeFromSleepModeSubscriber: TResumeFromSleepModeSubscriber | undefined;
 
   private readonly notActiveCallSubscriber: NotActiveCallSubscriber;
+
+  private readonly reconnectCoalescer = new ReconnectRequestCoalescer({
+    coalesceWindowMs: RECONNECT_COALESCE_WINDOW_MS,
+  });
 
   public constructor(
     {
@@ -186,14 +192,33 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
 
     this.unsubscribeFromNotActiveCall();
     this.unsubscribeFromHardwareTriggers();
+    this.resetReconnectCoalescingState();
     this.stateMachine.toStop();
   }
 
   private requestReconnect(parameters: TParametersAutoConnect, reason: TReconnectReason) {
+    const decision = this.reconnectCoalescer.register(reason);
+
+    if (!decision.shouldRequest) {
+      logger(`auto connector reconnect coalesced: ${reason}`, {
+        state: String(this.stateMachine.state),
+        coalescedBy: decision.coalescedBy,
+        currentPriority: decision.currentPriority,
+        coalescedByPriority: decision.coalescedByPriority,
+      });
+
+      return;
+    }
+
     logger(`auto connector reconnect requested: ${reason}`, {
       state: String(this.stateMachine.state),
+      generation: decision.generation,
     });
     this.stateMachine.toRestart(parameters);
+  }
+
+  private resetReconnectCoalescingState() {
+    this.reconnectCoalescer.reset();
   }
 
   private async stopConnectionFlow() {
