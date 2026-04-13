@@ -2,6 +2,7 @@ import flushPromises from '@/__fixtures__/flushPromises';
 import { doMockSipConnector } from '@/doMock';
 import logger from '@/logger';
 import AutoConnectorManager from '../@AutoConnectorManager';
+import AttemptsState from '../AttemptsState';
 import CheckTelephonyRequester from '../CheckTelephonyRequester';
 import PingServerIfNotActiveCallRequester from '../PingServerIfNotActiveCallRequester';
 
@@ -66,17 +67,14 @@ describe('AutoConnectorManager - Telephony', () => {
   afterEach(() => {
     jest.clearAllMocks();
     jest.restoreAllMocks();
-
-    // @ts-ignore приватное свойство
-    manager.attemptsState.limitInner = 30;
   });
 
   describe('проверка телефонии', () => {
     it('запускает check telephony requester при достижении лимита попыток', async () => {
       const checkTelephonyStartSpy = jest.spyOn(CheckTelephonyRequester.prototype, 'start');
-
-      // @ts-ignore приватное свойство
-      manager.attemptsState.limitInner = 0;
+      const hasLimitReachedSpy = jest
+        .spyOn(AttemptsState.prototype, 'hasLimitReached')
+        .mockReturnValue(true);
 
       manager.start(baseParameters);
 
@@ -89,13 +87,15 @@ describe('AutoConnectorManager - Telephony', () => {
         onSuccessRequest: expect.any(Function) as () => void,
         onFailRequest: expect.any(Function) as (error?: unknown) => void,
       });
+
+      hasLimitReachedSpy.mockRestore();
     });
 
     it('логирует ошибку в onFailRequest при проверке телефонии', async () => {
       const startSpy = jest.spyOn(CheckTelephonyRequester.prototype, 'start').mockImplementation();
-
-      // @ts-ignore приватное свойство
-      manager.attemptsState.limitInner = 0;
+      const hasLimitReachedSpy = jest
+        .spyOn(AttemptsState.prototype, 'hasLimitReached')
+        .mockReturnValue(true);
 
       manager.start(baseParameters);
 
@@ -110,12 +110,16 @@ describe('AutoConnectorManager - Telephony', () => {
       onFailRequest(error);
 
       expect(loggerMock).toHaveBeenCalled();
+      hasLimitReachedSpy.mockRestore();
     });
 
     it('эмитит telephony-check-failure и эскалирует warning/critical', async () => {
       const startSpy = jest.spyOn(CheckTelephonyRequester.prototype, 'start').mockImplementation();
       const failureHandler = jest.fn();
       const escalatedHandler = jest.fn();
+      const hasLimitReachedSpy = jest
+        .spyOn(AttemptsState.prototype, 'hasLimitReached')
+        .mockReturnValue(true);
 
       manager = createManager({
         telephonyFailPolicy: {
@@ -130,9 +134,6 @@ describe('AutoConnectorManager - Telephony', () => {
 
       manager.on('telephony-check-failure', failureHandler);
       manager.on('telephony-check-escalated', escalatedHandler);
-
-      // @ts-ignore приватное свойство
-      manager.attemptsState.limitInner = 0;
 
       manager.start(baseParameters);
 
@@ -162,10 +163,15 @@ describe('AutoConnectorManager - Telephony', () => {
         error,
       });
       expect(restartSpy).toHaveBeenCalledTimes(1);
+
+      hasLimitReachedSpy.mockRestore();
     });
 
     it('учитывает backoff и не делает лишний reconnect в окне retry', async () => {
       const startSpy = jest.spyOn(CheckTelephonyRequester.prototype, 'start').mockImplementation();
+      const hasLimitReachedSpy = jest
+        .spyOn(AttemptsState.prototype, 'hasLimitReached')
+        .mockReturnValue(true);
 
       manager = createManager({
         telephonyFailPolicy: {
@@ -177,9 +183,6 @@ describe('AutoConnectorManager - Telephony', () => {
       });
 
       const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
-
-      // @ts-ignore приватное свойство
-      manager.attemptsState.limitInner = 0;
 
       manager.start(baseParameters);
 
@@ -198,6 +201,8 @@ describe('AutoConnectorManager - Telephony', () => {
       (Date.now as jest.Mock).mockReturnValue(1100);
       onFailRequest(new Error('Second fail'));
       expect(restartSpy).toHaveBeenCalledTimes(1);
+
+      hasLimitReachedSpy.mockRestore();
     });
 
     it('при успешной проверке запускает start в случае, если соединение isDisconnected', async () => {
@@ -205,9 +210,15 @@ describe('AutoConnectorManager - Telephony', () => {
 
       const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
       const startSpy = jest.spyOn(CheckTelephonyRequester.prototype, 'start').mockImplementation();
-
-      // @ts-ignore приватное свойство
-      manager.attemptsState.limitInner = 0;
+      const originalHasLimitReached = AttemptsState.prototype.hasLimitReached;
+      const hasLimitReachedSpy = jest
+        .spyOn(AttemptsState.prototype, 'hasLimitReached')
+        .mockImplementationOnce(() => {
+          return true;
+        })
+        .mockImplementation(function fallbackHasLimitReached(this: AttemptsState) {
+          return originalHasLimitReached.call(this);
+        });
 
       manager.start(baseParameters);
 
@@ -217,15 +228,12 @@ describe('AutoConnectorManager - Telephony', () => {
         onSuccessRequest: () => void;
       };
 
-      // @ts-ignore приватное свойство
-      // eslint-disable-next-line require-atomic-updates
-      manager.attemptsState.limitInner = 10;
-
       onSuccessRequest();
 
       await manager.wait('success');
 
       expect(connectSpy).toHaveBeenCalled();
+      hasLimitReachedSpy.mockRestore();
     });
 
     it('при успешной проверке запускает start в случае, если соединение было отключено', async () => {
@@ -242,9 +250,6 @@ describe('AutoConnectorManager - Telephony', () => {
         timeoutBetweenAttempts: 10,
       });
       manager.start(baseParameters);
-
-      // @ts-ignore приватное свойство
-      manager.attemptsState.limitInner = 5;
 
       await sipConnector.connectionManager.wait('connect-succeeded');
 
@@ -275,9 +280,9 @@ describe('AutoConnectorManager - Telephony', () => {
         const startSpy = jest
           .spyOn(CheckTelephonyRequester.prototype, 'start')
           .mockImplementation();
-
-        // @ts-ignore приватное свойство
-        manager.attemptsState.limitInner = 0;
+        const hasLimitReachedSpy = jest
+          .spyOn(AttemptsState.prototype, 'hasLimitReached')
+          .mockReturnValue(true);
 
         manager.start({
           getParameters: baseParameters.getParameters,
@@ -292,15 +297,16 @@ describe('AutoConnectorManager - Telephony', () => {
         await onBeforeRequest();
 
         expect(onBeforeRetryMock).toHaveBeenCalledTimes(1);
+        hasLimitReachedSpy.mockRestore();
       });
 
       it('возвращает данные при успешном getParameters', async () => {
         const startSpy = jest
           .spyOn(CheckTelephonyRequester.prototype, 'start')
           .mockImplementation();
-
-        // @ts-ignore приватное свойство
-        manager.attemptsState.limitInner = 0;
+        const hasLimitReachedSpy = jest
+          .spyOn(AttemptsState.prototype, 'hasLimitReached')
+          .mockReturnValue(true);
 
         manager.start({
           getParameters: baseParameters.getParameters,
@@ -315,15 +321,16 @@ describe('AutoConnectorManager - Telephony', () => {
         const result = await onBeforeRequest();
 
         expect(result).toEqual(parameters);
+        hasLimitReachedSpy.mockRestore();
       });
 
       it('выбрасывает ошибку, если параметры отсутствуют', async () => {
         const startSpy = jest
           .spyOn(CheckTelephonyRequester.prototype, 'start')
           .mockImplementation();
-
-        // @ts-ignore приватное свойство
-        manager.attemptsState.limitInner = 0;
+        const hasLimitReachedSpy = jest
+          .spyOn(AttemptsState.prototype, 'hasLimitReached')
+          .mockReturnValue(true);
 
         const error = new Error('Parameters are missing');
 
@@ -341,6 +348,7 @@ describe('AutoConnectorManager - Telephony', () => {
 
         await expect(onBeforeRequest()).rejects.toThrow(error);
         expect(onBeforeRetryMock).toHaveBeenCalledTimes(1);
+        hasLimitReachedSpy.mockRestore();
       });
     });
   });

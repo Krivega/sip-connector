@@ -1,6 +1,7 @@
 import flushPromises from '@/__fixtures__/flushPromises';
 import { doMockSipConnector } from '@/doMock';
 import AutoConnectorManager from '../@AutoConnectorManager';
+import AttemptsState from '../AttemptsState';
 import CheckTelephonyRequester from '../CheckTelephonyRequester';
 import PingServerIfNotActiveCallRequester from '../PingServerIfNotActiveCallRequester';
 import RegistrationFailedOutOfCallSubscriber from '../RegistrationFailedOutOfCallSubscriber';
@@ -87,9 +88,6 @@ describe('AutoConnectorManager - Triggers', () => {
   afterEach(() => {
     jest.clearAllMocks();
     jest.restoreAllMocks();
-
-    // @ts-ignore приватное свойство
-    manager.attemptsState.limitInner = 30;
   });
 
   describe('подписчики и триггеры', () => {
@@ -131,32 +129,36 @@ describe('AutoConnectorManager - Triggers', () => {
     });
 
     it('перезапускает auto connector manager при resumeFromSleepModeSubscriber onResume', async () => {
-      const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
+      const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
 
       manager.start(baseParameters);
 
       await manager.wait('success');
 
-      jest.clearAllMocks();
+      expect(connectSpy).toHaveBeenCalledTimes(1);
 
       emitResumeMock?.();
 
-      expect(restartSpy).toHaveBeenCalledTimes(1);
+      await manager.wait('success');
+
+      expect(connectSpy).toHaveBeenCalledTimes(2);
     });
 
     it('схлопывает повторные onResume в коротком окне', async () => {
-      const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
+      const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
 
       manager.start(baseParameters);
 
       await manager.wait('success');
 
-      jest.clearAllMocks();
+      expect(connectSpy).toHaveBeenCalledTimes(1);
 
       emitResumeMock?.();
       emitResumeMock?.();
 
-      expect(restartSpy).toHaveBeenCalledTimes(1);
+      await manager.wait('success');
+
+      expect(connectSpy).toHaveBeenCalledTimes(2);
     });
 
     it('не отписывается от resumeFromSleepModeSubscriber при перезапуске auto connector manager', async () => {
@@ -207,62 +209,70 @@ describe('AutoConnectorManager - Triggers', () => {
     });
 
     it('перезапускает auto connector manager после смены сетевого интерфейса', async () => {
-      const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
+      const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
 
       manager.start(baseParameters);
 
       await manager.wait('success');
 
-      jest.clearAllMocks();
+      expect(connectSpy).toHaveBeenCalledTimes(1);
 
       emitChangeNetworkInterfacesMock?.();
 
-      expect(restartSpy).toHaveBeenCalledTimes(1);
+      await manager.wait('success');
+
+      expect(connectSpy).toHaveBeenCalledTimes(2);
     });
 
     it('схлопывает повторные onChange по одному интерфейсу в коротком окне', async () => {
-      const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
+      const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
 
       manager.start(baseParameters);
 
       await manager.wait('success');
 
-      jest.clearAllMocks();
+      expect(connectSpy).toHaveBeenCalledTimes(1);
 
       emitChangeNetworkInterfacesMock?.();
       emitChangeNetworkInterfacesMock?.();
 
-      expect(restartSpy).toHaveBeenCalledTimes(1);
+      await manager.wait('success');
+
+      expect(connectSpy).toHaveBeenCalledTimes(2);
     });
 
     it('подавляет менее приоритетную причину в окне coalescing', async () => {
-      const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
+      const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
 
       manager.start(baseParameters);
 
       await manager.wait('success');
 
-      jest.clearAllMocks();
+      expect(connectSpy).toHaveBeenCalledTimes(1);
 
       emitChangeNetworkInterfacesMock?.(); // network-change, высокий приоритет
       emitResumeMock?.(); // sleep-resume, ниже приоритет
 
-      expect(restartSpy).toHaveBeenCalledTimes(1);
+      await manager.wait('success');
+
+      expect(connectSpy).toHaveBeenCalledTimes(2);
     });
 
     it('пропускает более приоритетную причину в окне coalescing', async () => {
-      const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
+      const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
 
       manager.start(baseParameters);
 
       await manager.wait('success');
 
-      jest.clearAllMocks();
+      expect(connectSpy).toHaveBeenCalledTimes(1);
 
       emitResumeMock?.(); // sleep-resume, ниже приоритет
       emitChangeNetworkInterfacesMock?.(); // network-change, выше приоритет
 
-      expect(restartSpy).toHaveBeenCalledTimes(2);
+      await manager.wait('success');
+
+      expect(connectSpy).toHaveBeenCalledTimes(2);
     });
 
     it('вызывает stopConnectionFlow после удаления всех сетевых интерфейсов', async () => {
@@ -282,7 +292,7 @@ describe('AutoConnectorManager - Triggers', () => {
     });
 
     it('перезапускает auto connector manager после удаления всех сетевых интерфейсов и восстановления нового сетевого интерфейса', async () => {
-      const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
+      const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
 
       manager.start(baseParameters);
 
@@ -294,7 +304,9 @@ describe('AutoConnectorManager - Triggers', () => {
 
       emitChangeNetworkInterfacesMock?.();
 
-      expect(restartSpy).toHaveBeenCalled();
+      await manager.wait('success');
+
+      expect(connectSpy).toHaveBeenCalledTimes(1);
     });
 
     it('не отписывается от networkInterfacesSubscriber при перезапуске auto connector manager', async () => {
@@ -322,18 +334,15 @@ describe('AutoConnectorManager - Triggers', () => {
     });
 
     it('останавливает auto connector manager при networkInterfacesSubscriber onUnavailable до наступления success', async () => {
-      const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
-      const stopSpy = jest.spyOn(manager.stateMachine, 'toStop');
-
       manager.start(baseParameters);
 
-      expect(restartSpy).toHaveBeenCalledTimes(1);
-      expect(stopSpy).toHaveBeenCalledTimes(0);
+      expect(manager.stateMachine.state).toBe('disconnecting');
 
       emitUnavailableInterfacesMock?.();
 
-      expect(restartSpy).toHaveBeenCalledTimes(1);
-      expect(stopSpy).toHaveBeenCalledTimes(1);
+      await flushPromises();
+
+      expect(['idle', 'disconnecting']).toContain(manager.stateMachine.state);
     });
 
     it('подписывается на registration failed out of call после подключения', async () => {
@@ -395,7 +404,7 @@ describe('AutoConnectorManager - Triggers', () => {
       expect(connectSpy).toHaveBeenCalledTimes(2);
     });
 
-    it('stopConnectTriggers: останавливает все триггеры', () => {
+    it('stop: останавливает все connect triggers', async () => {
       const pingServerIfNotActiveCallStopSpy = jest.spyOn(
         PingServerIfNotActiveCallRequester.prototype,
         'stop',
@@ -406,36 +415,56 @@ describe('AutoConnectorManager - Triggers', () => {
         'unsubscribe',
       );
 
-      // @ts-expect-error
-      manager.stopConnectTriggers();
+      manager.start(baseParameters);
+      await manager.wait('success');
+
+      jest.clearAllMocks();
+      manager.stop();
 
       expect(pingServerIfNotActiveCallStopSpy).toHaveBeenCalled();
       expect(checkTelephonyStopSpy).toHaveBeenCalled();
       expect(registrationFailedSubscriberUnsubscribeSpy).toHaveBeenCalled();
     });
 
-    it('остановка всех триггеров в начале подключения', async () => {
-      // @ts-expect-error
-      const stopConnectTriggersSpy = jest.spyOn(manager, 'stopConnectTriggers');
+    it('в начале подключения сбрасывает connect triggers через инфраструктуру', async () => {
+      const pingServerIfNotActiveCallStopSpy = jest.spyOn(
+        PingServerIfNotActiveCallRequester.prototype,
+        'stop',
+      );
+      const checkTelephonyStopSpy = jest.spyOn(CheckTelephonyRequester.prototype, 'stop');
+      const registrationFailedSubscriberUnsubscribeSpy = jest.spyOn(
+        RegistrationFailedOutOfCallSubscriber.prototype,
+        'unsubscribe',
+      );
 
       manager.start(baseParameters);
 
       await flushPromises();
 
-      // 1-й раз останавливаются при вызове cancel в start
-      expect(stopConnectTriggersSpy).toHaveBeenCalledTimes(2);
+      expect(pingServerIfNotActiveCallStopSpy).toHaveBeenCalled();
+      expect(checkTelephonyStopSpy).toHaveBeenCalled();
+      expect(registrationFailedSubscriberUnsubscribeSpy).toHaveBeenCalled();
     });
 
     it('остановка всех триггеров успешной проверки телефонии', async () => {
       jest.spyOn(sipConnector.connectionManager, 'isDisconnected', 'get').mockReturnValue(false);
       jest.spyOn(sipConnector.connectionManager, 'isIdle', 'get').mockReturnValue(false);
 
-      // @ts-expect-error
-      const stopConnectTriggersSpy = jest.spyOn(manager, 'stopConnectTriggers');
       const startSpy = jest.spyOn(CheckTelephonyRequester.prototype, 'start').mockImplementation();
-
-      // @ts-ignore приватное свойство
-      manager.attemptsState.limitInner = 0;
+      const pingServerIfNotActiveCallStopSpy = jest.spyOn(
+        PingServerIfNotActiveCallRequester.prototype,
+        'stop',
+      );
+      const checkTelephonyStopSpy = jest.spyOn(CheckTelephonyRequester.prototype, 'stop');
+      const registrationFailedSubscriberUnsubscribeSpy = jest.spyOn(
+        RegistrationFailedOutOfCallSubscriber.prototype,
+        'unsubscribe',
+      );
+      const hasLimitReachedSpy = jest
+        .spyOn(AttemptsState.prototype, 'hasLimitReached')
+        .mockImplementation(() => {
+          return true;
+        });
 
       manager.start(baseParameters);
 
@@ -449,7 +478,11 @@ describe('AutoConnectorManager - Triggers', () => {
 
       onSuccessRequest();
 
-      expect(stopConnectTriggersSpy).toHaveBeenCalledTimes(1);
+      expect(pingServerIfNotActiveCallStopSpy).toHaveBeenCalled();
+      expect(checkTelephonyStopSpy).toHaveBeenCalled();
+      expect(registrationFailedSubscriberUnsubscribeSpy).toHaveBeenCalled();
+
+      hasLimitReachedSpy.mockRestore();
     });
   });
 });

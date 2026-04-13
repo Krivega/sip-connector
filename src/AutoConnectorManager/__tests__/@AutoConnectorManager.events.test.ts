@@ -2,6 +2,7 @@ import delayPromise from '@/__fixtures__/delayPromise';
 import flushPromises from '@/__fixtures__/flushPromises';
 import { doMockSipConnector } from '@/doMock';
 import AutoConnectorManager from '../@AutoConnectorManager';
+import AttemptsState from '../AttemptsState';
 
 import type { SipConnector } from '@/SipConnector';
 import type { IAutoConnectorOptions, TParametersAutoConnect } from '../types';
@@ -58,9 +59,6 @@ describe('AutoConnectorManager - Events', () => {
   afterEach(() => {
     jest.clearAllMocks();
     jest.restoreAllMocks();
-
-    // @ts-ignore приватное свойство
-    manager.attemptsState.limitInner = 30;
   });
 
   describe('changed-attempt-status события', () => {
@@ -124,8 +122,7 @@ describe('AutoConnectorManager - Events', () => {
       manager.on('changed-attempt-status', handleAttemptStatusChanged);
       manager.on('stop-attempts-by-error', () => {});
 
-      // @ts-ignore приватное свойство
-      jest.spyOn(manager.connectionQueueManager, 'connect').mockRejectedValue(error);
+      jest.spyOn(sipConnector.connectionQueueManager, 'connect').mockRejectedValue(error);
 
       manager.start(baseParameters);
 
@@ -139,9 +136,9 @@ describe('AutoConnectorManager - Events', () => {
 
       manager.on('changed-attempt-status', handleAttemptStatusChanged);
 
-      // Устанавливаем лимит попыток = 0 для немедленного срабатывания
-      // @ts-ignore приватное свойство
-      manager.attemptsState.limitInner = 0;
+      const hasLimitReachedSpy = jest
+        .spyOn(AttemptsState.prototype, 'hasLimitReached')
+        .mockReturnValue(true);
 
       manager.start(baseParameters);
 
@@ -152,6 +149,7 @@ describe('AutoConnectorManager - Events', () => {
       manager.start(baseParameters);
 
       expect(handleAttemptStatusChanged).not.toHaveBeenCalled();
+      hasLimitReachedSpy.mockRestore();
     });
 
     it('не вызывает changed-attempt-status при успешном подключении (статус остается true)', async () => {
@@ -211,8 +209,7 @@ describe('AutoConnectorManager - Events', () => {
       await delayPromise(DELAY);
 
       // Останавливаем подключение, чтобы сделать промис неактуальным
-      // @ts-expect-error приватное свойство
-      manager.connectionQueueManager.stop();
+      sipConnector.connectionQueueManager.stop();
 
       await manager.wait('cancelled-attempts');
 
@@ -228,8 +225,7 @@ describe('AutoConnectorManager - Events', () => {
       manager.on('failed-all-attempts', () => {}); // Чтобы не ждать события
 
       // Мокаем ошибку подключения
-      // @ts-ignore приватное свойство
-      jest.spyOn(manager.connectionQueueManager, 'connect').mockRejectedValue(error);
+      jest.spyOn(sipConnector.connectionQueueManager, 'connect').mockRejectedValue(error);
       onBeforeRetryMock.mockRejectedValue(error);
 
       manager.start(baseParameters);

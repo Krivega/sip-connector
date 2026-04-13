@@ -89,16 +89,12 @@ describe('AutoConnectorManager - Reconnection', () => {
   afterEach(() => {
     jest.clearAllMocks();
     jest.restoreAllMocks();
-
-    // @ts-ignore приватное свойство
-    manager.attemptsState.limitInner = 30;
   });
 
   describe('переподключение', () => {
     it('не делает переподключение, если отстутствуют параметры', async () => {
       const reconnectSpy = jest.spyOn(DelayRequester.prototype, 'request');
-      // @ts-ignore приватное свойство
-      const connectSpy = jest.spyOn(manager.connectionQueueManager, 'connect');
+      const connectSpy = jest.spyOn(sipConnector.connectionQueueManager, 'connect');
       const errorGetParameters = new Error('getParameters is failed');
 
       const parametersWithUndefined = {
@@ -128,8 +124,7 @@ describe('AutoConnectorManager - Reconnection', () => {
       const handleCancelled = jest.fn();
 
       const reconnectSpy = jest.spyOn(DelayRequester.prototype, 'request');
-      // @ts-ignore приватное свойство
-      const connectSpy = jest.spyOn(manager.connectionQueueManager, 'connect');
+      const connectSpy = jest.spyOn(sipConnector.connectionQueueManager, 'connect');
 
       // Симулируем долгое подключение
       jest.spyOn(sipConnector.connectionManager, 'connect').mockImplementation(async () => {
@@ -144,8 +139,7 @@ describe('AutoConnectorManager - Reconnection', () => {
       await delayPromise(DELAY);
 
       // Останавливаем подключение, чтобы сделать промис неактуальным
-      // @ts-expect-error приватное свойство
-      manager.connectionQueueManager.stop();
+      sipConnector.connectionQueueManager.stop();
 
       await manager.wait('cancelled-attempts');
 
@@ -155,26 +149,17 @@ describe('AutoConnectorManager - Reconnection', () => {
     });
 
     it('делает переподключение после сетевой ошибки с задержкой', async () => {
-      // @ts-ignore приватное свойство
-      const connectSpy = jest.spyOn(manager.connectionQueueManager, 'connect');
+      const connectSpy = jest.spyOn(sipConnector.connectionQueueManager, 'connect');
       const newError = new Error('Network Error');
 
       connectSpy.mockRejectedValueOnce(newError);
-
-      // @ts-ignore приватное свойство
-      expect(manager.attemptsState.count).toBe(0);
 
       manager.start(baseParameters);
 
       await flushPromises();
 
-      // @ts-ignore приватное свойство
-      expect(manager.attemptsState.count).toBe(1);
-
       await manager.wait('success');
 
-      // @ts-ignore приватное свойство
-      expect(manager.attemptsState.count).toBe(2);
       expect(onBeforeRetryMock).toHaveBeenCalled();
       expect(connectSpy).toHaveBeenCalledTimes(2);
     });

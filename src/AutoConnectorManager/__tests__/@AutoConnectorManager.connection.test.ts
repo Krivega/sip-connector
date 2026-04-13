@@ -58,15 +58,11 @@ describe('AutoConnectorManager - Connection', () => {
   afterEach(() => {
     jest.clearAllMocks();
     jest.restoreAllMocks();
-
-    // @ts-ignore приватное свойство
-    manager.attemptsState.limitInner = 30;
   });
 
   describe('подключение', () => {
     it('вызывает connect с данными из getParameters', async () => {
-      // @ts-expect-error приватное свойство
-      const connectSpy = jest.spyOn(manager.connectionQueueManager, 'connect');
+      const connectSpy = jest.spyOn(sipConnector.connectionQueueManager, 'connect');
 
       manager.start(baseParameters);
 
@@ -90,8 +86,7 @@ describe('AutoConnectorManager - Connection', () => {
         RegistrationFailedOutOfCallSubscriber.prototype,
         'subscribe',
       );
-      // @ts-ignore приватное свойство
-      const connectSpy = jest.spyOn(manager.connectionQueueManager, 'connect');
+      const connectSpy = jest.spyOn(sipConnector.connectionQueueManager, 'connect');
 
       manager.start({
         getParameters: baseParameters.getParameters,
