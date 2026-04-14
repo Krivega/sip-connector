@@ -83,9 +83,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
         },
       },
       reconnectActions: {
-        requestReconnect: (parameters: TParametersAutoConnect, reason: TReconnectReason) => {
-          this.requestReconnect(parameters, reason);
-        },
+        requestReconnect: this.requestReconnect,
         requestFlowRestart: () => {
           this.stateMachine.toFlowRestart();
         },
@@ -121,13 +119,16 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
     this.runtime.cancelPendingRetry();
   }
 
-  private requestReconnect(parameters: TParametersAutoConnect, reason: TReconnectReason) {
+  private readonly requestReconnect = (
+    parameters: TParametersAutoConnect,
+    reason: TReconnectReason,
+  ) => {
     if (!this.shouldRequestReconnect(reason)) {
       return;
     }
 
     this.stateMachine.toRestart(parameters);
-  }
+  };
 
   private shouldRequestReconnect(reason: TReconnectReason) {
     const decision = this.reconnectCoalescer.register(reason);
