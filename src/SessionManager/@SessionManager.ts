@@ -14,54 +14,8 @@ import type { TSessionMachines, TSessionSnapshot } from './types';
 type TEqualityFunction<T> = (previous: T, next: T) => boolean;
 type TSelector<T> = (snapshot: TSessionSnapshot) => T;
 
-const isObjectLike = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === 'object' && value !== null;
-};
-
-const deepEqual = (previous: unknown, next: unknown): boolean => {
-  if (Object.is(previous, next)) {
-    return true;
-  }
-
-  if (!isObjectLike(previous) || !isObjectLike(next)) {
-    return false;
-  }
-
-  const previousIsArray = Array.isArray(previous);
-  const nextIsArray = Array.isArray(next);
-
-  if (previousIsArray !== nextIsArray) {
-    return false;
-  }
-
-  if (previousIsArray && nextIsArray) {
-    if (previous.length !== next.length) {
-      return false;
-    }
-
-    return previous.every((item, index) => {
-      return deepEqual(item, next[index]);
-    });
-  }
-
-  const previousKeys = Object.keys(previous);
-  const nextKeys = Object.keys(next);
-
-  if (previousKeys.length !== nextKeys.length) {
-    return false;
-  }
-
-  return previousKeys.every((key) => {
-    if (!Object.hasOwn(next, key)) {
-      return false;
-    }
-
-    return deepEqual(previous[key], next[key]);
-  });
-};
-
 const defaultEquals = <T>(previous: T, next: T) => {
-  return deepEqual(previous, next);
+  return Object.is(previous, next);
 };
 
 const defaultSnapshotEquals: TEqualityFunction<TSessionSnapshot> = (previous, next) => {

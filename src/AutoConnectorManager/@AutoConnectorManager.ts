@@ -123,7 +123,14 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
     parameters: TParametersAutoConnect,
     reason: TReconnectReason,
   ) => {
-    if (!this.shouldRequestReconnect(reason)) {
+    const isAvailableToRestart = this.shouldRequestReconnect(reason);
+
+    logger('auto connector request reconnect', {
+      isAvailableToRestart,
+      reason,
+    });
+
+    if (!isAvailableToRestart) {
       return;
     }
 

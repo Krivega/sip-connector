@@ -88,7 +88,8 @@ const selectSystemStatus = (snapshot: TSessionSnapshot): ESystemStatus => {
   if (
     autoConnectorStatus === EAutoConnectorStatus.ATTEMPTING_CONNECT ||
     autoConnectorStatus === EAutoConnectorStatus.ATTEMPTING_GATE ||
-    autoConnectorStatus === EAutoConnectorStatus.WAITING_BEFORE_RETRY
+    autoConnectorStatus === EAutoConnectorStatus.WAITING_BEFORE_RETRY ||
+    autoConnectorStatus === EAutoConnectorStatus.CONNECTED_MONITORING
   ) {
     return ESystemStatus.CONNECTING;
   }
