@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [27.0.0](https://github.com/Krivega/sip-connector/compare/v26.22.0...v27.0.0) (2026-04-14)
+
+### ⚠ BREAKING CHANGES
+
+- remove FLOW.RESTART; rely on JsSIP for reconnect on ping failure
+- remove network and sleep resume subscribers from AutoConnectorManager
+- **AutoConnectorManager:** remove onBeforeRetry functionality and related references to simplify connection retry logic
+
+### Features
+
+- **AutoConnectorManager:** add restart method for manual reconnection and update documentation ([061fd1a](https://github.com/Krivega/sip-connector/commit/061fd1a4c9a9bdf5dc532a73efef296ee3e833e8))
+- **AutoConnectorManager:** add shouldDisconnectBeforeAttempt method to manage disconnection logic before connection attempts ([d3f93e0](https://github.com/Krivega/sip-connector/commit/d3f93e067f1166017f5dd2e00aaa7212fc0f2f0f))
+- **ConnectionManager:** add UA_CONNECTING event to state machine and update documentation for connection transitions ([a12f8c7](https://github.com/Krivega/sip-connector/commit/a12f8c73d629e58452b2d72f28e39ded168570c7))
+- **ConnectionManager:** enhance state machine to manage registerRequired flag for connection transitions ([9cafbd7](https://github.com/Krivega/sip-connector/commit/9cafbd706f1950feb98e078c8e68c33e614ef8a6))
+- **ConnectionManager:** introduce applyRegisterRequiredFromMachineEvent function and add integration tests for registerRequired context handling ([eeb996d](https://github.com/Krivega/sip-connector/commit/eeb996de6a2558e2c912c6f9666f84ef525ca4be))
+- remove FLOW.RESTART; rely on JsSIP for reconnect on ping failure ([602d84b](https://github.com/Krivega/sip-connector/commit/602d84b3d8f3deb7666e94173322fffaac54b93a))
+- **SessionManager:** add selectAutoConnectorStatus selector to manage auto connector state ([936d01c](https://github.com/Krivega/sip-connector/commit/936d01cb96f5f52eca41b79d8f5b973cc86974cb))
+- **SessionManager:** implement deep equality check for snapshots and optimize subscriber notifications ([170d531](https://github.com/Krivega/sip-connector/commit/170d531163b200f79b7023317f4812daca5c4d77))
+
+### Bug Fixes
+
+- **ConnectionManager:** enhance disconnect logic to handle requested disconnections ([b24c060](https://github.com/Krivega/sip-connector/commit/b24c06055bf86f7905c4f1d6ba8167b9321873d8))
+- remove network and sleep resume subscribers from AutoConnectorManager ([d7ed527](https://github.com/Krivega/sip-connector/commit/d7ed52781f5f89802d787c511a3ebf6d6ec5be40))
+- **SessionManager:** handle autoConnector disconnecting in system status ([89932a1](https://github.com/Krivega/sip-connector/commit/89932a10a8b484f20beae07611f557ed12d19fa4))
+- **SessionManager:** refine system status logic for CONNECTING state based on connection establishment ([1d89604](https://github.com/Krivega/sip-connector/commit/1d89604b8a790f2362c2e2257c86b3402a0ae575))
+- **SessionManager:** update system status logic to include CONNECTING state for autoConnector.CONNECTED_MONITORING ([8fa5812](https://github.com/Krivega/sip-connector/commit/8fa5812044d90ae3cbf0938aea220bcf71757847))
+- **Statuses:** update onStatusesChange to use selectAutoConnectorStatus for improved state management ([67311ed](https://github.com/Krivega/sip-connector/commit/67311ed3bbf76ff2afb1b0b7bc2d0bb024641d84))
+
+- **AutoConnectorManager:** remove onBeforeRetry functionality and related references to simplify connection retry logic ([cee0ccb](https://github.com/Krivega/sip-connector/commit/cee0ccbd31f9cccbdfb7d6e30aeddcbbbd8ec55e))
+
 ## [26.22.0](https://github.com/Krivega/sip-connector/compare/v26.21.0...v26.22.0) (2026-04-13)
 
 ### Features
