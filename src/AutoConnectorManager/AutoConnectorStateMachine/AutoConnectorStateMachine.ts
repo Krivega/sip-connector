@@ -1,8 +1,11 @@
+import resolveDebug from '@/logger';
 import { BaseStateMachine } from '@/tools/BaseStateMachine';
 import { createAutoConnectorMachine } from './createAutoConnectorMachine';
 
 import type { EState, TAutoConnectorContext, TAutoConnectorEvent } from './types';
 import type { TParametersAutoConnect } from '../types';
+
+const debug = resolveDebug('AutoConnectorStateMachine');
 
 type TMachine = ReturnType<typeof createAutoConnectorMachine>;
 
@@ -25,8 +28,7 @@ export class AutoConnectorStateMachine extends BaseStateMachine<
     const snapshot = this.actor.getSnapshot();
 
     if (!snapshot.can(event)) {
-      // eslint-disable-next-line no-console
-      console.warn(
+      debug(
         `[AutoConnectorStateMachine] Invalid transition: ${event.type} from ${String(this.state)}. Event cannot be processed in current state.`,
       );
 

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/class-methods-use-this */
 import { Events } from 'events-constructor';
 
+import resolveDebug from '@/logger';
 import { SESSION_JSSIP_EVENT_NAMES } from './eventNames';
 
 import type {
@@ -22,6 +23,8 @@ import type {
   RTCSessionEventMap,
   TDegradationPreference,
 } from '@krivega/jssip';
+
+const debug = resolveDebug('BaseSession.mock');
 
 export type TEventHandlers = Record<string, (data: unknown) => void>;
 
@@ -199,8 +202,7 @@ class BaseSession implements RTCSession {
   }
 
   public removeAllListeners(_event?: string | symbol): this {
-    // eslint-disable-next-line no-console
-    console.warn('Method not implemented. Event:', _event);
+    debug('Method not implemented. Event:', _event);
 
     return this;
   }

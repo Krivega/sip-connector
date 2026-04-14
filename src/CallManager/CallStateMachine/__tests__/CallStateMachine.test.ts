@@ -1,4 +1,6 @@
+import { createLoggerMockModule } from '@/__fixtures__/logger.mock';
 import { createApiManagerEvents } from '@/ApiManager';
+import resolveDebug from '@/logger';
 import { PURGATORY_CONFERENCE_NUMBER } from '@/tools/hasPurgatory';
 import { createEvents } from '../../events';
 import { createCallStateMachine } from '../CallStateMachine';
@@ -9,6 +11,12 @@ import type { TApiManagerEvents } from '@/ApiManager';
 import type { TEventName, TEvents } from '../../events';
 import type { ICallStateMachine } from '../CallStateMachine';
 import type { createCallMachine } from '../createCallMachine';
+
+jest.mock('@/logger', () => {
+  return createLoggerMockModule();
+});
+
+const mockDebug = (resolveDebug as jest.Mock).mock.results[0].value as jest.Mock;
 
 describe('CallStateMachine', () => {
   let apiManagerEvents: TApiManagerEvents;
@@ -45,6 +53,7 @@ describe('CallStateMachine', () => {
   };
 
   beforeEach(() => {
+    mockDebug.mockClear();
     apiManagerEvents = createApiManagerEvents();
     events = createEvents();
     machine = createCallStateMachine(events);
@@ -1202,43 +1211,33 @@ describe('CallStateMachine', () => {
 
   describe('Валидация переходов', () => {
     it('должен игнорировать недопустимые переходы с предупреждением', () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-
       machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
 
       expect(machine.state).toBe(EState.IDLE);
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining('Invalid transition: CALL.ENTER_ROOM from call:idle'),
       );
-
-      consoleSpy.mockRestore();
     });
 
     it('должен игнорировать повторные CALL.CONNECTING в CONNECTING', () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-
       machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
       expect(machine.state).toBe(EState.CONNECTING);
 
       machine.send({ type: 'CALL.CONNECTING', number: '200', answer: true });
 
       expect(machine.state).toBe(EState.CONNECTING);
-      expect(consoleSpy).toHaveBeenCalled();
-
-      consoleSpy.mockRestore();
+      expect(mockDebug).toHaveBeenCalledWith(
+        expect.stringContaining('Invalid transition: CALL.CONNECTING'),
+      );
     });
 
     it('должен игнорировать CALL.TOKEN_ISSUED в IDLE', () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-
       machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
 
       expect(machine.state).toBe(EState.IDLE);
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining('Invalid transition: CALL.TOKEN_ISSUED from call:idle'),
       );
-
-      consoleSpy.mockRestore();
     });
   });
 

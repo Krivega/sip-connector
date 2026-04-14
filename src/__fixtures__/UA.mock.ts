@@ -3,6 +3,7 @@ import { EventEmitter } from 'node:events';
 import { C, URI } from '@krivega/jssip';
 import { Events } from 'events-constructor';
 
+import resolveDebug from '@/logger';
 import { UA_JSSIP_EVENT_NAMES } from './eventNames';
 import Registrator from './Registrator.mock';
 import RTCSessionMock from './RTCSessionMock';
@@ -21,6 +22,8 @@ import type {
 } from '@krivega/jssip';
 import type Message from '@krivega/jssip/src/Message';
 import type { TEventHandlers } from './BaseSession.mock';
+
+const debug = resolveDebug('UA.mock');
 
 export const PASSWORD_CORRECT = 'PASSWORD_CORRECT';
 export const PASSWORD_CORRECT_2 = 'PASSWORD_CORRECT_2';
@@ -86,8 +89,7 @@ class UA extends EventEmitter implements IUA {
 
   public sendOptions = jest.fn(
     (target: string, body?: string, options?: Record<string, unknown>) => {
-      // eslint-disable-next-line no-console
-      console.log('sendOptions', target, body, options);
+      debug('sendOptions', target, body, options);
     },
   );
 

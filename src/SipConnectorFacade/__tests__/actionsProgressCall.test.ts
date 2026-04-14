@@ -69,10 +69,7 @@ describe('actionsProgressCall', () => {
           onFinishProgressCall,
         });
       })
-      .catch((error: unknown) => {
-        // eslint-disable-next-line no-console
-        console.log(error);
-      })
+      .catch(() => {})
       .finally(() => {
         expect(onBeforeProgressCall.mock.calls.length).toBe(1);
         expect(onSuccessProgressCall.mock.calls.length).toBe(0);

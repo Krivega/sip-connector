@@ -430,8 +430,7 @@ export class IncomingCallStateMachine extends BaseStateMachine<
     const snapshot = this.actor.getSnapshot();
 
     if (!snapshot.can(event)) {
-      // eslint-disable-next-line no-console
-      console.warn(
+      debug(
         `[IncomingCallStateMachine] Invalid transition: ${event.type} from ${this.state}. Event cannot be processed in current state.`,
       );
 

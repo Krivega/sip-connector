@@ -1,9 +1,12 @@
 import { assign, setup } from 'xstate';
 
+import resolveDebug from '@/logger';
 import { BaseStateMachine } from '@/tools/BaseStateMachine';
 
 import type { TApiManagerEvents, EContentedStreamCodec } from '@/ApiManager';
 import type { TContentedStreamStateInfo } from './types';
+
+const debug = resolveDebug('ContentedStreamStateMachine');
 
 export enum EState {
   NOT_AVAILABLE = 'contented-stream:not-available',
@@ -105,8 +108,7 @@ export class ContentedStreamStateMachine extends BaseStateMachine<
     const snapshot = this.actor.getSnapshot();
 
     if (!snapshot.can(event)) {
-      // eslint-disable-next-line no-console
-      console.warn(
+      debug(
         `[ContentedStreamStateMachine] Invalid transition: ${event.type} from ${this.state}. Event cannot be processed in current state.`,
       );
 

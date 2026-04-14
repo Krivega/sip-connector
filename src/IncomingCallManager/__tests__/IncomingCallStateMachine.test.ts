@@ -1,11 +1,19 @@
+import { createLoggerMockModule } from '@/__fixtures__/logger.mock';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { createEvents as createConnectionEvents } from '@/ConnectionManager';
+import resolveDebug from '@/logger';
 import { createEvents as createIncomingEvents } from '../events';
 import { IncomingCallStateMachine, EState } from '../IncomingCallStateMachine';
 
 import type { Socket } from '@krivega/jssip';
 import type { TConnectionManagerEvents } from '@/ConnectionManager';
 import type { TEvents as TIncomingEvents, TRemoteCallerData } from '../events';
+
+jest.mock('@/logger', () => {
+  return createLoggerMockModule();
+});
+
+const mockDebug = (resolveDebug as jest.Mock).mock.results[0].value as jest.Mock;
 
 describe('IncomingCallStateMachine', () => {
   let incomingEvents: TIncomingEvents;
@@ -20,6 +28,7 @@ describe('IncomingCallStateMachine', () => {
   };
 
   beforeEach(() => {
+    mockDebug.mockClear();
     incomingEvents = createIncomingEvents();
     connectionEvents = createConnectionEvents();
     machine = new IncomingCallStateMachine({
@@ -309,21 +318,11 @@ describe('IncomingCallStateMachine', () => {
   });
 
   describe('Валидация переходов', () => {
-    let consoleSpy: jest.SpyInstance;
-
-    beforeEach(() => {
-      consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-    });
-
-    afterEach(() => {
-      consoleSpy.mockRestore();
-    });
-
     it('предупреждает при попытке IDLE → CONSUMED', () => {
       machine.send({ type: 'INCOMING.CONSUMED' });
 
       expect(machine.state).toBe(EState.IDLE);
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining(
           '[IncomingCallStateMachine] Invalid transition: INCOMING.CONSUMED from incoming:idle',
         ),
@@ -334,7 +333,7 @@ describe('IncomingCallStateMachine', () => {
       machine.send({ type: 'INCOMING.DECLINED', data: sampleCaller });
 
       expect(machine.state).toBe(EState.IDLE);
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining(
           '[IncomingCallStateMachine] Invalid transition: INCOMING.DECLINED from incoming:idle',
         ),
@@ -347,7 +346,7 @@ describe('IncomingCallStateMachine', () => {
       machine.send({ type: 'INCOMING.DECLINED', data: sampleCaller });
 
       expect(machine.state).toBe(EState.CONSUMED);
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining(
           '[IncomingCallStateMachine] Invalid transition: INCOMING.DECLINED from incoming:consumed',
         ),
@@ -360,7 +359,7 @@ describe('IncomingCallStateMachine', () => {
       machine.send({ type: 'INCOMING.CONSUMED' });
 
       expect(machine.state).toBe(EState.CONSUMED);
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining(
           '[IncomingCallStateMachine] Invalid transition: INCOMING.CONSUMED from incoming:consumed',
         ),
@@ -372,7 +371,7 @@ describe('IncomingCallStateMachine', () => {
       machine.send({ type: 'INCOMING.CONSUMED' });
       machine.send({ type: 'INCOMING.CLEAR' });
 
-      expect(consoleSpy).not.toHaveBeenCalled();
+      expect(mockDebug).not.toHaveBeenCalledWith(expect.stringContaining('Invalid transition:'));
     });
   });
 
@@ -491,17 +490,13 @@ describe('IncomingCallStateMachine', () => {
     });
 
     it('валидация работает через события ConnectionManager', () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-
       // Попытка перейти в CONSUMED напрямую из IDLE через событие
       machine.send({ type: 'INCOMING.CONSUMED' });
 
       expect(machine.state).toBe(EState.IDLE);
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining('[IncomingCallStateMachine] Invalid transition'),
       );
-
-      consoleSpy.mockRestore();
     });
   });
 

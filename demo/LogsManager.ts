@@ -1,8 +1,11 @@
 import { dom } from './dom';
 import { renderJsonNode } from './jsonRenderer';
+import resolveDebug from './logger';
 import sipConnectorFacade from './Session/sipConnectorFacade';
 
 import type { TEventName } from '@/SipConnector/events';
+
+const debug = resolveDebug('LogsManager');
 
 type TLog = {
   name: string;
@@ -126,8 +129,7 @@ class LogsManager {
         try {
           eventParsed = this.safeSerialize(event);
         } catch {
-          // eslint-disable-next-line no-console
-          console.warn('fail parse event', event);
+          debug('fail parse event', event);
           eventParsed = 'parsing error';
         }
 

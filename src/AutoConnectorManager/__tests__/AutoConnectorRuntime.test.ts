@@ -6,7 +6,7 @@ jest.mock('@/logger', () => {
   return createLoggerMockModule();
 });
 
-const autoConnectorRuntimeDebug = (resolveDebug as jest.Mock).mock.results[0].value as jest.Mock;
+const mockDebug = (resolveDebug as jest.Mock).mock.results[0].value as jest.Mock;
 
 describe('AutoConnectorRuntime', () => {
   const createRuntime = ({
@@ -56,7 +56,7 @@ describe('AutoConnectorRuntime', () => {
       lastError: new Error('unexpected'),
     });
 
-    expect(autoConnectorRuntimeDebug).toHaveBeenCalledWith(
+    expect(mockDebug).toHaveBeenCalledWith(
       'emitTerminalOutcome without stopReason',
       expect.any(Error),
     );

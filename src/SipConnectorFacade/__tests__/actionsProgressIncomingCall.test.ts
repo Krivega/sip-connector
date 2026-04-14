@@ -82,9 +82,8 @@ describe('actionsProgressIncomingCall', () => {
             onFailProgressCall,
             onFinishProgressCall,
           });
-        } catch (error) {
-          // eslint-disable-next-line no-console
-          console.log(error);
+        } catch {
+          /* empty */
         } finally {
           expect(onBeforeProgressCall.mock.calls.length).toBe(1);
           expect(onSuccessProgressCall.mock.calls.length).toBe(0);

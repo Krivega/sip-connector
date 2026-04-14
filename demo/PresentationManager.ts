@@ -1,11 +1,13 @@
-/* eslint-disable no-console */
 import { dom } from './dom';
+import resolveDebug from './logger';
 import sipConnectorFacade from './Session/sipConnectorFacade';
 
 import type VideoPlayer from './VideoPlayer';
 
 type TState = 'idle' | 'ready' | 'starting' | 'started' | 'stopping';
 type TStressTestingState = 'started' | 'stopped';
+
+const debug = resolveDebug('PresentationManager');
 
 class PresentationManager {
   private state: TState = 'idle';
@@ -103,7 +105,7 @@ class PresentationManager {
     }
 
     this.stop().catch((error: unknown) => {
-      console.log('failed to stop presentation', error);
+      debug('failed to stop presentation', error);
     });
   };
 
@@ -115,7 +117,7 @@ class PresentationManager {
     this.updateUi();
 
     this.start().catch((error: unknown) => {
-      console.log('failed to start presentation', error);
+      debug('failed to start presentation', error);
     });
   };
 
@@ -129,10 +131,10 @@ class PresentationManager {
 
     this.startStressTesting()
       .then(() => {
-        console.log('stress testing presentation has successful');
+        debug('stress testing presentation has successful');
       })
       .catch((error: unknown) => {
-        console.log('failed to start presentation', error);
+        debug('failed to start presentation', error);
       })
       .finally(() => {
         this.setStoppedStressTesting();
@@ -146,7 +148,7 @@ class PresentationManager {
     }
 
     this.stopStressTesting().catch((error: unknown) => {
-      console.log('failed to stop stress testing presentation', error);
+      debug('failed to stop stress testing presentation', error);
     });
   };
 
@@ -179,7 +181,7 @@ class PresentationManager {
       const clonedTrack = sourceVideoTrack.clone(); // ключевой момент
       const attemptStream = new MediaStream([clonedTrack]);
 
-      console.log('stress testing - attempt:', attemptsCount);
+      debug('stress testing - attempt:', attemptsCount);
 
       await this.startByMediaStream({ presentationStream: attemptStream });
 
@@ -238,7 +240,7 @@ class PresentationManager {
       this.setStarted();
       this.updateUi();
 
-      console.log('presentation started');
+      debug('presentation started');
     } catch (error: unknown) {
       this.resetPresentation();
 
@@ -330,7 +332,7 @@ class PresentationManager {
     try {
       await sipConnectorFacade.stopPresentation();
 
-      console.log('presentation stopped');
+      debug('presentation stopped');
     } finally {
       this.resetPresentation();
     }

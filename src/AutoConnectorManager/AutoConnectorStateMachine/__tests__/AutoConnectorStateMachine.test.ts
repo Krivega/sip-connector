@@ -1,7 +1,15 @@
+import { createLoggerMockModule } from '@/__fixtures__/logger.mock';
+import resolveDebug from '@/logger';
 import { AutoConnectorStateMachine } from '../AutoConnectorStateMachine';
 import { createAutoConnectorMachine } from '../createAutoConnectorMachine';
 
 import type { TParametersAutoConnect } from '../../types';
+
+jest.mock('@/logger', () => {
+  return createLoggerMockModule();
+});
+
+const mockDebug = (resolveDebug as jest.Mock).mock.results[0].value as jest.Mock;
 
 const parameters: TParametersAutoConnect = {
   getParameters: async () => {
@@ -38,14 +46,18 @@ const minimalDeps = (): Parameters<typeof createAutoConnectorMachine>[0] => {
 };
 
 describe('AutoConnectorStateMachine', () => {
+  beforeEach(() => {
+    mockDebug.mockClear();
+  });
+
   it('не отправляет событие, если переход недопустим', () => {
-    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
     const sm = new AutoConnectorStateMachine(createAutoConnectorMachine(minimalDeps()));
 
     sm.send({ type: 'TELEPHONY.RESULT', outcome: 'stillConnected' });
 
-    expect(warnSpy).toHaveBeenCalled();
-    warnSpy.mockRestore();
+    expect(mockDebug).toHaveBeenCalledWith(
+      expect.stringContaining('[AutoConnectorStateMachine] Invalid transition: TELEPHONY.RESULT'),
+    );
   });
 
   it('отправляет допустимое событие', () => {

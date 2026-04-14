@@ -2,9 +2,11 @@
 import 'webrtc-adapter';
 
 import App from './App';
+import resolveDebug from './logger';
+
+const debug = resolveDebug('demo:index');
 
 // Инициализация приложения
 const app = new App();
 
-// eslint-disable-next-line no-console
-console.log('App initialized:', app);
+debug('App initialized:', app);

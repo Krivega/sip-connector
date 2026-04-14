@@ -1,13 +1,22 @@
+import { createLoggerMockModule } from '@/__fixtures__/logger.mock';
 import { createApiManagerEvents, EContentedStreamCodec } from '@/ApiManager';
+import resolveDebug from '@/logger';
 import { ContentedStreamStateMachine, EState } from '../ContentedStreamStateMachine';
 
 import type { TApiManagerEvents } from '@/ApiManager';
+
+jest.mock('@/logger', () => {
+  return createLoggerMockModule();
+});
+
+const mockDebug = (resolveDebug as jest.Mock).mock.results[0].value as jest.Mock;
 
 describe('ContentedStreamStateMachine', () => {
   let apiManagerEvents: TApiManagerEvents;
   let machine: ContentedStreamStateMachine;
 
   beforeEach(() => {
+    mockDebug.mockClear();
     apiManagerEvents = createApiManagerEvents();
     machine = new ContentedStreamStateMachine();
     machine.subscribeToApiEvents(apiManagerEvents);
@@ -177,44 +186,34 @@ describe('ContentedStreamStateMachine', () => {
 
   describe('Валидация переходов', () => {
     it('должен игнорировать недопустимые переходы с предупреждением', () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-
       // Попытка перейти из NOT_AVAILABLE в NOT_AVAILABLE
       machine.send({ type: 'CONTENTED_STREAM.NOT_AVAILABLE' });
 
       expect(machine.state).toBe(EState.NOT_AVAILABLE);
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining(
           'Invalid transition: CONTENTED_STREAM.NOT_AVAILABLE from contented-stream:not-available',
         ),
       );
-
-      consoleSpy.mockRestore();
     });
 
     it('должен игнорировать повторные CONTENTED_STREAM.AVAILABLE в AVAILABLE', () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-
       machine.send({ type: 'CONTENTED_STREAM.AVAILABLE', codec: EContentedStreamCodec.H264 });
       expect(machine.state).toBe(EState.AVAILABLE);
 
       // Повторное available должно быть допустимо для обновления codec
       machine.send({ type: 'CONTENTED_STREAM.AVAILABLE', codec: EContentedStreamCodec.VP8 });
       expect(machine.state).toBe(EState.AVAILABLE);
-      expect(consoleSpy).not.toHaveBeenCalled();
-
-      consoleSpy.mockRestore();
+      expect(mockDebug).not.toHaveBeenCalled();
     });
 
     it('должен запрещать прямой переход из NOT_AVAILABLE в NOT_AVAILABLE', () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-
       machine.send({ type: 'CONTENTED_STREAM.NOT_AVAILABLE' });
 
       expect(machine.state).toBe(EState.NOT_AVAILABLE);
-      expect(consoleSpy).toHaveBeenCalled();
-
-      consoleSpy.mockRestore();
+      expect(mockDebug).toHaveBeenCalledWith(
+        expect.stringContaining('Invalid transition: CONTENTED_STREAM.NOT_AVAILABLE'),
+      );
     });
   });
 
@@ -231,14 +230,12 @@ describe('ContentedStreamStateMachine', () => {
     });
 
     it('должен игнорировать RESET в NOT_AVAILABLE', () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-
       machine.reset();
 
       expect(machine.state).toBe(EState.NOT_AVAILABLE);
-      expect(consoleSpy).toHaveBeenCalled();
-
-      consoleSpy.mockRestore();
+      expect(mockDebug).toHaveBeenCalledWith(
+        expect.stringContaining('Invalid transition: CONTENTED_STREAM.RESET'),
+      );
     });
   });
 
@@ -255,11 +252,10 @@ describe('ContentedStreamStateMachine', () => {
       machine.send({ type: 'CONTENTED_STREAM.NOT_AVAILABLE' });
 
       // RESET из NOT_AVAILABLE игнорируется, так как уже в этом состоянии
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-
       machine.reset();
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(mockDebug).toHaveBeenCalledWith(
+        expect.stringContaining('Invalid transition: CONTENTED_STREAM.RESET'),
+      );
 
       expect(states).toEqual([
         EState.AVAILABLE,
@@ -349,14 +345,12 @@ describe('ContentedStreamStateMachine', () => {
     });
 
     it('должен игнорировать недопустимые события через валидацию', () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-
       // Попытка not-available в NOT_AVAILABLE состоянии (недопустимо)
       apiManagerEvents.trigger('contented-stream:not-available');
       expect(machine.state).toBe(EState.NOT_AVAILABLE);
-      expect(consoleSpy).toHaveBeenCalled();
-
-      consoleSpy.mockRestore();
+      expect(mockDebug).toHaveBeenCalledWith(
+        expect.stringContaining('Invalid transition: CONTENTED_STREAM.NOT_AVAILABLE'),
+      );
     });
 
     it('должен корректно обрабатывать последовательные события available', () => {

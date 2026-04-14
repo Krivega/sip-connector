@@ -1,7 +1,10 @@
 import { dom } from '../dom';
 import sipConnectorFacade from './sipConnectorFacade';
+import resolveDebug from '../logger';
 
 import type { TRecvQuality } from '@/index';
+
+const debug = resolveDebug('demo:Session:RecvQualityManager');
 
 function getCheckedRecvQuality(container: HTMLFieldSetElement): TRecvQuality | undefined {
   const input = container.querySelector<HTMLInputElement>('input[name="recvQuality"]:checked');
@@ -77,8 +80,7 @@ class RecvQualityManager {
         }
       })
       .catch((error: unknown) => {
-        // eslint-disable-next-line no-console
-        console.log('setRecvQuality error:', error);
+        debug('setRecvQuality error:', error);
 
         dom.recvQualityStatusElement.textContent = 'Ошибка применения качества';
       })

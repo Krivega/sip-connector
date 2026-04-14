@@ -1,9 +1,17 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 
+import { createLoggerMockModule } from '@/__fixtures__/logger.mock';
 import { createEvents as createCallEvents } from '@/CallManager';
+import resolveDebug from '@/logger';
 import { PresentationStateMachine, EState } from '../PresentationStateMachine';
 
 import type { TCallEvents } from '@/CallManager';
+
+jest.mock('@/logger', () => {
+  return createLoggerMockModule();
+});
+
+const mockDebug = (resolveDebug as jest.Mock).mock.results[0].value as jest.Mock;
 
 describe('PresentationStateMachine', () => {
   let callEvents: TCallEvents;
@@ -15,6 +23,7 @@ describe('PresentationStateMachine', () => {
   };
 
   beforeEach(() => {
+    mockDebug.mockClear();
     callEvents = createCallEvents();
     machine = new PresentationStateMachine(callEvents);
     mediaStream = createMediaStreamMock({
@@ -368,21 +377,11 @@ describe('PresentationStateMachine', () => {
   });
 
   describe('Валидация переходов', () => {
-    let consoleSpy: jest.SpyInstance;
-
-    beforeEach(() => {
-      consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-    });
-
-    afterEach(() => {
-      consoleSpy.mockRestore();
-    });
-
     it('предупреждает при попытке IDLE → ACTIVE', () => {
       machine.send({ type: 'SCREEN.STARTED' });
 
       expect(machine.state).toBe(EState.IDLE);
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining(
           '[PresentationStateMachine] Invalid transition: SCREEN.STARTED from presentation:idle',
         ),
@@ -394,7 +393,7 @@ describe('PresentationStateMachine', () => {
       machine.send({ type: 'SCREEN.ENDING' });
 
       expect(machine.state).toBe(EState.STARTING);
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining(
           '[PresentationStateMachine] Invalid transition: SCREEN.ENDING from presentation:starting',
         ),
@@ -406,7 +405,7 @@ describe('PresentationStateMachine', () => {
       machine.send({ type: 'SCREEN.STARTING' });
 
       expect(machine.state).toBe(EState.STARTING);
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining(
           '[PresentationStateMachine] Invalid transition: SCREEN.STARTING from presentation:starting',
         ),
@@ -419,7 +418,7 @@ describe('PresentationStateMachine', () => {
       machine.send({ type: 'SCREEN.STARTING' });
 
       expect(machine.state).toBe(EState.ACTIVE);
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining(
           '[PresentationStateMachine] Invalid transition: SCREEN.STARTING from presentation:active',
         ),
@@ -432,7 +431,7 @@ describe('PresentationStateMachine', () => {
       machine.send({ type: 'SCREEN.ENDING' });
       machine.send({ type: 'SCREEN.ENDED' });
 
-      expect(consoleSpy).not.toHaveBeenCalled();
+      expect(mockDebug).not.toHaveBeenCalledWith(expect.stringContaining('Invalid transition:'));
     });
   });
 
@@ -456,34 +455,26 @@ describe('PresentationStateMachine', () => {
     });
 
     it('игнорирует RESET в IDLE', () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-
       machine.send({ type: 'PRESENTATION.RESET' });
       expect(machine.state).toBe(EState.IDLE);
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining(
           '[PresentationStateMachine] Invalid transition: PRESENTATION.RESET from presentation:idle',
         ),
       );
-
-      consoleSpy.mockRestore();
     });
 
     it('игнорирует RESET в ACTIVE', () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-
       machine.send({ type: 'SCREEN.STARTING' });
       machine.send({ type: 'SCREEN.STARTED' });
       machine.send({ type: 'PRESENTATION.RESET' });
 
       expect(machine.state).toBe(EState.ACTIVE);
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining(
           '[PresentationStateMachine] Invalid transition: PRESENTATION.RESET from presentation:active',
         ),
       );
-
-      consoleSpy.mockRestore();
     });
   });
 
@@ -559,17 +550,13 @@ describe('PresentationStateMachine', () => {
     });
 
     it('валидация работает через события CallManager', () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-
       // Попытка перейти в ACTIVE напрямую из IDLE
       callEvents.trigger('presentation:started', mediaStream);
 
       expect(machine.state).toBe(EState.IDLE);
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining('[PresentationStateMachine] Invalid transition'),
       );
-
-      consoleSpy.mockRestore();
     });
 
     it('CALL.FAILED корректно обрабатывается в разных состояниях', () => {

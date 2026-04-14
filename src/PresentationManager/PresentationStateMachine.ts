@@ -407,8 +407,7 @@ export class PresentationStateMachine extends BaseStateMachine<
     const snapshot = this.actor.getSnapshot();
 
     if (!snapshot.can(event)) {
-      // eslint-disable-next-line no-console
-      console.warn(
+      debug(
         `[PresentationStateMachine] Invalid transition: ${event.type} from ${this.state}. Event cannot be processed in current state.`,
       );
 

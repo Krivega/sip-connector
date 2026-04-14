@@ -1,3 +1,4 @@
+import resolveDebug from '@/logger';
 import { BaseStateMachine } from '@/tools/BaseStateMachine';
 import { createCallMachine } from './createCallMachine';
 import { shouldResetInRoomCredentialsPrevious } from './inRoomCredentialsPreviousReset';
@@ -6,6 +7,8 @@ import { EState } from './types';
 import type { TApiManagerEvents } from '@/ApiManager';
 import type { TEvents } from '../events';
 import type { TBaseContext, TContextMap } from './types';
+
+const debug = resolveDebug('CallStateMachine');
 
 type TContext = {
   raw: TBaseContext;
@@ -296,8 +299,7 @@ class CallStateMachine extends BaseStateMachine<TMachine, EState, TContext, TSna
     const snapshot = this.actor.getSnapshot();
 
     if (!snapshot.can(event)) {
-      // eslint-disable-next-line no-console
-      console.warn(
+      debug(
         `[CallStateMachine] Invalid transition: ${event.type} from ${this.state}. Event cannot be processed in current state.`,
       );
 
