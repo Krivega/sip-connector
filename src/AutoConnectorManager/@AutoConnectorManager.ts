@@ -108,8 +108,16 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
     this.requestReconnect(parameters, START_REASON);
   }
 
-  public restart(parameters: TParametersAutoConnect) {
+  public restart() {
     debug('auto connector restart');
+
+    const { parameters } = this.stateMachine.context;
+
+    if (!parameters) {
+      debug('auto connector restart skipped: no parameters in context');
+
+      return;
+    }
 
     this.requestReconnect(parameters, MANUAL_RESTART_REASON);
   }

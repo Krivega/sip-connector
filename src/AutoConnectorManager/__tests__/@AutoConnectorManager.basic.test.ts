@@ -118,10 +118,25 @@ describe('AutoConnectorManager - Basic', () => {
       expect(mcuDebugLogger).toHaveBeenCalled();
     });
 
-    it('restart: запускает процесс подключения из idle', async () => {
+    it('restart: no-op без предшествующего start (нет parameters в контексте)', async () => {
       expect(sipConnector.isConfigured()).toBe(false);
 
-      manager.restart(baseParameters);
+      manager.restart();
+
+      await delayPromise(10);
+
+      expect(sipConnector.isConfigured()).toBe(false);
+    });
+
+    it('restart: запускает процесс подключения из idle, переиспользуя parameters из контекста', async () => {
+      manager.start(baseParameters);
+      await flushPromises();
+      manager.stop();
+      await flushPromises();
+
+      expect(sipConnector.isConfigured()).toBe(false);
+
+      manager.restart();
 
       await delayPromise(10);
 
@@ -135,7 +150,7 @@ describe('AutoConnectorManager - Basic', () => {
       await manager.wait('success');
       jest.clearAllMocks();
 
-      manager.restart(baseParameters);
+      manager.restart();
       await flushPromises();
 
       expect(disconnectSpy).toHaveBeenCalled();
@@ -206,7 +221,7 @@ describe('AutoConnectorManager - Basic', () => {
       manager.stop();
 
       expect(() => {
-        manager.restart(baseParameters);
+        manager.restart();
       }).not.toThrow();
     });
   });
