@@ -118,6 +118,29 @@ describe('AutoConnectorManager - Basic', () => {
       expect(mcuDebugLogger).toHaveBeenCalled();
     });
 
+    it('restart: запускает процесс подключения из idle', async () => {
+      expect(sipConnector.isConfigured()).toBe(false);
+
+      manager.restart(baseParameters);
+
+      await delayPromise(10);
+
+      expect(sipConnector.isConfigured()).toBe(true);
+    });
+
+    it('restart: делает disconnect, если вызван в connectedMonitoring', async () => {
+      const disconnectSpy = jest.spyOn(sipConnector.connectionQueueManager, 'disconnect');
+
+      manager.start(baseParameters);
+      await manager.wait('success');
+      jest.clearAllMocks();
+
+      manager.restart(baseParameters);
+      await flushPromises();
+
+      expect(disconnectSpy).toHaveBeenCalled();
+    });
+
     it('stop: останавливает все процессы', async () => {
       const connectQueueStopSpy = jest.spyOn(ConnectionQueueManager.prototype, 'stop');
       const delayBetweenAttemptsCancelRequestSpy = jest.spyOn(
@@ -170,6 +193,21 @@ describe('AutoConnectorManager - Basic', () => {
       manager.stop();
 
       expect(mcuDebugLogger).toHaveBeenCalled();
+    });
+
+    it('restart: не должен бросать ошибку, если вызван во время остановки', async () => {
+      jest.spyOn(sipConnector.connectionQueueManager, 'disconnect').mockImplementation(async () => {
+        await delayPromise(DELAY * 2);
+      });
+
+      manager.start(baseParameters);
+      await flushPromises();
+
+      manager.stop();
+
+      expect(() => {
+        manager.restart(baseParameters);
+      }).not.toThrow();
     });
   });
 

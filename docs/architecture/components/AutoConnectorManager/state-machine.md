@@ -25,7 +25,7 @@
 
 События ниже — **внутренний контракт машины**; снаружи `AutoConnectorManager` по-прежнему эмитит прежние публичные события через runtime и колбэки `deps`.
 
-- `AUTO.RESTART` — начать цикл реконнекта/подключения (используется из `start` и единой точки `requestReconnect`).
+- `AUTO.RESTART` — начать цикл реконнекта/подключения (используется из `start`, `restart` и единой точки `requestReconnect`).
   - Если `shouldDisconnectBeforeAttempt === true`, сначала переход в `disconnecting`.
   - Если `shouldDisconnectBeforeAttempt === false` (cold start: `isDisconnected || isIdle` и нет `requested/isDisconnecting`), переход сразу в `attemptingGate`.
 - `AUTO.STOP` — остановить флоу (`afterDisconnect: idle`). В `idle` обрабатывается как безопасный no-op (остаёмся в `idle`).

@@ -33,6 +33,7 @@ export type TAttemptStatus = {
 
 export const RECONNECT_REASONS = {
   START: 'start',
+  MANUAL_RESTART: 'manual-restart',
   REGISTRATION_FAILED_OUT_OF_CALL: 'registration-failed-out-of-call',
   TELEPHONY_DISCONNECTED: 'telephony-disconnected',
   TELEPHONY_CHECK_FAILED: 'telephony-check-failed',
@@ -46,6 +47,7 @@ export const RECONNECT_REASON_PRIORITY: Record<TReconnectReason, number> = {
   [RECONNECT_REASONS.TELEPHONY_DISCONNECTED]: 1,
   [RECONNECT_REASONS.TELEPHONY_CHECK_FAILED]: 1,
   [RECONNECT_REASONS.REGISTRATION_FAILED_OUT_OF_CALL]: 3,
+  [RECONNECT_REASONS.MANUAL_RESTART]: 4,
 } as const;
 
 export const getReconnectReasonPriority = (reason: TReconnectReason): number => {

@@ -25,6 +25,8 @@ const defaultCanRetryOnError = (_error: unknown): boolean => {
 };
 
 const debug = resolveDebug('AutoConnectorManager');
+const START_REASON: TReconnectReason = 'start';
+const MANUAL_RESTART_REASON: TReconnectReason = 'manual-restart';
 
 class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   public readonly stateMachine: AutoConnectorStateMachine;
@@ -103,7 +105,13 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   public start(parameters: TParametersAutoConnect) {
     debug('auto connector start');
 
-    this.requestReconnect(parameters, 'start');
+    this.requestReconnect(parameters, START_REASON);
+  }
+
+  public restart(parameters: TParametersAutoConnect) {
+    debug('auto connector restart');
+
+    this.requestReconnect(parameters, MANUAL_RESTART_REASON);
   }
 
   public stop() {
