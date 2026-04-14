@@ -56,6 +56,19 @@ type TContext = {
   registerRequired: boolean;
 };
 
+/** Контекст для `SET_REGISTER_REQUIRED`; пустой partial, если событие не `START_INIT_UA`. */
+export function applyRegisterRequiredFromMachineEvent(
+  event: TConnectionMachineEvents,
+): Partial<TContext> {
+  if (event.type !== EEvents.START_INIT_UA) {
+    return {};
+  }
+
+  return {
+    registerRequired: event.registerRequired,
+  };
+}
+
 // Создаем XState машину с setup API для лучшей типизации
 const connectionMachine = setup({
   types: {
@@ -69,13 +82,7 @@ const connectionMachine = setup({
   },
   actions: {
     [EAction.SET_REGISTER_REQUIRED]: assign(({ event }) => {
-      if (event.type !== EEvents.START_INIT_UA) {
-        return {};
-      }
-
-      return {
-        registerRequired: event.registerRequired,
-      };
+      return applyRegisterRequiredFromMachineEvent(event);
     }),
     [EAction.RESET_REGISTER_REQUIRED]: assign(() => {
       return {
