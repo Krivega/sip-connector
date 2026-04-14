@@ -132,6 +132,7 @@ const selectSystemStatus = (snapshot: TSessionSnapshot): ESystemStatus => {
 
 export const sessionSelectors = {
   selectConnectionStatus,
+  selectAutoConnectorStatus,
   selectCallState,
   selectCallStatus,
   selectIncomingStatus,
