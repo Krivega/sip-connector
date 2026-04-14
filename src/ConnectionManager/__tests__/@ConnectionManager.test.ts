@@ -1,3 +1,6 @@
+import { isCanceledError } from '@krivega/cancelable-promise';
+
+import delayPromise from '@/__fixtures__/delayPromise';
 import jssip from '@/__fixtures__/jssip.mock';
 import UAMock, { PASSWORD_CORRECT } from '@/__fixtures__/UA.mock';
 import ConnectionManager from '../@ConnectionManager';
@@ -169,6 +172,38 @@ describe('ConnectionManager', () => {
       // UA не устанавливалось, сразу вызываем disconnect
       await expect(connectionManager.disconnect()).resolves.toBeUndefined();
       // Дополнительно убеждаемся, что UA так и не появилось
+      expect(connectionManager.ua).toBeUndefined();
+    });
+
+    it('должен вызывать disconnect во время промежуточного состояния connect', async () => {
+      jest.spyOn(connectionManager.stateMachine, 'isPending', 'get').mockReturnValue(true);
+
+      // @ts-expect-error
+      const disconnectSpy = jest.spyOn(connectionManager.connectionFlow, 'disconnect');
+
+      await connectionManager.disconnect();
+
+      expect(disconnectSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('должен отменять in-flight connect при disconnect в промежуточном состоянии', async () => {
+      const getParametersSlow = async () => {
+        await delayPromise(300);
+
+        return parameters;
+      };
+
+      const connectPromise = connectionManager.connect(getParametersSlow);
+
+      await delayPromise(20);
+      await connectionManager.disconnect();
+
+      const canceledError = await connectPromise.catch((error: unknown) => {
+        return error;
+      });
+
+      expect(isCanceledError(canceledError)).toBe(true);
+      expect(connectionManager.isConfigured()).toBe(false);
       expect(connectionManager.ua).toBeUndefined();
     });
   });

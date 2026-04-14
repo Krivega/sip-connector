@@ -151,7 +151,7 @@ export default class ConnectionManager extends EventEmitterProxy<TEventMap> {
   };
 
   public disconnect = async () => {
-    if (this.isConfigured()) {
+    if (this.isConfigured() || this.requested) {
       return this.connectionFlow.disconnect();
     }
 

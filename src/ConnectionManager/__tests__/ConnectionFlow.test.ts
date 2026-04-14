@@ -1,3 +1,5 @@
+import { CancelableRequest, isCanceledError } from '@krivega/cancelable-promise';
+
 import delayPromise from '@/__fixtures__/delayPromise';
 import jssip from '@/__fixtures__/jssip.mock';
 import UAMock, {
@@ -234,6 +236,50 @@ describe('ConnectionFlow', () => {
 
       expect(getUa()).toBeDefined();
     });
+
+    it('должен отменять resolveParameters при вызове cancelRequests', async () => {
+      const cancelRequestSpy = jest.spyOn(CancelableRequest.prototype, 'cancelRequest');
+
+      const getParameters = async () => {
+        await delayPromise(500);
+
+        return baseConnectParameters;
+      };
+
+      const connectPromise = connectionFlow.connect(getParameters);
+
+      await delayPromise(10);
+      connectionFlow.cancelRequests();
+
+      const canceledError = await connectPromise.catch((error: unknown) => {
+        return error;
+      });
+
+      expect(isCanceledError(canceledError)).toBe(true);
+      expect(cancelRequestSpy).toHaveBeenCalled();
+    });
+
+    it('должен отменять предыдущий resolveParameters при повторном connect', async () => {
+      const getParametersSlow = async () => {
+        await delayPromise(500);
+
+        return baseConnectParameters;
+      };
+
+      const firstConnectPromise = connectionFlow.connect(getParametersSlow);
+
+      await delayPromise(10);
+
+      const secondConnectPromise = connectionFlow.connect(baseConnectParameters);
+
+      await expect(secondConnectPromise).resolves.toBeDefined();
+
+      const canceledError = await firstConnectPromise.catch((error: unknown) => {
+        return error;
+      });
+
+      expect(isCanceledError(canceledError)).toBe(true);
+    });
   });
 
   describe('connect events', () => {
@@ -335,6 +381,28 @@ describe('ConnectionFlow', () => {
       expect(handleFailed).toHaveBeenCalled();
     });
 
+    it('не должен вызывать CONNECT_FAILED при отмене resolveParameters', async () => {
+      const handleFailed = jest.fn();
+
+      events.on('connect-failed', handleFailed);
+
+      const getParameters = async () => {
+        await delayPromise(500);
+
+        return baseConnectParameters;
+      };
+
+      const connectPromise = connectionFlow.connect(getParameters);
+
+      await delayPromise(10);
+      connectionFlow.cancelRequests();
+      await connectPromise.catch(() => {
+        return undefined;
+      });
+
+      expect(handleFailed).not.toHaveBeenCalled();
+    });
+
     it('не должен вызывать CONNECT_PARAMETERS_RESOLVE_FAILED при ошибке в connectWithDuplicatedCalls', async () => {
       const connectWithDuplicatedCallsSpy = jest.spyOn(
         connectionFlow as unknown as {
@@ -355,6 +423,28 @@ describe('ConnectionFlow', () => {
 
       expect(handleParametersResolveFailed).not.toHaveBeenCalled();
       expect(handleFailed).toHaveBeenCalled();
+    });
+
+    it('не должен вызывать CONNECT_FAILED при отмене первого connect, отмененного вторым connect', async () => {
+      const handleFailed = jest.fn();
+
+      events.on('connect-failed', handleFailed);
+
+      const getParametersSlow = async () => {
+        await delayPromise(500);
+
+        return baseConnectParameters;
+      };
+
+      const firstConnectPromise = connectionFlow.connect(getParametersSlow);
+
+      await delayPromise(10);
+      await connectionFlow.connect(baseConnectParameters);
+      await firstConnectPromise.catch(() => {
+        return undefined;
+      });
+
+      expect(handleFailed).not.toHaveBeenCalled();
     });
 
     it('должен вызывать CONNECT_PARAMETERS_RESOLVE_SUCCESS при успешном разрешении параметров (объект)', async () => {

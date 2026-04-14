@@ -1,3 +1,4 @@
+import { CancelableRequest, isCanceledError } from '@krivega/cancelable-promise';
 import { repeatedCallsAsync } from 'repeated-calls';
 
 import { resolveParameters } from './utils';
@@ -74,6 +75,11 @@ interface IDependencies {
 }
 
 export default class ConnectionFlow {
+  private readonly resolveParametersRequester = new CancelableRequest<
+    TConnectParameters,
+    TParametersConnection
+  >(resolveParameters);
+
   private cancelableConnectWithRepeatedCalls:
     | ReturnType<typeof repeatedCallsAsync<TConnectionConfiguration>>
     | undefined;
@@ -101,7 +107,8 @@ export default class ConnectionFlow {
     this.dependencies.events.trigger('connect-started', {});
     this.cancelRequests();
 
-    return resolveParameters(parameters)
+    return this.resolveParametersRequester
+      .request(parameters)
       .then((data) => {
         this.dependencies.events.trigger('connect-parameters-resolve-success', data);
 
@@ -125,7 +132,9 @@ export default class ConnectionFlow {
       .catch((error: unknown) => {
         const connectError: unknown = error ?? new Error('Failed to connect to server');
 
-        this.dependencies.events.trigger('connect-failed', connectError);
+        if (!isCanceledError(connectError)) {
+          this.dependencies.events.trigger('connect-failed', connectError);
+        }
 
         throw connectError;
       });
@@ -159,7 +168,11 @@ export default class ConnectionFlow {
     });
   };
 
-  public disconnect = async () => {
+  public disconnect = async ({ cancelRequests = true }: { cancelRequests?: boolean } = {}) => {
+    if (cancelRequests) {
+      this.cancelRequests();
+    }
+
     this.dependencies.events.trigger('disconnecting', {});
 
     const disconnectedPromise = new Promise<void>((resolve) => {
@@ -184,6 +197,7 @@ export default class ConnectionFlow {
   };
 
   public cancelRequests() {
+    this.resolveParametersRequester.cancelRequest();
     this.cancelConnectWithRepeatedCalls();
   }
 
@@ -286,7 +300,7 @@ export default class ConnectionFlow {
     const currentUa = this.dependencies.getUa();
 
     if (currentUa) {
-      await this.disconnect();
+      await this.disconnect({ cancelRequests: false });
     }
 
     // Создаем UA с полной конфигурацией и событиями через UAFactory
