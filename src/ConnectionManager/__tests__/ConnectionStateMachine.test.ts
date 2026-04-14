@@ -4,7 +4,7 @@ import logger from '@/logger';
 import { ConnectionStateMachine, EEvents, EState } from '../ConnectionStateMachine';
 import { createEvents } from '../events';
 
-import type { Socket, IncomingResponse } from '@krivega/jssip';
+import type { Socket, IncomingResponse, ConnectingEventUA } from '@krivega/jssip';
 import type { TEvents } from '../events';
 
 jest.mock('@/logger', () => {
@@ -40,6 +40,7 @@ describe('ConnectionStateMachine', () => {
       const newStateMachine = new ConnectionStateMachine(events);
 
       expect(spyOn).toHaveBeenCalledWith('connected', expect.any(Function));
+      expect(spyOn).toHaveBeenCalledWith('connecting', expect.any(Function));
       expect(spyOn).toHaveBeenCalledWith('registered', expect.any(Function));
       expect(spyOn).toHaveBeenCalledWith('unregistered', expect.any(Function));
       expect(spyOn).toHaveBeenCalledWith('disconnecting', expect.any(Function));
@@ -370,6 +371,15 @@ describe('ConnectionStateMachine', () => {
         },
         expected: EState.DISCONNECTED,
       },
+      {
+        title: 'connecting переводит из DISCONNECTED в CONNECTING',
+        arrange: () => {
+          stateMachine.startConnect();
+          events.trigger('disconnected', { socket: {} as Socket, error: false });
+          events.trigger('connecting', {} as ConnectingEventUA);
+        },
+        expected: EState.CONNECTING,
+      },
     ];
 
     test.each(transitions)('$title', ({ arrange, expected }) => {
@@ -506,6 +516,30 @@ describe('ConnectionStateMachine', () => {
         'State transition: connection:preparing -> connection:disconnected (UA_DISCONNECTED)',
       );
     });
+
+    it('connecting событие должно переводить из DISCONNECTED в CONNECTING', () => {
+      stateMachine.startConnect();
+      events.trigger('disconnected', { socket: {} as Socket, error: false });
+      expect(stateMachine.state).toBe(EState.DISCONNECTED);
+
+      mockLogger.mockClear();
+      events.trigger('connecting', {} as ConnectingEventUA);
+
+      expect(stateMachine.state).toBe(EState.CONNECTING);
+      expect(mockLogger).toHaveBeenCalledWith(
+        'State transition: connection:disconnected -> connection:connecting (UA_CONNECTING)',
+      );
+    });
+
+    it('connecting событие должно игнорироваться в IDLE (UA_CONNECTING недопустим)', () => {
+      mockLogger.mockClear();
+      events.trigger('connecting', {} as ConnectingEventUA);
+
+      expect(stateMachine.state).toBe(EState.IDLE);
+      expect(mockLogger).toHaveBeenCalledWith(
+        'Invalid transition: UA_CONNECTING from connection:idle. Event cannot be processed in current state.',
+      );
+    });
   });
 
   describe('Валидация переходов', () => {
@@ -579,7 +613,7 @@ describe('ConnectionStateMachine', () => {
 
       stateMachine.destroy();
 
-      expect(spyOff).toHaveBeenCalledTimes(7); // 7 событий: connected, registered, unregistered, disconnecting, disconnected, registrationFailed, connect-failed
+      expect(spyOff).toHaveBeenCalledTimes(8); // connected, connecting, registered, unregistered, disconnecting, disconnected, registrationFailed, connect-failed
     });
 
     it('должен корректно работать после destroy', () => {

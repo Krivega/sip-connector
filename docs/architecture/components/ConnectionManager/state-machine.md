@@ -4,8 +4,8 @@
 
 ## Интеграция с менеджером
 
-- **Доменные события машины:** `START_CONNECT`, `START_INIT_UA`, `START_DISCONNECT`, `UA_CONNECTED`, `UA_REGISTERED`, `UA_UNREGISTERED`, `UA_DISCONNECTED`, `RESET`.
-- **Источники событий:** `ConnectionManager.events` — `connect-started`, `connecting`, `connect-parameters-resolve-success`, `connected`, `registered`, `unregistered`, `disconnecting`, `disconnected`, `registrationFailed`, `connect-failed`.
+- **Доменные события машины:** `START_CONNECT`, `START_INIT_UA`, `START_DISCONNECT`, `UA_CONNECTED`, `UA_CONNECTING`, `UA_REGISTERED`, `UA_UNREGISTERED`, `UA_DISCONNECTED`, `RESET`.
+- **Источники событий:** `ConnectionManager.events` — `connect-started`, `connecting` (→ `UA_CONNECTING`), `connect-parameters-resolve-success`, `connected`, `registered`, `unregistered`, `disconnecting`, `disconnected`, `registrationFailed`, `connect-failed`.
 
 ## Диаграмма переходов (Mermaid)
 
@@ -121,6 +121,7 @@ stateDiagram-v2
 ### Повторное подключение
 
 - **DISCONNECTED → PREPARING** — через `START_CONNECT`
+- **DISCONNECTED → CONNECTING** — через событие шины `connecting` (в машину уходит как `UA_CONNECTING`), когда UA снова входит в фазу подключения без нового цикла `START_CONNECT` / `PREPARING`
 
 ### Автоматические переходы
 
