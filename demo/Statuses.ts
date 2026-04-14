@@ -19,11 +19,11 @@ class Statuses {
     this.subscribeSessionStatuses((snapshot) => {
       onStatusesChange({
         connection: sessionSelectors.selectConnectionStatus(snapshot),
+        autoConnectorManager: sessionSelectors.selectAutoConnectorStatus(snapshot),
         call: sessionSelectors.selectCallStatus(snapshot),
         incoming: sessionSelectors.selectIncomingStatus(snapshot),
         presentation: sessionSelectors.selectPresentationStatus(snapshot),
         system: sessionSelectors.selectSystemStatus(snapshot),
-        autoConnectorManager: snapshot.autoConnector.value,
       });
     });
   }
