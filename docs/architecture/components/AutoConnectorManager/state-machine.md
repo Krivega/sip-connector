@@ -31,7 +31,7 @@
 - `AUTO.STOP` — остановить флоу (`afterDisconnect: idle`). В `idle` обрабатывается как безопасный no-op (остаёмся в `idle`).
 - `TELEPHONY.RESULT` с `stillConnected` — возврат в `connectedMonitoring` после успешной проверки телефонии при уже подключённом клиенте. Если нужен полный рестарт, менеджер вызывает `requestReconnect` с причиной `telephony-disconnected`.
 
-Неудачный ping в режиме мониторинга не инициирует отдельный перезапуск флоу: восстановление соединения остаётся на стороне JsSIP.
+**Ping в `connectedMonitoring`:** вне звонка [`PingServerIfNotActiveCallRequester`](../../../../src/AutoConnectorManager/PingServerIfNotActiveCallRequester.ts) периодически вызывает `connectionManager.ping()` — SIP OPTIONS через JsSIP на свой URI. Это мониторинг доступности сигнализации и лёгкая нагрузка на уже поднятый WebSocket-транспорт стека. Переподключение WebSocket после обрыва выполняет внутренний слой JsSIP; после восстановления транспорта следующие OPTIONS снова идут через актуальное соединение. На провал ping не отправляем `AUTO.RESTART` в машину: не дублируем встроенное переподключение транспорта в JsSIP.
 
 ## Диаграмма переходов (Mermaid)
 
@@ -86,6 +86,7 @@ stateDiagram-v2
 - В `attemptingConnect.invoke.input` добавлена явная проверка `context.parameters`: вместо `non-null assertion` машина выбрасывает явную ошибку инварианта.
 - В `waitingBeforeRetry.onError` отдельно различаются управляемая отмена цепочки (`cancelled-attempts`) и фатальная ошибка подготовки ретрая (`failed-all-attempts`).
 - Переход `telephonyChecking -> connectedMonitoring` означает: соединение уже восстановилось без нового `connect`, поэтому нужен только возврат в режим мониторинга и событие `success`.
+- Провал ping в мониторинге не переводит машину в `disconnecting`: см. раздел **Ping в `connectedMonitoring`** выше и комментарий в [`AutoConnectorRuntime.ts`](../../../../src/AutoConnectorManager/AutoConnectorRuntime.ts) у `subscribeToConnectTriggers`.
 - Ошибка в `CheckTelephonyRequester.onFailRequest` не переводит машину в другое состояние: политика «только логирование и продолжение периодических проверок».
 - `requestReconnect` использует «умный coalescing» в коротком окне: запрос с той же или меньшей важностью подавляется, а более приоритетная причина допускается. Карта приоритетов вынесена в [`types.ts`](../../../../src/AutoConnectorManager/types.ts) (`RECONNECT_REASON_PRIORITY`).
 - Ошибки `check-telephony` обрабатываются отдельной policy-моделью [`TelephonyFailPolicy.ts`](../../../../src/AutoConnectorManager/TelephonyFailPolicy.ts): считает fail-цепочку, применяет retry/backoff, поднимает escalation (`warning`/`critical`) и эмитит метрики-события.

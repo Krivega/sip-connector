@@ -258,6 +258,11 @@ export class AutoConnectorRuntime {
   }
 
   private subscribeToConnectTriggers(parameters: TParametersAutoConnect) {
+    // Без активного звонка периодически шлём SIP OPTIONS (`connectionManager.ping`) через тот же JsSIP UA:
+    // проверяем, что сигнализация до сервера жива, и даём стеку исходящий трафик по установленному WebSocket.
+    // При падении транспорта JsSIP сам перезапускает WebSocket и перевыводит сессию; повторные OPTIONS после
+    // восстановления снова проходят через уже переподнятый транспорт. Полный рестарт автоконнектора на
+    // сбой ping не вешаем — не дублируем встроенное переподключение транспорта.
     this.pingServerIfNotActiveCallRequester.start({
       onFailRequest: () => {
         debug('pingRequester: onFailRequest');
