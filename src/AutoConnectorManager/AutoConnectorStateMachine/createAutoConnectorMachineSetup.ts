@@ -58,37 +58,69 @@ export const createAutoConnectorMachineSetup = (deps: TAutoConnectorMachineDeps)
     guards: {
       /** Нужен ли промежуточный `disconnecting` перед новым циклом попытки. */
       shouldDisconnectBeforeAttempt: () => {
-        return deps.shouldDisconnectBeforeAttempt();
+        const shouldDisconnectBeforeAttempt = deps.shouldDisconnectBeforeAttempt();
+
+        debug('shouldDisconnectBeforeAttempt:', shouldDisconnectBeforeAttempt);
+
+        return shouldDisconnectBeforeAttempt;
       },
       /** После `stopConnectionFlow` уходим в `idle` (полная остановка / ошибка остановки). */
       shouldGoIdleAfterDisconnect: ({ context }) => {
-        return context.afterDisconnect === 'idle';
+        const shouldGoIdleAfterDisconnect = context.afterDisconnect === 'idle';
+
+        debug('shouldGoIdleAfterDisconnect:', shouldGoIdleAfterDisconnect);
+
+        return shouldGoIdleAfterDisconnect;
       },
       /** После `stopConnectionFlow` продолжаем цикл: к шлюзу попытки. */
       shouldAttemptAfterDisconnect: ({ context }) => {
-        return context.afterDisconnect === 'attempt';
+        const shouldAttemptAfterDisconnect = context.afterDisconnect === 'attempt';
+
+        debug('shouldAttemptAfterDisconnect:', shouldAttemptAfterDisconnect);
+
+        return shouldAttemptAfterDisconnect;
       },
       /** Лимит попыток исчерпан — переход к режиму check-telephony. */
       isLimitReached: () => {
-        return deps.hasLimitReached();
+        const isLimitReached = deps.hasLimitReached();
+
+        debug('isLimitReached:', isLimitReached);
+
+        return isLimitReached;
       },
       /** Ошибка «ещё не готовы к подключению» — без ретрая. */
       isNotReadyForConnection: ({ event }) => {
-        return hasNotReadyForConnectionError(getInvokeError(event));
+        const isNotReadyForConnection = hasNotReadyForConnectionError(getInvokeError(event));
+
+        debug('isNotReadyForConnection:', isNotReadyForConnection);
+
+        return isNotReadyForConnection;
       },
       /** Политика опций запрещает повтор для этой ошибки. */
       isNoRetryPolicy: ({ event }) => {
-        return !deps.canRetryOnError(getInvokeError(event));
+        const isNoRetryPolicy = !deps.canRetryOnError(getInvokeError(event));
+
+        debug('isNoRetryPolicy:', isNoRetryPolicy);
+
+        return isNoRetryPolicy;
       },
       /** Промис коннекта снят очередью (`stack-promises`) — отмена попыток. */
       isNotActualPromise: ({ event }) => {
-        return hasConnectionPromiseIsNotActualError(getInvokeError(event));
+        const isNotActualPromise = hasConnectionPromiseIsNotActualError(getInvokeError(event));
+
+        debug('isNotActualPromise:', isNotActualPromise);
+
+        return isNotActualPromise;
       },
       /** Отмена задержки (cancelable / timeout-requester). */
       isWaitRetryCancelled: ({ event }) => {
         const error = getInvokeError(event);
 
-        return isCanceledError(error) || hasCanceledError(error as Error);
+        const isWaitRetryCancelled = isCanceledError(error) || hasCanceledError(error as Error);
+
+        debug('isWaitRetryCancelled:', isWaitRetryCancelled);
+
+        return isWaitRetryCancelled;
       },
     },
     /** Синхронные побочные эффекты и обновление контекста (`assign`). */
@@ -134,18 +166,22 @@ export const createAutoConnectorMachineSetup = (deps: TAutoConnectorMachineDeps)
       }),
       /** Начало цикла попытки: событие «перед попыткой» и сброс внешних триггеров. */
       entryAttemptingGate: () => {
+        debug('entryAttemptingGate');
         deps.beforeAttempt();
       },
       /** Учёт попытки в `AttemptsState` непосредственно перед `connect`. */
       entryAttemptingConnect: () => {
+        debug('entryAttemptingConnect');
         deps.beforeConnectAttempt();
       },
       /** Лимит: завершить попытку, событие лимита, запуск опроса телефонии. */
       onLimitReachedTransition: ({ context }) => {
+        debug('onLimitReachedTransition');
         deps.onLimitReached(getRequiredParameters(context, 'onLimitReachedTransition'));
       },
       /** Успешный invoke `connect`. */
       onConnectDone: ({ context }) => {
+        debug('onConnectDone');
         deps.onConnectSucceeded(getRequiredParameters(context, 'onConnectDone'));
       },
       assignHaltedError: assign({
@@ -201,6 +237,7 @@ export const createAutoConnectorMachineSetup = (deps: TAutoConnectorMachineDeps)
        * Так машина хранит одну терминальную вершину, но не теряет различие причин остановки.
        */
       emitTerminalOutcome: ({ context }) => {
+        debug('emitTerminalOutcome');
         deps.emitTerminalOutcome({
           stopReason: context.stopReason,
           lastError: context.lastError,
@@ -212,6 +249,7 @@ export const createAutoConnectorMachineSetup = (deps: TAutoConnectorMachineDeps)
        * без нового вызова `connect`.
        */
       onTelephonyStillConnected: () => {
+        debug('onTelephonyStillConnected');
         deps.onTelephonyStillConnected();
       },
     },
