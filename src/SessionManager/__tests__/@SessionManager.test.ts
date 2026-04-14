@@ -265,6 +265,34 @@ describe('SessionManager', () => {
       stopAll();
     });
 
+    it('does not notify full-snapshot subscriber for identical snapshots with default equals', () => {
+      const { session, incomingStateMachine, stopAll } = startSession();
+      const callback = jest.fn();
+      const remoteCallerData = {
+        incomingNumber: '101',
+        displayName: 'Test Caller',
+        host: 'test.com',
+        rtcSession,
+      };
+
+      const unsubscribe = session.subscribe(callback);
+
+      incomingStateMachine.send({
+        type: 'INCOMING.RINGING',
+        data: remoteCallerData,
+      });
+      expect(callback).toHaveBeenCalledTimes(1);
+
+      incomingStateMachine.send({
+        type: 'INCOMING.RINGING',
+        data: remoteCallerData,
+      });
+
+      expect(callback).toHaveBeenCalledTimes(1);
+      unsubscribe();
+      stopAll();
+    });
+
     it('keeps system status CALL_ACTIVE when connection becomes disconnected while in call', () => {
       const { session, connectionStateMachine, callStateMachine, stopAll } = startSession();
 
@@ -419,6 +447,32 @@ describe('SessionManager', () => {
         conferenceForToken: 'room',
         participantName: 'participantName',
       });
+      expect(handler).toHaveBeenCalledTimes(1);
+      stopAll();
+    });
+
+    it('does not trigger snapshot-changed when only snapshot context changes', () => {
+      const { session, incomingStateMachine, stopAll } = startSession();
+      const handler = jest.fn();
+
+      session.on('snapshot-changed', handler);
+
+      incomingStateMachine.send({
+        type: 'INCOMING.RINGING',
+        data: { incomingNumber: '101', displayName: 'Test Caller', host: 'test.com', rtcSession },
+      });
+      expect(handler).toHaveBeenCalledTimes(1);
+
+      incomingStateMachine.send({
+        type: 'INCOMING.RINGING',
+        data: {
+          incomingNumber: '202',
+          displayName: 'Another Caller',
+          host: 'test.com',
+          rtcSession,
+        },
+      });
+
       expect(handler).toHaveBeenCalledTimes(1);
       stopAll();
     });

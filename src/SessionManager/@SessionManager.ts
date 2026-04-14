@@ -14,8 +14,64 @@ import type { TSessionMachines, TSessionSnapshot } from './types';
 type TEqualityFunction<T> = (previous: T, next: T) => boolean;
 type TSelector<T> = (snapshot: TSessionSnapshot) => T;
 
+const isObjectLike = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null;
+};
+
+const deepEqual = (previous: unknown, next: unknown): boolean => {
+  if (Object.is(previous, next)) {
+    return true;
+  }
+
+  if (!isObjectLike(previous) || !isObjectLike(next)) {
+    return false;
+  }
+
+  const previousIsArray = Array.isArray(previous);
+  const nextIsArray = Array.isArray(next);
+
+  if (previousIsArray !== nextIsArray) {
+    return false;
+  }
+
+  if (previousIsArray && nextIsArray) {
+    if (previous.length !== next.length) {
+      return false;
+    }
+
+    return previous.every((item, index) => {
+      return deepEqual(item, next[index]);
+    });
+  }
+
+  const previousKeys = Object.keys(previous);
+  const nextKeys = Object.keys(next);
+
+  if (previousKeys.length !== nextKeys.length) {
+    return false;
+  }
+
+  return previousKeys.every((key) => {
+    if (!Object.hasOwn(next, key)) {
+      return false;
+    }
+
+    return deepEqual(previous[key], next[key]);
+  });
+};
+
 const defaultEquals = <T>(previous: T, next: T) => {
-  return Object.is(previous, next);
+  return deepEqual(previous, next);
+};
+
+const defaultSnapshotEquals: TEqualityFunction<TSessionSnapshot> = (previous, next) => {
+  return (
+    previous.connection.value === next.connection.value &&
+    previous.call.value === next.call.value &&
+    previous.incoming.value === next.incoming.value &&
+    previous.presentation.value === next.presentation.value &&
+    previous.autoConnector.value === next.autoConnector.value
+  );
 };
 
 type TSessionManagerDeps = {
@@ -97,10 +153,10 @@ class SessionManager extends EventEmitterProxy<TEventMap> {
     const listener = hasSelector
       ? (maybeListener as (value: unknown) => void)
       : (selectorOrListener as (value: unknown) => void);
-    const equals =
-      (hasSelector ? (maybeEquals as TEqualityFunction<unknown> | undefined) : undefined) ??
-      (defaultEquals as TEqualityFunction<unknown>);
-
+    const selectorEquals = (maybeEquals as TEqualityFunction<unknown> | undefined) ?? defaultEquals;
+    const equals = hasSelector
+      ? selectorEquals
+      : (defaultSnapshotEquals as TEqualityFunction<unknown>);
     const current = selector(this.currentSnapshot);
     const subscriber = {
       selector,
@@ -128,19 +184,24 @@ class SessionManager extends EventEmitterProxy<TEventMap> {
 
     this.currentSnapshot = collectSnapshot(this.machines);
 
+    const isSnapshotEqual = defaultSnapshotEquals(previousSnapshot, this.currentSnapshot);
+
     for (const subscriber of this.subscribers) {
       const next = subscriber.selector(this.currentSnapshot);
+      const isEqual = subscriber.equals(subscriber.current, next);
 
-      if (!subscriber.equals(subscriber.current, next)) {
+      if (!isEqual) {
         subscriber.current = next;
         subscriber.listener(next);
       }
     }
 
-    this.events.trigger('snapshot-changed', {
-      previous: previousSnapshot,
-      current: this.currentSnapshot,
-    });
+    if (!isSnapshotEqual) {
+      this.events.trigger('snapshot-changed', {
+        previous: previousSnapshot,
+        current: this.currentSnapshot,
+      });
+    }
   };
 }
 
