@@ -585,7 +585,7 @@ describe('sessionSelectors', () => {
       expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CONNECTING);
     });
 
-    it('should return CONNECTING when autoConnector is CONNECTED_MONITORING even if connection is IDLE', () => {
+    it('should return CONNECTING when autoConnector is CONNECTED_MONITORING and connection is not ESTABLISHED', () => {
       const snapshot = createMockSnapshot({
         connection: { value: EConnectionStatus.IDLE } as never,
         call: { value: ECallStatus.IDLE } as never,
@@ -601,6 +601,24 @@ describe('sessionSelectors', () => {
       });
 
       expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CONNECTING);
+    });
+
+    it('should return READY_TO_CALL when autoConnector is CONNECTED_MONITORING and connection is ESTABLISHED', () => {
+      const snapshot = createMockSnapshot({
+        connection: { value: EConnectionStatus.ESTABLISHED } as never,
+        call: { value: ECallStatus.IDLE } as never,
+        autoConnector: {
+          value: EAutoConnectorState.CONNECTED_MONITORING,
+          context: {
+            parameters: undefined,
+            afterDisconnect: 'idle',
+            stopReason: undefined,
+            lastError: undefined,
+          },
+        } as never,
+      });
+
+      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.READY_TO_CALL);
     });
 
     it('should return DISCONNECTING when connection is DISCONNECTING even if autoConnector is ATTEMPTING_CONNECT', () => {

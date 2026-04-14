@@ -10,8 +10,10 @@
 
 2. **Если connection DISCONNECTING или autoConnector DISCONNECTING** → `DISCONNECTING` (если call не в активном состоянии)
 
-3. **Если autoConnector в `ATTEMPTING_CONNECT` / `ATTEMPTING_GATE` / `WAITING_BEFORE_RETRY` / `CONNECTED_MONITORING`** → `CONNECTING`  
+3. **Если autoConnector в `ATTEMPTING_CONNECT` / `ATTEMPTING_GATE` / `WAITING_BEFORE_RETRY`** → `CONNECTING`  
    (даже если connection сейчас `IDLE`)
+
+   **Если autoConnector в `CONNECTED_MONITORING`** → `CONNECTING` только пока `connection` **не** `ESTABLISHED` (после установления SIP-соединения общий статус определяется дальше по `connection`/`call`)
 
 4. **Если connection IDLE/DISCONNECTED** → `DISCONNECTED`
 
@@ -26,15 +28,15 @@
 
 ## Состояния ESystemStatus
 
-| Состояние            | Описание                                 | Условия                                                                                                                                                      |
-| :------------------- | :--------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DISCONNECTED`       | Система не подключена                    | connection: IDLE или DISCONNECTED, если AutoConnector не в attempting/waiting                                                                                |
-| `DISCONNECTING`      | Идет процесс отключения                  | connection: DISCONNECTING **или** autoConnector: DISCONNECTING                                                                                               |
-| `CONNECTING`         | Идет процесс подключения                 | connection: PREPARING, CONNECTING, CONNECTED, REGISTERED **или** autoConnector: ATTEMPTING_CONNECT/ATTEMPTING_GATE/WAITING_BEFORE_RETRY/CONNECTED_MONITORING |
-| `READY_TO_CALL`      | Соединение установлено, готово к звонкам | connection: ESTABLISHED, call: IDLE                                                                                                                          |
-| `CALL_CONNECTING`    | Идет установка звонка                    | connection: ESTABLISHED, call: CONNECTING                                                                                                                    |
-| `CALL_DISCONNECTING` | Идет процесс отключения звонка           | connection: ESTABLISHED, call: DISCONNECTING                                                                                                                 |
-| `CALL_ACTIVE`        | Звонок активен                           | connection: ESTABLISHED, call в активном состоянии звонка (в т.ч. presentation-call)                                                                         |
+| Состояние            | Описание                                 | Условия                                                                                                                                                                                                        |
+| :------------------- | :--------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DISCONNECTED`       | Система не подключена                    | connection: IDLE или DISCONNECTED, если AutoConnector не в attempting/waiting                                                                                                                                  |
+| `DISCONNECTING`      | Идет процесс отключения                  | connection: DISCONNECTING **или** autoConnector: DISCONNECTING                                                                                                                                                 |
+| `CONNECTING`         | Идет процесс подключения                 | connection: PREPARING, CONNECTING, CONNECTED, REGISTERED **или** autoConnector: ATTEMPTING_CONNECT/ATTEMPTING_GATE/WAITING_BEFORE_RETRY; либо autoConnector: CONNECTED_MONITORING при connection ≠ ESTABLISHED |
+| `READY_TO_CALL`      | Соединение установлено, готово к звонкам | connection: ESTABLISHED, call: IDLE                                                                                                                                                                            |
+| `CALL_CONNECTING`    | Идет установка звонка                    | connection: ESTABLISHED, call: CONNECTING                                                                                                                                                                      |
+| `CALL_DISCONNECTING` | Идет процесс отключения звонка           | connection: ESTABLISHED, call: DISCONNECTING                                                                                                                                                                   |
+| `CALL_ACTIVE`        | Звонок активен                           | connection: ESTABLISHED, call в активном состоянии звонка (в т.ч. presentation-call)                                                                                                                           |
 
 Активные состояния call для `CALL_ACTIVE`: `PRESENTATION_CALL`, `ROOM_PENDING_AUTH`, `IN_ROOM`, `PURGATORY`, `P2P_ROOM`, `DIRECT_P2P_ROOM`.
 

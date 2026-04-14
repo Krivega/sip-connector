@@ -156,7 +156,7 @@ stateDiagram-v2
 
 См. [ESystemStatus](./components/SessionManager/system-status.md) — механизм комбинирования состояний Connection, Call и AutoConnector машин в единое состояние для упрощения работы клиентов.
 Статус `DISCONNECTING` выставляется как при `connection=disconnecting`, так и при `autoConnector=disconnecting` (если call не находится в активном состоянии).
-Статус `CONNECTING` также выставляется при `autoConnector=connectedMonitoring`, даже если `connection` находится в `idle`.
+Статус `CONNECTING` также выставляется при `autoConnector=connectedMonitoring`, если `connection` ещё не `established` (например `idle`); при `connection=established` дальше действует обычная логика по `call`.
 
 ## Тестирование
 

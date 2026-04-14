@@ -89,7 +89,9 @@ const selectSystemStatus = (snapshot: TSessionSnapshot): ESystemStatus => {
     autoConnectorStatus === EAutoConnectorStatus.ATTEMPTING_CONNECT ||
     autoConnectorStatus === EAutoConnectorStatus.ATTEMPTING_GATE ||
     autoConnectorStatus === EAutoConnectorStatus.WAITING_BEFORE_RETRY ||
-    autoConnectorStatus === EAutoConnectorStatus.CONNECTED_MONITORING
+    // Мониторинг после успешного connect: CONNECTING только пока SIP ещё не ESTABLISHED
+    (autoConnectorStatus === EAutoConnectorStatus.CONNECTED_MONITORING &&
+      connectionStatus !== EConnectionStatus.ESTABLISHED)
   ) {
     return ESystemStatus.CONNECTING;
   }
