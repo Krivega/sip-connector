@@ -1,7 +1,4 @@
-import type {
-  AutoConnectorStateMachine,
-  TAutoConnectorSnapshot,
-} from '@/AutoConnectorManager/AutoConnectorStateMachine';
+import type { IAutoConnectorStateMachine, TAutoConnectorSnapshot } from '@/AutoConnectorManager';
 import type { ICallStateMachine, TCallSnapshot } from '@/CallManager';
 import type {
   ConnectionStateMachine,
@@ -29,10 +26,11 @@ export type TSessionMachines = {
   call: ICallStateMachine;
   incoming: IncomingCallStateMachine;
   presentation: PresentationStateMachine;
-  autoConnector: AutoConnectorStateMachine;
+  autoConnector: IAutoConnectorStateMachine;
 };
 
 export { EState as ECallStatus } from '@/CallManager/CallStateMachine';
+export { EAutoConnectorState as EAutoConnectorStatus } from '@/AutoConnectorManager/AutoConnectorStateMachine';
 export { EState as EIncomingStatus } from '@/IncomingCallManager/IncomingCallStateMachine';
 export { EState as EPresentationStatus } from '@/PresentationManager/PresentationStateMachine';
 export { EState as EConnectionStatus } from '@/ConnectionManager/ConnectionStateMachine';

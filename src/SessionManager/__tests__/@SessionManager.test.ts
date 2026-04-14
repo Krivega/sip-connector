@@ -28,6 +28,9 @@ const createAutoConnectorMachineDeps = () => {
     canRetryOnError: () => {
       return true;
     },
+    shouldDisconnectBeforeAttempt: () => {
+      return false;
+    },
     stopConnectionFlow: jest.fn(async () => {}),
     connect: jest.fn(async () => {}),
     delayBetweenAttempts: jest.fn(async () => {}),

@@ -62,3 +62,5 @@ export const createAutoConnectorStateMachine = (
 ) => {
   return new AutoConnectorStateMachine(createAutoConnectorMachine(deps));
 };
+
+export type { AutoConnectorStateMachine as IAutoConnectorStateMachine };
