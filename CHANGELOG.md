@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [27.0.1](https://github.com/Krivega/sip-connector/compare/v27.0.0...v27.0.1) (2026-04-14)
+
+### Bug Fixes
+
+- **AutoConnectorManager:** update restart method to use context parameters and adjust related tests ([45e40d0](https://github.com/Krivega/sip-connector/commit/45e40d00f3a0929534ec683b30a354e09444197a))
+
 ## [27.0.0](https://github.com/Krivega/sip-connector/compare/v26.22.0...v27.0.0) (2026-04-14)
 
 ### ⚠ BREAKING CHANGES
