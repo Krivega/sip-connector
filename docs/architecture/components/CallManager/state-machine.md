@@ -13,6 +13,10 @@
 
 События `end-call`, `ended`, `failed` от `CallManager.events` приводят к соответствующим переходам.
 
+**Источники событий менеджера:** `CallManager.events` — `start-call`, `confirmed`, `end-call`, `enter-room`, `conference:participant-token-issued`, `ended`, `failed`.
+
+**Значения в снимке сеанса:** `EState` в `CallStateMachine/types.ts` — `call:idle`, `call:connecting`, `call:presentationCall`, `call:roomPendingAuth`, `call:purgatory`, `call:p2pRoom`, `call:directP2pRoom`, `call:inRoom`, `call:disconnecting`.
+
 ## Публичный API
 
 ### Геттеры состояний

@@ -2,6 +2,11 @@
 
 Внутренний компонент `PresentationManager`, управляющий состояниями демонстрации экрана через XState с валидацией допустимых операций и предотвращением некорректных переходов.
 
+## Интеграция с менеджером
+
+- **Доменные события машины:** `SCREEN.STARTING`, `SCREEN.STARTED`, `SCREEN.ENDING`, `SCREEN.ENDED`, `SCREEN.FAILED`, `PRESENTATION.RESET`.
+- **Источники событий:** `CallManager.events` — `presentation:start`, `presentation:started`, `presentation:end`, `presentation:ended`, `presentation:failed`; `ConnectionManager.events` — `disconnected`, `registrationFailed`, `connect-failed` (сброс при потере соединения).
+
 ## Типобезопасная обработка ошибок
 
 Машина использует типобезопасную обработку ошибок: `lastError: Error | undefined`.

@@ -2,6 +2,11 @@
 
 Внутренний компонент `ConnectionManager`, управляющий состояниями SIP соединения через XState с валидацией допустимых операций и предотвращением некорректных переходов.
 
+## Интеграция с менеджером
+
+- **Доменные события машины:** `START_CONNECT`, `START_INIT_UA`, `START_DISCONNECT`, `UA_CONNECTED`, `UA_REGISTERED`, `UA_UNREGISTERED`, `UA_DISCONNECTED`, `RESET`.
+- **Источники событий:** `ConnectionManager.events` — `connect-started`, `connecting`, `connect-parameters-resolve-success`, `connected`, `registered`, `unregistered`, `disconnecting`, `disconnected`, `registrationFailed`, `connect-failed`.
+
 ## Логика состояний
 
 - `PREPARING` — подготовка к подключению (до инициализации UA, до вызова `ua.start()`)

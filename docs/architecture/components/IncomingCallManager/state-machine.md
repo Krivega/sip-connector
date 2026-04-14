@@ -2,6 +2,11 @@
 
 Внутренний компонент `IncomingCallManager`, управляющий состояниями входящих SIP-звонков через XState с валидацией допустимых операций и предотвращением некорректных переходов.
 
+## Интеграция с менеджером
+
+- **Доменные события машины:** `INCOMING.RINGING`, `INCOMING.CONSUMED`, `INCOMING.DECLINED`, `INCOMING.TERMINATED`, `INCOMING.FAILED`, `INCOMING.CLEAR`.
+- **Источники событий:** `IncomingCallManager.events` — `incomingCall`, `declinedIncomingCall`, `terminatedIncomingCall`, `failedIncomingCall`; дополнительная синтетика при ответе на входящий звонок.
+
 ## Хранение данных
 
 Машина хранит данные вызывающего абонента (`remoteCallerData`) и причину завершения (`lastReason`).
