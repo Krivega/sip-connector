@@ -17,11 +17,13 @@
 
 - `@AutoConnectorManager.ts` — фасад: публичный API (`start`/`stop`) и coalescing запросов на рестарт.
 - `AutoConnectorStateMachine/*` — декларативная машина состояний XState (policy и переходы).
-- `AutoConnectorRuntime.ts` — единая оркестрация побочных эффектов (attempts, connect/disconnect, triggers, telephony).
+- `AutoConnectorRuntime.ts` — единая оркестрация побочных эффектов (attempts, connect/disconnect, triggers, telephony), включая правило `shouldDisconnectBeforeAttempt`.
 - `createMachineDeps.ts` — тонкий адаптер между машиной и runtime, включая нормализацию terminal-ошибок.
 - `CheckTelephonyRequester`, `PingServerIfNotActiveCallRequester`, `RegistrationFailedOutOfCallSubscriber` — инфраструктурные наблюдатели и периодические проверки.
 
 ## Основные методы
 
-- `start(parameters)` - запуск процесса автоподключения
+- `start(parameters)` - запуск процесса автоподключения:
+  - cold start: сразу в цикл попытки без лишнего `disconnect`;
+  - при активном/переходном соединении: сначала `disconnect`, затем попытка подключения.
 - `stop()` - отмена текущей попытки автоподключения

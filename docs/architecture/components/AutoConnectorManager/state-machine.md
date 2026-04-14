@@ -23,7 +23,9 @@
 
 ## События
 
-- `AUTO.RESTART` — начать цикл: остановить текущий флоу и попытаться подключиться (используется из `start` и единой точки `requestReconnect`).
+- `AUTO.RESTART` — начать цикл реконнекта/подключения (используется из `start` и единой точки `requestReconnect`).
+  - Если `shouldDisconnectBeforeAttempt === true`, сначала переход в `disconnecting`.
+  - Если `shouldDisconnectBeforeAttempt === false` (cold start: `isDisconnected || isIdle` и нет `requested/isDisconnecting`), переход сразу в `attemptingGate`.
 - `AUTO.STOP` — остановить флоу (`afterDisconnect: idle`). В `idle` обрабатывается как безопасный no-op (остаёмся в `idle`).
 - `FLOW.RESTART` — перезапуск из мониторинга (ping / внутренние триггеры), параметры берутся из контекста.
 - `TELEPHONY.RESULT` с `stillConnected` — возврат в `connectedMonitoring` после успешной проверки телефонии при уже подключённом клиенте. Если нужен полный рестарт, менеджер вызывает `requestReconnect` с причиной `telephony-disconnected`.
@@ -33,7 +35,8 @@
 ```mermaid
 stateDiagram-v2
   [*] --> idle
-  idle --> disconnecting: AUTO_RESTART
+  idle --> disconnecting: AUTO_RESTART and shouldDisconnectBeforeAttempt
+  idle --> attemptingGate: AUTO_RESTART and not shouldDisconnectBeforeAttempt
   disconnecting --> attemptingGate: onDone_attempt
   disconnecting --> idle: onDone_idle
   attemptingGate --> telephonyChecking: limitReached
@@ -67,6 +70,10 @@ stateDiagram-v2
 - `requestReconnect` использует «умный coalescing» в коротком окне: запрос с той же или меньшей важностью подавляется, а более приоритетная причина допускается. Карта приоритетов вынесена в [`types.ts`](../../../../src/AutoConnectorManager/types.ts) (`RECONNECT_REASON_PRIORITY`).
 - Ошибки `check-telephony` обрабатываются отдельной policy-моделью [`TelephonyFailPolicy.ts`](../../../../src/AutoConnectorManager/TelephonyFailPolicy.ts): считает fail-цепочку, применяет retry/backoff, поднимает escalation (`warning`/`critical`) и эмитит метрики-события.
 - Сложные побочные эффекты (`stopConnectionFlow`, `onLimitReached`, терминальные эмиты, connect triggers) вынесены в `AutoConnectorRuntime`, а machine actions сведены к вызову одного runtime-сценария.
+- Условие захода в `disconnecting` инкапсулировано в `AutoConnectorRuntime.shouldDisconnectBeforeAttempt()`:
+  - `true`, если `connectionManager.requested || connectionManager.isDisconnecting`;
+  - иначе `true`, когда состояние не `isDisconnected` и не `isIdle`;
+  - `false` на cold start, когда безопасно идти сразу в `attemptingGate`.
 
 ## Coalescing-компонент
 
