@@ -10,14 +10,7 @@ describe('AutoConnectorRuntime', () => {
     const runtime = new AutoConnectorRuntime({
       connectionManager: {} as never,
       connectionQueueManager: {} as never,
-      checkTelephonyRequester: {} as never,
-      pingServerIfNotActiveCallRequester: {} as never,
-      registrationFailedOutOfCallSubscriber: {} as never,
-      attemptsState: {
-        finishAttempt: jest.fn(),
-      } as never,
-      delayBetweenAttempts: {} as never,
-      telephonyFailPolicy: {} as never,
+      callManager: {} as never,
       emitters: {
         emitBeforeAttempt: jest.fn(),
         emitLimitReachedAttempts: jest.fn(),
@@ -27,6 +20,7 @@ describe('AutoConnectorRuntime', () => {
         emitFailedAllAttempts: jest.fn(),
         emitTelephonyCheckFailure: jest.fn(),
         emitTelephonyCheckEscalated: jest.fn(),
+        emitStatusChange: jest.fn(),
       },
       reconnectActions: {
         requestReconnect: jest.fn(),

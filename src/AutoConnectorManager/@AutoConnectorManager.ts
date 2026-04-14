@@ -1,17 +1,11 @@
-import { DelayRequester } from '@krivega/timeout-requester';
 import { EventEmitterProxy } from 'events-constructor';
 
 import logger from '@/logger';
-import AttemptsState from './AttemptsState';
 import { AutoConnectorRuntime } from './AutoConnectorRuntime';
 import { createAutoConnectorStateMachine } from './AutoConnectorStateMachine';
-import CheckTelephonyRequester from './CheckTelephonyRequester';
 import { createMachineDeps } from './createMachineDeps';
 import { createEvents } from './events';
-import PingServerIfNotActiveCallRequester from './PingServerIfNotActiveCallRequester';
 import ReconnectRequestCoalescer from './ReconnectRequestCoalescer';
-import RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCallSubscriber';
-import TelephonyFailPolicy from './TelephonyFailPolicy';
 
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
@@ -20,8 +14,6 @@ import type { AutoConnectorStateMachine } from './AutoConnectorStateMachine';
 import type { TEventMap } from './events';
 import type { IAutoConnectorOptions, TParametersAutoConnect, TReconnectReason } from './types';
 
-const DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS = 3000;
-const DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL = 15_000;
 const RECONNECT_COALESCE_WINDOW_MS = 250;
 
 const ERROR_MESSAGES = {
@@ -55,36 +47,11 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   ) {
     super(createEvents());
 
-    const checkTelephonyRequester = new CheckTelephonyRequester({
-      connectionManager,
-      interval: options?.checkTelephonyRequestInterval ?? DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL,
-    });
-    const pingServerIfNotActiveCallRequester = new PingServerIfNotActiveCallRequester({
-      connectionManager,
-      callManager,
-    });
-    const registrationFailedOutOfCallSubscriber = new RegistrationFailedOutOfCallSubscriber({
-      connectionManager,
-      callManager,
-    });
-    const attemptsState = new AttemptsState({
-      onStatusChange: this.emitStatusChange,
-    });
-    const delayBetweenAttempts = new DelayRequester(
-      options?.timeoutBetweenAttempts ?? DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS,
-    );
-
-    const telephonyFailPolicy = new TelephonyFailPolicy(options?.telephonyFailPolicy);
-
     this.runtime = new AutoConnectorRuntime({
       connectionManager,
       connectionQueueManager,
-      checkTelephonyRequester,
-      pingServerIfNotActiveCallRequester,
-      registrationFailedOutOfCallSubscriber,
-      attemptsState,
-      delayBetweenAttempts,
-      telephonyFailPolicy,
+      callManager,
+      options,
       emitters: {
         emitBeforeAttempt: () => {
           this.events.trigger('before-attempt', {});
@@ -110,6 +77,9 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
         },
         emitTelephonyCheckEscalated: (payload) => {
           this.events.trigger('telephony-check-escalated', payload);
+        },
+        emitStatusChange: ({ isInProgress }: { isInProgress: boolean }) => {
+          this.events.trigger('changed-attempt-status', { isInProgress });
         },
       },
       reconnectActions: {
@@ -184,10 +154,6 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   private resetReconnectCoalescingState() {
     this.reconnectCoalescer.reset();
   }
-
-  private readonly emitStatusChange = ({ isInProgress }: { isInProgress: boolean }) => {
-    this.events.trigger('changed-attempt-status', { isInProgress });
-  };
 }
 
 export default AutoConnectorManager;

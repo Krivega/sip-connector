@@ -1,19 +1,22 @@
-import logger from '@/logger';
+import { DelayRequester } from '@krivega/timeout-requester';
 
-import type { DelayRequester } from '@krivega/timeout-requester';
+import logger from '@/logger';
+import AttemptsState from './AttemptsState';
+import CheckTelephonyRequester from './CheckTelephonyRequester';
+import PingServerIfNotActiveCallRequester from './PingServerIfNotActiveCallRequester';
+import RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCallSubscriber';
+import TelephonyFailPolicy from './TelephonyFailPolicy';
+
+import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
 import type { ConnectionQueueManager } from '@/ConnectionQueueManager';
-import type AttemptsState from './AttemptsState';
-import type CheckTelephonyRequester from './CheckTelephonyRequester';
 import type { TEventMap } from './events';
-import type PingServerIfNotActiveCallRequester from './PingServerIfNotActiveCallRequester';
-import type RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCallSubscriber';
-import type TelephonyFailPolicy from './TelephonyFailPolicy';
-import type { TParametersAutoConnect, TReconnectReason } from './types';
+import type { TParametersAutoConnect, TReconnectReason, IAutoConnectorOptions } from './types';
 
 type TStopReason = 'halted' | 'cancelled' | 'failed' | undefined;
 
 type TEmitters = {
+  emitStatusChange: ({ isInProgress }: { isInProgress: boolean }) => void;
   emitBeforeAttempt: () => void;
   emitLimitReachedAttempts: () => void;
   emitSuccess: () => void;
@@ -33,15 +36,14 @@ type TReconnectActions = {
 type TAutoConnectorRuntimeParams = {
   connectionManager: ConnectionManager;
   connectionQueueManager: ConnectionQueueManager;
-  checkTelephonyRequester: CheckTelephonyRequester;
-  pingServerIfNotActiveCallRequester: PingServerIfNotActiveCallRequester;
-  registrationFailedOutOfCallSubscriber: RegistrationFailedOutOfCallSubscriber;
-  attemptsState: AttemptsState;
-  delayBetweenAttempts: DelayRequester;
-  telephonyFailPolicy: TelephonyFailPolicy;
+  callManager: CallManager;
   emitters: TEmitters;
   reconnectActions: TReconnectActions;
+  options?: IAutoConnectorOptions;
 };
+
+const DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS = 3000;
+const DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL = 15_000;
 
 export class AutoConnectorRuntime {
   private readonly connectionManager: ConnectionManager;
@@ -67,14 +69,29 @@ export class AutoConnectorRuntime {
   public constructor(params: TAutoConnectorRuntimeParams) {
     this.connectionManager = params.connectionManager;
     this.connectionQueueManager = params.connectionQueueManager;
-    this.checkTelephonyRequester = params.checkTelephonyRequester;
-    this.pingServerIfNotActiveCallRequester = params.pingServerIfNotActiveCallRequester;
-    this.registrationFailedOutOfCallSubscriber = params.registrationFailedOutOfCallSubscriber;
-    this.attemptsState = params.attemptsState;
-    this.delayBetweenAttempts = params.delayBetweenAttempts;
-    this.telephonyFailPolicy = params.telephonyFailPolicy;
     this.emitters = params.emitters;
     this.reconnectActions = params.reconnectActions;
+
+    this.checkTelephonyRequester = new CheckTelephonyRequester({
+      connectionManager: this.connectionManager,
+      interval:
+        params.options?.checkTelephonyRequestInterval ?? DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL,
+    });
+    this.pingServerIfNotActiveCallRequester = new PingServerIfNotActiveCallRequester({
+      connectionManager: this.connectionManager,
+      callManager: params.callManager,
+    });
+    this.registrationFailedOutOfCallSubscriber = new RegistrationFailedOutOfCallSubscriber({
+      connectionManager: this.connectionManager,
+      callManager: params.callManager,
+    });
+    this.delayBetweenAttempts = new DelayRequester(
+      params.options?.timeoutBetweenAttempts ?? DEFAULT_TIMEOUT_BETWEEN_ATTEMPTS,
+    );
+    this.telephonyFailPolicy = new TelephonyFailPolicy(params.options?.telephonyFailPolicy);
+    this.attemptsState = new AttemptsState({
+      onStatusChange: this.emitters.emitStatusChange,
+    });
   }
 
   public async stopConnectionFlow() {
