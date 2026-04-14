@@ -42,7 +42,6 @@ describe('AutoConnectorRuntime', () => {
       },
       reconnectActions: {
         requestReconnect: jest.fn(),
-        requestFlowRestart: jest.fn(),
         notifyTelephonyStillConnected: jest.fn(),
       },
     });

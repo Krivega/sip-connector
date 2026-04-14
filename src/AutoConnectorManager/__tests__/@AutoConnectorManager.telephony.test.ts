@@ -4,7 +4,6 @@ import logger from '@/logger';
 import AutoConnectorManager from '../@AutoConnectorManager';
 import AttemptsState from '../AttemptsState';
 import CheckTelephonyRequester from '../CheckTelephonyRequester';
-import PingServerIfNotActiveCallRequester from '../PingServerIfNotActiveCallRequester';
 
 import type { SipConnector } from '@/SipConnector';
 import type {
@@ -12,8 +11,6 @@ import type {
   TParametersAutoConnect,
   TParametersCheckTelephony,
 } from '../types';
-
-const DELAY = 100;
 
 jest.mock('@/logger');
 
@@ -234,42 +231,39 @@ describe('AutoConnectorManager - Telephony', () => {
     });
 
     it('при успешной проверке запускает start в случае, если соединение было отключено', async () => {
-      jest
-        .spyOn(PingServerIfNotActiveCallRequester.prototype, 'start')
-        .mockImplementation(({ onFailRequest }) => {
-          setTimeout(() => {
-            onFailRequest();
-          }, DELAY);
+      jest.spyOn(sipConnector.connectionManager, 'isDisconnected', 'get').mockReturnValue(true);
+      jest.spyOn(sipConnector.connectionManager, 'isIdle', 'get').mockReturnValue(true);
+
+      const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
+      const startSpy = jest.spyOn(CheckTelephonyRequester.prototype, 'start').mockImplementation();
+      const originalHasLimitReached = AttemptsState.prototype.hasLimitReached;
+      const hasLimitReachedSpy = jest
+        .spyOn(AttemptsState.prototype, 'hasLimitReached')
+        .mockImplementationOnce(() => {
+          return true;
+        })
+        .mockImplementation(function fallbackHasLimitReached(this: AttemptsState) {
+          return originalHasLimitReached.call(this);
         });
 
-      manager = createManager({
-        checkTelephonyRequestInterval: 10,
-        timeoutBetweenAttempts: 10,
-      });
       manager.start(baseParameters);
 
-      await sipConnector.connectionManager.wait('connect-succeeded');
-
-      expect(sipConnector.connectionManager.isConfigured()).toBe(true);
-
-      jest
-        // @ts-expect-error
-        .spyOn(sipConnector.connectionManager.connectionFlow, 'connect')
-        .mockRejectedValue(new Error('connect is rejected'));
-
-      const disconnectSpy = jest.spyOn(sipConnector.connectionManager, 'disconnect');
-
-      await manager.wait('limit-reached-attempts');
+      await flushPromises();
 
       const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
 
-      expect(disconnectSpy).toHaveBeenCalled();
-      expect(sipConnector.connectionManager.isDisconnected).toBe(false);
-      expect(sipConnector.connectionManager.isIdle).toBe(true);
+      const { onSuccessRequest } = startSpy.mock.calls[0][1] as {
+        onSuccessRequest: () => void;
+      };
 
-      await manager.wait('before-attempt');
+      onSuccessRequest();
+
+      await manager.wait('success');
 
       expect(restartSpy).toHaveBeenCalledTimes(1);
+      expect(connectSpy).toHaveBeenCalled();
+
+      hasLimitReachedSpy.mockRestore();
     });
 
     describe('onBeforeRequest', () => {

@@ -31,16 +31,6 @@ const withStopAndRestart = (): TStopRestartTransitions => {
   };
 };
 
-const withStopRestartAndFlowRestart = () => {
-  return {
-    ...withStopAndRestart(),
-    'FLOW.RESTART': {
-      target: EState.DISCONNECTING,
-      actions: 'assignFlowRestart' as const,
-    },
-  };
-};
-
 /**
  * Собирает машину `autoConnector`: состояния, гварды, invoke-акторы и действия.
  *
@@ -69,10 +59,6 @@ export const createAutoConnectorMachine = (deps: TAutoConnectorMachineDeps) => {
               actions: 'assignRestart',
             },
           ],
-          'FLOW.RESTART': {
-            target: EState.DISCONNECTING,
-            actions: 'assignFlowRestart',
-          },
         },
       },
       /**
@@ -117,9 +103,6 @@ export const createAutoConnectorMachine = (deps: TAutoConnectorMachineDeps) => {
           },
           'AUTO.RESTART': {
             actions: 'assignRestart',
-          },
-          'FLOW.RESTART': {
-            actions: 'assignFlowRestart',
           },
         },
       },
@@ -227,9 +210,9 @@ export const createAutoConnectorMachine = (deps: TAutoConnectorMachineDeps) => {
         },
         on: withStopAndRestart(),
       },
-      /** Подключение установлено; ожидание внешних событий (стоп, рестарт, ping). */
+      /** Подключение установлено; ожидание внешних событий (стоп, рестарт через `AUTO.RESTART`). */
       [EState.CONNECTED_MONITORING]: {
-        on: withStopRestartAndFlowRestart(),
+        on: withStopAndRestart(),
       },
       /**
        * После лимита: работает check-telephony; если соединение уже живо, возвращаемся

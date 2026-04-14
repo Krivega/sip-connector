@@ -46,10 +46,6 @@ export class AutoConnectorStateMachine extends BaseStateMachine<
     this.send({ type: 'AUTO.RESTART', parameters });
   }
 
-  public toFlowRestart(): void {
-    this.send({ type: 'FLOW.RESTART' });
-  }
-
   public toTelephonyResult(outcome: 'stillConnected'): void {
     this.send({ type: 'TELEPHONY.RESULT', outcome });
   }

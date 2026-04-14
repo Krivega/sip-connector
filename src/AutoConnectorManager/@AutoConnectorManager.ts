@@ -86,9 +86,6 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
       },
       reconnectActions: {
         requestReconnect: this.requestReconnect,
-        requestFlowRestart: () => {
-          this.stateMachine.toFlowRestart();
-        },
         notifyTelephonyStillConnected: () => {
           this.stateMachine.toTelephonyResultStillConnected();
         },

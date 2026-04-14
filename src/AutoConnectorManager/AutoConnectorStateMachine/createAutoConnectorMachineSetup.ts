@@ -144,16 +144,6 @@ export const createAutoConnectorMachineSetup = (deps: TAutoConnectorMachineDeps)
           return undefined;
         },
       }),
-      /** Рестарт мониторинга без смены `parameters` (ping / внутренний перезапуск). */
-      assignFlowRestart: assign({
-        afterDisconnect: 'attempt' as const,
-        stopReason: () => {
-          return undefined;
-        },
-        lastError: () => {
-          return undefined;
-        },
-      }),
       /** Пользовательский или внешний стоп: после `disconnect` уйти в `idle`. */
       assignStop: assign({
         afterDisconnect: 'idle' as const,

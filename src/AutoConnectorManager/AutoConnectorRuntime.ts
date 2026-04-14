@@ -31,7 +31,6 @@ type TEmitters = {
 
 type TReconnectActions = {
   requestReconnect: (parameters: TParametersAutoConnect, reason: TReconnectReason) => void;
-  requestFlowRestart: () => void;
   notifyTelephonyStillConnected: () => void;
 };
 
@@ -262,7 +261,6 @@ export class AutoConnectorRuntime {
     this.pingServerIfNotActiveCallRequester.start({
       onFailRequest: () => {
         debug('pingRequester: onFailRequest');
-        this.reconnectActions.requestFlowRestart();
       },
     });
 

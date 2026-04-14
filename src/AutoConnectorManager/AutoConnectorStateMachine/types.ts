@@ -24,7 +24,6 @@ export type TAutoConnectorContext = {
 export type TAutoConnectorEvent =
   | { type: 'AUTO.STOP' }
   | { type: 'AUTO.RESTART'; parameters: TParametersAutoConnect }
-  | { type: 'FLOW.RESTART' }
   | {
       type: 'TELEPHONY.RESULT';
       outcome: 'stillConnected';

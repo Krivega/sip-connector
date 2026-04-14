@@ -29,8 +29,9 @@
   - Если `shouldDisconnectBeforeAttempt === true`, сначала переход в `disconnecting`.
   - Если `shouldDisconnectBeforeAttempt === false` (cold start: `isDisconnected || isIdle` и нет `requested/isDisconnecting`), переход сразу в `attemptingGate`.
 - `AUTO.STOP` — остановить флоу (`afterDisconnect: idle`). В `idle` обрабатывается как безопасный no-op (остаёмся в `idle`).
-- `FLOW.RESTART` — перезапуск из мониторинга (ping / внутренние триггеры), параметры берутся из контекста.
 - `TELEPHONY.RESULT` с `stillConnected` — возврат в `connectedMonitoring` после успешной проверки телефонии при уже подключённом клиенте. Если нужен полный рестарт, менеджер вызывает `requestReconnect` с причиной `telephony-disconnected`.
+
+Неудачный ping в режиме мониторинга не инициирует отдельный перезапуск флоу: восстановление соединения остаётся на стороне JsSIP.
 
 ## Диаграмма переходов (Mermaid)
 
@@ -42,13 +43,11 @@ stateDiagram-v2
   idle --> idle: AUTO.STOP
   idle --> disconnecting: AUTO.RESTART shouldDisconnectBeforeAttempt
   idle --> attemptingGate: AUTO.RESTART not shouldDisconnectBeforeAttempt
-  idle --> disconnecting: FLOW.RESTART
   disconnecting --> idle: invoke onDone shouldGoIdleAfterDisconnect
   disconnecting --> attemptingGate: invoke onDone shouldAttemptAfterDisconnect
   disconnecting --> idle: invoke onError
   disconnecting --> disconnecting: AUTO.STOP reenter
   disconnecting --> disconnecting: AUTO.RESTART actions only
-  disconnecting --> disconnecting: FLOW.RESTART actions only
   attemptingGate --> telephonyChecking: always isLimitReached
   attemptingGate --> attemptingConnect: always else
   attemptingGate --> disconnecting: AUTO.STOP
@@ -67,7 +66,6 @@ stateDiagram-v2
   waitingBeforeRetry --> disconnecting: AUTO.RESTART
   connectedMonitoring --> disconnecting: AUTO.STOP
   connectedMonitoring --> disconnecting: AUTO.RESTART
-  connectedMonitoring --> disconnecting: FLOW.RESTART
   telephonyChecking --> connectedMonitoring: TELEPHONY.RESULT stillConnected
   telephonyChecking --> disconnecting: AUTO.STOP
   telephonyChecking --> disconnecting: AUTO.RESTART
