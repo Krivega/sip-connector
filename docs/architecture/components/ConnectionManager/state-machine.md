@@ -30,7 +30,7 @@ stateDiagram-v2
     connecting --> registered: UA_REGISTERED
     connecting --> disconnecting: START_DISCONNECT
     connecting --> disconnected: UA_DISCONNECTED
-    connected --> established: always to ESTABLISHED
+    connected --> established: always (registerRequired=false)
     connected --> registered: UA_REGISTERED
     connected --> disconnecting: START_DISCONNECT
     connected --> disconnected: UA_DISCONNECTED
@@ -51,7 +51,7 @@ stateDiagram-v2
 
 - `PREPARING` — подготовка к подключению (до инициализации UA, до вызова `ua.start()`)
 - `CONNECTING` — UA запущен, идет подключение (после `ua.start()`, когда приходят события `connecting`, `connected`, `registered`)
-- `CONNECTED` — UA подключен к серверу (промежуточное состояние, автоматически переходит в `ESTABLISHED`)
+- `CONNECTED` — UA подключен к серверу (промежуточное состояние; автоматически переходит в `ESTABLISHED`, только если `register=false`)
 - `REGISTERED` — UA зарегистрирован на сервере (промежуточное состояние, автоматически переходит в `ESTABLISHED`)
 - `ESTABLISHED` — соединение установлено и готово к работе (финальное активное состояние, автоматически достигается из `CONNECTED` или `REGISTERED`)
 - `DISCONNECTING` — процесс отключения (начат вызов `disconnect()`, ожидаем `disconnected` от UA)
@@ -99,8 +99,9 @@ stateDiagram-v2
 
 ### Основные пути
 
-- **IDLE → PREPARING → CONNECTING → CONNECTED → ESTABLISHED** (автоматически)
+- **IDLE → PREPARING → CONNECTING → CONNECTED → ESTABLISHED** (автоматически, если `register=false`)
 - **IDLE → PREPARING → CONNECTING → REGISTERED → ESTABLISHED** (автоматически)
+- **IDLE → PREPARING → CONNECTING → CONNECTED → REGISTERED → ESTABLISHED** (если `register=true`)
 - **CONNECTING → REGISTERED** — прямой переход для быстрой регистрации без явного connected
 - **REGISTERED → CONNECTED → ESTABLISHED** — через `UA_UNREGISTERED`, затем автоматически
 
@@ -127,7 +128,7 @@ stateDiagram-v2
 
 Через `always`:
 
-- **CONNECTED → ESTABLISHED**
+- **CONNECTED → ESTABLISHED** (только при `register=false`)
 - **REGISTERED → ESTABLISHED**
 
 ### Игнорируемые события

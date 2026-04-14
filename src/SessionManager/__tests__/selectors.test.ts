@@ -16,7 +16,9 @@ describe('sessionSelectors', () => {
     return {
       connection: {
         value: EConnectionStatus.IDLE,
-        context: {},
+        context: {
+          registerRequired: false,
+        },
         ...overrides.connection,
       },
       call: {

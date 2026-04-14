@@ -109,7 +109,10 @@ describe('SessionManager', () => {
         EConnectionStatus.PREPARING,
       );
 
-      connectionStateMachine.send({ type: EConnectionEvents.START_INIT_UA });
+      connectionStateMachine.send({
+        type: EConnectionEvents.START_INIT_UA,
+        registerRequired: false,
+      });
       connectionStateMachine.send({ type: EConnectionEvents.UA_CONNECTED });
       connectionStateMachine.send({ type: EConnectionEvents.UA_REGISTERED });
       connectionStateMachine.send({ type: EConnectionEvents.UA_CONNECTED });
@@ -297,7 +300,10 @@ describe('SessionManager', () => {
       const { session, connectionStateMachine, callStateMachine, stopAll } = startSession();
 
       connectionStateMachine.send({ type: EConnectionEvents.START_CONNECT });
-      connectionStateMachine.send({ type: EConnectionEvents.START_INIT_UA });
+      connectionStateMachine.send({
+        type: EConnectionEvents.START_INIT_UA,
+        registerRequired: false,
+      });
       connectionStateMachine.send({ type: EConnectionEvents.UA_CONNECTED });
       connectionStateMachine.send({ type: EConnectionEvents.UA_REGISTERED });
 

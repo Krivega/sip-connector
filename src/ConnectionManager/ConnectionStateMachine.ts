@@ -1,4 +1,4 @@
-import { setup } from 'xstate';
+import { assign, setup } from 'xstate';
 
 import logger from '@/logger';
 import { BaseStateMachine } from '@/tools/BaseStateMachine';
@@ -19,6 +19,8 @@ export enum EState {
 enum EAction {
   LOG_TRANSITION = 'logTransition',
   LOG_STATE_CHANGE = 'logStateChange',
+  SET_REGISTER_REQUIRED = 'setRegisterRequired',
+  RESET_REGISTER_REQUIRED = 'resetRegisterRequired',
 }
 
 export enum EEvents {
@@ -33,13 +35,24 @@ export enum EEvents {
   RESET = 'RESET',
 }
 
-type TConnectionMachineEvent = `${EEvents}`;
+type TConnectionMachineEvent = EEvents;
 
-type TConnectionMachineEvents = { type: TConnectionMachineEvent };
+type TConnectionMachineEvents =
+  | { type: EEvents.START_CONNECT }
+  | { type: EEvents.START_INIT_UA; registerRequired: boolean }
+  | { type: EEvents.START_DISCONNECT }
+  | { type: EEvents.UA_CONNECTED }
+  | { type: EEvents.UA_CONNECTING }
+  | { type: EEvents.UA_REGISTERED }
+  | { type: EEvents.UA_UNREGISTERED }
+  | { type: EEvents.UA_DISCONNECTED }
+  | { type: EEvents.RESET };
 
 const ALL_MACHINE_EVENTS: TConnectionMachineEvent[] = Object.values(EEvents);
 
-type TContext = Record<string, never>;
+type TContext = {
+  registerRequired: boolean;
+};
 
 // Создаем XState машину с setup API для лучшей типизации
 const connectionMachine = setup({
@@ -47,7 +60,26 @@ const connectionMachine = setup({
     context: {} as TContext,
     events: {} as TConnectionMachineEvents,
   },
+  guards: {
+    canAutoEstablish: ({ context }) => {
+      return !context.registerRequired;
+    },
+  },
   actions: {
+    [EAction.SET_REGISTER_REQUIRED]: assign(({ event }) => {
+      if (event.type !== EEvents.START_INIT_UA) {
+        return {};
+      }
+
+      return {
+        registerRequired: event.registerRequired,
+      };
+    }),
+    [EAction.RESET_REGISTER_REQUIRED]: assign(() => {
+      return {
+        registerRequired: false,
+      };
+    }),
     [EAction.LOG_TRANSITION]: (_, params: { from: string; to: string; event: string }) => {
       logger(`State transition: ${params.from} -> ${params.to} (${params.event})`);
     },
@@ -58,7 +90,9 @@ const connectionMachine = setup({
 }).createMachine({
   id: 'connection',
   initial: EState.IDLE,
-  context: {},
+  context: {
+    registerRequired: false,
+  },
   states: {
     [EState.IDLE]: {
       entry: {
@@ -87,14 +121,17 @@ const connectionMachine = setup({
       on: {
         [EEvents.START_INIT_UA]: {
           target: EState.CONNECTING,
-          actions: {
-            type: EAction.LOG_TRANSITION,
-            params: {
-              from: EState.PREPARING,
-              to: EState.CONNECTING,
-              event: EEvents.START_INIT_UA,
+          actions: [
+            EAction.SET_REGISTER_REQUIRED,
+            {
+              type: EAction.LOG_TRANSITION,
+              params: {
+                from: EState.PREPARING,
+                to: EState.CONNECTING,
+                event: EEvents.START_INIT_UA,
+              },
             },
-          },
+          ],
         },
         [EEvents.UA_DISCONNECTED]: {
           target: EState.DISCONNECTED,
@@ -168,6 +205,7 @@ const connectionMachine = setup({
       },
       always: {
         target: EState.ESTABLISHED,
+        guard: 'canAutoEstablish',
         actions: {
           type: EAction.LOG_TRANSITION,
           params: {
@@ -295,14 +333,17 @@ const connectionMachine = setup({
         },
         [EEvents.RESET]: {
           target: EState.IDLE,
-          actions: {
-            type: EAction.LOG_TRANSITION,
-            params: {
-              from: EState.ESTABLISHED,
-              to: EState.IDLE,
-              event: EEvents.RESET,
+          actions: [
+            EAction.RESET_REGISTER_REQUIRED,
+            {
+              type: EAction.LOG_TRANSITION,
+              params: {
+                from: EState.ESTABLISHED,
+                to: EState.IDLE,
+                event: EEvents.RESET,
+              },
             },
-          },
+          ],
         },
       },
     },
@@ -333,14 +374,17 @@ const connectionMachine = setup({
       on: {
         [EEvents.RESET]: {
           target: EState.IDLE,
-          actions: {
-            type: EAction.LOG_TRANSITION,
-            params: {
-              from: EState.DISCONNECTED,
-              to: EState.IDLE,
-              event: EEvents.RESET,
+          actions: [
+            EAction.RESET_REGISTER_REQUIRED,
+            {
+              type: EAction.LOG_TRANSITION,
+              params: {
+                from: EState.DISCONNECTED,
+                to: EState.IDLE,
+                event: EEvents.RESET,
+              },
             },
-          },
+          ],
         },
         [EEvents.START_CONNECT]: {
           target: EState.PREPARING,
@@ -441,8 +485,8 @@ export class ConnectionStateMachine extends BaseStateMachine<
     this.toStartConnect();
   }
 
-  public startInitUa(): void {
-    this.toStartInitUa();
+  public startInitUa(registerRequired = false): void {
+    this.toStartInitUa(registerRequired);
   }
 
   public startDisconnect(): void {
@@ -460,8 +504,12 @@ export class ConnectionStateMachine extends BaseStateMachine<
 
   public canTransition(event: TConnectionMachineEvent): boolean {
     const snapshot = this.actor.getSnapshot();
+    const machineEvent =
+      event === EEvents.START_INIT_UA
+        ? { type: EEvents.START_INIT_UA, registerRequired: false }
+        : { type: event };
 
-    return snapshot.can({ type: event });
+    return snapshot.can(machineEvent);
   }
 
   public getValidEvents(): TConnectionMachineEvent[] {
@@ -493,8 +541,8 @@ export class ConnectionStateMachine extends BaseStateMachine<
     this.sendEvent({ type: EEvents.START_CONNECT });
   };
 
-  private readonly toStartInitUa = (): void => {
-    this.sendEvent({ type: EEvents.START_INIT_UA });
+  private readonly toStartInitUa = (registerRequired: boolean): void => {
+    this.sendEvent({ type: EEvents.START_INIT_UA, registerRequired });
   };
 
   private readonly toStartDisconnect = (): void => {

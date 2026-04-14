@@ -294,7 +294,7 @@ export default class ConnectionFlow {
     register = false,
     extraHeaders = [],
   }) => {
-    this.dependencies.stateMachine.startInitUa();
+    this.dependencies.stateMachine.startInitUa(register);
 
     // Отключаем текущее соединение, если оно есть
     const currentUa = this.dependencies.getUa();

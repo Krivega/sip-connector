@@ -404,6 +404,21 @@ describe('ConnectionStateMachine', () => {
       );
     });
 
+    it('при registerRequired=true connected не должен автопереводить в ESTABLISHED', () => {
+      stateMachine.startConnect();
+      stateMachine.startInitUa(true);
+      expect(stateMachine.state).toBe(EState.CONNECTING);
+
+      events.trigger('connected', { socket: {} as Socket });
+      expect(stateMachine.state).toBe(EState.CONNECTED);
+
+      events.trigger('registered', { response: {} as IncomingResponse });
+      expect(stateMachine.state).toBe(EState.ESTABLISHED);
+      expect(mockLogger).toHaveBeenCalledWith(
+        'State transition: connection:connected -> connection:registered (UA_REGISTERED)',
+      );
+    });
+
     it('registered событие должно игнорироваться в ESTABLISHED (нет обработчика)', () => {
       stateMachine.startConnect();
       stateMachine.startInitUa();
