@@ -119,6 +119,16 @@ export class AutoConnectorRuntime {
     return this.attemptsState.hasLimitReached();
   }
 
+  public shouldDisconnectBeforeAttempt(): boolean {
+    const { isDisconnected, isIdle, isDisconnecting, requested } = this.connectionManager;
+
+    if (isDisconnecting || requested) {
+      return true;
+    }
+
+    return !(isDisconnected || isIdle);
+  }
+
   public beforeAttempt() {
     logger('entryAttemptingGate');
     this.emitters.emitBeforeAttempt();

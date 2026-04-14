@@ -58,6 +58,10 @@ export const createAutoConnectorMachineSetup = (deps: TAutoConnectorMachineDeps)
     },
     /** Условия переходов после `disconnect`, классификация ошибок `connect` и ретрая. */
     guards: {
+      /** Нужен ли промежуточный `disconnecting` перед новым циклом попытки. */
+      shouldDisconnectBeforeAttempt: () => {
+        return deps.shouldDisconnectBeforeAttempt();
+      },
       /** После `stopConnectionFlow` уходим в `idle` (полная остановка / ошибка остановки). */
       shouldGoIdleAfterDisconnect: ({ context }) => {
         return context.afterDisconnect === 'idle';

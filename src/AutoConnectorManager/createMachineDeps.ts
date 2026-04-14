@@ -33,6 +33,9 @@ export const createMachineDeps = (
 
   return {
     canRetryOnError: params.canRetryOnError,
+    shouldDisconnectBeforeAttempt: () => {
+      return params.runtime.shouldDisconnectBeforeAttempt();
+    },
     stopConnectionFlow: async () => {
       await params.runtime.stopConnectionFlow();
     },

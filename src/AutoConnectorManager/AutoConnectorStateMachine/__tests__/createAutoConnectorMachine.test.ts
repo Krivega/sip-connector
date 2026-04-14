@@ -38,6 +38,9 @@ const createDeps = (overrides: Partial<Parameters<typeof createAutoConnectorMach
     canRetryOnError: () => {
       return true;
     },
+    shouldDisconnectBeforeAttempt: () => {
+      return false;
+    },
     stopConnectionFlow: jest.fn(async () => {}),
     connect: jest.fn(async () => {}),
     delayBetweenAttempts: jest.fn(async () => {}),
@@ -61,7 +64,7 @@ const settleMachine = async () => {
 };
 
 describe('createAutoConnectorMachine', () => {
-  it('после AUTO.RESTART из idle вызывает stopConnectionFlow и доходит до attemptingConnect', async () => {
+  it('после AUTO.RESTART из idle на холодном старте сразу доходит до attemptingConnect', async () => {
     const deps = createDeps();
     const machine = createAutoConnectorMachine(deps);
     const actor = createActor(machine);
@@ -71,8 +74,26 @@ describe('createAutoConnectorMachine', () => {
 
     await settleMachine();
 
-    expect(deps.stopConnectionFlow).toHaveBeenCalled();
+    expect(deps.stopConnectionFlow).not.toHaveBeenCalled();
     expect(deps.beforeAttempt).toHaveBeenCalled();
+    expect(deps.connect).toHaveBeenCalled();
+  });
+
+  it('после AUTO.RESTART из idle вызывает stopConnectionFlow, если нужен предварительный disconnect', async () => {
+    const deps = createDeps({
+      shouldDisconnectBeforeAttempt: () => {
+        return true;
+      },
+    });
+    const machine = createAutoConnectorMachine(deps);
+    const actor = createActor(machine);
+
+    actor.start();
+    actor.send({ type: 'AUTO.RESTART', parameters });
+
+    await settleMachine();
+
+    expect(deps.stopConnectionFlow).toHaveBeenCalled();
     expect(deps.connect).toHaveBeenCalled();
   });
 
@@ -90,6 +111,9 @@ describe('createAutoConnectorMachine', () => {
 
   it('логирует ошибку при падении stopConnectionFlow', async () => {
     const deps = createDeps({
+      shouldDisconnectBeforeAttempt: () => {
+        return true;
+      },
       stopConnectionFlow: jest.fn(async () => {
         throw new Error('stop failed');
       }),

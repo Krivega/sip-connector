@@ -157,12 +157,10 @@ describe('AutoConnectorManager - Events', () => {
       manager.on('changed-attempt-status', handleAttemptStatusChanged);
       manager.start(baseParameters);
 
-      // Очищаем вызов startAttempt
-      manager.once('changed-attempt-status', () => {
-        handleAttemptStatusChanged.mockClear();
-      });
+      await flushPromises();
+      handleAttemptStatusChanged.mockClear();
 
-      await manager.wait('success');
+      await flushPromises();
 
       // При успешном подключении статус остается true, поэтому событие не должно сработать
       expect(handleAttemptStatusChanged).not.toHaveBeenCalled();

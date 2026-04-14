@@ -37,6 +37,8 @@ export type TAutoConnectorEvent =
 export type TAutoConnectorMachineDeps = {
   /** Правило из опций: можно ли переподключаться после этой ошибки. */
   canRetryOnError: (error: unknown) => boolean;
+  /** Нужно ли делать предварительный `disconnect` перед новой попыткой. */
+  shouldDisconnectBeforeAttempt: () => boolean;
   /** Полная остановка текущего флоу: сброс попыток, стоп триггеров, `disconnect` очереди. */
   stopConnectionFlow: () => Promise<void>;
   /** Один вызов `connectionQueueManager.connect` с параметрами из контекста. */

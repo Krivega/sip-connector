@@ -58,10 +58,17 @@ export const createAutoConnectorMachine = (deps: TAutoConnectorMachineDeps) => {
           'AUTO.STOP': {
             target: EState.IDLE,
           },
-          'AUTO.RESTART': {
-            target: EState.DISCONNECTING,
-            actions: 'assignRestart',
-          },
+          'AUTO.RESTART': [
+            {
+              guard: 'shouldDisconnectBeforeAttempt',
+              target: EState.DISCONNECTING,
+              actions: 'assignRestart',
+            },
+            {
+              target: EState.ATTEMPTING_GATE,
+              actions: 'assignRestart',
+            },
+          ],
           'FLOW.RESTART': {
             target: EState.DISCONNECTING,
             actions: 'assignFlowRestart',

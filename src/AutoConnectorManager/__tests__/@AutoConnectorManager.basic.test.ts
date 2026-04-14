@@ -79,10 +79,33 @@ describe('AutoConnectorManager - Basic', () => {
       expect(sipConnector.isConfigured()).toBe(true);
     });
 
-    it('start: сбрасывает состояния перед подключением', () => {
+    it('start: на холодном старте не делает лишний disconnect', () => {
       const disconnectSpy = jest.spyOn(sipConnector.connectionQueueManager, 'disconnect');
 
       manager.start(baseParameters);
+
+      expect(disconnectSpy).not.toHaveBeenCalled();
+    });
+
+    it('start: делает disconnect, если есть активный connect request', async () => {
+      const disconnectSpy = jest.spyOn(sipConnector.connectionQueueManager, 'disconnect');
+
+      jest.spyOn(sipConnector.connectionManager, 'requested', 'get').mockReturnValue(true);
+
+      manager.start(baseParameters);
+      await flushPromises();
+
+      expect(disconnectSpy).toHaveBeenCalled();
+    });
+
+    it('start: делает disconnect, если connection manager уже в disconnecting', async () => {
+      const disconnectSpy = jest.spyOn(sipConnector.connectionQueueManager, 'disconnect');
+
+      jest.spyOn(sipConnector.connectionManager, 'isDisconnecting', 'get').mockReturnValue(true);
+      jest.spyOn(sipConnector.connectionManager, 'isDisconnected', 'get').mockReturnValue(false);
+
+      manager.start(baseParameters);
+      await flushPromises();
 
       expect(disconnectSpy).toHaveBeenCalled();
     });

@@ -18,6 +18,9 @@ const createParameters = (): TParametersAutoConnect => {
 
 const createBaseParams = () => {
   const runtime = {
+    shouldDisconnectBeforeAttempt: jest.fn(() => {
+      return false;
+    }),
     stopConnectionFlow: jest.fn(async () => {}),
     connect: jest.fn(async () => {}),
     delayBeforeRetry: jest.fn(async () => {}),

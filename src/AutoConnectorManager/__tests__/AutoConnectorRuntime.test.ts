@@ -6,9 +6,24 @@ jest.mock('@/logger', () => {
 });
 
 describe('AutoConnectorRuntime', () => {
-  it('логирует defensive-ветку, если terminal outcome пришел без stopReason', () => {
-    const runtime = new AutoConnectorRuntime({
-      connectionManager: {} as never,
+  const createRuntime = ({
+    isDisconnected = true,
+    isIdle = false,
+    isDisconnecting = false,
+    requested = false,
+  }: {
+    isDisconnected?: boolean;
+    isIdle?: boolean;
+    isDisconnecting?: boolean;
+    requested?: boolean;
+  } = {}) => {
+    return new AutoConnectorRuntime({
+      connectionManager: {
+        isDisconnected,
+        isIdle,
+        isDisconnecting,
+        requested,
+      } as never,
       connectionQueueManager: {} as never,
       callManager: {} as never,
       emitters: {
@@ -28,6 +43,10 @@ describe('AutoConnectorRuntime', () => {
         notifyTelephonyStillConnected: jest.fn(),
       },
     });
+  };
+
+  it('логирует defensive-ветку, если terminal outcome пришел без stopReason', () => {
+    const runtime = createRuntime();
 
     runtime.emitTerminalOutcome({
       stopReason: undefined,
@@ -38,5 +57,23 @@ describe('AutoConnectorRuntime', () => {
       'emitTerminalOutcome without stopReason',
       expect.any(Error),
     );
+  });
+
+  it('shouldDisconnectBeforeAttempt возвращает true, когда connection manager в disconnecting', () => {
+    const runtime = createRuntime({
+      isDisconnected: false,
+      isDisconnecting: true,
+    });
+
+    expect(runtime.shouldDisconnectBeforeAttempt()).toBe(true);
+  });
+
+  it('shouldDisconnectBeforeAttempt возвращает true, когда есть requested', () => {
+    const runtime = createRuntime({
+      isDisconnected: false,
+      requested: true,
+    });
+
+    expect(runtime.shouldDisconnectBeforeAttempt()).toBe(true);
   });
 });
