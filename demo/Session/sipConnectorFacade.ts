@@ -1,10 +1,11 @@
-import JsSIP from '@krivega/jssip';
+import JsSIP, { debug as JsSIPDebug } from '@krivega/jssip';
 
 import { SipConnector, SipConnectorFacade, enableDebug } from '@/index';
 import logger, { enableDebug as enableDebugDemo } from '../logger';
 
 enableDebug();
 enableDebugDemo();
+JsSIPDebug.enable('*');
 
 const debug = logger.extend('sipConnector event');
 
