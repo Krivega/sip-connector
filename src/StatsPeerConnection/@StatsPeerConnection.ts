@@ -2,7 +2,7 @@ import { CancelableRequest } from '@krivega/cancelable-promise';
 import { SetTimeoutRequest } from '@krivega/timeout-requester';
 import { EventEmitterProxy } from 'events-constructor';
 
-import log from '@/logger';
+import resolveDebug from '@/logger';
 import { INTERVAL_COLLECT_STATISTICS } from './constants';
 import { createEvents } from './events';
 import parseStatsReports from './parseStatsReports';
@@ -11,9 +11,7 @@ import { now } from './utils';
 
 import type { TEventMap } from './events';
 
-const debug = (data: unknown) => {
-  log(String(data));
-};
+const debug = resolveDebug('StatsPeerConnection');
 
 class StatsPeerConnection extends EventEmitterProxy<TEventMap> {
   private readonly setTimeoutRequest: SetTimeoutRequest;

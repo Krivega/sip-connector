@@ -1,9 +1,11 @@
 import { assign, setup } from 'xstate';
 
-import logger from '@/logger';
+import resolveDebug from '@/logger';
 import { BaseStateMachine } from '@/tools/BaseStateMachine';
 
 import type { TEvents } from './events';
+
+const debug = resolveDebug('ConnectionStateMachine');
 
 export enum EState {
   IDLE = 'connection:idle',
@@ -81,10 +83,10 @@ const connectionMachine = setup({
       };
     }),
     [EAction.LOG_TRANSITION]: (_, params: { from: string; to: string; event: string }) => {
-      logger(`State transition: ${params.from} -> ${params.to} (${params.event})`);
+      debug(`State transition: ${params.from} -> ${params.to} (${params.event})`);
     },
     [EAction.LOG_STATE_CHANGE]: (_, params: { state: string }) => {
-      logger('ConnectionStateMachine state changed', params.state);
+      debug('ConnectionStateMachine state changed', params.state);
     },
   },
 }).createMachine({
@@ -527,7 +529,7 @@ export class ConnectionStateMachine extends BaseStateMachine<
     const snapshot = this.actor.getSnapshot();
 
     if (!snapshot.can(event)) {
-      logger(
+      debug(
         `Invalid transition: ${event.type} from ${this.state}. Event cannot be processed in current state.`,
       );
 

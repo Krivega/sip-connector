@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable global-require */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+
 /// <reference types="jest" />
 import stringifyMessage from '../stringifyMessage';
 
@@ -14,7 +14,11 @@ describe('stringifyMessage', () => {
   let mockLogger: jest.Mock;
 
   beforeEach(() => {
-    mockLogger = jest.mocked(require('@/logger').default);
+    const resolveDebug = jest.mocked(require('@/logger').default) as jest.Mock & {
+      mcuDebugLogger: jest.Mock;
+    };
+
+    mockLogger = resolveDebug.mcuDebugLogger;
     jest.clearAllMocks();
   });
 

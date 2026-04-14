@@ -15,11 +15,9 @@ import type {
 
 const DELAY = 100;
 
-const loggerMock = logger as jest.MockedFunction<typeof logger>;
+jest.mock('@/logger');
 
-jest.mock('@/logger', () => {
-  return jest.fn();
-});
+const { mcuDebugLogger } = logger as jest.Mock & { mcuDebugLogger: jest.Mock };
 
 describe('AutoConnectorManager - Telephony', () => {
   let sipConnector: SipConnector;
@@ -108,7 +106,7 @@ describe('AutoConnectorManager - Telephony', () => {
 
       onFailRequest(error);
 
-      expect(loggerMock).toHaveBeenCalled();
+      expect(mcuDebugLogger).toHaveBeenCalled();
       hasLimitReachedSpy.mockRestore();
     });
 

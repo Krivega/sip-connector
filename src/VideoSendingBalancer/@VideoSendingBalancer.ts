@@ -1,4 +1,4 @@
-import debug from '@/logger';
+import resolveDebug from '@/logger';
 import { CodecProvider } from './CodecProvider';
 import { ParametersSetterWithQueue } from './ParametersSetterWithQueue';
 import { SenderBalancer } from './SenderBalancer';
@@ -9,6 +9,8 @@ import { VideoSendingEventHandler } from './VideoSendingEventHandler';
 import type { ApiManager } from '@/ApiManager';
 import type { TResultSetParametersToSender } from '@/tools';
 import type { IBalancerOptions, IMainCamHeaders } from './types';
+
+const debug = resolveDebug('VideoSendingBalancer');
 
 /**
  * Контроллер/фасад для балансировки видеопотоков

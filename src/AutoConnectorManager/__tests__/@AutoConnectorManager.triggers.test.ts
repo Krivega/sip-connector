@@ -9,9 +9,7 @@ import RegistrationFailedOutOfCallSubscriber from '../RegistrationFailedOutOfCal
 import type { SipConnector } from '@/SipConnector';
 import type { IAutoConnectorOptions, TParametersAutoConnect } from '../types';
 
-jest.mock('@/logger', () => {
-  return jest.fn();
-});
+jest.mock('@/logger');
 
 describe('AutoConnectorManager - Triggers', () => {
   let sipConnector: SipConnector;

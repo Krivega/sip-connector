@@ -1,9 +1,12 @@
-import logger from '@/logger';
+import { createLoggerMockModule } from '@/__fixtures__/logger.mock';
+import resolveDebug from '@/logger';
 import { AutoConnectorRuntime } from '../AutoConnectorRuntime';
 
 jest.mock('@/logger', () => {
-  return jest.fn();
+  return createLoggerMockModule();
 });
+
+const autoConnectorRuntimeDebug = (resolveDebug as jest.Mock).mock.results[0].value as jest.Mock;
 
 describe('AutoConnectorRuntime', () => {
   const createRuntime = ({
@@ -53,7 +56,7 @@ describe('AutoConnectorRuntime', () => {
       lastError: new Error('unexpected'),
     });
 
-    expect(logger).toHaveBeenCalledWith(
+    expect(autoConnectorRuntimeDebug).toHaveBeenCalledWith(
       'emitTerminalOutcome without stopReason',
       expect.any(Error),
     );

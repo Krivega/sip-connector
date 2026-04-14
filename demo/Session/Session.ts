@@ -1,4 +1,4 @@
-import { debugResolve } from '../logger';
+import resolveDebug from '../logger';
 import ParticipantRoleManager from './ParticipantRoleManager';
 import RecvQualityManager from './RecvQualityManager';
 import resolveServerParametersRequester from './resolveServerParametersRequester';
@@ -13,7 +13,7 @@ import type {
   IServerParameters,
 } from './resolveServerParametersRequester';
 
-const debug = debugResolve('demo:session');
+const debug = resolveDebug('demo:session');
 
 export class Session {
   private readonly serverParametersRequester: IServerParametersRequester;

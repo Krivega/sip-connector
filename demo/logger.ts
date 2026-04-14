@@ -4,10 +4,6 @@ const NAME = 'demo';
 
 const logger = debug(NAME);
 
-export const logError = (scope: string, error: unknown) => {
-  logger(`${scope}:`, error);
-};
-
 export const enableDebug = () => {
   debug.enable(`${NAME}:*`);
 };
@@ -16,6 +12,8 @@ export const disableDebug = () => {
   debug.enable(`-${NAME}`);
 };
 
-export { default as debugResolve } from 'debug';
+const resolveDebug = (name: string) => {
+  return logger.extend(name);
+};
 
-export default logger;
+export default resolveDebug;

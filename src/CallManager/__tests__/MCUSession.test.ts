@@ -1,15 +1,22 @@
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
 
 import flushPromises from '@/__fixtures__/flushPromises';
+import { createLoggerMockModule } from '@/__fixtures__/logger.mock';
 import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import UAMock from '@/__fixtures__/UA.mock';
-import * as loggerModule from '@/logger';
+import resolveDebug from '@/logger';
 import { createEvents, EVENT_NAMES } from '../events';
 import { MCUSession } from '../MCUSession';
 
 import type { RTCSession, UA } from '@krivega/jssip';
 import type { TEvents } from '../events';
+
+jest.mock('@/logger', () => {
+  return createLoggerMockModule();
+});
+
+const { mcuDebugLogger } = resolveDebug as jest.Mock & { mcuDebugLogger: jest.Mock };
 
 // Вспомогательный тип для доступа к защищённым свойствам MCUSession
 interface MCUSessionTestAccess {
@@ -550,8 +557,6 @@ describe('MCUSession - дополнительные тесты для покры
   });
 
   it('setMinBitrateForSenders: логирует ошибку если BitrateStateManager отклоняет промис', async () => {
-    const loggerSpy = jest.spyOn(loggerModule, 'logError').mockImplementation(() => {});
-
     // @ts-expect-error
     const bitrateManager = mcuSession.bitrateStateManager;
 
@@ -563,12 +568,10 @@ describe('MCUSession - дополнительные тесты для покры
 
     await flushPromises();
 
-    expect(loggerSpy).toHaveBeenCalledWith('MCUSession.setMinBitrateForSenders', expect.any(Error));
+    expect(mcuDebugLogger).toHaveBeenCalledWith('setMinBitrateForSenders', expect.any(Error));
   });
 
   it('restoreBitrateForSenders: логирует ошибку если BitrateStateManager отклоняет промис', async () => {
-    const loggerSpy = jest.spyOn(loggerModule, 'logError').mockImplementation(() => {});
-
     // @ts-expect-error
     const bitrateManager = mcuSession.bitrateStateManager;
 
@@ -580,9 +583,6 @@ describe('MCUSession - дополнительные тесты для покры
 
     await flushPromises();
 
-    expect(loggerSpy).toHaveBeenCalledWith(
-      'MCUSession.restoreBitrateForSenders',
-      expect.any(Error),
-    );
+    expect(mcuDebugLogger).toHaveBeenCalledWith('restoreBitrateForSenders', expect.any(Error));
   });
 });

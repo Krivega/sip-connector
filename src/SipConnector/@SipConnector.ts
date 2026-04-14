@@ -8,7 +8,7 @@ import { ConnectionManager } from '@/ConnectionManager';
 import { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
 import { IncomingCallManager } from '@/IncomingCallManager';
-import logger from '@/logger';
+import resolveDebug from '@/logger';
 import { PeerToPeerManager } from '@/PeerToPeerManager';
 import { PresentationManager } from '@/PresentationManager';
 import { SessionManager } from '@/SessionManager';
@@ -31,6 +31,8 @@ import type { TContentHint, TOnAddedTransceiver } from '@/PresentationManager';
 import type { TJsSIP } from '@/types';
 import type { IBalancerOptions } from '@/VideoSendingBalancer';
 import type { TEventName, TEventMap } from './events';
+
+const debug = resolveDebug('SipConnector');
 
 class SipConnector extends EventEmitterProxy<TEventMap> {
   public readonly connectionManager: ConnectionManager;
@@ -495,7 +497,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       const cause = JsSIP_C.causes.INTERNAL_ERROR;
 
       this.callManager.failed(message, cause).catch((endCallError: unknown) => {
-        logger('Failed to end call after failed:', endCallError);
+        debug('Failed to end call after failed:', endCallError);
       });
     });
   }
@@ -553,7 +555,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
 
   private subscribeToMainStreamHealthMonitorEvents() {
     this.mainStreamHealthMonitor.on('inbound-video-problem-detected', ({ reason }) => {
-      logger('detected inbound video problem', { reason });
+      debug('detected inbound video problem', { reason });
       this.mainStreamRecovery.recover();
     });
   }

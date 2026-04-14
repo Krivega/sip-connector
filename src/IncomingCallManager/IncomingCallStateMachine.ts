@@ -1,10 +1,12 @@
 import { assign, setup } from 'xstate';
 
-import logger from '@/logger';
+import resolveDebug from '@/logger';
 import { BaseStateMachine } from '@/tools/BaseStateMachine';
 
 import type { TEvents as TConnectionEvents } from '@/ConnectionManager/events';
 import type { TEvents as TIncomingEvents, TRemoteCallerData } from './events';
+
+const debug = resolveDebug('IncomingCallStateMachine');
 
 export enum EState {
   IDLE = 'incoming:idle',
@@ -43,10 +45,10 @@ const incomingMachine = setup({
   },
   actions: {
     [EAction.LOG_TRANSITION]: (_, params: { from: string; to: string; event: string }) => {
-      logger(`State transition: ${params.from} -> ${params.to} (${params.event})`);
+      debug(`State transition: ${params.from} -> ${params.to} (${params.event})`);
     },
     [EAction.LOG_STATE_CHANGE]: (_, params: { state: string }) => {
-      logger('IncomingCallStateMachine state changed', params.state);
+      debug('IncomingCallStateMachine state changed', params.state);
     },
     [EAction.REMEMBER_INCOMING]: assign(({ event }) => {
       const { data } = event as { data: TRemoteCallerData };

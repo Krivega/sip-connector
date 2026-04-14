@@ -4,7 +4,7 @@ import ConferenceStateDisplay from './ConferenceStateDisplay';
 import { dom } from './dom';
 import LoaderManager from './LoaderManager';
 import { LocalMediaStreamManager } from './LocalMediaStreamManager';
-import { debugResolve } from './logger';
+import resolveDebug from './logger';
 import LogsManager from './LogsManager';
 import NotificationManager from './NotificationManager';
 import PresentationManager from './PresentationManager';
@@ -20,7 +20,7 @@ import type { TRemoteStreams } from '@/index';
 import type { TCallState } from './CallStateManager';
 import type { IFormState } from './state/FormState';
 
-const debug = debugResolve('demo:app');
+const debug = resolveDebug('demo:app');
 
 /**
  * Главный класс приложения

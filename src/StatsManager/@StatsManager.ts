@@ -1,12 +1,14 @@
 import { EventEmitterProxy } from 'events-constructor';
 
-import logger from '@/logger';
+import resolveDebug from '@/logger';
 import { StatsPeerConnection } from '@/StatsPeerConnection';
 import { MIN_RECEIVED_MAIN_STREAM_PACKETS } from './constants';
 
 import type { ApiManager } from '@/ApiManager';
 import type { CallManager } from '@/CallManager';
 import type { TStats, TStatsPeerConnectionEventMap } from '@/StatsPeerConnection';
+
+const debug = resolveDebug('StatsManager');
 
 class StatsManager extends EventEmitterProxy<TStatsPeerConnectionEventMap> {
   public readonly statsPeerConnection: StatsPeerConnection;
@@ -212,7 +214,7 @@ class StatsManager extends EventEmitterProxy<TStatsPeerConnectionEventMap> {
       this.apiManager
         .sendStats({ availableIncomingBitrate: this.availableIncomingBitrate })
         .catch((error: unknown) => {
-          logger('Failed to send stats', error);
+          debug('Failed to send stats', error);
         });
     }
   }

@@ -1,6 +1,6 @@
 import { EventEmitterProxy } from 'events-constructor';
 
-import logger from '@/logger';
+import resolveDebug from '@/logger';
 import ConfigurationManager from './ConfigurationManager';
 import ConnectionFlow from './ConnectionFlow';
 import { ConnectionStateMachine } from './ConnectionStateMachine';
@@ -17,6 +17,8 @@ import type { TConnectionConfiguration } from './ConfigurationManager';
 import type { TConnect, TParametersConnection, TSet } from './ConnectionFlow';
 import type { TEventMap } from './events';
 import type { TParametersCheckTelephony } from './SipOperations';
+
+const debug = resolveDebug('ConnectionManager');
 
 type TConnectParameters = (() => Promise<TParametersConnection>) | TParametersConnection;
 type TConnectOptions = Parameters<TConnect>[1] & {
@@ -139,7 +141,7 @@ export default class ConnectionManager extends EventEmitterProxy<TEventMap> {
   ): Promise<TConnectionConfiguration> => {
     return this.disconnect()
       .catch((error: unknown) => {
-        logger('connect: disconnect error', error);
+        debug('connect: disconnect error', error);
       })
       .then(async () => {
         return this.connectWithProcessError(parameters, options);

@@ -1,7 +1,7 @@
 /* eslint-disable default-case */
 import { EventEmitterProxy } from 'events-constructor';
 
-import logger from '@/logger';
+import resolveDebug from '@/logger';
 import { hasDeclineResponseFromServer } from '@/utils/errors';
 import {
   EContentTypeSent,
@@ -47,6 +47,8 @@ import type {
   TWebcastInfoNotify,
   TWebcastStoppedInfoNotify,
 } from './types';
+
+const debug = resolveDebug('ApiManager');
 
 class ApiManager extends EventEmitterProxy<TEventMap> {
   private callManager?: CallManager;
@@ -265,7 +267,7 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
         this.handleNotify(headerNotifyParsed);
       }
     } catch (error) {
-      logger('error parse notify', error);
+      debug('error parse notify', error);
     }
   };
 
@@ -327,7 +329,7 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
         break;
       }
       default: {
-        logger('unknown cmd', header);
+        debug('unknown cmd', header);
       }
     }
   };

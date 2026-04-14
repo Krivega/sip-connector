@@ -10,9 +10,7 @@ import type { IAutoConnectorOptions, TParametersAutoConnect } from '../types';
 
 const DELAY = 100;
 
-jest.mock('@/logger', () => {
-  return jest.fn();
-});
+jest.mock('@/logger');
 
 describe('AutoConnectorManager - Reconnection', () => {
   let sipConnector: SipConnector;

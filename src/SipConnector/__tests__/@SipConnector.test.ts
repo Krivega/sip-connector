@@ -20,9 +20,9 @@ import type { TConnectionConfiguration } from '@/ConnectionManager';
 import type { TInboundStats, TOutboundStats } from '@/StatsPeerConnection';
 import type { TJsSIP } from '@/types';
 
-jest.mock('@/logger', () => {
-  return jest.fn();
-});
+jest.mock('@/logger');
+
+const { mcuDebugLogger } = logger as jest.Mock & { mcuDebugLogger: jest.Mock };
 
 describe('SipConnector', () => {
   let sipConnector: SipConnector;
@@ -204,7 +204,7 @@ describe('SipConnector', () => {
 
     await flushPromises();
 
-    expect(logger).toHaveBeenCalledWith('Failed to end call after failed:', endCallError);
+    expect(mcuDebugLogger).toHaveBeenCalledWith('Failed to end call after failed:', endCallError);
   });
 
   it('не должен проксировать событие connection:disconnected как disconnected-from-out-of-call если активен звонок', async () => {

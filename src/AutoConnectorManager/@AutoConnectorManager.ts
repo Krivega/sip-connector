@@ -1,6 +1,6 @@
 import { EventEmitterProxy } from 'events-constructor';
 
-import logger from '@/logger';
+import resolveDebug from '@/logger';
 import { AutoConnectorRuntime } from './AutoConnectorRuntime';
 import { createAutoConnectorStateMachine } from './AutoConnectorStateMachine';
 import { createMachineDeps } from './createMachineDeps';
@@ -23,6 +23,8 @@ const ERROR_MESSAGES = {
 const defaultCanRetryOnError = (_error: unknown): boolean => {
   return true;
 };
+
+const debug = resolveDebug('AutoConnectorManager');
 
 class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   public readonly stateMachine: AutoConnectorStateMachine;
@@ -60,7 +62,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
           this.events.trigger('limit-reached-attempts', new Error(ERROR_MESSAGES.LIMIT_REACHED));
         },
         emitSuccess: () => {
-          logger('handleSucceededAttempt');
+          debug('handleSucceededAttempt');
           this.events.trigger('success');
         },
         emitStopAttemptsByError: (error: unknown) => {
@@ -102,13 +104,13 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   }
 
   public start(parameters: TParametersAutoConnect) {
-    logger('auto connector start');
+    debug('auto connector start');
 
     this.requestReconnect(parameters, 'start');
   }
 
   public stop() {
-    logger('auto connector stop');
+    debug('auto connector stop');
 
     this.resetReconnectCoalescingState();
     this.stateMachine.toStop();
@@ -125,7 +127,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   ) => {
     const isAvailableToRestart = this.shouldRequestReconnect(reason);
 
-    logger('auto connector request reconnect', {
+    debug('auto connector requestReconnect', {
       isAvailableToRestart,
       reason,
     });
@@ -141,7 +143,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
     const decision = this.reconnectCoalescer.register(reason);
 
     if (!decision.shouldRequest) {
-      logger(`auto connector reconnect coalesced: ${reason}`, {
+      debug(`auto connector reconnect coalesced: ${reason}`, {
         state: String(this.stateMachine.state),
         coalescedBy: decision.coalescedBy,
         currentPriority: decision.currentPriority,
@@ -151,7 +153,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
       return false;
     }
 
-    logger(`auto connector reconnect requested: ${reason}`, {
+    debug(`auto connector reconnect requested: ${reason}`, {
       state: String(this.stateMachine.state),
       generation: decision.generation,
     });

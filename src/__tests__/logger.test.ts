@@ -2,50 +2,73 @@
 
 import debug from 'debug';
 
-import { disableDebug, enableDebug, logError } from '../logger';
+import resolveDebug, { disableDebug, enableDebug } from '../logger';
 
-const mockEnableDebug = jest.fn();
+type DebugMock = jest.Mock & {
+  enable: jest.Mock;
+  mockedControls: {
+    enableDebug: jest.Mock;
+    extend: jest.Mock;
+    scopedLogger: jest.Mock;
+  };
+};
 
 jest.mock('debug', () => {
-  const loggerSpy = jest.fn();
+  const scopedLogger = jest.fn();
+  const mockExtend = jest.fn(() => {
+    return scopedLogger;
+  });
+  const mockEnableDebug = jest.fn();
 
   const debugMocked = jest.fn(() => {
-    return loggerSpy;
+    return {
+      extend: mockExtend,
+    };
   });
 
-  // @ts-expect-error
-  debugMocked.enable = (arguments_: string) => {
-    mockEnableDebug(arguments_);
-  };
-
-  // Экспортируем spy через свойство мока, чтобы получить его в тесте
-  // @ts-expect-error
-  debugMocked.loggerSpy = loggerSpy;
+  Object.assign(debugMocked, {
+    enable: (arguments_: string) => {
+      mockEnableDebug(arguments_);
+    },
+    mockedControls: {
+      enableDebug: mockEnableDebug,
+      extend: mockExtend,
+      scopedLogger,
+    },
+  });
 
   return debugMocked;
 });
 
+const getDebugMock = () => {
+  return debug as unknown as DebugMock;
+};
+
 describe('Logger', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('должен включать и отключать отладку', () => {
+    const debugMock = getDebugMock();
+
     enableDebug();
 
-    expect(mockEnableDebug).toHaveBeenCalledTimes(1);
-    expect(mockEnableDebug).toHaveBeenCalledWith('sip-connector:*');
+    expect(debugMock.mockedControls.enableDebug).toHaveBeenCalledTimes(1);
+    expect(debugMock.mockedControls.enableDebug).toHaveBeenCalledWith('sip-connector:*');
 
     disableDebug();
 
-    expect(mockEnableDebug).toHaveBeenCalledTimes(2);
-    expect(mockEnableDebug).toHaveBeenCalledWith('-sip-connector:*');
+    expect(debugMock.mockedControls.enableDebug).toHaveBeenCalledTimes(2);
+    expect(debugMock.mockedControls.enableDebug).toHaveBeenCalledWith('-sip-connector:*');
   });
 
-  it('logError: должен логировать ошибку', () => {
-    logError('test-error', new Error('test-error'));
+  it('должен возвращать logger с нужным namespace', () => {
+    const debugMock = getDebugMock();
+    const logger = resolveDebug('auto-connector');
 
-    const debugMocked = debug as unknown as jest.Mock & {
-      loggerSpy: jest.Mock;
-    };
-
-    expect(debugMocked.loggerSpy).toHaveBeenCalledTimes(1);
-    expect(debugMocked.loggerSpy).toHaveBeenCalledWith('test-error:', expect.any(Error));
+    expect(debugMock.mockedControls.extend).toHaveBeenCalledTimes(1);
+    expect(debugMock.mockedControls.extend).toHaveBeenCalledWith('auto-connector');
+    expect(logger).toBe(debugMock.mockedControls.scopedLogger);
   });
 });

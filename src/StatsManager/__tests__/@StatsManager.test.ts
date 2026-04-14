@@ -13,10 +13,9 @@ import { statisticsMockBase } from '@/StatsPeerConnection/__fixtures__/callStati
 const audioTrack = createAudioMediaStreamTrackMock();
 const videoTrack = createVideoMediaStreamTrackMock();
 
-// Мокаем logger
-jest.mock('@/logger', () => {
-  return jest.fn();
-});
+jest.mock('@/logger');
+
+const { mcuDebugLogger } = logger as jest.Mock & { mcuDebugLogger: jest.Mock };
 
 describe('StatsManager', () => {
   const tools = {
@@ -674,7 +673,7 @@ describe('StatsManager', () => {
     };
 
     beforeEach(() => {
-      (logger as jest.MockedFunction<typeof logger>).mockClear();
+      mcuDebugLogger.mockClear();
     });
 
     it('не отправляет stats на первом collected (нет previous)', () => {
@@ -756,10 +755,7 @@ describe('StatsManager', () => {
 
       await delayPromise(0);
 
-      expect(logger as jest.MockedFunction<typeof logger>).toHaveBeenCalledWith(
-        'Failed to send stats',
-        error,
-      );
+      expect(mcuDebugLogger).toHaveBeenCalledWith('Failed to send stats', error);
     });
   });
 });

@@ -1,4 +1,6 @@
-import logger from '@/logger';
+import resolveDebug from '@/logger';
+
+const debug = resolveDebug('stringifyMessage');
 
 const stringifyMessage = (message: unknown) => {
   let stringifiedMessage = '';
@@ -6,7 +8,7 @@ const stringifyMessage = (message: unknown) => {
   try {
     stringifiedMessage = JSON.stringify(message);
   } catch (stringifyError: unknown) {
-    logger('failed to stringify message', stringifyError);
+    debug('failed to stringify message', stringifyError);
   }
 
   return stringifiedMessage;

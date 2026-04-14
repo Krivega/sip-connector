@@ -1,4 +1,4 @@
-import logger from '@/logger';
+import resolveDebug from '@/logger';
 
 import type { RegisteredEvent, UA, UnRegisteredEvent, DisconnectEvent } from '@krivega/jssip';
 import type { TEvents } from './events';
@@ -7,6 +7,8 @@ interface IDependencies {
   events: TEvents;
   getUaProtected: () => UA;
 }
+
+const debug = resolveDebug('RegistrationManager');
 
 export default class RegistrationManager {
   private readonly events: IDependencies['events'];
@@ -41,7 +43,7 @@ export default class RegistrationManager {
     try {
       await this.unregister();
     } catch (error) {
-      logger('tryRegister', error);
+      debug('tryRegister', error);
     }
 
     return this.register();

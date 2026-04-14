@@ -1,9 +1,11 @@
 import { CancelableRequest } from '@krivega/cancelable-promise';
 import lodash from 'lodash';
 
-import logger from '@/logger';
+import resolveDebug from '@/logger';
 
 import type { CallManager } from '@/CallManager';
+
+const debug = resolveDebug('MainStreamRecovery');
 
 const DEFAULT_THROTTLE_RECOVERY_TIMEOUT_MS = 4000;
 
@@ -51,17 +53,17 @@ class MainStreamRecovery {
 
   // Запускает recovery: фактически вызывает throttled-версию requestRenegotiate.
   public recover(): void {
-    logger('trying to recover main stream');
+    debug('trying to recover main stream');
 
     this.renegotiateThrottled();
   }
 
   // Выполняет renegotiate main media stream (если только он еще не выполняется).
   private readonly requestRenegotiate = () => {
-    logger('trying to renegotiate');
+    debug('trying to renegotiate');
 
     if (this.renegotiateRequester.requested) {
-      logger('previous renegotiate is not finished yet');
+      debug('previous renegotiate is not finished yet');
 
       return;
     }
@@ -70,10 +72,10 @@ class MainStreamRecovery {
     this.renegotiateRequester
       .request()
       .then(() => {
-        logger('renegotiate has successful');
+        debug('renegotiate has successful');
       })
       .catch((error: unknown) => {
-        logger('failed to renegotiate main media stream', error);
+        debug('failed to renegotiate main media stream', error);
       });
   };
 
@@ -95,7 +97,7 @@ class MainStreamRecovery {
 
   // Останавливает дальнейшие попытки recovery.
   private cancel() {
-    logger('cancel recover main stream');
+    debug('cancel recover main stream');
 
     this.renegotiateThrottled.cancel();
     this.renegotiateRequester.cancelRequest();

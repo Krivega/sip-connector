@@ -1,5 +1,6 @@
 import { C } from '@krivega/jssip';
 
+import { getMockedLoggerDefault } from '@/__fixtures__/logger.mock';
 import logger from '@/logger';
 import { ConnectionStateMachine, EEvents, EState } from '../ConnectionStateMachine';
 import { createEvents } from '../events';
@@ -7,12 +8,10 @@ import { createEvents } from '../events';
 import type { Socket, IncomingResponse, ConnectingEventUA } from '@krivega/jssip';
 import type { TEvents } from '../events';
 
-jest.mock('@/logger', () => {
-  return jest.fn();
-});
+jest.mock('@/logger');
 
 describe('ConnectionStateMachine', () => {
-  const mockLogger = logger as jest.MockedFunction<typeof logger>;
+  const mockLogger = getMockedLoggerDefault(logger);
   let events: TEvents;
   let stateMachine: ConnectionStateMachine;
 

@@ -1,9 +1,11 @@
-import logger from '@/logger';
+import resolveDebug from '@/logger';
 import NotActiveCallSubscriber from './NotActiveCallSubscriber';
 import PingServerRequester from './PingServerRequester';
 
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
+
+const debug = resolveDebug('PingServerIfNotActiveCallRequester');
 
 class PingServerIfNotActiveCallRequester {
   private readonly pingServerRequester: PingServerRequester;
@@ -25,7 +27,7 @@ class PingServerIfNotActiveCallRequester {
   }
 
   public start({ onFailRequest }: { onFailRequest: () => void }) {
-    logger('start');
+    debug('start');
 
     this.notActiveCallSubscriber.subscribe({
       onActive: () => {
@@ -38,7 +40,7 @@ class PingServerIfNotActiveCallRequester {
   }
 
   public stop() {
-    logger('stop');
+    debug('stop');
 
     this.pingServerRequester.stop();
     this.unsubscribeCallStatusChange();

@@ -15,9 +15,9 @@ import type {
 } from '@krivega/jssip';
 import type { UA_EVENT_NAMES, TEvents } from '../events';
 
-jest.mock('@/logger', () => {
-  return jest.fn();
-});
+jest.mock('@/logger');
+
+const { mcuDebugLogger } = logger as jest.Mock & { mcuDebugLogger: jest.Mock };
 
 // Типы для тестовых данных
 interface ITestEventData {
@@ -194,7 +194,7 @@ describe('RegistrationManager', () => {
       const result = await registrationManager.tryRegister();
 
       expect(result).toEqual(testData.mockRegisteredEvent);
-      expect(logger).toHaveBeenCalledWith('tryRegister', expect.any(Error));
+      expect(mcuDebugLogger).toHaveBeenCalledWith('tryRegister', expect.any(Error));
 
       // Восстанавливаем оригинальный метод
       unregisterMock.mockRestore();
@@ -210,7 +210,7 @@ describe('RegistrationManager', () => {
       const result = await registrationManager.tryRegister();
 
       expect(result).toEqual(testData.mockRegisteredEvent);
-      expect(logger).toHaveBeenCalledWith('tryRegister', expect.any(Error));
+      expect(mcuDebugLogger).toHaveBeenCalledWith('tryRegister', expect.any(Error));
 
       unregisterMock.mockRestore();
     });

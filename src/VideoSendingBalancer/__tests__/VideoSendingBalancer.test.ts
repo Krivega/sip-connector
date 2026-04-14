@@ -15,9 +15,9 @@ import { createMockTrack } from '../__fixtures__';
 import type { ApiManager } from '@/ApiManager';
 import type { IBalancerOptions, IMainCamHeaders } from '../types';
 
-jest.mock('@/logger', () => {
-  return jest.fn();
-});
+jest.mock('@/logger');
+
+const { mcuDebugLogger } = logger as jest.Mock & { mcuDebugLogger: jest.Mock };
 
 describe('VideoSendingBalancer', () => {
   let balancer: VideoSendingBalancer;
@@ -212,7 +212,10 @@ describe('VideoSendingBalancer', () => {
 
       await delayPromise(100);
 
-      expect(logger).toHaveBeenCalledWith('reset sender encodings: error', expect.any(Error));
+      expect(mcuDebugLogger).toHaveBeenCalledWith(
+        'reset sender encodings: error',
+        expect.any(Error),
+      );
     });
   });
 
@@ -285,7 +288,10 @@ describe('VideoSendingBalancer', () => {
 
       await delayPromise(50);
 
-      expect(logger).toHaveBeenCalledWith('reset sender encodings: error', expect.any(Error));
+      expect(mcuDebugLogger).toHaveBeenCalledWith(
+        'reset sender encodings: error',
+        expect.any(Error),
+      );
     });
   });
 
@@ -651,7 +657,10 @@ describe('VideoSendingBalancer', () => {
         await delayPromise(100);
 
         // Проверяем, что debug был вызван с ошибкой
-        expect(logger).toHaveBeenCalledWith('balance on track change: error', expect.any(Error));
+        expect(mcuDebugLogger).toHaveBeenCalledWith(
+          'balance on track change: error',
+          expect.any(Error),
+        );
       } finally {
         testBalancer.unsubscribe();
         jest.clearAllMocks();

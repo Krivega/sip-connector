@@ -1,14 +1,11 @@
 // <reference types="jest" />
 
-import log from '@/logger';
+import resolveDebug from '@/logger';
 import setCodecPreferences from '../setCodecPreferences';
 
-jest.mock('@/logger', () => {
-  return {
-    __esModule: true,
-    default: jest.fn(),
-  };
-});
+jest.mock('@/logger');
+
+const { mcuDebugLogger } = resolveDebug as jest.Mock & { mcuDebugLogger: jest.Mock };
 
 type GlobalWithRTC = typeof globalThis & {
   RTCRtpSender: { getCapabilities: jest.Mock };
@@ -191,7 +188,7 @@ describe('setCodecPreferences', () => {
       excludeMimeTypesVideoCodecs: ['video/h264'],
     });
 
-    expect(log).toHaveBeenCalledWith('setCodecPreferences error', expect.any(Error));
+    expect(mcuDebugLogger).toHaveBeenCalledWith('setCodecPreferences error', expect.any(Error));
   });
 
   it('should not call setCodecPreferences when no preferred or exclude codecs are provided', async () => {

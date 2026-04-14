@@ -1,6 +1,6 @@
 import { DelayRequester } from '@krivega/timeout-requester';
 
-import logger from '@/logger';
+import resolveDebug from '@/logger';
 import AttemptsState from './AttemptsState';
 import CheckTelephonyRequester from './CheckTelephonyRequester';
 import PingServerIfNotActiveCallRequester from './PingServerIfNotActiveCallRequester';
@@ -12,6 +12,8 @@ import type { ConnectionManager } from '@/ConnectionManager';
 import type { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import type { TEventMap } from './events';
 import type { TParametersAutoConnect, TReconnectReason, IAutoConnectorOptions } from './types';
+
+const debug = resolveDebug('AutoConnectorRuntime');
 
 type TStopReason = 'halted' | 'cancelled' | 'failed' | undefined;
 
@@ -95,7 +97,7 @@ export class AutoConnectorRuntime {
   }
 
   public async stopConnectionFlow() {
-    logger('stopConnectionFlow');
+    debug('stopConnectionFlow');
 
     // Важно останавливать локальные циклы до disconnect, чтобы не запускать новые рестарты во время остановки.
     this.stopAttempts();
@@ -130,19 +132,19 @@ export class AutoConnectorRuntime {
   }
 
   public beforeAttempt() {
-    logger('entryAttemptingGate');
+    debug('entryAttemptingGate');
     this.emitters.emitBeforeAttempt();
     this.stopConnectTriggers();
   }
 
   public beforeConnectAttempt() {
-    logger('entryAttemptingConnect');
+    debug('entryAttemptingConnect');
     this.attemptsState.startAttempt();
     this.attemptsState.increment();
   }
 
   public onLimitReached(parameters: TParametersAutoConnect) {
-    logger('onLimitReachedTransition');
+    debug('onLimitReachedTransition');
     this.attemptsState.finishAttempt();
     this.emitters.emitLimitReachedAttempts();
     this.startCheckTelephony(parameters);
@@ -181,17 +183,17 @@ export class AutoConnectorRuntime {
       return;
     }
 
-    logger('emitTerminalOutcome without stopReason', lastError);
+    debug('emitTerminalOutcome without stopReason', lastError);
   }
 
   public onTelephonyStillConnected() {
-    logger('onTelephonyStillConnected');
+    debug('onTelephonyStillConnected');
     this.stopConnectTriggers();
     this.emitters.emitSuccess();
   }
 
   public stopConnectTriggers() {
-    logger('stopConnectTriggers');
+    debug('stopConnectTriggers');
 
     this.pingServerIfNotActiveCallRequester.stop();
     this.checkTelephonyRequester.stop();
@@ -208,7 +210,7 @@ export class AutoConnectorRuntime {
   }
 
   private startCheckTelephony(parameters: TParametersAutoConnect) {
-    logger('startCheckTelephony');
+    debug('startCheckTelephony');
 
     this.checkTelephonyRequester.start(
       async () => {
@@ -216,7 +218,7 @@ export class AutoConnectorRuntime {
       },
       {
         onSuccessRequest: () => {
-          logger('startCheckTelephony: onSuccessRequest');
+          debug('startCheckTelephony: onSuccessRequest');
           this.telephonyFailPolicy.reset();
 
           if (this.isConnectionUnavailable()) {
@@ -250,7 +252,7 @@ export class AutoConnectorRuntime {
             this.reconnectActions.requestReconnect(parameters, 'telephony-check-failed');
           }
 
-          logger('startCheckTelephony: onFailRequest', (error as Error | undefined)?.message);
+          debug('startCheckTelephony: onFailRequest', (error as Error | undefined)?.message);
         },
       },
     );
@@ -259,13 +261,13 @@ export class AutoConnectorRuntime {
   private subscribeToConnectTriggers(parameters: TParametersAutoConnect) {
     this.pingServerIfNotActiveCallRequester.start({
       onFailRequest: () => {
-        logger('pingRequester: onFailRequest');
+        debug('pingRequester: onFailRequest');
         this.reconnectActions.requestFlowRestart();
       },
     });
 
     this.registrationFailedOutOfCallSubscriber.subscribe(() => {
-      logger('registrationFailedOutOfCallListener callback');
+      debug('registrationFailedOutOfCallListener callback');
       this.reconnectActions.requestReconnect(parameters, 'registration-failed-out-of-call');
     });
   }

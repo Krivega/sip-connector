@@ -1,4 +1,6 @@
-import log from '@/logger';
+import resolveDebug from '@/logger';
+
+const debug = resolveDebug('setCodecPreferences');
 
 const mergeIntersectionCodecs = (codecs1: RTCRtpCodec[], codecs2: RTCRtpCodec[]): RTCRtpCodec[] => {
   const uniqueArray = codecs1.filter((codec) => {
@@ -74,7 +76,7 @@ const setCodecPreferences = (
       transceiver.setCodecPreferences(sortedCodecs);
     }
   } catch (error) {
-    log('setCodecPreferences error', error);
+    debug('setCodecPreferences error', error);
   }
 };
 

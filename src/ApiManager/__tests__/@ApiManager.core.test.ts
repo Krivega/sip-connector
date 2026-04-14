@@ -1,6 +1,7 @@
 import delayPromise from '@/__fixtures__/delayPromise';
 import flushPromises from '@/__fixtures__/flushPromises';
 import jssip from '@/__fixtures__/jssip.mock';
+import { getMockedLoggerDefault } from '@/__fixtures__/logger.mock';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { CallManager } from '@/CallManager';
 import { ConnectionManager } from '@/ConnectionManager';
@@ -21,13 +22,10 @@ import {
 import type { IncomingRequest } from '@krivega/jssip';
 import type { TJsSIP } from '@/types';
 
-// Мокаем logger
-jest.mock('@/logger', () => {
-  return jest.fn();
-});
+jest.mock('@/logger');
 
 describe('ApiManager (core)', () => {
-  const mockLogger = logger as jest.MockedFunction<typeof logger>;
+  const mockLogger = getMockedLoggerDefault(logger);
   let connectionManager: ConnectionManager;
   let callManager: CallManager & { getEstablishedRTCSession: jest.Mock };
   let apiManager: ApiManager;

@@ -4,7 +4,7 @@ import { assign, fromPromise, setup } from 'xstate';
 
 import { hasNotReadyForConnectionError } from '@/ConnectionManager';
 import { hasConnectionPromiseIsNotActualError } from '@/ConnectionQueueManager';
-import logger from '@/logger';
+import resolveDebug from '@/logger';
 import { getInvokeError } from './getInvokeError';
 
 import type {
@@ -14,9 +14,7 @@ import type {
 } from './types';
 import type { TParametersAutoConnect } from '../types';
 
-const debug = (message: string, ...args: unknown[]) => {
-  logger(`[AutoConnectorMachine] ${message}`, ...args);
-};
+const debug = resolveDebug('AutoConnectorMachine');
 
 const getRequiredParameters = (context: TAutoConnectorContext, actionName: string) => {
   /* istanbul ignore next -- graph invariants require parameters before reaching these actions */

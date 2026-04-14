@@ -1,4 +1,4 @@
-import { logError } from '@/logger';
+import resolveDebug from '@/logger';
 import { prepareMediaStream } from '@/tools';
 import BitrateStateManager from './BitrateStateManager';
 import { ECallCause } from './causes';
@@ -9,6 +9,8 @@ import type { TEvents } from './events';
 import type { IMCUSession } from './types';
 
 export type TRestartIceOptions = RenegotiateOptions;
+
+const debug = resolveDebug('MCUSession');
 
 export class MCUSession implements IMCUSession {
   protected readonly events: TEvents;
@@ -216,7 +218,7 @@ export class MCUSession implements IMCUSession {
     this.bitrateStateManager
       .setMinBitrateForSenders(this.connection, kinds)
       .catch((error: unknown) => {
-        logError('MCUSession.setMinBitrateForSenders', error as Error);
+        debug('setMinBitrateForSenders', error as Error);
       });
   }
 
@@ -228,7 +230,7 @@ export class MCUSession implements IMCUSession {
     this.bitrateStateManager
       .restoreBitrateForSenders(this.connection, kinds)
       .catch((error: unknown) => {
-        logError('MCUSession.restoreBitrateForSenders', error as Error);
+        debug('restoreBitrateForSenders', error as Error);
       });
   }
 

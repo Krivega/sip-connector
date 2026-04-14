@@ -1,4 +1,5 @@
 import jssip from '@/__fixtures__/jssip.mock';
+import { getMockedLoggerDefault } from '@/__fixtures__/logger.mock';
 import { CallManager } from '@/CallManager';
 import { ConnectionManager } from '@/ConnectionManager';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
@@ -10,13 +11,10 @@ import { EKeyHeader } from '../constants';
 import type { IncomingRequest } from '@krivega/jssip';
 import type { TJsSIP } from '@/types';
 
-// Мокаем logger
-jest.mock('@/logger', () => {
-  return jest.fn();
-});
+jest.mock('@/logger');
 
 describe('ApiManager (notify via sipEvent)', () => {
-  const mockLogger = logger as jest.MockedFunction<typeof logger>;
+  const mockLogger = getMockedLoggerDefault(logger);
   let connectionManager: ConnectionManager;
   let callManager: CallManager & { getEstablishedRTCSession: jest.Mock };
   let apiManager: ApiManager;

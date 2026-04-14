@@ -1,6 +1,6 @@
 import { EventEmitterProxy } from 'events-constructor';
 
-import debug from '@/logger';
+import resolveDebug from '@/logger';
 import { VideoSendingBalancer } from '@/VideoSendingBalancer';
 import { createEvents } from './events';
 
@@ -12,6 +12,8 @@ import type { TEventMap } from './events';
 type TOptions = IBalancerOptions & {
   balancingStartDelay?: number;
 };
+
+const debug = resolveDebug('VideoSendingBalancerManager');
 
 /**
  * Менеджер для управления VideoSendingBalancer

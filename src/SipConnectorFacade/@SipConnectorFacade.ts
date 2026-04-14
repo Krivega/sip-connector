@@ -4,7 +4,7 @@ import { hasCanceledError } from 'repeated-calls';
 import { debounce } from 'ts-debounce';
 
 import { hasNotReadyForConnectionError } from '@/ConnectionManager';
-import debug from '@/logger';
+import resolveDebug from '@/logger';
 import hasPurgatory from '@/tools/hasPurgatory';
 
 import type { EContentUseLicense } from '@/ApiManager';
@@ -13,6 +13,8 @@ import type { TParametersConnection, TConnectionConfiguration } from '@/Connecti
 import type { TContentHint } from '@/PresentationManager';
 import type { SipConnector } from '@/SipConnector';
 import type { TStatsManagerEventMap } from '@/StatsManager';
+
+const debug = resolveDebug('SipConnectorFacade');
 
 const handleError = (error: Error): { configuration: undefined; isSuccessful: false } => {
   if (

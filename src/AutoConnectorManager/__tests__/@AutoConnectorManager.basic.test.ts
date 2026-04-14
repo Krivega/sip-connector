@@ -17,11 +17,9 @@ import type { IAutoConnectorOptions, TParametersAutoConnect } from '../types';
 
 const DELAY = 100;
 
-const loggerMock = logger as jest.MockedFunction<typeof logger>;
+jest.mock('@/logger');
 
-jest.mock('@/logger', () => {
-  return jest.fn();
-});
+const { mcuDebugLogger } = logger as jest.Mock & { mcuDebugLogger: jest.Mock };
 
 describe('AutoConnectorManager - Basic', () => {
   let sipConnector: SipConnector;
@@ -117,7 +115,7 @@ describe('AutoConnectorManager - Basic', () => {
 
       manager.start(baseParameters);
 
-      expect(loggerMock).toHaveBeenCalled();
+      expect(mcuDebugLogger).toHaveBeenCalled();
     });
 
     it('stop: останавливает все процессы', async () => {
@@ -171,7 +169,7 @@ describe('AutoConnectorManager - Basic', () => {
 
       manager.stop();
 
-      expect(loggerMock).toHaveBeenCalled();
+      expect(mcuDebugLogger).toHaveBeenCalled();
     });
   });
 

@@ -1,13 +1,14 @@
 import flushPromises from '@/__fixtures__/flushPromises';
 import { createEvents as createCallEvents } from '@/CallManager';
+import resolveDebug from '@/logger';
 import MainStreamRecovery from '../@MainStreamRecovery';
 
 import type { EndEvent } from '@krivega/jssip';
 import type { CallManager, TCallEvents } from '@/CallManager';
 
-jest.mock('@/logger', () => {
-  return jest.fn();
-});
+jest.mock('@/logger');
+
+const { mcuDebugLogger } = resolveDebug as jest.Mock & { mcuDebugLogger: jest.Mock };
 
 describe('@MainStreamRecovery', () => {
   let callEvents: TCallEvents;
@@ -128,7 +129,6 @@ describe('@MainStreamRecovery', () => {
   });
 
   it('должен логировать успех renegotiate после recover', async () => {
-    const mockLogger = await import('@/logger');
     const recovery = new MainStreamRecovery(callManager, 200);
 
     jest.useRealTimers();
@@ -137,11 +137,10 @@ describe('@MainStreamRecovery', () => {
 
     await flushPromises();
 
-    expect(mockLogger).toHaveBeenLastCalledWith('renegotiate has successful');
+    expect(mcuDebugLogger).toHaveBeenLastCalledWith('renegotiate has successful');
   });
 
   it('должен логировать ошибку renegotiate после recover если renegotiate завершился ошибкой', async () => {
-    const mockLogger = await import('@/logger');
     const error = new Error('renegotiate failed');
 
     callManager = {
@@ -157,6 +156,9 @@ describe('@MainStreamRecovery', () => {
 
     await flushPromises();
 
-    expect(mockLogger).toHaveBeenLastCalledWith('failed to renegotiate main media stream', error);
+    expect(mcuDebugLogger).toHaveBeenLastCalledWith(
+      'failed to renegotiate main media stream',
+      error,
+    );
   });
 });

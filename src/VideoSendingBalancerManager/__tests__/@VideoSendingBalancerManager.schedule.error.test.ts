@@ -1,20 +1,13 @@
-/* eslint-disable import/first */
-// Мокаем логгер до импорта тестируемого модуля
-jest.mock('@/logger', () => {
-  const debugMock = jest.fn();
-
-  return {
-    __esModule: true,
-    default: debugMock,
-  };
-});
-
 import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import { doMockSipConnector } from '@/doMock';
-import debugMock from '@/logger';
+import resolveDebug from '@/logger';
 import VideoSendingBalancerManager from '../@VideoSendingBalancerManager';
 
 import type { CallManager } from '@/CallManager';
+
+jest.mock('@/logger');
+
+const { mcuDebugLogger } = resolveDebug as jest.Mock & { mcuDebugLogger: jest.Mock };
 
 describe('VideoSendingBalancerManager scheduleBalancingStart error handling', () => {
   let callManager: CallManager;
@@ -55,7 +48,7 @@ describe('VideoSendingBalancerManager scheduleBalancingStart error handling', ()
   });
 
   it('logs error when startBalancing rejects', () => {
-    expect(debugMock).toHaveBeenCalledWith('startBalancing: error', expect.any(Error));
+    expect(mcuDebugLogger).toHaveBeenCalledWith('startBalancing: error', expect.any(Error));
   });
 });
 

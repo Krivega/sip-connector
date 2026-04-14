@@ -1,9 +1,11 @@
 import { assign, setup } from 'xstate';
 
-import logger from '@/logger';
+import resolveDebug from '@/logger';
 import { BaseStateMachine } from '@/tools/BaseStateMachine';
 
 import type { TCallEvents } from '@/CallManager';
+
+const debug = resolveDebug('PresentationStateMachine');
 
 export enum EState {
   IDLE = 'presentation:idle',
@@ -41,10 +43,10 @@ const presentationMachine = setup({
   },
   actions: {
     [EAction.LOG_TRANSITION]: (_, params: { from: string; to: string; event: string }) => {
-      logger(`State transition: ${params.from} -> ${params.to} (${params.event})`);
+      debug(`State transition: ${params.from} -> ${params.to} (${params.event})`);
     },
     [EAction.LOG_STATE_CHANGE]: (_, params: { state: string }) => {
-      logger('PresentationStateMachine state changed', params.state);
+      debug('PresentationStateMachine state changed', params.state);
     },
     [EAction.SET_ERROR]: assign(({ event }) => {
       if ('error' in event && event.error !== undefined) {

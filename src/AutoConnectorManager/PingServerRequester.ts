@@ -1,11 +1,13 @@
 import { requesterByTimeoutsWithFailCalls } from '@krivega/timeout-requester';
 
-import logger from '@/logger';
+import resolveDebug from '@/logger';
 
 import type { ConnectionManager } from '@/ConnectionManager';
 
 const INTERVAL_PING_SERVER_REQUEST = 15_000;
 const MAX_FAIL_REQUESTS_COUNT = 2;
+
+const debug = resolveDebug('PingServerRequester');
 
 class PingServerRequester {
   private readonly connectionManager: ConnectionManager;
@@ -23,17 +25,17 @@ class PingServerRequester {
       whenPossibleRequest: async () => {},
       requestInterval: INTERVAL_PING_SERVER_REQUEST,
       request: async () => {
-        logger('ping');
+        debug('ping');
 
         return this.connectionManager.ping().then(() => {
-          logger('ping success');
+          debug('ping success');
         });
       },
     });
   }
 
   public start({ onFailRequest }: { onFailRequest: () => void }) {
-    this.pingServerByTimeoutWithFailCalls.start(undefined, { onFailRequest }).catch(logger);
+    this.pingServerByTimeoutWithFailCalls.start(undefined, { onFailRequest }).catch(debug);
   }
 
   public stop() {

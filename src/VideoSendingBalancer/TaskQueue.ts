@@ -1,8 +1,10 @@
 import { createStackPromises } from 'stack-promises';
 
-import logger from '@/logger';
+import resolveDebug from '@/logger';
 
 import type { ITaskQueue } from './types';
+
+const debug = resolveDebug('TaskQueue');
 
 /**
  * Очередь задач с правильной обработкой ошибок
@@ -35,7 +37,7 @@ export class TaskQueue<T> implements ITaskQueue<T> {
   private async run(): Promise<T> {
     // @ts-expect-error
     return this.stackPromises().catch((error: unknown) => {
-      logger('TaskQueue: error', error);
+      debug('TaskQueue: error', error);
     });
   }
 }
