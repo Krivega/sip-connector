@@ -7,6 +7,38 @@
 - **Доменные события машины:** `INCOMING.RINGING`, `INCOMING.CONSUMED`, `INCOMING.DECLINED`, `INCOMING.TERMINATED`, `INCOMING.FAILED`, `INCOMING.CLEAR`.
 - **Источники событий:** `IncomingCallManager.events` — `incomingCall`, `declinedIncomingCall`, `terminatedIncomingCall`, `failedIncomingCall`; дополнительная синтетика при ответе на входящий звонок.
 
+## Диаграмма переходов (Mermaid)
+
+Граф соответствует [`IncomingCallStateMachine.ts`](../../../../src/IncomingCallManager/IncomingCallStateMachine.ts).
+
+```mermaid
+stateDiagram-v2
+    [*] --> idle
+    state "incoming:idle" as idle
+    state "incoming:ringing" as ringing
+    state "incoming:consumed" as consumed
+    state "incoming:declined" as declined
+    state "incoming:terminated" as terminated
+    state "incoming:failed" as failed
+
+    idle --> ringing: INCOMING.RINGING
+    idle --> idle: INCOMING.CLEAR
+    ringing --> ringing: INCOMING.RINGING
+    ringing --> consumed: INCOMING.CONSUMED
+    ringing --> declined: INCOMING.DECLINED
+    ringing --> terminated: INCOMING.TERMINATED
+    ringing --> failed: INCOMING.FAILED
+    ringing --> idle: INCOMING.CLEAR
+    consumed --> idle: INCOMING.CLEAR
+    consumed --> ringing: INCOMING.RINGING
+    declined --> idle: INCOMING.CLEAR
+    declined --> ringing: INCOMING.RINGING
+    terminated --> idle: INCOMING.CLEAR
+    terminated --> ringing: INCOMING.RINGING
+    failed --> idle: INCOMING.CLEAR
+    failed --> ringing: INCOMING.RINGING
+```
+
 ## Хранение данных
 
 Машина хранит данные вызывающего абонента (`remoteCallerData`) и причину завершения (`lastReason`).

@@ -4,8 +4,41 @@
 
 ## Интеграция с менеджером
 
-- **Доменные события машины:** `SCREEN.STARTING`, `SCREEN.STARTED`, `SCREEN.ENDING`, `SCREEN.ENDED`, `SCREEN.FAILED`, `PRESENTATION.RESET`.
-- **Источники событий:** `CallManager.events` — `presentation:start`, `presentation:started`, `presentation:end`, `presentation:ended`, `presentation:failed`; `ConnectionManager.events` — `disconnected`, `registrationFailed`, `connect-failed` (сброс при потере соединения).
+- **Доменные события машины:** `SCREEN.STARTING`, `SCREEN.STARTED`, `SCREEN.ENDING`, `SCREEN.ENDED`, `SCREEN.FAILED`, `CALL.ENDED`, `CALL.FAILED`, `PRESENTATION.RESET`.
+- **Источники событий:** `CallManager.events` — `presentation:start`, `presentation:started`, `presentation:end`, `presentation:ended`, `presentation:failed`, `ended`, `failed`; сброс при потере соединения обрабатывается на уровне менеджера (не отдельными переходами в этой машине).
+
+## Диаграмма переходов (Mermaid)
+
+Граф соответствует [`PresentationStateMachine.ts`](../../../../src/PresentationManager/PresentationStateMachine.ts).
+
+```mermaid
+stateDiagram-v2
+    [*] --> idle
+    state "presentation:idle" as idle
+    state "presentation:starting" as starting
+    state "presentation:active" as active
+    state "presentation:stopping" as stopping
+    state "presentation:failed" as failed
+
+    idle --> starting: SCREEN.STARTING
+    starting --> active: SCREEN.STARTED
+    starting --> failed: SCREEN.FAILED
+    starting --> idle: SCREEN.ENDED
+    starting --> idle: CALL.ENDED
+    starting --> failed: CALL.FAILED
+    active --> stopping: SCREEN.ENDING
+    active --> idle: SCREEN.ENDED
+    active --> idle: CALL.ENDED
+    active --> failed: SCREEN.FAILED
+    active --> failed: CALL.FAILED
+    stopping --> idle: SCREEN.ENDED
+    stopping --> idle: CALL.ENDED
+    stopping --> failed: SCREEN.FAILED
+    stopping --> failed: CALL.FAILED
+    failed --> starting: SCREEN.STARTING
+    failed --> idle: SCREEN.ENDED
+    failed --> idle: PRESENTATION.RESET
+```
 
 ## Типобезопасная обработка ошибок
 
@@ -45,7 +78,7 @@
 Из состояний STARTING/ACTIVE/STOPPING:
 
 - Через `SCREEN.FAILED`
-- При сбросе звонка — событие `failed`
+- При ошибке звонка — `CALL.FAILED`
 
 ### Переход RESET
 
@@ -53,7 +86,7 @@
 
 ### Прерывание при сбросе звонка
 
-При сбросе звонка (ended/failed → CALL.RESET) из любого активного состояния (STARTING/ACTIVE/STOPPING) происходит переход в IDLE.
+При завершении звонка (`ended` → `CALL.ENDED`, ошибка `failed` → `CALL.FAILED`) из состояний STARTING/ACTIVE/STOPPING происходит переход в IDLE или FAILED по графу выше.
 
 ### Убранные переходы
 

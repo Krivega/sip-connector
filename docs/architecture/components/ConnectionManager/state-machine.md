@@ -7,6 +7,46 @@
 - **Доменные события машины:** `START_CONNECT`, `START_INIT_UA`, `START_DISCONNECT`, `UA_CONNECTED`, `UA_REGISTERED`, `UA_UNREGISTERED`, `UA_DISCONNECTED`, `RESET`.
 - **Источники событий:** `ConnectionManager.events` — `connect-started`, `connecting`, `connect-parameters-resolve-success`, `connected`, `registered`, `unregistered`, `disconnecting`, `disconnected`, `registrationFailed`, `connect-failed`.
 
+## Диаграмма переходов (Mermaid)
+
+Граф соответствует [`ConnectionStateMachine.ts`](../../../../src/ConnectionManager/ConnectionStateMachine.ts).
+
+```mermaid
+stateDiagram-v2
+    [*] --> idle
+    state "connection:idle" as idle
+    state "connection:preparing" as preparing
+    state "connection:connecting" as connecting
+    state "connection:connected" as connected
+    state "connection:registered" as registered
+    state "connection:established" as established
+    state "connection:disconnecting" as disconnecting
+    state "connection:disconnected" as disconnected
+
+    idle --> preparing: START_CONNECT
+    preparing --> connecting: START_INIT_UA
+    preparing --> disconnected: UA_DISCONNECTED
+    connecting --> connected: UA_CONNECTED
+    connecting --> registered: UA_REGISTERED
+    connecting --> disconnecting: START_DISCONNECT
+    connecting --> disconnected: UA_DISCONNECTED
+    connected --> established: always to ESTABLISHED
+    connected --> registered: UA_REGISTERED
+    connected --> disconnecting: START_DISCONNECT
+    connected --> disconnected: UA_DISCONNECTED
+    registered --> established: always to ESTABLISHED
+    registered --> connected: UA_UNREGISTERED
+    registered --> disconnecting: START_DISCONNECT
+    registered --> disconnected: UA_DISCONNECTED
+    established --> disconnecting: START_DISCONNECT
+    established --> disconnected: UA_DISCONNECTED
+    established --> idle: RESET
+    disconnecting --> disconnected: UA_DISCONNECTED
+    disconnected --> idle: RESET
+    disconnected --> preparing: START_CONNECT
+    disconnected --> connecting: UA_CONNECTING
+```
+
 ## Логика состояний
 
 - `PREPARING` — подготовка к подключению (до инициализации UA, до вызова `ua.start()`)

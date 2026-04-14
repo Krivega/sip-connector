@@ -32,27 +32,47 @@
 - `FLOW.RESTART` — перезапуск из мониторинга (ping / внутренние триггеры), параметры берутся из контекста.
 - `TELEPHONY.RESULT` с `stillConnected` — возврат в `connectedMonitoring` после успешной проверки телефонии при уже подключённом клиенте. Если нужен полный рестарт, менеджер вызывает `requestReconnect` с причиной `telephony-disconnected`.
 
-## Диаграмма потока
+## Диаграмма переходов (Mermaid)
+
+Граф соответствует [`createAutoConnectorMachine.ts`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/createAutoConnectorMachine.ts). Подписи `invoke` — результат `stopConnectionFlow`, `connect`, `waitBeforeRetry`.
 
 ```mermaid
 stateDiagram-v2
   [*] --> idle
-  idle --> disconnecting: AUTO_RESTART and shouldDisconnectBeforeAttempt
-  idle --> attemptingGate: AUTO_RESTART and not shouldDisconnectBeforeAttempt
-  disconnecting --> attemptingGate: onDone_attempt
-  disconnecting --> idle: onDone_idle
-  attemptingGate --> telephonyChecking: limitReached
-  attemptingGate --> attemptingConnect: notLimit
-  attemptingConnect --> connectedMonitoring: connect_ok
-  attemptingConnect --> errorTerminal: nonRetryable
-  attemptingConnect --> errorTerminal: notActual
-  attemptingConnect --> waitingBeforeRetry: retryable
-  waitingBeforeRetry --> attemptingGate: delay_ok
-  waitingBeforeRetry --> errorTerminal: cancelled
-  waitingBeforeRetry --> errorTerminal: fatal
-  connectedMonitoring --> disconnecting: FLOW_RESTART_or_AUTO_RESTART_or_AUTO_STOP
-  telephonyChecking --> connectedMonitoring: TELEPHONY_RESULT_stillConnected
-  errorTerminal --> disconnecting: AUTO_STOP_or_AUTO_RESTART
+  idle --> idle: AUTO.STOP
+  idle --> disconnecting: AUTO.RESTART shouldDisconnectBeforeAttempt
+  idle --> attemptingGate: AUTO.RESTART not shouldDisconnectBeforeAttempt
+  idle --> disconnecting: FLOW.RESTART
+  disconnecting --> idle: invoke onDone shouldGoIdleAfterDisconnect
+  disconnecting --> attemptingGate: invoke onDone shouldAttemptAfterDisconnect
+  disconnecting --> idle: invoke onError
+  disconnecting --> disconnecting: AUTO.STOP reenter
+  disconnecting --> disconnecting: AUTO.RESTART actions only
+  disconnecting --> disconnecting: FLOW.RESTART actions only
+  attemptingGate --> telephonyChecking: always isLimitReached
+  attemptingGate --> attemptingConnect: always else
+  attemptingGate --> disconnecting: AUTO.STOP
+  attemptingGate --> disconnecting: AUTO.RESTART
+  attemptingConnect --> connectedMonitoring: invoke onDone
+  attemptingConnect --> errorTerminal: onError isNotReadyForConnection
+  attemptingConnect --> errorTerminal: onError isNoRetryPolicy
+  attemptingConnect --> errorTerminal: onError isNotActualPromise
+  attemptingConnect --> waitingBeforeRetry: onError else retryable
+  attemptingConnect --> disconnecting: AUTO.STOP
+  attemptingConnect --> disconnecting: AUTO.RESTART
+  waitingBeforeRetry --> attemptingGate: invoke onDone
+  waitingBeforeRetry --> errorTerminal: onError isWaitRetryCancelled
+  waitingBeforeRetry --> errorTerminal: onError else fatal
+  waitingBeforeRetry --> disconnecting: AUTO.STOP
+  waitingBeforeRetry --> disconnecting: AUTO.RESTART
+  connectedMonitoring --> disconnecting: AUTO.STOP
+  connectedMonitoring --> disconnecting: AUTO.RESTART
+  connectedMonitoring --> disconnecting: FLOW.RESTART
+  telephonyChecking --> connectedMonitoring: TELEPHONY.RESULT stillConnected
+  telephonyChecking --> disconnecting: AUTO.STOP
+  telephonyChecking --> disconnecting: AUTO.RESTART
+  errorTerminal --> disconnecting: AUTO.STOP
+  errorTerminal --> disconnecting: AUTO.RESTART
 ```
 
 ## Что упростили

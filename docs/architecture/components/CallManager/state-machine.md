@@ -17,6 +17,83 @@
 
 **Значения в снимке сеанса:** `EState` в `CallStateMachine/types.ts` — `call:idle`, `call:connecting`, `call:presentationCall`, `call:roomPendingAuth`, `call:purgatory`, `call:p2pRoom`, `call:directP2pRoom`, `call:inRoom`, `call:disconnecting`.
 
+## Диаграмма переходов (Mermaid)
+
+Реализация: [`createCallMachine.ts`](../../../../src/CallManager/CallStateMachine/createCallMachine.ts). Доменные состояния переводят события во внутренний узел `evaluate`, откуда **цепочка `always`-гвардов** (в указанном порядке) выбирает следующее состояние.
+
+### 1. Вход в `evaluate` по событиям
+
+```mermaid
+stateDiagram-v2
+    state "call:idle" as idle
+    state "call:connecting" as connecting
+    state "call:roomPendingAuth" as roomPendingAuth
+    state "call:inRoom" as inRoom
+    state "call:purgatory" as purgatory
+    state "call:p2pRoom" as p2pRoom
+    state "call:directP2pRoom" as directP2p
+    state "call:presentationCall" as presentationCall
+    state "call:disconnecting" as disconnecting
+    state "evaluate" as ev
+
+    [*] --> idle
+    idle --> ev: CALL.CONNECTING
+    connecting --> ev: CALL.PRESENTATION_CALL
+    connecting --> ev: CALL.ENTER_ROOM
+    connecting --> ev: CALL.TOKEN_ISSUED
+    connecting --> ev: CALL.START_DISCONNECT
+    connecting --> ev: CALL.RESET
+    roomPendingAuth --> ev: CALL.ENTER_ROOM
+    roomPendingAuth --> ev: CALL.TOKEN_ISSUED
+    roomPendingAuth --> ev: CALL.START_DISCONNECT
+    roomPendingAuth --> ev: CALL.RESET
+    inRoom --> ev: CALL.ENTER_ROOM
+    inRoom --> ev: CALL.TOKEN_ISSUED
+    inRoom --> ev: CALL.START_DISCONNECT
+    inRoom --> ev: CALL.RESET
+    purgatory --> ev: CALL.ENTER_ROOM
+    purgatory --> ev: CALL.TOKEN_ISSUED
+    purgatory --> ev: CALL.START_DISCONNECT
+    purgatory --> ev: CALL.RESET
+    p2pRoom --> ev: CALL.ENTER_ROOM
+    p2pRoom --> ev: CALL.TOKEN_ISSUED
+    p2pRoom --> ev: CALL.START_DISCONNECT
+    p2pRoom --> ev: CALL.RESET
+    directP2p --> ev: CALL.ENTER_ROOM
+    directP2p --> ev: CALL.TOKEN_ISSUED
+    directP2p --> ev: CALL.START_DISCONNECT
+    directP2p --> ev: CALL.RESET
+    presentationCall --> ev: CALL.START_DISCONNECT
+    presentationCall --> ev: CALL.RESET
+    disconnecting --> ev: CALL.RESET
+```
+
+### 2. Выход из `evaluate` (порядок гвардов)
+
+```mermaid
+stateDiagram-v2
+    state "evaluate" as ev
+    state "call:disconnecting" as disconnecting
+    state "call:presentationCall" as presentationCall
+    state "call:inRoom" as inRoom
+    state "call:directP2pRoom" as directP2p
+    state "call:p2pRoom" as p2pRoom
+    state "call:purgatory" as purgatory
+    state "call:roomPendingAuth" as roomPendingAuth
+    state "call:connecting" as connecting
+    state "call:idle" as idle
+
+    ev --> disconnecting: 1 guard DISCONNECTING
+    ev --> presentationCall: 2 guard PRESENTATION_CALL
+    ev --> inRoom: 3 guard IN_ROOM
+    ev --> directP2p: 4 guard DIRECT_P2P_ROOM
+    ev --> p2pRoom: 5 guard P2P_ROOM
+    ev --> purgatory: 6 guard PURGATORY
+    ev --> roomPendingAuth: 7 guard ROOM_PENDING_AUTH
+    ev --> connecting: 8 guard CONNECTING
+    ev --> idle: 9 default
+```
+
 ## Публичный API
 
 ### Геттеры состояний
@@ -105,17 +182,11 @@
 - **IN_ROOM → P2P_ROOM** — при `CALL.ENTER_ROOM` с room, соответствующим паттерну `/^p2p.+to.+$/i`, без token
 - **IN_ROOM → DIRECT_P2P_ROOM** — при `CALL.ENTER_ROOM` с `isDirectPeerToPeer=true` или room, соответствующим паттерну `/^directP2P.+to.+$/i`, без token
 - **IN_ROOM → DISCONNECTING** — при `CALL.START_DISCONNECT` или событии `end-call`
-- **IN_ROOM → IDLE** — при `CALL.RESET`
-- **IN_ROOM → FAILED** — при событии `failed`
+- **IN_ROOM → IDLE** — при `CALL.RESET` (в т.ч. при событии `ended` или `failed` от `CallManager.events`, что мапится в `CALL.RESET`)
 
 ### Из DISCONNECTING
 
 - **DISCONNECTING → IDLE** — при `CALL.RESET` (в т.ч. при событии `ended` или `failed`)
-
-### Из FAILED
-
-- **FAILED → IDLE** — при `CALL.RESET`
-- **FAILED → CONNECTING** — при `CALL.CONNECTING`
 
 ## Внутреннее состояние EVALUATE
 
