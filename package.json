@@ -58,7 +58,7 @@
     "start:builded": "yarn build:demo && http-server demoDist -c-1 -o --cors",
     "test": "jest",
     "test:ci": "cross-env CI=true jest",
-    "test:coverage": "yarn test:ci --no-cache --coverage",
+    "test:coverage": "yarn test:ci --no-cache --coverage && node -e \"const {resolve}=require('path'); const {pathToFileURL}=require('url'); const reportPath=resolve('coverage/lcov-report/index.html'); console.log('Coverage report:', pathToFileURL(reportPath).href);\"",
     "test:watch": "jest --watch"
   },
   "dependencies": {
