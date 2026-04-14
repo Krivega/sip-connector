@@ -13,6 +13,10 @@ const selectConnectionStatus = (snapshot: TSessionSnapshot): EConnectionStatus =
   return snapshot.connection.value;
 };
 
+const selectAutoConnectorStatus = (snapshot: TSessionSnapshot): EAutoConnectorStatus => {
+  return snapshot.autoConnector.value;
+};
+
 const selectCallState = (snapshot: TSessionSnapshot): TSessionSnapshot['call'] => {
   return snapshot.call;
 };
@@ -70,17 +74,21 @@ const selectSystemStatus = (snapshot: TSessionSnapshot): ESystemStatus => {
   }
 
   const connectionStatus = selectConnectionStatus(snapshot);
+  const autoConnectorStatus = selectAutoConnectorStatus(snapshot);
 
-  // Идет процесс отключения
-  if (connectionStatus === EConnectionStatus.DISCONNECTING) {
+  // Идет процесс отключения или AutoConnector в disconnecting
+  if (
+    connectionStatus === EConnectionStatus.DISCONNECTING ||
+    autoConnectorStatus === EAutoConnectorStatus.DISCONNECTING
+  ) {
     return ESystemStatus.DISCONNECTING;
   }
 
   // AutoConnector выполняет попытку соединения (например при IDLE у connection)
   if (
-    snapshot.autoConnector.value === EAutoConnectorStatus.ATTEMPTING_CONNECT ||
-    snapshot.autoConnector.value === EAutoConnectorStatus.ATTEMPTING_GATE ||
-    snapshot.autoConnector.value === EAutoConnectorStatus.WAITING_BEFORE_RETRY
+    autoConnectorStatus === EAutoConnectorStatus.ATTEMPTING_CONNECT ||
+    autoConnectorStatus === EAutoConnectorStatus.ATTEMPTING_GATE ||
+    autoConnectorStatus === EAutoConnectorStatus.WAITING_BEFORE_RETRY
   ) {
     return ESystemStatus.CONNECTING;
   }

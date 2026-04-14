@@ -513,6 +513,24 @@ describe('sessionSelectors', () => {
       expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.DISCONNECTING);
     });
 
+    it('should return DISCONNECTING when autoConnector is DISCONNECTING even if connection is IDLE', () => {
+      const snapshot = createMockSnapshot({
+        connection: { value: EConnectionStatus.IDLE } as never,
+        call: { value: ECallStatus.IDLE } as never,
+        autoConnector: {
+          value: EAutoConnectorState.DISCONNECTING,
+          context: {
+            parameters: undefined,
+            afterDisconnect: 'idle',
+            stopReason: undefined,
+            lastError: undefined,
+          },
+        } as never,
+      });
+
+      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.DISCONNECTING);
+    });
+
     it('should return CONNECTING when autoConnector is ATTEMPTING_CONNECT even if connection is IDLE', () => {
       const snapshot = createMockSnapshot({
         connection: { value: EConnectionStatus.IDLE } as never,

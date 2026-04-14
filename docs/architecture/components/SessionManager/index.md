@@ -132,7 +132,7 @@ SessionManager предоставляет набор готовых селект
 - `selectIncomingRemoteCaller` — данные вызывающего абонента (`TRemoteCallerData | undefined`)
 - `selectPresentationStatus` — статус презентации (`EPresentationStatus`)
 - `selectIsInCall` — проверка активности звонка (`boolean`, в т.ч. `PRESENTATION_CALL` и room-состояния)
-- `selectSystemStatus` — комбинированное состояние системы (`ESystemStatus`)
+- `selectSystemStatus` — комбинированное состояние системы (`ESystemStatus`), где `DISCONNECTING` возвращается при `connection.DISCONNECTING` **или** `autoConnector.DISCONNECTING`
 
 ### Комбинированное состояние системы (ESystemStatus)
 

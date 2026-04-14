@@ -8,7 +8,7 @@
 
 1. **Активный звонок имеет наивысший приоритет** — если call в активном состоянии (PRESENTATION_CALL, ROOM_PENDING_AUTH, IN_ROOM, PURGATORY, P2P_ROOM, DIRECT_P2P_ROOM), возвращается `CALL_ACTIVE` независимо от состояния connection
 
-2. **Если connection DISCONNECTING** → `DISCONNECTING` (если call не в активном состоянии)
+2. **Если connection DISCONNECTING или autoConnector DISCONNECTING** → `DISCONNECTING` (если call не в активном состоянии)
 
 3. **Если autoConnector в `ATTEMPTING_CONNECT` / `ATTEMPTING_GATE` / `WAITING_BEFORE_RETRY`** → `CONNECTING`  
    (даже если connection сейчас `IDLE`)
@@ -29,7 +29,7 @@
 | Состояние            | Описание                                 | Условия                                                                                                                                 |
 | :------------------- | :--------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------- |
 | `DISCONNECTED`       | Система не подключена                    | connection: IDLE или DISCONNECTED, если AutoConnector не в attempting/waiting                                                           |
-| `DISCONNECTING`      | Идет процесс отключения                  | connection: DISCONNECTING                                                                                                               |
+| `DISCONNECTING`      | Идет процесс отключения                  | connection: DISCONNECTING **или** autoConnector: DISCONNECTING                                                                          |
 | `CONNECTING`         | Идет процесс подключения                 | connection: PREPARING, CONNECTING, CONNECTED, REGISTERED **или** autoConnector: ATTEMPTING_CONNECT/ATTEMPTING_GATE/WAITING_BEFORE_RETRY |
 | `READY_TO_CALL`      | Соединение установлено, готово к звонкам | connection: ESTABLISHED, call: IDLE                                                                                                     |
 | `CALL_CONNECTING`    | Идет установка звонка                    | connection: ESTABLISHED, call: CONNECTING                                                                                               |
