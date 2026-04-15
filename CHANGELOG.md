@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [28.0.0](https://github.com/Krivega/sip-connector/compare/v27.0.1...v28.0.0) (2026-04-15)
+
+### ⚠ BREAKING CHANGES
+
+- streamline context handling and state management across various status nodes
+
+### Features
+
+- **CallStateMachine:** refactor state machine structure and constants for improved organization and clarity ([92d0d21](https://github.com/Krivega/sip-connector/commit/92d0d214d1370faf89d6a6b91f72d9539b3473ff))
+- **demo:** integrate mobx-state-tree for managing application statuses and add related tests ([72b9309](https://github.com/Krivega/sip-connector/commit/72b9309a73ed189c423cd3d94b6a112a0ed5f94d))
+- **demo:** introduce node value types for status management and enhance test coverage across various status nodes ([1b4c901](https://github.com/Krivega/sip-connector/commit/1b4c901044be21c7343fa5b624486c07056f514f))
+- **demo:** update conference state display to use node values and enhance UI structure ([75bcf3e](https://github.com/Krivega/sip-connector/commit/75bcf3ec5bf784d34a319a28fd3b859d9350efd7))
+
+- streamline context handling and state management across various status nodes ([e33d0a1](https://github.com/Krivega/sip-connector/commit/e33d0a193ffff25b8bc823df0702badd7e0b3297))
+
 ### [27.0.1](https://github.com/Krivega/sip-connector/compare/v27.0.0...v27.0.1) (2026-04-14)
 
 ### Bug Fixes
