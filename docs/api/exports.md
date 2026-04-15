@@ -46,25 +46,40 @@ const quality = sipConnector.getRecvQuality();
 
 ```typescript
 import {
-  // Утилиты
-  tools, // getUserAgent, getExtraHeaders, hasPurgatory
-  hasAvailableStats, // Проверка доступности статистики
+  // Классы и утилиты
+  SipConnector,
+  SipConnectorFacade,
+  StatsPeerConnection,
+  tools,
+  hasAvailableStats,
+  getCodecFromSender,
+  enableDebug,
+  disableDebug,
+  hasConnectionPromiseIsNotActualError,
+  hasCanceledCallError,
+  hasCanceledStartPresentationError,
 
-  // Константы
-  EStatsTypes, // Типы статистики
-  EMimeTypesVideoCodecs, // MIME-типы кодеков
-  EUseLicense, // Типы лицензий
-  ESystemStatus, // Комбинированное состояние системы (Connection + Call)
-  ECallStatus, // Состояния звонка
-  EConnectionStatus, // Состояния соединения
-  EIncomingStatus, // Состояния входящего звонка
-  EPresentationStatus, // Состояния презентации
+  // Константы и enum
+  EStatsTypes,
+  EMimeTypesVideoCodecs,
+  EContentUseLicense,
+  ESystemStatus,
+  ECallStatus,
+  EConnectionStatus,
+  EIncomingStatus,
+  EPresentationStatus,
 
   // Типы
-  type TContentHint, // Подсказки для кодирования
-  type TInboundStats, // Входящая статистика
-  type TOutboundStats, // Исходящая статистика
-  type TRestartData, // Данные события restart
-  type ITransceiverStorage, // Интерфейс хранения transceiver'ов
+  type TSessionSnapshot,
+  type TCustomError,
+  type TRemoteStreams,
+  type TRecvQuality,
+  type TEffectiveQuality,
+  type TParametersConnection,
+  type TConnectionConfiguration,
+  type TInboundStats,
+  type TOutboundStats,
+  type TContentHint,
+  type TJsSIP,
 } from 'sip-connector';
 ```

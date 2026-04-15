@@ -12,7 +12,7 @@
 | `connection:newRTCSession`                      | Генерируется при создании новой RTC сессии (для входящих или исходящих звонков) | `RTCSessionEvent`                              |
 | `connection:registered`                         | Генерируется при успешной регистрации на SIP-сервере (SIP REGISTER)             | `RegisteredEvent`                              |
 | `connection:unregistered`                       | Генерируется при отмене регистрации на SIP-сервере                              | `UnRegisteredEvent`                            |
-| `connection:registrationFailed`                 | Генерируется при неудачной попытке регистрации на SIP-сервере                   | `UnRegisteredEvent`                            |
+| `connection:registrationFailed`                 | Генерируется при неудачной попытке регистрации на SIP-сервере                   | `RegistrationFailedEvent`                      |
 | `connection:newMessage`                         | Генерируется при получении или отправке SIP MESSAGE                             | `IncomingMessageEvent \| OutgoingMessageEvent` |
 | `connection:sipEvent`                           | Генерируется при получении произвольного SIP события                            | `{ event: unknown; request: IncomingRequest }` |
 | `connection:disconnecting`                      | Генерируется при начале процесса отключения от сервера                          | `Record<string, never>`                        |

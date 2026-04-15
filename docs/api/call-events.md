@@ -6,13 +6,10 @@
 
 | Имя события                                      | Описание                                                            | Тип данных                                        |
 | ------------------------------------------------ | ------------------------------------------------------------------- | ------------------------------------------------- |
-| `call:start-call`                                | Генерируется при инициации исходящего звонка или ответа на входящий | `{ number: string; answer: boolean }`             |
+| `call:start-call`                                | Генерируется при инициации исходящего звонка или ответа на входящий | `TStartCallEvent`                                 |
 | `call:end-call`                                  | Генерируется при начале процесса отключения звонка (вызов endCall)  | `never`                                           |
 | `call:peerconnection`                            | Генерируется при создании RTCPeerConnection                         | `{ peerconnection: RTCPeerConnection }`           |
 | `call:connecting`                                | Генерируется при начале процесса подключения звонка                 | `unknown`                                         |
-| `call:roomPendingAuth`                           | Генерируется при входе в обычную комнату без token                  | `unknown`                                         |
-| `call:purgatory`                                 | Генерируется при входе в комнату ожидания (purgatory) без token     | `unknown`                                         |
-| `call:inRoom`                                    | Генерируется при входе в комнату конференции с token                | `unknown`                                         |
 | `call:sending`                                   | Генерируется при отправке SIP INVITE                                | `unknown`                                         |
 | `call:progress`                                  | Генерируется при получении SIP 180 Ringing                          | `unknown`                                         |
 | `call:accepted`                                  | Генерируется при принятии звонка (SIP 200 OK)                       | `unknown`                                         |
@@ -61,6 +58,16 @@
   changeType: TRemoteTracksChangeType;
   participantId: string;
   trackId: string;
+}
+```
+
+### `TStartCallEvent` (событие `call:start-call`)
+
+```typescript
+{
+  number: string;
+  answer: boolean;
+  extraHeaders?: string[];
 }
 ```
 

@@ -34,6 +34,7 @@
 | `api:admin:start-mic`                                      | Генерируется при административном включении микрофона         | `{ isSyncForced: boolean }`                                                                                                            |
 | `api:admin:stop-mic`                                       | Генерируется при административном отключении микрофона        | `{ isSyncForced: boolean }`                                                                                                            |
 | `api:admin:force-sync-media-state`                         | Генерируется при принудительной синхронизации медиа-состояния | `{ isSyncForced: boolean }`                                                                                                            |
+| `api:failed-send-room-direct-p2p`                          | Генерируется при ошибке отправки команды direct P2P room      | `{ error: unknown }`                                                                                                                   |
 
 ## Структуры данных
 
