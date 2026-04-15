@@ -4,7 +4,7 @@ import resolveDebug from '@/logger';
 import { PURGATORY_CONFERENCE_NUMBER } from '@/tools/hasPurgatory';
 import { createEvents } from '../../events';
 import { createCallStateMachine } from '../CallStateMachine';
-import { CALL_MACHINE_EVALUATE_STATE, EState } from '../types';
+import { CALL_MACHINE_EVALUATE_STATE, EState } from '../constants';
 
 import type { SnapshotFrom } from 'xstate';
 import type { TApiManagerEvents } from '@/ApiManager';

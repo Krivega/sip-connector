@@ -1,4 +1,4 @@
-import { CALL_MACHINE_EVALUATE_STATE } from './types';
+import { CALL_MACHINE_EVALUATE_STATE } from './constants';
 
 /**
  * После обработки снимка `IN_ROOM` в подписчике: сбрасывать ли `previous` для

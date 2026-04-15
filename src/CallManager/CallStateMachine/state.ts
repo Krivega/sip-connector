@@ -1,7 +1,7 @@
 import hasPeerToPeer from '@/tools/hasPeerToPeer';
 import hasPurgatory from '@/tools/hasPurgatory';
 import { hasValidExtraHeaders, isValidBoolean, isValidString } from '@/utils/validators';
-import { EState } from './types';
+import { EState } from './constants';
 
 import type { TBaseContext, TContextMap, TAnyRoomState } from './types';
 

@@ -1,0 +1,26 @@
+---
+description: State machine refactoring structure
+globs:
+  - src/**/StateMachine/**/*
+alwaysApply: false
+---
+
+# State Machine Refactoring Rule
+
+При рефакторинге state machine придерживаемся структуры как в `CallManager/CallStateMachine`.
+
+## Обязательная структура
+
+- `types.ts`
+- `constants.ts`
+- `create<Domain>MachineSetup.ts`
+- `create<Domain>Machine.ts`
+- `index.ts`
+
+## Принципы
+
+- Храним типы контекста по состояниям в `TContextMap`.
+- Константы состояний/событий/начального контекста держим в `constants.ts`.
+- Настройку `setup(...)` и action/guard-логику выносим в `create<Domain>MachineSetup.ts`.
+- Граф состояний (`createMachine(...)`) выносим в `create<Domain>Machine.ts`.
+- Публичный API реэкспортируем через `index.ts`.

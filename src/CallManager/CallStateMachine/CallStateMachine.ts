@@ -1,8 +1,8 @@
 import resolveDebug from '@/logger';
 import { BaseStateMachine } from '@/tools/BaseStateMachine';
+import { EState } from './constants';
 import { createCallMachine } from './createCallMachine';
 import { shouldResetInRoomCredentialsPrevious } from './inRoomCredentialsPreviousReset';
-import { EState } from './types';
 
 import type { TApiManagerEvents } from '@/ApiManager';
 import type { TEvents } from '../events';

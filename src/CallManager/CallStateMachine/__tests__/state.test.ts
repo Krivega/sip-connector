@@ -1,6 +1,6 @@
 import { PURGATORY_CONFERENCE_NUMBER } from '@/tools/hasPurgatory';
+import { EState } from '../constants';
 import { STATE_DESCRIPTORS } from '../state';
-import { EState } from '../types';
 
 describe('STATE_DESCRIPTORS', () => {
   const connectingContext = { number: '100', answer: false };

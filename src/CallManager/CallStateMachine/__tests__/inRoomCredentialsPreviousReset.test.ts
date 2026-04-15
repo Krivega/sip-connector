@@ -1,5 +1,5 @@
+import { CALL_MACHINE_EVALUATE_STATE, EState } from '../constants';
 import { shouldResetInRoomCredentialsPrevious } from '../inRoomCredentialsPreviousReset';
-import { CALL_MACHINE_EVALUATE_STATE, EState } from '../types';
 
 describe('shouldResetInRoomCredentialsPrevious', () => {
   it('возвращает false для служебного состояния evaluate (previous не сбрасываем)', () => {
