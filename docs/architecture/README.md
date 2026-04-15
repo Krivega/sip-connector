@@ -40,7 +40,7 @@
 **Особенности структуры:**
 
 - Каждый компонент с машиной состояний имеет отдельный файл `state-machine.md` с детальным описанием
-- Комбинированное состояние системы описано в [SessionManager/system-status.md](./components/SessionManager/system-status.md)
+- Комбинированное состояние системы описано в [SessionManager/index.md](./components/SessionManager/index.md#комбинированное-состояние-системы-esystemstatus)
 
 ### 🔄 [Модель состояний (XState)](./state-machines.md)
 
@@ -52,7 +52,7 @@
 - API для клиентов (`sipConnector.session`)
 - Инварианты и гварды
 - Ссылки на детальные описания машин состояний в компонентах
-- [Комбинированное состояние системы](./components/SessionManager/system-status.md) (ESystemStatus)
+- [Комбинированное состояние системы](./components/SessionManager/index.md#комбинированное-состояние-системы-esystemstatus) (ESystemStatus)
 - [Тестирование машин состояний](./state-machines-testing.md)
 
 ### 🏗️ [Архитектурные принципы](./principles.md)

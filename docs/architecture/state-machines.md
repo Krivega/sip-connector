@@ -18,7 +18,7 @@ Sip-connector публикует единый XState-актор сеанса, а
 
 ## Комбинированное состояние системы
 
-См. [ESystemStatus](./components/SessionManager/system-status.md) — механизм комбинирования состояний Connection, Call и AutoConnector машин в единое состояние для упрощения работы клиентов.
+См. [ESystemStatus](./components/SessionManager/index.md#комбинированное-состояние-системы-esystemstatus) — механизм комбинирования состояний Connection, Call и AutoConnector машин в единое состояние для упрощения работы клиентов.
 
 ## Тестирование
 

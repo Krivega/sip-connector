@@ -136,25 +136,57 @@ SessionManager предоставляет набор готовых селект
 - `selectIncomingStatus` — статус входящего звонка (`EIncomingStatus`)
 - `selectPresentationStatus` — статус презентации (`EPresentationStatus`)
 - `selectIsInCall` — проверка активности звонка (`boolean`, в т.ч. `PRESENTATION_CALL` и room-состояния)
-- `selectSystemStatus` — комбинированное состояние системы (`ESystemStatus`) с фиксированным порядком приоритетов:
-  1. активные call-состояния -> `CALL_ACTIVE`;
-  2. `connection.DISCONNECTING` или `autoConnector.DISCONNECTING` -> `DISCONNECTING`;
-  3. attempting-ветки `autoConnector` и `CONNECTED_MONITORING` (пока `connection != ESTABLISHED`) -> `CONNECTING`;
-  4. `connection.IDLE/DISCONNECTED` -> `DISCONNECTED`;
-  5. `connection.PREPARING/CONNECTING/CONNECTED/REGISTERED` -> `CONNECTING`;
-  6. при `connection.ESTABLISHED` маппинг по `call` (`IDLE` -> `READY_TO_CALL`, `CONNECTING` -> `CALL_CONNECTING`, `DISCONNECTING` -> `CALL_DISCONNECTING`, fallback -> `READY_TO_CALL`)
+- `selectSystemStatus` — комбинированное состояние системы (`ESystemStatus`) по состояниям `connection`, `call` и `autoConnector`
 
 ### Комбинированное состояние системы (ESystemStatus)
 
-Селектор `selectSystemStatus` объединяет состояния Connection, Call и AutoConnector машин в единое состояние для упрощения работы клиентов.
+`ESystemStatus` — агрегированный статус для клиента, вычисляемый селектором `sessionSelectors.selectSystemStatus`.
 
-Ключевые правила:
+Назначение:
 
-- `CALL_ACTIVE` имеет наивысший приоритет и возвращается независимо от `connection/autoConnector/incoming/presentation`.
-- `CALL_DISCONNECTING` возможен только при `connection=ESTABLISHED` и `call=DISCONNECTING`.
-- `incoming` и `presentation` не участвуют в расчёте статуса напрямую.
+- дать клиенту одно стабильное значение вместо ручного анализа нескольких state machine;
+- упростить UI-реакции (подключение, готовность, активный звонок);
+- инкапсулировать приоритеты между `connection`, `call` и `autoConnector`.
 
-Подробнее см. [Комбинированное состояние системы](./system-status.md).
+Входные данные селектора:
+
+- `connection.value` (`ConnectionStateMachine`)
+- `call.value` (`CallStateMachine`)
+- `autoConnector.value` (`AutoConnectorStateMachine`)
+
+`incoming` и `presentation` присутствуют в `TSessionSnapshot`, но напрямую не участвуют в расчёте `selectSystemStatus`.
+
+Порядок приоритетов в `selectSystemStatus` (сверху вниз):
+
+1. `call` в активном состоянии -> `CALL_ACTIVE`.
+2. `connection=DISCONNECTING` или `autoConnector=DISCONNECTING` -> `DISCONNECTING`.
+3. `autoConnector` в `ATTEMPTING_CONNECT`/`ATTEMPTING_GATE`/`WAITING_BEFORE_RETRY` -> `CONNECTING`.
+4. `autoConnector=CONNECTED_MONITORING` и `connection != ESTABLISHED` -> `CONNECTING`.
+5. `connection=IDLE` или `connection=DISCONNECTED` -> `DISCONNECTED`.
+6. `connection` в `PREPARING/CONNECTING/CONNECTED/REGISTERED` -> `CONNECTING`.
+7. `connection=ESTABLISHED`:  
+   - `call=IDLE` -> `READY_TO_CALL`;  
+   - `call=CONNECTING` -> `CALL_CONNECTING`;  
+   - `call=DISCONNECTING` -> `CALL_DISCONNECTING`;  
+   - прочее -> fallback `READY_TO_CALL`.
+
+Активные call-состояния для `CALL_ACTIVE`:
+
+- `PRESENTATION_CALL`
+- `ROOM_PENDING_AUTH`
+- `IN_ROOM`
+- `PURGATORY`
+- `P2P_ROOM`
+- `DIRECT_P2P_ROOM`
+
+Подтверждённые edge cases:
+
+- `CALL_ACTIVE` возвращается даже при `connection=IDLE`, `DISCONNECTING` или `DISCONNECTED`;
+- `DISCONNECTING` приоритетнее attempting-веток `autoConnector`;
+- `CALL_DISCONNECTING` возможен только при `connection=ESTABLISHED` и `call=DISCONNECTING`;
+- при `autoConnector=CONNECTED_MONITORING`:  
+  - если `connection != ESTABLISHED` -> `CONNECTING`;  
+  - если `connection = ESTABLISHED` и `call=IDLE` -> `READY_TO_CALL`.
 
 ## События
 
@@ -194,7 +226,6 @@ const unsubscribe = sipConnector.session.subscribe(
 );
 
 // Подписка на комбинированное состояние системы
-// Подробнее см. system-status.md
 const unsubscribeSystem = sipConnector.session.subscribe(
   sessionSelectors.selectSystemStatus,
   (status) => {
