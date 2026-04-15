@@ -183,7 +183,7 @@ class App {
     dom.renderSessionStatusDiagrams();
     this.statusesManager.subscribe((statuses) => {
       this.updateSessionStatuses(statuses);
-      dom.renderStatusesNodeValues(this.statusesManager.getNodeValues());
+      dom.renderStatusesNodeValues(this.statusesManager.getStatusSnapshots());
     });
   }
 

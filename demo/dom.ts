@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/class-methods-use-this */
-import type { TStatusesStoreSnapshot } from './statuses-store';
+import type { TStatusesRootSnapshot } from './statusesRoot';
 
 type TDomIds = {
   overlayId: string;
@@ -122,23 +122,23 @@ const STATUS_DIAGRAMS: Record<TStatusCategory, readonly string[]> = {
   ],
 };
 
-const EXPECTED_NODE_FIELDS: Record<keyof TStatusesStoreSnapshot, readonly string[]> = {
-  connection: ['state', 'context', 'connectionConfiguration'],
+const EXPECTED_NODE_FIELDS: Record<keyof TStatusesRootSnapshot, readonly string[]> = {
+  connection: ['state', 'context', 'connectionConfig'],
   autoConnector: ['state', 'afterDisconnect', 'parameters', 'stopReason', 'lastError'],
   call: [
     'state',
-    'pendingDisconnect',
+    'hasPendingDisconnect',
     'number',
-    'answer',
+    'isAnswered',
     'extraHeaders',
     'isConfirmed',
     'room',
     'participantName',
-    'isDirectPeerToPeer',
+    'isDirectP2P',
     'token',
     'conferenceForToken',
   ],
-  incoming: ['state', 'remoteCallerData', 'lastReason'],
+  incoming: ['state', 'remoteCallerData', 'terminalReason'],
   presentation: ['state', 'lastError'],
   system: ['state'],
 };
@@ -557,12 +557,12 @@ class DOM {
     }
   }
 
-  public renderStatusesNodeValues(statuses: TStatusesStoreSnapshot): void {
+  public renderStatusesNodeValues(statuses: TStatusesRootSnapshot): void {
     this.statusesNodeValuesElement.innerHTML = '';
 
     const fragment = document.createDocumentFragment();
 
-    const statusesEntries = Object.entries(statuses) as [keyof TStatusesStoreSnapshot, unknown][];
+    const statusesEntries = Object.entries(statuses) as [keyof TStatusesRootSnapshot, unknown][];
 
     statusesEntries.forEach(([nodeName, nodeValue]) => {
       if (!this.isRecord(nodeValue)) {
@@ -601,7 +601,7 @@ class DOM {
   }
 
   private buildNodeEntries(
-    nodeName: keyof TStatusesStoreSnapshot,
+    nodeName: keyof TStatusesRootSnapshot,
     nodeValue: Record<string, unknown>,
   ): [string, unknown][] {
     const expectedFields = EXPECTED_NODE_FIELDS[nodeName];

@@ -5,7 +5,7 @@ const jestConfig: JestConfigWithTsJest = {
   testEnvironment: 'jsdom',
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
-    'demo/statuses-store/**/*.{js,jsx,ts,tsx}',
+    'demo/statusesRoot/**/*.{js,jsx,ts,tsx}',
     'src/PresentationManager/@PresentationManager.ts',
     'src/CallManager/RemoteStreamsManager.ts',
     '!<rootDir>/node_modules/',

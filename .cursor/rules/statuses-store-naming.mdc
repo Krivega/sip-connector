@@ -1,0 +1,25 @@
+---
+description: Naming conventions for statusesRoot
+globs:
+  - demo/statusesRoot/**/*
+  - demo/Statuses.ts
+alwaysApply: false
+---
+
+# Statuses Store Naming Rule
+
+Единая схема именований для `demo/statusesRoot`:
+
+- `Model` — MST-модель или `types.union(...)`.
+- `Snapshot` — plain object, сериализуемая форма состояния.
+- `Status` — доменный статус (`enum`/literal состояния).
+- `Context` — полезная нагрузка, связанная со статусом.
+- `is*` — эксклюзивный предикат текущего состояния.
+- `has*` — наличие опционального флага/данных.
+- `create...FromSession` или `derive...FromSession` — построение `Snapshot` из session snapshot.
+
+Дополнительно:
+
+- Не использовать `NodeValue` и `nodeValue` в новых именах API.
+- Для геттеров snapshot-формы использовать суффикс `Snapshot` или краткое `snapshot`.
+- Выбирать имена, которые различают MST-модель и plain snapshot без чтения реализации.

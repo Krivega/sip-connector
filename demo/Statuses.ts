@@ -1,23 +1,23 @@
 import { getSnapshot } from 'mobx-state-tree';
 
 import sipConnectorFacade from './Session/sipConnectorFacade';
-import { INITIAL_STATUSES_STORE_SNAPSHOT, StatusesStoreModel } from './statuses-store';
+import { INITIAL_STATUSES_ROOT_SNAPSHOT, StatusesRootModel } from './statusesRoot';
 
 import type { TSessionSnapshot } from '@/index';
 import type {
-  TStatusStates,
-  TStatusesStoreSnapshotOut,
-  TStatusesStoreSnapshot,
-} from './statuses-store';
+  TStatusesByDomain,
+  TStatusesRootSnapshotOut,
+  TStatusesRootSnapshot,
+} from './statusesRoot';
 
 class Statuses {
   private unsubscribeSessionStatuses?: () => void;
 
-  private readonly statusesStore = StatusesStoreModel.create(INITIAL_STATUSES_STORE_SNAPSHOT);
+  private readonly statusesStore = StatusesRootModel.create(INITIAL_STATUSES_ROOT_SNAPSHOT);
 
-  public subscribe(onStatusesChange: (statuses: TStatusStates) => void) {
+  public subscribe(onStatusesChange: (statuses: TStatusesByDomain) => void) {
     this.subscribeSessionStatuses((snapshot) => {
-      this.statusesStore.applySessionSnapshot(snapshot);
+      this.statusesStore.syncFromSessionSnapshot(snapshot);
       onStatusesChange({
         connection: this.statusesStore.connection.state,
         autoConnector: this.statusesStore.autoConnector.state,
@@ -29,18 +29,18 @@ class Statuses {
     });
   }
 
-  public getStatusesWithContext(): TStatusesStoreSnapshotOut {
+  public getStatusesWithContext(): TStatusesRootSnapshotOut {
     return getSnapshot(this.statusesStore);
   }
 
-  public getNodeValues(): TStatusesStoreSnapshot {
+  public getStatusSnapshots(): TStatusesRootSnapshot {
     return {
-      connection: this.statusesStore.connectionNode,
-      autoConnector: this.statusesStore.autoConnectorNode,
-      call: this.statusesStore.callNode,
-      incoming: this.statusesStore.incomingNode,
-      presentation: this.statusesStore.presentationNode,
-      system: this.statusesStore.systemNode as TStatusesStoreSnapshot['system'],
+      connection: this.statusesStore.connectionSnapshot,
+      autoConnector: this.statusesStore.autoConnectorSnapshot,
+      call: this.statusesStore.callSnapshot,
+      incoming: this.statusesStore.incomingSnapshot,
+      presentation: this.statusesStore.presentationSnapshot,
+      system: this.statusesStore.systemSnapshot as TStatusesRootSnapshot['system'],
     };
   }
 
