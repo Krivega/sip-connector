@@ -6,16 +6,16 @@ import { createNodeModel } from '../createNodeModel';
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
 import type { TSessionSnapshot } from '@/index';
 import type { TPresentationContextMap } from '@/PresentationManager/PresentationStateMachine';
-import type { TNodeByState, TNodeValue } from '../nodeValue';
+import type { TStatusNodeByState, TStatusNodeValue } from '../nodeValue';
 
-type TPresentationNodeByState<TState extends EPresentationStatus> = TNodeByState<
+type TPresentationNodeByState<TState extends EPresentationStatus> = TStatusNodeByState<
   TState,
   TPresentationContextMap
 >;
 
-export type TPresentationNodeValue = TNodeValue<EPresentationStatus, TPresentationContextMap>;
+export type TPresentationNodeValue = TStatusNodeValue<EPresentationStatus, TPresentationContextMap>;
 
-const withNodeValueViews = <TState extends EPresentationStatus>(
+const withStatusViews = <TState extends EPresentationStatus>(
   base: ReturnType<typeof createNodeModel<TState, TPresentationContextMap[TState]>>,
 ) => {
   return base
@@ -54,7 +54,7 @@ const withNodeValueViews = <TState extends EPresentationStatus>(
     });
 };
 
-export function buildPresentationNodeFromSession(
+export function mapPresentationNodeFromSessionSnapshot(
   snapshot: TSessionSnapshot,
 ): TPresentationNodeValue {
   const state = sessionSelectors.selectPresentationStatus(snapshot);
@@ -68,29 +68,29 @@ export function buildPresentationNodeFromSession(
   } as TPresentationNodeValue;
 }
 
-const PresentationIdleNodeModel = withNodeValueViews(
+const PresentationIdleNodeModel = withStatusViews(
   createNodeModel<EPresentationStatus.IDLE, TPresentationContextMap[EPresentationStatus.IDLE]>(
     EPresentationStatus.IDLE,
   ),
 );
-const PresentationStartingNodeModel = withNodeValueViews(
+const PresentationStartingNodeModel = withStatusViews(
   createNodeModel<
     EPresentationStatus.STARTING,
     TPresentationContextMap[EPresentationStatus.STARTING]
   >(EPresentationStatus.STARTING),
 );
-const PresentationActiveNodeModel = withNodeValueViews(
+const PresentationActiveNodeModel = withStatusViews(
   createNodeModel<EPresentationStatus.ACTIVE, TPresentationContextMap[EPresentationStatus.ACTIVE]>(
     EPresentationStatus.ACTIVE,
   ),
 );
-const PresentationStoppingNodeModel = withNodeValueViews(
+const PresentationStoppingNodeModel = withStatusViews(
   createNodeModel<
     EPresentationStatus.STOPPING,
     TPresentationContextMap[EPresentationStatus.STOPPING]
   >(EPresentationStatus.STOPPING),
 );
-const PresentationFailedNodeModel = withNodeValueViews(
+const PresentationFailedNodeModel = withStatusViews(
   createNodeModel<EPresentationStatus.FAILED, TPresentationContextMap[EPresentationStatus.FAILED]>(
     EPresentationStatus.FAILED,
   ),

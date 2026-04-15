@@ -2,18 +2,18 @@ import { types } from 'mobx-state-tree';
 
 import { ECallStatus } from '@/index';
 import { createNodeModel } from '../createNodeModel';
-import { getContextProperty } from './getContextProperty';
+import { readContextField } from './utils';
 
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
 import type { TContextMap } from '@/CallManager/CallStateMachine';
 import type { TSessionSnapshot } from '@/index';
-import type { TNodeByState, TNodeValue } from '../nodeValue';
+import type { TStatusNodeByState, TStatusNodeValue } from '../nodeValue';
 
-type TCallNodeByState<TState extends ECallStatus> = TNodeByState<TState, TContextMap>;
+type TCallNodeByState<TState extends ECallStatus> = TStatusNodeByState<TState, TContextMap>;
 
-export type TCallNodeValue = TNodeValue<ECallStatus, TContextMap>;
+export type TCallNodeValue = TStatusNodeValue<ECallStatus, TContextMap>;
 
-const withNodeValueViews = <TState extends ECallStatus>(
+const withStatusViews = <TState extends ECallStatus>(
   base: ReturnType<typeof createNodeModel<TState, TContextMap[TState]>>,
 ) => {
   return base
@@ -58,40 +58,40 @@ const withNodeValueViews = <TState extends ECallStatus>(
     .views((self) => {
       return {
         get pendingDisconnect(): true | undefined {
-          return getContextProperty(self.context, 'pendingDisconnect');
+          return readContextField(self.context, 'pendingDisconnect');
         },
         get number(): string | undefined {
-          return getContextProperty(self.context, 'number');
+          return readContextField(self.context, 'number');
         },
         get answer(): boolean | undefined {
-          return getContextProperty(self.context, 'answer');
+          return readContextField(self.context, 'answer');
         },
         get extraHeaders(): string[] | undefined {
-          return getContextProperty(self.context, 'extraHeaders');
+          return readContextField(self.context, 'extraHeaders');
         },
         get isConfirmed(): true | undefined {
-          return getContextProperty(self.context, 'isConfirmed');
+          return readContextField(self.context, 'isConfirmed');
         },
         get room(): string | undefined {
-          return getContextProperty(self.context, 'room');
+          return readContextField(self.context, 'room');
         },
         get participantName(): string | undefined {
-          return getContextProperty(self.context, 'participantName');
+          return readContextField(self.context, 'participantName');
         },
         get isDirectPeerToPeer(): true | undefined {
-          return getContextProperty(self.context, 'isDirectPeerToPeer');
+          return readContextField(self.context, 'isDirectPeerToPeer');
         },
         get token(): string | undefined {
-          return getContextProperty(self.context, 'token');
+          return readContextField(self.context, 'token');
         },
         get conferenceForToken(): string | undefined {
-          return getContextProperty(self.context, 'conferenceForToken');
+          return readContextField(self.context, 'conferenceForToken');
         },
       };
     });
 };
 
-export function buildCallNodeFromSession(snapshot: TSessionSnapshot): TCallNodeValue {
+export function mapCallNodeFromSessionSnapshot(snapshot: TSessionSnapshot): TCallNodeValue {
   const {
     call: {
       value: state,
@@ -105,39 +105,39 @@ export function buildCallNodeFromSession(snapshot: TSessionSnapshot): TCallNodeV
   } as TCallNodeValue;
 }
 
-const CallIdleNodeModel = withNodeValueViews(
+const CallIdleNodeModel = withStatusViews(
   createNodeModel<ECallStatus.IDLE, TContextMap[ECallStatus.IDLE]>(ECallStatus.IDLE),
 );
-const CallConnectingNodeModel = withNodeValueViews(
+const CallConnectingNodeModel = withStatusViews(
   createNodeModel<ECallStatus.CONNECTING, TContextMap[ECallStatus.CONNECTING]>(
     ECallStatus.CONNECTING,
   ),
 );
-const CallPresentationCallNodeModel = withNodeValueViews(
+const CallPresentationCallNodeModel = withStatusViews(
   createNodeModel<ECallStatus.PRESENTATION_CALL, TContextMap[ECallStatus.PRESENTATION_CALL]>(
     ECallStatus.PRESENTATION_CALL,
   ),
 );
-const CallRoomPendingAuthNodeModel = withNodeValueViews(
+const CallRoomPendingAuthNodeModel = withStatusViews(
   createNodeModel<ECallStatus.ROOM_PENDING_AUTH, TContextMap[ECallStatus.ROOM_PENDING_AUTH]>(
     ECallStatus.ROOM_PENDING_AUTH,
   ),
 );
-const CallPurgatoryNodeModel = withNodeValueViews(
+const CallPurgatoryNodeModel = withStatusViews(
   createNodeModel<ECallStatus.PURGATORY, TContextMap[ECallStatus.PURGATORY]>(ECallStatus.PURGATORY),
 );
-const CallP2PRoomNodeModel = withNodeValueViews(
+const CallP2PRoomNodeModel = withStatusViews(
   createNodeModel<ECallStatus.P2P_ROOM, TContextMap[ECallStatus.P2P_ROOM]>(ECallStatus.P2P_ROOM),
 );
-const CallDirectP2PRoomNodeModel = withNodeValueViews(
+const CallDirectP2PRoomNodeModel = withStatusViews(
   createNodeModel<ECallStatus.DIRECT_P2P_ROOM, TContextMap[ECallStatus.DIRECT_P2P_ROOM]>(
     ECallStatus.DIRECT_P2P_ROOM,
   ),
 );
-const CallInRoomNodeModel = withNodeValueViews(
+const CallInRoomNodeModel = withStatusViews(
   createNodeModel<ECallStatus.IN_ROOM, TContextMap[ECallStatus.IN_ROOM]>(ECallStatus.IN_ROOM),
 );
-const CallDisconnectingNodeModel = withNodeValueViews(
+const CallDisconnectingNodeModel = withStatusViews(
   createNodeModel<ECallStatus.DISCONNECTING, TContextMap[ECallStatus.DISCONNECTING]>(
     ECallStatus.DISCONNECTING,
   ),

@@ -6,16 +6,16 @@ import { createNodeModel } from '../createNodeModel';
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
 import type { TIncomingContextMap } from '@/IncomingCallManager/IncomingCallStateMachine';
 import type { TSessionSnapshot } from '@/index';
-import type { TNodeByState, TNodeValue } from '../nodeValue';
+import type { TStatusNodeByState, TStatusNodeValue } from '../nodeValue';
 
-type TIncomingNodeByState<TState extends EIncomingStatus> = TNodeByState<
+type TIncomingNodeByState<TState extends EIncomingStatus> = TStatusNodeByState<
   TState,
   TIncomingContextMap
 >;
 
-export type TIncomingNodeValue = TNodeValue<EIncomingStatus, TIncomingContextMap>;
+export type TIncomingNodeValue = TStatusNodeValue<EIncomingStatus, TIncomingContextMap>;
 
-const withNodeValueViews = <TState extends EIncomingStatus>(
+const withStatusViews = <TState extends EIncomingStatus>(
   base: ReturnType<typeof createNodeModel<TState, TIncomingContextMap[TState]>>,
 ) => {
   return base
@@ -60,7 +60,7 @@ const withNodeValueViews = <TState extends EIncomingStatus>(
     });
 };
 
-export function buildIncomingNodeFromSession(snapshot: TSessionSnapshot): TIncomingNodeValue {
+export function mapIncomingNodeFromSessionSnapshot(snapshot: TSessionSnapshot): TIncomingNodeValue {
   const state = sessionSelectors.selectIncomingStatus(snapshot);
   const {
     incoming: { context },
@@ -72,32 +72,32 @@ export function buildIncomingNodeFromSession(snapshot: TSessionSnapshot): TIncom
   } as TIncomingNodeValue;
 }
 
-const IncomingIdleNodeModel = withNodeValueViews(
+const IncomingIdleNodeModel = withStatusViews(
   createNodeModel<EIncomingStatus.IDLE, TIncomingContextMap[EIncomingStatus.IDLE]>(
     EIncomingStatus.IDLE,
   ),
 );
-const IncomingRingingNodeModel = withNodeValueViews(
+const IncomingRingingNodeModel = withStatusViews(
   createNodeModel<EIncomingStatus.RINGING, TIncomingContextMap[EIncomingStatus.RINGING]>(
     EIncomingStatus.RINGING,
   ),
 );
-const IncomingConsumedNodeModel = withNodeValueViews(
+const IncomingConsumedNodeModel = withStatusViews(
   createNodeModel<EIncomingStatus.CONSUMED, TIncomingContextMap[EIncomingStatus.CONSUMED]>(
     EIncomingStatus.CONSUMED,
   ),
 );
-const IncomingDeclinedNodeModel = withNodeValueViews(
+const IncomingDeclinedNodeModel = withStatusViews(
   createNodeModel<EIncomingStatus.DECLINED, TIncomingContextMap[EIncomingStatus.DECLINED]>(
     EIncomingStatus.DECLINED,
   ),
 );
-const IncomingTerminatedNodeModel = withNodeValueViews(
+const IncomingTerminatedNodeModel = withStatusViews(
   createNodeModel<EIncomingStatus.TERMINATED, TIncomingContextMap[EIncomingStatus.TERMINATED]>(
     EIncomingStatus.TERMINATED,
   ),
 );
-const IncomingFailedNodeModel = withNodeValueViews(
+const IncomingFailedNodeModel = withStatusViews(
   createNodeModel<EIncomingStatus.FAILED, TIncomingContextMap[EIncomingStatus.FAILED]>(
     EIncomingStatus.FAILED,
   ),

@@ -2,32 +2,32 @@ import { applySnapshot, types } from 'mobx-state-tree';
 
 import {
   AutoConnectorNodeModel,
-  buildAutoConnectorNodeFromSession,
+  mapAutoConnectorNodeFromSessionSnapshot,
   INITIAL_AUTO_CONNECTOR_NODE_SNAPSHOT,
 } from './autoConnector/AutoConnectorStatusesNode';
 import {
   CallNodeModel,
-  buildCallNodeFromSession,
+  mapCallNodeFromSessionSnapshot,
   INITIAL_CALL_NODE_SNAPSHOT,
 } from './call/CallStatusesNode';
 import {
   ConnectionNodeModel,
-  buildConnectionNodeFromSession,
+  mapConnectionNodeFromSessionSnapshot,
   INITIAL_CONNECTION_NODE_SNAPSHOT,
 } from './connection/ConnectionStatusesNode';
 import {
   IncomingNodeModel,
-  buildIncomingNodeFromSession,
+  mapIncomingNodeFromSessionSnapshot,
   INITIAL_INCOMING_NODE_SNAPSHOT,
 } from './incoming/IncomingStatusesNode';
 import {
   PresentationNodeModel,
-  buildPresentationNodeFromSession,
+  mapPresentationNodeFromSessionSnapshot,
   INITIAL_PRESENTATION_NODE_SNAPSHOT,
 } from './presentation/PresentationStatusesNode';
 import {
   SystemNodeModel,
-  buildSystemNodeFromSession,
+  mapSystemNodeFromSessionSnapshot,
   INITIAL_SYSTEM_NODE_SNAPSHOT,
 } from './system/SystemStatusesNode';
 
@@ -67,7 +67,7 @@ export type TStatusesStoreSnapshot = {
   system: SnapshotIn<typeof SystemNodeModel>;
 };
 
-export type TPublicStatuses = {
+export type TStatusStates = {
   connection: EConnectionStatus;
   call: ECallStatus;
   incoming: EIncomingStatus;
@@ -76,16 +76,16 @@ export type TPublicStatuses = {
   autoConnector: EAutoConnectorStatus;
 };
 
-function buildStatusesStoreSnapshotFromSession(
+function mapStatusesStoreSnapshotFromSessionSnapshot(
   snapshot: TSessionSnapshot,
 ): SnapshotIn<typeof StatusesStoreModel> {
   return {
-    connection: buildConnectionNodeFromSession(snapshot),
-    autoConnector: buildAutoConnectorNodeFromSession(snapshot),
-    call: buildCallNodeFromSession(snapshot),
-    incoming: buildIncomingNodeFromSession(snapshot),
-    presentation: buildPresentationNodeFromSession(snapshot),
-    system: buildSystemNodeFromSession(snapshot),
+    connection: mapConnectionNodeFromSessionSnapshot(snapshot),
+    autoConnector: mapAutoConnectorNodeFromSessionSnapshot(snapshot),
+    call: mapCallNodeFromSessionSnapshot(snapshot),
+    incoming: mapIncomingNodeFromSessionSnapshot(snapshot),
+    presentation: mapPresentationNodeFromSessionSnapshot(snapshot),
+    system: mapSystemNodeFromSessionSnapshot(snapshot),
   };
 }
 
@@ -122,13 +122,13 @@ export const StatusesStoreModel = types
   })
   .actions((self) => {
     return {
-      syncFromSessionSnapshot(snapshot: TSessionSnapshot) {
-        applySnapshot(self, buildStatusesStoreSnapshotFromSession(snapshot));
+      applySessionSnapshot(snapshot: TSessionSnapshot) {
+        applySnapshot(self, mapStatusesStoreSnapshotFromSessionSnapshot(snapshot));
       },
     };
   });
 
-export type TStatusesStoreOutput = SnapshotOut<typeof StatusesStoreModel>;
+export type TStatusesStoreSnapshotOut = SnapshotOut<typeof StatusesStoreModel>;
 
 export const INITIAL_STATUSES_STORE_SNAPSHOT = {
   connection: INITIAL_CONNECTION_NODE_SNAPSHOT,

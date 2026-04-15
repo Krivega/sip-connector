@@ -133,7 +133,7 @@ const getPublicStatuses = (store: TStatusesStoreInstance) => {
 const syncStoreFromSession = (session: SessionManager) => {
   const store = createStore();
 
-  store.syncFromSessionSnapshot(session.getSnapshot());
+  store.applySessionSnapshot(session.getSnapshot());
 
   return store;
 };
@@ -281,7 +281,7 @@ describe('StatusesStore views', () => {
     assert(store);
   });
 
-  it('after syncFromSessionSnapshot, node getters are aligned with snapshot', () => {
+  it('after applySessionSnapshot, node getters are aligned with snapshot', () => {
     withStartedSession(({ session, incomingStateMachine }) => {
       incomingStateMachine.send({
         type: EIncomingEvents.RINGING,
@@ -378,7 +378,7 @@ describe('StatusesStore', () => {
     });
   });
 
-  it('updates MST instance via syncFromSessionSnapshot', () => {
+  it('updates MST instance via applySessionSnapshot', () => {
     withStartedSession(({ session, incomingStateMachine }) => {
       const store = createStore();
 
@@ -392,7 +392,7 @@ describe('StatusesStore', () => {
         },
       });
 
-      store.syncFromSessionSnapshot(session.getSnapshot());
+      store.applySessionSnapshot(session.getSnapshot());
 
       const frozen = getSnapshot(store);
 

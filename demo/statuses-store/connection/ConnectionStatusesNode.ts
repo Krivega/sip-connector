@@ -6,13 +6,16 @@ import { createNodeModel } from '../createNodeModel';
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
 import type { TContextMap } from '@/ConnectionManager/ConnectionStateMachine';
 import type { TSessionSnapshot } from '@/index';
-import type { TNodeByState, TNodeValue } from '../nodeValue';
+import type { TStatusNodeByState, TStatusNodeValue } from '../nodeValue';
 
-type TConnectionNodeByState<TState extends EConnectionStatus> = TNodeByState<TState, TContextMap>;
+type TConnectionNodeByState<TState extends EConnectionStatus> = TStatusNodeByState<
+  TState,
+  TContextMap
+>;
 
-export type TConnectionNodeValue = TNodeValue<EConnectionStatus, TContextMap>;
+export type TConnectionNodeValue = TStatusNodeValue<EConnectionStatus, TContextMap>;
 
-const withNodeValueViews = <TState extends EConnectionStatus>(
+const withStatusViews = <TState extends EConnectionStatus>(
   base: ReturnType<typeof createNodeModel<TState, TContextMap[TState]>>,
 ) => {
   return base
@@ -60,7 +63,9 @@ const withNodeValueViews = <TState extends EConnectionStatus>(
     });
 };
 
-export function buildConnectionNodeFromSession(snapshot: TSessionSnapshot): TConnectionNodeValue {
+export function mapConnectionNodeFromSessionSnapshot(
+  snapshot: TSessionSnapshot,
+): TConnectionNodeValue {
   const state = sessionSelectors.selectConnectionStatus(snapshot);
   const {
     connection: { context },
@@ -72,42 +77,42 @@ export function buildConnectionNodeFromSession(snapshot: TSessionSnapshot): TCon
   } as TConnectionNodeValue;
 }
 
-const ConnectionIdleNodeModel = withNodeValueViews(
+const ConnectionIdleNodeModel = withStatusViews(
   createNodeModel<EConnectionStatus.IDLE, TContextMap[EConnectionStatus.IDLE]>(
     EConnectionStatus.IDLE,
   ),
 );
-const ConnectionPreparingNodeModel = withNodeValueViews(
+const ConnectionPreparingNodeModel = withStatusViews(
   createNodeModel<EConnectionStatus.PREPARING, TContextMap[EConnectionStatus.PREPARING]>(
     EConnectionStatus.PREPARING,
   ),
 );
-const ConnectionConnectingNodeModel = withNodeValueViews(
+const ConnectionConnectingNodeModel = withStatusViews(
   createNodeModel<EConnectionStatus.CONNECTING, TContextMap[EConnectionStatus.CONNECTING]>(
     EConnectionStatus.CONNECTING,
   ),
 );
-const ConnectionConnectedNodeModel = withNodeValueViews(
+const ConnectionConnectedNodeModel = withStatusViews(
   createNodeModel<EConnectionStatus.CONNECTED, TContextMap[EConnectionStatus.CONNECTED]>(
     EConnectionStatus.CONNECTED,
   ),
 );
-const ConnectionRegisteredNodeModel = withNodeValueViews(
+const ConnectionRegisteredNodeModel = withStatusViews(
   createNodeModel<EConnectionStatus.REGISTERED, TContextMap[EConnectionStatus.REGISTERED]>(
     EConnectionStatus.REGISTERED,
   ),
 );
-const ConnectionEstablishedNodeModel = withNodeValueViews(
+const ConnectionEstablishedNodeModel = withStatusViews(
   createNodeModel<EConnectionStatus.ESTABLISHED, TContextMap[EConnectionStatus.ESTABLISHED]>(
     EConnectionStatus.ESTABLISHED,
   ),
 );
-const ConnectionDisconnectingNodeModel = withNodeValueViews(
+const ConnectionDisconnectingNodeModel = withStatusViews(
   createNodeModel<EConnectionStatus.DISCONNECTING, TContextMap[EConnectionStatus.DISCONNECTING]>(
     EConnectionStatus.DISCONNECTING,
   ),
 );
-const ConnectionDisconnectedNodeModel = withNodeValueViews(
+const ConnectionDisconnectedNodeModel = withStatusViews(
   createNodeModel<EConnectionStatus.DISCONNECTED, TContextMap[EConnectionStatus.DISCONNECTED]>(
     EConnectionStatus.DISCONNECTED,
   ),

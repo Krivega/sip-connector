@@ -103,7 +103,7 @@ describe('StatusesStore reactions', () => {
           participantName: 'participantName',
         });
 
-        store.syncFromSessionSnapshot(session.getSnapshot());
+        store.applySessionSnapshot(session.getSnapshot());
 
         expect(store.callNode.state).toBe(ESessionCallStatus.ROOM_PENDING_AUTH);
         expect(store.call.room).toBe('room-1');
@@ -119,7 +119,7 @@ describe('StatusesStore reactions', () => {
           conferenceForToken: 'room-1',
           participantName: 'participantName2',
         });
-        store.syncFromSessionSnapshot(session.getSnapshot());
+        store.applySessionSnapshot(session.getSnapshot());
 
         expect(store.callNode.state).toBe(ESessionCallStatus.IN_ROOM);
         expect(store.call.room).toBe('room-1');

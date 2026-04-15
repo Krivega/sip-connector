@@ -7,15 +7,16 @@ import type { Instance, SnapshotIn } from 'mobx-state-tree';
 import type { TAutoConnectorContextMap } from '@/AutoConnectorManager/AutoConnectorStateMachine';
 import type { TParametersAutoConnect } from '@/AutoConnectorManager/types';
 import type { TSessionSnapshot } from '@/index';
-import type { TNodeValue } from '../nodeValue';
+import type { TStatusNodeValue } from '../nodeValue';
 
 export type TAutoConnectorStopReason = 'halted' | 'cancelled' | 'failed';
 
-export type TAutoConnectorNodeValue = TNodeValue<EAutoConnectorStatus, TAutoConnectorContextMap>;
+export type TAutoConnectorNodeValue = TStatusNodeValue<
+  EAutoConnectorStatus,
+  TAutoConnectorContextMap
+>;
 
-const withNodeValueViews = <S extends string, C>(
-  base: ReturnType<typeof createNodeModel<S, C>>,
-) => {
+const withStatusViews = <S extends string, C>(base: ReturnType<typeof createNodeModel<S, C>>) => {
   return base.views((self) => {
     return {
       get nodeValue(): TAutoConnectorNodeValue {
@@ -25,7 +26,7 @@ const withNodeValueViews = <S extends string, C>(
   });
 };
 
-export function buildAutoConnectorNodeFromSession(
+export function mapAutoConnectorNodeFromSessionSnapshot(
   snapshot: TSessionSnapshot,
 ): TAutoConnectorNodeValue {
   const state = snapshot.autoConnector.value;
@@ -37,7 +38,7 @@ export function buildAutoConnectorNodeFromSession(
   } as TAutoConnectorNodeValue;
 }
 
-const AutoConnectorIdleNodeModel = withNodeValueViews(
+const AutoConnectorIdleNodeModel = withStatusViews(
   createNodeModel<
     EAutoConnectorStatus.IDLE,
     {
@@ -46,7 +47,7 @@ const AutoConnectorIdleNodeModel = withNodeValueViews(
     }
   >(EAutoConnectorStatus.IDLE),
 );
-const AutoConnectorDisconnectingNodeModel = withNodeValueViews(
+const AutoConnectorDisconnectingNodeModel = withStatusViews(
   createNodeModel<
     EAutoConnectorStatus.DISCONNECTING,
     {
@@ -57,7 +58,7 @@ const AutoConnectorDisconnectingNodeModel = withNodeValueViews(
     }
   >(EAutoConnectorStatus.DISCONNECTING),
 );
-const AutoConnectorAttemptingGateNodeModel = withNodeValueViews(
+const AutoConnectorAttemptingGateNodeModel = withStatusViews(
   createNodeModel<
     EAutoConnectorStatus.ATTEMPTING_GATE,
     {
@@ -66,7 +67,7 @@ const AutoConnectorAttemptingGateNodeModel = withNodeValueViews(
     }
   >(EAutoConnectorStatus.ATTEMPTING_GATE),
 );
-const AutoConnectorAttemptingConnectNodeModel = withNodeValueViews(
+const AutoConnectorAttemptingConnectNodeModel = withStatusViews(
   createNodeModel<
     EAutoConnectorStatus.ATTEMPTING_CONNECT,
     {
@@ -75,7 +76,7 @@ const AutoConnectorAttemptingConnectNodeModel = withNodeValueViews(
     }
   >(EAutoConnectorStatus.ATTEMPTING_CONNECT),
 );
-const AutoConnectorWaitingBeforeRetryNodeModel = withNodeValueViews(
+const AutoConnectorWaitingBeforeRetryNodeModel = withStatusViews(
   createNodeModel<
     EAutoConnectorStatus.WAITING_BEFORE_RETRY,
     {
@@ -84,7 +85,7 @@ const AutoConnectorWaitingBeforeRetryNodeModel = withNodeValueViews(
     }
   >(EAutoConnectorStatus.WAITING_BEFORE_RETRY),
 );
-const AutoConnectorConnectedMonitoringNodeModel = withNodeValueViews(
+const AutoConnectorConnectedMonitoringNodeModel = withStatusViews(
   createNodeModel<
     EAutoConnectorStatus.CONNECTED_MONITORING,
     {
@@ -93,7 +94,7 @@ const AutoConnectorConnectedMonitoringNodeModel = withNodeValueViews(
     }
   >(EAutoConnectorStatus.CONNECTED_MONITORING),
 );
-const AutoConnectorTelephonyCheckingNodeModel = withNodeValueViews(
+const AutoConnectorTelephonyCheckingNodeModel = withStatusViews(
   createNodeModel<
     EAutoConnectorStatus.TELEPHONY_CHECKING,
     {
@@ -102,7 +103,7 @@ const AutoConnectorTelephonyCheckingNodeModel = withNodeValueViews(
     }
   >(EAutoConnectorStatus.TELEPHONY_CHECKING),
 );
-const AutoConnectorErrorTerminalNodeModel = withNodeValueViews(
+const AutoConnectorErrorTerminalNodeModel = withStatusViews(
   createNodeModel<
     EAutoConnectorStatus.ERROR_TERMINAL,
     {

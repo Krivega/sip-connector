@@ -1,6 +1,6 @@
 import { ECallStatus } from '@/index';
 import {
-  isCallNodeState,
+  isCallState,
   isConnectingCallNode,
   isDirectP2PRoomCallNode,
   isDisconnectingCallNode,
@@ -9,7 +9,7 @@ import {
   isP2PRoomCallNode,
   isPresentationCallNode,
   isPurgatoryCallNode,
-  isRoomPendingAuthCallNode,
+  isRoomPendingAuthCallState,
 } from '../guards';
 
 const expectType = <T>(value: T): T => {
@@ -20,7 +20,7 @@ const stateGuards = {
   isIdleCallNode,
   isConnectingCallNode,
   isPresentationCallNode,
-  isRoomPendingAuthCallNode,
+  isRoomPendingAuthCallState,
   isPurgatoryCallNode,
   isP2PRoomCallNode,
   isDirectP2PRoomCallNode,
@@ -63,7 +63,7 @@ const runtimeCases: TCase[] = [
       state: ECallStatus.ROOM_PENDING_AUTH,
       context: { number: '102', answer: false, room: 'room-102', participantName: 'alice' },
     },
-    expectedGuard: 'isRoomPendingAuthCallNode',
+    expectedGuard: 'isRoomPendingAuthCallState',
   },
   {
     title: 'PURGATORY',
@@ -118,9 +118,9 @@ const runtimeCases: TCase[] = [
 ];
 
 describe('CallNode guards', () => {
-  it.each(runtimeCases)('detects $title with generic isCallNodeState', ({ value }) => {
-    expect(isCallNodeState(value, value.state)).toBe(true);
-    expect(isCallNodeState(value, ECallStatus.IDLE)).toBe(value.state === ECallStatus.IDLE);
+  it.each(runtimeCases)('detects $title with generic isCallState', ({ value }) => {
+    expect(isCallState(value, value.state)).toBe(true);
+    expect(isCallState(value, ECallStatus.IDLE)).toBe(value.state === ECallStatus.IDLE);
   });
 
   it.each(runtimeCases)('runs all per-state guards for $title', ({ value, expectedGuard }) => {
@@ -173,7 +173,7 @@ describe('CallNode guards', () => {
         expectType<boolean>(candidate.context.answer);
       }
 
-      if (isRoomPendingAuthCallNode(candidate)) {
+      if (isRoomPendingAuthCallState(candidate)) {
         expectType<Extract<TGuardCandidate, { state: ECallStatus.ROOM_PENDING_AUTH }>>(candidate);
         expectType<string>(candidate.context.room);
       }

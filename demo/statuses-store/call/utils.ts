@@ -10,7 +10,7 @@ type TContextProperty<K extends TContextPropertyKey> = {
     : never;
 }[keyof TContextMap];
 
-export const getContextProperty = <K extends TContextPropertyKey>(
+export const readContextField = <K extends TContextPropertyKey>(
   context: TContext,
   key: K,
 ): TContextProperty<K> | undefined => {

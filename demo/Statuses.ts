@@ -5,8 +5,8 @@ import { INITIAL_STATUSES_STORE_SNAPSHOT, StatusesStoreModel } from './statuses-
 
 import type { TSessionSnapshot } from '@/index';
 import type {
-  TPublicStatuses,
-  TStatusesStoreOutput,
+  TStatusStates,
+  TStatusesStoreSnapshotOut,
   TStatusesStoreSnapshot,
 } from './statuses-store';
 
@@ -15,9 +15,9 @@ class Statuses {
 
   private readonly statusesStore = StatusesStoreModel.create(INITIAL_STATUSES_STORE_SNAPSHOT);
 
-  public subscribe(onStatusesChange: (statuses: TPublicStatuses) => void) {
+  public subscribe(onStatusesChange: (statuses: TStatusStates) => void) {
     this.subscribeSessionStatuses((snapshot) => {
-      this.statusesStore.syncFromSessionSnapshot(snapshot);
+      this.statusesStore.applySessionSnapshot(snapshot);
       onStatusesChange({
         connection: this.statusesStore.connection.state,
         autoConnector: this.statusesStore.autoConnector.state,
@@ -29,7 +29,7 @@ class Statuses {
     });
   }
 
-  public getStatusesWithContext(): TStatusesStoreOutput {
+  public getStatusesWithContext(): TStatusesStoreSnapshotOut {
     return getSnapshot(this.statusesStore);
   }
 
