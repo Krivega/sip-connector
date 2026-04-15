@@ -1,6 +1,12 @@
 # PresentationManager (Презентации)
 
-**Назначение**: Управление демонстрацией экрана и презентациями.
+`PresentationManager` управляет демонстрацией экрана, обновлением презентационного потока и связанными состояниями.
+
+## Назначение
+
+- Запуск/остановка и обновление screen-sharing потока.
+- Интеграция с активной RTC-сессией звонка.
+- Контроль состояния презентации через `PresentationStateMachine`.
 
 ## Ключевые возможности
 
@@ -13,20 +19,22 @@
 
 ## Основные методы
 
-- `startPresentation()` / `stopPresentation()` - управление презентациями
-- `updatePresentation()` - обновление потока
-- `cancelSendPresentationWithRepeatedCalls()` - отмена операций
+| Метод                                        | Назначение                                                 |
+| -------------------------------------------- | ---------------------------------------------------------- |
+| `startPresentation()` / `stopPresentation()` | Запуск и завершение демонстрации экрана.                   |
+| `updatePresentation()`                       | Смена текущего presentation-потока без полного stop/start. |
+| `cancelSendPresentationWithRepeatedCalls()`  | Отмена повторных попыток отправки презентации.             |
+| `hasCanceledStartPresentationError()`        | Проверка, что ошибка старта связана с отменой операции.    |
 
 ## Внутренние компоненты
 
-### PresentationStateMachine
+| Компонент                  | Роль                                                            |
+| -------------------------- | --------------------------------------------------------------- |
+| `PresentationStateMachine` | Модель состояний демонстрации экрана (XState).                  |
+| `repeatedCallsAsync`       | Защита от дублированных запусков и повторные попытки send-flow. |
+| `prepareMediaStream`       | Подготовка media stream и content hint.                         |
+| `setMaxBitrateToSender`    | Ограничение битрейта презентационного трека.                    |
 
-Управление состояниями демонстрации экрана (XState)
+## Связанная state machine
 
-- Валидация переходов между состояниями
-- Публичный API с геттерами: `isIdle`, `isStarting`, `isActive`, `isStopping`, `isFailed`, `isPending`, `isActiveOrPending`
-- Типобезопасная обработка ошибок (lastError: Error | undefined)
-- Методы: `reset()`
-- Полное логирование всех переходов состояний
-
-Подробнее см. [State Machine](./state-machine.md).
+- [PresentationStateMachine](./state-machine.md)

@@ -1,6 +1,12 @@
 # IncomingCallManager (Входящие звонки)
 
-**Назначение**: Обработка входящих SIP-звонков.
+`IncomingCallManager` обрабатывает входящие SIP-сессии и предоставляет API для приёма/отклонения вызова.
+
+## Назначение
+
+- Детектирование входящих звонков (`newRTCSession` с `originator=remote`).
+- Хранение и выдача данных звонящего.
+- Передача принятой входящей сессии в `CallManager`.
 
 ## Ключевые возможности
 
@@ -12,21 +18,22 @@
 
 ## Основные методы
 
-- `getIncomingRTCSession()` - получение сессии
-- `declineToIncomingCall()` - отклонение звонка
-- `busyIncomingCall()` - ответ "занято"
+| Метод                         | Назначение                                                        |
+| ----------------------------- | ----------------------------------------------------------------- |
+| `getIncomingRTCSession()`     | Получение текущей входящей RTC-сессии (с ошибкой при отсутствии). |
+| `extractIncomingRTCSession()` | Извлечение сессии для `CallManager` с переводом в `consumed`.     |
+| `declineToIncomingCall()`     | Отклонение входящего вызова с заданным SIP-кодом.                 |
+| `busyIncomingCall()`          | Быстрое отклонение кодом "занято" (`486`).                        |
+| `start()` / `stop()`          | Управление подписками на события и очистка внутреннего состояния. |
 
 ## Внутренние компоненты
 
-### IncomingCallStateMachine
+| Компонент                           | Роль                                                                              |
+| ----------------------------------- | --------------------------------------------------------------------------------- |
+| `IncomingCallStateMachine`          | Модель состояния входящего вызова (XState).                                       |
+| `ConnectionManager.events` подписки | Источник `newRTCSession`, `disconnected`, `registrationFailed`, `connect-failed`. |
+| Внутренний `incomingRTCSession`     | Текущая входящая SIP-сессия и источник `remoteCallerData`.                        |
 
-Управление состояниями входящих SIP-звонков (XState)
+## Связанная state machine
 
-- Валидация переходов между состояниями
-- Публичный API с геттерами: `isIdle`, `isRinging`, `isConsumed`, `isDeclined`, `isTerminated`, `isFailed`, `isActive`, `isFinished`
-- Хранение данных вызывающего абонента (remoteCallerData)
-- Геттеры контекста: `remoteCallerData`, `lastReason`
-- Методы: `reset()`, `toConsumed()`
-- Полное логирование всех переходов состояний
-
-Подробнее см. [State Machine](./state-machine.md).
+- [IncomingCallStateMachine](./state-machine.md)

@@ -1,100 +1,92 @@
 # IncomingCallStateMachine (Состояния входящих звонков)
 
-Внутренний компонент `IncomingCallManager`, управляющий состояниями входящих SIP-звонков через XState с валидацией допустимых операций и предотвращением некорректных переходов.
-
-## Интеграция с менеджером
-
-- **Доменные события машины:** `INCOMING.RINGING`, `INCOMING.CONSUMED`, `INCOMING.DECLINED`, `INCOMING.TERMINATED`, `INCOMING.FAILED`, `INCOMING.CLEAR`.
-- **Источники событий:** `IncomingCallManager.events` — `incomingCall`, `declinedIncomingCall`, `terminatedIncomingCall`, `failedIncomingCall`; дополнительная синтетика при ответе на входящий звонок.
-
-## Диаграмма переходов (Mermaid)
-
-Граф соответствует [`IncomingCallStateMachine.ts`](../../../../src/IncomingCallManager/IncomingCallStateMachine.ts).
-
-```mermaid
-stateDiagram-v2
-    [*] --> idle
-    state "incoming:idle" as idle
-    state "incoming:ringing" as ringing
-    state "incoming:consumed" as consumed
-    state "incoming:declined" as declined
-    state "incoming:terminated" as terminated
-    state "incoming:failed" as failed
-
-    idle --> ringing: INCOMING.RINGING
-    idle --> idle: INCOMING.CLEAR
-    ringing --> ringing: INCOMING.RINGING
-    ringing --> consumed: INCOMING.CONSUMED
-    ringing --> declined: INCOMING.DECLINED
-    ringing --> terminated: INCOMING.TERMINATED
-    ringing --> failed: INCOMING.FAILED
-    ringing --> idle: INCOMING.CLEAR
-    consumed --> idle: INCOMING.CLEAR
-    consumed --> ringing: INCOMING.RINGING
-    declined --> idle: INCOMING.CLEAR
-    declined --> ringing: INCOMING.RINGING
-    terminated --> idle: INCOMING.CLEAR
-    terminated --> ringing: INCOMING.RINGING
-    failed --> idle: INCOMING.CLEAR
-    failed --> ringing: INCOMING.RINGING
-```
-
-## Хранение данных
-
-Машина хранит данные вызывающего абонента (`remoteCallerData`) и причину завершения (`lastReason`).
+`IncomingCallStateMachine` — внутренний XState-автомат `IncomingCallManager`, который управляет жизненным циклом входящего вызова и валидирует допустимые переходы.
 
 ## Публичный API
 
-### Геттеры состояний
+| Категория               | Элементы                                                                      |
+| ----------------------- | ----------------------------------------------------------------------------- |
+| Геттеры состояния       | `isIdle`, `isRinging`, `isConsumed`, `isDeclined`, `isTerminated`, `isFailed` |
+| Комбинированные геттеры | `isActive`, `isFinished`                                                      |
+| Геттеры контекста       | `remoteCallerData`, `lastReason`                                              |
+| Методы управления       | `toConsumed()`, `reset()`, `send(event)`                                      |
 
-- `isIdle` — проверка состояния IDLE
-- `isRinging` — проверка состояния RINGING
-- `isConsumed` — проверка состояния CONSUMED
-- `isDeclined` — проверка состояния DECLINED
-- `isTerminated` — проверка состояния TERMINATED
-- `isFailed` — проверка состояния FAILED
+## Состояния
 
-### Комбинированные геттеры
+| Состояние             | Назначение                                          |
+| --------------------- | --------------------------------------------------- |
+| `incoming:idle`       | Нет активного входящего звонка.                     |
+| `incoming:ringing`    | Входящий звонок доступен для обработки.             |
+| `incoming:consumed`   | Звонок принят (сессия извлечена потребителем).      |
+| `incoming:declined`   | Звонок отклонён локально.                           |
+| `incoming:terminated` | Звонок завершён локально/системно после старта.     |
+| `incoming:failed`     | Звонок завершился ошибкой удалённой стороны/сессии. |
 
-- `isActive` — проверка активного состояния (ringing)
-- `isFinished` — проверка финальных состояний (consumed/declined/terminated/failed)
+## Контекст и инварианты
 
-### Геттеры контекста
+| Инвариант            | Описание                                                                               |
+| -------------------- | -------------------------------------------------------------------------------------- |
+| Поля контекста       | Контекст содержит `remoteCallerData` и `lastReason`.                                   |
+| Idle-контекст        | В `incoming:idle` оба поля равны `undefined`.                                          |
+| Ringing-контекст     | В `incoming:ringing` заполнен `remoteCallerData`, `lastReason = undefined`.            |
+| Финальные состояния  | В `consumed/declined/terminated/failed` заполнены `remoteCallerData` и `lastReason`.   |
+| Обновление входящего | `rememberIncoming` на `INCOMING.RINGING` перезаписывает данные и очищает `lastReason`. |
+| Очистка              | `clearIncoming` на `INCOMING.CLEAR` сбрасывает оба поля.                               |
 
-- `remoteCallerData` — данные вызывающего абонента
-- `lastReason` — причина завершения звонка
+## Диаграмма переходов (Mermaid)
 
-### Методы управления
+Граф соответствует [`createIncomingCallMachine.ts`](../../../../src/IncomingCallManager/IncomingCallStateMachine/createIncomingCallMachine.ts).
 
-- `reset()` — сброс состояния в IDLE
-- `toConsumed()` — переход в состояние CONSUMED (принят звонок)
+```mermaid
+stateDiagram-v2
+  [*] --> idle
+  state "incoming:idle" as idle
+  state "incoming:ringing" as ringing
+  state "incoming:consumed" as consumed
+  state "incoming:declined" as declined
+  state "incoming:terminated" as terminated
+  state "incoming:failed" as failed
 
-## Граф переходов
+  idle --> ringing: INCOMING.RINGING
+  idle --> idle: INCOMING.CLEAR
+  ringing --> ringing: INCOMING.RINGING
+  ringing --> consumed: INCOMING.CONSUMED
+  ringing --> declined: INCOMING.DECLINED
+  ringing --> terminated: INCOMING.TERMINATED
+  ringing --> failed: INCOMING.FAILED
+  ringing --> idle: INCOMING.CLEAR
+  consumed --> idle: INCOMING.CLEAR
+  consumed --> ringing: INCOMING.RINGING
+  declined --> idle: INCOMING.CLEAR
+  declined --> ringing: INCOMING.RINGING
+  terminated --> idle: INCOMING.CLEAR
+  terminated --> ringing: INCOMING.RINGING
+  failed --> idle: INCOMING.CLEAR
+  failed --> ringing: INCOMING.RINGING
+```
 
-### Из IDLE
+## Ключевые правила переходов
 
-- **IDLE → RINGING** — при новом входящем звонке (`INCOMING.RINGING`)
+- Базовый сценарий: `idle -> ringing -> consumed|declined|terminated|failed -> idle`.
+- `INCOMING.RINGING` разрешён почти везде (включая `ringing` self-transition): новый вызов перезаписывает `remoteCallerData`.
+- `INCOMING.CONSUMED` валиден только из `ringing`.
+- В `idle` событие `INCOMING.CLEAR` — безопасный no-op переход `idle -> idle` со сбросом контекста.
+- При событиях `ConnectionManager` (`disconnected`, `registrationFailed`, `connect-failed`) машина автоматически отправляет `INCOMING.CLEAR`.
 
-### Из RINGING
+## Интеграция и события
 
-- **RINGING → CONSUMED** — звонок принят (`INCOMING.CONSUMED`)
-- **RINGING → DECLINED** — звонок отклонен (`INCOMING.DECLINED`)
-- **RINGING → TERMINATED** — обрыв звонка (`INCOMING.TERMINATED`)
-- **RINGING → FAILED** — ошибка (`INCOMING.FAILED`)
-- **RINGING → IDLE** — очистка (`INCOMING.CLEAR`)
-- **RINGING → RINGING** — self-transition при повторном входящем звонке
-
-### Из финальных состояний
-
-Все финальные состояния (CONSUMED, DECLINED, TERMINATED, FAILED) могут перейти:
-
-- **→ IDLE** — через `INCOMING.CLEAR`
-- **→ RINGING** — при новом входящем звонке (`INCOMING.RINGING`)
-
-## Автоматическая очистка
-
-При потере соединения (через ConnectionManager events: disconnected, registrationFailed, connect-failed) происходит автоматическая очистка состояния в IDLE.
+- Доменные события машины: `INCOMING.RINGING`, `INCOMING.CONSUMED`, `INCOMING.DECLINED`, `INCOMING.TERMINATED`, `INCOMING.FAILED`, `INCOMING.CLEAR`.
+- Источники событий `IncomingCallManager.events`:
+  - `ringing` -> `INCOMING.RINGING`;
+  - `declinedIncomingCall` -> `INCOMING.DECLINED`;
+  - `terminatedIncomingCall` -> `INCOMING.TERMINATED`;
+  - `failedIncomingCall` -> `INCOMING.FAILED`.
+- Синтетические события:
+  - `INCOMING.CONSUMED` отправляется через `toConsumed()` (например, в `extractIncomingRTCSession()`).
+  - `INCOMING.CLEAR` отправляется через `reset()` и из подписок на `ConnectionManager.events`.
+- Проверка допустимости перехода выполняется до `send`: при `snapshot.can(event) === false` событие игнорируется и состояние не меняется.
 
 ## Логирование
 
-Все переходы состояний и недопустимые операции логируются через `console.warn` для отладки и мониторинга.
+- Логи переходов и смены состояния пишутся через `resolveDebug('IncomingCallStateMachine')` (actions `logTransition`, `logStateChange`).
+- Недопустимые события также логируются через `resolveDebug` в `IncomingCallStateMachine.sendEvent(...)`.

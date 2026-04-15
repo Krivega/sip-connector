@@ -1,119 +1,84 @@
 # AutoConnectorManager: машина состояний (XState)
 
-Документ описывает оркестрацию автоподключения в [`AutoConnectorManager`](../../../../src/AutoConnectorManager/@AutoConnectorManager.ts) через модуль [`AutoConnectorStateMachine`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/AutoConnectorStateMachine.ts), runtime-слой [`AutoConnectorRuntime`](../../../../src/AutoConnectorManager/AutoConnectorRuntime.ts) и фабрику [`createAutoConnectorMachine`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/createAutoConnectorMachine.ts).
+`AutoConnectorStateMachine` оркестрирует цикл автоподключения в `AutoConnectorManager` и валидирует допустимые переходы.
 
-## Назначение
+## Публичный API
 
-- Явно задать допустимые фазы реконнекта, ретраев, проверки телефонии и остановки.
-- Сохранить прежние публичные события (`before-attempt`, `success`, `limit-reached-attempts`, и т.д.) через действия и колбэки `deps`, которые делегируют в `AutoConnectorRuntime`.
-- Отклонять недопустимые события в текущей фазе (см. `send` в `AutoConnectorStateMachine`).
+| Категория                 | Элементы                                                                                                                                                                                                       |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Методы менеджера          | `start(parameters)`, `restart()`, `stop()`, `cancelPendingRetry()`                                                                                                                                             |
+| Внутренние события машины | `AUTO.RESTART`, `AUTO.STOP`, `TELEPHONY.RESULT(stillConnected)`                                                                                                                                                |
+| Публичные эмиты менеджера | `before-attempt`, `success`, `limit-reached-attempts`, `stop-attempts-by-error`, `cancelled-attempts`, `failed-all-attempts`, `telephony-check-failure`, `telephony-check-escalated`, `changed-attempt-status` |
+| Сервисные точки           | `requestReconnect(...)` с coalescing и приоритетами причин                                                                                                                                                     |
 
 ## Состояния
 
-| Состояние             | Смысл                                                                                        |
-| --------------------- | -------------------------------------------------------------------------------------------- |
-| `idle`                | Автоконнектор не выполняет флоу подключения.                                                 |
-| `disconnecting`       | Выполняется `stopConnectionFlow` (остановка попыток, триггеров, `disconnect`).               |
-| `attemptingGate`      | Перед попыткой: `before-attempt`, остановка триггеров; проверка лимита попыток.              |
-| `attemptingConnect`   | Вызов `connectionQueueManager.connect`.                                                      |
-| `waitingBeforeRetry`  | Задержка `timeoutBetweenAttempts` перед следующей попыткой.                                  |
-| `connectedMonitoring` | Успешное подключение; активны ping и подписка на регистрацию.                                |
-| `telephonyChecking`   | Лимит попыток; работает `CheckTelephonyRequester`.                                           |
-| `errorTerminal`       | Общий терминальный режим для остановленных попыток; причина хранится в `context.stopReason`. |
+| Состояние             | Назначение                                                           |
+| --------------------- | -------------------------------------------------------------------- |
+| `idle`                | Автоконнектор не выполняет цикл подключения.                         |
+| `disconnecting`       | Запущен `stopConnectionFlow` (стоп попыток/триггеров, `disconnect`). |
+| `attemptingGate`      | Шлюз перед попыткой: `before-attempt`, проверка лимита.              |
+| `attemptingConnect`   | Вызов `connectionQueueManager.connect`.                              |
+| `waitingBeforeRetry`  | Ожидание `timeoutBetweenAttempts` до следующей попытки.              |
+| `connectedMonitoring` | Успешное подключение, активен мониторинг/триггеры.                   |
+| `telephonyChecking`   | Периодические проверки телефонии после лимита попыток.               |
+| `errorTerminal`       | Терминальное состояние остановленных попыток.                        |
 
-## События
+## Контекст и инварианты
 
-События ниже — **внутренний контракт машины**; снаружи `AutoConnectorManager` по-прежнему эмитит прежние публичные события через runtime и колбэки `deps`.
-
-- `AUTO.RESTART` — начать цикл реконнекта/подключения (используется из `start`, `restart` и единой точки `requestReconnect`).
-  - Если `shouldDisconnectBeforeAttempt === true`, сначала переход в `disconnecting`.
-  - Если `shouldDisconnectBeforeAttempt === false` (cold start: `isDisconnected || isIdle` и нет `requested/isDisconnecting`), переход сразу в `attemptingGate`.
-- `AUTO.STOP` — остановить флоу (`afterDisconnect: idle`). В `idle` обрабатывается как безопасный no-op (остаёмся в `idle`).
-- `TELEPHONY.RESULT` с `stillConnected` — возврат в `connectedMonitoring` после успешной проверки телефонии при уже подключённом клиенте. Если нужен полный рестарт, менеджер вызывает `requestReconnect` с причиной `telephony-disconnected`.
-
-**Ping в `connectedMonitoring`:** вне звонка [`PingServerIfNotActiveCallRequester`](../../../../src/AutoConnectorManager/PingServerIfNotActiveCallRequester.ts) периодически вызывает `connectionManager.ping()` — SIP OPTIONS через JsSIP на свой URI. Это мониторинг доступности сигнализации и лёгкая нагрузка на уже поднятый WebSocket-транспорт стека. Переподключение WebSocket после обрыва выполняет внутренний слой JsSIP; после восстановления транспорта следующие OPTIONS снова идут через актуальное соединение. На провал ping не отправляем `AUTO.RESTART` в машину: не дублируем встроенное переподключение транспорта в JsSIP.
+| Инвариант                | Описание                                                                                                 |
+| ------------------------ | -------------------------------------------------------------------------------------------------------- |
+| Базовые поля             | Контекст хранит `afterDisconnect`, `parameters`, `stopReason`, `lastError`.                              |
+| Параметры подключения    | В `idle`/`disconnecting` `parameters` может быть `undefined`, в attempt-flow состояниях обязателен.      |
+| Терминальная диагностика | В `errorTerminal` сохраняются `stopReason` (`halted/cancelled/failed`) и `lastError`.                    |
+| Рестарт                  | `assignRestart` сохраняет параметры нового цикла и очищает терминальную диагностику.                     |
+| Стоп                     | `assignStop` переводит сценарий в `afterDisconnect: idle` и очищает диагностику.                         |
+| Error-нормализация       | Для веток `cancelled`/`failed` ошибки нормализуются через `wrapReconnectError` в `createMachineDeps.ts`. |
 
 ## Диаграмма переходов (Mermaid)
 
-Граф соответствует [`createAutoConnectorMachine.ts`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/createAutoConnectorMachine.ts). Подписи `invoke` — результат `stopConnectionFlow`, `connect`, `waitBeforeRetry`.
+Граф соответствует [`createAutoConnectorMachine.ts`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/createAutoConnectorMachine.ts).
 
 ```mermaid
 stateDiagram-v2
   [*] --> idle
   idle --> idle: AUTO.STOP
-  idle --> disconnecting: AUTO.RESTART shouldDisconnectBeforeAttempt
-  idle --> attemptingGate: AUTO.RESTART not shouldDisconnectBeforeAttempt
-  disconnecting --> idle: invoke onDone shouldGoIdleAfterDisconnect
-  disconnecting --> attemptingGate: invoke onDone shouldAttemptAfterDisconnect
-  disconnecting --> idle: invoke onError
-  disconnecting --> disconnecting: AUTO.STOP reenter
-  disconnecting --> disconnecting: AUTO.RESTART actions only
-  attemptingGate --> telephonyChecking: always isLimitReached
-  attemptingGate --> attemptingConnect: always else
-  attemptingGate --> disconnecting: AUTO.STOP
-  attemptingGate --> disconnecting: AUTO.RESTART
-  attemptingConnect --> connectedMonitoring: invoke onDone
-  attemptingConnect --> errorTerminal: onError isNotReadyForConnection
-  attemptingConnect --> errorTerminal: onError isNoRetryPolicy
-  attemptingConnect --> errorTerminal: onError isNotActualPromise
-  attemptingConnect --> waitingBeforeRetry: onError else retryable
-  attemptingConnect --> disconnecting: AUTO.STOP
-  attemptingConnect --> disconnecting: AUTO.RESTART
-  waitingBeforeRetry --> attemptingGate: invoke onDone
-  waitingBeforeRetry --> errorTerminal: onError isWaitRetryCancelled
-  waitingBeforeRetry --> errorTerminal: onError else fatal
-  waitingBeforeRetry --> disconnecting: AUTO.STOP
-  waitingBeforeRetry --> disconnecting: AUTO.RESTART
-  connectedMonitoring --> disconnecting: AUTO.STOP
-  connectedMonitoring --> disconnecting: AUTO.RESTART
-  telephonyChecking --> connectedMonitoring: TELEPHONY.RESULT stillConnected
-  telephonyChecking --> disconnecting: AUTO.STOP
-  telephonyChecking --> disconnecting: AUTO.RESTART
-  errorTerminal --> disconnecting: AUTO.STOP
-  errorTerminal --> disconnecting: AUTO.RESTART
+  idle --> disconnecting: AUTO.RESTART / shouldDisconnectBeforeAttempt
+  idle --> attemptingGate: AUTO.RESTART / !shouldDisconnectBeforeAttempt
+  disconnecting --> idle: stopConnectionFlow.done / afterDisconnect=idle
+  disconnecting --> attemptingGate: stopConnectionFlow.done / afterDisconnect=attempt
+  disconnecting --> idle: stopConnectionFlow.error
+  attemptingGate --> telephonyChecking: isLimitReached
+  attemptingGate --> attemptingConnect: else
+  attemptingConnect --> connectedMonitoring: connect.done
+  attemptingConnect --> waitingBeforeRetry: retryable error
+  attemptingConnect --> errorTerminal: non-retryable error
+  waitingBeforeRetry --> attemptingGate: wait.done
+  waitingBeforeRetry --> errorTerminal: wait.error
+  connectedMonitoring --> disconnecting: AUTO.STOP / AUTO.RESTART
+  telephonyChecking --> connectedMonitoring: TELEPHONY.RESULT(stillConnected)
+  telephonyChecking --> disconnecting: AUTO.STOP / AUTO.RESTART
+  errorTerminal --> disconnecting: AUTO.STOP / AUTO.RESTART
 ```
 
-## Что упростили
+## Ключевые правила переходов
 
-- Убрано промежуточное состояние `standby`: после `check-telephony` машина возвращается в тот же режим `connectedMonitoring`, в котором уже живёт успешный `connect`.
-- Три терминальных состояния (`haltedByError`, `cancelled`, `failed`) объединены в одно `errorTerminal`.
-- Диагностика причины остановки не потеряна: машина сохраняет её в `context.stopReason` (`halted`, `cancelled`, `failed`), а наружу по-прежнему эмитит прежние события (`stop-attempts-by-error`, `cancelled-attempts`, `failed-all-attempts`).
-- Убрана скрытая связка с `stateMachine.context` из адаптера: `createMachineDeps` больше не вытягивает параметры из контекста, а получает их явно из machine actions.
+- `AUTO.RESTART` на cold start может идти сразу в `attemptingGate` без предварительного disconnect.
+- В `disconnecting` событие `AUTO.RESTART` не делает re-enter invoke: обновляется только контекст, текущий `stopConnectionFlow` продолжается.
+- Порядок guard в `attemptingConnect.onError` критичен: сначала non-retry/cancel cases, затем retry path.
+- `telephonyChecking -> connectedMonitoring` означает возврат к мониторингу без нового `connect`.
+- Сбой ping в мониторинге не инициирует `AUTO.RESTART`, чтобы не дублировать reconnect-механику транспорта JsSIP.
+- Coalescing рестартов (`ReconnectRequestCoalescer`) подавляет дубли в окне и пропускает более приоритетные причины.
 
-## Комментарии к логике
+## Интеграция и события
 
-- В `attemptingConnect.onError` порядок guard'ов важен: сначала отсекаются ошибки без права на retry, потом отменённые/неактуальные попытки, и только после этого машина идёт в `waitingBeforeRetry`.
-- В `attemptingConnect.invoke.input` добавлена явная проверка `context.parameters`: вместо `non-null assertion` машина выбрасывает явную ошибку инварианта.
-- В `waitingBeforeRetry.onError` отдельно различаются управляемая отмена цепочки (`cancelled-attempts`) и фатальная ошибка подготовки ретрая (`failed-all-attempts`).
-- Переход `telephonyChecking -> connectedMonitoring` означает: соединение уже восстановилось без нового `connect`, поэтому нужен только возврат в режим мониторинга и событие `success`.
-- Провал ping в мониторинге не переводит машину в `disconnecting`: см. раздел **Ping в `connectedMonitoring`** выше и комментарий в [`AutoConnectorRuntime.ts`](../../../../src/AutoConnectorManager/AutoConnectorRuntime.ts) у `subscribeToConnectTriggers`.
-- Ошибка в `CheckTelephonyRequester.onFailRequest` не переводит машину в другое состояние: политика «только логирование и продолжение периодических проверок».
-- `requestReconnect` использует «умный coalescing» в коротком окне: запрос с той же или меньшей важностью подавляется, а более приоритетная причина допускается. Карта приоритетов вынесена в [`types.ts`](../../../../src/AutoConnectorManager/types.ts) (`RECONNECT_REASON_PRIORITY`).
-- Ошибки `check-telephony` обрабатываются отдельной policy-моделью [`TelephonyFailPolicy.ts`](../../../../src/AutoConnectorManager/TelephonyFailPolicy.ts): считает fail-цепочку, применяет retry/backoff, поднимает escalation (`warning`/`critical`) и эмитит метрики-события.
-- Сложные побочные эффекты (`stopConnectionFlow`, `onLimitReached`, терминальные эмиты, connect triggers) вынесены в `AutoConnectorRuntime`, а machine actions сведены к вызову одного runtime-сценария.
-- Условие захода в `disconnecting` инкапсулировано в `AutoConnectorRuntime.shouldDisconnectBeforeAttempt()`:
-  - `true`, если `connectionManager.requested || connectionManager.isDisconnecting`;
-  - иначе `true`, когда состояние не `isDisconnected` и не `isIdle`;
-  - `false` на cold start, когда безопасно идти сразу в `attemptingGate`.
+- Внутренние события: `AUTO.RESTART`, `AUTO.STOP`, `TELEPHONY.RESULT`.
+- Источники событий:
+  - `AUTO.RESTART` — из `requestReconnect(...)` (`start`, `restart`, runtime-триггеры);
+  - `AUTO.STOP` — из `stop()` (`stateMachine.toStop()`);
+  - `TELEPHONY.RESULT(stillConnected)` — из runtime (`notifyTelephonyStillConnected()`).
+- Runtime делегирует в машину побочные сценарии (`stopConnectionFlow`, `connect`, `delayBetweenAttempts`, telephony-check policy), а публичные события эмитятся снаружи через `AutoConnectorRuntime`.
 
-## Coalescing-компонент
+## Логирование
 
-- За coalescing и `generation` отвечает отдельный класс [`ReconnectRequestCoalescer.ts`](../../../../src/AutoConnectorManager/ReconnectRequestCoalescer.ts).
-- Контракт метода `register(reason)`:
-  - `shouldRequest: true` — менеджер отправляет `AUTO.RESTART` в машину;
-  - `shouldRequest: false` — запрос считается схлопнутым, в лог попадают `coalescedBy` и приоритеты.
-- Метод `reset()` очищает coalescing-состояние при `stop()`, чтобы новая сессия стартовала без «истории» предыдущих рестартов.
-
-## Как расширять
-
-1. Добавить новое событие в [`types.ts`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/types.ts) и обработать переходы в `createAutoConnectorMachine.ts`.
-2. Побочные эффекты выносить в `AutoConnectorRuntime`, а в `TAutoConnectorMachineDeps` оставлять только тонкую адаптацию вызовов машины к runtime.
-3. При изменении переходов обновляйте эту диаграмму и прогоняйте `yarn test src/AutoConnectorManager` и контрактные тесты событий.
-
-## Связанные файлы
-
-- Реализация машины: [`createAutoConnectorMachine.ts`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/createAutoConnectorMachine.ts)
-- Обёртка актора: [`AutoConnectorStateMachine.ts`](../../../../src/AutoConnectorManager/AutoConnectorStateMachine/AutoConnectorStateMachine.ts)
-- Runtime-побочные эффекты: [`AutoConnectorRuntime.ts`](../../../../src/AutoConnectorManager/AutoConnectorRuntime.ts)
-- Адаптер зависимостей машины: [`createMachineDeps.ts`](../../../../src/AutoConnectorManager/createMachineDeps.ts)
-- Operational-профили policy: [auto-reconnection.md](../../recipes/auto-reconnection.md#базовые-operational-профили-telephonyfailpolicy)
+- Переходы, диагностические ветки и подавленные рестарты логируются через `resolveDebug` в слое машины/менеджера/runtime.

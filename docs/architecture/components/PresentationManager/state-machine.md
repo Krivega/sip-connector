@@ -1,106 +1,83 @@
 # PresentationStateMachine (Состояния демонстрации экрана)
 
-Внутренний компонент `PresentationManager`, управляющий состояниями демонстрации экрана через XState с валидацией допустимых операций и предотвращением некорректных переходов.
-
-## Интеграция с менеджером
-
-- **Доменные события машины:** `SCREEN.STARTING`, `SCREEN.STARTED`, `SCREEN.ENDING`, `SCREEN.ENDED`, `SCREEN.FAILED`, `CALL.ENDED`, `CALL.FAILED`, `PRESENTATION.RESET`.
-- **Источники событий:** `CallManager.events` — `presentation:start`, `presentation:started`, `presentation:end`, `presentation:ended`, `presentation:failed`, `ended`, `failed`; сброс при потере соединения обрабатывается на уровне менеджера (не отдельными переходами в этой машине).
-
-## Диаграмма переходов (Mermaid)
-
-Граф соответствует [`PresentationStateMachine.ts`](../../../../src/PresentationManager/PresentationStateMachine.ts).
-
-```mermaid
-stateDiagram-v2
-    [*] --> idle
-    state "presentation:idle" as idle
-    state "presentation:starting" as starting
-    state "presentation:active" as active
-    state "presentation:stopping" as stopping
-    state "presentation:failed" as failed
-
-    idle --> starting: SCREEN.STARTING
-    starting --> active: SCREEN.STARTED
-    starting --> failed: SCREEN.FAILED
-    starting --> idle: SCREEN.ENDED
-    starting --> idle: CALL.ENDED
-    starting --> failed: CALL.FAILED
-    active --> stopping: SCREEN.ENDING
-    active --> idle: SCREEN.ENDED
-    active --> idle: CALL.ENDED
-    active --> failed: SCREEN.FAILED
-    active --> failed: CALL.FAILED
-    stopping --> idle: SCREEN.ENDED
-    stopping --> idle: CALL.ENDED
-    stopping --> failed: SCREEN.FAILED
-    stopping --> failed: CALL.FAILED
-    failed --> starting: SCREEN.STARTING
-    failed --> idle: SCREEN.ENDED
-    failed --> idle: PRESENTATION.RESET
-```
-
-## Типобезопасная обработка ошибок
-
-Машина использует типобезопасную обработку ошибок: `lastError: Error | undefined`.
+`PresentationStateMachine` — внутренний XState-автомат `PresentationManager`, который валидирует допустимые переходы для сценария screen sharing и хранит terminal-ошибку в контексте.
 
 ## Публичный API
 
-### Геттеры состояний
+| Категория               | Элементы                                                     |
+| ----------------------- | ------------------------------------------------------------ |
+| Геттеры состояния       | `isIdle`, `isStarting`, `isActive`, `isStopping`, `isFailed` |
+| Комбинированные геттеры | `isPending`, `isActiveOrPending`                             |
+| Геттеры контекста       | `lastError`                                                  |
+| Методы управления       | `reset()`, `send(event)`                                     |
 
-- `isIdle` — проверка состояния IDLE
-- `isStarting` — проверка состояния STARTING
-- `isActive` — проверка состояния ACTIVE
-- `isStopping` — проверка состояния STOPPING
-- `isFailed` — проверка состояния FAILED
+## Состояния
 
-### Комбинированные геттеры
+| Состояние               | Назначение                        |
+| ----------------------- | --------------------------------- |
+| `presentation:idle`     | Презентация не запущена.          |
+| `presentation:starting` | Идёт запуск демонстрации экрана.  |
+| `presentation:active`   | Демонстрация экрана активна.      |
+| `presentation:stopping` | Идёт остановка демонстрации.      |
+| `presentation:failed`   | Демонстрация завершилась ошибкой. |
 
-- `isPending` — проверка состояний starting/stopping
-- `isActiveOrPending` — проверка состояний active/starting/stopping
+## Контекст и инварианты
 
-### Геттер ошибки
+| Инвариант            | Описание                                                                                 |
+| -------------------- | ---------------------------------------------------------------------------------------- |
+| Поле контекста       | Контекст содержит только `lastError`.                                                    |
+| Состояния без ошибки | В `idle`, `starting`, `active`, `stopping` значение `lastError = undefined`.             |
+| Failed-состояние     | В `failed` допустим `lastError: Error \| undefined`.                                     |
+| Нормализация         | `setError` сохраняет `Error` как есть, иначе создаёт `new Error(JSON.stringify(error))`. |
+| Очистка              | `clearError` срабатывает на переходах в `idle` и `failed -> starting`.                   |
 
-- `lastError` — последняя ошибка (если есть)
+## Диаграмма переходов (Mermaid)
 
-### Методы управления
+Граф соответствует [`createPresentationMachine.ts`](../../../../src/PresentationManager/PresentationStateMachine/createPresentationMachine.ts).
 
-- `reset()` — сброс состояния в IDLE
+```mermaid
+stateDiagram-v2
+  [*] --> idle
+  state "presentation:idle" as idle
+  state "presentation:starting" as starting
+  state "presentation:active" as active
+  state "presentation:stopping" as stopping
+  state "presentation:failed" as failed
 
-## Граф переходов
+  idle --> starting: SCREEN.STARTING
+  starting --> active: SCREEN.STARTED
+  starting --> failed: SCREEN.FAILED
+  starting --> idle: SCREEN.ENDED
+  starting --> idle: CALL.ENDED
+  starting --> failed: CALL.FAILED
+  active --> stopping: SCREEN.ENDING
+  active --> idle: SCREEN.ENDED
+  active --> idle: CALL.ENDED
+  active --> failed: SCREEN.FAILED
+  active --> failed: CALL.FAILED
+  stopping --> idle: SCREEN.ENDED
+  stopping --> idle: CALL.ENDED
+  stopping --> failed: SCREEN.FAILED
+  stopping --> failed: CALL.FAILED
+  failed --> starting: SCREEN.STARTING
+  failed --> idle: SCREEN.ENDED
+  failed --> idle: PRESENTATION.RESET
+```
 
-### Основной путь
+## Ключевые правила переходов
 
-- **IDLE → STARTING → ACTIVE → STOPPING → IDLE**
+- Основной успешный сценарий: `idle -> starting -> active -> stopping -> idle`.
+- Переход в `failed` возможен только из `starting`, `active`, `stopping` по `SCREEN.FAILED` или `CALL.FAILED`.
+- Переход `idle -> failed` отсутствует намеренно (презентация не может «упасть» до старта).
+- `PRESENTATION.RESET` не универсальный «global reset»: в невалидных состояниях событие игнорируется механизмом `snapshot.can(...)`.
 
-### Переходы в FAILED
+## Интеграция и события
 
-Из состояний STARTING/ACTIVE/STOPPING:
-
-- Через `SCREEN.FAILED`
-- При ошибке звонка — `CALL.FAILED`
-
-### Переход RESET
-
-- **FAILED → IDLE** — через `PRESENTATION.RESET`
-
-### Прерывание при сбросе звонка
-
-При завершении звонка (`ended` → `CALL.ENDED`, ошибка `failed` → `CALL.FAILED`) из состояний STARTING/ACTIVE/STOPPING происходит переход в IDLE или FAILED по графу выше.
-
-### Убранные переходы
-
-Убран нелогичный переход **IDLE → FAILED** (презентация не может зафейлиться до старта).
-
-### Переходы из FAILED
-
-- **FAILED → STARTING** — повторная попытка через `SCREEN.STARTING`
-- **FAILED → IDLE** — через `PRESENTATION.RESET` или `SCREEN.ENDED`
-
-## Обработка ошибок
-
-Автоматическое создание Error из не-Error значений: для объектов используется `JSON.stringify` для преобразования в строку перед созданием Error.
+- Доменные события машины: `SCREEN.STARTING`, `SCREEN.STARTED`, `SCREEN.ENDING`, `SCREEN.ENDED`, `SCREEN.FAILED`, `CALL.ENDED`, `CALL.FAILED`, `PRESENTATION.RESET`.
+- Источник событий: `CallManager.events` (`presentation:start`, `presentation:started`, `presentation:end`, `presentation:ended`, `presentation:failed`, `ended`, `failed`), которые адаптируются в доменные события в `subscribeCallEvents(...)`.
+- Проверка допустимости перехода делается до `send`: при недопустимом событии (`snapshot.can(event) === false`) переход игнорируется, а состояние не меняется.
 
 ## Логирование
 
-Все переходы состояний и недопустимые операции логируются через `console.warn` для отладки и мониторинга.
+- Логи переходов и смены состояния пишутся через `resolveDebug('PresentationStateMachine')` (actions `logTransition`, `logStateChange`).
+- Недопустимые события также логируются через `resolveDebug` в `PresentationStateMachine.sendEvent(...)`.

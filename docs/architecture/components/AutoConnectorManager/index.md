@@ -1,8 +1,12 @@
 # AutoConnectorManager (Автоматическое переподключение)
 
-**Назначение**: Обеспечивает автоматическое переподключение.
+`AutoConnectorManager` управляет автоматическим восстановлением соединения и retry-политикой поверх `ConnectionManager`.
 
-- [Машина состояний (XState)](./state-machine.md) — `AutoConnectorStateMachine`
+## Назначение
+
+- Автоматический цикл переподключения после сбоев/разрывов.
+- Координация retry-попыток, задержек и лимитов.
+- Мониторинг состояния соединения и телефонии.
 
 ## Ключевые возможности
 
@@ -10,21 +14,29 @@
 - Проверка доступности телефонии
 - Мониторинг состояния соединения
 - Управление событиями попыток подключения
-- Единая точка запросов на рестарт (`requestReconnect`) с причиной (`start`, `manual-restart`, `telephony-disconnected`, `registration-failed-out-of-call`, ...)
+- Единая точка запросов на рестарт (`requestReconnect`) с причиной (`start`, `manual-restart`, `telephony-disconnected`, `telephony-check-failed`, `registration-failed-out-of-call`, ...)
 - Operational-правила coalescing и приоритеты причин: [рецепт автопереподключения](../../../recipes/auto-reconnection.md#приоритеты-причин-рестарта-coalescing)
-
-## Архитектура компонентов
-
-- `@AutoConnectorManager.ts` — фасад: публичный API (`start`/`restart`/`stop`) и coalescing запросов на рестарт.
-- `AutoConnectorStateMachine/*` — декларативная машина состояний XState (policy и переходы).
-- `AutoConnectorRuntime.ts` — единая оркестрация побочных эффектов (attempts, connect/disconnect, triggers, telephony), включая правило `shouldDisconnectBeforeAttempt`.
-- `createMachineDeps.ts` — тонкий адаптер между машиной и runtime, включая нормализацию terminal-ошибок.
-- `CheckTelephonyRequester`, `PingServerIfNotActiveCallRequester`, `RegistrationFailedOutOfCallSubscriber` — инфраструктурные наблюдатели и периодические проверки.
 
 ## Основные методы
 
-- `start(parameters)` - запуск процесса автоподключения:
-  - cold start: сразу в цикл попытки без лишнего `disconnect`;
-  - при активном/переходном соединении: сначала `disconnect`, затем попытка подключения.
-- `restart()` - явный принудительный рестарт из внешнего кода (допустим из любого состояния машины); использует последние `parameters` из контекста машины (после `start` или предыдущего цикла). Если параметров ещё не было — no-op.
-- `stop()` - отмена текущей попытки автоподключения
+| Метод                  | Назначение                                                             |
+| ---------------------- | ---------------------------------------------------------------------- |
+| `start(parameters)`    | Запуск цикла автоподключения (cold start или через disconnect-phase).  |
+| `restart()`            | Принудительный рестарт с параметрами из контекста предыдущего цикла.   |
+| `stop()`               | Остановка текущего цикла автоподключения и сброс coalescing-состояния. |
+| `cancelPendingRetry()` | Тестовый/служебный хук отмены отложенного retry.                       |
+
+## Внутренние компоненты
+
+| Компонент                            | Роль                                                                                                      |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| `@AutoConnectorManager.ts`           | Фасад публичного API и точка `requestReconnect`.                                                          |
+| `AutoConnectorStateMachine/*`        | Декларативная state machine автоконнектора (XState).                                                      |
+| `AutoConnectorRuntime.ts`            | Побочные эффекты: attempts, connect/disconnect, triggers, telephony policy.                               |
+| `createMachineDeps.ts`               | Адаптер между машиной и runtime, включая нормализацию terminal-ошибок.                                    |
+| `ReconnectRequestCoalescer`          | Coalescing рестартов в коротком окне с приоритетами причин.                                               |
+| Telephony/Ping/Registration watchers | `CheckTelephonyRequester`, `PingServerIfNotActiveCallRequester`, `RegistrationFailedOutOfCallSubscriber`. |
+
+## Связанная state machine
+
+- [AutoConnectorStateMachine](./state-machine.md)

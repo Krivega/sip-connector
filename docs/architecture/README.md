@@ -78,20 +78,13 @@ SIP Connector построен на принципах **чистой архит
 
 Документация компонентов организована следующим образом:
 
-```
+```shell
 components/
 ├── ComponentName/
 │   ├── index.md          # Описание компонента
 │   └── state-machine.md  # Описание машины состояний (если есть)
 └── ...
 ```
-
-Компоненты с машинами состояний:
-
-- `ConnectionManager` - ConnectionStateMachine
-- `CallManager` - CallStateMachine
-- `PresentationManager` - PresentationStateMachine
-- `IncomingCallManager` - IncomingCallStateMachine
 
 ## Быстрый старт
 
