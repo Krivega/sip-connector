@@ -1,12 +1,10 @@
 import { types } from 'mobx-state-tree';
 
-import { EAutoConnectorState as EAutoConnectorStatus } from '@/AutoConnectorManager/AutoConnectorStateMachine';
+import { EAutoConnectorStatus } from '@/index';
 import { createStatusStateModel } from '../createStatusStateModel';
 
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
-import type { TAutoConnectorContextMap } from '@/AutoConnectorManager/AutoConnectorStateMachine';
-import type { TParametersAutoConnect } from '@/AutoConnectorManager/types';
-import type { TSessionSnapshot } from '@/index';
+import type { TAutoConnectorContextMap, TParametersAutoConnect, TSessionSnapshot } from '@/index';
 import type { TStatusSnapshot } from '../statusSnapshot';
 
 export type TAutoConnectorStopReason = 'halted' | 'cancelled' | 'failed';

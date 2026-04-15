@@ -1,5 +1,6 @@
 export { IncomingCallStateMachine } from './IncomingCallStateMachine';
-export { EEvents, EState } from './constants';
+export { EEvents as EIncomingCallStateMachineEvents, EState as EIncomingStatus } from './constants';
+
 export type { TSnapshot as TIncomingSnapshot } from './IncomingCallStateMachine';
 export type {
   TContext as TIncomingContext,

@@ -32,8 +32,8 @@ import {
 } from './system/Model';
 
 import type { SnapshotIn, SnapshotOut } from 'mobx-state-tree';
-import type { EAutoConnectorState as EAutoConnectorStatus } from '@/AutoConnectorManager/AutoConnectorStateMachine';
 import type {
+  EAutoConnectorStatus,
   ECallStatus,
   EConnectionStatus,
   EIncomingStatus,

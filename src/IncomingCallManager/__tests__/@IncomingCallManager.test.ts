@@ -5,7 +5,7 @@ import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { ConnectionManager } from '@/ConnectionManager';
 import IncomingCallManager from '../@IncomingCallManager';
 import { Originator } from '../events';
-import { EState } from '../IncomingCallStateMachine';
+import { EIncomingStatus } from '../IncomingCallStateMachine';
 
 import type { RTCSession, IncomingRequest, OutgoingRequest } from '@krivega/jssip';
 import type { TJsSIP } from '@/types';
@@ -179,7 +179,7 @@ describe('IncomingCallManager', () => {
       });
 
       // Проверяем, что состояние RINGING перед извлечением
-      expect(incomingCallManager.stateMachine.state).toBe(EState.RINGING);
+      expect(incomingCallManager.stateMachine.state).toBe(EIncomingStatus.RINGING);
       expect(incomingCallManager.isAvailableIncomingCall).toBe(true);
 
       const session = incomingCallManager.extractIncomingRTCSession();
@@ -188,7 +188,7 @@ describe('IncomingCallManager', () => {
       expect(session).toBe(mockRTCSession);
 
       // Проверяем, что toConsumed был вызван (состояние изменилось на CONSUMED)
-      expect(incomingCallManager.stateMachine.state).toBe(EState.CONSUMED);
+      expect(incomingCallManager.stateMachine.state).toBe(EIncomingStatus.CONSUMED);
 
       // Проверяем, что сессия была удалена
       expect(incomingCallManager.isAvailableIncomingCall).toBe(false);
@@ -222,7 +222,7 @@ describe('IncomingCallManager', () => {
         incomingNumber: 'testuser',
         rtcSession: mockRTCSession,
       });
-      expect(snapshot.context.lastReason).toBe(EState.CONSUMED);
+      expect(snapshot.context.lastReason).toBe(EIncomingStatus.CONSUMED);
     });
   });
 

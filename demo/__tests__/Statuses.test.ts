@@ -1,17 +1,17 @@
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
-import { createAutoConnectorStateMachine } from '@/AutoConnectorManager/AutoConnectorStateMachine';
-import { createEvents as createCallEvents } from '@/CallManager';
-import { createCallStateMachine } from '@/CallManager/CallStateMachine';
-import { createEvents as createConnectionEvents } from '@/ConnectionManager';
-import { ConnectionStateMachine } from '@/ConnectionManager/ConnectionStateMachine';
-import { createEvents as createIncomingEvents } from '@/IncomingCallManager';
 import {
+  createAutoConnectorStateMachine,
+  createCallEvents,
+  createCallStateMachine,
+  createIncomingEvents,
+  createConnectionEvents,
+  ConnectionStateMachine,
   IncomingCallStateMachine,
-  EEvents as EIncomingEvents,
-} from '@/IncomingCallManager/IncomingCallStateMachine';
-import { ESystemStatus } from '@/index';
-import { PresentationStateMachine } from '@/PresentationManager/PresentationStateMachine';
-import SessionManager from '@/SessionManager/@SessionManager';
+  EIncomingCallStateMachineEvents,
+  ESystemStatus,
+  PresentationStateMachine,
+  SessionManager,
+} from '@/index';
 import Statuses from '../Statuses';
 
 // eslint-disable-next-line no-var
@@ -108,7 +108,7 @@ describe('Statuses', () => {
     expect(onStatusesChange).toHaveBeenCalledTimes(1);
 
     incomingStateMachine.send({
-      type: EIncomingEvents.RINGING,
+      type: EIncomingCallStateMachineEvents.RINGING,
       data: {
         incomingNumber: '100',
         displayName: 'Test caller',
@@ -127,7 +127,7 @@ describe('Statuses', () => {
     });
 
     incomingStateMachine.send({
-      type: EIncomingEvents.RINGING,
+      type: EIncomingCallStateMachineEvents.RINGING,
       data: {
         incomingNumber: '200',
         displayName: 'Another caller',

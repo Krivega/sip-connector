@@ -2,7 +2,7 @@ import { C as JsSIP_C, IncomingResponse } from '@krivega/jssip';
 import { EventEmitterProxy } from 'events-constructor';
 
 import { DeferredCommandRunner } from '@/tools';
-import { createCallStateMachine, EState } from './CallStateMachine';
+import { createCallStateMachine, ECallStatus } from './CallStateMachine';
 import { createEvents } from './events';
 import { MCUSession } from './MCUSession';
 import { resolveRecvQuality } from './quality';
@@ -113,7 +113,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
 
   private readonly deferredStartRecvSessionRunner: DeferredCommandRunner<
     TCallRoleSpectator['recvParams'],
-    EState
+    ECallStatus
   >;
 
   private readonly streamsChangeTracker = new StreamsChangeTracker();
@@ -134,16 +134,16 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     );
     this.deferredStartRecvSessionRunner = new DeferredCommandRunner<
       TCallRoleSpectator['recvParams'],
-      EState
+      ECallStatus
     >({
       subscribe: (listener) => {
         return this.stateMachine.onStateChange(listener);
       },
       isReady: (state) => {
-        return state === EState.IN_ROOM;
+        return state === ECallStatus.IN_ROOM;
       },
       isCancelled: (state) => {
-        return state === EState.IDLE;
+        return state === ECallStatus.IDLE;
       },
       onExecute: (command) => {
         this.startRecvSessionForced({ audioChannel: command.audioId }).catch(() => {});

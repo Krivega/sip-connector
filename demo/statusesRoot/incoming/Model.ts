@@ -4,8 +4,7 @@ import { EIncomingStatus, sessionSelectors } from '@/index';
 import { createStatusStateModel } from '../createStatusStateModel';
 
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
-import type { TIncomingContextMap } from '@/IncomingCallManager/IncomingCallStateMachine';
-import type { TSessionSnapshot } from '@/index';
+import type { TIncomingContextMap, TSessionSnapshot } from '@/index';
 import type { TStatusSnapshot, TStatusSnapshotByState } from '../statusSnapshot';
 
 type TIncomingStatusSnapshotByState<TState extends EIncomingStatus> = TStatusSnapshotByState<

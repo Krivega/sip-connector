@@ -1,15 +1,17 @@
 import { reaction } from 'mobx';
 
-import { createAutoConnectorStateMachine } from '@/AutoConnectorManager/AutoConnectorStateMachine';
-import { createEvents as createCallEvents } from '@/CallManager';
-import { createCallStateMachine } from '@/CallManager/CallStateMachine';
-import { createEvents as createConnectionEvents } from '@/ConnectionManager';
-import { ConnectionStateMachine } from '@/ConnectionManager/ConnectionStateMachine';
-import { createEvents as createIncomingEvents } from '@/IncomingCallManager';
-import { IncomingCallStateMachine } from '@/IncomingCallManager/IncomingCallStateMachine';
-import { ECallStatus as ESessionCallStatus } from '@/index';
-import { PresentationStateMachine } from '@/PresentationManager/PresentationStateMachine';
-import SessionManager from '@/SessionManager/@SessionManager';
+import {
+  createConnectionEvents,
+  ConnectionStateMachine,
+  createIncomingEvents,
+  IncomingCallStateMachine,
+  createCallEvents,
+  createCallStateMachine,
+  createAutoConnectorStateMachine,
+  ECallStatus,
+  PresentationStateMachine,
+  SessionManager,
+} from '@/index';
 import { INITIAL_STATUSES_ROOT_SNAPSHOT, StatusesRootModel } from '../Model';
 
 const createAutoConnectorMachineDeps = () => {
@@ -105,7 +107,7 @@ describe('StatusesStore reactions', () => {
 
         store.syncFromSessionSnapshot(session.getSnapshot());
 
-        expect(store.callSnapshot.state).toBe(ESessionCallStatus.ROOM_PENDING_AUTH);
+        expect(store.callSnapshot.state).toBe(ECallStatus.ROOM_PENDING_AUTH);
         expect(store.call.room).toBe('room-1');
         expect(roomReaction).toHaveBeenCalledTimes(1);
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -121,7 +123,7 @@ describe('StatusesStore reactions', () => {
         });
         store.syncFromSessionSnapshot(session.getSnapshot());
 
-        expect(store.callSnapshot.state).toBe(ESessionCallStatus.IN_ROOM);
+        expect(store.callSnapshot.state).toBe(ECallStatus.IN_ROOM);
         expect(store.call.room).toBe('room-1');
         expect(store.call.token).toBe('token');
         expect(store.call.conferenceForToken).toBe('room-1');

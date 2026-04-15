@@ -1,17 +1,17 @@
-import type { TContextMap, TContext } from '@/CallManager/CallStateMachine';
+import type { TCallContextMap, TCallContext } from '@/index';
 
 type TCallContextKey = {
-  [TState in keyof TContextMap]: keyof TContextMap[TState];
-}[keyof TContextMap];
+  [TState in keyof TCallContextMap]: keyof TCallContextMap[TState];
+}[keyof TCallContextMap];
 
 type TCallContextFieldValue<K extends TCallContextKey> = {
-  [TState in keyof TContextMap]: K extends keyof TContextMap[TState]
-    ? TContextMap[TState][K]
+  [TState in keyof TCallContextMap]: K extends keyof TCallContextMap[TState]
+    ? TCallContextMap[TState][K]
     : never;
-}[keyof TContextMap];
+}[keyof TCallContextMap];
 
 export const getCallContextField = <K extends TCallContextKey>(
-  context: TContext,
+  context: TCallContext,
   key: K,
 ): TCallContextFieldValue<K> | undefined => {
   if (!(key in context)) {

@@ -1,5 +1,6 @@
 export { ConnectionStateMachine } from './ConnectionStateMachine';
-export { EEvents, EState } from './constants';
+export { EEvents as EConnectionStateMachineEvents, EState as EConnectionStatus } from './constants';
+
 export type { TSnapshot as TConnectionSnapshot } from './ConnectionStateMachine';
 export type {
   TConnectionMachineEvents,

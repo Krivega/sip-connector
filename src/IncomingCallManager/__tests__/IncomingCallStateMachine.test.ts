@@ -3,7 +3,7 @@ import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { createEvents as createConnectionEvents } from '@/ConnectionManager';
 import resolveDebug from '@/logger';
 import { createEvents as createIncomingEvents } from '../events';
-import { IncomingCallStateMachine, EState } from '../IncomingCallStateMachine';
+import { IncomingCallStateMachine, EIncomingStatus } from '../IncomingCallStateMachine';
 
 import type { Socket } from '@krivega/jssip';
 import type { TConnectionManagerEvents } from '@/ConnectionManager';
@@ -50,17 +50,17 @@ describe('IncomingCallStateMachine', () => {
       title: string;
       arrange?: () => void;
       event: { type: string; data?: TRemoteCallerData };
-      expected: EState;
+      expected: EIncomingStatus;
     }[] = [
       {
         title: 'INCOMING.RINGING из IDLE в RINGING',
         event: { type: 'INCOMING.RINGING', data: sampleCaller },
-        expected: EState.RINGING,
+        expected: EIncomingStatus.RINGING,
       },
       {
         title: 'INCOMING.CLEAR из IDLE остаётся в IDLE',
         event: { type: 'INCOMING.CLEAR' },
-        expected: EState.IDLE,
+        expected: EIncomingStatus.IDLE,
       },
       {
         title: 'INCOMING.CONSUMED из RINGING в CONSUMED',
@@ -68,7 +68,7 @@ describe('IncomingCallStateMachine', () => {
           machine.send({ type: 'INCOMING.RINGING', data: sampleCaller });
         },
         event: { type: 'INCOMING.CONSUMED' },
-        expected: EState.CONSUMED,
+        expected: EIncomingStatus.CONSUMED,
       },
       {
         title: 'INCOMING.DECLINED из RINGING в DECLINED',
@@ -76,7 +76,7 @@ describe('IncomingCallStateMachine', () => {
           machine.send({ type: 'INCOMING.RINGING', data: sampleCaller });
         },
         event: { type: 'INCOMING.DECLINED', data: sampleCaller },
-        expected: EState.DECLINED,
+        expected: EIncomingStatus.DECLINED,
       },
       {
         title: 'INCOMING.TERMINATED из RINGING в TERMINATED',
@@ -84,7 +84,7 @@ describe('IncomingCallStateMachine', () => {
           machine.send({ type: 'INCOMING.RINGING', data: sampleCaller });
         },
         event: { type: 'INCOMING.TERMINATED', data: sampleCaller },
-        expected: EState.TERMINATED,
+        expected: EIncomingStatus.TERMINATED,
       },
       {
         title: 'INCOMING.FAILED из RINGING в FAILED',
@@ -92,7 +92,7 @@ describe('IncomingCallStateMachine', () => {
           machine.send({ type: 'INCOMING.RINGING', data: sampleCaller });
         },
         event: { type: 'INCOMING.FAILED', data: sampleCaller },
-        expected: EState.FAILED,
+        expected: EIncomingStatus.FAILED,
       },
       {
         title: 'INCOMING.CLEAR из RINGING в IDLE',
@@ -100,7 +100,7 @@ describe('IncomingCallStateMachine', () => {
           machine.send({ type: 'INCOMING.RINGING', data: sampleCaller });
         },
         event: { type: 'INCOMING.CLEAR' },
-        expected: EState.IDLE,
+        expected: EIncomingStatus.IDLE,
       },
       {
         title: 'INCOMING.RINGING из CONSUMED возвращает в RINGING',
@@ -109,7 +109,7 @@ describe('IncomingCallStateMachine', () => {
           machine.send({ type: 'INCOMING.CONSUMED' });
         },
         event: { type: 'INCOMING.RINGING', data: sampleCaller },
-        expected: EState.RINGING,
+        expected: EIncomingStatus.RINGING,
       },
       {
         title: 'INCOMING.CLEAR из CONSUMED в IDLE',
@@ -118,7 +118,7 @@ describe('IncomingCallStateMachine', () => {
           machine.send({ type: 'INCOMING.CONSUMED' });
         },
         event: { type: 'INCOMING.CLEAR' },
-        expected: EState.IDLE,
+        expected: EIncomingStatus.IDLE,
       },
       {
         title: 'INCOMING.RINGING из DECLINED возвращает в RINGING',
@@ -127,7 +127,7 @@ describe('IncomingCallStateMachine', () => {
           machine.send({ type: 'INCOMING.DECLINED', data: sampleCaller });
         },
         event: { type: 'INCOMING.RINGING', data: sampleCaller },
-        expected: EState.RINGING,
+        expected: EIncomingStatus.RINGING,
       },
       {
         title: 'INCOMING.CLEAR из DECLINED в IDLE',
@@ -136,7 +136,7 @@ describe('IncomingCallStateMachine', () => {
           machine.send({ type: 'INCOMING.DECLINED', data: sampleCaller });
         },
         event: { type: 'INCOMING.CLEAR' },
-        expected: EState.IDLE,
+        expected: EIncomingStatus.IDLE,
       },
       {
         title: 'INCOMING.RINGING из TERMINATED возвращает в RINGING',
@@ -145,7 +145,7 @@ describe('IncomingCallStateMachine', () => {
           machine.send({ type: 'INCOMING.TERMINATED', data: sampleCaller });
         },
         event: { type: 'INCOMING.RINGING', data: sampleCaller },
-        expected: EState.RINGING,
+        expected: EIncomingStatus.RINGING,
       },
       {
         title: 'INCOMING.CLEAR из TERMINATED в IDLE',
@@ -154,7 +154,7 @@ describe('IncomingCallStateMachine', () => {
           machine.send({ type: 'INCOMING.TERMINATED', data: sampleCaller });
         },
         event: { type: 'INCOMING.CLEAR' },
-        expected: EState.IDLE,
+        expected: EIncomingStatus.IDLE,
       },
       {
         title: 'INCOMING.RINGING из FAILED возвращает в RINGING',
@@ -163,7 +163,7 @@ describe('IncomingCallStateMachine', () => {
           machine.send({ type: 'INCOMING.FAILED', data: sampleCaller });
         },
         event: { type: 'INCOMING.RINGING', data: sampleCaller },
-        expected: EState.RINGING,
+        expected: EIncomingStatus.RINGING,
       },
       {
         title: 'INCOMING.CLEAR из FAILED в IDLE',
@@ -172,7 +172,7 @@ describe('IncomingCallStateMachine', () => {
           machine.send({ type: 'INCOMING.FAILED', data: sampleCaller });
         },
         event: { type: 'INCOMING.CLEAR' },
-        expected: EState.IDLE,
+        expected: EIncomingStatus.IDLE,
       },
     ];
 
@@ -295,25 +295,25 @@ describe('IncomingCallStateMachine', () => {
     it('lastReason сохраняется при переходах в финальные состояния', () => {
       machine.send({ type: 'INCOMING.RINGING', data: sampleCaller });
       machine.send({ type: 'INCOMING.CONSUMED' });
-      expect(machine.lastReason).toBe(EState.CONSUMED);
+      expect(machine.lastReason).toBe(EIncomingStatus.CONSUMED);
 
       machine.send({ type: 'INCOMING.RINGING', data: sampleCaller });
       machine.send({ type: 'INCOMING.DECLINED', data: sampleCaller });
-      expect(machine.lastReason).toBe(EState.DECLINED);
+      expect(machine.lastReason).toBe(EIncomingStatus.DECLINED);
 
       machine.send({ type: 'INCOMING.RINGING', data: sampleCaller });
       machine.send({ type: 'INCOMING.TERMINATED', data: sampleCaller });
-      expect(machine.lastReason).toBe(EState.TERMINATED);
+      expect(machine.lastReason).toBe(EIncomingStatus.TERMINATED);
 
       machine.send({ type: 'INCOMING.RINGING', data: sampleCaller });
       machine.send({ type: 'INCOMING.FAILED', data: sampleCaller });
-      expect(machine.lastReason).toBe(EState.FAILED);
+      expect(machine.lastReason).toBe(EIncomingStatus.FAILED);
     });
 
     it('lastReason очищается при CLEAR', () => {
       machine.send({ type: 'INCOMING.RINGING', data: sampleCaller });
       machine.send({ type: 'INCOMING.CONSUMED' });
-      expect(machine.lastReason).toBe(EState.CONSUMED);
+      expect(machine.lastReason).toBe(EIncomingStatus.CONSUMED);
 
       machine.send({ type: 'INCOMING.CLEAR' });
       expect(machine.lastReason).toBeUndefined();
@@ -325,7 +325,7 @@ describe('IncomingCallStateMachine', () => {
     it('предупреждает при попытке IDLE → CONSUMED', () => {
       machine.send({ type: 'INCOMING.CONSUMED' });
 
-      expect(machine.state).toBe(EState.IDLE);
+      expect(machine.state).toBe(EIncomingStatus.IDLE);
       expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining(
           '[IncomingCallStateMachine] Invalid transition: INCOMING.CONSUMED from incoming:idle',
@@ -336,7 +336,7 @@ describe('IncomingCallStateMachine', () => {
     it('предупреждает при попытке IDLE → DECLINED', () => {
       machine.send({ type: 'INCOMING.DECLINED', data: sampleCaller });
 
-      expect(machine.state).toBe(EState.IDLE);
+      expect(machine.state).toBe(EIncomingStatus.IDLE);
       expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining(
           '[IncomingCallStateMachine] Invalid transition: INCOMING.DECLINED from incoming:idle',
@@ -349,7 +349,7 @@ describe('IncomingCallStateMachine', () => {
       machine.send({ type: 'INCOMING.CONSUMED' });
       machine.send({ type: 'INCOMING.DECLINED', data: sampleCaller });
 
-      expect(machine.state).toBe(EState.CONSUMED);
+      expect(machine.state).toBe(EIncomingStatus.CONSUMED);
       expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining(
           '[IncomingCallStateMachine] Invalid transition: INCOMING.DECLINED from incoming:consumed',
@@ -362,7 +362,7 @@ describe('IncomingCallStateMachine', () => {
       machine.send({ type: 'INCOMING.CONSUMED' });
       machine.send({ type: 'INCOMING.CONSUMED' });
 
-      expect(machine.state).toBe(EState.CONSUMED);
+      expect(machine.state).toBe(EIncomingStatus.CONSUMED);
       expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining(
           '[IncomingCallStateMachine] Invalid transition: INCOMING.CONSUMED from incoming:consumed',
@@ -382,26 +382,26 @@ describe('IncomingCallStateMachine', () => {
   describe('Публичный метод reset()', () => {
     it('переводит из RINGING в IDLE через reset()', () => {
       machine.send({ type: 'INCOMING.RINGING', data: sampleCaller });
-      expect(machine.state).toBe(EState.RINGING);
+      expect(machine.state).toBe(EIncomingStatus.RINGING);
 
       machine.reset();
-      expect(machine.state).toBe(EState.IDLE);
+      expect(machine.state).toBe(EIncomingStatus.IDLE);
     });
 
     it('переводит из FAILED в IDLE через reset()', () => {
       machine.send({ type: 'INCOMING.RINGING', data: sampleCaller });
       machine.send({ type: 'INCOMING.FAILED', data: sampleCaller });
-      expect(machine.state).toBe(EState.FAILED);
+      expect(machine.state).toBe(EIncomingStatus.FAILED);
 
       machine.reset();
-      expect(machine.state).toBe(EState.IDLE);
+      expect(machine.state).toBe(EIncomingStatus.IDLE);
     });
 
     it('очищает remoteCallerData и lastReason при reset', () => {
       machine.send({ type: 'INCOMING.RINGING', data: sampleCaller });
       machine.send({ type: 'INCOMING.CONSUMED' });
       expect(machine.remoteCallerData).toBeDefined();
-      expect(machine.lastReason).toBe(EState.CONSUMED);
+      expect(machine.lastReason).toBe(EIncomingStatus.CONSUMED);
 
       machine.reset();
       expect(machine.remoteCallerData).toBeUndefined();
@@ -411,93 +411,93 @@ describe('IncomingCallStateMachine', () => {
 
   describe('Полный жизненный цикл входящего звонка', () => {
     it('успешный флоу: IDLE → RINGING → CONSUMED → IDLE', () => {
-      expect(machine.state).toBe(EState.IDLE);
+      expect(machine.state).toBe(EIncomingStatus.IDLE);
 
       machine.send({ type: 'INCOMING.RINGING', data: sampleCaller });
-      expect(machine.state).toBe(EState.RINGING);
+      expect(machine.state).toBe(EIncomingStatus.RINGING);
 
       machine.send({ type: 'INCOMING.CONSUMED' });
-      expect(machine.state).toBe(EState.CONSUMED);
+      expect(machine.state).toBe(EIncomingStatus.CONSUMED);
 
       machine.send({ type: 'INCOMING.CLEAR' });
-      expect(machine.state).toBe(EState.IDLE);
+      expect(machine.state).toBe(EIncomingStatus.IDLE);
     });
 
     it('отклонение: IDLE → RINGING → DECLINED → IDLE', () => {
-      expect(machine.state).toBe(EState.IDLE);
+      expect(machine.state).toBe(EIncomingStatus.IDLE);
 
       machine.send({ type: 'INCOMING.RINGING', data: sampleCaller });
-      expect(machine.state).toBe(EState.RINGING);
+      expect(machine.state).toBe(EIncomingStatus.RINGING);
 
       machine.send({ type: 'INCOMING.DECLINED', data: sampleCaller });
-      expect(machine.state).toBe(EState.DECLINED);
+      expect(machine.state).toBe(EIncomingStatus.DECLINED);
 
       machine.send({ type: 'INCOMING.CLEAR' });
-      expect(machine.state).toBe(EState.IDLE);
+      expect(machine.state).toBe(EIncomingStatus.IDLE);
     });
 
     it('обрыв: IDLE → RINGING → TERMINATED → IDLE', () => {
-      expect(machine.state).toBe(EState.IDLE);
+      expect(machine.state).toBe(EIncomingStatus.IDLE);
 
       machine.send({ type: 'INCOMING.RINGING', data: sampleCaller });
-      expect(machine.state).toBe(EState.RINGING);
+      expect(machine.state).toBe(EIncomingStatus.RINGING);
 
       machine.send({ type: 'INCOMING.TERMINATED', data: sampleCaller });
-      expect(machine.state).toBe(EState.TERMINATED);
+      expect(machine.state).toBe(EIncomingStatus.TERMINATED);
 
       machine.send({ type: 'INCOMING.CLEAR' });
-      expect(machine.state).toBe(EState.IDLE);
+      expect(machine.state).toBe(EIncomingStatus.IDLE);
     });
 
     it('ошибка: IDLE → RINGING → FAILED → IDLE', () => {
-      expect(machine.state).toBe(EState.IDLE);
+      expect(machine.state).toBe(EIncomingStatus.IDLE);
 
       machine.send({ type: 'INCOMING.RINGING', data: sampleCaller });
-      expect(machine.state).toBe(EState.RINGING);
+      expect(machine.state).toBe(EIncomingStatus.RINGING);
 
       machine.send({ type: 'INCOMING.FAILED', data: sampleCaller });
-      expect(machine.state).toBe(EState.FAILED);
+      expect(machine.state).toBe(EIncomingStatus.FAILED);
 
       machine.send({ type: 'INCOMING.CLEAR' });
-      expect(machine.state).toBe(EState.IDLE);
+      expect(machine.state).toBe(EIncomingStatus.IDLE);
     });
   });
 
   describe('Интеграция с ConnectionManager', () => {
     it('триггер disconnected очищает состояние', () => {
       machine.send({ type: 'INCOMING.RINGING', data: sampleCaller });
-      expect(machine.state).toBe(EState.RINGING);
+      expect(machine.state).toBe(EIncomingStatus.RINGING);
 
       connectionEvents.trigger('disconnected', { socket: {} as Socket, error: false });
-      expect(machine.state).toBe(EState.IDLE);
+      expect(machine.state).toBe(EIncomingStatus.IDLE);
       expect(machine.remoteCallerData).toBeUndefined();
     });
 
     it('триггер registrationFailed очищает состояние', () => {
       machine.send({ type: 'INCOMING.RINGING', data: sampleCaller });
       machine.send({ type: 'INCOMING.CONSUMED' });
-      expect(machine.state).toBe(EState.CONSUMED);
+      expect(machine.state).toBe(EIncomingStatus.CONSUMED);
 
       connectionEvents.trigger('registrationFailed', {
         response: { status_code: 403, reason_phrase: 'Forbidden' },
       } as never);
-      expect(machine.state).toBe(EState.IDLE);
+      expect(machine.state).toBe(EIncomingStatus.IDLE);
     });
 
     it('триггер connect-failed очищает состояние', () => {
       machine.send({ type: 'INCOMING.RINGING', data: sampleCaller });
       machine.send({ type: 'INCOMING.DECLINED', data: sampleCaller });
-      expect(machine.state).toBe(EState.DECLINED);
+      expect(machine.state).toBe(EIncomingStatus.DECLINED);
 
       connectionEvents.trigger('connect-failed', new Error('Connection failed'));
-      expect(machine.state).toBe(EState.IDLE);
+      expect(machine.state).toBe(EIncomingStatus.IDLE);
     });
 
     it('валидация работает через события ConnectionManager', () => {
       // Попытка перейти в CONSUMED напрямую из IDLE через событие
       machine.send({ type: 'INCOMING.CONSUMED' });
 
-      expect(machine.state).toBe(EState.IDLE);
+      expect(machine.state).toBe(EIncomingStatus.IDLE);
       expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining('[IncomingCallStateMachine] Invalid transition'),
       );
@@ -507,45 +507,45 @@ describe('IncomingCallStateMachine', () => {
   describe('toConsumed', () => {
     it('should transition from RINGING to CONSUMED', () => {
       machine.send({ type: 'INCOMING.RINGING', data: sampleCaller });
-      expect(machine.state).toBe(EState.RINGING);
+      expect(machine.state).toBe(EIncomingStatus.RINGING);
 
       machine.toConsumed();
 
-      expect(machine.state).toBe(EState.CONSUMED);
+      expect(machine.state).toBe(EIncomingStatus.CONSUMED);
     });
 
     it('should preserve remoteCallerData when transitioning to CONSUMED', () => {
       machine.send({ type: 'INCOMING.RINGING', data: sampleCaller });
-      expect(machine.state).toBe(EState.RINGING);
+      expect(machine.state).toBe(EIncomingStatus.RINGING);
 
       machine.toConsumed();
 
-      expect(machine.state).toBe(EState.CONSUMED);
+      expect(machine.state).toBe(EIncomingStatus.CONSUMED);
 
       const snapshot = machine.getSnapshot();
 
       expect(snapshot.context.remoteCallerData).toEqual(sampleCaller);
-      expect(snapshot.context.lastReason).toBe(EState.CONSUMED);
+      expect(snapshot.context.lastReason).toBe(EIncomingStatus.CONSUMED);
     });
 
     it('should not transition from IDLE to CONSUMED', () => {
-      expect(machine.state).toBe(EState.IDLE);
+      expect(machine.state).toBe(EIncomingStatus.IDLE);
 
       machine.toConsumed();
 
       // Should remain in IDLE as there's no transition from IDLE to CONSUMED
-      expect(machine.state).toBe(EState.IDLE);
+      expect(machine.state).toBe(EIncomingStatus.IDLE);
     });
 
     it('should not transition from CONSUMED to CONSUMED (self-transition)', () => {
       machine.send({ type: 'INCOMING.RINGING', data: sampleCaller });
       machine.toConsumed();
-      expect(machine.state).toBe(EState.CONSUMED);
+      expect(machine.state).toBe(EIncomingStatus.CONSUMED);
 
       machine.toConsumed();
 
       // Should remain in CONSUMED as there's no transition from CONSUMED to CONSUMED
-      expect(machine.state).toBe(EState.CONSUMED);
+      expect(machine.state).toBe(EIncomingStatus.CONSUMED);
     });
   });
 });

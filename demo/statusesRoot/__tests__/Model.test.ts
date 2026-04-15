@@ -1,37 +1,26 @@
 import { getSnapshot } from 'mobx-state-tree';
 
-import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
-import {
-  createAutoConnectorStateMachine,
-  EAutoConnectorState as ESessionAutoConnectorStatus,
-} from '@/AutoConnectorManager/AutoConnectorStateMachine';
-import { createEvents as createCallEvents } from '@/CallManager';
-import { createCallStateMachine, EState as ECallStatus } from '@/CallManager/CallStateMachine';
-import { createEvents as createConnectionEvents } from '@/ConnectionManager';
 import {
   ConnectionStateMachine,
-  EState as EConnectionStatus,
-  EEvents as EConnectionEvents,
-} from '@/ConnectionManager/ConnectionStateMachine';
-import { createEvents as createIncomingEvents } from '@/IncomingCallManager';
-import {
+  createConnectionEvents,
+  EConnectionStatus,
   IncomingCallStateMachine,
-  EEvents as EIncomingEvents,
-  EState as EIncomingStatus,
-} from '@/IncomingCallManager/IncomingCallStateMachine';
-import {
-  ECallStatus as ESessionCallStatus,
-  EConnectionStatus as ESessionConnectionStatus,
-  EIncomingStatus as ESessionIncomingStatus,
-  EPresentationStatus as ESessionPresentationStatus,
-  ESystemStatus,
-} from '@/index';
-import {
-  EEvents as EPresentationEvents,
   PresentationStateMachine,
-  EState as EPresentationStatus,
-} from '@/PresentationManager/PresentationStateMachine';
-import SessionManager from '@/SessionManager/@SessionManager';
+  createAutoConnectorStateMachine,
+  createCallEvents,
+  createCallStateMachine,
+  createIncomingEvents,
+  EAutoConnectorStatus,
+  ECallStatus,
+  EConnectionStateMachineEvents,
+  EIncomingCallStateMachineEvents,
+  EIncomingStatus,
+  EPresentationStateMachineEvents,
+  EPresentationStatus,
+  ESystemStatus,
+  RTCSessionMock,
+  SessionManager,
+} from '@/index';
 import { INITIAL_STATUSES_ROOT_SNAPSHOT, StatusesRootModel } from '../Model';
 
 import type { Instance } from 'mobx-state-tree';
@@ -157,9 +146,9 @@ const createRtcSession = () => {
 };
 
 const transitionToEstablished = (connectionStateMachine: ConnectionStateMachine) => {
-  connectionStateMachine.send({ type: EConnectionEvents.START_CONNECT });
+  connectionStateMachine.send({ type: EConnectionStateMachineEvents.START_CONNECT });
   connectionStateMachine.send({
-    type: EConnectionEvents.START_UA,
+    type: EConnectionStateMachineEvents.START_UA,
     configuration: {
       sipServerIp: '127.0.0.1',
       sipServerUrl: 'wss://sip.example.com',
@@ -168,10 +157,10 @@ const transitionToEstablished = (connectionStateMachine: ConnectionStateMachine)
       register: false,
     },
   });
-  connectionStateMachine.send({ type: EConnectionEvents.UA_CONNECTED });
-  connectionStateMachine.send({ type: EConnectionEvents.UA_REGISTERED });
-  connectionStateMachine.send({ type: EConnectionEvents.UA_CONNECTED });
-  connectionStateMachine.send({ type: EConnectionEvents.UA_REGISTERED });
+  connectionStateMachine.send({ type: EConnectionStateMachineEvents.UA_CONNECTED });
+  connectionStateMachine.send({ type: EConnectionStateMachineEvents.UA_REGISTERED });
+  connectionStateMachine.send({ type: EConnectionStateMachineEvents.UA_CONNECTED });
+  connectionStateMachine.send({ type: EConnectionStateMachineEvents.UA_REGISTERED });
 };
 
 const transitionCallToInRoom = (
@@ -261,11 +250,11 @@ const viewsCases: TViewsCase[] = [
     title: 'publicStatuses lists state enum for each subtree',
     assert: (store: TStatusesRootInstance) => {
       expect(getPublicStatuses(store)).toEqual({
-        connection: ESessionConnectionStatus.IDLE,
-        autoConnector: ESessionAutoConnectorStatus.IDLE,
-        call: ESessionCallStatus.IDLE,
-        incoming: ESessionIncomingStatus.IDLE,
-        presentation: ESessionPresentationStatus.IDLE,
+        connection: EConnectionStatus.IDLE,
+        autoConnector: EAutoConnectorStatus.IDLE,
+        call: ECallStatus.IDLE,
+        incoming: EIncomingStatus.IDLE,
+        presentation: EPresentationStatus.IDLE,
         system: ESystemStatus.DISCONNECTED,
       });
     },
@@ -284,7 +273,7 @@ describe('StatusesStore views', () => {
   it('after syncFromSessionSnapshot, snapshot getters are aligned with snapshot', () => {
     withStartedSession(({ session, incomingStateMachine }) => {
       incomingStateMachine.send({
-        type: EIncomingEvents.RINGING,
+        type: EIncomingCallStateMachineEvents.RINGING,
         data: {
           incomingNumber: '77',
           displayName: 'View test',
@@ -297,11 +286,11 @@ describe('StatusesStore views', () => {
 
       expect(getStoreSnapshots(store)).toEqual(getSnapshot(store));
       expect(getPublicStatuses(store)).toEqual({
-        connection: ESessionConnectionStatus.IDLE,
-        autoConnector: ESessionAutoConnectorStatus.IDLE,
-        call: ESessionCallStatus.IDLE,
-        incoming: ESessionIncomingStatus.RINGING,
-        presentation: ESessionPresentationStatus.IDLE,
+        connection: EConnectionStatus.IDLE,
+        autoConnector: EAutoConnectorStatus.IDLE,
+        call: ECallStatus.IDLE,
+        incoming: EIncomingStatus.RINGING,
+        presentation: EPresentationStatus.IDLE,
         system: ESystemStatus.DISCONNECTED,
       });
     });
@@ -312,7 +301,7 @@ describe('StatusesStore', () => {
   it('maps INCOMING.RINGING with remoteCallerData on incoming snapshot', () => {
     withStartedSession(({ session, incomingStateMachine }) => {
       incomingStateMachine.send({
-        type: EIncomingEvents.RINGING,
+        type: EIncomingCallStateMachineEvents.RINGING,
         data: {
           incomingNumber: '100',
           displayName: 'Test caller',
@@ -338,9 +327,9 @@ describe('StatusesStore', () => {
 
   it('maps connection CONNECTING with configuration in context after START_UA', () => {
     withStartedSession(({ session, connectionStateMachine }) => {
-      connectionStateMachine.send({ type: EConnectionEvents.START_CONNECT });
+      connectionStateMachine.send({ type: EConnectionStateMachineEvents.START_CONNECT });
       connectionStateMachine.send({
-        type: EConnectionEvents.START_UA,
+        type: EConnectionStateMachineEvents.START_UA,
         configuration: {
           sipServerIp: '127.0.0.1',
           sipServerUrl: 'wss://sip.example.com',
@@ -383,7 +372,7 @@ describe('StatusesStore', () => {
       const store = createStore();
 
       incomingStateMachine.send({
-        type: EIncomingEvents.RINGING,
+        type: EIncomingCallStateMachineEvents.RINGING,
         data: {
           incomingNumber: '42',
           displayName: 'Caller',
@@ -402,8 +391,8 @@ describe('StatusesStore', () => {
 
   it('maps presentation ACTIVE after SCREEN.STARTED', () => {
     withStartedSession(({ session, presentationStateMachine }) => {
-      presentationStateMachine.send({ type: EPresentationEvents.SCREEN_STARTING });
-      presentationStateMachine.send({ type: EPresentationEvents.SCREEN_STARTED });
+      presentationStateMachine.send({ type: EPresentationStateMachineEvents.SCREEN_STARTING });
+      presentationStateMachine.send({ type: EPresentationStateMachineEvents.SCREEN_STARTED });
 
       const mapped = mappedFromSession(session);
 

@@ -4,8 +4,7 @@ import { EPresentationStatus, sessionSelectors } from '@/index';
 import { createStatusStateModel } from '../createStatusStateModel';
 
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
-import type { TSessionSnapshot } from '@/index';
-import type { TPresentationContextMap } from '@/PresentationManager/PresentationStateMachine';
+import type { TSessionSnapshot, TPresentationContextMap } from '@/index';
 import type { TStatusSnapshot, TStatusSnapshotByState } from '../statusSnapshot';
 
 type TPresentationStatusSnapshotByState<TState extends EPresentationStatus> =

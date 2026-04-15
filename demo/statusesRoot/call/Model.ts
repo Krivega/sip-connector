@@ -5,19 +5,18 @@ import { createStatusStateModel } from '../createStatusStateModel';
 import { getCallContextField } from './utils';
 
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
-import type { TContextMap } from '@/CallManager/CallStateMachine';
-import type { TSessionSnapshot } from '@/index';
+import type { TCallContextMap, TSessionSnapshot } from '@/index';
 import type { TStatusSnapshot, TStatusSnapshotByState } from '../statusSnapshot';
 
 type TCallStatusSnapshotByState<TState extends ECallStatus> = TStatusSnapshotByState<
   TState,
-  TContextMap
+  TCallContextMap
 >;
 
-export type TCallStatusSnapshot = TStatusSnapshot<ECallStatus, TContextMap>;
+export type TCallStatusSnapshot = TStatusSnapshot<ECallStatus, TCallContextMap>;
 
 const withStatusSnapshotViews = <TState extends ECallStatus>(
-  base: ReturnType<typeof createStatusStateModel<TState, TContextMap[TState]>>,
+  base: ReturnType<typeof createStatusStateModel<TState, TCallContextMap[TState]>>,
 ) => {
   return base
     .views((self) => {
@@ -111,45 +110,47 @@ export function createCallStatusSnapshotFromSession(
 }
 
 const CallIdleStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<ECallStatus.IDLE, TContextMap[ECallStatus.IDLE]>(ECallStatus.IDLE),
+  createStatusStateModel<ECallStatus.IDLE, TCallContextMap[ECallStatus.IDLE]>(ECallStatus.IDLE),
 );
 const CallConnectingStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<ECallStatus.CONNECTING, TContextMap[ECallStatus.CONNECTING]>(
+  createStatusStateModel<ECallStatus.CONNECTING, TCallContextMap[ECallStatus.CONNECTING]>(
     ECallStatus.CONNECTING,
   ),
 );
 const CallPresentationCallStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<ECallStatus.PRESENTATION_CALL, TContextMap[ECallStatus.PRESENTATION_CALL]>(
+  createStatusStateModel<
     ECallStatus.PRESENTATION_CALL,
-  ),
+    TCallContextMap[ECallStatus.PRESENTATION_CALL]
+  >(ECallStatus.PRESENTATION_CALL),
 );
 const CallRoomPendingAuthStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<ECallStatus.ROOM_PENDING_AUTH, TContextMap[ECallStatus.ROOM_PENDING_AUTH]>(
+  createStatusStateModel<
     ECallStatus.ROOM_PENDING_AUTH,
-  ),
+    TCallContextMap[ECallStatus.ROOM_PENDING_AUTH]
+  >(ECallStatus.ROOM_PENDING_AUTH),
 );
 const CallPurgatoryStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<ECallStatus.PURGATORY, TContextMap[ECallStatus.PURGATORY]>(
+  createStatusStateModel<ECallStatus.PURGATORY, TCallContextMap[ECallStatus.PURGATORY]>(
     ECallStatus.PURGATORY,
   ),
 );
 const CallP2PRoomStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<ECallStatus.P2P_ROOM, TContextMap[ECallStatus.P2P_ROOM]>(
+  createStatusStateModel<ECallStatus.P2P_ROOM, TCallContextMap[ECallStatus.P2P_ROOM]>(
     ECallStatus.P2P_ROOM,
   ),
 );
 const CallDirectP2PRoomStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<ECallStatus.DIRECT_P2P_ROOM, TContextMap[ECallStatus.DIRECT_P2P_ROOM]>(
+  createStatusStateModel<ECallStatus.DIRECT_P2P_ROOM, TCallContextMap[ECallStatus.DIRECT_P2P_ROOM]>(
     ECallStatus.DIRECT_P2P_ROOM,
   ),
 );
 const CallInRoomStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<ECallStatus.IN_ROOM, TContextMap[ECallStatus.IN_ROOM]>(
+  createStatusStateModel<ECallStatus.IN_ROOM, TCallContextMap[ECallStatus.IN_ROOM]>(
     ECallStatus.IN_ROOM,
   ),
 );
 const CallDisconnectingStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<ECallStatus.DISCONNECTING, TContextMap[ECallStatus.DISCONNECTING]>(
+  createStatusStateModel<ECallStatus.DISCONNECTING, TCallContextMap[ECallStatus.DISCONNECTING]>(
     ECallStatus.DISCONNECTING,
   ),
 );

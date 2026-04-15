@@ -1,8 +1,8 @@
-import { EAutoConnectorState } from '@/AutoConnectorManager/AutoConnectorStateMachine';
-import { EState as ECallStatus } from '@/CallManager/CallStateMachine';
-import { EState as EConnectionStatus } from '@/ConnectionManager/ConnectionStateMachine';
-import { EState as EIncomingStatus } from '@/IncomingCallManager/IncomingCallStateMachine';
-import { EState as EPresentationStatus } from '@/PresentationManager/PresentationStateMachine';
+import { EAutoConnectorStatus } from '@/AutoConnectorManager';
+import { ECallStatus } from '@/CallManager';
+import { EConnectionStatus } from '@/ConnectionManager';
+import { EIncomingStatus } from '@/IncomingCallManager';
+import { EPresentationStatus } from '@/PresentationManager';
 import { sessionSelectors } from '../selectors';
 import { ESystemStatus } from '../types';
 
@@ -42,7 +42,7 @@ describe('sessionSelectors', () => {
         ...overrides.presentation,
       },
       autoConnector: {
-        value: EAutoConnectorState.IDLE,
+        value: EAutoConnectorStatus.IDLE,
         context: {
           parameters: undefined,
           afterDisconnect: 'idle',
@@ -447,7 +447,7 @@ describe('sessionSelectors', () => {
         connection: { value: EConnectionStatus.IDLE } as never,
         call: { value: ECallStatus.IDLE } as never,
         autoConnector: {
-          value: EAutoConnectorState.DISCONNECTING,
+          value: EAutoConnectorStatus.DISCONNECTING,
           context: {
             parameters: undefined,
             afterDisconnect: 'idle',
@@ -465,7 +465,7 @@ describe('sessionSelectors', () => {
         connection: { value: EConnectionStatus.IDLE } as never,
         call: { value: ECallStatus.IDLE } as never,
         autoConnector: {
-          value: EAutoConnectorState.ATTEMPTING_CONNECT,
+          value: EAutoConnectorStatus.ATTEMPTING_CONNECT,
           context: {
             parameters: undefined,
             afterDisconnect: 'idle',
@@ -483,7 +483,7 @@ describe('sessionSelectors', () => {
         connection: { value: EConnectionStatus.IDLE } as never,
         call: { value: ECallStatus.IDLE } as never,
         autoConnector: {
-          value: EAutoConnectorState.ATTEMPTING_GATE,
+          value: EAutoConnectorStatus.ATTEMPTING_GATE,
           context: {
             parameters: undefined,
             afterDisconnect: 'idle',
@@ -501,7 +501,7 @@ describe('sessionSelectors', () => {
         connection: { value: EConnectionStatus.IDLE } as never,
         call: { value: ECallStatus.IDLE } as never,
         autoConnector: {
-          value: EAutoConnectorState.WAITING_BEFORE_RETRY,
+          value: EAutoConnectorStatus.WAITING_BEFORE_RETRY,
           context: {
             parameters: undefined,
             afterDisconnect: 'idle',
@@ -519,7 +519,7 @@ describe('sessionSelectors', () => {
         connection: { value: EConnectionStatus.IDLE } as never,
         call: { value: ECallStatus.IDLE } as never,
         autoConnector: {
-          value: EAutoConnectorState.CONNECTED_MONITORING,
+          value: EAutoConnectorStatus.CONNECTED_MONITORING,
           context: {
             parameters: undefined,
             afterDisconnect: 'idle',
@@ -537,7 +537,7 @@ describe('sessionSelectors', () => {
         connection: { value: EConnectionStatus.ESTABLISHED } as never,
         call: { value: ECallStatus.IDLE } as never,
         autoConnector: {
-          value: EAutoConnectorState.CONNECTED_MONITORING,
+          value: EAutoConnectorStatus.CONNECTED_MONITORING,
           context: {
             parameters: undefined,
             afterDisconnect: 'idle',
@@ -555,7 +555,7 @@ describe('sessionSelectors', () => {
         connection: { value: EConnectionStatus.DISCONNECTING } as never,
         call: { value: ECallStatus.IDLE } as never,
         autoConnector: {
-          value: EAutoConnectorState.ATTEMPTING_CONNECT,
+          value: EAutoConnectorStatus.ATTEMPTING_CONNECT,
           context: {
             parameters: undefined,
             afterDisconnect: 'idle',
@@ -573,7 +573,7 @@ describe('sessionSelectors', () => {
         connection: { value: EConnectionStatus.DISCONNECTING } as never,
         call: { value: ECallStatus.IDLE } as never,
         autoConnector: {
-          value: EAutoConnectorState.ATTEMPTING_GATE,
+          value: EAutoConnectorStatus.ATTEMPTING_GATE,
           context: {
             parameters: undefined,
             afterDisconnect: 'idle',
@@ -591,7 +591,7 @@ describe('sessionSelectors', () => {
         connection: { value: EConnectionStatus.DISCONNECTING } as never,
         call: { value: ECallStatus.IDLE } as never,
         autoConnector: {
-          value: EAutoConnectorState.WAITING_BEFORE_RETRY,
+          value: EAutoConnectorStatus.WAITING_BEFORE_RETRY,
           context: {
             parameters: undefined,
             afterDisconnect: 'idle',

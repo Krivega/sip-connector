@@ -4,19 +4,18 @@ import { EConnectionStatus, sessionSelectors } from '@/index';
 import { createStatusStateModel } from '../createStatusStateModel';
 
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
-import type { TContextMap } from '@/ConnectionManager/ConnectionStateMachine';
-import type { TSessionSnapshot } from '@/index';
+import type { TConnectionContextMap, TSessionSnapshot } from '@/index';
 import type { TStatusSnapshot, TStatusSnapshotByState } from '../statusSnapshot';
 
 type TConnectionStatusSnapshotByState<TState extends EConnectionStatus> = TStatusSnapshotByState<
   TState,
-  TContextMap
+  TConnectionContextMap
 >;
 
-export type TConnectionStatusSnapshot = TStatusSnapshot<EConnectionStatus, TContextMap>;
+export type TConnectionStatusSnapshot = TStatusSnapshot<EConnectionStatus, TConnectionContextMap>;
 
 const withStatusSnapshotViews = <TState extends EConnectionStatus>(
-  base: ReturnType<typeof createStatusStateModel<TState, TContextMap[TState]>>,
+  base: ReturnType<typeof createStatusStateModel<TState, TConnectionContextMap[TState]>>,
 ) => {
   return base
     .views((self) => {
@@ -56,7 +55,7 @@ const withStatusSnapshotViews = <TState extends EConnectionStatus>(
     })
     .views((self) => {
       return {
-        get connectionConfig(): TContextMap[TState]['connectionConfiguration'] {
+        get connectionConfig(): TConnectionContextMap[TState]['connectionConfiguration'] {
           return self.context.connectionConfiguration;
         },
       };
@@ -78,45 +77,50 @@ export function createConnectionStatusSnapshotFromSession(
 }
 
 const ConnectionIdleStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<EConnectionStatus.IDLE, TContextMap[EConnectionStatus.IDLE]>(
+  createStatusStateModel<EConnectionStatus.IDLE, TConnectionContextMap[EConnectionStatus.IDLE]>(
     EConnectionStatus.IDLE,
   ),
 );
 const ConnectionPreparingStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<EConnectionStatus.PREPARING, TContextMap[EConnectionStatus.PREPARING]>(
+  createStatusStateModel<
     EConnectionStatus.PREPARING,
-  ),
+    TConnectionContextMap[EConnectionStatus.PREPARING]
+  >(EConnectionStatus.PREPARING),
 );
 const ConnectionConnectingStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<EConnectionStatus.CONNECTING, TContextMap[EConnectionStatus.CONNECTING]>(
+  createStatusStateModel<
     EConnectionStatus.CONNECTING,
-  ),
+    TConnectionContextMap[EConnectionStatus.CONNECTING]
+  >(EConnectionStatus.CONNECTING),
 );
 const ConnectionConnectedStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<EConnectionStatus.CONNECTED, TContextMap[EConnectionStatus.CONNECTED]>(
+  createStatusStateModel<
     EConnectionStatus.CONNECTED,
-  ),
+    TConnectionContextMap[EConnectionStatus.CONNECTED]
+  >(EConnectionStatus.CONNECTED),
 );
 const ConnectionRegisteredStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<EConnectionStatus.REGISTERED, TContextMap[EConnectionStatus.REGISTERED]>(
+  createStatusStateModel<
     EConnectionStatus.REGISTERED,
-  ),
+    TConnectionContextMap[EConnectionStatus.REGISTERED]
+  >(EConnectionStatus.REGISTERED),
 );
 const ConnectionEstablishedStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<EConnectionStatus.ESTABLISHED, TContextMap[EConnectionStatus.ESTABLISHED]>(
+  createStatusStateModel<
     EConnectionStatus.ESTABLISHED,
-  ),
+    TConnectionContextMap[EConnectionStatus.ESTABLISHED]
+  >(EConnectionStatus.ESTABLISHED),
 );
 const ConnectionDisconnectingStatusModel = withStatusSnapshotViews(
   createStatusStateModel<
     EConnectionStatus.DISCONNECTING,
-    TContextMap[EConnectionStatus.DISCONNECTING]
+    TConnectionContextMap[EConnectionStatus.DISCONNECTING]
   >(EConnectionStatus.DISCONNECTING),
 );
 const ConnectionDisconnectedStatusModel = withStatusSnapshotViews(
   createStatusStateModel<
     EConnectionStatus.DISCONNECTED,
-    TContextMap[EConnectionStatus.DISCONNECTED]
+    TConnectionContextMap[EConnectionStatus.DISCONNECTED]
   >(EConnectionStatus.DISCONNECTED),
 );
 

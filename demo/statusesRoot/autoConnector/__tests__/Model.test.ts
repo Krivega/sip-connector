@@ -1,4 +1,4 @@
-import { EAutoConnectorState as EAutoConnectorStatus } from '@/AutoConnectorManager/AutoConnectorStateMachine';
+import { EAutoConnectorStatus } from '@/index';
 import { AutoConnectorStatusModel, INITIAL_AUTO_CONNECTOR_STATUS_SNAPSHOT } from '../Model';
 
 type TAutoConnectorSnapshot = Parameters<typeof AutoConnectorStatusModel.create>[0];
