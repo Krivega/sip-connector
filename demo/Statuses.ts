@@ -1,35 +1,36 @@
-import { sessionSelectors } from '@/index';
+import { getSnapshot } from 'mobx-state-tree';
+
 import sipConnectorFacade from './Session/sipConnectorFacade';
+import { INITIAL_STATUSES_STORE_SNAPSHOT, StatusesStoreModel } from './statuses-store';
 
 import type { TSessionSnapshot } from '@/index';
+import type { TPublicStatuses, TStatusesStoreOutput } from './statuses-store';
 
 class Statuses {
   private unsubscribeSessionStatuses?: () => void;
 
-  public subscribe(
-    onStatusesChange: (statuses: {
-      connection: string;
-      call: string;
-      incoming: string;
-      presentation: string;
-      system: string;
-      autoConnectorManager: string;
-    }) => void,
-  ) {
+  private readonly statusesStore = StatusesStoreModel.create(INITIAL_STATUSES_STORE_SNAPSHOT);
+
+  public subscribe(onStatusesChange: (statuses: TPublicStatuses) => void) {
     this.subscribeSessionStatuses((snapshot) => {
+      this.statusesStore.syncFromSessionSnapshot(snapshot);
       onStatusesChange({
-        connection: sessionSelectors.selectConnectionStatus(snapshot),
-        autoConnectorManager: sessionSelectors.selectAutoConnectorStatus(snapshot),
-        call: sessionSelectors.selectCallStatus(snapshot),
-        incoming: sessionSelectors.selectIncomingStatus(snapshot),
-        presentation: sessionSelectors.selectPresentationStatus(snapshot),
-        system: sessionSelectors.selectSystemStatus(snapshot),
+        connection: this.statusesStore.connection.state,
+        autoConnector: this.statusesStore.autoConnector.state,
+        call: this.statusesStore.call.state,
+        incoming: this.statusesStore.incoming.state,
+        presentation: this.statusesStore.presentation.state,
+        system: this.statusesStore.system.state,
       });
     });
   }
 
+  public getStatusesWithContext(): TStatusesStoreOutput {
+    return getSnapshot(this.statusesStore);
+  }
+
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this
-  private getStatuses() {
+  private getSessionSnapshot() {
     const { sessionManager } = sipConnectorFacade.sipConnector;
 
     return sessionManager.getSnapshot();
@@ -37,7 +38,7 @@ class Statuses {
 
   private subscribeSessionStatuses(onSnapshot: (snapshot: TSessionSnapshot) => void) {
     this.unsubscribeSessionStatuses?.();
-    onSnapshot(this.getStatuses());
+    onSnapshot(this.getSessionSnapshot());
 
     const { sessionManager } = sipConnectorFacade.sipConnector;
 

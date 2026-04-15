@@ -47,6 +47,8 @@ const jestConfig: JestConfigWithTsJest = {
   testMatch: [
     '<rootDir>/src/**/__tests__/**/*.[jt]s?(x)',
     '<rootDir>/src/**/?(*.)+(spec|test).[jt]s?(x)',
+    '<rootDir>/demo/**/__tests__/**/*.[jt]s?(x)',
+    '<rootDir>/demo/**/?(*.)+(spec|test).[jt]s?(x)',
   ],
 };
 

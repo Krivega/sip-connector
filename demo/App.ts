@@ -446,12 +446,12 @@ class App {
     incoming: string;
     presentation: string;
     system: string;
-    autoConnectorManager: string;
+    autoConnector: string;
   }): void {
     debug('updateSessionStatuses', statuses);
 
     dom.setActiveSessionStatusNode('connection', statuses.connection);
-    dom.setActiveSessionStatusNode('autoConnectorManager', statuses.autoConnectorManager);
+    dom.setActiveSessionStatusNode('autoConnectorManager', statuses.autoConnector);
     dom.setActiveSessionStatusNode('call', statuses.call);
     dom.setActiveSessionStatusNode('incoming', statuses.incoming);
     dom.setActiveSessionStatusNode('presentation', statuses.presentation);

@@ -9,12 +9,12 @@ import { IncomingCallStateMachine } from '@/IncomingCallManager/IncomingCallStat
 import { ESystemStatus } from '@/index';
 import { PresentationStateMachine } from '@/PresentationManager/PresentationStateMachine';
 import SessionManager from '@/SessionManager/@SessionManager';
-import Statuses from '../../demo/Statuses';
+import Statuses from '../Statuses';
 
 // eslint-disable-next-line no-var
 var mockSessionManager: SessionManager;
 
-jest.mock('../../demo/Session/sipConnectorFacade', () => {
+jest.mock('../Session/sipConnectorFacade', () => {
   return {
     __esModule: true,
     default: {
@@ -116,7 +116,7 @@ describe('Statuses', () => {
     expect(onStatusesChange).toHaveBeenCalledTimes(2);
     expect(onStatusesChange).toHaveBeenLastCalledWith({
       connection: 'connection:idle',
-      autoConnectorManager: 'idle',
+      autoConnector: 'idle',
       call: 'call:idle',
       incoming: 'incoming:ringing',
       presentation: 'presentation:idle',
