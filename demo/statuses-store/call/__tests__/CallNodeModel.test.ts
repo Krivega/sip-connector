@@ -23,6 +23,11 @@ const getStateFlags = (node: ReturnType<typeof createCallNode>) => {
 
 type TStateFlags = ReturnType<typeof getStateFlags>;
 type TStateFlagKey = keyof TStateFlags;
+type TStateCase = {
+  title: string;
+  snapshot: TCallNodeSnapshot;
+  expectedFlags: TStateFlags;
+};
 
 const createExpectedFlags = (activeFlag: TStateFlagKey): TStateFlags => {
   return {
@@ -53,6 +58,116 @@ const getContextAccessors = (node: ReturnType<typeof createCallNode>) => {
   };
 };
 
+const stateCases: TStateCase[] = [
+  {
+    title: 'IDLE',
+    snapshot: INITIAL_CALL_NODE_SNAPSHOT,
+    expectedFlags: createExpectedFlags('hasIdle'),
+  },
+  {
+    title: 'CONNECTING',
+    snapshot: {
+      state: ECallStatus.CONNECTING,
+      context: {
+        number: '100',
+        answer: false,
+        extraHeaders: ['X-Feature: a'],
+        isConfirmed: true,
+      },
+    } as TCallNodeSnapshot,
+    expectedFlags: createExpectedFlags('hasConnecting'),
+  },
+  {
+    title: 'PRESENTATION_CALL',
+    snapshot: {
+      state: ECallStatus.PRESENTATION_CALL,
+      context: {
+        number: '200',
+        answer: true,
+      },
+    } as TCallNodeSnapshot,
+    expectedFlags: createExpectedFlags('hasPresentationCall'),
+  },
+  {
+    title: 'ROOM_PENDING_AUTH',
+    snapshot: {
+      state: ECallStatus.ROOM_PENDING_AUTH,
+      context: {
+        number: '300',
+        answer: false,
+        room: 'room-300',
+        participantName: 'alice',
+      },
+    } as TCallNodeSnapshot,
+    expectedFlags: createExpectedFlags('hasRoomPendingAuth'),
+  },
+  {
+    title: 'PURGATORY',
+    snapshot: {
+      state: ECallStatus.PURGATORY,
+      context: {
+        number: '301',
+        answer: true,
+        room: 'room-301',
+        participantName: 'bob',
+      },
+    } as TCallNodeSnapshot,
+    expectedFlags: createExpectedFlags('hasPurgatory'),
+  },
+  {
+    title: 'P2P_ROOM',
+    snapshot: {
+      state: ECallStatus.P2P_ROOM,
+      context: {
+        number: '302',
+        answer: false,
+        room: 'room-302',
+        participantName: 'charlie',
+      },
+    } as TCallNodeSnapshot,
+    expectedFlags: createExpectedFlags('hasP2PRoom'),
+  },
+  {
+    title: 'DIRECT_P2P_ROOM',
+    snapshot: {
+      state: ECallStatus.DIRECT_P2P_ROOM,
+      context: {
+        number: '303',
+        answer: false,
+        room: 'room-303',
+        participantName: 'diana',
+        isDirectPeerToPeer: true,
+      },
+    } as TCallNodeSnapshot,
+    expectedFlags: createExpectedFlags('hasDirectP2PRoom'),
+  },
+  {
+    title: 'IN_ROOM',
+    snapshot: {
+      state: ECallStatus.IN_ROOM,
+      context: {
+        number: '300',
+        answer: true,
+        room: 'room-1',
+        participantName: 'alice',
+        token: 'jwt',
+        conferenceForToken: 'room-1',
+      },
+    } as TCallNodeSnapshot,
+    expectedFlags: createExpectedFlags('hasInRoom'),
+  },
+  {
+    title: 'DISCONNECTING',
+    snapshot: {
+      state: ECallStatus.DISCONNECTING,
+      context: {
+        pendingDisconnect: true,
+      },
+    } as TCallNodeSnapshot,
+    expectedFlags: createExpectedFlags('hasDisconnecting'),
+  },
+];
+
 describe('CallNodeModel', () => {
   it('maps initial snapshot to nodeValue', () => {
     const node = createCallNode();
@@ -63,133 +178,7 @@ describe('CallNodeModel', () => {
     });
   });
 
-  it.each([
-    {
-      title: 'IDLE',
-      snapshot: INITIAL_CALL_NODE_SNAPSHOT,
-      expectedFlags: {
-        ...createExpectedFlags('hasIdle'),
-      },
-    },
-    {
-      title: 'CONNECTING',
-      snapshot: {
-        state: ECallStatus.CONNECTING,
-        context: {
-          number: '100',
-          answer: false,
-          extraHeaders: ['X-Feature: a'],
-          isConfirmed: true,
-        },
-      } as TCallNodeSnapshot,
-      expectedFlags: {
-        ...createExpectedFlags('hasConnecting'),
-      },
-    },
-    {
-      title: 'PRESENTATION_CALL',
-      snapshot: {
-        state: ECallStatus.PRESENTATION_CALL,
-        context: {
-          number: '200',
-          answer: true,
-        },
-      } as TCallNodeSnapshot,
-      expectedFlags: {
-        ...createExpectedFlags('hasPresentationCall'),
-      },
-    },
-    {
-      title: 'ROOM_PENDING_AUTH',
-      snapshot: {
-        state: ECallStatus.ROOM_PENDING_AUTH,
-        context: {
-          number: '300',
-          answer: false,
-          room: 'room-300',
-          participantName: 'alice',
-        },
-      } as TCallNodeSnapshot,
-      expectedFlags: {
-        ...createExpectedFlags('hasRoomPendingAuth'),
-      },
-    },
-    {
-      title: 'PURGATORY',
-      snapshot: {
-        state: ECallStatus.PURGATORY,
-        context: {
-          number: '301',
-          answer: true,
-          room: 'room-301',
-          participantName: 'bob',
-        },
-      } as TCallNodeSnapshot,
-      expectedFlags: {
-        ...createExpectedFlags('hasPurgatory'),
-      },
-    },
-    {
-      title: 'P2P_ROOM',
-      snapshot: {
-        state: ECallStatus.P2P_ROOM,
-        context: {
-          number: '302',
-          answer: false,
-          room: 'room-302',
-          participantName: 'charlie',
-        },
-      } as TCallNodeSnapshot,
-      expectedFlags: {
-        ...createExpectedFlags('hasP2PRoom'),
-      },
-    },
-    {
-      title: 'DIRECT_P2P_ROOM',
-      snapshot: {
-        state: ECallStatus.DIRECT_P2P_ROOM,
-        context: {
-          number: '303',
-          answer: false,
-          room: 'room-303',
-          participantName: 'diana',
-          isDirectPeerToPeer: true,
-        },
-      } as TCallNodeSnapshot,
-      expectedFlags: {
-        ...createExpectedFlags('hasDirectP2PRoom'),
-      },
-    },
-    {
-      title: 'IN_ROOM',
-      snapshot: {
-        state: ECallStatus.IN_ROOM,
-        context: {
-          number: '300',
-          answer: true,
-          room: 'room-1',
-          participantName: 'alice',
-          token: 'jwt',
-          conferenceForToken: 'room-1',
-        },
-      } as TCallNodeSnapshot,
-      expectedFlags: {
-        ...createExpectedFlags('hasInRoom'),
-      },
-    },
-    {
-      title: 'DISCONNECTING',
-      snapshot: {
-        state: ECallStatus.DISCONNECTING,
-        context: {
-          pendingDisconnect: true,
-        },
-      } as TCallNodeSnapshot,
-      expectedFlags: {
-        ...createExpectedFlags('hasDisconnecting'),
-      },
-    },
-  ])('exposes state flags for $title', ({ snapshot, expectedFlags }) => {
+  it.each(stateCases)('exposes state flags for $title', ({ snapshot, expectedFlags }) => {
     const node = createCallNode(snapshot);
 
     expect(getStateFlags(node)).toEqual(expectedFlags);

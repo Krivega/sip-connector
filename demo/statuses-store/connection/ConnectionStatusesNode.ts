@@ -6,15 +6,11 @@ import { createNodeModel } from '../createNodeModel';
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
 import type { TContextMap } from '@/ConnectionManager/ConnectionStateMachine';
 import type { TSessionSnapshot } from '@/index';
+import type { TNodeByState, TNodeValue } from '../nodeValue';
 
-type TConnectionNodeByState<TState extends EConnectionStatus> = {
-  state: TState;
-  context: TContextMap[TState];
-};
+type TConnectionNodeByState<TState extends EConnectionStatus> = TNodeByState<TState, TContextMap>;
 
-export type TConnectionNodeValue = {
-  [TState in EConnectionStatus]: TConnectionNodeByState<TState>;
-}[EConnectionStatus];
+export type TConnectionNodeValue = TNodeValue<EConnectionStatus, TContextMap>;
 
 const withNodeValueViews = <TState extends EConnectionStatus>(
   base: ReturnType<typeof createNodeModel<TState, TContextMap[TState]>>,

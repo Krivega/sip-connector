@@ -6,15 +6,14 @@ import { createNodeModel } from '../createNodeModel';
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
 import type { TSessionSnapshot } from '@/index';
 import type { TPresentationContextMap } from '@/PresentationManager/PresentationStateMachine';
+import type { TNodeByState, TNodeValue } from '../nodeValue';
 
-type TPresentationNodeByState<TState extends EPresentationStatus> = {
-  state: TState;
-  context: TPresentationContextMap[TState];
-};
+type TPresentationNodeByState<TState extends EPresentationStatus> = TNodeByState<
+  TState,
+  TPresentationContextMap
+>;
 
-export type TPresentationNodeValue = {
-  [TState in EPresentationStatus]: TPresentationNodeByState<TState>;
-}[EPresentationStatus];
+export type TPresentationNodeValue = TNodeValue<EPresentationStatus, TPresentationContextMap>;
 
 const withNodeValueViews = <TState extends EPresentationStatus>(
   base: ReturnType<typeof createNodeModel<TState, TPresentationContextMap[TState]>>,

@@ -7,15 +7,11 @@ import { getContextProperty } from './getContextProperty';
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
 import type { TContextMap } from '@/CallManager/CallStateMachine';
 import type { TSessionSnapshot } from '@/index';
+import type { TNodeByState, TNodeValue } from '../nodeValue';
 
-type TCallNodeByState<TState extends ECallStatus> = {
-  state: TState;
-  context: TContextMap[TState];
-};
+type TCallNodeByState<TState extends ECallStatus> = TNodeByState<TState, TContextMap>;
 
-export type TCallNodeValue = {
-  [TState in ECallStatus]: TCallNodeByState<TState>;
-}[ECallStatus];
+export type TCallNodeValue = TNodeValue<ECallStatus, TContextMap>;
 
 const withNodeValueViews = <TState extends ECallStatus>(
   base: ReturnType<typeof createNodeModel<TState, TContextMap[TState]>>,

@@ -24,6 +24,12 @@ const getStateFlags = (node: ReturnType<typeof createPresentationNode>) => {
 
 type TStateFlags = ReturnType<typeof getStateFlags>;
 type TStateFlagKey = keyof TStateFlags;
+type TStateCase = {
+  title: string;
+  snapshot: TPresentationSnapshot;
+  expectedFlags: TStateFlags;
+  expectedLastError: Error | undefined;
+};
 
 const createExpectedFlags = (activeFlag: TStateFlagKey): TStateFlags => {
   return {
@@ -35,6 +41,51 @@ const createExpectedFlags = (activeFlag: TStateFlagKey): TStateFlags => {
   };
 };
 
+const stateCases: TStateCase[] = [
+  {
+    title: 'IDLE',
+    snapshot: INITIAL_PRESENTATION_NODE_SNAPSHOT,
+    expectedFlags: createExpectedFlags('hasIdle'),
+    expectedLastError: undefined,
+  },
+  {
+    title: 'STARTING',
+    snapshot: {
+      state: EPresentationStatus.STARTING,
+      context: { lastError: undefined },
+    } as TPresentationSnapshot,
+    expectedFlags: createExpectedFlags('hasStarting'),
+    expectedLastError: undefined,
+  },
+  {
+    title: 'ACTIVE',
+    snapshot: {
+      state: EPresentationStatus.ACTIVE,
+      context: { lastError: undefined },
+    } as TPresentationSnapshot,
+    expectedFlags: createExpectedFlags('hasActive'),
+    expectedLastError: undefined,
+  },
+  {
+    title: 'STOPPING',
+    snapshot: {
+      state: EPresentationStatus.STOPPING,
+      context: { lastError: undefined },
+    } as TPresentationSnapshot,
+    expectedFlags: createExpectedFlags('hasStopping'),
+    expectedLastError: undefined,
+  },
+  {
+    title: 'FAILED',
+    snapshot: {
+      state: EPresentationStatus.FAILED,
+      context: { lastError: new Error('screen failed') },
+    } as TPresentationSnapshot,
+    expectedFlags: createExpectedFlags('hasFailed'),
+    expectedLastError: new Error('screen failed'),
+  },
+];
+
 describe('PresentationNodeModel', () => {
   it('maps initial snapshot to nodeValue', () => {
     const node = createPresentationNode();
@@ -45,50 +96,7 @@ describe('PresentationNodeModel', () => {
     });
   });
 
-  it.each([
-    {
-      title: 'IDLE',
-      snapshot: INITIAL_PRESENTATION_NODE_SNAPSHOT,
-      expectedFlags: createExpectedFlags('hasIdle'),
-      expectedLastError: undefined,
-    },
-    {
-      title: 'STARTING',
-      snapshot: {
-        state: EPresentationStatus.STARTING,
-        context: { lastError: undefined },
-      } as TPresentationSnapshot,
-      expectedFlags: createExpectedFlags('hasStarting'),
-      expectedLastError: undefined,
-    },
-    {
-      title: 'ACTIVE',
-      snapshot: {
-        state: EPresentationStatus.ACTIVE,
-        context: { lastError: undefined },
-      } as TPresentationSnapshot,
-      expectedFlags: createExpectedFlags('hasActive'),
-      expectedLastError: undefined,
-    },
-    {
-      title: 'STOPPING',
-      snapshot: {
-        state: EPresentationStatus.STOPPING,
-        context: { lastError: undefined },
-      } as TPresentationSnapshot,
-      expectedFlags: createExpectedFlags('hasStopping'),
-      expectedLastError: undefined,
-    },
-    {
-      title: 'FAILED',
-      snapshot: {
-        state: EPresentationStatus.FAILED,
-        context: { lastError: new Error('screen failed') },
-      } as TPresentationSnapshot,
-      expectedFlags: createExpectedFlags('hasFailed'),
-      expectedLastError: new Error('screen failed'),
-    },
-  ])(
+  it.each(stateCases)(
     'exposes state flags and lastError for $title',
     ({ snapshot, expectedFlags, expectedLastError }) => {
       const node = createPresentationNode(snapshot);

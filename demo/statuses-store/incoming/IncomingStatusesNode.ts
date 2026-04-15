@@ -6,15 +6,14 @@ import { createNodeModel } from '../createNodeModel';
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
 import type { TIncomingContextMap } from '@/IncomingCallManager/IncomingCallStateMachine';
 import type { TSessionSnapshot } from '@/index';
+import type { TNodeByState, TNodeValue } from '../nodeValue';
 
-type TIncomingNodeByState<TState extends EIncomingStatus> = {
-  state: TState;
-  context: TIncomingContextMap[TState];
-};
+type TIncomingNodeByState<TState extends EIncomingStatus> = TNodeByState<
+  TState,
+  TIncomingContextMap
+>;
 
-export type TIncomingNodeValue = {
-  [TState in EIncomingStatus]: TIncomingNodeByState<TState>;
-}[EIncomingStatus];
+export type TIncomingNodeValue = TNodeValue<EIncomingStatus, TIncomingContextMap>;
 
 const withNodeValueViews = <TState extends EIncomingStatus>(
   base: ReturnType<typeof createNodeModel<TState, TIncomingContextMap[TState]>>,

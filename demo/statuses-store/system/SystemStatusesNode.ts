@@ -5,21 +5,18 @@ import { createNodeModel } from '../createNodeModel';
 
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
 import type { TSessionSnapshot } from '@/index';
+import type { TStateNodeByState, TStateNodeValue } from '../nodeValue';
 
-type TSystemNodeByState<TState extends ESystemStatus> = {
-  state: TState;
-};
+type TSystemNodeByState<TState extends ESystemStatus> = TStateNodeByState<TState>;
 
-export type TSystemNodeValue = {
-  [TState in ESystemStatus]: TSystemNodeByState<TState>;
-}[ESystemStatus];
+export type TSystemNodeValue = TStateNodeValue<ESystemStatus>;
 
 const withNodeValueViews = <S extends ESystemStatus>(
   base: ReturnType<typeof createNodeModel<S, never>>,
 ) => {
   return base.views((self) => {
     return {
-      get nodeValue(): TSystemNodeValue {
+      get nodeValue(): TSystemNodeByState<S> {
         return { state: self.state };
       },
     };

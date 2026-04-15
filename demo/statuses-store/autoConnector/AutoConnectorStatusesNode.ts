@@ -7,17 +7,11 @@ import type { Instance, SnapshotIn } from 'mobx-state-tree';
 import type { TAutoConnectorContextMap } from '@/AutoConnectorManager/AutoConnectorStateMachine';
 import type { TParametersAutoConnect } from '@/AutoConnectorManager/types';
 import type { TSessionSnapshot } from '@/index';
+import type { TNodeValue } from '../nodeValue';
 
 export type TAutoConnectorStopReason = 'halted' | 'cancelled' | 'failed';
 
-type TConnectionNodeByState<TState extends EAutoConnectorStatus> = {
-  state: TState;
-  context: TAutoConnectorContextMap[TState];
-};
-
-export type TAutoConnectorNodeValue = {
-  [TState in EAutoConnectorStatus]: TConnectionNodeByState<TState>;
-}[EAutoConnectorStatus];
+export type TAutoConnectorNodeValue = TNodeValue<EAutoConnectorStatus, TAutoConnectorContextMap>;
 
 const withNodeValueViews = <S extends string, C>(
   base: ReturnType<typeof createNodeModel<S, C>>,

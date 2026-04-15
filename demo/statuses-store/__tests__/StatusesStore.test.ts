@@ -34,20 +34,9 @@ import {
 import SessionManager from '@/SessionManager/@SessionManager';
 import { INITIAL_STATUSES_STORE_SNAPSHOT, StatusesStoreModel } from '..';
 
-const mappedFromSession = (session: SessionManager) => {
-  const store = StatusesStoreModel.create(INITIAL_STATUSES_STORE_SNAPSHOT);
+import type { Instance } from 'mobx-state-tree';
 
-  store.syncFromSessionSnapshot(session.getSnapshot());
-
-  return {
-    connection: store.connectionNode,
-    autoConnector: store.autoConnectorNode,
-    call: store.callNode,
-    incoming: store.incomingNode,
-    presentation: store.presentationNode,
-    system: store.systemNode,
-  };
-};
+type TStatusesStoreInstance = Instance<typeof StatusesStoreModel>;
 
 const createAutoConnectorMachineDeps = () => {
   return {
@@ -115,6 +104,58 @@ const startSession = () => {
   };
 };
 
+const createStore = () => {
+  return StatusesStoreModel.create(INITIAL_STATUSES_STORE_SNAPSHOT);
+};
+
+const getStoreNodes = (store: TStatusesStoreInstance) => {
+  return {
+    connection: store.connectionNode,
+    autoConnector: store.autoConnectorNode,
+    call: store.callNode,
+    incoming: store.incomingNode,
+    presentation: store.presentationNode,
+    system: store.systemNode,
+  };
+};
+
+const getPublicStatuses = (store: TStatusesStoreInstance) => {
+  return {
+    connection: store.connectionNode.state,
+    autoConnector: store.autoConnectorNode.state,
+    call: store.callNode.state,
+    incoming: store.incomingNode.state,
+    presentation: store.presentationNode.state,
+    system: store.systemNode.state,
+  };
+};
+
+const syncStoreFromSession = (session: SessionManager) => {
+  const store = createStore();
+
+  store.syncFromSessionSnapshot(session.getSnapshot());
+
+  return store;
+};
+
+const mappedFromSession = (session: SessionManager) => {
+  return getStoreNodes(syncStoreFromSession(session));
+};
+
+const withStartedSession = (testCase: (context: ReturnType<typeof startSession>) => void) => {
+  const context = startSession();
+
+  try {
+    testCase(context);
+  } finally {
+    context.stopAll();
+  }
+};
+
+const createRtcSession = () => {
+  return new RTCSessionMock({ eventHandlers: {}, originator: 'remote' });
+};
+
 const transitionToEstablished = (connectionStateMachine: ConnectionStateMachine) => {
   connectionStateMachine.send({ type: EConnectionEvents.START_CONNECT });
   connectionStateMachine.send({
@@ -133,271 +174,240 @@ const transitionToEstablished = (connectionStateMachine: ConnectionStateMachine)
   connectionStateMachine.send({ type: EConnectionEvents.UA_REGISTERED });
 };
 
+const transitionCallToInRoom = (
+  callStateMachine: ReturnType<typeof startSession>['callStateMachine'],
+) => {
+  callStateMachine.send({ type: 'CALL.CONNECTING', number: '300', answer: false });
+  callStateMachine.send({
+    type: 'CALL.ENTER_ROOM',
+    room: 'room-1',
+    participantName: 'participantName',
+  });
+  callStateMachine.send({
+    type: 'CALL.TOKEN_ISSUED',
+    token: 'token',
+    conferenceForToken: 'room-1',
+    participantName: 'participantName',
+  });
+};
+
+type TSystemStatusCase = {
+  title: string;
+  setup: (context: ReturnType<typeof startSession>) => void;
+  expectedSystemStatus: ESystemStatus;
+  assertMapped?: (mapped: ReturnType<typeof mappedFromSession>) => void;
+};
+
+const systemStatusCases: TSystemStatusCase[] = [
+  {
+    title: 'maps ESTABLISHED connection and IDLE call to READY_TO_CALL',
+    setup: ({ connectionStateMachine }: ReturnType<typeof startSession>) => {
+      transitionToEstablished(connectionStateMachine);
+    },
+    expectedSystemStatus: ESystemStatus.READY_TO_CALL,
+  },
+  {
+    title: 'maps ESTABLISHED + CALL.CONNECTING to CALL_CONNECTING',
+    setup: ({ connectionStateMachine, callStateMachine }: ReturnType<typeof startSession>) => {
+      transitionToEstablished(connectionStateMachine);
+      callStateMachine.send({ type: 'CALL.CONNECTING', number: '200', answer: false });
+    },
+    expectedSystemStatus: ESystemStatus.CALL_CONNECTING,
+    assertMapped: (mapped: ReturnType<typeof mappedFromSession>) => {
+      expect(mapped.call).toMatchObject({
+        state: ECallStatus.CONNECTING,
+        context: { number: '200', answer: false },
+      });
+    },
+  },
+  {
+    title: 'maps active call (IN_ROOM) to CALL_ACTIVE',
+    setup: ({ connectionStateMachine, callStateMachine }: ReturnType<typeof startSession>) => {
+      transitionToEstablished(connectionStateMachine);
+      transitionCallToInRoom(callStateMachine);
+    },
+    expectedSystemStatus: ESystemStatus.CALL_ACTIVE,
+    assertMapped: (mapped: ReturnType<typeof mappedFromSession>) => {
+      expect(mapped.call).toMatchObject({
+        state: ECallStatus.IN_ROOM,
+        context: {
+          room: 'room-1',
+          token: 'token',
+        },
+      });
+    },
+  },
+];
+
+type TViewsCase = {
+  title: string;
+  assert: (store: TStatusesStoreInstance) => void;
+};
+
+const viewsCases: TViewsCase[] = [
+  {
+    title: 'node getters mirror INITIAL_STATUSES_STORE_SNAPSHOT',
+    assert: (store: TStatusesStoreInstance) => {
+      expect(getStoreNodes(store)).toEqual(INITIAL_STATUSES_STORE_SNAPSHOT);
+    },
+  },
+  {
+    title: 'snapshot equals INITIAL_STATUSES_STORE_SNAPSHOT',
+    assert: (store: TStatusesStoreInstance) => {
+      expect(getSnapshot(store)).toEqual(INITIAL_STATUSES_STORE_SNAPSHOT);
+    },
+  },
+  {
+    title: 'publicStatuses lists state enum for each subtree',
+    assert: (store: TStatusesStoreInstance) => {
+      expect(getPublicStatuses(store)).toEqual({
+        connection: ESessionConnectionStatus.IDLE,
+        autoConnector: ESessionAutoConnectorStatus.IDLE,
+        call: ESessionCallStatus.IDLE,
+        incoming: ESessionIncomingStatus.IDLE,
+        presentation: ESessionPresentationStatus.IDLE,
+        system: ESystemStatus.DISCONNECTED,
+      });
+    },
+  },
+];
+
 describe('StatusesStore views', () => {
-  it('node getters mirror INITIAL_STATUSES_STORE_SNAPSHOT', () => {
-    const store = StatusesStoreModel.create(INITIAL_STATUSES_STORE_SNAPSHOT);
+  it.each(viewsCases)('$title', ({ assert }) => {
+    expect.hasAssertions();
 
-    expect(store.connectionNode).toEqual(INITIAL_STATUSES_STORE_SNAPSHOT.connection);
-    expect(store.autoConnectorNode).toEqual(INITIAL_STATUSES_STORE_SNAPSHOT.autoConnector);
-    expect(store.callNode).toEqual(INITIAL_STATUSES_STORE_SNAPSHOT.call);
-    expect(store.incomingNode).toEqual(INITIAL_STATUSES_STORE_SNAPSHOT.incoming);
-    expect(store.presentationNode).toEqual(INITIAL_STATUSES_STORE_SNAPSHOT.presentation);
-    expect(store.systemNode).toEqual(INITIAL_STATUSES_STORE_SNAPSHOT.system);
+    const store = createStore();
+
+    assert(store);
   });
 
-  it('statusesStoreSnapshot equals composing all node view getters', () => {
-    const store = StatusesStoreModel.create(INITIAL_STATUSES_STORE_SNAPSHOT);
+  it('after syncFromSessionSnapshot, node getters are aligned with snapshot', () => {
+    withStartedSession(({ session, incomingStateMachine }) => {
+      incomingStateMachine.send({
+        type: EIncomingEvents.RINGING,
+        data: {
+          incomingNumber: '77',
+          displayName: 'View test',
+          host: 'example.com',
+          rtcSession: createRtcSession(),
+        },
+      });
 
-    expect({
-      connection: store.connectionNode,
-      autoConnector: store.autoConnectorNode,
-      call: store.callNode,
-      incoming: store.incomingNode,
-      presentation: store.presentationNode,
-      system: store.systemNode,
-    }).toEqual({
-      connection: store.connectionNode,
-      autoConnector: store.autoConnectorNode,
-      call: store.callNode,
-      incoming: store.incomingNode,
-      presentation: store.presentationNode,
-      system: store.systemNode,
+      const store = syncStoreFromSession(session);
+
+      expect(getStoreNodes(store)).toEqual(getSnapshot(store));
+      expect(getPublicStatuses(store)).toEqual({
+        connection: ESessionConnectionStatus.IDLE,
+        autoConnector: ESessionAutoConnectorStatus.IDLE,
+        call: ESessionCallStatus.IDLE,
+        incoming: ESessionIncomingStatus.RINGING,
+        presentation: ESessionPresentationStatus.IDLE,
+        system: ESystemStatus.DISCONNECTED,
+      });
     });
-  });
-
-  it('publicStatuses lists state enum for each subtree', () => {
-    const store = StatusesStoreModel.create(INITIAL_STATUSES_STORE_SNAPSHOT);
-
-    expect({
-      connection: store.connectionNode.state,
-      autoConnector: store.autoConnectorNode.state,
-      call: store.callNode.state,
-      incoming: store.incomingNode.state,
-      presentation: store.presentationNode.state,
-      system: store.systemNode.state,
-    }).toEqual({
-      connection: ESessionConnectionStatus.IDLE,
-      autoConnector: ESessionAutoConnectorStatus.IDLE,
-      call: ESessionCallStatus.IDLE,
-      incoming: ESessionIncomingStatus.IDLE,
-      presentation: ESessionPresentationStatus.IDLE,
-      system: ESystemStatus.DISCONNECTED,
-    });
-  });
-
-  it('after syncFromSessionSnapshot, node getters stay aligned with statusesStoreSnapshot', () => {
-    const rtcSession = new RTCSessionMock({ eventHandlers: {}, originator: 'remote' });
-    const { session, incomingStateMachine, stopAll } = startSession();
-
-    incomingStateMachine.send({
-      type: EIncomingEvents.RINGING,
-      data: {
-        incomingNumber: '77',
-        displayName: 'View test',
-        host: 'example.com',
-        rtcSession,
-      },
-    });
-
-    const store = StatusesStoreModel.create(INITIAL_STATUSES_STORE_SNAPSHOT);
-
-    store.syncFromSessionSnapshot(session.getSnapshot());
-
-    expect({
-      connection: store.connectionNode,
-      autoConnector: store.autoConnectorNode,
-      call: store.callNode,
-      incoming: store.incomingNode,
-      presentation: store.presentationNode,
-      system: store.systemNode,
-    }).toEqual({
-      connection: store.connectionNode,
-      autoConnector: store.autoConnectorNode,
-      call: store.callNode,
-      incoming: store.incomingNode,
-      presentation: store.presentationNode,
-      system: store.systemNode,
-    });
-
-    expect({
-      connection: store.connectionNode.state,
-      autoConnector: store.autoConnectorNode.state,
-      call: store.callNode.state,
-      incoming: store.incomingNode.state,
-      presentation: store.presentationNode.state,
-      system: store.systemNode.state,
-    }).toEqual({
-      connection: store.connectionNode.state,
-      autoConnector: store.autoConnectorNode.state,
-      call: store.callNode.state,
-      incoming: store.incomingNode.state,
-      presentation: store.presentationNode.state,
-      system: store.systemNode.state,
-    });
-
-    stopAll();
   });
 });
 
 describe('StatusesStore', () => {
-  const rtcSession = new RTCSessionMock({ eventHandlers: {}, originator: 'remote' });
-
   it('maps INCOMING.RINGING with remoteCallerData on incoming node', () => {
-    const { session, incomingStateMachine, stopAll } = startSession();
-
-    incomingStateMachine.send({
-      type: EIncomingEvents.RINGING,
-      data: {
-        incomingNumber: '100',
-        displayName: 'Test caller',
-        host: 'test.com',
-        rtcSession,
-      },
-    });
-
-    const mapped = mappedFromSession(session);
-
-    expect(mapped.incoming).toMatchObject({
-      state: EIncomingStatus.RINGING,
-      context: {
-        remoteCallerData: {
+    withStartedSession(({ session, incomingStateMachine }) => {
+      incomingStateMachine.send({
+        type: EIncomingEvents.RINGING,
+        data: {
           incomingNumber: '100',
           displayName: 'Test caller',
           host: 'test.com',
+          rtcSession: createRtcSession(),
         },
-      },
-    });
+      });
 
-    stopAll();
+      const mapped = mappedFromSession(session);
+
+      expect(mapped.incoming).toMatchObject({
+        state: EIncomingStatus.RINGING,
+        context: {
+          remoteCallerData: {
+            incomingNumber: '100',
+            displayName: 'Test caller',
+            host: 'test.com',
+          },
+        },
+      });
+    });
   });
 
   it('maps connection CONNECTING with configuration in context after START_UA', () => {
-    const { session, connectionStateMachine, stopAll } = startSession();
-
-    connectionStateMachine.send({ type: EConnectionEvents.START_CONNECT });
-    connectionStateMachine.send({
-      type: EConnectionEvents.START_UA,
-      configuration: {
-        sipServerIp: '127.0.0.1',
-        sipServerUrl: 'wss://sip.example.com',
-        displayName: 'Test User',
-        authorizationUser: '100',
-        register: true,
-      },
-    });
-
-    const mapped = mappedFromSession(session);
-
-    expect(mapped.connection).toMatchObject({
-      state: EConnectionStatus.CONNECTING,
-      context: {
-        connectionConfiguration: {
+    withStartedSession(({ session, connectionStateMachine }) => {
+      connectionStateMachine.send({ type: EConnectionEvents.START_CONNECT });
+      connectionStateMachine.send({
+        type: EConnectionEvents.START_UA,
+        configuration: {
           sipServerIp: '127.0.0.1',
           sipServerUrl: 'wss://sip.example.com',
           displayName: 'Test User',
           authorizationUser: '100',
           register: true,
         },
-      },
-    });
+      });
 
-    stopAll();
+      const mapped = mappedFromSession(session);
+
+      expect(mapped.connection).toMatchObject({
+        state: EConnectionStatus.CONNECTING,
+        context: {
+          connectionConfiguration: {
+            sipServerIp: '127.0.0.1',
+            sipServerUrl: 'wss://sip.example.com',
+            displayName: 'Test User',
+            authorizationUser: '100',
+            register: true,
+          },
+        },
+      });
+    });
   });
 
-  it('maps ESTABLISHED connection and IDLE call to system READY_TO_CALL with narrowed context', () => {
-    const { session, connectionStateMachine, stopAll } = startSession();
+  it.each(systemStatusCases)('$title', ({ setup, expectedSystemStatus, assertMapped }) => {
+    withStartedSession((context) => {
+      setup(context);
 
-    transitionToEstablished(connectionStateMachine);
+      const mapped = mappedFromSession(context.session);
 
-    const mapped = mappedFromSession(session);
-
-    expect(mapped.system.state).toBe(ESystemStatus.READY_TO_CALL);
-
-    stopAll();
-  });
-
-  it('maps ESTABLISHED + CALL.CONNECTING to system CALL_CONNECTING', () => {
-    const { session, connectionStateMachine, callStateMachine, stopAll } = startSession();
-
-    transitionToEstablished(connectionStateMachine);
-    callStateMachine.send({ type: 'CALL.CONNECTING', number: '200', answer: false });
-
-    const mapped = mappedFromSession(session);
-
-    expect(mapped.system.state).toBe(ESystemStatus.CALL_CONNECTING);
-    expect(mapped.call).toMatchObject({
-      state: ECallStatus.CONNECTING,
-      context: { number: '200', answer: false },
+      expect(mapped.system.state).toBe(expectedSystemStatus);
+      assertMapped?.(mapped);
     });
-
-    stopAll();
-  });
-
-  it('maps active call (IN_ROOM) to system CALL_ACTIVE and keeps room context on call node', () => {
-    const { session, connectionStateMachine, callStateMachine, stopAll } = startSession();
-
-    transitionToEstablished(connectionStateMachine);
-    callStateMachine.send({ type: 'CALL.CONNECTING', number: '300', answer: false });
-    callStateMachine.send({
-      type: 'CALL.ENTER_ROOM',
-      room: 'room-1',
-      participantName: 'participantName',
-    });
-    callStateMachine.send({
-      type: 'CALL.TOKEN_ISSUED',
-      token: 'token',
-      conferenceForToken: 'room-1',
-      participantName: 'participantName',
-    });
-
-    const mapped = mappedFromSession(session);
-
-    expect(mapped.system.state).toBe(ESystemStatus.CALL_ACTIVE);
-    expect(mapped.call).toMatchObject({
-      state: ECallStatus.IN_ROOM,
-      context: {
-        room: 'room-1',
-        token: 'token',
-      },
-    });
-
-    stopAll();
   });
 
   it('updates MST instance via syncFromSessionSnapshot', () => {
-    const { session, incomingStateMachine, stopAll } = startSession();
+    withStartedSession(({ session, incomingStateMachine }) => {
+      const store = createStore();
 
-    const store = StatusesStoreModel.create(INITIAL_STATUSES_STORE_SNAPSHOT);
+      incomingStateMachine.send({
+        type: EIncomingEvents.RINGING,
+        data: {
+          incomingNumber: '42',
+          displayName: 'Caller',
+          host: 'host',
+          rtcSession: createRtcSession(),
+        },
+      });
 
-    incomingStateMachine.send({
-      type: EIncomingEvents.RINGING,
-      data: {
-        incomingNumber: '42',
-        displayName: 'Caller',
-        host: 'host',
-        rtcSession,
-      },
+      store.syncFromSessionSnapshot(session.getSnapshot());
+
+      const frozen = getSnapshot(store);
+
+      expect(frozen.incoming.state).toBe(EIncomingStatus.RINGING);
     });
-
-    store.syncFromSessionSnapshot(session.getSnapshot());
-
-    const frozen = getSnapshot(store);
-
-    expect(frozen.incoming.state).toBe(EIncomingStatus.RINGING);
-
-    stopAll();
   });
 
   it('maps presentation ACTIVE after SCREEN.STARTED', () => {
-    const { session, presentationStateMachine, stopAll } = startSession();
+    withStartedSession(({ session, presentationStateMachine }) => {
+      presentationStateMachine.send({ type: EPresentationEvents.SCREEN_STARTING });
+      presentationStateMachine.send({ type: EPresentationEvents.SCREEN_STARTED });
 
-    presentationStateMachine.send({ type: EPresentationEvents.SCREEN_STARTING });
-    presentationStateMachine.send({ type: EPresentationEvents.SCREEN_STARTED });
+      const mapped = mappedFromSession(session);
 
-    const mapped = mappedFromSession(session);
-
-    expect(mapped.presentation.state).toBe(EPresentationStatus.ACTIVE);
-
-    stopAll();
+      expect(mapped.presentation.state).toBe(EPresentationStatus.ACTIVE);
+    });
   });
 });
