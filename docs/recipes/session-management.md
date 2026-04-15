@@ -4,15 +4,15 @@
 
 ## Использование SessionManager
 
-`SessionManager` доступен через `sipConnector.session`:
+`SessionManager` доступен через `sipConnector.sessionManager`:
 
 ```typescript
-import { SipConnector } from '@krivega/sip-connector';
+import { SipConnector } from 'sip-connector';
 
 const sipConnector = new SipConnector({ JsSIP });
 
 // Получение текущего снапшота
-const snapshot = sipConnector.session.getSnapshot();
+const snapshot = sipConnector.sessionManager.getSnapshot();
 console.log('Connection status:', snapshot.connection.value);
 console.log('Call status:', snapshot.call.value);
 ```
@@ -21,7 +21,7 @@ console.log('Call status:', snapshot.call.value);
 
 ```typescript
 // Подписка на изменения состояния соединения
-const unsubscribe = sipConnector.session.subscribe(
+const unsubscribe = sipConnector.sessionManager.subscribe(
   (snapshot) => snapshot.connection.value,
   (status) => {
     console.log('Connection status changed:', status);
@@ -29,15 +29,15 @@ const unsubscribe = sipConnector.session.subscribe(
 );
 
 // Очистка подписок
-sipConnector.session.stop();
+sipConnector.sessionManager.stop();
 ```
 
 ## Использование селекторов
 
 ```typescript
-import { sessionSelectors } from '@krivega/sip-connector';
+import { sessionSelectors } from 'sip-connector';
 
-const unsubscribe = sipConnector.session.subscribe(
+const unsubscribe = sipConnector.sessionManager.subscribe(
   sessionSelectors.selectConnectionStatus,
   (status) => {
     console.log('Connection status:', status);
@@ -45,7 +45,7 @@ const unsubscribe = sipConnector.session.subscribe(
 );
 
 // Подписка на несколько значений
-const unsubscribeMultiple = sipConnector.session.subscribe(
+const unsubscribeMultiple = sipConnector.sessionManager.subscribe(
   (snapshot) => ({
     connection: sessionSelectors.selectConnectionStatus(snapshot),
     call: sessionSelectors.selectCallStatus(snapshot),
@@ -56,9 +56,9 @@ const unsubscribeMultiple = sipConnector.session.subscribe(
 );
 
 // Подписка на комбинированное состояние системы
-import { ESystemStatus } from '@krivega/sip-connector';
+import { ESystemStatus } from 'sip-connector';
 
-const unsubscribeSystem = sipConnector.session.subscribe(
+const unsubscribeSystem = sipConnector.sessionManager.subscribe(
   sessionSelectors.selectSystemStatus,
   (status) => {
     switch (status) {
@@ -134,7 +134,7 @@ sipConnector.on('session:snapshot-changed', ({ previous, current }) => {
 Для прямого доступа к машинам состояний (XState):
 
 ```typescript
-const { connection, call, incoming, presentation } = sipConnector.session.machines;
+const { connection, call, incoming, presentation } = sipConnector.sessionManager.machines;
 
 // Подписка на снапшот машины соединения
 connection.subscribe((snapshot) => {
@@ -144,7 +144,7 @@ connection.subscribe((snapshot) => {
 
 ## Миграция клиента
 
-1. Используйте `sipConnector.session` вместо локальной модели статусов.
+1. Используйте `sipConnector.sessionManager` вместо локальной модели статусов.
 2. Подпишитесь через селекторы и синхронизируйте store (MobX/MST/Redux) только по изменившимся срезам.
 3. Принимая входящие звонки, используйте `selectIncomingStatus` и действуйте по `consumed/declined`.
 4. Для UI статусов звонка используйте `selectCallStatus`, для блокировок по соединению — `selectConnectionStatus`.

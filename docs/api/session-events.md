@@ -33,7 +33,7 @@
 ## Пример использования
 
 ```typescript
-import { SipConnector } from '@krivega/sip-connector';
+import { SipConnector } from 'sip-connector';
 
 const sipConnector = new SipConnector({ JsSIP });
 

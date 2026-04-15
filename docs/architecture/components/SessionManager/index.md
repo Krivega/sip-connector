@@ -52,7 +52,7 @@ const unsubscribe = sessionManager.subscribe((snapshot) => {
 Типобезопасная подписка на срез состояния через селектор.
 
 ```typescript
-import { sessionSelectors } from '@krivega/sip-connector';
+import { sessionSelectors } from 'sip-connector';
 
 const unsubscribe = sessionManager.subscribe(sessionSelectors.selectConnectionStatus, (status) => {
   console.log('Connection status:', status);
@@ -208,17 +208,17 @@ SessionManager предоставляет набор готовых селект
 ### Базовое использование
 
 ```typescript
-import { SipConnector, sessionSelectors, ESystemStatus } from '@krivega/sip-connector';
+import { SipConnector, sessionSelectors, ESystemStatus } from 'sip-connector';
 
 const sipConnector = new SipConnector({ JsSIP });
 
 // Получение текущего снапшота
-const snapshot = sipConnector.session.getSnapshot();
+const snapshot = sipConnector.sessionManager.getSnapshot();
 console.log('Connection:', snapshot.connection.value);
 console.log('Call:', snapshot.call.value);
 
 // Подписка на изменения соединения
-const unsubscribe = sipConnector.session.subscribe(
+const unsubscribe = sipConnector.sessionManager.subscribe(
   sessionSelectors.selectConnectionStatus,
   (status) => {
     console.log('Connection status changed:', status);
@@ -226,7 +226,7 @@ const unsubscribe = sipConnector.session.subscribe(
 );
 
 // Подписка на комбинированное состояние системы
-const unsubscribeSystem = sipConnector.session.subscribe(
+const unsubscribeSystem = sipConnector.sessionManager.subscribe(
   sessionSelectors.selectSystemStatus,
   (status) => {
     console.log('System status:', status);
@@ -241,7 +241,7 @@ unsubscribeSystem();
 ### Подписка на несколько значений
 
 ```typescript
-const unsubscribe = sipConnector.session.subscribe(
+const unsubscribe = sipConnector.sessionManager.subscribe(
   (snapshot) => ({
     connection: sessionSelectors.selectConnectionStatus(snapshot),
     call: sessionSelectors.selectCallStatus(snapshot),
@@ -256,7 +256,7 @@ const unsubscribe = sipConnector.session.subscribe(
 ### Прямой доступ к машинам
 
 ```typescript
-const { connection, call, autoConnector } = sipConnector.session.machines;
+const { connection, call, autoConnector } = sipConnector.sessionManager.machines;
 
 // Подписка на снапшот конкретной машины
 connection.subscribe((snapshot) => {
@@ -271,7 +271,7 @@ autoConnector.subscribe((snapshot) => {
 ### Кастомный селектор с кастомной функцией сравнения
 
 ```typescript
-const unsubscribe = sipConnector.session.subscribe(
+const unsubscribe = sipConnector.sessionManager.subscribe(
   (snapshot) => snapshot.call.context,
   (context) => {
     console.log('Call context changed:', context);
@@ -304,7 +304,7 @@ SessionManager идеально подходит для интеграции с 
 ```typescript
 // Пример с MobX
 import { makeAutoObservable } from 'mobx';
-import { sessionSelectors, ESystemStatus } from '@krivega/sip-connector';
+import { sessionSelectors, ESystemStatus } from 'sip-connector';
 
 class SessionStore {
   systemStatus: ESystemStatus = ESystemStatus.DISCONNECTED;

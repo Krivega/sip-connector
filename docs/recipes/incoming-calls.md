@@ -23,7 +23,7 @@ sipConnector.on('incoming-call:ringing', () => {
 ```typescript
 // Подписка на входящие звонки
 sipConnector.on('incoming-call:ringing', async (event) => {
-  console.log('Входящий звонок:', event.remoteCallerData);
+  console.log('Входящий звонок:', event);
 
   // Принять звонок
   const mediaStream = await navigator.mediaDevices.getUserMedia({

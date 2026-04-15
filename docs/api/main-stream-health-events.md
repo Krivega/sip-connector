@@ -11,7 +11,9 @@
 | `main-stream-health:inbound-video-problem-resolved` | Когда ранее подтвержденная проблема исчезла и snapshot стал healthy   | `THealthSnapshot & { reason: TProblemReason }`                                         |
 | `main-stream-health:inbound-video-problem-reset`    | Когда подтвержденная проблема сбрасывается из-за смены контекста      | `{ reason: TProblemReason; resetCause: TProblemResetCause }`                           |
 
-## `THealthSnapshot`
+## Структуры данных
+
+### `THealthSnapshot`
 
 ```ts
 type THealthSnapshot = {
@@ -29,7 +31,7 @@ type THealthSnapshot = {
 - `isNoInboundVideoTraffic` - входящий видеотрафик отсутствует: `packetsReceived === 0 && bytesReceived === 0`.
 - `isInboundVideoStalled` - видеотрафик уже был, но `packetsReceived` и `bytesReceived` перестали расти.
 
-## `TProblemReason`
+### `TProblemReason`
 
 ```ts
 type TProblemReason =
@@ -38,7 +40,7 @@ type TProblemReason =
   | 'inbound-video-stalled';
 ```
 
-## `TProblemResetCause`
+### `TProblemResetCause`
 
 ```ts
 type TProblemResetCause =
@@ -50,7 +52,7 @@ type TProblemResetCause =
   | 'ended';
 ```
 
-## Текущее поведение восстановления
+## Пример использования
 
 `SipConnector` подписывается на `main-stream-health:inbound-video-problem-detected` и запускает `MainStreamRecovery.recover()`. Восстановление выполняется через throttled `renegotiate`, без автоматического `endCall`.
 

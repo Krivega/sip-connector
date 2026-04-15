@@ -110,18 +110,13 @@ await facade.connectToServer(async () => {
   };
 });
 
-// Доступ к состоянию через ConnectionStateMachine (внутренний компонент)
-const connectionStateMachine = sipConnector.connectionManager.connectionStateMachine;
+// Доступ к состоянию через ConnectionStateMachine (низкоуровневый компонент)
+const connectionStateMachine = sipConnector.connectionManager.stateMachine;
 
 // Проверка текущего состояния соединения
 console.log('Состояние соединения:', connectionStateMachine.state);
 console.log('Подключено:', connectionStateMachine.isActiveConnection); // true для connected/registered
 console.log('В процессе:', connectionStateMachine.isPending); // true для connecting/initializing
-console.log('Ошибка:', connectionStateMachine.error);
-
-// Получение списка допустимых событий
-const validEvents = connectionStateMachine.getValidEvents();
-console.log('Допустимые переходы:', validEvents);
 
 // Подписка на изменения состояния
 const unsubscribe = connectionStateMachine.onStateChange((state) => {

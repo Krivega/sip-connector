@@ -65,7 +65,7 @@ sipConnector.on('call:failed', (error) => {
 ```typescript
 // Подписка на события входящих звонков
 sipConnector.on('incoming-call:ringing', (event) => {
-  console.log('Входящий звонок от:', event.remoteCallerData);
+  console.log('Входящий звонок от:', event);
 });
 ```
 

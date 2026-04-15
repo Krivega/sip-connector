@@ -1,4 +1,4 @@
-# AutoConnectorManager: машина состояний (XState)
+# AutoConnectorStateMachine (состояния автоподключения)
 
 `AutoConnectorStateMachine` оркестрирует цикл автоподключения в `AutoConnectorManager` и валидирует допустимые переходы.
 

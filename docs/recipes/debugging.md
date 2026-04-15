@@ -52,16 +52,16 @@ sipConnector.on('call:failed', (error) => {
 });
 
 // Доступ к состоянию через CallStateMachine (внутренний компонент)
-const callStateMachine = sipConnector.callManager.callStateMachine;
+const callStateMachine = sipConnector.callManager.stateMachine;
 
 // Проверка текущего состояния
 console.log('Состояние звонка:', callStateMachine.state);
-console.log('Звонок активен:', callStateMachine.isActive); // true для accepted/inCall
-console.log('Ожидание:', callStateMachine.isPending); // true для connecting
-console.log('Последняя ошибка:', callStateMachine.lastError);
+console.log('Звонок активен:', callStateMachine.isActive); // true для активных состояний звонка
+console.log('Подключение звонка в процессе:', callStateMachine.isConnecting);
+console.log('Идет отключение:', callStateMachine.isDisconnecting);
 
 // Сброс состояния после завершения
-if (callStateMachine.isEnded || callStateMachine.isFailed) {
+if (!callStateMachine.isActive && !callStateMachine.isConnecting) {
   callStateMachine.reset(); // Переход в IDLE
 }
 ```
