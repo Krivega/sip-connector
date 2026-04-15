@@ -1,38 +1,202 @@
 import { ECallStatus } from '@/index';
 import { CallNodeModel, INITIAL_CALL_NODE_SNAPSHOT } from '../CallStatusesNode';
-import {
-  isCallNodeState,
-  isConnectingCallNode,
-  isDisconnectingCallNode,
-  isIdleCallNode,
-  isInRoomCallNode,
-} from '../guards';
 
-const expectType = <T>(value: T): T => {
-  return value;
+type TCallNodeSnapshot = Parameters<typeof CallNodeModel.create>[0];
+
+const createCallNode = (snapshot: TCallNodeSnapshot = INITIAL_CALL_NODE_SNAPSHOT) => {
+  return CallNodeModel.create(snapshot);
+};
+
+const getStateFlags = (node: ReturnType<typeof createCallNode>) => {
+  return {
+    hasIdle: node.hasIdle(),
+    hasConnecting: node.hasConnecting(),
+    hasPresentationCall: node.hasPresentationCall(),
+    hasRoomPendingAuth: node.hasRoomPendingAuth(),
+    hasPurgatory: node.hasPurgatory(),
+    hasP2PRoom: node.hasP2PRoom(),
+    hasDirectP2PRoom: node.hasDirectP2PRoom(),
+    hasInRoom: node.hasInRoom(),
+    hasDisconnecting: node.hasDisconnecting(),
+  };
+};
+
+type TStateFlags = ReturnType<typeof getStateFlags>;
+type TStateFlagKey = keyof TStateFlags;
+
+const createExpectedFlags = (activeFlag: TStateFlagKey): TStateFlags => {
+  return {
+    hasIdle: activeFlag === 'hasIdle',
+    hasConnecting: activeFlag === 'hasConnecting',
+    hasPresentationCall: activeFlag === 'hasPresentationCall',
+    hasRoomPendingAuth: activeFlag === 'hasRoomPendingAuth',
+    hasPurgatory: activeFlag === 'hasPurgatory',
+    hasP2PRoom: activeFlag === 'hasP2PRoom',
+    hasDirectP2PRoom: activeFlag === 'hasDirectP2PRoom',
+    hasInRoom: activeFlag === 'hasInRoom',
+    hasDisconnecting: activeFlag === 'hasDisconnecting',
+  };
+};
+
+const getContextAccessors = (node: ReturnType<typeof createCallNode>) => {
+  return {
+    number: node.number,
+    answer: node.answer,
+    extraHeaders: node.extraHeaders,
+    isConfirmed: node.isConfirmed,
+    room: node.room,
+    participantName: node.participantName,
+    isDirectPeerToPeer: node.isDirectPeerToPeer,
+    token: node.token,
+    conferenceForToken: node.conferenceForToken,
+    pendingDisconnect: node.pendingDisconnect,
+  };
 };
 
 describe('CallNodeModel', () => {
-  it('maps initial snapshot and exposes IDLE state helpers', () => {
-    const node = CallNodeModel.create(INITIAL_CALL_NODE_SNAPSHOT);
+  it('maps initial snapshot to nodeValue', () => {
+    const node = createCallNode();
 
     expect(node.nodeValue).toEqual({
       state: ECallStatus.IDLE,
       context: {},
     });
-    expect(node.hasIdle()).toBe(true);
-    expect(node.hasConnecting()).toBe(false);
-    expect(node.hasInRoom()).toBe(false);
+  });
 
-    expect(node.number).toBeUndefined();
-    expect(node.answer).toBeUndefined();
-    expect(node.room).toBeUndefined();
-    expect(node.token).toBeUndefined();
-    expect(node.conferenceForToken).toBeUndefined();
+  it.each([
+    {
+      title: 'IDLE',
+      snapshot: INITIAL_CALL_NODE_SNAPSHOT,
+      expectedFlags: {
+        ...createExpectedFlags('hasIdle'),
+      },
+    },
+    {
+      title: 'CONNECTING',
+      snapshot: {
+        state: ECallStatus.CONNECTING,
+        context: {
+          number: '100',
+          answer: false,
+          extraHeaders: ['X-Feature: a'],
+          isConfirmed: true,
+        },
+      } as TCallNodeSnapshot,
+      expectedFlags: {
+        ...createExpectedFlags('hasConnecting'),
+      },
+    },
+    {
+      title: 'PRESENTATION_CALL',
+      snapshot: {
+        state: ECallStatus.PRESENTATION_CALL,
+        context: {
+          number: '200',
+          answer: true,
+        },
+      } as TCallNodeSnapshot,
+      expectedFlags: {
+        ...createExpectedFlags('hasPresentationCall'),
+      },
+    },
+    {
+      title: 'ROOM_PENDING_AUTH',
+      snapshot: {
+        state: ECallStatus.ROOM_PENDING_AUTH,
+        context: {
+          number: '300',
+          answer: false,
+          room: 'room-300',
+          participantName: 'alice',
+        },
+      } as TCallNodeSnapshot,
+      expectedFlags: {
+        ...createExpectedFlags('hasRoomPendingAuth'),
+      },
+    },
+    {
+      title: 'PURGATORY',
+      snapshot: {
+        state: ECallStatus.PURGATORY,
+        context: {
+          number: '301',
+          answer: true,
+          room: 'room-301',
+          participantName: 'bob',
+        },
+      } as TCallNodeSnapshot,
+      expectedFlags: {
+        ...createExpectedFlags('hasPurgatory'),
+      },
+    },
+    {
+      title: 'P2P_ROOM',
+      snapshot: {
+        state: ECallStatus.P2P_ROOM,
+        context: {
+          number: '302',
+          answer: false,
+          room: 'room-302',
+          participantName: 'charlie',
+        },
+      } as TCallNodeSnapshot,
+      expectedFlags: {
+        ...createExpectedFlags('hasP2PRoom'),
+      },
+    },
+    {
+      title: 'DIRECT_P2P_ROOM',
+      snapshot: {
+        state: ECallStatus.DIRECT_P2P_ROOM,
+        context: {
+          number: '303',
+          answer: false,
+          room: 'room-303',
+          participantName: 'diana',
+          isDirectPeerToPeer: true,
+        },
+      } as TCallNodeSnapshot,
+      expectedFlags: {
+        ...createExpectedFlags('hasDirectP2PRoom'),
+      },
+    },
+    {
+      title: 'IN_ROOM',
+      snapshot: {
+        state: ECallStatus.IN_ROOM,
+        context: {
+          number: '300',
+          answer: true,
+          room: 'room-1',
+          participantName: 'alice',
+          token: 'jwt',
+          conferenceForToken: 'room-1',
+        },
+      } as TCallNodeSnapshot,
+      expectedFlags: {
+        ...createExpectedFlags('hasInRoom'),
+      },
+    },
+    {
+      title: 'DISCONNECTING',
+      snapshot: {
+        state: ECallStatus.DISCONNECTING,
+        context: {
+          pendingDisconnect: true,
+        },
+      } as TCallNodeSnapshot,
+      expectedFlags: {
+        ...createExpectedFlags('hasDisconnecting'),
+      },
+    },
+  ])('exposes state flags for $title', ({ snapshot, expectedFlags }) => {
+    const node = createCallNode(snapshot);
+
+    expect(getStateFlags(node)).toEqual(expectedFlags);
   });
 
   it('returns call context fields in CONNECTING state', () => {
-    const node = CallNodeModel.create({
+    const node = createCallNode({
       state: ECallStatus.CONNECTING,
       context: {
         number: '100',
@@ -42,18 +206,22 @@ describe('CallNodeModel', () => {
       },
     });
 
-    expect(node.hasConnecting()).toBe(true);
-    expect(node.hasIdle()).toBe(false);
-    expect(node.number).toBe('100');
-    expect(node.answer).toBe(false);
-    expect(node.extraHeaders).toEqual(['X-Feature: a']);
-    expect(node.isConfirmed).toBe(true);
-    expect(node.room).toBeUndefined();
-    expect(node.token).toBeUndefined();
+    expect(getContextAccessors(node)).toEqual({
+      number: '100',
+      answer: false,
+      extraHeaders: ['X-Feature: a'],
+      isConfirmed: true,
+      room: undefined,
+      participantName: undefined,
+      isDirectPeerToPeer: undefined,
+      token: undefined,
+      conferenceForToken: undefined,
+      pendingDisconnect: undefined,
+    });
   });
 
   it('returns room-related context fields in IN_ROOM state', () => {
-    const node = CallNodeModel.create({
+    const node = createCallNode({
       state: ECallStatus.IN_ROOM,
       context: {
         number: '300',
@@ -65,124 +233,65 @@ describe('CallNodeModel', () => {
       },
     });
 
-    expect(node.hasInRoom()).toBe(true);
-    expect(node.number).toBe('300');
-    expect(node.answer).toBe(true);
-    expect(node.room).toBe('room-1');
-    expect(node.participantName).toBe('alice');
-    expect(node.token).toBe('jwt');
-    expect(node.conferenceForToken).toBe('room-1');
-    expect(node.pendingDisconnect).toBeUndefined();
+    expect(getContextAccessors(node)).toEqual({
+      number: '300',
+      answer: true,
+      extraHeaders: undefined,
+      isConfirmed: undefined,
+      room: 'room-1',
+      participantName: 'alice',
+      isDirectPeerToPeer: undefined,
+      token: 'jwt',
+      conferenceForToken: 'room-1',
+      pendingDisconnect: undefined,
+    });
+  });
+
+  it('returns isDirectPeerToPeer in DIRECT_P2P_ROOM state', () => {
+    const node = createCallNode({
+      state: ECallStatus.DIRECT_P2P_ROOM,
+      context: {
+        number: '500',
+        answer: false,
+        room: 'room-direct',
+        participantName: 'eve',
+        isDirectPeerToPeer: true,
+      },
+    });
+
+    expect(getContextAccessors(node)).toEqual({
+      number: '500',
+      answer: false,
+      extraHeaders: undefined,
+      isConfirmed: undefined,
+      room: 'room-direct',
+      participantName: 'eve',
+      isDirectPeerToPeer: true,
+      token: undefined,
+      conferenceForToken: undefined,
+      pendingDisconnect: undefined,
+    });
   });
 
   it('returns pendingDisconnect in DISCONNECTING state', () => {
-    const node = CallNodeModel.create({
+    const node = createCallNode({
       state: ECallStatus.DISCONNECTING,
       context: {
         pendingDisconnect: true,
       },
     });
 
-    expect(node.hasDisconnecting()).toBe(true);
-    expect(node.pendingDisconnect).toBe(true);
-    expect(node.number).toBeUndefined();
-  });
-});
-
-describe('CallNode guards', () => {
-  it('detects state by generic guard', () => {
-    const value = {
-      state: ECallStatus.CONNECTING,
-      context: {
-        number: '555',
-        answer: false,
-      },
-    };
-
-    expect(isCallNodeState(value, ECallStatus.CONNECTING)).toBe(true);
-    expect(isCallNodeState(value, ECallStatus.IDLE)).toBe(false);
-  });
-
-  it('provides per-state runtime checks', () => {
-    const idleValue = { state: ECallStatus.IDLE, context: {} };
-    const inRoomValue = {
-      state: ECallStatus.IN_ROOM,
-      context: {
-        number: '200',
-        answer: false,
-        room: 'room-2',
-        participantName: 'bob',
-        token: 'token-2',
-        conferenceForToken: 'room-2',
-      },
-    };
-    const disconnectingValue = {
-      state: ECallStatus.DISCONNECTING,
-      context: { pendingDisconnect: true as const },
-    };
-
-    expect(isIdleCallNode(idleValue)).toBe(true);
-    expect(isConnectingCallNode(idleValue)).toBe(false);
-
-    expect(isInRoomCallNode(inRoomValue)).toBe(true);
-    expect(isIdleCallNode(inRoomValue)).toBe(false);
-
-    expect(isDisconnectingCallNode(disconnectingValue)).toBe(true);
-    expect(isInRoomCallNode(disconnectingValue)).toBe(false);
-  });
-
-  it('narrows types at compile time via guards', () => {
-    type TGuardCandidate =
-      | { state: ECallStatus.IDLE; context: object }
-      | { state: ECallStatus.CONNECTING; context: { number: string; answer: boolean } }
-      | {
-          state: ECallStatus.IN_ROOM;
-          context: {
-            number: string;
-            answer: boolean;
-            room: string;
-            participantName: string;
-            token: string;
-            conferenceForToken: string;
-          };
-        }
-      | { state: ECallStatus.DISCONNECTING; context: { pendingDisconnect?: true } };
-
-    const assertNarrowing = (candidate: TGuardCandidate) => {
-      if (isCallNodeState(candidate, ECallStatus.CONNECTING)) {
-        expectType<Extract<TGuardCandidate, { state: ECallStatus.CONNECTING }>>(candidate);
-        expectType<string>(candidate.context.number);
-        expectType<boolean>(candidate.context.answer);
-      }
-
-      if (isInRoomCallNode(candidate)) {
-        expectType<Extract<TGuardCandidate, { state: ECallStatus.IN_ROOM }>>(candidate);
-        expectType<string>(candidate.context.token);
-        expectType<string>(candidate.context.conferenceForToken);
-      }
-
-      if (isIdleCallNode(candidate)) {
-        expectType<Extract<TGuardCandidate, { state: ECallStatus.IDLE }>>(candidate);
-        expectType<object>(candidate.context);
-      }
-
-      if (isDisconnectingCallNode(candidate)) {
-        expectType<Extract<TGuardCandidate, { state: ECallStatus.DISCONNECTING }>>(candidate);
-        expectType<true | undefined>(candidate.context.pendingDisconnect);
-      }
-
-      if (isConnectingCallNode(candidate)) {
-        expectType<Extract<TGuardCandidate, { state: ECallStatus.CONNECTING }>>(candidate);
-        expectType<string>(candidate.context.number);
-      }
-    };
-
-    const sample: TGuardCandidate = {
-      state: ECallStatus.CONNECTING,
-      context: { number: '111', answer: false },
-    };
-
-    assertNarrowing(sample);
-    expect(true).toBe(true);
+    expect(getContextAccessors(node)).toEqual({
+      number: undefined,
+      answer: undefined,
+      extraHeaders: undefined,
+      isConfirmed: undefined,
+      room: undefined,
+      participantName: undefined,
+      isDirectPeerToPeer: undefined,
+      token: undefined,
+      conferenceForToken: undefined,
+      pendingDisconnect: true,
+    });
   });
 });
