@@ -14,7 +14,6 @@ import UAFactory from '../UAFactory';
 
 import type { Socket, UA, UAConfigurationParams, WebSocketInterface } from '@krivega/jssip';
 import type { TJsSIP } from '@/types';
-import type { TConnectionConfiguration } from '../ConfigurationManager';
 import type { TEvents } from '../events';
 
 const SIP_SERVER_URL = 'sip.example.com';
@@ -45,26 +44,6 @@ describe('ConnectionFlow', () => {
     uaInstance = ua as UAMock | undefined;
   });
 
-  type TConnectionConfig = TConnectionConfiguration | undefined;
-
-  let connectionConfiguration: TConnectionConfig = undefined;
-
-  const getConnectionConfiguration = jest.fn((): TConnectionConfig => {
-    return connectionConfiguration;
-  });
-
-  const setConnectionConfiguration = jest.fn((config: TConnectionConfig) => {
-    connectionConfiguration = config;
-  });
-
-  const updateConnectionConfiguration = jest.fn(
-    <K extends keyof TConnectionConfiguration>(key: K, value: TConnectionConfiguration[K]) => {
-      if (connectionConfiguration) {
-        connectionConfiguration[key] = value;
-      }
-    },
-  );
-
   const setGetUri = jest.fn();
   const setSocket = jest.fn();
 
@@ -72,7 +51,6 @@ describe('ConnectionFlow', () => {
     jest.clearAllMocks();
     UAMock.reset();
 
-    connectionConfiguration = undefined;
     uaInstance = undefined;
 
     events = createEvents();
@@ -98,9 +76,6 @@ describe('ConnectionFlow', () => {
       registrationManager,
       getUa,
       setUa,
-      getConnectionConfiguration,
-      setConnectionConfiguration,
-      updateConnectionConfiguration,
       setGetUri,
       setSocket,
     });
@@ -140,8 +115,8 @@ describe('ConnectionFlow', () => {
         sipServerUrl: SIP_SERVER_URL,
       } as const;
 
-      const startConnectSpy = jest.spyOn(stateMachine, 'startConnect');
-      const startInitUaSpy = jest.spyOn(stateMachine, 'startInitUa');
+      const startConnectSpy = jest.spyOn(stateMachine, 'toStartConnect');
+      const startInitUaSpy = jest.spyOn(stateMachine, 'toStartUa');
 
       await connectionFlow.connect(parameters);
 
@@ -192,8 +167,8 @@ describe('ConnectionFlow', () => {
         sipServerUrl: SIP_SERVER_URL,
       } as const;
 
-      const startConnectSpy = jest.spyOn(stateMachine, 'startConnect');
-      const startInitUaSpy = jest.spyOn(stateMachine, 'startInitUa');
+      const startConnectSpy = jest.spyOn(stateMachine, 'toStartConnect');
+      const startInitUaSpy = jest.spyOn(stateMachine, 'toStartUa');
 
       await connectionFlow.connect(parameters);
 
@@ -283,8 +258,8 @@ describe('ConnectionFlow', () => {
   });
 
   describe('connect events', () => {
-    it('должен вызывать stateMachine.startConnect до события connect-started', async () => {
-      const startConnectSpy = jest.spyOn(stateMachine, 'startConnect');
+    it('должен вызывать stateMachine.toStartConnect до события connect-started', async () => {
+      const startConnectSpy = jest.spyOn(stateMachine, 'toStartConnect');
       const handleStarted = jest.fn();
 
       events.on('connect-started', handleStarted);
@@ -518,75 +493,6 @@ describe('ConnectionFlow', () => {
 
       await expect(connectionFlow.connect(baseConnectParameters)).rejects.toThrow(
         'Failed to connect to server',
-      );
-    });
-  });
-
-  describe('set', () => {
-    it('должен успешно менять displayName и возвращать true', async () => {
-      // Создаём UA с displayName 'Old Name'
-      const uaMock = uaFactory.createUAWithConfiguration(
-        {
-          displayName: 'Old Name',
-          register: false,
-          sipServerIp: SIP_SERVER_IP,
-          sipServerUrl: SIP_SERVER_URL,
-        },
-        events,
-      ).ua as unknown as UAMock;
-
-      uaInstance = uaMock;
-      connectionConfiguration = {
-        sipServerIp: SIP_SERVER_IP,
-        sipServerUrl: SIP_SERVER_URL,
-        displayName: 'Old Name',
-        authorizationUser: 'testuser',
-      };
-
-      const setSpy = jest.spyOn(uaMock, 'set');
-
-      const result = await connectionFlow.set({ displayName: 'New Name' });
-
-      expect(result).toBe(true);
-      expect(setSpy).toHaveBeenCalledWith('display_name', expect.any(String));
-      expect(updateConnectionConfiguration).toHaveBeenCalledWith('displayName', 'New Name');
-    });
-
-    it('должен выбрасывать ошибку "nothing changed", если displayName не изменился', async () => {
-      const uaMock = uaFactory.createUAWithConfiguration(
-        {
-          displayName: 'Same Name',
-          register: false,
-          sipServerIp: SIP_SERVER_IP,
-          sipServerUrl: SIP_SERVER_URL,
-        },
-        events,
-      ).ua as unknown as UAMock;
-
-      uaInstance = uaMock;
-      connectionConfiguration = {
-        sipServerIp: SIP_SERVER_IP,
-        sipServerUrl: SIP_SERVER_URL,
-        displayName: 'Same Name',
-        authorizationUser: 'testuser',
-      };
-
-      await expect(connectionFlow.set({ displayName: 'Same Name' })).rejects.toThrow(
-        'nothing changed',
-      );
-    });
-
-    it('должен выбрасывать ошибку, если UA не инициализирован', async () => {
-      uaInstance = undefined;
-      connectionConfiguration = {
-        sipServerIp: SIP_SERVER_IP,
-        sipServerUrl: SIP_SERVER_URL,
-        displayName: 'Any Name',
-        authorizationUser: 'testuser',
-      };
-
-      await expect(connectionFlow.set({ displayName: 'Another Name' })).rejects.toThrow(
-        'this.ua is not initialized',
       );
     });
   });
@@ -879,25 +785,6 @@ describe('ConnectionFlow', () => {
       const connectPromise = connectionFlow.connectWithDuplicatedCalls(parameters);
 
       await expect(connectPromise).rejects.toThrow();
-    });
-  });
-
-  describe('connectInner error handling', () => {
-    it('должен выбрасывать ошибку когда connectionConfiguration не определен', async () => {
-      const parameters = {
-        displayName: 'Test User',
-        register: false,
-        sipServerIp: SIP_SERVER_IP,
-        sipServerUrl: SIP_SERVER_URL,
-      };
-
-      // Мокаем getConnectionConfiguration чтобы он возвращал undefined
-      getConnectionConfiguration.mockReturnValue(undefined);
-
-      // @ts-expect-error - тестируем приватный метод
-      const connectPromise = connectionFlow.connectInner(parameters);
-
-      await expect(connectPromise).rejects.toThrow('connectionConfiguration has not defined');
     });
   });
 });

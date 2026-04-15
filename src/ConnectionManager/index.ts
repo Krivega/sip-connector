@@ -3,7 +3,7 @@ export { hasNotReadyForConnectionError, createNotReadyForConnectionError } from 
 export { EVENT_NAMES as CONNECTION_MANAGER_EVENT_NAMES, createEvents } from './events';
 
 export type { TParametersConnection } from './ConnectionFlow';
-export type { TConnectionConfiguration } from './ConfigurationManager';
+export type { TConnectionConfiguration } from './types';
 export type {
   TEvents as TConnectionManagerEvents,
   TEventMap as TConnectionManagerEventMap,

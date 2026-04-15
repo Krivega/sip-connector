@@ -1,7 +1,6 @@
 import { EventEmitterProxy } from 'events-constructor';
 
 import resolveDebug from '@/logger';
-import ConfigurationManager from './ConfigurationManager';
 import ConnectionFlow from './ConnectionFlow';
 import { ConnectionStateMachine } from './ConnectionStateMachine';
 import { createEvents } from './events';
@@ -13,10 +12,10 @@ import { createNotReadyForConnectionError } from './utils';
 import type { RegisteredEvent, UA, UnRegisteredEvent, WebSocketInterface } from '@krivega/jssip';
 import type { TGetUri } from '@/CallManager';
 import type { TJsSIP } from '@/types';
-import type { TConnectionConfiguration } from './ConfigurationManager';
-import type { TConnect, TParametersConnection, TSet } from './ConnectionFlow';
+import type { TConnect, TParametersConnection } from './ConnectionFlow';
 import type { TEventMap } from './events';
 import type { TParametersCheckTelephony } from './SipOperations';
+import type { TConnectionConfiguration } from './types';
 
 const debug = resolveDebug('ConnectionManager');
 
@@ -40,8 +39,6 @@ export default class ConnectionManager extends EventEmitterProxy<TEventMap> {
 
   private readonly sipOperations: SipOperations;
 
-  private readonly configurationManager: ConfigurationManager;
-
   public constructor(
     { JsSIP }: { JsSIP: TJsSIP },
     {
@@ -59,10 +56,6 @@ export default class ConnectionManager extends EventEmitterProxy<TEventMap> {
     });
     this.stateMachine = new ConnectionStateMachine(this.events);
 
-    this.configurationManager = new ConfigurationManager({
-      getUa: this.getUa,
-    });
-
     this.sipOperations = new SipOperations({
       uaFactory: this.uaFactory,
       getUaProtected: this.getUaProtected,
@@ -75,16 +68,6 @@ export default class ConnectionManager extends EventEmitterProxy<TEventMap> {
         stateMachine: this.stateMachine,
         registrationManager: this.registrationManager,
         getUa: this.getUa,
-        getConnectionConfiguration: this.getConnectionConfiguration,
-        setConnectionConfiguration: (config) => {
-          this.configurationManager.set(config);
-        },
-        updateConnectionConfiguration: <K extends keyof TConnectionConfiguration>(
-          key: K,
-          value: TConnectionConfiguration[K],
-        ) => {
-          this.configurationManager.update(key, value);
-        },
         setUa: (ua: UA | undefined) => {
           this.ua = ua;
         },
@@ -132,7 +115,7 @@ export default class ConnectionManager extends EventEmitterProxy<TEventMap> {
   }
 
   public get isRegisterConfig() {
-    return this.configurationManager.isRegister();
+    return this.stateMachine.isRegisterEnabled();
   }
 
   public connect = async (
@@ -146,10 +129,6 @@ export default class ConnectionManager extends EventEmitterProxy<TEventMap> {
       .then(async () => {
         return this.connectWithProcessError(parameters, options);
       });
-  };
-
-  public set: TSet = async ({ displayName }) => {
-    return this.connectionFlow.set({ displayName });
   };
 
   public disconnect = async () => {
@@ -192,11 +171,11 @@ export default class ConnectionManager extends EventEmitterProxy<TEventMap> {
   };
 
   public isConfigured() {
-    return this.configurationManager.isConfigured();
+    return this.ua !== undefined;
   }
 
   public getConnectionConfiguration = () => {
-    return this.configurationManager.get();
+    return this.stateMachine.getConnectionConfiguration();
   };
 
   public destroy(): void {

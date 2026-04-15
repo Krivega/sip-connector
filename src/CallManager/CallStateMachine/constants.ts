@@ -1,5 +1,3 @@
-import type { TContext } from './types';
-
 /** Внутреннее состояние XState между переходами (`evaluate`). Не входит в `EState`. */
 export const CALL_MACHINE_EVALUATE_STATE = 'evaluate' as const;
 
@@ -15,7 +13,7 @@ export enum EState {
   DISCONNECTING = 'call:disconnecting',
 }
 
-export const initialContext: TContext = {
+export const initialContext = {
   raw: {},
   state: {},
 };

@@ -1,4 +1,3 @@
-import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { EAutoConnectorState } from '@/AutoConnectorManager/AutoConnectorStateMachine';
 import { EState as ECallStatus } from '@/CallManager/CallStateMachine';
 import { EState as EConnectionStatus } from '@/ConnectionManager/ConnectionStateMachine';
@@ -7,17 +6,15 @@ import { EState as EPresentationStatus } from '@/PresentationManager/Presentatio
 import { sessionSelectors } from '../selectors';
 import { ESystemStatus } from '../types';
 
-import type { TRemoteCallerData } from '@/IncomingCallManager';
 import type { TSessionSnapshot } from '../types';
 
 describe('sessionSelectors', () => {
-  const rtcSession = new RTCSessionMock({ eventHandlers: {}, originator: 'remote' });
   const createMockSnapshot = (overrides: Partial<TSessionSnapshot> = {}): TSessionSnapshot => {
     return {
       connection: {
         value: EConnectionStatus.IDLE,
         context: {
-          registerRequired: false,
+          connectionConfiguration: undefined,
         },
         ...overrides.connection,
       },
@@ -31,12 +28,17 @@ describe('sessionSelectors', () => {
       },
       incoming: {
         value: EIncomingStatus.IDLE,
-        context: {},
+        context: {
+          remoteCallerData: undefined,
+          lastReason: undefined,
+        },
         ...overrides.incoming,
       },
       presentation: {
         value: EPresentationStatus.IDLE,
-        context: {},
+        context: {
+          lastError: undefined,
+        },
         ...overrides.presentation,
       },
       autoConnector: {
@@ -208,81 +210,6 @@ describe('sessionSelectors', () => {
       });
     });
   });
-
-  describe('selectIncomingRemoteCaller', () => {
-    it('should return undefined when incoming status is IDLE', () => {
-      const snapshot = createMockSnapshot({
-        incoming: {
-          value: EIncomingStatus.IDLE,
-          context: {},
-        } as never,
-      });
-
-      expect(sessionSelectors.selectIncomingRemoteCaller(snapshot)).toBeUndefined();
-    });
-
-    it('should return remoteCallerData when incoming status is not IDLE', () => {
-      const remoteCallerData: TRemoteCallerData = {
-        incomingNumber: '101',
-        displayName: 'Test User',
-        host: 'test.com',
-        rtcSession,
-      };
-
-      const snapshot = createMockSnapshot({
-        incoming: {
-          value: EIncomingStatus.RINGING,
-          context: {
-            remoteCallerData,
-          },
-        } as never,
-      });
-
-      expect(sessionSelectors.selectIncomingRemoteCaller(snapshot)).toEqual(remoteCallerData);
-    });
-
-    it('should return remoteCallerData for all non-IDLE incoming statuses', () => {
-      const remoteCallerData: TRemoteCallerData = {
-        incomingNumber: '102',
-        displayName: 'Test User',
-        host: 'test.com',
-        rtcSession,
-      };
-
-      const nonIdleStatuses = [
-        EIncomingStatus.RINGING,
-        EIncomingStatus.CONSUMED,
-        EIncomingStatus.DECLINED,
-        EIncomingStatus.TERMINATED,
-        EIncomingStatus.FAILED,
-      ];
-
-      nonIdleStatuses.forEach((status) => {
-        const snapshot = createMockSnapshot({
-          incoming: {
-            value: status,
-            context: {
-              remoteCallerData,
-            },
-          } as never,
-        });
-
-        expect(sessionSelectors.selectIncomingRemoteCaller(snapshot)).toEqual(remoteCallerData);
-      });
-    });
-
-    it('should return undefined when remoteCallerData is not in context', () => {
-      const snapshot = createMockSnapshot({
-        incoming: {
-          value: EIncomingStatus.RINGING,
-          context: {},
-        } as never,
-      });
-
-      expect(sessionSelectors.selectIncomingRemoteCaller(snapshot)).toBeUndefined();
-    });
-  });
-
   describe('selectPresentationStatus', () => {
     it('should return presentation status from snapshot', () => {
       const snapshot = createMockSnapshot({

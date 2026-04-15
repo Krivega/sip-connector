@@ -8,27 +8,31 @@ import resolveDebug from '@/logger';
 import { getInvokeError } from './getInvokeError';
 
 import type {
-  TAutoConnectorContext,
+  EState,
+  TContext,
   TAutoConnectorEvent,
   TAutoConnectorMachineDeps,
+  TContextMap,
 } from './types';
 import type { TParametersAutoConnect } from '../types';
 
 const debug = resolveDebug('AutoConnectorMachine');
 
-const getRequiredParameters = (context: TAutoConnectorContext, actionName: string) => {
-  /* istanbul ignore next -- graph invariants require parameters before reaching these actions */
-  if (!context.parameters) {
-    throw new Error(`Auto connector parameters are missing in ${actionName} action`);
-  }
+type TAttemptFlowContext =
+  | TContextMap[EState.ATTEMPTING_GATE]
+  | TContextMap[EState.ATTEMPTING_CONNECT]
+  | TContextMap[EState.WAITING_BEFORE_RETRY]
+  | TContextMap[EState.CONNECTED_MONITORING]
+  | TContextMap[EState.TELEPHONY_CHECKING];
 
-  return context.parameters;
+const getAttemptFlowParameters = (context: TContext): TParametersAutoConnect => {
+  return (context as TAttemptFlowContext).parameters;
 };
 
 export const createAutoConnectorMachineSetup = (deps: TAutoConnectorMachineDeps) => {
   return setup({
     types: {
-      context: {} as TAutoConnectorContext,
+      context: {} as TContext,
       events: {} as TAutoConnectorEvent,
     },
     /** Асинхронные шаги: остановка флоу, коннект, задержка + beforeRetry. */
@@ -42,6 +46,7 @@ export const createAutoConnectorMachineSetup = (deps: TAutoConnectorMachineDeps)
       connect: fromPromise(async ({ input }: { input: TParametersAutoConnect | undefined }) => {
         debug('connect', input);
 
+        /* istanbul ignore next -- defensive guard for overridden actions in tests/provide */
         if (!input) {
           throw new Error('Auto connector parameters are missing in attemptingConnect state');
         }
@@ -130,19 +135,15 @@ export const createAutoConnectorMachineSetup = (deps: TAutoConnectorMachineDeps)
         debug('auto connector failed to restart connection attempts:', getInvokeError(event));
       },
       /** Сохранить параметры подключения и намерение продолжить попытки после `disconnect`. */
-      assignRestart: assign({
-        parameters: ({ event }) => {
-          return (event as { type: 'AUTO.RESTART'; parameters: TParametersAutoConnect }).parameters;
-        },
-        afterDisconnect: () => {
-          return 'attempt' as const;
-        },
-        stopReason: () => {
-          return undefined;
-        },
-        lastError: () => {
-          return undefined;
-        },
+      assignRestart: assign(({ event }) => {
+        const restartEvent = event as { type: 'AUTO.RESTART'; parameters: TParametersAutoConnect };
+
+        return {
+          parameters: restartEvent.parameters,
+          afterDisconnect: 'attempt' as const,
+          stopReason: undefined,
+          lastError: undefined,
+        };
       }),
       /** Пользовательский или внешний стоп: после `disconnect` уйти в `idle`. */
       assignStop: assign({
@@ -167,12 +168,12 @@ export const createAutoConnectorMachineSetup = (deps: TAutoConnectorMachineDeps)
       /** Лимит: завершить попытку, событие лимита, запуск опроса телефонии. */
       onLimitReachedTransition: ({ context }) => {
         debug('onLimitReachedTransition');
-        deps.onLimitReached(getRequiredParameters(context, 'onLimitReachedTransition'));
+        deps.onLimitReached(getAttemptFlowParameters(context));
       },
       /** Успешный invoke `connect`. */
       onConnectDone: ({ context }) => {
         debug('onConnectDone');
-        deps.onConnectSucceeded(getRequiredParameters(context, 'onConnectDone'));
+        deps.onConnectSucceeded(getAttemptFlowParameters(context));
       },
       assignHaltedError: assign({
         stopReason: () => {

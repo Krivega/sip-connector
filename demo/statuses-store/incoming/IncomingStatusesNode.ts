@@ -4,160 +4,123 @@ import { EIncomingStatus, sessionSelectors } from '@/index';
 import { createNodeModel } from '../createNodeModel';
 
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
-import type { TRemoteCallerData } from '@/IncomingCallManager';
+import type { TIncomingContextMap } from '@/IncomingCallManager/IncomingCallStateMachine';
 import type { TSessionSnapshot } from '@/index';
 
-export type TIncomingNodeValue =
-  | { state: EIncomingStatus.IDLE; context: Record<string, never> }
-  | { state: EIncomingStatus.RINGING; context: { remoteCallerData: TRemoteCallerData } }
-  | {
-      state: EIncomingStatus.CONSUMED;
-      context: {
-        remoteCallerData?: TRemoteCallerData;
-        lastReason: EIncomingStatus.CONSUMED;
-      };
-    }
-  | {
-      state: EIncomingStatus.DECLINED;
-      context: {
-        remoteCallerData?: TRemoteCallerData;
-        lastReason: EIncomingStatus.DECLINED;
-      };
-    }
-  | {
-      state: EIncomingStatus.TERMINATED;
-      context: {
-        remoteCallerData?: TRemoteCallerData;
-        lastReason: EIncomingStatus.TERMINATED;
-      };
-    }
-  | {
-      state: EIncomingStatus.FAILED;
-      context: {
-        remoteCallerData?: TRemoteCallerData;
-        lastReason: EIncomingStatus.FAILED;
-      };
-    };
+type TIncomingNodeByState<TState extends EIncomingStatus> = {
+  state: TState;
+  context: TIncomingContextMap[TState];
+};
 
-const withNodeValueViews = <S extends string, C>(
-  base: ReturnType<typeof createNodeModel<S, C>>,
+export type TIncomingNodeValue = {
+  [TState in EIncomingStatus]: TIncomingNodeByState<TState>;
+}[EIncomingStatus];
+
+const withNodeValueViews = <TState extends EIncomingStatus>(
+  base: ReturnType<typeof createNodeModel<TState, TIncomingContextMap[TState]>>,
 ) => {
-  return base.views((self) => {
-    return {
-      get nodeValue(): TIncomingNodeValue {
-        return { state: self.state, context: self.context } as TIncomingNodeValue;
-      },
-    };
-  });
+  return base
+    .views((self) => {
+      return {
+        get nodeValue(): TIncomingNodeByState<TState> {
+          return { state: self.state, context: self.context };
+        },
+      };
+    })
+    .views((self) => {
+      return {
+        hasIdle: (): boolean => {
+          return self.nodeValue.state === EIncomingStatus.IDLE;
+        },
+        hasRinging: (): boolean => {
+          return self.nodeValue.state === EIncomingStatus.RINGING;
+        },
+        hasConsumed: (): boolean => {
+          return self.nodeValue.state === EIncomingStatus.CONSUMED;
+        },
+        hasDeclined: (): boolean => {
+          return self.nodeValue.state === EIncomingStatus.DECLINED;
+        },
+        hasTerminated: (): boolean => {
+          return self.nodeValue.state === EIncomingStatus.TERMINATED;
+        },
+        hasFailed: (): boolean => {
+          return self.nodeValue.state === EIncomingStatus.FAILED;
+        },
+      };
+    })
+    .views((self) => {
+      return {
+        get remoteCallerData(): TIncomingContextMap[TState]['remoteCallerData'] {
+          return self.context.remoteCallerData;
+        },
+        get lastReason(): TIncomingContextMap[TState]['lastReason'] {
+          return self.context.lastReason;
+        },
+      };
+    });
 };
 
 export function buildIncomingNodeFromSession(snapshot: TSessionSnapshot): TIncomingNodeValue {
   const state = sessionSelectors.selectIncomingStatus(snapshot);
-  const { remoteCallerData } = snapshot.incoming.context;
+  const {
+    incoming: { context },
+  } = snapshot;
 
-  if (state === EIncomingStatus.RINGING && remoteCallerData !== undefined) {
-    return {
-      state,
-      context: {
-        remoteCallerData,
-      },
-    };
+  switch (state) {
+    case EIncomingStatus.IDLE: {
+      return { state, context: context as TIncomingContextMap[EIncomingStatus.IDLE] };
+    }
+    case EIncomingStatus.RINGING: {
+      return { state, context: context as TIncomingContextMap[EIncomingStatus.RINGING] };
+    }
+    case EIncomingStatus.CONSUMED: {
+      return { state, context: context as TIncomingContextMap[EIncomingStatus.CONSUMED] };
+    }
+    case EIncomingStatus.DECLINED: {
+      return { state, context: context as TIncomingContextMap[EIncomingStatus.DECLINED] };
+    }
+    case EIncomingStatus.TERMINATED: {
+      return { state, context: context as TIncomingContextMap[EIncomingStatus.TERMINATED] };
+    }
+    case EIncomingStatus.FAILED: {
+      return { state, context: context as TIncomingContextMap[EIncomingStatus.FAILED] };
+    }
+    default: {
+      throw new Error('Unsupported incoming status');
+    }
   }
-
-  if (
-    state === EIncomingStatus.CONSUMED ||
-    state === EIncomingStatus.DECLINED ||
-    state === EIncomingStatus.TERMINATED ||
-    state === EIncomingStatus.FAILED
-  ) {
-    if (state === EIncomingStatus.CONSUMED) {
-      return {
-        state,
-        context: {
-          remoteCallerData,
-          lastReason: EIncomingStatus.CONSUMED,
-        },
-      };
-    }
-
-    if (state === EIncomingStatus.DECLINED) {
-      return {
-        state,
-        context: {
-          remoteCallerData,
-          lastReason: EIncomingStatus.DECLINED,
-        },
-      };
-    }
-
-    if (state === EIncomingStatus.TERMINATED) {
-      return {
-        state,
-        context: {
-          remoteCallerData,
-          lastReason: EIncomingStatus.TERMINATED,
-        },
-      };
-    }
-
-    return {
-      state,
-      context: {
-        remoteCallerData,
-        lastReason: EIncomingStatus.FAILED,
-      },
-    };
-  }
-
-  return {
-    state: EIncomingStatus.IDLE,
-    context: {},
-  };
 }
 
 const IncomingIdleNodeModel = withNodeValueViews(
-  createNodeModel<EIncomingStatus.IDLE, Record<string, never>>(EIncomingStatus.IDLE),
+  createNodeModel<EIncomingStatus.IDLE, TIncomingContextMap[EIncomingStatus.IDLE]>(
+    EIncomingStatus.IDLE,
+  ),
 );
 const IncomingRingingNodeModel = withNodeValueViews(
-  createNodeModel<EIncomingStatus.RINGING, { remoteCallerData: TRemoteCallerData }>(
+  createNodeModel<EIncomingStatus.RINGING, TIncomingContextMap[EIncomingStatus.RINGING]>(
     EIncomingStatus.RINGING,
   ),
 );
 const IncomingConsumedNodeModel = withNodeValueViews(
-  createNodeModel<
+  createNodeModel<EIncomingStatus.CONSUMED, TIncomingContextMap[EIncomingStatus.CONSUMED]>(
     EIncomingStatus.CONSUMED,
-    {
-      remoteCallerData?: TRemoteCallerData;
-      lastReason: EIncomingStatus.CONSUMED;
-    }
-  >(EIncomingStatus.CONSUMED),
+  ),
 );
 const IncomingDeclinedNodeModel = withNodeValueViews(
-  createNodeModel<
+  createNodeModel<EIncomingStatus.DECLINED, TIncomingContextMap[EIncomingStatus.DECLINED]>(
     EIncomingStatus.DECLINED,
-    {
-      remoteCallerData?: TRemoteCallerData;
-      lastReason: EIncomingStatus.DECLINED;
-    }
-  >(EIncomingStatus.DECLINED),
+  ),
 );
 const IncomingTerminatedNodeModel = withNodeValueViews(
-  createNodeModel<
+  createNodeModel<EIncomingStatus.TERMINATED, TIncomingContextMap[EIncomingStatus.TERMINATED]>(
     EIncomingStatus.TERMINATED,
-    {
-      remoteCallerData?: TRemoteCallerData;
-      lastReason: EIncomingStatus.TERMINATED;
-    }
-  >(EIncomingStatus.TERMINATED),
+  ),
 );
 const IncomingFailedNodeModel = withNodeValueViews(
-  createNodeModel<
+  createNodeModel<EIncomingStatus.FAILED, TIncomingContextMap[EIncomingStatus.FAILED]>(
     EIncomingStatus.FAILED,
-    {
-      remoteCallerData?: TRemoteCallerData;
-      lastReason: EIncomingStatus.FAILED;
-    }
-  >(EIncomingStatus.FAILED),
+  ),
 );
 
 export const IncomingNodeModel = types.union(

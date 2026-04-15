@@ -5,64 +5,112 @@ import { createNodeModel } from '../createNodeModel';
 
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
 import type { TSessionSnapshot } from '@/index';
+import type { TPresentationContextMap } from '@/PresentationManager/PresentationStateMachine';
 
-export type TPresentationNodeValue =
-  | { state: EPresentationStatus.IDLE; context: Record<string, never> }
-  | { state: EPresentationStatus.STARTING; context: Record<string, never> }
-  | { state: EPresentationStatus.ACTIVE; context: Record<string, never> }
-  | { state: EPresentationStatus.STOPPING; context: Record<string, never> }
-  | { state: EPresentationStatus.FAILED; context: { lastError?: unknown } };
+type TPresentationNodeByState<TState extends EPresentationStatus> = {
+  state: TState;
+  context: TPresentationContextMap[TState];
+};
 
-const withNodeValueViews = <S extends string, C>(
-  base: ReturnType<typeof createNodeModel<S, C>>,
+export type TPresentationNodeValue = {
+  [TState in EPresentationStatus]: TPresentationNodeByState<TState>;
+}[EPresentationStatus];
+
+const withNodeValueViews = <TState extends EPresentationStatus>(
+  base: ReturnType<typeof createNodeModel<TState, TPresentationContextMap[TState]>>,
 ) => {
-  return base.views((self) => {
-    return {
-      get nodeValue(): TPresentationNodeValue {
-        return { state: self.state, context: self.context } as TPresentationNodeValue;
-      },
-    };
-  });
+  return base
+    .views((self) => {
+      return {
+        get nodeValue(): TPresentationNodeByState<TState> {
+          return { state: self.state, context: self.context };
+        },
+      };
+    })
+    .views((self) => {
+      return {
+        hasIdle: (): boolean => {
+          return self.nodeValue.state === EPresentationStatus.IDLE;
+        },
+        hasStarting: (): boolean => {
+          return self.nodeValue.state === EPresentationStatus.STARTING;
+        },
+        hasActive: (): boolean => {
+          return self.nodeValue.state === EPresentationStatus.ACTIVE;
+        },
+        hasStopping: (): boolean => {
+          return self.nodeValue.state === EPresentationStatus.STOPPING;
+        },
+        hasFailed: (): boolean => {
+          return self.nodeValue.state === EPresentationStatus.FAILED;
+        },
+      };
+    })
+    .views((self) => {
+      return {
+        get lastError(): TPresentationContextMap[TState]['lastError'] {
+          return self.context.lastError;
+        },
+      };
+    });
 };
 
 export function buildPresentationNodeFromSession(
   snapshot: TSessionSnapshot,
 ): TPresentationNodeValue {
   const state = sessionSelectors.selectPresentationStatus(snapshot);
+  const {
+    presentation: { context },
+  } = snapshot;
 
-  if (state === EPresentationStatus.FAILED) {
-    return {
-      state,
-      context: {
-        lastError: snapshot.presentation.context.lastError,
-      },
-    };
+  switch (state) {
+    case EPresentationStatus.IDLE: {
+      return { state, context: context as TPresentationContextMap[EPresentationStatus.IDLE] };
+    }
+    case EPresentationStatus.STARTING: {
+      return { state, context: context as TPresentationContextMap[EPresentationStatus.STARTING] };
+    }
+    case EPresentationStatus.ACTIVE: {
+      return { state, context: context as TPresentationContextMap[EPresentationStatus.ACTIVE] };
+    }
+    case EPresentationStatus.STOPPING: {
+      return { state, context: context as TPresentationContextMap[EPresentationStatus.STOPPING] };
+    }
+    case EPresentationStatus.FAILED: {
+      return { state, context: context as TPresentationContextMap[EPresentationStatus.FAILED] };
+    }
+    default: {
+      throw new Error('Unsupported presentation status');
+    }
   }
-
-  return {
-    state,
-    context: {},
-  };
 }
 
 const PresentationIdleNodeModel = withNodeValueViews(
-  createNodeModel<EPresentationStatus.IDLE, Record<string, never>>(EPresentationStatus.IDLE),
+  createNodeModel<EPresentationStatus.IDLE, TPresentationContextMap[EPresentationStatus.IDLE]>(
+    EPresentationStatus.IDLE,
+  ),
 );
 const PresentationStartingNodeModel = withNodeValueViews(
-  createNodeModel<EPresentationStatus.STARTING, Record<string, never>>(
+  createNodeModel<
     EPresentationStatus.STARTING,
-  ),
+    TPresentationContextMap[EPresentationStatus.STARTING]
+  >(EPresentationStatus.STARTING),
 );
 const PresentationActiveNodeModel = withNodeValueViews(
-  createNodeModel<EPresentationStatus.ACTIVE, Record<string, never>>(EPresentationStatus.ACTIVE),
-);
-const PresentationStoppingNodeModel = withNodeValueViews(
-  createNodeModel<EPresentationStatus.STOPPING, Record<string, never>>(
-    EPresentationStatus.STOPPING,
+  createNodeModel<EPresentationStatus.ACTIVE, TPresentationContextMap[EPresentationStatus.ACTIVE]>(
+    EPresentationStatus.ACTIVE,
   ),
 );
+const PresentationStoppingNodeModel = withNodeValueViews(
+  createNodeModel<
+    EPresentationStatus.STOPPING,
+    TPresentationContextMap[EPresentationStatus.STOPPING]
+  >(EPresentationStatus.STOPPING),
+);
 const PresentationFailedNodeModel = withNodeValueViews(
-  createNodeModel<EPresentationStatus.FAILED, { lastError?: unknown }>(EPresentationStatus.FAILED),
+  createNodeModel<EPresentationStatus.FAILED, TPresentationContextMap[EPresentationStatus.FAILED]>(
+    EPresentationStatus.FAILED,
+  ),
 );
 
 export const PresentationNodeModel = types.union(

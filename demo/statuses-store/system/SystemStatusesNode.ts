@@ -6,36 +6,21 @@ import { createNodeModel } from '../createNodeModel';
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
 import type { TSessionSnapshot } from '@/index';
 
-export type TSystemNodeValue =
-  | {
-      state: ESystemStatus.DISCONNECTED;
-    }
-  | {
-      state: ESystemStatus.DISCONNECTING;
-    }
-  | {
-      state: ESystemStatus.CONNECTING;
-    }
-  | {
-      state: ESystemStatus.READY_TO_CALL;
-    }
-  | {
-      state: ESystemStatus.CALL_CONNECTING;
-    }
-  | {
-      state: ESystemStatus.CALL_DISCONNECTING;
-    }
-  | {
-      state: ESystemStatus.CALL_ACTIVE;
-    };
+type TSystemNodeByState<TState extends ESystemStatus> = {
+  state: TState;
+};
 
-const withNodeValueViews = <S extends string, C>(
-  base: ReturnType<typeof createNodeModel<S, C>>,
+export type TSystemNodeValue = {
+  [TState in ESystemStatus]: TSystemNodeByState<TState>;
+}[ESystemStatus];
+
+const withNodeValueViews = <S extends ESystemStatus>(
+  base: ReturnType<typeof createNodeModel<S, never>>,
 ) => {
   return base.views((self) => {
     return {
       get nodeValue(): TSystemNodeValue {
-        return { state: self.state } as TSystemNodeValue;
+        return { state: self.state };
       },
     };
   });

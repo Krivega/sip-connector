@@ -24,10 +24,12 @@ export type TContextMap = {
   [EState.P2P_ROOM]: TAnyRoomState;
   [EState.DIRECT_P2P_ROOM]: TAnyRoomState & { isDirectPeerToPeer: true };
   [EState.IN_ROOM]: TAnyRoomState & { token: string; conferenceForToken: string };
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  [EState.DISCONNECTING]: {};
 };
 
-export type TBaseContext = TContextMap[keyof TContextMap];
-export type TContext = {
-  raw: TBaseContext;
-  state: TBaseContext;
+export type TContext = TContextMap[keyof TContextMap];
+export type TFullContext = {
+  raw: TContext;
+  state: TContext;
 };

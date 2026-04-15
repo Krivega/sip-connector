@@ -12,10 +12,12 @@ import { createEvents as createIncomingEvents } from '@/IncomingCallManager';
 import {
   IncomingCallStateMachine,
   EState as EIncomingStatus,
+  EEvents as EIncomingEvents,
 } from '@/IncomingCallManager/IncomingCallStateMachine';
 import {
   PresentationStateMachine,
   EState as EPresentationStatus,
+  EEvents as EPresentationEvents,
 } from '@/PresentationManager/PresentationStateMachine';
 import SessionManager from '../@SessionManager';
 import { sessionSelectors } from '../selectors';
@@ -110,8 +112,14 @@ describe('SessionManager', () => {
       );
 
       connectionStateMachine.send({
-        type: EConnectionEvents.START_INIT_UA,
-        registerRequired: false,
+        type: EConnectionEvents.START_UA,
+        configuration: {
+          displayName: 'Test User',
+          authorizationUser: 'testuser',
+          register: false,
+          sipServerIp: 'test.com',
+          sipServerUrl: 'test.com',
+        },
       });
       connectionStateMachine.send({ type: EConnectionEvents.UA_CONNECTED });
       connectionStateMachine.send({ type: EConnectionEvents.UA_REGISTERED });
@@ -141,28 +149,25 @@ describe('SessionManager', () => {
       expect(sessionSelectors.selectCallStatus(session.getSnapshot())).toBe(ECallStatus.IN_ROOM);
 
       incomingStateMachine.send({
-        type: 'INCOMING.RINGING',
+        type: EIncomingEvents.RINGING,
         data: { incomingNumber: '101', displayName: 'Test Caller', host: 'test.com', rtcSession },
       });
       expect(sessionSelectors.selectIncomingStatus(session.getSnapshot())).toBe(
         EIncomingStatus.RINGING,
       );
-      expect(sessionSelectors.selectIncomingRemoteCaller(session.getSnapshot())).toEqual(
-        expect.objectContaining({ incomingNumber: '101' }),
-      );
 
-      incomingStateMachine.send({ type: 'INCOMING.CONSUMED' });
+      incomingStateMachine.send({ type: EIncomingEvents.CONSUMED });
       expect(sessionSelectors.selectIncomingStatus(session.getSnapshot())).toBe(
         EIncomingStatus.CONSUMED,
       );
 
-      presentationStateMachine.send({ type: 'SCREEN.STARTING' });
-      presentationStateMachine.send({ type: 'SCREEN.STARTED' });
+      presentationStateMachine.send({ type: EPresentationEvents.SCREEN_STARTING });
+      presentationStateMachine.send({ type: EPresentationEvents.SCREEN_STARTED });
       expect(sessionSelectors.selectPresentationStatus(session.getSnapshot())).toBe(
         EPresentationStatus.ACTIVE,
       );
 
-      presentationStateMachine.send({ type: 'SCREEN.ENDED' });
+      presentationStateMachine.send({ type: EPresentationEvents.SCREEN_ENDED });
       expect(sessionSelectors.selectPresentationStatus(session.getSnapshot())).toBe(
         EPresentationStatus.IDLE,
       );
@@ -227,7 +232,7 @@ describe('SessionManager', () => {
 
       // Change incoming state
       incomingStateMachine.send({
-        type: 'INCOMING.RINGING',
+        type: EIncomingEvents.RINGING,
         data: { incomingNumber: '101', displayName: 'Test Caller', host: 'test.com', rtcSession },
       });
       expect(callback).toHaveBeenCalledTimes(3);
@@ -239,7 +244,7 @@ describe('SessionManager', () => {
       expect(sessionSelectors.selectIncomingStatus(thirdSnapshot)).toBe(EIncomingStatus.RINGING);
 
       // Change presentation state
-      presentationStateMachine.send({ type: 'SCREEN.STARTING' });
+      presentationStateMachine.send({ type: EPresentationEvents.SCREEN_STARTING });
       expect(callback).toHaveBeenCalledTimes(4);
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -281,13 +286,13 @@ describe('SessionManager', () => {
       const unsubscribe = session.subscribe(callback);
 
       incomingStateMachine.send({
-        type: 'INCOMING.RINGING',
+        type: EIncomingEvents.RINGING,
         data: remoteCallerData,
       });
       expect(callback).toHaveBeenCalledTimes(1);
 
       incomingStateMachine.send({
-        type: 'INCOMING.RINGING',
+        type: EIncomingEvents.RINGING,
         data: remoteCallerData,
       });
 
@@ -301,8 +306,14 @@ describe('SessionManager', () => {
 
       connectionStateMachine.send({ type: EConnectionEvents.START_CONNECT });
       connectionStateMachine.send({
-        type: EConnectionEvents.START_INIT_UA,
-        registerRequired: false,
+        type: EConnectionEvents.START_UA,
+        configuration: {
+          displayName: 'Test User',
+          authorizationUser: 'testuser',
+          register: false,
+          sipServerIp: 'test.com',
+          sipServerUrl: 'test.com',
+        },
       });
       connectionStateMachine.send({ type: EConnectionEvents.UA_CONNECTED });
       connectionStateMachine.send({ type: EConnectionEvents.UA_REGISTERED });
@@ -464,13 +475,13 @@ describe('SessionManager', () => {
       session.on('snapshot-changed', handler);
 
       incomingStateMachine.send({
-        type: 'INCOMING.RINGING',
+        type: EIncomingEvents.RINGING,
         data: { incomingNumber: '101', displayName: 'Test Caller', host: 'test.com', rtcSession },
       });
       expect(handler).toHaveBeenCalledTimes(1);
 
       incomingStateMachine.send({
-        type: 'INCOMING.RINGING',
+        type: EIncomingEvents.RINGING,
         data: {
           incomingNumber: '202',
           displayName: 'Another Caller',

@@ -1,10 +1,10 @@
 import { createAutoConnectorMachineSetup } from './createAutoConnectorMachineSetup';
 import { EState } from './types';
 
-import type { TAutoConnectorContext, TAutoConnectorMachineDeps } from './types';
+import type { TContext, TAutoConnectorMachineDeps, TContextMap } from './types';
 
 /** Начальный контекст до первого `AUTO.RESTART`. */
-const initialContext = (): TAutoConnectorContext => {
+const initialContext = (): TContextMap[EState.IDLE] => {
   return {
     parameters: undefined,
     afterDisconnect: 'idle',
@@ -136,8 +136,8 @@ export const createAutoConnectorMachine = (deps: TAutoConnectorMachineDeps) => {
           id: 'connect',
           // `src` указывает, какой actor запускать при входе в состояние.
           src: 'connect',
-          input: ({ context }: { context: TAutoConnectorContext }) => {
-            return context.parameters;
+          input: ({ context }: { context: TContext }) => {
+            return (context as TContextMap[EState.ATTEMPTING_CONNECT]).parameters;
           },
           // `connect` завершился без ошибки -> считаем подключение установленным и переходим в мониторинг.
           onDone: {

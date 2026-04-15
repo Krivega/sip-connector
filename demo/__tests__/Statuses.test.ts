@@ -5,7 +5,10 @@ import { createCallStateMachine } from '@/CallManager/CallStateMachine';
 import { createEvents as createConnectionEvents } from '@/ConnectionManager';
 import { ConnectionStateMachine } from '@/ConnectionManager/ConnectionStateMachine';
 import { createEvents as createIncomingEvents } from '@/IncomingCallManager';
-import { IncomingCallStateMachine } from '@/IncomingCallManager/IncomingCallStateMachine';
+import {
+  IncomingCallStateMachine,
+  EEvents as EIncomingEvents,
+} from '@/IncomingCallManager/IncomingCallStateMachine';
 import { ESystemStatus } from '@/index';
 import { PresentationStateMachine } from '@/PresentationManager/PresentationStateMachine';
 import SessionManager from '@/SessionManager/@SessionManager';
@@ -105,7 +108,7 @@ describe('Statuses', () => {
     expect(onStatusesChange).toHaveBeenCalledTimes(1);
 
     incomingStateMachine.send({
-      type: 'INCOMING.RINGING',
+      type: EIncomingEvents.RINGING,
       data: {
         incomingNumber: '100',
         displayName: 'Test caller',
@@ -124,7 +127,7 @@ describe('Statuses', () => {
     });
 
     incomingStateMachine.send({
-      type: 'INCOMING.RINGING',
+      type: EIncomingEvents.RINGING,
       data: {
         incomingNumber: '200',
         displayName: 'Another caller',

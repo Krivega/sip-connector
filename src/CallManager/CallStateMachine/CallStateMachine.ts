@@ -6,17 +6,12 @@ import { shouldResetInRoomCredentialsPrevious } from './inRoomCredentialsPreviou
 
 import type { TApiManagerEvents } from '@/ApiManager';
 import type { TEvents } from '../events';
-import type { TBaseContext, TContextMap } from './types';
+import type { TContext, TFullContext, TContextMap } from './types';
 
 const debug = resolveDebug('CallStateMachine');
 
-type TContext = {
-  raw: TBaseContext;
-  state: TBaseContext;
-};
-
-type TSnapshotContext<TState extends TBaseContext> = {
-  raw: TBaseContext;
+type TSnapshotContext<TState extends TContext> = {
+  raw: TContext;
   state: TState;
 };
 
@@ -66,7 +61,7 @@ export type TSnapshot =
 
 type TMachine = ReturnType<typeof createCallMachine>;
 
-class CallStateMachine extends BaseStateMachine<TMachine, EState, TContext, TSnapshot> {
+class CallStateMachine extends BaseStateMachine<TMachine, EState, TFullContext, TSnapshot> {
   public constructor(machine: TMachine, events: TEvents) {
     super(machine);
 

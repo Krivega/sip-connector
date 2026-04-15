@@ -12,6 +12,39 @@ import type { TEventMap } from './events';
 import type { TContentHint, TOnAddedTransceiver } from './types';
 
 const SEND_PRESENTATION_CALL_LIMIT = 1;
+const PRESENTATION_EVENT_NAMES = [
+  'presentation:start',
+  'presentation:started',
+  'presentation:end',
+  'presentation:ended',
+  'presentation:failed',
+] as const;
+
+type TPresentationOptions = {
+  isNeedReinvite?: boolean;
+  contentHint?: TContentHint;
+  sendEncodings?: RTCRtpEncodingParameters[];
+  onAddedTransceiver?: TOnAddedTransceiver;
+};
+
+type TSendPresentationOptions = TPresentationOptions & {
+  degradationPreference?: RTCDegradationPreference;
+};
+
+type TSendPresentationWithDuplicatedCallsOptions = {
+  rtcSession: RTCSession;
+  stream: MediaStream;
+  presentationOptions: TPresentationOptions;
+  options?: { callLimit: number };
+};
+
+const normalizePresentationError = (error: unknown): Error => {
+  if (error instanceof Error) {
+    return error;
+  }
+
+  return new Error(String(error));
+};
 
 export const hasCanceledStartPresentationError = (error: unknown) => {
   return hasCanceledError(error);
@@ -61,17 +94,7 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
   public async startPresentation(
     beforeStartPresentation: () => Promise<void>,
     stream: MediaStream,
-    {
-      isNeedReinvite,
-      contentHint,
-      sendEncodings,
-      onAddedTransceiver,
-    }: {
-      isNeedReinvite?: boolean;
-      contentHint?: TContentHint;
-      sendEncodings?: RTCRtpEncodingParameters[];
-      onAddedTransceiver?: TOnAddedTransceiver;
-    } = {},
+    { isNeedReinvite, contentHint, sendEncodings, onAddedTransceiver }: TPresentationOptions = {},
     options?: { callLimit: number },
   ): Promise<MediaStream> {
     const rtcSession = this.getRtcSessionProtected();
@@ -114,9 +137,7 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
           return rtcSession.stopPresentation(streamPresentationPrevious);
         })
         .catch((error: unknown) => {
-          const presentationError = error instanceof Error ? error : new Error(String(error));
-
-          this.events.trigger('presentation:failed', presentationError);
+          this.notifyPresentationFailed(error);
 
           throw error;
         });
@@ -134,15 +155,7 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
   public async updatePresentation(
     beforeStartPresentation: () => Promise<void>,
     stream: MediaStream,
-    {
-      contentHint,
-      sendEncodings,
-      onAddedTransceiver,
-    }: {
-      contentHint?: TContentHint;
-      sendEncodings?: RTCRtpEncodingParameters[];
-      onAddedTransceiver?: TOnAddedTransceiver;
-    } = {},
+    { contentHint, sendEncodings, onAddedTransceiver }: TPresentationOptions = {},
   ): Promise<MediaStream | undefined> {
     const rtcSession = this.getRtcSessionProtected();
 
@@ -171,20 +184,10 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
   }
 
   private subscribe() {
-    this.callManager.on('presentation:start', (stream: MediaStream) => {
-      this.events.trigger('presentation:start', stream);
-    });
-    this.callManager.on('presentation:started', (stream: MediaStream) => {
-      this.events.trigger('presentation:started', stream);
-    });
-    this.callManager.on('presentation:end', (stream: MediaStream) => {
-      this.events.trigger('presentation:end', stream);
-    });
-    this.callManager.on('presentation:ended', (stream: MediaStream) => {
-      this.events.trigger('presentation:ended', stream);
-    });
-    this.callManager.on('presentation:failed', (error: Error) => {
-      this.events.trigger('presentation:failed', error);
+    PRESENTATION_EVENT_NAMES.forEach((eventName) => {
+      this.callManager.on(eventName, (payload: TEventMap[typeof eventName]) => {
+        this.events.trigger(eventName, payload);
+      });
     });
 
     this.callManager.on('failed', this.handleEnded);
@@ -200,17 +203,7 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
       options = {
         callLimit: SEND_PRESENTATION_CALL_LIMIT,
       },
-    }: {
-      rtcSession: RTCSession;
-      stream: MediaStream;
-      presentationOptions: {
-        isNeedReinvite?: boolean;
-        contentHint?: TContentHint;
-        sendEncodings?: RTCRtpEncodingParameters[];
-        onAddedTransceiver?: TOnAddedTransceiver;
-      };
-      options?: { callLimit: number };
-    },
+    }: TSendPresentationWithDuplicatedCallsOptions,
   ) {
     const targetFunction = async () => {
       return this.sendPresentation(
@@ -248,13 +241,7 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
       degradationPreference,
       sendEncodings,
       onAddedTransceiver,
-    }: {
-      isNeedReinvite?: boolean;
-      contentHint?: TContentHint;
-      degradationPreference?: RTCDegradationPreference;
-      sendEncodings?: RTCRtpEncodingParameters[];
-      onAddedTransceiver?: TOnAddedTransceiver;
-    },
+    }: TSendPresentationOptions,
   ) {
     const streamPresentationTarget = prepareMediaStream(stream, { contentHint });
 
@@ -279,9 +266,7 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
       .catch((error: unknown) => {
         this.removeStreamPresentationCurrent();
 
-        const presentationError = error instanceof Error ? error : new Error(String(error));
-
-        this.events.trigger('presentation:failed', presentationError);
+        this.notifyPresentationFailed(error);
 
         throw error;
       });
@@ -335,6 +320,10 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
 
   private removeStreamPresentationCurrent() {
     delete this.streamPresentationCurrent;
+  }
+
+  private notifyPresentationFailed(error: unknown): void {
+    this.events.trigger('presentation:failed', normalizePresentationError(error));
   }
 }
 

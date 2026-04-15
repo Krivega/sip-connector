@@ -9,6 +9,10 @@ import type { Socket } from '@krivega/jssip';
 import type { TConnectionManagerEvents } from '@/ConnectionManager';
 import type { TEvents as TIncomingEvents, TRemoteCallerData } from '../events';
 
+type TIncomingCallStateMachineForTests = Omit<IncomingCallStateMachine, 'send'> & {
+  send: (event: { type: string; data?: TRemoteCallerData }) => void;
+};
+
 jest.mock('@/logger', () => {
   return createLoggerMockModule();
 });
@@ -18,7 +22,7 @@ const mockDebug = (resolveDebug as jest.Mock).mock.results[0].value as jest.Mock
 describe('IncomingCallStateMachine', () => {
   let incomingEvents: TIncomingEvents;
   let connectionEvents: TConnectionManagerEvents;
-  let machine: IncomingCallStateMachine;
+  let machine: TIncomingCallStateMachineForTests;
 
   const sampleCaller: TRemoteCallerData = {
     displayName: 'Test Caller',
@@ -34,7 +38,7 @@ describe('IncomingCallStateMachine', () => {
     machine = new IncomingCallStateMachine({
       incomingEvents,
       connectionEvents,
-    });
+    }) as TIncomingCallStateMachineForTests;
   });
 
   afterEach(() => {

@@ -4,91 +4,140 @@ import { EConnectionStatus, sessionSelectors } from '@/index';
 import { createNodeModel } from '../createNodeModel';
 
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
+import type { TContextMap } from '@/ConnectionManager/ConnectionStateMachine';
 import type { TSessionSnapshot } from '@/index';
 
-type TConnectionContext = { registerRequired: boolean };
-
-type TConnectionStatusesWithRegisterContext =
-  | EConnectionStatus.PREPARING
-  | EConnectionStatus.CONNECTING
-  | EConnectionStatus.CONNECTED
-  | EConnectionStatus.REGISTERED;
-
-export type TConnectionNodeValue =
-  | { state: EConnectionStatus.IDLE; context: Record<string, never> }
-  | { state: EConnectionStatus.ESTABLISHED; context: Record<string, never> }
-  | { state: EConnectionStatus.DISCONNECTING; context: Record<string, never> }
-  | { state: EConnectionStatus.DISCONNECTED; context: Record<string, never> }
-  | { state: TConnectionStatusesWithRegisterContext; context: TConnectionContext };
-
-const withNodeValueViews = <S extends string, C>(
-  base: ReturnType<typeof createNodeModel<S, C>>,
-) => {
-  return base.views((self) => {
-    return {
-      get nodeValue(): TConnectionNodeValue {
-        return { state: self.state, context: self.context } as TConnectionNodeValue;
-      },
-    };
-  });
+type TConnectionNodeByState<TState extends EConnectionStatus> = {
+  state: TState;
+  context: TContextMap[TState];
 };
 
-const isConnectionStatusWithRegisterContext = (
-  status: EConnectionStatus,
-): status is TConnectionStatusesWithRegisterContext => {
-  return (
-    status === EConnectionStatus.PREPARING ||
-    status === EConnectionStatus.CONNECTING ||
-    status === EConnectionStatus.CONNECTED ||
-    status === EConnectionStatus.REGISTERED
-  );
+export type TConnectionNodeValue = {
+  [TState in EConnectionStatus]: TConnectionNodeByState<TState>;
+}[EConnectionStatus];
+
+const withNodeValueViews = <TState extends EConnectionStatus>(
+  base: ReturnType<typeof createNodeModel<TState, TContextMap[TState]>>,
+) => {
+  return base
+    .views((self) => {
+      return {
+        get nodeValue(): TConnectionNodeByState<TState> {
+          return { state: self.state, context: self.context };
+        },
+      };
+    })
+    .views((self) => {
+      return {
+        hasIdle: (): boolean => {
+          return self.nodeValue.state === EConnectionStatus.IDLE;
+        },
+        hasPreparing: (): boolean => {
+          return self.nodeValue.state === EConnectionStatus.PREPARING;
+        },
+        hasConnecting: (): boolean => {
+          return self.nodeValue.state === EConnectionStatus.CONNECTING;
+        },
+        hasConnected: (): boolean => {
+          return self.nodeValue.state === EConnectionStatus.CONNECTED;
+        },
+        hasRegistered: (): boolean => {
+          return self.nodeValue.state === EConnectionStatus.REGISTERED;
+        },
+        hasEstablished: (): boolean => {
+          return self.nodeValue.state === EConnectionStatus.ESTABLISHED;
+        },
+        hasDisconnecting: (): boolean => {
+          return self.nodeValue.state === EConnectionStatus.DISCONNECTING;
+        },
+        hasDisconnected: (): boolean => {
+          return self.nodeValue.state === EConnectionStatus.DISCONNECTED;
+        },
+      };
+    })
+    .views((self) => {
+      return {
+        get connectionConfiguration(): TContextMap[TState]['connectionConfiguration'] {
+          return self.context.connectionConfiguration;
+        },
+      };
+    });
 };
 
 export function buildConnectionNodeFromSession(snapshot: TSessionSnapshot): TConnectionNodeValue {
   const state = sessionSelectors.selectConnectionStatus(snapshot);
+  const {
+    connection: { context },
+  } = snapshot;
 
-  if (isConnectionStatusWithRegisterContext(state)) {
-    return {
-      state,
-      context: {
-        registerRequired: snapshot.connection.context.registerRequired,
-      },
-    };
+  switch (state) {
+    case EConnectionStatus.IDLE: {
+      return { state, context: context as TContextMap[EConnectionStatus.IDLE] };
+    }
+    case EConnectionStatus.PREPARING: {
+      return { state, context: context as TContextMap[EConnectionStatus.PREPARING] };
+    }
+    case EConnectionStatus.CONNECTING: {
+      return { state, context: context as TContextMap[EConnectionStatus.CONNECTING] };
+    }
+    case EConnectionStatus.CONNECTED: {
+      return { state, context: context as TContextMap[EConnectionStatus.CONNECTED] };
+    }
+    case EConnectionStatus.REGISTERED: {
+      return { state, context: context as TContextMap[EConnectionStatus.REGISTERED] };
+    }
+    case EConnectionStatus.ESTABLISHED: {
+      return { state, context: context as TContextMap[EConnectionStatus.ESTABLISHED] };
+    }
+    case EConnectionStatus.DISCONNECTING: {
+      return { state, context: context as TContextMap[EConnectionStatus.DISCONNECTING] };
+    }
+    case EConnectionStatus.DISCONNECTED: {
+      return { state, context: context as TContextMap[EConnectionStatus.DISCONNECTED] };
+    }
+    default: {
+      throw new Error('Unsupported connection status');
+    }
   }
-
-  return {
-    state,
-    context: {},
-  };
 }
 
 const ConnectionIdleNodeModel = withNodeValueViews(
-  createNodeModel<EConnectionStatus.IDLE, Record<string, never>>(EConnectionStatus.IDLE),
+  createNodeModel<EConnectionStatus.IDLE, TContextMap[EConnectionStatus.IDLE]>(
+    EConnectionStatus.IDLE,
+  ),
 );
 const ConnectionPreparingNodeModel = withNodeValueViews(
-  createNodeModel<EConnectionStatus.PREPARING, TConnectionContext>(EConnectionStatus.PREPARING),
+  createNodeModel<EConnectionStatus.PREPARING, TContextMap[EConnectionStatus.PREPARING]>(
+    EConnectionStatus.PREPARING,
+  ),
 );
 const ConnectionConnectingNodeModel = withNodeValueViews(
-  createNodeModel<EConnectionStatus.CONNECTING, TConnectionContext>(EConnectionStatus.CONNECTING),
+  createNodeModel<EConnectionStatus.CONNECTING, TContextMap[EConnectionStatus.CONNECTING]>(
+    EConnectionStatus.CONNECTING,
+  ),
 );
 const ConnectionConnectedNodeModel = withNodeValueViews(
-  createNodeModel<EConnectionStatus.CONNECTED, TConnectionContext>(EConnectionStatus.CONNECTED),
+  createNodeModel<EConnectionStatus.CONNECTED, TContextMap[EConnectionStatus.CONNECTED]>(
+    EConnectionStatus.CONNECTED,
+  ),
 );
 const ConnectionRegisteredNodeModel = withNodeValueViews(
-  createNodeModel<EConnectionStatus.REGISTERED, TConnectionContext>(EConnectionStatus.REGISTERED),
+  createNodeModel<EConnectionStatus.REGISTERED, TContextMap[EConnectionStatus.REGISTERED]>(
+    EConnectionStatus.REGISTERED,
+  ),
 );
 const ConnectionEstablishedNodeModel = withNodeValueViews(
-  createNodeModel<EConnectionStatus.ESTABLISHED, Record<string, never>>(
+  createNodeModel<EConnectionStatus.ESTABLISHED, TContextMap[EConnectionStatus.ESTABLISHED]>(
     EConnectionStatus.ESTABLISHED,
   ),
 );
 const ConnectionDisconnectingNodeModel = withNodeValueViews(
-  createNodeModel<EConnectionStatus.DISCONNECTING, Record<string, never>>(
+  createNodeModel<EConnectionStatus.DISCONNECTING, TContextMap[EConnectionStatus.DISCONNECTING]>(
     EConnectionStatus.DISCONNECTING,
   ),
 );
 const ConnectionDisconnectedNodeModel = withNodeValueViews(
-  createNodeModel<EConnectionStatus.DISCONNECTED, Record<string, never>>(
+  createNodeModel<EConnectionStatus.DISCONNECTED, TContextMap[EConnectionStatus.DISCONNECTED]>(
     EConnectionStatus.DISCONNECTED,
   ),
 );

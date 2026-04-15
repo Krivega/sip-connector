@@ -168,17 +168,6 @@ describe('connect', () => {
     expect(connectionConfiguration?.password).toBe(dataForConnectionWithAuthorization.password);
   });
 
-  it('должен устанавливать displayName после подключения с авторизацией', async () => {
-    const anotherDisplayName = 'anotherDisplayName';
-
-    await sipConnector.connect(dataForConnectionWithAuthorizationWithDisplayName);
-    await sipConnector.set({
-      displayName: anotherDisplayName,
-    });
-
-    expect(sipConnector.getConnectionConfiguration()?.displayName).toBe(anotherDisplayName);
-  });
-
   it('должен отправлять базовые extraHeaders', async () => {
     expect.assertions(1);
 

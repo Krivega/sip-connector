@@ -3,25 +3,25 @@ import hasPurgatory from '@/tools/hasPurgatory';
 import { hasValidExtraHeaders, isValidBoolean, isValidString } from '@/utils/validators';
 import { EState } from './constants';
 
-import type { TBaseContext, TContextMap, TAnyRoomState } from './types';
+import type { TContext, TContextMap, TAnyRoomState } from './types';
 
-const hasConnectingContext = (context: TBaseContext): context is TContextMap[EState.CONNECTING] => {
+const hasConnectingContext = (context: TContext): context is TContextMap[EState.CONNECTING] => {
   return 'number' in context && isValidString(context.number) && isValidBoolean(context.answer);
 };
 
 const hasRoomContext = (
-  context: TBaseContext,
-): context is TBaseContext & Pick<TAnyRoomState, 'room' | 'participantName'> => {
+  context: TContext,
+): context is TContext & Pick<TAnyRoomState, 'room' | 'participantName'> => {
   return 'room' in context && isValidString(context.room) && isValidString(context.participantName);
 };
 
-const hasTokenContext = (context: TBaseContext): context is TBaseContext & { token: string } => {
+const hasTokenContext = (context: TContext): context is TContext & { token: string } => {
   return 'token' in context && isValidString(context.token);
 };
 
 const hasConferenceTokenContext = (
-  context: TBaseContext,
-): context is TBaseContext & { token: string; conferenceForToken: string } => {
+  context: TContext,
+): context is TContext & { token: string; conferenceForToken: string } => {
   return (
     hasTokenContext(context) &&
     'conferenceForToken' in context &&
@@ -29,11 +29,11 @@ const hasConferenceTokenContext = (
   );
 };
 
-const hasAnyRoomContext = (context: TBaseContext): context is TAnyRoomState => {
+const hasAnyRoomContext = (context: TContext): context is TAnyRoomState => {
   return hasConnectingContext(context) && hasRoomContext(context);
 };
 
-const hasMatchingConferenceTokenContext = (context: TBaseContext) => {
+const hasMatchingConferenceTokenContext = (context: TContext) => {
   if (!hasConferenceTokenContext(context) || !hasRoomContext(context)) {
     return false;
   }
@@ -49,7 +49,7 @@ export const hasDirectPeerToPeer = ({
   return isDirectPeerToPeer === true;
 };
 
-const hasDirectPeerToPeerContext = (context: TBaseContext): boolean => {
+const hasDirectPeerToPeerContext = (context: TContext): boolean => {
   return 'isDirectPeerToPeer' in context && hasDirectPeerToPeer(context);
 };
 
@@ -65,7 +65,7 @@ const hasPresentationCall = (extraHeaders?: string[]): boolean => {
 };
 
 const hasPresentationCallContext = (
-  context: TBaseContext,
+  context: TContext,
 ): context is TContextMap[EState.PRESENTATION_CALL] => {
   return (
     'extraHeaders' in context &&
@@ -75,7 +75,7 @@ const hasPresentationCallContext = (
   );
 };
 
-const hasInRoomContext = (raw: TBaseContext): boolean => {
+const hasInRoomContext = (raw: TContext): boolean => {
   return (
     hasAnyRoomContext(raw) &&
     !hasPurgatory(raw.room) &&
@@ -84,7 +84,7 @@ const hasInRoomContext = (raw: TBaseContext): boolean => {
   );
 };
 
-const buildAnyRoomStateContext = (raw: TBaseContext): TAnyRoomState => {
+const buildAnyRoomStateContext = (raw: TContext): TAnyRoomState => {
   const roomContext = raw as TAnyRoomState; // buildContext is called for states guarded by hasAnyRoomContext
 
   return {
@@ -106,7 +106,7 @@ export const STATE_DESCRIPTORS = {
   },
   [EState.CONNECTING]: {
     guard: hasConnectingContext,
-    buildContext: (raw: TBaseContext) => {
+    buildContext: (raw: TContext) => {
       const { number, answer, extraHeaders } = raw as TContextMap[EState.CONNECTING];
 
       return { number, answer, extraHeaders };
@@ -114,14 +114,14 @@ export const STATE_DESCRIPTORS = {
   },
   [EState.PRESENTATION_CALL]: {
     guard: hasPresentationCallContext,
-    buildContext: (raw: TBaseContext) => {
+    buildContext: (raw: TContext) => {
       const { number, answer } = raw as TContextMap[EState.PRESENTATION_CALL];
 
       return { number, answer };
     },
   },
   [EState.ROOM_PENDING_AUTH]: {
-    guard: (raw: TBaseContext) => {
+    guard: (raw: TContext) => {
       return (
         hasAnyRoomContext(raw) &&
         !hasPurgatory(raw.room) &&
@@ -134,13 +134,13 @@ export const STATE_DESCRIPTORS = {
   },
   /** Токен из TOKEN_ISSUED может уже лежать в context — это не переводит в IN_ROOM. */
   [EState.PURGATORY]: {
-    guard: (raw: TBaseContext) => {
+    guard: (raw: TContext) => {
       return hasAnyRoomContext(raw) && hasPurgatory(raw.room) && !hasInRoomContext(raw);
     },
     buildContext: buildAnyRoomStateContext,
   },
   [EState.P2P_ROOM]: {
-    guard: (raw: TBaseContext) => {
+    guard: (raw: TContext) => {
       return (
         hasAnyRoomContext(raw) &&
         hasPeerToPeer(raw.room) &&
@@ -151,24 +151,24 @@ export const STATE_DESCRIPTORS = {
     buildContext: buildAnyRoomStateContext,
   },
   [EState.DIRECT_P2P_ROOM]: {
-    guard: (raw: TBaseContext) => {
+    guard: (raw: TContext) => {
       return hasAnyRoomContext(raw) && hasDirectPeerToPeerContext(raw) && !hasInRoomContext(raw);
     },
-    buildContext: (raw: TBaseContext) => {
+    buildContext: (raw: TContext) => {
       return { ...buildAnyRoomStateContext(raw), isDirectPeerToPeer: true };
     },
   },
   /** IN_ROOM только если `conferenceForToken === room` (в т.ч. после enter-room с bearer, где conference задаётся как room). */
   [EState.IN_ROOM]: {
     guard: hasInRoomContext,
-    buildContext: (raw: TBaseContext) => {
+    buildContext: (raw: TContext) => {
       const { token, conferenceForToken } = raw as TContextMap[EState.IN_ROOM];
 
       return { ...buildAnyRoomStateContext(raw), token, conferenceForToken };
     },
   },
   [EState.DISCONNECTING]: {
-    guard: (raw: TBaseContext) => {
+    guard: (raw: TContext) => {
       return (raw as TContextMap[EState.IDLE]).pendingDisconnect === true;
     },
     buildContext: () => {

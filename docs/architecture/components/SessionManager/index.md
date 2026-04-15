@@ -129,7 +129,6 @@ SessionManager предоставляет набор готовых селект
 - `selectCallState` — снапшот машины звонка (`TSessionSnapshot['call']`: `{ value: ECallStatus; context: TContext }`)
 - `selectCallStatus` — статус звонка (`ECallStatus`)
 - `selectIncomingStatus` — статус входящего звонка (`EIncomingStatus`)
-- `selectIncomingRemoteCaller` — данные вызывающего абонента (`TRemoteCallerData | undefined`)
 - `selectPresentationStatus` — статус презентации (`EPresentationStatus`)
 - `selectIsInCall` — проверка активности звонка (`boolean`, в т.ч. `PRESENTATION_CALL` и room-состояния)
 - `selectSystemStatus` — комбинированное состояние системы (`ESystemStatus`), где `DISCONNECTING` возвращается при `connection.DISCONNECTING` **или** `autoConnector.DISCONNECTING`, а `CONNECTING` для `autoConnector.CONNECTED_MONITORING` только при `connection` ≠ `ESTABLISHED`

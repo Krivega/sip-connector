@@ -390,7 +390,6 @@ describe('SipConnector', () => {
   it('должен проксировать методы ConnectionManager', async () => {
     const cm = sipConnector.connectionManager;
 
-    jest.spyOn(cm, 'set').mockResolvedValue(true);
     jest.spyOn(cm, 'sendOptions').mockResolvedValue(undefined);
     jest.spyOn(cm, 'ping').mockResolvedValue(undefined);
     jest.spyOn(cm, 'checkTelephony').mockResolvedValue(undefined);
@@ -414,7 +413,6 @@ describe('SipConnector', () => {
 
     jest.spyOn(cm, 'getConnectionConfiguration').mockReturnValue(testConfiguration);
 
-    await sipConnector.set({ displayName: 'Test' });
     await sipConnector.sendOptions('sip:test@example.com', 'test', ['X-Test: value']);
     await sipConnector.ping('ping', ['X-Ping: value']);
     await sipConnector.register();
@@ -438,7 +436,6 @@ describe('SipConnector', () => {
     expect(cm.register).toHaveBeenCalled();
     expect(cm.unregister).toHaveBeenCalled();
     expect(cm.tryRegister).toHaveBeenCalled();
-    expect(cm.set).toHaveBeenCalledWith({ displayName: 'Test' });
     expect(cm.sendOptions).toHaveBeenCalled();
     expect(cm.ping).toHaveBeenCalled();
     expect(cm.checkTelephony).toHaveBeenCalled();

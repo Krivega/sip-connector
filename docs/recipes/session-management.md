@@ -97,7 +97,6 @@ unsubscribe(); // Когда больше не нужно слушать
 - `selectCallState` - снапшот машины звонка (value + context)
 - `selectCallStatus` - статус звонка (ECallStatus: IDLE, CONNECTING, PRESENTATION_CALL, ROOM_PENDING_AUTH, IN_ROOM и др.)
 - `selectIncomingStatus` - статус входящего звонка
-- `selectIncomingRemoteCaller` - данные входящего звонка
 - `selectPresentationStatus` - статус презентации
 - `selectIsInCall` - проверка, активен ли звонок (call в активном состоянии: PRESENTATION_CALL, ROOM_PENDING_AUTH, IN_ROOM, PURGATORY, P2P_ROOM, DIRECT_P2P_ROOM)
 - `selectSystemStatus` - комбинированное состояние системы (объединяет connection и call)
@@ -147,6 +146,6 @@ connection.subscribe((snapshot) => {
 
 1. Используйте `sipConnector.session` вместо локальной модели статусов.
 2. Подпишитесь через селекторы и синхронизируйте store (MobX/MST/Redux) только по изменившимся срезам.
-3. Принимая входящие звонки, используйте `selectIncomingStatus/selectIncomingRemoteCaller` и действуйте по `consumed/declined`.
+3. Принимая входящие звонки, используйте `selectIncomingStatus` и действуйте по `consumed/declined`.
 4. Для UI статусов звонка используйте `selectCallStatus`, для блокировок по соединению — `selectConnectionStatus`.
 5. Для определения общего состояния системы используйте `selectSystemStatus` — это упростит логику UI и избавит от необходимости комбинировать состояния Connection и Call вручную.

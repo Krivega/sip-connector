@@ -24,9 +24,7 @@ describe('STATE_DESCRIPTORS', () => {
     });
 
     it('guard отклоняет контекст без обязательных полей', () => {
-      // @ts-expect-error
       expect(STATE_DESCRIPTORS[EState.CONNECTING].guard({ number: '100' })).toBe(false);
-      // @ts-expect-error
       expect(STATE_DESCRIPTORS[EState.CONNECTING].guard({ answer: false })).toBe(false);
     });
   });

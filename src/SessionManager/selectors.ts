@@ -1,13 +1,6 @@
-import {
-  EIncomingStatus,
-  ECallStatus,
-  ESystemStatus,
-  EConnectionStatus,
-  EAutoConnectorStatus,
-} from './types';
+import { ECallStatus, ESystemStatus, EConnectionStatus, EAutoConnectorStatus } from './types';
 
-import type { TRemoteCallerData } from '@/IncomingCallManager';
-import type { EPresentationStatus, TSessionSnapshot } from './types';
+import type { EPresentationStatus, TSessionSnapshot, EIncomingStatus } from './types';
 
 const selectConnectionStatus = (snapshot: TSessionSnapshot): EConnectionStatus => {
   return snapshot.connection.value;
@@ -27,14 +20,6 @@ const selectCallStatus = (snapshot: TSessionSnapshot): ECallStatus => {
 
 const selectIncomingStatus = (snapshot: TSessionSnapshot): EIncomingStatus => {
   return snapshot.incoming.value;
-};
-
-const selectIncomingRemoteCaller = (snapshot: TSessionSnapshot): TRemoteCallerData | undefined => {
-  if (snapshot.incoming.value !== EIncomingStatus.IDLE) {
-    return snapshot.incoming.context.remoteCallerData;
-  }
-
-  return undefined;
 };
 
 const selectPresentationStatus = (snapshot: TSessionSnapshot): EPresentationStatus => {
@@ -139,7 +124,6 @@ export const sessionSelectors = {
   selectCallState,
   selectCallStatus,
   selectIncomingStatus,
-  selectIncomingRemoteCaller,
   selectPresentationStatus,
   selectIsInCall,
   selectSystemStatus,

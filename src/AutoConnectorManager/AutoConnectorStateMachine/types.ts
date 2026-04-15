@@ -14,12 +14,60 @@ export enum EState {
 export type TAfterDisconnect = 'attempt' | 'idle';
 export type TStopReason = 'halted' | 'cancelled' | 'failed';
 
-export type TAutoConnectorContext = {
-  parameters: TParametersAutoConnect | undefined;
+type TBaseContext = {
   afterDisconnect: TAfterDisconnect;
-  stopReason: TStopReason | undefined;
-  lastError: unknown;
 };
+
+export type TContextMap = {
+  [EState.IDLE]: TBaseContext & {
+    parameters: TParametersAutoConnect | undefined;
+    stopReason: undefined;
+    lastError: undefined;
+  };
+  [EState.DISCONNECTING]: TBaseContext & {
+    parameters: TParametersAutoConnect | undefined;
+    stopReason: undefined;
+    lastError: undefined;
+  };
+  [EState.ATTEMPTING_GATE]: TBaseContext & {
+    parameters: TParametersAutoConnect;
+    afterDisconnect: 'attempt';
+    stopReason: undefined;
+    lastError: undefined;
+  };
+  [EState.ATTEMPTING_CONNECT]: TBaseContext & {
+    parameters: TParametersAutoConnect;
+    afterDisconnect: 'attempt';
+    stopReason: undefined;
+    lastError: undefined;
+  };
+  [EState.WAITING_BEFORE_RETRY]: TBaseContext & {
+    parameters: TParametersAutoConnect;
+    afterDisconnect: 'attempt';
+    stopReason: undefined;
+    lastError: undefined;
+  };
+  [EState.CONNECTED_MONITORING]: TBaseContext & {
+    parameters: TParametersAutoConnect;
+    afterDisconnect: 'attempt';
+    stopReason: undefined;
+    lastError: undefined;
+  };
+  [EState.TELEPHONY_CHECKING]: TBaseContext & {
+    parameters: TParametersAutoConnect;
+    afterDisconnect: 'attempt';
+    stopReason: undefined;
+    lastError: undefined;
+  };
+  [EState.ERROR_TERMINAL]: TBaseContext & {
+    parameters: TParametersAutoConnect | undefined;
+    afterDisconnect: 'attempt';
+    stopReason: TStopReason | undefined;
+    lastError: unknown;
+  };
+};
+
+export type TContext = TContextMap[keyof TContextMap];
 
 export type TAutoConnectorEvent =
   | { type: 'AUTO.STOP' }

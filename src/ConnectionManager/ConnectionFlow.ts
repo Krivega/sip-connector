@@ -3,7 +3,6 @@ import { repeatedCallsAsync } from 'repeated-calls';
 
 import { resolveParameters } from './utils';
 import { hasHandshakeWebsocketOpeningError } from '../utils/errors';
-import { parseDisplayName } from '../utils/utils';
 
 import type {
   DisconnectEvent,
@@ -13,10 +12,10 @@ import type {
   WebSocketInterface,
 } from '@krivega/jssip';
 import type { TGetUri } from '../CallManager';
-import type { TConnectionConfiguration } from './ConfigurationManager';
 import type { ConnectionStateMachine } from './ConnectionStateMachine';
 import type { TEvents } from './events';
 import type RegistrationManager from './RegistrationManager';
+import type { TConnectionConfiguration } from './types';
 import type UAFactory from './UAFactory';
 
 const NUMBER_OF_CONNECTION_ATTEMPTS = 3;
@@ -52,10 +51,10 @@ type TConnectResolved = (
   options?: { numberOfConnectionAttempts?: number },
 ) => Promise<TConnectionConfiguration>;
 
-export type TSet = (parameters: { displayName?: string }) => Promise<boolean>;
-
-type TInitUa = (parameters: TParametersConnection) => Promise<UA>;
-type TStart = () => Promise<UA>;
+type TInitUa = (
+  parameters: TParametersConnection,
+) => Promise<{ ua: UA; configuration: TConnectionConfiguration }>;
+type TStart = (configuration: TConnectionConfiguration) => Promise<TConnectionConfiguration>;
 
 interface IDependencies {
   events: TEvents;
@@ -64,12 +63,6 @@ interface IDependencies {
   registrationManager: RegistrationManager;
   getUa: () => UA | undefined;
   setUa: (ua: UA | undefined) => void;
-  getConnectionConfiguration: () => TConnectionConfiguration | undefined;
-  setConnectionConfiguration: (config: TConnectionConfiguration | undefined) => void;
-  updateConnectionConfiguration: <K extends keyof TConnectionConfiguration>(
-    key: K,
-    value: TConnectionConfiguration[K],
-  ) => void;
   setGetUri: (getUri: TGetUri) => void;
   setSocket: (socket: WebSocketInterface) => void;
 }
@@ -103,7 +96,7 @@ export default class ConnectionFlow {
   }
 
   public connect: TConnect = async (parameters, options) => {
-    this.dependencies.stateMachine.startConnect();
+    this.dependencies.stateMachine.toStartConnect();
     this.dependencies.events.trigger('connect-started', {});
     this.cancelRequests();
 
@@ -138,34 +131,6 @@ export default class ConnectionFlow {
 
         throw connectError;
       });
-  };
-
-  public set: TSet = async ({ displayName }: { displayName?: string }): Promise<boolean> => {
-    return new Promise((resolve, reject) => {
-      const ua = this.dependencies.getUa();
-
-      if (!ua) {
-        reject(new Error('this.ua is not initialized'));
-
-        return;
-      }
-
-      let changedDisplayName = false;
-      const connectionConfiguration = this.dependencies.getConnectionConfiguration();
-
-      if (displayName !== undefined && displayName !== connectionConfiguration?.displayName) {
-        changedDisplayName = ua.set('display_name', parseDisplayName(displayName));
-        this.dependencies.updateConnectionConfiguration('displayName', displayName);
-      }
-
-      const changedSome = changedDisplayName;
-
-      if (changedSome) {
-        resolve(changedSome);
-      } else {
-        reject(new Error('nothing changed'));
-      }
-    });
   };
 
   public disconnect = async ({ cancelRequests = true }: { cancelRequests?: boolean } = {}) => {
@@ -264,19 +229,9 @@ export default class ConnectionFlow {
   }
 
   private readonly connectInner: TConnectResolved = async (parameters) => {
-    return this.initUa(parameters)
-      .then(async () => {
-        return this.start();
-      })
-      .then(() => {
-        const connectionConfiguration = this.dependencies.getConnectionConfiguration();
-
-        if (connectionConfiguration === undefined) {
-          throw new Error('connectionConfiguration has not defined');
-        }
-
-        return connectionConfiguration;
-      });
+    return this.initUa(parameters).then(async ({ configuration }) => {
+      return this.start(configuration);
+    });
   };
 
   private readonly initUa: TInitUa = async ({
@@ -294,8 +249,6 @@ export default class ConnectionFlow {
     register = false,
     extraHeaders = [],
   }) => {
-    this.dependencies.stateMachine.startInitUa(register);
-
     // Отключаем текущее соединение, если оно есть
     const currentUa = this.dependencies.getUa();
 
@@ -324,10 +277,14 @@ export default class ConnectionFlow {
       this.dependencies.events,
     );
 
+    // Сохраняем UA и связанные объекты
+    this.dependencies.setUa(ua);
+    this.dependencies.setGetUri(helpers.getUri);
+    this.dependencies.setSocket(helpers.socket);
+
     const authorizationUser = ua.configuration.uri.user;
 
-    // Сохраняем конфигурацию для дальнейшего использования
-    this.dependencies.setConnectionConfiguration({
+    const configuration = {
       sipServerIp,
       sipServerUrl,
       displayName,
@@ -335,17 +292,12 @@ export default class ConnectionFlow {
       register,
       user,
       password,
-    });
+    };
 
-    // Сохраняем UA и связанные объекты
-    this.dependencies.setUa(ua);
-    this.dependencies.setGetUri(helpers.getUri);
-    this.dependencies.setSocket(helpers.socket);
-
-    return ua;
+    return { ua, configuration };
   };
 
-  private readonly start: TStart = async () => {
+  private readonly start: TStart = async (configuration) => {
     return new Promise((resolve, reject) => {
       const ua = this.dependencies.getUa();
 
@@ -359,7 +311,7 @@ export default class ConnectionFlow {
 
       const resolveUa = () => {
         unsubscribeFromEvents?.();
-        resolve(ua);
+        resolve(configuration);
       };
 
       const rejectError = (error: DisconnectEvent | UnRegisteredEvent) => {
@@ -372,9 +324,7 @@ export default class ConnectionFlow {
         onSuccess: () => void,
         onError: (error: DisconnectEvent | UnRegisteredEvent) => void,
       ) => {
-        const connectionConfig = this.dependencies.getConnectionConfiguration();
-
-        if (connectionConfig?.register === true) {
+        if (configuration.register === true) {
           return this.dependencies.registrationManager.subscribeToStartEvents(onSuccess, onError);
         }
 
@@ -398,6 +348,8 @@ export default class ConnectionFlow {
 
       unsubscribeFromEvents = subscribeToStartEvents(resolveUa, rejectError);
 
+      this.dependencies.stateMachine.toStartUa(configuration);
+
       ua.start();
     });
   };
@@ -408,7 +360,7 @@ export default class ConnectionFlow {
 
   private proxyEvents() {
     this.dependencies.events.on('connected', () => {
-      const connectionConfiguration = this.dependencies.getConnectionConfiguration();
+      const connectionConfiguration = this.dependencies.stateMachine.getConnectionConfiguration();
 
       if (connectionConfiguration !== undefined) {
         this.dependencies.events.trigger('connected-with-configuration', connectionConfiguration);

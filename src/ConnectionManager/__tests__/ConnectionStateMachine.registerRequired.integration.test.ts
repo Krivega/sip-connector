@@ -1,13 +1,12 @@
 import jssip from '@/__fixtures__/jssip.mock';
 import UAMock, { PASSWORD_CORRECT } from '@/__fixtures__/UA.mock';
 import ConnectionManager from '../@ConnectionManager';
-import { applyRegisterRequiredFromMachineEvent, EEvents } from '../ConnectionStateMachine';
 
 import type { TJsSIP } from '@/types';
 
 jest.setTimeout(5000);
 
-describe('ConnectionStateMachine registerRequired (integration)', () => {
+describe('ConnectionStateMachine configuration (integration)', () => {
   const SIP_SERVER_URL = 'sip.example.com';
   const WS_DOMAIN = 'sip.example.com:8089';
 
@@ -15,7 +14,7 @@ describe('ConnectionStateMachine registerRequired (integration)', () => {
     UAMock.reset();
   });
 
-  it('после connect с register=true контекст машины содержит registerRequired: true', async () => {
+  it('после connect с register=true конфигурация сохраняется в контексте машины', async () => {
     const connectionManager = new ConnectionManager({
       JsSIP: jssip as unknown as TJsSIP,
     });
@@ -29,23 +28,39 @@ describe('ConnectionStateMachine registerRequired (integration)', () => {
       sipServerUrl: WS_DOMAIN,
     });
 
-    expect(connectionManager.stateMachine.context.registerRequired).toBe(true);
+    expect(connectionManager.stateMachine.context.connectionConfiguration).toEqual(
+      expect.objectContaining({
+        register: true,
+        displayName: 'Test User',
+        sipServerIp: SIP_SERVER_URL,
+        sipServerUrl: WS_DOMAIN,
+      }),
+    );
 
     connectionManager.destroy();
   });
 
-  it('applyRegisterRequiredFromMachineEvent: не-START_INIT_UA события дают пустой partial (ветка защиты)', () => {
-    expect(applyRegisterRequiredFromMachineEvent({ type: EEvents.UA_CONNECTED })).toEqual({});
-    expect(applyRegisterRequiredFromMachineEvent({ type: EEvents.RESET })).toEqual({});
-    expect(applyRegisterRequiredFromMachineEvent({ type: EEvents.START_CONNECT })).toEqual({});
-  });
+  it('после успешного connect disconnect очищает конфигурацию через reset', async () => {
+    const connectionManager = new ConnectionManager({
+      JsSIP: jssip as unknown as TJsSIP,
+    });
 
-  it('applyRegisterRequiredFromMachineEvent: START_INIT_UA задаёт registerRequired', () => {
-    expect(
-      applyRegisterRequiredFromMachineEvent({
-        type: EEvents.START_INIT_UA,
-        registerRequired: true,
-      }),
-    ).toEqual({ registerRequired: true });
+    await connectionManager.connect({
+      displayName: 'Test User',
+      user: 'testuser',
+      password: PASSWORD_CORRECT,
+      register: true,
+      sipServerIp: SIP_SERVER_URL,
+      sipServerUrl: WS_DOMAIN,
+    });
+
+    expect(connectionManager.getConnectionConfiguration()).toBeDefined();
+
+    await connectionManager.disconnect();
+
+    expect(connectionManager.getConnectionConfiguration()).toBeUndefined();
+    expect(connectionManager.stateMachine.isRegisterEnabled()).toBe(false);
+
+    connectionManager.destroy();
   });
 });

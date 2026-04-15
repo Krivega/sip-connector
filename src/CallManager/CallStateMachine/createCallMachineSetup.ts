@@ -6,7 +6,7 @@ import { isValidBoolean, isValidString } from '@/utils/validators';
 import { initialContext } from './constants';
 import { hasDirectPeerToPeer } from './state';
 
-import type { TBaseContext } from './types';
+import type { TContext } from './types';
 
 type TCallEvent =
   | {
@@ -36,7 +36,7 @@ const hasNoTokenRoom = (event: { room?: string; isDirectPeerToPeer?: boolean }):
   return hasPurgatory(event.room) || hasPeerToPeer(event.room) || hasDirectPeerToPeer(event);
 };
 
-const clearRawContext = (): TBaseContext => {
+const clearRawContext = (): TContext => {
   return {};
 };
 

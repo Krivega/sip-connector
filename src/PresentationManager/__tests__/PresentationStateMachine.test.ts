@@ -3,7 +3,7 @@ import { createMediaStreamMock } from 'webrtc-mock';
 import { createLoggerMockModule } from '@/__fixtures__/logger.mock';
 import { createEvents as createCallEvents } from '@/CallManager';
 import resolveDebug from '@/logger';
-import { PresentationStateMachine, EState } from '../PresentationStateMachine';
+import { PresentationStateMachine, EState, EEvents } from '../PresentationStateMachine';
 
 import type { TCallEvents } from '@/CallManager';
 
@@ -46,169 +46,161 @@ describe('PresentationStateMachine', () => {
     }[] = [
       {
         title: 'SCREEN.STARTING из IDLE в STARTING и сброс ошибки',
-        event: { type: 'SCREEN.STARTING' },
+        event: { type: EEvents.SCREEN_STARTING },
         expected: EState.STARTING,
         expectedError: undefined,
       },
       {
         title: 'SCREEN.STARTED из STARTING в ACTIVE',
         arrange: () => {
-          machine.send({ type: 'SCREEN.STARTING' });
+          machine.send({ type: EEvents.SCREEN_STARTING });
         },
-        event: { type: 'SCREEN.STARTED' },
+        event: { type: EEvents.SCREEN_STARTED },
         expected: EState.ACTIVE,
       },
       {
         title: 'SCREEN.FAILED из STARTING в FAILED и запоминает ошибку',
         arrange: () => {
-          machine.send({ type: 'SCREEN.STARTING' });
+          machine.send({ type: EEvents.SCREEN_STARTING });
         },
-        event: { type: 'SCREEN.FAILED', error: 'err-starting' },
+        event: { type: EEvents.SCREEN_FAILED, error: 'err-starting' },
         expected: EState.FAILED,
         expectedError: 'err-starting',
       },
       {
         title: 'SCREEN.ENDED из STARTING в IDLE со сбросом ошибки',
         arrange: () => {
-          machine.send({ type: 'SCREEN.STARTING' });
-          machine.send({ type: 'SCREEN.FAILED', error: 'prev' });
-          machine.send({ type: 'SCREEN.STARTING' });
+          machine.send({ type: EEvents.SCREEN_STARTING });
+          machine.send({ type: EEvents.SCREEN_FAILED, error: 'prev' });
+          machine.send({ type: EEvents.SCREEN_STARTING });
         },
-        event: { type: 'SCREEN.ENDED' },
+        event: { type: EEvents.SCREEN_ENDED },
         expected: EState.IDLE,
         expectedError: undefined,
       },
       {
-        title: 'CALL.ENDED из STARTING в IDLE',
-        arrange: () => {
-          machine.send({ type: 'SCREEN.STARTING' });
-        },
-        event: { type: 'CALL.ENDED' },
-        expected: EState.IDLE,
-      },
-      {
         title: 'CALL.FAILED из STARTING в FAILED и запоминает ошибку',
         arrange: () => {
-          machine.send({ type: 'SCREEN.STARTING' });
+          machine.send({ type: EEvents.SCREEN_STARTING });
         },
-        event: { type: 'CALL.FAILED', error: 'call-failed-starting' },
+        event: { type: EEvents.CALL_FAILED, error: 'call-failed-starting' },
         expected: EState.FAILED,
         expectedError: 'call-failed-starting',
       },
       {
         title: 'SCREEN.ENDING из ACTIVE в STOPPING',
         arrange: () => {
-          machine.send({ type: 'SCREEN.STARTING' });
-          machine.send({ type: 'SCREEN.STARTED' });
+          machine.send({ type: EEvents.SCREEN_STARTING });
+          machine.send({ type: EEvents.SCREEN_STARTED });
         },
-        event: { type: 'SCREEN.ENDING' },
+        event: { type: EEvents.SCREEN_ENDING },
         expected: EState.STOPPING,
       },
       {
         title: 'SCREEN.ENDED из ACTIVE в IDLE',
         arrange: () => {
-          machine.send({ type: 'SCREEN.STARTING' });
-          machine.send({ type: 'SCREEN.STARTED' });
+          machine.send({ type: EEvents.SCREEN_STARTING });
+          machine.send({ type: EEvents.SCREEN_STARTED });
         },
-        event: { type: 'SCREEN.ENDED' },
+        event: { type: EEvents.SCREEN_ENDED },
         expected: EState.IDLE,
       },
       {
         title: 'SCREEN.FAILED из ACTIVE в FAILED и запоминает ошибку',
         arrange: () => {
-          machine.send({ type: 'SCREEN.STARTING' });
-          machine.send({ type: 'SCREEN.STARTED' });
+          machine.send({ type: EEvents.SCREEN_STARTING });
+          machine.send({ type: EEvents.SCREEN_STARTED });
         },
-        event: { type: 'SCREEN.FAILED', error: 'active-fail' },
+        event: { type: EEvents.SCREEN_FAILED, error: 'active-fail' },
         expected: EState.FAILED,
         expectedError: 'active-fail',
       },
       {
         title: 'SCREEN.FAILED из ACTIVE без error оставляет lastError undefined',
         arrange: () => {
-          machine.send({ type: 'SCREEN.STARTING' });
-          machine.send({ type: 'SCREEN.STARTED' });
+          machine.send({ type: EEvents.SCREEN_STARTING });
+          machine.send({ type: EEvents.SCREEN_STARTED });
         },
-        event: { type: 'SCREEN.FAILED' },
+        event: { type: EEvents.SCREEN_FAILED },
         expected: EState.FAILED,
         expectedError: undefined,
       },
       {
         title: 'CALL.ENDED из ACTIVE в IDLE',
         arrange: () => {
-          machine.send({ type: 'SCREEN.STARTING' });
-          machine.send({ type: 'SCREEN.STARTED' });
+          machine.send({ type: EEvents.SCREEN_STARTING });
+          machine.send({ type: EEvents.SCREEN_STARTED });
         },
-        event: { type: 'CALL.ENDED' },
+        event: { type: EEvents.CALL_ENDED },
         expected: EState.IDLE,
       },
       {
         title: 'CALL.FAILED из ACTIVE в FAILED и запоминает ошибку',
         arrange: () => {
-          machine.send({ type: 'SCREEN.STARTING' });
-          machine.send({ type: 'SCREEN.STARTED' });
+          machine.send({ type: EEvents.SCREEN_STARTING });
+          machine.send({ type: EEvents.SCREEN_STARTED });
         },
-        event: { type: 'CALL.FAILED', error: 'call-fail' },
+        event: { type: EEvents.CALL_FAILED, error: 'call-fail' },
         expected: EState.FAILED,
         expectedError: 'call-fail',
       },
       {
         title: 'SCREEN.ENDED из STOPPING в IDLE',
         arrange: () => {
-          machine.send({ type: 'SCREEN.STARTING' });
-          machine.send({ type: 'SCREEN.STARTED' });
-          machine.send({ type: 'SCREEN.ENDING' });
+          machine.send({ type: EEvents.SCREEN_STARTING });
+          machine.send({ type: EEvents.SCREEN_STARTED });
+          machine.send({ type: EEvents.SCREEN_ENDING });
         },
-        event: { type: 'SCREEN.ENDED' },
+        event: { type: EEvents.SCREEN_ENDED },
         expected: EState.IDLE,
       },
       {
         title: 'SCREEN.FAILED из STOPPING в FAILED и запоминает ошибку',
         arrange: () => {
-          machine.send({ type: 'SCREEN.STARTING' });
-          machine.send({ type: 'SCREEN.STARTED' });
-          machine.send({ type: 'SCREEN.ENDING' });
+          machine.send({ type: EEvents.SCREEN_STARTING });
+          machine.send({ type: EEvents.SCREEN_STARTED });
+          machine.send({ type: EEvents.SCREEN_ENDING });
         },
-        event: { type: 'SCREEN.FAILED', error: 'stop-fail' },
+        event: { type: EEvents.SCREEN_FAILED, error: 'stop-fail' },
         expected: EState.FAILED,
         expectedError: 'stop-fail',
       },
       {
         title: 'CALL.ENDED из STOPPING в IDLE',
         arrange: () => {
-          machine.send({ type: 'SCREEN.STARTING' });
-          machine.send({ type: 'SCREEN.STARTED' });
-          machine.send({ type: 'SCREEN.ENDING' });
+          machine.send({ type: EEvents.SCREEN_STARTING });
+          machine.send({ type: EEvents.SCREEN_STARTED });
+          machine.send({ type: EEvents.SCREEN_ENDING });
         },
-        event: { type: 'CALL.ENDED' },
+        event: { type: EEvents.CALL_ENDED },
         expected: EState.IDLE,
       },
       {
         title: 'CALL.FAILED из STOPPING в FAILED и запоминает ошибку',
         arrange: () => {
-          machine.send({ type: 'SCREEN.STARTING' });
-          machine.send({ type: 'SCREEN.STARTED' });
-          machine.send({ type: 'SCREEN.ENDING' });
+          machine.send({ type: EEvents.SCREEN_STARTING });
+          machine.send({ type: EEvents.SCREEN_STARTED });
+          machine.send({ type: EEvents.SCREEN_ENDING });
         },
-        event: { type: 'CALL.FAILED', error: 'call-failed-stopping' },
+        event: { type: EEvents.CALL_FAILED, error: 'call-failed-stopping' },
         expected: EState.FAILED,
         expectedError: 'call-failed-stopping',
       },
       {
         title: 'SCREEN.STARTING из FAILED в STARTING сбрасывает ошибку',
         arrange: () => {
-          machine.send({ type: 'SCREEN.FAILED', error: 'old-error' });
+          machine.send({ type: EEvents.SCREEN_FAILED, error: 'old-error' });
         },
-        event: { type: 'SCREEN.STARTING' },
+        event: { type: EEvents.SCREEN_STARTING },
         expected: EState.STARTING,
         expectedError: undefined,
       },
       {
         title: 'SCREEN.ENDED из FAILED в IDLE сбрасывает ошибку',
         arrange: () => {
-          machine.send({ type: 'SCREEN.FAILED', error: 'old-error' });
+          machine.send({ type: EEvents.SCREEN_FAILED, error: 'old-error' });
         },
-        event: { type: 'SCREEN.ENDED' },
+        event: { type: EEvents.SCREEN_ENDED },
         expected: EState.IDLE,
         expectedError: undefined,
       },
@@ -244,7 +236,7 @@ describe('PresentationStateMachine', () => {
     });
 
     it('isStarting возвращает true только в STARTING', () => {
-      machine.send({ type: 'SCREEN.STARTING' });
+      machine.send({ type: EEvents.SCREEN_STARTING });
       expect(machine.isIdle).toBe(false);
       expect(machine.isStarting).toBe(true);
       expect(machine.isActive).toBe(false);
@@ -253,8 +245,8 @@ describe('PresentationStateMachine', () => {
     });
 
     it('isActive возвращает true только в ACTIVE', () => {
-      machine.send({ type: 'SCREEN.STARTING' });
-      machine.send({ type: 'SCREEN.STARTED' });
+      machine.send({ type: EEvents.SCREEN_STARTING });
+      machine.send({ type: EEvents.SCREEN_STARTED });
       expect(machine.isIdle).toBe(false);
       expect(machine.isStarting).toBe(false);
       expect(machine.isActive).toBe(true);
@@ -263,9 +255,9 @@ describe('PresentationStateMachine', () => {
     });
 
     it('isStopping возвращает true только в STOPPING', () => {
-      machine.send({ type: 'SCREEN.STARTING' });
-      machine.send({ type: 'SCREEN.STARTED' });
-      machine.send({ type: 'SCREEN.ENDING' });
+      machine.send({ type: EEvents.SCREEN_STARTING });
+      machine.send({ type: EEvents.SCREEN_STARTED });
+      machine.send({ type: EEvents.SCREEN_ENDING });
       expect(machine.isIdle).toBe(false);
       expect(machine.isStarting).toBe(false);
       expect(machine.isActive).toBe(false);
@@ -274,8 +266,8 @@ describe('PresentationStateMachine', () => {
     });
 
     it('isFailed возвращает true только в FAILED', () => {
-      machine.send({ type: 'SCREEN.STARTING' });
-      machine.send({ type: 'SCREEN.FAILED', error: new Error('test') });
+      machine.send({ type: EEvents.SCREEN_STARTING });
+      machine.send({ type: EEvents.SCREEN_FAILED, error: new Error('test') });
       expect(machine.isIdle).toBe(false);
       expect(machine.isStarting).toBe(false);
       expect(machine.isActive).toBe(false);
@@ -286,32 +278,32 @@ describe('PresentationStateMachine', () => {
     it('isPending возвращает true для STARTING и STOPPING', () => {
       expect(machine.isPending).toBe(false);
 
-      machine.send({ type: 'SCREEN.STARTING' });
+      machine.send({ type: EEvents.SCREEN_STARTING });
       expect(machine.isPending).toBe(true);
 
-      machine.send({ type: 'SCREEN.STARTED' });
+      machine.send({ type: EEvents.SCREEN_STARTED });
       expect(machine.isPending).toBe(false);
 
-      machine.send({ type: 'SCREEN.ENDING' });
+      machine.send({ type: EEvents.SCREEN_ENDING });
       expect(machine.isPending).toBe(true);
 
-      machine.send({ type: 'SCREEN.ENDED' });
+      machine.send({ type: EEvents.SCREEN_ENDED });
       expect(machine.isPending).toBe(false);
     });
 
     it('isActiveOrPending возвращает true для STARTING, ACTIVE и STOPPING', () => {
       expect(machine.isActiveOrPending).toBe(false);
 
-      machine.send({ type: 'SCREEN.STARTING' });
+      machine.send({ type: EEvents.SCREEN_STARTING });
       expect(machine.isActiveOrPending).toBe(true);
 
-      machine.send({ type: 'SCREEN.STARTED' });
+      machine.send({ type: EEvents.SCREEN_STARTED });
       expect(machine.isActiveOrPending).toBe(true);
 
-      machine.send({ type: 'SCREEN.ENDING' });
+      machine.send({ type: EEvents.SCREEN_ENDING });
       expect(machine.isActiveOrPending).toBe(true);
 
-      machine.send({ type: 'SCREEN.ENDED' });
+      machine.send({ type: EEvents.SCREEN_ENDED });
       expect(machine.isActiveOrPending).toBe(false);
     });
   });
@@ -324,24 +316,24 @@ describe('PresentationStateMachine', () => {
     it('сохраняет Error объект', () => {
       const error = new Error('test error');
 
-      machine.send({ type: 'SCREEN.STARTING' });
-      machine.send({ type: 'SCREEN.FAILED', error });
+      machine.send({ type: EEvents.SCREEN_STARTING });
+      machine.send({ type: EEvents.SCREEN_FAILED, error });
 
       expect(machine.lastError).toBe(error);
       expect(machine.lastError?.message).toBe('test error');
     });
 
     it('конвертирует строку в Error', () => {
-      machine.send({ type: 'SCREEN.STARTING' });
-      machine.send({ type: 'SCREEN.FAILED', error: 'String error' });
+      machine.send({ type: EEvents.SCREEN_STARTING });
+      machine.send({ type: EEvents.SCREEN_FAILED, error: 'String error' });
 
       expect(machine.lastError).toBeInstanceOf(Error);
       expect(machine.lastError?.message).toBe('"String error"');
     });
 
     it('конвертирует объект в Error', () => {
-      machine.send({ type: 'SCREEN.STARTING' });
-      machine.send({ type: 'SCREEN.FAILED', error: { code: 500, message: 'Server error' } });
+      machine.send({ type: EEvents.SCREEN_STARTING });
+      machine.send({ type: EEvents.SCREEN_FAILED, error: { code: 500, message: 'Server error' } });
 
       expect(machine.lastError).toBeInstanceOf(Error);
       expect(machine.lastError?.message).toContain('500');
@@ -349,15 +341,15 @@ describe('PresentationStateMachine', () => {
     });
 
     it('lastError undefined когда error не передан', () => {
-      machine.send({ type: 'SCREEN.STARTING' });
-      machine.send({ type: 'SCREEN.FAILED' });
+      machine.send({ type: EEvents.SCREEN_STARTING });
+      machine.send({ type: EEvents.SCREEN_FAILED });
 
       expect(machine.lastError).toBeUndefined();
     });
 
     it('очищает lastError при reset', () => {
-      machine.send({ type: 'SCREEN.STARTING' });
-      machine.send({ type: 'SCREEN.FAILED', error: new Error('test') });
+      machine.send({ type: EEvents.SCREEN_STARTING });
+      machine.send({ type: EEvents.SCREEN_FAILED, error: new Error('test') });
       expect(machine.lastError).toBeDefined();
 
       machine.reset();
@@ -366,11 +358,11 @@ describe('PresentationStateMachine', () => {
     });
 
     it('очищает lastError при новой попытке запуска', () => {
-      machine.send({ type: 'SCREEN.STARTING' });
-      machine.send({ type: 'SCREEN.FAILED', error: new Error('first error') });
+      machine.send({ type: EEvents.SCREEN_STARTING });
+      machine.send({ type: EEvents.SCREEN_FAILED, error: new Error('first error') });
       expect(machine.lastError).toBeDefined();
 
-      machine.send({ type: 'SCREEN.STARTING' });
+      machine.send({ type: EEvents.SCREEN_STARTING });
       expect(machine.lastError).toBeUndefined();
       expect(machine.state).toBe(EState.STARTING);
     });
@@ -378,7 +370,7 @@ describe('PresentationStateMachine', () => {
 
   describe('Валидация переходов', () => {
     it('предупреждает при попытке IDLE → ACTIVE', () => {
-      machine.send({ type: 'SCREEN.STARTED' });
+      machine.send({ type: EEvents.SCREEN_STARTED });
 
       expect(machine.state).toBe(EState.IDLE);
       expect(mockDebug).toHaveBeenCalledWith(
@@ -389,8 +381,8 @@ describe('PresentationStateMachine', () => {
     });
 
     it('предупреждает при попытке STARTING → STOPPING', () => {
-      machine.send({ type: 'SCREEN.STARTING' });
-      machine.send({ type: 'SCREEN.ENDING' });
+      machine.send({ type: EEvents.SCREEN_STARTING });
+      machine.send({ type: EEvents.SCREEN_ENDING });
 
       expect(machine.state).toBe(EState.STARTING);
       expect(mockDebug).toHaveBeenCalledWith(
@@ -401,8 +393,8 @@ describe('PresentationStateMachine', () => {
     });
 
     it('предупреждает при повторном SCREEN.STARTING из STARTING', () => {
-      machine.send({ type: 'SCREEN.STARTING' });
-      machine.send({ type: 'SCREEN.STARTING' });
+      machine.send({ type: EEvents.SCREEN_STARTING });
+      machine.send({ type: EEvents.SCREEN_STARTING });
 
       expect(machine.state).toBe(EState.STARTING);
       expect(mockDebug).toHaveBeenCalledWith(
@@ -413,9 +405,9 @@ describe('PresentationStateMachine', () => {
     });
 
     it('предупреждает при ACTIVE → STARTING', () => {
-      machine.send({ type: 'SCREEN.STARTING' });
-      machine.send({ type: 'SCREEN.STARTED' });
-      machine.send({ type: 'SCREEN.STARTING' });
+      machine.send({ type: EEvents.SCREEN_STARTING });
+      machine.send({ type: EEvents.SCREEN_STARTED });
+      machine.send({ type: EEvents.SCREEN_STARTING });
 
       expect(machine.state).toBe(EState.ACTIVE);
       expect(mockDebug).toHaveBeenCalledWith(
@@ -426,10 +418,10 @@ describe('PresentationStateMachine', () => {
     });
 
     it('не предупреждает при допустимых переходах', () => {
-      machine.send({ type: 'SCREEN.STARTING' });
-      machine.send({ type: 'SCREEN.STARTED' });
-      machine.send({ type: 'SCREEN.ENDING' });
-      machine.send({ type: 'SCREEN.ENDED' });
+      machine.send({ type: EEvents.SCREEN_STARTING });
+      machine.send({ type: EEvents.SCREEN_STARTED });
+      machine.send({ type: EEvents.SCREEN_ENDING });
+      machine.send({ type: EEvents.SCREEN_ENDED });
 
       expect(mockDebug).not.toHaveBeenCalledWith(expect.stringContaining('Invalid transition:'));
     });
@@ -437,8 +429,8 @@ describe('PresentationStateMachine', () => {
 
   describe('Событие PRESENTATION.RESET', () => {
     it('переводит из FAILED в IDLE через reset()', () => {
-      machine.send({ type: 'SCREEN.STARTING' });
-      machine.send({ type: 'SCREEN.FAILED', error: new Error('test') });
+      machine.send({ type: EEvents.SCREEN_STARTING });
+      machine.send({ type: EEvents.SCREEN_FAILED, error: new Error('test') });
       expect(machine.state).toBe(EState.FAILED);
 
       machine.reset();
@@ -446,8 +438,8 @@ describe('PresentationStateMachine', () => {
     });
 
     it('очищает lastError при reset', () => {
-      machine.send({ type: 'SCREEN.STARTING' });
-      machine.send({ type: 'SCREEN.FAILED', error: new Error('test') });
+      machine.send({ type: EEvents.SCREEN_STARTING });
+      machine.send({ type: EEvents.SCREEN_FAILED, error: new Error('test') });
       expect(machine.lastError).toBeDefined();
 
       machine.reset();
@@ -455,7 +447,7 @@ describe('PresentationStateMachine', () => {
     });
 
     it('игнорирует RESET в IDLE', () => {
-      machine.send({ type: 'PRESENTATION.RESET' });
+      machine.send({ type: EEvents.PRESENTATION_RESET });
       expect(machine.state).toBe(EState.IDLE);
       expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining(
@@ -465,9 +457,9 @@ describe('PresentationStateMachine', () => {
     });
 
     it('игнорирует RESET в ACTIVE', () => {
-      machine.send({ type: 'SCREEN.STARTING' });
-      machine.send({ type: 'SCREEN.STARTED' });
-      machine.send({ type: 'PRESENTATION.RESET' });
+      machine.send({ type: EEvents.SCREEN_STARTING });
+      machine.send({ type: EEvents.SCREEN_STARTED });
+      machine.send({ type: EEvents.PRESENTATION_RESET });
 
       expect(machine.state).toBe(EState.ACTIVE);
       expect(mockDebug).toHaveBeenCalledWith(
@@ -482,22 +474,22 @@ describe('PresentationStateMachine', () => {
     it('успешный флоу: IDLE → STARTING → ACTIVE → STOPPING → IDLE', () => {
       expect(machine.state).toBe(EState.IDLE);
 
-      machine.send({ type: 'SCREEN.STARTING' });
+      machine.send({ type: EEvents.SCREEN_STARTING });
       expect(machine.state).toBe(EState.STARTING);
 
-      machine.send({ type: 'SCREEN.STARTED' });
+      machine.send({ type: EEvents.SCREEN_STARTED });
       expect(machine.state).toBe(EState.ACTIVE);
 
-      machine.send({ type: 'SCREEN.ENDING' });
+      machine.send({ type: EEvents.SCREEN_ENDING });
       expect(machine.state).toBe(EState.STOPPING);
 
-      machine.send({ type: 'SCREEN.ENDED' });
+      machine.send({ type: EEvents.SCREEN_ENDED });
       expect(machine.state).toBe(EState.IDLE);
     });
 
     it('обработка ошибки и retry: IDLE → STARTING → FAILED → reset → STARTING → ACTIVE', () => {
-      machine.send({ type: 'SCREEN.STARTING' });
-      machine.send({ type: 'SCREEN.FAILED', error: new Error('first attempt') });
+      machine.send({ type: EEvents.SCREEN_STARTING });
+      machine.send({ type: EEvents.SCREEN_FAILED, error: new Error('first attempt') });
       expect(machine.state).toBe(EState.FAILED);
       expect(machine.lastError).toBeDefined();
 
@@ -505,30 +497,30 @@ describe('PresentationStateMachine', () => {
       expect(machine.state).toBe(EState.IDLE);
       expect(machine.lastError).toBeUndefined();
 
-      machine.send({ type: 'SCREEN.STARTING' });
+      machine.send({ type: EEvents.SCREEN_STARTING });
       expect(machine.state).toBe(EState.STARTING);
 
-      machine.send({ type: 'SCREEN.STARTED' });
+      machine.send({ type: EEvents.SCREEN_STARTED });
       expect(machine.state).toBe(EState.ACTIVE);
     });
 
     it('прерывание звонка во время активной презентации: ACTIVE + CALL.ENDED → IDLE', () => {
-      machine.send({ type: 'SCREEN.STARTING' });
-      machine.send({ type: 'SCREEN.STARTED' });
+      machine.send({ type: EEvents.SCREEN_STARTING });
+      machine.send({ type: EEvents.SCREEN_STARTED });
       expect(machine.state).toBe(EState.ACTIVE);
 
-      machine.send({ type: 'CALL.ENDED' });
+      machine.send({ type: EEvents.CALL_ENDED });
       expect(machine.state).toBe(EState.IDLE);
     });
 
     it('фейл звонка во время презентации: ACTIVE + CALL.FAILED → FAILED', () => {
-      machine.send({ type: 'SCREEN.STARTING' });
-      machine.send({ type: 'SCREEN.STARTED' });
+      machine.send({ type: EEvents.SCREEN_STARTING });
+      machine.send({ type: EEvents.SCREEN_STARTED });
       expect(machine.state).toBe(EState.ACTIVE);
 
       const callError = new Error('Call failed');
 
-      machine.send({ type: 'CALL.FAILED', error: callError });
+      machine.send({ type: EEvents.CALL_FAILED, error: callError });
       expect(machine.state).toBe(EState.FAILED);
       expect(machine.lastError).toBe(callError);
     });

@@ -16,6 +16,7 @@ import {
 import { createEvents as createIncomingEvents } from '@/IncomingCallManager';
 import {
   IncomingCallStateMachine,
+  EEvents as EIncomingEvents,
   EState as EIncomingStatus,
 } from '@/IncomingCallManager/IncomingCallStateMachine';
 import {
@@ -26,6 +27,7 @@ import {
   ESystemStatus,
 } from '@/index';
 import {
+  EEvents as EPresentationEvents,
   PresentationStateMachine,
   EState as EPresentationStatus,
 } from '@/PresentationManager/PresentationStateMachine';
@@ -116,8 +118,14 @@ const startSession = () => {
 const transitionToEstablished = (connectionStateMachine: ConnectionStateMachine) => {
   connectionStateMachine.send({ type: EConnectionEvents.START_CONNECT });
   connectionStateMachine.send({
-    type: EConnectionEvents.START_INIT_UA,
-    registerRequired: false,
+    type: EConnectionEvents.START_UA,
+    configuration: {
+      sipServerIp: '127.0.0.1',
+      sipServerUrl: 'wss://sip.example.com',
+      displayName: 'Test User',
+      authorizationUser: '100',
+      register: false,
+    },
   });
   connectionStateMachine.send({ type: EConnectionEvents.UA_CONNECTED });
   connectionStateMachine.send({ type: EConnectionEvents.UA_REGISTERED });
@@ -182,7 +190,7 @@ describe('StatusesStore views', () => {
     const { session, incomingStateMachine, stopAll } = startSession();
 
     incomingStateMachine.send({
-      type: 'INCOMING.RINGING',
+      type: EIncomingEvents.RINGING,
       data: {
         incomingNumber: '77',
         displayName: 'View test',
@@ -238,7 +246,7 @@ describe('StatusesStore', () => {
     const { session, incomingStateMachine, stopAll } = startSession();
 
     incomingStateMachine.send({
-      type: 'INCOMING.RINGING',
+      type: EIncomingEvents.RINGING,
       data: {
         incomingNumber: '100',
         displayName: 'Test caller',
@@ -263,20 +271,34 @@ describe('StatusesStore', () => {
     stopAll();
   });
 
-  it('maps connection CONNECTING with registerRequired in context after START_INIT_UA', () => {
+  it('maps connection CONNECTING with configuration in context after START_UA', () => {
     const { session, connectionStateMachine, stopAll } = startSession();
 
     connectionStateMachine.send({ type: EConnectionEvents.START_CONNECT });
     connectionStateMachine.send({
-      type: EConnectionEvents.START_INIT_UA,
-      registerRequired: true,
+      type: EConnectionEvents.START_UA,
+      configuration: {
+        sipServerIp: '127.0.0.1',
+        sipServerUrl: 'wss://sip.example.com',
+        displayName: 'Test User',
+        authorizationUser: '100',
+        register: true,
+      },
     });
 
     const mapped = mappedFromSession(session);
 
     expect(mapped.connection).toMatchObject({
       state: EConnectionStatus.CONNECTING,
-      context: { registerRequired: true },
+      context: {
+        connectionConfiguration: {
+          sipServerIp: '127.0.0.1',
+          sipServerUrl: 'wss://sip.example.com',
+          displayName: 'Test User',
+          authorizationUser: '100',
+          register: true,
+        },
+      },
     });
 
     stopAll();
@@ -348,7 +370,7 @@ describe('StatusesStore', () => {
     const store = StatusesStoreModel.create(INITIAL_STATUSES_STORE_SNAPSHOT);
 
     incomingStateMachine.send({
-      type: 'INCOMING.RINGING',
+      type: EIncomingEvents.RINGING,
       data: {
         incomingNumber: '42',
         displayName: 'Caller',
@@ -369,8 +391,8 @@ describe('StatusesStore', () => {
   it('maps presentation ACTIVE after SCREEN.STARTED', () => {
     const { session, presentationStateMachine, stopAll } = startSession();
 
-    presentationStateMachine.send({ type: 'SCREEN.STARTING' });
-    presentationStateMachine.send({ type: 'SCREEN.STARTED' });
+    presentationStateMachine.send({ type: EPresentationEvents.SCREEN_STARTING });
+    presentationStateMachine.send({ type: EPresentationEvents.SCREEN_STARTED });
 
     const mapped = mappedFromSession(session);
 

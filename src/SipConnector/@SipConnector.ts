@@ -237,10 +237,6 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     return this.connectionManager.tryRegister();
   };
 
-  public set: ConnectionManager['set'] = async (...args) => {
-    return this.connectionManager.set(...args);
-  };
-
   public sendOptions = async (
     target: Parameters<ConnectionManager['sendOptions']>[0],
     body?: Parameters<ConnectionManager['sendOptions']>[1],

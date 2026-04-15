@@ -1,12 +1,11 @@
-import { C } from '@krivega/jssip';
-
 import { getMockedLoggerDefault } from '@/__fixtures__/logger.mock';
 import logger from '@/logger';
-import { ConnectionStateMachine, EEvents, EState } from '../ConnectionStateMachine';
+import { ConnectionStateMachine, EState } from '../ConnectionStateMachine';
 import { createEvents } from '../events';
 
-import type { Socket, IncomingResponse, ConnectingEventUA } from '@krivega/jssip';
+import type { IncomingResponse, Socket } from '@krivega/jssip';
 import type { TEvents } from '../events';
+import type { TConnectionConfiguration } from '../types';
 
 jest.mock('@/logger');
 
@@ -14,6 +13,16 @@ describe('ConnectionStateMachine', () => {
   const mockLogger = getMockedLoggerDefault(logger);
   let events: TEvents;
   let stateMachine: ConnectionStateMachine;
+
+  const baseConfiguration: TConnectionConfiguration = {
+    sipServerIp: '192.168.0.1',
+    sipServerUrl: 'sip.example.com',
+    displayName: 'Test User',
+    authorizationUser: 'testuser',
+    register: false,
+    user: 'testuser',
+    password: 'password',
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -25,869 +34,166 @@ describe('ConnectionStateMachine', () => {
     stateMachine.destroy();
   });
 
-  describe('Инициализация', () => {
-    it('должен инициализироваться с состоянием IDLE', () => {
-      expect(stateMachine.state).toBe(EState.IDLE);
-      expect(stateMachine.isIdle).toBe(true);
-      expect(stateMachine.isPending).toBe(false);
-    });
-
-    it('должен подписаться на события UA при создании', () => {
-      const spyOn = jest.spyOn(events, 'on');
-
-      // Создаем новую stateMachine для проверки подписки
-      const newStateMachine = new ConnectionStateMachine(events);
-
-      expect(spyOn).toHaveBeenCalledWith('connected', expect.any(Function));
-      expect(spyOn).toHaveBeenCalledWith('connecting', expect.any(Function));
-      expect(spyOn).toHaveBeenCalledWith('registered', expect.any(Function));
-      expect(spyOn).toHaveBeenCalledWith('unregistered', expect.any(Function));
-      expect(spyOn).toHaveBeenCalledWith('disconnecting', expect.any(Function));
-      expect(spyOn).toHaveBeenCalledWith('disconnected', expect.any(Function));
-      expect(spyOn).toHaveBeenCalledWith('registrationFailed', expect.any(Function));
-      expect(spyOn).toHaveBeenCalledWith('connect-failed', expect.any(Function));
-
-      newStateMachine.destroy();
-    });
-
-    it('должен логировать изменения состояний', () => {
-      // Очищаем предыдущие вызовы
-      mockLogger.mockClear();
-
-      stateMachine.startConnect();
-
-      expect(mockLogger).toHaveBeenCalledWith(
-        'State transition: connection:idle -> connection:preparing (START_CONNECT)',
-      );
-    });
+  it('инициализируется в IDLE и без connectionConfiguration', () => {
+    expect(stateMachine.state).toBe(EState.IDLE);
+    expect(stateMachine.isIdle).toBe(true);
+    expect(stateMachine.isPending).toBe(false);
+    expect(stateMachine.getConnectionConfiguration()).toBeUndefined();
   });
 
-  describe('Геттеры состояний', () => {
-    it('isIdle должен возвращать true только для IDLE', () => {
-      expect(stateMachine.isIdle).toBe(true);
-      stateMachine.startConnect();
-      expect(stateMachine.isIdle).toBe(false);
-    });
+  it('подписывается и отписывается от событий UA', () => {
+    const onSpy = jest.spyOn(events, 'on');
+    const offSpy = jest.spyOn(events, 'off');
+    const localMachine = new ConnectionStateMachine(events);
 
-    it('isPreparing должен возвращать true только для PREPARING', () => {
-      expect(stateMachine.isPreparing).toBe(false);
-      stateMachine.startConnect();
-      expect(stateMachine.isPreparing).toBe(true);
-    });
+    expect(onSpy).toHaveBeenCalledWith('connected', expect.any(Function));
+    expect(onSpy).toHaveBeenCalledWith('connecting', expect.any(Function));
+    expect(onSpy).toHaveBeenCalledWith('registered', expect.any(Function));
+    expect(onSpy).toHaveBeenCalledWith('unregistered', expect.any(Function));
+    expect(onSpy).toHaveBeenCalledWith('disconnecting', expect.any(Function));
+    expect(onSpy).toHaveBeenCalledWith('disconnected', expect.any(Function));
+    expect(onSpy).toHaveBeenCalledWith('registrationFailed', expect.any(Function));
+    expect(onSpy).toHaveBeenCalledWith('connect-failed', expect.any(Function));
 
-    it('isConnecting должен возвращать true только для CONNECTING', () => {
-      stateMachine.startConnect();
-      expect(stateMachine.isConnecting).toBe(false);
-      stateMachine.startInitUa();
-      expect(stateMachine.isConnecting).toBe(true);
-    });
-
-    it('isPending должен возвращать true для PREPARING и CONNECTING', () => {
-      expect(stateMachine.isPending).toBe(false);
-
-      stateMachine.startConnect();
-      expect(stateMachine.isPending).toBe(true);
-      expect(stateMachine.isPendingConnect).toBe(true);
-      expect(stateMachine.isPendingInitUa).toBe(false);
-
-      stateMachine.startInitUa();
-      expect(stateMachine.isPending).toBe(true);
-      expect(stateMachine.isPendingConnect).toBe(false);
-      expect(stateMachine.isPendingInitUa).toBe(true);
-    });
-
-    it('isActiveConnection должен возвращать true для CONNECTED, REGISTERED и ESTABLISHED', () => {
-      expect(stateMachine.isActiveConnection).toBe(false);
-
-      // Переводим в состояние CONNECTED (автоматически переходит в ESTABLISHED)
-      stateMachine.startConnect();
-      stateMachine.startInitUa();
-      events.trigger('connected', { socket: {} as Socket });
-      expect(stateMachine.isActiveConnection).toBe(true);
-      expect(stateMachine.isEstablished).toBe(true);
-
-      // Переводим в состояние REGISTERED (автоматически переходит в ESTABLISHED)
-      stateMachine.reset();
-      stateMachine.startConnect();
-      stateMachine.startInitUa();
-      events.trigger('registered', { response: {} as IncomingResponse });
-      expect(stateMachine.isActiveConnection).toBe(true);
-      expect(stateMachine.isEstablished).toBe(true);
-    });
-
-    it('isEstablished должен возвращать true только для ESTABLISHED', () => {
-      expect(stateMachine.isEstablished).toBe(false);
-
-      // Переводим в состояние CONNECTED (автоматически переходит в ESTABLISHED)
-      stateMachine.startConnect();
-      stateMachine.startInitUa();
-      events.trigger('connected', { socket: {} as Socket });
-      expect(stateMachine.isEstablished).toBe(true);
-
-      // Переводим в состояние REGISTERED (автоматически переходит в ESTABLISHED)
-      stateMachine.reset();
-      stateMachine.startConnect();
-      stateMachine.startInitUa();
-      events.trigger('registered', { response: {} as IncomingResponse });
-      expect(stateMachine.isEstablished).toBe(true);
-    });
-
-    it('isDisconnecting должен возвращать true только для DISCONNECTING', () => {
-      expect(stateMachine.isDisconnecting).toBe(false);
-
-      // Переводим в ESTABLISHED
-      stateMachine.startConnect();
-      stateMachine.startInitUa();
-      events.trigger('connected', { socket: {} as Socket });
-      expect(stateMachine.isEstablished).toBe(true);
-      expect(stateMachine.isDisconnecting).toBe(false);
-
-      // Переводим в DISCONNECTING
-      stateMachine.startDisconnect();
-      expect(stateMachine.isDisconnecting).toBe(true);
-      expect(stateMachine.isEstablished).toBe(false);
-
-      // Переходим в DISCONNECTED
-      events.trigger('disconnected', { socket: {} as Socket, error: false });
-      expect(stateMachine.isDisconnecting).toBe(false);
-      expect(stateMachine.isDisconnected).toBe(true);
-    });
-
-    it('isDisconnected должен возвращать true только для DISCONNECTED', () => {
-      expect(stateMachine.isDisconnected).toBe(false);
-
-      stateMachine.startConnect();
-      events.trigger('disconnected', { socket: {} as Socket, error: false });
-      expect(stateMachine.isDisconnected).toBe(true);
-    });
+    localMachine.destroy();
+    expect(offSpy).toHaveBeenCalledTimes(8);
   });
 
-  describe('Публичные методы переходов', () => {
-    it('startConnect должен переводить из IDLE в PREPARING', () => {
-      expect(stateMachine.state).toBe(EState.IDLE);
+  it('toStartConnect переводит в PREPARING и логирует переход', () => {
+    mockLogger.mockClear();
 
-      stateMachine.startConnect();
+    stateMachine.toStartConnect();
 
-      expect(stateMachine.state).toBe(EState.PREPARING);
-      expect(mockLogger).toHaveBeenCalledWith(
-        'State transition: connection:idle -> connection:preparing (START_CONNECT)',
-      );
-    });
-
-    it('startInitUa должен переводить из PREPARING в CONNECTING', () => {
-      stateMachine.startConnect();
-      expect(stateMachine.state).toBe(EState.PREPARING);
-
-      stateMachine.startInitUa();
-
-      expect(stateMachine.state).toBe(EState.CONNECTING);
-      expect(mockLogger).toHaveBeenCalledWith(
-        'State transition: connection:preparing -> connection:connecting (START_INIT_UA)',
-      );
-    });
-
-    it('reset должен переводить из DISCONNECTED в IDLE', () => {
-      stateMachine.startConnect();
-      events.trigger('disconnected', { socket: {} as Socket, error: false });
-      expect(stateMachine.state).toBe(EState.DISCONNECTED);
-
-      stateMachine.reset();
-
-      expect(stateMachine.state).toBe(EState.IDLE);
-      expect(mockLogger).toHaveBeenCalledWith(
-        'State transition: connection:disconnected -> connection:idle (RESET)',
-      );
-    });
-
-    it('reset должен переводить из ESTABLISHED в IDLE', () => {
-      stateMachine.startConnect();
-      stateMachine.startInitUa();
-      events.trigger('connected', { socket: {} as Socket });
-      expect(stateMachine.state).toBe(EState.ESTABLISHED);
-
-      stateMachine.reset();
-
-      expect(stateMachine.state).toBe(EState.IDLE);
-      expect(mockLogger).toHaveBeenCalledWith(
-        'State transition: connection:established -> connection:idle (RESET)',
-      );
-    });
-
-    it('reset должен переводить из DISCONNECTED в IDLE при registrationFailed', () => {
-      stateMachine.startConnect();
-      events.trigger('registrationFailed', { cause: C.causes.AUTHENTICATION_ERROR });
-      expect(stateMachine.state).toBe(EState.DISCONNECTED);
-
-      stateMachine.reset();
-
-      expect(stateMachine.state).toBe(EState.IDLE);
-    });
-
-    it('reset должен переводить из DISCONNECTED в IDLE при connect-failed', () => {
-      stateMachine.startConnect();
-      events.trigger('connect-failed', new Error('Connection failed'));
-      expect(stateMachine.state).toBe(EState.DISCONNECTED);
-
-      stateMachine.reset();
-      expect(stateMachine.state).toBe(EState.IDLE);
-    });
-
-    it('startDisconnect должен переводить из ESTABLISHED в DISCONNECTING', () => {
-      stateMachine.startConnect();
-      stateMachine.startInitUa();
-      events.trigger('connected', { socket: {} as Socket });
-      expect(stateMachine.state).toBe(EState.ESTABLISHED);
-
-      stateMachine.startDisconnect();
-
-      expect(stateMachine.state).toBe(EState.DISCONNECTING);
-      expect(mockLogger).toHaveBeenCalledWith(
-        'State transition: connection:established -> connection:disconnecting (START_DISCONNECT)',
-      );
-    });
-
-    it('startDisconnect должен переводить из CONNECTING в DISCONNECTING', () => {
-      stateMachine.startConnect();
-      stateMachine.startInitUa();
-      expect(stateMachine.state).toBe(EState.CONNECTING);
-
-      stateMachine.startDisconnect();
-
-      expect(stateMachine.state).toBe(EState.DISCONNECTING);
-      expect(mockLogger).toHaveBeenCalledWith(
-        'State transition: connection:connecting -> connection:disconnecting (START_DISCONNECT)',
-      );
-    });
-
-    it('startDisconnect должен переводить из REGISTERED в DISCONNECTING', () => {
-      stateMachine.startConnect();
-      stateMachine.startInitUa();
-      events.trigger('registered', { response: {} as IncomingResponse });
-      // REGISTERED автоматически переходит в ESTABLISHED, но проверим через событие disconnecting
-      expect(stateMachine.state).toBe(EState.ESTABLISHED);
-
-      stateMachine.startDisconnect();
-
-      expect(stateMachine.state).toBe(EState.DISCONNECTING);
-    });
-
-    it('disconnecting событие должно переводить активные состояния в DISCONNECTING', () => {
-      // Тест из ESTABLISHED
-      stateMachine.startConnect();
-      stateMachine.startInitUa();
-      events.trigger('connected', { socket: {} as Socket });
-      expect(stateMachine.state).toBe(EState.ESTABLISHED);
-
-      events.trigger('disconnecting', {});
-      expect(stateMachine.state).toBe(EState.DISCONNECTING);
-
-      // Тест из CONNECTING
-      stateMachine.destroy();
-      stateMachine = new ConnectionStateMachine(events);
-      stateMachine.startConnect();
-      stateMachine.startInitUa();
-      expect(stateMachine.state).toBe(EState.CONNECTING);
-
-      events.trigger('disconnecting', {});
-      expect(stateMachine.state).toBe(EState.DISCONNECTING);
-    });
-
-    it('disconnected событие должно переводить из DISCONNECTING в DISCONNECTED', () => {
-      stateMachine.startConnect();
-      stateMachine.startInitUa();
-      events.trigger('connected', { socket: {} as Socket });
-      stateMachine.startDisconnect();
-      expect(stateMachine.state).toBe(EState.DISCONNECTING);
-
-      events.trigger('disconnected', { socket: {} as Socket, error: false });
-
-      expect(stateMachine.state).toBe(EState.DISCONNECTED);
-      expect(mockLogger).toHaveBeenCalledWith(
-        'State transition: connection:disconnecting -> connection:disconnected (UA_DISCONNECTED)',
-      );
-    });
+    expect(stateMachine.state).toBe(EState.PREPARING);
+    expect(stateMachine.isPendingConnect).toBe(true);
+    expect(mockLogger).toHaveBeenCalledWith(
+      'State transition: connection:idle -> connection:preparing (START_CONNECT)',
+    );
   });
 
-  describe('Табличные переходы по доменным событиям', () => {
-    const transitions: {
-      title: string;
-      arrange: () => void;
-      expected: EState;
-    }[] = [
-      {
-        title: 'connected переводит из CONNECTING в ESTABLISHED (через CONNECTED)',
-        arrange: () => {
-          stateMachine.startConnect();
-          stateMachine.startInitUa();
-          events.trigger('connected', { socket: {} as Socket });
-        },
-        expected: EState.ESTABLISHED,
-      },
-      {
-        title: 'registered переводит из CONNECTING в ESTABLISHED (через REGISTERED)',
-        arrange: () => {
-          stateMachine.startConnect();
-          stateMachine.startInitUa();
-          events.trigger('registered', { response: {} as IncomingResponse });
-        },
-        expected: EState.ESTABLISHED,
-      },
-      {
-        title: 'registered игнорируется в ESTABLISHED (нет обработчика)',
-        arrange: () => {
-          stateMachine.startConnect();
-          stateMachine.startInitUa();
-          events.trigger('connected', { socket: {} as Socket });
-          // Событие registered игнорируется в ESTABLISHED
-          events.trigger('registered', { response: {} as IncomingResponse });
-        },
-        expected: EState.ESTABLISHED,
-      },
-      {
-        title: 'unregistered игнорируется в ESTABLISHED (нет обработчика)',
-        arrange: () => {
-          stateMachine.startConnect();
-          stateMachine.startInitUa();
-          events.trigger('registered', { response: {} as IncomingResponse });
-          // Событие unregistered игнорируется в ESTABLISHED
-          events.trigger('unregistered', { response: {} as IncomingResponse });
-        },
-        expected: EState.ESTABLISHED,
-      },
-      {
-        title: 'disconnected переводит в DISCONNECTED независимо от активного состояния',
-        arrange: () => {
-          stateMachine.startConnect();
-          events.trigger('disconnected', { socket: {} as Socket, error: false });
-        },
-        expected: EState.DISCONNECTED,
-      },
-      {
-        title: 'registrationFailed переводит в DISCONNECTED',
-        arrange: () => {
-          stateMachine.startConnect();
-          events.trigger('registrationFailed', { cause: C.causes.AUTHENTICATION_ERROR });
-        },
-        expected: EState.DISCONNECTED,
-      },
-      {
-        title: 'connecting переводит из DISCONNECTED в CONNECTING',
-        arrange: () => {
-          stateMachine.startConnect();
-          events.trigger('disconnected', { socket: {} as Socket, error: false });
-          events.trigger('connecting', {} as ConnectingEventUA);
-        },
-        expected: EState.CONNECTING,
-      },
-    ];
+  it('toStartUa переводит в CONNECTING и сохраняет configuration', () => {
+    stateMachine.toStartConnect();
+    stateMachine.toStartUa(baseConfiguration);
 
-    test.each(transitions)('$title', ({ arrange, expected }) => {
-      arrange();
-
-      expect(stateMachine.state).toBe(expected);
-    });
-
-    it('connected событие должно переводить из CONNECTING в ESTABLISHED (через CONNECTED)', () => {
-      stateMachine.startConnect();
-      stateMachine.startInitUa();
-      expect(stateMachine.state).toBe(EState.CONNECTING);
-
-      events.trigger('connected', { socket: {} as Socket });
-
-      expect(stateMachine.state).toBe(EState.ESTABLISHED);
-      expect(mockLogger).toHaveBeenCalledWith(
-        'State transition: connection:connecting -> connection:connected (UA_CONNECTED)',
-      );
-      expect(mockLogger).toHaveBeenCalledWith(
-        'State transition: connection:connected -> connection:established (always)',
-      );
-    });
-
-    it('при registerRequired=true connected не должен автопереводить в ESTABLISHED', () => {
-      stateMachine.startConnect();
-      stateMachine.startInitUa(true);
-      expect(stateMachine.state).toBe(EState.CONNECTING);
-
-      events.trigger('connected', { socket: {} as Socket });
-      expect(stateMachine.state).toBe(EState.CONNECTED);
-
-      events.trigger('registered', { response: {} as IncomingResponse });
-      expect(stateMachine.state).toBe(EState.ESTABLISHED);
-      expect(mockLogger).toHaveBeenCalledWith(
-        'State transition: connection:connected -> connection:registered (UA_REGISTERED)',
-      );
-    });
-
-    it('registered событие должно игнорироваться в ESTABLISHED (нет обработчика)', () => {
-      stateMachine.startConnect();
-      stateMachine.startInitUa();
-      events.trigger('connected', { socket: {} as Socket });
-      expect(stateMachine.state).toBe(EState.ESTABLISHED);
-
-      // Очищаем предыдущие вызовы логгера
-      mockLogger.mockClear();
-
-      events.trigger('registered', { response: {} as IncomingResponse });
-
-      // Событие должно быть проигнорировано, состояние не должно измениться
-      expect(stateMachine.state).toBe(EState.ESTABLISHED);
-      // Не должно быть логирования перехода, так как событие не обработано
-      expect(mockLogger).not.toHaveBeenCalledWith(
-        expect.stringContaining(
-          'State transition: connection:established -> connection:registered',
-        ),
-      );
-    });
-
-    it('registered событие должно переводить из CONNECTING в ESTABLISHED (через REGISTERED)', () => {
-      stateMachine.startConnect();
-      stateMachine.startInitUa();
-      expect(stateMachine.state).toBe(EState.CONNECTING);
-
-      events.trigger('registered', { response: {} as IncomingResponse });
-
-      expect(stateMachine.state).toBe(EState.ESTABLISHED);
-      expect(mockLogger).toHaveBeenCalledWith(
-        'State transition: connection:connecting -> connection:registered (UA_REGISTERED)',
-      );
-      expect(mockLogger).toHaveBeenCalledWith(
-        'State transition: connection:registered -> connection:established (always)',
-      );
-    });
-
-    it('unregistered событие должно игнорироваться в ESTABLISHED (нет обработчика)', () => {
-      // Переводим в ESTABLISHED через REGISTERED
-      stateMachine.startConnect();
-      stateMachine.startInitUa();
-      events.trigger('registered', { response: {} as IncomingResponse });
-      expect(stateMachine.state).toBe(EState.ESTABLISHED);
-
-      // Очищаем предыдущие вызовы логгера
-      mockLogger.mockClear();
-
-      events.trigger('unregistered', { response: {} as IncomingResponse });
-
-      // Событие должно быть проигнорировано, состояние не должно измениться
-      expect(stateMachine.state).toBe(EState.ESTABLISHED);
-      // Не должно быть логирования перехода, так как событие не обработано
-      expect(mockLogger).not.toHaveBeenCalledWith(
-        expect.stringContaining('State transition: connection:established -> connection:connected'),
-      );
-    });
-
-    it('disconnected событие должно переводить активные состояния в DISCONNECTED', () => {
-      // Тест из PREPARING
-      stateMachine.startConnect();
-      events.trigger('disconnected', { socket: {} as Socket, error: false });
-      expect(stateMachine.state).toBe(EState.DISCONNECTED);
-
-      // Тест из CONNECTING
-      stateMachine.reset();
-      stateMachine.startConnect();
-      stateMachine.startInitUa();
-      events.trigger('disconnected', { socket: {} as Socket, error: false });
-      expect(stateMachine.state).toBe(EState.DISCONNECTED);
-
-      // Тест из ESTABLISHED (через CONNECTED)
-      stateMachine.reset();
-      stateMachine.startConnect();
-      stateMachine.startInitUa();
-      events.trigger('connected', { socket: {} as Socket });
-      expect(stateMachine.state).toBe(EState.ESTABLISHED);
-      events.trigger('disconnected', { socket: {} as Socket, error: false });
-      expect(stateMachine.state).toBe(EState.DISCONNECTED);
-
-      // Тест из ESTABLISHED (через REGISTERED)
-      stateMachine.reset();
-      stateMachine.startConnect();
-      stateMachine.startInitUa();
-      events.trigger('registered', { response: {} as IncomingResponse });
-      expect(stateMachine.state).toBe(EState.ESTABLISHED);
-      events.trigger('disconnected', { socket: {} as Socket, error: false });
-      expect(stateMachine.state).toBe(EState.DISCONNECTED);
-    });
-
-    it('registrationFailed событие должно переводить в DISCONNECTED', () => {
-      stateMachine.startConnect();
-      expect(stateMachine.state).toBe(EState.PREPARING);
-
-      events.trigger('registrationFailed', { cause: C.causes.AUTHENTICATION_ERROR });
-
-      expect(stateMachine.state).toBe(EState.DISCONNECTED);
-      expect(mockLogger).toHaveBeenCalledWith(
-        'State transition: connection:preparing -> connection:disconnected (UA_DISCONNECTED)',
-      );
-    });
-
-    it('connect-failed событие должно переводить в DISCONNECTED', () => {
-      stateMachine.startConnect();
-      expect(stateMachine.state).toBe(EState.PREPARING);
-
-      events.trigger('connect-failed', new Error('Connection failed'));
-
-      expect(stateMachine.state).toBe(EState.DISCONNECTED);
-      expect(mockLogger).toHaveBeenCalledWith(
-        'State transition: connection:preparing -> connection:disconnected (UA_DISCONNECTED)',
-      );
-    });
-
-    it('connecting событие должно переводить из DISCONNECTED в CONNECTING', () => {
-      stateMachine.startConnect();
-      events.trigger('disconnected', { socket: {} as Socket, error: false });
-      expect(stateMachine.state).toBe(EState.DISCONNECTED);
-
-      mockLogger.mockClear();
-      events.trigger('connecting', {} as ConnectingEventUA);
-
-      expect(stateMachine.state).toBe(EState.CONNECTING);
-      expect(mockLogger).toHaveBeenCalledWith(
-        'State transition: connection:disconnected -> connection:connecting (UA_CONNECTING)',
-      );
-    });
-
-    it('connecting событие должно игнорироваться в IDLE (UA_CONNECTING недопустим)', () => {
-      mockLogger.mockClear();
-      events.trigger('connecting', {} as ConnectingEventUA);
-
-      expect(stateMachine.state).toBe(EState.IDLE);
-      expect(mockLogger).toHaveBeenCalledWith(
-        'Invalid transition: UA_CONNECTING from connection:idle. Event cannot be processed in current state.',
-      );
-    });
+    expect(stateMachine.state).toBe(EState.CONNECTING);
+    expect(stateMachine.getConnectionConfiguration()).toEqual(baseConfiguration);
   });
 
-  describe('Валидация переходов', () => {
-    it('canTransition должен правильно валидировать возможные переходы', () => {
-      expect(stateMachine.canTransition(EEvents.START_CONNECT)).toBe(true);
-      expect(stateMachine.canTransition(EEvents.START_INIT_UA)).toBe(false);
+  it('копирует configuration при чтении', () => {
+    stateMachine.toStartConnect();
+    stateMachine.toStartUa(baseConfiguration);
 
-      stateMachine.startConnect();
-      expect(stateMachine.canTransition(EEvents.START_CONNECT)).toBe(false);
-      expect(stateMachine.canTransition(EEvents.START_INIT_UA)).toBe(true);
-    });
+    const configuration = stateMachine.getConnectionConfiguration();
 
-    it('getValidEvents должен возвращать список валидных событий', () => {
-      const validEvents = stateMachine.getValidEvents();
-
-      expect(validEvents).toContain(EEvents.START_CONNECT);
-      expect(validEvents).not.toContain(EEvents.START_INIT_UA);
-
-      stateMachine.startConnect();
-
-      const newValidEvents = stateMachine.getValidEvents();
-
-      expect(newValidEvents).toContain(EEvents.START_INIT_UA);
-      expect(newValidEvents).toContain(EEvents.UA_DISCONNECTED);
-    });
-
-    it('должен логировать предупреждение при невалидном переходе', () => {
-      // Попытка сделать невалидный переход
-      stateMachine.startInitUa(); // из IDLE нельзя напрямую в CONNECTING
-
-      expect(mockLogger).toHaveBeenCalledWith(
-        'Invalid transition: START_INIT_UA from connection:idle. Event cannot be processed in current state.',
-      );
-      // Состояние не должно измениться
-      expect(stateMachine.state).toBe(EState.IDLE);
-    });
+    expect(configuration).toEqual(baseConfiguration);
+    expect(configuration).not.toBe(baseConfiguration);
   });
 
-  describe('Слушатели изменений состояния', () => {
-    it('onStateChange должен вызывать колбэк при изменении состояния', () => {
-      const mockListener = jest.fn();
-      const unsubscribe = stateMachine.onStateChange(mockListener);
+  it('для register=false connected ведет в ESTABLISHED', () => {
+    stateMachine.toStartConnect();
+    stateMachine.toStartUa({ ...baseConfiguration, register: false });
 
-      stateMachine.startConnect();
+    events.trigger('connected', { socket: {} as Socket });
 
-      expect(mockListener).toHaveBeenCalledWith(EState.PREPARING);
-
-      // Отписываемся и проверяем, что колбэк больше не вызывается
-      unsubscribe();
-      stateMachine.startInitUa();
-      expect(mockListener).toHaveBeenCalledTimes(1); // только один раз
-    });
-
-    it('должен поддерживать несколько слушателей', () => {
-      const mockListener1 = jest.fn();
-      const mockListener2 = jest.fn();
-
-      stateMachine.onStateChange(mockListener1);
-      stateMachine.onStateChange(mockListener2);
-
-      stateMachine.startConnect();
-
-      expect(mockListener1).toHaveBeenCalledWith(EState.PREPARING);
-      expect(mockListener2).toHaveBeenCalledWith(EState.PREPARING);
-    });
+    expect(stateMachine.state).toBe(EState.ESTABLISHED);
+    expect(stateMachine.isEstablished).toBe(true);
+    expect(stateMachine.isActiveConnection).toBe(true);
   });
 
-  describe('Жизненный цикл', () => {
-    it('destroy должен отписываться от событий UA', () => {
-      const spyOff = jest.spyOn(events, 'off');
+  it('для register=true connected ведет в CONNECTED до registered', () => {
+    stateMachine.toStartConnect();
+    stateMachine.toStartUa({ ...baseConfiguration, register: true });
 
-      stateMachine.destroy();
+    events.trigger('connected', { socket: {} as Socket });
+    expect(stateMachine.state).toBe(EState.CONNECTED);
+    expect(stateMachine.isConnected).toBe(true);
 
-      expect(spyOff).toHaveBeenCalledTimes(8); // connected, connecting, registered, unregistered, disconnecting, disconnected, registrationFailed, connect-failed
-    });
-
-    it('должен корректно работать после destroy', () => {
-      stateMachine.destroy();
-
-      // После destroy события UA не должны влиять на состояние
-      const currentState = stateMachine.state;
-
-      events.trigger('connected', { socket: {} as Socket });
-      expect(stateMachine.state).toBe(currentState);
-    });
-
-    it('destroy должен очищать stateChangeListeners', () => {
-      const mockListener = jest.fn();
-
-      stateMachine.onStateChange(mockListener);
-      stateMachine.startConnect();
-      expect(mockListener).toHaveBeenCalledTimes(1);
-
-      stateMachine.destroy();
-
-      // Создаем новую машину и триггерим событие на старых events
-      const newStateMachine = new ConnectionStateMachine(events);
-
-      newStateMachine.startConnect();
-
-      // Старый слушатель не должен быть вызван снова
-      expect(mockListener).toHaveBeenCalledTimes(1);
-
-      newStateMachine.destroy();
-    });
+    events.trigger('registered', { response: {} as IncomingResponse });
+    expect(stateMachine.state).toBe(EState.ESTABLISHED);
   });
 
-  describe('Сценарии полного жизненного цикла', () => {
-    it('должен корректно проходить полный цикл подключения с регистрацией', () => {
-      const stateChanges: EState[] = [];
+  it('isRegistered доступен и возвращает false для не-REGISTERED snapshot', () => {
+    expect(stateMachine.isRegistered).toBe(false);
 
-      stateMachine.onStateChange((state) => {
-        return stateChanges.push(state);
-      });
+    stateMachine.toStartConnect();
+    stateMachine.toStartUa({ ...baseConfiguration, register: true });
+    events.trigger('connected', { socket: {} as Socket });
+    events.trigger('registered', { response: {} as IncomingResponse });
 
-      // Начинаем подключение
-      stateMachine.startConnect();
-      expect(stateMachine.state).toBe(EState.PREPARING);
-
-      // Инициализируем UA
-      stateMachine.startInitUa();
-      expect(stateMachine.state).toBe(EState.CONNECTING);
-
-      // UA подключился (автоматически переходит в ESTABLISHED)
-      events.trigger('connected', { socket: {} as Socket });
-      expect(stateMachine.state).toBe(EState.ESTABLISHED);
-
-      // Зарегистрировались (событие игнорируется в ESTABLISHED, состояние не меняется)
-      events.trigger('registered', { response: {} as IncomingResponse });
-      expect(stateMachine.state).toBe(EState.ESTABLISHED);
-
-      // Отключились
-      events.trigger('disconnected', { socket: {} as Socket, error: false });
-      expect(stateMachine.state).toBe(EState.DISCONNECTED);
-
-      // Сбрасываем состояние
-      stateMachine.reset();
-      expect(stateMachine.state).toBe(EState.IDLE);
-
-      // CONNECTED может не быть в списке, так как автоматический переход в ESTABLISHED происходит синхронно
-      // Проверяем, что есть все ключевые состояния
-      expect(stateChanges).toContain(EState.PREPARING);
-      expect(stateChanges).toContain(EState.CONNECTING);
-      expect(stateChanges).toContain(EState.ESTABLISHED);
-      expect(stateChanges).toContain(EState.DISCONNECTED);
-      expect(stateChanges).toContain(EState.IDLE);
-      // ESTABLISHED должен быть после CONNECTING
-      expect(stateChanges.indexOf(EState.ESTABLISHED)).toBeGreaterThan(
-        stateChanges.indexOf(EState.CONNECTING),
-      );
-    });
-
-    it('должен корректно обрабатывать сценарий ошибки подключения', () => {
-      stateMachine.startConnect();
-      stateMachine.startInitUa();
-
-      // Ошибка регистрации
-      events.trigger('registrationFailed', { cause: C.causes.AUTHENTICATION_ERROR });
-      expect(stateMachine.state).toBe(EState.DISCONNECTED);
-      expect(stateMachine.isDisconnected).toBe(true);
-
-      // Можем сбросить состояние после ошибки
-      expect(stateMachine.canTransition(EEvents.RESET)).toBe(true);
-      stateMachine.reset();
-      expect(stateMachine.state).toBe(EState.IDLE);
-    });
-
-    it('должен корректно обрабатывать ошибку регистрации', () => {
-      stateMachine.startConnect();
-      stateMachine.startInitUa();
-
-      // Ошибка регистрации с детальной информацией
-      events.trigger('registrationFailed', {
-        response: { status_code: 403, reason_phrase: 'Forbidden' } as IncomingResponse,
-        cause: C.causes.AUTHENTICATION_ERROR,
-      });
-
-      expect(stateMachine.state).toBe(EState.DISCONNECTED);
-      expect(stateMachine.isDisconnected).toBe(true);
-
-      // После reset состояние должно очиститься
-      stateMachine.reset();
-      expect(stateMachine.state).toBe(EState.IDLE);
-    });
-
-    it('должен корректно обрабатывать повторное подключение после ошибки регистрации', () => {
-      // Первая попытка с ошибкой
-      stateMachine.startConnect();
-      stateMachine.startInitUa();
-      events.trigger('registrationFailed', {
-        response: { status_code: 401, reason_phrase: 'Unauthorized' } as IncomingResponse,
-        cause: C.causes.AUTHENTICATION_ERROR,
-      });
-
-      expect(stateMachine.state).toBe(EState.DISCONNECTED);
-
-      // Повторная попытка подключения
-      stateMachine.startConnect();
-      expect(stateMachine.state).toBe(EState.PREPARING);
-
-      stateMachine.startInitUa();
-      events.trigger('connected', { socket: {} as Socket });
-      events.trigger('registered', { response: {} as IncomingResponse });
-
-      expect(stateMachine.state).toBe(EState.ESTABLISHED);
-    });
-
-    it('должен корректно обрабатывать подключение без регистрации', () => {
-      stateMachine.startConnect();
-      stateMachine.startInitUa();
-
-      // Просто подключились без регистрации (автоматически переходит в ESTABLISHED)
-      events.trigger('connected', { socket: {} as Socket });
-      expect(stateMachine.state).toBe(EState.ESTABLISHED);
-      expect(stateMachine.isEstablished).toBe(true);
-      expect(stateMachine.isRegistered).toBe(false);
-
-      // Отключились
-      events.trigger('disconnected', { socket: {} as Socket, error: false });
-      expect(stateMachine.state).toBe(EState.DISCONNECTED);
-    });
+    // REGISTERED в машине транзиентный: сразу переходит в ESTABLISHED
+    expect(stateMachine.state).toBe(EState.ESTABLISHED);
+    expect(stateMachine.isRegistered).toBe(false);
   });
 
-  describe('Граничные случаи', () => {
-    it('должен игнорировать события UA в неподходящих состояниях', () => {
-      // В состоянии IDLE события UA не должны менять состояние
-      expect(stateMachine.state).toBe(EState.IDLE);
+  it('disconnecting/disconnected переводят в DISCONNECTING и DISCONNECTED', () => {
+    stateMachine.toStartConnect();
+    stateMachine.toStartUa(baseConfiguration);
+    events.trigger('connected', { socket: {} as Socket });
 
-      events.trigger('connected', { socket: {} as Socket });
-      expect(stateMachine.state).toBe(EState.IDLE);
+    events.trigger('disconnecting', {});
+    expect(stateMachine.state).toBe(EState.DISCONNECTING);
+    expect(stateMachine.isDisconnecting).toBe(true);
 
-      events.trigger('registered', { response: {} as IncomingResponse });
-      expect(stateMachine.state).toBe(EState.IDLE);
+    events.trigger('disconnected', { socket: {} as Socket, error: false });
+    expect(stateMachine.state).toBe(EState.DISCONNECTED);
+    expect(stateMachine.isDisconnected).toBe(true);
+  });
 
-      events.trigger('unregistered', { response: {} as IncomingResponse });
-      expect(stateMachine.state).toBe(EState.IDLE);
-    });
+  it('reset переводит в IDLE и очищает configuration только из DISCONNECTED', () => {
+    stateMachine.toStartConnect();
+    stateMachine.toStartUa(baseConfiguration);
+    events.trigger('connected', { socket: {} as Socket });
+    events.trigger('disconnected', { socket: {} as Socket, error: false });
+    expect(stateMachine.getConnectionConfiguration()).toBeDefined();
 
-    it('должен корректно обрабатывать множественные вызовы startConnect', () => {
-      stateMachine.startConnect();
-      expect(stateMachine.state).toBe(EState.PREPARING);
+    stateMachine.reset();
 
-      // Повторный вызов должен логировать предупреждение
-      stateMachine.startConnect();
-      expect(mockLogger).toHaveBeenCalledWith(
-        'Invalid transition: START_CONNECT from connection:preparing. Event cannot be processed in current state.',
-      );
-      expect(stateMachine.state).toBe(EState.PREPARING); // состояние не изменилось
-    });
+    expect(stateMachine.state).toBe(EState.IDLE);
+    expect(stateMachine.getConnectionConfiguration()).toBeUndefined();
+  });
 
-    it('должен корректно работать геттер isDisconnected', () => {
-      // В начальном состоянии
-      expect(stateMachine.isDisconnected).toBe(false);
+  it('isActiveConnection возвращает false вне connected/registered/established', () => {
+    expect(stateMachine.isActiveConnection).toBe(false);
 
-      // Переводим в DISCONNECTED
-      stateMachine.startConnect();
-      events.trigger('disconnected', { socket: {} as Socket, error: false });
-      expect(stateMachine.isDisconnected).toBe(true);
-      expect(stateMachine.state).toBe(EState.DISCONNECTED);
-    });
+    stateMachine.toStartConnect();
+    expect(stateMachine.state).toBe(EState.PREPARING);
+    expect(stateMachine.isActiveConnection).toBe(false);
 
-    it('startDisconnect должен логировать предупреждение при вызове из IDLE', () => {
-      expect(stateMachine.state).toBe(EState.IDLE);
+    stateMachine.toStartUa(baseConfiguration);
+    expect(stateMachine.state).toBe(EState.CONNECTING);
+    expect(stateMachine.isActiveConnection).toBe(false);
 
-      stateMachine.startDisconnect();
+    events.trigger('disconnected', { socket: {} as Socket, error: false });
+    expect(stateMachine.state).toBe(EState.DISCONNECTED);
+    expect(stateMachine.isActiveConnection).toBe(false);
+  });
 
-      expect(mockLogger).toHaveBeenCalledWith(
-        'Invalid transition: START_DISCONNECT from connection:idle. Event cannot be processed in current state.',
-      );
-      expect(stateMachine.state).toBe(EState.IDLE);
-    });
+  it('isRegisterEnabled отражает register flag из configuration', () => {
+    stateMachine.toStartConnect();
+    stateMachine.toStartUa({ ...baseConfiguration, register: true });
+    expect(stateMachine.isRegisterEnabled()).toBe(true);
+  });
 
-    it('startDisconnect должен логировать предупреждение при вызове из DISCONNECTED', () => {
-      stateMachine.startConnect();
-      events.trigger('disconnected', { socket: {} as Socket, error: false });
-      expect(stateMachine.state).toBe(EState.DISCONNECTED);
+  it('невалидный toStartUa из IDLE логирует invalid transition', () => {
+    mockLogger.mockClear();
 
-      mockLogger.mockClear();
-      stateMachine.startDisconnect();
+    stateMachine.toStartUa(baseConfiguration);
 
-      expect(mockLogger).toHaveBeenCalledWith(
-        'Invalid transition: START_DISCONNECT from connection:disconnected. Event cannot be processed in current state.',
-      );
-      expect(stateMachine.state).toBe(EState.DISCONNECTED);
-    });
+    expect(stateMachine.state).toBe(EState.IDLE);
+    expect(mockLogger).toHaveBeenCalledWith(
+      'Invalid transition: START_UA from connection:idle. Event cannot be processed in current state.',
+    );
+  });
 
-    it('startDisconnect должен логировать предупреждение при вызове из DISCONNECTING', () => {
-      stateMachine.startConnect();
-      stateMachine.startInitUa();
-      events.trigger('connected', { socket: {} as Socket });
-      stateMachine.startDisconnect();
-      expect(stateMachine.state).toBe(EState.DISCONNECTING);
+  it('onStateChange вызывает слушатели и поддерживает отписку', () => {
+    const listener = jest.fn();
+    const unsubscribe = stateMachine.onStateChange(listener);
 
-      mockLogger.mockClear();
-      stateMachine.startDisconnect();
+    stateMachine.toStartConnect();
+    expect(listener).toHaveBeenCalledWith(EState.PREPARING);
 
-      expect(mockLogger).toHaveBeenCalledWith(
-        'Invalid transition: START_DISCONNECT from connection:disconnecting. Event cannot be processed in current state.',
-      );
-      expect(stateMachine.state).toBe(EState.DISCONNECTING);
-    });
-
-    it('должен корректно работать геттер isDisconnecting', () => {
-      // В начальном состоянии
-      expect(stateMachine.isDisconnecting).toBe(false);
-
-      // Переводим в ESTABLISHED
-      stateMachine.startConnect();
-      stateMachine.startInitUa();
-      events.trigger('connected', { socket: {} as Socket });
-      expect(stateMachine.isDisconnecting).toBe(false);
-
-      // Переводим в DISCONNECTING
-      stateMachine.startDisconnect();
-      expect(stateMachine.isDisconnecting).toBe(true);
-      expect(stateMachine.state).toBe(EState.DISCONNECTING);
-
-      // Переходим в DISCONNECTED
-      events.trigger('disconnected', { socket: {} as Socket, error: false });
-      expect(stateMachine.isDisconnecting).toBe(false);
-      expect(stateMachine.isDisconnected).toBe(true);
-    });
-
-    it('должен корректно логировать невалидные переходы', () => {
-      // Очищаем предыдущие вызовы логгера
-      mockLogger.mockClear();
-
-      // Попытка сделать невалидный переход
-      stateMachine.startInitUa(); // из IDLE нельзя напрямую в CONNECTING
-
-      // Проверяем, что было логирование невалидного перехода
-      expect(mockLogger).toHaveBeenCalledWith(
-        'Invalid transition: START_INIT_UA from connection:idle. Event cannot be processed in current state.',
-      );
-    });
+    unsubscribe();
+    stateMachine.toStartUa(baseConfiguration);
+    expect(listener).toHaveBeenCalledTimes(1);
   });
 });

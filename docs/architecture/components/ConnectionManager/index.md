@@ -26,7 +26,7 @@
 
 - Валидация переходов между состояниями
 - Публичный API с геттерами: `isIdle`, `isPreparing`, `isConnecting`, `isConnected`, `isRegistered`, `isEstablished`, `isDisconnected`, `isPending`, `isPendingConnect`, `isPendingInitUa`, `isActiveConnection`, `isDisconnecting`
-- Методы: `reset()`, `startConnect()`, `startInitUa()`, `onStateChange()`, `canTransition()`, `getValidEvents()`
+- Методы: `reset()`, `startConnect()`, `startInitUa()`, `onStateChange()`
 - При ошибках (registrationFailed, connect-failed) переход сразу в DISCONNECTED
 - Автоматическое логирование всех переходов состояний
 
