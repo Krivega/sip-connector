@@ -103,38 +103,10 @@ export function buildCallNodeFromSession(snapshot: TSessionSnapshot): TCallNodeV
     },
   } = snapshot;
 
-  switch (state) {
-    case ECallStatus.IDLE: {
-      return { state, context: context as TContextMap[ECallStatus.IDLE] };
-    }
-    case ECallStatus.CONNECTING: {
-      return { state, context: context as TContextMap[ECallStatus.CONNECTING] };
-    }
-    case ECallStatus.PRESENTATION_CALL: {
-      return { state, context: context as TContextMap[ECallStatus.PRESENTATION_CALL] };
-    }
-    case ECallStatus.ROOM_PENDING_AUTH: {
-      return { state, context: context as TContextMap[ECallStatus.ROOM_PENDING_AUTH] };
-    }
-    case ECallStatus.PURGATORY: {
-      return { state, context: context as TContextMap[ECallStatus.PURGATORY] };
-    }
-    case ECallStatus.P2P_ROOM: {
-      return { state, context: context as TContextMap[ECallStatus.P2P_ROOM] };
-    }
-    case ECallStatus.DIRECT_P2P_ROOM: {
-      return { state, context: context as TContextMap[ECallStatus.DIRECT_P2P_ROOM] };
-    }
-    case ECallStatus.IN_ROOM: {
-      return { state, context: context as TContextMap[ECallStatus.IN_ROOM] };
-    }
-    case ECallStatus.DISCONNECTING: {
-      return { state, context: context as TContextMap[ECallStatus.DISCONNECTING] };
-    }
-    default: {
-      throw new Error('Unsupported call status');
-    }
-  }
+  return {
+    state,
+    context,
+  } as TCallNodeValue;
 }
 
 const CallIdleNodeModel = withNodeValueViews(

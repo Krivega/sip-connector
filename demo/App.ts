@@ -1,6 +1,5 @@
 import CallStateManager from './CallStateManager';
 import CallStatsManager from './CallStatsManager';
-import ConferenceStateDisplay from './ConferenceStateDisplay';
 import { dom } from './dom';
 import LoaderManager from './LoaderManager';
 import { LocalMediaStreamManager } from './LocalMediaStreamManager';
@@ -62,12 +61,6 @@ class App {
     this.callStateManager = new CallStateManager();
     this.callStatsManager = new CallStatsManager();
     this.statusesManager = new Statuses();
-
-    const conferenceStateDisplay = new ConferenceStateDisplay();
-
-    conferenceStateDisplay.subscribe((state) => {
-      this.updateConferenceState(state);
-    });
 
     const logsManager = new LogsManager();
 
@@ -190,6 +183,7 @@ class App {
     dom.renderSessionStatusDiagrams();
     this.statusesManager.subscribe((statuses) => {
       this.updateSessionStatuses(statuses);
+      dom.renderStatusesNodeValues(this.statusesManager.getNodeValues());
     });
   }
 
@@ -456,26 +450,6 @@ class App {
     dom.setActiveSessionStatusNode('incoming', statuses.incoming);
     dom.setActiveSessionStatusNode('presentation', statuses.presentation);
     dom.setActiveSessionStatusNode('system', statuses.system);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
-  private updateConferenceState(state: {
-    room: string;
-    participantName: string;
-    token: string;
-    conferenceForToken: string;
-    number: string;
-    answer: string;
-    pendingDisconnect: string;
-  }): void {
-    debug('updateConferenceState', state);
-    dom.conferenceStateRoomElement.textContent = state.room;
-    dom.conferenceStateParticipantNameElement.textContent = state.participantName;
-    dom.conferenceStateTokenElement.textContent = state.token;
-    dom.conferenceStateConferenceForTokenElement.textContent = state.conferenceForToken;
-    dom.conferenceStateNumberElement.textContent = state.number;
-    dom.conferenceStateAnswerElement.textContent = state.answer;
-    dom.conferenceStatePendingDisconnectElement.textContent = state.pendingDisconnect;
   }
 
   /**

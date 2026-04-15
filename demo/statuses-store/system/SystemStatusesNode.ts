@@ -26,14 +26,6 @@ const withNodeValueViews = <S extends ESystemStatus>(
   });
 };
 
-export function buildSystemNodeFromSession(snapshot: TSessionSnapshot): TSystemNodeValue {
-  const state = sessionSelectors.selectSystemStatus(snapshot);
-
-  return {
-    state,
-  };
-}
-
 const SystemDisconnectedNodeModel = withNodeValueViews(
   createNodeModel<ESystemStatus.DISCONNECTED, never>(ESystemStatus.DISCONNECTED),
 );
@@ -65,6 +57,16 @@ export const SystemNodeModel = types.union(
   SystemCallDisconnectingNodeModel,
   SystemCallActiveNodeModel,
 );
+
+export function buildSystemNodeFromSession(
+  snapshot: TSessionSnapshot,
+): SnapshotIn<typeof SystemNodeModel> {
+  const state = sessionSelectors.selectSystemStatus(snapshot);
+
+  return {
+    state,
+  } as SnapshotIn<typeof SystemNodeModel>;
+}
 
 export type TSystemNodeInstance = Instance<typeof SystemNodeModel>;
 

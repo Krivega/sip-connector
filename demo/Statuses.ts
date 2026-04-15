@@ -4,7 +4,11 @@ import sipConnectorFacade from './Session/sipConnectorFacade';
 import { INITIAL_STATUSES_STORE_SNAPSHOT, StatusesStoreModel } from './statuses-store';
 
 import type { TSessionSnapshot } from '@/index';
-import type { TPublicStatuses, TStatusesStoreOutput } from './statuses-store';
+import type {
+  TPublicStatuses,
+  TStatusesStoreOutput,
+  TStatusesStoreSnapshot,
+} from './statuses-store';
 
 class Statuses {
   private unsubscribeSessionStatuses?: () => void;
@@ -27,6 +31,17 @@ class Statuses {
 
   public getStatusesWithContext(): TStatusesStoreOutput {
     return getSnapshot(this.statusesStore);
+  }
+
+  public getNodeValues(): TStatusesStoreSnapshot {
+    return {
+      connection: this.statusesStore.connectionNode,
+      autoConnector: this.statusesStore.autoConnectorNode,
+      call: this.statusesStore.callNode,
+      incoming: this.statusesStore.incomingNode,
+      presentation: this.statusesStore.presentationNode,
+      system: this.statusesStore.systemNode as TStatusesStoreSnapshot['system'],
+    };
   }
 
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this

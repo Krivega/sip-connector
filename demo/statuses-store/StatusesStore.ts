@@ -64,7 +64,7 @@ export type TStatusesStoreSnapshot = {
   call: TCallNodeValue;
   incoming: TIncomingNodeValue;
   presentation: TPresentationNodeValue;
-  system: TSystemNodeValue;
+  system: SnapshotIn<typeof SystemNodeModel>;
 };
 
 export type TPublicStatuses = {
@@ -76,7 +76,9 @@ export type TPublicStatuses = {
   autoConnector: EAutoConnectorStatus;
 };
 
-function buildStatusesStoreSnapshotFromSession(snapshot: TSessionSnapshot): TStatusesStoreSnapshot {
+function buildStatusesStoreSnapshotFromSession(
+  snapshot: TSessionSnapshot,
+): SnapshotIn<typeof StatusesStoreModel> {
   return {
     connection: buildConnectionNodeFromSession(snapshot),
     autoConnector: buildAutoConnectorNodeFromSession(snapshot),

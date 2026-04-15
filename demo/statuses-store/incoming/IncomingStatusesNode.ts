@@ -67,29 +67,10 @@ export function buildIncomingNodeFromSession(snapshot: TSessionSnapshot): TIncom
     incoming: { context },
   } = snapshot;
 
-  switch (state) {
-    case EIncomingStatus.IDLE: {
-      return { state, context: context as TIncomingContextMap[EIncomingStatus.IDLE] };
-    }
-    case EIncomingStatus.RINGING: {
-      return { state, context: context as TIncomingContextMap[EIncomingStatus.RINGING] };
-    }
-    case EIncomingStatus.CONSUMED: {
-      return { state, context: context as TIncomingContextMap[EIncomingStatus.CONSUMED] };
-    }
-    case EIncomingStatus.DECLINED: {
-      return { state, context: context as TIncomingContextMap[EIncomingStatus.DECLINED] };
-    }
-    case EIncomingStatus.TERMINATED: {
-      return { state, context: context as TIncomingContextMap[EIncomingStatus.TERMINATED] };
-    }
-    case EIncomingStatus.FAILED: {
-      return { state, context: context as TIncomingContextMap[EIncomingStatus.FAILED] };
-    }
-    default: {
-      throw new Error('Unsupported incoming status');
-    }
-  }
+  return {
+    state,
+    context,
+  } as TIncomingNodeValue;
 }
 
 const IncomingIdleNodeModel = withNodeValueViews(

@@ -4,48 +4,20 @@ import { EAutoConnectorState as EAutoConnectorStatus } from '@/AutoConnectorMana
 import { createNodeModel } from '../createNodeModel';
 
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
+import type { TAutoConnectorContextMap } from '@/AutoConnectorManager/AutoConnectorStateMachine';
 import type { TParametersAutoConnect } from '@/AutoConnectorManager/types';
 import type { TSessionSnapshot } from '@/index';
 
 export type TAutoConnectorStopReason = 'halted' | 'cancelled' | 'failed';
 
-export type TAutoConnectorNodeValue =
-  | {
-      state: EAutoConnectorStatus.IDLE;
-      context: {
-        stopReason?: TAutoConnectorStopReason;
-        lastError?: unknown;
-      };
-    }
-  | {
-      state: EAutoConnectorStatus.DISCONNECTING;
-      context: {
-        afterDisconnect: 'attempt' | 'idle';
-        parameters?: TParametersAutoConnect;
-        stopReason?: TAutoConnectorStopReason;
-        lastError?: unknown;
-      };
-    }
-  | {
-      state:
-        | EAutoConnectorStatus.ATTEMPTING_GATE
-        | EAutoConnectorStatus.ATTEMPTING_CONNECT
-        | EAutoConnectorStatus.WAITING_BEFORE_RETRY
-        | EAutoConnectorStatus.CONNECTED_MONITORING
-        | EAutoConnectorStatus.TELEPHONY_CHECKING;
-      context: {
-        parameters?: TParametersAutoConnect;
-        lastError?: unknown;
-      };
-    }
-  | {
-      state: EAutoConnectorStatus.ERROR_TERMINAL;
-      context: {
-        parameters?: TParametersAutoConnect;
-        stopReason?: TAutoConnectorStopReason;
-        lastError?: unknown;
-      };
-    };
+type TConnectionNodeByState<TState extends EAutoConnectorStatus> = {
+  state: TState;
+  context: TAutoConnectorContextMap[TState];
+};
+
+export type TAutoConnectorNodeValue = {
+  [TState in EAutoConnectorStatus]: TConnectionNodeByState<TState>;
+}[EAutoConnectorStatus];
 
 const withNodeValueViews = <S extends string, C>(
   base: ReturnType<typeof createNodeModel<S, C>>,
@@ -63,54 +35,12 @@ export function buildAutoConnectorNodeFromSession(
   snapshot: TSessionSnapshot,
 ): TAutoConnectorNodeValue {
   const state = snapshot.autoConnector.value;
-  const { parameters, afterDisconnect, stopReason, lastError } = snapshot.autoConnector.context;
-
-  if (state === EAutoConnectorStatus.IDLE) {
-    return {
-      state,
-      context: {
-        stopReason: stopReason as TAutoConnectorStopReason | undefined,
-        lastError,
-      },
-    };
-  }
-
-  if (state === EAutoConnectorStatus.DISCONNECTING) {
-    return {
-      state,
-      context: {
-        afterDisconnect,
-        parameters,
-        stopReason: stopReason as TAutoConnectorStopReason | undefined,
-        lastError,
-      },
-    };
-  }
-
-  if (
-    state === EAutoConnectorStatus.ATTEMPTING_GATE ||
-    state === EAutoConnectorStatus.ATTEMPTING_CONNECT ||
-    state === EAutoConnectorStatus.WAITING_BEFORE_RETRY ||
-    state === EAutoConnectorStatus.CONNECTED_MONITORING ||
-    state === EAutoConnectorStatus.TELEPHONY_CHECKING
-  ) {
-    return {
-      state,
-      context: {
-        parameters,
-        lastError,
-      },
-    };
-  }
+  const { context } = snapshot.autoConnector;
 
   return {
-    state: EAutoConnectorStatus.ERROR_TERMINAL,
-    context: {
-      parameters,
-      stopReason: stopReason as TAutoConnectorStopReason | undefined,
-      lastError,
-    },
-  };
+    state,
+    context,
+  } as TAutoConnectorNodeValue;
 }
 
 const AutoConnectorIdleNodeModel = withNodeValueViews(

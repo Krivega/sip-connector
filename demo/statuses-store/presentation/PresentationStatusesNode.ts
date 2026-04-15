@@ -63,26 +63,10 @@ export function buildPresentationNodeFromSession(
     presentation: { context },
   } = snapshot;
 
-  switch (state) {
-    case EPresentationStatus.IDLE: {
-      return { state, context: context as TPresentationContextMap[EPresentationStatus.IDLE] };
-    }
-    case EPresentationStatus.STARTING: {
-      return { state, context: context as TPresentationContextMap[EPresentationStatus.STARTING] };
-    }
-    case EPresentationStatus.ACTIVE: {
-      return { state, context: context as TPresentationContextMap[EPresentationStatus.ACTIVE] };
-    }
-    case EPresentationStatus.STOPPING: {
-      return { state, context: context as TPresentationContextMap[EPresentationStatus.STOPPING] };
-    }
-    case EPresentationStatus.FAILED: {
-      return { state, context: context as TPresentationContextMap[EPresentationStatus.FAILED] };
-    }
-    default: {
-      throw new Error('Unsupported presentation status');
-    }
-  }
+  return {
+    state,
+    context,
+  } as TPresentationNodeValue;
 }
 
 const PresentationIdleNodeModel = withNodeValueViews(

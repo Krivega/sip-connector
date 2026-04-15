@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/class-methods-use-this */
+import type { TStatusesStoreSnapshot } from './statuses-store';
+
 type TDomIds = {
   overlayId: string;
   connectButtonId: string;
@@ -23,13 +25,7 @@ type TDomIds = {
   systemStatusId: string;
   autoConnectorManagerStatusId: string;
   sessionStatusesDiagramsId: string;
-  conferenceStateRoomId: string;
-  conferenceStateParticipantNameId: string;
-  conferenceStateTokenId: string;
-  conferenceStateConferenceForTokenId: string;
-  conferenceStatePendingDisconnectId: string;
-  conferenceStateNumberId: string;
-  conferenceStateAnswerId: string;
+  statusesNodeValuesId: string;
   callStatsSectionId: string;
   callStatsTabAudioId: string;
   callStatsTabMainStreamId: string;
@@ -124,6 +120,27 @@ const STATUS_DIAGRAMS: Record<TStatusCategory, readonly string[]> = {
     'system:callDisconnecting',
     'system:callActive',
   ],
+};
+
+const EXPECTED_NODE_FIELDS: Record<keyof TStatusesStoreSnapshot, readonly string[]> = {
+  connection: ['state', 'context', 'connectionConfiguration'],
+  autoConnector: ['state', 'afterDisconnect', 'parameters', 'stopReason', 'lastError'],
+  call: [
+    'state',
+    'pendingDisconnect',
+    'number',
+    'answer',
+    'extraHeaders',
+    'isConfirmed',
+    'room',
+    'participantName',
+    'isDirectPeerToPeer',
+    'token',
+    'conferenceForToken',
+  ],
+  incoming: ['state', 'remoteCallerData', 'lastReason'],
+  presentation: ['state', 'lastError'],
+  system: ['state'],
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
@@ -226,19 +243,7 @@ class DOM {
 
   public sessionStatusesDiagramsElement: HTMLElement;
 
-  public conferenceStateRoomElement: HTMLElement;
-
-  public conferenceStateParticipantNameElement: HTMLElement;
-
-  public conferenceStateTokenElement: HTMLElement;
-
-  public conferenceStateConferenceForTokenElement: HTMLElement;
-
-  public conferenceStatePendingDisconnectElement: HTMLElement;
-
-  public conferenceStateNumberElement: HTMLElement;
-
-  public conferenceStateAnswerElement: HTMLElement;
+  public statusesNodeValuesElement: HTMLElement;
 
   public callStatsSectionElement: HTMLElement;
 
@@ -310,13 +315,7 @@ class DOM {
     systemStatusId,
     autoConnectorManagerStatusId,
     sessionStatusesDiagramsId,
-    conferenceStateRoomId,
-    conferenceStateParticipantNameId,
-    conferenceStateTokenId,
-    conferenceStateConferenceForTokenId,
-    conferenceStatePendingDisconnectId,
-    conferenceStateNumberId,
-    conferenceStateAnswerId,
+    statusesNodeValuesId,
     callStatsSectionId,
     callStatsTabAudioId,
     callStatsTabMainStreamId,
@@ -414,17 +413,7 @@ class DOM {
     this.systemStatusElement = getElementById(systemStatusId);
     this.autoConnectorManagerStatusElement = getElementById(autoConnectorManagerStatusId);
     this.sessionStatusesDiagramsElement = getElementById(sessionStatusesDiagramsId);
-    this.conferenceStateRoomElement = getElementById(conferenceStateRoomId);
-    this.conferenceStateParticipantNameElement = getElementById(conferenceStateParticipantNameId);
-    this.conferenceStateTokenElement = getElementById(conferenceStateTokenId);
-    this.conferenceStateConferenceForTokenElement = getElementById(
-      conferenceStateConferenceForTokenId,
-    );
-    this.conferenceStatePendingDisconnectElement = getElementById(
-      conferenceStatePendingDisconnectId,
-    );
-    this.conferenceStateNumberElement = getElementById(conferenceStateNumberId);
-    this.conferenceStateAnswerElement = getElementById(conferenceStateAnswerId);
+    this.statusesNodeValuesElement = getElementById(statusesNodeValuesId);
     this.callStatsSectionElement = getElementById(callStatsSectionId);
     this.callStatsTabAudioButtonElement = getElementById<HTMLButtonElement>(callStatsTabAudioId);
     this.callStatsTabMainStreamButtonElement =
@@ -567,6 +556,199 @@ class DOM {
       activeNode.classList.add('status-diagram__node--active');
     }
   }
+
+  public renderStatusesNodeValues(statuses: TStatusesStoreSnapshot): void {
+    this.statusesNodeValuesElement.innerHTML = '';
+
+    const fragment = document.createDocumentFragment();
+
+    const statusesEntries = Object.entries(statuses) as [keyof TStatusesStoreSnapshot, unknown][];
+
+    statusesEntries.forEach(([nodeName, nodeValue]) => {
+      if (!this.isRecord(nodeValue)) {
+        return;
+      }
+
+      const nodeSection = document.createElement('section');
+
+      nodeSection.className = 'conference-state__node';
+
+      const nodeTitle = document.createElement('h4');
+
+      nodeTitle.className = 'conference-state__node-title';
+      nodeTitle.textContent = this.toDisplayLabel(nodeName);
+
+      const nodeList = document.createElement('ul');
+
+      nodeList.className = 'conference-state__list';
+
+      this.buildNodeEntries(nodeName, nodeValue).forEach(([propertyName, propertyValue]) => {
+        const nodeListItem = document.createElement('li');
+        const propertyLabel = document.createElement('b');
+        const propertyValueElement = document.createElement('span');
+
+        propertyLabel.textContent = `${this.toDisplayLabel(propertyName)}: `;
+        this.renderPropertyValue(propertyValueElement, propertyName, propertyValue);
+        nodeListItem.append(propertyLabel, propertyValueElement);
+        nodeList.append(nodeListItem);
+      });
+
+      nodeSection.append(nodeTitle, nodeList);
+      fragment.append(nodeSection);
+    });
+
+    this.statusesNodeValuesElement.append(fragment);
+  }
+
+  private buildNodeEntries(
+    nodeName: keyof TStatusesStoreSnapshot,
+    nodeValue: Record<string, unknown>,
+  ): [string, unknown][] {
+    const expectedFields = EXPECTED_NODE_FIELDS[nodeName];
+    const entriesByName = new Map<string, unknown>();
+    const { context } = nodeValue;
+    const contextRecord = this.isRecord(context) ? context : undefined;
+
+    expectedFields.forEach((fieldName) => {
+      const valueFromNode = nodeValue[fieldName];
+
+      if (valueFromNode !== undefined) {
+        entriesByName.set(fieldName, valueFromNode);
+
+        return;
+      }
+
+      if (contextRecord !== undefined && fieldName in contextRecord) {
+        entriesByName.set(fieldName, contextRecord[fieldName]);
+
+        return;
+      }
+
+      entriesByName.set(fieldName, undefined);
+    });
+
+    if (contextRecord !== undefined) {
+      Object.entries(contextRecord).forEach(([fieldName, fieldValue]) => {
+        if (entriesByName.has(fieldName)) {
+          return;
+        }
+
+        entriesByName.set(fieldName, fieldValue);
+      });
+    }
+
+    Object.entries(nodeValue).forEach(([fieldName, fieldValue]) => {
+      if (fieldName === 'context' || entriesByName.has(fieldName)) {
+        return;
+      }
+
+      entriesByName.set(fieldName, fieldValue);
+    });
+
+    return [...entriesByName.entries()];
+  }
+
+  private renderPropertyValue(
+    propertyValueElement: HTMLElement,
+    propertyName: string,
+    value: unknown,
+  ): void {
+    if (this.isComplexJsonValue(value)) {
+      const detailsElement = document.createElement('details');
+
+      detailsElement.className = 'conference-state__json';
+
+      const summaryElement = document.createElement('summary');
+
+      summaryElement.textContent = 'JSON';
+
+      const preElement = document.createElement('pre');
+
+      preElement.textContent = this.stringifyForDisplay(value);
+
+      detailsElement.append(summaryElement, preElement);
+      propertyValueElement.append(detailsElement);
+
+      return;
+    }
+
+    const parsedValue = this.parseStatusValue(propertyName, value);
+    const valueTextNode = document.createTextNode(parsedValue);
+
+    propertyValueElement.append(valueTextNode);
+  }
+
+  private parseStatusValue(propertyName: string, value: unknown): string {
+    if (value === undefined || value === null) {
+      return '-';
+    }
+
+    if (propertyName === 'token' && typeof value === 'string') {
+      return `${value.slice(0, 20)}...`;
+    }
+
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+      return String(value);
+    }
+
+    return this.stringifyForDisplay(value);
+  }
+
+  private stringifyForDisplay(value: unknown): string {
+    if (typeof value === 'function') {
+      return value.toString();
+    }
+
+    try {
+      const replacer = (_key: string, nestedValue: unknown): unknown => {
+        if (typeof nestedValue === 'function') {
+          return nestedValue.toString();
+        }
+
+        return nestedValue;
+      };
+
+      const serialized = JSON.stringify(value, replacer, 2) as string | undefined;
+
+      if (serialized === undefined) {
+        return '-';
+      }
+
+      return this.expandJsonEscapesForDisplay(serialized);
+    } catch {
+      return '-';
+    }
+  }
+
+  /**
+   * JSON.stringify экранирует переводы строк в строковых значениях как `\n` (два символа),
+   * из‑за чего тело функций в <pre> сливается в одну строку. Раскрываем типичные escape-последовательности для читаемого вывода.
+   */
+  private expandJsonEscapesForDisplay(serialized: string): string {
+    return serialized
+      .replaceAll(String.raw`\r\n`, '\n')
+      .replaceAll(String.raw`\n`, '\n')
+      .replaceAll(String.raw`\t`, '\t')
+      .replaceAll(String.raw`\r`, '\n');
+  }
+
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+  }
+
+  private isComplexJsonValue(value: unknown): boolean {
+    return this.isRecord(value) || Array.isArray(value);
+  }
+
+  private toDisplayLabel(value: string): string {
+    const normalized = value.replaceAll(/([A-Z])/g, ' $1').trim();
+
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  }
 }
 
 export const dom = new DOM({
@@ -599,13 +781,7 @@ export const dom = new DOM({
   systemStatusId: 'systemStatus',
   autoConnectorManagerStatusId: 'autoConnectorManagerStatus',
   sessionStatusesDiagramsId: 'sessionStatusesDiagrams',
-  conferenceStateRoomId: 'conferenceStateRoom',
-  conferenceStateParticipantNameId: 'conferenceStateParticipantName',
-  conferenceStateTokenId: 'conferenceStateToken',
-  conferenceStateConferenceForTokenId: 'conferenceStateConferenceForToken',
-  conferenceStatePendingDisconnectId: 'conferenceStatePendingDisconnect',
-  conferenceStateNumberId: 'conferenceStateNumber',
-  conferenceStateAnswerId: 'conferenceStateAnswer',
+  statusesNodeValuesId: 'statusesNodeValues',
   callStatsSectionId: 'callStatsSection',
   callStatsTabAudioId: 'callStatsTabAudio',
   callStatsTabMainStreamId: 'callStatsTabMainStream',

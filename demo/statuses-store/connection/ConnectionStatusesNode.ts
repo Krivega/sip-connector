@@ -70,35 +70,10 @@ export function buildConnectionNodeFromSession(snapshot: TSessionSnapshot): TCon
     connection: { context },
   } = snapshot;
 
-  switch (state) {
-    case EConnectionStatus.IDLE: {
-      return { state, context: context as TContextMap[EConnectionStatus.IDLE] };
-    }
-    case EConnectionStatus.PREPARING: {
-      return { state, context: context as TContextMap[EConnectionStatus.PREPARING] };
-    }
-    case EConnectionStatus.CONNECTING: {
-      return { state, context: context as TContextMap[EConnectionStatus.CONNECTING] };
-    }
-    case EConnectionStatus.CONNECTED: {
-      return { state, context: context as TContextMap[EConnectionStatus.CONNECTED] };
-    }
-    case EConnectionStatus.REGISTERED: {
-      return { state, context: context as TContextMap[EConnectionStatus.REGISTERED] };
-    }
-    case EConnectionStatus.ESTABLISHED: {
-      return { state, context: context as TContextMap[EConnectionStatus.ESTABLISHED] };
-    }
-    case EConnectionStatus.DISCONNECTING: {
-      return { state, context: context as TContextMap[EConnectionStatus.DISCONNECTING] };
-    }
-    case EConnectionStatus.DISCONNECTED: {
-      return { state, context: context as TContextMap[EConnectionStatus.DISCONNECTED] };
-    }
-    default: {
-      throw new Error('Unsupported connection status');
-    }
-  }
+  return {
+    state,
+    context,
+  } as TConnectionNodeValue;
 }
 
 const ConnectionIdleNodeModel = withNodeValueViews(

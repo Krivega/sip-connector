@@ -13,6 +13,10 @@ button[disabled],
   user-select: none;
 }
 
+pre {
+  font-size: 0.72rem;
+}
+
 #callForm label {
   display: flex;
   flex-direction: column;
@@ -469,12 +473,28 @@ button[disabled],
 }
 
 .conference-state {
+  display: grid;
+  gap: 0.75rem;
   padding-top: 1.5rem;
   padding-bottom: 1.5rem;
   background-color: #f0f8f7;
   border-radius: 6px;
   font-weight: 500;
   color: #2c3e50;
+}
+
+.conference-state__node {
+  padding-top: 0;
+  margin: 0;
+}
+
+.conference-state__node-title {
+  margin: 0 0 0.5rem;
+}
+
+.conference-state__list {
+  margin: 0;
+  padding-left: 1.1rem;
 }
 
 .logs-controls {
