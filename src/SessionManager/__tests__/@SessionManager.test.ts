@@ -497,6 +497,34 @@ describe('SessionManager', () => {
       stopAll();
     });
 
+    it('trigger snapshot-changed when snapshot context changes', () => {
+      const { session, callStateMachine, stopAll } = startSession();
+
+      callStateMachine.send({ type: 'CALL.CONNECTING', number: '100', answer: false });
+
+      callStateMachine.send({
+        type: 'CALL.ENTER_ROOM',
+        room: 'room-1',
+        participantName: 'participantName',
+      });
+
+      const handler = jest.fn();
+
+      session.on('snapshot-changed', handler);
+
+      expect(handler).toHaveBeenCalledTimes(0);
+
+      callStateMachine.send({
+        type: 'CALL.ENTER_ROOM',
+        room: 'room-2',
+        participantName: 'participantName',
+      });
+
+      expect(handler).toHaveBeenCalledTimes(1);
+
+      stopAll();
+    });
+
     it('provides access to actors', () => {
       const { session, stopAll } = startSession();
 

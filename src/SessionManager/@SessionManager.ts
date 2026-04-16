@@ -1,4 +1,5 @@
 import { EventEmitterProxy } from 'events-constructor';
+import { isEqual } from 'lodash';
 
 import { createEvents } from './events';
 
@@ -21,7 +22,9 @@ const defaultEquals = <T>(previous: T, next: T) => {
 const defaultSnapshotEquals: TEqualityFunction<TSessionSnapshot> = (previous, next) => {
   return (
     previous.connection.value === next.connection.value &&
-    previous.call.value === next.call.value &&
+    // Call: full snapshot so room/context updates without a state `value` change still emit snapshot-changed
+    isEqual(previous.call, next.call) &&
+    // Incoming: value only — repeated RINGING with different callee metadata must not emit again
     previous.incoming.value === next.incoming.value &&
     previous.presentation.value === next.presentation.value &&
     previous.autoConnector.value === next.autoConnector.value
@@ -142,9 +145,9 @@ class SessionManager extends EventEmitterProxy<TEventMap> {
 
     for (const subscriber of this.subscribers) {
       const next = subscriber.selector(this.currentSnapshot);
-      const isEqual = subscriber.equals(subscriber.current, next);
+      const isSubscriberEqual = subscriber.equals(subscriber.current, next);
 
-      if (!isEqual) {
+      if (!isSubscriberEqual) {
         subscriber.current = next;
         subscriber.listener(next);
       }

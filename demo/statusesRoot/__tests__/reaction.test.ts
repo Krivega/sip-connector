@@ -113,20 +113,34 @@ describe('StatusesStore reactions', () => {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         expect(roomReaction.mock.calls[0][0]).toBe('room-1');
 
+        callStateMachine.send({
+          type: 'CALL.ENTER_ROOM',
+          room: 'room-2',
+          participantName: 'participantName',
+        });
+
+        store.syncFromSessionSnapshot(session.getSnapshot());
+
+        expect(store.callSnapshot.state).toBe(ECallStatus.ROOM_PENDING_AUTH);
+        expect(store.call.room).toBe('room-2');
+        expect(roomReaction).toHaveBeenCalledTimes(2);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        expect(roomReaction.mock.calls[1][0]).toBe('room-2');
+
         roomReaction.mockClear();
 
         callStateMachine.send({
           type: 'CALL.TOKEN_ISSUED',
           token: 'token',
-          conferenceForToken: 'room-1',
-          participantName: 'participantName2',
+          conferenceForToken: 'room-2',
+          participantName: 'participantName',
         });
         store.syncFromSessionSnapshot(session.getSnapshot());
 
         expect(store.callSnapshot.state).toBe(ECallStatus.IN_ROOM);
-        expect(store.call.room).toBe('room-1');
+        expect(store.call.room).toBe('room-2');
         expect(store.call.token).toBe('token');
-        expect(store.call.conferenceForToken).toBe('room-1');
+        expect(store.call.conferenceForToken).toBe('room-2');
         expect(roomReaction).not.toHaveBeenCalled();
       } finally {
         disposeRoomReaction();
