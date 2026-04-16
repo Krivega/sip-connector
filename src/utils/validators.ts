@@ -12,10 +12,5 @@ export const isValidBoolean = (value: unknown): value is boolean => {
 };
 
 export const hasValidExtraHeaders = (extraHeaders: unknown): extraHeaders is string[] => {
-  return (
-    Array.isArray(extraHeaders) &&
-    extraHeaders.every((header) => {
-      return typeof header === 'string';
-    })
-  );
+  return Array.isArray(extraHeaders) && extraHeaders.every(isValidString);
 };
