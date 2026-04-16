@@ -184,6 +184,101 @@ describe('CallStatusModel', () => {
     expect(getStateFlags(status)).toEqual(expectedFlags);
   });
 
+  it.each([
+    {
+      title: 'P2P_ROOM',
+      snapshot: {
+        state: ECallStatus.P2P_ROOM,
+        context: {},
+      } as TCallSnapshot,
+      expected: true,
+    },
+    {
+      title: 'DIRECT_P2P_ROOM',
+      snapshot: {
+        state: ECallStatus.DIRECT_P2P_ROOM,
+        context: {
+          isDirectPeerToPeer: true,
+        },
+      } as TCallSnapshot,
+      expected: true,
+    },
+    {
+      title: 'IN_ROOM',
+      snapshot: {
+        state: ECallStatus.IN_ROOM,
+        context: {},
+      } as TCallSnapshot,
+      expected: false,
+    },
+    {
+      title: 'PURGATORY',
+      snapshot: {
+        state: ECallStatus.PURGATORY,
+        context: {},
+      } as TCallSnapshot,
+      expected: false,
+    },
+    {
+      title: 'IDLE',
+      snapshot: INITIAL_CALL_STATUS_SNAPSHOT,
+      expected: false,
+    },
+  ])('returns $expected for isP2PCall() in $title', ({ snapshot, expected }) => {
+    const status = createCallStatus(snapshot);
+
+    expect(status.isP2PCall()).toBe(expected);
+  });
+
+  it.each([
+    {
+      title: 'PURGATORY uses number',
+      snapshot: {
+        state: ECallStatus.PURGATORY,
+        context: {
+          number: '301',
+          room: 'room-301',
+        },
+      } as TCallSnapshot,
+      expected: '301',
+    },
+    {
+      title: 'PURGATORY without number returns undefined',
+      snapshot: {
+        state: ECallStatus.PURGATORY,
+        context: {
+          room: 'room-301',
+        },
+      } as TCallSnapshot,
+      expected: undefined,
+    },
+    {
+      title: 'IN_ROOM uses room',
+      snapshot: {
+        state: ECallStatus.IN_ROOM,
+        context: {
+          number: '300',
+          room: 'room-1',
+        },
+      } as TCallSnapshot,
+      expected: 'room-1',
+    },
+    {
+      title: 'CONNECTING without room returns undefined',
+      snapshot: {
+        state: ECallStatus.CONNECTING,
+        context: {
+          number: '100',
+        },
+      } as TCallSnapshot,
+      expected: undefined,
+    },
+  ])('returns $expected for roomOrTargetRoom when $title', ({ snapshot, expected }) => {
+    const status = createCallStatus(snapshot);
+
+    expect(status.roomOrTargetRoom).toBe(expected);
+  });
+
   it('returns call context fields in CONNECTING state', () => {
     const status = createCallStatus({
       state: ECallStatus.CONNECTING,

@@ -88,6 +88,13 @@ export const CallStatusModel = types
   })
   .views((self) => {
     return {
+      isP2PCall(): boolean {
+        return self.isP2PRoom() || self.isDirectP2PRoom();
+      },
+    };
+  })
+  .views((self) => {
+    return {
       get hasPendingDisconnect(): true | undefined {
         return getCallContextField(self.context, 'pendingDisconnect');
       },
@@ -117,6 +124,13 @@ export const CallStatusModel = types
       },
       get conferenceForToken(): string | undefined {
         return getCallContextField(self.context, 'conferenceForToken');
+      },
+    };
+  })
+  .views((self) => {
+    return {
+      get roomOrTargetRoom(): string | undefined {
+        return self.isPurgatory() ? self.number : self.room;
       },
     };
   });
