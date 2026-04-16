@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [28.1.0](https://github.com/Krivega/sip-connector/compare/v28.0.1...v28.1.0) (2026-04-16)
+
+### Features
+
+- **demo:** add isP2PCall and roomOrTargetRoom views to CallStatusModel with corresponding tests ([b39430f](https://github.com/Krivega/sip-connector/commit/b39430f28659c593ae2b487d62ffc0063b383d13))
+- **demo:** enhance SystemStatusModel with state flag methods and update type imports ([4aecb63](https://github.com/Krivega/sip-connector/commit/4aecb634a6a0a8b400bdfc3b62c9e2859d69384f))
+
 ### [28.0.1](https://github.com/Krivega/sip-connector/compare/v28.0.0...v28.0.1) (2026-04-15)
 
 ## [28.0.0](https://github.com/Krivega/sip-connector/compare/v27.0.1...v28.0.0) (2026-04-15)
