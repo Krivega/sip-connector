@@ -1,67 +1,25 @@
 import { types } from 'mobx-state-tree';
 
-import { EIncomingStatus, sessionSelectors } from '@/index';
-import { createStatusStateModel } from '../createStatusStateModel';
+import { EIncomingStatus as EState, sessionSelectors } from '@/index';
 
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
-import type { TIncomingContextMap, TSessionSnapshot } from '@/index';
-import type { TStatusSnapshot, TStatusSnapshotByState } from '../statusSnapshot';
+import type {
+  TIncomingSnapshot as TSnapshot,
+  TIncomingContextMap,
+  TSessionSnapshot,
+} from '@/index';
 
-type TIncomingStatusSnapshotByState<TState extends EIncomingStatus> = TStatusSnapshotByState<
-  TState,
-  TIncomingContextMap
->;
+type TSnapshotByState<TState extends EState> = TState extends EState
+  ? Extract<TSnapshot, { value: TState }> extends { context: infer TContext }
+    ? { state: TState; context: TContext }
+    : never
+  : never;
 
-export type TIncomingStatusSnapshot = TStatusSnapshot<EIncomingStatus, TIncomingContextMap>;
+export type TIncomingStatusSnapshot = TSnapshotByState<EState>;
 
-const withStatusSnapshotViews = <TState extends EIncomingStatus>(
-  base: ReturnType<typeof createStatusStateModel<TState, TIncomingContextMap[TState]>>,
-) => {
-  return base
-    .views((self) => {
-      return {
-        get snapshot(): TIncomingStatusSnapshotByState<TState> {
-          return { state: self.state, context: self.context };
-        },
-      };
-    })
-    .views((self) => {
-      return {
-        isIdle: (): boolean => {
-          return self.snapshot.state === EIncomingStatus.IDLE;
-        },
-        isRinging: (): boolean => {
-          return self.snapshot.state === EIncomingStatus.RINGING;
-        },
-        isConsumed: (): boolean => {
-          return self.snapshot.state === EIncomingStatus.CONSUMED;
-        },
-        isDeclined: (): boolean => {
-          return self.snapshot.state === EIncomingStatus.DECLINED;
-        },
-        isTerminated: (): boolean => {
-          return self.snapshot.state === EIncomingStatus.TERMINATED;
-        },
-        isFailed: (): boolean => {
-          return self.snapshot.state === EIncomingStatus.FAILED;
-        },
-      };
-    })
-    .views((self) => {
-      return {
-        get remoteCallerData(): TIncomingContextMap[TState]['remoteCallerData'] {
-          return self.context.remoteCallerData;
-        },
-        get terminalReason(): TIncomingContextMap[TState]['lastReason'] {
-          return self.context.lastReason;
-        },
-      };
-    });
-};
-
-export function createIncomingStatusSnapshotFromSession(
+export const createIncomingStatusSnapshotFromSession = (
   snapshot: TSessionSnapshot,
-): TIncomingStatusSnapshot {
+): TSnapshotByState<EState> => {
   const state = sessionSelectors.selectIncomingStatus(snapshot);
   const {
     incoming: { context },
@@ -71,52 +29,66 @@ export function createIncomingStatusSnapshotFromSession(
     state,
     context,
   } as TIncomingStatusSnapshot;
-}
+};
 
-const IncomingIdleStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<EIncomingStatus.IDLE, TIncomingContextMap[EIncomingStatus.IDLE]>(
-    EIncomingStatus.IDLE,
-  ),
-);
-const IncomingRingingStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<EIncomingStatus.RINGING, TIncomingContextMap[EIncomingStatus.RINGING]>(
-    EIncomingStatus.RINGING,
-  ),
-);
-const IncomingConsumedStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<EIncomingStatus.CONSUMED, TIncomingContextMap[EIncomingStatus.CONSUMED]>(
-    EIncomingStatus.CONSUMED,
-  ),
-);
-const IncomingDeclinedStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<EIncomingStatus.DECLINED, TIncomingContextMap[EIncomingStatus.DECLINED]>(
-    EIncomingStatus.DECLINED,
-  ),
-);
-const IncomingTerminatedStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<
-    EIncomingStatus.TERMINATED,
-    TIncomingContextMap[EIncomingStatus.TERMINATED]
-  >(EIncomingStatus.TERMINATED),
-);
-const IncomingFailedStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<EIncomingStatus.FAILED, TIncomingContextMap[EIncomingStatus.FAILED]>(
-    EIncomingStatus.FAILED,
-  ),
-);
-
-export const IncomingStatusModel = types.union(
-  IncomingIdleStatusModel,
-  IncomingRingingStatusModel,
-  IncomingConsumedStatusModel,
-  IncomingDeclinedStatusModel,
-  IncomingTerminatedStatusModel,
-  IncomingFailedStatusModel,
-);
+export const IncomingStatusModel = types
+  .model({
+    state: types.enumeration('IncomingStatus', [
+      EState.IDLE,
+      EState.RINGING,
+      EState.CONSUMED,
+      EState.DECLINED,
+      EState.TERMINATED,
+      EState.FAILED,
+    ]),
+    context: types.frozen<TIncomingContextMap[EState]>(),
+  })
+  .views((self) => {
+    return {
+      get snapshot(): TSnapshotByState<EState> {
+        return {
+          state: self.state,
+          context: self.context,
+        } as TIncomingStatusSnapshot;
+      },
+    };
+  })
+  .views((self) => {
+    return {
+      isIdle: (): boolean => {
+        return self.state === EState.IDLE;
+      },
+      isRinging: (): boolean => {
+        return self.state === EState.RINGING;
+      },
+      isConsumed: (): boolean => {
+        return self.state === EState.CONSUMED;
+      },
+      isDeclined: (): boolean => {
+        return self.state === EState.DECLINED;
+      },
+      isTerminated: (): boolean => {
+        return self.state === EState.TERMINATED;
+      },
+      isFailed: (): boolean => {
+        return self.state === EState.FAILED;
+      },
+    };
+  })
+  .views((self) => {
+    return {
+      get remoteCallerData(): TIncomingContextMap[EState]['remoteCallerData'] {
+        return self.context.remoteCallerData;
+      },
+      get terminalReason(): TIncomingContextMap[EState]['lastReason'] {
+        return self.context.lastReason;
+      },
+    };
+  });
 
 export type TIncomingStatusInstance = Instance<typeof IncomingStatusModel>;
 
 export const INITIAL_INCOMING_STATUS_SNAPSHOT = {
-  state: EIncomingStatus.IDLE,
+  state: EState.IDLE,
   context: {},
 } as SnapshotIn<typeof IncomingStatusModel>;

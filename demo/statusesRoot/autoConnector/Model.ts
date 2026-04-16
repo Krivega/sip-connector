@@ -1,34 +1,27 @@
 import { types } from 'mobx-state-tree';
 
-import { EAutoConnectorStatus } from '@/index';
-import { createStatusStateModel } from '../createStatusStateModel';
+import { EAutoConnectorStatus as EState } from '@/index';
 
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
-import type { TAutoConnectorContextMap, TParametersAutoConnect, TSessionSnapshot } from '@/index';
-import type { TStatusSnapshot } from '../statusSnapshot';
+import type {
+  TAutoConnectorContextMap,
+  TAutoConnectorSnapshot as TSnapshot,
+  TSessionSnapshot,
+} from '@/index';
 
 export type TAutoConnectorStopReason = 'halted' | 'cancelled' | 'failed';
 
-export type TAutoConnectorStatusSnapshot = TStatusSnapshot<
-  EAutoConnectorStatus,
-  TAutoConnectorContextMap
->;
+type TSnapshotByState<TState extends EState> = TState extends EState
+  ? Extract<TSnapshot, { value: TState }> extends { context: infer TContext }
+    ? { state: TState; context: TContext }
+    : never
+  : never;
 
-const withStatusSnapshotViews = <S extends string, C>(
-  base: ReturnType<typeof createStatusStateModel<S, C>>,
-) => {
-  return base.views((self) => {
-    return {
-      get snapshot(): TAutoConnectorStatusSnapshot {
-        return { state: self.state, context: self.context } as TAutoConnectorStatusSnapshot;
-      },
-    };
-  });
-};
+export type TAutoConnectorStatusSnapshot = TSnapshotByState<EState>;
 
-export function createAutoConnectorStatusSnapshotFromSession(
+export const createAutoConnectorStatusSnapshotFromSession = (
   snapshot: TSessionSnapshot,
-): TAutoConnectorStatusSnapshot {
+): TSnapshotByState<EState> => {
   const state = snapshot.autoConnector.value;
   const { context } = snapshot.autoConnector;
 
@@ -36,98 +29,33 @@ export function createAutoConnectorStatusSnapshotFromSession(
     state,
     context,
   } as TAutoConnectorStatusSnapshot;
-}
+};
 
-const AutoConnectorIdleStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<
-    EAutoConnectorStatus.IDLE,
-    {
-      stopReason?: TAutoConnectorStopReason;
-      lastError?: unknown;
-    }
-  >(EAutoConnectorStatus.IDLE),
-);
-const AutoConnectorDisconnectingStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<
-    EAutoConnectorStatus.DISCONNECTING,
-    {
-      afterDisconnect: 'attempt' | 'idle';
-      parameters?: TParametersAutoConnect;
-      stopReason?: TAutoConnectorStopReason;
-      lastError?: unknown;
-    }
-  >(EAutoConnectorStatus.DISCONNECTING),
-);
-const AutoConnectorAttemptingGateStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<
-    EAutoConnectorStatus.ATTEMPTING_GATE,
-    {
-      parameters?: TParametersAutoConnect;
-      lastError?: unknown;
-    }
-  >(EAutoConnectorStatus.ATTEMPTING_GATE),
-);
-const AutoConnectorAttemptingConnectStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<
-    EAutoConnectorStatus.ATTEMPTING_CONNECT,
-    {
-      parameters?: TParametersAutoConnect;
-      lastError?: unknown;
-    }
-  >(EAutoConnectorStatus.ATTEMPTING_CONNECT),
-);
-const AutoConnectorWaitingBeforeRetryStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<
-    EAutoConnectorStatus.WAITING_BEFORE_RETRY,
-    {
-      parameters?: TParametersAutoConnect;
-      lastError?: unknown;
-    }
-  >(EAutoConnectorStatus.WAITING_BEFORE_RETRY),
-);
-const AutoConnectorConnectedMonitoringStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<
-    EAutoConnectorStatus.CONNECTED_MONITORING,
-    {
-      parameters?: TParametersAutoConnect;
-      lastError?: unknown;
-    }
-  >(EAutoConnectorStatus.CONNECTED_MONITORING),
-);
-const AutoConnectorTelephonyCheckingStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<
-    EAutoConnectorStatus.TELEPHONY_CHECKING,
-    {
-      parameters?: TParametersAutoConnect;
-      lastError?: unknown;
-    }
-  >(EAutoConnectorStatus.TELEPHONY_CHECKING),
-);
-const AutoConnectorErrorTerminalStatusModel = withStatusSnapshotViews(
-  createStatusStateModel<
-    EAutoConnectorStatus.ERROR_TERMINAL,
-    {
-      parameters?: TParametersAutoConnect;
-      stopReason?: TAutoConnectorStopReason;
-      lastError?: unknown;
-    }
-  >(EAutoConnectorStatus.ERROR_TERMINAL),
-);
-
-export const AutoConnectorStatusModel = types.union(
-  AutoConnectorIdleStatusModel,
-  AutoConnectorDisconnectingStatusModel,
-  AutoConnectorAttemptingGateStatusModel,
-  AutoConnectorAttemptingConnectStatusModel,
-  AutoConnectorWaitingBeforeRetryStatusModel,
-  AutoConnectorConnectedMonitoringStatusModel,
-  AutoConnectorTelephonyCheckingStatusModel,
-  AutoConnectorErrorTerminalStatusModel,
-);
+export const AutoConnectorStatusModel = types
+  .model({
+    state: types.enumeration('AutoConnectorStatus', [
+      EState.IDLE,
+      EState.DISCONNECTING,
+      EState.ATTEMPTING_GATE,
+      EState.ATTEMPTING_CONNECT,
+      EState.WAITING_BEFORE_RETRY,
+      EState.CONNECTED_MONITORING,
+      EState.TELEPHONY_CHECKING,
+      EState.ERROR_TERMINAL,
+    ]),
+    context: types.frozen<TAutoConnectorContextMap[EState]>(),
+  })
+  .views((self) => {
+    return {
+      get snapshot(): TSnapshotByState<EState> {
+        return { state: self.state, context: self.context } as TAutoConnectorStatusSnapshot;
+      },
+    };
+  });
 
 export type TAutoConnectorStatusInstance = Instance<typeof AutoConnectorStatusModel>;
 
 export const INITIAL_AUTO_CONNECTOR_STATUS_SNAPSHOT = {
-  state: EAutoConnectorStatus.IDLE,
+  state: EState.IDLE,
   context: {},
 } as SnapshotIn<typeof AutoConnectorStatusModel>;

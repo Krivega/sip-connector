@@ -49,14 +49,24 @@ export type {
   TEffectiveQuality,
   TCallContextMap,
   TCallContext,
+  TCallSnapshot,
 } from './CallManager';
 export type {
   TParametersConnection,
   TConnectionConfiguration,
   TConnectionContextMap,
+  TConnectionSnapshot,
 } from './ConnectionManager';
 export type { TInboundStats, TOutboundStats } from './StatsPeerConnection';
-export type { TContentHint, TPresentationContextMap } from './PresentationManager';
-export type { TParametersAutoConnect, TAutoConnectorContextMap } from './AutoConnectorManager';
-export type { TIncomingContextMap } from './IncomingCallManager';
+export type {
+  TContentHint,
+  TPresentationContextMap,
+  TPresentationSnapshot,
+} from './PresentationManager';
+export type {
+  TParametersAutoConnect,
+  TAutoConnectorContextMap,
+  TAutoConnectorSnapshot,
+} from './AutoConnectorManager';
+export type { TIncomingContextMap, TIncomingSnapshot } from './IncomingCallManager';
 export type { TJsSIP } from './types';
