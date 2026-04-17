@@ -457,6 +457,7 @@ class App {
 
   private handleCallStateChange(state: {
     isDisconnected: boolean;
+    isDisconnecting: boolean;
     isConnecting: boolean;
     isReadyToCall: boolean;
     isCallConnecting: boolean;
@@ -465,17 +466,20 @@ class App {
   }): void {
     const {
       isDisconnected,
+      isDisconnecting,
       isConnecting,
-      isReadyToCall,
       isCallConnecting,
       isCallDisconnecting,
       isCallActive,
     } = state;
 
-    dom.callButtonElement.disabled = isConnecting || isCallConnecting || isCallDisconnecting;
+    const isBusyWithConnection = isConnecting || isDisconnecting;
+
+    dom.callButtonElement.disabled =
+      isBusyWithConnection || isCallConnecting || isCallDisconnecting;
     dom.endCallButtonElement.disabled = !isCallActive;
-    dom.connectButtonElement.disabled = isConnecting;
-    dom.disconnectButtonElement.disabled = isConnecting;
+    dom.connectButtonElement.disabled = isBusyWithConnection;
+    dom.disconnectButtonElement.disabled = isBusyWithConnection;
 
     if (isDisconnected) {
       dom.show(dom.connectButtonElement);
@@ -483,12 +487,9 @@ class App {
     } else if (isConnecting) {
       dom.show(dom.connectButtonElement);
       dom.hide(dom.disconnectButtonElement);
-    } else if (isReadyToCall) {
-      dom.hide(dom.connectButtonElement);
-      dom.show(dom.disconnectButtonElement);
     } else {
       dom.hide(dom.connectButtonElement);
-      dom.hide(dom.disconnectButtonElement);
+      dom.show(dom.disconnectButtonElement);
     }
 
     if (isCallActive) {
