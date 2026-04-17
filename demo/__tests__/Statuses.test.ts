@@ -2,6 +2,7 @@ import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import {
   createAutoConnectorStateMachine,
   createCallEvents,
+  createCallReconnectStateMachine,
   createCallStateMachine,
   createIncomingEvents,
   createConnectionEvents,
@@ -46,6 +47,46 @@ jest.mock('../Session/sipConnectorFacade', () => {
   };
 });
 
+const createCallReconnectDeps = () => {
+  return {
+    isNetworkFailure: () => {
+      return false;
+    },
+    canRetryOnError: () => {
+      return true;
+    },
+    isSignalingReady: () => {
+      return true;
+    },
+    hasLimitReached: () => {
+      return false;
+    },
+    computeNextDelayMs: () => {
+      return 0;
+    },
+    delayBeforeAttempt: jest.fn(async () => {}),
+    waitSignalingReady: jest.fn(async () => {}),
+    performAttempt: jest.fn(async () => {}),
+    registerAttemptStart: jest.fn(),
+    registerAttemptFinish: jest.fn(),
+    resetAttemptsState: jest.fn(),
+    emitArmed: jest.fn(),
+    emitDisarmed: jest.fn(),
+    emitFailureDetected: jest.fn(),
+    emitAttemptScheduled: jest.fn(),
+    emitAttemptStarted: jest.fn(),
+    emitAttemptSucceeded: jest.fn(),
+    emitAttemptFailed: jest.fn(),
+    emitWaitingSignaling: jest.fn(),
+    emitLimitReached: jest.fn(),
+    emitCancelled: jest.fn(),
+    cancelAll: jest.fn(),
+    getWaitSignalingTimeoutMs: () => {
+      return 1000;
+    },
+  };
+};
+
 const createAutoConnectorMachineDeps = () => {
   return {
     canRetryOnError: () => {
@@ -84,6 +125,7 @@ const startSession = () => {
   const autoConnectorStateMachine = createAutoConnectorStateMachine(
     createAutoConnectorMachineDeps(),
   );
+  const callReconnectStateMachine = createCallReconnectStateMachine(createCallReconnectDeps());
 
   const session = new SessionManager({
     connectionManager: { stateMachine: connectionStateMachine },
@@ -91,6 +133,7 @@ const startSession = () => {
     incomingCallManager: { stateMachine: incomingStateMachine },
     presentationManager: { stateMachine: presentationStateMachine },
     autoConnectorManager: { stateMachine: autoConnectorStateMachine },
+    callReconnectManager: { stateMachine: callReconnectStateMachine },
   });
 
   const stopAll = () => {
@@ -100,6 +143,7 @@ const startSession = () => {
     incomingStateMachine.stop();
     presentationStateMachine.stop();
     autoConnectorStateMachine.stop();
+    callReconnectStateMachine.stop();
   };
 
   return {
@@ -136,6 +180,7 @@ describe('Statuses', () => {
     expect(onStatusesChange).toHaveBeenLastCalledWith({
       connection: 'connection:idle',
       autoConnector: 'idle',
+      callReconnect: 'idle',
       call: 'call:idle',
       incoming: 'incoming:ringing',
       presentation: 'presentation:idle',

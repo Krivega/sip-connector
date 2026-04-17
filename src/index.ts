@@ -1,5 +1,9 @@
 export { EContentUseLicense } from './ApiManager';
 export { createAutoConnectorStateMachine } from './AutoConnectorManager';
+export {
+  createCallReconnectStateMachine,
+  CALL_RECONNECT_MANAGER_EVENT_NAMES,
+} from './CallReconnectManager';
 export { default as RTCSessionMock } from './__fixtures__/RTCSessionMock';
 export {
   CallSessionState,
@@ -47,6 +51,7 @@ export {
   EPresentationStatus,
   ESystemStatus,
   EAutoConnectorStatus,
+  ECallReconnectStatus,
 } from './SessionManager';
 export * as tools from './tools';
 export { EMimeTypesVideoCodecs } from './types';
@@ -87,5 +92,14 @@ export type {
   TAutoConnectorContextMap,
   TAutoConnectorSnapshot,
 } from './AutoConnectorManager';
+export type {
+  TCallReconnectSnapshot,
+  TCallReconnectContext,
+  TCallReconnectContextMap,
+  ICallReconnectOptions,
+  TCallRedialParameters,
+  TBackoffJitter,
+  TCancelledReason,
+} from './CallReconnectManager';
 export type { TIncomingContextMap, TIncomingSnapshot } from './IncomingCallManager';
 export type { TJsSIP } from './types';

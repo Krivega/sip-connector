@@ -1,5 +1,6 @@
 import { EAutoConnectorStatus } from '@/AutoConnectorManager';
 import { ECallStatus } from '@/CallManager';
+import { ECallReconnectStatus } from '@/CallReconnectManager';
 import { EConnectionStatus } from '@/ConnectionManager';
 import { EIncomingStatus } from '@/IncomingCallManager';
 import { EPresentationStatus } from '@/PresentationManager';
@@ -50,6 +51,18 @@ describe('sessionSelectors', () => {
           lastError: undefined,
         },
         ...overrides.autoConnector,
+      },
+      callReconnect: {
+        value: ECallReconnectStatus.IDLE,
+        context: {
+          parameters: undefined,
+          attempt: 0,
+          nextDelayMs: 0,
+          lastError: undefined,
+          lastFailureCause: undefined,
+          cancelledReason: undefined,
+        },
+        ...overrides.callReconnect,
       },
       ...overrides,
     };

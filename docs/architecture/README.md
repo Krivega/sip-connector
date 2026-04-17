@@ -29,6 +29,9 @@
   - [State Machine](./components/IncomingCallManager/state-machine.md) - IncomingCallStateMachine
 - [ConnectionQueueManager](./components/ConnectionQueueManager/index.md) - Очередь операций подключения
 - [AutoConnectorManager](./components/AutoConnectorManager/index.md) - Автоматическое переподключение
+  - [State Machine](./components/AutoConnectorManager/state-machine.md) - AutoConnectorStateMachine
+- [CallReconnectManager](./components/CallReconnectManager/index.md) - Автоматический редиал звонка при сетевых обрывах
+  - [State Machine](./components/CallReconnectManager/state-machine.md) - CallReconnectStateMachine
 - [ApiManager](./components/ApiManager/index.md) - Обработка SIP INFO сообщений и взаимодействие с сервером
 
 **Вспомогательные компоненты:**

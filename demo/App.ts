@@ -180,6 +180,14 @@ class App {
       this.updateSessionStatuses(statuses);
       dom.renderStatusesNodeValues(this.statusesManager.getStatusSnapshots());
     });
+
+    this.statusesManager.onChangeCallReconnect(({ isReconnecting }) => {
+      if (isReconnecting) {
+        dom.show(dom.callReconnectIndicatorElement);
+      } else {
+        dom.hide(dom.callReconnectIndicatorElement);
+      }
+    });
   }
 
   /**
@@ -361,6 +369,7 @@ class App {
       await session.callToServer({
         mediaStream,
         conference: state.conferenceNumber,
+        autoRedial: state.autoRedialEnabled,
         setRemoteStreams: (streams: TRemoteStreams) => {
           this.handleRemoteStreams(streams);
         },
@@ -428,11 +437,13 @@ class App {
     presentation: string;
     system: string;
     autoConnector: string;
+    callReconnect: string;
   }): void {
     debug('updateSessionStatuses', statuses);
 
     dom.setActiveSessionStatusNode('connection', statuses.connection);
     dom.setActiveSessionStatusNode('autoConnectorManager', statuses.autoConnector);
+    dom.setActiveSessionStatusNode('callReconnect', statuses.callReconnect);
     dom.setActiveSessionStatusNode('call', statuses.call);
     dom.setActiveSessionStatusNode('incoming', statuses.incoming);
     dom.setActiveSessionStatusNode('presentation', statuses.presentation);

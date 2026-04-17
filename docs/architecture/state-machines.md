@@ -15,6 +15,7 @@ Sip-connector публикует единый XState-актор сеанса, а
 - Incoming: [IncomingCallStateMachine](./components/IncomingCallManager/state-machine.md)
 - Presentation: [PresentationStateMachine](./components/PresentationManager/state-machine.md)
 - AutoConnector: [AutoConnectorStateMachine](./components/AutoConnectorManager/state-machine.md)
+- CallReconnect: [CallReconnectStateMachine](./components/CallReconnectManager/state-machine.md)
 
 ## Комбинированное состояние системы
 

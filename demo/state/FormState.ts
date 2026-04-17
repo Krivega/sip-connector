@@ -10,6 +10,7 @@ export interface IFormState {
   userNumber: string;
   password: string;
   conferenceNumber: string;
+  autoRedialEnabled: boolean;
 }
 
 /**
@@ -29,6 +30,7 @@ class FormState {
     userNumber: '',
     password: '',
     conferenceNumber: '',
+    autoRedialEnabled: true,
   };
 
   private state: IFormState = this.initialState;
@@ -62,7 +64,8 @@ class FormState {
       typeof s.authEnabled === 'boolean' &&
       typeof s.userNumber === 'string' &&
       typeof s.password === 'string' &&
-      typeof s.conferenceNumber === 'string'
+      typeof s.conferenceNumber === 'string' &&
+      typeof s.autoRedialEnabled === 'boolean'
     );
   }
 

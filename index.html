@@ -67,6 +67,18 @@
               required
             />
           </label>
+
+          <label for="autoRedialEnabled">
+            <span class="form-label-text"
+              >Автоматический редиал при сетевых обрывах звонка</span
+            >
+            <input
+              type="checkbox"
+              id="autoRedialEnabled"
+              name="autoRedialEnabled"
+              checked
+            />
+          </label>
         </form>
       </section>
 
@@ -182,6 +194,7 @@
           <div class="hidden">
             <span id="connectionStatus"></span>
             <span id="autoConnectorManagerStatus"></span>
+            <span id="callReconnectStatus"></span>
             <span id="callStatus"></span>
             <span id="incomingStatus"></span>
             <span id="presentationStatus"></span>
@@ -191,6 +204,15 @@
           <div id="statusesNodeValues" class="conference-state"></div>
         </details>
       </section>
+
+      <div
+        id="callReconnectIndicator"
+        class="call-reconnect-indicator hidden"
+        role="status"
+        aria-live="polite"
+      >
+        Восстанавливаем звонок после сетевого обрыва…
+      </div>
 
       <section id="activeCallSection" class="hidden">
         <details class="section-collapsible" open>

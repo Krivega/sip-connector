@@ -4,6 +4,7 @@ import { EventEmitterProxy } from 'events-constructor';
 import { ApiManager } from '@/ApiManager';
 import { AutoConnectorManager } from '@/AutoConnectorManager';
 import { CallManager } from '@/CallManager';
+import { CallReconnectManager } from '@/CallReconnectManager';
 import { CallSessionState } from '@/CallSessionState';
 import { ConnectionManager } from '@/ConnectionManager';
 import { ConnectionQueueManager } from '@/ConnectionQueueManager';
@@ -28,6 +29,7 @@ import { createEvents } from './events';
 
 import type { IAutoConnectorOptions } from '@/AutoConnectorManager';
 import type { TGetUri, TRecvQuality } from '@/CallManager';
+import type { ICallReconnectOptions } from '@/CallReconnectManager';
 import type { TContentHint, TOnAddedTransceiver } from '@/PresentationManager';
 import type { TJsSIP } from '@/types';
 import type { IBalancerOptions } from '@/VideoSendingBalancer';
@@ -47,6 +49,8 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
   public readonly callSessionState: CallSessionState;
 
   public readonly autoConnectorManager: AutoConnectorManager;
+
+  public readonly callReconnectManager: CallReconnectManager;
 
   public readonly apiManager: ApiManager;
 
@@ -77,6 +81,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       excludeMimeTypesVideoCodecs,
       videoBalancerOptions,
       autoConnectorOptions,
+      callReconnectOptions,
       numberOfConnectionAttempts,
       minConsecutiveProblemSamplesCount,
       throttleRecoveryTimeout,
@@ -85,6 +90,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       excludeMimeTypesVideoCodecs?: string[];
       videoBalancerOptions?: IBalancerOptions;
       autoConnectorOptions?: IAutoConnectorOptions;
+      callReconnectOptions?: ICallReconnectOptions;
       numberOfConnectionAttempts?: number;
       minConsecutiveProblemSamplesCount?: number;
       throttleRecoveryTimeout?: number;
@@ -124,6 +130,13 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       },
       autoConnectorOptions,
     );
+    this.callReconnectManager = new CallReconnectManager(
+      {
+        callManager: this.callManager,
+        connectionManager: this.connectionManager,
+      },
+      callReconnectOptions,
+    );
     this.videoSendingBalancerManager = new VideoSendingBalancerManager(
       this.callManager,
       this.apiManager,
@@ -141,6 +154,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       incomingCallManager: this.incomingCallManager,
       presentationManager: this.presentationManager,
       autoConnectorManager: this.autoConnectorManager,
+      callReconnectManager: this.callReconnectManager,
     });
 
     this.callManager.subscribeToApiEvents(this.apiManager);
@@ -283,17 +297,49 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
 
   public call = async (
     params: Omit<Parameters<CallManager['startCall']>[2], 'isPresentationCall'>,
+    options: { autoRedial?: boolean } = {},
   ) => {
     const { onAddedTransceiver, ...rest } = params;
-
-    return this.callManager.startCall(this.connectionManager.getUaProtected(), this.getUri, {
+    const resolvedParams = {
       ...rest,
       onAddedTransceiver: this.resolveHandleAddTransceiver(onAddedTransceiver),
-    });
+    };
+
+    if (options.autoRedial === true) {
+      this.callReconnectManager.arm({
+        getCallParameters: async () => {
+          return resolvedParams;
+        },
+      });
+    }
+
+    return this.callManager.startCall(
+      this.connectionManager.getUaProtected(),
+      this.getUri,
+      resolvedParams,
+    );
   };
 
   public hangUp: CallManager['endCall'] = async () => {
+    this.callReconnectManager.disarm('local-hangup');
+
     return this.callManager.endCall();
+  };
+
+  public armCallAutoRedial: CallReconnectManager['arm'] = (parameters) => {
+    this.callReconnectManager.arm(parameters);
+  };
+
+  public disarmCallAutoRedial: CallReconnectManager['disarm'] = (reason) => {
+    this.callReconnectManager.disarm(reason);
+  };
+
+  public forceCallReconnect: CallReconnectManager['forceReconnect'] = () => {
+    this.callReconnectManager.forceReconnect();
+  };
+
+  public cancelCurrentCallReconnectAttempt: CallReconnectManager['cancelCurrentAttempt'] = () => {
+    this.callReconnectManager.cancelCurrentAttempt();
   };
 
   public answerToIncomingCall = async (
@@ -541,6 +587,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
 
   private subscribe() {
     this.bridgeEvents('auto-connect', this.autoConnectorManager);
+    this.bridgeEvents('call-reconnect', this.callReconnectManager);
     this.bridgeEvents('connection', this.connectionManager);
     this.bridgeEvents('call', this.callManager);
     this.bridgeEvents('api', this.apiManager);

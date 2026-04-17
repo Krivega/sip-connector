@@ -27,12 +27,34 @@ class Statuses {
       onStatusesChange({
         connection: this.statusesStore.connection.state,
         autoConnector: this.statusesStore.autoConnector.state,
+        callReconnect: this.statusesStore.callReconnect.state,
         call: this.statusesStore.call.state,
         incoming: this.statusesStore.incoming.state,
         presentation: this.statusesStore.presentation.state,
         system: this.statusesStore.system.state,
       });
     });
+  }
+
+  /**
+   * Подписывается на изменения состояния авто-редиала звонка.
+   * Колбек получает булев флаг `isReconnecting` (активная ли сейчас попытка восстановления).
+   */
+  public onChangeCallReconnect(
+    callback: (payload: { state: string; isReconnecting: boolean }) => void,
+  ) {
+    return reaction(
+      () => {
+        return {
+          state: this.statusesStore.callReconnect.state,
+          isReconnecting: this.statusesStore.callReconnect.isReconnecting,
+        };
+      },
+      (payload) => {
+        callback(payload);
+      },
+      { fireImmediately: true },
+    );
   }
 
   public getStatusesWithContext(): TStatusesRootSnapshotOut {
@@ -43,6 +65,7 @@ class Statuses {
     return {
       connection: this.statusesStore.connectionSnapshot,
       autoConnector: this.statusesStore.autoConnectorSnapshot,
+      callReconnect: this.statusesStore.callReconnectSnapshot,
       call: this.statusesStore.callSnapshot,
       callSession: this.statusesStore.callSessionSnapshot,
       incoming: this.statusesStore.incomingSnapshot,

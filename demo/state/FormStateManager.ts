@@ -12,6 +12,7 @@ const getElement = <K extends keyof IFormState>(field: K) => {
     userNumber: dom.userNumberInput,
     password: dom.passwordInput,
     conferenceNumber: dom.conferenceNumberInput,
+    autoRedialEnabled: dom.autoRedialEnabledInput,
     userNumberLabel: dom.userNumberLabel,
     passwordLabel: dom.passwordLabel,
   };
@@ -118,6 +119,7 @@ class FormStateManager {
     getElement('userNumber').value = state.userNumber;
     getElement('password').value = state.password;
     getElement('conferenceNumber').value = state.conferenceNumber;
+    getElement('autoRedialEnabled').checked = state.autoRedialEnabled;
 
     this.updateAuthFieldsVisibility();
     this.updateAuthFieldsRequired();
@@ -173,6 +175,13 @@ class FormStateManager {
       }
       case 'conferenceNumber': {
         this.formState.setField('conferenceNumber', target.value);
+        break;
+      }
+      case 'autoRedialEnabled': {
+        if (type === 'checkbox') {
+          this.formState.setField('autoRedialEnabled', target.checked);
+        }
+
         break;
       }
       default:

@@ -8,6 +8,7 @@ export {
   EPresentationStatus,
   ESystemStatus,
   EAutoConnectorStatus,
+  ECallReconnectStatus,
 } from './types';
 
 export type { TEventMap as TSessionManagerEventMap } from './events';

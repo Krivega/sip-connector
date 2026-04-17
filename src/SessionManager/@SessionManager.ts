@@ -6,6 +6,7 @@ import { createEvents } from './events';
 import type { Subscription } from 'xstate';
 import type { AutoConnectorManager } from '@/AutoConnectorManager';
 import type { CallManager } from '@/CallManager';
+import type { CallReconnectManager } from '@/CallReconnectManager';
 import type { ConnectionManager } from '@/ConnectionManager';
 import type { IncomingCallManager } from '@/IncomingCallManager';
 import type { PresentationManager } from '@/PresentationManager';
@@ -27,7 +28,9 @@ const defaultSnapshotEquals: TEqualityFunction<TSessionSnapshot> = (previous, ne
     // Incoming: value only — repeated RINGING with different callee metadata must not emit again
     previous.incoming.value === next.incoming.value &&
     previous.presentation.value === next.presentation.value &&
-    previous.autoConnector.value === next.autoConnector.value
+    previous.autoConnector.value === next.autoConnector.value &&
+    // CallReconnect: full snapshot so attempt/delay context updates без смены `value` тоже эмитят событие
+    isEqual(previous.callReconnect, next.callReconnect)
   );
 };
 
@@ -37,6 +40,7 @@ type TSessionManagerDeps = {
   incomingCallManager: Pick<IncomingCallManager, 'stateMachine'>;
   presentationManager: Pick<PresentationManager, 'stateMachine'>;
   autoConnectorManager: Pick<AutoConnectorManager, 'stateMachine'>;
+  callReconnectManager: Pick<CallReconnectManager, 'stateMachine'>;
 };
 
 const collectSnapshot = (machines: TSessionMachines): TSessionSnapshot => {
@@ -46,6 +50,7 @@ const collectSnapshot = (machines: TSessionMachines): TSessionSnapshot => {
     incoming: machines.incoming.getSnapshot(),
     presentation: machines.presentation.getSnapshot(),
     autoConnector: machines.autoConnector.getSnapshot(),
+    callReconnect: machines.callReconnect.getSnapshot(),
   };
 };
 
@@ -72,6 +77,7 @@ class SessionManager extends EventEmitterProxy<TEventMap> {
       incoming: deps.incomingCallManager.stateMachine,
       presentation: deps.presentationManager.stateMachine,
       autoConnector: deps.autoConnectorManager.stateMachine,
+      callReconnect: deps.callReconnectManager.stateMachine,
     };
 
     this.currentSnapshot = collectSnapshot(this.machines);
@@ -82,6 +88,7 @@ class SessionManager extends EventEmitterProxy<TEventMap> {
       this.machines.incoming.subscribe(this.notifySubscribers),
       this.machines.presentation.subscribe(this.notifySubscribers),
       this.machines.autoConnector.subscribe(this.notifySubscribers),
+      this.machines.callReconnect.subscribe(this.notifySubscribers),
     );
   }
 

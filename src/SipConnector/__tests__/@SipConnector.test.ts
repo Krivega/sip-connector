@@ -1663,4 +1663,74 @@ describe('SipConnector', () => {
       expect(startRecvSessionMock).toHaveBeenCalledWith({ audioChannel: audioId });
     });
   });
+
+  describe('call reconnect facade', () => {
+    it('call({ autoRedial: true }) armит callReconnectManager с resolvedParams', async () => {
+      const armSpy = jest.spyOn(sipConnector.callReconnectManager, 'arm').mockImplementation();
+      const startCallSpy = jest
+        .spyOn(sipConnector.callManager, 'startCall')
+        .mockImplementation(async () => {
+          return {} as never;
+        });
+
+      jest
+        .spyOn(sipConnector.connectionManager, 'getUaProtected')
+        .mockReturnValue({} as unknown as UA);
+
+      await sipConnector.call({ mediaStream: new MediaStream(), number: '100' } as never, {
+        autoRedial: true,
+      });
+
+      expect(armSpy).toHaveBeenCalledTimes(1);
+      expect(startCallSpy).toHaveBeenCalledTimes(1);
+
+      const [[armParameters]] = armSpy.mock.calls;
+      const resolved = await armParameters.getCallParameters();
+
+      expect(resolved).toBeDefined();
+    });
+
+    it('hangUp() disarmит callReconnectManager c причиной "local-hangup"', async () => {
+      const disarmSpy = jest
+        .spyOn(sipConnector.callReconnectManager, 'disarm')
+        .mockImplementation();
+      const endCallSpy = jest
+        .spyOn(sipConnector.callManager, 'endCall')
+        .mockImplementation(async () => {});
+
+      await sipConnector.hangUp();
+
+      expect(disarmSpy).toHaveBeenCalledWith('local-hangup');
+      expect(endCallSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('armCallAutoRedial/disarmCallAutoRedial/forceCallReconnect/cancelCurrentCallReconnectAttempt делегируют в менеджер', () => {
+      const armSpy = jest.spyOn(sipConnector.callReconnectManager, 'arm').mockImplementation();
+      const disarmSpy = jest
+        .spyOn(sipConnector.callReconnectManager, 'disarm')
+        .mockImplementation();
+      const forceSpy = jest
+        .spyOn(sipConnector.callReconnectManager, 'forceReconnect')
+        .mockImplementation();
+      const cancelSpy = jest
+        .spyOn(sipConnector.callReconnectManager, 'cancelCurrentAttempt')
+        .mockImplementation();
+
+      const parameters = {
+        getCallParameters: async () => {
+          return {} as never;
+        },
+      };
+
+      sipConnector.armCallAutoRedial(parameters);
+      sipConnector.disarmCallAutoRedial('manual');
+      sipConnector.forceCallReconnect();
+      sipConnector.cancelCurrentCallReconnectAttempt();
+
+      expect(armSpy).toHaveBeenCalledWith(parameters);
+      expect(disarmSpy).toHaveBeenCalledWith('manual');
+      expect(forceSpy).toHaveBeenCalledTimes(1);
+      expect(cancelSpy).toHaveBeenCalledTimes(1);
+    });
+  });
 });

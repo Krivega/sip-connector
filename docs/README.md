@@ -33,6 +33,7 @@
   - MainStreamHealthMonitor
   - SessionManager
   - AutoConnectorManager
+  - CallReconnectManager
   - ApiManager
   - SipConnector
 

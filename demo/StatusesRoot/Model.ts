@@ -11,6 +11,11 @@ import {
   INITIAL_CALL_STATUS_SNAPSHOT,
 } from './call/Model';
 import {
+  CallReconnectStatusModel,
+  createCallReconnectStatusSnapshotFromSession,
+  INITIAL_CALL_RECONNECT_STATUS_SNAPSHOT,
+} from './callReconnect/Model';
+import {
   CallSessionStatusModel,
   createCallSessionStatusSnapshot,
   INITIAL_CALL_SESSION_STATUS_SNAPSHOT,
@@ -39,6 +44,7 @@ import {
 import type { SnapshotIn, SnapshotOut } from 'mobx-state-tree';
 import type {
   EAutoConnectorStatus,
+  ECallReconnectStatus,
   ECallStatus,
   EConnectionStatus,
   EIncomingStatus,
@@ -49,6 +55,7 @@ import type {
 } from '@/index';
 import type { TAutoConnectorStatusSnapshot } from './autoConnector/Model';
 import type { TCallStatusSnapshot } from './call/Model';
+import type { TCallReconnectStatusSnapshot } from './callReconnect/Model';
 import type { TCallSessionStatusSnapshot } from './callSession/Model';
 import type { TConnectionStatusSnapshot } from './connection/Model';
 import type { TIncomingStatusSnapshot } from './incoming/Model';
@@ -56,6 +63,7 @@ import type { TPresentationStatusSnapshot } from './presentation/Model';
 import type { TSystemStatusSnapshot } from './system/Model';
 
 export type { TAutoConnectorStopReason, TAutoConnectorStatusSnapshot } from './autoConnector/Model';
+export type { TCallReconnectStatusSnapshot } from './callReconnect/Model';
 export type { TCallStatusSnapshot } from './call/Model';
 export type { TCallSessionStatusSnapshot } from './callSession/Model';
 export type { TConnectionStatusSnapshot } from './connection/Model';
@@ -66,6 +74,7 @@ export type { TSystemStatusSnapshot } from './system/Model';
 export type TStatusesRootSnapshot = {
   connection: TConnectionStatusSnapshot;
   autoConnector: TAutoConnectorStatusSnapshot;
+  callReconnect: TCallReconnectStatusSnapshot;
   call: TCallStatusSnapshot;
   callSession: TCallSessionStatusSnapshot;
   incoming: TIncomingStatusSnapshot;
@@ -80,6 +89,7 @@ export type TStatusesByDomain = {
   presentation: EPresentationStatus;
   system: ESystemStatus;
   autoConnector: EAutoConnectorStatus;
+  callReconnect: ECallReconnectStatus;
 };
 
 function createStatusesRootSnapshotFromSession(
@@ -88,6 +98,7 @@ function createStatusesRootSnapshotFromSession(
   return {
     connection: createConnectionStatusSnapshotFromSession(snapshot),
     autoConnector: createAutoConnectorStatusSnapshotFromSession(snapshot),
+    callReconnect: createCallReconnectStatusSnapshotFromSession(snapshot),
     call: createCallStatusSnapshotFromSession(snapshot),
     incoming: createIncomingStatusSnapshotFromSession(snapshot),
     presentation: createPresentationStatusSnapshotFromSession(snapshot),
@@ -99,6 +110,7 @@ export const StatusesRootModel = types
   .model({
     connection: ConnectionStatusModel,
     autoConnector: AutoConnectorStatusModel,
+    callReconnect: CallReconnectStatusModel,
     call: CallStatusModel,
     callSession: CallSessionStatusModel,
     incoming: IncomingStatusModel,
@@ -112,6 +124,9 @@ export const StatusesRootModel = types
       },
       get autoConnectorSnapshot(): TAutoConnectorStatusSnapshot {
         return self.autoConnector.snapshot;
+      },
+      get callReconnectSnapshot(): TCallReconnectStatusSnapshot {
+        return self.callReconnect.snapshot;
       },
       get callSnapshot(): TCallStatusSnapshot {
         return self.call.snapshot;
@@ -137,6 +152,7 @@ export const StatusesRootModel = types
 
         applySnapshot(self.connection, nextSnapshot.connection);
         applySnapshot(self.autoConnector, nextSnapshot.autoConnector);
+        applySnapshot(self.callReconnect, nextSnapshot.callReconnect);
         applySnapshot(self.call, nextSnapshot.call);
         applySnapshot(self.incoming, nextSnapshot.incoming);
         applySnapshot(self.presentation, nextSnapshot.presentation);
@@ -153,6 +169,7 @@ export type TStatusesRootSnapshotOut = SnapshotOut<typeof StatusesRootModel>;
 export const INITIAL_STATUSES_ROOT_SNAPSHOT = {
   connection: INITIAL_CONNECTION_STATUS_SNAPSHOT,
   autoConnector: INITIAL_AUTO_CONNECTOR_STATUS_SNAPSHOT,
+  callReconnect: INITIAL_CALL_RECONNECT_STATUS_SNAPSHOT,
   call: INITIAL_CALL_STATUS_SNAPSHOT,
   callSession: INITIAL_CALL_SESSION_STATUS_SNAPSHOT,
   incoming: INITIAL_INCOMING_STATUS_SNAPSHOT,

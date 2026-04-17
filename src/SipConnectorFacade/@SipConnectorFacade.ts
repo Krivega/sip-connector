@@ -246,6 +246,11 @@ class SipConnectorFacade implements IProxyMethods {
     onFinishProgressCall?: () => void;
     onEndedCall?: () => void;
     onAddedTransceiver?: TOnAddedTransceiver;
+    /**
+     * Включить автоматический перезвон при сетевых обрывах звонка.
+     * При `true` сразу после старта вооружается `CallReconnectManager` параметрами текущего вызова.
+     */
+    autoRedial?: boolean;
   }): Promise<RTCPeerConnection> => {
     const {
       conference,
@@ -267,6 +272,7 @@ class SipConnectorFacade implements IProxyMethods {
       onFinishProgressCall,
       onEndedCall,
       onAddedTransceiver,
+      autoRedial,
     } = parameters;
 
     debug('callToServer', parameters);
@@ -274,20 +280,23 @@ class SipConnectorFacade implements IProxyMethods {
     const startCall = async (): Promise<RTCPeerConnection> => {
       debug('startCall');
 
-      return this.sipConnector.call({
-        mediaStream,
-        extraHeaders,
-        iceServers,
-        contentHint,
-        offerToReceiveAudio,
-        offerToReceiveVideo,
-        directionVideo,
-        directionAudio,
-        degradationPreference,
-        onAddedTransceiver,
-        sendEncodings,
-        number: conference,
-      });
+      return this.sipConnector.call(
+        {
+          mediaStream,
+          extraHeaders,
+          iceServers,
+          contentHint,
+          offerToReceiveAudio,
+          offerToReceiveVideo,
+          directionVideo,
+          directionAudio,
+          degradationPreference,
+          onAddedTransceiver,
+          sendEncodings,
+          number: conference,
+        },
+        { autoRedial },
+      );
     };
     let isSuccessProgressCall = false;
     let room: string;

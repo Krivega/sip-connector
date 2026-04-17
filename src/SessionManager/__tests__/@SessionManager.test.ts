@@ -5,6 +5,7 @@ import {
   createCallStateMachine,
   ECallStatus,
 } from '@/CallManager';
+import { createCallReconnectStateMachine } from '@/CallReconnectManager';
 import {
   createEvents as createConnectionEvents,
   ConnectionStateMachine,
@@ -27,6 +28,46 @@ import { sessionSelectors } from '../selectors';
 import { ESystemStatus } from '../types';
 
 import type { TSessionSnapshot } from '../types';
+
+const createCallReconnectDeps = () => {
+  return {
+    isNetworkFailure: () => {
+      return false;
+    },
+    canRetryOnError: () => {
+      return true;
+    },
+    isSignalingReady: () => {
+      return true;
+    },
+    hasLimitReached: () => {
+      return false;
+    },
+    computeNextDelayMs: () => {
+      return 0;
+    },
+    delayBeforeAttempt: jest.fn(async () => {}),
+    waitSignalingReady: jest.fn(async () => {}),
+    performAttempt: jest.fn(async () => {}),
+    registerAttemptStart: jest.fn(),
+    registerAttemptFinish: jest.fn(),
+    resetAttemptsState: jest.fn(),
+    emitArmed: jest.fn(),
+    emitDisarmed: jest.fn(),
+    emitFailureDetected: jest.fn(),
+    emitAttemptScheduled: jest.fn(),
+    emitAttemptStarted: jest.fn(),
+    emitAttemptSucceeded: jest.fn(),
+    emitAttemptFailed: jest.fn(),
+    emitWaitingSignaling: jest.fn(),
+    emitLimitReached: jest.fn(),
+    emitCancelled: jest.fn(),
+    cancelAll: jest.fn(),
+    getWaitSignalingTimeoutMs: () => {
+      return 1000;
+    },
+  };
+};
 
 const createAutoConnectorMachineDeps = () => {
   return {
@@ -66,6 +107,7 @@ const startSession = () => {
   const autoConnectorStateMachine = createAutoConnectorStateMachine(
     createAutoConnectorMachineDeps(),
   );
+  const callReconnectStateMachine = createCallReconnectStateMachine(createCallReconnectDeps());
 
   const session = new SessionManager({
     connectionManager: { stateMachine: connectionStateMachine },
@@ -73,6 +115,7 @@ const startSession = () => {
     incomingCallManager: { stateMachine: incomingStateMachine },
     presentationManager: { stateMachine: presentationStateMachine },
     autoConnectorManager: { stateMachine: autoConnectorStateMachine },
+    callReconnectManager: { stateMachine: callReconnectStateMachine },
   });
 
   const stopAll = () => {
@@ -82,6 +125,7 @@ const startSession = () => {
     incomingStateMachine.stop();
     presentationStateMachine.stop();
     autoConnectorStateMachine.stop();
+    callReconnectStateMachine.stop();
   };
 
   return {
@@ -91,6 +135,7 @@ const startSession = () => {
     incomingStateMachine,
     presentationStateMachine,
     autoConnectorStateMachine,
+    callReconnectStateMachine,
     stopAll,
   };
 };

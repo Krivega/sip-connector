@@ -26,6 +26,8 @@
 
 ### 🔄 [События AutoConnectorManager](./auto-connector-events.md)
 
+### ☎️ [События CallReconnectManager](./call-reconnect-events.md)
+
 ### 🌐 [События ApiManager](./api-events.md)
 
 ### 🔌 [События SipConnector](./sip-connector-events.md)

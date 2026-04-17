@@ -624,3 +624,13 @@ pre {
   background: #fef2f2;
   color: #7f1d1d;
 }
+
+.call-reconnect-indicator {
+  margin: 0.5rem 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d97706;
+  border-radius: 8px;
+  background: #fffbeb;
+  color: #7c2d12;
+  font-weight: 600;
+}

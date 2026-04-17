@@ -22,6 +22,8 @@ type TDomIds = {
   presentationStatusId: string;
   systemStatusId: string;
   autoConnectorManagerStatusId: string;
+  callReconnectStatusId: string;
+  callReconnectIndicatorId: string;
   sessionStatusesDiagramsId: string;
   statusesNodeValuesId: string;
   callStatsSectionId: string;
@@ -59,6 +61,7 @@ type TDomIds = {
 export type TStatusCategory =
   | 'connection'
   | 'autoConnectorManager'
+  | 'callReconnect'
   | 'call'
   | 'incoming'
   | 'presentation'
@@ -83,6 +86,16 @@ const STATUS_DIAGRAMS: Record<TStatusCategory, readonly string[]> = {
     'waitingBeforeRetry',
     'connectedMonitoring',
     'telephonyChecking',
+    'errorTerminal',
+  ],
+  callReconnect: [
+    'idle',
+    'armed',
+    'evaluating',
+    'backoff',
+    'waitingSignaling',
+    'attempting',
+    'limitReached',
     'errorTerminal',
   ],
   call: [
@@ -124,6 +137,14 @@ const STATUS_DIAGRAMS: Record<TStatusCategory, readonly string[]> = {
 const EXPECTED_NODE_FIELDS: Record<keyof TStatusesRootSnapshot, readonly string[]> = {
   connection: ['state', 'context', 'connectionConfig'],
   autoConnector: ['state', 'afterDisconnect', 'parameters', 'stopReason', 'lastError'],
+  callReconnect: [
+    'state',
+    'attempt',
+    'nextDelayMs',
+    'lastFailureCause',
+    'lastError',
+    'cancelledReason',
+  ],
   call: [
     'state',
     'hasPendingDisconnect',
@@ -238,6 +259,12 @@ class DOM {
 
   public autoConnectorManagerStatusElement: HTMLElement;
 
+  public callReconnectStatusElement: HTMLElement;
+
+  public callReconnectIndicatorElement: HTMLElement;
+
+  public autoRedialEnabledInput: HTMLInputElement;
+
   public sessionStatusesDiagramsElement: HTMLElement;
 
   public statusesNodeValuesElement: HTMLElement;
@@ -311,6 +338,8 @@ class DOM {
     presentationStatusId,
     systemStatusId,
     autoConnectorManagerStatusId,
+    callReconnectStatusId,
+    callReconnectIndicatorId,
     sessionStatusesDiagramsId,
     statusesNodeValuesId,
     callStatsSectionId,
@@ -408,6 +437,12 @@ class DOM {
     this.presentationStatusElement = getElementById(presentationStatusId);
     this.systemStatusElement = getElementById(systemStatusId);
     this.autoConnectorManagerStatusElement = getElementById(autoConnectorManagerStatusId);
+    this.callReconnectStatusElement = getElementById(callReconnectStatusId);
+    this.callReconnectIndicatorElement = getElementById(callReconnectIndicatorId);
+    this.autoRedialEnabledInput = querySelectorByParent<HTMLInputElement>(
+      'input[type="checkbox"][name="autoRedialEnabled"]',
+      this.formElement,
+    );
     this.sessionStatusesDiagramsElement = getElementById(sessionStatusesDiagramsId);
     this.statusesNodeValuesElement = getElementById(statusesNodeValuesId);
     this.callStatsSectionElement = getElementById(callStatsSectionId);
@@ -788,6 +823,8 @@ export const dom = new DOM({
   presentationStatusId: 'presentationStatus',
   systemStatusId: 'systemStatus',
   autoConnectorManagerStatusId: 'autoConnectorManagerStatus',
+  callReconnectStatusId: 'callReconnectStatus',
+  callReconnectIndicatorId: 'callReconnectIndicator',
   sessionStatusesDiagramsId: 'sessionStatusesDiagrams',
   statusesNodeValuesId: 'statusesNodeValues',
   callStatsSectionId: 'callStatsSection',

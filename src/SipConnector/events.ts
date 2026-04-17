@@ -3,6 +3,7 @@ import { TypedEvents } from 'events-constructor';
 import { API_MANAGER_EVENT_NAMES } from '@/ApiManager';
 import { AUTO_CONNECTOR_MANAGER_EVENT_NAMES } from '@/AutoConnectorManager';
 import { CALL_MANAGER_EVENT_NAMES } from '@/CallManager';
+import { CALL_RECONNECT_MANAGER_EVENT_NAMES } from '@/CallReconnectManager';
 import { CONNECTION_MANAGER_EVENT_NAMES } from '@/ConnectionManager';
 import { INCOMING_CALL_MANAGER_EVENT_NAMES } from '@/IncomingCallManager';
 import { MAIN_STREAM_HEALTH_MONITOR_EVENT_NAMES } from '@/MainStreamHealthMonitor';
@@ -14,6 +15,7 @@ import { VIDEO_SENDING_BALANCER_MANAGER_EVENT_NAMES } from '@/VideoSendingBalanc
 import type { TApiManagerEventMap } from '@/ApiManager';
 import type { TAutoConnectorManagerEventMap } from '@/AutoConnectorManager';
 import type { TCallManagerEventMap } from '@/CallManager';
+import type { TCallReconnectManagerEventMap } from '@/CallReconnectManager';
 import type { TConnectionConfiguration, TConnectionManagerEventMap } from '@/ConnectionManager';
 import type { TIncomingCallManagerEventMap } from '@/IncomingCallManager';
 import type { TMainStreamHealthMonitorEventMap } from '@/MainStreamHealthMonitor';
@@ -25,6 +27,9 @@ import type { TVideoSendingBalancerManagerEventMap } from '@/VideoSendingBalance
 // Добавляем префиксы к событиям от разных менеджеров
 const AUTO_CONNECTOR_EVENTS = AUTO_CONNECTOR_MANAGER_EVENT_NAMES.map((eventName) => {
   return `auto-connect:${eventName}` as const;
+});
+const CALL_RECONNECT_EVENTS = CALL_RECONNECT_MANAGER_EVENT_NAMES.map((eventName) => {
+  return `call-reconnect:${eventName}` as const;
 });
 const CONNECTION_EVENTS = CONNECTION_MANAGER_EVENT_NAMES.map((eventName) => {
   return `connection:${eventName}` as const;
@@ -62,6 +67,7 @@ const SIP_CONNECTOR_EVENTS = [
 
 export const EVENT_NAMES = [
   ...AUTO_CONNECTOR_EVENTS,
+  ...CALL_RECONNECT_EVENTS,
   ...CONNECTION_EVENTS,
   ...CALL_EVENTS,
   ...API_EVENTS,
@@ -88,6 +94,7 @@ type TSipConnectorEventMap = {
 };
 
 export type TEventMap = PrefixedEventMap<TAutoConnectorManagerEventMap, 'auto-connect'> &
+  PrefixedEventMap<TCallReconnectManagerEventMap, 'call-reconnect'> &
   PrefixedEventMap<TConnectionManagerEventMap, 'connection'> &
   PrefixedEventMap<TCallManagerEventMap, 'call'> &
   PrefixedEventMap<TApiManagerEventMap, 'api'> &

@@ -79,10 +79,12 @@ export class Session {
   public async callToServer({
     conference,
     mediaStream,
+    autoRedial,
     setRemoteStreams,
   }: {
     conference: string;
     mediaStream: MediaStream;
+    autoRedial?: boolean;
     setRemoteStreams: (streams: TRemoteStreams) => void;
   }): Promise<void> {
     const { serverParameters } = this;
@@ -106,6 +108,7 @@ export class Session {
     await sipConnectorFacade.callToServer({
       conference,
       mediaStream,
+      autoRedial,
       extraHeaders: serverParameters.extraHeaders,
       iceServers: serverParameters.iceServers,
     });
