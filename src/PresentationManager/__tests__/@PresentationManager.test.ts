@@ -2,6 +2,7 @@ import { createMediaStreamMock } from 'webrtc-mock';
 
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { CallManager } from '@/CallManager';
+import { CallSessionState } from '@/CallSessionState';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
 import PresentationManager, { hasCanceledStartPresentationError } from '../@PresentationManager';
 
@@ -25,6 +26,7 @@ describe('PresentationManager', () => {
       {
         sendOffer: jest.fn().mockResolvedValue({} as RTCSessionDescription),
       },
+      { callSessionState: new CallSessionState() },
     );
     rtcSession.on('presentation:start', (data: MediaStream) => {
       callManager.events.trigger('presentation:start', data);

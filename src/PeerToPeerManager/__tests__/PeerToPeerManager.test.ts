@@ -3,6 +3,7 @@ import jssip from '@/__fixtures__/jssip.mock';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { ApiManager, EContentTypeReceived, EKeyHeader } from '@/ApiManager';
 import { CallManager } from '@/CallManager';
+import { CallSessionState } from '@/CallSessionState';
 import { ConnectionManager } from '@/ConnectionManager';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
 import { PeerToPeerManager } from '@/PeerToPeerManager';
@@ -26,9 +27,14 @@ describe('PeerToPeerManager', () => {
       sendOffer: jest.fn().mockResolvedValue({} as RTCSessionDescription),
     };
 
-    callManager = Object.assign(new CallManager({ contentedStreamManager }, tools), {
-      getEstablishedRTCSession: jest.fn(),
-    });
+    callManager = Object.assign(
+      new CallManager({ contentedStreamManager }, tools, {
+        callSessionState: new CallSessionState(),
+      }),
+      {
+        getEstablishedRTCSession: jest.fn(),
+      },
+    );
     rtcSession = new RTCSessionMock({
       eventHandlers: {},
       originator: 'local',

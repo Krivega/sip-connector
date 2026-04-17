@@ -3,6 +3,7 @@ import { getSnapshot } from 'mobx-state-tree';
 import {
   ConnectionStateMachine,
   createConnectionEvents,
+  EContentUseLicense,
   EConnectionStatus,
   IncomingCallStateMachine,
   PresentationStateMachine,
@@ -102,6 +103,7 @@ const getStoreSnapshots = (store: TStatusesRootInstance) => {
     connection: store.connectionSnapshot,
     autoConnector: store.autoConnectorSnapshot,
     call: store.callSnapshot,
+    callSession: store.callSessionSnapshot,
     incoming: store.incomingSnapshot,
     presentation: store.presentationSnapshot,
     system: store.systemSnapshot,
@@ -386,6 +388,38 @@ describe('StatusesStore', () => {
       const frozen = getSnapshot(store);
 
       expect(frozen.incoming.state).toBe(EIncomingStatus.RINGING);
+    });
+  });
+
+  it('updates callSession subtree via syncFromCallSessionSnapshot', () => {
+    withStartedSession(() => {
+      const store = createStore();
+
+      const callSessionSnapshot = {
+        license: EContentUseLicense.AUDIO,
+        role: {
+          type: 'spectator',
+          recvParams: {
+            audioId: 'audio-1',
+          },
+        },
+        derived: {
+          isSpectatorAny: true,
+          isRecvSessionExpected: true,
+          isAvailableSendingMedia: false,
+        },
+      } as const;
+
+      store.syncFromCallSessionSnapshot(callSessionSnapshot);
+
+      expect(store.callSessionSnapshot).toEqual({
+        license: EContentUseLicense.AUDIO,
+        roleType: 'spectator',
+        roleAudioId: 'audio-1',
+        isAvailableSendingMedia: false,
+        isSpectatorAny: true,
+        isRecvSessionExpected: true,
+      });
     });
   });
 

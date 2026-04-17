@@ -963,7 +963,7 @@ describe('SipConnector', () => {
   describe('subscribeChangeRole', () => {
     it('должен вызывать setCallRoleParticipant при событии participant:move-request-to-participants', () => {
       const setCallRoleParticipantSpy = jest.spyOn(
-        sipConnector.callManager,
+        sipConnector.callSessionState,
         'setCallRoleParticipant',
       );
 
@@ -975,7 +975,7 @@ describe('SipConnector', () => {
 
     it('должен вызывать setCallRoleSpectatorSynthetic при событии participant:move-request-to-spectators', () => {
       const setCallRoleSpectatorSpy = jest.spyOn(
-        sipConnector.callManager,
+        sipConnector.callSessionState,
         'setCallRoleSpectatorSynthetic',
       );
 
@@ -985,6 +985,7 @@ describe('SipConnector', () => {
       });
 
       expect(setCallRoleSpectatorSpy).toHaveBeenCalledTimes(1);
+      expect(setCallRoleSpectatorSpy).toHaveBeenCalledWith(true);
     });
 
     it('должен вызывать stopPresentation при событии participant:move-request-to-spectators-synthetic для активной презентации', async () => {
@@ -1009,7 +1010,10 @@ describe('SipConnector', () => {
     });
 
     it('должен вызывать setCallRoleSpectator с audioId при событии participant:move-request-to-spectators-with-audio-id', () => {
-      const setCallRoleSpectatorSpy = jest.spyOn(sipConnector.callManager, 'setCallRoleSpectator');
+      const setCallRoleSpectatorSpy = jest.spyOn(
+        sipConnector.callSessionState,
+        'setCallRoleSpectator',
+      );
       const audioId = 'test-audio-id';
 
       // Тригерим событие на уровне ApiManager
@@ -1022,9 +1026,7 @@ describe('SipConnector', () => {
       );
 
       expect(setCallRoleSpectatorSpy).toHaveBeenCalledTimes(1);
-      expect(setCallRoleSpectatorSpy).toHaveBeenCalledWith({
-        audioId,
-      });
+      expect(setCallRoleSpectatorSpy).toHaveBeenCalledWith({ audioId }, true);
     });
 
     it('должен вызывать stopPresentation при событии participant:move-request-to-spectators-with-audio-id для активной презентации', async () => {
@@ -1118,7 +1120,10 @@ describe('SipConnector', () => {
     });
 
     it('должен корректно обрабатывать множественные вызовы события participant:move-request-to-spectators-with-audio-id с разными audioId', () => {
-      const setCallRoleSpectatorSpy = jest.spyOn(sipConnector.callManager, 'setCallRoleSpectator');
+      const setCallRoleSpectatorSpy = jest.spyOn(
+        sipConnector.callSessionState,
+        'setCallRoleSpectator',
+      );
       const firstAudioId = 'test-audio-id-1';
       const secondAudioId = 'test-audio-id-2';
       const thirdAudioId = 'test-audio-id-3';
@@ -1133,9 +1138,7 @@ describe('SipConnector', () => {
       );
 
       expect(setCallRoleSpectatorSpy).toHaveBeenCalledTimes(1);
-      expect(setCallRoleSpectatorSpy).toHaveBeenNthCalledWith(1, {
-        audioId: firstAudioId,
-      });
+      expect(setCallRoleSpectatorSpy).toHaveBeenNthCalledWith(1, { audioId: firstAudioId }, true);
 
       // Второй вызов события с другим audioId
       sipConnector.apiManager.events.trigger(
@@ -1147,9 +1150,7 @@ describe('SipConnector', () => {
       );
 
       expect(setCallRoleSpectatorSpy).toHaveBeenCalledTimes(2);
-      expect(setCallRoleSpectatorSpy).toHaveBeenNthCalledWith(2, {
-        audioId: secondAudioId,
-      });
+      expect(setCallRoleSpectatorSpy).toHaveBeenNthCalledWith(2, { audioId: secondAudioId }, true);
 
       // Третий вызов события с еще одним другим audioId
       sipConnector.apiManager.events.trigger(
@@ -1161,9 +1162,7 @@ describe('SipConnector', () => {
       );
 
       expect(setCallRoleSpectatorSpy).toHaveBeenCalledTimes(3);
-      expect(setCallRoleSpectatorSpy).toHaveBeenNthCalledWith(3, {
-        audioId: thirdAudioId,
-      });
+      expect(setCallRoleSpectatorSpy).toHaveBeenNthCalledWith(3, { audioId: thirdAudioId }, true);
 
       // Проверяем, что все вызовы были с разными audioId
       const allCalls = setCallRoleSpectatorSpy.mock.calls;

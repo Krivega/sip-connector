@@ -21,6 +21,7 @@
 - [ConnectionManager](./components/ConnectionManager/index.md) - Управление SIP-соединениями и регистрацией на сервере
   - [State Machine](./components/ConnectionManager/state-machine.md) - ConnectionStateMachine
 - [CallManager](./components/CallManager/index.md) - Управление WebRTC-звонками
+- [CallSessionState](./components/CallSessionState/index.md) - Read-model роли звонка и лицензии
   - [State Machine](./components/CallManager/state-machine.md) - CallStateMachine
 - [PresentationManager](./components/PresentationManager/index.md) - Управление демонстрацией экрана
   - [State Machine](./components/PresentationManager/state-machine.md) - PresentationStateMachine

@@ -3,7 +3,6 @@ import ParticipantRoleManager from './ParticipantRoleManager';
 import RecvQualityManager from './RecvQualityManager';
 import resolveServerParametersRequester from './resolveServerParametersRequester';
 import sipConnectorFacade from './sipConnectorFacade';
-import UseLicenseManager from './UseLicenseManager';
 
 import type { TRemoteStreams } from '@/index';
 import type { TParticipantRoleHandler } from './ParticipantRoleManager';
@@ -20,8 +19,6 @@ export class Session {
 
   private readonly participantRoleManager: ParticipantRoleManager;
 
-  private readonly useLicenseManager: UseLicenseManager;
-
   private readonly recvQualityManager: RecvQualityManager;
 
   private serverParameters: IServerParameters | undefined;
@@ -37,7 +34,6 @@ export class Session {
       serverParametersRequesterParams,
     );
     this.participantRoleManager = new ParticipantRoleManager();
-    this.useLicenseManager = new UseLicenseManager();
     this.recvQualityManager = new RecvQualityManager();
   }
 
@@ -105,9 +101,6 @@ export class Session {
     // Подписываемся на события изменения роли участника
     this.participantRoleManager.subscribe();
 
-    // Подписываемся на события изменения лицензии
-    this.useLicenseManager.subscribe();
-
     // Подписываемся на изменение качества приема
     this.recvQualityManager.subscribe();
 
@@ -138,8 +131,6 @@ export class Session {
     this.participantRoleManager.unsubscribe();
     this.participantRoleManager.reset();
 
-    this.useLicenseManager.unsubscribe();
-    this.useLicenseManager.reset();
     this.recvQualityManager.unsubscribe();
     this.recvQualityManager.reset();
     await this.disconnectFromServer();

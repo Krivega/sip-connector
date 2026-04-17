@@ -1,4 +1,3 @@
-import { dom } from '../dom';
 import sipConnectorFacade from './sipConnectorFacade';
 
 type TState =
@@ -68,8 +67,6 @@ class ParticipantRoleManager {
         this.setState({ isAvailableSendingMedia, role: 'spectator' });
       },
     );
-
-    this.onChange(this.handleParticipantRoleChange);
   }
 
   /**
@@ -140,47 +137,6 @@ class ParticipantRoleManager {
       handler(this.state);
     });
   }
-
-  /**
-   * Обрабатывает изменения роли участника
-   */
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
-  private readonly handleParticipantRoleChange = (state: TState | undefined): void => {
-    if (state === undefined) {
-      dom.participantRoleElement.textContent = '';
-
-      return;
-    }
-
-    const { role } = state;
-    let roleText = '';
-
-    switch (role) {
-      case 'participant': {
-        roleText = 'Участник';
-
-        break;
-      }
-
-      case 'spectatorSynthetic': {
-        roleText = `Зритель (синтетический) (isAvailableSendingMedia: ${state.isAvailableSendingMedia})`;
-
-        break;
-      }
-
-      case 'spectator': {
-        roleText = `Зритель (isAvailableSendingMedia: ${state.isAvailableSendingMedia})`;
-
-        break;
-      }
-
-      default: {
-        roleText = '';
-      }
-    }
-
-    dom.participantRoleElement.textContent = roleText;
-  };
 }
 
 export default ParticipantRoleManager;

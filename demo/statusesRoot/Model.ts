@@ -11,6 +11,11 @@ import {
   INITIAL_CALL_STATUS_SNAPSHOT,
 } from './call/Model';
 import {
+  CallSessionStatusModel,
+  createCallSessionStatusSnapshot,
+  INITIAL_CALL_SESSION_STATUS_SNAPSHOT,
+} from './callSession/Model';
+import {
   ConnectionStatusModel,
   createConnectionStatusSnapshotFromSession,
   INITIAL_CONNECTION_STATUS_SNAPSHOT,
@@ -39,10 +44,12 @@ import type {
   EIncomingStatus,
   EPresentationStatus,
   ESystemStatus,
+  TCallSessionSnapshot,
   TSessionSnapshot,
 } from '@/index';
 import type { TAutoConnectorStatusSnapshot } from './autoConnector/Model';
 import type { TCallStatusSnapshot } from './call/Model';
+import type { TCallSessionStatusSnapshot } from './callSession/Model';
 import type { TConnectionStatusSnapshot } from './connection/Model';
 import type { TIncomingStatusSnapshot } from './incoming/Model';
 import type { TPresentationStatusSnapshot } from './presentation/Model';
@@ -50,6 +57,7 @@ import type { TSystemStatusSnapshot } from './system/Model';
 
 export type { TAutoConnectorStopReason, TAutoConnectorStatusSnapshot } from './autoConnector/Model';
 export type { TCallStatusSnapshot } from './call/Model';
+export type { TCallSessionStatusSnapshot } from './callSession/Model';
 export type { TConnectionStatusSnapshot } from './connection/Model';
 export type { TIncomingStatusSnapshot } from './incoming/Model';
 export type { TPresentationStatusSnapshot } from './presentation/Model';
@@ -59,6 +67,7 @@ export type TStatusesRootSnapshot = {
   connection: TConnectionStatusSnapshot;
   autoConnector: TAutoConnectorStatusSnapshot;
   call: TCallStatusSnapshot;
+  callSession: TCallSessionStatusSnapshot;
   incoming: TIncomingStatusSnapshot;
   presentation: TPresentationStatusSnapshot;
   system: SnapshotIn<typeof SystemStatusModel>;
@@ -75,7 +84,7 @@ export type TStatusesByDomain = {
 
 function createStatusesRootSnapshotFromSession(
   snapshot: TSessionSnapshot,
-): SnapshotIn<typeof StatusesRootModel> {
+): Omit<SnapshotIn<typeof StatusesRootModel>, 'callSession'> {
   return {
     connection: createConnectionStatusSnapshotFromSession(snapshot),
     autoConnector: createAutoConnectorStatusSnapshotFromSession(snapshot),
@@ -91,6 +100,7 @@ export const StatusesRootModel = types
     connection: ConnectionStatusModel,
     autoConnector: AutoConnectorStatusModel,
     call: CallStatusModel,
+    callSession: CallSessionStatusModel,
     incoming: IncomingStatusModel,
     presentation: PresentationStatusModel,
     system: SystemStatusModel,
@@ -106,6 +116,9 @@ export const StatusesRootModel = types
       get callSnapshot(): TCallStatusSnapshot {
         return self.call.snapshot;
       },
+      get callSessionSnapshot(): TCallSessionStatusSnapshot {
+        return self.callSession.snapshot;
+      },
       get incomingSnapshot(): TIncomingStatusSnapshot {
         return self.incoming.snapshot;
       },
@@ -120,7 +133,17 @@ export const StatusesRootModel = types
   .actions((self) => {
     return {
       syncFromSessionSnapshot(snapshot: TSessionSnapshot) {
-        applySnapshot(self, createStatusesRootSnapshotFromSession(snapshot));
+        const nextSnapshot = createStatusesRootSnapshotFromSession(snapshot);
+
+        applySnapshot(self.connection, nextSnapshot.connection);
+        applySnapshot(self.autoConnector, nextSnapshot.autoConnector);
+        applySnapshot(self.call, nextSnapshot.call);
+        applySnapshot(self.incoming, nextSnapshot.incoming);
+        applySnapshot(self.presentation, nextSnapshot.presentation);
+        applySnapshot(self.system, nextSnapshot.system);
+      },
+      syncFromCallSessionSnapshot(snapshot: TCallSessionSnapshot) {
+        applySnapshot(self.callSession, createCallSessionStatusSnapshot(snapshot));
       },
     };
   });
@@ -131,6 +154,7 @@ export const INITIAL_STATUSES_ROOT_SNAPSHOT = {
   connection: INITIAL_CONNECTION_STATUS_SNAPSHOT,
   autoConnector: INITIAL_AUTO_CONNECTOR_STATUS_SNAPSHOT,
   call: INITIAL_CALL_STATUS_SNAPSHOT,
+  callSession: INITIAL_CALL_SESSION_STATUS_SNAPSHOT,
   incoming: INITIAL_INCOMING_STATUS_SNAPSHOT,
   presentation: INITIAL_PRESENTATION_STATUS_SNAPSHOT,
   system: INITIAL_SYSTEM_STATUS_SNAPSHOT,

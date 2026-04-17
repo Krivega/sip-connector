@@ -1,6 +1,7 @@
+import { hasParticipant, hasSpectatorSynthetic, hasSpectator } from '@/CallSessionState/utils';
 import { RoleManager } from '../RoleManager';
 
-import type { TCallRoleSpectator } from '../types';
+import type { TCallRoleSpectator } from '@/CallSessionState/types';
 
 describe('RoleManager', () => {
   it('начальное состояние: participant и основной менеджер активен', () => {
@@ -93,12 +94,12 @@ describe('RoleManager', () => {
     expect(roleManager.hasParticipant()).toBe(true);
   });
 
-  it('статические гард-функции корректно определяют роль', () => {
-    expect(RoleManager.hasParticipant({ type: 'participant' })).toBe(true);
-    expect(RoleManager.hasSpectatorSynthetic({ type: 'participant' })).toBe(false);
-    expect(RoleManager.hasSpectatorSynthetic({ type: 'spectator_synthetic' })).toBe(true);
+  it('гард-функции корректно определяют роль', () => {
+    expect(hasParticipant({ type: 'participant' })).toBe(true);
+    expect(hasSpectatorSynthetic({ type: 'participant' })).toBe(false);
+    expect(hasSpectatorSynthetic({ type: 'spectator_synthetic' })).toBe(true);
     expect(
-      RoleManager.hasSpectator({
+      hasSpectator({
         type: 'spectator',
         recvParams: { audioId: 'a' },
       }),
@@ -215,5 +216,39 @@ describe('RoleManager', () => {
       type: 'spectator',
       recvParams: secondRecvParams,
     });
+  });
+
+  it('subscribe: уведомляет слушателя при смене роли и позволяет отписаться', () => {
+    const roleManager = new RoleManager();
+    const listener = jest.fn();
+    const unsubscribe = roleManager.subscribe(listener);
+    const recvParams: TCallRoleSpectator['recvParams'] = {
+      audioId: 'audio-1',
+    };
+
+    roleManager.setCallRoleSpectator(recvParams);
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith({
+      previous: { type: 'participant' },
+      next: { type: 'spectator', recvParams },
+    });
+
+    unsubscribe();
+    roleManager.setCallRoleParticipant();
+
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('stores isAvailableSendingMedia and resets it to true', () => {
+    const roleManager = new RoleManager();
+
+    expect(roleManager.getIsAvailableSendingMedia()).toBe(true);
+
+    roleManager.setCallRoleSpectatorSynthetic(false);
+    expect(roleManager.getIsAvailableSendingMedia()).toBe(false);
+
+    roleManager.setCallRoleParticipant();
+    expect(roleManager.getIsAvailableSendingMedia()).toBe(true);
   });
 });

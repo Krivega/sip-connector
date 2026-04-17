@@ -47,14 +47,6 @@ export type TCallConfiguration = {
   number?: string;
 };
 
-export type TCallRoleParticipant = { type: 'participant' };
-export type TCallRoleSpectatorSynthetic = { type: 'spectator_synthetic' };
-export type TCallRoleSpectator = {
-  type: 'spectator';
-  recvParams: { audioId: string };
-};
-export type TCallRole = TCallRoleParticipant | TCallRoleSpectatorSynthetic | TCallRoleSpectator;
-
 export type TStartCall = (
   ua: UA,
   getUri: TGetUri,

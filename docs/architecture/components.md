@@ -11,6 +11,7 @@
 - [ConnectionQueueManager](./components/ConnectionQueueManager/index.md) - Очередь операций подключения
 - [AutoConnectorManager](./components/AutoConnectorManager/index.md) - Автоматическое переподключение
 - [CallManager](./components/CallManager/index.md) - Управление WebRTC-звонками
+- [CallSessionState](./components/CallSessionState/index.md) - Read-model роли звонка и лицензии
 - [ApiManager](./components/ApiManager/index.md) - Обработка SIP INFO сообщений и взаимодействие с сервером
 - [PresentationManager](./components/PresentationManager/index.md) - Управление демонстрацией экрана
 - [IncomingCallManager](./components/IncomingCallManager/index.md) - Обработка входящих SIP-звонков

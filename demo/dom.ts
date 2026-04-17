@@ -16,8 +16,6 @@ type TDomIds = {
   localVideoId: string;
   remoteStreamsContainerId: string;
   callFormId: string;
-  participantRoleId: string;
-  useLicenseId: string;
   connectionStatusId: string;
   callStatusId: string;
   incomingStatusId: string;
@@ -138,6 +136,7 @@ const EXPECTED_NODE_FIELDS: Record<keyof TStatusesRootSnapshot, readonly string[
     'token',
     'conferenceForToken',
   ],
+  callSession: ['license', 'roleType', 'roleAudioId', 'isSpectatorAny', 'isRecvSessionExpected'],
   incoming: ['state', 'remoteCallerData', 'terminalReason'],
   presentation: ['state', 'lastError'],
   system: ['state'],
@@ -225,10 +224,6 @@ class DOM {
 
   public passwordLabel: HTMLLabelElement;
 
-  public participantRoleElement: HTMLElement;
-
-  public useLicenseElement: HTMLElement;
-
   public connectionStatusElement: HTMLElement;
 
   public callStatusElement: HTMLElement;
@@ -306,8 +301,6 @@ class DOM {
     localVideoId,
     remoteStreamsContainerId,
     callFormId,
-    participantRoleId,
-    useLicenseId,
     connectionStatusId,
     callStatusId,
     incomingStatusId,
@@ -404,8 +397,6 @@ class DOM {
       'label[for="password"]',
       this.formElement,
     );
-    this.participantRoleElement = getElementById(participantRoleId);
-    this.useLicenseElement = getElementById(useLicenseId);
     this.connectionStatusElement = getElementById(connectionStatusId);
     this.callStatusElement = getElementById(callStatusId);
     this.incomingStatusElement = getElementById(incomingStatusId);
@@ -772,8 +763,6 @@ export const dom = new DOM({
   presentationVideoId: 'presentationVideo',
   remoteStreamsContainerId: 'remoteStreamsContainer',
   callFormId: 'callForm',
-  participantRoleId: 'participantRole',
-  useLicenseId: 'useLicense',
   connectionStatusId: 'connectionStatus',
   callStatusId: 'callStatus',
   incomingStatusId: 'incomingStatus',

@@ -71,6 +71,9 @@ import {
 
   // Типы
   type TSessionSnapshot,
+  type TCallSessionSnapshot,
+  type TCallSessionDerived,
+  type TCallSessionDiagnostics,
   type TCustomError,
   type TRemoteStreams,
   type TRecvQuality,
@@ -82,4 +85,18 @@ import {
   type TContentHint,
   type TJsSIP,
 } from 'sip-connector';
+```
+
+```typescript
+// Aggregated call role state
+const snapshot = sipConnector.callSessionState.getSnapshot();
+
+const unsubscribe = sipConnector.callSessionState.subscribe((next) => {
+  console.log('Role changed:', next.role.type);
+});
+
+const diagnostics = sipConnector.callSessionState.getDiagnostics();
+console.log(diagnostics);
+
+unsubscribe();
 ```

@@ -1,6 +1,7 @@
 import jssip from '@/__fixtures__/jssip.mock';
 import { getMockedLoggerDefault } from '@/__fixtures__/logger.mock';
 import { CallManager } from '@/CallManager';
+import { CallSessionState } from '@/CallSessionState';
 import { ConnectionManager } from '@/ConnectionManager';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
 import logger from '@/logger';
@@ -30,9 +31,14 @@ describe('ApiManager (notify via sipEvent)', () => {
       sendOffer: jest.fn().mockResolvedValue({} as RTCSessionDescription),
     };
 
-    callManager = Object.assign(new CallManager({ contentedStreamManager }, tools), {
-      getEstablishedRTCSession: jest.fn(),
-    });
+    callManager = Object.assign(
+      new CallManager({ contentedStreamManager }, tools, {
+        callSessionState: new CallSessionState(),
+      }),
+      {
+        getEstablishedRTCSession: jest.fn(),
+      },
+    );
     apiManager = new ApiManager();
     mockRequest = new MockRequest();
 

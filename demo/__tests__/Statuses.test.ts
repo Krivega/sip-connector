@@ -16,6 +16,19 @@ import Statuses from '../Statuses';
 
 // eslint-disable-next-line no-var
 var mockSessionManager: SessionManager;
+// eslint-disable-next-line no-var
+var mockCallSessionState = {
+  getSnapshot: () => {
+    return {
+      role: { type: 'participant' as const },
+      derived: {
+        isSpectatorAny: false,
+        isRecvSessionExpected: false,
+        isAvailableSendingMedia: true,
+      },
+    };
+  },
+};
 
 jest.mock('../Session/sipConnectorFacade', () => {
   return {
@@ -24,6 +37,9 @@ jest.mock('../Session/sipConnectorFacade', () => {
       sipConnector: {
         get sessionManager() {
           return mockSessionManager;
+        },
+        get callSessionState() {
+          return mockCallSessionState;
         },
       },
     },

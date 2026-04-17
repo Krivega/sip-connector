@@ -4,6 +4,7 @@ import { EventEmitterProxy } from 'events-constructor';
 import { ApiManager } from '@/ApiManager';
 import { AutoConnectorManager } from '@/AutoConnectorManager';
 import { CallManager } from '@/CallManager';
+import { CallSessionState } from '@/CallSessionState';
 import { ConnectionManager } from '@/ConnectionManager';
 import { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
@@ -42,6 +43,8 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
   public readonly contentedStreamManager: ContentedStreamManager;
 
   public readonly callManager: CallManager;
+
+  public readonly callSessionState: CallSessionState;
 
   public readonly autoConnectorManager: AutoConnectorManager;
 
@@ -98,9 +101,11 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       connectionManager: this.connectionManager,
     });
     this.contentedStreamManager = new ContentedStreamManager();
+    this.callSessionState = new CallSessionState();
     this.callManager = new CallManager(
       { contentedStreamManager: this.contentedStreamManager },
       { sendOffer: this.sendOffer },
+      { callSessionState: this.callSessionState },
     );
     this.incomingCallManager = new IncomingCallManager(this.connectionManager);
     this.presentationManager = new PresentationManager({
@@ -471,16 +476,19 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
 
   private subscribeToApiEvents() {
     this.apiManager.on('participant:move-request-to-participants', () => {
-      this.callManager.setCallRoleParticipant();
+      this.callSessionState.setCallRoleParticipant();
     });
-    this.apiManager.on('participant:move-request-to-spectators-synthetic', () => {
-      this.callManager.setCallRoleSpectatorSynthetic();
+    this.apiManager.on('participant:move-request-to-spectators-synthetic', (params) => {
+      this.callSessionState.setCallRoleSpectatorSynthetic(params.isAvailableSendingMedia);
       this.mayBeStopPresentationAndNotify();
     });
-    this.apiManager.on('participant:move-request-to-spectators-with-audio-id', ({ audioId }) => {
-      this.callManager.setCallRoleSpectator({ audioId });
-      this.mayBeStopPresentationAndNotify();
-    });
+    this.apiManager.on(
+      'participant:move-request-to-spectators-with-audio-id',
+      ({ audioId, isAvailableSendingMedia }) => {
+        this.callSessionState.setCallRoleSpectator({ audioId }, isAvailableSendingMedia);
+        this.mayBeStopPresentationAndNotify();
+      },
+    );
     this.apiManager.on('presentation:must-stop', () => {
       this.mayBeStopPresentationAndNotify();
     });

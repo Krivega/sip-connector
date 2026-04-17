@@ -63,6 +63,7 @@
 
 - `ConnectionManager` - SIP-соединения (включает ConnectionStateMachine)
 - `CallManager` - WebRTC-звонки (включает CallStateMachine, DeferredCommandRunner для отложенного старта RecvSession при гонке событий с сервером)
+- `CallSessionState` - read-model состояния роли/лицензии (`role`, `derived`, `license`), доступный как `sipConnector.callSessionState`
 - `ApiManager` - серверное API
 - `PresentationManager` - презентации
 - `StatsManager` - статистика
@@ -178,8 +179,9 @@ graph TB
 - `CallManager` → `RecvSession` (управление receive-only сессией для зрителей)
 - `CallManager` → `DeferredCommandRunner` (отложенная команда запуска RecvSession: при приходе `participant:move-request-to-spectators-with-audio-id` до `conference:participant-token-issued` команда сохраняется и выполняется после перехода CallStateMachine в IN_ROOM; `ROOM_PENDING_AUTH` и `PRESENTATION_CALL` сами по себе недостаточны для JWT-зависимых операций)
 - `CallManager` → `RemoteStreamsManager` (два экземпляра: main и recv для организации входящих потоков)
-- `CallManager` → `RoleManager` (управление ролями: participant, spectator, spectator_synthetic)
-- `RoleManager` → `RemoteStreamsManager` (переключение между main и recv менеджерами)
+- `SipConnector` → `CallSessionState` (создание экземпляра и DI в `CallManager`)
+- `CallSessionState` → `RoleManager` (управление ролями: participant, spectator, spectator_synthetic)
+- `CallManager` → `CallSessionState` (role orchestration)
 - `ApiManager` → `SipConnector` (события: enter-room, conference:participant-token-issued, channels)
 - `ApiManager` → `CallManager.stateMachine` (события enter-room и conference:participant-token-issued передаются в CallStateMachine)
 - `SipConnector.sendOffer` → `CallManager.getToken()` (токен для API-запросов берётся из контекста CallStateMachine)

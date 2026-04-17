@@ -2,6 +2,16 @@ export { EContentUseLicense } from './ApiManager';
 export { createAutoConnectorStateMachine } from './AutoConnectorManager';
 export { default as RTCSessionMock } from './__fixtures__/RTCSessionMock';
 export {
+  CallSessionState,
+  hasParticipant,
+  hasSpectatorSynthetic,
+  hasSpectator,
+  isExitingSpectatorRole,
+  isEnteringSpectatorRole,
+  isExitingAnySpectatorRole,
+  isEnteringAnySpectatorRole,
+} from './CallSessionState';
+export {
   ECallCause,
   hasCanceledCallError,
   createEvents as createCallEvents,
@@ -42,6 +52,15 @@ export * as tools from './tools';
 export { EMimeTypesVideoCodecs } from './types';
 
 export type { TSessionSnapshot } from './SessionManager';
+export type {
+  TCallSessionSnapshot,
+  TCallSessionDerived,
+  TCallSessionDiagnostics,
+  TCallRole,
+  TCallRoleParticipant,
+  TCallRoleSpectatorSynthetic,
+  TCallRoleSpectator,
+} from './CallSessionState';
 export type {
   TCustomError,
   TRemoteStreams,

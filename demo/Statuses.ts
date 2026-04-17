@@ -3,7 +3,7 @@ import { getSnapshot } from 'mobx-state-tree';
 import sipConnectorFacade from './Session/sipConnectorFacade';
 import { INITIAL_STATUSES_ROOT_SNAPSHOT, StatusesRootModel } from './statusesRoot';
 
-import type { TSessionSnapshot } from '@/index';
+import type { TCallSessionSnapshot, TSessionSnapshot } from '@/index';
 import type {
   TStatusesByDomain,
   TStatusesRootSnapshotOut,
@@ -18,6 +18,11 @@ class Statuses {
   public subscribe(onStatusesChange: (statuses: TStatusesByDomain) => void) {
     this.subscribeSessionStatuses((snapshot) => {
       this.statusesStore.syncFromSessionSnapshot(snapshot);
+
+      const callSessionSnapshot = this.getCallSessionSnapshot();
+
+      this.statusesStore.syncFromCallSessionSnapshot(callSessionSnapshot);
+
       onStatusesChange({
         connection: this.statusesStore.connection.state,
         autoConnector: this.statusesStore.autoConnector.state,
@@ -38,6 +43,7 @@ class Statuses {
       connection: this.statusesStore.connectionSnapshot,
       autoConnector: this.statusesStore.autoConnectorSnapshot,
       call: this.statusesStore.callSnapshot,
+      callSession: this.statusesStore.callSessionSnapshot,
       incoming: this.statusesStore.incomingSnapshot,
       presentation: this.statusesStore.presentationSnapshot,
       system: this.statusesStore.systemSnapshot as TStatusesRootSnapshot['system'],
@@ -49,6 +55,13 @@ class Statuses {
     const { sessionManager } = sipConnectorFacade.sipConnector;
 
     return sessionManager.getSnapshot();
+  }
+
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
+  private getCallSessionSnapshot(): TCallSessionSnapshot {
+    const { sipConnector } = sipConnectorFacade;
+
+    return sipConnector.callSessionState.getSnapshot();
   }
 
   private subscribeSessionStatuses(onSnapshot: (snapshot: TSessionSnapshot) => void) {

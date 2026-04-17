@@ -8,6 +8,7 @@ import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import UAMock from '@/__fixtures__/UA.mock';
 import { EContentedStreamCodec } from '@/ApiManager';
+import { CallSessionState } from '@/CallSessionState';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
 import CallManager from '../@CallManager';
 import { EVENT_NAMES } from '../events';
@@ -27,6 +28,7 @@ describe('CallManager events', () => {
       {
         sendOffer: jest.fn().mockResolvedValue({} as RTCSessionDescription),
       },
+      { callSessionState: new CallSessionState() },
     );
     getSipServerUrl = (number) => {
       return `sip:${number}@sipServerUrl`;

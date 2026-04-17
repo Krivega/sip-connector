@@ -1,3 +1,5 @@
+import { hasParticipant, hasSpectatorSynthetic, hasSpectator } from './utils';
+
 import type {
   TCallRole,
   TCallRoleParticipant,
@@ -24,62 +26,39 @@ const createRoleSpectator = (recvParams: TCallRoleSpectator['recvParams']): TCal
 export class RoleManager {
   private role: TCallRole = roleParticipant;
 
+  private isAvailableSendingMedia = true;
+
   private readonly onRoleChanged?: TOnRoleChanged;
+
+  private readonly listeners = new Set<TOnRoleChanged>();
 
   public constructor(onRoleChanged?: TOnRoleChanged) {
     this.onRoleChanged = onRoleChanged;
-  }
-
-  public static hasParticipant(role: TCallRole): role is TCallRoleParticipant {
-    return role.type === 'participant';
-  }
-
-  public static hasSpectatorSynthetic(role: TCallRole): role is TCallRoleSpectatorSynthetic {
-    return role.type === 'spectator_synthetic';
-  }
-
-  public static hasSpectator(role: TCallRole): role is TCallRoleSpectator {
-    return role.type === 'spectator';
-  }
-
-  public static isExitingSpectatorRole(prev: TCallRole, next: TCallRole): boolean {
-    return RoleManager.hasSpectator(prev) && !RoleManager.hasSpectator(next);
-  }
-
-  public static isEnteringSpectatorRole(
-    _prev: TCallRole,
-    next: TCallRole,
-  ): next is TCallRoleSpectator {
-    return RoleManager.hasSpectator(next);
-  }
-
-  public static isExitingAnySpectatorRole(prev: TCallRole, next: TCallRole): boolean {
-    const prevAny = RoleManager.hasSpectator(prev) || RoleManager.hasSpectatorSynthetic(prev);
-    const nextAny = RoleManager.hasSpectator(next) || RoleManager.hasSpectatorSynthetic(next);
-
-    return prevAny && !nextAny;
-  }
-
-  public static isEnteringAnySpectatorRole(prev: TCallRole, next: TCallRole): boolean {
-    const prevAny = RoleManager.hasSpectator(prev) || RoleManager.hasSpectatorSynthetic(prev);
-    const nextAny = RoleManager.hasSpectator(next) || RoleManager.hasSpectatorSynthetic(next);
-
-    return !prevAny && nextAny;
   }
 
   public getRole(): TCallRole {
     return this.role;
   }
 
+  public getIsAvailableSendingMedia(): boolean {
+    return this.isAvailableSendingMedia;
+  }
+
   public setCallRoleParticipant() {
+    this.isAvailableSendingMedia = true;
     this.changeRole(roleParticipant);
   }
 
-  public setCallRoleSpectatorSynthetic() {
+  public setCallRoleSpectatorSynthetic(isAvailableSendingMedia = true) {
+    this.isAvailableSendingMedia = isAvailableSendingMedia;
     this.changeRole(roleSpectatorSynthetic);
   }
 
-  public setCallRoleSpectator(recvParams: TCallRoleSpectator['recvParams']) {
+  public setCallRoleSpectator(
+    recvParams: TCallRoleSpectator['recvParams'],
+    isAvailableSendingMedia = true,
+  ) {
+    this.isAvailableSendingMedia = isAvailableSendingMedia;
     this.changeRole(createRoleSpectator(recvParams));
   }
 
@@ -96,8 +75,8 @@ export class RoleManager {
     // Если тип роли тот же, проверяем нужно ли обновить роль
     // Для spectator_new проверяем изменился ли audioId
     const shouldUpdate =
-      RoleManager.hasSpectator(next) &&
-      RoleManager.hasSpectator(currentRole) &&
+      hasSpectator(next) &&
+      hasSpectator(currentRole) &&
       currentRole.recvParams.audioId !== next.recvParams.audioId;
 
     if (shouldUpdate) {
@@ -107,18 +86,27 @@ export class RoleManager {
 
   public reset() {
     this.role = roleParticipant;
+    this.isAvailableSendingMedia = true;
   }
 
   public hasParticipant() {
-    return RoleManager.hasParticipant(this.role);
+    return hasParticipant(this.role);
   }
 
   public hasSpectatorSynthetic() {
-    return RoleManager.hasSpectatorSynthetic(this.role);
+    return hasSpectatorSynthetic(this.role);
   }
 
   public hasSpectator() {
-    return RoleManager.hasSpectator(this.role);
+    return hasSpectator(this.role);
+  }
+
+  public subscribe(listener: TOnRoleChanged): () => void {
+    this.listeners.add(listener);
+
+    return () => {
+      this.listeners.delete(listener);
+    };
   }
 
   private setRole(next: TCallRole) {
@@ -127,5 +115,8 @@ export class RoleManager {
     this.role = next;
 
     this.onRoleChanged?.({ previous, next });
+    this.listeners.forEach((listener) => {
+      listener({ previous, next });
+    });
   }
 }

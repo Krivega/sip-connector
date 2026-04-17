@@ -4,14 +4,15 @@ import { createAudioMediaStreamTrackMock } from 'webrtc-mock';
 import { createManagers } from '@/__fixtures__/createManagers';
 import flushPromises from '@/__fixtures__/flushPromises';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
+import { CallSessionState } from '@/CallSessionState';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
 import CallManager, { getInRoomTokenOrThrow } from '../@CallManager';
 import { resolveRecvQuality } from '../quality';
 import { RemoteStreamsManager } from '../RemoteStreamsManager';
 
 import type { RTCSession } from '@krivega/jssip';
+import type { TCallRoleSpectatorSynthetic, TCallRoleSpectator } from '@/CallSessionState';
 import type { TRecvQuality } from '../quality';
-import type { TCallRoleSpectator, TCallRoleSpectatorSynthetic } from '../types';
 
 const mockRecvSession = (() => {
   const state: {
@@ -217,7 +218,7 @@ describe('CallManager', () => {
       conferenceForToken: '123',
     });
 
-    callManager.setCallRoleSpectator({ audioId: '1' });
+    callManager.sessionState.setCallRoleSpectator({ audioId: '1' });
 
     expect(callManager.getRecvQuality()).toEqual({
       quality: 'auto',
@@ -230,7 +231,7 @@ describe('CallManager', () => {
   });
 
   it('applyQuality: при роли participant не применяет качество', async () => {
-    callManager.setCallRoleParticipant();
+    callManager.sessionState.setCallRoleParticipant();
 
     const result = await callManager.applyQuality('low');
 
@@ -240,7 +241,7 @@ describe('CallManager', () => {
 
   it('applyQuality: при отсутствии recvSession возвращает false', async () => {
     mockGetInRoomCredentials(callManager, undefined);
-    callManager.setCallRoleSpectator({ audioId: '1' });
+    callManager.sessionState.setCallRoleSpectator({ audioId: '1' });
 
     const result = await callManager.applyQuality('low');
 
@@ -254,7 +255,7 @@ describe('CallManager', () => {
       conferenceForToken: '123',
     });
 
-    callManager.setCallRoleSpectator({ audioId: '1' });
+    callManager.sessionState.setCallRoleSpectator({ audioId: '1' });
 
     const result = await callManager.applyQuality('low');
 
@@ -268,7 +269,7 @@ describe('CallManager', () => {
       conferenceForToken: '123',
     });
 
-    callManager.setCallRoleSpectator({ audioId: '1' });
+    callManager.sessionState.setCallRoleSpectator({ audioId: '1' });
 
     mockRecvSession.instance?.applyQuality.mockResolvedValueOnce({
       applied: false,
@@ -286,7 +287,7 @@ describe('CallManager', () => {
       conferenceForToken: '123',
     });
 
-    callManager.setCallRoleSpectator({ audioId: '1' });
+    callManager.sessionState.setCallRoleSpectator({ audioId: '1' });
 
     const error = new Error('recv-session-fail');
 
@@ -303,7 +304,7 @@ describe('CallManager', () => {
       'startRecvSessionForced',
     );
 
-    callManager.setCallRoleParticipant();
+    callManager.sessionState.setCallRoleParticipant();
 
     const result = await callManager.restartRecvSession();
 
@@ -447,7 +448,7 @@ describe('CallManager', () => {
       'startRecvSessionForced',
     );
 
-    callManager.setCallRoleParticipant();
+    callManager.sessionState.setCallRoleParticipant();
 
     const result = await callManager.setRecvQuality('low');
 
@@ -884,7 +885,7 @@ describe('CallManager', () => {
         conferenceForToken: '123',
       });
 
-      callManager.setCallRoleSpectator({ audioId: '1' });
+      callManager.sessionState.setCallRoleSpectator({ audioId: '1' });
 
       const eventHandler = jest.fn();
 
@@ -913,7 +914,7 @@ describe('CallManager', () => {
         conferenceForToken: '123',
       });
 
-      callManager.setCallRoleSpectator({ audioId: '1' });
+      callManager.sessionState.setCallRoleSpectator({ audioId: '1' });
 
       const eventHandler = jest.fn();
 
@@ -935,7 +936,7 @@ describe('CallManager', () => {
         conferenceForToken: '123',
       });
 
-      callManager.setCallRoleSpectator({ audioId: '1' });
+      callManager.sessionState.setCallRoleSpectator({ audioId: '1' });
 
       const eventHandler = jest.fn();
 
@@ -962,7 +963,7 @@ describe('CallManager', () => {
         conferenceForToken: '123',
       });
 
-      callManager.setCallRoleSpectator({ audioId: '1' });
+      callManager.sessionState.setCallRoleSpectator({ audioId: '1' });
 
       const eventHandler = jest.fn();
 
@@ -989,7 +990,7 @@ describe('CallManager', () => {
         conferenceForToken: '123',
       });
 
-      callManager.setCallRoleSpectator({ audioId: '1' });
+      callManager.sessionState.setCallRoleSpectator({ audioId: '1' });
 
       const eventHandler = jest.fn();
 
@@ -1030,7 +1031,7 @@ describe('CallManager', () => {
   });
 
   it('renegotiate: должен вернуть false если rtcSession отсутствует', async () => {
-    callManager.setCallRoleSpectator({
+    callManager.sessionState.setCallRoleSpectator({
       audioId: 'audio-1',
     } as TCallRoleSpectator['recvParams']);
 
@@ -1051,7 +1052,7 @@ describe('CallManager', () => {
   it('renegotiate: должен пересогласовать recvSession для наблюдателя', async () => {
     mockGetInRoomCredentials(callManager, { token: 'token', conferenceForToken: '100' });
 
-    callManager.setCallRoleSpectator({
+    callManager.sessionState.setCallRoleSpectator({
       audioId: 'audio-1',
     } as TCallRoleSpectator['recvParams']);
 
@@ -1076,7 +1077,7 @@ describe('CallManager', () => {
   it('renegotiate: должен вернуть ошибку при пересогласовании для наблюдателя если renegotiate вернул ошибку', async () => {
     mockGetInRoomCredentials(callManager, { token: 'token', conferenceForToken: '100' });
 
-    callManager.setCallRoleSpectator({
+    callManager.sessionState.setCallRoleSpectator({
       audioId: 'audio-1',
     } as TCallRoleSpectator['recvParams']);
 
@@ -1149,7 +1150,7 @@ describe('CallManager', () => {
 
     mockGetInRoomCredentials(callManager, { token: 'token', conferenceForToken: '100' });
 
-    callManager.setCallRoleSpectator({
+    callManager.sessionState.setCallRoleSpectator({
       audioId: 'audio-1',
     } as TCallRoleSpectator['recvParams']);
 
@@ -1240,7 +1241,7 @@ describe('CallManager', () => {
     it('возвращает peerConnection из recvSession для наблюдателя', () => {
       mockGetInRoomCredentials(callManager, { token: 'token', conferenceForToken: '100' });
 
-      callManager.setCallRoleSpectator({
+      callManager.sessionState.setCallRoleSpectator({
         audioId: 'audio-1',
       } as TCallRoleSpectator['recvParams']);
 
@@ -1275,6 +1276,7 @@ describe('CallManager', () => {
       {
         sendOffer: jest.fn().mockResolvedValue({} as RTCSessionDescription),
       },
+      { callSessionState: new CallSessionState() },
     );
     const rtcSession = new RTCSessionMock({
       eventHandlers: {},
@@ -1299,10 +1301,12 @@ describe('CallManager', () => {
 
   it('reset: очищает remoteStreamsManager', () => {
     const spy = jest.spyOn(RemoteStreamsManager.prototype, 'reset');
+    const sessionResetSpy = jest.spyOn(callManager.sessionState, 'reset');
 
     // @ts-expect-error
     callManager.reset();
     expect(spy).toHaveBeenCalled();
+    expect(sessionResetSpy).toHaveBeenCalledTimes(1);
   });
 
   describe('deferred RecvSession command (race with conference:participant-token-issued)', () => {
@@ -1313,7 +1317,7 @@ describe('CallManager', () => {
       expect(cm.stateMachine.state).toBe('call:connecting');
       expect(cm.getToken()).toBeUndefined();
 
-      cm.setCallRoleSpectator({
+      cm.sessionState.setCallRoleSpectator({
         audioId: 'audio-1',
       } as TCallRoleSpectator['recvParams']);
 
@@ -1341,11 +1345,11 @@ describe('CallManager', () => {
       const { callManager: cm, apiManager } = createManagers();
 
       cm.events.trigger('start-call', { number: '100', answer: false });
-      cm.setCallRoleSpectator({
+      cm.sessionState.setCallRoleSpectator({
         audioId: 'audio-1',
       } as TCallRoleSpectator['recvParams']);
 
-      cm.setCallRoleParticipant();
+      cm.sessionState.setCallRoleParticipant();
 
       apiManager.events.trigger('enter-room', { room: 'r1', participantName: 'p1' });
       apiManager.events.trigger('conference:participant-token-issued', {
@@ -1362,7 +1366,7 @@ describe('CallManager', () => {
       const { callManager: cm } = createManagers();
 
       cm.events.trigger('start-call', { number: '100', answer: false });
-      cm.setCallRoleSpectator({
+      cm.sessionState.setCallRoleSpectator({
         audioId: 'audio-1',
       } as TCallRoleSpectator['recvParams']);
 
@@ -1396,7 +1400,7 @@ describe('CallManager', () => {
       expect(cm.stateMachine.state).toBe('call:connecting');
       expect(cm.getToken()).toBeUndefined();
 
-      cm.setCallRoleSpectator({
+      cm.sessionState.setCallRoleSpectator({
         audioId: 'audio-1',
       } as TCallRoleSpectator['recvParams']);
 
@@ -1464,7 +1468,9 @@ describe('CallManager - дополнительные тесты для покр�
       sendOffer: jest.fn().mockResolvedValue({} as RTCSessionDescription),
     };
 
-    callManager = new CallManager({ contentedStreamManager }, tools);
+    callManager = new CallManager({ contentedStreamManager }, tools, {
+      callSessionState: new CallSessionState(),
+    });
     callManagerTest = callManager as unknown as CallManagerTestAccess;
     jest.clearAllMocks();
     mockRecvSession.reset();
@@ -2143,11 +2149,11 @@ describe('CallManager - дополнительные тесты для покр�
   it('setCallRoleParticipant: делегирует в roleManager', () => {
     const spy = jest.spyOn(
       // @ts-expect-error
-      callManager.roleManager,
+      callManager.sessionState.roleManager,
       'setCallRoleParticipant',
     );
 
-    callManager.setCallRoleParticipant();
+    callManager.sessionState.setCallRoleParticipant();
 
     expect(spy).toHaveBeenCalledTimes(1);
   });

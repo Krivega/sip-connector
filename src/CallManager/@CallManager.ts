@@ -1,6 +1,12 @@
 import { C as JsSIP_C, IncomingResponse } from '@krivega/jssip';
 import { EventEmitterProxy } from 'events-constructor';
 
+import {
+  isExitingSpectatorRole,
+  isEnteringSpectatorRole,
+  isExitingAnySpectatorRole,
+  isEnteringAnySpectatorRole,
+} from '@/CallSessionState';
 import { DeferredCommandRunner } from '@/tools';
 import { createCallStateMachine, ECallStatus } from './CallStateMachine';
 import { createEvents } from './events';
@@ -8,12 +14,12 @@ import { MCUSession } from './MCUSession';
 import { resolveRecvQuality } from './quality';
 import RecvSession from './RecvSession';
 import { RemoteStreamsManager } from './RemoteStreamsManager';
-import { RoleManager } from './RoleManager';
 import { StreamsChangeTracker } from './StreamsChangeTracker';
 import { StreamsManagerProvider } from './StreamsManagerProvider';
 
 import type { RTCSession } from '@krivega/jssip';
 import type { ApiManager } from '@/ApiManager';
+import type { CallSessionState, TCallRole, TCallRoleSpectator } from '@/CallSessionState';
 import type { ContentedStreamManager } from '@/ContentedStreamManager';
 import type { ICallStateMachine } from './CallStateMachine';
 import type { TEventMap } from './events';
@@ -22,8 +28,6 @@ import type { TEffectiveQuality, TRecvQuality } from './quality';
 import type { TTools } from './RecvSession';
 import type {
   TAnswerToIncomingCall,
-  TCallRole,
-  TCallRoleSpectator,
   TReplaceMediaStream,
   TStartCall,
   TStreamsManagerTools,
@@ -85,6 +89,8 @@ export function getInRoomTokenOrThrow(stateMachine: ICallStateMachine): string {
 class CallManager extends EventEmitterProxy<TEventMap> {
   public readonly stateMachine: ICallStateMachine;
 
+  public readonly sessionState: CallSessionState;
+
   protected isPendingCall = false;
 
   protected isPendingAnswer = false;
@@ -99,9 +105,14 @@ class CallManager extends EventEmitterProxy<TEventMap> {
 
   private readonly tools: TTools;
 
-  private readonly roleManager = new RoleManager((params) => {
-    this.onRoleChanged(params);
-  });
+  private readonly roleManager = {
+    hasSpectator: (): boolean => {
+      return this.sessionState.hasSpectator();
+    },
+    reset: (): void => {
+      this.sessionState.reset();
+    },
+  };
 
   private readonly mcuSession: MCUSession;
 
@@ -121,6 +132,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   public constructor(
     { contentedStreamManager }: { contentedStreamManager: ContentedStreamManager },
     tools: TTools,
+    { callSessionState }: { callSessionState: CallSessionState },
   ) {
     super(createEvents());
 
@@ -128,6 +140,8 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     this.tools = tools;
     this.mcuSession = new MCUSession(this.events, { onReset: this.reset });
     this.stateMachine = createCallStateMachine(this.events);
+    this.sessionState = callSessionState;
+    this.sessionState.subscribeRoleChanges(this.onRoleChanged);
     this.streamsManagerProvider = new StreamsManagerProvider(
       this.mainRemoteStreamsManager,
       this.recvRemoteStreamsManager,
@@ -212,6 +226,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
 
   public subscribeToApiEvents(apiManager: ApiManager): void {
     this.stateMachine.subscribeToApiEvents(apiManager.events);
+    this.sessionState.subscribeToApiEvents(apiManager.events);
   }
 
   public startCall: TStartCall = async (ua, getUri, params) => {
@@ -305,18 +320,6 @@ class CallManager extends EventEmitterProxy<TEventMap> {
 
   public hasSpectator(): boolean {
     return this.roleManager.hasSpectator();
-  }
-
-  public setCallRoleParticipant() {
-    this.roleManager.setCallRoleParticipant();
-  }
-
-  public setCallRoleSpectatorSynthetic() {
-    this.roleManager.setCallRoleSpectatorSynthetic();
-  }
-
-  public setCallRoleSpectator(recvParams: TCallRoleSpectator['recvParams']) {
-    this.roleManager.setCallRoleSpectator(recvParams);
   }
 
   public async replaceMediaStream(
@@ -664,13 +667,13 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     previous: TCallRole;
     next: TCallRole;
   }) => {
-    if (RoleManager.isExitingSpectatorRole(previous, next)) {
+    if (isExitingSpectatorRole(previous, next)) {
       this.stopRecvSession();
       this.deferredStartRecvSessionRunner.cancel();
       this.emitEventChangedRemoteStreamsConnected();
     }
 
-    if (RoleManager.isEnteringSpectatorRole(previous, next)) {
+    if (isEnteringSpectatorRole(previous, next)) {
       const params = next.recvParams;
 
       if (this.stateMachine.getInRoomCredentials() === undefined) {
@@ -682,12 +685,12 @@ class CallManager extends EventEmitterProxy<TEventMap> {
       }
     }
 
-    if (RoleManager.isExitingAnySpectatorRole(previous, next)) {
+    if (isExitingAnySpectatorRole(previous, next)) {
       // Выход из роли зрителя: восстанавливаем битрейт отправителей
       this.mcuSession.restoreBitrateForSenders();
     }
 
-    if (RoleManager.isEnteringAnySpectatorRole(previous, next)) {
+    if (isEnteringAnySpectatorRole(previous, next)) {
       // Вход в роль зрителя: ограничиваем битрейт отправителей
       this.mcuSession.setMinBitrateForSenders();
     }
