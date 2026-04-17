@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/class-methods-use-this */
-import type { TStatusesRootSnapshot } from './statusesRoot';
+import type { TStatusesRootSnapshot } from './StatusesRoot';
 
 type TDomIds = {
   overlayId: string;

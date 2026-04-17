@@ -1,14 +1,14 @@
 import { getSnapshot } from 'mobx-state-tree';
 
 import sipConnectorFacade from './Session/sipConnectorFacade';
-import { INITIAL_STATUSES_ROOT_SNAPSHOT, StatusesRootModel } from './statusesRoot';
+import { INITIAL_STATUSES_ROOT_SNAPSHOT, StatusesRootModel } from './StatusesRoot';
 
 import type { TCallSessionSnapshot, TSessionSnapshot } from '@/index';
 import type {
   TStatusesByDomain,
   TStatusesRootSnapshotOut,
   TStatusesRootSnapshot,
-} from './statusesRoot';
+} from './StatusesRoot';
 
 class Statuses {
   private unsubscribeSessionStatuses?: () => void;
