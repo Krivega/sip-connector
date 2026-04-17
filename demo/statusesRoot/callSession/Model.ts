@@ -7,6 +7,7 @@ import type { TCallSessionSnapshot } from '@/index';
 
 export type TCallSessionStatusSnapshot = {
   license?: TCallSessionSnapshot['license'];
+  isDuplexSendingMediaMode: boolean;
   roleType: TCallSessionSnapshot['role']['type'];
   roleAudioId?: string;
   isSpectatorAny: boolean;
@@ -17,8 +18,12 @@ export type TCallSessionStatusSnapshot = {
 export const createCallSessionStatusSnapshot = (
   snapshot: TCallSessionSnapshot,
 ): TCallSessionStatusSnapshot => {
+  const isDuplexSendingMediaMode =
+    'isDuplexSendingMediaMode' in snapshot ? Boolean(snapshot.isDuplexSendingMediaMode) : false;
+
   return {
     license: snapshot.license,
+    isDuplexSendingMediaMode,
     roleType: snapshot.role.type,
     roleAudioId: snapshot.role.type === 'spectator' ? snapshot.role.recvParams.audioId : undefined,
     isAvailableSendingMedia: snapshot.derived.isAvailableSendingMedia,
@@ -36,6 +41,7 @@ export const CallSessionStatusModel = types
         EContentUseLicense.AUDIOPLUSPRESENTATION,
       ]),
     ),
+    isDuplexSendingMediaMode: types.boolean,
     roleType: types.enumeration('CallSessionRoleType', [
       'participant',
       'spectator',
@@ -51,6 +57,7 @@ export const CallSessionStatusModel = types
       get snapshot(): TCallSessionStatusSnapshot {
         return {
           license: self.license,
+          isDuplexSendingMediaMode: self.isDuplexSendingMediaMode,
           roleType: self.roleType,
           roleAudioId: self.roleAudioId,
           isSpectatorAny: self.isSpectatorAny,
@@ -109,6 +116,7 @@ export const CallSessionStatusModel = types
 export type TCallSessionStatusInstance = Instance<typeof CallSessionStatusModel>;
 
 export const INITIAL_CALL_SESSION_STATUS_SNAPSHOT = {
+  isDuplexSendingMediaMode: false,
   roleType: 'participant',
   isSpectatorAny: false,
   isRecvSessionExpected: false,

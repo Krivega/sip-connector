@@ -34,6 +34,7 @@ const isRoleEqual = (
 const defaultSnapshotEquals = (previous: TCallSessionSnapshot, next: TCallSessionSnapshot) => {
   return (
     previous.license === next.license &&
+    previous.isDuplexSendingMediaMode === next.isDuplexSendingMediaMode &&
     isRoleEqual(previous.role, next.role) &&
     previous.derived.isAvailableSendingMedia === next.derived.isAvailableSendingMedia
   );
@@ -41,6 +42,7 @@ const defaultSnapshotEquals = (previous: TCallSessionSnapshot, next: TCallSessio
 
 const collectCallSessionSnapshot = (
   roleManager: Pick<RoleManager, 'getRole' | 'getIsAvailableSendingMedia'>,
+  isDuplexSendingMediaMode: boolean,
   license?: EContentUseLicense,
 ): TCallSessionSnapshot => {
   const role = roleManager.getRole();
@@ -48,6 +50,7 @@ const collectCallSessionSnapshot = (
 
   return {
     license,
+    isDuplexSendingMediaMode,
     role,
     derived: {
       isSpectatorAny,
@@ -62,6 +65,8 @@ export class CallSessionState extends EventEmitterProxy<TEventMap> {
 
   private license?: EContentUseLicense;
 
+  private isDuplexSendingMediaMode = false;
+
   private currentSnapshot: TCallSessionSnapshot;
 
   private readonly subscriptions: { unsubscribe: () => void }[] = [];
@@ -71,7 +76,11 @@ export class CallSessionState extends EventEmitterProxy<TEventMap> {
   public constructor() {
     super(createEvents());
 
-    this.currentSnapshot = collectCallSessionSnapshot(this.roleManager, this.license);
+    this.currentSnapshot = collectCallSessionSnapshot(
+      this.roleManager,
+      this.isDuplexSendingMediaMode,
+      this.license,
+    );
 
     const unsubscribeRoleManager = this.roleManager.subscribe(this.notifySubscribers);
 
@@ -118,14 +127,34 @@ export class CallSessionState extends EventEmitterProxy<TEventMap> {
   public reset(): void {
     this.roleManager.reset();
     this.license = undefined;
+    this.isDuplexSendingMediaMode = false;
     this.notifySubscribers();
   }
 
   public subscribeToApiEvents(apiManager: TApiManagerEvents): void {
     const unsubscribeUseLicense = apiManager.on('use-license', this.handleUseLicense);
+    const unsubscribeSyncMediaState = apiManager.on(
+      'admin:force-sync-media-state',
+      this.handleSyncMediaState,
+    );
+    const unsubscribeStopMainCam = apiManager.on('admin:stop-main-cam', this.handleSyncMediaState);
+    const unsubscribeStopMic = apiManager.on('admin:stop-mic', this.handleSyncMediaState);
+    const unsubscribeStartMic = apiManager.on('admin:start-mic', this.handleSyncMediaState);
 
     this.subscriptions.push({
       unsubscribe: unsubscribeUseLicense,
+    });
+    this.subscriptions.push({
+      unsubscribe: unsubscribeSyncMediaState,
+    });
+    this.subscriptions.push({
+      unsubscribe: unsubscribeStopMainCam,
+    });
+    this.subscriptions.push({
+      unsubscribe: unsubscribeStopMic,
+    });
+    this.subscriptions.push({
+      unsubscribe: unsubscribeStartMic,
     });
   }
 
@@ -168,7 +197,11 @@ export class CallSessionState extends EventEmitterProxy<TEventMap> {
     // так проще тестировать и поддерживать оркестрацию в notifySubscribers.
     const previousSnapshot = this.currentSnapshot;
 
-    this.currentSnapshot = collectCallSessionSnapshot(this.roleManager, this.license);
+    this.currentSnapshot = collectCallSessionSnapshot(
+      this.roleManager,
+      this.isDuplexSendingMediaMode,
+      this.license,
+    );
 
     return {
       previousSnapshot,
@@ -178,6 +211,11 @@ export class CallSessionState extends EventEmitterProxy<TEventMap> {
 
   private readonly handleUseLicense = (license: EContentUseLicense): void => {
     this.license = license;
+    this.notifySubscribers();
+  };
+
+  private readonly handleSyncMediaState = ({ isSyncForced }: { isSyncForced: boolean }): void => {
+    this.isDuplexSendingMediaMode = isSyncForced;
     this.notifySubscribers();
   };
 }

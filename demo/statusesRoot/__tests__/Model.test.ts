@@ -397,6 +397,7 @@ describe('StatusesStore', () => {
 
       const callSessionSnapshot = {
         license: EContentUseLicense.AUDIO,
+        isDuplexSendingMediaMode: true,
         role: {
           type: 'spectator',
           recvParams: {
@@ -414,6 +415,7 @@ describe('StatusesStore', () => {
 
       expect(store.callSessionSnapshot).toEqual({
         license: EContentUseLicense.AUDIO,
+        isDuplexSendingMediaMode: true,
         roleType: 'spectator',
         roleAudioId: 'audio-1',
         isAvailableSendingMedia: false,

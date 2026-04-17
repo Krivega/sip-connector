@@ -16,6 +16,7 @@ export type TCallSessionDerived = {
 
 export type TCallSessionSnapshot = {
   license?: EContentUseLicense;
+  isDuplexSendingMediaMode: boolean;
   role: TCallRole;
   derived: TCallSessionDerived;
 };

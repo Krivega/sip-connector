@@ -11,6 +11,7 @@ describe('CallSessionState', () => {
 
     expect(snapshot.role).toEqual({ type: 'spectator_synthetic' });
     expect(snapshot.license).toBeUndefined();
+    expect(snapshot.isDuplexSendingMediaMode).toBe(false);
     expect(snapshot.derived).toEqual({
       isSpectatorAny: true,
       isRecvSessionExpected: false,
@@ -70,6 +71,31 @@ describe('CallSessionState', () => {
     });
   });
 
+  it('syncs isDuplexSendingMediaMode from admin media-state events', () => {
+    const apiEvents = createApiManagerEvents();
+    const callSessionState = new CallSessionState();
+    const listener = jest.fn();
+    const calls = listener.mock.calls as [ReturnType<CallSessionState['getSnapshot']>][];
+
+    callSessionState.subscribe(listener);
+    callSessionState.subscribeToApiEvents(apiEvents);
+
+    apiEvents.trigger('admin:force-sync-media-state', { isSyncForced: true });
+    apiEvents.trigger('admin:stop-main-cam', { isSyncForced: false });
+    apiEvents.trigger('admin:stop-mic', { isSyncForced: true });
+    apiEvents.trigger('admin:start-mic', { isSyncForced: true });
+
+    expect(listener).toHaveBeenCalledTimes(3);
+    expect(calls[0]?.[0]?.isDuplexSendingMediaMode).toBe(true);
+    expect(calls[1]?.[0]?.isDuplexSendingMediaMode).toBe(false);
+    expect(calls[2]?.[0]?.isDuplexSendingMediaMode).toBe(true);
+    expect(callSessionState.getDiagnostics()).toEqual({
+      emitsTotal: 3,
+      dedupedTotal: 1,
+      subscribersCount: 1,
+    });
+  });
+
   it('syncs isAvailableSendingMedia from role methods', () => {
     const callSessionState = new CallSessionState();
     const listener = jest.fn();
@@ -114,10 +140,12 @@ describe('CallSessionState', () => {
 
     callSessionState.setCallRoleSpectatorSynthetic(false);
     apiEvents.trigger('use-license', EContentUseLicense.VIDEO);
+    apiEvents.trigger('admin:force-sync-media-state', { isSyncForced: true });
     callSessionState.reset();
 
     expect(callSessionState.getSnapshot().role).toEqual({ type: 'participant' });
     expect(callSessionState.getSnapshot().license).toBeUndefined();
+    expect(callSessionState.getSnapshot().isDuplexSendingMediaMode).toBe(false);
     expect(callSessionState.getSnapshot().derived.isAvailableSendingMedia).toBe(true);
   });
 });

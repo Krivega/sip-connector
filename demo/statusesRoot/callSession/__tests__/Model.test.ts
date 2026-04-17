@@ -21,6 +21,7 @@ describe('CallSessionStatusModel', () => {
         },
       },
       license: EContentUseLicense.VIDEO,
+      isDuplexSendingMediaMode: true,
       derived: {
         isSpectatorAny: true,
         isRecvSessionExpected: true,
@@ -30,6 +31,7 @@ describe('CallSessionStatusModel', () => {
 
     expect(snapshot).toEqual({
       license: EContentUseLicense.VIDEO,
+      isDuplexSendingMediaMode: true,
       roleType: 'spectator',
       roleAudioId: 'audio-1',
       isAvailableSendingMedia: false,
@@ -43,6 +45,7 @@ describe('CallSessionStatusModel', () => {
       role: {
         type: 'participant',
       },
+      isDuplexSendingMediaMode: false,
       derived: {
         isSpectatorAny: false,
         isRecvSessionExpected: false,
@@ -51,6 +54,7 @@ describe('CallSessionStatusModel', () => {
     });
 
     expect(snapshot).toEqual({
+      isDuplexSendingMediaMode: false,
       roleType: 'participant',
       roleAudioId: undefined,
       isAvailableSendingMedia: true,
