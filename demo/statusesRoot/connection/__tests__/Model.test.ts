@@ -9,6 +9,8 @@ const createConnectionStatus = (
   return ConnectionStatusModel.create(snapshot);
 };
 
+type TConnectionConfiguration = ReturnType<typeof createConnectionStatus>['connectionConfig'];
+
 const getStateFlags = (status: ReturnType<typeof createConnectionStatus>) => {
   return {
     isIdle: status.isIdle(),
@@ -28,15 +30,13 @@ type TStateCase = {
   title: string;
   snapshot: TConnectionSnapshot;
   expectedFlags: TStateFlags;
-  expectedConnectionConfiguration:
-    | {
-        sipServerIp: string;
-        sipServerUrl: string;
-        displayName: string;
-        authorizationUser: string;
-        register: boolean;
-      }
-    | undefined;
+  expectedConnectionConfiguration: TConnectionConfiguration;
+};
+
+type TUserIdentityCase = {
+  title: string;
+  snapshot: TConnectionSnapshot;
+  expectedUserIdentity: { user: string; displayName: string | undefined } | undefined;
 };
 
 const createExpectedFlags = (activeFlag: TStateFlagKey): TStateFlags => {
@@ -65,6 +65,18 @@ const connectionConfigurationWithUser = {
   user: '100',
 };
 
+const createSnapshot = (
+  state: EConnectionStatus,
+  configuration: TConnectionConfiguration,
+): TConnectionSnapshot => {
+  return {
+    state,
+    context: {
+      connectionConfiguration: configuration,
+    },
+  } as TConnectionSnapshot;
+};
+
 const stateCases: TStateCase[] = [
   {
     title: 'IDLE',
@@ -74,80 +86,61 @@ const stateCases: TStateCase[] = [
   },
   {
     title: 'PREPARING',
-    snapshot: {
-      state: EConnectionStatus.PREPARING,
-      context: {
-        connectionConfiguration: undefined,
-      },
-    } as TConnectionSnapshot,
+    snapshot: createSnapshot(EConnectionStatus.PREPARING, undefined),
     expectedFlags: createExpectedFlags('isPreparing'),
     expectedConnectionConfiguration: undefined,
   },
   {
     title: 'CONNECTING',
-    snapshot: {
-      state: EConnectionStatus.CONNECTING,
-      context: {
-        connectionConfiguration: connectionConfigurationWithUser,
-      },
-    } as TConnectionSnapshot,
+    snapshot: createSnapshot(EConnectionStatus.CONNECTING, connectionConfigurationWithUser),
     expectedFlags: createExpectedFlags('isConnecting'),
     expectedConnectionConfiguration: connectionConfigurationWithUser,
   },
   {
     title: 'CONNECTED',
-    snapshot: {
-      state: EConnectionStatus.CONNECTED,
-      context: {
-        connectionConfiguration: connectionConfigurationWithUser,
-      },
-    } as TConnectionSnapshot,
+    snapshot: createSnapshot(EConnectionStatus.CONNECTED, connectionConfigurationWithUser),
     expectedFlags: createExpectedFlags('isConnected'),
     expectedConnectionConfiguration: connectionConfigurationWithUser,
   },
   {
     title: 'REGISTERED',
-    snapshot: {
-      state: EConnectionStatus.REGISTERED,
-      context: {
-        connectionConfiguration: connectionConfigurationWithUser,
-      },
-    } as TConnectionSnapshot,
+    snapshot: createSnapshot(EConnectionStatus.REGISTERED, connectionConfigurationWithUser),
     expectedFlags: createExpectedFlags('isRegistered'),
     expectedConnectionConfiguration: connectionConfigurationWithUser,
   },
   {
     title: 'ESTABLISHED',
-    snapshot: {
-      state: EConnectionStatus.ESTABLISHED,
-      context: {
-        connectionConfiguration: connectionConfigurationWithUser,
-      },
-    } as TConnectionSnapshot,
+    snapshot: createSnapshot(EConnectionStatus.ESTABLISHED, connectionConfigurationWithUser),
     expectedFlags: createExpectedFlags('isEstablished'),
     expectedConnectionConfiguration: connectionConfigurationWithUser,
   },
   {
     title: 'DISCONNECTING',
-    snapshot: {
-      state: EConnectionStatus.DISCONNECTING,
-      context: {
-        connectionConfiguration: connectionConfigurationWithUser,
-      },
-    } as TConnectionSnapshot,
+    snapshot: createSnapshot(EConnectionStatus.DISCONNECTING, connectionConfigurationWithUser),
     expectedFlags: createExpectedFlags('isDisconnecting'),
     expectedConnectionConfiguration: connectionConfigurationWithUser,
   },
   {
     title: 'DISCONNECTED',
-    snapshot: {
-      state: EConnectionStatus.DISCONNECTED,
-      context: {
-        connectionConfiguration: undefined,
-      },
-    } as TConnectionSnapshot,
+    snapshot: createSnapshot(EConnectionStatus.DISCONNECTED, undefined),
     expectedFlags: createExpectedFlags('isDisconnected'),
     expectedConnectionConfiguration: undefined,
+  },
+];
+
+const userIdentityCases: TUserIdentityCase[] = [
+  {
+    title: 'returns identity when connection configuration has user',
+    snapshot: createSnapshot(EConnectionStatus.CONNECTED, connectionConfigurationWithUser),
+    expectedUserIdentity: {
+      user: connectionConfigurationWithUser.user,
+      displayName: connectionConfigurationWithUser.displayName,
+    },
+  },
+  {
+    title: 'returns undefined when connection configuration has no user',
+    snapshot: createSnapshot(EConnectionStatus.CONNECTED, connectionConfiguration),
+    expectedUserIdentity: undefined,
   },
 ];
 
@@ -171,28 +164,9 @@ describe('ConnectionStatusModel', () => {
     },
   );
 
-  it('returns user identity when connection configuration has user', () => {
-    const status = createConnectionStatus({
-      state: EConnectionStatus.CONNECTED,
-      context: {
-        connectionConfiguration: connectionConfigurationWithUser,
-      },
-    } as TConnectionSnapshot);
+  it.each(userIdentityCases)('$title', ({ snapshot, expectedUserIdentity }) => {
+    const status = createConnectionStatus(snapshot);
 
-    expect(status.userIdentity).toEqual({
-      user: connectionConfigurationWithUser.user,
-      displayName: connectionConfigurationWithUser.displayName,
-    });
-  });
-
-  it('returns undefined user identity when connection configuration has no user', () => {
-    const status = createConnectionStatus({
-      state: EConnectionStatus.CONNECTED,
-      context: {
-        connectionConfiguration,
-      },
-    } as TConnectionSnapshot);
-
-    expect(status.userIdentity).toBeUndefined();
+    expect(status.userIdentity).toEqual(expectedUserIdentity);
   });
 });
