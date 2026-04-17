@@ -29,6 +29,9 @@ type TStateCase = {
   expectedFlags: TStateFlags;
 };
 
+/** Согласовано с типом контекста активных состояний CallStateMachine (`startedTimestamp`). */
+const MOCK_STARTED_AT = 1_700_000_000_000;
+
 const createExpectedFlags = (activeFlag: TStateFlagKey): TStateFlags => {
   return {
     isIdle: activeFlag === 'isIdle',
@@ -55,6 +58,7 @@ const getContextAccessors = (status: ReturnType<typeof createCallStatus>) => {
     token: status.token,
     conferenceForToken: status.conferenceForToken,
     hasPendingDisconnect: status.hasPendingDisconnect,
+    startedTimestamp: status.startedTimestamp,
   };
 };
 
@@ -84,6 +88,7 @@ const stateCases: TStateCase[] = [
       context: {
         number: '200',
         answer: true,
+        startedTimestamp: MOCK_STARTED_AT,
       },
     } as TCallSnapshot,
     expectedFlags: createExpectedFlags('isPresentationCall'),
@@ -97,6 +102,7 @@ const stateCases: TStateCase[] = [
         answer: false,
         room: 'room-300',
         participantName: 'alice',
+        startedTimestamp: MOCK_STARTED_AT,
       },
     } as TCallSnapshot,
     expectedFlags: createExpectedFlags('isRoomPendingAuth'),
@@ -110,6 +116,7 @@ const stateCases: TStateCase[] = [
         answer: true,
         room: 'room-301',
         participantName: 'bob',
+        startedTimestamp: MOCK_STARTED_AT,
       },
     } as TCallSnapshot,
     expectedFlags: createExpectedFlags('isPurgatory'),
@@ -123,6 +130,7 @@ const stateCases: TStateCase[] = [
         answer: false,
         room: 'room-302',
         participantName: 'charlie',
+        startedTimestamp: MOCK_STARTED_AT,
       },
     } as TCallSnapshot,
     expectedFlags: createExpectedFlags('isP2PRoom'),
@@ -137,6 +145,7 @@ const stateCases: TStateCase[] = [
         room: 'room-303',
         participantName: 'diana',
         isDirectPeerToPeer: true,
+        startedTimestamp: MOCK_STARTED_AT,
       },
     } as TCallSnapshot,
     expectedFlags: createExpectedFlags('isDirectP2PRoom'),
@@ -150,6 +159,7 @@ const stateCases: TStateCase[] = [
         answer: true,
         room: 'room-1',
         participantName: 'alice',
+        startedTimestamp: MOCK_STARTED_AT,
         token: 'jwt',
         conferenceForToken: 'room-1',
       },
@@ -301,6 +311,7 @@ describe('CallStatusModel', () => {
       token: undefined,
       conferenceForToken: undefined,
       hasPendingDisconnect: undefined,
+      startedTimestamp: undefined,
     });
   });
 
@@ -312,6 +323,7 @@ describe('CallStatusModel', () => {
         answer: true,
         room: 'room-1',
         participantName: 'alice',
+        startedTimestamp: MOCK_STARTED_AT,
         token: 'jwt',
         conferenceForToken: 'room-1',
       },
@@ -328,6 +340,7 @@ describe('CallStatusModel', () => {
       token: 'jwt',
       conferenceForToken: 'room-1',
       hasPendingDisconnect: undefined,
+      startedTimestamp: MOCK_STARTED_AT,
     });
   });
 
@@ -340,6 +353,7 @@ describe('CallStatusModel', () => {
         room: 'room-direct',
         participantName: 'eve',
         isDirectPeerToPeer: true,
+        startedTimestamp: MOCK_STARTED_AT,
       },
     });
 
@@ -354,6 +368,7 @@ describe('CallStatusModel', () => {
       token: undefined,
       conferenceForToken: undefined,
       hasPendingDisconnect: undefined,
+      startedTimestamp: MOCK_STARTED_AT,
     });
   });
 
@@ -376,6 +391,7 @@ describe('CallStatusModel', () => {
       token: undefined,
       conferenceForToken: undefined,
       hasPendingDisconnect: true,
+      startedTimestamp: undefined,
     });
   });
 });

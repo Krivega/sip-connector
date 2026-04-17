@@ -1,6 +1,7 @@
 import type { EState } from './constants';
 
 export type TAnyRoomState = {
+  startedTimestamp: number;
   number: string;
   answer: boolean;
   room: string;
@@ -18,6 +19,8 @@ export type TContextMap = {
   [EState.PRESENTATION_CALL]: {
     number: string;
     answer: boolean;
+    /** Время первого входа в «активную» фазу (см. `startedTimestamp` у ROOM_PENDING_AUTH и др.). */
+    startedTimestamp: number;
   };
   [EState.ROOM_PENDING_AUTH]: TAnyRoomState;
   [EState.PURGATORY]: TAnyRoomState;

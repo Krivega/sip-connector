@@ -9,33 +9,42 @@
 | Геттеры состояния       | `isIdle`, `isConnecting`, `isPresentationCall`, `isRoomPendingAuth`, `isInPurgatory`, `isP2PRoom`, `isDirectP2PRoom`, `isInRoom`, `isDisconnecting`                 |
 | Комбинированные геттеры | `isActive`                                                                                                                                                          |
 | Typed-геттеры контекста | `idleContext`, `connectingContext`, `roomPendingAuthContext`, `purgatoryContext`, `p2pRoomContext`, `directP2pRoomContext`, `inRoomContext`, `disconnectingContext` |
+| Время начала сессии     | `startedTimestamp` — момент (Unix ms) **первого** входа в «активную» фазу звонка; см. ниже                                                                          |
 | Геттеры/утилиты         | `number`, `token`, `isCallInitiator`, `isCallAnswerer`, `getInRoomCredentials()`, `onInRoomCredentialsChange(listener)`                                             |
 | Методы управления       | `reset()`, `send(event)`, `subscribeToApiEvents(apiManagerEvents)`                                                                                                  |
 
 ## Состояния
 
-| Состояние               | Назначение                                                                     |
-| ----------------------- | ------------------------------------------------------------------------------ |
-| `call:idle`             | Звонок не активен, контекст очищен.                                            |
-| `call:connecting`       | Идёт установка звонка, есть базовые данные (`number`, `answer`).               |
-| `call:presentationCall` | Режим presentation-call после `confirmed` и спец-заголовка.                    |
-| `call:roomPendingAuth`  | Известны `room` и `participantName`, но нет валидного room-согласованного JWT. |
-| `call:purgatory`        | Режим purgatory (no-token state).                                              |
-| `call:p2pRoom`          | P2P-режим по имени комнаты (no-token state).                                   |
-| `call:directP2pRoom`    | Direct P2P-режим по флагу/паттерну (no-token state).                           |
-| `call:inRoom`           | Комната готова к JWT-зависимым операциям (`conferenceForToken === room`).      |
-| `call:disconnecting`    | Идёт завершение звонка до финального `CALL.RESET`.                             |
-| `evaluate`              | Внутренний transient state выбора целевого доменного состояния.                |
+| Состояние               | Назначение                                                                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `call:idle`             | Звонок не активен, контекст очищен.                                                                                             |
+| `call:connecting`       | Идёт установка звонка, есть базовые данные (`number`, `answer`).                                                                |
+| `call:presentationCall` | Режим presentation-call после `confirmed` и спец-заголовка.                                                                     |
+| `call:roomPendingAuth`  | Известны `room` и `participantName`, но нет валидного room-согласованного JWT; вход в «активную» фазу (см. `startedTimestamp`). |
+| `call:purgatory`        | Режим purgatory (no-token state).                                                                                               |
+| `call:p2pRoom`          | P2P-режим по имени комнаты (no-token state).                                                                                    |
+| `call:directP2pRoom`    | Direct P2P-режим по флагу/паттерну (no-token state).                                                                            |
+| `call:inRoom`           | Комната готова к JWT-зависимым операциям (`conferenceForToken === room`).                                                       |
+| `call:disconnecting`    | Идёт завершение звонка до финального `CALL.RESET`.                                                                              |
+| `evaluate`              | Внутренний transient state выбора целевого доменного состояния.                                                                 |
 
 ## Контекст и инварианты
 
-| Инвариант             | Описание                                                                                                      |
-| --------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Формы контекста       | `context.raw` хранит рабочие данные, `context.state` — нормализованный контекст текущего состояния.           |
-| Валидность `inRoom`   | `inRoomContext` доступен только при `state = call:inRoom` и `conferenceForToken === room`.                    |
-| Presentation-контекст | В `call:presentationCall` типизированный контекст ограничен полями `number` и `answer`.                       |
-| Disconnect-контекст   | В `call:disconnecting` `state`-контекст пустой (`{}`), в `raw` временно может быть `pendingDisconnect: true`. |
-| Сброс                 | `CALL.RESET` очищает `raw` и возвращает машину в `call:idle`.                                                 |
+| Инвариант             | Описание                                                                                                                                                                                                                                                    |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Формы контекста       | `context.raw` хранит рабочие данные, `context.state` — нормализованный контекст текущего состояния.                                                                                                                                                         |
+| Валидность `inRoom`   | `inRoomContext` доступен только при `state = call:inRoom` и `conferenceForToken === room`.                                                                                                                                                                  |
+| Presentation-контекст | В `call:presentationCall` в типизированном контексте: `number`, `answer`, `startedTimestamp`.                                                                                                                                                               |
+| Комнатные контексты   | Для `call:roomPendingAuth`, `call:purgatory`, `call:p2pRoom`, `call:directP2pRoom`, `call:inRoom` к полям комнаты (`number`, `answer`, `room`, `participantName`, …) добавляется `startedTimestamp` (у `call:inRoom` также `token` и `conferenceForToken`). |
+| Disconnect-контекст   | В `call:disconnecting` `state`-контекст пустой (`{}`), в `raw` временно может быть `pendingDisconnect: true`.                                                                                                                                               |
+| Сброс                 | `CALL.RESET` очищает `raw` и возвращает машину в `call:idle`.                                                                                                                                                                                               |
+
+### Активная фаза и `startedTimestamp`
+
+- **Активная фаза** — любое из состояний: `call:roomPendingAuth`, `call:presentationCall`, `call:purgatory`, `call:p2pRoom`, `call:directP2pRoom`, `call:inRoom`.
+- **`startedTimestamp`** — число (момент времени через `Date.now()` в мс) **первого** входа в активную фазу. При последующих переходах между перечисленными состояниями значение в `raw` **не перезаписывается**; в нормализованном `state` поле есть у каждого из этих состояний.
+- Сброс: при `CALL.RESET` и при `CALL.START_DISCONNECT` (очистка `raw` перед `disconnecting`).
+- Публичный геттер `startedTimestamp` возвращает `undefined` в `call:idle`, `call:connecting` и `call:disconnecting`.
 
 ## Диаграмма переходов (Mermaid)
 
@@ -83,7 +92,7 @@ stateDiagram-v2
 - `roomPendingAuth` — обычная комната без согласованного JWT.
 - `purgatory`, `p2pRoom`, `directP2pRoom` — no-token режимы; `CALL.TOKEN_ISSUED` сам по себе не переводит их в `inRoom`.
 - `inRoom` достигается только при валидной связке комнаты и токена (`conferenceForToken === room`) или при `enter-room` с `bearerToken` (он кладётся как `token`, `conferenceForToken = room`).
-- `CALL.START_DISCONNECT` из активных состояний переводит в `disconnecting` через `prepareDisconnect` (`pendingDisconnect` в `raw`).
+- `CALL.START_DISCONNECT` из активных состояний переводит в `disconnecting` через `prepareDisconnect` (`pendingDisconnect` в `raw`, вместе с этим сбрасывается накопленный `raw`, включая `startedTimestamp`).
 - `CALL.RESET` очищает контекст и возвращает в `idle`.
 - `RecvSession` может стартовать только при достижении `call:inRoom`; при раннем запросе spectator-режима используется отложенный запуск через `DeferredCommandRunner`.
 

@@ -2,7 +2,7 @@ import { assign, setup } from 'xstate';
 
 import hasPeerToPeer from '@/tools/hasPeerToPeer';
 import hasPurgatory from '@/tools/hasPurgatory';
-import { isValidBoolean, isValidString } from '@/utils/validators';
+import { isValidBoolean, isValidNumber, isValidString } from '@/utils/validators';
 import { initialContext } from './constants';
 import { hasDirectPeerToPeer } from './state';
 
@@ -89,10 +89,15 @@ export const createCallMachineSetup = () => {
           nextRaw.isDirectPeerToPeer = event.isDirectPeerToPeer;
         }
 
+        const rawRecord = context.raw as Record<string, unknown>;
+        const existingStarted = rawRecord.startedTimestamp;
+        const startedTimestamp = isValidNumber(existingStarted) ? existingStarted : Date.now();
+
         return {
           raw: {
             ...context.raw,
             ...nextRaw,
+            startedTimestamp,
           },
         };
       }),
@@ -115,10 +120,15 @@ export const createCallMachineSetup = () => {
           return context;
         }
 
+        const rawRecord = context.raw as Record<string, unknown>;
+        const existingStarted = rawRecord.startedTimestamp;
+        const startedTimestamp = isValidNumber(existingStarted) ? existingStarted : Date.now();
+
         return {
           raw: {
             ...context.raw,
             isConfirmed: true as const,
+            startedTimestamp,
           },
         };
       }),

@@ -174,6 +174,14 @@ class CallStateMachine extends BaseStateMachine<TMachine, EState, TFullContext, 
     return this.context.state as TContextMap[EState.IN_ROOM];
   }
 
+  public get presentationCallContext(): TContextMap[EState.PRESENTATION_CALL] | undefined {
+    if (this.state !== EState.PRESENTATION_CALL) {
+      return undefined;
+    }
+
+    return this.context.state as TContextMap[EState.PRESENTATION_CALL];
+  }
+
   /** Только в DISCONNECTING (контекст сброшен, опционально `pendingDisconnect`). */
   public get disconnectingContext(): TContextMap[EState.IDLE] | undefined {
     if (this.state !== EState.DISCONNECTING) {
@@ -191,6 +199,22 @@ class CallStateMachine extends BaseStateMachine<TMachine, EState, TFullContext, 
       this.isInPurgatory ||
       this.isP2PRoom ||
       this.isDirectP2PRoom
+    );
+  }
+
+  /**
+   * Время первого попадания в одно из состояний «активной» фазы звонка:
+   * `ROOM_PENDING_AUTH`, `PRESENTATION_CALL`, `PURGATORY`, `P2P_ROOM`, `DIRECT_P2P_ROOM`, `IN_ROOM`.
+   * Сохраняется при переходах между ними; сбрасывается при `CALL.RESET` / disconnect.
+   */
+  public get startedTimestamp(): number | undefined {
+    return (
+      this.inRoomContext?.startedTimestamp ??
+      this.roomPendingAuthContext?.startedTimestamp ??
+      this.presentationCallContext?.startedTimestamp ??
+      this.purgatoryContext?.startedTimestamp ??
+      this.p2pRoomContext?.startedTimestamp ??
+      this.directP2pRoomContext?.startedTimestamp
     );
   }
 

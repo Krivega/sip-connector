@@ -1,6 +1,11 @@
 import hasPeerToPeer from '@/tools/hasPeerToPeer';
 import hasPurgatory from '@/tools/hasPurgatory';
-import { hasValidExtraHeaders, isValidBoolean, isValidString } from '@/utils/validators';
+import {
+  hasValidExtraHeaders,
+  isValidBoolean,
+  isValidString,
+  isValidNumber,
+} from '@/utils/validators';
 import { EState } from './constants';
 
 import type { TContext, TContextMap, TAnyRoomState } from './types';
@@ -11,8 +16,13 @@ const hasConnectingContext = (context: TContext): context is TContextMap[EState.
 
 const hasRoomContext = (
   context: TContext,
-): context is TContext & Pick<TAnyRoomState, 'room' | 'participantName'> => {
-  return 'room' in context && isValidString(context.room) && isValidString(context.participantName);
+): context is TContext & Pick<TAnyRoomState, 'room' | 'participantName' | 'startedTimestamp'> => {
+  return (
+    'room' in context &&
+    isValidString(context.room) &&
+    isValidString(context.participantName) &&
+    isValidNumber(context.startedTimestamp)
+  );
 };
 
 const hasTokenContext = (context: TContext): context is TContext & { token: string } => {
@@ -92,6 +102,7 @@ const buildAnyRoomStateContext = (raw: TContext): TAnyRoomState => {
     answer: roomContext.answer,
     room: roomContext.room,
     participantName: roomContext.participantName,
+    startedTimestamp: roomContext.startedTimestamp,
   };
 };
 
@@ -115,9 +126,9 @@ export const STATE_DESCRIPTORS = {
   [EState.PRESENTATION_CALL]: {
     guard: hasPresentationCallContext,
     buildContext: (raw: TContext) => {
-      const { number, answer } = raw as TContextMap[EState.PRESENTATION_CALL];
+      const { number, answer, startedTimestamp } = raw as TContextMap[EState.PRESENTATION_CALL];
 
-      return { number, answer };
+      return { number, answer, startedTimestamp };
     },
   },
   [EState.ROOM_PENDING_AUTH]: {

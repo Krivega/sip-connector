@@ -4,8 +4,9 @@ import { STATE_DESCRIPTORS } from '../state';
 
 describe('STATE_DESCRIPTORS', () => {
   const connectingContext = { number: '100', answer: false };
-  const roomContext = { room: 'room-1', participantName: 'User' };
-  const p2pRoomContext = { room: 'p2pCallerToCallee', participantName: 'User' };
+  const startedTimestamp = 1_700_000_000_000;
+  const roomContext = { room: 'room-1', participantName: 'User', startedTimestamp };
+  const p2pRoomContext = { room: 'p2pCallerToCallee', participantName: 'User', startedTimestamp };
   const tokenContext = { token: 'jwt-1', conferenceForToken: 'room-1' };
 
   describe('IDLE', () => {
@@ -50,6 +51,7 @@ describe('STATE_DESCRIPTORS', () => {
         ...connectingContext,
         room: PURGATORY_CONFERENCE_NUMBER,
         participantName: 'User',
+        startedTimestamp,
       };
 
       expect(STATE_DESCRIPTORS[EState.PURGATORY].guard(raw)).toBe(true);
@@ -61,6 +63,7 @@ describe('STATE_DESCRIPTORS', () => {
         ...connectingContext,
         room: PURGATORY_CONFERENCE_NUMBER,
         participantName: 'User',
+        startedTimestamp,
         token: 'jwt-1',
         conferenceForToken: PURGATORY_CONFERENCE_NUMBER,
       };
@@ -116,6 +119,7 @@ describe('STATE_DESCRIPTORS', () => {
         ...connectingContext,
         room: PURGATORY_CONFERENCE_NUMBER,
         participantName: 'User',
+        startedTimestamp,
         token: 'jwt-1',
         conferenceForToken: PURGATORY_CONFERENCE_NUMBER,
       };

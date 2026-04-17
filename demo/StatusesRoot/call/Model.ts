@@ -125,6 +125,9 @@ export const CallStatusModel = types
       get conferenceForToken(): string | undefined {
         return getCallContextField(self.context, 'conferenceForToken');
       },
+      get startedTimestamp(): number | undefined {
+        return getCallContextField(self.context, 'startedTimestamp');
+      },
     };
   })
   .views((self) => {

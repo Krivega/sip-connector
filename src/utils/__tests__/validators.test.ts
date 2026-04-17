@@ -1,4 +1,10 @@
-import { hasValidExtraHeaders, isValidBoolean, isValidObject, isValidString } from '../validators';
+import {
+  hasValidExtraHeaders,
+  isValidBoolean,
+  isValidObject,
+  isValidString,
+  isValidNumber,
+} from '../validators';
 
 describe('isValidString', () => {
   it('должен возвращать true если передана непустая строка', () => {
@@ -31,6 +37,39 @@ describe('isValidString', () => {
 
   it('не должен возвращать true если передан массив', () => {
     expect(isValidString([])).toBe(false);
+  });
+});
+
+describe('isValidNumber', () => {
+  it('должен возвращать true если передано число не NaN и не Infinity', () => {
+    expect(isValidNumber(Number.NaN)).toBe(false);
+    expect(isValidNumber(Infinity)).toBe(false);
+    expect(isValidNumber(123)).toBe(true);
+    expect(isValidNumber(0)).toBe(true);
+    expect(isValidNumber(-123)).toBe(true);
+    expect(isValidNumber(0.123)).toBe(true);
+    expect(isValidNumber(-0.123)).toBe(true);
+    expect(isValidNumber(1.23e10)).toBe(true);
+    expect(isValidNumber(-1.23e10)).toBe(true);
+  });
+
+  it('должен возвращать true если передано 0', () => {
+    expect(isValidNumber(0)).toBe(true);
+  });
+
+  it('не должен возвращать true если передано строка', () => {
+    expect(isValidNumber('123')).toBe(false);
+  });
+  it('не должен возвращать true если передано undefined', () => {
+    expect(isValidNumber(undefined)).toBe(false);
+  });
+
+  it('не должен возвращать true если передано строка не число', () => {
+    expect(isValidNumber('hello')).toBe(false);
+  });
+
+  it('не должен возвращать true если передано булево значение', () => {
+    expect(isValidNumber(true)).toBe(false);
   });
 });
 
