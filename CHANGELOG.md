@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [28.4.0](https://github.com/Krivega/sip-connector/compare/v28.3.0...v28.4.0) (2026-04-17)
+
+### Features
+
+- **call:** add presentationCallContext handling in CallStateMachine with related tests ([cb140fe](https://github.com/Krivega/sip-connector/commit/cb140fe2dbe7b46142a19bb8d4c04f814ccaa041))
+- **call:** add startedTimestamp to CallStatusModel and related contexts for tracking call session start time ([aef4333](https://github.com/Krivega/sip-connector/commit/aef433366443558053530f718b205abb3d439930))
+- **demo:** show recv quality controls only for spectator role ([4486244](https://github.com/Krivega/sip-connector/commit/4486244468ff5ce0f20b91a53f9cd93111405927))
+- **dom:** format startedTimestamp for improved readability in DOM class ([c602b77](https://github.com/Krivega/sip-connector/commit/c602b775350c6b3790515862f0196070a9e4df47))
+
 ## [28.3.0](https://github.com/Krivega/sip-connector/compare/v28.2.0...v28.3.0) (2026-04-17)
 
 ### Features
