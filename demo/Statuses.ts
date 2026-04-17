@@ -55,6 +55,7 @@ class Statuses {
     callback: (payload: {
       isAvailableSendingMedia: boolean;
       isSpectatorRoleAny: boolean;
+      isSpectator: boolean;
       isParticipant: boolean;
     }) => void,
   ) {
@@ -63,12 +64,14 @@ class Statuses {
         return {
           isAvailableSendingMedia: this.statusesStore.callSession.isAvailableSendingMedia,
           isSpectatorRoleAny: this.statusesStore.callSession.isSpectatorRoleAny(),
+          isSpectator: this.statusesStore.callSession.isSpectator(),
           isParticipant: this.statusesStore.callSession.isParticipant(),
         };
       },
-      ({ isAvailableSendingMedia, isSpectatorRoleAny, isParticipant }) => {
-        callback({ isAvailableSendingMedia, isSpectatorRoleAny, isParticipant });
+      ({ isAvailableSendingMedia, isSpectatorRoleAny, isSpectator, isParticipant }) => {
+        callback({ isAvailableSendingMedia, isSpectatorRoleAny, isSpectator, isParticipant });
       },
+      { fireImmediately: true },
     );
   }
 

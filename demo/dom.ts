@@ -34,6 +34,7 @@ type TDomIds = {
   callStatsAudioId: string;
   callStatsMainStreamId: string;
   callStatsContentedStreamId: string;
+  recvQualitySectionId: string;
   recvQualityRadiosId: string;
   recvQualityStatusId: string;
   logsContainerId: string;
@@ -261,6 +262,8 @@ class DOM {
 
   public callStatsContentedStreamElement: HTMLElement;
 
+  public recvQualitySectionElement: HTMLElement;
+
   public recvQualityRadiosElement: HTMLFieldSetElement;
 
   public recvQualityStatusElement: HTMLElement;
@@ -320,6 +323,7 @@ class DOM {
     callStatsAudioId,
     callStatsMainStreamId,
     callStatsContentedStreamId,
+    recvQualitySectionId,
     recvQualityRadiosId,
     recvQualityStatusId,
     logsContainerId,
@@ -419,6 +423,7 @@ class DOM {
     this.callStatsAudioElement = getElementById(callStatsAudioId);
     this.callStatsMainStreamElement = getElementById(callStatsMainStreamId);
     this.callStatsContentedStreamElement = getElementById(callStatsContentedStreamId);
+    this.recvQualitySectionElement = getElementById(recvQualitySectionId);
     this.recvQualityRadiosElement = getElementById<HTMLFieldSetElement>(recvQualityRadiosId);
     this.recvQualityStatusElement = getElementById(recvQualityStatusId);
     this.logsContainerElement = getElementById(logsContainerId);
@@ -795,6 +800,7 @@ export const dom = new DOM({
   callStatsAudioId: 'callStatsAudio',
   callStatsMainStreamId: 'callStatsMainStream',
   callStatsContentedStreamId: 'callStatsContentedStream',
+  recvQualitySectionId: 'recvQualitySection',
   recvQualityRadiosId: 'recvQualityRadios',
   recvQualityStatusId: 'recvQualityStatus',
   logsContainerId: 'logsContainer',

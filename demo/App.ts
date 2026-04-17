@@ -327,23 +327,36 @@ class App {
         throw new Error('MediaStream не инициализирован');
       }
 
-      this.statusesManager.onChangeParticipantRole((participantRoleState) => {
-        if (participantRoleState.isParticipant || participantRoleState.isAvailableSendingMedia) {
-          dom.muteMicButtonElement.classList.remove('disabled');
-          dom.unmuteMicButtonElement.classList.remove('disabled');
-          dom.muteCameraButtonElement.classList.remove('disabled');
-          dom.unmuteCameraButtonElement.classList.remove('disabled');
-        } else {
-          dom.muteMicButtonElement.classList.add('disabled');
-          dom.unmuteMicButtonElement.classList.add('disabled');
-          dom.muteCameraButtonElement.classList.add('disabled');
-          dom.unmuteCameraButtonElement.classList.add('disabled');
-        }
+      this.statusesManager.onChangeParticipantRole(
+        (participantRoleState: {
+          isAvailableSendingMedia: boolean;
+          isSpectatorRoleAny: boolean;
+          isSpectator: boolean;
+          isParticipant: boolean;
+        }) => {
+          if (participantRoleState.isParticipant || participantRoleState.isAvailableSendingMedia) {
+            dom.muteMicButtonElement.classList.remove('disabled');
+            dom.unmuteMicButtonElement.classList.remove('disabled');
+            dom.muteCameraButtonElement.classList.remove('disabled');
+            dom.unmuteCameraButtonElement.classList.remove('disabled');
+          } else {
+            dom.muteMicButtonElement.classList.add('disabled');
+            dom.unmuteMicButtonElement.classList.add('disabled');
+            dom.muteCameraButtonElement.classList.add('disabled');
+            dom.unmuteCameraButtonElement.classList.add('disabled');
+          }
 
-        if (participantRoleState.isSpectatorRoleAny) {
-          this.localMediaStreamManager.disableAll();
-        }
-      });
+          if (participantRoleState.isSpectatorRoleAny) {
+            this.localMediaStreamManager.disableAll();
+          }
+
+          if (participantRoleState.isSpectator) {
+            dom.show(dom.recvQualitySectionElement);
+          } else {
+            dom.hide(dom.recvQualitySectionElement);
+          }
+        },
+      );
 
       await session.callToServer({
         mediaStream,
