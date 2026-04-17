@@ -60,6 +60,11 @@ const connectionConfiguration = {
   register: true,
 };
 
+const connectionConfigurationWithUser = {
+  ...connectionConfiguration,
+  user: '100',
+};
+
 const stateCases: TStateCase[] = [
   {
     title: 'IDLE',
@@ -83,55 +88,55 @@ const stateCases: TStateCase[] = [
     snapshot: {
       state: EConnectionStatus.CONNECTING,
       context: {
-        connectionConfiguration,
+        connectionConfiguration: connectionConfigurationWithUser,
       },
     } as TConnectionSnapshot,
     expectedFlags: createExpectedFlags('isConnecting'),
-    expectedConnectionConfiguration: connectionConfiguration,
+    expectedConnectionConfiguration: connectionConfigurationWithUser,
   },
   {
     title: 'CONNECTED',
     snapshot: {
       state: EConnectionStatus.CONNECTED,
       context: {
-        connectionConfiguration,
+        connectionConfiguration: connectionConfigurationWithUser,
       },
     } as TConnectionSnapshot,
     expectedFlags: createExpectedFlags('isConnected'),
-    expectedConnectionConfiguration: connectionConfiguration,
+    expectedConnectionConfiguration: connectionConfigurationWithUser,
   },
   {
     title: 'REGISTERED',
     snapshot: {
       state: EConnectionStatus.REGISTERED,
       context: {
-        connectionConfiguration,
+        connectionConfiguration: connectionConfigurationWithUser,
       },
     } as TConnectionSnapshot,
     expectedFlags: createExpectedFlags('isRegistered'),
-    expectedConnectionConfiguration: connectionConfiguration,
+    expectedConnectionConfiguration: connectionConfigurationWithUser,
   },
   {
     title: 'ESTABLISHED',
     snapshot: {
       state: EConnectionStatus.ESTABLISHED,
       context: {
-        connectionConfiguration,
+        connectionConfiguration: connectionConfigurationWithUser,
       },
     } as TConnectionSnapshot,
     expectedFlags: createExpectedFlags('isEstablished'),
-    expectedConnectionConfiguration: connectionConfiguration,
+    expectedConnectionConfiguration: connectionConfigurationWithUser,
   },
   {
     title: 'DISCONNECTING',
     snapshot: {
       state: EConnectionStatus.DISCONNECTING,
       context: {
-        connectionConfiguration,
+        connectionConfiguration: connectionConfigurationWithUser,
       },
     } as TConnectionSnapshot,
     expectedFlags: createExpectedFlags('isDisconnecting'),
-    expectedConnectionConfiguration: connectionConfiguration,
+    expectedConnectionConfiguration: connectionConfigurationWithUser,
   },
   {
     title: 'DISCONNECTED',
@@ -165,4 +170,29 @@ describe('ConnectionStatusModel', () => {
       expect(status.connectionConfig).toEqual(expectedConnectionConfiguration);
     },
   );
+
+  it('returns user identity when connection configuration has user', () => {
+    const status = createConnectionStatus({
+      state: EConnectionStatus.CONNECTED,
+      context: {
+        connectionConfiguration: connectionConfigurationWithUser,
+      },
+    } as TConnectionSnapshot);
+
+    expect(status.userIdentity).toEqual({
+      user: connectionConfigurationWithUser.user,
+      displayName: connectionConfigurationWithUser.displayName,
+    });
+  });
+
+  it('returns undefined user identity when connection configuration has no user', () => {
+    const status = createConnectionStatus({
+      state: EConnectionStatus.CONNECTED,
+      context: {
+        connectionConfiguration,
+      },
+    } as TConnectionSnapshot);
+
+    expect(status.userIdentity).toBeUndefined();
+  });
 });

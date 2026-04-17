@@ -86,6 +86,21 @@ export const ConnectionStatusModel = types
         return self.context.connectionConfiguration;
       },
     };
+  })
+  .views((self) => {
+    return {
+      get userIdentity(): { user: string; displayName: string | undefined } | undefined {
+        const { connectionConfig } = self;
+
+        if (connectionConfig?.user !== undefined) {
+          const { displayName, user } = connectionConfig;
+
+          return { user, displayName };
+        }
+
+        return undefined;
+      },
+    };
   });
 
 export type TConnectionStatusInstance = Instance<typeof ConnectionStatusModel>;
