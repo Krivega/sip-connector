@@ -51,6 +51,10 @@ describe('CallStateMachine', () => {
     participantName: 'User',
     isDirectPeerToPeer: true,
   };
+  const presentationConnectPayload = {
+    ...connectPayload,
+    extraHeaders: ['X-Vinteo-Presentation-Call: yes'],
+  };
 
   beforeEach(() => {
     mockDebug.mockClear();
@@ -460,6 +464,17 @@ describe('CallStateMachine', () => {
       expect(machine.connectingContext).toBeUndefined();
     });
 
+    it('presentationCallContext только в PRESENTATION_CALL', () => {
+      expect(machine.presentationCallContext).toBeUndefined();
+
+      machine.send({ type: 'CALL.CONNECTING', ...presentationConnectPayload });
+      expect(machine.presentationCallContext).toBeUndefined();
+
+      machine.send({ type: 'CALL.PRESENTATION_CALL' });
+      expect(machine.state).toBe(EState.PRESENTATION_CALL);
+      expect(machine.presentationCallContext).toEqual(withStartedTimestamp(connectPayload));
+    });
+
     it('roomPendingAuthContext только в ROOM_PENDING_AUTH при валидном предикате', () => {
       machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
       machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
@@ -508,6 +523,7 @@ describe('CallStateMachine', () => {
       expect(machine.state).toBe(EState.IN_ROOM);
       expect(machine.inRoomContext).toBeDefined();
       expect(machine.connectingContext).toBeUndefined();
+      expect(machine.presentationCallContext).toBeUndefined();
       expect(machine.roomPendingAuthContext).toBeUndefined();
       expect(machine.purgatoryContext).toBeUndefined();
       expect(machine.p2pRoomContext).toBeUndefined();
@@ -527,6 +543,24 @@ describe('CallStateMachine', () => {
   });
 
   describe('getSnapshot: нормализованный контекст (согласован с typed-геттерами)', () => {
+    it('в PRESENTATION_CALL сырой context содержит extraHeaders и isConfirmed; snapshot — number, answer, startedTimestamp', () => {
+      machine.send({ type: 'CALL.CONNECTING', ...presentationConnectPayload });
+      machine.send({ type: 'CALL.PRESENTATION_CALL' });
+      expect(machine.state).toBe(EState.PRESENTATION_CALL);
+      expect(getRawContext()).toMatchObject({
+        extraHeaders: presentationConnectPayload.extraHeaders,
+        isConfirmed: true,
+      });
+
+      const snap = machine.getSnapshot();
+
+      expect(snap.value).toBe(EState.PRESENTATION_CALL);
+      expect('extraHeaders' in snap.context.state).toBe(false);
+      expect('isConfirmed' in snap.context.state).toBe(false);
+      expect(snap.context.raw).toEqual(machine.context.raw);
+      expect(snap.context.state).toEqual(machine.presentationCallContext);
+    });
+
     it('в PURGATORY после TOKEN_ISSUED сырой context содержит JWT, публичный snapshot — без полей token/conferenceForToken', () => {
       machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
       machine.send({ type: 'CALL.ENTER_ROOM', ...purgatoryPayload });
@@ -848,6 +882,61 @@ describe('CallStateMachine', () => {
         machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
         expect(machine.state).toBe(EState.IN_ROOM);
         expect(machine.roomPendingAuthContext).toBeUndefined();
+      });
+    });
+
+    describe('presentationCallContext', () => {
+      it('возвращает undefined в IDLE и CONNECTING', () => {
+        expect(machine.presentationCallContext).toBeUndefined();
+        machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+        expect(machine.presentationCallContext).toBeUndefined();
+      });
+
+      it('возвращает undefined в ROOM_PENDING_AUTH, PURGATORY, P2P_ROOM, DIRECT_P2P_ROOM, IN_ROOM', () => {
+        machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+        machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+        expect(machine.state).toBe(EState.ROOM_PENDING_AUTH);
+        expect(machine.presentationCallContext).toBeUndefined();
+
+        machine.send({ type: 'CALL.RESET' });
+        machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+        machine.send({ type: 'CALL.ENTER_ROOM', ...purgatoryPayload });
+        expect(machine.state).toBe(EState.PURGATORY);
+        expect(machine.presentationCallContext).toBeUndefined();
+
+        machine.send({ type: 'CALL.RESET' });
+        machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+        machine.send({ type: 'CALL.ENTER_ROOM', ...p2pRoomPayload });
+        expect(machine.state).toBe(EState.P2P_ROOM);
+        expect(machine.presentationCallContext).toBeUndefined();
+
+        machine.send({ type: 'CALL.RESET' });
+        machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+        machine.send({ type: 'CALL.ENTER_ROOM', ...directP2pRoomPayload });
+        expect(machine.state).toBe(EState.DIRECT_P2P_ROOM);
+        expect(machine.presentationCallContext).toBeUndefined();
+
+        machine.send({ type: 'CALL.RESET' });
+        machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+        machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+        machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+        expect(machine.state).toBe(EState.IN_ROOM);
+        expect(machine.presentationCallContext).toBeUndefined();
+      });
+
+      it('возвращает undefined после выхода из PRESENTATION_CALL (DISCONNECTING, IDLE)', () => {
+        machine.send({ type: 'CALL.CONNECTING', ...presentationConnectPayload });
+        machine.send({ type: 'CALL.PRESENTATION_CALL' });
+        expect(machine.state).toBe(EState.PRESENTATION_CALL);
+        expect(machine.presentationCallContext).toBeDefined();
+
+        machine.send({ type: 'CALL.START_DISCONNECT' });
+        expect(machine.state).toBe(EState.DISCONNECTING);
+        expect(machine.presentationCallContext).toBeUndefined();
+
+        machine.send({ type: 'CALL.RESET' });
+        expect(machine.state).toBe(EState.IDLE);
+        expect(machine.presentationCallContext).toBeUndefined();
       });
     });
 
@@ -1983,6 +2072,53 @@ describe('CallStateMachine', () => {
       });
     });
 
+    it('setRoomInfo: сохраняет startedTimestamp из raw, если он уже валидное число', () => {
+      const existingStarted = 1_700_000_000_000;
+      const context = {
+        raw: { ...connectPayload, startedTimestamp: existingStarted },
+        state: {},
+      };
+
+      const result = getSnapshot().machine.implementations.actions.setRoomInfo?.assignment({
+        context,
+        event: { type: 'CALL.ENTER_ROOM', ...room1Payload },
+      });
+
+      expect(result).toEqual({
+        raw: {
+          ...connectPayload,
+          ...room1Payload,
+          startedTimestamp: existingStarted,
+        },
+      });
+    });
+
+    it('setRoomInfo: при невалидном startedTimestamp в raw использует Date.now()', () => {
+      const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(9_999_999_000);
+
+      try {
+        const context = {
+          raw: { ...connectPayload, startedTimestamp: Number.NaN },
+          state: {},
+        };
+
+        const result = getSnapshot().machine.implementations.actions.setRoomInfo?.assignment({
+          context,
+          event: { type: 'CALL.ENTER_ROOM', ...room1Payload },
+        });
+
+        expect(result).toEqual({
+          raw: {
+            ...connectPayload,
+            ...room1Payload,
+            startedTimestamp: 9_999_999_000,
+          },
+        });
+      } finally {
+        nowSpy.mockRestore();
+      }
+    });
+
     it('setTokenInfo: возвращает context при event.type !== CALL.TOKEN_ISSUED', () => {
       const context = { raw: {}, state: {} };
       const result = getSnapshot().machine.implementations.actions.setTokenInfo?.assignment({
@@ -2001,6 +2137,53 @@ describe('CallStateMachine', () => {
       });
 
       expect(result).toBe(context);
+    });
+
+    it('setConfirmed: сохраняет startedTimestamp из raw, если он уже валидное число', () => {
+      const existingStarted = 1_700_000_000_000;
+      const context = {
+        raw: { ...connectPayload, startedTimestamp: existingStarted },
+        state: {},
+      };
+
+      const result = getSnapshot().machine.implementations.actions.setConfirmed?.assignment({
+        context,
+        event: { type: 'CALL.PRESENTATION_CALL' },
+      });
+
+      expect(result).toEqual({
+        raw: {
+          ...connectPayload,
+          isConfirmed: true,
+          startedTimestamp: existingStarted,
+        },
+      });
+    });
+
+    it('setConfirmed: при невалидном startedTimestamp в raw использует Date.now()', () => {
+      const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(8_888_888_000);
+
+      try {
+        const context = {
+          raw: { ...connectPayload, startedTimestamp: Number.POSITIVE_INFINITY },
+          state: {},
+        };
+
+        const result = getSnapshot().machine.implementations.actions.setConfirmed?.assignment({
+          context,
+          event: { type: 'CALL.PRESENTATION_CALL' },
+        });
+
+        expect(result).toEqual({
+          raw: {
+            ...connectPayload,
+            isConfirmed: true,
+            startedTimestamp: 8_888_888_000,
+          },
+        });
+      } finally {
+        nowSpy.mockRestore();
+      }
     });
   });
 });
