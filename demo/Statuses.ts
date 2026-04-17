@@ -1,3 +1,4 @@
+import { reaction } from 'mobx';
 import { getSnapshot } from 'mobx-state-tree';
 
 import sipConnectorFacade from './Session/sipConnectorFacade';
@@ -48,6 +49,59 @@ class Statuses {
       presentation: this.statusesStore.presentationSnapshot,
       system: this.statusesStore.systemSnapshot as TStatusesRootSnapshot['system'],
     };
+  }
+
+  public onChangeParticipantRole(
+    callback: (payload: {
+      isAvailableSendingMedia: boolean;
+      isSpectatorRoleAny: boolean;
+      isParticipant: boolean;
+    }) => void,
+  ) {
+    return reaction(
+      () => {
+        return {
+          isAvailableSendingMedia: this.statusesStore.callSession.isAvailableSendingMedia,
+          isSpectatorRoleAny: this.statusesStore.callSession.isSpectatorRoleAny(),
+          isParticipant: this.statusesStore.callSession.isParticipant(),
+        };
+      },
+      ({ isAvailableSendingMedia, isSpectatorRoleAny, isParticipant }) => {
+        callback({ isAvailableSendingMedia, isSpectatorRoleAny, isParticipant });
+      },
+    );
+  }
+
+  public onChangeSystemState(
+    callback: (payload: {
+      isDisconnected: boolean;
+      isDisconnecting: boolean;
+      isConnecting: boolean;
+      isReadyToCall: boolean;
+      isCallConnecting: boolean;
+      isCallDisconnecting: boolean;
+      isCallActive: boolean;
+    }) => void,
+  ) {
+    return reaction(
+      () => {
+        return {
+          isDisconnected: this.statusesStore.system.isDisconnected(),
+          isDisconnecting: this.statusesStore.system.isDisconnecting(),
+          isConnecting: this.statusesStore.system.isConnecting(),
+          isReadyToCall: this.statusesStore.system.isReadyToCall(),
+          isCallConnecting: this.statusesStore.system.isCallConnecting(),
+          isCallDisconnecting: this.statusesStore.system.isCallDisconnecting(),
+          isCallActive: this.statusesStore.system.isCallActive(),
+        };
+      },
+      (payload) => {
+        callback(payload);
+      },
+      {
+        fireImmediately: true,
+      },
+    );
   }
 
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this

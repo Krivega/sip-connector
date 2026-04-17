@@ -1,11 +1,9 @@
 import resolveDebug from '../logger';
-import ParticipantRoleManager from './ParticipantRoleManager';
 import RecvQualityManager from './RecvQualityManager';
 import resolveServerParametersRequester from './resolveServerParametersRequester';
 import sipConnectorFacade from './sipConnectorFacade';
 
 import type { TRemoteStreams } from '@/index';
-import type { TParticipantRoleHandler } from './ParticipantRoleManager';
 import type {
   IParams as IServerParametersRequesterParams,
   IServerParametersRequester,
@@ -16,8 +14,6 @@ const debug = resolveDebug('demo:session');
 
 export class Session {
   private readonly serverParametersRequester: IServerParametersRequester;
-
-  private readonly participantRoleManager: ParticipantRoleManager;
 
   private readonly recvQualityManager: RecvQualityManager;
 
@@ -33,7 +29,6 @@ export class Session {
     this.serverParametersRequester = resolveServerParametersRequester(
       serverParametersRequesterParams,
     );
-    this.participantRoleManager = new ParticipantRoleManager();
     this.recvQualityManager = new RecvQualityManager();
   }
 
@@ -98,9 +93,6 @@ export class Session {
       throw new Error('Server parameters are not initialized. Call connect() first.');
     }
 
-    // Подписываемся на события изменения роли участника
-    this.participantRoleManager.subscribe();
-
     // Подписываемся на изменение качества приема
     this.recvQualityManager.subscribe();
 
@@ -128,9 +120,6 @@ export class Session {
   public async stopCall(): Promise<void> {
     this.unsubscribeChangeRemoteStreams?.();
     this.unsubscribeChangeRemoteStreams = undefined;
-    this.participantRoleManager.unsubscribe();
-    this.participantRoleManager.reset();
-
     this.recvQualityManager.unsubscribe();
     this.recvQualityManager.reset();
     await this.disconnectFromServer();
@@ -147,9 +136,5 @@ export class Session {
     debug('sendMediaState', { isEnabledCam, isEnabledMic });
 
     return sipConnectorFacade.sendMediaState({ isEnabledCam, isEnabledMic });
-  }
-
-  public onChangeParticipantRole(callback: TParticipantRoleHandler) {
-    this.participantRoleManager.onChange(callback);
   }
 }

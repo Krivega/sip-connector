@@ -1,4 +1,3 @@
-import CallStateManager from './CallStateManager';
 import CallStatsManager from './CallStatsManager';
 import { dom } from './dom';
 import LoaderManager from './LoaderManager';
@@ -16,7 +15,6 @@ import getBrowserInfo from './utils/getBrowserInfo';
 import VideoPlayer from './VideoPlayer';
 
 import type { TRemoteStreams } from '@/index';
-import type { TCallState } from './CallStateManager';
 import type { IFormState } from './state/FormState';
 
 const debug = resolveDebug('demo:app');
@@ -40,8 +38,6 @@ class App {
 
   private readonly loaderManager: LoaderManager;
 
-  private readonly callStateManager: CallStateManager;
-
   private readonly callStatsManager: CallStatsManager;
 
   private readonly statusesManager: Statuses;
@@ -58,7 +54,6 @@ class App {
     this.presentationManager = new PresentationManager();
     this.remoteMediaStreamManager = new RemoteMediaStreamManager();
     this.loaderManager = new LoaderManager();
-    this.callStateManager = new CallStateManager();
     this.callStatsManager = new CallStatsManager();
     this.statusesManager = new Statuses();
 
@@ -147,7 +142,7 @@ class App {
     });
 
     // Подписываемся на изменения состояния звонка
-    this.callStateManager.onChange((state) => {
+    this.statusesManager.onChangeSystemState((state) => {
       this.handleCallStateChange(state);
     });
 
@@ -249,7 +244,6 @@ class App {
       .then(async () => {
         await session.disconnectFromServer();
         this.session = undefined;
-        this.callStateManager.reset();
         this.loaderManager.hide();
       })
       .catch((error: unknown) => {
@@ -324,7 +318,6 @@ class App {
       // Инициализируем локальный медиа-поток
       await this.localMediaStreamManager.initialize();
 
-      this.callStateManager.setState('calling');
       this.loaderManager.setMessage('Установление звонка...');
 
       // Запускаем звонок
@@ -334,11 +327,8 @@ class App {
         throw new Error('MediaStream не инициализирован');
       }
 
-      session.onChangeParticipantRole((participantRoleState) => {
-        if (
-          participantRoleState?.role === 'participant' ||
-          participantRoleState?.isAvailableSendingMedia === true
-        ) {
+      this.statusesManager.onChangeParticipantRole((participantRoleState) => {
+        if (participantRoleState.isParticipant || participantRoleState.isAvailableSendingMedia) {
           dom.muteMicButtonElement.classList.remove('disabled');
           dom.unmuteMicButtonElement.classList.remove('disabled');
           dom.muteCameraButtonElement.classList.remove('disabled');
@@ -350,14 +340,9 @@ class App {
           dom.unmuteCameraButtonElement.classList.add('disabled');
         }
 
-        if (
-          participantRoleState?.role === 'spectatorSynthetic' ||
-          participantRoleState?.role === 'spectator'
-        ) {
+        if (participantRoleState.isSpectatorRoleAny) {
           this.localMediaStreamManager.disableAll();
         }
-
-        this.updateMediaButtonsState();
       });
 
       await session.callToServer({
@@ -368,13 +353,8 @@ class App {
         },
       });
 
-      this.callStateManager.setState('active');
       this.loaderManager.hide();
-
-      // Обновляем состояние кнопок после успешного подключения
-      this.updateMediaButtonsState();
     } catch (error) {
-      this.callStateManager.reset();
       this.loaderManager.hide();
       throw error;
     }
@@ -382,7 +362,6 @@ class App {
 
   private async connect(state: IFormState): Promise<void> {
     try {
-      this.callStateManager.setState('connecting');
       this.loaderManager.setMessage('Подключение к серверу...');
 
       // Создаем сессию
@@ -406,13 +385,8 @@ class App {
         password: state.password,
       });
 
-      this.callStateManager.setState('connected');
       this.loaderManager.hide();
-
-      // Обновляем состояние кнопок после успешного подключения
-      this.updateMediaButtonsState();
     } catch (error) {
-      this.callStateManager.reset();
       this.loaderManager.hide();
       throw error;
     }
@@ -457,7 +431,6 @@ class App {
    */
   private handleEndCall() {
     this.loaderManager.show('Завершение звонка...');
-    this.callStateManager.setState('idle');
     // Сбрасываем состояние презентации
     this.presentationManager.deactivate();
 
@@ -482,23 +455,35 @@ class App {
    * Обрабатывает изменения состояния звонка
    */
 
-  private handleCallStateChange(state: TCallState): void {
-    const isConnecting = state === 'connecting';
-    const isConnected = state === 'connected';
-    const isCallInProgress = state === 'calling' || state === 'active';
+  private handleCallStateChange(state: {
+    isDisconnected: boolean;
+    isConnecting: boolean;
+    isReadyToCall: boolean;
+    isCallConnecting: boolean;
+    isCallDisconnecting: boolean;
+    isCallActive: boolean;
+  }): void {
+    const {
+      isDisconnected,
+      isConnecting,
+      isReadyToCall,
+      isCallConnecting,
+      isCallDisconnecting,
+      isCallActive,
+    } = state;
 
-    dom.callButtonElement.disabled = isCallInProgress;
-    dom.endCallButtonElement.disabled = state !== 'active';
+    dom.callButtonElement.disabled = isConnecting || isCallConnecting || isCallDisconnecting;
+    dom.endCallButtonElement.disabled = !isCallActive;
     dom.connectButtonElement.disabled = isConnecting;
     dom.disconnectButtonElement.disabled = isConnecting;
 
-    if (state === 'idle') {
+    if (isDisconnected) {
       dom.show(dom.connectButtonElement);
       dom.hide(dom.disconnectButtonElement);
     } else if (isConnecting) {
       dom.show(dom.connectButtonElement);
       dom.hide(dom.disconnectButtonElement);
-    } else if (isConnected) {
+    } else if (isReadyToCall) {
       dom.hide(dom.connectButtonElement);
       dom.show(dom.disconnectButtonElement);
     } else {
@@ -506,7 +491,7 @@ class App {
       dom.hide(dom.disconnectButtonElement);
     }
 
-    if (state === 'active') {
+    if (isCallActive) {
       dom.hide(dom.callButtonElement);
       dom.show(dom.endCallButtonElement);
     } else {
@@ -516,7 +501,7 @@ class App {
 
     // Показываем/скрываем секции в зависимости от состояния
     // Локальное видео показываем когда идет процесс
-    const shouldShowLocalVideo = isCallInProgress;
+    const shouldShowLocalVideo = isCallConnecting || isCallActive;
 
     if (shouldShowLocalVideo) {
       dom.show(dom.localVideoSectionElement);
@@ -525,7 +510,7 @@ class App {
     }
 
     // Общий контейнер для секций активного звонка показываем только когда звонок активен
-    const shouldShowActiveCallSection = state === 'active';
+    const shouldShowActiveCallSection = isCallActive;
 
     if (shouldShowActiveCallSection) {
       dom.show(dom.activeCallSectionElement);
@@ -534,15 +519,13 @@ class App {
     }
 
     // Обновляем состояние кнопок камеры и микрофона
-    this.updateMediaButtonsState();
+    this.updateMediaButtonsState({ isCallActive });
   }
 
   /**
    * Обновляет состояние кнопок камеры и микрофона
    */
-  private updateMediaButtonsState(): void {
-    const isCallActive = this.callStateManager.isActive();
-
+  private updateMediaButtonsState({ isCallActive }: { isCallActive: boolean }): void {
     if (isCallActive) {
       this.updateCamButtonsState();
       this.updateMicButtonsState();
@@ -583,7 +566,6 @@ class App {
    */
   private handleToggleCamera(): void {
     this.localMediaStreamManager.toggleCamera();
-    this.updateMediaButtonsState();
   }
 
   /**
@@ -591,7 +573,6 @@ class App {
    */
   private handleToggleMic(): void {
     this.localMediaStreamManager.toggleMic();
-    this.updateMediaButtonsState();
   }
 
   /**
@@ -607,7 +588,6 @@ class App {
       message: `Ошибка: ${errorMessage}`,
     });
 
-    this.callStateManager.reset();
     this.loaderManager.hide();
   }
 }
