@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [28.3.0](https://github.com/Krivega/sip-connector/compare/v28.2.0...v28.3.0) (2026-04-17)
+
+### Features
+
+- **demo:** implement StatusesRootModel and related types for managing application statuses ([fb2d16c](https://github.com/Krivega/sip-connector/commit/fb2d16c38df304152e09aa62118deb6dfbea3ee3))
+
+### Bug Fixes
+
+- **imports:** correct casing in module imports for StatusesRoot ([cb012bd](https://github.com/Krivega/sip-connector/commit/cb012bd8996db6c5567dd8d593e57493f3f22efd))
+
 ## [28.2.0](https://github.com/Krivega/sip-connector/compare/v28.1.0...v28.2.0) (2026-04-17)
 
 ### Features
