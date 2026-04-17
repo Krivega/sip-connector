@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [28.2.0](https://github.com/Krivega/sip-connector/compare/v28.1.0...v28.2.0) (2026-04-17)
+
+### Features
+
+- **demo:** add userIdentity view to ConnectionStatusModel and enhance tests for user configuration ([09b507d](https://github.com/Krivega/sip-connector/commit/09b507de67455b6a112c15576e2d1819dbb86fc4))
+- introduce CallSessionState ([d7aa69f](https://github.com/Krivega/sip-connector/commit/d7aa69f0135f6490d7bef06de0b7ad753fd1b153))
+
+### Bug Fixes
+
+- **session:** improve snapshot equality checks and add tests for context changes in session management ([f842a7a](https://github.com/Krivega/sip-connector/commit/f842a7aad82958fdf8874037780827aebc79d537))
+
 ## [28.1.0](https://github.com/Krivega/sip-connector/compare/v28.0.1...v28.1.0) (2026-04-16)
 
 ### Features
