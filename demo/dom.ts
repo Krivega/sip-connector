@@ -135,6 +135,7 @@ const EXPECTED_NODE_FIELDS: Record<keyof TStatusesRootSnapshot, readonly string[
     'isDirectP2P',
     'token',
     'conferenceForToken',
+    'startedTimestamp',
   ],
   callSession: ['license', 'roleType', 'roleAudioId', 'isSpectatorAny', 'isRecvSessionExpected'],
   incoming: ['state', 'remoteCallerData', 'terminalReason'],
@@ -676,6 +677,19 @@ class DOM {
 
     if (propertyName === 'token' && typeof value === 'string') {
       return `${value.slice(0, 20)}...`;
+    }
+
+    if (propertyName === 'startedTimestamp' && typeof value === 'number') {
+      const date = new Date(value);
+
+      if (Number.isNaN(date.getTime())) {
+        return String(value);
+      }
+
+      return date.toLocaleString(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'medium',
+      });
     }
 
     if (typeof value === 'string') {
