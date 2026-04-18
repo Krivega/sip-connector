@@ -54,7 +54,7 @@ export type TCallReconnectEvent =
   | { type: 'RECONNECT.DISARM'; reason?: TCancelledReason }
   | { type: 'RECONNECT.FORCE' }
   | { type: 'CALL.FAILED'; event: EndEvent }
-  | { type: 'CALL.ENDED_LOCAL' }
+  | { type: 'CALL.ENDED'; event?: EndEvent }
   | { type: 'CONN.CONNECTED' }
   | { type: 'CONN.DISCONNECTED' };
 

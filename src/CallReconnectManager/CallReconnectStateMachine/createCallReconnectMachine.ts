@@ -76,7 +76,7 @@ export const createCallReconnectMachine = (deps: TCallReconnectMachineDeps) => {
             target: EState.EVALUATING,
             actions: ['assignFailureDetected', 'emitFailureDetectedAction'],
           },
-          'CALL.ENDED_LOCAL': {
+          'CALL.ENDED': {
             target: EState.IDLE,
             actions: ['cancelAll', 'resetAttemptsState', 'assignDisarm', 'emitDisarmedAction'],
           },

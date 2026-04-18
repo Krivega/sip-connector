@@ -9,6 +9,7 @@ export class FakeCallManager {
   public readonly handlers: TCallbacks = {
     failed: new Set(),
     'end-call': new Set(),
+    ended: new Set(),
   };
 
   public startCall = jest.fn(async (..._arguments: any[]) => {

@@ -235,13 +235,29 @@ describe('createCallReconnectMachine', () => {
     expect(deps.emitCancelled).toHaveBeenCalledWith({ reason: 'disarm' });
   });
 
-  it('CALL.ENDED_LOCAL from armed goes to idle and emits disarmed', async () => {
+  it('CALL.ENDED from armed goes to idle and emits disarmed (локальный hangUp)', async () => {
     const deps = createDeps();
     const actor = createActor(createCallReconnectMachine(deps));
 
     actor.start();
     actor.send({ type: 'RECONNECT.ARM', parameters: makeParameters() });
-    actor.send({ type: 'CALL.ENDED_LOCAL' });
+    actor.send({ type: 'CALL.ENDED' });
+    await settle();
+
+    expect(actor.getSnapshot().value).toBe(EState.IDLE);
+    expect(deps.emitDisarmed).toHaveBeenCalled();
+  });
+
+  it('CALL.ENDED with event (remote BYE) из armed уводит в idle', async () => {
+    const deps = createDeps();
+    const actor = createActor(createCallReconnectMachine(deps));
+
+    actor.start();
+    actor.send({ type: 'RECONNECT.ARM', parameters: makeParameters() });
+    actor.send({
+      type: 'CALL.ENDED',
+      event: { originator: 'remote', cause: 'BYE' } as never,
+    });
     await settle();
 
     expect(actor.getSnapshot().value).toBe(EState.IDLE);

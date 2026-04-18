@@ -123,6 +123,20 @@ sipConnector.on('call-reconnect:limit-reached', ({ attempts }) => {
 - `SipConnector.hangUp` автоматически вызывает `callReconnectManager.disarm('local-hangup')`.
 - Машина уходит в `idle`, in-flight отменяется, эмитится `cancelled({ reason: 'local-hangup' })`.
 
+## Как классифицируются JsSIP-терминации
+
+JsSIP эмитит `failed` для не-установленных звонков и `ended` для уже установленных. Оба события проходят через единую политику `isNetworkFailure`:
+
+| JsSIP event | cause (пример)                                                                                    | Решение                                        |
+| ----------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `failed`    | `CONNECTION_ERROR`, `REQUEST_TIMEOUT`, `ADDRESS_INCOMPLETE`, system `INTERNAL_ERROR`              | Редиал (`CALL.FAILED`)                         |
+| `failed`    | `BUSY`, `REJECTED`, `NOT_FOUND`, `USER_DENIED_MEDIA_ACCESS`, `UNAVAILABLE`, `INCOMPATIBLE_SDP`, … | Разоружение (`CALL.ENDED`)                     |
+| `ended`     | `RTP_TIMEOUT`, `CONNECTION_ERROR` (mid-call)                                                      | Редиал (`CALL.FAILED`) — **основной сценарий** |
+| `ended`     | `BYE`, `CANCELED`                                                                                 | Разоружение (`CALL.ENDED`)                     |
+| `end-call`  | — (локальный hangUp)                                                                              | Разоружение (`CALL.ENDED`)                     |
+
+Политику можно переопределить через `callReconnectOptions.isNetworkFailure`.
+
 ## Отладка
 
 - Включите `enableDebug()` — увидите логи `CallReconnectManager`, `CallReconnectRuntime`, `CallReconnectMachine`.

@@ -11,16 +11,16 @@
 
 ## Состояния
 
-| Состояние          | Назначение                                                                                 |
-| ------------------ | ------------------------------------------------------------------------------------------ |
-| `idle`             | Не армирован, ждёт `RECONNECT.ARM`.                                                        |
-| `armed`            | Активен, слушает `CALL.FAILED` (сетевые причины) и `CALL.ENDED_LOCAL` (локальный hang-up). |
-| `evaluating`       | Транзитное состояние: лимит попыток → сигнализация → backoff.                              |
-| `backoff`          | Таймаут перед попыткой (`DelayRequester`). Переход в `attempting` при завершении задержки. |
-| `waitingSignaling` | Ожидание готовности UA (`connected`/`registered`) с таймаутом.                             |
-| `attempting`       | `invoke: performAttempt` — реальный `startCall` внутри `CancelableRequest`.                |
-| `limitReached`     | Исчерпан `maxAttempts`; выход только через `RECONNECT.FORCE` или `RECONNECT.DISARM`.       |
-| `errorTerminal`    | Нефатальные ветки ретрая (`canRetryOnError = false` или timeout сигнализации).             |
+| Состояние          | Назначение                                                                                          |
+| ------------------ | --------------------------------------------------------------------------------------------------- |
+| `idle`             | Не армирован, ждёт `RECONNECT.ARM`.                                                                 |
+| `armed`            | Активен, слушает `CALL.FAILED` (сетевые причины) и `CALL.ENDED` (локальный/удалённый конец звонка). |
+| `evaluating`       | Транзитное состояние: лимит попыток → сигнализация → backoff.                                       |
+| `backoff`          | Таймаут перед попыткой (`DelayRequester`). Переход в `attempting` при завершении задержки.          |
+| `waitingSignaling` | Ожидание готовности UA (`connected`/`registered`) с таймаутом.                                      |
+| `attempting`       | `invoke: performAttempt` — реальный `startCall` внутри `CancelableRequest`.                         |
+| `limitReached`     | Исчерпан `maxAttempts`; выход только через `RECONNECT.FORCE` или `RECONNECT.DISARM`.                |
+| `errorTerminal`    | Нефатальные ветки ретрая (`canRetryOnError = false` или timeout сигнализации).                      |
 
 ## Контекст и инварианты
 
@@ -39,7 +39,7 @@ stateDiagram-v2
   [*] --> idle
   idle --> armed: RECONNECT.ARM
   armed --> evaluating: CALL.FAILED / isNetworkFailure
-  armed --> idle: CALL.ENDED_LOCAL
+  armed --> idle: CALL.ENDED
   evaluating --> limitReached: isLimitReached
   evaluating --> backoff: isSignalingReady
   evaluating --> waitingSignaling: else
@@ -61,6 +61,7 @@ stateDiagram-v2
 
 ## Ключевые правила переходов
 
+- Классификация JsSIP-терминации выполняется **в `@CallReconnectManager`**, а не в guard машины: оба события (`failed`, `ended`) проходят через `isNetworkFailurePolicy`. Сетевые причины превращаются в `CALL.FAILED`, всё остальное — в `CALL.ENDED`. Это гарантирует, что `ended` с `RTP_TIMEOUT`/`CONNECTION_ERROR` (mid-call обрыв) запустит редиал, а `failed(BUSY)` или `ended(BYE)` разоружит менеджер.
 - Порядок `always`-guard в `evaluating` важен: сначала `isLimitReached`, затем `isSignalingReady`, иначе `waitingSignaling`.
 - Глобальный `RECONNECT.ARM` доступен из любого состояния: перед рестартом выполняется `cancelAll + resetAttemptsState`, что позволяет пользователю в любой момент «перепрошить» параметры звонка.
 - Глобальный `RECONNECT.DISARM` выполняет полный сброс in-flight и эмитит `disarmed` и `cancelled(reason)` (при явно переданной причине).
@@ -70,15 +71,15 @@ stateDiagram-v2
 
 ## Интеграция и события
 
-| Событие             | Источник                                                                                     |
-| ------------------- | -------------------------------------------------------------------------------------------- |
-| `RECONNECT.ARM`     | `CallReconnectManager.arm` / SipConnector.`armCallAutoRedial` / `call({ autoRedial: true })` |
-| `RECONNECT.DISARM`  | `CallReconnectManager.disarm` / SipConnector.`hangUp`                                        |
-| `RECONNECT.FORCE`   | `CallReconnectManager.forceReconnect`                                                        |
-| `CALL.FAILED`       | `CallManager.on('failed')`                                                                   |
-| `CALL.ENDED_LOCAL`  | `CallManager.on('end-call')`                                                                 |
-| `CONN.CONNECTED`    | `ConnectionManager.on('connected' \| 'registered')`                                          |
-| `CONN.DISCONNECTED` | `ConnectionManager.on('disconnected')`                                                       |
+| Событие             | Источник                                                                                                                                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RECONNECT.ARM`     | `CallReconnectManager.arm` / SipConnector.`armCallAutoRedial` / `call({ autoRedial: true })`                                                                                                                        |
+| `RECONNECT.DISARM`  | `CallReconnectManager.disarm` / SipConnector.`hangUp`                                                                                                                                                               |
+| `RECONNECT.FORCE`   | `CallReconnectManager.forceReconnect`                                                                                                                                                                               |
+| `CALL.FAILED`       | Маршрутизируется из `CallManager.on('failed' \| 'ended')`, когда `isNetworkFailure(event) === true` (обрыв транспорта при установке или mid-call `RTP_TIMEOUT`).                                                    |
+| `CALL.ENDED`        | 1) `CallManager.on('end-call')` — явный локальный hangUp; 2) `CallManager.on('failed' \| 'ended')` с **несетевой** причиной (BYE, CANCELED, BUSY, REJECTED, USER_DENIED_MEDIA_ACCESS …) — штатное окончание звонка. |
+| `CONN.CONNECTED`    | `ConnectionManager.on('connected' \| 'registered')`                                                                                                                                                                 |
+| `CONN.DISCONNECTED` | `ConnectionManager.on('disconnected')`                                                                                                                                                                              |
 
 Все side-эффекты (уведомление фасада, UI) реализованы через `emit*`-действия, вызывающие `events-constructor` триггеры внутри `CallReconnectManager`. Описание внешних событий — [docs/api/call-reconnect-events.md](../../../api/call-reconnect-events.md).
 

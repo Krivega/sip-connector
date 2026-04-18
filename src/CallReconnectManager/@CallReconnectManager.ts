@@ -121,12 +121,42 @@ class CallReconnectManager extends EventEmitterProxy<TEventMap> {
   }
 
   private subscribeToManagers(): void {
-    const onFailed = (event: EndEvent) => {
-      this.stateMachine.send({ type: 'CALL.FAILED', event });
+    /**
+     * Классификация JsSIP-событий `failed` / `ended`:
+     *
+     * - `failed` стреляет, если звонок НЕ успел установиться. Сетевые причины
+     *   (`REQUEST_TIMEOUT`, `CONNECTION_ERROR`, `ADDRESS_INCOMPLETE`, system `INTERNAL_ERROR`) —
+     *   кандидат на редиал. Остальные (`BUSY`, `REJECTED`, `USER_DENIED_MEDIA_ACCESS`, …) — бизнес/user,
+     *   редиалить бессмысленно — разоружаем менеджер.
+     * - `ended` стреляет, если УЖЕ установленный звонок завершился. Сетевые причины
+     *   (`RTP_TIMEOUT`, `CONNECTION_ERROR` в середине звонка) — это как раз сценарий редиала.
+     *   Нормальные (`BYE`, `CANCELED`, локальный hangUp) — штатное окончание, разоружаем.
+     *
+     * Решение о сетевой природе принимает `isNetworkFailurePolicy` (кастомизируется через
+     * `options.isNetworkFailure`), поэтому маршрутизация живёт в единой точке.
+     */
+    const routeTerminationEvent = (event: EndEvent): void => {
+      if (this.runtime.isNetworkFailure(event)) {
+        this.stateMachine.send({ type: 'CALL.FAILED', event });
+
+        return;
+      }
+
+      this.stateMachine.send({ type: 'CALL.ENDED', event });
     };
 
+    const onFailed = (event: EndEvent) => {
+      routeTerminationEvent(event);
+    };
+
+    const onEnded = (event: EndEvent) => {
+      routeTerminationEvent(event);
+    };
+
+    // Явный локальный hangUp через `CallManager.endCall()` — payload не несёт,
+    // безусловно разоружаем.
     const onEndCall = () => {
-      this.stateMachine.send({ type: 'CALL.ENDED_LOCAL' });
+      this.stateMachine.send({ type: 'CALL.ENDED' });
     };
 
     const onConnConnected = () => {
@@ -139,6 +169,7 @@ class CallReconnectManager extends EventEmitterProxy<TEventMap> {
 
     this.callManager.on('failed', onFailed);
     this.callManager.on('end-call', onEndCall);
+    this.callManager.on('ended', onEnded);
     this.connectionManager.on('connected', onConnConnected);
     this.connectionManager.on('registered', onConnConnected);
     this.connectionManager.on('disconnected', onConnDisconnected);
@@ -149,6 +180,9 @@ class CallReconnectManager extends EventEmitterProxy<TEventMap> {
       },
       () => {
         this.callManager.off('end-call', onEndCall);
+      },
+      () => {
+        this.callManager.off('ended', onEnded);
       },
       () => {
         this.connectionManager.off('connected', onConnConnected);

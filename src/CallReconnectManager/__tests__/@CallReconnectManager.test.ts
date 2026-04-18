@@ -128,6 +128,52 @@ describe('CallReconnectManager (facade)', () => {
     manager.stop();
   });
 
+  it('ended event (remote BYE) разоружает машину', () => {
+    const { manager, callManager } = createSubject();
+
+    manager.arm(makeRedialParameters());
+    callManager.emit('ended', { originator: 'remote', cause: 'BYE' });
+
+    expect(manager.state).toBe(ECallReconnectStatus.IDLE);
+
+    manager.stop();
+  });
+
+  it('ended event с сетевой причиной (RTP_TIMEOUT) триггерит редиал', async () => {
+    const { manager, callManager } = createSubject();
+
+    manager.arm(makeRedialParameters());
+
+    const waitForSucceeded = new Promise<void>((resolve) => {
+      manager.on('attempt-succeeded', () => {
+        resolve();
+      });
+    });
+
+    callManager.emit('ended', {
+      originator: 'system',
+      cause: JsSIP_C.causes.RTP_TIMEOUT,
+    });
+
+    await waitForSucceeded;
+
+    expect(callManager.startCall).toHaveBeenCalledTimes(1);
+
+    manager.stop();
+  });
+
+  it('failed event с бизнес-причиной (BUSY) разоружает менеджер', () => {
+    const { manager, callManager } = createSubject();
+
+    manager.arm(makeRedialParameters());
+    callManager.emit('failed', { originator: 'remote', cause: JsSIP_C.causes.BUSY });
+
+    expect(manager.state).toBe(ECallReconnectStatus.IDLE);
+    expect(callManager.startCall).not.toHaveBeenCalled();
+
+    manager.stop();
+  });
+
   it('disarm cancels current attempt and emits cancelled with provided reason', () => {
     const { manager, callManager } = createSubject();
     const onCancelled = jest.fn();

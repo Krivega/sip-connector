@@ -96,7 +96,7 @@ describe('CallReconnectManager (integration)', () => {
       manager.stop();
     });
 
-    it('ignores non-network failures', () => {
+    it('disarms on non-network failures (BUSY/REJECTED/etc.)', () => {
       const { manager, callManager } = createSubject();
       const onFailureDetected = jest.fn();
       const onAttemptStarted = jest.fn();
@@ -110,7 +110,7 @@ describe('CallReconnectManager (integration)', () => {
       expect(onFailureDetected).not.toHaveBeenCalled();
       expect(onAttemptStarted).not.toHaveBeenCalled();
       expect(callManager.startCall).not.toHaveBeenCalled();
-      expect(manager.state).toBe(ECallReconnectStatus.ARMED);
+      expect(manager.state).toBe(ECallReconnectStatus.IDLE);
 
       manager.stop();
     });
