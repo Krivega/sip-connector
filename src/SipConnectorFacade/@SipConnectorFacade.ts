@@ -249,6 +249,7 @@ class SipConnectorFacade implements IProxyMethods {
     /**
      * Включить автоматический перезвон при сетевых обрывах звонка.
      * При `true` сразу после старта вооружается `CallReconnectManager` параметрами текущего вызова.
+     * По умолчанию `true`; передайте `false`, чтобы отключить.
      */
     autoRedial?: boolean;
   }): Promise<RTCPeerConnection> => {
@@ -272,8 +273,10 @@ class SipConnectorFacade implements IProxyMethods {
       onFinishProgressCall,
       onEndedCall,
       onAddedTransceiver,
-      autoRedial,
+      autoRedial: autoRedialParameter,
     } = parameters;
+
+    const autoRedial = autoRedialParameter ?? true;
 
     debug('callToServer', parameters);
 

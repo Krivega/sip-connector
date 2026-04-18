@@ -108,7 +108,7 @@ export class Session {
     await sipConnectorFacade.callToServer({
       conference,
       mediaStream,
-      autoRedial,
+      autoRedial: autoRedial ?? true,
       extraHeaders: serverParameters.extraHeaders,
       iceServers: serverParameters.iceServers,
     });

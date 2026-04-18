@@ -165,16 +165,35 @@ class FormState {
     try {
       const serialized = localStorage.getItem(this.storageKey);
 
-      if (serialized !== null && serialized !== '') {
-        const parsed = JSON.parse(serialized) as IFormState;
+      if (serialized === null || serialized === '') {
+        return;
+      }
 
-        // Валидируем структуру загруженных данных
-        if (FormState.isValidState(parsed)) {
-          this.state = {
-            ...parsed,
-            displayName: parseDisplayName(parsed.displayName),
-          };
-        }
+      const parsed = JSON.parse(serialized) as unknown;
+
+      if (typeof parsed !== 'object' || parsed === null) {
+        return;
+      }
+
+      const record = parsed as Record<string, unknown>;
+
+      // Сохранения до появления чекбокса не содержат `autoRedialEnabled` — подставляем дефолт из `initialState` (вкл).
+      const merged: IFormState = {
+        ...this.initialState,
+        ...record,
+        autoRedialEnabled:
+          typeof record.autoRedialEnabled === 'boolean'
+            ? record.autoRedialEnabled
+            : this.initialState.autoRedialEnabled,
+        displayName: parseDisplayName(
+          typeof record.displayName === 'string'
+            ? record.displayName
+            : this.initialState.displayName,
+        ),
+      };
+
+      if (FormState.isValidState(merged)) {
+        this.state = merged;
       }
     } catch {
       // Игнорируем ошибки загрузки из localStorage

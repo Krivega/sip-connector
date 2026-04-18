@@ -15,19 +15,30 @@
 
 ## Включение в SipConnectorFacade
 
-Передайте `autoRedial: true` в `callToServer`:
+По умолчанию `callToServer` передаёт в `SipConnector.call` опцию `autoRedial: true` (редиал включён, пока явно не передан `autoRedial: false`).
 
 ```typescript
 await sipConnectorFacade.callToServer({
   conference,
   mediaStream,
-  autoRedial: true,
   extraHeaders,
   iceServers,
 });
 ```
 
-SipConnector автоматически вооружится после успешного старта звонка и начнёт слушать `call:failed` с сетевыми причинами.
+Чтобы отключить:
+
+```typescript
+await sipConnectorFacade.callToServer({
+  conference,
+  mediaStream,
+  autoRedial: false,
+  extraHeaders,
+  iceServers,
+});
+```
+
+SipConnector вооружает `CallReconnectManager` при `autoRedial: true` и начинает слушать сетевые обрывы согласно политике.
 
 ## Включение напрямую через SipConnector
 
