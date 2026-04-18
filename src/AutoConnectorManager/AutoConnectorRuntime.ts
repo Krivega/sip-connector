@@ -3,7 +3,7 @@ import { DelayRequester } from '@krivega/timeout-requester';
 import resolveDebug from '@/logger';
 import AttemptsState from './AttemptsState';
 import CheckTelephonyRequester from './CheckTelephonyRequester';
-import PingServerIfNotActiveCallRequester from './PingServerIfNotActiveCallRequester';
+import PingServerRequester from './PingServerRequester';
 import RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCallSubscriber';
 import TelephonyFailPolicy from './TelephonyFailPolicy';
 
@@ -53,7 +53,7 @@ export class AutoConnectorRuntime {
 
   private readonly checkTelephonyRequester: CheckTelephonyRequester;
 
-  private readonly pingServerIfNotActiveCallRequester: PingServerIfNotActiveCallRequester;
+  private readonly pingServerRequester: PingServerRequester;
 
   private readonly registrationFailedOutOfCallSubscriber: RegistrationFailedOutOfCallSubscriber;
 
@@ -78,9 +78,8 @@ export class AutoConnectorRuntime {
       interval:
         params.options?.checkTelephonyRequestInterval ?? DEFAULT_CHECK_TELEPHONY_REQUEST_INTERVAL,
     });
-    this.pingServerIfNotActiveCallRequester = new PingServerIfNotActiveCallRequester({
+    this.pingServerRequester = new PingServerRequester({
       connectionManager: this.connectionManager,
-      callManager: params.callManager,
     });
     this.registrationFailedOutOfCallSubscriber = new RegistrationFailedOutOfCallSubscriber({
       connectionManager: this.connectionManager,
@@ -194,7 +193,7 @@ export class AutoConnectorRuntime {
   public stopConnectTriggers() {
     debug('stopConnectTriggers');
 
-    this.pingServerIfNotActiveCallRequester.stop();
+    this.pingServerRequester.stop();
     this.checkTelephonyRequester.stop();
     this.registrationFailedOutOfCallSubscriber.unsubscribe();
   }
@@ -258,12 +257,17 @@ export class AutoConnectorRuntime {
   }
 
   private subscribeToConnectTriggers(parameters: TParametersAutoConnect) {
-    // Без активного звонка периодически шлём SIP OPTIONS (`connectionManager.ping`) через тот же JsSIP UA:
-    // проверяем, что сигнализация до сервера жива, и даём стеку исходящий трафик по установленному WebSocket.
-    // При падении транспорта JsSIP сам перезапускает WebSocket и перевыводит сессию; повторные OPTIONS после
-    // восстановления снова проходят через уже переподнятый транспорт. Полный рестарт автоконнектора на
-    // сбой ping не вешаем — не дублируем встроенное переподключение транспорта.
-    this.pingServerIfNotActiveCallRequester.start({
+    // Периодически шлём SIP OPTIONS (`connectionManager.ping`) через тот же JsSIP UA, пока подключены:
+    // проверяем живость сигнализации и даём исходящий трафик по WebSocket — в том числе во время активного звонка
+    // (раньше пинг заглушался на время звонка). При падении транспорта JsSIP перезапускает сокет; рестарт
+    // автоконнектора по одному сбою ping не вешаем — не дублируем встроенное переподключение транспорта.
+    /**
+     * Периодический SIP OPTIONS (`connectionManager.ping`) по установленному UA.
+     * Работает независимо от того, идёт ли звонок: поддерживает трафик по WebSocket
+     * и проверяет живость сигнализации в фоне всегда, пока автоконнектор в режиме
+     * «подписан на триггеры» после успешного connect.
+     */
+    this.pingServerRequester.start({
       onFailRequest: () => {
         debug('pingRequester: onFailRequest');
       },

@@ -9,7 +9,7 @@ import logger from '@/logger';
 import AutoConnectorManager from '../@AutoConnectorManager';
 import AttemptsState from '../AttemptsState';
 import CheckTelephonyRequester from '../CheckTelephonyRequester';
-import PingServerIfNotActiveCallRequester from '../PingServerIfNotActiveCallRequester';
+import PingServerRequester from '../PingServerRequester';
 import RegistrationFailedOutOfCallSubscriber from '../RegistrationFailedOutOfCallSubscriber';
 
 import type { SipConnector } from '@/SipConnector';
@@ -166,10 +166,7 @@ describe('AutoConnectorManager - Basic', () => {
         CancelableRequest.prototype,
         'cancelRequest',
       );
-      const pingServerIfNotActiveCallStopSpy = jest.spyOn(
-        PingServerIfNotActiveCallRequester.prototype,
-        'stop',
-      );
+      const pingServerStopSpy = jest.spyOn(PingServerRequester.prototype, 'stop');
       const checkTelephonyStopSpy = jest.spyOn(CheckTelephonyRequester.prototype, 'stop');
       const registrationFailedOutOfCallSubscriberUnsubscribeSpy = jest.spyOn(
         RegistrationFailedOutOfCallSubscriber.prototype,
@@ -187,7 +184,7 @@ describe('AutoConnectorManager - Basic', () => {
       expect(connectQueueStopSpy).toHaveBeenCalled();
       expect(delayBetweenAttemptsCancelRequestSpy).toHaveBeenCalled();
       expect(cancelableRequestBeforeRetryCancelRequestSpy).toHaveBeenCalled();
-      expect(pingServerIfNotActiveCallStopSpy).toHaveBeenCalled();
+      expect(pingServerStopSpy).toHaveBeenCalled();
       expect(checkTelephonyStopSpy).toHaveBeenCalled();
       expect(registrationFailedOutOfCallSubscriberUnsubscribeSpy).toHaveBeenCalled();
     });

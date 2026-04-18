@@ -28,14 +28,14 @@
 
 ## Внутренние компоненты
 
-| Компонент                            | Роль                                                                                                      |
-| ------------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| `@AutoConnectorManager.ts`           | Фасад публичного API и точка `requestReconnect`.                                                          |
-| `AutoConnectorStateMachine/*`        | Декларативная state machine автоконнектора (XState).                                                      |
-| `AutoConnectorRuntime.ts`            | Побочные эффекты: attempts, connect/disconnect, triggers, telephony policy.                               |
-| `createMachineDeps.ts`               | Адаптер между машиной и runtime, включая нормализацию terminal-ошибок.                                    |
-| `ReconnectRequestCoalescer`          | Coalescing рестартов в коротком окне с приоритетами причин.                                               |
-| Telephony/Ping/Registration watchers | `CheckTelephonyRequester`, `PingServerIfNotActiveCallRequester`, `RegistrationFailedOutOfCallSubscriber`. |
+| Компонент                            | Роль                                                                                                                                                       |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@AutoConnectorManager.ts`           | Фасад публичного API и точка `requestReconnect`.                                                                                                           |
+| `AutoConnectorStateMachine/*`        | Декларативная state machine автоконнектора (XState).                                                                                                       |
+| `AutoConnectorRuntime.ts`            | Побочные эффекты: attempts, connect/disconnect, triggers, telephony policy.                                                                                |
+| `createMachineDeps.ts`               | Адаптер между машиной и runtime, включая нормализацию terminal-ошибок.                                                                                     |
+| `ReconnectRequestCoalescer`          | Coalescing рестартов в коротком окне с приоритетами причин.                                                                                                |
+| Telephony/Ping/Registration watchers | `CheckTelephonyRequester`, `PingServerRequester` (периодический SIP OPTIONS в фоне, в том числе во время звонка), `RegistrationFailedOutOfCallSubscriber`. |
 
 ## Связанная state machine
 

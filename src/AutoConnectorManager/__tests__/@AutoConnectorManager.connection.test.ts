@@ -2,7 +2,7 @@ import flushPromises from '@/__fixtures__/flushPromises';
 import { createNotReadyForConnectionError } from '@/ConnectionManager';
 import { doMockSipConnector } from '@/doMock';
 import AutoConnectorManager from '../@AutoConnectorManager';
-import PingServerIfNotActiveCallRequester from '../PingServerIfNotActiveCallRequester';
+import PingServerRequester from '../PingServerRequester';
 import RegistrationFailedOutOfCallSubscriber from '../RegistrationFailedOutOfCallSubscriber';
 
 import type { SipConnector } from '@/SipConnector';
@@ -73,10 +73,7 @@ describe('AutoConnectorManager - Connection', () => {
     it('должен вызывать stop-attempts-by-error и подписываться на слушателей при ошибке not ready for connection', async () => {
       expect.assertions(3);
 
-      const pingServerIfNotActiveCallStartSpy = jest.spyOn(
-        PingServerIfNotActiveCallRequester.prototype,
-        'start',
-      );
+      const pingServerStartSpy = jest.spyOn(PingServerRequester.prototype, 'start');
       const registrationFailedSubscriberSpy = jest.spyOn(
         RegistrationFailedOutOfCallSubscriber.prototype,
         'subscribe',
@@ -96,7 +93,7 @@ describe('AutoConnectorManager - Connection', () => {
 
       const connectResult = connectSpy.mock.results[0].value as Promise<Error>;
 
-      expect(pingServerIfNotActiveCallStartSpy).not.toHaveBeenCalled();
+      expect(pingServerStartSpy).not.toHaveBeenCalled();
       expect(registrationFailedSubscriberSpy).not.toHaveBeenCalled();
 
       await expect(connectResult).rejects.toThrow(createNotReadyForConnectionError());
