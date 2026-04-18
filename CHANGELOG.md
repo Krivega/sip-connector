@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [28.5.0](https://github.com/Krivega/sip-connector/compare/v28.4.0...v28.5.0) (2026-04-18)
+
+### Features
+
+- **callReconnect:** implement CallReconnectManager for automatic call redial on network failures, including UI integration and event handling ([fb6e334](https://github.com/Krivega/sip-connector/commit/fb6e334790d6a969695f7492117411605c806fc0))
+- **callReconnect:** implement CallReconnectManager for automatic call redial on network failures, including UI integration and event handling ([1588c41](https://github.com/Krivega/sip-connector/commit/1588c41bfcd8c9e49a9a41622527d9aee92a759b))
+- **call:** set default autoRedial to true in callToServer and enhance FormState loading logic for autoRedialEnabled ([e6660d8](https://github.com/Krivega/sip-connector/commit/e6660d885ff0da011227f2e9ce66f604634e1210))
+
+### Bug Fixes
+
+- **AutoConnectorManager:** replace PingServerIfNotActiveCallRequester with PingServerRequester and update related documentation and tests ([5a3c1ba](https://github.com/Krivega/sip-connector/commit/5a3c1ba0f982878f12a169e41afd0b29fea8d8b4))
+
 ## [28.4.0](https://github.com/Krivega/sip-connector/compare/v28.3.0...v28.4.0) (2026-04-17)
 
 ### Features
