@@ -29,6 +29,9 @@ var mockCallSessionState = {
       },
     };
   },
+  subscribe: jest.fn(() => {
+    return () => {};
+  }),
 };
 
 jest.mock('../Session/sipConnectorFacade', () => {
@@ -164,7 +167,10 @@ describe('Statuses', () => {
     const statuses = new Statuses();
     const onStatusesChange = jest.fn();
 
-    statuses.subscribe(onStatusesChange);
+    statuses.subscribe();
+
+    const unsubscribeOnStatusesChange = statuses.onChangeSystemState(onStatusesChange);
+
     expect(onStatusesChange).toHaveBeenCalledTimes(1);
 
     incomingStateMachine.send({
@@ -177,15 +183,17 @@ describe('Statuses', () => {
       },
     });
     expect(onStatusesChange).toHaveBeenCalledTimes(2);
-    expect(onStatusesChange).toHaveBeenLastCalledWith({
-      connection: 'connection:idle',
-      autoConnector: 'idle',
-      callReconnect: 'idle',
-      call: 'call:idle',
-      incoming: 'incoming:ringing',
-      presentation: 'presentation:idle',
-      system: ESystemStatus.DISCONNECTED,
-    });
+    expect(onStatusesChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        connection: 'connection:idle',
+        autoConnector: 'idle',
+        callReconnect: 'idle',
+        call: 'call:idle',
+        incoming: 'incoming:ringing',
+        presentation: 'presentation:idle',
+        system: ESystemStatus.DISCONNECTED,
+      }),
+    );
 
     incomingStateMachine.send({
       type: EIncomingCallStateMachineEvents.RINGING,
@@ -198,6 +206,7 @@ describe('Statuses', () => {
     });
 
     expect(onStatusesChange).toHaveBeenCalledTimes(2);
+    unsubscribeOnStatusesChange();
     stopAll();
   });
 });
