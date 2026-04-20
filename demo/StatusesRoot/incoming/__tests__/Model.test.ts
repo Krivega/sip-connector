@@ -34,6 +34,7 @@ type TStateCase = {
     | undefined;
   expectedLastReason: EIncomingStatus | undefined;
   expectedIncomingNumber: string | undefined;
+  expectedDisplayName: string | undefined;
 };
 
 const createExpectedFlags = (activeFlag: TStateFlagKey): TStateFlags => {
@@ -62,6 +63,7 @@ const stateCases: TStateCase[] = [
     expectedRemoteCallerData: undefined,
     expectedLastReason: undefined,
     expectedIncomingNumber: undefined,
+    expectedDisplayName: undefined,
   },
   {
     title: 'RINGING',
@@ -76,6 +78,7 @@ const stateCases: TStateCase[] = [
     expectedRemoteCallerData: remoteCallerData,
     expectedLastReason: undefined,
     expectedIncomingNumber: remoteCallerData.incomingNumber,
+    expectedDisplayName: remoteCallerData.displayName,
   },
   {
     title: 'CONSUMED',
@@ -90,6 +93,7 @@ const stateCases: TStateCase[] = [
     expectedRemoteCallerData: remoteCallerData,
     expectedLastReason: EIncomingStatus.CONSUMED,
     expectedIncomingNumber: remoteCallerData.incomingNumber,
+    expectedDisplayName: remoteCallerData.displayName,
   },
   {
     title: 'DECLINED',
@@ -104,6 +108,7 @@ const stateCases: TStateCase[] = [
     expectedRemoteCallerData: remoteCallerData,
     expectedLastReason: EIncomingStatus.DECLINED,
     expectedIncomingNumber: remoteCallerData.incomingNumber,
+    expectedDisplayName: remoteCallerData.displayName,
   },
   {
     title: 'TERMINATED',
@@ -118,6 +123,7 @@ const stateCases: TStateCase[] = [
     expectedRemoteCallerData: remoteCallerData,
     expectedLastReason: EIncomingStatus.TERMINATED,
     expectedIncomingNumber: remoteCallerData.incomingNumber,
+    expectedDisplayName: remoteCallerData.displayName,
   },
   {
     title: 'FAILED',
@@ -132,6 +138,7 @@ const stateCases: TStateCase[] = [
     expectedRemoteCallerData: remoteCallerData,
     expectedLastReason: EIncomingStatus.FAILED,
     expectedIncomingNumber: remoteCallerData.incomingNumber,
+    expectedDisplayName: remoteCallerData.displayName,
   },
 ];
 
@@ -153,6 +160,7 @@ describe('IncomingStatusModel', () => {
       expectedRemoteCallerData,
       expectedLastReason,
       expectedIncomingNumber,
+      expectedDisplayName,
     }) => {
       const status = createIncomingStatus(snapshot);
 
@@ -160,6 +168,7 @@ describe('IncomingStatusModel', () => {
       expect(status.remoteCallerData).toEqual(expectedRemoteCallerData);
       expect(status.terminalReason).toEqual(expectedLastReason);
       expect(status.incomingNumber).toEqual(expectedIncomingNumber);
+      expect(status.displayName).toEqual(expectedDisplayName);
     },
   );
 
@@ -173,5 +182,6 @@ describe('IncomingStatusModel', () => {
 
     expect(status.remoteCallerData).toBeUndefined();
     expect(status.incomingNumber).toBeUndefined();
+    expect(status.displayName).toBeUndefined();
   });
 });

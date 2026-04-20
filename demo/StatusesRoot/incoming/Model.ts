@@ -86,6 +86,9 @@ export const IncomingStatusModel = types
       get incomingNumber(): string | undefined {
         return self.context.remoteCallerData?.incomingNumber;
       },
+      get displayName(): string | undefined {
+        return self.context.remoteCallerData?.displayName;
+      },
     };
   });
 
