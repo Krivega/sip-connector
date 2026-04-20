@@ -33,6 +33,7 @@ type TStateCase = {
       }
     | undefined;
   expectedLastReason: EIncomingStatus | undefined;
+  expectedIncomingNumber: string | undefined;
 };
 
 const createExpectedFlags = (activeFlag: TStateFlagKey): TStateFlags => {
@@ -60,6 +61,7 @@ const stateCases: TStateCase[] = [
     expectedFlags: createExpectedFlags('isIdle'),
     expectedRemoteCallerData: undefined,
     expectedLastReason: undefined,
+    expectedIncomingNumber: undefined,
   },
   {
     title: 'RINGING',
@@ -73,6 +75,7 @@ const stateCases: TStateCase[] = [
     expectedFlags: createExpectedFlags('isRinging'),
     expectedRemoteCallerData: remoteCallerData,
     expectedLastReason: undefined,
+    expectedIncomingNumber: remoteCallerData.incomingNumber,
   },
   {
     title: 'CONSUMED',
@@ -86,6 +89,7 @@ const stateCases: TStateCase[] = [
     expectedFlags: createExpectedFlags('isConsumed'),
     expectedRemoteCallerData: remoteCallerData,
     expectedLastReason: EIncomingStatus.CONSUMED,
+    expectedIncomingNumber: remoteCallerData.incomingNumber,
   },
   {
     title: 'DECLINED',
@@ -99,6 +103,7 @@ const stateCases: TStateCase[] = [
     expectedFlags: createExpectedFlags('isDeclined'),
     expectedRemoteCallerData: remoteCallerData,
     expectedLastReason: EIncomingStatus.DECLINED,
+    expectedIncomingNumber: remoteCallerData.incomingNumber,
   },
   {
     title: 'TERMINATED',
@@ -112,6 +117,7 @@ const stateCases: TStateCase[] = [
     expectedFlags: createExpectedFlags('isTerminated'),
     expectedRemoteCallerData: remoteCallerData,
     expectedLastReason: EIncomingStatus.TERMINATED,
+    expectedIncomingNumber: remoteCallerData.incomingNumber,
   },
   {
     title: 'FAILED',
@@ -125,6 +131,7 @@ const stateCases: TStateCase[] = [
     expectedFlags: createExpectedFlags('isFailed'),
     expectedRemoteCallerData: remoteCallerData,
     expectedLastReason: EIncomingStatus.FAILED,
+    expectedIncomingNumber: remoteCallerData.incomingNumber,
   },
 ];
 
@@ -140,12 +147,31 @@ describe('IncomingStatusModel', () => {
 
   it.each(stateCases)(
     'exposes state flags and context accessors for $title',
-    ({ snapshot, expectedFlags, expectedRemoteCallerData, expectedLastReason }) => {
+    ({
+      snapshot,
+      expectedFlags,
+      expectedRemoteCallerData,
+      expectedLastReason,
+      expectedIncomingNumber,
+    }) => {
       const status = createIncomingStatus(snapshot);
 
       expect(getStateFlags(status)).toEqual(expectedFlags);
       expect(status.remoteCallerData).toEqual(expectedRemoteCallerData);
       expect(status.terminalReason).toEqual(expectedLastReason);
+      expect(status.incomingNumber).toEqual(expectedIncomingNumber);
     },
   );
+
+  it('returns undefined incomingNumber when context has no remoteCallerData', () => {
+    const status = createIncomingStatus({
+      state: EIncomingStatus.RINGING,
+      context: {
+        lastReason: undefined,
+      },
+    } as TIncomingSnapshot);
+
+    expect(status.remoteCallerData).toBeUndefined();
+    expect(status.incomingNumber).toBeUndefined();
+  });
 });

@@ -83,6 +83,9 @@ export const IncomingStatusModel = types
       get terminalReason(): TIncomingContextMap[EState]['lastReason'] {
         return self.context.lastReason;
       },
+      get incomingNumber(): string | undefined {
+        return self.context.remoteCallerData?.incomingNumber;
+      },
     };
   });
 

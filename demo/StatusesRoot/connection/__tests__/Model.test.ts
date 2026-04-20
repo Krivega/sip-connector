@@ -39,6 +39,13 @@ type TUserIdentityCase = {
   expectedUserIdentity: { user: string; displayName: string | undefined } | undefined;
 };
 
+type TUserAccessorsCase = {
+  title: string;
+  snapshot: TConnectionSnapshot;
+  expectedUser: string | undefined;
+  expectedDisplayName: string | undefined;
+};
+
 const createExpectedFlags = (activeFlag: TStateFlagKey): TStateFlags => {
   return {
     isIdle: activeFlag === 'isIdle',
@@ -144,6 +151,27 @@ const userIdentityCases: TUserIdentityCase[] = [
   },
 ];
 
+const userAccessorsCases: TUserAccessorsCase[] = [
+  {
+    title: 'returns user and displayName when connection configuration has user',
+    snapshot: createSnapshot(EConnectionStatus.CONNECTED, connectionConfigurationWithUser),
+    expectedUser: connectionConfigurationWithUser.user,
+    expectedDisplayName: connectionConfigurationWithUser.displayName,
+  },
+  {
+    title: 'returns undefined user and defined displayName when configuration has no user',
+    snapshot: createSnapshot(EConnectionStatus.CONNECTED, connectionConfiguration),
+    expectedUser: undefined,
+    expectedDisplayName: connectionConfiguration.displayName,
+  },
+  {
+    title: 'returns undefined user and displayName when configuration is missing',
+    snapshot: INITIAL_CONNECTION_STATUS_SNAPSHOT,
+    expectedUser: undefined,
+    expectedDisplayName: undefined,
+  },
+];
+
 describe('ConnectionStatusModel', () => {
   it('maps initial snapshot to snapshot', () => {
     const status = createConnectionStatus();
@@ -168,5 +196,12 @@ describe('ConnectionStatusModel', () => {
     const status = createConnectionStatus(snapshot);
 
     expect(status.userIdentity).toEqual(expectedUserIdentity);
+  });
+
+  it.each(userAccessorsCases)('$title', ({ snapshot, expectedUser, expectedDisplayName }) => {
+    const status = createConnectionStatus(snapshot);
+
+    expect(status.user).toEqual(expectedUser);
+    expect(status.displayName).toEqual(expectedDisplayName);
   });
 });

@@ -100,6 +100,14 @@ export const ConnectionStatusModel = types
 
         return undefined;
       },
+
+      get user(): string | undefined {
+        return self.connectionConfig?.user;
+      },
+
+      get displayName(): string | undefined {
+        return self.connectionConfig?.displayName;
+      },
     };
   });
 
