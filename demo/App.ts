@@ -16,6 +16,7 @@ import VideoPlayer from './VideoPlayer';
 
 import type { TRemoteStreams } from '@/index';
 import type { IFormState } from './state/FormState';
+import type { TStatusesByDomain } from './StatusesRoot';
 
 const debug = resolveDebug('demo:app');
 
@@ -176,10 +177,7 @@ class App {
     });
 
     dom.renderSessionStatusDiagrams();
-    this.statusesManager.subscribe((statuses) => {
-      this.updateSessionStatuses(statuses);
-      dom.renderStatusesNodeValues(this.statusesManager.getStatusSnapshots());
-    });
+    this.statusesManager.subscribe();
 
     this.statusesManager.onChangeCallReconnect(({ isReconnecting }) => {
       if (isReconnecting) {
@@ -430,15 +428,7 @@ class App {
   }
 
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this
-  private updateSessionStatuses(statuses: {
-    connection: string;
-    call: string;
-    incoming: string;
-    presentation: string;
-    system: string;
-    autoConnector: string;
-    callReconnect: string;
-  }): void {
+  private updateSessionStatuses(statuses: TStatusesByDomain): void {
     debug('updateSessionStatuses', statuses);
 
     dom.setActiveSessionStatusNode('connection', statuses.connection);
@@ -479,15 +469,17 @@ class App {
    * Обрабатывает изменения состояния звонка
    */
 
-  private handleCallStateChange(state: {
-    isDisconnected: boolean;
-    isDisconnecting: boolean;
-    isConnecting: boolean;
-    isReadyToCall: boolean;
-    isCallConnecting: boolean;
-    isCallDisconnecting: boolean;
-    isCallActive: boolean;
-  }): void {
+  private handleCallStateChange(
+    state: {
+      isDisconnected: boolean;
+      isDisconnecting: boolean;
+      isConnecting: boolean;
+      isReadyToCall: boolean;
+      isCallConnecting: boolean;
+      isCallDisconnecting: boolean;
+      isCallActive: boolean;
+    } & TStatusesByDomain,
+  ): void {
     const {
       isDisconnected,
       isDisconnecting,
@@ -496,6 +488,18 @@ class App {
       isCallDisconnecting,
       isCallActive,
     } = state;
+
+    this.updateSessionStatuses({
+      connection: state.connection,
+      call: state.call,
+      incoming: state.incoming,
+      presentation: state.presentation,
+      system: state.system,
+      autoConnector: state.autoConnector,
+      callReconnect: state.callReconnect,
+    });
+
+    dom.renderStatusesNodeValues(this.statusesManager.getStatusSnapshots());
 
     const isBusyWithConnection = isConnecting || isDisconnecting;
 
