@@ -56,33 +56,37 @@ export const CallStatusModel = types
     };
   })
   .views((self) => {
+    const hasState = (state: EState): boolean => {
+      return self.state === state;
+    };
+
     return {
       isIdle: (): boolean => {
-        return self.state === EState.IDLE;
+        return hasState(EState.IDLE);
       },
       isConnecting: (): boolean => {
-        return self.state === EState.CONNECTING;
+        return hasState(EState.CONNECTING);
       },
       isPresentationCall: (): boolean => {
-        return self.state === EState.PRESENTATION_CALL;
+        return hasState(EState.PRESENTATION_CALL);
       },
       isRoomPendingAuth: (): boolean => {
-        return self.state === EState.ROOM_PENDING_AUTH;
+        return hasState(EState.ROOM_PENDING_AUTH);
       },
       isPurgatory: (): boolean => {
-        return self.state === EState.PURGATORY;
+        return hasState(EState.PURGATORY);
       },
       isP2PRoom: (): boolean => {
-        return self.state === EState.P2P_ROOM;
+        return hasState(EState.P2P_ROOM);
       },
       isDirectP2PRoom: (): boolean => {
-        return self.state === EState.DIRECT_P2P_ROOM;
+        return hasState(EState.DIRECT_P2P_ROOM);
       },
       isInRoom: (): boolean => {
-        return self.state === EState.IN_ROOM;
+        return hasState(EState.IN_ROOM);
       },
       isDisconnecting: (): boolean => {
-        return self.state === EState.DISCONNECTING;
+        return hasState(EState.DISCONNECTING);
       },
     };
   })

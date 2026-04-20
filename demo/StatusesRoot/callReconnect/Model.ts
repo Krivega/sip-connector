@@ -49,6 +49,10 @@ export const CallReconnectStatusModel = types
     context: types.frozen<TCallReconnectContextMap[EState]>(),
   })
   .views((self) => {
+    const hasState = (state: EState): boolean => {
+      return self.state === state;
+    };
+
     return {
       get snapshot(): TSnapshotByState<EState> {
         return {
@@ -62,9 +66,7 @@ export const CallReconnectStatusModel = types
        */
       get isReconnecting(): boolean {
         return (
-          self.state !== EState.IDLE &&
-          self.state !== EState.ARMED &&
-          self.state !== EState.ERROR_TERMINAL
+          !hasState(EState.IDLE) && !hasState(EState.ARMED) && !hasState(EState.ERROR_TERMINAL)
         );
       },
     };

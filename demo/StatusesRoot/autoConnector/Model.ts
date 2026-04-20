@@ -51,6 +51,38 @@ export const AutoConnectorStatusModel = types
         return { state: self.state, context: self.context } as TAutoConnectorStatusSnapshot;
       },
     };
+  })
+  .views((self) => {
+    const hasState = (state: EState): boolean => {
+      return self.state === state;
+    };
+
+    return {
+      isIdle: (): boolean => {
+        return hasState(EState.IDLE);
+      },
+      isDisconnecting: (): boolean => {
+        return hasState(EState.DISCONNECTING);
+      },
+      isAttemptingGate: (): boolean => {
+        return hasState(EState.ATTEMPTING_GATE);
+      },
+      isAttemptingConnect: (): boolean => {
+        return hasState(EState.ATTEMPTING_CONNECT);
+      },
+      isWaitingBeforeRetry: (): boolean => {
+        return hasState(EState.WAITING_BEFORE_RETRY);
+      },
+      isConnectedMonitoring: (): boolean => {
+        return hasState(EState.CONNECTED_MONITORING);
+      },
+      isTelephonyChecking: (): boolean => {
+        return hasState(EState.TELEPHONY_CHECKING);
+      },
+      isErrorTerminal: (): boolean => {
+        return hasState(EState.ERROR_TERMINAL);
+      },
+    };
   });
 
 export type TAutoConnectorStatusInstance = Instance<typeof AutoConnectorStatusModel>;

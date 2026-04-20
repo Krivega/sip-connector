@@ -53,30 +53,34 @@ export const ConnectionStatusModel = types
     };
   })
   .views((self) => {
+    const hasState = (state: EState): boolean => {
+      return self.state === state;
+    };
+
     return {
       isIdle: (): boolean => {
-        return self.state === EState.IDLE;
+        return hasState(EState.IDLE);
       },
       isPreparing: (): boolean => {
-        return self.state === EState.PREPARING;
+        return hasState(EState.PREPARING);
       },
       isConnecting: (): boolean => {
-        return self.state === EState.CONNECTING;
+        return hasState(EState.CONNECTING);
       },
       isConnected: (): boolean => {
-        return self.state === EState.CONNECTED;
+        return hasState(EState.CONNECTED);
       },
       isRegistered: (): boolean => {
-        return self.state === EState.REGISTERED;
+        return hasState(EState.REGISTERED);
       },
       isEstablished: (): boolean => {
-        return self.state === EState.ESTABLISHED;
+        return hasState(EState.ESTABLISHED);
       },
       isDisconnecting: (): boolean => {
-        return self.state === EState.DISCONNECTING;
+        return hasState(EState.DISCONNECTING);
       },
       isDisconnected: (): boolean => {
-        return self.state === EState.DISCONNECTED;
+        return hasState(EState.DISCONNECTED);
       },
     };
   })

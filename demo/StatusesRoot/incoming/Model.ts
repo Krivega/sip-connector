@@ -54,24 +54,28 @@ export const IncomingStatusModel = types
     };
   })
   .views((self) => {
+    const hasState = (state: EState): boolean => {
+      return self.state === state;
+    };
+
     return {
       isIdle: (): boolean => {
-        return self.state === EState.IDLE;
+        return hasState(EState.IDLE);
       },
       isRinging: (): boolean => {
-        return self.state === EState.RINGING;
+        return hasState(EState.RINGING);
       },
       isConsumed: (): boolean => {
-        return self.state === EState.CONSUMED;
+        return hasState(EState.CONSUMED);
       },
       isDeclined: (): boolean => {
-        return self.state === EState.DECLINED;
+        return hasState(EState.DECLINED);
       },
       isTerminated: (): boolean => {
-        return self.state === EState.TERMINATED;
+        return hasState(EState.TERMINATED);
       },
       isFailed: (): boolean => {
-        return self.state === EState.FAILED;
+        return hasState(EState.FAILED);
       },
     };
   })

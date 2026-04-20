@@ -27,27 +27,31 @@ export const SystemStatusModel = types
     };
   })
   .views((self) => {
+    const hasState = (state: EState): boolean => {
+      return self.state === state;
+    };
+
     return {
       isDisconnected(): boolean {
-        return self.state === EState.DISCONNECTED;
+        return hasState(EState.DISCONNECTED);
       },
       isDisconnecting(): boolean {
-        return self.state === EState.DISCONNECTING;
+        return hasState(EState.DISCONNECTING);
       },
       isConnecting(): boolean {
-        return self.state === EState.CONNECTING;
+        return hasState(EState.CONNECTING);
       },
       isReadyToCall(): boolean {
-        return self.state === EState.READY_TO_CALL;
+        return hasState(EState.READY_TO_CALL);
       },
       isCallConnecting(): boolean {
-        return self.state === EState.CALL_CONNECTING;
+        return hasState(EState.CALL_CONNECTING);
       },
       isCallDisconnecting(): boolean {
-        return self.state === EState.CALL_DISCONNECTING;
+        return hasState(EState.CALL_DISCONNECTING);
       },
       isCallActive(): boolean {
-        return self.state === EState.CALL_ACTIVE;
+        return hasState(EState.CALL_ACTIVE);
       },
     };
   });
