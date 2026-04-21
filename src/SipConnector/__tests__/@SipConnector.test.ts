@@ -289,6 +289,8 @@ describe('SipConnector', () => {
       displayName: 'Test User',
       sipServerIp: 'sip.example.com',
       sipServerUrl: 'wss://sip.example.com/ws',
+      remoteAddress: '10.10.10.10',
+      iceServers: [],
       authorizationUser: 'test-user',
     };
 
@@ -311,6 +313,8 @@ describe('SipConnector', () => {
       displayName: 'Test User',
       sipServerIp: 'sip.example.com',
       sipServerUrl: 'wss://sip.example.com/ws',
+      remoteAddress: '10.10.10.10',
+      iceServers: [],
       authorizationUser: 'test-user',
     };
 
@@ -380,6 +384,8 @@ describe('SipConnector', () => {
       register: false,
       sipServerIp: 'sip.example.com',
       sipServerUrl: 'wss://sip.example.com/ws',
+      remoteAddress: '10.10.10.10',
+      iceServers: [],
     });
     await sipConnector.disconnect();
 
@@ -408,6 +414,8 @@ describe('SipConnector', () => {
       displayName: 'X',
       sipServerIp: 'sip.example.com',
       sipServerUrl: 'wss://sip.example.com/ws',
+      remoteAddress: '10.10.10.10',
+      iceServers: [],
       authorizationUser: 'test-user',
     };
 
@@ -430,6 +438,8 @@ describe('SipConnector', () => {
       authorizationUser: 'test-user',
       sipServerIp: 'sip.example.com',
       sipServerUrl: 'wss://sip.example.com/ws',
+      remoteAddress: '10.10.10.10',
+      iceServers: [],
     });
     expect(sipConnector.getUri('id')).toBe('id');
 

@@ -2,7 +2,7 @@ import { CancelableRequest } from '@krivega/cancelable-promise';
 
 import parseIceServersFromServerConfig from './parseIceServersFromServerConfig';
 
-import type { TIceServer } from '../types';
+import type { TIceServer } from '@/index';
 
 type TServerResponse = {
   ip: string;

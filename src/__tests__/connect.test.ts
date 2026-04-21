@@ -174,7 +174,9 @@ describe('connect', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
 
     // @ts-expect-error
-    expect(sipConnector.connectionManager.ua?.registrator().extraHeaders).toEqual([]);
+    expect(sipConnector.connectionManager.ua?.registrator().extraHeaders).toEqual(
+      extraHeadersRemoteAddress,
+    );
   });
 
   it('должен отправлять extraHeaders с remoteAddress', async () => {
@@ -202,7 +204,10 @@ describe('connect', () => {
     });
 
     // @ts-expect-error
-    expect(sipConnector.connectionManager.ua?.registrator().extraHeaders).toEqual(extraHeaders);
+    expect(sipConnector.connectionManager.ua?.registrator().extraHeaders).toEqual([
+      ...extraHeadersRemoteAddress,
+      ...extraHeaders,
+    ]);
   });
 
   it('должен отправлять расширенные extraHeaders с remoteAddress', async () => {

@@ -18,6 +18,8 @@ import type { TEvents } from '../events';
 
 const SIP_SERVER_URL = 'sip.example.com';
 const SIP_SERVER_IP = '192.168.0.1';
+const REMOTE_ADDRESS = '10.10.10.10';
+const ICE_SERVERS = [{ urls: [`stun:${SIP_SERVER_IP}:3478`] }];
 const websocketHandshakeTimeoutError = createWebsocketHandshakeTimeoutError(SIP_SERVER_URL);
 const baseConnectParameters = {
   displayName: 'Test User',
@@ -26,6 +28,8 @@ const baseConnectParameters = {
   register: false,
   sipServerIp: SIP_SERVER_IP,
   sipServerUrl: SIP_SERVER_URL,
+  remoteAddress: REMOTE_ADDRESS,
+  iceServers: ICE_SERVERS,
 } as const;
 
 describe('ConnectionFlow', () => {
@@ -113,6 +117,8 @@ describe('ConnectionFlow', () => {
         register: false,
         sipServerIp: SIP_SERVER_IP,
         sipServerUrl: SIP_SERVER_URL,
+        remoteAddress: REMOTE_ADDRESS,
+        iceServers: ICE_SERVERS,
       } as const;
 
       const startConnectSpy = jest.spyOn(stateMachine, 'toStartConnect');
@@ -165,6 +171,8 @@ describe('ConnectionFlow', () => {
         register: true,
         sipServerIp: SIP_SERVER_IP,
         sipServerUrl: SIP_SERVER_URL,
+        remoteAddress: REMOTE_ADDRESS,
+        iceServers: ICE_SERVERS,
       } as const;
 
       const startConnectSpy = jest.spyOn(stateMachine, 'toStartConnect');
@@ -186,6 +194,8 @@ describe('ConnectionFlow', () => {
         register: false,
         sipServerIp: SIP_SERVER_IP,
         sipServerUrl: SIP_SERVER_URL,
+        remoteAddress: REMOTE_ADDRESS,
+        iceServers: ICE_SERVERS,
       } as const;
 
       // @ts-expect-error
@@ -606,6 +616,8 @@ describe('ConnectionFlow', () => {
         sipServerUrl: SIP_SERVER_URL,
         connectionRecoveryMinInterval: 2,
         connectionRecoveryMaxInterval: 6,
+        remoteAddress: REMOTE_ADDRESS,
+        iceServers: ICE_SERVERS,
       };
 
       // @ts-expect-error - тестируем приватный метод
@@ -637,6 +649,8 @@ describe('ConnectionFlow', () => {
         sipServerUrl: SIP_SERVER_URL,
         connectionRecoveryMinInterval: 3,
         connectionRecoveryMaxInterval: 7,
+        remoteAddress: REMOTE_ADDRESS,
+        iceServers: ICE_SERVERS,
       };
 
       // @ts-expect-error - тестируем приватный метод
@@ -653,6 +667,8 @@ describe('ConnectionFlow', () => {
         register: false,
         sipServerIp: SIP_SERVER_IP,
         sipServerUrl: SIP_SERVER_URL,
+        remoteAddress: REMOTE_ADDRESS,
+        iceServers: ICE_SERVERS,
       };
 
       // @ts-expect-error - тестируем приватный метод
@@ -776,6 +792,8 @@ describe('ConnectionFlow', () => {
         register: false,
         sipServerIp: SIP_SERVER_IP,
         sipServerUrl: SIP_SERVER_URL,
+        remoteAddress: REMOTE_ADDRESS,
+        iceServers: ICE_SERVERS,
       };
 
       // Настраиваем UAMock чтобы он возвращал ошибку на всех попытках

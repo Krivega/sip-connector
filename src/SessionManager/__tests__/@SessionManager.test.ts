@@ -167,6 +167,8 @@ describe('SessionManager', () => {
           register: false,
           sipServerIp: 'test.com',
           sipServerUrl: 'test.com',
+          remoteAddress: '10.10.10.10',
+          iceServers: [],
         },
       });
       connectionStateMachine.send({ type: EConnectionStateMachineEvents.UA_CONNECTED });
@@ -361,6 +363,8 @@ describe('SessionManager', () => {
           register: false,
           sipServerIp: 'test.com',
           sipServerUrl: 'test.com',
+          remoteAddress: '10.10.10.10',
+          iceServers: [],
         },
       });
       connectionStateMachine.send({ type: EConnectionStateMachineEvents.UA_CONNECTED });

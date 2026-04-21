@@ -21,6 +21,8 @@ describe('AutoConnectorManager - Events', () => {
     displayName: 'Test User',
     sipServerIp: 'sip://test.com',
     sipServerUrl: 'wss://test.com',
+    remoteAddress: '10.10.10.10',
+    iceServers: [],
     register: false,
   };
 

@@ -15,29 +15,10 @@ import type { TGetUri } from '../CallManager';
 import type { ConnectionStateMachine } from './ConnectionStateMachine';
 import type { TEvents } from './events';
 import type RegistrationManager from './RegistrationManager';
-import type { TConnectionConfiguration } from './types';
+import type { TConnectionConfiguration, TParametersConnection } from './types';
 import type UAFactory from './UAFactory';
 
 const NUMBER_OF_CONNECTION_ATTEMPTS = 3;
-
-export type TOptionsExtraHeaders = {
-  extraHeaders?: string[];
-};
-
-export type TParametersConnection = TOptionsExtraHeaders & {
-  sipServerIp: string;
-  sipServerUrl: string;
-  displayName: string;
-  register?: boolean;
-  user?: string;
-  password?: string;
-  remoteAddress?: string;
-  userAgent?: string;
-  sessionTimers?: boolean;
-  registerExpires?: number;
-  connectionRecoveryMinInterval?: number;
-  connectionRecoveryMaxInterval?: number;
-};
 
 type TConnectParameters = (() => Promise<TParametersConnection>) | TParametersConnection;
 
@@ -240,6 +221,7 @@ export default class ConnectionFlow {
     sipServerIp,
     sipServerUrl,
     remoteAddress,
+    iceServers,
     sessionTimers,
     registerExpires,
     connectionRecoveryMinInterval,
@@ -287,6 +269,8 @@ export default class ConnectionFlow {
     const configuration = {
       sipServerIp,
       sipServerUrl,
+      remoteAddress,
+      iceServers,
       displayName,
       authorizationUser,
       register,

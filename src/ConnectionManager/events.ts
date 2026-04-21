@@ -13,8 +13,7 @@ import type {
   UnRegisteredEvent,
   RegistrationFailedEvent,
 } from '@krivega/jssip';
-import type { TParametersConnection } from './ConnectionFlow';
-import type { TConnectionConfiguration } from './types';
+import type { TConnectionConfiguration, TParametersConnection } from './types';
 
 enum EEvent {
   CONNECTING = 'connecting',

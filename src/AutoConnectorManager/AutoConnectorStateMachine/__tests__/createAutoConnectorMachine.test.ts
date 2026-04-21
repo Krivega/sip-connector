@@ -28,6 +28,8 @@ const parameters: TParametersAutoConnect = {
       displayName: 'u',
       sipServerIp: 'sip:u',
       sipServerUrl: 'wss://u',
+      remoteAddress: '10.10.10.10',
+      iceServers: [],
       register: false,
     };
   },

@@ -172,11 +172,11 @@ describe('connect', () => {
     await connectionManager.connect(dataForConnectionWithAuthorization);
 
     // @ts-expect-error
-    expect(connectionManager.ua.registrator().extraHeaders).toEqual([]);
+    expect(connectionManager.ua.registrator().extraHeaders).toEqual(extraHeadersRemoteAddress);
   });
 
   it('должен отправлять extraHeaders с remoteAddress', async () => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     await connectionManager.connect({
       ...dataForConnectionWithAuthorization,
@@ -185,6 +185,20 @@ describe('connect', () => {
 
     // @ts-expect-error
     expect(connectionManager.ua.registrator().extraHeaders).toEqual(extraHeadersRemoteAddress);
+    expect(connectionManager.getConnectionConfiguration()?.remoteAddress).toBe(remoteAddress);
+  });
+
+  it('должен сохранять iceServers в connectionConfiguration', async () => {
+    expect.assertions(1);
+
+    const iceServers = [{ urls: 'stun:stun.example.com:3478' }];
+
+    await connectionManager.connect({
+      ...dataForConnectionWithAuthorization,
+      iceServers,
+    });
+
+    expect(connectionManager.getConnectionConfiguration()?.iceServers).toEqual(iceServers);
   });
 
   it('должен отправлять расширенные extraHeaders', async () => {
@@ -198,7 +212,10 @@ describe('connect', () => {
     });
 
     // @ts-expect-error
-    expect(connectionManager.ua.registrator().extraHeaders).toEqual(extraHeaders);
+    expect(connectionManager.ua.registrator().extraHeaders).toEqual([
+      ...extraHeadersRemoteAddress,
+      ...extraHeaders,
+    ]);
   });
 
   it('должен отправлять расширенные extraHeaders с remoteAddress', async () => {

@@ -12,10 +12,10 @@ import { createNotReadyForConnectionError } from './utils';
 import type { RegisteredEvent, UA, UnRegisteredEvent, WebSocketInterface } from '@krivega/jssip';
 import type { TGetUri } from '@/CallManager';
 import type { TJsSIP } from '@/types';
-import type { TConnect, TParametersConnection } from './ConnectionFlow';
+import type { TConnect } from './ConnectionFlow';
 import type { TEventMap } from './events';
 import type { TParametersCheckTelephony } from './SipOperations';
-import type { TConnectionConfiguration } from './types';
+import type { TConnectionConfiguration, TParametersConnection } from './types';
 
 const debug = resolveDebug('ConnectionManager');
 

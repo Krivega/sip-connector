@@ -70,6 +70,7 @@ export class Session {
           sipServerIp: serverParameters.serverIp,
           sipServerUrl: serverParameters.sipServerUrl,
           remoteAddress: serverParameters.remoteAddress,
+          iceServers: serverParameters.iceServers,
           userAgent: serverParameters.userAgent,
         };
       },

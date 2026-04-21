@@ -24,6 +24,8 @@ sipConnector.startAutoConnect({
       displayName: 'displayName',
       sipServerUrl: 'example.com', // Путь /webrtc/wss/ добавляется автоматически
       sipServerIp: 'sip.example.com',
+      remoteAddress: '192.168.1.1',
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
       user: 'user',
       password: 'password',
       register: true,
@@ -37,6 +39,9 @@ sipConnector.startAutoConnect({
 
 // Остановка автоподключения
 sipConnector.stopAutoConnect();
+
+// Принудительный рестарт текущего автоконнект-флоу (низкоуровневый API)
+sipConnector.autoConnectorManager.restart();
 ```
 
 ## Принцип работы
@@ -46,7 +51,7 @@ sipConnector.stopAutoConnect();
 - **Мониторинг состояния**: Отслеживает состояние регистрации и звонков
 - **Адаптивные задержки**: Использует настраиваемые интервалы между попытками
 - **Очистка кэша**: Возможность настраивать очистку кэша через хук
-- **Причины реконнекта**: Все внешние рестарты проходят через единый `requestReconnect` (например: `start`, `telephony-disconnected`, `registration-failed-out-of-call`)
+- **Причины реконнекта**: Все внешние рестарты проходят через единый `requestReconnect` (например: `start`, `manual-restart`, `telephony-disconnected`, `registration-failed-out-of-call`)
 
 ## Приоритеты причин рестарта (coalescing)
 
@@ -61,6 +66,7 @@ sipConnector.stopAutoConnect();
 | `telephony-disconnected`          | `1`       |
 | `telephony-check-failed`          | `1`       |
 | `registration-failed-out-of-call` | `3`       |
+| `manual-restart`                  | `4`       |
 
 ## События автоподключения
 

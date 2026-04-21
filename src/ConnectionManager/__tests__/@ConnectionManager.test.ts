@@ -22,6 +22,8 @@ describe('ConnectionManager', () => {
     register: false,
     sipServerIp: SIP_SERVER_URL,
     sipServerUrl: WS_DOMAIN,
+    remoteAddress: '10.10.10.10',
+    iceServers: [],
   };
 
   beforeEach(() => {
@@ -73,6 +75,8 @@ describe('ConnectionManager', () => {
         register: true,
         sipServerIp: SIP_SERVER_URL,
         sipServerUrl: WS_DOMAIN,
+        remoteAddress: '10.10.10.10',
+        iceServers: [],
       };
 
       await connectionManager.connect(parameters2);
@@ -218,6 +222,8 @@ describe('ConnectionManager', () => {
         register: true,
         sipServerIp: SIP_SERVER_URL,
         sipServerUrl: WS_DOMAIN,
+        remoteAddress: '10.10.10.10',
+        iceServers: [],
       };
 
       await connectionManager.connect(parameters2);
@@ -246,6 +252,8 @@ describe('ConnectionManager', () => {
         register: true,
         sipServerIp: SIP_SERVER_URL,
         sipServerUrl: WS_DOMAIN,
+        remoteAddress: '10.10.10.10',
+        iceServers: [],
       };
 
       await connectionManager.connect(parameters2);

@@ -26,6 +26,8 @@ describe('ConnectionStateMachine configuration (integration)', () => {
       register: true,
       sipServerIp: SIP_SERVER_URL,
       sipServerUrl: WS_DOMAIN,
+      remoteAddress: '10.10.10.10',
+      iceServers: [],
     });
 
     expect(connectionManager.stateMachine.context.connectionConfiguration).toEqual(
@@ -52,6 +54,8 @@ describe('ConnectionStateMachine configuration (integration)', () => {
       register: true,
       sipServerIp: SIP_SERVER_URL,
       sipServerUrl: WS_DOMAIN,
+      remoteAddress: '10.10.10.10',
+      iceServers: [],
     });
 
     expect(connectionManager.getConnectionConfiguration()).toBeDefined();

@@ -80,6 +80,8 @@ export type {
   TConnectionConfiguration,
   TConnectionContextMap,
   TConnectionSnapshot,
+  TIceServer,
+  TServerConfiguration,
 } from './ConnectionManager';
 export type { TInboundStats, TOutboundStats } from './StatsPeerConnection';
 export type {

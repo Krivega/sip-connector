@@ -14,13 +14,19 @@ const sipConnector = new SipConnector(
 const facade = new SipConnectorFacade(sipConnector);
 
 // 2. Подключение
-await facade.connectToServer({
+const connectResult = await facade.connectToServer({
   sipServerUrl: 'example.com', // Путь /webrtc/wss/ добавляется автоматически
   sipServerIp: 'sip.example.com',
+  remoteAddress: '192.168.1.1',
+  iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
   user: 'user123',
   password: 'secret',
   register: true,
 });
+
+if (!connectResult.isSuccessful) {
+  throw new Error('Не удалось подключиться к серверу');
+}
 
 // 3. Подписка на изменения удаленных потоков
 const unsubscribeRemoteStreams = sipConnector.on('call:remote-streams-changed', (event) => {
@@ -87,28 +93,40 @@ const facade = new SipConnectorFacade(sipConnector);
 
 ```typescript
 // Подключение с объектом параметров
-await facade.connectToServer({
+const connectByObjectResult = await facade.connectToServer({
   userAgent: tools.getUserAgent({ appName: 'MyApp' }),
   sipServerUrl: 'sip.example.com', // WebSocket URL (путь /webrtc/wss/ добавляется автоматически)
   sipServerIp: 'sip.example.com', // SIP сервер IP
+  remoteAddress: '192.168.1.1',
+  iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
   user: '1001', // SIP URI user part
   password: 'secret',
   register: true, // Включить SIP REGISTER
 });
 
+if (!connectByObjectResult.isSuccessful) {
+  throw new Error('Подключение не выполнено');
+}
+
 // Или с функцией для динамического получения параметров
-await facade.connectToServer(async () => {
+const connectByResolverResult = await facade.connectToServer(async () => {
   // Получение актуальных параметров подключения
   const config = await fetchConnectionConfig();
   return {
     userAgent: tools.getUserAgent({ appName: 'MyApp' }),
     sipServerUrl: config.websocketUrl, // Без пути /webrtc/wss/ - он добавляется автоматически
     sipServerIp: config.sipServerIp,
+    remoteAddress: config.remoteAddress,
+    iceServers: config.iceServers,
     user: config.username,
     password: config.password,
     register: true,
   };
 });
+
+if (!connectByResolverResult.isSuccessful) {
+  throw new Error('Подключение не выполнено');
+}
 
 // Доступ к состоянию через ConnectionStateMachine (низкоуровневый компонент)
 const connectionStateMachine = sipConnector.connectionManager.stateMachine;

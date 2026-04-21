@@ -1,7 +1,7 @@
 import { tools } from '@/index';
 import resolveRequestSipServerIp from './resolveRequestSipServerIp';
 
-import type { TIceServer } from '../types';
+import type { TIceServer } from '@/index';
 
 export interface IParams {
   appVersion: number;

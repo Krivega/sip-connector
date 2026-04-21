@@ -11,6 +11,7 @@ import { NAME_INCORRECT, PASSWORD_CORRECT, PASSWORD_CORRECT_2 } from '@/__fixtur
 
 const baseDataForConnection = {
   remoteAddress: '10.10.10.10',
+  iceServers: [{ urls: [`stun:${SIP_SERVER_URL}:3478`] }],
   sipServerIp: SIP_SERVER_URL,
   sipServerUrl: SIP_WEB_SOCKET_SERVER_URL,
   userAgent: 'Chrome',

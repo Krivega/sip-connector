@@ -6,6 +6,8 @@ export const user = 'user';
 export const displayName = 'displayName';
 export const SIP_SERVER_URL = 'SIP_SERVER_URL';
 export const SIP_WEB_SOCKET_SERVER_URL = 'SIP_WEB_SOCKET_SERVER_URL';
+export const remoteAddress = '10.10.10.10';
+export const iceServers = [{ urls: [`stun:${SIP_SERVER_URL}:3478`] }];
 
 const socket = new JsSIP.WebSocketInterface(`wss://${SIP_WEB_SOCKET_SERVER_URL}/webrtc/wss/`);
 
@@ -14,6 +16,8 @@ const baseDataForConnection = {
   userAgent: 'Chrome',
   sipServerIp: SIP_SERVER_URL,
   sipServerUrl: SIP_WEB_SOCKET_SERVER_URL,
+  remoteAddress,
+  iceServers,
 };
 
 export const dataForConnectionWithoutAuthorizationWithoutDisplayName = {
@@ -72,7 +76,5 @@ export const uaConfigurationWithoutAuthorizationWithoutDisplayName = {
   display_name: 'DISPLAY_NAME',
   register: false,
 };
-
-export const remoteAddress = '10.10.10.10';
 
 export const extraHeadersRemoteAddress = [`X-Vinteo-Remote: ${remoteAddress}`];

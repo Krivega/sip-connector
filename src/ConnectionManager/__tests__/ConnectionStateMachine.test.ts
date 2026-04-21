@@ -17,6 +17,8 @@ describe('ConnectionStateMachine', () => {
   const baseConfiguration: TConnectionConfiguration = {
     sipServerIp: '192.168.0.1',
     sipServerUrl: 'sip.example.com',
+    remoteAddress: '10.10.10.10',
+    iceServers: [],
     displayName: 'Test User',
     authorizationUser: 'testuser',
     register: false,

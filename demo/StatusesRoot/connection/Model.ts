@@ -7,6 +7,7 @@ import type {
   TConnectionContextMap,
   TConnectionSnapshot as TSnapshot,
   TSessionSnapshot,
+  TIceServer,
 } from '@/index';
 
 type TSnapshotByState<TState extends EState> = TState extends EState
@@ -109,8 +110,24 @@ export const ConnectionStatusModel = types
         return self.connectionConfig?.user;
       },
 
+      get authorizationUser(): string | undefined {
+        return self.connectionConfig?.authorizationUser;
+      },
+
       get displayName(): string | undefined {
         return self.connectionConfig?.displayName;
+      },
+
+      get sipServerUrl(): string | undefined {
+        return self.connectionConfig?.sipServerUrl;
+      },
+
+      get iceServers(): TIceServer[] | undefined {
+        return self.connectionConfig?.iceServers;
+      },
+
+      get remoteAddress(): string | undefined {
+        return self.connectionConfig?.remoteAddress;
       },
     };
   });

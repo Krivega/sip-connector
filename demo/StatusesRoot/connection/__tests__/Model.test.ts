@@ -1,6 +1,8 @@
 import { EConnectionStatus } from '@/index';
 import { ConnectionStatusModel, INITIAL_CONNECTION_STATUS_SNAPSHOT } from '../Model';
 
+import type { TConnectionConfiguration } from '@/index';
+
 type TConnectionSnapshot = Parameters<typeof ConnectionStatusModel.create>[0];
 
 const createConnectionStatus = (
@@ -8,8 +10,6 @@ const createConnectionStatus = (
 ) => {
   return ConnectionStatusModel.create(snapshot);
 };
-
-type TConnectionConfiguration = ReturnType<typeof createConnectionStatus>['connectionConfig'];
 
 const getStateFlags = (status: ReturnType<typeof createConnectionStatus>) => {
   return {
@@ -30,7 +30,7 @@ type TStateCase = {
   title: string;
   snapshot: TConnectionSnapshot;
   expectedFlags: TStateFlags;
-  expectedConnectionConfiguration: TConnectionConfiguration;
+  expectedConnectionConfiguration: TConnectionConfiguration | undefined;
 };
 
 type TUserIdentityCase = {
@@ -44,6 +44,15 @@ type TUserAccessorsCase = {
   snapshot: TConnectionSnapshot;
   expectedUser: string | undefined;
   expectedDisplayName: string | undefined;
+};
+
+type TConnectionConfigAccessorsCase = {
+  title: string;
+  snapshot: TConnectionSnapshot;
+  expectedAuthorizationUser: string | undefined;
+  expectedSipServerUrl: string | undefined;
+  expectedIceServers: TConnectionConfiguration['iceServers'] | undefined;
+  expectedRemoteAddress: string | undefined;
 };
 
 const createExpectedFlags = (activeFlag: TStateFlagKey): TStateFlags => {
@@ -62,6 +71,8 @@ const createExpectedFlags = (activeFlag: TStateFlagKey): TStateFlags => {
 const connectionConfiguration = {
   sipServerIp: '127.0.0.1',
   sipServerUrl: 'wss://sip.example.com',
+  remoteAddress: '10.10.10.10',
+  iceServers: [],
   displayName: 'Test User',
   authorizationUser: '100',
   register: true,
@@ -74,7 +85,7 @@ const connectionConfigurationWithUser = {
 
 const createSnapshot = (
   state: EConnectionStatus,
-  configuration: TConnectionConfiguration,
+  configuration: TConnectionConfiguration | undefined,
 ): TConnectionSnapshot => {
   return {
     state,
@@ -172,6 +183,25 @@ const userAccessorsCases: TUserAccessorsCase[] = [
   },
 ];
 
+const connectionConfigAccessorsCases: TConnectionConfigAccessorsCase[] = [
+  {
+    title: 'returns values from full connection configuration',
+    snapshot: createSnapshot(EConnectionStatus.CONNECTED, connectionConfigurationWithUser),
+    expectedAuthorizationUser: connectionConfigurationWithUser.authorizationUser,
+    expectedSipServerUrl: connectionConfigurationWithUser.sipServerUrl,
+    expectedIceServers: connectionConfigurationWithUser.iceServers,
+    expectedRemoteAddress: connectionConfigurationWithUser.remoteAddress,
+  },
+  {
+    title: 'returns undefined accessors when configuration is missing',
+    snapshot: INITIAL_CONNECTION_STATUS_SNAPSHOT,
+    expectedAuthorizationUser: undefined,
+    expectedSipServerUrl: undefined,
+    expectedIceServers: undefined,
+    expectedRemoteAddress: undefined,
+  },
+];
+
 describe('ConnectionStatusModel', () => {
   it('maps initial snapshot to snapshot', () => {
     const status = createConnectionStatus();
@@ -204,4 +234,22 @@ describe('ConnectionStatusModel', () => {
     expect(status.user).toEqual(expectedUser);
     expect(status.displayName).toEqual(expectedDisplayName);
   });
+
+  it.each(connectionConfigAccessorsCases)(
+    '$title',
+    ({
+      snapshot,
+      expectedAuthorizationUser,
+      expectedSipServerUrl,
+      expectedIceServers,
+      expectedRemoteAddress,
+    }) => {
+      const status = createConnectionStatus(snapshot);
+
+      expect(status.authorizationUser).toEqual(expectedAuthorizationUser);
+      expect(status.sipServerUrl).toEqual(expectedSipServerUrl);
+      expect(status.iceServers).toEqual(expectedIceServers);
+      expect(status.remoteAddress).toEqual(expectedRemoteAddress);
+    },
+  );
 });

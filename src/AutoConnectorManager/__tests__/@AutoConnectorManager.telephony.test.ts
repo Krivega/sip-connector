@@ -24,6 +24,8 @@ describe('AutoConnectorManager - Telephony', () => {
     displayName: 'Test User',
     sipServerIp: 'sip://test.com',
     sipServerUrl: 'wss://test.com',
+    remoteAddress: '10.10.10.10',
+    iceServers: [],
     register: false,
   };
 

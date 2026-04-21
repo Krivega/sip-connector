@@ -1,4 +1,4 @@
-import type { TIceServer } from '../types';
+import type { TIceServer } from '@/index';
 
 const hasValidUrls = (urls?: unknown): boolean => {
   if (urls === undefined) {

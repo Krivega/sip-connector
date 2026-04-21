@@ -62,6 +62,8 @@ describe('SipConnectorFacade comprehensive', () => {
         userAgent: 'Chrome',
         sipServerUrl: 'wss://sip.example.com/ws',
         sipServerIp: 'sip.example.com',
+        remoteAddress: '10.10.10.10',
+        iceServers: [],
         user: 'testuser',
         password: 'testpass',
         register: true,
@@ -80,7 +82,8 @@ describe('SipConnectorFacade comprehensive', () => {
         password: 'testpass',
         user: 'testuser',
         register: true,
-        remoteAddress: undefined,
+        remoteAddress: '10.10.10.10',
+        iceServers: [],
       });
     });
 
@@ -95,6 +98,8 @@ describe('SipConnectorFacade comprehensive', () => {
           userAgent: 'Chrome',
           sipServerUrl: 'wss://sip.example.com/ws',
           sipServerIp: 'sip.example.com',
+          remoteAddress: '10.10.10.10',
+          iceServers: [],
         }),
       ).rejects.toThrow('Connection failed');
 
@@ -133,6 +138,8 @@ describe('SipConnectorFacade comprehensive', () => {
         userAgent: 'Chrome',
         sipServerUrl: 'wss://sip.example.com/ws',
         sipServerIp: 'sip.example.com',
+        remoteAddress: '10.10.10.10',
+        iceServers: [],
       });
 
       expect(result.isSuccessful).toBe(false);
@@ -170,6 +177,8 @@ describe('SipConnectorFacade comprehensive', () => {
         userAgent: 'Chrome',
         sipServerUrl: 'wss://sip.example.com/ws',
         sipServerIp: 'sip.example.com',
+        remoteAddress: '10.10.10.10',
+        iceServers: [],
       });
 
       expect(result.isSuccessful).toBe(false);

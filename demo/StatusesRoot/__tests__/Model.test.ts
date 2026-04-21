@@ -199,6 +199,8 @@ const transitionToEstablished = (connectionStateMachine: ConnectionStateMachine)
     configuration: {
       sipServerIp: '127.0.0.1',
       sipServerUrl: 'wss://sip.example.com',
+      remoteAddress: '10.10.10.10',
+      iceServers: [],
       displayName: 'Test User',
       authorizationUser: '100',
       register: false,
@@ -380,6 +382,8 @@ describe('StatusesStore', () => {
         configuration: {
           sipServerIp: '127.0.0.1',
           sipServerUrl: 'wss://sip.example.com',
+          remoteAddress: '10.10.10.10',
+          iceServers: [],
           displayName: 'Test User',
           authorizationUser: '100',
           register: true,

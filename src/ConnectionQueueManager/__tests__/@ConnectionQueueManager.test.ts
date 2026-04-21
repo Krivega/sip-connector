@@ -31,6 +31,8 @@ describe('ConnectionQueueManager', () => {
       displayName: 'Any Name',
       sipServerIp: 'test.com',
       sipServerUrl: 'wss://test.com',
+      remoteAddress: '10.10.10.10',
+      iceServers: [],
     };
 
     const getParameters = async () => {

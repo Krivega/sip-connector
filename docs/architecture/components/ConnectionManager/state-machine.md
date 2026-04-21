@@ -29,7 +29,7 @@
 
 | Инвариант                | Описание                                                                                                                                                 |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Поле контекста           | Контекст содержит `connectionConfiguration`.                                                                                                             |
+| Поле контекста           | Контекст содержит `connectionConfiguration: TConnectionConfiguration` (включая `remoteAddress` и `iceServers`).                                          |
 | Пустая конфигурация      | В `connection:idle`, `connection:preparing`, `connection:disconnected` значение `connectionConfiguration = undefined`.                                   |
 | Заполненная конфигурация | В `connection:connecting`, `connection:connected`, `connection:registered`, `connection:established`, `connection:disconnecting` конфигурация заполнена. |
 | Установка                | `START_UA` сохраняет конфигурацию через action `setConnectionConfiguration`.                                                                             |
@@ -85,6 +85,7 @@ stateDiagram-v2
 - `connected` также транзиентен, если guard `canAutoEstablish` истинный.
 - `reset()` валиден только из `established` и `disconnected`; иначе событие игнорируется.
 - В `disconnected` допустим `UA_CONNECTING` напрямую в `connecting` без нового `START_CONNECT`.
+- Все входящие события валидируются через `snapshot.can(event)`; недопустимые события логируются и игнорируются.
 
 ## Интеграция и события
 

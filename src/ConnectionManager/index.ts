@@ -7,8 +7,12 @@ export {
 export { hasNotReadyForConnectionError, createNotReadyForConnectionError } from './utils';
 export { EVENT_NAMES as CONNECTION_MANAGER_EVENT_NAMES, createEvents } from './events';
 
-export type { TParametersConnection } from './ConnectionFlow';
-export type { TConnectionConfiguration } from './types';
+export type {
+  TIceServer,
+  TServerConfiguration,
+  TParametersConnection,
+  TConnectionConfiguration,
+} from './types';
 export type {
   TEvents as TConnectionManagerEvents,
   TEventMap as TConnectionManagerEventMap,
