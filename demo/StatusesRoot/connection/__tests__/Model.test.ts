@@ -51,6 +51,7 @@ type TConnectionConfigAccessorsCase = {
   snapshot: TConnectionSnapshot;
   expectedAuthorizationUser: string | undefined;
   expectedSipServerUrl: string | undefined;
+  expectedSipServerIp: string | undefined;
   expectedIceServers: TConnectionConfiguration['iceServers'] | undefined;
   expectedRemoteAddress: string | undefined;
 };
@@ -189,6 +190,7 @@ const connectionConfigAccessorsCases: TConnectionConfigAccessorsCase[] = [
     snapshot: createSnapshot(EConnectionStatus.CONNECTED, connectionConfigurationWithUser),
     expectedAuthorizationUser: connectionConfigurationWithUser.authorizationUser,
     expectedSipServerUrl: connectionConfigurationWithUser.sipServerUrl,
+    expectedSipServerIp: connectionConfigurationWithUser.sipServerIp,
     expectedIceServers: connectionConfigurationWithUser.iceServers,
     expectedRemoteAddress: connectionConfigurationWithUser.remoteAddress,
   },
@@ -197,6 +199,7 @@ const connectionConfigAccessorsCases: TConnectionConfigAccessorsCase[] = [
     snapshot: INITIAL_CONNECTION_STATUS_SNAPSHOT,
     expectedAuthorizationUser: undefined,
     expectedSipServerUrl: undefined,
+    expectedSipServerIp: undefined,
     expectedIceServers: undefined,
     expectedRemoteAddress: undefined,
   },
@@ -241,6 +244,7 @@ describe('ConnectionStatusModel', () => {
       snapshot,
       expectedAuthorizationUser,
       expectedSipServerUrl,
+      expectedSipServerIp,
       expectedIceServers,
       expectedRemoteAddress,
     }) => {
@@ -248,6 +252,7 @@ describe('ConnectionStatusModel', () => {
 
       expect(status.authorizationUser).toEqual(expectedAuthorizationUser);
       expect(status.sipServerUrl).toEqual(expectedSipServerUrl);
+      expect(status.sipServerIp).toEqual(expectedSipServerIp);
       expect(status.iceServers).toEqual(expectedIceServers);
       expect(status.remoteAddress).toEqual(expectedRemoteAddress);
     },

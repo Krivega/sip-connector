@@ -122,6 +122,10 @@ export const ConnectionStatusModel = types
         return self.connectionConfig?.sipServerUrl;
       },
 
+      get sipServerIp(): string | undefined {
+        return self.connectionConfig?.sipServerIp;
+      },
+
       get iceServers(): TIceServer[] | undefined {
         return self.connectionConfig?.iceServers;
       },
