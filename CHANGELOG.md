@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [28.6.0](https://github.com/Krivega/sip-connector/compare/v28.5.0...v28.6.0) (2026-04-21)
+
+### Features
+
+- remove TIceServer type definition and update imports to use centralized index; enhance connection configuration with remoteAddress and iceServers properties ([40035dc](https://github.com/Krivega/sip-connector/commit/40035dc7fe480b93b12e36a45ea8c47850aa6221))
+- **statuses:** add displayName accessor to IncomingStatusModel and update related tests ([9398d80](https://github.com/Krivega/sip-connector/commit/9398d80a6f0fc68c4b65c7adad7c2064a7eb3882))
+- **statuses:** add user and displayName accessors to ConnectionStatusModel and incomingNumber accessor to IncomingStatusModel with corresponding tests ([10e2e94](https://github.com/Krivega/sip-connector/commit/10e2e941fdce2769f512c74dd84efa8bb39bab0e))
+- **statuses:** enhance state management in status models by introducing hasState utility function for cleaner state checks ([b145e9d](https://github.com/Krivega/sip-connector/commit/b145e9d532c385a7b740b627a21912b76005a1d2))
+
+### Bug Fixes
+
+- **statuses:** update subscription logic in Statuses tests to include unsubscribe functionality and improve expectation matching ([7ce21d4](https://github.com/Krivega/sip-connector/commit/7ce21d4c416b8eab1fb340d9e6cb397c98d86269))
+
 ## [28.5.0](https://github.com/Krivega/sip-connector/compare/v28.4.0...v28.5.0) (2026-04-18)
 
 ### Features
