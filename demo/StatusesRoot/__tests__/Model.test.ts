@@ -20,7 +20,6 @@ import {
   EPresentationStateMachineEvents,
   EPresentationStatus,
   ESystemStatus,
-  RTCSessionMock,
   SessionManager,
 } from '@/index';
 import { INITIAL_STATUSES_ROOT_SNAPSHOT, StatusesRootModel } from '../Model';
@@ -188,10 +187,6 @@ const withStartedSession = (testCase: (context: ReturnType<typeof startSession>)
   }
 };
 
-const createRtcSession = () => {
-  return new RTCSessionMock({ eventHandlers: {}, originator: 'remote' });
-};
-
 const transitionToEstablished = (connectionStateMachine: ConnectionStateMachine) => {
   connectionStateMachine.send({ type: EConnectionStateMachineEvents.START_CONNECT });
   connectionStateMachine.send({
@@ -327,7 +322,6 @@ describe('StatusesStore views', () => {
           incomingNumber: '77',
           displayName: 'View test',
           host: 'example.com',
-          rtcSession: createRtcSession(),
         },
       });
 
@@ -355,7 +349,6 @@ describe('StatusesStore', () => {
           incomingNumber: '100',
           displayName: 'Test caller',
           host: 'test.com',
-          rtcSession: createRtcSession(),
         },
       });
 
@@ -430,7 +423,6 @@ describe('StatusesStore', () => {
           incomingNumber: '42',
           displayName: 'Caller',
           host: 'host',
-          rtcSession: createRtcSession(),
         },
       });
 

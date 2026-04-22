@@ -220,7 +220,6 @@ describe('IncomingCallManager', () => {
         displayName: 'Test Caller',
         host: 'test.com',
         incomingNumber: 'testuser',
-        rtcSession: mockRTCSession,
       });
       expect(snapshot.context.lastReason).toBe(EIncomingStatus.CONSUMED);
     });

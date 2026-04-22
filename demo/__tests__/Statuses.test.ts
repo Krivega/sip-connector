@@ -1,4 +1,3 @@
-import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import {
   createAutoConnectorStateMachine,
   createCallEvents,
@@ -157,8 +156,6 @@ const startSession = () => {
 };
 
 describe('Statuses', () => {
-  const rtcSession = new RTCSessionMock({ eventHandlers: {}, originator: 'remote' });
-
   it('does not emit duplicated statuses when only snapshot context changes', () => {
     const { session, incomingStateMachine, stopAll } = startSession();
 
@@ -179,7 +176,6 @@ describe('Statuses', () => {
         incomingNumber: '100',
         displayName: 'Test caller',
         host: 'test.com',
-        rtcSession,
       },
     });
     expect(onStatusesChange).toHaveBeenCalledTimes(2);
@@ -201,7 +197,6 @@ describe('Statuses', () => {
         incomingNumber: '200',
         displayName: 'Another caller',
         host: 'test.com',
-        rtcSession,
       },
     });
 

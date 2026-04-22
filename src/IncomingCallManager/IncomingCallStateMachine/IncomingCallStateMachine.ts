@@ -108,23 +108,51 @@ export class IncomingCallStateMachine extends BaseStateMachine<
 
   private subscribeIncomingEvents(events: TIncomingEvents): void {
     this.addSubscription(
-      events.on('ringing', (data: TRemoteCallerData) => {
-        this.sendEvent({ type: EEvents.RINGING, data });
+      events.on('ringing', (data) => {
+        this.sendEvent({
+          type: EEvents.RINGING,
+          data: {
+            displayName: data.displayName,
+            host: data.host,
+            incomingNumber: data.incomingNumber,
+          },
+        });
       }),
     );
     this.addSubscription(
       events.on('declinedIncomingCall', (data: TRemoteCallerData) => {
-        this.sendEvent({ type: EEvents.DECLINED, data });
+        this.sendEvent({
+          type: EEvents.DECLINED,
+          data: {
+            displayName: data.displayName,
+            host: data.host,
+            incomingNumber: data.incomingNumber,
+          },
+        });
       }),
     );
     this.addSubscription(
       events.on('terminatedIncomingCall', (data: TRemoteCallerData) => {
-        this.sendEvent({ type: EEvents.TERMINATED, data });
+        this.sendEvent({
+          type: EEvents.TERMINATED,
+          data: {
+            displayName: data.displayName,
+            host: data.host,
+            incomingNumber: data.incomingNumber,
+          },
+        });
       }),
     );
     this.addSubscription(
       events.on('failedIncomingCall', (data: TRemoteCallerData) => {
-        this.sendEvent({ type: EEvents.FAILED, data });
+        this.sendEvent({
+          type: EEvents.FAILED,
+          data: {
+            displayName: data.displayName,
+            host: data.host,
+            incomingNumber: data.incomingNumber,
+          },
+        });
       }),
     );
   }

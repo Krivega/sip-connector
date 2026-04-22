@@ -27,14 +27,17 @@ export type TRemoteCallerData = {
   displayName: string;
   host: string;
   incomingNumber: string;
+};
+
+export type TRemoteCallerDataWithRTCSession = TRemoteCallerData & {
   rtcSession: RTCSession;
 };
 
 export type TEventMap = {
-  ringing: TRemoteCallerData;
-  declinedIncomingCall: TRemoteCallerData;
-  terminatedIncomingCall: TRemoteCallerData;
-  failedIncomingCall: TRemoteCallerData;
+  ringing: TRemoteCallerDataWithRTCSession;
+  declinedIncomingCall: TRemoteCallerDataWithRTCSession;
+  terminatedIncomingCall: TRemoteCallerDataWithRTCSession;
+  failedIncomingCall: TRemoteCallerDataWithRTCSession;
 };
 
 export type TEvents = TypedEvents<TEventMap>;

@@ -7,7 +7,11 @@ import { IncomingCallStateMachine, EIncomingStatus } from '../IncomingCallStateM
 
 import type { Socket } from '@krivega/jssip';
 import type { TConnectionManagerEvents } from '@/ConnectionManager';
-import type { TEvents as TIncomingEvents, TRemoteCallerData } from '../events';
+import type {
+  TEvents as TIncomingEvents,
+  TRemoteCallerData,
+  TRemoteCallerDataWithRTCSession,
+} from '../events';
 
 type TIncomingCallStateMachineForTests = Omit<IncomingCallStateMachine, 'send'> & {
   send: (event: { type: string; data?: TRemoteCallerData }) => void;
@@ -24,7 +28,7 @@ describe('IncomingCallStateMachine', () => {
   let connectionEvents: TConnectionManagerEvents;
   let machine: TIncomingCallStateMachineForTests;
 
-  const sampleCaller: TRemoteCallerData = {
+  const sampleCaller: TRemoteCallerDataWithRTCSession = {
     displayName: 'Test Caller',
     host: 'test.com',
     incomingNumber: '101',

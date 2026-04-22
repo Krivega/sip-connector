@@ -4,16 +4,16 @@
 
 ## События
 
-| Имя события                            | Описание                                      | Тип данных          |
-| -------------------------------------- | --------------------------------------------- | ------------------- |
-| `incoming-call:ringing`                | Генерируется при поступлении входящего звонка | `TRemoteCallerData` |
-| `incoming-call:declinedIncomingCall`   | Генерируется при отклонении входящего звонка  | `TRemoteCallerData` |
-| `incoming-call:terminatedIncomingCall` | Генерируется при завершении входящего звонка  | `TRemoteCallerData` |
-| `incoming-call:failedIncomingCall`     | Генерируется при ошибке входящего звонка      | `TRemoteCallerData` |
+| Имя события                            | Описание                                      | Тип данных                        |
+| -------------------------------------- | --------------------------------------------- | --------------------------------- |
+| `incoming-call:ringing`                | Генерируется при поступлении входящего звонка | `TRemoteCallerDataWithRTCSession` |
+| `incoming-call:declinedIncomingCall`   | Генерируется при отклонении входящего звонка  | `TRemoteCallerDataWithRTCSession` |
+| `incoming-call:terminatedIncomingCall` | Генерируется при завершении входящего звонка  | `TRemoteCallerDataWithRTCSession` |
+| `incoming-call:failedIncomingCall`     | Генерируется при ошибке входящего звонка      | `TRemoteCallerDataWithRTCSession` |
 
 ## Структуры данных
 
-### `TRemoteCallerData`
+### `TRemoteCallerDataWithRTCSession`
 
 ```typescript
 {

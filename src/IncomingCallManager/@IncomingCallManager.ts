@@ -5,12 +5,12 @@ import { IncomingCallStateMachine } from './IncomingCallStateMachine';
 
 import type { IncomingRTCSessionEvent, OutgoingRTCSessionEvent, RTCSession } from '@krivega/jssip';
 import type { ConnectionManager } from '@/ConnectionManager';
-import type { Originator, TEventMap, TRemoteCallerData } from './events';
+import type { Originator, TEventMap, TRemoteCallerDataWithRTCSession } from './events';
 
 const BUSY_HERE_STATUS_CODE = 486;
 const REQUEST_TERMINATED_STATUS_CODE = 487;
 
-const getRemoteCallerData = (incomingRTCSession: RTCSession): TRemoteCallerData => {
+const getRemoteCallerData = (incomingRTCSession: RTCSession): TRemoteCallerDataWithRTCSession => {
   return {
     displayName: incomingRTCSession.remote_identity.display_name,
     host: incomingRTCSession.remote_identity.uri.host,
