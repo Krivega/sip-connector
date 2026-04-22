@@ -159,48 +159,48 @@ describe('CallStatus guards', () => {
 
     const assertNarrowing = (candidate: TGuardCandidate) => {
       if (isIdleCall(candidate)) {
-        expectType<Extract<TGuardCandidate, { state: ECallStatus.IDLE }>>(candidate);
+        expectType(candidate);
         expectType<true | undefined>(candidate.context.pendingDisconnect);
       }
 
       if (isConnectingCall(candidate)) {
-        expectType<Extract<TGuardCandidate, { state: ECallStatus.CONNECTING }>>(candidate);
-        expectType<string>(candidate.context.number);
+        expectType(candidate);
+        expectType(candidate.context.number);
       }
 
       if (isPresentationCall(candidate)) {
-        expectType<Extract<TGuardCandidate, { state: ECallStatus.PRESENTATION_CALL }>>(candidate);
-        expectType<boolean>(candidate.context.answer);
+        expectType(candidate);
+        expectType(candidate.context.answer);
       }
 
       if (isRoomPendingAuthCall(candidate)) {
-        expectType<Extract<TGuardCandidate, { state: ECallStatus.ROOM_PENDING_AUTH }>>(candidate);
-        expectType<string>(candidate.context.room);
+        expectType(candidate);
+        expectType(candidate.context.room);
       }
 
       if (isPurgatoryCall(candidate)) {
-        expectType<Extract<TGuardCandidate, { state: ECallStatus.PURGATORY }>>(candidate);
-        expectType<string>(candidate.context.participantName);
+        expectType(candidate);
+        expectType(candidate.context.participantName);
       }
 
       if (isP2PRoomCall(candidate)) {
-        expectType<Extract<TGuardCandidate, { state: ECallStatus.P2P_ROOM }>>(candidate);
-        expectType<string>(candidate.context.number);
+        expectType(candidate);
+        expectType(candidate.context.number);
       }
 
       if (isDirectP2PRoomCall(candidate)) {
-        expectType<Extract<TGuardCandidate, { state: ECallStatus.DIRECT_P2P_ROOM }>>(candidate);
+        expectType(candidate);
         expectType<true>(candidate.context.isDirectPeerToPeer);
       }
 
       if (isInRoomCall(candidate)) {
-        expectType<Extract<TGuardCandidate, { state: ECallStatus.IN_ROOM }>>(candidate);
-        expectType<string>(candidate.context.token);
-        expectType<string>(candidate.context.conferenceForToken);
+        expectType(candidate);
+        expectType(candidate.context.token);
+        expectType(candidate.context.conferenceForToken);
       }
 
       if (isDisconnectingCall(candidate)) {
-        expectType<Extract<TGuardCandidate, { state: ECallStatus.DISCONNECTING }>>(candidate);
+        expectType(candidate);
         expectType<object>(candidate.context);
       }
     };

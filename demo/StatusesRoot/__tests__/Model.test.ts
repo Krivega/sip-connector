@@ -1,5 +1,4 @@
 import { getSnapshot } from 'mobx-state-tree';
-
 import {
   ConnectionStateMachine,
   createConnectionEvents,
@@ -199,11 +198,11 @@ const transitionToEstablished = (connectionStateMachine: ConnectionStateMachine)
     configuration: {
       sipServerIp: '127.0.0.1',
       sipServerUrl: 'wss://sip.example.com',
-      remoteAddress: '10.10.10.10',
-      iceServers: [],
       displayName: 'Test User',
       authorizationUser: '100',
       register: false,
+      remoteAddress: '127.0.0.1',
+      iceServers: [],
     },
   });
   connectionStateMachine.send({ type: EConnectionStateMachineEvents.UA_CONNECTED });
@@ -382,11 +381,11 @@ describe('StatusesStore', () => {
         configuration: {
           sipServerIp: '127.0.0.1',
           sipServerUrl: 'wss://sip.example.com',
-          remoteAddress: '10.10.10.10',
-          iceServers: [],
           displayName: 'Test User',
           authorizationUser: '100',
           register: true,
+          remoteAddress: '127.0.0.1',
+          iceServers: [],
         },
       });
 
@@ -401,6 +400,8 @@ describe('StatusesStore', () => {
             displayName: 'Test User',
             authorizationUser: '100',
             register: true,
+            remoteAddress: '127.0.0.1',
+            iceServers: [],
           },
         },
       });
