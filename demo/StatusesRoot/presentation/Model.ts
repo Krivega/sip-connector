@@ -50,21 +50,25 @@ export const PresentationStatusModel = types
     };
   })
   .views((self) => {
+    const hasState = (state: EState): boolean => {
+      return self.state === state;
+    };
+
     return {
       isIdle: (): boolean => {
-        return self.state === EState.IDLE;
+        return hasState(EState.IDLE);
       },
       isStarting: (): boolean => {
-        return self.state === EState.STARTING;
+        return hasState(EState.STARTING);
       },
       isActive: (): boolean => {
-        return self.state === EState.ACTIVE;
+        return hasState(EState.ACTIVE);
       },
       isStopping: (): boolean => {
-        return self.state === EState.STOPPING;
+        return hasState(EState.STOPPING);
       },
       isFailed: (): boolean => {
-        return self.state === EState.FAILED;
+        return hasState(EState.FAILED);
       },
     };
   })
