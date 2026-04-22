@@ -92,7 +92,6 @@ describe('IncomingCallManager', () => {
         displayName: 'John Doe',
         host: 'example.com',
         incomingNumber: 'johndoe',
-        rtcSession: session,
       });
     });
   });
@@ -220,8 +219,8 @@ describe('IncomingCallManager', () => {
         displayName: 'Test Caller',
         host: 'test.com',
         incomingNumber: 'testuser',
-        rtcSession: mockRTCSession,
       });
+      expect(snapshot.context.remoteCallerData).not.toHaveProperty('rtcSession');
       expect(snapshot.context.lastReason).toBe(EIncomingStatus.CONSUMED);
     });
   });
@@ -246,7 +245,6 @@ describe('IncomingCallManager', () => {
         displayName: 'Test Caller',
         host: 'test.com',
         incomingNumber: 'testuser',
-        rtcSession: mockRTCSession,
       });
       expect(incomingCallManager.isAvailableIncomingCall).toBe(false);
     });
@@ -307,7 +305,6 @@ describe('IncomingCallManager', () => {
         displayName: 'Test Caller',
         host: 'test.com',
         incomingNumber: 'testuser',
-        rtcSession: mockRTCSession,
       });
     });
 
@@ -358,7 +355,6 @@ describe('IncomingCallManager', () => {
         displayName: 'Test Caller',
         host: 'test.com',
         incomingNumber: 'testuser',
-        rtcSession: mockRTCSession,
       });
       expect(incomingCallManager.isAvailableIncomingCall).toBe(false);
     });
@@ -391,7 +387,6 @@ describe('IncomingCallManager', () => {
         displayName: 'Test Caller',
         host: 'test.com',
         incomingNumber: 'testuser',
-        rtcSession: mockRTCSession,
       });
       expect(incomingCallManager.isAvailableIncomingCall).toBe(false);
     });
@@ -559,7 +554,13 @@ describe('API событий IncomingCallManager', () => {
       session: mockRTCSession,
       request: {} as IncomingRequest,
     });
-    expect(handler).toHaveBeenCalledWith(expect.objectContaining({ rtcSession: mockRTCSession }));
+    expect(handler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        displayName: 'Test Caller',
+        host: 'test.com',
+        incomingNumber: 'testuser',
+      }),
+    );
     incomingCallManager.off('ringing', handler);
   });
 
@@ -611,6 +612,12 @@ describe('API событий IncomingCallManager', () => {
       session: mockRTCSession,
       request: {} as IncomingRequest,
     });
-    await expect(promise).resolves.toEqual(expect.objectContaining({ rtcSession: mockRTCSession }));
+    await expect(promise).resolves.toEqual(
+      expect.objectContaining({
+        displayName: 'Test Caller',
+        host: 'test.com',
+        incomingNumber: 'testuser',
+      }),
+    );
   });
 });

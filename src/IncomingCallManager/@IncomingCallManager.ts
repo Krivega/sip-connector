@@ -15,7 +15,6 @@ const getRemoteCallerData = (incomingRTCSession: RTCSession): TRemoteCallerData 
     displayName: incomingRTCSession.remote_identity.display_name,
     host: incomingRTCSession.remote_identity.uri.host,
     incomingNumber: incomingRTCSession.remote_identity.uri.user,
-    rtcSession: incomingRTCSession,
   };
 };
 

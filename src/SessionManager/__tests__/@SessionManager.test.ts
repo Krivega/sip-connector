@@ -1,4 +1,3 @@
-import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { createAutoConnectorStateMachine } from '@/AutoConnectorManager/AutoConnectorStateMachine';
 import {
   createEvents as createCallEvents,
@@ -141,8 +140,6 @@ const startSession = () => {
 };
 
 describe('SessionManager', () => {
-  const rtcSession = new RTCSessionMock({ eventHandlers: {}, originator: 'remote' });
-
   describe('session aggregation', () => {
     it('reads snapshots directly from manager actors', () => {
       const {
@@ -200,7 +197,7 @@ describe('SessionManager', () => {
 
       incomingStateMachine.send({
         type: EIncomingCallStateMachineEvents.RINGING,
-        data: { incomingNumber: '101', displayName: 'Test Caller', host: 'test.com', rtcSession },
+        data: { incomingNumber: '101', displayName: 'Test Caller', host: 'test.com' },
       });
       expect(sessionSelectors.selectIncomingStatus(session.getSnapshot())).toBe(
         EIncomingStatus.RINGING,
@@ -283,7 +280,7 @@ describe('SessionManager', () => {
       // Change incoming state
       incomingStateMachine.send({
         type: EIncomingCallStateMachineEvents.RINGING,
-        data: { incomingNumber: '101', displayName: 'Test Caller', host: 'test.com', rtcSession },
+        data: { incomingNumber: '101', displayName: 'Test Caller', host: 'test.com' },
       });
       expect(callback).toHaveBeenCalledTimes(3);
 
@@ -330,7 +327,6 @@ describe('SessionManager', () => {
         incomingNumber: '101',
         displayName: 'Test Caller',
         host: 'test.com',
-        rtcSession,
       };
 
       const unsubscribe = session.subscribe(callback);
@@ -528,7 +524,7 @@ describe('SessionManager', () => {
 
       incomingStateMachine.send({
         type: EIncomingCallStateMachineEvents.RINGING,
-        data: { incomingNumber: '101', displayName: 'Test Caller', host: 'test.com', rtcSession },
+        data: { incomingNumber: '101', displayName: 'Test Caller', host: 'test.com' },
       });
       expect(handler).toHaveBeenCalledTimes(1);
 
@@ -538,7 +534,6 @@ describe('SessionManager', () => {
           incomingNumber: '202',
           displayName: 'Another Caller',
           host: 'test.com',
-          rtcSession,
         },
       });
 

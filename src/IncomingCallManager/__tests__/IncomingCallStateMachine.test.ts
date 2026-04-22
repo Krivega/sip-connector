@@ -1,5 +1,4 @@
 import { createLoggerMockModule } from '@/__fixtures__/logger.mock';
-import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { createEvents as createConnectionEvents } from '@/ConnectionManager';
 import resolveDebug from '@/logger';
 import { createEvents as createIncomingEvents } from '../events';
@@ -28,7 +27,6 @@ describe('IncomingCallStateMachine', () => {
     displayName: 'Test Caller',
     host: 'test.com',
     incomingNumber: '101',
-    rtcSession: new RTCSessionMock({ eventHandlers: {}, originator: 'remote' }),
   };
 
   beforeEach(() => {
