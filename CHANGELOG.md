@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [28.7.0](https://github.com/Krivega/sip-connector/compare/v28.6.0...v28.7.0) (2026-04-22)
+
+### Features
+
+- **statuses:** add sipServerIp accessor to ConnectionStatusModel and update related tests ([ab52fb1](https://github.com/Krivega/sip-connector/commit/ab52fb132db0c947ac2349fdf3434d921d764613))
+
 ## [28.6.0](https://github.com/Krivega/sip-connector/compare/v28.5.0...v28.6.0) (2026-04-21)
 
 ### Features
