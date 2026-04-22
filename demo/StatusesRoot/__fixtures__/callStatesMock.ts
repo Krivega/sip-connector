@@ -1,4 +1,4 @@
-import { ECallStatus } from 'sip-connector';
+import { ECallStatus } from '@/index';
 
 export const idleCallState = {
   value: ECallStatus.IDLE,

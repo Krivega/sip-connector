@@ -72,4 +72,4 @@ export const INITIAL_SYSTEM_STATUS_SNAPSHOT = {
   state: EState.DISCONNECTED,
 } as SnapshotIn<typeof SystemStatusModel>;
 
-export { ESystemStatus } from 'sip-connector';
+export { ESystemStatus } from '@/index';
