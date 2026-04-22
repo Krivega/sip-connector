@@ -20,6 +20,5 @@
   displayName: string;
   host: string;
   incomingNumber: string;
-  rtcSession: RTCSession;
 }
 ```

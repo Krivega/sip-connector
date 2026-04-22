@@ -34,6 +34,10 @@
 | `ConnectionManager.events` подписки | Источник `newRTCSession`, `disconnected`, `registrationFailed`, `connect-failed`. |
 | Внутренний `incomingRTCSession`     | Текущая входящая SIP-сессия и источник `remoteCallerData`.                        |
 
+`RTCSession` хранится только во внутреннем runtime-поле `incomingRTCSession`.  
+В `remoteCallerData` и контекстах state machine передаются только сериализуемые данные звонящего
+(`displayName`, `host`, `incomingNumber`).
+
 ## Связанная state machine
 
 - [IncomingCallStateMachine](./state-machine.md)

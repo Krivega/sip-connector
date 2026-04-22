@@ -38,6 +38,9 @@ sipConnector.on('incoming-call:ringing', async (event) => {
 });
 ```
 
+`event` в `incoming-call:*` содержит только данные вызывающего
+(`displayName`, `host`, `incomingNumber`) без ссылки на `RTCSession`.
+
 ## Управление состоянием входящих звонков
 
 Доступ к состоянию через IncomingCallStateMachine:
