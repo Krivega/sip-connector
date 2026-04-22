@@ -3505,11 +3505,6 @@ eventemitter3@^5.0.1:
   resolved "https://registry.yarnpkg.com/eventemitter3/-/eventemitter3-5.0.4.tgz#a86d66170433712dde814707ac52b5271ceb1feb"
   integrity sha512-mlsTRyGaPBjPedk6Bvw+aqbsXDtoAyAzm5MO7JgU+yVRyMQ5O8bD4Kcci7BS85f93veegeCPkL8R4GLClnjLFw==
 
-events-constructor@^2.0.0:
-  version "2.2.1"
-  resolved "https://registry.yarnpkg.com/events-constructor/-/events-constructor-2.2.1.tgz#2a0d377b3aac57a202898cf795013d5a12532af1"
-  integrity sha512-pyitshHs1P+P3M1eVLIU1RLIh5cMasx3dTa28ZlNmGmwa/TjRImmva5UL/cY02wDiJAiAfXveNYgIinmmqiKPw==
-
 events-constructor@^2.3.1:
   version "2.3.1"
   resolved "https://registry.yarnpkg.com/events-constructor/-/events-constructor-2.3.1.tgz#788f563551e1d24b9f4c598ac2e522aa9e773dbb"
@@ -6752,10 +6747,10 @@ ts-api-utils@^2.5.0:
   resolved "https://registry.yarnpkg.com/ts-api-utils/-/ts-api-utils-2.5.0.tgz#4acd4a155e22734990a5ed1fe9e97f113bcb37c1"
   integrity sha512-OJ/ibxhPlqrMM0UiNHJ/0CKQkoKF243/AEmplt3qpRgkW8VG7IfOS41h7V8TjITqdByHzrjcS/2si+y4lIh8NA==
 
-ts-debounce@^5.0.0:
-  version "5.0.0"
-  resolved "https://registry.yarnpkg.com/ts-debounce/-/ts-debounce-5.0.0.tgz#ecb1547089a473042c0c80433ef167da89677aea"
-  integrity sha512-u0TCPC1koR5OcYC8hUC9ZisNlkxW87VejeoK+qX2in0grK1Dy0Fjlq9diNwHsFZwbFjM5lCTloRPPrs4TcPPug==
+ts-debounce@^5.0.1:
+  version "5.0.1"
+  resolved "https://registry.yarnpkg.com/ts-debounce/-/ts-debounce-5.0.1.tgz#4372a5ad727bdc2c807b8b11bbd4fb9594a8edec"
+  integrity sha512-HzwqxastMnaSKu96T8S+fRUorxSptTawIc9004Fs6R9MduRo5IqOE6jS2RfJCl4DVwJvxdcYEXg8g5zQCQR0Ow==
 
 ts-essentials@^9.4.1:
   version "9.4.2"
@@ -7105,20 +7100,20 @@ webidl-conversions@^7.0.0:
   resolved "https://registry.yarnpkg.com/webidl-conversions/-/webidl-conversions-7.0.0.tgz#256b4e1882be7debbf01d05f0aa2039778ea080a"
   integrity sha512-VwddBukDzu71offAQR975unBIGqfKZpM+8ZX6ySk8nYhVoo5CYaZyzt3YBvYtRtO+aoGlqxPg/B87NGVZ/fu6g==
 
-webrtc-adapter@^9.0.4:
-  version "9.0.4"
-  resolved "https://registry.yarnpkg.com/webrtc-adapter/-/webrtc-adapter-9.0.4.tgz#8456a5388e4947093611332e09337dedd28b1522"
-  integrity sha512-5ZZY1+lGq8LEKuDlg9M2RPJHlH3R7OVwyHqMcUsLKCgd9Wvf+QrFTCItkXXYPmrJn8H6gRLXbSgxLLdexiqHxw==
+webrtc-adapter@^9.0.5:
+  version "9.0.5"
+  resolved "https://registry.yarnpkg.com/webrtc-adapter/-/webrtc-adapter-9.0.5.tgz#fb036c3db06e1a0d86c264da649e130187783b3f"
+  integrity sha512-U9vjByy/sK2OMXu5mmfuZFKTMIUQe34c0JXRO+oDrxJTsntdYT2iIFwYMOV7HhMTuktcZLGf2W1N/OcSf9ssWg==
   dependencies:
     sdp "^3.2.0"
 
-webrtc-mock@^1.2.1:
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/webrtc-mock/-/webrtc-mock-1.2.1.tgz#302bc96e2ede54f65fe0b4bb367da4aa9ec4ca02"
-  integrity sha512-IRWMYVThqphixau8V8cp4OgoeJ+/8xwlZWmRM40iY+kSugtLketjOT/B55i0wBjvRpPotceTHt/HxSCmpMir8A==
+webrtc-mock@^1.2.2:
+  version "1.2.2"
+  resolved "https://registry.yarnpkg.com/webrtc-mock/-/webrtc-mock-1.2.2.tgz#3a18c92707501112910d036acc4e5aef6e1ce6f2"
+  integrity sha512-Gt71Heh8nn9gb4Nh+RY2l5JMpcWsMS9SVZxs6d8e1tWtZCoWc3SDNpVOpgYcv2I+XuLjKvhRs6VtbwUSVbY0NA==
   dependencies:
     "@types/dom-mediacapture-transform" "^0.1.11"
-    events-constructor "^2.0.0"
+    events-constructor "^2.3.1"
 
 whatwg-encoding@^2.0.0:
   version "2.0.0"

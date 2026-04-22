@@ -1,4 +1,5 @@
 import { getSnapshot } from 'mobx-state-tree';
+
 import {
   ConnectionStateMachine,
   createConnectionEvents,

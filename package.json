@@ -74,9 +74,9 @@
     "repeated-calls": "^2.4.0",
     "sequent-promises": "^2.0.1",
     "stack-promises": "^2.0.4",
-    "ts-debounce": "^5.0.0",
+    "ts-debounce": "^5.0.1",
     "ua-parser-js": "^2.0.9",
-    "webrtc-mock": "^1.2.1",
+    "webrtc-mock": "^1.2.2",
     "xstate": "^5.30.0"
   },
   "devDependencies": {
@@ -106,7 +106,7 @@
     "vite": "^7.3.1",
     "vite-plugin-dts": "^4.5.4",
     "vite-tsconfig-paths": "^6.1.1",
-    "webrtc-adapter": "^9.0.4"
+    "webrtc-adapter": "^9.0.5"
   },
   "peerDependencies": {
     "@krivega/cancelable-promise": "^1.1.4",
@@ -118,9 +118,9 @@
     "repeated-calls": "^2.4.0",
     "sequent-promises": "^2.0.1",
     "stack-promises": "^2.0.4",
-    "ts-debounce": "^5.0.0",
+    "ts-debounce": "^5.0.1",
     "ua-parser-js": "^2.0.9",
-    "webrtc-mock": "^1.2.1",
+    "webrtc-mock": "^1.2.2",
     "xstate": "^5.30.0"
   },
   "packageManager": "yarn@1.22.22"
