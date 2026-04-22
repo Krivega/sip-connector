@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [28.7.1](https://github.com/Krivega/sip-connector/compare/v28.7.0...v28.7.1) (2026-04-22)
+
+### Bug Fixes
+
+- **incoming-calls:** remove RTCSessionMock references from machine context ([89fd7dd](https://github.com/Krivega/sip-connector/commit/89fd7ddb38aa9f8639ced1dc4f6ee7b5af0fd74d))
+
 ## [28.7.0](https://github.com/Krivega/sip-connector/compare/v28.6.0...v28.7.0) (2026-04-22)
 
 ### Features
