@@ -14,7 +14,7 @@
 - Проверка доступности телефонии
 - Мониторинг состояния соединения
 - Управление событиями попыток подключения
-- Реакция на сетевые события клиента (online/offline/change): встроенный браузерный подписчик по умолчанию + опциональная подмена через `networkEventsSubscriber`
+- Реакция на сетевые события клиента (online/offline/change): встроенный браузерный подписчик по умолчанию + опциональная подмена через `networkEventsSubscriber`; политики `onNetworkChangePolicy` / `onNetworkOnlinePolicy` (`probe` по умолчанию — проверка SIP OPTIONS-пингом перед реконнектом)
 - Единая точка запросов на рестарт (`requestReconnect`) с причиной (`start`, `manual-restart`, `telephony-disconnected`, `telephony-check-failed`, `registration-failed-out-of-call`, `network-online`, `network-change`, ...)
 - Operational-правила coalescing и приоритеты причин: [рецепт автопереподключения](../../../recipes/auto-reconnection.md#приоритеты-причин-рестарта-coalescing)
 
@@ -37,7 +37,7 @@
 | `createMachineDeps.ts`                 | Адаптер между машиной и runtime, включая нормализацию terminal-ошибок.                                                                                     |
 | `ReconnectRequestCoalescer`            | Coalescing рестартов в коротком окне с приоритетами причин.                                                                                                |
 | `createBrowserNetworkEventsSubscriber` | Дефолтный браузерный адаптер (`online`/`offline`/`connection.change`) для `NetworkEventsReconnector`.                                                      |
-| `NetworkEventsReconnector`             | Мост между `INetworkEventsSubscriber` клиента и `requestReconnect`/`toStop`; grace-окно для offline.                                                       |
+| `NetworkEventsReconnector`             | Мост между `INetworkEventsSubscriber` клиента и `requestReconnect`/`toStop`; политики `probe`/`reconnect`/`ignore` + grace-окно для offline.               |
 | Telephony/Ping/Registration watchers   | `CheckTelephonyRequester`, `PingServerRequester` (периодический SIP OPTIONS в фоне, в том числе во время звонка), `RegistrationFailedOutOfCallSubscriber`. |
 
 ## Связанная state machine

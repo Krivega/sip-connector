@@ -3,6 +3,7 @@ import { EventEmitterProxy } from 'events-constructor';
 import resolveDebug from '@/logger';
 import { AutoConnectorRuntime } from './AutoConnectorRuntime';
 import { createAutoConnectorStateMachine } from './AutoConnectorStateMachine';
+import { EState } from './AutoConnectorStateMachine/types';
 import { createBrowserNetworkEventsSubscriber } from './createBrowserNetworkEventsSubscriber';
 import { createMachineDeps } from './createMachineDeps';
 import { createEvents } from './events';
@@ -35,6 +36,8 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
 
   private readonly runtime: AutoConnectorRuntime;
 
+  private readonly connectionManager: ConnectionManager;
+
   private readonly reconnectCoalescer = new ReconnectRequestCoalescer({
     coalesceWindowMs: RECONNECT_COALESCE_WINDOW_MS,
   });
@@ -54,6 +57,8 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
     options?: IAutoConnectorOptions,
   ) {
     super(createEvents());
+
+    this.connectionManager = connectionManager;
 
     this.runtime = new AutoConnectorRuntime({
       connectionManager,
@@ -112,6 +117,9 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
       this.networkEventsReconnector = new NetworkEventsReconnector({
         subscriber: networkEventsSubscriber,
         offlineGraceMs: options?.offlineGraceMs,
+        onChangePolicy: options?.onNetworkChangePolicy,
+        onOnlinePolicy: options?.onNetworkOnlinePolicy,
+        probe: this.probeServerReachability,
         requestReconnect: this.requestReconnect,
         stopConnection: () => {
           // Только прерываем текущее соединение; подписка на сетевые события остаётся
@@ -175,6 +183,62 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
     // на onOnline/onChange не зависеть от текущего состояния state machine.
     this.networkEventsReconnector?.setParameters(parameters);
     this.stateMachine.toRestart(parameters);
+  };
+
+  // Адаптивный probe под состояние машины. Возвращаемое значение трактуется
+  // вызывающей стороной единообразно: `true` — reconnect не нужен, `false` —
+  // нужен. Но смысл самой проверки отличается:
+  //
+  // * `connectedMonitoring`: дешёвый SIP OPTIONS (`ping`) по уже установленному
+  //    сокету. Успех → сокет жив (true). Неуспех → сокет мёртв (false).
+  //
+  // * `waitingBeforeRetry`: мы ждём `timeoutBetweenAttempts`. Проверяем
+  //    сервер через `checkTelephony` (временное подключение). Доступен →
+  //    ускоряем попытку (false = "нужен reconnect"); недоступен → не тратим
+  //    попытку впустую, ждём естественный retry (true).
+  //
+  // * В прочих состояниях probe бесполезен (попытка либо уже идёт, либо нет
+  //    параметров): возвращаем false, сохраняя прежнее поведение — пусть
+  //    сетевое событие триггернёт стандартный `requestReconnect`.
+  private readonly probeServerReachability = async (): Promise<boolean> => {
+    const { state } = this.stateMachine;
+
+    if (state === EState.CONNECTED_MONITORING) {
+      try {
+        await this.connectionManager.ping();
+
+        return true;
+      } catch (error) {
+        debug('probeServerReachability: ping failed', error);
+
+        return false;
+      }
+    }
+
+    if (state === EState.WAITING_BEFORE_RETRY) {
+      const { parameters } = this.stateMachine.context;
+
+      /* istanbul ignore next -- defensive: в WAITING_BEFORE_RETRY по типам `parameters` всегда определены */
+      if (!parameters) {
+        return false;
+      }
+
+      try {
+        const checkTelephonyParameters = await parameters.getParameters();
+
+        await this.connectionManager.checkTelephony(checkTelephonyParameters);
+
+        // Сервер отвечает — имеет смысл немедленно попытаться переподключиться.
+        return false;
+      } catch (error) {
+        debug('probeServerReachability: checkTelephony failed', error);
+
+        // Сервер недоступен — не расходуем попытку зря, пусть отработает штатный retry.
+        return true;
+      }
+    }
+
+    return false;
   };
 
   private shouldRequestReconnect(reason: TReconnectReason) {

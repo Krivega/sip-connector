@@ -74,7 +74,7 @@ stateDiagram-v2
 
 - Внутренние события: `AUTO.RESTART`, `AUTO.STOP`, `TELEPHONY.RESULT`.
 - Источники событий:
-  - `AUTO.RESTART` — из `requestReconnect(...)` (`start`, `restart`, runtime-триггеры, сетевые события `network-online`/`network-change` от `NetworkEventsReconnector`);
+  - `AUTO.RESTART` — из `requestReconnect(...)` (`start`, `restart`, runtime-триггеры, сетевые события `network-online`/`network-change` от `NetworkEventsReconnector`; в дефолтной политике `'probe'` сетевое событие приводит к рестарту только после неуспешного SIP OPTIONS-пинга, см. [recipes/auto-reconnection](../../../recipes/auto-reconnection.md#реакция-на-сетевые-события-браузера));
   - `AUTO.STOP` — из `stop()` (`stateMachine.toStop()`), а также из `NetworkEventsReconnector` по истечении offline grace-окна;
   - `TELEPHONY.RESULT(stillConnected)` — из runtime (`notifyTelephonyStillConnected()`).
 - Runtime делегирует в машину побочные сценарии (`stopConnectionFlow`, `connect`, `delayBetweenAttempts`, telephony-check policy), а публичные события эмитятся снаружи через `AutoConnectorRuntime`.

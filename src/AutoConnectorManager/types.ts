@@ -1,6 +1,12 @@
 import type { ConnectionManager, TParametersConnection } from '@/ConnectionManager';
 import type { ConnectionQueueManager } from '@/ConnectionQueueManager';
 
+// Стратегия обработки сетевого события (за исключением offline — у него свой таймаут).
+export type TNetworkEventPolicy = 'ignore' | 'probe' | 'reconnect';
+
+// Лёгкая проверка доступности сервера. true — сервер отвечает, reconnect не нужен.
+export type TNetworkProbe = () => Promise<boolean>;
+
 export interface IAutoConnectorOptions {
   checkTelephonyRequestInterval?: number;
   timeoutBetweenAttempts?: number;
@@ -10,6 +16,14 @@ export interface IAutoConnectorOptions {
   // Окно ожидания при offline, в течение которого короткий "мигающий" обрыв сети
   // не приводит к разрыву активного соединения.
   offlineGraceMs?: number;
+  // Как реагировать на смену характеристик сети (`navigator.connection.change`).
+  // 'probe' (по умолчанию) — проверить сервер ping-ом и reconnect только при неудаче.
+  // 'reconnect' — всегда безусловный reconnect.
+  // 'ignore' — не реагировать (положиться на PingServerRequester / JsSIP transport).
+  onNetworkChangePolicy?: TNetworkEventPolicy;
+  // Как реагировать на `window.online`. Дефолт — 'probe' по той же причине:
+  // событие online не гарантирует, что наш сервер достижим.
+  onNetworkOnlinePolicy?: TNetworkEventPolicy;
 }
 
 export type TNetworkEventsHandlers = {
