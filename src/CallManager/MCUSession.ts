@@ -234,6 +234,14 @@ export class MCUSession implements IMCUSession {
       });
   }
 
+  public readonly reset: () => void = () => {
+    delete this.rtcSession;
+    delete this.pcConfig;
+    this.unsubscribeFromSessionEvents();
+    this.bitrateStateManager.clearAll();
+    this.onReset();
+  };
+
   private readonly handleCall = async (): Promise<RTCPeerConnection> => {
     return new Promise((resolve, reject) => {
       const addStartedEventListeners = () => {
@@ -325,15 +333,5 @@ export class MCUSession implements IMCUSession {
     if (originator === 'remote') {
       this.events.trigger('ended:fromserver', event);
     }
-
-    this.reset();
-  };
-
-  private readonly reset: () => void = () => {
-    delete this.rtcSession;
-    delete this.pcConfig;
-    this.unsubscribeFromSessionEvents();
-    this.bitrateStateManager.clearAll();
-    this.onReset();
   };
 }

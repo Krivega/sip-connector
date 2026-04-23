@@ -189,7 +189,6 @@ describe('MCUSession', () => {
     // @ts-expect-error
     mcuSession.rtcSession = rtcSession as unknown as RTCSession;
 
-    // @ts-expect-error
     mcuSession.reset();
     // @ts-expect-error
     expect(mcuSession.rtcSession).toBeUndefined();
@@ -269,14 +268,12 @@ describe('MCUSession', () => {
     expect(mcuSession.getPcConfig()).toBeUndefined();
   });
 
-  it('handleEnded: триггерит ENDED_FROM_SERVER и вызывает reset', () => {
-    const spy = jest.spyOn(mcuSession as unknown as { reset: () => void }, 'reset');
+  it('handleEnded: триггерит ENDED_FROM_SERVER', () => {
     const trigger = jest.spyOn(events, 'trigger');
 
     // @ts-expect-error
     mcuSession.handleEnded({ originator: 'remote' });
     expect(trigger).toHaveBeenCalledWith('ended:fromserver', expect.anything());
-    expect(spy).toHaveBeenCalled();
   });
 });
 

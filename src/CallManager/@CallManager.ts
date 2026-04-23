@@ -164,6 +164,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
       },
     });
 
+    this.subscribeCallEndedStateMachine();
     this.subscribeCallStatusChange();
     this.subscribeMcuRemoteTrackEvents();
     this.subscribeContentedStreamEvents();
@@ -434,12 +435,20 @@ class CallManager extends EventEmitterProxy<TEventMap> {
 
   private readonly reset: () => void = () => {
     this.mainRemoteStreamsManager.reset();
-    this.roleManager.reset();
     this.recvRemoteStreamsManager.reset();
     this.stopRecvSession();
     this.deferredStartRecvSessionRunner.cancel();
     this.streamsChangeTracker.reset();
   };
+
+  private subscribeCallEndedStateMachine() {
+    this.stateMachine.onStateChange((state) => {
+      if (state === ECallStatus.IDLE) {
+        this.mcuSession.reset();
+        this.roleManager.reset();
+      }
+    });
+  }
 
   private subscribeCallStatusChange() {
     const onStatusChanged = this.createCallStatusChangeListener();

@@ -1336,14 +1336,50 @@ describe('CallManager', () => {
     );
   });
 
-  it('reset: очищает remoteStreamsManager', () => {
+  it('endCall: очищает remoteStreamsManager', async () => {
     const spy = jest.spyOn(RemoteStreamsManager.prototype, 'reset');
     const sessionResetSpy = jest.spyOn(callManager.sessionState, 'reset');
 
-    // @ts-expect-error
-    callManager.reset();
+    const ua = {
+      call: jest.fn(
+        (
+          _uri: string,
+          options: { eventHandlers: Record<string, (...args: unknown[]) => void> },
+        ) => {
+          const peerconnection = {
+            addEventListener: jest.fn(),
+            removeEventListener: jest.fn(),
+          } as unknown as RTCPeerConnection;
+
+          const rtcSession = {
+            connection: peerconnection,
+            isEnded: () => {
+              return false;
+            },
+            terminateAsync: jest.fn(async () => {}),
+          } as unknown as RTCSession;
+
+          // имитируем успешный старт звонка
+          options.eventHandlers.peerconnection({ peerconnection });
+          options.eventHandlers.confirmed({});
+
+          return rtcSession;
+        },
+      ),
+    } as unknown as Parameters<CallManager['startCall']>[0];
+    const getUri = jest.fn(() => {
+      return 'sip:100@domain.test';
+    }) as Parameters<CallManager['startCall']>[1];
+
+    await callManager.startCall(ua, getUri, {
+      number: '100',
+      mediaStream: new MediaStream(),
+    });
+
+    await callManager.endCall();
+
     expect(spy).toHaveBeenCalled();
-    expect(sessionResetSpy).toHaveBeenCalledTimes(1);
+    expect(sessionResetSpy).not.toHaveBeenCalled();
   });
 
   describe('deferred RecvSession command (race with conference:participant-token-issued)', () => {
