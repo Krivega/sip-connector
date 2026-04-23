@@ -4,13 +4,12 @@ import { ECallStatus as EState } from '@/index';
 import { getCallContextField } from './utils';
 
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
-import type { TCallContextMap, TCallSnapshot as TSnapshot, TSessionSnapshot } from '@/index';
+import type { TCallContextMap, TSessionSnapshot } from '@/index';
 
-type TSnapshotByState<TState extends EState> = TState extends EState
-  ? Extract<TSnapshot, { value: TState }> extends { context: infer TContext }
-    ? { state: TState; context: TContext }
-    : never
-  : never;
+export type TSnapshotByState<TState extends EState> = {
+  state: TState;
+  context: TCallContextMap[TState];
+};
 
 export type TCallStatusSnapshot = TSnapshotByState<EState>;
 

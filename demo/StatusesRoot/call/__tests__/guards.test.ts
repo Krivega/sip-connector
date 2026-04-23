@@ -1,4 +1,4 @@
-import { ECallStatus, type TCallContextMap } from '@/index';
+import { ECallStatus } from '@/index';
 import {
   isCallInState,
   isConnectingCall,
@@ -11,6 +11,8 @@ import {
   isPurgatoryCall,
   isRoomPendingAuthCall,
 } from '../guards';
+
+import type { TCallContextMap } from '@/index';
 
 const expectType = <T>(value: T): T => {
   return value;

@@ -3,18 +3,12 @@ import { types } from 'mobx-state-tree';
 import { EConnectionStatus as EState, sessionSelectors } from '@/index';
 
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
-import type {
-  TConnectionContextMap,
-  TConnectionSnapshot as TSnapshot,
-  TSessionSnapshot,
-  TIceServer,
-} from '@/index';
+import type { TConnectionContextMap, TSessionSnapshot, TIceServer } from '@/index';
 
-type TSnapshotByState<TState extends EState> = TState extends EState
-  ? Extract<TSnapshot, { value: TState }> extends { context: infer TContext }
-    ? { state: TState; context: TContext }
-    : never
-  : never;
+type TSnapshotByState<TState extends EState> = {
+  state: TState;
+  context: TConnectionContextMap[TState];
+};
 
 export type TConnectionStatusSnapshot = TSnapshotByState<EState>;
 

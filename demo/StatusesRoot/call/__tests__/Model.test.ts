@@ -1,7 +1,23 @@
-import { ECallStatus } from '@/index';
+import { ECallStatus, type TCallContextMap } from '@/index';
 import { CallStatusModel, INITIAL_CALL_STATUS_SNAPSHOT } from '../Model';
 
-type TCallSnapshot = Parameters<typeof CallStatusModel.create>[0];
+type TCallSnapshotByState<TState extends ECallStatus> = {
+  state: TState;
+  context: TCallContextMap[TState];
+};
+
+type TCallSnapshot = TCallSnapshotByState<ECallStatus>;
+
+const createSnapshot = <TState extends ECallStatus>(
+  state: TState,
+  context: TCallContextMap[TState],
+): TCallSnapshotByState<TState> => {
+  return { state, context };
+};
+
+const unsafeSnapshot = (snapshot: unknown): TCallSnapshot => {
+  return snapshot as TCallSnapshot;
+};
 
 const createCallStatus = (snapshot: TCallSnapshot = INITIAL_CALL_STATUS_SNAPSHOT) => {
   return CallStatusModel.create(snapshot);
@@ -70,110 +86,86 @@ const stateCases: TStateCase[] = [
   },
   {
     title: 'CONNECTING',
-    snapshot: {
-      state: ECallStatus.CONNECTING,
-      context: {
-        number: '100',
-        answer: false,
-        extraHeaders: ['X-Feature: a'],
-        isConfirmed: true,
-      },
-    } as TCallSnapshot,
+    snapshot: createSnapshot(ECallStatus.CONNECTING, {
+      number: '100',
+      answer: false,
+      extraHeaders: ['X-Feature: a'],
+      isConfirmed: true,
+    }),
     expectedFlags: createExpectedFlags('isConnecting'),
   },
   {
     title: 'PRESENTATION_CALL',
-    snapshot: {
-      state: ECallStatus.PRESENTATION_CALL,
-      context: {
-        number: '200',
-        answer: true,
-        startedTimestamp: MOCK_STARTED_AT,
-      },
-    } as TCallSnapshot,
+    snapshot: createSnapshot(ECallStatus.PRESENTATION_CALL, {
+      number: '200',
+      answer: true,
+      startedTimestamp: MOCK_STARTED_AT,
+    }),
     expectedFlags: createExpectedFlags('isPresentationCall'),
   },
   {
     title: 'ROOM_PENDING_AUTH',
-    snapshot: {
-      state: ECallStatus.ROOM_PENDING_AUTH,
-      context: {
-        number: '300',
-        answer: false,
-        room: 'room-300',
-        participantName: 'alice',
-        startedTimestamp: MOCK_STARTED_AT,
-      },
-    } as TCallSnapshot,
+    snapshot: createSnapshot(ECallStatus.ROOM_PENDING_AUTH, {
+      number: '300',
+      answer: false,
+      room: 'room-300',
+      participantName: 'alice',
+      startedTimestamp: MOCK_STARTED_AT,
+    }),
     expectedFlags: createExpectedFlags('isRoomPendingAuth'),
   },
   {
     title: 'PURGATORY',
-    snapshot: {
-      state: ECallStatus.PURGATORY,
-      context: {
-        number: '301',
-        answer: true,
-        room: 'room-301',
-        participantName: 'bob',
-        startedTimestamp: MOCK_STARTED_AT,
-      },
-    } as TCallSnapshot,
+    snapshot: createSnapshot(ECallStatus.PURGATORY, {
+      number: '301',
+      answer: true,
+      room: 'room-301',
+      participantName: 'bob',
+      startedTimestamp: MOCK_STARTED_AT,
+    }),
     expectedFlags: createExpectedFlags('isPurgatory'),
   },
   {
     title: 'P2P_ROOM',
-    snapshot: {
-      state: ECallStatus.P2P_ROOM,
-      context: {
-        number: '302',
-        answer: false,
-        room: 'room-302',
-        participantName: 'charlie',
-        startedTimestamp: MOCK_STARTED_AT,
-      },
-    } as TCallSnapshot,
+    snapshot: createSnapshot(ECallStatus.P2P_ROOM, {
+      number: '302',
+      answer: false,
+      room: 'room-302',
+      participantName: 'charlie',
+      startedTimestamp: MOCK_STARTED_AT,
+    }),
     expectedFlags: createExpectedFlags('isP2PRoom'),
   },
   {
     title: 'DIRECT_P2P_ROOM',
-    snapshot: {
-      state: ECallStatus.DIRECT_P2P_ROOM,
-      context: {
-        number: '303',
-        answer: false,
-        room: 'room-303',
-        participantName: 'diana',
-        isDirectPeerToPeer: true,
-        startedTimestamp: MOCK_STARTED_AT,
-      },
-    } as TCallSnapshot,
+    snapshot: createSnapshot(ECallStatus.DIRECT_P2P_ROOM, {
+      number: '303',
+      answer: false,
+      room: 'room-303',
+      participantName: 'diana',
+      isDirectPeerToPeer: true,
+      startedTimestamp: MOCK_STARTED_AT,
+    }),
     expectedFlags: createExpectedFlags('isDirectP2PRoom'),
   },
   {
     title: 'IN_ROOM',
-    snapshot: {
-      state: ECallStatus.IN_ROOM,
-      context: {
-        number: '300',
-        answer: true,
-        room: 'room-1',
-        participantName: 'alice',
-        startedTimestamp: MOCK_STARTED_AT,
-        token: 'jwt',
-        conferenceForToken: 'room-1',
-      },
-    } as TCallSnapshot,
+    snapshot: createSnapshot(ECallStatus.IN_ROOM, {
+      number: '300',
+      answer: true,
+      room: 'room-1',
+      participantName: 'alice',
+      startedTimestamp: MOCK_STARTED_AT,
+      token: 'jwt',
+      conferenceForToken: 'room-1',
+    }),
     expectedFlags: createExpectedFlags('isInRoom'),
   },
   {
     title: 'DISCONNECTING',
-    snapshot: {
-      state: ECallStatus.DISCONNECTING,
-      context: {
-        pendingDisconnect: true,
-      },
-    } as TCallSnapshot,
+    snapshot: createSnapshot(ECallStatus.DISCONNECTING, {
+      pendingDisconnect: true,
+    }),
     expectedFlags: createExpectedFlags('isDisconnecting'),
   },
 ];
@@ -197,36 +189,49 @@ describe('CallStatusModel', () => {
   it.each([
     {
       title: 'P2P_ROOM',
-      snapshot: {
-        state: ECallStatus.P2P_ROOM,
-        context: {},
-      } as TCallSnapshot,
+      snapshot: createSnapshot(ECallStatus.P2P_ROOM, {
+        number: '302',
+        answer: false,
+        room: 'room-302',
+        participantName: 'charlie',
+        startedTimestamp: MOCK_STARTED_AT,
+      }),
       expected: true,
     },
     {
       title: 'DIRECT_P2P_ROOM',
-      snapshot: {
-        state: ECallStatus.DIRECT_P2P_ROOM,
-        context: {
-          isDirectPeerToPeer: true,
-        },
-      } as TCallSnapshot,
+      snapshot: createSnapshot(ECallStatus.DIRECT_P2P_ROOM, {
+        number: '303',
+        answer: false,
+        room: 'room-303',
+        participantName: 'diana',
+        isDirectPeerToPeer: true,
+        startedTimestamp: MOCK_STARTED_AT,
+      }),
       expected: true,
     },
     {
       title: 'IN_ROOM',
-      snapshot: {
-        state: ECallStatus.IN_ROOM,
-        context: {},
-      } as TCallSnapshot,
+      snapshot: createSnapshot(ECallStatus.IN_ROOM, {
+        number: '300',
+        answer: true,
+        room: 'room-1',
+        participantName: 'alice',
+        startedTimestamp: MOCK_STARTED_AT,
+        token: 'jwt',
+        conferenceForToken: 'room-1',
+      }),
       expected: false,
     },
     {
       title: 'PURGATORY',
-      snapshot: {
-        state: ECallStatus.PURGATORY,
-        context: {},
-      } as TCallSnapshot,
+      snapshot: createSnapshot(ECallStatus.PURGATORY, {
+        number: '301',
+        answer: true,
+        room: 'room-301',
+        participantName: 'bob',
+        startedTimestamp: MOCK_STARTED_AT,
+      }),
       expected: false,
     },
     {
@@ -243,44 +248,39 @@ describe('CallStatusModel', () => {
   it.each([
     {
       title: 'PURGATORY uses number',
-      snapshot: {
-        state: ECallStatus.PURGATORY,
-        context: {
-          number: '301',
-          room: 'room-301',
-        },
-      } as TCallSnapshot,
+      snapshot: createSnapshot(ECallStatus.PURGATORY, {
+        number: '301',
+        answer: true,
+        room: 'room-301',
+        participantName: 'bob',
+        startedTimestamp: MOCK_STARTED_AT,
+      }),
       expected: '301',
     },
     {
-      title: 'PURGATORY without number returns undefined',
-      snapshot: {
-        state: ECallStatus.PURGATORY,
-        context: {
-          room: 'room-301',
-        },
-      } as TCallSnapshot,
+      title: 'IDLE returns undefined',
+      snapshot: INITIAL_CALL_STATUS_SNAPSHOT,
       expected: undefined,
     },
     {
       title: 'IN_ROOM uses room',
-      snapshot: {
-        state: ECallStatus.IN_ROOM,
-        context: {
-          number: '300',
-          room: 'room-1',
-        },
-      } as TCallSnapshot,
+      snapshot: createSnapshot(ECallStatus.IN_ROOM, {
+        number: '300',
+        answer: true,
+        room: 'room-1',
+        participantName: 'alice',
+        startedTimestamp: MOCK_STARTED_AT,
+        token: 'jwt',
+        conferenceForToken: 'room-1',
+      }),
       expected: 'room-1',
     },
     {
       title: 'CONNECTING without room returns undefined',
-      snapshot: {
-        state: ECallStatus.CONNECTING,
-        context: {
-          number: '100',
-        },
-      } as TCallSnapshot,
+      snapshot: createSnapshot(ECallStatus.CONNECTING, {
+        number: '100',
+        answer: false,
+      }),
       expected: undefined,
     },
   ])('returns $expected for roomOrTargetRoom when $title', ({ snapshot, expected }) => {
@@ -392,6 +392,46 @@ describe('CallStatusModel', () => {
       conferenceForToken: undefined,
       hasPendingDisconnect: true,
       startedTimestamp: undefined,
+    });
+  });
+
+  describe('runtime negative cases (unsafe cast)', () => {
+    it.each([
+      {
+        title: 'P2P_ROOM with empty context still treated as p2p',
+        snapshot: unsafeSnapshot({
+          state: ECallStatus.P2P_ROOM,
+          context: {},
+        }),
+        expected: true,
+      },
+      {
+        title: 'DIRECT_P2P_ROOM with partial context still treated as p2p',
+        snapshot: unsafeSnapshot({
+          state: ECallStatus.DIRECT_P2P_ROOM,
+          context: {
+            isDirectPeerToPeer: true,
+          },
+        }),
+        expected: true,
+      },
+    ])('returns $expected for isP2PCall when $title', ({ snapshot, expected }) => {
+      const status = createCallStatus(snapshot);
+
+      expect(status.isP2PCall()).toBe(expected);
+    });
+
+    it('returns undefined roomOrTargetRoom for invalid PURGATORY context', () => {
+      const status = createCallStatus(
+        unsafeSnapshot({
+          state: ECallStatus.PURGATORY,
+          context: {
+            room: 'room-invalid',
+          },
+        }),
+      );
+
+      expect(status.roomOrTargetRoom).toBeUndefined();
     });
   });
 });

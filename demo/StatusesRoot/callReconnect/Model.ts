@@ -3,22 +3,17 @@ import { types } from 'mobx-state-tree';
 import { ECallReconnectStatus as EState } from '@/index';
 
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
-import type {
-  TCallReconnectContextMap,
-  TCallReconnectSnapshot as TSnapshot,
-  TSessionSnapshot,
-} from '@/index';
+import type { TCallReconnectContextMap, TSessionSnapshot } from '@/index';
 
 /**
  * Snapshot модели — узкая выборка из снапшота XState-машины `CallReconnect`.
  * Храним `state` + `context` (в сыром виде через `types.frozen`), чтобы удобно
  * отрисовывать в UI и подписываться на изменения через MobX.
  */
-type TSnapshotByState<TS extends EState> = TS extends EState
-  ? Extract<TSnapshot, { value: TS }> extends { context: infer TContext }
-    ? { state: TS; context: TContext }
-    : never
-  : never;
+type TSnapshotByState<TState extends EState> = {
+  state: TState;
+  context: TCallReconnectContextMap[TState];
+};
 
 export type TCallReconnectStatusSnapshot = TSnapshotByState<EState>;
 

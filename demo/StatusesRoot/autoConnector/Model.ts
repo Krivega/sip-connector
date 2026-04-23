@@ -3,19 +3,14 @@ import { types } from 'mobx-state-tree';
 import { EAutoConnectorStatus as EState } from '@/index';
 
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
-import type {
-  TAutoConnectorContextMap,
-  TAutoConnectorSnapshot as TSnapshot,
-  TSessionSnapshot,
-} from '@/index';
+import type { TAutoConnectorContextMap, TSessionSnapshot } from '@/index';
 
 export type TAutoConnectorStopReason = 'halted' | 'cancelled' | 'failed';
 
-type TSnapshotByState<TState extends EState> = TState extends EState
-  ? Extract<TSnapshot, { value: TState }> extends { context: infer TContext }
-    ? { state: TState; context: TContext }
-    : never
-  : never;
+type TSnapshotByState<TState extends EState> = {
+  state: TState;
+  context: TAutoConnectorContextMap[TState];
+};
 
 export type TAutoConnectorStatusSnapshot = TSnapshotByState<EState>;
 

@@ -1,7 +1,23 @@
-import { EIncomingStatus } from '@/index';
+import { EIncomingStatus, type TIncomingContextMap } from '@/index';
 import { IncomingStatusModel, INITIAL_INCOMING_STATUS_SNAPSHOT } from '../Model';
 
-type TIncomingSnapshot = Parameters<typeof IncomingStatusModel.create>[0];
+type TIncomingSnapshotByState<TState extends EIncomingStatus> = {
+  state: TState;
+  context: TIncomingContextMap[TState];
+};
+
+type TIncomingSnapshot = TIncomingSnapshotByState<EIncomingStatus>;
+
+const createSnapshot = <TState extends EIncomingStatus>(
+  state: TState,
+  context: TIncomingContextMap[TState],
+): TIncomingSnapshotByState<TState> => {
+  return { state, context };
+};
+
+const unsafeSnapshot = (snapshot: unknown): TIncomingSnapshot => {
+  return snapshot as TIncomingSnapshot;
+};
 
 const createIncomingStatus = (snapshot: TIncomingSnapshot = INITIAL_INCOMING_STATUS_SNAPSHOT) => {
   return IncomingStatusModel.create(snapshot);
@@ -67,13 +83,10 @@ const stateCases: TStateCase[] = [
   },
   {
     title: 'RINGING',
-    snapshot: {
-      state: EIncomingStatus.RINGING,
-      context: {
-        remoteCallerData,
-        lastReason: undefined,
-      },
-    } as TIncomingSnapshot,
+    snapshot: createSnapshot(EIncomingStatus.RINGING, {
+      remoteCallerData,
+      lastReason: undefined,
+    }),
     expectedFlags: createExpectedFlags('isRinging'),
     expectedRemoteCallerData: remoteCallerData,
     expectedLastReason: undefined,
@@ -82,13 +95,10 @@ const stateCases: TStateCase[] = [
   },
   {
     title: 'CONSUMED',
-    snapshot: {
-      state: EIncomingStatus.CONSUMED,
-      context: {
-        remoteCallerData,
-        lastReason: EIncomingStatus.CONSUMED,
-      },
-    } as TIncomingSnapshot,
+    snapshot: createSnapshot(EIncomingStatus.CONSUMED, {
+      remoteCallerData,
+      lastReason: EIncomingStatus.CONSUMED,
+    }),
     expectedFlags: createExpectedFlags('isConsumed'),
     expectedRemoteCallerData: remoteCallerData,
     expectedLastReason: EIncomingStatus.CONSUMED,
@@ -97,13 +107,10 @@ const stateCases: TStateCase[] = [
   },
   {
     title: 'DECLINED',
-    snapshot: {
-      state: EIncomingStatus.DECLINED,
-      context: {
-        remoteCallerData,
-        lastReason: EIncomingStatus.DECLINED,
-      },
-    } as TIncomingSnapshot,
+    snapshot: createSnapshot(EIncomingStatus.DECLINED, {
+      remoteCallerData,
+      lastReason: EIncomingStatus.DECLINED,
+    }),
     expectedFlags: createExpectedFlags('isDeclined'),
     expectedRemoteCallerData: remoteCallerData,
     expectedLastReason: EIncomingStatus.DECLINED,
@@ -112,13 +119,10 @@ const stateCases: TStateCase[] = [
   },
   {
     title: 'TERMINATED',
-    snapshot: {
-      state: EIncomingStatus.TERMINATED,
-      context: {
-        remoteCallerData,
-        lastReason: EIncomingStatus.TERMINATED,
-      },
-    } as TIncomingSnapshot,
+    snapshot: createSnapshot(EIncomingStatus.TERMINATED, {
+      remoteCallerData,
+      lastReason: EIncomingStatus.TERMINATED,
+    }),
     expectedFlags: createExpectedFlags('isTerminated'),
     expectedRemoteCallerData: remoteCallerData,
     expectedLastReason: EIncomingStatus.TERMINATED,
@@ -127,13 +131,10 @@ const stateCases: TStateCase[] = [
   },
   {
     title: 'FAILED',
-    snapshot: {
-      state: EIncomingStatus.FAILED,
-      context: {
-        remoteCallerData,
-        lastReason: EIncomingStatus.FAILED,
-      },
-    } as TIncomingSnapshot,
+    snapshot: createSnapshot(EIncomingStatus.FAILED, {
+      remoteCallerData,
+      lastReason: EIncomingStatus.FAILED,
+    }),
     expectedFlags: createExpectedFlags('isFailed'),
     expectedRemoteCallerData: remoteCallerData,
     expectedLastReason: EIncomingStatus.FAILED,
@@ -172,16 +173,28 @@ describe('IncomingStatusModel', () => {
     },
   );
 
-  it('returns undefined incomingNumber when context has no remoteCallerData', () => {
-    const status = createIncomingStatus({
-      state: EIncomingStatus.RINGING,
-      context: {
-        lastReason: undefined,
-      },
-    } as TIncomingSnapshot);
+  it('returns undefined incomingNumber in IDLE state', () => {
+    const status = createIncomingStatus(INITIAL_INCOMING_STATUS_SNAPSHOT);
 
     expect(status.remoteCallerData).toBeUndefined();
     expect(status.incomingNumber).toBeUndefined();
     expect(status.displayName).toBeUndefined();
+  });
+
+  describe('runtime negative cases (unsafe cast)', () => {
+    it('returns undefined incomingNumber when RINGING has no remoteCallerData', () => {
+      const status = createIncomingStatus(
+        unsafeSnapshot({
+          state: EIncomingStatus.RINGING,
+          context: {
+            lastReason: undefined,
+          },
+        }),
+      );
+
+      expect(status.remoteCallerData).toBeUndefined();
+      expect(status.incomingNumber).toBeUndefined();
+      expect(status.displayName).toBeUndefined();
+    });
   });
 });

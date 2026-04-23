@@ -1,7 +1,23 @@
-import { EPresentationStatus } from '@/index';
+import { EPresentationStatus, type TPresentationContextMap } from '@/index';
 import { INITIAL_PRESENTATION_STATUS_SNAPSHOT, PresentationStatusModel } from '../Model';
 
-type TPresentationSnapshot = Parameters<typeof PresentationStatusModel.create>[0];
+type TPresentationSnapshotByState<TState extends EPresentationStatus> = {
+  state: TState;
+  context: TPresentationContextMap[TState];
+};
+
+type TPresentationSnapshot = TPresentationSnapshotByState<EPresentationStatus>;
+
+const createSnapshot = <TState extends EPresentationStatus>(
+  state: TState,
+  context: TPresentationContextMap[TState],
+): TPresentationSnapshotByState<TState> => {
+  return { state, context };
+};
+
+const unsafeSnapshot = (snapshot: unknown): TPresentationSnapshot => {
+  return snapshot as TPresentationSnapshot;
+};
 
 const createPresentationStatus = (
   snapshot: TPresentationSnapshot = INITIAL_PRESENTATION_STATUS_SNAPSHOT,
@@ -47,37 +63,27 @@ const stateCases: TStateCase[] = [
   },
   {
     title: 'STARTING',
-    snapshot: {
-      state: EPresentationStatus.STARTING,
-      context: { lastError: undefined },
-    } as TPresentationSnapshot,
+    snapshot: createSnapshot(EPresentationStatus.STARTING, { lastError: undefined }),
     expectedFlags: createExpectedFlags('isStarting'),
     expectedLastError: undefined,
   },
   {
     title: 'ACTIVE',
-    snapshot: {
-      state: EPresentationStatus.ACTIVE,
-      context: { lastError: undefined },
-    } as TPresentationSnapshot,
+    snapshot: createSnapshot(EPresentationStatus.ACTIVE, { lastError: undefined }),
     expectedFlags: createExpectedFlags('isActive'),
     expectedLastError: undefined,
   },
   {
     title: 'STOPPING',
-    snapshot: {
-      state: EPresentationStatus.STOPPING,
-      context: { lastError: undefined },
-    } as TPresentationSnapshot,
+    snapshot: createSnapshot(EPresentationStatus.STOPPING, { lastError: undefined }),
     expectedFlags: createExpectedFlags('isStopping'),
     expectedLastError: undefined,
   },
   {
     title: 'FAILED',
-    snapshot: {
-      state: EPresentationStatus.FAILED,
-      context: { lastError: new Error('screen failed') },
-    } as TPresentationSnapshot,
+    snapshot: createSnapshot(EPresentationStatus.FAILED, {
+      lastError: new Error('screen failed'),
+    }),
     expectedFlags: createExpectedFlags('isFailed'),
     expectedLastError: new Error('screen failed'),
   },
@@ -112,4 +118,18 @@ describe('PresentationStatusModel', () => {
       expect(instance.lastError).toBeUndefined();
     },
   );
+
+  describe('runtime negative cases (unsafe cast)', () => {
+    it('keeps failed flag when FAILED has non-Error lastError', () => {
+      const instance = createPresentationStatus(
+        unsafeSnapshot({
+          state: EPresentationStatus.FAILED,
+          context: { lastError: 'boom' },
+        }),
+      );
+
+      expect(instance.isFailed()).toBe(true);
+      expect(instance.lastError).toBe('boom');
+    });
+  });
 });

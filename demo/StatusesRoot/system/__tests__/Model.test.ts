@@ -1,7 +1,21 @@
 import { ESystemStatus } from '@/index';
 import { INITIAL_SYSTEM_STATUS_SNAPSHOT, SystemStatusModel } from '../Model';
 
-type TSystemSnapshot = Parameters<typeof SystemStatusModel.create>[0];
+type TSystemSnapshotByState<TState extends ESystemStatus> = {
+  state: TState;
+};
+
+type TSystemSnapshot = TSystemSnapshotByState<ESystemStatus>;
+
+const createSnapshot = <TState extends ESystemStatus>(
+  state: TState,
+): TSystemSnapshotByState<TState> => {
+  return { state };
+};
+
+const unsafeSnapshot = (snapshot: unknown): TSystemSnapshot => {
+  return snapshot as TSystemSnapshot;
+};
 
 const createSystemStatus = (snapshot: TSystemSnapshot = INITIAL_SYSTEM_STATUS_SNAPSHOT) => {
   return SystemStatusModel.create(snapshot);
@@ -47,44 +61,32 @@ const stateCases: TStateCase[] = [
   },
   {
     title: 'DISCONNECTING',
-    snapshot: {
-      state: ESystemStatus.DISCONNECTING,
-    } as TSystemSnapshot,
+    snapshot: createSnapshot(ESystemStatus.DISCONNECTING),
     expectedFlags: createExpectedFlags('isDisconnecting'),
   },
   {
     title: 'CONNECTING',
-    snapshot: {
-      state: ESystemStatus.CONNECTING,
-    } as TSystemSnapshot,
+    snapshot: createSnapshot(ESystemStatus.CONNECTING),
     expectedFlags: createExpectedFlags('isConnecting'),
   },
   {
     title: 'READY_TO_CALL',
-    snapshot: {
-      state: ESystemStatus.READY_TO_CALL,
-    } as TSystemSnapshot,
+    snapshot: createSnapshot(ESystemStatus.READY_TO_CALL),
     expectedFlags: createExpectedFlags('isReadyToCall'),
   },
   {
     title: 'CALL_CONNECTING',
-    snapshot: {
-      state: ESystemStatus.CALL_CONNECTING,
-    } as TSystemSnapshot,
+    snapshot: createSnapshot(ESystemStatus.CALL_CONNECTING),
     expectedFlags: createExpectedFlags('isCallConnecting'),
   },
   {
     title: 'CALL_DISCONNECTING',
-    snapshot: {
-      state: ESystemStatus.CALL_DISCONNECTING,
-    } as TSystemSnapshot,
+    snapshot: createSnapshot(ESystemStatus.CALL_DISCONNECTING),
     expectedFlags: createExpectedFlags('isCallDisconnecting'),
   },
   {
     title: 'CALL_ACTIVE',
-    snapshot: {
-      state: ESystemStatus.CALL_ACTIVE,
-    } as TSystemSnapshot,
+    snapshot: createSnapshot(ESystemStatus.CALL_ACTIVE),
     expectedFlags: createExpectedFlags('isCallActive'),
   },
 ];
@@ -102,5 +104,13 @@ describe('SystemStatusModel', () => {
     const status = createSystemStatus(snapshot);
 
     expect(getStateFlags(status)).toEqual(expectedFlags);
+  });
+
+  describe('runtime negative cases (unsafe cast)', () => {
+    it('throws on unknown state value', () => {
+      expect(() => {
+        createSystemStatus(unsafeSnapshot({ state: 'broken-state' }));
+      }).toThrow();
+    });
   });
 });

@@ -1,7 +1,33 @@
-import { EAutoConnectorStatus } from '@/index';
+import {
+  EAutoConnectorStatus,
+  type TAutoConnectorContextMap,
+  type TParametersAutoConnect,
+} from '@/index';
 import { AutoConnectorStatusModel, INITIAL_AUTO_CONNECTOR_STATUS_SNAPSHOT } from '../Model';
 
-type TAutoConnectorSnapshot = Parameters<typeof AutoConnectorStatusModel.create>[0];
+type TAutoConnectorSnapshotByState<TState extends EAutoConnectorStatus> = {
+  state: TState;
+  context: TAutoConnectorContextMap[TState];
+};
+
+type TAutoConnectorSnapshot = TAutoConnectorSnapshotByState<EAutoConnectorStatus>;
+
+const createSnapshot = <TState extends EAutoConnectorStatus>(
+  state: TState,
+  context: TAutoConnectorContextMap[TState],
+): TAutoConnectorSnapshotByState<TState> => {
+  return { state, context };
+};
+
+const unsafeSnapshot = (snapshot: unknown): TAutoConnectorSnapshot => {
+  return snapshot as TAutoConnectorSnapshot;
+};
+
+const autoConnectParameters: TParametersAutoConnect = {
+  getParameters: async () => {
+    return {} as never;
+  },
+};
 
 const createAutoConnectorStatus = (
   snapshot: TAutoConnectorSnapshot = INITIAL_AUTO_CONNECTOR_STATUS_SNAPSHOT,
@@ -46,74 +72,82 @@ const createExpectedFlags = (activeFlag: TStateFlagKey): TStateFlags => {
 const stateCases: TStateCase[] = [
   {
     title: 'IDLE',
-    snapshot: {
-      state: EAutoConnectorStatus.IDLE,
-      context: {
-        stopReason: 'halted',
-      },
-    } as TAutoConnectorSnapshot,
+    snapshot: createSnapshot(EAutoConnectorStatus.IDLE, {
+      afterDisconnect: 'idle',
+      parameters: undefined,
+      stopReason: undefined,
+      lastError: undefined,
+    }),
     expectedFlags: createExpectedFlags('isIdle'),
   },
   {
     title: 'DISCONNECTING',
-    snapshot: {
-      state: EAutoConnectorStatus.DISCONNECTING,
-      context: {
-        afterDisconnect: 'attempt',
-        stopReason: 'cancelled',
-      },
-    } as TAutoConnectorSnapshot,
+    snapshot: createSnapshot(EAutoConnectorStatus.DISCONNECTING, {
+      afterDisconnect: 'attempt',
+      parameters: undefined,
+      stopReason: undefined,
+      lastError: undefined,
+    }),
     expectedFlags: createExpectedFlags('isDisconnecting'),
   },
   {
     title: 'ATTEMPTING_GATE',
-    snapshot: {
-      state: EAutoConnectorStatus.ATTEMPTING_GATE,
-      context: {},
-    } as TAutoConnectorSnapshot,
+    snapshot: createSnapshot(EAutoConnectorStatus.ATTEMPTING_GATE, {
+      afterDisconnect: 'attempt',
+      parameters: autoConnectParameters,
+      stopReason: undefined,
+      lastError: undefined,
+    }),
     expectedFlags: createExpectedFlags('isAttemptingGate'),
   },
   {
     title: 'ATTEMPTING_CONNECT',
-    snapshot: {
-      state: EAutoConnectorStatus.ATTEMPTING_CONNECT,
-      context: {},
-    } as TAutoConnectorSnapshot,
+    snapshot: createSnapshot(EAutoConnectorStatus.ATTEMPTING_CONNECT, {
+      afterDisconnect: 'attempt',
+      parameters: autoConnectParameters,
+      stopReason: undefined,
+      lastError: undefined,
+    }),
     expectedFlags: createExpectedFlags('isAttemptingConnect'),
   },
   {
     title: 'WAITING_BEFORE_RETRY',
-    snapshot: {
-      state: EAutoConnectorStatus.WAITING_BEFORE_RETRY,
-      context: {},
-    } as TAutoConnectorSnapshot,
+    snapshot: createSnapshot(EAutoConnectorStatus.WAITING_BEFORE_RETRY, {
+      afterDisconnect: 'attempt',
+      parameters: autoConnectParameters,
+      stopReason: undefined,
+      lastError: undefined,
+    }),
     expectedFlags: createExpectedFlags('isWaitingBeforeRetry'),
   },
   {
     title: 'CONNECTED_MONITORING',
-    snapshot: {
-      state: EAutoConnectorStatus.CONNECTED_MONITORING,
-      context: {},
-    } as TAutoConnectorSnapshot,
+    snapshot: createSnapshot(EAutoConnectorStatus.CONNECTED_MONITORING, {
+      afterDisconnect: 'attempt',
+      parameters: autoConnectParameters,
+      stopReason: undefined,
+      lastError: undefined,
+    }),
     expectedFlags: createExpectedFlags('isConnectedMonitoring'),
   },
   {
     title: 'TELEPHONY_CHECKING',
-    snapshot: {
-      state: EAutoConnectorStatus.TELEPHONY_CHECKING,
-      context: {},
-    } as TAutoConnectorSnapshot,
+    snapshot: createSnapshot(EAutoConnectorStatus.TELEPHONY_CHECKING, {
+      afterDisconnect: 'attempt',
+      parameters: autoConnectParameters,
+      stopReason: undefined,
+      lastError: undefined,
+    }),
     expectedFlags: createExpectedFlags('isTelephonyChecking'),
   },
   {
     title: 'ERROR_TERMINAL',
-    snapshot: {
-      state: EAutoConnectorStatus.ERROR_TERMINAL,
-      context: {
-        stopReason: 'failed',
-        lastError: new Error('auto connector failed'),
-      },
-    } as TAutoConnectorSnapshot,
+    snapshot: createSnapshot(EAutoConnectorStatus.ERROR_TERMINAL, {
+      afterDisconnect: 'attempt',
+      parameters: autoConnectParameters,
+      stopReason: 'failed',
+      lastError: new Error('auto connector failed'),
+    }),
     expectedFlags: createExpectedFlags('isErrorTerminal'),
   },
 ];
@@ -144,5 +178,19 @@ describe('AutoConnectorStatusModel', () => {
     const activeFlagsCount = Object.values(flags).filter(Boolean).length;
 
     expect(activeFlagsCount).toBe(1);
+  });
+
+  describe('runtime negative cases (unsafe cast)', () => {
+    it('keeps state flag behavior for incomplete context', () => {
+      const instance = createAutoConnectorStatus(
+        unsafeSnapshot({
+          state: EAutoConnectorStatus.ATTEMPTING_CONNECT,
+          context: {},
+        }),
+      );
+
+      expect(instance.isAttemptingConnect()).toBe(true);
+      expect(instance.isIdle()).toBe(false);
+    });
   });
 });

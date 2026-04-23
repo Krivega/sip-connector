@@ -5,7 +5,11 @@ import { ESystemStatus as EState, sessionSelectors } from '@/index';
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
 import type { TSessionSnapshot } from '@/index';
 
-export type TSystemStatusSnapshot = { state: EState };
+type TSnapshotByState<TState extends EState> = {
+  state: TState;
+};
+
+export type TSystemStatusSnapshot = TSnapshotByState<EState>;
 
 export const SystemStatusModel = types
   .model({
@@ -22,7 +26,7 @@ export const SystemStatusModel = types
   .views((self) => {
     return {
       get snapshot(): TSystemStatusSnapshot {
-        return { state: self.state } as TSystemStatusSnapshot;
+        return { state: self.state };
       },
     };
   })
@@ -58,12 +62,12 @@ export const SystemStatusModel = types
 
 export const createSystemStatusSnapshotFromSession = (
   snapshot: TSessionSnapshot,
-): SnapshotIn<typeof SystemStatusModel> => {
+): TSnapshotByState<EState> => {
   const state = sessionSelectors.selectSystemStatus(snapshot);
 
   return {
     state,
-  } as SnapshotIn<typeof SystemStatusModel>;
+  };
 };
 
 export type TSystemStatusInstance = Instance<typeof SystemStatusModel>;

@@ -3,17 +3,12 @@ import { types } from 'mobx-state-tree';
 import { EPresentationStatus as EState, sessionSelectors } from '@/index';
 
 import type { Instance, SnapshotIn } from 'mobx-state-tree';
-import type {
-  TSessionSnapshot,
-  TPresentationContextMap,
-  TPresentationSnapshot as TSnapshot,
-} from '@/index';
+import type { TSessionSnapshot, TPresentationContextMap } from '@/index';
 
-type TSnapshotByState<TState extends EState> = TState extends EState
-  ? Extract<TSnapshot, { value: TState }> extends { context: infer TContext }
-    ? { state: TState; context: TContext }
-    : never
-  : never;
+type TSnapshotByState<TState extends EState> = {
+  state: TState;
+  context: TPresentationContextMap[TState];
+};
 
 export type TPresentationStatusSnapshot = TSnapshotByState<EState>;
 
