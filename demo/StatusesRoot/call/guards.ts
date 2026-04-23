@@ -1,58 +1,66 @@
 import { ECallStatus } from '@/index';
 
+import type { TCallContextMap } from '@/index';
+
 type THasCallState = {
   state: ECallStatus;
+  context: unknown;
 };
 
-export const isCallInState = <T extends THasCallState, S extends ECallStatus>(
-  call: T,
-  state: S,
-): call is Extract<T, { state: S }> => {
+type TCallSnapshotByState<TState extends ECallStatus> = {
+  state: TState;
+  context: TCallContextMap[TState];
+};
+
+export const isCallInState = <TCall extends THasCallState, TState extends ECallStatus>(
+  call: TCall,
+  state: TState,
+): call is TCall & TCallSnapshotByState<TState> => {
   return call.state === state;
 };
 
-export const isIdleCall = <T extends THasCallState>(
-  call: T,
-): call is Extract<T, { state: ECallStatus.IDLE }> => {
+export const isIdleCall = <TCall extends THasCallState>(
+  call: TCall,
+): call is TCall & TCallSnapshotByState<ECallStatus.IDLE> => {
   return isCallInState(call, ECallStatus.IDLE);
 };
-export const isConnectingCall = <T extends THasCallState>(
-  call: T,
-): call is Extract<T, { state: ECallStatus.CONNECTING }> => {
+export const isConnectingCall = <TCall extends THasCallState>(
+  call: TCall,
+): call is TCall & TCallSnapshotByState<ECallStatus.CONNECTING> => {
   return isCallInState(call, ECallStatus.CONNECTING);
 };
-export const isPresentationCall = <T extends THasCallState>(
-  call: T,
-): call is Extract<T, { state: ECallStatus.PRESENTATION_CALL }> => {
+export const isPresentationCall = <TCall extends THasCallState>(
+  call: TCall,
+): call is TCall & TCallSnapshotByState<ECallStatus.PRESENTATION_CALL> => {
   return isCallInState(call, ECallStatus.PRESENTATION_CALL);
 };
-export const isRoomPendingAuthCall = <T extends THasCallState>(
-  call: T,
-): call is Extract<T, { state: ECallStatus.ROOM_PENDING_AUTH }> => {
+export const isRoomPendingAuthCall = <TCall extends THasCallState>(
+  call: TCall,
+): call is TCall & TCallSnapshotByState<ECallStatus.ROOM_PENDING_AUTH> => {
   return isCallInState(call, ECallStatus.ROOM_PENDING_AUTH);
 };
-export const isPurgatoryCall = <T extends THasCallState>(
-  call: T,
-): call is Extract<T, { state: ECallStatus.PURGATORY }> => {
+export const isPurgatoryCall = <TCall extends THasCallState>(
+  call: TCall,
+): call is TCall & TCallSnapshotByState<ECallStatus.PURGATORY> => {
   return isCallInState(call, ECallStatus.PURGATORY);
 };
-export const isP2PRoomCall = <T extends THasCallState>(
-  call: T,
-): call is Extract<T, { state: ECallStatus.P2P_ROOM }> => {
+export const isP2PRoomCall = <TCall extends THasCallState>(
+  call: TCall,
+): call is TCall & TCallSnapshotByState<ECallStatus.P2P_ROOM> => {
   return isCallInState(call, ECallStatus.P2P_ROOM);
 };
-export const isDirectP2PRoomCall = <T extends THasCallState>(
-  call: T,
-): call is Extract<T, { state: ECallStatus.DIRECT_P2P_ROOM }> => {
+export const isDirectP2PRoomCall = <TCall extends THasCallState>(
+  call: TCall,
+): call is TCall & TCallSnapshotByState<ECallStatus.DIRECT_P2P_ROOM> => {
   return isCallInState(call, ECallStatus.DIRECT_P2P_ROOM);
 };
-export const isInRoomCall = <T extends THasCallState>(
-  call: T,
-): call is Extract<T, { state: ECallStatus.IN_ROOM }> => {
+export const isInRoomCall = <TCall extends THasCallState>(
+  call: TCall,
+): call is TCall & TCallSnapshotByState<ECallStatus.IN_ROOM> => {
   return isCallInState(call, ECallStatus.IN_ROOM);
 };
-export const isDisconnectingCall = <T extends THasCallState>(
-  call: T,
-): call is Extract<T, { state: ECallStatus.DISCONNECTING }> => {
+export const isDisconnectingCall = <TCall extends THasCallState>(
+  call: TCall,
+): call is TCall & TCallSnapshotByState<ECallStatus.DISCONNECTING> => {
   return isCallInState(call, ECallStatus.DISCONNECTING);
 };

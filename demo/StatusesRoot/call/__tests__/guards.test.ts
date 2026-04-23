@@ -1,4 +1,4 @@
-import { ECallStatus } from '@/index';
+import { ECallStatus, type TCallContextMap } from '@/index';
 import {
   isCallInState,
   isConnectingCall,
@@ -32,7 +32,7 @@ type TGuardName = keyof typeof stateGuards;
 
 type TRuntimeInstance = {
   state: ECallStatus;
-  context: unknown;
+  context: TCallContextMap[ECallStatus];
 };
 
 type TCase = {
@@ -54,14 +54,23 @@ const runtimeCases: TCase[] = [
   },
   {
     title: 'PRESENTATION_CALL',
-    value: { state: ECallStatus.PRESENTATION_CALL, context: { number: '101', answer: true } },
+    value: {
+      state: ECallStatus.PRESENTATION_CALL,
+      context: { number: '101', answer: true, startedTimestamp: 101 },
+    },
     expectedGuard: 'isPresentationCall',
   },
   {
     title: 'ROOM_PENDING_AUTH',
     value: {
       state: ECallStatus.ROOM_PENDING_AUTH,
-      context: { number: '102', answer: false, room: 'room-102', participantName: 'alice' },
+      context: {
+        number: '102',
+        answer: false,
+        room: 'room-102',
+        participantName: 'alice',
+        startedTimestamp: 102,
+      },
     },
     expectedGuard: 'isRoomPendingAuthCall',
   },
@@ -69,7 +78,13 @@ const runtimeCases: TCase[] = [
     title: 'PURGATORY',
     value: {
       state: ECallStatus.PURGATORY,
-      context: { number: '103', answer: true, room: 'room-103', participantName: 'bob' },
+      context: {
+        number: '103',
+        answer: true,
+        room: 'room-103',
+        participantName: 'bob',
+        startedTimestamp: 103,
+      },
     },
     expectedGuard: 'isPurgatoryCall',
   },
@@ -77,7 +92,13 @@ const runtimeCases: TCase[] = [
     title: 'P2P_ROOM',
     value: {
       state: ECallStatus.P2P_ROOM,
-      context: { number: '104', answer: false, room: 'room-104', participantName: 'charlie' },
+      context: {
+        number: '104',
+        answer: false,
+        room: 'room-104',
+        participantName: 'charlie',
+        startedTimestamp: 104,
+      },
     },
     expectedGuard: 'isP2PRoomCall',
   },
@@ -90,6 +111,7 @@ const runtimeCases: TCase[] = [
         answer: false,
         room: 'room-105',
         participantName: 'diana',
+        startedTimestamp: 105,
         isDirectPeerToPeer: true,
       },
     },
@@ -104,6 +126,7 @@ const runtimeCases: TCase[] = [
         answer: true,
         room: 'room-106',
         participantName: 'eve',
+        startedTimestamp: 106,
         token: 'jwt',
         conferenceForToken: 'room-106',
       },
@@ -132,30 +155,9 @@ describe('CallStatus guards', () => {
   });
 
   it('narrows types at compile time via all guards', () => {
-    type TRoomBase = {
-      number: string;
-      answer: boolean;
-      room: string;
-      participantName: string;
-    };
-
-    type TGuardCandidate =
-      | { state: ECallStatus.IDLE; context: { pendingDisconnect?: true } }
-      | { state: ECallStatus.CONNECTING; context: { number: string; answer: boolean } }
-      | { state: ECallStatus.PRESENTATION_CALL; context: { number: string; answer: boolean } }
-      | { state: ECallStatus.ROOM_PENDING_AUTH; context: TRoomBase }
-      | { state: ECallStatus.PURGATORY; context: TRoomBase }
-      | { state: ECallStatus.P2P_ROOM; context: TRoomBase }
-      | {
-          state: ECallStatus.DIRECT_P2P_ROOM;
-          context: TRoomBase & { isDirectPeerToPeer: true };
-        }
-      | {
-          state: ECallStatus.IN_ROOM;
-          context: TRoomBase & { token: string; conferenceForToken: string };
-        }
-      // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-      | { state: ECallStatus.DISCONNECTING; context: {} };
+    type TGuardCandidate = {
+      [TState in ECallStatus]: { state: TState; context: TCallContextMap[TState] };
+    }[ECallStatus];
 
     const assertNarrowing = (candidate: TGuardCandidate) => {
       if (isIdleCall(candidate)) {
@@ -170,7 +172,7 @@ describe('CallStatus guards', () => {
 
       if (isPresentationCall(candidate)) {
         expectType(candidate);
-        expectType(candidate.context.answer);
+        expectType(candidate.context.startedTimestamp);
       }
 
       if (isRoomPendingAuthCall(candidate)) {
@@ -196,6 +198,7 @@ describe('CallStatus guards', () => {
       if (isInRoomCall(candidate)) {
         expectType(candidate);
         expectType(candidate.context.token);
+        expectType(candidate.context.room);
         expectType(candidate.context.conferenceForToken);
       }
 
@@ -212,6 +215,7 @@ describe('CallStatus guards', () => {
         answer: false,
         room: 'room-200',
         participantName: 'sample',
+        startedTimestamp: 200,
         isDirectPeerToPeer: true,
       },
     };
