@@ -6,7 +6,22 @@ export interface IAutoConnectorOptions {
   timeoutBetweenAttempts?: number;
   canRetryOnError?: (error: unknown) => boolean;
   telephonyFailPolicy?: Partial<ITelephonyFailPolicyOptions>;
+  networkEventsSubscriber?: INetworkEventsSubscriber;
+  // Окно ожидания при offline, в течение которого короткий "мигающий" обрыв сети
+  // не приводит к разрыву активного соединения.
+  offlineGraceMs?: number;
 }
+
+export type TNetworkEventsHandlers = {
+  onChange: () => void;
+  onOnline: () => void;
+  onOffline: () => void;
+};
+
+export type INetworkEventsSubscriber = {
+  subscribe: (handlers: TNetworkEventsHandlers) => void;
+  unsubscribe: () => void;
+};
 
 export interface ITelephonyFailPolicyOptions {
   baseRetryDelayMs: number;
@@ -37,6 +52,8 @@ export const RECONNECT_REASONS = {
   REGISTRATION_FAILED_OUT_OF_CALL: 'registration-failed-out-of-call',
   TELEPHONY_DISCONNECTED: 'telephony-disconnected',
   TELEPHONY_CHECK_FAILED: 'telephony-check-failed',
+  NETWORK_ONLINE: 'network-online',
+  NETWORK_CHANGE: 'network-change',
 } as const;
 
 export type TReconnectReason = (typeof RECONNECT_REASONS)[keyof typeof RECONNECT_REASONS];
@@ -48,6 +65,8 @@ export const RECONNECT_REASON_PRIORITY: Record<TReconnectReason, number> = {
   [RECONNECT_REASONS.TELEPHONY_CHECK_FAILED]: 1,
   [RECONNECT_REASONS.REGISTRATION_FAILED_OUT_OF_CALL]: 3,
   [RECONNECT_REASONS.MANUAL_RESTART]: 4,
+  [RECONNECT_REASONS.NETWORK_ONLINE]: 4,
+  [RECONNECT_REASONS.NETWORK_CHANGE]: 4,
 } as const;
 
 export const getReconnectReasonPriority = (reason: TReconnectReason): number => {

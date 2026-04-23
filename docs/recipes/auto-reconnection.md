@@ -51,7 +51,8 @@ sipConnector.autoConnectorManager.restart();
 - **Мониторинг состояния**: Отслеживает состояние регистрации и звонков
 - **Адаптивные задержки**: Использует настраиваемые интервалы между попытками
 - **Очистка кэша**: Возможность настраивать очистку кэша через хук
-- **Причины реконнекта**: Все внешние рестарты проходят через единый `requestReconnect` (например: `start`, `manual-restart`, `telephony-disconnected`, `registration-failed-out-of-call`)
+- **Реакция на сеть**: Опциональный подписчик сетевых событий (`online`/`offline`/`change`) запускает реконнект при восстановлении сети и прерывает соединение при потере с grace-окном
+- **Причины реконнекта**: Все внешние рестарты проходят через единый `requestReconnect` (например: `start`, `manual-restart`, `telephony-disconnected`, `registration-failed-out-of-call`, `network-online`, `network-change`)
 
 ## Приоритеты причин рестарта (coalescing)
 
@@ -67,6 +68,8 @@ sipConnector.autoConnectorManager.restart();
 | `telephony-check-failed`          | `1`       |
 | `registration-failed-out-of-call` | `3`       |
 | `manual-restart`                  | `4`       |
+| `network-online`                  | `4`       |
+| `network-change`                  | `4`       |
 
 ## События автоподключения
 
@@ -106,6 +109,93 @@ sipConnector.on('auto-connect:cancelled-attempts', (error) => {
   console.log('Попытка подключения отменена:', error);
 });
 ```
+
+## Реакция на сетевые события браузера
+
+По умолчанию `AutoConnectorManager` использует встроенный browser-адаптер `createBrowserNetworkEventsSubscriber()` (события `window.online`/`window.offline` + `navigator.connection.change`, если доступен). При необходимости клиент может передать свой `networkEventsSubscriber` (например, для React Native NetInfo или кастомного окружения).
+
+### Контракт
+
+```typescript
+type TNetworkEventsHandlers = {
+  onChange: () => void;
+  onOnline: () => void;
+  onOffline: () => void;
+};
+
+type INetworkEventsSubscriber = {
+  subscribe: (handlers: TNetworkEventsHandlers) => void;
+  unsubscribe: () => void;
+};
+```
+
+- `onOnline` — запрашивается реконнект с причиной `network-online`.
+- `onChange` — запрашивается реконнект с причиной `network-change`.
+- `onOffline` — планируется отложенный стоп соединения через `offlineGraceMs` (по умолчанию `2000` мс). Если в течение окна придёт `onOnline`/`onChange`, стоп отменяется — это защита от «моргнувшей» сети.
+
+Подписка на сетевые события активна, пока автоконнектор работает: `start()` подписывается, `stop()` отписывается.
+
+### Пример (браузер)
+
+```typescript
+const browserNetworkSubscriber: INetworkEventsSubscriber = (() => {
+  let disposers: Array<() => void> = [];
+
+  return {
+    subscribe: (handlers) => {
+      const online = () => {
+        handlers.onOnline();
+      };
+      const offline = () => {
+        handlers.onOffline();
+      };
+      const change = () => {
+        handlers.onChange();
+      };
+
+      window.addEventListener('online', online);
+      window.addEventListener('offline', offline);
+
+      const connection = (navigator as Navigator & { connection?: EventTarget }).connection;
+
+      connection?.addEventListener('change', change);
+
+      disposers = [
+        () => {
+          window.removeEventListener('online', online);
+        },
+        () => {
+          window.removeEventListener('offline', offline);
+        },
+        () => {
+          connection?.removeEventListener('change', change);
+        },
+      ];
+    },
+    unsubscribe: () => {
+      disposers.forEach((dispose) => {
+        dispose();
+      });
+      disposers = [];
+    },
+  };
+})();
+
+const sipConnector = new SipConnector(
+  { JsSIP },
+  {
+    autoConnectorOptions: {
+      networkEventsSubscriber: browserNetworkSubscriber,
+      offlineGraceMs: 2000,
+    },
+  },
+);
+```
+
+### Тюнинг `offlineGraceMs`
+
+- Короче (500–1000 мс) — быстрее реагируем на реальный обрыв, но растёт риск ложного disconnect при коротких дропах.
+- Дольше (3000–5000 мс) — комфортнее для нестабильных мобильных сетей, но заметнее лаг при длительных обрывах.
 
 ## Базовые operational профили telephonyFailPolicy
 

@@ -3,8 +3,10 @@ import { EventEmitterProxy } from 'events-constructor';
 import resolveDebug from '@/logger';
 import { AutoConnectorRuntime } from './AutoConnectorRuntime';
 import { createAutoConnectorStateMachine } from './AutoConnectorStateMachine';
+import { createBrowserNetworkEventsSubscriber } from './createBrowserNetworkEventsSubscriber';
 import { createMachineDeps } from './createMachineDeps';
 import { createEvents } from './events';
+import NetworkEventsReconnector from './NetworkEventsReconnector';
 import ReconnectRequestCoalescer from './ReconnectRequestCoalescer';
 
 import type { CallManager } from '@/CallManager';
@@ -36,6 +38,8 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   private readonly reconnectCoalescer = new ReconnectRequestCoalescer({
     coalesceWindowMs: RECONNECT_COALESCE_WINDOW_MS,
   });
+
+  private readonly networkEventsReconnector: NetworkEventsReconnector | undefined;
 
   public constructor(
     {
@@ -100,11 +104,28 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
         canRetryOnError: options?.canRetryOnError ?? defaultCanRetryOnError,
       }),
     );
+
+    const networkEventsSubscriber =
+      options?.networkEventsSubscriber ?? createBrowserNetworkEventsSubscriber();
+
+    if (networkEventsSubscriber) {
+      this.networkEventsReconnector = new NetworkEventsReconnector({
+        subscriber: networkEventsSubscriber,
+        offlineGraceMs: options?.offlineGraceMs,
+        requestReconnect: this.requestReconnect,
+        stopConnection: () => {
+          // Только прерываем текущее соединение; подписка на сетевые события остаётся
+          // активной, чтобы вернуть флоу при последующем online/change.
+          this.stateMachine.toStop();
+        },
+      });
+    }
   }
 
   public start(parameters: TParametersAutoConnect) {
     debug('auto connector start');
 
+    this.networkEventsReconnector?.start(parameters);
     this.requestReconnect(parameters, START_REASON);
   }
 
@@ -125,6 +146,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   public stop() {
     debug('auto connector stop');
 
+    this.networkEventsReconnector?.stop();
     this.resetReconnectCoalescingState();
     this.stateMachine.toStop();
   }
@@ -149,6 +171,9 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
       return;
     }
 
+    // Держим последние валидные параметры в подписчике сетевых событий, чтобы
+    // на onOnline/onChange не зависеть от текущего состояния state machine.
+    this.networkEventsReconnector?.setParameters(parameters);
     this.stateMachine.toRestart(parameters);
   };
 
