@@ -4,6 +4,7 @@ import { createAudioMediaStreamTrackMock } from 'webrtc-mock';
 import { createManagers } from '@/__fixtures__/createManagers';
 import flushPromises from '@/__fixtures__/flushPromises';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
+import { EContentUseLicense } from '@/ApiManager';
 import { CallSessionState } from '@/CallSessionState';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
 import CallManager, { getInRoomTokenOrThrow } from '../@CallManager';
@@ -194,6 +195,42 @@ describe('CallManager', () => {
     // @ts-expect-error
     callManager.mcuSession.rtcSession = undefined;
     await expect(callManager.endCall()).resolves.toBeUndefined();
+  });
+
+  it('Не должен преждевременно сбрасывать состояние лицензии равное AUDIOPLUSPRESENTATION в процессе завершения звонка', async () => {
+    const { callManager: cm, apiManager } = createManagers();
+
+    cm.events.trigger('start-call', { number: '100', answer: false });
+    apiManager.events.trigger('enter-room', { room: 'room-1', participantName: 'participant-1' });
+    apiManager.events.trigger('conference:participant-token-issued', {
+      jwt: 'token-1',
+      conference: 'room-1',
+      participant: 'participant-1',
+    });
+
+    expect(cm.stateMachine.state).toBe('call:inRoom');
+
+    apiManager.events.trigger('use-license', EContentUseLicense.AUDIOPLUSPRESENTATION);
+    expect(cm.sessionState.getSnapshot().license).toBe(EContentUseLicense.AUDIOPLUSPRESENTATION);
+
+    const terminateAsync = jest.fn(async () => {});
+
+    (
+      cm as unknown as {
+        mcuSession: { rtcSession: RTCSession };
+      }
+    ).mcuSession.rtcSession = {
+      isEnded: () => {
+        return false;
+      },
+      terminateAsync,
+    } as unknown as RTCSession;
+
+    await cm.endCall();
+    await flushPromises();
+
+    expect(cm.stateMachine.state).toBe('call:disconnecting');
+    expect(cm.sessionState.getSnapshot().license).toBe(EContentUseLicense.AUDIOPLUSPRESENTATION);
   });
 
   describe('isDisconnecting', () => {
