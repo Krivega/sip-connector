@@ -42,6 +42,7 @@ describe('CallSessionStatusModel', () => {
 
   it('createCallSessionStatusSnapshot maps participant role without audio id', () => {
     const snapshot = createCallSessionStatusSnapshot({
+      license: EContentUseLicense.VIDEO,
       role: {
         type: 'participant',
       },
@@ -54,6 +55,7 @@ describe('CallSessionStatusModel', () => {
     });
 
     expect(snapshot).toEqual({
+      license: EContentUseLicense.VIDEO,
       isDuplexSendingMediaMode: false,
       roleType: 'participant',
       roleAudioId: undefined,
