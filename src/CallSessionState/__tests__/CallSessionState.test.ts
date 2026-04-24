@@ -10,7 +10,7 @@ describe('CallSessionState', () => {
     const snapshot = callSessionState.getSnapshot();
 
     expect(snapshot.role).toEqual({ type: 'spectator_synthetic' });
-    expect(snapshot.license).toBe(EContentUseLicense.AUDIOPLUSPRESENTATION);
+    expect(snapshot.license).toBe(EContentUseLicense.VIDEO);
     expect(snapshot.isDuplexSendingMediaMode).toBe(false);
     expect(snapshot.derived).toEqual({
       isSpectatorAny: true,
@@ -144,7 +144,7 @@ describe('CallSessionState', () => {
     callSessionState.reset();
 
     expect(callSessionState.getSnapshot().role).toEqual({ type: 'participant' });
-    expect(callSessionState.getSnapshot().license).toBe(EContentUseLicense.AUDIOPLUSPRESENTATION);
+    expect(callSessionState.getSnapshot().license).toBe(EContentUseLicense.VIDEO);
     expect(callSessionState.getSnapshot().isDuplexSendingMediaMode).toBe(false);
     expect(callSessionState.getSnapshot().derived.isAvailableSendingMedia).toBe(true);
   });
