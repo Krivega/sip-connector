@@ -138,7 +138,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
 
     this.contentedStreamManager = contentedStreamManager;
     this.tools = tools;
-    this.mcuSession = new MCUSession(this.events, { onReset: this.reset });
+    this.mcuSession = new MCUSession(this.events);
     this.stateMachine = createCallStateMachine(this.events);
     this.sessionState = callSessionState;
     this.sessionState.subscribeRoleChanges(this.onRoleChanged);
@@ -446,6 +446,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
       if (state === ECallStatus.IDLE) {
         this.mcuSession.reset();
         this.roleManager.reset();
+        this.reset();
       }
     });
   }

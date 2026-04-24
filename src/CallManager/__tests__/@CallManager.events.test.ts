@@ -473,32 +473,6 @@ describe('CallManager events', () => {
       expect(handler).toHaveBeenCalledTimes(1);
     });
 
-    it('должен сбросить кеш если вызать endCall при отсутствии rtcSession и позволить вызвать событие снова', async () => {
-      const handler = jest.fn();
-
-      callManager.on('remote-streams-changed', handler);
-
-      const contentedStreamManager = callManager.getContentedStreamManager();
-
-      // Первый вызов
-      contentedStreamManager.events.trigger('available', { codec: EContentedStreamCodec.H264 });
-
-      expect(handler).toHaveBeenCalledTimes(1);
-
-      // Повторный вызов - событие не должно сработать
-      contentedStreamManager.events.trigger('available', { codec: EContentedStreamCodec.H264 });
-
-      expect(handler).toHaveBeenCalledTimes(1);
-
-      // Вызываем reset через endCall
-      await callManager.endCall();
-
-      // После reset кеш очищен, событие должно сработать снова
-      contentedStreamManager.events.trigger('available', { codec: EContentedStreamCodec.H264 });
-
-      expect(handler).toHaveBeenCalledTimes(2);
-    });
-
     it('должен сбросить кеш если вызать endCall при наличии rtcSession и позволить вызвать событие снова', async () => {
       const rtcSession = new RTCSessionMock({
         eventHandlers: {},
@@ -531,8 +505,13 @@ describe('CallManager events', () => {
 
       expect(handler).toHaveBeenCalledTimes(1);
 
-      // Вызываем reset через endCall
-      await callManager.endCall();
+      // Вызываем reset через эмуляцию окончания звонка
+      callManager.events.trigger('ended', {
+        originator: 'remote',
+        // @ts-expect-error
+        message: {},
+        cause: 'error',
+      });
 
       // После reset кеш очищен, событие должно сработать снова
       contentedStreamManager.events.trigger('available', { codec: EContentedStreamCodec.H264 });

@@ -1336,9 +1336,9 @@ describe('CallManager', () => {
     );
   });
 
-  it('endCall: очищает remoteStreamsManager', async () => {
-    const spy = jest.spyOn(RemoteStreamsManager.prototype, 'reset');
-    const sessionResetSpy = jest.spyOn(callManager.sessionState, 'reset');
+  it('endCall: очищает remoteStreamsManager и sessionState', async () => {
+    const remoteStreamsManagerResetSpy = jest.spyOn(RemoteStreamsManager.prototype, 'reset');
+    const sessionStateResetSpy = jest.spyOn(callManager.sessionState, 'reset');
 
     const ua = {
       call: jest.fn(
@@ -1367,6 +1367,7 @@ describe('CallManager', () => {
         },
       ),
     } as unknown as Parameters<CallManager['startCall']>[0];
+
     const getUri = jest.fn(() => {
       return 'sip:100@domain.test';
     }) as Parameters<CallManager['startCall']>[1];
@@ -1376,10 +1377,16 @@ describe('CallManager', () => {
       mediaStream: new MediaStream(),
     });
 
-    await callManager.endCall();
+    // Эмулируем окончание звонка
+    callManager.events.trigger('ended', {
+      originator: 'remote',
+      // @ts-expect-error
+      message: {},
+      cause: 'error',
+    });
 
-    expect(spy).toHaveBeenCalled();
-    expect(sessionResetSpy).not.toHaveBeenCalled();
+    expect(remoteStreamsManagerResetSpy).toHaveBeenCalled();
+    expect(sessionStateResetSpy).toHaveBeenCalled();
   });
 
   describe('deferred RecvSession command (race with conference:participant-token-issued)', () => {
