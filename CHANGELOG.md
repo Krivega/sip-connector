@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [28.8.0](https://github.com/Krivega/sip-connector/compare/v28.7.1...v28.8.0) (2026-04-24)
+
+### Features
+
+- **network-events:** add INetworkEventsSubscriber and TNetworkEventsHandlers types for improved event handling ([b4f8426](https://github.com/Krivega/sip-connector/commit/b4f8426844a935177a994ddcda6338dd0a793cb9))
+- **network-events:** enhance network event handling with configurable policies for reconnection logic ([3e68c2c](https://github.com/Krivega/sip-connector/commit/3e68c2c3f527801fa4016ba778760ddd5b48351f))
+- **network-events:** implement network event handling in AutoConnectorManager for improved reconnection logic ([e2f4bb3](https://github.com/Krivega/sip-connector/commit/e2f4bb328c7a80ea3a6aec33c37a7732ebd2bb18))
+
+### Bug Fixes
+
+- **imports:** update ECallStatus and ESystemStatus imports to use centralized index ([86ac50b](https://github.com/Krivega/sip-connector/commit/86ac50bbe9e718b5f446df4470089ee2b351295f))
+- reset states after ended call ([#77](https://github.com/Krivega/sip-connector/issues/77)) ([aa37469](https://github.com/Krivega/sip-connector/commit/aa37469403504f97c3bc89de0e93cd58ec5b09d2))
+
 ### [28.7.1](https://github.com/Krivega/sip-connector/compare/v28.7.0...v28.7.1) (2026-04-22)
 
 ### Bug Fixes
