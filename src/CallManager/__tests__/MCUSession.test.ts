@@ -259,7 +259,7 @@ describe('MCUSession', () => {
 
     expect(mcuSession.getPcConfig()).toEqual({ iceServers });
 
-    await mcuSession.endCall();
+    mcuSession.reset();
 
     expect(mcuSession.getPcConfig()).toBeUndefined();
   });
