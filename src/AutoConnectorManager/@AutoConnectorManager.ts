@@ -3,7 +3,6 @@ import { EventEmitterProxy } from 'events-constructor';
 import resolveDebug from '@/logger';
 import { AutoConnectorRuntime } from './AutoConnectorRuntime';
 import { createAutoConnectorStateMachine } from './AutoConnectorStateMachine';
-import { EState } from './AutoConnectorStateMachine/types';
 import { createBrowserNetworkEventsSubscriber } from './createBrowserNetworkEventsSubscriber';
 import { createMachineDeps } from './createMachineDeps';
 import { createEvents } from './events';
@@ -201,9 +200,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   //    параметров): возвращаем false, сохраняя прежнее поведение — пусть
   //    сетевое событие триггернёт стандартный `requestReconnect`.
   private readonly probeServerReachability = async (): Promise<boolean> => {
-    const { state } = this.stateMachine;
-
-    if (state === EState.CONNECTED_MONITORING) {
+    if (this.stateMachine.isInConnectedMonitoringState()) {
       try {
         await this.connectionManager.ping();
 
@@ -215,13 +212,8 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
       }
     }
 
-    if (state === EState.WAITING_BEFORE_RETRY) {
+    if (this.stateMachine.isInWaitingBeforeRetryState()) {
       const { parameters } = this.stateMachine.context;
-
-      /* istanbul ignore next -- defensive: в WAITING_BEFORE_RETRY по типам `parameters` всегда определены */
-      if (!parameters) {
-        return false;
-      }
 
       try {
         const checkTelephonyParameters = await parameters.getParameters();

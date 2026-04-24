@@ -1,8 +1,9 @@
 import resolveDebug from '@/logger';
 import { BaseStateMachine } from '@/tools/BaseStateMachine';
 import { createAutoConnectorMachine } from './createAutoConnectorMachine';
+import { EState } from './types';
 
-import type { EState, TAutoConnectorEvent, TContext, TContextMap } from './types';
+import type { TAutoConnectorEvent, TContext, TContextMap } from './types';
 import type { TParametersAutoConnect } from '../types';
 
 const debug = resolveDebug('AutoConnectorStateMachine');
@@ -57,6 +58,20 @@ export class AutoConnectorStateMachine extends BaseStateMachine<
 
   public toTelephonyResultStillConnected(): void {
     this.toTelephonyResult('stillConnected');
+  }
+
+  public isInConnectedMonitoringState(): this is AutoConnectorStateMachine & {
+    state: EState.CONNECTED_MONITORING;
+    context: TContextMap[EState.CONNECTED_MONITORING];
+  } {
+    return this.state === EState.CONNECTED_MONITORING;
+  }
+
+  public isInWaitingBeforeRetryState(): this is AutoConnectorStateMachine & {
+    state: EState.WAITING_BEFORE_RETRY;
+    context: TContextMap[EState.WAITING_BEFORE_RETRY];
+  } {
+    return this.state === EState.WAITING_BEFORE_RETRY;
   }
 }
 
