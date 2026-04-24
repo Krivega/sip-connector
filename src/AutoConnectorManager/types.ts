@@ -7,6 +7,17 @@ export type TNetworkEventPolicy = 'ignore' | 'probe' | 'reconnect';
 // Лёгкая проверка доступности сервера. true — сервер отвечает, reconnect не нужен.
 export type TNetworkProbe = () => Promise<boolean>;
 
+export type TNetworkEventsHandlers = {
+  onChange: () => void;
+  onOnline: () => void;
+  onOffline: () => void;
+};
+
+export type INetworkEventsSubscriber = {
+  subscribe: (handlers: TNetworkEventsHandlers) => void;
+  unsubscribe: () => void;
+};
+
 export interface IAutoConnectorOptions {
   checkTelephonyRequestInterval?: number;
   timeoutBetweenAttempts?: number;
@@ -25,18 +36,6 @@ export interface IAutoConnectorOptions {
   // событие online не гарантирует, что наш сервер достижим.
   onNetworkOnlinePolicy?: TNetworkEventPolicy;
 }
-
-export type TNetworkEventsHandlers = {
-  onChange: () => void;
-  onOnline: () => void;
-  onOffline: () => void;
-};
-
-export type INetworkEventsSubscriber = {
-  subscribe: (handlers: TNetworkEventsHandlers) => void;
-  unsubscribe: () => void;
-};
-
 export interface ITelephonyFailPolicyOptions {
   baseRetryDelayMs: number;
   maxRetryDelayMs: number;

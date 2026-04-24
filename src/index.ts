@@ -93,6 +93,7 @@ export type {
   TParametersAutoConnect,
   TAutoConnectorContextMap,
   TAutoConnectorSnapshot,
+  INetworkEventsSubscriber,
 } from './AutoConnectorManager';
 export type {
   TCallReconnectSnapshot,
