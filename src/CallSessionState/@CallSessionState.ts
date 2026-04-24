@@ -61,7 +61,7 @@ const collectCallSessionSnapshot = (
   };
 };
 
-export const DEFAULT_LICENSE = EContentUseLicense.AUDIOPLUSPRESENTATION;
+export const DEFAULT_LICENSE = EContentUseLicense.VIDEO;
 
 export class CallSessionState extends EventEmitterProxy<TEventMap> {
   private readonly roleManager = new RoleManager();
