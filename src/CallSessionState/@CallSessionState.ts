@@ -1,10 +1,10 @@
 import { EventEmitterProxy } from 'events-constructor';
 
-import { EContentUseLicense } from '../ApiManager';
+import { EContentUseLicense } from '@/ApiManager';
 import { createEvents } from './events';
 import { RoleManager } from './RoleManager';
 
-import type { TApiManagerEvents } from '../ApiManager';
+import type { TApiManagerEvents } from '@/ApiManager';
 import type { TEventMap } from './events';
 import type {
   TCallRole,
