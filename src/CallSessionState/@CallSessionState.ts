@@ -1,9 +1,10 @@
 import { EventEmitterProxy } from 'events-constructor';
 
+import { EContentUseLicense } from '../ApiManager';
 import { createEvents } from './events';
 import { RoleManager } from './RoleManager';
 
-import type { EContentUseLicense, TApiManagerEvents } from '@/ApiManager';
+import type { TApiManagerEvents } from '../ApiManager';
 import type { TEventMap } from './events';
 import type {
   TCallRole,
@@ -43,7 +44,7 @@ const defaultSnapshotEquals = (previous: TCallSessionSnapshot, next: TCallSessio
 const collectCallSessionSnapshot = (
   roleManager: Pick<RoleManager, 'getRole' | 'getIsAvailableSendingMedia'>,
   isDuplexSendingMediaMode: boolean,
-  license?: EContentUseLicense,
+  license: EContentUseLicense,
 ): TCallSessionSnapshot => {
   const role = roleManager.getRole();
   const isSpectatorAny = role.type === 'spectator' || role.type === 'spectator_synthetic';
@@ -60,10 +61,12 @@ const collectCallSessionSnapshot = (
   };
 };
 
+export const DEFAULT_LICENSE = EContentUseLicense.VIDEO;
+
 export class CallSessionState extends EventEmitterProxy<TEventMap> {
   private readonly roleManager = new RoleManager();
 
-  private license?: EContentUseLicense;
+  private license: EContentUseLicense = DEFAULT_LICENSE;
 
   private isDuplexSendingMediaMode = false;
 
@@ -126,7 +129,7 @@ export class CallSessionState extends EventEmitterProxy<TEventMap> {
 
   public reset(): void {
     this.roleManager.reset();
-    this.license = undefined;
+    this.license = DEFAULT_LICENSE;
     this.isDuplexSendingMediaMode = false;
     this.notifySubscribers();
   }

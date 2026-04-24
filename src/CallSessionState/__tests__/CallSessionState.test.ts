@@ -1,5 +1,5 @@
 import { createApiManagerEvents, EContentUseLicense } from '@/ApiManager';
-import { CallSessionState } from '../@CallSessionState';
+import { CallSessionState, DEFAULT_LICENSE } from '../@CallSessionState';
 
 describe('CallSessionState', () => {
   it('collects initial snapshot with derived flags', () => {
@@ -10,7 +10,7 @@ describe('CallSessionState', () => {
     const snapshot = callSessionState.getSnapshot();
 
     expect(snapshot.role).toEqual({ type: 'spectator_synthetic' });
-    expect(snapshot.license).toBeUndefined();
+    expect(snapshot.license).toBe(EContentUseLicense.VIDEO);
     expect(snapshot.isDuplexSendingMediaMode).toBe(false);
     expect(snapshot.derived).toEqual({
       isSpectatorAny: true,
@@ -144,8 +144,20 @@ describe('CallSessionState', () => {
     callSessionState.reset();
 
     expect(callSessionState.getSnapshot().role).toEqual({ type: 'participant' });
-    expect(callSessionState.getSnapshot().license).toBeUndefined();
+    expect(callSessionState.getSnapshot().license).toBe(EContentUseLicense.VIDEO);
     expect(callSessionState.getSnapshot().isDuplexSendingMediaMode).toBe(false);
     expect(callSessionState.getSnapshot().derived.isAvailableSendingMedia).toBe(true);
+  });
+
+  it('reset: устанавливает license равным DEFAULT_LICENSE', () => {
+    const callSessionState = new CallSessionState();
+    const apiEvents = createApiManagerEvents();
+
+    callSessionState.subscribeToApiEvents(apiEvents);
+    apiEvents.trigger('use-license', EContentUseLicense.VIDEO);
+
+    callSessionState.reset();
+
+    expect(callSessionState.getSnapshot().license).toBe(DEFAULT_LICENSE);
   });
 });

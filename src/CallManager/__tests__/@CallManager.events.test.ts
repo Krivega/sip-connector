@@ -473,7 +473,22 @@ describe('CallManager events', () => {
       expect(handler).toHaveBeenCalledTimes(1);
     });
 
-    it('должен сбросить кеш при reset и позволить вызвать событие снова', async () => {
+    it('должен сбросить кеш если вызать endCall при наличии rtcSession и позволить вызвать событие снова', async () => {
+      const rtcSession = new RTCSessionMock({
+        eventHandlers: {},
+        originator: 'remote',
+      });
+
+      rtcSession.terminateAsync = jest.fn(async () => {});
+
+      const getIncomingRTCSession = () => {
+        return rtcSession as unknown as RTCSession;
+      };
+
+      await callManager.answerToIncomingCall(getIncomingRTCSession, {
+        mediaStream,
+      });
+
       const handler = jest.fn();
 
       callManager.on('remote-streams-changed', handler);
@@ -490,8 +505,13 @@ describe('CallManager events', () => {
 
       expect(handler).toHaveBeenCalledTimes(1);
 
-      // Вызываем reset через endCall
-      await callManager.endCall();
+      // Вызываем reset через эмуляцию окончания звонка
+      callManager.events.trigger('ended', {
+        originator: 'remote',
+        // @ts-expect-error
+        message: {},
+        cause: 'error',
+      });
 
       // После reset кеш очищен, событие должно сработать снова
       contentedStreamManager.events.trigger('available', { codec: EContentedStreamCodec.H264 });

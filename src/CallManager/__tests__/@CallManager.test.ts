@@ -4,6 +4,7 @@ import { createAudioMediaStreamTrackMock } from 'webrtc-mock';
 import { createManagers } from '@/__fixtures__/createManagers';
 import flushPromises from '@/__fixtures__/flushPromises';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
+import { EContentUseLicense } from '@/ApiManager';
 import { CallSessionState } from '@/CallSessionState';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
 import CallManager, { getInRoomTokenOrThrow } from '../@CallManager';
@@ -194,6 +195,42 @@ describe('CallManager', () => {
     // @ts-expect-error
     callManager.mcuSession.rtcSession = undefined;
     await expect(callManager.endCall()).resolves.toBeUndefined();
+  });
+
+  it('Не должен преждевременно сбрасывать состояние лицензии равное AUDIOPLUSPRESENTATION в процессе завершения звонка', async () => {
+    const { callManager: cm, apiManager } = createManagers();
+
+    cm.events.trigger('start-call', { number: '100', answer: false });
+    apiManager.events.trigger('enter-room', { room: 'room-1', participantName: 'participant-1' });
+    apiManager.events.trigger('conference:participant-token-issued', {
+      jwt: 'token-1',
+      conference: 'room-1',
+      participant: 'participant-1',
+    });
+
+    expect(cm.stateMachine.state).toBe('call:inRoom');
+
+    apiManager.events.trigger('use-license', EContentUseLicense.AUDIOPLUSPRESENTATION);
+    expect(cm.sessionState.getSnapshot().license).toBe(EContentUseLicense.AUDIOPLUSPRESENTATION);
+
+    const terminateAsync = jest.fn(async () => {});
+
+    (
+      cm as unknown as {
+        mcuSession: { rtcSession: RTCSession };
+      }
+    ).mcuSession.rtcSession = {
+      isEnded: () => {
+        return false;
+      },
+      terminateAsync,
+    } as unknown as RTCSession;
+
+    await cm.endCall();
+    await flushPromises();
+
+    expect(cm.stateMachine.state).toBe('call:disconnecting');
+    expect(cm.sessionState.getSnapshot().license).toBe(EContentUseLicense.AUDIOPLUSPRESENTATION);
   });
 
   describe('isDisconnecting', () => {
@@ -1299,14 +1336,57 @@ describe('CallManager', () => {
     );
   });
 
-  it('reset: очищает remoteStreamsManager', () => {
-    const spy = jest.spyOn(RemoteStreamsManager.prototype, 'reset');
-    const sessionResetSpy = jest.spyOn(callManager.sessionState, 'reset');
+  it('endCall: очищает remoteStreamsManager и sessionState', async () => {
+    const remoteStreamsManagerResetSpy = jest.spyOn(RemoteStreamsManager.prototype, 'reset');
+    const sessionStateResetSpy = jest.spyOn(callManager.sessionState, 'reset');
 
-    // @ts-expect-error
-    callManager.reset();
-    expect(spy).toHaveBeenCalled();
-    expect(sessionResetSpy).toHaveBeenCalledTimes(1);
+    const ua = {
+      call: jest.fn(
+        (
+          _uri: string,
+          options: { eventHandlers: Record<string, (...args: unknown[]) => void> },
+        ) => {
+          const peerconnection = {
+            addEventListener: jest.fn(),
+            removeEventListener: jest.fn(),
+          } as unknown as RTCPeerConnection;
+
+          const rtcSession = {
+            connection: peerconnection,
+            isEnded: () => {
+              return false;
+            },
+            terminateAsync: jest.fn(async () => {}),
+          } as unknown as RTCSession;
+
+          // имитируем успешный старт звонка
+          options.eventHandlers.peerconnection({ peerconnection });
+          options.eventHandlers.confirmed({});
+
+          return rtcSession;
+        },
+      ),
+    } as unknown as Parameters<CallManager['startCall']>[0];
+
+    const getUri = jest.fn(() => {
+      return 'sip:100@domain.test';
+    }) as Parameters<CallManager['startCall']>[1];
+
+    await callManager.startCall(ua, getUri, {
+      number: '100',
+      mediaStream: new MediaStream(),
+    });
+
+    // Эмулируем окончание звонка
+    callManager.events.trigger('ended', {
+      originator: 'remote',
+      // @ts-expect-error
+      message: {},
+      cause: 'error',
+    });
+
+    expect(remoteStreamsManagerResetSpy).toHaveBeenCalled();
+    expect(sessionStateResetSpy).toHaveBeenCalled();
   });
 
   describe('deferred RecvSession command (race with conference:participant-token-issued)', () => {

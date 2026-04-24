@@ -19,16 +19,13 @@ export class MCUSession implements IMCUSession {
 
   private readonly disposers = new Set<() => void>();
 
-  private readonly onReset: () => void;
-
   private pcConfig?: { iceServers?: RTCIceServer[] };
 
   // Менеджер состояния битрейта
   private readonly bitrateStateManager = new BitrateStateManager();
 
-  public constructor(events: TEvents, { onReset }: { onReset: () => void }) {
+  public constructor(events: TEvents) {
     this.events = events;
-    this.onReset = onReset;
     events.on('failed', this.handleEnded);
     events.on('ended', this.handleEnded);
   }
@@ -116,16 +113,10 @@ export class MCUSession implements IMCUSession {
     const { rtcSession } = this;
 
     if (rtcSession && !rtcSession.isEnded()) {
-      return rtcSession
-        .terminateAsync({
-          cause: ECallCause.CANCELED,
-        })
-        .finally(() => {
-          this.reset();
-        });
+      return rtcSession.terminateAsync({
+        cause: ECallCause.CANCELED,
+      });
     }
-
-    this.reset();
 
     return undefined;
   }
@@ -234,6 +225,13 @@ export class MCUSession implements IMCUSession {
       });
   }
 
+  public readonly reset: () => void = () => {
+    delete this.rtcSession;
+    delete this.pcConfig;
+    this.unsubscribeFromSessionEvents();
+    this.bitrateStateManager.clearAll();
+  };
+
   private readonly handleCall = async (): Promise<RTCPeerConnection> => {
     return new Promise((resolve, reject) => {
       const addStartedEventListeners = () => {
@@ -325,15 +323,5 @@ export class MCUSession implements IMCUSession {
     if (originator === 'remote') {
       this.events.trigger('ended:fromserver', event);
     }
-
-    this.reset();
-  };
-
-  private readonly reset: () => void = () => {
-    delete this.rtcSession;
-    delete this.pcConfig;
-    this.unsubscribeFromSessionEvents();
-    this.bitrateStateManager.clearAll();
-    this.onReset();
   };
 }
