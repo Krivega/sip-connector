@@ -439,13 +439,13 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     this.stopRecvSession();
     this.deferredStartRecvSessionRunner.cancel();
     this.streamsChangeTracker.reset();
+    this.mcuSession.reset();
+    this.roleManager.reset();
   };
 
   private subscribeCallEndedStateMachine() {
     this.stateMachine.onStateChange((state) => {
       if (state === ECallStatus.IDLE) {
-        this.mcuSession.reset();
-        this.roleManager.reset();
         this.reset();
       }
     });
