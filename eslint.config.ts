@@ -47,4 +47,10 @@ export default defineConfig([
       '**/vendor/**',
     ],
   },
+  {
+    files: ['e2e/**'],
+    rules: {
+      'import/no-extraneous-dependencies': 'off',
+    },
+  },
 ]);
