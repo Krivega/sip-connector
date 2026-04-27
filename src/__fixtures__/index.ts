@@ -47,7 +47,6 @@ const baseUaConfiguration = {
   session_timers: false,
   sockets: [socket],
   user_agent: 'Chrome',
-  sdpSemantics: 'unified-plan',
   register_expires: 300,
   connection_recovery_max_interval: 6,
   connection_recovery_min_interval: 2,

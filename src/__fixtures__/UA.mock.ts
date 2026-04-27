@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events';
 
-import { C, URI } from '@krivega/jssip';
+import { C, URI, Options } from '@krivega/jssip';
 import { Events } from 'events-constructor';
 
 import resolveDebug from '@/logger';
@@ -13,14 +13,18 @@ import type {
   UA as IUA,
   IncomingRequest,
   IncomingResponse,
+  NotifierOptions,
   Socket,
+  SubscriberOptions,
   UAConfiguration,
   UAConfigurationParams,
   UAContact,
   UAEventMap,
   UAStatus,
 } from '@krivega/jssip';
-import type Message from '@krivega/jssip/src/Message';
+import type { Message } from '@krivega/jssip/lib/Message';
+import type { Notifier } from '@krivega/jssip/lib/Notifier';
+import type { Subscriber } from '@krivega/jssip/lib/Subscriber';
 import type { TEventHandlers } from './BaseSession.mock';
 
 const debug = resolveDebug('UA.mock');
@@ -90,6 +94,8 @@ class UA extends EventEmitter implements IUA {
   public sendOptions = jest.fn(
     (target: string, body?: string, options?: Record<string, unknown>) => {
       debug('sendOptions', target, body, options);
+
+      return new Options();
     },
   );
 
@@ -228,6 +234,25 @@ class UA extends EventEmitter implements IUA {
     this.events.on<Parameters<UAEventMap[T]>[0]>(eventName, handler);
 
     return this;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this, @typescript-eslint/max-params
+  public subscribe(
+    _target: string,
+    _eventName: string,
+    _accept: string,
+    _options: SubscriberOptions,
+  ): Subscriber {
+    throw new Error('Method not implemented.');
+  }
+
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
+  public notify(
+    _subscribe: IncomingRequest,
+    _contentType: string,
+    _options: NotifierOptions,
+  ): Notifier {
+    throw new Error('Method not implemented.');
   }
 
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this

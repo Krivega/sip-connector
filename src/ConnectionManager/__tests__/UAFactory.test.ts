@@ -64,7 +64,6 @@ describe('UAFactory', () => {
         password: 'testpass',
         register: true,
         display_name: 'Test_User', // parseDisplayName заменяет пробелы на подчеркивания
-        sdpSemantics: 'unified-plan',
         session_timers: false,
         register_expires: 300,
         connection_recovery_min_interval: 2,
@@ -249,7 +248,6 @@ describe('UAFactory', () => {
       password: 'testpass',
       register: true,
       display_name: 'Test User',
-      sdpSemantics: 'unified-plan' as const,
       sockets: [{}] as unknown as Socket,
     };
 

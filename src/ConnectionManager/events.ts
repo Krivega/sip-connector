@@ -3,7 +3,7 @@ import { TypedEvents } from 'events-constructor';
 
 import type {
   ConnectedEvent,
-  ConnectingEventUA,
+  ConnectingEvent,
   DisconnectEvent,
   IncomingMessageEvent,
   IncomingRequest,
@@ -59,7 +59,7 @@ const SYNTHETICS_EVENT_NAMES = [
 export const EVENT_NAMES = [...UA_EVENT_NAMES, ...SYNTHETICS_EVENT_NAMES] as const;
 
 export type TEventMap = {
-  connecting: ConnectingEventUA;
+  connecting: ConnectingEvent;
   connected: ConnectedEvent;
   disconnected: DisconnectEvent;
   disconnecting: Record<string, never>;

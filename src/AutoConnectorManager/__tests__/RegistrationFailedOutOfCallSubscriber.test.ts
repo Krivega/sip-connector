@@ -3,6 +3,8 @@ import { C } from '@krivega/jssip';
 import { doMockSipConnector } from '@/doMock';
 import RegistrationFailedOutOfCallSubscriber from '../RegistrationFailedOutOfCallSubscriber';
 
+import type { IncomingResponse } from '@krivega/jssip/lib/SIPMessage';
+
 describe('RegistrationFailedOutOfCallSubscriber', () => {
   const callback = jest.fn();
 
@@ -63,6 +65,10 @@ describe('RegistrationFailedOutOfCallSubscriber', () => {
       subscriber.subscribe(callback);
 
       sipConnector.connectionManager.events.trigger('registrationFailed', {
+        response: {
+          status_code: 401,
+          reason_phrase: 'Unauthorized',
+        } as unknown as IncomingResponse,
         cause: C.causes.AUTHENTICATION_ERROR,
       });
 
@@ -85,6 +91,10 @@ describe('RegistrationFailedOutOfCallSubscriber', () => {
       startCall();
 
       sipConnector.connectionManager.events.trigger('registrationFailed', {
+        response: {
+          status_code: 401,
+          reason_phrase: 'Unauthorized',
+        } as unknown as IncomingResponse,
         cause: C.causes.AUTHENTICATION_ERROR,
       });
 
@@ -107,6 +117,10 @@ describe('RegistrationFailedOutOfCallSubscriber', () => {
       startCall();
 
       sipConnector.connectionManager.events.trigger('registrationFailed', {
+        response: {
+          status_code: 401,
+          reason_phrase: 'Unauthorized',
+        } as unknown as IncomingResponse,
         cause: C.causes.AUTHENTICATION_ERROR,
       });
 
@@ -148,6 +162,10 @@ describe('RegistrationFailedOutOfCallSubscriber', () => {
 
       sipConnector.connectionManager.events.trigger('registrationFailed', {
         cause: C.causes.AUTHENTICATION_ERROR,
+        response: {
+          status_code: 401,
+          reason_phrase: 'Unauthorized',
+        } as unknown as IncomingResponse,
       });
 
       endCall();

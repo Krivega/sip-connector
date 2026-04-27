@@ -91,7 +91,6 @@ describe('ConnectionFlow', () => {
         password: undefined,
         register: false,
         register_expires: 300,
-        sdpSemantics: 'unified-plan',
         session_timers: false,
         sockets: [
           {
@@ -143,7 +142,6 @@ describe('ConnectionFlow', () => {
         password: PASSWORD_CORRECT,
         register: true,
         register_expires: 300,
-        sdpSemantics: 'unified-plan',
         session_timers: false,
         sockets: [
           {

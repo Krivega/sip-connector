@@ -125,7 +125,6 @@ export default class UAFactory {
         uri,
         display_name: parseDisplayName(displayName),
         user_agent: userAgent,
-        sdpSemantics: 'unified-plan',
         sockets: [socket],
         session_timers: sessionTimers,
         register_expires: registerExpires,

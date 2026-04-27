@@ -1,3 +1,5 @@
+import { Options } from '@krivega/jssip';
+
 import jssip from '@/__fixtures__/jssip.mock';
 import UAMock from '@/__fixtures__/UA.mock';
 import SipOperations from '../SipOperations';
@@ -44,6 +46,8 @@ describe('SipOperations', () => {
       mockUA.sendOptions.mockImplementation(
         (_targetParameter: string, _bodyParameter?: string, options?: Record<string, unknown>) => {
           (options as { eventHandlers: { succeeded: () => void } }).eventHandlers.succeeded();
+
+          return new Options();
         },
       );
 
@@ -68,6 +72,8 @@ describe('SipOperations', () => {
       mockUA.sendOptions.mockImplementation(
         (_targetParameter: string, _bodyParameter?: string, options?: Record<string, unknown>) => {
           (options as { eventHandlers: { succeeded: () => void } }).eventHandlers.succeeded();
+
+          return new Options();
         },
       );
 
@@ -91,6 +97,8 @@ describe('SipOperations', () => {
       mockUA.sendOptions.mockImplementation(
         (_targetParameter: string, _bodyParameter?: string, options?: Record<string, unknown>) => {
           (options as { eventHandlers: { succeeded: () => void } }).eventHandlers.succeeded();
+
+          return new Options();
         },
       );
 
@@ -116,6 +124,8 @@ describe('SipOperations', () => {
           (options as { eventHandlers: { failed: (error: Error) => void } }).eventHandlers.failed(
             error,
           );
+
+          return new Options();
         },
       );
 
@@ -150,6 +160,8 @@ describe('SipOperations', () => {
             }),
           );
           (options as { eventHandlers: { succeeded: () => void } }).eventHandlers.succeeded();
+
+          return new Options();
         },
       );
 
@@ -187,6 +199,8 @@ describe('SipOperations', () => {
             }),
           );
           (options as { eventHandlers: { succeeded: () => void } }).eventHandlers.succeeded();
+
+          return new Options();
         },
       );
 
@@ -257,7 +271,6 @@ describe('SipOperations', () => {
           password: 'testpass',
           register: false,
           display_name: 'Test_User',
-          sdpSemantics: 'unified-plan',
           sockets: [{}] as unknown as Socket,
         },
         helpers: {
@@ -294,7 +307,6 @@ describe('SipOperations', () => {
         password: 'testpass',
         register: false,
         display_name: 'Test_User',
-        sdpSemantics: 'unified-plan',
         sockets: [{}],
         remoteAddress: '192.168.1.1',
         extraHeaders: ['X-Test-Header: value'],
@@ -328,7 +340,6 @@ describe('SipOperations', () => {
           password: 'testpass',
           register: false,
           display_name: 'Test_User',
-          sdpSemantics: 'unified-plan',
           sockets: [{}] as unknown as Socket,
         },
         helpers: {
@@ -389,7 +400,6 @@ describe('SipOperations', () => {
           password: undefined,
           register: false,
           display_name: 'Test_User',
-          sdpSemantics: 'unified-plan',
           sockets: [{}] as unknown as Socket,
         },
         helpers: {
@@ -441,6 +451,8 @@ describe('SipOperations', () => {
           expect(bodyParameter).toBe('ping test');
           expect((options as { extraHeaders: string[] }).extraHeaders).toEqual(['X-Ping: test']);
           (options as { eventHandlers: { succeeded: () => void } }).eventHandlers.succeeded();
+
+          return new Options();
         },
       );
 
@@ -459,6 +471,8 @@ describe('SipOperations', () => {
           (options as { eventHandlers: { failed: (error: Error) => void } }).eventHandlers.failed(
             error,
           );
+
+          return new Options();
         },
       );
 

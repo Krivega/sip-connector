@@ -164,8 +164,8 @@ class BaseSession implements RTCSession {
     throw new Error('Method not implemented.');
   }
 
-  public refer(_target: URI | string, _options?: ReferOptions): void {
-    throw new Error('Method not implemented.');
+  public refer(_target: URI | string, _options?: ReferOptions): false {
+    return false;
   }
 
   public resetLocalMedia(): void {
