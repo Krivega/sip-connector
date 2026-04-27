@@ -68,6 +68,15 @@ export type TStatusCategory =
   | 'system';
 
 const STATUS_DIAGRAMS: Record<TStatusCategory, readonly string[]> = {
+  system: [
+    'system:disconnected',
+    'system:disconnecting',
+    'system:connecting',
+    'system:readyToCall',
+    'system:callConnecting',
+    'system:callDisconnecting',
+    'system:callActive',
+  ],
   connection: [
     'connection:idle',
     'connection:preparing',
@@ -122,15 +131,6 @@ const STATUS_DIAGRAMS: Record<TStatusCategory, readonly string[]> = {
     'presentation:active',
     'presentation:stopping',
     'presentation:failed',
-  ],
-  system: [
-    'system:disconnected',
-    'system:disconnecting',
-    'system:connecting',
-    'system:readyToCall',
-    'system:callConnecting',
-    'system:callDisconnecting',
-    'system:callActive',
   ],
 };
 

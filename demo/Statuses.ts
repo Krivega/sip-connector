@@ -26,6 +26,7 @@ class Statuses {
 
   public getStatusSnapshots(): TStatusesRootSnapshot {
     return {
+      system: this.statusesStore.systemSnapshot as TStatusesRootSnapshot['system'],
       connection: this.statusesStore.connectionSnapshot,
       autoConnector: this.statusesStore.autoConnectorSnapshot,
       callReconnect: this.statusesStore.callReconnectSnapshot,
@@ -33,7 +34,6 @@ class Statuses {
       callSession: this.statusesStore.callSessionSnapshot,
       incoming: this.statusesStore.incomingSnapshot,
       presentation: this.statusesStore.presentationSnapshot,
-      system: this.statusesStore.systemSnapshot as TStatusesRootSnapshot['system'],
     };
   }
 
