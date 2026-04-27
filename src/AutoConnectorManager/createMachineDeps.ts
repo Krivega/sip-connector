@@ -7,12 +7,23 @@ import type { TParametersAutoConnect } from './types';
 
 type TCreateMachineDepsParameters = {
   runtime: AutoConnectorRuntime;
-  canRetryOnError: (error: unknown) => boolean;
+  baseCanRetryOnError: (error: unknown) => boolean;
+  canRetryOnError?: (error: unknown) => boolean;
 };
 
 export const createMachineDeps = (
   params: TCreateMachineDepsParameters,
 ): TAutoConnectorMachineDeps => {
+  const canRetryOnError = (error: unknown): boolean => {
+    const isBaseRetryAllowed = params.baseCanRetryOnError(error);
+
+    if (!isBaseRetryAllowed) {
+      return false;
+    }
+
+    return params.canRetryOnError?.(error) ?? true;
+  };
+
   const toTerminalError = ({
     stopReason,
     lastError,
@@ -32,7 +43,7 @@ export const createMachineDeps = (
   };
 
   return {
-    canRetryOnError: params.canRetryOnError,
+    canRetryOnError,
     shouldDisconnectBeforeAttempt: () => {
       return params.runtime.shouldDisconnectBeforeAttempt();
     },

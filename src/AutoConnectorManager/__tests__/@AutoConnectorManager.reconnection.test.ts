@@ -3,6 +3,7 @@ import { DelayRequester } from '@krivega/timeout-requester';
 import delayPromise from '@/__fixtures__/delayPromise';
 import flushPromises from '@/__fixtures__/flushPromises';
 import { doMockSipConnector } from '@/doMock';
+import { dataForConnectionWithAuthorizationIncorrectPassword } from '@/tools/__fixtures__/connectToServer';
 import AutoConnectorManager from '../@AutoConnectorManager';
 
 import type { SipConnector } from '@/SipConnector';
@@ -129,6 +130,31 @@ describe('AutoConnectorManager - Reconnection', () => {
       await manager.wait('success');
 
       expect(connectSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('при неверном пароле должен останавливать авто-подключение без retry', async () => {
+      const connectSpy = jest.spyOn(sipConnector.connectionQueueManager, 'connect');
+      const retryDelaySpy = jest.spyOn(DelayRequester.prototype, 'request');
+
+      manager.start({
+        getParameters: async () => {
+          return dataForConnectionWithAuthorizationIncorrectPassword;
+        },
+      });
+
+      try {
+        await Promise.race([
+          manager.wait('stop-attempts-by-error'),
+          delayPromise(1500).then(() => {
+            throw new Error('stop-attempts-by-error not emitted');
+          }),
+        ]);
+      } finally {
+        manager.stop();
+      }
+
+      expect(connectSpy).toHaveBeenCalledTimes(1);
+      expect(retryDelaySpy).not.toHaveBeenCalled();
     });
   });
 });

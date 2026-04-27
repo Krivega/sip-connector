@@ -1,9 +1,7 @@
 import { expect } from '@playwright/test';
 
 import type { Page } from '@playwright/test';
-import type { connectionFormConfig } from '../connection.config';
-
-type TConnectionFormConfig = typeof connectionFormConfig;
+import type { TConnectionFormConfig } from '../connection.config';
 
 const CONNECT_BUTTON_NAME = 'Подключиться к серверу';
 const DISCONNECT_BUTTON_NAME = 'Отключиться от сервера';
@@ -35,9 +33,19 @@ export class ConnectPage {
   }
 
   public async connect({ timeout }: { timeout: number }) {
-    await this.connectButton.click();
+    await this.startConnectionAttempt();
     await expect(this.disconnectButton).toBeVisible({ timeout });
     await expect(this.connectButton).toBeHidden();
+  }
+
+  public async startConnectionAttempt() {
+    await this.connectButton.click();
+  }
+
+  public async expectReadyForConnection({ timeout = 30_000 }: { timeout?: number } = {}) {
+    await expect(this.connectButton).toBeVisible({ timeout });
+    await expect(this.connectButton).toBeEnabled();
+    await expect(this.disconnectButton).toBeHidden();
   }
 
   public async disconnect({ timeout = 30_000 }: { timeout?: number } = {}) {

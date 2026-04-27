@@ -49,13 +49,17 @@ export class StatusDashboard {
     await expect(this.page.locator('#statusesNodeValues')).toBeVisible();
   }
 
-  public async waitForDiagramStatus(category: TStatusDiagramCategory, value: string) {
+  public async waitForDiagramStatus(
+    category: TStatusDiagramCategory,
+    value: string,
+    { timeout = STATE_SYNC_TIMEOUT_MS }: { timeout?: number } = {},
+  ) {
     const activeNode = this.page.locator(
       `#sessionStatusesDiagrams .status-diagram__node--active[data-status-category="${category}"]`,
     );
 
     await expect(activeNode).toHaveAttribute('data-status-value', value, {
-      timeout: STATE_SYNC_TIMEOUT_MS,
+      timeout,
     });
   }
 

@@ -5,6 +5,11 @@ import type { TExpectedDashboardState, TStatusNodeTitle } from './page-objects/S
 
 /** Подключение к реальному хосту + получение server parameters; нужен доступ к серверу по сети. */
 const CONNECT_OK_TIMEOUT_MS = 120_000;
+const CONNECT_AUTH_ERROR_TIMEOUT_MS = 20_000;
+const WRONG_PASSWORD_CONFIG = {
+  ...connectionFormConfig,
+  password: 'wrong-password',
+};
 
 const IPv4 = /^(?:\d{1,3}\.){3}\d{1,3}$/;
 
@@ -205,6 +210,47 @@ test.describe('Подключение (connectButton)', () => {
 
     await test.step('проверить connectionConfiguration в JSON', async () => {
       await expectConnectionConfig(statusDashboard);
+    });
+  });
+
+  test('неверный пароль: авто-соединение останавливается без retry-цикла', async ({
+    connectPage,
+    statusDashboard,
+  }) => {
+    test.setTimeout(CONNECT_AUTH_ERROR_TIMEOUT_MS + 15_000);
+
+    await test.step('заполнить форму с неверным паролем и начать подключение', async () => {
+      await connectPage.fillForm(WRONG_PASSWORD_CONFIG);
+      await connectPage.startConnectionAttempt();
+    });
+
+    await test.step('проверить, что автоконнектор остановился на терминальной ошибке', async () => {
+      await statusDashboard.waitForDiagramStatus('autoConnectorManager', 'errorTerminal', {
+        timeout: CONNECT_AUTH_ERROR_TIMEOUT_MS,
+      });
+      await statusDashboard.open();
+      await statusDashboard.expectState({
+        diagrams: {
+          connection: 'connection:idle',
+          autoConnectorManager: 'errorTerminal',
+          system: 'system:disconnected',
+        },
+        nodes: {
+          'Auto Connector': {
+            state: 'errorTerminal',
+            fields: {
+              'stop reason:': 'halted',
+            },
+          },
+          System: {
+            state: 'system:disconnected',
+          },
+        },
+      });
+    });
+
+    await test.step('проверить, что UI снова готов к ручному подключению', async () => {
+      await connectPage.expectReadyForConnection();
     });
   });
 });

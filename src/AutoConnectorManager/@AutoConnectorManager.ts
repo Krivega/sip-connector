@@ -3,6 +3,7 @@ import { EventEmitterProxy } from 'events-constructor';
 import resolveDebug from '@/logger';
 import { AutoConnectorRuntime } from './AutoConnectorRuntime';
 import { createAutoConnectorStateMachine } from './AutoConnectorStateMachine';
+import { baseCanRetryOnError } from './baseCanRetryOnError';
 import { createBrowserNetworkEventsSubscriber } from './createBrowserNetworkEventsSubscriber';
 import { createMachineDeps } from './createMachineDeps';
 import { createEvents } from './events';
@@ -21,10 +22,6 @@ const RECONNECT_COALESCE_WINDOW_MS = 250;
 const ERROR_MESSAGES = {
   LIMIT_REACHED: 'Limit reached',
 } as const;
-
-const defaultCanRetryOnError = (_error: unknown): boolean => {
-  return true;
-};
 
 const debug = resolveDebug('AutoConnectorManager');
 const START_REASON: TReconnectReason = 'start';
@@ -104,8 +101,9 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
 
     this.stateMachine = createAutoConnectorStateMachine(
       createMachineDeps({
+        baseCanRetryOnError,
         runtime: this.runtime,
-        canRetryOnError: options?.canRetryOnError ?? defaultCanRetryOnError,
+        canRetryOnError: options?.canRetryOnError,
       }),
     );
 

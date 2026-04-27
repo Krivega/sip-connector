@@ -39,6 +39,9 @@ const createBaseParams = () => {
 
   return {
     runtime: runtime as unknown as AutoConnectorRuntime,
+    baseCanRetryOnError: jest.fn(() => {
+      return true;
+    }),
     canRetryOnError: jest.fn(() => {
       return true;
     }),
@@ -119,5 +122,41 @@ describe('createMachineDeps', () => {
       stopReason: 'failed',
       lastError: new Error('Failed to reconnect'),
     });
+  });
+
+  it('canRetryOnError: не вызывает кастомную политику, если base вернула false', () => {
+    const params = createBaseParams();
+    const error = new Error('terminal');
+
+    params.baseCanRetryOnError = jest.fn(() => {
+      return false;
+    });
+    params.canRetryOnError = jest.fn(() => {
+      return true;
+    });
+
+    const deps = createMachineDeps(params);
+
+    expect(deps.canRetryOnError(error)).toBe(false);
+    expect(params.baseCanRetryOnError).toHaveBeenCalledWith(error);
+    expect(params.canRetryOnError).not.toHaveBeenCalled();
+  });
+
+  it('canRetryOnError: комбинирует base и кастомную политику через AND', () => {
+    const params = createBaseParams();
+    const error = new Error('retryable');
+
+    params.baseCanRetryOnError = jest.fn(() => {
+      return true;
+    });
+    params.canRetryOnError = jest.fn(() => {
+      return false;
+    });
+
+    const deps = createMachineDeps(params);
+
+    expect(deps.canRetryOnError(error)).toBe(false);
+    expect(params.baseCanRetryOnError).toHaveBeenCalledWith(error);
+    expect(params.canRetryOnError).toHaveBeenCalledWith(error);
   });
 });
