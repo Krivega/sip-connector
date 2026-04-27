@@ -6,6 +6,8 @@ import type { TExpectedDashboardState, TStatusNodeTitle } from './page-objects/S
 /** Подключение к реальному хосту + получение server parameters; нужен доступ к серверу по сети. */
 const CONNECT_OK_TIMEOUT_MS = 120_000;
 const CONNECT_AUTH_ERROR_TIMEOUT_MS = 20_000;
+const NETWORK_INTERFACE_CHANGE_TIMEOUT_MS = 10_000;
+const NETWORK_INTERFACE_SOFT_SWITCH_OBSERVE_MS = 4000;
 const WRONG_PASSWORD_CONFIG = {
   ...connectionFormConfig,
   password: 'wrong-password',
@@ -210,6 +212,84 @@ test.describe('Подключение (connectButton)', () => {
 
     await test.step('проверить connectionConfiguration в JSON', async () => {
       await expectConnectionConfig(statusDashboard);
+    });
+  });
+
+  test('смена сетевого интерфейса: автоконнект остаётся активен при disconnected connect', async ({
+    connectPage,
+    statusDashboard,
+  }) => {
+    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 45_000);
+
+    await test.step('авторизоваться на доступном сервере через первый интерфейс', async () => {
+      await connectPage.fillForm(connectionFormConfig);
+      await connectPage.connect({ timeout: CONNECT_OK_TIMEOUT_MS });
+    });
+
+    await test.step('открыть дашборд и дождаться успешного мониторинга', async () => {
+      await statusDashboard.waitForDiagramStatus('autoConnectorManager', 'connectedMonitoring');
+      await statusDashboard.open();
+    });
+
+    await test.step('сымитировать смену сетевого интерфейса на второй доступный интерфейс', async () => {
+      await connectPage.blockServerAddressApi(connectionFormConfig.serverAddress);
+      await connectPage.disconnectWsTransport(connectionFormConfig.serverAddress);
+      await connectPage.simulateNetworkInterfaceChange();
+    });
+
+    await test.step('проверить, что автоконнект продолжается при disconnected connect', async () => {
+      await statusDashboard.waitForDiagramStatus('connection', 'connection:disconnected', {
+        timeout: NETWORK_INTERFACE_CHANGE_TIMEOUT_MS,
+      });
+      await statusDashboard.waitForDiagramStatus('system', 'system:connecting', {
+        timeout: NETWORK_INTERFACE_CHANGE_TIMEOUT_MS,
+      });
+      await statusDashboard.expectState({
+        diagrams: {
+          connection: 'connection:disconnected',
+          autoConnectorManager: 'waitingBeforeRetry',
+          system: 'system:connecting',
+        },
+        nodes: {
+          Connection: {
+            state: 'connection:disconnected',
+          },
+          'Auto Connector': {
+            state: 'waitingBeforeRetry',
+          },
+          System: {
+            state: 'system:connecting',
+          },
+        },
+      });
+    });
+  });
+
+  test('смена интерфейса с блокировкой WS сообщений: автоконнект остаётся активен', async ({
+    connectPage,
+    statusDashboard,
+  }) => {
+    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 45_000);
+
+    await test.step('авторизоваться на сервере и дождаться connected monitoring', async () => {
+      await connectPage.fillForm(connectionFormConfig);
+      await connectPage.connect({ timeout: CONNECT_OK_TIMEOUT_MS });
+      await statusDashboard.waitForDiagramStatus('autoConnectorManager', 'connectedMonitoring');
+      await statusDashboard.open();
+    });
+
+    await test.step('сымитировать смену сети и блокировку только WS сообщений', async () => {
+      await connectPage.blockWsMessages(connectionFormConfig.serverAddress);
+      await connectPage.simulateNetworkInterfaceChange();
+    });
+
+    await test.step('проверить, что автоконнект не останавливается терминально', async () => {
+      await statusDashboard.waitForDiagramStatus('system', 'system:connecting', {
+        timeout: NETWORK_INTERFACE_CHANGE_TIMEOUT_MS,
+      });
+      await statusDashboard.expectDiagramStatusNot('autoConnectorManager', 'errorTerminal', {
+        timeout: NETWORK_INTERFACE_SOFT_SWITCH_OBSERVE_MS,
+      });
     });
   });
 

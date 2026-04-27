@@ -63,6 +63,20 @@ export class StatusDashboard {
     });
   }
 
+  public async expectDiagramStatusNot(
+    category: TStatusDiagramCategory,
+    value: string,
+    { timeout = STATE_SYNC_TIMEOUT_MS }: { timeout?: number } = {},
+  ) {
+    const activeNode = this.page.locator(
+      `#sessionStatusesDiagrams .status-diagram__node--active[data-status-category="${category}"]`,
+    );
+
+    await expect(activeNode).not.toHaveAttribute('data-status-value', value, {
+      timeout,
+    });
+  }
+
   /** Единая точка входа — декларативная проверка всего состояния дашборда */
   public async expectState(expected: TExpectedDashboardState) {
     if (expected.diagrams) {

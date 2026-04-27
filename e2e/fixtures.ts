@@ -3,6 +3,7 @@ import { test as base } from '@playwright/test';
 import { ConnectPage } from './page-objects/ConnectPage';
 import { DemoPage } from './page-objects/DemoPage';
 import { StatusDashboard } from './page-objects/StatusDashboard';
+import { installE2ENetworkControls } from './support/networkControls';
 
 type TFixtures = {
   connectPage: ConnectPage;
@@ -12,6 +13,7 @@ type TFixtures = {
 
 export const test = base.extend<TFixtures>({
   connectPage: async ({ page, context }, use) => {
+    await context.addInitScript(installE2ENetworkControls);
     await context.addInitScript(() => {
       try {
         localStorage.clear();
