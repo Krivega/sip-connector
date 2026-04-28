@@ -176,6 +176,7 @@ describe('SipOperations', () => {
         body,
         {
           extraHeaders,
+          timeout: 10_000,
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           eventHandlers: expect.objectContaining({
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -215,6 +216,7 @@ describe('SipOperations', () => {
         undefined,
         {
           extraHeaders: undefined,
+          timeout: 10_000,
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           eventHandlers: expect.objectContaining({
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment

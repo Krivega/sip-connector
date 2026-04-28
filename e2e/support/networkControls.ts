@@ -15,6 +15,7 @@ export const installE2ENetworkControls = () => {
 
   const blockedApiHostnames = new Set<string>();
   const blockedWsMessageHostnames = new Set<string>();
+  const blockedWsResponseHostnames = new Set<string>();
   const blockedWsTransportHostnames = new Set<string>();
   let forcedPingProbeResult: 'ok' | 'fail' | 'real' = 'real';
   let forcedGetUserMediaResult: 'real' | 'fail' = 'real';
@@ -168,7 +169,10 @@ export const installE2ENetworkControls = () => {
       socket.addEventListener(
         'message',
         (event) => {
-          if (blockedWsMessageHostnames.has(socketHostname)) {
+          if (
+            blockedWsMessageHostnames.has(socketHostname) ||
+            blockedWsResponseHostnames.has(socketHostname)
+          ) {
             event.stopImmediatePropagation();
           }
         },
@@ -206,6 +210,11 @@ export const installE2ENetworkControls = () => {
 
       blockedWsMessageHostnames.add(normalizedServerHostname);
     },
+    blockWsResponseMessages: (serverAddress: string) => {
+      const normalizedServerHostname = normalizeServerHostname(serverAddress);
+
+      blockedWsResponseHostnames.add(normalizedServerHostname);
+    },
     disconnectWsTransport: (serverAddress: string) => {
       const normalizedServerHostname = normalizeServerHostname(serverAddress);
 
@@ -220,6 +229,11 @@ export const installE2ENetworkControls = () => {
           /* ignore */
         }
       });
+    },
+    blockCreateNewWsTransport: (serverAddress: string) => {
+      const normalizedServerHostname = normalizeServerHostname(serverAddress);
+
+      blockedWsTransportHostnames.add(normalizedServerHostname);
     },
     simulateNetworkInterfaceChange: () => {
       syncConnectionManagerPingOverride();

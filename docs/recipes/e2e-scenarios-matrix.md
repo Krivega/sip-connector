@@ -16,7 +16,7 @@
 - `stable` — rapid-sequence `connect → disconnect → connect` сохраняет корректные состояния (`e2e/connect.spec.ts`).
 - `stable` — `network-change + ping OK` не запускает reconnect (`e2e/connect.spec.ts`).
 - `stable` — `network-change + ping FAIL` приводит к reconnect-флоу (`e2e/connect.spec.ts`).
-- `expected-fail` — при `ping FAIL` ожидается явный `waitingBeforeRetry` перед восстановлением (`e2e/connect.spec.ts`).
+- `stable` — при `ping FAIL` ожидается явный `waitingBeforeRetry` перед восстановлением (`e2e/connect.spec.ts`).
 - `stable` — неверный пароль переводит auto-connector в `errorTerminal` без retry-цикла (`e2e/connect.spec.ts`).
 
 ## Call

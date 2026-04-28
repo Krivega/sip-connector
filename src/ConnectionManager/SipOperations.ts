@@ -1,6 +1,8 @@
 import type { UA, URI } from '@krivega/jssip';
 import type UAFactory from './UAFactory';
 
+const TIMEOUT_PING = 10_000;
+
 export type TParametersCheckTelephony = {
   displayName: string;
   sipServerIp: string;
@@ -28,10 +30,12 @@ export default class SipOperations {
   /**
    * Отправляет SIP OPTIONS запрос к указанному адресу
    */
+  // eslint-disable-next-line @typescript-eslint/max-params
   public async sendOptions(
     target: URI | string,
     body?: string,
     extraHeaders?: string[],
+    timeout?: number,
   ): Promise<void> {
     const ua = this.getUaProtected();
 
@@ -45,6 +49,7 @@ export default class SipOperations {
             },
             failed: reject,
           },
+          timeout,
         });
       } catch (error) {
         reject(error as Error);
@@ -59,7 +64,7 @@ export default class SipOperations {
     const ua = this.getUaProtected();
     const target = ua.configuration.uri;
 
-    return this.sendOptions(target, body, extraHeaders);
+    return this.sendOptions(target, body, extraHeaders, TIMEOUT_PING);
   }
 
   /**

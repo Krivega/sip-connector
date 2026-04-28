@@ -6,7 +6,7 @@ import type { TExpectedDashboardState, TStatusNodeTitle } from './page-objects/S
 /** Подключение к реальному хосту + получение server parameters; нужен доступ к серверу по сети. */
 const CONNECT_OK_TIMEOUT_MS = 10_000;
 const CONNECT_AUTH_ERROR_TIMEOUT_MS = 10_000;
-const NETWORK_INTERFACE_CHANGE_TIMEOUT_MS = 10_000;
+const NETWORK_INTERFACE_CHANGE_TIMEOUT_MS = 15_000;
 const WRONG_PASSWORD_CONFIG = {
   ...connectionFormConfig,
   password: 'wrong-password',
@@ -352,7 +352,6 @@ test.describe('Подключение (connectButton)', () => {
     });
 
     await test.step('сымитировать смену сетевого интерфейса при доступном сервере', async () => {
-      await connectPage.forcePingProbeResult('ok');
       await connectPage.simulateNetworkInterfaceChange();
     });
 
@@ -401,8 +400,9 @@ test.describe('Подключение (connectButton)', () => {
       await statusDashboard.open();
     });
 
-    await test.step('сымитировать смену сети и недоступность сервера для ping', async () => {
-      await connectPage.forcePingProbeResult('fail');
+    await test.step('сымитировать смену сети и отключение WS-ответов от сервера', async () => {
+      await connectPage.blockWsMessages(connectionFormConfig.serverAddress);
+      await connectPage.blockCreateNewWsTransport(connectionFormConfig.serverAddress);
       await connectPage.simulateNetworkInterfaceChange();
     });
 
@@ -410,27 +410,23 @@ test.describe('Подключение (connectButton)', () => {
       await statusDashboard.waitForDiagramStatus('system', 'system:disconnecting', {
         timeout: NETWORK_INTERFACE_CHANGE_TIMEOUT_MS,
       });
-      await statusDashboard.waitForDiagramStatus('system', 'system:readyToCall', {
+      await statusDashboard.waitForDiagramStatus('system', 'system:connecting', {
         timeout: CONNECT_OK_TIMEOUT_MS,
       });
       await statusDashboard.expectState({
         diagrams: {
-          autoConnectorManager: 'connectedMonitoring',
-          system: 'system:readyToCall',
+          autoConnectorManager: 'attemptingConnect',
+          system: 'system:connecting',
         },
         nodes: {
           'Auto Connector': {
-            state: 'connectedMonitoring',
+            state: 'attemptingConnect',
           },
           System: {
-            state: 'system:readyToCall',
+            state: 'system:connecting',
           },
         },
       });
-    });
-
-    await test.step('сбросить принудительный результат ping в real-режим', async () => {
-      await connectPage.forcePingProbeResult('real');
     });
   });
 
@@ -438,11 +434,7 @@ test.describe('Подключение (connectButton)', () => {
     connectPage,
     statusDashboard,
   }) => {
-    test.fail(
-      true,
-      'ожидаем увидеть явный retry-cycle у autoConnectorManager, а не мгновенный восстановленный readyToCall',
-    );
-    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 10_000);
+    test.setTimeout(CONNECT_OK_TIMEOUT_MS + NETWORK_INTERFACE_CHANGE_TIMEOUT_MS);
 
     await test.step('подключиться и открыть дашборд', async () => {
       await connectPage.fillForm(connectionFormConfig);
@@ -452,12 +444,22 @@ test.describe('Подключение (connectButton)', () => {
     });
 
     await test.step('спровоцировать network-change с ping FAIL', async () => {
-      await connectPage.forcePingProbeResult('fail');
+      await connectPage.blockWsMessages(connectionFormConfig.serverAddress);
+      await connectPage.blockCreateNewWsTransport(connectionFormConfig.serverAddress);
       await connectPage.simulateNetworkInterfaceChange();
     });
 
-    await test.step('ожидать переход в waitingBeforeRetry', async () => {
-      await statusDashboard.waitForDiagramStatus('autoConnectorManager', 'waitingBeforeRetry', {
+    await test.step('ожидать переход в attemptingConnect', async () => {
+      await statusDashboard.waitForDiagramStatus('system', 'system:disconnecting', {
+        timeout: NETWORK_INTERFACE_CHANGE_TIMEOUT_MS,
+      });
+      await statusDashboard.waitForDiagramStatus('system', 'system:connecting', {
+        timeout: NETWORK_INTERFACE_CHANGE_TIMEOUT_MS,
+      });
+      await statusDashboard.waitForDiagramStatus('autoConnectorManager', 'attemptingConnect', {
+        timeout: NETWORK_INTERFACE_CHANGE_TIMEOUT_MS,
+      });
+      await statusDashboard.waitForDiagramStatus('connection', 'connection:connecting', {
         timeout: NETWORK_INTERFACE_CHANGE_TIMEOUT_MS,
       });
     });

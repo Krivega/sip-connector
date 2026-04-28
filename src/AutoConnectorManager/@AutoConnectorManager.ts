@@ -199,6 +199,8 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   //    сетевое событие триггернёт стандартный `requestReconnect`.
   private readonly probeServerReachability = async (): Promise<boolean> => {
     if (this.stateMachine.isInConnectedMonitoringState()) {
+      debug('probeServerReachability: isInConnectedMonitoringState');
+
       try {
         await this.connectionManager.ping();
 
@@ -211,6 +213,8 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
     }
 
     if (this.stateMachine.isInWaitingBeforeRetryState()) {
+      debug('probeServerReachability: isInWaitingBeforeRetryState');
+
       const { parameters } = this.stateMachine.context;
 
       try {
@@ -227,6 +231,8 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
         return true;
       }
     }
+
+    debug('probeServerReachability: default return false');
 
     return false;
   };

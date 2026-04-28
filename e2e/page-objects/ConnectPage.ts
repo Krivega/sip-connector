@@ -76,6 +76,7 @@ export class ConnectPage {
   public async expectConnected({ timeout = 30_000 }: { timeout?: number } = {}) {
     await expect(this.disconnectButton).toBeVisible({ timeout });
     await expect(this.connectButton).toBeHidden();
+    await this.page.waitForTimeout(1000);
   }
 
   public async startConnectionAttempt() {
@@ -125,6 +126,18 @@ export class ConnectPage {
     }, serverAddress);
   }
 
+  public async blockWsResponseMessages(serverAddress: string) {
+    await this.page.evaluate((address) => {
+      const hooks = (window as TSipConnectorDemoE2EWindow).sipConnectorDemoE2E;
+
+      if (!hooks) {
+        throw new Error('Demo e2e hooks are not available');
+      }
+
+      hooks.blockWsResponseMessages(address);
+    }, serverAddress);
+  }
+
   public async disconnectWsTransport(serverAddress: string) {
     await this.page.evaluate((address) => {
       const hooks = (window as TSipConnectorDemoE2EWindow).sipConnectorDemoE2E;
@@ -134,6 +147,18 @@ export class ConnectPage {
       }
 
       hooks.disconnectWsTransport(address);
+    }, serverAddress);
+  }
+
+  public async blockCreateNewWsTransport(serverAddress: string) {
+    await this.page.evaluate((address) => {
+      const hooks = (window as TSipConnectorDemoE2EWindow).sipConnectorDemoE2E;
+
+      if (!hooks) {
+        throw new Error('Demo e2e hooks are not available');
+      }
+
+      hooks.blockCreateNewWsTransport(address);
     }, serverAddress);
   }
 

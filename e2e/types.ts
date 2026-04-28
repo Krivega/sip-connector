@@ -1,7 +1,9 @@
 export type TSipConnectorDemoE2EHooks = {
   blockServerAddressApi: (serverAddress: string) => void;
   blockWsMessages: (serverAddress: string) => void;
+  blockWsResponseMessages: (serverAddress: string) => void;
   disconnectWsTransport: (serverAddress: string) => void;
+  blockCreateNewWsTransport: (serverAddress: string) => void;
   simulateNetworkInterfaceChange: () => void;
   forcePingProbeResult: (result: 'ok' | 'fail' | 'real') => void;
   forceGetUserMediaResult: (result: 'real' | 'fail') => void;
