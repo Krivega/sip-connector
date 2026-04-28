@@ -45,6 +45,8 @@ class App {
 
   private session: Session | undefined = undefined;
 
+  private isCallActivePrev = false;
+
   /**
    * Создает экземпляр App
    */
@@ -544,6 +546,12 @@ class App {
       isCallActive,
     } = state;
 
+    const isCallFinished = this.isCallActivePrev && !isCallActive;
+
+    if (isCallFinished) {
+      this.presentationManager.deactivate();
+    }
+
     this.updateSessionStatuses({
       connection: state.connection,
       call: state.call,
@@ -616,6 +624,7 @@ class App {
 
     // Обновляем состояние кнопок камеры и микрофона
     this.updateMediaButtonsState({ isCallActive });
+    this.isCallActivePrev = isCallActive;
   }
 
   /**
