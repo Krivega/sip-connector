@@ -1,5 +1,7 @@
 import { expect } from '@playwright/test';
 
+import { DemoPage } from './DemoPage';
+
 import type { Page } from '@playwright/test';
 import type { TConnectionFormConfig } from '../connection.config';
 import type { TSipConnectorDemoE2EWindow } from '../types';
@@ -16,8 +18,11 @@ const STOP_SHARE_BUTTON_NAME = 'Завершить презентацию';
 export class ConnectPage {
   private readonly page: Page;
 
+  private readonly demoPage: DemoPage;
+
   public constructor(page: Page) {
     this.page = page;
+    this.demoPage = new DemoPage(page);
   }
 
   public get connectButton() {
@@ -182,10 +187,12 @@ export class ConnectPage {
 
   public async startCallAttempt() {
     await this.callButton.click();
+    await this.demoPage.waitForLoaderToBeHidden();
   }
 
   public async startConnectAndCallAttempt() {
     await this.connectAndCallButton.click();
+    await this.demoPage.waitForLoaderToBeHidden();
   }
 
   public async hangupOnly() {

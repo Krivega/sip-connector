@@ -54,11 +54,11 @@ class App {
     this.notificationManager = new NotificationManager();
     this.formStateManager = new FormStateManager();
     this.localMediaStreamManager = new LocalMediaStreamManager();
-    this.presentationManager = new PresentationManager();
+    this.statusesManager = new Statuses();
+    this.presentationManager = new PresentationManager(this.statusesManager);
     this.remoteMediaStreamManager = new RemoteMediaStreamManager();
     this.loaderManager = new LoaderManager();
     this.callStatsManager = new CallStatsManager();
-    this.statusesManager = new Statuses();
 
     const logsManager = new LogsManager();
 
@@ -104,7 +104,12 @@ class App {
       this.notificationManager.hide(idNotificationInboundVideoProblemDetected);
     });
 
+    this.bootstrap();
+  }
+
+  private bootstrap(): void {
     this.initialize();
+    this.loaderManager.hide();
   }
 
   /**

@@ -21,7 +21,12 @@ export const test = base.extend<TFixtures>({
         /* ignore */
       }
     });
+
     await page.goto('/');
+
+    const demoPage = new DemoPage(page);
+
+    await demoPage.waitForLoaderToBeHidden();
 
     const connectPage = new ConnectPage(page);
 
@@ -39,6 +44,8 @@ export const test = base.extend<TFixtures>({
     await page.goto('/');
 
     const demoPage = new DemoPage(page);
+
+    await demoPage.waitForLoaderToBeHidden();
 
     await use(demoPage);
   },

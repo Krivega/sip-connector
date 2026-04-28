@@ -1,26 +1,44 @@
+import { EPresentationStatus } from '@/index';
 import { dom } from './dom';
 import resolveDebug from './logger';
 import sipConnectorFacade from './Session/sipConnectorFacade';
 
+import type Statuses from './Statuses';
 import type VideoPlayer from './VideoPlayer';
 
-type TState = 'idle' | 'ready' | 'starting' | 'started' | 'stopping';
 type TStressTestingState = 'started' | 'stopped';
+type TPresentationState = EPresentationStatus;
+
+const isPresentationStoppedState = (state: TPresentationState): boolean => {
+  return state === EPresentationStatus.IDLE || state === EPresentationStatus.FAILED;
+};
+
+const isPresentationProcessState = (state: TPresentationState): boolean => {
+  return (
+    state === EPresentationStatus.STARTING ||
+    state === EPresentationStatus.ACTIVE ||
+    state === EPresentationStatus.STOPPING
+  );
+};
 
 const debug = resolveDebug('PresentationManager');
 
 class PresentationManager {
-  private state: TState = 'idle';
-
   private stressTestingState: TStressTestingState = 'stopped';
 
   private videoPlayer: VideoPlayer | undefined = undefined;
 
   private currentPresentationStream: MediaStream | undefined = undefined;
 
-  private unsubscribeSipConnectorEvents: (() => void) | undefined = undefined;
+  private presentationState: TPresentationState = EPresentationStatus.IDLE;
 
-  public constructor() {
+  private isCallActive = false;
+
+  private readonly statusesManager: Statuses;
+
+  public constructor(statusesManager: Statuses) {
+    this.statusesManager = statusesManager;
+
     dom.startPresentationElement.addEventListener('click', this.handleStart);
     dom.startStressTestingPresentationElement.addEventListener(
       'click',
@@ -28,6 +46,22 @@ class PresentationManager {
     );
     dom.stopPresentationElement.addEventListener('click', this.handleStop);
     dom.stopStressTestingPresentationButton.addEventListener('click', this.handleStopStressTesting);
+
+    this.statusesManager.onChangeSystemState(({ presentation, isCallActive }) => {
+      const shouldResetPresentation =
+        this.currentPresentationStream !== undefined &&
+        isPresentationProcessState(this.presentationState) &&
+        isPresentationStoppedState(presentation);
+
+      this.presentationState = presentation;
+      this.isCallActive = isCallActive;
+
+      if (shouldResetPresentation) {
+        this.resetPresentation();
+      }
+
+      this.updateUi();
+    });
   }
 
   private get isNotStartedStressTesting() {
@@ -38,63 +72,30 @@ class PresentationManager {
     return this.stressTestingState === 'started';
   }
 
-  private get isIdle() {
-    return this.state === 'idle';
-  }
-
   private get isNotReady() {
     return !this.isReady;
   }
 
   private get isReady() {
-    return this.state === 'ready';
+    return isPresentationStoppedState(this.presentationState);
   }
 
   private get isStarted() {
-    return this.state === 'started';
+    return this.presentationState === EPresentationStatus.ACTIVE;
   }
 
   public activate(): void {
-    this.setReady();
     this.updateUi();
   }
 
   public deactivate(): void {
     this.resetPresentation();
     this.setStoppedStressTesting();
-    this.setIdle();
     this.updateUi();
   }
 
   public setVideoPlayer(videoPlayer: VideoPlayer): void {
     this.videoPlayer = videoPlayer;
-  }
-
-  private subscribeSipConnectorEvents(): void {
-    this.unsubscribeSipConnectorEvents?.();
-
-    const handleStoppedPresentation = () => {
-      this.resetPresentation();
-    };
-
-    const offStoppedByServerCommand = sipConnectorFacade.on(
-      'stopped-presentation-by-server-command',
-      handleStoppedPresentation,
-    );
-    const offPresentationFailed = sipConnectorFacade.on(
-      'presentation:presentation:failed',
-      handleStoppedPresentation,
-    );
-    const offPresentationEnded = sipConnectorFacade.on(
-      'presentation:presentation:ended',
-      handleStoppedPresentation,
-    );
-
-    this.unsubscribeSipConnectorEvents = () => {
-      offStoppedByServerCommand();
-      offPresentationFailed();
-      offPresentationEnded();
-    };
   }
 
   private readonly handleStop = () => {
@@ -218,8 +219,6 @@ class PresentationManager {
   }: {
     presentationStream: MediaStream;
   }): Promise<void> {
-    this.setStarting();
-    this.updateUi();
     this.currentPresentationStream = presentationStream;
 
     try {
@@ -230,11 +229,6 @@ class PresentationManager {
         mediaStream: presentationStream,
       });
 
-      this.subscribeSipConnectorEvents();
-
-      this.setStarted();
-      this.updateUi();
-
       debug('presentation started');
     } catch (error: unknown) {
       this.resetPresentation();
@@ -244,40 +238,36 @@ class PresentationManager {
   }
 
   private readonly resetPresentation = () => {
-    this.unsubscribeSipConnectorEvents?.();
-    this.unsubscribeSipConnectorEvents = undefined;
-
-    this.setReady();
-    this.updateUi();
-
     this.currentPresentationStream?.getTracks().forEach((track) => {
       track.stop();
     });
     this.currentPresentationStream = undefined;
 
     this.videoPlayer?.clear();
+
+    this.updateUi();
   };
 
   private updateUi() {
-    this.updateStartPresentationElement();
+    this.updateButtonsStartPresentationElement();
     this.updateStressTestingPresentationButtons();
-    this.updateStopPresentationElement();
     this.updatePresentationVideoElement();
     this.updatePresentationStressTestingSection();
   }
 
-  private updateStopPresentationElement() {
-    if (this.isNotReady && this.isNotStartedStressTesting) {
-      dom.show(dom.stopPresentationElement);
-    } else {
+  private updateButtonsStartPresentationElement() {
+    if (this.isStartedStressTesting || !this.isCallActive) {
+      dom.hide(dom.startPresentationElement);
       dom.hide(dom.stopPresentationElement);
-    }
-  }
 
-  private updateStartPresentationElement() {
-    if (this.isReady && this.isNotStartedStressTesting) {
+      return;
+    }
+
+    if (this.isReady) {
       dom.show(dom.startPresentationElement);
+      dom.hide(dom.stopPresentationElement);
     } else {
+      dom.show(dom.stopPresentationElement);
       dom.hide(dom.startPresentationElement);
     }
   }
@@ -309,21 +299,14 @@ class PresentationManager {
   }
 
   private updatePresentationStressTestingSection() {
-    if (this.isIdle) {
-      dom.hide(dom.presentationStressTestingSectionElement);
-    } else {
+    if (this.isCallActive) {
       dom.show(dom.presentationStressTestingSectionElement);
+    } else {
+      dom.hide(dom.presentationStressTestingSectionElement);
     }
   }
 
   private async stop(): Promise<void> {
-    if (this.isIdle || this.isReady) {
-      return;
-    }
-
-    this.setStopping();
-    this.updateUi();
-
     try {
       await sipConnectorFacade.stopPresentation();
 
@@ -331,26 +314,6 @@ class PresentationManager {
     } finally {
       this.resetPresentation();
     }
-  }
-
-  private setIdle() {
-    this.state = 'idle';
-  }
-
-  private setReady() {
-    this.state = 'ready';
-  }
-
-  private setStarting() {
-    this.state = 'starting';
-  }
-
-  private setStarted() {
-    this.state = 'started';
-  }
-
-  private setStopping() {
-    this.state = 'stopping';
   }
 
   private setStartedStressTesting() {

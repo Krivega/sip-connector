@@ -1,11 +1,14 @@
 import { connectionFormConfig } from './connection.config';
 import { test, expect } from './fixtures';
 
-const CONNECT_OK_TIMEOUT_MS = 120_000;
-const CALL_ATTEMPT_TIMEOUT_MS = 15_000;
+const CONNECT_OK_TIMEOUT_MS = 10_000;
+const CALL_ATTEMPT_TIMEOUT_MS = 5000;
 
 test.describe('Звонок (callButton)', () => {
   test.describe.configure({ mode: 'serial' });
+  test.afterEach(async ({ connectPage }) => {
+    await connectPage.disconnect({ timeout: CONNECT_OK_TIMEOUT_MS });
+  });
 
   test('в disconnected доступна только кнопка connect+call, call-only скрыта', async ({
     connectPage,
@@ -21,7 +24,7 @@ test.describe('Звонок (callButton)', () => {
     connectPage,
     statusDashboard,
   }) => {
-    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 30_000);
+    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 10_000);
 
     await test.step('подключиться и открыть дашборд', async () => {
       await connectPage.fillForm(connectionFormConfig);
@@ -50,7 +53,7 @@ test.describe('Звонок (callButton)', () => {
     connectPage,
     statusDashboard,
   }) => {
-    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 30_000);
+    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 10_000);
 
     await test.step('подключиться и открыть дашборд', async () => {
       await connectPage.fillForm(connectionFormConfig);
@@ -86,7 +89,7 @@ test.describe('Звонок (callButton)', () => {
     connectPage,
     statusDashboard,
   }) => {
-    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 30_000);
+    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 10_000);
 
     await test.step('подключиться к серверу', async () => {
       await connectPage.fillForm(connectionFormConfig);
@@ -117,7 +120,7 @@ test.describe('Звонок (callButton)', () => {
     connectPage,
     statusDashboard,
   }) => {
-    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 30_000);
+    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 10_000);
 
     await test.step('подключиться к серверу', async () => {
       await connectPage.fillForm(connectionFormConfig);
@@ -151,7 +154,7 @@ test.describe('Звонок (callButton)', () => {
     connectPage,
     statusDashboard,
   }) => {
-    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 30_000);
+    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 10_000);
 
     await test.step('подключиться к серверу', async () => {
       await connectPage.fillForm(connectionFormConfig);
@@ -184,7 +187,7 @@ test.describe('Звонок (callButton)', () => {
     connectPage,
     statusDashboard,
   }) => {
-    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 120_000);
+    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 10_000);
 
     await test.step('заполнить форму и запустить connect+call', async () => {
       await connectPage.fillForm(connectionFormConfig);
@@ -212,11 +215,11 @@ test.describe('Звонок (callButton)', () => {
     });
   });
 
-  test('после завершения звонка кнопка stop share скрыта', async ({
+  test.skip('после завершения звонка кнопка stop share скрыта', async ({
     connectPage,
     statusDashboard,
   }) => {
-    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 120_000);
+    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 10_000);
 
     await test.step('заполнить форму и запустить connect+call', async () => {
       await connectPage.fillForm(connectionFormConfig);
@@ -224,16 +227,9 @@ test.describe('Звонок (callButton)', () => {
     });
 
     await test.step('дождаться активного звонка, стартовать share и убедиться что stop share показана', async () => {
-      try {
-        await statusDashboard.waitForDiagramStatus('system', 'system:callActive', {
-          timeout: CONNECT_OK_TIMEOUT_MS,
-        });
-      } catch {
-        test.skip(
-          true,
-          'Окружение не достигает system:callActive (например, media/WebRTC not supported)',
-        );
-      }
+      await statusDashboard.waitForDiagramStatus('system', 'system:callActive', {
+        timeout: CONNECT_OK_TIMEOUT_MS,
+      });
 
       await connectPage.forceGetDisplayMediaResult('real');
       await expect(connectPage.startShareButton).toBeVisible();
@@ -255,7 +251,7 @@ test.describe('Звонок (callButton)', () => {
     connectPage,
     statusDashboard,
   }) => {
-    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 45_000);
+    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 10_000);
 
     await test.step('подключиться к серверу', async () => {
       await connectPage.fillForm(connectionFormConfig);

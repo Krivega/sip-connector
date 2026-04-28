@@ -21,6 +21,10 @@ export class DemoPage {
     await expect(this.page).toHaveTitle(/Demo sip-connector call v/);
   }
 
+  public async waitForLoaderToBeHidden() {
+    await this.page.locator('#loaderOverlay').waitFor({ state: 'hidden' });
+  }
+
   public async expectCallSettings(expected: TCallSettingsExpectations) {
     await expect(this.page.getByRole('heading', { name: 'Настройки звонка' })).toBeVisible();
 

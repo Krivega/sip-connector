@@ -29,7 +29,12 @@ export default defineConfig({
     baseURL: 'http://127.0.0.1:4173',
     permissions: ['camera', 'microphone'],
     launchOptions: {
-      args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'],
+      args: [
+        '--use-fake-ui-for-media-stream',
+        '--use-fake-device-for-media-stream',
+        '--enable-usermedia-screen-capturing',
+        '--auto-select-desktop-capture-source=Entire screen',
+      ],
     },
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',

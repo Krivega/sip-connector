@@ -4,8 +4,8 @@ import { test, expect } from './fixtures';
 import type { TExpectedDashboardState, TStatusNodeTitle } from './page-objects/StatusDashboard';
 
 /** Подключение к реальному хосту + получение server parameters; нужен доступ к серверу по сети. */
-const CONNECT_OK_TIMEOUT_MS = 120_000;
-const CONNECT_AUTH_ERROR_TIMEOUT_MS = 20_000;
+const CONNECT_OK_TIMEOUT_MS = 10_000;
+const CONNECT_AUTH_ERROR_TIMEOUT_MS = 10_000;
 const NETWORK_INTERFACE_CHANGE_TIMEOUT_MS = 10_000;
 const WRONG_PASSWORD_CONFIG = {
   ...connectionFormConfig,
@@ -188,12 +188,15 @@ async function expectConnectionConfig(statusDashboard: TNodeReader) {
 
 test.describe('Подключение (connectButton)', () => {
   test.describe.configure({ mode: 'serial' });
+  test.afterEach(async ({ connectPage }) => {
+    await connectPage.disconnect({ timeout: CONNECT_OK_TIMEOUT_MS });
+  });
 
   test('успешное подключение: смена connect → disconnect', async ({
     connectPage,
     statusDashboard,
   }) => {
-    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 45_000);
+    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 10_000);
 
     await test.step('заполнить форму и подключиться', async () => {
       await connectPage.fillForm(connectionFormConfig);
@@ -218,7 +221,7 @@ test.describe('Подключение (connectButton)', () => {
     connectPage,
     statusDashboard,
   }) => {
-    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 45_000);
+    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 10_000);
 
     await test.step('подключиться к серверу', async () => {
       await connectPage.fillForm(connectionFormConfig);
@@ -257,7 +260,7 @@ test.describe('Подключение (connectButton)', () => {
     connectPage,
     statusDashboard,
   }) => {
-    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 45_000);
+    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 10_000);
 
     await test.step('подключиться к серверу', async () => {
       await connectPage.fillForm(connectionFormConfig);
@@ -277,7 +280,7 @@ test.describe('Подключение (connectButton)', () => {
     connectPage,
     statusDashboard,
   }) => {
-    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 45_000);
+    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 10_000);
 
     await test.step('заполнить форму и быстро нажать connect дважды', async () => {
       await connectPage.fillForm(connectionFormConfig);
@@ -336,7 +339,7 @@ test.describe('Подключение (connectButton)', () => {
     connectPage,
     statusDashboard,
   }) => {
-    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 45_000);
+    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 10_000);
 
     await test.step('авторизоваться на доступном сервере через первый интерфейс', async () => {
       await connectPage.fillForm(connectionFormConfig);
@@ -389,7 +392,7 @@ test.describe('Подключение (connectButton)', () => {
     connectPage,
     statusDashboard,
   }) => {
-    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 45_000);
+    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 10_000);
 
     await test.step('авторизоваться на сервере и дождаться connected monitoring', async () => {
       await connectPage.fillForm(connectionFormConfig);
@@ -439,7 +442,7 @@ test.describe('Подключение (connectButton)', () => {
       true,
       'ожидаем увидеть явный retry-cycle у autoConnectorManager, а не мгновенный восстановленный readyToCall',
     );
-    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 45_000);
+    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 10_000);
 
     await test.step('подключиться и открыть дашборд', async () => {
       await connectPage.fillForm(connectionFormConfig);
