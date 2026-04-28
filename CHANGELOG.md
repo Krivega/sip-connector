@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [28.9.0](https://github.com/Krivega/sip-connector/compare/v28.8.0...v28.9.0) (2026-04-28)
+
+### Features
+
+- **connect:** implement network interface change handling in end-to-end tests, ensuring auto-connect remains active during disconnections ([aecb69e](https://github.com/Krivega/sip-connector/commit/aecb69e80845f44ca59341b040a0336ce0cb4132))
+- **playwright:** integrate Playwright for end-to-end testing with configuration and initial test cases ([d088a67](https://github.com/Krivega/sip-connector/commit/d088a67b6f20445ead15495723b87297cd0dd5ce))
+- **statuses:** update system status handling by reintroducing system states in STATUS_DIAGRAMS and correcting status snapshot retrieval ([c960685](https://github.com/Krivega/sip-connector/commit/c9606853c052305dd418006f606f92077239aebe))
+- **ui:** enhance floating action panel with new buttons for connecting and calling, and update button visibility logic in the application ([6f2d8c8](https://github.com/Krivega/sip-connector/commit/6f2d8c8d3aa3bad194a13b29a316d22d4462dc51))
+- **ui:** synchronize media action buttons with stream state on camera and mic toggle ([a6fcef1](https://github.com/Krivega/sip-connector/commit/a6fcef1bcbc2478d63c73a0907820d604684174d))
+
+### Bug Fixes
+
+- **connect:** incorrect password during auto-connection, ensuring it stops without retrying ([abaa033](https://github.com/Krivega/sip-connector/commit/abaa03337aacbb3425ff9d4d37f00db51b8caa62))
+- **presentation:** correct condition for displaying stop presentation element based on readiness state ([6213368](https://github.com/Krivega/sip-connector/commit/6213368df7235118f3ab19fde08e8674920b318a))
+
 ## [28.8.0](https://github.com/Krivega/sip-connector/compare/v28.7.1...v28.8.0) (2026-04-24)
 
 ### Features
