@@ -238,6 +238,7 @@ test.describe('Звонок (callButton)', () => {
           'Окружение не достигает system:callActive (например, media/WebRTC not supported)',
         );
       }
+
       await connectPage.forceGetDisplayMediaResult('real');
       await expect(connectPage.startShareButton).toBeVisible();
       await connectPage.startShare();
