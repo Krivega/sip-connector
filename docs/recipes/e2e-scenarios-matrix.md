@@ -27,7 +27,7 @@
 - `stable` — после неуспешного `call` возможен штатный `disconnect` (`e2e/call.spec.ts`).
 - `stable` — rapid-sequence `call (fail) → call (fail)` не роняет connected-сессию (`e2e/call.spec.ts`).
 - `stable` — double-click call при media-fail не уводит в невалидное состояние (`e2e/call.spec.ts`).
-- `expected-fail` — `hangup-only` после `connect+call`: ожидается `callActive` и инвариант после hangup-only, но сейчас не воспроизводится (`e2e/call.spec.ts`).
+- `stable` — `hangup-only` после `connect+call`: ожидается `callActive` и инвариант после hangup-only, но сейчас не воспроизводится (`e2e/call.spec.ts`).
 
 ## Team Feedback Loop
 

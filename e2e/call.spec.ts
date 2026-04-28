@@ -184,10 +184,6 @@ test.describe('Звонок (callButton)', () => {
     connectPage,
     statusDashboard,
   }) => {
-    test.fail(
-      true,
-      'ожидаем callActive после connect+call; текущая реализация возвращается в readyToCall до hangup-only',
-    );
     test.setTimeout(CONNECT_OK_TIMEOUT_MS + 120_000);
 
     await test.step('заполнить форму и запустить connect+call', async () => {
