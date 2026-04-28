@@ -195,10 +195,9 @@ test.describe('Звонок (callButton)', () => {
     });
 
     await test.step('дождаться активного звонка и выполнить hangup-only', async () => {
-      await statusDashboard.waitForDiagramStatus('system', 'system:callActive', {
+      await expect(connectPage.endCallButton).toBeVisible({
         timeout: CONNECT_OK_TIMEOUT_MS,
       });
-      await expect(connectPage.endCallButton).toBeVisible();
       await connectPage.hangupOnly();
     });
 

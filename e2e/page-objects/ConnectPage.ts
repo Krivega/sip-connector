@@ -99,7 +99,7 @@ export class ConnectPage {
   public async expectReadyForConnection({ timeout = 30_000 }: { timeout?: number } = {}) {
     await expect(this.connectButton).toBeVisible({ timeout });
     await expect(this.connectButton).toBeEnabled();
-    await expect(this.disconnectButton).toBeHidden();
+    await expect(this.disconnectButton).toHaveCount(0);
   }
 
   public async blockServerAddressApi(serverAddress: string) {
@@ -235,7 +235,7 @@ export class ConnectPage {
   public async expectCallReady({ timeout = 30_000 }: { timeout?: number } = {}) {
     await expect(this.callButton).toBeVisible({ timeout });
     await expect(this.callButton).toBeEnabled();
-    await expect(this.endCallButton).toBeHidden();
+    await expect(this.endCallButton).toHaveCount(0);
   }
 
   public async disconnect({ timeout = 30_000 }: { timeout?: number } = {}) {
