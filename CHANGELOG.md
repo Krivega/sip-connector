@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [28.9.1](https://github.com/Krivega/sip-connector/compare/v28.9.0...v28.9.1) (2026-04-28)
+
+### Bug Fixes
+
+- **call:** track previous call state to manage presentation deactivation when call ends ([63f093d](https://github.com/Krivega/sip-connector/commit/63f093dc4635c6f0ec1f5aeda6dc878e5661a33b))
+
 ## [28.9.0](https://github.com/Krivega/sip-connector/compare/v28.8.0...v28.9.0) (2026-04-28)
 
 ### Features
