@@ -184,6 +184,7 @@ class App {
       this.session?.sendMediaState(state).catch((error: unknown) => {
         this.handleError(error);
       });
+      this.syncMediaActionButtonsWithStreamState();
     });
 
     dom.renderSessionStatusDiagrams();
@@ -661,6 +662,7 @@ class App {
    */
   private handleToggleCamera(): void {
     this.localMediaStreamManager.toggleCamera();
+    this.syncMediaActionButtonsWithStreamState();
   }
 
   /**
@@ -668,6 +670,16 @@ class App {
    */
   private handleToggleMic(): void {
     this.localMediaStreamManager.toggleMic();
+    this.syncMediaActionButtonsWithStreamState();
+  }
+
+  private syncMediaActionButtonsWithStreamState(): void {
+    if (!dom.isVisible(dom.activeCallSectionElement)) {
+      return;
+    }
+
+    this.updateCamButtonsState();
+    this.updateMicButtonsState();
   }
 
   /**
