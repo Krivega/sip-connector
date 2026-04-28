@@ -14,6 +14,8 @@ class PresentationManager {
 
   private stressTestingState: TStressTestingState = 'stopped';
 
+  private shouldStopAfterStart = false;
+
   private videoPlayer: VideoPlayer | undefined = undefined;
 
   private unsubscribeSipConnectorEvents: (() => void) | undefined = undefined;
@@ -56,12 +58,21 @@ class PresentationManager {
     return this.state === 'started';
   }
 
+  private get isStarting() {
+    return this.state === 'starting';
+  }
+
+  private get isStopping() {
+    return this.state === 'stopping';
+  }
+
   public activate(): void {
     this.setReady();
     this.updateUi();
   }
 
   public deactivate(): void {
+    this.shouldStopAfterStart = false;
     this.resetPresentation();
     this.setStoppedStressTesting();
     this.setIdle();
@@ -100,7 +111,13 @@ class PresentationManager {
   }
 
   private readonly handleStop = () => {
-    if (this.isNotStarted) {
+    if (this.isIdle || this.isReady || this.isStopping) {
+      return;
+    }
+
+    if (this.isStarting) {
+      this.shouldStopAfterStart = true;
+
       return;
     }
 
@@ -240,8 +257,16 @@ class PresentationManager {
       this.setStarted();
       this.updateUi();
 
+      if (this.shouldStopAfterStart) {
+        this.shouldStopAfterStart = false;
+        await this.stop();
+
+        return;
+      }
+
       debug('presentation started');
     } catch (error: unknown) {
+      this.shouldStopAfterStart = false;
       this.resetPresentation();
 
       throw error;
@@ -266,7 +291,7 @@ class PresentationManager {
   }
 
   private updateStopPresentationElement() {
-    if (this.isStarted && this.isNotStartedStressTesting) {
+    if (this.isNotReady && this.isNotStartedStressTesting) {
       dom.show(dom.stopPresentationElement);
     } else {
       dom.hide(dom.stopPresentationElement);
@@ -322,7 +347,7 @@ class PresentationManager {
   }
 
   private async stop(): Promise<void> {
-    if (this.isNotStarted) {
+    if (this.isIdle || this.isReady || this.isStopping) {
       return;
     }
 
