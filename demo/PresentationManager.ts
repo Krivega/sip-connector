@@ -14,9 +14,9 @@ class PresentationManager {
 
   private stressTestingState: TStressTestingState = 'stopped';
 
-  private shouldStopAfterStart = false;
-
   private videoPlayer: VideoPlayer | undefined = undefined;
+
+  private currentPresentationStream: MediaStream | undefined = undefined;
 
   private unsubscribeSipConnectorEvents: (() => void) | undefined = undefined;
 
@@ -50,20 +50,8 @@ class PresentationManager {
     return this.state === 'ready';
   }
 
-  private get isNotStarted() {
-    return !this.isStarted;
-  }
-
   private get isStarted() {
     return this.state === 'started';
-  }
-
-  private get isStarting() {
-    return this.state === 'starting';
-  }
-
-  private get isStopping() {
-    return this.state === 'stopping';
   }
 
   public activate(): void {
@@ -72,7 +60,6 @@ class PresentationManager {
   }
 
   public deactivate(): void {
-    this.shouldStopAfterStart = false;
     this.resetPresentation();
     this.setStoppedStressTesting();
     this.setIdle();
@@ -111,16 +98,6 @@ class PresentationManager {
   }
 
   private readonly handleStop = () => {
-    if (this.isIdle || this.isReady || this.isStopping) {
-      return;
-    }
-
-    if (this.isStarting) {
-      this.shouldStopAfterStart = true;
-
-      return;
-    }
-
     this.stop().catch((error: unknown) => {
       debug('failed to stop presentation', error);
     });
@@ -243,6 +220,7 @@ class PresentationManager {
   }): Promise<void> {
     this.setStarting();
     this.updateUi();
+    this.currentPresentationStream = presentationStream;
 
     try {
       this.videoPlayer?.setStream(presentationStream);
@@ -257,16 +235,8 @@ class PresentationManager {
       this.setStarted();
       this.updateUi();
 
-      if (this.shouldStopAfterStart) {
-        this.shouldStopAfterStart = false;
-        await this.stop();
-
-        return;
-      }
-
       debug('presentation started');
     } catch (error: unknown) {
-      this.shouldStopAfterStart = false;
       this.resetPresentation();
 
       throw error;
@@ -275,9 +245,15 @@ class PresentationManager {
 
   private readonly resetPresentation = () => {
     this.unsubscribeSipConnectorEvents?.();
+    this.unsubscribeSipConnectorEvents = undefined;
 
     this.setReady();
     this.updateUi();
+
+    this.currentPresentationStream?.getTracks().forEach((track) => {
+      track.stop();
+    });
+    this.currentPresentationStream = undefined;
 
     this.videoPlayer?.clear();
   };
@@ -322,12 +298,6 @@ class PresentationManager {
     } else {
       dom.enable(dom.startStressTestingPresentationElement);
     }
-
-    // if (this.isIdle) {
-    //   dom.hide(dom.startStressTestingPresentationElement);
-    // } else {
-    //   dom.show(dom.startStressTestingPresentationElement);
-    // }
   }
 
   private updatePresentationVideoElement() {
@@ -347,7 +317,7 @@ class PresentationManager {
   }
 
   private async stop(): Promise<void> {
-    if (this.isIdle || this.isReady || this.isStopping) {
+    if (this.isIdle || this.isReady) {
       return;
     }
 
