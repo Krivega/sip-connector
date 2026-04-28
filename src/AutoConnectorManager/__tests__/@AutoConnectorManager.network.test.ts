@@ -240,7 +240,7 @@ describe('AutoConnectorManager - Network events', () => {
   });
 
   describe('policy=probe (default)', () => {
-    it('onChange + ping OK → reconnect НЕ происходит', async () => {
+    it('после смены интерфейса (network-change) + ping OK → reconnect НЕ происходит', async () => {
       const { subscriber, state } = createFakeNetworkSubscriber();
 
       manager = createManager({ networkEventsSubscriber: subscriber });
@@ -264,7 +264,7 @@ describe('AutoConnectorManager - Network events', () => {
       expect(connectSpy).not.toHaveBeenCalled();
     });
 
-    it('onChange + ping FAIL → reconnect происходит', async () => {
+    it('после смены интерфейса (network-change) + ping FAIL → reconnect происходит', async () => {
       const { subscriber, state } = createFakeNetworkSubscriber();
 
       manager = createManager({ networkEventsSubscriber: subscriber });

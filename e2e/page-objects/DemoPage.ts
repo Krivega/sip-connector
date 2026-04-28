@@ -42,7 +42,7 @@ export class DemoPage {
 
     await Promise.all(
       expected.buttons.map(async ({ name, visibility }) => {
-        const button = this.page.getByRole('button', { name });
+        const button = this.page.getByRole('button', { name, exact: true });
 
         await (visibility === 'visible'
           ? expect(button).toBeVisible()

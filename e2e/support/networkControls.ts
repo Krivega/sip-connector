@@ -1,12 +1,67 @@
 import type { TSipConnectorDemoE2EWindow } from '../types';
 
 export const installE2ENetworkControls = () => {
+  const navigatorWithConnection = navigator as Navigator & { connection?: EventTarget };
+
+  // Обеспечиваем наличие navigator.connection для стабильной e2e-симуляции network-change.
+  if (navigatorWithConnection.connection === undefined) {
+    Object.defineProperty(navigatorWithConnection, 'connection', {
+      value: new EventTarget(),
+      configurable: true,
+      enumerable: true,
+      writable: false,
+    });
+  }
+
   const blockedApiHostnames = new Set<string>();
   const blockedWsMessageHostnames = new Set<string>();
   const blockedWsTransportHostnames = new Set<string>();
+  let forcedPingProbeResult: 'ok' | 'fail' | 'real' = 'real';
+  let forcedGetUserMediaResult: 'real' | 'fail' = 'real';
+  let originalConnectionPing:
+    | ((body?: string, extraHeaders?: string[]) => Promise<void>)
+    | undefined;
   const openedSockets: { socket: WebSocket; hostname: string }[] = [];
+  const syncConnectionManagerPingOverride = () => {
+    const windowWithDemoApp = window as Window;
+    const demoApp = Reflect.get(windowWithDemoApp, '__sipConnectorDemoApp') as
+      | {
+          sipConnectorFacade?: {
+            sipConnector?: {
+              connectionManager?: {
+                ping: (body?: string, extraHeaders?: string[]) => Promise<void>;
+              };
+            };
+          };
+        }
+      | undefined;
+    const connectionManager = demoApp?.sipConnectorFacade?.sipConnector?.connectionManager;
+
+    if (!connectionManager) {
+      return;
+    }
+
+    originalConnectionPing ??= connectionManager.ping.bind(connectionManager);
+
+    if (forcedPingProbeResult === 'real') {
+      connectionManager.ping = originalConnectionPing;
+
+      return;
+    }
+
+    connectionManager.ping = async () => {
+      if (forcedPingProbeResult === 'ok') {
+        return;
+      }
+
+      throw new Error('Forced ping failure by e2e control');
+    };
+  };
+
   const originalFetch = window.fetch.bind(window);
   const OriginalWebSocket = window.WebSocket;
+  const { mediaDevices } = navigator;
+  const originalGetUserMedia = mediaDevices.getUserMedia.bind(mediaDevices);
 
   const normalizeServerHostname = (serverAddress: string): string => {
     return new URL(`https://${serverAddress.trim()}`).hostname;
@@ -58,6 +113,16 @@ export const installE2ENetworkControls = () => {
     }
 
     return originalFetch(input, init);
+  };
+
+  mediaDevices.getUserMedia = async (
+    constraints?: MediaStreamConstraints,
+  ): Promise<MediaStream> => {
+    if (forcedGetUserMediaResult === 'fail') {
+      throw new Error('Forced getUserMedia failure by e2e control');
+    }
+
+    return originalGetUserMedia(constraints);
   };
 
   const WrappedWebSocket = function wrappedWebSocket(
@@ -145,9 +210,15 @@ export const installE2ENetworkControls = () => {
       });
     },
     simulateNetworkInterfaceChange: () => {
-      (navigator as Navigator & { connection?: EventTarget }).connection?.dispatchEvent(
-        new Event('change'),
-      );
+      syncConnectionManagerPingOverride();
+      navigatorWithConnection.connection?.dispatchEvent(new Event('change'));
+    },
+    forcePingProbeResult: (result: 'ok' | 'fail' | 'real') => {
+      forcedPingProbeResult = result;
+      syncConnectionManagerPingOverride();
+    },
+    forceGetUserMediaResult: (result: 'real' | 'fail') => {
+      forcedGetUserMediaResult = result;
     },
   };
 };

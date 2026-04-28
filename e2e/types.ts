@@ -3,6 +3,8 @@ export type TSipConnectorDemoE2EHooks = {
   blockWsMessages: (serverAddress: string) => void;
   disconnectWsTransport: (serverAddress: string) => void;
   simulateNetworkInterfaceChange: () => void;
+  forcePingProbeResult: (result: 'ok' | 'fail' | 'real') => void;
+  forceGetUserMediaResult: (result: 'real' | 'fail') => void;
 };
 
 export type TSipConnectorDemoE2EWindow = Window & {

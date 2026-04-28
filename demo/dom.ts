@@ -5,7 +5,9 @@ type TDomIds = {
   overlayId: string;
   connectButtonId: string;
   disconnectButtonId: string;
+  connectAndCallButtonId: string;
   callButtonId: string;
+  hangupButtonId: string;
   endCallButtonId: string;
   muteCameraButtonId: string;
   unmuteCameraButtonId: string;
@@ -197,7 +199,11 @@ class DOM {
 
   public disconnectButtonElement: HTMLButtonElement;
 
+  public connectAndCallButtonElement: HTMLButtonElement;
+
   public callButtonElement: HTMLButtonElement;
+
+  public hangupButtonElement: HTMLButtonElement;
 
   public endCallButtonElement: HTMLButtonElement;
 
@@ -321,7 +327,9 @@ class DOM {
     overlayId,
     connectButtonId,
     disconnectButtonId,
+    connectAndCallButtonId,
     callButtonId,
+    hangupButtonId,
     endCallButtonId,
     muteCameraButtonId,
     unmuteCameraButtonId,
@@ -376,7 +384,9 @@ class DOM {
     this.overlayElement = getElementById(overlayId);
     this.connectButtonElement = getElementById<HTMLButtonElement>(connectButtonId);
     this.disconnectButtonElement = getElementById<HTMLButtonElement>(disconnectButtonId);
+    this.connectAndCallButtonElement = getElementById<HTMLButtonElement>(connectAndCallButtonId);
     this.callButtonElement = getElementById<HTMLButtonElement>(callButtonId);
+    this.hangupButtonElement = getElementById<HTMLButtonElement>(hangupButtonId);
     this.endCallButtonElement = getElementById<HTMLButtonElement>(endCallButtonId);
     this.startPresentationElement = getElementById<HTMLButtonElement>(startPresentationId);
     this.startStressTestingPresentationElement = getElementById<HTMLButtonElement>(
@@ -800,7 +810,9 @@ export const dom = new DOM({
   overlayId: 'loaderOverlay',
   connectButtonId: 'connectButton',
   disconnectButtonId: 'disconnectButton',
+  connectAndCallButtonId: 'connectAndCallButton',
   callButtonId: 'callButton',
+  hangupButtonId: 'hangupButton',
   endCallButtonId: 'endCallButton',
   muteCameraButtonId: 'muteCameraButton',
   unmuteCameraButtonId: 'unmuteCameraButton',

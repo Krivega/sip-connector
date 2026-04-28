@@ -69,15 +69,8 @@
           </label>
 
           <label for="autoRedialEnabled">
-            <span class="form-label-text"
-              >Автоматический редиал при сетевых обрывах звонка</span
-            >
-            <input
-              type="checkbox"
-              id="autoRedialEnabled"
-              name="autoRedialEnabled"
-              checked
-            />
+            <span class="form-label-text">Автоматический редиал при сетевых обрывах звонка</span>
+            <input type="checkbox" id="autoRedialEnabled" name="autoRedialEnabled" checked />
           </label>
         </form>
       </section>
@@ -288,89 +281,126 @@
     <div id="notificationsContainer" class="notifications-container" aria-live="polite"></div>
 
     <div class="floating-action-panel">
-      <button
-        id="connectButton"
-        type="button"
-        title="Подключиться к серверу"
-        aria-label="Подключиться к серверу"
-      >
-        <span class="icon icon--size-regular" aria-hidden="true">cloud_upload</span>
-      </button>
-      <button
-        id="disconnectButton"
-        type="button"
-        class="hidden"
-        title="Отключиться от сервера"
-        aria-label="Отключиться от сервера"
-      >
-        <span class="icon icon--size-regular" aria-hidden="true">cloud_off</span>
-      </button>
-      <button id="callButton" type="button" title="Позвонить" aria-label="Позвонить">
-        <span class="icon icon--size-regular" aria-hidden="true">call</span>
-      </button>
-      <button
-        id="endCallButton"
-        type="button"
-        class="hidden"
-        title="Завершить звонок"
-        aria-label="Завершить звонок"
-      >
-        <span class="icon icon--size-regular" aria-hidden="true">call_end</span>
-      </button>
-      <button
-        id="muteCameraButton"
-        type="button"
-        class="hidden"
-        title="Выключить камеру"
-        aria-label="Выключить камеру"
-      >
-        <span class="icon icon--size-regular" aria-hidden="true">videocam</span>
-      </button>
-      <button
-        id="unmuteCameraButton"
-        type="button"
-        class="hidden"
-        title="Включить камеру"
-        aria-label="Включить камеру"
-      >
-        <span class="icon icon--size-regular" aria-hidden="true">videocam_off</span>
-      </button>
-      <button
-        id="muteMicButton"
-        type="button"
-        class="hidden"
-        title="Выключить микрофон"
-        aria-label="Выключить микрофон"
-      >
-        <span class="icon icon--size-regular" aria-hidden="true">mic</span>
-      </button>
-      <button
-        id="unmuteMicButton"
-        type="button"
-        class="hidden"
-        title="Включить микрофон"
-        aria-label="Включить микрофон"
-      >
-        <span class="icon icon--size-regular" aria-hidden="true">mic_off</span>
-      </button>
-      <button
-        id="startPresentationButton"
-        type="button"
-        class="hidden"
-        title="Начать презентацию"
-        aria-label="Начать презентацию"
-      >
-        <span class="icon icon--size-regular" aria-hidden="true">screen_share</span>
-      </button>
-      <button
-        id="stopPresentationButton"
-        type="button"
-        class="hidden"
-        title="Завершить презентацию"
-        aria-label="Завершить презентацию"
-      >
-        <span class="icon icon--size-regular" aria-hidden="true">stop_screen_share</span>
-      </button>
+      <div class="floating-action-panel__container">
+        <button
+          id="connectButton"
+          type="button"
+          title="Подключиться к серверу"
+          aria-label="Подключиться к серверу"
+        >
+          <span class="icon icon--size-regular" aria-hidden="true">cloud_upload</span>
+          <span class="floating-action-panel__button-label">Connect</span>
+        </button>
+        <button
+          id="disconnectButton"
+          type="button"
+          class="hidden"
+          title="Отключиться от сервера"
+          aria-label="Отключиться от сервера"
+        >
+          <span class="icon icon--size-regular" aria-hidden="true">cloud_off</span>
+          <span class="floating-action-panel__button-label">Disconnect</span>
+        </button>
+        <button
+          id="connectAndCallButton"
+          type="button"
+          title="Подключиться и позвонить"
+          aria-label="Подключиться и позвонить"
+        >
+          <span class="icon icon--size-regular" aria-hidden="true">call</span>
+          <span class="floating-action-panel__button-label">Connect and call</span>
+        </button>
+        <button
+          id="callButton"
+          type="button"
+          class="hidden"
+          title="Позвонить"
+          aria-label="Позвонить"
+        >
+          <span class="icon icon--size-regular" aria-hidden="true">phone_forwarded</span>
+          <span class="floating-action-panel__button-label">Call</span>
+        </button>
+        <button
+          id="hangupButton"
+          type="button"
+          class="hidden"
+          title="Завершить звонок"
+          aria-label="Завершить звонок"
+        >
+          <span class="icon icon--size-regular" aria-hidden="true">call_end</span>
+          <span class="floating-action-panel__button-label">Hang up</span>
+        </button>
+        <button
+          id="endCallButton"
+          type="button"
+          class="hidden"
+          title="Завершить звонок и отключиться"
+          aria-label="Завершить звонок и отключиться"
+        >
+          <span class="icon icon--size-regular" aria-hidden="true">call_end</span>
+          <span class="floating-action-panel__button-label">Hang up and disconnect</span>
+        </button>
+        <button
+          id="muteCameraButton"
+          type="button"
+          class="hidden"
+          title="Выключить камеру"
+          aria-label="Выключить камеру"
+        >
+          <span class="icon icon--size-regular" aria-hidden="true">videocam</span>
+          <span class="floating-action-panel__button-label">Camera off</span>
+        </button>
+        <button
+          id="unmuteCameraButton"
+          type="button"
+          class="hidden"
+          title="Включить камеру"
+          aria-label="Включить камеру"
+        >
+          <span class="icon icon--size-regular" aria-hidden="true">videocam_off</span>
+          <span class="floating-action-panel__button-label">Camera on</span>
+        </button>
+        <button
+          id="muteMicButton"
+          type="button"
+          class="hidden"
+          title="Выключить микрофон"
+          aria-label="Выключить микрофон"
+        >
+          <span class="icon icon--size-regular" aria-hidden="true">mic</span>
+          <span class="floating-action-panel__button-label">Mic off</span>
+        </button>
+        <button
+          id="unmuteMicButton"
+          type="button"
+          class="hidden"
+          title="Включить микрофон"
+          aria-label="Включить микрофон"
+        >
+          <span class="icon icon--size-regular" aria-hidden="true">mic_off</span>
+          <span class="floating-action-panel__button-label">Mic on</span>
+        </button>
+        <button
+          id="startPresentationButton"
+          type="button"
+          class="hidden"
+          title="Начать презентацию"
+          aria-label="Начать презентацию"
+        >
+          <span class="icon icon--size-regular" aria-hidden="true">screen_share</span>
+          <span class="floating-action-panel__button-label">Start share</span>
+        </button>
+        <button
+          id="stopPresentationButton"
+          type="button"
+          class="hidden"
+          title="Завершить презентацию"
+          aria-label="Завершить презентацию"
+        >
+          <span class="icon icon--size-regular" aria-hidden="true">stop_screen_share</span>
+          <span class="floating-action-panel__button-label">Stop share</span>
+        </button>
+      </div>
     </div>
 
     <script type="module" src="demo/index.ts"></script>

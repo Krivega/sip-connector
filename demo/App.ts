@@ -132,9 +132,14 @@ class App {
       this.handleDisconnectOnly();
     });
 
-    // Подписываемся на кнопку "Позвонить"
-    dom.callButtonElement.addEventListener('click', () => {
+    // Подписываемся на кнопку "Подключиться и позвонить"
+    dom.connectAndCallButtonElement.addEventListener('click', () => {
       this.handleFormSubmit();
+    });
+
+    // Подписываемся на кнопку "Позвонить" (без подключения)
+    dom.callButtonElement.addEventListener('click', () => {
+      this.handleCallOnly();
     });
 
     dom.mainStreamSettingsFormElement.addEventListener('submit', (event) => {
@@ -147,7 +152,12 @@ class App {
       this.handleCallStateChange(state);
     });
 
-    // Подписываемся на кнопку завершения звонка
+    // Подписываемся на кнопку завершения звонка (без disconnect)
+    dom.hangupButtonElement.addEventListener('click', () => {
+      this.handleHangupOnly();
+    });
+
+    // Подписываемся на кнопку завершения звонка и отключения
     dom.endCallButtonElement.addEventListener('click', () => {
       this.handleEndCall();
     });
@@ -231,6 +241,35 @@ class App {
     Promise.resolve()
       .then(async () => {
         return this.connect(state);
+      })
+      .catch((error: unknown) => {
+        this.handleError(error);
+      });
+  }
+
+  private handleCallOnly(): void {
+    const state = this.formStateManager.getState();
+
+    if (!this.formStateManager.validate()) {
+      return;
+    }
+
+    if (this.session?.hasConnected() !== true) {
+      this.notificationManager.show({
+        type: 'warning',
+        message: 'Сначала подключитесь к серверу',
+        isAutoHide: true,
+      });
+
+      return;
+    }
+
+    Promise.resolve()
+      .then(async () => {
+        return this.callToServer(state);
+      })
+      .then(() => {
+        this.presentationManager.activate();
       })
       .catch((error: unknown) => {
         this.handleError(error);
@@ -465,6 +504,21 @@ class App {
       });
   }
 
+  private handleHangupOnly() {
+    this.loaderManager.show('Завершение звонка...');
+    this.presentationManager.deactivate();
+    this.localMediaStreamManager.stop();
+    this.remoteMediaStreamManager.clear();
+    (this.session ? this.session.hangUpCall() : Promise.resolve())
+      .then(() => {
+        this.loaderManager.hide();
+      })
+      .catch((error: unknown) => {
+        this.handleError(error);
+        this.loaderManager.hide();
+      });
+  }
+
   /**
    * Обрабатывает изменения состояния звонка
    */
@@ -503,8 +557,11 @@ class App {
 
     const isBusyWithConnection = isConnecting || isDisconnecting;
 
-    dom.callButtonElement.disabled =
+    dom.connectAndCallButtonElement.disabled =
       isBusyWithConnection || isCallConnecting || isCallDisconnecting;
+    dom.callButtonElement.disabled =
+      isBusyWithConnection || isCallConnecting || isCallDisconnecting || isDisconnected;
+    dom.hangupButtonElement.disabled = !isCallActive;
     dom.endCallButtonElement.disabled = !isCallActive;
     dom.connectButtonElement.disabled = isBusyWithConnection;
     dom.disconnectButtonElement.disabled = isBusyWithConnection;
@@ -521,10 +578,19 @@ class App {
     }
 
     if (isCallActive) {
+      dom.hide(dom.connectAndCallButtonElement);
       dom.hide(dom.callButtonElement);
+      dom.show(dom.hangupButtonElement);
       dom.show(dom.endCallButtonElement);
+    } else if (isDisconnected) {
+      dom.show(dom.connectAndCallButtonElement);
+      dom.hide(dom.callButtonElement);
+      dom.hide(dom.hangupButtonElement);
+      dom.hide(dom.endCallButtonElement);
     } else {
+      dom.hide(dom.connectAndCallButtonElement);
       dom.show(dom.callButtonElement);
+      dom.hide(dom.hangupButtonElement);
       dom.hide(dom.endCallButtonElement);
     }
 

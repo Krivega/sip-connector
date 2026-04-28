@@ -121,11 +121,13 @@ export class Session {
     this.serverParameters = undefined;
   }
 
+  public async hangUpCall(): Promise<void> {
+    this.cleanupCallSubscriptions();
+    await sipConnectorFacade.hangUp();
+  }
+
   public async stopCall(): Promise<void> {
-    this.unsubscribeChangeRemoteStreams?.();
-    this.unsubscribeChangeRemoteStreams = undefined;
-    this.recvQualityManager.unsubscribe();
-    this.recvQualityManager.reset();
+    this.cleanupCallSubscriptions();
     await this.disconnectFromServer();
   }
 
@@ -140,5 +142,12 @@ export class Session {
     debug('sendMediaState', { isEnabledCam, isEnabledMic });
 
     return sipConnectorFacade.sendMediaState({ isEnabledCam, isEnabledMic });
+  }
+
+  private cleanupCallSubscriptions(): void {
+    this.unsubscribeChangeRemoteStreams?.();
+    this.unsubscribeChangeRemoteStreams = undefined;
+    this.recvQualityManager.unsubscribe();
+    this.recvQualityManager.reset();
   }
 }

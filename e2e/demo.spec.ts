@@ -7,9 +7,11 @@ const EXPECTED_CALL_SETTINGS = {
   autoRedialChecked: true,
   buttons: [
     { name: 'Подключиться к серверу', visibility: 'visible' },
-    { name: 'Позвонить', visibility: 'visible' },
+    { name: 'Подключиться и позвонить', visibility: 'visible' },
+    { name: 'Позвонить', visibility: 'hidden' },
     { name: 'Отключиться от сервера', visibility: 'hidden' },
     { name: 'Завершить звонок', visibility: 'hidden' },
+    { name: 'Завершить звонок и отключиться', visibility: 'hidden' },
   ] as const,
 } as const;
 

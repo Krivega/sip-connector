@@ -174,27 +174,103 @@ pre {
 
 .floating-action-panel {
   position: fixed;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 1rem;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: block;
   z-index: 100;
-  background-color: white;
-  padding: 1rem 2rem;
-  border-radius: 8px;
+  background-color: #ecf3fb;
+  border-top: 1px solid #c9d7e8;
   box-shadow:
-    0 4px 6px rgba(0, 0, 0, 0.1),
-    0 2px 4px rgba(0, 0, 0, 0.06);
+    0 -1px 3px rgba(20, 46, 78, 0.12),
+    0 -4px 14px rgba(20, 46, 78, 0.08);
+}
+
+.floating-action-panel__container {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  width: 100%;
+  max-width: 839px;
+  min-height: 80px;
+  margin: 0 auto;
+  padding: 12px 16px;
+  overflow-x: auto;
+  gap: 4px;
 }
 
 .floating-action-panel button {
+  display: inline-grid;
+  grid-auto-flow: row;
+  justify-items: center;
+  align-content: center;
+  gap: 4px;
+  flex: 1 1 0;
+  min-width: 72px;
+  min-height: 56px;
+  margin: 0;
+  border: 0;
+  border-radius: 16px;
+  background: transparent !important;
+  color: #1b2838 !important;
+  box-shadow: none;
+  padding: 4px 8px;
+}
+
+.floating-action-panel button:hover {
+  background-color: #dae5f4 !important;
+  border: 0;
+}
+
+.floating-action-panel button:focus-visible {
+  outline: 2px solid #1f5f9d;
+  outline-offset: 2px;
+}
+
+.floating-action-panel button .icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  min-width: 0;
-  padding: 0.6rem 0.75rem;
+  width: 32px;
+  height: 32px;
+  font-size: 24px;
+  line-height: 1;
+  border-radius: 16px;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    width 160ms ease;
+}
+
+.floating-action-panel__button-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-wrap: nowrap;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  color: #334254;
+}
+
+.floating-action-panel button[data-selected='true'] .icon {
+  width: 64px;
+  background-color: #c7d8ee;
+}
+
+.floating-action-panel button[data-selected='true'] .floating-action-panel__button-label {
+  color: #0f2136;
+  font-weight: 600;
+}
+
+.floating-action-panel button:not([data-selected='true']):hover .icon {
+  background-color: #dbe7f6;
+}
+
+@media (min-width: 600px) {
+  .floating-action-panel__container {
+    width: clamp(600px, calc(100vw - 32px), 839px);
+  }
 }
 
 .floating-action-panel__label {
@@ -207,67 +283,6 @@ pre {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
-}
-
-#endCallButton,
-#disconnectButton {
-  background-color: #dc3545;
-  color: white;
-  border-color: #dc3545;
-}
-
-#endCallButton:hover,
-#disconnectButton:hover {
-  background-color: #c82333;
-  border-color: #bd2130;
-}
-
-#connectButton {
-  background-color: #007bff;
-  color: white;
-  border-color: #007bff;
-}
-
-#connectButton:hover {
-  background-color: #0069d9;
-  border-color: #0062cc;
-}
-
-#callButton {
-  background-color: #28a745;
-  color: white;
-  border-color: #28a745;
-}
-
-#callButton:hover {
-  background-color: #218838;
-  border-color: #1e7e34;
-}
-
-#muteMicButton,
-#muteCameraButton {
-  background-color: #17a2b8;
-  color: white;
-  border-color: #17a2b8;
-}
-
-#muteMicButton:hover,
-#muteCameraButton:hover {
-  background-color: #138496;
-  border-color: #117a8b;
-}
-
-#unmuteMicButton,
-#unmuteCameraButton {
-  background-color: #6c757d;
-  color: white;
-  border-color: #6c757d;
-}
-
-#unmuteMicButton:hover,
-#unmuteCameraButton:hover {
-  background-color: #5a6268;
-  border-color: #545b62;
 }
 
 #remoteStreamsContainer {
