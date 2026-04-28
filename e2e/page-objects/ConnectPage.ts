@@ -10,6 +10,8 @@ const CONNECT_AND_CALL_BUTTON_NAME = 'Подключиться и позвони
 const CALL_BUTTON_NAME = 'Позвонить';
 const END_CALL_BUTTON_NAME = 'Завершить звонок';
 const HANGUP_AND_DISCONNECT_BUTTON_NAME = 'Завершить звонок и отключиться';
+const START_SHARE_BUTTON_NAME = 'Начать презентацию';
+const STOP_SHARE_BUTTON_NAME = 'Завершить презентацию';
 
 export class ConnectPage {
   private readonly page: Page;
@@ -40,6 +42,14 @@ export class ConnectPage {
 
   public get hangupAndDisconnectButton() {
     return this.page.getByRole('button', { name: HANGUP_AND_DISCONNECT_BUTTON_NAME, exact: true });
+  }
+
+  public get startShareButton() {
+    return this.page.getByRole('button', { name: START_SHARE_BUTTON_NAME, exact: true });
+  }
+
+  public get stopShareButton() {
+    return this.page.getByRole('button', { name: STOP_SHARE_BUTTON_NAME, exact: true });
   }
 
   public async fillForm(config: TConnectionFormConfig) {
@@ -158,6 +168,18 @@ export class ConnectPage {
     }, result);
   }
 
+  public async forceGetDisplayMediaResult(result: 'real' | 'fail') {
+    await this.page.evaluate((mediaResult) => {
+      const hooks = (window as TSipConnectorDemoE2EWindow).sipConnectorDemoE2E;
+
+      if (!hooks) {
+        throw new Error('Demo e2e hooks are not available');
+      }
+
+      hooks.forceGetDisplayMediaResult(mediaResult);
+    }, result);
+  }
+
   public async startCallAttempt() {
     await this.callButton.click();
   }
@@ -172,6 +194,10 @@ export class ConnectPage {
 
   public async setConferenceNumber(value: string) {
     await this.page.locator('#conferenceNumber').fill(value);
+  }
+
+  public async startShare() {
+    await this.startShareButton.click();
   }
 
   public async expectCallReady({ timeout = 30_000 }: { timeout?: number } = {}) {

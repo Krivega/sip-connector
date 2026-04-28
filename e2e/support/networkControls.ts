@@ -18,6 +18,7 @@ export const installE2ENetworkControls = () => {
   const blockedWsTransportHostnames = new Set<string>();
   let forcedPingProbeResult: 'ok' | 'fail' | 'real' = 'real';
   let forcedGetUserMediaResult: 'real' | 'fail' = 'real';
+  let forcedGetDisplayMediaResult: 'real' | 'fail' = 'real';
   let originalConnectionPing:
     | ((body?: string, extraHeaders?: string[]) => Promise<void>)
     | undefined;
@@ -62,6 +63,7 @@ export const installE2ENetworkControls = () => {
   const OriginalWebSocket = window.WebSocket;
   const { mediaDevices } = navigator;
   const originalGetUserMedia = mediaDevices.getUserMedia.bind(mediaDevices);
+  const originalGetDisplayMedia = mediaDevices.getDisplayMedia.bind(mediaDevices);
 
   const normalizeServerHostname = (serverAddress: string): string => {
     return new URL(`https://${serverAddress.trim()}`).hostname;
@@ -123,6 +125,16 @@ export const installE2ENetworkControls = () => {
     }
 
     return originalGetUserMedia(constraints);
+  };
+
+  mediaDevices.getDisplayMedia = async (
+    constraints?: DisplayMediaStreamOptions,
+  ): Promise<MediaStream> => {
+    if (forcedGetDisplayMediaResult === 'fail') {
+      throw new Error('Forced getDisplayMedia failure by e2e control');
+    }
+
+    return originalGetDisplayMedia(constraints);
   };
 
   const WrappedWebSocket = function wrappedWebSocket(
@@ -219,6 +231,9 @@ export const installE2ENetworkControls = () => {
     },
     forceGetUserMediaResult: (result: 'real' | 'fail') => {
       forcedGetUserMediaResult = result;
+    },
+    forceGetDisplayMediaResult: (result: 'real' | 'fail') => {
+      forcedGetDisplayMediaResult = result;
     },
   };
 };

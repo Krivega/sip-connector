@@ -216,6 +216,44 @@ test.describe('Звонок (callButton)', () => {
     });
   });
 
+  test('после завершения звонка кнопка stop share скрыта', async ({
+    connectPage,
+    statusDashboard,
+  }) => {
+    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 120_000);
+
+    await test.step('заполнить форму и запустить connect+call', async () => {
+      await connectPage.fillForm(connectionFormConfig);
+      await connectPage.startConnectAndCallAttempt();
+    });
+
+    await test.step('дождаться активного звонка, стартовать share и убедиться что stop share показана', async () => {
+      try {
+        await statusDashboard.waitForDiagramStatus('system', 'system:callActive', {
+          timeout: CONNECT_OK_TIMEOUT_MS,
+        });
+      } catch {
+        test.skip(
+          true,
+          'Окружение не достигает system:callActive (например, media/WebRTC not supported)',
+        );
+      }
+      await connectPage.forceGetDisplayMediaResult('real');
+      await expect(connectPage.startShareButton).toBeVisible();
+      await connectPage.startShare();
+      await expect(connectPage.stopShareButton).toBeVisible();
+    });
+
+    await test.step('завершить звонок и проверить, что stop share скрыта', async () => {
+      await connectPage.hangupOnly();
+      await statusDashboard.waitForDiagramStatus('system', 'system:readyToCall', {
+        timeout: CONNECT_OK_TIMEOUT_MS,
+      });
+      await expect(connectPage.stopShareButton).toBeHidden();
+      await connectPage.forceGetDisplayMediaResult('real');
+    });
+  });
+
   test('rapid-sequence: call → media-error → call (repeat) не роняет connected-сессию', async ({
     connectPage,
     statusDashboard,

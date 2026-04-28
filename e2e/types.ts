@@ -5,6 +5,7 @@ export type TSipConnectorDemoE2EHooks = {
   simulateNetworkInterfaceChange: () => void;
   forcePingProbeResult: (result: 'ok' | 'fail' | 'real') => void;
   forceGetUserMediaResult: (result: 'real' | 'fail') => void;
+  forceGetDisplayMediaResult: (result: 'real' | 'fail') => void;
 };
 
 export type TSipConnectorDemoE2EWindow = Window & {
