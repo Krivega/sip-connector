@@ -1,4 +1,4 @@
-import { requesterByTimeoutsWithFailCalls } from '@krivega/timeout-requester';
+import { resolveRequesterByTimeout } from '@krivega/timeout-requester';
 
 import resolveDebug from '@/logger';
 
@@ -12,17 +12,21 @@ const debug = resolveDebug('AutoConnectorManager: PingServerRequester');
 class PingServerRequester {
   private readonly connectionManager: ConnectionManager;
 
-  private readonly pingServerByTimeoutWithFailCalls: ReturnType<
-    typeof requesterByTimeoutsWithFailCalls<ReturnType<typeof this.connectionManager.ping>>
-  >;
+  private pingServerByTimeout: ReturnType<typeof resolveRequesterByTimeout> | undefined = undefined;
+
+  private failRequestsCount = 0;
+
+  private isFailRequestReported = false;
 
   public constructor({ connectionManager }: { connectionManager: ConnectionManager }) {
     this.connectionManager = connectionManager;
+  }
 
-    this.pingServerByTimeoutWithFailCalls = requesterByTimeoutsWithFailCalls<
-      ReturnType<typeof this.connectionManager.ping>
-    >(MAX_FAIL_REQUESTS_COUNT, {
-      whenPossibleRequest: async () => {},
+  public start({ onFailRequest }: { onFailRequest: () => void }) {
+    this.stop();
+
+    this.pingServerByTimeout = resolveRequesterByTimeout({
+      isDontStopOnFail: true,
       requestInterval: INTERVAL_PING_SERVER_REQUEST,
       request: async () => {
         debug('ping');
@@ -32,14 +36,33 @@ class PingServerRequester {
         });
       },
     });
-  }
 
-  public start({ onFailRequest }: { onFailRequest: () => void }) {
-    this.pingServerByTimeoutWithFailCalls.start(undefined, { onFailRequest }).catch(debug);
+    this.pingServerByTimeout.start(undefined, {
+      onSuccessRequest: () => {
+        this.resetFailRequests();
+      },
+      onFailRequest: () => {
+        this.failRequestsCount += 1;
+
+        if (this.failRequestsCount < MAX_FAIL_REQUESTS_COUNT || this.isFailRequestReported) {
+          return;
+        }
+
+        this.isFailRequestReported = true;
+        onFailRequest();
+      },
+    });
   }
 
   public stop() {
-    this.pingServerByTimeoutWithFailCalls.stop();
+    this.pingServerByTimeout?.stop();
+    this.pingServerByTimeout = undefined;
+    this.resetFailRequests();
+  }
+
+  private resetFailRequests() {
+    this.failRequestsCount = 0;
+    this.isFailRequestReported = false;
   }
 }
 

@@ -240,6 +240,46 @@ describe('AutoConnectorManager - Network events', () => {
   });
 
   describe('policy=probe (default)', () => {
+    it('после восстановления повторно обрабатывает новый network-change с ping FAIL', async () => {
+      const { subscriber, state } = createFakeNetworkSubscriber();
+
+      manager = createManager({ networkEventsSubscriber: subscriber });
+      manager.start(baseParameters).catch(() => {});
+      await manager.wait('success');
+
+      const pingSpy = jest
+        .spyOn(sipConnector.connectionManager, 'ping')
+        .mockResolvedValue(undefined);
+      const connectSpy = jest.spyOn(sipConnector.connectionQueueManager, 'connect');
+
+      // 1) Сервер недоступен: probe=FAIL -> реконнект.
+      await delayPromise(300);
+      pingSpy.mockRejectedValueOnce(new Error('server unavailable'));
+      state.handlers?.onChange();
+      await manager.wait('success');
+
+      expect(connectSpy.mock.calls.length).toBeGreaterThan(0);
+
+      // 2) После восстановления: probe=OK -> реконнекта нет.
+      await delayPromise(300);
+
+      const connectCallsAfterRecovery = connectSpy.mock.calls.length;
+
+      pingSpy.mockResolvedValueOnce(undefined);
+      state.handlers?.onChange();
+      await flushPromises();
+
+      expect(connectSpy.mock.calls.length).toBe(connectCallsAfterRecovery);
+
+      // 3) Новый сбой после восстановления: probe=FAIL -> снова реконнект.
+      await delayPromise(300);
+      pingSpy.mockRejectedValueOnce(new Error('server unavailable again'));
+      state.handlers?.onChange();
+      await manager.wait('success');
+
+      expect(connectSpy.mock.calls.length).toBeGreaterThan(connectCallsAfterRecovery);
+    });
+
     it('после смены интерфейса (network-change) + ping OK → reconnect НЕ происходит', async () => {
       const { subscriber, state } = createFakeNetworkSubscriber();
 

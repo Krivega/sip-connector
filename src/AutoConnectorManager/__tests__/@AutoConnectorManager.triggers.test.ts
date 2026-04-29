@@ -56,6 +56,7 @@ describe('AutoConnectorManager - Triggers', () => {
   afterEach(() => {
     jest.clearAllMocks();
     jest.restoreAllMocks();
+    jest.useRealTimers();
   });
 
   describe('подписчики и триггеры', () => {

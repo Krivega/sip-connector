@@ -1,10 +1,11 @@
-import { requesterByTimeoutsWithFailCalls } from '@krivega/timeout-requester';
+import { resolveRequesterByTimeout } from '@krivega/timeout-requester';
 
 import { doMockSipConnector } from '@/doMock';
 import PingServerRequester from '../PingServerRequester';
 
-const requesterByTimeoutsWithFailCallsMock =
-  requesterByTimeoutsWithFailCalls as jest.MockedFunction<typeof requesterByTimeoutsWithFailCalls>;
+const resolveRequesterByTimeoutMock = resolveRequesterByTimeout as jest.MockedFunction<
+  typeof resolveRequesterByTimeout
+>;
 
 const startMock = jest.fn(async () => {});
 const stopMock = jest.fn();
@@ -13,7 +14,7 @@ jest.mock('@krivega/timeout-requester', () => {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return {
     ...jest.requireActual('@krivega/timeout-requester'),
-    requesterByTimeoutsWithFailCalls: jest.fn(() => {
+    resolveRequesterByTimeout: jest.fn(() => {
       return {
         start: startMock,
         stop: stopMock,
@@ -36,21 +37,21 @@ describe('PingServerRequester', () => {
     });
   });
 
-  describe('инициализация', () => {
-    it('создаёт requesterByTimeoutsWithFailCalls с корректными параметрами', async () => {
-      expect(requesterByTimeoutsWithFailCallsMock).toHaveBeenCalledTimes(1);
+  describe('start', () => {
+    it('создаёт resolveRequesterByTimeout с корректными параметрами', async () => {
+      pingServerRequester.start({ onFailRequest: jest.fn() });
 
-      const { calls } = requesterByTimeoutsWithFailCallsMock.mock;
+      expect(resolveRequesterByTimeoutMock).toHaveBeenCalledTimes(1);
+
+      const { calls } = resolveRequesterByTimeoutMock.mock;
 
       expect(calls.length).toBe(1);
 
-      const firstCall = calls[0] as unknown as [
-        number,
-        { requestInterval: number; request: () => Promise<void> },
+      const [options] = calls[0] as unknown as [
+        { isDontStopOnFail: boolean; requestInterval: number; request: () => Promise<void> },
       ];
-      const [maxFails, options] = firstCall;
 
-      expect(maxFails).toBe(2);
+      expect(options.isDontStopOnFail).toBe(true);
       expect(options.requestInterval).toBe(15_000);
       expect(typeof options.request).toBe('function');
 
@@ -62,16 +63,40 @@ describe('PingServerRequester', () => {
 
       expect(pingSpy).toHaveBeenCalledTimes(1);
     });
-  });
 
-  describe('start', () => {
     it('запускает периодический ping', () => {
       const onFailRequest = jest.fn();
 
       pingServerRequester.start({ onFailRequest });
 
       expect(startMock).toHaveBeenCalledTimes(1);
-      expect(startMock).toHaveBeenCalledWith(undefined, { onFailRequest });
+      expect(startMock).toHaveBeenCalledWith(undefined, {
+        onFailRequest: expect.any(Function) as () => void,
+        onSuccessRequest: expect.any(Function) as () => void,
+      });
+    });
+
+    it('вызывает onFailRequest один раз после лимита ошибок до следующего успеха', () => {
+      const onFailRequest = jest.fn();
+
+      pingServerRequester.start({ onFailRequest });
+
+      const [, callbacks] = startMock.mock.calls[0] as unknown as [
+        undefined,
+        { onFailRequest: () => void; onSuccessRequest: () => void },
+      ];
+
+      callbacks.onFailRequest();
+      callbacks.onFailRequest();
+      callbacks.onFailRequest();
+
+      expect(onFailRequest).toHaveBeenCalledTimes(1);
+
+      callbacks.onSuccessRequest();
+      callbacks.onFailRequest();
+      callbacks.onFailRequest();
+
+      expect(onFailRequest).toHaveBeenCalledTimes(2);
     });
   });
 

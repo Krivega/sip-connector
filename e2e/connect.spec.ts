@@ -387,6 +387,78 @@ test.describe('Подключение (connectButton)', () => {
     });
   });
 
+  test('повторный network-change после восстановления снова запускает reconnect при ping FAIL', async ({
+    connectPage,
+    statusDashboard,
+  }) => {
+    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 35_000);
+
+    await test.step('подключиться и открыть дашборд', async () => {
+      await connectPage.fillForm(connectionFormConfig);
+      await connectPage.connect({ timeout: CONNECT_OK_TIMEOUT_MS });
+      await statusDashboard.waitForDiagramStatus('autoConnectorManager', 'connectedMonitoring');
+      await statusDashboard.open();
+    });
+
+    await test.step('первый network-change с ping FAIL запускает reconnect', async () => {
+      await connectPage.forcePingProbeResult('fail');
+      await connectPage.simulateNetworkInterfaceChange();
+
+      await statusDashboard.waitForDiagramStatus('system', 'system:disconnecting', {
+        timeout: NETWORK_INTERFACE_CHANGE_TIMEOUT_MS,
+      });
+      await statusDashboard.waitForDiagramStatus('system', 'system:readyToCall', {
+        timeout: NETWORK_INTERFACE_CHANGE_TIMEOUT_MS,
+      });
+      await statusDashboard.waitForDiagramStatus('autoConnectorManager', 'connectedMonitoring', {
+        timeout: NETWORK_INTERFACE_CHANGE_TIMEOUT_MS,
+      });
+    });
+
+    await test.step('восстановиться в readyToCall и connectedMonitoring', async () => {
+      await statusDashboard.waitForDiagramStatus('system', 'system:readyToCall', {
+        timeout: CONNECT_OK_TIMEOUT_MS,
+      });
+      await statusDashboard.waitForDiagramStatus('autoConnectorManager', 'connectedMonitoring', {
+        timeout: CONNECT_OK_TIMEOUT_MS,
+      });
+    });
+
+    await test.step('network-change с ping OK не должен запускать reconnect', async () => {
+      await connectPage.forcePingProbeResult('ok');
+      await connectPage.simulateNetworkInterfaceChange();
+
+      await statusDashboard.waitForDiagramStatus('system', 'system:readyToCall', {
+        timeout: NETWORK_INTERFACE_CHANGE_TIMEOUT_MS,
+      });
+      await statusDashboard.waitForDiagramStatus('autoConnectorManager', 'connectedMonitoring', {
+        timeout: NETWORK_INTERFACE_CHANGE_TIMEOUT_MS,
+      });
+      await statusDashboard.expectDiagramStatusNot('system', 'system:connecting', {
+        timeout: NETWORK_INTERFACE_CHANGE_TIMEOUT_MS,
+      });
+    });
+
+    await test.step('второй network-change с ping FAIL снова запускает reconnect', async () => {
+      await connectPage.forcePingProbeResult('fail');
+      await connectPage.simulateNetworkInterfaceChange();
+
+      await statusDashboard.waitForDiagramStatus('system', 'system:disconnecting', {
+        timeout: NETWORK_INTERFACE_CHANGE_TIMEOUT_MS,
+      });
+      await statusDashboard.waitForDiagramStatus('system', 'system:readyToCall', {
+        timeout: NETWORK_INTERFACE_CHANGE_TIMEOUT_MS,
+      });
+      await statusDashboard.waitForDiagramStatus('autoConnectorManager', 'connectedMonitoring', {
+        timeout: NETWORK_INTERFACE_CHANGE_TIMEOUT_MS,
+      });
+    });
+
+    await test.step('сбросить принудительный результат ping в real-режим', async () => {
+      await connectPage.forcePingProbeResult('real');
+    });
+  });
+
   test('смена интерфейса (network-change) + ping FAIL: reconnect происходит', async ({
     connectPage,
     statusDashboard,
