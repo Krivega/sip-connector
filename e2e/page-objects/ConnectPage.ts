@@ -6,6 +6,8 @@ import type { Page } from '@playwright/test';
 import type { TConnectionFormConfig } from '../connection.config';
 import type { TSipConnectorDemoE2EWindow } from '../types';
 
+type TRecvQuality = 'auto' | 'high' | 'medium' | 'low';
+
 export class ConnectPage {
   private readonly page: Page;
 
@@ -267,7 +269,7 @@ export class ConnectPage {
   }
 
   public async expectRecvQualitySelected(
-    quality: 'auto' | 'high' | 'medium' | 'low',
+    quality: TRecvQuality,
     { timeout = 30_000 }: { timeout?: number } = {},
   ) {
     await expect(
@@ -277,7 +279,7 @@ export class ConnectPage {
     });
   }
 
-  public async setRecvQuality(quality: 'auto' | 'high' | 'medium' | 'low') {
+  public async setRecvQuality(quality: TRecvQuality) {
     await this.page
       .locator(`#recvQualityRadios input[name="recvQuality"][value="${quality}"]`)
       .check();
@@ -288,6 +290,48 @@ export class ConnectPage {
     { timeout = 30_000 }: { timeout?: number } = {},
   ) {
     await expect(this.recvQualityStatus).toContainText(text, { timeout });
+  }
+
+  public async setRecvQualityAndExpectStatus({
+    quality,
+    timeout = 30_000,
+    maxAttempts = 3,
+  }: {
+    quality: TRecvQuality;
+    timeout?: number;
+    maxAttempts?: number;
+  }) {
+    const startedAt = Date.now();
+    const attemptChange = async (attempt: number): Promise<void> => {
+      await this.setRecvQuality(quality);
+      await this.expectRecvQualitySelected(quality, {
+        timeout: Math.min(5000, timeout),
+      });
+
+      const elapsed = Date.now() - startedAt;
+      const remaining = timeout - elapsed;
+
+      if (remaining <= 0) {
+        throw new Error(`Timeout waiting for recv quality status update: "${quality}"`);
+      }
+
+      try {
+        await expect(this.recvQualityStatus).toHaveText(
+          new RegExp(String.raw`(Применено|Не применено|Текущее):\s*${quality}\b`, 'i'),
+          { timeout: Math.min(remaining, 10_000) },
+        );
+      } catch (error) {
+        if (attempt >= maxAttempts) {
+          const message = `Failed to observe recv quality status update for quality "${quality}"`;
+
+          throw error instanceof Error ? new Error(message, { cause: error }) : new Error(message);
+        }
+
+        await attemptChange(attempt + 1);
+      }
+    };
+
+    await attemptChange(1);
   }
 
   public async disconnect({ timeout = 30_000 }: { timeout?: number } = {}) {

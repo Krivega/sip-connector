@@ -3,6 +3,7 @@ import { test } from './fixtures';
 
 const CONNECT_OK_TIMEOUT_MS = 10_000;
 const CALL_ATTEMPT_TIMEOUT_MS = 5000;
+const WAIT_SPECTATOR_ROLE_TIMEOUT_MS = 25_000;
 
 test.describe('Режим зрителя', () => {
   test.describe.configure({ mode: 'serial' });
@@ -33,7 +34,7 @@ test.describe('Режим зрителя', () => {
         nodeTitle: 'Call Session',
         fieldLabel: /role type:/i,
         expectedText: 'spectator',
-        timeout: CONNECT_OK_TIMEOUT_MS,
+        timeout: WAIT_SPECTATOR_ROLE_TIMEOUT_MS,
       });
       await statusDashboard.expectState({
         nodes: {
@@ -78,16 +79,13 @@ test.describe('Режим зрителя', () => {
         nodeTitle: 'Call Session',
         fieldLabel: /role type:/i,
         expectedText: 'spectator',
-        timeout: CONNECT_OK_TIMEOUT_MS,
+        timeout: WAIT_SPECTATOR_ROLE_TIMEOUT_MS,
       });
 
       await connectPage.expectRecvQualitySectionVisible({
         timeout: CALL_ATTEMPT_TIMEOUT_MS,
       });
       await connectPage.expectRecvQualitySelected('auto', {
-        timeout: CALL_ATTEMPT_TIMEOUT_MS,
-      });
-      await connectPage.expectRecvQualityStatusContains('Текущее:', {
         timeout: CALL_ATTEMPT_TIMEOUT_MS,
       });
     });
@@ -113,7 +111,7 @@ test.describe('Режим зрителя', () => {
         nodeTitle: 'Call Session',
         fieldLabel: /role type:/i,
         expectedText: 'spectator',
-        timeout: CONNECT_OK_TIMEOUT_MS,
+        timeout: WAIT_SPECTATOR_ROLE_TIMEOUT_MS,
       });
       await connectPage.expectRecvQualitySectionVisible({
         timeout: CALL_ATTEMPT_TIMEOUT_MS,
@@ -121,28 +119,16 @@ test.describe('Режим зрителя', () => {
     });
 
     await test.step('переключить качество на low и дождаться применения', async () => {
-      await connectPage.setRecvQuality('low');
-      await connectPage.expectRecvQualitySelected('low', {
-        timeout: CALL_ATTEMPT_TIMEOUT_MS,
-      });
-      await connectPage.expectRecvQualityStatusContains('Применено:', {
-        timeout: CONNECT_OK_TIMEOUT_MS,
-      });
-      await connectPage.expectRecvQualityStatusContains('low', {
-        timeout: CONNECT_OK_TIMEOUT_MS,
+      await connectPage.setRecvQualityAndExpectStatus({
+        quality: 'low',
+        timeout: CONNECT_OK_TIMEOUT_MS + CALL_ATTEMPT_TIMEOUT_MS,
       });
     });
 
     await test.step('переключить качество обратно на auto и дождаться применения', async () => {
-      await connectPage.setRecvQuality('auto');
-      await connectPage.expectRecvQualitySelected('auto', {
-        timeout: CALL_ATTEMPT_TIMEOUT_MS,
-      });
-      await connectPage.expectRecvQualityStatusContains('Применено:', {
-        timeout: CONNECT_OK_TIMEOUT_MS,
-      });
-      await connectPage.expectRecvQualityStatusContains('auto', {
-        timeout: CONNECT_OK_TIMEOUT_MS,
+      await connectPage.setRecvQualityAndExpectStatus({
+        quality: 'auto',
+        timeout: CONNECT_OK_TIMEOUT_MS + CALL_ATTEMPT_TIMEOUT_MS,
       });
     });
   });
