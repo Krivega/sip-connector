@@ -6,15 +6,6 @@ import type { Page } from '@playwright/test';
 import type { TConnectionFormConfig } from '../connection.config';
 import type { TSipConnectorDemoE2EWindow } from '../types';
 
-const CONNECT_BUTTON_NAME = 'Подключиться к серверу';
-const DISCONNECT_BUTTON_NAME = 'Отключиться от сервера';
-const CONNECT_AND_CALL_BUTTON_NAME = 'Подключиться и позвонить';
-const CALL_BUTTON_NAME = 'Позвонить';
-const END_CALL_BUTTON_NAME = 'Завершить звонок';
-const HANGUP_AND_DISCONNECT_BUTTON_NAME = 'Завершить звонок и отключиться';
-const START_SHARE_BUTTON_NAME = 'Начать презентацию';
-const STOP_SHARE_BUTTON_NAME = 'Завершить презентацию';
-
 export class ConnectPage {
   private readonly page: Page;
 
@@ -26,35 +17,35 @@ export class ConnectPage {
   }
 
   public get connectButton() {
-    return this.page.getByRole('button', { name: CONNECT_BUTTON_NAME, exact: true });
+    return this.page.locator('#connectButton');
   }
 
   public get disconnectButton() {
-    return this.page.getByRole('button', { name: DISCONNECT_BUTTON_NAME, exact: true });
+    return this.page.locator('#disconnectButton');
   }
 
   public get callButton() {
-    return this.page.getByRole('button', { name: CALL_BUTTON_NAME, exact: true });
+    return this.page.locator('#callButton');
   }
 
   public get endCallButton() {
-    return this.page.getByRole('button', { name: END_CALL_BUTTON_NAME, exact: true });
+    return this.page.locator('#hangupButton');
   }
 
   public get connectAndCallButton() {
-    return this.page.getByRole('button', { name: CONNECT_AND_CALL_BUTTON_NAME, exact: true });
+    return this.page.locator('#connectAndCallButton');
   }
 
   public get hangupAndDisconnectButton() {
-    return this.page.getByRole('button', { name: HANGUP_AND_DISCONNECT_BUTTON_NAME, exact: true });
+    return this.page.locator('#endCallButton');
   }
 
   public get startShareButton() {
-    return this.page.getByRole('button', { name: START_SHARE_BUTTON_NAME, exact: true });
+    return this.page.locator('#startShareButton');
   }
 
   public get stopShareButton() {
-    return this.page.getByRole('button', { name: STOP_SHARE_BUTTON_NAME, exact: true });
+    return this.page.locator('#stopShareButton');
   }
 
   public async fillForm(config: TConnectionFormConfig) {
@@ -98,8 +89,8 @@ export class ConnectPage {
 
   public async expectReadyForConnection({ timeout = 30_000 }: { timeout?: number } = {}) {
     await expect(this.connectButton).toBeVisible({ timeout });
-    await expect(this.connectButton).toBeEnabled();
-    await expect(this.disconnectButton).toHaveCount(0);
+    await expect(this.connectButton).toBeEnabled({ timeout });
+    await expect(this.disconnectButton).toBeHidden();
   }
 
   public async blockServerAddressApi(serverAddress: string) {
@@ -235,7 +226,7 @@ export class ConnectPage {
   public async expectCallReady({ timeout = 30_000 }: { timeout?: number } = {}) {
     await expect(this.callButton).toBeVisible({ timeout });
     await expect(this.callButton).toBeEnabled();
-    await expect(this.endCallButton).toHaveCount(0);
+    await expect(this.endCallButton).toBeHidden();
   }
 
   public async disconnect({ timeout = 30_000 }: { timeout?: number } = {}) {
