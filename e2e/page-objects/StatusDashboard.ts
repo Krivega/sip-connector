@@ -105,6 +105,22 @@ export class StatusDashboard {
     return JSON.parse(preText) as unknown;
   }
 
+  public async waitForNodeFieldText({
+    nodeTitle,
+    fieldLabel,
+    expectedText,
+    timeout = STATE_SYNC_TIMEOUT_MS,
+  }: {
+    nodeTitle: TStatusNodeTitle;
+    fieldLabel: RegExp;
+    expectedText: string;
+    timeout?: number;
+  }) {
+    const valueSpan = this.rowByLabel(nodeTitle, fieldLabel).locator(':scope > span').first();
+
+    await expect(valueSpan).toHaveText(expectedText, { timeout });
+  }
+
   private async expectDiagramStatuses(diagrams: Partial<Record<TStatusDiagramCategory, string>>) {
     await Promise.all(
       Object.entries(diagrams).map(async ([category, value]) => {

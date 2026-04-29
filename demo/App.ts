@@ -20,6 +20,13 @@ import type { TStatusesByDomain } from './StatusesRoot';
 
 const debug = resolveDebug('demo:app');
 
+const setMediaActionButtonsDisabled = (isDisabled: boolean): void => {
+  dom.toggleDisabled(dom.muteMicButtonElement, isDisabled);
+  dom.toggleDisabled(dom.unmuteMicButtonElement, isDisabled);
+  dom.toggleDisabled(dom.muteCameraButtonElement, isDisabled);
+  dom.toggleDisabled(dom.unmuteCameraButtonElement, isDisabled);
+};
+
 /**
  * Главный класс приложения
  * Объединяет все компоненты для работы SIP-звонков
@@ -387,17 +394,10 @@ class App {
           isSpectator: boolean;
           isParticipant: boolean;
         }) => {
-          if (participantRoleState.isParticipant || participantRoleState.isAvailableSendingMedia) {
-            dom.muteMicButtonElement.classList.remove('disabled');
-            dom.unmuteMicButtonElement.classList.remove('disabled');
-            dom.muteCameraButtonElement.classList.remove('disabled');
-            dom.unmuteCameraButtonElement.classList.remove('disabled');
-          } else {
-            dom.muteMicButtonElement.classList.add('disabled');
-            dom.unmuteMicButtonElement.classList.add('disabled');
-            dom.muteCameraButtonElement.classList.add('disabled');
-            dom.unmuteCameraButtonElement.classList.add('disabled');
-          }
+          const canSendMedia =
+            participantRoleState.isParticipant || participantRoleState.isAvailableSendingMedia;
+
+          setMediaActionButtonsDisabled(!canSendMedia);
 
           if (participantRoleState.isSpectatorRoleAny) {
             this.localMediaStreamManager.disableAll();
@@ -408,6 +408,8 @@ class App {
           } else {
             dom.hide(dom.recvQualitySectionElement);
           }
+
+          dom.renderStatusesNodeValues(this.statusesManager.getStatusSnapshots());
         },
       );
 

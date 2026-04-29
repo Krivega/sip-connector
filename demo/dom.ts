@@ -541,10 +541,12 @@ class DOM {
 
   public disable(element: HTMLElement): void {
     element.classList.add('disabled');
+    this.setDisabledAttribute(element, true);
   }
 
   public enable(element: HTMLElement): void {
     element.classList.remove('disabled');
+    this.setDisabledAttribute(element, false);
   }
 
   public isDisabled(element: HTMLElement): boolean {
@@ -640,6 +642,18 @@ class DOM {
     });
 
     this.statusesNodeValuesElement.append(fragment);
+  }
+
+  private setDisabledAttribute(element: HTMLElement, isDisabled: boolean): void {
+    if (
+      element instanceof HTMLButtonElement ||
+      element instanceof HTMLInputElement ||
+      element instanceof HTMLSelectElement ||
+      element instanceof HTMLTextAreaElement ||
+      element instanceof HTMLFieldSetElement
+    ) {
+      element.toggleAttribute('disabled', isDisabled);
+    }
   }
 
   private buildNodeEntries(

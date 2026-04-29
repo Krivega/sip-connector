@@ -48,6 +48,14 @@ export class ConnectPage {
     return this.page.locator('#stopShareButton');
   }
 
+  public get visibleCameraActionButton() {
+    return this.page.locator('#muteCameraButton:not(.hidden), #unmuteCameraButton:not(.hidden)');
+  }
+
+  public get visibleMicActionButton() {
+    return this.page.locator('#muteMicButton:not(.hidden), #unmuteMicButton:not(.hidden)');
+  }
+
   public async fillForm(config: TConnectionFormConfig) {
     await this.page.locator('#serverAddress').fill(config.serverAddress);
     await this.page.locator('#displayName').fill(config.displayName);
@@ -230,6 +238,15 @@ export class ConnectPage {
     await expect(this.callButton).toBeVisible({ timeout });
     await expect(this.callButton).toBeEnabled();
     await expect(this.endCallButton).toBeHidden();
+  }
+
+  public async expectVisibleMediaActionButtonsDisabled({
+    timeout = 30_000,
+  }: { timeout?: number } = {}) {
+    await expect(this.visibleCameraActionButton).toBeVisible({ timeout });
+    await expect(this.visibleCameraActionButton).toBeDisabled();
+    await expect(this.visibleMicActionButton).toBeVisible({ timeout });
+    await expect(this.visibleMicActionButton).toBeDisabled();
   }
 
   public async disconnect({ timeout = 30_000 }: { timeout?: number } = {}) {
