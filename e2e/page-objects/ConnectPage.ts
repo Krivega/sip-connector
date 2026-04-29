@@ -7,6 +7,15 @@ import type { TConnectionFormConfig } from '../connection.config';
 import type { TSipConnectorDemoE2EWindow } from '../types';
 
 type TRecvQuality = 'auto' | 'high' | 'medium' | 'low';
+type TCallSessionSnapshot = {
+  license?: string;
+  role?: { type?: string };
+  derived?: {
+    isSpectatorAny?: boolean;
+    isRecvSessionExpected?: boolean;
+    isAvailableSendingMedia?: boolean;
+  };
+};
 
 export class ConnectPage {
   private readonly page: Page;
@@ -292,6 +301,67 @@ export class ConnectPage {
     await expect(this.recvQualityStatus).toContainText(text, { timeout });
   }
 
+  public async getCallSessionSnapshot(): Promise<TCallSessionSnapshot | undefined> {
+    return this.page.evaluate(() => {
+      const demoApp = Reflect.get(window as Window, '__sipConnectorDemoApp') as
+        | {
+            sipConnectorFacade?: {
+              sipConnector?: {
+                callSessionState?: { getSnapshot: () => unknown };
+              };
+            };
+          }
+        | undefined;
+
+      return demoApp?.sipConnectorFacade?.sipConnector?.callSessionState?.getSnapshot() as
+        | TCallSessionSnapshot
+        | undefined;
+    });
+  }
+
+  public async expectCallSessionRole(
+    roleType: 'spectator' | 'participant' | 'spectator_synthetic',
+    { timeout = 30_000 }: { timeout?: number } = {},
+  ) {
+    await expect
+      .poll(
+        async () => {
+          const snapshot = await this.getCallSessionSnapshot();
+
+          return snapshot?.role?.type ?? '';
+        },
+        { timeout },
+      )
+      .toBe(roleType);
+  }
+
+  public async expectCallSessionSpectatorState({ timeout = 30_000 }: { timeout?: number } = {}) {
+    await expect
+      .poll(
+        async () => {
+          const snapshot = await this.getCallSessionSnapshot();
+
+          return JSON.stringify({
+            license: snapshot?.license,
+            roleType: snapshot?.role?.type,
+            isSpectatorAny: snapshot?.derived?.isSpectatorAny,
+            isRecvSessionExpected: snapshot?.derived?.isRecvSessionExpected,
+            isAvailableSendingMedia: snapshot?.derived?.isAvailableSendingMedia,
+          });
+        },
+        { timeout },
+      )
+      .toBe(
+        JSON.stringify({
+          license: 'VIDEO',
+          roleType: 'spectator',
+          isSpectatorAny: true,
+          isRecvSessionExpected: true,
+          isAvailableSendingMedia: false,
+        }),
+      );
+  }
+
   public async setRecvQualityAndExpectStatus({
     quality,
     timeout = 30_000,
@@ -317,7 +387,7 @@ export class ConnectPage {
 
       try {
         await expect(this.recvQualityStatus).toHaveText(
-          new RegExp(String.raw`(Применено|Не применено|Текущее):\s*${quality}\b`, 'i'),
+          new RegExp(String.raw`(Применение|Применено|Не применено|Текущее):\s*${quality}\b`, 'i'),
           { timeout: Math.min(remaining, 10_000) },
         );
       } catch (error) {

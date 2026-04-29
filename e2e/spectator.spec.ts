@@ -30,25 +30,11 @@ test.describe('Режим зрителя', () => {
     });
 
     await test.step('проверить статусы Call Session для режима зрителя', async () => {
-      await statusDashboard.waitForNodeFieldText({
-        nodeTitle: 'Call Session',
-        fieldLabel: /role type:/i,
-        expectedText: 'spectator',
+      await connectPage.expectCallSessionRole('spectator', {
         timeout: WAIT_SPECTATOR_ROLE_TIMEOUT_MS,
       });
-      await statusDashboard.expectState({
-        nodes: {
-          'Call Session': {
-            fields: {
-              'license:': 'VIDEO',
-              'role type:': 'spectator',
-              'is spectator any:': 'true',
-              'is recv session expected:': 'true',
-              'is duplex sending media mode:': 'false',
-              'is available sending media:': 'false',
-            },
-          },
-        },
+      await connectPage.expectCallSessionSpectatorState({
+        timeout: CALL_ATTEMPT_TIMEOUT_MS,
       });
     });
 
@@ -75,10 +61,7 @@ test.describe('Режим зрителя', () => {
         timeout: CONNECT_OK_TIMEOUT_MS,
       });
       await statusDashboard.open();
-      await statusDashboard.waitForNodeFieldText({
-        nodeTitle: 'Call Session',
-        fieldLabel: /role type:/i,
-        expectedText: 'spectator',
+      await connectPage.expectCallSessionRole('spectator', {
         timeout: WAIT_SPECTATOR_ROLE_TIMEOUT_MS,
       });
 
@@ -107,10 +90,7 @@ test.describe('Режим зрителя', () => {
         timeout: CONNECT_OK_TIMEOUT_MS,
       });
       await statusDashboard.open();
-      await statusDashboard.waitForNodeFieldText({
-        nodeTitle: 'Call Session',
-        fieldLabel: /role type:/i,
-        expectedText: 'spectator',
+      await connectPage.expectCallSessionRole('spectator', {
         timeout: WAIT_SPECTATOR_ROLE_TIMEOUT_MS,
       });
       await connectPage.expectRecvQualitySectionVisible({

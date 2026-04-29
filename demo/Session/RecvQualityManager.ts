@@ -71,6 +71,7 @@ class RecvQualityManager {
     }
 
     dom.recvQualityRadiosElement.classList.add('disabled');
+    dom.recvQualityStatusElement.textContent = `Применение: ${quality}`;
 
     sipConnectorFacade.sipConnector
       .setRecvQuality(quality)
