@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [28.10.0](https://github.com/Krivega/sip-connector/compare/v28.9.2...v28.10.0) (2026-04-29)
+
+### Features
+
+- **auto-connector:** update start method to return detailed success and failure results ([82ce54f](https://github.com/Krivega/sip-connector/commit/82ce54fb576c618cf86321082d5642058e988096))
+
+### Bug Fixes
+
+- **connect:** reconnect behavior on network changes with ping failures ([da27193](https://github.com/Krivega/sip-connector/commit/da27193657e0e62a0c0d02e934a9625ea7b6cda8))
+
 ### [28.9.2](https://github.com/Krivega/sip-connector/compare/v28.9.1...v28.9.2) (2026-04-28)
 
 ### Bug Fixes
