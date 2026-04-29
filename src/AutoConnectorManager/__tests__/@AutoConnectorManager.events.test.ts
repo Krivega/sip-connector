@@ -65,7 +65,7 @@ describe('AutoConnectorManager - Events', () => {
       const handleAttemptStatusChanged = jest.fn();
 
       manager.on('changed-attempt-status', handleAttemptStatusChanged);
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       await flushPromises();
 
@@ -78,7 +78,7 @@ describe('AutoConnectorManager - Events', () => {
       manager.on('changed-attempt-status', handleAttemptStatusChanged);
 
       // Сначала запускаем попытку, чтобы статус стал true
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       await flushPromises();
 
@@ -96,7 +96,7 @@ describe('AutoConnectorManager - Events', () => {
       const handleAttemptStatusChanged = jest.fn();
 
       manager.on('changed-attempt-status', handleAttemptStatusChanged);
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       await flushPromises();
 
@@ -123,7 +123,7 @@ describe('AutoConnectorManager - Events', () => {
 
       jest.spyOn(sipConnector.connectionQueueManager, 'connect').mockRejectedValue(error);
 
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       await manager.wait('stop-attempts-by-error');
 
@@ -139,13 +139,13 @@ describe('AutoConnectorManager - Events', () => {
         .spyOn(AttemptsState.prototype, 'hasLimitReached')
         .mockReturnValue(true);
 
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       // Очищаем предыдущие вызовы
       handleAttemptStatusChanged.mockClear();
 
       // Вызываем start еще раз - статус уже true, поэтому событие не должно сработать
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       expect(handleAttemptStatusChanged).not.toHaveBeenCalled();
       hasLimitReachedSpy.mockRestore();
@@ -155,7 +155,7 @@ describe('AutoConnectorManager - Events', () => {
       const handleAttemptStatusChanged = jest.fn();
 
       manager.on('changed-attempt-status', handleAttemptStatusChanged);
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       await flushPromises();
       handleAttemptStatusChanged.mockClear();
@@ -173,14 +173,16 @@ describe('AutoConnectorManager - Events', () => {
       manager.on('success', () => {}); // Чтобы не ждать события
 
       // Используем опцию hasReadyForConnection: false чтобы вызвать hasNotReadyForConnectionError
-      manager.start({
-        getParameters: baseParameters.getParameters,
-        options: {
-          hasReadyForConnection: () => {
-            return false;
+      manager
+        .start({
+          getParameters: baseParameters.getParameters,
+          options: {
+            hasReadyForConnection: () => {
+              return false;
+            },
           },
-        },
-      });
+        })
+        .catch(() => {});
 
       await manager.wait('stop-attempts-by-error');
 
@@ -201,7 +203,7 @@ describe('AutoConnectorManager - Events', () => {
         return {} as unknown as ReturnType<typeof sipConnector.connectionManager.connect>;
       });
 
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       await delayPromise(DELAY);
 
@@ -225,7 +227,7 @@ describe('AutoConnectorManager - Events', () => {
       jest.spyOn(sipConnector.connectionQueueManager, 'connect').mockRejectedValue(error);
       jest.spyOn(DelayRequester.prototype, 'request').mockRejectedValue(error);
 
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       await manager.wait('failed-all-attempts');
 

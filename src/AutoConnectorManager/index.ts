@@ -6,6 +6,9 @@ export { EVENT_NAMES as AUTO_CONNECTOR_MANAGER_EVENT_NAMES } from './events';
 export type {
   IAutoConnectorOptions,
   INetworkEventsSubscriber,
+  TAutoConnectStartResult,
+  TAutoConnectStartFailureResult,
+  TAutoConnectStartSuccessResult,
   TNetworkEventsHandlers,
   TParametersAutoConnect,
 } from './types';

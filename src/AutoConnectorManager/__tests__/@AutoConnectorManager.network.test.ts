@@ -93,7 +93,7 @@ describe('AutoConnectorManager - Network events', () => {
         .mockReturnValue(subscriber);
 
       manager = createManager({ timeoutBetweenAttempts: 10 });
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       expect(createDefaultSubscriberSpy).toHaveBeenCalledTimes(1);
       expect(state.subscribeCount).toBe(1);
@@ -107,7 +107,7 @@ describe('AutoConnectorManager - Network events', () => {
       );
 
       manager = createManager({ networkEventsSubscriber: subscriber, timeoutBetweenAttempts: 10 });
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       expect(createDefaultSubscriberSpy).not.toHaveBeenCalled();
       expect(state.subscribeCount).toBe(1);
@@ -119,7 +119,7 @@ describe('AutoConnectorManager - Network events', () => {
         .mockReturnValue(undefined);
 
       manager = createManager({ timeoutBetweenAttempts: 10 });
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       expect(createDefaultSubscriberSpy).toHaveBeenCalledTimes(1);
       expect(() => {
@@ -131,7 +131,7 @@ describe('AutoConnectorManager - Network events', () => {
       const { subscriber, state } = createFakeNetworkSubscriber();
 
       manager = createManager({ networkEventsSubscriber: subscriber });
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       expect(state.subscribeCount).toBe(1);
       expect(state.handlers).toBeDefined();
@@ -141,8 +141,8 @@ describe('AutoConnectorManager - Network events', () => {
       const { subscriber, state } = createFakeNetworkSubscriber();
 
       manager = createManager({ networkEventsSubscriber: subscriber });
-      manager.start(baseParameters);
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
+      manager.start(baseParameters).catch(() => {});
 
       expect(state.subscribeCount).toBe(1);
     });
@@ -151,7 +151,7 @@ describe('AutoConnectorManager - Network events', () => {
       const { subscriber, state } = createFakeNetworkSubscriber();
 
       manager = createManager({ networkEventsSubscriber: subscriber });
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
       manager.stop();
 
       expect(state.unsubscribeCount).toBe(1);
@@ -167,7 +167,7 @@ describe('AutoConnectorManager - Network events', () => {
         networkEventsSubscriber: subscriber,
         onNetworkOnlinePolicy: 'reconnect',
       });
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       await manager.wait('success');
 
@@ -188,7 +188,7 @@ describe('AutoConnectorManager - Network events', () => {
         networkEventsSubscriber: subscriber,
         onNetworkChangePolicy: 'reconnect',
       });
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       await manager.wait('success');
 
@@ -209,7 +209,7 @@ describe('AutoConnectorManager - Network events', () => {
         networkEventsSubscriber: subscriber,
         onNetworkChangePolicy: 'ignore',
       });
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
       await manager.wait('success');
 
       const connectSpy = jest.spyOn(sipConnector.connectionQueueManager, 'connect');
@@ -227,7 +227,7 @@ describe('AutoConnectorManager - Network events', () => {
         networkEventsSubscriber: subscriber,
         onNetworkOnlinePolicy: 'ignore',
       });
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
       await manager.wait('success');
 
       const connectSpy = jest.spyOn(sipConnector.connectionQueueManager, 'connect');
@@ -244,7 +244,7 @@ describe('AutoConnectorManager - Network events', () => {
       const { subscriber, state } = createFakeNetworkSubscriber();
 
       manager = createManager({ networkEventsSubscriber: subscriber });
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
       await manager.wait('success');
 
       // Подменяем ping уже на подключённом ConnectionManager: возвращаем resolve.
@@ -268,7 +268,7 @@ describe('AutoConnectorManager - Network events', () => {
       const { subscriber, state } = createFakeNetworkSubscriber();
 
       manager = createManager({ networkEventsSubscriber: subscriber });
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
       await manager.wait('success');
 
       const pingSpy = jest
@@ -290,7 +290,7 @@ describe('AutoConnectorManager - Network events', () => {
       const { subscriber, state } = createFakeNetworkSubscriber();
 
       manager = createManager({ networkEventsSubscriber: subscriber });
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
       await manager.wait('success');
 
       const pingSpy = jest
@@ -322,7 +322,7 @@ describe('AutoConnectorManager - Network events', () => {
         .spyOn(sipConnector.connectionQueueManager, 'connect')
         .mockRejectedValueOnce(new Error('initial connect failed'));
 
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
       // Ждём, пока первый connect упадёт и машина окажется в waitingBeforeRetry.
       await flushPromises();
 
@@ -352,7 +352,7 @@ describe('AutoConnectorManager - Network events', () => {
         .spyOn(sipConnector.connectionQueueManager, 'connect')
         .mockRejectedValueOnce(new Error('initial connect failed'));
 
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
       await flushPromises();
 
       const checkTelephonySpy = jest
@@ -380,7 +380,7 @@ describe('AutoConnectorManager - Network events', () => {
         networkEventsSubscriber: subscriber,
         offlineGraceMs: 500,
       });
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       jest.useRealTimers();
       await manager.wait('success');
@@ -409,7 +409,7 @@ describe('AutoConnectorManager - Network events', () => {
         // фокус — именно отмена offline-таймера.
         onNetworkOnlinePolicy: 'reconnect',
       });
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       jest.useRealTimers();
       await manager.wait('success');
@@ -434,7 +434,7 @@ describe('AutoConnectorManager - Network events', () => {
         offlineGraceMs: 50,
         timeoutBetweenAttempts: 10,
       });
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
       await manager.wait('success');
 
       state.handlers?.onOffline();

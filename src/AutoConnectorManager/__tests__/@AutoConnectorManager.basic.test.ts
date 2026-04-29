@@ -51,6 +51,22 @@ describe('AutoConnectorManager - Basic', () => {
     );
   };
 
+  const startAndWaitFor = async (
+    eventName: 'success' | 'limit-reached-attempts' | 'failed-all-attempts',
+    parametersForStart: TParametersAutoConnect = baseParameters,
+  ) => {
+    const startPromise = manager.start(parametersForStart);
+    const eventPayload = await manager.wait(eventName);
+
+    await startPromise;
+
+    return eventPayload;
+  };
+
+  const startAndIgnoreResult = (parametersForStart: TParametersAutoConnect = baseParameters) => {
+    manager.start(parametersForStart).catch(() => {});
+  };
+
   beforeEach(() => {
     sipConnector = doMockSipConnector();
 
@@ -72,17 +88,17 @@ describe('AutoConnectorManager - Basic', () => {
     it('start: запускает процесс подключения', async () => {
       expect(sipConnector.isConfigured()).toBe(false);
 
-      manager.start(baseParameters);
+      await manager.start(baseParameters);
 
       await delayPromise(10);
 
       expect(sipConnector.isConfigured()).toBe(true);
     });
 
-    it('start: на холодном старте не делает лишний disconnect', () => {
+    it('start: на холодном старте не делает лишний disconnect', async () => {
       const disconnectSpy = jest.spyOn(sipConnector.connectionQueueManager, 'disconnect');
 
-      manager.start(baseParameters);
+      await manager.start(baseParameters);
 
       expect(disconnectSpy).not.toHaveBeenCalled();
     });
@@ -92,7 +108,7 @@ describe('AutoConnectorManager - Basic', () => {
 
       jest.spyOn(sipConnector.connectionManager, 'requested', 'get').mockReturnValue(true);
 
-      manager.start(baseParameters);
+      await manager.start(baseParameters);
       await flushPromises();
 
       expect(disconnectSpy).toHaveBeenCalled();
@@ -104,7 +120,7 @@ describe('AutoConnectorManager - Basic', () => {
       jest.spyOn(sipConnector.connectionManager, 'isDisconnecting', 'get').mockReturnValue(true);
       jest.spyOn(sipConnector.connectionManager, 'isDisconnected', 'get').mockReturnValue(false);
 
-      manager.start(baseParameters);
+      await manager.start(baseParameters);
       await flushPromises();
 
       expect(disconnectSpy).toHaveBeenCalled();
@@ -115,7 +131,7 @@ describe('AutoConnectorManager - Basic', () => {
 
       jest.spyOn(sipConnector.connectionQueueManager, 'disconnect').mockRejectedValue(error);
 
-      manager.start(baseParameters);
+      await manager.start(baseParameters);
 
       expect(mcuDebugLogger).toHaveBeenCalled();
     });
@@ -131,7 +147,7 @@ describe('AutoConnectorManager - Basic', () => {
     });
 
     it('restart: запускает процесс подключения из idle, переиспользуя parameters из контекста', async () => {
-      manager.start(baseParameters);
+      await manager.start(baseParameters);
       await flushPromises();
       manager.stop();
       await flushPromises();
@@ -148,8 +164,7 @@ describe('AutoConnectorManager - Basic', () => {
     it('restart: делает disconnect, если вызван в connectedMonitoring', async () => {
       const disconnectSpy = jest.spyOn(sipConnector.connectionQueueManager, 'disconnect');
 
-      manager.start(baseParameters);
-      await manager.wait('success');
+      await startAndWaitFor('success');
       jest.clearAllMocks();
 
       manager.restart();
@@ -175,7 +190,7 @@ describe('AutoConnectorManager - Basic', () => {
         'unsubscribe',
       );
 
-      manager.start(baseParameters);
+      await manager.start(baseParameters);
 
       await flushPromises();
 
@@ -214,7 +229,7 @@ describe('AutoConnectorManager - Basic', () => {
         await delayPromise(DELAY * 2);
       });
 
-      manager.start(baseParameters);
+      await manager.start(baseParameters);
       await flushPromises();
 
       manager.stop();
@@ -223,6 +238,68 @@ describe('AutoConnectorManager - Basic', () => {
         manager.restart();
       }).not.toThrow();
     });
+
+    it('start: возвращает success-результат при успешном подключении', async () => {
+      const result = await manager.start(baseParameters);
+
+      expect(result).toEqual({
+        isSuccess: true,
+        reason: 'started',
+      });
+    });
+
+    it('start: возвращает coalesced-результат при повторном запуске в окне coalescing', async () => {
+      const firstStartPromise = manager.start(baseParameters);
+      const secondStartResult = await manager.start(baseParameters);
+
+      expect(secondStartResult).toEqual({
+        isSuccess: false,
+        reason: 'coalesced',
+      });
+
+      await firstStartPromise;
+    });
+
+    it('start: возвращает stop-attempts-by-error без reject', async () => {
+      const result = await manager.start({
+        getParameters: baseParameters.getParameters,
+        options: {
+          hasReadyForConnection: () => {
+            return false;
+          },
+        },
+      });
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.reason).toBe('stop-attempts-by-error');
+    });
+
+    it('start: возвращает failed-all-attempts без reject', async () => {
+      const error = new Error('Unknown error');
+
+      jest.spyOn(sipConnector.connectionQueueManager, 'connect').mockRejectedValue(error);
+      jest.spyOn(DelayRequester.prototype, 'request').mockRejectedValue(error);
+
+      const result = await manager.start(baseParameters);
+
+      expect(result).toEqual({
+        isSuccess: false,
+        reason: 'failed-all-attempts',
+        error,
+      });
+    });
+
+    it('start: возвращает limit-reached-attempts без reject', async () => {
+      const hasLimitReachedSpy = jest
+        .spyOn(AttemptsState.prototype, 'hasLimitReached')
+        .mockReturnValue(true);
+
+      const result = await manager.start(baseParameters);
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.reason).toBe('limit-reached-attempts');
+      hasLimitReachedSpy.mockRestore();
+    });
   });
 
   describe('базовые события', () => {
@@ -230,7 +307,7 @@ describe('AutoConnectorManager - Basic', () => {
       const handleBeforeAttempt = jest.fn();
 
       manager.on('before-attempt', handleBeforeAttempt);
-      manager.start(baseParameters);
+      await manager.start(baseParameters);
 
       await flushPromises();
 
@@ -241,7 +318,7 @@ describe('AutoConnectorManager - Basic', () => {
       const handleAttemptStatusChanged = jest.fn();
 
       manager.on('changed-attempt-status', handleAttemptStatusChanged);
-      manager.start(baseParameters);
+      await manager.start(baseParameters);
 
       await flushPromises();
 
@@ -252,7 +329,7 @@ describe('AutoConnectorManager - Basic', () => {
 
       expect(handleAttemptStatusChanged).toHaveBeenCalledWith({ isInProgress: false });
 
-      manager.start(baseParameters);
+      await manager.start(baseParameters);
 
       expect(handleAttemptStatusChanged).toHaveBeenCalledWith({ isInProgress: true });
     });
@@ -261,9 +338,7 @@ describe('AutoConnectorManager - Basic', () => {
       const handleSuccess = jest.fn();
 
       manager.on('success', handleSuccess);
-      manager.start(baseParameters);
-
-      await manager.wait('success');
+      await startAndWaitFor('success');
 
       expect(handleSuccess).toHaveBeenCalled();
     });
@@ -286,7 +361,7 @@ describe('AutoConnectorManager - Basic', () => {
         });
 
       manager.on('success', handleSuccess);
-      manager.start(baseParameters);
+      await manager.start(baseParameters);
 
       await flushPromises();
 
@@ -307,10 +382,7 @@ describe('AutoConnectorManager - Basic', () => {
         .mockReturnValue(true);
 
       manager.on('limit-reached-attempts', handleLimitReached);
-
-      manager.start(baseParameters);
-
-      await manager.wait('limit-reached-attempts');
+      await startAndWaitFor('limit-reached-attempts');
 
       expect(handleLimitReached).toHaveBeenCalled();
       hasLimitReachedSpy.mockRestore();
@@ -324,9 +396,7 @@ describe('AutoConnectorManager - Basic', () => {
       jest.spyOn(DelayRequester.prototype, 'request').mockRejectedValue(error);
 
       manager.on('failed-all-attempts', handleFailed);
-      manager.start(baseParameters);
-
-      await manager.wait('failed-all-attempts');
+      await startAndWaitFor('failed-all-attempts');
 
       expect(handleFailed).toHaveBeenCalledWith(error);
     });
@@ -341,7 +411,7 @@ describe('AutoConnectorManager - Basic', () => {
       });
 
       manager.on('cancelled-attempts', handleCancelled);
-      manager.start(baseParameters);
+      startAndIgnoreResult();
 
       await delayPromise(DELAY);
 
@@ -362,7 +432,7 @@ describe('AutoConnectorManager - Basic', () => {
       });
 
       manager.on('cancelled-attempts', handleCancelled);
-      manager.start(baseParameters);
+      startAndIgnoreResult();
 
       await delayPromise(DELAY);
 
@@ -384,9 +454,7 @@ describe('AutoConnectorManager - Basic', () => {
       const handler = jest.fn();
 
       manager.once('success', handler);
-      manager.start(baseParameters);
-
-      await manager.wait('success');
+      await startAndWaitFor('success');
 
       manager.events.trigger('success');
 
@@ -398,17 +466,13 @@ describe('AutoConnectorManager - Basic', () => {
 
       manager.on('success', handler);
       manager.off('success', handler);
-      manager.start(baseParameters);
-
-      await manager.wait('success');
+      await startAndWaitFor('success');
 
       expect(handler).not.toHaveBeenCalled();
     });
 
     it('wait: возвращает данные события', async () => {
-      manager.start(baseParameters);
-
-      const result = await manager.wait('success');
+      const result = await startAndWaitFor('success');
 
       expect(result).toEqual(undefined);
     });
@@ -417,9 +481,7 @@ describe('AutoConnectorManager - Basic', () => {
       const raceHandler = jest.fn();
 
       manager.onceRace(['changed-attempt-status', 'failed-all-attempts'], raceHandler);
-      manager.start(baseParameters);
-
-      await manager.wait('success');
+      await startAndWaitFor('success');
 
       expect(raceHandler).toHaveBeenCalledWith(
         {

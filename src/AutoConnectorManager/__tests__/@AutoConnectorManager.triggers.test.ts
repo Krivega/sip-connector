@@ -62,7 +62,7 @@ describe('AutoConnectorManager - Triggers', () => {
     it('запускает ping server requester после успешного подключения', async () => {
       const pingServerStartSpy = jest.spyOn(PingServerRequester.prototype, 'start');
 
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       await manager.wait('success');
 
@@ -77,7 +77,7 @@ describe('AutoConnectorManager - Triggers', () => {
         'subscribe',
       );
 
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       await manager.wait('success');
 
@@ -90,7 +90,7 @@ describe('AutoConnectorManager - Triggers', () => {
       const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
       const startSpy = jest.spyOn(PingServerRequester.prototype, 'start').mockImplementation();
 
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       await manager.wait('success');
 
@@ -113,7 +113,7 @@ describe('AutoConnectorManager - Triggers', () => {
         .spyOn(RegistrationFailedOutOfCallSubscriber.prototype, 'subscribe')
         .mockImplementation();
 
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       await manager.wait('success');
 
@@ -136,7 +136,7 @@ describe('AutoConnectorManager - Triggers', () => {
         'unsubscribe',
       );
 
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
       await manager.wait('success');
 
       jest.clearAllMocks();
@@ -155,7 +155,7 @@ describe('AutoConnectorManager - Triggers', () => {
         'unsubscribe',
       );
 
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       await flushPromises();
 
@@ -181,7 +181,7 @@ describe('AutoConnectorManager - Triggers', () => {
           return true;
         });
 
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       await flushPromises();
 

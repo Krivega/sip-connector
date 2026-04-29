@@ -359,10 +359,13 @@ describe('SipConnector', () => {
   it('должен проксировать методы AutoConnectorManager', async () => {
     const { autoConnectorManager } = sipConnector;
 
-    jest.spyOn(autoConnectorManager, 'start');
+    jest.spyOn(autoConnectorManager, 'start').mockResolvedValue({
+      isSuccess: true,
+      reason: 'started',
+    });
     jest.spyOn(autoConnectorManager, 'stop');
 
-    sipConnector.startAutoConnect(
+    await sipConnector.startAutoConnect(
       {} as unknown as Parameters<(typeof autoConnectorManager)['start']>[0],
     );
     sipConnector.stopAutoConnect();

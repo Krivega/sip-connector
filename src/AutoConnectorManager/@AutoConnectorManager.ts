@@ -15,7 +15,12 @@ import type { ConnectionManager } from '@/ConnectionManager';
 import type { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import type { AutoConnectorStateMachine } from './AutoConnectorStateMachine';
 import type { TEventMap } from './events';
-import type { IAutoConnectorOptions, TParametersAutoConnect, TReconnectReason } from './types';
+import type {
+  IAutoConnectorOptions,
+  TAutoConnectStartResult,
+  TParametersAutoConnect,
+  TReconnectReason,
+} from './types';
 
 const RECONNECT_COALESCE_WINDOW_MS = 250;
 
@@ -127,11 +132,63 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
     }
   }
 
-  public start(parameters: TParametersAutoConnect) {
+  public async start(parameters: TParametersAutoConnect): Promise<TAutoConnectStartResult> {
     debug('auto connector start');
 
     this.networkEventsReconnector?.start(parameters);
-    this.requestReconnect(parameters, START_REASON);
+
+    const isRequested = this.requestReconnect(parameters, START_REASON);
+
+    if (!isRequested) {
+      return {
+        isSuccess: false,
+        reason: 'coalesced',
+      };
+    }
+
+    return new Promise<TAutoConnectStartResult>((resolve) => {
+      const unsubscribe = this.events.onceRace(
+        ['success', 'failed-all-attempts', 'stop-attempts-by-error', 'limit-reached-attempts'],
+        (payload, eventName) => {
+          unsubscribe();
+
+          if (eventName === 'success') {
+            resolve({
+              isSuccess: true,
+              reason: 'started',
+            });
+
+            return;
+          }
+
+          if (eventName === 'failed-all-attempts') {
+            resolve({
+              isSuccess: false,
+              reason: 'failed-all-attempts',
+              error: payload,
+            });
+
+            return;
+          }
+
+          if (eventName === 'stop-attempts-by-error') {
+            resolve({
+              isSuccess: false,
+              reason: 'stop-attempts-by-error',
+              error: payload,
+            });
+
+            return;
+          }
+
+          resolve({
+            isSuccess: false,
+            reason: 'limit-reached-attempts',
+            error: payload,
+          });
+        },
+      );
+    });
   }
 
   public restart() {
@@ -164,7 +221,7 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   private readonly requestReconnect = (
     parameters: TParametersAutoConnect,
     reason: TReconnectReason,
-  ) => {
+  ): boolean => {
     const isAvailableToRestart = this.shouldRequestReconnect(reason);
 
     debug('auto connector requestReconnect', {
@@ -173,13 +230,15 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
     });
 
     if (!isAvailableToRestart) {
-      return;
+      return false;
     }
 
     // Держим последние валидные параметры в подписчике сетевых событий, чтобы
     // на onOnline/onChange не зависеть от текущего состояния state machine.
     this.networkEventsReconnector?.setParameters(parameters);
     this.stateMachine.toRestart(parameters);
+
+    return true;
   };
 
   // Адаптивный probe под состояние машины. Возвращаемое значение трактуется

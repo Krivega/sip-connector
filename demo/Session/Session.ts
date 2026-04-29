@@ -51,7 +51,7 @@ export class Session {
   }): Promise<void> {
     debug('connect', { serverUrl, isRegistered, displayName, user, password });
 
-    sipConnectorFacade.startAutoConnect({
+    await sipConnectorFacade.startAutoConnect({
       getParameters: async () => {
         const serverParameters = await this.serverParametersRequester.request({
           serverUrl,

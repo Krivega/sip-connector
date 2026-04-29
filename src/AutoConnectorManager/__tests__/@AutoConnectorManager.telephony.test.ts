@@ -70,7 +70,7 @@ describe('AutoConnectorManager - Telephony', () => {
         .spyOn(AttemptsState.prototype, 'hasLimitReached')
         .mockReturnValue(true);
 
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       await new Promise((resolve) => {
         manager.once('limit-reached-attempts', resolve);
@@ -93,7 +93,7 @@ describe('AutoConnectorManager - Telephony', () => {
         .spyOn(AttemptsState.prototype, 'hasLimitReached')
         .mockReturnValue(true);
 
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       await flushPromises();
 
@@ -131,7 +131,7 @@ describe('AutoConnectorManager - Telephony', () => {
       manager.on('telephony-check-failure', failureHandler);
       manager.on('telephony-check-escalated', escalatedHandler);
 
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       await flushPromises();
 
@@ -180,7 +180,7 @@ describe('AutoConnectorManager - Telephony', () => {
 
       const restartSpy = jest.spyOn(manager.stateMachine, 'toRestart');
 
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       await flushPromises();
 
@@ -216,7 +216,7 @@ describe('AutoConnectorManager - Telephony', () => {
           return originalHasLimitReached.call(this);
         });
 
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       await flushPromises();
 
@@ -248,7 +248,7 @@ describe('AutoConnectorManager - Telephony', () => {
           return originalHasLimitReached.call(this);
         });
 
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       await flushPromises();
 
@@ -277,9 +277,11 @@ describe('AutoConnectorManager - Telephony', () => {
           .spyOn(AttemptsState.prototype, 'hasLimitReached')
           .mockReturnValue(true);
 
-        manager.start({
-          getParameters: baseParameters.getParameters,
-        });
+        manager
+          .start({
+            getParameters: baseParameters.getParameters,
+          })
+          .catch(() => {});
 
         await flushPromises();
 
@@ -302,11 +304,13 @@ describe('AutoConnectorManager - Telephony', () => {
 
         const error = new Error('Parameters are missing');
 
-        manager.start({
-          getParameters: async () => {
-            throw error;
-          },
-        });
+        manager
+          .start({
+            getParameters: async () => {
+              throw error;
+            },
+          })
+          .catch(() => {});
 
         await flushPromises();
 

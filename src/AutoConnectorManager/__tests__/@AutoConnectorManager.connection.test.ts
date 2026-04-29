@@ -61,7 +61,7 @@ describe('AutoConnectorManager - Connection', () => {
     it('вызывает connect с данными из getParameters', async () => {
       const connectSpy = jest.spyOn(sipConnector.connectionQueueManager, 'connect');
 
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       await flushPromises();
 
@@ -82,14 +82,16 @@ describe('AutoConnectorManager - Connection', () => {
       );
       const connectSpy = jest.spyOn(sipConnector.connectionQueueManager, 'connect');
 
-      manager.start({
-        getParameters: baseParameters.getParameters,
-        options: {
-          hasReadyForConnection: () => {
-            return false;
+      manager
+        .start({
+          getParameters: baseParameters.getParameters,
+          options: {
+            hasReadyForConnection: () => {
+              return false;
+            },
           },
-        },
-      });
+        })
+        .catch(() => {});
 
       await manager.wait('stop-attempts-by-error');
 

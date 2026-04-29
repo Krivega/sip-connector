@@ -59,6 +59,26 @@ export type TAttemptStatus = {
   isInProgress: boolean;
 };
 
+export type TAutoConnectStartSuccessResult = {
+  isSuccess: true;
+  reason: 'started';
+};
+
+export type TAutoConnectStartFailureResult = {
+  isSuccess: false;
+  reason:
+    | 'coalesced'
+    | 'failed-all-attempts'
+    | 'stop-attempts-by-error'
+    | 'limit-reached-attempts'
+    | 'unexpected';
+  error?: unknown;
+};
+
+export type TAutoConnectStartResult =
+  | TAutoConnectStartSuccessResult
+  | TAutoConnectStartFailureResult;
+
 export const RECONNECT_REASONS = {
   START: 'start',
   MANUAL_RESTART: 'manual-restart',

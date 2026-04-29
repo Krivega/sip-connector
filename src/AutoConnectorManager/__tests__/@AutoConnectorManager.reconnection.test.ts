@@ -81,7 +81,7 @@ describe('AutoConnectorManager - Reconnection', () => {
         },
       });
 
-      manager.start(parametersWithUndefined);
+      manager.start(parametersWithUndefined).catch(() => {});
 
       await delayPromise(DELAY);
 
@@ -103,7 +103,7 @@ describe('AutoConnectorManager - Reconnection', () => {
       });
 
       manager.on('cancelled-attempts', handleCancelled);
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       await delayPromise(DELAY);
 
@@ -123,7 +123,7 @@ describe('AutoConnectorManager - Reconnection', () => {
 
       connectSpy.mockRejectedValueOnce(newError);
 
-      manager.start(baseParameters);
+      manager.start(baseParameters).catch(() => {});
 
       await flushPromises();
 
@@ -136,11 +136,13 @@ describe('AutoConnectorManager - Reconnection', () => {
       const connectSpy = jest.spyOn(sipConnector.connectionQueueManager, 'connect');
       const retryDelaySpy = jest.spyOn(DelayRequester.prototype, 'request');
 
-      manager.start({
-        getParameters: async () => {
-          return dataForConnectionWithAuthorizationIncorrectPassword;
-        },
-      });
+      manager
+        .start({
+          getParameters: async () => {
+            return dataForConnectionWithAuthorizationIncorrectPassword;
+          },
+        })
+        .catch(() => {});
 
       try {
         await Promise.race([
