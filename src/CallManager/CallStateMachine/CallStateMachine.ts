@@ -8,7 +8,7 @@ import type { TApiManagerEvents } from '@/ApiManager';
 import type { TEvents } from '../events';
 import type { TContext, TFullContext, TContextMap } from './types';
 
-const debug = resolveDebug('CallStateMachine');
+const debug = resolveDebug('CallManager: CallStateMachine');
 
 type TSnapshotContext<TState extends TContext> = {
   raw: TContext;

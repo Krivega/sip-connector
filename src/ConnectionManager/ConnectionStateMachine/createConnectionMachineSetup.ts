@@ -6,7 +6,7 @@ import { EAction, initialContext } from './constants';
 import type { EEvents } from './constants';
 import type { TConnectionMachineEvents, TContext } from './types';
 
-const debug = resolveDebug('ConnectionStateMachine');
+const debug = resolveDebug('ConnectionManager: createConnectionMachineSetup');
 
 export const createConnectionMachineSetup = () => {
   return setup({

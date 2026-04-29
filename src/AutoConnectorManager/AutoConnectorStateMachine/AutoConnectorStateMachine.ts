@@ -6,7 +6,7 @@ import { EState } from './types';
 import type { TAutoConnectorEvent, TContext, TContextMap } from './types';
 import type { TParametersAutoConnect } from '../types';
 
-const debug = resolveDebug('AutoConnectorStateMachine');
+const debug = resolveDebug('AutoConnectorManager: AutoConnectorStateMachine');
 
 type TMachine = ReturnType<typeof createAutoConnectorMachine>;
 

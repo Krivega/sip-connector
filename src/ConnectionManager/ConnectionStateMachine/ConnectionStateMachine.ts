@@ -8,7 +8,7 @@ import type { TConnectionConfiguration } from '../types';
 import type { TConnectionMachineEvents, TContext, TContextMap } from './types';
 
 const connectionMachine = createConnectionMachine();
-const debug = resolveDebug('ConnectionStateMachine');
+const debug = resolveDebug('ConnectionManager: ConnectionStateMachine');
 
 export type TSnapshot =
   | { value: EState.IDLE; context: TContextMap[EState.IDLE] }

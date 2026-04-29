@@ -8,7 +8,7 @@ interface IDependencies {
   getUaProtected: () => UA;
 }
 
-const debug = resolveDebug('RegistrationManager');
+const debug = resolveDebug('ConnectionManager: RegistrationManager');
 
 export default class RegistrationManager {
   private readonly events: IDependencies['events'];

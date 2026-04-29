@@ -7,7 +7,7 @@ import type { ConnectionManager } from '@/ConnectionManager';
 const INTERVAL_PING_SERVER_REQUEST = 15_000;
 const MAX_FAIL_REQUESTS_COUNT = 2;
 
-const debug = resolveDebug('PingServerRequester');
+const debug = resolveDebug('AutoConnectorManager: PingServerRequester');
 
 class PingServerRequester {
   private readonly connectionManager: ConnectionManager;

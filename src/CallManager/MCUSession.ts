@@ -10,7 +10,7 @@ import type { IMCUSession } from './types';
 
 export type TRestartIceOptions = RenegotiateOptions;
 
-const debug = resolveDebug('MCUSession');
+const debug = resolveDebug('CallManager: MCUSession');
 
 export class MCUSession implements IMCUSession {
   protected readonly events: TEvents;

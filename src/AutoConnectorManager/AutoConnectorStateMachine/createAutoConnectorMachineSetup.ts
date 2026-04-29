@@ -16,7 +16,7 @@ import type {
 } from './types';
 import type { TParametersAutoConnect } from '../types';
 
-const debug = resolveDebug('AutoConnectorMachine');
+const debug = resolveDebug('AutoConnectorManager: createAutoConnectorMachineSetup');
 
 type TAttemptFlowContext =
   | TContextMap[EState.ATTEMPTING_GATE]

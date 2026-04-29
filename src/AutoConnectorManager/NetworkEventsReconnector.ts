@@ -8,7 +8,7 @@ import type {
   TReconnectReason,
 } from './types';
 
-const debug = resolveDebug('NetworkEventsReconnector');
+const debug = resolveDebug('AutoConnectorManager: NetworkEventsReconnector');
 
 // Даём сети "поморгать" без немедленного disconnect.
 const DEFAULT_OFFLINE_GRACE_MS = 2000;

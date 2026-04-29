@@ -13,7 +13,7 @@ import type { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import type { TEventMap } from './events';
 import type { TParametersAutoConnect, TReconnectReason, IAutoConnectorOptions } from './types';
 
-const debug = resolveDebug('AutoConnectorRuntime');
+const debug = resolveDebug('AutoConnectorManager: AutoConnectorRuntime');
 
 type TStopReason = 'halted' | 'cancelled' | 'failed' | undefined;
 

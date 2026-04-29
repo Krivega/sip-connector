@@ -5,7 +5,7 @@ import { EAction, EEvents, EState, initialContext } from './constants';
 
 import type { TIncomingMachineEvents, TContext } from './types';
 
-const debug = resolveDebug('IncomingCallStateMachine');
+const debug = resolveDebug('IncomingCallManager: createIncomingCallMachineSetup');
 
 export const createIncomingCallMachineSetup = () => {
   return setup({
