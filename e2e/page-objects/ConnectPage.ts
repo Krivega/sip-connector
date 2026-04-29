@@ -56,6 +56,18 @@ export class ConnectPage {
     return this.page.locator('#muteMicButton:not(.hidden), #unmuteMicButton:not(.hidden)');
   }
 
+  public get recvQualitySection() {
+    return this.page.locator('#recvQualitySection');
+  }
+
+  public get recvQualityRadios() {
+    return this.page.locator('#recvQualityRadios');
+  }
+
+  public get recvQualityStatus() {
+    return this.page.locator('#recvQualityStatus');
+  }
+
   public async fillForm(config: TConnectionFormConfig) {
     await this.page.locator('#serverAddress').fill(config.serverAddress);
     await this.page.locator('#displayName').fill(config.displayName);
@@ -247,6 +259,35 @@ export class ConnectPage {
     await expect(this.visibleCameraActionButton).toBeDisabled();
     await expect(this.visibleMicActionButton).toBeVisible({ timeout });
     await expect(this.visibleMicActionButton).toBeDisabled();
+  }
+
+  public async expectRecvQualitySectionVisible({ timeout = 30_000 }: { timeout?: number } = {}) {
+    await expect(this.recvQualitySection).toBeVisible({ timeout });
+    await expect(this.recvQualityRadios).toBeVisible({ timeout });
+  }
+
+  public async expectRecvQualitySelected(
+    quality: 'auto' | 'high' | 'medium' | 'low',
+    { timeout = 30_000 }: { timeout?: number } = {},
+  ) {
+    await expect(
+      this.page.locator(`#recvQualityRadios input[name="recvQuality"][value="${quality}"]`),
+    ).toBeChecked({
+      timeout,
+    });
+  }
+
+  public async setRecvQuality(quality: 'auto' | 'high' | 'medium' | 'low') {
+    await this.page
+      .locator(`#recvQualityRadios input[name="recvQuality"][value="${quality}"]`)
+      .check();
+  }
+
+  public async expectRecvQualityStatusContains(
+    text: string,
+    { timeout = 30_000 }: { timeout?: number } = {},
+  ) {
+    await expect(this.recvQualityStatus).toContainText(text, { timeout });
   }
 
   public async disconnect({ timeout = 30_000 }: { timeout?: number } = {}) {

@@ -57,4 +57,93 @@ test.describe('Режим зрителя', () => {
       });
     });
   });
+
+  test('секция "Качество приема (зритель)" видима и по умолчанию выбрано auto', async ({
+    connectPage,
+    statusDashboard,
+  }) => {
+    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 10_000);
+
+    await test.step('заполнить форму и запустить connect+call в конференцию зрителя', async () => {
+      await connectPage.fillForm(connectionFormConfigSpectator);
+      await connectPage.startConnectAndCallAttempt();
+    });
+
+    await test.step('дождаться spectator-режима и проверить секцию качества приема', async () => {
+      await statusDashboard.waitForDiagramStatus('system', 'system:callActive', {
+        timeout: CONNECT_OK_TIMEOUT_MS,
+      });
+      await statusDashboard.open();
+      await statusDashboard.waitForNodeFieldText({
+        nodeTitle: 'Call Session',
+        fieldLabel: /role type:/i,
+        expectedText: 'spectator',
+        timeout: CONNECT_OK_TIMEOUT_MS,
+      });
+
+      await connectPage.expectRecvQualitySectionVisible({
+        timeout: CALL_ATTEMPT_TIMEOUT_MS,
+      });
+      await connectPage.expectRecvQualitySelected('auto', {
+        timeout: CALL_ATTEMPT_TIMEOUT_MS,
+      });
+      await connectPage.expectRecvQualityStatusContains('Текущее:', {
+        timeout: CALL_ATTEMPT_TIMEOUT_MS,
+      });
+    });
+  });
+
+  test('можно переключать качество приема: auto → low → auto', async ({
+    connectPage,
+    statusDashboard,
+  }) => {
+    test.setTimeout(CONNECT_OK_TIMEOUT_MS + 15_000);
+
+    await test.step('заполнить форму и запустить connect+call в конференцию зрителя', async () => {
+      await connectPage.fillForm(connectionFormConfigSpectator);
+      await connectPage.startConnectAndCallAttempt();
+    });
+
+    await test.step('дождаться spectator-режима', async () => {
+      await statusDashboard.waitForDiagramStatus('system', 'system:callActive', {
+        timeout: CONNECT_OK_TIMEOUT_MS,
+      });
+      await statusDashboard.open();
+      await statusDashboard.waitForNodeFieldText({
+        nodeTitle: 'Call Session',
+        fieldLabel: /role type:/i,
+        expectedText: 'spectator',
+        timeout: CONNECT_OK_TIMEOUT_MS,
+      });
+      await connectPage.expectRecvQualitySectionVisible({
+        timeout: CALL_ATTEMPT_TIMEOUT_MS,
+      });
+    });
+
+    await test.step('переключить качество на low и дождаться применения', async () => {
+      await connectPage.setRecvQuality('low');
+      await connectPage.expectRecvQualitySelected('low', {
+        timeout: CALL_ATTEMPT_TIMEOUT_MS,
+      });
+      await connectPage.expectRecvQualityStatusContains('Применено:', {
+        timeout: CONNECT_OK_TIMEOUT_MS,
+      });
+      await connectPage.expectRecvQualityStatusContains('low', {
+        timeout: CONNECT_OK_TIMEOUT_MS,
+      });
+    });
+
+    await test.step('переключить качество обратно на auto и дождаться применения', async () => {
+      await connectPage.setRecvQuality('auto');
+      await connectPage.expectRecvQualitySelected('auto', {
+        timeout: CALL_ATTEMPT_TIMEOUT_MS,
+      });
+      await connectPage.expectRecvQualityStatusContains('Применено:', {
+        timeout: CONNECT_OK_TIMEOUT_MS,
+      });
+      await connectPage.expectRecvQualityStatusContains('auto', {
+        timeout: CONNECT_OK_TIMEOUT_MS,
+      });
+    });
+  });
 });
