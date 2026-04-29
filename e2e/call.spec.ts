@@ -189,50 +189,28 @@ test.describe('Звонок (callButton)', () => {
   }) => {
     test.setTimeout(CONNECT_OK_TIMEOUT_MS + 10_000);
 
-    let wasHangupOnlyExecuted = false;
-
     await test.step('заполнить форму и запустить connect+call', async () => {
       await connectPage.fillForm(connectionFormConfig);
       await connectPage.startConnectAndCallAttempt();
     });
 
     await test.step('дождаться активного звонка и выполнить hangup-only', async () => {
-      const endCallVisible = await connectPage.endCallButton
-        .isVisible({ timeout: CONNECT_OK_TIMEOUT_MS })
-        .catch(() => {
-          return false;
-        });
-
-      if (endCallVisible) {
-        await connectPage.hangupOnly();
-        wasHangupOnlyExecuted = true;
-      } else {
-        await statusDashboard.waitForDiagramStatus('system', 'system:readyToCall', {
-          timeout: CONNECT_OK_TIMEOUT_MS,
-        });
-      }
+      await statusDashboard.waitForDiagramStatus('system', 'system:callActive', {
+        timeout: CONNECT_OK_TIMEOUT_MS,
+      });
+      await connectPage.hangupOnly();
     });
 
     await test.step('проверить инвариант: readyToCall, callButton доступен, connectAndCallButton скрыт', async () => {
-      if (wasHangupOnlyExecuted) {
-        await statusDashboard.waitForDiagramStatus('system', 'system:readyToCall', {
-          timeout: CONNECT_OK_TIMEOUT_MS,
-        });
-        await statusDashboard.waitForDiagramStatus('connection', 'connection:established', {
-          timeout: CONNECT_OK_TIMEOUT_MS,
-        });
-        await expect(connectPage.callButton).toBeVisible();
-        await expect(connectPage.callButton).toBeEnabled();
-        await expect(connectPage.connectAndCallButton).toBeHidden();
-
-        return;
-      }
-
-      await statusDashboard.waitForDiagramStatus('system', 'system:disconnected', {
+      await statusDashboard.waitForDiagramStatus('system', 'system:readyToCall', {
         timeout: CONNECT_OK_TIMEOUT_MS,
       });
-      await expect(connectPage.connectAndCallButton).toBeVisible();
-      await expect(connectPage.callButton).toBeHidden();
+      await statusDashboard.waitForDiagramStatus('connection', 'connection:established', {
+        timeout: CONNECT_OK_TIMEOUT_MS,
+      });
+      await expect(connectPage.callButton).toBeVisible();
+      await expect(connectPage.callButton).toBeEnabled();
+      await expect(connectPage.connectAndCallButton).toBeHidden();
     });
   });
 

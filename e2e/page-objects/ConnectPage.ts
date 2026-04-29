@@ -212,7 +212,10 @@ export class ConnectPage {
   }
 
   public async hangupOnly() {
+    await expect(this.endCallButton).toBeVisible();
+    await expect(this.endCallButton).toBeEnabled();
     await this.endCallButton.click();
+    await this.demoPage.waitForLoaderToBeHidden();
   }
 
   public async setConferenceNumber(value: string) {
