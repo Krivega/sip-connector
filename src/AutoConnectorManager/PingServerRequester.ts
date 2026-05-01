@@ -23,6 +23,7 @@ class PingServerRequester {
   }
 
   public start({ onFailRequest }: { onFailRequest: () => void }) {
+    debug('start');
     this.stop();
 
     this.pingServerByTimeout = resolveRequesterByTimeout({
@@ -44,17 +45,28 @@ class PingServerRequester {
       onFailRequest: () => {
         this.failRequestsCount += 1;
 
+        debug('failRequestsCount', this.failRequestsCount);
+
         if (this.failRequestsCount < MAX_FAIL_REQUESTS_COUNT || this.isFailRequestReported) {
+          debug(
+            'failRequestsCount < MAX_FAIL_REQUESTS_COUNT || isFailRequestReported',
+            this.failRequestsCount,
+            MAX_FAIL_REQUESTS_COUNT,
+            this.isFailRequestReported,
+          );
+
           return;
         }
 
         this.isFailRequestReported = true;
+        debug('isFailRequestReported', this.isFailRequestReported);
         onFailRequest();
       },
     });
   }
 
   public stop() {
+    debug('stop');
     this.pingServerByTimeout?.stop();
     this.pingServerByTimeout = undefined;
     this.resetFailRequests();
