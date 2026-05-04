@@ -368,7 +368,7 @@ describe('SipConnector', () => {
     await sipConnector.startAutoConnect(
       {} as unknown as Parameters<(typeof autoConnectorManager)['start']>[0],
     );
-    sipConnector.stopAutoConnect();
+    await sipConnector.stopAutoConnect();
 
     expect(autoConnectorManager.start).toHaveBeenCalled();
     expect(autoConnectorManager.stop).toHaveBeenCalled();
