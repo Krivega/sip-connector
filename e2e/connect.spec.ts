@@ -485,19 +485,25 @@ test.describe('Подключение (connectButton)', () => {
       await statusDashboard.waitForDiagramStatus('system', 'system:connecting', {
         timeout: CONNECT_OK_TIMEOUT_MS,
       });
+      await statusDashboard.waitForDiagramStatus('connection', 'connection:connecting', {
+        timeout: CONNECT_OK_TIMEOUT_MS,
+      });
       await statusDashboard.expectState({
         diagrams: {
-          autoConnectorManager: 'attemptingConnect',
           system: 'system:connecting',
+          connection: 'connection:connecting',
         },
         nodes: {
-          'Auto Connector': {
-            state: 'attemptingConnect',
-          },
           System: {
             state: 'system:connecting',
           },
+          Connection: {
+            state: 'connection:connecting',
+          },
         },
+      });
+      await statusDashboard.expectDiagramStatusNot('autoConnectorManager', 'connectedMonitoring', {
+        timeout: CONNECT_OK_TIMEOUT_MS,
       });
     });
   });

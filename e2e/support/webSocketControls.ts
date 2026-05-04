@@ -5,6 +5,11 @@ export const SIP_CONNECTOR_DEMO_E2E_WEBSOCKET_GLOBAL_KEY = 'sipConnectorDemoE2EW
 
 /** Регистрирует перехват WebSocket и выставляет `window.sipConnectorDemoE2EWebSocket` (SIP_CONNECTOR_DEMO_E2E_WEBSOCKET_GLOBAL_KEY). */
 export const installE2EWebSocketControls = () => {
+  // Контрактный ключ: должен совпадать с SIP_CONNECTOR_DEMO_E2E_WEBSOCKET_GLOBAL_KEY в ConnectPage.
+  // Не менять без синхронного обновления page-object и e2e-хуков.
+  // Нельзя использовать SIP_CONNECTOR_DEMO_E2E_WEBSOCKET_GLOBAL_KEY напрямую:
+  // context.addInitScript сериализует только тело этой функции, внешние константы не попадают в browser context.
+  const globalKey = 'sipConnectorDemoE2EWebSocket';
   const normalizeServerHostname = (serverAddress: string): string => {
     return new URL(`https://${serverAddress.trim()}`).hostname;
   };
@@ -144,5 +149,5 @@ export const installE2EWebSocketControls = () => {
 
   const hooks = createWebSocketControlsInInitScript();
 
-  Reflect.set(window, SIP_CONNECTOR_DEMO_E2E_WEBSOCKET_GLOBAL_KEY, hooks);
+  Reflect.set(window, globalKey, hooks);
 };
