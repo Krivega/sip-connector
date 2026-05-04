@@ -146,8 +146,6 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
       };
     }
 
-    this.networkEventsReconnector?.start(parameters);
-
     const isRequested = this.requestReconnect(parameters, START_REASON);
 
     if (!isRequested) {
@@ -156,6 +154,8 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
         reason: 'coalesced',
       };
     }
+
+    this.networkEventsReconnector?.start(parameters);
 
     return new Promise<TAutoConnectStartResult>((resolve) => {
       const unsubscribe = this.events.onceRace(
