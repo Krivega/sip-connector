@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [28.10.5](https://github.com/Krivega/sip-connector/compare/v28.10.4...v28.10.5) (2026-05-04)
+
+### Bug Fixes
+
+- **auto-connector:** update stop method to handle concurrent calls and ensure proper promise resolution ([678dbb5](https://github.com/Krivega/sip-connector/commit/678dbb54d2e1c1088c9fb438dfe0f461cb1823c0))
+- **tests:** ensure stopAutoConnect method is awaited for proper execution in SipConnector tests ([2a528e3](https://github.com/Krivega/sip-connector/commit/2a528e3d01be9405063b68a285ef7326b3edce0a))
+
 ### [28.10.4](https://github.com/Krivega/sip-connector/compare/v28.10.3...v28.10.4) (2026-05-04)
 
 ### Bug Fixes
