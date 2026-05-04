@@ -63,6 +63,54 @@ export class StatusDashboard {
     });
   }
 
+  /**
+   * Ожидает, пока активный узел диаграммы примет одно из значений (poll).
+   * Нужно для краткоживущих состояний (например attemptingConnect между retry).
+   */
+  public async waitForDiagramStatusOneOf(
+    category: TStatusDiagramCategory,
+    values: readonly string[],
+    { timeout = STATE_SYNC_TIMEOUT_MS }: { timeout?: number } = {},
+  ) {
+    const activeNode = this.page.locator(
+      `#sessionStatusesDiagrams .status-diagram__node--active[data-status-category="${category}"]`,
+    );
+
+    await expect(async () => {
+      const value = await activeNode.getAttribute('data-status-value');
+
+      if (!values.includes(value ?? '')) {
+        throw new Error(
+          `diagram ${category}: ожидалось одно из [${values.join(', ')}], получено ${String(value)}`,
+        );
+      }
+    }).toPass({ timeout });
+  }
+
+  /**
+   * Поле state у узла дашборда — одно из допустимых строковых значений (poll).
+   */
+  public async waitForNodeStateOneOf(
+    nodeTitle: TStatusNodeTitle,
+    values: readonly string[],
+    { timeout = STATE_SYNC_TIMEOUT_MS }: { timeout?: number } = {},
+  ) {
+    const valueSpan = this.rowByLabel(nodeTitle, /state:/i)
+      .locator(':scope > span')
+      .first();
+
+    await expect(async () => {
+      const text = await valueSpan.textContent();
+      const trimmed = text?.trim() ?? '';
+
+      if (!values.includes(trimmed)) {
+        throw new Error(
+          `node ${nodeTitle} state: ожидалось одно из [${values.join(', ')}], получено ${trimmed}`,
+        );
+      }
+    }).toPass({ timeout });
+  }
+
   public async expectDiagramStatusNot(
     category: TStatusDiagramCategory,
     value: string,

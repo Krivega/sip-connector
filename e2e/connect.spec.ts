@@ -485,23 +485,15 @@ test.describe('Подключение (connectButton)', () => {
       await statusDashboard.waitForDiagramStatus('system', 'system:connecting', {
         timeout: CONNECT_OK_TIMEOUT_MS,
       });
-      await statusDashboard.waitForDiagramStatus('connection', 'connection:connecting', {
+      await statusDashboard.waitForNodeStateOneOf('System', ['system:connecting'], {
         timeout: CONNECT_OK_TIMEOUT_MS,
       });
-      await statusDashboard.expectState({
-        diagrams: {
-          system: 'system:connecting',
-          connection: 'connection:connecting',
-        },
-        nodes: {
-          System: {
-            state: 'system:connecting',
-          },
-          Connection: {
-            state: 'connection:connecting',
-          },
-        },
-      });
+      // Домен connection в этом сценарии может оставаться idle, пока reconnect ведёт автоконнектор.
+      await statusDashboard.waitForDiagramStatusOneOf(
+        'autoConnectorManager',
+        ['disconnecting', 'attemptingGate', 'attemptingConnect', 'waitingBeforeRetry'],
+        { timeout: CONNECT_OK_TIMEOUT_MS },
+      );
       await statusDashboard.expectDiagramStatusNot('autoConnectorManager', 'connectedMonitoring', {
         timeout: CONNECT_OK_TIMEOUT_MS,
       });
@@ -527,18 +519,18 @@ test.describe('Подключение (connectButton)', () => {
       await connectPage.simulateNetworkInterfaceChange();
     });
 
-    await test.step('ожидать переход в attemptingConnect', async () => {
+    await test.step('ожидать reconnect-флоу и фазу waitingBeforeRetry у автоконнектора', async () => {
       await statusDashboard.waitForDiagramStatus('system', 'system:disconnecting', {
         timeout: NETWORK_INTERFACE_CHANGE_TIMEOUT_MS,
       });
       await statusDashboard.waitForDiagramStatus('system', 'system:connecting', {
         timeout: NETWORK_INTERFACE_CHANGE_TIMEOUT_MS,
       });
-      await statusDashboard.waitForDiagramStatus('autoConnectorManager', 'attemptingConnect', {
+      await statusDashboard.expectDiagramStatusNot('autoConnectorManager', 'connectedMonitoring', {
         timeout: NETWORK_INTERFACE_CHANGE_TIMEOUT_MS,
       });
-      await statusDashboard.waitForDiagramStatus('connection', 'connection:connecting', {
-        timeout: NETWORK_INTERFACE_CHANGE_TIMEOUT_MS,
+      await statusDashboard.waitForDiagramStatus('autoConnectorManager', 'waitingBeforeRetry', {
+        timeout: CONNECT_OK_TIMEOUT_MS,
       });
     });
 
