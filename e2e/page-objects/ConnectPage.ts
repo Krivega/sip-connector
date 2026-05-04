@@ -1,10 +1,11 @@
 import { expect } from '@playwright/test';
 
 import { DemoPage } from './DemoPage';
+import { SIP_CONNECTOR_DEMO_E2E_WEBSOCKET_GLOBAL_KEY } from '../support/webSocketControls';
 
 import type { Page } from '@playwright/test';
 import type { TConnectionFormConfig } from '../connection.config';
-import type { TSipConnectorDemoE2EWindow } from '../types';
+import type { TSipConnectorDemoE2EWebSocketHooks, TSipConnectorDemoE2EWindow } from '../types';
 
 type TRecvQuality = 'auto' | 'high' | 'medium' | 'low';
 type TCallSessionSnapshot = {
@@ -137,51 +138,63 @@ export class ConnectPage {
   }
 
   public async blockWsMessages(serverAddress: string) {
-    await this.page.evaluate((address) => {
-      const hooks = (window as TSipConnectorDemoE2EWindow).sipConnectorDemoE2E;
+    await this.page.evaluate(
+      ({ key, address }) => {
+        const hooks = Reflect.get(window, key) as TSipConnectorDemoE2EWebSocketHooks | undefined;
 
-      if (!hooks) {
-        throw new Error('Demo e2e hooks are not available');
-      }
+        if (!hooks) {
+          throw new Error('Demo e2e WebSocket hooks are not available');
+        }
 
-      hooks.blockWsMessages(address);
-    }, serverAddress);
+        hooks.blockWsMessages(address);
+      },
+      { key: SIP_CONNECTOR_DEMO_E2E_WEBSOCKET_GLOBAL_KEY, address: serverAddress },
+    );
   }
 
   public async blockWsResponseMessages(serverAddress: string) {
-    await this.page.evaluate((address) => {
-      const hooks = (window as TSipConnectorDemoE2EWindow).sipConnectorDemoE2E;
+    await this.page.evaluate(
+      ({ key, address }) => {
+        const hooks = Reflect.get(window, key) as TSipConnectorDemoE2EWebSocketHooks | undefined;
 
-      if (!hooks) {
-        throw new Error('Demo e2e hooks are not available');
-      }
+        if (!hooks) {
+          throw new Error('Demo e2e WebSocket hooks are not available');
+        }
 
-      hooks.blockWsResponseMessages(address);
-    }, serverAddress);
+        hooks.blockWsResponseMessages(address);
+      },
+      { key: SIP_CONNECTOR_DEMO_E2E_WEBSOCKET_GLOBAL_KEY, address: serverAddress },
+    );
   }
 
   public async disconnectWsTransport(serverAddress: string) {
-    await this.page.evaluate((address) => {
-      const hooks = (window as TSipConnectorDemoE2EWindow).sipConnectorDemoE2E;
+    await this.page.evaluate(
+      ({ key, address }) => {
+        const hooks = Reflect.get(window, key) as TSipConnectorDemoE2EWebSocketHooks | undefined;
 
-      if (!hooks) {
-        throw new Error('Demo e2e hooks are not available');
-      }
+        if (!hooks) {
+          throw new Error('Demo e2e WebSocket hooks are not available');
+        }
 
-      hooks.disconnectWsTransport(address);
-    }, serverAddress);
+        hooks.disconnectWsTransport(address);
+      },
+      { key: SIP_CONNECTOR_DEMO_E2E_WEBSOCKET_GLOBAL_KEY, address: serverAddress },
+    );
   }
 
   public async blockCreateNewWsTransport(serverAddress: string) {
-    await this.page.evaluate((address) => {
-      const hooks = (window as TSipConnectorDemoE2EWindow).sipConnectorDemoE2E;
+    await this.page.evaluate(
+      ({ key, address }) => {
+        const hooks = Reflect.get(window, key) as TSipConnectorDemoE2EWebSocketHooks | undefined;
 
-      if (!hooks) {
-        throw new Error('Demo e2e hooks are not available');
-      }
+        if (!hooks) {
+          throw new Error('Demo e2e WebSocket hooks are not available');
+        }
 
-      hooks.blockCreateNewWsTransport(address);
-    }, serverAddress);
+        hooks.blockCreateNewWsTransport(address);
+      },
+      { key: SIP_CONNECTOR_DEMO_E2E_WEBSOCKET_GLOBAL_KEY, address: serverAddress },
+    );
   }
 
   public async simulateNetworkInterfaceChange() {
@@ -209,15 +222,18 @@ export class ConnectPage {
   }
 
   public async getSentWsOptionsCount(serverAddress: string) {
-    return this.page.evaluate((address) => {
-      const hooks = (window as TSipConnectorDemoE2EWindow).sipConnectorDemoE2E;
+    return this.page.evaluate(
+      ({ key, address }) => {
+        const hooks = Reflect.get(window, key) as TSipConnectorDemoE2EWebSocketHooks | undefined;
 
-      if (!hooks) {
-        throw new Error('Demo e2e hooks are not available');
-      }
+        if (!hooks) {
+          throw new Error('Demo e2e WebSocket hooks are not available');
+        }
 
-      return hooks.getSentWsOptionsCount(address);
-    }, serverAddress);
+        return hooks.getSentWsOptionsCount(address);
+      },
+      { key: SIP_CONNECTOR_DEMO_E2E_WEBSOCKET_GLOBAL_KEY, address: serverAddress },
+    );
   }
 
   public async forceGetUserMediaResult(result: 'real' | 'fail') {
