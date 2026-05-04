@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [28.10.4](https://github.com/Krivega/sip-connector/compare/v28.10.3...v28.10.4) (2026-05-04)
+
+### Bug Fixes
+
+- **auto-connector:** restore networkEventsReconnector start call to ensure proper reconnection behavior ([d0e3ab9](https://github.com/Krivega/sip-connector/commit/d0e3ab9cc6357c7a8342c315b2a7a9b6bc60cb0f))
+- reconnect tests for WebSocket handling ([1521d38](https://github.com/Krivega/sip-connector/commit/1521d383c0caaedcf41b273ec3d1090f96317ff9))
+
 ### [28.10.3](https://github.com/Krivega/sip-connector/compare/v28.10.2...v28.10.3) (2026-05-04)
 
 ### Bug Fixes
