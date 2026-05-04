@@ -12,6 +12,7 @@ export type TSipConnectorDemoE2EWebSocketHooks = {
   disconnectWsTransport: (serverAddress: string) => void;
   blockCreateNewWsTransport: (serverAddress: string) => void;
   getSentWsOptionsCount: (serverAddress: string) => number;
+  resetWsControls: () => void;
 };
 
 export type TSipConnectorDemoE2EWindow = Window & {

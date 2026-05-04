@@ -236,6 +236,21 @@ export class ConnectPage {
     );
   }
 
+  public async resetWsControls() {
+    await this.page.evaluate(
+      ({ key }) => {
+        const hooks = Reflect.get(window, key) as TSipConnectorDemoE2EWebSocketHooks | undefined;
+
+        if (!hooks) {
+          throw new Error('Demo e2e WebSocket hooks are not available');
+        }
+
+        hooks.resetWsControls();
+      },
+      { key: SIP_CONNECTOR_DEMO_E2E_WEBSOCKET_GLOBAL_KEY },
+    );
+  }
+
   public async forceGetUserMediaResult(result: 'real' | 'fail') {
     await this.page.evaluate((mediaResult) => {
       const hooks = (window as TSipConnectorDemoE2EWindow).sipConnectorDemoE2E;

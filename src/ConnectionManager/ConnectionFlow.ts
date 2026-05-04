@@ -1,6 +1,7 @@
 import { CancelableRequest, isCanceledError } from '@krivega/cancelable-promise';
 import { repeatedCallsAsync } from 'repeated-calls';
 
+import resolveDebug from '@/logger';
 import { resolveParameters } from './utils';
 import { hasHandshakeWebsocketOpeningError } from '../utils/errors';
 
@@ -17,6 +18,8 @@ import type { TEvents } from './events';
 import type RegistrationManager from './RegistrationManager';
 import type { TConnectionConfiguration, TParametersConnection } from './types';
 import type UAFactory from './UAFactory';
+
+const debug = resolveDebug('ConnectionManager: ConnectionFlow');
 
 const NUMBER_OF_CONNECTION_ATTEMPTS = 3;
 
@@ -77,6 +80,8 @@ export default class ConnectionFlow {
   }
 
   public connect: TConnect = async (parameters, options) => {
+    debug('connect', parameters, options);
+
     this.dependencies.stateMachine.toStartConnect();
     this.dependencies.events.trigger('connect-started', {});
     this.cancelRequests();
@@ -97,6 +102,8 @@ export default class ConnectionFlow {
         return this.connectWithDuplicatedCalls(data, options);
       })
       .then((connectionConfigurationWithUa) => {
+        debug('connect: succeeded', connectionConfigurationWithUa);
+
         this.dependencies.events.trigger('connect-succeeded', {
           ...connectionConfigurationWithUa,
         });
@@ -104,6 +111,8 @@ export default class ConnectionFlow {
         return connectionConfigurationWithUa;
       })
       .catch((error: unknown) => {
+        debug('connect: error', error);
+
         const connectError: unknown = error ?? new Error('Failed to connect to server');
 
         if (!isCanceledError(connectError)) {
@@ -115,6 +124,8 @@ export default class ConnectionFlow {
   };
 
   public disconnect = async ({ cancelRequests = true }: { cancelRequests?: boolean } = {}) => {
+    debug('disconnect', { cancelRequests });
+
     if (cancelRequests) {
       this.cancelRequests();
     }
@@ -143,6 +154,8 @@ export default class ConnectionFlow {
   };
 
   public cancelRequests() {
+    debug('cancelRequests');
+
     this.resolveParametersRequester.cancelRequest();
     this.cancelConnectWithRepeatedCalls();
   }
@@ -231,6 +244,8 @@ export default class ConnectionFlow {
     register = false,
     extraHeaders = [],
   }) => {
+    debug('initUa');
+
     // Отключаем текущее соединение, если оно есть
     const currentUa = this.dependencies.getUa();
 
@@ -282,6 +297,8 @@ export default class ConnectionFlow {
   };
 
   private readonly start: TStart = async (configuration) => {
+    debug('start', configuration);
+
     return new Promise((resolve, reject) => {
       const ua = this.dependencies.getUa();
 
@@ -294,6 +311,8 @@ export default class ConnectionFlow {
       let unsubscribeFromEvents: undefined | (() => void);
 
       const resolveUa = () => {
+        debug('start: resolveUa');
+
         unsubscribeFromEvents?.();
         resolve(configuration);
       };

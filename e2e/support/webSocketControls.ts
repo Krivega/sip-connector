@@ -144,6 +144,13 @@ export const installE2EWebSocketControls = () => {
       getSentWsOptionsCount: (serverAddress: string) => {
         return sentWsOptionsCountByHostname.get(normalizeServerHostname(serverAddress)) ?? 0;
       },
+
+      resetWsControls: () => {
+        blockedWsMessageHostnames.clear();
+        blockedWsResponseHostnames.clear();
+        blockedWsTransportHostnames.clear();
+        sentWsOptionsCountByHostname.clear();
+      },
     };
   };
 

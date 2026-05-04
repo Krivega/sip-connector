@@ -1,5 +1,8 @@
+import resolveDebug from '@/logger';
+
 const DEFAULT_INITIAL_COUNT = 0;
 const DEFAULT_LIMIT = 30;
+const debug = resolveDebug('AutoConnectorManager: AttemptsState');
 
 class AttemptsState {
   private countInner = DEFAULT_INITIAL_COUNT;
@@ -33,10 +36,14 @@ class AttemptsState {
   }
 
   public hasLimitReached(): boolean {
+    debug('hasLimitReached', { count: this.countInner, limit: this.limitInner });
+
     return this.countInner >= this.limitInner;
   }
 
   public startAttempt(): void {
+    debug('startAttempt', { count: this.countInner, limit: this.limitInner });
+
     if (!this.isInProgress) {
       this.isInProgress = true;
       this.onStatusChange({ isInProgress: this.isInProgress });
@@ -44,6 +51,8 @@ class AttemptsState {
   }
 
   public finishAttempt(): void {
+    debug('finishAttempt', { count: this.countInner, limit: this.limitInner });
+
     if (this.isInProgress) {
       this.isInProgress = false;
       this.onStatusChange({ isInProgress: this.isInProgress });
@@ -51,12 +60,16 @@ class AttemptsState {
   }
 
   public increment(): void {
+    debug('increment', { count: this.countInner, limit: this.limitInner });
+
     if (this.count < this.limit) {
       this.countInner += 1;
     }
   }
 
   public reset(): void {
+    debug('reset', { count: this.countInner, limit: this.limitInner });
+
     this.countInner = this.initialCount;
     this.finishAttempt();
   }
