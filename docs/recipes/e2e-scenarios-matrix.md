@@ -18,6 +18,7 @@
 - `stable` — `network-change + ping FAIL` приводит к reconnect-флоу (`e2e/connect.spec.ts`).
 - `stable` — при `ping FAIL` ожидается явный `waitingBeforeRetry` перед восстановлением (`e2e/connect.spec.ts`).
 - `stable` — неверный пароль переводит auto-connector в `errorTerminal` без retry-цикла (`e2e/connect.spec.ts`).
+- `flaky-risk` — half-open WebSocket (нет входящих кадров): после порога периодического SIP OPTIONS ожидается reconnect-флоу (`e2e/ping-reconnect.spec.ts`, зависит от реального сервера и таймаутов JsSIP).
 
 ## Call
 

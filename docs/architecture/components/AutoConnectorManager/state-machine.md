@@ -67,14 +67,14 @@ stateDiagram-v2
 - В `disconnecting` событие `AUTO.RESTART` не делает re-enter invoke: обновляется только контекст, текущий `stopConnectionFlow` продолжается.
 - Порядок guard в `attemptingConnect.onError` критичен: сначала non-retry/cancel cases, затем retry path.
 - `telephonyChecking -> connectedMonitoring` означает возврат к мониторингу без нового `connect`.
-- Сбой ping в мониторинге не инициирует `AUTO.RESTART`, чтобы не дублировать reconnect-механику транспорта JsSIP.
+- После порога неуспешных периодических SIP OPTIONS (`PingServerRequester`) в `connectedMonitoring` вызывается `requestReconnect` с причиной `periodic-ping-failed` (полный цикл автоконнектора), чтобы выйти из сценария «полуживого» WebSocket, когда JsSIP не пересоздаёт транспорт сам.
 - Coalescing рестартов (`ReconnectRequestCoalescer`) подавляет дубли в окне и пропускает более приоритетные причины.
 
 ## Интеграция и события
 
 - Внутренние события: `AUTO.RESTART`, `AUTO.STOP`, `TELEPHONY.RESULT`.
 - Источники событий:
-  - `AUTO.RESTART` — из `requestReconnect(...)` (`start`, `restart`, runtime-триггеры, сетевые события `network-online`/`network-change` от `NetworkEventsReconnector`; в дефолтной политике `'probe'` сетевое событие приводит к рестарту только после неуспешного SIP OPTIONS-пинга, см. [recipes/auto-reconnection](../../../recipes/auto-reconnection.md#реакция-на-сетевые-события-браузера));
+  - `AUTO.RESTART` — из `requestReconnect(...)` (`start`, `restart`, runtime-триггеры, `periodic-ping-failed` после порога периодического ping, сетевые события `network-online`/`network-change` от `NetworkEventsReconnector`; в дефолтной политике `'probe'` сетевое событие приводит к рестарту только после неуспешного SIP OPTIONS-пинга, см. [recipes/auto-reconnection](../../../recipes/auto-reconnection.md#реакция-на-сетевые-события-браузера));
   - `AUTO.STOP` — из `stop()` (`stateMachine.toStop()`), а также из `NetworkEventsReconnector` по истечении offline grace-окна;
   - `TELEPHONY.RESULT(stillConnected)` — из runtime (`notifyTelephonyStillConnected()`).
 - Runtime делегирует в машину побочные сценарии (`stopConnectionFlow`, `connect`, `delayBetweenAttempts`, telephony-check policy), а публичные события эмитятся снаружи через `AutoConnectorRuntime`.

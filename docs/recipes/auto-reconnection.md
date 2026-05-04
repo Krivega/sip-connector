@@ -52,7 +52,7 @@ sipConnector.autoConnectorManager.restart();
 - **Адаптивные задержки**: Использует настраиваемые интервалы между попытками
 - **Очистка кэша**: Возможность настраивать очистку кэша через хук
 - **Реакция на сеть**: Опциональный подписчик сетевых событий (`online`/`offline`/`change`) с настраиваемой политикой `probe` (по умолчанию) / `reconnect` / `ignore` — проверяет достижимость сервера SIP OPTIONS-пингом и запускает реконнект только при недоступности; `offline` прерывает соединение через grace-окно
-- **Причины реконнекта**: Все внешние рестарты проходят через единый `requestReconnect` (например: `start`, `manual-restart`, `telephony-disconnected`, `registration-failed-out-of-call`, `network-online`, `network-change`)
+- **Причины реконнекта**: Все внешние рестарты проходят через единый `requestReconnect` (например: `start`, `manual-restart`, `telephony-disconnected`, `telephony-check-failed`, `periodic-ping-failed`, `registration-failed-out-of-call`, `network-online`, `network-change`)
 
 ## Приоритеты причин рестарта (coalescing)
 
@@ -66,6 +66,7 @@ sipConnector.autoConnectorManager.restart();
 | `start`                           | `0`       |
 | `telephony-disconnected`          | `1`       |
 | `telephony-check-failed`          | `1`       |
+| `periodic-ping-failed`            | `2`       |
 | `registration-failed-out-of-call` | `3`       |
 | `manual-restart`                  | `4`       |
 | `network-online`                  | `4`       |

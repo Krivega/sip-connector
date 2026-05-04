@@ -47,6 +47,18 @@ describe('ReconnectRequestCoalescer', () => {
     });
   });
 
+  it('пропускает periodic-ping-failed выше telephony в пределах окна', () => {
+    const coalescer = new ReconnectRequestCoalescer({ coalesceWindowMs: 250 });
+
+    coalescer.register('telephony-check-failed');
+
+    expect(coalescer.register('periodic-ping-failed')).toEqual({
+      shouldRequest: true,
+      generation: 2,
+      currentPriority: 2,
+    });
+  });
+
   it('после reset начинает новую серию без схлопывания', () => {
     const coalescer = new ReconnectRequestCoalescer({ coalesceWindowMs: 250 });
 

@@ -6,6 +6,7 @@ export type TSipConnectorDemoE2EHooks = {
   blockCreateNewWsTransport: (serverAddress: string) => void;
   simulateNetworkInterfaceChange: () => void;
   forcePingProbeResult: (result: 'ok' | 'fail' | 'real') => void;
+  getSentWsOptionsCount: (serverAddress: string) => number;
   forceGetUserMediaResult: (result: 'real' | 'fail') => void;
   forceGetDisplayMediaResult: (result: 'real' | 'fail') => void;
 };

@@ -15,7 +15,7 @@
 - Мониторинг состояния соединения
 - Управление событиями попыток подключения
 - Реакция на сетевые события клиента (online/offline/change): встроенный браузерный подписчик по умолчанию + опциональная подмена через `networkEventsSubscriber`; политики `onNetworkChangePolicy` / `onNetworkOnlinePolicy` (`probe` по умолчанию — проверка SIP OPTIONS-пингом перед реконнектом)
-- Единая точка запросов на рестарт (`requestReconnect`) с причиной (`start`, `manual-restart`, `telephony-disconnected`, `telephony-check-failed`, `registration-failed-out-of-call`, `network-online`, `network-change`, ...)
+- Единая точка запросов на рестарт (`requestReconnect`) с причиной (`start`, `manual-restart`, `telephony-disconnected`, `telephony-check-failed`, `periodic-ping-failed`, `registration-failed-out-of-call`, `network-online`, `network-change`, ...)
 - Operational-правила coalescing и приоритеты причин: [рецепт автопереподключения](../../../recipes/auto-reconnection.md#приоритеты-причин-рестарта-coalescing)
 
 ## Основные методы

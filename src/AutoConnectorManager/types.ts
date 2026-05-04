@@ -30,7 +30,7 @@ export interface IAutoConnectorOptions {
   // Как реагировать на смену характеристик сети (`navigator.connection.change`).
   // 'probe' (по умолчанию) — проверить сервер ping-ом и reconnect только при неудаче.
   // 'reconnect' — всегда безусловный reconnect.
-  // 'ignore' — не реагировать (положиться на PingServerRequester / JsSIP transport).
+  // 'ignore' — не реагировать на смену сети (положиться на периодический ping / JsSIP transport).
   onNetworkChangePolicy?: TNetworkEventPolicy;
   // Как реагировать на `window.online`. Дефолт — 'probe' по той же причине:
   // событие online не гарантирует, что наш сервер достижим.
@@ -85,6 +85,8 @@ export const RECONNECT_REASONS = {
   REGISTRATION_FAILED_OUT_OF_CALL: 'registration-failed-out-of-call',
   TELEPHONY_DISCONNECTED: 'telephony-disconnected',
   TELEPHONY_CHECK_FAILED: 'telephony-check-failed',
+  /** Порог неуспешных периодических SIP OPTIONS (`PingServerRequester`) в `connectedMonitoring`. */
+  PERIODIC_PING_FAILED: 'periodic-ping-failed',
   NETWORK_ONLINE: 'network-online',
   NETWORK_CHANGE: 'network-change',
 } as const;
@@ -96,6 +98,7 @@ export const RECONNECT_REASON_PRIORITY: Record<TReconnectReason, number> = {
   [RECONNECT_REASONS.START]: 0,
   [RECONNECT_REASONS.TELEPHONY_DISCONNECTED]: 1,
   [RECONNECT_REASONS.TELEPHONY_CHECK_FAILED]: 1,
+  [RECONNECT_REASONS.PERIODIC_PING_FAILED]: 2,
   [RECONNECT_REASONS.REGISTRATION_FAILED_OUT_OF_CALL]: 3,
   [RECONNECT_REASONS.MANUAL_RESTART]: 4,
   [RECONNECT_REASONS.NETWORK_ONLINE]: 4,

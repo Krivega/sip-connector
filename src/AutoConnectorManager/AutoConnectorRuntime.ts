@@ -6,12 +6,13 @@ import CheckTelephonyRequester from './CheckTelephonyRequester';
 import PingServerRequester from './PingServerRequester';
 import RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCallSubscriber';
 import TelephonyFailPolicy from './TelephonyFailPolicy';
+import { RECONNECT_REASONS } from './types';
 
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
 import type { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import type { TEventMap } from './events';
-import type { TParametersAutoConnect, TReconnectReason, IAutoConnectorOptions } from './types';
+import type { IAutoConnectorOptions, TParametersAutoConnect, TReconnectReason } from './types';
 
 const debug = resolveDebug('AutoConnectorManager: AutoConnectorRuntime');
 
@@ -259,8 +260,9 @@ export class AutoConnectorRuntime {
   private subscribeToConnectTriggers(parameters: TParametersAutoConnect) {
     // Периодически шлём SIP OPTIONS (`connectionManager.ping`) через тот же JsSIP UA, пока подключены:
     // проверяем живость сигнализации и даём исходящий трафик по WebSocket — в том числе во время активного звонка
-    // (раньше пинг заглушался на время звонка). При падении транспорта JsSIP перезапускает сокет; рестарт
-    // автоконнектора по одному сбою ping не вешаем — не дублируем встроенное переподключение транспорта.
+    // (раньше пинг заглушался на время звонка). JsSIP может перезапускать транспорт при явном обрыве; при
+    // «полуживом» WebSocket (OPTIONS без ответа) транспорт не всегда восстанавливается — после порога
+    // неуспешных ping инициируем полный reconnect автоконнектора.
     /**
      * Периодический SIP OPTIONS (`connectionManager.ping`) по установленному UA.
      * Работает независимо от того, идёт ли звонок: поддерживает трафик по WebSocket
@@ -270,6 +272,7 @@ export class AutoConnectorRuntime {
     this.pingServerRequester.start({
       onFailRequest: () => {
         debug('pingRequester: onFailRequest');
+        this.reconnectActions.requestReconnect(parameters, RECONNECT_REASONS.PERIODIC_PING_FAILED);
       },
     });
 

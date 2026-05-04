@@ -17,6 +17,7 @@ export const installE2ENetworkControls = () => {
   const blockedWsMessageHostnames = new Set<string>();
   const blockedWsResponseHostnames = new Set<string>();
   const blockedWsTransportHostnames = new Set<string>();
+  const sentWsOptionsCountByHostname = new Map<string, number>();
   let forcedPingProbeResult: 'ok' | 'fail' | 'real' = 'real';
   let forcedGetUserMediaResult: 'real' | 'fail' = 'real';
   let forcedGetDisplayMediaResult: 'real' | 'fail' = 'real';
@@ -110,6 +111,19 @@ export const installE2ENetworkControls = () => {
     return input.url;
   };
 
+  const isSipOptionsMessage = (
+    data: string | ArrayBufferLike | Blob | ArrayBufferView,
+  ): boolean => {
+    return typeof data === 'string' && data.startsWith('OPTIONS ');
+  };
+
+  const incrementSentWsOptionsCount = (hostname: string) => {
+    sentWsOptionsCountByHostname.set(
+      hostname,
+      (sentWsOptionsCountByHostname.get(hostname) ?? 0) + 1,
+    );
+  };
+
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     if (isBlockedApiRequest(normalizeRequestUrl(input))) {
       throw new TypeError('Failed to fetch');
@@ -159,6 +173,10 @@ export const installE2ENetworkControls = () => {
       const originalSend = socket.send.bind(socket);
 
       socket.send = ((data: string | ArrayBufferLike | Blob | ArrayBufferView) => {
+        if (isSipOptionsMessage(data)) {
+          incrementSentWsOptionsCount(socketHostname);
+        }
+
         if (blockedWsMessageHostnames.has(socketHostname)) {
           return;
         }
@@ -242,6 +260,11 @@ export const installE2ENetworkControls = () => {
     forcePingProbeResult: (result: 'ok' | 'fail' | 'real') => {
       forcedPingProbeResult = result;
       syncConnectionManagerPingOverride();
+    },
+    getSentWsOptionsCount: (serverAddress: string) => {
+      const normalizedServerHostname = normalizeServerHostname(serverAddress);
+
+      return sentWsOptionsCountByHostname.get(normalizedServerHostname) ?? 0;
     },
     forceGetUserMediaResult: (result: 'real' | 'fail') => {
       forcedGetUserMediaResult = result;

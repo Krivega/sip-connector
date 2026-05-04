@@ -87,8 +87,8 @@ describe('AutoConnectorManager - Triggers', () => {
       );
     });
 
-    it('не перезапускает connect при onFailRequest в ping server (восстановление на стороне JsSIP)', async () => {
-      const connectSpy = jest.spyOn(sipConnector.connectionManager, 'connect');
+    it('при onFailRequest периодического ping запускает reconnect (второй connect)', async () => {
+      const connectSpy = jest.spyOn(sipConnector.connectionQueueManager, 'connect');
       const startSpy = jest.spyOn(PingServerRequester.prototype, 'start').mockImplementation();
 
       manager.start(baseParameters).catch(() => {});
@@ -103,9 +103,9 @@ describe('AutoConnectorManager - Triggers', () => {
 
       onFailRequest();
 
-      await flushPromises();
+      await manager.wait('success');
 
-      expect(connectSpy).toHaveBeenCalledTimes(1);
+      expect(connectSpy).toHaveBeenCalledTimes(2);
     });
 
     it('запускает start при срабатывании registration failed out of call', async () => {

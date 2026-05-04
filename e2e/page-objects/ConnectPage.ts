@@ -208,6 +208,18 @@ export class ConnectPage {
     }, result);
   }
 
+  public async getSentWsOptionsCount(serverAddress: string) {
+    return this.page.evaluate((address) => {
+      const hooks = (window as TSipConnectorDemoE2EWindow).sipConnectorDemoE2E;
+
+      if (!hooks) {
+        throw new Error('Demo e2e hooks are not available');
+      }
+
+      return hooks.getSentWsOptionsCount(address);
+    }, serverAddress);
+  }
+
   public async forceGetUserMediaResult(result: 'real' | 'fail') {
     await this.page.evaluate((mediaResult) => {
       const hooks = (window as TSipConnectorDemoE2EWindow).sipConnectorDemoE2E;
