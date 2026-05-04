@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [28.10.3](https://github.com/Krivega/sip-connector/compare/v28.10.2...v28.10.3) (2026-05-04)
+
+### Bug Fixes
+
+- **auto-connector:** improve start method behavior to prevent redundant calls and clarify usage of restart and stop methods ([2dbe5d8](https://github.com/Krivega/sip-connector/commit/2dbe5d84945e3564e61cfb60aa7aae75b1bda722))
+
 ### [28.10.2](https://github.com/Krivega/sip-connector/compare/v28.10.1...v28.10.2) (2026-05-04)
 
 ### [28.10.1](https://github.com/Krivega/sip-connector/compare/v28.10.0...v28.10.1) (2026-05-04)
