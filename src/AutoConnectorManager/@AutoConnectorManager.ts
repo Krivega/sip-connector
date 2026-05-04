@@ -35,6 +35,8 @@ const MANUAL_RESTART_REASON: TReconnectReason = 'manual-restart';
 class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   public readonly stateMachine: AutoConnectorStateMachine;
 
+  private stopSettledPromise: Promise<void> | undefined;
+
   private readonly runtime: AutoConnectorRuntime;
 
   private readonly connectionManager: ConnectionManager;
@@ -216,12 +218,40 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
     this.requestReconnect(parameters, MANUAL_RESTART_REASON);
   }
 
-  public stop() {
-    debug('auto connector stop');
+  public async stop(): Promise<void> {
+    if (this.stopSettledPromise) {
+      debug('auto connector stop skipped: already in progress');
+      await this.stopSettledPromise;
 
-    this.networkEventsReconnector?.stop();
-    this.resetReconnectCoalescingState();
-    this.stateMachine.toStop();
+      return;
+    }
+
+    this.stopSettledPromise = (async () => {
+      debug('auto connector stop');
+
+      this.networkEventsReconnector?.stop();
+      this.resetReconnectCoalescingState();
+      this.stateMachine.toStop();
+
+      if (this.stateMachine.isInIdleState()) {
+        return;
+      }
+
+      await new Promise<void>((resolve) => {
+        const unsubscribe = this.stateMachine.onStateChange(() => {
+          if (this.stateMachine.isInIdleState()) {
+            unsubscribe();
+            resolve();
+          }
+        });
+      });
+    })();
+
+    try {
+      await this.stopSettledPromise;
+    } finally {
+      this.stopSettledPromise = undefined;
+    }
   }
 
   // Test hook: allows deterministic cancellation of pending retry flow.

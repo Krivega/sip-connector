@@ -149,8 +149,7 @@ describe('AutoConnectorManager - Basic', () => {
     it('restart: запускает процесс подключения из idle, переиспользуя parameters из контекста', async () => {
       await manager.start(baseParameters);
       await flushPromises();
-      manager.stop();
-      await flushPromises();
+      await manager.stop();
 
       expect(sipConnector.isConfigured()).toBe(false);
 
@@ -196,7 +195,7 @@ describe('AutoConnectorManager - Basic', () => {
 
       jest.clearAllMocks();
 
-      manager.stop();
+      await manager.stop();
 
       expect(connectQueueStopSpy).toHaveBeenCalled();
       expect(delayBetweenAttemptsCancelRequestSpy).toHaveBeenCalled();
@@ -206,12 +205,29 @@ describe('AutoConnectorManager - Basic', () => {
       expect(registrationFailedOutOfCallSubscriberUnsubscribeSpy).toHaveBeenCalled();
     });
 
-    it('stop: не останавливает очередь запросов, если попытка подключения не запущена', () => {
+    it('stop: не останавливает очередь запросов, если попытка подключения не запущена', async () => {
       const connectQueueStopSpy = jest.spyOn(ConnectionQueueManager.prototype, 'stop');
 
-      manager.stop();
+      await manager.stop();
 
       expect(connectQueueStopSpy).not.toHaveBeenCalled();
+    });
+
+    it('stop: параллельные вызовы ждут один in-flight (ветка stopSettledPromise)', async () => {
+      await startAndWaitFor('success');
+
+      const disconnectSpy = jest
+        .spyOn(sipConnector.connectionQueueManager, 'disconnect')
+        .mockImplementation(async () => {
+          return delayPromise(DELAY * 3);
+        });
+
+      const firstStop = manager.stop();
+      const secondStop = manager.stop();
+
+      await expect(Promise.all([firstStop, secondStop])).resolves.toEqual([undefined, undefined]);
+
+      expect(disconnectSpy).toHaveBeenCalledTimes(1);
     });
 
     it('stop: не должна всплывать ошибка, если disconnect завершился с ошибкой', async () => {
@@ -219,7 +235,7 @@ describe('AutoConnectorManager - Basic', () => {
 
       jest.spyOn(sipConnector.connectionQueueManager, 'disconnect').mockRejectedValue(error);
 
-      manager.stop();
+      await manager.stop();
 
       expect(mcuDebugLogger).toHaveBeenCalled();
     });
@@ -232,7 +248,10 @@ describe('AutoConnectorManager - Basic', () => {
       await manager.start(baseParameters);
       await flushPromises();
 
-      manager.stop();
+      // Не await: после restart() во время DISCONNECTING машина не вернётся в idle,
+      // и async stop() не завершится — проверяем только отсутствие sync-throw у restart.
+      // eslint-disable-next-line no-void
+      void manager.stop();
 
       expect(() => {
         manager.restart();
@@ -280,8 +299,7 @@ describe('AutoConnectorManager - Basic', () => {
 
     it('start: после stop снова запускается успешно', async () => {
       await manager.start(baseParameters);
-      manager.stop();
-      await flushPromises();
+      await manager.stop();
 
       const resultAfterStop = await manager.start(baseParameters);
 
@@ -356,7 +374,7 @@ describe('AutoConnectorManager - Basic', () => {
       expect(handleAttemptStatusChanged).toHaveBeenCalledTimes(1);
       expect(handleAttemptStatusChanged).toHaveBeenCalledWith({ isInProgress: true });
 
-      manager.stop();
+      await manager.stop();
 
       expect(handleAttemptStatusChanged).toHaveBeenCalledWith({ isInProgress: false });
 

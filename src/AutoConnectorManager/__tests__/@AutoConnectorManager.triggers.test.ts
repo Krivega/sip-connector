@@ -141,7 +141,7 @@ describe('AutoConnectorManager - Triggers', () => {
       await manager.wait('success');
 
       jest.clearAllMocks();
-      manager.stop();
+      await manager.stop();
 
       expect(pingServerStopSpy).toHaveBeenCalled();
       expect(checkTelephonyStopSpy).toHaveBeenCalled();

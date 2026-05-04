@@ -86,7 +86,7 @@ describe('AutoConnectorManager - Events', () => {
       handleAttemptStatusChanged.mockClear();
 
       // Вызываем stop - статус должен сброситься
-      manager.stop();
+      await manager.stop();
 
       // При остановке статус должен сброситься
       expect(handleAttemptStatusChanged).toHaveBeenCalledWith({ isInProgress: false });
@@ -103,7 +103,7 @@ describe('AutoConnectorManager - Events', () => {
       // Очищаем предыдущие вызовы
       handleAttemptStatusChanged.mockClear();
 
-      manager.stop();
+      await manager.stop();
 
       expect(handleAttemptStatusChanged).toHaveBeenCalledWith({ isInProgress: false });
     });

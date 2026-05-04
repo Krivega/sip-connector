@@ -78,8 +78,8 @@ describe('AutoConnectorManager - Network events', () => {
     };
   });
 
-  afterEach(() => {
-    manager.stop();
+  afterEach(async () => {
+    await manager.stop();
     jest.clearAllMocks();
     jest.restoreAllMocks();
     jest.useRealTimers();
@@ -113,7 +113,7 @@ describe('AutoConnectorManager - Network events', () => {
       expect(state.subscribeCount).toBe(1);
     });
 
-    it('не подписывается на сетевые события, если default browser-subscriber недоступен', () => {
+    it('не подписывается на сетевые события, если default browser-subscriber недоступен', async () => {
       const createDefaultSubscriberSpy = jest
         .spyOn(browserNetworkEventsSubscriberFactory, 'createBrowserNetworkEventsSubscriber')
         .mockReturnValue(undefined);
@@ -122,9 +122,7 @@ describe('AutoConnectorManager - Network events', () => {
       manager.start(baseParameters).catch(() => {});
 
       expect(createDefaultSubscriberSpy).toHaveBeenCalledTimes(1);
-      expect(() => {
-        manager.stop();
-      }).not.toThrow();
+      await expect(manager.stop()).resolves.toBeUndefined();
     });
 
     it('start: подписывает subscriber на сетевые события', () => {
@@ -147,12 +145,12 @@ describe('AutoConnectorManager - Network events', () => {
       expect(state.subscribeCount).toBe(1);
     });
 
-    it('stop: отписывает subscriber от сетевых событий', () => {
+    it('stop: отписывает subscriber от сетевых событий', async () => {
       const { subscriber, state } = createFakeNetworkSubscriber();
 
       manager = createManager({ networkEventsSubscriber: subscriber });
       manager.start(baseParameters).catch(() => {});
-      manager.stop();
+      await manager.stop();
 
       expect(state.unsubscribeCount).toBe(1);
       expect(state.handlers).toBeUndefined();

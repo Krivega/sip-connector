@@ -116,7 +116,7 @@ export class Session {
   }
 
   public async disconnectFromServer(): Promise<void> {
-    sipConnectorFacade.stopAutoConnect();
+    await sipConnectorFacade.stopAutoConnect();
     await sipConnectorFacade.disconnectFromServer();
     this.serverParameters = undefined;
   }

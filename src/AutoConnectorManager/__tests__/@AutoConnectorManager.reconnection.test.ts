@@ -152,7 +152,7 @@ describe('AutoConnectorManager - Reconnection', () => {
           }),
         ]);
       } finally {
-        manager.stop();
+        await manager.stop();
       }
 
       expect(connectSpy).toHaveBeenCalledTimes(1);

@@ -293,8 +293,8 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     return this.autoConnectorManager.start(...args);
   };
 
-  public stopAutoConnect: AutoConnectorManager['stop'] = () => {
-    this.autoConnectorManager.stop();
+  public stopAutoConnect: AutoConnectorManager['stop'] = async () => {
+    return this.autoConnectorManager.stop();
   };
 
   public call = async (
