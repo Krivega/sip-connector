@@ -37,6 +37,10 @@ sipConnector.startAutoConnect({
   },
 });
 
+// Повторный start во время активного цикла — no-op.
+// Для принудительного переподключения используйте restart(),
+// либо остановите цикл stopAutoConnect() и запустите снова.
+
 // Остановка автоподключения
 sipConnector.stopAutoConnect();
 
@@ -85,6 +89,12 @@ sipConnector.autoConnectorManager.restart();
 | `auto-connect:changed-attempt-status`    | Изменение статуса попытки                        | `{ isInProgress: boolean }`                                                       |
 | `auto-connect:telephony-check-failure`   | Ошибка проверки телефонии + решение policy       | `{ failCount, escalationLevel, shouldRequestReconnect, nextRetryDelayMs, error }` |
 | `auto-connect:telephony-check-escalated` | Эскалация деградации проверки телефонии          | `{ failCount, escalationLevel, error }`                                           |
+
+## Поведение повторного `start()`
+
+- Если `AutoConnectorManager` уже запущен (состояние не `idle`), повторный `start()` не перезапускает флоу и возвращает `{ isSuccess: false, reason: 'coalesced' }`.
+- В debug-лог пишется подсказка: используйте `restart()` для форс-реконнекта или сначала вызовите `stop()`/`stopAutoConnect()`.
+- После `stop()` вызов `start()` снова запускает цикл и возвращает `{ isSuccess: true, reason: 'started' }`.
 
 ## Подписка на события автоподключения
 

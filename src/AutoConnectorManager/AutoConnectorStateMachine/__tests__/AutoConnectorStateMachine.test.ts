@@ -69,4 +69,14 @@ describe('AutoConnectorStateMachine', () => {
 
     expect(sm.state).not.toBe('idle');
   });
+
+  it('isInIdleState: возвращает true только в состоянии idle', () => {
+    const sm = new AutoConnectorStateMachine(createAutoConnectorMachine(minimalDeps()));
+
+    expect(sm.isInIdleState()).toBe(true);
+
+    sm.send({ type: 'AUTO.RESTART', parameters });
+
+    expect(sm.isInIdleState()).toBe(false);
+  });
 });

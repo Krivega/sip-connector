@@ -43,6 +43,46 @@ const flushMicrotasks = async () => {
 };
 
 describe('NetworkEventsReconnector', () => {
+  describe('start subscribe guard', () => {
+    it('повторный start при активной подписке не вызывает subscribe второй раз', () => {
+      const subscribe = jest.fn();
+      const subscriber: INetworkEventsSubscriber = {
+        subscribe,
+        unsubscribe: jest.fn(),
+      };
+      const reconnector = new NetworkEventsReconnector({
+        subscriber,
+        onChangePolicy: 'reconnect',
+        requestReconnect: jest.fn(),
+        stopConnection: jest.fn(),
+      });
+
+      reconnector.start(createParameters());
+      reconnector.start(createParameters());
+
+      expect(subscribe).toHaveBeenCalledTimes(1);
+    });
+
+    it('повторный start обновляет parameters, даже если подписка уже активна', () => {
+      const { subscriber, emit } = createSubscriber();
+      const requestReconnect = jest.fn();
+      const firstParameters = createParameters();
+      const secondParameters = createParameters();
+      const reconnector = new NetworkEventsReconnector({
+        subscriber,
+        onChangePolicy: 'reconnect',
+        requestReconnect,
+        stopConnection: jest.fn(),
+      });
+
+      reconnector.start(firstParameters);
+      reconnector.start(secondParameters);
+      emit('onChange');
+
+      expect(requestReconnect).toHaveBeenCalledWith(secondParameters, 'network-change');
+    });
+  });
+
   it('не запрашивает reconnect после stop (parameters сброшены)', () => {
     const { subscriber, emit } = createSubscriber();
     const requestReconnect = jest.fn();

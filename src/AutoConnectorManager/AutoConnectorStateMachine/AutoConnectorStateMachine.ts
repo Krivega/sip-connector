@@ -60,6 +60,13 @@ export class AutoConnectorStateMachine extends BaseStateMachine<
     this.toTelephonyResult('stillConnected');
   }
 
+  public isInIdleState(): this is AutoConnectorStateMachine & {
+    state: EState.IDLE;
+    context: TContextMap[EState.IDLE];
+  } {
+    return this.state === EState.IDLE;
+  }
+
   public isInConnectedMonitoringState(): this is AutoConnectorStateMachine & {
     state: EState.CONNECTED_MONITORING;
     context: TContextMap[EState.CONNECTED_MONITORING];

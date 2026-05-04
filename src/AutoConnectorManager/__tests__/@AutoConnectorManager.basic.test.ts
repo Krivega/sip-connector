@@ -248,7 +248,7 @@ describe('AutoConnectorManager - Basic', () => {
       });
     });
 
-    it('start: возвращает coalesced-результат при повторном запуске в окне coalescing', async () => {
+    it('start: возвращает coalesced-результат при повторном запуске, если manager уже запущен', async () => {
       const firstStartPromise = manager.start(baseParameters);
       const secondStartResult = await manager.start(baseParameters);
 
@@ -256,8 +256,39 @@ describe('AutoConnectorManager - Basic', () => {
         isSuccess: false,
         reason: 'coalesced',
       });
+      expect(mcuDebugLogger).toHaveBeenCalledWith(
+        'auto connector start skipped: already started. Use restart() for force reconnect or stop() before next start()',
+      );
 
       await firstStartPromise;
+    });
+
+    it('start: возвращает coalesced-результат, если requestReconnect вернул false', async () => {
+      const requestReconnectSpy = jest
+        .spyOn(manager as unknown as { requestReconnect: () => boolean }, 'requestReconnect')
+        .mockReturnValue(false);
+
+      const result = await manager.start(baseParameters);
+
+      expect(result).toEqual({
+        isSuccess: false,
+        reason: 'coalesced',
+      });
+
+      requestReconnectSpy.mockRestore();
+    });
+
+    it('start: после stop снова запускается успешно', async () => {
+      await manager.start(baseParameters);
+      manager.stop();
+      await flushPromises();
+
+      const resultAfterStop = await manager.start(baseParameters);
+
+      expect(resultAfterStop).toEqual({
+        isSuccess: true,
+        reason: 'started',
+      });
     });
 
     it('start: возвращает stop-attempts-by-error без reject', async () => {

@@ -135,6 +135,17 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
   public async start(parameters: TParametersAutoConnect): Promise<TAutoConnectStartResult> {
     debug('auto connector start');
 
+    if (this.isStarted()) {
+      debug(
+        'auto connector start skipped: already started. Use restart() for force reconnect or stop() before next start()',
+      );
+
+      return {
+        isSuccess: false,
+        reason: 'coalesced',
+      };
+    }
+
     this.networkEventsReconnector?.start(parameters);
 
     const isRequested = this.requestReconnect(parameters, START_REASON);
@@ -320,6 +331,10 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
 
   private resetReconnectCoalescingState() {
     this.reconnectCoalescer.reset();
+  }
+
+  private isStarted(): boolean {
+    return !this.stateMachine.isInIdleState();
   }
 }
 
