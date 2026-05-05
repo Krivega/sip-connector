@@ -48,13 +48,53 @@ describe('ConnectionQueueManager', () => {
     expect(result).toBe(mockResult);
   });
 
-  it('должен выполнять disconnect через очередь', async () => {
+  it('должен выполнять disconnect сразу и останавливать очередь', async () => {
+    const stopSpy = jest.spyOn(connectionQueueManager, 'stop');
+
     (connectionManager.disconnect as jest.Mock).mockResolvedValue(undefined);
 
     await connectionQueueManager.disconnect();
 
-    expect(stackRunSpy).toHaveBeenCalled();
+    expect(stopSpy).toHaveBeenCalled();
+    expect(stackRunSpy).not.toHaveBeenCalled();
     expect(connectionManager.disconnect).toHaveBeenCalled();
+
+    stopSpy.mockRestore();
+  });
+
+  it('должен выполнять disconnect, не дожидаясь завершения активного connect', async () => {
+    const mockResult = {};
+    const connectParams = {
+      displayName: 'Any Name',
+      sipServerIp: 'test.com',
+      sipServerUrl: 'wss://test.com',
+      remoteAddress: '10.10.10.10',
+      iceServers: [],
+    };
+    let resolveConnect!: (value: unknown) => void;
+
+    (connectionManager.connect as jest.Mock).mockReturnValue(
+      new Promise((resolve) => {
+        resolveConnect = resolve;
+      }),
+    );
+    (connectionManager.disconnect as jest.Mock).mockResolvedValue(undefined);
+
+    const connectPromise = connectionQueueManager.connect(async () => {
+      return connectParams;
+    });
+
+    await Promise.resolve();
+
+    const disconnectPromise = connectionQueueManager.disconnect();
+
+    await Promise.resolve();
+
+    expect(connectionManager.disconnect).toHaveBeenCalledTimes(1);
+
+    resolveConnect(mockResult);
+
+    await Promise.allSettled([connectPromise, disconnectPromise]);
   });
 
   it('должен проксировать метод stop', async () => {

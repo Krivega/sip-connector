@@ -580,14 +580,14 @@ class App {
     dom.hangupButtonElement.disabled = !isCallActive;
     dom.endCallButtonElement.disabled = !isCallActive;
     dom.connectButtonElement.disabled = isBusyWithConnection;
-    dom.disconnectButtonElement.disabled = isBusyWithConnection;
+    dom.disconnectButtonElement.disabled = isDisconnecting;
 
     if (isDisconnected) {
       dom.show(dom.connectButtonElement);
       dom.hide(dom.disconnectButtonElement);
     } else if (isConnecting) {
-      dom.show(dom.connectButtonElement);
-      dom.hide(dom.disconnectButtonElement);
+      dom.hide(dom.connectButtonElement);
+      dom.show(dom.disconnectButtonElement);
     } else {
       dom.hide(dom.connectButtonElement);
       dom.show(dom.disconnectButtonElement);

@@ -20,9 +20,9 @@ class ConnectionQueueManager {
   };
 
   public disconnect: ConnectionManager['disconnect'] = async () => {
-    return this.stackPromises.run(async () => {
-      return this.connectionManager.disconnect();
-    }) as ReturnType<ConnectionManager['disconnect']>;
+    this.stop();
+
+    return this.connectionManager.disconnect();
   };
 
   public stop() {
