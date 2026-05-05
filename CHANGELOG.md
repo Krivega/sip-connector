@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [28.10.6](https://github.com/Krivega/sip-connector/compare/v28.10.5...v28.10.6) (2026-05-05)
+
+### Bug Fixes
+
+- update disconnect button behavior during connection states and add e2e test for disconnecting during connecting ([5f72c7c](https://github.com/Krivega/sip-connector/commit/5f72c7c352ef013f94461153907859e5e44204ce))
+
 ### [28.10.5](https://github.com/Krivega/sip-connector/compare/v28.10.4...v28.10.5) (2026-05-04)
 
 ### Bug Fixes
