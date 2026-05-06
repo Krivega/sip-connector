@@ -279,7 +279,8 @@ class CallStateMachine extends BaseStateMachine<TMachine, EState, TFullContext, 
     listener: (payload: { token: string; conferenceForToken: string }) => void,
   ): () => void {
     /** Последняя пара, о которой уже вызывали `listener` (не путать с «предыдущим снимком» актора). */
-    let previous: { token: string; conferenceForToken: string } | undefined;
+    let previous: { token: string; conferenceForToken: string } | undefined =
+      this.getInRoomCredentials();
 
     const subscription = this.subscribe((snapshot) => {
       if (snapshot.value === EState.IN_ROOM) {
@@ -302,6 +303,39 @@ class CallStateMachine extends BaseStateMachine<TMachine, EState, TFullContext, 
       // Не сбрасываем на `evaluate` — см. п. 3-4 в JSDoc и `shouldResetInRoomCredentialsPrevious`.
       if (shouldResetInRoomCredentialsPrevious(snapshot.value)) {
         previous = undefined;
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }
+
+  /**
+   * Подписка на изменение `conferenceForToken` в нормализованном контексте `IN_ROOM`.
+   * Изменения `token` сознательно игнорируются.
+   */
+  public onInRoomConferenceForTokenChange(
+    listener: (payload: { conferenceForToken: string }) => void,
+  ): () => void {
+    let previousConferenceForToken: string | undefined =
+      this.getInRoomCredentials()?.conferenceForToken;
+    const subscription = this.subscribe((snapshot) => {
+      if (snapshot.value === EState.IN_ROOM) {
+        const state = snapshot.context.state as TContextMap[EState.IN_ROOM];
+        const nextConferenceForToken = state.conferenceForToken;
+        const conferenceChanged = previousConferenceForToken !== nextConferenceForToken;
+
+        if (conferenceChanged) {
+          previousConferenceForToken = nextConferenceForToken;
+          listener({ conferenceForToken: nextConferenceForToken });
+        }
+
+        return;
+      }
+
+      if (shouldResetInRoomCredentialsPrevious(snapshot.value)) {
+        previousConferenceForToken = undefined;
       }
     });
 

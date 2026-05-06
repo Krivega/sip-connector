@@ -2604,20 +2604,18 @@ describe('CallManager - дополнительные тесты для покр�
     );
   });
 
-  it('startRecvSession: после успешного call подписывается на onInRoomCredentialsChange и вызывает renegotiateRecvSession', async () => {
+  it('startRecvSession: после успешного call подписывается на onInRoomConferenceForTokenChange и вызывает renegotiateRecvSession', async () => {
     mockGetInRoomCredentials(callManager, {
       token: 'test-token',
       conferenceForToken: '123',
     });
 
-    let credentialsListener:
-      | ((payload: { token: string; conferenceForToken: string }) => void)
-      | undefined;
+    let conferenceListener: ((payload: { conferenceForToken: string }) => void) | undefined;
 
     jest
-      .spyOn(callManager.stateMachine, 'onInRoomCredentialsChange')
+      .spyOn(callManager.stateMachine, 'onInRoomConferenceForTokenChange')
       .mockImplementation((callback) => {
-        credentialsListener = callback;
+        conferenceListener = callback;
 
         return jest.fn();
       });
@@ -2647,30 +2645,28 @@ describe('CallManager - дополнительные тесты для покр�
 
     await flushPromises();
 
-    expect(callManager.stateMachine.onInRoomCredentialsChange).toHaveBeenCalled();
-    expect(credentialsListener).toBeDefined();
+    expect(callManager.stateMachine.onInRoomConferenceForTokenChange).toHaveBeenCalled();
+    expect(conferenceListener).toBeDefined();
 
-    credentialsListener?.({ token: 'new-token', conferenceForToken: '456' });
+    conferenceListener?.({ conferenceForToken: '456' });
 
     await flushPromises();
 
     expect(renegotiateSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('startRecvSession: при отклонении renegotiateRecvSession в обработчике смены credentials ошибка поглощается', async () => {
+  it('startRecvSession: при отклонении renegotiateRecvSession в обработчике смены conference ошибка поглощается', async () => {
     mockGetInRoomCredentials(callManager, {
       token: 'test-token',
       conferenceForToken: '123',
     });
 
-    let credentialsListener:
-      | ((payload: { token: string; conferenceForToken: string }) => void)
-      | undefined;
+    let conferenceListener: ((payload: { conferenceForToken: string }) => void) | undefined;
 
     jest
-      .spyOn(callManager.stateMachine, 'onInRoomCredentialsChange')
+      .spyOn(callManager.stateMachine, 'onInRoomConferenceForTokenChange')
       .mockImplementation((callback) => {
-        credentialsListener = callback;
+        conferenceListener = callback;
 
         return jest.fn();
       });
@@ -2700,14 +2696,14 @@ describe('CallManager - дополнительные тесты для покр�
 
     await flushPromises();
 
-    credentialsListener?.({ token: 'new-token', conferenceForToken: '456' });
+    conferenceListener?.({ conferenceForToken: '456' });
 
     await flushPromises();
 
     expect(renegotiateSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('startRecvSession: при call с результатом false не подписывается на onInRoomCredentialsChange', async () => {
+  it('startRecvSession: при call с результатом false не подписывается на onInRoomConferenceForTokenChange', async () => {
     mockGetInRoomCredentials(callManager, {
       token: 'test-token',
       conferenceForToken: '123',
@@ -2725,9 +2721,9 @@ describe('CallManager - дополнительные тесты для покр�
       return inst;
     });
 
-    const onCredentialsChangeSpy = jest.spyOn(
+    const onConferenceChangeSpy = jest.spyOn(
       callManager.stateMachine,
-      'onInRoomCredentialsChange',
+      'onInRoomConferenceForTokenChange',
     );
 
     jest
@@ -2748,7 +2744,7 @@ describe('CallManager - дополнительные тесты для покр�
 
     await flushPromises();
 
-    expect(onCredentialsChangeSpy).not.toHaveBeenCalled();
+    expect(onConferenceChangeSpy).not.toHaveBeenCalled();
   });
 
   it('stopRecvSession: закрывает сессию, сбрасывает слушатель и менеджер', () => {

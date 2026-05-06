@@ -640,6 +640,22 @@ describe('CallStateMachine', () => {
   });
 
   describe('onInRoomCredentialsChange', () => {
+    it('BUG: при подписке в уже активном IN_ROOM повторный TOKEN_ISSUED с теми же credentials даёт лишний вызов', () => {
+      const callback = jest.fn();
+
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+      expect(machine.state).toBe(EState.IN_ROOM);
+
+      machine.onInRoomCredentialsChange(callback);
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+
+      // Ожидаем отсутствие вызова: credentials не изменились.
+      // Сейчас падает, потому что previous инициализируется как undefined.
+      expect(callback).toHaveBeenCalledTimes(0);
+    });
+
     it('вызывает listener при первом входе в IN_ROOM с валидными учётными данными', () => {
       const callback = jest.fn();
       const off = machine.onInRoomCredentialsChange(callback);
@@ -747,6 +763,134 @@ describe('CallStateMachine', () => {
 
       off();
       machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1RefreshContext });
+
+      expect(callback).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('onInRoomConferenceForTokenChange', () => {
+    it('BUG: при подписке в уже активном IN_ROOM первый апдейт только token даёт лишний вызов из-за previous=undefined', () => {
+      const callback = jest.fn();
+
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+      expect(machine.state).toBe(EState.IN_ROOM);
+
+      machine.onInRoomConferenceForTokenChange(callback);
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1RefreshContext });
+
+      // Ожидаем отсутствие вызова: conferenceForToken не менялся.
+      // Сейчас падает, потому что previousConferenceForToken инициализируется как undefined.
+      expect(callback).toHaveBeenCalledTimes(0);
+    });
+
+    it('вызывает listener при первом входе в IN_ROOM', () => {
+      const callback = jest.fn();
+      const off = machine.onInRoomConferenceForTokenChange(callback);
+
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+
+      expect(machine.state).toBe(EState.IN_ROOM);
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith({
+        conferenceForToken: token1Context.conferenceForToken,
+      });
+      off();
+    });
+
+    it('не вызывает listener при обновлении только token (conferenceForToken не изменился)', () => {
+      const callback = jest.fn();
+
+      machine.onInRoomConferenceForTokenChange(callback);
+
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1RefreshContext });
+
+      expect(machine.state).toBe(EState.IN_ROOM);
+      expect(callback).toHaveBeenCalledTimes(1);
+    });
+
+    it('вызывает listener при смене conferenceForToken (смена комнаты с token в IN_ROOM)', () => {
+      const callback = jest.fn();
+
+      machine.onInRoomConferenceForTokenChange(callback);
+
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room2Payload, token: 'jwt-room-2' });
+
+      expect(machine.state).toBe(EState.IN_ROOM);
+      expect(callback).toHaveBeenCalledTimes(2);
+      expect(callback).toHaveBeenNthCalledWith(1, {
+        conferenceForToken: token1Context.conferenceForToken,
+      });
+      expect(callback).toHaveBeenNthCalledWith(2, {
+        conferenceForToken: room2Payload.room,
+      });
+    });
+
+    it('снимок evaluate не сбрасывает previous: повторный IN_ROOM с тем же conference не вызывает listener', () => {
+      const subscribeSpy = jest.spyOn(machine, 'subscribe');
+      const callback = jest.fn();
+
+      machine.onInRoomConferenceForTokenChange(callback);
+
+      const conferenceListener = subscribeSpy.mock.calls.at(-1)?.[0];
+
+      if (conferenceListener === undefined) {
+        throw new Error('conferenceListener is undefined');
+      }
+
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+      expect(callback).toHaveBeenCalledTimes(1);
+
+      conferenceListener({
+        value: CALL_MACHINE_EVALUATE_STATE,
+        context: machine.getSnapshot().context,
+      } as SnapshotFrom<ReturnType<typeof createCallMachine>>);
+
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1RefreshContext });
+      expect(callback).toHaveBeenCalledTimes(1);
+
+      subscribeSpy.mockRestore();
+    });
+
+    it('сбрасывает previous после выхода из IN_ROOM: при новом входе в комнату вызывает listener снова', () => {
+      const callback = jest.fn();
+
+      machine.onInRoomConferenceForTokenChange(callback);
+
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+      machine.send({ type: 'CALL.RESET' });
+
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload, participantName: 'U2' });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+
+      expect(callback).toHaveBeenCalledTimes(2);
+    });
+
+    it('отписка отключает дальнейшие уведомления', () => {
+      const callback = jest.fn();
+      const off = machine.onInRoomConferenceForTokenChange(callback);
+
+      machine.send({ type: 'CALL.CONNECTING', ...connectPayload });
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room1Payload });
+      machine.send({ type: 'CALL.TOKEN_ISSUED', ...token1Context });
+      expect(callback).toHaveBeenCalledTimes(1);
+
+      off();
+      machine.send({ type: 'CALL.ENTER_ROOM', ...room2Payload, token: 'jwt-room-2' });
 
       expect(callback).toHaveBeenCalledTimes(1);
     });

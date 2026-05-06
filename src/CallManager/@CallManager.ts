@@ -7,6 +7,7 @@ import {
   isExitingAnySpectatorRole,
   isEnteringAnySpectatorRole,
 } from '@/CallSessionState';
+import resolveDebug from '@/logger';
 import { DeferredCommandRunner } from '@/tools';
 import { createCallStateMachine, ECallStatus } from './CallStateMachine';
 import { createEvents } from './events';
@@ -37,6 +38,7 @@ import type {
 
 const UDP_PROTOCOL = 'udp' as const;
 
+const debug = resolveDebug('CallManager');
 const getLocalCandidatesFromReceiver = (receiver: RTCRtpReceiver): RTCIceCandidate[] => {
   if (receiver.transport?.iceTransport) {
     // @ts-expect-error
@@ -160,6 +162,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
         return state === ECallStatus.IDLE;
       },
       onExecute: (command) => {
+        debug('startRecvSessionForced', command);
         this.startRecvSessionForced({ audioChannel: command.audioId }).catch(() => {});
       },
     });
@@ -231,6 +234,8 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   }
 
   public startCall: TStartCall = async (ua, getUri, params) => {
+    debug('startCall', params);
+
     this.isPendingCall = true;
 
     this.events.emit('start-call', {
@@ -245,12 +250,16 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   };
 
   public async endCall(): Promise<void> {
+    debug('endCall');
+
     this.events.emit('end-call');
 
     return this.mcuSession.endCall();
   }
 
   public async renegotiate(): Promise<boolean> {
+    debug('renegotiate');
+
     if (this.hasSpectator()) {
       return this.renegotiateRecvSession();
     }
@@ -262,6 +271,8 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     extractIncomingRTCSession: () => RTCSession,
     params,
   ): Promise<RTCPeerConnection> => {
+    debug('answerToIncomingCall', params);
+
     this.isPendingAnswer = true;
 
     const rtcSession = extractIncomingRTCSession();
@@ -327,14 +338,20 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     mediaStream: Parameters<TReplaceMediaStream>[0],
     options?: Parameters<TReplaceMediaStream>[1],
   ): Promise<void> {
+    debug('replaceMediaStream', mediaStream, options);
+
     return this.mcuSession.replaceMediaStream(mediaStream, options);
   }
 
   public async restartIce(options?: TRestartIceOptions): Promise<boolean> {
+    debug('restartIce', options);
+
     return this.mcuSession.restartIce(options);
   }
 
   public async restartRecvSession(): Promise<boolean> {
+    debug('restartRecvSession');
+
     const { recvSession } = this;
 
     if (!this.hasSpectator() || !recvSession) {
@@ -352,6 +369,8 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   }
 
   public async setRecvQuality(quality: TRecvQuality): Promise<boolean> {
+    debug('setRecvQuality', quality);
+
     const { recvSession } = this;
 
     if (!this.hasSpectator() || !recvSession) {
@@ -402,6 +421,8 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   }
 
   public async applyQuality(quality: TRecvQuality): Promise<boolean> {
+    debug('applyQuality', quality);
+
     const { recvSession } = this;
 
     if (!this.hasSpectator() || !recvSession) {
@@ -582,6 +603,12 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     params: { audioChannel: string; quality?: TRecvQuality },
     { silent }: { silent?: boolean } = {},
   ) {
+    debug('startRecvSessionForced', {
+      audioChannel: params.audioChannel,
+      quality: params.quality,
+      silent,
+    });
+
     return this.startRecvSession(
       { audioChannel: params.audioChannel, quality: params.quality },
       {
@@ -599,6 +626,8 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     this.disposeInRoomCredentialsListener?.();
 
     const credentials = this.stateMachine.getInRoomCredentials();
+
+    debug('startRecvSession', { audioChannel, quality, silent, credentials });
 
     if (credentials === undefined) {
       return { session: undefined, callResult: false };
@@ -630,11 +659,10 @@ class CallManager extends EventEmitterProxy<TEventMap> {
         }
 
         if (result) {
-          this.disposeInRoomCredentialsListener = this.stateMachine.onInRoomCredentialsChange(
-            () => {
-              this.renegotiateRecvSession().catch(() => {});
-            },
-          );
+          this.stateMachine.onInRoomConferenceForTokenChange(() => {
+            debug('onInRoomConferenceForTokenChange');
+            this.renegotiateRecvSession().catch(() => {});
+          });
         }
 
         return { session, callResult: result };
@@ -654,6 +682,8 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   }
 
   private stopRecvSession({ silent }: { silent?: boolean } = {}) {
+    debug('stopRecvSession', { silent });
+
     const isActive = Boolean(this.recvSession);
 
     this.disposeInRoomCredentialsListener?.();
@@ -677,6 +707,8 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     previous: TCallRole;
     next: TCallRole;
   }) => {
+    debug('onRoleChanged', { previous, next });
+
     if (isExitingSpectatorRole(previous, next)) {
       this.stopRecvSession();
       this.deferredStartRecvSessionRunner.cancel();
@@ -714,6 +746,8 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   private async renegotiateRecvSession() {
     const credentials = this.stateMachine.getInRoomCredentials();
 
+    debug('renegotiateRecvSession', { credentials });
+
     if (credentials === undefined || this.recvSession === undefined) {
       return false;
     }
@@ -725,6 +759,8 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   }
 
   private async renegotiateMcuSession() {
+    debug('renegotiateMcuSession');
+
     return this.mcuSession.renegotiate();
   }
 }
