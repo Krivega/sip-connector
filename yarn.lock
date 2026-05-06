@@ -5143,10 +5143,10 @@ mobx-state-tree@^7.2.0:
   dependencies:
     ts-essentials "^9.4.1"
 
-mobx@^6.15.1:
-  version "6.15.1"
-  resolved "https://registry.yarnpkg.com/mobx/-/mobx-6.15.1.tgz#c6c1aa4eb8f8540c86f4cd0460fb6218fbd2e4a9"
-  integrity sha512-QW37HNiD87H4Dy7PkPVBSwXrTYCSTH5Nwo8Yr52cPwiRIjSYFpvOOfUOhYUUkpq2U/XjWLTTAYvXYsRrdnNZxg==
+mobx@^6.15.2:
+  version "6.15.2"
+  resolved "https://registry.yarnpkg.com/mobx/-/mobx-6.15.2.tgz#a86b617a225ca974a5fcf18dbc6582d24d7c7512"
+  integrity sha512-vwdrd/nrsOSAUtDKAan1c85cwUlbxeOVDwqJ8mZ2Re614SupOFz6PRG1mtYIvT41u6PKRcAq4p+OHbUoGkymYA==
 
 modify-values@^1.0.0:
   version "1.0.1"

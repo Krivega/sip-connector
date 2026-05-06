@@ -74,7 +74,7 @@
     "debug": "^4.4.3",
     "events-constructor": "^2.3.1",
     "lodash": "^4.18.1",
-    "mobx": "^6.15.1",
+    "mobx": "^6.15.2",
     "mobx-state-tree": "^7.2.0",
     "repeated-calls": "^2.4.0",
     "sequent-promises": "^2.0.1",
