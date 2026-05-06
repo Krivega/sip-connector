@@ -20,11 +20,88 @@ import type { TStatusesByDomain } from './StatusesRoot';
 
 const debug = resolveDebug('demo:app');
 
+const INBOUND_VIDEO_PROBLEM_NOTIFICATION_ID = 'inbound-video-problem-detected';
+
+type TSystemState = {
+  isDisconnected: boolean;
+  isDisconnecting: boolean;
+  isConnecting: boolean;
+  isReadyToCall: boolean;
+  isCallConnecting: boolean;
+  isCallDisconnecting: boolean;
+  isCallActive: boolean;
+} & TStatusesByDomain;
+
+type TParticipantRoleState = {
+  isAvailableSendingMedia: boolean;
+  isSpectatorRoleAny: boolean;
+  isSpectator: boolean;
+  isParticipant: boolean;
+};
+
+type TPositiveIntegerParseResult =
+  | {
+      isValid: true;
+      value: number;
+    }
+  | {
+      isValid: false;
+      message: string;
+    };
+
+const setElementVisible = (element: HTMLElement, isVisible: boolean): void => {
+  if (isVisible) {
+    dom.show(element);
+  } else {
+    dom.hide(element);
+  }
+};
+
 const setMediaActionButtonsDisabled = (isDisabled: boolean): void => {
   dom.toggleDisabled(dom.muteMicButtonElement, isDisabled);
   dom.toggleDisabled(dom.unmuteMicButtonElement, isDisabled);
   dom.toggleDisabled(dom.muteCameraButtonElement, isDisabled);
   dom.toggleDisabled(dom.unmuteCameraButtonElement, isDisabled);
+};
+
+const parsePositiveIntegerInput = ({
+  input,
+  invalidMessage,
+}: {
+  input: HTMLInputElement;
+  invalidMessage: string;
+}): TPositiveIntegerParseResult => {
+  const value = Number.parseInt(input.value, 10);
+
+  if (!Number.isInteger(value) || value < 1) {
+    return { isValid: false, message: invalidMessage };
+  }
+
+  return { isValid: true, value };
+};
+
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  const serializedError = JSON.stringify(error);
+
+  return typeof serializedError === 'string' ? serializedError : String(error);
+};
+
+const createSession = (): Session => {
+  const browserInfo = getBrowserInfo();
+  const appInfo = getAppInfo();
+
+  return new Session({
+    serverParametersRequesterParams: {
+      appVersion: appInfo.appVersion,
+      appName: appInfo.appName,
+      browserName: browserInfo.name,
+      browserVersion: browserInfo.version,
+    },
+  });
 };
 
 /**
@@ -72,15 +149,23 @@ class App {
     logsManager.subscribe();
     this.callStatsManager.subscribe();
 
-    const idNotificationInboundVideoProblemDetected = 'inbound-video-problem-detected';
+    this.subscribeMainStreamHealthNotifications();
+    this.bootstrap();
+  }
 
+  private bootstrap(): void {
+    this.initialize();
+    this.loaderManager.hide();
+  }
+
+  private subscribeMainStreamHealthNotifications(): void {
     sipConnectorFacade.on(
       'main-stream-health:inbound-video-problem-detected',
       ({ reason, consecutiveProblemSamplesCount }) => {
         this.notificationManager.show({
           type: 'error',
           message: `Обнаружена проблема: ${reason} (подряд ${consecutiveProblemSamplesCount} раз)`,
-          id: idNotificationInboundVideoProblemDetected,
+          id: INBOUND_VIDEO_PROBLEM_NOTIFICATION_ID,
         });
       },
     );
@@ -105,34 +190,30 @@ class App {
       });
     });
     sipConnectorFacade.on('main-stream-health:inbound-video-problem-resolved', () => {
-      this.notificationManager.hide(idNotificationInboundVideoProblemDetected);
+      this.notificationManager.hide(INBOUND_VIDEO_PROBLEM_NOTIFICATION_ID);
     });
     sipConnectorFacade.on('main-stream-health:inbound-video-problem-reset', () => {
-      this.notificationManager.hide(idNotificationInboundVideoProblemDetected);
+      this.notificationManager.hide(INBOUND_VIDEO_PROBLEM_NOTIFICATION_ID);
     });
-
-    this.bootstrap();
-  }
-
-  private bootstrap(): void {
-    this.initialize();
-    this.loaderManager.hide();
   }
 
   /**
    * Инициализирует приложение
    */
   private initialize(): void {
-    // Подключаем видео-плеер к локальному медиа-менеджеру
-    const localVideoPlayer = new VideoPlayer(dom.localVideoElement);
+    this.setupVideoPlayers();
+    this.setupFormHandlers();
+    this.setupCallActionHandlers();
+    this.setupMediaHandlers();
+    this.setupStatusHandlers();
+  }
 
-    this.localMediaStreamManager.setVideoPlayer(localVideoPlayer);
+  private setupVideoPlayers(): void {
+    this.localMediaStreamManager.setVideoPlayer(new VideoPlayer(dom.localVideoElement));
+    this.presentationManager.setVideoPlayer(new VideoPlayer(dom.presentationVideoElement));
+  }
 
-    const presentationVideoPlayer = new VideoPlayer(dom.presentationVideoElement);
-
-    this.presentationManager.setVideoPlayer(presentationVideoPlayer);
-
-    // Подписываемся на отправку формы по Enter
+  private setupFormHandlers(): void {
     this.formStateManager.onSubmit((_state, event) => {
       event.preventDefault();
       this.handleFormSubmit();
@@ -160,23 +241,34 @@ class App {
       event.preventDefault();
       this.handleMainStreamSettingsSubmit();
     });
+  }
 
-    // Подписываемся на изменения состояния звонка
+  private setupStatusHandlers(): void {
+    dom.renderSessionStatusDiagrams();
+    this.statusesManager.subscribe();
+
     this.statusesManager.onChangeSystemState((state) => {
       this.handleCallStateChange(state);
     });
 
-    // Подписываемся на кнопку завершения звонка (без disconnect)
+    this.statusesManager.onChangeCallReconnect(({ isReconnecting }) => {
+      setElementVisible(dom.callReconnectIndicatorElement, isReconnecting);
+    });
+
+    this.statusesManager.onChangeParticipantRole((participantRoleState) => {
+      this.handleParticipantRoleChange(participantRoleState);
+    });
+  }
+
+  private setupCallActionHandlers(): void {
     dom.hangupButtonElement.addEventListener('click', () => {
       this.handleHangupOnly();
     });
 
-    // Подписываемся на кнопку завершения звонка и отключения
     dom.endCallButtonElement.addEventListener('click', () => {
       this.handleEndCall();
     });
 
-    // Подписываемся на кнопки включения/выключения камеры
     dom.muteCameraButtonElement.addEventListener('click', () => {
       this.handleToggleCamera();
     });
@@ -185,7 +277,6 @@ class App {
       this.handleToggleCamera();
     });
 
-    // Подписываемся на кнопки включения/выключения микрофона
     dom.muteMicButtonElement.addEventListener('click', () => {
       this.handleToggleMic();
     });
@@ -193,53 +284,35 @@ class App {
     dom.unmuteMicButtonElement.addEventListener('click', () => {
       this.handleToggleMic();
     });
+  }
 
+  private setupMediaHandlers(): void {
     this.localMediaStreamManager.onMediaStateChange((state) => {
       this.session?.sendMediaState(state).catch((error: unknown) => {
         this.handleError(error);
       });
       this.syncMediaActionButtonsWithStreamState();
     });
-
-    dom.renderSessionStatusDiagrams();
-    this.statusesManager.subscribe();
-
-    this.statusesManager.onChangeCallReconnect(({ isReconnecting }) => {
-      if (isReconnecting) {
-        dom.show(dom.callReconnectIndicatorElement);
-      } else {
-        dom.hide(dom.callReconnectIndicatorElement);
-      }
-    });
   }
 
   /**
    * Обрабатывает отправку формы
    */
-  private handleFormSubmit() {
+  private handleFormSubmit(): void {
     const state = this.formStateManager.getState();
 
     if (!this.formStateManager.validate()) {
       return;
     }
 
-    Promise.resolve()
-      .then(async () => {
-        if (this.session?.hasConnected() === true) {
-          return undefined;
-        }
+    this.runSafely(async () => {
+      if (this.session?.hasConnected() !== true) {
+        await this.connect(state);
+      }
 
-        return this.connect(state);
-      })
-      .then(async () => {
-        return this.callToServer(state);
-      })
-      .then(() => {
-        this.presentationManager.activate();
-      })
-      .catch((error: unknown) => {
-        this.handleError(error);
-      });
+      await this.callToServer(state);
+      this.presentationManager.activate();
+    });
   }
 
   private handleConnectOnly(): void {
@@ -253,13 +326,9 @@ class App {
       return;
     }
 
-    Promise.resolve()
-      .then(async () => {
-        return this.connect(state);
-      })
-      .catch((error: unknown) => {
-        this.handleError(error);
-      });
+    this.runSafely(async () => {
+      await this.connect(state);
+    });
   }
 
   private handleCallOnly(): void {
@@ -270,25 +339,15 @@ class App {
     }
 
     if (this.session?.hasConnected() !== true) {
-      this.notificationManager.show({
-        type: 'warning',
-        message: 'Сначала подключитесь к серверу',
-        isAutoHide: true,
-      });
+      this.showWarning('Сначала подключитесь к серверу');
 
       return;
     }
 
-    Promise.resolve()
-      .then(async () => {
-        return this.callToServer(state);
-      })
-      .then(() => {
-        this.presentationManager.activate();
-      })
-      .catch((error: unknown) => {
-        this.handleError(error);
-      });
+    this.runSafely(async () => {
+      await this.callToServer(state);
+      this.presentationManager.activate();
+    });
   }
 
   private handleDisconnectOnly(): void {
@@ -300,47 +359,67 @@ class App {
 
     this.loaderManager.show('Отключение от сервера...');
 
+    this.runSafely(async () => {
+      await session.disconnectFromServer();
+      this.session = undefined;
+      this.loaderManager.hide();
+    });
+  }
+
+  private runSafely(action: () => Promise<void>): void {
     Promise.resolve()
-      .then(async () => {
-        await session.disconnectFromServer();
-        this.session = undefined;
-        this.loaderManager.hide();
-      })
+      .then(action)
       .catch((error: unknown) => {
         this.handleError(error);
       });
   }
 
+  private showWarning(message: string): void {
+    this.notificationManager.show({
+      type: 'warning',
+      message,
+      isAutoHide: true,
+    });
+  }
+
+  private showSuccess(message: string): void {
+    this.notificationManager.show({
+      type: 'success',
+      message,
+      isAutoHide: true,
+    });
+  }
+
+  private resolvePositiveIntegerInput(result: TPositiveIntegerParseResult): number | undefined {
+    if (result.isValid) {
+      return result.value;
+    }
+
+    this.showWarning(result.message);
+
+    return undefined;
+  }
+
   private handleMainStreamSettingsSubmit(): void {
-    const minConsecutiveProblemSamplesCount = Number.parseInt(
-      dom.minConsecutiveProblemSamplesCountInputElement.value,
-      10,
-    );
-    const throttleRecoveryTimeout = Number.parseInt(
-      dom.throttleRecoveryTimeoutInputElement.value,
-      10,
+    const minConsecutiveProblemSamplesCount = this.resolvePositiveIntegerInput(
+      parsePositiveIntegerInput({
+        input: dom.minConsecutiveProblemSamplesCountInputElement,
+        invalidMessage: 'Порог детекта проблемы должен быть положительным целым числом',
+      }),
     );
 
-    if (
-      !Number.isInteger(minConsecutiveProblemSamplesCount) ||
-      minConsecutiveProblemSamplesCount < 1
-    ) {
-      this.notificationManager.show({
-        type: 'warning',
-        message: 'Порог детекта проблемы должен быть положительным целым числом',
-        isAutoHide: true,
-      });
-
+    if (minConsecutiveProblemSamplesCount === undefined) {
       return;
     }
 
-    if (!Number.isInteger(throttleRecoveryTimeout) || throttleRecoveryTimeout < 1) {
-      this.notificationManager.show({
-        type: 'warning',
-        message: 'Интервал восстановления должен быть положительным целым числом (мс)',
-        isAutoHide: true,
-      });
+    const throttleRecoveryTimeout = this.resolvePositiveIntegerInput(
+      parsePositiveIntegerInput({
+        input: dom.throttleRecoveryTimeoutInputElement,
+        invalidMessage: 'Интервал восстановления должен быть положительным целым числом (мс)',
+      }),
+    );
 
+    if (throttleRecoveryTimeout === undefined) {
       return;
     }
 
@@ -350,68 +429,30 @@ class App {
       );
       this.sipConnectorFacade.sipConnector.setThrottleRecoveryTimeout(throttleRecoveryTimeout);
 
-      this.notificationManager.show({
-        type: 'success',
-        message: 'Настройки восстановления применены',
-        isAutoHide: true,
-      });
+      this.showSuccess('Настройки восстановления применены');
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-
       this.notificationManager.show({
         type: 'error',
-        message: `Ошибка применения настроек восстановления: ${errorMessage}`,
+        message: `Ошибка применения настроек восстановления: ${getErrorMessage(error)}`,
         isAutoHide: true,
       });
     }
   }
 
   private async callToServer(state: IFormState): Promise<void> {
-    const { session } = this;
-
-    if (!session) {
-      throw new Error('Session is not initialized. Call connect() first.');
-    }
+    const session = this.getConnectedSession();
 
     try {
       this.loaderManager.show('Инициализация медиа...');
-      // Инициализируем локальный медиа-поток
       await this.localMediaStreamManager.initialize();
 
       this.loaderManager.setMessage('Установление звонка...');
 
-      // Запускаем звонок
       const mediaStream = this.localMediaStreamManager.getStream();
 
       if (!mediaStream) {
         throw new Error('MediaStream не инициализирован');
       }
-
-      this.statusesManager.onChangeParticipantRole(
-        (participantRoleState: {
-          isAvailableSendingMedia: boolean;
-          isSpectatorRoleAny: boolean;
-          isSpectator: boolean;
-          isParticipant: boolean;
-        }) => {
-          const canSendMedia =
-            participantRoleState.isParticipant || participantRoleState.isAvailableSendingMedia;
-
-          setMediaActionButtonsDisabled(!canSendMedia);
-
-          if (participantRoleState.isSpectatorRoleAny) {
-            this.localMediaStreamManager.disableAll();
-          }
-
-          if (participantRoleState.isSpectator) {
-            dom.show(dom.recvQualitySectionElement);
-          } else {
-            dom.hide(dom.recvQualitySectionElement);
-          }
-
-          dom.renderStatusesNodeValues(this.statusesManager.getStatusSnapshots());
-        },
-      );
 
       await session.callToServer({
         mediaStream,
@@ -429,22 +470,21 @@ class App {
     }
   }
 
+  private getConnectedSession(): Session {
+    const { session } = this;
+
+    if (!session) {
+      throw new Error('Session is not initialized. Call connect() first.');
+    }
+
+    return session;
+  }
+
   private async connect(state: IFormState): Promise<void> {
     try {
       this.loaderManager.setMessage('Подключение к серверу...');
 
-      // Создаем сессию
-      const browserInfo = getBrowserInfo();
-      const appInfo = getAppInfo();
-
-      this.session = new Session({
-        serverParametersRequesterParams: {
-          appVersion: appInfo.appVersion,
-          appName: appInfo.appName,
-          browserName: browserInfo.name,
-          browserVersion: browserInfo.version,
-        },
-      });
+      this.session = createSession();
 
       await this.session.connect({
         serverUrl: state.serverAddress,
@@ -489,61 +529,55 @@ class App {
     dom.setActiveSessionStatusNode('system', statuses.system);
   }
 
+  private handleParticipantRoleChange(participantRoleState: TParticipantRoleState): void {
+    const canSendMedia =
+      participantRoleState.isParticipant || participantRoleState.isAvailableSendingMedia;
+
+    setMediaActionButtonsDisabled(!canSendMedia);
+
+    if (participantRoleState.isSpectatorRoleAny) {
+      this.localMediaStreamManager.disableAll();
+    }
+
+    setElementVisible(dom.recvQualitySectionElement, participantRoleState.isSpectator);
+    dom.renderStatusesNodeValues(this.statusesManager.getStatusSnapshots());
+  }
+
   /**
    * Обрабатывает завершение звонка
    */
-  private handleEndCall() {
+  private handleEndCall(): void {
     this.loaderManager.show('Завершение звонка...');
-    // Сбрасываем состояние презентации
-    this.presentationManager.deactivate();
+    this.resetCallMediaState();
 
-    // Останавливаем локальный медиа-поток
-    this.localMediaStreamManager.stop();
-
-    // Очищаем удаленные потоки
-    this.remoteMediaStreamManager.clear();
-    (this.session ? this.session.stopCall() : Promise.resolve())
-      .then(() => {
-        this.session = undefined;
-
-        this.loaderManager.hide();
-      })
-      .catch((error: unknown) => {
-        this.handleError(error);
-        this.loaderManager.hide();
-      });
+    this.runSafely(async () => {
+      await (this.session ? this.session.stopCall() : Promise.resolve());
+      this.session = undefined;
+      this.loaderManager.hide();
+    });
   }
 
-  private handleHangupOnly() {
+  private handleHangupOnly(): void {
     this.loaderManager.show('Завершение звонка...');
+    this.resetCallMediaState();
+
+    this.runSafely(async () => {
+      await (this.session ? this.session.hangUpCall() : Promise.resolve());
+      this.loaderManager.hide();
+    });
+  }
+
+  private resetCallMediaState(): void {
     this.presentationManager.deactivate();
     this.localMediaStreamManager.stop();
     this.remoteMediaStreamManager.clear();
-    (this.session ? this.session.hangUpCall() : Promise.resolve())
-      .then(() => {
-        this.loaderManager.hide();
-      })
-      .catch((error: unknown) => {
-        this.handleError(error);
-        this.loaderManager.hide();
-      });
   }
 
   /**
    * Обрабатывает изменения состояния звонка
    */
 
-  private handleCallStateChange(
-    state: {
-      isDisconnected: boolean;
-      isDisconnecting: boolean;
-      isConnecting: boolean;
-      isReadyToCall: boolean;
-      isCallConnecting: boolean;
-      isCallDisconnecting: boolean;
-      isCallActive: boolean;
-    } & TStatusesByDomain,
-  ): void {
+  private handleCallStateChange(state: TSystemState): void {
     const {
       isDisconnected,
       isDisconnecting,
@@ -610,24 +644,8 @@ class App {
       dom.hide(dom.endCallButtonElement);
     }
 
-    // Показываем/скрываем секции в зависимости от состояния
-    // Локальное видео показываем когда идет процесс
-    const shouldShowLocalVideo = isCallConnecting || isCallActive;
-
-    if (shouldShowLocalVideo) {
-      dom.show(dom.localVideoSectionElement);
-    } else {
-      dom.hide(dom.localVideoSectionElement);
-    }
-
-    // Общий контейнер для секций активного звонка показываем только когда звонок активен
-    const shouldShowActiveCallSection = isCallActive;
-
-    if (shouldShowActiveCallSection) {
-      dom.show(dom.activeCallSectionElement);
-    } else {
-      dom.hide(dom.activeCallSectionElement);
-    }
+    setElementVisible(dom.localVideoSectionElement, isCallConnecting || isCallActive);
+    setElementVisible(dom.activeCallSectionElement, isCallActive);
 
     // Обновляем состояние кнопок камеры и микрофона
     this.updateMediaButtonsState({ isCallActive });
@@ -702,13 +720,11 @@ class App {
    * Обрабатывает ошибки
    */
   private handleError(error: unknown): void {
-    const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
-
     debug('Ошибка:', error);
 
     this.notificationManager.show({
       type: 'error',
-      message: `Ошибка: ${errorMessage}`,
+      message: `Ошибка: ${getErrorMessage(error)}`,
     });
 
     this.loaderManager.hide();
