@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [28.10.7](https://github.com/Krivega/sip-connector/compare/v28.10.6...v28.10.7) (2026-05-06)
+
+### Bug Fixes
+
+- double transitions to spectator mode ([1718df3](https://github.com/Krivega/sip-connector/commit/1718df36a3b4f5f5d531d9d8ae861e20f10f1434))
+
 ### [28.10.6](https://github.com/Krivega/sip-connector/compare/v28.10.5...v28.10.6) (2026-05-05)
 
 ### Bug Fixes
