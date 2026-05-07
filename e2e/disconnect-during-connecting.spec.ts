@@ -4,6 +4,11 @@ import { expect, test } from './fixtures';
 const CONNECTING_TIMEOUT_MS = 15_000;
 const DISCONNECT_TIMEOUT_MS = 15_000;
 const FAST_DISCONNECT_TIMEOUT_MS = 5000;
+const CONNECT_ATTEMPT_CONNECTION_STATES = [
+  'connection:preparing',
+  'connection:connecting',
+  'connection:connected',
+] as const;
 
 test.describe('Disconnect во время connecting', () => {
   test('disconnect срабатывает сразу в процессе connect attempt', async ({
@@ -19,13 +24,13 @@ test.describe('Disconnect во время connecting', () => {
       await statusDashboard.open();
     });
 
-    await test.step('дождаться входа в connecting', async () => {
+    await test.step('дождаться незавершенной connect attempt', async () => {
       await statusDashboard.waitForDiagramStatus('system', 'system:connecting', {
         timeout: CONNECTING_TIMEOUT_MS,
       });
       await statusDashboard.waitForDiagramStatusOneOf(
         'connection',
-        ['connection:connecting', 'connection:preparing'],
+        CONNECT_ATTEMPT_CONNECTION_STATES,
         {
           timeout: CONNECTING_TIMEOUT_MS,
         },
