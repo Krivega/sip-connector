@@ -10,7 +10,7 @@ import type { TCallReconnectContextMap, TSessionSnapshot } from '@/index';
  * Храним `state` + `context` (в сыром виде через `types.frozen`), чтобы удобно
  * отрисовывать в UI и подписываться на изменения через MobX.
  */
-type TSnapshotByState<TState extends EState> = {
+export type TSnapshotByState<TState extends EState> = {
   state: TState;
   context: TCallReconnectContextMap[TState];
 };
@@ -44,10 +44,6 @@ export const CallReconnectStatusModel = types
     context: types.frozen<TCallReconnectContextMap[EState]>(),
   })
   .views((self) => {
-    const hasState = (state: EState): boolean => {
-      return self.state === state;
-    };
-
     return {
       get snapshot(): TSnapshotByState<EState> {
         return {
@@ -55,14 +51,77 @@ export const CallReconnectStatusModel = types
           context: self.context,
         } as TCallReconnectStatusSnapshot;
       },
+    };
+  })
+  .views((self) => {
+    const hasState = (state: EState): boolean => {
+      return self.state === state;
+    };
+
+    return {
+      isIdle: (): boolean => {
+        return hasState(EState.IDLE);
+      },
+      isArmed: (): boolean => {
+        return hasState(EState.ARMED);
+      },
+      isEvaluating: (): boolean => {
+        return hasState(EState.EVALUATING);
+      },
+      isBackoff: (): boolean => {
+        return hasState(EState.BACKOFF);
+      },
+      isWaitingSignaling: (): boolean => {
+        return hasState(EState.WAITING_SIGNALING);
+      },
+      isAttempting: (): boolean => {
+        return hasState(EState.ATTEMPTING);
+      },
+      isLimitReached: (): boolean => {
+        return hasState(EState.LIMIT_REACHED);
+      },
+      isErrorTerminal: (): boolean => {
+        return hasState(EState.ERROR_TERMINAL);
+      },
+    };
+  })
+  .views((self) => {
+    return {
+      /**
+       * Показывать ли баннер `#callReconnectIndicator`: активный ретрай или финальная ошибка.
+       */
+      get isReconnectIndicatorVisible(): boolean {
+        return this.isReconnecting() || self.isErrorTerminal();
+      },
       /**
        * UI-флаг: показывать ли индикатор «переподключение».
        * Истинно, когда машина не в `idle` и не в `armed` (т.е. активно борется с обрывом).
        */
-      get isReconnecting(): boolean {
-        return (
-          !hasState(EState.IDLE) && !hasState(EState.ARMED) && !hasState(EState.ERROR_TERMINAL)
-        );
+      isReconnecting: (): boolean => {
+        return !self.isIdle() && !self.isArmed() && !self.isErrorTerminal();
+      },
+    };
+  })
+  .views((self) => {
+    return {
+      get attempt(): number {
+        return self.context.attempt;
+      },
+
+      get nextDelayMs(): number {
+        return self.context.nextDelayMs;
+      },
+
+      get lastFailureCause(): string | undefined {
+        return self.context.lastFailureCause;
+      },
+
+      get lastError() {
+        return self.context.lastError;
+      },
+
+      get cancelledReason() {
+        return self.context.cancelledReason;
       },
     };
   });

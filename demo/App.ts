@@ -1,7 +1,7 @@
+import { CallReconnectIndicatorPresenter } from './app/CallReconnectIndicatorPresenter';
 import { createDemoSession } from './app/createDemoSession';
 import { DemoCallFlowService } from './app/DemoCallFlowService';
 import { DemoCallStatePresenter } from './app/DemoCallStatePresenter';
-import { setElementVisible } from './app/domUiHelpers';
 import { getErrorMessage } from './app/inputParsing';
 import { MainStreamHealthNotificationsBinder } from './app/MainStreamHealthNotificationsBinder';
 import { MainStreamRecoverySettingsApplier } from './app/MainStreamRecoverySettingsApplier';
@@ -51,6 +51,8 @@ class App {
 
   private readonly callFlow: DemoCallFlowService;
 
+  private readonly callReconnectIndicatorPresenter: CallReconnectIndicatorPresenter;
+
   public constructor() {
     this.notificationManager = new NotificationManager();
     this.formStateManager = new FormStateManager();
@@ -66,6 +68,10 @@ class App {
       sessionFactory: { createSession: createDemoSession },
       media: this.localMediaStreamManager,
     });
+
+    this.callReconnectIndicatorPresenter = new CallReconnectIndicatorPresenter(
+      dom.callReconnectIndicatorElement,
+    );
 
     this.callStatePresenter = new DemoCallStatePresenter(
       this.localMediaStreamManager,
@@ -158,8 +164,8 @@ class App {
       this.callStatePresenter.renderSystemState(state);
     });
 
-    this.statusesManager.onChangeCallReconnect(({ isReconnecting }) => {
-      setElementVisible(dom.callReconnectIndicatorElement, isReconnecting);
+    this.statusesManager.onChangeCallReconnect((state) => {
+      this.callReconnectIndicatorPresenter.render(state);
     });
 
     this.statusesManager.onChangeParticipantRole((participantRoleState) => {

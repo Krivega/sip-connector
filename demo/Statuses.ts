@@ -11,6 +11,17 @@ import type {
   TStatusesRootSnapshot,
 } from './StatusesRoot';
 
+export type TCallReconnectIndicatorState = {
+  state: string;
+  isReconnecting: boolean;
+  isErrorTerminal: boolean;
+  attempt: number;
+  nextDelayMs: number;
+  lastFailureCause: string | undefined;
+  lastError: unknown;
+  cancelledReason: unknown;
+};
+
 class Statuses {
   private readonly unsubsribers = new Set<() => void>();
 
@@ -104,20 +115,24 @@ class Statuses {
 
   /**
    * Подписывается на изменения состояния авто-редиала звонка.
-   * Колбек получает булев флаг `isReconnecting` (активная ли сейчас попытка восстановления).
+   * Колбек получает MST-инстанс домена `callReconnect`.
    */
-  public onChangeCallReconnect(
-    callback: (payload: { state: string; isReconnecting: boolean }) => void,
-  ) {
+  public onChangeCallReconnect(callback: (state: TCallReconnectIndicatorState) => void) {
     return reaction(
-      () => {
+      (): TCallReconnectIndicatorState => {
         return {
           state: this.statusesStore.callReconnect.state,
-          isReconnecting: this.statusesStore.callReconnect.isReconnecting,
+          attempt: this.statusesStore.callReconnect.attempt,
+          nextDelayMs: this.statusesStore.callReconnect.nextDelayMs,
+          lastFailureCause: this.statusesStore.callReconnect.lastFailureCause,
+          lastError: this.statusesStore.callReconnect.lastError,
+          cancelledReason: this.statusesStore.callReconnect.cancelledReason,
+          isReconnecting: this.statusesStore.callReconnect.isReconnecting(),
+          isErrorTerminal: this.statusesStore.callReconnect.isErrorTerminal(),
         };
       },
-      (payload) => {
-        callback(payload);
+      (state) => {
+        callback(state);
       },
       { fireImmediately: true },
     );

@@ -641,11 +641,55 @@ pre {
 }
 
 .call-reconnect-indicator {
-  margin: 0.5rem 0;
+  position: fixed;
+  left: 50%;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 1200;
+  width: min(920px, calc(100vw - 24px));
+  margin: 0;
   padding: 0.75rem 1rem;
   border: 1px solid #d97706;
   border-radius: 8px;
   background: #fffbeb;
   color: #7c2d12;
   font-weight: 600;
+  box-shadow:
+    0 12px 28px rgba(15, 23, 42, 0.18),
+    0 2px 6px rgba(15, 23, 42, 0.12);
+  animation:
+    call-reconnect-indicator-pulse 1400ms ease-in-out infinite,
+    call-reconnect-indicator-glow 2400ms ease-in-out infinite;
+  will-change: transform, box-shadow;
+}
+
+@keyframes call-reconnect-indicator-pulse {
+  0%,
+  100% {
+    transform: translateX(-50%) translateY(0);
+  }
+  50% {
+    transform: translateX(-50%) translateY(-2px);
+  }
+}
+
+@keyframes call-reconnect-indicator-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 12px 28px rgba(15, 23, 42, 0.18),
+      0 2px 6px rgba(15, 23, 42, 0.12);
+  }
+  50% {
+    box-shadow:
+      0 14px 34px rgba(15, 23, 42, 0.24),
+      0 3px 10px rgba(15, 23, 42, 0.16);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .call-reconnect-indicator {
+    animation: none;
+    will-change: auto;
+  }
 }
