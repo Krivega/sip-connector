@@ -8,7 +8,7 @@ class RTCRtpSenderMock implements RTCRtpSender {
 
   public transport: RTCDtlsTransport | null = null;
 
-  public transform: RTCRtpTransform | null = null;
+  public transform: RTCRtpScriptTransform | null = null;
 
   private parameters: RTCRtpSendParameters = {
     encodings: [{}],

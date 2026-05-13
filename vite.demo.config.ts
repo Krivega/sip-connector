@@ -1,5 +1,4 @@
 import { defineConfig } from 'vite';
-import tsConfigPaths from 'vite-tsconfig-paths';
 
 import packageJson from './package.json';
 
@@ -22,7 +21,9 @@ export default defineConfig(() => {
     build: {
       outDir: 'demoDist',
     },
-    plugins: [tsConfigPaths()],
+    resolve: {
+      tsconfigPaths: true,
+    },
     server: {
       https: {
         key: './.cert/key.pem',

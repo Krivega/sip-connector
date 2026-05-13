@@ -71,7 +71,7 @@ export const installE2EWebSocketControls = () => {
       if (socketHostname !== undefined) {
         const originalSend = socket.send.bind(socket);
 
-        socket.send = ((data: string | ArrayBufferLike | Blob | ArrayBufferView) => {
+        socket.send = ((data: Parameters<typeof socket.send>[0]) => {
           if (isSipOptionsMessage(data)) {
             incrementSentWsOptionsCount(socketHostname);
           }

@@ -2,7 +2,6 @@ import path from 'node:path';
 
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
-import tsConfigPaths from 'vite-tsconfig-paths';
 
 import packageJson from './package.json';
 
@@ -19,11 +18,12 @@ export default defineConfig(() => {
 
   return {
     publicDir: false,
+    resolve: {
+      tsconfigPaths: true,
+    },
     plugins: [
-      tsConfigPaths(),
       dts({
         entryRoot: 'src',
-        include: ['src'],
         exclude: ['src/setupTests.ts', 'src/**/__tests__/**'],
       }),
     ],

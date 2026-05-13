@@ -1,20 +1,19 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "baseUrl": "./",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     },
     "types": ["./src/global.d.ts"]
   },
   "include": [
-    "src",
-    "demo",
-    "e2e",
-    "eslint.config.ts",
-    "jest.config.ts",
-    "vite.config.ts",
-    "vite.demo.config.ts",
-    "playwright.config.ts"
+    "./src",
+    "./demo",
+    "./e2e",
+    "./eslint.config.ts",
+    "./jest.config.ts",
+    "./vite.config.ts",
+    "./vite.demo.config.ts",
+    "./playwright.config.ts"
   ]
 }
