@@ -34,15 +34,17 @@ describe('getHeader', () => {
       expect(result).toBe('testroom123');
     });
 
-    it('должен возвращать строку в lowercase для PARTICIPANT_NAME', () => {
-      mockRequest.setHeader(EKeyHeader.PARTICIPANT_NAME, 'JohnDoe');
+    it('должен возвращать строку без изменений для PARTICIPANT_NAME', () => {
+      const participantName = 'JohnDoe';
+
+      mockRequest.setHeader(EKeyHeader.PARTICIPANT_NAME, participantName);
 
       const result = getHeader(
         mockRequest as unknown as IncomingRequest,
         EKeyHeader.PARTICIPANT_NAME,
       );
 
-      expect(result).toBe('johndoe');
+      expect(result).toBe(participantName);
     });
 
     it('должен возвращать строку в lowercase для INPUT_CHANNELS', () => {
@@ -734,7 +736,7 @@ describe('getHeader', () => {
         expect(result).toBe('test-room-123');
       });
 
-      it('должен обрабатывать PARTICIPANT_NAME с UPPERCASE', () => {
+      it('должен сохранять регистр PARTICIPANT_NAME с UPPERCASE', () => {
         mockRequest.setHeader(EKeyHeader.PARTICIPANT_NAME, 'JOHN DOE');
 
         const result = getHeader(
@@ -742,7 +744,7 @@ describe('getHeader', () => {
           EKeyHeader.PARTICIPANT_NAME,
         );
 
-        expect(result).toBe('john doe');
+        expect(result).toBe('JOHN DOE');
       });
 
       it('должен обрабатывать INPUT_CHANNELS с Mixed Case', () => {

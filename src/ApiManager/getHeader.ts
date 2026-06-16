@@ -68,11 +68,11 @@ export const getHeader = <T extends EKeyHeader>(
   const lowerValue = value.toLowerCase();
 
   switch (header) {
-    case EKeyHeader.BEARER_TOKEN: {
+    case EKeyHeader.BEARER_TOKEN:
+    case EKeyHeader.PARTICIPANT_NAME: {
       return value as EValueHeader<T>;
     }
     case EKeyHeader.CONTENT_ENTER_ROOM:
-    case EKeyHeader.PARTICIPANT_NAME:
     case EKeyHeader.INPUT_CHANNELS:
     case EKeyHeader.OUTPUT_CHANNELS:
     case EKeyHeader.TRACKS_DIRECTION:
