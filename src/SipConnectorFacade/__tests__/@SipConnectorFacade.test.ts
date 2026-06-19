@@ -709,6 +709,24 @@ describe('SipConnectorFacade comprehensive', () => {
         degradationPreference: 'maintain-framerate',
         sendEncodings: [],
         onAddedTransceiver: undefined,
+        waitForOutboundVideoPackets: undefined,
+        waitForOutboundVideoPacketsTimeout: undefined,
+      });
+    });
+
+    it('должен заменить медиа поток без опций', async () => {
+      await sipConnectorFacade.replaceMediaStream(mockMediaStream);
+
+      expect(sipConnector.replaceMediaStream).toHaveBeenCalledWith(mockMediaStream, {
+        deleteExisting: undefined,
+        addMissing: undefined,
+        forceRenegotiation: undefined,
+        contentHint: undefined,
+        degradationPreference: undefined,
+        sendEncodings: undefined,
+        onAddedTransceiver: undefined,
+        waitForOutboundVideoPackets: undefined,
+        waitForOutboundVideoPacketsTimeout: undefined,
       });
     });
   });
