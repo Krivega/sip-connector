@@ -783,4 +783,90 @@ describe('StatsManager', () => {
       expect(mcuDebugLogger).toHaveBeenCalledWith('Failed to send stats', error);
     });
   });
+
+  describe('waitForOutboundVideoPackets', () => {
+    const trackId = 'new-video-track-id';
+
+    const createStatsWithOutboundVideo = (outboundVideo: {
+      trackIdentifier?: string;
+      packetsSent?: number;
+    }): typeof statisticsMockBase => {
+      return {
+        ...statisticsMockBase,
+        outbound: {
+          ...statisticsMockBase.outbound,
+          video: {
+            ...statisticsMockBase.outbound.video,
+            outboundRtp: {
+              ...statisticsMockBase.outbound.video.outboundRtp,
+              packetsSent: outboundVideo.packetsSent,
+            },
+            mediaSource: {
+              ...statisticsMockBase.outbound.video.mediaSource,
+              trackIdentifier: outboundVideo.trackIdentifier,
+            },
+          },
+        },
+      } as typeof statisticsMockBase;
+    };
+
+    let manager: StatsManager;
+
+    beforeEach(() => {
+      const { callManager, apiManager } = createManagers();
+
+      manager = new StatsManager({ callManager, apiManager });
+    });
+
+    it('должен резолвиться когда outbound-rtp отправляет пакеты с нужным video track', async () => {
+      const waitPromise = manager.waitForOutboundVideoPackets(trackId);
+
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithOutboundVideo({ trackIdentifier: 'old-track-id', packetsSent: 100 }),
+      );
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithOutboundVideo({ trackIdentifier: trackId, packetsSent: 101 }),
+      );
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithOutboundVideo({ trackIdentifier: trackId, packetsSent: 102 }),
+      );
+
+      await expect(waitPromise).resolves.toBeUndefined();
+    });
+
+    it('должен резолвиться сразу если условие уже выполнено', async () => {
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithOutboundVideo({ trackIdentifier: trackId, packetsSent: 100 }),
+      );
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithOutboundVideo({ trackIdentifier: trackId, packetsSent: 101 }),
+      );
+
+      await expect(manager.waitForOutboundVideoPackets(trackId)).resolves.toBeUndefined();
+    });
+
+    it('должен отклоняться по таймауту', async () => {
+      jest.useFakeTimers();
+
+      const waitPromise = manager.waitForOutboundVideoPackets(trackId, { timeout: 1000 });
+
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithOutboundVideo({ trackIdentifier: 'old-track-id', packetsSent: 100 }),
+      );
+
+      jest.advanceTimersByTime(1000);
+
+      await expect(waitPromise).rejects.toThrow(
+        `Timed out waiting for outbound-rtp packets with video track ${trackId}`,
+      );
+
+      jest.useRealTimers();
+    });
+  });
 });

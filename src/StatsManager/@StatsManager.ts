@@ -2,7 +2,7 @@ import { EventEmitterProxy } from 'events-constructor';
 
 import resolveDebug from '@/logger';
 import { StatsPeerConnection } from '@/StatsPeerConnection';
-import { MIN_RECEIVED_MAIN_STREAM_PACKETS } from './constants';
+import { MIN_RECEIVED_MAIN_STREAM_PACKETS, WAIT_OUTBOUND_VIDEO_PACKETS_TIMEOUT } from './constants';
 
 import type { ApiManager } from '@/ApiManager';
 import type { CallManager } from '@/CallManager';
@@ -139,6 +139,49 @@ class StatsManager extends EventEmitterProxy<TStatsPeerConnectionEventMap> {
     return isReceivingMoreThanMinPackets && isNotSameValue;
   }
 
+  private get outboundVideoMediaSourceTrackIdentifier(): string | undefined {
+    return this.availableStats?.outbound.video.mediaSource?.trackIdentifier;
+  }
+
+  private get outboundVideoPacketsSent(): number | undefined {
+    return this.availableStats?.outbound.video.outboundRtp?.packetsSent;
+  }
+
+  private get previousOutboundVideoPacketsSent(): number | undefined {
+    return this.previousAvailableStats?.outbound.video.outboundRtp?.packetsSent;
+  }
+
+  public async waitForOutboundVideoPackets(
+    trackId: string,
+    { timeout = WAIT_OUTBOUND_VIDEO_PACKETS_TIMEOUT }: { timeout?: number } = {},
+  ): Promise<void> {
+    if (this.isSendingOutboundVideoPacketsWithTrack(trackId)) {
+      return;
+    }
+
+    return new Promise<void>((resolve, reject) => {
+      let timeoutId: ReturnType<typeof setTimeout>;
+      let disposeCollectedListener: () => void;
+
+      const cleanup = () => {
+        clearTimeout(timeoutId);
+        disposeCollectedListener();
+      };
+
+      timeoutId = setTimeout(() => {
+        cleanup();
+        reject(new Error(`Timed out waiting for outbound-rtp packets with video track ${trackId}`));
+      }, timeout);
+
+      disposeCollectedListener = this.on('collected', () => {
+        if (this.isSendingOutboundVideoPacketsWithTrack(trackId)) {
+          cleanup();
+          resolve();
+        }
+      });
+    });
+  }
+
   public hasAvailableIncomingBitrateChangedQuarter() {
     const prev = this.previousAvailableIncomingBitrate;
     const current = this.availableIncomingBitrate;
@@ -154,6 +197,18 @@ class StatsManager extends EventEmitterProxy<TStatsPeerConnectionEventMap> {
     const delta = Math.abs(current - prev) / prev;
 
     return delta >= 0.25;
+  }
+
+  private isSendingOutboundVideoPacketsWithTrack(trackId: string): boolean {
+    const trackMatches = this.outboundVideoMediaSourceTrackIdentifier === trackId;
+    const packetsSent = this.outboundVideoPacketsSent;
+    const previousPacketsSent = this.previousOutboundVideoPacketsSent;
+
+    if (!trackMatches || packetsSent === undefined || previousPacketsSent === undefined) {
+      return false;
+    }
+
+    return packetsSent > 0 && packetsSent !== previousPacketsSent;
   }
 
   private subscribe() {

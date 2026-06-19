@@ -610,6 +610,8 @@ class SipConnectorFacade implements IProxyMethods {
       degradationPreference,
       sendEncodings,
       onAddedTransceiver,
+      waitForOutboundVideoPackets,
+      waitForOutboundVideoPacketsTimeout,
     }: {
       deleteExisting?: boolean;
       addMissing?: boolean;
@@ -618,7 +620,9 @@ class SipConnectorFacade implements IProxyMethods {
       degradationPreference?: RTCDegradationPreference;
       sendEncodings?: RTCRtpEncodingParameters[];
       onAddedTransceiver?: TOnAddedTransceiver;
-    },
+      waitForOutboundVideoPackets?: boolean;
+      waitForOutboundVideoPacketsTimeout?: number;
+    } = {},
   ): Promise<void> => {
     debug('replaceMediaStream');
 
@@ -630,6 +634,8 @@ class SipConnectorFacade implements IProxyMethods {
       degradationPreference,
       onAddedTransceiver,
       sendEncodings,
+      waitForOutboundVideoPackets,
+      waitForOutboundVideoPacketsTimeout,
     });
   };
 

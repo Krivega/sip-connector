@@ -17,6 +17,7 @@ import { SessionManager } from '@/SessionManager';
 import { StatsManager } from '@/StatsManager';
 import { sendOffer } from '@/tools';
 import setCodecPreferences from '@/tools/setCodecPreferences';
+import findVideoTrack from '@/utils/findVideoTrack';
 import { VideoSendingBalancerManager } from '@/VideoSendingBalancerManager';
 import { MainStreamHealthMonitor } from '../MainStreamHealthMonitor';
 import { MainStreamRecovery } from '../MainStreamRecovery';
@@ -382,8 +383,34 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     return this.callManager.applyQuality(quality);
   };
 
-  public replaceMediaStream: CallManager['replaceMediaStream'] = async (...args) => {
-    return this.callManager.replaceMediaStream(...args);
+  public replaceMediaStream = async (
+    mediaStream: Parameters<CallManager['replaceMediaStream']>[0],
+    options?: Parameters<CallManager['replaceMediaStream']>[1] & {
+      waitForOutboundVideoPackets?: boolean;
+      waitForOutboundVideoPacketsTimeout?: number;
+    },
+  ): Promise<void> => {
+    const {
+      waitForOutboundVideoPackets: shouldWaitForOutboundVideoPackets,
+      waitForOutboundVideoPacketsTimeout,
+      ...replaceMediaStreamOptions
+    } = options ?? {};
+
+    await this.callManager.replaceMediaStream(mediaStream, replaceMediaStreamOptions);
+
+    if (shouldWaitForOutboundVideoPackets !== true) {
+      return;
+    }
+
+    const videoTrack = findVideoTrack(mediaStream);
+
+    if (videoTrack === undefined) {
+      throw new Error('waitForOutboundVideoPackets requires a video track in mediaStream');
+    }
+
+    await this.statsManager.waitForOutboundVideoPackets(videoTrack.id, {
+      timeout: waitForOutboundVideoPacketsTimeout,
+    });
   };
 
   public async startPresentation(

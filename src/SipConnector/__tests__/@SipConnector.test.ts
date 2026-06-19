@@ -507,6 +507,37 @@ describe('SipConnector', () => {
     expect(replaceStream).toHaveBeenCalled();
   });
 
+  it('replaceMediaStream: ждёт outbound-rtp пакеты с новым video track при waitForOutboundVideoPackets', async () => {
+    const testStream = createMediaStreamMock({
+      audio: { deviceId: { exact: 'audioDeviceId' } },
+      video: { deviceId: { exact: 'videoDeviceId' } },
+    });
+    const videoTrack = testStream.getVideoTracks()[0] as MediaStreamTrack;
+    const replaceStream = jest
+      .spyOn(sipConnector.callManager, 'replaceMediaStream')
+      .mockResolvedValue(undefined);
+    const waitForOutboundVideoPackets = jest
+      .spyOn(sipConnector.statsManager, 'waitForOutboundVideoPackets')
+      .mockResolvedValue(undefined);
+
+    await sipConnector.replaceMediaStream(testStream, { waitForOutboundVideoPackets: true });
+
+    expect(replaceStream).toHaveBeenCalledWith(testStream, {});
+    expect(waitForOutboundVideoPackets).toHaveBeenCalledWith(videoTrack.id, { timeout: undefined });
+  });
+
+  it('replaceMediaStream: бросает ошибку при waitForOutboundVideoPackets без video track', async () => {
+    const audioOnlyStream = createMediaStreamMock({
+      audio: { deviceId: { exact: 'audioDeviceId' } },
+    });
+
+    jest.spyOn(sipConnector.callManager, 'replaceMediaStream').mockResolvedValue(undefined);
+
+    await expect(
+      sipConnector.replaceMediaStream(audioOnlyStream, { waitForOutboundVideoPackets: true }),
+    ).rejects.toThrow('waitForOutboundVideoPackets requires a video track in mediaStream');
+  });
+
   it('localPorts: проксирует геттер CallManager.localPorts', () => {
     const localPortsSpy = jest
       .spyOn(sipConnector.callManager, 'localPorts', 'get')
