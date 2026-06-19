@@ -523,7 +523,10 @@ describe('SipConnector', () => {
     await sipConnector.replaceMediaStream(testStream, { waitForOutboundVideoPackets: true });
 
     expect(replaceStream).toHaveBeenCalledWith(testStream, {});
-    expect(waitForOutboundVideoPackets).toHaveBeenCalledWith(videoTrack.id, { timeout: undefined });
+    expect(waitForOutboundVideoPackets).toHaveBeenCalledWith(videoTrack.id, {
+      timeout: undefined,
+      strictness: undefined,
+    });
   });
 
   it('replaceMediaStream: бросает ошибку при waitForOutboundVideoPackets без video track', async () => {

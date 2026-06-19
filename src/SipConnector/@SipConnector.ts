@@ -32,6 +32,7 @@ import type { IAutoConnectorOptions } from '@/AutoConnectorManager';
 import type { TGetUri, TRecvQuality } from '@/CallManager';
 import type { ICallReconnectOptions } from '@/CallReconnectManager';
 import type { TContentHint, TOnAddedTransceiver } from '@/PresentationManager';
+import type { TOutboundVideoVerificationStrictness } from '@/StatsManager';
 import type { TJsSIP } from '@/types';
 import type { IBalancerOptions } from '@/VideoSendingBalancer';
 import type { TEventName, TEventMap } from './events';
@@ -383,16 +384,30 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     return this.callManager.applyQuality(quality);
   };
 
+  /**
+   * Заменяет локальный media stream в активной MCU-сессии.
+   *
+   * Опциональная верификация (`waitForOutboundVideoPackets: true`):
+   * 1. Сначала выполняется обычный `callManager.replaceMediaStream` (replaceTrack / reinvite).
+   * 2. Затем `statsManager.waitForOutboundVideoPackets` ждёт подтверждения из WebRTC stats,
+   *    что outbound-rtp реально шлёт данные с video track из переданного `mediaStream`.
+   * 3. Режим строгости задаётся через `waitForOutboundVideoPacketsStrictness`
+   *    (`fast` | `normal` | `strict`, по умолчанию в StatsManager — `normal`).
+   *
+   * Опции wait не передаются в RTC-сессию — они обрабатываются только на уровне SipConnector.
+   */
   public replaceMediaStream = async (
     mediaStream: Parameters<CallManager['replaceMediaStream']>[0],
     options?: Parameters<CallManager['replaceMediaStream']>[1] & {
       waitForOutboundVideoPackets?: boolean;
       waitForOutboundVideoPacketsTimeout?: number;
+      waitForOutboundVideoPacketsStrictness?: TOutboundVideoVerificationStrictness;
     },
   ): Promise<void> => {
     const {
       waitForOutboundVideoPackets: shouldWaitForOutboundVideoPackets,
       waitForOutboundVideoPacketsTimeout,
+      waitForOutboundVideoPacketsStrictness,
       ...replaceMediaStreamOptions
     } = options ?? {};
 
@@ -408,8 +423,10 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       throw new Error('waitForOutboundVideoPackets requires a video track in mediaStream');
     }
 
+    // Ждём подтверждения в stats: track id + накопленные дельты от baseline (см. StatsManager).
     await this.statsManager.waitForOutboundVideoPackets(videoTrack.id, {
       timeout: waitForOutboundVideoPacketsTimeout,
+      strictness: waitForOutboundVideoPacketsStrictness,
     });
   };
 

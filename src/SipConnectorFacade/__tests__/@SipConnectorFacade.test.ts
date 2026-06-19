@@ -711,6 +711,7 @@ describe('SipConnectorFacade comprehensive', () => {
         onAddedTransceiver: undefined,
         waitForOutboundVideoPackets: undefined,
         waitForOutboundVideoPacketsTimeout: undefined,
+        waitForOutboundVideoPacketsStrictness: undefined,
       });
     });
 
@@ -727,6 +728,7 @@ describe('SipConnectorFacade comprehensive', () => {
         onAddedTransceiver: undefined,
         waitForOutboundVideoPackets: undefined,
         waitForOutboundVideoPacketsTimeout: undefined,
+        waitForOutboundVideoPacketsStrictness: undefined,
       });
     });
   });

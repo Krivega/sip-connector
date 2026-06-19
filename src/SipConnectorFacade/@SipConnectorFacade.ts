@@ -12,7 +12,7 @@ import type { TOnAddedTransceiver, TRemoteStreams } from '@/CallManager';
 import type { TParametersConnection, TConnectionConfiguration } from '@/ConnectionManager';
 import type { TContentHint } from '@/PresentationManager';
 import type { SipConnector } from '@/SipConnector';
-import type { TStatsManagerEventMap } from '@/StatsManager';
+import type { TOutboundVideoVerificationStrictness, TStatsManagerEventMap } from '@/StatsManager';
 
 const debug = resolveDebug('SipConnectorFacade');
 
@@ -600,19 +600,13 @@ class SipConnectorFacade implements IProxyMethods {
     await this.sipConnector.sendMediaState({ cam: isEnabledCam, mic: isEnabledMic });
   };
 
+  /**
+   * Замена media stream с опциональной верификацией исходящего video через stats.
+   * Опции `waitForOutboundVideoPackets*` пробрасываются в SipConnector без изменений.
+   */
   public replaceMediaStream = async (
     mediaStream: MediaStream,
-    {
-      deleteExisting,
-      addMissing,
-      forceRenegotiation,
-      contentHint,
-      degradationPreference,
-      sendEncodings,
-      onAddedTransceiver,
-      waitForOutboundVideoPackets,
-      waitForOutboundVideoPacketsTimeout,
-    }: {
+    options?: {
       deleteExisting?: boolean;
       addMissing?: boolean;
       forceRenegotiation?: boolean;
@@ -622,8 +616,22 @@ class SipConnectorFacade implements IProxyMethods {
       onAddedTransceiver?: TOnAddedTransceiver;
       waitForOutboundVideoPackets?: boolean;
       waitForOutboundVideoPacketsTimeout?: number;
-    } = {},
+      waitForOutboundVideoPacketsStrictness?: TOutboundVideoVerificationStrictness;
+    },
   ): Promise<void> => {
+    const {
+      deleteExisting,
+      addMissing,
+      forceRenegotiation,
+      contentHint,
+      degradationPreference,
+      sendEncodings,
+      onAddedTransceiver,
+      waitForOutboundVideoPackets,
+      waitForOutboundVideoPacketsTimeout,
+      waitForOutboundVideoPacketsStrictness,
+    } = options ?? {};
+
     debug('replaceMediaStream');
 
     return this.sipConnector.replaceMediaStream(mediaStream, {
@@ -636,6 +644,7 @@ class SipConnectorFacade implements IProxyMethods {
       sendEncodings,
       waitForOutboundVideoPackets,
       waitForOutboundVideoPacketsTimeout,
+      waitForOutboundVideoPacketsStrictness,
     });
   };
 

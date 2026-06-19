@@ -2,11 +2,17 @@ import { EventEmitterProxy } from 'events-constructor';
 
 import resolveDebug from '@/logger';
 import { StatsPeerConnection } from '@/StatsPeerConnection';
-import { MIN_RECEIVED_MAIN_STREAM_PACKETS, WAIT_OUTBOUND_VIDEO_PACKETS_TIMEOUT } from './constants';
+import {
+  MIN_RECEIVED_MAIN_STREAM_PACKETS,
+  OUTBOUND_VIDEO_VERIFICATION_THRESHOLDS,
+  WAIT_OUTBOUND_VIDEO_PACKETS_TIMEOUT,
+} from './constants';
 
 import type { ApiManager } from '@/ApiManager';
 import type { CallManager } from '@/CallManager';
 import type { TStats, TStatsPeerConnectionEventMap } from '@/StatsPeerConnection';
+import type { TOutboundVideoVerificationStrictness } from './constants';
+import type { TOutboundVideoStatsSnapshot } from './types';
 
 const debug = resolveDebug('StatsManager');
 
@@ -139,23 +145,134 @@ class StatsManager extends EventEmitterProxy<TStatsPeerConnectionEventMap> {
     return isReceivingMoreThanMinPackets && isNotSameValue;
   }
 
-  private get outboundVideoMediaSourceTrackIdentifier(): string | undefined {
-    return this.availableStats?.outbound.video.mediaSource?.trackIdentifier;
+  private get outboundVideoBytesSent(): number | undefined {
+    return this.availableStats?.outbound.video.outboundRtp?.bytesSent;
   }
 
-  private get outboundVideoPacketsSent(): number | undefined {
-    return this.availableStats?.outbound.video.outboundRtp?.packetsSent;
+  private get outboundVideoFramesEncoded(): number | undefined {
+    return this.availableStats?.outbound.video.outboundRtp?.framesEncoded;
   }
 
-  private get previousOutboundVideoPacketsSent(): number | undefined {
-    return this.previousAvailableStats?.outbound.video.outboundRtp?.packetsSent;
+  private get outboundVideoMediaSourceFrames(): number | undefined {
+    return this.availableStats?.outbound.video.mediaSource?.frames;
   }
 
+  private get previousOutboundVideoBytesSent(): number | undefined {
+    return this.previousAvailableStats?.outbound.video.outboundRtp?.bytesSent;
+  }
+
+  private get previousOutboundVideoFramesEncoded(): number | undefined {
+    return this.previousAvailableStats?.outbound.video.outboundRtp?.framesEncoded;
+  }
+
+  private get previousOutboundVideoMediaSourceFrames(): number | undefined {
+    return this.previousAvailableStats?.outbound.video.mediaSource?.frames;
+  }
+
+  /**
+   * Вычисляет дельту метрики относительно baseline.
+   *
+   * Если `current` отсутствует в stats — дельту определить нельзя (undefined).
+   * Если baseline отсутствует (пустой snapshot, stats ещё не собирались) — считаем baseline = 0,
+   * т.е. любое положительное current уже считается приростом после замены.
+   */
+  private static resolveDelta(current?: number, baseline?: number): number | undefined {
+    if (current === undefined) {
+      return undefined;
+    }
+
+    return current - (baseline ?? 0);
+  }
+
+  /**
+   * Дельта кадров: берём максимум из двух источников WebRTC stats.
+   *
+   * Браузеры могут заполнять либо `outbound-rtp.framesEncoded`, либо `media-source.frames`,
+   * либо оба. Для верификации достаточно роста хотя бы в одном из них.
+   *
+   * Если в current нет ни одного frame-счётчика — дельту кадров определить нельзя.
+   */
+  private static resolveFramesDelta(
+    current: TOutboundVideoStatsSnapshot,
+    baseline: TOutboundVideoStatsSnapshot,
+  ): number | undefined {
+    if (current.framesEncoded === undefined && current.mediaSourceFrames === undefined) {
+      return undefined;
+    }
+
+    const framesEncodedDelta = StatsManager.resolveDelta(
+      current.framesEncoded,
+      baseline.framesEncoded,
+    );
+    const mediaSourceFramesDelta = StatsManager.resolveDelta(
+      current.mediaSourceFrames,
+      baseline.mediaSourceFrames,
+    );
+
+    return Math.max(framesEncodedDelta ?? 0, mediaSourceFramesDelta ?? 0);
+  }
+
+  /** Извлекает outbound video-поля из полного объекта stats (`collected`). */
+  private static extractOutboundVideoStatsSnapshot(
+    stats: TStats | undefined,
+  ): TOutboundVideoStatsSnapshot {
+    if (stats === undefined) {
+      return {};
+    }
+
+    return {
+      trackIdentifier: stats.outbound.video.mediaSource?.trackIdentifier,
+      packetsSent: stats.outbound.video.outboundRtp?.packetsSent,
+      bytesSent: stats.outbound.video.outboundRtp?.bytesSent,
+      framesEncoded: stats.outbound.video.outboundRtp?.framesEncoded,
+      mediaSourceFrames: stats.outbound.video.mediaSource?.frames,
+    };
+  }
+
+  /**
+   * Ожидает, пока stats подтвердят реальную отправку video с указанным track id.
+   *
+   * ## Алгоритм
+   *
+   * 1. Фиксируем baseline — snapshot метрик до начала ожидания (см. `captureOutboundVideoWaitBaseline`).
+   * 2. На каждом событии `collected` (poll stats ~раз в 1 с) проверяем current против baseline.
+   * 3. Успех, когда `isSendingOutboundVideoPacketsWithTrack` возвращает `isSending: true`.
+   * 4. При таймауте — reject с ошибкой.
+   *
+   * ## Почему baseline, а не previous poll
+   *
+   * Сравнение с «предыдущим poll'ом» даёт ложное срабатывание сразу после replace:
+   * `trackIdentifier` уже новый, а `packetsSent` вырос на +1 между двумя соседними сэмплами.
+   * Baseline фиксирует состояние **на момент вызова wait** (сразу после replaceMediaStream),
+   * поэтому мы ждём накопленный прирост трафика **после замены**, а не любой монotonic tick.
+   *
+   * @param trackId — `MediaStreamTrack.id` нового video track из replaceMediaStream
+   * @param timeout — максимальное время ожидания (мс)
+   * @param strictness — режим порогов (см. `OUTBOUND_VIDEO_VERIFICATION_THRESHOLDS`)
+   */
   public async waitForOutboundVideoPackets(
     trackId: string,
-    { timeout = WAIT_OUTBOUND_VIDEO_PACKETS_TIMEOUT }: { timeout?: number } = {},
+    {
+      timeout = WAIT_OUTBOUND_VIDEO_PACKETS_TIMEOUT,
+      strictness = 'normal',
+    }: {
+      timeout?: number;
+      strictness?: TOutboundVideoVerificationStrictness;
+    } = {},
   ): Promise<void> {
-    if (this.isSendingOutboundVideoPacketsWithTrack(trackId)) {
+    // Baseline: «точка отсчёта» для всех дельт на протяжении ожидания.
+    const baseline = this.captureOutboundVideoWaitBaseline();
+    // Счётчик подряд идущих poll'ов, прошедших все проверки (важно для strict).
+    const verificationState = { consecutivePositiveSamples: 0 };
+
+    // Быстрый путь: условие уже выполнено на текущем snapshot (без ожидания следующего poll'а).
+    if (
+      this.isSendingOutboundVideoPacketsWithTrack(
+        trackId,
+        { baseline, strictness },
+        verificationState,
+      ).isSending
+    ) {
       return;
     }
 
@@ -174,9 +291,18 @@ class StatsManager extends EventEmitterProxy<TStatsPeerConnectionEventMap> {
       }, timeout);
 
       disposeCollectedListener = this.on('collected', () => {
-        if (this.isSendingOutboundVideoPacketsWithTrack(trackId)) {
+        const { isSending, newVerificationState } = this.isSendingOutboundVideoPacketsWithTrack(
+          trackId,
+          { baseline, strictness },
+          verificationState,
+        );
+
+        if (isSending) {
           cleanup();
           resolve();
+        } else {
+          // Сохраняем прогресс consecutive-счётчика между poll'ами (или сброс внутри проверки).
+          verificationState.consecutivePositiveSamples = newVerificationState;
         }
       });
     });
@@ -199,16 +325,160 @@ class StatsManager extends EventEmitterProxy<TStatsPeerConnectionEventMap> {
     return delta >= 0.25;
   }
 
-  private isSendingOutboundVideoPacketsWithTrack(trackId: string): boolean {
-    const trackMatches = this.outboundVideoMediaSourceTrackIdentifier === trackId;
-    const packetsSent = this.outboundVideoPacketsSent;
-    const previousPacketsSent = this.previousOutboundVideoPacketsSent;
+  private getOutboundVideoStatsSnapshot(): TOutboundVideoStatsSnapshot {
+    return StatsManager.extractOutboundVideoStatsSnapshot(this.availableStats);
+  }
 
-    if (!trackMatches || packetsSent === undefined || previousPacketsSent === undefined) {
+  /**
+   * Фиксирует baseline для wait сразу после replaceMediaStream.
+   *
+   * Берём `previousAvailableStats`, если он есть: это последний poll **до** текущего
+   * `availableStats`, т.е. состояние «до замены» или непосредственно перед ней.
+   * Если stats ещё ни разу не собирались — fallback на `availableStats` или пустой объект.
+   */
+  private captureOutboundVideoWaitBaseline(): TOutboundVideoStatsSnapshot {
+    const stats = this.previousAvailableStats ?? this.availableStats;
+
+    if (stats === undefined) {
+      return {};
+    }
+
+    return StatsManager.extractOutboundVideoStatsSnapshot(stats);
+  }
+
+  /**
+   * Проверяет, что current stats удовлетворяют порогам strictness относительно baseline.
+   *
+   * Шаги:
+   * 1. `media-source.trackIdentifier` должен совпасть с id нового track (metadata swap).
+   * 2. Дельта `packetsSent` от baseline >= порога.
+   * 3. Дельта `bytesSent` от baseline >= порога (в fast может быть 0).
+   * 4. Для `normal`/`strict`: дельта кадров >= порога (fast кадры не проверяет).
+   */
+  private meetsOutboundVideoThresholds(
+    trackId: string,
+    baseline: TOutboundVideoStatsSnapshot,
+    strictness: TOutboundVideoVerificationStrictness,
+  ): boolean {
+    const current = this.getOutboundVideoStatsSnapshot();
+    const thresholds = OUTBOUND_VIDEO_VERIFICATION_THRESHOLDS[strictness];
+
+    // Шаг 1: в stats уже должен быть именно новый track, а не старый media-source.
+    if (current.trackIdentifier !== trackId) {
       return false;
     }
 
-    return packetsSent > 0 && packetsSent !== previousPacketsSent;
+    const packetsSentDelta = StatsManager.resolveDelta(current.packetsSent, baseline.packetsSent);
+    const bytesSentDelta = StatsManager.resolveDelta(current.bytesSent, baseline.bytesSent);
+    const framesDelta = StatsManager.resolveFramesDelta(current, baseline);
+
+    // Шаг 2: без packetsSent в current stats верификацию продолжать нельзя.
+    if (packetsSentDelta === undefined || packetsSentDelta < thresholds.minPacketsSentDelta) {
+      return false;
+    }
+
+    // Шаг 3: bytesSent подтверждает объём, а не только счётчик пакетов.
+    if ((bytesSentDelta ?? 0) < thresholds.minBytesSentDelta) {
+      return false;
+    }
+
+    // Шаг 4: frames — сигнал, что encoder реально кодирует новый source (не только RTP tick).
+    if (
+      strictness !== 'fast' &&
+      (framesDelta === undefined || framesDelta < thresholds.minFramesDelta)
+    ) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Interval delta: рост метрик между двумя **соседними** poll'ами stats.
+   *
+   * Используется только в режиме `strict`. Отличается от baseline-delta:
+   * baseline отвечает на «сколько отправили с момента replace», interval — «идёт ли отправка
+   * прямо сейчас между poll N и poll N+1».
+   *
+   * Если на одном poll'е пороги от baseline уже выполнены, но на следующем poll'е счётчики
+   * не выросли — strict сбрасывает consecutive-счётчик (отправка не устойчива).
+   */
+  private hasPositiveOutboundVideoIntervalDelta(): boolean {
+    const bytesSent = this.outboundVideoBytesSent;
+    const previousBytesSent = this.previousOutboundVideoBytesSent;
+    const framesEncoded = this.outboundVideoFramesEncoded;
+    const previousFramesEncoded = this.previousOutboundVideoFramesEncoded;
+    const mediaSourceFrames = this.outboundVideoMediaSourceFrames;
+    const previousMediaSourceFrames = this.previousOutboundVideoMediaSourceFrames;
+
+    if (
+      bytesSent !== undefined &&
+      previousBytesSent !== undefined &&
+      bytesSent > previousBytesSent
+    ) {
+      return true;
+    }
+
+    if (
+      framesEncoded !== undefined &&
+      previousFramesEncoded !== undefined &&
+      framesEncoded > previousFramesEncoded
+    ) {
+      return true;
+    }
+
+    if (
+      mediaSourceFrames !== undefined &&
+      previousMediaSourceFrames !== undefined &&
+      mediaSourceFrames > previousMediaSourceFrames
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Главная проверка: «отправляется ли video с нужным track» на текущем poll'е.
+   *
+   * Возвращает:
+   * - `isSending: true` — все условия выполнены, можно резолвить wait-промис.
+   * - `newVerificationState` — обновлённый счётчик consecutive poll'ов (для strict — 2 подряд).
+   *
+   * Логика:
+   * 1. `meetsOutboundVideoThresholds` — baseline-проверка (track + deltas).
+   * 2. Для `strict`: дополнительно `hasPositiveOutboundVideoIntervalDelta`.
+   * 3. Если оба шага OK — increment consecutive; иначе сброс в 0.
+   * 4. Успех, когда consecutive >= `requiredConsecutivePositiveSamples`.
+   */
+  private isSendingOutboundVideoPacketsWithTrack(
+    trackId: string,
+    options: {
+      baseline: TOutboundVideoStatsSnapshot;
+      strictness: TOutboundVideoVerificationStrictness;
+    },
+    verificationState: { consecutivePositiveSamples: number },
+  ) {
+    const { baseline, strictness } = options;
+
+    const thresholds = OUTBOUND_VIDEO_VERIFICATION_THRESHOLDS[strictness];
+
+    if (!this.meetsOutboundVideoThresholds(trackId, baseline, strictness)) {
+      // Пороги не выполнены — прогресс consecutive обнуляется.
+      return { isSending: false, newVerificationState: 0 };
+    }
+
+    if (strictness === 'strict' && !this.hasPositiveOutboundVideoIntervalDelta()) {
+      // Baseline OK, но между этим и предыдущим poll'ом нет роста — не считаем устойчивой отправкой.
+      return { isSending: false, newVerificationState: 0 };
+    }
+
+    const newVerificationState = verificationState.consecutivePositiveSamples + 1;
+
+    return {
+      isSending: newVerificationState >= thresholds.requiredConsecutivePositiveSamples,
+      newVerificationState,
+    };
   }
 
   private subscribe() {

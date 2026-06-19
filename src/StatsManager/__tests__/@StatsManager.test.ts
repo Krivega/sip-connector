@@ -786,10 +786,20 @@ describe('StatsManager', () => {
 
   describe('waitForOutboundVideoPackets', () => {
     const trackId = 'new-video-track-id';
+    const baselineStats = {
+      trackIdentifier: 'old-track-id',
+      packetsSent: 100,
+      bytesSent: 10_000,
+      framesEncoded: 50,
+      mediaSourceFrames: 50,
+    };
 
     const createStatsWithOutboundVideo = (outboundVideo: {
       trackIdentifier?: string;
       packetsSent?: number;
+      bytesSent?: number;
+      framesEncoded?: number;
+      mediaSourceFrames?: number;
     }): typeof statisticsMockBase => {
       return {
         ...statisticsMockBase,
@@ -800,10 +810,13 @@ describe('StatsManager', () => {
             outboundRtp: {
               ...statisticsMockBase.outbound.video.outboundRtp,
               packetsSent: outboundVideo.packetsSent,
+              bytesSent: outboundVideo.bytesSent,
+              framesEncoded: outboundVideo.framesEncoded,
             },
             mediaSource: {
               ...statisticsMockBase.outbound.video.mediaSource,
               trackIdentifier: outboundVideo.trackIdentifier,
+              frames: outboundVideo.mediaSourceFrames,
             },
           },
         },
@@ -816,38 +829,371 @@ describe('StatsManager', () => {
       const { callManager, apiManager } = createManagers();
 
       manager = new StatsManager({ callManager, apiManager });
+
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithOutboundVideo(baselineStats),
+      );
     });
 
-    it('должен резолвиться когда outbound-rtp отправляет пакеты с нужным video track', async () => {
-      const waitPromise = manager.waitForOutboundVideoPackets(trackId);
+    it('fast: резолвится при минимальной дельте packetsSent от baseline', async () => {
+      const waitPromise = manager.waitForOutboundVideoPackets(trackId, { strictness: 'fast' });
 
       manager.statsPeerConnection.events.trigger(
         'collected',
-        createStatsWithOutboundVideo({ trackIdentifier: 'old-track-id', packetsSent: 100 }),
-      );
-      manager.statsPeerConnection.events.trigger(
-        'collected',
-        createStatsWithOutboundVideo({ trackIdentifier: trackId, packetsSent: 101 }),
-      );
-      manager.statsPeerConnection.events.trigger(
-        'collected',
-        createStatsWithOutboundVideo({ trackIdentifier: trackId, packetsSent: 102 }),
+        createStatsWithOutboundVideo({
+          ...baselineStats,
+          trackIdentifier: trackId,
+          packetsSent: 101,
+        }),
       );
 
       await expect(waitPromise).resolves.toBeUndefined();
     });
 
+    it('normal: не резолвится без достаточной дельты frames/bytes', async () => {
+      jest.useFakeTimers();
+
+      const waitPromise = manager.waitForOutboundVideoPackets(trackId, {
+        strictness: 'normal',
+        timeout: 1000,
+      });
+
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithOutboundVideo({
+          ...baselineStats,
+          trackIdentifier: trackId,
+          packetsSent: 106,
+        }),
+      );
+
+      jest.advanceTimersByTime(1000);
+
+      await expect(waitPromise).rejects.toThrow(
+        `Timed out waiting for outbound-rtp packets with video track ${trackId}`,
+      );
+
+      jest.useRealTimers();
+    });
+
+    it('normal: резолвится при достаточной дельте frames и bytes от baseline', async () => {
+      const waitPromise = manager.waitForOutboundVideoPackets(trackId, { strictness: 'normal' });
+
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithOutboundVideo({
+          trackIdentifier: trackId,
+          packetsSent: 106,
+          bytesSent: 19_000,
+          framesEncoded: 54,
+          mediaSourceFrames: 54,
+        }),
+      );
+
+      await expect(waitPromise).resolves.toBeUndefined();
+    });
+
+    it('strict: требует два последовательных положительных интервала', async () => {
+      const waitPromise = manager.waitForOutboundVideoPackets(trackId, { strictness: 'strict' });
+
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithOutboundVideo({
+          trackIdentifier: trackId,
+          packetsSent: 115,
+          bytesSent: 28_000,
+          framesEncoded: 56,
+          mediaSourceFrames: 56,
+        }),
+      );
+
+      let isResolved = false;
+
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      waitPromise.then(() => {
+        isResolved = true;
+      });
+
+      await delayPromise(0);
+
+      expect(isResolved).toBe(false);
+
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithOutboundVideo({
+          trackIdentifier: trackId,
+          packetsSent: 130,
+          bytesSent: 46_000,
+          framesEncoded: 62,
+          mediaSourceFrames: 62,
+        }),
+      );
+
+      await expect(waitPromise).resolves.toBeUndefined();
+    });
+
+    it('strict: сбрасывает счётчик при отсутствии interval delta', async () => {
+      jest.useFakeTimers();
+
+      const waitPromise = manager.waitForOutboundVideoPackets(trackId, {
+        strictness: 'strict',
+        timeout: 1000,
+      });
+
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithOutboundVideo({
+          trackIdentifier: trackId,
+          packetsSent: 115,
+          bytesSent: 28_000,
+          framesEncoded: 56,
+          mediaSourceFrames: 56,
+        }),
+      );
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithOutboundVideo({
+          trackIdentifier: trackId,
+          packetsSent: 115,
+          bytesSent: 28_000,
+          framesEncoded: 56,
+          mediaSourceFrames: 56,
+        }),
+      );
+
+      jest.advanceTimersByTime(1000);
+
+      await expect(waitPromise).rejects.toThrow(
+        `Timed out waiting for outbound-rtp packets with video track ${trackId}`,
+      );
+
+      jest.useRealTimers();
+    });
+
     it('должен резолвиться сразу если условие уже выполнено', async () => {
       manager.statsPeerConnection.events.trigger(
         'collected',
-        createStatsWithOutboundVideo({ trackIdentifier: trackId, packetsSent: 100 }),
-      );
-      manager.statsPeerConnection.events.trigger(
-        'collected',
-        createStatsWithOutboundVideo({ trackIdentifier: trackId, packetsSent: 101 }),
+        createStatsWithOutboundVideo({
+          trackIdentifier: trackId,
+          packetsSent: 106,
+          bytesSent: 19_000,
+          framesEncoded: 54,
+          mediaSourceFrames: 54,
+        }),
       );
 
       await expect(manager.waitForOutboundVideoPackets(trackId)).resolves.toBeUndefined();
+    });
+
+    it('strict: учитывает interval delta по framesEncoded', async () => {
+      const waitPromise = manager.waitForOutboundVideoPackets(trackId, { strictness: 'strict' });
+
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithOutboundVideo({
+          trackIdentifier: trackId,
+          packetsSent: 115,
+          bytesSent: 28_000,
+          framesEncoded: 56,
+          mediaSourceFrames: 50,
+        }),
+      );
+
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithOutboundVideo({
+          trackIdentifier: trackId,
+          packetsSent: 130,
+          bytesSent: 28_000,
+          framesEncoded: 62,
+          mediaSourceFrames: 50,
+        }),
+      );
+
+      await expect(waitPromise).resolves.toBeUndefined();
+    });
+
+    it('strict: учитывает interval delta только по mediaSource.frames', async () => {
+      const waitPromise = manager.waitForOutboundVideoPackets(trackId, { strictness: 'strict' });
+
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithOutboundVideo({
+          trackIdentifier: trackId,
+          packetsSent: 115,
+          bytesSent: 28_000,
+          mediaSourceFrames: 56,
+        }),
+      );
+
+      manager.statsPeerConnection.events.trigger(
+        'collected',
+        createStatsWithOutboundVideo({
+          trackIdentifier: trackId,
+          packetsSent: 130,
+          bytesSent: 28_000,
+          mediaSourceFrames: 62,
+        }),
+      );
+
+      await expect(waitPromise).resolves.toBeUndefined();
+    });
+
+    it('normal: резолвится по framesEncoded если mediaSource.frames отсутствует', async () => {
+      const waitPromise = manager.waitForOutboundVideoPackets(trackId, { strictness: 'normal' });
+
+      manager.statsPeerConnection.events.trigger('collected', {
+        ...statisticsMockBase,
+        outbound: {
+          ...statisticsMockBase.outbound,
+          video: {
+            ...statisticsMockBase.outbound.video,
+            outboundRtp: {
+              ...statisticsMockBase.outbound.video.outboundRtp,
+              packetsSent: 106,
+              bytesSent: 19_000,
+              framesEncoded: 54,
+            },
+            mediaSource: {
+              ...statisticsMockBase.outbound.video.mediaSource,
+              trackIdentifier: trackId,
+              frames: undefined,
+            },
+          },
+        },
+      } as unknown as typeof statisticsMockBase);
+
+      await expect(waitPromise).resolves.toBeUndefined();
+    });
+
+    it('normal: резолвится по mediaSource.frames если framesEncoded отсутствует', async () => {
+      const waitPromise = manager.waitForOutboundVideoPackets(trackId, { strictness: 'normal' });
+
+      manager.statsPeerConnection.events.trigger('collected', {
+        ...statisticsMockBase,
+        outbound: {
+          ...statisticsMockBase.outbound,
+          video: {
+            ...statisticsMockBase.outbound.video,
+            outboundRtp: {
+              ...statisticsMockBase.outbound.video.outboundRtp,
+              packetsSent: 106,
+              bytesSent: 19_000,
+              framesEncoded: undefined,
+            },
+            mediaSource: {
+              ...statisticsMockBase.outbound.video.mediaSource,
+              trackIdentifier: trackId,
+              frames: 54,
+            },
+          },
+        },
+      } as unknown as typeof statisticsMockBase);
+
+      await expect(waitPromise).resolves.toBeUndefined();
+    });
+
+    it('normal: не резолвится без packetsSent в current stats', async () => {
+      jest.useFakeTimers();
+
+      const waitPromise = manager.waitForOutboundVideoPackets(trackId, {
+        strictness: 'normal',
+        timeout: 500,
+      });
+
+      manager.statsPeerConnection.events.trigger('collected', {
+        ...statisticsMockBase,
+        outbound: {
+          ...statisticsMockBase.outbound,
+          video: {
+            ...statisticsMockBase.outbound.video,
+            outboundRtp: {
+              ...statisticsMockBase.outbound.video.outboundRtp,
+              bytesSent: 19_000,
+              framesEncoded: 54,
+              packetsSent: undefined,
+            },
+            mediaSource: {
+              ...statisticsMockBase.outbound.video.mediaSource,
+              trackIdentifier: trackId,
+              frames: 54,
+            },
+          },
+        },
+      } as unknown as typeof statisticsMockBase);
+
+      jest.advanceTimersByTime(500);
+
+      await expect(waitPromise).rejects.toThrow(
+        `Timed out waiting for outbound-rtp packets with video track ${trackId}`,
+      );
+
+      jest.useRealTimers();
+    });
+
+    it('normal: не резолвится без frames в current stats', async () => {
+      jest.useFakeTimers();
+
+      const waitPromise = manager.waitForOutboundVideoPackets(trackId, {
+        strictness: 'normal',
+        timeout: 500,
+      });
+
+      manager.statsPeerConnection.events.trigger('collected', {
+        ...statisticsMockBase,
+        outbound: {
+          ...statisticsMockBase.outbound,
+          video: {
+            ...statisticsMockBase.outbound.video,
+            outboundRtp: {
+              ...statisticsMockBase.outbound.video.outboundRtp,
+              packetsSent: 106,
+              bytesSent: 19_000,
+              framesEncoded: undefined,
+            },
+            mediaSource: {
+              ...statisticsMockBase.outbound.video.mediaSource,
+              trackIdentifier: trackId,
+              frames: undefined,
+            },
+          },
+        },
+      } as unknown as typeof statisticsMockBase);
+
+      jest.advanceTimersByTime(500);
+
+      await expect(waitPromise).rejects.toThrow(
+        `Timed out waiting for outbound-rtp packets with video track ${trackId}`,
+      );
+
+      jest.useRealTimers();
+    });
+
+    describe('без начальной статистики', () => {
+      let managerWithoutStats: StatsManager;
+
+      beforeEach(() => {
+        const { callManager, apiManager } = createManagers();
+
+        managerWithoutStats = new StatsManager({ callManager, apiManager });
+      });
+
+      it('использует пустой baseline и резолвится после первого collected', async () => {
+        const waitPromise = managerWithoutStats.waitForOutboundVideoPackets(trackId, {
+          strictness: 'fast',
+        });
+
+        managerWithoutStats.statsPeerConnection.events.trigger(
+          'collected',
+          createStatsWithOutboundVideo({
+            trackIdentifier: trackId,
+            packetsSent: 1,
+          }),
+        );
+
+        await expect(waitPromise).resolves.toBeUndefined();
+      });
     });
 
     it('должен отклоняться по таймауту', async () => {
@@ -857,7 +1203,10 @@ describe('StatsManager', () => {
 
       manager.statsPeerConnection.events.trigger(
         'collected',
-        createStatsWithOutboundVideo({ trackIdentifier: 'old-track-id', packetsSent: 100 }),
+        createStatsWithOutboundVideo({
+          ...baselineStats,
+          trackIdentifier: 'another-track-id',
+        }),
       );
 
       jest.advanceTimersByTime(1000);
