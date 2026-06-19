@@ -62,9 +62,18 @@ typings/
 # Optional REPL history
 .node_repl_history
 
-# Test artifacts inside dist (not needed for consumers)
-dist/**/__tests-utils__
-dist/**/__test__
+# Non-library artifacts inside dist (not needed for consumers)
+dist/demo/**
+dist/e2e/**
+dist/__mocks__/**
+dist/**/__tests__/**
+dist/**/__tests-utils__/**
+dist/*/**/__fixtures__/**
+dist/eslint.config.d.ts
+dist/jest.config.d.ts
+dist/playwright.config.d.ts
+dist/vite.config.d.ts
+dist/vite.demo.config.d.ts
 dist/**/*.test.d.ts
 dist/**/*.test.js
 dist/**/*.test.cjs

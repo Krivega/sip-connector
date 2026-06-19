@@ -24,10 +24,23 @@ export default defineConfig(() => {
     plugins: [
       dts({
         entryRoot: 'src',
-        exclude: ['src/setupTests.ts', 'src/**/__tests__/**'],
+        exclude: [
+          'src/setupTests.ts',
+          'src/**/__tests__/**',
+          'src/**/__tests-utils__/**',
+          'src/**/__mocks__/**',
+          'src/*/**/__fixtures__/**',
+          'demo/**',
+          'e2e/**',
+          'eslint.config.ts',
+          'jest.config.ts',
+          'vite.config.ts',
+          'vite.demo.config.ts',
+        ],
       }),
     ],
     build: {
+      emptyOutDir: true,
       lib: {
         entry: [path.resolve('src', 'index.ts'), path.resolve('src', 'doMock.ts')],
         name: 'index',
