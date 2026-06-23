@@ -24,6 +24,7 @@ export const createManagers = () => {
     callManager,
   });
 
+  callManager.subscribeResetOnIdle();
   callManager.subscribeToApiEvents(apiManager);
 
   return {

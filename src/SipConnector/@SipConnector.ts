@@ -1,4 +1,4 @@
-import { C as JsSIP_C, IncomingResponse } from '@krivega/jssip';
+import { IncomingResponse, C as JsSIP_C } from '@krivega/jssip';
 import { EventEmitterProxy } from 'events-constructor';
 
 import { ApiManager } from '@/ApiManager';
@@ -35,7 +35,7 @@ import type { TContentHint, TOnAddedTransceiver } from '@/PresentationManager';
 import type { TOutboundVideoVerificationStrictness } from '@/StatsManager';
 import type { TJsSIP } from '@/types';
 import type { IBalancerOptions } from '@/VideoSendingBalancer';
-import type { TEventName, TEventMap } from './events';
+import type { TEventMap, TEventName } from './events';
 
 const debug = resolveDebug('SipConnector');
 
@@ -158,6 +158,10 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       autoConnectorManager: this.autoConnectorManager,
       callReconnectManager: this.callReconnectManager,
     });
+
+    // Сброс при завершении звонка подписываем ПОСЛЕ SessionManager, чтобы при
+    // переходе машины в IDLE системный статус обновился раньше сброса роли
+    this.callManager.subscribeResetOnIdle();
 
     this.callManager.subscribeToApiEvents(this.apiManager);
     this.contentedStreamManager.subscribeToApiEvents(this.apiManager);

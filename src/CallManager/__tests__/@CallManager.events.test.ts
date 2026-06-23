@@ -30,6 +30,8 @@ describe('CallManager events', () => {
       },
       { callSessionState: new CallSessionState() },
     );
+    callManager.subscribeResetOnIdle();
+
     getSipServerUrl = (number) => {
       return `sip:${number}@sipServerUrl`;
     };
