@@ -82,12 +82,12 @@
     "ts-debounce": "^5.0.1",
     "ua-parser-js": "^2.0.10",
     "webrtc-mock": "^1.2.2",
-    "xstate": "^5.32.1"
+    "xstate": "^5.32.2"
   },
   "devDependencies": {
-    "@babel/preset-typescript": "^7.29.7",
-    "@commitlint/cli": "^21.0.2",
-    "@commitlint/config-conventional": "^21.0.2",
+    "@babel/preset-typescript": "^8.0.1",
+    "@commitlint/cli": "^21.1.0",
+    "@commitlint/config-conventional": "^21.1.0",
     "@eslint/compat": "^2.1.0",
     "@krivega/eslint-config": "^1.1.23",
     "@playwright/test": "^1.61.0",
@@ -95,7 +95,7 @@
     "@types/dom-mediacapture-transform": "^0.1.11",
     "@types/jest": "^30.0.0",
     "@types/lodash": "^4.17.24",
-    "@types/node": "^25.9.3",
+    "@types/node": "^26.0.0",
     "cross-env": "^10.1.0",
     "http-server": "^14.1.1",
     "husky": "^9.1.7",
@@ -103,14 +103,14 @@
     "jest-environment-jsdom": "^30.4.1",
     "jest-extended": "^7.0.0",
     "jest-junit": "^17.0.0",
-    "lint-staged": "^17.0.7",
+    "lint-staged": "^17.0.8",
     "prettier": "^3.8.4",
     "standard-version": "^9.5.0",
     "ts-jest": "^29.4.11",
     "ts-node": "^10.9.2",
     "tsc-files": "^1.1.4",
     "typescript": "^6.0.3",
-    "vite": "^8.0.16",
+    "vite": "^8.1.0",
     "vite-plugin-dts": "^5.0.2",
     "webrtc-adapter": "^9.0.6"
   },
@@ -127,7 +127,7 @@
     "ts-debounce": "^5.0.1",
     "ua-parser-js": "^2.0.9",
     "webrtc-mock": "^1.2.2",
-    "xstate": "^5.32.1"
+    "xstate": "^5.32.2"
   },
   "packageManager": "yarn@1.22.22"
 }
