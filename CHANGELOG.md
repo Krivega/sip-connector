@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [28.12.1](https://github.com/Krivega/sip-connector/compare/v28.12.0...v28.12.1) (2026-06-24)
+
+### Bug Fixes
+
+- reset call session role after system status update on call end ([#79](https://github.com/Krivega/sip-connector/issues/79)) ([91ccabc](https://github.com/Krivega/sip-connector/commit/91ccabc740708e325a6fe79fbe31f31291aaa3e4))
+
 ## [28.12.0](https://github.com/Krivega/sip-connector/compare/v28.11.1...v28.12.0) (2026-06-19)
 
 ### Features
