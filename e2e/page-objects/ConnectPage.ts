@@ -350,15 +350,14 @@ export class ConnectPage {
         | {
             sipConnectorFacade?: {
               sipConnector?: {
-                callSessionState?: { getSnapshot: () => unknown };
+                sessionManager?: { getSnapshot: () => { callSessionState?: unknown } };
               };
             };
           }
         | undefined;
 
-      return demoApp?.sipConnectorFacade?.sipConnector?.callSessionState?.getSnapshot() as
-        | TCallSessionSnapshot
-        | undefined;
+      return demoApp?.sipConnectorFacade?.sipConnector?.sessionManager?.getSnapshot()
+        .callSessionState as TCallSessionSnapshot | undefined;
     });
   }
 

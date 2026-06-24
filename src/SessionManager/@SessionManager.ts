@@ -33,7 +33,7 @@ const defaultSnapshotEquals: TEqualityFunction<TSessionSnapshot> = (previous, ne
     // CallReconnect: full snapshot so attempt/delay context updates без смены `value` тоже эмитят событие
     isEqual(previous.callReconnect, next.callReconnect) &&
     // CallSession: full snapshot — смена роли должна эмитить snapshot-changed
-    isEqual(previous.callSession, next.callSession)
+    isEqual(previous.callSessionState, next.callSessionState)
   );
 };
 
@@ -60,7 +60,7 @@ const collectSnapshot = (
     presentation: machines.presentation.getSnapshot(),
     autoConnector: machines.autoConnector.getSnapshot(),
     callReconnect: machines.callReconnect.getSnapshot(),
-    callSession: callSessionState.getSnapshot(),
+    callSessionState: callSessionState.getSnapshot(),
   };
 };
 

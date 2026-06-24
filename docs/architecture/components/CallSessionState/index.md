@@ -1,10 +1,10 @@
 # CallSessionState (read-model роли звонка)
 
-`CallSessionState` — отдельный компонент уровня `SipConnector`, отвечающий за агрегированный снимок роли звонка и связанных derived-флагов.
+`CallSessionState` — внутренний компонент уровня `SipConnector`, отвечающий за агрегированный снимок роли звонка и связанных derived-флагов.
 
 ## Назначение
 
-- Единый источник role-состояния для клиентов.
+- Единый read-model источник role-состояния для `SessionManager`.
 - Дедупликация изменений snapshot перед уведомлением подписчиков.
 - Синхронизация `license` из API-события `use-license`.
 
@@ -39,13 +39,13 @@
 
 ## Клиентская интеграция
 
-Рекомендуемый доступ — через `sipConnector.callSessionState`.
+Прямой доступ к `sipConnector.callSessionState` закрыт: две независимые подписки «роль» и «статус звонка» рассинхронизируются. Используйте агрегирующий менеджер состояний `sessionManager`.
 
 ```typescript
-const snapshot = sipConnector.callSessionState.getSnapshot();
+const snapshot = sipConnector.sessionManager.getSnapshot();
 
-const unsubscribe = sipConnector.callSessionState.subscribe((next) => {
-  console.log(next.role.type, next.license);
+const unsubscribe = sipConnector.sessionManager.subscribe((next) => {
+  syncRole(next.callSessionState.role.type, next.callSessionState.license);
 });
 
 unsubscribe();

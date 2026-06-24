@@ -155,9 +155,9 @@ class Statuses {
 
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   private getCallSessionSnapshot(): TCallSessionSnapshot {
-    const { sipConnector } = sipConnectorFacade;
+    const { sessionManager } = sipConnectorFacade.sipConnector;
 
-    return sipConnector.callSessionState.getSnapshot();
+    return sessionManager.getSnapshot().callSessionState;
   }
 
   private unsubscribe() {
@@ -179,7 +179,9 @@ class Statuses {
       sipConnectorFacade.sipConnector.sessionManager.subscribe(onSessionSnapshot),
     );
     this.unsubsribers.add(
-      sipConnectorFacade.sipConnector.callSessionState.subscribe(onCallSessionSnapshot),
+      sipConnectorFacade.sipConnector.sessionManager.subscribe((sessionSnapshot) => {
+        return sessionSnapshot.callSessionState;
+      }, onCallSessionSnapshot),
     );
   }
 }

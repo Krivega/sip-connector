@@ -1,38 +1,45 @@
-# Единая синхронизация состояния звонка через CallSessionState
+# Синхронизация роли звонка через SessionManager
 
-`CallSessionState` — это отдельный агрегированный read-model модуль (уровень `src/CallSessionState`), который:
+Роль звонка читается из единого снапшота `sipConnector.sessionManager`.
 
-- хранит текущую роль (`role`);
-- вычисляет производные role-флаги для UI (`derived`);
-- синхронизирует `license` из `api:use-license`.
+Внутри `TSessionSnapshot` поле `callSessionState` содержит:
 
-В `SipConnector` этот модуль создается отдельно и передается в `CallManager` через DI.  
-Для клиентов публичная точка доступа — `sipConnector.callSessionState`.
+- текущую роль (`role`);
+- производные role-флаги для UI (`derived`);
+- `license` из события `api:use-license`.
+
+Не подписывайтесь на роль отдельно от статуса звонка. Для клиентской логики используйте один снапшот `sessionManager`: так роль и `call`-статус согласованы в рамках одной реакции.
 
 ## Когда применять
 
-Используйте `CallSessionState`, если клиент сейчас:
+Используйте этот подход, если клиент:
 
 - вручную отслеживает изменения роли;
-- получает лишние ререндеры из-за рассинхронизации событий.
+- одновременно зависит от роли и жизненного цикла звонка;
+- получает ложные реакции из-за независимых подписок на разные источники.
 
 ## Базовый пример
 
 ```typescript
-// Текущий агрегированный снимок
-const snapshot = sipConnector.callSessionState.getSnapshot();
+const snapshot = sipConnector.sessionManager.getSnapshot();
+const { role, derived, license } = snapshot.callSessionState;
 
-console.log(snapshot.role.type); // participant | spectator | spectator_synthetic
-console.log(snapshot.derived.isSpectatorAny);
-console.log(snapshot.license); // AUDIO | VIDEO | AUDIOPLUSPRESENTATION | undefined
+renderCallRole({
+  role: role.type, // participant | spectator | spectator_synthetic
+  isSpectator: derived.isSpectatorAny,
+  license, // AUDIO | VIDEO | AUDIOPLUSPRESENTATION | undefined
+});
 ```
 
-## Подписка на весь snapshot
+## Подписка на role snapshot
 
 ```typescript
-const unsubscribe = sipConnector.callSessionState.subscribe((snapshot) => {
-  callSessionStore.syncFromCallSessionSnapshot(snapshot);
-});
+const unsubscribe = sipConnector.sessionManager.subscribe(
+  (snapshot) => snapshot.callSessionState,
+  (callSessionState) => {
+    callSessionStore.syncFromCallSessionSnapshot(callSessionState);
+  },
+);
 
 // ... позже
 unsubscribe();
@@ -42,43 +49,25 @@ unsubscribe();
 
 ```typescript
 // statusesRoot/Model.ts
-syncFromCallSessionSnapshot(snapshot: TCallSessionSnapshot) {
-  applySnapshot(self.callSession, createCallSessionStatusSnapshot(snapshot));
+syncFromSessionSnapshot(snapshot: TSessionSnapshot) {
+  applySnapshot(self.callSession, createCallSessionStatusSnapshot(snapshot.callSessionState));
 }
 ```
 
-Такой путь позволяет обновлять отдельную role-модель напрямую из `CallSessionState`, не затрагивая ветку `call` из `SessionSnapshot`.
+Такой путь обновляет role-модель из общего `SessionSnapshot` и оставляет доступ к соседним веткам (`call`, `connection`, `callReconnect`) в той же реакции.
 
 ## Что синхронизируется
 
-`CallSessionState` формирует snapshot из двух источников:
+Ветка `callSessionState` формируется из двух источников:
 
 - `RoleManager` (`role`, `derived`);
 - `ApiManager` событие `use-license` (`license`).
 
-События с семантически неизменным snapshot (тот же role branch и `audioId`, та же `license`) дедуплицируются и не эмитятся повторно.
-
-## Диагностика и feedback loop
-
-Для контроля качества подписок используйте:
-
-```typescript
-const diagnostics = sipConnector.callSessionState.getDiagnostics();
-
-console.log(diagnostics.emitsTotal);
-console.log(diagnostics.dedupedTotal);
-console.log(diagnostics.subscribersCount);
-```
-
-Рекомендации:
-
-1. Если `emitsTotal` растет быстрее ожидаемого UI-апдейта — проверьте дублирующиеся подписки.
-2. Если `dedupedTotal` стабильно низкий — проверьте, не происходят ли лишние доменные изменения.
-3. Периодически собирайте обратную связь от потребителей (`UI`, интеграции): стало ли проще поддерживать статусную синхронизацию.
+Семантически неизменные обновления роли дедуплицируются внутри read-model, а клиент получает уже агрегированный снапшот через `sessionManager`.
 
 ## Миграция с ручной синхронизации
 
-1. Оставьте текущие API чтения жизненного цикла звонка (`SessionManager`/`CallStateMachine`) без удаления.
-2. Добавьте `sipConnector.callSessionState.subscribe(...)` в клиент и запитайте новый store-слой.
-3. Переведите UI на чтение `snapshot.role`/`snapshot.derived` из одного обработчика подписки.
-4. Удалите legacy-подписки на старые источники только после стабилизации метрик и тестов.
+1. Найдите места, где роль и статус звонка читаются из независимых подписок.
+2. Замените их одной подпиской на `sipConnector.sessionManager`.
+3. Переведите UI на чтение `snapshot.callSessionState.role` и `snapshot.callSessionState.derived`.
+4. Для условий, завязанных на активный звонок, используйте `sessionSelectors.selectIsInCall(snapshot)`.

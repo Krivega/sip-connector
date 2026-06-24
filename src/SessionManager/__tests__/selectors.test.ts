@@ -65,9 +65,9 @@ describe('sessionSelectors', () => {
         },
         ...overrides.callReconnect,
       },
-      callSession: {
+      callSessionState: {
         ...new CallSessionState().getSnapshot(),
-        ...overrides.callSession,
+        ...overrides.callSessionState,
       },
       ...overrides,
     };

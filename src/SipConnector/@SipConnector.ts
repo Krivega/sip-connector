@@ -48,8 +48,6 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
 
   public readonly callManager: CallManager;
 
-  public readonly callSessionState: CallSessionState;
-
   public readonly autoConnectorManager: AutoConnectorManager;
 
   public readonly callReconnectManager: CallReconnectManager;
@@ -67,6 +65,8 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
   public readonly sessionManager: SessionManager;
 
   public readonly mainStreamHealthMonitor: MainStreamHealthMonitor;
+
+  private readonly callSessionState: CallSessionState;
 
   private readonly peerToPeerManager: PeerToPeerManager;
 

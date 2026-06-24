@@ -1,9 +1,11 @@
 import { doMockSipConnector } from '@/doMock';
-import { ESystemStatus, sessionSelectors } from '@/SessionManager';
+import { sessionSelectors } from '@/SessionManager';
+
+import type { TSessionSnapshot } from '@/SessionManager';
 
 type TSipConnector = ReturnType<typeof doMockSipConnector>;
 
-const enterActiveRoomAsSpectator = (sipConnector: ReturnType<typeof doMockSipConnector>) => {
+const enterActiveRoomAsSpectator = (sipConnector: TSipConnector) => {
   sipConnector.callManager.events.trigger('start-call', { number: '100', answer: false });
   sipConnector.apiManager.events.trigger('enter-room', {
     room: 'room-1',
@@ -14,49 +16,41 @@ const enterActiveRoomAsSpectator = (sipConnector: ReturnType<typeof doMockSipCon
     conference: 'room-1',
     participant: 'participant-1',
   });
-
-  sipConnector.callSessionState.setCallRoleSpectatorSynthetic();
+  sipConnector.apiManager.events.trigger('participant:move-request-to-spectators-synthetic', {
+    isAvailableSendingMedia: true,
+  });
 };
 
-const hasSpectatorRole = (roleType: string) => {
-  return roleType === 'spectator' || roleType === 'spectator_synthetic';
+type TCallSessionStateRole = TSessionSnapshot['callSessionState']['role'];
+
+const hasSpectatorRole = (role: TCallSessionStateRole): boolean => {
+  return role.type === 'spectator' || role.type === 'spectator_synthetic';
+};
+
+const hasParticipantRole = (role: TCallSessionStateRole): boolean => {
+  return role.type === 'participant';
 };
 
 const installMovedToParticipantNotificationReaction = (
   sipConnector: TSipConnector,
   showMovedToParticipantNotification: jest.Mock,
 ) => {
-  let isCallActive =
-    sessionSelectors.selectSystemStatus(sipConnector.sessionManager.getSnapshot()) ===
-    ESystemStatus.CALL_ACTIVE;
-  let previousRoleType = sipConnector.callSessionState.getSnapshot().role.type;
+  let previousSnapshot = sipConnector.sessionManager.getSnapshot();
 
-  sipConnector.sessionManager.subscribe(sessionSelectors.selectSystemStatus, (systemStatus) => {
-    console.log(
-      '🚀 temp  ~ roleResetOrderOnCallEnd.test.ts:37 ~ installMovedToParticipantNotificationReaction ~ systemStatus === ESystemStatus.CALL_ACTIVE:',
-      systemStatus === ESystemStatus.CALL_ACTIVE,
-    );
-    isCallActive = systemStatus === ESystemStatus.CALL_ACTIVE;
-  });
+  sipConnector.sessionManager.subscribe((snapshot) => {
+    const wasSpectator = hasSpectatorRole(previousSnapshot.callSessionState.role);
+    const isBecameParticipant = hasParticipantRole(snapshot.callSessionState.role);
 
-  sipConnector.callSessionState.subscribe((snapshot) => {
-    const nextRoleType = snapshot.role.type;
-
-    console.log(
-      '🚀 temp  ~ roleResetOrderOnCallEnd.test.ts:41 ~ installMovedToParticipantNotificationReaction ~ nextRoleType:',
-      { isCallActive, nextRoleType },
-    );
-
-    if (isCallActive && hasSpectatorRole(previousRoleType) && nextRoleType === 'participant') {
+    if (sessionSelectors.selectIsInCall(snapshot) && wasSpectator && isBecameParticipant) {
       showMovedToParticipantNotification();
     }
 
-    previousRoleType = nextRoleType;
+    previousSnapshot = snapshot;
   });
 };
 
 describe('Уведомление о переводе зрителя в участники', () => {
-  let sipConnector: ReturnType<typeof doMockSipConnector>;
+  let sipConnector: TSipConnector;
   let showMovedToParticipantNotification: jest.Mock;
 
   beforeEach(() => {
@@ -64,22 +58,18 @@ describe('Уведомление о переводе зрителя в учас�
     showMovedToParticipantNotification = jest.fn();
   });
 
-  // it('показывается, когда роль меняется со зрителя на участника во время активного звонка', () => {
-  //   enterActiveRoomAsSpectator(sipConnector);
-
-  //   installMovedToParticipantNotificationReaction(sipConnector, showMovedToParticipantNotification);
-
-  //   sipConnector.callSessionState.setCallRoleParticipant();
-
-  //   expect(showMovedToParticipantNotification).toHaveBeenCalledTimes(1);
-  // });
-
-  it('не показывается, когда роль сбрасывается в участника после завершения звонка', () => {
+  it('показывается при повышении зрителя во время звонка, но не при сбросе роли после завершения', () => {
     enterActiveRoomAsSpectator(sipConnector);
 
     installMovedToParticipantNotificationReaction(sipConnector, showMovedToParticipantNotification);
 
-    console.log('🚀 temp  ~ roleResetOrderOnCallEnd.test.ts:84 ~ ended:');
+    sipConnector.apiManager.events.trigger('participant:move-request-to-participants');
+    expect(showMovedToParticipantNotification).toHaveBeenCalledTimes(1);
+
+    sipConnector.apiManager.events.trigger('participant:move-request-to-spectators-synthetic', {
+      isAvailableSendingMedia: true,
+    });
+
     sipConnector.callManager.events.trigger('ended', {
       originator: 'remote',
       // @ts-expect-error
@@ -87,7 +77,9 @@ describe('Уведомление о переводе зрителя в учас�
       cause: 'bye',
     });
 
-    expect(sipConnector.callSessionState.getSnapshot().role.type).toBe('participant');
-    expect(showMovedToParticipantNotification).not.toHaveBeenCalled();
+    expect(sipConnector.sessionManager.getSnapshot().callSessionState.role.type).toBe(
+      'participant',
+    );
+    expect(showMovedToParticipantNotification).toHaveBeenCalledTimes(1);
   });
 });

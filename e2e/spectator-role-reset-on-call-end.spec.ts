@@ -8,18 +8,27 @@ const NOTIFICATION_CALLS_GLOBAL_KEY = '__e2eMovedToParticipantNotificationCalls'
 
 type TNotificationCall = { text: string };
 
+type TSessionSnapshot = {
+  call: { value: string };
+  callSessionState: { role: { type: string } };
+};
+
 type TInstrumentedSipConnector = {
   sessionManager: {
-    getSnapshot: () => { call: { value: string } };
-    subscribe: (listener: (snapshot: { call: { value: string } }) => void) => unknown;
-  };
-  callSessionState: {
-    getSnapshot: () => { role: { type: string } };
-    subscribe: (listener: (snapshot: { role: { type: string } }) => void) => unknown;
+    getSnapshot: () => TSessionSnapshot;
+    subscribe: (listener: (snapshot: TSessionSnapshot) => void) => unknown;
   };
 };
 
 type TDemoApp = { sipConnectorFacade?: { sipConnector?: TInstrumentedSipConnector } };
+
+const hasSpectatorRole = (roleType: string) => {
+  return roleType === 'spectator' || roleType === 'spectator_synthetic';
+};
+
+const hasParticipantRole = (roleType: string) => {
+  return roleType === 'participant';
+};
 
 test.describe('завершение звонка в роли зрителя', () => {
   test.describe.configure({ mode: 'serial' });
@@ -65,33 +74,19 @@ test.describe('завершение звонка в роли зрителя', ()
         ]);
 
         const notificationCalls: TNotificationCall[] = [];
-        let isCallActive = activeCallStates.has(
-          sipConnector.sessionManager.getSnapshot().call.value,
-        );
-        let previousRoleType = sipConnector.callSessionState.getSnapshot().role.type;
-
-        const hasSpectatorRole = (roleType: string) => {
-          return roleType === 'spectator' || roleType === 'spectator_synthetic';
-        };
+        let previousSnapshot = sipConnector.sessionManager.getSnapshot();
 
         sipConnector.sessionManager.subscribe((snapshot) => {
-          isCallActive = activeCallStates.has(snapshot.call.value);
-        });
+          const wasSpectator = hasSpectatorRole(previousSnapshot.callSessionState.role.type);
+          const isBecameParticipant = hasParticipantRole(snapshot.callSessionState.role.type);
 
-        sipConnector.callSessionState.subscribe((snapshot) => {
-          const nextRoleType = snapshot.role.type;
-
-          if (
-            isCallActive &&
-            hasSpectatorRole(previousRoleType) &&
-            nextRoleType === 'participant'
-          ) {
+          if (activeCallStates.has(snapshot.call.value) && wasSpectator && isBecameParticipant) {
             notificationCalls.push({
               text: 'Вы переведены в участники, теперь можно использовать камеру и микрофон',
             });
           }
 
-          previousRoleType = nextRoleType;
+          previousSnapshot = snapshot;
         });
 
         Reflect.set(window, notificationCallsKey, notificationCalls);
