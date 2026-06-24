@@ -157,11 +157,8 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       presentationManager: this.presentationManager,
       autoConnectorManager: this.autoConnectorManager,
       callReconnectManager: this.callReconnectManager,
+      callSessionState: this.callSessionState,
     });
-
-    // Сброс при завершении звонка подписываем ПОСЛЕ SessionManager, чтобы при
-    // переходе машины в IDLE системный статус обновился раньше сброса роли
-    this.callManager.subscribeResetOnIdle();
 
     this.callManager.subscribeToApiEvents(this.apiManager);
     this.contentedStreamManager.subscribeToApiEvents(this.apiManager);

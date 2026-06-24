@@ -1,6 +1,7 @@
 import { getSnapshot } from 'mobx-state-tree';
 
 import {
+  CallSessionState,
   ConnectionStateMachine,
   createConnectionEvents,
   EContentUseLicense,
@@ -115,6 +116,7 @@ const startSession = () => {
     presentationManager: { stateMachine: presentationStateMachine },
     autoConnectorManager: { stateMachine: autoConnectorStateMachine },
     callReconnectManager: { stateMachine: callReconnectStateMachine },
+    callSessionState: new CallSessionState(),
   });
 
   const stopAll = () => {

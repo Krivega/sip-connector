@@ -1,6 +1,7 @@
 import { EAutoConnectorStatus } from '@/AutoConnectorManager';
 import { ECallStatus } from '@/CallManager';
 import { ECallReconnectStatus } from '@/CallReconnectManager';
+import { CallSessionState } from '@/CallSessionState';
 import { EConnectionStatus } from '@/ConnectionManager';
 import { EIncomingStatus } from '@/IncomingCallManager';
 import { EPresentationStatus } from '@/PresentationManager';
@@ -63,6 +64,10 @@ describe('sessionSelectors', () => {
           cancelledReason: undefined,
         },
         ...overrides.callReconnect,
+      },
+      callSession: {
+        ...new CallSessionState().getSnapshot(),
+        ...overrides.callSession,
       },
       ...overrides,
     };

@@ -167,6 +167,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
       },
     });
 
+    this.subscribeCallEndedStateMachine();
     this.subscribeCallStatusChange();
     this.subscribeMcuRemoteTrackEvents();
     this.subscribeContentedStreamEvents();
@@ -230,23 +231,6 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   public subscribeToApiEvents(apiManager: ApiManager): void {
     this.stateMachine.subscribeToApiEvents(apiManager.events);
     this.sessionState.subscribeToApiEvents(apiManager.events);
-  }
-
-  /**
-   * Подписка на сброс при завершении звонка — по доменному СОСТОЯНИЮ машины (IDLE),
-   * а не по сырым событиям ended/failed. Так сброс срабатывает на любом пути в IDLE
-   * (устойчивость к новым причинам завершения).
-   *
-   * Важно: подписку нужно регистрировать ПОСЛЕ того, как на ту же машину подпишется
-   * SessionManager — тогда системный статус обновится раньше, чем сбросится роль.
-   * Поэтому вызывается извне (из SipConnector / createManagers), а не в конструкторе.
-   */
-  public subscribeResetOnIdle(): void {
-    this.stateMachine.subscribe((snapshot) => {
-      if (snapshot.value === ECallStatus.IDLE) {
-        this.reset();
-      }
-    });
   }
 
   public startCall: TStartCall = async (ua, getUri, params) => {
@@ -479,6 +463,14 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     this.mcuSession.reset();
     this.roleManager.reset();
   };
+
+  private subscribeCallEndedStateMachine() {
+    this.stateMachine.onStateChange((state) => {
+      if (state === ECallStatus.IDLE) {
+        this.reset();
+      }
+    });
+  }
 
   private subscribeCallStatusChange() {
     const onStatusChanged = this.createCallStatusChangeListener();

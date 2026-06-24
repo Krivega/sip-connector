@@ -1,6 +1,6 @@
-import { ECallStatus, ESystemStatus, EConnectionStatus, EAutoConnectorStatus } from './types';
+import { EAutoConnectorStatus, ECallStatus, EConnectionStatus, ESystemStatus } from './types';
 
-import type { EPresentationStatus, TSessionSnapshot, EIncomingStatus } from './types';
+import type { EIncomingStatus, EPresentationStatus, TSessionSnapshot } from './types';
 
 const selectConnectionStatus = (snapshot: TSessionSnapshot): EConnectionStatus => {
   return snapshot.connection.value;
@@ -118,6 +118,41 @@ const selectSystemStatus = (snapshot: TSessionSnapshot): ESystemStatus => {
   }
 };
 
+const selectCallSession = (snapshot: TSessionSnapshot): TSessionSnapshot['callSession'] => {
+  return snapshot.callSession;
+};
+
+const selectCallSessionRole = (
+  snapshot: TSessionSnapshot,
+): TSessionSnapshot['callSession']['role'] => {
+  return snapshot.callSession.role;
+};
+
+const hasSpectatorRole = (role: TSessionSnapshot['callSession']['role']): boolean => {
+  return role.type === 'spectator' || role.type === 'spectator_synthetic';
+};
+
+const hasParticipantRole = (role: TSessionSnapshot['callSession']['role']): boolean => {
+  return role.type === 'participant';
+};
+
+/**
+ * Истинно, если зритель повышен до участника ВО ВРЕМЯ активного звонка
+ * (а не в результате сброса роли при завершении). Оба поля берутся из ОДНОГО
+ * снапшота, поэтому корреляция «звонок активен + смена роли» консистентна и не
+ * зависит от порядка подписок: при завершении звонка next уже не isInCall.
+ */
+const hasSpectatorPromotedToParticipantDuringCall = (
+  previous: TSessionSnapshot,
+  next: TSessionSnapshot,
+): boolean => {
+  return (
+    selectIsInCall(next) &&
+    hasSpectatorRole(previous.callSession.role) &&
+    hasParticipantRole(next.callSession.role)
+  );
+};
+
 export const sessionSelectors = {
   selectConnectionStatus,
   selectAutoConnectorStatus,
@@ -127,4 +162,7 @@ export const sessionSelectors = {
   selectPresentationStatus,
   selectIsInCall,
   selectSystemStatus,
+  selectCallSession,
+  selectCallSessionRole,
+  hasSpectatorPromotedToParticipantDuringCall,
 };

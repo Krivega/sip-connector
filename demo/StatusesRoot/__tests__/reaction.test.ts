@@ -1,6 +1,7 @@
 import { reaction } from 'mobx';
 
 import {
+  CallSessionState,
   createConnectionEvents,
   ConnectionStateMachine,
   createIncomingEvents,
@@ -102,6 +103,7 @@ const startSession = () => {
     presentationManager: { stateMachine: presentationStateMachine },
     autoConnectorManager: { stateMachine: autoConnectorStateMachine },
     callReconnectManager: { stateMachine: callReconnectStateMachine },
+    callSessionState: new CallSessionState(),
   });
 
   const stopAll = () => {
