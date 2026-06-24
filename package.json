@@ -90,7 +90,7 @@
     "@commitlint/config-conventional": "^21.1.0",
     "@eslint/compat": "^2.1.0",
     "@krivega/eslint-config": "^1.1.23",
-    "@playwright/test": "^1.61.0",
+    "@playwright/test": "^1.61.1",
     "@types/debug": "^4.1.13",
     "@types/dom-mediacapture-transform": "^0.1.11",
     "@types/jest": "^30.0.0",
@@ -111,7 +111,7 @@
     "tsc-files": "^1.1.4",
     "typescript": "^6.0.3",
     "vite": "^8.1.0",
-    "vite-plugin-dts": "^5.0.2",
+    "vite-plugin-dts": "^5.0.3",
     "webrtc-adapter": "^9.0.6"
   },
   "peerDependencies": {
