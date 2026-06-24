@@ -7,8 +7,8 @@ import { INITIAL_STATUSES_ROOT_SNAPSHOT, StatusesRootModel } from './StatusesRoo
 import type { TCallSessionSnapshot, TSessionSnapshot } from '@/index';
 import type {
   TStatusesByDomain,
-  TStatusesRootSnapshotOut,
   TStatusesRootSnapshot,
+  TStatusesRootSnapshotOut,
 } from './StatusesRoot';
 
 export type TCallReconnectIndicatorState = {
@@ -176,12 +176,10 @@ class Statuses {
     onCallSessionSnapshot(this.getCallSessionSnapshot());
 
     this.unsubsribers.add(
-      sipConnectorFacade.sipConnector.sessionManager.subscribe(onSessionSnapshot),
-    );
-    this.unsubsribers.add(
       sipConnectorFacade.sipConnector.sessionManager.subscribe((sessionSnapshot) => {
-        return sessionSnapshot.callSessionState;
-      }, onCallSessionSnapshot),
+        onSessionSnapshot(sessionSnapshot);
+        onCallSessionSnapshot(sessionSnapshot.callSessionState);
+      }),
     );
   }
 }
