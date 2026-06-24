@@ -1008,31 +1008,31 @@ describe('SipConnector', () => {
   });
 
   describe('subscribeChangeRole', () => {
-    it('должен вызывать setCallRoleParticipant при событии participant:move-request-to-participants', () => {
-      const setCallRoleParticipantSpy = jest.spyOn(
-        sipConnector.callSessionState,
-        'setCallRoleParticipant',
-      );
+    it('должен устанавливать роль participant при событии participant:move-request-to-participants', () => {
+      sipConnector.apiManager.events.trigger('participant:move-request-to-spectators-synthetic', {
+        isAvailableSendingMedia: true,
+      });
 
       // Тригерим событие на уровне ApiManager
       sipConnector.apiManager.events.trigger('participant:move-request-to-participants');
 
-      expect(setCallRoleParticipantSpy).toHaveBeenCalledTimes(1);
+      expect(sipConnector.sessionManager.getSnapshot().callSessionState.role).toEqual({
+        type: 'participant',
+      });
     });
 
-    it('должен вызывать setCallRoleSpectatorSynthetic при событии participant:move-request-to-spectators', () => {
-      const setCallRoleSpectatorSpy = jest.spyOn(
-        sipConnector.callSessionState,
-        'setCallRoleSpectatorSynthetic',
-      );
-
+    it('должен устанавливать роль spectator_synthetic при событии participant:move-request-to-spectators', () => {
       // Тригерим событие на уровне ApiManager
       sipConnector.apiManager.events.trigger('participant:move-request-to-spectators-synthetic', {
         isAvailableSendingMedia: true,
       });
 
-      expect(setCallRoleSpectatorSpy).toHaveBeenCalledTimes(1);
-      expect(setCallRoleSpectatorSpy).toHaveBeenCalledWith(true);
+      expect(sipConnector.sessionManager.getSnapshot().callSessionState.role).toEqual({
+        type: 'spectator_synthetic',
+      });
+      expect(
+        sipConnector.sessionManager.getSnapshot().callSessionState.derived.isAvailableSendingMedia,
+      ).toBe(true);
     });
 
     it('должен вызывать stopPresentation при событии participant:move-request-to-spectators-synthetic для активной презентации', async () => {
@@ -1056,11 +1056,7 @@ describe('SipConnector', () => {
       expect(stopPresentationSpy).toHaveBeenCalledWith();
     });
 
-    it('должен вызывать setCallRoleSpectator с audioId при событии participant:move-request-to-spectators-with-audio-id', () => {
-      const setCallRoleSpectatorSpy = jest.spyOn(
-        sipConnector.callSessionState,
-        'setCallRoleSpectator',
-      );
+    it('должен устанавливать роль spectator с audioId при событии participant:move-request-to-spectators-with-audio-id', () => {
       const audioId = 'test-audio-id';
 
       // Тригерим событие на уровне ApiManager
@@ -1072,8 +1068,13 @@ describe('SipConnector', () => {
         },
       );
 
-      expect(setCallRoleSpectatorSpy).toHaveBeenCalledTimes(1);
-      expect(setCallRoleSpectatorSpy).toHaveBeenCalledWith({ audioId }, true);
+      expect(sipConnector.sessionManager.getSnapshot().callSessionState.role).toEqual({
+        type: 'spectator',
+        recvParams: { audioId },
+      });
+      expect(
+        sipConnector.sessionManager.getSnapshot().callSessionState.derived.isAvailableSendingMedia,
+      ).toBe(true);
     });
 
     it('должен вызывать stopPresentation при событии participant:move-request-to-spectators-with-audio-id для активной презентации', async () => {
@@ -1167,13 +1168,13 @@ describe('SipConnector', () => {
     });
 
     it('должен корректно обрабатывать множественные вызовы события participant:move-request-to-spectators-with-audio-id с разными audioId', () => {
-      const setCallRoleSpectatorSpy = jest.spyOn(
-        sipConnector.callSessionState,
-        'setCallRoleSpectator',
-      );
       const firstAudioId = 'test-audio-id-1';
       const secondAudioId = 'test-audio-id-2';
       const thirdAudioId = 'test-audio-id-3';
+
+      const roleChangeListener = jest.fn();
+
+      sipConnector.sessionManager.subscribe(roleChangeListener);
 
       // Первый вызов события
       sipConnector.apiManager.events.trigger(
@@ -1184,8 +1185,11 @@ describe('SipConnector', () => {
         },
       );
 
-      expect(setCallRoleSpectatorSpy).toHaveBeenCalledTimes(1);
-      expect(setCallRoleSpectatorSpy).toHaveBeenNthCalledWith(1, { audioId: firstAudioId }, true);
+      expect(sipConnector.sessionManager.getSnapshot().callSessionState.role).toEqual({
+        type: 'spectator',
+        recvParams: { audioId: firstAudioId },
+      });
+      expect(roleChangeListener).toHaveBeenCalledTimes(1);
 
       // Второй вызов события с другим audioId
       sipConnector.apiManager.events.trigger(
@@ -1196,8 +1200,11 @@ describe('SipConnector', () => {
         },
       );
 
-      expect(setCallRoleSpectatorSpy).toHaveBeenCalledTimes(2);
-      expect(setCallRoleSpectatorSpy).toHaveBeenNthCalledWith(2, { audioId: secondAudioId }, true);
+      expect(sipConnector.sessionManager.getSnapshot().callSessionState.role).toEqual({
+        type: 'spectator',
+        recvParams: { audioId: secondAudioId },
+      });
+      expect(roleChangeListener).toHaveBeenCalledTimes(2);
 
       // Третий вызов события с еще одним другим audioId
       sipConnector.apiManager.events.trigger(
@@ -1208,15 +1215,11 @@ describe('SipConnector', () => {
         },
       );
 
-      expect(setCallRoleSpectatorSpy).toHaveBeenCalledTimes(3);
-      expect(setCallRoleSpectatorSpy).toHaveBeenNthCalledWith(3, { audioId: thirdAudioId }, true);
-
-      // Проверяем, что все вызовы были с разными audioId
-      const allCalls = setCallRoleSpectatorSpy.mock.calls;
-
-      expect(allCalls[0][0].audioId).toBe(firstAudioId);
-      expect(allCalls[1][0].audioId).toBe(secondAudioId);
-      expect(allCalls[2][0].audioId).toBe(thirdAudioId);
+      expect(sipConnector.sessionManager.getSnapshot().callSessionState.role).toEqual({
+        type: 'spectator',
+        recvParams: { audioId: thirdAudioId },
+      });
+      expect(roleChangeListener).toHaveBeenCalledTimes(3);
     });
 
     it('должен безопасно обрабатывать stopPresentation, если презентация не запущена', async () => {

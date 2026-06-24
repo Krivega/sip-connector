@@ -63,7 +63,7 @@
 
 - `ConnectionManager` - SIP-соединения (включает ConnectionStateMachine)
 - `CallManager` - WebRTC-звонки (включает CallStateMachine, DeferredCommandRunner для отложенного старта RecvSession при гонке событий с сервером)
-- `CallSessionState` - read-model состояния роли/лицензии (`role`, `derived`, `license`), доступный как `sipConnector.callSessionState`
+- `CallSessionState` - внутренний read-model состояния роли/лицензии (`role`, `derived`, `license`); наружу роль отдаётся через единый снапшот `sipConnector.sessionManager`
 - `ApiManager` - серверное API
 - `PresentationManager` - презентации
 - `StatsManager` - статистика

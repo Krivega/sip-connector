@@ -9,6 +9,7 @@ import {
   IncomingCallStateMachine,
   EIncomingCallStateMachineEvents,
   ESystemStatus,
+  EContentUseLicense,
   PresentationStateMachine,
   SessionManager,
 } from '@/index';
@@ -20,6 +21,8 @@ var mockSessionManager: SessionManager;
 var mockCallSessionState = {
   getSnapshot: () => {
     return {
+      license: EContentUseLicense.VIDEO,
+      isDuplexSendingMediaMode: false,
       role: { type: 'participant' as const },
       derived: {
         isSpectatorAny: false,
@@ -136,6 +139,7 @@ const startSession = () => {
     presentationManager: { stateMachine: presentationStateMachine },
     autoConnectorManager: { stateMachine: autoConnectorStateMachine },
     callReconnectManager: { stateMachine: callReconnectStateMachine },
+    callSessionState: mockCallSessionState,
   });
 
   const stopAll = () => {

@@ -1,4 +1,4 @@
-import { C as JsSIP_C, IncomingResponse } from '@krivega/jssip';
+import { IncomingResponse, C as JsSIP_C } from '@krivega/jssip';
 import { EventEmitterProxy } from 'events-constructor';
 
 import { ApiManager } from '@/ApiManager';
@@ -35,7 +35,7 @@ import type { TContentHint, TOnAddedTransceiver } from '@/PresentationManager';
 import type { TOutboundVideoVerificationStrictness } from '@/StatsManager';
 import type { TJsSIP } from '@/types';
 import type { IBalancerOptions } from '@/VideoSendingBalancer';
-import type { TEventName, TEventMap } from './events';
+import type { TEventMap, TEventName } from './events';
 
 const debug = resolveDebug('SipConnector');
 
@@ -47,8 +47,6 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
   public readonly contentedStreamManager: ContentedStreamManager;
 
   public readonly callManager: CallManager;
-
-  public readonly callSessionState: CallSessionState;
 
   public readonly autoConnectorManager: AutoConnectorManager;
 
@@ -67,6 +65,8 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
   public readonly sessionManager: SessionManager;
 
   public readonly mainStreamHealthMonitor: MainStreamHealthMonitor;
+
+  private readonly callSessionState: CallSessionState;
 
   private readonly peerToPeerManager: PeerToPeerManager;
 
@@ -157,6 +157,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       presentationManager: this.presentationManager,
       autoConnectorManager: this.autoConnectorManager,
       callReconnectManager: this.callReconnectManager,
+      callSessionState: this.callSessionState,
     });
 
     this.callManager.subscribeToApiEvents(this.apiManager);

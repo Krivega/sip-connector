@@ -1,6 +1,6 @@
 # SessionManager (Агрегатор состояний сеанса)
 
-**Назначение**: Предоставляет единый интерфейс для работы с состоянием всех машин состояний (connection, call, incoming, presentation, autoConnector) через XState. Агрегирует снапшоты всех машин и предоставляет типобезопасные селекторы для подписки на изменения.
+**Назначение**: Предоставляет единый интерфейс для работы с состоянием сеанса. Агрегирует снапшоты шести машин состояний (connection, call, incoming, presentation, autoConnector, callReconnect) и read-model роли (`callSessionState`) в **один** снапшот `TSessionSnapshot` и предоставляет типобезопасные селекторы для подписки на изменения.
 
 ## Ключевые возможности
 
@@ -24,7 +24,7 @@
 
 Возвращает текущий агрегированный снапшот всех машин состояний.
 
-> Важно: объект снапшота обновляется при каждом событии из машин, но для подписки без селектора (`subscribe(listener)`) уведомления идут только при изменении `value` хотя бы одной машины. Изменения только в `context` без смены `value` по умолчанию не триггерят callback.
+> Важно: объект снапшота обновляется при каждом событии из источников, но для подписки без селектора (`subscribe(listener)`) уведомления идут по правилам `defaultSnapshotEquals`: `value` для `connection/incoming/presentation/autoConnector` и полный снапшот для `call/callReconnect/callSessionState`.
 
 ```typescript
 const snapshot = sessionManager.getSnapshot();
@@ -39,7 +39,7 @@ console.log(snapshot.autoConnector.value); // EAutoConnectorState
 
 Подписка на изменения всего снапшота.
 
-Для этой перегрузки используется оптимизация `defaultSnapshotEquals`: сравниваются только поля `value` у `connection/call/incoming/presentation/autoConnector`.
+Для этой перегрузки используется оптимизация `defaultSnapshotEquals`: для `connection/incoming/presentation/autoConnector` сравнивается только `value`, а для `call/callReconnect/callSessionState` — полный снапшот (так смена роли, `context` комнаты или параметров переподключения тоже триггерит уведомление).
 
 ```typescript
 const unsubscribe = sessionManager.subscribe((snapshot) => {
@@ -85,21 +85,23 @@ const unsubscribe = sessionManager.on('snapshot-changed', ({ previous, current }
 
 ## Архитектура
 
-SessionManager является фасадом над пятью машинами состояний:
+SessionManager является фасадом над шестью машинами состояний и read-model роли:
 
 - `connection` — ConnectionStateMachine (состояния SIP соединения)
 - `call` — CallStateMachine (состояния звонка)
 - `incoming` — IncomingCallStateMachine (состояния входящих звонков)
 - `presentation` — PresentationStateMachine (состояния демонстрации экрана)
 - `autoConnector` — AutoConnectorStateMachine (состояния авто-переподключения)
+- `callReconnect` — CallReconnectStateMachine (состояния переподключения звонка)
+- `callSessionState` — `CallSessionState` (read-model роли: участник/зритель + `derived`). Это **не** xstate-машина, а отдельный источник снапшота.
 
-Каждая машина поднимается внутри своего менеджера и управляется им. SessionManager подписывается на изменения всех машин и агрегирует их снапшоты.
+Все источники приводятся к единому интерфейсу источника снапшота (`getSnapshot()` + `subscribe(listener): () => void`) и обрабатываются одинаково: при изменении любого из них SessionManager пересобирает единый снапшот и уведомляет подписчиков.
 
 ## Типы
 
 ### TSessionSnapshot
 
-Агрегированный снапшот всех машин состояний:
+Агрегированный снапшот всех машин состояний и read-model:
 
 ```typescript
 type TSessionSnapshot = {
@@ -108,12 +110,16 @@ type TSessionSnapshot = {
   incoming: TIncomingSnapshot;
   presentation: TPresentationSnapshot;
   autoConnector: TAutoConnectorSnapshot;
+  callReconnect: TCallReconnectSnapshot;
+
+  // read-model
+  callSessionState: TCallSessionSnapshot;
 };
 ```
 
 ### TSessionMachines
 
-Доступ к машинам состояний:
+Доступ к машинам состояний (`callSessionState` — не машина, в этот тип не входит):
 
 ```typescript
 type TSessionMachines = {
@@ -122,6 +128,7 @@ type TSessionMachines = {
   incoming: IncomingCallStateMachine;
   presentation: PresentationStateMachine;
   autoConnector: IAutoConnectorStateMachine;
+  callReconnect: ICallReconnectStateMachine;
 };
 ```
 
@@ -164,10 +171,10 @@ SessionManager предоставляет набор готовых селект
 4. `autoConnector=CONNECTED_MONITORING` и `connection != ESTABLISHED` -> `CONNECTING`.
 5. `connection=IDLE` или `connection=DISCONNECTED` -> `DISCONNECTED`.
 6. `connection` в `PREPARING/CONNECTING/CONNECTED/REGISTERED` -> `CONNECTING`.
-7. `connection=ESTABLISHED`:  
-   - `call=IDLE` -> `READY_TO_CALL`;  
-   - `call=CONNECTING` -> `CALL_CONNECTING`;  
-   - `call=DISCONNECTING` -> `CALL_DISCONNECTING`;  
+7. `connection=ESTABLISHED`:
+   - `call=IDLE` -> `READY_TO_CALL`;
+   - `call=CONNECTING` -> `CALL_CONNECTING`;
+   - `call=DISCONNECTING` -> `CALL_DISCONNECTING`;
    - прочее -> fallback `READY_TO_CALL`.
 
 Активные call-состояния для `CALL_ACTIVE`:
@@ -184,17 +191,17 @@ SessionManager предоставляет набор готовых селект
 - `CALL_ACTIVE` возвращается даже при `connection=IDLE`, `DISCONNECTING` или `DISCONNECTED`;
 - `DISCONNECTING` приоритетнее attempting-веток `autoConnector`;
 - `CALL_DISCONNECTING` возможен только при `connection=ESTABLISHED` и `call=DISCONNECTING`;
-- при `autoConnector=CONNECTED_MONITORING`:  
-  - если `connection != ESTABLISHED` -> `CONNECTING`;  
+- при `autoConnector=CONNECTED_MONITORING`:
+  - если `connection != ESTABLISHED` -> `CONNECTING`;
   - если `connection = ESTABLISHED` и `call=IDLE` -> `READY_TO_CALL`.
 
 ## События
 
 ### `snapshot-changed`
 
-Генерируется при изменении `value` хотя бы одной из машин.
+Генерируется, когда агрегированный снапшот изменился по правилам `defaultSnapshotEquals`.
 
-Изменения только в `context` без смены `value` событие не генерируют.
+Для `connection/incoming/presentation/autoConnector` сравнивается только `value`. Для `call`, `callReconnect` и `callSessionState` сравнивается полный снапшот, поэтому изменения роли, комнаты или параметров переподключения тоже генерируют событие.
 
 ```typescript
 {
@@ -343,5 +350,7 @@ SessionManager зависит от:
 - `IncomingCallManager.stateMachine`
 - `PresentationManager.stateMachine`
 - `AutoConnectorManager.stateMachine`
+- `CallReconnectManager.stateMachine`
+- `CallSessionState` (read-model роли)
 
-Все машины должны быть инициализированы до создания SessionManager.
+Все машины и `callSessionState` должны быть инициализированы до создания SessionManager.

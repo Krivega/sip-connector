@@ -1,11 +1,11 @@
-import { C as JsSIP_C, IncomingResponse } from '@krivega/jssip';
+import { IncomingResponse, C as JsSIP_C } from '@krivega/jssip';
 import { EventEmitterProxy } from 'events-constructor';
 
 import {
-  isExitingSpectatorRole,
+  isEnteringAnySpectatorRole,
   isEnteringSpectatorRole,
   isExitingAnySpectatorRole,
-  isEnteringAnySpectatorRole,
+  isExitingSpectatorRole,
 } from '@/CallSessionState';
 import resolveDebug from '@/logger';
 import { DeferredCommandRunner } from '@/tools';
@@ -29,11 +29,11 @@ import type { TEffectiveQuality, TRecvQuality } from './quality';
 import type { TTools } from './RecvSession';
 import type {
   TAnswerToIncomingCall,
+  TRemoteStreams,
+  TRemoteTracksChangeType,
   TReplaceMediaStream,
   TStartCall,
   TStreamsManagerTools,
-  TRemoteTracksChangeType,
-  TRemoteStreams,
 } from './types';
 
 const UDP_PROTOCOL = 'udp' as const;

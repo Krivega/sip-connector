@@ -1,6 +1,6 @@
-import { ECallStatus, ESystemStatus, EConnectionStatus, EAutoConnectorStatus } from './types';
+import { EAutoConnectorStatus, ECallStatus, EConnectionStatus, ESystemStatus } from './types';
 
-import type { EPresentationStatus, TSessionSnapshot, EIncomingStatus } from './types';
+import type { EIncomingStatus, EPresentationStatus, TSessionSnapshot } from './types';
 
 const selectConnectionStatus = (snapshot: TSessionSnapshot): EConnectionStatus => {
   return snapshot.connection.value;

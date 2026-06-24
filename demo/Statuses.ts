@@ -7,8 +7,8 @@ import { INITIAL_STATUSES_ROOT_SNAPSHOT, StatusesRootModel } from './StatusesRoo
 import type { TCallSessionSnapshot, TSessionSnapshot } from '@/index';
 import type {
   TStatusesByDomain,
-  TStatusesRootSnapshotOut,
   TStatusesRootSnapshot,
+  TStatusesRootSnapshotOut,
 } from './StatusesRoot';
 
 export type TCallReconnectIndicatorState = {
@@ -155,9 +155,9 @@ class Statuses {
 
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   private getCallSessionSnapshot(): TCallSessionSnapshot {
-    const { sipConnector } = sipConnectorFacade;
+    const { sessionManager } = sipConnectorFacade.sipConnector;
 
-    return sipConnector.callSessionState.getSnapshot();
+    return sessionManager.getSnapshot().callSessionState;
   }
 
   private unsubscribe() {
@@ -176,10 +176,10 @@ class Statuses {
     onCallSessionSnapshot(this.getCallSessionSnapshot());
 
     this.unsubsribers.add(
-      sipConnectorFacade.sipConnector.sessionManager.subscribe(onSessionSnapshot),
-    );
-    this.unsubsribers.add(
-      sipConnectorFacade.sipConnector.callSessionState.subscribe(onCallSessionSnapshot),
+      sipConnectorFacade.sipConnector.sessionManager.subscribe((sessionSnapshot) => {
+        onSessionSnapshot(sessionSnapshot);
+        onCallSessionSnapshot(sessionSnapshot.callSessionState);
+      }),
     );
   }
 }

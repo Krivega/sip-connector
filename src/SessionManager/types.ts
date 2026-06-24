@@ -1,9 +1,10 @@
 import type { IAutoConnectorStateMachine, TAutoConnectorSnapshot } from '@/AutoConnectorManager';
 import type { ICallStateMachine, TCallSnapshot } from '@/CallManager';
 import type { ICallReconnectStateMachine, TCallReconnectSnapshot } from '@/CallReconnectManager';
+import type { TCallSessionSnapshot } from '@/CallSessionState';
 import type { ConnectionStateMachine, TConnectionSnapshot } from '@/ConnectionManager';
 import type { IncomingCallStateMachine, TIncomingSnapshot } from '@/IncomingCallManager';
-import type { TPresentationSnapshot, PresentationStateMachine } from '@/PresentationManager';
+import type { PresentationStateMachine, TPresentationSnapshot } from '@/PresentationManager';
 
 export type TSessionSnapshot = {
   connection: TConnectionSnapshot;
@@ -12,6 +13,7 @@ export type TSessionSnapshot = {
   presentation: TPresentationSnapshot;
   autoConnector: TAutoConnectorSnapshot;
   callReconnect: TCallReconnectSnapshot;
+  callSessionState: TCallSessionSnapshot;
 };
 
 export type TSessionMachines = {
@@ -23,12 +25,12 @@ export type TSessionMachines = {
   callReconnect: ICallReconnectStateMachine;
 };
 
-export { ECallStatus } from '@/CallManager';
 export { EAutoConnectorStatus } from '@/AutoConnectorManager';
+export { ECallStatus } from '@/CallManager';
 export { ECallReconnectStatus } from '@/CallReconnectManager';
+export { EConnectionStatus } from '@/ConnectionManager';
 export { EIncomingStatus } from '@/IncomingCallManager';
 export { EPresentationStatus } from '@/PresentationManager';
-export { EConnectionStatus } from '@/ConnectionManager';
 
 /**
  * Комбинированное состояние системы, объединяющее состояния Connection и Call

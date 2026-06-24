@@ -7,6 +7,7 @@ import {
   SipConnector, // Низкоуровневый API
   SipConnectorFacade, // Высокоуровневый фасад
   StatsPeerConnection, // Сбор статистики
+  sessionSelectors, // Селекторы SessionManager
   // ... другие экспорты
 } from 'sip-connector';
 ```
@@ -50,6 +51,7 @@ import {
   SipConnector,
   SipConnectorFacade,
   StatsPeerConnection,
+  sessionSelectors,
   tools,
   hasAvailableStats,
   getCodecFromSender,
@@ -68,6 +70,7 @@ import {
   EConnectionStatus,
   EIncomingStatus,
   EPresentationStatus,
+  ECallReconnectStatus,
 
   // Типы
   type TSessionSnapshot,
@@ -88,15 +91,16 @@ import {
 ```
 
 ```typescript
-// Aggregated call role state
-const snapshot = sipConnector.callSessionState.getSnapshot();
+// Aggregated session state
+const snapshot = sipConnector.sessionManager.getSnapshot();
+const { role, derived, license } = snapshot.callSessionState;
 
-const unsubscribe = sipConnector.callSessionState.subscribe((next) => {
-  console.log('Role changed:', next.role.type);
-});
-
-const diagnostics = sipConnector.callSessionState.getDiagnostics();
-console.log(diagnostics);
+const unsubscribe = sipConnector.sessionManager.subscribe(
+  (next) => next.callSessionState,
+  (callSessionState) => {
+    syncRole(callSessionState.role.type, callSessionState.derived, callSessionState.license);
+  },
+);
 
 unsubscribe();
 ```

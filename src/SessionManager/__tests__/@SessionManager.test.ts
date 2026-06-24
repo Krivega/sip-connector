@@ -6,6 +6,7 @@ import {
   ECallStatus,
 } from '@/CallManager';
 import { createCallReconnectStateMachine } from '@/CallReconnectManager';
+import { CallSessionState } from '@/CallSessionState';
 import {
   createEvents as createConnectionEvents,
   ConnectionStateMachine,
@@ -116,6 +117,7 @@ const startSession = () => {
     presentationManager: { stateMachine: presentationStateMachine },
     autoConnectorManager: { stateMachine: autoConnectorStateMachine },
     callReconnectManager: { stateMachine: callReconnectStateMachine },
+    callSessionState: new CallSessionState(),
   });
 
   const stopAll = () => {

@@ -7,6 +7,7 @@ import type { Subscription } from 'xstate';
 import type { AutoConnectorManager } from '@/AutoConnectorManager';
 import type { CallManager } from '@/CallManager';
 import type { CallReconnectManager } from '@/CallReconnectManager';
+import type { CallSessionState } from '@/CallSessionState';
 import type { ConnectionManager } from '@/ConnectionManager';
 import type { IncomingCallManager } from '@/IncomingCallManager';
 import type { PresentationManager } from '@/PresentationManager';
@@ -30,9 +31,13 @@ const defaultSnapshotEquals: TEqualityFunction<TSessionSnapshot> = (previous, ne
     previous.presentation.value === next.presentation.value &&
     previous.autoConnector.value === next.autoConnector.value &&
     // CallReconnect: full snapshot so attempt/delay context updates без смены `value` тоже эмитят событие
-    isEqual(previous.callReconnect, next.callReconnect)
+    isEqual(previous.callReconnect, next.callReconnect) &&
+    // CallSession: full snapshot — смена роли должна эмитить snapshot-changed
+    isEqual(previous.callSessionState, next.callSessionState)
   );
 };
+
+type TCallSessionSource = Pick<CallSessionState, 'getSnapshot' | 'subscribe'>;
 
 type TSessionManagerDeps = {
   connectionManager: Pick<ConnectionManager, 'stateMachine'>;
@@ -41,9 +46,13 @@ type TSessionManagerDeps = {
   presentationManager: Pick<PresentationManager, 'stateMachine'>;
   autoConnectorManager: Pick<AutoConnectorManager, 'stateMachine'>;
   callReconnectManager: Pick<CallReconnectManager, 'stateMachine'>;
+  callSessionState: TCallSessionSource;
 };
 
-const collectSnapshot = (machines: TSessionMachines): TSessionSnapshot => {
+const collectSnapshot = (
+  machines: TSessionMachines,
+  callSessionState: Pick<CallSessionState, 'getSnapshot'>,
+): TSessionSnapshot => {
   return {
     connection: machines.connection.getSnapshot(),
     call: machines.call.getSnapshot(),
@@ -51,11 +60,14 @@ const collectSnapshot = (machines: TSessionMachines): TSessionSnapshot => {
     presentation: machines.presentation.getSnapshot(),
     autoConnector: machines.autoConnector.getSnapshot(),
     callReconnect: machines.callReconnect.getSnapshot(),
+    callSessionState: callSessionState.getSnapshot(),
   };
 };
 
 class SessionManager extends EventEmitterProxy<TEventMap> {
   public readonly machines: TSessionMachines;
+
+  private readonly callSessionState: TCallSessionSource;
 
   private currentSnapshot: TSessionSnapshot;
 
@@ -79,8 +91,9 @@ class SessionManager extends EventEmitterProxy<TEventMap> {
       autoConnector: deps.autoConnectorManager.stateMachine,
       callReconnect: deps.callReconnectManager.stateMachine,
     };
+    this.callSessionState = deps.callSessionState;
 
-    this.currentSnapshot = collectSnapshot(this.machines);
+    this.currentSnapshot = collectSnapshot(this.machines, this.callSessionState);
 
     this.actorSubscriptions.push(
       this.machines.connection.subscribe(this.notifySubscribers),
@@ -89,6 +102,10 @@ class SessionManager extends EventEmitterProxy<TEventMap> {
       this.machines.presentation.subscribe(this.notifySubscribers),
       this.machines.autoConnector.subscribe(this.notifySubscribers),
       this.machines.callReconnect.subscribe(this.notifySubscribers),
+
+      // callSessionState — не xstate-машина, а отдельный read-model роли;
+      // включаем его в единый снапшот, чтобы роль и call-статус были согласованы
+      { unsubscribe: this.callSessionState.subscribe(this.notifySubscribers) },
     );
   }
 
@@ -146,7 +163,7 @@ class SessionManager extends EventEmitterProxy<TEventMap> {
   private readonly notifySubscribers = () => {
     const previousSnapshot = this.currentSnapshot;
 
-    this.currentSnapshot = collectSnapshot(this.machines);
+    this.currentSnapshot = collectSnapshot(this.machines, this.callSessionState);
 
     const isSnapshotEqual = defaultSnapshotEquals(previousSnapshot, this.currentSnapshot);
 
