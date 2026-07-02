@@ -5,7 +5,7 @@ import getExtraHeadersRemoteAddress from './getExtraHeadersRemoteAddress';
 import type { UA, UAConfigurationParams, WebSocketInterface } from '@krivega/jssip';
 import type { TJsSIP } from '@/types';
 
-export type TUAConfiguration = {
+export type TUAConfig = {
   configuration: UAConfigurationParams;
   helpers: {
     socket: WebSocketInterface;
@@ -18,7 +18,7 @@ export type TCreateUAParameters = UAConfigurationParams & {
   extraHeaders?: string[];
 };
 
-type TParametersCreateUaConfiguration = {
+type TParametersCreateUaConfig = {
   sipServerUrl: string;
   displayName: string;
   sipServerIp: string;
@@ -104,7 +104,7 @@ export default class UAFactory {
     connectionRecoveryMinInterval = 2,
     connectionRecoveryMaxInterval = 6,
     userAgent,
-  }: TParametersCreateUaConfiguration): TUAConfiguration {
+  }: TParametersCreateUaConfig): TUAConfig {
     UAFactory.validateParametersConnection({
       register,
       password,
@@ -154,7 +154,7 @@ export default class UAFactory {
    * Создает UA с полным жизненным циклом - конфигурация + создание + настройка событий
    */
   public createUAWithConfiguration(
-    parameters: TParametersCreateUaConfiguration & {
+    parameters: TParametersCreateUaConfig & {
       remoteAddress?: string;
       extraHeaders?: string[];
     },
@@ -163,7 +163,7 @@ export default class UAFactory {
         callback: (trigger: (...args: unknown[]) => void, eventName: string) => void,
       ) => void;
     },
-  ): { ua: UA; helpers: TUAConfiguration['helpers'] } {
+  ): { ua: UA; helpers: TUAConfig['helpers'] } {
     const { configuration, helpers } = this.createConfiguration(parameters);
     const ua = this.createUA({
       ...configuration,

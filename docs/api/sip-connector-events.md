@@ -4,10 +4,10 @@
 
 ## События
 
-| Имя события                                     | Описание                                                             | Тип данных                 |
-| ----------------------------------------------- | -------------------------------------------------------------------- | -------------------------- |
-| `disconnected-from-out-of-call`                 | Генерируется при отключении, если звонок не активен                  | `Record<string, never>`    |
-| `connected-with-configuration-from-out-of-call` | Генерируется при подключении с конфигурацией, если звонок не активен | `TConnectionConfiguration` |
-| `stopped-presentation-by-server-command`        | Генерируется при остановке презентации по команде сервера            | `Record<string, never>`    |
+| Имя события                                     | Описание                                                             | Тип данных              |
+| ----------------------------------------------- | -------------------------------------------------------------------- | ----------------------- |
+| `disconnected-from-out-of-call`                 | Генерируется при отключении, если звонок не активен                  | `Record<string, never>` |
+| `connected-with-configuration-from-out-of-call` | Генерируется при подключении с конфигурацией, если звонок не активен | `TConnectionConfig`     |
+| `stopped-presentation-by-server-command`        | Генерируется при остановке презентации по команде сервера            | `Record<string, never>` |
 
-**Примечание**: Полное описание типа доступно в [событиях ConnectionManager](./connection-events.md#TConnectionConfiguration).
+**Примечание**: Полное описание типа доступно в [событиях ConnectionManager](./connection-events.md#TConnectionConfig).

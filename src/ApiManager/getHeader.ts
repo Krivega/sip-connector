@@ -117,8 +117,7 @@ export const getHeader = <T extends EKeyHeader>(
     }
     case EKeyHeader.CONTENTED_STREAM_STATE: {
       return findEnumValue(EContentedStreamSendAndReceive, lowerValue) as
-        | EValueHeader<T>
-        | undefined;
+        EValueHeader<T> | undefined;
     }
     case EKeyHeader.IS_DIRECT_PEER_TO_PEER: {
       return parseBooleanValue(lowerValue) as EValueHeader<T> | undefined;

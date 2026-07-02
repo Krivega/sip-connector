@@ -8,14 +8,14 @@ export type TIceServer = {
   credential?: string;
 };
 
-export type TServerConfiguration = {
+export type TServerConfig = {
   sipServerUrl: string;
   sipServerIp: string;
   remoteAddress: string;
   iceServers: TIceServer[];
 };
 
-export type TParametersConnection = TServerConfiguration &
+export type TParametersConnection = TServerConfig &
   TOptionsExtraHeaders & {
     displayName: string;
     register?: boolean;
@@ -28,7 +28,7 @@ export type TParametersConnection = TServerConfiguration &
     connectionRecoveryMaxInterval?: number;
   };
 
-export type TConnectionConfiguration = TServerConfiguration & {
+export type TConnectionConfig = TServerConfig & {
   displayName: string;
   authorizationUser: string;
   register?: boolean;

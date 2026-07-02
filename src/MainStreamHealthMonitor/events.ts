@@ -13,9 +13,7 @@ export const EVENT_NAMES = [
 ] as const;
 
 export type TProblemReason =
-  | 'invalid-inbound-frames'
-  | 'no-inbound-video-traffic'
-  | 'inbound-video-stalled';
+  'invalid-inbound-frames' | 'no-inbound-video-traffic' | 'inbound-video-stalled';
 
 export type TProblemResetCause =
   | 'peerconnection:confirmed'

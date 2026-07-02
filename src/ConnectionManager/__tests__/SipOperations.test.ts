@@ -267,7 +267,7 @@ describe('SipOperations', () => {
       });
 
       // Мокаем методы UAFactory
-      const createConfigurationSpy = jest.spyOn(uaFactory, 'createConfiguration').mockReturnValue({
+      const createConfigSpy = jest.spyOn(uaFactory, 'createConfiguration').mockReturnValue({
         configuration: {
           uri: 'sip:testuser@sip.example.com',
           password: 'testpass',
@@ -297,7 +297,7 @@ describe('SipOperations', () => {
 
       await expect(checkPromise).resolves.toBeUndefined();
 
-      expect(createConfigurationSpy).toHaveBeenCalledWith({
+      expect(createConfigSpy).toHaveBeenCalledWith({
         sipServerUrl: 'wss://sip.example.com:8089/ws',
         displayName: 'Test User',
         userAgent: 'Test UA',
@@ -396,7 +396,7 @@ describe('SipOperations', () => {
         return mockCreatedUA;
       });
 
-      const createConfigurationSpy = jest.spyOn(uaFactory, 'createConfiguration').mockReturnValue({
+      const createConfigSpy = jest.spyOn(uaFactory, 'createConfiguration').mockReturnValue({
         configuration: {
           uri: 'sip:testuser@sip.example.com',
           password: undefined,
@@ -426,7 +426,7 @@ describe('SipOperations', () => {
 
       await expect(checkPromise).resolves.toBeUndefined();
 
-      expect(createConfigurationSpy).toHaveBeenCalledWith({
+      expect(createConfigSpy).toHaveBeenCalledWith({
         sipServerUrl: 'wss://sip.example.com:8089/ws',
         displayName: 'Test User',
         userAgent: undefined,

@@ -1,11 +1,11 @@
-import type { TConnectionConfiguration } from '../types';
+import type { TConnectionConfig } from '../types';
 import type { EEvents, EState } from './constants';
 
 export type TConnectionMachineEvents =
   | { type: EEvents.START_CONNECT }
   | {
       type: EEvents.START_UA;
-      configuration: TConnectionConfiguration;
+      configuration: TConnectionConfig;
     }
   | { type: EEvents.START_DISCONNECT }
   | { type: EEvents.UA_CONNECTED }
@@ -26,19 +26,19 @@ export type TContextMap = {
     connectionConfiguration: undefined;
   };
   [EState.CONNECTING]: {
-    connectionConfiguration: TConnectionConfiguration;
+    connectionConfiguration: TConnectionConfig;
   };
   [EState.CONNECTED]: {
-    connectionConfiguration: TConnectionConfiguration;
+    connectionConfiguration: TConnectionConfig;
   };
   [EState.REGISTERED]: {
-    connectionConfiguration: TConnectionConfiguration;
+    connectionConfiguration: TConnectionConfig;
   };
   [EState.ESTABLISHED]: {
-    connectionConfiguration: TConnectionConfiguration;
+    connectionConfiguration: TConnectionConfig;
   };
   [EState.DISCONNECTING]: {
-    connectionConfiguration: TConnectionConfiguration;
+    connectionConfiguration: TConnectionConfig;
   };
   [EState.DISCONNECTED]: {
     connectionConfiguration: undefined;

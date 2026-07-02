@@ -1,7 +1,7 @@
 import { EConnectionStatus } from '@/index';
 import { ConnectionStatusModel, INITIAL_CONNECTION_STATUS_SNAPSHOT } from '../Model';
 
-import type { TConnectionConfiguration, TConnectionContextMap } from '@/index';
+import type { TConnectionConfig, TConnectionContextMap } from '@/index';
 
 type TConnectionSnapshotByState<TState extends EConnectionStatus> = {
   state: TState;
@@ -35,7 +35,7 @@ type TStateCase = {
   title: string;
   snapshot: TConnectionSnapshot;
   expectedFlags: TStateFlags;
-  expectedConnectionConfiguration: TConnectionConfiguration | undefined;
+  expectedConnectionConfiguration: TConnectionConfig | undefined;
 };
 
 type TUserIdentityCase = {
@@ -57,7 +57,7 @@ type TConnectionConfigAccessorsCase = {
   expectedAuthorizationUser: string | undefined;
   expectedSipServerUrl: string | undefined;
   expectedSipServerIp: string | undefined;
-  expectedIceServers: TConnectionConfiguration['iceServers'] | undefined;
+  expectedIceServers: TConnectionConfig['iceServers'] | undefined;
   expectedRemoteAddress: string | undefined;
 };
 
@@ -74,7 +74,7 @@ const createExpectedFlags = (activeFlag: TStateFlagKey): TStateFlags => {
   };
 };
 
-const connectionConfiguration = {
+const connectionConfig = {
   sipServerIp: '127.0.0.1',
   sipServerUrl: 'wss://sip.example.com',
   remoteAddress: '10.10.10.10',
@@ -84,8 +84,8 @@ const connectionConfiguration = {
   register: true,
 };
 
-const connectionConfigurationWithUser = {
-  ...connectionConfiguration,
+const connectionConfigWithUser = {
+  ...connectionConfig,
   user: '100',
 };
 
@@ -121,42 +121,42 @@ const stateCases: TStateCase[] = [
   {
     title: 'CONNECTING',
     snapshot: createSnapshot(EConnectionStatus.CONNECTING, {
-      connectionConfiguration: connectionConfigurationWithUser,
+      connectionConfiguration: connectionConfigWithUser,
     }),
     expectedFlags: createExpectedFlags('isConnecting'),
-    expectedConnectionConfiguration: connectionConfigurationWithUser,
+    expectedConnectionConfiguration: connectionConfigWithUser,
   },
   {
     title: 'CONNECTED',
     snapshot: createSnapshot(EConnectionStatus.CONNECTED, {
-      connectionConfiguration: connectionConfigurationWithUser,
+      connectionConfiguration: connectionConfigWithUser,
     }),
     expectedFlags: createExpectedFlags('isConnected'),
-    expectedConnectionConfiguration: connectionConfigurationWithUser,
+    expectedConnectionConfiguration: connectionConfigWithUser,
   },
   {
     title: 'REGISTERED',
     snapshot: createSnapshot(EConnectionStatus.REGISTERED, {
-      connectionConfiguration: connectionConfigurationWithUser,
+      connectionConfiguration: connectionConfigWithUser,
     }),
     expectedFlags: createExpectedFlags('isRegistered'),
-    expectedConnectionConfiguration: connectionConfigurationWithUser,
+    expectedConnectionConfiguration: connectionConfigWithUser,
   },
   {
     title: 'ESTABLISHED',
     snapshot: createSnapshot(EConnectionStatus.ESTABLISHED, {
-      connectionConfiguration: connectionConfigurationWithUser,
+      connectionConfiguration: connectionConfigWithUser,
     }),
     expectedFlags: createExpectedFlags('isEstablished'),
-    expectedConnectionConfiguration: connectionConfigurationWithUser,
+    expectedConnectionConfiguration: connectionConfigWithUser,
   },
   {
     title: 'DISCONNECTING',
     snapshot: createSnapshot(EConnectionStatus.DISCONNECTING, {
-      connectionConfiguration: connectionConfigurationWithUser,
+      connectionConfiguration: connectionConfigWithUser,
     }),
     expectedFlags: createExpectedFlags('isDisconnecting'),
-    expectedConnectionConfiguration: connectionConfigurationWithUser,
+    expectedConnectionConfiguration: connectionConfigWithUser,
   },
   {
     title: 'DISCONNECTED',
@@ -172,17 +172,17 @@ const userIdentityCases: TUserIdentityCase[] = [
   {
     title: 'returns identity when connection configuration has user',
     snapshot: createSnapshot(EConnectionStatus.CONNECTED, {
-      connectionConfiguration: connectionConfigurationWithUser,
+      connectionConfiguration: connectionConfigWithUser,
     }),
     expectedUserIdentity: {
-      user: connectionConfigurationWithUser.user,
-      displayName: connectionConfigurationWithUser.displayName,
+      user: connectionConfigWithUser.user,
+      displayName: connectionConfigWithUser.displayName,
     },
   },
   {
     title: 'returns undefined when connection configuration has no user',
     snapshot: createSnapshot(EConnectionStatus.CONNECTED, {
-      connectionConfiguration,
+      connectionConfiguration: connectionConfig,
     }),
     expectedUserIdentity: undefined,
   },
@@ -192,18 +192,18 @@ const userAccessorsCases: TUserAccessorsCase[] = [
   {
     title: 'returns user and displayName when connection configuration has user',
     snapshot: createSnapshot(EConnectionStatus.CONNECTED, {
-      connectionConfiguration: connectionConfigurationWithUser,
+      connectionConfiguration: connectionConfigWithUser,
     }),
-    expectedUser: connectionConfigurationWithUser.user,
-    expectedDisplayName: connectionConfigurationWithUser.displayName,
+    expectedUser: connectionConfigWithUser.user,
+    expectedDisplayName: connectionConfigWithUser.displayName,
   },
   {
     title: 'returns undefined user and defined displayName when configuration has no user',
     snapshot: createSnapshot(EConnectionStatus.CONNECTED, {
-      connectionConfiguration,
+      connectionConfiguration: connectionConfig,
     }),
     expectedUser: undefined,
-    expectedDisplayName: connectionConfiguration.displayName,
+    expectedDisplayName: connectionConfig.displayName,
   },
   {
     title: 'returns undefined user and displayName when configuration is missing',
@@ -217,13 +217,13 @@ const connectionConfigAccessorsCases: TConnectionConfigAccessorsCase[] = [
   {
     title: 'returns values from full connection configuration',
     snapshot: createSnapshot(EConnectionStatus.CONNECTED, {
-      connectionConfiguration: connectionConfigurationWithUser,
+      connectionConfiguration: connectionConfigWithUser,
     }),
-    expectedAuthorizationUser: connectionConfigurationWithUser.authorizationUser,
-    expectedSipServerUrl: connectionConfigurationWithUser.sipServerUrl,
-    expectedSipServerIp: connectionConfigurationWithUser.sipServerIp,
-    expectedIceServers: connectionConfigurationWithUser.iceServers,
-    expectedRemoteAddress: connectionConfigurationWithUser.remoteAddress,
+    expectedAuthorizationUser: connectionConfigWithUser.authorizationUser,
+    expectedSipServerUrl: connectionConfigWithUser.sipServerUrl,
+    expectedSipServerIp: connectionConfigWithUser.sipServerIp,
+    expectedIceServers: connectionConfigWithUser.iceServers,
+    expectedRemoteAddress: connectionConfigWithUser.remoteAddress,
   },
   {
     title: 'returns undefined accessors when configuration is missing',

@@ -20,8 +20,8 @@
 | `connection:connect-started`                    | Начат `connect()` (до resolve параметров)                          | `Record<string, never>`                        |
 | `connection:connect-parameters-resolve-success` | Параметры подключения успешно получены                             | `TParametersConnection`                        |
 | `connection:connect-parameters-resolve-failed`  | Ошибка получения параметров подключения                            | `unknown`                                      |
-| `connection:connect-succeeded`                  | `connect()` завершён успешно                                       | `TConnectionConfiguration`                     |
-| `connection:connected-with-configuration`       | Получен `connected` + доступна конфигурация подключения            | `TConnectionConfiguration`                     |
+| `connection:connect-succeeded`                  | `connect()` завершён успешно                                       | `TConnectionConfig`                            |
+| `connection:connected-with-configuration`       | Получен `connected` + доступна конфигурация подключения            | `TConnectionConfig`                            |
 | `connection:connect-failed`                     | `connect()` завершился ошибкой (кроме отменённых/cancelled ошибок) | `unknown`                                      |
 
 ## Структуры данных
@@ -51,7 +51,7 @@
 }
 ```
 
-### `TConnectionConfiguration`
+### `TConnectionConfig`
 
 ```typescript
 {

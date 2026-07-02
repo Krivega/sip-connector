@@ -82,7 +82,7 @@ import {
   type TRecvQuality,
   type TEffectiveQuality,
   type TParametersConnection,
-  type TConnectionConfiguration,
+  type TConnectionConfig,
   type TInboundStats,
   type TOutboundStats,
   type TContentHint,

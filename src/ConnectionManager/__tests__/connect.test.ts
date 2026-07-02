@@ -7,10 +7,10 @@ import {
   dataForConnectionWithoutAuthorizationWithoutDisplayName,
   extraHeadersRemoteAddress,
   remoteAddress,
-  uaConfigurationWithAuthorization,
-  uaConfigurationWithAuthorizationWithDisplayName,
-  uaConfigurationWithoutAuthorization,
-  uaConfigurationWithoutAuthorizationWithoutDisplayName,
+  uaConfigWithAuthorization,
+  uaConfigWithAuthorizationWithDisplayName,
+  uaConfigWithoutAuthorization,
+  uaConfigWithoutAuthorizationWithoutDisplayName,
 } from '@/__fixtures__';
 import jssip from '@/__fixtures__/jssip.mock';
 import UAMock, { createWebsocketHandshakeTimeoutError } from '@/__fixtures__/UA.mock';
@@ -42,7 +42,7 @@ describe('connect', () => {
 
     await connectionManager.connect(dataForConnectionWithAuthorization);
 
-    expect(connectionManager.ua?.configuration).toEqual(uaConfigurationWithAuthorization);
+    expect(connectionManager.ua?.configuration).toEqual(uaConfigWithAuthorization);
   });
 
   it('должен отклонять подключение с неправильным паролем', async () => {
@@ -79,8 +79,8 @@ describe('connect', () => {
     });
 
     expect(connectionManager.ua?.configuration).toEqual({
-      ...uaConfigurationWithAuthorization,
-      uri: uriWithName(uaConfigurationWithAuthorization.uri.user, sipServerUrlChanged),
+      ...uaConfigWithAuthorization,
+      uri: uriWithName(uaConfigWithAuthorization.uri.user, sipServerUrlChanged),
     });
   });
 
@@ -89,26 +89,22 @@ describe('connect', () => {
 
     await connectionManager.connect(dataForConnectionWithAuthorizationWithDisplayName);
 
-    const connectionConfiguration = connectionManager.getConnectionConfiguration();
+    const connectionConfig = connectionManager.getConnectionConfiguration();
 
-    expect(connectionConfiguration?.sipServerIp).toBe(
+    expect(connectionConfig?.sipServerIp).toBe(
       dataForConnectionWithAuthorizationWithDisplayName.sipServerIp,
     );
-    expect(connectionConfiguration?.displayName).toBe(
+    expect(connectionConfig?.displayName).toBe(
       dataForConnectionWithAuthorizationWithDisplayName.displayName,
     );
-    expect(connectionConfiguration?.register).toBe(
+    expect(connectionConfig?.register).toBe(
       dataForConnectionWithAuthorizationWithDisplayName.register,
     );
-    expect(connectionConfiguration?.user).toBe(
-      dataForConnectionWithAuthorizationWithDisplayName.user,
-    );
-    expect(connectionConfiguration?.password).toBe(
+    expect(connectionConfig?.user).toBe(dataForConnectionWithAuthorizationWithDisplayName.user);
+    expect(connectionConfig?.password).toBe(
       dataForConnectionWithAuthorizationWithDisplayName.password,
     );
-    expect(connectionManager.ua?.configuration).toEqual(
-      uaConfigurationWithAuthorizationWithDisplayName,
-    );
+    expect(connectionManager.ua?.configuration).toEqual(uaConfigWithAuthorizationWithDisplayName);
   });
 
   it('должен подключать пользователя без авторизации', async () => {
@@ -116,20 +112,16 @@ describe('connect', () => {
 
     await connectionManager.connect(dataForConnectionWithoutAuthorization);
 
-    const { uri, ...configuration } = connectionManager.ua?.configuration ?? {};
-    const connectionConfiguration = connectionManager.getConnectionConfiguration();
+    const { uri, ...config } = connectionManager.ua?.configuration ?? {};
+    const connectionConfig = connectionManager.getConnectionConfiguration();
 
-    expect(connectionConfiguration?.sipServerIp).toBe(
-      dataForConnectionWithoutAuthorization.sipServerIp,
-    );
-    expect(connectionConfiguration?.displayName).toBe(
-      dataForConnectionWithoutAuthorization.displayName,
-    );
-    expect(connectionConfiguration?.register).toBe(dataForConnectionWithoutAuthorization.register);
-    expect(connectionConfiguration?.user).toBe(undefined);
-    expect(connectionConfiguration?.password).toBe(undefined);
+    expect(connectionConfig?.sipServerIp).toBe(dataForConnectionWithoutAuthorization.sipServerIp);
+    expect(connectionConfig?.displayName).toBe(dataForConnectionWithoutAuthorization.displayName);
+    expect(connectionConfig?.register).toBe(dataForConnectionWithoutAuthorization.register);
+    expect(connectionConfig?.user).toBe(undefined);
+    expect(connectionConfig?.password).toBe(undefined);
 
-    expect(configuration).toEqual(uaConfigurationWithoutAuthorization);
+    expect(config).toEqual(uaConfigWithoutAuthorization);
   });
 
   it('должен подключать пользователя без авторизации и displayName', async () => {
@@ -137,17 +129,17 @@ describe('connect', () => {
 
     await connectionManager.connect(dataForConnectionWithoutAuthorizationWithoutDisplayName);
 
-    const { uri, ...configuration } = connectionManager.ua?.configuration ?? {};
-    const connectionConfiguration = connectionManager.getConnectionConfiguration();
+    const { uri, ...config } = connectionManager.ua?.configuration ?? {};
+    const connectionConfig = connectionManager.getConnectionConfiguration();
 
-    expect(connectionConfiguration?.sipServerIp).toBe(
+    expect(connectionConfig?.sipServerIp).toBe(
       dataForConnectionWithoutAuthorizationWithoutDisplayName.sipServerIp,
     );
-    expect(connectionConfiguration?.displayName).toBe('DISPLAY_NAME');
-    expect(connectionConfiguration?.register).toBe(false);
-    expect(connectionConfiguration?.user).toBe(undefined);
-    expect(connectionConfiguration?.password).toBe(undefined);
-    expect(configuration).toEqual(uaConfigurationWithoutAuthorizationWithoutDisplayName);
+    expect(connectionConfig?.displayName).toBe('DISPLAY_NAME');
+    expect(connectionConfig?.register).toBe(false);
+    expect(connectionConfig?.user).toBe(undefined);
+    expect(connectionConfig?.password).toBe(undefined);
+    expect(config).toEqual(uaConfigWithoutAuthorizationWithoutDisplayName);
   });
 
   it('должен сохранять connectionConfiguration после подключения', async () => {
@@ -155,15 +147,13 @@ describe('connect', () => {
 
     await connectionManager.connect(dataForConnectionWithAuthorization);
 
-    const connectionConfiguration = connectionManager.getConnectionConfiguration();
+    const connectionConfig = connectionManager.getConnectionConfiguration();
 
-    expect(connectionConfiguration?.sipServerIp).toBe(
-      dataForConnectionWithAuthorization.sipServerIp,
-    );
-    expect(connectionConfiguration?.displayName).toBe('DISPLAY_NAME');
-    expect(connectionConfiguration?.register).toBe(dataForConnectionWithAuthorization.register);
-    expect(connectionConfiguration?.user).toBe(dataForConnectionWithAuthorization.user);
-    expect(connectionConfiguration?.password).toBe(dataForConnectionWithAuthorization.password);
+    expect(connectionConfig?.sipServerIp).toBe(dataForConnectionWithAuthorization.sipServerIp);
+    expect(connectionConfig?.displayName).toBe('DISPLAY_NAME');
+    expect(connectionConfig?.register).toBe(dataForConnectionWithAuthorization.register);
+    expect(connectionConfig?.user).toBe(dataForConnectionWithAuthorization.user);
+    expect(connectionConfig?.password).toBe(dataForConnectionWithAuthorization.password);
   });
 
   it('должен отправлять базовые extraHeaders', async () => {
@@ -268,7 +258,7 @@ describe('connect', () => {
       numberOfConnectionAttempts,
     });
 
-    expect(connectionManager.ua?.configuration).toEqual(uaConfigurationWithAuthorization);
+    expect(connectionManager.ua?.configuration).toEqual(uaConfigWithAuthorization);
     expect(requestConnectMocked).toHaveBeenCalledTimes(2);
   });
 });

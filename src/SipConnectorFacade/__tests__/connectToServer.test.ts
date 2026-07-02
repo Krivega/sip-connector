@@ -10,8 +10,8 @@ import {
   oneWord,
   thirdWord,
   twoWord,
-  uaConfigurationWithAuthorization,
-  uaConfigurationWithoutAuthorization,
+  uaConfigWithAuthorization,
+  uaConfigWithoutAuthorization,
   uriWithName,
 } from '@/tools/__fixtures__/connectToServer';
 import hasValidUri from '@/tools/__fixtures__/hasValidUri';
@@ -56,9 +56,7 @@ describe('connectToServer', () => {
 
   it('registered', async () => {
     return sipConnectorFacade.connectToServer(dataForConnectionWithAuthorization).then(() => {
-      expect(sipConnector.connectionManager.ua?.configuration).toEqual(
-        uaConfigurationWithAuthorization,
-      );
+      expect(sipConnector.connectionManager.ua?.configuration).toEqual(uaConfigWithAuthorization);
     });
   });
 
@@ -79,7 +77,7 @@ describe('connectToServer', () => {
       })
       .then(() => {
         expect(sipConnector.connectionManager.ua?.configuration).toEqual({
-          ...uaConfigurationWithAuthorization,
+          ...uaConfigWithAuthorization,
           uri: uriWithName(thirdWord),
         });
       });
@@ -89,7 +87,7 @@ describe('connectToServer', () => {
     return sipConnectorFacade.connectToServer(dataForConnectionWithoutAuthorization).then(() => {
       expect(hasValidUri(sipConnector.connectionManager.ua!.configuration.uri)).toBe(true);
       expect(parseObjectWithoutUri(sipConnector.connectionManager.ua!.configuration)).toEqual(
-        uaConfigurationWithoutAuthorization,
+        uaConfigWithoutAuthorization,
       );
     });
   });
@@ -103,7 +101,7 @@ describe('connectToServer', () => {
       expect(results[1].status).toBe('fulfilled');
       expect(hasValidUri(sipConnector.connectionManager.ua!.configuration.uri)).toBe(true);
       expect(parseObjectWithoutUri(sipConnector.connectionManager.ua!.configuration)).toEqual(
-        uaConfigurationWithoutAuthorization,
+        uaConfigWithoutAuthorization,
       );
     });
   });
@@ -123,7 +121,7 @@ describe('connectToServer', () => {
             ).toBe(true);
 
             const config = parseObjectWithoutUri(sipConnector.connectionManager.ua!.configuration);
-            const expected = parseObjectWithoutUri(uaConfigurationWithoutAuthorization);
+            const expected = parseObjectWithoutUri(uaConfigWithoutAuthorization);
 
             // Socket URL должен быть изменен
             const sockets = Array.isArray(config.sockets) ? config.sockets : [config.sockets];

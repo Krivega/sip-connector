@@ -39,8 +39,7 @@ class RTCPeerConnectionMock extends EventTarget implements RTCPeerConnectionDepr
   public ondatachannel!: ((this: RTCPeerConnection, event_: RTCDataChannelEvent) => unknown) | null;
 
   public onicecandidate!:
-    | ((this: RTCPeerConnection, event_: RTCPeerConnectionIceEvent) => unknown)
-    | null;
+    ((this: RTCPeerConnection, event_: RTCPeerConnectionIceEvent) => unknown) | null;
 
   // eslint-disable-next-line unicorn/no-null
   public onicecandidateerror: ((this: RTCPeerConnection, event_: Event) => unknown) | null = null;
@@ -109,7 +108,7 @@ class RTCPeerConnectionMock extends EventTarget implements RTCPeerConnectionDepr
     ): Promise<void>;
   };
 
-  public constructor(_configuration?: RTCConfiguration, tracks?: MediaStreamTrackMock[]) {
+  public constructor(_config?: RTCConfiguration, tracks?: MediaStreamTrackMock[]) {
     super();
     this.receivers =
       tracks?.map((track) => {
@@ -165,7 +164,7 @@ class RTCPeerConnectionMock extends EventTarget implements RTCPeerConnectionDepr
     throw new Error('Method not implemented.');
   }
 
-  public setConfiguration(_configuration: RTCConfiguration): void {
+  public setConfiguration(_config: RTCConfiguration): void {
     throw new Error('Method not implemented.');
   }
 

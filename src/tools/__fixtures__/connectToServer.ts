@@ -3,7 +3,7 @@ import { URI } from '@krivega/jssip';
 import {
   SIP_SERVER_URL,
   SIP_WEB_SOCKET_SERVER_URL,
-  uaConfigurationWithAuthorization as _uaConfigurationWithAuthorization,
+  uaConfigWithAuthorization as _uaConfigWithAuthorization,
   displayName,
   user,
 } from '@/__fixtures__';
@@ -67,10 +67,10 @@ export const dataForConnectionWithAuthorizationPasswordChanged = {
   passwordChanged: true,
 };
 
-export const uaConfigurationWithAuthorization = _uaConfigurationWithAuthorization;
+export const uaConfigWithAuthorization = _uaConfigWithAuthorization;
 
-export const uaConfigurationWithAuthorizationPasswordChanged = {
-  ...uaConfigurationWithAuthorization,
+export const uaConfigWithAuthorizationPasswordChanged = {
+  ...uaConfigWithAuthorization,
   password: PASSWORD_CORRECT_2,
 };
 
@@ -83,6 +83,6 @@ export const uriWithName = (name: string, url: string = SIP_SERVER_URL) => {
 };
 
 export {
-  uaConfigurationWithoutAuthorization,
-  uaConfigurationWithoutAuthorizationWithoutDisplayName,
+  uaConfigWithoutAuthorization,
+  uaConfigWithoutAuthorizationWithoutDisplayName,
 } from '../../__fixtures__';

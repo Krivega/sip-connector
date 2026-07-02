@@ -43,7 +43,7 @@ export const dataForConnectionWithoutAuthorization = {
   register: false,
 };
 
-const baseUaConfiguration = {
+const baseUaConfig = {
   session_timers: false,
   sockets: [socket],
   user_agent: 'Chrome',
@@ -51,27 +51,27 @@ const baseUaConfiguration = {
   connection_recovery_max_interval: 6,
   connection_recovery_min_interval: 2,
 };
-export const uaConfigurationWithAuthorization = {
-  ...baseUaConfiguration,
+export const uaConfigWithAuthorization = {
+  ...baseUaConfig,
   password: PASSWORD_CORRECT,
   uri: new URI('sip', user, SIP_SERVER_URL),
   display_name: 'DISPLAY_NAME',
   register: true,
 };
-export const uaConfigurationWithAuthorizationWithDisplayName = {
-  ...baseUaConfiguration,
+export const uaConfigWithAuthorizationWithDisplayName = {
+  ...baseUaConfig,
   password: PASSWORD_CORRECT,
   uri: new URI('sip', user, SIP_SERVER_URL),
   display_name: displayName,
   register: true,
 };
-export const uaConfigurationWithoutAuthorization = {
-  ...baseUaConfiguration,
+export const uaConfigWithoutAuthorization = {
+  ...baseUaConfig,
   display_name: displayName,
   register: false,
 };
-export const uaConfigurationWithoutAuthorizationWithoutDisplayName = {
-  ...baseUaConfiguration,
+export const uaConfigWithoutAuthorizationWithoutDisplayName = {
+  ...baseUaConfig,
   display_name: 'DISPLAY_NAME',
   register: false,
 };

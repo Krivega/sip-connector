@@ -87,7 +87,7 @@ describe('ConnectionFlow', () => {
 
   describe('connect', () => {
     it('должен успешно устанавливать соединение и вызывать нужные зависимости без регистрации', async () => {
-      const configuration = {
+      const config = {
         password: undefined,
         register: false,
         register_expires: 300,
@@ -129,16 +129,16 @@ describe('ConnectionFlow', () => {
       // так как user генерируется случайно
       // @ts-expect-error
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, no-underscore-dangle
-      configuration.uri._user = getUa()?.configuration.uri._user;
+      config.uri._user = getUa()?.configuration.uri._user;
 
-      expect(getUa()?.configuration).toEqual(configuration);
+      expect(getUa()?.configuration).toEqual(config);
       expect(setUa).toHaveBeenCalled();
       expect(startConnectSpy).toHaveBeenCalled();
       expect(startInitUaSpy).toHaveBeenCalled();
     });
 
     it('должен успешно устанавливать соединение и вызывать нужные зависимости с регистрацией', async () => {
-      const configuration = {
+      const config = {
         password: PASSWORD_CORRECT,
         register: true,
         register_expires: 300,
@@ -178,7 +178,7 @@ describe('ConnectionFlow', () => {
 
       await connectionFlow.connect(parameters);
 
-      expect(getUa()?.configuration).toEqual(configuration);
+      expect(getUa()?.configuration).toEqual(config);
       expect(setUa).toHaveBeenCalled();
       expect(startConnectSpy).toHaveBeenCalled();
       expect(startInitUaSpy).toHaveBeenCalled();
@@ -569,20 +569,20 @@ describe('ConnectionFlow', () => {
   });
 
   describe('hasEqualConnectionConfiguration', () => {
-    const mockCreateConfiguration = (
+    const mockCreateConfig = (
       baseConfig: UAConfigurationParams,
       override?: Partial<UAConfigurationParams>,
     ) => {
       uaInstance = { configuration: baseConfig } as unknown as UAMock;
 
-      const configuration: UAConfigurationParams = { ...baseConfig, ...override };
+      const config: UAConfigurationParams = { ...baseConfig, ...override };
 
       const sockets = Array.isArray(baseConfig.sockets)
         ? baseConfig.sockets
         : [baseConfig.sockets as unknown as WebSocketInterface];
 
       jest.spyOn(uaFactory, 'createConfiguration').mockReturnValue({
-        configuration,
+        configuration: config,
         helpers: {
           socket: sockets[0] as WebSocketInterface,
           getUri: (id: string) => {
@@ -657,7 +657,7 @@ describe('ConnectionFlow', () => {
       expect(result).toBe(false);
     });
 
-    it('должен возвращать false когда uaConfiguration отсутствует', () => {
+    it('должен возвращать false когда uaConfig отсутствует', () => {
       uaInstance = undefined;
 
       const parameters = {
@@ -687,7 +687,7 @@ describe('ConnectionFlow', () => {
         connectionRecoveryMaxInterval: 8,
       });
 
-      mockCreateConfiguration(baseConfig);
+      mockCreateConfig(baseConfig);
 
       // @ts-expect-error - тестируем приватный метод
       const result = connectionFlow.hasEqualConnectionConfiguration({});
@@ -704,7 +704,7 @@ describe('ConnectionFlow', () => {
         sessionTimers: false,
       });
 
-      mockCreateConfiguration(baseConfig, { session_timers: true });
+      mockCreateConfig(baseConfig, { session_timers: true });
 
       // @ts-expect-error - тестируем приватный метод
       const result = connectionFlow.hasEqualConnectionConfiguration({});
@@ -721,7 +721,7 @@ describe('ConnectionFlow', () => {
         registerExpires: 300,
       });
 
-      mockCreateConfiguration(baseConfig, {
+      mockCreateConfig(baseConfig, {
         register_expires: (baseConfig.register_expires ?? 0) + 1,
       });
 
@@ -741,7 +741,7 @@ describe('ConnectionFlow', () => {
         connectionRecoveryMaxInterval: 6,
       });
 
-      mockCreateConfiguration(baseConfig, {
+      mockCreateConfig(baseConfig, {
         connection_recovery_min_interval: (baseConfig.connection_recovery_min_interval ?? 0) + 1,
       });
 
@@ -761,7 +761,7 @@ describe('ConnectionFlow', () => {
         connectionRecoveryMaxInterval: 6,
       });
 
-      mockCreateConfiguration(baseConfig, {
+      mockCreateConfig(baseConfig, {
         connection_recovery_max_interval: (baseConfig.connection_recovery_max_interval ?? 0) + 1,
       });
 

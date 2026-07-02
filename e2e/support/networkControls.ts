@@ -16,8 +16,7 @@ export const installE2ENetworkControls = () => {
   let forcedGetUserMediaResult: 'real' | 'fail' = 'real';
   let forcedGetDisplayMediaResult: 'real' | 'fail' = 'real';
   let originalConnectionPing:
-    | ((body?: string, extraHeaders?: string[]) => Promise<void>)
-    | undefined;
+    ((body?: string, extraHeaders?: string[]) => Promise<void>) | undefined;
   const syncConnectionManagerPingOverride = () => {
     const windowWithDemoApp = window as Window;
     const demoApp = Reflect.get(windowWithDemoApp, '__sipConnectorDemoApp') as

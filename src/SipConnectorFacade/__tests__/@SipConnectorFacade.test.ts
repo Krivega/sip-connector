@@ -8,7 +8,7 @@ import resolveParameters from '@/ConnectionManager/utils/resolveParameters';
 import { doMockSipConnector } from '@/doMock';
 import SipConnectorFacade, { TEST_HOOKS } from '../@SipConnectorFacade';
 
-import type { TConnectionConfiguration } from '@/ConnectionManager';
+import type { TConnectionConfig } from '@/ConnectionManager';
 import type { SipConnector } from '@/SipConnector';
 
 describe('SipConnectorFacade comprehensive', () => {
@@ -55,7 +55,7 @@ describe('SipConnectorFacade comprehensive', () => {
     it('должен успешно подключиться к серверу', async () => {
       const connectSpy = jest
         .spyOn(sipConnector, 'connect')
-        .mockResolvedValue({} as unknown as TConnectionConfiguration);
+        .mockResolvedValue({} as unknown as TConnectionConfig);
 
       const result = await sipConnectorFacade.connectToServer({
         displayName: 'DISPLAY_NAME',

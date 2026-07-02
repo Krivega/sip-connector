@@ -245,8 +245,7 @@ class CallStateMachine extends BaseStateMachine<TMachine, EState, TFullContext, 
    * Только в `IN_ROOM` (как `inRoomContext`); иначе `undefined`.
    */
   public getInRoomCredentials():
-    | Pick<TContextMap[EState.IN_ROOM], 'token' | 'conferenceForToken'>
-    | undefined {
+    Pick<TContextMap[EState.IN_ROOM], 'token' | 'conferenceForToken'> | undefined {
     const context = this.inRoomContext;
 
     if (context === undefined) {

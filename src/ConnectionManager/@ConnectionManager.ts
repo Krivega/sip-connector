@@ -15,7 +15,7 @@ import type { TJsSIP } from '@/types';
 import type { TConnect } from './ConnectionFlow';
 import type { TEventMap } from './events';
 import type { TParametersCheckTelephony } from './SipOperations';
-import type { TConnectionConfiguration, TParametersConnection } from './types';
+import type { TConnectionConfig, TParametersConnection } from './types';
 
 const debug = resolveDebug('ConnectionManager');
 
@@ -121,7 +121,7 @@ export default class ConnectionManager extends EventEmitterProxy<TEventMap> {
   public connect = async (
     parameters: TConnectParameters,
     options?: TConnectOptions,
-  ): Promise<TConnectionConfiguration> => {
+  ): Promise<TConnectionConfig> => {
     return this.disconnect()
       .catch((error: unknown) => {
         debug('connect: disconnect error', error);

@@ -4,7 +4,7 @@ import { EEvents, EState } from './constants';
 import { createConnectionMachine } from './createConnectionMachine';
 
 import type { TEvents } from '../events';
-import type { TConnectionConfiguration } from '../types';
+import type { TConnectionConfig } from '../types';
 import type { TConnectionMachineEvents, TContext, TContextMap } from './types';
 
 const connectionMachine = createConnectionMachine();
@@ -89,15 +89,15 @@ export class ConnectionStateMachine extends BaseStateMachine<
     this.sendEvent({ type: EEvents.START_CONNECT });
   };
 
-  public readonly toStartUa = (configuration: TConnectionConfiguration): void => {
-    this.sendEvent({ type: EEvents.START_UA, configuration });
+  public readonly toStartUa = (config: TConnectionConfig): void => {
+    this.sendEvent({ type: EEvents.START_UA, configuration: config });
   };
 
   public reset(): void {
     this.toIdle();
   }
 
-  public getConnectionConfiguration(): TConnectionConfiguration | undefined {
+  public getConnectionConfiguration(): TConnectionConfig | undefined {
     if (this.context.connectionConfiguration === undefined) {
       return undefined;
     }

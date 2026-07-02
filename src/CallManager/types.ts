@@ -42,7 +42,7 @@ export type TCustomError = Error & {
   code?: string;
 };
 
-export type TCallConfiguration = {
+export type TCallConfig = {
   answer?: boolean;
   number?: string;
 };

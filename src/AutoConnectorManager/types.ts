@@ -76,8 +76,7 @@ export type TAutoConnectStartFailureResult = {
 };
 
 export type TAutoConnectStartResult =
-  | TAutoConnectStartSuccessResult
-  | TAutoConnectStartFailureResult;
+  TAutoConnectStartSuccessResult | TAutoConnectStartFailureResult;
 
 export const RECONNECT_REASONS = {
   START: 'start',

@@ -550,9 +550,9 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
   }
 
   private subscribeConnectedWithConfigurationFromOutOfCall() {
-    this.connectionManager.on('connected-with-configuration', (configuration) => {
+    this.connectionManager.on('connected-with-configuration', (config) => {
       if (!this.isCallActive) {
-        this.events.trigger('connected-with-configuration-from-out-of-call', configuration);
+        this.events.trigger('connected-with-configuration-from-out-of-call', config);
       }
     });
   }
@@ -608,8 +608,8 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     },
     offer: RTCSessionDescriptionInit,
   ): Promise<RTCSessionDescription> => {
-    const connectionConfiguration = this.connectionManager.getConnectionConfiguration();
-    const serverUrl = connectionConfiguration?.sipServerUrl;
+    const connectionConfig = this.connectionManager.getConnectionConfiguration();
+    const serverUrl = connectionConfig?.sipServerUrl;
 
     if (serverUrl === undefined) {
       throw new Error('No sipServerUrl for sendOffer');

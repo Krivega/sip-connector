@@ -282,7 +282,7 @@ describe('resolveVideoSendingBalancer', () => {
       expect(result.isChanged).toBe(true);
       expect(result.parameters.encodings).toEqual([
         {
-          scaleResolutionDownBy: 4.444_444_444_444_445,
+          scaleResolutionDownBy: 4.444444444444445,
           maxBitrate: 320_000,
         },
       ]);
@@ -294,7 +294,7 @@ describe('resolveVideoSendingBalancer', () => {
       const targetWidth = 288;
       const targeHight = 162;
 
-      const targetScaleResolutionDownBy = 4.444_444_444_444_445; // 720 / 162
+      const targetScaleResolutionDownBy = 4.444444444444445; // 720 / 162
 
       // Мокаем connection и sender
       const mockConnection = {
@@ -442,7 +442,7 @@ describe('resolveVideoSendingBalancer', () => {
       const targetWidth = 288;
       const targeHight = 162;
 
-      const targetScaleResolutionDownBy = 4.444_444_444_444_445; // 720 / 162
+      const targetScaleResolutionDownBy = 4.444444444444445; // 720 / 162
 
       // Мокаем connection и sender
       const mockConnection = {

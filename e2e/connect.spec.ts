@@ -153,33 +153,33 @@ async function expectConnectionConfig(statusDashboard: TNodeReader) {
     /context:/i,
   )) as TContextJson;
 
-  const { connectionConfiguration: cfg } = contextJson;
+  const { connectionConfiguration: config } = contextJson;
 
-  expect(cfg, 'connectionConfiguration присутствует в context').toBeDefined();
+  expect(config, 'connectionConfiguration присутствует в context').toBeDefined();
 
-  if (!isConnectionConfig(cfg)) {
+  if (!isConnectionConfig(config)) {
     throw new TypeError('connectionConfiguration имеет неверный формат');
   }
 
   const c = connectionFormConfig;
 
-  expect(cfg.sipServerUrl).toBe(c.serverAddress);
-  expect(typeof cfg.displayName).toBe('string');
-  expect(cfg.displayName as string).toBe(normalizeSipDisplayName(c.displayName));
-  expect(cfg.user).toBe(c.userNumber);
-  expect(cfg.authorizationUser).toBe(c.userNumber);
-  expect(cfg.password).toBe(c.password);
-  expect(cfg.register).toBe(true);
+  expect(config.sipServerUrl).toBe(c.serverAddress);
+  expect(typeof config.displayName).toBe('string');
+  expect(config.displayName as string).toBe(normalizeSipDisplayName(c.displayName));
+  expect(config.user).toBe(c.userNumber);
+  expect(config.authorizationUser).toBe(c.userNumber);
+  expect(config.password).toBe(c.password);
+  expect(config.register).toBe(true);
 
-  const iceServers = cfg.iceServers as { urls?: string | string[] }[];
+  const iceServers = config.iceServers as { urls?: string | string[] }[];
   const firstIceServer = iceServers[0];
 
   expectStunUrl(firstIceServer.urls, c.serverAddress);
 
-  expect(typeof cfg.sipServerIp).toBe('string');
-  expect(typeof cfg.remoteAddress).toBe('string');
-  expect(cfg.sipServerIp as string).toMatch(IPv4);
-  expect(cfg.remoteAddress as string).toMatch(IPv4);
+  expect(typeof config.sipServerIp).toBe('string');
+  expect(typeof config.remoteAddress).toBe('string');
+  expect(config.sipServerIp as string).toMatch(IPv4);
+  expect(config.remoteAddress as string).toMatch(IPv4);
 }
 
 // ---------------------------------------------------------------------------

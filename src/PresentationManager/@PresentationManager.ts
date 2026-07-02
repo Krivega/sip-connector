@@ -62,8 +62,7 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
   private readonly maxBitrate?: number;
 
   private cancelableSendPresentationWithRepeatedCalls:
-    | ReturnType<typeof repeatedCallsAsync<MediaStream>>
-    | undefined;
+    ReturnType<typeof repeatedCallsAsync<MediaStream>> | undefined;
 
   private readonly callManager: CallManager;
 

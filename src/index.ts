@@ -77,11 +77,11 @@ export type {
 } from './CallManager';
 export type {
   TParametersConnection,
-  TConnectionConfiguration,
+  TConnectionConfig,
   TConnectionContextMap,
   TConnectionSnapshot,
   TIceServer,
-  TServerConfiguration,
+  TServerConfig,
 } from './ConnectionManager';
 export type { TInboundStats, TOutboundStats } from './StatsPeerConnection';
 export type {

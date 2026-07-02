@@ -5,7 +5,7 @@ import { createEvents } from '../events';
 
 import type { IncomingResponse, Socket } from '@krivega/jssip';
 import type { TEvents } from '../events';
-import type { TConnectionConfiguration } from '../types';
+import type { TConnectionConfig } from '../types';
 
 jest.mock('@/logger');
 
@@ -14,7 +14,7 @@ describe('ConnectionStateMachine', () => {
   let events: TEvents;
   let stateMachine: ConnectionStateMachine;
 
-  const baseConfiguration: TConnectionConfiguration = {
+  const baseConfig: TConnectionConfig = {
     sipServerIp: '192.168.0.1',
     sipServerUrl: 'sip.example.com',
     remoteAddress: '10.10.10.10',
@@ -75,25 +75,25 @@ describe('ConnectionStateMachine', () => {
 
   it('toStartUa переводит в CONNECTING и сохраняет configuration', () => {
     stateMachine.toStartConnect();
-    stateMachine.toStartUa(baseConfiguration);
+    stateMachine.toStartUa(baseConfig);
 
     expect(stateMachine.state).toBe(EConnectionStatus.CONNECTING);
-    expect(stateMachine.getConnectionConfiguration()).toEqual(baseConfiguration);
+    expect(stateMachine.getConnectionConfiguration()).toEqual(baseConfig);
   });
 
   it('копирует configuration при чтении', () => {
     stateMachine.toStartConnect();
-    stateMachine.toStartUa(baseConfiguration);
+    stateMachine.toStartUa(baseConfig);
 
-    const configuration = stateMachine.getConnectionConfiguration();
+    const config = stateMachine.getConnectionConfiguration();
 
-    expect(configuration).toEqual(baseConfiguration);
-    expect(configuration).not.toBe(baseConfiguration);
+    expect(config).toEqual(baseConfig);
+    expect(config).not.toBe(baseConfig);
   });
 
   it('для register=false connected ведет в ESTABLISHED', () => {
     stateMachine.toStartConnect();
-    stateMachine.toStartUa({ ...baseConfiguration, register: false });
+    stateMachine.toStartUa({ ...baseConfig, register: false });
 
     events.trigger('connected', { socket: {} as Socket });
 
@@ -104,7 +104,7 @@ describe('ConnectionStateMachine', () => {
 
   it('для register=true connected ведет в CONNECTED до registered', () => {
     stateMachine.toStartConnect();
-    stateMachine.toStartUa({ ...baseConfiguration, register: true });
+    stateMachine.toStartUa({ ...baseConfig, register: true });
 
     events.trigger('connected', { socket: {} as Socket });
     expect(stateMachine.state).toBe(EConnectionStatus.CONNECTED);
@@ -118,7 +118,7 @@ describe('ConnectionStateMachine', () => {
     expect(stateMachine.isRegistered).toBe(false);
 
     stateMachine.toStartConnect();
-    stateMachine.toStartUa({ ...baseConfiguration, register: true });
+    stateMachine.toStartUa({ ...baseConfig, register: true });
     events.trigger('connected', { socket: {} as Socket });
     events.trigger('registered', { response: {} as IncomingResponse });
 
@@ -129,7 +129,7 @@ describe('ConnectionStateMachine', () => {
 
   it('disconnecting/disconnected переводят в DISCONNECTING и DISCONNECTED', () => {
     stateMachine.toStartConnect();
-    stateMachine.toStartUa(baseConfiguration);
+    stateMachine.toStartUa(baseConfig);
     events.trigger('connected', { socket: {} as Socket });
 
     events.trigger('disconnecting', {});
@@ -143,7 +143,7 @@ describe('ConnectionStateMachine', () => {
 
   it('reset переводит в IDLE и очищает configuration только из DISCONNECTED', () => {
     stateMachine.toStartConnect();
-    stateMachine.toStartUa(baseConfiguration);
+    stateMachine.toStartUa(baseConfig);
     events.trigger('connected', { socket: {} as Socket });
     events.trigger('disconnected', { socket: {} as Socket, error: false });
     expect(stateMachine.getConnectionConfiguration()).toBeDefined();
@@ -161,7 +161,7 @@ describe('ConnectionStateMachine', () => {
     expect(stateMachine.state).toBe(EConnectionStatus.PREPARING);
     expect(stateMachine.isActiveConnection).toBe(false);
 
-    stateMachine.toStartUa(baseConfiguration);
+    stateMachine.toStartUa(baseConfig);
     expect(stateMachine.state).toBe(EConnectionStatus.CONNECTING);
     expect(stateMachine.isActiveConnection).toBe(false);
 
@@ -172,14 +172,14 @@ describe('ConnectionStateMachine', () => {
 
   it('isRegisterEnabled отражает register flag из configuration', () => {
     stateMachine.toStartConnect();
-    stateMachine.toStartUa({ ...baseConfiguration, register: true });
+    stateMachine.toStartUa({ ...baseConfig, register: true });
     expect(stateMachine.isRegisterEnabled()).toBe(true);
   });
 
   it('невалидный toStartUa из IDLE логирует invalid transition', () => {
     mockLogger.mockClear();
 
-    stateMachine.toStartUa(baseConfiguration);
+    stateMachine.toStartUa(baseConfig);
 
     expect(stateMachine.state).toBe(EConnectionStatus.IDLE);
     expect(mockLogger).toHaveBeenCalledWith(
@@ -195,7 +195,7 @@ describe('ConnectionStateMachine', () => {
     expect(listener).toHaveBeenCalledWith(EConnectionStatus.PREPARING);
 
     unsubscribe();
-    stateMachine.toStartUa(baseConfiguration);
+    stateMachine.toStartUa(baseConfig);
     expect(listener).toHaveBeenCalledTimes(1);
   });
 });

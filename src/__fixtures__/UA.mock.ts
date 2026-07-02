@@ -162,19 +162,19 @@ class UA extends EventEmitter implements IUA {
 
   private isConnectedInner?: boolean;
 
-  public constructor(_configuration: UAConfigurationParams) {
+  public constructor(_config: UAConfigurationParams) {
     super();
     this.events = new Events<readonly (keyof UAEventMap)[]>(UA_JSSIP_EVENT_NAMES);
 
-    const [scheme, infoUri] = _configuration.uri.split(':');
+    const [scheme, infoUri] = _config.uri.split(':');
     const [user, url] = infoUri.split('@');
 
-    const configuration = {
-      ..._configuration,
+    const config = {
+      ..._config,
       uri: new URI(scheme, user, url),
     };
 
-    this.configuration = configuration;
+    this.configuration = config;
     this.registratorInner = new Registrator();
   }
 

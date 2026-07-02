@@ -305,8 +305,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   }
 
   public getRecvQuality():
-    | { effectiveQuality: TEffectiveQuality; quality: TRecvQuality }
-    | undefined {
+    { effectiveQuality: TEffectiveQuality; quality: TRecvQuality } | undefined {
     const { recvSession } = this;
 
     if (recvSession === undefined) {

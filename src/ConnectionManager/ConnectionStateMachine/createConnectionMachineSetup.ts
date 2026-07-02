@@ -21,13 +21,13 @@ export const createConnectionMachineSetup = () => {
     },
     actions: {
       [EAction.SET_CONNECTION_CONFIGURATION]: assign(({ event }) => {
-        const setConfigurationEvent = event as Extract<
+        const setConfigEvent = event as Extract<
           TConnectionMachineEvents,
           { type: EEvents.START_UA }
         >;
 
         return {
-          connectionConfiguration: { ...setConfigurationEvent.configuration },
+          connectionConfiguration: { ...setConfigEvent.configuration },
         };
       }),
       [EAction.CLEAR_CONNECTION_CONFIGURATION]: assign(() => {

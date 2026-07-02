@@ -16,8 +16,7 @@ const configureEncodings = (
   parametersCurrent.encodings.forEach((encoding, index) => {
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     const encodingTarget = (parametersTarget?.encodings ?? [])[index] as
-      | RTCRtpEncodingParameters
-      | undefined;
+      RTCRtpEncodingParameters | undefined;
     const maxBitrate = encodingTarget?.maxBitrate;
     const scaleResolutionDownBy = encodingTarget?.scaleResolutionDownBy;
 

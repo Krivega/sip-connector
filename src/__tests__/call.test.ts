@@ -46,15 +46,13 @@ describe('call', () => {
 
     const number = '10000';
     const callPromise = sipConnector.call({ number, mediaStream });
-    const connectionConfiguration = sipConnector.connectionManager.getConnectionConfiguration();
+    const connectionConfig = sipConnector.connectionManager.getConnectionConfiguration();
 
-    expect(connectionConfiguration?.sipServerIp).toBe(
-      dataForConnectionWithAuthorization.sipServerIp,
-    );
-    expect(connectionConfiguration?.displayName).toBe('DISPLAY_NAME');
-    expect(connectionConfiguration?.register).toBe(dataForConnectionWithAuthorization.register);
-    expect(connectionConfiguration?.user).toBe(dataForConnectionWithAuthorization.user);
-    expect(connectionConfiguration?.password).toBe(dataForConnectionWithAuthorization.password);
+    expect(connectionConfig?.sipServerIp).toBe(dataForConnectionWithAuthorization.sipServerIp);
+    expect(connectionConfig?.displayName).toBe('DISPLAY_NAME');
+    expect(connectionConfig?.register).toBe(dataForConnectionWithAuthorization.register);
+    expect(connectionConfig?.user).toBe(dataForConnectionWithAuthorization.user);
+    expect(connectionConfig?.password).toBe(dataForConnectionWithAuthorization.password);
 
     return callPromise;
   });

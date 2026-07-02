@@ -13,10 +13,10 @@ import {
   dataForConnectionWithoutAuthorizationWithSipServerUrlChanged,
   dataForConnectionWithoutAuthorizationWithoutDisplayName,
   thirdWord,
-  uaConfigurationWithAuthorization,
-  uaConfigurationWithAuthorizationPasswordChanged,
-  uaConfigurationWithoutAuthorization,
-  uaConfigurationWithoutAuthorizationWithoutDisplayName,
+  uaConfigWithAuthorization,
+  uaConfigWithAuthorizationPasswordChanged,
+  uaConfigWithoutAuthorization,
+  uaConfigWithoutAuthorizationWithoutDisplayName,
   withNameChanged,
 } from '../__fixtures__/connectToServer';
 import hasValidUri from '../__fixtures__/hasValidUri';
@@ -45,7 +45,7 @@ describe('processRequest', () => {
       expect(sipConnector.isConfigured()).toBe(true);
       expect(hasValidUri(sipConnector.connectionManager.ua!.configuration.uri)).toBe(true);
       expect(parseObjectWithoutUri(sipConnector.connectionManager.ua!.configuration)).toEqual(
-        uaConfigurationWithoutAuthorization,
+        uaConfigWithoutAuthorization,
       );
     });
   });
@@ -59,7 +59,7 @@ describe('processRequest', () => {
         expect(sipConnector.isConfigured()).toBe(true);
         expect(hasValidUri(sipConnector.connectionManager.ua!.configuration.uri)).toBe(true);
         expect(parseObjectWithoutUri(sipConnector.connectionManager.ua!.configuration)).toEqual(
-          uaConfigurationWithoutAuthorizationWithoutDisplayName,
+          uaConfigWithoutAuthorizationWithoutDisplayName,
         );
       },
     );
@@ -79,7 +79,7 @@ describe('processRequest', () => {
         expect(sipConnector.isConfigured()).toBe(true);
         expect(hasValidUri(sipConnector.connectionManager.ua!.configuration.uri)).toBe(true);
         expect(parseObjectWithoutUri(sipConnector.connectionManager.ua!.configuration)).toEqual(
-          uaConfigurationWithoutAuthorization,
+          uaConfigWithoutAuthorization,
         );
       });
   });
@@ -100,7 +100,7 @@ describe('processRequest', () => {
         expect(success).toBe(true);
         expect(sipConnector.isConfigured()).toBe(true);
         expect(parseObjectWithoutUri(sipConnector.connectionManager.ua!.configuration)).toEqual(
-          uaConfigurationWithoutAuthorizationWithoutDisplayName,
+          uaConfigWithoutAuthorizationWithoutDisplayName,
         );
       });
   });
@@ -112,9 +112,7 @@ describe('processRequest', () => {
     return processRequest(dataForConnectionWithAuthorization).then((success) => {
       expect(success).toBe(true);
       expect(sipConnector.isConfigured()).toBe(true);
-      expect(sipConnector.connectionManager.ua!.configuration).toEqual(
-        uaConfigurationWithAuthorization,
-      );
+      expect(sipConnector.connectionManager.ua!.configuration).toEqual(uaConfigWithAuthorization);
     });
   });
 
@@ -286,7 +284,7 @@ describe('processRequest', () => {
       .then((success) => {
         expect(success).toBe(true);
         expect(sipConnector.connectionManager.ua!.configuration).toEqual(
-          uaConfigurationWithAuthorizationPasswordChanged,
+          uaConfigWithAuthorizationPasswordChanged,
         );
       });
   });
@@ -319,7 +317,7 @@ describe('processRequest', () => {
       .then((success) => {
         expect(success).toBe(true);
         expect(sipConnector.connectionManager.ua!.configuration).toEqual(
-          uaConfigurationWithAuthorizationPasswordChanged,
+          uaConfigWithAuthorizationPasswordChanged,
         );
       });
   });
@@ -335,9 +333,7 @@ describe('processRequest', () => {
       })
       .then((success) => {
         expect(success).toBe(true);
-        expect(sipConnector.connectionManager.ua!.configuration).toEqual(
-          uaConfigurationWithAuthorization,
-        );
+        expect(sipConnector.connectionManager.ua!.configuration).toEqual(uaConfigWithAuthorization);
       });
   });
 

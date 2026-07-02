@@ -9,7 +9,7 @@ import hasPurgatory from '@/tools/hasPurgatory';
 
 import type { EContentUseLicense } from '@/ApiManager';
 import type { TOnAddedTransceiver, TRemoteStreams } from '@/CallManager';
-import type { TParametersConnection, TConnectionConfiguration } from '@/ConnectionManager';
+import type { TParametersConnection, TConnectionConfig } from '@/ConnectionManager';
 import type { TContentHint } from '@/PresentationManager';
 import type { SipConnector } from '@/SipConnector';
 import type { TOutboundVideoVerificationStrictness, TStatsManagerEventMap } from '@/StatsManager';
@@ -206,16 +206,16 @@ class SipConnectorFacade implements IProxyMethods {
       hasReadyForConnection?: () => boolean;
     },
   ): Promise<
-    | { configuration: TConnectionConfiguration; isSuccessful: true }
+    | { configuration: TConnectionConfig; isSuccessful: true }
     | { configuration: undefined; isSuccessful: false }
   > => {
     return this.sipConnector
       .connect(parameters, options)
-      .then((connectionConfigurationWithUa) => {
+      .then((connectionConfigWithUa) => {
         debug('connectToServer then');
 
-        return { configuration: connectionConfigurationWithUa, isSuccessful: true } as {
-          configuration: TConnectionConfiguration;
+        return { configuration: connectionConfigWithUa, isSuccessful: true } as {
+          configuration: TConnectionConfig;
           isSuccessful: true;
         };
       })

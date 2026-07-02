@@ -53,8 +53,7 @@ class RecvSession {
    * Может быть отменена при новом renegotiate для предотвращения конфликтов.
    */
   private cancelableSendOfferWithRepeatedCalls:
-    | ReturnType<typeof repeatedCallsAsync<RTCSessionDescription, Error, false>>
-    | undefined;
+    ReturnType<typeof repeatedCallsAsync<RTCSessionDescription, Error, false>> | undefined;
 
   /**
    * Промис текущего выполняющегося renegotiate.

@@ -28,20 +28,20 @@ describe('now', () => {
   });
 
   it('#1 uses performance.now when available', () => {
-    const perfNow = jest.fn().mockReturnValue(123.456);
+    const performanceNow = jest.fn().mockReturnValue(123.456);
 
     // Make property configurable for reliable cleanup
     Object.defineProperty(window, 'performance', {
       configurable: true,
       enumerable: true,
       writable: true,
-      value: { now: perfNow } as unknown as Performance,
+      value: { now: performanceNow } as unknown as Performance,
     });
 
     jest.spyOn(Date, 'now');
 
     expect(now()).toBe(123.456);
-    expect(perfNow).toHaveBeenCalledTimes(1);
+    expect(performanceNow).toHaveBeenCalledTimes(1);
   });
 
   it('#2 falls back to Date.now when performance is not present', () => {
