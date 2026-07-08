@@ -8,11 +8,17 @@ export type TIceServer = {
   credential?: string;
 };
 
+export type TMaxAvailableResolution = {
+  width: number;
+  height: number;
+};
+
 export type TServerConfig = {
   sipServerUrl: string;
   sipServerIp: string;
   remoteAddress: string;
   iceServers: TIceServer[];
+  maxAvailableResolution?: TMaxAvailableResolution;
 };
 
 export type TParametersConnection = TServerConfig &

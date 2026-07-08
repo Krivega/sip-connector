@@ -1,15 +1,21 @@
 export { default as ConnectionManager } from './@ConnectionManager';
 export {
-  EConnectionStatus,
   ConnectionStateMachine,
   EConnectionStateMachineEvents,
+  EConnectionStatus,
 } from './ConnectionStateMachine';
-export { hasNotReadyForConnectionError, createNotReadyForConnectionError } from './utils';
 export { EVENT_NAMES as CONNECTION_MANAGER_EVENT_NAMES, createEvents } from './events';
+export { createNotReadyForConnectionError, hasNotReadyForConnectionError } from './utils';
 
-export type { TIceServer, TServerConfig, TParametersConnection, TConnectionConfig } from './types';
 export type {
-  TEvents as TConnectionManagerEvents,
+  TIceServer,
+  TMaxAvailableResolution,
+  TServerConfig,
+  TParametersConnection,
+  TConnectionConfig,
+} from './types';
+export type {
   TEventMap as TConnectionManagerEventMap,
+  TEvents as TConnectionManagerEvents,
 } from './events';
-export type { TConnectionSnapshot, TConnectionContextMap } from './ConnectionStateMachine';
+export type { TConnectionContextMap, TConnectionSnapshot } from './ConnectionStateMachine';

@@ -29,7 +29,7 @@
 
 | Инвариант                | Описание                                                                                                                                                 |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Поле контекста           | Контекст содержит `connectionConfiguration: TConnectionConfig` (включая `remoteAddress` и `iceServers`).                                                 |
+| Поле контекста           | Контекст содержит `connectionConfiguration: TConnectionConfig` (включая `remoteAddress`, `iceServers` и `maxAvailableResolution`).                       |
 | Пустая конфигурация      | В `connection:idle`, `connection:preparing`, `connection:disconnected` значение `connectionConfiguration = undefined`.                                   |
 | Заполненная конфигурация | В `connection:connecting`, `connection:connected`, `connection:registered`, `connection:established`, `connection:disconnecting` конфигурация заполнена. |
 | Установка                | `START_UA` сохраняет конфигурацию через action `setConnectionConfiguration`.                                                                             |
