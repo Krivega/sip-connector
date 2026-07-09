@@ -758,4 +758,72 @@ describe('PresentationManager', () => {
     expect(manager.promisePendingStartPresentation).toBeUndefined();
     expect(manager.promisePendingStopPresentation).toBeUndefined();
   });
+
+  describe('ограничение sendEncodings по maxResolution', () => {
+    const RESOLUTION_4K = { width: 3840, height: 2160 };
+    const MAX_RESOLUTION = { width: 1920, height: 1080 };
+
+    let presentationMediaStream: MediaStream;
+
+    beforeEach(() => {
+      presentationMediaStream = createMediaStreamMock({
+        video: {
+          deviceId: { exact: 'videoDeviceId' },
+          width: { exact: RESOLUTION_4K.width },
+          height: { exact: RESOLUTION_4K.height },
+        },
+      });
+    });
+
+    it('должен ограничивать sendEncodings в startPresentation по maxResolution', async () => {
+      const startPresentation = jest.spyOn(rtcSession, 'startPresentation');
+
+      await manager.startPresentation(beforeStartPresentation, presentationMediaStream, {
+        maxResolution: MAX_RESOLUTION,
+      });
+
+      expect(startPresentation).toHaveBeenCalledWith(
+        expect.any(MediaStream),
+        true,
+        expect.objectContaining({
+          sendEncodings: [{ scaleResolutionDownBy: 2 }],
+        }),
+      );
+    });
+
+    it('должен ограничивать sendEncodings в updatePresentation по maxResolution', async () => {
+      await manager.startPresentation(beforeStartPresentation, presentationMediaStream);
+
+      const startPresentation = jest.spyOn(rtcSession, 'startPresentation');
+
+      await manager.updatePresentation(beforeStartPresentation, presentationMediaStream, {
+        maxResolution: MAX_RESOLUTION,
+      });
+
+      expect(startPresentation).toHaveBeenCalledWith(
+        expect.any(MediaStream),
+        false,
+        expect.objectContaining({
+          sendEncodings: [{ scaleResolutionDownBy: 2 }],
+        }),
+      );
+    });
+
+    it('не должен изменять sendEncodings, если maxResolution отсутствует', async () => {
+      const sendEncodings = [{ maxBitrate: 1_000_000 }];
+      const startPresentation = jest.spyOn(rtcSession, 'startPresentation');
+
+      await manager.startPresentation(beforeStartPresentation, presentationMediaStream, {
+        sendEncodings,
+      });
+
+      expect(startPresentation).toHaveBeenCalledWith(
+        expect.any(MediaStream),
+        true,
+        expect.objectContaining({
+          sendEncodings,
+        }),
+      );
+    });
+  });
 });

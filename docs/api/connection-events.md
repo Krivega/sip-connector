@@ -38,6 +38,10 @@
     username?: string;
     credential?: string;
   }>;
+  maxAvailableResolution?: {
+    width: number;
+    height: number;
+  };
   displayName: string;
   register?: boolean;
   user?: string;
@@ -63,6 +67,10 @@
     username?: string;
     credential?: string;
   }>;
+  maxAvailableResolution?: {
+    width: number;
+    height: number;
+  };
   displayName: string;
   authorizationUser: string;
   register?: boolean;

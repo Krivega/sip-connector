@@ -443,6 +443,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     } = {},
   ): Promise<MediaStream> {
     const { callLimit, onAddedTransceiver, ...rest } = options;
+    const connectionConfig = this.connectionManager.getConnectionConfiguration();
 
     return this.presentationManager.startPresentation(
       async () => {
@@ -453,6 +454,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       mediaStream,
       {
         ...rest,
+        maxResolution: connectionConfig?.maxAvailableResolution,
         onAddedTransceiver: this.resolveHandleAddTransceiver(onAddedTransceiver),
       },
       callLimit === undefined ? undefined : { callLimit },
@@ -478,6 +480,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     } = {},
   ): Promise<MediaStream | undefined> {
     const { onAddedTransceiver, ...rest } = options;
+    const connectionConfig = this.connectionManager.getConnectionConfiguration();
 
     return this.presentationManager.updatePresentation(
       async () => {
@@ -488,6 +491,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       mediaStream,
       {
         ...rest,
+        maxResolution: connectionConfig?.maxAvailableResolution,
         onAddedTransceiver: this.resolveHandleAddTransceiver(onAddedTransceiver),
       },
     );

@@ -45,6 +45,12 @@ await facade.stopPresentation();
 | `degradationPreference` | Приоритет при ухудшении качества | `'maintain-resolution'` для презентаций |
 | `sendEncodings`         | Параметры слоёв кодирования      | Массив RTCRtpEncodingParameters         |
 
+Если в конфигурации подключения есть `maxAvailableResolution`, `SipConnector` передаёт его
+в `PresentationManager` как `maxResolution`. `PresentationManager` при `startPresentation()` и
+`updatePresentation()` автоматически добавляет или ужесточает `scaleResolutionDownBy` в
+`sendEncodings`, чтобы разрешение отправляемой презентации не превышало этот лимит.
+При отсутствии `maxAvailableResolution` поведение не меняется.
+
 ## Адаптивные настройки в зависимости от типа контента
 
 ```typescript

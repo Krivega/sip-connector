@@ -13,6 +13,7 @@
 - Запуск и остановка презентаций
 - Обновление потоков презентации
 - Управление битрейтом презентации
+- Ограничение разрешения презентации через `maxResolution`
 - Обработка дублированных вызовов
 - Поддержка P2P и MCU режимов
 - Валидация переходов состояний через PresentationStateMachine
@@ -34,6 +35,7 @@
 | `repeatedCallsAsync`       | Защита от дублированных запусков и повторные попытки send-flow. |
 | `prepareMediaStream`       | Подготовка media stream и content hint.                         |
 | `setMaxBitrateToSender`    | Ограничение битрейта презентационного трека.                    |
+| `resolveSendEncodings`     | Ограничение `sendEncodings` по `maxResolution`.                 |
 
 ## Связанная state machine
 

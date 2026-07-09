@@ -191,6 +191,21 @@ describe('connect', () => {
     expect(connectionManager.getConnectionConfiguration()?.iceServers).toEqual(iceServers);
   });
 
+  it('должен сохранять maxAvailableResolution в connectionConfiguration', async () => {
+    expect.assertions(1);
+
+    const maxAvailableResolution = { width: 1920, height: 1080 };
+
+    await connectionManager.connect({
+      ...dataForConnectionWithAuthorization,
+      maxAvailableResolution,
+    });
+
+    expect(connectionManager.getConnectionConfiguration()?.maxAvailableResolution).toEqual(
+      maxAvailableResolution,
+    );
+  });
+
   it('должен отправлять расширенные extraHeaders', async () => {
     expect.assertions(1);
 
