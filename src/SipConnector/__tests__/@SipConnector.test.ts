@@ -2,7 +2,6 @@
 import { C, IncomingResponse } from '@krivega/jssip';
 import { createMediaStreamMock } from 'webrtc-mock';
 
-import { createMediaStreamWithVideoTrack } from '@/__fixtures__/createMediaStreamWithVideoTrack';
 import flushPromises from '@/__fixtures__/flushPromises';
 import JsSIP from '@/__fixtures__/jssip.mock';
 import logger from '@/logger';
@@ -651,54 +650,63 @@ describe('SipConnector', () => {
     expect(sendStoppedPresentation).not.toHaveBeenCalled();
   });
 
-  it('должен ограничивать sendEncodings в startPresentation по maxAvailableResolution из connectionConfiguration', async () => {
-    const mediaStream = createMediaStreamWithVideoTrack(RESOLUTION_4K);
-    const startPresentation = jest
-      .spyOn(sipConnector.presentationManager, 'startPresentation')
-      .mockImplementation(async (callback, stream) => {
-        await callback();
+  describe('ограничение sendEncodings по maxAvailableResolution', () => {
+    let mediaStream: MediaStream;
 
-        return stream;
+    beforeEach(() => {
+      mediaStream = createMediaStreamMock({
+        video: {
+          deviceId: { exact: 'videoDeviceId' },
+          width: { exact: RESOLUTION_4K.width },
+          height: { exact: RESOLUTION_4K.height },
+        },
       });
 
-    jest.spyOn(sipConnector.apiManager, 'askPermissionToStartPresentation').mockResolvedValue();
-    jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
-      maxAvailableResolution: MAX_AVAILABLE_RESOLUTION,
-    } as unknown as TConnectionConfig);
+      jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
+        maxAvailableResolution: MAX_AVAILABLE_RESOLUTION,
+      } as unknown as TConnectionConfig);
+    });
 
-    await sipConnector.startPresentation(mediaStream);
+    it('должен ограничивать sendEncodings в startPresentation по maxAvailableResolution из connectionConfiguration', async () => {
+      const startPresentation = jest
+        .spyOn(sipConnector.presentationManager, 'startPresentation')
+        .mockImplementation(async (callback, stream) => {
+          await callback();
 
-    expect(startPresentation).toHaveBeenCalledWith(
-      expect.any(Function),
-      mediaStream,
-      expect.objectContaining({
-        sendEncodings: [{ scaleResolutionDownBy: 2 }],
-      }),
-      undefined,
-    );
-  });
+          return stream;
+        });
 
-  it('должен ограничивать sendEncodings в updatePresentation по maxAvailableResolution из connectionConfiguration', async () => {
-    const mediaStream = createMediaStreamWithVideoTrack(RESOLUTION_4K);
-    const updatePresentation = jest
-      .spyOn(sipConnector.presentationManager, 'updatePresentation')
-      .mockImplementation(async (_callback, stream) => {
-        return stream;
-      });
+      jest.spyOn(sipConnector.apiManager, 'askPermissionToStartPresentation').mockResolvedValue();
 
-    jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
-      maxAvailableResolution: MAX_AVAILABLE_RESOLUTION,
-    } as unknown as TConnectionConfig);
+      await sipConnector.startPresentation(mediaStream);
 
-    await sipConnector.updatePresentation(mediaStream);
+      expect(startPresentation).toHaveBeenCalledWith(
+        expect.any(Function),
+        mediaStream,
+        expect.objectContaining({
+          sendEncodings: [{ scaleResolutionDownBy: 2 }],
+        }),
+        undefined,
+      );
+    });
 
-    expect(updatePresentation).toHaveBeenCalledWith(
-      expect.any(Function),
-      mediaStream,
-      expect.objectContaining({
-        sendEncodings: [{ scaleResolutionDownBy: 2 }],
-      }),
-    );
+    it('должен ограничивать sendEncodings в updatePresentation по maxAvailableResolution из connectionConfiguration', async () => {
+      const updatePresentation = jest
+        .spyOn(sipConnector.presentationManager, 'updatePresentation')
+        .mockImplementation(async (_callback, stream) => {
+          return stream;
+        });
+
+      await sipConnector.updatePresentation(mediaStream);
+
+      expect(updatePresentation).toHaveBeenCalledWith(
+        expect.any(Function),
+        mediaStream,
+        expect.objectContaining({
+          sendEncodings: [{ scaleResolutionDownBy: 2 }],
+        }),
+      );
+    });
   });
 
   it('должен корректно обрабатывать startPresentation когда в DIRECT_P2P_ROOM', async () => {
