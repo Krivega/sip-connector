@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [29.1.0](https://github.com/Krivega/sip-connector/compare/v29.0.1...v29.1.0) (2026-07-09)
+
+### Features
+
+- enforce presentation max resolution from connection config ([#80](https://github.com/Krivega/sip-connector/issues/80)) ([66edc63](https://github.com/Krivega/sip-connector/commit/66edc63852f70419d336000d2e02bb8895fd0e81))
+
 ### [29.0.1](https://github.com/Krivega/sip-connector/compare/v29.0.0...v29.0.1) (2026-07-02)
 
 ## [29.0.0](https://github.com/Krivega/sip-connector/compare/v28.12.1...v29.0.0) (2026-06-24)
