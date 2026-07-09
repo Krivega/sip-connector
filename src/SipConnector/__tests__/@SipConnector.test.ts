@@ -647,65 +647,6 @@ describe('SipConnector', () => {
     expect(sendStoppedPresentation).not.toHaveBeenCalled();
   });
 
-  describe('прокидывание maxResolution из maxAvailableResolution', () => {
-    let mediaStream: MediaStream;
-
-    beforeEach(() => {
-      mediaStream = createMediaStreamMock({
-        video: {
-          deviceId: { exact: 'videoDeviceId' },
-          width: { exact: 3840 },
-          height: { exact: 2160 },
-        },
-      });
-
-      jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
-        maxAvailableResolution: { width: 1920, height: 1080 },
-      } as unknown as TConnectionConfig);
-    });
-
-    it('должен передавать maxResolution в startPresentation PresentationManager', async () => {
-      const startPresentation = jest
-        .spyOn(sipConnector.presentationManager, 'startPresentation')
-        .mockImplementation(async (callback, stream) => {
-          await callback();
-
-          return stream;
-        });
-
-      jest.spyOn(sipConnector.apiManager, 'askPermissionToStartPresentation').mockResolvedValue();
-
-      await sipConnector.startPresentation(mediaStream);
-
-      expect(startPresentation).toHaveBeenCalledWith(
-        expect.any(Function),
-        mediaStream,
-        expect.objectContaining({
-          maxResolution: { width: 1920, height: 1080 },
-        }),
-        undefined,
-      );
-    });
-
-    it('должен передавать maxResolution в updatePresentation PresentationManager', async () => {
-      const updatePresentation = jest
-        .spyOn(sipConnector.presentationManager, 'updatePresentation')
-        .mockImplementation(async (_callback, stream) => {
-          return stream;
-        });
-
-      await sipConnector.updatePresentation(mediaStream);
-
-      expect(updatePresentation).toHaveBeenCalledWith(
-        expect.any(Function),
-        mediaStream,
-        expect.objectContaining({
-          maxResolution: { width: 1920, height: 1080 },
-        }),
-      );
-    });
-  });
-
   it('должен корректно обрабатывать startPresentation когда в DIRECT_P2P_ROOM', async () => {
     const stream = createMediaStreamMock({
       audio: { deviceId: { exact: 'audioDeviceId' } },

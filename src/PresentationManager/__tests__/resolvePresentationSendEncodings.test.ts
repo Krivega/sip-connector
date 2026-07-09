@@ -43,6 +43,18 @@ describe('resolvePresentationSendEncodings', () => {
     expect(result).toEqual([{ scaleResolutionDownBy: 2 }]);
   });
 
+  it('должен добавлять scaleResolutionDownBy в encoding, если он не задан', () => {
+    const stream = createStream(RESOLUTION_4K);
+
+    const result = resolvePresentationSendEncodings({
+      stream,
+      sendEncodings: [{ maxBitrate: 1_000_000 }],
+      maxResolution: MAX_RESOLUTION,
+    });
+
+    expect(result).toEqual([{ maxBitrate: 1_000_000, scaleResolutionDownBy: 2 }]);
+  });
+
   it('не должен уменьшать существующий scaleResolutionDownBy, если он сильнее ограничения maxResolution', () => {
     const stream = createStream(RESOLUTION_4K);
 
