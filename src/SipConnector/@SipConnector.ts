@@ -27,7 +27,6 @@ import {
   VIDEO_BALANCER_OPTIONS,
 } from './constants';
 import { createEvents } from './events';
-import resolvePresentationSendEncodings from './resolvePresentationSendEncodings';
 
 import type { IAutoConnectorOptions } from '@/AutoConnectorManager';
 import type { TGetUri, TRecvQuality } from '@/CallManager';
@@ -443,13 +442,8 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       callLimit?: number;
     } = {},
   ): Promise<MediaStream> {
-    const { callLimit, onAddedTransceiver, sendEncodings, ...rest } = options;
+    const { callLimit, onAddedTransceiver, ...rest } = options;
     const connectionConfig = this.connectionManager.getConnectionConfiguration();
-    const presentationSendEncodings = resolvePresentationSendEncodings({
-      mediaStream,
-      sendEncodings,
-      maxResolution: connectionConfig?.maxAvailableResolution,
-    });
 
     return this.presentationManager.startPresentation(
       async () => {
@@ -460,7 +454,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       mediaStream,
       {
         ...rest,
-        sendEncodings: presentationSendEncodings,
+        maxResolution: connectionConfig?.maxAvailableResolution,
         onAddedTransceiver: this.resolveHandleAddTransceiver(onAddedTransceiver),
       },
       callLimit === undefined ? undefined : { callLimit },
@@ -485,13 +479,8 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       onAddedTransceiver?: TOnAddedTransceiver;
     } = {},
   ): Promise<MediaStream | undefined> {
-    const { onAddedTransceiver, sendEncodings, ...rest } = options;
+    const { onAddedTransceiver, ...rest } = options;
     const connectionConfig = this.connectionManager.getConnectionConfiguration();
-    const presentationSendEncodings = resolvePresentationSendEncodings({
-      mediaStream,
-      sendEncodings,
-      maxResolution: connectionConfig?.maxAvailableResolution,
-    });
 
     return this.presentationManager.updatePresentation(
       async () => {
@@ -502,7 +491,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       mediaStream,
       {
         ...rest,
-        sendEncodings: presentationSendEncodings,
+        maxResolution: connectionConfig?.maxAvailableResolution,
         onAddedTransceiver: this.resolveHandleAddTransceiver(onAddedTransceiver),
       },
     );

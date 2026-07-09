@@ -3,11 +3,13 @@ import { createMediaStreamMock } from 'webrtc-mock';
 
 import resolvePresentationSendEncodings from '../resolvePresentationSendEncodings';
 
+import type { TMaxResolution } from '../types';
+
 const RESOLUTION_4K = { width: 3840, height: 2160 };
 const RESOLUTION_HD = { width: 1280, height: 720 };
 const MAX_RESOLUTION = { width: 1920, height: 1080 };
 
-const createPresentationMediaStream = ({ width, height }: { width: number; height: number }) => {
+const createStream = ({ width, height }: TMaxResolution) => {
   return createMediaStreamMock({
     video: {
       deviceId: { exact: 'videoDeviceId' },
@@ -18,11 +20,11 @@ const createPresentationMediaStream = ({ width, height }: { width: number; heigh
 };
 
 describe('resolvePresentationSendEncodings', () => {
-  it('должен добавлять scaleResolutionDownBy для presentation выше maxAvailableResolution', () => {
-    const mediaStream = createPresentationMediaStream(RESOLUTION_4K);
+  it('должен добавлять scaleResolutionDownBy для presentation выше maxResolution', () => {
+    const stream = createStream(RESOLUTION_4K);
 
     const result = resolvePresentationSendEncodings({
-      mediaStream,
+      stream,
       maxResolution: MAX_RESOLUTION,
     });
 
@@ -30,10 +32,10 @@ describe('resolvePresentationSendEncodings', () => {
   });
 
   it('должен добавлять scaleResolutionDownBy, если sendEncodings пустой', () => {
-    const mediaStream = createPresentationMediaStream(RESOLUTION_4K);
+    const stream = createStream(RESOLUTION_4K);
 
     const result = resolvePresentationSendEncodings({
-      mediaStream,
+      stream,
       sendEncodings: [],
       maxResolution: MAX_RESOLUTION,
     });
@@ -41,11 +43,11 @@ describe('resolvePresentationSendEncodings', () => {
     expect(result).toEqual([{ scaleResolutionDownBy: 2 }]);
   });
 
-  it('не должен уменьшать существующий scaleResolutionDownBy, если он сильнее ограничения maxAvailableResolution', () => {
-    const mediaStream = createPresentationMediaStream(RESOLUTION_4K);
+  it('не должен уменьшать существующий scaleResolutionDownBy, если он сильнее ограничения maxResolution', () => {
+    const stream = createStream(RESOLUTION_4K);
 
     const result = resolvePresentationSendEncodings({
-      mediaStream,
+      stream,
       sendEncodings: [{ maxBitrate: 1_000_000, scaleResolutionDownBy: 3 }],
       maxResolution: MAX_RESOLUTION,
     });
@@ -53,12 +55,12 @@ describe('resolvePresentationSendEncodings', () => {
     expect(result).toEqual([{ maxBitrate: 1_000_000, scaleResolutionDownBy: 3 }]);
   });
 
-  it('не должен добавлять ограничение, если presentation не выше maxAvailableResolution', () => {
+  it('не должен добавлять ограничение, если presentation не выше maxResolution', () => {
     const sendEncodings = [{ maxBitrate: 1_000_000 }];
-    const mediaStream = createPresentationMediaStream(RESOLUTION_HD);
+    const stream = createStream(RESOLUTION_HD);
 
     const result = resolvePresentationSendEncodings({
-      mediaStream,
+      stream,
       sendEncodings,
       maxResolution: MAX_RESOLUTION,
     });
@@ -66,27 +68,27 @@ describe('resolvePresentationSendEncodings', () => {
     expect(result).toBe(sendEncodings);
   });
 
-  it('не должен изменять sendEncodings, если maxAvailableResolution отсутствует', () => {
+  it('не должен изменять sendEncodings, если maxResolution отсутствует', () => {
     const sendEncodings = [{ maxBitrate: 1_000_000 }];
-    const mediaStream = createPresentationMediaStream(RESOLUTION_4K);
+    const stream = createStream(RESOLUTION_4K);
 
     const result = resolvePresentationSendEncodings({
-      mediaStream,
+      stream,
       sendEncodings,
     });
 
     expect(result).toBe(sendEncodings);
   });
 
-  it('не должен изменять sendEncodings, если в mediaStream нет video track', () => {
+  it('не должен изменять sendEncodings, если в stream нет video track', () => {
     const sendEncodings = [{ maxBitrate: 1_000_000 }];
-    const mediaStreamWithoutVideoTrack = createMediaStreamMock({
+    const streamWithoutVideoTrack = createMediaStreamMock({
       audio: { deviceId: { exact: 'audioDeviceId' } },
     });
 
     const result = resolvePresentationSendEncodings({
       sendEncodings,
-      mediaStream: mediaStreamWithoutVideoTrack,
+      stream: streamWithoutVideoTrack,
       maxResolution: MAX_RESOLUTION,
     });
 

@@ -5,11 +5,12 @@ import prepareMediaStream from '@/tools/prepareMediaStream';
 import { setMaxBitrateToSender } from '@/tools/setParametersToSender';
 import { createEvents } from './events';
 import { PresentationStateMachine } from './PresentationStateMachine';
+import resolvePresentationSendEncodings from './resolvePresentationSendEncodings';
 
 import type { RTCSession } from '@krivega/jssip';
 import type { CallManager } from '@/CallManager';
 import type { TEventMap } from './events';
-import type { TContentHint, TOnAddedTransceiver } from './types';
+import type { TContentHint, TMaxResolution, TOnAddedTransceiver } from './types';
 
 const SEND_PRESENTATION_CALL_LIMIT = 1;
 const PRESENTATION_EVENT_NAMES = [
@@ -24,6 +25,7 @@ type TPresentationOptions = {
   isNeedReinvite?: boolean;
   contentHint?: TContentHint;
   sendEncodings?: RTCRtpEncodingParameters[];
+  maxResolution?: TMaxResolution;
   onAddedTransceiver?: TOnAddedTransceiver;
 };
 
@@ -93,7 +95,13 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
   public async startPresentation(
     beforeStartPresentation: () => Promise<void>,
     stream: MediaStream,
-    { isNeedReinvite, contentHint, sendEncodings, onAddedTransceiver }: TPresentationOptions = {},
+    {
+      isNeedReinvite,
+      contentHint,
+      sendEncodings,
+      maxResolution,
+      onAddedTransceiver,
+    }: TPresentationOptions = {},
     options?: { callLimit: number },
   ): Promise<MediaStream> {
     const rtcSession = this.getRtcSessionProtected();
@@ -109,6 +117,7 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
         isNeedReinvite,
         contentHint,
         sendEncodings,
+        maxResolution,
         onAddedTransceiver,
       },
       options,
@@ -154,7 +163,7 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
   public async updatePresentation(
     beforeStartPresentation: () => Promise<void>,
     stream: MediaStream,
-    { contentHint, sendEncodings, onAddedTransceiver }: TPresentationOptions = {},
+    { contentHint, sendEncodings, maxResolution, onAddedTransceiver }: TPresentationOptions = {},
   ): Promise<MediaStream | undefined> {
     const rtcSession = this.getRtcSessionProtected();
 
@@ -168,9 +177,10 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
 
     return this.sendPresentation(beforeStartPresentation, rtcSession, stream, {
       contentHint,
-      isNeedReinvite: false,
       sendEncodings,
+      maxResolution,
       onAddedTransceiver,
+      isNeedReinvite: false,
     }).then(async (mediaStream) => {
       await this.setMaxBitrate();
 
@@ -239,6 +249,7 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
       contentHint = 'detail',
       degradationPreference,
       sendEncodings,
+      maxResolution,
       onAddedTransceiver,
     }: TSendPresentationOptions,
   ) {
@@ -250,12 +261,18 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
 
     this.streamPresentationCurrent = streamPresentationTarget;
 
+    const presentationSendEncodings = resolvePresentationSendEncodings({
+      stream,
+      sendEncodings,
+      maxResolution,
+    });
+
     const result = beforeStartPresentation()
       .then(async () => {
         return rtcSession.startPresentation(streamPresentationTarget, isNeedReinvite, {
           degradationPreference,
-          sendEncodings,
           onAddedTransceiver,
+          sendEncodings: presentationSendEncodings,
         });
       })
       .then(this.setMaxBitrate)

@@ -24,9 +24,6 @@ jest.mock('@/logger');
 
 const { mcuDebugLogger } = logger as jest.Mock & { mcuDebugLogger: jest.Mock };
 
-const MAX_AVAILABLE_RESOLUTION = { width: 1920, height: 1080 };
-const RESOLUTION_4K = { width: 3840, height: 2160 };
-
 describe('SipConnector', () => {
   let sipConnector: SipConnector;
 
@@ -650,24 +647,24 @@ describe('SipConnector', () => {
     expect(sendStoppedPresentation).not.toHaveBeenCalled();
   });
 
-  describe('ограничение sendEncodings по maxAvailableResolution', () => {
+  describe('прокидывание maxResolution из maxAvailableResolution', () => {
     let mediaStream: MediaStream;
 
     beforeEach(() => {
       mediaStream = createMediaStreamMock({
         video: {
           deviceId: { exact: 'videoDeviceId' },
-          width: { exact: RESOLUTION_4K.width },
-          height: { exact: RESOLUTION_4K.height },
+          width: { exact: 3840 },
+          height: { exact: 2160 },
         },
       });
 
       jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
-        maxAvailableResolution: MAX_AVAILABLE_RESOLUTION,
+        maxAvailableResolution: { width: 1920, height: 1080 },
       } as unknown as TConnectionConfig);
     });
 
-    it('должен ограничивать sendEncodings в startPresentation по maxAvailableResolution из connectionConfiguration', async () => {
+    it('должен передавать maxResolution в startPresentation PresentationManager', async () => {
       const startPresentation = jest
         .spyOn(sipConnector.presentationManager, 'startPresentation')
         .mockImplementation(async (callback, stream) => {
@@ -684,13 +681,13 @@ describe('SipConnector', () => {
         expect.any(Function),
         mediaStream,
         expect.objectContaining({
-          sendEncodings: [{ scaleResolutionDownBy: 2 }],
+          maxResolution: { width: 1920, height: 1080 },
         }),
         undefined,
       );
     });
 
-    it('должен ограничивать sendEncodings в updatePresentation по maxAvailableResolution из connectionConfiguration', async () => {
+    it('должен передавать maxResolution в updatePresentation PresentationManager', async () => {
       const updatePresentation = jest
         .spyOn(sipConnector.presentationManager, 'updatePresentation')
         .mockImplementation(async (_callback, stream) => {
@@ -703,7 +700,7 @@ describe('SipConnector', () => {
         expect.any(Function),
         mediaStream,
         expect.objectContaining({
-          sendEncodings: [{ scaleResolutionDownBy: 2 }],
+          maxResolution: { width: 1920, height: 1080 },
         }),
       );
     });

@@ -1,14 +1,14 @@
 import findVideoTrack from '@/utils/findVideoTrack';
 import { calcScaleResolutionDownBy } from '@/VideoSendingBalancer/calcResolution';
 
-import type { TMaxAvailableResolution } from '@/ConnectionManager';
+import type { TMaxResolution } from './types';
 
 const SCALE_RESOLUTION_DOWN_BY_MIN = 1;
 
 type TParameters = {
-  mediaStream: MediaStream;
+  stream: MediaStream;
   sendEncodings?: RTCRtpEncodingParameters[];
-  maxResolution?: TMaxAvailableResolution;
+  maxResolution?: TMaxResolution;
 };
 
 const resolveScaleResolutionDownByEncoding = (
@@ -25,7 +25,7 @@ const resolveScaleResolutionDownByEncoding = (
 };
 
 const resolvePresentationSendEncodings = ({
-  mediaStream,
+  stream,
   sendEncodings,
   maxResolution,
 }: TParameters): RTCRtpEncodingParameters[] | undefined => {
@@ -33,7 +33,7 @@ const resolvePresentationSendEncodings = ({
     return sendEncodings;
   }
 
-  const videoTrack = findVideoTrack(mediaStream);
+  const videoTrack = findVideoTrack(stream);
 
   if (videoTrack === undefined) {
     return sendEncodings;
