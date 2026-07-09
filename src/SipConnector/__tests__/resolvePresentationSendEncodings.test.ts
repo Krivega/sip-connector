@@ -5,7 +5,7 @@ import resolvePresentationSendEncodings from '../resolvePresentationSendEncoding
 
 const RESOLUTION_4K = { width: 3840, height: 2160 };
 const RESOLUTION_HD = { width: 1280, height: 720 };
-const MAX_AVAILABLE_RESOLUTION = { width: 1920, height: 1080 };
+const MAX_RESOLUTION = { width: 1920, height: 1080 };
 
 const createPresentationMediaStream = ({ width, height }: { width: number; height: number }) => {
   return createMediaStreamMock({
@@ -23,7 +23,7 @@ describe('resolvePresentationSendEncodings', () => {
 
     const result = resolvePresentationSendEncodings({
       mediaStream,
-      maxAvailableResolution: MAX_AVAILABLE_RESOLUTION,
+      maxResolution: MAX_RESOLUTION,
     });
 
     expect(result).toEqual([{ scaleResolutionDownBy: 2 }]);
@@ -35,7 +35,7 @@ describe('resolvePresentationSendEncodings', () => {
     const result = resolvePresentationSendEncodings({
       mediaStream,
       sendEncodings: [],
-      maxAvailableResolution: MAX_AVAILABLE_RESOLUTION,
+      maxResolution: MAX_RESOLUTION,
     });
 
     expect(result).toEqual([{ scaleResolutionDownBy: 2 }]);
@@ -47,7 +47,7 @@ describe('resolvePresentationSendEncodings', () => {
     const result = resolvePresentationSendEncodings({
       mediaStream,
       sendEncodings: [{ maxBitrate: 1_000_000, scaleResolutionDownBy: 3 }],
-      maxAvailableResolution: MAX_AVAILABLE_RESOLUTION,
+      maxResolution: MAX_RESOLUTION,
     });
 
     expect(result).toEqual([{ maxBitrate: 1_000_000, scaleResolutionDownBy: 3 }]);
@@ -60,7 +60,7 @@ describe('resolvePresentationSendEncodings', () => {
     const result = resolvePresentationSendEncodings({
       mediaStream,
       sendEncodings,
-      maxAvailableResolution: MAX_AVAILABLE_RESOLUTION,
+      maxResolution: MAX_RESOLUTION,
     });
 
     expect(result).toBe(sendEncodings);
@@ -87,7 +87,7 @@ describe('resolvePresentationSendEncodings', () => {
     const result = resolvePresentationSendEncodings({
       sendEncodings,
       mediaStream: mediaStreamWithoutVideoTrack,
-      maxAvailableResolution: MAX_AVAILABLE_RESOLUTION,
+      maxResolution: MAX_RESOLUTION,
     });
 
     expect(result).toBe(sendEncodings);

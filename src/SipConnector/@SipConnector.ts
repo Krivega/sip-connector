@@ -448,7 +448,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     const presentationSendEncodings = resolvePresentationSendEncodings({
       mediaStream,
       sendEncodings,
-      maxAvailableResolution: connectionConfig?.maxAvailableResolution,
+      maxResolution: connectionConfig?.maxAvailableResolution,
     });
 
     return this.presentationManager.startPresentation(
@@ -490,7 +490,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     const presentationSendEncodings = resolvePresentationSendEncodings({
       mediaStream,
       sendEncodings,
-      maxAvailableResolution: connectionConfig?.maxAvailableResolution,
+      maxResolution: connectionConfig?.maxAvailableResolution,
     });
 
     return this.presentationManager.updatePresentation(
