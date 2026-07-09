@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 import { createMediaStreamMock } from 'webrtc-mock';
 
-import resolvePresentationSendEncodings from '../resolvePresentationSendEncodings';
+import resolveSendEncodings from '../resolveSendEncodings';
 
 import type { TMaxResolution } from '../types';
 
@@ -19,11 +19,11 @@ const createStream = ({ width, height }: TMaxResolution) => {
   });
 };
 
-describe('resolvePresentationSendEncodings', () => {
+describe('resolveSendEncodings', () => {
   it('должен добавлять scaleResolutionDownBy для presentation выше maxResolution', () => {
     const stream = createStream(RESOLUTION_4K);
 
-    const result = resolvePresentationSendEncodings({
+    const result = resolveSendEncodings({
       stream,
       maxResolution: MAX_RESOLUTION,
     });
@@ -34,7 +34,7 @@ describe('resolvePresentationSendEncodings', () => {
   it('должен добавлять scaleResolutionDownBy, если sendEncodings пустой', () => {
     const stream = createStream(RESOLUTION_4K);
 
-    const result = resolvePresentationSendEncodings({
+    const result = resolveSendEncodings({
       stream,
       sendEncodings: [],
       maxResolution: MAX_RESOLUTION,
@@ -46,7 +46,7 @@ describe('resolvePresentationSendEncodings', () => {
   it('должен добавлять scaleResolutionDownBy в encoding, если он не задан', () => {
     const stream = createStream(RESOLUTION_4K);
 
-    const result = resolvePresentationSendEncodings({
+    const result = resolveSendEncodings({
       stream,
       sendEncodings: [{ maxBitrate: 1_000_000 }],
       maxResolution: MAX_RESOLUTION,
@@ -58,7 +58,7 @@ describe('resolvePresentationSendEncodings', () => {
   it('не должен уменьшать существующий scaleResolutionDownBy, если он сильнее ограничения maxResolution', () => {
     const stream = createStream(RESOLUTION_4K);
 
-    const result = resolvePresentationSendEncodings({
+    const result = resolveSendEncodings({
       stream,
       sendEncodings: [{ maxBitrate: 1_000_000, scaleResolutionDownBy: 3 }],
       maxResolution: MAX_RESOLUTION,
@@ -71,7 +71,7 @@ describe('resolvePresentationSendEncodings', () => {
     const sendEncodings = [{ maxBitrate: 1_000_000 }];
     const stream = createStream(RESOLUTION_HD);
 
-    const result = resolvePresentationSendEncodings({
+    const result = resolveSendEncodings({
       stream,
       sendEncodings,
       maxResolution: MAX_RESOLUTION,
@@ -84,7 +84,7 @@ describe('resolvePresentationSendEncodings', () => {
     const sendEncodings = [{ maxBitrate: 1_000_000 }];
     const stream = createStream(RESOLUTION_4K);
 
-    const result = resolvePresentationSendEncodings({
+    const result = resolveSendEncodings({
       stream,
       sendEncodings,
     });
@@ -98,7 +98,7 @@ describe('resolvePresentationSendEncodings', () => {
       audio: { deviceId: { exact: 'audioDeviceId' } },
     });
 
-    const result = resolvePresentationSendEncodings({
+    const result = resolveSendEncodings({
       sendEncodings,
       stream: streamWithoutVideoTrack,
       maxResolution: MAX_RESOLUTION,

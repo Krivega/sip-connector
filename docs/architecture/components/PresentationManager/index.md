@@ -29,13 +29,13 @@
 
 ## Внутренние компоненты
 
-| Компонент                          | Роль                                                            |
-| ---------------------------------- | --------------------------------------------------------------- |
-| `PresentationStateMachine`         | Модель состояний демонстрации экрана (XState).                  |
-| `repeatedCallsAsync`               | Защита от дублированных запусков и повторные попытки send-flow. |
-| `prepareMediaStream`               | Подготовка media stream и content hint.                         |
-| `setMaxBitrateToSender`            | Ограничение битрейта презентационного трека.                    |
-| `resolvePresentationSendEncodings` | Ограничение `sendEncodings` по `maxResolution`.                 |
+| Компонент                  | Роль                                                            |
+| -------------------------- | --------------------------------------------------------------- |
+| `PresentationStateMachine` | Модель состояний демонстрации экрана (XState).                  |
+| `repeatedCallsAsync`       | Защита от дублированных запусков и повторные попытки send-flow. |
+| `prepareMediaStream`       | Подготовка media stream и content hint.                         |
+| `setMaxBitrateToSender`    | Ограничение битрейта презентационного трека.                    |
+| `resolveSendEncodings`     | Ограничение `sendEncodings` по `maxResolution`.                 |
 
 ## Связанная state machine
 

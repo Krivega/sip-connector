@@ -5,7 +5,7 @@ import prepareMediaStream from '@/tools/prepareMediaStream';
 import { setMaxBitrateToSender } from '@/tools/setParametersToSender';
 import { createEvents } from './events';
 import { PresentationStateMachine } from './PresentationStateMachine';
-import resolvePresentationSendEncodings from './resolvePresentationSendEncodings';
+import resolveSendEncodings from './resolveSendEncodings';
 
 import type { RTCSession } from '@krivega/jssip';
 import type { CallManager } from '@/CallManager';
@@ -261,7 +261,7 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
 
     this.streamPresentationCurrent = streamPresentationTarget;
 
-    const presentationSendEncodings = resolvePresentationSendEncodings({
+    const presentationSendEncodings = resolveSendEncodings({
       stream,
       sendEncodings,
       maxResolution,

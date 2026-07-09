@@ -24,7 +24,7 @@ const resolveScaleResolutionDownByEncoding = (
   };
 };
 
-const resolvePresentationSendEncodings = ({
+const resolveSendEncodings = ({
   stream,
   sendEncodings,
   maxResolution,
@@ -57,4 +57,4 @@ const resolvePresentationSendEncodings = ({
   });
 };
 
-export default resolvePresentationSendEncodings;
+export default resolveSendEncodings;
