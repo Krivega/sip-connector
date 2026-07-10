@@ -22,9 +22,6 @@ export type TContextMap = {
   [EState.PREPARING]: {
     connectionConfiguration: undefined;
   };
-  [EState.PREPARING]: {
-    connectionConfiguration: undefined;
-  };
   [EState.CONNECTING]: {
     connectionConfiguration: TConnectionConfig;
   };
