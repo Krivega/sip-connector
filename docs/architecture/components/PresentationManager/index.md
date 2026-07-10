@@ -29,13 +29,16 @@
 
 ## Внутренние компоненты
 
-| Компонент                  | Роль                                                            |
-| -------------------------- | --------------------------------------------------------------- |
-| `PresentationStateMachine` | Модель состояний демонстрации экрана (XState).                  |
-| `repeatedCallsAsync`       | Защита от дублированных запусков и повторные попытки send-flow. |
-| `prepareMediaStream`       | Подготовка media stream и content hint.                         |
-| `setMaxBitrateToSender`    | Ограничение битрейта презентационного трека.                    |
-| `resolveSendEncodings`     | Ограничение `sendEncodings` по `maxResolution`.                 |
+| Компонент                      | Роль                                                            |
+| ------------------------------ | --------------------------------------------------------------- |
+| `PresentationStateMachine`     | Модель состояний демонстрации экрана (XState).                  |
+| `repeatedCallsAsync`           | Защита от дублированных запусков и повторные попытки send-flow. |
+| `prepareMediaStream`           | Подготовка media stream и content hint.                         |
+| `setMaxBitrateToSender`        | Ограничение битрейта презентационного трека.                    |
+| `@/tools/resolveSendEncodings` | Общая утилита ограничения `sendEncodings` по `maxResolution`.   |
+
+`maxResolution` для презентации передаёт `SipConnector` из `connectionConfiguration.maxAvailableResolution`
+при `startPresentation()` и `updatePresentation()`.
 
 ## Связанная state machine
 

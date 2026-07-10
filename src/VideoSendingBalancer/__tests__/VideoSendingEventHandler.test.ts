@@ -2,11 +2,17 @@
 import { VideoSendingEventHandler } from '../VideoSendingEventHandler';
 
 import type { ApiManager } from '@/ApiManager';
-import type { IMainCamHeaders } from '../types';
+import type { IMainCamHeaders, TBalancingContext } from '../types';
+
+const BALANCING_CONTEXT: TBalancingContext = {};
 
 describe('VideoSendingEventHandler', () => {
   let eventHandler: VideoSendingEventHandler;
   let apiManager: jest.Mocked<ApiManager>;
+
+  const getWrappedHandler = (callIndex = 0) => {
+    return apiManager.on.mock.calls[callIndex]?.[1];
+  };
 
   beforeEach(() => {
     apiManager = {
@@ -27,30 +33,57 @@ describe('VideoSendingEventHandler', () => {
     it('должен подписаться на события main-cam-control', () => {
       const handler = jest.fn();
 
-      eventHandler.subscribe(handler);
+      eventHandler.subscribe(handler, BALANCING_CONTEXT);
 
-      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', handler);
+      const wrappedHandler = getWrappedHandler();
+
+      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', wrappedHandler);
+    });
+
+    it('должен передавать контекст в обработчик', () => {
+      const handler = jest.fn();
+      const context: TBalancingContext = {
+        getMaxResolution: () => {
+          return { width: 1280, height: 720 };
+        },
+      };
+
+      eventHandler.subscribe(handler, context);
+
+      const wrappedHandler = getWrappedHandler();
+      const headers: IMainCamHeaders = { resolutionMainCam: '1280x720' };
+
+      wrappedHandler(headers);
+
+      expect(handler).toHaveBeenCalledWith(headers, context);
     });
 
     it('должен сохранить текущий обработчик', () => {
       const handler = jest.fn();
 
-      eventHandler.subscribe(handler);
+      eventHandler.subscribe(handler, BALANCING_CONTEXT);
 
-      // Проверяем, что обработчик сохранился для последующей отписки
-      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', handler);
+      const wrappedHandler = getWrappedHandler();
+
+      eventHandler.unsubscribe();
+
+      expect(apiManager.off).toHaveBeenCalledWith('main-cam-control', wrappedHandler);
     });
 
     it('должен заменить предыдущий обработчик при повторной подписке', () => {
       const handler1 = jest.fn();
       const handler2 = jest.fn();
 
-      eventHandler.subscribe(handler1);
-      eventHandler.subscribe(handler2);
+      eventHandler.subscribe(handler1, BALANCING_CONTEXT);
+      eventHandler.subscribe(handler2, BALANCING_CONTEXT);
+
+      const wrappedHandler1 = getWrappedHandler(0);
+      const wrappedHandler2 = getWrappedHandler(1);
 
       expect(apiManager.on).toHaveBeenCalledTimes(2);
-      expect(apiManager.on).toHaveBeenNthCalledWith(1, 'main-cam-control', handler1);
-      expect(apiManager.on).toHaveBeenNthCalledWith(2, 'main-cam-control', handler2);
+      expect(wrappedHandler1).not.toBe(wrappedHandler2);
+      expect(apiManager.on).toHaveBeenNthCalledWith(1, 'main-cam-control', wrappedHandler1);
+      expect(apiManager.on).toHaveBeenNthCalledWith(2, 'main-cam-control', wrappedHandler2);
     });
   });
 
@@ -58,19 +91,21 @@ describe('VideoSendingEventHandler', () => {
     it('должен отписаться от событий если есть текущий обработчик', () => {
       const handler = jest.fn();
 
-      eventHandler.subscribe(handler);
+      eventHandler.subscribe(handler, BALANCING_CONTEXT);
+
+      const wrappedHandler = getWrappedHandler();
+
       eventHandler.unsubscribe();
 
-      expect(apiManager.off).toHaveBeenCalledWith('main-cam-control', handler);
+      expect(apiManager.off).toHaveBeenCalledWith('main-cam-control', wrappedHandler);
     });
 
     it('должен очистить текущий обработчик после отписки', () => {
       const handler = jest.fn();
 
-      eventHandler.subscribe(handler);
+      eventHandler.subscribe(handler, BALANCING_CONTEXT);
       eventHandler.unsubscribe();
 
-      // Повторная отписка не должна вызывать off
       eventHandler.unsubscribe();
 
       expect(apiManager.off).toHaveBeenCalledTimes(1);
@@ -86,11 +121,14 @@ describe('VideoSendingEventHandler', () => {
       const handler1 = jest.fn();
       const handler2 = jest.fn();
 
-      eventHandler.subscribe(handler1);
-      eventHandler.subscribe(handler2);
+      eventHandler.subscribe(handler1, BALANCING_CONTEXT);
+      eventHandler.subscribe(handler2, BALANCING_CONTEXT);
+
+      const wrappedHandler2 = getWrappedHandler(1);
+
       eventHandler.unsubscribe();
 
-      expect(apiManager.off).toHaveBeenCalledWith('main-cam-control', handler2);
+      expect(apiManager.off).toHaveBeenCalledWith('main-cam-control', wrappedHandler2);
     });
   });
 
@@ -98,15 +136,15 @@ describe('VideoSendingEventHandler', () => {
     it('должен корректно обрабатывать полный цикл подписки и отписки', () => {
       const handler = jest.fn();
 
-      // Подписка
-      eventHandler.subscribe(handler);
-      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', handler);
+      eventHandler.subscribe(handler, BALANCING_CONTEXT);
 
-      // Отписка
+      const wrappedHandler = getWrappedHandler();
+
+      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', wrappedHandler);
+
       eventHandler.unsubscribe();
-      expect(apiManager.off).toHaveBeenCalledWith('main-cam-control', handler);
+      expect(apiManager.off).toHaveBeenCalledWith('main-cam-control', wrappedHandler);
 
-      // Повторная отписка не должна вызывать off
       eventHandler.unsubscribe();
       expect(apiManager.off).toHaveBeenCalledTimes(1);
     });
@@ -115,17 +153,20 @@ describe('VideoSendingEventHandler', () => {
       const handler1 = jest.fn();
       const handler2 = jest.fn();
 
-      // Первая подписка
-      eventHandler.subscribe(handler1);
-      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', handler1);
+      eventHandler.subscribe(handler1, BALANCING_CONTEXT);
 
-      // Смена обработчика
-      eventHandler.subscribe(handler2);
-      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', handler2);
+      const wrappedHandler1 = getWrappedHandler();
 
-      // Отписка от второго обработчика
+      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', wrappedHandler1);
+
+      eventHandler.subscribe(handler2, BALANCING_CONTEXT);
+
+      const wrappedHandler2 = getWrappedHandler(1);
+
+      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', wrappedHandler2);
+
       eventHandler.unsubscribe();
-      expect(apiManager.off).toHaveBeenCalledWith('main-cam-control', handler2);
+      expect(apiManager.off).toHaveBeenCalledWith('main-cam-control', wrappedHandler2);
     });
 
     it('должен корректно обрабатывать множественные подписки и отписки', () => {
@@ -133,52 +174,68 @@ describe('VideoSendingEventHandler', () => {
       const handler2 = jest.fn();
       const handler3 = jest.fn();
 
-      // Подписка 1
-      eventHandler.subscribe(handler1);
-      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', handler1);
+      eventHandler.subscribe(handler1, BALANCING_CONTEXT);
 
-      // Подписка 2
-      eventHandler.subscribe(handler2);
-      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', handler2);
+      const wrappedHandler1 = getWrappedHandler();
 
-      // Отписка
+      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', wrappedHandler1);
+
+      eventHandler.subscribe(handler2, BALANCING_CONTEXT);
+
+      const wrappedHandler2 = getWrappedHandler(1);
+
+      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', wrappedHandler2);
+
       eventHandler.unsubscribe();
-      expect(apiManager.off).toHaveBeenCalledWith('main-cam-control', handler2);
+      expect(apiManager.off).toHaveBeenCalledWith('main-cam-control', wrappedHandler2);
 
-      // Подписка 3
-      eventHandler.subscribe(handler3);
-      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', handler3);
+      eventHandler.subscribe(handler3, BALANCING_CONTEXT);
 
-      // Финальная отписка
+      const wrappedHandler3 = getWrappedHandler(2);
+
+      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', wrappedHandler3);
+
       eventHandler.unsubscribe();
-      expect(apiManager.off).toHaveBeenCalledWith('main-cam-control', handler3);
+      expect(apiManager.off).toHaveBeenCalledWith('main-cam-control', wrappedHandler3);
     });
   });
 
   describe('граничные случаи', () => {
     it('должен корректно обрабатывать undefined handler', () => {
-      const handler = undefined as unknown as (headers: IMainCamHeaders) => void;
+      const handler = undefined as unknown as (
+        headers: IMainCamHeaders,
+        context: TBalancingContext,
+      ) => void;
 
-      eventHandler.subscribe(handler);
+      eventHandler.subscribe(handler, BALANCING_CONTEXT);
 
-      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', handler);
+      const wrappedHandler = getWrappedHandler();
+
+      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', wrappedHandler);
     });
 
     it('должен корректно обрабатывать null handler', () => {
       // eslint-disable-next-line unicorn/no-null
-      const handler = null as unknown as (headers: IMainCamHeaders) => void;
+      const handler = null as unknown as (
+        headers: IMainCamHeaders,
+        context: TBalancingContext,
+      ) => void;
 
-      eventHandler.subscribe(handler);
+      eventHandler.subscribe(handler, BALANCING_CONTEXT);
 
-      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', handler);
+      const wrappedHandler = getWrappedHandler();
+
+      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', wrappedHandler);
     });
 
     it('должен корректно обрабатывать пустую функцию handler', () => {
       const handler = () => {};
 
-      eventHandler.subscribe(handler);
+      eventHandler.subscribe(handler, BALANCING_CONTEXT);
 
-      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', handler);
+      const wrappedHandler = getWrappedHandler();
+
+      expect(apiManager.on).toHaveBeenCalledWith('main-cam-control', wrappedHandler);
     });
   });
 });

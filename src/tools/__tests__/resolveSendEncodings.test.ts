@@ -3,13 +3,13 @@ import { createMediaStreamMock } from 'webrtc-mock';
 
 import resolveSendEncodings from '../resolveSendEncodings';
 
-import type { TMaxResolution } from '../types';
+import type { TResolutionSize } from '@/types';
 
 const RESOLUTION_4K = { width: 3840, height: 2160 };
 const RESOLUTION_HD = { width: 1280, height: 720 };
 const MAX_RESOLUTION = { width: 1920, height: 1080 };
 
-const createStream = ({ width, height }: TMaxResolution) => {
+const createStream = ({ width, height }: TResolutionSize) => {
   return createMediaStreamMock({
     video: {
       deviceId: { exact: 'videoDeviceId' },
@@ -20,7 +20,7 @@ const createStream = ({ width, height }: TMaxResolution) => {
 };
 
 describe('resolveSendEncodings', () => {
-  it('должен добавлять scaleResolutionDownBy для presentation выше maxResolution', () => {
+  it('должен добавлять scaleResolutionDownBy для видеопотока выше maxResolution', () => {
     const stream = createStream(RESOLUTION_4K);
 
     const result = resolveSendEncodings({
@@ -67,7 +67,7 @@ describe('resolveSendEncodings', () => {
     expect(result).toEqual([{ maxBitrate: 1_000_000, scaleResolutionDownBy: 3 }]);
   });
 
-  it('не должен добавлять ограничение, если presentation не выше maxResolution', () => {
+  it('не должен добавлять ограничение, если видеопоток не выше maxResolution', () => {
     const sendEncodings = [{ maxBitrate: 1_000_000 }];
     const stream = createStream(RESOLUTION_HD);
 

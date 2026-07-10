@@ -99,6 +99,31 @@ describe('VideoSendingBalancerManager', () => {
       videoSendingBalancerManager.stopBalancing();
       expect(videoSendingBalancerManager.isBalancingActive).toBe(false);
     });
+
+    it('должен передавать maxResolution в VideoSendingBalancer', async () => {
+      const managerWithMaxResolution = new VideoSendingBalancerManager(
+        callManager,
+        sipConnector.apiManager,
+        {},
+        () => {
+          return { width: 960, height: 540 };
+        },
+      );
+
+      await managerWithMaxResolution.startBalancing();
+
+      expect(mockSender.setParameters).toHaveBeenCalledWith(
+        expect.objectContaining({
+          encodings: [
+            expect.objectContaining({
+              scaleResolutionDownBy: 2,
+            }),
+          ],
+        }),
+      );
+
+      managerWithMaxResolution.stopBalancing();
+    });
   });
 
   describe('events', () => {
