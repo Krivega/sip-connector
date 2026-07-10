@@ -1708,6 +1708,196 @@ describe('SipConnector', () => {
     });
   });
 
+  describe('connect and call session ownership', () => {
+    const connectionParameters = {
+      displayName: 'User',
+      iceServers: [],
+      remoteAddress: '127.0.0.1',
+      sipServerIp: 'sip.example.com',
+      sipServerUrl: 'wss://sip.example.com',
+    };
+    const config: TConnectionConfig = {
+      ...connectionParameters,
+      authorizationUser: 'user',
+    };
+
+    const prepareSuccessfulAutoConnect = () => {
+      jest.spyOn(sipConnector.autoConnectorManager, 'isActive', 'get').mockReturnValue(false);
+      jest.spyOn(sipConnector.autoConnectorManager, 'start').mockResolvedValue({
+        isSuccess: true,
+        reason: 'started',
+      });
+      jest.spyOn(sipConnector.autoConnectorManager, 'stop').mockResolvedValue();
+      jest
+        .spyOn(sipConnector.connectionManager, 'getConnectionConfiguration')
+        .mockReturnValue(config);
+    };
+
+    it('маршрутизирует публичный hangUp через активную сессию', async () => {
+      prepareSuccessfulAutoConnect();
+
+      const result = await sipConnector.connectAndCallToServer({
+        connection: { parameters: connectionParameters },
+        startCall: async () => {
+          return {} as RTCPeerConnection;
+        },
+      });
+
+      if (!result.isSuccessful) {
+        throw new Error('Expected successful connect and call result');
+      }
+
+      const sessionHangUpSpy = jest.spyOn(result.session, 'hangUp');
+
+      await sipConnector.hangUp();
+
+      expect(sessionHangUpSpy).toHaveBeenCalledTimes(1);
+      expect(sipConnector.autoConnectorManager.stop).toHaveBeenCalledTimes(1);
+      expect(await result.session.waitUntilClosed()).toBe('manual');
+    });
+
+    it('маршрутизирует публичный disconnect через активную сессию', async () => {
+      prepareSuccessfulAutoConnect();
+
+      const result = await sipConnector.connectAndCallToServer({
+        connection: { parameters: connectionParameters },
+        startCall: async () => {
+          return {} as RTCPeerConnection;
+        },
+      });
+
+      if (!result.isSuccessful) {
+        throw new Error('Expected successful connect and call result');
+      }
+
+      const sessionDisconnectSpy = jest.spyOn(result.session, 'disconnect');
+
+      await sipConnector.disconnect();
+
+      expect(sessionDisconnectSpy).toHaveBeenCalledTimes(1);
+      expect(sipConnector.autoConnectorManager.stop).toHaveBeenCalledTimes(1);
+      expect(await result.session.waitUntilClosed()).toBe('manual');
+    });
+
+    it('отклоняет повторный запуск, пока предыдущая сессия активна', async () => {
+      prepareSuccessfulAutoConnect();
+
+      const firstResult = await sipConnector.connectAndCallToServer({
+        connection: { parameters: connectionParameters },
+        startCall: async () => {
+          return {} as RTCPeerConnection;
+        },
+      });
+      const secondResult = await sipConnector.connectAndCallToServer({
+        connection: { parameters: connectionParameters },
+        startCall: jest.fn(),
+      });
+
+      expect(secondResult).toEqual({
+        configuration: undefined,
+        isSuccessful: false,
+        peerConnection: undefined,
+        reason: 'session-active',
+        session: undefined,
+      });
+
+      if (firstResult.isSuccessful) {
+        await firstResult.session.disconnect();
+      }
+    });
+
+    it('разрешает новый запуск после закрытия предыдущей сессии', async () => {
+      prepareSuccessfulAutoConnect();
+
+      const firstResult = await sipConnector.connectAndCallToServer({
+        connection: { parameters: connectionParameters },
+        startCall: async () => {
+          return {} as RTCPeerConnection;
+        },
+      });
+
+      if (!firstResult.isSuccessful) {
+        throw new Error('Expected successful connect and call result');
+      }
+
+      await sipConnector.hangUp();
+
+      const secondResult = await sipConnector.connectAndCallToServer({
+        connection: { parameters: connectionParameters },
+        startCall: async () => {
+          return {} as RTCPeerConnection;
+        },
+      });
+
+      expect(secondResult.isSuccessful).toBe(true);
+
+      if (secondResult.isSuccessful) {
+        await secondResult.session.disconnect();
+      }
+    });
+
+    it('освобождает ownership после ошибки первого звонка', async () => {
+      prepareSuccessfulAutoConnect();
+
+      const error = new Error('Call failed');
+
+      await expect(
+        sipConnector.connectAndCallToServer({
+          connection: { parameters: connectionParameters },
+          startCall: async () => {
+            throw error;
+          },
+        }),
+      ).rejects.toBe(error);
+
+      const result = await sipConnector.connectAndCallToServer({
+        connection: { parameters: connectionParameters },
+        startCall: async () => {
+          return {} as RTCPeerConnection;
+        },
+      });
+
+      expect(result.isSuccessful).toBe(true);
+
+      if (result.isSuccessful) {
+        await result.session.disconnect();
+      }
+    });
+
+    it('логирует ошибку освобождения активной session', async () => {
+      prepareSuccessfulAutoConnect();
+
+      const result = await sipConnector.connectAndCallToServer({
+        connection: { parameters: connectionParameters },
+        startCall: async () => {
+          return {} as RTCPeerConnection;
+        },
+      });
+
+      if (!result.isSuccessful) {
+        throw new Error('Expected successful connect and call result');
+      }
+
+      const releaseError = new Error('wait failed');
+
+      // @ts-expect-error - доступ к приватному методу
+      sipConnector.clearActiveConnectAndCallSessionWhenClosed({
+        waitUntilClosed: async () => {
+          throw releaseError;
+        },
+      });
+
+      await flushPromises();
+
+      expect(mcuDebugLogger).toHaveBeenCalledWith(
+        'failed to release connect and call session',
+        releaseError,
+      );
+
+      await result.session.disconnect();
+    });
+  });
+
   describe('call reconnect facade', () => {
     it('call({ autoRedial: true }) armит callReconnectManager с resolvedParams', async () => {
       const armSpy = jest.spyOn(sipConnector.callReconnectManager, 'arm').mockImplementation();
@@ -1746,6 +1936,56 @@ describe('SipConnector', () => {
 
       expect(disarmSpy).toHaveBeenCalledWith('local-hangup');
       expect(endCallSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('disconnect() продолжает отключение signaling при ошибке endCall', async () => {
+      const disarmSpy = jest
+        .spyOn(sipConnector.callReconnectManager, 'disarm')
+        .mockImplementation();
+      const cancelSpy = jest
+        .spyOn(sipConnector.callReconnectManager, 'cancelCurrentAttempt')
+        .mockImplementation();
+      const endCallSpy = jest
+        .spyOn(sipConnector.callManager, 'endCall')
+        .mockRejectedValue(new Error('end failed'));
+      const disconnectSpy = jest
+        .spyOn(sipConnector.connectionQueueManager, 'disconnect')
+        .mockResolvedValue();
+
+      jest.spyOn(sipConnector.callManager, 'isCallActive', 'get').mockReturnValue(true);
+
+      await sipConnector.disconnect();
+
+      expect(disarmSpy).toHaveBeenCalledWith('manual');
+      expect(cancelSpy).toHaveBeenCalledTimes(1);
+      expect(endCallSpy).toHaveBeenCalledTimes(1);
+      expect(disconnectSpy).toHaveBeenCalledTimes(1);
+      expect(mcuDebugLogger).toHaveBeenCalledWith(
+        'disconnect: failed to end active call',
+        expect.any(Error),
+      );
+    });
+
+    it('disconnect() отменяет redial, завершает звонок и отключает signaling', async () => {
+      const disarmSpy = jest
+        .spyOn(sipConnector.callReconnectManager, 'disarm')
+        .mockImplementation();
+      const cancelSpy = jest
+        .spyOn(sipConnector.callReconnectManager, 'cancelCurrentAttempt')
+        .mockImplementation();
+      const endCallSpy = jest.spyOn(sipConnector.callManager, 'endCall').mockResolvedValue();
+      const disconnectSpy = jest
+        .spyOn(sipConnector.connectionQueueManager, 'disconnect')
+        .mockResolvedValue();
+
+      jest.spyOn(sipConnector.callManager, 'isCallActive', 'get').mockReturnValue(true);
+
+      await sipConnector.disconnect();
+
+      expect(disarmSpy).toHaveBeenCalledWith('manual');
+      expect(cancelSpy).toHaveBeenCalledTimes(1);
+      expect(endCallSpy).toHaveBeenCalledTimes(1);
+      expect(disconnectSpy).toHaveBeenCalledTimes(1);
     });
 
     it('armCallAutoRedial/disarmCallAutoRedial/forceCallReconnect/cancelCurrentCallReconnectAttempt делегируют в менеджер', () => {

@@ -28,6 +28,7 @@ const getStateFlags = (status: ReturnType<typeof createSystemStatus>) => {
     isConnecting: status.isConnecting(),
     isReadyToCall: status.isReadyToCall(),
     isCallConnecting: status.isCallConnecting(),
+    isCallReconnecting: status.isCallReconnecting(),
     isCallDisconnecting: status.isCallDisconnecting(),
     isCallActive: status.isCallActive(),
   };
@@ -48,6 +49,7 @@ const createExpectedFlags = (activeFlag: TStateFlagKey): TStateFlags => {
     isConnecting: activeFlag === 'isConnecting',
     isReadyToCall: activeFlag === 'isReadyToCall',
     isCallConnecting: activeFlag === 'isCallConnecting',
+    isCallReconnecting: activeFlag === 'isCallReconnecting',
     isCallDisconnecting: activeFlag === 'isCallDisconnecting',
     isCallActive: activeFlag === 'isCallActive',
   };
@@ -78,6 +80,11 @@ const stateCases: TStateCase[] = [
     title: 'CALL_CONNECTING',
     snapshot: createSnapshot(ESystemStatus.CALL_CONNECTING),
     expectedFlags: createExpectedFlags('isCallConnecting'),
+  },
+  {
+    title: 'CALL_RECONNECTING',
+    snapshot: createSnapshot(ESystemStatus.CALL_RECONNECTING),
+    expectedFlags: createExpectedFlags('isCallReconnecting'),
   },
   {
     title: 'CALL_DISCONNECTING',

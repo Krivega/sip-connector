@@ -4,6 +4,12 @@ export {
   createCallReconnectStateMachine,
   CALL_RECONNECT_MANAGER_EVENT_NAMES,
 } from './CallReconnectManager';
+export {
+  ConnectAndCallSessionManager,
+  ConnectAndCallSessionStateMachine,
+  createConnectAndCallSessionMachine,
+  EConnectAndCallSessionPhase,
+} from './ConnectAndCallSession';
 export { default as RTCSessionMock } from './__fixtures__/RTCSessionMock';
 export {
   CallSessionState,
@@ -83,6 +89,14 @@ export type {
   TIceServer,
   TServerConfig,
 } from './ConnectionManager';
+export type {
+  TCallToServerParameters,
+  TConnectAndCallToServerParameters,
+  TConnectAndCallToServerResult,
+  TConnectToServerOptions,
+  TConnectToServerParameters,
+  TConnectToServerResult,
+} from './SipConnectorFacade';
 export type { TInboundStats, TOutboundStats } from './StatsPeerConnection';
 export type {
   TContentHint,
@@ -104,5 +118,15 @@ export type {
   TBackoffJitter,
   TCancelledReason,
 } from './CallReconnectManager';
+export type {
+  IConnectAndCallSession,
+  TConnectAndCallSessionCloseReason,
+  TConnectAndCallSessionContext,
+  TConnectAndCallSessionEvent,
+  TConnectAndCallSessionParameters,
+  TConnectAndCallSessionResult,
+  TConnectAndCallSessionStartResult,
+  TConnectAndCallSessionTeardown,
+} from './ConnectAndCallSession';
 export type { TIncomingContextMap, TIncomingSnapshot } from './IncomingCallManager';
 export type { TJsSIP } from './types';

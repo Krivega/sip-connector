@@ -130,18 +130,26 @@ describe('CallReconnectManager (facade)', () => {
 
   it('ended event (remote BYE) разоружает машину', () => {
     const { manager, callManager } = createSubject();
+    const onTerminationClassified = jest.fn();
 
+    manager.on('termination-classified', onTerminationClassified);
     manager.arm(makeRedialParameters());
     callManager.emit('ended', { originator: 'remote', cause: 'BYE' });
 
     expect(manager.state).toBe(ECallReconnectStatus.IDLE);
+    expect(onTerminationClassified).toHaveBeenCalledWith({
+      decision: 'finish',
+      event: { originator: 'remote', cause: 'BYE' },
+    });
 
     manager.stop();
   });
 
   it('ended event с сетевой причиной (RTP_TIMEOUT) триггерит редиал', async () => {
     const { manager, callManager } = createSubject();
+    const onTerminationClassified = jest.fn();
 
+    manager.on('termination-classified', onTerminationClassified);
     manager.arm(makeRedialParameters());
 
     const waitForSucceeded = new Promise<void>((resolve) => {
@@ -158,6 +166,13 @@ describe('CallReconnectManager (facade)', () => {
     await waitForSucceeded;
 
     expect(callManager.startCall).toHaveBeenCalledTimes(1);
+    expect(onTerminationClassified).toHaveBeenCalledWith({
+      decision: 'redial',
+      event: {
+        originator: 'system',
+        cause: JsSIP_C.causes.RTP_TIMEOUT,
+      },
+    });
 
     manager.stop();
   });

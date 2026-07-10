@@ -134,10 +134,14 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
     }
   }
 
+  public get isActive(): boolean {
+    return !this.stateMachine.isInIdleState();
+  }
+
   public async start(parameters: TParametersAutoConnect): Promise<TAutoConnectStartResult> {
     debug('auto connector start');
 
-    if (this.isStarted()) {
+    if (this.isActive) {
       debug(
         'auto connector start skipped: already started. Use restart() for force reconnect or stop() before next start()',
       );
@@ -361,10 +365,6 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
 
   private resetReconnectCoalescingState() {
     this.reconnectCoalescer.reset();
-  }
-
-  private isStarted(): boolean {
-    return !this.stateMachine.isInIdleState();
   }
 }
 

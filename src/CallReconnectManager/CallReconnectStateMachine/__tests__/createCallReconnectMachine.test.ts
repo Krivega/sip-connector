@@ -60,6 +60,7 @@ const createDeps = (
     emitAttemptFailed: jest.fn(),
     emitWaitingSignaling: jest.fn(),
     emitLimitReached: jest.fn(),
+    emitTerminal: jest.fn(),
     emitCancelled: jest.fn(),
     cancelAll: jest.fn(),
     getWaitSignalingTimeoutMs: () => {
@@ -186,6 +187,10 @@ describe('createCallReconnectMachine', () => {
 
     expect(actor.getSnapshot().value).toBe(EState.LIMIT_REACHED);
     expect(deps.emitLimitReached).toHaveBeenCalled();
+    expect(deps.emitTerminal).toHaveBeenCalledWith({
+      reason: 'limit-reached',
+      attempts: 0,
+    });
   });
 
   it('RECONNECT.FORCE from limitReached re-enters evaluating and resets attempts', async () => {
@@ -265,8 +270,9 @@ describe('createCallReconnectMachine', () => {
   });
 
   it('attempt failed with canRetryOnError=false lands in errorTerminal', async () => {
+    const error = new Error('no-retry');
     const performAttempt = jest.fn(async () => {
-      throw new Error('no-retry');
+      throw error;
     });
     const deps = createDeps({
       canRetryOnError: () => {
@@ -283,6 +289,10 @@ describe('createCallReconnectMachine', () => {
 
     expect(actor.getSnapshot().value).toBe(EState.ERROR_TERMINAL);
     expect(deps.emitAttemptFailed).toHaveBeenCalled();
+    expect(deps.emitTerminal).toHaveBeenCalledWith({
+      reason: 'error-terminal',
+      error,
+    });
   });
 
   it('attempt failed with retry policy re-enters evaluating → next backoff', async () => {

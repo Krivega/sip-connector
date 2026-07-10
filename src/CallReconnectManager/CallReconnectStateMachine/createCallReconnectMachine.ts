@@ -91,7 +91,7 @@ export const createCallReconnectMachine = (deps: TCallReconnectMachineDeps) => {
           {
             guard: 'isLimitReached',
             target: EState.LIMIT_REACHED,
-            actions: ['emitLimitReachedAction'],
+            actions: ['emitLimitReachedAction', 'emitLimitReachedTerminalAction'],
           },
           {
             guard: 'isSignalingReady',
@@ -144,7 +144,7 @@ export const createCallReconnectMachine = (deps: TCallReconnectMachineDeps) => {
             },
             {
               target: EState.ERROR_TERMINAL,
-              actions: 'assignAttemptError',
+              actions: ['assignAttemptError', 'emitErrorTerminalAction'],
             },
           ],
         },
@@ -181,7 +181,12 @@ export const createCallReconnectMachine = (deps: TCallReconnectMachineDeps) => {
             {
               guard: 'isNoRetryPolicy',
               target: EState.ERROR_TERMINAL,
-              actions: ['registerAttemptFinish', 'emitAttemptFailedAction', 'assignAttemptError'],
+              actions: [
+                'registerAttemptFinish',
+                'emitAttemptFailedAction',
+                'assignAttemptError',
+                'emitErrorTerminalAction',
+              ],
             },
             {
               target: EState.EVALUATING,

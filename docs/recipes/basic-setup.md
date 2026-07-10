@@ -60,6 +60,60 @@ await facade.sendMediaState({
 unsubscribeRemoteStreams();
 ```
 
+## Подключение и звонок одной операцией
+
+Для сценария, в котором звонок должен начаться сразу после подключения, используйте
+`connectAndCallToServer()`:
+
+```typescript
+const mediaStream = await navigator.mediaDevices.getUserMedia({
+  video: true,
+  audio: true,
+});
+
+const result = await facade.connectAndCallToServer({
+  connection: {
+    parameters: {
+      sipServerUrl: 'example.com',
+      sipServerIp: 'sip.example.com',
+      remoteAddress: '192.168.1.1',
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+      displayName: 'User',
+      user: 'user123',
+      password: 'secret',
+      register: true,
+    },
+  },
+  call: {
+    conference: 'room123',
+    mediaStream,
+  },
+});
+
+if (!result.isSuccessful) {
+  showConnectionError(result.reason);
+  return;
+}
+
+usePeerConnection(result.peerConnection);
+
+// Ручное завершение отменяет redial, завершает звонок и останавливает AutoConnector.
+// Можно использовать session handle или публичный метод facade.
+await facade.hangUp();
+
+// При необходимости можно дождаться автоматического закрытия после remote BYE/final failure.
+const closeReason = await result.session.waitUntilClosed();
+```
+
+Метод эксклюзивно запускает `AutoConnectorManager`, поэтому перед вызовом AutoConnector должен
+находиться в `idle`. При уже активном цикле возвращается `reason: 'auto-connector-active'`.
+Пока предыдущая connect + call session не перешла в `closed`, повторный вызов возвращает
+`reason: 'session-active'`. `facade.hangUp()` и `facade.disconnectFromServer()` автоматически
+маршрутизируются через активную session и выполняют полный cleanup.
+Ошибки запуска AutoConnector возвращаются типизированным failure-result, а ошибка первого звонка
+пробрасывается после полного cleanup. При сетевом обрыве `autoRedial: true` сохраняет signaling:
+AutoConnector восстанавливает SIP-соединение, а `CallReconnectManager` повторяет звонок.
+
 ## Быстрый старт
 
 ### Шаг 1: Инициализация

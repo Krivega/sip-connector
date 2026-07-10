@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
 import { TypedEvents } from 'events-constructor';
 
+import type { EndEvent } from '@krivega/jssip';
 import type { TCancelledReason } from './types';
 
 enum EEvent {
@@ -15,6 +16,8 @@ enum EEvent {
   LIMIT_REACHED = 'limit-reached',
   CANCELLED = 'cancelled',
   STATUS_CHANGED = 'status-changed',
+  TERMINATION_CLASSIFIED = 'termination-classified',
+  TERMINAL = 'terminal',
 }
 
 export const EVENT_NAMES = [
@@ -29,6 +32,8 @@ export const EVENT_NAMES = [
   `${EEvent.LIMIT_REACHED}`,
   `${EEvent.CANCELLED}`,
   `${EEvent.STATUS_CHANGED}`,
+  `${EEvent.TERMINATION_CLASSIFIED}`,
+  `${EEvent.TERMINAL}`,
 ] as const;
 
 export type TEventMap = {
@@ -43,6 +48,12 @@ export type TEventMap = {
   'limit-reached': { attempts: number };
   cancelled: { reason: TCancelledReason };
   'status-changed': { isReconnecting: boolean };
+  'termination-classified': {
+    decision: 'redial' | 'finish';
+    event: EndEvent;
+  };
+  terminal:
+    { reason: 'limit-reached'; attempts: number } | { reason: 'error-terminal'; error: unknown };
 };
 
 export type TEvents = TypedEvents<TEventMap>;

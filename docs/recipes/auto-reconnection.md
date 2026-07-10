@@ -231,6 +231,18 @@ const sipConnector = new SipConnector(
 );
 ```
 
+## AutoConnector внутри connect + call session
+
+`connectAndCallToServer()` эксклюзивно владеет AutoConnector до закрытия возвращённой `session`.
+Не вызывайте `startAutoConnect()` перед ним: при уже активном цикле метод вернёт
+`auto-connector-active`.
+
+Во время звонка AutoConnector продолжает ping и обработку сетевых событий. Если signaling
+переподключается, `CallReconnectManager` ждёт его восстановления и выполняет redial. Ручные
+`session.hangUp()` и `session.disconnect()`, публичные `SipConnector.hangUp()`/`disconnect()`, а
+также финальный исход redial вызывают `stopAutoConnect()`, который освобождает watchers/retry и
+закрывает SIP-соединение. Публичные команды автоматически направляются через активную session.
+
 ### Тюнинг `offlineGraceMs`
 
 - Короче (500–1000 мс) — быстрее реагируем на реальный обрыв, но растёт риск ложного disconnect при коротких дропах.

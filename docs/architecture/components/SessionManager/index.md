@@ -143,6 +143,7 @@ SessionManager предоставляет набор готовых селект
 - `selectIncomingStatus` — статус входящего звонка (`EIncomingStatus`)
 - `selectPresentationStatus` — статус презентации (`EPresentationStatus`)
 - `selectIsInCall` — проверка активности звонка (`boolean`, в т.ч. `PRESENTATION_CALL` и room-состояния)
+- `selectIsCallReconnecting` — активная фаза автоматического redial (`boolean`)
 - `selectSystemStatus` — комбинированное состояние системы (`ESystemStatus`) по состояниям `connection`, `call` и `autoConnector`
 
 ### Комбинированное состояние системы (ESystemStatus)
@@ -166,12 +167,13 @@ SessionManager предоставляет набор готовых селект
 Порядок приоритетов в `selectSystemStatus` (сверху вниз):
 
 1. `call` в активном состоянии -> `CALL_ACTIVE`.
-2. `connection=DISCONNECTING` или `autoConnector=DISCONNECTING` -> `DISCONNECTING`.
-3. `autoConnector` в `ATTEMPTING_CONNECT`/`ATTEMPTING_GATE`/`WAITING_BEFORE_RETRY` -> `CONNECTING`.
-4. `autoConnector=CONNECTED_MONITORING` и `connection != ESTABLISHED` -> `CONNECTING`.
-5. `connection=IDLE` или `connection=DISCONNECTED` -> `DISCONNECTED`.
-6. `connection` в `PREPARING/CONNECTING/CONNECTED/REGISTERED` -> `CONNECTING`.
-7. `connection=ESTABLISHED`:
+2. `callReconnect` в `EVALUATING`/`BACKOFF`/`WAITING_SIGNALING`/`ATTEMPTING` -> `CALL_RECONNECTING`.
+3. `connection=DISCONNECTING` или `autoConnector=DISCONNECTING` -> `DISCONNECTING`.
+4. `autoConnector` в `ATTEMPTING_CONNECT`/`ATTEMPTING_GATE`/`WAITING_BEFORE_RETRY` -> `CONNECTING`.
+5. `autoConnector=CONNECTED_MONITORING` и `connection != ESTABLISHED` -> `CONNECTING`.
+6. `connection=IDLE` или `connection=DISCONNECTED` -> `DISCONNECTED`.
+7. `connection` в `PREPARING/CONNECTING/CONNECTED/REGISTERED` -> `CONNECTING`.
+8. `connection=ESTABLISHED`:
    - `call=IDLE` -> `READY_TO_CALL`;
    - `call=CONNECTING` -> `CALL_CONNECTING`;
    - `call=DISCONNECTING` -> `CALL_DISCONNECTING`;

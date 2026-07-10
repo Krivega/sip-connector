@@ -136,13 +136,20 @@ class CallReconnectManager extends EventEmitterProxy<TEventMap> {
      * `options.isNetworkFailure`), поэтому маршрутизация живёт в единой точке.
      */
     const routeTerminationEvent = (event: EndEvent): void => {
-      if (this.runtime.isNetworkFailure(event)) {
-        this.stateMachine.send({ type: 'CALL.FAILED', event });
+      const shouldRedial =
+        this.stateMachine.state === ECallReconnectStatus.ARMED &&
+        this.runtime.isNetworkFailure(event);
 
-        return;
+      if (shouldRedial) {
+        this.stateMachine.send({ type: 'CALL.FAILED', event });
+      } else {
+        this.stateMachine.send({ type: 'CALL.ENDED', event });
       }
 
-      this.stateMachine.send({ type: 'CALL.ENDED', event });
+      this.events.trigger('termination-classified', {
+        decision: shouldRedial ? 'redial' : 'finish',
+        event,
+      });
     };
 
     const onFailed = (event: EndEvent) => {

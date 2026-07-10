@@ -56,6 +56,7 @@ class Statuses {
         isConnecting: boolean;
         isReadyToCall: boolean;
         isCallConnecting: boolean;
+        isCallReconnecting: boolean;
         isCallDisconnecting: boolean;
         isCallActive: boolean;
       } & TStatusesByDomain,
@@ -76,6 +77,7 @@ class Statuses {
           isConnecting: this.statusesStore.system.isConnecting(),
           isReadyToCall: this.statusesStore.system.isReadyToCall(),
           isCallConnecting: this.statusesStore.system.isCallConnecting(),
+          isCallReconnecting: this.statusesStore.system.isCallReconnecting(),
           isCallDisconnecting: this.statusesStore.system.isCallDisconnecting(),
           isCallActive: this.statusesStore.system.isCallActive(),
         };

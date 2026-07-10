@@ -15,7 +15,7 @@
 - Детектировать обрыв звонка, вызванный сетевым сбоем (через JsSIP-причины).
 - Проводить конечное число попыток повтора `startCall` с экспоненциальной задержкой и jitter.
 - Координироваться с `ConnectionManager` — ждать готовности сигнализации (UA registered/connected), прежде чем делать попытку.
-- Отдавать наружу поток событий (`armed`, `failure-detected`, `attempt-scheduled`, `attempt-started`, `attempt-succeeded`, `attempt-failed`, `waiting-signaling`, `limit-reached`, `cancelled`, `disarmed`, `status-changed`) и агрегированный state-машиный snapshot для UI.
+- Отдавать наружу поток событий (`armed`, `failure-detected`, `attempt-scheduled`, `attempt-started`, `attempt-succeeded`, `attempt-failed`, `waiting-signaling`, `limit-reached`, `cancelled`, `disarmed`, `status-changed`, `termination-classified`, `terminal`) и агрегированный state-машиный snapshot для UI.
 - Предоставлять API для отмены (`disarm`), принудительного повтора сверх лимита (`forceReconnect`) и отмены только текущей попытки (`cancelCurrentAttempt`).
 
 Менеджер намеренно не пересекается с `MainStreamRecovery` (восстановление медиапотока в активном звонке) и с `AutoConnectorManager` (восстановление _подключения_ к серверу): `CallReconnectManager` работает _только со звонком_, опираясь на уже установленное подключение.

@@ -9,10 +9,17 @@ import hasPurgatory from '@/tools/hasPurgatory';
 
 import type { EContentUseLicense } from '@/ApiManager';
 import type { TOnAddedTransceiver, TRemoteStreams } from '@/CallManager';
-import type { TParametersConnection, TConnectionConfig } from '@/ConnectionManager';
 import type { TContentHint } from '@/PresentationManager';
 import type { SipConnector } from '@/SipConnector';
 import type { TOutboundVideoVerificationStrictness, TStatsManagerEventMap } from '@/StatsManager';
+import type {
+  TCallToServerParameters,
+  TConnectAndCallToServerParameters,
+  TConnectAndCallToServerResult,
+  TConnectToServerOptions,
+  TConnectToServerParameters,
+  TConnectToServerResult,
+} from './types';
 
 const debug = resolveDebug('SipConnectorFacade');
 
@@ -201,23 +208,18 @@ class SipConnectorFacade implements IProxyMethods {
   }
 
   public connectToServer = async (
-    parameters: (() => Promise<TParametersConnection>) | TParametersConnection,
-    options?: {
-      hasReadyForConnection?: () => boolean;
-    },
-  ): Promise<
-    | { configuration: TConnectionConfig; isSuccessful: true }
-    | { configuration: undefined; isSuccessful: false }
-  > => {
+    parameters: TConnectToServerParameters,
+    options?: TConnectToServerOptions,
+  ): Promise<TConnectToServerResult> => {
     return this.sipConnector
       .connect(parameters, options)
       .then((connectionConfigWithUa) => {
         debug('connectToServer then');
 
-        return { configuration: connectionConfigWithUa, isSuccessful: true } as {
-          configuration: TConnectionConfig;
-          isSuccessful: true;
-        };
+        return {
+          configuration: connectionConfigWithUa,
+          isSuccessful: true,
+        } as const;
       })
       .catch(async (error: unknown) => {
         debug('connectToServer catch: error', error);
@@ -226,33 +228,19 @@ class SipConnectorFacade implements IProxyMethods {
       });
   };
 
-  public callToServer = async (parameters: {
-    conference: string;
-    mediaStream: MediaStream;
-    extraHeaders?: string[] | undefined;
-    iceServers?: RTCIceServer[];
-    contentHint?: TContentHint;
-    degradationPreference?: RTCDegradationPreference;
-    sendEncodings?: RTCRtpEncodingParameters[];
-    offerToReceiveAudio?: boolean;
-    offerToReceiveVideo?: boolean;
-    directionVideo?: RTCRtpTransceiverDirection;
-    directionAudio?: RTCRtpTransceiverDirection;
-    onBeforeProgressCall?: (conference: string) => void;
-    onSuccessProgressCall?: (parameters_: { isPurgatory: boolean }) => void;
-    onEnterPurgatory?: () => void;
-    onEnterConference?: (parameters_: { isSuccessProgressCall: boolean }) => void;
-    onFailProgressCall?: () => void;
-    onFinishProgressCall?: () => void;
-    onEndedCall?: () => void;
-    onAddedTransceiver?: TOnAddedTransceiver;
-    /**
-     * Включить автоматический перезвон при сетевых обрывах звонка.
-     * При `true` сразу после старта вооружается `CallReconnectManager` параметрами текущего вызова.
-     * По умолчанию `true`; передайте `false`, чтобы отключить.
-     */
-    autoRedial?: boolean;
-  }): Promise<RTCPeerConnection> => {
+  public connectAndCallToServer = async ({
+    connection,
+    call,
+  }: TConnectAndCallToServerParameters): Promise<TConnectAndCallToServerResult> => {
+    return this.sipConnector.connectAndCallToServer({
+      connection,
+      startCall: async () => {
+        return this.callToServer(call);
+      },
+    });
+  };
+
+  public callToServer = async (parameters: TCallToServerParameters): Promise<RTCPeerConnection> => {
     const {
       conference,
       mediaStream,

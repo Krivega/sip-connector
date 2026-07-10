@@ -4,6 +4,7 @@ import { dataForConnectionWithAuthorization } from '@/__fixtures__';
 import delayPromise from '@/__fixtures__/delayPromise';
 import JsSIP from '@/__fixtures__/jssip.mock';
 import remoteCallerData from '@/__fixtures__/remoteCallerData';
+import { createNotReadyForConnectionError } from '@/ConnectionManager';
 import resolveParameters from '@/ConnectionManager/utils/resolveParameters';
 import { doMockSipConnector } from '@/doMock';
 import SipConnectorFacade, { TEST_HOOKS } from '../@SipConnectorFacade';
@@ -182,6 +183,220 @@ describe('SipConnectorFacade comprehensive', () => {
       });
 
       expect(result.isSuccessful).toBe(false);
+    });
+  });
+
+  describe('connectAndCallToServer', () => {
+    const connectionParameters = {
+      displayName: 'DISPLAY_NAME',
+      sipServerUrl: 'wss://sip.example.com/ws',
+      sipServerIp: 'sip.example.com',
+      remoteAddress: '10.10.10.10',
+      iceServers: [],
+    };
+    const connectionOptions = {
+      hasReadyForConnection: () => {
+        return true;
+      },
+    };
+    const callParameters = {
+      conference: 'test-conference',
+      mediaStream: createMediaStreamMock({
+        audio: { deviceId: { exact: 'audioDeviceId' } },
+        video: { deviceId: { exact: 'videoDeviceId' } },
+      }),
+    };
+    const config = {
+      ...connectionParameters,
+      authorizationUser: 'test-user',
+    };
+
+    beforeEach(() => {
+      jest.spyOn(sipConnector.autoConnectorManager, 'isActive', 'get').mockReturnValue(false);
+      jest.spyOn(sipConnector.autoConnectorManager, 'start').mockResolvedValue({
+        isSuccess: true,
+        reason: 'started',
+      });
+      jest.spyOn(sipConnector.autoConnectorManager, 'stop').mockResolvedValue();
+      jest
+        .spyOn(sipConnector.connectionManager, 'getConnectionConfiguration')
+        .mockReturnValue(config);
+      jest.spyOn(sipConnector, 'on').mockReturnValue(() => {});
+      jest.spyOn(sipConnector, 'onceRace').mockReturnValue(() => {});
+    });
+
+    it('должен последовательно подключиться и выполнить звонок', async () => {
+      const peerConnection = {} as RTCPeerConnection;
+      const callSpy = jest.spyOn(sipConnector, 'call').mockResolvedValue(peerConnection);
+
+      const result = await sipConnectorFacade.connectAndCallToServer({
+        connection: {
+          parameters: connectionParameters,
+          options: connectionOptions,
+        },
+        call: callParameters,
+      });
+
+      expect(result.isSuccessful).toBe(true);
+
+      if (!result.isSuccessful) {
+        throw new Error('Expected successful connect and call result');
+      }
+
+      expect(result.configuration).toBe(config);
+      expect(result.peerConnection).toBe(peerConnection);
+      expect(typeof result.session.hangUp).toBe('function');
+      expect(typeof result.session.disconnect).toBe('function');
+      expect(typeof result.session.waitUntilClosed).toBe('function');
+
+      const startAutoConnectMock = jest.mocked(sipConnector.autoConnectorManager.start);
+      const autoConnectParameters = startAutoConnectMock.mock.calls[0][0];
+
+      expect(typeof autoConnectParameters.getParameters).toBe('function');
+      expect(autoConnectParameters.options).toBe(connectionOptions);
+      expect(callSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mediaStream: callParameters.mediaStream,
+          number: callParameters.conference,
+        }),
+        { autoRedial: true },
+      );
+      expect(startAutoConnectMock.mock.invocationCallOrder[0] as number).toBeLessThan(
+        callSpy.mock.invocationCallOrder[0] as number,
+      );
+    });
+
+    it('не должен выполнять звонок после отменённого подключения', async () => {
+      jest.spyOn(sipConnector.autoConnectorManager, 'start').mockResolvedValue({
+        isSuccess: false,
+        reason: 'stop-attempts-by-error',
+        error: createNotReadyForConnectionError(),
+      });
+
+      const callSpy = jest.spyOn(sipConnector, 'call');
+
+      const result = await sipConnectorFacade.connectAndCallToServer({
+        connection: { parameters: connectionParameters },
+        call: callParameters,
+      });
+
+      expect(result).toMatchObject({
+        configuration: undefined,
+        isSuccessful: false,
+        peerConnection: undefined,
+        reason: 'cancelled',
+        session: undefined,
+      });
+
+      if (result.isSuccessful) {
+        throw new Error('Expected cancelled connect and call result');
+      }
+
+      expect(result.error).toBeInstanceOf(Error);
+      expect(callSpy).not.toHaveBeenCalled();
+      expect(sipConnector.autoConnectorManager.stop).toHaveBeenCalled();
+    });
+
+    it('должен вернуть auto-connect-failed без запуска звонка', async () => {
+      const error = new Error('Connection failed');
+
+      jest.spyOn(sipConnector.autoConnectorManager, 'start').mockResolvedValue({
+        isSuccess: false,
+        reason: 'failed-all-attempts',
+        error,
+      });
+
+      const callSpy = jest.spyOn(sipConnector, 'call');
+
+      const result = await sipConnectorFacade.connectAndCallToServer({
+        connection: { parameters: connectionParameters },
+        call: callParameters,
+      });
+
+      expect(result).toEqual({
+        configuration: undefined,
+        error,
+        isSuccessful: false,
+        peerConnection: undefined,
+        reason: 'auto-connect-failed',
+        session: undefined,
+      });
+      expect(callSpy).not.toHaveBeenCalled();
+    });
+
+    it('должен пробрасывать ошибку звонка и закрывать соединение', async () => {
+      const error = new Error('Call failed');
+
+      jest.spyOn(sipConnector, 'call').mockRejectedValue(error);
+
+      await expect(
+        sipConnectorFacade.connectAndCallToServer({
+          connection: { parameters: connectionParameters },
+          call: callParameters,
+        }),
+      ).rejects.toBe(error);
+
+      expect(sipConnector.autoConnectorManager.stop).toHaveBeenCalled();
+    });
+
+    it('должен завершать активную сессию через facade.hangUp', async () => {
+      jest.spyOn(sipConnector, 'call').mockResolvedValue({} as RTCPeerConnection);
+
+      const result = await sipConnectorFacade.connectAndCallToServer({
+        connection: { parameters: connectionParameters },
+        call: callParameters,
+      });
+
+      if (!result.isSuccessful) {
+        throw new Error('Expected successful connect and call result');
+      }
+
+      const sessionHangUpSpy = jest.spyOn(result.session, 'hangUp');
+
+      await sipConnectorFacade.hangUp();
+
+      expect(sessionHangUpSpy).toHaveBeenCalledTimes(1);
+      expect(await result.session.waitUntilClosed()).toBe('manual');
+    });
+
+    it('должен завершать активную сессию через disconnectFromServer', async () => {
+      jest.spyOn(sipConnector, 'call').mockResolvedValue({} as RTCPeerConnection);
+
+      const result = await sipConnectorFacade.connectAndCallToServer({
+        connection: { parameters: connectionParameters },
+        call: callParameters,
+      });
+
+      if (!result.isSuccessful) {
+        throw new Error('Expected successful connect and call result');
+      }
+
+      const sessionDisconnectSpy = jest.spyOn(result.session, 'disconnect');
+
+      await expect(sipConnectorFacade.disconnectFromServer()).resolves.toEqual({
+        isSuccessful: true,
+      });
+      expect(sessionDisconnectSpy).toHaveBeenCalledTimes(1);
+      expect(await result.session.waitUntilClosed()).toBe('manual');
+    });
+
+    it('должен отклонить запуск при уже активном AutoConnector', async () => {
+      jest.spyOn(sipConnector.autoConnectorManager, 'isActive', 'get').mockReturnValue(true);
+
+      const result = await sipConnectorFacade.connectAndCallToServer({
+        connection: { parameters: connectionParameters },
+        call: callParameters,
+      });
+
+      expect(result).toEqual({
+        configuration: undefined,
+        error: undefined,
+        isSuccessful: false,
+        peerConnection: undefined,
+        reason: 'auto-connector-active',
+        session: undefined,
+      });
+      expect(sipConnector.autoConnectorManager.start).not.toHaveBeenCalled();
     });
   });
 

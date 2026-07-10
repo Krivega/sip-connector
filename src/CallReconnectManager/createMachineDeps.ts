@@ -78,6 +78,9 @@ export const createMachineDeps = (
     emitLimitReached: (payload) => {
       events.trigger('limit-reached', payload);
     },
+    emitTerminal: (payload) => {
+      events.trigger('terminal', payload);
+    },
     emitCancelled: (payload) => {
       events.trigger('cancelled', payload);
     },

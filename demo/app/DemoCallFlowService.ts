@@ -69,9 +69,9 @@ export class DemoCallFlowService {
 
       await session.callToServer({
         mediaStream,
+        setRemoteStreams,
         conference: state.conferenceNumber,
         autoRedial: state.autoRedialEnabled,
-        setRemoteStreams,
       });
 
       this.loader.hide();

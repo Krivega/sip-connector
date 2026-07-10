@@ -32,6 +32,7 @@
   - [State Machine](./components/AutoConnectorManager/state-machine.md) - AutoConnectorStateMachine
 - [CallReconnectManager](./components/CallReconnectManager/index.md) - Автоматический редиал звонка при сетевых обрывах
   - [State Machine](./components/CallReconnectManager/state-machine.md) - CallReconnectStateMachine
+- [ConnectAndCallSessionManager](./components/ConnectAndCallSession/index.md) - Lifecycle connect + call и координация двух reconnect-механизмов
 - [ApiManager](./components/ApiManager/index.md) - Обработка SIP INFO сообщений и взаимодействие с сервером
 
 **Вспомогательные компоненты:**

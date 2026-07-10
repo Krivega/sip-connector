@@ -14,7 +14,7 @@ const debug = resolveDebug('demo:call-state-presenter');
  * Синхронизация DOM демо с состоянием звонка и ролью участника (отдельно от сценариев SIP).
  */
 export class DemoCallStatePresenter {
-  private isCallActivePrev = false;
+  private isCallOngoingPrev = false;
 
   private readonly localMediaStreamManager: LocalMediaStreamManager;
 
@@ -38,11 +38,13 @@ export class DemoCallStatePresenter {
       isDisconnecting,
       isConnecting,
       isCallConnecting,
+      isCallReconnecting,
       isCallDisconnecting,
       isCallActive,
     } = state;
+    const isCallOngoing = isCallActive || isCallReconnecting;
 
-    const isCallFinished = this.isCallActivePrev && !isCallActive;
+    const isCallFinished = this.isCallOngoingPrev && !isCallOngoing;
 
     if (isCallFinished) {
       this.presentationManager.deactivate();
@@ -63,11 +65,15 @@ export class DemoCallStatePresenter {
     const isBusyWithConnection = isConnecting || isDisconnecting;
 
     dom.connectAndCallButtonElement.disabled =
-      isBusyWithConnection || isCallConnecting || isCallDisconnecting;
+      isBusyWithConnection || isCallConnecting || isCallReconnecting || isCallDisconnecting;
     dom.callButtonElement.disabled =
-      isBusyWithConnection || isCallConnecting || isCallDisconnecting || isDisconnected;
-    dom.hangupButtonElement.disabled = !isCallActive;
-    dom.endCallButtonElement.disabled = !isCallActive;
+      isBusyWithConnection ||
+      isCallConnecting ||
+      isCallReconnecting ||
+      isCallDisconnecting ||
+      isDisconnected;
+    dom.hangupButtonElement.disabled = !isCallOngoing;
+    dom.endCallButtonElement.disabled = !isCallOngoing;
     dom.connectButtonElement.disabled = isBusyWithConnection;
     dom.disconnectButtonElement.disabled = isDisconnecting;
 
@@ -82,7 +88,7 @@ export class DemoCallStatePresenter {
       dom.show(dom.disconnectButtonElement);
     }
 
-    if (isCallActive) {
+    if (isCallOngoing) {
       dom.hide(dom.connectAndCallButtonElement);
       dom.hide(dom.callButtonElement);
       dom.show(dom.hangupButtonElement);
@@ -99,11 +105,14 @@ export class DemoCallStatePresenter {
       dom.hide(dom.endCallButtonElement);
     }
 
-    setElementVisible(dom.localVideoSectionElement, isCallConnecting || isCallActive);
-    setElementVisible(dom.activeCallSectionElement, isCallActive);
+    setElementVisible(
+      dom.localVideoSectionElement,
+      isCallConnecting || isCallReconnecting || isCallActive,
+    );
+    setElementVisible(dom.activeCallSectionElement, isCallOngoing);
 
     this.updateMediaButtonsState({ isCallActive });
-    this.isCallActivePrev = isCallActive;
+    this.isCallOngoingPrev = isCallOngoing;
   }
 
   public renderParticipantRole(participantRoleState: TDemoParticipantRoleState): void {

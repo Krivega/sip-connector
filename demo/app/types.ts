@@ -6,6 +6,7 @@ export type TDemoSystemState = {
   isConnecting: boolean;
   isReadyToCall: boolean;
   isCallConnecting: boolean;
+  isCallReconnecting: boolean;
   isCallDisconnecting: boolean;
   isCallActive: boolean;
 } & TStatusesByDomain;

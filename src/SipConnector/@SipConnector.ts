@@ -6,6 +6,7 @@ import { AutoConnectorManager } from '@/AutoConnectorManager';
 import { CallManager } from '@/CallManager';
 import { CallReconnectManager } from '@/CallReconnectManager';
 import { CallSessionState } from '@/CallSessionState';
+import { ConnectAndCallSessionManager } from '@/ConnectAndCallSession';
 import { ConnectionManager } from '@/ConnectionManager';
 import { ConnectionQueueManager } from '@/ConnectionQueueManager';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
@@ -31,6 +32,10 @@ import { createEvents } from './events';
 import type { IAutoConnectorOptions } from '@/AutoConnectorManager';
 import type { TGetUri, TRecvQuality } from '@/CallManager';
 import type { ICallReconnectOptions } from '@/CallReconnectManager';
+import type {
+  TConnectAndCallSessionParameters,
+  TConnectAndCallSessionResult,
+} from '@/ConnectAndCallSession';
 import type { TContentHint, TOnAddedTransceiver } from '@/PresentationManager';
 import type { TOutboundVideoVerificationStrictness } from '@/StatsManager';
 import type { TJsSIP } from '@/types';
@@ -75,6 +80,8 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
   private readonly preferredMimeTypesVideoCodecs?: string[];
 
   private readonly excludeMimeTypesVideoCodecs?: string[];
+
+  private activeConnectAndCallSession: ConnectAndCallSessionManager | undefined;
 
   public constructor(
     { JsSIP }: { JsSIP: TJsSIP },
@@ -244,6 +251,27 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
   };
 
   public disconnect = async () => {
+    const activeSession = this.activeConnectAndCallSession;
+
+    if (activeSession !== undefined) {
+      try {
+        await activeSession.disconnect();
+      } finally {
+        this.clearActiveConnectAndCallSession(activeSession);
+      }
+
+      return;
+    }
+
+    this.callReconnectManager.disarm('manual');
+    this.callReconnectManager.cancelCurrentAttempt();
+
+    if (this.isCallActive) {
+      await this.endCallWithoutSessionRouting().catch((error: unknown) => {
+        debug('disconnect: failed to end active call', error);
+      });
+    }
+
     return this.connectionQueueManager.disconnect();
   };
 
@@ -300,6 +328,57 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     return this.autoConnectorManager.stop();
   };
 
+  public connectAndCallToServer = async (
+    parameters: TConnectAndCallSessionParameters,
+  ): Promise<TConnectAndCallSessionResult> => {
+    if (this.activeConnectAndCallSession !== undefined) {
+      return {
+        configuration: undefined,
+        isSuccessful: false,
+        peerConnection: undefined,
+        reason: 'session-active',
+        session: undefined,
+      };
+    }
+
+    const session = new ConnectAndCallSessionManager({
+      autoConnectorManager: this.autoConnectorManager,
+      callReconnectManager: this.callReconnectManager,
+      connectionManager: this.connectionManager,
+      teardown: {
+        endCall: this.endCallWithoutSessionRouting,
+        isCallOngoing: () => {
+          return this.requestedCall || this.isCallActive;
+        },
+      },
+    });
+
+    this.activeConnectAndCallSession = session;
+
+    try {
+      const result = await session.start(parameters);
+
+      if (!result.isSuccessful) {
+        this.clearActiveConnectAndCallSession(session);
+
+        return {
+          ...result,
+          session: undefined,
+        };
+      }
+
+      this.clearActiveConnectAndCallSessionWhenClosed(session);
+
+      return {
+        ...result,
+        session,
+      };
+    } catch (error) {
+      this.clearActiveConnectAndCallSession(session);
+      throw error;
+    }
+  };
+
   public call = async (
     params: Omit<Parameters<CallManager['startCall']>[2], 'isPresentationCall'>,
     options: { autoRedial?: boolean } = {},
@@ -326,9 +405,21 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
   };
 
   public hangUp: CallManager['endCall'] = async () => {
+    const activeSession = this.activeConnectAndCallSession;
+
+    if (activeSession !== undefined) {
+      try {
+        await activeSession.hangUp();
+      } finally {
+        this.clearActiveConnectAndCallSession(activeSession);
+      }
+
+      return;
+    }
+
     this.callReconnectManager.disarm('local-hangup');
 
-    return this.callManager.endCall();
+    return this.endCallWithoutSessionRouting();
   };
 
   public armCallAutoRedial: CallReconnectManager['arm'] = (parameters) => {
@@ -544,6 +635,27 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
   public setThrottleRecoveryTimeout = (throttleRecoveryTimeout: number) => {
     this.mainStreamRecovery.setThrottleRecoveryTimeout(throttleRecoveryTimeout);
   };
+
+  private readonly endCallWithoutSessionRouting: CallManager['endCall'] = async () => {
+    return this.callManager.endCall();
+  };
+
+  private clearActiveConnectAndCallSession(session: ConnectAndCallSessionManager): void {
+    if (this.activeConnectAndCallSession === session) {
+      this.activeConnectAndCallSession = undefined;
+    }
+  }
+
+  private clearActiveConnectAndCallSessionWhenClosed(session: ConnectAndCallSessionManager): void {
+    session
+      .waitUntilClosed()
+      .then(() => {
+        this.clearActiveConnectAndCallSession(session);
+      })
+      .catch((error: unknown) => {
+        debug('failed to release connect and call session', error);
+      });
+  }
 
   private subscribeDisconnectedFromOutOfCall() {
     this.connectionManager.on('disconnected', () => {

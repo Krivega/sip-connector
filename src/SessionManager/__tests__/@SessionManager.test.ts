@@ -62,6 +62,7 @@ const createCallReconnectDeps = () => {
     emitAttemptFailed: jest.fn(),
     emitWaitingSignaling: jest.fn(),
     emitLimitReached: jest.fn(),
+    emitTerminal: jest.fn(),
     emitCancelled: jest.fn(),
     cancelAll: jest.fn(),
     getWaitSignalingTimeoutMs: () => {

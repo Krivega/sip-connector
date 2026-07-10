@@ -188,6 +188,12 @@ export const createCallReconnectMachineSetup = (deps: TCallReconnectMachineDeps)
       emitLimitReachedAction: ({ context }) => {
         deps.emitLimitReached({ attempts: context.attempt });
       },
+      emitLimitReachedTerminalAction: ({ context }) => {
+        deps.emitTerminal({ reason: 'limit-reached', attempts: context.attempt });
+      },
+      emitErrorTerminalAction: ({ event }) => {
+        deps.emitTerminal({ reason: 'error-terminal', error: getInvokeError(event) });
+      },
       registerAttemptStart: () => {
         deps.registerAttemptStart();
       },

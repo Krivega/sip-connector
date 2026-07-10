@@ -19,6 +19,7 @@ export const SystemStatusModel = types
       EState.CONNECTING,
       EState.READY_TO_CALL,
       EState.CALL_CONNECTING,
+      EState.CALL_RECONNECTING,
       EState.CALL_DISCONNECTING,
       EState.CALL_ACTIVE,
     ]),
@@ -50,6 +51,9 @@ export const SystemStatusModel = types
       },
       isCallConnecting(): boolean {
         return hasState(EState.CALL_CONNECTING);
+      },
+      isCallReconnecting(): boolean {
+        return hasState(EState.CALL_RECONNECTING);
       },
       isCallDisconnecting(): boolean {
         return hasState(EState.CALL_DISCONNECTING);

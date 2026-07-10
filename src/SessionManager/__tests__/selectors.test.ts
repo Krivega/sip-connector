@@ -336,6 +336,35 @@ describe('sessionSelectors', () => {
     });
   });
 
+  describe('selectIsCallReconnecting', () => {
+    it.each([
+      ECallReconnectStatus.EVALUATING,
+      ECallReconnectStatus.BACKOFF,
+      ECallReconnectStatus.WAITING_SIGNALING,
+      ECallReconnectStatus.ATTEMPTING,
+    ])('returns true for %s', (status) => {
+      const snapshot = createMockSnapshot({
+        callReconnect: { value: status } as never,
+      });
+
+      expect(sessionSelectors.selectIsCallReconnecting(snapshot)).toBe(true);
+      expect(sessionSelectors.selectSystemStatus(snapshot)).toBe(ESystemStatus.CALL_RECONNECTING);
+    });
+
+    it.each([
+      ECallReconnectStatus.IDLE,
+      ECallReconnectStatus.ARMED,
+      ECallReconnectStatus.LIMIT_REACHED,
+      ECallReconnectStatus.ERROR_TERMINAL,
+    ])('returns false for %s', (status) => {
+      const snapshot = createMockSnapshot({
+        callReconnect: { value: status } as never,
+      });
+
+      expect(sessionSelectors.selectIsCallReconnecting(snapshot)).toBe(false);
+    });
+  });
+
   describe('selectSystemStatus', () => {
     it('should return CALL_ACTIVE for ROOM_PENDING_AUTH, IN_ROOM, PURGATORY, P2P_ROOM or DIRECT_P2P_ROOM regardless of connection status (check is done first)', () => {
       const allConnectionStatuses = [

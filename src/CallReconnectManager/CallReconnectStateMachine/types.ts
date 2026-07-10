@@ -105,6 +105,11 @@ export type TCallReconnectMachineDeps = {
   emitWaitingSignaling: (payload: { timeoutMs: number }) => void;
   /** Эмит `limit-reached`. */
   emitLimitReached: (payload: { attempts: number }) => void;
+  /** Эмит финального состояния, после которого автоматический redial больше не продолжится. */
+  emitTerminal: (
+    payload:
+      { reason: 'limit-reached'; attempts: number } | { reason: 'error-terminal'; error: unknown },
+  ) => void;
   /** Эмит `cancelled`. */
   emitCancelled: (payload: { reason: TCancelledReason }) => void;
   /** Cancel all side-effects (delay + in-flight call). */

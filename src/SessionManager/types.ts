@@ -47,6 +47,8 @@ export enum ESystemStatus {
   READY_TO_CALL = 'system:readyToCall',
   /** Идет установка звонка (connection established, call connecting) */
   CALL_CONNECTING = 'system:callConnecting',
+  /** Идет автоматическое восстановление звонка после сетевого сбоя */
+  CALL_RECONNECTING = 'system:callReconnecting',
   /** Идет процесс отключения звонка (connection established, call disconnecting) */
   CALL_DISCONNECTING = 'system:callDisconnecting',
   /** Звонок активен (connection established, call accepted/inCall) */

@@ -1,4 +1,10 @@
-import { EAutoConnectorStatus, ECallStatus, EConnectionStatus, ESystemStatus } from './types';
+import {
+  EAutoConnectorStatus,
+  ECallReconnectStatus,
+  ECallStatus,
+  EConnectionStatus,
+  ESystemStatus,
+} from './types';
 
 import type { EIncomingStatus, EPresentationStatus, TSessionSnapshot } from './types';
 
@@ -39,6 +45,17 @@ const selectIsInCall = (snapshot: TSessionSnapshot): boolean => {
   );
 };
 
+const selectIsCallReconnecting = (snapshot: TSessionSnapshot): boolean => {
+  const status = snapshot.callReconnect.value;
+
+  return (
+    status === ECallReconnectStatus.EVALUATING ||
+    status === ECallReconnectStatus.BACKOFF ||
+    status === ECallReconnectStatus.WAITING_SIGNALING ||
+    status === ECallReconnectStatus.ATTEMPTING
+  );
+};
+
 /**
  * Селектор для определения комбинированного состояния системы
  * на основе состояний Connection, Call и AutoConnector машин
@@ -56,6 +73,10 @@ const selectSystemStatus = (snapshot: TSessionSnapshot): ESystemStatus => {
     callStatus === ECallStatus.PRESENTATION_CALL
   ) {
     return ESystemStatus.CALL_ACTIVE;
+  }
+
+  if (selectIsCallReconnecting(snapshot)) {
+    return ESystemStatus.CALL_RECONNECTING;
   }
 
   const connectionStatus = selectConnectionStatus(snapshot);
@@ -126,5 +147,6 @@ export const sessionSelectors = {
   selectIncomingStatus,
   selectPresentationStatus,
   selectIsInCall,
+  selectIsCallReconnecting,
   selectSystemStatus,
 };

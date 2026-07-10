@@ -84,6 +84,7 @@ const createCallReconnectDeps = () => {
     emitAttemptFailed: jest.fn(),
     emitWaitingSignaling: jest.fn(),
     emitLimitReached: jest.fn(),
+    emitTerminal: jest.fn(),
     emitCancelled: jest.fn(),
     cancelAll: jest.fn(),
     getWaitSignalingTimeoutMs: () => {
@@ -192,6 +193,7 @@ describe('Statuses', () => {
         incoming: 'incoming:ringing',
         presentation: 'presentation:idle',
         system: ESystemStatus.DISCONNECTED,
+        isCallReconnecting: false,
       }),
     );
 

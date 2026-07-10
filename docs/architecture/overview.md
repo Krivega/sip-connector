@@ -25,6 +25,7 @@
 
 - `connectToServer()` / `disconnectFromServer()` - управление соединением
 - `callToServer()` / `answerToIncomingCall()` - управление звонками
+- `connectAndCallToServer()` - последовательное подключение и запуск исходящего звонка
 - `startPresentation()` / `stopPresentation()` - управление презентациями
 - `updatePresentation()` - обновление презентации
 - `getRemoteStreams()` - получение удаленных потоков
@@ -33,9 +34,19 @@
 - `replaceMediaStream()` - замена медиа-потока
 - `askPermissionToEnableCam()` - запрос разрешений
 
+Фасад адаптирует параметры `callToServer()` и делегирует композиционный сценарий
+`connectAndCallToServer()` в `SipConnector`.
+
 ### SipConnector (Центральный координатор)
 
 **Назначение**: Координирует работу всех менеджеров и предоставляет единый API.
+
+`SipConnector.connectAndCallToServer()` создаёт `ConnectAndCallSessionManager` и координирует
+`AutoConnectorManager`, `CallReconnectManager` и запуск первого звонка. Сессия владеет циклом
+автоподключения до завершения звонка: recoverable network failure сохраняет signaling для redial,
+а финальный или ручной исход останавливает AutoConnector и закрывает SIP-соединение.
+`SipConnector` хранит активную session до её закрытия и направляет публичные `hangUp()` и
+`disconnect()` через неё. Повторный запуск до `CLOSED` возвращает `session-active`.
 
 **Ключевые возможности**:
 
@@ -73,6 +84,7 @@
 - `IncomingCallManager` - входящие звонки
 - `MainStreamHealthMonitor` - мониторинг здоровья потока и детекция устойчивых проблем
 - `MainStreamRecovery` - восстановление потока через throttled renegotiate
+- `ConnectAndCallSessionManager` - lifecycle connect + call, координация auto-connect/redial/cleanup
 
 ## Диаграмма архитектуры
 
