@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [29.2.0](https://github.com/Krivega/sip-connector/compare/v29.1.0...v29.2.0) (2026-07-10)
+
+### Features
+
+- add connectAndCallToServer method ([5c3773f](https://github.com/Krivega/sip-connector/commit/5c3773f5aa43a4eb01a5f75c1b7e82b1146b4a11))
+- implement handleConnectAndCall method and integrate connectAndCallToServer functionality ([dddd283](https://github.com/Krivega/sip-connector/commit/dddd2836388cd579f75231bfef07101429de795d))
+
 ## [29.1.0](https://github.com/Krivega/sip-connector/compare/v29.0.1...v29.1.0) (2026-07-09)
 
 ### Features
