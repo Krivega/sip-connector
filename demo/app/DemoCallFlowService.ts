@@ -49,6 +49,45 @@ export class DemoCallFlowService {
     }
   }
 
+  public async connectAndCallToServer(
+    state: IFormState,
+    setRemoteStreams: (streams: TRemoteStreams) => void,
+  ): Promise<void> {
+    try {
+      this.loader.setMessage('Подключение к серверу...');
+
+      this.session = this.sessionFactory.createSession();
+
+      this.loader.show('Инициализация медиа...');
+      await this.media.initialize();
+
+      const mediaStream = this.media.getStream();
+
+      if (!mediaStream) {
+        throw new Error('MediaStream не инициализирован');
+      }
+
+      this.loader.setMessage('Подключение и установление звонка...');
+
+      await this.session.connectAndCallToServer({
+        serverUrl: state.serverAddress,
+        isRegistered: state.authEnabled,
+        displayName: state.displayName,
+        user: state.userNumber,
+        password: state.password,
+        conference: state.conferenceNumber,
+        mediaStream,
+        autoRedial: state.autoRedialEnabled,
+        setRemoteStreams,
+      });
+
+      this.loader.hide();
+    } catch (error) {
+      this.loader.hide();
+      throw error;
+    }
+  }
+
   public async callToServer(
     state: IFormState,
     setRemoteStreams: (streams: TRemoteStreams) => void,

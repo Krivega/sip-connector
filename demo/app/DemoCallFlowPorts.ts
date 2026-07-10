@@ -18,6 +18,17 @@ export type TDemoCallFlowSession = {
     autoRedial?: boolean;
     setRemoteStreams: (streams: TRemoteStreams) => void;
   }) => Promise<void>;
+  connectAndCallToServer: (params: {
+    serverUrl: string;
+    isRegistered: boolean;
+    displayName: string;
+    user: string;
+    password: string;
+    conference: string;
+    mediaStream: MediaStream;
+    autoRedial?: boolean;
+    setRemoteStreams: (streams: TRemoteStreams) => void;
+  }) => Promise<void>;
   disconnectFromServer: () => Promise<void>;
   hangUpCall: () => Promise<void>;
   stopCall: () => Promise<void>;

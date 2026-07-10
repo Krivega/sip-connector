@@ -218,12 +218,12 @@ class App {
       return;
     }
 
-    this.runSafely(async () => {
-      if (!this.callFlow.hasConnected()) {
-        await this.callFlow.connect(state);
-      }
+    if (this.callFlow.hasConnected()) {
+      return;
+    }
 
-      await this.callFlow.callToServer(state, (streams) => {
+    this.runSafely(async () => {
+      await this.callFlow.connectAndCallToServer(state, (streams) => {
         this.handleRemoteStreams(streams);
       });
       this.presentationManager.activate();

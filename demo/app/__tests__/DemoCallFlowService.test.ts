@@ -27,6 +27,7 @@ describe('DemoCallFlowService', () => {
         return true;
       }),
       connect: jest.fn().mockResolvedValue(undefined),
+      connectAndCallToServer: jest.fn(),
       callToServer: jest.fn(),
       disconnectFromServer: jest.fn(),
       hangUpCall: jest.fn(),
@@ -84,6 +85,7 @@ describe('DemoCallFlowService', () => {
         return true;
       }),
       connect: jest.fn(),
+      connectAndCallToServer: jest.fn(),
       callToServer: jest.fn().mockResolvedValue(undefined),
       disconnectFromServer: jest.fn(),
       hangUpCall: jest.fn(),
@@ -122,5 +124,61 @@ describe('DemoCallFlowService', () => {
       }),
     );
     expect(loader.hide).toHaveBeenCalled();
+  });
+
+  it('connectAndCallToServer создаёт сессию, инициализирует медиа и вызывает session.connectAndCallToServer', async () => {
+    const loader = {
+      show: jest.fn(),
+      hide: jest.fn(),
+      setMessage: jest.fn(),
+    };
+
+    const mediaStream = new MediaStream();
+
+    const session = {
+      hasConnected: jest.fn(() => {
+        return true;
+      }),
+      connect: jest.fn(),
+      connectAndCallToServer: jest.fn().mockResolvedValue(undefined),
+      callToServer: jest.fn(),
+      disconnectFromServer: jest.fn(),
+      hangUpCall: jest.fn(),
+      stopCall: jest.fn(),
+      sendMediaState: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const createSession = jest.fn(() => {
+      return session;
+    });
+
+    const initialize = jest.fn().mockResolvedValue(mediaStream);
+    const getStream = jest.fn(() => {
+      return mediaStream;
+    });
+
+    const service = new DemoCallFlowService({
+      loader,
+      sessionFactory: { createSession },
+      media: { initialize, getStream },
+    });
+
+    const onStreams = jest.fn();
+
+    await service.connectAndCallToServer(buildFormState(), onStreams);
+
+    expect(loader.setMessage).toHaveBeenCalledWith('Подключение к серверу...');
+    expect(createSession).toHaveBeenCalledTimes(1);
+    expect(initialize).toHaveBeenCalledTimes(1);
+    expect(session.connectAndCallToServer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mediaStream,
+        conference: '2000',
+        autoRedial: true,
+        setRemoteStreams: onStreams,
+      }),
+    );
+    expect(loader.hide).toHaveBeenCalled();
+    expect(service.hasConnected()).toBe(true);
   });
 });

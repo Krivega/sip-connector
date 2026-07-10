@@ -77,6 +77,74 @@ export class Session {
     });
   }
 
+  public async connectAndCallToServer({
+    serverUrl,
+    isRegistered,
+    displayName,
+    user,
+    password,
+    conference,
+    mediaStream,
+    autoRedial,
+    setRemoteStreams,
+  }: {
+    serverUrl: string;
+    isRegistered: boolean;
+    displayName: string;
+    user: string;
+    password: string;
+    conference: string;
+    mediaStream: MediaStream;
+    autoRedial?: boolean;
+    setRemoteStreams: (streams: TRemoteStreams) => void;
+  }): Promise<void> {
+    debug('connectAndCallToServer', { serverUrl, isRegistered, displayName, user, conference });
+
+    const serverParameters = await this.serverParametersRequester.request({
+      serverUrl,
+      isRegistered,
+    });
+
+    this.serverParameters = serverParameters;
+
+    this.recvQualityManager.subscribe();
+
+    this.unsubscribeChangeRemoteStreams = sipConnectorFacade.on(
+      'call:remote-streams-changed',
+      (event) => {
+        setRemoteStreams(event.streams);
+      },
+    );
+
+    const result = await sipConnectorFacade.connectAndCallToServer({
+      connection: {
+        parameters: {
+          displayName,
+          user,
+          password,
+          register: isRegistered,
+          sipServerIp: serverParameters.serverIp,
+          sipServerUrl: serverParameters.sipServerUrl,
+          remoteAddress: serverParameters.remoteAddress,
+          iceServers: serverParameters.iceServers,
+          userAgent: serverParameters.userAgent,
+        },
+      },
+      call: {
+        conference,
+        mediaStream,
+        autoRedial: autoRedial ?? true,
+        extraHeaders: serverParameters.extraHeaders,
+        iceServers: serverParameters.iceServers,
+      },
+    });
+
+    if (!result.isSuccessful) {
+      this.cleanupCallSubscriptions();
+      throw new Error(`connectAndCallToServer failed: ${result.reason}`);
+    }
+  }
+
   public async callToServer({
     conference,
     mediaStream,
