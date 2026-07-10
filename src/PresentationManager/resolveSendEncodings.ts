@@ -24,6 +24,25 @@ const resolveScaleResolutionDownByEncoding = (
   };
 };
 
+const applyScaleToSendEncodings = (
+  sendEncodings: RTCRtpEncodingParameters[] | undefined,
+  scaleResolutionDownBy: number,
+): RTCRtpEncodingParameters[] => {
+  if (sendEncodings === undefined || sendEncodings.length === 0) {
+    return [{ scaleResolutionDownBy }];
+  }
+
+  return sendEncodings.map((encoding) => {
+    return resolveScaleResolutionDownByEncoding(encoding, scaleResolutionDownBy);
+  });
+};
+
+const getTargetScale = (scaleResolutionDownBy: number): number => {
+  return scaleResolutionDownBy <= SCALE_RESOLUTION_DOWN_BY_MIN
+    ? SCALE_RESOLUTION_DOWN_BY_MIN
+    : scaleResolutionDownBy;
+};
+
 const resolveSendEncodings = ({
   stream,
   sendEncodings,
@@ -44,17 +63,9 @@ const resolveSendEncodings = ({
     targetSize: maxResolution,
   });
 
-  if (scaleResolutionDownBy <= SCALE_RESOLUTION_DOWN_BY_MIN) {
-    return sendEncodings;
-  }
+  const targetScale = getTargetScale(scaleResolutionDownBy);
 
-  if (sendEncodings === undefined || sendEncodings.length === 0) {
-    return [{ scaleResolutionDownBy }];
-  }
-
-  return sendEncodings.map((encoding) => {
-    return resolveScaleResolutionDownByEncoding(encoding, scaleResolutionDownBy);
-  });
+  return applyScaleToSendEncodings(sendEncodings, targetScale);
 };
 
 export default resolveSendEncodings;

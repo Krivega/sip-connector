@@ -2,7 +2,8 @@ import { EventEmitterProxy } from 'events-constructor';
 import { hasCanceledError, repeatedCallsAsync } from 'repeated-calls';
 
 import prepareMediaStream from '@/tools/prepareMediaStream';
-import { setMaxBitrateToSender } from '@/tools/setParametersToSender';
+import { setEncodingsToSender } from '@/tools/setParametersToSender';
+import findSenderByStream from '@/utils/findSenderByStream';
 import { createEvents } from './events';
 import { PresentationStateMachine } from './PresentationStateMachine';
 import resolveSendEncodings from './resolveSendEncodings';
@@ -275,6 +276,9 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
           sendEncodings: presentationSendEncodings,
         });
       })
+      .then(async () => {
+        await this.applyPresentationSendEncodings(presentationSendEncodings);
+      })
       .then(this.setMaxBitrate)
       .then(() => {
         return stream;
@@ -294,18 +298,45 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
     });
   }
 
-  private readonly setMaxBitrate = async () => {
+  private getPresentationSender(): RTCRtpSender | undefined {
     const { connection } = this.callManager;
     const { streamPresentationCurrent } = this;
-    const { maxBitrate } = this;
 
-    if (!connection || !streamPresentationCurrent || maxBitrate === undefined) {
+    if (!connection || !streamPresentationCurrent) {
+      return undefined;
+    }
+
+    return findSenderByStream(connection.getSenders(), streamPresentationCurrent);
+  }
+
+  private readonly applyPresentationSendEncodings = async (
+    presentationSendEncodings?: RTCRtpEncodingParameters[],
+  ) => {
+    const sender = this.getPresentationSender();
+    const encoding = presentationSendEncodings?.[0];
+
+    if (!sender || encoding === undefined) {
       return;
     }
 
-    const senders = connection.getSenders();
+    const { scaleResolutionDownBy, maxBitrate } = encoding;
 
-    await setMaxBitrateToSender(senders, streamPresentationCurrent, maxBitrate);
+    if (scaleResolutionDownBy === undefined && maxBitrate === undefined) {
+      return;
+    }
+
+    await setEncodingsToSender(sender, { scaleResolutionDownBy, maxBitrate });
+  };
+
+  private readonly setMaxBitrate = async () => {
+    const sender = this.getPresentationSender();
+    const { maxBitrate } = this;
+
+    if (!sender || maxBitrate === undefined) {
+      return;
+    }
+
+    await setEncodingsToSender(sender, { maxBitrate });
   };
 
   private readonly getRtcSessionProtected = () => {

@@ -67,7 +67,7 @@ describe('resolveSendEncodings', () => {
     expect(result).toEqual([{ maxBitrate: 1_000_000, scaleResolutionDownBy: 3 }]);
   });
 
-  it('не должен добавлять ограничение, если presentation не выше maxResolution', () => {
+  it('должен явно задавать scaleResolutionDownBy: 1, если presentation не выше maxResolution', () => {
     const sendEncodings = [{ maxBitrate: 1_000_000 }];
     const stream = createStream(RESOLUTION_HD);
 
@@ -77,7 +77,7 @@ describe('resolveSendEncodings', () => {
       maxResolution: MAX_RESOLUTION,
     });
 
-    expect(result).toBe(sendEncodings);
+    expect(result).toEqual([{ maxBitrate: 1_000_000, scaleResolutionDownBy: 1 }]);
   });
 
   it('не должен изменять sendEncodings, если maxResolution отсутствует', () => {
