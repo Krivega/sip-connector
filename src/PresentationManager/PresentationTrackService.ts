@@ -3,6 +3,7 @@ import {
   addVideoTrackInSender,
   hasRecvOnlyTransceiver,
   replaceTrack,
+  findSenderByTrack,
 } from '@/utils/peerConnection';
 
 import type { TTransceiverOptions } from '@/utils/peerConnection';
@@ -53,9 +54,7 @@ class PresentationTrackService {
   }
 
   private markTrack(connection: RTCPeerConnection, videoTrack: MediaStreamVideoTrack): void {
-    const sender = connection.getSenders().find((itemSender) => {
-      return itemSender.track === videoTrack;
-    });
+    const sender = findSenderByTrack(connection, videoTrack);
 
     if (sender !== undefined) {
       this.senders.add(sender);

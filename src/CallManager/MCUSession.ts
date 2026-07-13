@@ -1,5 +1,6 @@
 import resolveDebug from '@/logger';
 import { prepareMediaStream } from '@/tools';
+import { replaceMediaStreamInConnection } from '@/utils/peerConnection';
 import BitrateStateManager from './BitrateStateManager';
 import { ECallCause } from './causes';
 import { SESSION_JSSIP_EVENT_NAMES } from './events';
@@ -20,6 +21,8 @@ export class MCUSession implements IMCUSession {
   private readonly disposers = new Set<() => void>();
 
   private pcConfig?: { iceServers?: RTCIceServer[] };
+
+  private localMediaStream?: MediaStream;
 
   // Менеджер состояния битрейта
   private readonly bitrateStateManager = new BitrateStateManager();
@@ -82,12 +85,16 @@ export class MCUSession implements IMCUSession {
         });
 
       this.pcConfig = { iceServers };
+
+      const preparedMediaStream = prepareMediaStream(mediaStream, {
+        directionVideo,
+        directionAudio,
+        contentHint,
+      });
+
+      this.localMediaStream = preparedMediaStream;
       this.rtcSession = ua.call(getUri(number), {
-        mediaStream: prepareMediaStream(mediaStream, {
-          directionVideo,
-          directionAudio,
-          contentHint,
-        }),
+        mediaStream: preparedMediaStream,
         pcConfig: {
           iceServers,
         },
@@ -149,6 +156,14 @@ export class MCUSession implements IMCUSession {
           });
 
         this.pcConfig = { iceServers };
+
+        const preparedMediaStream = prepareMediaStream(mediaStream, {
+          directionVideo,
+          directionAudio,
+          contentHint,
+        });
+
+        this.localMediaStream = preparedMediaStream;
         rtcSession.answer({
           pcConfig: {
             iceServers,
@@ -157,11 +172,7 @@ export class MCUSession implements IMCUSession {
             offerToReceiveAudio,
             offerToReceiveVideo,
           },
-          mediaStream: prepareMediaStream(mediaStream, {
-            directionVideo,
-            directionAudio,
-            contentHint,
-          }),
+          mediaStream: preparedMediaStream,
           extraHeaders,
           directionVideo,
           directionAudio,
@@ -183,14 +194,30 @@ export class MCUSession implements IMCUSession {
       throw new Error('No rtcSession established');
     }
 
-    const { contentHint } = options ?? {};
+    const { connection } = this;
+
+    if (connection === undefined) {
+      throw new Error('No connection established');
+    }
+
+    const { contentHint, ...replaceOptions } = options ?? {};
     const preparedMediaStream = prepareMediaStream(mediaStream, { contentHint });
 
     if (preparedMediaStream === undefined) {
       throw new Error('No preparedMediaStream');
     }
 
-    return this.rtcSession.replaceMediaStream(preparedMediaStream, options);
+    debug('replaceMediaStream');
+
+    this.localMediaStream = await replaceMediaStreamInConnection({
+      connection,
+      stream: preparedMediaStream,
+      localMediaStream: this.localMediaStream,
+      renegotiate: async () => {
+        return this.renegotiate();
+      },
+      options: replaceOptions,
+    });
   }
 
   public async restartIce(options?: TRestartIceOptions): Promise<boolean> {
@@ -228,6 +255,7 @@ export class MCUSession implements IMCUSession {
   public readonly reset: () => void = () => {
     delete this.rtcSession;
     delete this.pcConfig;
+    delete this.localMediaStream;
     this.unsubscribeFromSessionEvents();
     this.bitrateStateManager.clearAll();
   };

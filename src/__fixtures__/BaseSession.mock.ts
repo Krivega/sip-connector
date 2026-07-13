@@ -172,13 +172,6 @@ class BaseSession implements RTCSession {
     throw new Error('Method not implemented.');
   }
 
-  public async replaceMediaStream(
-    _stream: MediaStream,
-    _options?: { deleteExisting: boolean; addMissing: boolean },
-  ): Promise<void> {
-    throw new Error('Method not implemented.');
-  }
-
   public addListener(_event: string | symbol, _listener: (...arguments_: unknown[]) => void): this {
     throw new Error('Method not implemented.');
   }

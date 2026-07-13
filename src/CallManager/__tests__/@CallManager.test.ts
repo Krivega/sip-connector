@@ -1,5 +1,5 @@
 import { C as JsSIP_C, IncomingResponse } from '@krivega/jssip';
-import { createAudioMediaStreamTrackMock } from 'webrtc-mock';
+import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
 
 import { createManagers } from '@/__fixtures__/createManagers';
 import flushPromises from '@/__fixtures__/flushPromises';
@@ -1288,17 +1288,38 @@ describe('CallManager', () => {
   });
 
   it('replaceMediaStream: заменяет поток', async () => {
+    const oldAudioTrack = createAudioMediaStreamTrackMock();
+    const oldVideoTrack = createVideoMediaStreamTrackMock();
+    const newAudioTrack = createAudioMediaStreamTrackMock();
+    const newVideoTrack = createVideoMediaStreamTrackMock();
+    const oldStream = new MediaStream([oldAudioTrack, oldVideoTrack]);
+    const newStream = new MediaStream([newAudioTrack, newVideoTrack]);
+
     const rtcSession = new RTCSessionMock({
       eventHandlers: {},
       originator: 'remote',
     });
 
-    // @ts-expect-error
-    callManager.mcuSession.rtcSession = rtcSession as unknown as RTCSession;
+    rtcSession.createPeerconnection(oldStream);
 
-    await callManager.replaceMediaStream(mediaStream);
+    const mcuSessionAccess = (
+      callManager as unknown as {
+        mcuSession: {
+          rtcSession?: RTCSession;
+          localMediaStream?: MediaStream;
+        };
+      }
+    ).mcuSession;
 
-    expect(rtcSession.replaceMediaStream).toHaveBeenCalled();
+    mcuSessionAccess.rtcSession = rtcSession as unknown as RTCSession;
+    mcuSessionAccess.localMediaStream = oldStream;
+
+    const replaceTrackSpy = jest.spyOn(rtcSession.connection.getSenders()[0], 'replaceTrack');
+
+    await callManager.replaceMediaStream(newStream);
+
+    expect(replaceTrackSpy).toHaveBeenCalledWith(newAudioTrack);
+    expect(mcuSessionAccess.localMediaStream.getTracks()).toEqual(newStream.getTracks());
   });
 
   it('replaceMediaStream: бросает ошибку если prepareMediaStream вернул undefined', async () => {
@@ -1320,8 +1341,17 @@ describe('CallManager', () => {
       originator: 'remote',
     });
 
-    // @ts-expect-error
-    callManagerLocal.mcuSession.rtcSession = rtcSession as unknown as RTCSession;
+    rtcSession.createPeerconnection(new MediaStream());
+
+    const mcuSessionLocalAccess = (
+      callManagerLocal as unknown as {
+        mcuSession: {
+          rtcSession?: RTCSession;
+        };
+      }
+    ).mcuSession;
+
+    mcuSessionLocalAccess.rtcSession = rtcSession as unknown as RTCSession;
 
     await expect(callManagerLocal.replaceMediaStream(mediaStream)).rejects.toThrow(
       'No preparedMediaStream',

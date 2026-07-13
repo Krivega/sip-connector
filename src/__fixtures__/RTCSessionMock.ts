@@ -69,8 +69,6 @@ class RTCSessionMock extends BaseSession {
     }, CONNECTION_DELAY);
   });
 
-  public replaceMediaStream = jest.fn(async (_mediaStream: MediaStream): Promise<void> => {});
-
   public _isReadyToReOffer = jest.fn((): boolean => {
     return true;
   });

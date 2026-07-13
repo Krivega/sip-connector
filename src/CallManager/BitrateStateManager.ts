@@ -1,5 +1,5 @@
 import { setParametersToSender } from '@/tools/setParametersToSender';
-import getCodecFromSender from '@/utils/peerConnection/getCodecFromSender';
+import { getCodecFromSender, getSendersByKind } from '@/utils/peerConnection';
 import {
   getMinimumBitrateByWidthAndCodec,
   getMaximumBitrateByWidthAndCodec,
@@ -8,18 +8,6 @@ import {
 export const MINIMUM_BITRATE_AUDIO = 6000; // 6 kbps
 export const MINIMUM_BITRATE_VIDEO = 1000; // 1 kbps
 export const MAXIMUM_BITRATE_AUDIO = 520_000; // 520 kbps
-
-/**
- * Находит все RTCRtpSender'ы для указанного типа медиа
- */
-const getSendersByKind = (
-  connection: RTCPeerConnection,
-  kind: 'audio' | 'video',
-): RTCRtpSender[] => {
-  return connection.getSenders().filter((sender) => {
-    return sender.track?.kind === kind;
-  });
-};
 
 const getMinimumBitrate = (kind: 'audio' | 'video', codec?: string): number => {
   return kind === 'audio' ? MINIMUM_BITRATE_AUDIO : getMinimumBitrateByWidthAndCodec(codec);

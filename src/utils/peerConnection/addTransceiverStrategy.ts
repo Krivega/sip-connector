@@ -16,6 +16,8 @@ const addTrackTransceiver = async (
   connection: RTCPeerConnection,
   track: MediaStreamTrack,
   options: TTransceiverOptions,
+  streams: MediaStream[],
+  // eslint-disable-next-line @typescript-eslint/max-params
 ): Promise<RTCRtpTransceiver | undefined> => {
   const direction = options.direction ?? 'sendrecv';
 
@@ -23,11 +25,12 @@ const addTrackTransceiver = async (
     if (!isFirefoxOrLower(SUPPORTED_FIREFOX_VERSION_FOR_ADD_TRANSCEIVER)) {
       return connection.addTransceiver(track, {
         direction,
+        streams,
         sendEncodings: options.sendEncodings,
       });
     }
 
-    connection.addTrack(track);
+    connection.addTrack(track, ...streams);
 
     return connection.getTransceivers().find((itemTransceiver) => {
       return itemTransceiver.sender.track === track;
@@ -44,14 +47,26 @@ const addTrackTransceiver = async (
   return transceiver;
 };
 
+export const addTrackInTransceiver = async (
+  connection: RTCPeerConnection,
+  track: MediaStreamTrack,
+  options: TTransceiverOptions,
+  streams: MediaStream[] = [],
+  // eslint-disable-next-line @typescript-eslint/max-params
+): Promise<void> => {
+  const transceiver = await addTrackTransceiver(connection, track, options, streams);
+
+  if (options.onAddedTransceiver !== undefined && transceiver !== undefined) {
+    await options.onAddedTransceiver(transceiver, track);
+  }
+};
+
 export const addVideoTrackInTransceiver = async (
   connection: RTCPeerConnection,
   videoTrack: MediaStreamVideoTrack,
   options: TTransceiverOptions,
+  streams: MediaStream[] = [],
+  // eslint-disable-next-line @typescript-eslint/max-params
 ): Promise<void> => {
-  const transceiver = await addTrackTransceiver(connection, videoTrack, options);
-
-  if (options.onAddedTransceiver !== undefined && transceiver !== undefined) {
-    await options.onAddedTransceiver(transceiver, videoTrack);
-  }
+  await addTrackInTransceiver(connection, videoTrack, options, streams);
 };

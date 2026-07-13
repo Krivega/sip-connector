@@ -1,4 +1,5 @@
 import { setEncodingsToSender } from '@/tools/setParametersToSender';
+import findSenderByTrack from './findSenderByTrack';
 
 export const setPresentationMaxBitrate = async ({
   connection,
@@ -13,9 +14,7 @@ export const setPresentationMaxBitrate = async ({
     return;
   }
 
-  const sender = connection.getSenders().find((itemSender) => {
-    return itemSender.track === videoTrack;
-  });
+  const sender = findSenderByTrack(connection, videoTrack);
 
   if (sender) {
     await setEncodingsToSender(sender, { maxBitrate });

@@ -21,6 +21,7 @@ const { mcuDebugLogger } = resolveDebug as jest.Mock & { mcuDebugLogger: jest.Mo
 // Вспомогательный тип для доступа к защищённым свойствам MCUSession
 interface MCUSessionTestAccess {
   rtcSession?: unknown;
+  localMediaStream?: MediaStream;
   pcConfig?: { iceServers?: RTCIceServer[] };
   isPendingCall?: boolean;
   isPendingAnswer?: boolean;
@@ -158,23 +159,37 @@ describe('MCUSession', () => {
   });
 
   it('replaceMediaStream: заменяет поток', async () => {
+    const oldAudioTrack = createAudioMediaStreamTrackMock();
+    const oldVideoTrack = createVideoMediaStreamTrackMock();
+    const newAudioTrack = createAudioMediaStreamTrackMock();
+    const newVideoTrack = createVideoMediaStreamTrackMock();
+    const oldStream = new MediaStream([oldAudioTrack, oldVideoTrack]);
+    const newStream = new MediaStream([newAudioTrack, newVideoTrack]);
+
     const rtcSession = new RTCSessionMock({
       eventHandlers: {},
       originator: 'remote',
     });
 
-    // @ts-expect-error
-    mcuSession.rtcSession = rtcSession as unknown as RTCSession;
+    rtcSession.createPeerconnection(oldStream);
 
-    await mcuSession.replaceMediaStream(mediaStream);
+    const mcuSessionAccess = mcuSession as unknown as MCUSessionTestAccess;
 
-    expect(rtcSession.replaceMediaStream).toHaveBeenCalled();
+    mcuSessionAccess.rtcSession = rtcSession as unknown as RTCSession;
+    mcuSessionAccess.localMediaStream = oldStream;
+
+    const replaceTrackSpy = jest.spyOn(rtcSession.connection.getSenders()[0], 'replaceTrack');
+
+    await mcuSession.replaceMediaStream(newStream);
+
+    expect(replaceTrackSpy).toHaveBeenCalledWith(newAudioTrack);
+    expect(mcuSessionAccess.localMediaStream.getTracks()).toEqual(newStream.getTracks());
   });
 
   it('replaceMediaStream: бросает ошибку если prepareMediaStream вернул undefined', async () => {
     const prepareMediaStreamModule = await import('@/tools/prepareMediaStream');
 
-    jest
+    const prepareMediaStreamSpy = jest
       .spyOn(prepareMediaStreamModule, 'default')
       .mockReturnValue(undefined as unknown as MediaStream);
 
@@ -184,12 +199,17 @@ describe('MCUSession', () => {
       originator: 'remote',
     });
 
-    // @ts-expect-error
-    mcuSessionLocal.rtcSession = rtcSession as unknown as RTCSession;
+    rtcSession.createPeerconnection(new MediaStream());
+
+    const mcuSessionLocalAccess = mcuSessionLocal as unknown as MCUSessionTestAccess;
+
+    mcuSessionLocalAccess.rtcSession = rtcSession as unknown as RTCSession;
 
     await expect(mcuSessionLocal.replaceMediaStream(mediaStream)).rejects.toThrow(
       'No preparedMediaStream',
     );
+
+    prepareMediaStreamSpy.mockRestore();
   });
 
   it('replaceMediaStream: бросает ошибку если нет rtcSession', async () => {
@@ -198,6 +218,47 @@ describe('MCUSession', () => {
     await expect(mcuSession.replaceMediaStream(mediaStream)).rejects.toThrow(
       'No rtcSession established',
     );
+  });
+
+  it('replaceMediaStream: бросает ошибку если нет connection', async () => {
+    const rtcSession = new RTCSessionMock({
+      eventHandlers: {},
+      originator: 'remote',
+    });
+
+    const mcuSessionAccess = mcuSession as unknown as MCUSessionTestAccess;
+
+    mcuSessionAccess.rtcSession = rtcSession as unknown as RTCSession;
+
+    await expect(mcuSession.replaceMediaStream(mediaStream)).rejects.toThrow(
+      'No connection established',
+    );
+  });
+
+  it('replaceMediaStream: вызывает renegotiate у rtcSession при forceRenegotiation', async () => {
+    const audioTrack = createAudioMediaStreamTrackMock();
+    const newAudioTrack = createAudioMediaStreamTrackMock();
+    const oldStream = new MediaStream([audioTrack]);
+    const newStream = new MediaStream([newAudioTrack]);
+
+    const rtcSession = new RTCSessionMock({
+      eventHandlers: {},
+      originator: 'remote',
+    });
+
+    rtcSession.createPeerconnection(oldStream);
+
+    const mcuSessionAccess = mcuSession as unknown as MCUSessionTestAccess;
+
+    mcuSessionAccess.rtcSession = rtcSession as unknown as RTCSession;
+    mcuSessionAccess.localMediaStream = oldStream;
+
+    await mcuSession.replaceMediaStream(newStream, {
+      deleteExisting: false,
+      forceRenegotiation: true,
+    });
+
+    expect(rtcSession.renegotiate).toHaveBeenCalled();
   });
 
   it('reset: очищает rtcSession', () => {

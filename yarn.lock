@@ -1164,15 +1164,14 @@
     globals "^17.7.0"
     typescript "^6.0.3"
 
-"@krivega/jssip@^7.0.0":
-  version "7.0.0"
-  resolved "https://registry.yarnpkg.com/@krivega/jssip/-/jssip-7.0.0.tgz#902865249ee82906d6695a97938e889a51a1f41c"
-  integrity sha512-99BAgNE4j/SlgMKeqnws0mrplS8beryeGvomkPe26pvs3334xlY76Ztbn62wxVTqo8/ze6G+KciL6NxA0lsyZA==
+"@krivega/jssip@^8.0.0":
+  version "8.0.0"
+  resolved "https://registry.yarnpkg.com/@krivega/jssip/-/jssip-8.0.0.tgz#f2a81fc4ce7eadbdea13313b0538210efcf789c1"
+  integrity sha512-m1E52xuFAeGLrjT3cxahfGtcuRgnazqq8XMWSs3eRecCtXHhEp17jHkJjBV0uWfVopAFoT+v0IiO5Ho3x/+toA==
   dependencies:
     debug "^4.4.3"
     events "^3.3.0"
     sdp-transform "^3.0.0"
-    sequent-promises "^2.0.1"
 
 "@krivega/timeout-requester@^1.0.0":
   version "1.0.0"

@@ -54,6 +54,8 @@ export type TStartCall = (
 export type TReplaceMediaStream = (
   mediaStream: MediaStream,
   options?: {
+    directionVideo?: RTCRtpTransceiverDirection;
+    directionAudio?: RTCRtpTransceiverDirection;
     deleteExisting?: boolean;
     addMissing?: boolean;
     forceRenegotiation?: boolean;
