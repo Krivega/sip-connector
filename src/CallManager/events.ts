@@ -32,12 +32,6 @@ enum EEvent {
   PEER_CONNECTION_CREATE_ANSWER_FAILED = 'peerconnection:createanswerfailed',
   PEER_CONNECTION_SET_LOCAL_DESCRIPTION_FAILED = 'peerconnection:setlocaldescriptionfailed',
   PEER_CONNECTION_SET_REMOTE_DESCRIPTION_FAILED = 'peerconnection:setremotedescriptionfailed',
-  // presentation events
-  START_PRESENTATION = 'presentation:start',
-  STARTED_PRESENTATION = 'presentation:started',
-  END_PRESENTATION = 'presentation:end',
-  ENDED_PRESENTATION = 'presentation:ended',
-  FAILED_PRESENTATION = 'presentation:failed',
 
   // synthetic events
   START_CALL = 'start-call',
@@ -74,11 +68,6 @@ export const SESSION_JSSIP_EVENT_NAMES = [
   `${EEvent.UNMUTED}`,
   `${EEvent.NEW_INFO}`,
   `${EEvent.NEW_DTMF}`,
-  `${EEvent.START_PRESENTATION}`,
-  `${EEvent.STARTED_PRESENTATION}`,
-  `${EEvent.END_PRESENTATION}`,
-  `${EEvent.ENDED_PRESENTATION}`,
-  `${EEvent.FAILED_PRESENTATION}`,
   `${EEvent.REINVITE}`,
   `${EEvent.UPDATE}`,
   `${EEvent.REFER}`,
@@ -140,12 +129,6 @@ export type TEventMap = {
   'peerconnection:createanswerfailed': unknown;
   'peerconnection:setlocaldescriptionfailed': unknown;
   'peerconnection:setremotedescriptionfailed': unknown;
-  // presentation events
-  'presentation:start': MediaStream;
-  'presentation:started': MediaStream;
-  'presentation:end': MediaStream;
-  'presentation:ended': MediaStream;
-  'presentation:failed': Error;
   // synthetic events
   'start-call': {
     number: string;

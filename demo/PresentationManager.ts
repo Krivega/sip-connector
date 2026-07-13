@@ -28,7 +28,7 @@ class PresentationManager {
 
   private videoPlayer: VideoPlayer | undefined = undefined;
 
-  private currentPresentationStream: MediaStream | undefined = undefined;
+  private currentPresentationVideoTrack: MediaStreamVideoTrack | undefined = undefined;
 
   private presentationState: TPresentationState = EPresentationStatus.IDLE;
 
@@ -49,7 +49,7 @@ class PresentationManager {
 
     this.statusesManager.onChangeSystemState(({ presentation, isCallActive }) => {
       const shouldResetPresentation =
-        this.currentPresentationStream !== undefined &&
+        this.currentPresentationVideoTrack !== undefined &&
         isPresentationProcessState(this.presentationState) &&
         isPresentationStoppedState(presentation);
 
@@ -174,11 +174,10 @@ class PresentationManager {
 
       const [sourceVideoTrack] = presentationStream.getVideoTracks();
       const clonedTrack = sourceVideoTrack.clone(); // ключевой момент
-      const attemptStream = new MediaStream([clonedTrack]);
 
       debug('stress testing - attempt:', attemptsCount);
 
-      await this.startByMediaStream({ presentationStream: attemptStream });
+      await this.startByVideoTrack({ videoTrack: clonedTrack });
 
       await wait(delayBetweenStartAndStop);
 
@@ -211,22 +210,24 @@ class PresentationManager {
       audio: false,
     });
 
-    await this.startByMediaStream({ presentationStream });
+    const [sourceVideoTrack] = presentationStream.getVideoTracks();
+
+    await this.startByVideoTrack({ videoTrack: sourceVideoTrack });
   }
 
-  private async startByMediaStream({
-    presentationStream,
+  private async startByVideoTrack({
+    videoTrack,
   }: {
-    presentationStream: MediaStream;
+    videoTrack: MediaStreamVideoTrack;
   }): Promise<void> {
-    this.currentPresentationStream = presentationStream;
+    this.currentPresentationVideoTrack = videoTrack;
 
     try {
-      this.videoPlayer?.setStream(presentationStream);
+      this.videoPlayer?.setStream(new MediaStream([videoTrack]));
       this.videoPlayer?.setPlaying(true);
 
       await sipConnectorFacade.startPresentation({
-        mediaStream: presentationStream,
+        videoTrack,
       });
 
       debug('presentation started');
@@ -238,10 +239,8 @@ class PresentationManager {
   }
 
   private readonly resetPresentation = () => {
-    this.currentPresentationStream?.getTracks().forEach((track) => {
-      track.stop();
-    });
-    this.currentPresentationStream = undefined;
+    this.currentPresentationVideoTrack?.stop();
+    this.currentPresentationVideoTrack = undefined;
 
     this.videoPlayer?.clear();
 

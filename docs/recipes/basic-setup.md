@@ -46,7 +46,7 @@ await facade.callToServer({
 
 // 5. Презентация
 await facade.startPresentation({
-  mediaStream: presentationStream,
+  videoTrack: presentationStream.getVideoTracks()[0] as MediaStreamVideoTrack,
   contentHint: 'detail',
 });
 

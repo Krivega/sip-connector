@@ -4,6 +4,7 @@ import { EEvents, EState } from './constants';
 import { createPresentationMachine } from './createPresentationMachine';
 
 import type { TCallEvents } from '@/CallManager';
+import type { TEvents as TPresentationEvents } from '../events';
 import type { TContext, TContextMap, TPresentationMachineEvents } from './types';
 
 const presentationMachine = createPresentationMachine();
@@ -22,9 +23,10 @@ export class PresentationStateMachine extends BaseStateMachine<
   TContext,
   TSnapshot
 > {
-  public constructor(callEvents: TCallEvents) {
+  public constructor(presentationEvents: TPresentationEvents, callEvents: TCallEvents) {
     super(presentationMachine);
 
+    this.subscribePresentationEvents(presentationEvents);
     this.subscribeCallEvents(callEvents);
   }
 
@@ -86,32 +88,35 @@ export class PresentationStateMachine extends BaseStateMachine<
     super.send(event);
   }
 
-  private subscribeCallEvents(events: TCallEvents): void {
+  private subscribePresentationEvents(events: TPresentationEvents): void {
     this.addSubscription(
-      events.on('presentation:start', () => {
+      events.on('start', () => {
         this.sendEvent({ type: EEvents.SCREEN_STARTING });
       }),
     );
     this.addSubscription(
-      events.on('presentation:started', () => {
+      events.on('started', () => {
         this.sendEvent({ type: EEvents.SCREEN_STARTED });
       }),
     );
     this.addSubscription(
-      events.on('presentation:end', () => {
+      events.on('end', () => {
         this.sendEvent({ type: EEvents.SCREEN_ENDING });
       }),
     );
     this.addSubscription(
-      events.on('presentation:ended', () => {
+      events.on('ended', () => {
         this.sendEvent({ type: EEvents.SCREEN_ENDED });
       }),
     );
     this.addSubscription(
-      events.on('presentation:failed', (error) => {
+      events.on('failed', (error) => {
         this.sendEvent({ type: EEvents.SCREEN_FAILED, error });
       }),
     );
+  }
+
+  private subscribeCallEvents(events: TCallEvents): void {
     this.addSubscription(
       events.on('ended', () => {
         this.sendEvent({ type: EEvents.CALL_ENDED });

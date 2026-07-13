@@ -7,7 +7,7 @@ export {
   PresentationStateMachine,
   EPresentationStateMachineEvents,
 } from './PresentationStateMachine';
-export { EVENT_NAMES as PRESENTATION_MANAGER_EVENT_NAMES } from './events';
+export { EVENT_NAMES as PRESENTATION_MANAGER_EVENT_NAMES, createEvents } from './events';
 
 export type { TPresentationSnapshot, TPresentationContextMap } from './PresentationStateMachine';
 export type { TEventMap as TPresentationManagerEventMap } from './events';

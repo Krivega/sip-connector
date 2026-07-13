@@ -1,6 +1,9 @@
 import { UAParser } from 'ua-parser-js';
 
-import { resolveHasGreaterThanBrowserVersion } from './compareBrowserVersion';
+import {
+  resolveHasGreaterThanBrowserVersion,
+  resolveHasLessOrEqualBrowserVersion,
+} from './compareBrowserVersion';
 import getVersionParsed from './getVersionParsed';
 import isElectronEnvironment from './isElectronEnvironment';
 
@@ -14,11 +17,14 @@ const createUaParser = () => {
 
   const browserVersionParsed = getVersionParsed(browserVersion);
   const hasGreaterThanBrowserVersion = resolveHasGreaterThanBrowserVersion(browserVersionParsed);
+  const hasLessOrEqualBrowserVersion = resolveHasLessOrEqualBrowserVersion(browserVersionParsed);
 
   return {
     hasGreaterThanBrowserVersion,
+    hasLessOrEqualBrowserVersion,
     isMobileDevice,
     isChrome: browserName === 'Chrome' || isElectron,
+    isFirefox: browserName === 'Firefox',
     isYandexBrowser: browserName === 'Yandex',
     isSafari: browserName === 'Safari',
     isOpera: browserName === 'Opera',

@@ -103,7 +103,7 @@ describe('SipConnector events', () => {
     sipConnector.events.on('call:accepted', callHandler);
     sipConnector.events.on('api:channels:all', apiHandler);
     sipConnector.events.on('incoming-call:ringing', incomingCallHandler);
-    sipConnector.events.on('presentation:presentation:start', presentationHandler);
+    sipConnector.events.on('presentation:start', presentationHandler);
     sipConnector.events.on('stats:collected', statsHandler);
     sipConnector.events.on('main-stream-health:health-snapshot', mainStreamHealthHandler);
     sipConnector.events.on(
@@ -151,9 +151,9 @@ describe('SipConnector events', () => {
       rtcSession,
     });
 
-    const mediaStream = new MediaStream();
+    const videoTrack = { kind: 'video' } as MediaStreamVideoTrack;
 
-    sipConnector.presentationManager.events.trigger('presentation:start', mediaStream);
+    sipConnector.presentationManager.events.trigger('start', videoTrack);
     // @ts-expect-error
     sipConnector.statsManager.events.trigger('collected', stats);
 
@@ -197,7 +197,7 @@ describe('SipConnector events', () => {
       incomingNumber: 'incoming',
       rtcSession,
     });
-    expect(presentationHandler).toHaveBeenCalledWith(mediaStream);
+    expect(presentationHandler).toHaveBeenCalledWith(videoTrack);
     expect(statsHandler).toHaveBeenCalledWith(stats);
     expect(mainStreamHealthHandler).toHaveBeenCalledWith({
       isMutedMainVideoTrack: false,

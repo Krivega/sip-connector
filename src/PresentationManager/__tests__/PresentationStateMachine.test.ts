@@ -3,6 +3,7 @@ import { createMediaStreamMock } from 'webrtc-mock';
 import { createLoggerMockModule } from '@/__fixtures__/logger.mock';
 import { createEvents as createCallEvents } from '@/CallManager';
 import resolveDebug from '@/logger';
+import { createEvents as createPresentationEvents } from '../events';
 import {
   PresentationStateMachine,
   EPresentationStatus,
@@ -10,6 +11,7 @@ import {
 } from '../PresentationStateMachine';
 
 import type { TCallEvents } from '@/CallManager';
+import type { TEvents as TPresentationEvents } from '../events';
 
 jest.mock('@/logger', () => {
   return createLoggerMockModule();
@@ -18,9 +20,10 @@ jest.mock('@/logger', () => {
 const mockDebug = (resolveDebug as jest.Mock).mock.results[0].value as jest.Mock;
 
 describe('PresentationStateMachine', () => {
+  let presentationEvents: TPresentationEvents;
   let callEvents: TCallEvents;
   let machine: PresentationStateMachine;
-  let mediaStream: MediaStream;
+  let videoTrack: MediaStreamVideoTrack;
 
   const getContext = () => {
     return machine.getSnapshot().context as { lastError?: unknown };
@@ -28,12 +31,13 @@ describe('PresentationStateMachine', () => {
 
   beforeEach(() => {
     mockDebug.mockClear();
+    presentationEvents = createPresentationEvents();
     callEvents = createCallEvents();
-    machine = new PresentationStateMachine(callEvents);
-    mediaStream = createMediaStreamMock({
+    machine = new PresentationStateMachine(presentationEvents, callEvents);
+    videoTrack = createMediaStreamMock({
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },
-    });
+    }).getVideoTracks()[0] as MediaStreamVideoTrack;
   });
 
   afterEach(() => {
@@ -391,7 +395,7 @@ describe('PresentationStateMachine', () => {
       expect(machine.state).toBe(EPresentationStatus.IDLE);
       expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining(
-          '[PresentationStateMachine] Invalid transition: SCREEN.STARTED from presentation:idle',
+          '[PresentationStateMachine] Invalid transition: SCREEN.STARTED from idle',
         ),
       );
     });
@@ -403,7 +407,7 @@ describe('PresentationStateMachine', () => {
       expect(machine.state).toBe(EPresentationStatus.STARTING);
       expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining(
-          '[PresentationStateMachine] Invalid transition: SCREEN.ENDING from presentation:starting',
+          '[PresentationStateMachine] Invalid transition: SCREEN.ENDING from starting',
         ),
       );
     });
@@ -415,7 +419,7 @@ describe('PresentationStateMachine', () => {
       expect(machine.state).toBe(EPresentationStatus.STARTING);
       expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining(
-          '[PresentationStateMachine] Invalid transition: SCREEN.STARTING from presentation:starting',
+          '[PresentationStateMachine] Invalid transition: SCREEN.STARTING from starting',
         ),
       );
     });
@@ -428,7 +432,7 @@ describe('PresentationStateMachine', () => {
       expect(machine.state).toBe(EPresentationStatus.ACTIVE);
       expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining(
-          '[PresentationStateMachine] Invalid transition: SCREEN.STARTING from presentation:active',
+          '[PresentationStateMachine] Invalid transition: SCREEN.STARTING from active',
         ),
       );
     });
@@ -473,7 +477,7 @@ describe('PresentationStateMachine', () => {
       expect(machine.state).toBe(EPresentationStatus.IDLE);
       expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining(
-          '[PresentationStateMachine] Invalid transition: PRESENTATION.RESET from presentation:idle',
+          '[PresentationStateMachine] Invalid transition: PRESENTATION.RESET from idle',
         ),
       );
     });
@@ -486,7 +490,7 @@ describe('PresentationStateMachine', () => {
       expect(machine.state).toBe(EPresentationStatus.ACTIVE);
       expect(mockDebug).toHaveBeenCalledWith(
         expect.stringContaining(
-          '[PresentationStateMachine] Invalid transition: PRESENTATION.RESET from presentation:active',
+          '[PresentationStateMachine] Invalid transition: PRESENTATION.RESET from active',
         ),
       );
     });
@@ -551,24 +555,24 @@ describe('PresentationStateMachine', () => {
     });
   });
 
-  describe('Интеграция с событиями CallManager', () => {
-    it('триггеры callEvents.trigger() корректно обрабатываются', () => {
-      callEvents.trigger('presentation:start', mediaStream);
+  describe('Интеграция с событиями PresentationManager и CallManager', () => {
+    it('триггеры presentationEvents.trigger() корректно обрабатываются', () => {
+      presentationEvents.trigger('start', videoTrack);
       expect(machine.state).toBe(EPresentationStatus.STARTING);
 
-      callEvents.trigger('presentation:started', mediaStream);
+      presentationEvents.trigger('started', videoTrack);
       expect(machine.state).toBe(EPresentationStatus.ACTIVE);
 
-      callEvents.trigger('presentation:end', mediaStream);
+      presentationEvents.trigger('end', videoTrack);
       expect(machine.state).toBe(EPresentationStatus.STOPPING);
 
-      callEvents.trigger('presentation:ended', mediaStream);
+      presentationEvents.trigger('ended', videoTrack);
       expect(machine.state).toBe(EPresentationStatus.IDLE);
     });
 
-    it('валидация работает через события CallManager', () => {
+    it('валидация работает через события PresentationManager', () => {
       // Попытка перейти в ACTIVE напрямую из IDLE
-      callEvents.trigger('presentation:started', mediaStream);
+      presentationEvents.trigger('started', videoTrack);
 
       expect(machine.state).toBe(EPresentationStatus.IDLE);
       expect(mockDebug).toHaveBeenCalledWith(
@@ -576,7 +580,7 @@ describe('PresentationStateMachine', () => {
       );
     });
 
-    it('CALL.FAILED корректно обрабатывается в разных состояниях', () => {
+    it('SCREEN.FAILED корректно обрабатывается в разных состояниях', () => {
       const error = {
         originator: 'remote',
         message: {},
@@ -584,29 +588,29 @@ describe('PresentationStateMachine', () => {
       };
 
       // STARTING → FAILED
-      callEvents.trigger('presentation:start', mediaStream);
+      presentationEvents.trigger('start', videoTrack);
       // @ts-expect-error
-      callEvents.trigger('presentation:failed', error);
+      presentationEvents.trigger('failed', error);
       expect(machine.state).toBe(EPresentationStatus.FAILED);
       expect(machine.lastError).toEqual(new Error(JSON.stringify(error)));
 
       machine.reset();
 
       // ACTIVE → FAILED
-      callEvents.trigger('presentation:start', mediaStream);
-      callEvents.trigger('presentation:started', mediaStream);
+      presentationEvents.trigger('start', videoTrack);
+      presentationEvents.trigger('started', videoTrack);
       // @ts-expect-error
-      callEvents.trigger('presentation:failed', error);
+      presentationEvents.trigger('failed', error);
       expect(machine.state).toBe(EPresentationStatus.FAILED);
 
       machine.reset();
 
       // STOPPING → FAILED
-      callEvents.trigger('presentation:start', mediaStream);
-      callEvents.trigger('presentation:started', mediaStream);
-      callEvents.trigger('presentation:end', mediaStream);
+      presentationEvents.trigger('start', videoTrack);
+      presentationEvents.trigger('started', videoTrack);
+      presentationEvents.trigger('end', videoTrack);
       // @ts-expect-error
-      callEvents.trigger('presentation:failed', error);
+      presentationEvents.trigger('failed', error);
       expect(machine.state).toBe(EPresentationStatus.FAILED);
     });
   });
@@ -614,26 +618,26 @@ describe('PresentationStateMachine', () => {
   describe('Контракт адаптера событий менеджеров', () => {
     it('обрабатывает цепочку событий от менеджеров', () => {
       // start sharing
-      callEvents.trigger('presentation:start', mediaStream);
+      presentationEvents.trigger('start', videoTrack);
       expect(machine.state).toBe(EPresentationStatus.STARTING);
       expect(getContext().lastError).toBeUndefined();
 
       // started
-      callEvents.trigger('presentation:started', mediaStream);
+      presentationEvents.trigger('started', videoTrack);
       expect(machine.state).toBe(EPresentationStatus.ACTIVE);
 
       // end request
-      callEvents.trigger('presentation:end', mediaStream);
+      presentationEvents.trigger('end', videoTrack);
       expect(machine.state).toBe(EPresentationStatus.STOPPING);
 
       // ended -> idle
-      callEvents.trigger('presentation:ended', mediaStream);
+      presentationEvents.trigger('ended', videoTrack);
       expect(machine.state).toBe(EPresentationStatus.IDLE);
 
-      // new start and failure from call
-      callEvents.trigger('presentation:start', mediaStream);
-      callEvents.trigger('presentation:started', mediaStream);
-      callEvents.trigger('presentation:failed', new Error('call failed'));
+      // new start and failure from presentation
+      presentationEvents.trigger('start', videoTrack);
+      presentationEvents.trigger('started', videoTrack);
+      presentationEvents.trigger('failed', new Error('call failed'));
       expect(machine.state).toBe(EPresentationStatus.FAILED);
       expect(getContext().lastError).toBeInstanceOf(Error);
     });

@@ -28,9 +28,8 @@ describe('SipConnector onAddedTransceiver wrappers', () => {
 
     const transceiver = {} as unknown as RTCRtpTransceiver;
     const track = {} as unknown as MediaStreamTrack;
-    const stream = {} as unknown as MediaStream;
 
-    return { sipConnector, transceiver, track, stream };
+    return { sipConnector, transceiver, track };
   };
 
   beforeEach(() => {
@@ -43,7 +42,7 @@ describe('SipConnector onAddedTransceiver wrappers', () => {
   };
 
   it('wraps onAddedTransceiver in call()', async () => {
-    const { sipConnector, transceiver, track, stream } = createMocks();
+    const { sipConnector, transceiver, track } = createMocks();
 
     const calls: string[] = [];
 
@@ -58,7 +57,7 @@ describe('SipConnector onAddedTransceiver wrappers', () => {
     jest
       .spyOn(sipConnector.callManager, 'startCall')
       .mockImplementation(async (_ua, _getUrl, params) => {
-        await params.onAddedTransceiver?.(transceiver, track, [stream]);
+        await params.onAddedTransceiver?.(transceiver, track);
 
         return {} as unknown as RTCPeerConnection;
       });
@@ -73,7 +72,7 @@ describe('SipConnector onAddedTransceiver wrappers', () => {
   });
 
   it('wraps onAddedTransceiver in answerToIncomingCall()', async () => {
-    const { sipConnector, transceiver, track, stream } = createMocks();
+    const { sipConnector, transceiver, track } = createMocks();
 
     const calls: string[] = [];
 
@@ -88,7 +87,7 @@ describe('SipConnector onAddedTransceiver wrappers', () => {
     jest
       .spyOn(sipConnector.callManager, 'answerToIncomingCall')
       .mockImplementation(async (_extractRtc, params) => {
-        await params.onAddedTransceiver?.(transceiver, track, [stream]);
+        await params.onAddedTransceiver?.(transceiver, track);
 
         return {} as unknown as RTCPeerConnection;
       });
@@ -102,7 +101,7 @@ describe('SipConnector onAddedTransceiver wrappers', () => {
   });
 
   it('wraps onAddedTransceiver in startPresentation()', async () => {
-    const { sipConnector, transceiver, track, stream } = createMocks();
+    const { sipConnector, transceiver, track } = createMocks();
 
     const calls: string[] = [];
 
@@ -117,19 +116,21 @@ describe('SipConnector onAddedTransceiver wrappers', () => {
     jest
 
       .spyOn(sipConnector.presentationManager, 'startPresentation')
-      .mockImplementation(async (_before, _mediaStream: MediaStream, options) => {
-        await options?.onAddedTransceiver?.(transceiver, track, [stream]);
+      .mockImplementation(async (_before, videoTrack: MediaStreamVideoTrack, options) => {
+        await options?.onAddedTransceiver?.(transceiver, track);
 
-        return _mediaStream;
+        return videoTrack;
       });
 
-    await sipConnector.startPresentation(new MediaStream(), { onAddedTransceiver: onAddedMock });
+    await sipConnector.startPresentation(track as MediaStreamVideoTrack, {
+      onAddedTransceiver: onAddedMock,
+    });
 
     expectCalls(onAddedMock);
   });
 
   it('wraps onAddedTransceiver in updatePresentation()', async () => {
-    const { sipConnector, transceiver, track, stream } = createMocks();
+    const { sipConnector, transceiver, track } = createMocks();
 
     const calls: string[] = [];
 
@@ -144,13 +145,15 @@ describe('SipConnector onAddedTransceiver wrappers', () => {
     jest
 
       .spyOn(sipConnector.presentationManager, 'updatePresentation')
-      .mockImplementation(async (_before, _mediaStream: MediaStream, options) => {
-        await options?.onAddedTransceiver?.(transceiver, track, [stream]);
+      .mockImplementation(async (_before, videoTrack: MediaStreamVideoTrack, options) => {
+        await options?.onAddedTransceiver?.(transceiver, track);
 
-        return _mediaStream;
+        return videoTrack;
       });
 
-    await sipConnector.updatePresentation(new MediaStream(), { onAddedTransceiver: onAddedMock });
+    await sipConnector.updatePresentation(track as MediaStreamVideoTrack, {
+      onAddedTransceiver: onAddedMock,
+    });
 
     expectCalls(onAddedMock);
   });

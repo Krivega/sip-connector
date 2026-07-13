@@ -7,7 +7,11 @@ const initialUaParser: ReturnType<typeof createUaParser> = {
   isOpera: false,
   isWindows: false,
   isChrome: false,
+  isFirefox: false,
   hasGreaterThanBrowserVersion: () => {
+    return false;
+  },
+  hasLessOrEqualBrowserVersion: () => {
     return false;
   },
 };

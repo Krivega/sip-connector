@@ -787,22 +787,25 @@ describe('SipConnectorFacade comprehensive', () => {
     });
 
     beforeEach(() => {
-      jest.spyOn(sipConnector, 'startPresentation').mockResolvedValue(mockMediaStream);
-      jest.spyOn(sipConnector, 'updatePresentation').mockResolvedValue(mockMediaStream);
+      const videoTrack = mockMediaStream.getVideoTracks()[0] as MediaStreamVideoTrack;
+
+      jest.spyOn(sipConnector, 'startPresentation').mockResolvedValue(videoTrack);
+      jest.spyOn(sipConnector, 'updatePresentation').mockResolvedValue(videoTrack);
       jest.spyOn(sipConnector, 'stopPresentation').mockResolvedValue(undefined);
     });
 
     it('должен запустить презентацию', async () => {
+      const videoTrack = mockMediaStream.getVideoTracks()[0] as MediaStreamVideoTrack;
       const result = await sipConnectorFacade.startPresentation({
-        mediaStream: mockMediaStream,
+        videoTrack,
         contentHint: 'detail',
         degradationPreference: 'maintain-framerate',
         sendEncodings: [],
         callLimit: 10,
       });
 
-      expect(result).toBe(mockMediaStream);
-      expect(sipConnector.startPresentation).toHaveBeenCalledWith(mockMediaStream, {
+      expect(result).toBe(videoTrack);
+      expect(sipConnector.startPresentation).toHaveBeenCalledWith(videoTrack, {
         contentHint: 'detail',
         callLimit: 10,
         degradationPreference: 'maintain-framerate',
@@ -812,15 +815,16 @@ describe('SipConnectorFacade comprehensive', () => {
     });
 
     it('должен обновить презентацию', async () => {
+      const videoTrack = mockMediaStream.getVideoTracks()[0] as MediaStreamVideoTrack;
       const result = await sipConnectorFacade.updatePresentation({
-        mediaStream: mockMediaStream,
+        videoTrack,
         contentHint: 'motion',
         degradationPreference: 'maintain-resolution',
         sendEncodings: [],
       });
 
-      expect(result).toBe(mockMediaStream);
-      expect(sipConnector.updatePresentation).toHaveBeenCalledWith(mockMediaStream, {
+      expect(result).toBe(videoTrack);
+      expect(sipConnector.updatePresentation).toHaveBeenCalledWith(videoTrack, {
         contentHint: 'motion',
         degradationPreference: 'maintain-resolution',
         sendEncodings: [],

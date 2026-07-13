@@ -90,5 +90,37 @@ describe('createUaParser', () => {
     const api = createUaParser();
 
     expect(api.isChrome).toBe(false);
+    expect(api.isFirefox).toBe(false);
+  });
+
+  it('isFirefox = true, когда браузер Firefox', () => {
+    const { UAParser } = jest.requireMock('ua-parser-js') as { UAParser: jest.Mock };
+
+    UAParser.mockImplementation(() => {
+      return {
+        getBrowser: () => {
+          return { name: 'Firefox', version: '100.0.0' };
+        },
+        getOS: () => {
+          return { name: 'Windows' };
+        },
+        getDevice: () => {
+          return { type: 'desktop' };
+        },
+      };
+    });
+
+    (isElectronEnvironment as jest.Mock).mockReturnValue(false);
+
+    const api = createUaParser();
+
+    expect(api.isFirefox).toBe(true);
+    expect(
+      api.hasLessOrEqualBrowserVersion({
+        major: 109,
+        minor: 0,
+        patch: 0,
+      }),
+    ).toBe(true);
   });
 });

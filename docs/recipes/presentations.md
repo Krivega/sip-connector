@@ -13,7 +13,7 @@ const displayStream = await navigator.mediaDevices.getDisplayMedia({
 
 // Запуск презентации с настройками качества
 await facade.startPresentation({
-  mediaStream: displayStream,
+  videoTrack: displayStream.getVideoTracks()[0] as MediaStreamVideoTrack,
   contentHint: 'detail', // Оптимизация для детального контента
   degradationPreference: 'maintain-resolution', // Приоритет разрешения
   sendEncodings: [
@@ -28,7 +28,7 @@ await facade.startPresentation({
 ```typescript
 // Обновление потока презентации с новыми настройками
 await facade.updatePresentation({
-  mediaStream: newDisplayStream,
+  videoTrack: newDisplayStream.getVideoTracks()[0] as MediaStreamVideoTrack,
   contentHint: 'text', // Оптимизация для текстового контента
   degradationPreference: 'maintain-resolution',
 });
@@ -77,7 +77,7 @@ const presentationSettings = {
 
 // Использование настроек
 await facade.startPresentation({
-  mediaStream: displayStream,
+  videoTrack: displayStream.getVideoTracks()[0] as MediaStreamVideoTrack,
   ...presentationSettings.textOptimized,
 });
 ```
@@ -91,5 +91,5 @@ const { presentationManager } = sipConnector;
 
 // Проверка текущего состояния
 console.log('В процессе запуска/остановки:', presentationManager.isPendingPresentation);
-console.log('Текущий поток презентации:', presentationManager.streamPresentationCurrent);
+console.log('Текущий video track презентации:', presentationManager.videoTrackPresentationCurrent);
 ```

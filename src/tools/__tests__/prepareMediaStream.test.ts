@@ -138,4 +138,40 @@ describe('prepareMediaStream', () => {
     expect(tracks?.[0].kind).toBe('audio');
     expect(tracks?.[1].kind).toBe('video');
   });
+
+  it('should apply contentHint when it is provided and not none', () => {
+    mockVideoTrack = {
+      kind: 'video',
+      contentHint: 'motion',
+    } as MediaStreamVideoTrack;
+    mockMediaStream = {
+      getAudioTracks: jest.fn().mockReturnValue([mockAudioTrack]),
+      getVideoTracks: jest.fn().mockReturnValue([mockVideoTrack]),
+    } as unknown as MediaStream;
+
+    const result = prepareMediaStream(mockMediaStream, {
+      contentHint: 'detail',
+    });
+
+    expect(result).toBeDefined();
+    expect(result?.getVideoTracks()[0]?.contentHint).toBe('detail');
+  });
+
+  it('should not apply contentHint when it is none', () => {
+    mockVideoTrack = {
+      kind: 'video',
+      contentHint: 'motion',
+    } as MediaStreamVideoTrack;
+    mockMediaStream = {
+      getAudioTracks: jest.fn().mockReturnValue([mockAudioTrack]),
+      getVideoTracks: jest.fn().mockReturnValue([mockVideoTrack]),
+    } as unknown as MediaStream;
+
+    const result = prepareMediaStream(mockMediaStream, {
+      contentHint: 'none',
+    });
+
+    expect(result).toBeDefined();
+    expect(result?.getVideoTracks()[0]?.contentHint).toBe('motion');
+  });
 });

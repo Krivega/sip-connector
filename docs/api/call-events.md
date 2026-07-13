@@ -33,11 +33,6 @@
 | `call:peerconnection:createanswerfailed`         | Генерируется при ошибке создания SDP answer                         | `unknown`                                         |
 | `call:peerconnection:setlocaldescriptionfailed`  | Генерируется при ошибке установки локального SDP описания           | `unknown`                                         |
 | `call:peerconnection:setremotedescriptionfailed` | Генерируется при ошибке установки удаленного SDP описания           | `unknown`                                         |
-| `call:presentation:start`                        | Генерируется при начале запуска презентации                         | `MediaStream`                                     |
-| `call:presentation:started`                      | Генерируется при успешном запуске презентации                       | `MediaStream`                                     |
-| `call:presentation:end`                          | Генерируется при начале остановки презентации                       | `MediaStream`                                     |
-| `call:presentation:ended`                        | Генерируется при успешной остановке презентации                     | `MediaStream`                                     |
-| `call:presentation:failed`                       | Генерируется при ошибке презентации                                 | `Error`                                           |
 | `call:peerconnection:confirmed`                  | Генерируется при подтверждении RTCPeerConnection                    | `RTCPeerConnection`                               |
 | `call:peerconnection:ontrack`                    | Генерируется при получении нового медиа-трека                       | `RTCTrackEvent`                                   |
 | `call:ended:fromserver`                          | Генерируется при завершении звонка от сервера                       | `EndEvent`                                        |

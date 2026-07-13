@@ -633,13 +633,13 @@ describe('SipConnector', () => {
     jest
       .spyOn(sipConnector.presentationManager, 'startPresentation')
       // eslint-disable-next-line @typescript-eslint/max-params
-      .mockImplementation(async (callback, s, _rest, _options) => {
+      .mockImplementation(async (callback, videoTrack, _rest, _options) => {
         await callback();
 
-        return s;
+        return videoTrack;
       });
 
-    await sipConnector.startPresentation(stream);
+    await sipConnector.startPresentation(stream.getVideoTracks()[0] as MediaStreamVideoTrack);
 
     expect(askPermissionToStartPresentation).toHaveBeenCalled();
     expect(sendAvailableContentedStream).not.toHaveBeenCalled();
@@ -676,13 +676,13 @@ describe('SipConnector', () => {
     jest
       .spyOn(sipConnector.presentationManager, 'startPresentation')
       // eslint-disable-next-line @typescript-eslint/max-params
-      .mockImplementation(async (callback, s, _rest, _options) => {
+      .mockImplementation(async (callback, videoTrack, _rest, _options) => {
         await callback();
 
-        return s;
+        return videoTrack;
       });
 
-    await sipConnector.startPresentation(stream);
+    await sipConnector.startPresentation(stream.getVideoTracks()[0] as MediaStreamVideoTrack);
 
     expect(askPermissionToStartPresentation).not.toHaveBeenCalled();
     expect(sendAvailableContentedStream).toHaveBeenCalled();
@@ -708,13 +708,13 @@ describe('SipConnector', () => {
 
     jest
       .spyOn(sipConnector.presentationManager, 'startPresentation')
-      .mockImplementation(async (callback, s) => {
+      .mockImplementation(async (callback, videoTrack) => {
         await callback();
 
-        return s;
+        return videoTrack;
       });
 
-    await sipConnector.startPresentation(stream);
+    await sipConnector.startPresentation(stream.getVideoTracks()[0] as MediaStreamVideoTrack);
 
     expect(sendAvailableContentedStream).toHaveBeenCalled();
     expect(askPermissionToStartPresentation).not.toHaveBeenCalled();
@@ -809,10 +809,10 @@ describe('SipConnector', () => {
 
     jest
       .spyOn(sipConnector.presentationManager, 'startPresentation')
-      .mockImplementation(async (_callback, s) => {
-        return s;
+      .mockImplementation(async (_callback, videoTrack) => {
+        return videoTrack;
       });
-    await sipConnector.startPresentation(stream);
+    await sipConnector.startPresentation(stream.getVideoTracks()[0] as MediaStreamVideoTrack);
 
     const askPermissionToStartPresentation = jest
       .spyOn(sipConnector.apiManager, 'askPermissionToStartPresentation')
@@ -835,7 +835,7 @@ describe('SipConnector', () => {
         return undefined;
       });
 
-    await sipConnector.updatePresentation(stream);
+    await sipConnector.updatePresentation(stream.getVideoTracks()[0] as MediaStreamVideoTrack);
 
     expect(askPermissionToStartPresentation).toHaveBeenCalled();
     expect(sendAvailableContentedStream).not.toHaveBeenCalled();
@@ -858,10 +858,10 @@ describe('SipConnector', () => {
 
     jest
       .spyOn(sipConnector.presentationManager, 'startPresentation')
-      .mockImplementation(async (_callback, s) => {
-        return s;
+      .mockImplementation(async (_callback, videoTrack) => {
+        return videoTrack;
       });
-    await sipConnector.startPresentation(stream);
+    await sipConnector.startPresentation(stream.getVideoTracks()[0] as MediaStreamVideoTrack);
 
     const askPermissionToStartPresentation = jest
       .spyOn(sipConnector.apiManager, 'askPermissionToStartPresentation')
@@ -884,7 +884,7 @@ describe('SipConnector', () => {
         return undefined;
       });
 
-    await sipConnector.updatePresentation(stream);
+    await sipConnector.updatePresentation(stream.getVideoTracks()[0] as MediaStreamVideoTrack);
 
     expect(askPermissionToStartPresentation).not.toHaveBeenCalled();
     expect(sendAvailableContentedStream).toHaveBeenCalled();

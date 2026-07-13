@@ -140,9 +140,7 @@ const API_EVENT_SYNC_CONFIG = [
   {
     docPath: 'docs/api/presentation-events.md',
     sourcePath: 'src/PresentationManager/events.ts',
-    // События PresentationManager уже содержат `presentation:*`.
-    prefix: '',
-    docPrefixFilter: 'presentation:',
+    prefix: 'presentation',
   },
   {
     docPath: 'docs/api/stats-events.md',

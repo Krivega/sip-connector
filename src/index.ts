@@ -37,6 +37,7 @@ export {
   hasCanceledStartPresentationError,
   PresentationStateMachine,
   EPresentationStateMachineEvents,
+  createEvents as createPresentationEvents,
 } from './PresentationManager';
 export { SipConnector } from './SipConnector';
 export { SipConnectorFacade } from './SipConnectorFacade';

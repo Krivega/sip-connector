@@ -30,14 +30,6 @@ const hasVideoTracks = (mediaStream: MediaStream): boolean => {
 };
 
 class RTCSessionMock extends BaseSession {
-  private static presentationError?: Error;
-
-  private static startPresentationError?: Error;
-
-  private static countStartPresentationError: number = Number.POSITIVE_INFINITY;
-
-  private static countStartsPresentation = 0;
-
   public url?: string;
 
   public status_code?: number;
@@ -98,9 +90,7 @@ class RTCSessionMock extends BaseSession {
 
   private isEndedInner = false;
 
-  private readonly delayStartPresentation: number = 0;
-
-  private timeoutStartPresentation?: NodeJS.Timeout;
+  private readonly timeoutStartPresentation?: NodeJS.Timeout;
 
   private timeoutConnect?: NodeJS.Timeout;
 
@@ -117,88 +107,17 @@ class RTCSessionMock extends BaseSession {
       new URI('sip', 'caller1', 'test1.com', 5060),
       'Test Caller 1',
     ),
-    delayStartPresentation = 0,
   }: {
     eventHandlers: TEventHandlers;
     originator: string;
     remoteIdentity?: NameAddrHeader;
-    delayStartPresentation?: number;
   }) {
     super({ originator, eventHandlers, remoteIdentity });
-
-    this.delayStartPresentation = delayStartPresentation;
   }
 
   public static get C(): typeof SessionStatus {
     return SessionStatus;
   }
-
-  public static setPresentationError(presentationError: Error) {
-    this.presentationError = presentationError;
-  }
-
-  public static resetPresentationError() {
-    this.presentationError = undefined;
-  }
-
-  public static setStartPresentationError(
-    startPresentationError: Error,
-    { count = Number.POSITIVE_INFINITY }: { count?: number } = {},
-  ) {
-    this.startPresentationError = startPresentationError;
-    this.countStartPresentationError = count;
-  }
-
-  public static resetStartPresentationError() {
-    this.startPresentationError = undefined;
-    this.countStartPresentationError = Number.POSITIVE_INFINITY;
-    this.countStartsPresentation = 0;
-  }
-
-  public startPresentation = async (stream: MediaStream) => {
-    RTCSessionMock.countStartsPresentation += 1;
-
-    return new Promise<MediaStream>((resolve, reject) => {
-      this.timeoutStartPresentation = setTimeout(() => {
-        if (RTCSessionMock.presentationError) {
-          this.trigger('presentation:start', stream);
-
-          this.trigger('presentation:failed', stream);
-
-          reject(RTCSessionMock.presentationError);
-
-          return;
-        }
-
-        if (
-          RTCSessionMock.startPresentationError &&
-          RTCSessionMock.countStartsPresentation < RTCSessionMock.countStartPresentationError
-        ) {
-          this.trigger('presentation:start', stream);
-
-          this.trigger('presentation:failed', stream);
-
-          reject(RTCSessionMock.startPresentationError);
-
-          return;
-        }
-
-        resolve(super.startPresentation(stream));
-      }, this.delayStartPresentation);
-    });
-  };
-
-  public stopPresentation = async (stream: MediaStream) => {
-    if (RTCSessionMock.presentationError) {
-      this.trigger('presentation:end', stream);
-
-      this.trigger('presentation:failed', stream);
-
-      throw RTCSessionMock.presentationError;
-    }
-
-    return super.stopPresentation(stream);
-  };
 
   public initPeerconnection(mediaStream: MediaStream | undefined) {
     if (!mediaStream) {
@@ -393,6 +312,20 @@ class RTCSessionMock extends BaseSession {
 
   public newInfo(data: IncomingInfoEvent) {
     this.trigger('newInfo', data);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
+  public async startPresentation(stream: MediaStream) {
+    // TODO: deprecated
+
+    return stream;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
+  public async stopPresentation(stream: MediaStream) {
+    // TODO: deprecated
+
+    return stream;
   }
 
   public clear() {

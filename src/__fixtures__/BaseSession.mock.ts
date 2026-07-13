@@ -262,6 +262,7 @@ class BaseSession implements RTCSession {
     type: T,
     listener: RTCSessionEventMap[T],
   ) => {
+    // @ts-expect-error
     if (SESSION_JSSIP_EVENT_NAMES.includes(type)) {
       // @ts-expect-error
       this.events.on(type, listener);
@@ -283,22 +284,6 @@ class BaseSession implements RTCSession {
    */
   public sendDTMF() {
     this.trigger('newDTMF', { originator: this.originator });
-  }
-
-  public async startPresentation(stream: MediaStream) {
-    this.trigger('presentation:start', stream);
-
-    this.trigger('presentation:started', stream);
-
-    return stream;
-  }
-
-  public async stopPresentation(stream: MediaStream) {
-    this.trigger('presentation:end', stream);
-
-    this.trigger('presentation:ended', stream);
-
-    return stream;
   }
 
   public isEstablished() {

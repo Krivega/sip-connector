@@ -1,9 +1,9 @@
 export enum EState {
-  IDLE = 'presentation:idle',
-  STARTING = 'presentation:starting',
-  ACTIVE = 'presentation:active',
-  STOPPING = 'presentation:stopping',
-  FAILED = 'presentation:failed',
+  IDLE = 'idle',
+  STARTING = 'starting',
+  ACTIVE = 'active',
+  STOPPING = 'stopping',
+  FAILED = 'failed',
 }
 
 export enum EAction {

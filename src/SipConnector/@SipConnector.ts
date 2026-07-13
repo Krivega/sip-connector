@@ -523,7 +523,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
   };
 
   public async startPresentation(
-    mediaStream: MediaStream,
+    videoTrack: MediaStreamVideoTrack,
     options: {
       isNeedReinvite?: boolean;
       contentHint?: TContentHint;
@@ -532,7 +532,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       onAddedTransceiver?: TOnAddedTransceiver;
       callLimit?: number;
     } = {},
-  ): Promise<MediaStream> {
+  ): Promise<MediaStreamVideoTrack> {
     const { callLimit, onAddedTransceiver, ...rest } = options;
     const connectionConfig = this.connectionManager.getConnectionConfiguration();
 
@@ -542,7 +542,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
           ? this.apiManager.sendAvailableContentedStream()
           : this.apiManager.askPermissionToStartPresentation());
       },
-      mediaStream,
+      videoTrack,
       {
         ...rest,
         maxResolution: connectionConfig?.maxAvailableResolution,
@@ -552,7 +552,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     );
   }
 
-  public async stopPresentation(): Promise<MediaStream | undefined> {
+  public async stopPresentation(): Promise<MediaStreamVideoTrack | undefined> {
     return this.presentationManager.stopPresentation(async () => {
       await (this.isOptionalPresentationPermission
         ? this.apiManager.sendNotAvailableContentedStream()
@@ -561,7 +561,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
   }
 
   public async updatePresentation(
-    mediaStream: MediaStream,
+    videoTrack: MediaStreamVideoTrack,
     options: {
       isNeedReinvite?: boolean;
       contentHint?: TContentHint;
@@ -569,7 +569,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       sendEncodings?: RTCRtpEncodingParameters[];
       onAddedTransceiver?: TOnAddedTransceiver;
     } = {},
-  ): Promise<MediaStream | undefined> {
+  ): Promise<MediaStreamVideoTrack | undefined> {
     const { onAddedTransceiver, ...rest } = options;
     const connectionConfig = this.connectionManager.getConnectionConfiguration();
 
@@ -579,7 +579,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
           ? this.apiManager.sendAvailableContentedStream()
           : this.apiManager.askPermissionToStartPresentation());
       },
-      mediaStream,
+      videoTrack,
       {
         ...rest,
         maxResolution: connectionConfig?.maxAvailableResolution,
@@ -791,13 +791,9 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
   };
 
   private readonly resolveHandleAddTransceiver = (onAddedTransceiver?: TOnAddedTransceiver) => {
-    return async (
-      transceiver: RTCRtpTransceiver,
-      track: MediaStreamTrack,
-      streams: MediaStream[],
-    ) => {
+    return async (transceiver: RTCRtpTransceiver, track: MediaStreamTrack) => {
       this.setCodecPreferences(transceiver);
-      await onAddedTransceiver?.(transceiver, track, streams);
+      await onAddedTransceiver?.(transceiver, track);
     };
   };
 }

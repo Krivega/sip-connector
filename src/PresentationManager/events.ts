@@ -2,11 +2,11 @@
 import { TypedEvents } from 'events-constructor';
 
 enum EEvent {
-  START_PRESENTATION = 'presentation:start',
-  STARTED_PRESENTATION = 'presentation:started',
-  END_PRESENTATION = 'presentation:end',
-  ENDED_PRESENTATION = 'presentation:ended',
-  FAILED_PRESENTATION = 'presentation:failed',
+  START_PRESENTATION = 'start',
+  STARTED_PRESENTATION = 'started',
+  END_PRESENTATION = 'end',
+  ENDED_PRESENTATION = 'ended',
+  FAILED_PRESENTATION = 'failed',
 }
 
 export const EVENT_NAMES = [
@@ -18,11 +18,11 @@ export const EVENT_NAMES = [
 ] as const;
 
 export type TEventMap = {
-  'presentation:start': MediaStream;
-  'presentation:started': MediaStream;
-  'presentation:end': MediaStream;
-  'presentation:ended': MediaStream;
-  'presentation:failed': Error;
+  start: MediaStreamVideoTrack;
+  started: MediaStreamVideoTrack;
+  end: MediaStreamVideoTrack;
+  ended: MediaStreamVideoTrack;
+  failed: Error;
 };
 
 export type TEvents = TypedEvents<TEventMap>;

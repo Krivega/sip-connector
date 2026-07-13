@@ -1,6 +1,7 @@
 import {
   createAutoConnectorStateMachine,
   createCallEvents,
+  createPresentationEvents,
   createCallReconnectStateMachine,
   createCallStateMachine,
   createIncomingEvents,
@@ -127,7 +128,8 @@ const startSession = () => {
     incomingEvents,
     connectionEvents,
   });
-  const presentationStateMachine = new PresentationStateMachine(callEvents);
+  const presentationEvents = createPresentationEvents();
+  const presentationStateMachine = new PresentationStateMachine(presentationEvents, callEvents);
   const autoConnectorStateMachine = createAutoConnectorStateMachine(
     createAutoConnectorMachineDeps(),
   );
@@ -191,7 +193,7 @@ describe('Statuses', () => {
         callReconnect: 'idle',
         call: 'call:idle',
         incoming: 'incoming:ringing',
-        presentation: 'presentation:idle',
+        presentation: 'idle',
         system: ESystemStatus.DISCONNECTED,
         isCallReconnecting: false,
       }),

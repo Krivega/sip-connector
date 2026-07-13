@@ -504,21 +504,21 @@ class SipConnectorFacade implements IProxyMethods {
   };
 
   public updatePresentation = async ({
-    mediaStream,
+    videoTrack,
     contentHint,
     degradationPreference,
     sendEncodings,
     onAddedTransceiver,
   }: {
-    mediaStream: MediaStream;
+    videoTrack: MediaStreamVideoTrack;
     contentHint?: TContentHint;
     degradationPreference?: RTCDegradationPreference;
     sendEncodings?: RTCRtpEncodingParameters[];
     onAddedTransceiver?: TOnAddedTransceiver;
-  }): Promise<MediaStream | undefined> => {
+  }): Promise<MediaStreamVideoTrack | undefined> => {
     debug('updatePresentation');
 
-    return this.sipConnector.updatePresentation(mediaStream, {
+    return this.sipConnector.updatePresentation(videoTrack, {
       contentHint,
       degradationPreference,
       onAddedTransceiver,
@@ -527,23 +527,23 @@ class SipConnectorFacade implements IProxyMethods {
   };
 
   public startPresentation = async ({
-    mediaStream,
+    videoTrack,
     contentHint,
     degradationPreference,
     sendEncodings,
     callLimit,
     onAddedTransceiver,
   }: {
-    mediaStream: MediaStream;
+    videoTrack: MediaStreamVideoTrack;
     contentHint?: TContentHint;
     degradationPreference?: RTCDegradationPreference;
     sendEncodings?: RTCRtpEncodingParameters[];
     onAddedTransceiver?: TOnAddedTransceiver;
     callLimit?: number;
-  }): Promise<MediaStream | undefined> => {
+  }): Promise<MediaStreamVideoTrack | undefined> => {
     debug('startPresentation');
 
-    return this.sipConnector.startPresentation(mediaStream, {
+    return this.sipConnector.startPresentation(videoTrack, {
       contentHint,
       callLimit,
       degradationPreference,

@@ -6,7 +6,6 @@ import type { RemoteStreamsManager } from './RemoteStreamsManager';
 export type TOnAddedTransceiver = (
   transceiver: RTCRtpTransceiver,
   track: MediaStreamTrack,
-  streams: MediaStream[],
 ) => Promise<void>;
 export type TGetUri = (id: string) => string;
 

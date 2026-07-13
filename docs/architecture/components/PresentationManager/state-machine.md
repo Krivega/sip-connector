@@ -13,13 +13,13 @@
 
 ## Состояния
 
-| Состояние               | Назначение                        |
-| ----------------------- | --------------------------------- |
-| `presentation:idle`     | Презентация не запущена.          |
-| `presentation:starting` | Идёт запуск демонстрации экрана.  |
-| `presentation:active`   | Демонстрация экрана активна.      |
-| `presentation:stopping` | Идёт остановка демонстрации.      |
-| `presentation:failed`   | Демонстрация завершилась ошибкой. |
+| Состояние  | Назначение                        |
+| ---------- | --------------------------------- |
+| `idle`     | Презентация не запущена.          |
+| `starting` | Идёт запуск демонстрации экрана.  |
+| `active`   | Демонстрация экрана активна.      |
+| `stopping` | Идёт остановка демонстрации.      |
+| `failed`   | Демонстрация завершилась ошибкой. |
 
 ## Контекст и инварианты
 
@@ -38,11 +38,11 @@
 ```mermaid
 stateDiagram-v2
   [*] --> idle
-  state "presentation:idle" as idle
-  state "presentation:starting" as starting
-  state "presentation:active" as active
-  state "presentation:stopping" as stopping
-  state "presentation:failed" as failed
+  state "idle" as idle
+  state "starting" as starting
+  state "active" as active
+  state "stopping" as stopping
+  state "failed" as failed
 
   idle --> starting: SCREEN.STARTING
   starting --> active: SCREEN.STARTED
@@ -74,7 +74,9 @@ stateDiagram-v2
 ## Интеграция и события
 
 - Доменные события машины: `SCREEN.STARTING`, `SCREEN.STARTED`, `SCREEN.ENDING`, `SCREEN.ENDED`, `SCREEN.FAILED`, `CALL.ENDED`, `CALL.FAILED`, `PRESENTATION.RESET`.
-- Источник событий: `CallManager.events` (`presentation:start`, `presentation:started`, `presentation:end`, `presentation:ended`, `presentation:failed`, `ended`, `failed`), которые адаптируются в доменные события в `subscribeCallEvents(...)`.
+- Источник событий:
+  - `PresentationManager.events` (`start`, `started`, `end`, `ended`, `failed`) — через `subscribePresentationEvents(...)`;
+  - `CallManager.events` (`ended`, `failed`) — через `subscribeCallEvents(...)`.
 - Проверка допустимости перехода делается до `send`: при недопустимом событии (`snapshot.can(event) === false`) переход игнорируется, а состояние не меняется.
 
 ## Логирование

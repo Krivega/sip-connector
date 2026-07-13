@@ -14,6 +14,8 @@ export enum EEvent {
 class RTCPeerConnectionMock extends EventTarget implements RTCPeerConnectionDeprecated {
   public senders: RTCRtpSender[] = [];
 
+  public transceivers: RTCRtpTransceiver[] = [];
+
   public receivers: RTCRtpReceiver[] = [];
 
   public canTrickleIceCandidates!: boolean | null;
@@ -86,8 +88,29 @@ class RTCPeerConnectionMock extends EventTarget implements RTCPeerConnectionDepr
   );
 
   public addTransceiver = jest.fn(
-    (_trackOrKind: MediaStreamTrack | string, _init?: RTCRtpTransceiverInit): RTCRtpTransceiver => {
-      return {} as RTCRtpTransceiver;
+    (trackOrKind: MediaStreamTrack | string, init?: RTCRtpTransceiverInit): RTCRtpTransceiver => {
+      const track =
+        typeof trackOrKind === 'string'
+          ? new MediaStreamTrackMock(trackOrKind as 'audio' | 'video')
+          : trackOrKind;
+      const sender = new RTCRtpSenderMock({ track });
+      const transceiver = new RTCRtpTransceiverMock(sender);
+
+      transceiver.mid = track.kind === 'audio' ? '0' : '1';
+
+      if (init?.direction) {
+        Object.defineProperty(transceiver, 'direction', {
+          value: init.direction,
+        });
+        Object.defineProperty(transceiver, 'currentDirection', {
+          value: init.direction,
+        });
+      }
+
+      this.senders.push(sender);
+      this.transceivers.push(transceiver);
+
+      return transceiver;
     },
   );
 
@@ -157,7 +180,7 @@ class RTCPeerConnectionMock extends EventTarget implements RTCPeerConnectionDepr
   }
 
   public getTransceivers(): RTCRtpTransceiver[] {
-    throw new Error('Method not implemented.');
+    return this.transceivers;
   }
 
   public removeTrack(_sender: RTCRtpSender): void {
@@ -184,6 +207,7 @@ class RTCPeerConnectionMock extends EventTarget implements RTCPeerConnectionDepr
     transceiver.mid = track.kind === 'audio' ? '0' : '1';
 
     this.senders.push(sender);
+    this.transceivers.push(transceiver);
 
     this.dispatchTrackInternal(track, ...streams);
 
@@ -204,6 +228,7 @@ class RTCPeerConnectionMock extends EventTarget implements RTCPeerConnectionDepr
     }
 
     this.senders.push(sender);
+    this.transceivers.push(transceiver);
 
     this.dispatchTrackInternal(track);
 

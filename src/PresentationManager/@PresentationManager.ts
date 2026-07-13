@@ -1,25 +1,18 @@
 import { EventEmitterProxy } from 'events-constructor';
 import { hasCanceledError, repeatedCallsAsync } from 'repeated-calls';
 
-import prepareMediaStream from '@/tools/prepareMediaStream';
-import { setMaxBitrateToSender } from '@/tools/setParametersToSender';
+import { setEncodingsToSender } from '@/tools/setParametersToSender';
 import { createEvents } from './events';
+import PresentationSenders from './PresentationSenders';
+import { addOrReplacePresentationVideoTrack } from './presentationSession';
 import { PresentationStateMachine } from './PresentationStateMachine';
 import resolveSendEncodings from './resolveSendEncodings';
 
-import type { RTCSession } from '@krivega/jssip';
 import type { CallManager } from '@/CallManager';
 import type { TEventMap } from './events';
 import type { TContentHint, TMaxResolution, TOnAddedTransceiver } from './types';
 
 const SEND_PRESENTATION_CALL_LIMIT = 1;
-const PRESENTATION_EVENT_NAMES = [
-  'presentation:start',
-  'presentation:started',
-  'presentation:end',
-  'presentation:ended',
-  'presentation:failed',
-] as const;
 
 type TPresentationOptions = {
   isNeedReinvite?: boolean;
@@ -34,8 +27,7 @@ type TSendPresentationOptions = TPresentationOptions & {
 };
 
 type TSendPresentationWithDuplicatedCallsOptions = {
-  rtcSession: RTCSession;
-  stream: MediaStream;
+  videoTrack: MediaStreamVideoTrack;
   presentationOptions: TPresentationOptions;
   options?: { callLimit: number };
 };
@@ -48,6 +40,17 @@ const normalizePresentationError = (error: unknown): Error => {
   return new Error(String(error));
 };
 
+const applyContentHint = (videoTrack: MediaStreamVideoTrack, contentHint: TContentHint): void => {
+  if (contentHint === 'none') {
+    return;
+  }
+
+  if ('contentHint' in videoTrack && videoTrack.contentHint !== contentHint) {
+    // eslint-disable-next-line no-param-reassign
+    videoTrack.contentHint = contentHint;
+  }
+};
+
 export const hasCanceledStartPresentationError = (error: unknown) => {
   return hasCanceledError(error);
 };
@@ -55,16 +58,18 @@ export const hasCanceledStartPresentationError = (error: unknown) => {
 class PresentationManager extends EventEmitterProxy<TEventMap> {
   public readonly stateMachine: PresentationStateMachine;
 
-  public promisePendingStartPresentation?: Promise<MediaStream>;
+  public promisePendingStartPresentation?: Promise<MediaStreamVideoTrack>;
 
-  public promisePendingStopPresentation?: Promise<MediaStream | undefined>;
+  public promisePendingStopPresentation?: Promise<MediaStreamVideoTrack | undefined>;
 
-  public streamPresentationCurrent?: MediaStream;
+  public videoTrackPresentationCurrent?: MediaStreamVideoTrack;
 
   private readonly maxBitrate?: number;
 
+  private readonly presentationSenders = new PresentationSenders();
+
   private cancelableSendPresentationWithRepeatedCalls:
-    ReturnType<typeof repeatedCallsAsync<MediaStream>> | undefined;
+    ReturnType<typeof repeatedCallsAsync<MediaStreamVideoTrack>> | undefined;
 
   private readonly callManager: CallManager;
 
@@ -79,7 +84,7 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
 
     this.callManager = callManager;
     this.maxBitrate = maxBitrate;
-    this.stateMachine = new PresentationStateMachine(this.callManager.events);
+    this.stateMachine = new PresentationStateMachine(this.events, this.callManager.events);
     this.subscribe();
   }
 
@@ -88,13 +93,13 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
   }
 
   public get isPresentationInProcess(): boolean {
-    return !!this.streamPresentationCurrent || this.isPendingPresentation;
+    return !!this.videoTrackPresentationCurrent || this.isPendingPresentation;
   }
 
   // eslint-disable-next-line @typescript-eslint/max-params
   public async startPresentation(
     beforeStartPresentation: () => Promise<void>,
-    stream: MediaStream,
+    videoTrack: MediaStreamVideoTrack,
     {
       isNeedReinvite,
       contentHint,
@@ -103,16 +108,15 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
       onAddedTransceiver,
     }: TPresentationOptions = {},
     options?: { callLimit: number },
-  ): Promise<MediaStream> {
-    const rtcSession = this.getRtcSessionProtected();
+  ): Promise<MediaStreamVideoTrack> {
+    this.getRtcSessionProtected();
 
-    if (this.streamPresentationCurrent) {
+    if (this.videoTrackPresentationCurrent) {
       throw new Error('Presentation is already started');
     }
 
     return this.sendPresentationWithDuplicatedCalls(beforeStartPresentation, {
-      rtcSession,
-      stream,
+      videoTrack,
       presentationOptions: {
         isNeedReinvite,
         contentHint,
@@ -126,11 +130,11 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
 
   public async stopPresentation(
     beforeStopPresentation: () => Promise<void>,
-  ): Promise<MediaStream | undefined> {
+  ): Promise<MediaStreamVideoTrack | undefined> {
     this.cancelSendPresentationWithRepeatedCalls();
 
-    const streamPresentationPrevious = this.streamPresentationCurrent;
-    let result: Promise<MediaStream | undefined> =
+    const videoTrackPresentationPrevious = this.videoTrackPresentationCurrent;
+    let result: Promise<MediaStreamVideoTrack | undefined> =
       this.promisePendingStartPresentation ?? Promise.resolve(undefined);
 
     if (this.promisePendingStartPresentation) {
@@ -139,18 +143,18 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
 
     const rtcSession = this.callManager.getEstablishedRTCSession();
 
-    if (rtcSession && streamPresentationPrevious) {
+    if (rtcSession && videoTrackPresentationPrevious) {
       result = beforeStopPresentation()
         .then(async () => {
-          return rtcSession.stopPresentation(streamPresentationPrevious);
+          return this.executeStopPresentation(videoTrackPresentationPrevious);
         })
         .catch((error: unknown) => {
           this.notifyPresentationFailed(error);
 
           throw error;
         });
-    } else if (streamPresentationPrevious) {
-      this.events.trigger('presentation:ended', streamPresentationPrevious);
+    } else if (videoTrackPresentationPrevious) {
+      this.emitPresentationEvent('ended', videoTrackPresentationPrevious);
     }
 
     this.promisePendingStopPresentation = result;
@@ -162,12 +166,12 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
 
   public async updatePresentation(
     beforeStartPresentation: () => Promise<void>,
-    stream: MediaStream,
+    videoTrack: MediaStreamVideoTrack,
     { contentHint, sendEncodings, maxResolution, onAddedTransceiver }: TPresentationOptions = {},
-  ): Promise<MediaStream | undefined> {
-    const rtcSession = this.getRtcSessionProtected();
+  ): Promise<MediaStreamVideoTrack | undefined> {
+    this.getRtcSessionProtected();
 
-    if (!this.streamPresentationCurrent) {
+    if (!this.videoTrackPresentationCurrent) {
       throw new Error('Presentation has not started yet');
     }
 
@@ -175,16 +179,16 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
       await this.promisePendingStartPresentation;
     }
 
-    return this.sendPresentation(beforeStartPresentation, rtcSession, stream, {
+    return this.sendPresentation(beforeStartPresentation, videoTrack, {
       contentHint,
       sendEncodings,
       maxResolution,
       onAddedTransceiver,
       isNeedReinvite: false,
-    }).then(async (mediaStream) => {
+    }).then(async (track) => {
       await this.setMaxBitrate();
 
-      return mediaStream;
+      return track;
     });
   }
 
@@ -193,12 +197,6 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
   }
 
   private subscribe() {
-    PRESENTATION_EVENT_NAMES.forEach((eventName) => {
-      this.callManager.on(eventName, (payload: TEventMap[typeof eventName]) => {
-        this.events.trigger(eventName, payload);
-      });
-    });
-
     this.callManager.on('failed', this.handleEnded);
     this.callManager.on('ended', this.handleEnded);
   }
@@ -206,8 +204,7 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
   private async sendPresentationWithDuplicatedCalls(
     beforeStartPresentation: () => Promise<void>,
     {
-      rtcSession,
-      stream,
+      videoTrack,
       presentationOptions,
       options = {
         callLimit: SEND_PRESENTATION_CALL_LIMIT,
@@ -215,19 +212,14 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
     }: TSendPresentationWithDuplicatedCallsOptions,
   ) {
     const targetFunction = async () => {
-      return this.sendPresentation(
-        beforeStartPresentation,
-        rtcSession,
-        stream,
-        presentationOptions,
-      );
+      return this.sendPresentation(beforeStartPresentation, videoTrack, presentationOptions);
     };
 
     const isComplete = (): boolean => {
-      return !!this.streamPresentationCurrent;
+      return !!this.videoTrackPresentationCurrent;
     };
 
-    this.cancelableSendPresentationWithRepeatedCalls = repeatedCallsAsync<MediaStream>({
+    this.cancelableSendPresentationWithRepeatedCalls = repeatedCallsAsync<MediaStreamVideoTrack>({
       targetFunction,
       isComplete,
       isRejectAsValid: true,
@@ -235,15 +227,13 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
     });
 
     return this.cancelableSendPresentationWithRepeatedCalls.then((response?: unknown) => {
-      return response as MediaStream;
+      return response as MediaStreamVideoTrack;
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/max-params
   private async sendPresentation(
     beforeStartPresentation: () => Promise<void>,
-    rtcSession: RTCSession,
-    stream: MediaStream,
+    videoTrack: MediaStreamVideoTrack,
     {
       isNeedReinvite = true,
       contentHint = 'detail',
@@ -253,23 +243,19 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
       onAddedTransceiver,
     }: TSendPresentationOptions,
   ) {
-    const streamPresentationTarget = prepareMediaStream(stream, { contentHint });
+    applyContentHint(videoTrack, contentHint);
 
-    if (streamPresentationTarget === undefined) {
-      throw new Error('No streamPresentationTarget');
-    }
-
-    this.streamPresentationCurrent = streamPresentationTarget;
+    this.videoTrackPresentationCurrent = videoTrack;
 
     const presentationSendEncodings = resolveSendEncodings({
-      stream,
+      videoTrack,
       sendEncodings,
       maxResolution,
     });
 
     const result = beforeStartPresentation()
       .then(async () => {
-        return rtcSession.startPresentation(streamPresentationTarget, isNeedReinvite, {
+        return this.executeStartPresentation(videoTrack, isNeedReinvite, {
           degradationPreference,
           onAddedTransceiver,
           sendEncodings: presentationSendEncodings,
@@ -277,10 +263,10 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
       })
       .then(this.setMaxBitrate)
       .then(() => {
-        return stream;
+        return videoTrack;
       })
       .catch((error: unknown) => {
-        this.removeStreamPresentationCurrent();
+        this.removeVideoTrackPresentationCurrent();
 
         this.notifyPresentationFailed(error);
 
@@ -294,18 +280,85 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
     });
   }
 
+  private async executeStartPresentation(
+    videoTrack: MediaStreamVideoTrack,
+    isNeedReinvite: boolean,
+    {
+      degradationPreference,
+      onAddedTransceiver,
+      sendEncodings,
+    }: {
+      degradationPreference?: RTCDegradationPreference;
+      onAddedTransceiver?: TOnAddedTransceiver;
+      sendEncodings?: RTCRtpEncodingParameters[];
+    },
+  ): Promise<MediaStreamVideoTrack> {
+    const connection = this.getConnectionProtected();
+
+    this.emitPresentationEvent('start', videoTrack);
+
+    try {
+      await addOrReplacePresentationVideoTrack(connection, this.presentationSenders, videoTrack, {
+        degradationPreference,
+        onAddedTransceiver,
+        sendEncodings,
+      });
+      this.presentationSenders.markTrack(connection, videoTrack);
+
+      if (isNeedReinvite) {
+        try {
+          await this.callManager.renegotiate();
+        } catch {
+          this.presentationSenders.stopTracks(connection);
+
+          throw new Error('Fail reInvite');
+        }
+      }
+
+      this.emitPresentationEvent('started', videoTrack);
+
+      return videoTrack;
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message === 'Fail reInvite') {
+        throw error;
+      }
+
+      throw new Error('Wrong videoTrack');
+    }
+  }
+
+  private async executeStopPresentation(
+    videoTrack: MediaStreamVideoTrack,
+  ): Promise<MediaStreamVideoTrack> {
+    this.emitPresentationEvent('end', videoTrack);
+
+    const { connection } = this.callManager;
+
+    if (connection) {
+      this.presentationSenders.stopTracks(connection);
+    }
+
+    this.emitPresentationEvent('ended', videoTrack);
+
+    return videoTrack;
+  }
+
   private readonly setMaxBitrate = async () => {
     const { connection } = this.callManager;
-    const { streamPresentationCurrent } = this;
+    const { videoTrackPresentationCurrent } = this;
     const { maxBitrate } = this;
 
-    if (!connection || !streamPresentationCurrent || maxBitrate === undefined) {
+    if (!connection || !videoTrackPresentationCurrent || maxBitrate === undefined) {
       return;
     }
 
-    const senders = connection.getSenders();
+    const sender = connection.getSenders().find((itemSender) => {
+      return itemSender.track === videoTrackPresentationCurrent;
+    });
 
-    await setMaxBitrateToSender(senders, streamPresentationCurrent, maxBitrate);
+    if (sender) {
+      await setEncodingsToSender(sender, { maxBitrate });
+    }
   };
 
   private readonly getRtcSessionProtected = () => {
@@ -318,6 +371,16 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
     return rtcSession;
   };
 
+  private readonly getConnectionProtected = () => {
+    const { connection } = this.callManager;
+
+    if (!connection) {
+      throw new Error('No connection established');
+    }
+
+    return connection;
+  };
+
   private readonly handleEnded = () => {
     this.reset();
   };
@@ -328,18 +391,28 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
   }
 
   private resetPresentation() {
-    this.removeStreamPresentationCurrent();
+    this.removeVideoTrackPresentationCurrent();
+    this.presentationSenders.clear();
 
     this.promisePendingStartPresentation = undefined;
     this.promisePendingStopPresentation = undefined;
   }
 
-  private removeStreamPresentationCurrent() {
-    delete this.streamPresentationCurrent;
+  private removeVideoTrackPresentationCurrent() {
+    delete this.videoTrackPresentationCurrent;
+  }
+
+  private emitPresentationEvent<T extends keyof TEventMap>(
+    eventName: T,
+    payload: TEventMap[T],
+  ): void {
+    this.events.trigger(eventName, payload);
   }
 
   private notifyPresentationFailed(error: unknown): void {
-    this.events.trigger('presentation:failed', normalizePresentationError(error));
+    const normalizedError = normalizePresentationError(error);
+
+    this.emitPresentationEvent('failed', normalizedError);
   }
 }
 

@@ -7,6 +7,7 @@ import {
   createIncomingEvents,
   IncomingCallStateMachine,
   createCallEvents,
+  createPresentationEvents,
   createCallReconnectStateMachine,
   createCallStateMachine,
   createAutoConnectorStateMachine,
@@ -91,7 +92,8 @@ const startSession = () => {
     incomingEvents,
     connectionEvents,
   });
-  const presentationStateMachine = new PresentationStateMachine(callEvents);
+  const presentationEvents = createPresentationEvents();
+  const presentationStateMachine = new PresentationStateMachine(presentationEvents, callEvents);
   const autoConnectorStateMachine = createAutoConnectorStateMachine(
     createAutoConnectorMachineDeps(),
   );
