@@ -6,9 +6,9 @@ export type TJsSIP = {
 };
 
 export type TRtpSendParameters = Partial<Omit<RTCRtpSendParameters, 'transactionId'>>;
-export type TSize = { width: number; height: number };
+export type TResolutionSize = { width: number; height: number };
 
-export type TSimulcastEncoding = TSize & {
+export type TSimulcastEncoding = TResolutionSize & {
   rid?: string;
   scalabilityMode?: string;
 };

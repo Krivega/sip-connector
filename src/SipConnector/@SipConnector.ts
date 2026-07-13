@@ -16,7 +16,7 @@ import { PeerToPeerManager } from '@/PeerToPeerManager';
 import { PresentationManager } from '@/PresentationManager';
 import { SessionManager } from '@/SessionManager';
 import { StatsManager } from '@/StatsManager';
-import { sendOffer } from '@/tools';
+import { resolveSendEncodings, sendOffer } from '@/tools';
 import setCodecPreferences from '@/tools/setCodecPreferences';
 import findVideoTrack from '@/utils/findVideoTrack';
 import { VideoSendingBalancerManager } from '@/VideoSendingBalancerManager';
@@ -150,6 +150,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       this.callManager,
       this.apiManager,
       videoBalancerOptions ?? VIDEO_BALANCER_OPTIONS,
+      this.getMaxAvailableResolution.bind(this),
     );
     this.mainStreamHealthMonitor = new MainStreamHealthMonitor(
       this.statsManager,
@@ -383,9 +384,11 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     params: Omit<Parameters<CallManager['startCall']>[2], 'isPresentationCall'>,
     options: { autoRedial?: boolean } = {},
   ) => {
-    const { onAddedTransceiver, ...rest } = params;
+    const { mediaStream, onAddedTransceiver, sendEncodings, ...rest } = params;
     const resolvedParams = {
       ...rest,
+      mediaStream,
+      sendEncodings: this.resolveMainStreamSendEncodings(mediaStream, sendEncodings),
       onAddedTransceiver: this.resolveHandleAddTransceiver(onAddedTransceiver),
     };
 
@@ -441,12 +444,14 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
   public answerToIncomingCall = async (
     params: Parameters<CallManager['answerToIncomingCall']>[1],
   ) => {
-    const { onAddedTransceiver, ...rest } = params;
+    const { mediaStream, onAddedTransceiver, sendEncodings, ...rest } = params;
 
     return this.callManager.answerToIncomingCall(
       this.incomingCallManager.extractIncomingRTCSession,
       {
         ...rest,
+        mediaStream,
+        sendEncodings: this.resolveMainStreamSendEncodings(mediaStream, sendEncodings),
         onAddedTransceiver: this.resolveHandleAddTransceiver(onAddedTransceiver),
       },
     );
@@ -500,10 +505,14 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       waitForOutboundVideoPackets: shouldWaitForOutboundVideoPackets,
       waitForOutboundVideoPacketsTimeout,
       waitForOutboundVideoPacketsStrictness,
+      sendEncodings,
       ...replaceMediaStreamOptions
     } = options ?? {};
 
-    await this.callManager.replaceMediaStream(mediaStream, replaceMediaStreamOptions);
+    await this.callManager.replaceMediaStream(mediaStream, {
+      ...replaceMediaStreamOptions,
+      sendEncodings: this.resolveMainStreamSendEncodings(mediaStream, sendEncodings),
+    });
 
     if (shouldWaitForOutboundVideoPackets !== true) {
       return;
@@ -534,7 +543,6 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     } = {},
   ): Promise<MediaStream> {
     const { callLimit, onAddedTransceiver, ...rest } = options;
-    const connectionConfig = this.connectionManager.getConnectionConfiguration();
 
     return this.presentationManager.startPresentation(
       async () => {
@@ -545,7 +553,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       mediaStream,
       {
         ...rest,
-        maxResolution: connectionConfig?.maxAvailableResolution,
+        maxResolution: this.getMaxAvailableResolution(),
         onAddedTransceiver: this.resolveHandleAddTransceiver(onAddedTransceiver),
       },
       callLimit === undefined ? undefined : { callLimit },
@@ -571,7 +579,6 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     } = {},
   ): Promise<MediaStream | undefined> {
     const { onAddedTransceiver, ...rest } = options;
-    const connectionConfig = this.connectionManager.getConnectionConfiguration();
 
     return this.presentationManager.updatePresentation(
       async () => {
@@ -582,7 +589,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       mediaStream,
       {
         ...rest,
-        maxResolution: connectionConfig?.maxAvailableResolution,
+        maxResolution: this.getMaxAvailableResolution(),
         onAddedTransceiver: this.resolveHandleAddTransceiver(onAddedTransceiver),
       },
     );
@@ -799,6 +806,21 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       this.setCodecPreferences(transceiver);
       await onAddedTransceiver?.(transceiver, track, streams);
     };
+  };
+
+  private getMaxAvailableResolution() {
+    return this.connectionManager.getConnectionConfiguration()?.maxAvailableResolution;
+  }
+
+  private readonly resolveMainStreamSendEncodings = (
+    mediaStream: MediaStream,
+    sendEncodings?: RTCRtpEncodingParameters[],
+  ): RTCRtpEncodingParameters[] | undefined => {
+    return resolveSendEncodings({
+      stream: mediaStream,
+      sendEncodings,
+      maxResolution: this.getMaxAvailableResolution(),
+    });
   };
 }
 

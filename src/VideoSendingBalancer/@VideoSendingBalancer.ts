@@ -8,7 +8,7 @@ import { VideoSendingEventHandler } from './VideoSendingEventHandler';
 
 import type { ApiManager } from '@/ApiManager';
 import type { TResultSetParametersToSender } from '@/tools';
-import type { IBalancerOptions, IMainCamHeaders } from './types';
+import type { IBalancerOptions, IMainCamHeaders, TBalancingContext } from './types';
 
 const debug = resolveDebug('VideoSendingBalancer');
 
@@ -36,7 +36,9 @@ class VideoSendingBalancer {
       ignoreForCodec,
       onSetParameters,
       pollIntervalMs,
-    }: IBalancerOptions & { pollIntervalMs?: number } = {},
+    }: IBalancerOptions & {
+      pollIntervalMs?: number;
+    } = {},
   ) {
     this.getConnection = getConnection;
     this.eventHandler = new VideoSendingEventHandler(apiManager);
@@ -59,22 +61,24 @@ class VideoSendingBalancer {
   /**
    * Подписывается на события управления главной камерой
    */
-  public subscribe(): void {
-    this.eventHandler.subscribe(this.handleMainCamControl);
+  public subscribe(context: TBalancingContext = {}): void {
+    this.eventHandler.subscribe(this.handleMainCamControl, context);
   }
 
   /**
    * Отписывается от событий и сбрасывает состояние
    */
-  public unsubscribe(): void {
+  public unsubscribe(context: TBalancingContext = {}): void {
     this.eventHandler.unsubscribe();
-    this.reset();
+    this.reset(context);
   }
 
   /**
    * Сбрасывает состояние балансировщика и восстанавливает параметры отправителя
    */
-  public reset(): void {
+  public reset(context: TBalancingContext = {}): void {
+    const maxResolution = context.getMaxResolution?.();
+
     this.clearState();
 
     const connection = this.getConnection();
@@ -82,7 +86,7 @@ class VideoSendingBalancer {
     if (connection) {
       // eslint-disable-next-line no-void
       void this.senderBalancer
-        .reset(connection)
+        .reset(connection, maxResolution)
         .catch((error: unknown) => {
           debug('reset sender encodings: error', error);
         })
@@ -98,17 +102,18 @@ class VideoSendingBalancer {
    * Выполняет балансировку на основе текущего состояния
    * @returns Promise с результатом балансировки
    */
-  public async balance(): Promise<TResultSetParametersToSender> {
+  public async balance(context: TBalancingContext = {}): Promise<TResultSetParametersToSender> {
     const connection = this.getConnection();
+    const maxResolution = context.getMaxResolution?.();
 
     if (!connection) {
       throw new Error('connection is not exist');
     }
 
-    const result = await this.senderBalancer.balance(connection, this.serverHeaders);
+    const result = await this.senderBalancer.balance(connection, this.serverHeaders, maxResolution);
 
     this.trackMonitor.subscribe(result.sender, () => {
-      this.balance().catch((error: unknown) => {
+      this.balance(context).catch((error: unknown) => {
         debug('balance on track change: error', error);
       });
     });
@@ -125,9 +130,12 @@ class VideoSendingBalancer {
    * Обработчик событий управления главной камерой
    * @param headers - Заголовки от сервера
    */
-  private readonly handleMainCamControl = (headers: IMainCamHeaders) => {
+  private readonly handleMainCamControl = (
+    headers: IMainCamHeaders,
+    context: TBalancingContext,
+  ) => {
     this.serverHeaders = headers;
-    this.balance().catch((error: unknown) => {
+    this.balance(context).catch((error: unknown) => {
       debug('handleMainCamControl: error', error);
     });
   };

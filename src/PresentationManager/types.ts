@@ -4,7 +4,3 @@ export type TOnAddedTransceiver = (
   streams: MediaStream[],
 ) => Promise<void>;
 export type TContentHint = 'motion' | 'detail' | 'text' | 'none';
-export type TMaxResolution = {
-  width: number;
-  height: number;
-};

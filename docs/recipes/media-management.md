@@ -12,6 +12,11 @@ const newMediaStream = await navigator.mediaDevices.getUserMedia({
 await facade.replaceMediaStream(newMediaStream);
 ```
 
+Если в конфигурации подключения задан `maxAvailableResolution`, `SipConnector` через
+`@/tools/resolveSendEncodings` автоматически ограничивает через `scaleResolutionDownBy` разрешение
+основного исходящего видеопотока при исходящем звонке, ответе на входящий звонок и замене
+`mediaStream`. Более строгое значение из переданных `sendEncodings` сохраняется.
+
 ## Отправка состояния медиа
 
 ```typescript

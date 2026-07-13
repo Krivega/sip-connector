@@ -1,4 +1,4 @@
-import type { TSize } from '@/types';
+import type { TResolutionSize } from '@/types';
 
 const SCALE_MIN = 1;
 
@@ -7,7 +7,7 @@ const calcScaleResolutionDownBy = ({
   targetSize,
 }: {
   videoTrack: MediaStreamVideoTrack;
-  targetSize: TSize;
+  targetSize: TResolutionSize;
 }) => {
   const settings = videoTrack.getSettings();
   const widthCurrent = settings.width;

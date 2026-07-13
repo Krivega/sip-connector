@@ -1,19 +1,19 @@
 /// <reference types="jest" />
 import calcScaleResolutionDownBy from '../calcScaleResolutionDownBy';
 
-import type { TSize } from '@/types';
+import type { TResolutionSize } from '@/types';
 
 describe('calcScaleResolutionDownBy', () => {
   const mockVideoTrack = {} as MediaStreamVideoTrack;
 
-  it('should scale resolution down and calculate max bitrate correctly', () => {
+  it('должен рассчитывать scaleResolutionDownBy при уменьшении разрешения до 1280x720', () => {
     const settings = { width: 1920, height: 1080 };
 
     mockVideoTrack.getSettings = () => {
       return settings;
     };
 
-    const targetSize: TSize = { width: 1280, height: 720 };
+    const targetSize: TResolutionSize = { width: 1280, height: 720 };
 
     const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,
@@ -32,14 +32,14 @@ describe('calcScaleResolutionDownBy', () => {
     });
   });
 
-  it('should use SCALE_MIN when scaling factor is less than 1', () => {
+  it('должен использовать SCALE_MIN, когда коэффициент масштабирования меньше 1', () => {
     const settings = { width: 640, height: 480 };
 
     mockVideoTrack.getSettings = () => {
       return settings;
     };
 
-    const targetSize: TSize = { width: 1280, height: 720 };
+    const targetSize: TResolutionSize = { width: 1280, height: 720 };
 
     const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,
@@ -55,14 +55,14 @@ describe('calcScaleResolutionDownBy', () => {
     expect(resultResolutions).toEqual(settings);
   });
 
-  it('should handle odd target width correctly', () => {
+  it('должен корректно обрабатывать нечётную целевую ширину', () => {
     const settings = { width: 1920, height: 1080 };
 
     mockVideoTrack.getSettings = () => {
       return settings;
     };
 
-    const targetSize: TSize = { width: 640, height: 720 };
+    const targetSize: TResolutionSize = { width: 640, height: 720 };
 
     const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,
@@ -81,14 +81,14 @@ describe('calcScaleResolutionDownBy', () => {
     });
   });
 
-  it('should handle odd target height correctly', () => {
+  it('должен корректно обрабатывать нечётную целевую высоту', () => {
     const settings = { width: 1920, height: 1080 };
 
     mockVideoTrack.getSettings = () => {
       return settings;
     };
 
-    const targetSize: TSize = { width: 1280, height: 360 };
+    const targetSize: TResolutionSize = { width: 1280, height: 360 };
 
     const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,
@@ -107,14 +107,14 @@ describe('calcScaleResolutionDownBy', () => {
     });
   });
 
-  it('should handle both odd target width and height correctly', () => {
+  it('должен корректно обрабатывать нечётные целевые ширину и высоту', () => {
     const settings = { width: 1920, height: 1080 };
 
     mockVideoTrack.getSettings = () => {
       return settings;
     };
 
-    const targetSize: TSize = { width: 640, height: 360 };
+    const targetSize: TResolutionSize = { width: 640, height: 360 };
 
     const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,
@@ -130,14 +130,14 @@ describe('calcScaleResolutionDownBy', () => {
     expect(resultResolutions).toEqual(targetSize);
   });
 
-  it('should handle small odd target values correctly', () => {
+  it('должен корректно обрабатывать маленькие нечётные целевые значения', () => {
     const settings = { width: 640, height: 480 };
 
     mockVideoTrack.getSettings = () => {
       return settings;
     };
 
-    const targetSize: TSize = { width: 320, height: 240 };
+    const targetSize: TResolutionSize = { width: 320, height: 240 };
 
     const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,
@@ -156,14 +156,14 @@ describe('calcScaleResolutionDownBy', () => {
     });
   });
 
-  it('should return SCALE_MIN when widthCurrent is undefined', () => {
+  it('должен рассчитывать scaleResolutionDownBy по высоте, когда widthCurrent не задан', () => {
     const settings = { width: undefined, height: 1080 };
 
     mockVideoTrack.getSettings = () => {
       return settings;
     };
 
-    const targetSize: TSize = { width: 1280, height: 720 };
+    const targetSize: TResolutionSize = { width: 1280, height: 720 };
 
     const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,
@@ -175,14 +175,14 @@ describe('calcScaleResolutionDownBy', () => {
     expect(result).toEqual(1.5);
   });
 
-  it('should return SCALE_MIN when heightCurrent is undefined', () => {
+  it('должен рассчитывать scaleResolutionDownBy по ширине, когда heightCurrent не задан', () => {
     const settings = { width: 1920, height: undefined };
 
     mockVideoTrack.getSettings = () => {
       return settings;
     };
 
-    const targetSize: TSize = { width: 1280, height: 720 };
+    const targetSize: TResolutionSize = { width: 1280, height: 720 };
 
     const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,
@@ -194,14 +194,14 @@ describe('calcScaleResolutionDownBy', () => {
     expect(result).toEqual(1.5);
   });
 
-  it('should return SCALE_MIN when both widthCurrent and heightCurrent are undefined', () => {
+  it('должен возвращать SCALE_MIN, когда widthCurrent и heightCurrent не заданы', () => {
     const settings = { width: undefined, height: undefined };
 
     mockVideoTrack.getSettings = () => {
       return settings;
     };
 
-    const targetSize: TSize = { width: 1280, height: 720 };
+    const targetSize: TResolutionSize = { width: 1280, height: 720 };
 
     const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,
@@ -211,14 +211,14 @@ describe('calcScaleResolutionDownBy', () => {
     expect(result).toEqual(1);
   });
 
-  it('should return SCALE_MIN when widthCurrent is undefined but heightCurrent is valid', () => {
+  it('должен рассчитывать scaleResolutionDownBy по высоте, если widthCurrent не задан, а heightCurrent задан', () => {
     const settings = { width: undefined, height: 1080 };
 
     mockVideoTrack.getSettings = () => {
       return settings;
     };
 
-    const targetSize: TSize = { width: 1280, height: 720 };
+    const targetSize: TResolutionSize = { width: 1280, height: 720 };
 
     const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,
@@ -230,14 +230,14 @@ describe('calcScaleResolutionDownBy', () => {
     expect(result).toEqual(1.5);
   });
 
-  it('should return SCALE_MIN when heightCurrent is undefined but widthCurrent is valid', () => {
+  it('должен рассчитывать scaleResolutionDownBy по ширине, если heightCurrent не задан, а widthCurrent задан', () => {
     const settings = { width: 1920, height: undefined };
 
     mockVideoTrack.getSettings = () => {
       return settings;
     };
 
-    const targetSize: TSize = { width: 1280, height: 720 };
+    const targetSize: TResolutionSize = { width: 1280, height: 720 };
 
     const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,

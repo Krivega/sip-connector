@@ -2,15 +2,16 @@ import { EventEmitterProxy } from 'events-constructor';
 import { hasCanceledError, repeatedCallsAsync } from 'repeated-calls';
 
 import prepareMediaStream from '@/tools/prepareMediaStream';
+import resolveSendEncodings from '@/tools/resolveSendEncodings';
 import { setMaxBitrateToSender } from '@/tools/setParametersToSender';
 import { createEvents } from './events';
 import { PresentationStateMachine } from './PresentationStateMachine';
-import resolveSendEncodings from './resolveSendEncodings';
 
 import type { RTCSession } from '@krivega/jssip';
 import type { CallManager } from '@/CallManager';
+import type { TResolutionSize } from '@/types';
 import type { TEventMap } from './events';
-import type { TContentHint, TMaxResolution, TOnAddedTransceiver } from './types';
+import type { TContentHint, TOnAddedTransceiver } from './types';
 
 const SEND_PRESENTATION_CALL_LIMIT = 1;
 const PRESENTATION_EVENT_NAMES = [
@@ -25,7 +26,7 @@ type TPresentationOptions = {
   isNeedReinvite?: boolean;
   contentHint?: TContentHint;
   sendEncodings?: RTCRtpEncodingParameters[];
-  maxResolution?: TMaxResolution;
+  maxResolution?: TResolutionSize;
   onAddedTransceiver?: TOnAddedTransceiver;
 };
 

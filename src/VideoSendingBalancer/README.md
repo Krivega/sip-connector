@@ -29,29 +29,43 @@ const balancer = new VideoSendingBalancer(apiManager, getConnection, {
 });
 ```
 
+### Контекст балансировки
+
+Методы `subscribe`, `balance`, `reset` и `unsubscribe` принимают `TBalancingContext` — контекст
+активной сессии балансировки. Через него передаётся лимит разрешения подключения:
+
+```typescript
+type TBalancingContext = {
+  getMaxResolution?: () => TResolutionSize | undefined;
+};
+```
+
+`getMaxResolution` вызывается при каждой балансировке и сбросе, чтобы учесть актуальное значение
+`maxAvailableResolution` из конфигурации подключения. В типичном сценарии контекст передаёт
+`VideoSendingBalancerManager`.
+
 ### Подписка на события
 
 ```typescript
-// Подписаться на события управления камерой
-balancer.subscribe();
+const context = {
+  getMaxResolution: () => ({ width: 1920, height: 1080 }),
+};
 
-// Отписаться от событий
-balancer.unsubscribe();
+balancer.subscribe(context);
+balancer.unsubscribe(context);
 ```
 
 ### Балансировка
 
 ```typescript
-// Выполнить балансировку вручную
-const result = await balancer.balance();
+const result = await balancer.balance(context);
 console.log('Результат балансировки:', result);
 ```
 
 ### Сброс состояния
 
 ```typescript
-// Сбросить состояние управления камерой
-balancer.reset();
+balancer.reset(context);
 ```
 
 ## API
@@ -72,14 +86,14 @@ constructor(
 
 ### Публичные методы
 
-- `subscribe()`: Подписаться на события управления камерой
-- `unsubscribe()`: Отписаться от событий управления камерой
-- `balance()`: Выполнить балансировку вручную
-- `reset()`: Сбросить состояние управления камерой
+- `subscribe(context: TBalancingContext)`: Подписаться на события управления камерой
+- `unsubscribe(context?: TBalancingContext)`: Отписаться от событий и сбросить состояние
+- `balance(context?: TBalancingContext)`: Выполнить балансировку вручную
+- `reset(context?: TBalancingContext)`: Сбросить состояние и восстановить параметры отправителя
 
 ### Приватные методы
 
-- `handleMainCamControl()`: Обработчик событий управления камерой
+- `handleMainCamControl(headers, context)`: Обработчик событий `main-cam-control`
 
 ## Внутренняя логика
 
@@ -91,6 +105,15 @@ constructor(
 - `TrackMonitor`: Мониторинг изменений видеотреков
 - `SenderFinder`: Поиск видео-сендера в соединении
 - `CodecProvider`: Получение кодека из сендера
+
+## Ограничение разрешения
+
+При наличии `getMaxResolution` в контексте:
+
+- `balance` и `reset` передают лимит в `SenderBalancer`
+- для `MAX_MAIN_CAM_RESOLUTION` применяется более строгое из двух ограничений: команда сервера и
+  `maxAvailableResolution` подключения (`Math.max` по `scaleResolutionDownBy`)
+- при смене трека перебалансировка использует тот же `context`, что и текущий вызов `balance`
 
 ## Состояния камеры
 
@@ -110,12 +133,3 @@ import { resolveVideoSendingBalancer } from './VideoSendingBalancer';
 
 const balancer = resolveVideoSendingBalancer(apiManager, getConnection, options);
 ```
-
-## Рефакторинг
-
-Класс был создан в результате рефакторинга функционального подхода в объектно-ориентированный:
-
-- Перенесена логика из `balance.ts` в метод `balance()`
-- Перенесена логика из `processSender.ts` в метод `processSender()`
-- Инкапсулированы все вспомогательные функции
-- Улучшена организация кода и читаемость

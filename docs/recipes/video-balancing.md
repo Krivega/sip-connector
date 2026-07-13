@@ -36,6 +36,12 @@ sipConnector.on('video-balancer:parameters-updated', (result) => {
 5. При изменении треков → Перебалансировка
 6. При завершении звонка → Остановка балансировки
 
+Если подключение содержит `maxAvailableResolution`, `SipConnector` передаёт его в
+`VideoSendingBalancerManager` как `getMaxResolution`. Менеджер пробрасывает контекст
+`{ getMaxResolution }` в `VideoSendingBalancer` при запуске, обработке команд управления главной
+камерой, смене трека и сбросе. Если команда `MAX_MAIN_CAM_RESOLUTION` задаёт более низкое
+разрешение, применяется более строгое из двух ограничений.
+
 ## События балансировщика
 
 | Событие                              | Описание                   | Данные                 |

@@ -125,6 +125,32 @@ describe('SenderBalancer', () => {
       expect(result.isChanged).toBe(true);
       expect(result.sender).toBe(mockSender);
     });
+
+    it('должен ограничивать разрешение sender по maxResolution без команды mainCam', async () => {
+      mockSenderFinder.findVideoSender.mockReturnValue(mockSender);
+      mockCodecProvider.getCodecFromSender.mockResolvedValue('h264');
+      mockParametersSetter.setEncodingsToSender.mockResolvedValue({
+        isChanged: true,
+        parameters: {
+          encodings: [{ scaleResolutionDownBy: 2 }],
+          transactionId: '',
+          codecs: [],
+          headerExtensions: [],
+        },
+      });
+
+      await senderBalancer.balance(mockConnection, undefined, {
+        width: 960,
+        height: 540,
+      });
+
+      expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
+        mockSender,
+        expect.objectContaining({
+          scaleResolutionDownBy: 2,
+        }),
+      );
+    });
   });
 
   describe('обработка команд', () => {
@@ -205,6 +231,35 @@ describe('SenderBalancer', () => {
         mockSender,
         expect.objectContaining({
           scaleResolutionDownBy: 1.5,
+        }),
+      );
+    });
+
+    it('должен сохранять более строгое maxResolution при команде MAX_MAIN_CAM_RESOLUTION', async () => {
+      const headers: IMainCamHeaders = {
+        mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
+        resolutionMainCam: '1280x720',
+      };
+
+      mockParametersSetter.setEncodingsToSender.mockResolvedValue({
+        isChanged: true,
+        parameters: {
+          encodings: [{ scaleResolutionDownBy: 3 }],
+          transactionId: '',
+          codecs: [],
+          headerExtensions: [],
+        },
+      });
+
+      await senderBalancer.balance(mockConnection, headers, {
+        width: 640,
+        height: 360,
+      });
+
+      expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
+        mockSender,
+        expect.objectContaining({
+          scaleResolutionDownBy: 3,
         }),
       );
     });
@@ -395,6 +450,32 @@ describe('SenderBalancer', () => {
         }),
       );
       expect(result.sender).toBe(mockSender);
+    });
+
+    it('должен сохранять maxResolution при сбросе балансировки', async () => {
+      mockSenderFinder.findVideoSender.mockReturnValue(mockSender);
+      mockCodecProvider.getCodecFromSender.mockResolvedValue('h264');
+      mockParametersSetter.setEncodingsToSender.mockResolvedValue({
+        isChanged: true,
+        parameters: {
+          encodings: [{ scaleResolutionDownBy: 2 }],
+          transactionId: '',
+          codecs: [],
+          headerExtensions: [],
+        },
+      });
+
+      await senderBalancer.reset(mockConnection, {
+        width: 960,
+        height: 540,
+      });
+
+      expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
+        mockSender,
+        expect.objectContaining({
+          scaleResolutionDownBy: 2,
+        }),
+      );
     });
 
     it('должен обработать undefined width в getSettings', async () => {

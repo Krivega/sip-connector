@@ -1,4 +1,4 @@
-export type { IBalancerOptions } from './types';
+export type { IBalancerOptions, TBalancingContext } from './types';
 export {
   resolveVideoSendingBalancer,
   default as VideoSendingBalancer,

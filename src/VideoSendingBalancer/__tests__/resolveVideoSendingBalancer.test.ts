@@ -57,10 +57,10 @@ describe('resolveVideoSendingBalancer', () => {
       return sipConnector.connection;
     });
 
-    videoSendingBalancer.subscribe();
+    videoSendingBalancer.subscribe({});
   });
 
-  it('should be set actual mediaStreamTrack bitrate by RESUME_MAIN_CAM info', async () => {
+  it('должен установить актуальный maxBitrate mediaStreamTrack по команде RESUME_MAIN_CAM', async () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
@@ -107,7 +107,7 @@ describe('resolveVideoSendingBalancer', () => {
     expect(parameters.encodings[0].maxBitrate).toEqual(fhdBitrate);
   });
 
-  it('should be set minimum mediaStreamTrack bitrate by PAUSE_MAIN_CAM info', async () => {
+  it('должен установить минимальный maxBitrate mediaStreamTrack по команде PAUSE_MAIN_CAM', async () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
@@ -154,7 +154,7 @@ describe('resolveVideoSendingBalancer', () => {
     expect(parameters.encodings[0].maxBitrate).toEqual(0.06 * 1e6);
   });
 
-  it('should be set max mediaStreamTrack bitrate by MAX_MAIN_CAM_RESOLUTION info', async () => {
+  it('должен установить maxBitrate mediaStreamTrack по команде MAX_MAIN_CAM_RESOLUTION', async () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
@@ -201,7 +201,7 @@ describe('resolveVideoSendingBalancer', () => {
     expect(parameters.encodings[0].maxBitrate).toEqual(sdBitrate);
   });
 
-  describe('processSender scenarios', () => {
+  describe('сценарии processSender', () => {
     let sender: RTCRtpSender;
     let trackWith1024: MediaStreamVideoTrack;
     let balancer: ReturnType<typeof resolveVideoSendingBalancer>;
@@ -245,7 +245,7 @@ describe('resolveVideoSendingBalancer', () => {
       });
     });
 
-    it('by videoTrack 1024 after MAX_MAIN_CAM_RESOLUTION', async () => {
+    it('должен балансировать videoTrack 1024 после MAX_MAIN_CAM_RESOLUTION', async () => {
       expect.assertions(2);
 
       const targetWidth = 288;
@@ -288,7 +288,7 @@ describe('resolveVideoSendingBalancer', () => {
       ]);
     });
 
-    it('MAX_MAIN_CAM_RESOLUTION', async () => {
+    it('должен обработать MAX_MAIN_CAM_RESOLUTION', async () => {
       expect.assertions(2);
 
       const targetWidth = 288;
@@ -333,7 +333,7 @@ describe('resolveVideoSendingBalancer', () => {
       ]);
     });
 
-    it('PAUSE_MAIN_CAM', async () => {
+    it('должен обработать PAUSE_MAIN_CAM', async () => {
       expect.assertions(2);
 
       // Мокаем connection и sender
@@ -373,7 +373,7 @@ describe('resolveVideoSendingBalancer', () => {
       ]);
     });
 
-    it('RESUME_MAIN_CAM 2', async () => {
+    it('должен восстановить параметры после MAX_MAIN_CAM_RESOLUTION при повторном RESUME_MAIN_CAM', async () => {
       expect.assertions(2);
 
       const targetWidth = 896;
@@ -436,7 +436,7 @@ describe('resolveVideoSendingBalancer', () => {
       ]);
     });
 
-    it('MAX_MAIN_CAM_RESOLUTION for av1', async () => {
+    it('должен обработать MAX_MAIN_CAM_RESOLUTION для AV1', async () => {
       expect.assertions(2);
 
       const targetWidth = 288;
@@ -493,7 +493,7 @@ describe('resolveVideoSendingBalancer', () => {
       ]);
     });
 
-    it('PAUSE_MAIN_CAM for av1', async () => {
+    it('должен обработать PAUSE_MAIN_CAM для AV1', async () => {
       expect.assertions(2);
 
       // Мокаем connection и sender
@@ -545,7 +545,7 @@ describe('resolveVideoSendingBalancer', () => {
       ]);
     });
 
-    it('RESUME_MAIN_CAM 2 for av1', async () => {
+    it('должен восстановить параметры после MAX_MAIN_CAM_RESOLUTION при повторном RESUME_MAIN_CAM для AV1', async () => {
       expect.assertions(2);
 
       const targetWidth = 896;

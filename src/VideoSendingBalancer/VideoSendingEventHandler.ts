@@ -1,5 +1,10 @@
 import type { ApiManager } from '@/ApiManager';
-import type { IEventHandler, IMainCamHeaders } from './types';
+import type {
+  IEventHandler,
+  IMainCamHeaders,
+  TBalancingContext,
+  TMainCamControlHandler,
+} from './types';
 
 /**
  * Обработчик событий управления главной камерой
@@ -8,6 +13,7 @@ import type { IEventHandler, IMainCamHeaders } from './types';
 export class VideoSendingEventHandler implements IEventHandler {
   private readonly apiManager: ApiManager;
 
+  // Ссылка для unsubscribe, которая должна быть та же функция, что была в subscribe
   private currentHandler?: (headers: IMainCamHeaders) => void;
 
   public constructor(apiManager: ApiManager) {
@@ -17,10 +23,16 @@ export class VideoSendingEventHandler implements IEventHandler {
   /**
    * Подписывается на события управления главной камерой
    * @param handler - Обработчик события
+   * @param context - Контекст активной сессии балансировки
    */
-  public subscribe(handler: (headers: IMainCamHeaders) => void): void {
-    this.currentHandler = handler;
-    this.apiManager.on('main-cam-control', handler);
+  public subscribe(handler: TMainCamControlHandler, context: TBalancingContext): void {
+    // apiManager передаёт в колбек только headers — дополняем context.
+    const wrappedHandler = (headers: IMainCamHeaders) => {
+      handler(headers, context);
+    };
+
+    this.currentHandler = wrappedHandler;
+    this.apiManager.on('main-cam-control', wrappedHandler);
   }
 
   /**

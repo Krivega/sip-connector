@@ -6,6 +6,7 @@ import { createEvents } from './events';
 
 import type { ApiManager } from '@/ApiManager';
 import type { CallManager } from '@/CallManager';
+import type { TResolutionSize } from '@/types';
 import type { IBalancerOptions } from '@/VideoSendingBalancer/types';
 import type { TEventMap } from './events';
 
@@ -28,17 +29,22 @@ class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
 
   private readonly videoSendingBalancer: VideoSendingBalancer;
 
+  private readonly getMaxResolution?: () => TResolutionSize | undefined;
+
   private startBalancingTimer?: NodeJS.Timeout;
 
+  // eslint-disable-next-line @typescript-eslint/max-params
   public constructor(
     callManager: CallManager,
     apiManager: ApiManager,
     balancerOptions: TOptions = {},
+    getMaxResolution?: () => TResolutionSize | undefined,
   ) {
     super(createEvents());
 
     this.callManager = callManager;
     this.balancingStartDelay = balancerOptions.balancingStartDelay ?? 10_000;
+    this.getMaxResolution = getMaxResolution;
 
     this.videoSendingBalancer = new VideoSendingBalancer(
       apiManager,
@@ -74,8 +80,8 @@ class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
 
     this.clearStartTimer();
 
-    await this.videoSendingBalancer.balance();
-    this.videoSendingBalancer.subscribe();
+    await this.videoSendingBalancer.balance({ getMaxResolution: this.getMaxResolution });
+    this.videoSendingBalancer.subscribe({ getMaxResolution: this.getMaxResolution });
     this.isBalancingActive = true;
 
     this.events.trigger('balancing-started', { delay: this.balancingStartDelay });
@@ -87,7 +93,7 @@ class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
   public stopBalancing(): void {
     this.clearStartTimer();
 
-    this.videoSendingBalancer.unsubscribe();
+    this.videoSendingBalancer.unsubscribe({ getMaxResolution: this.getMaxResolution });
     this.isBalancingActive = false;
     this.events.trigger('balancing-stopped', {});
   }
@@ -96,7 +102,7 @@ class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
    * Выполнить ручную балансировку
    */
   public async balance() {
-    return this.videoSendingBalancer.balance();
+    return this.videoSendingBalancer.balance({ getMaxResolution: this.getMaxResolution });
   }
 
   private subscribe(): void {

@@ -4,6 +4,7 @@ import { calcMaxBitrateByWidthAndCodec, getMaximumBitrate, getMinimumBitrate } f
 import { calcScaleResolutionDownBy } from './calcResolution';
 
 import type { TResultSetParametersToSender } from '@/tools';
+import type { TResolutionSize } from '@/types';
 import type {
   IBalancingContext,
   ICodecProvider,
@@ -12,6 +13,34 @@ import type {
   IParametersSetter,
   ISenderFinder,
 } from './types';
+
+const resolveScaleResolutionDownBy = (
+  videoTrack: MediaStreamVideoTrack,
+  maxResolution?: TResolutionSize,
+): number => {
+  if (maxResolution === undefined) {
+    return 1;
+  }
+
+  return calcScaleResolutionDownBy({
+    videoTrack,
+    targetSize: maxResolution,
+  });
+};
+
+const resolveMaxBitrate = (
+  videoTrack: MediaStreamVideoTrack,
+  codec: string | undefined,
+  scaleResolutionDownBy: number,
+): number => {
+  const widthCurrent = videoTrack.getSettings().width;
+
+  if (widthCurrent === undefined) {
+    return getMaximumBitrate(codec);
+  }
+
+  return calcMaxBitrateByWidthAndCodec(widthCurrent / scaleResolutionDownBy, codec);
+};
 
 /**
  * Бизнес-логика балансировки отправителей
@@ -66,6 +95,7 @@ export class SenderBalancer {
   public async balance(
     connection: RTCPeerConnection,
     headers?: IMainCamHeaders,
+    maxResolution?: TResolutionSize,
   ): Promise<TResultSetParametersToSender & { sender: RTCRtpSender | undefined }> {
     const senders = connection.getSenders();
     const sender = this.senderFinder.findVideoSender(senders);
@@ -89,6 +119,7 @@ export class SenderBalancer {
         codec,
         videoTrack: sender.track as MediaStreamVideoTrack,
       },
+      maxResolution,
     ).then((result) => {
       return { ...result, sender };
     });
@@ -101,6 +132,7 @@ export class SenderBalancer {
    */
   public async reset(
     connection: RTCPeerConnection,
+    maxResolution?: TResolutionSize,
   ): Promise<TResultSetParametersToSender & { sender: RTCRtpSender | undefined }> {
     const senders = connection.getSenders();
     const sender = this.senderFinder.findVideoSender(senders);
@@ -121,7 +153,7 @@ export class SenderBalancer {
       videoTrack: sender.track as MediaStreamVideoTrack,
     };
 
-    const result = await this.setBitrateByTrackResolution(context);
+    const result = await this.setBitrateByTrackResolution(context, maxResolution);
 
     return { ...result, sender };
   }
@@ -134,6 +166,7 @@ export class SenderBalancer {
   private async processSender(
     headers: IMainCamHeaders,
     context: IBalancingContext,
+    maxResolution?: TResolutionSize,
   ): Promise<TResultSetParametersToSender> {
     const { mainCam, resolutionMainCam } = headers;
 
@@ -142,22 +175,22 @@ export class SenderBalancer {
         return this.downgradeResolutionSender(context);
       }
       case EContentMainCAM.RESUME_MAIN_CAM: {
-        return this.setBitrateByTrackResolution(context);
+        return this.setBitrateByTrackResolution(context, maxResolution);
       }
       case EContentMainCAM.MAX_MAIN_CAM_RESOLUTION: {
         if (resolutionMainCam !== undefined) {
-          return this.setResolutionSender(resolutionMainCam, context);
+          return this.setResolutionSender(resolutionMainCam, context, maxResolution);
         }
 
-        return this.setBitrateByTrackResolution(context);
+        return this.setBitrateByTrackResolution(context, maxResolution);
       }
       case EContentMainCAM.ADMIN_STOP_MAIN_CAM:
       case EContentMainCAM.ADMIN_START_MAIN_CAM:
       case undefined: {
-        return this.setBitrateByTrackResolution(context);
+        return this.setBitrateByTrackResolution(context, maxResolution);
       }
       default: {
-        return this.setBitrateByTrackResolution(context);
+        return this.setBitrateByTrackResolution(context, maxResolution);
       }
     }
   }
@@ -186,18 +219,14 @@ export class SenderBalancer {
    */
   private async setBitrateByTrackResolution(
     context: IBalancingContext,
+    maxResolution?: TResolutionSize,
   ): Promise<TResultSetParametersToSender> {
     const { sender, videoTrack, codec } = context;
-    const settings = videoTrack.getSettings();
-    const widthCurrent = settings.width;
-
-    const maxBitrate =
-      widthCurrent === undefined
-        ? getMaximumBitrate(codec)
-        : calcMaxBitrateByWidthAndCodec(widthCurrent, codec);
+    const scaleResolutionDownBy = resolveScaleResolutionDownBy(videoTrack, maxResolution);
+    const maxBitrate = resolveMaxBitrate(videoTrack, codec, scaleResolutionDownBy);
 
     return this.parametersSetter.setEncodingsToSender(sender, {
-      scaleResolutionDownBy: 1,
+      scaleResolutionDownBy,
       maxBitrate,
     });
   }
@@ -211,6 +240,7 @@ export class SenderBalancer {
   private async setResolutionSender(
     resolutionMainCam: string,
     context: IBalancingContext,
+    maxResolution?: TResolutionSize,
   ): Promise<TResultSetParametersToSender> {
     const [widthTarget, heightTarget] = resolutionMainCam.split('x');
     const { sender, videoTrack, codec } = context;
@@ -219,11 +249,22 @@ export class SenderBalancer {
       height: Number(heightTarget),
     };
 
-    const scaleResolutionDownBy = calcScaleResolutionDownBy({
+    const scaleResolutionDownByByMainCam = calcScaleResolutionDownBy({
       videoTrack,
       targetSize,
     });
-    const maxBitrate = calcMaxBitrateByWidthAndCodec(targetSize.width, codec);
+    const scaleResolutionDownByByConnection = resolveScaleResolutionDownBy(
+      videoTrack,
+      maxResolution,
+    );
+    const scaleResolutionDownBy = Math.max(
+      scaleResolutionDownByByMainCam,
+      scaleResolutionDownByByConnection,
+    );
+    const maxBitrate =
+      scaleResolutionDownByByConnection > scaleResolutionDownByByMainCam
+        ? resolveMaxBitrate(videoTrack, codec, scaleResolutionDownBy)
+        : calcMaxBitrateByWidthAndCodec(targetSize.width, codec);
 
     const parameters: IEncodingParameters = {
       scaleResolutionDownBy,
