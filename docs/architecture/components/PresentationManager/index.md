@@ -14,7 +14,7 @@
 - Запуск и остановка презентаций
 - Обновление потока без полного stop/start (`updatePresentation`)
 - Управление битрейтом презентации (`maxBitrate` в конструкторе)
-- Ограничение разрешения через `maxResolution` и `resolveSendEncodings`
+- Ограничение разрешения через `maxResolution` и `@/tools/resolveSendEncodings`
 - Обработка дублированных вызовов (`repeatedCallsAsync`)
 - Поддержка P2P и MCU режимов
 - Валидация переходов состояний через `PresentationStateMachine`
@@ -34,8 +34,6 @@ PresentationManager/
 ├── PresentationStateMachine/        # XState, context.videoTrack + lastError
 ├── errors.ts                        # PresentationReinviteError, PresentationTrackError
 ├── events.ts                        # TypedEvents: start/started/updating/updated/end/ended/failed
-├── resolveSendEncodings.ts          # ограничение sendEncodings по maxResolution
-├── types.ts
 └── index.ts                         # публичные экспорты
 ```
 
@@ -127,14 +125,17 @@ flowchart TB
 
 ## Внутренние компоненты
 
-| Компонент                  | Роль                                                             |
-| -------------------------- | ---------------------------------------------------------------- |
-| `PresentationStateMachine` | Состояние + `context.videoTrack` + `context.lastError`           |
-| `PresentationTrackService` | WebRTC add/replace/stop с атомарной регистрацией senders         |
-| `PresentationLifecycle`    | Бизнес-последовательность start/stop/update, нормализация ошибок |
-| `PresentationConcurrency`  | `repeatedCallsAsync`, pending start/stop, cancel/reset           |
-| `createCallManagerPort`    | Порт к `CallManager` без прямой зависимости lifecycle от его API |
-| `resolveSendEncodings`     | Ограничение `sendEncodings` по `maxResolution`                   |
+| Компонент                      | Роль                                                             |
+| ------------------------------ | ---------------------------------------------------------------- |
+| `PresentationStateMachine`     | Состояние + `context.videoTrack` + `context.lastError`           |
+| `PresentationTrackService`     | WebRTC add/replace/stop с атомарной регистрацией senders         |
+| `PresentationLifecycle`        | Бизнес-последовательность start/stop/update, нормализация ошибок |
+| `PresentationConcurrency`      | `repeatedCallsAsync`, pending start/stop, cancel/reset           |
+| `createCallManagerPort`        | Порт к `CallManager` без прямой зависимости lifecycle от его API |
+| `@/tools/resolveSendEncodings` | Общая утилита ограничения `sendEncodings` по `maxResolution`     |
+
+`maxResolution` для презентации передаёт `SipConnector` из `connectionConfiguration.maxAvailableResolution`
+при `startPresentation()` и `updatePresentation()`.
 
 ## Связанная state machine
 

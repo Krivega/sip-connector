@@ -3,7 +3,7 @@ import { createMediaStreamMock } from 'webrtc-mock';
 
 import resolveSendEncodings from '../resolveSendEncodings';
 
-import type { TResolutionSize } from '../types';
+import type { TResolutionSize } from '@/types';
 
 const RESOLUTION_4K = { width: 3840, height: 2160 };
 const RESOLUTION_HD = { width: 1280, height: 720 };
@@ -22,7 +22,7 @@ const createVideoTrack = ({ width, height }: TResolutionSize) => {
 };
 
 describe('resolveSendEncodings', () => {
-  it('должен добавлять scaleResolutionDownBy для presentation выше maxResolution', () => {
+  it('должен добавлять scaleResolutionDownBy для videoTrack выше maxResolution', () => {
     const videoTrack = createVideoTrack(RESOLUTION_4K);
 
     const result = resolveSendEncodings({
@@ -69,7 +69,7 @@ describe('resolveSendEncodings', () => {
     expect(result).toEqual([{ maxBitrate: 1_000_000, scaleResolutionDownBy: 3 }]);
   });
 
-  it('не должен добавлять ограничение, если presentation не выше maxResolution', () => {
+  it('не должен добавлять ограничение, если videoTrack не выше maxResolution', () => {
     const sendEncodings = [{ maxBitrate: 1_000_000 }];
     const videoTrack = createVideoTrack(RESOLUTION_HD);
 
@@ -82,7 +82,7 @@ describe('resolveSendEncodings', () => {
     expect(result).toEqual([{ maxBitrate: 1_000_000, scaleResolutionDownBy: 1 }]);
   });
 
-  it('должен явно задавать scaleResolutionDownBy: 1, если presentation ниже maxResolution', () => {
+  it('должен явно задавать scaleResolutionDownBy: 1, если videoTrack ниже maxResolution', () => {
     const videoTrack = createVideoTrack(RESOLUTION_HD);
 
     const result = resolveSendEncodings({
@@ -93,7 +93,7 @@ describe('resolveSendEncodings', () => {
     expect(result).toEqual([{ scaleResolutionDownBy: 1 }]);
   });
 
-  it('должен сбрасывать scaleResolutionDownBy до 1, если presentation ниже maxResolution', () => {
+  it('должен сбрасывать scaleResolutionDownBy до 1, если videoTrack ниже maxResolution', () => {
     const videoTrack = createVideoTrack(RESOLUTION_HD);
 
     const result = resolveSendEncodings({

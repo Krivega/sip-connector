@@ -1,6 +1,6 @@
 import { calcScaleResolutionDownBy } from '@/VideoSendingBalancer/calcResolution';
 
-import type { TResolutionSize } from './types';
+import type { TResolutionSize } from '@/types';
 
 const SCALE_RESOLUTION_DOWN_BY_MIN = 1;
 

@@ -1,6 +1,6 @@
+import resolveSendEncodings from '@/tools/resolveSendEncodings';
 import { setPresentationMaxBitrate, applyContentHint } from '@/utils/peerConnection';
 import { PresentationReinviteError, PresentationTrackError } from '../errors';
-import resolveSendEncodings from '../resolveSendEncodings';
 
 import type { TResolutionSize } from '@/types';
 import type { TContentHint, TOnAddedTransceiver } from '@/utils/peerConnection';

@@ -5,7 +5,7 @@ import { createMediaStreamMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import { doMockSipConnector } from '../doMock';
 
-import type { TResolutionSize } from '../PresentationManager/types';
+import type { TResolutionSize } from '@/types';
 import type { SipConnector } from '../SipConnector';
 
 const RESOLUTION_FHD = { width: 1920, height: 1080 };
