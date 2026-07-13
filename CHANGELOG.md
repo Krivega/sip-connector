@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [30.0.0](https://github.com/Krivega/sip-connector/compare/v29.2.1...v30.0.0) (2026-07-13)
+
+### ⚠ BREAKING CHANGES
+
+- update PresentationManager to use MediaStreamVideoTrack instead of MediaStream for presentations, enhancing type safety and clarity in event handling
+
+### Bug Fixes
+
+- presentation send encodings reuse ([321010b](https://github.com/Krivega/sip-connector/commit/321010b6e9d4d9131b29a98030431d7ef432ea37))
+
+- update PresentationManager to use MediaStreamVideoTrack instead of MediaStream for presentations, enhancing type safety and clarity in event handling ([11497a2](https://github.com/Krivega/sip-connector/commit/11497a29dde7b07fda2b4bdcb99dcd3c41496468))
+
 ### [29.2.1](https://github.com/Krivega/sip-connector/compare/v29.2.0...v29.2.1) (2026-07-13)
 
 ## [29.2.0](https://github.com/Krivega/sip-connector/compare/v29.1.0...v29.2.0) (2026-07-10)
