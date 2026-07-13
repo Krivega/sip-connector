@@ -262,7 +262,6 @@ class BaseSession implements RTCSession {
     type: T,
     listener: RTCSessionEventMap[T],
   ) => {
-    // @ts-expect-error
     if (SESSION_JSSIP_EVENT_NAMES.includes(type)) {
       // @ts-expect-error
       this.events.on(type, listener);
