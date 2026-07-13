@@ -2,20 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-## [Unreleased]
+## [31.0.0](https://github.com/Krivega/sip-connector/compare/v30.0.1...v31.0.0) (2026-07-13)
 
 ### ⚠ BREAKING CHANGES
 
-- **PresentationManager**: removed public fields `promisePendingStartPresentation`, `promisePendingStopPresentation`, `videoTrackPresentationCurrent`
-- use `presentationManager.stateMachine.activeVideoTrack` and `presentationManager.isPendingPresentation` instead
-- **PresentationManager**: added `updating` / `updated` events for track updates in ACTIVE state
-- **PresentationStateMachine**: context now includes `videoTrack`; update flow uses `SCREEN.UPDATING` / `SCREEN.UPDATED`
+- remove promisePendingStartPresentation,
+  promisePendingStopPresentation, and videoTrackPresentationCurrent. Use
+  stateMachine.activeVideoTrack and isPendingPresentation instead. Add
+  presentation:updating and presentation:updated events; state machine context
+  now stores videoTrack.
 
 ### Features
 
-- refactor PresentationManager into `PresentationTrackService`, `PresentationLifecycle`, `PresentationConcurrency`
-- typed errors: `PresentationReinviteError`, `PresentationTrackError`
-- SessionManager compares full `presentation` snapshot (track changes emit `snapshot-changed`)
+- apply maxAvailableResolution to main stream and video balancer ([11339b4](https://github.com/Krivega/sip-connector/commit/11339b40d757e21545bb04d5f78fb27b4919053f))
+
+- restructure PresentationManager around state machine and orchestration ([5c964b2](https://github.com/Krivega/sip-connector/commit/5c964b2533b0b9894838ac64f1d699f82958cdd2))
 
 ### [30.0.1](https://github.com/Krivega/sip-connector/compare/v30.0.0...v30.0.1) (2026-07-13)
 
