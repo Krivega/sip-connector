@@ -1,4 +1,4 @@
-import getCodecFromSender from '@/utils/getCodecFromSender';
+import getCodecFromSender from '@/utils/peerConnection/getCodecFromSender';
 
 import type { ICodecProvider } from './types';
 

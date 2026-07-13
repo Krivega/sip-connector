@@ -42,6 +42,20 @@ export const createPresentationMachineSetup = () => {
           lastError: undefined,
         };
       }),
+      [EAction.SET_VIDEO_TRACK]: assign(({ event }) => {
+        if ('videoTrack' in event && event.videoTrack !== undefined) {
+          return {
+            videoTrack: event.videoTrack,
+          };
+        }
+
+        return {};
+      }),
+      [EAction.CLEAR_VIDEO_TRACK]: assign(() => {
+        return {
+          videoTrack: undefined,
+        };
+      }),
     },
   });
 };

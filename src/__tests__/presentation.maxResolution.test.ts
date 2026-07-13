@@ -5,14 +5,14 @@ import { createMediaStreamMock } from 'webrtc-mock';
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import { doMockSipConnector } from '../doMock';
 
-import type { TMaxResolution } from '../PresentationManager/types';
+import type { TResolutionSize } from '../PresentationManager/types';
 import type { SipConnector } from '../SipConnector';
 
 const RESOLUTION_FHD = { width: 1920, height: 1080 };
 const RESOLUTION_4K = { width: 3840, height: 2160 };
 const MAX_RESOLUTION = { width: 1920, height: 1080 };
 
-const createPresentationTrack = ({ width, height }: TMaxResolution) => {
+const createPresentationTrack = ({ width, height }: TResolutionSize) => {
   return createMediaStreamMock({
     video: {
       deviceId: { exact: `video-${width}x${height}` },
@@ -28,10 +28,10 @@ describe('presentation maxResolution after stop/start', () => {
   let mediaStream: MediaStream;
 
   const getPresentationSenderEncodings = () => {
-    const { videoTrackPresentationCurrent } = sipConnector.presentationManager;
+    const videoTrack = sipConnector.presentationManager.stateMachine.activeVideoTrack;
     const { connection } = sipConnector.callManager;
     const sender = connection?.getSenders().find((itemSender) => {
-      return itemSender.track === videoTrackPresentationCurrent;
+      return itemSender.track === videoTrack;
     });
 
     return sender?.getParameters().encodings;

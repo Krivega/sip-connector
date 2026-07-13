@@ -1,5 +1,5 @@
 import type { RTCSession, UA } from '@krivega/jssip';
-import type { TContentHint } from '@/PresentationManager';
+import type { TContentHint } from '@/utils/peerConnection';
 import type { Originator } from './events';
 import type { RemoteStreamsManager } from './RemoteStreamsManager';
 

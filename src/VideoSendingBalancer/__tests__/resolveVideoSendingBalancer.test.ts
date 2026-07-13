@@ -6,7 +6,7 @@ import JsSIP from '@/__fixtures__/jssip.mock';
 import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
 import { EContentTypeReceived, EContentMainCAM, EKeyHeader } from '@/ApiManager';
 import { doMockSipConnector } from '@/doMock';
-import findVideoSender from '@/utils/findVideoSender';
+import findVideoSender from '@/utils/peerConnection/findVideoSender';
 import { resolveVideoSendingBalancer } from '../@VideoSendingBalancer';
 import { calcMaxBitrateByWidthAndCodec } from '../calcBitrate';
 

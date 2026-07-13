@@ -4,10 +4,12 @@
 
 ## События
 
-| Имя события            | Описание                                        | Тип данных              |
-| ---------------------- | ----------------------------------------------- | ----------------------- |
-| `presentation:start`   | Генерируется при начале запуска презентации     | `MediaStreamVideoTrack` |
-| `presentation:started` | Генерируется при успешном запуске презентации   | `MediaStreamVideoTrack` |
-| `presentation:end`     | Генерируется при начале остановки презентации   | `MediaStreamVideoTrack` |
-| `presentation:ended`   | Генерируется при успешной остановке презентации | `MediaStreamVideoTrack` |
-| `presentation:failed`  | Генерируется при ошибке презентации             | `Error`                 |
+| Имя события             | Описание                                         | Тип данных              |
+| ----------------------- | ------------------------------------------------ | ----------------------- |
+| `presentation:start`    | Генерируется при начале запуска презентации      | `MediaStreamVideoTrack` |
+| `presentation:started`  | Генерируется при успешном запуске презентации    | `MediaStreamVideoTrack` |
+| `presentation:updating` | Генерируется при начале обновления презентации   | `MediaStreamVideoTrack` |
+| `presentation:updated`  | Генерируется при успешном обновлении презентации | `MediaStreamVideoTrack` |
+| `presentation:end`      | Генерируется при начале остановки презентации    | `MediaStreamVideoTrack` |
+| `presentation:ended`    | Генерируется при успешной остановке презентации  | `MediaStreamVideoTrack` |
+| `presentation:failed`   | Генерируется при ошибке презентации              | `Error`                 |

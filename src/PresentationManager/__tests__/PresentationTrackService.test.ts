@@ -4,8 +4,12 @@ import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
 import RTCRtpTransceiverMock from '@/__fixtures__/RTCRtpTransceiverMock';
 import { createUaParser } from '@/tools/createUaParser';
-import PresentationSenders from '../PresentationSenders';
-import { addOrReplacePresentationVideoTrack, isFirefoxOrLower } from '../presentationSession';
+import * as peerConnectionUtils from '@/utils/peerConnection';
+import {
+  isFirefoxOrLower,
+  resetUaParserCacheForTests,
+} from '../../utils/peerConnection/isFirefoxOrLower';
+import PresentationTrackService from '../PresentationTrackService';
 
 jest.mock('@/tools/createUaParser', () => {
   return {
@@ -22,6 +26,7 @@ const mockUaParser = ({
   isFirefox?: boolean;
   isLessOrEqual?: boolean;
 } = {}) => {
+  resetUaParserCacheForTests();
   mockedCreateUaParser.mockReturnValue({
     isFirefox,
     isChrome: false,
@@ -39,14 +44,14 @@ const mockUaParser = ({
   });
 };
 
-describe('presentationSession', () => {
+describe('PresentationTrackService', () => {
   let connection: RTCPeerConnectionMock;
-  let presentationSenders: PresentationSenders;
+  let trackService: PresentationTrackService;
   let videoTrack: MediaStreamVideoTrack;
 
   beforeEach(() => {
     connection = new RTCPeerConnectionMock();
-    presentationSenders = new PresentationSenders();
+    trackService = new PresentationTrackService();
     videoTrack = createMediaStreamMock({
       video: { deviceId: { exact: 'videoDeviceId' } },
     }).getVideoTracks()[0] as MediaStreamVideoTrack;
@@ -73,9 +78,9 @@ describe('presentationSession', () => {
     });
   });
 
-  describe('addOrReplacePresentationVideoTrack', () => {
+  describe('addOrReplace', () => {
     it('добавляет трек через addTransceiver без options', async () => {
-      await addOrReplacePresentationVideoTrack(connection, presentationSenders, videoTrack);
+      await trackService.addOrReplace(connection, videoTrack);
 
       expect(connection.addTransceiver).toHaveBeenCalled();
       expect(connection.getSenders()).toHaveLength(1);
@@ -84,7 +89,7 @@ describe('presentationSession', () => {
     it('вызывает onAddedTransceiver и применяет encodings', async () => {
       const onAddedTransceiver = jest.fn().mockResolvedValue(undefined);
 
-      await addOrReplacePresentationVideoTrack(connection, presentationSenders, videoTrack, {
+      await trackService.addOrReplace(connection, videoTrack, {
         onAddedTransceiver,
         sendEncodings: [{ maxBitrate: 1_000_000 }],
         degradationPreference: 'maintain-resolution',
@@ -93,13 +98,13 @@ describe('presentationSession', () => {
       expect(onAddedTransceiver).toHaveBeenCalled();
     });
 
-    it('не применяет sender params при directionVideo=recvonly', async () => {
+    it('не применяет sender params при direction=recvonly', async () => {
       const setParametersSpy = jest.fn();
 
       jest.spyOn(RTCRtpSenderMock.prototype, 'setParameters').mockImplementation(setParametersSpy);
 
-      await addOrReplacePresentationVideoTrack(connection, presentationSenders, videoTrack, {
-        directionVideo: 'recvonly',
+      await trackService.addOrReplace(connection, videoTrack, {
+        direction: 'recvonly',
         sendEncodings: [{ maxBitrate: 1_000_000 }],
       });
 
@@ -111,15 +116,14 @@ describe('presentationSession', () => {
 
       const addTrackSpy = jest.spyOn(connection, 'addTrack');
 
-      await addOrReplacePresentationVideoTrack(connection, presentationSenders, videoTrack);
+      await trackService.addOrReplace(connection, videoTrack);
 
       expect(addTrackSpy).toHaveBeenCalled();
       expect(connection.addTransceiver).not.toHaveBeenCalled();
     });
 
     it('заменяет track у существующего presentation sender', async () => {
-      await addOrReplacePresentationVideoTrack(connection, presentationSenders, videoTrack);
-      presentationSenders.markTrack(connection, videoTrack);
+      await trackService.addOrReplace(connection, videoTrack);
 
       const [existingSender] = connection.getSenders();
       const replaceTrackSpy = jest.spyOn(existingSender, 'replaceTrack');
@@ -127,7 +131,7 @@ describe('presentationSession', () => {
         video: { deviceId: { exact: 'videoDeviceId2' } },
       }).getVideoTracks()[0] as MediaStreamVideoTrack;
 
-      await addOrReplacePresentationVideoTrack(connection, presentationSenders, nextVideoTrack, {
+      await trackService.addOrReplace(connection, nextVideoTrack, {
         sendEncodings: [{ maxBitrate: 500_000 }],
       });
 
@@ -135,17 +139,16 @@ describe('presentationSession', () => {
     });
 
     it('сбрасывает scaleResolutionDownBy при replaceTrack, если presentation ниже лимита', async () => {
-      await addOrReplacePresentationVideoTrack(connection, presentationSenders, videoTrack, {
+      await trackService.addOrReplace(connection, videoTrack, {
         sendEncodings: [{ scaleResolutionDownBy: 2 }],
       });
-      presentationSenders.markTrack(connection, videoTrack);
 
       const [existingSender] = connection.getSenders();
       const nextVideoTrack = createMediaStreamMock({
         video: { deviceId: { exact: 'videoDeviceId2' } },
       }).getVideoTracks()[0] as MediaStreamVideoTrack;
 
-      await addOrReplacePresentationVideoTrack(connection, presentationSenders, nextVideoTrack, {
+      await trackService.addOrReplace(connection, nextVideoTrack, {
         sendEncodings: [{ scaleResolutionDownBy: 1 }],
       });
 
@@ -164,7 +167,7 @@ describe('presentationSession', () => {
       const onAddedTransceiver = jest.fn().mockResolvedValue(undefined);
       const addTrackSpy = jest.spyOn(connection, 'addTrack');
 
-      await addOrReplacePresentationVideoTrack(connection, presentationSenders, videoTrack, {
+      await trackService.addOrReplace(connection, videoTrack, {
         direction: 'sendonly',
         onAddedTransceiver,
         sendEncodings: [{ maxBitrate: 800_000 }],
@@ -210,8 +213,8 @@ describe('presentationSession', () => {
         return transceivers;
       });
 
-      await addOrReplacePresentationVideoTrack(connection, presentationSenders, videoTrack, {
-        directionVideo: 'sendonly',
+      await trackService.addOrReplace(connection, videoTrack, {
+        direction: 'sendonly',
       });
 
       expect(setDirection).toHaveBeenCalledWith('sendonly');
@@ -254,8 +257,8 @@ describe('presentationSession', () => {
         return transceivers;
       });
 
-      await addOrReplacePresentationVideoTrack(connection, presentationSenders, videoTrack, {
-        directionVideo: 'sendonly',
+      await trackService.addOrReplace(connection, videoTrack, {
+        direction: 'sendonly',
         onAddedTransceiver: async (transceiver) => {
           capturedTransceiver = transceiver;
         },
@@ -299,11 +302,28 @@ describe('presentationSession', () => {
         return transceivers;
       });
 
-      await addOrReplacePresentationVideoTrack(connection, presentationSenders, videoTrack, {
-        directionVideo: 'sendonly',
+      await trackService.addOrReplace(connection, videoTrack, {
+        direction: 'sendonly',
       });
 
       expect(setDirection).not.toHaveBeenCalled();
+    });
+
+    it('не регистрирует sender если track не найден после addTransceiver', async () => {
+      const addTransceiverSpy = jest.spyOn(connection, 'addTransceiver');
+      const stopSpy = jest.spyOn(videoTrack, 'stop');
+
+      jest
+        .spyOn(peerConnectionUtils, 'addVideoTrackInTransceiver')
+        .mockImplementationOnce(async () => {
+          return undefined;
+        });
+
+      await trackService.addOrReplace(connection, videoTrack);
+
+      expect(addTransceiverSpy).not.toHaveBeenCalled();
+      trackService.stop(connection);
+      expect(stopSpy).not.toHaveBeenCalled();
     });
 
     it('не падает если transceiver не найден после addTrack', async () => {
@@ -318,42 +338,29 @@ describe('presentationSession', () => {
       jest.spyOn(connection, 'getTransceivers').mockReturnValue([recvonlyTransceiver]);
 
       await expect(
-        addOrReplacePresentationVideoTrack(connection, presentationSenders, videoTrack, {
-          directionVideo: 'sendonly',
+        trackService.addOrReplace(connection, videoTrack, {
+          direction: 'sendonly',
           onAddedTransceiver: jest.fn(),
         }),
       ).resolves.toBeUndefined();
     });
   });
 
-  describe('PresentationSenders markTrack / stopTracks', () => {
-    it('не добавляет sender если track не найден в connection', () => {
-      presentationSenders.markTrack(
-        connection,
-        createMediaStreamMock({
-          video: { deviceId: { exact: 'unknown' } },
-        }).getVideoTracks()[0] as MediaStreamVideoTrack,
-      );
-
-      expect(presentationSenders.getFromConnection(connection)).toHaveLength(0);
-    });
-
-    it('останавливает только presentation tracks', async () => {
-      await addOrReplacePresentationVideoTrack(connection, presentationSenders, videoTrack);
-      presentationSenders.markTrack(connection, videoTrack);
+  describe('stop / clear', () => {
+    it('останавливает presentation tracks после addOrReplace', async () => {
+      await trackService.addOrReplace(connection, videoTrack);
 
       const [sender] = connection.getSenders();
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const stopSpy = jest.spyOn(sender.track!, 'stop');
 
-      presentationSenders.stopTracks(connection);
+      trackService.stop(connection);
 
       expect(stopSpy).toHaveBeenCalled();
     });
 
     it('не останавливает sender без track', async () => {
-      await addOrReplacePresentationVideoTrack(connection, presentationSenders, videoTrack);
-      presentationSenders.markTrack(connection, videoTrack);
+      await trackService.addOrReplace(connection, videoTrack);
 
       const [sender] = connection.getSenders();
 
@@ -362,19 +369,22 @@ describe('presentationSession', () => {
       sender.track = null;
 
       expect(() => {
-        presentationSenders.stopTracks(connection);
+        trackService.stop(connection);
       }).not.toThrow();
     });
 
-    it('clear очищает отмеченные senders', async () => {
-      await addOrReplacePresentationVideoTrack(connection, presentationSenders, videoTrack);
-      presentationSenders.markTrack(connection, videoTrack);
+    it('clear сбрасывает зарегистрированные senders', async () => {
+      await trackService.addOrReplace(connection, videoTrack);
 
-      expect(presentationSenders.getFromConnection(connection)).toHaveLength(1);
+      trackService.clear();
 
-      presentationSenders.clear();
+      const [sender] = connection.getSenders();
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const stopSpy = jest.spyOn(sender.track!, 'stop');
 
-      expect(presentationSenders.getFromConnection(connection)).toHaveLength(0);
+      trackService.stop(connection);
+
+      expect(stopSpy).not.toHaveBeenCalled();
     });
   });
 });

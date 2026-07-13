@@ -28,7 +28,7 @@ const defaultSnapshotEquals: TEqualityFunction<TSessionSnapshot> = (previous, ne
     isEqual(previous.call, next.call) &&
     // Incoming: value only — repeated RINGING with different callee metadata must not emit again
     previous.incoming.value === next.incoming.value &&
-    previous.presentation.value === next.presentation.value &&
+    isEqual(previous.presentation, next.presentation) &&
     previous.autoConnector.value === next.autoConnector.value &&
     // CallReconnect: full snapshot so attempt/delay context updates без смены `value` тоже эмитят событие
     isEqual(previous.callReconnect, next.callReconnect) &&

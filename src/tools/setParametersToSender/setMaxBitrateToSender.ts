@@ -1,4 +1,4 @@
-import findSenderByStream from '@/utils/findSenderByStream';
+import findSenderByStream from '@/utils/peerConnection/findSenderByStream';
 import setEncodingsToSender from './setEncodingsToSender';
 
 const setMaxBitrateToSender = async (

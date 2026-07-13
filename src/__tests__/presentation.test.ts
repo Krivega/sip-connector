@@ -6,6 +6,7 @@ import { dataForConnectionWithAuthorization } from '../__fixtures__';
 import { createDeclineStartPresentationError } from '../__fixtures__/RTCSessionMock';
 import { EContentTypeReceived, EHeader } from '../ApiManager';
 import { doMockSipConnector } from '../doMock';
+import { PresentationLifecycle } from '../PresentationManager/orchestration/PresentationLifecycle';
 
 import type { ExtraHeaders } from '@krivega/jssip';
 import type { SipConnector } from '../SipConnector';
@@ -90,7 +91,7 @@ describe('presentation', () => {
   });
 
   it('isPendingPresentation and for start presentation', async () => {
-    expect.assertions(7);
+    expect.assertions(4);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
@@ -100,19 +101,16 @@ describe('presentation', () => {
     );
 
     expect(sipConnector.presentationManager.isPendingPresentation).toBe(true);
-    expect(sipConnector.presentationManager.promisePendingStartPresentation).toBeDefined();
-    expect(sipConnector.presentationManager.videoTrackPresentationCurrent).toBeDefined();
 
     return promise.then(() => {
       expect(sipConnector.presentationManager.isPendingPresentation).toBe(false);
-      expect(sipConnector.presentationManager.promisePendingStartPresentation).toBeUndefined();
-      expect(sipConnector.presentationManager.promisePendingStopPresentation).toBeUndefined();
-      expect(sipConnector.presentationManager.videoTrackPresentationCurrent).toBeDefined();
+      expect(sipConnector.presentationManager.stateMachine.isActive).toBe(true);
+      expect(sipConnector.presentationManager.stateMachine.activeVideoTrack).toBeDefined();
     });
   });
 
   it('clear after hungUp for start presentation', async () => {
-    expect.assertions(4);
+    expect.assertions(3);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
@@ -120,13 +118,12 @@ describe('presentation', () => {
     await sipConnector.hangUp();
 
     expect(sipConnector.presentationManager.isPendingPresentation).toBe(false);
-    expect(sipConnector.presentationManager.promisePendingStartPresentation).toBeUndefined();
-    expect(sipConnector.presentationManager.promisePendingStopPresentation).toBeUndefined();
-    expect(sipConnector.presentationManager.videoTrackPresentationCurrent).toBeUndefined();
+    expect(sipConnector.presentationManager.stateMachine.isIdle).toBe(true);
+    expect(sipConnector.presentationManager.stateMachine.activeVideoTrack).toBeUndefined();
   });
 
   it('isPendingPresentation and promisePendingStopPresentation for stop presentation', async () => {
-    expect.assertions(7);
+    expect.assertions(3);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
@@ -135,19 +132,15 @@ describe('presentation', () => {
     const promise = sipConnector.stopPresentation();
 
     expect(sipConnector.presentationManager.isPendingPresentation).toBe(true);
-    expect(sipConnector.presentationManager.promisePendingStopPresentation).toBeDefined();
-    expect(sipConnector.presentationManager.videoTrackPresentationCurrent).toBeDefined();
 
     return promise.then(() => {
       expect(sipConnector.presentationManager.isPendingPresentation).toBe(false);
-      expect(sipConnector.presentationManager.promisePendingStopPresentation).toBeUndefined();
-      expect(sipConnector.presentationManager.videoTrackPresentationCurrent).toBeUndefined();
-      expect(sipConnector.presentationManager.promisePendingStartPresentation).toBeUndefined();
+      expect(sipConnector.presentationManager.stateMachine.activeVideoTrack).toBeUndefined();
     });
   });
 
   it('clear after hungUp for stop presentation', async () => {
-    expect.assertions(4);
+    expect.assertions(3);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
@@ -156,85 +149,61 @@ describe('presentation', () => {
     await sipConnector.hangUp();
 
     expect(sipConnector.presentationManager.isPendingPresentation).toBe(false);
-    expect(sipConnector.presentationManager.promisePendingStartPresentation).toBeUndefined();
-    expect(sipConnector.presentationManager.promisePendingStopPresentation).toBeUndefined();
-    expect(sipConnector.presentationManager.videoTrackPresentationCurrent).toBeUndefined();
+    expect(sipConnector.presentationManager.stateMachine.isIdle).toBe(true);
+    expect(sipConnector.presentationManager.stateMachine.activeVideoTrack).toBeUndefined();
   });
 
   it('update presentation after start', async () => {
-    expect.assertions(8);
+    expect.assertions(5);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
     await sipConnector.startPresentation(mediaStream.getVideoTracks()[0] as MediaStreamVideoTrack);
 
-    const previousVideoTrack = sipConnector.presentationManager.videoTrackPresentationCurrent;
+    const previousVideoTrack = sipConnector.presentationManager.stateMachine.activeVideoTrack;
 
     const promise = sipConnector.updatePresentation(
       mediaStreamUpdated.getVideoTracks()[0] as MediaStreamVideoTrack,
     );
 
-    expect(sipConnector.presentationManager.isPendingPresentation).toBe(true);
-    expect(sipConnector.presentationManager.promisePendingStartPresentation).toBeDefined();
-    expect(sipConnector.presentationManager.videoTrackPresentationCurrent).toBeDefined();
+    expect(sipConnector.presentationManager.stateMachine.isActive).toBe(true);
 
     return promise.then(() => {
       expect(sipConnector.presentationManager.isPendingPresentation).toBe(false);
-      expect(sipConnector.presentationManager.promisePendingStartPresentation).toBeUndefined();
-      expect(sipConnector.presentationManager.promisePendingStopPresentation).toBeUndefined();
-      expect(sipConnector.presentationManager.videoTrackPresentationCurrent).toBeDefined();
+      expect(sipConnector.presentationManager.stateMachine.activeVideoTrack).toBeDefined();
       expect(previousVideoTrack).not.toBe(
-        sipConnector.presentationManager.videoTrackPresentationCurrent,
+        sipConnector.presentationManager.stateMachine.activeVideoTrack,
       );
+      expect(sipConnector.presentationManager.stateMachine.isActive).toBe(true);
     });
   });
 
   it('update presentation before startPresentation promise resolved', async () => {
-    expect.assertions(13);
+    expect.assertions(5);
 
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    sipConnector.startPresentation(mediaStream.getVideoTracks()[0] as MediaStreamVideoTrack);
+    const startPromise = sipConnector.startPresentation(
+      mediaStream.getVideoTracks()[0] as MediaStreamVideoTrack,
+    );
 
-    const previousVideoTrack = sipConnector.presentationManager.videoTrackPresentationCurrent;
-    const startPresentationPromise =
-      sipConnector.presentationManager.promisePendingStartPresentation;
+    const previousVideoTrack = sipConnector.presentationManager.stateMachine.pendingVideoTrack;
 
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    sipConnector.updatePresentation(
+    const updatePromise = sipConnector.updatePresentation(
       mediaStreamUpdated.getVideoTracks()[0] as MediaStreamVideoTrack,
     );
 
     expect(sipConnector.presentationManager.isPendingPresentation).toBe(true);
-    expect(sipConnector.presentationManager.promisePendingStartPresentation).toBeDefined();
-    expect(sipConnector.presentationManager.videoTrackPresentationCurrent).toBeDefined();
 
-    return startPresentationPromise
-      ?.then(async () => {
-        expect(sipConnector.presentationManager.isPendingPresentation).toBe(true);
-        expect(previousVideoTrack).not.toBe(
-          sipConnector.presentationManager.videoTrackPresentationCurrent,
-        );
-        expect(sipConnector.presentationManager.promisePendingStartPresentation).toBeDefined();
-        expect(sipConnector.presentationManager.promisePendingStopPresentation).toBeUndefined();
-        expect(sipConnector.presentationManager.videoTrackPresentationCurrent).toBeDefined();
-
-        const updatePresentationPromise =
-          sipConnector.presentationManager.promisePendingStartPresentation;
-
-        return updatePresentationPromise;
-      })
-      .then(() => {
-        expect(sipConnector.presentationManager.isPendingPresentation).toBe(false);
-        expect(sipConnector.presentationManager.promisePendingStartPresentation).toBeUndefined();
-        expect(sipConnector.presentationManager.promisePendingStopPresentation).toBeUndefined();
-        expect(sipConnector.presentationManager.videoTrackPresentationCurrent).toBeDefined();
-        expect(previousVideoTrack).not.toBe(
-          sipConnector.presentationManager.videoTrackPresentationCurrent,
-        );
-      });
+    return Promise.all([startPromise, updatePromise]).then(() => {
+      expect(sipConnector.presentationManager.isPendingPresentation).toBe(false);
+      expect(sipConnector.presentationManager.stateMachine.activeVideoTrack).toBeDefined();
+      expect(previousVideoTrack).not.toBe(
+        sipConnector.presentationManager.stateMachine.activeVideoTrack,
+      );
+      expect(sipConnector.presentationManager.stateMachine.isActive).toBe(true);
+    });
   });
 
   it('update presentation without start', async () => {
@@ -335,8 +304,7 @@ describe('presentation', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    // @ts-expect-error
-    const sendPresentationMocked = jest.spyOn(sipConnector.presentationManager, 'sendPresentation');
+    const executeStartFlowMocked = jest.spyOn(PresentationLifecycle.prototype, 'executeStartFlow');
     let stream;
 
     try {
@@ -348,7 +316,7 @@ describe('presentation', () => {
       expect(error).toEqual(new Error('call limit (1) is reached'));
     }
 
-    expect(sendPresentationMocked).toHaveBeenCalledTimes(startPresentationCallLimit);
+    expect(executeStartFlowMocked).toHaveBeenCalledTimes(startPresentationCallLimit);
     expect(stream).toBeUndefined();
   });
 
@@ -362,8 +330,7 @@ describe('presentation', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    // @ts-expect-error
-    const sendPresentationMocked = jest.spyOn(sipConnector.presentationManager, 'sendPresentation');
+    const executeStartFlowMocked = jest.spyOn(PresentationLifecycle.prototype, 'executeStartFlow');
 
     const stream = await sipConnector.startPresentation(
       mediaStream.getVideoTracks()[0] as MediaStreamVideoTrack,
@@ -372,7 +339,7 @@ describe('presentation', () => {
       },
     );
 
-    expect(sendPresentationMocked).toHaveBeenCalledTimes(errorStartPresentationCount);
+    expect(executeStartFlowMocked).toHaveBeenCalledTimes(errorStartPresentationCount);
     expect(stream).toBe(mediaStream.getVideoTracks()[0]);
   });
 
@@ -384,8 +351,7 @@ describe('presentation', () => {
     await sipConnector.connect(dataForConnectionWithAuthorization);
     await sipConnector.call({ number, mediaStream });
 
-    // @ts-expect-error
-    const sendPresentationMocked = jest.spyOn(sipConnector.presentationManager, 'sendPresentation');
+    const executeStartFlowMocked = jest.spyOn(PresentationLifecycle.prototype, 'executeStartFlow');
     const cancelSendPresentationWithRepeatedCallsMocked = jest.spyOn(
       sipConnector.presentationManager,
       'cancelSendPresentationWithRepeatedCalls',
@@ -407,7 +373,7 @@ describe('presentation', () => {
       expect(error).toEqual(new Error('canceled'));
     }
 
-    expect(sendPresentationMocked).toHaveBeenCalledTimes(1);
+    expect(executeStartFlowMocked).toHaveBeenCalledTimes(1);
     expect(cancelSendPresentationWithRepeatedCallsMocked).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,6 +1,36 @@
 import { EAction, EEvents, EState, initialContext } from './constants';
 import { createPresentationMachineSetup } from './createPresentationMachineSetup';
 
+const toIdleActions = (from: EState, event: EEvents) => {
+  return [
+    EAction.CLEAR_ERROR,
+    EAction.CLEAR_VIDEO_TRACK,
+    {
+      type: EAction.LOG_TRANSITION,
+      params: {
+        event,
+        from,
+        to: EState.IDLE,
+      },
+    },
+  ] as const;
+};
+
+const toFailedActions = (from: EState, event: EEvents) => {
+  return [
+    EAction.SET_ERROR,
+    EAction.CLEAR_VIDEO_TRACK,
+    {
+      type: EAction.LOG_TRANSITION,
+      params: {
+        event,
+        from,
+        to: EState.FAILED,
+      },
+    },
+  ] as const;
+};
+
 export const createPresentationMachine = () => {
   return createPresentationMachineSetup().createMachine({
     id: 'presentation',
@@ -17,6 +47,7 @@ export const createPresentationMachine = () => {
             target: EState.STARTING,
             actions: [
               EAction.CLEAR_ERROR,
+              EAction.SET_VIDEO_TRACK,
               {
                 type: EAction.LOG_TRANSITION,
                 params: {
@@ -37,70 +68,33 @@ export const createPresentationMachine = () => {
         on: {
           [EEvents.SCREEN_STARTED]: {
             target: EState.ACTIVE,
-            actions: {
-              type: EAction.LOG_TRANSITION,
-              params: {
-                from: EState.STARTING,
-                to: EState.ACTIVE,
-                event: EEvents.SCREEN_STARTED,
+            actions: [
+              EAction.SET_VIDEO_TRACK,
+              {
+                type: EAction.LOG_TRANSITION,
+                params: {
+                  from: EState.STARTING,
+                  to: EState.ACTIVE,
+                  event: EEvents.SCREEN_STARTED,
+                },
               },
-            },
+            ],
           },
           [EEvents.SCREEN_FAILED]: {
             target: EState.FAILED,
-            actions: [
-              EAction.SET_ERROR,
-              {
-                type: EAction.LOG_TRANSITION,
-                params: {
-                  from: EState.STARTING,
-                  to: EState.FAILED,
-                  event: EEvents.SCREEN_FAILED,
-                },
-              },
-            ],
+            actions: toFailedActions(EState.STARTING, EEvents.SCREEN_FAILED),
           },
           [EEvents.SCREEN_ENDED]: {
             target: EState.IDLE,
-            actions: [
-              EAction.CLEAR_ERROR,
-              {
-                type: EAction.LOG_TRANSITION,
-                params: {
-                  from: EState.STARTING,
-                  to: EState.IDLE,
-                  event: EEvents.SCREEN_ENDED,
-                },
-              },
-            ],
+            actions: toIdleActions(EState.STARTING, EEvents.SCREEN_ENDED),
           },
           [EEvents.CALL_ENDED]: {
             target: EState.IDLE,
-            actions: [
-              EAction.CLEAR_ERROR,
-              {
-                type: EAction.LOG_TRANSITION,
-                params: {
-                  from: EState.STARTING,
-                  to: EState.IDLE,
-                  event: EEvents.CALL_ENDED,
-                },
-              },
-            ],
+            actions: toIdleActions(EState.STARTING, EEvents.CALL_ENDED),
           },
           [EEvents.CALL_FAILED]: {
             target: EState.FAILED,
-            actions: [
-              EAction.SET_ERROR,
-              {
-                type: EAction.LOG_TRANSITION,
-                params: {
-                  from: EState.STARTING,
-                  to: EState.FAILED,
-                  event: EEvents.CALL_FAILED,
-                },
-              },
-            ],
+            actions: toFailedActions(EState.STARTING, EEvents.CALL_FAILED),
           },
         },
       },
@@ -110,6 +104,12 @@ export const createPresentationMachine = () => {
           params: { state: EState.ACTIVE },
         },
         on: {
+          [EEvents.SCREEN_UPDATING]: {
+            actions: [EAction.SET_VIDEO_TRACK],
+          },
+          [EEvents.SCREEN_UPDATED]: {
+            actions: [EAction.SET_VIDEO_TRACK],
+          },
           [EEvents.SCREEN_ENDING]: {
             target: EState.STOPPING,
             actions: {
@@ -123,59 +123,19 @@ export const createPresentationMachine = () => {
           },
           [EEvents.SCREEN_ENDED]: {
             target: EState.IDLE,
-            actions: [
-              EAction.CLEAR_ERROR,
-              {
-                type: EAction.LOG_TRANSITION,
-                params: {
-                  from: EState.ACTIVE,
-                  to: EState.IDLE,
-                  event: EEvents.SCREEN_ENDED,
-                },
-              },
-            ],
+            actions: toIdleActions(EState.ACTIVE, EEvents.SCREEN_ENDED),
           },
           [EEvents.SCREEN_FAILED]: {
             target: EState.FAILED,
-            actions: [
-              EAction.SET_ERROR,
-              {
-                type: EAction.LOG_TRANSITION,
-                params: {
-                  from: EState.ACTIVE,
-                  to: EState.FAILED,
-                  event: EEvents.SCREEN_FAILED,
-                },
-              },
-            ],
+            actions: toFailedActions(EState.ACTIVE, EEvents.SCREEN_FAILED),
           },
           [EEvents.CALL_ENDED]: {
             target: EState.IDLE,
-            actions: [
-              EAction.CLEAR_ERROR,
-              {
-                type: EAction.LOG_TRANSITION,
-                params: {
-                  from: EState.ACTIVE,
-                  to: EState.IDLE,
-                  event: EEvents.CALL_ENDED,
-                },
-              },
-            ],
+            actions: toIdleActions(EState.ACTIVE, EEvents.CALL_ENDED),
           },
           [EEvents.CALL_FAILED]: {
             target: EState.FAILED,
-            actions: [
-              EAction.SET_ERROR,
-              {
-                type: EAction.LOG_TRANSITION,
-                params: {
-                  from: EState.ACTIVE,
-                  to: EState.FAILED,
-                  event: EEvents.CALL_FAILED,
-                },
-              },
-            ],
+            actions: toFailedActions(EState.ACTIVE, EEvents.CALL_FAILED),
           },
         },
       },
@@ -187,59 +147,19 @@ export const createPresentationMachine = () => {
         on: {
           [EEvents.SCREEN_ENDED]: {
             target: EState.IDLE,
-            actions: [
-              EAction.CLEAR_ERROR,
-              {
-                type: EAction.LOG_TRANSITION,
-                params: {
-                  from: EState.STOPPING,
-                  to: EState.IDLE,
-                  event: EEvents.SCREEN_ENDED,
-                },
-              },
-            ],
+            actions: toIdleActions(EState.STOPPING, EEvents.SCREEN_ENDED),
           },
           [EEvents.SCREEN_FAILED]: {
             target: EState.FAILED,
-            actions: [
-              EAction.SET_ERROR,
-              {
-                type: EAction.LOG_TRANSITION,
-                params: {
-                  from: EState.STOPPING,
-                  to: EState.FAILED,
-                  event: EEvents.SCREEN_FAILED,
-                },
-              },
-            ],
+            actions: toFailedActions(EState.STOPPING, EEvents.SCREEN_FAILED),
           },
           [EEvents.CALL_ENDED]: {
             target: EState.IDLE,
-            actions: [
-              EAction.CLEAR_ERROR,
-              {
-                type: EAction.LOG_TRANSITION,
-                params: {
-                  from: EState.STOPPING,
-                  to: EState.IDLE,
-                  event: EEvents.CALL_ENDED,
-                },
-              },
-            ],
+            actions: toIdleActions(EState.STOPPING, EEvents.CALL_ENDED),
           },
           [EEvents.CALL_FAILED]: {
             target: EState.FAILED,
-            actions: [
-              EAction.SET_ERROR,
-              {
-                type: EAction.LOG_TRANSITION,
-                params: {
-                  from: EState.STOPPING,
-                  to: EState.FAILED,
-                  event: EEvents.CALL_FAILED,
-                },
-              },
-            ],
+            actions: toFailedActions(EState.STOPPING, EEvents.CALL_FAILED),
           },
         },
       },
@@ -253,6 +173,7 @@ export const createPresentationMachine = () => {
             target: EState.STARTING,
             actions: [
               EAction.CLEAR_ERROR,
+              EAction.SET_VIDEO_TRACK,
               {
                 type: EAction.LOG_TRANSITION,
                 params: {
@@ -265,31 +186,11 @@ export const createPresentationMachine = () => {
           },
           [EEvents.SCREEN_ENDED]: {
             target: EState.IDLE,
-            actions: [
-              EAction.CLEAR_ERROR,
-              {
-                type: EAction.LOG_TRANSITION,
-                params: {
-                  from: EState.FAILED,
-                  to: EState.IDLE,
-                  event: EEvents.SCREEN_ENDED,
-                },
-              },
-            ],
+            actions: toIdleActions(EState.FAILED, EEvents.SCREEN_ENDED),
           },
           [EEvents.PRESENTATION_RESET]: {
             target: EState.IDLE,
-            actions: [
-              EAction.CLEAR_ERROR,
-              {
-                type: EAction.LOG_TRANSITION,
-                params: {
-                  from: EState.FAILED,
-                  to: EState.IDLE,
-                  event: EEvents.PRESENTATION_RESET,
-                },
-              },
-            ],
+            actions: toIdleActions(EState.FAILED, EEvents.PRESENTATION_RESET),
           },
         },
       },

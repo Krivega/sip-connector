@@ -1,12 +1,12 @@
 /// <reference types="jest" />
-import getCodecFromSender from '@/utils/getCodecFromSender';
+import getCodecFromSender from '@/utils/peerConnection/getCodecFromSender';
 import BitrateStateManager, {
   MAXIMUM_BITRATE_AUDIO,
   MINIMUM_BITRATE_AUDIO,
   MINIMUM_BITRATE_VIDEO,
 } from '../BitrateStateManager';
 
-jest.mock('@/utils/getCodecFromSender');
+jest.mock('@/utils/peerConnection/getCodecFromSender');
 
 describe('BitrateStateManager', () => {
   let manager: BitrateStateManager;

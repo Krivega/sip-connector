@@ -42,7 +42,7 @@ export {
 export { SipConnector } from './SipConnector';
 export { SipConnectorFacade } from './SipConnectorFacade';
 export { EStatsTypes, hasAvailableStats, StatsPeerConnection } from './StatsPeerConnection';
-export { default as getCodecFromSender } from './utils/getCodecFromSender';
+export { default as getCodecFromSender } from './utils/peerConnection/getCodecFromSender';
 export { hasConnectionPromiseIsNotActualError } from './ConnectionQueueManager';
 export {
   createEvents as createIncomingEvents,
@@ -99,11 +99,7 @@ export type {
   TConnectToServerResult,
 } from './SipConnectorFacade';
 export type { TInboundStats, TOutboundStats } from './StatsPeerConnection';
-export type {
-  TContentHint,
-  TPresentationContextMap,
-  TPresentationSnapshot,
-} from './PresentationManager';
+export type { TPresentationContextMap, TPresentationSnapshot } from './PresentationManager';
 export type {
   TParametersAutoConnect,
   TAutoConnectorContextMap,
@@ -131,3 +127,4 @@ export type {
 } from './ConnectAndCallSession';
 export type { TIncomingContextMap, TIncomingSnapshot } from './IncomingCallManager';
 export type { TJsSIP } from './types';
+export type { TContentHint } from './utils/peerConnection';

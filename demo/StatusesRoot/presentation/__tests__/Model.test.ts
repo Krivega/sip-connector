@@ -63,19 +63,28 @@ const stateCases: TStateCase[] = [
   },
   {
     title: 'STARTING',
-    snapshot: createSnapshot(EPresentationStatus.STARTING, { lastError: undefined }),
+    snapshot: createSnapshot(EPresentationStatus.STARTING, {
+      lastError: undefined,
+      videoTrack: undefined,
+    }),
     expectedFlags: createExpectedFlags('isStarting'),
     expectedLastError: undefined,
   },
   {
     title: 'ACTIVE',
-    snapshot: createSnapshot(EPresentationStatus.ACTIVE, { lastError: undefined }),
+    snapshot: createSnapshot(EPresentationStatus.ACTIVE, {
+      lastError: undefined,
+      videoTrack: undefined,
+    }),
     expectedFlags: createExpectedFlags('isActive'),
     expectedLastError: undefined,
   },
   {
     title: 'STOPPING',
-    snapshot: createSnapshot(EPresentationStatus.STOPPING, { lastError: undefined }),
+    snapshot: createSnapshot(EPresentationStatus.STOPPING, {
+      lastError: undefined,
+      videoTrack: undefined,
+    }),
     expectedFlags: createExpectedFlags('isStopping'),
     expectedLastError: undefined,
   },
@@ -83,6 +92,7 @@ const stateCases: TStateCase[] = [
     title: 'FAILED',
     snapshot: createSnapshot(EPresentationStatus.FAILED, {
       lastError: new Error('screen failed'),
+      videoTrack: undefined,
     }),
     expectedFlags: createExpectedFlags('isFailed'),
     expectedLastError: new Error('screen failed'),

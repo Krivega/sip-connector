@@ -9,9 +9,9 @@ import hasPurgatory from '@/tools/hasPurgatory';
 
 import type { EContentUseLicense } from '@/ApiManager';
 import type { TOnAddedTransceiver, TRemoteStreams } from '@/CallManager';
-import type { TContentHint } from '@/PresentationManager';
 import type { SipConnector } from '@/SipConnector';
 import type { TOutboundVideoVerificationStrictness, TStatsManagerEventMap } from '@/StatsManager';
+import type { TContentHint } from '@/utils/peerConnection';
 import type {
   TCallToServerParameters,
   TConnectAndCallToServerParameters,

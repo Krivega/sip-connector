@@ -11,11 +11,15 @@ export enum EAction {
   LOG_STATE_CHANGE = 'logStateChange',
   SET_ERROR = 'setError',
   CLEAR_ERROR = 'clearError',
+  SET_VIDEO_TRACK = 'setVideoTrack',
+  CLEAR_VIDEO_TRACK = 'clearVideoTrack',
 }
 
 export enum EEvents {
   SCREEN_STARTING = 'SCREEN.STARTING',
   SCREEN_STARTED = 'SCREEN.STARTED',
+  SCREEN_UPDATING = 'SCREEN.UPDATING',
+  SCREEN_UPDATED = 'SCREEN.UPDATED',
   SCREEN_ENDING = 'SCREEN.ENDING',
   SCREEN_ENDED = 'SCREEN.ENDED',
   SCREEN_FAILED = 'SCREEN.FAILED',
@@ -26,4 +30,5 @@ export enum EEvents {
 
 export const initialContext = {
   lastError: undefined,
+  videoTrack: undefined,
 };

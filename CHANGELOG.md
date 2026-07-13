@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [Unreleased]
+
+### ⚠ BREAKING CHANGES
+
+- **PresentationManager**: removed public fields `promisePendingStartPresentation`, `promisePendingStopPresentation`, `videoTrackPresentationCurrent`
+- use `presentationManager.stateMachine.activeVideoTrack` and `presentationManager.isPendingPresentation` instead
+- **PresentationManager**: added `updating` / `updated` events for track updates in ACTIVE state
+- **PresentationStateMachine**: context now includes `videoTrack`; update flow uses `SCREEN.UPDATING` / `SCREEN.UPDATED`
+
+### Features
+
+- refactor PresentationManager into `PresentationTrackService`, `PresentationLifecycle`, `PresentationConcurrency`
+- typed errors: `PresentationReinviteError`, `PresentationTrackError`
+- SessionManager compares full `presentation` snapshot (track changes emit `snapshot-changed`)
+
 ### [30.0.1](https://github.com/Krivega/sip-connector/compare/v30.0.0...v30.0.1) (2026-07-13)
 
 ## [30.0.0](https://github.com/Krivega/sip-connector/compare/v29.2.1...v30.0.0) (2026-07-13)

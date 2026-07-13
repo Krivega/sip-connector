@@ -62,6 +62,18 @@ export class PresentationStateMachine extends BaseStateMachine<
     return this.context.lastError;
   }
 
+  public get activeVideoTrack(): MediaStreamVideoTrack | undefined {
+    return this.context.videoTrack;
+  }
+
+  public get pendingVideoTrack(): MediaStreamVideoTrack | undefined {
+    if (this.isStarting) {
+      return this.context.videoTrack;
+    }
+
+    return undefined;
+  }
+
   public reset(): void {
     this.sendEvent({ type: EEvents.PRESENTATION_RESET });
   }
@@ -90,13 +102,23 @@ export class PresentationStateMachine extends BaseStateMachine<
 
   private subscribePresentationEvents(events: TPresentationEvents): void {
     this.addSubscription(
-      events.on('start', () => {
-        this.sendEvent({ type: EEvents.SCREEN_STARTING });
+      events.on('start', (videoTrack) => {
+        this.sendEvent({ type: EEvents.SCREEN_STARTING, videoTrack });
       }),
     );
     this.addSubscription(
-      events.on('started', () => {
-        this.sendEvent({ type: EEvents.SCREEN_STARTED });
+      events.on('started', (videoTrack) => {
+        this.sendEvent({ type: EEvents.SCREEN_STARTED, videoTrack });
+      }),
+    );
+    this.addSubscription(
+      events.on('updating', (videoTrack) => {
+        this.sendEvent({ type: EEvents.SCREEN_UPDATING, videoTrack });
+      }),
+    );
+    this.addSubscription(
+      events.on('updated', (videoTrack) => {
+        this.sendEvent({ type: EEvents.SCREEN_UPDATED, videoTrack });
       }),
     );
     this.addSubscription(

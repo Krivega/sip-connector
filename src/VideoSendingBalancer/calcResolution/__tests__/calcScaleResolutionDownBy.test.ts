@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 import calcScaleResolutionDownBy from '../calcScaleResolutionDownBy';
 
-import type { TSize } from '@/types';
+import type { TResolutionSize } from '@/types';
 
 describe('calcScaleResolutionDownBy', () => {
   const mockVideoTrack = {} as MediaStreamVideoTrack;
@@ -13,7 +13,7 @@ describe('calcScaleResolutionDownBy', () => {
       return settings;
     };
 
-    const targetSize: TSize = { width: 1280, height: 720 };
+    const targetSize: TResolutionSize = { width: 1280, height: 720 };
 
     const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,
@@ -39,7 +39,7 @@ describe('calcScaleResolutionDownBy', () => {
       return settings;
     };
 
-    const targetSize: TSize = { width: 1280, height: 720 };
+    const targetSize: TResolutionSize = { width: 1280, height: 720 };
 
     const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,
@@ -62,7 +62,7 @@ describe('calcScaleResolutionDownBy', () => {
       return settings;
     };
 
-    const targetSize: TSize = { width: 640, height: 720 };
+    const targetSize: TResolutionSize = { width: 640, height: 720 };
 
     const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,
@@ -88,7 +88,7 @@ describe('calcScaleResolutionDownBy', () => {
       return settings;
     };
 
-    const targetSize: TSize = { width: 1280, height: 360 };
+    const targetSize: TResolutionSize = { width: 1280, height: 360 };
 
     const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,
@@ -114,7 +114,7 @@ describe('calcScaleResolutionDownBy', () => {
       return settings;
     };
 
-    const targetSize: TSize = { width: 640, height: 360 };
+    const targetSize: TResolutionSize = { width: 640, height: 360 };
 
     const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,
@@ -137,7 +137,7 @@ describe('calcScaleResolutionDownBy', () => {
       return settings;
     };
 
-    const targetSize: TSize = { width: 320, height: 240 };
+    const targetSize: TResolutionSize = { width: 320, height: 240 };
 
     const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,
@@ -163,7 +163,7 @@ describe('calcScaleResolutionDownBy', () => {
       return settings;
     };
 
-    const targetSize: TSize = { width: 1280, height: 720 };
+    const targetSize: TResolutionSize = { width: 1280, height: 720 };
 
     const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,
@@ -182,7 +182,7 @@ describe('calcScaleResolutionDownBy', () => {
       return settings;
     };
 
-    const targetSize: TSize = { width: 1280, height: 720 };
+    const targetSize: TResolutionSize = { width: 1280, height: 720 };
 
     const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,
@@ -201,7 +201,7 @@ describe('calcScaleResolutionDownBy', () => {
       return settings;
     };
 
-    const targetSize: TSize = { width: 1280, height: 720 };
+    const targetSize: TResolutionSize = { width: 1280, height: 720 };
 
     const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,
@@ -218,7 +218,7 @@ describe('calcScaleResolutionDownBy', () => {
       return settings;
     };
 
-    const targetSize: TSize = { width: 1280, height: 720 };
+    const targetSize: TResolutionSize = { width: 1280, height: 720 };
 
     const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,
@@ -237,7 +237,7 @@ describe('calcScaleResolutionDownBy', () => {
       return settings;
     };
 
-    const targetSize: TSize = { width: 1280, height: 720 };
+    const targetSize: TResolutionSize = { width: 1280, height: 720 };
 
     const result = calcScaleResolutionDownBy({
       videoTrack: mockVideoTrack,

@@ -1,10 +1,10 @@
 /// <reference types="jest" />
-import findSenderByStream from '@/utils/findSenderByStream';
+import findSenderByStream from '@/utils/peerConnection/findSenderByStream';
 import setEncodingsToSender from '../setEncodingsToSender';
 import setMaxBitrateToSender from '../setMaxBitrateToSender';
 
 // Mock dependencies
-jest.mock('@/utils/findSenderByStream');
+jest.mock('@/utils/peerConnection/findSenderByStream');
 jest.mock('../setEncodingsToSender');
 
 describe('setMaxBitrateToSender', () => {

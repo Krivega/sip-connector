@@ -1,8 +1,15 @@
 import type { EEvents, EState } from './constants';
 
+type TPresentationContextBase = {
+  lastError: Error | undefined;
+  videoTrack: MediaStreamVideoTrack | undefined;
+};
+
 export type TPresentationMachineEvents =
-  | { type: EEvents.SCREEN_STARTING }
-  | { type: EEvents.SCREEN_STARTED }
+  | { type: EEvents.SCREEN_STARTING; videoTrack?: MediaStreamVideoTrack }
+  | { type: EEvents.SCREEN_STARTED; videoTrack?: MediaStreamVideoTrack }
+  | { type: EEvents.SCREEN_UPDATING; videoTrack: MediaStreamVideoTrack }
+  | { type: EEvents.SCREEN_UPDATED; videoTrack: MediaStreamVideoTrack }
   | { type: EEvents.SCREEN_ENDING }
   | { type: EEvents.SCREEN_ENDED }
   | { type: EEvents.SCREEN_FAILED; error?: unknown }
@@ -11,21 +18,11 @@ export type TPresentationMachineEvents =
   | { type: EEvents.PRESENTATION_RESET };
 
 export type TContextMap = {
-  [EState.IDLE]: {
-    lastError: undefined;
-  };
-  [EState.STARTING]: {
-    lastError: undefined;
-  };
-  [EState.ACTIVE]: {
-    lastError: undefined;
-  };
-  [EState.STOPPING]: {
-    lastError: undefined;
-  };
-  [EState.FAILED]: {
-    lastError: Error | undefined;
-  };
+  [EState.IDLE]: TPresentationContextBase;
+  [EState.STARTING]: TPresentationContextBase;
+  [EState.ACTIVE]: TPresentationContextBase;
+  [EState.STOPPING]: TPresentationContextBase;
+  [EState.FAILED]: TPresentationContextBase;
 };
 
 export type TContext = TContextMap[keyof TContextMap];

@@ -18,7 +18,7 @@ import { SessionManager } from '@/SessionManager';
 import { StatsManager } from '@/StatsManager';
 import { sendOffer } from '@/tools';
 import setCodecPreferences from '@/tools/setCodecPreferences';
-import findVideoTrack from '@/utils/findVideoTrack';
+import findVideoTrack from '@/utils/peerConnection/findVideoTrack';
 import { VideoSendingBalancerManager } from '@/VideoSendingBalancerManager';
 import { MainStreamHealthMonitor } from '../MainStreamHealthMonitor';
 import { MainStreamRecovery } from '../MainStreamRecovery';
@@ -36,9 +36,9 @@ import type {
   TConnectAndCallSessionParameters,
   TConnectAndCallSessionResult,
 } from '@/ConnectAndCallSession';
-import type { TContentHint, TOnAddedTransceiver } from '@/PresentationManager';
 import type { TOutboundVideoVerificationStrictness } from '@/StatsManager';
 import type { TJsSIP } from '@/types';
+import type { TContentHint, TOnAddedTransceiver } from '@/utils/peerConnection';
 import type { IBalancerOptions } from '@/VideoSendingBalancer';
 import type { TEventMap, TEventName } from './events';
 

@@ -40,6 +40,7 @@ describe('sessionSelectors', () => {
         value: EPresentationStatus.IDLE,
         context: {
           lastError: undefined,
+          videoTrack: undefined,
         },
         ...overrides.presentation,
       },

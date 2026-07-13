@@ -3,13 +3,13 @@ import { createMediaStreamMock } from 'webrtc-mock';
 
 import resolveSendEncodings from '../resolveSendEncodings';
 
-import type { TMaxResolution } from '../types';
+import type { TResolutionSize } from '../types';
 
 const RESOLUTION_4K = { width: 3840, height: 2160 };
 const RESOLUTION_HD = { width: 1280, height: 720 };
 const MAX_RESOLUTION = { width: 1920, height: 1080 };
 
-const createVideoTrack = ({ width, height }: TMaxResolution) => {
+const createVideoTrack = ({ width, height }: TResolutionSize) => {
   const stream = createMediaStreamMock({
     video: {
       deviceId: { exact: 'videoDeviceId' },

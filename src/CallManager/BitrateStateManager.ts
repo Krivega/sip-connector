@@ -1,5 +1,5 @@
 import { setParametersToSender } from '@/tools/setParametersToSender';
-import getCodecFromSender from '@/utils/getCodecFromSender';
+import getCodecFromSender from '@/utils/peerConnection/getCodecFromSender';
 import {
   getMinimumBitrateByWidthAndCodec,
   getMaximumBitrateByWidthAndCodec,

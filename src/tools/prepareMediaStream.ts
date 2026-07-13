@@ -1,6 +1,6 @@
 import setVideoTrackContentHints from './setVideoTrackContentHints';
 
-import type { TContentHint } from '@/PresentationManager';
+import type { TContentHint } from '@/utils/peerConnection';
 
 const prepareMediaStream = (
   mediaStream?: MediaStream,

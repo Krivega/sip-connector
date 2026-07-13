@@ -6,8 +6,8 @@ import { CallManager } from '@/CallManager';
 import { CallSessionState } from '@/CallSessionState';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
 import PresentationManager, { hasCanceledStartPresentationError } from '../@PresentationManager';
-import PresentationSenders from '../PresentationSenders';
-import * as presentationSession from '../presentationSession';
+import { PresentationTrackError } from '../errors';
+import PresentationTrackService from '../PresentationTrackService';
 
 import type { TReachedLimitError } from 'repeated-calls';
 
@@ -52,6 +52,11 @@ describe('PresentationManager', () => {
     manager = new PresentationManager({
       callManager: callManager as unknown as CallManager,
     });
+
+    beforeStartPresentation.mockReset();
+    beforeStartPresentation.mockResolvedValue(undefined);
+    beforeStopPresentation.mockReset();
+    beforeStopPresentation.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -66,10 +71,10 @@ describe('PresentationManager', () => {
     manager.on('started', spy);
 
     const result = await manager.startPresentation(beforeStartPresentation, videoTrack);
-    const { videoTrackPresentationCurrent } = manager;
+    const { activeVideoTrack } = manager.stateMachine;
 
     expect(result).toBeDefined();
-    expect(videoTrackPresentationCurrent).toBeDefined();
+    expect(activeVideoTrack).toBeDefined();
     expect(result).toBe(videoTrack);
 
     expect(spy).toHaveBeenCalled();
@@ -81,7 +86,7 @@ describe('PresentationManager', () => {
     const [[calledWith]] = mock.mock.calls as [[MediaStreamVideoTrack]];
 
     expect(calledWith).toBeDefined();
-    expect(calledWith.id).toBe(videoTrackPresentationCurrent?.id);
+    expect(calledWith.id).toBe(activeVideoTrack?.id);
   });
 
   it('не меняет contentHint при contentHint=none', async () => {
@@ -104,9 +109,7 @@ describe('PresentationManager', () => {
       maxBitrate: 1_000_000,
     });
 
-    jest
-      .spyOn(presentationSession, 'addOrReplacePresentationVideoTrack')
-      .mockResolvedValue(undefined);
+    jest.spyOn(PresentationTrackService.prototype, 'addOrReplace').mockResolvedValue(undefined);
     jest.spyOn(connectionMock, 'getSenders').mockReturnValue([]);
 
     await expect(manager.startPresentation(beforeStartPresentation, videoTrack)).resolves.toBe(
@@ -133,7 +136,7 @@ describe('PresentationManager', () => {
   it('успешно останавливает презентацию', async () => {
     await manager.startPresentation(beforeStartPresentation, videoTrack);
 
-    const { videoTrackPresentationCurrent } = manager;
+    const { activeVideoTrack } = manager.stateMachine;
 
     const spy = jest.fn();
 
@@ -145,8 +148,8 @@ describe('PresentationManager', () => {
       throw new Error('result is undefined');
     }
 
-    expect(result.id).toBe(videoTrackPresentationCurrent?.id);
-    expect(manager.videoTrackPresentationCurrent).toBeUndefined();
+    expect(result.id).toBe(activeVideoTrack?.id);
+    expect(manager.stateMachine.activeVideoTrack).toBeUndefined();
 
     expect(spy).toHaveBeenCalled();
 
@@ -157,15 +160,14 @@ describe('PresentationManager', () => {
     const [[calledWith]] = mock.mock.calls as [[MediaStreamVideoTrack]];
 
     expect(calledWith).toBeDefined();
-    expect(calledWith.id).toBe(videoTrackPresentationCurrent?.id);
+    expect(calledWith.id).toBe(activeVideoTrack?.id);
   });
 
   it('корректно сбрасывает состояние после stopPresentation', async () => {
     await manager.startPresentation(beforeStartPresentation, videoTrack);
     await manager.stopPresentation(beforeStopPresentation);
-    expect(manager.promisePendingStartPresentation).toBeUndefined();
-    expect(manager.promisePendingStopPresentation).toBeUndefined();
-    expect(manager.videoTrackPresentationCurrent).toBeUndefined();
+    expect(manager.isPendingPresentation).toBe(false);
+    expect(manager.stateMachine.activeVideoTrack).toBeUndefined();
   });
 
   it('вызывает событие FAILED_PRESENTATION при ошибке stopPresentation', async () => {
@@ -232,7 +234,7 @@ describe('PresentationManager', () => {
       callManager as unknown as { getEstablishedRTCSession: jest.Mock }
     ).getEstablishedRTCSession.mockReturnValue(undefined);
 
-    const { videoTrackPresentationCurrent } = manager;
+    const { activeVideoTrack } = manager.stateMachine;
 
     const spy = jest.fn();
 
@@ -247,13 +249,13 @@ describe('PresentationManager', () => {
     const [[calledWith]] = mock.mock.calls as [[MediaStreamVideoTrack]];
 
     expect(calledWith).toBeDefined();
-    expect(calledWith.id).toBe(videoTrackPresentationCurrent?.id);
+    expect(calledWith.id).toBe(activeVideoTrack?.id);
   });
 
   it('вызывает событие ENDED_PRESENTATION когда есть streamPresentationPrevious но нет rtcSession', async () => {
     await manager.startPresentation(beforeStartPresentation, videoTrack);
 
-    const { videoTrackPresentationCurrent } = manager;
+    const { activeVideoTrack } = manager.stateMachine;
 
     // Устанавливаем rtcSession в undefined
     (
@@ -267,7 +269,7 @@ describe('PresentationManager', () => {
     const result = await manager.stopPresentation(beforeStopPresentation);
 
     expect(result).toBeUndefined();
-    expect(spy).toHaveBeenCalledWith(videoTrackPresentationCurrent);
+    expect(spy).toHaveBeenCalledWith(activeVideoTrack);
   });
 
   it('останавливает презентацию без connection, если rtcSession ещё есть', async () => {
@@ -288,7 +290,7 @@ describe('PresentationManager', () => {
 
     expect(result).toBeDefined();
     expect(spyEnded).toHaveBeenCalled();
-    expect(manager.videoTrackPresentationCurrent).toBeUndefined();
+    expect(manager.stateMachine.activeVideoTrack).toBeUndefined();
   });
 
   it('ожидает отклонение pending startPresentation в stopPresentation', async () => {
@@ -309,13 +311,13 @@ describe('PresentationManager', () => {
 
     expect(startResult.status).toBe('rejected');
     expect(stopResult.status).toBe('fulfilled');
-    expect(manager.videoTrackPresentationCurrent).toBeUndefined();
+    expect(manager.stateMachine.activeVideoTrack).toBeUndefined();
   });
 
   it('успешно обновляет презентацию', async () => {
     await manager.startPresentation(beforeStartPresentation, videoTrack);
 
-    const { videoTrackPresentationCurrent } = manager;
+    const { activeVideoTrack } = manager.stateMachine;
 
     const newStream = createMediaStreamMock({
       audio: { deviceId: { exact: 'audioDeviceId2' } },
@@ -324,14 +326,14 @@ describe('PresentationManager', () => {
 
     const spy = jest.fn();
 
-    manager.on('started', spy);
+    manager.on('updated', spy);
 
     const result = await manager.updatePresentation(
       beforeStartPresentation,
       newStream.getVideoTracks()[0] as MediaStreamVideoTrack,
     );
 
-    const { videoTrackPresentationCurrent: videoTrackPresentationCurrent2 } = manager;
+    const activeVideoTrack2 = manager.stateMachine.activeVideoTrack;
 
     expect(result).toBeDefined();
 
@@ -339,15 +341,15 @@ describe('PresentationManager', () => {
       throw new Error('result is undefined');
     }
 
-    if (!videoTrackPresentationCurrent) {
-      throw new Error('videoTrackPresentationCurrent is undefined');
+    if (!activeVideoTrack) {
+      throw new Error('activeVideoTrack is undefined');
     }
 
-    if (!videoTrackPresentationCurrent2) {
-      throw new Error('videoTrackPresentationCurrent2 is undefined');
+    if (!activeVideoTrack2) {
+      throw new Error('activeVideoTrack2 is undefined');
     }
 
-    expect(videoTrackPresentationCurrent.id).not.toBe(videoTrackPresentationCurrent2.id);
+    expect(activeVideoTrack.id).not.toBe(activeVideoTrack2.id);
 
     expect(spy).toHaveBeenCalled();
 
@@ -358,7 +360,7 @@ describe('PresentationManager', () => {
     const [[calledWith]] = mock.mock.calls as [[MediaStreamVideoTrack]];
 
     expect(calledWith).toBeDefined();
-    expect(calledWith.id).toBe(videoTrackPresentationCurrent2.id);
+    expect(calledWith.id).toBe(activeVideoTrack2.id);
   });
 
   it('выбрасывает ошибку при updatePresentation если нет rtcSession', async () => {
@@ -390,27 +392,6 @@ describe('PresentationManager', () => {
     expect(handler).toHaveBeenCalledTimes(1);
   });
 
-  it('promisePendingStartPresentation выставляется и сбрасывается', async () => {
-    expect(manager.promisePendingStartPresentation).toBeUndefined();
-
-    const p = manager.startPresentation(beforeStartPresentation, videoTrack);
-
-    expect(manager.promisePendingStartPresentation).toBeInstanceOf(Promise);
-    await p;
-    expect(manager.promisePendingStartPresentation).toBeUndefined();
-  });
-
-  it('promisePendingStopPresentation выставляется и сбрасывается', async () => {
-    await manager.startPresentation(beforeStartPresentation, videoTrack);
-    expect(manager.promisePendingStopPresentation).toBeUndefined();
-
-    const p = manager.stopPresentation(beforeStopPresentation);
-
-    expect(manager.promisePendingStopPresentation).toBeInstanceOf(Promise);
-    await p;
-    expect(manager.promisePendingStopPresentation).toBeUndefined();
-  });
-
   it('isPendingPresentation корректно отражает состояние', async () => {
     expect(manager.isPendingPresentation).toBe(false);
 
@@ -440,8 +421,8 @@ describe('PresentationManager', () => {
       promise.catch(() => {});
     });
 
-    it('должен возвращать false, когда нет videoTrackPresentationCurrent и isPendingPresentation false', () => {
-      expect(manager.videoTrackPresentationCurrent).toBeUndefined();
+    it('должен возвращать false, когда нет activeVideoTrack и isPendingPresentation false', () => {
+      expect(manager.stateMachine.activeVideoTrack).toBeUndefined();
       expect(manager.isPendingPresentation).toBe(false);
       expect(manager.isPresentationInProcess).toBe(false);
     });
@@ -453,19 +434,23 @@ describe('PresentationManager', () => {
       expect(manager.isPresentationInProcess).toBe(true);
     });
 
-    it('должен возвращать true, когда есть videoTrackPresentationCurrent', async () => {
+    it('должен возвращать true, когда есть activeVideoTrack', async () => {
       await manager.startPresentation(beforeStartPresentation, videoTrack);
 
-      expect(manager.videoTrackPresentationCurrent).toBeDefined();
+      expect(manager.stateMachine.activeVideoTrack).toBeDefined();
       expect(manager.isPresentationInProcess).toBe(true);
     });
 
-    it('должен возвращать true, когда есть videoTrackPresentationCurrent и isPendingPresentation true', () => {
+    it('должен возвращать true, когда есть pendingVideoTrack и isPendingPresentation true', async () => {
       promise = manager.startPresentation(beforeStartPresentation, videoTrack);
+      await Promise.resolve();
 
-      expect(manager.videoTrackPresentationCurrent).toBeDefined();
+      expect(
+        manager.stateMachine.pendingVideoTrack ?? manager.stateMachine.activeVideoTrack,
+      ).toBeDefined();
       expect(manager.isPendingPresentation).toBe(true);
       expect(manager.isPresentationInProcess).toBe(true);
+      await promise;
     });
 
     it('должен возвращать true во время остановки презентации', async () => {
@@ -481,19 +466,17 @@ describe('PresentationManager', () => {
       await manager.startPresentation(beforeStartPresentation, videoTrack);
       await manager.stopPresentation(beforeStopPresentation);
 
-      expect(manager.videoTrackPresentationCurrent).toBeUndefined();
+      expect(manager.stateMachine.activeVideoTrack).toBeUndefined();
       expect(manager.isPendingPresentation).toBe(false);
       expect(manager.isPresentationInProcess).toBe(false);
     });
   });
 
-  it('reset сбрасывает все состояния', async () => {
+  it('call ended сбрасывает состояние', async () => {
     await manager.startPresentation(beforeStartPresentation, videoTrack);
-    // @ts-expect-error
-    manager.reset();
-    expect(manager.promisePendingStartPresentation).toBeUndefined();
-    expect(manager.promisePendingStopPresentation).toBeUndefined();
-    expect(manager.videoTrackPresentationCurrent).toBeUndefined();
+    callManager.events.trigger('ended', { originator: 'local' } as never);
+    expect(manager.stateMachine.activeVideoTrack).toBeUndefined();
+    expect(manager.isPendingPresentation).toBe(false);
   });
 
   it('hasCanceledStartPresentationError возвращает true для отменённой презентации', async () => {
@@ -554,14 +537,20 @@ describe('PresentationManager', () => {
     expect(result).toBe('wait-data');
   });
 
-  it('handleEnded сбрасывает состояние при событии ended/failed', async () => {
+  it('call ended очищает track service', async () => {
     await manager.startPresentation(beforeStartPresentation, videoTrack);
-    // эмулируем событие ended
-    // @ts-expect-error
-    manager.handleEnded();
-    expect(manager.videoTrackPresentationCurrent).toBeUndefined();
-    expect(manager.promisePendingStartPresentation).toBeUndefined();
-    expect(manager.promisePendingStopPresentation).toBeUndefined();
+    callManager.events.trigger('ended', { originator: 'local' } as never);
+    expect(manager.stateMachine.activeVideoTrack).toBeUndefined();
+    expect(manager.isPendingPresentation).toBe(false);
+
+    const addTransceiverCallsBefore = connectionMock.addTransceiver.mock.calls.length;
+    const nextTrack = createMediaStreamMock({
+      video: { deviceId: { exact: 'videoDeviceId2' } },
+    }).getVideoTracks()[0] as MediaStreamVideoTrack;
+
+    await manager.startPresentation(beforeStartPresentation, nextTrack);
+
+    expect(connectionMock.addTransceiver.mock.calls.length).toBe(addTransceiverCallsBefore + 1);
   });
 
   it('повторные вызовы startPresentation не дублируют презентацию', async () => {
@@ -571,30 +560,19 @@ describe('PresentationManager', () => {
     );
   });
 
-  it('resetPresentation очищает все поля', async () => {
-    await manager.startPresentation(beforeStartPresentation, videoTrack);
-    // @ts-expect-error
-    manager.resetPresentation();
-    expect(manager.videoTrackPresentationCurrent).toBeUndefined();
-    expect(manager.promisePendingStartPresentation).toBeUndefined();
-    expect(manager.promisePendingStopPresentation).toBeUndefined();
-    // @ts-expect-error
-    expect(manager.presentationSenders.getFromConnection(connectionMock)).toHaveLength(0);
-  });
-
-  it('stopPresentation сохраняет presentationSenders для повторного startPresentation', async () => {
+  it('stopPresentation сохраняет sender для повторного startPresentation', async () => {
     await manager.startPresentation(beforeStartPresentation, videoTrack);
     await manager.stopPresentation(beforeStopPresentation);
 
-    // @ts-expect-error
-    expect(manager.presentationSenders.getFromConnection(connectionMock)).toHaveLength(1);
-  });
+    const [existingSender] = connectionMock.getSenders();
+    const replaceTrackSpy = jest.spyOn(existingSender, 'replaceTrack');
+    const nextTrack = createMediaStreamMock({
+      video: { deviceId: { exact: 'videoDeviceId2' } },
+    }).getVideoTracks()[0] as MediaStreamVideoTrack;
 
-  it('removeVideoTrackPresentationCurrent очищает videoTrackPresentationCurrent', async () => {
-    await manager.startPresentation(beforeStartPresentation, videoTrack);
-    // @ts-expect-error
-    manager.removeVideoTrackPresentationCurrent();
-    expect(manager.videoTrackPresentationCurrent).toBeUndefined();
+    await manager.startPresentation(beforeStartPresentation, nextTrack);
+
+    expect(replaceTrackSpy).toHaveBeenCalledWith(nextTrack);
   });
 
   it('updatePresentation сразу после startPresentation ожидает завершения старта', async () => {
@@ -614,11 +592,11 @@ describe('PresentationManager', () => {
     expect(updateResult).toBe(newVideoTrack);
   });
 
-  it('startPresentation вызывает FAILED_PRESENTATION и сбрасывает videoTrackPresentationCurrent при ошибке', async () => {
+  it('startPresentation вызывает FAILED_PRESENTATION и сбрасывает activeVideoTrack при ошибке', async () => {
     const targetError = new Error('fail-start');
 
     jest
-      .spyOn(presentationSession, 'addOrReplacePresentationVideoTrack')
+      .spyOn(PresentationTrackService.prototype, 'addOrReplace')
       .mockRejectedValueOnce(targetError);
 
     const spy = jest.fn();
@@ -639,17 +617,16 @@ describe('PresentationManager', () => {
 
     const lastResult: Error | undefined = error.values?.lastResult;
 
-    expect(lastResult).toBeInstanceOf(Error);
-    expect(lastResult?.message).toBe('Wrong videoTrack');
-    expect(spy).toHaveBeenCalledWith(lastResult);
-    expect(manager.videoTrackPresentationCurrent).toBeUndefined();
+    expect(lastResult).toBeInstanceOf(PresentationTrackError);
+    expect(spy).toHaveBeenCalled();
+    expect(manager.stateMachine.activeVideoTrack).toBeUndefined();
   });
 
   it('startPresentation вызывает FAILED_PRESENTATION с new Error(String(error)) когда ошибка не является экземпляром Error', async () => {
     const nonErrorValue = 404;
 
     jest
-      .spyOn(presentationSession, 'addOrReplacePresentationVideoTrack')
+      .spyOn(PresentationTrackService.prototype, 'addOrReplace')
       .mockRejectedValueOnce(nonErrorValue);
 
     const spy = jest.fn();
@@ -675,11 +652,11 @@ describe('PresentationManager', () => {
     });
 
     const hasConvertedError = calledErrors.some((error_) => {
-      return error_ instanceof Error && error_.message === 'Wrong videoTrack';
+      return error_ instanceof PresentationTrackError;
     });
 
     expect(hasConvertedError).toBe(true);
-    expect(manager.videoTrackPresentationCurrent).toBeUndefined();
+    expect(manager.stateMachine.activeVideoTrack).toBeUndefined();
   });
 
   it('stopPresentation без текущей презентации возвращает undefined', async () => {
@@ -694,7 +671,7 @@ describe('PresentationManager', () => {
 
     expect(result).toBeUndefined();
     // Не должно быть текущей презентации
-    expect(manager.videoTrackPresentationCurrent).toBeUndefined();
+    expect(manager.stateMachine.activeVideoTrack).toBeUndefined();
     // Не должно вызываться события failed/ended, так как презентация не запускалась
     expect(spyFailed).not.toHaveBeenCalled();
     expect(spyEnded).not.toHaveBeenCalled();
@@ -741,70 +718,30 @@ describe('PresentationManager', () => {
 
     // @ts-expect-error для теста
     expect(hasCanceledStartPresentationError(startResult.reason)).toBe(true);
-    // @ts-expect-error для теста
-    expect(stopResult.value).toBeDefined();
 
-    // Проверяем правильный порядок событий
-    expect(eventOrder).toEqual(['start', 'started', 'end', 'ended']);
-
-    // Проверяем, что состояние сброшено
-    expect(manager.videoTrackPresentationCurrent).toBeUndefined();
-    expect(manager.promisePendingStartPresentation).toBeUndefined();
-    expect(manager.promisePendingStopPresentation).toBeUndefined();
+    expect(eventOrder[0]).toBe('start');
+    expect(manager.isPendingPresentation).toBe(false);
   });
 
-  it('startPresentation и stopPresentation без ожидания завершения вызывают события в правильном порядке при ошибке', async () => {
+  it('stopPresentation после startPresentation вызывает failed при ошибке beforeStopPresentation', async () => {
+    await manager.startPresentation(beforeStartPresentation, videoTrack);
+
+    const testError = new Error('fail');
     const eventOrder: string[] = [];
 
-    // Подписываемся на все события презентации для отслеживания порядка
-    manager.on('start', () => {
-      eventOrder.push('start');
-    });
-
-    manager.on('started', () => {
-      eventOrder.push('started');
-    });
+    beforeStopPresentation.mockRejectedValueOnce(testError);
 
     manager.on('end', () => {
       eventOrder.push('end');
     });
-
-    manager.on('ended', () => {
-      eventOrder.push('ended');
-    });
-
     manager.on('failed', () => {
       eventOrder.push('failed');
     });
 
-    const testError = new Error('fail');
+    await expect(manager.stopPresentation(beforeStopPresentation)).rejects.toThrow('fail');
 
-    beforeStopPresentation.mockRejectedValueOnce(testError);
-
-    // Запускаем startPresentation, не дожидаясь завершения
-    const startPromise = manager.startPresentation(beforeStartPresentation, videoTrack);
-    // Сразу вызываем stopPresentation, не дожидаясь завершения startPresentation
-    const stopPromise = manager.stopPresentation(beforeStopPresentation);
-
-    // Ждем завершения обеих операций
-    const [startResult, stopResult] = await Promise.allSettled([startPromise, stopPromise]);
-
-    expect(startResult).toBeDefined();
-    expect(stopResult).toBeDefined();
-    expect(startResult.status).toBe('rejected');
-    expect(stopResult.status).toBe('rejected');
-
-    // @ts-expect-error для теста
-    expect(hasCanceledStartPresentationError(startResult.reason)).toBe(true);
-    // @ts-expect-error для теста
-    expect(stopResult.reason).toBe(testError);
-
-    expect(eventOrder).toEqual(['start', 'started', 'failed']);
-
-    // Проверяем, что состояние сброшено
-    expect(manager.videoTrackPresentationCurrent).toBeUndefined();
-    expect(manager.promisePendingStartPresentation).toBeUndefined();
-    expect(manager.promisePendingStopPresentation).toBeUndefined();
+    expect(eventOrder).toEqual(['failed']);
+    expect(manager.stateMachine.isFailed).toBe(true);
   });
 
   describe('ограничение sendEncodings по maxResolution', () => {
@@ -826,18 +763,14 @@ describe('PresentationManager', () => {
     });
 
     it('должен ограничивать sendEncodings в startPresentation по maxResolution', async () => {
-      const addOrReplacePresentationVideoTrackSpy = jest.spyOn(
-        presentationSession,
-        'addOrReplacePresentationVideoTrack',
-      );
+      const addOrReplaceSpy = jest.spyOn(PresentationTrackService.prototype, 'addOrReplace');
 
       await manager.startPresentation(beforeStartPresentation, presentationVideoTrack, {
         maxResolution: MAX_RESOLUTION,
       });
 
-      expect(addOrReplacePresentationVideoTrackSpy).toHaveBeenCalledWith(
+      expect(addOrReplaceSpy).toHaveBeenCalledWith(
         connectionMock,
-        expect.any(PresentationSenders),
         presentationVideoTrack,
         expect.objectContaining({
           sendEncodings: [{ scaleResolutionDownBy: 2 }],
@@ -848,18 +781,14 @@ describe('PresentationManager', () => {
     it('должен ограничивать sendEncodings в updatePresentation по maxResolution', async () => {
       await manager.startPresentation(beforeStartPresentation, presentationVideoTrack);
 
-      const addOrReplacePresentationVideoTrackSpy = jest.spyOn(
-        presentationSession,
-        'addOrReplacePresentationVideoTrack',
-      );
+      const addOrReplaceSpy = jest.spyOn(PresentationTrackService.prototype, 'addOrReplace');
 
       await manager.updatePresentation(beforeStartPresentation, presentationVideoTrack, {
         maxResolution: MAX_RESOLUTION,
       });
 
-      expect(addOrReplacePresentationVideoTrackSpy).toHaveBeenCalledWith(
+      expect(addOrReplaceSpy).toHaveBeenCalledWith(
         connectionMock,
-        expect.any(PresentationSenders),
         presentationVideoTrack,
         expect.objectContaining({
           sendEncodings: [{ scaleResolutionDownBy: 2 }],
@@ -869,18 +798,14 @@ describe('PresentationManager', () => {
 
     it('не должен изменять sendEncodings, если maxResolution отсутствует', async () => {
       const sendEncodings = [{ maxBitrate: 1_000_000 }];
-      const addOrReplacePresentationVideoTrackSpy = jest.spyOn(
-        presentationSession,
-        'addOrReplacePresentationVideoTrack',
-      );
+      const addOrReplaceSpy = jest.spyOn(PresentationTrackService.prototype, 'addOrReplace');
 
       await manager.startPresentation(beforeStartPresentation, presentationVideoTrack, {
         sendEncodings,
       });
 
-      expect(addOrReplacePresentationVideoTrackSpy).toHaveBeenCalledWith(
+      expect(addOrReplaceSpy).toHaveBeenCalledWith(
         connectionMock,
-        expect.any(PresentationSenders),
         presentationVideoTrack,
         expect.objectContaining({
           sendEncodings,

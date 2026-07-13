@@ -1,4 +1,4 @@
-import findVideoSender from '@/utils/findVideoSender';
+import findVideoSender from '@/utils/peerConnection/findVideoSender';
 
 import type { ISenderFinder } from './types';
 
