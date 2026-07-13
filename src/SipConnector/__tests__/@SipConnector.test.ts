@@ -501,6 +501,83 @@ describe('SipConnector', () => {
     expect(replaceStream).toHaveBeenCalled();
   });
 
+  it('должен ограничивать разрешение основного потока при исходящем звонке', async () => {
+    const mediaStream = createMediaStreamMock({
+      video: {
+        deviceId: { exact: 'videoDeviceId' },
+        width: { exact: 3840 },
+        height: { exact: 2160 },
+      },
+    });
+    const startCall = jest
+      .spyOn(sipConnector.callManager, 'startCall')
+      .mockResolvedValue({} as RTCPeerConnection);
+
+    jest.spyOn(sipConnector.connectionManager, 'getUaProtected').mockReturnValue({} as UA);
+    jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
+      maxAvailableResolution: { width: 1920, height: 1080 },
+    } as TConnectionConfig);
+
+    await sipConnector.call({ mediaStream, number: '100' });
+
+    expect(startCall).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.any(Function),
+      expect.objectContaining({
+        sendEncodings: [{ scaleResolutionDownBy: 2 }],
+      }),
+    );
+  });
+
+  it('должен ограничивать разрешение основного потока при ответе на входящий звонок', async () => {
+    const mediaStream = createMediaStreamMock({
+      video: {
+        deviceId: { exact: 'videoDeviceId' },
+        width: { exact: 3840 },
+        height: { exact: 2160 },
+      },
+    });
+    const answerToIncomingCall = jest
+      .spyOn(sipConnector.callManager, 'answerToIncomingCall')
+      .mockResolvedValue({} as RTCPeerConnection);
+
+    jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
+      maxAvailableResolution: { width: 1920, height: 1080 },
+    } as TConnectionConfig);
+
+    await sipConnector.answerToIncomingCall({ mediaStream });
+
+    expect(answerToIncomingCall).toHaveBeenCalledWith(
+      expect.any(Function),
+      expect.objectContaining({
+        sendEncodings: [{ scaleResolutionDownBy: 2 }],
+      }),
+    );
+  });
+
+  it('должен ограничивать разрешение основного потока при замене mediaStream', async () => {
+    const mediaStream = createMediaStreamMock({
+      video: {
+        deviceId: { exact: 'videoDeviceId' },
+        width: { exact: 3840 },
+        height: { exact: 2160 },
+      },
+    });
+    const replaceMediaStream = jest
+      .spyOn(sipConnector.callManager, 'replaceMediaStream')
+      .mockResolvedValue(undefined);
+
+    jest.spyOn(sipConnector.connectionManager, 'getConnectionConfiguration').mockReturnValue({
+      maxAvailableResolution: { width: 1920, height: 1080 },
+    } as TConnectionConfig);
+
+    await sipConnector.replaceMediaStream(mediaStream);
+
+    expect(replaceMediaStream).toHaveBeenCalledWith(mediaStream, {
+      sendEncodings: [{ scaleResolutionDownBy: 2 }],
+    });
+  });
+
   it('replaceMediaStream: ждёт outbound-rtp пакеты с новым video track при waitForOutboundVideoPackets', async () => {
     const testStream = createMediaStreamMock({
       audio: { deviceId: { exact: 'audioDeviceId' } },

@@ -36,12 +36,14 @@ class VideoSendingBalancer {
       ignoreForCodec,
       onSetParameters,
       pollIntervalMs,
-    }: IBalancerOptions & { pollIntervalMs?: number } = {},
+      getMaxResolution,
+    }: IBalancerOptions & {
+      pollIntervalMs?: number;
+    },
   ) {
     this.getConnection = getConnection;
     this.eventHandler = new VideoSendingEventHandler(apiManager);
     this.parametersSetterWithQueue = new ParametersSetterWithQueue(onSetParameters);
-
     this.senderBalancer = new SenderBalancer(
       {
         senderFinder: new SenderFinder(),
@@ -50,6 +52,7 @@ class VideoSendingBalancer {
       },
       {
         ignoreForCodec,
+        getMaxResolution,
       },
     );
 
@@ -60,7 +63,9 @@ class VideoSendingBalancer {
    * Подписывается на события управления главной камерой
    */
   public subscribe(): void {
-    this.eventHandler.subscribe(this.handleMainCamControl);
+    this.eventHandler.subscribe((headers) => {
+      this.handleMainCamControl(headers);
+    });
   }
 
   /**
@@ -137,7 +142,7 @@ class VideoSendingBalancer {
 const resolveVideoSendingBalancer = (
   apiManager: ApiManager,
   getConnection: () => RTCPeerConnection | undefined,
-  options: IBalancerOptions = {},
+  options: IBalancerOptions,
 ) => {
   return new VideoSendingBalancer(apiManager, getConnection, options);
 };

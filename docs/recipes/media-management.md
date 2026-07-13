@@ -12,6 +12,27 @@ const newMediaStream = await navigator.mediaDevices.getUserMedia({
 await facade.replaceMediaStream(newMediaStream);
 ```
 
+## Ограничение разрешения основного потока
+
+Если в конфигурации подключения задан `maxAvailableResolution`, `SipConnector` ограничивает
+`sendEncodings` основного исходящего видеопотока при:
+
+- исходящем звонке (`call`);
+- ответе на входящий звонок (`answerToIncomingCall`);
+- замене `mediaStream` (`replaceMediaStream`).
+
+`SipConnector` извлекает `videoTrack` из `mediaStream` и передаёт его в `@/tools/resolveSendEncodings`.
+Если в потоке нет видеотрека, `sendEncodings` не изменяются.
+
+Утилита рассчитывает `scaleResolutionDownBy` по фактическому разрешению трека. Более строгое значение
+из уже переданных `sendEncodings` сохраняется (`Math.max` по `scaleResolutionDownBy`).
+
+## Ограничение разрешения презентации
+
+При `startPresentation()` и `updatePresentation()` `SipConnector` передаёт в `PresentationManager`
+`maxResolution` из `connectionConfiguration.maxAvailableResolution`. Ограничение `sendEncodings`
+презентационного трека выполняется через тот же `@/tools/resolveSendEncodings`.
+
 ## Отправка состояния медиа
 
 ```typescript

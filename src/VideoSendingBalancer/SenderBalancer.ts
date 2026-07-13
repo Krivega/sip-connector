@@ -4,6 +4,7 @@ import { calcMaxBitrateByWidthAndCodec, getMaximumBitrate, getMinimumBitrate } f
 import { calcScaleResolutionDownBy } from './calcResolution';
 
 import type { TResultSetParametersToSender } from '@/tools';
+import type { TResolutionSize } from '@/types';
 import type {
   IBalancingContext,
   ICodecProvider,
@@ -12,6 +13,34 @@ import type {
   IParametersSetter,
   ISenderFinder,
 } from './types';
+
+const resolveScaleResolutionDownBy = (
+  videoTrack: MediaStreamVideoTrack,
+  maxResolution?: TResolutionSize,
+): number => {
+  if (maxResolution === undefined) {
+    return 1;
+  }
+
+  return calcScaleResolutionDownBy({
+    videoTrack,
+    targetSize: maxResolution,
+  });
+};
+
+const resolveMaxBitrate = (
+  videoTrack: MediaStreamVideoTrack,
+  codec: string | undefined,
+  scaleResolutionDownBy: number,
+): number => {
+  const widthCurrent = videoTrack.getSettings().width;
+
+  if (widthCurrent === undefined) {
+    return getMaximumBitrate(codec);
+  }
+
+  return calcMaxBitrateByWidthAndCodec(widthCurrent / scaleResolutionDownBy, codec);
+};
 
 /**
  * Бизнес-логика балансировки отправителей
@@ -25,6 +54,8 @@ export class SenderBalancer {
   private readonly codecProvider: ICodecProvider;
 
   private readonly parametersSetter: IParametersSetter;
+
+  private readonly getMaxResolution: () => TResolutionSize | undefined;
 
   private readonly resultNoChanged: TResultSetParametersToSender = {
     isChanged: false,
@@ -49,12 +80,14 @@ export class SenderBalancer {
     },
     options: {
       ignoreForCodec?: string;
+      getMaxResolution: () => TResolutionSize | undefined;
     },
   ) {
     this.senderFinder = senderFinder;
     this.codecProvider = codecProvider;
     this.parametersSetter = parametersSetter;
     this.ignoreForCodec = options.ignoreForCodec;
+    this.getMaxResolution = options.getMaxResolution;
   }
 
   /**
@@ -188,16 +221,12 @@ export class SenderBalancer {
     context: IBalancingContext,
   ): Promise<TResultSetParametersToSender> {
     const { sender, videoTrack, codec } = context;
-    const settings = videoTrack.getSettings();
-    const widthCurrent = settings.width;
-
-    const maxBitrate =
-      widthCurrent === undefined
-        ? getMaximumBitrate(codec)
-        : calcMaxBitrateByWidthAndCodec(widthCurrent, codec);
+    const maxResolution = this.getMaxResolution();
+    const scaleResolutionDownBy = resolveScaleResolutionDownBy(videoTrack, maxResolution);
+    const maxBitrate = resolveMaxBitrate(videoTrack, codec, scaleResolutionDownBy);
 
     return this.parametersSetter.setEncodingsToSender(sender, {
-      scaleResolutionDownBy: 1,
+      scaleResolutionDownBy,
       maxBitrate,
     });
   }

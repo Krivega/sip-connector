@@ -10,7 +10,7 @@ import { EContentMainCAM } from '@/ApiManager';
 import { doMockSipConnector } from '@/doMock';
 import logger from '@/logger';
 import VideoSendingBalancer, { resolveVideoSendingBalancer } from '../@VideoSendingBalancer';
-import { createMockTrack } from '../__fixtures__';
+import { createMockTrack, NO_MAX_RESOLUTION_BALANCER_OPTIONS } from '../__fixtures__';
 
 import type { ApiManager } from '@/ApiManager';
 import type { IBalancerOptions, IMainCamHeaders } from '../types';
@@ -60,9 +60,13 @@ describe('VideoSendingBalancer', () => {
 
     // Добавляем методы для имитации событий (реальный SipConnector уже их имеет)
     apiManager = sipConnector.apiManager;
-    balancer = new VideoSendingBalancer(apiManager, () => {
-      return sipConnector.connection;
-    });
+    balancer = new VideoSendingBalancer(
+      apiManager,
+      () => {
+        return sipConnector.connection;
+      },
+      NO_MAX_RESOLUTION_BALANCER_OPTIONS,
+    );
   });
 
   afterEach(() => {
@@ -77,6 +81,7 @@ describe('VideoSendingBalancer', () => {
 
     it('должен создать экземпляр с опциями', () => {
       const options: IBalancerOptions = {
+        ...NO_MAX_RESOLUTION_BALANCER_OPTIONS,
         ignoreForCodec: 'VP8',
         onSetParameters: jest.fn(),
       };
@@ -465,6 +470,7 @@ describe('VideoSendingBalancer', () => {
     it('должен корректно работать с разными опциями балансировщика', async () => {
       const onSetParameters = jest.fn().mockResolvedValue({ success: true });
       const options: IBalancerOptions = {
+        ...NO_MAX_RESOLUTION_BALANCER_OPTIONS,
         ignoreForCodec: 'VP8',
         onSetParameters,
       };
@@ -526,6 +532,7 @@ describe('VideoSendingBalancer', () => {
           return sipConnector.connection;
         },
         {
+          ...NO_MAX_RESOLUTION_BALANCER_OPTIONS,
           pollIntervalMs: 500,
         },
       );
@@ -549,6 +556,7 @@ describe('VideoSendingBalancer', () => {
           return undefined;
         },
         {
+          ...NO_MAX_RESOLUTION_BALANCER_OPTIONS,
           pollIntervalMs: 100,
         },
       );
@@ -584,6 +592,7 @@ describe('VideoSendingBalancer', () => {
           return connection;
         },
         {
+          ...NO_MAX_RESOLUTION_BALANCER_OPTIONS,
           pollIntervalMs: 100,
         },
       );
@@ -639,7 +648,10 @@ describe('VideoSendingBalancer', () => {
         () => {
           return connection;
         }, // Возвращаем undefined для создания ошибки
-        { pollIntervalMs: 100 },
+        {
+          ...NO_MAX_RESOLUTION_BALANCER_OPTIONS,
+          pollIntervalMs: 100,
+        },
       );
 
       try {
@@ -717,9 +729,13 @@ describe('resolveVideoSendingBalancer', () => {
   });
 
   it('должен создать экземпляр VideoSendingBalancer', () => {
-    const balancer = resolveVideoSendingBalancer(apiManager, () => {
-      return sipConnector.connection;
-    });
+    const balancer = resolveVideoSendingBalancer(
+      apiManager,
+      () => {
+        return sipConnector.connection;
+      },
+      NO_MAX_RESOLUTION_BALANCER_OPTIONS,
+    );
 
     expect(balancer).toBeInstanceOf(VideoSendingBalancer);
 
@@ -728,6 +744,7 @@ describe('resolveVideoSendingBalancer', () => {
 
   it('должен создать экземпляр с опциями', () => {
     const options: IBalancerOptions = {
+      ...NO_MAX_RESOLUTION_BALANCER_OPTIONS,
       ignoreForCodec: 'VP9',
       onSetParameters: jest.fn(),
     };
@@ -745,13 +762,13 @@ describe('resolveVideoSendingBalancer', () => {
     balancer.unsubscribe();
   });
 
-  it('должен создать экземпляр без опций', () => {
+  it('должен создать экземпляр с минимальными опциями', () => {
     const balancer = resolveVideoSendingBalancer(
       apiManager,
       () => {
         return sipConnector.connection;
       },
-      {},
+      NO_MAX_RESOLUTION_BALANCER_OPTIONS,
     );
 
     expect(balancer).toBeInstanceOf(VideoSendingBalancer);

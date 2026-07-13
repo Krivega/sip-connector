@@ -1,6 +1,7 @@
 import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import { doMockSipConnector } from '@/doMock';
 import resolveDebug from '@/logger';
+import { NO_MAX_RESOLUTION_BALANCER_OPTIONS } from '@/VideoSendingBalancer/__fixtures__';
 import VideoSendingBalancerManager from '../@VideoSendingBalancerManager';
 
 import type { CallManager } from '@/CallManager';
@@ -33,6 +34,7 @@ describe('VideoSendingBalancerManager scheduleBalancingStart error handling', ()
 
     // eslint-disable-next-line no-new
     new VideoSendingBalancerManager(callManager, sipConnector.apiManager, {
+      ...NO_MAX_RESOLUTION_BALANCER_OPTIONS,
       balancingStartDelay: 0,
     });
 
@@ -71,6 +73,7 @@ describe('VideoSendingBalancerManager error handling', () => {
     videoSendingBalancerManager = new VideoSendingBalancerManager(
       callManager,
       sipConnector.apiManager,
+      NO_MAX_RESOLUTION_BALANCER_OPTIONS,
     );
   });
 

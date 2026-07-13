@@ -1,6 +1,7 @@
 /// <reference types="jest" />
 import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
 import { EContentMainCAM } from '@/ApiManager';
+import { createBalancerOptions, NO_MAX_RESOLUTION_BALANCER_OPTIONS } from '../__fixtures__';
 import { SenderBalancer } from '../SenderBalancer';
 
 import type { ICodecProvider, IMainCamHeaders, IParametersSetter, ISenderFinder } from '../types';
@@ -47,7 +48,7 @@ describe('SenderBalancer', () => {
         codecProvider: mockCodecProvider,
         parametersSetter: mockParametersSetter,
       },
-      {},
+      NO_MAX_RESOLUTION_BALANCER_OPTIONS,
     );
   });
 
@@ -59,7 +60,7 @@ describe('SenderBalancer', () => {
           codecProvider: mockCodecProvider,
           parametersSetter: mockParametersSetter,
         },
-        { ignoreForCodec: 'vp8' },
+        createBalancerOptions({ ignoreForCodec: 'vp8' }),
       );
 
       expect(balancer).toBeInstanceOf(SenderBalancer);
@@ -97,7 +98,7 @@ describe('SenderBalancer', () => {
           codecProvider: mockCodecProvider,
           parametersSetter: mockParametersSetter,
         },
-        { ignoreForCodec: 'vp8' },
+        createBalancerOptions({ ignoreForCodec: 'vp8' }),
       );
 
       const result = await balancerWithIgnore.balance(mockConnection);
@@ -124,6 +125,38 @@ describe('SenderBalancer', () => {
       expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalled();
       expect(result.isChanged).toBe(true);
       expect(result.sender).toBe(mockSender);
+    });
+
+    it('должен ограничивать разрешение sender по maxResolution без команды mainCam', async () => {
+      mockSenderFinder.findVideoSender.mockReturnValue(mockSender);
+      mockCodecProvider.getCodecFromSender.mockResolvedValue('h264');
+      mockParametersSetter.setEncodingsToSender.mockResolvedValue({
+        isChanged: true,
+        parameters: {
+          encodings: [{ scaleResolutionDownBy: 2 }],
+          transactionId: '',
+          codecs: [],
+          headerExtensions: [],
+        },
+      });
+
+      const balancerWithMaxResolution = new SenderBalancer(
+        {
+          senderFinder: mockSenderFinder,
+          codecProvider: mockCodecProvider,
+          parametersSetter: mockParametersSetter,
+        },
+        createBalancerOptions({ maxResolution: { width: 960, height: 540 } }),
+      );
+
+      await balancerWithMaxResolution.balance(mockConnection, undefined);
+
+      expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
+        mockSender,
+        expect.objectContaining({
+          scaleResolutionDownBy: 2,
+        }),
+      );
     });
   });
 
@@ -205,6 +238,40 @@ describe('SenderBalancer', () => {
         mockSender,
         expect.objectContaining({
           scaleResolutionDownBy: 1.5,
+        }),
+      );
+    });
+
+    it('должен применять maxResolution из конструктора при RESUME_MAIN_CAM', async () => {
+      const headers: IMainCamHeaders = {
+        mainCam: EContentMainCAM.RESUME_MAIN_CAM,
+      };
+
+      mockParametersSetter.setEncodingsToSender.mockResolvedValue({
+        isChanged: true,
+        parameters: {
+          encodings: [{ scaleResolutionDownBy: 3 }],
+          transactionId: '',
+          codecs: [],
+          headerExtensions: [],
+        },
+      });
+
+      const balancerWithMaxResolution = new SenderBalancer(
+        {
+          senderFinder: mockSenderFinder,
+          codecProvider: mockCodecProvider,
+          parametersSetter: mockParametersSetter,
+        },
+        createBalancerOptions({ maxResolution: { width: 640, height: 360 } }),
+      );
+
+      await balancerWithMaxResolution.balance(mockConnection, headers);
+
+      expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
+        mockSender,
+        expect.objectContaining({
+          scaleResolutionDownBy: 3,
         }),
       );
     });
@@ -364,7 +431,7 @@ describe('SenderBalancer', () => {
           codecProvider: mockCodecProvider,
           parametersSetter: mockParametersSetter,
         },
-        { ignoreForCodec: 'vp8' },
+        createBalancerOptions({ ignoreForCodec: 'vp8' }),
       );
 
       const result = await balancerWithIgnore.reset(mockConnection);
@@ -395,6 +462,38 @@ describe('SenderBalancer', () => {
         }),
       );
       expect(result.sender).toBe(mockSender);
+    });
+
+    it('должен сохранять maxResolution при сбросе балансировки', async () => {
+      mockSenderFinder.findVideoSender.mockReturnValue(mockSender);
+      mockCodecProvider.getCodecFromSender.mockResolvedValue('h264');
+      mockParametersSetter.setEncodingsToSender.mockResolvedValue({
+        isChanged: true,
+        parameters: {
+          encodings: [{ scaleResolutionDownBy: 2 }],
+          transactionId: '',
+          codecs: [],
+          headerExtensions: [],
+        },
+      });
+
+      const balancerWithMaxResolution = new SenderBalancer(
+        {
+          senderFinder: mockSenderFinder,
+          codecProvider: mockCodecProvider,
+          parametersSetter: mockParametersSetter,
+        },
+        createBalancerOptions({ maxResolution: { width: 960, height: 540 } }),
+      );
+
+      await balancerWithMaxResolution.reset(mockConnection);
+
+      expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
+        mockSender,
+        expect.objectContaining({
+          scaleResolutionDownBy: 2,
+        }),
+      );
     });
 
     it('должен обработать undefined width в getSettings', async () => {

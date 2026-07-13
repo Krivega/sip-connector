@@ -48,11 +48,12 @@ describe('SipConnector videoBalancerOptions defaults', () => {
       VideoSendingBalancerManagerMock.mock.calls[0] as [unknown, unknown, IBalancerOptions]
     )[2];
 
-    expect(balancerOptions).toBe(VIDEO_BALANCER_OPTIONS);
+    expect(balancerOptions).toMatchObject(VIDEO_BALANCER_OPTIONS);
+    expect(typeof balancerOptions.getMaxResolution).toBe('function');
   });
 
   it('должен использовать переданные videoBalancerOptions если они заданы', () => {
-    const customOptions: IBalancerOptions = {
+    const customOptions = {
       ignoreForCodec: 'vp8',
     };
 
@@ -70,6 +71,7 @@ describe('SipConnector videoBalancerOptions defaults', () => {
       VideoSendingBalancerManagerMock.mock.calls[0] as [unknown, unknown, IBalancerOptions]
     )[2];
 
-    expect(balancerOptions).toBe(customOptions);
+    expect(balancerOptions).toMatchObject(customOptions);
+    expect(typeof balancerOptions.getMaxResolution).toBe('function');
   });
 });

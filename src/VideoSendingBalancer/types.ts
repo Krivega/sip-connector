@@ -1,10 +1,12 @@
 import type { EContentMainCAM } from '@/ApiManager';
 import type { TOnSetParameters, TResultSetParametersToSender } from '@/tools';
+import type { TResolutionSize } from '@/types';
 
 // Конфигурация балансировщика
 export interface IBalancerOptions {
   ignoreForCodec?: string;
   onSetParameters?: TOnSetParameters;
+  getMaxResolution: () => TResolutionSize | undefined;
 }
 
 // Заголовки от сервера
@@ -42,9 +44,11 @@ export interface IParametersSetter {
   ) => Promise<TResultSetParametersToSender>;
 }
 
+export type TMainCamControlHandler = (headers: IMainCamHeaders) => void;
+
 // Интерфейс для обработчика событий
 export interface IEventHandler {
-  subscribe: (handler: (headers: IMainCamHeaders) => void) => void;
+  subscribe: (handler: TMainCamControlHandler) => void;
   unsubscribe: () => void;
 }
 

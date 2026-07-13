@@ -30,16 +30,11 @@ class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
 
   private startBalancingTimer?: NodeJS.Timeout;
 
-  public constructor(
-    callManager: CallManager,
-    apiManager: ApiManager,
-    balancerOptions: TOptions = {},
-  ) {
+  public constructor(callManager: CallManager, apiManager: ApiManager, balancerOptions: TOptions) {
     super(createEvents());
 
     this.callManager = callManager;
     this.balancingStartDelay = balancerOptions.balancingStartDelay ?? 10_000;
-
     this.videoSendingBalancer = new VideoSendingBalancer(
       apiManager,
       () => {

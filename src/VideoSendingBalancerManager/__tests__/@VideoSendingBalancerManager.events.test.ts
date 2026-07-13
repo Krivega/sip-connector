@@ -3,6 +3,7 @@ import { createVideoMediaStreamTrackMock } from 'webrtc-mock';
 import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
 import { doMockSipConnector } from '@/doMock';
+import { NO_MAX_RESOLUTION_BALANCER_OPTIONS } from '@/VideoSendingBalancer/__fixtures__';
 import VideoSendingBalancerManager from '../@VideoSendingBalancerManager';
 
 import type { CallManager } from '@/CallManager';
@@ -50,6 +51,7 @@ describe('VideoSendingBalancerManager events API', () => {
     videoSendingBalancerManager = new VideoSendingBalancerManager(
       callManager,
       sipConnector.apiManager,
+      NO_MAX_RESOLUTION_BALANCER_OPTIONS,
     );
   });
 

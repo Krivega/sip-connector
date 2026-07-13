@@ -109,6 +109,29 @@ describe('MCUSession', () => {
     await expect(promise).rejects.toBeDefined();
   });
 
+  it('answerToIncomingCall: отклоняет при синхронной ошибке в try', async () => {
+    const prepareMediaStreamModule = await import('@/tools/prepareMediaStream');
+    const syncError = new Error('prepareMediaStream failed');
+    const prepareSpy = jest.spyOn(prepareMediaStreamModule, 'default').mockImplementation(() => {
+      throw syncError;
+    });
+
+    const rtcSession = new RTCSessionMock({
+      eventHandlers: {},
+      originator: 'remote',
+    });
+
+    try {
+      await expect(
+        mcuSession.answerToIncomingCall(rtcSession as unknown as RTCSession, {
+          mediaStream,
+        }),
+      ).rejects.toThrow(syncError);
+    } finally {
+      prepareSpy.mockRestore();
+    }
+  });
+
   it('answerToIncomingCall: отвечает на входящий звонок', async () => {
     const rtcSession = new RTCSessionMock({
       eventHandlers: {},

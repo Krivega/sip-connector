@@ -3,6 +3,7 @@ import { createVideoMediaStreamTrackMock } from 'webrtc-mock';
 import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
 import { doMockSipConnector } from '@/doMock';
+import { NO_MAX_RESOLUTION_BALANCER_OPTIONS } from '@/VideoSendingBalancer/__fixtures__';
 import VideoSendingBalancerManager from '../@VideoSendingBalancerManager';
 
 import type { CallManager } from '@/CallManager';
@@ -53,6 +54,7 @@ describe('VideoSendingBalancerManager', () => {
     videoSendingBalancerManager = new VideoSendingBalancerManager(
       callManager,
       sipConnector.apiManager,
+      NO_MAX_RESOLUTION_BALANCER_OPTIONS,
     );
   });
 
@@ -71,6 +73,7 @@ describe('VideoSendingBalancerManager', () => {
     it('should create instance with custom balancing start delay', () => {
       const customDelay = 5000; // 5 секунд
       const customManager = new VideoSendingBalancerManager(callManager, sipConnector.apiManager, {
+        ...NO_MAX_RESOLUTION_BALANCER_OPTIONS,
         balancingStartDelay: customDelay,
       });
 
@@ -98,6 +101,32 @@ describe('VideoSendingBalancerManager', () => {
 
       videoSendingBalancerManager.stopBalancing();
       expect(videoSendingBalancerManager.isBalancingActive).toBe(false);
+    });
+
+    it('должен передавать maxResolution в VideoSendingBalancer', async () => {
+      const managerWithMaxResolution = new VideoSendingBalancerManager(
+        callManager,
+        sipConnector.apiManager,
+        {
+          getMaxResolution: () => {
+            return { width: 960, height: 540 };
+          },
+        },
+      );
+
+      await managerWithMaxResolution.startBalancing();
+
+      expect(mockSender.setParameters).toHaveBeenCalledWith(
+        expect.objectContaining({
+          encodings: [
+            expect.objectContaining({
+              scaleResolutionDownBy: 2,
+            }),
+          ],
+        }),
+      );
+
+      managerWithMaxResolution.stopBalancing();
     });
   });
 
