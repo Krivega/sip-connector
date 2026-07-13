@@ -14,6 +14,13 @@ const resolveScaleResolutionDownByEncoding = (
   encoding: RTCRtpEncodingParameters,
   scaleResolutionDownBy: number,
 ): RTCRtpEncodingParameters => {
+  if (scaleResolutionDownBy <= SCALE_RESOLUTION_DOWN_BY_MIN) {
+    return {
+      ...encoding,
+      scaleResolutionDownBy: SCALE_RESOLUTION_DOWN_BY_MIN,
+    };
+  }
+
   return {
     ...encoding,
     scaleResolutionDownBy: Math.max(
@@ -36,10 +43,6 @@ const resolveSendEncodings = ({
     videoTrack,
     targetSize: maxResolution,
   });
-
-  if (scaleResolutionDownBy <= SCALE_RESOLUTION_DOWN_BY_MIN) {
-    return sendEncodings;
-  }
 
   if (sendEncodings === undefined || sendEncodings.length === 0) {
     return [{ scaleResolutionDownBy }];

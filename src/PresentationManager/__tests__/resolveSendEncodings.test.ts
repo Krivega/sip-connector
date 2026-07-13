@@ -79,7 +79,30 @@ describe('resolveSendEncodings', () => {
       maxResolution: MAX_RESOLUTION,
     });
 
-    expect(result).toBe(sendEncodings);
+    expect(result).toEqual([{ maxBitrate: 1_000_000, scaleResolutionDownBy: 1 }]);
+  });
+
+  it('должен явно задавать scaleResolutionDownBy: 1, если presentation ниже maxResolution', () => {
+    const videoTrack = createVideoTrack(RESOLUTION_HD);
+
+    const result = resolveSendEncodings({
+      videoTrack,
+      maxResolution: MAX_RESOLUTION,
+    });
+
+    expect(result).toEqual([{ scaleResolutionDownBy: 1 }]);
+  });
+
+  it('должен сбрасывать scaleResolutionDownBy до 1, если presentation ниже maxResolution', () => {
+    const videoTrack = createVideoTrack(RESOLUTION_HD);
+
+    const result = resolveSendEncodings({
+      videoTrack,
+      sendEncodings: [{ maxBitrate: 1_000_000, scaleResolutionDownBy: 2 }],
+      maxResolution: MAX_RESOLUTION,
+    });
+
+    expect(result).toEqual([{ maxBitrate: 1_000_000, scaleResolutionDownBy: 1 }]);
   });
 
   it('не должен изменять sendEncodings, если maxResolution отсутствует', () => {

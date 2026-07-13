@@ -160,7 +160,7 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
     this.promisePendingStopPresentation = result;
 
     return result.finally(() => {
-      this.resetPresentation();
+      this.resetPresentationState();
     });
   }
 
@@ -390,12 +390,16 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
     this.resetPresentation();
   }
 
-  private resetPresentation() {
+  private resetPresentationState() {
     this.removeVideoTrackPresentationCurrent();
-    this.presentationSenders.clear();
 
     this.promisePendingStartPresentation = undefined;
     this.promisePendingStopPresentation = undefined;
+  }
+
+  private resetPresentation() {
+    this.resetPresentationState();
+    this.presentationSenders.clear();
   }
 
   private removeVideoTrackPresentationCurrent() {

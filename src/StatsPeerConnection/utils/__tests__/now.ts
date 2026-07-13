@@ -16,7 +16,6 @@ describe('now', () => {
     } else {
       // ensure no stray property is left behind
       try {
-        // @ts-ignore - property may not exist in this environment
         delete (window as unknown as { performance?: Performance }).performance;
       } catch {
         // ignore
@@ -53,7 +52,6 @@ describe('now', () => {
         writable: true,
         value: originalPerformanceDescriptor?.value,
       });
-      // @ts-ignore - delete to make `'performance' in window` false
       delete (window as unknown as { performance?: Performance }).performance;
     } catch {
       // If deleting fails in this environment, skip forcing delete

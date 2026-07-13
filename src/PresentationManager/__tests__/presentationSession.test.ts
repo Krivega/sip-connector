@@ -134,6 +134,24 @@ describe('presentationSession', () => {
       expect(replaceTrackSpy).toHaveBeenCalledWith(nextVideoTrack);
     });
 
+    it('сбрасывает scaleResolutionDownBy при replaceTrack, если presentation ниже лимита', async () => {
+      await addOrReplacePresentationVideoTrack(connection, presentationSenders, videoTrack, {
+        sendEncodings: [{ scaleResolutionDownBy: 2 }],
+      });
+      presentationSenders.markTrack(connection, videoTrack);
+
+      const [existingSender] = connection.getSenders();
+      const nextVideoTrack = createMediaStreamMock({
+        video: { deviceId: { exact: 'videoDeviceId2' } },
+      }).getVideoTracks()[0] as MediaStreamVideoTrack;
+
+      await addOrReplacePresentationVideoTrack(connection, presentationSenders, nextVideoTrack, {
+        sendEncodings: [{ scaleResolutionDownBy: 1 }],
+      });
+
+      expect(existingSender.getParameters().encodings).toEqual([{ scaleResolutionDownBy: 1 }]);
+    });
+
     it('использует addVideoTrackInSender при recvonly transceiver', async () => {
       const recvonlySender = new RTCRtpSenderMock();
       const recvonlyTransceiver = new RTCRtpTransceiverMock(recvonlySender);

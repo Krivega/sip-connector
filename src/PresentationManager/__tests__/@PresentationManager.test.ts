@@ -381,11 +381,11 @@ describe('PresentationManager', () => {
     const handler = jest.fn();
 
     manager.on('start', handler);
-    // @ts-ignore
+    // @ts-expect-error
     manager.events.trigger('start', 'data');
     expect(handler).toHaveBeenCalledWith('data');
     manager.off('start', handler);
-    // @ts-ignore
+    // @ts-expect-error
     manager.events.trigger('start', 'data2');
     expect(handler).toHaveBeenCalledTimes(1);
   });
@@ -489,7 +489,7 @@ describe('PresentationManager', () => {
 
   it('reset сбрасывает все состояния', async () => {
     await manager.startPresentation(beforeStartPresentation, videoTrack);
-    // @ts-ignore
+    // @ts-expect-error
     manager.reset();
     expect(manager.promisePendingStartPresentation).toBeUndefined();
     expect(manager.promisePendingStopPresentation).toBeUndefined();
@@ -521,9 +521,9 @@ describe('PresentationManager', () => {
     const handler = jest.fn();
 
     manager.once('start', handler);
-    // @ts-ignore
+    // @ts-expect-error
     manager.events.trigger('start', 'once-data');
-    // @ts-ignore
+    // @ts-expect-error
     manager.events.trigger('start', 'once-data2');
     expect(handler).toHaveBeenCalledTimes(1);
     expect(handler).toHaveBeenCalledWith('once-data');
@@ -533,7 +533,7 @@ describe('PresentationManager', () => {
     const handler = jest.fn();
 
     manager.onceRace(['start', 'end'], handler);
-    // @ts-ignore
+    // @ts-expect-error
     manager.events.trigger('end', 'race-data');
     expect(handler).toHaveBeenCalledTimes(1);
 
@@ -545,7 +545,7 @@ describe('PresentationManager', () => {
 
   it('wait работает для событий', async () => {
     setTimeout(() => {
-      // @ts-ignore
+      // @ts-expect-error
       manager.events.trigger('start', 'wait-data');
     }, 10);
 
@@ -557,7 +557,7 @@ describe('PresentationManager', () => {
   it('handleEnded сбрасывает состояние при событии ended/failed', async () => {
     await manager.startPresentation(beforeStartPresentation, videoTrack);
     // эмулируем событие ended
-    // @ts-ignore
+    // @ts-expect-error
     manager.handleEnded();
     expect(manager.videoTrackPresentationCurrent).toBeUndefined();
     expect(manager.promisePendingStartPresentation).toBeUndefined();
@@ -573,16 +573,26 @@ describe('PresentationManager', () => {
 
   it('resetPresentation очищает все поля', async () => {
     await manager.startPresentation(beforeStartPresentation, videoTrack);
-    // @ts-ignore
+    // @ts-expect-error
     manager.resetPresentation();
     expect(manager.videoTrackPresentationCurrent).toBeUndefined();
     expect(manager.promisePendingStartPresentation).toBeUndefined();
     expect(manager.promisePendingStopPresentation).toBeUndefined();
+    // @ts-expect-error
+    expect(manager.presentationSenders.getFromConnection(connectionMock)).toHaveLength(0);
+  });
+
+  it('stopPresentation сохраняет presentationSenders для повторного startPresentation', async () => {
+    await manager.startPresentation(beforeStartPresentation, videoTrack);
+    await manager.stopPresentation(beforeStopPresentation);
+
+    // @ts-expect-error
+    expect(manager.presentationSenders.getFromConnection(connectionMock)).toHaveLength(1);
   });
 
   it('removeVideoTrackPresentationCurrent очищает videoTrackPresentationCurrent', async () => {
     await manager.startPresentation(beforeStartPresentation, videoTrack);
-    // @ts-ignore
+    // @ts-expect-error
     manager.removeVideoTrackPresentationCurrent();
     expect(manager.videoTrackPresentationCurrent).toBeUndefined();
   });
@@ -876,6 +886,116 @@ describe('PresentationManager', () => {
           sendEncodings,
         }),
       );
+    });
+  });
+
+  describe('maxResolution после stop/start', () => {
+    const RESOLUTION_FHD = { width: 1920, height: 1080 };
+    const RESOLUTION_4K = { width: 3840, height: 2160 };
+    const MAX_RESOLUTION = { width: 1920, height: 1080 };
+
+    const createPresentationTrack = ({ width, height }: { width: number; height: number }) => {
+      return createMediaStreamMock({
+        video: {
+          deviceId: { exact: `video-${width}x${height}` },
+          width: { exact: width },
+          height: { exact: height },
+        },
+      }).getVideoTracks()[0] as MediaStreamVideoTrack;
+    };
+
+    const getPresentationSenderEncodings = (track: MediaStreamVideoTrack) => {
+      const sender = connectionMock.getSenders().find((itemSender) => {
+        return itemSender.track === track;
+      });
+
+      return sender?.getParameters().encodings;
+    };
+
+    it('FHD → stop → 4K применяет scaleResolutionDownBy: 2 в startPresentation', async () => {
+      const fhdTrack = createPresentationTrack(RESOLUTION_FHD);
+      const track4K = createPresentationTrack(RESOLUTION_4K);
+
+      await manager.startPresentation(beforeStartPresentation, fhdTrack, {
+        maxResolution: MAX_RESOLUTION,
+      });
+      await manager.stopPresentation(beforeStopPresentation);
+
+      await manager.startPresentation(beforeStartPresentation, track4K, {
+        maxResolution: MAX_RESOLUTION,
+      });
+
+      expect(getPresentationSenderEncodings(track4K)).toEqual([{ scaleResolutionDownBy: 2 }]);
+    });
+
+    it('4K → stop → FHD сбрасывает scaleResolutionDownBy до 1 в startPresentation', async () => {
+      const track4K = createPresentationTrack(RESOLUTION_4K);
+      const fhdTrack = createPresentationTrack(RESOLUTION_FHD);
+
+      await manager.startPresentation(beforeStartPresentation, track4K, {
+        maxResolution: MAX_RESOLUTION,
+      });
+      await manager.stopPresentation(beforeStopPresentation);
+
+      await manager.startPresentation(beforeStartPresentation, fhdTrack, {
+        maxResolution: MAX_RESOLUTION,
+      });
+
+      expect(getPresentationSenderEncodings(fhdTrack)).toEqual([{ scaleResolutionDownBy: 1 }]);
+    });
+
+    it('4K → stop → 4K сохраняет scaleResolutionDownBy: 2 в startPresentation', async () => {
+      const track4K = createPresentationTrack(RESOLUTION_4K);
+      const track4KNext = createPresentationTrack(RESOLUTION_4K);
+
+      await manager.startPresentation(beforeStartPresentation, track4K, {
+        maxResolution: MAX_RESOLUTION,
+      });
+      await manager.stopPresentation(beforeStopPresentation);
+
+      await manager.startPresentation(beforeStartPresentation, track4KNext, {
+        maxResolution: MAX_RESOLUTION,
+      });
+
+      expect(getPresentationSenderEncodings(track4KNext)).toEqual([{ scaleResolutionDownBy: 2 }]);
+    });
+
+    it('4K → stop → FHD применяет scaleResolutionDownBy: 1 в updatePresentation', async () => {
+      const track4K = createPresentationTrack(RESOLUTION_4K);
+      const fhdTrack = createPresentationTrack(RESOLUTION_FHD);
+
+      await manager.startPresentation(beforeStartPresentation, track4K, {
+        maxResolution: MAX_RESOLUTION,
+      });
+      await manager.stopPresentation(beforeStopPresentation);
+      await manager.startPresentation(beforeStartPresentation, track4K, {
+        maxResolution: MAX_RESOLUTION,
+      });
+
+      await manager.updatePresentation(beforeStartPresentation, fhdTrack, {
+        maxResolution: MAX_RESOLUTION,
+      });
+
+      expect(getPresentationSenderEncodings(fhdTrack)).toEqual([{ scaleResolutionDownBy: 1 }]);
+    });
+
+    it('FHD → stop → 4K применяет scaleResolutionDownBy: 2 в updatePresentation', async () => {
+      const fhdTrack = createPresentationTrack(RESOLUTION_FHD);
+      const track4K = createPresentationTrack(RESOLUTION_4K);
+
+      await manager.startPresentation(beforeStartPresentation, fhdTrack, {
+        maxResolution: MAX_RESOLUTION,
+      });
+      await manager.stopPresentation(beforeStopPresentation);
+      await manager.startPresentation(beforeStartPresentation, fhdTrack, {
+        maxResolution: MAX_RESOLUTION,
+      });
+
+      await manager.updatePresentation(beforeStartPresentation, track4K, {
+        maxResolution: MAX_RESOLUTION,
+      });
+
+      expect(getPresentationSenderEncodings(track4K)).toEqual([{ scaleResolutionDownBy: 2 }]);
     });
   });
 });
