@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [31.1.0](https://github.com/Krivega/sip-connector/compare/v31.0.0...v31.1.0) (2026-09-18)
+
+### Features
+
+- enhance session management and error handling in CallManager and RecvSession ([5b26ae5](https://github.com/Krivega/sip-connector/commit/5b26ae56e061ec3e1471384bd2e839b586f5861a))
+
+### Bug Fixes
+
+- store listener for in-room conference token changes in CallManager ([ca7c8b9](https://github.com/Krivega/sip-connector/commit/ca7c8b98628cf3848c94dc09079ae34d2c08baa0))
+
 ## [31.0.0](https://github.com/Krivega/sip-connector/compare/v30.0.1...v31.0.0) (2026-07-13)
 
 ### ⚠ BREAKING CHANGES
