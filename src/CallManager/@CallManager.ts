@@ -406,22 +406,33 @@ class CallManager extends EventEmitterProxy<TEventMap> {
       return true;
     }
 
-    const { session, callResult } = await this.startRecvSessionForced(
-      { audioChannel, quality },
-      { silent: true },
-    );
+    try {
+      const { session, callResult } = await this.startRecvSessionForced(
+        { audioChannel, quality },
+        { silent: true },
+      );
 
-    if (callResult) {
-      const effectiveQuality = session.getEffectiveQuality();
+      if (callResult) {
+        // Защита: пока ждали возврата из startRecvSession, сессию могли убить
+        if (!this.isCurrentRecvSession(session)) {
+          return false;
+        }
 
-      this.events.trigger('recv-quality-changed', {
-        previousQuality,
-        quality,
-        effectiveQuality,
-      });
+        const effectiveQuality = session.getEffectiveQuality();
+
+        this.events.trigger('recv-quality-changed', {
+          previousQuality,
+          quality,
+          effectiveQuality,
+        });
+
+        return true;
+      }
+
+      return false;
+    } catch {
+      return false; // Подавление ошибки: startRecvSession уже вызвал this.failed()
     }
-
-    return callResult;
   }
 
   public async applyQuality(quality: TRecvQuality): Promise<boolean> {
