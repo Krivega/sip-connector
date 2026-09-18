@@ -677,10 +677,11 @@ class CallManager extends EventEmitterProxy<TEventMap> {
         }
 
         if (result) {
-          this.stateMachine.onInRoomConferenceForTokenChange(() => {
-            debug('onInRoomConferenceForTokenChange');
-            this.renegotiateRecvSession().catch(() => {});
-          });
+          this.disposeInRoomCredentialsListener =
+            this.stateMachine.onInRoomConferenceForTokenChange(() => {
+              debug('onInRoomConferenceForTokenChange');
+              this.renegotiateRecvSession().catch(() => {});
+            });
         }
 
         return { session, callResult: result };
