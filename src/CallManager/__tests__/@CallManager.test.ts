@@ -1,4 +1,4 @@
-import { C as JsSIP_C, IncomingResponse } from '@krivega/jssip';
+import { IncomingResponse, C as JsSIP_C } from '@krivega/jssip';
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
 
 import { createManagers } from '@/__fixtures__/createManagers';
@@ -12,7 +12,7 @@ import { resolveRecvQuality } from '../quality';
 import { RemoteStreamsManager } from '../RemoteStreamsManager';
 
 import type { RTCSession } from '@krivega/jssip';
-import type { TCallRoleSpectatorSynthetic, TCallRoleSpectator } from '@/CallSessionState';
+import type { TCallRoleSpectator, TCallRoleSpectatorSynthetic } from '@/CallSessionState';
 import type { TRecvQuality } from '../quality';
 
 const mockRecvSession = (() => {
@@ -2596,7 +2596,7 @@ describe('CallManager - дополнительные тесты для покр�
     await flushPromises();
 
     expect(startedEventHandler).not.toHaveBeenCalled();
-    expect(endedEventHandler).toHaveBeenCalledTimes(1); // один раз в catch при ошибке call
+    expect(endedEventHandler).toHaveBeenCalledTimes(0);
   });
 
   it('startRecvSession: при ошибке не-Error использует String(error) для body', async () => {

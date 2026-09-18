@@ -1,5 +1,6 @@
-import { repeatedCallsAsync } from 'repeated-calls';
+import { hasCanceledError, repeatedCallsAsync } from 'repeated-calls';
 
+import resolveDebug from '@/logger';
 import { resolveRecvQuality } from './quality';
 
 import type { TEffectiveQuality, TRecvQuality } from './quality';
@@ -42,6 +43,8 @@ export type TTools = {
     offer: RTCSessionDescriptionInit,
   ) => Promise<RTCSessionDescription>;
 };
+
+const debug = resolveDebug('RecvSession');
 
 /**
  * Управляет входящей сессией WebRTC для приёма медиа-потоков.
@@ -91,6 +94,10 @@ class RecvSession {
     return this.connection;
   }
 
+  public static readonly isCanceledError = (error: unknown): boolean => {
+    return hasCanceledError(error);
+  };
+
   public getAudioChannel(): string {
     return this.config.audioChannel;
   }
@@ -112,6 +119,8 @@ class RecvSession {
    * @returns true если качество изменилось, false если осталось прежним
    */
   public async setQuality(quality: TRecvQuality): Promise<boolean> {
+    debug('setQuality', { quality, lastCallParams: this.lastCallParams });
+
     if (!this.lastCallParams) {
       return false;
     }
@@ -141,6 +150,8 @@ class RecvSession {
     applied: boolean;
     effectiveQuality: TEffectiveQuality;
   }> {
+    debug('applyQuality', quality);
+
     const applied = await this.setQuality(quality);
     const effectiveQuality = this.getEffectiveQuality();
 
@@ -148,6 +159,7 @@ class RecvSession {
   }
 
   public close(): void {
+    debug('close');
     this.cancelSendOfferWithRepeatedCalls();
     this.connection.close();
   }
@@ -160,15 +172,22 @@ class RecvSession {
    * @param token - токен авторизации
    */
   public async call({ conferenceNumber, token }: TCallParams): Promise<boolean> {
+    debug('call', { conferenceNumber, token });
+
     // Начинаем ожидание треков параллельно с renegotiate
-    const tracksPromise = this.waitForTracks();
+    const task = this.waitForTracks();
 
-    const result = await this.renegotiate({ conferenceNumber, token });
+    try {
+      const result = await this.renegotiate({ conferenceNumber, token });
 
-    // Ждём получения всех необходимых треков (audio + video)
-    await tracksPromise;
+      // Ждём получения всех необходимых треков (audio + video)
+      await task.promise;
 
-    return result;
+      return result;
+    } catch (error) {
+      task.cancel();
+      throw error;
+    }
   }
 
   /**
@@ -186,6 +205,7 @@ class RecvSession {
    * @returns true если пересогласование успешно
    */
   public async renegotiate({ conferenceNumber, token }: TCallParams): Promise<boolean> {
+    debug('renegotiate', { conferenceNumber, token });
     this.lastCallParams = { conferenceNumber, token };
 
     // Отменяем текущий sendOffer, чтобы избежать конфликта с новым offer
@@ -449,8 +469,14 @@ class RecvSession {
     });
   }
 
-  private async waitForTracks(): Promise<void> {
-    return new Promise<void>((resolve) => {
+  private waitForTracks(): { promise: Promise<void>; cancel: () => void } {
+    const disposers = new Set<() => void>();
+    const cancel = () => {
+      disposers.forEach((disposer) => {
+        disposer();
+      });
+    };
+    const promise = new Promise<void>((resolve) => {
       const receivedTracks = new Set<'audio' | 'video'>();
       const handler = (event: RTCTrackEvent): void => {
         const { track } = event;
@@ -464,7 +490,17 @@ class RecvSession {
       };
 
       this.connection.addEventListener('track', handler);
+
+      disposers.add(() => {
+        this.connection.removeEventListener('track', handler);
+      });
+
+      disposers.add(() => {
+        resolve();
+      });
     });
+
+    return { promise, cancel };
   }
 
   /**
@@ -492,6 +528,7 @@ class RecvSession {
    * Используется при новом renegotiate для предотвращения конфликтов.
    */
   private cancelSendOfferWithRepeatedCalls(): void {
+    debug('cancelSendOfferWithRepeatedCalls');
     this.cancelableSendOfferWithRepeatedCalls?.cancel();
   }
 }

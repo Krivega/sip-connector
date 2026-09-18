@@ -392,6 +392,11 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     if (targetEffectiveQuality === previousEffectiveQuality) {
       await recvSession.setQuality(quality); // для обновления quality. renegotiate не будет вызван
 
+      // Защита от отправки ивентов в UI для старой сессии
+      if (!this.isCurrentRecvSession(recvSession)) {
+        return false;
+      }
+
       this.events.trigger('recv-quality-changed', {
         previousQuality,
         quality,
@@ -432,6 +437,11 @@ class CallManager extends EventEmitterProxy<TEventMap> {
 
     const result = await recvSession.applyQuality(quality);
 
+    // Защита: пока ждали ответа, сессия стала неактуальной
+    if (!this.isCurrentRecvSession(recvSession)) {
+      return false;
+    }
+
     if (result.applied) {
       this.events.trigger('recv-quality-changed', {
         previousQuality,
@@ -454,6 +464,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   }
 
   private readonly reset: () => void = () => {
+    debug('reset');
     this.mainRemoteStreamsManager.reset();
     this.recvRemoteStreamsManager.reset();
     this.stopRecvSession();
@@ -466,6 +477,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   private subscribeCallEndedStateMachine() {
     this.stateMachine.onStateChange((state) => {
       if (state === ECallStatus.IDLE) {
+        debug('onStateChange to IDLE -> reset');
         this.reset();
       }
     });
@@ -653,6 +665,13 @@ class CallManager extends EventEmitterProxy<TEventMap> {
 
     return callPromise
       .then((result) => {
+        // Защита: промис зарезолвился, но сессию уже отменили/перезаписали
+        if (!this.isCurrentRecvSession(session)) {
+          debug('startRecvSession resolved, but session was overridden or stopped');
+
+          return { session: undefined, callResult: false as const };
+        }
+
         if (silent !== true) {
           this.events.emit('recv-session-started');
         }
@@ -667,6 +686,19 @@ class CallManager extends EventEmitterProxy<TEventMap> {
         return { session, callResult: result };
       })
       .catch(async (error: unknown) => {
+        const isCurrentRecvSession = this.isCurrentRecvSession(session);
+
+        debug('startRecvSession error', {
+          error,
+          isCurrentRecvSession,
+        });
+
+        if (!isCurrentRecvSession || RecvSession.isCanceledError(error)) {
+          debug('startRecvSession cancelled due to role change or explicit stop');
+
+          return { session: undefined, callResult: false as const };
+        }
+
         this.stopRecvSession();
 
         const message = new IncomingResponse();
@@ -681,9 +713,9 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   }
 
   private stopRecvSession({ silent }: { silent?: boolean } = {}) {
-    debug('stopRecvSession', { silent });
-
     const isActive = Boolean(this.recvSession);
+
+    debug('stopRecvSession', { silent, isActiverecvSession: isActive });
 
     this.disposeInRoomCredentialsListener?.();
     this.disposeInRoomCredentialsListener = undefined;
@@ -716,8 +748,11 @@ class CallManager extends EventEmitterProxy<TEventMap> {
 
     if (isEnteringSpectatorRole(previous, next)) {
       const params = next.recvParams;
+      const inRoomCredentials = this.stateMachine.getInRoomCredentials();
 
-      if (this.stateMachine.getInRoomCredentials() === undefined) {
+      debug('onRoleChanged: isEnteringSpectatorRole', { inRoomCredentials });
+
+      if (inRoomCredentials === undefined) {
         this.deferredStartRecvSessionRunner.set({
           audioId: params.audioId,
         });
@@ -761,6 +796,10 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     debug('renegotiateMcuSession');
 
     return this.mcuSession.renegotiate();
+  }
+
+  private isCurrentRecvSession(session: RecvSession) {
+    return this.recvSession === session;
   }
 }
 
