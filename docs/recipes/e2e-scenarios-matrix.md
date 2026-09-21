@@ -28,11 +28,16 @@
 - `stable` — после неуспешного `call` возможен штатный `disconnect` (`e2e/call.spec.ts`).
 - `stable` — rapid-sequence `call (fail) → call (fail)` не роняет connected-сессию (`e2e/call.spec.ts`).
 - `stable` — double-click call при media-fail не уводит в невалидное состояние (`e2e/call.spec.ts`).
-- `stable` — `hangup-only` после `connect+call`: ожидается `callActive` и инвариант после hangup-only, но сейчас не воспроизводится (`e2e/call.spec.ts`).
+- `stable` — `hangup` после `connect+call` выполняет полный cleanup и возвращает систему в `disconnected` (`e2e/call.spec.ts`).
 
 ## Participant role
 
 - `stable` — браузерный эквивалент трёх переключений микрофона (`spectator → participant → spectator` с интервалом 100 мс) создаёт только одну spectator-сессию без промежуточного завершения (`e2e/microphone-role-transition.spec.ts`; внешний медиавызов заменён детерминированным тестовым адаптером).
+- `stable` — UI роли spectator, управление качеством и сброс роли после завершения звонка проверяются детерминированным входным событием; конфигурация внешней конференции не используется как тестовая фикстура (`e2e/spectator.spec.ts`, `e2e/spectator-role-reset-on-call-end.spec.ts`).
+
+## Execution isolation
+
+- Сетевые E2E выполняются одним worker: все сценарии используют одну SIP-учётную запись, и параллельные регистрации взаимно прерывают сессии.
 
 ## Team Feedback Loop
 

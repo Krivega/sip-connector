@@ -127,13 +127,7 @@ const STATUS_DIAGRAMS: Record<TStatusCategory, readonly string[]> = {
     'incoming:terminated',
     'incoming:failed',
   ],
-  presentation: [
-    'presentation:idle',
-    'presentation:starting',
-    'presentation:active',
-    'presentation:stopping',
-    'presentation:failed',
-  ],
+  presentation: ['idle', 'starting', 'active', 'stopping', 'failed'],
 };
 
 const EXPECTED_NODE_FIELDS: Record<keyof TStatusesRootSnapshot, readonly string[]> = {

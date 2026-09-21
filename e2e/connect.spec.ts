@@ -25,7 +25,7 @@ const EXPECTED_CONNECTED_STATE: TExpectedDashboardState = {
     callReconnect: 'idle',
     call: 'call:idle',
     incoming: 'incoming:idle',
-    presentation: 'presentation:idle',
+    presentation: 'idle',
     system: 'system:readyToCall',
   },
   nodes: {
@@ -92,7 +92,7 @@ const EXPECTED_CONNECTED_STATE: TExpectedDashboardState = {
       },
     },
     Presentation: {
-      state: 'presentation:idle',
+      state: 'idle',
       fields: {
         'last error:': '-',
       },

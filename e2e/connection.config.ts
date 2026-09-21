@@ -13,9 +13,3 @@ export const connectionFormConfig: TConnectionFormConfig = {
   userNumber: '777',
   password: '5V1tCz',
 };
-
-export const connectionFormConfigSpectator: TConnectionFormConfig = {
-  ...connectionFormConfig,
-  displayName: 'test sip-connector spectator',
-  conferenceNumber: '1008',
-};

@@ -1,9 +1,9 @@
-import { connectionFormConfigSpectator } from './connection.config';
+import { connectionFormConfig } from './connection.config';
 import { test } from './fixtures';
 
 const CONNECT_OK_TIMEOUT_MS = 10_000;
 const CALL_ATTEMPT_TIMEOUT_MS = 5000;
-const WAIT_SPECTATOR_ROLE_TIMEOUT_MS = 25_000;
+const WAIT_SPECTATOR_ROLE_TIMEOUT_MS = 5000;
 
 test.describe('Режим зрителя', () => {
   test.describe.configure({ mode: 'serial' });
@@ -17,8 +17,8 @@ test.describe('Режим зрителя', () => {
   }) => {
     test.setTimeout(CONNECT_OK_TIMEOUT_MS + 15_000);
 
-    await test.step('заполнить форму и запустить connect+call в конференцию зрителя', async () => {
-      await connectPage.fillForm(connectionFormConfigSpectator);
+    await test.step('заполнить форму и запустить connect+call', async () => {
+      await connectPage.fillForm(connectionFormConfig);
       await connectPage.startConnectAndCallAttempt();
     });
 
@@ -26,6 +26,7 @@ test.describe('Режим зрителя', () => {
       await statusDashboard.waitForDiagramStatus('system', 'system:callActive', {
         timeout: CONNECT_OK_TIMEOUT_MS,
       });
+      await connectPage.enterDeterministicSpectatorRole();
       await statusDashboard.open();
     });
 
@@ -51,8 +52,8 @@ test.describe('Режим зрителя', () => {
   }) => {
     test.setTimeout(CONNECT_OK_TIMEOUT_MS + 10_000);
 
-    await test.step('заполнить форму и запустить connect+call в конференцию зрителя', async () => {
-      await connectPage.fillForm(connectionFormConfigSpectator);
+    await test.step('заполнить форму и запустить connect+call', async () => {
+      await connectPage.fillForm(connectionFormConfig);
       await connectPage.startConnectAndCallAttempt();
     });
 
@@ -60,6 +61,7 @@ test.describe('Режим зрителя', () => {
       await statusDashboard.waitForDiagramStatus('system', 'system:callActive', {
         timeout: CONNECT_OK_TIMEOUT_MS,
       });
+      await connectPage.enterDeterministicSpectatorRole();
       await statusDashboard.open();
       await connectPage.expectCallSessionRole('spectator', {
         timeout: WAIT_SPECTATOR_ROLE_TIMEOUT_MS,
@@ -80,8 +82,8 @@ test.describe('Режим зрителя', () => {
   }) => {
     test.setTimeout(CONNECT_OK_TIMEOUT_MS + 15_000);
 
-    await test.step('заполнить форму и запустить connect+call в конференцию зрителя', async () => {
-      await connectPage.fillForm(connectionFormConfigSpectator);
+    await test.step('заполнить форму и запустить connect+call', async () => {
+      await connectPage.fillForm(connectionFormConfig);
       await connectPage.startConnectAndCallAttempt();
     });
 
@@ -89,6 +91,7 @@ test.describe('Режим зрителя', () => {
       await statusDashboard.waitForDiagramStatus('system', 'system:callActive', {
         timeout: CONNECT_OK_TIMEOUT_MS,
       });
+      await connectPage.enterDeterministicSpectatorRole();
       await statusDashboard.open();
       await connectPage.expectCallSessionRole('spectator', {
         timeout: WAIT_SPECTATOR_ROLE_TIMEOUT_MS,

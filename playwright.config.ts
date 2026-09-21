@@ -14,14 +14,14 @@ const CI = Boolean(process.env.CI);
  */
 export default defineConfig({
   testDir: './e2e',
-  /* Run tests in files in parallel */
-  fullyParallel: true,
+  /* Live SIP scenarios share one account, so the whole suite must stay serial. */
+  fullyParallel: false,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: CI,
   /* Retry on CI only */
   retries: CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: CI ? 1 : undefined,
+  /* A second worker would invalidate the first worker's SIP registration. */
+  workers: 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */

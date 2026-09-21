@@ -18,6 +18,35 @@ type TCallSessionSnapshot = {
   };
 };
 
+type TDeterministicRecvSession = {
+  applyQuality: (
+    quality: TRecvQuality,
+  ) => Promise<{ applied: boolean; effectiveQuality: Exclude<TRecvQuality, 'auto'> }>;
+  close: () => void;
+  getAudioChannel: () => string;
+  getEffectiveQuality: () => Exclude<TRecvQuality, 'auto'>;
+  getQuality: () => TRecvQuality;
+  setQuality: (quality: TRecvQuality) => Promise<boolean>;
+};
+
+type TDeterministicSpectatorHarness = {
+  apiManager: {
+    events: {
+      trigger: (
+        eventName: 'participant:move-request-to-spectators-with-audio-id',
+        payload: { audioId: string; isAvailableSendingMedia: boolean },
+      ) => void;
+    };
+  };
+  callManager: {
+    recvSession?: TDeterministicRecvSession;
+    startRecvSession: (params: {
+      audioChannel: string;
+      quality?: TRecvQuality;
+    }) => Promise<{ session: TDeterministicRecvSession; callResult: true }>;
+  };
+};
+
 export class ConnectPage {
   private readonly page: Page;
 
@@ -375,6 +404,63 @@ export class ConnectPage {
         { timeout },
       )
       .toBe(roleType);
+  }
+
+  public async enterDeterministicSpectatorRole() {
+    await this.page.evaluate(() => {
+      const demoApp = Reflect.get(window, '__sipConnectorDemoApp') as
+        { sipConnectorFacade?: { sipConnector?: TDeterministicSpectatorHarness } } | undefined;
+      const sipConnector = demoApp?.sipConnectorFacade?.sipConnector;
+
+      if (sipConnector === undefined) {
+        throw new Error('sipConnector недоступен на demo-странице');
+      }
+
+      const resolveEffectiveQuality = (quality: TRecvQuality): Exclude<TRecvQuality, 'auto'> => {
+        return quality === 'auto' ? 'high' : quality;
+      };
+
+      sipConnector.callManager.startRecvSession = async ({ audioChannel, quality = 'auto' }) => {
+        let currentQuality = quality;
+        const session: TDeterministicRecvSession = {
+          applyQuality: async (nextQuality) => {
+            currentQuality = nextQuality;
+
+            return {
+              applied: true,
+              effectiveQuality: resolveEffectiveQuality(nextQuality),
+            };
+          },
+          close: () => {},
+          getAudioChannel: () => {
+            return audioChannel;
+          },
+          getEffectiveQuality: () => {
+            return resolveEffectiveQuality(currentQuality);
+          },
+          getQuality: () => {
+            return currentQuality;
+          },
+          setQuality: async (nextQuality) => {
+            currentQuality = nextQuality;
+
+            return true;
+          },
+        };
+
+        sipConnector.callManager.recvSession = session;
+
+        return { session, callResult: true };
+      };
+
+      sipConnector.apiManager.events.trigger(
+        'participant:move-request-to-spectators-with-audio-id',
+        {
+          audioId: 'e2e-audio-id',
+          isAvailableSendingMedia: false,
+        },
+      );
+    });
   }
 
   public async expectCallSessionSpectatorState({ timeout = 30_000 }: { timeout?: number } = {}) {

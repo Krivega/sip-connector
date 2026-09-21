@@ -183,7 +183,7 @@ test.describe('Звонок (callButton)', () => {
     });
   });
 
-  test('hangup-only: после завершения звонка соединение остаётся readyToCall', async ({
+  test('connect+call: hangup завершает lifecycle и отключает соединение', async ({
     connectPage,
     statusDashboard,
   }) => {
@@ -201,16 +201,17 @@ test.describe('Звонок (callButton)', () => {
       await connectPage.hangupOnly();
     });
 
-    await test.step('проверить инвариант: readyToCall, callButton доступен, connectAndCallButton скрыт', async () => {
-      await statusDashboard.waitForDiagramStatus('system', 'system:readyToCall', {
+    await test.step('проверить полный cleanup и готовность к новому connect+call', async () => {
+      await statusDashboard.waitForDiagramStatus('system', 'system:disconnected', {
         timeout: CONNECT_OK_TIMEOUT_MS,
       });
-      await statusDashboard.waitForDiagramStatus('connection', 'connection:established', {
+      await statusDashboard.waitForDiagramStatus('connection', 'connection:idle', {
         timeout: CONNECT_OK_TIMEOUT_MS,
       });
-      await expect(connectPage.callButton).toBeVisible();
-      await expect(connectPage.callButton).toBeEnabled();
-      await expect(connectPage.connectAndCallButton).toBeHidden();
+      await connectPage.expectReadyForConnection({ timeout: CONNECT_OK_TIMEOUT_MS });
+      await expect(connectPage.callButton).toBeHidden();
+      await expect(connectPage.connectAndCallButton).toBeVisible();
+      await expect(connectPage.connectAndCallButton).toBeEnabled();
     });
   });
 
@@ -238,7 +239,7 @@ test.describe('Звонок (callButton)', () => {
 
     await test.step('завершить звонок и проверить, что stop share скрыта', async () => {
       await connectPage.hangupOnly();
-      await statusDashboard.waitForDiagramStatus('system', 'system:readyToCall', {
+      await statusDashboard.waitForDiagramStatus('system', 'system:disconnected', {
         timeout: CONNECT_OK_TIMEOUT_MS,
       });
       await expect(connectPage.stopShareButton).toBeHidden();

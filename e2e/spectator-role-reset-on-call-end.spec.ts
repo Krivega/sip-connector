@@ -1,8 +1,8 @@
-import { connectionFormConfigSpectator } from './connection.config';
+import { connectionFormConfig } from './connection.config';
 import { expect, test } from './fixtures';
 
 const CONNECT_OK_TIMEOUT_MS = 10_000;
-const WAIT_SPECTATOR_ROLE_TIMEOUT_MS = 25_000;
+const WAIT_SPECTATOR_ROLE_TIMEOUT_MS = 5000;
 
 const NOTIFICATION_CALLS_GLOBAL_KEY = '__e2eMovedToParticipantNotificationCalls';
 
@@ -45,11 +45,12 @@ test.describe('завершение звонка в роли зрителя', ()
     test.setTimeout(CONNECT_OK_TIMEOUT_MS + 45_000);
 
     await test.step('подключиться и дождаться активного звонка в роли зрителя', async () => {
-      await connectPage.fillForm(connectionFormConfigSpectator);
+      await connectPage.fillForm(connectionFormConfig);
       await connectPage.startConnectAndCallAttempt();
       await statusDashboard.waitForDiagramStatus('system', 'system:callActive', {
         timeout: CONNECT_OK_TIMEOUT_MS,
       });
+      await connectPage.enterDeterministicSpectatorRole();
       await connectPage.expectCallSessionRole('spectator', {
         timeout: WAIT_SPECTATOR_ROLE_TIMEOUT_MS,
       });
