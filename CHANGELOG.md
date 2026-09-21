@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [31.1.1](https://github.com/Krivega/sip-connector/compare/v31.1.0...v31.1.1) (2026-09-21)
+
+### Bug Fixes
+
+- переключения микрофона (`spectator → participant → spectator` с интервалом 100 мс) создаёт только одну spectator-сессию без промежуточного завершения ([4d9f678](https://github.com/Krivega/sip-connector/commit/4d9f678f26b2408058d76dcee89bcf2eff488616))
+- fire event 'recv-quality-changed' in setRecvQuality ([e8b116c](https://github.com/Krivega/sip-connector/commit/e8b116c720907a1acf41680a87abb27fbe58aecf))
+
 ## [31.1.0](https://github.com/Krivega/sip-connector/compare/v31.0.0...v31.1.0) (2026-09-18)
 
 ### Features
