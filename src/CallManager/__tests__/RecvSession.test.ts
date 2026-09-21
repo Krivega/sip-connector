@@ -62,6 +62,10 @@ describe('RecvSession', () => {
     expect(session.getEffectiveQuality()).toBe(config.quality);
   });
 
+  it('isCanceledError: делегирует распознавание ошибки отмены', () => {
+    expect(RecvSession.isCanceledError(new Error('regular error'))).toBe(false);
+  });
+
   it('создает recvonly трансиверы для основных аудио и видео, и 3 видео для презентации', () => {
     const config = createConfig();
     const tools = createTools();
@@ -128,6 +132,21 @@ describe('RecvSession', () => {
     expect(session.peerConnection.setRemoteDescription).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'answer', sdp: 'offer-sdp' }),
     );
+  });
+
+  it('call: при ошибке renegotiate отменяет ожидание треков и пробрасывает ошибку', async () => {
+    const config = createConfig();
+    const tools = createTools();
+    const session = new RecvSession(config, tools);
+    const error = new Error('renegotiate failed');
+    const removeEventListenerSpy = jest.spyOn(session.peerConnection, 'removeEventListener');
+
+    jest.spyOn(session, 'renegotiate').mockRejectedValueOnce(error);
+
+    await expect(session.call({ conferenceNumber: '123', token: 'test-token' })).rejects.toThrow(
+      error,
+    );
+    expect(removeEventListenerSpy).toHaveBeenCalledWith('track', expect.any(Function));
   });
 
   it('renegotiate: пересогласует с переданным conferenceNumber', async () => {

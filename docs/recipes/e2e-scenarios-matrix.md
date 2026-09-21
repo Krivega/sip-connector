@@ -30,6 +30,10 @@
 - `stable` — double-click call при media-fail не уводит в невалидное состояние (`e2e/call.spec.ts`).
 - `stable` — `hangup-only` после `connect+call`: ожидается `callActive` и инвариант после hangup-only, но сейчас не воспроизводится (`e2e/call.spec.ts`).
 
+## Participant role
+
+- `stable` — браузерный эквивалент трёх переключений микрофона (`spectator → participant → spectator` с интервалом 100 мс) создаёт только одну spectator-сессию без промежуточного завершения (`e2e/microphone-role-transition.spec.ts`; внешний медиавызов заменён детерминированным тестовым адаптером).
+
 ## Team Feedback Loop
 
 - При каждом падении сценария обновляйте статус в этой матрице: `stable` → `flaky-risk` или `expected-fail`.

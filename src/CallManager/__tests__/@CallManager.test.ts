@@ -86,37 +86,43 @@ const mockRecvSession = (() => {
 })();
 
 jest.mock('../RecvSession', () => {
+  const RecvSessionMock = jest.fn().mockImplementation((config, tools) => {
+    const inst = mockRecvSession.create();
+    const configTyped = config as { quality?: TRecvQuality; audioChannel: string };
+    const qualityConfig = configTyped.quality ?? 'auto';
+
+    inst.config = {
+      ...configTyped,
+      quality: qualityConfig,
+      effectiveQuality: resolveRecvQuality(qualityConfig),
+    };
+    inst.tools = tools;
+    inst.getQuality = jest.fn(() => {
+      return (inst.config as { quality: TRecvQuality }).quality;
+    });
+    inst.getEffectiveQuality = jest.fn(() => {
+      return resolveRecvQuality((inst.config as { quality: TRecvQuality }).quality);
+    });
+    inst.setQuality = jest.fn(async (quality: TRecvQuality) => {
+      inst.config = {
+        ...(inst.config as object),
+        quality,
+        effectiveQuality: resolveRecvQuality(quality),
+      };
+
+      return true;
+    });
+
+    return inst;
+  }) as jest.Mock & { isCanceledError: jest.Mock };
+
+  RecvSessionMock.isCanceledError = jest.fn(() => {
+    return false;
+  });
+
   return {
     __esModule: true,
-    default: jest.fn().mockImplementation((config, tools) => {
-      const inst = mockRecvSession.create();
-      const configTyped = config as { quality?: TRecvQuality; audioChannel: string };
-      const qualityConfig = configTyped.quality ?? 'auto';
-
-      inst.config = {
-        ...configTyped,
-        quality: qualityConfig,
-        effectiveQuality: resolveRecvQuality(qualityConfig),
-      };
-      inst.tools = tools;
-      inst.getQuality = jest.fn(() => {
-        return (inst.config as { quality: TRecvQuality }).quality;
-      });
-      inst.getEffectiveQuality = jest.fn(() => {
-        return resolveRecvQuality((inst.config as { quality: TRecvQuality }).quality);
-      });
-      inst.setQuality = jest.fn(async (quality: TRecvQuality) => {
-        inst.config = {
-          ...(inst.config as object),
-          quality,
-          effectiveQuality: resolveRecvQuality(quality),
-        };
-
-        return true;
-      });
-
-      return inst;
-    }),
+    default: RecvSessionMock,
   };
 });
 
@@ -331,6 +337,32 @@ describe('CallManager', () => {
     mockRecvSession.instance?.applyQuality.mockRejectedValueOnce(error);
 
     await expect(callManager.applyQuality('low')).rejects.toThrow('recv-session-fail');
+  });
+
+  it('applyQuality: возвращает false, если сессия сменилась во время применения качества', async () => {
+    mockGetInRoomCredentials(callManager, {
+      token: 'test-token',
+      conferenceForToken: '123',
+    });
+    callManager.sessionState.setCallRoleSpectator({ audioId: '1' });
+
+    const session = mockRecvSession.instance;
+    let resolveApplyQuality!: (result: { applied: boolean; effectiveQuality: 'low' }) => void;
+    const applyQualityPromise = new Promise<{ applied: boolean; effectiveQuality: 'low' }>(
+      (resolve) => {
+        resolveApplyQuality = resolve;
+      },
+    );
+
+    session?.applyQuality.mockReturnValueOnce(applyQualityPromise);
+
+    const resultPromise = callManager.applyQuality('low');
+
+    // @ts-expect-error проверка гонки с приватным состоянием
+    callManager.recvSession = undefined;
+    resolveApplyQuality({ applied: true, effectiveQuality: 'low' });
+
+    await expect(resultPromise).resolves.toBe(false);
   });
 
   it('restartRecvSession: при роли participant не перезапускает recvSession', async () => {
@@ -567,13 +599,20 @@ describe('CallManager', () => {
       'startRecvSessionForced',
     );
 
-    startRecvSessionForcedSpy.mockResolvedValue({
-      session: {
-        getEffectiveQuality: () => {
-          return effectiveQuality;
-        },
+    const restartedSession = {
+      getEffectiveQuality: () => {
+        return effectiveQuality;
       },
-      callResult: true,
+    };
+
+    startRecvSessionForcedSpy.mockImplementation(async () => {
+      (
+        callManager as unknown as {
+          recvSession: typeof restartedSession;
+        }
+      ).recvSession = restartedSession;
+
+      return { session: restartedSession, callResult: true };
     });
 
     const eventHandler = jest.fn();
@@ -642,13 +681,20 @@ describe('CallManager', () => {
       'startRecvSessionForced',
     );
 
-    startRecvSessionForcedSpy.mockResolvedValue({
-      session: {
-        getEffectiveQuality: () => {
-          return 'low';
-        },
+    const restartedSession = {
+      getEffectiveQuality: () => {
+        return 'low' as const;
       },
-      callResult: true,
+    };
+
+    startRecvSessionForcedSpy.mockImplementation(async () => {
+      (
+        callManager as unknown as {
+          recvSession: typeof restartedSession;
+        }
+      ).recvSession = restartedSession;
+
+      return { session: restartedSession, callResult: true };
     });
 
     const recvSessionStartedHandler = jest.fn();
@@ -666,6 +712,78 @@ describe('CallManager', () => {
     );
     expect(recvSessionStartedHandler).not.toHaveBeenCalled();
     expect(recvSessionEndedHandler).not.toHaveBeenCalled();
+  });
+
+  it('setRecvQuality: возвращает false, если перезапущенная сессия уже неактуальна', async () => {
+    jest
+      .spyOn(
+        (
+          callManager as unknown as {
+            roleManager: { hasSpectator: () => boolean };
+          }
+        ).roleManager,
+        'hasSpectator',
+      )
+      .mockReturnValue(true);
+
+    (
+      callManager as unknown as {
+        recvSession?: {
+          getQuality: () => TRecvQuality;
+          getEffectiveQuality: () => TRecvQuality;
+          getAudioChannel: () => string;
+        };
+      }
+    ).recvSession = {
+      getQuality: () => {
+        return 'auto';
+      },
+      getEffectiveQuality: () => {
+        return 'high';
+      },
+      getAudioChannel: () => {
+        return 'audio-1';
+      },
+    };
+
+    const restartedSession = {
+      getEffectiveQuality: () => {
+        return 'low' as const;
+      },
+    };
+    let resolveRestart!: (result: {
+      session: typeof restartedSession;
+      callResult: boolean;
+    }) => void;
+
+    jest
+      .spyOn(
+        callManager as unknown as {
+          startRecvSessionForced: () => Promise<{
+            session: typeof restartedSession;
+            callResult: boolean;
+          }>;
+        },
+        'startRecvSessionForced',
+      )
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveRestart = resolve;
+        }),
+      );
+
+    const eventHandler = jest.fn();
+
+    callManager.on('recv-quality-changed', eventHandler);
+
+    const resultPromise = callManager.setRecvQuality('low');
+
+    // @ts-expect-error проверка гонки с приватным состоянием
+    callManager.recvSession = undefined;
+    resolveRestart({ session: restartedSession, callResult: true });
+
+    await expect(resultPromise).resolves.toBe(false);
+    expect(eventHandler).not.toHaveBeenCalled();
   });
 
   it('setRecvQuality: не триггерит recv-quality-changed и возвращает false при неуспешном рестарте', async () => {
@@ -729,7 +847,7 @@ describe('CallManager', () => {
     expect(eventHandler).not.toHaveBeenCalled();
   });
 
-  it('setRecvQuality: пробрасывает ошибку, если startRecvSessionForced отклоняется', async () => {
+  it('setRecvQuality: возвращает false, если startRecvSessionForced отклоняется', async () => {
     jest
       .spyOn(
         (
@@ -775,7 +893,7 @@ describe('CallManager', () => {
       )
       .mockRejectedValueOnce(error);
 
-    await expect(callManager.setRecvQuality('low')).rejects.toThrow('restart failed');
+    await expect(callManager.setRecvQuality('low')).resolves.toBe(false);
   });
 
   it('setRecvQuality: не перезапускает recvSession и не эмитит событие, когда качество не изменилось', async () => {
@@ -913,6 +1031,56 @@ describe('CallManager', () => {
       quality: 'high',
       effectiveQuality: 'high',
     });
+  });
+
+  it('setRecvQuality: не эмитит событие, если сессия сменилась во время setQuality', async () => {
+    jest
+      .spyOn(
+        (
+          callManager as unknown as {
+            roleManager: { hasSpectator: () => boolean };
+          }
+        ).roleManager,
+        'hasSpectator',
+      )
+      .mockReturnValue(true);
+
+    let resolveSetQuality!: (result: boolean) => void;
+    const session = {
+      getQuality: () => {
+        return 'auto' as const;
+      },
+      getEffectiveQuality: () => {
+        return 'high' as const;
+      },
+      getAudioChannel: () => {
+        return 'audio-1';
+      },
+      setQuality: jest.fn(async () => {
+        return new Promise<boolean>((resolve) => {
+          resolveSetQuality = resolve;
+        });
+      }),
+    };
+
+    (
+      callManager as unknown as {
+        recvSession?: typeof session;
+      }
+    ).recvSession = session;
+
+    const eventHandler = jest.fn();
+
+    callManager.on('recv-quality-changed', eventHandler);
+
+    const resultPromise = callManager.setRecvQuality('high');
+
+    // @ts-expect-error проверка гонки с приватным состоянием
+    callManager.recvSession = undefined;
+    resolveSetQuality(true);
+
+    await expect(resultPromise).resolves.toBe(false);
+    expect(eventHandler).not.toHaveBeenCalled();
   });
 
   describe('applyQuality: событие recv-quality-changed', () => {
@@ -2255,6 +2423,104 @@ describe('CallManager - дополнительные тесты для покр�
     expect(startSpy).toHaveBeenCalledTimes(1);
   });
 
+  it('переиспользует spectator-сессию при трёх быстрых переключениях роли', () => {
+    jest.useFakeTimers();
+
+    try {
+      const startSpy = jest
+        // @ts-expect-error
+        .spyOn(callManager, 'startRecvSession');
+      const stopSpy = jest
+        // @ts-expect-error
+        .spyOn(callManager, 'stopRecvSession');
+
+      mockGetInRoomCredentials(callManager, { token: 'token', conferenceForToken: '100' });
+
+      callManager.sessionState.setCallRoleSpectator({ audioId: 'a1' });
+      expect(startSpy).toHaveBeenCalledTimes(1);
+      expect(stopSpy).toHaveBeenCalledTimes(1);
+
+      jest.advanceTimersByTime(100);
+      callManager.sessionState.setCallRoleParticipant();
+      expect(stopSpy).toHaveBeenCalledTimes(1);
+      expect(callManager.hasSpectator()).toBe(true);
+
+      jest.advanceTimersByTime(100);
+      callManager.sessionState.setCallRoleSpectator({ audioId: 'a1' });
+      jest.advanceTimersByTime(300);
+
+      expect(startSpy).toHaveBeenCalledTimes(1);
+      expect(startSpy).toHaveBeenCalledWith({ audioChannel: 'a1' });
+      expect(stopSpy).toHaveBeenCalledTimes(1);
+      expect(callManager.hasSpectator()).toBe(true);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('завершает spectator-сессию после периода стабилизации, если итоговая роль participant', () => {
+    jest.useFakeTimers();
+
+    try {
+      const stopSpy = jest
+        // @ts-expect-error
+        .spyOn(callManager, 'stopRecvSession');
+
+      mockGetInRoomCredentials(callManager, { token: 'token', conferenceForToken: '100' });
+
+      callManager.sessionState.setCallRoleSpectator({ audioId: 'a1' });
+      jest.advanceTimersByTime(100);
+      callManager.sessionState.setCallRoleParticipant();
+
+      expect(stopSpy).toHaveBeenCalledTimes(1);
+
+      jest.advanceTimersByTime(299);
+      expect(stopSpy).toHaveBeenCalledTimes(1);
+      expect(callManager.hasSpectator()).toBe(true);
+
+      jest.advanceTimersByTime(1);
+      expect(stopSpy).toHaveBeenCalledTimes(2);
+      expect(callManager.hasSpectator()).toBe(false);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('переносит отложенный выход на последнюю роль и перезапускает таймер стабилизации', () => {
+    jest.useFakeTimers();
+
+    try {
+      const stopSpy = jest
+        // @ts-expect-error
+        .spyOn(callManager, 'stopRecvSession');
+
+      mockGetInRoomCredentials(callManager, { token: 'token', conferenceForToken: '100' });
+
+      callManager.sessionState.setCallRoleSpectator({ audioId: 'a1' });
+      callManager.sessionState.setCallRoleParticipant();
+      jest.advanceTimersByTime(200);
+      callManager.sessionState.setCallRoleSpectatorSynthetic();
+
+      jest.advanceTimersByTime(100);
+      expect(stopSpy).toHaveBeenCalledTimes(1);
+      expect(callManager.hasSpectator()).toBe(true);
+
+      jest.advanceTimersByTime(200);
+      expect(stopSpy).toHaveBeenCalledTimes(2);
+      expect(callManager.hasSpectator()).toBe(false);
+      expect(callManager.sessionState.getSnapshot().role.type).toBe('spectator_synthetic');
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('applyPendingSpectatorExit: безопасно завершается без ожидающего перехода', () => {
+    expect(() => {
+      // @ts-expect-error прямой вызов приватного обработчика для проверки пустой очереди
+      callManager.applyPendingSpectatorExit();
+    }).not.toThrow();
+  });
+
   it('setCallRoleParticipant: делегирует в roleManager', () => {
     const spy = jest.spyOn(
       // @ts-expect-error
@@ -2596,7 +2862,7 @@ describe('CallManager - дополнительные тесты для покр�
     await flushPromises();
 
     expect(startedEventHandler).not.toHaveBeenCalled();
-    expect(endedEventHandler).toHaveBeenCalledTimes(0);
+    expect(endedEventHandler).toHaveBeenCalledTimes(1);
   });
 
   it('startRecvSession: при ошибке не-Error использует String(error) для body', async () => {
@@ -2631,6 +2897,41 @@ describe('CallManager - дополнительные тесты для покр�
       expect.objectContaining({ body: 'non-error value' }),
       JsSIP_C.causes.INTERNAL_ERROR,
     );
+  });
+
+  it('startRecvSession: отменённая операция не завершает звонок с ошибкой', async () => {
+    mockGetInRoomCredentials(callManager, {
+      token: 'test-token',
+      conferenceForToken: '123',
+    });
+
+    const failedSpy = jest.spyOn(callManager, 'failed').mockResolvedValue();
+    const error = new Error('canceled');
+    const RecvSessionModule = jest.requireMock('../RecvSession') as {
+      default: jest.Mock & { isCanceledError: jest.Mock };
+    };
+
+    RecvSessionModule.default.isCanceledError.mockReturnValueOnce(true);
+    RecvSessionModule.default.mockImplementationOnce((config, tools) => {
+      const inst = mockRecvSession.create();
+
+      inst.config = config;
+      inst.tools = tools;
+      inst.call = jest.fn().mockRejectedValueOnce(error);
+
+      return inst;
+    });
+
+    const result = await (
+      callManager as unknown as {
+        startRecvSession: (params: {
+          audioChannel: string;
+        }) => Promise<{ session: undefined; callResult: false }>;
+      }
+    ).startRecvSession({ audioChannel: 'audio-id' });
+
+    expect(result).toEqual({ session: undefined, callResult: false });
+    expect(failedSpy).not.toHaveBeenCalled();
   });
 
   it('startRecvSession: после успешного call подписывается на onInRoomConferenceForTokenChange и вызывает renegotiateRecvSession', async () => {

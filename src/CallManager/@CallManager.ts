@@ -37,6 +37,7 @@ import type {
 } from './types';
 
 const UDP_PROTOCOL = 'udp' as const;
+const SPECTATOR_EXIT_GRACE_MS = 300;
 
 const debug = resolveDebug('CallManager');
 const getLocalCandidatesFromReceiver = (receiver: RTCRtpReceiver): RTCIceCandidate[] => {
@@ -109,7 +110,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
 
   private readonly roleManager = {
     hasSpectator: (): boolean => {
-      return this.sessionState.hasSpectator();
+      return this.pendingSpectatorExit !== undefined || this.sessionState.hasSpectator();
     },
     reset: (): void => {
       this.sessionState.reset();
@@ -123,6 +124,10 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   private disposeRecvSessionTrackListener?: () => void;
 
   private disposeInRoomCredentialsListener?: () => void;
+
+  private pendingSpectatorExit?: { previous: TCallRoleSpectator; next: TCallRole };
+
+  private spectatorExitTimeout?: ReturnType<typeof setTimeout>;
 
   private readonly deferredStartRecvSessionRunner: DeferredCommandRunner<
     TCallRoleSpectator['recvParams'],
@@ -143,7 +148,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     this.mcuSession = new MCUSession(this.events);
     this.stateMachine = createCallStateMachine(this.events);
     this.sessionState = callSessionState;
-    this.sessionState.subscribeRoleChanges(this.onRoleChanged);
+    this.sessionState.subscribeRoleChanges(this.onRoleChangeRequested);
     this.streamsManagerProvider = new StreamsManagerProvider(
       this.mainRemoteStreamsManager,
       this.recvRemoteStreamsManager,
@@ -476,6 +481,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
 
   private readonly reset: () => void = () => {
     debug('reset');
+    this.cancelPendingSpectatorExit();
     this.mainRemoteStreamsManager.reset();
     this.recvRemoteStreamsManager.reset();
     this.stopRecvSession();
@@ -741,6 +747,93 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     if (isActive && silent !== true) {
       this.events.emit('recv-session-ended');
     }
+  }
+
+  private readonly onRoleChangeRequested = ({
+    previous,
+    next,
+  }: {
+    previous: TCallRole;
+    next: TCallRole;
+  }) => {
+    debug('onRoleChangeRequested', { previous, next });
+
+    if (isEnteringSpectatorRole(previous, next)) {
+      const pendingExit = this.pendingSpectatorExit;
+      const canReuseRecvSession =
+        pendingExit?.previous.recvParams.audioId === next.recvParams.audioId;
+
+      this.cancelPendingSpectatorExit();
+
+      if (canReuseRecvSession) {
+        debug('onRoleChangeRequested: reuse spectator session', next.recvParams);
+
+        return;
+      }
+
+      const operationalPrevious = pendingExit?.previous ?? previous;
+
+      this.onRoleChanged({ previous: operationalPrevious, next });
+
+      return;
+    }
+
+    if (this.pendingSpectatorExit !== undefined) {
+      this.scheduleSpectatorExit({
+        previous: this.pendingSpectatorExit.previous,
+        next,
+      });
+
+      return;
+    }
+
+    if (previous.type === 'spectator' && isExitingSpectatorRole(previous, next)) {
+      // Пока RecvSession ещё не создана, откладывать нечего: важно сразу
+      // отменить deferred-команду, чтобы она не выполнилась после смены роли.
+      if (this.recvSession === undefined) {
+        this.onRoleChanged({ previous, next });
+
+        return;
+      }
+
+      this.scheduleSpectatorExit({ previous, next });
+
+      return;
+    }
+
+    this.onRoleChanged({ previous, next });
+  };
+
+  private scheduleSpectatorExit(roleChange: { previous: TCallRoleSpectator; next: TCallRole }) {
+    this.pendingSpectatorExit = roleChange;
+
+    if (this.spectatorExitTimeout !== undefined) {
+      clearTimeout(this.spectatorExitTimeout);
+    }
+
+    this.spectatorExitTimeout = setTimeout(this.applyPendingSpectatorExit, SPECTATOR_EXIT_GRACE_MS);
+  }
+
+  private readonly applyPendingSpectatorExit = () => {
+    const roleChange = this.pendingSpectatorExit;
+
+    this.pendingSpectatorExit = undefined;
+    this.spectatorExitTimeout = undefined;
+
+    if (roleChange === undefined) {
+      return;
+    }
+
+    this.onRoleChanged(roleChange);
+  };
+
+  private cancelPendingSpectatorExit() {
+    if (this.spectatorExitTimeout !== undefined) {
+      clearTimeout(this.spectatorExitTimeout);
+    }
+
+    this.spectatorExitTimeout = undefined;
+    this.pendingSpectatorExit = undefined;
   }
 
   private readonly onRoleChanged = ({
