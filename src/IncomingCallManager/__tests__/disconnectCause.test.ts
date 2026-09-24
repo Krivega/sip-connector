@@ -11,6 +11,13 @@ import type { TIncomingCallManagerEventMap } from '@/IncomingCallManager';
 import type { SipConnector } from '@/SipConnector';
 import type { TCallEndEvent } from '@/tools';
 
+const SESSION_START_DELAY_MS = 1000;
+const MODERATOR_DISCONNECT_CAUSE = {
+  raw: '1003',
+  code: 1003,
+  key: EDisconnectCause.DISCONNECTED_BY_MODERATOR,
+};
+
 const createEndEvent = (method: string, raw?: string) => {
   return {
     originator: 'remote' as const,
@@ -22,6 +29,7 @@ const createEndEvent = (method: string, raw?: string) => {
 describe('Причина отключения входящего звонка через публичные события', () => {
   let sipConnector: SipConnector;
   let facade: SipConnectorFacade;
+  let incomingCallManager: SipConnector['incomingCallManager'];
   let incomingFailed: jest.Mock<undefined, [TIncomingCallManagerEventMap['failedIncomingCall']]>;
 
   const receiveIncoming = () => {
@@ -40,6 +48,7 @@ describe('Причина отключения входящего звонка ч
     jest.useFakeTimers();
     sipConnector = doMockSipConnector();
     facade = new SipConnectorFacade(sipConnector);
+    incomingCallManager = sipConnector.incomingCallManager;
     incomingFailed = jest.fn<undefined, [TIncomingCallManagerEventMap['failedIncomingCall']]>();
 
     facade.on('incoming-call:failedIncomingCall', incomingFailed);
@@ -47,114 +56,141 @@ describe('Причина отключения входящего звонка ч
 
   afterEach(() => {
     facade.off('incoming-call:failedIncomingCall', incomingFailed);
-    sipConnector.incomingCallManager.stop();
+    incomingCallManager.stop();
     jest.clearAllTimers();
     jest.useRealTimers();
   });
 
-  it('должен передать причину BYE до ответа и сохранить данные звонящего', () => {
-    const session = receiveIncoming();
-    const caller = sipConnector.incomingCallManager.remoteCallerData;
+  describe('До ответа', () => {
+    let session: RTCSessionMock;
+    let caller: TIncomingCallManagerEventMap['ringing'] | undefined;
 
-    session.trigger('ended', createEndEvent('BYE', '1003'));
-
-    expect(incomingFailed).toHaveBeenCalledTimes(1);
-    expect(incomingFailed).toHaveBeenCalledWith({
-      ...caller,
-      disconnectCause: {
-        raw: '1003',
-        code: 1003,
-        key: EDisconnectCause.DISCONNECTED_BY_MODERATOR,
-      },
+    beforeEach(() => {
+      session = receiveIncoming();
+      caller = incomingCallManager.remoteCallerData;
     });
-    expect(sipConnector.incomingCallManager.isAvailableIncomingCall).toBe(false);
-  });
 
-  it('должен передать причину CANCEL до ответа и сохранить данные звонящего', () => {
-    const session = receiveIncoming();
-    const caller = sipConnector.incomingCallManager.remoteCallerData;
+    it('должен передать причину BYE и сохранить данные звонящего', () => {
+      const event = createEndEvent('BYE', '1003');
 
-    session.trigger('failed', createEndEvent('CANCEL', '1003'));
+      session.trigger('ended', event);
 
-    expect(incomingFailed).toHaveBeenCalledTimes(1);
-    expect(incomingFailed).toHaveBeenCalledWith({
-      ...caller,
-      disconnectCause: {
-        raw: '1003',
-        code: 1003,
-        key: EDisconnectCause.DISCONNECTED_BY_MODERATOR,
-      },
+      expect(incomingFailed).toHaveBeenCalledTimes(1);
+      expect(incomingFailed).toHaveBeenCalledWith({
+        ...caller,
+        disconnectCause: MODERATOR_DISCONNECT_CAUSE,
+      });
+      expect(incomingCallManager.isAvailableIncomingCall).toBe(false);
     });
-    expect(sipConnector.incomingCallManager.isAvailableIncomingCall).toBe(false);
+
+    it('должен передать причину CANCEL и сохранить данные звонящего', () => {
+      const event = createEndEvent('CANCEL', '1003');
+
+      session.trigger('failed', event);
+
+      expect(incomingFailed).toHaveBeenCalledTimes(1);
+      expect(incomingFailed).toHaveBeenCalledWith({
+        ...caller,
+        disconnectCause: MODERATOR_DISCONNECT_CAUSE,
+      });
+      expect(incomingCallManager.isAvailableIncomingCall).toBe(false);
+    });
+
+    it('должен сохранить прежние данные CANCEL без заголовка', () => {
+      const event = createEndEvent('CANCEL');
+
+      session.trigger('failed', event);
+
+      expect(incomingFailed).toHaveBeenCalledWith({ ...caller, disconnectCause: undefined });
+    });
+
+    it('не должен добавлять событие для BYE без заголовка', () => {
+      const event = createEndEvent('BYE');
+
+      session.trigger('ended', event);
+
+      expect(incomingFailed).not.toHaveBeenCalled();
+    });
+
+    it('должен передать неизвестную причину', () => {
+      const event = createEndEvent('CANCEL', '9999');
+      const disconnectCause = { raw: '9999', code: 9999 };
+
+      session.trigger('failed', event);
+
+      expect(incomingFailed.mock.calls[0][0].disconnectCause).toEqual(disconnectCause);
+    });
+
+    it('должен передать некорректную причину', () => {
+      const event = createEndEvent('CANCEL', 'invalid');
+      const disconnectCause = { raw: 'invalid' };
+
+      session.trigger('failed', event);
+
+      expect(incomingFailed.mock.calls[0][0].disconnectCause).toEqual(disconnectCause);
+    });
+
+    it('не должен передавать причину для локального завершения', () => {
+      const terminated = jest.fn<
+        undefined,
+        [TIncomingCallManagerEventMap['terminatedIncomingCall']]
+      >();
+      const event = { ...createEndEvent('CANCEL', '1003'), originator: 'local' as const };
+
+      facade.on('incoming-call:terminatedIncomingCall', terminated);
+      session.trigger('failed', event);
+
+      expect(incomingFailed).not.toHaveBeenCalled();
+      expect(terminated.mock.calls[0][0]).not.toHaveProperty('disconnectCause');
+    });
+
+    it('не должен публиковать причину повторного завершения одной сессии', () => {
+      const failedEvent = createEndEvent('CANCEL', '1003');
+      const endedEvent = createEndEvent('BYE', '1003');
+
+      session.trigger('failed', failedEvent);
+      session.trigger('ended', endedEvent);
+
+      expect(incomingFailed).toHaveBeenCalledTimes(1);
+    });
   });
 
-  it('должен сохранить прежние данные CANCEL без заголовка', () => {
-    const session = receiveIncoming();
-    const caller = sipConnector.incomingCallManager.remoteCallerData;
+  describe('Передача сессии основному звонку', () => {
+    let session: RTCSessionMock;
 
-    session.trigger('failed', createEndEvent('CANCEL'));
+    beforeEach(() => {
+      session = receiveIncoming();
+    });
 
-    expect(incomingFailed).toHaveBeenCalledWith({ ...caller, disconnectCause: undefined });
-  });
+    it('должен передать причину только через основной звонок после ответа', async () => {
+      const callEnded = jest.fn<undefined, [TCallEndEvent]>();
+      const mediaStream = new MediaStream();
+      const event = createEndEvent('BYE', '1003');
 
-  it('не должен добавлять событие для BYE без заголовка', () => {
-    const session = receiveIncoming();
+      facade.on('call:ended', callEnded);
 
-    session.trigger('ended', createEndEvent('BYE'));
+      const answer = sipConnector.answerToIncomingCall({ mediaStream });
 
-    expect(incomingFailed).not.toHaveBeenCalled();
-  });
+      await jest.advanceTimersByTimeAsync(SESSION_START_DELAY_MS);
+      await answer;
+      session.trigger('ended', event);
 
-  it('должен передать неизвестную и некорректную причину', () => {
-    receiveIncoming().trigger('failed', createEndEvent('CANCEL', '9999'));
-    receiveIncoming().trigger('failed', createEndEvent('CANCEL', 'invalid'));
+      expect(callEnded).toHaveBeenCalledTimes(1);
+      expect(callEnded.mock.calls[0][0].disconnectCause?.code).toBe(1003);
+      expect(incomingFailed).not.toHaveBeenCalled();
+    });
 
-    expect(incomingFailed.mock.calls[0][0].disconnectCause).toEqual({ raw: '9999', code: 9999 });
-    expect(incomingFailed.mock.calls[1][0].disconnectCause).toEqual({ raw: 'invalid' });
-  });
+    it('не должен привязывать причину BYE старой сессии к новому входящему звонку', () => {
+      incomingCallManager.extractIncomingRTCSession();
 
-  it('не должен передавать причину для локального завершения', () => {
-    const session = receiveIncoming();
-    const terminated = jest.fn<
-      undefined,
-      [TIncomingCallManagerEventMap['terminatedIncomingCall']]
-    >();
+      const current = receiveIncoming();
+      const event = createEndEvent('BYE', '1003');
 
-    facade.on('incoming-call:terminatedIncomingCall', terminated);
-    session.trigger('failed', { ...createEndEvent('CANCEL', '1003'), originator: 'local' });
+      session.trigger('ended', event);
 
-    expect(incomingFailed).not.toHaveBeenCalled();
-    expect(terminated.mock.calls[0][0]).not.toHaveProperty('disconnectCause');
-  });
-
-  it('должен передать причину только через основной звонок после ответа', async () => {
-    const session = receiveIncoming();
-    const callEnded = jest.fn<undefined, [TCallEndEvent]>();
-
-    facade.on('call:ended', callEnded);
-
-    const answer = sipConnector.answerToIncomingCall({ mediaStream: new MediaStream() });
-
-    await jest.advanceTimersByTimeAsync(1000);
-    await answer;
-    session.trigger('ended', createEndEvent('BYE', '1003'));
-
-    expect(callEnded).toHaveBeenCalledTimes(1);
-    expect(callEnded.mock.calls[0][0].disconnectCause?.code).toBe(1003);
-    expect(incomingFailed).not.toHaveBeenCalled();
-  });
-
-  it('не должен привязывать причину BYE старой сессии к новому входящему звонку', () => {
-    const previous = receiveIncoming();
-
-    sipConnector.incomingCallManager.extractIncomingRTCSession();
-
-    const current = receiveIncoming();
-
-    previous.trigger('ended', createEndEvent('BYE', '1003'));
-
-    expect(incomingFailed).not.toHaveBeenCalled();
-    expect(sipConnector.incomingCallManager.getIncomingRTCSession()).toBe(current);
+      expect(incomingFailed).not.toHaveBeenCalled();
+      expect(incomingCallManager.getIncomingRTCSession()).toBe(current);
+    });
   });
 
   it('не должен публиковать причину, если другой обработчик уже передал сессию на ответ', () => {
@@ -164,29 +200,21 @@ describe('Причина отключения входящего звонка ч
     });
     // JsSIP использует EventEmitter: удаление подписки не отменяет уже начатый emit.
     // eslint-disable-next-line unicorn/prefer-event-target
-    const session = Object.assign(new EventEmitter(), { remote_identity: remoteIdentity });
+    const emittingSession = Object.assign(new EventEmitter(), { remote_identity: remoteIdentity });
+    const event = createEndEvent('BYE', '1003');
 
-    session.on('ended', () => {
-      sipConnector.incomingCallManager.extractIncomingRTCSession();
+    emittingSession.on('ended', () => {
+      incomingCallManager.extractIncomingRTCSession();
     });
     sipConnector.connectionManager.events.trigger('newRTCSession', {
       originator: 'remote',
-      session: session as unknown as RTCSession,
+      session: emittingSession as unknown as RTCSession,
       request: createDisconnectRequest({ method: 'INVITE' }),
     });
 
-    session.emit('ended', createEndEvent('BYE', '1003'));
+    emittingSession.emit('ended', event);
 
     expect(incomingFailed).not.toHaveBeenCalled();
-    expect(sipConnector.incomingCallManager.isAvailableIncomingCall).toBe(false);
-  });
-
-  it('не должен публиковать причину повторного завершения одной сессии', () => {
-    const session = receiveIncoming();
-
-    session.trigger('failed', createEndEvent('CANCEL', '1003'));
-    session.trigger('ended', createEndEvent('BYE', '1003'));
-
-    expect(incomingFailed).toHaveBeenCalledTimes(1);
+    expect(incomingCallManager.isAvailableIncomingCall).toBe(false);
   });
 });

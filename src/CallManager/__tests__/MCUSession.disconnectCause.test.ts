@@ -7,6 +7,15 @@ import { MCUSession } from '../MCUSession';
 
 import type { EndEvent, RTCSession, UA } from '@krivega/jssip';
 import type { TCallEndEvent } from '@/tools';
+import type { TEvents } from '../events';
+
+const SIP_SERVER_HOST = 'example.com';
+const CALL_NUMBER = '100';
+const SESSION_START_DELAY_MS = 1000;
+
+const getUri = (number: string): string => {
+  return `sip:${number}@${SIP_SERVER_HOST}`;
+};
 
 const createEndEvent = (method: string, raw?: string): EndEvent => {
   return {
@@ -17,168 +26,142 @@ const createEndEvent = (method: string, raw?: string): EndEvent => {
 };
 
 describe('Причина отключения основной сессии', () => {
+  let events: TEvents;
+  let session: MCUSession;
+  let mediaStream: MediaStream;
+  let ended: jest.Mock<undefined, [TCallEndEvent]>;
+
   beforeEach(() => {
     jest.useFakeTimers();
+    events = createEvents();
+    session = new MCUSession(events);
+    mediaStream = new MediaStream();
+    ended = jest.fn<undefined, [TCallEndEvent]>();
+    events.on('ended', ended);
   });
 
   afterEach(() => {
+    session.reset();
     jest.clearAllTimers();
     jest.useRealTimers();
   });
 
-  it('должен передать причину BYE исходящего звонка и сохранить исходное событие', async () => {
-    const events = createEvents();
-    const session = new MCUSession(events);
-    const ua = new UAMock({ uri: 'sip:user@example.com', register: false, sockets: [] });
-    const ended = jest.fn<undefined, [TCallEndEvent]>();
-    const fromServer = jest.fn<undefined, [TCallEndEvent]>();
+  describe('Исходящий звонок', () => {
+    let ua: UAMock;
+    let callParameters: Parameters<MCUSession['startCall']>[2];
 
-    events.on('ended', ended);
-    events.on('ended:fromserver', fromServer);
+    beforeEach(() => {
+      ua = new UAMock({ uri: getUri('user'), register: false, sockets: [] });
+      callParameters = { number: CALL_NUMBER, mediaStream };
+    });
 
-    const promise = session.startCall(
-      ua as unknown as UA,
-      (number) => {
-        return `sip:${number}@example.com`;
-      },
-      {
-        number: '100',
-        mediaStream: new MediaStream(),
-      },
-    );
+    it('должен передать причину BYE и сохранить исходное событие', async () => {
+      const fromServer = jest.fn<undefined, [TCallEndEvent]>();
 
-    await jest.advanceTimersByTimeAsync(1000);
-    await promise;
+      events.on('ended:fromserver', fromServer);
 
-    const rtcSession = ua.call.mock.results[0].value as RTCSessionMock;
-    const event = createEndEvent('BYE', '1003');
+      const promise = session.startCall(ua as unknown as UA, getUri, callParameters);
 
-    rtcSession.trigger('ended', event);
+      await jest.advanceTimersByTimeAsync(SESSION_START_DELAY_MS);
+      await promise;
 
-    expect(ended).toHaveBeenCalledTimes(1);
-    expect(ended).toHaveBeenCalledWith({
-      ...event,
-      disconnectCause: {
+      const rtcSession = ua.call.mock.results[0].value as RTCSessionMock;
+      const event = createEndEvent('BYE', '1003');
+      const disconnectCause = {
         raw: '1003',
         code: 1003,
         key: EDisconnectCause.DISCONNECTED_BY_MODERATOR,
-      },
+      };
+
+      rtcSession.trigger('ended', event);
+
+      expect(ended).toHaveBeenCalledTimes(1);
+      expect(ended).toHaveBeenCalledWith({ ...event, disconnectCause });
+      expect(fromServer).toHaveBeenCalledWith(ended.mock.calls[0][0]);
+      expect(event).not.toHaveProperty('disconnectCause');
     });
-    expect(fromServer).toHaveBeenCalledWith(ended.mock.calls[0][0]);
-    expect(event).not.toHaveProperty('disconnectCause');
-    session.reset();
+
+    it('должен передать одну и ту же причину в событие ended и отклонение ожидания', async () => {
+      const promise = session.startCall(ua as unknown as UA, getUri, callParameters);
+      const rejected = promise.catch((error: unknown) => {
+        return error;
+      });
+      const rtcSession = ua.call.mock.results[0].value as RTCSessionMock;
+      const event = createEndEvent('BYE', '1003');
+
+      rtcSession.trigger('ended', event);
+
+      const error = await rejected;
+
+      expect(error).toMatchObject({ disconnectCause: { code: 1003 } });
+      expect(error).toBe(ended.mock.calls[0][0]);
+    });
+
+    it('должен передать одну и ту же причину в событие failed и отклонение ожидания', async () => {
+      const failed = jest.fn<undefined, [TCallEndEvent]>();
+
+      events.on('failed', failed);
+
+      const promise = session.startCall(ua as unknown as UA, getUri, callParameters);
+      const rejected = promise.catch((error: unknown) => {
+        return error;
+      });
+      const rtcSession = ua.call.mock.results[0].value as RTCSessionMock;
+      const event = createEndEvent('CANCEL', '1003');
+
+      rtcSession.trigger('failed', event);
+
+      const error = await rejected;
+
+      expect(error).toMatchObject({ disconnectCause: { code: 1003 } });
+      expect(error).toBe(failed.mock.calls[0][0]);
+    });
   });
 
-  it('должен передать одну и ту же причину в событие ended и отклонение ожидания', async () => {
-    const events = createEvents();
-    const session = new MCUSession(events);
-    const ua = new UAMock({ uri: 'sip:user@example.com', register: false, sockets: [] });
-    const listener = jest.fn<undefined, [TCallEndEvent]>();
+  describe('Принятый входящий звонок', () => {
+    let rtcSession: RTCSessionMock;
 
-    events.on('ended', listener);
+    beforeEach(async () => {
+      rtcSession = new RTCSessionMock({ eventHandlers: {}, originator: 'remote' });
 
-    const promise = session.startCall(
-      ua as unknown as UA,
-      (number) => {
-        return `sip:${number}@example.com`;
-      },
-      {
-        number: '100',
-        mediaStream: new MediaStream(),
-      },
-    );
-    const rejected = promise.catch((error: unknown) => {
-      return error;
-    });
-    const rtcSession = ua.call.mock.results[0].value as RTCSessionMock;
+      const promise = session.answerToIncomingCall(rtcSession as unknown as RTCSession, {
+        mediaStream,
+      });
 
-    rtcSession.trigger('ended', createEndEvent('BYE', '1003'));
-
-    const error = await rejected;
-
-    expect(error).toMatchObject({ disconnectCause: { code: 1003 } });
-    expect(error).toBe(listener.mock.calls[0][0]);
-    session.reset();
-  });
-
-  it('должен передать одну и ту же причину в событие failed и отклонение ожидания', async () => {
-    const events = createEvents();
-    const session = new MCUSession(events);
-    const ua = new UAMock({ uri: 'sip:user@example.com', register: false, sockets: [] });
-    const listener = jest.fn<undefined, [TCallEndEvent]>();
-
-    events.on('failed', listener);
-
-    const promise = session.startCall(
-      ua as unknown as UA,
-      (number) => {
-        return `sip:${number}@example.com`;
-      },
-      {
-        number: '100',
-        mediaStream: new MediaStream(),
-      },
-    );
-    const rejected = promise.catch((error: unknown) => {
-      return error;
-    });
-    const rtcSession = ua.call.mock.results[0].value as RTCSessionMock;
-
-    rtcSession.trigger('failed', createEndEvent('CANCEL', '1003'));
-
-    const error = await rejected;
-
-    expect(error).toMatchObject({ disconnectCause: { code: 1003 } });
-    expect(error).toBe(listener.mock.calls[0][0]);
-    session.reset();
-  });
-
-  it('должен передать причину завершения принятого входящего звонка', async () => {
-    const events = createEvents();
-    const session = new MCUSession(events);
-    const rtcSession = new RTCSessionMock({ eventHandlers: {}, originator: 'remote' });
-    const ended = jest.fn<undefined, [TCallEndEvent]>();
-
-    events.on('ended', ended);
-
-    const promise = session.answerToIncomingCall(rtcSession as unknown as RTCSession, {
-      mediaStream: new MediaStream(),
+      await jest.advanceTimersByTimeAsync(SESSION_START_DELAY_MS);
+      await promise;
     });
 
-    await jest.advanceTimersByTimeAsync(1000);
-    await promise;
-    rtcSession.trigger('ended', createEndEvent('BYE', '1004'));
+    it('должен передать причину завершения', () => {
+      const event = createEndEvent('BYE', '1004');
+      const disconnectCause = {
+        raw: '1004',
+        code: 1004,
+        key: EDisconnectCause.CONFERENCE_FINISHED,
+      };
 
-    expect(ended).toHaveBeenCalledWith(
-      expect.objectContaining({
-        disconnectCause: { raw: '1004', code: 1004, key: EDisconnectCause.CONFERENCE_FINISHED },
-      }),
-    );
-    session.reset();
-    rtcSession.trigger('ended', createEndEvent('BYE', '1004'));
-    expect(ended).toHaveBeenCalledTimes(1);
-  });
+      rtcSession.trigger('ended', event);
 
-  it('должен сохранить событие без заголовка без изменений', async () => {
-    const events = createEvents();
-    const session = new MCUSession(events);
-    const rtcSession = new RTCSessionMock({ eventHandlers: {}, originator: 'remote' });
-    const ended = jest.fn<undefined, [TCallEndEvent]>();
-
-    events.on('ended', ended);
-
-    const promise = session.answerToIncomingCall(rtcSession as unknown as RTCSession, {
-      mediaStream: new MediaStream(),
+      expect(ended).toHaveBeenCalledWith(expect.objectContaining({ disconnectCause }));
+      expect(ended).toHaveBeenCalledTimes(1);
     });
 
-    await jest.advanceTimersByTimeAsync(1000);
-    await promise;
+    it('не должен передавать повторное событие ended после сброса сессии', () => {
+      const event = createEndEvent('BYE', '1004');
 
-    const event = createEndEvent('BYE');
+      rtcSession.trigger('ended', event);
+      session.reset();
+      rtcSession.trigger('ended', event);
 
-    rtcSession.trigger('ended', event);
+      expect(ended).toHaveBeenCalledTimes(1);
+    });
 
-    expect(ended.mock.calls[0][0]).toBe(event);
-    session.reset();
+    it('должен сохранить событие без заголовка без изменений', () => {
+      const event = createEndEvent('BYE');
+
+      rtcSession.trigger('ended', event);
+
+      expect(ended.mock.calls[0][0]).toBe(event);
+    });
   });
 });

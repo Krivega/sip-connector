@@ -1,6 +1,6 @@
 import { IncomingRequest } from '@krivega/jssip';
 
-type TCreateDisconnectRequestParams = {
+type TParameters = {
   method?: string;
   raw?: string;
   headerName?: string;
@@ -12,10 +12,10 @@ const { parseMessage } = jest.requireActual<{
 }>('@krivega/jssip/lib/Parser');
 
 const createDisconnectRequest = ({
-  method = 'BYE',
   raw,
+  method = 'BYE',
   headerName = 'X-VINTEO-DISCONNECT-CAUSE',
-}: TCreateDisconnectRequestParams = {}): IncomingRequest => {
+}: TParameters = {}): IncomingRequest => {
   const request = parseMessage(
     [
       `${method} sip:client@example.com SIP/2.0`,
@@ -32,11 +32,11 @@ const createDisconnectRequest = ({
     ].join('\r\n'),
   );
 
-  if (!(request instanceof IncomingRequest)) {
-    throw new TypeError('Не удалось разобрать тестовый SIP-запрос');
+  if (request instanceof IncomingRequest) {
+    return request;
   }
 
-  return request;
+  throw new TypeError('Не удалось разобрать тестовый SIP-запрос');
 };
 
 export default createDisconnectRequest;
