@@ -12,6 +12,8 @@
 
 ### 📞 [События CallManager](./call-events.md)
 
+### [Причина отключения от сервера](../recipes/disconnect-cause.md)
+
 ### 📥 [События IncomingCallManager](./incoming-call-events.md)
 
 ### 🖥️ [События PresentationManager](./presentation-events.md)

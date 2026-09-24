@@ -2,6 +2,7 @@
 import { TypedEvents } from 'events-constructor';
 
 import type { RTCSession } from '@krivega/jssip';
+import type { TDisconnectCause } from '@/tools';
 
 enum EEvent {
   RINGING = 'ringing',
@@ -37,7 +38,9 @@ export type TEventMap = {
   ringing: TRemoteCallerDataWithRTCSession;
   declinedIncomingCall: TRemoteCallerDataWithRTCSession;
   terminatedIncomingCall: TRemoteCallerDataWithRTCSession;
-  failedIncomingCall: TRemoteCallerDataWithRTCSession;
+  failedIncomingCall: TRemoteCallerDataWithRTCSession & {
+    disconnectCause?: TDisconnectCause;
+  };
 };
 
 export type TEvents = TypedEvents<TEventMap>;

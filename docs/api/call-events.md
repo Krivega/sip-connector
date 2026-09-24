@@ -14,8 +14,8 @@
 | `call:progress`                                  | Генерируется при получении SIP 180 Ringing                          | `unknown`                                         |
 | `call:accepted`                                  | Генерируется при принятии звонка (SIP 200 OK)                       | `unknown`                                         |
 | `call:confirmed`                                 | Генерируется при подтверждении звонка                               | `unknown`                                         |
-| `call:ended`                                     | Генерируется при завершении звонка                                  | `EndEvent`                                        |
-| `call:failed`                                    | Генерируется при неудаче звонка                                     | `EndEvent`                                        |
+| `call:ended`                                     | Генерируется при завершении звонка                                  | `TCallEndEvent`                                        |
+| `call:failed`                                    | Генерируется при неудаче звонка                                     | `TCallEndEvent`                                        |
 | `call:newDTMF`                                   | Генерируется при получении DTMF сигнала                             | `{ originator: 'local' \| 'remote' \| 'system' }` |
 | `call:newInfo`                                   | Генерируется при получении или отправке SIP INFO                    | `IncomingInfoEvent \| OutgoingInfoEvent`          |
 | `call:hold`                                      | Генерируется при постановке звонка на удержание                     | `unknown`                                         |
@@ -35,7 +35,7 @@
 | `call:peerconnection:setremotedescriptionfailed` | Генерируется при ошибке установки удаленного SDP описания           | `unknown`                                         |
 | `call:peerconnection:confirmed`                  | Генерируется при подтверждении RTCPeerConnection                    | `RTCPeerConnection`                               |
 | `call:peerconnection:ontrack`                    | Генерируется при получении нового медиа-трека                       | `RTCTrackEvent`                                   |
-| `call:ended:fromserver`                          | Генерируется при завершении звонка от сервера                       | `EndEvent`                                        |
+| `call:ended:fromserver`                          | Генерируется при завершении звонка от сервера                       | `TCallEndEvent`                                        |
 | `call:call-status-changed`                       | Генерируется при изменении статуса звонка                           | `{ isCallActive: boolean }`                       |
 | `call:remote-tracks-changed`                     | Генерируется при изменении треков в удаленных медиа-потоках         | `TRemoteTracksChangedEvent`                       |
 | `call:remote-streams-changed`                    | Генерируется при изменении удаленных медиа-потоков                  | `{ streams: TRemoteStreams }`                     |
@@ -98,9 +98,11 @@ type TEffectiveQuality = 'low' | 'medium' | 'high';
 }
 ```
 
-### `EndEvent`
+### `TCallEndEvent`
 
-Тип из `@krivega/jssip`, содержит информацию о завершении звонка.
+Расширяет `EndEvent` из `@krivega/jssip` необязательным `disconnectCause`. Сохраняет
+стандартные `cause`, `originator` и `message`. Контракт и справочник описаны в
+[причинах отключения](../recipes/disconnect-cause.md).
 
 ### `IncomingInfoEvent` / `OutgoingInfoEvent`
 

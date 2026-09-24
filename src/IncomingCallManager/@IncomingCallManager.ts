@@ -1,11 +1,17 @@
 import { EventEmitterProxy } from 'events-constructor';
 
+import { resolveCallEndEvent } from '@/tools';
 import { createEvents } from './events';
 import { IncomingCallStateMachine } from './IncomingCallStateMachine';
 
-import type { IncomingRTCSessionEvent, OutgoingRTCSessionEvent, RTCSession } from '@krivega/jssip';
+import type {
+  EndEvent,
+  IncomingRTCSessionEvent,
+  OutgoingRTCSessionEvent,
+  RTCSession,
+} from '@krivega/jssip';
 import type { ConnectionManager } from '@/ConnectionManager';
-import type { Originator, TEventMap, TRemoteCallerDataWithRTCSession } from './events';
+import type { TEventMap, TRemoteCallerDataWithRTCSession } from './events';
 
 const BUSY_HERE_STATUS_CODE = 486;
 const REQUEST_TERMINATED_STATUS_CODE = 487;
@@ -23,6 +29,8 @@ export default class IncomingCallManager extends EventEmitterProxy<TEventMap> {
   public readonly stateMachine: IncomingCallStateMachine;
 
   private incomingRTCSession?: RTCSession;
+
+  private disposeIncomingEndedListener?: () => void;
 
   private readonly connectionManager: ConnectionManager;
 
@@ -120,20 +128,50 @@ export default class IncomingCallManager extends EventEmitterProxy<TEventMap> {
 
     const callerData = getRemoteCallerData(rtcSession);
 
-    rtcSession.on('failed', (event: { originator: `${Originator}` }) => {
-      this.removeIncomingSession();
+    const handleFailed = (event: EndEvent) => {
+      this.handleSessionFailed(event, callerData);
+    };
+    const handleEnded = (event: EndEvent) => {
+      this.handleSessionEnded(event, callerData);
+    };
 
-      if (event.originator === 'local') {
-        this.events.trigger('terminatedIncomingCall', callerData);
-      } else {
-        this.events.trigger('failedIncomingCall', callerData);
-      }
-    });
+    rtcSession.on('failed', handleFailed);
+    rtcSession.on('ended', handleEnded);
+
+    this.disposeIncomingEndedListener = () => {
+      rtcSession.off('ended', handleEnded);
+    };
 
     this.events.trigger('ringing', callerData);
   }
 
+  private handleSessionFailed(event: EndEvent, callerData: TRemoteCallerDataWithRTCSession): void {
+    const { disconnectCause } = resolveCallEndEvent(event);
+
+    this.removeIncomingSession();
+
+    if (event.originator === 'local') {
+      this.events.trigger('terminatedIncomingCall', callerData);
+    } else {
+      this.events.trigger('failedIncomingCall', { ...callerData, disconnectCause });
+    }
+  }
+
+  private handleSessionEnded(event: EndEvent, callerData: TRemoteCallerDataWithRTCSession): void {
+    const { disconnectCause } = resolveCallEndEvent(event);
+
+    if (this.incomingRTCSession !== callerData.rtcSession || disconnectCause === undefined) {
+      return;
+    }
+
+    this.removeIncomingSession();
+    this.events.trigger('failedIncomingCall', { ...callerData, disconnectCause });
+  }
+
   private removeIncomingSession(): void {
+    this.disposeIncomingEndedListener?.();
+    this.disposeIncomingEndedListener = undefined;
+
     delete this.incomingRTCSession;
   }
 }

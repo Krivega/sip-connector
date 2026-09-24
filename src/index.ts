@@ -1,4 +1,6 @@
 export { EContentUseLicense } from './ApiManager';
+export { EDisconnectCause } from './tools';
+export type { TCallEndEvent, TDisconnectCause } from './tools';
 export { createAutoConnectorStateMachine } from './AutoConnectorManager';
 export {
   createCallReconnectStateMachine,
