@@ -1,5 +1,4 @@
 export { createUaParser } from './createUaParser';
-export { EDisconnectCause, resolveCallEndEvent } from './disconnectCause';
 export * as error from './error';
 export { default as getExtraHeaders } from './getExtraHeaders';
 export { default as getUserAgent } from './getUserAgent';
@@ -13,6 +12,5 @@ export { setEncodingsToSender, setParametersToSender } from './setParametersToSe
 export { createSyncMediaState } from './syncMediaState';
 export { DeferredCommandRunner } from './DeferredCommandRunner';
 
-export type { TCallEndEvent, TDisconnectCause } from './disconnectCause';
 export type { TDeferredCommandRunnerOptions } from './DeferredCommandRunner';
 export type { TOnSetParameters, TResultSetParametersToSender } from './setParametersToSender';

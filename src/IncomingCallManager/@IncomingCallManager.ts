@@ -1,6 +1,6 @@
 import { EventEmitterProxy } from 'events-constructor';
 
-import { resolveCallEndEvent } from '@/tools';
+import { resolveCallEndEvent } from '@/DisconnectCause';
 import { createEvents } from './events';
 import { IncomingCallStateMachine } from './IncomingCallStateMachine';
 

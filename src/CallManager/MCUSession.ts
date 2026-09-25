@@ -1,5 +1,6 @@
+import { resolveCallEndEvent } from '@/DisconnectCause';
 import resolveDebug from '@/logger';
-import { prepareMediaStream, resolveCallEndEvent } from '@/tools';
+import { prepareMediaStream } from '@/tools';
 import { replaceMediaStreamInConnection } from '@/utils/peerConnection';
 import BitrateStateManager from './BitrateStateManager';
 import { ECallCause } from './causes';

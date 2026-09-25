@@ -1,5 +1,5 @@
 import type { RTCSession, UA } from '@krivega/jssip';
-import type { TDisconnectCause } from '@/tools';
+import type { TDisconnectCause } from '@/DisconnectCause';
 import type { TContentHint } from '@/utils/peerConnection';
 import type { Originator } from './events';
 import type { RemoteStreamsManager } from './RemoteStreamsManager';

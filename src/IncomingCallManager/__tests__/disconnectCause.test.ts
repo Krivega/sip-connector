@@ -1,15 +1,15 @@
 import { EventEmitter } from 'node:events';
 
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
+import { EDisconnectCause } from '@/DisconnectCause';
+import createDisconnectRequest from '@/DisconnectCause/__fixtures__/createDisconnectRequest';
 import { doMockSipConnector } from '@/doMock';
 import { SipConnectorFacade } from '@/SipConnectorFacade';
-import { EDisconnectCause } from '@/tools';
-import createDisconnectRequest from '@/tools/disconnectCause/__fixtures__/createDisconnectRequest';
 
 import type { RTCSession } from '@krivega/jssip';
+import type { TCallEndEvent } from '@/DisconnectCause';
 import type { TIncomingCallManagerEventMap } from '@/IncomingCallManager';
 import type { SipConnector } from '@/SipConnector';
-import type { TCallEndEvent } from '@/tools';
 
 const SESSION_START_DELAY_MS = 1000;
 const MODERATOR_DISCONNECT_CAUSE = {

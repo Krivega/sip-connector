@@ -1,6 +1,4 @@
 export { EContentUseLicense } from './ApiManager';
-export { EDisconnectCause } from './tools';
-export type { TCallEndEvent, TDisconnectCause } from './tools';
 export { createAutoConnectorStateMachine } from './AutoConnectorManager';
 export {
   createCallReconnectStateMachine,
@@ -63,6 +61,7 @@ export {
   ECallReconnectStatus,
 } from './SessionManager';
 export * as tools from './tools';
+export { EDisconnectCause } from './DisconnectCause';
 export { EMimeTypesVideoCodecs } from './types';
 
 export type { TSessionSnapshot } from './SessionManager';
@@ -128,5 +127,6 @@ export type {
   TConnectAndCallSessionTeardown,
 } from './ConnectAndCallSession';
 export type { TIncomingContextMap, TIncomingSnapshot } from './IncomingCallManager';
+export type { TCallEndEvent, TDisconnectCause } from './DisconnectCause';
 export type { TJsSIP } from './types';
 export type { TContentHint } from './utils/peerConnection';

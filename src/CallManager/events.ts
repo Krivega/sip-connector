@@ -2,7 +2,7 @@
 import { TypedEvents } from 'events-constructor';
 
 import type { IncomingInfoEvent, OutgoingInfoEvent } from '@krivega/jssip';
-import type { TCallEndEvent } from '@/tools';
+import type { TCallEndEvent } from '@/DisconnectCause';
 import type { TEffectiveQuality, TRecvQuality } from './quality';
 import type { TRemoteStreams, TRemoteTracksChangeType } from './types';
 

@@ -1,12 +1,12 @@
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import UAMock from '@/__fixtures__/UA.mock';
-import { EDisconnectCause } from '@/tools';
-import createDisconnectRequest from '@/tools/disconnectCause/__fixtures__/createDisconnectRequest';
+import { EDisconnectCause } from '@/DisconnectCause';
+import createDisconnectRequest from '@/DisconnectCause/__fixtures__/createDisconnectRequest';
 import { createEvents } from '../events';
 import { MCUSession } from '../MCUSession';
 
 import type { EndEvent, RTCSession, UA } from '@krivega/jssip';
-import type { TCallEndEvent } from '@/tools';
+import type { TCallEndEvent } from '@/DisconnectCause';
 import type { TEvents } from '../events';
 
 const SIP_SERVER_HOST = 'example.com';

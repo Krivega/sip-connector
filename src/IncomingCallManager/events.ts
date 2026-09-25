@@ -2,7 +2,7 @@
 import { TypedEvents } from 'events-constructor';
 
 import type { RTCSession } from '@krivega/jssip';
-import type { TDisconnectCause } from '@/tools';
+import type { TDisconnectCause } from '@/DisconnectCause';
 
 enum EEvent {
   RINGING = 'ringing',
