@@ -146,15 +146,22 @@ export default class IncomingCallManager extends EventEmitterProxy<TEventMap> {
   }
 
   private handleSessionFailed(event: EndEvent, callerData: TRemoteCallerDataWithRTCSession): void {
-    const { disconnectCause } = resolveCallEndEvent(event);
-
     this.removeIncomingSession();
 
     if (event.originator === 'local') {
       this.events.trigger('terminatedIncomingCall', callerData);
     } else {
-      this.events.trigger('failedIncomingCall', { ...callerData, disconnectCause });
+      this.triggerFailedIncomingCall(event, callerData);
     }
+  }
+
+  private triggerFailedIncomingCall(
+    event: EndEvent,
+    callerData: TRemoteCallerDataWithRTCSession,
+  ): void {
+    const { disconnectCause } = resolveCallEndEvent(event);
+
+    this.events.trigger('failedIncomingCall', { ...callerData, disconnectCause });
   }
 
   private handleSessionEnded(event: EndEvent, callerData: TRemoteCallerDataWithRTCSession): void {
