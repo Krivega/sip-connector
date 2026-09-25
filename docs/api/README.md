@@ -12,7 +12,7 @@
 
 ### 📞 [События CallManager](./call-events.md)
 
-### [Причина отключения от сервера](../recipes/disconnect-cause.md)
+### [Причина отключения от сервера](./disconnect-causes.md)
 
 ### 📥 [События IncomingCallManager](./incoming-call-events.md)
 

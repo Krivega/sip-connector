@@ -1,4 +1,4 @@
-# Причина отключения от сервера
+# Причины отключения
 
 При завершении сессии входящим SIP BYE/CANCEL с заголовком
 `X-VINTEO-DISCONNECT-CAUSE` коннектор добавляет `disconnectCause` в событие:
@@ -8,6 +8,10 @@
 
 Заголовок читается без учёта регистра. Локализованный текст и его отображение
 реализует приложение; коннектор передаёт причину, полученную от сервера.
+
+`call:ended:fromserver` дополнительно публикуется при `call:ended` или `call:failed`
+с `originator: 'remote'`. Если звонок завершился во время установления, событие
+завершения также передаётся в отклонение Promise операции.
 
 ## Данные причины
 
@@ -29,6 +33,9 @@ type TDisconnectCause = {
 | Целое число неизвестно | Заполнены `raw`, `code`; `key` равен `undefined` |
 | Значение некорректно | Сохраняется только `raw`, исключение не возникает |
 
+Для диагностики включите debug namespace `sip-connector:DisconnectCause`:
+он записывает `raw`, `code`, `key`, SIP-метод и доступные `Call-ID` и `CSeq`.
+
 ## Справочник кодов
 
 | Код | `EDisconnectCause` |
@@ -44,30 +51,3 @@ type TDisconnectCause = {
 | 1009 | `MODERATOR_REQUIRED` |
 
 Коды 1005, 1010 и 1011 обрабатываются как неизвестные.
-
-## Использование в приложении
-
-```typescript
-import type { TCallEndEvent } from 'sip-connector';
-
-const handleCallEnd = ({ disconnectCause }: TCallEndEvent) => {
-  if (disconnectCause === undefined) {
-    // Прежняя обработка завершения звонка.
-    return;
-  }
-
-  // По key выбрать локализованное сообщение.
-  // Если key отсутствует — показать общую причину отключения.
-};
-
-sipConnector.on('call:ended', handleCallEnd);
-sipConnector.on('call:failed', handleCallEnd);
-```
-
-`call:ended:fromserver` — производное событие: не показывайте причину одновременно
-из него и из `call:ended`/`call:failed`. При завершении во время установления звонка
-причина также попадает в отклонение Promise; согласуйте обработку с `.catch`, чтобы
-не показывать второе уведомление.
-
-Для диагностики включите debug namespace `sip-connector:DisconnectCause`:
-он записывает `raw`, `code`, `key`, SIP-метод и доступные `Call-ID` и `CSeq`.

@@ -102,7 +102,7 @@ type TEffectiveQuality = 'low' | 'medium' | 'high';
 
 Расширяет `EndEvent` из `@krivega/jssip` необязательным `disconnectCause`. Сохраняет
 стандартные `cause`, `originator` и `message`. Контракт и справочник описаны в
-[причинах отключения](../recipes/disconnect-cause.md).
+[причинах отключения](./disconnect-causes.md).
 
 ### `IncomingInfoEvent` / `OutgoingInfoEvent`
 
