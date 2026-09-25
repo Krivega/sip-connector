@@ -104,12 +104,34 @@ describe('Причина отключения входящего звонка ч
       expect(incomingFailed).toHaveBeenCalledWith({ ...caller, disconnectCause: undefined });
     });
 
-    it('не должен добавлять событие для BYE без заголовка', () => {
+    it('должен завершить входящий звонок при BYE без заголовка', () => {
       const event = createEndEvent('BYE');
 
       session.trigger('ended', event);
 
+      expect(incomingFailed).toHaveBeenCalledTimes(1);
+      expect(incomingFailed).toHaveBeenCalledWith({ ...caller, disconnectCause: undefined });
+      expect(incomingCallManager.isAvailableIncomingCall).toBe(false);
+      expect(incomingCallManager.remoteCallerData).toBeUndefined();
+      expect(incomingCallManager.stateMachine.isFailed).toBe(true);
+
+      session.trigger('ended', event);
+
+      expect(incomingFailed).toHaveBeenCalledTimes(1);
+    });
+
+    it('должен завершить локально закончившийся входящий звонок без события ошибки', () => {
+      const terminated = jest.fn();
+      const event = { ...createEndEvent('BYE'), originator: 'local' as const };
+
+      facade.on('incoming-call:terminatedIncomingCall', terminated);
+      session.trigger('ended', event);
+
+      expect(terminated).toHaveBeenCalledTimes(1);
+      expect(terminated).toHaveBeenCalledWith(caller);
       expect(incomingFailed).not.toHaveBeenCalled();
+      expect(incomingCallManager.isAvailableIncomingCall).toBe(false);
+      expect(incomingCallManager.stateMachine.isTerminated).toBe(true);
     });
 
     it('должен передать неизвестную причину', () => {
