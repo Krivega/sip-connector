@@ -1,3 +1,4 @@
+import { resolveCallEndEvent } from '@/DisconnectCause';
 import resolveDebug from '@/logger';
 import { prepareMediaStream } from '@/tools';
 import { replaceMediaStreamInConnection } from '@/utils/peerConnection';
@@ -105,7 +106,7 @@ export class MCUSession implements IMCUSession {
         // необходимо передавать в методе call, чтобы подписаться на события peerconnection,
         // так как в методе call создается RTCSession
         // и после создания нет возможности подписаться на события peerconnection через subscribeToSessionEvents
-        eventHandlers: this.events.triggers,
+        eventHandlers: this.getSessionEventHandlers(),
         extraHeaders,
         directionVideo,
         directionAudio,
@@ -323,16 +324,30 @@ export class MCUSession implements IMCUSession {
     });
   };
 
+  private getSessionEventHandlers() {
+    return {
+      ...this.events.triggers,
+      ended: (event: EndEvent) => {
+        this.events.trigger('ended', resolveCallEndEvent(event));
+      },
+      failed: (event: EndEvent) => {
+        this.events.trigger('failed', resolveCallEndEvent(event));
+      },
+    };
+  }
+
   private subscribeToSessionEvents(rtcSession: RTCSession) {
-    this.events.eachTriggers((trigger, eventName) => {
+    const eventHandlers = this.getSessionEventHandlers();
+
+    Object.entries(eventHandlers).forEach(([eventName, handler]) => {
       const sessionJsSipEvent = SESSION_JSSIP_EVENT_NAMES.find((jsSipEvent) => {
         return jsSipEvent === eventName;
       });
 
-      if (sessionJsSipEvent) {
-        rtcSession.on(sessionJsSipEvent, trigger);
+      if (sessionJsSipEvent && handler) {
+        rtcSession.on(sessionJsSipEvent, handler);
         this.disposers.add(() => {
-          rtcSession.off(sessionJsSipEvent, trigger);
+          rtcSession.off(sessionJsSipEvent, handler);
         });
       }
     });

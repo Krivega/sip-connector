@@ -13,6 +13,11 @@
 
 ## Структуры данных
 
+У `incoming-call:failedIncomingCall` дополнительно может присутствовать
+`disconnectCause?: TDisconnectCause`, если текущий ожидающий вызов завершён входящим
+BYE/CANCEL с заголовком причины. Данные звонящего сохраняются. Подробности:
+[причина отключения от сервера](./disconnect-causes.md).
+
 ### `TRemoteCallerDataWithRTCSession`
 
 ```typescript

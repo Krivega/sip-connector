@@ -110,6 +110,14 @@ const DOCS_SCHEMA = {
       orderTemplate: API_EXPORTS_SECTIONS,
       requireIntro: false,
     },
+    DISCONNECT_CAUSES: {
+      fileName: 'disconnect-causes.md',
+      h1Exact: '# Причины отключения',
+      requiredSections: ['## Данные причины', '## Справочник кодов'],
+      allowedSections: ['## Данные причины', '## Справочник кодов'],
+      orderTemplate: ['## Данные причины', '## Справочник кодов'],
+      requireIntro: true,
+    },
     EVENTS: {
       fileNamePattern: /-events\.md$/,
       h1Regex: /^# События `[^`]+`$/,
@@ -1030,6 +1038,7 @@ function resolveApiDocsSchemaByFileName(fileName) {
   const candidates = [
     { schema: api.README, test: (name) => name === api.README.fileName },
     { schema: api.EXPORTS, test: (name) => name === api.EXPORTS.fileName },
+    { schema: api.DISCONNECT_CAUSES, test: (name) => name === api.DISCONNECT_CAUSES.fileName },
     { schema: api.EVENTS, test: (name) => api.EVENTS.fileNamePattern.test(name) },
   ];
 
@@ -1070,7 +1079,7 @@ function checkApiDocsStructure(filePath, content) {
         1,
         'api-docs-structure',
         'Unsupported api doc file',
-        'Expected README.md, exports.md, or a file named *-events.md. Update docs-check.cjs if a new layout is intentional.',
+        'Expected README.md, exports.md, disconnect-causes.md, or a file named *-events.md. Update docs-check.cjs if a new layout is intentional.',
       ),
     );
 

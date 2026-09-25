@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-template-expression */
 import { TypedEvents } from 'events-constructor';
 
-import type { IncomingInfoEvent, OutgoingInfoEvent, EndEvent } from '@krivega/jssip';
+import type { IncomingInfoEvent, OutgoingInfoEvent } from '@krivega/jssip';
+import type { TCallEndEvent } from '@/DisconnectCause';
 import type { TEffectiveQuality, TRecvQuality } from './quality';
 import type { TRemoteStreams, TRemoteTracksChangeType } from './types';
 
@@ -110,8 +111,8 @@ export type TEventMap = {
   progress: unknown;
   accepted: unknown;
   confirmed: unknown;
-  ended: EndEvent;
-  failed: EndEvent;
+  ended: TCallEndEvent;
+  failed: TCallEndEvent;
   newDTMF: { originator: `${Originator}` };
   newInfo: IncomingInfoEvent | OutgoingInfoEvent;
   hold: unknown;
@@ -138,7 +139,7 @@ export type TEventMap = {
   'end-call': never;
   'peerconnection:confirmed': RTCPeerConnection;
   'peerconnection:ontrack': RTCTrackEvent;
-  'ended:fromserver': EndEvent;
+  'ended:fromserver': TCallEndEvent;
   'call-status-changed': { isCallActive: boolean };
   'remote-tracks-changed': {
     streams: TRemoteStreams;
