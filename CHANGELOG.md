@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [31.2.0](https://github.com/Krivega/sip-connector/compare/v31.1.1...v31.2.0) (2026-09-25)
+
+### Features
+
+- expose server disconnect causes in call events ([#83](https://github.com/Krivega/sip-connector/issues/83)) ([436be51](https://github.com/Krivega/sip-connector/commit/436be51a823e1852c92167278a69021abff05559))
+
 ### [31.1.1](https://github.com/Krivega/sip-connector/compare/v31.1.0...v31.1.1) (2026-09-21)
 
 ### Bug Fixes
