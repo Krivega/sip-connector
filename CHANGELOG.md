@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [31.2.1](https://github.com/Krivega/sip-connector/compare/v31.2.0...v31.2.1) (2026-10-08)
+
 ## [31.2.0](https://github.com/Krivega/sip-connector/compare/v31.1.1...v31.2.0) (2026-09-25)
 
 ### Features
