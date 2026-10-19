@@ -82,15 +82,15 @@
     "ts-debounce": "^5.0.1",
     "ua-parser-js": "^2.0.10",
     "webrtc-mock": "^1.2.3",
-    "xstate": "^5.33.2"
+    "xstate": "^5.33.3"
   },
   "devDependencies": {
     "@babel/preset-typescript": "^8.0.7",
-    "@commitlint/cli": "^21.2.3",
-    "@commitlint/config-conventional": "^21.2.3",
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
     "@eslint/compat": "^2.1.1",
     "@krivega/eslint-config": "^1.1.25",
-    "@playwright/test": "^1.64.0",
+    "@playwright/test": "^1.64.1",
     "@types/debug": "^4.1.13",
     "@types/dom-mediacapture-transform": "^0.1.12",
     "@types/jest": "^30.0.0",
@@ -106,7 +106,7 @@
     "lint-staged": "^17.6.0",
     "prettier": "^3.9.10",
     "standard-version": "^9.5.0",
-    "ts-jest": "^29.4.14",
+    "ts-jest": "^29.4.15",
     "ts-node": "^10.9.2",
     "tsc-files": "^1.1.4",
     "typescript": "^6.0.3",
@@ -127,7 +127,7 @@
     "ts-debounce": "^5.0.1",
     "ua-parser-js": "^2.0.9",
     "webrtc-mock": "^1.2.3",
-    "xstate": "^5.33.2"
+    "xstate": "^5.33.3"
   },
   "packageManager": "yarn@1.22.22"
 }
