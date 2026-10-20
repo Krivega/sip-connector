@@ -272,6 +272,13 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     return this.renegotiateMcuSession();
   }
 
+  // Исходящие потоки (например, презентация) идут только через MCU-сессию, независимо от роли
+  public async renegotiateMcuSession(): Promise<boolean> {
+    debug('renegotiateMcuSession');
+
+    return this.mcuSession.renegotiate();
+  }
+
   public answerToIncomingCall: TAnswerToIncomingCall = async (
     extractIncomingRTCSession: () => RTCSession,
     params,
@@ -895,12 +902,6 @@ class CallManager extends EventEmitterProxy<TEventMap> {
       conferenceNumber: credentials.conferenceForToken,
       token: credentials.token,
     });
-  }
-
-  private async renegotiateMcuSession() {
-    debug('renegotiateMcuSession');
-
-    return this.mcuSession.renegotiate();
   }
 
   private isCurrentRecvSession(session: RecvSession) {

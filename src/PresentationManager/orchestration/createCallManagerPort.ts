@@ -10,7 +10,7 @@ export type TPresentationSessionPort = {
 export const createCallManagerPort = (callManager: {
   connection: RTCPeerConnection | undefined;
   getEstablishedRTCSession: () => RTCSession | undefined;
-  renegotiate: () => Promise<boolean>;
+  renegotiateMcuSession: () => Promise<boolean>;
   on: (event: 'failed' | 'ended', handler: () => void) => void;
   off: (event: 'failed' | 'ended', handler: () => void) => void;
 }): TPresentationSessionPort => {
@@ -22,7 +22,7 @@ export const createCallManagerPort = (callManager: {
       return callManager.getEstablishedRTCSession();
     },
     renegotiate: async () => {
-      return callManager.renegotiate();
+      return callManager.renegotiateMcuSession();
     },
     onCallEnded: (handler) => {
       callManager.on('failed', handler);

@@ -42,7 +42,7 @@ describe('PresentationManager', () => {
       },
       configurable: true,
     });
-    callManager.renegotiate = jest.fn().mockResolvedValue(true);
+    callManager.renegotiateMcuSession = jest.fn().mockResolvedValue(true);
     mediaStream = createMediaStreamMock({
       audio: { deviceId: { exact: 'audioDeviceId' } },
       video: { deviceId: { exact: 'videoDeviceId' } },

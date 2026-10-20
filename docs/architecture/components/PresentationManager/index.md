@@ -83,6 +83,10 @@ flowchart TB
 
 `startPresentation` поддерживает `isNeedReinvite` (по умолчанию `true`). `updatePresentation` всегда выполняется без renegotiate.
 
+Renegotiate презентации всегда идёт в MCU-сессию (`CallManager.renegotiateMcuSession`), независимо от роли: трек презентации добавляется в MCU-соединение. Общий `CallManager.renegotiate` для роли `spectator` пересогласует `RecvSession` и для презентации не подходит — сервер присылает `PARTICIPANT` только после ответа на `LETMESTARTPRESENTATION`, и к моменту renegotiate роль ещё `spectator`.
+
+Если renegotiate вернул `false` (reINVITE не отправлен: в звонке уже идёт другое согласование, например INVITE от сервера), он повторяется — до 10 попыток через 300 мс, пока звонок не освободится. Если звонок так и не освободился или завершился, старт завершается `PresentationReinviteError`, трек останавливается. Ошибка самого reINVITE пробрасывается сразу, без повторов.
+
 ## Доступ к состоянию (breaking change)
 
 Публичные поля `promisePendingStartPresentation`, `promisePendingStopPresentation`, `videoTrackPresentationCurrent` **удалены**.

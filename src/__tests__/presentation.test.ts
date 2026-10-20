@@ -29,7 +29,7 @@ describe('presentation', () => {
   ) => {
     let attempts = 0;
 
-    sipConnector.callManager.renegotiate = jest.fn(async () => {
+    sipConnector.callManager.renegotiateMcuSession = jest.fn(async () => {
       attempts += 1;
 
       if (attempts < successAfterAttempts) {
@@ -41,7 +41,7 @@ describe('presentation', () => {
   };
 
   const mockRenegotiatePending = () => {
-    sipConnector.callManager.renegotiate = jest.fn(async () => {
+    sipConnector.callManager.renegotiateMcuSession = jest.fn(async () => {
       return new Promise<boolean>(() => {});
     });
   };
@@ -218,6 +218,41 @@ describe('presentation', () => {
         // eslint-disable-next-line jest/no-conditional-expect
         expect(error).toEqual(new Error('Presentation has not started yet'));
       });
+  });
+
+  it('должен согласовывать демонстрацию в основном звонке, когда пользователь подключён зрителем с отдельным аудиоканалом', async () => {
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    sipConnector.apiManager.events.trigger('participant:move-request-to-spectators-with-audio-id', {
+      isAvailableSendingMedia: true,
+      audioId: '0',
+    });
+
+    const renegotiateMainCall = jest.spyOn(
+      sipConnector.callManager.getEstablishedRTCSession()!,
+      'renegotiate',
+    );
+
+    await sipConnector.startPresentation(mediaStream.getVideoTracks()[0] as MediaStreamVideoTrack);
+
+    expect(renegotiateMainCall).toHaveBeenCalledTimes(1);
+    expect(sipConnector.presentationManager.stateMachine.isActive).toBe(true);
+  });
+
+  it('должен согласовывать демонстрацию, когда основной звонок освободился после другого согласования', async () => {
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    const renegotiateMainCall = jest
+      .spyOn(sipConnector.callManager.getEstablishedRTCSession()!, 'renegotiate')
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true);
+
+    await sipConnector.startPresentation(mediaStream.getVideoTracks()[0] as MediaStreamVideoTrack);
+
+    expect(renegotiateMainCall).toHaveBeenCalledTimes(2);
+    expect(sipConnector.presentationManager.stateMachine.isActive).toBe(true);
   });
 
   it('should be stopped incoming presentation before outgoing presentation started when in DIRECT_P2P_ROOM', async () => {
