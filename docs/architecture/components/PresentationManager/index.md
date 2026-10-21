@@ -83,6 +83,10 @@ flowchart TB
 
 `startPresentation` поддерживает `isNeedReinvite` (по умолчанию `true`). `updatePresentation` всегда выполняется без renegotiate.
 
+Renegotiate презентации всегда идёт в MCU-сессию (`CallManager.renegotiateMcuSession`), независимо от роли: трек презентации добавляется в MCU-соединение. Общий `CallManager.renegotiate` для роли `spectator` пересогласует `RecvSession` и для презентации не подходит — сервер присылает `PARTICIPANT` только после ответа на `LETMESTARTPRESENTATION`, и к моменту renegotiate роль ещё `spectator`.
+
+Если в звонке уже идёт другое согласование (например, INVITE от сервера), JsSIP (`@krivega/jssip` с 8.0.2) сам дожидается его завершения — до 5 с — и затем отправляет reINVITE. Если renegotiate вернул `false` (звонок так и не освободился или завершился) или reINVITE завершился ошибкой, старт завершается `PresentationReinviteError`, трек останавливается.
+
 ## Доступ к состоянию (breaking change)
 
 Публичные поля `promisePendingStartPresentation`, `promisePendingStopPresentation`, `videoTrackPresentationCurrent` **удалены**.

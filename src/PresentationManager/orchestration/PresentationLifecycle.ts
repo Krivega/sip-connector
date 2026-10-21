@@ -193,7 +193,7 @@ export class PresentationLifecycle {
 
       if (isNeedReinvite) {
         try {
-          await this.sessionPort.renegotiate();
+          await this.sendRenegotiation();
         } catch (reinviteError: unknown) {
           this.trackService.stop(connection);
 
@@ -208,6 +208,16 @@ export class PresentationLifecycle {
       }
 
       throw new PresentationTrackError(error);
+    }
+  }
+
+  // JsSIP сам дожидается конца другого согласования в звонке (например, INVITE от сервера);
+  // false — reINVITE не отправлен: звонок так и не освободился или завершился
+  private async sendRenegotiation(): Promise<void> {
+    const isRenegotiated = await this.sessionPort.renegotiate();
+
+    if (!isRenegotiated) {
+      throw new Error('Renegotiation was not sent');
     }
   }
 

@@ -1308,6 +1308,27 @@ describe('CallManager', () => {
     expect(mcuRenegotiateSpy).not.toHaveBeenCalled();
   });
 
+  it('renegotiateMcuSession: должен пересогласовать основной звонок, когда пользователь подключён зрителем', async () => {
+    mockGetInRoomCredentials(callManager, { token: 'token', conferenceForToken: '100' });
+
+    callManager.sessionState.setCallRoleSpectator({
+      audioId: 'audio-1',
+    } as TCallRoleSpectator['recvParams']);
+
+    const mcuRenegotiateSpy = jest
+      .spyOn(
+        (callManager as unknown as { mcuSession: { renegotiate: () => Promise<boolean> } })
+          .mcuSession,
+        'renegotiate',
+      )
+      .mockResolvedValue(true);
+
+    await expect(callManager.renegotiateMcuSession()).resolves.toBe(true);
+
+    expect(mcuRenegotiateSpy).toHaveBeenCalledTimes(1);
+    expect(mockRecvSession.instance?.renegotiate).not.toHaveBeenCalled();
+  });
+
   it('getRemoteStreams: возвращает undefined если нет connection', () => {
     jest.spyOn(RemoteStreamsManager.prototype, 'getStreams').mockReturnValue([]);
 
