@@ -1,4 +1,8 @@
+import { UA as RealUA, WebSocketInterface } from '@krivega/jssip';
+
 import jssip from '@/__fixtures__/jssip.mock';
+import * as utils from '@/utils/utils';
+import { createEvents } from '../events';
 import UAFactory from '../UAFactory';
 
 import type { Socket, UA } from '@krivega/jssip';
@@ -9,6 +13,10 @@ describe('UAFactory', () => {
 
   beforeEach(() => {
     uaFactory = new UAFactory(jssip as unknown as TJsSIP);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   describe('конструктор', () => {
@@ -106,6 +114,48 @@ describe('UAFactory', () => {
       expect(config.configuration.uri).toContain('customuser');
     });
 
+    it.each([
+      {
+        title: 'использовать userId без регистрации даже при переданном user',
+        register: false,
+        user: 'testuser',
+        userId: 'guest-user',
+        authorizationUser: 'guest-user',
+      },
+      {
+        title: 'сохранять пустой userId без генерации идентификатора',
+        register: false,
+        user: undefined,
+        userId: '',
+        authorizationUser: '',
+      },
+      {
+        title: 'использовать user при регистрации с переданным userId',
+        register: true,
+        user: ' testuser ',
+        userId: 'guest-user',
+        authorizationUser: 'testuser',
+      },
+      {
+        title: 'использовать userId при регистрации с user из пробелов',
+        register: true,
+        user: '   ',
+        userId: 'guest-user',
+        authorizationUser: 'guest-user',
+      },
+    ])('должен $title', ({ authorizationUser, register, user, userId }) => {
+      const generateUserIdSpy = jest.spyOn(utils, 'generateUserId');
+      const config = uaFactory.createConfiguration({
+        ...baseParameters,
+        register,
+        user,
+        userId,
+      });
+
+      expect(config.configuration.uri).toBe(`sip:${authorizationUser}@sip.example.com`);
+      expect(generateUserIdSpy).not.toHaveBeenCalled();
+    });
+
     it('должен обрабатывать пустой displayName', () => {
       const config = uaFactory.createConfiguration({
         ...baseParameters,
@@ -136,6 +186,40 @@ describe('UAFactory', () => {
       });
 
       expect(config.configuration.user_agent).toBe('Custom User Agent');
+    });
+
+    it('должен формировать contact_uri с заданным contactUserId', () => {
+      const contactUserId = 'contact-user';
+      const config = uaFactory.createConfiguration({
+        ...baseParameters,
+        contactUserId,
+      });
+
+      expect(config.configuration.contact_uri).toMatch(
+        /^sip:contact-user@[\da-v]{12}\.invalid;transport=ws$/,
+      );
+      expect(config.configuration.uri).toBe('sip:testuser@sip.example.com');
+    });
+
+    it('должен оставлять Contact на усмотрение JsSIP без contactUserId', () => {
+      const config = uaFactory.createConfiguration(baseParameters);
+
+      expect(config.configuration).not.toHaveProperty('contact_uri');
+    });
+
+    it.each([
+      { randomValue: 0, expectedHost: '000000000000.invalid' },
+      { randomValue: 0.5, expectedHost: 'gggggggggggg.invalid' },
+      { randomValue: 0.999999, expectedHost: 'vvvvvvvvvvvv.invalid' },
+    ])('должен генерировать хост как JsSIP: $expectedHost', ({ randomValue, expectedHost }) => {
+      jest.spyOn(Math, 'random').mockReturnValue(randomValue);
+
+      const config = uaFactory.createConfiguration({
+        ...baseParameters,
+        contactUserId: 'test123',
+      });
+
+      expect(config.configuration.contact_uri).toBe(`sip:test123@${expectedHost};transport=ws`);
     });
 
     it('должен обрабатывать sessionTimers', () => {
@@ -424,6 +508,59 @@ describe('UAFactory', () => {
   });
 
   describe('интеграционные тесты', () => {
+    const realUaFactory = new UAFactory({ UA: RealUA, WebSocketInterface });
+    const realUaParameters = {
+      displayName: 'Test User',
+      sipServerIp: 'sip.example.com',
+      sipServerUrl: 'sip.example.com',
+      user: 'registered-user',
+      password: 'testpass',
+      userId: 'from-user',
+    };
+
+    it.each([false, true])(
+      'должен формировать Contact в настоящем JsSIP при register=%s',
+      (register) => {
+        const contactUserId = 'test123';
+        const { ua } = realUaFactory.createUAWithConfiguration(
+          { ...realUaParameters, register, contactUserId },
+          createEvents(),
+        );
+
+        expect(ua.contact.uri?.user).toBe(contactUserId);
+        expect(ua.contact.uri?.host).toMatch(/^[\da-v]{12}\.invalid$/);
+        expect(ua.contact.uri?.getParam('transport')).toBe('ws');
+        expect(ua.contact.toString({ outbound: true })).toMatch(
+          /^<sip:test123@[\da-v]{12}\.invalid;transport=ws;ob>$/,
+        );
+        expect(ua.configuration.uri.user).toBe(register ? 'registered-user' : 'from-user');
+      },
+    );
+
+    it('должен автоматически создавать Contact в настоящем JsSIP без contactUserId', () => {
+      const { ua } = realUaFactory.createUAWithConfiguration(
+        { ...realUaParameters, register: false },
+        createEvents(),
+      );
+
+      expect(ua.contact.toString({ outbound: true })).toMatch(
+        /^<sip:[\da-v]{8}@[\da-v]{12}\.invalid;transport=ws;ob>$/,
+      );
+      expect(ua.configuration.uri.user).toBe('from-user');
+    });
+
+    it('должен экранировать contactUserId без изменения хоста и транспорта', () => {
+      const { ua } = realUaFactory.createUAWithConfiguration(
+        { ...realUaParameters, register: false, contactUserId: 'test@123' },
+        createEvents(),
+      );
+
+      expect(ua.contact.uri?.user).toBe('test@123');
+      expect(ua.contact.toString({ outbound: true })).toMatch(
+        /^<sip:test%40123@[\da-v]{12}\.invalid;transport=ws;ob>$/,
+      );
+    });
+
     it('должен создавать полную конфигурацию и UA', () => {
       const parameters = {
         sipServerIp: 'sip.example.com',

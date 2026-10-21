@@ -1,3 +1,5 @@
+import { URI } from '@krivega/jssip';
+
 import { generateUserId, parseDisplayName, resolveGetUri } from '@/utils/utils';
 import { UA_EVENT_NAMES } from './events';
 import getExtraHeadersRemoteAddress from './getExtraHeadersRemoteAddress';
@@ -23,6 +25,8 @@ type TParametersCreateUaConfig = {
   displayName: string;
   sipServerIp: string;
   user?: string;
+  userId?: string;
+  contactUserId?: string;
   register?: boolean;
   password?: string;
   sessionTimers?: boolean;
@@ -73,10 +77,14 @@ export default class UAFactory {
     }
   }
 
-  private static resolveAuthorizationUser(register: boolean, user?: string): string {
+  private static resolveAuthorizationUser(
+    register: boolean,
+    user?: string,
+    userId?: string,
+  ): string {
     return register && user !== undefined && user.trim() !== ''
       ? user.trim()
-      : `${generateUserId()}`;
+      : `${userId ?? generateUserId()}`;
   }
 
   private static buildExtraHeaders(remoteAddress?: string, extraHeaders?: string[]): string[] {
@@ -92,8 +100,21 @@ export default class UAFactory {
     return [...extraHeadersRemoteAddress, ...extraHeaders];
   }
 
+  private static createContactUri(contactUserId: string): string {
+    // JsSIP: Config.settings.via_host и UA._loadConfig.
+    const randomHost = Array.from({ length: 12 }, () => {
+      return Math.floor(Math.random() * 32).toString(32);
+    }).join('');
+
+    return new URI('sip', contactUserId, `${randomHost}.invalid`, undefined, {
+      transport: 'ws',
+    }).toString();
+  }
+
   public createConfiguration({
     user,
+    userId,
+    contactUserId,
     password,
     sipServerUrl,
     displayName = '',
@@ -113,7 +134,7 @@ export default class UAFactory {
       sipServerUrl,
     });
 
-    const authorizationUser = UAFactory.resolveAuthorizationUser(register, user);
+    const authorizationUser = UAFactory.resolveAuthorizationUser(register, user, userId);
     const getUri = resolveGetUri(sipServerIp);
     const uri = getUri(authorizationUser);
     const socket = new this.JsSIP.WebSocketInterface(`wss://${sipServerUrl}/webrtc/wss/`);
@@ -123,6 +144,9 @@ export default class UAFactory {
         password,
         register,
         uri,
+        ...(contactUserId === undefined
+          ? {}
+          : { contact_uri: UAFactory.createContactUri(contactUserId) }),
         display_name: parseDisplayName(displayName),
         user_agent: userAgent,
         sockets: [socket],

@@ -26,6 +26,9 @@ export type TParametersConnection = TServerConfig &
     displayName: string;
     register?: boolean;
     user?: string;
+    userId?: string;
+    /** Пользовательская часть Contact; хост и транспорт генерируются как в JsSIP. */
+    contactUserId?: string;
     password?: string;
     userAgent?: string;
     sessionTimers?: boolean;

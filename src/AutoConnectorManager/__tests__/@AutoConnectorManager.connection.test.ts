@@ -58,6 +58,55 @@ describe('AutoConnectorManager - Connection', () => {
   });
 
   describe('подключение', () => {
+    it('должен сохранять userId при подключении и повторном подключении', async () => {
+      const userId = 'guest-user';
+
+      try {
+        const result = await manager.start({
+          getParameters: async () => {
+            return { ...parameters, userId };
+          },
+        });
+
+        expect(result.isSuccess).toBe(true);
+        expect(sipConnector.connectionManager.getUser()).toBe(userId);
+
+        const reconnected = manager.wait('success');
+
+        manager.restart();
+        await reconnected;
+
+        expect(sipConnector.connectionManager.getUser()).toBe(userId);
+        expect(sipConnector.getConnectionConfiguration()?.authorizationUser).toBe(userId);
+      } finally {
+        await manager.stop();
+      }
+    });
+
+    it('должен сохранять contactUserId при подключении и повторном подключении', async () => {
+      const contactUserId = 'contact-user';
+
+      try {
+        const result = await manager.start({
+          getParameters: async () => {
+            return { ...parameters, contactUserId };
+          },
+        });
+
+        expect(result.isSuccess).toBe(true);
+        expect(sipConnector.connectionManager.ua?.contact.uri?.user).toBe(contactUserId);
+
+        const reconnected = manager.wait('success');
+
+        manager.restart();
+        await reconnected;
+
+        expect(sipConnector.connectionManager.ua?.contact.uri?.user).toBe(contactUserId);
+      } finally {
+        await manager.stop();
+      }
+    });
+
     it('вызывает connect с данными из getParameters', async () => {
       const connectSpy = jest.spyOn(sipConnector.connectionQueueManager, 'connect');
 

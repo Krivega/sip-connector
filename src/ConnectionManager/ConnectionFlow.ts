@@ -209,6 +209,8 @@ export default class ConnectionFlow {
       uaConfig.password === newConfig.password &&
       uaConfig.register === newConfig.register &&
       uaConfig.uri.toString() === newConfig.uri &&
+      (parameters.contactUserId === undefined ||
+        ua.contact.uri?.user === parameters.contactUserId) &&
       uaConfig.display_name === newConfig.display_name &&
       uaConfig.user_agent === newConfig.user_agent &&
       uaConfig.sockets === newConfig.sockets &&
@@ -227,6 +229,8 @@ export default class ConnectionFlow {
 
   private readonly initUa: TInitUa = async ({
     user,
+    userId,
+    contactUserId,
     password,
     sipServerIp,
     sipServerUrl,
@@ -256,6 +260,8 @@ export default class ConnectionFlow {
     const { ua, helpers } = this.dependencies.uaFactory.createUAWithConfiguration(
       {
         user,
+        userId,
+        contactUserId,
         password,
         sipServerIp,
         sipServerUrl,

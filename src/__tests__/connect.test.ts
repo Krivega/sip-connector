@@ -142,6 +142,51 @@ describe('connect', () => {
     expect(config).toEqual(uaConfigWithoutAuthorizationWithoutDisplayName);
   });
 
+  it('должен использовать userId из объекта параметров без авторизации', async () => {
+    const userId = 'guest-user';
+    const config = await sipConnector.connect({
+      ...dataForConnectionWithoutAuthorization,
+      userId,
+    });
+
+    expect(config.authorizationUser).toBe(userId);
+    expect(sipConnector.connectionManager.getUser()).toBe(userId);
+    expect(sipConnector.getConnectionConfiguration()?.authorizationUser).toBe(userId);
+  });
+
+  it('должен использовать userId из функции получения параметров', async () => {
+    const userId = 'guest-user';
+    const config = await sipConnector.connect(async () => {
+      return { ...dataForConnectionWithoutAuthorization, userId };
+    });
+
+    expect(config.authorizationUser).toBe(userId);
+    expect(sipConnector.connectionManager.getUser()).toBe(userId);
+  });
+
+  it('должен передавать contactUserId из объекта параметров независимо от userId', async () => {
+    const userId = 'from-user';
+    const contactUserId = 'contact-user';
+    const config = await sipConnector.connect({
+      ...dataForConnectionWithoutAuthorization,
+      userId,
+      contactUserId,
+    });
+
+    expect(config.authorizationUser).toBe(userId);
+    expect(sipConnector.connectionManager.ua?.contact.uri?.user).toBe(contactUserId);
+  });
+
+  it('должен передавать contactUserId из функции получения параметров', async () => {
+    const contactUserId = 'contact-user';
+
+    await sipConnector.connect(async () => {
+      return { ...dataForConnectionWithoutAuthorization, contactUserId };
+    });
+
+    expect(sipConnector.connectionManager.ua?.contact.uri?.user).toBe(contactUserId);
+  });
+
   it('должен сохранять connectionConfiguration после подключения', async () => {
     expect.assertions(5);
 

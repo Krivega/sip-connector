@@ -573,7 +573,7 @@ describe('ConnectionFlow', () => {
       baseConfig: UAConfigurationParams,
       override?: Partial<UAConfigurationParams>,
     ) => {
-      uaInstance = { configuration: baseConfig } as unknown as UAMock;
+      uaInstance = new UAMock(baseConfig);
 
       const config: UAConfigurationParams = { ...baseConfig, ...override };
 
@@ -590,6 +590,8 @@ describe('ConnectionFlow', () => {
           },
         },
       });
+
+      return uaInstance;
     };
 
     it('должен корректно сравнивать конфигурации с connection_recovery интервалами', () => {
@@ -693,6 +695,87 @@ describe('ConnectionFlow', () => {
       const result = connectionFlow.hasEqualConnectionConfiguration({});
 
       expect(result).toBe(true);
+    });
+
+    it.each([
+      {
+        currentContactUserId: undefined,
+        requestedContactUserId: 'contact-user',
+        isEqual: false,
+      },
+      {
+        currentContactUserId: 'contact-user',
+        requestedContactUserId: 'contact-user',
+        isEqual: true,
+      },
+      {
+        currentContactUserId: 'other-user',
+        requestedContactUserId: 'contact-user',
+        isEqual: false,
+      },
+      {
+        currentContactUserId: 'contact-user',
+        requestedContactUserId: undefined,
+        isEqual: true,
+      },
+    ])(
+      'должен сравнивать пользовательскую часть Contact: $currentContactUserId / $requestedContactUserId',
+      ({ currentContactUserId, requestedContactUserId, isEqual }) => {
+        const parameters = {
+          displayName: 'Any Name',
+          register: false,
+          sipServerIp: SIP_SERVER_IP,
+          sipServerUrl: SIP_SERVER_URL,
+          remoteAddress: REMOTE_ADDRESS,
+          iceServers: ICE_SERVERS,
+        };
+        const { configuration: baseConfig } = uaFactory.createConfiguration({
+          ...parameters,
+          contactUserId: currentContactUserId,
+        });
+        const { configuration: requestedConfig } = uaFactory.createConfiguration({
+          ...parameters,
+          contactUserId: requestedContactUserId,
+        });
+
+        mockCreateConfig(baseConfig, {
+          contact_uri: requestedConfig.contact_uri,
+        });
+
+        // @ts-expect-error - тестируем приватный метод
+        const result = connectionFlow.hasEqualConnectionConfiguration({
+          ...parameters,
+          contactUserId: requestedContactUserId,
+        });
+
+        expect(result).toBe(isEqual);
+      },
+    );
+
+    it('должен возвращать false, если запрошен contactUserId, а контактный URI отсутствует', () => {
+      const parameters = {
+        displayName: 'Any Name',
+        register: false,
+        sipServerIp: SIP_SERVER_IP,
+        sipServerUrl: SIP_SERVER_URL,
+        remoteAddress: REMOTE_ADDRESS,
+        iceServers: ICE_SERVERS,
+        contactUserId: 'contact-user',
+      };
+      const { configuration: baseConfig } = uaFactory.createConfiguration(parameters);
+
+      const ua = mockCreateConfig(baseConfig);
+
+      jest.spyOn(ua, 'contact', 'get').mockReturnValue({
+        toString: () => {
+          return '';
+        },
+      });
+
+      // @ts-expect-error - тестируем приватный метод
+      const result = connectionFlow.hasEqualConnectionConfiguration(parameters);
+
+      expect(result).toBe(false);
     });
 
     it('должен возвращать false если отличается session_timers', () => {

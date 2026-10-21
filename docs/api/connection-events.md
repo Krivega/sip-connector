@@ -45,6 +45,8 @@
   displayName: string;
   register?: boolean;
   user?: string;
+  userId?: string;
+  contactUserId?: string;
   password?: string;
   userAgent?: string;
   sessionTimers?: boolean;
@@ -54,6 +56,16 @@
   extraHeaders?: string[];
 }
 ```
+
+`userId` задаёт пользовательскую часть SIP URI без регистрации. Если параметр не передан,
+идентификатор генерируется автоматически. При регистрации используется непустой `user`
+после удаления пробелов по краям.
+
+`contactUserId` задаёт только пользовательскую часть заголовка `Contact`, например `test123`,
+независимо от `user` и `userId`. Контактный URI формируется как в JsSIP: схема `sip`, хост
+из 12 случайных символов в системе счисления 32 с суффиксом `.invalid`, транспорт `ws`,
+без порта. JsSIP добавляет угловые скобки и параметр `ob` при исходящем звонке.
+Без `contactUserId` JsSIP автоматически создаёт весь контактный адрес, включая пользователя.
 
 ### `TConnectionConfig`
 

@@ -152,6 +152,8 @@ class UA extends EventEmitter implements IUA {
 
   public configuration: UAConfiguration;
 
+  private readonly contactInner: UAContact;
+
   private startedTimeout?: ReturnType<typeof setTimeout>;
 
   private stopedTimeout?: ReturnType<typeof setTimeout>;
@@ -175,6 +177,17 @@ class UA extends EventEmitter implements IUA {
     };
 
     this.configuration = config;
+
+    const contactUri = URI.parse(
+      _config.contact_uri ?? 'sip:mockuser@mockhost1234.invalid;transport=ws',
+    ) as unknown as URI;
+
+    this.contactInner = {
+      uri: contactUri,
+      toString: ({ outbound } = {}) => {
+        return `<${contactUri.toString()}${outbound === true ? ';ob' : ''}>`;
+      },
+    };
     this.registratorInner = new Registrator();
   }
 
@@ -188,9 +201,8 @@ class UA extends EventEmitter implements IUA {
     throw new Error('Method not implemented.');
   }
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   public get contact(): UAContact {
-    throw new Error('Method not implemented.');
+    return this.contactInner;
   }
 
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this

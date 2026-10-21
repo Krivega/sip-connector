@@ -5,9 +5,9 @@ import sipConnectorFacade from './sipConnectorFacade';
 
 import type { TRemoteStreams } from '@/index';
 import type {
-  IParams as IServerParametersRequesterParams,
-  IServerParametersRequester,
   IServerParameters,
+  IServerParametersRequester,
+  IParams as IServerParametersRequesterParams,
 } from './resolveServerParametersRequester';
 
 const debug = resolveDebug('demo:session');
@@ -116,12 +116,17 @@ export class Session {
       },
     );
 
+    const userId = 'userIdTest123';
+    const contactUserId = 'contactUserIdTest456';
+
     const result = await sipConnectorFacade.connectAndCallToServer({
       connection: {
         parameters: {
           displayName,
           user,
           password,
+          userId,
+          contactUserId,
           register: isRegistered,
           sipServerIp: serverParameters.serverIp,
           sipServerUrl: serverParameters.sipServerUrl,
@@ -138,6 +143,8 @@ export class Session {
         iceServers: serverParameters.iceServers,
       },
     });
+
+    console.log('🚀 temp  ~ Session ~ connectAndCallToServer ~ result:', result);
 
     if (!result.isSuccessful) {
       this.cleanupCallSubscriptions();

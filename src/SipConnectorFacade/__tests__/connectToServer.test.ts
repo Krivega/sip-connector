@@ -106,6 +106,32 @@ describe('connectToServer', () => {
     });
   });
 
+  it('должен передавать userId при подключении без регистрации', async () => {
+    const userId = 'guest-user';
+    const result = await sipConnectorFacade.connectToServer({
+      ...dataForConnectionWithoutAuthorization,
+      userId,
+    });
+
+    expect(result.isSuccessful).toBe(true);
+    expect(result.configuration?.authorizationUser).toBe(userId);
+    expect(sipConnector.connectionManager.getUser()).toBe(userId);
+  });
+
+  it('должен передавать contactUserId независимо от userId', async () => {
+    const userId = 'from-user';
+    const contactUserId = 'contact-user';
+    const result = await sipConnectorFacade.connectToServer({
+      ...dataForConnectionWithoutAuthorization,
+      userId,
+      contactUserId,
+    });
+
+    expect(result.isSuccessful).toBe(true);
+    expect(result.configuration?.authorizationUser).toBe(userId);
+    expect(sipConnector.connectionManager.ua?.contact.uri?.user).toBe(contactUserId);
+  });
+
   it('change sipServerUrl (WebSocket URL)', async () => {
     return sipConnectorFacade
       .connectToServer(dataForConnectionWithoutAuthorization)
