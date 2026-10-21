@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [31.3.0](https://github.com/Krivega/sip-connector/compare/v31.2.2...v31.3.0) (2026-10-21)
+
+### Features
+
+- enhance presentation renegotiation handling ([#84](https://github.com/Krivega/sip-connector/issues/84)) ([2f57471](https://github.com/Krivega/sip-connector/commit/2f574715cbba2a4abc74ab5d784f0d3cbfc40e95))
+
 ### [31.2.2](https://github.com/Krivega/sip-connector/compare/v31.2.1...v31.2.2) (2026-10-19)
 
 ### [31.2.1](https://github.com/Krivega/sip-connector/compare/v31.2.0...v31.2.1) (2026-10-08)
