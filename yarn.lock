@@ -1281,10 +1281,10 @@
     globals "^17.7.0"
     typescript "^6.0.3"
 
-"@krivega/jssip@^8.0.1":
-  version "8.0.1"
-  resolved "https://registry.yarnpkg.com/@krivega/jssip/-/jssip-8.0.1.tgz#1705a11b1feb0b1843cb29972b153d1850afa44a"
-  integrity sha512-I5Phwk6vTRHe+4Breqfi4oW05HTUuhzzL9kN7u8yMsdeL4T0lRo9BlwwlnM8BRdTnGQ02TtndrKXf0k41pX4qQ==
+"@krivega/jssip@^8.0.2":
+  version "8.0.2"
+  resolved "https://registry.yarnpkg.com/@krivega/jssip/-/jssip-8.0.2.tgz#aa7c98984b5cb82bd8bb0b7182c2a26cce5e8fc4"
+  integrity sha512-PVdzVD55+PLdbu29ZYQq7aqG8xZGW39irMcfn10xzg266URH4Hn1hK92eA8yKTs54jhTK4K3muIe6CVCysjR3g==
   dependencies:
     debug "^4.4.3"
     events "^3.3.0"
