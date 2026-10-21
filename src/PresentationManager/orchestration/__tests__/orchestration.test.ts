@@ -142,68 +142,15 @@ describe('PresentationManager orchestration', () => {
       expect(renegotiateSpy).not.toHaveBeenCalled();
     });
 
-    describe('когда основной звонок занят другим согласованием', () => {
-      beforeEach(() => {
-        jest.useFakeTimers();
-      });
+    it('должен завершать запуск демонстрации ошибкой и останавливать дорожку, когда основной звонок так и не освободился', async () => {
+      jest.spyOn(callManager, 'renegotiateMcuSession').mockResolvedValue(false);
 
-      afterEach(() => {
-        jest.useRealTimers();
-      });
+      const stopTrackSpy = jest.spyOn(trackService, 'stop');
 
-      it('должен завершать запуск демонстрации ошибкой и останавливать дорожку, когда звонок так и не освободился', async () => {
-        const renegotiateSpy = jest
-          .spyOn(callManager, 'renegotiateMcuSession')
-          .mockResolvedValue(false);
-        const stopTrackSpy = jest.spyOn(trackService, 'stop');
-        const result = lifecycle
-          .executeStartFlow(jest.fn(), videoTrack, {})
-          .catch((error: unknown) => {
-            return error;
-          });
-
-        await jest.runAllTimersAsync();
-
-        expect(await result).toBeInstanceOf(PresentationReinviteError);
-        expect(renegotiateSpy).toHaveBeenCalledTimes(10);
-        expect(stopTrackSpy).toHaveBeenCalledTimes(1);
-      });
-
-      it('должен прекращать повторы согласования, когда звонок завершился', async () => {
-        const renegotiateSpy = jest
-          .spyOn(callManager, 'renegotiateMcuSession')
-          .mockImplementationOnce(async () => {
-            jest.mocked(callManager.getEstablishedRTCSession).mockReturnValue(undefined);
-
-            return false;
-          });
-        const result = lifecycle
-          .executeStartFlow(jest.fn(), videoTrack, {})
-          .catch((error: unknown) => {
-            return error;
-          });
-
-        await jest.runAllTimersAsync();
-
-        expect(await result).toBeInstanceOf(PresentationReinviteError);
-        expect(renegotiateSpy).toHaveBeenCalledTimes(1);
-      });
-
-      it('должен сразу завершать запуск демонстрации ошибкой, когда сервер отклонил согласование', async () => {
-        const renegotiateSpy = jest
-          .spyOn(callManager, 'renegotiateMcuSession')
-          .mockRejectedValue(new Error('Request Pending'));
-        const result = lifecycle
-          .executeStartFlow(jest.fn(), videoTrack, {})
-          .catch((error: unknown) => {
-            return error;
-          });
-
-        await jest.runAllTimersAsync();
-
-        expect(await result).toBeInstanceOf(PresentationReinviteError);
-        expect(renegotiateSpy).toHaveBeenCalledTimes(1);
-      });
+      await expect(lifecycle.executeStartFlow(jest.fn(), videoTrack, {})).rejects.toBeInstanceOf(
+        PresentationReinviteError,
+      );
+      expect(stopTrackSpy).toHaveBeenCalledTimes(1);
     });
 
     it('executeUpdateFlow эмитит failed и пробрасывает PresentationTrackError', async () => {

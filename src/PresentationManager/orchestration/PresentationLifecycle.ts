@@ -1,5 +1,3 @@
-import { repeatedCallsAsync } from 'repeated-calls';
-
 import resolveSendEncodings from '@/tools/resolveSendEncodings';
 import { setPresentationMaxBitrate, applyContentHint } from '@/utils/peerConnection';
 import { PresentationReinviteError, PresentationTrackError } from '../errors';
@@ -11,11 +9,6 @@ import type { TEvents } from '../events';
 import type { TPresentationSessionPort } from './createCallManagerPort';
 import type { PresentationStateMachine } from '../PresentationStateMachine';
 import type PresentationTrackService from '../PresentationTrackService';
-
-/** Максимальное количество попыток renegotiate, пока в звонке идёт другое согласование */
-const RENEGOTIATE_CALL_LIMIT = 10;
-/** Задержка между попытками renegotiate (мс); окно перекрывает паузу JsSIP после 491 (1 с) */
-const RENEGOTIATE_DELAY_BETWEEN_CALLS = 300;
 
 type TPresentationLifecycleDeps = {
   events: TEvents;
@@ -200,7 +193,7 @@ export class PresentationLifecycle {
 
       if (isNeedReinvite) {
         try {
-          await this.repeatRenegotiation();
+          await this.sendRenegotiation();
         } catch (reinviteError: unknown) {
           this.trackService.stop(connection);
 
@@ -218,24 +211,14 @@ export class PresentationLifecycle {
     }
   }
 
-  // renegotiate возвращает false без отправки reINVITE, пока в звонке идёт другое согласование
-  // (например, INVITE от сервера) — повторяем, пока звонок не освободится
-  private async repeatRenegotiation(): Promise<void> {
-    await repeatedCallsAsync<boolean, Error, false>({
-      targetFunction: async () => {
-        if (!this.sessionPort.getEstablishedSession()) {
-          throw new Error('No rtcSession established');
-        }
+  // JsSIP сам дожидается конца другого согласования в звонке (например, INVITE от сервера);
+  // false — reINVITE не отправлен: звонок так и не освободился или завершился
+  private async sendRenegotiation(): Promise<void> {
+    const isRenegotiated = await this.sessionPort.renegotiate();
 
-        return this.sessionPort.renegotiate();
-      },
-      isComplete: (isRenegotiated) => {
-        return isRenegotiated === true;
-      },
-      callLimit: RENEGOTIATE_CALL_LIMIT,
-      delay: RENEGOTIATE_DELAY_BETWEEN_CALLS,
-      isCheckBeforeCall: false,
-    });
+    if (!isRenegotiated) {
+      throw new Error('Renegotiation was not sent');
+    }
   }
 
   private async replaceActiveTrack(

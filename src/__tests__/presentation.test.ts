@@ -240,21 +240,6 @@ describe('presentation', () => {
     expect(sipConnector.presentationManager.stateMachine.isActive).toBe(true);
   });
 
-  it('должен согласовывать демонстрацию, когда основной звонок освободился после другого согласования', async () => {
-    await sipConnector.connect(dataForConnectionWithAuthorization);
-    await sipConnector.call({ number, mediaStream });
-
-    const renegotiateMainCall = jest
-      .spyOn(sipConnector.callManager.getEstablishedRTCSession()!, 'renegotiate')
-      .mockResolvedValueOnce(false)
-      .mockResolvedValueOnce(true);
-
-    await sipConnector.startPresentation(mediaStream.getVideoTracks()[0] as MediaStreamVideoTrack);
-
-    expect(renegotiateMainCall).toHaveBeenCalledTimes(2);
-    expect(sipConnector.presentationManager.stateMachine.isActive).toBe(true);
-  });
-
   it('should be stopped incoming presentation before outgoing presentation started when in DIRECT_P2P_ROOM', async () => {
     expect.assertions(2);
 
