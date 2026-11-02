@@ -1688,10 +1688,10 @@
   resolved "https://registry.yarnpkg.com/@types/json5/-/json5-0.0.29.tgz#ee28707ae94e11d2b827bcbe5270bcea7f3e71ee"
   integrity sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ==
 
-"@types/lodash@^4.17.26":
-  version "4.17.26"
-  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.17.26.tgz#7f83594d70359fc4b2707e344aed9a59138d024c"
-  integrity sha512-48NWfiY6oNcKOh47Z4h+sIvwcQR91h6KPhaYKgeMIrkT2jV82Gy90SErj60vW8jQbeMSOSbhIv3bZ7JoqPPVhA==
+"@types/lodash@^4.17.27":
+  version "4.17.27"
+  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.17.27.tgz#15fb73275b64dbfe49e2ae8376bb469b352a47a7"
+  integrity sha512-VenMRv/eKNrspX9v3H4dbmjsrnCOYdYBG3kxXKk3dG6X+urBGcj2Prww3xw1U5K4FV/mE4h5GbWd0szEKf+9ew==
 
 "@types/minimist@^1.2.0":
   version "1.2.5"
@@ -1717,10 +1717,10 @@
   dependencies:
     undici-types "~8.3.0"
 
-"@types/node@^26.6.5":
-  version "26.6.5"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-26.6.5.tgz#cb35209e7767c503551b5fa42a48231c7441d979"
-  integrity sha512-uMzsv9stDdofIZBx4UGh4Z9ZgXnGC9seRDscilBcTHAeOFk67MZg/k9bWVfO+bk4qZmG+l52hRnLwUiH2LnJTg==
+"@types/node@^26.6.6":
+  version "26.6.6"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-26.6.6.tgz#9ed7b5817e728ed9216ef7c5b7d373fe3b777104"
+  integrity sha512-MzQj+8Kx3XI40OmUAE6Qoh58ZMNstNNMwn2nfd3qWsfe7nDNSqJNzes4njhz6AHwrSHOffSLwXU6yb474Q4aog==
   dependencies:
     undici-types "~8.9.0"
 
@@ -5509,17 +5509,17 @@ mlly@^1.7.4:
     pkg-types "^1.3.1"
     ufo "^1.6.3"
 
-mobx-state-tree@^8.0.0:
-  version "8.0.0"
-  resolved "https://registry.yarnpkg.com/mobx-state-tree/-/mobx-state-tree-8.0.0.tgz#6b1850c4b32366b3cc4a42136294d007286767f3"
-  integrity sha512-3ekhwG9KkPtrzzsp9vJu8JEpctoXeCADk1O1G4s+36JDqLug/AVsdW2JXT+rrAfWtPXopaoCER/sJs6qPK5oTg==
+mobx-state-tree@^9.0.0:
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/mobx-state-tree/-/mobx-state-tree-9.0.0.tgz#7636e39f76e3c9402dd761b842025e392a455860"
+  integrity sha512-jhO/vYk4syfqQKNLLPTbY0C+/N4HA14cLcizDPMS4qndWo+HKGJN+JMJ5c2BEi5LmbtVLZkWRNeOgvMSQ8H5tg==
   dependencies:
     ts-essentials "^9.4.1"
 
-mobx@^7.1.0:
-  version "7.1.0"
-  resolved "https://registry.yarnpkg.com/mobx/-/mobx-7.1.0.tgz#afdc675ecba30942a818184f9e2f697a38fe74fa"
-  integrity sha512-5eGlbA7iJ7bUwtdLaUTu7g9DDQsTo3bhtVkWD/Rii24zhjhSPdTXJ5sjKVd9n7AaJ/h6xlmUvUsyO6B1zK9HVQ==
+mobx@^7.1.4:
+  version "7.1.4"
+  resolved "https://registry.yarnpkg.com/mobx/-/mobx-7.1.4.tgz#1ce4cd658cd7e5977cbad3e43839766505e15235"
+  integrity sha512-2G9WcLqXGKe4e5usnMabjz06mqO5hQmad3qagY7/n5MmKS7t281+XtmYxnPYqVmSnCEGAKJkrdRfDhOjn3UNJg==
 
 modify-values@^1.0.0:
   version "1.0.1"
