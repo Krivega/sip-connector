@@ -184,17 +184,33 @@ describe('SipConnector: ограничение MAXMAINCAMRESOLUTION до ста�
     });
   });
 
-  it('выставляет scaleResolutionDownBy 3 до оригинального replaceTrack при замене потока на 4K до истечения задержки старта', async () => {
-    const logLengthBeforeReplace = await callWithLimitBeforeBalancingAndReplaceTo4K(5000);
+  it('во время прогрева не скалирует 4K-трек при замене потока, после старта по таймеру применяет запомненное ограничение', async () => {
+    const warmupDuration = BALANCING_START_DELAY / 2;
+    const logLengthBeforeReplace = await callWithLimitBeforeBalancingAndReplaceTo4K(warmupDuration);
 
-    const replaceTrackEntry = log.slice(logLengthBeforeReplace).find((entry) => {
-      return entry.type === 'replaceTrack';
-    });
+    const { videoSendingBalancerManager } = sipConnector;
 
-    expect(replaceTrackEntry).toEqual({
+    expect(videoSendingBalancerManager.isBalancingActive).toBe(false);
+    expect(videoSendingBalancerManager.isBalancingScheduled).toBe(true);
+    expect(
+      log.filter((entry) => {
+        return entry.type === 'setParameters' && entry.scaleResolutionDownBy !== 1;
+      }),
+    ).toEqual([]);
+    expect(log.slice(logLengthBeforeReplace)).toContainEqual({
       type: 'replaceTrack',
-      appliedScaleResolutionDownBy: 3,
+      appliedScaleResolutionDownBy: 1,
     });
-    expect(appliedScaleBySender.get(getVideoSender())).toBe(3);
+
+    await jest.advanceTimersByTimeAsync(BALANCING_START_DELAY - warmupDuration);
+    await settle();
+
+    const videoSender = getVideoSender();
+
+    expect(videoSendingBalancerManager.isBalancingActive).toBe(true);
+    expect(appliedScaleBySender.get(videoSender)).toBe(3);
+    expect(appliedMaxBitrateBySender.get(videoSender)).toBe(
+      calcMaxBitrateByWidthAndCodec(1280, CODEC),
+    );
   });
 });

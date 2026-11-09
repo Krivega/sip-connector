@@ -92,13 +92,17 @@ describe('VideoSendingBalancerManager error handling', () => {
     );
   });
 
-  it('logs error when start on main-cam-control rejects', async () => {
+  it('does not try to start on main-cam-control while balancing is scheduled', async () => {
+    mcuDebugLogger.mockClear();
     callManager.events.trigger('peerconnection:confirmed', {} as RTCPeerConnection);
     apiManager.events.trigger('main-cam-control', { mainCam: EContentMainCAM.PAUSE_MAIN_CAM });
     await delayPromise(0);
 
-    expect(videoSendingBalancerManager.isBalancingScheduled).toBe(false);
-    expect(mcuDebugLogger).toHaveBeenCalledWith('startBalancing: error', expect.any(Error));
+    expect(videoSendingBalancerManager.isBalancingScheduled).toBe(true);
+    expect(videoSendingBalancerManager.isBalancingActive).toBe(false);
+    expect(mcuDebugLogger).not.toHaveBeenCalled();
+
+    videoSendingBalancerManager.stopBalancing();
   });
 
   it('stays active and triggers balancing-started before the failed initial balance', async () => {
