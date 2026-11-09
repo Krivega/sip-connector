@@ -2,6 +2,7 @@ import { createVideoMediaStreamTrackMock } from 'webrtc-mock';
 
 import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
+import { EContentMainCAM } from '@/ApiManager';
 import { doMockSipConnector } from '@/doMock';
 import { NO_MAX_RESOLUTION_BALANCER_OPTIONS } from '@/VideoSendingBalancer/__fixtures__';
 import VideoSendingBalancerManager from '../@VideoSendingBalancerManager';
@@ -229,6 +230,28 @@ describe('VideoSendingBalancerManager', () => {
         effectiveQuality: 'low',
         previousQuality: 'auto',
         quality: 'low',
+      });
+
+      expect(videoSendingBalancerManager.isBalancingActive).toBe(false);
+    });
+
+    it('should start balancing immediately on main-cam-control while balancing is scheduled', async () => {
+      const startedPromise = videoSendingBalancerManager.wait('balancing-started');
+
+      callManager.events.trigger('peerconnection:confirmed', mockConnection);
+      sipConnector.apiManager.events.trigger('main-cam-control', {
+        mainCam: EContentMainCAM.PAUSE_MAIN_CAM,
+      });
+
+      await startedPromise;
+
+      expect(videoSendingBalancerManager.isBalancingActive).toBe(true);
+      expect(videoSendingBalancerManager.isBalancingScheduled).toBe(false);
+    });
+
+    it('should not start balancing on main-cam-control when balancing is not scheduled', () => {
+      sipConnector.apiManager.events.trigger('main-cam-control', {
+        mainCam: EContentMainCAM.PAUSE_MAIN_CAM,
       });
 
       expect(videoSendingBalancerManager.isBalancingActive).toBe(false);

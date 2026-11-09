@@ -43,6 +43,57 @@ const resolveMaxBitrate = (
 };
 
 /**
+ * Параметры паузы камеры: минимальное разрешение и битрейт
+ */
+const resolvePausedParameters = ({ codec }: IBalancingContext): IEncodingParameters => {
+  return {
+    scaleResolutionDownBy: 200,
+    maxBitrate: getMinimumBitrate(codec),
+  };
+};
+
+/**
+ * Параметры на основе разрешения трека и максимального доступного разрешения
+ */
+const resolveParametersByTrackResolution = (
+  { videoTrack, codec }: IBalancingContext,
+  maxResolution?: TResolutionSize,
+): IEncodingParameters => {
+  const scaleResolutionDownBy = resolveScaleResolutionDownBy(videoTrack, maxResolution);
+  const maxBitrate = resolveMaxBitrate(videoTrack, codec, scaleResolutionDownBy);
+
+  return {
+    scaleResolutionDownBy,
+    maxBitrate,
+  };
+};
+
+/**
+ * Параметры на основе разрешения из заголовка сервера
+ */
+const resolveParametersByResolutionMainCam = (
+  resolutionMainCam: string,
+  { videoTrack, codec }: IBalancingContext,
+): IEncodingParameters => {
+  const [widthTarget, heightTarget] = resolutionMainCam.split('x');
+  const targetSize = {
+    width: Number(widthTarget),
+    height: Number(heightTarget),
+  };
+
+  const scaleResolutionDownBy = calcScaleResolutionDownBy({
+    videoTrack,
+    targetSize,
+  });
+  const maxBitrate = calcMaxBitrateByWidthAndCodec(targetSize.width, codec);
+
+  return {
+    scaleResolutionDownBy,
+    maxBitrate,
+  };
+};
+
+/**
  * Бизнес-логика балансировки отправителей
  * Отвечает за определение стратегии и применение параметров к отправителю
  */
@@ -56,6 +107,10 @@ export class SenderBalancer {
   private readonly parametersSetter: IParametersSetter;
 
   private readonly getMaxResolution: () => TResolutionSize | undefined;
+
+  private readonly getServerHeaders: () => IMainCamHeaders | undefined;
+
+  private pendingReplacement?: { sender: RTCRtpSender; track: MediaStreamTrack };
 
   private readonly resultNoChanged: TResultSetParametersToSender = {
     isChanged: false,
@@ -81,6 +136,7 @@ export class SenderBalancer {
     options: {
       ignoreForCodec?: string;
       getMaxResolution: () => TResolutionSize | undefined;
+      getServerHeaders: () => IMainCamHeaders | undefined;
     },
   ) {
     this.senderFinder = senderFinder;
@@ -88,17 +144,16 @@ export class SenderBalancer {
     this.parametersSetter = parametersSetter;
     this.ignoreForCodec = options.ignoreForCodec;
     this.getMaxResolution = options.getMaxResolution;
+    this.getServerHeaders = options.getServerHeaders;
   }
 
   /**
-   * Выполняет балансировку на основе заголовков от сервера
+   * Выполняет балансировку на основе текущих заголовков от сервера
    * @param connection - RTCPeerConnection для получения отправителей
-   * @param headers - Заголовки от сервера с командами управления
    * @returns Promise с результатом балансировки
    */
   public async balance(
     connection: RTCPeerConnection,
-    headers?: IMainCamHeaders,
   ): Promise<TResultSetParametersToSender & { sender: RTCRtpSender | undefined }> {
     const senders = connection.getSenders();
     const sender = this.senderFinder.findVideoSender(senders);
@@ -113,18 +168,14 @@ export class SenderBalancer {
       return { ...this.resultNoChanged, sender };
     }
 
-    const { mainCam, resolutionMainCam } = headers ?? {};
-
-    return this.processSender(
-      { mainCam, resolutionMainCam },
-      {
-        sender,
-        codec,
-        videoTrack: sender.track as MediaStreamVideoTrack,
-      },
-    ).then((result) => {
-      return { ...result, sender };
+    // состояние читается после await, чтобы параллельная балансировка не применила устаревшую команду
+    const parameters = this.resolveStrictestParameters(sender, this.getServerHeaders(), {
+      codec,
+      videoTrack: sender.track as MediaStreamVideoTrack,
     });
+    const result = await this.parametersSetter.setEncodingsToSender(sender, parameters);
+
+    return { ...result, sender };
   }
 
   /**
@@ -148,117 +199,127 @@ export class SenderBalancer {
       return { ...this.resultNoChanged, sender };
     }
 
-    const context: IBalancingContext = {
-      sender,
+    const parameters = this.resolveStrictestParameters(sender, undefined, {
       codec,
       videoTrack: sender.track as MediaStreamVideoTrack,
-    };
-
-    const result = await this.setBitrateByTrackResolution(context);
+    });
+    const result = await this.parametersSetter.setEncodingsToSender(sender, parameters);
 
     return { ...result, sender };
   }
 
   /**
-   * Обрабатывает отправитель в зависимости от команды управления
-   * @param context - Контекст балансировки
-   * @returns Promise с результатом обработки
+   * Заранее ужесточает ограничение отправителя перед заменой трека,
+   * чтобы кадры нового трека не ушли с параметрами старого.
+   * До completeTrackReplacement любая балансировка этого отправителя учитывает новый трек
+   * @param sender - Отправитель, у которого заменяется трек
+   * @param newTrack - Новый трек
    */
-  private async processSender(
-    headers: IMainCamHeaders,
-    context: IBalancingContext,
-  ): Promise<TResultSetParametersToSender> {
-    const { mainCam, resolutionMainCam } = headers;
+  public async prepareTrackReplacement(
+    sender: RTCRtpSender,
+    newTrack: MediaStreamTrack,
+  ): Promise<void> {
+    this.pendingReplacement = { sender, track: newTrack };
 
-    switch (mainCam) {
-      case EContentMainCAM.PAUSE_MAIN_CAM: {
-        return this.downgradeResolutionSender(context);
-      }
-      case EContentMainCAM.RESUME_MAIN_CAM: {
-        return this.setBitrateByTrackResolution(context);
-      }
-      case EContentMainCAM.MAX_MAIN_CAM_RESOLUTION: {
-        if (resolutionMainCam !== undefined) {
-          return this.setResolutionSender(resolutionMainCam, context);
-        }
+    if (!sender.track) {
+      return;
+    }
 
-        return this.setBitrateByTrackResolution(context);
-      }
-      case EContentMainCAM.ADMIN_STOP_MAIN_CAM:
-      case EContentMainCAM.ADMIN_START_MAIN_CAM:
-      case undefined: {
-        return this.setBitrateByTrackResolution(context);
-      }
-      default: {
-        return this.setBitrateByTrackResolution(context);
-      }
+    const codec = await this.codecProvider.getCodecFromSender(sender);
+
+    if (hasIncludesString(codec, this.ignoreForCodec)) {
+      return;
+    }
+
+    const headers = this.getServerHeaders();
+    const currentParameters = this.resolveEncodingParameters(headers, {
+      codec,
+      videoTrack: sender.track as MediaStreamVideoTrack,
+    });
+    const nextParameters = this.resolveEncodingParameters(headers, {
+      codec,
+      videoTrack: newTrack as MediaStreamVideoTrack,
+    });
+
+    if (nextParameters.scaleResolutionDownBy > currentParameters.scaleResolutionDownBy) {
+      await this.parametersSetter.setEncodingsToSender(sender, nextParameters);
     }
   }
 
   /**
-   * Понижает разрешение отправителя (пауза камеры)
-   * @param context - Контекст балансировки
-   * @returns Promise с результатом
+   * Завершает замену трека: балансировка снова считается только по текущему треку
+   * @param sender - Отправитель, у которого заменялся трек
+   * @param newTrack - Новый трек
    */
-  private async downgradeResolutionSender(
-    context: IBalancingContext,
-  ): Promise<TResultSetParametersToSender> {
-    const { sender, codec } = context;
-    const parameters: IEncodingParameters = {
-      scaleResolutionDownBy: 200,
-      maxBitrate: getMinimumBitrate(codec),
-    };
-
-    return this.parametersSetter.setEncodingsToSender(sender, parameters);
+  public completeTrackReplacement(sender: RTCRtpSender, newTrack: MediaStreamTrack): void {
+    if (this.pendingReplacement?.sender === sender && this.pendingReplacement.track === newTrack) {
+      this.pendingReplacement = undefined;
+    }
   }
 
   /**
-   * Устанавливает битрейт на основе разрешения трека
-   * @param context - Контекст балансировки
-   * @returns Promise с результатом
+   * Рассчитывает параметры для текущего трека, а во время замены трека —
+   * более строгие из параметров текущего и ожидаемого трека
+   * @param sender - Отправитель
+   * @param headers - Заголовки от сервера с командами управления
+   * @param context - Контекст балансировки текущего трека
+   * @returns Параметры кодирования
    */
-  private async setBitrateByTrackResolution(
+  private resolveStrictestParameters(
+    sender: RTCRtpSender,
+    headers: IMainCamHeaders | undefined,
     context: IBalancingContext,
-  ): Promise<TResultSetParametersToSender> {
-    const { sender, videoTrack, codec } = context;
-    const maxResolution = this.getMaxResolution();
-    const scaleResolutionDownBy = resolveScaleResolutionDownBy(videoTrack, maxResolution);
-    const maxBitrate = resolveMaxBitrate(videoTrack, codec, scaleResolutionDownBy);
+  ): IEncodingParameters {
+    const parameters = this.resolveEncodingParameters(headers, context);
 
-    return this.parametersSetter.setEncodingsToSender(sender, {
-      scaleResolutionDownBy,
-      maxBitrate,
+    if (this.pendingReplacement?.sender !== sender) {
+      return parameters;
+    }
+
+    const pendingParameters = this.resolveEncodingParameters(headers, {
+      ...context,
+      videoTrack: this.pendingReplacement.track as MediaStreamVideoTrack,
     });
+
+    return pendingParameters.scaleResolutionDownBy > parameters.scaleResolutionDownBy
+      ? pendingParameters
+      : parameters;
   }
 
   /**
-   * Устанавливает разрешение отправителя на основе заголовка
-   * @param resolutionMainCam - Разрешение главной камеры
+   * Рассчитывает параметры кодирования в зависимости от команды управления
+   * @param headers - Заголовки от сервера с командами управления
    * @param context - Контекст балансировки
-   * @returns Promise с результатом
+   * @returns Параметры кодирования
    */
-  private async setResolutionSender(
-    resolutionMainCam: string,
+  private resolveEncodingParameters(
+    headers: IMainCamHeaders | undefined,
     context: IBalancingContext,
-  ): Promise<TResultSetParametersToSender> {
-    const [widthTarget, heightTarget] = resolutionMainCam.split('x');
-    const { sender, videoTrack, codec } = context;
-    const targetSize = {
-      width: Number(widthTarget),
-      height: Number(heightTarget),
-    };
+  ): IEncodingParameters {
+    const { mainCam, resolutionMainCam } = headers ?? {};
 
-    const scaleResolutionDownBy = calcScaleResolutionDownBy({
-      videoTrack,
-      targetSize,
-    });
-    const maxBitrate = calcMaxBitrateByWidthAndCodec(targetSize.width, codec);
+    switch (mainCam) {
+      case EContentMainCAM.PAUSE_MAIN_CAM: {
+        return resolvePausedParameters(context);
+      }
+      case EContentMainCAM.RESUME_MAIN_CAM: {
+        return resolveParametersByTrackResolution(context, this.getMaxResolution());
+      }
+      case EContentMainCAM.MAX_MAIN_CAM_RESOLUTION: {
+        if (resolutionMainCam !== undefined) {
+          return resolveParametersByResolutionMainCam(resolutionMainCam, context);
+        }
 
-    const parameters: IEncodingParameters = {
-      scaleResolutionDownBy,
-      maxBitrate,
-    };
-
-    return this.parametersSetter.setEncodingsToSender(sender, parameters);
+        return resolveParametersByTrackResolution(context, this.getMaxResolution());
+      }
+      case EContentMainCAM.ADMIN_STOP_MAIN_CAM:
+      case EContentMainCAM.ADMIN_START_MAIN_CAM:
+      case undefined: {
+        return resolveParametersByTrackResolution(context, this.getMaxResolution());
+      }
+      default: {
+        return resolveParametersByTrackResolution(context, this.getMaxResolution());
+      }
+    }
   }
 }

@@ -8,9 +8,9 @@
 
 - Поиск видео-sender в соединении
 - Проверку кодеков и их игнорирование
-- Обработку событий управления камерой
+- Применение команды управления камерой, переданной `VideoSendingBalancerManager`
 - Управление состоянием балансировки
-- Логику обработки Sender (`processSender`)
+- Расчёт параметров кодирования по команде сервера (`resolveEncodingParameters`)
 - Управление очередью установки параметров отправителя
 
 ## Использование
@@ -20,7 +20,7 @@
 ```typescript
 import VideoSendingBalancer from './VideoSendingBalancer';
 
-const balancer = new VideoSendingBalancer(apiManager, getConnection, {
+const balancer = new VideoSendingBalancer(getConnection, {
   ignoreForCodec: 'H264',
   getMaxResolution: () => connectionConfiguration?.maxAvailableResolution,
   onSetParameters: (parameters) => {
@@ -37,12 +37,16 @@ const balancer = new VideoSendingBalancer(apiManager, getConnection, {
 В типичном сценарии `getMaxResolution` задаёт `SipConnector` при создании
 `VideoSendingBalancerManager`.
 
-### Подписка на события
+### Команда сервера
 
 ```typescript
-balancer.subscribe();
-balancer.unsubscribe();
+balancer.setServerHeaders(headers);
+await balancer.balance();
 ```
+
+Балансировщик не подписывается на `main-cam-control`: события звонка и команды сервера слушает
+`VideoSendingBalancerManager` и решает, когда балансировать. `setServerHeaders()` только сохраняет
+команду, применяет её следующий `balance()`.
 
 ### Балансировка
 
@@ -51,11 +55,17 @@ const result = await balancer.balance();
 console.log('Результат балансировки:', result);
 ```
 
+`balance()` применяет параметры по текущей команде и включает `TrackMonitor` для найденного
+отправителя.
+
 ### Сброс состояния
 
 ```typescript
 balancer.reset();
 ```
+
+`reset()` стирает команду сервера, останавливает `TrackMonitor` и восстанавливает параметры
+отправителя по разрешению трека.
 
 ## API
 
@@ -63,7 +73,6 @@ balancer.reset();
 
 ```typescript
 constructor(
-  apiManager: ApiManager,
   getConnection: () => RTCPeerConnection | undefined,
   options: IBalancerOptions & {
     pollIntervalMs?: number;
@@ -81,20 +90,14 @@ interface IBalancerOptions {
 
 ### Публичные методы
 
-- `subscribe()`: Подписаться на события управления камерой
-- `unsubscribe()`: Отписаться от событий и сбросить состояние
-- `balance()`: Выполнить балансировку вручную
-- `reset()`: Сбросить состояние и восстановить параметры Sender
-
-### Приватные методы
-
-- `handleMainCamControl(headers)`: Обработчик событий управления камерой
+- `setServerHeaders(headers)`: Сохранить команду управления главной камерой
+- `balance()`: Выполнить балансировку
+- `reset()`: Стереть команду, остановить `TrackMonitor` и восстановить параметры Sender
 
 ## Внутренняя логика
 
 Класс использует следующие компоненты:
 
-- `VideoSendingEventHandler`: Обработка событий управления камерой
 - `SenderBalancer`: Бизнес-логика балансировки и ограничения разрешения
 - `ParametersSetterWithQueue`: Очередь установки параметров отправителя
 - `TrackMonitor`: Мониторинг смены видеотрека и перебалансировка
@@ -107,15 +110,39 @@ interface IBalancerOptions {
 
 - `balance()` без команды MCU и с `RESUME_MAIN_CAM`
 - `reset()` при остановке балансировки
-- перебалансировке после смены видеотрека
+- подготовке к замене видеотрека и перебалансировке после неё
 
-Лимит влияет на `scaleResolutionDownBy` и `maxBitrate` в `setBitrateByTrackResolution`.
+Лимит влияет на `scaleResolutionDownBy` и `maxBitrate` в `resolveEncodingParameters`.
 
 Исключения:
 
 - `PAUSE_MAIN_CAM` — фиксированное понижение (`scaleResolutionDownBy: 200`), лимит подключения не
   применяется
 - `MAX_MAIN_CAM_RESOLUTION` с `resolutionMainCam` — используется только разрешение из команды MCU
+
+## Замена видеотрека
+
+`TrackMonitor` оборачивает `replaceTrack` отправителя и выполняет вызовы последовательно, в порядке
+вызова: каждый следующий ждёт завершения предыдущего, даже если тот завершился ошибкой или монитор
+переподписался к тому же отправителю. Перед заменой на непустой трек, отличный от
+текущего, вызывается `SenderBalancer.prepareTrackReplacement`: новый трек сразу запоминается как
+ожидаемый, затем параметры считаются для старого и нового трека с текущей командой сервера и
+`getMaxResolution`. Если для нового трека `scaleResolutionDownBy` больше, ограничение применяется до
+замены, чтобы кадры нового трека не ушли в полном разрешении. Иначе параметры до замены не меняются
+(ослабления до замены нет). Ошибки хука `beforeReplaceTrack` логирует `TrackMonitor`; замена
+выполняется в любом случае.
+
+Пока замена не завершилась, любая балансировка этого отправителя (команда сервера, опрос трека,
+`reset`) берёт более строгие параметры из текущего и ожидаемого трека, поэтому параллельный
+`balance()` не может ослабить ограничение. Ожидаемый трек сбрасывается после оригинального
+`replaceTrack`, в том числе при ошибке (`completeTrackReplacement`), а затем выполняется обычная
+перебалансировка.
+
+Если во время замены вызван `reset()`, обёртка `replaceTrack` после замены не возобновляет слежение и
+не запускает перебалансировку, раз монитор уже отключён от отправителя.
+
+`ParametersSetterWithQueue` применяет параметры через `TaskQueue`: если задачу вытеснила более новая,
+промис `add()` резолвится только после выполнения последней задачи очереди.
 
 ## Состояния камеры
 
@@ -129,5 +156,5 @@ interface IBalancerOptions {
 ```typescript
 import { resolveVideoSendingBalancer } from './VideoSendingBalancer';
 
-const balancer = resolveVideoSendingBalancer(apiManager, getConnection, options);
+const balancer = resolveVideoSendingBalancer(getConnection, options);
 ```

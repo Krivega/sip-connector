@@ -1,5 +1,12 @@
 /// <reference types="jest" />
+import { isEmptyStackError } from 'stack-promises';
+
+import logger from '@/logger';
 import { TaskQueue } from '../TaskQueue';
+
+jest.mock('@/logger');
+
+const { mcuDebugLogger } = logger as jest.Mock & { mcuDebugLogger: jest.Mock };
 
 describe('TaskQueue', () => {
   let taskQueue: TaskQueue<void>;
@@ -243,6 +250,129 @@ describe('TaskQueue', () => {
       expect(result1).toBe('first');
       expect(result2).toBe('second');
       expect(result3).toBe('third');
+    });
+  });
+
+  describe('очередь при добавлении задач во время выполнения', () => {
+    let numberQueue: TaskQueue<number>;
+    let order: string[];
+    let firstDeferred: PromiseWithResolvers<number>;
+    let firstPromise: Promise<number>;
+
+    beforeEach(async () => {
+      numberQueue = new TaskQueue<number>();
+      order = [];
+      firstDeferred = Promise.withResolvers<number>();
+      firstPromise = numberQueue.add(async () => {
+        const value = await firstDeferred.promise;
+
+        order.push('first');
+
+        return value;
+      });
+
+      await Promise.resolve();
+    });
+
+    it('должен резолвить выполняющуюся задачу только после последней задачи её результатом', async () => {
+      const lastDeferred = Promise.withResolvers<number>();
+      const lastPromise = numberQueue.add(async () => {
+        const value = await lastDeferred.promise;
+
+        order.push('last');
+
+        return value;
+      });
+      const firstResult = firstPromise.then((value) => {
+        order.push(`first-resolved:${value}`);
+      });
+
+      firstDeferred.resolve(1);
+      await Promise.resolve();
+      lastDeferred.resolve(2);
+      await Promise.all([firstResult, lastPromise]);
+
+      expect(order).toEqual(['first', 'last', 'first-resolved:2']);
+    });
+
+    it('не должен запускать вытесненную задачу и должен резолвить её результатом последней', async () => {
+      const skippedTask = jest.fn(async () => {
+        return 2;
+      });
+      const skippedPromise = numberQueue.add(skippedTask);
+      const lastPromise = numberQueue.add(async () => {
+        order.push('last');
+
+        return 3;
+      });
+      const skippedResult = skippedPromise.then((value) => {
+        order.push(`skipped-resolved:${value}`);
+      });
+
+      firstDeferred.resolve(1);
+      await Promise.all([firstPromise, skippedResult, lastPromise]);
+
+      expect(skippedTask).not.toHaveBeenCalled();
+      expect(order).toEqual(['first', 'last', 'skipped-resolved:3']);
+      await expect(firstPromise).resolves.toBe(3);
+    });
+
+    it('должен резолвить задачи undefined без повторного запуска, если очередь остановлена во время выполнения', async () => {
+      const secondTask = jest.fn(async () => {
+        return 2;
+      });
+      const secondPromise = numberQueue.add(secondTask);
+
+      numberQueue.stop();
+      firstDeferred.resolve(1);
+
+      const results = await Promise.all([firstPromise, secondPromise]);
+
+      expect(results).toEqual([undefined, undefined]);
+      expect(secondTask).not.toHaveBeenCalled();
+      expect(order).toEqual(['first']);
+      expect(mcuDebugLogger).toHaveBeenCalledWith('TaskQueue: error', expect.any(Error));
+      expect(
+        mcuDebugLogger.mock.calls.every(([, error]) => {
+          return isEmptyStackError(error as Error);
+        }),
+      ).toBe(true);
+    });
+  });
+
+  describe('ошибки задач', () => {
+    it('должен резолвить undefined и логировать ошибку задачи', async () => {
+      const error = new Error('Task failed');
+      const numberQueue = new TaskQueue<number>();
+
+      const result = await numberQueue.add(async () => {
+        throw error;
+      });
+
+      expect(result).toBeUndefined();
+      expect(mcuDebugLogger).toHaveBeenCalledWith('TaskQueue: error', error);
+    });
+
+    it('должен резолвить undefined, если последняя задача завершилась ошибкой после добавления', async () => {
+      const error = new Error('Last task failed');
+      const numberQueue = new TaskQueue<number>();
+      const firstDeferred = Promise.withResolvers<number>();
+      const firstPromise = numberQueue.add(async () => {
+        return firstDeferred.promise;
+      });
+
+      await Promise.resolve();
+
+      const lastPromise = numberQueue.add(async () => {
+        throw error;
+      });
+
+      firstDeferred.resolve(1);
+
+      const results = await Promise.all([firstPromise, lastPromise]);
+
+      expect(results).toEqual([undefined, undefined]);
+      expect(mcuDebugLogger).toHaveBeenCalledWith('TaskQueue: error', error);
     });
   });
 });
