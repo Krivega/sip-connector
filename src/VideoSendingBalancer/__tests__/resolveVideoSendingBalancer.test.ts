@@ -54,15 +54,15 @@ describe('resolveVideoSendingBalancer', () => {
       video: { deviceId: { exact: 'videoDeviceId' }, width: { exact: fhdWidth } },
     });
 
-    videoSendingBalancer = resolveVideoSendingBalancer(
-      sipConnector.apiManager,
-      () => {
-        return sipConnector.connection;
-      },
-      NO_MAX_RESOLUTION_BALANCER_OPTIONS,
-    );
+    videoSendingBalancer = resolveVideoSendingBalancer(() => {
+      return sipConnector.connection;
+    }, NO_MAX_RESOLUTION_BALANCER_OPTIONS);
 
-    videoSendingBalancer.subscribe();
+    // так команду применяет VideoSendingBalancerManager при активной балансировке
+    sipConnector.apiManager.on('main-cam-control', (headers) => {
+      videoSendingBalancer.setServerHeaders(headers);
+      videoSendingBalancer.balance().catch(() => {});
+    });
   });
 
   it('должен установить актуальный maxBitrate mediaStreamTrack по команде RESUME_MAIN_CAM', async () => {
@@ -245,13 +245,9 @@ describe('resolveVideoSendingBalancer', () => {
       // Мокаем setParameters
       jest.spyOn(sender, 'setParameters').mockResolvedValue(undefined);
 
-      balancer = resolveVideoSendingBalancer(
-        sipConnector.apiManager,
-        () => {
-          return sipConnector.connection;
-        },
-        NO_MAX_RESOLUTION_BALANCER_OPTIONS,
-      );
+      balancer = resolveVideoSendingBalancer(() => {
+        return sipConnector.connection;
+      }, NO_MAX_RESOLUTION_BALANCER_OPTIONS);
     });
 
     it('должен балансировать videoTrack 1024 после MAX_MAIN_CAM_RESOLUTION', async () => {
@@ -279,12 +275,10 @@ describe('resolveVideoSendingBalancer', () => {
       });
 
       // Симулируем событие MAX_MAIN_CAM_RESOLUTION
-
-      // @ts-expect-error
-      balancer.serverHeaders = {
+      balancer.setServerHeaders({
         mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
         resolutionMainCam: `${targetWidth}x${targeHight}`,
-      };
+      });
 
       const result = await balancer.balance();
 
@@ -324,12 +318,10 @@ describe('resolveVideoSendingBalancer', () => {
       });
 
       // Симулируем событие MAX_MAIN_CAM_RESOLUTION
-
-      // @ts-expect-error
-      balancer.serverHeaders = {
+      balancer.setServerHeaders({
         mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
         resolutionMainCam: `${targetWidth}x${targeHight}`,
-      };
+      });
 
       const result = await balancer.balance();
 
@@ -364,12 +356,10 @@ describe('resolveVideoSendingBalancer', () => {
       });
 
       // Симулируем событие PAUSE_MAIN_CAM
-
-      // @ts-expect-error
-      balancer.serverHeaders = {
+      balancer.setServerHeaders({
         mainCam: EContentMainCAM.PAUSE_MAIN_CAM,
         resolutionMainCam: '',
-      };
+      });
 
       const result = await balancer.balance();
 
@@ -407,32 +397,24 @@ describe('resolveVideoSendingBalancer', () => {
       });
 
       // Симулируем событие RESUME_MAIN_CAM
-
-      // @ts-expect-error
-      balancer.serverHeaders = {
+      balancer.setServerHeaders({
         mainCam: EContentMainCAM.RESUME_MAIN_CAM,
-      };
+      });
 
       await balancer.balance();
 
       // Симулируем событие MAX_MAIN_CAM_RESOLUTION
-
-      // @ts-expect-error
-      // eslint-disable-next-line require-atomic-updates
-      balancer.serverHeaders = {
+      balancer.setServerHeaders({
         mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
         resolutionMainCam: `${targetWidth}x${targeHight}`,
-      };
+      });
 
       await balancer.balance();
 
       // Симулируем событие RESUME_MAIN_CAM снова
-
-      // @ts-expect-error
-      // eslint-disable-next-line require-atomic-updates
-      balancer.serverHeaders = {
+      balancer.setServerHeaders({
         mainCam: EContentMainCAM.RESUME_MAIN_CAM,
-      };
+      });
 
       const result = await balancer.balance();
 
@@ -484,12 +466,10 @@ describe('resolveVideoSendingBalancer', () => {
         );
 
       // Симулируем событие MAX_MAIN_CAM_RESOLUTION
-
-      // @ts-expect-error
-      balancer.serverHeaders = {
+      balancer.setServerHeaders({
         mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
         resolutionMainCam: `${targetWidth}x${targeHight}`,
-      };
+      });
 
       const result = await balancer.balance();
 
@@ -536,12 +516,10 @@ describe('resolveVideoSendingBalancer', () => {
         );
 
       // Симулируем событие PAUSE_MAIN_CAM
-
-      // @ts-expect-error
-      balancer.serverHeaders = {
+      balancer.setServerHeaders({
         mainCam: EContentMainCAM.PAUSE_MAIN_CAM,
         resolutionMainCam: '',
-      };
+      });
 
       const result = await balancer.balance();
 
@@ -591,32 +569,24 @@ describe('resolveVideoSendingBalancer', () => {
         );
 
       // Симулируем событие RESUME_MAIN_CAM
-
-      // @ts-expect-error
-      balancer.serverHeaders = {
+      balancer.setServerHeaders({
         mainCam: EContentMainCAM.RESUME_MAIN_CAM,
-      };
+      });
 
       await balancer.balance();
 
       // Симулируем событие MAX_MAIN_CAM_RESOLUTION
-
-      // @ts-expect-error
-      // eslint-disable-next-line require-atomic-updates
-      balancer.serverHeaders = {
+      balancer.setServerHeaders({
         mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
         resolutionMainCam: `${targetWidth}x${targeHight}`,
-      };
+      });
 
       await balancer.balance();
 
       // Симулируем событие RESUME_MAIN_CAM снова
-
-      // @ts-expect-error
-      // eslint-disable-next-line require-atomic-updates
-      balancer.serverHeaders = {
+      balancer.setServerHeaders({
         mainCam: EContentMainCAM.RESUME_MAIN_CAM,
-      };
+      });
 
       const result = await balancer.balance();
 

@@ -1,17 +1,30 @@
 import { SetTimeoutRequest } from '@krivega/timeout-requester';
 
+import resolveDebug from '@/logger';
+
+const debug = resolveDebug('TrackMonitor');
+
+type TBeforeReplaceTrack = (sender: RTCRtpSender, newTrack: MediaStreamTrack) => Promise<void>;
+
+type TAfterReplaceTrack = (sender: RTCRtpSender, newTrack: MediaStreamTrack) => void;
+
 /**
  * TrackMonitor следит за изменением MediaStreamTrack, который отправляется
  * локальным RTCRtpSender-ом.
  *
  * 1. Обнаруживает смену sender или его track (replaceTrack).
  * 2. При изменении разрешения (resize-event или polling) вызывает callback.
- * 3. При replaceTrack вызывает callback сразу после замены и перенастраивает слежение.
+ * 3. Выполняет вызовы replaceTrack последовательно, в порядке вызова.
+ * 4. Перед заменой трека на новый вызывает beforeReplaceTrack, после (в том числе при ошибке) — afterReplaceTrack.
+ * 5. При replaceTrack вызывает callback сразу после замены и перенастраивает слежение.
  */
 export class TrackMonitor {
   private currentSender?: RTCRtpSender;
 
   private originalReplaceTrack?: RTCRtpSender['replaceTrack'];
+
+  // shortcut: после detach без повторной подписки вызов идёт мимо очереди, замены сериализует потребитель (VideoTrackSender)
+  private previousReplacement: Promise<void> = Promise.resolve();
 
   private lastWidth?: number;
 
@@ -25,14 +38,24 @@ export class TrackMonitor {
 
   private readonly setTimeoutRequest: SetTimeoutRequest;
 
+  private readonly beforeReplaceTrack?: TBeforeReplaceTrack;
+
+  private readonly afterReplaceTrack?: TAfterReplaceTrack;
+
   public constructor({
     pollIntervalMs = 1000,
     maxPollIntervalMs,
+    beforeReplaceTrack,
+    afterReplaceTrack,
   }: {
     pollIntervalMs?: number;
     maxPollIntervalMs?: number;
+    beforeReplaceTrack?: TBeforeReplaceTrack;
+    afterReplaceTrack?: TAfterReplaceTrack;
   }) {
     this.pollIntervalMs = pollIntervalMs;
+    this.beforeReplaceTrack = beforeReplaceTrack;
+    this.afterReplaceTrack = afterReplaceTrack;
     // default max ~ 16x initial
     this.maxPollIntervalMs = maxPollIntervalMs ?? pollIntervalMs * 16;
     this.currentPollIntervalMs = this.pollIntervalMs;
@@ -72,17 +95,62 @@ export class TrackMonitor {
     const originalReplaceTrack = sender.replaceTrack.bind(sender);
 
     this.originalReplaceTrack = originalReplaceTrack;
+
     // переопределяем существующий метод только внутри мониторинга
     // eslint-disable-next-line no-param-reassign
     sender.replaceTrack = async (newTrack: MediaStreamTrack | null) => {
-      await originalReplaceTrack(newTrack);
+      const replacement = this.previousReplacement.then(async () => {
+        return this.replaceSenderTrack({ sender, newTrack, originalReplaceTrack, callback });
+      });
 
-      // После успешной замены трека – обновляем слежение и уведомляем
-      this.attachTrack(callback, newTrack ?? undefined);
-      callback();
+      // ошибка предыдущей замены не должна блокировать следующую
+      this.previousReplacement = replacement.catch(() => {
+        return undefined;
+      });
+
+      return replacement;
     };
 
     this.attachTrack(callback, sender.track as MediaStreamTrack | undefined);
+  }
+
+  private async replaceSenderTrack({
+    sender,
+    newTrack,
+    originalReplaceTrack,
+    callback,
+  }: {
+    sender: RTCRtpSender;
+    newTrack: MediaStreamTrack | null;
+    originalReplaceTrack: RTCRtpSender['replaceTrack'];
+    callback: () => void;
+  }): Promise<void> {
+    const isTrackChanging = newTrack !== null && newTrack !== sender.track;
+
+    if (isTrackChanging) {
+      try {
+        await this.beforeReplaceTrack?.(sender, newTrack);
+      } catch (error: unknown) {
+        debug('beforeReplaceTrack: error', error);
+      }
+    }
+
+    try {
+      await originalReplaceTrack(newTrack);
+    } finally {
+      if (isTrackChanging) {
+        this.afterReplaceTrack?.(sender, newTrack);
+      }
+    }
+
+    // монитор могли отключить от sender во время замены — не возобновляем слежение
+    if (this.currentSender !== sender) {
+      return;
+    }
+
+    // После успешной замены трека – обновляем слежение и уведомляем
+    this.attachTrack(callback, newTrack ?? undefined);
+    callback();
   }
 
   private detachSender(): void {

@@ -1,10 +1,31 @@
 /// <reference types="jest" />
+import { createVideoMediaStreamTrackMock } from 'webrtc-mock';
+
 import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
 import { EContentMainCAM } from '@/ApiManager';
-import { createBalancerOptions, NO_MAX_RESOLUTION_BALANCER_OPTIONS } from '../__fixtures__';
+import { createSenderBalancerOptions } from '../__fixtures__';
+import { calcMaxBitrateByWidthAndCodec } from '../calcBitrate';
 import { SenderBalancer } from '../SenderBalancer';
 
 import type { ICodecProvider, IMainCamHeaders, IParametersSetter, ISenderFinder } from '../types';
+
+const CODEC = 'h264';
+
+const HEADERS_MAX_720P: IMainCamHeaders = {
+  mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
+  resolutionMainCam: '1280x720',
+};
+
+const PARAMETERS_4K_LIMITED_TO_720P = {
+  scaleResolutionDownBy: 3,
+  maxBitrate: calcMaxBitrateByWidthAndCodec(1280, CODEC),
+};
+
+const createVideoTrack = (width: number, height: number): MediaStreamVideoTrack => {
+  return createVideoMediaStreamTrackMock({
+    constraints: { width, height },
+  }) as MediaStreamVideoTrack;
+};
 
 describe('SenderBalancer', () => {
   let senderBalancer: SenderBalancer;
@@ -14,8 +35,15 @@ describe('SenderBalancer', () => {
   let mockSender: RTCRtpSender;
   let mockVideoTrack: MediaStreamVideoTrack;
   let mockConnection: RTCPeerConnection;
+  let serverHeaders: IMainCamHeaders | undefined;
+
+  const getServerHeaders = () => {
+    return serverHeaders;
+  };
 
   beforeEach(() => {
+    serverHeaders = undefined;
+
     // Создаем моки
     mockSenderFinder = {
       findVideoSender: jest.fn(),
@@ -48,7 +76,7 @@ describe('SenderBalancer', () => {
         codecProvider: mockCodecProvider,
         parametersSetter: mockParametersSetter,
       },
-      NO_MAX_RESOLUTION_BALANCER_OPTIONS,
+      createSenderBalancerOptions({ getServerHeaders }),
     );
   });
 
@@ -60,7 +88,7 @@ describe('SenderBalancer', () => {
           codecProvider: mockCodecProvider,
           parametersSetter: mockParametersSetter,
         },
-        createBalancerOptions({ ignoreForCodec: 'vp8' }),
+        createSenderBalancerOptions({ getServerHeaders, ignoreForCodec: 'vp8' }),
       );
 
       expect(balancer).toBeInstanceOf(SenderBalancer);
@@ -98,7 +126,7 @@ describe('SenderBalancer', () => {
           codecProvider: mockCodecProvider,
           parametersSetter: mockParametersSetter,
         },
-        createBalancerOptions({ ignoreForCodec: 'vp8' }),
+        createSenderBalancerOptions({ getServerHeaders, ignoreForCodec: 'vp8' }),
       );
 
       const result = await balancerWithIgnore.balance(mockConnection);
@@ -146,10 +174,13 @@ describe('SenderBalancer', () => {
           codecProvider: mockCodecProvider,
           parametersSetter: mockParametersSetter,
         },
-        createBalancerOptions({ maxResolution: { width: 960, height: 540 } }),
+        createSenderBalancerOptions({
+          getServerHeaders,
+          maxResolution: { width: 960, height: 540 },
+        }),
       );
 
-      await balancerWithMaxResolution.balance(mockConnection, undefined);
+      await balancerWithMaxResolution.balance(mockConnection);
 
       expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
         mockSender,
@@ -181,7 +212,9 @@ describe('SenderBalancer', () => {
         },
       });
 
-      await senderBalancer.balance(mockConnection, headers);
+      serverHeaders = headers;
+
+      await senderBalancer.balance(mockConnection);
 
       expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
         mockSender,
@@ -206,7 +239,9 @@ describe('SenderBalancer', () => {
         },
       });
 
-      await senderBalancer.balance(mockConnection, headers);
+      serverHeaders = headers;
+
+      await senderBalancer.balance(mockConnection);
 
       expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
         mockSender,
@@ -232,7 +267,9 @@ describe('SenderBalancer', () => {
         },
       });
 
-      await senderBalancer.balance(mockConnection, headers);
+      serverHeaders = headers;
+
+      await senderBalancer.balance(mockConnection);
 
       expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
         mockSender,
@@ -263,10 +300,15 @@ describe('SenderBalancer', () => {
           codecProvider: mockCodecProvider,
           parametersSetter: mockParametersSetter,
         },
-        createBalancerOptions({ maxResolution: { width: 640, height: 360 } }),
+        createSenderBalancerOptions({
+          getServerHeaders,
+          maxResolution: { width: 640, height: 360 },
+        }),
       );
 
-      await balancerWithMaxResolution.balance(mockConnection, headers);
+      serverHeaders = headers;
+
+      await balancerWithMaxResolution.balance(mockConnection);
 
       expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
         mockSender,
@@ -291,7 +333,9 @@ describe('SenderBalancer', () => {
         },
       });
 
-      await senderBalancer.balance(mockConnection, headers);
+      serverHeaders = headers;
+
+      await senderBalancer.balance(mockConnection);
 
       expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
         mockSender,
@@ -316,7 +360,9 @@ describe('SenderBalancer', () => {
         },
       });
 
-      await senderBalancer.balance(mockConnection, headers);
+      serverHeaders = headers;
+
+      await senderBalancer.balance(mockConnection);
 
       expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
         mockSender,
@@ -341,7 +387,9 @@ describe('SenderBalancer', () => {
         },
       });
 
-      await senderBalancer.balance(mockConnection, headers);
+      serverHeaders = headers;
+
+      await senderBalancer.balance(mockConnection);
 
       expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
         mockSender,
@@ -364,7 +412,9 @@ describe('SenderBalancer', () => {
         },
       });
 
-      await senderBalancer.balance(mockConnection, headers);
+      serverHeaders = headers;
+
+      await senderBalancer.balance(mockConnection);
 
       expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
         mockSender,
@@ -389,7 +439,9 @@ describe('SenderBalancer', () => {
         },
       });
 
-      await senderBalancer.balance(mockConnection, headers);
+      serverHeaders = headers;
+
+      await senderBalancer.balance(mockConnection);
 
       expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
         mockSender,
@@ -431,7 +483,7 @@ describe('SenderBalancer', () => {
           codecProvider: mockCodecProvider,
           parametersSetter: mockParametersSetter,
         },
-        createBalancerOptions({ ignoreForCodec: 'vp8' }),
+        createSenderBalancerOptions({ getServerHeaders, ignoreForCodec: 'vp8' }),
       );
 
       const result = await balancerWithIgnore.reset(mockConnection);
@@ -483,7 +535,10 @@ describe('SenderBalancer', () => {
           codecProvider: mockCodecProvider,
           parametersSetter: mockParametersSetter,
         },
-        createBalancerOptions({ maxResolution: { width: 960, height: 540 } }),
+        createSenderBalancerOptions({
+          getServerHeaders,
+          maxResolution: { width: 960, height: 540 },
+        }),
       );
 
       await balancerWithMaxResolution.reset(mockConnection);
@@ -544,9 +599,9 @@ describe('SenderBalancer', () => {
           },
         });
 
-      await senderBalancer.balance(mockConnection, {
-        mainCam: EContentMainCAM.PAUSE_MAIN_CAM,
-      });
+      serverHeaders = { mainCam: EContentMainCAM.PAUSE_MAIN_CAM };
+
+      await senderBalancer.balance(mockConnection);
 
       expect(mockParametersSetter.setEncodingsToSender).toHaveBeenNthCalledWith(
         1,
@@ -613,7 +668,9 @@ describe('SenderBalancer', () => {
         },
       });
 
-      await senderBalancer.balance(mockConnection, headers);
+      serverHeaders = headers;
+
+      await senderBalancer.balance(mockConnection);
 
       expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
         mockSender,
@@ -639,7 +696,9 @@ describe('SenderBalancer', () => {
         },
       });
 
-      await senderBalancer.balance(mockConnection, headers);
+      serverHeaders = headers;
+
+      await senderBalancer.balance(mockConnection);
 
       expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
         mockSender,
@@ -665,7 +724,9 @@ describe('SenderBalancer', () => {
         },
       });
 
-      await senderBalancer.balance(mockConnection, headers);
+      serverHeaders = headers;
+
+      await senderBalancer.balance(mockConnection);
 
       expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
         mockSender,
@@ -691,7 +752,9 @@ describe('SenderBalancer', () => {
         },
       });
 
-      await senderBalancer.balance(mockConnection, headers);
+      serverHeaders = headers;
+
+      await senderBalancer.balance(mockConnection);
 
       expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
         mockSender,
@@ -699,6 +762,297 @@ describe('SenderBalancer', () => {
           scaleResolutionDownBy: Number.NaN,
         }),
       );
+    });
+  });
+
+  describe('чтение состояния после getCodecFromSender', () => {
+    let sender4K: RTCRtpSender;
+
+    beforeEach(() => {
+      sender4K = new RTCRtpSenderMock({ track: createVideoTrack(3840, 2160) });
+      mockSenderFinder.findVideoSender.mockReturnValue(sender4K);
+    });
+
+    it('должен применить команду сервера, пришедшую во время получения кодека', async () => {
+      const codecDeferred = Promise.withResolvers<string>();
+
+      mockCodecProvider.getCodecFromSender.mockReturnValue(codecDeferred.promise);
+
+      const balancing = senderBalancer.balance(mockConnection);
+
+      serverHeaders = HEADERS_MAX_720P;
+      codecDeferred.resolve(CODEC);
+      await balancing;
+
+      expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledTimes(1);
+      expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
+        sender4K,
+        PARAMETERS_4K_LIMITED_TO_720P,
+      );
+    });
+  });
+
+  describe('prepareTrackReplacement', () => {
+    let track720: MediaStreamVideoTrack;
+    let track4K: MediaStreamVideoTrack;
+    let sender720: RTCRtpSender;
+
+    beforeEach(() => {
+      track720 = createVideoTrack(1280, 720);
+      track4K = createVideoTrack(3840, 2160);
+      sender720 = new RTCRtpSenderMock({ track: track720 });
+      mockSenderFinder.findVideoSender.mockReturnValue(sender720);
+      mockCodecProvider.getCodecFromSender.mockResolvedValue(CODEC);
+    });
+
+    it('должен ужесточить параметры до замены трека, если новый трек требует большего scaleResolutionDownBy', async () => {
+      serverHeaders = HEADERS_MAX_720P;
+
+      await senderBalancer.prepareTrackReplacement(sender720, track4K);
+
+      expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledTimes(1);
+      expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
+        sender720,
+        PARAMETERS_4K_LIMITED_TO_720P,
+      );
+    });
+
+    it('должен применить команду сервера, пришедшую во время получения кодека при подготовке замены', async () => {
+      const codecDeferred = Promise.withResolvers<string>();
+
+      mockCodecProvider.getCodecFromSender.mockReturnValue(codecDeferred.promise);
+
+      const preparing = senderBalancer.prepareTrackReplacement(sender720, track4K);
+
+      serverHeaders = HEADERS_MAX_720P;
+      codecDeferred.resolve(CODEC);
+      await preparing;
+
+      expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
+        sender720,
+        PARAMETERS_4K_LIMITED_TO_720P,
+      );
+    });
+
+    it('должен ужесточить параметры по maxResolution без команды сервера', async () => {
+      const balancerWithMaxResolution = new SenderBalancer(
+        {
+          senderFinder: mockSenderFinder,
+          codecProvider: mockCodecProvider,
+          parametersSetter: mockParametersSetter,
+        },
+        createSenderBalancerOptions({
+          getServerHeaders,
+          maxResolution: { width: 1920, height: 1080 },
+        }),
+      );
+
+      await balancerWithMaxResolution.prepareTrackReplacement(sender720, track4K);
+
+      expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
+        sender720,
+        expect.objectContaining({ scaleResolutionDownBy: 2 }),
+      );
+    });
+
+    it('не должен менять параметры, если новый трек не требует большего scaleResolutionDownBy', async () => {
+      await senderBalancer.prepareTrackReplacement(sender720, track4K);
+
+      expect(mockParametersSetter.setEncodingsToSender).not.toHaveBeenCalled();
+    });
+
+    it('не должен менять параметры при замене 4K на 720p', async () => {
+      const sender4K = new RTCRtpSenderMock({ track: track4K });
+
+      serverHeaders = HEADERS_MAX_720P;
+
+      await senderBalancer.prepareTrackReplacement(sender4K, track720);
+
+      expect(mockParametersSetter.setEncodingsToSender).not.toHaveBeenCalled();
+    });
+
+    it('не должен менять параметры при PAUSE_MAIN_CAM, который уже строже нового трека', async () => {
+      serverHeaders = { mainCam: EContentMainCAM.PAUSE_MAIN_CAM };
+
+      await senderBalancer.prepareTrackReplacement(sender720, track4K);
+
+      expect(mockParametersSetter.setEncodingsToSender).not.toHaveBeenCalled();
+    });
+
+    it('не должен менять параметры, если codec игнорируется', async () => {
+      const balancerWithIgnore = new SenderBalancer(
+        {
+          senderFinder: mockSenderFinder,
+          codecProvider: mockCodecProvider,
+          parametersSetter: mockParametersSetter,
+        },
+        createSenderBalancerOptions({ getServerHeaders, ignoreForCodec: CODEC }),
+      );
+
+      serverHeaders = HEADERS_MAX_720P;
+
+      await balancerWithIgnore.prepareTrackReplacement(sender720, track4K);
+
+      expect(mockParametersSetter.setEncodingsToSender).not.toHaveBeenCalled();
+    });
+
+    it('не должен запрашивать кодек и менять параметры, если у отправителя нет трека', async () => {
+      const senderWithoutTrack = new RTCRtpSenderMock({ track: undefined });
+
+      serverHeaders = HEADERS_MAX_720P;
+
+      await senderBalancer.prepareTrackReplacement(senderWithoutTrack, track4K);
+
+      expect(mockCodecProvider.getCodecFromSender).not.toHaveBeenCalled();
+      expect(mockParametersSetter.setEncodingsToSender).not.toHaveBeenCalled();
+    });
+
+    it('должен отклонить промис, если получение кодека завершилось ошибкой', async () => {
+      const error = new Error('getStats failed');
+
+      mockCodecProvider.getCodecFromSender.mockRejectedValue(error);
+
+      await expect(senderBalancer.prepareTrackReplacement(sender720, track4K)).rejects.toBe(error);
+    });
+  });
+
+  describe('балансировка во время замены трека', () => {
+    let track720: MediaStreamVideoTrack;
+    let track4K: MediaStreamVideoTrack;
+    let sender720: RTCRtpSender;
+
+    beforeEach(async () => {
+      track720 = createVideoTrack(1280, 720);
+      track4K = createVideoTrack(3840, 2160);
+      sender720 = new RTCRtpSenderMock({ track: track720 });
+      mockSenderFinder.findVideoSender.mockReturnValue(sender720);
+      mockCodecProvider.getCodecFromSender.mockResolvedValue(CODEC);
+
+      await senderBalancer.prepareTrackReplacement(sender720, track4K);
+      mockParametersSetter.setEncodingsToSender.mockClear();
+    });
+
+    it('balance должен применить более строгие параметры ожидаемого трека', async () => {
+      serverHeaders = HEADERS_MAX_720P;
+
+      await senderBalancer.balance(mockConnection);
+
+      expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
+        sender720,
+        PARAMETERS_4K_LIMITED_TO_720P,
+      );
+    });
+
+    it('balance должен применить параметры текущего трека, если они строже ожидаемого', async () => {
+      const sender4K = new RTCRtpSenderMock({ track: track4K });
+
+      mockSenderFinder.findVideoSender.mockReturnValue(sender4K);
+      await senderBalancer.prepareTrackReplacement(sender4K, track720);
+      serverHeaders = HEADERS_MAX_720P;
+
+      await senderBalancer.balance(mockConnection);
+
+      expect(mockParametersSetter.setEncodingsToSender).toHaveBeenLastCalledWith(
+        sender4K,
+        PARAMETERS_4K_LIMITED_TO_720P,
+      );
+    });
+
+    it('balance должен учитывать только текущий трек, если заменяется трек другого отправителя', async () => {
+      const otherSender = new RTCRtpSenderMock({ track: createVideoTrack(1280, 720) });
+
+      mockSenderFinder.findVideoSender.mockReturnValue(otherSender);
+      serverHeaders = HEADERS_MAX_720P;
+
+      await senderBalancer.balance(mockConnection);
+
+      expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
+        otherSender,
+        expect.objectContaining({ scaleResolutionDownBy: 1 }),
+      );
+    });
+
+    it('reset должен применить более строгие параметры ожидаемого трека по maxResolution', async () => {
+      const balancerWithMaxResolution = new SenderBalancer(
+        {
+          senderFinder: mockSenderFinder,
+          codecProvider: mockCodecProvider,
+          parametersSetter: mockParametersSetter,
+        },
+        createSenderBalancerOptions({
+          getServerHeaders,
+          maxResolution: { width: 1920, height: 1080 },
+        }),
+      );
+
+      await balancerWithMaxResolution.prepareTrackReplacement(sender720, track4K);
+      mockParametersSetter.setEncodingsToSender.mockClear();
+      serverHeaders = HEADERS_MAX_720P;
+
+      await balancerWithMaxResolution.reset(mockConnection);
+
+      expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
+        sender720,
+        expect.objectContaining({ scaleResolutionDownBy: 2 }),
+      );
+    });
+
+    it('balance должен учитывать только текущий трек после completeTrackReplacement', async () => {
+      senderBalancer.completeTrackReplacement(sender720, track4K);
+      serverHeaders = HEADERS_MAX_720P;
+
+      await senderBalancer.balance(mockConnection);
+
+      expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
+        sender720,
+        expect.objectContaining({ scaleResolutionDownBy: 1 }),
+      );
+    });
+
+    it('completeTrackReplacement с другим отправителем не должен завершать замену', async () => {
+      const otherSender = new RTCRtpSenderMock({ track: track720 });
+
+      senderBalancer.completeTrackReplacement(otherSender, track4K);
+      serverHeaders = HEADERS_MAX_720P;
+
+      await senderBalancer.balance(mockConnection);
+
+      expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
+        sender720,
+        PARAMETERS_4K_LIMITED_TO_720P,
+      );
+    });
+
+    it('completeTrackReplacement с другим треком не должен завершать замену', async () => {
+      senderBalancer.completeTrackReplacement(sender720, createVideoTrack(3840, 2160));
+      serverHeaders = HEADERS_MAX_720P;
+
+      await senderBalancer.balance(mockConnection);
+
+      expect(mockParametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
+        sender720,
+        PARAMETERS_4K_LIMITED_TO_720P,
+      );
+    });
+
+    it('повторная подготовка замены должна заменить ожидаемый трек', async () => {
+      await senderBalancer.prepareTrackReplacement(sender720, createVideoTrack(1280, 720));
+      serverHeaders = HEADERS_MAX_720P;
+
+      await senderBalancer.balance(mockConnection);
+
+      expect(mockParametersSetter.setEncodingsToSender).toHaveBeenLastCalledWith(
+        sender720,
+        expect.objectContaining({ scaleResolutionDownBy: 1 }),
+      );
+    });
+  });
+
+  describe('completeTrackReplacement', () => {
+    it('не должен падать без подготовленной замены', () => {
+      expect(() => {
+        senderBalancer.completeTrackReplacement(mockSender, mockVideoTrack);
+      }).not.toThrow();
     });
   });
 });

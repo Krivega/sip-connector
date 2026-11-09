@@ -1,4 +1,4 @@
-import { createStackPromises } from 'stack-promises';
+import { createStackPromises, isPromiseIsNotActualError } from 'stack-promises';
 
 import resolveDebug from '@/logger';
 
@@ -36,8 +36,15 @@ export class TaskQueue<T> implements ITaskQueue<T> {
    */
   private async run(): Promise<T> {
     // @ts-expect-error
-    return this.stackPromises().catch((error: unknown) => {
+    return this.stackPromises().catch(async (error: unknown) => {
+      // «неактуально» получает ждущий, а не задача: пришла задача новее — ждём её результат; выполненные задачи не повторяются
+      if (isPromiseIsNotActualError(error)) {
+        return this.run();
+      }
+
       debug('TaskQueue: error', error);
+
+      return undefined;
     });
   }
 }

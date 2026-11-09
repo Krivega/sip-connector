@@ -19,7 +19,6 @@ export interface IMainCamHeaders {
 
 // Контекст для балансировки
 export interface IBalancingContext {
-  sender: RTCRtpSender;
   videoTrack: MediaStreamVideoTrack;
   codec?: string;
 }
@@ -44,14 +43,6 @@ export interface IParametersSetter {
     parameters: IEncodingParameters,
     onSetParameters?: TOnSetParameters,
   ) => Promise<TResultSetParametersToSender>;
-}
-
-export type TMainCamControlHandler = (headers: IMainCamHeaders) => void;
-
-// Интерфейс для обработчика событий
-export interface IEventHandler {
-  subscribe: (handler: TMainCamControlHandler) => void;
-  unsubscribe: () => void;
 }
 
 // Интерфейс для очереди задач

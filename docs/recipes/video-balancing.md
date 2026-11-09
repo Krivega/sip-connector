@@ -34,9 +34,12 @@ sipConnector.on('video-balancer:parameters-updated', (result) => {
 ## Жизненный цикл балансировщика
 
 1. `peerconnection:confirmed` → планирование запуска через `balancingStartDelay` (по умолчанию 10 с)
-2. По таймеру → `balance()` + `subscribe()`
-3. События `main-cam-control` → перебалансировка
-4. Смена видеотрека → автоматическая перебалансировка
+2. По таймеру → `startBalancing()`: `balance()` и слежение за треком
+3. События `main-cam-control` → при активной балансировке перебалансировка; пока запуск
+   запланирован — старт сразу с этой командой, не дожидаясь `balancingStartDelay`; иначе команда
+   игнорируется
+4. Смена видеотрека → ограничение нового трека заранее, если оно строже, затем
+   перебалансировка
 5. `ended` / `failed` / `recv-session-started` / `recv-quality-changed` → `stopBalancing()`
 6. `recv-session-ended` → повторное планирование запуска
 

@@ -10,3 +10,7 @@
 | `video-balancer:balancing-started`   | Генерируется при запуске балансировки        | `{ delay: number }`     |
 | `video-balancer:balancing-stopped`   | Генерируется при остановке балансировки      | `Record<string, never>` |
 | `video-balancer:parameters-updated`  | Генерируется при обновлении параметров видео | `RTCRtpSendParameters`  |
+
+Поле `delay` в `balancing-scheduled` и `balancing-started` — настроенная задержка запуска
+(`balancingStartDelay`), а не фактически прошедшее время. Если команда сервера пришла в ожидании
+старта, `balancing-started` приходит сразу после `balancing-scheduled` с той же настроенной `delay`.
