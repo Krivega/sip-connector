@@ -101,15 +101,18 @@ const mainCamHeaders = (
   return headers;
 };
 
+const HEADERS_MAX_360P = mainCamHeaders(EContentMainCAM.MAX_MAIN_CAM_RESOLUTION, '640x360');
 const HEADERS_MAX_720P = mainCamHeaders(EContentMainCAM.MAX_MAIN_CAM_RESOLUTION, '1280x720');
 const HEADERS_PAUSE = mainCamHeaders(EContentMainCAM.PAUSE_MAIN_CAM);
 const HEADERS_RESUME = mainCamHeaders(EContentMainCAM.RESUME_MAIN_CAM);
 
+const MAX_BITRATE_640 = calcMaxBitrateByWidthAndCodec(640, CODEC);
 const MAX_BITRATE_1280 = calcMaxBitrateByWidthAndCodec(1280, CODEC);
 const MAX_BITRATE_3840 = calcMaxBitrateByWidthAndCodec(3840, CODEC);
 
 // параметры 4K-трека по каждой команде
 const ENCODING_4K_BY_TRACK = { scaleResolutionDownBy: 1, maxBitrate: MAX_BITRATE_3840 };
+const ENCODING_4K_LIMITED_TO_360P = { scaleResolutionDownBy: 6, maxBitrate: MAX_BITRATE_640 };
 const ENCODING_4K_LIMITED_TO_720P = { scaleResolutionDownBy: 3, maxBitrate: MAX_BITRATE_1280 };
 const ENCODING_PAUSED = { scaleResolutionDownBy: 200, maxBitrate: getMinimumBitrate(CODEC) };
 
@@ -121,6 +124,23 @@ const COMMANDS: [string, [string, string][], RTCRtpEncodingParameters][] = [
 
 // команды, параметры которых отличаются от параметров по треку
 const LIMITING_COMMANDS = COMMANDS.slice(0, 2);
+
+// последовательности команд за время прогрева и параметры по последней из них
+const LAST_COMMAND_SEQUENCES: [string, [string, string][][], RTCRtpEncodingParameters][] = [
+  [
+    'MAX 640x360, затем MAX 1280x720',
+    [HEADERS_MAX_360P, HEADERS_MAX_720P],
+    ENCODING_4K_LIMITED_TO_720P,
+  ],
+  [
+    'MAX 1280x720, затем MAX 640x360',
+    [HEADERS_MAX_720P, HEADERS_MAX_360P],
+    ENCODING_4K_LIMITED_TO_360P,
+  ],
+  ['MAX 1280x720, затем PAUSE', [HEADERS_MAX_720P, HEADERS_PAUSE], ENCODING_PAUSED],
+  ['PAUSE, затем RESUME', [HEADERS_PAUSE, HEADERS_RESUME], ENCODING_4K_BY_TRACK],
+  ['MAX 640x360, затем RESUME', [HEADERS_MAX_360P, HEADERS_RESUME], ENCODING_4K_BY_TRACK],
+];
 
 const settle = async () => {
   await jest.advanceTimersByTimeAsync(0);
@@ -205,7 +225,7 @@ describe('VideoSendingBalancerManager: команда main-cam-control', () => {
     jest.useRealTimers();
   });
 
-  describe('(а) команда в ожидании отложенного старта', () => {
+  describe('(а) команда в ожидании отложенного старта (прогрев отправки)', () => {
     let startedHandler: jest.Mock;
 
     beforeEach(() => {
@@ -217,19 +237,43 @@ describe('VideoSendingBalancerManager: команда main-cam-control', () => {
     });
 
     it.each(COMMANDS)(
-      'по %s запускает балансировку сразу, очищает таймер и применяет команду',
+      'по %s не запускает балансировку и не меняет параметры до истечения задержки, затем старт применяет команду',
       async (_name, headers, expectedEncoding) => {
         confirmCall();
-
-        expect(manager.isBalancingScheduled).toBe(true);
-
         sendMainCamInfo(headers);
+        await jest.advanceTimersByTimeAsync(BALANCING_START_DELAY - 1);
+        await settle();
+
+        expect(startedHandler).not.toHaveBeenCalled();
+        expect(manager.isBalancingActive).toBe(false);
+        expect(manager.isBalancingScheduled).toBe(true);
+        expect(observed.log).toEqual([]);
+
+        await jest.advanceTimersByTimeAsync(1);
         await settle();
 
         expect(startedHandler).toHaveBeenCalledTimes(1);
         expect(manager.isBalancingActive).toBe(true);
         expect(manager.isBalancingScheduled).toBe(false);
         expect(observed.getAppliedEncoding()).toEqual(expectedEncoding);
+      },
+    );
+
+    it.each(LAST_COMMAND_SEQUENCES)(
+      'старт по таймеру применяет последнюю из команд: %s',
+      async (_name, sequence, expectedEncoding) => {
+        confirmCall();
+
+        for (const headers of sequence) {
+          sendMainCamInfo(headers);
+          // eslint-disable-next-line no-await-in-loop
+          await jest.advanceTimersByTimeAsync(1000);
+        }
+
+        await settle();
+
+        expect(startedHandler).not.toHaveBeenCalled();
+        expect(observed.log).toEqual([]);
 
         await jest.advanceTimersByTimeAsync(BALANCING_START_DELAY);
         await settle();
@@ -255,15 +299,17 @@ describe('VideoSendingBalancerManager: команда main-cam-control', () => {
       expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_BY_TRACK);
     });
 
-    it('остаётся активной после неудачного раннего старта и применяет следующую команду', async () => {
+    it('остаётся активной после неудачного старта по таймеру и применяет следующую команду сразу', async () => {
       setConnection(undefined);
       confirmCall();
       sendMainCamInfo(HEADERS_PAUSE);
+      await jest.advanceTimersByTimeAsync(BALANCING_START_DELAY);
       await settle();
 
       expect(startedHandler).toHaveBeenCalledTimes(1);
       expect(manager.isBalancingActive).toBe(true);
       expect(manager.isBalancingScheduled).toBe(false);
+      expect(observed.log).toEqual([]);
 
       setConnection(connection as RTCPeerConnection);
       sendMainCamInfo(HEADERS_MAX_720P);
@@ -303,7 +349,7 @@ describe('VideoSendingBalancerManager: команда main-cam-control', () => {
     it('выставляет scaleResolutionDownBy 3 до оригинального replaceTrack, если команда пришла в ожидании старта', async () => {
       confirmCall();
       sendMainCamInfo(HEADERS_MAX_720P);
-      await jest.advanceTimersByTimeAsync(5000);
+      await jest.advanceTimersByTimeAsync(BALANCING_START_DELAY);
       await settle();
 
       const logLengthBeforeReplace = observed.log.length;
@@ -314,6 +360,23 @@ describe('VideoSendingBalancerManager: команда main-cam-control', () => {
         type: 'replaceTrack',
         appliedScaleResolutionDownBy: 3,
       });
+      expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_LIMITED_TO_720P);
+    });
+
+    it('во время прогрева не скалирует трек при замене, после старта по таймеру применяет запомненную команду', async () => {
+      confirmCall();
+      sendMainCamInfo(HEADERS_MAX_720P);
+      await jest.advanceTimersByTimeAsync(BALANCING_START_DELAY / 2);
+      await settle();
+      await replaceTrack(track4K);
+
+      expect(manager.isBalancingActive).toBe(false);
+      expect(observed.log).toEqual([{ type: 'replaceTrack', appliedScaleResolutionDownBy: 1 }]);
+
+      await jest.advanceTimersByTimeAsync(BALANCING_START_DELAY / 2);
+      await settle();
+
+      expect(manager.isBalancingActive).toBe(true);
       expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_LIMITED_TO_720P);
     });
 
@@ -599,9 +662,19 @@ describe('VideoSendingBalancerManager: команда main-cam-control', () => {
       expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_BY_TRACK);
     });
 
-    it('команда после recv-session-ended запускает балансировку сразу', async () => {
+    it('команда после recv-session-ended запоминается и применяется стартом по таймеру', async () => {
+      const logLengthBeforeCommand = observed.log.length;
+
       callManager.events.trigger('recv-session-ended', undefined as never);
       sendMainCamInfo(HEADERS_MAX_720P);
+      await jest.advanceTimersByTimeAsync(BALANCING_START_DELAY - 1);
+      await settle();
+
+      expect(startedHandler).not.toHaveBeenCalled();
+      expect(manager.isBalancingScheduled).toBe(true);
+      expect(observed.log.slice(logLengthBeforeCommand)).toEqual([]);
+
+      await jest.advanceTimersByTimeAsync(1);
       await settle();
 
       expect(startedHandler).toHaveBeenCalledTimes(1);

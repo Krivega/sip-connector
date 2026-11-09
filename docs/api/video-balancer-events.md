@@ -12,5 +12,6 @@
 | `video-balancer:parameters-updated`  | Генерируется при обновлении параметров видео | `RTCRtpSendParameters`  |
 
 Поле `delay` в `balancing-scheduled` и `balancing-started` — настроенная задержка запуска
-(`balancingStartDelay`), а не фактически прошедшее время. Если команда сервера пришла в ожидании
-старта, `balancing-started` приходит сразу после `balancing-scheduled` с той же настроенной `delay`.
+(`balancingStartDelay`), а не фактически прошедшее время. Команда сервера, пришедшая после
+`balancing-scheduled`, не ускоряет запуск: `balancing-started` приходит по таймеру или при ручном
+`startBalancing()`.

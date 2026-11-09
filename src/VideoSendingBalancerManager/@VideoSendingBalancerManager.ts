@@ -17,8 +17,8 @@ const debug = resolveDebug('VideoSendingBalancerManager');
 
 /**
  * Менеджер для управления VideoSendingBalancer
- * Автоматически запускает балансировку через 10 секунд после начала звонка
- * либо сразу, если команда сервера пришла в ожидании старта
+ * Автоматически запускает балансировку через 10 секунд после начала звонка:
+ * пока браузер прогревает отправку (постепенно наращивает разрешение), скалирование применять нельзя
  */
 class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
   public isBalancingActive = false;
@@ -140,10 +140,9 @@ class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
       return;
     }
 
-    // ограничение нужно до замены трека пользователем, поэтому не ждём задержку старта
+    // во время прогрева только запоминаем: последнюю команду применит старт балансировки
     if (this.isBalancingScheduled) {
       this.videoSendingBalancer.setServerHeaders(headers);
-      this.runStartBalancing();
     }
   };
 
@@ -154,16 +153,12 @@ class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
     // Запланируем запуск балансировки через настраиваемое время
     this.startBalancingTimer = setTimeout(() => {
       this.startBalancingTimer = undefined;
-      this.runStartBalancing();
+      this.startBalancing().catch((error: unknown) => {
+        debug('startBalancing: error', error);
+      });
     }, this.balancingStartDelay);
 
     this.events.trigger('balancing-scheduled', { delay: this.balancingStartDelay });
-  }
-
-  private runStartBalancing(): void {
-    this.startBalancing().catch((error: unknown) => {
-      debug('startBalancing: error', error);
-    });
   }
 
   private clearStartTimer(): void {

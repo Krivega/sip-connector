@@ -235,18 +235,20 @@ describe('VideoSendingBalancerManager', () => {
       expect(videoSendingBalancerManager.isBalancingActive).toBe(false);
     });
 
-    it('should start balancing immediately on main-cam-control while balancing is scheduled', async () => {
-      const startedPromise = videoSendingBalancerManager.wait('balancing-started');
+    it('should keep balancing scheduled on main-cam-control while balancing is scheduled', async () => {
+      const startedHandler = jest.fn();
 
+      videoSendingBalancerManager.on('balancing-started', startedHandler);
       callManager.events.trigger('peerconnection:confirmed', mockConnection);
       sipConnector.apiManager.events.trigger('main-cam-control', {
         mainCam: EContentMainCAM.PAUSE_MAIN_CAM,
       });
+      await Promise.resolve();
 
-      await startedPromise;
-
-      expect(videoSendingBalancerManager.isBalancingActive).toBe(true);
-      expect(videoSendingBalancerManager.isBalancingScheduled).toBe(false);
+      expect(startedHandler).not.toHaveBeenCalled();
+      expect(mockSender.setParameters).not.toHaveBeenCalled();
+      expect(videoSendingBalancerManager.isBalancingActive).toBe(false);
+      expect(videoSendingBalancerManager.isBalancingScheduled).toBe(true);
     });
 
     it('should not start balancing on main-cam-control when balancing is not scheduled', () => {
