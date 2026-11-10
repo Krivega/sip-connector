@@ -82,7 +82,7 @@
     "ts-debounce": "^5.0.1",
     "ua-parser-js": "^2.0.10",
     "webrtc-mock": "^1.2.3",
-    "xstate": "^5.33.3"
+    "xstate": "^5.33.4"
   },
   "devDependencies": {
     "@babel/preset-typescript": "^8.0.7",
@@ -110,7 +110,7 @@
     "ts-node": "^10.9.2",
     "tsc-files": "^1.1.4",
     "typescript": "^6.0.3",
-    "vite": "^8.3.6",
+    "vite": "^8.3.7",
     "vite-plugin-dts": "^5.1.2",
     "webrtc-adapter": "^9.0.6"
   },
@@ -127,7 +127,7 @@
     "ts-debounce": "^5.0.1",
     "ua-parser-js": "^2.0.9",
     "webrtc-mock": "^1.2.3",
-    "xstate": "^5.33.3"
+    "xstate": "^5.33.4"
   },
   "packageManager": "yarn@1.22.22"
 }
