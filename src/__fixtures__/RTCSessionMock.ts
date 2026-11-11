@@ -1,9 +1,8 @@
-/// <reference types="jest" />
-
 import { NameAddrHeader, SessionStatus, URI } from '@krivega/jssip';
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
 
 import BaseSession from './BaseSession.mock';
+import createJestMock from './createJestMock';
 import RTCPeerConnectionMock from './RTCPeerConnectionMock';
 import { getRoomFromSipUrl } from './utils';
 import { Originator } from '../CallManager/events';
@@ -34,7 +33,7 @@ class RTCSessionMock extends BaseSession {
 
   public status_code?: number;
 
-  public renegotiate = jest.fn(async () => {
+  public renegotiate = createJestMock(async () => {
     return true;
   });
 
@@ -47,7 +46,7 @@ class RTCSessionMock extends BaseSession {
 
  * @returns {undefined}
      */
-  public answer = jest.fn(({ mediaStream }: { mediaStream: MediaStream }) => {
+  public answer = createJestMock(({ mediaStream }: { mediaStream: MediaStream }) => {
     if (this.originator !== 'remote') {
       const error = new Error('answer available only for remote sessions');
 
@@ -69,11 +68,11 @@ class RTCSessionMock extends BaseSession {
     }, CONNECTION_DELAY);
   });
 
-  public _isReadyToReOffer = jest.fn((): boolean => {
+  public _isReadyToReOffer = createJestMock((): boolean => {
     return true;
   });
 
-  public restartIce = jest.fn(
+  public restartIce = createJestMock(
     async (_options?: {
       useUpdate?: boolean;
       extraHeaders?: string[];

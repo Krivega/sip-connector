@@ -2,17 +2,21 @@
  * Полный набор экспортов, совместимый с `src/logger.ts` (default, enable/disable, resolveDebug, logError).
  * Используется в `src/__mocks__/logger.ts` и в `jest.mock('@/logger', () => createLoggerMockModule())`.
  */
+import createJestMock from './createJestMock';
+
+import type { TCompatibleMock } from './mockTypes';
+
 export type LoggerMockModule = {
   __esModule: true;
   /** `resolveDebug`: при вызове возвращает вызываемую функцию (как `debug.extend`) */
-  default: jest.Mock;
-  enableDebug: jest.Mock;
-  disableDebug: jest.Mock;
+  default: TCompatibleMock;
+  enableDebug: TCompatibleMock;
+  disableDebug: TCompatibleMock;
 };
 
 export function createLoggerMockModule(): LoggerMockModule {
-  const mcuDebugLogger = jest.fn();
-  const resolveDebugMock = jest.fn(() => {
+  const mcuDebugLogger = createJestMock();
+  const resolveDebugMock = createJestMock(() => {
     return mcuDebugLogger;
   });
 
@@ -23,14 +27,16 @@ export function createLoggerMockModule(): LoggerMockModule {
   return {
     __esModule: true,
     default: resolveDebugMock,
-    enableDebug: jest.fn(),
-    disableDebug: jest.fn(),
+    enableDebug: createJestMock(),
+    disableDebug: createJestMock(),
   };
 }
 
 /** Возвращает функцию, на которую пишет `resolveDebug('…')` (реальные вызовы логов). */
-export function getMockedLoggerDefault(imported: unknown): jest.Mock {
-  const resolveDebug = imported as jest.Mock & { mcuDebugLogger: jest.Mock };
+export function getMockedLoggerDefault(imported: unknown): TCompatibleMock {
+  const resolveDebug = imported as TCompatibleMock & {
+    mcuDebugLogger: TCompatibleMock;
+  };
 
   return resolveDebug.mcuDebugLogger;
 }

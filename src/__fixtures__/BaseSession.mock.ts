@@ -2,6 +2,7 @@
 import { Events } from 'events-constructor';
 
 import resolveDebug from '@/logger';
+import createJestMock from './createJestMock';
 import { SESSION_JSSIP_EVENT_NAMES } from './eventNames';
 
 import type {
@@ -28,7 +29,7 @@ const debug = resolveDebug('BaseSession.mock');
 
 export type TEventHandlers = Record<string, (data: unknown) => void>;
 
-class BaseSession implements RTCSession {
+abstract class BaseSession implements RTCSession {
   public originator: string;
 
   public connection!: RTCPeerConnectionDeprecated;
@@ -39,7 +40,7 @@ class BaseSession implements RTCSession {
 
   public mutedOptions = { audio: false, video: false };
 
-  public addTransceiver = jest.fn(
+  public addTransceiver = createJestMock(
     async (
       _trackOrKind: MediaStreamTrack | 'audio' | 'video',
       _init?: RTCRtpTransceiverInit,
@@ -48,6 +49,8 @@ class BaseSession implements RTCSession {
       return {} as RTCRtpTransceiver;
     },
   );
+
+  public abstract restartIce: RTCSession['restartIce'];
 
   public constructor({
     originator = 'local',
@@ -250,17 +253,16 @@ class BaseSession implements RTCSession {
     }
   }
 
-  // @ts-expect-error
-  public on: RTCSession['on'] = <T extends keyof RTCSessionEventMap>(
+  public on = <T extends keyof RTCSessionEventMap>(
     type: T,
     listener: RTCSessionEventMap[T],
-  ) => {
+  ): this => {
     if (SESSION_JSSIP_EVENT_NAMES.includes(type)) {
       // @ts-expect-error
       this.events.on(type, listener);
     }
 
-    return this as unknown as RTCSession;
+    return this;
   };
 
   public trigger(eventName: (typeof SESSION_JSSIP_EVENT_NAMES)[number], data?: unknown) {
@@ -281,6 +283,11 @@ class BaseSession implements RTCSession {
   public isEstablished() {
     return true;
   }
+  public abstract connect(...parameters: Parameters<RTCSession['connect']>): void;
+
+  public abstract terminateAsync(
+    ...parameters: Parameters<RTCSession['terminateAsync']>
+  ): Promise<void>;
 }
 
 export default BaseSession;

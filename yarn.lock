@@ -4818,7 +4818,7 @@ jest-mock@30.4.1:
     "@types/node" "*"
     jest-util "30.4.1"
 
-jest-mock@30.5.2:
+jest-mock@30.5.2, jest-mock@^30.5.2:
   version "30.5.2"
   resolved "https://registry.yarnpkg.com/jest-mock/-/jest-mock-30.5.2.tgz#78a8e24589113fa95a96c70d14b3c01c6116c2c2"
   integrity sha512-KTHb37Fhj8xY8qPFvTFaFJHcdsumQp+ExsUlgoX232Agmc706gagBs53+CYvulV7MVQo9AgXOUxsqzzVBoJlrA==

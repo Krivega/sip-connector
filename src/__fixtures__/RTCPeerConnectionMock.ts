@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/class-methods-use-this */
-
 import { MediaStreamTrackMock } from 'webrtc-mock';
 
+import createJestMock from './createJestMock';
 import RTCRtpSenderMock from './RTCRtpSenderMock';
 import RTCRtpTransceiverMock from './RTCRtpTransceiverMock';
 
@@ -69,16 +69,16 @@ class RTCPeerConnectionMock extends EventTarget implements RTCPeerConnectionDepr
 
   public signalingState: RTCSignalingState = 'stable';
 
-  public close = jest.fn();
+  public close = createJestMock();
 
-  public setLocalDescription = jest.fn(
+  public setLocalDescription = createJestMock(
     async (description: RTCSessionDescriptionInit): Promise<void> => {
       this.signalingState = description.type === 'rollback' ? 'stable' : 'have-local-offer';
       this.dispatchEvent(new Event('signalingstatechange'));
     },
   );
 
-  public setRemoteDescription = jest.fn(
+  public setRemoteDescription = createJestMock(
     async (_description: RTCSessionDescriptionInit): Promise<void> => {
       this.signalingState = 'stable';
       this.connectionState = 'connected';
@@ -87,7 +87,7 @@ class RTCPeerConnectionMock extends EventTarget implements RTCPeerConnectionDepr
     },
   );
 
-  public addTransceiver = jest.fn(
+  public addTransceiver = createJestMock(
     (trackOrKind: MediaStreamTrack | string, init?: RTCRtpTransceiverInit): RTCRtpTransceiver => {
       const track =
         typeof trackOrKind === 'string'
@@ -114,7 +114,7 @@ class RTCPeerConnectionMock extends EventTarget implements RTCPeerConnectionDepr
     },
   );
 
-  public createOffer = jest.fn(
+  public createOffer = createJestMock(
     async (
       _successCallback?: unknown,
       _failureCallback?: unknown,

@@ -4,6 +4,7 @@ import { C, URI, Options } from '@krivega/jssip';
 import { Events } from 'events-constructor';
 
 import resolveDebug from '@/logger';
+import createJestMock from './createJestMock';
 import { UA_JSSIP_EVENT_NAMES } from './eventNames';
 import Registrator from './Registrator.mock';
 import RTCSessionMock from './RTCSessionMock';
@@ -77,7 +78,7 @@ class UA extends EventEmitter implements IUA {
 
   public readonly registratorInner!: Registrator;
 
-  public call = jest.fn(
+  public call = createJestMock(
     (
       url: string,
       parameters: { mediaStream: MediaStream; eventHandlers: TEventHandlers },
@@ -91,7 +92,7 @@ class UA extends EventEmitter implements IUA {
     },
   );
 
-  public sendOptions = jest.fn(
+  public sendOptions = createJestMock(
     (target: string, body?: string, options?: Record<string, unknown>) => {
       debug('sendOptions', target, body, options);
 
@@ -102,7 +103,7 @@ class UA extends EventEmitter implements IUA {
   /**
    * start – имитирует запуск UA.
    */
-  public start = jest.fn(() => {
+  public start = createJestMock(() => {
     UA.countStarts += 1;
 
     if (UA.startError && UA.countStarts < UA.countStartError) {
@@ -117,7 +118,7 @@ class UA extends EventEmitter implements IUA {
   /**
    * stop – имитирует остановку UA.
    */
-  public stop = jest.fn(() => {
+  public stop = createJestMock(() => {
     if (this.startedTimeout) {
       clearTimeout(this.startedTimeout);
     }
@@ -137,13 +138,13 @@ class UA extends EventEmitter implements IUA {
     }
   });
 
-  public removeAllListeners = jest.fn(() => {
+  public removeAllListeners = createJestMock(() => {
     this.events.removeEventHandlers();
 
     return this;
   });
 
-  public once = jest.fn((eventName: string, handler: () => void) => {
+  public once = createJestMock((eventName: string, handler: () => void) => {
     // @ts-expect-error
     this.events.once(eventName, handler);
 

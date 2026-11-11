@@ -3,6 +3,7 @@ import { CallManager } from '@/CallManager';
 import { CallSessionState } from '@/CallSessionState';
 import { ConnectionManager } from '@/ConnectionManager';
 import { ContentedStreamManager } from '@/ContentedStreamManager';
+import createJestMock from './createJestMock';
 import jssip from './jssip.mock';
 
 import type { TJsSIP } from '@/types';
@@ -10,7 +11,7 @@ import type { TJsSIP } from '@/types';
 export const createManagers = () => {
   const contentedStreamManager = new ContentedStreamManager();
   const toolsCallManager = {
-    sendOffer: jest.fn().mockResolvedValue({} as RTCSessionDescription),
+    sendOffer: createJestMock().mockResolvedValue({} as RTCSessionDescription),
   };
   const callManager = new CallManager({ contentedStreamManager }, toolsCallManager, {
     callSessionState: new CallSessionState(),
