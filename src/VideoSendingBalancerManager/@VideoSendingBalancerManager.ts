@@ -1,7 +1,7 @@
 import { EventEmitterProxy } from 'events-constructor';
 
 import resolveDebug from '@/logger';
-import { VideoSendingBalancer } from '@/VideoSendingBalancer';
+import { RESULT_NO_CHANGED, VideoSendingBalancer } from '@/VideoSendingBalancer';
 import { createEvents } from './events';
 
 import type { ApiManager } from '@/ApiManager';
@@ -73,9 +73,14 @@ class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
     this.clearStartTimer();
 
     this.isBalancingActive = true;
-    this.events.trigger('balancing-started', { delay: this.balancingStartDelay });
 
-    await this.videoSendingBalancer.balance();
+    await this.videoSendingBalancer.start();
+
+    // за время первой балансировки её могли остановить, сужение типа этого не учитывает
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (this.isBalancingActive) {
+      this.events.trigger('balancing-started', { delay: this.balancingStartDelay });
+    }
   }
 
   /**
@@ -84,7 +89,7 @@ class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
   public stopBalancing(): void {
     this.clearStartTimer();
 
-    this.videoSendingBalancer.reset();
+    this.videoSendingBalancer.stop();
     this.isBalancingActive = false;
     this.events.trigger('balancing-stopped', {});
   }
@@ -93,6 +98,11 @@ class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
    * Выполнить ручную балансировку
    */
   public async balance() {
+    // во время прогрева скалирование применять нельзя
+    if (this.isBalancingScheduled) {
+      return RESULT_NO_CHANGED;
+    }
+
     return this.videoSendingBalancer.balance();
   }
 

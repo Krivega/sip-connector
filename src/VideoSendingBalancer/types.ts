@@ -38,12 +38,12 @@ export interface IEncodingParameters {
 export interface IParametersSetter {
   setEncodingsToSender: (
     sender: RTCRtpSender,
-    parameters: IEncodingParameters,
+    parameters: { scaleResolutionDownBy: number; maxBitrate?: number },
     onSetParameters?: TOnSetParameters,
   ) => Promise<TResultSetParametersToSender>;
 }
 
 // Интерфейс для очереди задач
-export interface ITaskQueue<T> {
-  add: (task: () => Promise<T>) => Promise<T>;
+export interface ITaskQueue {
+  add: <T>(task: () => Promise<T>) => Promise<T>;
 }

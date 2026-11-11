@@ -1,478 +1,207 @@
-import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
-import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
-import logger from '@/logger';
-import { createMockTrack } from '../__fixtures__';
+import { createMockTrack, createVideoTrack } from '../__fixtures__';
 import { TrackMonitor } from '../TrackMonitor';
 
-jest.mock('@/logger');
+const POLL_INTERVAL_MS = 100;
+const DEFAULT_POLL_INTERVAL_MS = 1000;
+const DEFAULT_MAX_POLL_INTERVAL_MS = 16 * POLL_INTERVAL_MS;
 
-const { mcuDebugLogger } = logger as jest.Mock & { mcuDebugLogger: jest.Mock };
+// дольше максимального интервала опроса по умолчанию
+const POLLING_WINDOW_MS = 2 * DEFAULT_MAX_POLL_INTERVAL_MS;
 
 describe('TrackMonitor', () => {
+  let monitor: TrackMonitor;
+  let callback: jest.Mock;
+  let track: MediaStreamTrack;
+  let setWidth: (width: number) => void;
+
   beforeEach(() => {
     jest.useFakeTimers();
+
+    monitor = new TrackMonitor({ pollIntervalMs: POLL_INTERVAL_MS });
+    callback = jest.fn();
+    ({ track, setWidth } = createMockTrack(640));
   });
 
   afterEach(() => {
-    jest.clearAllTimers();
+    monitor.unsubscribe();
     jest.useRealTimers();
   });
 
-  it('calls callback on size change via polling', () => {
-    const { track, setWidth } = createMockTrack(640); // no resize event support
+  describe('изменение размера трека', () => {
+    it('должен вызвать callback при изменении ширины трека', () => {
+      monitor.subscribe(track, callback);
+      setWidth(320);
+      jest.advanceTimersByTime(POLL_INTERVAL_MS);
 
-    const sender = new RTCRtpSenderMock({ track });
-    const connection = new RTCPeerConnectionMock(undefined, [track]);
-
-    Object.defineProperty(connection, 'getSenders', {
-      value: () => {
-        return [sender];
-      },
+      expect(callback).toHaveBeenCalledTimes(1);
     });
 
-    const callback = jest.fn();
-    const monitor = new TrackMonitor({ pollIntervalMs: 500 });
+    it('должен вызвать callback при изменении высоты трека', () => {
+      const track720 = createVideoTrack(1280, 720);
 
-    monitor.subscribe(sender, callback);
-    expect(callback).not.toHaveBeenCalled();
+      monitor.subscribe(track720, callback);
+      jest.spyOn(track720, 'getSettings').mockReturnValue({ width: 1280, height: 360 });
+      jest.advanceTimersByTime(POLL_INTERVAL_MS);
 
-    setWidth(320);
-    jest.advanceTimersByTime(500);
-
-    expect(callback).toHaveBeenCalledTimes(1);
-  });
-
-  it('calls callback after replaceTrack and monitors new track', async () => {
-    const original = createMockTrack(640);
-    const newTrackMock = createMockTrack(800);
-
-    const sender = new RTCRtpSenderMock({ track: original.track });
-
-    const connection = new RTCPeerConnectionMock(undefined, [original.track]);
-
-    Object.defineProperty(connection, 'getSenders', {
-      value: () => {
-        return [sender];
-      },
+      expect(callback).toHaveBeenCalledTimes(1);
     });
 
-    const callback = jest.fn();
-    const monitor = new TrackMonitor({ pollIntervalMs: 500 });
+    it('не должен вызывать callback, пока размер трека не меняется', () => {
+      monitor.subscribe(track, callback);
+      jest.advanceTimersByTime(POLLING_WINDOW_MS);
 
-    monitor.subscribe(sender, callback);
-
-    // Replace track (the monitor patched replaceTrack internally)
-    await (sender as RTCRtpSender).replaceTrack(newTrackMock.track);
-
-    // Callback should be called once for replaceTrack
-    expect(callback).toHaveBeenCalledTimes(1);
-
-    // Теперь меняем размеры нового трека и прокручиваем таймеры — колбэк должен сработать второй раз
-    newTrackMock.setWidth(640);
-    jest.advanceTimersByTime(1000);
-
-    expect(callback).toHaveBeenCalledTimes(2);
-  });
-
-  it('calls callback on size change via polling (Safari fallback)', () => {
-    const { track, setWidth } = createMockTrack(640); // no resize event support
-
-    const sender = new RTCRtpSenderMock({ track });
-    const connection = new RTCPeerConnectionMock(undefined, [track]);
-
-    Object.defineProperty(connection, 'getSenders', {
-      value: () => {
-        return [sender];
-      },
+      expect(callback).not.toHaveBeenCalled();
     });
 
-    const callback = jest.fn();
-    const monitor = new TrackMonitor({ pollIntervalMs: 500 });
+    it('не должен повторно вызывать callback, если размер трека больше не менялся', () => {
+      monitor.subscribe(track, callback);
+      setWidth(320);
+      jest.advanceTimersByTime(POLLING_WINDOW_MS);
 
-    monitor.subscribe(sender, callback);
-    expect(callback).not.toHaveBeenCalled();
-
-    setWidth(320);
-    jest.advanceTimersByTime(500);
-
-    expect(callback).toHaveBeenCalledTimes(1);
-  });
-
-  it('does nothing when connection is undefined', () => {
-    const callback = jest.fn();
-    const monitor = new TrackMonitor({ pollIntervalMs: 500 });
-
-    expect(() => {
-      monitor.subscribe(undefined, callback);
-    }).not.toThrow();
-
-    expect(callback).not.toHaveBeenCalled();
-  });
-
-  it('does nothing when getSenders returns no video sender', () => {
-    const connection = new RTCPeerConnectionMock(undefined, []);
-
-    Object.defineProperty(connection, 'getSenders', {
-      value: () => {
-        return [];
-      },
+      expect(callback).toHaveBeenCalledTimes(1);
     });
-
-    const callback = jest.fn();
-    const monitor = new TrackMonitor({ pollIntervalMs: 500 });
-
-    monitor.subscribe(undefined, callback);
-
-    expect(callback).not.toHaveBeenCalled();
   });
 
-  it('handles replaceTrack(null) and does not start polling for undefined track', async () => {
-    const original = createMockTrack(640);
+  describe('интервал опроса', () => {
+    it('должен опрашивать трек раз в секунду по умолчанию', () => {
+      monitor = new TrackMonitor({});
+      monitor.subscribe(track, callback);
+      setWidth(320);
+      jest.advanceTimersByTime(DEFAULT_POLL_INTERVAL_MS - 1);
 
-    const sender = new RTCRtpSenderMock({ track: original.track });
-    const connection = new RTCPeerConnectionMock(undefined, [original.track]);
-
-    Object.defineProperty(connection, 'getSenders', {
-      value: () => {
-        return [sender];
-      },
-    });
-
-    const callback = jest.fn();
-    const monitor = new TrackMonitor({ pollIntervalMs: 500 });
-
-    monitor.subscribe(sender, callback);
-
-    // eslint-disable-next-line unicorn/no-null
-    await sender.replaceTrack(null);
-
-    // callback должен вызваться (handleTrackResize), но polling не запускается
-    expect(callback).toHaveBeenCalledTimes(1);
-  });
-
-  describe('adaptive polling', () => {
-    it('doubles interval when no size changes detected', () => {
-      const { track } = createMockTrack(640);
-
-      const sender = new RTCRtpSenderMock({ track });
-
-      const callback = jest.fn();
-
-      const monitor = new TrackMonitor({ pollIntervalMs: 100 });
-
-      const setTimeoutSpy = jest.spyOn(global, 'setTimeout');
-
-      monitor.subscribe(sender, callback);
-
-      // Первый вызов setTimeout должен быть с базовым интервалом 100мс
-      expect(setTimeoutSpy).toHaveBeenCalledTimes(1);
-      expect(setTimeoutSpy.mock.calls[0][1]).toBe(100);
-
-      // Прокручиваем первый интервал — изменений нет
-      jest.advanceTimersByTime(100);
-
-      // Должен быть запланирован второй таймаут с удвоенным интервалом (200мс)
-      expect(setTimeoutSpy).toHaveBeenCalledTimes(2);
-      expect(setTimeoutSpy.mock.calls[1][1]).toBe(200);
-
-      // Колбэк не должен вызываться, так как размер не менялся
       expect(callback).not.toHaveBeenCalled();
 
-      setTimeoutSpy.mockRestore();
+      jest.advanceTimersByTime(1);
+
+      expect(callback).toHaveBeenCalledTimes(1);
     });
 
-    it('interval сбрасывается после изменения размера', () => {
-      const { track, setWidth } = createMockTrack(640);
-
-      const sender = new RTCRtpSenderMock({ track });
-      const callback = jest.fn();
-
-      const monitor = new TrackMonitor({ pollIntervalMs: 100 });
-
-      const setTimeoutSpy = jest.spyOn(global, 'setTimeout');
-
-      monitor.subscribe(sender, callback);
-
-      // Первый цикл – без изменений
-      jest.advanceTimersByTime(100);
-
-      // Изменяем размер, но колбэк пока не должен вызваться, так как проверка будет во втором цикле
+    it('должен удваивать интервал опроса, пока размер трека не меняется', () => {
+      monitor.subscribe(track, callback);
+      jest.advanceTimersByTime(POLL_INTERVAL_MS);
       setWidth(320);
+      jest.advanceTimersByTime(2 * POLL_INTERVAL_MS - 1);
 
-      jest.advanceTimersByTime(200); // ждём второй опрос (200мс)
+      expect(callback).not.toHaveBeenCalled();
 
-      // Колбэк должен быть вызван один раз после обнаружения изменения
+      jest.advanceTimersByTime(1);
+
       expect(callback).toHaveBeenCalledTimes(1);
+    });
 
-      // После изменения интервал должен сброситься до базового 100мс
-      const lastCallArgs = setTimeoutSpy.mock.calls.at(-1);
+    it('должен вернуть начальный интервал опроса после изменения размера трека', () => {
+      monitor.subscribe(track, callback);
+      jest.advanceTimersByTime(POLL_INTERVAL_MS);
+      setWidth(320);
+      jest.advanceTimersByTime(2 * POLL_INTERVAL_MS);
+      setWidth(640);
+      jest.advanceTimersByTime(POLL_INTERVAL_MS);
 
-      // @ts-expect-error
-      expect(lastCallArgs[1]).toBe(100);
+      expect(callback).toHaveBeenCalledTimes(2);
+    });
 
-      setTimeoutSpy.mockRestore();
+    it('не должен увеличивать интервал опроса больше maxPollIntervalMs', () => {
+      const maxPollIntervalMs = 3 * POLL_INTERVAL_MS;
+
+      monitor = new TrackMonitor({ pollIntervalMs: POLL_INTERVAL_MS, maxPollIntervalMs });
+      monitor.subscribe(track, callback);
+      jest.advanceTimersByTime(POLL_INTERVAL_MS + 2 * POLL_INTERVAL_MS + maxPollIntervalMs);
+      setWidth(320);
+      jest.advanceTimersByTime(maxPollIntervalMs - 1);
+
+      expect(callback).not.toHaveBeenCalled();
+
+      jest.advanceTimersByTime(1);
+
+      expect(callback).toHaveBeenCalledTimes(1);
+    });
+
+    it('не должен увеличивать интервал опроса больше 16 начальных интервалов по умолчанию', () => {
+      monitor.subscribe(track, callback);
+      jest.advanceTimersByTime((1 + 2 + 4 + 8 + 16) * POLL_INTERVAL_MS);
+      setWidth(320);
+      jest.advanceTimersByTime(DEFAULT_MAX_POLL_INTERVAL_MS - 1);
+
+      expect(callback).not.toHaveBeenCalled();
+
+      jest.advanceTimersByTime(1);
+
+      expect(callback).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe('хуки замены трека', () => {
-    let log: string[];
-    let original: ReturnType<typeof createMockTrack>;
-    let next: ReturnType<typeof createMockTrack>;
-    let sender: RTCRtpSender;
-    let originalReplaceTrack: jest.SpyInstance;
-    let beforeReplaceTrack: jest.Mock;
-    let afterReplaceTrack: jest.Mock;
-    let callback: jest.Mock;
-    let monitor: TrackMonitor;
+  describe('unsubscribe', () => {
+    it('должен прекратить опрос трека', () => {
+      monitor.subscribe(track, callback);
+      monitor.unsubscribe();
+      setWidth(320);
+      jest.advanceTimersByTime(POLLING_WINDOW_MS);
+
+      expect(callback).not.toHaveBeenCalled();
+      expect(jest.getTimerCount()).toBe(0);
+    });
+
+    it('должен прекратить опрос трека, если вызван из callback', () => {
+      callback.mockImplementation(() => {
+        monitor.unsubscribe();
+      });
+      monitor.subscribe(track, callback);
+      setWidth(320);
+      jest.advanceTimersByTime(POLLING_WINDOW_MS);
+
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(jest.getTimerCount()).toBe(0);
+    });
+  });
+
+  describe('повторная подписка', () => {
+    let nextTrack: MediaStreamTrack;
+    let setNextWidth: (width: number) => void;
+    let nextCallback: jest.Mock;
 
     beforeEach(() => {
-      log = [];
-      original = createMockTrack(640);
-      next = createMockTrack(1280);
-      sender = new RTCRtpSenderMock({ track: original.track });
-      originalReplaceTrack = jest.spyOn(sender, 'replaceTrack');
-      originalReplaceTrack.mockImplementation(async (track: MediaStreamTrack | null) => {
-        log.push('original');
-        (sender as RTCRtpSenderMock).track = track;
-      });
-      beforeReplaceTrack = jest.fn(async () => {
-        log.push('before');
-      });
-      afterReplaceTrack = jest.fn(() => {
-        log.push('after');
-      });
-      callback = jest.fn(() => {
-        log.push('callback');
-      });
-      monitor = new TrackMonitor({ pollIntervalMs: 500, beforeReplaceTrack, afterReplaceTrack });
-      monitor.subscribe(sender, callback);
+      ({ track: nextTrack, setWidth: setNextWidth } = createMockTrack(1280));
+      nextCallback = jest.fn();
     });
 
-    afterEach(() => {
-      monitor.unsubscribe();
-    });
+    it('должен следить только за новым треком', () => {
+      monitor.subscribe(track, callback);
+      monitor.subscribe(nextTrack, nextCallback);
+      setWidth(320);
+      jest.advanceTimersByTime(POLLING_WINDOW_MS);
 
-    it('должен вызывать beforeReplaceTrack до оригинального replaceTrack, а afterReplaceTrack после него и до callback', async () => {
-      await sender.replaceTrack(next.track);
-
-      expect(log).toEqual(['before', 'original', 'after', 'callback']);
-      expect(beforeReplaceTrack).toHaveBeenCalledWith(sender, next.track);
-      expect(afterReplaceTrack).toHaveBeenCalledWith(sender, next.track);
-    });
-
-    it('должен вызывать оригинальный replaceTrack только после завершения beforeReplaceTrack', async () => {
-      const beforeDeferred = Promise.withResolvers<undefined>();
-
-      beforeReplaceTrack.mockImplementation(async () => {
-        await beforeDeferred.promise;
-        log.push('before');
-      });
-
-      const replacing = sender.replaceTrack(next.track);
-
-      await Promise.resolve();
-
-      expect(originalReplaceTrack).not.toHaveBeenCalled();
-
-      beforeDeferred.resolve(undefined);
-      await replacing;
-
-      expect(log).toEqual(['before', 'original', 'after', 'callback']);
-    });
-
-    it('не должен вызывать хуки при replaceTrack(null)', async () => {
-      // eslint-disable-next-line unicorn/no-null
-      await sender.replaceTrack(null);
-
-      expect(beforeReplaceTrack).not.toHaveBeenCalled();
-      expect(afterReplaceTrack).not.toHaveBeenCalled();
-      expect(log).toEqual(['original', 'callback']);
-    });
-
-    it('не должен вызывать хуки при замене на тот же трек', async () => {
-      await sender.replaceTrack(original.track);
-
-      expect(beforeReplaceTrack).not.toHaveBeenCalled();
-      expect(afterReplaceTrack).not.toHaveBeenCalled();
-      expect(log).toEqual(['original', 'callback']);
-    });
-
-    it('должен вызвать afterReplaceTrack и пробросить ошибку оригинального replaceTrack без вызова callback', async () => {
-      const error = new Error('replaceTrack failed');
-
-      originalReplaceTrack.mockRejectedValue(error);
-
-      await expect(sender.replaceTrack(next.track)).rejects.toBe(error);
-      expect(log).toEqual(['before', 'after']);
-      expect(afterReplaceTrack).toHaveBeenCalledWith(sender, next.track);
       expect(callback).not.toHaveBeenCalled();
+      expect(nextCallback).not.toHaveBeenCalled();
+
+      setNextWidth(640);
+      jest.advanceTimersByTime(POLLING_WINDOW_MS);
+
+      expect(callback).not.toHaveBeenCalled();
+      expect(nextCallback).toHaveBeenCalledTimes(1);
     });
 
-    it('должен продолжить следить за прежним треком после ошибки оригинального replaceTrack', async () => {
-      originalReplaceTrack.mockRejectedValue(new Error('replaceTrack failed'));
+    it('должен опрашивать новый трек с начального интервала', () => {
+      monitor.subscribe(track, callback);
+      jest.advanceTimersByTime(POLL_INTERVAL_MS + 2 * POLL_INTERVAL_MS);
+      monitor.subscribe(nextTrack, nextCallback);
+      setNextWidth(640);
+      jest.advanceTimersByTime(POLL_INTERVAL_MS);
 
-      await expect(sender.replaceTrack(next.track)).rejects.toThrow('replaceTrack failed');
+      expect(nextCallback).toHaveBeenCalledTimes(1);
+    });
 
-      original.setWidth(320);
-      jest.advanceTimersByTime(500);
+    it('должен следить только за новым треком, если подписка на него вызвана из callback', () => {
+      callback.mockImplementation(() => {
+        monitor.subscribe(nextTrack, nextCallback);
+      });
+      monitor.subscribe(track, callback);
+      setWidth(320);
+      jest.advanceTimersByTime(POLL_INTERVAL_MS);
+      setNextWidth(640);
+      jest.advanceTimersByTime(POLLING_WINDOW_MS);
 
       expect(callback).toHaveBeenCalledTimes(1);
-    });
-
-    describe('отключение монитора во время оригинального replaceTrack', () => {
-      let originalDeferred: PromiseWithResolvers<undefined>;
-      let replacing: Promise<void>;
-
-      beforeEach(async () => {
-        originalDeferred = Promise.withResolvers<undefined>();
-        originalReplaceTrack.mockImplementation(async (track: MediaStreamTrack | null) => {
-          await originalDeferred.promise;
-          (sender as RTCRtpSenderMock).track = track;
-        });
-        replacing = sender.replaceTrack(next.track);
-        await Promise.resolve();
-        await Promise.resolve();
-      });
-
-      it('не должен вызывать callback и следить за новым треком после unsubscribe, но должен вызвать afterReplaceTrack', async () => {
-        monitor.unsubscribe();
-        originalDeferred.resolve(undefined);
-        await replacing;
-
-        next.setWidth(640);
-        jest.advanceTimersByTime(2000);
-
-        expect(originalReplaceTrack).toHaveBeenCalledTimes(1);
-        expect(afterReplaceTrack).toHaveBeenCalledWith(sender, next.track);
-        expect(callback).not.toHaveBeenCalled();
-        expect(jest.getTimerCount()).toBe(0);
-      });
-
-      it('должен следить за новым треком и вызвать callback, если монитор переподключён к тому же sender', async () => {
-        monitor.unsubscribe();
-        monitor.subscribe(sender, callback);
-        originalDeferred.resolve(undefined);
-        await replacing;
-
-        expect(callback).toHaveBeenCalledTimes(1);
-
-        next.setWidth(640);
-        jest.advanceTimersByTime(500);
-
-        expect(callback).toHaveBeenCalledTimes(2);
-      });
-    });
-
-    describe('последовательные вызовы replaceTrack', () => {
-      let third: ReturnType<typeof createMockTrack>;
-
-      beforeEach(() => {
-        third = createMockTrack(320);
-        originalReplaceTrack.mockImplementation(async (track: MediaStreamTrack | null) => {
-          log.push(`original:${track === next.track ? 'next' : 'third'}`);
-          (sender as RTCRtpSenderMock).track = track;
-        });
-      });
-
-      it('должен выполнять нативные замены в порядке вызова и оставить последний запрошенный трек', async () => {
-        const firstOriginal = Promise.withResolvers<undefined>();
-
-        originalReplaceTrack.mockImplementationOnce(async (track: MediaStreamTrack | null) => {
-          await firstOriginal.promise;
-          log.push('original:next');
-          (sender as RTCRtpSenderMock).track = track;
-        });
-
-        const firstReplacing = sender.replaceTrack(next.track);
-        const secondReplacing = sender.replaceTrack(third.track);
-
-        await Promise.resolve();
-        await Promise.resolve();
-        await Promise.resolve();
-
-        expect(originalReplaceTrack).toHaveBeenCalledTimes(1);
-
-        firstOriginal.resolve(undefined);
-        await Promise.all([firstReplacing, secondReplacing]);
-
-        expect(log).toEqual([
-          'before',
-          'original:next',
-          'after',
-          'callback',
-          'before',
-          'original:third',
-          'after',
-          'callback',
-        ]);
-        expect(sender.track).toBe(third.track);
-        expect(beforeReplaceTrack).toHaveBeenNthCalledWith(2, sender, third.track);
-      });
-
-      it('должен ждать незавершённую замену после переподключения монитора к тому же sender', async () => {
-        const firstOriginal = Promise.withResolvers<undefined>();
-
-        originalReplaceTrack.mockImplementationOnce(async (track: MediaStreamTrack | null) => {
-          await firstOriginal.promise;
-          log.push('original:next');
-          (sender as RTCRtpSenderMock).track = track;
-        });
-
-        const firstReplacing = sender.replaceTrack(next.track);
-
-        await Promise.resolve();
-        await Promise.resolve();
-        monitor.unsubscribe();
-        monitor.subscribe(sender, callback);
-
-        const secondReplacing = sender.replaceTrack(third.track);
-
-        await Promise.resolve();
-        await Promise.resolve();
-        await Promise.resolve();
-
-        expect(originalReplaceTrack).toHaveBeenCalledTimes(1);
-
-        firstOriginal.resolve(undefined);
-        await Promise.all([firstReplacing, secondReplacing]);
-
-        expect(
-          log.filter((entry) => {
-            return entry.startsWith('original');
-          }),
-        ).toEqual(['original:next', 'original:third']);
-        expect(sender.track).toBe(third.track);
-      });
-
-      it('не должен блокировать следующую замену ошибкой предыдущей нативной замены', async () => {
-        const error = new Error('first replaceTrack failed');
-
-        originalReplaceTrack.mockRejectedValueOnce(error);
-
-        const firstReplacing = sender.replaceTrack(next.track);
-        const secondReplacing = sender.replaceTrack(third.track);
-
-        const results = await Promise.allSettled([firstReplacing, secondReplacing]);
-
-        expect(results).toEqual([
-          { status: 'rejected', reason: error },
-          { status: 'fulfilled', value: undefined },
-        ]);
-        expect(sender.track).toBe(third.track);
-        expect(originalReplaceTrack).toHaveBeenCalledTimes(2);
-      });
-    });
-
-    it('должен логировать ошибку beforeReplaceTrack и выполнить замену', async () => {
-      const error = new Error('beforeReplaceTrack failed');
-
-      beforeReplaceTrack.mockRejectedValue(error);
-
-      await sender.replaceTrack(next.track);
-
-      expect(mcuDebugLogger).toHaveBeenCalledWith('beforeReplaceTrack: error', error);
-      expect(sender.track).toBe(next.track);
-      expect(log).toEqual(['original', 'after', 'callback']);
+      expect(nextCallback).toHaveBeenCalledTimes(1);
     });
   });
 });

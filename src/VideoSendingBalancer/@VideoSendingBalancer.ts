@@ -1,9 +1,11 @@
 import resolveDebug from '@/logger';
+import { setEncodingsToSender } from '@/tools';
 import { CodecProvider } from './CodecProvider';
-import { ParametersSetterWithQueue } from './ParametersSetterWithQueue';
-import { SenderBalancer } from './SenderBalancer';
+import { RESULT_NO_CHANGED, SenderBalancer } from './SenderBalancer';
 import { SenderFinder } from './SenderFinder';
+import { TaskQueue } from './TaskQueue';
 import { TrackMonitor } from './TrackMonitor';
+import { TrackReplacer } from './TrackReplacer';
 
 import type { TResultSetParametersToSender } from '@/tools';
 import type { IBalancerOptions, IMainCamHeaders } from './types';
@@ -12,18 +14,26 @@ const debug = resolveDebug('VideoSendingBalancer');
 
 /**
  * Контроллер/фасад для балансировки видеопотоков
- * Координирует работу балансировщика, слежения за треком и очереди задач
+ * Координирует работу балансировщика, замены трека, слежения за треком и очереди задач
  */
 class VideoSendingBalancer {
   private readonly senderBalancer: SenderBalancer;
 
-  private readonly parametersSetterWithQueue: ParametersSetterWithQueue;
+  private readonly codecProvider: CodecProvider;
+
+  private readonly senderFinder: SenderFinder;
+
+  private readonly taskQueue: TaskQueue;
 
   private readonly getConnection: () => RTCPeerConnection | undefined;
 
   private serverHeaders?: IMainCamHeaders;
 
+  private isStarted = false;
+
   private readonly trackMonitor: TrackMonitor;
+
+  private readonly trackReplacer: TrackReplacer;
 
   public constructor(
     getConnection: () => RTCPeerConnection | undefined,
@@ -37,30 +47,35 @@ class VideoSendingBalancer {
     },
   ) {
     this.getConnection = getConnection;
-    this.parametersSetterWithQueue = new ParametersSetterWithQueue(onSetParameters);
+    this.codecProvider = new CodecProvider();
+    this.senderFinder = new SenderFinder();
+    this.taskQueue = new TaskQueue();
     this.senderBalancer = new SenderBalancer(
       {
-        senderFinder: new SenderFinder(),
-        codecProvider: new CodecProvider(),
-        parametersSetter: this.parametersSetterWithQueue,
+        parametersSetter: {
+          setEncodingsToSender: async (sender, parameters) => {
+            return setEncodingsToSender(sender, parameters, onSetParameters);
+          },
+        },
       },
       {
         ignoreForCodec,
         getMaxResolution,
+        // до старта команда только запомнена: балансировки, начатые до остановки, не должны её применить
         getServerHeaders: () => {
-          return this.serverHeaders;
+          return this.isStarted ? this.serverHeaders : undefined;
         },
       },
     );
 
-    this.trackMonitor = new TrackMonitor({
-      pollIntervalMs,
-      beforeReplaceTrack: async (sender, newTrack) => {
-        return this.senderBalancer.prepareTrackReplacement(sender, newTrack);
+    this.trackMonitor = new TrackMonitor({ pollIntervalMs });
+    this.trackReplacer = new TrackReplacer({
+      taskQueue: this.taskQueue,
+      applyParameters: async (sender, upcomingTrack) => {
+        return this.senderBalancer.apply(sender, { upcomingTrack });
       },
-      afterReplaceTrack: (sender, newTrack) => {
-        this.senderBalancer.completeTrackReplacement(sender, newTrack);
-      },
+      onTrackChange: this.handleSenderTrackChange,
+      requestBalance: this.requestBalance,
     });
   }
 
@@ -73,26 +88,31 @@ class VideoSendingBalancer {
   }
 
   /**
-   * Сбрасывает состояние балансировщика и восстанавливает параметры отправителя
+   * Запускает балансировку: применяет сохранённую команду,
+   * включает перехват замены трека и слежение за размером трека
+   * @returns Promise с результатом первой балансировки
    */
-  public reset(): void {
+  public async start(): Promise<TResultSetParametersToSender> {
+    this.isStarted = true;
+
+    return this.balance();
+  }
+
+  /**
+   * Останавливает балансировку: стирает команду, снимает перехват замены трека и слежение,
+   * начинает очередь заново и восстанавливает параметры отправителя по разрешению трека
+   */
+  public stop(): void {
+    this.isStarted = false;
     delete this.serverHeaders;
-    this.trackMonitor.unsubscribe();
+    this.trackReplacer.detach();
+    // операция, зависшая до остановки, не должна задерживать сброс параметров и следующие запуски
+    this.taskQueue.reset();
 
-    const connection = this.getConnection();
-
-    if (connection) {
-      // eslint-disable-next-line no-void
-      void this.senderBalancer
-        .reset(connection)
-        .catch((error: unknown) => {
-          debug('reset sender encodings: error', error);
-        })
-        .finally(() => {
-          this.parametersSetterWithQueue.stop();
-        });
-    } else {
-      this.parametersSetterWithQueue.stop();
+    if (this.getConnection()) {
+      this.balance().catch((error: unknown) => {
+        debug('reset sender encodings: error', error);
+      });
     }
   }
 
@@ -107,14 +127,36 @@ class VideoSendingBalancer {
       throw new Error('connection is not exist');
     }
 
-    const result = await this.senderBalancer.balance(connection);
+    const sender = this.senderFinder.findVideoSender(connection.getSenders());
 
-    this.trackMonitor.subscribe(result.sender, this.handleTrackChange);
+    if (!sender) {
+      this.trackReplacer.detach();
 
-    return result;
+      return RESULT_NO_CHANGED;
+    }
+
+    // перехват включается синхронно: замена трека, вызванная до конца балансировки, не должна пройти мимо очереди
+    if (this.isStarted) {
+      this.trackReplacer.attach(sender);
+    }
+
+    // shortcut: таймаута нет — при зависшем getStats эта балансировка не завершится; очередь и замена трека от него не зависят
+    const codec = await this.codecProvider.getCodecFromSender(sender);
+
+    return this.taskQueue.add(async () => {
+      return this.senderBalancer.apply(sender, { codec });
+    });
   }
 
-  private readonly handleTrackChange = () => {
+  private readonly handleSenderTrackChange = (track: MediaStreamTrack | undefined) => {
+    if (track) {
+      this.trackMonitor.subscribe(track, this.requestBalance);
+    } else {
+      this.trackMonitor.unsubscribe();
+    }
+  };
+
+  private readonly requestBalance = () => {
     this.balance().catch((error: unknown) => {
       debug('balance on track change: error', error);
     });

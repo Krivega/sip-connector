@@ -213,4 +213,80 @@ describe('SipConnector: ограничение MAXMAINCAMRESOLUTION до ста�
       calcMaxBitrateByWidthAndCodec(1280, CODEC),
     );
   });
+
+  describe('замена потока с собственными параметрами отправки', () => {
+    const sendLimit720p = () => {
+      const establishedRTCSession = sipConnector.getEstablishedRTCSession();
+
+      if (!establishedRTCSession) {
+        throw new Error('rtcSession is not established');
+      }
+
+      JsSIP.triggerNewInfo(establishedRTCSession, headersMaxMainCamResolution720p);
+    };
+
+    const callAndReplaceTo4K = async ({
+      maxAvailableResolution,
+      sendEncodings,
+      receiveCommandInWarmup,
+      receiveCommandAfterBalancingStart,
+    }: {
+      maxAvailableResolution?: { width: number; height: number };
+      sendEncodings?: RTCRtpEncodingParameters[];
+      receiveCommandInWarmup: () => void;
+      receiveCommandAfterBalancingStart: () => void;
+    }) => {
+      await waitWithTimers(
+        sipConnector.connect({ ...dataForConnectionWithAuthorization, maxAvailableResolution }),
+      );
+      await waitWithTimers(sipConnector.call({ number, mediaStream: createStream(1280, 720) }));
+      receiveCommandInWarmup();
+      await jest.advanceTimersByTimeAsync(BALANCING_START_DELAY);
+      await settle();
+      receiveCommandAfterBalancingStart();
+      await settle();
+      await sipConnector.replaceMediaStream(createStream(3840, 2160), {
+        contentHint: 'detail',
+        degradationPreference: 'maintain-resolution',
+        sendEncodings,
+      });
+      await settle();
+    };
+
+    it.each([
+      ['в прогреве', sendLimit720p, () => {}],
+      ['после старта балансировки', () => {}, sendLimit720p],
+    ])(
+      'ограничивает 4K-трек до 1280x720 после замены потока при maxAvailableResolution 1920x1080, если команда получена %s',
+      async (_name, receiveCommandInWarmup, receiveCommandAfterBalancingStart) => {
+        await callAndReplaceTo4K({
+          maxAvailableResolution: { width: 1920, height: 1080 },
+          receiveCommandInWarmup,
+          receiveCommandAfterBalancingStart,
+        });
+
+        const videoSender = getVideoSender();
+
+        expect(appliedScaleBySender.get(videoSender)).toBe(3);
+        expect(appliedMaxBitrateBySender.get(videoSender)).toBe(
+          calcMaxBitrateByWidthAndCodec(1280, CODEC),
+        );
+      },
+    );
+
+    it('ограничивает 4K-трек до 1280x720 после замены потока с sendEncodings scaleResolutionDownBy 1, если команда получена в прогреве', async () => {
+      await callAndReplaceTo4K({
+        sendEncodings: [{ scaleResolutionDownBy: 1 }],
+        receiveCommandInWarmup: sendLimit720p,
+        receiveCommandAfterBalancingStart: () => {},
+      });
+
+      const videoSender = getVideoSender();
+
+      expect(appliedScaleBySender.get(videoSender)).toBe(3);
+      expect(appliedMaxBitrateBySender.get(videoSender)).toBe(
+        calcMaxBitrateByWidthAndCodec(1280, CODEC),
+      );
+    });
+  });
 });
