@@ -1,120 +1,34 @@
-import { createVideoMediaStreamTrackMock } from 'webrtc-mock';
-
 import { createManagers } from '@/__fixtures__/createManagers';
-import Request from '@/__fixtures__/Request.mock';
 import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
-import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
-import { EContentMainCAM, EContentTypeReceived, EKeyHeader } from '@/ApiManager';
 import {
   createBalancerOptions,
   NO_MAX_RESOLUTION_BALANCER_OPTIONS,
 } from '@/VideoSendingBalancer/__fixtures__';
-import {
-  calcMaxBitrateByWidthAndCodec,
-  getMinimumBitrate,
-} from '@/VideoSendingBalancer/calcBitrate';
+import { calcMaxBitrateByWidthAndCodec } from '@/VideoSendingBalancer/calcBitrate';
 import VideoSendingBalancerManager from '../@VideoSendingBalancerManager';
+import {
+  BALANCING_START_DELAY,
+  CODEC,
+  confirmCall as confirmCallOn,
+  createObservedSender,
+  createVideoTrack,
+  ENCODING_4K_BY_TRACK,
+  ENCODING_4K_LIMITED_TO_360P,
+  ENCODING_4K_LIMITED_TO_720P,
+  ENCODING_PAUSED,
+  HEADERS_MAX_360P,
+  HEADERS_MAX_720P,
+  HEADERS_PAUSE,
+  HEADERS_RESUME,
+  sendMainCamInfo as sendMainCamInfoTo,
+  setConnection as setConnectionOf,
+  settle,
+} from '../__fixtures__';
 
-import type { IncomingInfoEvent } from '@krivega/jssip';
 import type { ApiManager } from '@/ApiManager';
 import type { CallManager } from '@/CallManager';
 import type { IBalancerOptions } from '@/VideoSendingBalancer/types';
-
-const BALANCING_START_DELAY = 10_000;
-const CODEC = 'video/h264';
-
-type TSenderLogEntry =
-  | { type: 'setParameters'; scaleResolutionDownBy?: number }
-  | { type: 'replaceTrack'; appliedScaleResolutionDownBy?: number };
-
-type TObservedSender = {
-  sender: RTCRtpSender;
-  log: TSenderLogEntry[];
-  getAppliedEncoding: () => RTCRtpEncodingParameters;
-};
-
-const createVideoTrack = (width: number, height: number): MediaStreamVideoTrack => {
-  return createVideoMediaStreamTrackMock({
-    constraints: { width, height },
-  }) as MediaStreamVideoTrack;
-};
-
-const DEFAULT_SCALE_RESOLUTION_DOWN_BY = 1;
-
-const normalizeEncoding = (encoding: RTCRtpEncodingParameters): RTCRtpEncodingParameters => {
-  return {
-    scaleResolutionDownBy: encoding.scaleResolutionDownBy ?? DEFAULT_SCALE_RESOLUTION_DOWN_BY,
-    maxBitrate: encoding.maxBitrate,
-  };
-};
-
-const createObservedSender = (track: MediaStreamVideoTrack): TObservedSender => {
-  const sender = new RTCRtpSenderMock({ track }) as RTCRtpSender;
-  const log: TSenderLogEntry[] = [];
-  const originalSetParameters = sender.setParameters.bind(sender);
-  const originalReplaceTrack = sender.replaceTrack.bind(sender);
-  let appliedEncoding: RTCRtpEncodingParameters = {
-    scaleResolutionDownBy: DEFAULT_SCALE_RESOLUTION_DOWN_BY,
-  };
-
-  sender.setParameters = async (parameters: RTCRtpSendParameters) => {
-    await originalSetParameters(parameters);
-
-    appliedEncoding = normalizeEncoding(parameters.encodings[0]);
-    log.push({
-      type: 'setParameters',
-      scaleResolutionDownBy: appliedEncoding.scaleResolutionDownBy,
-    });
-  };
-
-  sender.replaceTrack = async (newTrack: MediaStreamTrack | null) => {
-    log.push({
-      type: 'replaceTrack',
-      appliedScaleResolutionDownBy: appliedEncoding.scaleResolutionDownBy,
-    });
-
-    return originalReplaceTrack(newTrack);
-  };
-
-  return {
-    sender,
-    log,
-    getAppliedEncoding: () => {
-      return appliedEncoding;
-    },
-  };
-};
-
-const mainCamHeaders = (
-  mainCam: EContentMainCAM,
-  resolutionMainCam?: string,
-): [string, string][] => {
-  const headers: [string, string][] = [
-    [EKeyHeader.CONTENT_TYPE, EContentTypeReceived.MAIN_CAM],
-    [EKeyHeader.MAIN_CAM, mainCam],
-  ];
-
-  if (resolutionMainCam !== undefined) {
-    headers.push([EKeyHeader.MAIN_CAM_RESOLUTION, resolutionMainCam]);
-  }
-
-  return headers;
-};
-
-const HEADERS_MAX_360P = mainCamHeaders(EContentMainCAM.MAX_MAIN_CAM_RESOLUTION, '640x360');
-const HEADERS_MAX_720P = mainCamHeaders(EContentMainCAM.MAX_MAIN_CAM_RESOLUTION, '1280x720');
-const HEADERS_PAUSE = mainCamHeaders(EContentMainCAM.PAUSE_MAIN_CAM);
-const HEADERS_RESUME = mainCamHeaders(EContentMainCAM.RESUME_MAIN_CAM);
-
-const MAX_BITRATE_640 = calcMaxBitrateByWidthAndCodec(640, CODEC);
-const MAX_BITRATE_1280 = calcMaxBitrateByWidthAndCodec(1280, CODEC);
-const MAX_BITRATE_3840 = calcMaxBitrateByWidthAndCodec(3840, CODEC);
-
-// параметры 4K-трека по каждой команде
-const ENCODING_4K_BY_TRACK = { scaleResolutionDownBy: 1, maxBitrate: MAX_BITRATE_3840 };
-const ENCODING_4K_LIMITED_TO_360P = { scaleResolutionDownBy: 6, maxBitrate: MAX_BITRATE_640 };
-const ENCODING_4K_LIMITED_TO_720P = { scaleResolutionDownBy: 3, maxBitrate: MAX_BITRATE_1280 };
-const ENCODING_PAUSED = { scaleResolutionDownBy: 200, maxBitrate: getMinimumBitrate(CODEC) };
+import type { TObservedSender } from '../__fixtures__';
 
 const COMMANDS: [string, [string, string][], RTCRtpEncodingParameters][] = [
   ['MAX_MAIN_CAM_RESOLUTION 1280x720', HEADERS_MAX_720P, ENCODING_4K_LIMITED_TO_720P],
@@ -142,12 +56,6 @@ const LAST_COMMAND_SEQUENCES: [string, [string, string][][], RTCRtpEncodingParam
   ['MAX 640x360, затем RESUME', [HEADERS_MAX_360P, HEADERS_RESUME], ENCODING_4K_BY_TRACK],
 ];
 
-const settle = async () => {
-  await jest.advanceTimersByTimeAsync(0);
-  await jest.advanceTimersByTimeAsync(0);
-  await jest.advanceTimersByTimeAsync(0);
-};
-
 describe('VideoSendingBalancerManager: команда main-cam-control', () => {
   let callManager: CallManager;
   let apiManager: ApiManager;
@@ -158,11 +66,7 @@ describe('VideoSendingBalancerManager: команда main-cam-control', () => {
   let track4K: MediaStreamVideoTrack;
 
   const setConnection = (value: RTCPeerConnection | undefined) => {
-    Object.defineProperty(callManager, 'connection', {
-      value,
-      writable: true,
-      configurable: true,
-    });
+    setConnectionOf(callManager, value);
   };
 
   const createManager = (options: IBalancerOptions = NO_MAX_RESOLUTION_BALANCER_OPTIONS) => {
@@ -170,14 +74,11 @@ describe('VideoSendingBalancerManager: команда main-cam-control', () => {
   };
 
   const sendMainCamInfo = (headers: [string, string][]) => {
-    callManager.events.trigger('newInfo', {
-      originator: 'remote',
-      request: new Request(headers),
-    } as unknown as IncomingInfoEvent);
+    sendMainCamInfoTo(callManager, headers);
   };
 
   const confirmCall = () => {
-    callManager.events.trigger('peerconnection:confirmed', connection as RTCPeerConnection);
+    confirmCallOn(callManager, connection);
   };
 
   const confirmCallAndWaitBalancingStart = async () => {
@@ -306,7 +207,7 @@ describe('VideoSendingBalancerManager: команда main-cam-control', () => {
       await jest.advanceTimersByTimeAsync(BALANCING_START_DELAY);
       await settle();
 
-      expect(startedHandler).toHaveBeenCalledTimes(1);
+      expect(startedHandler).not.toHaveBeenCalled();
       expect(manager.isBalancingActive).toBe(true);
       expect(manager.isBalancingScheduled).toBe(false);
       expect(observed.log).toEqual([]);

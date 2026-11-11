@@ -105,7 +105,7 @@ describe('VideoSendingBalancerManager error handling', () => {
     videoSendingBalancerManager.stopBalancing();
   });
 
-  it('stays active and triggers balancing-started before the failed initial balance', async () => {
+  it('stays active and does not trigger balancing-started when the initial balance fails', async () => {
     const handler = jest.fn();
 
     videoSendingBalancerManager.on('balancing-started', handler);
@@ -113,7 +113,7 @@ describe('VideoSendingBalancerManager error handling', () => {
     await expect(videoSendingBalancerManager.startBalancing()).rejects.toThrow(
       'connection is not exist',
     );
-    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler).not.toHaveBeenCalled();
     expect(videoSendingBalancerManager.isBalancingActive).toBe(true);
   });
 
