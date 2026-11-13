@@ -129,12 +129,9 @@ export const installE2EWebSocketControls = () => {
         blockedWsTransportHostnames.add(normalizedServerHostname);
 
         openedSockets.forEach(({ socket, hostname }) => {
-          try {
-            if (hostname === normalizedServerHostname) {
-              socket.close(1011, 'e2e: network interface switched');
-            }
-          } catch {
-            /* ignore */
+          if (hostname === normalizedServerHostname) {
+            // Клиенту доступны только 1000 и 3000–4999, иначе close() бросает InvalidAccessError.
+            socket.close(4000, 'e2e: network interface switched');
           }
         });
       },

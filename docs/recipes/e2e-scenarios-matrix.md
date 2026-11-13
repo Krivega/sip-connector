@@ -29,6 +29,7 @@
 - `stable` — rapid-sequence `call (fail) → call (fail)` не роняет connected-сессию (`e2e/call.spec.ts`).
 - `stable` — double-click call при media-fail не уводит в невалидное состояние (`e2e/call.spec.ts`).
 - `stable` — `hangup` после `connect+call` выполняет полный cleanup и возвращает систему в `disconnected` (`e2e/call.spec.ts`).
+- `flaky-risk` — потеря SIP WebSocket во время активного звонка не завершает звонок: после обрыва транспорта и переключения микрофона, при INFO и OPTIONS без ответа по открытому WebSocket, при неуспешных периодических ping (без reconnect и повторного REGISTER) (`e2e/wss-loss-in-call.spec.ts`; сервер заменён тестовым SIP-пиром `e2e/support/SipPeer.ts`; зависит от реальных таймеров JsSIP: Timer F 32 с при ожидании ~34 с, таймаут ping 10 с).
 
 ## Participant role
 

@@ -16,6 +16,7 @@ describe('PingServerRequester - Integration', () => {
     const sipConnector = doMockSipConnector();
     const pingServerRequester = new PingServerRequester({
       connectionManager: sipConnector.connectionManager,
+      callManager: sipConnector.callManager,
     });
     const pingOutcomes: ('success' | 'fail')[] = [
       'success',
