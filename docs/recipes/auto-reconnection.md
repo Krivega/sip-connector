@@ -237,11 +237,20 @@ const sipConnector = new SipConnector(
 Не вызывайте `startAutoConnect()` перед ним: при уже активном цикле метод вернёт
 `auto-connector-active`.
 
-Во время звонка AutoConnector продолжает ping и обработку сетевых событий. Если signaling
+Во время звонка AutoConnector продолжает ping и обработку сетевых событий. Неуспешный ping во время
+активного звонка не запускает reconnect (`periodic-ping-failed`): reconnect перезапускает UA и обрывает
+звонок. OPTIONS продолжают уходить как keepalive; если порог неуспешных ping достигнут в звонке,
+reconnect запросит первый неуспешный ping после его завершения. Обработка `network-change`/`network-online`
+во время звонка не изменилась и при неуспешном probe запускает reconnect. Если signaling
 переподключается, `CallReconnectManager` ждёт его восстановления и выполняет redial. Ручные
 `session.hangUp()` и `session.disconnect()`, публичные `SipConnector.hangUp()`/`disconnect()`, а
 также финальный исход redial вызывают `stopAutoConnect()`, который освобождает watchers/retry и
 закрывает SIP-соединение. Публичные команды автоматически направляются через активную session.
+
+Известное ограничение: при «полуживом» WebSocket во время звонка signaling не восстанавливается до
+завершения звонка — запросы сервера (BYE, INFO) до клиента не дойдут, исходящие INFO не дойдут до
+сервера. Медиа идёт по WebRTC независимо от WebSocket. Если сервер закроет медиасоединение,
+`iceConnectionState` перейдёт в `failed`, и JsSIP завершит звонок с причиной `RTP_TIMEOUT`.
 
 ### Тюнинг `offlineGraceMs`
 

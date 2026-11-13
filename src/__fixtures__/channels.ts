@@ -14,5 +14,6 @@ export const channelsHeaders: [string, string][] = [
 export const channelsData = { inputChannels, outputChannels };
 
 export const sendedExtraHeaders = {
+  noTerminateWhenError: true,
   extraHeaders: [headerInputChannels, headerOutputChannels],
 };

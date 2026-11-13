@@ -189,7 +189,7 @@ describe('ApiManager (core)', () => {
   });
 
   describe('методы send', () => {
-    it('должен отправлять channels', async () => {
+    it('должен отправлять channels с noTerminateWhenError', async () => {
       const sendInfoSpy = jest.spyOn(rtcSession, 'sendInfo').mockResolvedValue(undefined);
 
       await apiManager.sendChannels({
@@ -197,6 +197,7 @@ describe('ApiManager (core)', () => {
         outputChannels: 'output1,output2',
       });
       expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeSent.CHANNELS, undefined, {
+        noTerminateWhenError: true,
         extraHeaders: [
           `${EKeyHeader.INPUT_CHANNELS}: input1,input2`,
           `${EKeyHeader.OUTPUT_CHANNELS}: output1,output2`,
