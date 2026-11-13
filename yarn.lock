@@ -1281,10 +1281,10 @@
     globals "^17.7.0"
     typescript "^6.0.3"
 
-"@krivega/jssip@^8.0.2":
-  version "8.0.2"
-  resolved "https://registry.yarnpkg.com/@krivega/jssip/-/jssip-8.0.2.tgz#aa7c98984b5cb82bd8bb0b7182c2a26cce5e8fc4"
-  integrity sha512-PVdzVD55+PLdbu29ZYQq7aqG8xZGW39irMcfn10xzg266URH4Hn1hK92eA8yKTs54jhTK4K3muIe6CVCysjR3g==
+"@krivega/jssip@^8.0.4":
+  version "8.0.4"
+  resolved "https://registry.yarnpkg.com/@krivega/jssip/-/jssip-8.0.4.tgz#3f8025733419d74e3bf87107c9753640687958f4"
+  integrity sha512-4WqPAgugldHGo8PC/lZcQPJUTQx5rGGAk3HfaFWKzEpzDTaiaFzSCRCqfTw4jWRezEV64gLmKZj2jG9GqUsLYQ==
   dependencies:
     debug "^4.4.3"
     events "^3.3.0"
@@ -5516,10 +5516,10 @@ mobx-state-tree@^9.0.1:
   dependencies:
     ts-essentials "^9.4.1"
 
-mobx@^7.1.6:
-  version "7.1.6"
-  resolved "https://registry.yarnpkg.com/mobx/-/mobx-7.1.6.tgz#f6caf3f73983e40301ececd705dfe3ecb8bc1c13"
-  integrity sha512-ZCiX6zxYeWaPnBLnH/OHJCFV5FysL41I7ndHntYv/mU4bWvpmP0N46Z+ujg/DoRv2K+7748/HvgFn1Jm8jiObQ==
+mobx@^7.1.7:
+  version "7.1.7"
+  resolved "https://registry.yarnpkg.com/mobx/-/mobx-7.1.7.tgz#12281ff4c4329c0e31bf9ad846b602090bd56c0c"
+  integrity sha512-fzFPm0u0xHxrAyjFsjfA/a99JgyvLh8R/bnTe7uD37cwbO5O7OUrv/e6Q4rlYdBGCf3rR/pVvh1OVMPF10ghng==
 
 modify-values@^1.0.0:
   version "1.0.1"
@@ -5999,10 +5999,10 @@ prettier-linter-helpers@^1.0.1:
   dependencies:
     fast-diff "^1.1.2"
 
-prettier@^3.9.10:
-  version "3.9.10"
-  resolved "https://registry.yarnpkg.com/prettier/-/prettier-3.9.10.tgz#ac378e432f1a7381518f2e080816bbaefa38d585"
-  integrity sha512-skGHTH1Yb9QvaTC4hWnRTzEYtCpApF0UMBPz+t/0ZPzP8ihefo/btKd+QA7pUE0fEwA1SbS/NmhyEcstdXOIdA==
+prettier@^3.10.1:
+  version "3.10.1"
+  resolved "https://registry.yarnpkg.com/prettier/-/prettier-3.10.1.tgz#00b1c1872f9650ec22093d5bdafdca0fe6760f77"
+  integrity sha512-70vp3ZUYoPlFbF9uiTdXHUUCGEIp7d4+6p+8DYbkm2jP7x/3i/paXVF6dopSI3zd/CEitrZN1rc4i85xWmmXlg==
 
 pretty-format@30.4.1, pretty-format@^30.0.0:
   version "30.4.1"
