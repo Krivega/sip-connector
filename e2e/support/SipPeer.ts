@@ -17,6 +17,8 @@ type TDialog = {
   to: string;
 };
 
+type TSilentMethod = 'INFO' | 'OPTIONS';
+
 type TRequest = TDialog & {
   method: string;
   cseq: number;
@@ -116,6 +118,12 @@ export class SipPeer {
 
   private readonly receivedMessages: string[] = [];
 
+  private readonly silentMethods = new Set<TSilentMethod>();
+
+  private isAcceptingConnections = true;
+
+  private rejectedConnectionsCount = 0;
+
   public constructor(page: Page) {
     this.page = page;
   }
@@ -130,7 +138,14 @@ export class SipPeer {
         await route.abort();
       }
     });
-    await this.page.routeWebSocket(`wss://${SIP_PEER_HOST}/webrtc/wss/`, (socket) => {
+    await this.page.routeWebSocket(`wss://${SIP_PEER_HOST}/webrtc/wss/`, async (socket) => {
+      if (!this.isAcceptingConnections) {
+        this.rejectedConnectionsCount += 1;
+        await socket.close({ code: 1011, reason: 'sip-peer: server unavailable' });
+
+        return;
+      }
+
       this.socket = socket;
       socket.onMessage(async (message) => {
         await this.handleMessage(message.toString());
@@ -228,6 +243,29 @@ export class SipPeer {
     await this.waitForResponse(invite.callId, `${invite.cseq} INVITE`, 487);
   }
 
+  /** Перестаёт отвечать на запросы клиента: сокет жив, но запросы уходят без ответа. */
+  public stopAnswering(methods: TSilentMethod[]): void {
+    methods.forEach((method) => {
+      this.silentMethods.add(method);
+    });
+  }
+
+  /** Сервер закрывает текущий WebSocket и сразу закрывает все новые подключения клиента. */
+  public async dropConnection(): Promise<void> {
+    this.isAcceptingConnections = false;
+    await this.socket?.close({ code: 1011, reason: 'sip-peer: connection lost' });
+  }
+
+  public getRejectedConnectionsCount(): number {
+    return this.rejectedConnectionsCount;
+  }
+
+  public countReceivedRequests(method: string): number {
+    return this.receivedMessages.filter((message) => {
+      return message.startsWith(`${method} `);
+    }).length;
+  }
+
   public async dispose(): Promise<void> {
     await this.peerConnection?.evaluate((peer) => {
       peer.close();
@@ -322,9 +360,15 @@ export class SipPeer {
           body: '',
         }),
       );
-    } else if (/^(?:OPTIONS|INFO|BYE) /.test(message)) {
+    } else if (/^(?:OPTIONS|INFO|BYE) /.test(message) && !this.isSilentRequest(message)) {
       this.send(createResponse(message));
     }
+  }
+
+  private isSilentRequest(message: string): boolean {
+    return [...this.silentMethods].some((method) => {
+      return message.startsWith(`${method} `);
+    });
   }
 
   private async createDescription(remoteOffer?: string): Promise<string> {

@@ -34,6 +34,7 @@ describe('PingServerRequester', () => {
 
     pingServerRequester = new PingServerRequester({
       connectionManager: sipConnector.connectionManager,
+      callManager: sipConnector.callManager,
     });
   });
 
@@ -97,6 +98,62 @@ describe('PingServerRequester', () => {
       callbacks.onFailRequest();
 
       expect(onFailRequest).toHaveBeenCalledTimes(2);
+    });
+
+    it('не вызывает onFailRequest во время активного звонка и вызывает после его завершения', () => {
+      const onFailRequest = jest.fn();
+      const isCallActiveSpy = jest
+        .spyOn(sipConnector.callManager, 'isCallActive', 'get')
+        .mockReturnValue(true);
+
+      pingServerRequester.start({ onFailRequest });
+
+      const [, callbacks] = startMock.mock.calls[0] as unknown as [
+        undefined,
+        { onFailRequest: () => void; onSuccessRequest: () => void },
+      ];
+
+      callbacks.onFailRequest();
+      callbacks.onFailRequest();
+      callbacks.onFailRequest();
+
+      expect(onFailRequest).not.toHaveBeenCalled();
+
+      isCallActiveSpy.mockReturnValue(false);
+      callbacks.onFailRequest();
+
+      expect(onFailRequest).toHaveBeenCalledTimes(1);
+
+      callbacks.onFailRequest();
+
+      expect(onFailRequest).toHaveBeenCalledTimes(1);
+    });
+
+    it('после успешного ping во время звонка требует новый лимит ошибок после его завершения', () => {
+      const onFailRequest = jest.fn();
+      const isCallActiveSpy = jest
+        .spyOn(sipConnector.callManager, 'isCallActive', 'get')
+        .mockReturnValue(true);
+
+      pingServerRequester.start({ onFailRequest });
+
+      const [, callbacks] = startMock.mock.calls[0] as unknown as [
+        undefined,
+        { onFailRequest: () => void; onSuccessRequest: () => void },
+      ];
+
+      callbacks.onFailRequest();
+      callbacks.onFailRequest();
+      callbacks.onSuccessRequest();
+
+      isCallActiveSpy.mockReturnValue(false);
+      callbacks.onFailRequest();
+
+      expect(onFailRequest).not.toHaveBeenCalled();
+
+      callbacks.onFailRequest();
+
+      expect(onFailRequest).toHaveBeenCalledTimes(1);
     });
   });
 
