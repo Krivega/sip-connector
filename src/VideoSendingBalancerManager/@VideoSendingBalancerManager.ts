@@ -1,12 +1,12 @@
 import { EventEmitterProxy } from 'events-constructor';
 
 import resolveDebug from '@/logger';
-import { VideoSendingBalancer } from '@/VideoSendingBalancer';
+import { RESULT_NO_CHANGED, VideoSendingBalancer } from '@/VideoSendingBalancer';
 import { createEvents } from './events';
 
 import type { ApiManager } from '@/ApiManager';
 import type { CallManager } from '@/CallManager';
-import type { IBalancerOptions } from '@/VideoSendingBalancer/types';
+import type { IBalancerOptions, IMainCamHeaders } from '@/VideoSendingBalancer/types';
 import type { TEventMap } from './events';
 
 type TOptions = IBalancerOptions & {
@@ -17,12 +17,15 @@ const debug = resolveDebug('VideoSendingBalancerManager');
 
 /**
  * Менеджер для управления VideoSendingBalancer
- * Автоматически запускает балансировку через 10 секунд после начала звонка
+ * Автоматически запускает балансировку через 10 секунд после начала звонка:
+ * пока браузер прогревает отправку (постепенно наращивает разрешение), скалирование применять нельзя
  */
 class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
   public isBalancingActive = false;
 
   private readonly callManager: CallManager;
+
+  private readonly apiManager: ApiManager;
 
   private readonly balancingStartDelay: number;
 
@@ -34,9 +37,9 @@ class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
     super(createEvents());
 
     this.callManager = callManager;
+    this.apiManager = apiManager;
     this.balancingStartDelay = balancerOptions.balancingStartDelay ?? 10_000;
     this.videoSendingBalancer = new VideoSendingBalancer(
-      apiManager,
       () => {
         return callManager.connection;
       },
@@ -69,11 +72,15 @@ class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
 
     this.clearStartTimer();
 
-    await this.videoSendingBalancer.balance();
-    this.videoSendingBalancer.subscribe();
     this.isBalancingActive = true;
 
-    this.events.trigger('balancing-started', { delay: this.balancingStartDelay });
+    await this.videoSendingBalancer.start();
+
+    // за время первой балансировки её могли остановить, сужение типа этого не учитывает
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (this.isBalancingActive) {
+      this.events.trigger('balancing-started', { delay: this.balancingStartDelay });
+    }
   }
 
   /**
@@ -82,7 +89,7 @@ class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
   public stopBalancing(): void {
     this.clearStartTimer();
 
-    this.videoSendingBalancer.unsubscribe();
+    this.videoSendingBalancer.stop();
     this.isBalancingActive = false;
     this.events.trigger('balancing-stopped', {});
   }
@@ -91,6 +98,11 @@ class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
    * Выполнить ручную балансировку
    */
   public async balance() {
+    // во время прогрева скалирование применять нельзя
+    if (this.isBalancingScheduled) {
+      return RESULT_NO_CHANGED;
+    }
+
     return this.videoSendingBalancer.balance();
   }
 
@@ -104,6 +116,8 @@ class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
     // Подписываемся на окончание звонка
     this.callManager.on('ended', this.handleCallEnded);
     this.callManager.on('failed', this.handleCallEnded);
+
+    this.apiManager.on('main-cam-control', this.handleMainCamControl);
   }
 
   private readonly handleCallStarted = (): void => {
@@ -124,6 +138,22 @@ class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
 
   private readonly handleRecvQualityChanged = (): void => {
     this.stopBalancing();
+  };
+
+  private readonly handleMainCamControl = (headers: IMainCamHeaders): void => {
+    if (this.isBalancingActive) {
+      this.videoSendingBalancer.setServerHeaders(headers);
+      this.videoSendingBalancer.balance().catch((error: unknown) => {
+        debug('balance on main-cam-control: error', error);
+      });
+
+      return;
+    }
+
+    // во время прогрева только запоминаем: последнюю команду применит старт балансировки
+    if (this.isBalancingScheduled) {
+      this.videoSendingBalancer.setServerHeaders(headers);
+    }
   };
 
   private scheduleBalancingStart(): void {

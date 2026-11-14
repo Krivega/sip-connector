@@ -1,248 +1,160 @@
-/// <reference types="jest" />
+import delayPromise from '@/__fixtures__/delayPromise';
+import flushPromises from '@/__fixtures__/flushPromises';
 import { TaskQueue } from '../TaskQueue';
 
 describe('TaskQueue', () => {
-  let taskQueue: TaskQueue<void>;
+  let taskQueue: TaskQueue;
+  let log: string[];
+
+  const createLoggedTask = (name: string) => {
+    return async () => {
+      log.push(`${name}:start`);
+      await flushPromises();
+      log.push(`${name}:end`);
+
+      return name;
+    };
+  };
 
   beforeEach(() => {
     taskQueue = new TaskQueue();
+    log = [];
   });
 
-  describe('add', () => {
-    it('должен выполнить задачу', async () => {
-      const task = jest.fn(async () => {});
-
-      await taskQueue.add(task);
-
-      expect(task).toHaveBeenCalledTimes(1);
+  it('должен вернуть результат задачи', async () => {
+    const result = await taskQueue.add(async () => {
+      return 'result';
     });
 
-    it('должен выполнить несколько задач', async () => {
-      const task1 = jest.fn(async () => {});
-      const task2 = jest.fn(async () => {});
-      const task3 = jest.fn(async () => {});
-
-      await taskQueue.add(task1);
-      await taskQueue.add(task2);
-      await taskQueue.add(task3);
-
-      expect(task1).toHaveBeenCalledTimes(1);
-      expect(task2).toHaveBeenCalledTimes(1);
-      expect(task3).toHaveBeenCalledTimes(1);
-    });
-
-    it('должен обработать ошибку в задаче', async () => {
-      const error = new Error('Task failed');
-      const task = jest.fn().mockRejectedValue(error);
-
-      await taskQueue.add(task);
-
-      expect(task).toHaveBeenCalledTimes(1);
-    });
-
-    it('должен обработать ошибку и продолжить выполнение следующих задач', async () => {
-      const error = new Error('Task failed');
-      const failingTask = jest.fn().mockRejectedValue(error);
-      const succeedingTask = jest.fn(async () => {});
-
-      await taskQueue.add(failingTask);
-      await taskQueue.add(succeedingTask);
-
-      expect(failingTask).toHaveBeenCalledTimes(1);
-      expect(succeedingTask).toHaveBeenCalledTimes(1);
-    });
-
-    it('должен выполнить задачи с задержкой', async () => {
-      const task1 = jest.fn().mockImplementation(async () => {
-        return new Promise<void>((resolve) => {
-          setTimeout(() => {
-            resolve();
-          }, 12);
-        });
-      });
-      const task2 = jest.fn(async () => {});
-
-      const startTime = Date.now();
-
-      await taskQueue.add(task1);
-      await taskQueue.add(task2);
-
-      const endTime = Date.now();
-
-      expect(task1).toHaveBeenCalledTimes(1);
-      expect(task2).toHaveBeenCalledTimes(1);
-      expect(endTime - startTime).toBeGreaterThanOrEqual(10);
-    });
+    expect(result).toBe('result');
   });
 
-  describe('stop', () => {
-    it('должен остановить очередь задач', async () => {
-      const task1 = jest.fn(async () => {});
-      const task2 = jest.fn(async () => {});
-      const task3 = jest.fn(async () => {});
+  it('должен отклониться ошибкой задачи', async () => {
+    const error = new Error('task failed');
 
-      // Добавляем задачи в очередь
-      const promise1 = taskQueue.add(task1);
-      const promise2 = taskQueue.add(task2);
-
-      // Останавливаем очередь после добавления задач
-      taskQueue.stop();
-
-      // Пытаемся добавить еще одну задачу после остановки
-      const promise3 = taskQueue.add(task3);
-
-      // Ждем завершения всех промисов
-      const results = await Promise.allSettled([promise1, promise2, promise3]);
-
-      // Проверяем, что задачи не выполнились (stop() предотвращает выполнение уже добавленных задач)
-      expect(task1).not.toHaveBeenCalled();
-      expect(task2).not.toHaveBeenCalled();
-
-      // Проверяем, что задача выполнилась, так как она добавлена после остановки
-      expect(task3).toHaveBeenCalled();
-
-      // Проверяем, что все промисы завершились успешно
-      expect(results[0].status).toBe('fulfilled');
-      expect(results[1].status).toBe('fulfilled');
-      expect(results[2].status).toBe('fulfilled');
-    });
-
-    it('должен позволить остановить очередь несколько раз', () => {
-      expect(() => {
-        taskQueue.stop();
-        taskQueue.stop();
-        taskQueue.stop();
-      }).not.toThrow();
-    });
+    await expect(
+      taskQueue.add(async () => {
+        throw error;
+      }),
+    ).rejects.toBe(error);
   });
 
-  describe('с разными типами данных', () => {
-    it('должен работать с задачами, возвращающими числа', async () => {
-      const task = jest.fn().mockImplementation(async () => {
-        return 42;
-      });
+  it('должен выполнять задачи по одной в порядке добавления и вернуть каждой её результат', async () => {
+    const results = await Promise.all([
+      taskQueue.add(createLoggedTask('first')),
+      taskQueue.add(createLoggedTask('second')),
+      taskQueue.add(createLoggedTask('third')),
+    ]);
 
-      await taskQueue.add(task);
-
-      expect(task).toHaveBeenCalledTimes(1);
-    });
-
-    it('должен работать с задачами, возвращающими объекты', async () => {
-      const task = jest.fn().mockImplementation(async () => {
-        return { id: 1, name: 'test' };
-      });
-
-      await taskQueue.add(task);
-
-      expect(task).toHaveBeenCalledTimes(1);
-    });
-
-    it('должен работать с задачами, не возвращающими значения', async () => {
-      const task = jest.fn(async () => {});
-
-      await taskQueue.add(task);
-
-      expect(task).toHaveBeenCalledTimes(1);
-    });
+    expect(results).toEqual(['first', 'second', 'third']);
+    expect(log).toEqual([
+      'first:start',
+      'first:end',
+      'second:start',
+      'second:end',
+      'third:start',
+      'third:end',
+    ]);
   });
 
-  describe('возвращаемые значения', () => {
-    it('должен возвращать число из задачи', async () => {
-      const taskQueueItem = new TaskQueue<number>();
-      const task = jest.fn().mockImplementation(async () => {
-        return 42;
+  it('должен запустить задачу только после завершения предыдущей', async () => {
+    const previous = Promise.withResolvers<string>();
+    const nextTask = jest.fn(createLoggedTask('next'));
+
+    const previousResult = taskQueue.add(async () => {
+      return previous.promise;
+    });
+    const nextResult = taskQueue.add(nextTask);
+
+    await flushPromises();
+
+    expect(nextTask).not.toHaveBeenCalled();
+
+    previous.resolve('previous');
+
+    await expect(previousResult).resolves.toBe('previous');
+    await expect(nextResult).resolves.toBe('next');
+  });
+
+  it('должен запустить следующую задачу после завершения предыдущей ошибкой', async () => {
+    const error = new Error('previous failed');
+    const previous = Promise.withResolvers<string>();
+    const nextTask = jest.fn(createLoggedTask('next'));
+
+    const previousResult = taskQueue.add(async () => {
+      return previous.promise;
+    });
+    const nextResult = taskQueue.add(nextTask);
+
+    await flushPromises();
+
+    expect(nextTask).not.toHaveBeenCalled();
+
+    previous.reject(error);
+
+    await expect(previousResult).rejects.toBe(error);
+    await expect(nextResult).resolves.toBe('next');
+  });
+
+  it('должен выполнить задачу, добавленную из выполняющейся задачи, после её завершения', async () => {
+    let nestedResult: Promise<string> | undefined;
+
+    await taskQueue.add(async () => {
+      log.push('outer:start');
+      nestedResult = taskQueue.add(createLoggedTask('nested'));
+      await flushPromises();
+      log.push('outer:end');
+    });
+    await nestedResult;
+
+    expect(log).toEqual(['outer:start', 'outer:end', 'nested:start', 'nested:end']);
+  });
+
+  describe('reset', () => {
+    let unfinished: PromiseWithResolvers<string>;
+    let unfinishedResult: Promise<string>;
+
+    beforeEach(async () => {
+      unfinished = Promise.withResolvers<string>();
+      unfinishedResult = taskQueue.add(async () => {
+        return unfinished.promise;
       });
-
-      const result = await taskQueueItem.add(task);
-
-      expect(result).toBe(42);
+      await flushPromises();
     });
 
-    it('должен возвращать объект из задачи', async () => {
-      const taskQueueItem = new TaskQueue<{ id: number; name: string }>();
-      const task = jest.fn().mockImplementation(async () => {
-        return { id: 1, name: 'test' };
-      });
+    it('должен запустить задачу, добавленную после reset, не дожидаясь незавершённой задачи прежней цепочки', async () => {
+      const nextTask = jest.fn(createLoggedTask('next'));
 
-      const result = await taskQueueItem.add(task);
+      taskQueue.reset();
 
-      expect(result).toEqual({ id: 1, name: 'test' });
+      const nextResult = taskQueue.add(nextTask);
+
+      await flushPromises();
+
+      expect(nextTask).toHaveBeenCalledTimes(1);
+
+      unfinished.resolve('unfinished');
+
+      await expect(nextResult).resolves.toBe('next');
     });
 
-    it('должен возвращать undefined из задачи без возвращаемого значения', async () => {
-      const taskQueueItem = new TaskQueue<void>();
-      const task = jest.fn(async () => {});
+    it('должен довести до конца задачи прежней цепочки и вернуть каждой её результат после reset', async () => {
+      const queuedResult = taskQueue.add(createLoggedTask('queued'));
 
-      // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
-      const result = await taskQueueItem.add(task);
+      taskQueue.reset();
+      unfinished.resolve('unfinished');
 
-      expect(result).toBeUndefined();
+      await expect(unfinishedResult).resolves.toBe('unfinished');
+      await expect(queuedResult).resolves.toBe('queued');
     });
 
-    it('должен возвращать строку из задачи', async () => {
-      const taskQueueItem = new TaskQueue<string>();
-      const task = jest.fn().mockImplementation(async () => {
-        return 'test result';
-      });
+    it('должен выполнять задачи, добавленные после reset, по одной в порядке добавления', async () => {
+      taskQueue.reset();
+      taskQueue.add(createLoggedTask('first')).catch(() => {});
+      taskQueue.add(createLoggedTask('second')).catch(() => {});
+      await delayPromise(0);
 
-      const result = await taskQueueItem.add(task);
-
-      expect(result).toBe('test result');
-    });
-
-    it('должен возвращать массив из задачи', async () => {
-      const taskQueueItem = new TaskQueue<(number | string)[]>();
-      const task = jest.fn().mockImplementation(async () => {
-        return [1, 2, 3, 'test'];
-      });
-
-      const result = await taskQueueItem.add(task);
-
-      expect(result).toEqual([1, 2, 3, 'test']);
-    });
-
-    it('должен возвращать boolean из задачи', async () => {
-      const taskQueueItem = new TaskQueue<boolean>();
-      const task = jest.fn().mockImplementation(async () => {
-        return true;
-      });
-
-      const result = await taskQueueItem.add(task);
-
-      expect(result).toBe(true);
-    });
-
-    it('должен возвращать undefined из задачи, явно возвращающей undefined', async () => {
-      const taskQueueItem = new TaskQueue<undefined>();
-      const task = jest.fn().mockImplementation(async () => {
-        return undefined;
-      });
-
-      // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
-      const result = await taskQueueItem.add(task);
-
-      expect(result).toBeUndefined();
-    });
-
-    it('должен возвращать результат из нескольких последовательных задач', async () => {
-      const taskQueueItem = new TaskQueue<string>();
-      const task1 = jest.fn().mockImplementation(async () => {
-        return 'first';
-      });
-      const task2 = jest.fn().mockImplementation(async () => {
-        return 'second';
-      });
-      const task3 = jest.fn().mockImplementation(async () => {
-        return 'third';
-      });
-
-      const result1 = await taskQueueItem.add(task1);
-      const result2 = await taskQueueItem.add(task2);
-      const result3 = await taskQueueItem.add(task3);
-
-      expect(result1).toBe('first');
-      expect(result2).toBe('second');
-      expect(result3).toBe('third');
+      expect(log).toEqual(['first:start', 'first:end', 'second:start', 'second:end']);
     });
   });
 });

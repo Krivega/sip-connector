@@ -1,778 +1,456 @@
-/* eslint-disable no-await-in-loop */
-
-/// <reference types="jest" />
-import { createVideoMediaStreamTrackMock } from 'webrtc-mock';
-
-import delayPromise from '@/__fixtures__/delayPromise';
 import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
 import { EContentMainCAM } from '@/ApiManager';
-import { doMockSipConnector } from '@/doMock';
-import logger from '@/logger';
+import resolveDebug from '@/logger';
 import VideoSendingBalancer, { resolveVideoSendingBalancer } from '../@VideoSendingBalancer';
-import { createMockTrack, NO_MAX_RESOLUTION_BALANCER_OPTIONS } from '../__fixtures__';
+import {
+  createBalancerOptions,
+  createVideoTrack,
+  deferNextGetStats,
+  hangGetStats,
+  hangNextGetStats,
+  setSenderCodec,
+} from '../__fixtures__';
+import { calcMaxBitrateByWidthAndCodec, getMinimumBitrate } from '../calcBitrate';
+import { RESULT_NO_CHANGED } from '../SenderBalancer';
 
-import type { ApiManager } from '@/ApiManager';
 import type { IBalancerOptions, IMainCamHeaders } from '../types';
 
 jest.mock('@/logger');
 
-const { mcuDebugLogger } = logger as jest.Mock & { mcuDebugLogger: jest.Mock };
+const { mcuDebugLogger } = resolveDebug as jest.Mock & { mcuDebugLogger: jest.Mock };
+
+const POLL_INTERVAL_MS = 100;
+const DEFAULT_SCALE_RESOLUTION_DOWN_BY = 1;
+
+// дольше максимального интервала опроса размера трека (16 начальных интервалов)
+const POLLING_WINDOW_MS = 2 * 16 * POLL_INTERVAL_MS;
+
+const MAX_RESOLUTION_360P = { width: 640, height: 360 };
+
+const HEADERS_PAUSE: IMainCamHeaders = { mainCam: EContentMainCAM.PAUSE_MAIN_CAM };
+const HEADERS_MAX_720P: IMainCamHeaders = {
+  mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
+  resolutionMainCam: '1280x720',
+};
+
+const ENCODING_720P_BY_TRACK = {
+  scaleResolutionDownBy: 1,
+  maxBitrate: calcMaxBitrateByWidthAndCodec(1280),
+};
+const ENCODING_360P_BY_TRACK = {
+  scaleResolutionDownBy: 1,
+  maxBitrate: calcMaxBitrateByWidthAndCodec(640),
+};
+const ENCODING_720P_LIMITED_TO_360P = {
+  scaleResolutionDownBy: 2,
+  maxBitrate: calcMaxBitrateByWidthAndCodec(640),
+};
+const ENCODING_1440P_LIMITED_TO_720P = {
+  scaleResolutionDownBy: 2,
+  maxBitrate: calcMaxBitrateByWidthAndCodec(1280),
+};
+const ENCODING_4K_LIMITED_TO_360P = {
+  scaleResolutionDownBy: 6,
+  maxBitrate: calcMaxBitrateByWidthAndCodec(640),
+};
+const ENCODING_4K_LIMITED_TO_720P = {
+  scaleResolutionDownBy: 3,
+  maxBitrate: calcMaxBitrateByWidthAndCodec(1280),
+};
+const ENCODING_PAUSED = { scaleResolutionDownBy: 200, maxBitrate: getMinimumBitrate() };
 
 describe('VideoSendingBalancer', () => {
+  let connection: RTCPeerConnectionMock;
+  let currentConnection: RTCPeerConnectionMock | undefined;
+  let track720: MediaStreamVideoTrack;
+  let track4K: MediaStreamVideoTrack;
+  let sender: RTCRtpSender;
+  let setParameters: jest.SpyInstance;
   let balancer: VideoSendingBalancer;
-  let sipConnector: ReturnType<typeof doMockSipConnector>;
-  let apiManager: ApiManager;
-  let mockConnection: RTCPeerConnection;
-  let mockVideoTrack: MediaStreamVideoTrack;
-  let mockSender: RTCRtpSender;
+
+  const getConnection = () => {
+    return currentConnection as RTCPeerConnection | undefined;
+  };
+
+  const createBalancer = (options: IBalancerOptions = createBalancerOptions()) => {
+    return new VideoSendingBalancer(getConnection, {
+      ...options,
+      pollIntervalMs: POLL_INTERVAL_MS,
+    });
+  };
+
+  const getEncoding = (target: RTCRtpSender = sender) => {
+    const [{ scaleResolutionDownBy = DEFAULT_SCALE_RESOLUTION_DOWN_BY, maxBitrate }] =
+      target.getParameters().encodings;
+
+    return { scaleResolutionDownBy, maxBitrate };
+  };
+
+  const resizeTrack = (track: MediaStreamVideoTrack, width: number, height: number) => {
+    return jest.spyOn(track, 'getSettings').mockReturnValue({ width, height });
+  };
+
+  const flushQueue = async () => {
+    await jest.advanceTimersByTimeAsync(0);
+  };
 
   beforeEach(() => {
-    // Создаем реальный SipConnector с замоканным JsSIP
-    sipConnector = doMockSipConnector();
+    jest.useFakeTimers();
 
-    // Создаем видео трек
-    mockVideoTrack = createVideoMediaStreamTrackMock({
-      constraints: { width: 1920, height: 1080 },
-    }) as MediaStreamVideoTrack;
-
-    // Создаем sender
-    mockSender = new RTCRtpSenderMock({ track: mockVideoTrack });
-    Object.defineProperty(mockSender, 'getParameters', {
-      value: jest.fn().mockReturnValue({
-        encodings: [{ scaleResolutionDownBy: 1, maxBitrate: 1_000_000 }],
-      }),
-    });
-    Object.defineProperty(mockSender, 'setParameters', {
-      value: jest.fn().mockResolvedValue(undefined),
-    });
-
-    // Создаем RTCPeerConnection
-    mockConnection = {
-      getSenders: jest.fn().mockReturnValue([mockSender]),
-    } as unknown as RTCPeerConnection;
-
-    // Устанавливаем соединение в sipConnector
-    Object.defineProperty(sipConnector, 'connection', {
-      value: mockConnection,
-      writable: true,
-    });
-
-    // Добавляем методы для имитации событий (реальный SipConnector уже их имеет)
-    apiManager = sipConnector.apiManager;
-    balancer = new VideoSendingBalancer(
-      apiManager,
-      () => {
-        return sipConnector.connection;
-      },
-      NO_MAX_RESOLUTION_BALANCER_OPTIONS,
-    );
+    track720 = createVideoTrack(1280, 720);
+    track4K = createVideoTrack(3840, 2160);
+    sender = new RTCRtpSenderMock({ track: track720 });
+    setParameters = jest.spyOn(sender, 'setParameters');
+    connection = new RTCPeerConnectionMock(undefined, []);
+    connection.senders = [sender];
+    currentConnection = connection;
+    balancer = createBalancer();
   });
 
   afterEach(() => {
-    balancer.unsubscribe();
-    jest.clearAllMocks();
-  });
-
-  describe('constructor', () => {
-    it('должен создать экземпляр VideoSendingBalancer', () => {
-      expect(balancer).toBeInstanceOf(VideoSendingBalancer);
-    });
-
-    it('должен создать экземпляр с опциями', () => {
-      const options: IBalancerOptions = {
-        ...NO_MAX_RESOLUTION_BALANCER_OPTIONS,
-        ignoreForCodec: 'VP8',
-        onSetParameters: jest.fn(),
-      };
-
-      const balancerWithOptions = new VideoSendingBalancer(
-        apiManager,
-        () => {
-          return sipConnector.connection;
-        },
-        options,
-      );
-
-      expect(balancerWithOptions).toBeInstanceOf(VideoSendingBalancer);
-    });
-  });
-
-  describe('subscribe', () => {
-    it('должен подписаться на события управления главной камерой', () => {
-      const spyOn = jest.spyOn(apiManager, 'on');
-
-      balancer.subscribe();
-
-      expect(spyOn).toHaveBeenCalledWith('main-cam-control', expect.any(Function));
-    });
-
-    it('должен обрабатывать событие main-cam-control при подписке', async () => {
-      const spyOn = jest.spyOn(apiManager, 'on');
-      let eventHandler: ((data: IMainCamHeaders) => void) | undefined;
-
-      spyOn.mockImplementation((eventName, handler) => {
-        if (eventName === 'main-cam-control') {
-          eventHandler = handler as (data: IMainCamHeaders) => void;
-        }
-
-        // Возвращаем функцию отписки
-        return () => {
-          return undefined;
-        };
-      });
-
-      balancer.subscribe();
-
-      expect(eventHandler).toBeDefined();
-
-      // Имитируем событие
-      const testHeaders: IMainCamHeaders = {
-        mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
-        resolutionMainCam: '1920x1080',
-      };
-
-      expect(eventHandler).toBeDefined();
-
-      // Ждем обработки события без ошибок
-      expect(() => {
-        eventHandler?.(testHeaders);
-      }).not.toThrow();
-
-      // Даем время на обработку асинхронного вызова
-      await delayPromise(10);
-    });
-  });
-
-  describe('unsubscribe', () => {
-    it('должен отписаться от событий', () => {
-      const spyOff = jest.spyOn(apiManager, 'off');
-
-      balancer.subscribe();
-      balancer.unsubscribe();
-
-      expect(spyOff).toHaveBeenCalledWith('main-cam-control', expect.any(Function));
-    });
-
-    it('должен сбросить состояние при отписке', () => {
-      balancer.subscribe();
-
-      // Устанавливаем заголовки через приватное свойство
-
-      // @ts-expect-error
-      balancer.serverHeaders = {
-        mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
-        resolutionMainCam: '1920x1080',
-      };
-
-      balancer.unsubscribe();
-
-      // Проверяем, что заголовки сброшены
-      // @ts-expect-error
-      expect(balancer.serverHeaders).toBeUndefined();
-    });
-
-    it('должен восстановить параметры отправителя при unsubscribe после balance с PAUSE_MAIN_CAM', async () => {
-      const setParametersSpy = jest.spyOn(mockSender, 'setParameters');
-
-      balancer.subscribe();
-      // @ts-expect-error
-      balancer.serverHeaders = { mainCam: EContentMainCAM.PAUSE_MAIN_CAM };
-      await balancer.balance();
-
-      const pauseCall = setParametersSpy.mock.calls.find((call) => {
-        const encoding = call[0].encodings[0];
-
-        return encoding.scaleResolutionDownBy === 200;
-      });
-
-      expect(pauseCall).toBeDefined();
-
-      balancer.unsubscribe();
-      await delayPromise(100);
-
-      const resetCall = setParametersSpy.mock.calls.find((call) => {
-        const encoding = call[0].encodings[0];
-
-        return encoding.scaleResolutionDownBy === 1;
-      });
-
-      expect(resetCall).toBeDefined();
-    });
-
-    it('должен обработать ошибку senderBalancer.reset при unsubscribe без падения', async () => {
-      const getStatsSpy = jest.spyOn(mockSender, 'getStats');
-      const statsOk = new Map([['codec', { type: 'codec', mimeType: 'video/h264' }]]);
-
-      getStatsSpy.mockResolvedValueOnce(statsOk).mockRejectedValueOnce(new Error('reset error'));
-
-      balancer.subscribe();
-      // @ts-expect-error
-      balancer.serverHeaders = { mainCam: EContentMainCAM.PAUSE_MAIN_CAM };
-      await balancer.balance();
-
-      expect(() => {
-        balancer.unsubscribe();
-      }).not.toThrow();
-
-      await delayPromise(100);
-
-      expect(mcuDebugLogger).toHaveBeenCalledWith(
-        'reset sender encodings: error',
-        expect.any(Error),
-      );
-    });
-  });
-
-  describe('reset', () => {
-    it('должен сбросить состояние балансировщика', () => {
-      // Устанавливаем заголовки
-
-      // @ts-expect-error
-      balancer.serverHeaders = {
-        mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
-        resolutionMainCam: '1920x1080',
-      };
-
-      balancer.reset();
-      // @ts-expect-error
-      expect(balancer.serverHeaders).toBeUndefined();
-    });
-
-    it('должен восстановить параметры отправителя после balance с PAUSE_MAIN_CAM', async () => {
-      const setParametersSpy = jest.spyOn(mockSender, 'setParameters');
-
-      // @ts-expect-error
-      balancer.serverHeaders = { mainCam: EContentMainCAM.PAUSE_MAIN_CAM };
-      await balancer.balance();
-
-      const pauseCall = setParametersSpy.mock.calls.find((call) => {
-        const encoding = call[0].encodings[0];
-
-        return encoding.scaleResolutionDownBy === 200;
-      });
-
-      expect(pauseCall).toBeDefined();
-
-      balancer.reset();
-      await delayPromise(50);
-
-      const resetCall = setParametersSpy.mock.calls.find((call) => {
-        const encoding = call[0].encodings[0];
-
-        return encoding.scaleResolutionDownBy === 1;
-      });
-
-      expect(resetCall).toBeDefined();
-    });
-
-    it('должен не падать при reset без connection', () => {
-      Object.defineProperty(sipConnector, 'connection', {
-        value: undefined,
-        writable: true,
-      });
-
-      expect(() => {
-        balancer.reset();
-      }).not.toThrow();
-    });
-
-    it('должен обработать ошибку senderBalancer.reset без падения', async () => {
-      const getStatsSpy = jest.spyOn(mockSender, 'getStats');
-      const statsOk = new Map([['codec', { type: 'codec', mimeType: 'video/h264' }]]);
-
-      getStatsSpy.mockResolvedValueOnce(statsOk).mockRejectedValueOnce(new Error('reset error'));
-
-      // @ts-expect-error
-      balancer.serverHeaders = { mainCam: EContentMainCAM.PAUSE_MAIN_CAM };
-      await balancer.balance();
-
-      expect(() => {
-        balancer.reset();
-      }).not.toThrow();
-
-      await delayPromise(50);
-
-      expect(mcuDebugLogger).toHaveBeenCalledWith(
-        'reset sender encodings: error',
-        expect.any(Error),
-      );
-    });
+    jest.useRealTimers();
   });
 
   describe('balance', () => {
-    it('должен выполнить балансировку при наличии соединения', async () => {
-      const result = await balancer.balance();
-
-      expect(result).toBeDefined();
-      expect(mockConnection.getSenders).toHaveBeenCalled();
-    });
-
-    it('должен выбросить ошибку если нет соединения', async () => {
-      // Убираем соединение
-      Object.defineProperty(sipConnector, 'connection', {
-        value: undefined,
-        writable: true,
-      });
+    it('должен отклониться ошибкой, если нет connection', async () => {
+      currentConnection = undefined;
 
       await expect(balancer.balance()).rejects.toThrow('connection is not exist');
     });
 
-    it('должен работать с заголовками сервера', async () => {
-      // Устанавливаем заголовки
-
-      // @ts-expect-error
-      balancer.serverHeaders = {
-        mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
-        resolutionMainCam: '1920x1080',
-      };
+    it('должен вернуть RESULT_NO_CHANGED, если нет видео-отправителя', async () => {
+      connection.senders = [];
 
       const result = await balancer.balance();
 
-      expect(result).toBeDefined();
-      expect(mockConnection.getSenders).toHaveBeenCalled();
-    });
-  });
-
-  describe('handleMainCamControl (через события)', () => {
-    it('должен обновить заголовки сервера при получении события', async () => {
-      const spyOn = jest.spyOn(apiManager, 'on');
-      let eventHandler: ((data: IMainCamHeaders) => void) | undefined;
-
-      spyOn.mockImplementation((eventName, handler) => {
-        if (eventName === 'main-cam-control') {
-          eventHandler = handler as (data: IMainCamHeaders) => void;
-        }
-
-        return () => {
-          return undefined;
-        };
-      });
-
-      balancer.subscribe();
-
-      const testHeaders: IMainCamHeaders = {
-        mainCam: EContentMainCAM.PAUSE_MAIN_CAM,
-        resolutionMainCam: '1280x720',
-      };
-
-      expect(eventHandler).toBeDefined();
-
-      eventHandler?.(testHeaders);
-      // Даем время на обработку
-      await delayPromise(10);
-
-      expect((balancer as unknown as { serverHeaders: IMainCamHeaders }).serverHeaders).toEqual(
-        testHeaders,
-      );
+      expect(result).toBe(RESULT_NO_CHANGED);
     });
 
-    it('должен вызвать балансировку при получении разных типов событий главной камеры', async () => {
-      const spyOn = jest.spyOn(apiManager, 'on');
-      let eventHandler: ((data: IMainCamHeaders) => void) | undefined;
+    it('должен установить параметры по треку отправителя и вернуть результат установки', async () => {
+      balancer = createBalancer(createBalancerOptions({ maxResolution: MAX_RESOLUTION_360P }));
 
-      spyOn.mockImplementation((eventName, handler) => {
-        if (eventName === 'main-cam-control') {
-          eventHandler = handler as (data: IMainCamHeaders) => void;
-        }
-
-        return () => {
-          return undefined;
-        };
-      });
-
-      balancer.subscribe();
-
-      // Тестируем разные типы событий
-      const events = [
-        {
-          mainCam: EContentMainCAM.PAUSE_MAIN_CAM,
-          resolutionMainCam: '640x480',
-        },
-        {
-          mainCam: EContentMainCAM.RESUME_MAIN_CAM,
-          resolutionMainCam: '1920x1080',
-        },
-        {
-          mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
-          resolutionMainCam: '3840x2160',
-        },
-        {
-          mainCam: EContentMainCAM.ADMIN_STOP_MAIN_CAM,
-        },
-        {
-          mainCam: EContentMainCAM.ADMIN_START_MAIN_CAM,
-          resolutionMainCam: '1920x1080',
-        },
-      ];
-
-      expect(eventHandler).toBeDefined();
-
-      for (const headers of events) {
-        eventHandler?.(headers);
-        // Даем время на обработку каждого события
-        await delayPromise(10);
-
-        expect((balancer as unknown as { serverHeaders: IMainCamHeaders }).serverHeaders).toEqual(
-          headers,
-        );
-      }
-    });
-  });
-
-  describe('интеграционные тесты', () => {
-    it('должен корректно работать полный цикл подписки, события и отписки', async () => {
-      const spyOn = jest.spyOn(apiManager, 'on');
-      const spyOff = jest.spyOn(apiManager, 'off');
-      let eventHandler: ((data: IMainCamHeaders) => void) | undefined;
-
-      spyOn.mockImplementation((eventName, handler) => {
-        if (eventName === 'main-cam-control') {
-          eventHandler = handler as (data: IMainCamHeaders) => void;
-        }
-
-        return () => {
-          return undefined;
-        };
-      });
-
-      // Подписка
-      balancer.subscribe();
-      expect(spyOn).toHaveBeenCalledWith('main-cam-control', expect.any(Function));
-
-      // Событие
-      const testHeaders: IMainCamHeaders = {
-        mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
-        resolutionMainCam: '1920x1080',
-      };
-
-      expect(eventHandler).toBeDefined();
-
-      eventHandler?.(testHeaders);
-      await delayPromise(10);
-      expect((balancer as unknown as { serverHeaders: IMainCamHeaders }).serverHeaders).toEqual(
-        testHeaders,
-      );
-
-      // Ребалансировка
       const result = await balancer.balance();
 
-      expect(result).toBeDefined();
-
-      // Отписка
-      balancer.unsubscribe();
-      expect(spyOff).toHaveBeenCalledWith('main-cam-control', expect.any(Function));
-      expect(
-        (balancer as unknown as { serverHeaders?: IMainCamHeaders }).serverHeaders,
-      ).toBeUndefined();
+      expect(result.isChanged).toBe(true);
+      expect(result.parameters.encodings).toEqual([ENCODING_720P_LIMITED_TO_360P]);
+      expect(getEncoding()).toEqual(ENCODING_720P_LIMITED_TO_360P);
     });
 
-    it('должен корректно работать с разными опциями балансировщика', async () => {
-      const onSetParameters = jest.fn().mockResolvedValue({ success: true });
-      const options: IBalancerOptions = {
-        ...NO_MAX_RESOLUTION_BALANCER_OPTIONS,
-        ignoreForCodec: 'VP8',
-        onSetParameters,
-      };
-
-      const balancerWithOptions = new VideoSendingBalancer(
-        apiManager,
-        () => {
-          return sipConnector.connection;
-        },
-        options,
+    it('должен вернуть RESULT_NO_CHANGED и не менять параметры, если кодек отправителя игнорируется', async () => {
+      setSenderCodec(sender, 'video/VP8');
+      balancer = createBalancer(
+        createBalancerOptions({ ignoreForCodec: 'vp8', maxResolution: MAX_RESOLUTION_360P }),
       );
 
-      try {
-        const result = await balancerWithOptions.balance();
-
-        expect(result).toBeDefined();
-      } finally {
-        balancerWithOptions.unsubscribe();
-      }
-    });
-
-    it('должен обрабатывать события без заголовков разрешения', async () => {
-      const spyOn = jest.spyOn(apiManager, 'on');
-      let eventHandler: ((data: IMainCamHeaders) => void) | undefined;
-
-      spyOn.mockImplementation((eventName, handler) => {
-        if (eventName === 'main-cam-control') {
-          eventHandler = handler as (data: IMainCamHeaders) => void;
-        }
-
-        return () => {
-          return undefined;
-        };
-      });
-
-      balancer.subscribe();
-
-      // Событие без resolutionMainCam
-      const headersWithoutResolution: IMainCamHeaders = {
-        mainCam: EContentMainCAM.PAUSE_MAIN_CAM,
-      };
-
-      expect(eventHandler).toBeDefined();
-
-      eventHandler?.(headersWithoutResolution);
-      await delayPromise(10);
-
-      expect((balancer as unknown as { serverHeaders: IMainCamHeaders }).serverHeaders).toEqual(
-        headersWithoutResolution,
-      );
-    });
-  });
-
-  describe('TrackMonitor колбэк при изменении трека', () => {
-    it('должен создать VideoSendingBalancer с pollIntervalMs', () => {
-      const testBalancer = new VideoSendingBalancer(
-        apiManager,
-        () => {
-          return sipConnector.connection;
-        },
-        {
-          ...NO_MAX_RESOLUTION_BALANCER_OPTIONS,
-          pollIntervalMs: 500,
-        },
-      );
-
-      expect(testBalancer).toBeInstanceOf(VideoSendingBalancer);
-      testBalancer.unsubscribe();
-    });
-
-    it('должен вызывать balance без ошибок', async () => {
       const result = await balancer.balance();
 
-      expect(result).toHaveProperty('isChanged');
-      expect(result).toHaveProperty('parameters');
-      expect(typeof result.isChanged).toBe('boolean');
+      expect(result).toBe(RESULT_NO_CHANGED);
+      expect(setParameters).not.toHaveBeenCalled();
     });
 
-    it('должен обрабатывать ошибки при отсутствии connection', async () => {
-      const testBalancer = new VideoSendingBalancer(
-        apiManager,
-        () => {
-          return undefined;
-        },
-        {
-          ...NO_MAX_RESOLUTION_BALANCER_OPTIONS,
-          pollIntervalMs: 100,
-        },
+    it('должен вызвать onSetParameters с установленными параметрами', async () => {
+      const onSetParameters = jest.fn();
+
+      balancer = createBalancer(
+        createBalancerOptions({ onSetParameters, maxResolution: MAX_RESOLUTION_360P }),
       );
 
-      try {
-        await expect(testBalancer.balance()).rejects.toThrow('connection is not exist');
-      } finally {
-        testBalancer.unsubscribe();
-      }
+      const { parameters } = await balancer.balance();
+
+      expect(onSetParameters).toHaveBeenCalledTimes(1);
+      expect(onSetParameters).toHaveBeenCalledWith(parameters);
+    });
+
+    it('не должен учитывать команду сервера до start()', async () => {
+      balancer.setServerHeaders(HEADERS_PAUSE);
+      await balancer.balance();
+
+      expect(getEncoding()).toEqual(ENCODING_720P_BY_TRACK);
     });
   });
 
-  describe('обработка ошибок', () => {
-    afterEach(() => {
-      jest.clearAllMocks();
+  describe('запрос кодека', () => {
+    it('должен отклониться ошибкой запроса кодека', async () => {
+      const error = new Error('getStats failed');
+
+      jest.spyOn(sender, 'getStats').mockRejectedValueOnce(error);
+
+      await expect(balancer.balance()).rejects.toBe(error);
     });
 
-    it('должен обрабатывать ошибки балансировки без падения', async () => {
-      const { track, setWidth } = createMockTrack(640); // no resize event support
+    it('должен выполнить следующую балансировку, если запрос кодека предыдущей не отвечает', async () => {
+      await balancer.start();
+      hangNextGetStats(sender);
+      balancer.balance().catch(() => {});
+      balancer.setServerHeaders(HEADERS_PAUSE);
+      balancer.balance().catch(() => {});
+      await flushQueue();
 
-      const sender = new RTCRtpSenderMock({ track });
-      const connection = new RTCPeerConnectionMock(undefined, [track]);
+      expect(getEncoding()).toEqual(ENCODING_PAUSED);
+    });
 
-      Object.defineProperty(connection, 'getSenders', {
-        value: () => {
-          return [sender];
-        },
-      });
+    it('должен заменить трек при scaleResolutionDownBy нового трека, если запросы кодека не отвечают', async () => {
+      const onReplaced = jest.fn();
 
-      const testBalancer = new VideoSendingBalancer(
-        apiManager,
-        () => {
-          return connection;
-        },
-        {
-          ...NO_MAX_RESOLUTION_BALANCER_OPTIONS,
-          pollIntervalMs: 100,
-        },
+      balancer.setServerHeaders(HEADERS_MAX_720P);
+      await balancer.start();
+      hangGetStats(sender);
+      balancer.balance().catch(() => {});
+      sender
+        .replaceTrack(track4K)
+        .then(onReplaced)
+        .catch(() => {});
+      await flushQueue();
+
+      expect(onReplaced).toHaveBeenCalledTimes(1);
+      expect(sender.track).toBe(track4K);
+      expect(getEncoding().scaleResolutionDownBy).toBe(3);
+    });
+
+    it('должен применить команду сервера, сохранённую за время запроса кодека', async () => {
+      await balancer.start();
+
+      const releaseStats = deferNextGetStats(sender);
+      const balancing = balancer.balance();
+
+      balancer.setServerHeaders(HEADERS_PAUSE);
+      releaseStats();
+      await balancing;
+
+      expect(getEncoding()).toEqual(ENCODING_PAUSED);
+    });
+
+    it('должен рассчитать параметры по треку, установленному отправителю за время запроса кодека', async () => {
+      balancer = createBalancer(createBalancerOptions({ maxResolution: MAX_RESOLUTION_360P }));
+
+      const releaseStats = deferNextGetStats(sender);
+      const balancing = balancer.balance();
+
+      await sender.replaceTrack(track4K);
+      releaseStats();
+      await balancing;
+
+      expect(getEncoding()).toEqual(ENCODING_4K_LIMITED_TO_360P);
+    });
+  });
+
+  describe('start', () => {
+    it('должен применить сохранённую команду сервера и вернуть результат установки', async () => {
+      balancer.setServerHeaders(HEADERS_PAUSE);
+
+      const result = await balancer.start();
+
+      expect(result.isChanged).toBe(true);
+      expect(result.parameters.encodings).toEqual([ENCODING_PAUSED]);
+    });
+
+    it('должен только сохранить команду сервера, полученную после start(), и применить её при следующей балансировке', async () => {
+      await balancer.start();
+      balancer.setServerHeaders(HEADERS_PAUSE);
+      await flushQueue();
+
+      expect(getEncoding()).toEqual(ENCODING_720P_BY_TRACK);
+
+      await balancer.balance();
+
+      expect(getEncoding()).toEqual(ENCODING_PAUSED);
+    });
+
+    it('должен включить перехват замены трека при балансировке после start(), если при старте не было connection', async () => {
+      balancer = createBalancer(createBalancerOptions({ maxResolution: MAX_RESOLUTION_360P }));
+      currentConnection = undefined;
+      await Promise.allSettled([balancer.start()]);
+      currentConnection = connection;
+      await balancer.balance();
+      await sender.replaceTrack(track4K);
+
+      expect(getEncoding()).toEqual(ENCODING_4K_LIMITED_TO_360P);
+    });
+  });
+
+  describe('изменение размера трека', () => {
+    it('должен пересчитать параметры отправителя при изменении размера трека', async () => {
+      balancer.setServerHeaders(HEADERS_MAX_720P);
+      await balancer.start();
+      resizeTrack(track720, 2560, 1440);
+      await jest.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+
+      expect(getEncoding()).toEqual(ENCODING_1440P_LIMITED_TO_720P);
+    });
+
+    it('должен залогировать ошибку балансировки по изменению размера трека', async () => {
+      await balancer.start();
+      currentConnection = undefined;
+      resizeTrack(track720, 640, 360);
+      await jest.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+
+      expect(mcuDebugLogger).toHaveBeenCalledWith(
+        'balance on track change: error',
+        new Error('connection is not exist'),
       );
+    });
+  });
 
-      try {
-        // Вызываем balance
-        await testBalancer.balance();
+  describe('замена трека', () => {
+    it('должен выполнить балансировку, запрошенную во время замены трека, только после завершения замены', async () => {
+      const originalReplacement = Promise.withResolvers<undefined>();
+      const replaceTrack = sender.replaceTrack.bind(sender);
 
-        // Мокаем balance метод для проверки вызова
-        const balanceSpy = jest.spyOn(testBalancer, 'balance');
+      jest.spyOn(sender, 'replaceTrack').mockImplementation(async (track) => {
+        await originalReplacement.promise;
+        await replaceTrack(track);
+      });
+      balancer.setServerHeaders(HEADERS_MAX_720P);
+      await balancer.start();
 
-        setWidth(320);
+      const replacing = sender.replaceTrack(track4K);
 
-        // Ждем выполнения асинхронного кода
-        await delayPromise(100);
+      await flushQueue();
 
-        // Проверяем, что balance был вызван повторно
-        expect(balanceSpy).toHaveBeenCalled();
-      } finally {
-        testBalancer.unsubscribe();
-      }
+      const balancing = balancer.balance();
+
+      await flushQueue();
+
+      expect(getEncoding()).toEqual(ENCODING_4K_LIMITED_TO_720P);
+
+      originalReplacement.resolve(undefined);
+      await Promise.all([replacing, balancing]);
+
+      expect(sender.track).toBe(track4K);
+      expect(getEncoding()).toEqual(ENCODING_4K_LIMITED_TO_720P);
+    });
+  });
+
+  describe('смена видео-отправителя', () => {
+    let otherTrack: MediaStreamVideoTrack;
+    let otherSender: RTCRtpSender;
+
+    beforeEach(async () => {
+      otherTrack = createVideoTrack(1280, 720);
+      otherSender = new RTCRtpSenderMock({ track: otherTrack });
+      balancer = createBalancer(createBalancerOptions({ maxResolution: MAX_RESOLUTION_360P }));
+      await balancer.start();
+      connection.senders = [otherSender];
     });
 
-    it('должен логировать ошибки в колбэке TrackMonitor при неудачном вызове balance()', async () => {
-      const { track, setWidth } = createMockTrack(640); // no resize event support
+    it('должен перехватывать замену трека у нового отправителя после балансировки', async () => {
+      await balancer.balance();
+      await otherSender.replaceTrack(track4K);
 
-      const sender = new RTCRtpSenderMock({ track });
-      const connection = new RTCPeerConnectionMock(undefined, [track]);
-
-      Object.defineProperty(connection, 'getSenders', {
-        value: () => {
-          return [sender];
-        },
-      });
-
-      // Мокаем TrackMonitor
-      const mockTrackMonitorSubscribe = jest.fn();
-      const MockTrackMonitor = jest.fn().mockImplementation(() => {
-        return {
-          subscribe: mockTrackMonitorSubscribe,
-          unsubscribe: jest.fn(),
-        };
-      });
-
-      jest.doMock('../TrackMonitor', () => {
-        return {
-          TrackMonitor: MockTrackMonitor,
-        };
-      });
-
-      const testBalancer = new VideoSendingBalancer(
-        apiManager,
-        () => {
-          return connection;
-        }, // Возвращаем undefined для создания ошибки
-        {
-          ...NO_MAX_RESOLUTION_BALANCER_OPTIONS,
-          pollIntervalMs: 100,
-        },
-      );
-
-      try {
-        await testBalancer.balance();
-
-        // Ломаем connection для создания ошибки
-        // @ts-expect-error
-        testBalancer.getConnection = () => {
-          return undefined;
-        };
-
-        setWidth(320);
-
-        // Ждем выполнения асинхронного кода
-        await delayPromise(100);
-
-        // Проверяем, что debug был вызван с ошибкой
-        expect(mcuDebugLogger).toHaveBeenCalledWith(
-          'balance on track change: error',
-          expect.any(Error),
-        );
-      } finally {
-        testBalancer.unsubscribe();
-        jest.clearAllMocks();
-        jest.dontMock('../TrackMonitor');
-      }
+      expect(getEncoding(otherSender)).toEqual(ENCODING_4K_LIMITED_TO_360P);
     });
 
-    it('должен обрабатывать ошибки в обработчике событий', async () => {
-      const spyOn = jest.spyOn(apiManager, 'on');
-      let eventHandler: ((data: IMainCamHeaders) => void) | undefined;
+    it('должен снять перехват замены трека с прежнего отправителя после балансировки', async () => {
+      await balancer.balance();
+      setParameters.mockClear();
+      await sender.replaceTrack(track4K);
+      await flushQueue();
 
-      spyOn.mockImplementation((eventName, handler) => {
-        if (eventName === 'main-cam-control') {
-          eventHandler = handler as (data: IMainCamHeaders) => void;
-        }
+      expect(setParameters).not.toHaveBeenCalled();
+    });
 
-        return () => {
-          return undefined;
-        };
-      });
+    it('должен следить за размером трека нового отправителя, если смена отправителя обнаружена балансировкой по изменению размера', async () => {
+      resizeTrack(track720, 640, 360);
+      await jest.advanceTimersByTimeAsync(POLLING_WINDOW_MS);
+      resizeTrack(otherTrack, 640, 360);
+      await jest.advanceTimersByTimeAsync(POLLING_WINDOW_MS);
 
-      // Делаем соединение недоступным для создания ошибки
-      Object.defineProperty(sipConnector, 'connection', {
-        value: undefined,
-        writable: true,
-      });
+      expect(getEncoding(otherSender)).toEqual(ENCODING_360P_BY_TRACK);
+    });
+  });
 
-      balancer.subscribe();
+  describe('пропажа видео-отправителя', () => {
+    beforeEach(async () => {
+      balancer = createBalancer(createBalancerOptions({ maxResolution: MAX_RESOLUTION_360P }));
+      await balancer.start();
+      connection.senders = [];
+    });
 
-      const testHeaders: IMainCamHeaders = {
-        mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
-        resolutionMainCam: '1920x1080',
-      };
+    it('должен снять перехват замены трека и слежение за размером трека при балансировке без видео-отправителя', async () => {
+      await balancer.balance();
+      connection.senders = [sender];
+      setParameters.mockClear();
+      resizeTrack(track720, 640, 360);
+      await jest.advanceTimersByTimeAsync(POLLING_WINDOW_MS);
+      await sender.replaceTrack(track4K);
+      await flushQueue();
 
-      // Событие должно обработаться без падения, но с логированием ошибки
-      expect(eventHandler).toBeDefined();
+      expect(setParameters).not.toHaveBeenCalled();
+    });
 
-      expect(() => {
-        eventHandler?.(testHeaders);
-      }).not.toThrow();
+    it('должен прекратить опрос размера трека, если пропажа отправителя обнаружена балансировкой по изменению размера', async () => {
+      const getSettings = resizeTrack(track720, 640, 360);
 
-      await delayPromise(10);
+      await jest.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+      getSettings.mockClear();
+      await jest.advanceTimersByTimeAsync(POLLING_WINDOW_MS);
+
+      expect(getSettings).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('stop', () => {
+    it('должен восстановить параметры отправителя по разрешению трека', async () => {
+      balancer.setServerHeaders(HEADERS_PAUSE);
+      await balancer.start();
+      balancer.stop();
+      await flushQueue();
+
+      expect(getEncoding()).toEqual(ENCODING_720P_BY_TRACK);
+    });
+
+    it('должен восстановить параметры отправителя по разрешению трека, если замена трека не завершилась', async () => {
+      jest.spyOn(sender, 'replaceTrack').mockReturnValue(new Promise<undefined>(() => {}));
+      balancer.setServerHeaders(HEADERS_PAUSE);
+      await balancer.start();
+      sender.replaceTrack(track4K).catch(() => {});
+      await flushQueue();
+      balancer.stop();
+      await flushQueue();
+
+      expect(getEncoding()).toEqual(ENCODING_720P_BY_TRACK);
+    });
+
+    it('не должен восстанавливать параметры отправителя, если нет connection', async () => {
+      await balancer.start();
+      currentConnection = undefined;
+      balancer.stop();
+      await flushQueue();
+
+      expect(mcuDebugLogger).not.toHaveBeenCalled();
+    });
+
+    it('должен залогировать ошибку восстановления параметров отправителя', async () => {
+      const error = new Error('getStats failed');
+
+      await balancer.start();
+      jest.spyOn(sender, 'getStats').mockRejectedValueOnce(error);
+      balancer.stop();
+      await flushQueue();
+
+      expect(mcuDebugLogger).toHaveBeenCalledWith('reset sender encodings: error', error);
     });
   });
 });
 
 describe('resolveVideoSendingBalancer', () => {
-  let sipConnector: ReturnType<typeof doMockSipConnector>;
-  let apiManager: ApiManager;
+  it('должен создать VideoSendingBalancer для переданных connection и опций', async () => {
+    const sender = new RTCRtpSenderMock({ track: createVideoTrack(1280, 720) });
+    const connection = new RTCPeerConnectionMock(undefined, []);
 
-  beforeEach(() => {
-    sipConnector = doMockSipConnector();
-    apiManager = sipConnector.apiManager;
-  });
-
-  it('должен создать экземпляр VideoSendingBalancer', () => {
-    const balancer = resolveVideoSendingBalancer(
-      apiManager,
-      () => {
-        return sipConnector.connection;
-      },
-      NO_MAX_RESOLUTION_BALANCER_OPTIONS,
-    );
-
-    expect(balancer).toBeInstanceOf(VideoSendingBalancer);
-
-    balancer.unsubscribe();
-  });
-
-  it('должен создать экземпляр с опциями', () => {
-    const options: IBalancerOptions = {
-      ...NO_MAX_RESOLUTION_BALANCER_OPTIONS,
-      ignoreForCodec: 'VP9',
-      onSetParameters: jest.fn(),
-    };
+    connection.senders = [sender];
 
     const balancer = resolveVideoSendingBalancer(
-      apiManager,
       () => {
-        return sipConnector.connection;
+        return connection as RTCPeerConnection;
       },
-      options,
+      createBalancerOptions({ maxResolution: MAX_RESOLUTION_360P }),
     );
 
-    expect(balancer).toBeInstanceOf(VideoSendingBalancer);
-
-    balancer.unsubscribe();
-  });
-
-  it('должен создать экземпляр с минимальными опциями', () => {
-    const balancer = resolveVideoSendingBalancer(
-      apiManager,
-      () => {
-        return sipConnector.connection;
-      },
-      NO_MAX_RESOLUTION_BALANCER_OPTIONS,
-    );
+    await balancer.balance();
 
     expect(balancer).toBeInstanceOf(VideoSendingBalancer);
-
-    balancer.unsubscribe();
+    expect(sender.getParameters().encodings[0]).toEqual(ENCODING_720P_LIMITED_TO_360P);
   });
 });

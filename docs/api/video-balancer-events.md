@@ -10,3 +10,14 @@
 | `video-balancer:balancing-started`   | Генерируется при запуске балансировки        | `{ delay: number }`     |
 | `video-balancer:balancing-stopped`   | Генерируется при остановке балансировки      | `Record<string, never>` |
 | `video-balancer:parameters-updated`  | Генерируется при обновлении параметров видео | `RTCRtpSendParameters`  |
+
+Поле `delay` в `balancing-scheduled` и `balancing-started` — настроенная задержка запуска
+(`balancingStartDelay`), а не фактически прошедшее время. Команда сервера, пришедшая после
+`balancing-scheduled`, не ускоряет запуск: `balancing-started` приходит по таймеру или при ручном
+`startBalancing()`.
+
+`balancing-started` генерируется после первой балансировки. Если она завершилась ошибкой или
+балансировку остановили во время неё, событие не генерируется (при ошибке балансировка остаётся
+активной). Если запрос кодека первой балансировки не завершился, `balancing-started` не приходит и
+`startBalancing()` не завершается, хотя балансировка активна: команды сервера и замена трека
+работают.

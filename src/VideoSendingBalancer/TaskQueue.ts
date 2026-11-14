@@ -1,43 +1,34 @@
-import { createStackPromises } from 'stack-promises';
-
-import resolveDebug from '@/logger';
-
 import type { ITaskQueue } from './types';
 
-const debug = resolveDebug('TaskQueue');
-
 /**
- * Очередь задач с правильной обработкой ошибок
- * Обеспечивает последовательное выполнение задач и логирование ошибок
+ * Строго последовательная очередь задач
+ * Ошибка задачи отклоняет только её промис и не останавливает очередь
+ * shortcut: зависший setParameters или replaceTrack держит очередь до остановки балансировки; таймаут сознательно не делается
  */
-export class TaskQueue<T> implements ITaskQueue<T> {
-  private readonly stackPromises = createStackPromises({
-    noRunIsNotActual: true,
-  });
+export class TaskQueue implements ITaskQueue {
+  private lastTask: Promise<unknown> = Promise.resolve();
 
   /**
    * Добавляет задачу в очередь и возвращает Promise с результатом
    * @param task - Функция для выполнения
    * @returns Promise с результатом выполнения задачи
    */
-  public async add(task: () => Promise<T>): Promise<T> {
-    this.stackPromises.add(task);
+  public async add<T>(task: () => Promise<T>): Promise<T> {
+    const result = this.lastTask.then(async () => {
+      return task();
+    });
 
-    return this.run();
-  }
+    this.lastTask = result.catch(() => {
+      return undefined;
+    });
 
-  public stop(): void {
-    this.stackPromises.stop();
+    return result;
   }
 
   /**
-   * Выполняет задачи из очереди с обработкой ошибок
-   * @returns Promise с результатом выполнения
+   * Начинает очередь заново: задачи прежней цепочки дорабатывают сами, новые их не ждут
    */
-  private async run(): Promise<T> {
-    // @ts-expect-error
-    return this.stackPromises().catch((error: unknown) => {
-      debug('TaskQueue: error', error);
-    });
+  public reset(): void {
+    this.lastTask = Promise.resolve();
   }
 }

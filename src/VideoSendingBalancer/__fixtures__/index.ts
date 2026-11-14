@@ -1,2 +1,8 @@
 export { default as createMockTrack } from './createMockTrack';
-export { createBalancerOptions, NO_MAX_RESOLUTION_BALANCER_OPTIONS } from './balancerOptions';
+export { default as createVideoTrack } from './createVideoTrack';
+export {
+  createBalancerOptions,
+  createSenderBalancerOptions,
+  NO_MAX_RESOLUTION_BALANCER_OPTIONS,
+} from './balancerOptions';
+export { deferNextGetStats, hangGetStats, hangNextGetStats, setSenderCodec } from './senderStats';
