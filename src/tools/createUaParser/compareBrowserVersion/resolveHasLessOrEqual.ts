@@ -26,11 +26,7 @@ const resolveHasLessOrEqual = (currentVersion: TBrowserVersion) => {
   const normalizedCurrent = normalizeVersion(currentVersion);
 
   return (compareVersion: Required<TBrowserVersion>) => {
-    if (normalizedCurrent === undefined) {
-      return false;
-    }
-
-    return hasLessOrEqual(normalizedCurrent, compareVersion);
+    return normalizedCurrent !== undefined && hasLessOrEqual(normalizedCurrent, compareVersion);
   };
 };
 

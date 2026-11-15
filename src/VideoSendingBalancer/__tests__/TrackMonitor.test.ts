@@ -137,8 +137,6 @@ describe('TrackMonitor', () => {
     const monitor = new TrackMonitor({ pollIntervalMs: 500 });
 
     monitor.subscribe(sender, callback);
-
-    // eslint-disable-next-line unicorn/no-null
     await sender.replaceTrack(null);
 
     // callback должен вызваться (handleTrackResize), но polling не запускается

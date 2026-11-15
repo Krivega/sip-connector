@@ -176,12 +176,8 @@ class StatsManager extends EventEmitterProxy<TStatsPeerConnectionEventMap> {
    * Если baseline отсутствует (пустой snapshot, stats ещё не собирались) — считаем baseline = 0,
    * т.е. любое положительное current уже считается приростом после замены.
    */
-  private static resolveDelta(current?: number, baseline?: number): number | undefined {
-    if (current === undefined) {
-      return undefined;
-    }
-
-    return current - (baseline ?? 0);
+  private static resolveDelta(current?: number, baseline = 0): number | undefined {
+    return current === undefined ? undefined : current - baseline;
   }
 
   /**
@@ -339,11 +335,7 @@ class StatsManager extends EventEmitterProxy<TStatsPeerConnectionEventMap> {
   private captureOutboundVideoWaitBaseline(): TOutboundVideoStatsSnapshot {
     const stats = this.previousAvailableStats ?? this.availableStats;
 
-    if (stats === undefined) {
-      return {};
-    }
-
-    return StatsManager.extractOutboundVideoStatsSnapshot(stats);
+    return stats === undefined ? {} : StatsManager.extractOutboundVideoStatsSnapshot(stats);
   }
 
   /**

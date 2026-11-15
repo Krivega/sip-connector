@@ -17,11 +17,9 @@ export const parsePositiveIntegerInput = ({
 }): TPositiveIntegerParseResult => {
   const value = Number.parseInt(input.value, 10);
 
-  if (!Number.isInteger(value) || value < 1) {
-    return { isValid: false, message: invalidMessage };
-  }
-
-  return { isValid: true, value };
+  return !Number.isInteger(value) || value < 1
+    ? { isValid: false, message: invalidMessage }
+    : { isValid: true, value };
 };
 
 export const getErrorMessage = (error: unknown): string => {

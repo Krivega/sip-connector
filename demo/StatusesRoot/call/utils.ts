@@ -14,9 +14,5 @@ export const getCallContextField = <K extends TCallContextKey>(
   context: TCallContext,
   key: K,
 ): TCallContextFieldValue<K> | undefined => {
-  if (!(key in context)) {
-    return undefined;
-  }
-
-  return (context as Record<K, TCallContextFieldValue<K>>)[key];
+  return key in context ? (context as Record<K, TCallContextFieldValue<K>>)[key] : undefined;
 };

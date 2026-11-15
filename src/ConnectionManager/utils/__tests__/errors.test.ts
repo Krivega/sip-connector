@@ -27,7 +27,6 @@ describe('errors', () => {
     });
 
     it('должен возвращать false для null', () => {
-      // eslint-disable-next-line unicorn/no-null
       const result = hasNotReadyForConnectionError(null);
 
       expect(result).toBe(false);

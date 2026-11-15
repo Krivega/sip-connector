@@ -232,22 +232,14 @@ export class LocalMediaStreamManager {
    * Проверяет, включена ли камера
    */
   public isEnabledCam(): boolean {
-    if (!this.mediaStream) {
-      return false;
-    }
-
-    return this.state.isEnabledCam;
+    return Boolean(this.mediaStream && this.state.isEnabledCam);
   }
 
   /**
    * Проверяет, включен ли микрофон
    */
   public isEnabledMic(): boolean {
-    if (!this.mediaStream) {
-      return false;
-    }
-
-    return this.state.isEnabledMic;
+    return Boolean(this.mediaStream && this.state.isEnabledMic);
   }
 
   /**

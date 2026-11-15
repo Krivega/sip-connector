@@ -33,7 +33,7 @@ const initUa = (
   {
     sipServerIp,
     sipServerUrl,
-    remoteAddress,
+    remoteAddress = '',
     displayName,
     user,
     password,
@@ -49,14 +49,13 @@ const initUa = (
   },
 ) => {
   const sipConnectorFacade = new SipConnectorFacade(sipConnector);
-  const normalizedRemoteAddress = remoteAddress ?? '';
 
   Promise.resolve()
     .then(async () => {
       if (
         canConnectToServer({
           sipServerIp,
-          remoteAddress: normalizedRemoteAddress,
+          remoteAddress,
           sipServerUrl,
           register,
           user,
@@ -64,7 +63,7 @@ const initUa = (
         })
       ) {
         return sipConnectorFacade.connectToServer({
-          remoteAddress: normalizedRemoteAddress,
+          remoteAddress,
           iceServers: [],
           sipServerIp,
           sipServerUrl,

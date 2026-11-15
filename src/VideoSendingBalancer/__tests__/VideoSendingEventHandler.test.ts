@@ -165,7 +165,6 @@ describe('VideoSendingEventHandler', () => {
     });
 
     it('должен корректно обрабатывать null handler', () => {
-      // eslint-disable-next-line unicorn/no-null
       const handler = null as unknown as (headers: IMainCamHeaders) => void;
 
       eventHandler.subscribe(handler);

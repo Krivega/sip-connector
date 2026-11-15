@@ -117,7 +117,7 @@ describe('setCodecPreferences', () => {
     (globalWithRTC.RTCRtpSender.getCapabilities as jest.Mock).mockReturnValue({
       codecs: [vp8Codec],
     });
-    // eslint-disable-next-line unicorn/no-null
+
     (globalWithRTC.RTCRtpReceiver.getCapabilities as jest.Mock).mockReturnValue(null);
 
     const transceiver = {
@@ -169,7 +169,7 @@ describe('setCodecPreferences', () => {
 
   it('should log error when setCodecPreferences throws', async () => {
     // Capabilities with null sender to cover null branch
-    // eslint-disable-next-line unicorn/no-null
+
     (globalWithRTC.RTCRtpSender.getCapabilities as jest.Mock).mockReturnValue(null);
     (globalWithRTC.RTCRtpReceiver.getCapabilities as jest.Mock).mockReturnValue({
       codecs: [vp8Codec],

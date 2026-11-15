@@ -45,11 +45,7 @@ export default class IncomingCallManager extends EventEmitterProxy<TEventMap> {
   }
 
   public get remoteCallerData(): TEventMap['ringing'] | undefined {
-    if (!this.incomingRTCSession) {
-      return undefined;
-    }
-
-    return getRemoteCallerData(this.incomingRTCSession);
+    return this.incomingRTCSession ? getRemoteCallerData(this.incomingRTCSession) : undefined;
   }
 
   public get isAvailableIncomingCall(): boolean {

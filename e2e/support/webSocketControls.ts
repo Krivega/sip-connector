@@ -28,11 +28,7 @@ export const installE2EWebSocketControls = () => {
       try {
         const url = new URL(urlValue, window.location.href);
 
-        if (url.protocol !== 'wss:') {
-          return undefined;
-        }
-
-        return url.hostname;
+        return url.protocol === 'wss:' ? url.hostname : undefined;
       } catch {
         return undefined;
       }

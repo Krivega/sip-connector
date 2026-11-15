@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/class-methods-use-this */
-import FormState from './FormState';
 import { dom } from '../dom';
+import FormState from './FormState';
 
 import type { IFormState, TFormChangeHandler } from './FormState';
 

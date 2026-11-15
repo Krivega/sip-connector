@@ -362,11 +362,7 @@ class LogsManager {
   }
 
   private shouldShowLog(log: TLog): boolean {
-    if (!this.filterText) {
-      return true;
-    }
-
-    return log.name.toLowerCase().includes(this.filterText);
+    return !this.filterText || log.name.toLowerCase().includes(this.filterText);
   }
 
   private appendNewLog(log: TLog, index: number): void {

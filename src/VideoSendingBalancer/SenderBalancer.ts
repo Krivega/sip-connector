@@ -35,11 +35,9 @@ const resolveMaxBitrate = (
 ): number => {
   const widthCurrent = videoTrack.getSettings().width;
 
-  if (widthCurrent === undefined) {
-    return getMaximumBitrate(codec);
-  }
-
-  return calcMaxBitrateByWidthAndCodec(widthCurrent / scaleResolutionDownBy, codec);
+  return widthCurrent === undefined
+    ? getMaximumBitrate(codec)
+    : calcMaxBitrateByWidthAndCodec(widthCurrent / scaleResolutionDownBy, codec);
 };
 
 /**
@@ -178,11 +176,9 @@ export class SenderBalancer {
         return this.setBitrateByTrackResolution(context);
       }
       case EContentMainCAM.MAX_MAIN_CAM_RESOLUTION: {
-        if (resolutionMainCam !== undefined) {
-          return this.setResolutionSender(resolutionMainCam, context);
-        }
-
-        return this.setBitrateByTrackResolution(context);
+        return resolutionMainCam === undefined
+          ? this.setBitrateByTrackResolution(context)
+          : this.setResolutionSender(resolutionMainCam, context);
       }
       case EContentMainCAM.ADMIN_STOP_MAIN_CAM:
       case EContentMainCAM.ADMIN_START_MAIN_CAM:

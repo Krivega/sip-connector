@@ -8,11 +8,7 @@ const setMaxBitrateToSender = async (
 ) => {
   const sender = findSenderByStream(senders, mediaStream);
 
-  if (sender) {
-    return setEncodingsToSender(sender, { maxBitrate });
-  }
-
-  return undefined;
+  return sender ? setEncodingsToSender(sender, { maxBitrate }) : undefined;
 };
 
 export default setMaxBitrateToSender;

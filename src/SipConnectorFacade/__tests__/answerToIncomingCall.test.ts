@@ -35,7 +35,6 @@ describe('answerToIncomingCall', () => {
 
     const peerconnection = await sipConnectorFacade.answerToIncomingCall(dataCall);
 
-    // eslint-disable-next-line @typescript-eslint/non-nullable-type-assertion-style
     expect(parseObject((peerconnection as RTCPeerConnection).getReceivers())).toEqual(
       parseObject(peerConnectionFromData.getReceivers()),
     );

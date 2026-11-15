@@ -195,7 +195,6 @@ describe('PresentationTrackService', () => {
 
         for (const item of transceivers) {
           if (item === recvonlyTransceiver) {
-            // eslint-disable-next-line no-continue
             continue;
           }
 
@@ -237,7 +236,6 @@ describe('PresentationTrackService', () => {
 
         for (const item of transceivers) {
           if (item === recvonlyTransceiver) {
-            // eslint-disable-next-line no-continue
             continue;
           }
 
@@ -284,7 +282,6 @@ describe('PresentationTrackService', () => {
 
         for (const item of transceivers) {
           if (item === recvonlyTransceiver) {
-            // eslint-disable-next-line no-continue
             continue;
           }
 
@@ -365,7 +362,7 @@ describe('PresentationTrackService', () => {
       const [sender] = connection.getSenders();
 
       // @ts-expect-error
-      // eslint-disable-next-line unicorn/no-null
+
       sender.track = null;
 
       expect(() => {

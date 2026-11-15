@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 
-import packageJson from './package.json';
+import packageJson from './package.json' with { type: 'json' };
 
 /** Non-root base for static hosts (e.g. GitHub Pages project site). Set via DEMO_BASE in CI. */
 function resolveDemoBase(): string {

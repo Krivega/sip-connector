@@ -1,6 +1,6 @@
 import type { TRemoteStreams } from '@/index';
-import type { TDemoCallFlowPorts, TDemoCallFlowSession } from './DemoCallFlowPorts';
 import type { IFormState } from '../state/FormState';
+import type { TDemoCallFlowPorts, TDemoCallFlowSession } from './DemoCallFlowPorts';
 
 /**
  * Сценарии подключения и звонка демо: состояние сессии и координация портов (loader / media / factory).

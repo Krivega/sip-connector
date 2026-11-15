@@ -41,6 +41,7 @@ const SPECTATOR_EXIT_GRACE_MS = 300;
 
 const debug = resolveDebug('CallManager');
 const getLocalCandidatesFromReceiver = (receiver: RTCRtpReceiver): RTCIceCandidate[] => {
+  // eslint-disable-next-line unicorn/prefer-ternary
   if (receiver.transport?.iceTransport) {
     // @ts-expect-error
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
@@ -213,11 +214,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   public get localPorts(): number[] {
     const peerConnection = this.getActivePeerConnection();
 
-    if (!peerConnection) {
-      return [];
-    }
-
-    return getLocalPortsFromPeerConnection(peerConnection);
+    return peerConnection ? getLocalPortsFromPeerConnection(peerConnection) : [];
   }
 
   // For testing purposes
@@ -265,11 +262,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   public async renegotiate(): Promise<boolean> {
     debug('renegotiate');
 
-    if (this.hasSpectator()) {
-      return this.renegotiateRecvSession();
-    }
-
-    return this.renegotiateMcuSession();
+    return this.hasSpectator() ? this.renegotiateRecvSession() : this.renegotiateMcuSession();
   }
 
   // Исходящие потоки (например, презентация) идут только через MCU-сессию, независимо от роли
@@ -334,11 +327,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   }
 
   public readonly getActivePeerConnection = () => {
-    if (this.hasSpectator()) {
-      return this.recvSession?.peerConnection;
-    }
-
-    return this.mcuSession.connection;
+    return this.hasSpectator() ? this.recvSession?.peerConnection : this.mcuSession.connection;
   };
 
   public hasSpectator(): boolean {

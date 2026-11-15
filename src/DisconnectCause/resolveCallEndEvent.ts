@@ -20,11 +20,7 @@ const parseDisconnectCause = (raw: string): TDisconnectCause => {
 
   const code = Number(value);
 
-  if (Number.isSafeInteger(code)) {
-    return { raw, code, key: DISCONNECT_CAUSES[code] };
-  }
-
-  return { raw };
+  return Number.isSafeInteger(code) ? { raw, code, key: DISCONNECT_CAUSES[code] } : { raw };
 };
 
 const resolveCallEndEvent = (event: EndEvent): TCallEndEvent => {

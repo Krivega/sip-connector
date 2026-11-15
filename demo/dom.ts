@@ -768,20 +768,12 @@ class DOM {
 
     try {
       const replacer = (_key: string, nestedValue: unknown): unknown => {
-        if (typeof nestedValue === 'function') {
-          return nestedValue.toString();
-        }
-
-        return nestedValue;
+        return typeof nestedValue === 'function' ? nestedValue.toString() : nestedValue;
       };
 
       const serialized = JSON.stringify(value, replacer, 2) as string | undefined;
 
-      if (serialized === undefined) {
-        return '-';
-      }
-
-      return this.expandJsonEscapesForDisplay(serialized);
+      return serialized === undefined ? '-' : this.expandJsonEscapesForDisplay(serialized);
     } catch {
       return '-';
     }

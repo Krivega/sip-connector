@@ -6,9 +6,9 @@ import type { TResolutionSize } from '@/types';
 import type { TContentHint, TOnAddedTransceiver } from '@/utils/peerConnection';
 import type { TTransceiverOptions } from '@/utils/peerConnection/types';
 import type { TEvents } from '../events';
-import type { TPresentationSessionPort } from './createCallManagerPort';
 import type { PresentationStateMachine } from '../PresentationStateMachine';
 import type PresentationTrackService from '../PresentationTrackService';
+import type { TPresentationSessionPort } from './createCallManagerPort';
 
 type TPresentationLifecycleDeps = {
   events: TEvents;
@@ -34,11 +34,7 @@ type TPresentationFlowOptions = {
 };
 
 const normalizePresentationError = (error: unknown): Error => {
-  if (error instanceof Error) {
-    return error;
-  }
-
-  return new Error(String(error));
+  return error instanceof Error ? error : new Error(String(error));
 };
 
 export class PresentationLifecycle {

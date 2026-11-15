@@ -67,11 +67,7 @@ export class PresentationStateMachine extends BaseStateMachine<
   }
 
   public get pendingVideoTrack(): MediaStreamVideoTrack | undefined {
-    if (this.isStarting) {
-      return this.context.videoTrack;
-    }
-
-    return undefined;
+    return this.isStarting ? this.context.videoTrack : undefined;
   }
 
   public reset(): void {

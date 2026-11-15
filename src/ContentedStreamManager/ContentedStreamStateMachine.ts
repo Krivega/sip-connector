@@ -29,11 +29,7 @@ const contentedStreamMachine = setup({
   },
   actions: {
     setCodec: assign(({ event }) => {
-      if ('codec' in event) {
-        return { codec: event.codec };
-      }
-
-      return {};
+      return 'codec' in event ? { codec: event.codec } : {};
     }),
     clearCodec: assign({ codec: undefined }),
   },

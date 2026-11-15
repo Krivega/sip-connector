@@ -11,7 +11,6 @@ const app = new App();
 
 type TDemoWindow = Window & { __sipConnectorDemoApp?: App };
 
-// eslint-disable-next-line no-underscore-dangle
 (window as TDemoWindow).__sipConnectorDemoApp = app;
 
 debug('App initialized:', app);

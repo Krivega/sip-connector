@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/no-null */
 class RTCRtpSenderMock implements RTCRtpSender {
   public stats: RTCStatsReport = new Map().set('codec', { mimeType: 'video/h264' });
 
@@ -28,8 +27,8 @@ class RTCRtpSenderMock implements RTCRtpSender {
     return this.stats;
   }
 
-  public async replaceTrack(track: MediaStreamTrack | null): Promise<void> {
-    this.track = track ?? null;
+  public async replaceTrack(track: MediaStreamTrack | null = null): Promise<void> {
+    this.track = track;
   }
 
   public async setParameters(parameters: RTCRtpSendParameters): Promise<void> {

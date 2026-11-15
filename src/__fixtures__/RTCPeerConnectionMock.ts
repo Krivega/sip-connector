@@ -43,7 +43,6 @@ class RTCPeerConnectionMock extends EventTarget implements RTCPeerConnectionDepr
   public onicecandidate!:
     ((this: RTCPeerConnection, event_: RTCPeerConnectionIceEvent) => unknown) | null;
 
-  // eslint-disable-next-line unicorn/no-null
   public onicecandidateerror: ((this: RTCPeerConnection, event_: Event) => unknown) | null = null;
 
   public oniceconnectionstatechange!: ((this: RTCPeerConnection, event_: Event) => unknown) | null;
@@ -64,7 +63,6 @@ class RTCPeerConnectionMock extends EventTarget implements RTCPeerConnectionDepr
 
   public remoteDescription!: RTCSessionDescription | null;
 
-  // eslint-disable-next-line unicorn/no-null
   public sctp = null;
 
   public signalingState: RTCSignalingState = 'stable';

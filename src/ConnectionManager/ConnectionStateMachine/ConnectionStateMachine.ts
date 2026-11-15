@@ -98,11 +98,9 @@ export class ConnectionStateMachine extends BaseStateMachine<
   }
 
   public getConnectionConfiguration(): TConnectionConfig | undefined {
-    if (this.context.connectionConfiguration === undefined) {
-      return undefined;
-    }
-
-    return { ...this.context.connectionConfiguration };
+    return this.context.connectionConfiguration === undefined
+      ? undefined
+      : { ...this.context.connectionConfiguration };
   }
 
   public isRegisterEnabled(): boolean {

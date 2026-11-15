@@ -123,17 +123,17 @@ export class TrackMonitor {
     const poll = () => {
       const { width: w, height: h } = track.getSettings();
 
-      if (w !== this.lastWidth || h !== this.lastHeight) {
-        this.lastWidth = w;
-        this.lastHeight = h;
-        this.currentPollIntervalMs = this.pollIntervalMs; // сброс при изменениях
-        callback();
-      } else {
+      if (w === this.lastWidth && h === this.lastHeight) {
         // нет изменений — увеличиваем интервал, но не превышаем максимум
         this.currentPollIntervalMs = Math.min(
           this.currentPollIntervalMs * 2,
           this.maxPollIntervalMs,
         );
+      } else {
+        this.lastWidth = w;
+        this.lastHeight = h;
+        this.currentPollIntervalMs = this.pollIntervalMs; // сброс при изменениях
+        callback();
       }
 
       this.setTimeoutRequest.request(poll, this.currentPollIntervalMs);

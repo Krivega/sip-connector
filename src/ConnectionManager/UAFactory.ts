@@ -81,15 +81,13 @@ export default class UAFactory {
 
   private static buildExtraHeaders(remoteAddress?: string, extraHeaders?: string[]): string[] {
     const extraHeadersRemoteAddress =
-      remoteAddress !== undefined && remoteAddress !== ''
-        ? getExtraHeadersRemoteAddress(remoteAddress)
-        : [];
+      remoteAddress === undefined || remoteAddress === ''
+        ? []
+        : getExtraHeadersRemoteAddress(remoteAddress);
 
-    if (extraHeaders === undefined) {
-      return extraHeadersRemoteAddress;
-    }
-
-    return [...extraHeadersRemoteAddress, ...extraHeaders];
+    return extraHeaders === undefined
+      ? extraHeadersRemoteAddress
+      : [...extraHeadersRemoteAddress, ...extraHeaders];
   }
 
   public createConfiguration({

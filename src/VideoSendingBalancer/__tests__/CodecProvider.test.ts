@@ -145,7 +145,6 @@ describe('CodecProvider', () => {
     it('должен обработать null значения в stats', async () => {
       const mockStats = new Map();
 
-      // eslint-disable-next-line unicorn/no-null
       mockStats.set('codec-1', null);
       mockStats.set('codec-2', {
         type: 'codec',

@@ -9,16 +9,15 @@ class VideoPlayer {
    * Создает экземпляр VideoPlayer
    * @param videoId - ID video элемента в DOM
    */
-  public constructor(videoElement: HTMLVideoElement, { muted }: { muted?: boolean } = {}) {
+  public constructor(videoElement: HTMLVideoElement, { muted = true }: { muted?: boolean } = {}) {
     this.videoElement = videoElement;
-    this.setMuted(muted ?? true);
+    this.setMuted(muted);
   }
 
   /**
    * Подключает MediaStream к видео-плееру
    */
   public setStream(stream: MediaStream | undefined): void {
-    // eslint-disable-next-line unicorn/no-null
     this.videoElement.srcObject = stream ?? null;
   }
 
@@ -67,7 +66,6 @@ class VideoPlayer {
    * Очищает поток из видео-плеера
    */
   public clear(): void {
-    // eslint-disable-next-line unicorn/no-null
     this.videoElement.srcObject = null;
   }
 }

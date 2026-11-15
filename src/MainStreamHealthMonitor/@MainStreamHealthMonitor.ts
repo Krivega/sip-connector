@@ -2,9 +2,9 @@ import { EventEmitterProxy } from 'events-constructor';
 
 import {
   createEvents,
+  HEALTH_SNAPSHOT_EVENT_NAME,
   INBOUND_VIDEO_PROBLEM_DETECTED_EVENT_NAME,
   INBOUND_VIDEO_PROBLEM_RESET_EVENT_NAME,
-  HEALTH_SNAPSHOT_EVENT_NAME,
   INBOUND_VIDEO_PROBLEM_RESOLVED_EVENT_NAME,
 } from './events';
 
@@ -52,11 +52,7 @@ class MainStreamHealthMonitor extends EventEmitterProxy<TEventMap> {
   private get isMutedMainVideoTrack(): boolean {
     const { mainVideoTrack } = this;
 
-    if (mainVideoTrack === undefined) {
-      return false;
-    }
-
-    return mainVideoTrack.muted;
+    return mainVideoTrack?.muted === true;
   }
 
   private get isInvalidInboundFrames(): boolean {

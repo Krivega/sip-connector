@@ -34,11 +34,7 @@ const isValidNumber = (value: unknown): value is number => {
 };
 
 const parseNumberValue = (value: string): number | undefined => {
-  if (!isValidNumber(value)) {
-    return undefined;
-  }
-
-  return Number(value);
+  return isValidNumber(value) ? Number(value) : undefined;
 };
 
 const parseBooleanValue = (value: string): boolean | undefined => {

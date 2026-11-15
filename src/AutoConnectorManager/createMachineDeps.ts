@@ -17,11 +17,7 @@ export const createMachineDeps = (
   const canRetryOnError = (error: unknown): boolean => {
     const isBaseRetryAllowed = params.baseCanRetryOnError(error);
 
-    if (!isBaseRetryAllowed) {
-      return false;
-    }
-
-    return params.canRetryOnError?.(error) ?? true;
+    return isBaseRetryAllowed ? (params.canRetryOnError?.(error) ?? true) : false;
   };
 
   const toTerminalError = ({

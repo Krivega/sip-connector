@@ -125,7 +125,7 @@ describe('SenderFinder', () => {
       } as MediaStreamVideoTrack;
 
       // @ts-expect-error
-      // eslint-disable-next-line unicorn/no-null
+
       const sender1 = new RTCRtpSenderMock({ track: null });
       const sender2 = new RTCRtpSenderMock({ track: videoTrack });
 

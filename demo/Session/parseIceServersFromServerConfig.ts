@@ -57,11 +57,9 @@ const parseIceServersFromServerConfig = (
   ip: string,
   iceServersFromServerConfig?: unknown,
 ): TIceServer[] => {
-  if (shouldUseIceServersFromServerConfig(iceServersFromServerConfig)) {
-    return iceServersFromServerConfig;
-  }
-
-  return getDefaultIceServer(ip);
+  return shouldUseIceServersFromServerConfig(iceServersFromServerConfig)
+    ? iceServersFromServerConfig
+    : getDefaultIceServer(ip);
 };
 
 export default parseIceServersFromServerConfig;

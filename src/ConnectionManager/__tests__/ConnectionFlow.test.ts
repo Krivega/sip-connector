@@ -128,7 +128,7 @@ describe('ConnectionFlow', () => {
       // копируем юзер из результата в конфигурацию, чтобы тест прошел
       // так как user генерируется случайно
       // @ts-expect-error
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, no-underscore-dangle
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       config.uri._user = getUa()?.configuration.uri._user;
 
       expect(getUa()?.configuration).toEqual(config);

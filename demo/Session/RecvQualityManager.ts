@@ -1,6 +1,6 @@
 import { dom } from '../dom';
-import sipConnectorFacade from './sipConnectorFacade';
 import resolveDebug from '../logger';
+import sipConnectorFacade from './sipConnectorFacade';
 
 import type { TRecvQuality } from '@/index';
 

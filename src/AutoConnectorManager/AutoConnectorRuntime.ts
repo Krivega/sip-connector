@@ -123,11 +123,7 @@ export class AutoConnectorRuntime {
   public shouldDisconnectBeforeAttempt(): boolean {
     const { isDisconnected, isIdle, isDisconnecting, requested } = this.connectionManager;
 
-    if (isDisconnecting || requested) {
-      return true;
-    }
-
-    return !(isDisconnected || isIdle);
+    return isDisconnecting || requested || !(isDisconnected || isIdle);
   }
 
   public beforeAttempt() {

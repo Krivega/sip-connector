@@ -2,8 +2,8 @@ import { CancelableRequest, isCanceledError } from '@krivega/cancelable-promise'
 import { repeatedCallsAsync } from 'repeated-calls';
 
 import resolveDebug from '@/logger';
-import { resolveParameters } from './utils';
 import { hasHandshakeWebsocketOpeningError } from '../utils/errors';
+import { resolveParameters } from './utils';
 
 import type {
   DisconnectEvent,

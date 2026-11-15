@@ -20,9 +20,7 @@ export const canConnectToServer = ({
   const hasInitParameters =
     remoteAddress !== undefined && sipServerIp !== undefined && sipServerUrl !== undefined;
 
-  if (register) {
-    return hasInitParameters && hasNoEmptyString(user) && hasNoEmptyString(password);
-  }
-
-  return hasInitParameters;
+  return register
+    ? hasInitParameters && hasNoEmptyString(user) && hasNoEmptyString(password)
+    : hasInitParameters;
 };

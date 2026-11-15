@@ -7,6 +7,7 @@ import { hasConnectionPromiseIsNotActualError } from '@/ConnectionQueueManager';
 import resolveDebug from '@/logger';
 import { getInvokeError } from './getInvokeError';
 
+import type { TParametersAutoConnect } from '../types';
 import type {
   EState,
   TContext,
@@ -14,7 +15,6 @@ import type {
   TAutoConnectorMachineDeps,
   TContextMap,
 } from './types';
-import type { TParametersAutoConnect } from '../types';
 
 const debug = resolveDebug('AutoConnectorManager: createAutoConnectorMachineSetup');
 

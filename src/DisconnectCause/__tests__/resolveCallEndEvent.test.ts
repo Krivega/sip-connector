@@ -304,7 +304,7 @@ describe('Причина завершения SIP-вызова', () => {
 
   it('не должен обрабатывать завершение без SIP-сообщения', () => {
     // JsSIP передаёт null при завершении без входящего сообщения.
-    // eslint-disable-next-line unicorn/no-null
+
     const event = { ...createEvent(), message: null };
 
     expect(resolveCallEndEvent(event)).toBe(event);

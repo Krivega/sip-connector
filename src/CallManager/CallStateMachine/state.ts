@@ -3,12 +3,12 @@ import hasPurgatory from '@/tools/hasPurgatory';
 import {
   hasValidExtraHeaders,
   isValidBoolean,
-  isValidString,
   isValidNumber,
+  isValidString,
 } from '@/utils/validators';
 import { EState } from './constants';
 
-import type { TContext, TContextMap, TAnyRoomState } from './types';
+import type { TAnyRoomState, TContext, TContextMap } from './types';
 
 const hasConnectingContext = (context: TContext): context is TContextMap[EState.CONNECTING] => {
   return 'number' in context && isValidString(context.number) && isValidBoolean(context.answer);
@@ -44,11 +44,11 @@ const hasAnyRoomContext = (context: TContext): context is TAnyRoomState => {
 };
 
 const hasMatchingConferenceTokenContext = (context: TContext) => {
-  if (!hasConferenceTokenContext(context) || !hasRoomContext(context)) {
-    return false;
-  }
-
-  return context.conferenceForToken === context.room;
+  return (
+    hasConferenceTokenContext(context) &&
+    hasRoomContext(context) &&
+    context.conferenceForToken === context.room
+  );
 };
 
 export const hasDirectPeerToPeer = ({

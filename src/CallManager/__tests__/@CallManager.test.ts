@@ -1418,7 +1418,7 @@ describe('CallManager', () => {
             { protocol: 'udp', port: 10_000 } as RTCIceCandidate,
             { protocol: 'udp', port: 10_001 } as RTCIceCandidate,
             { protocol: 'tcp', port: 20_000 } as RTCIceCandidate,
-            // eslint-disable-next-line unicorn/no-null
+
             { protocol: 'udp', port: null } as RTCIceCandidate,
           ];
 

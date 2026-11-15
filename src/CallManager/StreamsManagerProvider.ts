@@ -36,11 +36,9 @@ export class StreamsManagerProvider {
     isSpectator: boolean;
     stateInfo: TContentedStreamStateInfo;
   }): TStreamsManagerTools {
-    if (isSpectator) {
-      return this.getRecvRemoteStreamsManagerTools({ stateInfo });
-    }
-
-    return this.getMainRemoteStreamsManagerTools({ stateInfo });
+    return isSpectator
+      ? this.getRecvRemoteStreamsManagerTools({ stateInfo })
+      : this.getMainRemoteStreamsManagerTools({ stateInfo });
   }
 
   public getMainRemoteStreamsManagerTools({

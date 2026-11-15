@@ -1,11 +1,11 @@
 import { NameAddrHeader, SessionStatus, URI } from '@krivega/jssip';
 import { createAudioMediaStreamTrackMock, createVideoMediaStreamTrackMock } from 'webrtc-mock';
 
+import { Originator } from '../CallManager/events';
 import BaseSession from './BaseSession.mock';
 import createJestMock from './createJestMock';
 import RTCPeerConnectionMock from './RTCPeerConnectionMock';
 import { getRoomFromSipUrl } from './utils';
-import { Originator } from '../CallManager/events';
 
 import type { IncomingInfoEvent } from '@krivega/jssip';
 import type { TEventHandlers } from './BaseSession.mock';

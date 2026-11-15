@@ -8,7 +8,6 @@ export class RTCRtpTransceiverMock implements RTCRtpTransceiver {
 
   public readonly direction: RTCRtpTransceiverDirection = 'sendrecv';
 
-  // eslint-disable-next-line unicorn/no-null
   public mid: string | null = null;
 
   public readonly receiver!: RTCRtpReceiver;

@@ -43,11 +43,7 @@ class AttemptsState {
   }
 
   public hasLimitReached(): boolean {
-    if (this.limitInner === UNLIMITED) {
-      return false;
-    }
-
-    return this.countInner >= this.limitInner;
+    return this.limitInner !== UNLIMITED && this.countInner >= this.limitInner;
   }
 
   public startAttempt(): void {

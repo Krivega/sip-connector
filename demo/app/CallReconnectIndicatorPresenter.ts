@@ -4,19 +4,13 @@ import { getErrorMessage } from './inputParsing';
 import type { TCallReconnectIndicatorState } from '../Statuses';
 
 const formatNamedError = (name: string, value: unknown): string | undefined => {
-  if (value === undefined || value === null || value === '') {
-    return undefined;
-  }
-
-  return `${name}: ${getErrorMessage(value)}`;
+  return value === undefined || value === null || value === ''
+    ? undefined
+    : `${name}: ${getErrorMessage(value)}`;
 };
 
 const formatScalarForDisplay = (value: number | undefined): string => {
-  if (value === undefined) {
-    return '-';
-  }
-
-  return String(value);
+  return value === undefined ? '-' : String(value);
 };
 
 const formatErrorsLine = (state: TCallReconnectIndicatorState): string => {

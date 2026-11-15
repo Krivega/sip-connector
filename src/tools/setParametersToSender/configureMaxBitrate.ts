@@ -6,11 +6,9 @@ const performUpdateMaxBitrate = (
   maxBitrateTarget?: number,
   maxBitrateCurrent?: number,
 ): number | undefined => {
-  if (hasNeedToUpdateMaxBitrate(maxBitrateTarget, maxBitrateCurrent)) {
-    return maxBitrateTarget;
-  }
-
-  return undefined;
+  return hasNeedToUpdateMaxBitrate(maxBitrateTarget, maxBitrateCurrent)
+    ? maxBitrateTarget
+    : undefined;
 };
 
 const configureMaxBitrate = (

@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test';
 
-import { DemoPage } from './DemoPage';
 import { SIP_CONNECTOR_DEMO_E2E_WEBSOCKET_GLOBAL_KEY } from '../support/webSocketControls';
+import { DemoPage } from './DemoPage';
 
 import type { Page } from '@playwright/test';
 import type { TConnectionFormConfig } from '../connection.config';

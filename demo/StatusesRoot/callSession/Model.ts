@@ -19,7 +19,7 @@ export const createCallSessionStatusSnapshot = (
   snapshot: TCallSessionSnapshot,
 ): TCallSessionStatusSnapshot => {
   const isDuplexSendingMediaMode =
-    'isDuplexSendingMediaMode' in snapshot ? Boolean(snapshot.isDuplexSendingMediaMode) : false;
+    'isDuplexSendingMediaMode' in snapshot && Boolean(snapshot.isDuplexSendingMediaMode);
 
   return {
     license: snapshot.license,

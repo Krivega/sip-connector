@@ -616,11 +616,7 @@ describe('RecvSession', () => {
           resolveSlowSetRemote = resolve;
         });
 
-        if (originalSetRemoteImpl) {
-          return originalSetRemoteImpl(description);
-        }
-
-        return undefined;
+        return originalSetRemoteImpl ? originalSetRemoteImpl(description) : undefined;
       });
 
       const renegotiatePromise = session.renegotiate(params);

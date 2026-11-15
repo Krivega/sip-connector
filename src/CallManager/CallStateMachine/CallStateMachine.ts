@@ -106,20 +106,16 @@ class CallStateMachine extends BaseStateMachine<TMachine, EState, TFullContext, 
 
   /** Только в IDLE. См. `context` у актора для сырого значения. */
   public get idleContext(): TContextMap[EState.IDLE] | undefined {
-    if (this.state !== EState.IDLE) {
-      return undefined;
-    }
-
-    return this.context.state as TContextMap[EState.IDLE];
+    return this.state === EState.IDLE
+      ? (this.context.state as TContextMap[EState.IDLE])
+      : undefined;
   }
 
   /** Только в CONNECTING: номер и ответ; без полей комнаты и токена в типе. */
   public get connectingContext(): TContextMap[EState.CONNECTING] | undefined {
-    if (this.state !== EState.CONNECTING) {
-      return undefined;
-    }
-
-    return this.context.state as TContextMap[EState.CONNECTING];
+    return this.state === EState.CONNECTING
+      ? (this.context.state as TContextMap[EState.CONNECTING])
+      : undefined;
   }
 
   /**
@@ -127,38 +123,30 @@ class CallStateMachine extends BaseStateMachine<TMachine, EState, TFullContext, 
    * В сыром `context` могут быть лишние поля (например JWT до выравнивания с `room`).
    */
   public get roomPendingAuthContext(): TContextMap[EState.ROOM_PENDING_AUTH] | undefined {
-    if (this.state !== EState.ROOM_PENDING_AUTH) {
-      return undefined;
-    }
-
-    return this.context.state as TContextMap[EState.ROOM_PENDING_AUTH];
+    return this.state === EState.ROOM_PENDING_AUTH
+      ? (this.context.state as TContextMap[EState.ROOM_PENDING_AUTH])
+      : undefined;
   }
 
   /** Только в PURGATORY. */
   public get purgatoryContext(): TContextMap[EState.PURGATORY] | undefined {
-    if (this.state !== EState.PURGATORY) {
-      return undefined;
-    }
-
-    return this.context.state as TContextMap[EState.PURGATORY];
+    return this.state === EState.PURGATORY
+      ? (this.context.state as TContextMap[EState.PURGATORY])
+      : undefined;
   }
 
   /** Только в P2P_ROOM. */
   public get p2pRoomContext(): TContextMap[EState.P2P_ROOM] | undefined {
-    if (this.state !== EState.P2P_ROOM) {
-      return undefined;
-    }
-
-    return this.context.state as TContextMap[EState.P2P_ROOM];
+    return this.state === EState.P2P_ROOM
+      ? (this.context.state as TContextMap[EState.P2P_ROOM])
+      : undefined;
   }
 
   /** Только в DIRECT_P2P_ROOM. */
   public get directP2pRoomContext(): TContextMap[EState.DIRECT_P2P_ROOM] | undefined {
-    if (this.state !== EState.DIRECT_P2P_ROOM) {
-      return undefined;
-    }
-
-    return this.context.state as TContextMap[EState.DIRECT_P2P_ROOM];
+    return this.state === EState.DIRECT_P2P_ROOM
+      ? (this.context.state as TContextMap[EState.DIRECT_P2P_ROOM])
+      : undefined;
   }
 
   /**
@@ -167,28 +155,22 @@ class CallStateMachine extends BaseStateMachine<TMachine, EState, TFullContext, 
    * содержать устаревший JWT или несовпадающий `conferenceForToken` — полагаться на него напрямую нельзя.
    */
   public get inRoomContext(): TContextMap[EState.IN_ROOM] | undefined {
-    if (this.state !== EState.IN_ROOM) {
-      return undefined;
-    }
-
-    return this.context.state as TContextMap[EState.IN_ROOM];
+    return this.state === EState.IN_ROOM
+      ? (this.context.state as TContextMap[EState.IN_ROOM])
+      : undefined;
   }
 
   public get presentationCallContext(): TContextMap[EState.PRESENTATION_CALL] | undefined {
-    if (this.state !== EState.PRESENTATION_CALL) {
-      return undefined;
-    }
-
-    return this.context.state as TContextMap[EState.PRESENTATION_CALL];
+    return this.state === EState.PRESENTATION_CALL
+      ? (this.context.state as TContextMap[EState.PRESENTATION_CALL])
+      : undefined;
   }
 
   /** Только в DISCONNECTING (контекст сброшен, опционально `pendingDisconnect`). */
   public get disconnectingContext(): TContextMap[EState.IDLE] | undefined {
-    if (this.state !== EState.DISCONNECTING) {
-      return undefined;
-    }
-
-    return this.context.state as TContextMap[EState.IDLE];
+    return this.state === EState.DISCONNECTING
+      ? (this.context.state as TContextMap[EState.IDLE])
+      : undefined;
   }
 
   public get isActive(): boolean {
@@ -221,11 +203,7 @@ class CallStateMachine extends BaseStateMachine<TMachine, EState, TFullContext, 
   public get number() {
     const { raw } = this.context;
 
-    if ('number' in raw) {
-      return raw.number;
-    }
-
-    return undefined;
+    return 'number' in raw ? raw.number : undefined;
   }
 
   public get token() {
@@ -248,11 +226,9 @@ class CallStateMachine extends BaseStateMachine<TMachine, EState, TFullContext, 
     Pick<TContextMap[EState.IN_ROOM], 'token' | 'conferenceForToken'> | undefined {
     const context = this.inRoomContext;
 
-    if (context === undefined) {
-      return undefined;
-    }
-
-    return { token: context.token, conferenceForToken: context.conferenceForToken };
+    return context === undefined
+      ? undefined
+      : { token: context.token, conferenceForToken: context.conferenceForToken };
   }
 
   /**

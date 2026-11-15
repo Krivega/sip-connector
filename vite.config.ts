@@ -3,7 +3,7 @@ import path from 'node:path';
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 
-import packageJson from './package.json';
+import packageJson from './package.json' with { type: 'json' };
 
 const externalDependencies = [
   ...Object.keys(packageJson.peerDependencies),
@@ -17,6 +17,11 @@ export default defineConfig(() => {
   process.env.VITE_APP_VERSION = packageJson.version;
 
   return {
+    // Rolldown can inline react/jsx-dev-runtime, which uses a CJS `require("react")` shim;
+    // that throws in the browser unless we freeze NODE_ENV for the published bundle.
+    define: {
+      'process.env.NODE_ENV': JSON.stringify('production'),
+    },
     publicDir: false,
     resolve: {
       tsconfigPaths: true,

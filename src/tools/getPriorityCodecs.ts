@@ -28,11 +28,7 @@ const hasYandexBrowserWithBrokenH264Codec = ({
 const getPriorityCodecs = (): string[] | undefined => {
   const uaParser = createUaParser();
 
-  if (hasYandexBrowserWithBrokenH264Codec(uaParser)) {
-    return [EMimeTypesVideoCodecs.VP8];
-  }
-
-  return undefined;
+  return hasYandexBrowserWithBrokenH264Codec(uaParser) ? [EMimeTypesVideoCodecs.VP8] : undefined;
 };
 
 export default getPriorityCodecs;

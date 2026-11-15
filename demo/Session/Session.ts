@@ -5,9 +5,9 @@ import sipConnectorFacade from './sipConnectorFacade';
 
 import type { TRemoteStreams } from '@/index';
 import type {
-  IParams as IServerParametersRequesterParams,
-  IServerParametersRequester,
   IServerParameters,
+  IServerParametersRequester,
+  IParams as IServerParametersRequesterParams,
 } from './resolveServerParametersRequester';
 
 const debug = resolveDebug('demo:session');
@@ -85,7 +85,7 @@ export class Session {
     password,
     conference,
     mediaStream,
-    autoRedial,
+    autoRedial = true,
     setRemoteStreams,
   }: {
     serverUrl: string;
@@ -133,7 +133,7 @@ export class Session {
       call: {
         conference,
         mediaStream,
-        autoRedial: autoRedial ?? true,
+        autoRedial,
         extraHeaders: serverParameters.extraHeaders,
         iceServers: serverParameters.iceServers,
       },
@@ -148,7 +148,7 @@ export class Session {
   public async callToServer({
     conference,
     mediaStream,
-    autoRedial,
+    autoRedial = true,
     setRemoteStreams,
   }: {
     conference: string;
@@ -177,7 +177,7 @@ export class Session {
     await sipConnectorFacade.callToServer({
       conference,
       mediaStream,
-      autoRedial: autoRedial ?? true,
+      autoRedial,
       extraHeaders: serverParameters.extraHeaders,
       iceServers: serverParameters.iceServers,
     });

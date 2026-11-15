@@ -19,7 +19,6 @@ jest.mock('@/VideoSendingBalancerManager', () => {
     // eslint-disable-next-line @typescript-eslint/class-methods-use-this
     public on() {}
 
-    // eslint-disable-next-line @typescript-eslint/member-ordering
     public constructor(...args: unknown[]) {
       VideoSendingBalancerManagerMock(...args);
     }

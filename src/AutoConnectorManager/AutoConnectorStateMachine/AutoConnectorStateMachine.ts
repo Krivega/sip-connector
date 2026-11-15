@@ -3,8 +3,8 @@ import { BaseStateMachine } from '@/tools/BaseStateMachine';
 import { createAutoConnectorMachine } from './createAutoConnectorMachine';
 import { EState } from './types';
 
-import type { TAutoConnectorEvent, TContext, TContextMap } from './types';
 import type { TParametersAutoConnect } from '../types';
+import type { TAutoConnectorEvent, TContext, TContextMap } from './types';
 
 const debug = resolveDebug('AutoConnectorManager: AutoConnectorStateMachine');
 

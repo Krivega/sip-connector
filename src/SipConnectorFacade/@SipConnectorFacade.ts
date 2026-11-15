@@ -261,10 +261,8 @@ class SipConnectorFacade implements IProxyMethods {
       onFinishProgressCall,
       onEndedCall,
       onAddedTransceiver,
-      autoRedial: autoRedialParameter,
+      autoRedial = true,
     } = parameters;
-
-    const autoRedial = autoRedialParameter ?? true;
 
     debug('callToServer', parameters);
 
