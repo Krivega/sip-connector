@@ -38,6 +38,8 @@ describe('AutoConnectorRuntime', () => {
         emitFailedAllAttempts: jest.fn(),
         emitTelephonyCheckFailure: jest.fn(),
         emitTelephonyCheckEscalated: jest.fn(),
+        emitSignalingUnstable: jest.fn(),
+        emitSignalingRestored: jest.fn(),
         emitStatusChange: jest.fn(),
       },
       reconnectActions: {

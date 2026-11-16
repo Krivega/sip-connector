@@ -240,7 +240,10 @@ const sipConnector = new SipConnector(
 Во время звонка AutoConnector продолжает ping и обработку сетевых событий. Неуспешный ping во время
 активного звонка не запускает reconnect (`periodic-ping-failed`): reconnect перезапускает UA и обрывает
 звонок. OPTIONS продолжают уходить как keepalive; если порог неуспешных ping достигнут в звонке,
-reconnect запросит первый неуспешный ping после его завершения. Обработка `network-change`/`network-online`
+reconnect запросит первый неуспешный ping после его завершения. При достижении порога в звонке один раз
+приходит `auto-connect:signaling-unstable` (`{ failCount }`), а после успешного ping или остановки ping
+(disconnect, reconnect после звонка) — `auto-connect:signaling-restored`; по ним приложение может
+показать и скрыть уведомление о нестабильном соединении. Обработка `network-change`/`network-online`
 во время звонка не изменилась и при неуспешном probe запускает reconnect. Если signaling
 переподключается, `CallReconnectManager` ждёт его восстановления и выполняет redial. Ручные
 `session.hangUp()` и `session.disconnect()`, публичные `SipConnector.hangUp()`/`disconnect()`, а

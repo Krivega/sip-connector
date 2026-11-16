@@ -28,6 +28,8 @@ type TEmitters = {
   emitFailedAllAttempts: (error: Error) => void;
   emitTelephonyCheckFailure: (payload: TEventMap['telephony-check-failure']) => void;
   emitTelephonyCheckEscalated: (payload: TEventMap['telephony-check-escalated']) => void;
+  emitSignalingUnstable: (payload: TEventMap['signaling-unstable']) => void;
+  emitSignalingRestored: () => void;
 };
 
 type TReconnectActions = {
@@ -262,12 +264,15 @@ export class AutoConnectorRuntime {
      * JsSIP не всегда восстанавливает транспорт, поэтому после порога неуспешных ping инициируется полный
      * reconnect. Во время активного звонка reconnect не запрашивается: он перезапускает UA и обрывает звонок.
      * Если порог достигнут в звонке, reconnect запросит первый неуспешный ping после его завершения.
+     * В звонке вместо reconnect эмитятся `signaling-unstable` и затем `signaling-restored`.
      */
     this.pingServerRequester.start({
       onFailRequest: () => {
         debug('pingRequester: onFailRequest');
         this.reconnectActions.requestReconnect(parameters, RECONNECT_REASONS.PERIODIC_PING_FAILED);
       },
+      onSignalingUnstable: this.emitters.emitSignalingUnstable,
+      onSignalingRestored: this.emitters.emitSignalingRestored,
     });
 
     this.registrationFailedOutOfCallSubscriber.subscribe(() => {

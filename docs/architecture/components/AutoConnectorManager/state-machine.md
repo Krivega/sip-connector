@@ -4,12 +4,12 @@
 
 ## Публичный API
 
-| Категория                 | Элементы                                                                                                                                                                                                       |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Методы менеджера          | `start(parameters)`, `restart()`, `stop()`, `cancelPendingRetry()`                                                                                                                                             |
-| Внутренние события машины | `AUTO.RESTART`, `AUTO.STOP`, `TELEPHONY.RESULT(stillConnected)`                                                                                                                                                |
-| Публичные эмиты менеджера | `before-attempt`, `success`, `limit-reached-attempts`, `stop-attempts-by-error`, `cancelled-attempts`, `failed-all-attempts`, `telephony-check-failure`, `telephony-check-escalated`, `changed-attempt-status` |
-| Сервисные точки           | `requestReconnect(...)` с coalescing и приоритетами причин                                                                                                                                                     |
+| Категория                 | Элементы                                                                                                                                                                                                                                                   |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Методы менеджера          | `start(parameters)`, `restart()`, `stop()`, `cancelPendingRetry()`                                                                                                                                                                                         |
+| Внутренние события машины | `AUTO.RESTART`, `AUTO.STOP`, `TELEPHONY.RESULT(stillConnected)`                                                                                                                                                                                            |
+| Публичные эмиты менеджера | `before-attempt`, `success`, `limit-reached-attempts`, `stop-attempts-by-error`, `cancelled-attempts`, `failed-all-attempts`, `telephony-check-failure`, `telephony-check-escalated`, `signaling-unstable`, `signaling-restored`, `changed-attempt-status` |
+| Сервисные точки           | `requestReconnect(...)` с coalescing и приоритетами причин                                                                                                                                                                                                 |
 
 ## Состояния
 
@@ -67,7 +67,7 @@ stateDiagram-v2
 - В `disconnecting` событие `AUTO.RESTART` не делает re-enter invoke: обновляется только контекст, текущий `stopConnectionFlow` продолжается.
 - Порядок guard в `attemptingConnect.onError` критичен: сначала non-retry/cancel cases, затем retry path.
 - `telephonyChecking -> connectedMonitoring` означает возврат к мониторингу без нового `connect`.
-- После порога неуспешных периодических SIP OPTIONS (`PingServerRequester`) в `connectedMonitoring` вызывается `requestReconnect` с причиной `periodic-ping-failed` (полный цикл автоконнектора), чтобы выйти из сценария «полуживого» WebSocket, когда JsSIP не пересоздаёт транспорт сам. Во время активного звонка (`callManager.isCallActive`) reconnect не запрашивается, чтобы не оборвать звонок; если порог достигнут в звонке, `periodic-ping-failed` придёт с первым неуспешным ping после его завершения. Поэтому при «полуживом» WebSocket signaling звонка не восстанавливается до его завершения.
+- После порога неуспешных периодических SIP OPTIONS (`PingServerRequester`) в `connectedMonitoring` вызывается `requestReconnect` с причиной `periodic-ping-failed` (полный цикл автоконнектора), чтобы выйти из сценария «полуживого» WebSocket, когда JsSIP не пересоздаёт транспорт сам. Во время активного звонка (`callManager.isCallActive`) reconnect не запрашивается, чтобы не оборвать звонок; если порог достигнут в звонке, менеджер один раз эмитит `signaling-unstable`, а `periodic-ping-failed` придёт с первым неуспешным ping после его завершения. После успешного ping или остановки `PingServerRequester` эмитится `signaling-restored`. Поэтому при «полуживом» WebSocket signaling звонка не восстанавливается до его завершения.
 - Coalescing рестартов (`ReconnectRequestCoalescer`) подавляет дубли в окне и пропускает более приоритетные причины.
 
 ## Интеграция и события

@@ -250,6 +250,12 @@ export class SipPeer {
     });
   }
 
+  public resumeAnswering(methods: TSilentMethod[]): void {
+    methods.forEach((method) => {
+      this.silentMethods.delete(method);
+    });
+  }
+
   /** Сервер закрывает текущий WebSocket и сразу закрывает все новые подключения клиента. */
   public async dropConnection(): Promise<void> {
     this.isAcceptingConnections = false;

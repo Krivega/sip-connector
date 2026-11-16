@@ -13,6 +13,8 @@ const AFTER_INFO_TIMER_F_WAIT_MS = 34_000;
 const TWO_SILENT_PINGS_TIMEOUT_MS = 45_000;
 /** Таймаут второго ping в SipOperations (10 с) и запас на reconnect-flow. */
 const AFTER_SECOND_SILENT_PING_WAIT_MS = 13_000;
+/** Таймаут ping, отправленного до возобновления ответов, и следующий успешный ping. */
+const PING_RESTORE_TIMEOUT_MS = 30_000;
 
 type TDisconnectEvents = Awaited<ReturnType<typeof observeDisconnectEvents>>;
 
@@ -152,6 +154,15 @@ test.describe('Активный звонок при потере SIP WebSocket',
 
     await expectCallAlive(sipPeer);
     expect(sipPeer.countReceivedRequests('REGISTER')).toBe(1);
+    expect(await readEvents()).toMatchObject({ signalingUnstable: 1, signalingRestored: 0 });
     await statusDashboard.waitForDiagramStatus('system', 'system:callActive');
+
+    sipPeer.resumeAnswering(['OPTIONS']);
+
+    await expect
+      .poll(readEvents, { timeout: PING_RESTORE_TIMEOUT_MS })
+      .toMatchObject({ signalingUnstable: 1, signalingRestored: 1 });
+    await expectCallAlive(sipPeer);
+    expect(sipPeer.countReceivedRequests('REGISTER')).toBe(1);
   });
 });

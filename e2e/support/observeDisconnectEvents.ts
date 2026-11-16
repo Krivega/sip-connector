@@ -29,6 +29,8 @@ export const observeDisconnectEvents = async (page: Page) => {
     const incomingFailed: TIncomingEnd[] = [];
     let confirmed = 0;
     let ringing = 0;
+    let signalingUnstable = 0;
+    let signalingRestored = 0;
     let mediaStream: MediaStream | undefined;
 
     const saveEnded = ({ originator, cause, disconnectCause }: TCallEndEvent) => {
@@ -49,6 +51,12 @@ export const observeDisconnectEvents = async (page: Page) => {
       facade.on('incoming-call:failedIncomingCall', ({ incomingNumber, disconnectCause }) => {
         incomingFailed.push({ incomingNumber, disconnectCause });
       }),
+      facade.on('auto-connect:signaling-unstable', () => {
+        signalingUnstable += 1;
+      }),
+      facade.on('auto-connect:signaling-restored', () => {
+        signalingRestored += 1;
+      }),
     ];
 
     return {
@@ -59,6 +67,8 @@ export const observeDisconnectEvents = async (page: Page) => {
           incomingFailed,
           confirmed,
           ringing,
+          signalingUnstable,
+          signalingRestored,
           isEstablished: facade.sipConnector.getEstablishedRTCSession() !== undefined,
           isAvailableIncomingCall: facade.sipConnector.isAvailableIncomingCall,
         };

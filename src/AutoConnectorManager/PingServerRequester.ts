@@ -4,6 +4,7 @@ import resolveDebug from '@/logger';
 
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
+import type { TEventMap } from './events';
 
 const INTERVAL_PING_SERVER_REQUEST = 15_000;
 const MAX_FAIL_REQUESTS_COUNT = 2;
@@ -21,6 +22,8 @@ class PingServerRequester {
 
   private isFailRequestReported = false;
 
+  private notifySignalingRestored: (() => void) | undefined = undefined;
+
   public constructor({
     connectionManager,
     callManager,
@@ -32,7 +35,15 @@ class PingServerRequester {
     this.callManager = callManager;
   }
 
-  public start({ onFailRequest }: { onFailRequest: () => void }) {
+  public start({
+    onFailRequest,
+    onSignalingUnstable,
+    onSignalingRestored,
+  }: {
+    onFailRequest: () => void;
+    onSignalingUnstable: (payload: TEventMap['signaling-unstable']) => void;
+    onSignalingRestored: () => void;
+  }) {
     debug('start');
     this.stop();
 
@@ -72,6 +83,11 @@ class PingServerRequester {
         if (this.callManager.isCallActive) {
           debug('skip reporting fail request: call is active');
 
+          if (!this.notifySignalingRestored) {
+            this.notifySignalingRestored = onSignalingRestored;
+            onSignalingUnstable({ failCount: this.failRequestsCount });
+          }
+
           return;
         }
 
@@ -92,6 +108,11 @@ class PingServerRequester {
   private resetFailRequests() {
     this.failRequestsCount = 0;
     this.isFailRequestReported = false;
+
+    const { notifySignalingRestored } = this;
+
+    this.notifySignalingRestored = undefined;
+    notifySignalingRestored?.();
   }
 }
 

@@ -69,6 +69,8 @@ describe('AutoConnectorManager - Triggers', () => {
 
       expect(pingServerStartSpy).toHaveBeenCalledWith({
         onFailRequest: expect.any(Function) as () => void,
+        onSignalingUnstable: expect.any(Function) as () => void,
+        onSignalingRestored: expect.any(Function) as () => void,
       });
     });
 
@@ -209,6 +211,8 @@ describe('AutoConnectorManager - Triggers', () => {
     let disconnectSpy: jest.SpyInstance;
     let connectSpy: jest.SpyInstance;
     let failFirstPing: () => void;
+    let signalingUnstableHandler: jest.Mock;
+    let signalingRestoredHandler: jest.Mock;
 
     const startCall = () => {
       jest.spyOn(sipConnector.callManager, 'isCallActive', 'get').mockReturnValue(true);
@@ -242,6 +246,11 @@ describe('AutoConnectorManager - Triggers', () => {
 
       disconnectSpy = jest.spyOn(sipConnector.connectionQueueManager, 'disconnect');
       connectSpy = jest.spyOn(sipConnector.connectionQueueManager, 'connect');
+
+      signalingUnstableHandler = jest.fn();
+      signalingRestoredHandler = jest.fn();
+      manager.on('signaling-unstable', signalingUnstableHandler);
+      manager.on('signaling-restored', signalingRestoredHandler);
     });
 
     it('не разрывает соединение, когда ping не отвечает во время активного звонка', async () => {
@@ -255,6 +264,23 @@ describe('AutoConnectorManager - Triggers', () => {
       expect(disconnectSpy).not.toHaveBeenCalled();
       expect(connectSpy).not.toHaveBeenCalled();
       expect(pingSpy).toHaveBeenCalledTimes(4);
+      expect(signalingUnstableHandler).toHaveBeenCalledTimes(1);
+      expect(signalingUnstableHandler).toHaveBeenCalledWith({ failCount: 2 });
+      expect(signalingRestoredHandler).not.toHaveBeenCalled();
+    });
+
+    it('сообщает signaling-restored при остановке автоконнектора во время нестабильной сигнализации', async () => {
+      startCall();
+
+      failFirstPing();
+      await failNextPing();
+
+      expect(signalingUnstableHandler).toHaveBeenCalledTimes(1);
+
+      await manager.stop();
+
+      expect(signalingRestoredHandler).toHaveBeenCalledTimes(1);
+      expect(signalingRestoredHandler).toHaveBeenCalledWith({});
     });
 
     it('запускает reconnect при провале ping после завершения звонка', async () => {
@@ -265,11 +291,15 @@ describe('AutoConnectorManager - Triggers', () => {
 
       expect(disconnectSpy).not.toHaveBeenCalled();
 
+      expect(signalingRestoredHandler).not.toHaveBeenCalled();
+
       endCall();
       await failNextPing();
 
       expect(disconnectSpy).toHaveBeenCalled();
       expect(connectSpy).toHaveBeenCalled();
+      expect(signalingUnstableHandler).toHaveBeenCalledTimes(1);
+      expect(signalingRestoredHandler).toHaveBeenCalledTimes(1);
     });
 
     it('после успешного ping во время звонка запускает reconnect только после нового лимита ошибок', async () => {
@@ -280,6 +310,8 @@ describe('AutoConnectorManager - Triggers', () => {
 
       pingSpy.mockResolvedValueOnce(undefined);
       await failNextPing();
+
+      expect(signalingRestoredHandler).toHaveBeenCalledTimes(1);
 
       endCall();
       await failNextPing();
@@ -299,6 +331,8 @@ describe('AutoConnectorManager - Triggers', () => {
 
       expect(disconnectSpy).toHaveBeenCalled();
       expect(connectSpy).toHaveBeenCalled();
+      expect(signalingUnstableHandler).not.toHaveBeenCalled();
+      expect(signalingRestoredHandler).not.toHaveBeenCalled();
     });
   });
 });
