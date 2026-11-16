@@ -4,17 +4,19 @@
 
 ## События
 
-| Имя события                              | Описание                                               | Тип данных                      |
-| ---------------------------------------- | ------------------------------------------------------ | ------------------------------- |
-| `auto-connect:before-attempt`            | Генерируется перед началом попытки подключения         | `Record<string, never>`         |
-| `auto-connect:success`                   | Генерируется при успешном подключении                  | `never`                         |
-| `auto-connect:failed-all-attempts`       | Генерируется при неудаче всех попыток подключения      | `Error`                         |
-| `auto-connect:cancelled-attempts`        | Генерируется при отмене попыток подключения            | `unknown`                       |
-| `auto-connect:changed-attempt-status`    | Генерируется при изменении статуса попытки подключения | `TAttemptStatus`                |
-| `auto-connect:stop-attempts-by-error`    | Генерируется при остановке попыток из-за ошибки        | `unknown`                       |
-| `auto-connect:limit-reached-attempts`    | Генерируется при достижении лимита попыток подключения | `Error`                         |
-| `auto-connect:telephony-check-failure`   | Генерируется при ошибке проверки доступности телефонии | `TTelephonyCheckFailureEvent`   |
-| `auto-connect:telephony-check-escalated` | Генерируется при эскалации уровня проблем телефонии    | `TTelephonyCheckEscalatedEvent` |
+| Имя события                              | Описание                                                                     | Тип данных                      |
+| ---------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------- |
+| `auto-connect:before-attempt`            | Генерируется перед началом попытки подключения                               | `Record<string, never>`         |
+| `auto-connect:success`                   | Генерируется при успешном подключении                                        | `never`                         |
+| `auto-connect:failed-all-attempts`       | Генерируется при неудаче всех попыток подключения                            | `Error`                         |
+| `auto-connect:cancelled-attempts`        | Генерируется при отмене попыток подключения                                  | `unknown`                       |
+| `auto-connect:changed-attempt-status`    | Генерируется при изменении статуса попытки подключения                       | `TAttemptStatus`                |
+| `auto-connect:stop-attempts-by-error`    | Генерируется при остановке попыток из-за ошибки                              | `unknown`                       |
+| `auto-connect:limit-reached-attempts`    | Генерируется при достижении лимита попыток подключения                       | `Error`                         |
+| `auto-connect:telephony-check-failure`   | Генерируется при ошибке проверки доступности телефонии                       | `TTelephonyCheckFailureEvent`   |
+| `auto-connect:telephony-check-escalated` | Генерируется при эскалации уровня проблем телефонии                          | `TTelephonyCheckEscalatedEvent` |
+| `auto-connect:signaling-unstable`        | Генерируется один раз, когда во время звонка неуспешные ping достигли порога | `TSignalingUnstableEvent`       |
+| `auto-connect:signaling-restored`        | Генерируется после `signaling-unstable` при успешном ping или остановке ping | `Record<string, never>`         |
 
 ## Структуры данных
 
@@ -45,5 +47,13 @@
   failCount: number;
   escalationLevel: 'warning' | 'critical';
   error: unknown;
+}
+```
+
+### `TSignalingUnstableEvent`
+
+```typescript
+{
+  failCount: number;
 }
 ```

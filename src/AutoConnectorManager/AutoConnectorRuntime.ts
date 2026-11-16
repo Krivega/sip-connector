@@ -28,6 +28,8 @@ type TEmitters = {
   emitFailedAllAttempts: (error: Error) => void;
   emitTelephonyCheckFailure: (payload: TEventMap['telephony-check-failure']) => void;
   emitTelephonyCheckEscalated: (payload: TEventMap['telephony-check-escalated']) => void;
+  emitSignalingUnstable: (payload: TEventMap['signaling-unstable']) => void;
+  emitSignalingRestored: () => void;
 };
 
 type TReconnectActions = {
@@ -81,6 +83,7 @@ export class AutoConnectorRuntime {
     });
     this.pingServerRequester = new PingServerRequester({
       connectionManager: this.connectionManager,
+      callManager: params.callManager,
     });
     this.registrationFailedOutOfCallSubscriber = new RegistrationFailedOutOfCallSubscriber({
       connectionManager: this.connectionManager,
@@ -254,22 +257,22 @@ export class AutoConnectorRuntime {
   }
 
   private subscribeToConnectTriggers(parameters: TParametersAutoConnect) {
-    // Периодически шлём SIP OPTIONS (`connectionManager.ping`) через тот же JsSIP UA, пока подключены:
-    // проверяем живость сигнализации и даём исходящий трафик по WebSocket — в том числе во время активного звонка
-    // (раньше пинг заглушался на время звонка). JsSIP может перезапускать транспорт при явном обрыве; при
-    // «полуживом» WebSocket (OPTIONS без ответа) транспорт не всегда восстанавливается — после порога
-    // неуспешных ping инициируем полный reconnect автоконнектора.
     /**
-     * Периодический SIP OPTIONS (`connectionManager.ping`) по установленному UA.
-     * Работает независимо от того, идёт ли звонок: поддерживает трафик по WebSocket
-     * и проверяет живость сигнализации в фоне всегда, пока автоконнектор в режиме
-     * «подписан на триггеры» после успешного connect.
+     * Периодический SIP OPTIONS (`connectionManager.ping`) по установленному UA, пока автоконнектор
+     * подписан на триггеры после успешного connect. Ping уходит и во время активного звонка: поддерживает
+     * трафик по WebSocket и проверяет живость сигнализации. При «полуживом» WebSocket (OPTIONS без ответа)
+     * JsSIP не всегда восстанавливает транспорт, поэтому после порога неуспешных ping инициируется полный
+     * reconnect. Во время активного звонка reconnect не запрашивается: он перезапускает UA и обрывает звонок.
+     * Если порог достигнут в звонке, reconnect запросит первый неуспешный ping после его завершения.
+     * В звонке вместо reconnect эмитятся `signaling-unstable` и затем `signaling-restored`.
      */
     this.pingServerRequester.start({
       onFailRequest: () => {
         debug('pingRequester: onFailRequest');
         this.reconnectActions.requestReconnect(parameters, RECONNECT_REASONS.PERIODIC_PING_FAILED);
       },
+      onSignalingUnstable: this.emitters.emitSignalingUnstable,
+      onSignalingRestored: this.emitters.emitSignalingRestored,
     });
 
     this.registrationFailedOutOfCallSubscriber.subscribe(() => {

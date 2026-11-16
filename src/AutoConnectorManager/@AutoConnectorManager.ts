@@ -94,6 +94,12 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
         emitTelephonyCheckEscalated: (payload) => {
           this.events.trigger('telephony-check-escalated', payload);
         },
+        emitSignalingUnstable: (payload) => {
+          this.events.trigger('signaling-unstable', payload);
+        },
+        emitSignalingRestored: () => {
+          this.events.trigger('signaling-restored', {});
+        },
         emitStatusChange: ({ isInProgress }: { isInProgress: boolean }) => {
           this.events.trigger('changed-attempt-status', { isInProgress });
         },

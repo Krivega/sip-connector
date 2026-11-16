@@ -13,6 +13,8 @@ enum EEvent {
   LIMIT_REACHED_ATTEMPTS = 'limit-reached-attempts',
   TELEPHONY_CHECK_FAILURE = 'telephony-check-failure',
   TELEPHONY_CHECK_ESCALATED = 'telephony-check-escalated',
+  SIGNALING_UNSTABLE = 'signaling-unstable',
+  SIGNALING_RESTORED = 'signaling-restored',
 }
 
 export const EVENT_NAMES = [
@@ -25,6 +27,8 @@ export const EVENT_NAMES = [
   `${EEvent.LIMIT_REACHED_ATTEMPTS}`,
   `${EEvent.TELEPHONY_CHECK_FAILURE}`,
   `${EEvent.TELEPHONY_CHECK_ESCALATED}`,
+  `${EEvent.SIGNALING_UNSTABLE}`,
+  `${EEvent.SIGNALING_RESTORED}`,
 ] as const;
 
 export type TEventMap = {
@@ -47,6 +51,10 @@ export type TEventMap = {
     escalationLevel: 'warning' | 'critical';
     error: unknown;
   };
+  'signaling-unstable': {
+    failCount: number;
+  };
+  'signaling-restored': Record<string, never>;
 };
 
 export type TEvents = TypedEvents<TEventMap>;

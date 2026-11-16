@@ -118,7 +118,10 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
       headerOutputChannels,
     ];
 
-    return rtcSession.sendInfo(EContentTypeSent.CHANNELS, undefined, { extraHeaders });
+    return rtcSession.sendInfo(EContentTypeSent.CHANNELS, undefined, {
+      noTerminateWhenError: true,
+      extraHeaders,
+    });
   }
 
   public sendEnterRoom(extraHeaders: string[]): void {

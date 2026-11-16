@@ -238,4 +238,18 @@ describe('SipConnector events', () => {
     expect(mainStreamProblemResolvedHandler).toHaveBeenCalledTimes(1);
     expect(mainStreamProblemResetHandler).toHaveBeenCalledTimes(1);
   });
+
+  it('should bridge auto-connect signaling events', () => {
+    const signalingUnstableHandler = jest.fn();
+    const signalingRestoredHandler = jest.fn();
+
+    sipConnector.events.on('auto-connect:signaling-unstable', signalingUnstableHandler);
+    sipConnector.events.on('auto-connect:signaling-restored', signalingRestoredHandler);
+
+    sipConnector.autoConnectorManager.events.trigger('signaling-unstable', { failCount: 2 });
+    sipConnector.autoConnectorManager.events.trigger('signaling-restored', {});
+
+    expect(signalingUnstableHandler).toHaveBeenCalledWith({ failCount: 2 });
+    expect(signalingRestoredHandler).toHaveBeenCalledWith({});
+  });
 });
