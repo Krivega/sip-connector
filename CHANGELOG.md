@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [31.3.6](https://github.com/Krivega/sip-connector/compare/v31.3.5...v31.3.6) (2026-11-16)
+
+### Bug Fixes
+
+- call ends on info transport error ([#86](https://github.com/Krivega/sip-connector/issues/86)) ([b6700b2](https://github.com/Krivega/sip-connector/commit/b6700b2740b0577feab09ab045557ac17ec00102))
+
 ### [31.3.5](https://github.com/Krivega/sip-connector/compare/v31.3.4...v31.3.5) (2026-11-13)
 
 ### [31.3.4](https://github.com/Krivega/sip-connector/compare/v31.3.3...v31.3.4) (2026-11-11)
