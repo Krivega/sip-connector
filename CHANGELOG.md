@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [31.3.7](https://github.com/Krivega/sip-connector/compare/v31.3.6...v31.3.7) (2026-11-17)
+
+### Bug Fixes
+
+- select inbound main and content statistics by the active remote tracks instead of codec receiver order ([26c5dea](https://github.com/Krivega/sip-connector/commit/26c5dea610ec24ab4a0ab4faa3cf7fef9d35ffca))
+
 ### 31.3.7 (2026-11-17)
 
 ### Bug Fixes
