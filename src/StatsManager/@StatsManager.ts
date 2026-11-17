@@ -34,7 +34,9 @@ class StatsManager extends EventEmitterProxy<TStatsPeerConnectionEventMap> {
     callManager: CallManager;
     apiManager: ApiManager;
   }) {
-    const statsPeerConnection = new StatsPeerConnection();
+    const statsPeerConnection = new StatsPeerConnection(() => {
+      return callManager.getRemoteStreams();
+    });
 
     super(statsPeerConnection.events);
     this.statsPeerConnection = statsPeerConnection;

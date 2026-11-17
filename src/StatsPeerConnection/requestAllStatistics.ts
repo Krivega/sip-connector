@@ -1,6 +1,9 @@
 import type { TSynchronizationSources } from './types';
 
-const requestAllStatistics = async (peerConnection: RTCPeerConnection) => {
+const requestAllStatistics = async (
+  peerConnection: RTCPeerConnection,
+  remoteStreams?: { mainStream?: MediaStream; contentedStream?: MediaStream },
+) => {
   const AUDIO = 'audio';
   const VIDEO = 'video';
 
@@ -20,6 +23,23 @@ const requestAllStatistics = async (peerConnection: RTCPeerConnection) => {
   const videoReceivers = receivers.filter((receiver) => {
     return receiver.track.kind === VIDEO;
   });
+  const findVideoReceiver = (stream?: MediaStream, excluded?: RTCRtpReceiver) => {
+    return videoReceivers.find((receiver) => {
+      return (
+        receiver !== excluded &&
+        (stream?.getVideoTracks().some((track) => {
+          return track.id === receiver.track.id;
+        }) ??
+          false)
+      );
+    });
+  };
+  const firstVideoReceiver = remoteStreams
+    ? findVideoReceiver(remoteStreams.mainStream)
+    : videoReceivers[0];
+  const secondVideoReceiver = remoteStreams
+    ? findVideoReceiver(remoteStreams.contentedStream, firstVideoReceiver)
+    : videoReceivers[1];
 
   const synchronizationSourceAudio = {
     trackIdentifier: audioReceiver?.track.id,
@@ -27,13 +47,13 @@ const requestAllStatistics = async (peerConnection: RTCPeerConnection) => {
   };
 
   const synchronizationSourceFirstVideo = {
-    trackIdentifier: videoReceivers[0]?.track.id,
-    item: videoReceivers[0]?.getSynchronizationSources()[0],
+    trackIdentifier: firstVideoReceiver?.track.id,
+    item: firstVideoReceiver?.getSynchronizationSources()[0],
   };
 
   const synchronizationSourceSecondVideo = {
-    trackIdentifier: videoReceivers[1]?.track.id,
-    item: videoReceivers[1]?.getSynchronizationSources()[0],
+    trackIdentifier: secondVideoReceiver?.track.id,
+    item: secondVideoReceiver?.getSynchronizationSources()[0],
   };
 
   const synchronizationSources: TSynchronizationSources = {
@@ -47,8 +67,8 @@ const requestAllStatistics = async (peerConnection: RTCPeerConnection) => {
     videoSenders[0]?.getStats() ?? Promise.resolve(undefined),
     videoSenders[1]?.getStats() ?? Promise.resolve(undefined),
     audioReceiver?.getStats() ?? Promise.resolve(undefined),
-    videoReceivers[0]?.getStats() ?? Promise.resolve(undefined),
-    videoReceivers[1]?.getStats() ?? Promise.resolve(undefined),
+    firstVideoReceiver?.getStats() ?? Promise.resolve(undefined),
+    secondVideoReceiver?.getStats() ?? Promise.resolve(undefined),
   ]).then((reports) => {
     const [
       audioSenderStats,

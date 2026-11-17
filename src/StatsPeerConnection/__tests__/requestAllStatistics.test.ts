@@ -237,3 +237,76 @@ describe('requestAllStatistics', () => {
     expect(result.videoSenderSecondStats).toBeUndefined();
   });
 });
+
+describe('semantic remote video streams', () => {
+  const stream = (...ids: string[]) => {
+    return {
+      getVideoTracks: () => {
+        return ids.map((id) => {
+          return { id };
+        });
+      },
+    } as unknown as MediaStream;
+  };
+  const fixture = () => {
+    const reports = Array.from({ length: 4 }, () => {
+      return {} as RTCStatsReport;
+    });
+    const receivers = reports.map((report, i) => {
+      return createReceiver({ kind: 'video', id: `video-${i}` }, { source: i }, report);
+    });
+    const peer = {
+      getSenders: () => {
+        return [];
+      },
+      getReceivers: () => {
+        return receivers;
+      },
+    } as unknown as RTCPeerConnection;
+
+    return { reports, peer };
+  };
+
+  it('selects main and content tracks among four codec receivers, including synchronization sources', async () => {
+    const { reports, peer } = fixture();
+    const result = await requestAllStatistics(peer, {
+      mainStream: stream('unmatched', 'video-2'),
+      contentedStream: stream('video-3'),
+    });
+
+    expect(result.videoReceiverFirstStats).toBe(reports[2]);
+    expect(result.videoReceiverSecondStats).toBe(reports[3]);
+    expect(result.synchronizationSources.video).toEqual({
+      trackIdentifier: 'video-2',
+      item: { source: 2 },
+    });
+    expect(result.synchronizationSources.secondVideo).toEqual({
+      trackIdentifier: 'video-3',
+      item: { source: 3 },
+    });
+  });
+  it('does not report a spare codec receiver when the content stream is absent or unmatched', async () => {
+    const { reports, peer } = fixture();
+
+    const results = await Promise.all(
+      [undefined, stream('missing')].map(async (contentedStream) => {
+        return requestAllStatistics(peer, { mainStream: stream('video-0'), contentedStream });
+      }),
+    );
+
+    for (const result of results) {
+      expect(result.videoReceiverFirstStats).toBe(reports[0]);
+      expect(result.videoReceiverSecondStats).toBeUndefined();
+      expect(result.synchronizationSources.secondVideo?.trackIdentifier).toBeUndefined();
+    }
+  });
+  it('does not count the main receiver twice if the streams overlap', async () => {
+    const { peer } = fixture();
+    const result = await requestAllStatistics(peer, {
+      mainStream: stream('video-0'),
+      contentedStream: stream('video-0'),
+    });
+
+    expect(result.videoReceiverSecondStats).toBeUndefined();
+  });
+});

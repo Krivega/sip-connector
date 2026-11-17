@@ -14,15 +14,20 @@ import type { TEventMap } from './events';
 const debug = resolveDebug('StatsPeerConnection');
 
 class StatsPeerConnection extends EventEmitterProxy<TEventMap> {
+  private readonly getRemoteStreams?: () => Parameters<typeof requestAllStatistics>[1];
+
   private readonly setTimeoutRequest: SetTimeoutRequest;
 
   private readonly requesterAllStatistics = new CancelableRequest<
     RTCPeerConnection,
     ReturnType<typeof requestAllStatistics>
-  >(requestAllStatistics);
+  >(async (peerConnection) => {
+    return requestAllStatistics(peerConnection, this.getRemoteStreams?.());
+  });
 
-  public constructor() {
+  public constructor(getRemoteStreams?: () => Parameters<typeof requestAllStatistics>[1]) {
     super(createEvents());
+    this.getRemoteStreams = getRemoteStreams;
 
     this.setTimeoutRequest = new SetTimeoutRequest();
   }

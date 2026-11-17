@@ -9,6 +9,17 @@
 | `stats:collected` | Генерируется при сборе статистики WebRTC                               | `{ outbound: TOutboundStats; inbound: TInboundStats }`                                                 |
 | `stats:stopped`   | Генерируется при остановке сбора статистики (рестарт или конец звонка) | `{ reason: 'recv-session-started' \| 'recv-session-ended' \| 'recv-quality-changed' \| 'call-ended' }` |
 
+В `SipConnector` входящие `video` и `secondVideo` соответствуют фактическим
+`mainStream` и `contentedStream`: приёмники выбираются по идентификатору дорожки,
+а не по позиции среди доступных кодеков. Статистика и данные синхронизации
+относятся к одному приёмнику. Для отсутствующего потока чужой приёмник не
+подставляется.
+
+При самостоятельном использовании `StatsPeerConnection` можно передать в
+конструктор необязательный getter `() => ({ mainStream, contentedStream })`.
+Он читается при каждом опросе. Вызов без getter сохраняет прежний выбор первых
+двух видеоприёмников.
+
 ## Структуры данных
 
 ### `TInboundStats`
