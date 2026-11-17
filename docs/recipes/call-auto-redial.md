@@ -40,6 +40,24 @@ await sipConnectorFacade.callToServer({
 
 SipConnector вооружает `CallReconnectManager` при `autoRedial: true` и начинает слушать сетевые обрывы согласно политике.
 
+### Шаг перед повторным звонком
+
+`beforeRedial` выполняется перед каждой попыткой редиала, до повторного `INVITE`. Например,
+приложение просит сервер отключить прежнее подключение участника:
+
+```typescript
+await sipConnectorFacade.callToServer({
+  conference,
+  mediaStream,
+  beforeRedial: async () => {
+    await requestDisconnectSelf();
+  },
+});
+```
+
+Ошибка шага считается неуспешной попыткой по общей политике (`canRetryOnError`, `maxAttempts`).
+Если попытку отменили во время шага (`hangUp`, `disarm`, новый `arm`), `INVITE` не отправляется.
+
 ## Включение напрямую через SipConnector
 
 Если вы используете низкоуровневый `sipConnector.call`:

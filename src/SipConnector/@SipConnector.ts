@@ -33,7 +33,7 @@ import { createEvents } from './events';
 
 import type { IAutoConnectorOptions } from '@/AutoConnectorManager';
 import type { TGetUri, TRecvQuality } from '@/CallManager';
-import type { ICallReconnectOptions } from '@/CallReconnectManager';
+import type { ICallReconnectOptions, TCallRedialParameters } from '@/CallReconnectManager';
 import type {
   TConnectAndCallSessionParameters,
   TConnectAndCallSessionResult,
@@ -401,7 +401,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
 
   public call = async (
     params: Omit<Parameters<CallManager['startCall']>[2], 'isPresentationCall'>,
-    options: { autoRedial?: boolean } = {},
+    options: Pick<TCallRedialParameters, 'beforeRedial'> & { autoRedial?: boolean } = {},
   ) => {
     const { mediaStream, onAddedTransceiver, sendEncodings, ...rest } = params;
     const resolvedParams = {
@@ -416,6 +416,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
         getCallParameters: async () => {
           return resolvedParams;
         },
+        beforeRedial: options.beforeRedial,
       });
     }
 

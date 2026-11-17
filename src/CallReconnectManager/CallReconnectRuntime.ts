@@ -78,6 +78,8 @@ export class CallReconnectRuntime {
 
   private unsubscribeConnectionWait?: () => void;
 
+  private cancellationsCount = 0;
+
   public constructor(parameters: TRuntimeParameters) {
     this.resolvedOptions = resolveOptions(parameters.options);
     this.callManager = parameters.callManager;
@@ -87,7 +89,18 @@ export class CallReconnectRuntime {
     this.delayRequester = new DelayRequester(this.resolvedOptions.baseBackoffMs);
     this.performCall = new CancelableRequest<TCallRedialParameters, Promise<void>>(
       async (callParameters) => {
+        const { cancellationsCount } = this;
+
+        await callParameters.beforeRedial?.();
+
         const snapshot = await callParameters.getCallParameters();
+
+        // Отмена прерывает только ожидание результата, поэтому шаги до `startCall` проверяем явно.
+        if (cancellationsCount !== this.cancellationsCount) {
+          debug('performCall: attempt cancelled before startCall');
+
+          return;
+        }
 
         await this.callManager.startCall(
           this.connectionManager.getUaProtected(),
@@ -198,6 +211,7 @@ export class CallReconnectRuntime {
   public cancelAll(): void {
     debug('cancelAll');
 
+    this.cancellationsCount += 1;
     this.delayRequester.cancelRequest();
     this.performCall.cancelRequest();
     this.unsubscribeConnectionWait?.();

@@ -11,16 +11,16 @@
 
 ## Состояния
 
-| Состояние          | Назначение                                                                                          |
-| ------------------ | --------------------------------------------------------------------------------------------------- |
-| `idle`             | Не армирован, ждёт `RECONNECT.ARM`.                                                                 |
-| `armed`            | Активен, слушает `CALL.FAILED` (сетевые причины) и `CALL.ENDED` (локальный/удалённый конец звонка). |
-| `evaluating`       | Транзитное состояние: лимит попыток → сигнализация → backoff.                                       |
-| `backoff`          | Таймаут перед попыткой (`DelayRequester`). Переход в `attempting` при завершении задержки.          |
-| `waitingSignaling` | Ожидание готовности UA (`connected`/`registered`) с таймаутом.                                      |
-| `attempting`       | `invoke: performAttempt` — реальный `startCall` внутри `CancelableRequest`.                         |
-| `limitReached`     | Исчерпан `maxAttempts`; выход только через `RECONNECT.FORCE` или `RECONNECT.DISARM`.                |
-| `errorTerminal`    | Нефатальные ветки ретрая (`canRetryOnError = false` или timeout сигнализации).                      |
+| Состояние          | Назначение                                                                                                             |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `idle`             | Не армирован, ждёт `RECONNECT.ARM`.                                                                                    |
+| `armed`            | Активен, слушает `CALL.FAILED` (сетевые причины) и `CALL.ENDED` (локальный/удалённый конец звонка).                    |
+| `evaluating`       | Транзитное состояние: лимит попыток → сигнализация → backoff.                                                          |
+| `backoff`          | Таймаут перед попыткой (`DelayRequester`). Переход в `attempting` при завершении задержки.                             |
+| `waitingSignaling` | Ожидание готовности UA (`connected`/`registered`) с таймаутом.                                                         |
+| `attempting`       | `invoke: performAttempt` — `beforeRedial` (если задан) → `getCallParameters` → `startCall` внутри `CancelableRequest`. |
+| `limitReached`     | Исчерпан `maxAttempts`; выход только через `RECONNECT.FORCE` или `RECONNECT.DISARM`.                                   |
+| `errorTerminal`    | Нефатальные ветки ретрая (`canRetryOnError = false` или timeout сигнализации).                                         |
 
 ## Контекст и инварианты
 

@@ -1,5 +1,6 @@
 import { C as JsSIP_C } from '@krivega/jssip';
 
+import flushPromises from '@/__fixtures__/flushPromises';
 import { FakeConnectionManager } from '../__fixtures__';
 import { CallReconnectRuntime } from '../CallReconnectRuntime';
 
@@ -235,6 +236,66 @@ describe('CallReconnectRuntime', () => {
 
     expect(parameters.getCallParameters).toHaveBeenCalledTimes(1);
     expect(callManager.startCall).toHaveBeenCalledTimes(1);
+  });
+
+  it('performAttempt runs beforeRedial before startCall', async () => {
+    const callManager = createCallManagerMock();
+    const { runtime } = createRuntime({
+      callManager,
+      connectionManager: new FakeConnectionManager(),
+    });
+    const beforeRedial = jest.fn(async () => {});
+
+    await runtime.performAttempt({ ...makeRedialParameters(), beforeRedial });
+
+    expect(beforeRedial).toHaveBeenCalledTimes(1);
+    expect(beforeRedial.mock.invocationCallOrder[0]).toBeLessThan(
+      jest.mocked(callManager.startCall).mock.invocationCallOrder[0],
+    );
+  });
+
+  it('performAttempt rejects without startCall when beforeRedial fails', async () => {
+    const callManager = createCallManagerMock();
+    const { runtime } = createRuntime({
+      callManager,
+      connectionManager: new FakeConnectionManager(),
+    });
+    const error = new Error('before redial failed');
+
+    await expect(
+      runtime.performAttempt({
+        ...makeRedialParameters(),
+        beforeRedial: async () => {
+          throw error;
+        },
+      }),
+    ).rejects.toBe(error);
+    expect(callManager.startCall).not.toHaveBeenCalled();
+  });
+
+  it('performAttempt does not startCall when cancelled during beforeRedial', async () => {
+    jest.useRealTimers();
+
+    const callManager = createCallManagerMock();
+    const { runtime } = createRuntime({
+      callManager,
+      connectionManager: new FakeConnectionManager(),
+    });
+    let finishBeforeRedial = () => {};
+    const beforeRedial = async () => {
+      return new Promise<void>((resolve) => {
+        finishBeforeRedial = resolve;
+      });
+    };
+
+    const attempt = runtime.performAttempt({ ...makeRedialParameters(), beforeRedial });
+
+    runtime.cancelAll();
+    finishBeforeRedial();
+
+    await expect(attempt).rejects.toMatchObject({ name: 'Canceled' });
+    await flushPromises();
+    expect(callManager.startCall).not.toHaveBeenCalled();
   });
 
   it('delayBeforeAttempt awaits requested delay', async () => {

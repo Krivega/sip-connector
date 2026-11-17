@@ -11,6 +11,11 @@ export type TCallRedialParameters = {
   getCallParameters: () => Promise<
     Omit<Parameters<CallManager['startCall']>[2], 'isPresentationCall'>
   >;
+  /**
+   * Шаг перед каждой попыткой, до повторного `startCall`. Ошибка шага — неуспешная попытка
+   * по общей политике повтора; отмена попытки во время шага не отправляет `INVITE`.
+   */
+  beforeRedial?: () => Promise<void>;
 };
 
 /**

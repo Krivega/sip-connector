@@ -22,16 +22,16 @@
 
 ## Публичный API
 
-| Метод/поле               | Назначение                                                                                            |
-| ------------------------ | ----------------------------------------------------------------------------------------------------- |
-| `arm(parameters)`        | Активирует наблюдение и запоминает `getCallParameters`. В ролях spectator ранний выход с `cancelled`. |
-| `disarm(reason?)`        | Отменяет in-flight (delay + startCall), уводит машину в `idle`, эмитит `disarmed`/`cancelled`.        |
-| `forceReconnect()`       | Немедленный новый цикл из `limitReached`/`errorTerminal` (сбрасывает счётчик попыток).                |
-| `cancelCurrentAttempt()` | Отмена in-flight без `disarm` — машина возвращается в `armed`.                                        |
-| `stop()`                 | Останавливает машину и отписывается от менеджеров-источников событий.                                 |
-| `isReconnecting`         | `true`, если state ≠ `idle`.                                                                          |
-| `state`                  | Текущее значение `ECallReconnectStatus`.                                                              |
-| `stateMachine`           | Публичный snapshot-ориентированный доступ к машине (используется в `SessionManager.getSnapshot()`).   |
+| Метод/поле               | Назначение                                                                                                                                                                                                       |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `arm(parameters)`        | Активирует наблюдение и запоминает `getCallParameters` и необязательный `beforeRedial`. Попытка — `beforeRedial` (если задан) → `getCallParameters` → `startCall`. В ролях spectator ранний выход с `cancelled`. |
+| `disarm(reason?)`        | Отменяет in-flight (delay + startCall), уводит машину в `idle`, эмитит `disarmed`/`cancelled`.                                                                                                                   |
+| `forceReconnect()`       | Немедленный новый цикл из `limitReached`/`errorTerminal` (сбрасывает счётчик попыток).                                                                                                                           |
+| `cancelCurrentAttempt()` | Отмена in-flight без `disarm` — машина возвращается в `armed`.                                                                                                                                                   |
+| `stop()`                 | Останавливает машину и отписывается от менеджеров-источников событий.                                                                                                                                            |
+| `isReconnecting`         | `true`, если state ≠ `idle`.                                                                                                                                                                                     |
+| `state`                  | Текущее значение `ECallReconnectStatus`.                                                                                                                                                                         |
+| `stateMachine`           | Публичный snapshot-ориентированный доступ к машине (используется в `SessionManager.getSnapshot()`).                                                                                                              |
 
 ## Структура
 
@@ -48,16 +48,16 @@
 
 ## Опции конструктора (`ICallReconnectOptions`)
 
-| Поле                      | По умолчанию | Описание                                                                       |
-| ------------------------- | ------------ | ------------------------------------------------------------------------------ |
-| `maxAttempts`             | `5`          | Максимум попыток до `limit-reached`.                                           |
-| `baseBackoffMs`           | `1000`       | Базовая задержка перед первой попыткой.                                        |
-| `maxBackoffMs`            | `30_000`     | Верхняя граница задержки.                                                      |
-| `backoffFactor`           | `2`          | Экспонента роста задержки.                                                     |
-| `jitter`                  | `'equal'`    | `none` \| `full` \| `equal` — алгоритм размытия задержек.                      |
-| `waitSignalingTimeoutMs`  | `20_000`     | Ждём до этого значения готовности сигнализации в состоянии `waitingSignaling`. |
-| `isNetworkFailure(event)` | default      | Кастомный детектор сетевого сбоя (default покрывает основные JsSIP-коды).      |
-| `canRetryOnError(error)`  | `() => true` | Политика «ретраить ли ошибку `startCall`» (non-retry → `errorTerminal`).       |
+| Поле                      | По умолчанию | Описание                                                                                              |
+| ------------------------- | ------------ | ----------------------------------------------------------------------------------------------------- |
+| `maxAttempts`             | `5`          | Максимум попыток до `limit-reached`.                                                                  |
+| `baseBackoffMs`           | `1000`       | Базовая задержка перед первой попыткой.                                                               |
+| `maxBackoffMs`            | `30_000`     | Верхняя граница задержки.                                                                             |
+| `backoffFactor`           | `2`          | Экспонента роста задержки.                                                                            |
+| `jitter`                  | `'equal'`    | `none` \| `full` \| `equal` — алгоритм размытия задержек.                                             |
+| `waitSignalingTimeoutMs`  | `20_000`     | Ждём до этого значения готовности сигнализации в состоянии `waitingSignaling`.                        |
+| `isNetworkFailure(event)` | default      | Кастомный детектор сетевого сбоя (default покрывает основные JsSIP-коды).                             |
+| `canRetryOnError(error)`  | `() => true` | Политика «ретраить ли ошибку попытки» — `beforeRedial` или `startCall` (non-retry → `errorTerminal`). |
 
 ## Связанная state machine
 

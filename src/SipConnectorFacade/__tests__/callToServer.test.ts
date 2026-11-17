@@ -6,13 +6,13 @@ import parseObject from '@/tools/__tests-utils__/parseObject';
 import SipConnectorFacade from '../@SipConnectorFacade';
 
 describe('callToServer', () => {
+  let sipConnector: ReturnType<typeof doMockSipConnector>;
   let sipConnectorFacade: SipConnectorFacade;
 
   beforeEach(() => {
     jest.resetModules();
 
-    const sipConnector = doMockSipConnector();
-
+    sipConnector = doMockSipConnector();
     sipConnectorFacade = new SipConnectorFacade(sipConnector);
   });
 
@@ -45,5 +45,15 @@ describe('callToServer', () => {
         expect(dataCallPurgatory.onEnterPurgatory).toHaveBeenCalledTimes(1);
         expect(dataCallPurgatory.onEnterConference).toHaveBeenCalledTimes(0);
       });
+  });
+
+  it('should pass beforeRedial to auto redial of the call', async () => {
+    const beforeRedial = jest.fn(async () => {});
+    const callSpy = jest.spyOn(sipConnector, 'call');
+
+    await sipConnectorFacade.connectToServer(dataForConnectionWithoutAuthorization);
+    await sipConnectorFacade.callToServer({ ...dataCall, beforeRedial });
+
+    expect(callSpy).toHaveBeenCalledWith(expect.anything(), { autoRedial: true, beforeRedial });
   });
 });

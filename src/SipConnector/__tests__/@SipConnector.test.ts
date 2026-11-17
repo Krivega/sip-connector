@@ -2001,6 +2001,25 @@ describe('SipConnector', () => {
       expect(resolved).toBeDefined();
     });
 
+    it('call({ autoRedial: true, beforeRedial }) передаёт шаг перед перезвоном в arm', async () => {
+      const armSpy = jest.spyOn(sipConnector.callReconnectManager, 'arm').mockImplementation();
+      const beforeRedial = jest.fn(async () => {});
+
+      jest.spyOn(sipConnector.callManager, 'startCall').mockImplementation(async () => {
+        return {} as never;
+      });
+      jest
+        .spyOn(sipConnector.connectionManager, 'getUaProtected')
+        .mockReturnValue({} as unknown as UA);
+
+      await sipConnector.call({ mediaStream: new MediaStream(), number: '100' } as never, {
+        autoRedial: true,
+        beforeRedial,
+      });
+
+      expect(armSpy).toHaveBeenCalledWith(expect.objectContaining({ beforeRedial }));
+    });
+
     it('hangUp() disarmит callReconnectManager c причиной "local-hangup"', async () => {
       const disarmSpy = jest
         .spyOn(sipConnector.callReconnectManager, 'disarm')
