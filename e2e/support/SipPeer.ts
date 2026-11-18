@@ -19,6 +19,11 @@ type TDialog = {
 
 type TSilentMethod = 'INFO' | 'OPTIONS';
 
+type TConnection = {
+  isHalfOpen: boolean;
+  messages: string[];
+};
+
 type TRequest = TDialog & {
   method: string;
   cseq: number;
@@ -124,6 +129,8 @@ export class SipPeer {
 
   private rejectedConnectionsCount = 0;
 
+  private readonly connections: TConnection[] = [];
+
   public constructor(page: Page) {
     this.page = page;
   }
@@ -146,8 +153,17 @@ export class SipPeer {
         return;
       }
 
+      const connection: TConnection = { isHalfOpen: false, messages: [] };
+
+      this.connections.push(connection);
       this.socket = socket;
       socket.onMessage(async (message) => {
+        // Полуоткрытое соединение: сообщения клиента до сервера не доходят.
+        if (connection.isHalfOpen) {
+          return;
+        }
+
+        connection.messages.push(message.toString());
         await this.handleMessage(message.toString());
       });
     });
@@ -260,6 +276,30 @@ export class SipPeer {
   public async dropConnection(): Promise<void> {
     this.isAcceptingConnections = false;
     await this.socket?.close({ code: 1011, reason: 'sip-peer: connection lost' });
+  }
+
+  /**
+   * Текущий WebSocket становится полуоткрытым: у клиента он открыт, но сервер не получает
+   * сообщения по нему и ничего не отвечает. Новые подключения клиента обслуживаются штатно.
+   */
+  public makeConnectionHalfOpen(): void {
+    const connection = this.connections.at(-1);
+
+    if (connection === undefined) {
+      throw new Error('SIP WebSocket ещё не открыт');
+    }
+
+    connection.isHalfOpen = true;
+  }
+
+  public getConnectionsCount(): number {
+    return this.connections.length;
+  }
+
+  public countLatestConnectionRequests(method: string): number {
+    return (this.connections.at(-1)?.messages ?? []).filter((message) => {
+      return message.startsWith(`${method} `);
+    }).length;
   }
 
   public getRejectedConnectionsCount(): number {

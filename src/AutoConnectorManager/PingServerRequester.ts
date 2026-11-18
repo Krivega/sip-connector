@@ -79,7 +79,7 @@ class PingServerRequester {
           return;
         }
 
-        // Reconnect перезапускает UA и обрывает звонок, поэтому во время звонка ping остаётся только keepalive.
+        // Reconnect перезапускает UA и обрывает звонок, поэтому во время звонка переоткрывается только транспорт.
         if (this.callManager.isCallActive) {
           debug('skip reporting fail request: call is active');
 
@@ -87,6 +87,8 @@ class PingServerRequester {
             this.notifySignalingRestored = onSignalingRestored;
             onSignalingUnstable({ failCount: this.failRequestsCount });
           }
+
+          this.connectionManager.reopenTransport();
 
           return;
         }

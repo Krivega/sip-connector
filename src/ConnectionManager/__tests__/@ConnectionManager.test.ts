@@ -4,6 +4,7 @@ import delayPromise from '@/__fixtures__/delayPromise';
 import jssip from '@/__fixtures__/jssip.mock';
 import UAMock, { PASSWORD_CORRECT } from '@/__fixtures__/UA.mock';
 import ConnectionManager from '../@ConnectionManager';
+import { EConnectionStatus } from '../ConnectionStateMachine';
 
 import type { TJsSIP } from '@/types';
 
@@ -304,6 +305,82 @@ describe('ConnectionManager', () => {
       const result = await connectionManager.checkTelephony(telephonyParams);
 
       expect(result).toBeUndefined();
+    });
+  });
+
+  describe('reopenTransport', () => {
+    it('не должен падать без UA', () => {
+      expect(() => {
+        connectionManager.reopenTransport();
+      }).not.toThrow();
+    });
+
+    it('должен переоткрывать подключённый транспорт без остановки UA и вернуть состояние в ESTABLISHED', async () => {
+      await connectionManager.connect(parameters);
+
+      const ua = connectionManager.ua as unknown as UAMock;
+      const { transport } = ua;
+      const stopSpy = jest.spyOn(ua, 'stop');
+      const states: string[] = [];
+
+      connectionManager.stateMachine.onStateChange((state) => {
+        states.push(state);
+      });
+
+      connectionManager.reopenTransport();
+
+      expect(transport.disconnect).toHaveBeenCalledTimes(1);
+      expect(transport.connect).toHaveBeenCalledTimes(1);
+      expect(transport.disconnect.mock.invocationCallOrder[0]).toBeLessThan(
+        transport.connect.mock.invocationCallOrder[0],
+      );
+      expect(stopSpy).not.toHaveBeenCalled();
+      expect(states).toEqual([
+        EConnectionStatus.DISCONNECTED,
+        EConnectionStatus.CONNECTING,
+        EConnectionStatus.ESTABLISHED,
+      ]);
+    });
+
+    it('не должен трогать транспорт, который не считает себя подключённым', async () => {
+      await connectionManager.connect(parameters);
+
+      const ua = connectionManager.ua as unknown as UAMock;
+      const { transport } = ua;
+
+      jest.spyOn(ua, 'isConnected').mockReturnValue(false);
+
+      connectionManager.reopenTransport();
+
+      expect(transport.disconnect).not.toHaveBeenCalled();
+      expect(transport.connect).not.toHaveBeenCalled();
+    });
+
+    it('не должен падать, если у UA нет транспорта', async () => {
+      await connectionManager.connect(parameters);
+
+      jest
+        .spyOn(connectionManager.ua as unknown as UAMock, 'transport', 'get')
+        .mockReturnValue(undefined as never);
+
+      expect(() => {
+        connectionManager.reopenTransport();
+      }).not.toThrow();
+    });
+
+    it('не должен пробрасывать ошибку транспорта', async () => {
+      await connectionManager.connect(parameters);
+
+      const { transport } = connectionManager.ua as unknown as UAMock;
+
+      transport.disconnect.mockImplementationOnce(() => {
+        throw new Error('disconnect failed');
+      });
+
+      expect(() => {
+        connectionManager.reopenTransport();
+      }).not.toThrow();
+      expect(transport.connect).not.toHaveBeenCalled();
     });
   });
 

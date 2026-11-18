@@ -1,4 +1,5 @@
 import flushPromises from '@/__fixtures__/flushPromises';
+import { EConnectionStatus } from '@/ConnectionManager';
 import { doMockSipConnector } from '@/doMock';
 import AutoConnectorManager from '../@AutoConnectorManager';
 import AttemptsState from '../AttemptsState';
@@ -6,6 +7,7 @@ import CheckTelephonyRequester from '../CheckTelephonyRequester';
 import PingServerRequester from '../PingServerRequester';
 import RegistrationFailedOutOfCallSubscriber from '../RegistrationFailedOutOfCallSubscriber';
 
+import type UAMock from '@/__fixtures__/UA.mock';
 import type { SipConnector } from '@/SipConnector';
 import type { IAutoConnectorOptions, TParametersAutoConnect } from '../types';
 
@@ -254,6 +256,8 @@ describe('AutoConnectorManager - Triggers', () => {
     });
 
     it('не разрывает соединение, когда ping не отвечает во время активного звонка', async () => {
+      const ua = sipConnector.connectionManager.getUaProtected() as unknown as UAMock;
+
       startCall();
 
       failFirstPing();
@@ -263,6 +267,10 @@ describe('AutoConnectorManager - Triggers', () => {
 
       expect(disconnectSpy).not.toHaveBeenCalled();
       expect(connectSpy).not.toHaveBeenCalled();
+      expect(ua.transport.disconnect).toHaveBeenCalledTimes(3);
+      expect(ua.transport.connect).toHaveBeenCalledTimes(3);
+      expect(ua.stop).not.toHaveBeenCalled();
+      expect(sipConnector.connectionManager.connectionState).toBe(EConnectionStatus.ESTABLISHED);
       expect(pingSpy).toHaveBeenCalledTimes(4);
       expect(signalingUnstableHandler).toHaveBeenCalledTimes(1);
       expect(signalingUnstableHandler).toHaveBeenCalledWith({ failCount: 2 });

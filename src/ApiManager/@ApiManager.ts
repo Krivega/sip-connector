@@ -200,6 +200,7 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
     const rtcSession = this.getEstablishedRTCSessionProtected();
 
     await rtcSession.sendInfo(EContentTypeSent.SHARE_STATE, undefined, {
+      noTerminateWhenError: true,
       extraHeaders: [EHeader.AVAILABLE_CONTENTED_STREAM],
     });
   }
@@ -208,6 +209,7 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
     const rtcSession = this.getEstablishedRTCSessionProtected();
 
     await rtcSession.sendInfo(EContentTypeSent.SHARE_STATE, undefined, {
+      noTerminateWhenError: true,
       extraHeaders: [EHeader.ACK_PERMISSION_TO_START_PRESENTATION],
     });
   }
@@ -216,6 +218,7 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
     const rtcSession = this.getEstablishedRTCSessionProtected();
 
     await rtcSession.sendInfo(EContentTypeSent.SHARE_STATE, undefined, {
+      noTerminateWhenError: true,
       extraHeaders: [EHeader.STOPPED_CLIENT_PRESENTATION],
     });
   }
@@ -224,6 +227,7 @@ class ApiManager extends EventEmitterProxy<TEventMap> {
     const rtcSession = this.getEstablishedRTCSessionProtected();
 
     await rtcSession.sendInfo(EContentTypeSent.SHARE_STATE, undefined, {
+      noTerminateWhenError: true,
       extraHeaders: [EHeader.NOT_AVAILABLE_CONTENTED_STREAM],
     });
   }

@@ -15,6 +15,10 @@ const TWO_SILENT_PINGS_TIMEOUT_MS = 45_000;
 const AFTER_SECOND_SILENT_PING_WAIT_MS = 13_000;
 /** Таймаут ping, отправленного до возобновления ответов, и следующий успешный ping. */
 const PING_RESTORE_TIMEOUT_MS = 30_000;
+/** Ping раз в 15 с с таймаутом 10 с: второй провал не позже T + 15 + 10 + 15 + 10 секунд, плюс запас. */
+const SIGNALING_UNSTABLE_TIMEOUT_MS = 60_000;
+/** Переоткрытие транспорта начинается сразу после signaling-unstable. */
+const TRANSPORT_REOPEN_TIMEOUT_MS = 10_000;
 
 type TDisconnectEvents = Awaited<ReturnType<typeof observeDisconnectEvents>>;
 
@@ -131,7 +135,7 @@ test.describe('Активный звонок при потере SIP WebSocket',
     await statusDashboard.waitForDiagramStatus('system', 'system:callActive');
   });
 
-  test('не переподключается и не завершает звонок, когда сервер не отвечает на периодический ping', async ({
+  test('не завершает звонок, когда сервер не отвечает на периодический ping', async ({
     page,
     sipPeer,
     statusDashboard,
@@ -153,7 +157,6 @@ test.describe('Активный звонок при потере SIP WebSocket',
     await page.waitForTimeout(AFTER_SECOND_SILENT_PING_WAIT_MS);
 
     await expectCallAlive(sipPeer);
-    expect(sipPeer.countReceivedRequests('REGISTER')).toBe(1);
     expect(await readEvents()).toMatchObject({ signalingUnstable: 1, signalingRestored: 0 });
     await statusDashboard.waitForDiagramStatus('system', 'system:callActive');
 
@@ -163,6 +166,44 @@ test.describe('Активный звонок при потере SIP WebSocket',
       .poll(readEvents, { timeout: PING_RESTORE_TIMEOUT_MS })
       .toMatchObject({ signalingUnstable: 1, signalingRestored: 1 });
     await expectCallAlive(sipPeer);
-    expect(sipPeer.countReceivedRequests('REGISTER')).toBe(1);
+  });
+
+  test('переоткрывает полуоткрытый WebSocket без завершения звонка, когда ping не проходит', async ({
+    connectPage,
+    sipPeer,
+    statusDashboard,
+  }) => {
+    test.setTimeout(150_000);
+
+    const connectionsBeforeSilence = sipPeer.getConnectionsCount();
+
+    sipPeer.makeConnectionHalfOpen();
+
+    await expect
+      .poll(readEvents, { timeout: SIGNALING_UNSTABLE_TIMEOUT_MS })
+      .toMatchObject({ signalingUnstable: 1 });
+    await expect
+      .poll(
+        () => {
+          return sipPeer.getConnectionsCount();
+        },
+        { timeout: TRANSPORT_REOPEN_TIMEOUT_MS },
+      )
+      .toBeGreaterThan(connectionsBeforeSilence);
+    await expect
+      .poll(readEvents, { timeout: PING_RESTORE_TIMEOUT_MS })
+      .toMatchObject({ signalingUnstable: 1, signalingRestored: 1 });
+    expect(sipPeer.countLatestConnectionRequests('OPTIONS')).toBeGreaterThan(0);
+    await expectCallAlive(sipPeer);
+
+    await connectPage.visibleMicActionButton.click();
+    await expect
+      .poll(() => {
+        return sipPeer.countLatestConnectionRequests('INFO');
+      })
+      .toBeGreaterThan(0);
+
+    await expectCallAlive(sipPeer);
+    await statusDashboard.waitForDiagramStatus('system', 'system:callActive');
   });
 });

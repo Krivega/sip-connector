@@ -163,6 +163,18 @@ class UA extends EventEmitter implements IUA {
 
   private isConnectedInner?: boolean;
 
+  private readonly transportInner = {
+    disconnect: createJestMock(() => {
+      this.isConnectedInner = false;
+      this.trigger('disconnected', { error: false, socket });
+    }),
+    connect: createJestMock(() => {
+      this.trigger('connecting', { socket, attempts: 0 });
+      this.isConnectedInner = true;
+      this.trigger('connected', { socket });
+    }),
+  };
+
   public constructor(_config: UAConfigurationParams) {
     super();
     this.events = new Events<readonly (keyof UAEventMap)[]>(UA_JSSIP_EVENT_NAMES);
@@ -194,9 +206,8 @@ class UA extends EventEmitter implements IUA {
     throw new Error('Method not implemented.');
   }
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
-  public get transport(): unknown {
-    throw new Error('Method not implemented.');
+  public get transport() {
+    return this.transportInner;
   }
 
   public static C(): UAStatus {

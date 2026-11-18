@@ -321,6 +321,7 @@ describe('ApiManager (core)', () => {
 
       await apiManager.sendStoppedPresentation();
       expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeReceived.SHARE_STATE, undefined, {
+        noTerminateWhenError: true,
         extraHeaders: [EHeader.STOPPED_CLIENT_PRESENTATION],
       });
     });
@@ -330,6 +331,7 @@ describe('ApiManager (core)', () => {
 
       await apiManager.sendAvailableContentedStream();
       expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeReceived.SHARE_STATE, undefined, {
+        noTerminateWhenError: true,
         extraHeaders: [EHeader.AVAILABLE_CONTENTED_STREAM],
       });
     });
@@ -339,6 +341,7 @@ describe('ApiManager (core)', () => {
 
       await apiManager.sendNotAvailableContentedStream();
       expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeReceived.SHARE_STATE, undefined, {
+        noTerminateWhenError: true,
         extraHeaders: [EHeader.NOT_AVAILABLE_CONTENTED_STREAM],
       });
     });
@@ -348,6 +351,7 @@ describe('ApiManager (core)', () => {
 
       await apiManager.askPermissionToStartPresentation();
       expect(sendInfoSpy).toHaveBeenCalledWith(EContentTypeReceived.SHARE_STATE, undefined, {
+        noTerminateWhenError: true,
         extraHeaders: [EHeader.ACK_PERMISSION_TO_START_PRESENTATION],
       });
     });

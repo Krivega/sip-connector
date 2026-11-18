@@ -122,9 +122,14 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
 
       try {
         if (rtcSession !== undefined) {
-          await beforeStopPresentation();
+          // Ошибка INFO не должна оставлять трек в отправке, поэтому локальная остановка выполняется всегда
+          try {
+            await beforeStopPresentation();
+          } finally {
+            await this.lifecycle.executeStop(videoTrack);
+          }
 
-          return await this.lifecycle.executeStop(videoTrack);
+          return videoTrack;
         }
 
         this.lifecycle.emitEndedOnly(videoTrack);

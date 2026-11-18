@@ -263,8 +263,11 @@ export class AutoConnectorRuntime {
      * трафик по WebSocket и проверяет живость сигнализации. При «полуживом» WebSocket (OPTIONS без ответа)
      * JsSIP не всегда восстанавливает транспорт, поэтому после порога неуспешных ping инициируется полный
      * reconnect. Во время активного звонка reconnect не запрашивается: он перезапускает UA и обрывает звонок.
+     * Вместо него каждый неуспешный ping сверх порога переоткрывает только WebSocket
+     * (`connectionManager.reopenTransport`), если транспорт считает себя подключённым; неподключённый
+     * транспорт JsSIP восстанавливает сам. Звонок при этом не завершается.
      * Если порог достигнут в звонке, reconnect запросит первый неуспешный ping после его завершения.
-     * В звонке вместо reconnect эмитятся `signaling-unstable` и затем `signaling-restored`.
+     * В звонке эмитятся `signaling-unstable` и затем, по первому успешному ping, `signaling-restored`.
      */
     this.pingServerRequester.start({
       onFailRequest: () => {
