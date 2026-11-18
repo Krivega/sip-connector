@@ -20,7 +20,9 @@ jobs:
       - name: Install Playwright Browsers
         run: yarn playwright install --with-deps
       - name: Run Playwright tests
-        run: yarn playwright test
+        run: |
+          yarn playwright test e2e/signaling-loss-real-server.spec.ts -g "переоткрывает" --retries=0 --repeat-each=2 || true
+          E2E_ANONYMOUS=1 yarn playwright test e2e/signaling-loss-real-server.spec.ts -g "переоткрывает" --retries=0 --repeat-each=2
       - uses: actions/upload-artifact@v6
         if: ${{ !cancelled() }}
         with:

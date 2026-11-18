@@ -18,6 +18,8 @@ const PING_RESTORE_TIMEOUT_MS = 30_000;
 /** JsSIP переподключает транспорт с интервалом 2–6 с. */
 const TRANSPORT_RECONNECT_ATTEMPT_TIMEOUT_MS = 15_000;
 const REGISTERED_TIMEOUT_MS = 20_000;
+// Эксперимент: звонок без регистрации, чтобы проверить, рвёт ли сервер звонок из-за повторного REGISTER.
+const IS_ANONYMOUS = process.env.E2E_ANONYMOUS === '1';
 const SIP_RESPONSE_TIMEOUT_MS = 10_000;
 const PRESENTATION_SETTLE_TIMEOUT_MS = 15_000;
 /** Время, за которое сервер успел бы завершить звонок после смены соединения. */
@@ -263,6 +265,11 @@ test.describe('Потеря SIP WebSocket в звонке на реальном 
     presentation = undefined;
     events = await observeDisconnectEvents(page);
     await connectPage.fillForm(connectionFormConfig);
+
+    if (IS_ANONYMOUS) {
+      await page.locator('#authEnabled').setChecked(false);
+    }
+
     await page.locator('#autoRedialEnabled').uncheck();
     await connectPage.connect({ timeout: CONNECT_TIMEOUT_MS });
     await statusDashboard.waitForDiagramStatus('connection', 'connection:established', {
@@ -294,14 +301,17 @@ test.describe('Потеря SIP WebSocket в звонке на реальном 
     const { isEstablished } = await readEvents();
 
     if (isEstablished) {
-      await expect
-        .poll(
-          () => {
-            return sipProxy.isLatestConnectionRegistered();
-          },
-          { timeout: REGISTERED_TIMEOUT_MS },
-        )
-        .toBe(true);
+      if (!IS_ANONYMOUS) {
+        await expect
+          .poll(
+            () => {
+              return sipProxy.isLatestConnectionRegistered();
+            },
+            { timeout: REGISTERED_TIMEOUT_MS },
+          )
+          .toBe(true);
+      }
+
       await connectPage.hangupOnly();
     }
 
@@ -320,7 +330,7 @@ test.describe('Потеря SIP WebSocket в звонке на реальном 
     await events.dispose();
   });
 
-  test('переоткрывает полуоткрытый WebSocket, сервер продолжает звонок по новому соединению', async ({
+  test(`переоткрывает полуоткрытый WebSocket, сервер продолжает звонок по новому соединению${IS_ANONYMOUS ? ' (без регистрации)' : ''}`, async ({
     page,
     connectPage,
     sipProxy,
@@ -351,7 +361,11 @@ test.describe('Потеря SIP WebSocket в звонке на реальном 
       .poll(readEvents, { timeout: PING_RESTORE_TIMEOUT_MS })
       .toMatchObject({ signalingUnstable: 1, signalingRestored: 1 });
     await report(`signaling-restored after ${sipProxy.getElapsedMs() - frozenAt}ms`, sipProxy);
-    expect(sipProxy.getServerResponses(reopenedIndex, 'REGISTER')).toContain(200);
+
+    if (!IS_ANONYMOUS) {
+      expect(sipProxy.getServerResponses(reopenedIndex, 'REGISTER')).toContain(200);
+    }
+
     expect(
       sipProxy.getServerResponses(reopenedIndex, 'OPTIONS').some((status) => {
         return status >= 200 && status < 300;
