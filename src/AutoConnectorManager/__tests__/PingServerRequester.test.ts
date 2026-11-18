@@ -193,6 +193,37 @@ describe('PingServerRequester', () => {
       expect(onSignalingRestored).not.toHaveBeenCalled();
     });
 
+    it('переоткрывает транспорт на каждом неуспешном ping сверх лимита', () => {
+      const reopenTransportSpy = jest
+        .spyOn(sipConnector.connectionManager, 'reopenTransport')
+        .mockImplementation(() => {});
+
+      callbacks.onFailRequest();
+
+      expect(reopenTransportSpy).not.toHaveBeenCalled();
+
+      callbacks.onFailRequest();
+      callbacks.onFailRequest();
+
+      expect(reopenTransportSpy).toHaveBeenCalledTimes(2);
+      expect(onFailRequest).not.toHaveBeenCalled();
+    });
+
+    it('не переоткрывает транспорт вне звонка', () => {
+      const reopenTransportSpy = jest
+        .spyOn(sipConnector.connectionManager, 'reopenTransport')
+        .mockImplementation(() => {});
+
+      isCallActiveSpy.mockReturnValue(false);
+
+      callbacks.onFailRequest();
+      callbacks.onFailRequest();
+      callbacks.onFailRequest();
+
+      expect(reopenTransportSpy).not.toHaveBeenCalled();
+      expect(onFailRequest).toHaveBeenCalledTimes(1);
+    });
+
     it('не сообщает signaling-unstable и signaling-restored вне звонка', () => {
       isCallActiveSpy.mockReturnValue(false);
 

@@ -260,6 +260,7 @@ describe('presentation', () => {
 
     expect(sendInfoMocked).toHaveBeenCalledTimes(1);
     expect(sendInfoMocked).toHaveBeenNthCalledWith(1, EContentTypeReceived.SHARE_STATE, undefined, {
+      noTerminateWhenError: true,
       extraHeaders: [EHeader.AVAILABLE_CONTENTED_STREAM],
     });
   });
@@ -284,6 +285,7 @@ describe('presentation', () => {
 
     expect(sendInfoMocked).toHaveBeenCalledTimes(1);
     expect(sendInfoMocked).toHaveBeenNthCalledWith(1, EContentTypeReceived.SHARE_STATE, undefined, {
+      noTerminateWhenError: true,
       extraHeaders: [EHeader.ACK_PERMISSION_TO_START_PRESENTATION],
     });
   });

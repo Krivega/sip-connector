@@ -723,16 +723,20 @@ describe('PresentationManager', () => {
     expect(manager.isPendingPresentation).toBe(false);
   });
 
-  it('stopPresentation после startPresentation вызывает failed при ошибке beforeStopPresentation', async () => {
+  it('stopPresentation при ошибке beforeStopPresentation останавливает трек и затем вызывает failed', async () => {
     await manager.startPresentation(beforeStartPresentation, videoTrack);
 
     const testError = new Error('fail');
     const eventOrder: string[] = [];
+    const trackStopSpy = jest.spyOn(videoTrack, 'stop');
 
     beforeStopPresentation.mockRejectedValueOnce(testError);
 
     manager.on('end', () => {
       eventOrder.push('end');
+    });
+    manager.on('ended', () => {
+      eventOrder.push('ended');
     });
     manager.on('failed', () => {
       eventOrder.push('failed');
@@ -740,8 +744,10 @@ describe('PresentationManager', () => {
 
     await expect(manager.stopPresentation(beforeStopPresentation)).rejects.toThrow('fail');
 
-    expect(eventOrder).toEqual(['failed']);
-    expect(manager.stateMachine.isFailed).toBe(true);
+    expect(eventOrder).toEqual(['end', 'ended', 'failed']);
+    expect(trackStopSpy).toHaveBeenCalled();
+    expect(manager.stateMachine.isIdle).toBe(true);
+    expect(manager.isPresentationInProcess).toBe(false);
   });
 
   describe('ограничение sendEncodings по maxResolution', () => {
