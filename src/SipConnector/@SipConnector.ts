@@ -17,6 +17,8 @@ import { PresentationManager } from '@/PresentationManager';
 import { SessionManager } from '@/SessionManager';
 import { StatsManager } from '@/StatsManager';
 import { resolveSendEncodings, sendOffer } from '@/tools';
+import { createUaParser } from '@/tools/createUaParser';
+import keepSingleH264VideoInSdp from '@/tools/keepSingleH264VideoInSdp';
 import setCodecPreferences from '@/tools/setCodecPreferences';
 import findVideoTrack from '@/utils/peerConnection/findVideoTrack';
 import { VideoSendingBalancerManager } from '@/VideoSendingBalancerManager';
@@ -88,6 +90,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     {
       preferredMimeTypesVideoCodecs,
       excludeMimeTypesVideoCodecs,
+      singleH264ForLegacyFirefox = false,
       videoBalancerOptions,
       autoConnectorOptions,
       callReconnectOptions,
@@ -97,6 +100,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     }: {
       preferredMimeTypesVideoCodecs?: string[];
       excludeMimeTypesVideoCodecs?: string[];
+      singleH264ForLegacyFirefox?: boolean;
       videoBalancerOptions?: Omit<IBalancerOptions, 'getMaxResolution'>;
       autoConnectorOptions?: IAutoConnectorOptions;
       callReconnectOptions?: ICallReconnectOptions;
@@ -112,6 +116,23 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     this.excludeMimeTypesVideoCodecs = excludeMimeTypesVideoCodecs;
     this.apiManager = new ApiManager();
     this.connectionManager = new ConnectionManager({ JsSIP }, { numberOfConnectionAttempts });
+
+    if (singleH264ForLegacyFirefox) {
+      const { isFirefox, browserVersionParsed } = createUaParser();
+      const { major = 0 } = browserVersionParsed;
+
+      if (isFirefox && major >= 104 && major < 138) {
+        this.connectionManager.on('newRTCSession', ({ session }) => {
+          session.on('sdp', (event) => {
+            if (event.originator === 'local') {
+              // eslint-disable-next-line no-param-reassign -- JsSIP sends the SDP from the event.
+              event.sdp = keepSingleH264VideoInSdp(event.sdp);
+            }
+          });
+        });
+      }
+    }
+
     this.connectionQueueManager = new ConnectionQueueManager({
       connectionManager: this.connectionManager,
     });

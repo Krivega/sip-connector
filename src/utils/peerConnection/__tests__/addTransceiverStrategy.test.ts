@@ -24,6 +24,7 @@ const mockUaParser = ({
 } = {}) => {
   resetUaParserCacheForTests();
   mockedCreateUaParser.mockReturnValue({
+    browserVersionParsed: { major: undefined, minor: undefined, patch: undefined },
     isFirefox,
     isChrome: false,
     isYandexBrowser: false,

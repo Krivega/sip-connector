@@ -29,3 +29,17 @@ if (!RTCPeerConnection.prototype.restartIce) {
   console.warn('ICE restart не поддерживается в этом браузере');
 }
 ```
+
+## Один вариант H.264 в Firefox 104–137
+
+Если при демонстрации экрана входящее видео замирает после смены варианта H.264,
+приложение может включить обход через опцию `singleH264ForLegacyFirefox`.
+По умолчанию опция выключена.
+
+```typescript
+const connector = new SipConnector({ JsSIP }, { singleH264ForLegacyFirefox: true });
+```
+
+В Firefox 104–137 опция оставляет в каждой видеосекции исходящего SDP один
+вариант H.264 с `packetization-mode=1` и связанный RTX (`apt`). Если в секции
+нет подходящего H.264, список форматов сохраняется.

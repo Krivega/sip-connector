@@ -1,6 +1,7 @@
 import type { createUaParser } from '@/tools/createUaParser';
 
 const initialUaParser: ReturnType<typeof createUaParser> = {
+  browserVersionParsed: { major: undefined, minor: undefined, patch: undefined },
   isMobileDevice: false,
   isSafari: false,
   isYandexBrowser: false,

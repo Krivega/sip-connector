@@ -20,6 +20,7 @@ const createUaParser = () => {
   const hasLessOrEqualBrowserVersion = resolveHasLessOrEqualBrowserVersion(browserVersionParsed);
 
   return {
+    browserVersionParsed,
     hasGreaterThanBrowserVersion,
     hasLessOrEqualBrowserVersion,
     isMobileDevice,
