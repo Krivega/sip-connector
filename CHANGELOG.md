@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [31.3.8](https://github.com/Krivega/sip-connector/compare/v31.3.7...v31.3.8) (2026-11-19)
+
+### Bug Fixes
+
+- add opt-in H264 compatibility for legacy Firefox ([#90](https://github.com/Krivega/sip-connector/issues/90)) ([2e10345](https://github.com/Krivega/sip-connector/commit/2e103456829b3047a45f44cee8d8c1940cb15353))
+
 ### [31.3.7](https://github.com/Krivega/sip-connector/compare/v31.3.6...v31.3.7) (2026-11-17)
 
 ### Bug Fixes
