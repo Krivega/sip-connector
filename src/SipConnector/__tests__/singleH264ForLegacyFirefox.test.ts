@@ -136,6 +136,28 @@ describe('SipConnector', () => {
     expect(offer.sdp).toBe(sdp);
   });
 
+  it('должен сохранять видео с H.264 без fmtp', () => {
+    const session = createSession(firefox('104.0'));
+    const sdp = ['v=0', 'm=video 9 UDP/TLS/RTP/SAVPF 99', 'a=rtpmap:99 H264/90000', ''].join(
+      '\r\n',
+    );
+    const offer: SDPEvent = { type: 'offer', originator: 'local', sdp };
+
+    session.trigger('sdp', offer);
+
+    expect(offer.sdp).toBe(sdp);
+  });
+
+  it('должен сохранять исходящие кодеки для Firefox без версии в user agent', () => {
+    const session = createSession('Mozilla/5.0 (X11; Linux x86_64) Gecko/20100101 Firefox');
+    const offer = createOffer(false);
+    const { sdp } = offer;
+
+    session.trigger('sdp', offer);
+
+    expect(offer.sdp).toBe(sdp);
+  });
+
   it.each([
     ['Firefox 103', firefox('103.0.2')],
     ['Firefox 138', firefox('138.0')],
