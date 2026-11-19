@@ -47,15 +47,12 @@ const firefox = (version: string) => {
   return `Mozilla/5.0 (X11; Linux x86_64; rv:${version}) Gecko/20100101 Firefox/${version}`;
 };
 
-const createSession = (userAgent: string, enabled?: boolean) => {
+const createSession = (userAgent: string) => {
   const userAgentSpy = jest.spyOn(navigator, 'userAgent', 'get').mockReturnValue(userAgent);
   let connector: SipConnector;
 
   try {
-    connector = new SipConnector(
-      { JsSIP },
-      enabled === undefined ? undefined : { singleH264ForLegacyFirefox: enabled },
-    );
+    connector = new SipConnector({ JsSIP });
   } finally {
     userAgentSpy.mockRestore();
   }
@@ -73,7 +70,7 @@ const createSession = (userAgent: string, enabled?: boolean) => {
 
 describe('SipConnector', () => {
   it('должен предлагать один вариант H.264 и связанный RTX при звонке в Firefox 104', () => {
-    const session = createSession(firefox('104.0.2'), true);
+    const session = createSession(firefox('104.0.2'));
     const offer = createOffer(false);
 
     session.trigger('sdp', offer);
@@ -91,7 +88,7 @@ describe('SipConnector', () => {
   });
 
   it('должен ограничивать оба видеоканала при согласовании демонстрации в Firefox 137', () => {
-    const session = createSession(firefox('137.0.2'), true);
+    const session = createSession(firefox('137.0.2'));
     const offer = createOffer(true);
 
     session.trigger('sdp', offer);
@@ -111,7 +108,7 @@ describe('SipConnector', () => {
   });
 
   it('должен сохранять исходящий SDP без H.264 с режимом упаковки 1', () => {
-    const session = createSession(firefox('104.0'), true);
+    const session = createSession(firefox('104.0'));
     const sdp = ['v=0', 'm=video 9 UDP/TLS/RTP/SAVPF 120', 'a=rtpmap:120 VP8/90000', ''].join('\n');
     const answer: SDPEvent = { type: 'answer', originator: 'local', sdp };
 
@@ -121,7 +118,7 @@ describe('SipConnector', () => {
   });
 
   it('должен оставлять один вариант H.264 с режимом упаковки 1 в исходящем ответе', () => {
-    const session = createSession(firefox('104.0'), true);
+    const session = createSession(firefox('104.0'));
     const answer: SDPEvent = { ...createOffer(false), type: 'answer' };
 
     session.trigger('sdp', answer);
@@ -130,7 +127,7 @@ describe('SipConnector', () => {
   });
 
   it('должен сохранять входящий SDP сервера', () => {
-    const session = createSession(firefox('104.0'), true);
+    const session = createSession(firefox('104.0'));
     const { sdp } = createOffer(true);
     const offer: SDPEvent = { type: 'offer', originator: 'remote', sdp };
 
@@ -140,12 +137,11 @@ describe('SipConnector', () => {
   });
 
   it.each([
-    ['Firefox 104 без опции', firefox('104.0'), undefined],
-    ['Firefox 103', firefox('103.0.2'), true],
-    ['Firefox 138', firefox('138.0'), true],
-    ['Chrome', 'Mozilla/5.0 AppleWebKit/537.36 Chrome/130.0.0.0 Safari/537.36', true],
-  ] as const)('должен сохранять исходящие кодеки для %s', (_, userAgent, enabled) => {
-    const session = createSession(userAgent, enabled);
+    ['Firefox 103', firefox('103.0.2')],
+    ['Firefox 138', firefox('138.0')],
+    ['Chrome', 'Mozilla/5.0 AppleWebKit/537.36 Chrome/130.0.0.0 Safari/537.36'],
+  ] as const)('должен сохранять исходящие кодеки для %s', (_, userAgent) => {
+    const session = createSession(userAgent);
     const offer = createOffer(false);
     const { sdp } = offer;
 
