@@ -701,7 +701,7 @@ describe('MCUSession - дополнительные тесты для покры
         expect(waitForSignaling).toHaveBeenCalledTimes(1);
       });
 
-      it('снимает досылку до отправки, даже если досылка не удалась', async () => {
+      it('оставляет досылку до следующего успешного ping, если досылка завершилась ошибкой', async () => {
         waitForSignaling.mockResolvedValue(false);
         rtcSession.renegotiate.mockRejectedValueOnce(new Error('Media Renegotiation Failed'));
 
@@ -710,9 +710,72 @@ describe('MCUSession - дополнительные тесты для покры
         await expect(mcuSession.renegotiateIfPending()).rejects.toThrow(
           'Media Renegotiation Failed',
         );
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(true);
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(false);
+
+        expect(rtcSession.renegotiate).toHaveBeenCalledTimes(2);
+      });
+
+      it('оставляет досылку до следующего успешного ping, если JsSIP не отправил re-INVITE', async () => {
+        waitForSignaling.mockResolvedValue(false);
+        rtcSession.renegotiate.mockResolvedValueOnce(false);
+
+        await replaceMediaStream();
+
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(false);
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(true);
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(false);
+
+        expect(rtcSession.renegotiate).toHaveBeenCalledTimes(2);
+        expect(waitForSignaling).toHaveBeenCalledTimes(1);
+      });
+
+      it('не запускает вторую досылку, пока идёт первая', async () => {
+        let finishResend: (isRenegotiated: boolean) => void = () => {};
+
+        waitForSignaling.mockResolvedValue(false);
+        rtcSession.renegotiate.mockImplementationOnce(async () => {
+          return new Promise<boolean>((resolve) => {
+            finishResend = resolve;
+          });
+        });
+
+        await replaceMediaStream();
+
+        const resend = mcuSession.renegotiateIfPending();
+
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(false);
+
+        finishResend(true);
+
+        await expect(resend).resolves.toBe(true);
         await expect(mcuSession.renegotiateIfPending()).resolves.toBe(false);
 
         expect(rtcSession.renegotiate).toHaveBeenCalledTimes(1);
+      });
+
+      it('не досылает снова, если во время неудачной досылки ушёл другой re-INVITE', async () => {
+        let finishResend: (isRenegotiated: boolean) => void = () => {};
+
+        waitForSignaling.mockResolvedValueOnce(false).mockResolvedValue(true);
+        rtcSession.renegotiate.mockImplementationOnce(async () => {
+          return new Promise<boolean>((resolve) => {
+            finishResend = resolve;
+          });
+        });
+
+        await replaceMediaStream();
+
+        const resend = mcuSession.renegotiateIfPending();
+
+        await expect(mcuSession.renegotiate()).resolves.toBe(true);
+
+        finishResend(false);
+
+        await expect(resend).resolves.toBe(false);
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(false);
+
+        expect(rtcSession.renegotiate).toHaveBeenCalledTimes(2);
       });
 
       it('не досылает, пока другой re-INVITE ждёт проверки сигнализации: он сам отправит актуальный SDP', async () => {

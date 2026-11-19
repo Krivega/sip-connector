@@ -564,10 +564,15 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     const { callLimit, onAddedTransceiver, ...rest } = options;
 
     return this.presentationManager.startPresentation(
-      async () => {
+      async (signal) => {
         // Иначе INFO уйдёт в зависший WebSocket и будет ждать таймаута транзакции
         if (!(await this.waitForSignaling())) {
           throw new Error('Signaling is not ready');
+        }
+
+        // Старт остановлен во время проверки: INFO не нужен, отмену завершит PresentationLifecycle
+        if (signal.aborted) {
+          return;
         }
 
         await (this.isOptionalPresentationPermission

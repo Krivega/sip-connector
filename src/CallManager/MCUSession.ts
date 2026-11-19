@@ -38,6 +38,8 @@ export class MCUSession implements IMCUSession {
 
   private reinvitesAwaitingSignaling = 0;
 
+  private isResendingRenegotiation = false;
+
   public constructor(events: TEvents, waitForSignaling: () => Promise<boolean>) {
     this.events = events;
     this.waitForSignaling = waitForSignaling;
@@ -78,17 +80,28 @@ export class MCUSession implements IMCUSession {
       return false;
     }
 
-    // Ждущий проверки re-INVITE сам отправит актуальный SDP и снимет пометку
-    if (this.reinvitesAwaitingSignaling > 0) {
-      debug('renegotiateIfPending: skip, re-INVITE is awaiting signaling');
+    // Ждущий проверки re-INVITE или идущая досылка сами отправят актуальный SDP
+    if (this.reinvitesAwaitingSignaling > 0 || this.isResendingRenegotiation) {
+      debug('renegotiateIfPending: skip, another re-INVITE is in progress');
 
       return false;
     }
 
     debug('renegotiateIfPending: resend re-INVITE');
-    delete this.pendingRenegotiationSession;
+    this.isResendingRenegotiation = true;
 
-    return pendingRenegotiationSession.renegotiate();
+    try {
+      // JsSIP возвращает false, не дождавшись конца другого согласования: пометка ждёт следующего успешного ping
+      const isRenegotiated = await pendingRenegotiationSession.renegotiate();
+
+      if (isRenegotiated) {
+        delete this.pendingRenegotiationSession;
+      }
+
+      return isRenegotiated;
+    } finally {
+      this.isResendingRenegotiation = false;
+    }
   }
 
   public startCall: IMCUSession['startCall'] = async (

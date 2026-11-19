@@ -66,7 +66,7 @@ flowchart TB
 | Слой                       | Ответственность                                                          |
 | -------------------------- | ------------------------------------------------------------------------ |
 | `@PresentationManager`     | Публичный API, guards, делегирование в lifecycle/concurrency             |
-| `PresentationConcurrency`  | `repeatedCallsAsync`, `promisePendingStart/Stop`, cancel/reset           |
+| `PresentationConcurrency`  | `repeatedCallsAsync`, `AbortSignal` старта, pending start/stop, cancel   |
 | `PresentationLifecycle`    | Последовательность start/stop/update, события, renegotiate               |
 | `createCallManagerPort`    | Изоляция от `CallManager`: connection, session, renegotiate, onCallEnded |
 | `PresentationTrackService` | Выбор стратегии add/replace, registry senders, stop                      |
@@ -82,6 +82,10 @@ flowchart TB
 | `hasCanceledStartPresentationError()`        | Проверка, что ошибка старта связана с отменой операции.    |
 
 `startPresentation` поддерживает `isNeedReinvite` (по умолчанию `true`). `updatePresentation` всегда выполняется без renegotiate.
+
+`beforeStartPresentation` получает `AbortSignal` старта. `stopPresentation()` и завершение звонка отменяют старт: `SipConnector` после проверки сигнализации INFO уже не отправляет, а `PresentationLifecycle` после `beforeStartPresentation` трек не добавляет. Промис старта отклоняется ошибкой отмены (`hasCanceledStartPresentationError()`), событий `start`/`failed` нет. Без этого остановка, пришедшая до добавления трека, ничего бы не остановила, а старт затем запустил бы демонстрацию.
+
+`stopPresentation()` сначала останавливает трек локально (`end` → `ended`, `active → stopping → idle`), затем вызывает `beforeStopPresentation` (INFO серверу): трек не идёт, пока сервер отвечает. Ошибка `beforeStopPresentation` эмитит `failed` и пробрасывается; состояние остаётся `idle`.
 
 Renegotiate презентации всегда идёт в MCU-сессию (`CallManager.renegotiateMcuSession`), независимо от роли: трек презентации добавляется в MCU-соединение. Общий `CallManager.renegotiate` для роли `spectator` пересогласует `RecvSession` и для презентации не подходит — сервер присылает `PARTICIPANT` только после ответа на `LETMESTARTPRESENTATION`, и к моменту renegotiate роль ещё `spectator`.
 

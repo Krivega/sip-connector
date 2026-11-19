@@ -3,9 +3,11 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
+import flushPromises from '../__fixtures__/flushPromises';
 import { createDeclineStartPresentationError } from '../__fixtures__/RTCSessionMock';
 import { EContentTypeReceived, EHeader } from '../ApiManager';
 import { doMockSipConnector } from '../doMock';
+import { hasCanceledStartPresentationError } from '../PresentationManager';
 import { PresentationLifecycle } from '../PresentationManager/orchestration/PresentationLifecycle';
 
 import type { ExtraHeaders } from '@krivega/jssip';
@@ -257,6 +259,85 @@ describe('presentation', () => {
     expect(sendInfoMocked).not.toHaveBeenCalled();
     expect(renegotiateMocked).not.toHaveBeenCalled();
     expect(sipConnector.isCallActive).toBe(true);
+  });
+
+  describe('остановка во время старта демонстрации', () => {
+    const presentationTrack = createMediaStreamMock({
+      video: { deviceId: { exact: 'presentationDeviceId' } },
+    }).getVideoTracks()[0] as MediaStreamVideoTrack;
+
+    const hasPresentationSender = () => {
+      return sipConnector.connection!.getSenders().some(({ track }) => {
+        return track === presentationTrack;
+      });
+    };
+
+    beforeEach(async () => {
+      await sipConnector.connect(dataForConnectionWithAuthorization);
+      await sipConnector.call({ number, mediaStream });
+    });
+
+    it('не отправляет INFO и не добавляет трек, если остановка пришла во время проверки сигнализации', async () => {
+      const rtcSession = sipConnector.callManager.getEstablishedRTCSession()!;
+      const sendInfoMocked = jest.spyOn(rtcSession, 'sendInfo');
+      const renegotiateMocked = jest.spyOn(rtcSession, 'renegotiate');
+      let confirmSignaling: (isReady: boolean) => void = () => {};
+
+      jest.spyOn(sipConnector.autoConnectorManager, 'waitForSignaling').mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          confirmSignaling = resolve;
+        }),
+      );
+
+      const startPromise = sipConnector.startPresentation(presentationTrack);
+      const stopPromise = sipConnector.stopPresentation();
+
+      confirmSignaling(true);
+
+      const [startResult, stopResult] = await Promise.allSettled([startPromise, stopPromise]);
+
+      expect(startResult.status).toBe('rejected');
+      // @ts-expect-error для теста
+      expect(hasCanceledStartPresentationError(startResult.reason)).toBe(true);
+      expect(stopResult).toEqual({ status: 'fulfilled', value: undefined });
+      expect(sendInfoMocked).not.toHaveBeenCalled();
+      expect(renegotiateMocked).not.toHaveBeenCalled();
+      expect(hasPresentationSender()).toBe(false);
+      expect(sipConnector.presentationManager.stateMachine.isIdle).toBe(true);
+      expect(sipConnector.presentationManager.isPresentationInProcess).toBe(false);
+      expect(sipConnector.isCallActive).toBe(true);
+    });
+
+    it('не добавляет трек, если остановка пришла во время ожидания ответа на INFO', async () => {
+      const rtcSession = sipConnector.callManager.getEstablishedRTCSession()!;
+      const renegotiateMocked = jest.spyOn(rtcSession, 'renegotiate');
+      let answerInfo: () => void = () => {};
+      const sendInfoMocked = jest.spyOn(rtcSession, 'sendInfo').mockImplementationOnce(async () => {
+        return new Promise<void>((resolve) => {
+          answerInfo = resolve;
+        });
+      });
+
+      const startPromise = sipConnector.startPresentation(presentationTrack);
+
+      await flushPromises();
+
+      expect(sendInfoMocked).toHaveBeenCalledTimes(1);
+
+      const stopPromise = sipConnector.stopPresentation();
+
+      answerInfo();
+
+      const [startResult, stopResult] = await Promise.allSettled([startPromise, stopPromise]);
+
+      // @ts-expect-error для теста
+      expect(hasCanceledStartPresentationError(startResult.reason)).toBe(true);
+      expect(stopResult).toEqual({ status: 'fulfilled', value: undefined });
+      expect(sendInfoMocked).toHaveBeenCalledTimes(1);
+      expect(renegotiateMocked).not.toHaveBeenCalled();
+      expect(hasPresentationSender()).toBe(false);
+      expect(sipConnector.presentationManager.stateMachine.isIdle).toBe(true);
+    });
   });
 
   it('не отправляет re-INVITE звонка, если сигнализация не подтверждена', async () => {

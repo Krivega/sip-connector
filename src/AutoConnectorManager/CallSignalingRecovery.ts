@@ -41,6 +41,8 @@ class CallSignalingRecovery {
 
   private isSignalingUnstable = false;
 
+  private isPingOnTransportConnectedPending = false;
+
   public constructor({
     connectionManager,
     callManager,
@@ -75,6 +77,7 @@ class CallSignalingRecovery {
   }
 
   public onPingSucceeded() {
+    this.isPingOnTransportConnectedPending = false;
     this.restoreSignaling();
     this.events.trigger('ping-succeeded');
     this.callManager.renegotiateIfPending().catch((error: unknown) => {
@@ -83,6 +86,10 @@ class CallSignalingRecovery {
   }
 
   public onPingFailedInCall({ failCount, error }: { failCount: number; error: unknown }) {
+    const isPingOnTransportConnected = this.isPingOnTransportConnectedPending;
+
+    this.isPingOnTransportConnectedPending = false;
+
     if (!this.isSignalingUnstable) {
       this.isSignalingUnstable = true;
       this.onSignalingUnstable({ failCount });
@@ -95,6 +102,13 @@ class CallSignalingRecovery {
       return;
     }
 
+    // Переоткрытие уже не помогло (например, сервер отвечает 408): следующее — только по провалу периодического ping
+    if (isPingOnTransportConnected) {
+      debug('skip reopen transport: ping on reconnected transport failed');
+
+      return;
+    }
+
     this.pingOnTransportConnected();
     this.connectionManager.reopenTransport();
   }
@@ -103,6 +117,7 @@ class CallSignalingRecovery {
     debug('stop');
     this.unsubscribeTransportConnected?.();
     this.unsubscribeTransportConnected = undefined;
+    this.isPingOnTransportConnectedPending = false;
     this.events.trigger('stopped');
     this.restoreSignaling();
   }
@@ -156,6 +171,7 @@ class CallSignalingRecovery {
     this.unsubscribeTransportConnected ??= this.connectionManager.once('connected', () => {
       debug('transport connected: ping immediately');
       this.unsubscribeTransportConnected = undefined;
+      this.isPingOnTransportConnectedPending = true;
       this.pingServerRequester.pingImmediately();
     });
   }

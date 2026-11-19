@@ -248,6 +248,51 @@ describe('CallSignalingRecovery', () => {
       expect(startMock).toHaveBeenCalledTimes(2);
     });
 
+    it('не переоткрывает транспорт по провалу ping сразу после подключения: следующее переоткрытие — по провалу ping цикла', () => {
+      callbacks.onFailRequest(pingTimeoutError);
+      triggerTransportConnected();
+
+      expect(reopenTransportSpy).toHaveBeenCalledTimes(1);
+      expect(startMock).toHaveBeenCalledTimes(2);
+
+      // Полученный ответ 408 JsSIP отдаёт как таймаут: `originator: 'system'`
+      callbacks.onFailRequest(pingTimeoutError);
+      triggerTransportConnected();
+
+      expect(reopenTransportSpy).toHaveBeenCalledTimes(1);
+      expect(startMock).toHaveBeenCalledTimes(2);
+
+      callbacks.onFailRequest(pingTimeoutError);
+      triggerTransportConnected();
+
+      expect(reopenTransportSpy).toHaveBeenCalledTimes(2);
+      expect(startMock).toHaveBeenCalledTimes(3);
+
+      callbacks.onFailRequest(pingTimeoutError);
+
+      expect(reopenTransportSpy).toHaveBeenCalledTimes(2);
+      expect(onSignalingUnstable).toHaveBeenCalledTimes(1);
+      expect(onSignalingRestored).not.toHaveBeenCalled();
+    });
+
+    it('переоткрывает транспорт по провалу ping, если ping по новому транспорту прошёл', () => {
+      callbacks.onFailRequest(pingTimeoutError);
+      triggerTransportConnected();
+      callbacks.onSuccessRequest();
+      callbacks.onFailRequest(pingTimeoutError);
+
+      expect(reopenTransportSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('после остановки переоткрывает транспорт по первому провалу ping', () => {
+      callbacks.onFailRequest(pingTimeoutError);
+      triggerTransportConnected();
+      callSignalingRecovery.stop();
+      callbacks.onFailRequest(pingTimeoutError);
+
+      expect(reopenTransportSpy).toHaveBeenCalledTimes(2);
+    });
+
     it('сразу отправляет ping, как только транспорт снова подключён', () => {
       callbacks.onFailRequest();
 

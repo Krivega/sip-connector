@@ -219,7 +219,7 @@ describe('AutoConnectorManager - Triggers', () => {
     const PING_INTERVAL_MS = 15_000;
     const PING_TIMEOUT_MS = 10_000;
 
-    // Как OPTIONS без ответа в JsSIP: иначе мгновенный отказ по новому транспорту снова переоткроет его
+    // Как OPTIONS без ответа в JsSIP: провал приходит только по таймауту ping
     const rejectByPingTimeout = async () => {
       return new Promise<void>((_resolve, reject) => {
         setTimeout(() => {
@@ -287,12 +287,12 @@ describe('AutoConnectorManager - Triggers', () => {
 
       expect(disconnectSpy).not.toHaveBeenCalled();
       expect(connectSpy).not.toHaveBeenCalled();
-      // Каждый ping без ответа переоткрывает транспорт, ping по новому транспорту уходит сразу
-      expect(ua.transport.disconnect).toHaveBeenCalledTimes(5);
-      expect(ua.transport.connect).toHaveBeenCalledTimes(5);
+      // Ping по новому транспорту уходит сразу, его провал не переоткрывает транспорт: следующее — по периодическому ping
+      expect(ua.transport.disconnect).toHaveBeenCalledTimes(2);
+      expect(ua.transport.connect).toHaveBeenCalledTimes(2);
       expect(ua.stop).not.toHaveBeenCalled();
       expect(sipConnector.connectionManager.connectionState).toBe(EConnectionStatus.ESTABLISHED);
-      expect(pingSpy).toHaveBeenCalledTimes(6);
+      expect(pingSpy).toHaveBeenCalledTimes(4);
       expect(signalingUnstableHandler).toHaveBeenCalledTimes(1);
       expect(signalingUnstableHandler).toHaveBeenCalledWith({ failCount: 1 });
       expect(signalingRestoredHandler).not.toHaveBeenCalled();
@@ -374,7 +374,7 @@ describe('AutoConnectorManager - Triggers', () => {
       expect(signalingRestoredHandler).not.toHaveBeenCalled();
 
       endCall();
-      await failNextPing();
+      await jest.advanceTimersByTimeAsync(PING_INTERVAL_MS + PING_TIMEOUT_MS);
 
       expect(disconnectSpy).toHaveBeenCalled();
       expect(connectSpy).toHaveBeenCalled();
@@ -394,7 +394,7 @@ describe('AutoConnectorManager - Triggers', () => {
       expect(signalingRestoredHandler).toHaveBeenCalledTimes(1);
 
       endCall();
-      await failNextPing();
+      await jest.advanceTimersByTimeAsync(PING_INTERVAL_MS + PING_TIMEOUT_MS);
 
       expect(disconnectSpy).not.toHaveBeenCalled();
 

@@ -64,6 +64,7 @@ describe('PresentationManager orchestration', () => {
   });
 
   describe('PresentationLifecycle', () => {
+    const { signal } = new AbortController();
     let connectionMock: RTCPeerConnectionMock;
     let lifecycle: PresentationLifecycle;
     let trackService: PresentationTrackService;
@@ -128,7 +129,7 @@ describe('PresentationManager orchestration', () => {
         .spyOn(peerConnectionUtils, 'setPresentationMaxBitrate')
         .mockRejectedValueOnce('bitrate-error');
 
-      await expect(lifecycle.executeStartFlow(jest.fn(), videoTrack, {})).rejects.toBe(
+      await expect(lifecycle.executeStartFlow(jest.fn(), videoTrack, { signal })).rejects.toBe(
         'bitrate-error',
       );
 
@@ -138,7 +139,7 @@ describe('PresentationManager orchestration', () => {
     it('executeStartFlow пропускает renegotiate при isNeedReinvite: false', async () => {
       const renegotiateSpy = jest.spyOn(callManager, 'renegotiateMcuSession');
 
-      await lifecycle.executeStartFlow(jest.fn(), videoTrack, { isNeedReinvite: false });
+      await lifecycle.executeStartFlow(jest.fn(), videoTrack, { isNeedReinvite: false, signal });
 
       expect(renegotiateSpy).not.toHaveBeenCalled();
     });
@@ -148,9 +149,9 @@ describe('PresentationManager orchestration', () => {
 
       const stopTrackSpy = jest.spyOn(trackService, 'stop');
 
-      await expect(lifecycle.executeStartFlow(jest.fn(), videoTrack, {})).rejects.toBeInstanceOf(
-        PresentationReinviteError,
-      );
+      await expect(
+        lifecycle.executeStartFlow(jest.fn(), videoTrack, { signal }),
+      ).rejects.toBeInstanceOf(PresentationReinviteError);
       expect(stopTrackSpy).toHaveBeenCalledTimes(1);
     });
 
@@ -162,7 +163,7 @@ describe('PresentationManager orchestration', () => {
         configurable: true,
       });
 
-      await expect(lifecycle.executeStartFlow(jest.fn(), videoTrack, {})).rejects.toThrow(
+      await expect(lifecycle.executeStartFlow(jest.fn(), videoTrack, { signal })).rejects.toThrow(
         'No connection established',
       );
     });
@@ -174,7 +175,7 @@ describe('PresentationManager orchestration', () => {
       events.on('failed', failedSpy);
       addOrReplaceSpy.mockResolvedValueOnce(undefined);
 
-      await lifecycle.executeStartFlow(jest.fn(), videoTrack, {});
+      await lifecycle.executeStartFlow(jest.fn(), videoTrack, { signal });
       addOrReplaceSpy.mockRejectedValueOnce(new Error('update failed'));
 
       await expect(lifecycle.executeUpdateFlow(jest.fn(), videoTrack, {})).rejects.toBeInstanceOf(

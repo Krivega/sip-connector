@@ -14,21 +14,30 @@ export class PresentationConcurrency {
   private cancelableSendPresentation?:
     ReturnType<typeof repeatedCallsAsync<MediaStreamVideoTrack>> | undefined;
 
+  private startAbortController?: AbortController;
+
   public get isPending(): boolean {
     return !!this.promisePendingStart || !!this.promisePendingStop;
   }
 
   public cancel(): void {
+    this.startAbortController?.abort();
     this.cancelableSendPresentation?.stopRepeatedCalls();
   }
 
   public async runWithRepeatedCalls(
-    targetFunction: () => Promise<MediaStreamVideoTrack>,
+    targetFunction: (signal: AbortSignal) => Promise<MediaStreamVideoTrack>,
     isComplete: () => boolean,
     options: { callLimit: number } = DEFAULT_REPEATED_CALLS_OPTIONS,
   ): Promise<MediaStreamVideoTrack> {
+    const startAbortController = new AbortController();
+
+    this.startAbortController = startAbortController;
     this.cancelableSendPresentation = repeatedCallsAsync<MediaStreamVideoTrack>({
-      targetFunction,
+      // stopRepeatedCalls не прерывает уже идущую попытку: её останавливает сигнал
+      targetFunction: async () => {
+        return targetFunction(startAbortController.signal);
+      },
       isComplete,
       isRejectAsValid: true,
       ...options,

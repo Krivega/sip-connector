@@ -70,7 +70,7 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
 
   // eslint-disable-next-line @typescript-eslint/max-params
   public async startPresentation(
-    beforeStartPresentation: () => Promise<void>,
+    beforeStartPresentation: (signal: AbortSignal) => Promise<void>,
     videoTrack: MediaStreamVideoTrack,
     {
       isNeedReinvite,
@@ -88,7 +88,7 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
     }
 
     return this.concurrency.runWithRepeatedCalls(
-      async () => {
+      async (signal) => {
         return this.concurrency.runStart(async () => {
           return this.lifecycle.executeStartFlow(beforeStartPresentation, videoTrack, {
             isNeedReinvite,
@@ -96,6 +96,7 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
             sendEncodings,
             maxResolution,
             onAddedTransceiver,
+            signal,
           });
         });
       },
@@ -122,12 +123,9 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
 
       try {
         if (rtcSession !== undefined) {
-          // Ошибка INFO не должна оставлять трек в отправке, поэтому локальная остановка выполняется всегда
-          try {
-            await beforeStopPresentation();
-          } finally {
-            await this.lifecycle.executeStop(videoTrack);
-          }
+          // Трек не должен идти, пока сервер отвечает на INFO: без ответа это до таймаута транзакции (32 с)
+          await this.lifecycle.executeStop(videoTrack);
+          await beforeStopPresentation();
 
           return videoTrack;
         }

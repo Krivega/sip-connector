@@ -15,7 +15,7 @@
 - Обработка переходов роли участника и переключение активного stream manager.
 - Отложенный запуск `RecvSession` при гонке API-событий и выдачи JWT.
 - Поддержка presentation-call через заголовок `x-vinteo-presentation-call: yes`.
-- Проверка сигнализации перед re-INVITE/UPDATE клиента: `MCUSession` вызывает `waitForSignaling`, который `SipConnector` передаёт из `AutoConnectorManager`. Без подтверждения re-INVITE не отправляется, а `renegotiate()`/`restartIce()` возвращают `false`; досылается только re-INVITE `replaceMediaStream()` — сразу по успешному ping, без повторной проверки, если другой re-INVITE не ждёт проверки; re-INVITE от сервера проверка не затрагивает. Подробнее — в [рецепте автопереподключения](../../../recipes/auto-reconnection.md#проверка-сигнализации-перед-re-invite).
+- Проверка сигнализации перед re-INVITE/UPDATE клиента: `MCUSession` вызывает `waitForSignaling`, который `SipConnector` передаёт из `AutoConnectorManager`. Без подтверждения re-INVITE не отправляется, а `renegotiate()`/`restartIce()` возвращают `false`; досылается только re-INVITE `replaceMediaStream()` — сразу по успешному ping, без повторной проверки, если другой re-INVITE не ждёт проверки и досылка уже не идёт; пометка снимается, только когда `renegotiate()` вернул `true`; re-INVITE от сервера проверка не затрагивает. Подробнее — в [рецепте автопереподключения](../../../recipes/auto-reconnection.md#проверка-сигнализации-перед-re-invite).
 
 ## Основные методы
 
