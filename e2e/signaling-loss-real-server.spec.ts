@@ -287,7 +287,8 @@ test.describe('Потеря SIP WebSocket в звонке на реальном 
           const index = sipProxy.getConnectionsCount() - 1;
           const invites = sipProxy.countRequests(index, 'toClient', 'INVITE');
 
-          return invites > 0 && sipProxy.countRequests(index, 'toClient', 'ACK') === invites;
+          // Сервер может повторить ACK на ретрансмиссию 200 OK
+          return invites > 0 && sipProxy.countRequests(index, 'toClient', 'ACK') >= invites;
         },
         { timeout: CONNECT_TIMEOUT_MS },
       )
