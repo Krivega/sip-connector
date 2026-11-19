@@ -39,6 +39,8 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
 
   private readonly sessionPort: TPresentationSessionPort;
 
+  private presentation?: { startConfirmed: boolean };
+
   public constructor({
     callManager,
     maxBitrate,
@@ -83,22 +85,31 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
   ): Promise<MediaStreamVideoTrack> {
     this.lifecycle.guardEstablishedSession();
 
-    if (this.stateMachine.isActiveOrPending) {
+    if (this.stateMachine.isActiveOrPending || this.concurrency.isStartPending) {
       throw new Error('Presentation is already started');
     }
 
+    const presentation = { startConfirmed: false };
+
+    this.presentation = presentation;
+
     return this.concurrency.runWithRepeatedCalls(
       async (signal) => {
-        return this.concurrency.runStart(async () => {
-          return this.lifecycle.executeStartFlow(beforeStartPresentation, videoTrack, {
+        return this.lifecycle.executeStartFlow(
+          async (startSignal) => {
+            await beforeStartPresentation(startSignal);
+            presentation.startConfirmed = true;
+          },
+          videoTrack,
+          {
             isNeedReinvite,
             contentHint,
             sendEncodings,
             maxResolution,
             onAddedTransceiver,
             signal,
-          });
-        });
+          },
+        );
       },
       () => {
         return this.stateMachine.isActive;
@@ -112,31 +123,48 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
   ): Promise<MediaStreamVideoTrack | undefined> {
     this.concurrency.cancel();
 
+    const { presentation } = this;
     const videoTrack = this.getStopVideoTrack();
 
     return this.concurrency.runStop(async () => {
-      if (videoTrack === undefined) {
+      if (
+        presentation === undefined ||
+        presentation !== this.presentation ||
+        !presentation.startConfirmed
+      ) {
         return undefined;
       }
 
-      const rtcSession = this.sessionPort.getEstablishedSession();
+      presentation.startConfirmed = false;
 
       try {
-        if (rtcSession !== undefined) {
-          // Трек не должен идти, пока сервер отвечает на INFO: без ответа это до таймаута транзакции (32 с)
-          await this.lifecycle.executeStop(videoTrack);
-          await beforeStopPresentation();
+        const rtcSession = this.sessionPort.getEstablishedSession();
 
-          return videoTrack;
+        if (!rtcSession) {
+          if (videoTrack !== undefined) {
+            this.lifecycle.emitEndedOnly(videoTrack);
+          }
+
+          return undefined;
         }
 
-        this.lifecycle.emitEndedOnly(videoTrack);
+        if (videoTrack !== undefined) {
+          await this.lifecycle.executeStop(videoTrack);
+        }
 
-        return undefined;
+        // Отзываем подтверждённый INFO и при отмене до добавления трека.
+        if (this.sessionPort.getEstablishedSession() === rtcSession) {
+          await beforeStopPresentation();
+        }
+
+        return videoTrack;
       } catch (error: unknown) {
         const normalizedError = error instanceof Error ? error : new Error(String(error));
 
-        this.events.trigger('failed', normalizedError);
+        if (this.presentation === presentation) {
+          presentation.startConfirmed = true;
+          this.events.trigger('failed', normalizedError);
+        }
 
         throw error;
       }
@@ -185,6 +213,7 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
 
   private reset(): void {
     this.cancelSendPresentationWithRepeatedCalls();
+    this.presentation = undefined;
     this.concurrency.clearPending();
     this.lifecycle.resetTrackService();
     this.stateMachine.reset();

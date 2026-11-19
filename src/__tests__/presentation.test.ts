@@ -277,6 +277,55 @@ describe('presentation', () => {
       await sipConnector.call({ number, mediaStream });
     });
 
+    it('отклоняет второй старт во время проверки и отменяет первый при остановке', async () => {
+      let confirmSignaling!: (isReady: boolean) => void;
+
+      jest.spyOn(sipConnector.autoConnectorManager, 'waitForSignaling').mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          confirmSignaling = resolve;
+        }),
+      );
+
+      const start = sipConnector.startPresentation(presentationTrack);
+
+      await expect(sipConnector.startPresentation(presentationTrack)).rejects.toThrow(
+        'Presentation is already started',
+      );
+
+      const stop = sipConnector.stopPresentation();
+
+      confirmSignaling(true);
+      await expect(start).rejects.toBeDefined();
+      await stop;
+      expect(hasPresentationSender()).toBe(false);
+    });
+
+    it('ошибка INFO старой остановки не мешает остановить новую демонстрацию', async () => {
+      await sipConnector.startPresentation(presentationTrack);
+
+      let rejectInfo!: (error: Error) => void;
+
+      jest
+        .spyOn(sipConnector.callManager.getEstablishedRTCSession()!, 'sendInfo')
+        .mockReturnValueOnce(
+          new Promise<void>((_resolve, reject) => {
+            rejectInfo = reject;
+          }),
+        );
+
+      const stop = sipConnector.stopPresentation();
+
+      await flushPromises();
+
+      const nextTrack = mediaStreamUpdated.getVideoTracks()[0] as MediaStreamVideoTrack;
+
+      await sipConnector.startPresentation(nextTrack);
+      rejectInfo(new Error('Request timeout'));
+      await expect(stop).rejects.toThrow('Request timeout');
+      expect(sipConnector.presentationManager.stateMachine.activeVideoTrack).toBe(nextTrack);
+      await expect(sipConnector.stopPresentation()).resolves.toBe(nextTrack);
+    });
+
     it('не отправляет INFO и не добавляет трек, если остановка пришла во время проверки сигнализации', async () => {
       const rtcSession = sipConnector.callManager.getEstablishedRTCSession()!;
       const sendInfoMocked = jest.spyOn(rtcSession, 'sendInfo');
@@ -308,36 +357,53 @@ describe('presentation', () => {
       expect(sipConnector.isCallActive).toBe(true);
     });
 
-    it('не добавляет трек, если остановка пришла во время ожидания ответа на INFO', async () => {
-      const rtcSession = sipConnector.callManager.getEstablishedRTCSession()!;
-      const renegotiateMocked = jest.spyOn(rtcSession, 'renegotiate');
-      let answerInfo: () => void = () => {};
-      const sendInfoMocked = jest.spyOn(rtcSession, 'sendInfo').mockImplementationOnce(async () => {
-        return new Promise<void>((resolve) => {
-          answerInfo = resolve;
-        });
-      });
+    it.each([
+      [false, EHeader.STOPPED_CLIENT_PRESENTATION],
+      [true, EHeader.NOT_AVAILABLE_CONTENTED_STREAM],
+    ] as const)(
+      'отзывает подтверждённый INFO при отмене старта, directP2P = %s',
+      async (directP2P, stopHeader) => {
+        if (directP2P) {
+          sipConnector.apiManager.events.trigger('enter-room', {
+            room: 'directP2P111to200',
+            participantName: 'User',
+            isDirectPeerToPeer: true,
+          });
+        }
 
-      const startPromise = sipConnector.startPresentation(presentationTrack);
+        const rtcSession = sipConnector.callManager.getEstablishedRTCSession()!;
+        const renegotiateMocked = jest.spyOn(rtcSession, 'renegotiate');
+        let answerInfo: () => void = () => {};
+        const sendInfoMocked = jest
+          .spyOn(rtcSession, 'sendInfo')
+          .mockImplementationOnce(async () => {
+            return new Promise<void>((resolve) => {
+              answerInfo = resolve;
+            });
+          });
 
-      await flushPromises();
+        const startPromise = sipConnector.startPresentation(presentationTrack);
 
-      expect(sendInfoMocked).toHaveBeenCalledTimes(1);
+        await flushPromises();
 
-      const stopPromise = sipConnector.stopPresentation();
+        expect(sendInfoMocked).toHaveBeenCalledTimes(1);
 
-      answerInfo();
+        const stopPromise = sipConnector.stopPresentation();
 
-      const [startResult, stopResult] = await Promise.allSettled([startPromise, stopPromise]);
+        answerInfo();
 
-      // @ts-expect-error для теста
-      expect(hasCanceledStartPresentationError(startResult.reason)).toBe(true);
-      expect(stopResult).toEqual({ status: 'fulfilled', value: undefined });
-      expect(sendInfoMocked).toHaveBeenCalledTimes(1);
-      expect(renegotiateMocked).not.toHaveBeenCalled();
-      expect(hasPresentationSender()).toBe(false);
-      expect(sipConnector.presentationManager.stateMachine.isIdle).toBe(true);
-    });
+        const [startResult, stopResult] = await Promise.allSettled([startPromise, stopPromise]);
+
+        // @ts-expect-error для теста
+        expect(hasCanceledStartPresentationError(startResult.reason)).toBe(true);
+        expect(stopResult).toEqual({ status: 'fulfilled', value: undefined });
+        expect(sendInfoMocked).toHaveBeenCalledTimes(2);
+        expect(sendInfoMocked.mock.calls[1]?.[2]?.extraHeaders).toContain(stopHeader);
+        expect(renegotiateMocked).not.toHaveBeenCalled();
+        expect(hasPresentationSender()).toBe(false);
+        expect(sipConnector.presentationManager.stateMachine.isIdle).toBe(true);
+      },
+    );
   });
 
   it('не отправляет re-INVITE звонка, если сигнализация не подтверждена', async () => {

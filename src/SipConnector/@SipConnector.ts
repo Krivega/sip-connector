@@ -570,9 +570,9 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
           throw new Error('Signaling is not ready');
         }
 
-        // Старт остановлен во время проверки: INFO не нужен, отмену завершит PresentationLifecycle
+        // У отменённого до отправки INFO старта нет серверного состояния для сброса.
         if (signal.aborted) {
-          return;
+          throw new Error('Presentation start is canceled');
         }
 
         await (this.isOptionalPresentationPermission

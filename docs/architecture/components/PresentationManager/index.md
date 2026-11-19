@@ -83,9 +83,9 @@ flowchart TB
 
 `startPresentation` поддерживает `isNeedReinvite` (по умолчанию `true`). `updatePresentation` всегда выполняется без renegotiate.
 
-`beforeStartPresentation` получает `AbortSignal` старта. `stopPresentation()` и завершение звонка отменяют старт: `SipConnector` после проверки сигнализации INFO уже не отправляет, а `PresentationLifecycle` после `beforeStartPresentation` трек не добавляет. Промис старта отклоняется ошибкой отмены (`hasCanceledStartPresentationError()`), событий `start`/`failed` нет. Без этого остановка, пришедшая до добавления трека, ничего бы не остановила, а старт затем запустил бы демонстрацию.
+`beforeStartPresentation` получает `AbortSignal` старта. `stopPresentation()` и завершение звонка отменяют старт: `SipConnector` после проверки сигнализации INFO уже не отправляет, а `PresentationLifecycle` после `beforeStartPresentation` трек не добавляет. Промис старта отклоняется ошибкой отмены (`hasCanceledStartPresentationError()`), событий `start`/`failed` нет. Пока попытка запуска ожидает ответа, повторный старт отклоняется. Если сервер подтвердил INFO до отмены, остановка отзывает его даже без локального трека.
 
-`stopPresentation()` сначала останавливает трек локально (`end` → `ended`, `active → stopping → idle`), затем вызывает `beforeStopPresentation` (INFO серверу): трек не идёт, пока сервер отвечает. Ошибка `beforeStopPresentation` эмитит `failed` и пробрасывается; состояние остаётся `idle`.
+`stopPresentation()` сначала останавливает трек локально (`end` → `ended`, `active → stopping → idle`), затем вызывает `beforeStopPresentation` (INFO серверу): трек не идёт, пока сервер отвечает. Ошибка уведомления отклоняет промис остановки. Событие `failed` приходит только для той же демонстрации. Если за время ожидания началась новая, она продолжает работать.
 
 Renegotiate презентации всегда идёт в MCU-сессию (`CallManager.renegotiateMcuSession`), независимо от роли: трек презентации добавляется в MCU-соединение. Общий `CallManager.renegotiate` для роли `spectator` пересогласует `RecvSession` и для презентации не подходит — сервер присылает `PARTICIPANT` только после ответа на `LETMESTARTPRESENTATION`, и к моменту renegotiate роль ещё `spectator`.
 

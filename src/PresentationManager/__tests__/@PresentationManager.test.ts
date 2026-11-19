@@ -444,8 +444,14 @@ describe('PresentationManager', () => {
     });
 
     it('должен возвращать true, когда есть pendingVideoTrack и isPendingPresentation true', async () => {
+      const starting = new Promise<void>((resolve) => {
+        manager.once('start', () => {
+          resolve();
+        });
+      });
+
       promise = manager.startPresentation(beforeStartPresentation, videoTrack);
-      await Promise.resolve();
+      await starting;
 
       expect(
         manager.stateMachine.pendingVideoTrack ?? manager.stateMachine.activeVideoTrack,
@@ -756,9 +762,146 @@ describe('PresentationManager', () => {
     expect(stopResult).toEqual({ status: 'fulfilled', value: undefined });
     expect(spyStart).not.toHaveBeenCalled();
     expect(addOrReplaceSpy).not.toHaveBeenCalled();
-    expect(beforeStopPresentation).not.toHaveBeenCalled();
+    expect(beforeStopPresentation).toHaveBeenCalledTimes(1);
     expect(manager.stateMachine.isIdle).toBe(true);
     expect(manager.isPresentationInProcess).toBe(false);
+  });
+
+  it('пропускает INFO остановки после завершения звонка в обработчике ended', async () => {
+    await manager.startPresentation(beforeStartPresentation, videoTrack);
+    manager.once('ended', () => {
+      jest.mocked(callManager.getEstablishedRTCSession).mockReturnValue(undefined);
+    });
+
+    await manager.stopPresentation(beforeStopPresentation);
+    expect(beforeStopPresentation).not.toHaveBeenCalled();
+  });
+
+  it('ответ на предыдущий INFO не завершает остановку новой демонстрации', async () => {
+    let confirmFirst!: () => void;
+    let confirmSecond!: () => void;
+
+    beforeStopPresentation
+      .mockImplementationOnce(async () => {
+        return new Promise<void>((resolve) => {
+          confirmFirst = resolve;
+        });
+      })
+      .mockImplementationOnce(async () => {
+        return new Promise<void>((resolve) => {
+          confirmSecond = resolve;
+        });
+      });
+
+    await manager.startPresentation(beforeStartPresentation, videoTrack);
+
+    const firstStop = manager.stopPresentation(beforeStopPresentation);
+
+    await flushPromises();
+
+    const nextTrack = createMediaStreamMock({
+      video: { deviceId: { exact: 'second-screen' } },
+    }).getVideoTracks()[0] as MediaStreamVideoTrack;
+
+    await manager.startPresentation(beforeStartPresentation, nextTrack);
+
+    const secondStop = manager.stopPresentation(beforeStopPresentation);
+
+    await flushPromises();
+    confirmFirst();
+    await firstStop;
+    expect(manager.isPendingPresentation).toBe(true);
+
+    confirmSecond();
+    await secondStop;
+    expect(manager.isPendingPresentation).toBe(false);
+  });
+
+  it('после ошибки INFO можно повторить уведомление, пока звонок установлен', async () => {
+    await manager.startPresentation(beforeStartPresentation, videoTrack);
+    beforeStopPresentation.mockRejectedValueOnce(new Error('Request timeout'));
+    await expect(manager.stopPresentation(beforeStopPresentation)).rejects.toThrow(
+      'Request timeout',
+    );
+
+    await manager.stopPresentation(beforeStopPresentation);
+    expect(beforeStopPresentation).toHaveBeenCalledTimes(2);
+  });
+
+  it('пропускает отзыв подтверждённого INFO при потере сессии до добавления трека', async () => {
+    let confirm!: () => void;
+
+    beforeStartPresentation.mockImplementationOnce(async () => {
+      return new Promise<void>((resolve) => {
+        confirm = resolve;
+      });
+    });
+
+    const start = manager.startPresentation(beforeStartPresentation, videoTrack);
+    const stop = manager.stopPresentation(beforeStopPresentation);
+
+    jest.mocked(callManager.getEstablishedRTCSession).mockReturnValue(undefined);
+    confirm();
+    await expect(start.catch(hasCanceledStartPresentationError)).resolves.toBe(true);
+    await expect(stop).resolves.toBeUndefined();
+    expect(beforeStopPresentation).not.toHaveBeenCalled();
+  });
+
+  it('остановка между повторными попытками освобождает следующий запуск', async () => {
+    beforeStartPresentation.mockRejectedValueOnce(new Error('Нет ответа'));
+
+    const start = manager.startPresentation(
+      beforeStartPresentation,
+      videoTrack,
+      {},
+      { callLimit: 2 },
+    );
+
+    await flushPromises();
+
+    const stop = manager.stopPresentation(beforeStopPresentation);
+
+    await expect(start.catch(hasCanceledStartPresentationError)).resolves.toBe(true);
+    await expect(stop).resolves.toBeUndefined();
+    expect(beforeStartPresentation).toHaveBeenCalledTimes(1);
+    await expect(manager.startPresentation(beforeStartPresentation, videoTrack)).resolves.toBe(
+      videoTrack,
+    );
+  });
+
+  it('отмена старого звонка не снимает ожидающий запуск в новом звонке', async () => {
+    let confirmOld!: () => void;
+    let confirmNew!: () => void;
+
+    beforeStartPresentation
+      .mockImplementationOnce(async () => {
+        return new Promise<void>((resolve) => {
+          confirmOld = resolve;
+        });
+      })
+      .mockImplementationOnce(async () => {
+        return new Promise<void>((resolve) => {
+          confirmNew = resolve;
+        });
+      });
+
+    const oldStart = manager.startPresentation(beforeStartPresentation, videoTrack);
+    const oldStop = manager.stopPresentation(beforeStopPresentation);
+
+    callManager.events.trigger('ended', { originator: 'local' } as never);
+
+    const newStart = manager.startPresentation(beforeStartPresentation, videoTrack);
+
+    confirmOld();
+    await expect(oldStart.catch(hasCanceledStartPresentationError)).resolves.toBe(true);
+    await expect(oldStop).resolves.toBeUndefined();
+    expect(beforeStopPresentation).not.toHaveBeenCalled();
+    await expect(manager.startPresentation(beforeStartPresentation, videoTrack)).rejects.toThrow(
+      'Presentation is already started',
+    );
+
+    confirmNew();
+    await expect(newStart).resolves.toBe(videoTrack);
   });
 
   it('stopPresentation останавливает трек сразу, не дожидаясь ответа на beforeStopPresentation', async () => {

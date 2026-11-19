@@ -16,13 +16,22 @@ export class PresentationConcurrency {
 
   private startAbortController?: AbortController;
 
+  public get isStartPending(): boolean {
+    return this.startAbortController !== undefined || this.promisePendingStart !== undefined;
+  }
+
   public get isPending(): boolean {
-    return !!this.promisePendingStart || !!this.promisePendingStop;
+    return this.isStartPending || this.promisePendingStop !== undefined;
   }
 
   public cancel(): void {
     this.startAbortController?.abort();
     this.cancelableSendPresentation?.stopRepeatedCalls();
+
+    if (!this.promisePendingStart) {
+      // Между попытками stopRepeatedCalls снимает таймер, но не завершает промис.
+      this.cancelableSendPresentation?.cancel();
+    }
   }
 
   public async runWithRepeatedCalls(
@@ -36,21 +45,24 @@ export class PresentationConcurrency {
     this.cancelableSendPresentation = repeatedCallsAsync<MediaStreamVideoTrack>({
       // stopRepeatedCalls не прерывает уже идущую попытку: её останавливает сигнал
       targetFunction: async () => {
-        return targetFunction(startAbortController.signal);
+        return this.runStart(async () => {
+          return targetFunction(startAbortController.signal);
+        });
       },
       isComplete,
       isRejectAsValid: true,
       ...options,
     });
-    this.promisePendingStart = this.cancelableSendPresentation as Promise<MediaStreamVideoTrack>;
 
     return this.cancelableSendPresentation
       .then((response?: unknown) => {
         return response as MediaStreamVideoTrack;
       })
       .finally(() => {
-        this.promisePendingStart = undefined;
-        this.cancelableSendPresentation = undefined;
+        if (this.startAbortController === startAbortController) {
+          this.cancelableSendPresentation = undefined;
+          this.startAbortController = undefined;
+        }
       });
   }
 
@@ -62,14 +74,14 @@ export class PresentationConcurrency {
     this.promisePendingStart = result;
 
     return result.finally(() => {
-      this.promisePendingStart = undefined;
+      if (this.promisePendingStart === result) {
+        this.promisePendingStart = undefined;
+      }
     });
   }
 
   public async awaitPendingStart(): Promise<void> {
-    if (this.promisePendingStart) {
-      await this.promisePendingStart.catch(() => {});
-    }
+    await (this.cancelableSendPresentation ?? this.promisePendingStart)?.catch(() => {});
   }
 
   public async runStop(
@@ -84,11 +96,15 @@ export class PresentationConcurrency {
     this.promisePendingStop = result;
 
     return result.finally(() => {
-      this.promisePendingStop = undefined;
+      if (this.promisePendingStop === result) {
+        this.promisePendingStop = undefined;
+      }
     });
   }
 
   public clearPending(): void {
+    this.startAbortController = undefined;
+    this.cancelableSendPresentation = undefined;
     this.promisePendingStart = undefined;
     this.promisePendingStop = undefined;
   }

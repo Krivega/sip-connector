@@ -34,11 +34,9 @@ export class MCUSession implements IMCUSession {
 
   private readonly waitForSignaling: () => Promise<boolean>;
 
-  private pendingRenegotiationSession?: RTCSession;
+  private pendingRenegotiation?: { session: RTCSession };
 
-  private reinvitesAwaitingSignaling = 0;
-
-  private isResendingRenegotiation = false;
+  private reinvitesInProgress = 0;
 
   public constructor(events: TEvents, waitForSignaling: () => Promise<boolean>) {
     this.events = events;
@@ -71,37 +69,25 @@ export class MCUSession implements IMCUSession {
 
   // Вызывается по успешному ping: сигнализация подтверждена, поэтому re-INVITE уходит без повторной проверки
   public async renegotiateIfPending(): Promise<boolean> {
-    const { pendingRenegotiationSession } = this;
+    const { pendingRenegotiation } = this;
 
     if (
-      pendingRenegotiationSession === undefined ||
-      pendingRenegotiationSession !== this.getEstablishedRTCSession()
+      pendingRenegotiation === undefined ||
+      pendingRenegotiation.session !== this.getEstablishedRTCSession()
     ) {
       return false;
     }
 
     // Ждущий проверки re-INVITE или идущая досылка сами отправят актуальный SDP
-    if (this.reinvitesAwaitingSignaling > 0 || this.isResendingRenegotiation) {
+    if (this.reinvitesInProgress > 0) {
       debug('renegotiateIfPending: skip, another re-INVITE is in progress');
 
       return false;
     }
 
     debug('renegotiateIfPending: resend re-INVITE');
-    this.isResendingRenegotiation = true;
 
-    try {
-      // JsSIP возвращает false, не дождавшись конца другого согласования: пометка ждёт следующего успешного ping
-      const isRenegotiated = await pendingRenegotiationSession.renegotiate();
-
-      if (isRenegotiated) {
-        delete this.pendingRenegotiationSession;
-      }
-
-      return isRenegotiated;
-    } finally {
-      this.isResendingRenegotiation = false;
-    }
+    return this.sendAndConfirmRenegotiation(pendingRenegotiation.session, renegotiateSession);
   }
 
   public startCall: IMCUSession['startCall'] = async (
@@ -300,7 +286,7 @@ export class MCUSession implements IMCUSession {
     delete this.rtcSession;
     delete this.pcConfig;
     delete this.localMediaStream;
-    delete this.pendingRenegotiationSession;
+    delete this.pendingRenegotiation;
     this.unsubscribeFromSessionEvents();
     this.bitrateStateManager.clearAll();
   };
@@ -318,28 +304,50 @@ export class MCUSession implements IMCUSession {
 
     let isSignalingReady: boolean;
 
-    this.reinvitesAwaitingSignaling += 1;
+    this.reinvitesInProgress += 1;
 
     try {
       isSignalingReady = await this.waitForSignaling();
     } finally {
-      this.reinvitesAwaitingSignaling -= 1;
+      this.reinvitesInProgress -= 1;
+    }
+
+    if (resendWhenSignalingRestored && this.getEstablishedRTCSession() === rtcSession) {
+      this.pendingRenegotiation = { session: rtcSession };
     }
 
     if (!isSignalingReady) {
       debug('re-INVITE is not sent: signaling is not ready');
 
-      // Звонок мог завершиться во время проверки: досылать в завершённую сессию нечего
-      if (resendWhenSignalingRestored && this.getEstablishedRTCSession() === rtcSession) {
-        this.pendingRenegotiationSession = rtcSession;
-      }
-
       return false;
     }
 
-    delete this.pendingRenegotiationSession;
+    return this.sendAndConfirmRenegotiation(rtcSession, send);
+  }
 
-    return send(rtcSession);
+  private async sendAndConfirmRenegotiation(
+    rtcSession: RTCSession,
+    send: (session: RTCSession) => Promise<boolean>,
+  ): Promise<boolean> {
+    const { pendingRenegotiation } = this;
+
+    this.reinvitesInProgress += 1;
+
+    try {
+      const isSent = await send(rtcSession);
+
+      if (
+        isSent &&
+        pendingRenegotiation?.session === rtcSession &&
+        this.pendingRenegotiation === pendingRenegotiation
+      ) {
+        delete this.pendingRenegotiation;
+      }
+
+      return isSent;
+    } finally {
+      this.reinvitesInProgress -= 1;
+    }
   }
 
   private readonly handleCall = async (): Promise<RTCPeerConnection> => {

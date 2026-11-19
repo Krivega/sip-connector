@@ -653,6 +653,36 @@ describe('MCUSession - дополнительные тесты для покры
         rtcSession.createPeerconnection(new MediaStream([createAudioMediaStreamTrackMock()]));
       });
 
+      it('сохраняет досылку, если restartIce получил подтверждение связи, но не отправил SDP', async () => {
+        waitForSignaling.mockResolvedValueOnce(false).mockResolvedValue(true);
+        await replaceMediaStream();
+        rtcSession.restartIce.mockResolvedValueOnce(false);
+
+        await expect(mcuSession.restartIce()).resolves.toBe(false);
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(true);
+      });
+
+      it('сохраняет новое изменение потока после успешного ответа на предыдущий SDP', async () => {
+        waitForSignaling.mockResolvedValue(false);
+        await replaceMediaStream();
+
+        let finishResend!: (isSent: boolean) => void;
+
+        rtcSession.renegotiate.mockReturnValueOnce(
+          new Promise<boolean>((resolve) => {
+            finishResend = resolve;
+          }),
+        );
+
+        const resend = mcuSession.renegotiateIfPending();
+
+        await replaceMediaStream();
+        finishResend(true);
+        await resend;
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(true);
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(false);
+      });
+
       it('без неотправленной перенастройки ничего не досылает', async () => {
         await expect(mcuSession.renegotiateIfPending()).resolves.toBe(false);
 
