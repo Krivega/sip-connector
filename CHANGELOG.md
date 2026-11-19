@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [31.3.9](https://github.com/Krivega/sip-connector/compare/v31.3.8...v31.3.9) (2026-11-19)
+
+### Bug Fixes
+
+- handle overlapping presentation requests and preserve pending renegotiation ([b5d1621](https://github.com/Krivega/sip-connector/commit/b5d16218b290f8438282588ada4ddac910fd3055))
+- signaling restored on call end ([#88](https://github.com/Krivega/sip-connector/issues/88)) ([e6f5448](https://github.com/Krivega/sip-connector/commit/e6f5448ab81f4c2ed0389859f9f031b9e6901a04))
+
 ### [31.3.8](https://github.com/Krivega/sip-connector/compare/v31.3.7...v31.3.8) (2026-11-19)
 
 ### Bug Fixes
