@@ -64,6 +64,7 @@ describe('PresentationManager orchestration', () => {
   });
 
   describe('PresentationLifecycle', () => {
+    const { signal } = new AbortController();
     let connectionMock: RTCPeerConnectionMock;
     let lifecycle: PresentationLifecycle;
     let trackService: PresentationTrackService;
@@ -85,6 +86,7 @@ describe('PresentationManager orchestration', () => {
         { contentedStreamManager: new ContentedStreamManager() },
         {
           sendOffer: jest.fn().mockResolvedValue({} as RTCSessionDescription),
+          waitForSignaling: jest.fn().mockResolvedValue(true),
         },
         { callSessionState: new CallSessionState() },
       );
@@ -127,7 +129,7 @@ describe('PresentationManager orchestration', () => {
         .spyOn(peerConnectionUtils, 'setPresentationMaxBitrate')
         .mockRejectedValueOnce('bitrate-error');
 
-      await expect(lifecycle.executeStartFlow(jest.fn(), videoTrack, {})).rejects.toBe(
+      await expect(lifecycle.executeStartFlow(jest.fn(), videoTrack, { signal })).rejects.toBe(
         'bitrate-error',
       );
 
@@ -137,7 +139,7 @@ describe('PresentationManager orchestration', () => {
     it('executeStartFlow пропускает renegotiate при isNeedReinvite: false', async () => {
       const renegotiateSpy = jest.spyOn(callManager, 'renegotiateMcuSession');
 
-      await lifecycle.executeStartFlow(jest.fn(), videoTrack, { isNeedReinvite: false });
+      await lifecycle.executeStartFlow(jest.fn(), videoTrack, { isNeedReinvite: false, signal });
 
       expect(renegotiateSpy).not.toHaveBeenCalled();
     });
@@ -147,10 +149,23 @@ describe('PresentationManager orchestration', () => {
 
       const stopTrackSpy = jest.spyOn(trackService, 'stop');
 
-      await expect(lifecycle.executeStartFlow(jest.fn(), videoTrack, {})).rejects.toBeInstanceOf(
-        PresentationReinviteError,
-      );
+      await expect(
+        lifecycle.executeStartFlow(jest.fn(), videoTrack, { signal }),
+      ).rejects.toBeInstanceOf(PresentationReinviteError);
       expect(stopTrackSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('executeStartFlow отклоняется, если соединение пропало до добавления дорожки', async () => {
+      Object.defineProperty(callManager, 'connection', {
+        get: () => {
+          return undefined;
+        },
+        configurable: true,
+      });
+
+      await expect(lifecycle.executeStartFlow(jest.fn(), videoTrack, { signal })).rejects.toThrow(
+        'No connection established',
+      );
     });
 
     it('executeUpdateFlow эмитит failed и пробрасывает PresentationTrackError', async () => {
@@ -160,7 +175,7 @@ describe('PresentationManager orchestration', () => {
       events.on('failed', failedSpy);
       addOrReplaceSpy.mockResolvedValueOnce(undefined);
 
-      await lifecycle.executeStartFlow(jest.fn(), videoTrack, {});
+      await lifecycle.executeStartFlow(jest.fn(), videoTrack, { signal });
       addOrReplaceSpy.mockRejectedValueOnce(new Error('update failed'));
 
       await expect(lifecycle.executeUpdateFlow(jest.fn(), videoTrack, {})).rejects.toBeInstanceOf(

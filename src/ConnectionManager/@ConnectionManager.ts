@@ -17,6 +17,8 @@ import type { TEventMap } from './events';
 import type { TParametersCheckTelephony } from './SipOperations';
 import type { TConnectionConfig, TParametersConnection } from './types';
 
+type TReopenableTransport = { connect: () => void; disconnect: () => void };
+
 const debug = resolveDebug('ConnectionManager');
 
 type TConnectParameters = (() => Promise<TParametersConnection>) | TParametersConnection;
@@ -160,6 +162,26 @@ export default class ConnectionManager extends EventEmitterProxy<TEventMap> {
     extraHeaders?: Parameters<SipOperations['ping']>[1],
   ) => {
     return this.sipOperations.ping(body, extraHeaders);
+  };
+
+  // Переоткрывает только WebSocket без ua.stop, чтобы не рвать звонок; неподключённый транспорт JsSIP восстанавливает сам
+  public reopenTransport = () => {
+    // UA.d.ts не типизирует transport, а Transport не экспортируется из корня @krivega/jssip
+    const { transport } = (this.ua ?? {}) as { transport?: TReopenableTransport };
+
+    if (this.ua?.isConnected() !== true || transport === undefined) {
+      return;
+    }
+
+    debug('reopenTransport');
+
+    // Ошибка здесь не должна прерывать цикл ping, из которого вызывается метод
+    try {
+      transport.disconnect();
+      transport.connect();
+    } catch (error) {
+      debug('reopenTransport failed', error);
+    }
   };
 
   public checkTelephony = async (parameters: TParametersCheckTelephony) => {

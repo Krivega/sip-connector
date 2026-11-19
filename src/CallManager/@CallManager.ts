@@ -139,14 +139,14 @@ class CallManager extends EventEmitterProxy<TEventMap> {
 
   public constructor(
     { contentedStreamManager }: { contentedStreamManager: ContentedStreamManager },
-    tools: TTools,
+    tools: TTools & { waitForSignaling: () => Promise<boolean> },
     { callSessionState }: { callSessionState: CallSessionState },
   ) {
     super(createEvents());
 
     this.contentedStreamManager = contentedStreamManager;
     this.tools = tools;
-    this.mcuSession = new MCUSession(this.events);
+    this.mcuSession = new MCUSession(this.events, tools.waitForSignaling);
     this.stateMachine = createCallStateMachine(this.events);
     this.sessionState = callSessionState;
     this.sessionState.subscribeRoleChanges(this.onRoleChangeRequested);
@@ -270,6 +270,10 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     debug('renegotiateMcuSession');
 
     return this.mcuSession.renegotiate();
+  }
+
+  public async renegotiateIfPending(): Promise<boolean> {
+    return this.mcuSession.renegotiateIfPending();
   }
 
   public answerToIncomingCall: TAnswerToIncomingCall = async (

@@ -1,5 +1,6 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 
+import flushPromises from '@/__fixtures__/flushPromises';
 import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import { CallManager } from '@/CallManager';
@@ -32,6 +33,7 @@ describe('PresentationManager', () => {
       { contentedStreamManager: new ContentedStreamManager() },
       {
         sendOffer: jest.fn().mockResolvedValue({} as RTCSessionDescription),
+        waitForSignaling: jest.fn().mockResolvedValue(true),
       },
       { callSessionState: new CallSessionState() },
     );
@@ -719,20 +721,97 @@ describe('PresentationManager', () => {
     // @ts-expect-error для теста
     expect(hasCanceledStartPresentationError(startResult.reason)).toBe(true);
 
-    expect(eventOrder[0]).toBe('start');
+    // Остановка пришла до ответа на beforeStartPresentation: трек не добавлялся
+    expect(eventOrder).toEqual([]);
+    expect(manager.stateMachine.isIdle).toBe(true);
     expect(manager.isPendingPresentation).toBe(false);
   });
 
-  it('stopPresentation после startPresentation вызывает failed при ошибке beforeStopPresentation', async () => {
+  it('stopPresentation во время beforeStartPresentation отменяет старт: трек не добавляется', async () => {
+    const addOrReplaceSpy = jest.spyOn(PresentationTrackService.prototype, 'addOrReplace');
+    const spyStart = jest.fn();
+    let finishBeforeStart: () => void = () => {};
+
+    manager.on('start', spyStart);
+    beforeStartPresentation.mockImplementationOnce(async () => {
+      return new Promise<void>((resolve) => {
+        finishBeforeStart = resolve;
+      });
+    });
+
+    const startPromise = manager.startPresentation(beforeStartPresentation, videoTrack);
+    const stopPromise = manager.stopPresentation(beforeStopPresentation);
+
+    expect(beforeStartPresentation).toHaveBeenCalledWith(
+      expect.objectContaining({ aborted: true }),
+    );
+
+    finishBeforeStart();
+
+    const [startResult, stopResult] = await Promise.allSettled([startPromise, stopPromise]);
+
+    expect(startResult.status).toBe('rejected');
+    // @ts-expect-error для теста
+    expect(hasCanceledStartPresentationError(startResult.reason)).toBe(true);
+    expect(stopResult).toEqual({ status: 'fulfilled', value: undefined });
+    expect(spyStart).not.toHaveBeenCalled();
+    expect(addOrReplaceSpy).not.toHaveBeenCalled();
+    expect(beforeStopPresentation).not.toHaveBeenCalled();
+    expect(manager.stateMachine.isIdle).toBe(true);
+    expect(manager.isPresentationInProcess).toBe(false);
+  });
+
+  it('stopPresentation останавливает трек сразу, не дожидаясь ответа на beforeStopPresentation', async () => {
+    await manager.startPresentation(beforeStartPresentation, videoTrack);
+
+    const trackStopSpy = jest.spyOn(videoTrack, 'stop');
+    const eventOrder: string[] = [];
+    let answerBeforeStop: () => void = () => {};
+
+    manager.on('end', () => {
+      eventOrder.push('end');
+    });
+    manager.on('ended', () => {
+      eventOrder.push('ended');
+    });
+    beforeStopPresentation.mockImplementationOnce(async () => {
+      return new Promise<void>((resolve) => {
+        answerBeforeStop = resolve;
+      });
+    });
+
+    const stopPromise = manager.stopPresentation(beforeStopPresentation);
+
+    await flushPromises();
+
+    expect(beforeStopPresentation).toHaveBeenCalledTimes(1);
+    expect(trackStopSpy).toHaveBeenCalled();
+    expect(trackStopSpy.mock.invocationCallOrder[0]).toBeLessThan(
+      beforeStopPresentation.mock.invocationCallOrder[0],
+    );
+    expect(eventOrder).toEqual(['end', 'ended']);
+    expect(manager.stateMachine.isIdle).toBe(true);
+
+    answerBeforeStop();
+
+    await expect(stopPromise).resolves.toBe(videoTrack);
+    expect(eventOrder).toEqual(['end', 'ended']);
+  });
+
+  it('stopPresentation при ошибке beforeStopPresentation останавливает трек и затем вызывает failed', async () => {
     await manager.startPresentation(beforeStartPresentation, videoTrack);
 
     const testError = new Error('fail');
     const eventOrder: string[] = [];
+    const trackStopSpy = jest.spyOn(videoTrack, 'stop');
 
     beforeStopPresentation.mockRejectedValueOnce(testError);
 
     manager.on('end', () => {
       eventOrder.push('end');
+    });
+    manager.on('ended', () => {
+      eventOrder.push('ended');
     });
     manager.on('failed', () => {
       eventOrder.push('failed');
@@ -740,8 +819,10 @@ describe('PresentationManager', () => {
 
     await expect(manager.stopPresentation(beforeStopPresentation)).rejects.toThrow('fail');
 
-    expect(eventOrder).toEqual(['failed']);
-    expect(manager.stateMachine.isFailed).toBe(true);
+    expect(eventOrder).toEqual(['end', 'ended', 'failed']);
+    expect(trackStopSpy).toHaveBeenCalled();
+    expect(manager.stateMachine.isIdle).toBe(true);
+    expect(manager.isPresentationInProcess).toBe(false);
   });
 
   describe('ограничение sendEncodings по maxResolution', () => {

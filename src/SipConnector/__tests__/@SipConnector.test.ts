@@ -711,7 +711,7 @@ describe('SipConnector', () => {
       .spyOn(sipConnector.presentationManager, 'startPresentation')
       // eslint-disable-next-line @typescript-eslint/max-params
       .mockImplementation(async (callback, videoTrack, _rest, _options) => {
-        await callback();
+        await callback(new AbortController().signal);
 
         return videoTrack;
       });
@@ -754,7 +754,7 @@ describe('SipConnector', () => {
       .spyOn(sipConnector.presentationManager, 'startPresentation')
       // eslint-disable-next-line @typescript-eslint/max-params
       .mockImplementation(async (callback, videoTrack, _rest, _options) => {
-        await callback();
+        await callback(new AbortController().signal);
 
         return videoTrack;
       });
@@ -786,7 +786,7 @@ describe('SipConnector', () => {
     jest
       .spyOn(sipConnector.presentationManager, 'startPresentation')
       .mockImplementation(async (callback, videoTrack) => {
-        await callback();
+        await callback(new AbortController().signal);
 
         return videoTrack;
       });

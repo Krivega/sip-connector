@@ -38,7 +38,7 @@ describe('MCUSession', () => {
   beforeEach(() => {
     events = createEvents();
     ua = new UAMock({ uri: 'sip:user@sipServerUrl', register: false, sockets: [] });
-    mcuSession = new MCUSession(events);
+    mcuSession = new MCUSession(events, jest.fn().mockResolvedValue(true));
     getSipServerUrl = (number) => {
       return `sip:${number}@sipServerUrl`;
     };
@@ -193,7 +193,7 @@ describe('MCUSession', () => {
       .spyOn(prepareMediaStreamModule, 'default')
       .mockReturnValue(undefined as unknown as MediaStream);
 
-    const mcuSessionLocal = new MCUSession(events);
+    const mcuSessionLocal = new MCUSession(events, jest.fn().mockResolvedValue(true));
     const rtcSession = new RTCSessionMock({
       eventHandlers: {},
       originator: 'remote',
@@ -365,7 +365,7 @@ describe('MCUSession - дополнительные тесты для покры
 
   beforeEach(() => {
     events = createEvents();
-    mcuSession = new MCUSession(events);
+    mcuSession = new MCUSession(events, jest.fn().mockResolvedValue(true));
     mcuSessionTest = mcuSession as unknown as MCUSessionTestAccess;
     connectionMock = new RTCPeerConnectionMock();
     jest.clearAllMocks();
@@ -574,6 +574,341 @@ describe('MCUSession - дополнительные тесты для покры
 
   it('renegotiate: должен вернуть ошибку renegotiate при вызове если rtcSession не существует', async () => {
     await expect(mcuSession.renegotiate()).rejects.toThrow('No rtcSession established');
+  });
+
+  describe('проверка сигнализации перед re-INVITE', () => {
+    let rtcSession: RTCSessionMock;
+    let waitForSignaling: jest.Mock<Promise<boolean>, []>;
+
+    beforeEach(() => {
+      rtcSession = new RTCSessionMock({ eventHandlers: {}, originator: 'remote' });
+      waitForSignaling = jest.fn<Promise<boolean>, []>();
+      mcuSession = new MCUSession(events, waitForSignaling);
+
+      Object.defineProperty(mcuSession, 'rtcSession', {
+        get: () => {
+          return rtcSession;
+        },
+        configurable: true,
+      });
+    });
+
+    it('renegotiate и restartIce не отправляют re-INVITE без подтверждённой сигнализации', async () => {
+      waitForSignaling.mockResolvedValue(false);
+
+      await expect(mcuSession.renegotiate()).resolves.toBe(false);
+      await expect(mcuSession.restartIce({ useUpdate: true })).resolves.toBe(false);
+
+      expect(waitForSignaling).toHaveBeenCalledTimes(2);
+      expect(rtcSession.renegotiate).not.toHaveBeenCalled();
+      expect(rtcSession.restartIce).not.toHaveBeenCalled();
+    });
+
+    it('renegotiate и restartIce отправляют re-INVITE после подтверждения сигнализации', async () => {
+      const options = { extraHeaders: ['X-Test: value'] };
+
+      waitForSignaling.mockResolvedValue(true);
+
+      await expect(mcuSession.renegotiate()).resolves.toBe(true);
+      await expect(mcuSession.restartIce(options)).resolves.toBe(true);
+
+      expect(rtcSession.renegotiate).toHaveBeenCalledTimes(1);
+      expect(rtcSession.restartIce).toHaveBeenCalledWith(options);
+      expect(waitForSignaling.mock.invocationCallOrder[0]).toBeLessThan(
+        rtcSession.renegotiate.mock.invocationCallOrder[0],
+      );
+    });
+
+    it('не проверяет сигнализацию без rtcSession', async () => {
+      Object.defineProperty(mcuSession, 'rtcSession', {
+        get: () => {
+          return undefined;
+        },
+        configurable: true,
+      });
+
+      await expect(mcuSession.renegotiate()).rejects.toThrow('No rtcSession established');
+
+      expect(waitForSignaling).not.toHaveBeenCalled();
+    });
+
+    describe('досылка неотправленной перенастройки', () => {
+      const setRtcSession = (session: RTCSessionMock) => {
+        Object.defineProperty(mcuSession, 'rtcSession', {
+          get: () => {
+            return session;
+          },
+          configurable: true,
+        });
+      };
+
+      const replaceMediaStream = async () => {
+        return mcuSession.replaceMediaStream(new MediaStream([createAudioMediaStreamTrackMock()]), {
+          deleteExisting: false,
+          forceRenegotiation: true,
+        });
+      };
+
+      beforeEach(() => {
+        rtcSession.createPeerconnection(new MediaStream([createAudioMediaStreamTrackMock()]));
+      });
+
+      it('без неотправленной перенастройки ничего не досылает', async () => {
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(false);
+
+        expect(waitForSignaling).not.toHaveBeenCalled();
+        expect(rtcSession.renegotiate).not.toHaveBeenCalled();
+      });
+
+      it.each([
+        [
+          'renegotiate',
+          async () => {
+            return mcuSession.renegotiate();
+          },
+        ],
+        [
+          'restartIce',
+          async () => {
+            return mcuSession.restartIce();
+          },
+        ],
+      ])('не досылает неотправленный %s', async (_name, sendReinvite) => {
+        waitForSignaling.mockResolvedValueOnce(false).mockResolvedValue(true);
+
+        await expect(sendReinvite()).resolves.toBe(false);
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(false);
+
+        expect(rtcSession.renegotiate).not.toHaveBeenCalled();
+        expect(rtcSession.restartIce).not.toHaveBeenCalled();
+      });
+
+      it('досылает перенастройку replaceMediaStream один раз сразу, без повторной проверки сигнализации', async () => {
+        waitForSignaling.mockResolvedValue(false);
+
+        await replaceMediaStream();
+
+        expect(rtcSession.renegotiate).not.toHaveBeenCalled();
+
+        const resend = mcuSession.renegotiateIfPending();
+
+        expect(rtcSession.renegotiate).toHaveBeenCalledTimes(1);
+
+        await expect(resend).resolves.toBe(true);
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(false);
+
+        expect(rtcSession.renegotiate).toHaveBeenCalledTimes(1);
+        expect(waitForSignaling).toHaveBeenCalledTimes(1);
+      });
+
+      it('оставляет досылку до следующего успешного ping, если досылка завершилась ошибкой', async () => {
+        waitForSignaling.mockResolvedValue(false);
+        rtcSession.renegotiate.mockRejectedValueOnce(new Error('Media Renegotiation Failed'));
+
+        await replaceMediaStream();
+
+        await expect(mcuSession.renegotiateIfPending()).rejects.toThrow(
+          'Media Renegotiation Failed',
+        );
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(true);
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(false);
+
+        expect(rtcSession.renegotiate).toHaveBeenCalledTimes(2);
+      });
+
+      it('оставляет досылку до следующего успешного ping, если JsSIP не отправил re-INVITE', async () => {
+        waitForSignaling.mockResolvedValue(false);
+        rtcSession.renegotiate.mockResolvedValueOnce(false);
+
+        await replaceMediaStream();
+
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(false);
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(true);
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(false);
+
+        expect(rtcSession.renegotiate).toHaveBeenCalledTimes(2);
+        expect(waitForSignaling).toHaveBeenCalledTimes(1);
+      });
+
+      it('не запускает вторую досылку, пока идёт первая', async () => {
+        let finishResend: (isRenegotiated: boolean) => void = () => {};
+
+        waitForSignaling.mockResolvedValue(false);
+        rtcSession.renegotiate.mockImplementationOnce(async () => {
+          return new Promise<boolean>((resolve) => {
+            finishResend = resolve;
+          });
+        });
+
+        await replaceMediaStream();
+
+        const resend = mcuSession.renegotiateIfPending();
+
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(false);
+
+        finishResend(true);
+
+        await expect(resend).resolves.toBe(true);
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(false);
+
+        expect(rtcSession.renegotiate).toHaveBeenCalledTimes(1);
+      });
+
+      it('не досылает снова, если во время неудачной досылки ушёл другой re-INVITE', async () => {
+        let finishResend: (isRenegotiated: boolean) => void = () => {};
+
+        waitForSignaling.mockResolvedValueOnce(false).mockResolvedValue(true);
+        rtcSession.renegotiate.mockImplementationOnce(async () => {
+          return new Promise<boolean>((resolve) => {
+            finishResend = resolve;
+          });
+        });
+
+        await replaceMediaStream();
+
+        const resend = mcuSession.renegotiateIfPending();
+
+        await expect(mcuSession.renegotiate()).resolves.toBe(true);
+
+        finishResend(false);
+
+        await expect(resend).resolves.toBe(false);
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(false);
+
+        expect(rtcSession.renegotiate).toHaveBeenCalledTimes(2);
+      });
+
+      it('не досылает, пока другой re-INVITE ждёт проверки сигнализации: он сам отправит актуальный SDP', async () => {
+        let confirmSignaling: (isReady: boolean) => void = () => {};
+
+        waitForSignaling.mockResolvedValueOnce(false).mockImplementationOnce(async () => {
+          return new Promise<boolean>((resolve) => {
+            confirmSignaling = resolve;
+          });
+        });
+
+        await replaceMediaStream();
+
+        const restartIce = mcuSession.restartIce();
+
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(false);
+
+        // Успешный ping подтверждает проверку и сразу вызывает досылку, раньше продолжения re-INVITE
+        confirmSignaling(true);
+
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(false);
+        await expect(restartIce).resolves.toBe(true);
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(false);
+
+        expect(rtcSession.restartIce).toHaveBeenCalledTimes(1);
+        expect(rtcSession.renegotiate).not.toHaveBeenCalled();
+      });
+
+      it('досылает после ошибки проверки сигнализации другого re-INVITE', async () => {
+        waitForSignaling
+          .mockResolvedValueOnce(false)
+          .mockRejectedValueOnce(new Error('Signaling check failed'));
+
+        await replaceMediaStream();
+
+        await expect(mcuSession.restartIce()).rejects.toThrow('Signaling check failed');
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(true);
+
+        expect(rtcSession.renegotiate).toHaveBeenCalledTimes(1);
+      });
+
+      it('не снимает досылку неотправленным restartIce', async () => {
+        waitForSignaling.mockResolvedValue(false);
+
+        await replaceMediaStream();
+        await expect(mcuSession.restartIce()).resolves.toBe(false);
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(true);
+
+        expect(rtcSession.restartIce).not.toHaveBeenCalled();
+        expect(rtcSession.renegotiate).toHaveBeenCalledTimes(1);
+      });
+
+      it.each([
+        [
+          'renegotiate',
+          async () => {
+            return mcuSession.renegotiate();
+          },
+        ],
+        [
+          'restartIce',
+          async () => {
+            return mcuSession.restartIce();
+          },
+        ],
+      ])('не досылает после отправленного %s', async (_name, sendReinvite) => {
+        waitForSignaling.mockResolvedValueOnce(false).mockResolvedValue(true);
+
+        await replaceMediaStream();
+        await sendReinvite();
+        rtcSession.renegotiate.mockClear();
+
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(false);
+
+        expect(rtcSession.renegotiate).not.toHaveBeenCalled();
+      });
+
+      it('не запоминает перенастройку, если звонок завершился во время проверки', async () => {
+        waitForSignaling.mockImplementationOnce(async () => {
+          mcuSession.reset();
+
+          return false;
+        });
+
+        await replaceMediaStream();
+
+        setRtcSession(rtcSession);
+
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(false);
+
+        expect(rtcSession.renegotiate).not.toHaveBeenCalled();
+      });
+
+      it('не запоминает перенастройку, если сессия перестала быть установленной во время проверки', async () => {
+        waitForSignaling.mockImplementationOnce(async () => {
+          jest.spyOn(rtcSession, 'isEstablished').mockReturnValueOnce(false);
+
+          return false;
+        });
+
+        await replaceMediaStream();
+
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(false);
+
+        expect(rtcSession.renegotiate).not.toHaveBeenCalled();
+      });
+
+      it('не досылает после завершения звонка', async () => {
+        waitForSignaling.mockResolvedValue(false);
+
+        await replaceMediaStream();
+        mcuSession.reset();
+        setRtcSession(rtcSession);
+
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(false);
+
+        expect(rtcSession.renegotiate).not.toHaveBeenCalled();
+      });
+
+      it('не досылает в другую сессию звонка', async () => {
+        const nextRtcSession = new RTCSessionMock({ eventHandlers: {}, originator: 'remote' });
+
+        waitForSignaling.mockResolvedValue(false);
+
+        await replaceMediaStream();
+        setRtcSession(nextRtcSession);
+
+        await expect(mcuSession.renegotiateIfPending()).resolves.toBe(false);
+
+        expect(nextRtcSession.renegotiate).not.toHaveBeenCalled();
+        expect(rtcSession.renegotiate).not.toHaveBeenCalled();
+      });
+    });
   });
 
   it('setMinBitrateForSenders: delegates to BitrateStateManager with current connection', async () => {

@@ -15,7 +15,7 @@
 | `auto-connect:limit-reached-attempts`    | Генерируется при достижении лимита попыток подключения                       | `Error`                         |
 | `auto-connect:telephony-check-failure`   | Генерируется при ошибке проверки доступности телефонии                       | `TTelephonyCheckFailureEvent`   |
 | `auto-connect:telephony-check-escalated` | Генерируется при эскалации уровня проблем телефонии                          | `TTelephonyCheckEscalatedEvent` |
-| `auto-connect:signaling-unstable`        | Генерируется один раз, когда во время звонка неуспешные ping достигли порога | `TSignalingUnstableEvent`       |
+| `auto-connect:signaling-unstable`        | Генерируется один раз по первому неуспешному ping во время звонка            | `TSignalingUnstableEvent`       |
 | `auto-connect:signaling-restored`        | Генерируется после `signaling-unstable` при успешном ping или остановке ping | `Record<string, never>`         |
 
 ## Структуры данных

@@ -29,7 +29,8 @@
 - `stable` — rapid-sequence `call (fail) → call (fail)` не роняет connected-сессию (`e2e/call.spec.ts`).
 - `stable` — double-click call при media-fail не уводит в невалидное состояние (`e2e/call.spec.ts`).
 - `stable` — `hangup` после `connect+call` выполняет полный cleanup и возвращает систему в `disconnected` (`e2e/call.spec.ts`).
-- `flaky-risk` — потеря SIP WebSocket во время активного звонка не завершает звонок: после обрыва транспорта и переключения микрофона, при INFO и OPTIONS без ответа по открытому WebSocket, при неуспешных периодических ping (без reconnect и повторного REGISTER) (`e2e/wss-loss-in-call.spec.ts`; сервер заменён тестовым SIP-пиром `e2e/support/SipPeer.ts`; зависит от реальных таймеров JsSIP: Timer F 32 с при ожидании ~34 с, таймаут ping 10 с).
+- `flaky-risk` — потеря SIP WebSocket во время активного звонка не завершает звонок: после обрыва транспорта и переключения микрофона, при INFO и OPTIONS без ответа по открытому WebSocket, при неуспешных периодических ping. В звонке reconnect не запускается: после первого неуспешного ping транспорт переоткрывается, `signaling-unstable` приходит не позже 30 с, а `signaling-restored` — не позже 5 с после переоткрытия, потому что ping по новому транспорту уходит сразу (`e2e/wss-loss-in-call.spec.ts`; сервер заменён тестовым SIP-пиром `e2e/support/SipPeer.ts`; зависит от реальных таймеров JsSIP: Timer F 32 с при ожидании ~34 с, таймаут ping 10 с).
+- `flaky-risk` — перед стартом демонстрации и перед re-INVITE сигнализация проверяется ping: по полуоткрытому WebSocket старт проходит по новому соединению (ping, затем INFO и re-INVITE), а если сигнализация не восстанавливается, старт отклоняется не позже 30 с без INFO и re-INVITE, звонок продолжается (`e2e/presentation-on-signaling-loss.spec.ts`; тестовый SIP-пир `e2e/support/SipPeer.ts`).
 
 ## Participant role
 

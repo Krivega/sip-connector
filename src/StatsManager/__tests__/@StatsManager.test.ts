@@ -21,6 +21,7 @@ const { mcuDebugLogger } = logger as jest.Mock & { mcuDebugLogger: jest.Mock };
 describe('StatsManager', () => {
   const tools = {
     sendOffer: jest.fn().mockResolvedValue({} as RTCSessionDescription),
+    waitForSignaling: jest.fn().mockResolvedValue(true),
   };
 
   it('подписывается на события CallManager при создании', () => {

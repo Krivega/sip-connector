@@ -19,12 +19,23 @@ type TDialog = {
 
 type TSilentMethod = 'INFO' | 'OPTIONS';
 
+type TConnection = {
+  isHalfOpen: boolean;
+  messages: string[];
+  /** Сообщения клиента, отправленные по полуоткрытому соединению и не дошедшие до сервера. */
+  lostMessages: string[];
+};
+
 type TRequest = TDialog & {
   method: string;
   cseq: number;
   branch?: string;
   headers?: string[];
   body?: string;
+};
+
+const isRequest = (message: string, method: string): boolean => {
+  return message.startsWith(`${method} `);
 };
 
 const getHeader = (message: string, name: string): string => {
@@ -124,6 +135,8 @@ export class SipPeer {
 
   private rejectedConnectionsCount = 0;
 
+  private readonly connections: TConnection[] = [];
+
   public constructor(page: Page) {
     this.page = page;
   }
@@ -146,8 +159,19 @@ export class SipPeer {
         return;
       }
 
+      const connection: TConnection = { isHalfOpen: false, messages: [], lostMessages: [] };
+
+      this.connections.push(connection);
       this.socket = socket;
       socket.onMessage(async (message) => {
+        // Полуоткрытое соединение: сообщения клиента до сервера не доходят.
+        if (connection.isHalfOpen) {
+          connection.lostMessages.push(message.toString());
+
+          return;
+        }
+
+        connection.messages.push(message.toString());
         await this.handleMessage(message.toString());
       });
     });
@@ -258,8 +282,59 @@ export class SipPeer {
 
   /** Сервер закрывает текущий WebSocket и сразу закрывает все новые подключения клиента. */
   public async dropConnection(): Promise<void> {
-    this.isAcceptingConnections = false;
+    this.stopAcceptingConnections();
     await this.socket?.close({ code: 1011, reason: 'sip-peer: connection lost' });
+  }
+
+  /** Сервер сразу закрывает новые подключения клиента, текущий WebSocket не меняется. */
+  public stopAcceptingConnections(): void {
+    this.isAcceptingConnections = false;
+  }
+
+  /**
+   * Текущий WebSocket становится полуоткрытым: у клиента он открыт, но сервер не получает
+   * сообщения по нему и ничего не отвечает. Новые подключения клиента обслуживаются штатно.
+   */
+  public makeConnectionHalfOpen(): void {
+    const connection = this.connections.at(-1);
+
+    if (connection === undefined) {
+      throw new Error('SIP WebSocket ещё не открыт');
+    }
+
+    connection.isHalfOpen = true;
+  }
+
+  public getConnectionsCount(): number {
+    return this.connections.length;
+  }
+
+  public countLatestConnectionRequests(method: string): number {
+    return (this.connections.at(-1)?.messages ?? []).filter((message) => {
+      return isRequest(message, method);
+    }).length;
+  }
+
+  /** Методы запросов, полученных сервером по последнему соединению, в порядке получения. */
+  public getLatestConnectionRequestMethods(): string[] {
+    return (this.connections.at(-1)?.messages ?? [])
+      .filter((message) => {
+        return !message.startsWith('SIP/2.0 ');
+      })
+      .map((message) => {
+        return message.slice(0, message.indexOf(' '));
+      });
+  }
+
+  /** Запросы клиента, отправленные по полуоткрытым соединениям: сервер их не получил. */
+  public countLostRequests(method: string): number {
+    return this.connections
+      .flatMap(({ lostMessages }) => {
+        return lostMessages;
+      })
+      .filter((message) => {
+        return isRequest(message, method);
+      }).length;
   }
 
   public getRejectedConnectionsCount(): number {
@@ -268,7 +343,7 @@ export class SipPeer {
 
   public countReceivedRequests(method: string): number {
     return this.receivedMessages.filter((message) => {
-      return message.startsWith(`${method} `);
+      return isRequest(message, method);
     }).length;
   }
 

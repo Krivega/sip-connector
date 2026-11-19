@@ -8,7 +8,7 @@ const keepSingleH264VideoInSdp = (sdp: string): string => {
         return section;
       }
 
-      const [mediaLine = '', ...attributes] = section.split(lineEnding);
+      const [mediaLine, ...attributes] = section.split(lineEnding);
       const [media, port, protocol, ...payloadTypes] = mediaLine.split(' ');
       const h264PayloadTypes = new Set(
         Array.from(section.matchAll(/^a=rtpmap:(\d+) H264\/90000$/gim), ([, payloadType]) => {

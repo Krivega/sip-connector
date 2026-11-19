@@ -79,7 +79,7 @@ export class PresentationLifecycle {
   }
 
   public async executeStartFlow(
-    beforeStartPresentation: () => Promise<void>,
+    beforeStartPresentation: (signal: AbortSignal) => Promise<void>,
     videoTrack: MediaStreamVideoTrack,
     {
       isNeedReinvite = true,
@@ -88,7 +88,8 @@ export class PresentationLifecycle {
       sendEncodings,
       maxResolution,
       onAddedTransceiver,
-    }: TPresentationFlowOptions,
+      signal,
+    }: TPresentationFlowOptions & { signal: AbortSignal },
   ): Promise<MediaStreamVideoTrack> {
     applyContentHint(videoTrack, contentHint);
 
@@ -98,7 +99,12 @@ export class PresentationLifecycle {
       maxResolution,
     });
 
-    await beforeStartPresentation();
+    await beforeStartPresentation(signal);
+
+    // Остановка во время ожидания сервера ещё не видела трек, поэтому отменённый старт его не добавляет
+    if (signal.aborted) {
+      throw new Error('Presentation start is canceled');
+    }
 
     try {
       await this.attachTrack(videoTrack, isNeedReinvite, {

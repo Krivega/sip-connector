@@ -269,6 +269,10 @@ class AutoConnectorManager extends EventEmitterProxy<TEventMap> {
     this.runtime.cancelPendingRetry();
   }
 
+  public async waitForSignaling(): Promise<boolean> {
+    return this.runtime.waitForSignaling();
+  }
+
   private readonly requestReconnect = (
     parameters: TParametersAutoConnect,
     reason: TReconnectReason,

@@ -1,9 +1,47 @@
 import { doMockSipConnector } from '@/doMock';
+import CallSignalingRecovery from '../CallSignalingRecovery';
 import PingServerRequester from '../PingServerRequester';
+
+import type { SipConnector } from '@/SipConnector';
 
 jest.mock('@/logger');
 
 describe('PingServerRequester - Integration', () => {
+  // Та же связка с восстановлением сигнализации, что и в AutoConnectorRuntime
+  const createPingServerRequester = (
+    sipConnector: SipConnector,
+    signalingHandlers: { onSignalingUnstable: () => void; onSignalingRestored: () => void },
+  ) => {
+    const pingServerRequester = new PingServerRequester({
+      connectionManager: sipConnector.connectionManager,
+      callManager: sipConnector.callManager,
+    });
+    const callSignalingRecovery = new CallSignalingRecovery({
+      connectionManager: sipConnector.connectionManager,
+      callManager: sipConnector.callManager,
+      pingServerRequester,
+      ...signalingHandlers,
+    });
+
+    return {
+      start: ({ onFailRequest }: { onFailRequest: () => void }) => {
+        pingServerRequester.start({
+          onFailRequest,
+          onPingSucceeded: () => {
+            callSignalingRecovery.onPingSucceeded();
+          },
+          onPingFailedInCall: (payload) => {
+            callSignalingRecovery.onPingFailedInCall(payload);
+          },
+        });
+      },
+      stop: () => {
+        pingServerRequester.stop();
+        callSignalingRecovery.stop();
+      },
+    };
+  };
+
   afterEach(() => {
     jest.clearAllMocks();
     jest.restoreAllMocks();
@@ -14,9 +52,9 @@ describe('PingServerRequester - Integration', () => {
     jest.useFakeTimers({ doNotFake: ['setImmediate', 'queueMicrotask'] });
 
     const sipConnector = doMockSipConnector();
-    const pingServerRequester = new PingServerRequester({
-      connectionManager: sipConnector.connectionManager,
-      callManager: sipConnector.callManager,
+    const pingServerRequester = createPingServerRequester(sipConnector, {
+      onSignalingUnstable: jest.fn(),
+      onSignalingRestored: jest.fn(),
     });
     const pingOutcomes: ('success' | 'fail')[] = [
       'success',
@@ -37,11 +75,7 @@ describe('PingServerRequester - Integration', () => {
       });
     const onFailRequest = jest.fn();
 
-    pingServerRequester.start({
-      onFailRequest,
-      onSignalingUnstable: jest.fn(),
-      onSignalingRestored: jest.fn(),
-    });
+    pingServerRequester.start({ onFailRequest });
 
     for (let index = 0; index < 6; index += 1) {
       // eslint-disable-next-line no-await-in-loop
@@ -61,9 +95,11 @@ describe('PingServerRequester - Integration', () => {
 
     jest.spyOn(sipConnector.callManager, 'isCallActive', 'get').mockReturnValue(true);
 
-    const pingServerRequester = new PingServerRequester({
-      connectionManager: sipConnector.connectionManager,
-      callManager: sipConnector.callManager,
+    const onSignalingUnstable = jest.fn();
+    const onSignalingRestored = jest.fn();
+    const pingServerRequester = createPingServerRequester(sipConnector, {
+      onSignalingUnstable,
+      onSignalingRestored,
     });
     const pingOutcomes: ('success' | 'fail')[] = ['fail', 'fail', 'fail', 'success'];
 
@@ -74,10 +110,8 @@ describe('PingServerRequester - Integration', () => {
     });
 
     const onFailRequest = jest.fn();
-    const onSignalingUnstable = jest.fn();
-    const onSignalingRestored = jest.fn();
 
-    pingServerRequester.start({ onFailRequest, onSignalingUnstable, onSignalingRestored });
+    pingServerRequester.start({ onFailRequest });
 
     for (let index = 0; index < 4; index += 1) {
       // eslint-disable-next-line no-await-in-loop
@@ -86,7 +120,7 @@ describe('PingServerRequester - Integration', () => {
 
     expect(onFailRequest).not.toHaveBeenCalled();
     expect(onSignalingUnstable).toHaveBeenCalledTimes(1);
-    expect(onSignalingUnstable).toHaveBeenCalledWith({ failCount: 2 });
+    expect(onSignalingUnstable).toHaveBeenCalledWith({ failCount: 1 });
     expect(onSignalingRestored).toHaveBeenCalledTimes(1);
 
     pingServerRequester.stop();

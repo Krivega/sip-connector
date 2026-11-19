@@ -3,9 +3,11 @@
 import { createMediaStreamMock } from 'webrtc-mock';
 
 import { dataForConnectionWithAuthorization } from '../__fixtures__';
+import flushPromises from '../__fixtures__/flushPromises';
 import { createDeclineStartPresentationError } from '../__fixtures__/RTCSessionMock';
 import { EContentTypeReceived, EHeader } from '../ApiManager';
 import { doMockSipConnector } from '../doMock';
+import { hasCanceledStartPresentationError } from '../PresentationManager';
 import { PresentationLifecycle } from '../PresentationManager/orchestration/PresentationLifecycle';
 
 import type { ExtraHeaders } from '@krivega/jssip';
@@ -240,6 +242,179 @@ describe('presentation', () => {
     expect(sipConnector.presentationManager.stateMachine.isActive).toBe(true);
   });
 
+  it('отклоняет старт демонстрации без INFO и re-INVITE, если сигнализация не подтверждена', async () => {
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    const rtcSession = sipConnector.callManager.getEstablishedRTCSession()!;
+    const sendInfoMocked = jest.spyOn(rtcSession, 'sendInfo');
+    const renegotiateMocked = jest.spyOn(rtcSession, 'renegotiate');
+
+    jest.spyOn(sipConnector.autoConnectorManager, 'waitForSignaling').mockResolvedValue(false);
+
+    await expect(
+      sipConnector.startPresentation(mediaStream.getVideoTracks()[0] as MediaStreamVideoTrack),
+    ).rejects.toMatchObject({ values: { lastResult: { message: 'Signaling is not ready' } } });
+
+    expect(sendInfoMocked).not.toHaveBeenCalled();
+    expect(renegotiateMocked).not.toHaveBeenCalled();
+    expect(sipConnector.isCallActive).toBe(true);
+  });
+
+  describe('остановка во время старта демонстрации', () => {
+    const presentationTrack = createMediaStreamMock({
+      video: { deviceId: { exact: 'presentationDeviceId' } },
+    }).getVideoTracks()[0] as MediaStreamVideoTrack;
+
+    const hasPresentationSender = () => {
+      return sipConnector.connection!.getSenders().some(({ track }) => {
+        return track === presentationTrack;
+      });
+    };
+
+    beforeEach(async () => {
+      await sipConnector.connect(dataForConnectionWithAuthorization);
+      await sipConnector.call({ number, mediaStream });
+    });
+
+    it('не отправляет INFO и не добавляет трек, если остановка пришла во время проверки сигнализации', async () => {
+      const rtcSession = sipConnector.callManager.getEstablishedRTCSession()!;
+      const sendInfoMocked = jest.spyOn(rtcSession, 'sendInfo');
+      const renegotiateMocked = jest.spyOn(rtcSession, 'renegotiate');
+      let confirmSignaling: (isReady: boolean) => void = () => {};
+
+      jest.spyOn(sipConnector.autoConnectorManager, 'waitForSignaling').mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          confirmSignaling = resolve;
+        }),
+      );
+
+      const startPromise = sipConnector.startPresentation(presentationTrack);
+      const stopPromise = sipConnector.stopPresentation();
+
+      confirmSignaling(true);
+
+      const [startResult, stopResult] = await Promise.allSettled([startPromise, stopPromise]);
+
+      expect(startResult.status).toBe('rejected');
+      // @ts-expect-error для теста
+      expect(hasCanceledStartPresentationError(startResult.reason)).toBe(true);
+      expect(stopResult).toEqual({ status: 'fulfilled', value: undefined });
+      expect(sendInfoMocked).not.toHaveBeenCalled();
+      expect(renegotiateMocked).not.toHaveBeenCalled();
+      expect(hasPresentationSender()).toBe(false);
+      expect(sipConnector.presentationManager.stateMachine.isIdle).toBe(true);
+      expect(sipConnector.presentationManager.isPresentationInProcess).toBe(false);
+      expect(sipConnector.isCallActive).toBe(true);
+    });
+
+    it('не добавляет трек, если остановка пришла во время ожидания ответа на INFO', async () => {
+      const rtcSession = sipConnector.callManager.getEstablishedRTCSession()!;
+      const renegotiateMocked = jest.spyOn(rtcSession, 'renegotiate');
+      let answerInfo: () => void = () => {};
+      const sendInfoMocked = jest.spyOn(rtcSession, 'sendInfo').mockImplementationOnce(async () => {
+        return new Promise<void>((resolve) => {
+          answerInfo = resolve;
+        });
+      });
+
+      const startPromise = sipConnector.startPresentation(presentationTrack);
+
+      await flushPromises();
+
+      expect(sendInfoMocked).toHaveBeenCalledTimes(1);
+
+      const stopPromise = sipConnector.stopPresentation();
+
+      answerInfo();
+
+      const [startResult, stopResult] = await Promise.allSettled([startPromise, stopPromise]);
+
+      // @ts-expect-error для теста
+      expect(hasCanceledStartPresentationError(startResult.reason)).toBe(true);
+      expect(stopResult).toEqual({ status: 'fulfilled', value: undefined });
+      expect(sendInfoMocked).toHaveBeenCalledTimes(1);
+      expect(renegotiateMocked).not.toHaveBeenCalled();
+      expect(hasPresentationSender()).toBe(false);
+      expect(sipConnector.presentationManager.stateMachine.isIdle).toBe(true);
+    });
+  });
+
+  it('не отправляет re-INVITE звонка, если сигнализация не подтверждена', async () => {
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    const renegotiateMocked = jest.spyOn(
+      sipConnector.callManager.getEstablishedRTCSession()!,
+      'renegotiate',
+    );
+    const waitForSignalingMocked = jest
+      .spyOn(sipConnector.autoConnectorManager, 'waitForSignaling')
+      .mockResolvedValue(false);
+
+    await expect(sipConnector.callManager.renegotiateMcuSession()).resolves.toBe(false);
+
+    expect(waitForSignalingMocked).toHaveBeenCalledTimes(1);
+    expect(renegotiateMocked).not.toHaveBeenCalled();
+  });
+
+  it('досылает re-INVITE нового канала, не отправленный без подтверждённой сигнализации', async () => {
+    const audioMediaStream = createMediaStreamMock({
+      audio: { deviceId: { exact: 'audioDeviceId' } },
+    });
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream: audioMediaStream });
+
+    const renegotiateMocked = jest.spyOn(
+      sipConnector.callManager.getEstablishedRTCSession()!,
+      'renegotiate',
+    );
+
+    jest
+      .spyOn(sipConnector.autoConnectorManager, 'waitForSignaling')
+      .mockResolvedValueOnce(false)
+      .mockResolvedValue(true);
+
+    await sipConnector.replaceMediaStream(mediaStream);
+
+    expect(renegotiateMocked).not.toHaveBeenCalled();
+    expect(sipConnector.isCallActive).toBe(true);
+
+    await expect(sipConnector.callManager.renegotiateIfPending()).resolves.toBe(true);
+    await expect(sipConnector.callManager.renegotiateIfPending()).resolves.toBe(false);
+
+    expect(renegotiateMocked).toHaveBeenCalledTimes(1);
+  });
+
+  it('не досылает re-INVITE демонстрации, отменённой без подтверждённой сигнализации', async () => {
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    const rtcSession = sipConnector.callManager.getEstablishedRTCSession()!;
+    const sendInfoMocked = jest.spyOn(rtcSession, 'sendInfo');
+    const renegotiateMocked = jest.spyOn(rtcSession, 'renegotiate');
+
+    // Проверка перед INFO проходит, перед re-INVITE — нет
+    jest
+      .spyOn(sipConnector.autoConnectorManager, 'waitForSignaling')
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false)
+      .mockResolvedValue(true);
+
+    await expect(
+      sipConnector.startPresentation(mediaStream.getVideoTracks()[0] as MediaStreamVideoTrack),
+    ).rejects.toMatchObject({ values: { lastResult: { name: 'PresentationReinviteError' } } });
+
+    expect(sendInfoMocked).toHaveBeenCalled();
+    expect(sipConnector.presentationManager.stateMachine.isActive).toBe(false);
+
+    await expect(sipConnector.callManager.renegotiateIfPending()).resolves.toBe(false);
+
+    expect(renegotiateMocked).not.toHaveBeenCalled();
+    expect(sipConnector.isCallActive).toBe(true);
+  });
+
   it('should be stopped incoming presentation before outgoing presentation started when in DIRECT_P2P_ROOM', async () => {
     expect.assertions(2);
 
@@ -260,6 +435,7 @@ describe('presentation', () => {
 
     expect(sendInfoMocked).toHaveBeenCalledTimes(1);
     expect(sendInfoMocked).toHaveBeenNthCalledWith(1, EContentTypeReceived.SHARE_STATE, undefined, {
+      noTerminateWhenError: true,
       extraHeaders: [EHeader.AVAILABLE_CONTENTED_STREAM],
     });
   });
@@ -284,6 +460,7 @@ describe('presentation', () => {
 
     expect(sendInfoMocked).toHaveBeenCalledTimes(1);
     expect(sendInfoMocked).toHaveBeenNthCalledWith(1, EContentTypeReceived.SHARE_STATE, undefined, {
+      noTerminateWhenError: true,
       extraHeaders: [EHeader.ACK_PERMISSION_TO_START_PRESENTATION],
     });
   });

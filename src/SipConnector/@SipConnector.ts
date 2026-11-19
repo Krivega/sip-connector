@@ -136,7 +136,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     this.callSessionState = new CallSessionState();
     this.callManager = new CallManager(
       { contentedStreamManager: this.contentedStreamManager },
-      { sendOffer: this.sendOffer },
+      { sendOffer: this.sendOffer, waitForSignaling: this.waitForSignaling },
       { callSessionState: this.callSessionState },
     );
     this.incomingCallManager = new IncomingCallManager(this.connectionManager);
@@ -564,7 +564,17 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     const { callLimit, onAddedTransceiver, ...rest } = options;
 
     return this.presentationManager.startPresentation(
-      async () => {
+      async (signal) => {
+        // Иначе INFO уйдёт в зависший WebSocket и будет ждать таймаута транзакции
+        if (!(await this.waitForSignaling())) {
+          throw new Error('Signaling is not ready');
+        }
+
+        // Старт остановлен во время проверки: INFO не нужен, отмену завершит PresentationLifecycle
+        if (signal.aborted) {
+          return;
+        }
+
         await (this.isOptionalPresentationPermission
           ? this.apiManager.sendAvailableContentedStream()
           : this.apiManager.askPermissionToStartPresentation());
@@ -765,6 +775,11 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       quality: params.quality,
       audio: params.audioChannel,
     });
+  };
+
+  // AutoConnectorManager создаётся после CallManager, поэтому проверка читает его лениво
+  private readonly waitForSignaling = async (): Promise<boolean> => {
+    return this.autoConnectorManager.waitForSignaling();
   };
 
   private setCodecPreferences(transceiver: RTCRtpTransceiver) {
