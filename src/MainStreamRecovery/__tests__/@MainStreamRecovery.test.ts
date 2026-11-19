@@ -140,6 +140,20 @@ describe('@MainStreamRecovery', () => {
     expect(mcuDebugLogger).toHaveBeenLastCalledWith('renegotiate has successful');
   });
 
+  it('должен логировать, что renegotiate не отправлен, если сигнализация не готова', async () => {
+    jest.mocked(callManager.renegotiate).mockResolvedValueOnce(false);
+
+    const recovery = new MainStreamRecovery(callManager, 200);
+
+    jest.useRealTimers();
+
+    recovery.recover();
+
+    await flushPromises();
+
+    expect(mcuDebugLogger).toHaveBeenLastCalledWith('renegotiate was not sent');
+  });
+
   it('должен логировать ошибку renegotiate после recover если renegotiate завершился ошибкой', async () => {
     const error = new Error('renegotiate failed');
 

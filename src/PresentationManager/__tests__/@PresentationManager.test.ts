@@ -32,6 +32,7 @@ describe('PresentationManager', () => {
       { contentedStreamManager: new ContentedStreamManager() },
       {
         sendOffer: jest.fn().mockResolvedValue({} as RTCSessionDescription),
+        waitForSignaling: jest.fn().mockResolvedValue(true),
       },
       { callSessionState: new CallSessionState() },
     );

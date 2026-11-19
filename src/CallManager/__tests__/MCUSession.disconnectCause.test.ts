@@ -34,7 +34,7 @@ describe('Причина отключения основной сессии', ()
   beforeEach(() => {
     jest.useFakeTimers();
     events = createEvents();
-    session = new MCUSession(events);
+    session = new MCUSession(events, jest.fn().mockResolvedValue(true));
     mediaStream = new MediaStream();
     ended = jest.fn<undefined, [TCallEndEvent]>();
     events.on('ended', ended);

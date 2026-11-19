@@ -33,6 +33,7 @@ describe('ApiManager (NEW_INFO handling)', () => {
     const contentedStreamManager = new ContentedStreamManager();
     const tools = {
       sendOffer: jest.fn().mockResolvedValue({} as RTCSessionDescription),
+      waitForSignaling: jest.fn().mockResolvedValue(true),
     };
 
     callManager = Object.assign(

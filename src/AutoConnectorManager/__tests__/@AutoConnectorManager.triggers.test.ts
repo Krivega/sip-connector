@@ -1,8 +1,11 @@
+import { C as JsSIP_C } from '@krivega/jssip';
+
 import flushPromises from '@/__fixtures__/flushPromises';
 import { EConnectionStatus } from '@/ConnectionManager';
 import { doMockSipConnector } from '@/doMock';
 import AutoConnectorManager from '../@AutoConnectorManager';
 import AttemptsState from '../AttemptsState';
+import CallSignalingRecovery from '../CallSignalingRecovery';
 import CheckTelephonyRequester from '../CheckTelephonyRequester';
 import PingServerRequester from '../PingServerRequester';
 import RegistrationFailedOutOfCallSubscriber from '../RegistrationFailedOutOfCallSubscriber';
@@ -71,8 +74,8 @@ describe('AutoConnectorManager - Triggers', () => {
 
       expect(pingServerStartSpy).toHaveBeenCalledWith({
         onFailRequest: expect.any(Function) as () => void,
-        onSignalingUnstable: expect.any(Function) as () => void,
-        onSignalingRestored: expect.any(Function) as () => void,
+        onPingSucceeded: expect.any(Function) as () => void,
+        onPingFailedInCall: expect.any(Function) as () => void,
       });
     });
 
@@ -134,6 +137,7 @@ describe('AutoConnectorManager - Triggers', () => {
     });
 
     it('stop: останавливает все connect triggers', async () => {
+      const callSignalingRecoveryStopSpy = jest.spyOn(CallSignalingRecovery.prototype, 'stop');
       const pingServerStopSpy = jest.spyOn(PingServerRequester.prototype, 'stop');
       const checkTelephonyStopSpy = jest.spyOn(CheckTelephonyRequester.prototype, 'stop');
       const registrationFailedSubscriberUnsubscribeSpy = jest.spyOn(
@@ -148,6 +152,11 @@ describe('AutoConnectorManager - Triggers', () => {
       await manager.stop();
 
       expect(pingServerStopSpy).toHaveBeenCalled();
+      // Ping останавливается раньше: `waitForSignaling()` из обработчика `signaling-restored` не отправит ping
+      expect(pingServerStopSpy.mock.invocationCallOrder[0]).toBeLessThan(
+        callSignalingRecoveryStopSpy.mock.invocationCallOrder[0],
+      );
+      expect(callSignalingRecoveryStopSpy).toHaveBeenCalled();
       expect(checkTelephonyStopSpy).toHaveBeenCalled();
       expect(registrationFailedSubscriberUnsubscribeSpy).toHaveBeenCalled();
     });
@@ -208,6 +217,17 @@ describe('AutoConnectorManager - Triggers', () => {
 
   describe('периодический ping и активный звонок', () => {
     const PING_INTERVAL_MS = 15_000;
+    const PING_TIMEOUT_MS = 10_000;
+
+    // Как OPTIONS без ответа в JsSIP: иначе мгновенный отказ по новому транспорту снова переоткроет его
+    const rejectByPingTimeout = async () => {
+      return new Promise<void>((_resolve, reject) => {
+        setTimeout(() => {
+          // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
+          reject({ originator: 'system', cause: JsSIP_C.causes.REQUEST_TIMEOUT });
+        }, PING_TIMEOUT_MS);
+      });
+    };
 
     let pingSpy: jest.SpyInstance;
     let disconnectSpy: jest.SpyInstance;
@@ -238,7 +258,7 @@ describe('AutoConnectorManager - Triggers', () => {
             };
           });
         })
-        .mockRejectedValue(new Error('ping timeout'));
+        .mockImplementation(rejectByPingTimeout);
 
       manager.start(baseParameters).catch(() => {});
 
@@ -267,14 +287,66 @@ describe('AutoConnectorManager - Triggers', () => {
 
       expect(disconnectSpy).not.toHaveBeenCalled();
       expect(connectSpy).not.toHaveBeenCalled();
-      expect(ua.transport.disconnect).toHaveBeenCalledTimes(3);
-      expect(ua.transport.connect).toHaveBeenCalledTimes(3);
+      // Каждый ping без ответа переоткрывает транспорт, ping по новому транспорту уходит сразу
+      expect(ua.transport.disconnect).toHaveBeenCalledTimes(5);
+      expect(ua.transport.connect).toHaveBeenCalledTimes(5);
       expect(ua.stop).not.toHaveBeenCalled();
       expect(sipConnector.connectionManager.connectionState).toBe(EConnectionStatus.ESTABLISHED);
-      expect(pingSpy).toHaveBeenCalledTimes(4);
+      expect(pingSpy).toHaveBeenCalledTimes(6);
       expect(signalingUnstableHandler).toHaveBeenCalledTimes(1);
-      expect(signalingUnstableHandler).toHaveBeenCalledWith({ failCount: 2 });
+      expect(signalingUnstableHandler).toHaveBeenCalledWith({ failCount: 1 });
       expect(signalingRestoredHandler).not.toHaveBeenCalled();
+    });
+
+    it('сообщает signaling-restored по ping, отправленному сразу после переоткрытия транспорта', async () => {
+      startCall();
+      pingSpy.mockResolvedValueOnce(undefined);
+
+      failFirstPing();
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(signalingUnstableHandler).toHaveBeenCalledTimes(1);
+      expect(signalingRestoredHandler).toHaveBeenCalledTimes(1);
+      expect(pingSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('по неуспешному ping перед re-INVITE сообщает signaling-unstable, переоткрывает транспорт и подтверждает сигнализацию', async () => {
+      const ua = sipConnector.connectionManager.getUaProtected() as unknown as UAMock;
+
+      startCall();
+      pingSpy.mockRejectedValueOnce(new Error('ping timeout')).mockResolvedValueOnce(undefined);
+
+      await expect(manager.waitForSignaling()).resolves.toBe(true);
+
+      expect(signalingUnstableHandler).toHaveBeenCalledTimes(1);
+      expect(signalingUnstableHandler).toHaveBeenCalledWith({ failCount: 1 });
+      expect(signalingRestoredHandler).toHaveBeenCalledTimes(1);
+      expect(ua.transport.disconnect).toHaveBeenCalledTimes(1);
+      expect(ua.transport.connect).toHaveBeenCalledTimes(1);
+      expect(pingSpy).toHaveBeenCalledTimes(3);
+      expect(disconnectSpy).not.toHaveBeenCalled();
+      expect(sipConnector.connectionManager.connectionState).toBe(EConnectionStatus.ESTABLISHED);
+    });
+
+    it('ping перед re-INVITE отменяет идущий ping цикла, не засчитывая его провалом, и продолжает тот же цикл', async () => {
+      startCall();
+      pingSpy.mockResolvedValueOnce(undefined).mockResolvedValueOnce(undefined);
+
+      await expect(manager.waitForSignaling()).resolves.toBe(true);
+
+      failFirstPing();
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(signalingUnstableHandler).not.toHaveBeenCalled();
+      expect(pingSpy).toHaveBeenCalledTimes(2);
+
+      await jest.advanceTimersByTimeAsync(PING_INTERVAL_MS - 1);
+
+      expect(pingSpy).toHaveBeenCalledTimes(2);
+
+      await jest.advanceTimersByTimeAsync(1);
+
+      expect(pingSpy).toHaveBeenCalledTimes(3);
     });
 
     it('сообщает signaling-restored при остановке автоконнектора во время нестабильной сигнализации', async () => {
@@ -326,7 +398,7 @@ describe('AutoConnectorManager - Triggers', () => {
 
       expect(disconnectSpy).not.toHaveBeenCalled();
 
-      await failNextPing();
+      await jest.advanceTimersByTimeAsync(PING_INTERVAL_MS + PING_TIMEOUT_MS);
 
       expect(disconnectSpy).toHaveBeenCalled();
       expect(connectSpy).toHaveBeenCalled();

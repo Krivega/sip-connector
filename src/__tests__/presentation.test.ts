@@ -240,6 +240,100 @@ describe('presentation', () => {
     expect(sipConnector.presentationManager.stateMachine.isActive).toBe(true);
   });
 
+  it('отклоняет старт демонстрации без INFO и re-INVITE, если сигнализация не подтверждена', async () => {
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    const rtcSession = sipConnector.callManager.getEstablishedRTCSession()!;
+    const sendInfoMocked = jest.spyOn(rtcSession, 'sendInfo');
+    const renegotiateMocked = jest.spyOn(rtcSession, 'renegotiate');
+
+    jest.spyOn(sipConnector.autoConnectorManager, 'waitForSignaling').mockResolvedValue(false);
+
+    await expect(
+      sipConnector.startPresentation(mediaStream.getVideoTracks()[0] as MediaStreamVideoTrack),
+    ).rejects.toMatchObject({ values: { lastResult: { message: 'Signaling is not ready' } } });
+
+    expect(sendInfoMocked).not.toHaveBeenCalled();
+    expect(renegotiateMocked).not.toHaveBeenCalled();
+    expect(sipConnector.isCallActive).toBe(true);
+  });
+
+  it('не отправляет re-INVITE звонка, если сигнализация не подтверждена', async () => {
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    const renegotiateMocked = jest.spyOn(
+      sipConnector.callManager.getEstablishedRTCSession()!,
+      'renegotiate',
+    );
+    const waitForSignalingMocked = jest
+      .spyOn(sipConnector.autoConnectorManager, 'waitForSignaling')
+      .mockResolvedValue(false);
+
+    await expect(sipConnector.callManager.renegotiateMcuSession()).resolves.toBe(false);
+
+    expect(waitForSignalingMocked).toHaveBeenCalledTimes(1);
+    expect(renegotiateMocked).not.toHaveBeenCalled();
+  });
+
+  it('досылает re-INVITE нового канала, не отправленный без подтверждённой сигнализации', async () => {
+    const audioMediaStream = createMediaStreamMock({
+      audio: { deviceId: { exact: 'audioDeviceId' } },
+    });
+
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream: audioMediaStream });
+
+    const renegotiateMocked = jest.spyOn(
+      sipConnector.callManager.getEstablishedRTCSession()!,
+      'renegotiate',
+    );
+
+    jest
+      .spyOn(sipConnector.autoConnectorManager, 'waitForSignaling')
+      .mockResolvedValueOnce(false)
+      .mockResolvedValue(true);
+
+    await sipConnector.replaceMediaStream(mediaStream);
+
+    expect(renegotiateMocked).not.toHaveBeenCalled();
+    expect(sipConnector.isCallActive).toBe(true);
+
+    await expect(sipConnector.callManager.renegotiateIfPending()).resolves.toBe(true);
+    await expect(sipConnector.callManager.renegotiateIfPending()).resolves.toBe(false);
+
+    expect(renegotiateMocked).toHaveBeenCalledTimes(1);
+  });
+
+  it('не досылает re-INVITE демонстрации, отменённой без подтверждённой сигнализации', async () => {
+    await sipConnector.connect(dataForConnectionWithAuthorization);
+    await sipConnector.call({ number, mediaStream });
+
+    const rtcSession = sipConnector.callManager.getEstablishedRTCSession()!;
+    const sendInfoMocked = jest.spyOn(rtcSession, 'sendInfo');
+    const renegotiateMocked = jest.spyOn(rtcSession, 'renegotiate');
+
+    // Проверка перед INFO проходит, перед re-INVITE — нет
+    jest
+      .spyOn(sipConnector.autoConnectorManager, 'waitForSignaling')
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false)
+      .mockResolvedValue(true);
+
+    await expect(
+      sipConnector.startPresentation(mediaStream.getVideoTracks()[0] as MediaStreamVideoTrack),
+    ).rejects.toMatchObject({ values: { lastResult: { name: 'PresentationReinviteError' } } });
+
+    expect(sendInfoMocked).toHaveBeenCalled();
+    expect(sipConnector.presentationManager.stateMachine.isActive).toBe(false);
+
+    await expect(sipConnector.callManager.renegotiateIfPending()).resolves.toBe(false);
+
+    expect(renegotiateMocked).not.toHaveBeenCalled();
+    expect(sipConnector.isCallActive).toBe(true);
+  });
+
   it('should be stopped incoming presentation before outgoing presentation started when in DIRECT_P2P_ROOM', async () => {
     expect.assertions(2);
 

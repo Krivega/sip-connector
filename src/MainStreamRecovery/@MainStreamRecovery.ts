@@ -71,8 +71,8 @@ class MainStreamRecovery {
     // Инициируем renegotiate. Результат не меняет UI, только логирование.
     this.renegotiateRequester
       .request()
-      .then(() => {
-        debug('renegotiate has successful');
+      .then((isRenegotiated) => {
+        debug(isRenegotiated ? 'renegotiate has successful' : 'renegotiate was not sent');
       })
       .catch((error: unknown) => {
         debug('failed to renegotiate main media stream', error);

@@ -12,6 +12,7 @@ export const createManagers = () => {
   const contentedStreamManager = new ContentedStreamManager();
   const toolsCallManager = {
     sendOffer: createJestMock().mockResolvedValue({} as RTCSessionDescription),
+    waitForSignaling: createJestMock().mockResolvedValue(true),
   };
   const callManager = new CallManager({ contentedStreamManager }, toolsCallManager, {
     callSessionState: new CallSessionState(),

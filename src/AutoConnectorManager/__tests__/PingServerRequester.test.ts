@@ -26,13 +26,21 @@ jest.mock('@krivega/timeout-requester', () => {
 describe('PingServerRequester', () => {
   let pingServerRequester: PingServerRequester;
   let sipConnector: ReturnType<typeof doMockSipConnector>;
-  let onSignalingUnstable: jest.Mock;
-  let onSignalingRestored: jest.Mock;
+  let onPingSucceeded: jest.Mock;
+  let onPingFailedInCall: jest.Mock;
+
+  const startRequester = (onFailRequest: () => void = jest.fn()) => {
+    pingServerRequester.start({
+      onFailRequest,
+      onPingSucceeded,
+      onPingFailedInCall,
+    });
+  };
 
   const getRequesterCallbacks = () => {
     return startMock.mock.calls[0] as unknown as [
       undefined,
-      { onFailRequest: () => void; onSuccessRequest: () => void },
+      { onFailRequest: (error?: unknown) => void; onSuccessRequest: () => void },
     ];
   };
 
@@ -41,8 +49,8 @@ describe('PingServerRequester', () => {
 
     jest.clearAllMocks();
 
-    onSignalingUnstable = jest.fn();
-    onSignalingRestored = jest.fn();
+    onPingSucceeded = jest.fn();
+    onPingFailedInCall = jest.fn();
 
     pingServerRequester = new PingServerRequester({
       connectionManager: sipConnector.connectionManager,
@@ -52,11 +60,7 @@ describe('PingServerRequester', () => {
 
   describe('start', () => {
     it('создаёт resolveRequesterByTimeout с корректными параметрами', async () => {
-      pingServerRequester.start({
-        onFailRequest: jest.fn(),
-        onSignalingUnstable,
-        onSignalingRestored,
-      });
+      startRequester();
 
       expect(resolveRequesterByTimeoutMock).toHaveBeenCalledTimes(1);
 
@@ -82,10 +86,11 @@ describe('PingServerRequester', () => {
     });
 
     it('запускает периодический ping', () => {
-      const onFailRequest = jest.fn();
+      expect(pingServerRequester.isStarted).toBe(false);
 
-      pingServerRequester.start({ onFailRequest, onSignalingUnstable, onSignalingRestored });
+      startRequester();
 
+      expect(pingServerRequester.isStarted).toBe(true);
       expect(startMock).toHaveBeenCalledTimes(1);
       expect(startMock).toHaveBeenCalledWith(undefined, {
         onFailRequest: expect.any(Function) as () => void,
@@ -96,7 +101,7 @@ describe('PingServerRequester', () => {
     it('вызывает onFailRequest один раз после лимита ошибок до следующего успеха', () => {
       const onFailRequest = jest.fn();
 
-      pingServerRequester.start({ onFailRequest, onSignalingUnstable, onSignalingRestored });
+      startRequester(onFailRequest);
 
       const [, callbacks] = getRequesterCallbacks();
 
@@ -119,7 +124,7 @@ describe('PingServerRequester', () => {
         .spyOn(sipConnector.callManager, 'isCallActive', 'get')
         .mockReturnValue(true);
 
-      pingServerRequester.start({ onFailRequest, onSignalingUnstable, onSignalingRestored });
+      startRequester(onFailRequest);
 
       const [, callbacks] = getRequesterCallbacks();
 
@@ -145,7 +150,7 @@ describe('PingServerRequester', () => {
         .spyOn(sipConnector.callManager, 'isCallActive', 'get')
         .mockReturnValue(true);
 
-      pingServerRequester.start({ onFailRequest, onSignalingUnstable, onSignalingRestored });
+      startRequester(onFailRequest);
 
       const [, callbacks] = getRequesterCallbacks();
 
@@ -164,10 +169,10 @@ describe('PingServerRequester', () => {
     });
   });
 
-  describe('нестабильная сигнализация во время звонка', () => {
+  describe('неуспешный ping во время звонка', () => {
     let onFailRequest: jest.Mock;
     let isCallActiveSpy: jest.SpyInstance;
-    let callbacks: { onFailRequest: () => void; onSuccessRequest: () => void };
+    let callbacks: { onFailRequest: (error?: unknown) => void; onSuccessRequest: () => void };
 
     beforeEach(() => {
       onFailRequest = jest.fn();
@@ -175,133 +180,97 @@ describe('PingServerRequester', () => {
         .spyOn(sipConnector.callManager, 'isCallActive', 'get')
         .mockReturnValue(true);
 
-      pingServerRequester.start({ onFailRequest, onSignalingUnstable, onSignalingRestored });
+      startRequester(onFailRequest);
 
       [, callbacks] = getRequesterCallbacks();
     });
 
-    it('сообщает signaling-unstable один раз за эпизод при достижении лимита ошибок', () => {
-      callbacks.onFailRequest();
+    it('сообщает о каждом неуспешном ping в звонке с числом провалов подряд и ошибкой ping', () => {
+      const error = { originator: 'system', cause: 'Request Timeout' };
 
-      expect(onSignalingUnstable).not.toHaveBeenCalled();
+      callbacks.onFailRequest(error);
+      callbacks.onFailRequest(error);
 
-      callbacks.onFailRequest();
-      callbacks.onFailRequest();
-
-      expect(onSignalingUnstable).toHaveBeenCalledTimes(1);
-      expect(onSignalingUnstable).toHaveBeenCalledWith({ failCount: 2 });
-      expect(onSignalingRestored).not.toHaveBeenCalled();
-    });
-
-    it('переоткрывает транспорт на каждом неуспешном ping сверх лимита', () => {
-      const reopenTransportSpy = jest
-        .spyOn(sipConnector.connectionManager, 'reopenTransport')
-        .mockImplementation(() => {});
-
-      callbacks.onFailRequest();
-
-      expect(reopenTransportSpy).not.toHaveBeenCalled();
-
-      callbacks.onFailRequest();
-      callbacks.onFailRequest();
-
-      expect(reopenTransportSpy).toHaveBeenCalledTimes(2);
+      expect(onPingFailedInCall).toHaveBeenCalledTimes(2);
+      expect(onPingFailedInCall).toHaveBeenNthCalledWith(1, { failCount: 1, error });
+      expect(onPingFailedInCall).toHaveBeenNthCalledWith(2, { failCount: 2, error });
       expect(onFailRequest).not.toHaveBeenCalled();
     });
 
-    it('не переоткрывает транспорт вне звонка', () => {
-      const reopenTransportSpy = jest
-        .spyOn(sipConnector.connectionManager, 'reopenTransport')
-        .mockImplementation(() => {});
+    it('после успешного ping считает провалы заново', () => {
+      callbacks.onFailRequest();
+      callbacks.onFailRequest();
+      callbacks.onSuccessRequest();
+      callbacks.onFailRequest();
 
+      expect(onPingFailedInCall).toHaveBeenLastCalledWith({ failCount: 1 });
+    });
+
+    it('не сообщает о неуспешном ping вне звонка', () => {
       isCallActiveSpy.mockReturnValue(false);
 
       callbacks.onFailRequest();
       callbacks.onFailRequest();
       callbacks.onFailRequest();
 
-      expect(reopenTransportSpy).not.toHaveBeenCalled();
+      expect(onPingFailedInCall).not.toHaveBeenCalled();
       expect(onFailRequest).toHaveBeenCalledTimes(1);
     });
 
-    it('не сообщает signaling-unstable и signaling-restored вне звонка', () => {
+    it('сообщает о каждом успешном ping в звонке и вне его', () => {
+      callbacks.onFailRequest();
+      callbacks.onSuccessRequest();
       isCallActiveSpy.mockReturnValue(false);
-
-      callbacks.onFailRequest();
-      callbacks.onFailRequest();
-      callbacks.onSuccessRequest();
-      pingServerRequester.stop();
-
-      expect(onFailRequest).toHaveBeenCalledTimes(1);
-      expect(onSignalingUnstable).not.toHaveBeenCalled();
-      expect(onSignalingRestored).not.toHaveBeenCalled();
-    });
-
-    it('сообщает signaling-restored один раз после успешного ping', () => {
-      callbacks.onFailRequest();
-      callbacks.onFailRequest();
-      callbacks.onSuccessRequest();
       callbacks.onSuccessRequest();
 
-      expect(onSignalingRestored).toHaveBeenCalledTimes(1);
+      expect(onPingSucceeded).toHaveBeenCalledTimes(2);
     });
 
-    it('сообщает signaling-restored при остановке ping', () => {
+    it('остановка ни о чём не сообщает', () => {
       callbacks.onFailRequest();
-      callbacks.onFailRequest();
-      pingServerRequester.stop();
       pingServerRequester.stop();
 
-      expect(onSignalingRestored).toHaveBeenCalledTimes(1);
+      expect(onPingFailedInCall).toHaveBeenCalledTimes(1);
+      expect(onPingSucceeded).not.toHaveBeenCalled();
+      expect(onFailRequest).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('pingImmediately', () => {
+    it('без запущенного ping ничего не отправляет', () => {
+      pingServerRequester.pingImmediately();
+
+      expect(startMock).not.toHaveBeenCalled();
     });
 
-    it('не сообщает signaling-restored без предшествующего signaling-unstable', () => {
-      callbacks.onFailRequest();
-      callbacks.onSuccessRequest();
-      pingServerRequester.stop();
+    it('сразу отправляет ping того же цикла', () => {
+      startRequester();
 
-      expect(onSignalingUnstable).not.toHaveBeenCalled();
-      expect(onSignalingRestored).not.toHaveBeenCalled();
+      const [, callbacks] = getRequesterCallbacks();
+
+      pingServerRequester.pingImmediately();
+
+      expect(resolveRequesterByTimeoutMock).toHaveBeenCalledTimes(1);
+      expect(startMock).toHaveBeenCalledTimes(2);
+      expect(startMock).toHaveBeenLastCalledWith(undefined, callbacks);
     });
 
-    it('сообщает signaling-unstable повторно в новом эпизоде после восстановления', () => {
-      callbacks.onFailRequest();
-      callbacks.onFailRequest();
-      callbacks.onSuccessRequest();
-      callbacks.onFailRequest();
-      callbacks.onFailRequest();
-
-      expect(onSignalingUnstable).toHaveBeenCalledTimes(2);
-      expect(onSignalingRestored).toHaveBeenCalledTimes(1);
-    });
-
-    it('после завершения звонка запрашивает reconnect и сообщает signaling-restored при остановке', () => {
-      callbacks.onFailRequest();
-      callbacks.onFailRequest();
-
-      isCallActiveSpy.mockReturnValue(false);
-      callbacks.onFailRequest();
-
-      expect(onFailRequest).toHaveBeenCalledTimes(1);
-      expect(onSignalingRestored).not.toHaveBeenCalled();
-
+    it('после остановки ничего не отправляет', () => {
+      startRequester();
       pingServerRequester.stop();
+      pingServerRequester.pingImmediately();
 
-      expect(onSignalingUnstable).toHaveBeenCalledTimes(1);
-      expect(onSignalingRestored).toHaveBeenCalledTimes(1);
+      expect(startMock).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('stop', () => {
     it('останавливает ping', () => {
-      pingServerRequester.start({
-        onFailRequest: jest.fn(),
-        onSignalingUnstable,
-        onSignalingRestored,
-      });
+      startRequester();
       pingServerRequester.stop();
 
       expect(stopMock).toHaveBeenCalledTimes(1);
+      expect(pingServerRequester.isStarted).toBe(false);
     });
   });
 });

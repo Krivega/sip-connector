@@ -14,6 +14,10 @@ export type TRestartIceOptions = RenegotiateOptions;
 
 const debug = resolveDebug('CallManager: MCUSession');
 
+const renegotiateSession = async (rtcSession: RTCSession): Promise<boolean> => {
+  return rtcSession.renegotiate();
+};
+
 export class MCUSession implements IMCUSession {
   protected readonly events: TEvents;
 
@@ -28,8 +32,15 @@ export class MCUSession implements IMCUSession {
   // Менеджер состояния битрейта
   private readonly bitrateStateManager = new BitrateStateManager();
 
-  public constructor(events: TEvents) {
+  private readonly waitForSignaling: () => Promise<boolean>;
+
+  private pendingRenegotiationSession?: RTCSession;
+
+  private reinvitesAwaitingSignaling = 0;
+
+  public constructor(events: TEvents, waitForSignaling: () => Promise<boolean>) {
     this.events = events;
+    this.waitForSignaling = waitForSignaling;
     events.on('failed', this.handleEnded);
     events.on('ended', this.handleEnded);
   }
@@ -53,11 +64,31 @@ export class MCUSession implements IMCUSession {
   }
 
   public async renegotiate(): Promise<boolean> {
-    if (this.rtcSession === undefined) {
-      throw new Error('No rtcSession established');
+    return this.sendReinvite(renegotiateSession);
+  }
+
+  // Вызывается по успешному ping: сигнализация подтверждена, поэтому re-INVITE уходит без повторной проверки
+  public async renegotiateIfPending(): Promise<boolean> {
+    const { pendingRenegotiationSession } = this;
+
+    if (
+      pendingRenegotiationSession === undefined ||
+      pendingRenegotiationSession !== this.getEstablishedRTCSession()
+    ) {
+      return false;
     }
 
-    return this.rtcSession.renegotiate();
+    // Ждущий проверки re-INVITE сам отправит актуальный SDP и снимет пометку
+    if (this.reinvitesAwaitingSignaling > 0) {
+      debug('renegotiateIfPending: skip, re-INVITE is awaiting signaling');
+
+      return false;
+    }
+
+    debug('renegotiateIfPending: resend re-INVITE');
+    delete this.pendingRenegotiationSession;
+
+    return pendingRenegotiationSession.renegotiate();
   }
 
   public startCall: IMCUSession['startCall'] = async (
@@ -214,19 +245,18 @@ export class MCUSession implements IMCUSession {
       connection,
       stream: preparedMediaStream,
       localMediaStream: this.localMediaStream,
+      // Потоки уже заменены локально и остаются: сервер получит их только с досланным re-INVITE
       renegotiate: async () => {
-        return this.renegotiate();
+        return this.sendReinvite(renegotiateSession, { resendWhenSignalingRestored: true });
       },
       options: replaceOptions,
     });
   }
 
   public async restartIce(options?: TRestartIceOptions): Promise<boolean> {
-    if (!this.rtcSession) {
-      throw new Error('No rtcSession established');
-    }
-
-    return this.rtcSession.restartIce(options);
+    return this.sendReinvite(async (rtcSession) => {
+      return rtcSession.restartIce(options);
+    });
   }
 
   /**
@@ -257,9 +287,47 @@ export class MCUSession implements IMCUSession {
     delete this.rtcSession;
     delete this.pcConfig;
     delete this.localMediaStream;
+    delete this.pendingRenegotiationSession;
     this.unsubscribeFromSessionEvents();
     this.bitrateStateManager.clearAll();
   };
+
+  // Re-INVITE с ошибкой транспорта JsSIP завершает звонок, поэтому без подтверждённой сигнализации он не отправляется
+  private async sendReinvite(
+    send: (rtcSession: RTCSession) => Promise<boolean>,
+    { resendWhenSignalingRestored = false }: { resendWhenSignalingRestored?: boolean } = {},
+  ): Promise<boolean> {
+    const { rtcSession } = this;
+
+    if (rtcSession === undefined) {
+      throw new Error('No rtcSession established');
+    }
+
+    let isSignalingReady: boolean;
+
+    this.reinvitesAwaitingSignaling += 1;
+
+    try {
+      isSignalingReady = await this.waitForSignaling();
+    } finally {
+      this.reinvitesAwaitingSignaling -= 1;
+    }
+
+    if (!isSignalingReady) {
+      debug('re-INVITE is not sent: signaling is not ready');
+
+      // Звонок мог завершиться во время проверки: досылать в завершённую сессию нечего
+      if (resendWhenSignalingRestored && this.getEstablishedRTCSession() === rtcSession) {
+        this.pendingRenegotiationSession = rtcSession;
+      }
+
+      return false;
+    }
+
+    delete this.pendingRenegotiationSession;
+
+    return send(rtcSession);
+  }
 
   private readonly handleCall = async (): Promise<RTCPeerConnection> => {
     return new Promise((resolve, reject) => {

@@ -2,6 +2,7 @@ import { DelayRequester } from '@krivega/timeout-requester';
 
 import resolveDebug from '@/logger';
 import AttemptsState from './AttemptsState';
+import CallSignalingRecovery from './CallSignalingRecovery';
 import CheckTelephonyRequester from './CheckTelephonyRequester';
 import PingServerRequester from './PingServerRequester';
 import RegistrationFailedOutOfCallSubscriber from './RegistrationFailedOutOfCallSubscriber';
@@ -58,6 +59,8 @@ export class AutoConnectorRuntime {
 
   private readonly pingServerRequester: PingServerRequester;
 
+  private readonly callSignalingRecovery: CallSignalingRecovery;
+
   private readonly registrationFailedOutOfCallSubscriber: RegistrationFailedOutOfCallSubscriber;
 
   private readonly attemptsState: AttemptsState;
@@ -84,6 +87,13 @@ export class AutoConnectorRuntime {
     this.pingServerRequester = new PingServerRequester({
       connectionManager: this.connectionManager,
       callManager: params.callManager,
+    });
+    this.callSignalingRecovery = new CallSignalingRecovery({
+      connectionManager: this.connectionManager,
+      callManager: params.callManager,
+      pingServerRequester: this.pingServerRequester,
+      onSignalingUnstable: this.emitters.emitSignalingUnstable,
+      onSignalingRestored: this.emitters.emitSignalingRestored,
     });
     this.registrationFailedOutOfCallSubscriber = new RegistrationFailedOutOfCallSubscriber({
       connectionManager: this.connectionManager,
@@ -190,10 +200,16 @@ export class AutoConnectorRuntime {
     this.emitters.emitSuccess();
   }
 
+  public async waitForSignaling(): Promise<boolean> {
+    return this.callSignalingRecovery.waitForSignaling();
+  }
+
   public stopConnectTriggers() {
     debug('stopConnectTriggers');
 
+    // Ping останавливается раньше: `waitForSignaling()` из обработчика `signaling-restored` не отправит ping
     this.pingServerRequester.stop();
+    this.callSignalingRecovery.stop();
     this.checkTelephonyRequester.stop();
     this.registrationFailedOutOfCallSubscriber.unsubscribe();
   }
@@ -261,21 +277,30 @@ export class AutoConnectorRuntime {
      * Периодический SIP OPTIONS (`connectionManager.ping`) по установленному UA, пока автоконнектор
      * подписан на триггеры после успешного connect. Ping уходит и во время активного звонка: поддерживает
      * трафик по WebSocket и проверяет живость сигнализации. При «полуживом» WebSocket (OPTIONS без ответа)
-     * JsSIP не всегда восстанавливает транспорт, поэтому после порога неуспешных ping инициируется полный
-     * reconnect. Во время активного звонка reconnect не запрашивается: он перезапускает UA и обрывает звонок.
-     * Вместо него каждый неуспешный ping сверх порога переоткрывает только WebSocket
-     * (`connectionManager.reopenTransport`), если транспорт считает себя подключённым; неподключённый
-     * транспорт JsSIP восстанавливает сам. Звонок при этом не завершается.
-     * Если порог достигнут в звонке, reconnect запросит первый неуспешный ping после его завершения.
-     * В звонке эмитятся `signaling-unstable` и затем, по первому успешному ping, `signaling-restored`.
+     * JsSIP не всегда восстанавливает транспорт, поэтому вне звонка после двух неуспешных ping подряд
+     * инициируется полный reconnect. Во время активного звонка reconnect не запрашивается: он перезапускает UA
+     * и обрывает звонок. Вместо него уже первый неуспешный ping, на который сервер не ответил (таймаут или
+     * ошибка транспорта), переоткрывает только WebSocket (`connectionManager.reopenTransport`), если
+     * транспорт считает себя подключённым; неподключённый транспорт JsSIP восстанавливает сам. Ответ сервера
+     * с ошибкой транспорт не переоткрывает. Как только транспорт снова подключён (`connected`), ping уходит
+     * сразу, не дожидаясь интервала. Звонок при этом не завершается.
+     * Если до конца звонка ping так и не прошёл, reconnect запросит первый неуспешный ping после него.
+     * Провал ping в звонке и каждый успешный ping передаются в `CallSignalingRecovery`: он эмитит
+     * `signaling-unstable` и затем, по первому успешному ping или остановке, `signaling-restored`,
+     * восстанавливает транспорт, проверяет сигнализацию перед re-INVITE клиента и стартом демонстрации и
+     * досылает неотправленный re-INVITE по успешному ping.
      */
     this.pingServerRequester.start({
       onFailRequest: () => {
         debug('pingRequester: onFailRequest');
         this.reconnectActions.requestReconnect(parameters, RECONNECT_REASONS.PERIODIC_PING_FAILED);
       },
-      onSignalingUnstable: this.emitters.emitSignalingUnstable,
-      onSignalingRestored: this.emitters.emitSignalingRestored,
+      onPingSucceeded: () => {
+        this.callSignalingRecovery.onPingSucceeded();
+      },
+      onPingFailedInCall: (payload) => {
+        this.callSignalingRecovery.onPingFailedInCall(payload);
+      },
     });
 
     this.registrationFailedOutOfCallSubscriber.subscribe(() => {

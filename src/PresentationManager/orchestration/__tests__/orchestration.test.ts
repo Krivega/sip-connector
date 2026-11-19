@@ -85,6 +85,7 @@ describe('PresentationManager orchestration', () => {
         { contentedStreamManager: new ContentedStreamManager() },
         {
           sendOffer: jest.fn().mockResolvedValue({} as RTCSessionDescription),
+          waitForSignaling: jest.fn().mockResolvedValue(true),
         },
         { callSessionState: new CallSessionState() },
       );
@@ -151,6 +152,19 @@ describe('PresentationManager orchestration', () => {
         PresentationReinviteError,
       );
       expect(stopTrackSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('executeStartFlow отклоняется, если соединение пропало до добавления дорожки', async () => {
+      Object.defineProperty(callManager, 'connection', {
+        get: () => {
+          return undefined;
+        },
+        configurable: true,
+      });
+
+      await expect(lifecycle.executeStartFlow(jest.fn(), videoTrack, {})).rejects.toThrow(
+        'No connection established',
+      );
     });
 
     it('executeUpdateFlow эмитит failed и пробрасывает PresentationTrackError', async () => {

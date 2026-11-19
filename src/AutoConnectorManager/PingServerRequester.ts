@@ -4,7 +4,6 @@ import resolveDebug from '@/logger';
 
 import type { CallManager } from '@/CallManager';
 import type { ConnectionManager } from '@/ConnectionManager';
-import type { TEventMap } from './events';
 
 const INTERVAL_PING_SERVER_REQUEST = 15_000;
 const MAX_FAIL_REQUESTS_COUNT = 2;
@@ -18,11 +17,11 @@ class PingServerRequester {
 
   private pingServerByTimeout: ReturnType<typeof resolveRequesterByTimeout> | undefined = undefined;
 
+  private startPing: (() => void) | undefined = undefined;
+
   private failRequestsCount = 0;
 
   private isFailRequestReported = false;
-
-  private notifySignalingRestored: (() => void) | undefined = undefined;
 
   public constructor({
     connectionManager,
@@ -35,38 +34,51 @@ class PingServerRequester {
     this.callManager = callManager;
   }
 
+  public get isStarted(): boolean {
+    return this.startPing !== undefined;
+  }
+
   public start({
     onFailRequest,
-    onSignalingUnstable,
-    onSignalingRestored,
+    onPingSucceeded,
+    onPingFailedInCall,
   }: {
     onFailRequest: () => void;
-    onSignalingUnstable: (payload: TEventMap['signaling-unstable']) => void;
-    onSignalingRestored: () => void;
+    onPingSucceeded: () => void;
+    onPingFailedInCall: ({ failCount, error }: { failCount: number; error: unknown }) => void;
   }) {
     debug('start');
     this.stop();
 
-    this.pingServerByTimeout = resolveRequesterByTimeout({
-      isDontStopOnFail: true,
-      requestInterval: INTERVAL_PING_SERVER_REQUEST,
-      request: async () => {
-        debug('ping');
+    const pingServerByTimeout: ReturnType<typeof resolveRequesterByTimeout> =
+      resolveRequesterByTimeout({
+        isDontStopOnFail: true,
+        requestInterval: INTERVAL_PING_SERVER_REQUEST,
+        request: async () => {
+          debug('ping');
 
-        return this.connectionManager.ping().then(() => {
-          debug('ping success');
-        });
-      },
-    });
-
-    this.pingServerByTimeout.start(undefined, {
+          return this.connectionManager.ping().then(() => {
+            debug('ping success');
+          });
+        },
+      });
+    const requestHandlers = {
       onSuccessRequest: () => {
         this.resetFailRequests();
+        onPingSucceeded();
       },
-      onFailRequest: () => {
+      onFailRequest: (error: unknown) => {
         this.failRequestsCount += 1;
 
         debug('failRequestsCount', this.failRequestsCount);
+
+        // Reconnect перезапускает UA и обрывает звонок, поэтому во время звонка переоткрывается только транспорт.
+        if (this.callManager.isCallActive) {
+          debug('skip reporting fail request: call is active');
+          onPingFailedInCall({ failCount: this.failRequestsCount, error });
+
+          return;
+        }
 
         if (this.failRequestsCount < MAX_FAIL_REQUESTS_COUNT || this.isFailRequestReported) {
           debug(
@@ -79,42 +91,34 @@ class PingServerRequester {
           return;
         }
 
-        // Reconnect перезапускает UA и обрывает звонок, поэтому во время звонка переоткрывается только транспорт.
-        if (this.callManager.isCallActive) {
-          debug('skip reporting fail request: call is active');
-
-          if (!this.notifySignalingRestored) {
-            this.notifySignalingRestored = onSignalingRestored;
-            onSignalingUnstable({ failCount: this.failRequestsCount });
-          }
-
-          this.connectionManager.reopenTransport();
-
-          return;
-        }
-
         this.isFailRequestReported = true;
         debug('isFailRequestReported', this.isFailRequestReported);
         onFailRequest();
       },
-    });
+    };
+
+    this.pingServerByTimeout = pingServerByTimeout;
+    this.startPing = () => {
+      pingServerByTimeout.start(undefined, requestHandlers);
+    };
+    this.startPing();
   }
 
   public stop() {
     debug('stop');
     this.pingServerByTimeout?.stop();
     this.pingServerByTimeout = undefined;
+    this.startPing = undefined;
     this.resetFailRequests();
+  }
+
+  public pingImmediately() {
+    this.startPing?.();
   }
 
   private resetFailRequests() {
     this.failRequestsCount = 0;
     this.isFailRequestReported = false;
-
-    const { notifySignalingRestored } = this;
-
-    this.notifySignalingRestored = undefined;
-    notifySignalingRestored?.();
   }
 }
 

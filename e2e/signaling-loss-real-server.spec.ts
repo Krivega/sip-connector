@@ -8,18 +8,21 @@ import { SipWebSocketProxy } from './support/SipWebSocketProxy';
 import type { Page } from '@playwright/test';
 import type { SipConnectorFacade } from '../src';
 
+/** Снаружи сети dev.vinteo.com ведёт себя иначе, чем через VPN, поэтому файл запускается только явно. */
+const IS_REAL_SERVER_ENABLED = process.env.E2E_REAL_SERVER === '1';
 const CONNECT_TIMEOUT_MS = 15_000;
-/** Ping раз в 15 с с таймаутом 10 с: второй провал не позже T + 15 + 10 + 15 + 10 секунд, плюс запас. */
-const SIGNALING_UNSTABLE_TIMEOUT_MS = 60_000;
+/** Ping раз в 15 с с таймаутом 10 с: первый провал не позже T + 15 + 10 секунд, плюс запас. */
+const SIGNALING_UNSTABLE_TIMEOUT_MS = 30_000;
 /** Переоткрытие транспорта начинается сразу после signaling-unstable. */
 const TRANSPORT_REOPEN_TIMEOUT_MS = 10_000;
-/** Таймаут ping, отправленного до переоткрытия, и следующий успешный ping. */
-const PING_RESTORE_TIMEOUT_MS = 30_000;
+/** После переоткрытия ping уходит сразу: REGISTER и OPTIONS по новому соединению, плюс запас на сеть. */
+const PING_RESTORE_TIMEOUT_MS = 15_000;
 /** JsSIP переподключает транспорт с интервалом 2–6 с. */
 const TRANSPORT_RECONNECT_ATTEMPT_TIMEOUT_MS = 15_000;
 const REGISTERED_TIMEOUT_MS = 20_000;
 const SIP_RESPONSE_TIMEOUT_MS = 10_000;
-const PRESENTATION_SETTLE_TIMEOUT_MS = 15_000;
+/** Проверка сигнализации перед re-INVITE: таймаут ping 10 с и ожидание подтверждения до 15 с, плюс запас. */
+const PRESENTATION_SETTLE_TIMEOUT_MS = 30_000;
 /** Время, за которое сервер успел бы завершить звонок после смены соединения. */
 const CALL_ALIVE_OBSERVATION_MS = 60_000;
 const AFTER_DEAD_TRANSPORT_WAIT_MS = 10_000;
@@ -144,6 +147,10 @@ const test = base.extend<TFixtures>({
 });
 
 test.describe('Потеря SIP WebSocket в звонке на реальном сервере', () => {
+  test.skip(
+    !IS_REAL_SERVER_ENABLED,
+    'Ходит на dev.vinteo.com и зависит от сети до него; запуск: E2E_REAL_SERVER=1 yarn test:e2e e2e/signaling-loss-real-server.spec.ts',
+  );
   test.describe.configure({ mode: 'serial' });
 
   let events: TDisconnectEvents;
@@ -351,7 +358,15 @@ test.describe('Потеря SIP WebSocket в звонке на реальном 
       .poll(readEvents, { timeout: PING_RESTORE_TIMEOUT_MS })
       .toMatchObject({ signalingUnstable: 1, signalingRestored: 1 });
     await report(`signaling-restored after ${sipProxy.getElapsedMs() - frozenAt}ms`, sipProxy);
-    expect(sipProxy.getServerResponses(reopenedIndex, 'REGISTER')).toContain(200);
+    // Ping после переоткрытия уходит сразу и может ответить раньше, чем завершится REGISTER (401 → 200).
+    await expect
+      .poll(
+        () => {
+          return sipProxy.getServerResponses(reopenedIndex, 'REGISTER');
+        },
+        { timeout: REGISTERED_TIMEOUT_MS },
+      )
+      .toContain(200);
     expect(
       sipProxy.getServerResponses(reopenedIndex, 'OPTIONS').some((status) => {
         return status >= 200 && status < 300;

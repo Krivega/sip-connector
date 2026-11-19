@@ -13,6 +13,13 @@ const PRESENTATION_SETTLE_TIMEOUT_MS = 10_000;
 const AFTER_DEAD_TRANSPORT_WAIT_MS = 5000;
 /** JsSIP Timer F (64 * T1) для INFO без ответа и запас на обработку. */
 const AFTER_SILENT_TRANSACTION_WAIT_MS = 40_000;
+/** Ping раз в 15 с: следующий успешный ping по текущему соединению, плюс запас. */
+const ANSWERED_PING_TIMEOUT_MS = 20_000;
+/**
+ * Проверка сигнализации перед re-INVITE: таймаут ping 10 с и ожидание подтверждения
+ * по новому соединению до 15 с, плюс запас. Меньше Timer B/F JsSIP (32 с).
+ */
+const SIGNALING_CHECK_TIMEOUT_MS = 30_000;
 
 type TDemoApp = { sipConnectorFacade: SipConnectorFacade };
 
@@ -249,6 +256,20 @@ test.describe('Демонстрация в активном звонке при 
       .toBeGreaterThan(0);
   };
 
+  /** Сразу после успешного периодического ping следующий будет не раньше чем через 15 с. */
+  const waitForAnsweredPing = async (sipPeer: SipPeer) => {
+    const pingsBefore = sipPeer.countLatestConnectionRequests('OPTIONS');
+
+    await expect
+      .poll(
+        () => {
+          return sipPeer.countLatestConnectionRequests('OPTIONS');
+        },
+        { timeout: ANSWERED_PING_TIMEOUT_MS, intervals: [100] },
+      )
+      .toBeGreaterThan(pingsBefore);
+  };
+
   test.beforeEach(async ({ page, connectPage, statusDashboard, sipPeer }) => {
     events = await observeDisconnectEvents(page);
     await connectPage.fillForm({
@@ -328,15 +349,12 @@ test.describe('Демонстрация в активном звонке при 
 
     sipPeer.stopAnswering(['INFO', 'OPTIONS']);
 
-    const infosBeforeStart = sipPeer.countReceivedRequests('INFO');
-
     await startPresentation();
+    // Без ответа остаётся проверочный ping или INFO SHARE_STATE: старт отклоняется по таймауту.
     await expect
-      .poll(() => {
-        return sipPeer.countReceivedRequests('INFO') - infosBeforeStart;
-      })
-      .toBeGreaterThan(0);
-    await page.waitForTimeout(AFTER_SILENT_TRANSACTION_WAIT_MS);
+      .poll(getLastOutcome, { timeout: AFTER_SILENT_TRANSACTION_WAIT_MS })
+      .toMatchObject({ action: 'start', status: 'rejected' });
+    await page.waitForTimeout(AFTER_DEAD_TRANSPORT_WAIT_MS);
     await reportObserved('observed', sipPeer);
 
     await expectCallAlive(sipPeer);
@@ -360,6 +378,71 @@ test.describe('Демонстрация в активном звонке при 
     await page.waitForTimeout(AFTER_DEAD_TRANSPORT_WAIT_MS);
     await reportObserved('observed', sipPeer);
 
+    await expectCallAlive(sipPeer);
+    await statusDashboard.waitForDiagramStatus('system', 'system:callActive');
+  });
+
+  test('запускает демонстрацию по новому WebSocket, когда соединение стало полуоткрытым после успешного ping', async ({
+    sipPeer,
+    statusDashboard,
+  }) => {
+    test.setTimeout(90_000);
+
+    await waitForAnsweredPing(sipPeer);
+
+    const connectionsBeforeHalfOpen = sipPeer.getConnectionsCount();
+
+    sipPeer.makeConnectionHalfOpen();
+    await startPresentation();
+    await expect
+      .poll(getLastOutcome, { timeout: SIGNALING_CHECK_TIMEOUT_MS })
+      .toMatchObject({ action: 'start', status: 'resolved' });
+    await reportObserved('observed', sipPeer);
+
+    // По полуоткрытому соединению ушёл только проверочный ping.
+    expect(sipPeer.countLostRequests('OPTIONS')).toBeGreaterThan(0);
+    expect(sipPeer.countLostRequests('INFO')).toBe(0);
+    expect(sipPeer.countLostRequests('INVITE')).toBe(0);
+    expect(sipPeer.getConnectionsCount()).toBeGreaterThan(connectionsBeforeHalfOpen);
+
+    const requests = sipPeer.getLatestConnectionRequestMethods();
+    const order = requests.join(' → ');
+    const [pingAt, infoAt, reInviteAt] = ['OPTIONS', 'INFO', 'INVITE'].map((method) => {
+      return requests.indexOf(method);
+    });
+
+    expect(pingAt, order).toBeGreaterThanOrEqual(0);
+    expect(infoAt, order).toBeGreaterThan(pingAt);
+    expect(reInviteAt, order).toBeGreaterThan(infoAt);
+    await expectCallAlive(sipPeer);
+    await statusDashboard.waitForDiagramStatus('system', 'system:callActive');
+  });
+
+  test('отклоняет старт демонстрации без re-INVITE и завершения звонка, когда сигнализация не восстанавливается', async ({
+    page,
+    sipPeer,
+    statusDashboard,
+  }) => {
+    test.setTimeout(90_000);
+
+    await waitForAnsweredPing(sipPeer);
+
+    const invitesBeforeStart = sipPeer.countReceivedRequests('INVITE');
+
+    sipPeer.stopAcceptingConnections();
+    sipPeer.makeConnectionHalfOpen();
+    await startPresentation();
+    await expect
+      .poll(getLastOutcome, { timeout: SIGNALING_CHECK_TIMEOUT_MS })
+      .toMatchObject({ action: 'start', status: 'rejected' });
+    await page.waitForTimeout(AFTER_DEAD_TRANSPORT_WAIT_MS);
+    await reportObserved('observed', sipPeer);
+
+    // Сигнализация проверяется до INFO SHARE_STATE и re-INVITE.
+    expect(sipPeer.countLostRequests('OPTIONS')).toBeGreaterThan(0);
+    expect(sipPeer.countLostRequests('INVITE')).toBe(0);
+    expect(sipPeer.countReceivedRequests('INVITE')).toBe(invitesBeforeStart);
+    expect(await readPresentation()).toMatchObject({ sentRequests: [] });
     await expectCallAlive(sipPeer);
     await statusDashboard.waitForDiagramStatus('system', 'system:callActive');
   });
