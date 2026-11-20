@@ -7,7 +7,7 @@
 - Автоматически детектирует обрыв звонка по сетевому сбою и запускает цикл повтора `startCall`.
 - Поддерживает экспоненциальный backoff с jitter и cap по времени (`ICallReconnectOptions`).
 - Координируется с `ConnectionManager` — дожидается восстановления сигнализации до попытки.
-- Прежнее подключение участника перед попыткой отключает сам `CallManager.startCall` ([StaleParticipantManager](../StaleParticipantManager/index.md)): ошибка отключения приходит отказом `startCall` вместе с `failed` (`'Internal Error'`) и считается неуспешной попыткой. Отмена попытки тихо, без `failed`, прерывает и отключение: `cancelCurrentAttempt` и повторный `arm` во время отключения оставляют перезвон в `armed`.
+- Прежнее подключение участника перед попыткой отключает сам `CallManager.startCall` ([StaleParticipantManager](../StaleParticipantManager/index.md)): ошибка отключения приходит отказом `startCall` вместе с `failed` (`'Internal Error'`) и считается неуспешной попыткой. Перезвон начатый звонок не отменяет: `disarm`, `cancelCurrentAttempt` и повторный `arm` прекращают только планирование, а отключение и `INVITE` начатой попытки продолжаются ([отмена запуска](../StaleParticipantManager/index.md#отмена-запуска)).
 - Позволяет принудительно прервать (`disarm`) или перезапустить (`forceReconnect`) цикл в любой момент.
 - Отдаёт подробный поток событий и snapshot-машины для интеграции с UI через `SessionManager`.
 
@@ -36,16 +36,16 @@
 
 ## Структура
 
-| Компонент                                                      | Роль                                                                                                                                                                                                                             |
-| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@CallReconnectManager.ts`                                     | Фасад, подписки на `CallManager`/`ConnectionManager`, проброс событий фасада с префиксом `call-reconnect:*`.                                                                                                                     |
-| `CallReconnectRuntime.ts`                                      | Побочные эффекты: `CancelableRequest` попытки (`getCallParameters` → `startCall`), `DelayRequester` для backoff, `AttemptsState`, `waitSignalingReady`. `cancelAll` при идущей попытке вызывает `callManager.cancelStartCall()`. |
-| `CallReconnectStateMachine/createCallReconnectMachine.ts`      | Декларативный XState-автомат (состояния и переходы).                                                                                                                                                                             |
-| `CallReconnectStateMachine/createCallReconnectMachineSetup.ts` | Actors/guards/actions/assign — тонкий адаптер между машиной и `TCallReconnectMachineDeps`.                                                                                                                                       |
-| `createMachineDeps.ts`                                         | Склейка runtime + events для предоставления машине узкого contract.                                                                                                                                                              |
-| `policies/NetworkFailurePolicy.ts`                             | «Это сетевой сбой?» — классификация `EndEvent.cause` и `originator=system`.                                                                                                                                                      |
-| `policies/BackoffPolicy.ts`                                    | Вычисление следующей задержки: `base × factor^(attempt-1)`, cap `maxBackoffMs`, jitter `none/full/equal`.                                                                                                                        |
-| `AttemptsState.ts`                                             | Счётчик попыток с callback `isInProgress` для UI-сигналов.                                                                                                                                                                       |
+| Компонент                                                      | Роль                                                                                                                                                    |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@CallReconnectManager.ts`                                     | Фасад, подписки на `CallManager`/`ConnectionManager`, проброс событий фасада с префиксом `call-reconnect:*`.                                            |
+| `CallReconnectRuntime.ts`                                      | Побочные эффекты: `CancelableRequest` попытки (`getCallParameters` → `startCall`), `DelayRequester` для backoff, `AttemptsState`, `waitSignalingReady`. |
+| `CallReconnectStateMachine/createCallReconnectMachine.ts`      | Декларативный XState-автомат (состояния и переходы).                                                                                                    |
+| `CallReconnectStateMachine/createCallReconnectMachineSetup.ts` | Actors/guards/actions/assign — тонкий адаптер между машиной и `TCallReconnectMachineDeps`.                                                              |
+| `createMachineDeps.ts`                                         | Склейка runtime + events для предоставления машине узкого contract.                                                                                     |
+| `policies/NetworkFailurePolicy.ts`                             | «Это сетевой сбой?» — классификация `EndEvent.cause` и `originator=system`.                                                                             |
+| `policies/BackoffPolicy.ts`                                    | Вычисление следующей задержки: `base × factor^(attempt-1)`, cap `maxBackoffMs`, jitter `none/full/equal`.                                               |
+| `AttemptsState.ts`                                             | Счётчик попыток с callback `isInProgress` для UI-сигналов.                                                                                              |
 
 ## Опции конструктора (`ICallReconnectOptions`)
 

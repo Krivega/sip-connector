@@ -129,6 +129,9 @@ export class SipPeer {
 
   private readonly receivedMessages: string[] = [];
 
+  /** `Date.now()` получения запросов клиента: по нему тесты меряют задержку перед INVITE. */
+  private readonly receivedRequestTimes: { method: string; receivedAt: number }[] = [];
+
   private readonly silentMethods = new Set<TSilentMethod>();
 
   private isAcceptingConnections = true;
@@ -211,7 +214,8 @@ export class SipPeer {
       .toBe('connected');
   }
 
-  public enterRoom(): void {
+  /** С `bearerToken` вход идёт с токеном комнаты, как у сервера с авторизацией участников. */
+  public enterRoom({ bearerToken }: { bearerToken?: string } = {}): void {
     this.cseq += 1;
 
     this.send(
@@ -223,6 +227,7 @@ export class SipPeer {
           'Content-Type: application/vinteo.webrtc.roomname',
           `X-Webrtc-Enter-Room: ${SIP_PEER_NUMBER}`,
           'X-Webrtc-Participant-Name: Test participant',
+          ...(bearerToken === undefined ? [] : [`X-Bearer-Token: ${bearerToken}`]),
         ],
         body: SIP_PEER_NUMBER,
       }),
@@ -347,6 +352,17 @@ export class SipPeer {
     }).length;
   }
 
+  /** `Date.now()` получения запросов клиента этого метода в порядке получения. */
+  public getReceivedRequestTimes(method: string): number[] {
+    return this.receivedRequestTimes
+      .filter((request) => {
+        return request.method === method;
+      })
+      .map(({ receivedAt }) => {
+        return receivedAt;
+      });
+  }
+
   public async dispose(): Promise<void> {
     await this.peerConnection?.evaluate((peer) => {
       peer.close();
@@ -387,6 +403,13 @@ export class SipPeer {
 
   private async handleMessage(message: string): Promise<void> {
     this.receivedMessages.push(message);
+
+    if (!message.startsWith('SIP/2.0 ')) {
+      this.receivedRequestTimes.push({
+        method: message.slice(0, message.indexOf(' ')),
+        receivedAt: Date.now(),
+      });
+    }
 
     if (message.startsWith('REGISTER ')) {
       this.registration = message;

@@ -99,7 +99,7 @@ stateDiagram-v2
 ## Интеграция и события
 
 - Внутренние события: `CALL.CONNECTING`, `CALL.ENTER_ROOM`, `CALL.TOKEN_ISSUED`, `CALL.PRESENTATION_CALL`, `CALL.START_DISCONNECT`, `CALL.RESET`.
-- Маппинг `CallManager.events`: `start-call -> CALL.CONNECTING`, `confirmed -> CALL.PRESENTATION_CALL`, `end-call -> CALL.START_DISCONNECT`, `ended/failed -> CALL.RESET`. `CallManager.cancelStartCall()` и `answerToIncomingCall()` во время отключения прежнего подключения шлют `CALL.RESET` напрямую, без `failed`; ответ затем переводит машину в `call:connecting` уже с контекстом ответа.
+- Маппинг `CallManager.events`: `start-call -> CALL.CONNECTING`, `confirmed -> CALL.PRESENTATION_CALL`, `end-call -> CALL.START_DISCONNECT`, `ended/failed -> CALL.RESET`. При незавершённом запуске исходящего (до `INVITE`) `CallManager.answerToIncomingCall()` шлёт `CALL.RESET` напрямую, без `failed`, и ответ переводит машину в `call:connecting` уже с контекстом ответа; `endCall()` после `end-call` эмитит `failed` с `'Canceled'`, поэтому машина не остаётся в `call:disconnecting` ([отмена запуска](../StaleParticipantManager/index.md#отмена-запуска)).
 - Маппинг `ApiManager.events`: `enter-room -> CALL.ENTER_ROOM`, `conference:participant-token-issued -> CALL.TOKEN_ISSUED`.
 
 ## Логирование

@@ -273,7 +273,7 @@ describe('SipConnector: отключение устаревшего участн
     expect(subject.ua.call).not.toHaveBeenCalled();
   });
 
-  it('disconnect() во время запроса отменяет звонок без INVITE', async () => {
+  it('disconnect() во время запроса отменяет звонок: failed с CANCELED, без INVITE', async () => {
     const subject = setup();
 
     jest.spyOn(subject.connector.connectionQueueManager, 'disconnect').mockResolvedValue();
@@ -292,6 +292,11 @@ describe('SipConnector: отключение устаревшего участн
     expect(isRejected).toBe(true);
     expect(hasCanceledCallError(error)).toBe(true);
     expect(requests[0].init.signal?.aborted).toBe(true);
+    expect(subject.failedListener).toHaveBeenCalledWith(
+      expect.objectContaining({ originator: 'local', cause: JsSIP_C.causes.CANCELED }),
+    );
+    expect(subject.connector.callManager.stateMachine.state).toBe('call:idle');
+    expect(subject.connector.requestedCall).toBe(false);
 
     await flush(20);
 
@@ -420,7 +425,7 @@ describe('SipConnector: отключение устаревшего участн
       expect(fetchMock).toHaveBeenCalledTimes(1);
     });
 
-    it('cancelCurrentCallReconnectAttempt() во время запроса попытки молча отменяет её и оставляет перезвон армированным', async () => {
+    it('cancelCurrentCallReconnectAttempt() во время запроса попытки оставляет запрос, INVITE и перезвон армированным', async () => {
       const subject = setup();
       const reconnectEvents: string[] = [];
 
@@ -437,26 +442,19 @@ describe('SipConnector: отключение устаревшего участн
       subject.connector.cancelCurrentCallReconnectAttempt();
       await flush(20);
 
-      expect(requests[0].init.signal?.aborted).toBe(true);
+      expect(requests[0].init.signal?.aborted).toBe(false);
       expect(subject.connector.callReconnectManager.state).toBe('armed');
       expect(reconnectEvents).toEqual([]);
       expect(subject.failedListener).not.toHaveBeenCalled();
-      expect(subject.connector.callManager.stateMachine.state).toBe('call:idle');
-      expect(subject.ua.call).not.toHaveBeenCalled();
+      expect(subject.connector.callManager.stateMachine.state).toBe('call:connecting');
 
-      // Следующий сетевой обрыв запускает новый цикл с тем же устаревшим участником.
-      subject.connector.callManager.events.trigger('failed', {
-        originator: 'system',
-        cause: JsSIP_C.causes.CONNECTION_ERROR,
-      } as never);
-      await waitUntil(() => {
-        return requests.length === 2;
-      });
+      requests[0].respond(401);
+      await flush(20);
 
-      expect(subject.connector.callReconnectManager.state).toBe('attempting');
+      expect(subject.ua.call).toHaveBeenCalledTimes(1);
     });
 
-    it('disarmCallAutoRedial() во время запроса попытки молча отменяет её и разоружает перезвон', async () => {
+    it('disarmCallAutoRedial() во время запроса попытки разоружает перезвон и оставляет запрос и INVITE', async () => {
       const subject = setup();
 
       subject.breakArmedCallBySystem();
@@ -467,15 +465,19 @@ describe('SipConnector: отключение устаревшего участн
       subject.connector.disarmCallAutoRedial();
       await flush(20);
 
-      expect(requests[0].init.signal?.aborted).toBe(true);
+      expect(requests[0].init.signal?.aborted).toBe(false);
       expect(subject.connector.callReconnectManager.state).toBe('idle');
       expect(subject.failedListener).not.toHaveBeenCalled();
-      expect(subject.connector.callManager.stateMachine.state).toBe('call:idle');
-      expect(subject.ua.call).not.toHaveBeenCalled();
+      expect(subject.connector.callManager.stateMachine.state).toBe('call:connecting');
+
+      requests[0].respond(401);
+      await flush(20);
+
+      expect(subject.ua.call).toHaveBeenCalledTimes(1);
     });
 
     it.each(['hangUp', 'disconnect'] as const)(
-      '%s() во время запроса попытки молча отменяет её без INVITE и без зависания в отключении',
+      '%s() во время запроса попытки отменяет звонок: failed с CANCELED, без INVITE и без зависания в отключении',
       async (method) => {
         const subject = setup();
 
@@ -490,13 +492,17 @@ describe('SipConnector: отключение устаревшего участн
 
         expect(requests[0].init.signal?.aborted).toBe(true);
         expect(subject.connector.callReconnectManager.state).toBe('idle');
-        expect(subject.failedListener).not.toHaveBeenCalled();
+        expect(subject.failedListener).toHaveBeenCalledTimes(1);
+        expect(subject.failedListener).toHaveBeenCalledWith(
+          expect.objectContaining({ originator: 'local', cause: JsSIP_C.causes.CANCELED }),
+        );
         expect(subject.connector.callManager.stateMachine.state).toBe('call:idle');
+        expect(subject.connector.requestedCall).toBe(false);
         expect(subject.ua.call).not.toHaveBeenCalled();
       },
     );
 
-    it('armCallAutoRedial() во время запроса попытки оставляет перезвон армированным', async () => {
+    it('armCallAutoRedial() во время запроса попытки оставляет перезвон армированным, запрос и INVITE', async () => {
       const subject = setup();
       const onDisarmed = jest.fn();
 
@@ -515,7 +521,12 @@ describe('SipConnector: отключение устаревшего участн
 
       expect(onDisarmed).not.toHaveBeenCalled();
       expect(subject.connector.callReconnectManager.state).toBe('armed');
-      expect(subject.ua.call).not.toHaveBeenCalled();
+      expect(requests[0].init.signal?.aborted).toBe(false);
+
+      requests[0].respond(401);
+      await flush(20);
+
+      expect(subject.ua.call).toHaveBeenCalledTimes(1);
     });
 
     it('answerToIncomingCall() во время запроса попытки молча отменяет её и разоружает перезвон', async () => {

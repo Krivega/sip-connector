@@ -15,8 +15,8 @@ export type TSelfDisconnectRequest = {
 };
 
 const CORS_ALLOW_HEADERS = 'Authorization, Content-Type';
-/** Дольше таймаута клиента (10 с), чтобы журнал показал зависание сервера, а не обрыв перехвата. */
-const UPSTREAM_TIMEOUT_MS = 15_000;
+/** Дольше предела ожидания клиента (20 с): зависание сервера не подменяется обрывом перехвата. */
+const UPSTREAM_TIMEOUT_MS = 25_000;
 
 const resolveAllowOrigin = async (route: Route): Promise<string> => {
   return (await route.request().headerValue('origin')) ?? '*';

@@ -32,6 +32,23 @@
 - `flaky-risk` — потеря SIP WebSocket во время активного звонка не завершает звонок: после обрыва транспорта и переключения микрофона, при INFO и OPTIONS без ответа по открытому WebSocket, при неуспешных периодических ping. В звонке reconnect не запускается: после первого неуспешного ping транспорт переоткрывается, `signaling-unstable` приходит не позже 30 с, а `signaling-restored` — не позже 5 с после переоткрытия, потому что ping по новому транспорту уходит сразу (`e2e/wss-loss-in-call.spec.ts`; сервер заменён тестовым SIP-пиром `e2e/support/SipPeer.ts`; зависит от реальных таймеров JsSIP: Timer F 32 с при ожидании ~34 с, таймаут ping 10 с).
 - `flaky-risk` — перед стартом демонстрации и перед re-INVITE сигнализация проверяется ping: по полуоткрытому WebSocket старт проходит по новому соединению (ping, затем INFO и re-INVITE), а если сигнализация не восстанавливается, старт отклоняется не позже 30 с без INFO и re-INVITE, звонок продолжается (`e2e/presentation-on-signaling-loss.spec.ts`; тестовый SIP-пир `e2e/support/SipPeer.ts`).
 
+## Stale participant
+
+- `flaky-risk` — молчащее устаревшее подключение после обрыва: перед новым INVITE POST `self/disconnect` повторяется до `401`, затем вход в комнату (`e2e/stale-participant-disconnect.spec.ts`; живой dev-сервер).
+- `flaky-risk` — прежнее подключение сервер уже убрал: первый POST получает `401`, звонок входит в комнату (`e2e/stale-participant-disconnect.spec.ts`; живой dev-сервер).
+- `flaky-risk` — после ручного отбоя следующий звонок ждёт в `call:connecting`, пока POST не получит `401`, и входит в комнату (`e2e/stale-participant-disconnect.spec.ts`; живой dev-сервер).
+- `flaky-risk` — первый звонок страницы уходит без POST; после завершения звонка сервером (`BYE`) следующий звонок тоже без POST (`e2e/stale-participant-disconnect.spec.ts`; живой dev-сервер).
+- `stable` — первый звонок без предыстории уходит без POST (`e2e/stale-participant-disconnect-sip-peer.spec.ts`; тестовый SIP-пир `e2e/support/SipPeer.ts` и подменённый маршрут `self/disconnect`).
+- `stable` — после ручного отбоя ответы `204, 204, 401` с токеном прежнего звонка: POST повторяется раз в 1 с, INVITE уходит после `401`; новый вход в комнату заменяет токен (`e2e/stale-participant-disconnect-sip-peer.spec.ts`).
+- `stable` — звонок завершён сервером (`BYE`): следующий звонок уходит без POST (`e2e/stale-participant-disconnect-sip-peer.spec.ts`).
+- `stable` — `hangUp` во время POST: INVITE нет, `call:failed` с `Canceled`, `call:idle`; прежнее подключение запомнено, и следующий звонок снова отправляет POST (`e2e/stale-participant-disconnect-sip-peer.spec.ts`).
+- `stable` — `disconnect` во время POST: INVITE нет, `call:failed` с `Canceled`, `call:idle` (`e2e/stale-participant-disconnect-sip-peer.spec.ts`).
+- `stable` — второй `callToServer` во время POST тихо заменяет первый: один INVITE после `401` и вход в комнату (`e2e/stale-participant-disconnect-sip-peer.spec.ts`).
+- `stable` — ответ `500`, `204` → `500` или сетевой отказ на POST: INVITE нет, `call:failed` с `Internal Error`; следующий звонок уходит без POST (`e2e/stale-participant-disconnect-sip-peer.spec.ts`).
+- `flaky-risk` — предел 20 с при зависшем POST и при бесконечных `204`: звонок ждёт в `call:connecting` и уходит через 20 с после первого POST (`e2e/stale-participant-disconnect-sip-peer.spec.ts`; реальные таймеры, допустимое окно 19–23 с).
+- `stable` — срок 60 с после завершения звонка: при часах страницы, сдвинутых на 55 с, POST уходит, при сдвиге на 65 с — нет (`e2e/stale-participant-disconnect-sip-peer.spec.ts`; `page.clock`).
+- `stable` — ответ на входящий во время POST тихо отменяет исходящий: его INVITE нет, ответ проходит, автоперезвон в `idle` (`e2e/stale-participant-disconnect-sip-peer.spec.ts`).
+
 ## Participant role
 
 - `stable` — браузерный эквивалент трёх переключений микрофона (`spectator → participant → spectator` с интервалом 100 мс) создаёт только одну spectator-сессию без промежуточного завершения (`e2e/microphone-role-transition.spec.ts`; внешний медиавызов заменён детерминированным тестовым адаптером).

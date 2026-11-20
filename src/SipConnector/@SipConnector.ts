@@ -291,10 +291,8 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
 
     this.callReconnectManager.disarm('manual');
     this.callReconnectManager.cancelCurrentAttempt();
-    // Шаг ручного звонка перезвону не принадлежит: отменяем его явно.
-    this.callManager.cancelStartCall();
 
-    if (this.isCallActive) {
+    if (this.requestedCall || this.isCallActive) {
       await this.endCallWithoutSessionRouting().catch((error: unknown) => {
         debug('disconnect: failed to end active call', error);
       });

@@ -1,4 +1,3 @@
-import { isCanceledError } from '@krivega/cancelable-promise';
 import { IncomingResponse, C as JsSIP_C } from '@krivega/jssip';
 import { EventEmitterProxy } from 'events-constructor';
 
@@ -11,6 +10,7 @@ import {
 import resolveDebug from '@/logger';
 import { StaleParticipantManager } from '@/StaleParticipantManager';
 import { DeferredCommandRunner } from '@/tools';
+import { createCanceledError } from '@/utils/errors';
 import { createCallStateMachine, ECallStatus } from './CallStateMachine';
 import { createEvents } from './events';
 import { MCUSession } from './MCUSession';
@@ -141,10 +141,8 @@ class CallManager extends EventEmitterProxy<TEventMap> {
 
   private readonly streamsChangeTracker = new StreamsChangeTracker();
 
-  private startCallId = 0;
-
-  // Запуск, который сейчас ждёт отключения устаревшего участника.
-  private startCallStepId?: number;
+  // Запуск, который ещё не отправил INVITE.
+  private startCallAbortController?: AbortController;
 
   public constructor(
     { contentedStreamManager }: { contentedStreamManager: ContentedStreamManager },
@@ -260,10 +258,11 @@ class CallManager extends EventEmitterProxy<TEventMap> {
 
     // Без UA звонок отклоняется до `start-call`, как и раньше.
     getUa();
-    this.supersedePendingStartCall();
+    this.abortStartCall();
 
-    const { startCallId } = this;
+    const abortController = new AbortController();
 
+    this.startCallAbortController = abortController;
     this.isPendingCall = true;
 
     this.events.emit('start-call', {
@@ -272,50 +271,43 @@ class CallManager extends EventEmitterProxy<TEventMap> {
       answer: false,
     });
 
-    this.startCallStepId = startCallId;
-
     let resolvedUa: UA;
 
     try {
-      await this.staleParticipantManager.disconnectStale();
+      await this.staleParticipantManager.disconnectStale(abortController.signal);
+      abortController.signal.throwIfAborted();
       // UA берём после шага: за время шага AutoConnector мог его пересоздать.
       resolvedUa = getUa();
     } catch (error) {
-      // Вытесненный запуск молчит: его отказ не должен ломать состояние нового звонка.
-      if (startCallId === this.startCallId) {
+      // Прерванный запуск молчит: последствия отмены уже применил тот, кто её вызвал.
+      if (!abortController.signal.aborted) {
         this.isPendingCall = false;
         this.emitStartCallFailed(error);
       }
 
       throw error;
     } finally {
-      if (this.startCallStepId === startCallId) {
-        this.startCallStepId = undefined;
+      if (this.startCallAbortController === abortController) {
+        this.startCallAbortController = undefined;
       }
     }
 
     return this.mcuSession.startCall(resolvedUa, getUri, params).finally(() => {
-      if (startCallId === this.startCallId) {
-        this.isPendingCall = false;
-      }
+      this.isPendingCall = false;
     });
   };
-
-  // Отмена от перезвона без `failed`: иначе перезвон принял бы её за конец звонка и разоружился.
-  public cancelStartCall(): void {
-    if (this.startCallStepId === undefined) {
-      return;
-    }
-
-    this.supersedePendingStartCall();
-    this.stateMachine.reset();
-  }
 
   public async endCall(): Promise<void> {
     debug('endCall');
 
-    this.staleParticipantManager.cancel();
+    const isStartCallAborted = this.abortStartCall();
+
     this.events.emit('end-call');
+
+    // Без `failed` машина звонка осталась бы в DISCONNECTING: сессии JsSIP ещё нет.
+    if (isStartCallAborted) {
+      this.emitFailedCall(new IncomingResponse(), JsSIP_C.causes.CANCELED);
+    }
 
     return this.mcuSession.endCall();
   }
@@ -343,12 +335,8 @@ class CallManager extends EventEmitterProxy<TEventMap> {
   ): Promise<RTCPeerConnection> => {
     debug('answerToIncomingCall', params);
 
-    const hasStartCallStep = this.startCallStepId !== undefined;
-
-    this.supersedePendingStartCall();
-
     // Тихо: синтетический `failed` разорвал бы у потребителей уже принимаемый входящий.
-    if (hasStartCallStep) {
+    if (this.abortStartCall()) {
       this.stateMachine.reset();
     }
 
@@ -549,23 +537,28 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     this.events.trigger('failed', { message, cause, originator: 'local' });
   }
 
-  private supersedePendingStartCall(): void {
-    this.startCallId += 1;
-    this.startCallStepId = undefined;
+  /** `true` — прерван запуск, ещё не отправивший INVITE. */
+  private abortStartCall(): boolean {
+    const { startCallAbortController } = this;
+
+    if (startCallAbortController === undefined) {
+      return false;
+    }
+
+    this.startCallAbortController = undefined;
     this.isPendingCall = false;
-    this.staleParticipantManager.cancel();
+    startCallAbortController.abort(createCanceledError('CallManager'));
+
+    return true;
   }
 
-  // Без `failed` машина звонка осталась бы в CONNECTING или DISCONNECTING: сессии JsSIP ещё нет.
+  // Без `failed` машина звонка осталась бы в CONNECTING: сессии JsSIP ещё нет.
   private emitStartCallFailed(error: unknown): void {
     const message = new IncomingResponse();
 
     message.body = error instanceof Error ? error.message : String(error);
 
-    this.emitFailedCall(
-      message,
-      isCanceledError(error) ? JsSIP_C.causes.CANCELED : JsSIP_C.causes.INTERNAL_ERROR,
-    );
+    this.emitFailedCall(message, JsSIP_C.causes.INTERNAL_ERROR);
   }
 
   private readonly reset: () => void = () => {

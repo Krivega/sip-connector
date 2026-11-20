@@ -1,18 +1,15 @@
 import { DelayRequester } from '@krivega/timeout-requester';
 
 import resolveDebug from '@/logger';
-import { createCanceledError } from '@/utils/errors';
 
 import type { CallManager } from '@/CallManager';
 import type { TCallEndEvent } from '@/DisconnectCause';
 
 const debug = resolveDebug('StaleParticipantManager');
 
-export const REQUEST_TIMEOUT_MS = 10_000;
-
 const CONFIRM_INTERVAL_MS = 1000;
 
-const CONFIRM_LIMIT_MS = 15_000;
+const CONFIRM_LIMIT_MS = 20_000;
 
 const STALE_TTL_MS = 60_000;
 
@@ -32,7 +29,6 @@ type TSlot = {
 type TCycle = {
   abortController: AbortController;
   delayRequester: DelayRequester;
-  isCanceled: boolean;
   isLimitReached: boolean;
 };
 
@@ -44,37 +40,29 @@ const interruptCycle = ({ abortController, delayRequester }: TCycle): void => {
 /** `true` — сервер подтвердил отключение ответом 401: участника уже нет. */
 const requestDisconnect = async (
   { sipServerUrl, token }: TSlot,
-  abortController: AbortController,
+  signal: AbortSignal,
 ): Promise<boolean> => {
-  const timeoutId = setTimeout(() => {
-    abortController.abort();
-  }, REQUEST_TIMEOUT_MS);
+  const response = await fetch(`https://${sipServerUrl}/${ENDPOINT}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    credentials: 'same-origin',
+    signal,
+  });
 
-  try {
-    const response = await fetch(`https://${sipServerUrl}/${ENDPOINT}`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      credentials: 'same-origin',
-      signal: abortController.signal,
-    });
-
-    if (response.status === 401) {
-      return true;
-    }
-
-    if (!response.ok) {
-      throw new Error(`Stale participant disconnect failed with status ${response.status}`);
-    }
-
-    return false;
-  } finally {
-    clearTimeout(timeoutId);
+  if (response.status === 401) {
+    return true;
   }
+
+  if (!response.ok) {
+    throw new Error(`Stale participant disconnect failed with status ${response.status}`);
+  }
+
+  return false;
 };
 
 // 2xx подтверждает только приём команды: повторяем запрос, пока сервер не ответит 401.
 const confirmDisconnect = async (slot: TSlot, cycle: TCycle): Promise<void> => {
-  if (await requestDisconnect(slot, cycle.abortController)) {
+  if (await requestDisconnect(slot, cycle.abortController.signal)) {
     return undefined;
   }
 
@@ -89,10 +77,6 @@ const confirmDisconnect = async (slot: TSlot, cycle: TCycle): Promise<void> => {
 class StaleParticipantManager {
   private readonly getSipServerUrl: () => string | undefined;
 
-  private readonly unsubscribes: (() => void)[];
-
-  private readonly cycles = new Set<TCycle>();
-
   private slot?: TSlot;
 
   public constructor({
@@ -103,15 +87,13 @@ class StaleParticipantManager {
     getServerUrl: () => string | undefined;
   }) {
     this.getSipServerUrl = getServerUrl;
-    this.unsubscribes = [
-      callManager.stateMachine.onInRoomCredentialsChange(this.handleInRoomCredentials),
-      callManager.on('ended', this.handleCallTermination),
-      callManager.on('failed', this.handleCallTermination),
-      callManager.on('end-call', this.handleEndCall),
-    ];
+    callManager.stateMachine.onInRoomCredentialsChange(this.handleInRoomCredentials);
+    callManager.on('ended', this.handleCallTermination);
+    callManager.on('failed', this.handleCallTermination);
+    callManager.on('end-call', this.handleEndCall);
   }
 
-  public async disconnectStale(): Promise<void> {
+  public async disconnectStale(signal: AbortSignal): Promise<void> {
     const { slot } = this;
 
     if (slot?.staleAt === undefined) {
@@ -144,22 +126,22 @@ class StaleParticipantManager {
     const cycle: TCycle = {
       abortController: new AbortController(),
       delayRequester: new DelayRequester(CONFIRM_INTERVAL_MS),
-      isCanceled: false,
       isLimitReached: false,
+    };
+    const handleAbort = (): void => {
+      interruptCycle(cycle);
     };
     const limitTimeoutId = setTimeout(() => {
       cycle.isLimitReached = true;
       interruptCycle(cycle);
     }, CONFIRM_LIMIT_MS);
 
-    this.cycles.add(cycle);
+    signal.addEventListener('abort', handleAbort);
 
     try {
       await confirmDisconnect(slot, cycle);
     } catch (error) {
-      if (cycle.isCanceled) {
-        throw createCanceledError('StaleParticipantManager');
-      }
+      signal.throwIfAborted();
 
       if (!cycle.isLimitReached) {
         throw error;
@@ -168,29 +150,12 @@ class StaleParticipantManager {
       debug('disconnectStale: disconnect is not confirmed');
     } finally {
       clearTimeout(limitTimeoutId);
-      this.cycles.delete(cycle);
+      signal.removeEventListener('abort', handleAbort);
 
-      if (!cycle.isCanceled && this.slot === slot) {
+      if (!signal.aborted && this.slot === slot) {
         this.slot = undefined;
       }
     }
-  }
-
-  public cancel(): void {
-    for (const cycle of this.cycles) {
-      debug('cancel');
-
-      cycle.isCanceled = true;
-      interruptCycle(cycle);
-    }
-  }
-
-  public stop(): void {
-    this.cancel();
-    this.unsubscribes.forEach((unsubscribe) => {
-      unsubscribe();
-    });
-    this.unsubscribes.length = 0;
   }
 
   private getServerUrl(): string | undefined {

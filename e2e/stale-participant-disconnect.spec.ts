@@ -163,16 +163,19 @@ const attachTimeline = async (testInfo: TestInfo, timeline: TTimelineEntry[]) =>
   });
 };
 
+/** Первый звонок страницы: предыстории нет, POST self/disconnect не уходит. */
 const startActiveCall = async ({
   page,
   connectPage,
   statusDashboard,
   sipFrames,
+  selfDisconnect,
 }: {
   page: Page;
   connectPage: ConnectPage;
   statusDashboard: StatusDashboard;
   sipFrames: TSipFrameJournal;
+  selfDisconnect: TSelfDisconnectRoute;
 }) => {
   await connectPage.fillForm(connectionFormConfig);
   await page.locator('#autoRedialEnabled').uncheck();
@@ -189,6 +192,11 @@ const startActiveCall = async ({
   });
 
   const callId = sipFrames.findSentInvite(callStartT)?.callId;
+
+  expect(
+    selfDisconnect.requests(),
+    'первый звонок без предыстории отправил self/disconnect',
+  ).toEqual([]);
 
   // Обрыв до ответа на re-INVITE сервера оставляет подключение, которое self/disconnect
   // с 204 не убирает (на dev его снимает только DTLS-FAILED через ~15 с). Ждём ACK сервера.
@@ -252,6 +260,71 @@ const waitForCallActive = async ({
   }
 };
 
+/**
+ * Убирает подключение тем же API в обход приложения (page.request не идёт через route), повторяя
+ * запрос раз в секунду, как продуктовый цикл: сервер иногда отвечает 204, не отключив.
+ * Подключение убрано, когда сервер прислал BYE старому диалогу или ответил 401.
+ */
+const removeConnectionDirectly = async ({
+  page,
+  token,
+  callId,
+  sipFrames,
+  timeline,
+}: {
+  page: Page;
+  token: string;
+  callId?: string;
+  sipFrames: TSipFrameJournal;
+  timeline: ReturnType<typeof createTimeline>;
+}) => {
+  const hasBye = () => {
+    return sipFrames.byCallId(callId).some((frame) => {
+      return frame.direction === 'received' && frame.firstLine.startsWith('BYE ');
+    });
+  };
+  const startedAt = Date.now();
+  const statuses: number[] = [];
+  const isRemoved = () => {
+    return hasBye() || statuses.at(-1) === 401;
+  };
+
+  for (
+    let attempt = 0;
+    attempt * REMOVAL_INTERVAL_MS < REMOVAL_LIMIT_MS && !isRemoved();
+    attempt += 1
+  ) {
+    const waitMs = startedAt + attempt * REMOVAL_INTERVAL_MS - Date.now();
+
+    if (waitMs > 0) {
+      // eslint-disable-next-line no-await-in-loop
+      await page.waitForTimeout(waitMs);
+    }
+
+    // eslint-disable-next-line no-await-in-loop
+    const removal = await page.request.post(SELF_DISCONNECT_URL, {
+      headers: { Authorization: `Bearer ${token}` },
+      failOnStatusCode: false,
+    });
+    const status = removal.status();
+
+    statuses.push(status);
+    timeline.mark(sipFrames.now(), `тест убирает подключение напрямую → ${status}`);
+    expect(isAcceptedDisconnectStatus(status), `прямой self/disconnect вернул ${status}`).toBe(
+      true,
+    );
+  }
+
+  await expect
+    .poll(isRemoved, {
+      message: 'сервер не убрал подключение за 15 с повторов self/disconnect',
+      timeout: REMOVAL_INTERVAL_MS,
+    })
+    .toBe(true);
+
+  return { hasBye };
+};
+
 const waitForLocalCallEnd = async ({
   events,
   statusDashboard,
@@ -288,7 +361,13 @@ test.describe('Отключение прежнего подключения пе
     let newCallStartT: number | undefined;
 
     try {
-      const call = await startActiveCall({ page, connectPage, statusDashboard, sipFrames });
+      const call = await startActiveCall({
+        page,
+        connectPage,
+        statusDashboard,
+        sipFrames,
+        selfDisconnect,
+      });
 
       ({ oldCallId } = call);
       expect(oldCallId, 'Call-ID первого звонка не найден в журнале').toBeDefined();
@@ -397,7 +476,13 @@ test.describe('Отключение прежнего подключения пе
     let newCallStartT: number | undefined;
 
     try {
-      const call = await startActiveCall({ page, connectPage, statusDashboard, sipFrames });
+      const call = await startActiveCall({
+        page,
+        connectPage,
+        statusDashboard,
+        sipFrames,
+        selfDisconnect,
+      });
 
       ({ oldCallId } = call);
       breakT = sipFrames.now();
@@ -407,51 +492,13 @@ test.describe('Отключение прежнего подключения пе
 
       // Сам сервер на dev убирает подключение только после 481 на свой запрос в старом диалоге,
       // а после завершённого re-INVITE запросов нет и за 25 с подключение не убирается.
-      // Поэтому убираем его напрямую тем же API в обход приложения (page.request не идёт через route),
-      // повторяя запрос раз в секунду, как продуктовый цикл: сервер иногда отвечает 204, не отключив.
-      const hasOldBye = () => {
-        return sipFrames.byCallId(oldCallId).some((frame) => {
-          return frame.direction === 'received' && frame.firstLine.startsWith('BYE ');
-        });
-      };
-      const removalStartedAt = Date.now();
-      const removalStatuses: number[] = [];
-      const isRemoved = () => {
-        return hasOldBye() || removalStatuses.at(-1) === 401;
-      };
-
-      for (
-        let attempt = 0;
-        attempt * REMOVAL_INTERVAL_MS < REMOVAL_LIMIT_MS && !isRemoved();
-        attempt += 1
-      ) {
-        const waitMs = removalStartedAt + attempt * REMOVAL_INTERVAL_MS - Date.now();
-
-        if (waitMs > 0) {
-          // eslint-disable-next-line no-await-in-loop
-          await page.waitForTimeout(waitMs);
-        }
-
-        // eslint-disable-next-line no-await-in-loop
-        const removal = await page.request.post(SELF_DISCONNECT_URL, {
-          headers: { Authorization: `Bearer ${call.oldToken}` },
-          failOnStatusCode: false,
-        });
-        const status = removal.status();
-
-        removalStatuses.push(status);
-        timeline.mark(sipFrames.now(), `тест убирает прежнее подключение напрямую → ${status}`);
-        expect(isAcceptedDisconnectStatus(status), `прямой self/disconnect вернул ${status}`).toBe(
-          true,
-        );
-      }
-
-      await expect
-        .poll(isRemoved, {
-          message: 'сервер не убрал прежнее подключение за 15 с повторов self/disconnect',
-          timeout: REMOVAL_INTERVAL_MS,
-        })
-        .toBe(true);
+      await removeConnectionDirectly({
+        page,
+        token: call.oldToken,
+        callId: oldCallId,
+        sipFrames,
+        timeline,
+      });
 
       newCallStartT = sipFrames.now();
       timeline.mark(newCallStartT, 'повторный звонок');
@@ -493,7 +540,13 @@ test.describe('Отключение прежнего подключения пе
     let newCallStartT: number | undefined;
 
     try {
-      const call = await startActiveCall({ page, connectPage, statusDashboard, sipFrames });
+      const call = await startActiveCall({
+        page,
+        connectPage,
+        statusDashboard,
+        sipFrames,
+        selfDisconnect,
+      });
 
       await connectPage.hangupOnly();
       timeline.mark(sipFrames.now(), 'ручной отбой');
@@ -507,7 +560,7 @@ test.describe('Отключение прежнего подключения пе
       newCallStartT = sipFrames.now();
       timeline.mark(newCallStartT, 'повторный звонок');
 
-      // Лоадер демо скрывается только после звонка: ожидание до снятия удержания упёрлось бы в таймаут запроса 10 с.
+      // Лоадер демо скрывается только после звонка: его ждём уже после снятия удержания.
       const callAttempt = connectPage.startCallAttempt();
 
       try {
@@ -537,6 +590,83 @@ test.describe('Отключение прежнего подключения пе
     } finally {
       await attachTimeline(testInfo, timeline.build({ sipFrames, selfDisconnect, newCallStartT }));
       await attachSipFrames(testInfo, sipFrames);
+    }
+  });
+
+  test('звонок завершён сервером (BYE): следующий звонок уходит без POST self/disconnect', async ({
+    page,
+    connectPage,
+    statusDashboard,
+    sipFrames,
+    selfDisconnect,
+  }, testInfo) => {
+    test.setTimeout(90_000);
+
+    const events = await observeDisconnectEvents(page);
+    const timeline = createTimeline();
+    let oldCallId: string | undefined;
+    let breakT: number | undefined;
+    let newCallStartT: number | undefined;
+
+    try {
+      const call = await startActiveCall({
+        page,
+        connectPage,
+        statusDashboard,
+        sipFrames,
+        selfDisconnect,
+      });
+
+      ({ oldCallId } = call);
+      breakT = sipFrames.now();
+      timeline.mark(breakT, 'тест просит сервер отключить участника живого звонка');
+
+      // Звонок жив и отвечает серверу: сервер сам завершает его BYE, как при исключении из комнаты.
+      const { hasBye } = await removeConnectionDirectly({
+        page,
+        token: call.oldToken,
+        callId: oldCallId,
+        sipFrames,
+        timeline,
+      });
+
+      await expect
+        .poll(hasBye, { message: 'сервер убрал подключение без BYE звонку', timeout: 5000 })
+        .toBe(true);
+      await expect
+        .poll(async () => {
+          return events.evaluate((observer) => {
+            return observer.read().ended;
+          });
+        })
+        .toContainEqual(expect.objectContaining({ originator: 'remote' }));
+      await statusDashboard.waitForDiagramStatus('system', 'system:readyToCall');
+      timeline.mark(sipFrames.now(), 'звонок завершён сервером');
+
+      newCallStartT = sipFrames.now();
+      timeline.mark(newCallStartT, 'повторный звонок');
+      await connectPage.startCallAttempt();
+      await waitForCallActive({ statusDashboard, sipFrames, newCallStartT });
+      timeline.mark(sipFrames.now(), 'system:callActive');
+
+      expect(
+        selfDisconnect.requests(),
+        'после завершения звонка сервером self/disconnect не нужен',
+      ).toEqual([]);
+      expect(
+        sipFrames.findSentInvite(newCallStartT),
+        'новый INVITE не найден в журнале',
+      ).toBeDefined();
+    } finally {
+      await attachTimeline(
+        testInfo,
+        timeline.build({ sipFrames, selfDisconnect, oldCallId, breakT, newCallStartT }),
+      );
+      await attachSipFrames(testInfo, sipFrames);
+      await events.evaluate((observer) => {
+        observer.dispose();
+      });
+      await events.dispose();
     }
   });
 });

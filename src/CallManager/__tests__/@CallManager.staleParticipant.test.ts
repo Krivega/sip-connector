@@ -75,9 +75,9 @@ const createSubject = () => {
     states.push(state);
   });
 
-  const startCall = async () => {
+  const startCall = async (number = '1000') => {
     return callManager.startCall(ua as unknown as UA, getUri, {
-      number: '1000',
+      number,
       mediaStream: new MediaStream(),
     });
   };
@@ -279,69 +279,7 @@ describe('CallManager: отключение устаревшего участн�
     expect(subject.ua.call).not.toHaveBeenCalled();
   });
 
-  it('отменяет звонок при cancelStartCall во время запроса молча: без failed и без INVITE', async () => {
-    const subject = createSubject();
-
-    subject.leaveStaleParticipant();
-
-    const call = settle(subject.startCall());
-
-    await flush();
-
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-
-    subject.callManager.cancelStartCall();
-
-    const { isRejected, error } = await call;
-
-    await flush();
-
-    expect(isRejected).toBe(true);
-    expect(hasCanceledCallError(error)).toBe(true);
-    expect(requests[0].init.signal?.aborted).toBe(true);
-    expect(subject.failedListener).not.toHaveBeenCalled();
-    expect(subject.callManager.requested).toBe(false);
-    expect(subject.callManager.stateMachine.state).toBe('call:idle');
-    expect(subject.ua.call).not.toHaveBeenCalled();
-  });
-
-  it('не трогает звонок при cancelStartCall после ответа на запрос и отправки INVITE', async () => {
-    const subject = createSubject();
-
-    subject.leaveStaleParticipant();
-
-    const call = settle(subject.startCall());
-
-    await flush();
-
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-
-    requests[0].respond(401);
-    await flush();
-
-    expect(subject.ua.call).toHaveBeenCalledTimes(1);
-
-    subject.callManager.cancelStartCall();
-    await flush();
-
-    expect(subject.failedListener).not.toHaveBeenCalled();
-    expect(subject.callManager.requested).toBe(true);
-    expect(subject.callManager.stateMachine.state).toBe('call:connecting');
-
-    await subject.callManager.endCall();
-    await call;
-  });
-
-  it('ничего не сообщает при cancelStartCall без идущего запроса', () => {
-    const subject = createSubject();
-
-    subject.callManager.cancelStartCall();
-
-    expect(subject.failedListener).not.toHaveBeenCalled();
-    expect(subject.callManager.stateMachine.state).toBe('call:idle');
-  });
-
-  it('сохраняет устаревшего участника после отмены звонка и отключает его на следующем звонке', async () => {
+  it('сохраняет устаревшего участника после отбоя во время запроса и отключает его на следующем звонке', async () => {
     const subject = createSubject();
 
     subject.leaveStaleParticipant('token-1');
@@ -349,7 +287,7 @@ describe('CallManager: отключение устаревшего участн�
     const canceledCall = settle(subject.startCall());
 
     await flush();
-    subject.callManager.cancelStartCall();
+    await subject.callManager.endCall();
     await canceledCall;
 
     const call = settle(subject.startCall());
@@ -499,6 +437,153 @@ describe('CallManager: отключение устаревшего участн�
 
       await subject.callManager.endCall();
       await secondCall;
+    });
+  });
+
+  it('отправляет INVITE нового звонка, начатого сразу после отбоя во время запроса', async () => {
+    const subject = createSubject();
+
+    subject.leaveStaleParticipant();
+
+    const canceledCall = settle(subject.startCall());
+
+    await flush();
+
+    const endCall = subject.callManager.endCall();
+    const call = settle(subject.startCall('2000'));
+
+    await endCall;
+
+    const { isRejected, error } = await canceledCall;
+
+    await flush();
+    requests[1].respond(401);
+    await flush();
+
+    expect(isRejected).toBe(true);
+    expect(hasCanceledCallError(error)).toBe(true);
+    expect(subject.failedListener).toHaveBeenCalledTimes(1);
+    expect(subject.failedListener).toHaveBeenCalledWith(
+      expect.objectContaining({ originator: 'local', cause: JsSIP_C.causes.CANCELED }),
+    );
+    expect(subject.callManager.requested).toBe(true);
+    expect(subject.callManager.stateMachine.state).toBe('call:connecting');
+    expect(subject.callManager.number).toBe('2000');
+    expect(subject.ua.call).toHaveBeenCalledTimes(1);
+    expect(subject.ua.call.mock.calls[0][0]).toBe(getUri('2000'));
+
+    await subject.callManager.endCall();
+    await call;
+  });
+
+  describe('прерывание запуска до продолжения startCall', () => {
+    type TSubject = ReturnType<typeof createSubject>;
+    type TWindow = (
+      subject: TSubject,
+      interrupt: () => void,
+    ) => Promise<{ isRejected: boolean; error: unknown }>;
+
+    // Прерывание идёт синхронно в окне, где отключение уже завершилось, а запуск ещё не продолжился.
+    const windows: [string, TWindow][] = [
+      [
+        'в том же такте без устаревшего участника',
+        async (subject, interrupt) => {
+          const call = settle(subject.startCall());
+
+          interrupt();
+
+          return call;
+        },
+      ],
+      [
+        'сразу после ответа 401',
+        async (subject, interrupt) => {
+          subject.leaveStaleParticipant();
+
+          const call = settle(subject.startCall());
+
+          await flush();
+          requests[0].respond(401);
+          interrupt();
+
+          return call;
+        },
+      ],
+    ];
+
+    it.each(windows)(
+      'endCall %s: failed с CANCELED, без INVITE и без зависания в отключении',
+      async (_name, openWindow) => {
+        const subject = createSubject();
+        let endCall: Promise<void> | undefined;
+        const { isRejected, error } = await openWindow(subject, () => {
+          endCall = subject.callManager.endCall();
+        });
+
+        await endCall;
+        await flush();
+
+        expect(isRejected).toBe(true);
+        expect(hasCanceledCallError(error)).toBe(true);
+        expect(subject.failedListener).toHaveBeenCalledTimes(1);
+        expect(subject.failedListener).toHaveBeenCalledWith(
+          expect.objectContaining({ originator: 'local', cause: JsSIP_C.causes.CANCELED }),
+        );
+        expect(subject.callManager.requested).toBe(false);
+        expect(subject.callManager.stateMachine.state).toBe('call:idle');
+        expect(subject.ua.call).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each(windows)(
+      'второй startCall %s: один INVITE второго звонка, без failed',
+      async (_name, openWindow) => {
+        const subject = createSubject();
+        let secondCall: Promise<unknown> | undefined;
+        const { isRejected, error } = await openWindow(subject, () => {
+          secondCall = settle(subject.startCall('2000'));
+        });
+
+        await flush();
+        requests.slice(1).forEach((request) => {
+          request.respond(401);
+        });
+        await flush();
+
+        expect(isRejected).toBe(true);
+        expect(hasCanceledCallError(error)).toBe(true);
+        expect(subject.failedListener).not.toHaveBeenCalled();
+        expect(subject.callManager.requested).toBe(true);
+        expect(subject.callManager.stateMachine.state).toBe('call:connecting');
+        expect(subject.ua.call).toHaveBeenCalledTimes(1);
+        expect(subject.ua.call.mock.calls[0][0]).toBe(getUri('2000'));
+
+        await subject.callManager.endCall();
+        await secondCall;
+      },
+    );
+
+    it.each(windows)('ответ на входящий %s: без failed и без INVITE', async (_name, openWindow) => {
+      const subject = createSubject();
+      let incoming: ReturnType<typeof answerIncoming> | undefined;
+      const { isRejected, error } = await openWindow(subject, () => {
+        incoming = answerIncoming(subject);
+      });
+
+      await flush();
+
+      expect(isRejected).toBe(true);
+      expect(hasCanceledCallError(error)).toBe(true);
+      expect(subject.failedListener).not.toHaveBeenCalled();
+      expect(subject.timeline).toEqual(['start-call:outgoing', 'start-call:answer']);
+      expect(subject.states.slice(-2)).toEqual(['call:idle', 'call:connecting']);
+      expect(subject.callManager.number).toBe('caller1');
+      expect(subject.callManager.requested).toBe(true);
+      expect(incoming?.incomingSession.answer).toHaveBeenCalledTimes(1);
+      expect(subject.ua.call).not.toHaveBeenCalled();
+
+      await subject.callManager.endCall();
+      await incoming?.answer;
     });
   });
 });

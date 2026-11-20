@@ -67,7 +67,7 @@ stateDiagram-v2
 - Глобальный `RECONNECT.DISARM` выполняет полный сброс in-flight и эмитит `disarmed` и `cancelled(reason)` (при явно переданной причине).
 - После удачной попытки (`attempting → armed` + `attempt-succeeded`) счётчик попыток сбрасывается, и менеджер продолжает следить за следующим `CALL.FAILED`.
 - `canRetryOnError` вычисляется по ошибке из invoke: `startCall` с «человеческой» ошибкой (например `busy`) уходит в `errorTerminal`, дальше — только `forceReconnect()`.
-- Ошибка отключения прежнего подключения участника приходит в `performAttempt.error` отказом `startCall`, вместе с `failed` от `CallManager` (`originator: 'local'`, `'Internal Error'`). `cancelAll` при идущей попытке вызывает `callManager.cancelStartCall()`: отключение попытки прерывается тихо, без `failed`, поэтому `cancelCurrentAttempt` и повторный `RECONNECT.ARM` во время отключения оставляют машину в `armed`; отключение ручного звонка `cancelAll` не трогает.
+- Ошибка отключения прежнего подключения участника приходит в `performAttempt.error` отказом `startCall`, вместе с `failed` от `CallManager` (`originator: 'local'`, `'Internal Error'`). `cancelAll` прекращает только ожидание попытки и `CallManager` не вызывает: отключение и `INVITE` начатой попытки продолжаются; такой звонок завершает `endCall`, замещает — новый звонок или ответ ([отмена запуска](../StaleParticipantManager/index.md#отмена-запуска)).
 - `isAttemptCancelled` учитывает оба возможных cancel-маркера: `@krivega/cancelable-promise` (`isCanceledError`) и `@krivega/timeout-requester` (`hasCanceledError`).
 
 ## Интеграция и события

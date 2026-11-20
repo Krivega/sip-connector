@@ -13,7 +13,7 @@ type TCredentialsListener = (payload: { token: string; conferenceForToken: strin
 type TFetchResponse = { ok: boolean; status: number };
 
 const DISCONNECT_URL = 'https://dev.vinteo.com/api/v2/participants/self/disconnect';
-const REQUEST_TIMEOUT_MS = 10_000;
+const CONFIRM_LIMIT_MS = 20_000;
 
 const createCallManager = () => {
   const handlers = new Map<string, Set<THandler>>();
@@ -82,7 +82,11 @@ const setup = ({
     },
   });
 
-  return { manager, connection, ...calls };
+  const disconnectStale = async (signal = new AbortController().signal) => {
+    return manager.disconnectStale(signal);
+  };
+
+  return { manager, connection, disconnectStale, ...calls };
 };
 
 type TSubject = ReturnType<typeof setup>;
@@ -144,7 +148,7 @@ describe('StaleParticipantManager', () => {
 
     subject.enterRoom('token-1');
 
-    await expect(subject.manager.disconnectStale()).resolves.toBeUndefined();
+    await expect(subject.disconnectStale()).resolves.toBeUndefined();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -159,7 +163,7 @@ describe('StaleParticipantManager', () => {
     subject.emit(event, { originator, cause: JsSIP_C.causes.CONNECTION_ERROR });
     subject.emit('end-call');
 
-    await expect(subject.manager.disconnectStale()).resolves.toBeUndefined();
+    await expect(subject.disconnectStale()).resolves.toBeUndefined();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -168,7 +172,7 @@ describe('StaleParticipantManager', () => {
 
     createStale(subject);
 
-    await expect(subject.manager.disconnectStale()).resolves.toBeUndefined();
+    await expect(subject.disconnectStale()).resolves.toBeUndefined();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -188,7 +192,7 @@ describe('StaleParticipantManager', () => {
       subject.enterRoom('token-1');
       subject.emit(event, { originator, cause });
 
-      await subject.manager.disconnectStale();
+      await subject.disconnectStale();
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
       expect(fetchMock.mock.calls[0][0]).toBe(DISCONNECT_URL);
@@ -202,7 +206,7 @@ describe('StaleParticipantManager', () => {
     subject.enterRoom('token-1');
     subject.emit('end-call');
 
-    await expect(subject.manager.disconnectStale()).resolves.toBeUndefined();
+    await expect(subject.disconnectStale()).resolves.toBeUndefined();
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(new Headers(getRequestInit().headers).get('Authorization')).toBe('Bearer token-1');
   });
@@ -213,7 +217,7 @@ describe('StaleParticipantManager', () => {
     respond(401);
     createStale(subject, 'room-token');
 
-    await subject.manager.disconnectStale();
+    await subject.disconnectStale();
 
     const init = getRequestInit();
 
@@ -232,7 +236,7 @@ describe('StaleParticipantManager', () => {
       respond(401);
       createStale(subject);
 
-      await subject.manager.disconnectStale();
+      await subject.disconnectStale();
 
       expect(fetchMock.mock.calls[0][0]).toBe(DISCONNECT_URL);
     },
@@ -251,7 +255,7 @@ describe('StaleParticipantManager', () => {
     subject.enterRoom('token-1');
     subject.emit(event, { originator: 'remote', cause });
 
-    await expect(subject.manager.disconnectStale()).resolves.toBeUndefined();
+    await expect(subject.disconnectStale()).resolves.toBeUndefined();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -261,7 +265,7 @@ describe('StaleParticipantManager', () => {
     respond(status);
     createStale(subject);
 
-    const error = await catchError(subject.manager.disconnectStale());
+    const error = await catchError(subject.disconnectStale());
 
     expect(error).toBeInstanceOf(Error);
     expect((error as Error).message).toBe(
@@ -276,7 +280,7 @@ describe('StaleParticipantManager', () => {
     fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
     createStale(subject);
 
-    const error = await catchError(subject.manager.disconnectStale());
+    const error = await catchError(subject.disconnectStale());
 
     expect(isCanceledError(error)).toBe(false);
   });
@@ -290,9 +294,9 @@ describe('StaleParticipantManager', () => {
 
     fetchMock.mockResolvedValueOnce({ ok, status });
     createStale(subject);
-    await subject.manager.disconnectStale().catch(() => {});
+    await subject.disconnectStale().catch(() => {});
 
-    await expect(subject.manager.disconnectStale()).resolves.toBeUndefined();
+    await expect(subject.disconnectStale()).resolves.toBeUndefined();
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
@@ -301,9 +305,9 @@ describe('StaleParticipantManager', () => {
 
     fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
     createStale(subject);
-    await subject.manager.disconnectStale().catch(() => {});
+    await subject.disconnectStale().catch(() => {});
 
-    await expect(subject.manager.disconnectStale()).resolves.toBeUndefined();
+    await expect(subject.disconnectStale()).resolves.toBeUndefined();
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
@@ -315,12 +319,12 @@ describe('StaleParticipantManager', () => {
     respond(401);
     createStale(subject);
 
-    await subject.manager.disconnectStale();
+    await subject.disconnectStale();
 
     expect(jest.getTimerCount()).toBe(0);
   });
 
-  it('прерывает запрос и отклоняет отключение не отменой через 10 секунд', async () => {
+  it('не прерывает зависший запрос раньше предела 20 секунд и разрешает звонок по пределу', async () => {
     jest.useFakeTimers();
 
     const subject = setup();
@@ -328,111 +332,95 @@ describe('StaleParticipantManager', () => {
     holdUntilAbort();
     createStale(subject);
 
-    const result = catchError(subject.manager.disconnectStale());
+    const result = subject.disconnectStale();
 
-    await jest.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS - 1);
+    await jest.advanceTimersByTimeAsync(CONFIRM_LIMIT_MS - 1);
 
     expect(getRequestInit().signal?.aborted).toBe(false);
 
     await jest.advanceTimersByTimeAsync(1);
 
-    const error = await result;
-
+    await expect(result).resolves.toBeUndefined();
     expect(getRequestInit().signal?.aborted).toBe(true);
-    expect(isCanceledError(error)).toBe(false);
-    expect(jest.getTimerCount()).toBe(0);
-  });
-
-  it('не повторяет запрос после таймаута', async () => {
-    jest.useFakeTimers();
-
-    const subject = setup();
-
-    holdUntilAbort();
-    createStale(subject);
-
-    const result = subject.manager.disconnectStale().catch(() => {});
-
-    await jest.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS);
-    await result;
-
-    await expect(subject.manager.disconnectStale()).resolves.toBeUndefined();
     expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(jest.getTimerCount()).toBe(0);
   });
 
-  it('отклоняет отключение ошибкой отмены и прерывает запрос при cancel()', async () => {
+  it('отклоняет отключение причиной отмены сигнала и прерывает запрос', async () => {
     jest.useFakeTimers();
 
     const subject = setup();
+    const abortController = new AbortController();
+    const reason = new Error('canceled');
 
     holdUntilAbort();
     createStale(subject);
 
-    const result = catchError(subject.manager.disconnectStale());
+    const result = catchError(subject.disconnectStale(abortController.signal));
 
-    subject.manager.cancel();
+    abortController.abort(reason);
 
-    const error = await result;
-
-    expect(error).toBeInstanceOf(Error);
-    expect(isCanceledError(error)).toBe(true);
+    expect(await result).toBe(reason);
     expect(getRequestInit().signal?.aborted).toBe(true);
     expect(jest.getTimerCount()).toBe(0);
   });
 
-  it('сохраняет устаревшего участника после cancel() и отправляет запрос при следующем вызове', async () => {
+  it('сохраняет устаревшего участника после отмены и отправляет запрос при следующем вызове', async () => {
     const subject = setup();
+    const abortController = new AbortController();
 
     holdUntilAbort();
     respond(401);
     createStale(subject, 'token-1');
 
-    const result = subject.manager.disconnectStale().catch(() => {});
+    const result = subject.disconnectStale(abortController.signal).catch(() => {});
 
-    subject.manager.cancel();
+    abortController.abort();
     await result;
-    await subject.manager.disconnectStale();
+    await subject.disconnectStale();
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(new Headers(getRequestInit(1).headers).get('Authorization')).toBe('Bearer token-1');
   });
 
-  it('прерывает cancel() второй запрос после завершения первого при перекрывающихся вызовах', async () => {
+  it('сохраняет устаревшего участника, когда сигнал отменён сразу после ответа 401', async () => {
     const subject = setup();
-    let respondFirst: (response: TFetchResponse) => void = () => {};
+    const abortController = new AbortController();
 
-    fetchMock.mockImplementationOnce(async () => {
-      return new Promise<TFetchResponse>((resolve) => {
-        respondFirst = resolve;
-      });
-    });
+    respond(401);
+    respond(401);
+    createStale(subject);
+
+    const result = subject.disconnectStale(abortController.signal);
+
+    abortController.abort();
+    await result;
+    await subject.disconnectStale();
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('прерывает по сигналу только свой запрос при перекрывающихся вызовах', async () => {
+    const subject = setup();
+    const firstController = new AbortController();
+    const secondController = new AbortController();
+    const reason = new Error('canceled');
+
+    holdUntilAbort();
     holdUntilAbort();
     createStale(subject);
 
-    const first = subject.manager.disconnectStale();
-    const second = catchError(subject.manager.disconnectStale());
+    const first = catchError(subject.disconnectStale(firstController.signal));
+    const second = catchError(subject.disconnectStale(secondController.signal));
 
-    respondFirst({ ok: false, status: 401 });
-    await first;
-    subject.manager.cancel();
+    firstController.abort(reason);
 
-    const error = await second;
+    expect(await first).toBe(reason);
+    expect(getRequestInit(0).signal?.aborted).toBe(true);
+    expect(getRequestInit(1).signal?.aborted).toBe(false);
 
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(isCanceledError(error)).toBe(true);
-    expect(getRequestInit(1).signal?.aborted).toBe(true);
-  });
-
-  it('не забывает устаревшего участника при cancel() без запроса', async () => {
-    const subject = setup();
-
-    respond(401);
-    createStale(subject);
-    subject.manager.cancel();
-
-    await subject.manager.disconnectStale();
-
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    secondController.abort();
+    await second;
   });
 
   it.each([
@@ -447,7 +435,7 @@ describe('StaleParticipantManager', () => {
     createStale(subject);
     subject.emit(event, payload);
 
-    await subject.manager.disconnectStale();
+    await subject.disconnectStale();
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
@@ -458,7 +446,7 @@ describe('StaleParticipantManager', () => {
     createStale(subject, 'token-1');
     subject.enterRoom('token-2');
 
-    await expect(subject.manager.disconnectStale()).resolves.toBeUndefined();
+    await expect(subject.disconnectStale()).resolves.toBeUndefined();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -469,7 +457,7 @@ describe('StaleParticipantManager', () => {
     createStale(subject, 'token-1');
     createStale(subject, 'token-2');
 
-    await subject.manager.disconnectStale();
+    await subject.disconnectStale();
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(new Headers(getRequestInit().headers).get('Authorization')).toBe('Bearer token-2');
@@ -481,7 +469,7 @@ describe('StaleParticipantManager', () => {
     createStale(subject);
     subject.connection.configuration = { sipServerUrl: 'other.vinteo.com' } as TConnectionConfig;
 
-    await expect(subject.manager.disconnectStale()).resolves.toBeUndefined();
+    await expect(subject.disconnectStale()).resolves.toBeUndefined();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -490,10 +478,10 @@ describe('StaleParticipantManager', () => {
 
     createStale(subject);
     subject.connection.configuration = { sipServerUrl: 'other.vinteo.com' } as TConnectionConfig;
-    await subject.manager.disconnectStale();
+    await subject.disconnectStale();
     subject.connection.configuration = { sipServerUrl: 'dev.vinteo.com' } as TConnectionConfig;
 
-    await subject.manager.disconnectStale();
+    await subject.disconnectStale();
 
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -504,7 +492,7 @@ describe('StaleParticipantManager', () => {
     createStale(subject);
     subject.connection.configuration = undefined;
 
-    await expect(subject.manager.disconnectStale()).resolves.toBeUndefined();
+    await expect(subject.disconnectStale()).resolves.toBeUndefined();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -514,10 +502,10 @@ describe('StaleParticipantManager', () => {
     respond(401);
     createStale(subject);
     subject.connection.configuration = undefined;
-    await subject.manager.disconnectStale();
+    await subject.disconnectStale();
     subject.connection.configuration = { sipServerUrl: 'dev.vinteo.com' } as TConnectionConfig;
 
-    await subject.manager.disconnectStale();
+    await subject.disconnectStale();
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0][0]).toBe(DISCONNECT_URL);
@@ -535,34 +523,15 @@ describe('StaleParticipantManager', () => {
       createStale(subject);
       subject.connection.configuration = { sipServerUrl: callServerUrl } as TConnectionConfig;
 
-      await subject.manager.disconnectStale();
+      await subject.disconnectStale();
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
       expect(fetchMock.mock.calls[0][0]).toBe(DISCONNECT_URL);
     },
   );
 
-  it('прерывает cancel() оба одновременно идущих запроса', async () => {
-    const subject = setup();
-
-    holdUntilAbort();
-    holdUntilAbort();
-    createStale(subject);
-
-    const first = catchError(subject.manager.disconnectStale());
-    const second = catchError(subject.manager.disconnectStale());
-
-    subject.manager.cancel();
-
-    expect(getRequestInit(0).signal?.aborted).toBe(true);
-    expect(getRequestInit(1).signal?.aborted).toBe(true);
-    expect(isCanceledError(await first)).toBe(true);
-    expect(isCanceledError(await second)).toBe(true);
-  });
-
   describe('ожидание подтверждения отключения', () => {
     const CONFIRM_INTERVAL_MS = 1000;
-    const CONFIRM_LIMIT_MS = 15_000;
 
     const trackSettled = (promise: Promise<unknown>) => {
       const state = { settled: false };
@@ -589,7 +558,7 @@ describe('StaleParticipantManager', () => {
       respond(401);
       createStale(subject);
 
-      await expect(subject.manager.disconnectStale()).resolves.toBeUndefined();
+      await expect(subject.disconnectStale()).resolves.toBeUndefined();
       expect(fetchMock).toHaveBeenCalledTimes(1);
     });
 
@@ -599,7 +568,7 @@ describe('StaleParticipantManager', () => {
       respond(204);
       respond(401);
       createStale(subject);
-      subject.manager.disconnectStale().catch(() => {});
+      subject.disconnectStale().catch(() => {});
 
       await jest.advanceTimersByTimeAsync(CONFIRM_INTERVAL_MS - 1);
 
@@ -620,7 +589,7 @@ describe('StaleParticipantManager', () => {
         respond(401);
         createStale(subject);
 
-        const result = subject.manager.disconnectStale();
+        const result = subject.disconnectStale();
 
         await jest.advanceTimersByTimeAsync(2 * CONFIRM_INTERVAL_MS);
 
@@ -636,7 +605,7 @@ describe('StaleParticipantManager', () => {
       respond(401);
       createStale(subject, 'room-token');
 
-      const result = subject.manager.disconnectStale();
+      const result = subject.disconnectStale();
 
       await jest.advanceTimersByTimeAsync(CONFIRM_INTERVAL_MS);
       await result;
@@ -652,7 +621,7 @@ describe('StaleParticipantManager', () => {
       respond(401);
       createStale(subject);
 
-      const result = subject.manager.disconnectStale();
+      const result = subject.disconnectStale();
 
       await jest.advanceTimersByTimeAsync(CONFIRM_INTERVAL_MS);
       await result;
@@ -660,13 +629,13 @@ describe('StaleParticipantManager', () => {
       expect(jest.getTimerCount()).toBe(0);
     });
 
-    it('разрешает звонок через 15 секунд без ответа 401', async () => {
+    it('разрешает звонок через 20 секунд без ответа 401', async () => {
       const subject = setup();
 
       fetchMock.mockResolvedValue({ ok: true, status: 204 });
       createStale(subject);
 
-      const state = trackSettled(subject.manager.disconnectStale());
+      const state = trackSettled(subject.disconnectStale());
 
       await jest.advanceTimersByTimeAsync(CONFIRM_LIMIT_MS - 1);
 
@@ -677,13 +646,13 @@ describe('StaleParticipantManager', () => {
       expect(state.settled).toBe(true);
     });
 
-    it('отправляет запрос раз в секунду до предела 15 секунд и не продолжает после него', async () => {
+    it('отправляет запрос раз в секунду до предела 20 секунд и не продолжает после него', async () => {
       const subject = setup();
 
       fetchMock.mockResolvedValue({ ok: true, status: 204 });
       createStale(subject);
 
-      const result = subject.manager.disconnectStale();
+      const result = subject.disconnectStale();
 
       await jest.advanceTimersByTimeAsync(CONFIRM_LIMIT_MS);
       await result;
@@ -692,26 +661,26 @@ describe('StaleParticipantManager', () => {
 
       await jest.advanceTimersByTimeAsync(5 * CONFIRM_INTERVAL_MS);
 
-      expect(callsAtLimit).toBeGreaterThanOrEqual(15);
-      expect(callsAtLimit).toBeLessThanOrEqual(16);
+      expect(callsAtLimit).toBeGreaterThanOrEqual(20);
+      expect(callsAtLimit).toBeLessThanOrEqual(21);
       expect(fetchMock).toHaveBeenCalledTimes(callsAtLimit);
       expect(jest.getTimerCount()).toBe(0);
     });
 
-    it('забывает устаревшего участника после предела 15 секунд без ответа 401', async () => {
+    it('забывает устаревшего участника после предела 20 секунд без ответа 401', async () => {
       const subject = setup();
 
       fetchMock.mockResolvedValue({ ok: true, status: 204 });
       createStale(subject);
 
-      const result = subject.manager.disconnectStale();
+      const result = subject.disconnectStale();
 
       await jest.advanceTimersByTimeAsync(CONFIRM_LIMIT_MS);
       await result;
 
       const callsAtLimit = fetchMock.mock.calls.length;
 
-      await subject.manager.disconnectStale();
+      await subject.disconnectStale();
 
       expect(fetchMock).toHaveBeenCalledTimes(callsAtLimit);
     });
@@ -738,7 +707,7 @@ describe('StaleParticipantManager', () => {
         failRepeat();
         createStale(subject);
 
-        const result = catchError(subject.manager.disconnectStale());
+        const result = catchError(subject.disconnectStale());
 
         await jest.advanceTimersByTimeAsync(CONFIRM_INTERVAL_MS);
 
@@ -757,96 +726,81 @@ describe('StaleParticipantManager', () => {
       respond(500);
       createStale(subject);
 
-      const result = subject.manager.disconnectStale().catch(() => {});
+      const result = subject.disconnectStale().catch(() => {});
 
       await jest.advanceTimersByTimeAsync(CONFIRM_INTERVAL_MS);
       await result;
-      await subject.manager.disconnectStale();
+      await subject.disconnectStale();
 
       expect(fetchMock).toHaveBeenCalledTimes(2);
     });
 
-    it('отклоняет звонок не отменой по таймауту повторного запроса', async () => {
+    it('отклоняет звонок причиной отмены сигнала в паузе между запросами', async () => {
       const subject = setup();
-
-      respond(204);
-      holdUntilAbort();
-      createStale(subject);
-
-      const result = catchError(subject.manager.disconnectStale());
-
-      await jest.advanceTimersByTimeAsync(CONFIRM_INTERVAL_MS + REQUEST_TIMEOUT_MS);
-
-      const error = await result;
-
-      expect(getRequestInit(1).signal?.aborted).toBe(true);
-      expect(isCanceledError(error)).toBe(false);
-      expect(jest.getTimerCount()).toBe(0);
-    });
-
-    it('отклоняет звонок ошибкой отмены при cancel() в паузе между запросами', async () => {
-      const subject = setup();
+      const abortController = new AbortController();
+      const reason = new Error('canceled');
 
       respond(204);
       createStale(subject);
 
-      const result = catchError(subject.manager.disconnectStale());
+      const result = catchError(subject.disconnectStale(abortController.signal));
 
       await jest.advanceTimersByTimeAsync(CONFIRM_INTERVAL_MS / 2);
-      subject.manager.cancel();
+      abortController.abort(reason);
 
-      const error = await result;
-
-      expect(isCanceledError(error)).toBe(true);
+      expect(await result).toBe(reason);
       expect(fetchMock).toHaveBeenCalledTimes(1);
       expect(jest.getTimerCount()).toBe(0);
     });
 
-    it('сохраняет устаревшего участника после cancel() в паузе между запросами', async () => {
+    it('сохраняет устаревшего участника после отмены в паузе между запросами', async () => {
       const subject = setup();
+      const abortController = new AbortController();
 
       respond(204);
       respond(401);
       createStale(subject);
 
-      const result = subject.manager.disconnectStale().catch(() => {});
+      const result = subject.disconnectStale(abortController.signal).catch(() => {});
 
       await jest.advanceTimersByTimeAsync(CONFIRM_INTERVAL_MS / 2);
-      subject.manager.cancel();
+      abortController.abort();
       await result;
-      await subject.manager.disconnectStale();
+      await subject.disconnectStale();
 
       expect(fetchMock).toHaveBeenCalledTimes(2);
     });
 
-    it('прерывает повторный запрос и отклоняет звонок ошибкой отмены при cancel()', async () => {
+    it('прерывает повторный запрос и отклоняет звонок причиной отмены сигнала', async () => {
       const subject = setup();
+      const abortController = new AbortController();
+      const reason = new Error('canceled');
 
       respond(204);
       holdUntilAbort();
       createStale(subject);
 
-      const result = catchError(subject.manager.disconnectStale());
+      const result = catchError(subject.disconnectStale(abortController.signal));
 
       await jest.advanceTimersByTimeAsync(CONFIRM_INTERVAL_MS);
-      subject.manager.cancel();
+      abortController.abort(reason);
 
-      const error = await result;
-
+      expect(await result).toBe(reason);
       expect(getRequestInit(1).signal?.aborted).toBe(true);
-      expect(isCanceledError(error)).toBe(true);
       expect(jest.getTimerCount()).toBe(0);
     });
 
-    it('отклоняет звонок ошибкой отмены без паузы при cancel() сразу после ответа 204', async () => {
+    it('отклоняет звонок причиной отмены без паузы при отмене сразу после ответа 204', async () => {
       const subject = setup();
+      const abortController = new AbortController();
+      const reason = new Error('canceled');
 
       fetchMock.mockImplementationOnce(async () => {
         return Promise.resolve({ ok: true, status: 204 }).then((response) => {
           // Настоящая микрозадача: фейковые таймеры подменяют queueMicrotask, но не цепочки Promise.
           Promise.resolve()
             .then(() => {
-              subject.manager.cancel();
+              abortController.abort(reason);
             })
             .catch(() => {});
 
@@ -855,16 +809,16 @@ describe('StaleParticipantManager', () => {
       });
       createStale(subject);
 
-      const result = catchError(subject.manager.disconnectStale());
+      const result = catchError(subject.disconnectStale(abortController.signal));
 
       await jest.advanceTimersByTimeAsync(0);
 
       expect(jest.getTimerCount()).toBe(0);
-      expect(isCanceledError(await result)).toBe(true);
+      expect(await result).toBe(reason);
       expect(fetchMock).toHaveBeenCalledTimes(1);
     });
 
-    it('разрешает звонок ровно на 15 секундах, обрывая зависший запрос', async () => {
+    it('разрешает звонок ровно на 20 секундах, обрывая зависший запрос', async () => {
       const subject = setup();
 
       for (let index = 0; index < 7; index += 1) {
@@ -874,7 +828,7 @@ describe('StaleParticipantManager', () => {
       holdUntilAbort();
       createStale(subject);
 
-      const state = trackSettled(subject.manager.disconnectStale());
+      const state = trackSettled(subject.disconnectStale());
 
       await jest.advanceTimersByTimeAsync(CONFIRM_LIMIT_MS - 1);
 
@@ -897,7 +851,7 @@ describe('StaleParticipantManager', () => {
       holdUntilAbort();
       createStale(subject);
 
-      const result = subject.manager.disconnectStale();
+      const result = subject.disconnectStale();
 
       await jest.advanceTimersByTimeAsync(CONFIRM_LIMIT_MS);
       await expect(result).resolves.toBeUndefined();
@@ -907,26 +861,6 @@ describe('StaleParticipantManager', () => {
       expect(jest.getTimerCount()).toBe(0);
     });
 
-    it('отклоняет звонок не отменой, когда таймаут зависшего запроса наступает раньше предела', async () => {
-      const subject = setup();
-
-      respond(204);
-      holdUntilAbort();
-      createStale(subject);
-
-      const result = catchError(subject.manager.disconnectStale());
-      const state = trackSettled(result);
-
-      await jest.advanceTimersByTimeAsync(CONFIRM_INTERVAL_MS + REQUEST_TIMEOUT_MS - 1);
-
-      expect(state.settled).toBe(false);
-
-      await jest.advanceTimersByTimeAsync(1);
-
-      expect(state.settled).toBe(true);
-      expect(isCanceledError(await result)).toBe(false);
-    });
-
     it('сохраняет новое подключение, когда 401 по прежнему токену приходит после смены токена', async () => {
       const subject = setup();
 
@@ -934,7 +868,7 @@ describe('StaleParticipantManager', () => {
       respond(401);
       createStale(subject, 'token-1');
 
-      const result = subject.manager.disconnectStale();
+      const result = subject.disconnectStale();
 
       subject.enterRoom('token-2');
       await jest.advanceTimersByTimeAsync(CONFIRM_INTERVAL_MS);
@@ -944,7 +878,7 @@ describe('StaleParticipantManager', () => {
 
       const callsBefore = fetchMock.mock.calls.length;
 
-      await subject.manager.disconnectStale();
+      await subject.disconnectStale();
 
       expect(fetchMock).toHaveBeenCalledTimes(callsBefore + 1);
       expect(new Headers(getRequestInit(callsBefore).headers).get('Authorization')).toBe(
@@ -967,7 +901,7 @@ describe('StaleParticipantManager', () => {
       createStale(subject);
       jest.advanceTimersByTime(STALE_TTL_MS);
 
-      await subject.manager.disconnectStale();
+      await subject.disconnectStale();
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
     });
@@ -980,8 +914,8 @@ describe('StaleParticipantManager', () => {
       createStale(subject);
       jest.advanceTimersByTime(STALE_TTL_MS + 1);
 
-      await expect(subject.manager.disconnectStale()).resolves.toBeUndefined();
-      await expect(subject.manager.disconnectStale()).resolves.toBeUndefined();
+      await expect(subject.disconnectStale()).resolves.toBeUndefined();
+      await expect(subject.disconnectStale()).resolves.toBeUndefined();
       expect(fetchMock).not.toHaveBeenCalled();
       expect(jest.getTimerCount()).toBe(0);
     });
@@ -994,7 +928,7 @@ describe('StaleParticipantManager', () => {
       jest.advanceTimersByTime(STALE_TTL_MS * 2);
       endByNetwork(subject);
 
-      await subject.manager.disconnectStale();
+      await subject.disconnectStale();
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
     });
@@ -1010,40 +944,30 @@ describe('StaleParticipantManager', () => {
       endByNetwork(subject);
       jest.advanceTimersByTime(STALE_TTL_MS / 2 + 1);
 
-      await subject.manager.disconnectStale();
+      await subject.disconnectStale();
 
       expect(fetchMock).not.toHaveBeenCalled();
     });
 
     it('не продлевает срок отменой отключения', async () => {
       const subject = setup();
+      const abortController = new AbortController();
 
       holdUntilAbort();
       respond(401);
       createStale(subject);
       jest.advanceTimersByTime(STALE_TTL_MS / 2);
 
-      const result = catchError(subject.manager.disconnectStale());
+      const result = catchError(subject.disconnectStale(abortController.signal));
 
-      subject.manager.cancel();
-
-      expect(isCanceledError(await result)).toBe(true);
+      abortController.abort();
+      await result;
 
       jest.advanceTimersByTime(STALE_TTL_MS / 2 + 1);
 
-      await subject.manager.disconnectStale();
+      await subject.disconnectStale();
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
     });
-  });
-
-  it('игнорирует события звонка после stop()', async () => {
-    const subject = setup();
-
-    subject.manager.stop();
-    createStale(subject);
-
-    await expect(subject.manager.disconnectStale()).resolves.toBeUndefined();
-    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

@@ -212,12 +212,6 @@ export class CallReconnectRuntime {
     debug('cancelAll');
 
     this.cancellationsCount += 1;
-
-    // Без идущей попытки `startCall` принадлежит ручному звонку: его шаг не трогаем.
-    if (this.performCall.requested) {
-      this.callManager.cancelStartCall();
-    }
-
     this.delayRequester.cancelRequest();
     this.performCall.cancelRequest();
     this.unsubscribeConnectionWait?.();

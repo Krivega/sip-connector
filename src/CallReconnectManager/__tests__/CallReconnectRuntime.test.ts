@@ -12,7 +12,6 @@ import type { TCallRedialParameters } from '../types';
 const createCallManagerMock = () => {
   return {
     startCall: jest.fn(async () => {}),
-    cancelStartCall: jest.fn(),
   } as unknown as CallManager;
 };
 
@@ -252,7 +251,7 @@ describe('CallReconnectRuntime', () => {
     await expect(runtime.performAttempt(makeRedialParameters())).rejects.toBe(error);
   });
 
-  it('cancelAll during attempt cancels CallManager start call step', async () => {
+  it('cancelAll during startCall cancels only the attempt and leaves the call to CallManager', async () => {
     jest.useRealTimers();
 
     const callManager = createCallManagerMock();
@@ -272,8 +271,8 @@ describe('CallReconnectRuntime', () => {
     await flushPromises();
     runtime.cancelAll();
 
-    expect(callManager.cancelStartCall).toHaveBeenCalledTimes(1);
     expect(await attempt).toMatchObject({ name: 'Canceled' });
+    expect(callManager.startCall).toHaveBeenCalledTimes(1);
   });
 
   it('cancelAll during getCallParameters skips startCall', async () => {
