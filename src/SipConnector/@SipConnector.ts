@@ -136,7 +136,13 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     this.callSessionState = new CallSessionState();
     this.callManager = new CallManager(
       { contentedStreamManager: this.contentedStreamManager },
-      { sendOffer: this.sendOffer, waitForSignaling: this.waitForSignaling },
+      {
+        sendOffer: this.sendOffer,
+        waitForSignaling: this.waitForSignaling,
+        getSipServerUrl: () => {
+          return this.connectionManager.getConnectionConfiguration()?.sipServerUrl;
+        },
+      },
       { callSessionState: this.callSessionState },
     );
     this.incomingCallManager = new IncomingCallManager(this.connectionManager);
@@ -286,7 +292,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     this.callReconnectManager.disarm('manual');
     this.callReconnectManager.cancelCurrentAttempt();
 
-    if (this.isCallActive) {
+    if (this.requestedCall || this.isCallActive) {
       await this.endCallWithoutSessionRouting().catch((error: unknown) => {
         debug('disconnect: failed to end active call', error);
       });
@@ -411,6 +417,9 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       onAddedTransceiver: this.resolveHandleAddTransceiver(onAddedTransceiver),
     };
 
+    // Новый звонок заменяет идущий цикл перезвона: иначе его попытка отправит второй INVITE.
+    this.callReconnectManager.disarm('manual');
+
     if (options.autoRedial === true) {
       this.callReconnectManager.arm({
         getCallParameters: async () => {
@@ -420,7 +429,9 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     }
 
     return this.callManager.startCall(
-      this.connectionManager.getUaProtected(),
+      () => {
+        return this.connectionManager.getUaProtected();
+      },
       this.getUri,
       resolvedParams,
     );
@@ -464,6 +475,9 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     params: Parameters<CallManager['answerToIncomingCall']>[1],
   ) => {
     const { mediaStream, onAddedTransceiver, sendEncodings, ...rest } = params;
+
+    // Ответ заменяет идущий цикл перезвона: иначе он остался бы вооружён параметрами прежнего звонка.
+    this.callReconnectManager.disarm('manual');
 
     return this.callManager.answerToIncomingCall(
       this.incomingCallManager.extractIncomingRTCSession,

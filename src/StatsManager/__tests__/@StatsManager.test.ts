@@ -22,6 +22,9 @@ describe('StatsManager', () => {
   const tools = {
     sendOffer: jest.fn().mockResolvedValue({} as RTCSessionDescription),
     waitForSignaling: jest.fn().mockResolvedValue(true),
+    getSipServerUrl: () => {
+      return undefined;
+    },
   };
 
   it('подписывается на события CallManager при создании', () => {

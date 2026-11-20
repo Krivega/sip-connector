@@ -1,11 +1,16 @@
 import { expect } from '@playwright/test';
 
+import { SIP_CONNECTOR_DEMO_E2E_SILENT_CALL_GLOBAL_KEY } from '../support/silentCallControls';
 import { SIP_CONNECTOR_DEMO_E2E_WEBSOCKET_GLOBAL_KEY } from '../support/webSocketControls';
 import { DemoPage } from './DemoPage';
 
 import type { Page } from '@playwright/test';
 import type { TConnectionFormConfig } from '../connection.config';
-import type { TSipConnectorDemoE2EWebSocketHooks, TSipConnectorDemoE2EWindow } from '../types';
+import type {
+  TSipConnectorDemoE2ESilentCallHooks,
+  TSipConnectorDemoE2EWebSocketHooks,
+  TSipConnectorDemoE2EWindow,
+} from '../types';
 
 type TRecvQuality = 'auto' | 'high' | 'medium' | 'low';
 type TCallSessionSnapshot = {
@@ -278,6 +283,105 @@ export class ConnectPage {
       },
       { key: SIP_CONNECTOR_DEMO_E2E_WEBSOCKET_GLOBAL_KEY },
     );
+  }
+
+  /**
+   * Обрывает активный звонок так, чтобы BYE не ушёл на сервер: ICE failed → JsSIP `terminate`
+   * с `RTP Timeout`, пока исходящие и входящие кадры заблокированы.
+   *
+   * С `silenceCallId` кадры старого диалога глушатся и дальше: клиент не отвечает серверу 481,
+   * и сервер продолжает держать прежнее подключение. Без него JsSIP ответит 481 и сервер
+   * уберёт подключение сам.
+   */
+  public async breakCallWithoutBye({
+    serverAddress,
+    silenceCallId,
+  }: {
+    serverAddress: string;
+    silenceCallId?: string;
+  }) {
+    await this.page.evaluate(
+      ({ webSocketKey, silentCallKey, address, callId }) => {
+        const webSocketHooks = Reflect.get(window, webSocketKey) as
+          TSipConnectorDemoE2EWebSocketHooks | undefined;
+        const silentCallHooks = Reflect.get(window, silentCallKey) as
+          TSipConnectorDemoE2ESilentCallHooks | undefined;
+        const demoApp = Reflect.get(window, '__sipConnectorDemoApp') as
+          | {
+              sipConnectorFacade?: {
+                sipConnector?: { callManager: { connection?: RTCPeerConnection } };
+              };
+            }
+          | undefined;
+        const peerConnection = demoApp?.sipConnectorFacade?.sipConnector?.callManager.connection;
+
+        if (!webSocketHooks) {
+          throw new Error('Demo e2e WebSocket hooks are not available');
+        }
+
+        if (peerConnection === undefined) {
+          throw new Error('Active call peer connection is not available');
+        }
+
+        if (callId !== undefined) {
+          if (!silentCallHooks) {
+            throw new Error('Demo e2e silent call hooks are not available');
+          }
+
+          silentCallHooks.silenceCall(callId);
+        }
+
+        webSocketHooks.blockWsMessages(address);
+        Object.defineProperty(peerConnection, 'iceConnectionState', {
+          configurable: true,
+          get: () => {
+            return 'failed';
+          },
+        });
+        peerConnection.dispatchEvent(new Event('iceconnectionstatechange'));
+        webSocketHooks.resetWsControls();
+      },
+      {
+        webSocketKey: SIP_CONNECTOR_DEMO_E2E_WEBSOCKET_GLOBAL_KEY,
+        silentCallKey: SIP_CONNECTOR_DEMO_E2E_SILENT_CALL_GLOBAL_KEY,
+        address: serverAddress,
+        callId: silenceCallId,
+      },
+    );
+  }
+
+  public async getConferenceToken(): Promise<string | undefined> {
+    return this.page.evaluate(() => {
+      const demoApp = Reflect.get(window, '__sipConnectorDemoApp') as
+        | { sipConnectorFacade?: { sipConnector?: { callManager: { getToken: () => unknown } } } }
+        | undefined;
+      const token = demoApp?.sipConnectorFacade?.sipConnector?.callManager.getToken();
+
+      return typeof token === 'string' && token !== '' ? token : undefined;
+    });
+  }
+
+  /** Завершает звонок через коннектор, даже если кнопка отбоя в демо скрыта (call:connecting). */
+  public async hangUpEstablishedCall() {
+    await this.page.evaluate(async () => {
+      const demoApp = Reflect.get(window, '__sipConnectorDemoApp') as
+        | {
+            sipConnectorFacade?: {
+              hangUp: () => Promise<unknown>;
+              sipConnector: { getEstablishedRTCSession: () => unknown };
+            };
+          }
+        | undefined;
+      const facade = demoApp?.sipConnectorFacade;
+
+      if (facade === undefined) {
+        return;
+      }
+
+      if (facade.sipConnector.getEstablishedRTCSession() !== undefined) {
+        await facade.hangUp();
+      }
+    });
   }
 
   public async forceGetUserMediaResult(result: 'real' | 'fail') {

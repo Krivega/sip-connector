@@ -87,6 +87,9 @@ describe('PresentationManager orchestration', () => {
         {
           sendOffer: jest.fn().mockResolvedValue({} as RTCSessionDescription),
           waitForSignaling: jest.fn().mockResolvedValue(true),
+          getSipServerUrl: () => {
+            return undefined;
+          },
         },
         { callSessionState: new CallSessionState() },
       );

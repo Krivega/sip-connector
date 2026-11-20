@@ -1,5 +1,6 @@
 import { C as JsSIP_C } from '@krivega/jssip';
 
+import flushPromises from '@/__fixtures__/flushPromises';
 import { FakeConnectionManager } from '../__fixtures__';
 import { CallReconnectRuntime } from '../CallReconnectRuntime';
 
@@ -235,6 +236,73 @@ describe('CallReconnectRuntime', () => {
 
     expect(parameters.getCallParameters).toHaveBeenCalledTimes(1);
     expect(callManager.startCall).toHaveBeenCalledTimes(1);
+  });
+
+  it('performAttempt rejects with startCall error as is and does not wrap it', async () => {
+    const callManager = createCallManagerMock();
+    const { runtime } = createRuntime({
+      callManager,
+      connectionManager: new FakeConnectionManager(),
+    });
+    const error = new Error('Stale participant disconnect failed with status 500');
+
+    jest.mocked(callManager.startCall).mockRejectedValueOnce(error);
+
+    await expect(runtime.performAttempt(makeRedialParameters())).rejects.toBe(error);
+  });
+
+  it('cancelAll during startCall cancels only the attempt and leaves the call to CallManager', async () => {
+    jest.useRealTimers();
+
+    const callManager = createCallManagerMock();
+    const { runtime } = createRuntime({
+      callManager,
+      connectionManager: new FakeConnectionManager(),
+    });
+
+    jest.mocked(callManager.startCall).mockImplementationOnce(async () => {
+      return new Promise<never>(() => {});
+    });
+
+    const attempt = runtime.performAttempt(makeRedialParameters()).catch((error: unknown) => {
+      return error;
+    });
+
+    await flushPromises();
+    runtime.cancelAll();
+
+    expect(await attempt).toMatchObject({ name: 'Canceled' });
+    expect(callManager.startCall).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancelAll during getCallParameters skips startCall', async () => {
+    jest.useRealTimers();
+
+    const { runtime, callManager } = createRuntime({
+      connectionManager: new FakeConnectionManager(),
+    });
+    let finishParameters = () => {};
+    const parameters: TCallRedialParameters = {
+      getCallParameters: jest.fn(async () => {
+        return new Promise<never>((resolve) => {
+          finishParameters = () => {
+            resolve({ number: '100' } as never);
+          };
+        });
+      }),
+    };
+
+    const attempt = runtime.performAttempt(parameters).catch((error: unknown) => {
+      return error;
+    });
+
+    await flushPromises();
+    runtime.cancelAll();
+    finishParameters();
+
+    expect(await attempt).toMatchObject({ name: 'Canceled' });
+    await flushPromises();
+    expect(callManager.startCall).not.toHaveBeenCalled();
   });
 
   it('delayBeforeAttempt awaits requested delay', async () => {

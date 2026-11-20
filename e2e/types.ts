@@ -15,7 +15,14 @@ export type TSipConnectorDemoE2EWebSocketHooks = {
   resetWsControls: () => void;
 };
 
+export type TSipConnectorDemoE2ESilentCallHooks = {
+  /** Глушит кадры SIP с этим Call-ID в обе стороны: клиент перестаёт отвечать старому диалогу. */
+  silenceCall: (callId: string) => void;
+  getDroppedFrames: () => { direction: 'sent' | 'received'; firstLine: string }[];
+};
+
 export type TSipConnectorDemoE2EWindow = Window & {
   sipConnectorDemoE2E?: TSipConnectorDemoE2EHooks;
   sipConnectorDemoE2EWebSocket?: TSipConnectorDemoE2EWebSocketHooks;
+  sipConnectorDemoE2ESilentCall?: TSipConnectorDemoE2ESilentCallHooks;
 };

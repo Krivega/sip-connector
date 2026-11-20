@@ -30,6 +30,9 @@ describe('ApiManager (notify via sipEvent)', () => {
     const tools = {
       sendOffer: jest.fn().mockResolvedValue({} as RTCSessionDescription),
       waitForSignaling: jest.fn().mockResolvedValue(true),
+      getSipServerUrl: () => {
+        return undefined;
+      },
     };
 
     callManager = Object.assign(

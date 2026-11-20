@@ -2,6 +2,7 @@ import { CancelableRequest } from '@krivega/cancelable-promise';
 import { DelayRequester } from '@krivega/timeout-requester';
 
 import resolveDebug from '@/logger';
+import { createCanceledError } from '@/utils/errors';
 import AttemptsState from './AttemptsState';
 import { computeBackoffDelay } from './policies/BackoffPolicy';
 import { createNetworkFailurePolicy } from './policies/NetworkFailurePolicy';
@@ -78,6 +79,8 @@ export class CallReconnectRuntime {
 
   private unsubscribeConnectionWait?: () => void;
 
+  private cancellationsCount = 0;
+
   public constructor(parameters: TRuntimeParameters) {
     this.resolvedOptions = resolveOptions(parameters.options);
     this.callManager = parameters.callManager;
@@ -87,10 +90,20 @@ export class CallReconnectRuntime {
     this.delayRequester = new DelayRequester(this.resolvedOptions.baseBackoffMs);
     this.performCall = new CancelableRequest<TCallRedialParameters, Promise<void>>(
       async (callParameters) => {
+        const { cancellationsCount } = this;
         const snapshot = await callParameters.getCallParameters();
 
+        // Отмена прерывает только ожидание результата, поэтому шаг до `startCall` проверяем явно.
+        if (cancellationsCount !== this.cancellationsCount) {
+          debug('performCall: attempt cancelled before startCall');
+
+          throw createCanceledError('CallReconnectRuntime');
+        }
+
         await this.callManager.startCall(
-          this.connectionManager.getUaProtected(),
+          () => {
+            return this.connectionManager.getUaProtected();
+          },
           this.connectionManager.getUri.bind(this.connectionManager),
           snapshot,
         );
@@ -198,6 +211,7 @@ export class CallReconnectRuntime {
   public cancelAll(): void {
     debug('cancelAll');
 
+    this.cancellationsCount += 1;
     this.delayRequester.cancelRequest();
     this.performCall.cancelRequest();
     this.unsubscribeConnectionWait?.();

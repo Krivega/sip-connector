@@ -136,6 +136,11 @@ class CallReconnectManager extends EventEmitterProxy<TEventMap> {
      * `options.isNetworkFailure`), поэтому маршрутизация живёт в единой точке.
      */
     const routeTerminationEvent = (event: EndEvent): void => {
+      // Исход попытки решает её отказ: он проходит canRetryOnError и лимит попыток.
+      if (this.stateMachine.state === ECallReconnectStatus.ATTEMPTING) {
+        return;
+      }
+
       const shouldRedial =
         this.stateMachine.state === ECallReconnectStatus.ARMED &&
         this.runtime.isNetworkFailure(event);

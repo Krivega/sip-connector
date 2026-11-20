@@ -1,3 +1,5 @@
+import { createErrorCanceled } from '@krivega/cancelable-promise';
+
 const DECLINE_ERROR_MESSAGE = 'Error decline with 603';
 const HANDSHAKE_WEBSOCKET_OPENING_ERROR_CODE = 1006;
 
@@ -10,4 +12,12 @@ export const hasHandshakeWebsocketOpeningError = (error: unknown): boolean => {
 
 export const hasDeclineResponseFromServer = (error: Error): boolean => {
   return error.message === DECLINE_ERROR_MESSAGE;
+};
+
+/** `Error`, который `isCanceledError` из `@krivega/cancelable-promise` считает отменой. */
+export const createCanceledError = (moduleName: string): Error => {
+  return Object.assign(
+    new Error('Promise is canceled'),
+    createErrorCanceled(Promise.resolve(), moduleName),
+  );
 };
