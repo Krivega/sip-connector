@@ -31,7 +31,6 @@ const resolveAllowOrigin = async (route: Route): Promise<string> => {
  */
 export const installSelfDisconnectRoute = async (page: Page, startedAt = Date.now()) => {
   const requests: TSelfDisconnectRequest[] = [];
-  let holdGate: Promise<void> | undefined;
 
   await page.route(SELF_DISCONNECT_URL_PATTERN, async (route) => {
     const request = route.request();
@@ -58,8 +57,6 @@ export const installSelfDisconnectRoute = async (page: Page, startedAt = Date.no
       hasBody: (request.postDataBuffer()?.length ?? 0) > 0,
     };
     let response: APIResponse;
-
-    await holdGate;
 
     try {
       response = await route.fetch({ timeout: UPSTREAM_TIMEOUT_MS });
@@ -89,19 +86,6 @@ export const installSelfDisconnectRoute = async (page: Page, startedAt = Date.no
   return {
     requests: () => {
       return [...requests];
-    },
-    /** Задерживает следующие запросы до вызова возвращённой функции: видно состояние звонка во время отключения. */
-    hold: () => {
-      let release = () => {};
-
-      holdGate = new Promise<void>((resolve) => {
-        release = resolve;
-      });
-
-      return () => {
-        holdGate = undefined;
-        release();
-      };
     },
   };
 };

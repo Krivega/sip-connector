@@ -121,5 +121,6 @@ export type TRemoteTracksChangeType = 'added' | 'removed' | 'updated';
 
 export type TCallManagerTools = TTools & {
   getSipServerUrl: () => string | undefined;
+  getUa: () => UA | undefined;
   waitForSignaling: () => Promise<boolean>;
 };

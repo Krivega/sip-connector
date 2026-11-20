@@ -17,7 +17,7 @@ type TDialog = {
   to: string;
 };
 
-type TSilentMethod = 'INFO' | 'OPTIONS';
+type TSilentMethod = 'INFO' | 'OPTIONS' | 'BYE';
 
 type TConnection = {
   isHalfOpen: boolean;
@@ -283,6 +283,19 @@ export class SipPeer {
     methods.forEach((method) => {
       this.silentMethods.delete(method);
     });
+  }
+
+  /** Запоздалый 200 OK на последний запрос метода, оставленный без ответа `stopAnswering`. */
+  public answerLastRequest(method: TSilentMethod): void {
+    const request = this.receivedMessages.findLast((message) => {
+      return isRequest(message, method);
+    });
+
+    if (request === undefined) {
+      throw new Error(`Клиент не отправлял ${method}`);
+    }
+
+    this.send(createResponse(request));
   }
 
   /** Сервер закрывает текущий WebSocket и сразу закрывает все новые подключения клиента. */

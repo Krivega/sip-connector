@@ -527,7 +527,7 @@ test.describe('Отключение прежнего подключения пе
     }
   });
 
-  test('ручной отбой: звонок ждёт в call:connecting ответа 401 на POST self/disconnect и входит в комнату', async ({
+  test('ручной отбой: сервер ответил на BYE, звонок сразу после отбоя уходит без POST self/disconnect и входит в комнату', async ({
     page,
     connectPage,
     statusDashboard,
@@ -536,7 +536,10 @@ test.describe('Отключение прежнего подключения пе
   }, testInfo) => {
     test.setTimeout(90_000);
 
+    const events = await observeDisconnectEvents(page);
     const timeline = createTimeline();
+    let oldCallId: string | undefined;
+    let breakT: number | undefined;
     let newCallStartT: number | undefined;
 
     try {
@@ -548,48 +551,76 @@ test.describe('Отключение прежнего подключения пе
         selfDisconnect,
       });
 
+      ({ oldCallId } = call);
+      breakT = sipFrames.now();
+      timeline.mark(breakT, 'ручной отбой');
       await connectPage.hangupOnly();
-      timeline.mark(sipFrames.now(), 'ручной отбой');
       await statusDashboard.waitForDiagramStatus('system', 'system:readyToCall');
 
-      const releaseSelfDisconnect = selfDisconnect.hold();
-      const selfDisconnectRequest = page.waitForRequest((request) => {
-        return request.method() === 'POST' && request.url() === SELF_DISCONNECT_URL;
-      });
+      // Без ответа на BYE клиент считает подключение оставшимся: это предусловие сценария.
+      await expect
+        .poll(
+          () => {
+            return sipFrames.byCallId(oldCallId).some((frame) => {
+              return (
+                frame.direction === 'received' &&
+                /^SIP\/2\.0 [2-6]\d\d /.test(frame.firstLine) &&
+                (frame.cseq ?? '').endsWith(' BYE')
+              );
+            });
+          },
+          { message: 'сервер не ответил на BYE ручного отбоя', timeout: TOKEN_TIMEOUT_MS },
+        )
+        .toBe(true);
 
       newCallStartT = sipFrames.now();
       timeline.mark(newCallStartT, 'повторный звонок');
-
-      // Лоадер демо скрывается только после звонка: его ждём уже после снятия удержания.
-      const callAttempt = connectPage.startCallAttempt();
-
-      try {
-        await selfDisconnectRequest;
-        await statusDashboard.waitForDiagramStatus('call', 'call:connecting');
-        expect(
-          sipFrames.findSentInvite(newCallStartT),
-          'INVITE ушёл до ответа на self/disconnect',
-        ).toBeUndefined();
-      } finally {
-        releaseSelfDisconnect();
-      }
-
-      await callAttempt;
+      await connectPage.startCallAttempt();
       await waitForCallActive({ statusDashboard, sipFrames, newCallStartT });
       timeline.mark(sipFrames.now(), 'system:callActive');
 
-      const requests = selfDisconnect.requests();
-
-      expect(requests, 'после ручного отбоя один self/disconnect с ответом 401').toHaveLength(1);
-      expect(requests[0].authorization).toBe(`Bearer ${call.oldToken}`);
-      expect(requests[0].hasBody).toBe(false);
-      expect(requests[0].status).toBe(401);
-      expect(requests[0].finishedT).toBeLessThan(
-        sipFrames.findSentInvite(newCallStartT)?.t ?? Number.NEGATIVE_INFINITY,
+      expect(selfDisconnect.requests(), 'сервер ответил на BYE: self/disconnect не нужен').toEqual(
+        [],
       );
+      expect(
+        sipFrames.findSentInvite(newCallStartT),
+        'новый INVITE не найден в журнале',
+      ).toBeDefined();
+
+      // Прежнее подключение не осталось на сервере: новый звонок держится и получает свой токен.
+      const endsBeforeHold = await events.evaluate((observer) => {
+        const { ended, failed } = observer.read();
+
+        return ended.length + failed.length;
+      });
+
+      await page.waitForTimeout(CALL_HOLD_MS);
+      await statusDashboard.waitForDiagramStatus('system', 'system:callActive', { timeout: 1000 });
+      expect(
+        await events.evaluate((observer) => {
+          const { ended, failed } = observer.read();
+
+          return ended.length + failed.length;
+        }),
+      ).toBe(endsBeforeHold);
+      await expect
+        .poll(
+          async () => {
+            return connectPage.getConferenceToken();
+          },
+          { message: 'новый токен конференции не пришёл', timeout: TOKEN_TIMEOUT_MS },
+        )
+        .not.toBe(call.oldToken);
     } finally {
-      await attachTimeline(testInfo, timeline.build({ sipFrames, selfDisconnect, newCallStartT }));
+      await attachTimeline(
+        testInfo,
+        timeline.build({ sipFrames, selfDisconnect, oldCallId, breakT, newCallStartT }),
+      );
       await attachSipFrames(testInfo, sipFrames);
+      await events.evaluate((observer) => {
+        observer.dispose();
+      });
+      await events.dispose();
     }
   });
 

@@ -187,6 +187,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     this.staleParticipantManager = new StaleParticipantManager({
       callManager: this,
       getServerUrl: tools.getSipServerUrl,
+      getUa: tools.getUa,
     });
   }
 

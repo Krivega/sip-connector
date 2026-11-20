@@ -6,6 +6,7 @@ import { ContentedStreamManager } from '@/ContentedStreamManager';
 import createJestMock from './createJestMock';
 import jssip from './jssip.mock';
 
+import type { UA } from '@krivega/jssip';
 import type { TJsSIP } from '@/types';
 
 export const createManagers = () => {
@@ -14,6 +15,9 @@ export const createManagers = () => {
     sendOffer: createJestMock().mockResolvedValue({} as RTCSessionDescription),
     waitForSignaling: createJestMock().mockResolvedValue(true),
     getSipServerUrl: createJestMock((): string | undefined => {
+      return undefined;
+    }),
+    getUa: createJestMock((): UA | undefined => {
       return undefined;
     }),
   };

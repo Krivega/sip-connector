@@ -1,7 +1,9 @@
 import { DelayRequester } from '@krivega/timeout-requester';
 
 import resolveDebug from '@/logger';
+import watchByeResponse from './watchByeResponse';
 
+import type { UA } from '@krivega/jssip';
 import type { CallManager } from '@/CallManager';
 import type { TCallEndEvent } from '@/DisconnectCause';
 
@@ -27,14 +29,22 @@ type TSlot = {
 };
 
 type TCycle = {
+  slot: TSlot;
   abortController: AbortController;
   delayRequester: DelayRequester;
-  isLimitReached: boolean;
+  // Остановка без ошибки: предел ожидания или ответ сервера на BYE прошлого звонка.
+  stopReason?: 'limit' | 'bye-answered';
 };
 
 const interruptCycle = ({ abortController, delayRequester }: TCycle): void => {
   abortController.abort();
   delayRequester.cancelRequest();
+};
+
+const stopCycle = (cycle: TCycle, stopReason: NonNullable<TCycle['stopReason']>): void => {
+  // eslint-disable-next-line no-param-reassign -- причину читает `disconnectStale` этого цикла.
+  cycle.stopReason = stopReason;
+  interruptCycle(cycle);
 };
 
 /** `true` — сервер подтвердил отключение ответом 401: участника уже нет. */
@@ -77,16 +87,23 @@ const confirmDisconnect = async (slot: TSlot, cycle: TCycle): Promise<void> => {
 class StaleParticipantManager {
   private readonly getSipServerUrl: () => string | undefined;
 
+  private readonly getUa: () => UA | undefined;
+
+  private readonly cycles = new Set<TCycle>();
+
   private slot?: TSlot;
 
   public constructor({
     callManager,
     getServerUrl,
+    getUa,
   }: {
     callManager: CallManager;
     getServerUrl: () => string | undefined;
+    getUa: () => UA | undefined;
   }) {
     this.getSipServerUrl = getServerUrl;
+    this.getUa = getUa;
     callManager.stateMachine.onInRoomCredentialsChange(this.handleInRoomCredentials);
     callManager.on('ended', this.handleCallTermination);
     callManager.on('failed', this.handleCallTermination);
@@ -127,33 +144,34 @@ class StaleParticipantManager {
     debug('disconnectStale');
 
     const cycle: TCycle = {
+      slot,
       abortController: new AbortController(),
       delayRequester: new DelayRequester(CONFIRM_INTERVAL_MS),
-      isLimitReached: false,
     };
     const handleAbort = (): void => {
       interruptCycle(cycle);
     };
     const limitTimeoutId = setTimeout(() => {
-      cycle.isLimitReached = true;
-      interruptCycle(cycle);
+      stopCycle(cycle, 'limit');
     }, CONFIRM_LIMIT_MS);
 
     signal.addEventListener('abort', handleAbort);
+    this.cycles.add(cycle);
 
     try {
       await confirmDisconnect(slot, cycle);
     } catch (error) {
       signal.throwIfAborted();
 
-      if (!cycle.isLimitReached) {
+      if (cycle.stopReason === undefined) {
         throw error;
       }
 
-      debug('disconnectStale: disconnect is not confirmed');
+      debug('disconnectStale: stopped', cycle.stopReason);
     } finally {
       clearTimeout(limitTimeoutId);
       signal.removeEventListener('abort', handleAbort);
+      this.cycles.delete(cycle);
 
       if (!signal.aborted && this.slot === slot) {
         this.slot = undefined;
@@ -183,10 +201,37 @@ class StaleParticipantManager {
   };
 
   private readonly handleEndCall = (): void => {
-    if (this.slot !== undefined && this.slot.staleAt === undefined) {
-      this.slot = { ...this.slot, staleAt: Date.now() };
+    if (this.slot === undefined || this.slot.staleAt !== undefined) {
+      return;
+    }
+
+    const slot: TSlot = { ...this.slot, staleAt: Date.now() };
+    const ua = this.getUa();
+
+    this.slot = slot;
+
+    // Без UA ответ на BYE не узнать: подключение считаем оставшимся.
+    if (ua !== undefined) {
+      watchByeResponse(ua, () => {
+        this.handleByeAnswered(slot);
+      });
     }
   };
+
+  // Сервер ответил на BYE — он и снял подключение: отключать нечего.
+  private handleByeAnswered(slot: TSlot): void {
+    debug('handleByeAnswered');
+
+    if (this.slot === slot) {
+      this.slot = undefined;
+    }
+
+    this.cycles.forEach((cycle) => {
+      if (cycle.slot === slot) {
+        stopCycle(cycle, 'bye-answered');
+      }
+    });
+  }
 }
 
 export default StaleParticipantManager;

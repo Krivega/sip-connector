@@ -1526,6 +1526,9 @@ describe('CallManager', () => {
         getSipServerUrl: () => {
           return undefined;
         },
+        getUa: () => {
+          return undefined;
+        },
       },
       { callSessionState: new CallSessionState() },
     );
@@ -1771,6 +1774,9 @@ describe('CallManager - дополнительные тесты для покр�
       sendOffer: jest.fn().mockResolvedValue({} as RTCSessionDescription),
       waitForSignaling: jest.fn().mockResolvedValue(true),
       getSipServerUrl: () => {
+        return undefined;
+      },
+      getUa: () => {
         return undefined;
       },
     };

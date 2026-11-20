@@ -203,11 +203,29 @@ test.describe('Отключение прежнего подключения пе
     await enterRoom({ sipPeer, statusDashboard, confirmed: confirmed + 1, bearerToken });
   };
 
-  /** Звонок с токеном комнаты и ручной отбой: прежнее подключение могло остаться на сервере. */
+  /** Ручной отбой, на BYE которого сервер не ответил: подключение могло остаться на сервере. */
+  const hangUpWithoutByeAnswer = async ({
+    connectPage,
+    sipPeer,
+    statusDashboard,
+  }: TCallFixtures) => {
+    const byeCount = sipPeer.countReceivedRequests('BYE');
+
+    sipPeer.stopAnswering(['BYE']);
+    await connectPage.hangupOnly();
+    await expect
+      .poll(() => {
+        return sipPeer.countReceivedRequests('BYE');
+      })
+      .toBe(byeCount + 1);
+    sipPeer.resumeAnswering(['BYE']);
+    await statusDashboard.waitForDiagramStatus('system', 'system:readyToCall');
+  };
+
+  /** Звонок с токеном комнаты и ручной отбой без ответа на BYE. */
   const leaveStaleParticipant = async (fixtures: TCallFixtures) => {
     await callAndEnterRoom({ ...fixtures, bearerToken: STALE_TOKEN });
-    await fixtures.connectPage.hangupOnly();
-    await fixtures.statusDashboard.waitForDiagramStatus('system', 'system:readyToCall');
+    await hangUpWithoutByeAnswer(fixtures);
   };
 
   /** Лоадер демо висит до конца звонка: ждём не его, а запрос отключения и статус исходящего. */
@@ -272,7 +290,46 @@ test.describe('Отключение прежнего подключения пе
     expect(sipPeer.countReceivedRequests('INVITE')).toBe(1);
   });
 
-  test('после ручного отбоя POST повторяется после 2xx до 401 с токеном прежнего звонка, INVITE уходит после 401', async ({
+  test('ручной отбой с ответом на BYE: звонок сразу после отбоя уходит без POST self/disconnect', async ({
+    connectPage,
+    sipPeer,
+    statusDashboard,
+    selfDisconnect,
+  }) => {
+    const fixtures = { connectPage, sipPeer, statusDashboard };
+
+    await callAndEnterRoom({ ...fixtures, bearerToken: STALE_TOKEN });
+    await connectPage.hangupOnly();
+    await statusDashboard.waitForDiagramStatus('system', 'system:readyToCall');
+    await callAndEnterRoom({ ...fixtures, bearerToken: NEXT_TOKEN });
+
+    expect(sipPeer.countReceivedRequests('BYE')).toBe(1);
+    expect(selfDisconnect.requests()).toEqual([]);
+    expect(sipPeer.countReceivedRequests('INVITE')).toBe(2);
+  });
+
+  test('ответ на BYE прежнего звонка во время POST: повторы прекращаются без ошибки, INVITE уходит без 401', async ({
+    connectPage,
+    sipPeer,
+    statusDashboard,
+    selfDisconnect,
+  }) => {
+    await leaveStaleParticipant({ connectPage, sipPeer, statusDashboard });
+    selfDisconnect.hold();
+    await startCallUntilSelfDisconnect({ connectPage, statusDashboard, selfDisconnect });
+
+    expect(sipPeer.countReceivedRequests('INVITE'), 'INVITE ушёл до ответа на BYE').toBe(1);
+
+    // Ответ на POST удержан: INVITE может уйти только после остановки повторов ответом на BYE.
+    sipPeer.answerLastRequest('BYE');
+    await enterRoom({ sipPeer, statusDashboard, confirmed: 2, bearerToken: NEXT_TOKEN });
+
+    expect(selfDisconnect.requests(), 'POST после ответа на BYE').toHaveLength(1);
+    expectStaleToken(selfDisconnect.requests(), STALE_TOKEN);
+    expect(await readEvents()).toMatchObject({ failed: [] });
+  });
+
+  test('после ручного отбоя без ответа на BYE POST повторяется после 2xx до 401 с токеном прежнего звонка, INVITE уходит после 401', async ({
     connectPage,
     sipPeer,
     statusDashboard,
@@ -309,8 +366,7 @@ test.describe('Отключение прежнего подключения пе
     expect(await readEvents()).toMatchObject({ failed: [] });
 
     // Вход второго звонка заменил прежнее подключение: следующий POST идёт уже с его токеном.
-    await connectPage.hangupOnly();
-    await statusDashboard.waitForDiagramStatus('system', 'system:readyToCall');
+    await hangUpWithoutByeAnswer(fixtures);
     await callAndEnterRoom({ ...fixtures, bearerToken: LAST_TOKEN });
 
     const nextRequests = selfDisconnect.requests().slice(requests.length);

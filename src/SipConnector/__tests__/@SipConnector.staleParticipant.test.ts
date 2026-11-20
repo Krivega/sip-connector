@@ -4,6 +4,7 @@ import { C as JsSIP_C } from '@krivega/jssip';
 
 import JsSIP from '@/__fixtures__/jssip.mock';
 import RTCSessionMock, { FAILED_CONFERENCE_NUMBER } from '@/__fixtures__/RTCSessionMock';
+import TransactionMock, { TransactionStatus } from '@/__fixtures__/Transaction.mock';
 import UAMock from '@/__fixtures__/UA.mock';
 import hasCanceledCallError from '@/CallManager/hasCanceledCallError';
 import { EConnectAndCallSessionPhase } from '@/ConnectAndCallSession';
@@ -391,6 +392,102 @@ describe('SipConnector: отключение устаревшего участн
 
     await subject.connector.callManager.endCall();
     await answer;
+  });
+
+  describe('ответ сервера на BYE ручного отбоя', () => {
+    // Звонок через UA вошёл в комнату; отбой отправит BYE, как JsSIP, в том же такте.
+    const callIntoRoom = async (subject: ReturnType<typeof createSubject>) => {
+      jest.replaceProperty(subject.connector.connectionManager, 'ua', subject.ua as unknown as UA);
+      await subject.connector.call(subject.callParameters);
+      subject.connector.apiManager.events.trigger('conference:participant-token-issued', {
+        jwt: 'token-1',
+        conference: '1000',
+        participant: 'p1',
+      });
+
+      expect(subject.connector.callManager.stateMachine.state).toBe('call:inRoom');
+
+      const session = subject.ua.call.mock.results[0].value as RTCSessionMock;
+      const terminate = session.terminate.bind(session);
+      const bye = new TransactionMock('BYE');
+
+      jest.spyOn(session, 'terminate').mockImplementation((options) => {
+        subject.ua.newTransaction(bye);
+        bye.stateChanged(TransactionStatus.TRYING);
+
+        return terminate(options);
+      });
+
+      return bye;
+    };
+
+    it('call() после hangUp() с ответом на BYE отправляет INVITE без запроса отключения', async () => {
+      const subject = setup();
+      const bye = await callIntoRoom(subject);
+
+      await subject.connector.hangUp();
+      bye.receiveFinalResponse();
+
+      const call = settle(subject.connector.call(subject.callParameters));
+
+      await flush();
+
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(subject.ua.call).toHaveBeenCalledTimes(2);
+
+      await subject.connector.callManager.endCall();
+      await call;
+    });
+
+    it('call() отправляет INVITE без ответа 401, когда ответ на BYE пришёл во время запроса отключения', async () => {
+      const subject = setup();
+      const bye = await callIntoRoom(subject);
+
+      await subject.connector.hangUp();
+
+      const call = settle(subject.connector.call(subject.callParameters));
+
+      await flush();
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(subject.ua.call).toHaveBeenCalledTimes(1);
+
+      bye.receiveFinalResponse();
+      await flush();
+
+      expect(requests[0].init.signal?.aborted).toBe(true);
+      expect(subject.failedListener).not.toHaveBeenCalled();
+      expect(subject.ua.call).toHaveBeenCalledTimes(2);
+
+      await subject.connector.callManager.endCall();
+      await call;
+    });
+
+    it('call() после hangUp() с обрывом транспорта на BYE отключает прежнее подключение', async () => {
+      const subject = setup();
+      const bye = await callIntoRoom(subject);
+
+      await subject.connector.hangUp();
+      bye.terminateWithoutResponse();
+
+      const call = settle(subject.connector.call(subject.callParameters));
+
+      await flush();
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(new Headers(fetchMock.mock.calls[0][1].headers).get('Authorization')).toBe(
+        'Bearer token-1',
+      );
+      expect(subject.ua.call).toHaveBeenCalledTimes(1);
+
+      requests[0].respond(401);
+      await flush();
+
+      expect(subject.ua.call).toHaveBeenCalledTimes(2);
+
+      await subject.connector.callManager.endCall();
+      await call;
+    });
   });
 
   describe('перезвон', () => {

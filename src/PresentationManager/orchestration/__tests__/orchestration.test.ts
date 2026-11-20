@@ -90,6 +90,9 @@ describe('PresentationManager orchestration', () => {
           getSipServerUrl: () => {
             return undefined;
           },
+          getUa: () => {
+            return undefined;
+          },
         },
         { callSessionState: new CallSessionState() },
       );
