@@ -33,6 +33,9 @@ describe('ApiManager (notify via sipEvent)', () => {
       getSipServerUrl: () => {
         return undefined;
       },
+      getUa: () => {
+        return undefined;
+      },
     };
 
     callManager = Object.assign(

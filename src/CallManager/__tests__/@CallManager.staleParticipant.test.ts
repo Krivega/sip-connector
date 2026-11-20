@@ -53,6 +53,9 @@ const createSubject = () => {
       getSipServerUrl: () => {
         return SIP_SERVER_URL;
       },
+      getUa: () => {
+        return undefined;
+      },
     },
     { callSessionState: new CallSessionState() },
   );

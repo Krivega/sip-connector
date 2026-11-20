@@ -45,6 +45,9 @@ describe('ApiManager (core)', () => {
       getSipServerUrl: () => {
         return undefined;
       },
+      getUa: () => {
+        return undefined;
+      },
     };
 
     callManager = Object.assign(

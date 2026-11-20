@@ -37,6 +37,9 @@ describe('ApiManager (NEW_INFO handling)', () => {
       getSipServerUrl: () => {
         return undefined;
       },
+      getUa: () => {
+        return undefined;
+      },
     };
 
     callManager = Object.assign(
