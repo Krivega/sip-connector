@@ -306,7 +306,7 @@ JsSIP эмитит `failed` для не-установленных звонко�
 
 - `termination-classified: redial` переводит session в `reconnecting` и сохраняет AutoConnector;
 - `attempt-succeeded` возвращает session в `active`;
-- `termination-classified: finish`, `limitReached` или `errorTerminal` запускают полный cleanup. Известное ограничение: редиал классифицируется только из `armed`, поэтому любой `failed` во время попытки (`attempting`) — отказ её `INVITE` или синтетический `failed` ошибки отключения прежнего подключения — приходит как `finish` и закрывает session, хотя без неё `CallReconnectManager` запланировал бы следующую попытку. Ограничение существовало до отключения прежнего подключения и пока не меняется;
+- `termination-classified: finish`, `limitReached` или `errorTerminal` запускают полный cleanup. Завершение звонка во время попытки (`attempting`) не классифицируется: отказ её `INVITE` или ошибка отключения прежнего подключения отклоняет попытку, и решение — следующая попытка или `errorTerminal`/`limitReached` — принимает `CallReconnectManager` через `canRetryOnError` и лимит попыток;
 - ручной `session.hangUp()`/`disconnect()` или публичный `SipConnector.hangUp()`/`disconnect()`
   отменяет текущую попытку redial и останавливает AutoConnector. Публичные методы делегируются
   активной session.

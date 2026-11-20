@@ -279,6 +279,26 @@ describe('CallManager: отключение устаревшего участн�
     expect(subject.ua.call).not.toHaveBeenCalled();
   });
 
+  it('не отправляет запрос отключения при endCall из обработчика start-call', async () => {
+    const subject = createSubject();
+
+    subject.leaveStaleParticipant();
+    subject.callManager.on('start-call', () => {
+      subject.callManager.endCall().catch(() => {});
+    });
+
+    const { isRejected, error } = await settle(subject.startCall());
+
+    expect(isRejected).toBe(true);
+    expect(hasCanceledCallError(error)).toBe(true);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(subject.failedListener).toHaveBeenCalledWith(
+      expect.objectContaining({ originator: 'local', cause: JsSIP_C.causes.CANCELED }),
+    );
+    expect(subject.callManager.stateMachine.state).toBe('call:idle');
+    expect(subject.ua.call).not.toHaveBeenCalled();
+  });
+
   it('сохраняет устаревшего участника после отбоя во время запроса и отключает его на следующем звонке', async () => {
     const subject = createSubject();
 

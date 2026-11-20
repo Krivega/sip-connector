@@ -94,6 +94,9 @@ class StaleParticipantManager {
   }
 
   public async disconnectStale(signal: AbortSignal): Promise<void> {
+    // Отбой мог прийти синхронно из обработчика `start-call`, до подписки на `abort`.
+    signal.throwIfAborted();
+
     const { slot } = this;
 
     if (slot?.staleAt === undefined) {

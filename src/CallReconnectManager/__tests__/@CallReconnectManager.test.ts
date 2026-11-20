@@ -177,6 +177,47 @@ describe('CallReconnectManager (facade)', () => {
     manager.stop();
   });
 
+  it('не классифицирует завершение звонка попытки и передаёт её отказ политике повторов', async () => {
+    const { manager, callManager } = createSubject();
+    const onTerminationClassified = jest.fn();
+    let rejectAttempt = (_error: Error) => {};
+    let markAttemptCallStarted = () => {};
+    const waitForAttemptCallStarted = new Promise<void>((resolve) => {
+      markAttemptCallStarted = resolve;
+    });
+
+    callManager.startCall.mockImplementationOnce(async () => {
+      return new Promise<undefined>((_resolve, reject) => {
+        rejectAttempt = reject;
+        markAttemptCallStarted();
+      });
+    });
+
+    const waitForSucceeded = new Promise<void>((resolve) => {
+      manager.on('attempt-succeeded', () => {
+        resolve();
+      });
+    });
+
+    manager.arm(makeRedialParameters());
+    callManager.emit('failed', makeFailedEndEvent());
+    await waitForAttemptCallStarted;
+    manager.on('termination-classified', onTerminationClassified);
+
+    callManager.emit('failed', {
+      originator: 'local',
+      cause: JsSIP_C.causes.INTERNAL_ERROR,
+    });
+    rejectAttempt(new Error('disconnect failed'));
+    await waitForSucceeded;
+
+    expect(onTerminationClassified).not.toHaveBeenCalled();
+    expect(callManager.startCall).toHaveBeenCalledTimes(2);
+    expect(manager.state).toBe(ECallReconnectStatus.ARMED);
+
+    manager.stop();
+  });
+
   it('failed event с бизнес-причиной (BUSY) разоружает менеджер', () => {
     const { manager, callManager } = createSubject();
 

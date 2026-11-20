@@ -365,6 +365,24 @@ describe('StaleParticipantManager', () => {
     expect(jest.getTimerCount()).toBe(0);
   });
 
+  it('не отправляет запрос и сохраняет устаревшего участника, когда сигнал отменён до вызова', async () => {
+    const subject = setup();
+    const abortController = new AbortController();
+    const reason = new Error('canceled');
+
+    respond(401);
+    createStale(subject, 'token-1');
+    abortController.abort(reason);
+
+    expect(await catchError(subject.disconnectStale(abortController.signal))).toBe(reason);
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    await subject.disconnectStale();
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(new Headers(getRequestInit().headers).get('Authorization')).toBe('Bearer token-1');
+  });
+
   it('сохраняет устаревшего участника после отмены и отправляет запрос при следующем вызове', async () => {
     const subject = setup();
     const abortController = new AbortController();
