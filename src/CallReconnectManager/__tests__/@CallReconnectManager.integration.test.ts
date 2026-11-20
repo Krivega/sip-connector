@@ -27,6 +27,7 @@ const createSubject = (
       jitter: 'none' | 'equal' | 'full';
       maxAttempts: number;
       waitSignalingTimeoutMs: number;
+      canRetryOnError: (error: unknown) => boolean;
     }>;
   } = {},
 ) => {
@@ -49,6 +50,7 @@ const createSubject = (
       jitter: overrides.options?.jitter ?? 'none',
       maxAttempts: overrides.options?.maxAttempts ?? 3,
       waitSignalingTimeoutMs: overrides.options?.waitSignalingTimeoutMs ?? 50,
+      canRetryOnError: overrides.options?.canRetryOnError,
     },
   );
 
@@ -382,6 +384,128 @@ describe('CallReconnectManager (integration)', () => {
 
       expect(manager.state).toBe(ECallReconnectStatus.ARMED);
       expect(firstWaveAttempts).toBeGreaterThan(0);
+
+      manager.stop();
+    });
+  });
+  // `CallManager.startCall` сам отключает устаревшего участника: ошибка шага приходит событием `failed` и отказом.
+  describe('start call step before INVITE', () => {
+    const stepFailedEvent = { originator: 'local', cause: JsSIP_C.causes.INTERNAL_ERROR };
+
+    it('fails the attempt and schedules the next one when the start call step fails', async () => {
+      const callManager = new FakeCallManager();
+      let attempts = 0;
+      const { manager } = createSubject({
+        callManager,
+        startCall: async () => {
+          attempts += 1;
+
+          if (attempts === 1) {
+            callManager.emit('failed', stepFailedEvent);
+
+            throw new Error('Stale participant disconnect failed with status 500');
+          }
+        },
+      });
+      const events: string[] = [];
+
+      manager.on('attempt-failed', () => {
+        events.push('attempt-failed');
+      });
+      manager.on('attempt-scheduled', () => {
+        events.push('attempt-scheduled');
+      });
+
+      manager.arm(makeRedialParameters());
+      callManager.emit('failed', makeNetworkFailedEndEvent(JsSIP_C.causes.REQUEST_TIMEOUT));
+
+      await waitFor(manager, 'attempt-succeeded');
+
+      expect(events).toEqual(['attempt-scheduled', 'attempt-failed', 'attempt-scheduled']);
+      expect(callManager.startCall).toHaveBeenCalledTimes(2);
+      expect(manager.state).toBe(ECallReconnectStatus.ARMED);
+
+      manager.stop();
+    });
+
+    it('goes to ERROR_TERMINAL when the start call step fails and retry on error is disabled', async () => {
+      const callManager = new FakeCallManager();
+      const { manager } = createSubject({
+        callManager,
+        startCall: async () => {
+          callManager.emit('failed', stepFailedEvent);
+
+          throw new Error('Stale participant disconnect failed with status 500');
+        },
+        options: {
+          canRetryOnError: () => {
+            return false;
+          },
+        },
+      });
+
+      manager.arm(makeRedialParameters());
+      callManager.emit('failed', makeNetworkFailedEndEvent(JsSIP_C.causes.REQUEST_TIMEOUT));
+
+      await waitFor(manager, 'attempt-failed');
+
+      expect(manager.state).toBe(ECallReconnectStatus.ERROR_TERMINAL);
+      expect(callManager.startCall).toHaveBeenCalledTimes(1);
+
+      manager.stop();
+    });
+
+    it('cancels the start call step of the current attempt', async () => {
+      const callManager = new FakeCallManager();
+      const { manager } = createSubject({
+        callManager,
+        startCall: async () => {
+          return new Promise<void>(() => {});
+        },
+      });
+
+      manager.arm(makeRedialParameters());
+      callManager.emit('failed', makeNetworkFailedEndEvent(JsSIP_C.causes.REQUEST_TIMEOUT));
+      await waitFor(manager, 'attempt-started');
+
+      manager.cancelCurrentAttempt();
+
+      expect(callManager.cancelStartCall).toHaveBeenCalledTimes(1);
+
+      manager.stop();
+    });
+
+    it('stays armed when re-armed while the start call step is canceled', async () => {
+      const callManager = new FakeCallManager();
+      const onDisarmed = jest.fn();
+      let rejectStep: (error: unknown) => void = () => {};
+      const { manager } = createSubject({
+        callManager,
+        startCall: async () => {
+          return new Promise<void>((_resolve, reject) => {
+            rejectStep = reject;
+          });
+        },
+      });
+
+      // Как настоящий CallManager: отмена шага по запросу runtime молчит, `failed` нет.
+      callManager.cancelStartCall.mockImplementation(() => {
+        rejectStep(Object.assign(new Error('Promise is canceled'), { id: 'ERROR_CANCELED' }));
+      });
+      manager.on('disarmed', onDisarmed);
+
+      manager.arm(makeRedialParameters());
+      callManager.emit('failed', makeNetworkFailedEndEvent(JsSIP_C.causes.REQUEST_TIMEOUT));
+      await waitFor(manager, 'attempt-started');
+
+      manager.arm(makeRedialParameters());
+      await new Promise((resolve) => {
+        setTimeout(resolve, 20);
+      });
+
+      expect(callManager.cancelStartCall).toHaveBeenCalled();
+      expect(onDisarmed).not.toHaveBeenCalled();
+      expect(manager.state).toBe(ECallReconnectStatus.ARMED);
 
       manager.stop();
     });

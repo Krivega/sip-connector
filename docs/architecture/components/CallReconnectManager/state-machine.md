@@ -11,16 +11,16 @@
 
 ## Состояния
 
-| Состояние          | Назначение                                                                                                             |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| `idle`             | Не армирован, ждёт `RECONNECT.ARM`.                                                                                    |
-| `armed`            | Активен, слушает `CALL.FAILED` (сетевые причины) и `CALL.ENDED` (локальный/удалённый конец звонка).                    |
-| `evaluating`       | Транзитное состояние: лимит попыток → сигнализация → backoff.                                                          |
-| `backoff`          | Таймаут перед попыткой (`DelayRequester`). Переход в `attempting` при завершении задержки.                             |
-| `waitingSignaling` | Ожидание готовности UA (`connected`/`registered`) с таймаутом.                                                         |
-| `attempting`       | `invoke: performAttempt` — `beforeRedial` (если задан) → `getCallParameters` → `startCall` внутри `CancelableRequest`. |
-| `limitReached`     | Исчерпан `maxAttempts`; выход только через `RECONNECT.FORCE` или `RECONNECT.DISARM`.                                   |
-| `errorTerminal`    | Нефатальные ветки ретрая (`canRetryOnError = false` или timeout сигнализации).                                         |
+| Состояние          | Назначение                                                                                                                                        |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `idle`             | Не армирован, ждёт `RECONNECT.ARM`.                                                                                                               |
+| `armed`            | Активен, слушает `CALL.FAILED` (сетевые причины) и `CALL.ENDED` (локальный/удалённый конец звонка).                                               |
+| `evaluating`       | Транзитное состояние: лимит попыток → сигнализация → backoff.                                                                                     |
+| `backoff`          | Таймаут перед попыткой (`DelayRequester`). Переход в `attempting` при завершении задержки.                                                        |
+| `waitingSignaling` | Ожидание готовности UA (`connected`/`registered`) с таймаутом.                                                                                    |
+| `attempting`       | `invoke: performAttempt` — `getCallParameters` → `startCall` внутри `CancelableRequest`; прежнее подключение участника отключает сам `startCall`. |
+| `limitReached`     | Исчерпан `maxAttempts`; выход только через `RECONNECT.FORCE` или `RECONNECT.DISARM`.                                                              |
+| `errorTerminal`    | Нефатальные ветки ретрая (`canRetryOnError = false` или timeout сигнализации).                                                                    |
 
 ## Контекст и инварианты
 
@@ -67,6 +67,7 @@ stateDiagram-v2
 - Глобальный `RECONNECT.DISARM` выполняет полный сброс in-flight и эмитит `disarmed` и `cancelled(reason)` (при явно переданной причине).
 - После удачной попытки (`attempting → armed` + `attempt-succeeded`) счётчик попыток сбрасывается, и менеджер продолжает следить за следующим `CALL.FAILED`.
 - `canRetryOnError` вычисляется по ошибке из invoke: `startCall` с «человеческой» ошибкой (например `busy`) уходит в `errorTerminal`, дальше — только `forceReconnect()`.
+- Ошибка отключения прежнего подключения участника приходит в `performAttempt.error` отказом `startCall`, вместе с `failed` от `CallManager` (`originator: 'local'`, `'Internal Error'`). `cancelAll` при идущей попытке вызывает `callManager.cancelStartCall()`: отключение попытки прерывается тихо, без `failed`, поэтому `cancelCurrentAttempt` и повторный `RECONNECT.ARM` во время отключения оставляют машину в `armed`; отключение ручного звонка `cancelAll` не трогает.
 - `isAttemptCancelled` учитывает оба возможных cancel-маркера: `@krivega/cancelable-promise` (`isCanceledError`) и `@krivega/timeout-requester` (`hasCanceledError`).
 
 ## Интеграция и события

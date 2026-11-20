@@ -2,6 +2,7 @@ import type { RTCSession, UA } from '@krivega/jssip';
 import type { TDisconnectCause } from '@/DisconnectCause';
 import type { TContentHint } from '@/utils/peerConnection';
 import type { Originator } from './events';
+import type { TTools } from './RecvSession';
 import type { RemoteStreamsManager } from './RemoteStreamsManager';
 
 export type TOnAddedTransceiver = (
@@ -50,6 +51,11 @@ export type TCallConfig = {
 
 export type TStartCall = (
   ua: UA,
+  getUri: TGetUri,
+  params: TParamsCall,
+) => Promise<RTCPeerConnection>;
+export type TCallManagerStartCall = (
+  ua: UA | (() => UA),
   getUri: TGetUri,
   params: TParamsCall,
 ) => Promise<RTCPeerConnection>;
@@ -112,3 +118,8 @@ export type TStreamsManagerTools = {
 };
 
 export type TRemoteTracksChangeType = 'added' | 'removed' | 'updated';
+
+export type TCallManagerTools = TTools & {
+  getSipServerUrl: () => string | undefined;
+  waitForSignaling: () => Promise<boolean>;
+};

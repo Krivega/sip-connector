@@ -7,6 +7,7 @@
 - Автоматически детектирует обрыв звонка по сетевому сбою и запускает цикл повтора `startCall`.
 - Поддерживает экспоненциальный backoff с jitter и cap по времени (`ICallReconnectOptions`).
 - Координируется с `ConnectionManager` — дожидается восстановления сигнализации до попытки.
+- Прежнее подключение участника перед попыткой отключает сам `CallManager.startCall` ([StaleParticipantManager](../StaleParticipantManager/index.md)): ошибка отключения приходит отказом `startCall` вместе с `failed` (`'Internal Error'`) и считается неуспешной попыткой. Отмена попытки тихо, без `failed`, прерывает и отключение: `cancelCurrentAttempt` и повторный `arm` во время отключения оставляют перезвон в `armed`.
 - Позволяет принудительно прервать (`disarm`) или перезапустить (`forceReconnect`) цикл в любой момент.
 - Отдаёт подробный поток событий и snapshot-машины для интеграции с UI через `SessionManager`.
 
@@ -22,42 +23,42 @@
 
 ## Публичный API
 
-| Метод/поле               | Назначение                                                                                                                                                                                                       |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `arm(parameters)`        | Активирует наблюдение и запоминает `getCallParameters` и необязательный `beforeRedial`. Попытка — `beforeRedial` (если задан) → `getCallParameters` → `startCall`. В ролях spectator ранний выход с `cancelled`. |
-| `disarm(reason?)`        | Отменяет in-flight (delay + startCall), уводит машину в `idle`, эмитит `disarmed`/`cancelled`.                                                                                                                   |
-| `forceReconnect()`       | Немедленный новый цикл из `limitReached`/`errorTerminal` (сбрасывает счётчик попыток).                                                                                                                           |
-| `cancelCurrentAttempt()` | Отмена in-flight без `disarm` — машина возвращается в `armed`.                                                                                                                                                   |
-| `stop()`                 | Останавливает машину и отписывается от менеджеров-источников событий.                                                                                                                                            |
-| `isReconnecting`         | `true`, если state ≠ `idle`.                                                                                                                                                                                     |
-| `state`                  | Текущее значение `ECallReconnectStatus`.                                                                                                                                                                         |
-| `stateMachine`           | Публичный snapshot-ориентированный доступ к машине (используется в `SessionManager.getSnapshot()`).                                                                                                              |
+| Метод/поле               | Назначение                                                                                            |
+| ------------------------ | ----------------------------------------------------------------------------------------------------- |
+| `arm(parameters)`        | Активирует наблюдение и запоминает `getCallParameters`. В ролях spectator ранний выход с `cancelled`. |
+| `disarm(reason?)`        | Отменяет in-flight (delay + startCall), уводит машину в `idle`, эмитит `disarmed`/`cancelled`.        |
+| `forceReconnect()`       | Немедленный новый цикл из `limitReached`/`errorTerminal` (сбрасывает счётчик попыток).                |
+| `cancelCurrentAttempt()` | Отмена in-flight без `disarm` — машина возвращается в `armed`.                                        |
+| `stop()`                 | Останавливает машину и отписывается от менеджеров-источников событий.                                 |
+| `isReconnecting`         | `true`, если state ≠ `idle`.                                                                          |
+| `state`                  | Текущее значение `ECallReconnectStatus`.                                                              |
+| `stateMachine`           | Публичный snapshot-ориентированный доступ к машине (используется в `SessionManager.getSnapshot()`).   |
 
 ## Структура
 
-| Компонент                                                      | Роль                                                                                                                   |
-| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `@CallReconnectManager.ts`                                     | Фасад, подписки на `CallManager`/`ConnectionManager`, проброс событий фасада с префиксом `call-reconnect:*`.           |
-| `CallReconnectRuntime.ts`                                      | Побочные эффекты: `CancelableRequest<startCall>`, `DelayRequester` для backoff, `AttemptsState`, `waitSignalingReady`. |
-| `CallReconnectStateMachine/createCallReconnectMachine.ts`      | Декларативный XState-автомат (состояния и переходы).                                                                   |
-| `CallReconnectStateMachine/createCallReconnectMachineSetup.ts` | Actors/guards/actions/assign — тонкий адаптер между машиной и `TCallReconnectMachineDeps`.                             |
-| `createMachineDeps.ts`                                         | Склейка runtime + events для предоставления машине узкого contract.                                                    |
-| `policies/NetworkFailurePolicy.ts`                             | «Это сетевой сбой?» — классификация `EndEvent.cause` и `originator=system`.                                            |
-| `policies/BackoffPolicy.ts`                                    | Вычисление следующей задержки: `base × factor^(attempt-1)`, cap `maxBackoffMs`, jitter `none/full/equal`.              |
-| `AttemptsState.ts`                                             | Счётчик попыток с callback `isInProgress` для UI-сигналов.                                                             |
+| Компонент                                                      | Роль                                                                                                                                                                                                                             |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@CallReconnectManager.ts`                                     | Фасад, подписки на `CallManager`/`ConnectionManager`, проброс событий фасада с префиксом `call-reconnect:*`.                                                                                                                     |
+| `CallReconnectRuntime.ts`                                      | Побочные эффекты: `CancelableRequest` попытки (`getCallParameters` → `startCall`), `DelayRequester` для backoff, `AttemptsState`, `waitSignalingReady`. `cancelAll` при идущей попытке вызывает `callManager.cancelStartCall()`. |
+| `CallReconnectStateMachine/createCallReconnectMachine.ts`      | Декларативный XState-автомат (состояния и переходы).                                                                                                                                                                             |
+| `CallReconnectStateMachine/createCallReconnectMachineSetup.ts` | Actors/guards/actions/assign — тонкий адаптер между машиной и `TCallReconnectMachineDeps`.                                                                                                                                       |
+| `createMachineDeps.ts`                                         | Склейка runtime + events для предоставления машине узкого contract.                                                                                                                                                              |
+| `policies/NetworkFailurePolicy.ts`                             | «Это сетевой сбой?» — классификация `EndEvent.cause` и `originator=system`.                                                                                                                                                      |
+| `policies/BackoffPolicy.ts`                                    | Вычисление следующей задержки: `base × factor^(attempt-1)`, cap `maxBackoffMs`, jitter `none/full/equal`.                                                                                                                        |
+| `AttemptsState.ts`                                             | Счётчик попыток с callback `isInProgress` для UI-сигналов.                                                                                                                                                                       |
 
 ## Опции конструктора (`ICallReconnectOptions`)
 
-| Поле                      | По умолчанию | Описание                                                                                              |
-| ------------------------- | ------------ | ----------------------------------------------------------------------------------------------------- |
-| `maxAttempts`             | `5`          | Максимум попыток до `limit-reached`.                                                                  |
-| `baseBackoffMs`           | `1000`       | Базовая задержка перед первой попыткой.                                                               |
-| `maxBackoffMs`            | `30_000`     | Верхняя граница задержки.                                                                             |
-| `backoffFactor`           | `2`          | Экспонента роста задержки.                                                                            |
-| `jitter`                  | `'equal'`    | `none` \| `full` \| `equal` — алгоритм размытия задержек.                                             |
-| `waitSignalingTimeoutMs`  | `20_000`     | Ждём до этого значения готовности сигнализации в состоянии `waitingSignaling`.                        |
-| `isNetworkFailure(event)` | default      | Кастомный детектор сетевого сбоя (default покрывает основные JsSIP-коды).                             |
-| `canRetryOnError(error)`  | `() => true` | Политика «ретраить ли ошибку попытки» — `beforeRedial` или `startCall` (non-retry → `errorTerminal`). |
+| Поле                      | По умолчанию | Описание                                                                                                                               |
+| ------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `maxAttempts`             | `5`          | Максимум попыток до `limit-reached`.                                                                                                   |
+| `baseBackoffMs`           | `1000`       | Базовая задержка перед первой попыткой.                                                                                                |
+| `maxBackoffMs`            | `30_000`     | Верхняя граница задержки.                                                                                                              |
+| `backoffFactor`           | `2`          | Экспонента роста задержки.                                                                                                             |
+| `jitter`                  | `'equal'`    | `none` \| `full` \| `equal` — алгоритм размытия задержек.                                                                              |
+| `waitSignalingTimeoutMs`  | `20_000`     | Ждём до этого значения готовности сигнализации в состоянии `waitingSignaling`.                                                         |
+| `isNetworkFailure(event)` | default      | Кастомный детектор сетевого сбоя (default покрывает основные JsSIP-коды).                                                              |
+| `canRetryOnError(error)`  | `() => true` | Политика «ретраить ли ошибку попытки» — `startCall`, в том числе ошибку отключения прежнего подключения (non-retry → `errorTerminal`). |
 
 ## Связанная state machine
 

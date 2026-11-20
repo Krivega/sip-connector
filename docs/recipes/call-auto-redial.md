@@ -40,23 +40,9 @@ await sipConnectorFacade.callToServer({
 
 SipConnector вооружает `CallReconnectManager` при `autoRedial: true` и начинает слушать сетевые обрывы согласно политике.
 
-### Шаг перед повторным звонком
+## Отключение прежнего подключения
 
-`beforeRedial` выполняется перед каждой попыткой редиала, до повторного `INVITE`. Например,
-приложение просит сервер отключить прежнее подключение участника:
-
-```typescript
-await sipConnectorFacade.callToServer({
-  conference,
-  mediaStream,
-  beforeRedial: async () => {
-    await requestDisconnectSelf();
-  },
-});
-```
-
-Ошибка шага считается неуспешной попыткой по общей политике (`canRetryOnError`, `maxAttempts`).
-Если попытку отменили во время шага (`hangUp`, `disarm`, новый `arm`), `INVITE` не отправляется.
+Если предыдущий звонок завершился не сервером — обрыв сети, остановка клиента, локальный отбой, — сервер может ещё держать прежнее подключение участника и не пускать новый звонок в комнату. Поэтому перед любым исходящим звонком и каждой попыткой редиала `CallManager.startCall` сам отключает это подключение, если с завершения прошло не больше 60 с и сервер не сменился, — настраивать ничего не нужно. Отключение идёт после `call:start-call`, пока звонок в состоянии подключения, и до `INVITE`. Запрос повторяется раз в секунду, пока сервер не подтвердит отключение, но не дольше 15 с; после этого звонок уходит в любом случае. После любого исхода, кроме отмены, подключение забывается. Ошибка запроса отклоняет звонок с `call:failed` (`originator: 'local'`, `'Internal Error'`), а в редиале считается неуспешной попыткой. Новый `call` сначала останавливает идущий цикл редиала (`disarm('manual')`). Подробности и ограничения — в [StaleParticipantManager](../architecture/components/StaleParticipantManager/index.md).
 
 ## Включение напрямую через SipConnector
 
@@ -152,6 +138,10 @@ sipConnector.on('call-reconnect:limit-reached', ({ attempts }) => {
 - `SipConnector.hangUp` автоматически вызывает `callReconnectManager.disarm('local-hangup')`.
 - Машина уходит в `idle`, in-flight отменяется, эмитится `cancelled({ reason: 'local-hangup' })`.
 
+## Что происходит при ответе на входящий
+
+- `SipConnector.answerToIncomingCall` перед ответом разоружает автоперезвон и отменяет идущую попытку.
+
 ## Как классифицируются JsSIP-терминации
 
 JsSIP эмитит `failed` для не-установленных звонков и `ended` для уже установленных. Оба события проходят через единую политику `isNetworkFailure`:
@@ -163,6 +153,8 @@ JsSIP эмитит `failed` для не-установленных звонко�
 | `ended`     | `RTP_TIMEOUT`, `CONNECTION_ERROR` (mid-call)                                                      | Редиал (`CALL.FAILED`) — **основной сценарий** |
 | `ended`     | `BYE`, `CANCELED`                                                                                 | Разоружение (`CALL.ENDED`)                     |
 | `end-call`  | — (локальный hangUp)                                                                              | Разоружение (`CALL.ENDED`)                     |
+
+Расхождение с таблицей: `defaultIsNetworkFailure` не считает сетевым сбоем завершение с `originator: 'local'`, поэтому `ended` с локальным `RTP_TIMEOUT` или `CONNECTION_ERROR` редиал не запускает и разоружает менеджер. Поведение пока не меняется.
 
 Политику можно переопределить через `callReconnectOptions.isNetworkFailure`.
 

@@ -12,6 +12,7 @@ import type { TCallRedialParameters } from '../types';
 const createCallManagerMock = () => {
   return {
     startCall: jest.fn(async () => {}),
+    cancelStartCall: jest.fn(),
   } as unknown as CallManager;
 };
 
@@ -238,42 +239,20 @@ describe('CallReconnectRuntime', () => {
     expect(callManager.startCall).toHaveBeenCalledTimes(1);
   });
 
-  it('performAttempt runs beforeRedial before startCall', async () => {
+  it('performAttempt rejects with startCall error as is and does not wrap it', async () => {
     const callManager = createCallManagerMock();
     const { runtime } = createRuntime({
       callManager,
       connectionManager: new FakeConnectionManager(),
     });
-    const beforeRedial = jest.fn(async () => {});
+    const error = new Error('Stale participant disconnect failed with status 500');
 
-    await runtime.performAttempt({ ...makeRedialParameters(), beforeRedial });
+    jest.mocked(callManager.startCall).mockRejectedValueOnce(error);
 
-    expect(beforeRedial).toHaveBeenCalledTimes(1);
-    expect(beforeRedial.mock.invocationCallOrder[0]).toBeLessThan(
-      jest.mocked(callManager.startCall).mock.invocationCallOrder[0],
-    );
+    await expect(runtime.performAttempt(makeRedialParameters())).rejects.toBe(error);
   });
 
-  it('performAttempt rejects without startCall when beforeRedial fails', async () => {
-    const callManager = createCallManagerMock();
-    const { runtime } = createRuntime({
-      callManager,
-      connectionManager: new FakeConnectionManager(),
-    });
-    const error = new Error('before redial failed');
-
-    await expect(
-      runtime.performAttempt({
-        ...makeRedialParameters(),
-        beforeRedial: async () => {
-          throw error;
-        },
-      }),
-    ).rejects.toBe(error);
-    expect(callManager.startCall).not.toHaveBeenCalled();
-  });
-
-  it('performAttempt does not startCall when cancelled during beforeRedial', async () => {
+  it('cancelAll during attempt cancels CallManager start call step', async () => {
     jest.useRealTimers();
 
     const callManager = createCallManagerMock();
@@ -281,19 +260,48 @@ describe('CallReconnectRuntime', () => {
       callManager,
       connectionManager: new FakeConnectionManager(),
     });
-    let finishBeforeRedial = () => {};
-    const beforeRedial = async () => {
-      return new Promise<void>((resolve) => {
-        finishBeforeRedial = resolve;
-      });
+
+    jest.mocked(callManager.startCall).mockImplementationOnce(async () => {
+      return new Promise<never>(() => {});
+    });
+
+    const attempt = runtime.performAttempt(makeRedialParameters()).catch((error: unknown) => {
+      return error;
+    });
+
+    await flushPromises();
+    runtime.cancelAll();
+
+    expect(callManager.cancelStartCall).toHaveBeenCalledTimes(1);
+    expect(await attempt).toMatchObject({ name: 'Canceled' });
+  });
+
+  it('cancelAll during getCallParameters skips startCall', async () => {
+    jest.useRealTimers();
+
+    const { runtime, callManager } = createRuntime({
+      connectionManager: new FakeConnectionManager(),
+    });
+    let finishParameters = () => {};
+    const parameters: TCallRedialParameters = {
+      getCallParameters: jest.fn(async () => {
+        return new Promise<never>((resolve) => {
+          finishParameters = () => {
+            resolve({ number: '100' } as never);
+          };
+        });
+      }),
     };
 
-    const attempt = runtime.performAttempt({ ...makeRedialParameters(), beforeRedial });
+    const attempt = runtime.performAttempt(parameters).catch((error: unknown) => {
+      return error;
+    });
 
+    await flushPromises();
     runtime.cancelAll();
-    finishBeforeRedial();
+    finishParameters();
 
-    await expect(attempt).rejects.toMatchObject({ name: 'Canceled' });
+    expect(await attempt).toMatchObject({ name: 'Canceled' });
     await flushPromises();
     expect(callManager.startCall).not.toHaveBeenCalled();
   });

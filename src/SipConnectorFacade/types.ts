@@ -1,5 +1,4 @@
 import type { TOnAddedTransceiver } from '@/CallManager';
-import type { TCallRedialParameters } from '@/CallReconnectManager';
 import type { TConnectAndCallSessionResult } from '@/ConnectAndCallSession';
 import type { TConnectionConfig, TParametersConnection } from '@/ConnectionManager';
 import type { TContentHint } from '@/utils/peerConnection';
@@ -46,8 +45,6 @@ export type TCallToServerParameters = {
    * По умолчанию `true`.
    */
   autoRedial?: boolean;
-  /** Шаг перед каждой попыткой автоматического перезвона, до повторного `INVITE`. */
-  beforeRedial?: TCallRedialParameters['beforeRedial'];
 };
 
 export type TConnectAndCallToServerParameters = {

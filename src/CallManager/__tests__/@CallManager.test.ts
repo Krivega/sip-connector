@@ -1523,6 +1523,9 @@ describe('CallManager', () => {
       {
         sendOffer: jest.fn().mockResolvedValue({} as RTCSessionDescription),
         waitForSignaling: jest.fn().mockResolvedValue(true),
+        getSipServerUrl: () => {
+          return undefined;
+        },
       },
       { callSessionState: new CallSessionState() },
     );
@@ -1767,6 +1770,9 @@ describe('CallManager - дополнительные тесты для покр�
     const tools = {
       sendOffer: jest.fn().mockResolvedValue({} as RTCSessionDescription),
       waitForSignaling: jest.fn().mockResolvedValue(true),
+      getSipServerUrl: () => {
+        return undefined;
+      },
     };
 
     callManager = new CallManager({ contentedStreamManager }, tools, {

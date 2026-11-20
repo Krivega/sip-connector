@@ -15,18 +15,18 @@
 
 ## Состояния
 
-| Состояние               | Назначение                                                                                                                      |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `call:idle`             | Звонок не активен, контекст очищен.                                                                                             |
-| `call:connecting`       | Идёт установка звонка, есть базовые данные (`number`, `answer`).                                                                |
-| `call:presentationCall` | Режим presentation-call после `confirmed` и спец-заголовка.                                                                     |
-| `call:roomPendingAuth`  | Известны `room` и `participantName`, но нет валидного room-согласованного JWT; вход в «активную» фазу (см. `startedTimestamp`). |
-| `call:purgatory`        | Режим purgatory (no-token state).                                                                                               |
-| `call:p2pRoom`          | P2P-режим по имени комнаты (no-token state).                                                                                    |
-| `call:directP2pRoom`    | Direct P2P-режим по флагу/паттерну (no-token state).                                                                            |
-| `call:inRoom`           | Комната готова к JWT-зависимым операциям (`conferenceForToken === room`).                                                       |
-| `call:disconnecting`    | Идёт завершение звонка до финального `CALL.RESET`.                                                                              |
-| `evaluate`              | Внутренний transient state выбора целевого доменного состояния.                                                                 |
+| Состояние               | Назначение                                                                                                                                    |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `call:idle`             | Звонок не активен, контекст очищен.                                                                                                           |
+| `call:connecting`       | Идёт установка звонка, есть базовые данные (`number`, `answer`). У исходящего включает отключение прежнего подключения участника до `INVITE`. |
+| `call:presentationCall` | Режим presentation-call после `confirmed` и спец-заголовка.                                                                                   |
+| `call:roomPendingAuth`  | Известны `room` и `participantName`, но нет валидного room-согласованного JWT; вход в «активную» фазу (см. `startedTimestamp`).               |
+| `call:purgatory`        | Режим purgatory (no-token state).                                                                                                             |
+| `call:p2pRoom`          | P2P-режим по имени комнаты (no-token state).                                                                                                  |
+| `call:directP2pRoom`    | Direct P2P-режим по флагу/паттерну (no-token state).                                                                                          |
+| `call:inRoom`           | Комната готова к JWT-зависимым операциям (`conferenceForToken === room`).                                                                     |
+| `call:disconnecting`    | Идёт завершение звонка до финального `CALL.RESET`.                                                                                            |
+| `evaluate`              | Внутренний transient state выбора целевого доменного состояния.                                                                               |
 
 ## Контекст и инварианты
 
@@ -99,7 +99,7 @@ stateDiagram-v2
 ## Интеграция и события
 
 - Внутренние события: `CALL.CONNECTING`, `CALL.ENTER_ROOM`, `CALL.TOKEN_ISSUED`, `CALL.PRESENTATION_CALL`, `CALL.START_DISCONNECT`, `CALL.RESET`.
-- Маппинг `CallManager.events`: `start-call -> CALL.CONNECTING`, `confirmed -> CALL.PRESENTATION_CALL`, `end-call -> CALL.START_DISCONNECT`, `ended/failed -> CALL.RESET`.
+- Маппинг `CallManager.events`: `start-call -> CALL.CONNECTING`, `confirmed -> CALL.PRESENTATION_CALL`, `end-call -> CALL.START_DISCONNECT`, `ended/failed -> CALL.RESET`. `CallManager.cancelStartCall()` и `answerToIncomingCall()` во время отключения прежнего подключения шлют `CALL.RESET` напрямую, без `failed`; ответ затем переводит машину в `call:connecting` уже с контекстом ответа.
 - Маппинг `ApiManager.events`: `enter-room -> CALL.ENTER_ROOM`, `conference:participant-token-issued -> CALL.TOKEN_ISSUED`.
 
 ## Логирование

@@ -262,7 +262,6 @@ class SipConnectorFacade implements IProxyMethods {
       onEndedCall,
       onAddedTransceiver,
       autoRedial = true,
-      beforeRedial,
     } = parameters;
 
     debug('callToServer', parameters);
@@ -285,7 +284,7 @@ class SipConnectorFacade implements IProxyMethods {
           sendEncodings,
           number: conference,
         },
-        { autoRedial, beforeRedial },
+        { autoRedial },
       );
     };
     let isSuccessProgressCall = false;

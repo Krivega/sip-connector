@@ -16,6 +16,8 @@ export class FakeCallManager {
     return undefined;
   });
 
+  public cancelStartCall = jest.fn((): void => {});
+
   private isSpectatorInner = false;
 
   public on = (event: string, handler: (payload?: unknown) => void): (() => void) => {

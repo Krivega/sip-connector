@@ -1,3 +1,4 @@
+import { isCanceledError } from '@krivega/cancelable-promise';
 import { IncomingResponse, C as JsSIP_C } from '@krivega/jssip';
 import { EventEmitterProxy } from 'events-constructor';
 
@@ -8,6 +9,7 @@ import {
   isExitingSpectatorRole,
 } from '@/CallSessionState';
 import resolveDebug from '@/logger';
+import { StaleParticipantManager } from '@/StaleParticipantManager';
 import { DeferredCommandRunner } from '@/tools';
 import { createCallStateMachine, ECallStatus } from './CallStateMachine';
 import { createEvents } from './events';
@@ -18,7 +20,7 @@ import { RemoteStreamsManager } from './RemoteStreamsManager';
 import { StreamsChangeTracker } from './StreamsChangeTracker';
 import { StreamsManagerProvider } from './StreamsManagerProvider';
 
-import type { RTCSession } from '@krivega/jssip';
+import type { RTCSession, UA } from '@krivega/jssip';
 import type { ApiManager } from '@/ApiManager';
 import type { CallSessionState, TCallRole, TCallRoleSpectator } from '@/CallSessionState';
 import type { ContentedStreamManager } from '@/ContentedStreamManager';
@@ -26,13 +28,13 @@ import type { ICallStateMachine } from './CallStateMachine';
 import type { TEventMap } from './events';
 import type { TRestartIceOptions } from './MCUSession';
 import type { TEffectiveQuality, TRecvQuality } from './quality';
-import type { TTools } from './RecvSession';
 import type {
   TAnswerToIncomingCall,
+  TCallManagerStartCall,
+  TCallManagerTools,
   TRemoteStreams,
   TRemoteTracksChangeType,
   TReplaceMediaStream,
-  TStartCall,
   TStreamsManagerTools,
 } from './types';
 
@@ -107,7 +109,9 @@ class CallManager extends EventEmitterProxy<TEventMap> {
 
   private readonly contentedStreamManager: ContentedStreamManager;
 
-  private readonly tools: TTools;
+  private readonly tools: TCallManagerTools;
+
+  private readonly staleParticipantManager: StaleParticipantManager;
 
   private readonly roleManager = {
     hasSpectator: (): boolean => {
@@ -137,9 +141,14 @@ class CallManager extends EventEmitterProxy<TEventMap> {
 
   private readonly streamsChangeTracker = new StreamsChangeTracker();
 
+  private startCallId = 0;
+
+  // Запуск, который сейчас ждёт отключения устаревшего участника.
+  private startCallStepId?: number;
+
   public constructor(
     { contentedStreamManager }: { contentedStreamManager: ContentedStreamManager },
-    tools: TTools & { waitForSignaling: () => Promise<boolean> },
+    tools: TCallManagerTools,
     { callSessionState }: { callSessionState: CallSessionState },
   ) {
     super(createEvents());
@@ -177,6 +186,10 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     this.subscribeCallStatusChange();
     this.subscribeMcuRemoteTrackEvents();
     this.subscribeContentedStreamEvents();
+    this.staleParticipantManager = new StaleParticipantManager({
+      callManager: this,
+      getServerUrl: tools.getSipServerUrl,
+    });
   }
 
   public get requested() {
@@ -235,8 +248,21 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     this.sessionState.subscribeToApiEvents(apiManager.events);
   }
 
-  public startCall: TStartCall = async (ua, getUri, params) => {
+  public startCall: TCallManagerStartCall = async (ua, getUri, params) => {
     debug('startCall', params);
+
+    const getUa =
+      typeof ua === 'function'
+        ? ua
+        : () => {
+            return ua;
+          };
+
+    // Без UA звонок отклоняется до `start-call`, как и раньше.
+    getUa();
+    this.supersedePendingStartCall();
+
+    const { startCallId } = this;
 
     this.isPendingCall = true;
 
@@ -246,14 +272,49 @@ class CallManager extends EventEmitterProxy<TEventMap> {
       answer: false,
     });
 
-    return this.mcuSession.startCall(ua, getUri, params).finally(() => {
-      this.isPendingCall = false;
+    this.startCallStepId = startCallId;
+
+    let resolvedUa: UA;
+
+    try {
+      await this.staleParticipantManager.disconnectStale();
+      // UA берём после шага: за время шага AutoConnector мог его пересоздать.
+      resolvedUa = getUa();
+    } catch (error) {
+      // Вытесненный запуск молчит: его отказ не должен ломать состояние нового звонка.
+      if (startCallId === this.startCallId) {
+        this.isPendingCall = false;
+        this.emitStartCallFailed(error);
+      }
+
+      throw error;
+    } finally {
+      if (this.startCallStepId === startCallId) {
+        this.startCallStepId = undefined;
+      }
+    }
+
+    return this.mcuSession.startCall(resolvedUa, getUri, params).finally(() => {
+      if (startCallId === this.startCallId) {
+        this.isPendingCall = false;
+      }
     });
   };
+
+  // Отмена от перезвона без `failed`: иначе перезвон принял бы её за конец звонка и разоружился.
+  public cancelStartCall(): void {
+    if (this.startCallStepId === undefined) {
+      return;
+    }
+
+    this.supersedePendingStartCall();
+    this.stateMachine.reset();
+  }
 
   public async endCall(): Promise<void> {
     debug('endCall');
 
+    this.staleParticipantManager.cancel();
     this.events.emit('end-call');
 
     return this.mcuSession.endCall();
@@ -281,6 +342,15 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     params,
   ): Promise<RTCPeerConnection> => {
     debug('answerToIncomingCall', params);
+
+    const hasStartCallStep = this.startCallStepId !== undefined;
+
+    this.supersedePendingStartCall();
+
+    // Тихо: синтетический `failed` разорвал бы у потребителей уже принимаемый входящий.
+    if (hasStartCallStep) {
+      this.stateMachine.reset();
+    }
 
     this.isPendingAnswer = true;
 
@@ -477,6 +547,25 @@ class CallManager extends EventEmitterProxy<TEventMap> {
 
   private emitFailedCall(message: IncomingResponse, cause: string) {
     this.events.trigger('failed', { message, cause, originator: 'local' });
+  }
+
+  private supersedePendingStartCall(): void {
+    this.startCallId += 1;
+    this.startCallStepId = undefined;
+    this.isPendingCall = false;
+    this.staleParticipantManager.cancel();
+  }
+
+  // Без `failed` машина звонка осталась бы в CONNECTING или DISCONNECTING: сессии JsSIP ещё нет.
+  private emitStartCallFailed(error: unknown): void {
+    const message = new IncomingResponse();
+
+    message.body = error instanceof Error ? error.message : String(error);
+
+    this.emitFailedCall(
+      message,
+      isCanceledError(error) ? JsSIP_C.causes.CANCELED : JsSIP_C.causes.INTERNAL_ERROR,
+    );
   }
 
   private readonly reset: () => void = () => {
