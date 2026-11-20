@@ -3,13 +3,15 @@
 import { C as JsSIP_C } from '@krivega/jssip';
 
 import JsSIP from '@/__fixtures__/jssip.mock';
-import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
+import RTCSessionMock, { FAILED_CONFERENCE_NUMBER } from '@/__fixtures__/RTCSessionMock';
 import UAMock from '@/__fixtures__/UA.mock';
 import hasCanceledCallError from '@/CallManager/hasCanceledCallError';
+import { EConnectAndCallSessionPhase } from '@/ConnectAndCallSession';
 import SipConnector from '../@SipConnector';
 
 import type { RTCSession, UA } from '@krivega/jssip';
-import type { TConnectionConfig } from '@/ConnectionManager';
+import type { TConnectAndCallSessionCloseReason } from '@/ConnectAndCallSession';
+import type { TConnectionConfig, TParametersConnection } from '@/ConnectionManager';
 import type { TJsSIP } from '@/types';
 
 type TFetchResponse = { ok: boolean; status: number };
@@ -52,7 +54,10 @@ const waitUntil = async (predicate: () => boolean): Promise<void> => {
   }
 };
 
-const createSubject = ({ isRegistered = true }: { isRegistered?: boolean } = {}) => {
+const createSubject = ({
+  isRegistered = true,
+  number = '1000',
+}: { isRegistered?: boolean; number?: string } = {}) => {
   const connector = new SipConnector(
     { JsSIP: JsSIP as unknown as TJsSIP },
     {
@@ -66,7 +71,7 @@ const createSubject = ({ isRegistered = true }: { isRegistered?: boolean } = {})
   );
   const ua = new UAMock({ uri: `sip:user@${SIP_SERVER_URL}`, register: false, sockets: [] });
   const failedListener = jest.fn();
-  const callParameters = { number: '1000', mediaStream: new MediaStream() };
+  const callParameters = { number, mediaStream: new MediaStream() };
 
   jest.spyOn(connector.connectionManager, 'getUaProtected').mockReturnValue(ua as unknown as UA);
   jest
@@ -127,7 +132,7 @@ describe('SipConnector: отключение устаревшего участн
   let requests: TPendingRequest[];
   let subjects: ReturnType<typeof createSubject>[];
 
-  const setup = (options?: { isRegistered?: boolean }) => {
+  const setup = (options?: Parameters<typeof createSubject>[0]) => {
     const subject = createSubject(options);
 
     subjects.push(subject);
@@ -639,6 +644,90 @@ describe('SipConnector: отключение устаревшего участн
 
       await subject.connector.callManager.endCall();
       await manualCall;
+    });
+
+    describe('в сессии connect + call', () => {
+      const startSession = async (subject: ReturnType<typeof createSubject>) => {
+        const { autoConnectorManager } = subject.connector;
+        let closeReason: TConnectAndCallSessionCloseReason | undefined;
+
+        jest.spyOn(autoConnectorManager, 'isActive', 'get').mockReturnValue(false);
+        jest
+          .spyOn(autoConnectorManager, 'start')
+          .mockResolvedValue({ isSuccess: true, reason: 'started' });
+        jest.spyOn(autoConnectorManager, 'stop').mockResolvedValue();
+
+        const result = await subject.connector.connectAndCallToServer({
+          connection: { parameters: {} as TParametersConnection },
+          startCall: async () => {
+            return {} as RTCPeerConnection;
+          },
+        });
+
+        if (!result.isSuccessful) {
+          throw new Error('Expected successful connect and call result');
+        }
+
+        result.session
+          .waitUntilClosed()
+          .then((reason) => {
+            closeReason = reason;
+          })
+          .catch(() => {});
+
+        return {
+          session: result.session,
+          getCloseReason: () => {
+            return closeReason;
+          },
+        };
+      };
+
+      it('явный отказ удалённой стороны на INVITE попытки закрывает сессию без повторного INVITE', async () => {
+        const subject = setup({ number: FAILED_CONFERENCE_NUMBER });
+        const { session, getCloseReason } = await startSession(subject);
+
+        subject.breakArmedCallBySystem();
+        await waitUntil(() => {
+          return requests.length === 1;
+        });
+        requests[0].respond(401);
+        await waitUntil(() => {
+          return subject.failedListener.mock.calls.length === 1;
+        });
+        await flush(20);
+
+        expect(subject.failedListener).toHaveBeenCalledWith(
+          expect.objectContaining({ originator: 'remote', cause: JsSIP_C.causes.REJECTED }),
+        );
+        expect(getCloseReason()).toBe('completed');
+        expect(session.phase).toBe(EConnectAndCallSessionPhase.CLOSED);
+        expect(subject.connector.callReconnectManager.state).toBe('idle');
+        expect(subject.ua.call).toHaveBeenCalledTimes(1);
+      });
+
+      it('ошибка отключения перед INVITE попытки оставляет сессию и запускает следующую попытку', async () => {
+        const subject = setup();
+        const { session, getCloseReason } = await startSession(subject);
+
+        subject.breakArmedCallBySystem();
+        await waitUntil(() => {
+          return requests.length === 1;
+        });
+        requests[0].respond(500);
+        await waitUntil(() => {
+          return subject.ua.call.mock.calls.length === 1;
+        });
+
+        expect(subject.failedListener).toHaveBeenCalledWith(
+          expect.objectContaining({ originator: 'local', cause: JsSIP_C.causes.INTERNAL_ERROR }),
+        );
+        expect(getCloseReason()).toBeUndefined();
+        expect(session.phase).toBe(EConnectAndCallSessionPhase.RECONNECTING);
+        expect(requests).toHaveLength(1);
+
+        await session.disconnect();
+      });
     });
   });
 });

@@ -194,6 +194,18 @@ export const createCallReconnectMachine = (deps: TCallReconnectMachineDeps) => {
             },
           ],
         },
+        on: {
+          'CALL.ENDED': {
+            target: EState.IDLE,
+            actions: [
+              'cancelAll',
+              'resetAttemptsState',
+              'registerAttemptFinish',
+              'assignDisarm',
+              'emitDisarmedAction',
+            ],
+          },
+        },
       },
       [EState.LIMIT_REACHED]: {
         on: {

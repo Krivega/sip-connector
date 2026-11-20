@@ -156,6 +156,8 @@ JsSIP эмитит `failed` для не-установленных звонко�
 
 Расхождение с таблицей: `defaultIsNetworkFailure` не считает сетевым сбоем завершение с `originator: 'local'`, поэтому `ended` с локальным `RTP_TIMEOUT` или `CONNECTION_ERROR` редиал не запускает и разоружает менеджер. Поведение пока не меняется.
 
+Во время попытки (`attempting`) таблица действует только для явного отказа удалённой стороны на `INVITE` попытки — `originator: 'remote'` с несетевой причиной (`REJECTED`, `BUSY`, `NOT_FOUND`, …): разоружение (`CALL.ENDED`), повторного звонка нет. Сетевой сбой, локальное и системное завершение звонка попытки, в том числе ошибка отключения прежнего подключения, не классифицируются: исход решает отказ попытки через `canRetryOnError` и лимит попыток.
+
 Политику можно переопределить через `callReconnectOptions.isNetworkFailure`.
 
 ## Отладка
@@ -306,7 +308,7 @@ JsSIP эмитит `failed` для не-установленных звонко�
 
 - `termination-classified: redial` переводит session в `reconnecting` и сохраняет AutoConnector;
 - `attempt-succeeded` возвращает session в `active`;
-- `termination-classified: finish`, `limitReached` или `errorTerminal` запускают полный cleanup. Завершение звонка во время попытки (`attempting`) не классифицируется: отказ её `INVITE` или ошибка отключения прежнего подключения отклоняет попытку, и решение — следующая попытка или `errorTerminal`/`limitReached` — принимает `CallReconnectManager` через `canRetryOnError` и лимит попыток;
+- `termination-classified: finish`, `limitReached` или `errorTerminal` запускают полный cleanup. Во время попытки (`attempting`) `finish` даёт только явный отказ удалённой стороны на её `INVITE` (`originator: 'remote'`, несетевая причина: `REJECTED`, `BUSY`, …) — session закрывается, повторного звонка нет. Сетевой сбой, локальное или системное завершение звонка попытки, в том числе ошибка отключения прежнего подключения, не классифицируются: попытка отклоняется, и решение — следующая попытка или `errorTerminal`/`limitReached` — принимает `CallReconnectManager` через `canRetryOnError` и лимит попыток;
 - ручной `session.hangUp()`/`disconnect()` или публичный `SipConnector.hangUp()`/`disconnect()`
   отменяет текущую попытку redial и останавливает AutoConnector. Публичные методы делегируются
   активной session.
