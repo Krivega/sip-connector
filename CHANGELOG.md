@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [31.4.0](https://github.com/Krivega/sip-connector/compare/v31.3.9...v31.4.0) (2026-11-20)
+
+### Features
+
+- add call redial before attempt hook ([#87](https://github.com/Krivega/sip-connector/issues/87)) ([c07e25a](https://github.com/Krivega/sip-connector/commit/c07e25a9974c94ca01b33826b5ff4aeed38062a2))
+
 ### [31.3.9](https://github.com/Krivega/sip-connector/compare/v31.3.8...v31.3.9) (2026-11-19)
 
 ### Bug Fixes
