@@ -237,6 +237,36 @@ describe('CallReconnectManager (facade)', () => {
       },
     );
 
+    it('локальное завершение звонка попытки через endCall завершает перезвон без политики повторов', async () => {
+      const subject = createSubject();
+      const { manager, callManager } = subject;
+      const failedEvent = { originator: 'local', cause: JsSIP_C.causes.INTERNAL_ERROR };
+      const onTerminationClassified = jest.fn();
+      const onDisarmed = jest.fn();
+      const onAttemptFailed = jest.fn();
+      const rejectAttempt = await startPendingAttempt(subject);
+
+      manager.on('termination-classified', onTerminationClassified);
+      manager.on('disarmed', onDisarmed);
+      manager.on('attempt-failed', onAttemptFailed);
+
+      // Так завершает звонок `CallManager.failed()`: `failed`, затем `end-call` из `endCall()`.
+      callManager.emit('failed', failedEvent);
+      callManager.emit('end-call');
+      rejectAttempt(failedEvent);
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 20);
+      });
+
+      expect(onTerminationClassified).not.toHaveBeenCalled();
+      expect(onDisarmed).toHaveBeenCalledTimes(1);
+      expect(onAttemptFailed).not.toHaveBeenCalled();
+      expect(callManager.startCall).toHaveBeenCalledTimes(1);
+      expect(manager.state).toBe(ECallReconnectStatus.IDLE);
+
+      manager.stop();
+    });
+
     it.each([
       [
         'ошибку подготовки звонка',
