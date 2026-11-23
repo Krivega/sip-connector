@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [31.4.1](https://github.com/Krivega/sip-connector/compare/v31.4.0...v31.4.1) (2026-11-23)
+
+### Bug Fixes
+
+- redial explicit remote refusal ([#91](https://github.com/Krivega/sip-connector/issues/91)) ([ba6b464](https://github.com/Krivega/sip-connector/commit/ba6b464e2d830f3f009d908694e79db457c7aad2))
+
 ## [31.4.0](https://github.com/Krivega/sip-connector/compare/v31.3.9...v31.4.0) (2026-11-20)
 
 ### Features
