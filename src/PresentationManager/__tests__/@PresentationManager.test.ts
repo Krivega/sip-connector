@@ -37,9 +37,6 @@ describe('PresentationManager', () => {
         getSipServerUrl: () => {
           return undefined;
         },
-        getUa: () => {
-          return undefined;
-        },
       },
       { callSessionState: new CallSessionState() },
     );

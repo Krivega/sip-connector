@@ -31,9 +31,6 @@ describe('CallManager events', () => {
         getSipServerUrl: () => {
           return undefined;
         },
-        getUa: () => {
-          return undefined;
-        },
       },
       { callSessionState: new CallSessionState() },
     );

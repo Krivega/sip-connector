@@ -67,8 +67,9 @@ describe('MCUSession', () => {
     expect(typeof pc).toBe('object');
   });
 
-  it('endCall: вызывает reset и terminateAsync', async () => {
+  it('endCall: вызывает terminateAsync и передаёт подтверждение BYE в onSuccessResponse', async () => {
     const terminateAsync = jest.fn(async () => {});
+    const onByeConfirmed = jest.fn();
 
     (mcuSession as unknown as { rtcSession: RTCSession }).rtcSession = {
       isEnded: () => {
@@ -76,8 +77,11 @@ describe('MCUSession', () => {
       },
       terminateAsync,
     } as unknown as RTCSession;
-    await mcuSession.endCall();
-    expect(terminateAsync).toHaveBeenCalledWith({ cause: 'Canceled' });
+    await mcuSession.endCall(onByeConfirmed);
+    expect(terminateAsync).toHaveBeenCalledWith({
+      cause: 'Canceled',
+      byeEventHandlers: { onSuccessResponse: onByeConfirmed },
+    });
   });
 
   it('endCall: если rtcSession нет, возвращает undefined', async () => {

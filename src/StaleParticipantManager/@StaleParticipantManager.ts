@@ -1,9 +1,7 @@
 import { DelayRequester } from '@krivega/timeout-requester';
 
 import resolveDebug from '@/logger';
-import watchByeResponse from './watchByeResponse';
 
-import type { UA } from '@krivega/jssip';
 import type { CallManager } from '@/CallManager';
 import type { TCallEndEvent } from '@/DisconnectCause';
 
@@ -32,8 +30,8 @@ type TCycle = {
   slot: TSlot;
   abortController: AbortController;
   delayRequester: DelayRequester;
-  // Остановка без ошибки: предел ожидания или ответ сервера на BYE прошлого звонка.
-  stopReason?: 'limit' | 'bye-answered';
+  // Остановка без ошибки: предел ожидания или ответ 2xx сервера на BYE прошлого звонка.
+  stopReason?: 'limit' | 'bye-confirmed';
 };
 
 const interruptCycle = ({ abortController, delayRequester }: TCycle): void => {
@@ -87,8 +85,6 @@ const confirmDisconnect = async (slot: TSlot, cycle: TCycle): Promise<void> => {
 class StaleParticipantManager {
   private readonly getSipServerUrl: () => string | undefined;
 
-  private readonly getUa: () => UA | undefined;
-
   private readonly cycles = new Set<TCycle>();
 
   private slot?: TSlot;
@@ -96,18 +92,14 @@ class StaleParticipantManager {
   public constructor({
     callManager,
     getServerUrl,
-    getUa,
   }: {
     callManager: CallManager;
     getServerUrl: () => string | undefined;
-    getUa: () => UA | undefined;
   }) {
     this.getSipServerUrl = getServerUrl;
-    this.getUa = getUa;
     callManager.stateMachine.onInRoomCredentialsChange(this.handleInRoomCredentials);
     callManager.on('ended', this.handleCallTermination);
     callManager.on('failed', this.handleCallTermination);
-    callManager.on('end-call', this.handleEndCall);
   }
 
   public async disconnectStale(signal: AbortSignal): Promise<void> {
@@ -179,6 +171,21 @@ class StaleParticipantManager {
     }
   }
 
+  /** Локальный отбой делает подключение устаревшим; возвращает подтверждение его снятия ответом 2xx на BYE. */
+  public handleEndCall(): () => void {
+    if (this.slot === undefined || this.slot.staleAt !== undefined) {
+      return () => {};
+    }
+
+    const slot: TSlot = { ...this.slot, staleAt: Date.now() };
+
+    this.slot = slot;
+
+    return () => {
+      this.confirmBye(slot);
+    };
+  }
+
   private getServerUrl(): string | undefined {
     const sipServerUrl = this.getSipServerUrl();
 
@@ -200,27 +207,9 @@ class StaleParticipantManager {
     this.slot = originator === 'remote' ? undefined : { ...this.slot, staleAt: Date.now() };
   };
 
-  private readonly handleEndCall = (): void => {
-    if (this.slot === undefined || this.slot.staleAt !== undefined) {
-      return;
-    }
-
-    const slot: TSlot = { ...this.slot, staleAt: Date.now() };
-    const ua = this.getUa();
-
-    this.slot = slot;
-
-    // Без UA ответ на BYE не узнать: подключение считаем оставшимся.
-    if (ua !== undefined) {
-      watchByeResponse(ua, () => {
-        this.handleByeAnswered(slot);
-      });
-    }
-  };
-
-  // Сервер ответил на BYE — он и снял подключение: отключать нечего.
-  private handleByeAnswered(slot: TSlot): void {
-    debug('handleByeAnswered');
+  // Ответ 2xx на BYE отбоя: сервер снял подключение, отключать нечего.
+  private confirmBye(slot: TSlot): void {
+    debug('confirmBye');
 
     if (this.slot === slot) {
       this.slot = undefined;
@@ -228,7 +217,7 @@ class StaleParticipantManager {
 
     this.cycles.forEach((cycle) => {
       if (cycle.slot === slot) {
-        stopCycle(cycle, 'bye-answered');
+        stopCycle(cycle, 'bye-confirmed');
       }
     });
   }

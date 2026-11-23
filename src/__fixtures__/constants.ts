@@ -11,8 +11,6 @@ export const UNREGISTERED = 'unregistered';
 export const REGISTRATION_FAILED = 'registrationFailed';
 export const NEW_MESSAGE = 'newMessage';
 export const SIP_EVENT = 'sipEvent';
-// Внутреннее событие JsSIP UA: о новой транзакции до её отправки.
-export const NEW_TRANSACTION = 'newTransaction';
 export const AVAILABLE_SECOND_REMOTE_STREAM_EVENT = 'availableSecondRemoteStream';
 export const NOT_AVAILABLE_SECOND_REMOTE_STREAM_EVENT = 'notAvailableSecondRemoteStream';
 export const MUST_STOP_PRESENTATION_EVENT = 'mustStopPresentation';

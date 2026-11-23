@@ -442,11 +442,13 @@ test.describe('Отключение прежнего подключения пе
       await expect
         .poll(
           async () => {
-            return connectPage.getConferenceToken();
+            const token = await connectPage.getConferenceToken();
+
+            return token !== undefined && token !== call.oldToken;
           },
           { message: 'новый токен конференции не пришёл', timeout: TOKEN_TIMEOUT_MS },
         )
-        .not.toBe(call.oldToken);
+        .toBe(true);
     } finally {
       await attachTimeline(
         testInfo,
@@ -557,19 +559,22 @@ test.describe('Отключение прежнего подключения пе
       await connectPage.hangupOnly();
       await statusDashboard.waitForDiagramStatus('system', 'system:readyToCall');
 
-      // Без ответа на BYE клиент считает подключение оставшимся: это предусловие сценария.
+      // Без ответа 2xx на BYE клиент считает подключение оставшимся: это предусловие сценария.
       await expect
         .poll(
           () => {
             return sipFrames.byCallId(oldCallId).some((frame) => {
               return (
                 frame.direction === 'received' &&
-                /^SIP\/2\.0 [2-6]\d\d /.test(frame.firstLine) &&
+                /^SIP\/2\.0 2\d\d /.test(frame.firstLine) &&
                 (frame.cseq ?? '').endsWith(' BYE')
               );
             });
           },
-          { message: 'сервер не ответил на BYE ручного отбоя', timeout: TOKEN_TIMEOUT_MS },
+          {
+            message: 'сервер не подтвердил BYE ручного отбоя ответом 2xx',
+            timeout: TOKEN_TIMEOUT_MS,
+          },
         )
         .toBe(true);
 
@@ -579,9 +584,10 @@ test.describe('Отключение прежнего подключения пе
       await waitForCallActive({ statusDashboard, sipFrames, newCallStartT });
       timeline.mark(sipFrames.now(), 'system:callActive');
 
-      expect(selfDisconnect.requests(), 'сервер ответил на BYE: self/disconnect не нужен').toEqual(
-        [],
-      );
+      expect(
+        selfDisconnect.requests(),
+        'сервер ответил 2xx на BYE: self/disconnect не нужен',
+      ).toEqual([]);
       expect(
         sipFrames.findSentInvite(newCallStartT),
         'новый INVITE не найден в журнале',
@@ -606,11 +612,13 @@ test.describe('Отключение прежнего подключения пе
       await expect
         .poll(
           async () => {
-            return connectPage.getConferenceToken();
+            const token = await connectPage.getConferenceToken();
+
+            return token !== undefined && token !== call.oldToken;
           },
           { message: 'новый токен конференции не пришёл', timeout: TOKEN_TIMEOUT_MS },
         )
-        .not.toBe(call.oldToken);
+        .toBe(true);
     } finally {
       await attachTimeline(
         testInfo,

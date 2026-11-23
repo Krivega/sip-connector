@@ -4,7 +4,6 @@ import { C, URI, Options } from '@krivega/jssip';
 import { Events } from 'events-constructor';
 
 import resolveDebug from '@/logger';
-import { NEW_TRANSACTION } from './constants';
 import createJestMock from './createJestMock';
 import { UA_JSSIP_EVENT_NAMES } from './eventNames';
 import Registrator from './Registrator.mock';
@@ -30,8 +29,6 @@ import type { Subscriber } from '@krivega/jssip/lib/Subscriber';
 import type { TEventHandlers } from './BaseSession.mock';
 
 const debug = resolveDebug('UA.mock');
-
-type TUAMockEventName = keyof UAEventMap | typeof NEW_TRANSACTION;
 
 export const PASSWORD_CORRECT = 'PASSWORD_CORRECT';
 export const PASSWORD_CORRECT_2 = 'PASSWORD_CORRECT_2';
@@ -77,7 +74,7 @@ class UA extends EventEmitter implements IUA {
 
   private static countStarts = 0;
 
-  public events: Events<readonly TUAMockEventName[]>;
+  public events: Events<readonly (keyof UAEventMap)[]>;
 
   public readonly registratorInner!: Registrator;
 
@@ -180,7 +177,7 @@ class UA extends EventEmitter implements IUA {
 
   public constructor(_config: UAConfigurationParams) {
     super();
-    this.events = new Events<readonly TUAMockEventName[]>(UA_JSSIP_EVENT_NAMES);
+    this.events = new Events<readonly (keyof UAEventMap)[]>(UA_JSSIP_EVENT_NAMES);
 
     const [scheme, infoUri] = _config.uri.split(':');
     const [user, url] = infoUri.split('@');
@@ -393,13 +390,6 @@ class UA extends EventEmitter implements IUA {
 
   public newSipEvent(data: { event: unknown; request: IncomingRequest }) {
     this.trigger('sipEvent', data);
-  }
-
-  /**
-   * Как JsSIP: транзакция сообщает о себе UA до отправки запроса.
-   */
-  public newTransaction(transaction: unknown) {
-    this.events.trigger(NEW_TRANSACTION, { transaction });
   }
 
   public registrator() {

@@ -194,7 +194,10 @@ describe('CallManager', () => {
       terminateAsync,
     } as unknown as RTCSession;
     await callManager.endCall();
-    expect(terminateAsync).toHaveBeenCalledWith({ cause: 'Canceled' });
+    expect(terminateAsync).toHaveBeenCalledWith({
+      cause: 'Canceled',
+      byeEventHandlers: { onSuccessResponse: expect.any(Function) as unknown },
+    });
   });
 
   it('endCall: если rtcSession нет, возвращает undefined', async () => {
@@ -1526,9 +1529,6 @@ describe('CallManager', () => {
         getSipServerUrl: () => {
           return undefined;
         },
-        getUa: () => {
-          return undefined;
-        },
       },
       { callSessionState: new CallSessionState() },
     );
@@ -1774,9 +1774,6 @@ describe('CallManager - дополнительные тесты для покр�
       sendOffer: jest.fn().mockResolvedValue({} as RTCSessionDescription),
       waitForSignaling: jest.fn().mockResolvedValue(true),
       getSipServerUrl: () => {
-        return undefined;
-      },
-      getUa: () => {
         return undefined;
       },
     };

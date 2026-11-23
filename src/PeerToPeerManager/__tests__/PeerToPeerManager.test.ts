@@ -29,9 +29,6 @@ describe('PeerToPeerManager', () => {
       getSipServerUrl: () => {
         return undefined;
       },
-      getUa: () => {
-        return undefined;
-      },
     };
 
     callManager = Object.assign(

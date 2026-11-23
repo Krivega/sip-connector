@@ -87,7 +87,7 @@ export interface IMCUSession {
   getPcConfig: () => { iceServers?: RTCIceServer[] } | undefined;
   // Методы
   startCall: TStartCall;
-  endCall: () => Promise<void>;
+  endCall: (onByeConfirmed?: () => void) => Promise<void>;
   renegotiate: () => Promise<boolean>;
   answerToIncomingCall: (
     incomingRTCSession: RTCSession,
@@ -121,6 +121,5 @@ export type TRemoteTracksChangeType = 'added' | 'removed' | 'updated';
 
 export type TCallManagerTools = TTools & {
   getSipServerUrl: () => string | undefined;
-  getUa: () => UA | undefined;
   waitForSignaling: () => Promise<boolean>;
 };

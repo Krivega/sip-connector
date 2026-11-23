@@ -25,9 +25,6 @@ describe('StatsManager', () => {
     getSipServerUrl: () => {
       return undefined;
     },
-    getUa: () => {
-      return undefined;
-    },
   };
 
   it('подписывается на события CallManager при создании', () => {

@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 
-import { C as JsSIP_C } from '@krivega/jssip';
+import { IncomingResponse, C as JsSIP_C } from '@krivega/jssip';
 
 import RTCSessionMock from '@/__fixtures__/RTCSessionMock';
 import UAMock from '@/__fixtures__/UA.mock';
@@ -53,9 +53,6 @@ const createSubject = () => {
       getSipServerUrl: () => {
         return SIP_SERVER_URL;
       },
-      getUa: () => {
-        return undefined;
-      },
     },
     { callSessionState: new CallSessionState() },
   );
@@ -85,9 +82,7 @@ const createSubject = () => {
     });
   };
 
-  // Прошлый звонок вошёл в комнату и оборвался локально: участник остался на сервере.
-  const leaveStaleParticipant = (token = 'token-1') => {
-    callManager.events.trigger('start-call', { number: '1000', answer: false });
+  const enterRoom = (token: string) => {
     apiManager.events.trigger('enter-room', { room: '1000', participantName: 'p1' });
     apiManager.events.trigger('conference:participant-token-issued', {
       jwt: token,
@@ -95,6 +90,12 @@ const createSubject = () => {
       participant: 'p1',
     });
     expect(callManager.stateMachine.state).toBe('call:inRoom');
+  };
+
+  // Прошлый звонок вошёл в комнату и оборвался локально: участник остался на сервере.
+  const leaveStaleParticipant = (token = 'token-1') => {
+    callManager.events.trigger('start-call', { number: '1000', answer: false });
+    enterRoom(token);
     callManager.events.trigger('ended', {
       originator: 'local',
       cause: JsSIP_C.causes.RTP_TIMEOUT,
@@ -112,6 +113,7 @@ const createSubject = () => {
     failedListener,
     endCallListener,
     startCall,
+    enterRoom,
     leaveStaleParticipant,
   };
 };
@@ -181,6 +183,33 @@ describe('CallManager: отключение устаревшего участн�
     expect(subject.callManager.stateMachine.state).toBe('call:connecting');
     expect(subject.callManager.requested).toBe(true);
     expect(subject.ua.call).not.toHaveBeenCalled();
+
+    await subject.callManager.endCall();
+    await call;
+  });
+
+  it.each([
+    [
+      'не отправляет запрос отключения, когда сервер ответил 2xx на BYE отбоя',
+      (session: RTCSessionMock) => {
+        session.byeEventHandlers?.onSuccessResponse?.(new IncomingResponse());
+      },
+      0,
+    ],
+    ['отключает прежнее подключение, когда ответа 2xx на BYE отбоя нет', () => {}, 1],
+  ])('%s', async (_name, answerBye, expectedRequests) => {
+    const subject = createSubject();
+
+    await subject.startCall();
+    subject.enterRoom('token-1');
+    await subject.callManager.endCall();
+    answerBye(subject.ua.call.mock.results[0].value as RTCSessionMock);
+
+    const call = settle(subject.startCall());
+
+    await flush();
+
+    expect(fetchMock).toHaveBeenCalledTimes(expectedRequests);
 
     await subject.callManager.endCall();
     await call;

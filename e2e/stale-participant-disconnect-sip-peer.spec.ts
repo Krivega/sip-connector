@@ -290,7 +290,7 @@ test.describe('Отключение прежнего подключения пе
     expect(sipPeer.countReceivedRequests('INVITE')).toBe(1);
   });
 
-  test('ручной отбой с ответом на BYE: звонок сразу после отбоя уходит без POST self/disconnect', async ({
+  test('ручной отбой с ответом 200 на BYE: звонок сразу после отбоя уходит без POST self/disconnect', async ({
     connectPage,
     sipPeer,
     statusDashboard,
@@ -308,7 +308,7 @@ test.describe('Отключение прежнего подключения пе
     expect(sipPeer.countReceivedRequests('INVITE')).toBe(2);
   });
 
-  test('ответ на BYE прежнего звонка во время POST: повторы прекращаются без ошибки, INVITE уходит без 401', async ({
+  test('ответ 200 на BYE прежнего звонка во время POST: повторы прекращаются без ошибки, INVITE уходит без 401', async ({
     connectPage,
     sipPeer,
     statusDashboard,
@@ -326,6 +326,33 @@ test.describe('Отключение прежнего подключения пе
 
     expect(selfDisconnect.requests(), 'POST после ответа на BYE').toHaveLength(1);
     expectStaleToken(selfDisconnect.requests(), STALE_TOKEN);
+    expect(await readEvents()).toMatchObject({ failed: [] });
+  });
+
+  test('ответ 500 на BYE ручного отбоя не снимает прежнее подключение: INVITE ждёт 401 на POST', async ({
+    page,
+    connectPage,
+    sipPeer,
+    statusDashboard,
+    selfDisconnect,
+  }) => {
+    await leaveStaleParticipant({ connectPage, sipPeer, statusDashboard });
+    sipPeer.answerLastRequest('BYE', '500 Server Internal Error');
+    selfDisconnect.hold();
+    await startCallUntilSelfDisconnect({ connectPage, statusDashboard, selfDisconnect });
+    await page.waitForTimeout(NO_INVITE_WAIT_MS);
+
+    // Ответ на POST удержан: ушедший INVITE значил бы, что ошибку на BYE приняли за снятие подключения.
+    expect(sipPeer.countReceivedRequests('INVITE'), 'INVITE ушёл до ответа на POST').toBe(1);
+
+    selfDisconnect.release();
+    await enterRoom({ sipPeer, statusDashboard, confirmed: 2, bearerToken: NEXT_TOKEN });
+
+    const requests = selfDisconnect.requests();
+
+    expect(requests).toHaveLength(1);
+    expect(requests[0].reply).toBe(401);
+    expectStaleToken(requests, STALE_TOKEN);
     expect(await readEvents()).toMatchObject({ failed: [] });
   });
 

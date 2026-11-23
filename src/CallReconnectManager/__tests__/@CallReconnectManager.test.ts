@@ -202,34 +202,40 @@ describe('CallReconnectManager (facade)', () => {
       };
     };
 
-    it('явный отказ удалённой стороны завершает перезвон без повторного звонка', async () => {
-      const subject = createSubject();
-      const { manager, callManager } = subject;
-      const refusal = { originator: 'remote', cause: JsSIP_C.causes.REJECTED };
-      const onTerminationClassified = jest.fn();
-      const onDisarmed = jest.fn();
-      const onAttemptFailed = jest.fn();
-      const rejectAttempt = await startPendingAttempt(subject);
+    it.each([JsSIP_C.causes.BUSY, JsSIP_C.causes.REJECTED])(
+      'явный отказ удалённой стороны (%s) завершает перезвон без повторного звонка',
+      async (cause) => {
+        const subject = createSubject();
+        const { manager, callManager } = subject;
+        const refusal = { originator: 'remote', cause };
+        const onTerminationClassified = jest.fn();
+        const onDisarmed = jest.fn();
+        const onAttemptFailed = jest.fn();
+        const rejectAttempt = await startPendingAttempt(subject);
 
-      manager.on('termination-classified', onTerminationClassified);
-      manager.on('disarmed', onDisarmed);
-      manager.on('attempt-failed', onAttemptFailed);
+        manager.on('termination-classified', onTerminationClassified);
+        manager.on('disarmed', onDisarmed);
+        manager.on('attempt-failed', onAttemptFailed);
 
-      callManager.emit('failed', refusal);
-      rejectAttempt(refusal);
-      await new Promise<void>((resolve) => {
-        setTimeout(resolve, 20);
-      });
+        callManager.emit('failed', refusal);
+        rejectAttempt(refusal);
+        await new Promise<void>((resolve) => {
+          setTimeout(resolve, 20);
+        });
 
-      expect(onTerminationClassified).toHaveBeenCalledTimes(1);
-      expect(onTerminationClassified).toHaveBeenCalledWith({ decision: 'finish', event: refusal });
-      expect(onDisarmed).toHaveBeenCalledTimes(1);
-      expect(onAttemptFailed).not.toHaveBeenCalled();
-      expect(callManager.startCall).toHaveBeenCalledTimes(1);
-      expect(manager.state).toBe(ECallReconnectStatus.IDLE);
+        expect(onTerminationClassified).toHaveBeenCalledTimes(1);
+        expect(onTerminationClassified).toHaveBeenCalledWith({
+          decision: 'finish',
+          event: refusal,
+        });
+        expect(onDisarmed).toHaveBeenCalledTimes(1);
+        expect(onAttemptFailed).not.toHaveBeenCalled();
+        expect(callManager.startCall).toHaveBeenCalledTimes(1);
+        expect(manager.state).toBe(ECallReconnectStatus.IDLE);
 
-      manager.stop();
-    });
+        manager.stop();
+      },
+    );
 
     it.each([
       [
@@ -246,6 +252,16 @@ describe('CallReconnectManager (facade)', () => {
         'сетевой отказ удалённой стороны',
         { originator: 'remote', cause: JsSIP_C.causes.ADDRESS_INCOMPLETE },
         { originator: 'remote', cause: JsSIP_C.causes.ADDRESS_INCOMPLETE },
+      ],
+      [
+        'временный отказ удалённой стороны (503)',
+        { originator: 'remote', cause: JsSIP_C.causes.SIP_FAILURE_CODE },
+        { originator: 'remote', cause: JsSIP_C.causes.SIP_FAILURE_CODE },
+      ],
+      [
+        'недоступность удалённой стороны (480)',
+        { originator: 'remote', cause: JsSIP_C.causes.UNAVAILABLE },
+        { originator: 'remote', cause: JsSIP_C.causes.UNAVAILABLE },
       ],
     ])(
       'не классифицирует %s и передаёт отказ попытки политике повторов',

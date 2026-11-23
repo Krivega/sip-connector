@@ -187,7 +187,6 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     this.staleParticipantManager = new StaleParticipantManager({
       callManager: this,
       getServerUrl: tools.getSipServerUrl,
-      getUa: tools.getUa,
     });
   }
 
@@ -305,12 +304,14 @@ class CallManager extends EventEmitterProxy<TEventMap> {
 
     this.events.emit('end-call');
 
+    const onByeConfirmed = this.staleParticipantManager.handleEndCall();
+
     // Без `failed` машина звонка осталась бы в DISCONNECTING: сессии JsSIP ещё нет.
     if (isStartCallAborted) {
       this.emitFailedCall(new IncomingResponse(), JsSIP_C.causes.CANCELED);
     }
 
-    return this.mcuSession.endCall();
+    return this.mcuSession.endCall(onByeConfirmed);
   }
 
   public async renegotiate(): Promise<boolean> {

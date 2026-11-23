@@ -142,9 +142,6 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
         getSipServerUrl: () => {
           return this.connectionManager.getConnectionConfiguration()?.sipServerUrl;
         },
-        getUa: () => {
-          return this.connectionManager.ua;
-        },
       },
       { callSessionState: this.callSessionState },
     );

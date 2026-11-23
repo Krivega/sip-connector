@@ -455,4 +455,70 @@ describe('CallReconnectManager (integration)', () => {
       manager.stop();
     });
   });
+  // Как `CallManager.startCall`: временный отказ сервера приходит событием `failed` и отклоняет звонок им же.
+  describe('temporary remote refusal of the attempt', () => {
+    const serviceUnavailableEvent = {
+      originator: 'remote',
+      cause: JsSIP_C.causes.SIP_FAILURE_CODE,
+    };
+
+    const startRefusedCall = (callManager: FakeCallManager) => {
+      return async () => {
+        callManager.emit('failed', serviceUnavailableEvent);
+
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
+        throw serviceUnavailableEvent;
+      };
+    };
+
+    it('retries until the limit and counts each refused attempt once', async () => {
+      const callManager = new FakeCallManager();
+      const { manager } = createSubject({
+        callManager,
+        startCall: startRefusedCall(callManager),
+        options: { maxAttempts: 2 },
+      });
+      const onTerminationClassified = jest.fn();
+      const onAttemptFailed = jest.fn();
+      const limitPromise = waitFor<{ attempts: number }>(manager, 'limit-reached');
+
+      manager.arm(makeRedialParameters());
+      callManager.emit('failed', makeNetworkFailedEndEvent(JsSIP_C.causes.REQUEST_TIMEOUT));
+      manager.on('termination-classified', onTerminationClassified);
+      manager.on('attempt-failed', onAttemptFailed);
+
+      const payload = await limitPromise;
+
+      expect(payload.attempts).toBe(2);
+      expect(onAttemptFailed).toHaveBeenCalledTimes(2);
+      expect(onTerminationClassified).not.toHaveBeenCalled();
+      expect(callManager.startCall).toHaveBeenCalledTimes(2);
+      expect(manager.state).toBe(ECallReconnectStatus.LIMIT_REACHED);
+
+      manager.stop();
+    });
+
+    it('goes to ERROR_TERMINAL when retry on error is disabled', async () => {
+      const callManager = new FakeCallManager();
+      const canRetryOnError = jest.fn(() => {
+        return false;
+      });
+      const { manager } = createSubject({
+        callManager,
+        startCall: startRefusedCall(callManager),
+        options: { canRetryOnError },
+      });
+
+      manager.arm(makeRedialParameters());
+      callManager.emit('failed', makeNetworkFailedEndEvent(JsSIP_C.causes.REQUEST_TIMEOUT));
+
+      await waitFor(manager, 'attempt-failed');
+
+      expect(canRetryOnError).toHaveBeenCalledWith(serviceUnavailableEvent);
+      expect(manager.state).toBe(ECallReconnectStatus.ERROR_TERMINAL);
+      expect(callManager.startCall).toHaveBeenCalledTimes(1);
+
+      manager.stop();
+    });
+  });
 });
