@@ -269,6 +269,36 @@ describe('createCallReconnectMachine', () => {
     expect(deps.emitDisarmed).toHaveBeenCalled();
   });
 
+  it('CALL.ENDED из attempting отменяет попытку и уводит в idle без её позднего исхода', async () => {
+    let resolveAttempt = () => {};
+    const deps = createDeps({
+      performAttempt: jest.fn(async () => {
+        return new Promise<void>((resolve) => {
+          resolveAttempt = resolve;
+        });
+      }),
+    });
+    const actor = createActor(createCallReconnectMachine(deps));
+
+    actor.start();
+    actor.send({ type: 'RECONNECT.ARM', parameters: makeParameters() });
+    actor.send({ type: 'CALL.FAILED', event: makeEndEvent() });
+    await settle();
+
+    expect(actor.getSnapshot().value).toBe(EState.ATTEMPTING);
+
+    actor.send({ type: 'CALL.ENDED', event: makeEndEvent({ cause: JsSIP_C.causes.REJECTED }) });
+    resolveAttempt();
+    await settle();
+
+    expect(actor.getSnapshot().value).toBe(EState.IDLE);
+    expect(deps.cancelAll).toHaveBeenCalledTimes(2);
+    expect(deps.registerAttemptFinish).toHaveBeenCalledTimes(1);
+    expect(deps.emitDisarmed).toHaveBeenCalledTimes(1);
+    expect(deps.emitCancelled).toHaveBeenCalledWith({ reason: 'disarm' });
+    expect(deps.emitAttemptSucceeded).not.toHaveBeenCalled();
+  });
+
   it('attempt failed with canRetryOnError=false lands in errorTerminal', async () => {
     const error = new Error('no-retry');
     const performAttempt = jest.fn(async () => {

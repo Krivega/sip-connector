@@ -100,6 +100,15 @@ const createStale = (subject: TSubject, token = 'token-1') => {
   endByNetwork(subject);
 };
 
+// Ручной отбой, как в `CallManager.endCall`: подтверждение уходит в `terminateAsync`, JsSIP в том же такте завершает сессию.
+const hangUp = (subject: TSubject) => {
+  const confirmBye = subject.manager.handleEndCall();
+
+  subject.emit('ended', { originator: 'local', cause: JsSIP_C.causes.BYE });
+
+  return confirmBye;
+};
+
 const catchError = async (promise: Promise<unknown>): Promise<unknown> => {
   return promise.then(
     () => {
@@ -161,7 +170,7 @@ describe('StaleParticipantManager', () => {
 
     respond(401);
     subject.emit(event, { originator, cause: JsSIP_C.causes.CONNECTION_ERROR });
-    subject.emit('end-call');
+    subject.manager.handleEndCall();
 
     await expect(subject.disconnectStale()).resolves.toBeUndefined();
     expect(fetchMock).not.toHaveBeenCalled();
@@ -204,7 +213,7 @@ describe('StaleParticipantManager', () => {
 
     respond(401);
     subject.enterRoom('token-1');
-    subject.emit('end-call');
+    subject.manager.handleEndCall();
 
     await expect(subject.disconnectStale()).resolves.toBeUndefined();
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -442,16 +451,31 @@ describe('StaleParticipantManager', () => {
   });
 
   it.each([
-    ['ended', { originator: 'remote', cause: JsSIP_C.causes.BYE }],
-    ['failed', { originator: 'remote', cause: JsSIP_C.causes.BUSY }],
-    ['ended', { originator: 'local', cause: JsSIP_C.causes.RTP_TIMEOUT }],
-    ['end-call', undefined],
-  ])('не забывает устаревшего участника при последующем %s', async (event, payload) => {
+    [
+      'ended от сервера',
+      (subject: TSubject) => {
+        subject.emit('ended', { originator: 'remote', cause: JsSIP_C.causes.BYE });
+      },
+    ],
+    [
+      'failed от сервера',
+      (subject: TSubject) => {
+        subject.emit('failed', { originator: 'remote', cause: JsSIP_C.causes.BUSY });
+      },
+    ],
+    ['обрыве по сети', endByNetwork],
+    [
+      'ручном отбое с ответом 2xx на BYE',
+      (subject: TSubject) => {
+        hangUp(subject)();
+      },
+    ],
+  ])('не забывает устаревшего участника при последующем %s', async (_name, endCall) => {
     const subject = setup();
 
     respond(401);
     createStale(subject);
-    subject.emit(event, payload);
+    endCall(subject);
 
     await subject.disconnectStale();
 
@@ -957,7 +981,7 @@ describe('StaleParticipantManager', () => {
       respond(401);
       createStale(subject);
       jest.advanceTimersByTime(STALE_TTL_MS / 2);
-      subject.emit('end-call');
+      subject.manager.handleEndCall();
       subject.emit('failed', { originator: 'local', cause: JsSIP_C.causes.INTERNAL_ERROR });
       endByNetwork(subject);
       jest.advanceTimersByTime(STALE_TTL_MS / 2 + 1);
@@ -987,5 +1011,249 @@ describe('StaleParticipantManager', () => {
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
     });
+  });
+
+  describe('подтверждение BYE ручного отбоя', () => {
+    const CONFIRM_INTERVAL_MS = 1000;
+
+    it('не отправляет запрос, когда сервер ответил 2xx на BYE', async () => {
+      const subject = setup();
+
+      respond(401);
+      subject.enterRoom('token-1');
+      hangUp(subject)();
+
+      await expect(subject.disconnectStale()).resolves.toBeUndefined();
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('отключает прежнее подключение, когда ответа 2xx на BYE нет', async () => {
+      const subject = setup();
+
+      respond(401);
+      subject.enterRoom('token-1');
+      hangUp(subject);
+
+      await subject.disconnectStale();
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(new Headers(getRequestInit().headers).get('Authorization')).toBe('Bearer token-1');
+    });
+
+    it('возвращает подтверждение без действия, когда подключения в комнате нет', async () => {
+      const subject = setup();
+      const confirmBye = subject.manager.handleEndCall();
+
+      confirmBye();
+
+      await expect(subject.disconnectStale()).resolves.toBeUndefined();
+      expect(fetchMock).not.toHaveBeenCalled();
+
+      respond(401);
+      createStale(subject);
+      confirmBye();
+
+      await subject.disconnectStale();
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('забывает прежнее подключение, когда ответ 2xx на BYE пришёл после отменённого отключения', async () => {
+      const subject = setup();
+      const abortController = new AbortController();
+      const confirmBye = (() => {
+        subject.enterRoom('token-1');
+
+        return hangUp(subject);
+      })();
+
+      holdUntilAbort();
+      respond(401);
+
+      const canceled = catchError(subject.disconnectStale(abortController.signal));
+
+      abortController.abort();
+      await canceled;
+      confirmBye();
+
+      await expect(subject.disconnectStale()).resolves.toBeUndefined();
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    describe('во время отключения', () => {
+      beforeEach(() => {
+        jest.useFakeTimers();
+      });
+
+      it('разрешает звонок без ошибки и прерывает зависший запрос, когда сервер ответил 2xx на BYE', async () => {
+        const subject = setup();
+
+        holdUntilAbort();
+        subject.enterRoom('token-1');
+
+        const confirmBye = hangUp(subject);
+        const result = subject.disconnectStale();
+
+        await jest.advanceTimersByTimeAsync(0);
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+
+        confirmBye();
+
+        await expect(result).resolves.toBeUndefined();
+        expect(getRequestInit().signal?.aborted).toBe(true);
+        expect(jest.getTimerCount()).toBe(0);
+
+        await jest.advanceTimersByTimeAsync(5 * CONFIRM_INTERVAL_MS);
+        await subject.disconnectStale();
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+      });
+
+      it('разрешает звонок без ошибки в паузе между запросами, когда сервер ответил 2xx на BYE', async () => {
+        const subject = setup();
+
+        fetchMock.mockResolvedValue({ ok: true, status: 204 });
+        subject.enterRoom('token-1');
+
+        const confirmBye = hangUp(subject);
+        const result = subject.disconnectStale();
+
+        await jest.advanceTimersByTimeAsync(CONFIRM_INTERVAL_MS / 2);
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+
+        confirmBye();
+
+        await expect(result).resolves.toBeUndefined();
+        expect(jest.getTimerCount()).toBe(0);
+
+        await jest.advanceTimersByTimeAsync(5 * CONFIRM_INTERVAL_MS);
+        await subject.disconnectStale();
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+      });
+
+      it('останавливает перекрывающиеся отключения прежнего подключения', async () => {
+        const subject = setup();
+
+        holdUntilAbort();
+        holdUntilAbort();
+        subject.enterRoom('token-1');
+
+        const confirmBye = hangUp(subject);
+        const first = subject.disconnectStale();
+        const second = subject.disconnectStale();
+
+        await jest.advanceTimersByTimeAsync(0);
+
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+
+        confirmBye();
+
+        await expect(first).resolves.toBeUndefined();
+        await expect(second).resolves.toBeUndefined();
+        expect(getRequestInit(0).signal?.aborted).toBe(true);
+        expect(getRequestInit(1).signal?.aborted).toBe(true);
+        expect(jest.getTimerCount()).toBe(0);
+      });
+
+      it('не останавливает отключение нового подключения ответом 2xx на BYE прежнего звонка', async () => {
+        const subject = setup();
+
+        respond(204);
+        respond(401);
+        subject.enterRoom('token-1');
+
+        const confirmBye = hangUp(subject);
+
+        createStale(subject, 'token-2');
+
+        const result = subject.disconnectStale();
+
+        await jest.advanceTimersByTimeAsync(0);
+        confirmBye();
+        await jest.advanceTimersByTimeAsync(CONFIRM_INTERVAL_MS);
+
+        await expect(result).resolves.toBeUndefined();
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+        expect(new Headers(getRequestInit(1).headers).get('Authorization')).toBe('Bearer token-2');
+      });
+
+      it('разрешает звонок по пределу 20 секунд, пока ответа 2xx на BYE нет', async () => {
+        const subject = setup();
+
+        fetchMock.mockResolvedValue({ ok: true, status: 204 });
+        subject.enterRoom('token-1');
+        hangUp(subject);
+
+        const result = subject.disconnectStale();
+
+        await jest.advanceTimersByTimeAsync(CONFIRM_LIMIT_MS);
+
+        await expect(result).resolves.toBeUndefined();
+        expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(20);
+        expect(jest.getTimerCount()).toBe(0);
+      });
+
+      it('отклоняет звонок причиной отмены сигнала, пока ответа 2xx на BYE нет', async () => {
+        const subject = setup();
+        const abortController = new AbortController();
+        const reason = new Error('canceled');
+
+        holdUntilAbort();
+        subject.enterRoom('token-1');
+        hangUp(subject);
+
+        const result = catchError(subject.disconnectStale(abortController.signal));
+
+        abortController.abort(reason);
+
+        expect(await result).toBe(reason);
+        expect(getRequestInit().signal?.aborted).toBe(true);
+        expect(jest.getTimerCount()).toBe(0);
+      });
+    });
+
+    it.each([
+      [
+        'новое подключение в комнате',
+        (subject: TSubject) => {
+          subject.enterRoom('token-2');
+        },
+      ],
+      [
+        'оборванное по сети новое подключение',
+        (subject: TSubject) => {
+          createStale(subject, 'token-2');
+        },
+      ],
+      [
+        'новое подключение после второго ручного отбоя',
+        (subject: TSubject) => {
+          subject.enterRoom('token-2');
+          hangUp(subject);
+        },
+      ],
+    ])(
+      'сохраняет %s, когда ответ 2xx на BYE прежнего звонка пришёл позже',
+      async (_name, replaceSlot) => {
+        const subject = setup();
+
+        subject.enterRoom('token-1');
+
+        const confirmBye = hangUp(subject);
+
+        replaceSlot(subject);
+        confirmBye();
+        endByNetwork(subject);
+        respond(401);
+
+        await subject.disconnectStale();
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(new Headers(getRequestInit().headers).get('Authorization')).toBe('Bearer token-2');
+      },
+    );
   });
 });

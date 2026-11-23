@@ -53,6 +53,7 @@ stateDiagram-v2
   attempting --> evaluating: performAttempt.error / retryable
   attempting --> armed: performAttempt.error / cancelled
   attempting --> errorTerminal: performAttempt.error / !canRetryOnError
+  attempting --> idle: CALL.ENDED
   limitReached --> evaluating: RECONNECT.FORCE
   errorTerminal --> evaluating: RECONNECT.FORCE
   idle --> armed: RECONNECT.ARM (глобальный re-arm)
@@ -62,6 +63,7 @@ stateDiagram-v2
 ## Ключевые правила переходов
 
 - Классификация JsSIP-терминации выполняется **в `@CallReconnectManager`**, а не в guard машины: оба события (`failed`, `ended`) проходят через `isNetworkFailurePolicy`. Сетевые причины превращаются в `CALL.FAILED`, всё остальное — в `CALL.ENDED`. Это гарантирует, что `ended` с `RTP_TIMEOUT`/`CONNECTION_ERROR` (mid-call обрыв) запустит редиал, а `failed(BUSY)` или `ended(BYE)` разоружит менеджер.
+- Во время попытки фасад маршрутизирует только явный отказ удалённой стороны на `INVITE` попытки (`originator: 'remote'`, причина `BUSY` или `REJECTED`) — в `CALL.ENDED` с `termination-classified: finish`: машина отменяет попытку (`cancelAll`), её поздний исход не обрабатывается. Остальные завершения звонка попытки (`failed`/`ended`) — временный отказ сервера (`SIP_FAILURE_CODE` на `503`, `UNAVAILABLE` на `480`) и другие ответы удалённой стороны, сетевой сбой, локальное и системное завершение — фасад не маршрутизирует и не классифицирует: исход решает `performAttempt.error` через `canRetryOnError` и лимит попыток. Явный локальный hangUp (`end-call` из `CallManager.endCall()`, в том числе внутри `CallManager.failed()`) уводит в `idle` и из `attempting`, `canRetryOnError` не вызывается.
 - Порядок `always`-guard в `evaluating` важен: сначала `isLimitReached`, затем `isSignalingReady`, иначе `waitingSignaling`.
 - Глобальный `RECONNECT.ARM` доступен из любого состояния: перед рестартом выполняется `cancelAll + resetAttemptsState`, что позволяет пользователю в любой момент «перепрошить» параметры звонка.
 - Глобальный `RECONNECT.DISARM` выполняет полный сброс in-flight и эмитит `disarmed` и `cancelled(reason)` (при явно переданной причине).

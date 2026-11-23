@@ -7,7 +7,7 @@ import createJestMock from './createJestMock';
 import RTCPeerConnectionMock from './RTCPeerConnectionMock';
 import { getRoomFromSipUrl } from './utils';
 
-import type { IncomingInfoEvent } from '@krivega/jssip';
+import type { ByeEventHandlers, IncomingInfoEvent, TerminateOptions } from '@krivega/jssip';
 import type { TEventHandlers } from './BaseSession.mock';
 
 const CONNECTION_DELAY = 400; // more 300 for test cancel requests with debounced
@@ -32,6 +32,9 @@ class RTCSessionMock extends BaseSession {
   public url?: string;
 
   public status_code?: number;
+
+  /** Обработчики ответа на BYE из последнего `terminate`: тест сам вызывает нужный исход. */
+  public byeEventHandlers?: ByeEventHandlers;
 
   public renegotiate = createJestMock(async () => {
     return true;
@@ -201,8 +204,9 @@ class RTCSessionMock extends BaseSession {
     return this.connection;
   }
 
-  public terminate({ status_code, cause }: { status_code?: number; cause?: string } = {}) {
+  public terminate({ status_code, cause, byeEventHandlers }: TerminateOptions = {}) {
     this.status_code = status_code;
+    this.byeEventHandlers = byeEventHandlers;
 
     this.trigger('ended', { status_code, cause, originator: 'local' });
 
@@ -211,11 +215,8 @@ class RTCSessionMock extends BaseSession {
     return this;
   }
 
-  public async terminateAsync({
-    status_code,
-    cause,
-  }: { status_code?: number; cause?: string } = {}) {
-    this.terminate({ status_code, cause });
+  public async terminateAsync({ status_code, cause, byeEventHandlers }: TerminateOptions = {}) {
+    this.terminate({ status_code, cause, byeEventHandlers });
   }
 
   public terminateRemote({ status_code }: { status_code?: number } = {}) {

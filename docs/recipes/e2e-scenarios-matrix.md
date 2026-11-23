@@ -36,10 +36,13 @@
 
 - `flaky-risk` — молчащее устаревшее подключение после обрыва: перед новым INVITE POST `self/disconnect` повторяется до `401`, затем вход в комнату (`e2e/stale-participant-disconnect.spec.ts`; живой dev-сервер).
 - `flaky-risk` — прежнее подключение сервер уже убрал: первый POST получает `401`, звонок входит в комнату (`e2e/stale-participant-disconnect.spec.ts`; живой dev-сервер).
-- `flaky-risk` — после ручного отбоя следующий звонок ждёт в `call:connecting`, пока POST не получит `401`, и входит в комнату (`e2e/stale-participant-disconnect.spec.ts`; живой dev-сервер).
+- `flaky-risk` — ручной отбой, сервер ответил на `BYE`: звонок сразу после отбоя уходит без POST, входит в комнату и держится 5 с (`e2e/stale-participant-disconnect.spec.ts`; живой dev-сервер).
 - `flaky-risk` — первый звонок страницы уходит без POST; после завершения звонка сервером (`BYE`) следующий звонок тоже без POST (`e2e/stale-participant-disconnect.spec.ts`; живой dev-сервер).
 - `stable` — первый звонок без предыстории уходит без POST (`e2e/stale-participant-disconnect-sip-peer.spec.ts`; тестовый SIP-пир `e2e/support/SipPeer.ts` и подменённый маршрут `self/disconnect`).
-- `stable` — после ручного отбоя ответы `204, 204, 401` с токеном прежнего звонка: POST повторяется раз в 1 с, INVITE уходит после `401`; новый вход в комнату заменяет токен (`e2e/stale-participant-disconnect-sip-peer.spec.ts`).
+- `stable` — ручной отбой с ответом `200` на `BYE`: звонок сразу после отбоя уходит без POST (`e2e/stale-participant-disconnect-sip-peer.spec.ts`).
+- `stable` — ответ `200` на `BYE` прежнего звонка приходит во время POST: повторы прекращаются без ошибки, INVITE уходит, не дожидаясь `401` (`e2e/stale-participant-disconnect-sip-peer.spec.ts`).
+- `stable` — ответ `500` на `BYE` ручного отбоя подключение не снимает: следующий звонок отправляет POST с токеном прежнего звонка, INVITE уходит только после `401` (`e2e/stale-participant-disconnect-sip-peer.spec.ts`).
+- `stable` — после ручного отбоя без ответа на `BYE` ответы `204, 204, 401` с токеном прежнего звонка: POST повторяется раз в 1 с, INVITE уходит после `401`; новый вход в комнату заменяет токен (`e2e/stale-participant-disconnect-sip-peer.spec.ts`; сценарии с POST ниже тоже начинаются с отбоя без ответа на `BYE`).
 - `stable` — звонок завершён сервером (`BYE`): следующий звонок уходит без POST (`e2e/stale-participant-disconnect-sip-peer.spec.ts`).
 - `stable` — `hangUp` во время POST: INVITE нет, `call:failed` с `Canceled`, `call:idle`; прежнее подключение запомнено, и следующий звонок снова отправляет POST (`e2e/stale-participant-disconnect-sip-peer.spec.ts`).
 - `stable` — `disconnect` во время POST: INVITE нет, `call:failed` с `Canceled`, `call:idle` (`e2e/stale-participant-disconnect-sip-peer.spec.ts`).

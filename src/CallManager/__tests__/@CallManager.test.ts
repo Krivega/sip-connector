@@ -194,7 +194,10 @@ describe('CallManager', () => {
       terminateAsync,
     } as unknown as RTCSession;
     await callManager.endCall();
-    expect(terminateAsync).toHaveBeenCalledWith({ cause: 'Canceled' });
+    expect(terminateAsync).toHaveBeenCalledWith({
+      cause: 'Canceled',
+      byeEventHandlers: { onSuccessResponse: expect.any(Function) as unknown },
+    });
   });
 
   it('endCall: если rtcSession нет, возвращает undefined', async () => {

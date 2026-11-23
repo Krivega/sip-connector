@@ -147,12 +147,13 @@ export class MCUSession implements IMCUSession {
     });
   };
 
-  public async endCall(): Promise<void> {
+  public async endCall(onByeConfirmed?: () => void): Promise<void> {
     const { rtcSession } = this;
 
     if (rtcSession && !rtcSession.isEnded()) {
       return rtcSession.terminateAsync({
         cause: ECallCause.CANCELED,
+        byeEventHandlers: { onSuccessResponse: onByeConfirmed },
       });
     }
 

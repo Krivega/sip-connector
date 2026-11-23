@@ -301,6 +301,8 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     debug('endCall');
 
     const isStartCallAborted = this.abortStartCall();
+    // До `end-call`: звонок из его обработчика должен застать подключение уже устаревшим.
+    const onByeConfirmed = this.staleParticipantManager.handleEndCall();
 
     this.events.emit('end-call');
 
@@ -309,7 +311,7 @@ class CallManager extends EventEmitterProxy<TEventMap> {
       this.emitFailedCall(new IncomingResponse(), JsSIP_C.causes.CANCELED);
     }
 
-    return this.mcuSession.endCall();
+    return this.mcuSession.endCall(onByeConfirmed);
   }
 
   public async renegotiate(): Promise<boolean> {

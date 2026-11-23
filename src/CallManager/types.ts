@@ -87,7 +87,7 @@ export interface IMCUSession {
   getPcConfig: () => { iceServers?: RTCIceServer[] } | undefined;
   // Методы
   startCall: TStartCall;
-  endCall: () => Promise<void>;
+  endCall: (onByeConfirmed?: () => void) => Promise<void>;
   renegotiate: () => Promise<boolean>;
   answerToIncomingCall: (
     incomingRTCSession: RTCSession,

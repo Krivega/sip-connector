@@ -177,45 +177,148 @@ describe('CallReconnectManager (facade)', () => {
     manager.stop();
   });
 
-  it('не классифицирует завершение звонка попытки и передаёт её отказ политике повторов', async () => {
-    const { manager, callManager } = createSubject();
-    const onTerminationClassified = jest.fn();
-    let rejectAttempt = (_error: Error) => {};
-    let markAttemptCallStarted = () => {};
-    const waitForAttemptCallStarted = new Promise<void>((resolve) => {
-      markAttemptCallStarted = resolve;
-    });
-
-    callManager.startCall.mockImplementationOnce(async () => {
-      return new Promise<undefined>((_resolve, reject) => {
-        rejectAttempt = reject;
-        markAttemptCallStarted();
+  describe('завершение звонка во время попытки', () => {
+    // Звонок попытки висит, пока тест не отклонит его так же, как `CallManager.startCall`.
+    const startPendingAttempt = async ({
+      manager,
+      callManager,
+    }: ReturnType<typeof createSubject>) => {
+      let rejectAttempt = (_error: unknown) => {};
+      const waitForAttemptCallStarted = new Promise<void>((resolve) => {
+        callManager.startCall.mockImplementationOnce(async () => {
+          return new Promise<undefined>((_resolve, reject) => {
+            rejectAttempt = reject;
+            resolve();
+          });
+        });
       });
-    });
 
-    const waitForSucceeded = new Promise<void>((resolve) => {
-      manager.on('attempt-succeeded', () => {
-        resolve();
+      manager.arm(makeRedialParameters());
+      callManager.emit('failed', makeFailedEndEvent());
+      await waitForAttemptCallStarted;
+
+      return (error: unknown) => {
+        rejectAttempt(error);
+      };
+    };
+
+    it.each([JsSIP_C.causes.BUSY, JsSIP_C.causes.REJECTED])(
+      'явный отказ удалённой стороны (%s) завершает перезвон без повторного звонка',
+      async (cause) => {
+        const subject = createSubject();
+        const { manager, callManager } = subject;
+        const refusal = { originator: 'remote', cause };
+        const onTerminationClassified = jest.fn();
+        const onDisarmed = jest.fn();
+        const onAttemptFailed = jest.fn();
+        const rejectAttempt = await startPendingAttempt(subject);
+
+        manager.on('termination-classified', onTerminationClassified);
+        manager.on('disarmed', onDisarmed);
+        manager.on('attempt-failed', onAttemptFailed);
+
+        callManager.emit('failed', refusal);
+        rejectAttempt(refusal);
+        await new Promise<void>((resolve) => {
+          setTimeout(resolve, 20);
+        });
+
+        expect(onTerminationClassified).toHaveBeenCalledTimes(1);
+        expect(onTerminationClassified).toHaveBeenCalledWith({
+          decision: 'finish',
+          event: refusal,
+        });
+        expect(onDisarmed).toHaveBeenCalledTimes(1);
+        expect(onAttemptFailed).not.toHaveBeenCalled();
+        expect(callManager.startCall).toHaveBeenCalledTimes(1);
+        expect(manager.state).toBe(ECallReconnectStatus.IDLE);
+
+        manager.stop();
+      },
+    );
+
+    it('локальное завершение звонка попытки через endCall завершает перезвон без политики повторов', async () => {
+      const subject = createSubject();
+      const { manager, callManager } = subject;
+      const failedEvent = { originator: 'local', cause: JsSIP_C.causes.INTERNAL_ERROR };
+      const onTerminationClassified = jest.fn();
+      const onDisarmed = jest.fn();
+      const onAttemptFailed = jest.fn();
+      const rejectAttempt = await startPendingAttempt(subject);
+
+      manager.on('termination-classified', onTerminationClassified);
+      manager.on('disarmed', onDisarmed);
+      manager.on('attempt-failed', onAttemptFailed);
+
+      // Так завершает звонок `CallManager.failed()`: `failed`, затем `end-call` из `endCall()`.
+      callManager.emit('failed', failedEvent);
+      callManager.emit('end-call');
+      rejectAttempt(failedEvent);
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 20);
       });
+
+      expect(onTerminationClassified).not.toHaveBeenCalled();
+      expect(onDisarmed).toHaveBeenCalledTimes(1);
+      expect(onAttemptFailed).not.toHaveBeenCalled();
+      expect(callManager.startCall).toHaveBeenCalledTimes(1);
+      expect(manager.state).toBe(ECallReconnectStatus.IDLE);
+
+      manager.stop();
     });
 
-    manager.arm(makeRedialParameters());
-    callManager.emit('failed', makeFailedEndEvent());
-    await waitForAttemptCallStarted;
-    manager.on('termination-classified', onTerminationClassified);
+    it.each([
+      [
+        'ошибку подготовки звонка',
+        { originator: 'local', cause: JsSIP_C.causes.INTERNAL_ERROR },
+        new Error('Stale participant disconnect failed with status 500'),
+      ],
+      [
+        'сетевой сбой',
+        { originator: 'system', cause: JsSIP_C.causes.REQUEST_TIMEOUT },
+        { originator: 'system', cause: JsSIP_C.causes.REQUEST_TIMEOUT },
+      ],
+      [
+        'сетевой отказ удалённой стороны',
+        { originator: 'remote', cause: JsSIP_C.causes.ADDRESS_INCOMPLETE },
+        { originator: 'remote', cause: JsSIP_C.causes.ADDRESS_INCOMPLETE },
+      ],
+      [
+        'временный отказ удалённой стороны (503)',
+        { originator: 'remote', cause: JsSIP_C.causes.SIP_FAILURE_CODE },
+        { originator: 'remote', cause: JsSIP_C.causes.SIP_FAILURE_CODE },
+      ],
+      [
+        'недоступность удалённой стороны (480)',
+        { originator: 'remote', cause: JsSIP_C.causes.UNAVAILABLE },
+        { originator: 'remote', cause: JsSIP_C.causes.UNAVAILABLE },
+      ],
+    ])(
+      'не классифицирует %s и передаёт отказ попытки политике повторов',
+      async (_name, event, attemptError) => {
+        const subject = createSubject();
+        const { manager, callManager } = subject;
+        const onTerminationClassified = jest.fn();
+        const rejectAttempt = await startPendingAttempt(subject);
+        const waitForSucceeded = new Promise<void>((resolve) => {
+          manager.on('attempt-succeeded', () => {
+            resolve();
+          });
+        });
 
-    callManager.emit('failed', {
-      originator: 'local',
-      cause: JsSIP_C.causes.INTERNAL_ERROR,
-    });
-    rejectAttempt(new Error('disconnect failed'));
-    await waitForSucceeded;
+        manager.on('termination-classified', onTerminationClassified);
 
-    expect(onTerminationClassified).not.toHaveBeenCalled();
-    expect(callManager.startCall).toHaveBeenCalledTimes(2);
-    expect(manager.state).toBe(ECallReconnectStatus.ARMED);
+        callManager.emit('failed', event);
+        rejectAttempt(attemptError);
+        await waitForSucceeded;
 
-    manager.stop();
+        expect(onTerminationClassified).not.toHaveBeenCalled();
+        expect(callManager.startCall).toHaveBeenCalledTimes(2);
+        expect(manager.state).toBe(ECallReconnectStatus.ARMED);
+
+        manager.stop();
+      },
+    );
   });
 
   it('failed event с бизнес-причиной (BUSY) разоружает менеджер', () => {

@@ -1,3 +1,4 @@
+import { C as JsSIP_C } from '@krivega/jssip';
 import { EventEmitterProxy } from 'events-constructor';
 
 import resolveDebug from '@/logger';
@@ -14,6 +15,8 @@ import type { TEventMap } from './events';
 import type { ICallReconnectOptions, TCallRedialParameters, TCancelledReason } from './types';
 
 const debug = resolveDebug('CallReconnectManager');
+
+const REMOTE_REFUSAL_CAUSES = new Set<string>([JsSIP_C.causes.BUSY, JsSIP_C.causes.REJECTED]);
 
 /**
  * Менеджер автоматического перезвона при сетевых обрывах звонка.
@@ -136,8 +139,11 @@ class CallReconnectManager extends EventEmitterProxy<TEventMap> {
      * `options.isNetworkFailure`), поэтому маршрутизация живёт в единой точке.
      */
     const routeTerminationEvent = (event: EndEvent): void => {
-      // Исход попытки решает её отказ: он проходит canRetryOnError и лимит попыток.
-      if (this.stateMachine.state === ECallReconnectStatus.ATTEMPTING) {
+      // Кроме явного отказа удалённой стороны, исход попытки решает её отказ через canRetryOnError и лимит.
+      if (
+        this.stateMachine.state === ECallReconnectStatus.ATTEMPTING &&
+        (event.originator !== 'remote' || !REMOTE_REFUSAL_CAUSES.has(event.cause))
+      ) {
         return;
       }
 

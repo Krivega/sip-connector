@@ -17,7 +17,7 @@ type TDialog = {
   to: string;
 };
 
-type TSilentMethod = 'INFO' | 'OPTIONS';
+type TSilentMethod = 'INFO' | 'OPTIONS' | 'BYE';
 
 type TConnection = {
   isHalfOpen: boolean;
@@ -88,11 +88,18 @@ const createRequest = ({
   ].join('\r\n');
 };
 
-const createResponse = (request: string, headers: string[] = [], body = ''): string => {
+const createResponse = (
+  request: string,
+  {
+    headers = [],
+    body = '',
+    status = '200 OK',
+  }: { headers?: string[]; body?: string; status?: string } = {},
+): string => {
   const to = getHeader(request, 'To');
 
   return [
-    'SIP/2.0 200 OK',
+    `SIP/2.0 ${status}`,
     `Via: ${getHeader(request, 'Via')}`,
     `From: ${getHeader(request, 'From')}`,
     `To: ${to.includes(';tag=') ? to : `${to};tag=sip-peer`}`,
@@ -285,6 +292,19 @@ export class SipPeer {
     });
   }
 
+  /** Запоздалый ответ (по умолчанию 200 OK) на последний запрос метода, оставленный без ответа `stopAnswering`. */
+  public answerLastRequest(method: TSilentMethod, status = '200 OK'): void {
+    const request = this.receivedMessages.findLast((message) => {
+      return isRequest(message, method);
+    });
+
+    if (request === undefined) {
+      throw new Error(`Клиент не отправлял ${method}`);
+    }
+
+    this.send(createResponse(request, { status }));
+  }
+
   /** Сервер закрывает текущий WebSocket и сразу закрывает все новые подключения клиента. */
   public async dropConnection(): Promise<void> {
     this.stopAcceptingConnections();
@@ -413,14 +433,15 @@ export class SipPeer {
 
     if (message.startsWith('REGISTER ')) {
       this.registration = message;
-      this.send(createResponse(message, [`Contact: ${getHeader(message, 'Contact')}`]));
+      this.send(
+        createResponse(message, { headers: [`Contact: ${getHeader(message, 'Contact')}`] }),
+      );
     } else if (message.startsWith('INVITE ')) {
       const body = await this.createDescription(message.slice(message.indexOf('\r\n\r\n') + 4));
-      const response = createResponse(
-        message,
-        [`Contact: ${PEER_CONTACT}`, 'Content-Type: application/sdp'],
+      const response = createResponse(message, {
+        headers: [`Contact: ${PEER_CONTACT}`, 'Content-Type: application/sdp'],
         body,
-      );
+      });
 
       this.dialog = {
         uri: getContactUri(message),
