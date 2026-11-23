@@ -450,6 +450,32 @@ describe('SipConnector: отключение устаревшего участн
       await call;
     });
 
+    it('call() из обработчика call:end-call после hangUp() отключает прежнее подключение до INVITE', async () => {
+      const subject = setup();
+      let redial: Promise<unknown> | undefined;
+
+      await callIntoRoom(subject);
+      subject.connector.once('call:end-call', () => {
+        redial = settle(subject.connector.call(subject.callParameters));
+      });
+      await subject.connector.hangUp();
+      await flush();
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(new Headers(fetchMock.mock.calls[0][1].headers).get('Authorization')).toBe(
+        'Bearer token-1',
+      );
+      expect(subject.ua.call).toHaveBeenCalledTimes(1);
+
+      requests[0].respond(401);
+      await flush();
+
+      expect(subject.ua.call).toHaveBeenCalledTimes(2);
+
+      await subject.connector.callManager.endCall();
+      await redial;
+    });
+
     it.each([
       [
         'ответе ошибкой',

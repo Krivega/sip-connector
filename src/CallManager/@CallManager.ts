@@ -301,10 +301,10 @@ class CallManager extends EventEmitterProxy<TEventMap> {
     debug('endCall');
 
     const isStartCallAborted = this.abortStartCall();
+    // До `end-call`: звонок из его обработчика должен застать подключение уже устаревшим.
+    const onByeConfirmed = this.staleParticipantManager.handleEndCall();
 
     this.events.emit('end-call');
-
-    const onByeConfirmed = this.staleParticipantManager.handleEndCall();
 
     // Без `failed` машина звонка осталась бы в DISCONNECTING: сессии JsSIP ещё нет.
     if (isStartCallAborted) {

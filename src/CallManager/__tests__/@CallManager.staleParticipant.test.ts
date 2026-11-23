@@ -215,6 +215,34 @@ describe('CallManager: отключение устаревшего участн�
     await call;
   });
 
+  it('отключает подключение отбоя до INVITE звонка, начатого из обработчика end-call', async () => {
+    const subject = createSubject();
+    let redial: Promise<unknown> | undefined;
+
+    await subject.startCall();
+    subject.enterRoom('token-1');
+    subject.callManager.once('end-call', () => {
+      redial = settle(subject.startCall('2000'));
+    });
+    await subject.callManager.endCall();
+    await flush();
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(new Headers(fetchMock.mock.calls[0][1].headers).get('Authorization')).toBe(
+      'Bearer token-1',
+    );
+    expect(subject.ua.call).toHaveBeenCalledTimes(1);
+
+    requests[0].respond(401);
+    await flush();
+
+    expect(subject.ua.call).toHaveBeenCalledTimes(2);
+    expect(subject.ua.call.mock.calls[1][0]).toBe(getUri('2000'));
+
+    await subject.callManager.endCall();
+    await redial;
+  });
+
   it('отправляет INVITE без запроса отключения, когда устаревшего участника нет', async () => {
     const subject = createSubject();
 
