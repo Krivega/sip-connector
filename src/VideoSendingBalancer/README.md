@@ -34,6 +34,12 @@ const balancer = new VideoSendingBalancer(apiManager, getConnection, {
 при создании и вызывается при каждой балансировке и сбросе, чтобы учесть актуальное значение
 `maxAvailableResolution` из конфигурации подключения.
 
+`isExcludedSender` — необязательная опция `IBalancerOptions`. `SenderFinder` не выбирает senders, для
+которых она возвращает `true`. Если других video senders с треком нет, балансировка и сброс ничего не
+записывают. `SipConnector` исключает так sender идущей демонстрации
+(`PresentationManager.isPresentationSender()`): без камеры первым video sender с треком оказалась бы
+демонстрация. После остановки демонстрации тот же sender (например, с камерой) снова балансируется.
+
 В типичном сценарии `getMaxResolution` задаёт `SipConnector` при создании
 `VideoSendingBalancerManager`.
 

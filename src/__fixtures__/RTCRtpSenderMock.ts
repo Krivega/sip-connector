@@ -48,7 +48,13 @@ class RTCRtpSenderMock implements RTCRtpSender {
   }
 
   public getParameters(): RTCRtpSendParameters {
-    this.parametersGets = { ...this.parameters };
+    // Как в браузере: изменения полученных параметров применяются только через setParameters
+    this.parametersGets = {
+      ...this.parameters,
+      encodings: this.parameters.encodings.map((encoding) => {
+        return { ...encoding };
+      }),
+    };
 
     return this.parametersGets;
   }

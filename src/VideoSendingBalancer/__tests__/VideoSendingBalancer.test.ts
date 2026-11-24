@@ -719,6 +719,79 @@ describe('VideoSendingBalancer', () => {
   });
 });
 
+describe('VideoSendingBalancer: исключённые senders', () => {
+  let apiManager: ApiManager;
+  let excludedSender: RTCRtpSender;
+  let balancer: VideoSendingBalancer | undefined;
+
+  const createVideoSender = (width: number, height: number): RTCRtpSender => {
+    return new RTCRtpSenderMock({
+      track: createVideoMediaStreamTrackMock({ constraints: { width, height } }),
+    });
+  };
+
+  const createBalancer = (senders: RTCRtpSender[]): VideoSendingBalancer => {
+    const connection = {
+      getSenders: () => {
+        return senders;
+      },
+    } as unknown as RTCPeerConnection;
+
+    balancer = new VideoSendingBalancer(
+      apiManager,
+      () => {
+        return connection;
+      },
+      {
+        ...NO_MAX_RESOLUTION_BALANCER_OPTIONS,
+        isExcludedSender: (sender) => {
+          return sender === excludedSender;
+        },
+      },
+    );
+
+    return balancer;
+  };
+
+  beforeEach(() => {
+    apiManager = doMockSipConnector().apiManager;
+    excludedSender = createVideoSender(3840, 2486);
+  });
+
+  afterEach(() => {
+    balancer?.unsubscribe();
+    balancer = undefined;
+    jest.restoreAllMocks();
+  });
+
+  it('балансирует следующий видео sender и не трогает исключённый', async () => {
+    const cameraSender = createVideoSender(1280, 720);
+    const excludedSetParameters = jest.spyOn(excludedSender, 'setParameters');
+
+    await createBalancer([excludedSender, cameraSender]).balance();
+
+    expect(cameraSender.getParameters().encodings[0]?.maxBitrate).toEqual(expect.any(Number));
+    expect(excludedSetParameters).not.toHaveBeenCalled();
+  });
+
+  it('ничего не пишет при балансировке и сбросе, если остались только исключённые senders', async () => {
+    const audioSender = new RTCRtpSenderMock({
+      track: { kind: 'audio' } as MediaStreamAudioTrack,
+    });
+    const excludedSetParameters = jest.spyOn(excludedSender, 'setParameters');
+    const testBalancer = createBalancer([audioSender, excludedSender]);
+
+    const result = await testBalancer.balance();
+
+    testBalancer.unsubscribe();
+    await delayPromise(10);
+
+    expect(result.isChanged).toBe(false);
+    expect(excludedSetParameters).not.toHaveBeenCalled();
+    expect(excludedSender.getParameters().encodings).toEqual([{}]);
+  });
+});
+
 describe('resolveVideoSendingBalancer', () => {
   let sipConnector: ReturnType<typeof doMockSipConnector>;
   let apiManager: ApiManager;

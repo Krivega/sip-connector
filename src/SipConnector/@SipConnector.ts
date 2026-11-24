@@ -99,7 +99,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     }: {
       preferredMimeTypesVideoCodecs?: string[];
       excludeMimeTypesVideoCodecs?: string[];
-      videoBalancerOptions?: Omit<IBalancerOptions, 'getMaxResolution'>;
+      videoBalancerOptions?: Omit<IBalancerOptions, 'getMaxResolution' | 'isExcludedSender'>;
       autoConnectorOptions?: IAutoConnectorOptions;
       callReconnectOptions?: ICallReconnectOptions;
       numberOfConnectionAttempts?: number;
@@ -175,6 +175,10 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       {
         ...(videoBalancerOptions ?? VIDEO_BALANCER_OPTIONS),
         getMaxResolution: this.getMaxAvailableResolution.bind(this),
+        // Без камеры первый video sender с треком — демонстрация: её кадр держит PresentationManager
+        isExcludedSender: (sender) => {
+          return this.presentationManager.isPresentationSender(sender);
+        },
       },
     );
     this.mainStreamHealthMonitor = new MainStreamHealthMonitor(

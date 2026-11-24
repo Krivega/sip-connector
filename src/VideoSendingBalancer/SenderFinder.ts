@@ -1,13 +1,26 @@
 import findVideoSender from '@/utils/peerConnection/findVideoSender';
 
-import type { ISenderFinder } from './types';
+import type { IBalancerOptions, ISenderFinder } from './types';
 
 /**
  * Реализация поиска видео отправителя
  */
 export class SenderFinder implements ISenderFinder {
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
+  private readonly isExcludedSender: NonNullable<IBalancerOptions['isExcludedSender']>;
+
+  public constructor({
+    isExcludedSender = () => {
+      return false;
+    },
+  }: Pick<IBalancerOptions, 'isExcludedSender'> = {}) {
+    this.isExcludedSender = isExcludedSender;
+  }
+
   public findVideoSender(senders: RTCRtpSender[]): RTCRtpSender | undefined {
-    return findVideoSender(senders);
+    return findVideoSender(
+      senders.filter((sender) => {
+        return !this.isExcludedSender(sender);
+      }),
+    );
   }
 }

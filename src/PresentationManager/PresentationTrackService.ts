@@ -43,6 +43,10 @@ class PresentationTrackService {
     });
   }
 
+  public has(sender: RTCRtpSender): boolean {
+    return this.senders.has(sender);
+  }
+
   public clear(): void {
     this.senders.clear();
   }

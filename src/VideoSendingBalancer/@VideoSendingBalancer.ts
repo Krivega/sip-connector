@@ -37,6 +37,7 @@ class VideoSendingBalancer {
       onSetParameters,
       pollIntervalMs,
       getMaxResolution,
+      isExcludedSender,
     }: IBalancerOptions & {
       pollIntervalMs?: number;
     },
@@ -46,7 +47,7 @@ class VideoSendingBalancer {
     this.parametersSetterWithQueue = new ParametersSetterWithQueue(onSetParameters);
     this.senderBalancer = new SenderBalancer(
       {
-        senderFinder: new SenderFinder(),
+        senderFinder: new SenderFinder({ isExcludedSender }),
         codecProvider: new CodecProvider(),
         parametersSetter: this.parametersSetterWithQueue,
       },

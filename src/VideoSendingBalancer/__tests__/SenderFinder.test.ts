@@ -178,4 +178,42 @@ describe('SenderFinder', () => {
       expect(result).toBe(sender);
     });
   });
+
+  describe('isExcludedSender', () => {
+    const createVideoSender = () => {
+      return new RTCRtpSenderMock({ track: { kind: 'video' } as MediaStreamVideoTrack });
+    };
+
+    it('по умолчанию ничего не исключает', () => {
+      const videoSender = createVideoSender();
+
+      expect(new SenderFinder({}).findVideoSender([videoSender])).toBe(videoSender);
+    });
+
+    it('не выбирает исключённый видео sender, даже если он первый', () => {
+      const excludedSender = createVideoSender();
+      const videoSender = createVideoSender();
+      const finder = new SenderFinder({
+        isExcludedSender: (sender) => {
+          return sender === excludedSender;
+        },
+      });
+
+      expect(finder.findVideoSender([excludedSender, videoSender])).toBe(videoSender);
+    });
+
+    it('должен вернуть undefined, если остались только исключённые видео senders', () => {
+      const excludedSender = createVideoSender();
+      const audioSender = new RTCRtpSenderMock({
+        track: { kind: 'audio' } as MediaStreamAudioTrack,
+      });
+      const finder = new SenderFinder({
+        isExcludedSender: (sender) => {
+          return sender === excludedSender;
+        },
+      });
+
+      expect(finder.findVideoSender([audioSender, excludedSender])).toBeUndefined();
+    });
+  });
 });

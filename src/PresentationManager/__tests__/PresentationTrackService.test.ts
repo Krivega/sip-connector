@@ -59,6 +59,10 @@ describe('PresentationTrackService', () => {
     mockUaParser();
   });
 
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   describe('isFirefoxOrLower', () => {
     it('возвращает false без Firefox', () => {
       mockUaParser({ isFirefox: false, isLessOrEqual: true });
@@ -383,6 +387,32 @@ describe('PresentationTrackService', () => {
       trackService.stop(connection);
 
       expect(stopSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('has', () => {
+    it('узнаёт sender, добавленный для демонстрации', async () => {
+      await trackService.addOrReplace(connection, videoTrack);
+
+      const [sender] = connection.getSenders();
+
+      expect(trackService.has(sender)).toBe(true);
+    });
+
+    it('не узнаёт чужой sender', async () => {
+      await trackService.addOrReplace(connection, videoTrack);
+
+      expect(trackService.has(new RTCRtpSenderMock())).toBe(false);
+    });
+
+    it('после clear не узнаёт прежний sender', async () => {
+      await trackService.addOrReplace(connection, videoTrack);
+
+      const [sender] = connection.getSenders();
+
+      trackService.clear();
+
+      expect(trackService.has(sender)).toBe(false);
     });
   });
 });

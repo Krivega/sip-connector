@@ -1,11 +1,16 @@
-import resolveSendEncodings from '@/tools/resolveSendEncodings';
-import { setPresentationMaxBitrate, applyContentHint } from '@/utils/peerConnection';
+import {
+  setPresentationMaxBitrate,
+  applyContentHint,
+  findSenderByTrack,
+} from '@/utils/peerConnection';
 import { PresentationReinviteError, PresentationTrackError } from '../errors';
+import { resolvePresentationSendEncodings } from '../PresentationFrameSizeLimiter';
 
 import type { TResolutionSize } from '@/types';
 import type { TContentHint, TOnAddedTransceiver } from '@/utils/peerConnection';
 import type { TTransceiverOptions } from '@/utils/peerConnection/types';
 import type { TEvents } from '../events';
+import type PresentationFrameSizeLimiter from '../PresentationFrameSizeLimiter';
 import type { PresentationStateMachine } from '../PresentationStateMachine';
 import type PresentationTrackService from '../PresentationTrackService';
 import type { TPresentationSessionPort } from './createCallManagerPort';
@@ -13,6 +18,7 @@ import type { TPresentationSessionPort } from './createCallManagerPort';
 type TPresentationLifecycleDeps = {
   events: TEvents;
   trackService: PresentationTrackService;
+  frameSizeLimiter: PresentationFrameSizeLimiter;
   sessionPort: TPresentationSessionPort;
   stateMachine: PresentationStateMachine;
   maxBitrate?: number;
@@ -42,6 +48,8 @@ export class PresentationLifecycle {
 
   private readonly trackService: PresentationTrackService;
 
+  private readonly frameSizeLimiter: PresentationFrameSizeLimiter;
+
   private readonly sessionPort: TPresentationSessionPort;
 
   private readonly stateMachine: PresentationStateMachine;
@@ -51,12 +59,14 @@ export class PresentationLifecycle {
   public constructor({
     events,
     trackService,
+    frameSizeLimiter,
     sessionPort,
     stateMachine,
     maxBitrate,
   }: TPresentationLifecycleDeps) {
     this.events = events;
     this.trackService = trackService;
+    this.frameSizeLimiter = frameSizeLimiter;
     this.sessionPort = sessionPort;
     this.stateMachine = stateMachine;
     this.maxBitrate = maxBitrate;
@@ -93,7 +103,7 @@ export class PresentationLifecycle {
   ): Promise<MediaStreamVideoTrack> {
     applyContentHint(videoTrack, contentHint);
 
-    const presentationSendEncodings = resolveSendEncodings({
+    const presentationSendEncodings = resolvePresentationSendEncodings({
       videoTrack,
       sendEncodings,
       maxResolution,
@@ -113,6 +123,7 @@ export class PresentationLifecycle {
         sendEncodings: presentationSendEncodings,
       });
       await this.applyMaxBitrate();
+      this.watchFrameSize(videoTrack, { sendEncodings, maxResolution });
 
       return videoTrack;
     } catch (error: unknown) {
@@ -135,13 +146,16 @@ export class PresentationLifecycle {
   ): Promise<MediaStreamVideoTrack> {
     applyContentHint(videoTrack, contentHint);
 
-    const presentationSendEncodings = resolveSendEncodings({
+    const presentationSendEncodings = resolvePresentationSendEncodings({
       videoTrack,
       sendEncodings,
       maxResolution,
     });
 
     await beforeStartPresentation();
+
+    // Отказ сервера оставляет прежний трек, поэтому слежение за ним снимаем только перед заменой
+    this.frameSizeLimiter.stop();
 
     try {
       await this.replaceActiveTrack(videoTrack, {
@@ -150,6 +164,7 @@ export class PresentationLifecycle {
         sendEncodings: presentationSendEncodings,
       });
       await this.applyMaxBitrate();
+      this.watchFrameSize(videoTrack, { sendEncodings, maxResolution });
 
       return videoTrack;
     } catch (error: unknown) {
@@ -160,6 +175,7 @@ export class PresentationLifecycle {
   }
 
   public async executeStop(videoTrack: MediaStreamVideoTrack): Promise<MediaStreamVideoTrack> {
+    this.frameSizeLimiter.stop();
     this.events.trigger('end', videoTrack);
 
     const connection = this.sessionPort.getConnection();
@@ -174,10 +190,12 @@ export class PresentationLifecycle {
   }
 
   public emitEndedOnly(videoTrack: MediaStreamVideoTrack): void {
+    this.frameSizeLimiter.stop();
     this.events.trigger('ended', videoTrack);
   }
 
   public resetTrackService(): void {
+    this.frameSizeLimiter.stop();
     this.trackService.clear();
   }
 
@@ -245,6 +263,24 @@ export class PresentationLifecycle {
       videoTrack: this.stateMachine.activeVideoTrack,
       maxBitrate: this.maxBitrate,
     });
+  }
+
+  // Следим только за активной демонстрацией: остановка или конец звонка во время flow её уже сняли
+  private watchFrameSize(
+    videoTrack: MediaStreamVideoTrack,
+    options: Pick<TPresentationFlowOptions, 'sendEncodings' | 'maxResolution'>,
+  ): void {
+    const connection = this.sessionPort.getConnection();
+
+    if (!this.stateMachine.isActive || !connection) {
+      return;
+    }
+
+    const sender = findSenderByTrack(connection, videoTrack);
+
+    if (sender) {
+      this.frameSizeLimiter.watch(sender, options);
+    }
   }
 
   private notifyFailed(error: unknown): void {

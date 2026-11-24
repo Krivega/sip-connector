@@ -8,6 +8,7 @@ import { ContentedStreamManager } from '@/ContentedStreamManager';
 import * as peerConnectionUtils from '@/utils/peerConnection';
 import { PresentationReinviteError, PresentationTrackError } from '../../errors';
 import { createEvents as createPresentationEvents } from '../../events';
+import PresentationFrameSizeLimiter from '../../PresentationFrameSizeLimiter';
 import { PresentationStateMachine } from '../../PresentationStateMachine';
 import PresentationTrackService from '../../PresentationTrackService';
 import { createCallManagerPort } from '../createCallManagerPort';
@@ -111,6 +112,7 @@ describe('PresentationManager orchestration', () => {
       lifecycle = new PresentationLifecycle({
         events,
         trackService,
+        frameSizeLimiter: new PresentationFrameSizeLimiter(),
         sessionPort: createCallManagerPort(callManager),
         stateMachine,
       });
@@ -121,6 +123,8 @@ describe('PresentationManager orchestration', () => {
     });
 
     afterEach(() => {
+      // Успешный старт оставляет опрос размера кадра демонстрации
+      lifecycle.resetTrackService();
       jest.restoreAllMocks();
     });
 

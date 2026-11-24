@@ -7,6 +7,7 @@ import {
   PresentationConcurrency,
   PresentationLifecycle,
 } from './orchestration';
+import PresentationFrameSizeLimiter from './PresentationFrameSizeLimiter';
 import { PresentationStateMachine } from './PresentationStateMachine';
 import PresentationTrackService from './PresentationTrackService';
 
@@ -33,6 +34,8 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
 
   private readonly trackService = new PresentationTrackService();
 
+  private readonly frameSizeLimiter = new PresentationFrameSizeLimiter();
+
   private readonly concurrency = new PresentationConcurrency();
 
   private readonly lifecycle: PresentationLifecycle;
@@ -55,6 +58,7 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
     this.lifecycle = new PresentationLifecycle({
       events: this.events,
       trackService: this.trackService,
+      frameSizeLimiter: this.frameSizeLimiter,
       sessionPort: this.sessionPort,
       stateMachine: this.stateMachine,
       maxBitrate,
@@ -68,6 +72,15 @@ class PresentationManager extends EventEmitterProxy<TEventMap> {
 
   public get isPresentationInProcess(): boolean {
     return this.stateMachine.isActiveOrPending || this.concurrency.isPending;
+  }
+
+  // Только пока демонстрация идёт: трек из state machine покрывает старт до регистрации sender,
+  // реестр — замену трека, когда на sender ещё прежний трек демонстрации
+  public isPresentationSender(sender: RTCRtpSender): boolean {
+    return (
+      this.stateMachine.isActiveOrPending &&
+      (sender.track === this.stateMachine.activeVideoTrack || this.trackService.has(sender))
+    );
   }
 
   // eslint-disable-next-line @typescript-eslint/max-params

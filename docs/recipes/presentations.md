@@ -45,11 +45,20 @@ await facade.stopPresentation();
 | `degradationPreference` | Приоритет при ухудшении качества | `'maintain-resolution'` для презентаций |
 | `sendEncodings`         | Параметры слоёв кодирования      | Массив RTCRtpEncodingParameters         |
 
-Если в конфигурации подключения есть `maxAvailableResolution`, `SipConnector` передаёт его
-в `PresentationManager` как `maxResolution`. `PresentationManager` при `startPresentation()` и
-`updatePresentation()` автоматически добавляет или ужесточает `scaleResolutionDownBy` в
-`sendEncodings`, чтобы разрешение отправляемой презентации не превышало этот лимит.
-При отсутствии `maxAvailableResolution` поведение не меняется.
+`PresentationManager` при `startPresentation()` и `updatePresentation()` автоматически добавляет
+или ужесточает `scaleResolutionDownBy` в `sendEncodings`, чтобы отправляемый кадр демонстрации
+укладывался в два лимита; действует более строгий:
+
+- `maxAvailableResolution` из конфигурации подключения: `SipConnector` передаёт его в
+  `PresentationManager` как `maxResolution`;
+- предел H.264-энкодера: площадь кадра не больше 36 864 макроблоков 16×16 (например, 4096×2304).
+  Больший кадр уменьшается минимально, ровно до этого предела. Лимит действует и без
+  `maxAvailableResolution`.
+
+Пока демонстрация активна, размер кадра проверяется раз в секунду. Если трек изменил размер без
+замены (например, выросло захватываемое окно), `scaleResolutionDownBy` пересчитывается по тем же
+лимитам, а при возврате в пределы возвращается к `1`. `maxBitrate` при пересчёте не меняется.
+Проверка останавливается при `updatePresentation()`, `stopPresentation()` и завершении звонка.
 
 ## Адаптивные настройки в зависимости от типа контента
 
