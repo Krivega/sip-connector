@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [31.4.2](https://github.com/Krivega/sip-connector/compare/v31.4.1...v31.4.2) (2026-11-24)
+
+### Bug Fixes
+
+- presentation max frame size ([#92](https://github.com/Krivega/sip-connector/issues/92)) ([daa0374](https://github.com/Krivega/sip-connector/commit/daa0374fbbcf6df456acba5f53a3a0b86c8afb9f))
+
 ### [31.4.1](https://github.com/Krivega/sip-connector/compare/v31.4.0...v31.4.1) (2026-11-23)
 
 ### Bug Fixes
