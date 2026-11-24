@@ -490,6 +490,68 @@ describe('PresentationManager', () => {
     expect(manager.isPendingPresentation).toBe(false);
   });
 
+  describe('isPresentationSender', () => {
+    const findSender = (track: MediaStreamTrack): RTCRtpSender => {
+      const sender = connectionMock.getSenders().find((item) => {
+        return item.track === track;
+      });
+
+      if (!sender) {
+        throw new Error('No sender');
+      }
+
+      return sender;
+    };
+
+    it('узнаёт sender демонстрации после старта', async () => {
+      await manager.startPresentation(beforeStartPresentation, videoTrack);
+
+      expect(manager.isPresentationSender(findSender(videoTrack))).toBe(true);
+    });
+
+    it('не узнаёт sender не демонстрации', async () => {
+      const mainVideoTrack = createMediaStreamMock({
+        video: { deviceId: { exact: 'mainVideoDeviceId' } },
+      }).getVideoTracks()[0] as MediaStreamVideoTrack;
+
+      connectionMock.addTrack(mainVideoTrack);
+      await manager.startPresentation(beforeStartPresentation, videoTrack);
+
+      expect(manager.isPresentationSender(findSender(mainVideoTrack))).toBe(false);
+    });
+
+    it('не узнаёт бывший sender демонстрации после её остановки', async () => {
+      await manager.startPresentation(beforeStartPresentation, videoTrack);
+
+      const sender = findSender(videoTrack);
+
+      await manager.stopPresentation(beforeStopPresentation);
+
+      expect(manager.isPresentationSender(sender)).toBe(false);
+    });
+
+    it('не узнаёт sender демонстрации после неудачного старта', async () => {
+      callManager.renegotiateMcuSession = jest.fn().mockRejectedValue(new Error('reinvite failed'));
+
+      await expect(
+        manager.startPresentation(beforeStartPresentation, videoTrack),
+      ).rejects.toBeDefined();
+      expect(manager.stateMachine.isFailed).toBe(true);
+
+      expect(manager.isPresentationSender(findSender(videoTrack))).toBe(false);
+    });
+
+    it('не узнаёт sender демонстрации после конца звонка', async () => {
+      await manager.startPresentation(beforeStartPresentation, videoTrack);
+
+      const sender = findSender(videoTrack);
+
+      callManager.events.trigger('ended', { originator: 'local' } as never);
+
+      expect(manager.isPresentationSender(sender)).toBe(false);
+    });
+  });
+
   it('hasCanceledStartPresentationError возвращает true для отменённой презентации', async () => {
     // Запускаем презентацию, отменяем, ловим ошибку
     const promise = manager.startPresentation(beforeStartPresentation, videoTrack);

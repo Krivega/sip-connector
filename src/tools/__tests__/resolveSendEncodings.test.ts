@@ -116,4 +116,87 @@ describe('resolveSendEncodings', () => {
 
     expect(result).toBe(sendEncodings);
   });
+
+  describe('minScaleResolutionDownBy', () => {
+    it('должен задавать minScaleResolutionDownBy без maxResolution', () => {
+      const result = resolveSendEncodings({
+        videoTrack: createVideoTrack(RESOLUTION_4K),
+        minScaleResolutionDownBy: 1.5,
+      });
+
+      expect(result).toEqual([{ scaleResolutionDownBy: 1.5 }]);
+    });
+
+    it('должен добавлять minScaleResolutionDownBy в encoding без maxResolution, сохраняя остальные поля', () => {
+      const result = resolveSendEncodings({
+        videoTrack: createVideoTrack(RESOLUTION_4K),
+        sendEncodings: [{ maxBitrate: 1_000_000 }],
+        minScaleResolutionDownBy: 1.5,
+      });
+
+      expect(result).toEqual([{ maxBitrate: 1_000_000, scaleResolutionDownBy: 1.5 }]);
+    });
+
+    it('не должен изменять sendEncodings при minScaleResolutionDownBy: 1 без maxResolution', () => {
+      const sendEncodings = [{ maxBitrate: 1_000_000 }];
+
+      const result = resolveSendEncodings({
+        videoTrack: createVideoTrack(RESOLUTION_4K),
+        sendEncodings,
+        minScaleResolutionDownBy: 1,
+      });
+
+      expect(result).toBe(sendEncodings);
+    });
+
+    it('должен применять maxResolution, если он строже minScaleResolutionDownBy', () => {
+      const result = resolveSendEncodings({
+        videoTrack: createVideoTrack(RESOLUTION_4K),
+        maxResolution: MAX_RESOLUTION,
+        minScaleResolutionDownBy: 1.5,
+      });
+
+      expect(result).toEqual([{ scaleResolutionDownBy: 2 }]);
+    });
+
+    it('должен применять minScaleResolutionDownBy, если он строже maxResolution', () => {
+      const result = resolveSendEncodings({
+        videoTrack: createVideoTrack(RESOLUTION_4K),
+        maxResolution: MAX_RESOLUTION,
+        minScaleResolutionDownBy: 2.5,
+      });
+
+      expect(result).toEqual([{ scaleResolutionDownBy: 2.5 }]);
+    });
+
+    it('должен применять minScaleResolutionDownBy, если videoTrack ниже maxResolution', () => {
+      const result = resolveSendEncodings({
+        videoTrack: createVideoTrack(RESOLUTION_HD),
+        maxResolution: MAX_RESOLUTION,
+        minScaleResolutionDownBy: 1.2,
+      });
+
+      expect(result).toEqual([{ scaleResolutionDownBy: 1.2 }]);
+    });
+
+    it('не должен уменьшать пользовательский scaleResolutionDownBy, если он сильнее minScaleResolutionDownBy', () => {
+      const result = resolveSendEncodings({
+        videoTrack: createVideoTrack(RESOLUTION_4K),
+        sendEncodings: [{ maxBitrate: 1_000_000, scaleResolutionDownBy: 3 }],
+        minScaleResolutionDownBy: 1.5,
+      });
+
+      expect(result).toEqual([{ maxBitrate: 1_000_000, scaleResolutionDownBy: 3 }]);
+    });
+
+    it('должен поднимать пользовательский scaleResolutionDownBy до minScaleResolutionDownBy', () => {
+      const result = resolveSendEncodings({
+        videoTrack: createVideoTrack(RESOLUTION_4K),
+        sendEncodings: [{ scaleResolutionDownBy: 1.2 }],
+        minScaleResolutionDownBy: 1.5,
+      });
+
+      expect(result).toEqual([{ scaleResolutionDownBy: 1.5 }]);
+    });
+  });
 });

@@ -8,6 +8,7 @@ type TParameters = {
   videoTrack: MediaStreamVideoTrack;
   sendEncodings?: RTCRtpEncodingParameters[];
   maxResolution?: TResolutionSize;
+  minScaleResolutionDownBy?: number;
 };
 
 const resolveScaleResolutionDownByEncoding = (
@@ -34,15 +35,18 @@ const resolveSendEncodings = ({
   videoTrack,
   sendEncodings,
   maxResolution,
+  minScaleResolutionDownBy = SCALE_RESOLUTION_DOWN_BY_MIN,
 }: TParameters): RTCRtpEncodingParameters[] | undefined => {
-  if (maxResolution === undefined) {
+  if (maxResolution === undefined && minScaleResolutionDownBy <= SCALE_RESOLUTION_DOWN_BY_MIN) {
     return sendEncodings;
   }
 
-  const scaleResolutionDownBy = calcScaleResolutionDownBy({
-    videoTrack,
-    targetSize: maxResolution,
-  });
+  const scaleResolutionDownBy = Math.max(
+    maxResolution === undefined
+      ? SCALE_RESOLUTION_DOWN_BY_MIN
+      : calcScaleResolutionDownBy({ videoTrack, targetSize: maxResolution }),
+    minScaleResolutionDownBy,
+  );
 
   if (sendEncodings === undefined || sendEncodings.length === 0) {
     return [{ scaleResolutionDownBy }];

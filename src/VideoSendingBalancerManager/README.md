@@ -113,6 +113,7 @@ interface IBalancerOptions {
   ignoreForCodec?: string;
   onSetParameters?: TOnSetParameters;
   getMaxResolution: () => TResolutionSize | undefined; // Обязательный
+  isExcludedSender?: (sender: RTCRtpSender) => boolean; // Senders, которые балансировщик не трогает
 }
 ```
 
@@ -188,6 +189,15 @@ VideoSendingBalancerManager автоматически интегрируетс�
 При создании через `SipConnector` менеджер получает `getMaxResolution` в `balancerOptions` — ссылку
 на `connectionConfiguration.maxAvailableResolution`. Опции передаются в конструктор
 `VideoSendingBalancer` один раз; `SenderBalancer` вызывает callback при каждой балансировке и сбросе.
+
+## Senders демонстрации
+
+`SipConnector` передаёт в `balancerOptions` и `isExcludedSender` — проверку
+`PresentationManager.isPresentationSender()`. Пока демонстрация идёт (от старта до остановки, сбоя
+или конца звонка), балансировщик не выбирает её sender, даже если у основного потока нет видеотрека
+(нет камеры или видео только на приём): тогда он ничего не записывает, а кадр демонстрации ограничивает
+`PresentationManager`. После остановки демонстрации тот же sender (например, с камерой) балансируется
+как обычно. В `videoBalancerOptions` эту опцию не передают.
 
 Подробнее: [рецепт видеобалансировки](../../docs/recipes/video-balancing.md).
 

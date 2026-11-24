@@ -7,6 +7,8 @@ export interface IBalancerOptions {
   ignoreForCodec?: string;
   onSetParameters?: TOnSetParameters;
   getMaxResolution: () => TResolutionSize | undefined;
+  // Senders не основного видео (например, демонстрации), которые балансировщик не трогает
+  isExcludedSender?: (sender: RTCRtpSender) => boolean;
 }
 
 // Заголовки от сервера
