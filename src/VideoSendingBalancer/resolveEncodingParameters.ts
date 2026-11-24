@@ -3,7 +3,12 @@ import { calcMaxBitrateByWidthAndCodec, getMaximumBitrate, getMinimumBitrate } f
 import { calcScaleResolutionDownBy } from './calcResolution';
 
 import type { TResolutionSize } from '@/types';
-import type { IBalancingContext, IEncodingParameters, IMainCamHeaders } from './types';
+import type {
+  IBalancingContext,
+  IEncodingParameters,
+  IMainCamHeaders,
+  TSenderEncodingParameters,
+} from './types';
 
 const resolveScaleResolutionDownBy = (
   videoTrack: MediaStreamVideoTrack,
@@ -26,11 +31,9 @@ const resolveMaxBitrate = (
 ): number => {
   const widthCurrent = videoTrack.getSettings().width;
 
-  if (widthCurrent === undefined) {
-    return getMaximumBitrate(codec);
-  }
-
-  return calcMaxBitrateByWidthAndCodec(widthCurrent / scaleResolutionDownBy, codec);
+  return widthCurrent === undefined
+    ? getMaximumBitrate(codec)
+    : calcMaxBitrateByWidthAndCodec(widthCurrent / scaleResolutionDownBy, codec);
 };
 
 /**
@@ -59,6 +62,34 @@ const resolveParametersByTrackResolution = (
   };
 };
 
+const isPositiveFinite = (value: number): boolean => {
+  return Number.isFinite(value) && value > 0;
+};
+
+/**
+ * Разбирает разрешение из заголовка сервера «ШИРИНАxВЫСОТА»; корректность проверяется при приёме команды
+ * @param resolutionMainCam - Значение заголовка
+ * @returns Части значения между «x», приведённые к числу
+ */
+const parseResolutionMainCam = (resolutionMainCam: string): number[] => {
+  return resolutionMainCam.split('x').map(Number);
+};
+
+/**
+ * Проверяет, что команду можно принять: разрешение MAX_MAIN_CAM_RESOLUTION, если оно задано, разбирается
+ * @param headers - Заголовки от сервера
+ * @returns false для MAX_MAIN_CAM_RESOLUTION с некорректным разрешением
+ */
+export const hasValidResolutionMainCam = ({ mainCam, resolutionMainCam }: IMainCamHeaders) => {
+  if (mainCam !== EContentMainCAM.MAX_MAIN_CAM_RESOLUTION || resolutionMainCam === undefined) {
+    return true;
+  }
+
+  const sizes = parseResolutionMainCam(resolutionMainCam);
+
+  return sizes.length === 2 && sizes.every(isPositiveFinite);
+};
+
 /**
  * Параметры на основе разрешения из заголовка сервера
  */
@@ -66,11 +97,8 @@ const resolveParametersByResolutionMainCam = (
   resolutionMainCam: string,
   { videoTrack, codec }: IBalancingContext,
 ): IEncodingParameters => {
-  const [widthTarget, heightTarget] = resolutionMainCam.split('x');
-  const targetSize = {
-    width: Number(widthTarget),
-    height: Number(heightTarget),
-  };
+  const [width, height] = parseResolutionMainCam(resolutionMainCam);
+  const targetSize = { width, height };
 
   const scaleResolutionDownBy = calcScaleResolutionDownBy({
     videoTrack,
@@ -106,11 +134,9 @@ export const resolveEncodingParameters = (
       return resolveParametersByTrackResolution(context, maxResolution);
     }
     case EContentMainCAM.MAX_MAIN_CAM_RESOLUTION: {
-      if (resolutionMainCam !== undefined) {
-        return resolveParametersByResolutionMainCam(resolutionMainCam, context);
-      }
-
-      return resolveParametersByTrackResolution(context, maxResolution);
+      return resolutionMainCam === undefined
+        ? resolveParametersByTrackResolution(context, maxResolution)
+        : resolveParametersByResolutionMainCam(resolutionMainCam, context);
     }
     case EContentMainCAM.ADMIN_STOP_MAIN_CAM:
     case EContentMainCAM.ADMIN_START_MAIN_CAM:
@@ -121,6 +147,38 @@ export const resolveEncodingParameters = (
       return resolveParametersByTrackResolution(context, maxResolution);
     }
   }
+};
+
+/**
+ * Оставляет от желаемых параметров только ослабление текущих параметров отправителя
+ * @param desired - Желаемые параметры
+ * @param current - Текущие параметры кодирования отправителя
+ * @returns Параметры с масштабом не больше текущего и битрейтом не меньше текущего
+ */
+export const resolveLoosenedEncodingParameters = (
+  desired: TSenderEncodingParameters,
+  { scaleResolutionDownBy = 1, maxBitrate }: RTCRtpEncodingParameters = {},
+): TSenderEncodingParameters => {
+  return {
+    scaleResolutionDownBy: Math.min(desired.scaleResolutionDownBy, scaleResolutionDownBy),
+    // отправитель без потолка битрейта уже ослаблен, а без желаемого битрейта (кодек неизвестен) его не трогаем
+    maxBitrate:
+      desired.maxBitrate === undefined || maxBitrate === undefined
+        ? undefined
+        : Math.max(desired.maxBitrate, maxBitrate),
+  };
+};
+
+/**
+ * Параметры отправителя без трека: та же формула, что у трека с неизвестными размерами
+ * @param codec - Кодек отправителя
+ * @returns Параметры без ограничения разрешения
+ */
+export const resolveTracklessEncodingParameters = (codec?: string): IEncodingParameters => {
+  return {
+    scaleResolutionDownBy: 1,
+    maxBitrate: getMaximumBitrate(codec),
+  };
 };
 
 /**

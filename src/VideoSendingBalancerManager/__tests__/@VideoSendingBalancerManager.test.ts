@@ -9,7 +9,6 @@ import VideoSendingBalancerManager from '../@VideoSendingBalancerManager';
 
 import type { CallManager } from '@/CallManager';
 import type SipConnector from '@/SipConnector/@SipConnector';
-import type VideoSendingBalancer from '@/VideoSendingBalancer/@VideoSendingBalancer';
 
 describe('VideoSendingBalancerManager', () => {
   let sipConnector: SipConnector;
@@ -272,24 +271,19 @@ describe('VideoSendingBalancerManager', () => {
     });
   });
 
-  it('should not call balance again if balancing already active', async () => {
-    // Достаём приватный videoSendingBalancer, сохраняя типизацию через двойное приведение
-    const balancer = (
-      videoSendingBalancerManager as unknown as {
-        videoSendingBalancer: VideoSendingBalancer;
-      }
-    ).videoSendingBalancer;
+  it('should not trigger balancing-started or set parameters again if balancing already active', async () => {
+    const startedHandler = jest.fn();
+    const setParameters = jest.spyOn(mockSender, 'setParameters');
 
-    const balanceSpy = jest.spyOn(balancer, 'balance');
-
-    // Первый запуск
+    videoSendingBalancerManager.on('balancing-started', startedHandler);
     await videoSendingBalancerManager.startBalancing();
+
+    const setParametersCallsAfterStart = setParameters.mock.calls.length;
+
+    await videoSendingBalancerManager.startBalancing();
+
     expect(videoSendingBalancerManager.isBalancingActive).toBe(true);
-    expect(balanceSpy).toHaveBeenCalledTimes(1);
-
-    // Повторный запуск не должен вызвать balance второй раз
-    await videoSendingBalancerManager.startBalancing();
-
-    expect(balanceSpy).toHaveBeenCalledTimes(1);
+    expect(startedHandler).toHaveBeenCalledTimes(1);
+    expect(setParameters).toHaveBeenCalledTimes(setParametersCallsAfterStart);
   });
 });

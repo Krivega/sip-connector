@@ -14,6 +14,7 @@ import {
   deferNextGetStats,
   ENCODING_4K_BY_TRACK,
   ENCODING_4K_LIMITED_TO_720P,
+  ENCODING_PAUSED,
   HEADERS_MAX_720P,
   HEADERS_PAUSE,
   sendMainCamInfo,
@@ -182,6 +183,109 @@ describe('VideoSendingBalancerManager: остановка во время зап
       expect(startedHandler).not.toHaveBeenCalled();
       expect(manager.isBalancingActive).toBe(false);
     });
+
+    it('отправляет balancing-started один раз, если кодек первой балансировки прерванного запуска получен после stopBalancing и нового startBalancing', async () => {
+      const startedHandler = jest.fn();
+      const releaseStats = deferNextGetStats(observed.sender);
+
+      createManager();
+      manager.on('balancing-started', startedHandler);
+
+      const interruptedStarting = manager.startBalancing();
+
+      await settle();
+      manager.stopBalancing();
+      await manager.startBalancing();
+      releaseStats();
+      await interruptedStarting;
+      await settle();
+
+      expect(startedHandler).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('stopBalancing сразу после первой балансировки старта', () => {
+    const MICROTASK_SHIFTS = Array.from({ length: 20 }, (_, shift) => {
+      return shift;
+    });
+    const LAST_MICROTASK_SHIFT = MICROTASK_SHIFTS.length - 1;
+
+    let events: string[];
+
+    const waitMicrotasks = async (count: number) => {
+      for (let step = 0; step < count; step += 1) {
+        // eslint-disable-next-line no-await-in-loop
+        await Promise.resolve();
+      }
+    };
+
+    beforeEach(() => {
+      events = [];
+      createManager();
+      manager.on('balancing-started', () => {
+        events.push('balancing-started');
+      });
+      manager.on('balancing-stopped', () => {
+        events.push('balancing-stopped');
+      });
+    });
+
+    it.each(MICROTASK_SHIFTS)(
+      'не отправляет balancing-started после balancing-stopped, если stopBalancing вызван со сдвигом %i (в микрозадачах) после parameters-updated первой балансировки старта',
+      async (shift) => {
+        const firstParametersUpdated = manager.wait('parameters-updated');
+        const starting = manager.startBalancing();
+
+        await firstParametersUpdated;
+        await waitMicrotasks(shift);
+        manager.stopBalancing();
+        await starting;
+        await settle();
+
+        expect(events.slice(events.indexOf('balancing-stopped'))).toEqual(['balancing-stopped']);
+      },
+    );
+
+    it.each(MICROTASK_SHIFTS)(
+      'отправляет после balancing-stopped ровно один balancing-started, если stopBalancing и сразу за ним startBalancing вызваны со сдвигом %i (в микрозадачах) после parameters-updated первой балансировки старта',
+      async (shift) => {
+        const firstParametersUpdated = manager.wait('parameters-updated');
+        const starting = manager.startBalancing();
+
+        await firstParametersUpdated;
+        await waitMicrotasks(shift);
+        manager.stopBalancing();
+
+        const restarting = manager.startBalancing();
+
+        await Promise.all([starting, restarting]);
+        await settle();
+
+        expect(events.slice(events.indexOf('balancing-stopped'))).toEqual([
+          'balancing-stopped',
+          'balancing-started',
+        ]);
+      },
+    );
+
+    it.each([
+      [0, ['balancing-stopped']],
+      [LAST_MICROTASK_SHIFT, ['balancing-started', 'balancing-stopped']],
+    ])(
+      'перебор сдвигов охватывает обе стороны отправки balancing-started: при stopBalancing со сдвигом %i (в микрозадачах) после parameters-updated события — %j',
+      async (shift, expectedEvents) => {
+        const firstParametersUpdated = manager.wait('parameters-updated');
+        const starting = manager.startBalancing();
+
+        await firstParametersUpdated;
+        await waitMicrotasks(shift);
+        manager.stopBalancing();
+        await starting;
+        await settle();
+
+        expect(events).toEqual(expectedEvents);
+      },
+    );
   });
 
   describe('исключение обработчика balancing-started', () => {
@@ -231,6 +335,27 @@ describe('VideoSendingBalancerManager: остановка во время зап
       expect(manager.isBalancingActive).toBe(true);
       expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_LIMITED_TO_720P);
       expect(mcuDebugLogger).toHaveBeenCalledWith('startBalancing: error', handlerError);
+    });
+  });
+
+  describe('исключение подписчика parameters-updated', () => {
+    it('применяет запомненную в прогреве MAX 1280x720 и отправляет balancing-started при старте по таймеру, если подписчик parameters-updated бросает исключение', async () => {
+      const startedHandler = jest.fn();
+
+      observed = createObservedSender(track4K);
+      connection.senders = [observed.sender];
+      createManager();
+      manager.on('parameters-updated', () => {
+        throw new Error('parameters-updated subscriber failed');
+      });
+      manager.on('balancing-started', startedHandler);
+      confirmCall(callManager, connection);
+      sendMainCamInfo(callManager, HEADERS_MAX_720P);
+      await jest.advanceTimersByTimeAsync(BALANCING_START_DELAY);
+      await settle();
+
+      expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_LIMITED_TO_720P);
+      expect(startedHandler).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -311,6 +436,119 @@ describe('VideoSendingBalancerManager: остановка во время зап
 
       expect(manager.isBalancingActive).toBe(true);
       expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_LIMITED_TO_720P);
+    });
+  });
+
+  describe('setParameters балансировки прежнего запуска завершён при новом запуске', () => {
+    beforeEach(async () => {
+      observed = createObservedSender(track4K);
+      connection.senders = [observed.sender];
+      createManager();
+      await confirmCallAndWaitBalancingStart();
+    });
+
+    it('применяет запомненную в новом прогреве MAX 1280x720 повтором без новой команды, если setParameters балансировки PAUSE_MAIN_CAM прежнего запуска завершён после старта нового, getStats первой балансировки которого отклонён, а setParameters сброса остановки отклонён', async () => {
+      const staleSetParameters = observed.deferNextSetParameters();
+
+      observed.rejectNextSetParameters(new Error('setParameters failed'));
+      sendMainCamInfo(callManager, HEADERS_PAUSE);
+      await settle();
+      callManager.events.trigger('recv-session-started', undefined as never);
+      callManager.events.trigger('recv-session-ended', undefined as never);
+      sendMainCamInfo(callManager, HEADERS_MAX_720P);
+      jest.spyOn(observed.sender, 'getStats').mockRejectedValueOnce(new Error('getStats failed'));
+      await jest.advanceTimersByTimeAsync(BALANCING_START_DELAY);
+      await settle();
+      staleSetParameters.resolve(undefined);
+      await jest.advanceTimersByTimeAsync(TRACK_SIZE_POLLING_WINDOW);
+
+      expect(manager.isBalancingActive).toBe(true);
+      expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_LIMITED_TO_720P);
+    });
+
+    it('возвращает 4K-треку параметры по треку повтором без новой команды, если setParameters балансировки PAUSE_MAIN_CAM прежнего запуска завершён после stopBalancing без connection и startBalancing, getStats первой балансировки которого отклонён', async () => {
+      const staleSetParameters = observed.deferNextSetParameters();
+
+      sendMainCamInfo(callManager, HEADERS_PAUSE);
+      await settle();
+      setConnection(callManager, undefined);
+      manager.stopBalancing();
+      setConnection(callManager, connection as RTCPeerConnection);
+      jest.spyOn(observed.sender, 'getStats').mockRejectedValueOnce(new Error('getStats failed'));
+
+      const starting = Promise.allSettled([manager.startBalancing()]);
+
+      await settle();
+      staleSetParameters.resolve(undefined);
+      await starting;
+      await jest.advanceTimersByTimeAsync(TRACK_SIZE_POLLING_WINDOW);
+
+      expect(manager.isBalancingActive).toBe(true);
+      expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_BY_TRACK);
+    });
+  });
+
+  describe('новый прогрев во время незавершённых операций', () => {
+    beforeEach(async () => {
+      createManager(createBalancerOptions({ maxResolution: { width: 1920, height: 1080 } }));
+      await confirmCallAndWaitBalancingStart();
+    });
+
+    it('не меняет параметры в новом прогреве при maxAvailableResolution 1920x1080, если кодек прерванной балансировки получен после recv-session-started, recv-session-ended и замены 720p на 4K', async () => {
+      const releaseStaleStats = deferNextGetStats(observed.sender);
+
+      sendMainCamInfo(callManager, HEADERS_PAUSE);
+      await settle();
+      callManager.events.trigger('recv-session-started', undefined as never);
+      callManager.events.trigger('recv-session-ended', undefined as never);
+      await settle();
+      await observed.sender.replaceTrack(track4K);
+      await settle();
+
+      const logLengthAfterReplace = observed.log.length;
+
+      releaseStaleStats();
+      await settle();
+
+      expect(observed.log.slice(logLengthAfterReplace)).toEqual([]);
+      expect(manager.isBalancingScheduled).toBe(true);
+    });
+
+    it('не ужесточает параметры до конца нового прогрева при maxAvailableResolution 1920x1080, если отложенный getStats отправителя ответил после recv-session-started, recv-session-ended и замены 720p на 4K', async () => {
+      const releaseStats = deferNextGetStats(observed.sender);
+
+      callManager.events.trigger('recv-session-started', undefined as never);
+      callManager.events.trigger('recv-session-ended', undefined as never);
+      await settle();
+      await observed.sender.replaceTrack(track4K);
+      await settle();
+
+      const logLengthAfterReplace = observed.log.length;
+
+      releaseStats();
+      await jest.advanceTimersByTimeAsync(BALANCING_START_DELAY - 1);
+
+      expect(
+        observed.log.slice(logLengthAfterReplace).filter((entry) => {
+          return entry.type === 'setParameters' && entry.scaleResolutionDownBy !== 1;
+        }),
+      ).toEqual([]);
+      expect(manager.isBalancingScheduled).toBe(true);
+      expect(manager.isBalancingActive).toBe(false);
+    });
+
+    it('применяет PAUSE_MAIN_CAM и оставляет балансировку активной, если recv-session-ended получен без recv-session-started при активной балансировке, пока балансировка команды ждёт кодек', async () => {
+      const releaseStats = deferNextGetStats(observed.sender);
+
+      sendMainCamInfo(callManager, HEADERS_PAUSE);
+      await settle();
+      callManager.events.trigger('recv-session-ended', undefined as never);
+      await settle();
+      releaseStats();
+      await settle();
+
+      expect(manager.isBalancingActive).toBe(true);
+      expect(observed.getAppliedEncoding()).toEqual(ENCODING_PAUSED);
     });
   });
 });

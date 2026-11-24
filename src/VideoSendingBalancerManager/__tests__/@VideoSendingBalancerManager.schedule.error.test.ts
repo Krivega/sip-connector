@@ -87,9 +87,7 @@ describe('VideoSendingBalancerManager error handling', () => {
   });
 
   it('throws error when trying to start balancing without connection', async () => {
-    await expect(videoSendingBalancerManager.startBalancing()).rejects.toThrow(
-      'connection is not exist',
-    );
+    await expect(videoSendingBalancerManager.startBalancing()).resolves.toBeUndefined();
   });
 
   it('does not try to start on main-cam-control while balancing is scheduled', async () => {
@@ -110,17 +108,13 @@ describe('VideoSendingBalancerManager error handling', () => {
 
     videoSendingBalancerManager.on('balancing-started', handler);
 
-    await expect(videoSendingBalancerManager.startBalancing()).rejects.toThrow(
-      'connection is not exist',
-    );
-    expect(handler).not.toHaveBeenCalled();
+    await expect(videoSendingBalancerManager.startBalancing()).resolves.toBeUndefined();
+    expect(handler).toHaveBeenCalledTimes(1);
     expect(videoSendingBalancerManager.isBalancingActive).toBe(true);
   });
 
   it('logs error when balance on main-cam-control rejects during active balancing', async () => {
-    await expect(videoSendingBalancerManager.startBalancing()).rejects.toThrow(
-      'connection is not exist',
-    );
+    await expect(videoSendingBalancerManager.startBalancing()).resolves.toBeUndefined();
 
     apiManager.events.trigger('main-cam-control', { mainCam: EContentMainCAM.PAUSE_MAIN_CAM });
     await delayPromise(0);

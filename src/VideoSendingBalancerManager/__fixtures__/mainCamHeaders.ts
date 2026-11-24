@@ -18,5 +18,6 @@ export const mainCamHeaders = (
 
 export const HEADERS_MAX_360P = mainCamHeaders(EContentMainCAM.MAX_MAIN_CAM_RESOLUTION, '640x360');
 export const HEADERS_MAX_720P = mainCamHeaders(EContentMainCAM.MAX_MAIN_CAM_RESOLUTION, '1280x720');
+export const HEADERS_MAX_4K = mainCamHeaders(EContentMainCAM.MAX_MAIN_CAM_RESOLUTION, '3840x2160');
 export const HEADERS_PAUSE = mainCamHeaders(EContentMainCAM.PAUSE_MAIN_CAM);
 export const HEADERS_RESUME = mainCamHeaders(EContentMainCAM.RESUME_MAIN_CAM);

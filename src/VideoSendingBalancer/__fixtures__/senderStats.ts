@@ -38,3 +38,13 @@ export const hangNextGetStats = (sender: RTCRtpSender): void => {
 export const hangGetStats = (sender: RTCRtpSender): void => {
   jest.spyOn(sender, 'getStats').mockReturnValue(new Promise<RTCStatsReport>(() => {}));
 };
+
+/**
+ * Все последующие вызовы sender.getStats() отклоняются ошибкой
+ */
+export const rejectGetStats = (
+  sender: RTCRtpSender,
+  error: Error = new Error('getStats failed'),
+): void => {
+  jest.spyOn(sender, 'getStats').mockRejectedValue(error);
+};

@@ -159,4 +159,61 @@ describe('CodecProvider', () => {
       expect(mockSender.getStats).toHaveBeenCalled();
     });
   });
+
+  describe('getKnownCodec', () => {
+    const createCodecStats = (mimeType: string) => {
+      return new Map([['codec-1', { type: 'codec', mimeType }]]);
+    };
+
+    it('должен вернуть undefined, пока кодек отправителя не получен', () => {
+      expect(codecProvider.getKnownCodec(mockSender)).toBeUndefined();
+    });
+
+    it('должен вернуть undefined, пока запрос кодека не завершён', () => {
+      (mockSender.getStats as jest.Mock).mockReturnValue(new Promise(() => {}));
+      codecProvider.getCodecFromSender(mockSender).catch(() => {});
+
+      expect(codecProvider.getKnownCodec(mockSender)).toBeUndefined();
+    });
+
+    it('должен вернуть последний полученный кодек отправителя', async () => {
+      (mockSender.getStats as jest.Mock)
+        .mockResolvedValueOnce(createCodecStats('video/h264'))
+        .mockResolvedValueOnce(createCodecStats('video/vp8'));
+
+      await codecProvider.getCodecFromSender(mockSender);
+      await codecProvider.getCodecFromSender(mockSender);
+
+      expect(codecProvider.getKnownCodec(mockSender)).toBe('video/vp8');
+    });
+
+    it('должен вернуть пустую строку, если в полученной статистике нет кодека', async () => {
+      (mockSender.getStats as jest.Mock).mockResolvedValue(new Map());
+
+      await codecProvider.getCodecFromSender(mockSender);
+
+      expect(codecProvider.getKnownCodec(mockSender)).toBe('');
+    });
+
+    it('должен сохранить прежний кодек, если следующий запрос завершился ошибкой', async () => {
+      (mockSender.getStats as jest.Mock)
+        .mockResolvedValueOnce(createCodecStats('video/h264'))
+        .mockRejectedValueOnce(new Error('Network error'));
+
+      await codecProvider.getCodecFromSender(mockSender);
+      await codecProvider.getCodecFromSender(mockSender).catch(() => {});
+
+      expect(codecProvider.getKnownCodec(mockSender)).toBe('video/h264');
+    });
+
+    it('должен помнить кодек каждого отправителя отдельно', async () => {
+      const otherSender = { getStats: jest.fn() } as unknown as jest.Mocked<RTCRtpSender>;
+
+      (mockSender.getStats as jest.Mock).mockResolvedValue(createCodecStats('video/h264'));
+
+      await codecProvider.getCodecFromSender(mockSender);
+
+      expect(codecProvider.getKnownCodec(otherSender)).toBeUndefined();
+    });
+  });
 });

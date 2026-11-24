@@ -1,9 +1,5 @@
 export type { IBalancerOptions } from './types';
-export {
-  resolveVideoSendingBalancer,
-  default as VideoSendingBalancer,
-} from './@VideoSendingBalancer';
-export { RESULT_NO_CHANGED } from './SenderBalancer';
+export { default as VideoSendingBalancer } from './@VideoSendingBalancer';
 export {
   getMinimumBitrate as getMinimumBitrateByWidthAndCodec,
   getMaximumBitrate as getMaximumBitrateByWidthAndCodec,

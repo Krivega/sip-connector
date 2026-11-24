@@ -23,29 +23,22 @@ export interface IBalancingContext {
   codec?: string;
 }
 
-// Интерфейсы для внедрения зависимостей
-export interface ISenderFinder {
-  findVideoSender: (senders: RTCRtpSender[]) => RTCRtpSender | undefined;
-}
-
-export interface ICodecProvider {
-  getCodecFromSender: (sender: RTCRtpSender) => Promise<string>;
-}
-
 export interface IEncodingParameters {
   scaleResolutionDownBy: number;
   maxBitrate: number;
 }
 
+// Параметры, применяемые отправителю: без maxBitrate битрейт не меняется
+export type TSenderEncodingParameters = { scaleResolutionDownBy: number; maxBitrate?: number };
+
 export interface IParametersSetter {
   setEncodingsToSender: (
     sender: RTCRtpSender,
-    parameters: { scaleResolutionDownBy: number; maxBitrate?: number },
-    onSetParameters?: TOnSetParameters,
+    parameters: TSenderEncodingParameters,
   ) => Promise<TResultSetParametersToSender>;
 }
 
 // Интерфейс для очереди задач
 export interface ITaskQueue {
-  add: <T>(task: () => Promise<T>) => Promise<T>;
+  add: <T>(key: object, task: () => Promise<T>) => Promise<T>;
 }

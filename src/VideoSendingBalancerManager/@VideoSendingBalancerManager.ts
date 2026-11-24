@@ -1,7 +1,7 @@
 import { EventEmitterProxy } from 'events-constructor';
 
 import resolveDebug from '@/logger';
-import { RESULT_NO_CHANGED, VideoSendingBalancer } from '@/VideoSendingBalancer';
+import { VideoSendingBalancer } from '@/VideoSendingBalancer';
 import { createEvents } from './events';
 
 import type { ApiManager } from '@/ApiManager';
@@ -74,11 +74,18 @@ class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
 
     this.isBalancingActive = true;
 
-    await this.videoSendingBalancer.start();
+    const starting = this.videoSendingBalancer.start();
+    const { runToken } = this.videoSendingBalancer;
 
-    // за время первой балансировки её могли остановить, сужение типа этого не учитывает
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (this.isBalancingActive) {
+    // запуск включает режим, а первая балансировка — только первая попытка: неудавшуюся повторит сверка по тику
+    try {
+      await starting;
+    } catch (error: unknown) {
+      debug('startBalancing: error', error);
+    }
+
+    // за время первой балансировки запуск могли остановить или начать заново: сверка прямо перед событием
+    if (this.videoSendingBalancer.runToken === runToken) {
       this.events.trigger('balancing-started', { delay: this.balancingStartDelay });
     }
   }
@@ -98,11 +105,6 @@ class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
    * Выполнить ручную балансировку
    */
   public async balance() {
-    // во время прогрева скалирование применять нельзя
-    if (this.isBalancingScheduled) {
-      return RESULT_NO_CHANGED;
-    }
-
     return this.videoSendingBalancer.balance();
   }
 
@@ -141,24 +143,14 @@ class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
   };
 
   private readonly handleMainCamControl = (headers: IMainCamHeaders): void => {
-    if (this.isBalancingActive) {
-      this.videoSendingBalancer.setServerHeaders(headers);
-      this.videoSendingBalancer.balance().catch((error: unknown) => {
-        debug('balance on main-cam-control: error', error);
-      });
-
-      return;
-    }
-
-    // во время прогрева только запоминаем: последнюю команду применит старт балансировки
-    if (this.isBalancingScheduled) {
-      this.videoSendingBalancer.setServerHeaders(headers);
-    }
+    this.videoSendingBalancer.handleServerHeaders(headers);
   };
 
   private scheduleBalancingStart(): void {
     // Очищаем предыдущий таймер, если есть
     this.clearStartTimer();
+
+    this.videoSendingBalancer.warmUp();
 
     // Запланируем запуск балансировки через настраиваемое время
     this.startBalancingTimer = setTimeout(() => {

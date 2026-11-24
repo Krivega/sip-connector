@@ -1,34 +1,31 @@
 import type { ITaskQueue } from './types';
 
 /**
- * Строго последовательная очередь задач
+ * Строго последовательные очереди задач: у каждого ключа (отправителя) своя
  * Ошибка задачи отклоняет только её промис и не останавливает очередь
- * shortcut: зависший setParameters или replaceTrack держит очередь до остановки балансировки; таймаут сознательно не делается
+ * shortcut: зависший setParameters или replaceTrack держит очередь своего отправителя насовсем (у следующего звонка свой отправитель и своя очередь); таймаут сознательно не делается
  */
 export class TaskQueue implements ITaskQueue {
-  private lastTask: Promise<unknown> = Promise.resolve();
+  private readonly lastTasks = new WeakMap<object, Promise<unknown>>();
 
   /**
-   * Добавляет задачу в очередь и возвращает Promise с результатом
+   * Добавляет задачу в очередь ключа и возвращает Promise с результатом
+   * @param key - Владелец очереди: задачи одного ключа выполняются в порядке добавления
    * @param task - Функция для выполнения
    * @returns Promise с результатом выполнения задачи
    */
-  public async add<T>(task: () => Promise<T>): Promise<T> {
-    const result = this.lastTask.then(async () => {
+  public async add<T>(key: object, task: () => Promise<T>): Promise<T> {
+    const result = (this.lastTasks.get(key) ?? Promise.resolve()).then(async () => {
       return task();
     });
 
-    this.lastTask = result.catch(() => {
-      return undefined;
-    });
+    this.lastTasks.set(
+      key,
+      result.catch(() => {
+        return undefined;
+      }),
+    );
 
     return result;
-  }
-
-  /**
-   * Начинает очередь заново: задачи прежней цепочки дорабатывают сами, новые их не ждут
-   */
-  public reset(): void {
-    this.lastTask = Promise.resolve();
   }
 }

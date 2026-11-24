@@ -1,15 +1,21 @@
 import getCodecFromSender from '@/utils/peerConnection/getCodecFromSender';
 
-import type { ICodecProvider } from './types';
-
 /**
- * Реализация провайдера кодеков
+ * Реализация провайдера кодеков: запрашивает кодек отправителя и помнит последний полученный
  */
-export class CodecProvider implements ICodecProvider {
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
-  public async getCodecFromSender(sender: RTCRtpSender): Promise<string> {
-    const codec = await getCodecFromSender(sender);
+export class CodecProvider {
+  private readonly knownCodecs = new WeakMap<RTCRtpSender, string>();
 
-    return codec ?? '';
+  public async getCodecFromSender(sender: RTCRtpSender): Promise<string> {
+    const codec = (await getCodecFromSender(sender)) ?? '';
+
+    this.knownCodecs.set(sender, codec);
+
+    return codec;
+  }
+
+  // shortcut: кодек — от последней балансировки отправителя и может устареть до следующей
+  public getKnownCodec(sender: RTCRtpSender): string | undefined {
+    return this.knownCodecs.get(sender);
   }
 }

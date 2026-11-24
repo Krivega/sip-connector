@@ -9,90 +9,157 @@ type TApplyParameters = (
   upcomingTrack?: MediaStreamTrack,
 ) => Promise<unknown>;
 
-type TOnTrackChange = (track: MediaStreamTrack | undefined) => void;
+type TInterception = {
+  sender: RTCRtpSender;
+  originalReplaceTrack: RTCRtpSender['replaceTrack'];
+  unfinishedReplacements: number;
+};
+
+type TPreparation = { newTrack: MediaStreamTrack; isPrepared: boolean; chain: Promise<void> };
+
+// ждёт, пока цепочка подготовки не перестанет расти
+const settlePreparation = async (preparation?: TPreparation): Promise<void> => {
+  const chain = preparation?.chain;
+
+  await chain;
+
+  if (preparation?.chain !== chain) {
+    await settlePreparation(preparation);
+  }
+};
 
 /**
- * TrackReplacer перехватывает replaceTrack отправителя и выполняет замену одной задачей очереди:
+ * TrackReplacer перехватывает replaceTrack отправителя и выполняет замену одной задачей его очереди:
  *
- * 1. Перед заменой на новый трек применяет более строгий масштаб без запроса кодека;
- *    ошибка этого шага логируется и замену не отменяет.
- * 2. Вызывает оригинальный replaceTrack.
- * 3. При ошибке шага 2 возвращает параметры оставшегося трека и отклоняет замену этой ошибкой.
- * 4. После успешной замены сообщает через onTrackChange, какой трек теперь на отправителе,
+ * 1. Перед заменой на новый трек применяет более строгие параметры — первое звено цепочки подготовки;
+ *    пока идёт замена, prepareOngoingReplacement добавляет звенья. Ошибка звена логируется и замену не отменяет.
+ * 2. Дожидается цепочки и вызывает оригинальный replaceTrack; после его возврата снова дожидается цепочки.
+ * 3. При ошибке оригинала возвращает параметры оставшегося трека, если выполнялось хотя бы одно звено,
+ *    и отклоняет замену этой ошибкой.
+ * 4. После успешной замены применяет параметры трека, оказавшегося на отправителе,
  *    и, если трек есть, запрашивает обычную балансировку.
+ *
+ * Звенья и шаг 4 выполняются, только если на момент их выполнения балансировка запущена, а отправитель подключён (attach).
+ * Иначе перехват только ставит замену в очередь отправителя: порядок сохраняется, параметры не меняются.
+ * Перехват остаётся и на отключённом отправителе, пока не завершены принятые им замены: так сохраняется их порядок.
  */
 export class TrackReplacer {
-  private attached?: { sender: RTCRtpSender; originalReplaceTrack: RTCRtpSender['replaceTrack'] };
+  private attached?: TInterception;
+
+  private readonly interceptions = new WeakMap<RTCRtpSender, TInterception>();
+
+  // у отправителя не больше одной идущей замены: очередь выполняет их по одной
+  private readonly preparations = new WeakMap<RTCRtpSender, TPreparation>();
 
   private readonly taskQueue: ITaskQueue;
 
-  private readonly applyParameters: TApplyParameters;
+  private readonly isBalancing: (sender: RTCRtpSender) => boolean;
 
-  private readonly onTrackChange: TOnTrackChange;
+  private readonly applyParameters: TApplyParameters;
 
   private readonly requestBalance: () => void;
 
   public constructor({
     taskQueue,
+    isBalancing,
     applyParameters,
-    onTrackChange,
     requestBalance,
   }: {
     taskQueue: ITaskQueue;
+    isBalancing: (sender: RTCRtpSender) => boolean;
     applyParameters: TApplyParameters;
-    onTrackChange: TOnTrackChange;
     requestBalance: () => void;
   }) {
     this.taskQueue = taskQueue;
+    this.isBalancing = isBalancing;
     this.applyParameters = applyParameters;
-    this.onTrackChange = onTrackChange;
     this.requestBalance = requestBalance;
   }
 
+  public get attachedSender(): RTCRtpSender | undefined {
+    return this.attached?.sender;
+  }
+
   /**
-   * Подменяет replaceTrack отправителя; для уже подключённого отправителя ничего не делает.
+   * Подключает отправителя и подменяет его replaceTrack; для уже подключённого отправителя ничего не делает.
    */
   public attach(sender: RTCRtpSender): void {
-    if (this.attached?.sender === sender) {
+    if (this.isAttachedTo(sender)) {
       return;
     }
 
     this.detach();
 
-    // Сохраним оригинальный replaceTrack, чтобы вернуть при детаче
-    const originalReplaceTrack = sender.replaceTrack.bind(sender);
+    // перехват, оставшийся с прошлого подключения, используется снова
+    this.attached = this.interceptions.get(sender) ?? this.intercept(sender);
+  }
 
-    this.attached = { sender, originalReplaceTrack };
+  /** Отключает отправителя; оригинальный replaceTrack возвращается ему после завершения принятых замен */
+  public detach(): void {
+    const interception = this.attached;
+
+    if (!interception) {
+      return;
+    }
+
+    this.attached = undefined;
+    this.restoreUnusedReplaceTrack(interception);
+  }
+
+  /** Добавляет звено в подготовку замены, которая идёт у подключённого отправителя; без такой замены ничего не делает */
+  public prepareOngoingReplacement(): void {
+    if (this.attached) {
+      this.addPreparationStep(this.attached.sender);
+    }
+  }
+
+  private isAttachedTo(sender: RTCRtpSender): boolean {
+    return this.attachedSender === sender;
+  }
+
+  private intercept(sender: RTCRtpSender): TInterception {
+    const interception: TInterception = {
+      sender,
+      // Сохраним оригинальный replaceTrack, чтобы вернуть его отправителю
+      originalReplaceTrack: sender.replaceTrack.bind(sender),
+      unfinishedReplacements: 0,
+    };
+
+    this.interceptions.set(sender, interception);
 
     // eslint-disable-next-line no-param-reassign
     sender.replaceTrack = async (newTrack: MediaStreamTrack | null) => {
-      await this.taskQueue.add(async () => {
-        return this.replaceSenderTrack(sender, newTrack, originalReplaceTrack);
-      });
+      interception.unfinishedReplacements += 1;
 
-      // без трека балансировать нечего; перехват остаётся до следующей балансировки, которая снимет его, не найдя трек
-      if (sender.track) {
+      try {
+        await this.taskQueue.add(sender, async () => {
+          return this.replaceSenderTrack(sender, newTrack, interception.originalReplaceTrack);
+        });
+      } finally {
+        interception.unfinishedReplacements -= 1;
+        this.restoreUnusedReplaceTrack(interception);
+      }
+
+      // без трека балансировать нечего
+      if (this.isBalancing(sender) && sender.track) {
         // вызывающий код сразу после replaceTrack сам меняет параметры; балансировка перекрывает их, потому что сначала асинхронно получает кодек
         this.requestBalance();
       }
     };
 
-    this.onTrackChange(sender.track ?? undefined);
+    return interception;
   }
 
-  /** Возвращает отправителю оригинальный replaceTrack */
-  public detach(): void {
-    if (!this.attached) {
+  private restoreUnusedReplaceTrack(interception: TInterception): void {
+    const { sender, originalReplaceTrack, unfinishedReplacements } = interception;
+
+    if (this.isAttachedTo(sender) || unfinishedReplacements > 0) {
       return;
     }
 
-    const { sender, originalReplaceTrack } = this.attached;
-
-    // shortcut: после detach вызовы replaceTrack идут мимо очереди, замены сериализует потребитель
+    // shortcut: замена, вызванная после этого, идёт мимо очереди и не упорядочена с её задачами; такие замены сериализует потребитель
     sender.replaceTrack = originalReplaceTrack;
-    this.attached = undefined;
-
-    this.onTrackChange(undefined);
+    this.interceptions.delete(sender);
   }
 
   private async replaceSenderTrack(
@@ -100,28 +167,67 @@ export class TrackReplacer {
     newTrack: MediaStreamTrack | null,
     originalReplaceTrack: RTCRtpSender['replaceTrack'],
   ): Promise<void> {
-    if (newTrack !== null && newTrack !== sender.track) {
-      try {
-        await this.applyParameters(sender, newTrack);
-      } catch (error: unknown) {
-        // подготовка не должна срывать замену: параметры нового трека применит балансировка после замены
-        debug('applyParameters before replaceTrack: error', error);
-      }
+    const preparation =
+      newTrack === null || newTrack === sender.track
+        ? undefined
+        : { newTrack, isPrepared: false, chain: Promise.resolve() };
+
+    if (preparation) {
+      this.preparations.set(sender, preparation);
+      this.addPreparationStep(sender);
     }
+
+    await settlePreparation(preparation);
 
     try {
       await originalReplaceTrack(newTrack);
     } catch (error: unknown) {
-      // трек остался прежним, а подготовка могла ужесточить его параметры
-      await this.applyActualTrackParameters(sender);
+      await this.finishPreparation(sender);
+
+      // трек остался прежним, а подготовка этой замены могла ужесточить его параметры; возвращаем их, даже если отправителя уже отключили
+      if (preparation?.isPrepared === true) {
+        await this.applyActualTrackParameters(sender);
+      }
 
       throw error;
     }
 
-    // от отправителя могли отключиться во время замены — не возобновляем слежение
-    if (this.attached?.sender === sender) {
-      this.onTrackChange(sender.track ?? undefined);
+    await this.finishPreparation(sender);
+
+    // подготовка держала строжайшее из двух треков, а балансировка после замены ещё ждёт кодек: параметры фактического трека нужны сразу
+    if (this.isBalancing(sender)) {
+      await this.applyActualTrackParameters(sender);
     }
+  }
+
+  // звенья, добавленные во время оригинального replaceTrack, завершаются до отката и применения после замены
+  private async finishPreparation(sender: RTCRtpSender): Promise<void> {
+    await settlePreparation(this.preparations.get(sender));
+    this.preparations.delete(sender);
+  }
+
+  // звенья идут друг за другом, а очередь отправителя занята заменой: записи параметров не пересекаются
+  private addPreparationStep(sender: RTCRtpSender): void {
+    const preparation = this.preparations.get(sender);
+
+    if (!preparation) {
+      return;
+    }
+
+    preparation.chain = preparation.chain.then(async () => {
+      if (!this.isBalancing(sender)) {
+        return;
+      }
+
+      preparation.isPrepared = true;
+
+      try {
+        await this.applyParameters(sender, preparation.newTrack);
+      } catch (error: unknown) {
+        // подготовка не должна срывать замену: подключённому отправителю параметры нового трека применятся после неё
+        debug('applyParameters before replaceTrack: error', error);
+      }
+    });
   }
 
   private async applyActualTrackParameters(sender: RTCRtpSender): Promise<void> {

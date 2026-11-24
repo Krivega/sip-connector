@@ -1,14 +1,15 @@
 import { SetTimeoutRequest } from '@krivega/timeout-requester';
 
+type TCheck = () => Promise<boolean>;
+
+type TSubscription = { readonly check: TCheck };
+
 /**
- * TrackMonitor следит за размером MediaStreamTrack:
- * при изменении разрешения (polling) вызывает callback.
+ * TrackMonitor — тикер сверки: вызывает проверку с адаптивным интервалом.
+ * Проверка сообщает, изменились ли параметры отправителя; следующий опрос планируется после её завершения,
+ * поэтому при зависшей проверке опросы не копятся.
  */
 export class TrackMonitor {
-  private lastWidth?: number;
-
-  private lastHeight?: number;
-
   private readonly maxPollIntervalMs: number;
 
   private currentPollIntervalMs: number;
@@ -16,6 +17,9 @@ export class TrackMonitor {
   private readonly pollIntervalMs: number;
 
   private readonly setTimeoutRequest: SetTimeoutRequest;
+
+  // новый объект на каждую подписку: проверка, завершившаяся после её снятия или смены, опрос не продолжает
+  private subscription?: TSubscription;
 
   public constructor({
     pollIntervalMs = 1000,
@@ -32,52 +36,53 @@ export class TrackMonitor {
   }
 
   /**
-   * Запускает слежение за размером трека с начального интервала опроса.
+   * Запускает опрос проверки с начального интервала.
    */
-  public subscribe(track: MediaStreamTrack, callback: () => void): void {
+  public subscribe(check: TCheck): void {
     this.unsubscribe();
 
-    const { width, height } = track.getSettings();
+    const subscription = { check };
 
-    this.lastWidth = width;
-    this.lastHeight = height;
-    // запускаем адаптивный опрос
+    this.subscription = subscription;
     this.currentPollIntervalMs = this.pollIntervalMs;
-    this.schedulePoll(track, callback);
+    this.schedulePoll(subscription);
   }
 
   /** Останавливает всю активность мониторинга */
   public unsubscribe(): void {
     this.setTimeoutRequest.cancelRequest();
+    this.subscription = undefined;
+  }
 
-    this.lastWidth = undefined;
-    this.lastHeight = undefined;
+  /** Возвращает опрос к начальному интервалу; без подписки ничего не делает */
+  public resetInterval(): void {
+    if (this.subscription) {
+      this.subscribe(this.subscription.check);
+    }
   }
 
   /**
-   * Периодически опрашивает track с экспоненциальной адаптацией частоты.
-   * При отсутствии изменений интервал удваивается до maxPollIntervalMs,
-   * при обнаружении изменений сбрасывается до начального.
+   * Планирует опрос с экспоненциальной адаптацией частоты.
+   * Пока проверка не сообщает об изменениях, интервал удваивается до maxPollIntervalMs,
+   * при изменениях сбрасывается до начального.
    */
-  private schedulePoll(track: MediaStreamTrack, callback: () => void): void {
-    const poll = () => {
-      const { width, height } = track.getSettings();
-      const isSizeChanged = width !== this.lastWidth || height !== this.lastHeight;
+  private schedulePoll(subscription: TSubscription): void {
+    const scheduleNextPoll = (isChanged: boolean) => {
+      if (this.subscription !== subscription) {
+        return;
+      }
 
-      this.lastWidth = width;
-      this.lastHeight = height;
-      // при изменениях — сброс интервала, иначе увеличиваем его, но не превышаем максимум
-      this.currentPollIntervalMs = isSizeChanged
+      this.currentPollIntervalMs = isChanged
         ? this.pollIntervalMs
         : Math.min(this.currentPollIntervalMs * 2, this.maxPollIntervalMs);
-      // следующий опрос планируется до callback: callback может синхронно снять или сменить подписку
-      this.setTimeoutRequest.request(poll, this.currentPollIntervalMs);
-
-      if (isSizeChanged) {
-        callback();
-      }
+      this.schedulePoll(subscription);
     };
 
-    this.setTimeoutRequest.request(poll, this.currentPollIntervalMs);
+    this.setTimeoutRequest.request(() => {
+      // ошибка проверки отодвигает следующий опрос так же, как отсутствие изменений
+      subscription.check().then(scheduleNextPoll, () => {
+        scheduleNextPoll(false);
+      });
+    }, this.currentPollIntervalMs);
   }
 }

@@ -6,8 +6,11 @@ import {
   getMinimumBitrate,
 } from '../calcBitrate';
 import {
+  hasValidResolutionMainCam,
   resolveEncodingParameters,
+  resolveLoosenedEncodingParameters,
   resolveStrictestEncodingParameters,
+  resolveTracklessEncodingParameters,
 } from '../resolveEncodingParameters';
 
 import type { IBalancingContext, IEncodingParameters, IMainCamHeaders } from '../types';
@@ -23,6 +26,20 @@ const HEADERS_MAX_720P: IMainCamHeaders = {
   mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
   resolutionMainCam: '1280x720',
 };
+
+// не два положительных конечных числа «ШИРИНАxВЫСОТА»
+const MALFORMED_RESOLUTIONS = [
+  '',
+  '1280',
+  '1280x',
+  'x720',
+  'axb',
+  '0x0',
+  '0x720',
+  '-1280x-720',
+  'Infinityx720',
+  '1280x720x30',
+];
 
 // заголовки, при которых параметры считаются по разрешению трека
 const HEADERS_WITHOUT_LIMIT: [string, IMainCamHeaders | undefined][] = [
@@ -123,18 +140,6 @@ describe('resolveEncodingParameters', () => {
         });
       },
     );
-
-    it.each(['', '1280', 'invalid-format', 'abcxdef'])(
-      'должен вернуть scaleResolutionDownBy NaN для некорректного resolutionMainCam "%s"',
-      (resolutionMainCam) => {
-        const parameters = resolveEncodingParameters(
-          { mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION, resolutionMainCam },
-          context,
-        );
-
-        expect(parameters.scaleResolutionDownBy).toBeNaN();
-      },
-    );
   });
 
   describe('кодек', () => {
@@ -155,6 +160,36 @@ describe('resolveEncodingParameters', () => {
       expect(parameters.maxBitrate).toBe(maxBitrate);
     });
   });
+});
+
+describe('hasValidResolutionMainCam', () => {
+  it.each([
+    ['MAX_MAIN_CAM_RESOLUTION с разрешением 1280x720', HEADERS_MAX_720P],
+    [
+      'MAX_MAIN_CAM_RESOLUTION без resolutionMainCam',
+      { mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION },
+    ],
+    ['PAUSE_MAIN_CAM', HEADERS_PAUSE],
+    [
+      'PAUSE_MAIN_CAM с некорректным resolutionMainCam',
+      { ...HEADERS_PAUSE, resolutionMainCam: 'axb' },
+    ],
+    ['заголовки без mainCam', {}],
+  ])('должен вернуть true, если пришла %s', (_name, headers: IMainCamHeaders) => {
+    expect(hasValidResolutionMainCam(headers)).toBe(true);
+  });
+
+  it.each(MALFORMED_RESOLUTIONS)(
+    'должен вернуть false для MAX_MAIN_CAM_RESOLUTION с resolutionMainCam "%s"',
+    (resolutionMainCam) => {
+      expect(
+        hasValidResolutionMainCam({
+          mainCam: EContentMainCAM.MAX_MAIN_CAM_RESOLUTION,
+          resolutionMainCam,
+        }),
+      ).toBe(false);
+    },
+  );
 });
 
 describe('resolveStrictestEncodingParameters', () => {
@@ -181,5 +216,78 @@ describe('resolveStrictestEncodingParameters', () => {
     const upcoming = createParameters(2);
 
     expect(resolveStrictestEncodingParameters(current, upcoming)).toBe(current);
+  });
+});
+
+describe('resolveLoosenedEncodingParameters', () => {
+  it.each([
+    [2, 4, 2],
+    [4, 2, 2],
+    [3, 3, 3],
+  ])(
+    'должен вернуть меньший из желаемого scaleResolutionDownBy %d и текущего %d: %d',
+    (desiredScale, currentScale, scaleResolutionDownBy) => {
+      const parameters = resolveLoosenedEncodingParameters(
+        { scaleResolutionDownBy: desiredScale },
+        { scaleResolutionDownBy: currentScale },
+      );
+
+      expect(parameters.scaleResolutionDownBy).toBe(scaleResolutionDownBy);
+    },
+  );
+
+  it.each([
+    ['у отправителя не задан scaleResolutionDownBy', {}],
+    ['у отправителя нет параметров кодирования', undefined],
+  ])('должен считать текущий scaleResolutionDownBy равным 1, если %s', (_name, current) => {
+    const parameters = resolveLoosenedEncodingParameters({ scaleResolutionDownBy: 3 }, current);
+
+    expect(parameters).toEqual({ scaleResolutionDownBy: 1, maxBitrate: undefined });
+  });
+
+  it.each([
+    [2_000_000, 1_000_000, 2_000_000],
+    [1_000_000, 2_000_000, 2_000_000],
+  ])(
+    'должен вернуть больший из желаемого maxBitrate %d и текущего %d: %d',
+    (desiredMaxBitrate, currentMaxBitrate, maxBitrate) => {
+      const parameters = resolveLoosenedEncodingParameters(
+        { scaleResolutionDownBy: 1, maxBitrate: desiredMaxBitrate },
+        { maxBitrate: currentMaxBitrate },
+      );
+
+      expect(parameters.maxBitrate).toBe(maxBitrate);
+    },
+  );
+
+  it('не должен задавать maxBitrate отправителю без ограничения битрейта', () => {
+    const parameters = resolveLoosenedEncodingParameters(
+      { scaleResolutionDownBy: 1, maxBitrate: 1_000_000 },
+      { scaleResolutionDownBy: 1 },
+    );
+
+    expect(parameters.maxBitrate).toBeUndefined();
+  });
+
+  it('не должен задавать maxBitrate, если желаемый не задан', () => {
+    const parameters = resolveLoosenedEncodingParameters(
+      { scaleResolutionDownBy: 1 },
+      { maxBitrate: 1_000_000 },
+    );
+
+    expect(parameters.maxBitrate).toBeUndefined();
+  });
+});
+
+describe('resolveTracklessEncodingParameters', () => {
+  it.each([
+    ['H264', CODEC_H264],
+    ['AV1', CODEC_AV1],
+    ['неизвестного', undefined],
+  ])('должен вернуть scaleResolutionDownBy 1 и максимальный битрейт кодека %s', (_name, codec) => {
+    expect(resolveTracklessEncodingParameters(codec)).toEqual({
+      scaleResolutionDownBy: 1,
+      maxBitrate: getMaximumBitrate(codec),
+    });
   });
 });

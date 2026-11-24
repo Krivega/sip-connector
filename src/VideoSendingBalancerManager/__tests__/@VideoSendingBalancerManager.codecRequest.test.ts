@@ -11,16 +11,19 @@ import {
   confirmCall,
   createObservedSender,
   createVideoTrack,
+  ENCODING_4K_BY_TRACK,
   ENCODING_4K_LIMITED_TO_720P,
   getSettledResult,
   hangGetStats,
   hangNextGetStats,
   HEADERS_MAX_720P,
   HEADERS_PAUSE,
+  rejectGetStats,
   sendMainCamInfo,
   setConnection,
   setSenderCodec,
   settle,
+  TRACK_SIZE_POLLING_WINDOW,
 } from '../__fixtures__';
 
 import type { ApiManager } from '@/ApiManager';
@@ -183,12 +186,52 @@ describe('VideoSendingBalancerManager: запрос кодека при бала
     });
   });
 
+  describe('остановка балансировки, когда getStats не отвечает или отклонён', () => {
+    const GET_STATS_FAILURES: [string, (sender: RTCRtpSender) => void][] = [
+      ['не отвечает', hangGetStats],
+      ['отклонён', rejectGetStats],
+    ];
+
+    beforeEach(async () => {
+      observeSenderWith(track4K);
+      createManager();
+      await confirmCallAndWaitBalancingStart();
+      sendMainCamInfo(callManager, HEADERS_PAUSE);
+      await settle();
+    });
+
+    it.each(GET_STATS_FAILURES)(
+      'возвращает 4K-треку параметры по треку вместо PAUSE_MAIN_CAM после recv-session-started, если getStats %s',
+      async (_name, breakGetStats) => {
+        breakGetStats(observed.sender);
+        callManager.events.trigger('recv-session-started', undefined as never);
+        await settle();
+
+        expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_BY_TRACK);
+      },
+    );
+
+    it.each(GET_STATS_FAILURES)(
+      'возвращает 4K-треку параметры по треку вместо PAUSE_MAIN_CAM во время нового прогрева, если getStats %s, а сразу за recv-session-started получен recv-session-ended',
+      async (_name, breakGetStats) => {
+        breakGetStats(observed.sender);
+        callManager.events.trigger('recv-session-started', undefined as never);
+        callManager.events.trigger('recv-session-ended', undefined as never);
+        await settle();
+
+        expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_BY_TRACK);
+        expect(manager.isBalancingScheduled).toBe(true);
+        expect(manager.isBalancingActive).toBe(false);
+      },
+    );
+  });
+
   describe('исключение по кодеку: ignoreForCodec h264', () => {
     beforeEach(() => {
       createManager(BALANCER_OPTIONS_IGNORING_H264);
     });
 
-    it('при кодеке VP8 не меняет параметры до оригинального replaceTrack и ограничивает 4K-трек до 1280x720 после замены', async () => {
+    it('при кодеке VP8 выставляет scaleResolutionDownBy 3 до оригинального replaceTrack при замене 720p на 4K', async () => {
       setSenderCodec(observed.sender, CODEC_VP8);
       await startBalancingWithLimit720p();
 
@@ -199,7 +242,7 @@ describe('VideoSendingBalancerManager: запрос кодека при бала
 
       expect(result).toEqual({ status: 'fulfilled', value: undefined });
       expect(getReplaceTrackEntries(logLengthBeforeReplace)).toEqual([
-        { type: 'replaceTrack', appliedScaleResolutionDownBy: 1 },
+        { type: 'replaceTrack', appliedScaleResolutionDownBy: 3 },
       ]);
       expect(observed.getAppliedEncoding()).toEqual({
         scaleResolutionDownBy: 3,
@@ -207,9 +250,9 @@ describe('VideoSendingBalancerManager: запрос кодека при бала
       });
     });
 
-    it('заменяет 720p на 4K без изменения параметров, если getStats не отвечает', async () => {
-      await startBalancingWithLimit720p();
+    it('заменяет 720p на 4K без изменения параметров, если кодек ещё не получен: getStats не отвечает с первой балансировки старта', async () => {
       hangGetStats(observed.sender);
+      await startBalancingWithLimit720p();
 
       const logLengthBeforeReplace = observed.log.length;
       const result = await getSettledResult(observed.sender.replaceTrack(track4K));
@@ -265,6 +308,18 @@ describe('VideoSendingBalancerManager: запрос кодека при бала
       jest.spyOn(observed.sender, 'getStats').mockRejectedValueOnce(getStatsError);
 
       await expect(manager.balance()).rejects.toBe(getStatsError);
+    });
+
+    it('применяет MAX 1280x720 к 4K-треку без повторной команды, если getStats её балансировки отклонён', async () => {
+      observeSenderWith(track4K);
+      createManager();
+      await confirmCallAndWaitBalancingStart();
+      jest.spyOn(observed.sender, 'getStats').mockRejectedValueOnce(new Error('getStats failed'));
+      sendMainCamInfo(callManager, HEADERS_MAX_720P);
+      await settle();
+      await jest.advanceTimersByTimeAsync(TRACK_SIZE_POLLING_WINDOW);
+
+      expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_LIMITED_TO_720P);
     });
   });
 });

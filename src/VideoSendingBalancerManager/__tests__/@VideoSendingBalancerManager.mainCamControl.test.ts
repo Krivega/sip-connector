@@ -1,5 +1,6 @@
 import { createManagers } from '@/__fixtures__/createManagers';
 import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
+import { EContentMainCAM } from '@/ApiManager';
 import {
   createBalancerOptions,
   NO_MAX_RESOLUTION_BALANCER_OPTIONS,
@@ -20,9 +21,11 @@ import {
   HEADERS_MAX_720P,
   HEADERS_PAUSE,
   HEADERS_RESUME,
+  mainCamHeaders,
   sendMainCamInfo as sendMainCamInfoTo,
   setConnection as setConnectionOf,
   settle,
+  TRACK_SIZE_POLLING_WINDOW,
 } from '../__fixtures__';
 
 import type { ApiManager } from '@/ApiManager';
@@ -207,7 +210,7 @@ describe('VideoSendingBalancerManager: команда main-cam-control', () => {
       await jest.advanceTimersByTimeAsync(BALANCING_START_DELAY);
       await settle();
 
-      expect(startedHandler).not.toHaveBeenCalled();
+      expect(startedHandler).toHaveBeenCalledTimes(1);
       expect(manager.isBalancingActive).toBe(true);
       expect(manager.isBalancingScheduled).toBe(false);
       expect(observed.log).toEqual([]);
@@ -217,6 +220,18 @@ describe('VideoSendingBalancerManager: команда main-cam-control', () => {
       await settle();
 
       expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_LIMITED_TO_720P);
+    });
+
+    it('применяет запомненную в прогреве PAUSE_MAIN_CAM без новой команды, если старт по таймеру не удался без connection, а connection появился позже', async () => {
+      setConnection(undefined);
+      confirmCall();
+      sendMainCamInfo(HEADERS_PAUSE);
+      await jest.advanceTimersByTimeAsync(BALANCING_START_DELAY);
+      await settle();
+      setConnection(connection as RTCPeerConnection);
+      await jest.advanceTimersByTimeAsync(TRACK_SIZE_POLLING_WINDOW);
+
+      expect(observed.getAppliedEncoding()).toEqual(ENCODING_PAUSED);
     });
   });
 
@@ -338,6 +353,43 @@ describe('VideoSendingBalancerManager: команда main-cam-control', () => {
 
       expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_LIMITED_TO_720P);
     });
+
+    it('применяет MAX 1280x720 без повторной команды, если setParameters её балансировки отклонён', async () => {
+      observed.rejectNextSetParameters(new Error('setParameters failed'));
+      sendMainCamInfo(HEADERS_MAX_720P);
+      await settle();
+      await jest.advanceTimersByTimeAsync(TRACK_SIZE_POLLING_WINDOW);
+
+      expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_LIMITED_TO_720P);
+    });
+
+    it.each([
+      ['нечисловым', 'axb'],
+      ['нулевым', '0x0'],
+      ['неполным', '1280'],
+      ['отрицательным', '-1280x-720'],
+      ['нулевым по ширине', '0x720'],
+      ['пустым по высоте', '1280x'],
+    ])(
+      'не принимает MAX_MAIN_CAM_RESOLUTION с %s разрешением «%s»: оставляет параметры PAUSE_MAIN_CAM без новых setParameters, а следующую MAX 1280x720 применяет как обычно',
+      async (_name, resolutionMainCam) => {
+        sendMainCamInfo(HEADERS_PAUSE);
+        await settle();
+
+        const logLengthBeforeCommand = observed.log.length;
+
+        sendMainCamInfo(mainCamHeaders(EContentMainCAM.MAX_MAIN_CAM_RESOLUTION, resolutionMainCam));
+        await settle();
+
+        expect(observed.log.slice(logLengthBeforeCommand)).toEqual([]);
+        expect(observed.getAppliedEncoding()).toEqual(ENCODING_PAUSED);
+
+        sendMainCamInfo(HEADERS_MAX_720P);
+        await settle();
+
+        expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_LIMITED_TO_720P);
+      },
+    );
 
     it('применяет команду, когда connection появился после неудачного старта', async () => {
       manager.stopBalancing();
@@ -595,5 +647,83 @@ describe('VideoSendingBalancerManager: команда main-cam-control', () => {
         maxBitrate: calcMaxBitrateByWidthAndCodec(1920, CODEC),
       });
     });
+
+    it('возвращает 720p-треку scaleResolutionDownBy 2 при maxAvailableResolution 640x360, если размер трека изменился, по RESUME_MAIN_CAM выполнена балансировка, а размер вернулся к прежнему до очередного опроса', async () => {
+      const getSettings = jest.spyOn(track720, 'getSettings');
+
+      createManager(createBalancerOptions({ maxResolution: { width: 640, height: 360 } }));
+      await confirmCallAndWaitBalancingStart();
+      getSettings.mockReturnValue({ width: 640, height: 360 });
+      sendMainCamInfo(HEADERS_RESUME);
+      await settle();
+      getSettings.mockReturnValue({ width: 1280, height: 720 });
+      await jest.advanceTimersByTimeAsync(TRACK_SIZE_POLLING_WINDOW);
+
+      expect(observed.getAppliedEncoding().scaleResolutionDownBy).toBe(2);
+    });
+  });
+
+  describe('(з) размер трека при активной балансировке', () => {
+    // ограничения до 1280x720: 4K-треку нужен масштаб 3, а после смены его размера на 1920x1080 — 1.5
+    const LIMITS_TO_720P: [string, IBalancerOptions, () => void][] = [
+      [
+        'MAX 1280x720',
+        NO_MAX_RESOLUTION_BALANCER_OPTIONS,
+        () => {
+          sendMainCamInfo(HEADERS_MAX_720P);
+        },
+      ],
+      [
+        'maxAvailableResolution 1280x720',
+        createBalancerOptions({ maxResolution: { width: 1280, height: 720 } }),
+        () => {},
+      ],
+    ];
+
+    const startBalancingWithLimit = async (
+      options: IBalancerOptions,
+      receiveCommand: () => void,
+    ) => {
+      observed = createObservedSender(track4K);
+      connection.senders = [observed.sender];
+      createManager(options);
+      await confirmCallAndWaitBalancingStart();
+      receiveCommand();
+      await settle();
+    };
+
+    it.each(LIMITS_TO_720P)(
+      'при %s пересчитывает масштаб 4K-трека с 3 на 1.5 в пределах окна опроса, если размер трека изменился на 1920x1080 без команды и замены трека',
+      async (_name, options, receiveCommand) => {
+        await startBalancingWithLimit(options, receiveCommand);
+
+        const logLengthBeforeResize = observed.log.length;
+
+        jest.spyOn(track4K, 'getSettings').mockReturnValue({ width: 1920, height: 1080 });
+        await jest.advanceTimersByTimeAsync(TRACK_SIZE_POLLING_WINDOW);
+
+        expect(observed.log.slice(logLengthBeforeResize)).toEqual([
+          { type: 'setParameters', scaleResolutionDownBy: 1.5 },
+        ]);
+        expect(observed.getAppliedEncoding()).toEqual({
+          scaleResolutionDownBy: 1.5,
+          maxBitrate: calcMaxBitrateByWidthAndCodec(1280, CODEC),
+        });
+      },
+    );
+
+    it.each(LIMITS_TO_720P)(
+      'при %s не вызывает setParameters два окна опроса подряд, если размер трека, трек и команда не менялись',
+      async (_name, options, receiveCommand) => {
+        await startBalancingWithLimit(options, receiveCommand);
+
+        const logLengthAfterBalancing = observed.log.length;
+
+        await jest.advanceTimersByTimeAsync(2 * TRACK_SIZE_POLLING_WINDOW);
+
+        expect(observed.log.slice(logLengthAfterBalancing)).toEqual([]);
+        expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_LIMITED_TO_720P);
+      },
+    );
   });
 });

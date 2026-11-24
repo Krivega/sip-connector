@@ -1,7 +1,11 @@
 import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
 import { EContentMainCAM } from '@/ApiManager';
-import { createSenderBalancerOptions, createVideoTrack } from '../__fixtures__';
-import { calcMaxBitrateByWidthAndCodec, getMinimumBitrate } from '../calcBitrate';
+import { createBalancerOptions, createVideoTrack } from '../__fixtures__';
+import {
+  calcMaxBitrateByWidthAndCodec,
+  getMaximumBitrate,
+  getMinimumBitrate,
+} from '../calcBitrate';
 import { RESULT_NO_CHANGED, SenderBalancer } from '../SenderBalancer';
 
 import type { TResultSetParametersToSender } from '@/tools';
@@ -54,26 +58,15 @@ const RESULT_CHANGED: TResultSetParametersToSender = {
 
 describe('SenderBalancer', () => {
   let parametersSetter: jest.Mocked<IParametersSetter>;
-  let serverHeaders: IMainCamHeaders | undefined;
   let track720: MediaStreamVideoTrack;
   let track4K: MediaStreamVideoTrack;
   let sender720: RTCRtpSender;
   let sender4K: RTCRtpSender;
 
-  const createSenderBalancer = ({
-    ignoreForCodec,
-    maxResolution,
-  }: { ignoreForCodec?: string; maxResolution?: TResolutionSize } = {}) => {
-    return new SenderBalancer(
-      { parametersSetter },
-      createSenderBalancerOptions({
-        ignoreForCodec,
-        maxResolution,
-        getServerHeaders: () => {
-          return serverHeaders;
-        },
-      }),
-    );
+  const createSenderBalancer = (
+    options: { ignoreForCodec?: string; maxResolution?: TResolutionSize } = {},
+  ) => {
+    return new SenderBalancer({ parametersSetter }, createBalancerOptions(options));
   };
 
   const getAppliedParameters = () => {
@@ -83,7 +76,6 @@ describe('SenderBalancer', () => {
   };
 
   beforeEach(() => {
-    serverHeaders = undefined;
     parametersSetter = {
       setEncodingsToSender: jest.fn().mockResolvedValue(RESULT_CHANGED),
     };
@@ -111,9 +103,10 @@ describe('SenderBalancer', () => {
     });
 
     it('должен установить параметры по команде сервера', async () => {
-      serverHeaders = HEADERS_MAX_720P;
-
-      await createSenderBalancer().apply(sender4K, { codec: CODEC_H264 });
+      await createSenderBalancer().apply(sender4K, {
+        codec: CODEC_H264,
+        serverHeaders: HEADERS_MAX_720P,
+      });
 
       expect(parametersSetter.setEncodingsToSender).toHaveBeenCalledWith(
         sender4K,
@@ -142,9 +135,11 @@ describe('SenderBalancer', () => {
     });
 
     it('должен установить параметры ожидаемого трека, если его ограничение строже', async () => {
-      serverHeaders = HEADERS_MAX_720P;
-
-      await createSenderBalancer().apply(sender720, { codec: CODEC_H264, upcomingTrack: track4K });
+      await createSenderBalancer().apply(sender720, {
+        codec: CODEC_H264,
+        upcomingTrack: track4K,
+        serverHeaders: HEADERS_MAX_720P,
+      });
 
       expect(getAppliedParameters()).toEqual([PARAMETERS_4K_LIMITED_TO_720P]);
     });
@@ -156,35 +151,47 @@ describe('SenderBalancer', () => {
     });
 
     it('должен установить параметры паузы при PAUSE_MAIN_CAM', async () => {
-      serverHeaders = HEADERS_PAUSE;
-
-      await createSenderBalancer().apply(sender720, { codec: CODEC_H264, upcomingTrack: track4K });
+      await createSenderBalancer().apply(sender720, {
+        codec: CODEC_H264,
+        upcomingTrack: track4K,
+        serverHeaders: HEADERS_PAUSE,
+      });
 
       expect(getAppliedParameters()).toEqual([PARAMETERS_PAUSED]);
+    });
+
+    it('должен установить параметры ожидаемого трека, если у отправителя нет трека', async () => {
+      await createSenderBalancer().apply(new RTCRtpSenderMock(), {
+        codec: CODEC_H264,
+        upcomingTrack: track4K,
+        serverHeaders: HEADERS_MAX_720P,
+      });
+
+      expect(getAppliedParameters()).toEqual([PARAMETERS_4K_LIMITED_TO_720P]);
     });
   });
 
   describe('применение без кодека', () => {
     it('должен установить только scaleResolutionDownBy по текущему треку', async () => {
-      serverHeaders = HEADERS_MAX_720P;
-
-      await createSenderBalancer().apply(sender4K);
+      await createSenderBalancer().apply(sender4K, { serverHeaders: HEADERS_MAX_720P });
 
       expect(getAppliedParameters()).toStrictEqual([{ scaleResolutionDownBy: 3 }]);
     });
 
     it('должен установить только scaleResolutionDownBy ожидаемого трека, если его ограничение строже', async () => {
-      serverHeaders = HEADERS_MAX_720P;
-
-      await createSenderBalancer().apply(sender720, { upcomingTrack: track4K });
+      await createSenderBalancer().apply(sender720, {
+        upcomingTrack: track4K,
+        serverHeaders: HEADERS_MAX_720P,
+      });
 
       expect(getAppliedParameters()).toStrictEqual([{ scaleResolutionDownBy: 3 }]);
     });
 
     it('должен установить только scaleResolutionDownBy текущего трека, если ограничение ожидаемого трека мягче', async () => {
-      serverHeaders = HEADERS_MAX_720P;
-
-      await createSenderBalancer().apply(sender4K, { upcomingTrack: track720 });
+      await createSenderBalancer().apply(sender4K, {
+        upcomingTrack: track720,
+        serverHeaders: HEADERS_MAX_720P,
+      });
 
       expect(getAppliedParameters()).toStrictEqual([{ scaleResolutionDownBy: 3 }]);
     });
@@ -193,6 +200,15 @@ describe('SenderBalancer', () => {
       await createSenderBalancer().apply(sender720, { upcomingTrack: track4K });
 
       expect(getAppliedParameters()).toStrictEqual([{ scaleResolutionDownBy: 1 }]);
+    });
+
+    it('должен установить только scaleResolutionDownBy ожидаемого трека, если у отправителя нет трека', async () => {
+      await createSenderBalancer().apply(new RTCRtpSenderMock(), {
+        upcomingTrack: track4K,
+        serverHeaders: HEADERS_MAX_720P,
+      });
+
+      expect(getAppliedParameters()).toStrictEqual([{ scaleResolutionDownBy: 3 }]);
     });
 
     it('должен установить только scaleResolutionDownBy ожидаемого трека, ограниченного maxResolution', async () => {
@@ -204,22 +220,77 @@ describe('SenderBalancer', () => {
     });
   });
 
+  describe('только ослабление', () => {
+    const setCurrentEncoding = async (sender: RTCRtpSender, encoding: RTCRtpEncodingParameters) => {
+      const parameters = sender.getParameters();
+
+      parameters.encodings = [encoding];
+
+      await sender.setParameters(parameters);
+    };
+
+    it('не должен увеличивать scaleResolutionDownBy и уменьшать maxBitrate относительно текущих параметров отправителя', async () => {
+      await setCurrentEncoding(sender4K, PARAMETERS_4K_BY_TRACK);
+      await createSenderBalancer().apply(sender4K, {
+        codec: CODEC_H264,
+        serverHeaders: HEADERS_PAUSE,
+        isLooseningOnly: true,
+      });
+
+      expect(getAppliedParameters()).toEqual([PARAMETERS_4K_BY_TRACK]);
+    });
+
+    it('должен уменьшить scaleResolutionDownBy и увеличить maxBitrate до желаемых', async () => {
+      await setCurrentEncoding(sender4K, PARAMETERS_PAUSED);
+      await createSenderBalancer().apply(sender4K, { codec: CODEC_H264, isLooseningOnly: true });
+
+      expect(getAppliedParameters()).toEqual([PARAMETERS_4K_BY_TRACK]);
+    });
+
+    it('должен уменьшить только scaleResolutionDownBy, если кодек не передан', async () => {
+      await setCurrentEncoding(sender4K, PARAMETERS_PAUSED);
+      await createSenderBalancer().apply(sender4K, { isLooseningOnly: true });
+
+      expect(getAppliedParameters()).toEqual([{ scaleResolutionDownBy: 1, maxBitrate: undefined }]);
+    });
+
+    it('не должен задавать maxBitrate отправителю без ограничения битрейта', async () => {
+      await createSenderBalancer().apply(sender4K, { codec: CODEC_H264, isLooseningOnly: true });
+
+      expect(getAppliedParameters()).toEqual([{ scaleResolutionDownBy: 1, maxBitrate: undefined }]);
+    });
+  });
+
+  describe('отправитель без трека', () => {
+    it('должен снять ограничение даже при команде сервера: scaleResolutionDownBy 1 и максимальный битрейт кодека', async () => {
+      await createSenderBalancer({ maxResolution: MAX_RESOLUTION_1080P }).apply(
+        new RTCRtpSenderMock(),
+        { codec: CODEC_H264, serverHeaders: HEADERS_PAUSE },
+      );
+
+      expect(getAppliedParameters()).toEqual([
+        { scaleResolutionDownBy: 1, maxBitrate: getMaximumBitrate(CODEC_H264) },
+      ]);
+    });
+
+    it('должен вернуть только scaleResolutionDownBy 1, если кодек не передан', async () => {
+      await createSenderBalancer().apply(new RTCRtpSenderMock(), {});
+
+      expect(getAppliedParameters()).toStrictEqual([{ scaleResolutionDownBy: 1 }]);
+    });
+
+    it('не должен менять параметры при ignoreForCodec h264, если кодек не передан', async () => {
+      const result = await createSenderBalancer({ ignoreForCodec: 'h264' }).apply(
+        new RTCRtpSenderMock(),
+        {},
+      );
+
+      expect(result).toBe(RESULT_NO_CHANGED);
+      expect(parametersSetter.setEncodingsToSender).not.toHaveBeenCalled();
+    });
+  });
+
   describe('без изменений', () => {
-    it.each([
-      ['с кодеком', { codec: CODEC_H264 }],
-      ['без кодека', {}],
-    ])(
-      'должен вернуть RESULT_NO_CHANGED и не менять параметры %s, если у отправителя нет трека',
-      async (_name, options) => {
-        const senderWithoutTrack = new RTCRtpSenderMock();
-
-        const result = await createSenderBalancer().apply(senderWithoutTrack, options);
-
-        expect(result).toBe(RESULT_NO_CHANGED);
-        expect(parametersSetter.setEncodingsToSender).not.toHaveBeenCalled();
-      },
-    );
-
     it.each([
       ['кодек совпал с исключением', { codec: 'video/H264' }],
       ['кодек не передан', {}],
@@ -227,12 +298,10 @@ describe('SenderBalancer', () => {
     ])(
       'должен вернуть RESULT_NO_CHANGED и не менять параметры при ignoreForCodec h264, если %s',
       async (_name, options) => {
-        serverHeaders = HEADERS_MAX_720P;
-
-        const result = await createSenderBalancer({ ignoreForCodec: 'h264' }).apply(
-          sender4K,
-          options,
-        );
+        const result = await createSenderBalancer({ ignoreForCodec: 'h264' }).apply(sender4K, {
+          ...options,
+          serverHeaders: HEADERS_MAX_720P,
+        });
 
         expect(result).toBe(RESULT_NO_CHANGED);
         expect(parametersSetter.setEncodingsToSender).not.toHaveBeenCalled();
@@ -245,9 +314,10 @@ describe('SenderBalancer', () => {
       ['VP8', CODEC_VP8],
       ['неизвестен (пустая строка)', CODEC_UNKNOWN],
     ])('должен установить полные параметры, если кодек %s', async (_name, codec) => {
-      serverHeaders = HEADERS_MAX_720P;
-
-      await createSenderBalancer({ ignoreForCodec: 'h264' }).apply(sender4K, { codec });
+      await createSenderBalancer({ ignoreForCodec: 'h264' }).apply(sender4K, {
+        codec,
+        serverHeaders: HEADERS_MAX_720P,
+      });
 
       expect(getAppliedParameters()).toStrictEqual([
         { scaleResolutionDownBy: 3, maxBitrate: calcMaxBitrateByWidthAndCodec(1280, codec) },

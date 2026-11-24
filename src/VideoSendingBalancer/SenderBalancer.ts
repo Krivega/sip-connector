@@ -1,12 +1,19 @@
 import hasIncludesString from '@/utils/hasIncludesString';
 import {
   resolveEncodingParameters,
+  resolveLoosenedEncodingParameters,
   resolveStrictestEncodingParameters,
+  resolveTracklessEncodingParameters,
 } from './resolveEncodingParameters';
 
 import type { TResultSetParametersToSender } from '@/tools';
 import type { TResolutionSize } from '@/types';
-import type { IEncodingParameters, IMainCamHeaders, IParametersSetter } from './types';
+import type {
+  IEncodingParameters,
+  IMainCamHeaders,
+  IParametersSetter,
+  TSenderEncodingParameters,
+} from './types';
 
 export const RESULT_NO_CHANGED: TResultSetParametersToSender = {
   isChanged: false,
@@ -17,6 +24,15 @@ export const RESULT_NO_CHANGED: TResultSetParametersToSender = {
     headerExtensions: [],
     rtcp: {},
   },
+};
+
+type TApplyOptions = {
+  codec?: string;
+  upcomingTrack?: MediaStreamTrack;
+  // команда сервера, если её можно применять этому отправителю
+  serverHeaders?: IMainCamHeaders;
+  // применить только то, что ослабляет текущие параметры отправителя
+  isLooseningOnly?: boolean;
 };
 
 /**
@@ -30,53 +46,76 @@ export class SenderBalancer {
 
   private readonly getMaxResolution: () => TResolutionSize | undefined;
 
-  private readonly getServerHeaders: () => IMainCamHeaders | undefined;
-
   public constructor(
     { parametersSetter }: { parametersSetter: IParametersSetter },
     options: {
       ignoreForCodec?: string;
       getMaxResolution: () => TResolutionSize | undefined;
-      getServerHeaders: () => IMainCamHeaders | undefined;
     },
   ) {
     this.parametersSetter = parametersSetter;
     this.ignoreForCodec = options.ignoreForCodec;
     this.getMaxResolution = options.getMaxResolution;
-    this.getServerHeaders = options.getServerHeaders;
   }
 
   /**
-   * Применяет к отправителю параметры на основе текущих заголовков от сервера.
+   * Применяет к отправителю параметры на основе переданной команды сервера.
    * Перед заменой трека применяет более строгие из параметров текущего и ожидаемого трека,
-   * чтобы кадры нового трека не ушли с параметрами старого.
+   * чтобы кадры нового трека не ушли с параметрами старого; без текущего трека — параметры ожидаемого.
+   * Отправителю без трека снимает ограничение: трек, который на нём появится, не должен унаследовать прежнее.
    * Без кодека меняет только масштаб, а при заданном ignoreForCodec не меняет ничего
    * @param sender - Отправитель видео
-   * @param options - Кодек отправителя и трек, на который заменяется текущий
+   * @param options - Кодек отправителя, трек, на который заменяется текущий, команда сервера
+   * и разрешено ли только ослабление
    * @returns Promise с результатом применения
    */
   public async apply(
     sender: RTCRtpSender,
-    { codec, upcomingTrack }: { codec?: string; upcomingTrack?: MediaStreamTrack } = {},
+    options: TApplyOptions,
   ): Promise<TResultSetParametersToSender> {
-    if (!sender.track || this.isIgnoredCodec(codec)) {
+    const { codec, isLooseningOnly = false } = options;
+    const targetParameters = this.resolveTargetParameters(sender, options);
+
+    if (this.isIgnoredCodec(codec)) {
       return RESULT_NO_CHANGED;
     }
 
-    const trackParameters = this.resolveParameters(sender.track, codec);
-    const parameters = upcomingTrack
-      ? resolveStrictestEncodingParameters(
-          trackParameters,
-          this.resolveParameters(upcomingTrack, codec),
-        )
-      : trackParameters;
-    const { scaleResolutionDownBy } = parameters;
-
     // битрейт зависит от кодека: без кодека его не трогаем
+    const parameters: TSenderEncodingParameters =
+      codec === undefined
+        ? { scaleResolutionDownBy: targetParameters.scaleResolutionDownBy }
+        : targetParameters;
+
     return this.parametersSetter.setEncodingsToSender(
       sender,
-      codec === undefined ? { scaleResolutionDownBy } : parameters,
+      isLooseningOnly
+        ? resolveLoosenedEncodingParameters(parameters, sender.getParameters().encodings[0])
+        : parameters,
     );
+  }
+
+  private resolveTargetParameters(
+    sender: RTCRtpSender,
+    { codec, upcomingTrack, serverHeaders }: TApplyOptions,
+  ): IEncodingParameters {
+    const track = sender.track ?? upcomingTrack;
+
+    if (!track) {
+      return resolveTracklessEncodingParameters(codec);
+    }
+
+    const resolveParameters = (videoTrack: MediaStreamTrack): IEncodingParameters => {
+      return resolveEncodingParameters(
+        serverHeaders,
+        { codec, videoTrack: videoTrack as MediaStreamVideoTrack },
+        this.getMaxResolution(),
+      );
+    };
+    const trackParameters = resolveParameters(track);
+
+    return upcomingTrack
+      ? resolveStrictestEncodingParameters(trackParameters, resolveParameters(upcomingTrack))
+      : trackParameters;
   }
 
   private isIgnoredCodec(codec?: string): boolean {
@@ -84,14 +123,6 @@ export class SenderBalancer {
     return (
       this.ignoreForCodec !== undefined &&
       (codec === undefined || hasIncludesString(codec, this.ignoreForCodec))
-    );
-  }
-
-  private resolveParameters(track: MediaStreamTrack, codec?: string): IEncodingParameters {
-    return resolveEncodingParameters(
-      this.getServerHeaders(),
-      { codec, videoTrack: track as MediaStreamVideoTrack },
-      this.getMaxResolution(),
     );
   }
 }

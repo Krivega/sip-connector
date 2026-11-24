@@ -10,7 +10,10 @@ export type TObservedSender = {
   // применённые setParameters и вызовы replaceTrack отправителя (с масштабом, действовавшим в момент замены)
   log: TSenderLogEntry[];
   getAppliedEncoding: () => RTCRtpEncodingParameters;
+  // меняет параметры отправителя так, как это делает другой модуль: мимо балансировщика
+  applyForeignEncoding: (encoding: RTCRtpEncodingParameters) => Promise<void>;
   rejectNextSetParameters: (error: Error) => void;
+  deferNextSetParameters: () => PromiseWithResolvers<undefined>;
   // следующий setParameters не завершается никогда
   hangNextSetParameters: () => void;
   rejectNextReplaceTrack: (error: Error) => void;
@@ -94,10 +97,26 @@ const createObservedSender = (track: MediaStreamVideoTrack): TObservedSender => 
     getAppliedEncoding: () => {
       return appliedEncoding;
     },
+    applyForeignEncoding: async (encoding: RTCRtpEncodingParameters) => {
+      const parameters = sender.getParameters();
+
+      parameters.encodings = [{ ...parameters.encodings[0], ...encoding }];
+
+      await sender.setParameters(parameters);
+    },
     rejectNextSetParameters: (error: Error) => {
       setParametersGates.push(async () => {
         throw error;
       });
+    },
+    deferNextSetParameters: () => {
+      const deferred = Promise.withResolvers<undefined>();
+
+      setParametersGates.push(async () => {
+        await deferred.promise;
+      });
+
+      return deferred;
     },
     hangNextSetParameters: () => {
       setParametersGates.push(waitForever);
