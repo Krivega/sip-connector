@@ -184,6 +184,20 @@ describe('PresentationFrameSizeLimiter', () => {
     expect(getEncoding(sender)?.scaleResolutionDownBy).toBe(1);
   });
 
+  it('возвращает scale к 1 после уменьшения кадра при пустом sendEncodings', async () => {
+    const { track, setSize } = createVideoTrack(SIZE_OVER_LIMIT);
+    const sender = new RTCRtpSenderMock({ track });
+
+    limiter.watch(sender, { sendEncodings: [] });
+    await flushPromises();
+    expectScaleFitsEncoderLimit(getScale(sender), SIZE_OVER_LIMIT);
+
+    setSize(SIZE_FHD);
+    await jest.advanceTimersByTimeAsync(FRAME_CHECK_PERIOD_MS);
+
+    expect(getEncoding(sender)?.scaleResolutionDownBy).toBe(1);
+  });
+
   it('не меняет maxBitrate отправителя', async () => {
     const { track, setSize } = createVideoTrack(SIZE_OVER_LIMIT);
     const sender = new RTCRtpSenderMock({ track });

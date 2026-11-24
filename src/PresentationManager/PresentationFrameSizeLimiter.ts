@@ -43,13 +43,17 @@ const applyFrameSizeLimit = (
     return;
   }
 
-  const presentationSendEncodings = resolvePresentationSendEncodings({
+  const resolvedSendEncodings = resolvePresentationSendEncodings({
     videoTrack,
     sendEncodings,
     maxResolution,
-  }) ?? [{}];
-  // Явный scale 1 снимает уменьшение прежнего кадра и прошлой демонстрации на том же sender;
-  // maxBitrate не передаём, чтобы не менять битрейт демонстрации
+  });
+  const presentationSendEncodings =
+    resolvedSendEncodings === undefined || resolvedSendEncodings.length === 0
+      ? [{}]
+      : resolvedSendEncodings;
+  // Явный scale 1 (и при пустом sendEncodings) снимает уменьшение прежнего кадра и прошлой
+  // демонстрации на том же sender; maxBitrate не передаём, чтобы не менять битрейт демонстрации
   const encodings = presentationSendEncodings.map(({ scaleResolutionDownBy }) => {
     return { scaleResolutionDownBy: scaleResolutionDownBy ?? SCALE_RESOLUTION_DOWN_BY_DEFAULT };
   });
