@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [31.5.0](https://github.com/Krivega/sip-connector/compare/v31.4.2...v31.5.0) (2026-11-25)
+
+### Features
+
+- add X-VINTEO-PARTNAME header to SIP INVITE ([5db6ab5](https://github.com/Krivega/sip-connector/commit/5db6ab54d4d259392651316fbb60d613a6d189f6))
+
 ### [31.4.2](https://github.com/Krivega/sip-connector/compare/v31.4.1...v31.4.2) (2026-11-24)
 
 ### Bug Fixes
