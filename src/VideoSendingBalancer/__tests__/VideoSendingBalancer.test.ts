@@ -10,6 +10,7 @@ import {
   hangGetStats,
   hangNextGetStats,
   setSenderCodec,
+  setSenderStatsWithoutCodec,
 } from '../__fixtures__';
 import {
   calcMaxBitrateByWidthAndCodec,
@@ -306,6 +307,41 @@ describe('VideoSendingBalancer', () => {
 
       await expect(balancing).resolves.toMatchObject({ isChanged: false });
       expect(getEncoding()).toEqual({ scaleResolutionDownBy: 1, maxBitrate: getMaximumBitrate() });
+    });
+
+    it('должен менять только масштаб, пока в статистике нет кодека, и выставить битрейт по тику, когда кодек появится', async () => {
+      setSenderStatsWithoutCodec(sender);
+      await startWithServerHeaders(HEADERS_PAUSE);
+
+      expect(getEncoding()).toEqual({ scaleResolutionDownBy: 200, maxBitrate: undefined });
+
+      setSenderCodec(sender, 'video/VP8');
+      await jest.advanceTimersByTimeAsync(POLLING_WINDOW_MS);
+
+      expect(getEncoding()).toEqual(ENCODING_PAUSED);
+    });
+
+    it('не должен менять параметры при ignoreForCodec, пока в статистике нет кодека, и должен применить их по тику, когда появится не исключённый кодек', async () => {
+      balancer = createBalancer(createBalancerOptions({ ignoreForCodec: 'h264' }));
+      setSenderStatsWithoutCodec(sender);
+      await startWithServerHeaders(HEADERS_PAUSE);
+
+      expect(setParameters).not.toHaveBeenCalled();
+
+      setSenderCodec(sender, 'video/VP8');
+      await jest.advanceTimersByTimeAsync(POLLING_WINDOW_MS);
+
+      expect(getEncoding()).toEqual(ENCODING_PAUSED);
+    });
+
+    it('должен балансировать по последнему известному кодеку, если в следующей статистике кодека нет', async () => {
+      balancer = createBalancer(createBalancerOptions({ ignoreForCodec: 'h264' }));
+      setSenderCodec(sender, 'video/H264');
+      await balancer.balance();
+      setSenderStatsWithoutCodec(sender);
+      await startWithServerHeaders(HEADERS_PAUSE);
+
+      expect(setParameters).not.toHaveBeenCalled();
     });
 
     it('должен рассчитать параметры по треку, установленному отправителю за время запроса кодека', async () => {

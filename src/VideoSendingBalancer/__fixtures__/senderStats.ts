@@ -12,6 +12,13 @@ export const setSenderCodec = (sender: RTCRtpSender, mimeType: string): void => 
 };
 
 /**
+ * Отправитель отдаёт в sender.getStats() статистику без кодека, например до согласования отправки
+ */
+export const setSenderStatsWithoutCodec = (sender: RTCRtpSender): void => {
+  jest.spyOn(sender, 'getStats').mockResolvedValue(new Map());
+};
+
+/**
  * Откладывает ответ на следующий вызов sender.getStats() (получение кодека балансировкой)
  * @returns функция, которая отпускает отложенный ответ
  */

@@ -7,4 +7,5 @@ export {
   hangNextGetStats,
   rejectGetStats,
   setSenderCodec,
+  setSenderStatsWithoutCodec,
 } from './senderStats';

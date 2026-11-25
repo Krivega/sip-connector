@@ -29,7 +29,7 @@ describe('CodecProvider', () => {
       expect(mockSender.getStats).toHaveBeenCalled();
     });
 
-    it('должен вернуть пустую строку если кодек не найден', async () => {
+    it('должен вернуть undefined, если кодек не найден', async () => {
       const mockStats = new Map();
 
       mockStats.set('outbound-rtp-1', {
@@ -41,22 +41,22 @@ describe('CodecProvider', () => {
 
       const result = await codecProvider.getCodecFromSender(mockSender);
 
-      expect(result).toBe('');
+      expect(result).toBeUndefined();
       expect(mockSender.getStats).toHaveBeenCalled();
     });
 
-    it('должен вернуть пустую строку если stats пустые', async () => {
+    it('должен вернуть undefined, если stats пустые', async () => {
       const mockStats = new Map();
 
       (mockSender.getStats as jest.Mock).mockResolvedValue(mockStats);
 
       const result = await codecProvider.getCodecFromSender(mockSender);
 
-      expect(result).toBe('');
+      expect(result).toBeUndefined();
       expect(mockSender.getStats).toHaveBeenCalled();
     });
 
-    it('должен вернуть пустую строку если кодек не имеет mimeType', async () => {
+    it('должен вернуть undefined, если кодек не имеет mimeType', async () => {
       const mockStats = new Map();
 
       mockStats.set('codec-1', {
@@ -68,7 +68,7 @@ describe('CodecProvider', () => {
 
       const result = await codecProvider.getCodecFromSender(mockSender);
 
-      expect(result).toBe('');
+      expect(result).toBeUndefined();
       expect(mockSender.getStats).toHaveBeenCalled();
     });
 
@@ -138,7 +138,7 @@ describe('CodecProvider', () => {
 
       const result = await codecProvider.getCodecFromSender(mockSender);
 
-      expect(result).toBe('');
+      expect(result).toBeUndefined();
       expect(mockSender.getStats).toHaveBeenCalled();
     });
 
@@ -187,12 +187,23 @@ describe('CodecProvider', () => {
       expect(codecProvider.getKnownCodec(mockSender)).toBe('video/vp8');
     });
 
-    it('должен вернуть пустую строку, если в полученной статистике нет кодека', async () => {
+    it('должен вернуть undefined, если в полученной статистике нет кодека, а прежний неизвестен', async () => {
       (mockSender.getStats as jest.Mock).mockResolvedValue(new Map());
 
       await codecProvider.getCodecFromSender(mockSender);
 
-      expect(codecProvider.getKnownCodec(mockSender)).toBe('');
+      expect(codecProvider.getKnownCodec(mockSender)).toBeUndefined();
+    });
+
+    it('должен сохранить и вернуть прежний кодек, если в следующей статистике кодека нет', async () => {
+      (mockSender.getStats as jest.Mock)
+        .mockResolvedValueOnce(createCodecStats('video/h264'))
+        .mockResolvedValueOnce(new Map());
+
+      await codecProvider.getCodecFromSender(mockSender);
+
+      await expect(codecProvider.getCodecFromSender(mockSender)).resolves.toBe('video/h264');
+      expect(codecProvider.getKnownCodec(mockSender)).toBe('video/h264');
     });
 
     it('должен сохранить прежний кодек, если следующий запрос завершился ошибкой', async () => {

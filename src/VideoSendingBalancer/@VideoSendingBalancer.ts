@@ -249,7 +249,8 @@ class VideoSendingBalancer {
         const result = await this.applyParameters(sender, { codec });
 
         if (state.kind === 'started') {
-          state.appliedInputs = inputs;
+          // без кодека применено не всё: сверка повторит балансировку, пока кодек не станет известен
+          state.appliedInputs = codec === undefined ? undefined : inputs;
         }
 
         return result;

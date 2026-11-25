@@ -1,5 +1,5 @@
 class RTCRtpSenderMock implements RTCRtpSender {
-  public stats: RTCStatsReport = new Map().set('codec', { mimeType: 'video/h264' });
+  public stats: RTCStatsReport = new Map().set('codec', { type: 'codec', mimeType: 'video/h264' });
 
   public dtmf: RTCDTMFSender | null = null;
 

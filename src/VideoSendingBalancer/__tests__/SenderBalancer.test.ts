@@ -15,7 +15,6 @@ import type { IMainCamHeaders, IParametersSetter } from '../types';
 const CODEC_H264 = 'video/h264';
 const CODEC_VP8 = 'video/VP8';
 const CODEC_AV1 = 'video/AV1';
-const CODEC_UNKNOWN = '';
 const MAX_RESOLUTION_1080P = { width: 1920, height: 1080 };
 
 const HEADERS_MAX_720P: IMainCamHeaders = {
@@ -310,17 +309,14 @@ describe('SenderBalancer', () => {
   });
 
   describe('кодек вне исключения ignoreForCodec h264', () => {
-    it.each([
-      ['VP8', CODEC_VP8],
-      ['неизвестен (пустая строка)', CODEC_UNKNOWN],
-    ])('должен установить полные параметры, если кодек %s', async (_name, codec) => {
+    it('должен установить полные параметры, если кодек VP8', async () => {
       await createSenderBalancer({ ignoreForCodec: 'h264' }).apply(sender4K, {
-        codec,
+        codec: CODEC_VP8,
         serverHeaders: HEADERS_MAX_720P,
       });
 
       expect(getAppliedParameters()).toStrictEqual([
-        { scaleResolutionDownBy: 3, maxBitrate: calcMaxBitrateByWidthAndCodec(1280, codec) },
+        { scaleResolutionDownBy: 3, maxBitrate: calcMaxBitrateByWidthAndCodec(1280, CODEC_VP8) },
       ]);
     });
   });
