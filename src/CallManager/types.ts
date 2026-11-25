@@ -17,6 +17,7 @@ type TOptionsExtraHeaders = {
 
 type TParamsAnswerToIncomingCall = {
   mediaStream: MediaStream;
+  partName?: string;
   extraHeaders?: TOptionsExtraHeaders['extraHeaders'];
   iceServers?: RTCIceServer[];
   directionVideo?: RTCRtpTransceiverDirection;

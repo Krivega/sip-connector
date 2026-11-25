@@ -43,6 +43,7 @@
     height: number;
   };
   displayName: string;
+  partName?: string;
   register?: boolean;
   user?: string;
   password?: string;
@@ -72,6 +73,7 @@
     height: number;
   };
   displayName: string;
+  partName?: string;
   authorizationUser: string;
   register?: boolean;
   user?: string;

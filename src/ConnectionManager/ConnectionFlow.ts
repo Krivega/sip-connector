@@ -239,6 +239,7 @@ export default class ConnectionFlow {
     connectionRecoveryMaxInterval,
     userAgent,
     displayName = '',
+    partName,
     register = false,
     extraHeaders = [],
   }) => {
@@ -286,6 +287,7 @@ export default class ConnectionFlow {
       iceServers,
       maxAvailableResolution,
       displayName,
+      partName,
       authorizationUser,
       register,
       user,

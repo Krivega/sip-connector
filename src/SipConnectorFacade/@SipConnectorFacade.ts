@@ -244,6 +244,7 @@ class SipConnectorFacade implements IProxyMethods {
     const {
       conference,
       mediaStream,
+      partName,
       extraHeaders,
       iceServers,
       contentHint,
@@ -272,6 +273,7 @@ class SipConnectorFacade implements IProxyMethods {
       return this.sipConnector.call(
         {
           mediaStream,
+          partName,
           extraHeaders,
           iceServers,
           contentHint,
@@ -370,6 +372,7 @@ class SipConnectorFacade implements IProxyMethods {
 
   public answerToIncomingCall = async (parameters: {
     mediaStream: MediaStream;
+    partName?: string | undefined;
     extraHeaders?: string[] | undefined;
     iceServers?: RTCIceServer[];
     contentHint?: TContentHint;
@@ -390,6 +393,7 @@ class SipConnectorFacade implements IProxyMethods {
   }): Promise<RTCPeerConnection | undefined> => {
     const {
       mediaStream,
+      partName,
       extraHeaders,
       iceServers,
       contentHint,
@@ -414,6 +418,7 @@ class SipConnectorFacade implements IProxyMethods {
     const answer = async (): Promise<RTCPeerConnection> => {
       return this.sipConnector.answerToIncomingCall({
         mediaStream,
+        partName,
         extraHeaders,
         iceServers,
         contentHint,

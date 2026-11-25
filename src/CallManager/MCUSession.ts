@@ -5,6 +5,7 @@ import { replaceMediaStreamInConnection } from '@/utils/peerConnection';
 import BitrateStateManager from './BitrateStateManager';
 import { ECallCause } from './causes';
 import { SESSION_JSSIP_EVENT_NAMES } from './events';
+import { createPartNameExtraHeader } from './partName';
 
 import type { EndEvent, RTCSession, RenegotiateOptions } from '@krivega/jssip';
 import type { TEvents } from './events';
@@ -96,6 +97,7 @@ export class MCUSession implements IMCUSession {
     {
       number,
       mediaStream,
+      partName,
       extraHeaders = [],
       iceServers,
       directionVideo,
@@ -108,6 +110,8 @@ export class MCUSession implements IMCUSession {
       onAddedTransceiver,
     },
   ) => {
+    const partNameExtraHeaders = createPartNameExtraHeader(partName);
+
     return new Promise<RTCPeerConnection>((resolve, reject) => {
       this.handleCall()
         .then(resolve)
@@ -137,7 +141,7 @@ export class MCUSession implements IMCUSession {
         // так как в методе call создается RTCSession
         // и после создания нет возможности подписаться на события peerconnection через subscribeToSessionEvents
         eventHandlers: this.getSessionEventHandlers(),
-        extraHeaders,
+        extraHeaders: [...partNameExtraHeaders, ...extraHeaders],
         directionVideo,
         directionAudio,
         degradationPreference,
@@ -164,6 +168,7 @@ export class MCUSession implements IMCUSession {
     rtcSession: RTCSession,
     {
       mediaStream,
+      partName,
       extraHeaders = [],
       iceServers,
       directionVideo,
@@ -176,6 +181,8 @@ export class MCUSession implements IMCUSession {
       onAddedTransceiver,
     },
   ): Promise<RTCPeerConnection> => {
+    const partNameExtraHeaders = createPartNameExtraHeader(partName);
+
     return new Promise<RTCPeerConnection>((resolve, reject) => {
       try {
         this.rtcSession = rtcSession;
@@ -205,7 +212,7 @@ export class MCUSession implements IMCUSession {
             offerToReceiveVideo,
           },
           mediaStream: preparedMediaStream,
-          extraHeaders,
+          extraHeaders: [...partNameExtraHeaders, ...extraHeaders],
           directionVideo,
           directionAudio,
           degradationPreference,

@@ -67,6 +67,53 @@ describe('MCUSession', () => {
     expect(typeof pc).toBe('object');
   });
 
+  it('startCall: добавляет X-VINTEO-PARTNAME в extraHeaders INVITE', async () => {
+    const promise = mcuSession.startCall(ua as unknown as UA, getSipServerUrl, {
+      number: '123',
+      mediaStream,
+      partName: 'John Doe',
+    });
+    const audioTrack = createAudioMediaStreamTrackMock();
+    const videoTrack = createVideoMediaStreamTrackMock();
+    const fakePeerconnection = new RTCPeerConnectionMock(undefined, [audioTrack, videoTrack]);
+
+    events.trigger('peerconnection', { peerconnection: fakePeerconnection });
+    events.trigger('confirmed', {});
+
+    await promise;
+
+    expect(ua.call).toHaveBeenCalledWith(
+      'sip:123@sipServerUrl',
+      expect.objectContaining({
+        extraHeaders: ['X-VINTEO-PARTNAME: John Doe'],
+      }),
+    );
+  });
+
+  it('startCall: сохраняет существующие extraHeaders при добавлении X-VINTEO-PARTNAME', async () => {
+    const promise = mcuSession.startCall(ua as unknown as UA, getSipServerUrl, {
+      number: '123',
+      mediaStream,
+      partName: 'John Doe',
+      extraHeaders: ['X-Test: value'],
+    });
+    const audioTrack = createAudioMediaStreamTrackMock();
+    const videoTrack = createVideoMediaStreamTrackMock();
+    const fakePeerconnection = new RTCPeerConnectionMock(undefined, [audioTrack, videoTrack]);
+
+    events.trigger('peerconnection', { peerconnection: fakePeerconnection });
+    events.trigger('confirmed', {});
+
+    await promise;
+
+    expect(ua.call).toHaveBeenCalledWith(
+      'sip:123@sipServerUrl',
+      expect.objectContaining({
+        extraHeaders: ['X-VINTEO-PARTNAME: John Doe', 'X-Test: value'],
+      }),
+    );
+  });
+
   it('endCall: вызывает terminateAsync и передаёт подтверждение BYE в onSuccessResponse', async () => {
     const terminateAsync = jest.fn(async () => {});
     const onByeConfirmed = jest.fn();

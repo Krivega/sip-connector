@@ -24,6 +24,7 @@ export type TServerConfig = {
 export type TParametersConnection = TServerConfig &
   TOptionsExtraHeaders & {
     displayName: string;
+    partName?: string;
     register?: boolean;
     user?: string;
     password?: string;
@@ -36,6 +37,7 @@ export type TParametersConnection = TServerConfig &
 
 export type TConnectionConfig = TServerConfig & {
   displayName: string;
+  partName?: string;
   authorizationUser: string;
   register?: boolean;
   user?: string;

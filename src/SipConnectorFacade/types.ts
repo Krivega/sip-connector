@@ -23,6 +23,7 @@ export type TConnectToServerResult =
 export type TCallToServerParameters = {
   conference: string;
   mediaStream: MediaStream;
+  partName?: string;
   extraHeaders?: string[];
   iceServers?: RTCIceServer[];
   contentHint?: TContentHint;

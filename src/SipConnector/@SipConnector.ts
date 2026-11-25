@@ -414,9 +414,12 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     options: { autoRedial?: boolean } = {},
   ) => {
     const { mediaStream, onAddedTransceiver, sendEncodings, ...rest } = params;
+    const partName =
+      params.partName ?? this.connectionManager.getConnectionConfiguration()?.partName;
     const resolvedParams = {
       ...rest,
       mediaStream,
+      partName,
       sendEncodings: this.resolveMainStreamSendEncodings(mediaStream, sendEncodings),
       onAddedTransceiver: this.resolveHandleAddTransceiver(onAddedTransceiver),
     };
@@ -479,6 +482,8 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
     params: Parameters<CallManager['answerToIncomingCall']>[1],
   ) => {
     const { mediaStream, onAddedTransceiver, sendEncodings, ...rest } = params;
+    const partName =
+      params.partName ?? this.connectionManager.getConnectionConfiguration()?.partName;
 
     // Ответ заменяет идущий цикл перезвона: иначе он остался бы вооружён параметрами прежнего звонка.
     this.callReconnectManager.disarm('manual');
@@ -488,6 +493,7 @@ class SipConnector extends EventEmitterProxy<TEventMap> {
       {
         ...rest,
         mediaStream,
+        partName,
         sendEncodings: this.resolveMainStreamSendEncodings(mediaStream, sendEncodings),
         onAddedTransceiver: this.resolveHandleAddTransceiver(onAddedTransceiver),
       },

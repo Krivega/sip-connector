@@ -18,6 +18,7 @@ const connectResult = await facade.connectToServer({
   sipServerUrl: 'example.com', // Путь /webrtc/wss/ добавляется автоматически
   sipServerIp: 'sip.example.com',
   remoteAddress: '192.168.1.1',
+  partName: 'Иван',
   iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
   user: 'user123',
   password: 'secret',
@@ -79,6 +80,7 @@ const result = await facade.connectAndCallToServer({
       remoteAddress: '192.168.1.1',
       iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
       displayName: 'User',
+      partName: 'Иван',
       user: 'user123',
       password: 'secret',
       register: true,
@@ -113,6 +115,21 @@ const closeReason = await result.session.waitUntilClosed();
 Ошибки запуска AutoConnector возвращаются типизированным failure-result, а ошибка первого звонка
 пробрасывается после полного cleanup. При сетевом обрыве `autoRedial: true` сохраняет signaling:
 AutoConnector восстанавливает SIP-соединение, а `CallReconnectManager` повторяет звонок.
+
+## Имя участника (`partName`)
+
+Параметр `partName` добавляет SIP-заголовок `X-VINTEO-PARTNAME` в `INVITE` (SDP-invite).
+Его можно передать в `connect()` / `connectToServer()` — значение сохраняется в конфигурации
+соединения и автоматически попадает в исходящий звонок, — либо напрямую в
+`callToServer()` / `answerToIncomingCall()` (значение из звонка приоритетнее значения из соединения):
+
+```typescript
+await facade.callToServer({
+  conference: 'room123',
+  mediaStream,
+  partName: 'Иван',
+});
+```
 
 ## Быстрый старт
 

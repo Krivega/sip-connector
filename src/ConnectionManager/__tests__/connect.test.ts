@@ -206,6 +206,17 @@ describe('connect', () => {
     );
   });
 
+  it('должен сохранять partName в connectionConfiguration', async () => {
+    expect.assertions(1);
+
+    await connectionManager.connect({
+      ...dataForConnectionWithAuthorization,
+      partName: 'John Doe',
+    });
+
+    expect(connectionManager.getConnectionConfiguration()?.partName).toBe('John Doe');
+  });
+
   it('должен отправлять расширенные extraHeaders', async () => {
     expect.assertions(1);
 
