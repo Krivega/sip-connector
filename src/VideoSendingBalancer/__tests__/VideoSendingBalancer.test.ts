@@ -289,16 +289,34 @@ describe('VideoSendingBalancer', () => {
     // потребитель правит полученный результат; правка снимается после теста, чтобы через общий объект она не задела другие тесты
     const editResult = (result: TResultSetParametersToSender) => {
       const { isChanged, parameters } = result;
+      const { codecs, headerExtensions, rtcp } = parameters;
+
+      // без rtcp его правка прошла бы мимо результата
+      if (rtcp === undefined) {
+        throw new Error('result has no rtcp');
+      }
+
       const [encoding] = parameters.encodings;
       const encodingBefore = { ...encoding };
+      const codecsCountBefore = codecs.length;
+      const headerExtensionsCountBefore = headerExtensions.length;
+      const rtcpBefore = { ...rtcp };
 
       restoreEdits.push(() => {
         Object.assign(result, { isChanged });
         parameters.encodings[0] = encodingBefore;
+        // вложенные массивы и объекты восстанавливаются на месте: общим может оказаться любой из них
+        codecs.splice(codecsCountBefore);
+        headerExtensions.splice(headerExtensionsCountBefore);
+        delete rtcp.cname;
+        Object.assign(rtcp, rtcpBefore);
       });
 
       Object.assign(result, { isChanged: true });
       Object.assign(encoding, ENCODING_PAUSED);
+      codecs.push({ clockRate: 90_000, mimeType: 'video/VP8', payloadType: 96 });
+      headerExtensions.push({ id: 1, uri: 'urn:ietf:params:rtp-hdrext:sdes:mid' });
+      Object.assign(rtcp, { cname: 'edited' });
     };
 
     beforeEach(() => {
