@@ -9,6 +9,7 @@ import {
   deferNextGetStats,
   hangGetStats,
   hangNextGetStats,
+  NO_CHANGE_RESULT,
   setSenderCodec,
   setSenderStatsWithoutCodec,
 } from '../__fixtures__';
@@ -17,8 +18,8 @@ import {
   getMaximumBitrate,
   getMinimumBitrate,
 } from '../calcBitrate';
-import { RESULT_NO_CHANGED } from '../SenderBalancer';
 
+import type { TResultSetParametersToSender } from '@/tools';
 import type { IBalancerOptions, IMainCamHeaders } from '../types';
 
 jest.mock('@/logger');
@@ -156,12 +157,12 @@ describe('VideoSendingBalancer', () => {
       await expect(balancer.balance()).rejects.toThrow('connection is not exist');
     });
 
-    it('должен вернуть RESULT_NO_CHANGED, если нет видео-отправителя', async () => {
+    it('должен вернуть результат без изменений, если нет видео-отправителя', async () => {
       connection.senders = [];
 
       const result = await balancer.balance();
 
-      expect(result).toBe(RESULT_NO_CHANGED);
+      expect(result).toStrictEqual(NO_CHANGE_RESULT);
     });
 
     it('должен установить параметры по треку отправителя и вернуть результат установки', async () => {
@@ -174,7 +175,7 @@ describe('VideoSendingBalancer', () => {
       expect(getEncoding()).toEqual(ENCODING_720P_LIMITED_TO_360P);
     });
 
-    it('должен вернуть RESULT_NO_CHANGED и не менять параметры, если кодек отправителя игнорируется', async () => {
+    it('должен вернуть результат без изменений и не менять параметры, если кодек отправителя игнорируется', async () => {
       setSenderCodec(sender, 'video/VP8');
       balancer = createBalancer(
         createBalancerOptions({ ignoreForCodec: 'vp8', maxResolution: MAX_RESOLUTION_360P }),
@@ -182,7 +183,7 @@ describe('VideoSendingBalancer', () => {
 
       const result = await balancer.balance();
 
-      expect(result).toBe(RESULT_NO_CHANGED);
+      expect(result).toStrictEqual(NO_CHANGE_RESULT);
       expect(setParameters).not.toHaveBeenCalled();
     });
 
@@ -238,7 +239,7 @@ describe('VideoSendingBalancer', () => {
       await expect(balancer.balance()).rejects.toThrow('connection is not exist');
     });
 
-    it('должен вернуть RESULT_NO_CHANGED и не менять параметры, если за время запроса кодека начат прогрев', async () => {
+    it('должен вернуть результат без изменений и не менять параметры, если за время запроса кодека начат прогрев', async () => {
       balancer = createBalancer(createBalancerOptions({ maxResolution: MAX_RESOLUTION_360P }));
 
       const releaseStats = deferNextGetStats(sender);
@@ -247,7 +248,7 @@ describe('VideoSendingBalancer', () => {
       balancer.warmUp();
       releaseStats();
 
-      await expect(balancing).resolves.toBe(RESULT_NO_CHANGED);
+      await expect(balancing).resolves.toStrictEqual(NO_CHANGE_RESULT);
       expect(setParameters).not.toHaveBeenCalled();
     });
 
@@ -266,7 +267,7 @@ describe('VideoSendingBalancer', () => {
         },
       ],
     ])(
-      'должен вернуть RESULT_NO_CHANGED, если за время запроса кодека вызван %s',
+      'должен вернуть результат без изменений, если за время запроса кодека вызван %s',
       async (_name, interrupt) => {
         await balancer.start();
 
@@ -276,7 +277,123 @@ describe('VideoSendingBalancer', () => {
         interrupt();
         releaseStats();
 
-        await expect(balancing).resolves.toBe(RESULT_NO_CHANGED);
+        await expect(balancing).resolves.toStrictEqual(NO_CHANGE_RESULT);
+      },
+    );
+  });
+
+  describe('результат без изменений', () => {
+    let isExcluded: boolean;
+    let restoreEdits: (() => void)[];
+
+    // потребитель правит полученный результат; правка снимается после теста, чтобы через общий объект она не задела другие тесты
+    const editResult = (result: TResultSetParametersToSender) => {
+      const { isChanged, parameters } = result;
+      const [encoding] = parameters.encodings;
+      const encodingBefore = { ...encoding };
+
+      restoreEdits.push(() => {
+        Object.assign(result, { isChanged });
+        parameters.encodings[0] = encodingBefore;
+      });
+
+      Object.assign(result, { isChanged: true });
+      Object.assign(encoding, ENCODING_PAUSED);
+    };
+
+    beforeEach(() => {
+      isExcluded = false;
+      restoreEdits = [];
+    });
+
+    afterEach(() => {
+      restoreEdits.forEach((restore) => {
+        restore();
+      });
+    });
+
+    it.each<
+      [
+        string,
+        () => IBalancerOptions,
+        (target: VideoSendingBalancer) => Promise<TResultSetParametersToSender>,
+      ]
+    >([
+      [
+        'нет видео-отправителя',
+        () => {
+          return createBalancerOptions();
+        },
+        async (target) => {
+          connection.senders = [];
+
+          return target.balance();
+        },
+      ],
+      [
+        'кодек отправителя игнорируется',
+        () => {
+          return createBalancerOptions({ ignoreForCodec: 'vp8' });
+        },
+        async (target) => {
+          setSenderCodec(sender, 'video/VP8');
+
+          return target.balance();
+        },
+      ],
+      [
+        'за время запроса кодека вызван stop()',
+        () => {
+          return createBalancerOptions();
+        },
+        async (target) => {
+          await target.start();
+
+          const releaseStats = deferNextGetStats(sender);
+          const balancing = target.balance();
+
+          target.stop();
+          releaseStats();
+
+          return balancing;
+        },
+      ],
+      [
+        'отправитель исключён за время запроса кодека',
+        () => {
+          return createBalancerOptions({
+            isExcludedSender: () => {
+              return isExcluded;
+            },
+          });
+        },
+        async (target) => {
+          isExcluded = false;
+
+          const releaseStats = deferNextGetStats(sender);
+          const balancing = target.balance();
+
+          isExcluded = true;
+          releaseStats();
+
+          return balancing;
+        },
+      ],
+    ])(
+      'не должен менять результат без изменений, полученный позже от того же и от другого балансировщика, если потребитель изменил прежний, когда %s',
+      async (_name, resolveOptions, getNoChangeResult) => {
+        balancer = createBalancer(resolveOptions());
+
+        const result = await getNoChangeResult(balancer);
+
+        expect(result).toStrictEqual(NO_CHANGE_RESULT);
+
+        editResult(result);
+
+        await expect(getNoChangeResult(createBalancer(resolveOptions()))).resolves.toStrictEqual(
+          NO_CHANGE_RESULT,
+        );
+        await expect(getNoChangeResult(balancer)).resolves.toStrictEqual(NO_CHANGE_RESULT);
       },
     );
   });
@@ -498,14 +615,14 @@ describe('VideoSendingBalancer', () => {
       expect(result.parameters.encodings).toEqual([ENCODING_PAUSED]);
     });
 
-    it('должен вернуть RESULT_NO_CHANGED и не применять запомненную команду, если за время первой балансировки вызван stop()', async () => {
+    it('должен вернуть результат без изменений и не применять запомненную команду, если за время первой балансировки вызван stop()', async () => {
       const releaseStats = deferNextGetStats(sender);
       const starting = startWithServerHeaders(HEADERS_PAUSE);
 
       balancer.stop();
       releaseStats();
 
-      await expect(starting).resolves.toBe(RESULT_NO_CHANGED);
+      await expect(starting).resolves.toStrictEqual(NO_CHANGE_RESULT);
       expect(setParameters).not.toHaveBeenCalled();
     });
 
@@ -903,7 +1020,7 @@ describe('VideoSendingBalancer', () => {
       hangGetStats(sender);
       await sender.replaceTrack(track4K);
 
-      expect(result).toBe(RESULT_NO_CHANGED);
+      expect(result).toStrictEqual(NO_CHANGE_RESULT);
       expect(getEncoding()).toEqual(ENCODING_4K_LIMITED_TO_720P);
     });
   });
@@ -1075,7 +1192,7 @@ describe('VideoSendingBalancer', () => {
     it('ничего не должен писать при балансировке, сверке и сбросе, если остался только исключённый отправитель', async () => {
       connection.senders = [excludedSender];
 
-      await expect(balancer.balance()).resolves.toEqual(RESULT_NO_CHANGED);
+      await expect(balancer.balance()).resolves.toEqual(NO_CHANGE_RESULT);
 
       await startWithServerHeaders(HEADERS_PAUSE);
       await jest.advanceTimersByTimeAsync(POLLING_WINDOW_MS);

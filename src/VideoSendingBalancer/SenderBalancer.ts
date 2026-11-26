@@ -15,15 +15,18 @@ import type {
   TSenderEncodingParameters,
 } from './types';
 
-export const RESULT_NO_CHANGED: TResultSetParametersToSender = {
-  isChanged: false,
-  parameters: {
-    encodings: [{}],
-    transactionId: '0',
-    codecs: [],
-    headerExtensions: [],
-    rtcp: {},
-  },
+// каждый вызов — новый объект: потребитель может изменить полученный результат, и это не должно задеть другие результаты
+export const createResultNoChanged = (): TResultSetParametersToSender => {
+  return {
+    isChanged: false,
+    parameters: {
+      encodings: [{}],
+      transactionId: '0',
+      codecs: [],
+      headerExtensions: [],
+      rtcp: {},
+    },
+  };
 };
 
 type TApplyOptions = {
@@ -77,7 +80,7 @@ export class SenderBalancer {
     const targetParameters = this.resolveTargetParameters(sender, options);
 
     if (this.isIgnoredCodec(codec)) {
-      return RESULT_NO_CHANGED;
+      return createResultNoChanged();
     }
 
     // битрейт зависит от кодека: без кодека его не трогаем

@@ -1,12 +1,12 @@
 import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
 import { EContentMainCAM } from '@/ApiManager';
-import { createBalancerOptions, createVideoTrack } from '../__fixtures__';
+import { createBalancerOptions, createVideoTrack, NO_CHANGE_RESULT } from '../__fixtures__';
 import {
   calcMaxBitrateByWidthAndCodec,
   getMaximumBitrate,
   getMinimumBitrate,
 } from '../calcBitrate';
-import { RESULT_NO_CHANGED, SenderBalancer } from '../SenderBalancer';
+import { SenderBalancer } from '../SenderBalancer';
 
 import type { TResultSetParametersToSender } from '@/tools';
 import type { TResolutionSize } from '@/types';
@@ -284,7 +284,7 @@ describe('SenderBalancer', () => {
         {},
       );
 
-      expect(result).toBe(RESULT_NO_CHANGED);
+      expect(result).toStrictEqual(NO_CHANGE_RESULT);
       expect(parametersSetter.setEncodingsToSender).not.toHaveBeenCalled();
     });
   });
@@ -295,14 +295,14 @@ describe('SenderBalancer', () => {
       ['кодек не передан', {}],
       ['кодек не передан перед заменой трека', { upcomingTrack: createVideoTrack(3840, 2160) }],
     ])(
-      'должен вернуть RESULT_NO_CHANGED и не менять параметры при ignoreForCodec h264, если %s',
+      'должен вернуть результат без изменений и не менять параметры при ignoreForCodec h264, если %s',
       async (_name, options) => {
         const result = await createSenderBalancer({ ignoreForCodec: 'h264' }).apply(sender4K, {
           ...options,
           serverHeaders: HEADERS_MAX_720P,
         });
 
-        expect(result).toBe(RESULT_NO_CHANGED);
+        expect(result).toStrictEqual(NO_CHANGE_RESULT);
         expect(parametersSetter.setEncodingsToSender).not.toHaveBeenCalled();
       },
     );

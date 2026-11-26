@@ -3,7 +3,7 @@ import { setEncodingsToSender } from '@/tools';
 import findVideoSender from '@/utils/peerConnection/findVideoSender';
 import { CodecProvider } from './CodecProvider';
 import { hasValidResolutionMainCam } from './resolveEncodingParameters';
-import { RESULT_NO_CHANGED, SenderBalancer } from './SenderBalancer';
+import { createResultNoChanged, SenderBalancer } from './SenderBalancer';
 import { TaskQueue } from './TaskQueue';
 import { TrackMonitor } from './TrackMonitor';
 import { TrackReplacer } from './TrackReplacer';
@@ -235,7 +235,7 @@ class VideoSendingBalancer {
           state.appliedInputs = undefined;
         }
 
-        return RESULT_NO_CHANGED;
+        return createResultNoChanged();
       }
 
       // кодек запрашивается до очереди: ожидание статистики не держит очередь и замену трека
@@ -244,7 +244,7 @@ class VideoSendingBalancer {
       return await this.taskQueue.add(sender, async () => {
         // балансировка, начатая в прошлом состоянии, устарела
         if (this.state !== state) {
-          return RESULT_NO_CHANGED;
+          return createResultNoChanged();
         }
 
         // входы читаются до применения: изменившееся за его время должно остаться расхождением для сверки
@@ -366,7 +366,7 @@ class VideoSendingBalancer {
   ): Promise<TResultSetParametersToSender> {
     // исключённому отправителю не пишется ничего, в том числе задачами, поставленными до его исключения
     if (this.isExcludedSender(sender)) {
-      return RESULT_NO_CHANGED;
+      return createResultNoChanged();
     }
 
     return this.senderBalancer.apply(sender, {
