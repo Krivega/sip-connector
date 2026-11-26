@@ -13,7 +13,10 @@ export type TObservedSender = {
   // меняет параметры отправителя так, как это делает другой модуль: мимо балансировщика
   applyForeignEncoding: (encoding: RTCRtpEncodingParameters) => Promise<void>;
   rejectNextSetParameters: (error: Error) => void;
-  deferNextSetParameters: () => PromiseWithResolvers<undefined>;
+  // откладывает применение ближайшей записи, для которой matches вернёт true (без условия — ближайшей записи)
+  deferNextSetParameters: (
+    matches?: (encoding: RTCRtpEncodingParameters) => boolean,
+  ) => PromiseWithResolvers<undefined>;
   // следующий setParameters не завершается никогда
   hangNextSetParameters: () => void;
   rejectNextReplaceTrack: (error: Error) => void;
@@ -22,8 +25,17 @@ export type TObservedSender = {
   hangNextReplaceTrack: () => void;
 };
 
+type TSetParametersGate = {
+  matches: (encoding: RTCRtpEncodingParameters) => boolean;
+  wait: () => Promise<void>;
+};
+
 const waitForever = async (): Promise<void> => {
   return new Promise<void>(() => {});
+};
+
+const matchesAnyEncoding = () => {
+  return true;
 };
 
 const normalizeEncoding = (encoding: RTCRtpEncodingParameters): RTCRtpEncodingParameters => {
@@ -36,18 +48,40 @@ const normalizeEncoding = (encoding: RTCRtpEncodingParameters): RTCRtpEncodingPa
 /**
  * Отправитель с журналом: replaceTrack здесь — «оригинальный» метод отправителя,
  * который был на нём до подключения балансировщика.
- * getParameters отдаёт снимок encodings, поэтому отклонённый setParameters не меняет параметры отправителя
+ * getParameters отдаёт снимок encodings, поэтому отклонённый setParameters не меняет параметры отправителя.
+ * setParameters — как в Chrome: параметры сверяются с последним getParameters при вызове, гейт задерживает только применение,
+ * записи применяются в порядке вызовов, а пока запись не применена, getParameters отдаёт прежние параметры
  */
 const createObservedSender = (track: MediaStreamVideoTrack): TObservedSender => {
-  const sender = new RTCRtpSenderMock({ track }) as RTCRtpSender;
+  const senderMock = new RTCRtpSenderMock({ track });
+  const sender = senderMock as RTCRtpSender;
   const log: TSenderLogEntry[] = [];
   const originalGetParameters = sender.getParameters.bind(sender);
-  const originalSetParameters = sender.setParameters.bind(sender);
   const originalReplaceTrack = sender.replaceTrack.bind(sender);
-  const setParametersGates: (() => Promise<void>)[] = [];
+  const setParametersGates: TSetParametersGate[] = [];
   const replaceTrackGates: (() => Promise<void>)[] = [];
   let appliedEncoding: RTCRtpEncodingParameters = {
     scaleResolutionDownBy: DEFAULT_SCALE_RESOLUTION_DOWN_BY,
+  };
+  // вызванные, но ещё не применённые или не отклонённые записи и завершение последней из них
+  let pendingApplications = 0;
+  let lastApplication: Promise<void> = Promise.resolve();
+
+  const takeSetParametersGate = (
+    parameters: RTCRtpSendParameters,
+  ): (() => Promise<void>) | undefined => {
+    const index = setParametersGates.findIndex((gate) => {
+      return gate.matches(parameters.encodings[0]);
+    });
+
+    return index === -1 ? undefined : setParametersGates.splice(index, 1)[0].wait;
+  };
+
+  const pushSetParametersGate = (
+    wait: () => Promise<void>,
+    matches: TSetParametersGate['matches'] = matchesAnyEncoding,
+  ) => {
+    setParametersGates.push({ matches, wait });
   };
 
   sender.getParameters = () => {
@@ -61,19 +95,42 @@ const createObservedSender = (track: MediaStreamVideoTrack): TObservedSender => 
   };
 
   sender.setParameters = async (parameters: RTCRtpSendParameters) => {
-    const gate = setParametersGates.shift();
+    // сверка — при вызове: поздний getParameters уже вызванную запись не отменяет
+    senderMock.checkParameters(parameters);
 
-    if (gate) {
-      await gate();
+    const gate = takeSetParametersGate(parameters);
+    const apply = () => {
+      senderMock.applyParameters(parameters);
+      appliedEncoding = normalizeEncoding(parameters.encodings[0]);
+      log.push({
+        type: 'setParameters',
+        scaleResolutionDownBy: appliedEncoding.scaleResolutionDownBy,
+      });
+    };
+
+    if (!gate && pendingApplications === 0) {
+      apply();
+
+      return;
     }
 
-    await originalSetParameters(parameters);
+    const previous = lastApplication;
 
-    appliedEncoding = normalizeEncoding(parameters.encodings[0]);
-    log.push({
-      type: 'setParameters',
-      scaleResolutionDownBy: appliedEncoding.scaleResolutionDownBy,
-    });
+    pendingApplications += 1;
+
+    const application = (async () => {
+      try {
+        await previous;
+        await gate?.();
+        apply();
+      } finally {
+        pendingApplications -= 1;
+      }
+    })();
+
+    lastApplication = application.catch(() => {});
+
+    await application;
   };
 
   sender.replaceTrack = async (newTrack: MediaStreamTrack | null) => {
@@ -105,21 +162,21 @@ const createObservedSender = (track: MediaStreamVideoTrack): TObservedSender => 
       await sender.setParameters(parameters);
     },
     rejectNextSetParameters: (error: Error) => {
-      setParametersGates.push(async () => {
+      pushSetParametersGate(async () => {
         throw error;
       });
     },
-    deferNextSetParameters: () => {
+    deferNextSetParameters: (matches) => {
       const deferred = Promise.withResolvers<undefined>();
 
-      setParametersGates.push(async () => {
+      pushSetParametersGate(async () => {
         await deferred.promise;
-      });
+      }, matches);
 
       return deferred;
     },
     hangNextSetParameters: () => {
-      setParametersGates.push(waitForever);
+      pushSetParametersGate(waitForever);
     },
     rejectNextReplaceTrack: (error: Error) => {
       replaceTrackGates.push(async () => {

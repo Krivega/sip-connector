@@ -19,7 +19,13 @@ type TAppliedInputs = {
   height?: number;
 };
 
-type TStartedState = { readonly kind: 'started'; appliedInputs?: TAppliedInputs };
+type TStartedState = {
+  readonly kind: 'started';
+  appliedInputs?: TAppliedInputs;
+  // после успешной замены трека первая сверка балансирует при любых входах: чтение параметров
+  // балансировкой после замены могло пересечься с ещё не завершённой записью вызывающего
+  isReplacementUnverified?: boolean;
+};
 
 type TState = { readonly kind: 'idle' | 'warmup' } | TStartedState;
 
@@ -268,9 +274,16 @@ class VideoSendingBalancer {
     }
   }
 
-  // сверка по тику: балансирует, только если изменились собственные входы — отправитель, его трек или размер трека
+  // сверка по тику: балансирует, если изменились собственные входы — отправитель, его трек или размер трека,
+  // а также один раз на первом тике после успешной замены трека, при любых входах
   private async reconcile(state: TStartedState): Promise<boolean> {
-    if (!this.hasInputsChanged(state.appliedInputs)) {
+    const isReplacementUnverified = state.isReplacementUnverified === true;
+
+    // сброс до балансировки: замена, завершившаяся за время балансировки этого тика, взводит флаг заново
+    // eslint-disable-next-line no-param-reassign -- флаг принадлежит объекту состояния этого запуска, как и appliedInputs
+    state.isReplacementUnverified = false;
+
+    if (!isReplacementUnverified && !this.hasInputsChanged(state.appliedInputs)) {
       return false;
     }
 
@@ -392,6 +405,13 @@ class VideoSendingBalancer {
   };
 
   private readonly balanceAfterReplacement = () => {
+    const { state } = this;
+
+    /* istanbul ignore else -- сужение типа: TrackReplacer запрашивает балансировку только при isBalancing, то есть в started */
+    if (state.kind === 'started') {
+      state.isReplacementUnverified = true;
+    }
+
     // новый трек может менять размер: сверка возвращается к начальному интервалу
     this.trackMonitor.resetInterval();
     this.balance().catch((error: unknown) => {
