@@ -24,7 +24,7 @@ type TStartedState = {
   appliedInputs?: TAppliedInputs;
   // после успешной замены трека первая сверка балансирует при любых входах: чтение параметров
   // балансировкой после замены могло пересечься с ещё не завершённой записью вызывающего
-  isReplacementUnverified?: boolean;
+  isReplacementUnverified: boolean;
 };
 
 type TState = { readonly kind: 'idle' | 'warmup' } | TStartedState;
@@ -178,7 +178,7 @@ class VideoSendingBalancer {
    * @returns Promise с результатом первой балансировки
    */
   public async start(): Promise<TResultSetParametersToSender> {
-    const state: TStartedState = { kind: 'started' };
+    const state: TStartedState = { kind: 'started', isReplacementUnverified: false };
 
     this.state = state;
     this.trackReplacer.prepareOngoingReplacement();
@@ -277,7 +277,7 @@ class VideoSendingBalancer {
   // сверка по тику: балансирует, если изменились собственные входы — отправитель, его трек или размер трека,
   // а также один раз на первом тике после успешной замены трека, при любых входах
   private async reconcile(state: TStartedState): Promise<boolean> {
-    const isReplacementUnverified = state.isReplacementUnverified === true;
+    const { isReplacementUnverified } = state;
 
     // сброс до балансировки: замена, завершившаяся за время балансировки этого тика, взводит флаг заново
     // eslint-disable-next-line no-param-reassign -- флаг принадлежит объекту состояния этого запуска, как и appliedInputs
@@ -412,7 +412,8 @@ class VideoSendingBalancer {
       state.isReplacementUnverified = true;
     }
 
-    // новый трек может менять размер: сверка возвращается к начальному интервалу
+    // сверка возвращается к начальному интервалу: новый трек может менять размер, а первый тик после замены,
+    // перекрывающий запись вызывающего, приходит через один интервал опроса, а не через выросший за долгую тишину до максимума
     this.trackMonitor.resetInterval();
     this.balance().catch((error: unknown) => {
       debug('balance on track change: error', error);
