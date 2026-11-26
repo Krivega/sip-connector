@@ -11,11 +11,13 @@ import {
   createObservedSender,
   createVideoTrack,
   deferNextGetStats,
+  ENCODING_4K_BY_TRACK,
   ENCODING_4K_LIMITED_TO_360P,
   ENCODING_4K_LIMITED_TO_720P,
   ENCODING_720P_BY_TRACK,
   ENCODING_720P_LIMITED_TO_360P,
   ENCODING_PAUSED,
+  getSettledResult,
   hangGetStats,
   HEADERS_MAX_360P,
   HEADERS_MAX_4K,
@@ -704,6 +706,233 @@ describe('VideoSendingBalancerManager: замена трека при гонка
         { type: 'replaceTrack', appliedScaleResolutionDownBy: 1 },
         { type: 'replaceTrack', appliedScaleResolutionDownBy: 1 },
       ]);
+    });
+  });
+
+  describe('ожидание зависшей записи', () => {
+    // не дольше этого вызывающий replaceTrack ждёт зависшие записи в отправитель
+    const WRITE_WAIT_TIMEOUT_MS = 1000;
+
+    const PENDING = { status: 'pending' };
+    const FULFILLED = { status: 'fulfilled', value: undefined };
+
+    let nextTrack4K: MediaStreamVideoTrack;
+    let startTime: number;
+    let writes: { started: number; inFlight: number; maxInFlight: number };
+
+    // время сценария: t = 0 — вызов первой замены
+    const startScenarioTime = () => {
+      startTime = jest.now();
+    };
+
+    const advanceTo = async (time: number) => {
+      await jest.advanceTimersByTimeAsync(startTime + time - jest.now());
+    };
+
+    // считает вызовы setParameters отправителя и записи, идущие одновременно
+    const countWrites = () => {
+      const setParameters = observed.sender.setParameters.bind(observed.sender);
+
+      writes = { started: 0, inFlight: 0, maxInFlight: 0 };
+      observed.sender.setParameters = async (parameters: RTCRtpSendParameters) => {
+        writes.started += 1;
+        writes.inFlight += 1;
+        writes.maxInFlight = Math.max(writes.maxInFlight, writes.inFlight);
+
+        try {
+          await setParameters(parameters);
+        } finally {
+          writes.inFlight -= 1;
+        }
+      };
+    };
+
+    // MAX 1280x720 получена в прогреве и применяется балансировкой старта
+    const startWithMaxResolution720p = async (options?: IBalancerOptions) => {
+      createManager(options);
+      confirmCall(callManager, connection);
+      sendMaxResolution720p();
+      await jest.advanceTimersByTimeAsync(BALANCING_START_DELAY);
+      await settle();
+    };
+
+    beforeEach(() => {
+      nextTrack4K = createVideoTrack(3840, 2160);
+      countWrites();
+    });
+
+    it('заменяет 720p на 4K без подготовки через таймаут ожидания, если setParameters балансировки старта по MAX 1280x720 завис, и после него применяет PAUSE_MAIN_CAM, полученную после замены', async () => {
+      const commandWrite = observed.deferNextSetParameters();
+
+      await startWithMaxResolution720p();
+
+      const writesBeforeReplace = writes.started;
+      const logLengthBeforeReplace = observed.log.length;
+
+      startScenarioTime();
+
+      const replacing = observed.sender.replaceTrack(track4K);
+
+      await advanceTo(WRITE_WAIT_TIMEOUT_MS - 1);
+
+      expect(writes.inFlight).toBe(1);
+      expect(observed.sender.track).toBe(track720);
+
+      await advanceTo(WRITE_WAIT_TIMEOUT_MS);
+
+      expect(observed.sender.track).toBe(track4K);
+      expect(await getSettledResult(replacing)).toEqual(FULFILLED);
+      expect(getReplaceTrackEntries(logLengthBeforeReplace)).toEqual([
+        { type: 'replaceTrack', appliedScaleResolutionDownBy: 1 },
+      ]);
+
+      await advanceTo(WRITE_WAIT_TIMEOUT_MS + 200);
+      sendMainCamInfo(callManager, HEADERS_PAUSE);
+      await settle();
+
+      expect(writes.started).toBe(writesBeforeReplace);
+
+      commandWrite.resolve(undefined);
+      await settle();
+
+      expect(observed.sender.track).toBe(track4K);
+      expect(observed.getAppliedEncoding()).toEqual(ENCODING_PAUSED);
+      expect(writes.maxInFlight).toBe(1);
+    });
+
+    it('заменяет 720p на 4K через таймаут ожидания, если setParameters подготовки при MAX 1280x720 завис, и после него ограничивает 4K-трек до 1280x720', async () => {
+      await startWithMaxResolution720p();
+
+      const preparationWrite = observed.deferNextSetParameters();
+      const logLengthBeforeReplace = observed.log.length;
+
+      startScenarioTime();
+
+      const replacing = observed.sender.replaceTrack(track4K);
+
+      await advanceTo(WRITE_WAIT_TIMEOUT_MS - 1);
+
+      expect(writes.inFlight).toBe(1);
+      expect(observed.sender.track).toBe(track720);
+
+      await advanceTo(WRITE_WAIT_TIMEOUT_MS);
+
+      expect(observed.sender.track).toBe(track4K);
+      expect(await getSettledResult(replacing)).toEqual(FULFILLED);
+      expect(getReplaceTrackEntries(logLengthBeforeReplace)).toEqual([
+        { type: 'replaceTrack', appliedScaleResolutionDownBy: 1 },
+      ]);
+
+      preparationWrite.resolve(undefined);
+      await settle();
+
+      expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_LIMITED_TO_720P);
+      expect(writes.maxInFlight).toBe(1);
+    });
+
+    it('заменяет 720p на 4K через таймаут ожидания, если stopBalancing вызван во время ожидания зависшего setParameters балансировки старта, выполняет следующую замену напрямую и после записи один раз сбрасывает параметры по фактическому треку без команды', async () => {
+      const commandWrite = observed.deferNextSetParameters();
+
+      await startWithMaxResolution720p();
+      startScenarioTime();
+
+      const replacing = observed.sender.replaceTrack(track4K);
+
+      await advanceTo(WRITE_WAIT_TIMEOUT_MS / 2);
+      manager.stopBalancing();
+      await advanceTo(WRITE_WAIT_TIMEOUT_MS);
+
+      expect(observed.sender.track).toBe(track4K);
+      expect(await getSettledResult(replacing)).toEqual(FULFILLED);
+      expect(jest.getTimerCount()).toBe(0);
+
+      // запись всё ещё висит: через перехват замена ждала бы её до таймаута
+      expect(await getSettledResult(observed.sender.replaceTrack(nextTrack4K))).toEqual(FULFILLED);
+      expect(observed.sender.track).toBe(nextTrack4K);
+
+      const writesBeforeRelease = writes.started;
+      const logLengthBeforeRelease = observed.log.length;
+
+      commandWrite.resolve(undefined);
+      await settle();
+
+      expect(writes.started).toBe(writesBeforeRelease + 1);
+      expect(observed.log.slice(logLengthBeforeRelease)).toEqual([
+        // завис раньше остановки и завершается сам
+        { type: 'setParameters', scaleResolutionDownBy: 1 },
+        // сброс остановки
+        { type: 'setParameters', scaleResolutionDownBy: 1 },
+      ]);
+      expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_BY_TRACK);
+    });
+
+    it('заменяет 720p на 4K через таймаут ожидания, если отправитель исключён во время ожидания зависшего setParameters балансировки старта, выполняет следующую замену напрямую и после записи ничего в него не пишет', async () => {
+      let isExcluded = false;
+      const commandWrite = observed.deferNextSetParameters();
+
+      await startWithMaxResolution720p(
+        createBalancerOptions({
+          isExcludedSender: (target) => {
+            return isExcluded && target === observed.sender;
+          },
+        }),
+      );
+
+      const writesBeforeReplace = writes.started;
+
+      startScenarioTime();
+
+      const replacing = observed.sender.replaceTrack(track4K);
+
+      await advanceTo(WRITE_WAIT_TIMEOUT_MS / 2);
+      isExcluded = true;
+      await advanceTo(WRITE_WAIT_TIMEOUT_MS);
+
+      expect(observed.sender.track).toBe(track4K);
+      expect(await getSettledResult(replacing)).toEqual(FULFILLED);
+
+      // запись всё ещё висит: через перехват замена ждала бы её до таймаута
+      expect(await getSettledResult(observed.sender.replaceTrack(nextTrack4K))).toEqual(FULFILLED);
+      expect(observed.sender.track).toBe(nextTrack4K);
+
+      commandWrite.resolve(undefined);
+      await settle();
+      await jest.advanceTimersByTimeAsync(TRACK_SIZE_POLLING_WINDOW);
+
+      expect(writes.started).toBe(writesBeforeReplace);
+    });
+
+    it('завершает каждую из трёх замен через таймаут ожидания, если setParameters балансировки старта так и не завершился, и ничего не пишет в отправитель', async () => {
+      observed.hangNextSetParameters();
+      await startWithMaxResolution720p();
+
+      const writesBeforeReplace = writes.started;
+
+      const expectReplacedWithinTimeout = async (
+        track: MediaStreamVideoTrack,
+        callTime: number,
+      ) => {
+        await advanceTo(callTime);
+
+        const replacing = observed.sender.replaceTrack(track);
+
+        await advanceTo(callTime + WRITE_WAIT_TIMEOUT_MS - 1);
+
+        expect(await getSettledResult(replacing)).toEqual(PENDING);
+
+        await advanceTo(callTime + WRITE_WAIT_TIMEOUT_MS);
+
+        expect(await getSettledResult(replacing)).toEqual(FULFILLED);
+        expect(observed.sender.track).toBe(track);
+      };
+
+      startScenarioTime();
+      await expectReplacedWithinTimeout(track4K, 0);
+      await expectReplacedWithinTimeout(track720, 2 * WRITE_WAIT_TIMEOUT_MS);
+      await expectReplacedWithinTimeout(nextTrack4K, 4 * WRITE_WAIT_TIMEOUT_MS);
+
+      expect(writes.inFlight).toBe(1);
+      expect(writes.started).toBe(writesBeforeReplace);
     });
   });
 });

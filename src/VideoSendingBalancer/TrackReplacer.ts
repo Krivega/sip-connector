@@ -1,4 +1,7 @@
+import { cancelableDelayPromise } from '@krivega/timeout-requester';
+
 import resolveDebug from '@/logger';
+import { BROWSER_RESPONSE_TIMEOUT_MS } from './constants';
 
 import type { ITaskQueue } from './types';
 
@@ -13,9 +16,115 @@ type TInterception = {
   sender: RTCRtpSender;
   originalReplaceTrack: RTCRtpSender['replaceTrack'];
   unfinishedReplacements: number;
+  // завершение оригинального replaceTrack последней принятой замены
+  lastSettled: Promise<void>;
 };
 
 type TPreparation = { newTrack: MediaStreamTrack; isPrepared: boolean; chain: Promise<void> };
+
+type TReplacement = {
+  readonly newTrack: MediaStreamTrack | null;
+  // завершение оригинала предыдущей замены этого отправителя: оригиналы вызываются по порядку замен
+  readonly previous: Promise<void>;
+  // оригинал вызван
+  readonly called: Promise<void>;
+  // оригинал завершился, успехом или ошибкой
+  readonly settled: Promise<void>;
+  readonly isCalled: () => boolean;
+  // оригинал вызывается один раз — задачей очереди или по таймауту ожидания вызывающего; повторный вызов отдаёт его же исход
+  readonly callOriginal: () => Promise<void>;
+};
+
+const createReplacement = (
+  originalReplaceTrack: RTCRtpSender['replaceTrack'],
+  newTrack: MediaStreamTrack | null,
+  previous: Promise<void>,
+): TReplacement => {
+  let original: Promise<void> | undefined;
+  let markCalled = () => {};
+  let markSettled = () => {};
+  const called = new Promise<void>((resolve) => {
+    markCalled = resolve;
+  });
+  const settled = new Promise<void>((resolve) => {
+    markSettled = resolve;
+  });
+
+  const startOriginal = async () => {
+    markCalled();
+
+    try {
+      await originalReplaceTrack(newTrack);
+    } finally {
+      markSettled();
+    }
+  };
+
+  return {
+    newTrack,
+    previous,
+    called,
+    settled,
+    isCalled: () => {
+      return original !== undefined;
+    },
+    callOriginal: async () => {
+      original ??= startOriginal();
+
+      return original;
+    },
+  };
+};
+
+// true — промис завершился за ms; таймер снимается в любом случае
+const settlesWithin = async (promise: Promise<unknown>, ms: number): Promise<boolean> => {
+  const timeout = cancelableDelayPromise(ms);
+
+  try {
+    return await Promise.race([
+      promise.then(
+        () => {
+          return true;
+        },
+        () => {
+          return true;
+        },
+      ),
+      timeout.then(() => {
+        return false;
+      }),
+    ]);
+  } finally {
+    timeout.cancel();
+  }
+};
+
+/**
+ * Ожидание замены вызывающим: зависшие записи параметров он ждёт не дольше BROWSER_RESPONSE_TIMEOUT_MS
+ * до оригинального replaceTrack и столько же после него, а сам оригинал — сколько отвечает браузер.
+ * Вызывающий получает исход оригинала; задача замены остаётся в очереди и доделывает свои записи после зависшей
+ */
+const awaitReplacement = async (replacement: TReplacement, task: Promise<void>): Promise<void> => {
+  // отсчёт — от завершения оригинала предыдущей замены, а не от вызова: иначе при медленном браузере подготовка терялась бы и без зависших записей
+  await replacement.previous;
+
+  const isCalledInTime = await settlesWithin(replacement.called, BROWSER_RESPONSE_TIMEOUT_MS);
+
+  if (!isCalledInTime) {
+    // исход задачи больше никто не ждёт, а без обработчика её отказ остался бы необработанным
+    task.catch(() => {});
+
+    // shortcut: оригинал вызывается мимо очереди и без подготовки, как без балансировщика
+    return replacement.callOriginal();
+  }
+
+  await replacement.settled;
+
+  const isFinishedInTime = await settlesWithin(task, BROWSER_RESPONSE_TIMEOUT_MS);
+
+  // не уложившиеся записи после оригинала задача доделает сама
+  return isFinishedInTime ? task : replacement.callOriginal();
+};
 
 // ждёт, пока цепочка подготовки не перестанет расти
 const settlePreparation = async (preparation?: TPreparation): Promise<void> => {
@@ -41,15 +150,18 @@ const settlePreparation = async (preparation?: TPreparation): Promise<void> => {
  *
  * Звенья и шаг 4 выполняются, только если на момент их выполнения балансировка запущена, а отправитель подключён (attach).
  * Иначе перехват только ставит замену в очередь отправителя: порядок сохраняется, параметры не меняются.
- * Перехват остаётся и на отключённом отправителе, пока не завершены принятые им замены: так сохраняется их порядок.
- * Подключённый отправитель, исключённый балансировщиком (isExcludedSender), отключается, как только завершится его замена.
+ * Зависшие записи до оригинала и после него вызывающий ждёт не дольше BROWSER_RESPONSE_TIMEOUT_MS (awaitReplacement):
+ * не дождался до оригинала — вызывает его мимо очереди, без подготовки. Оригинал вызывается один раз и по порядку замен,
+ * а задача замены остаётся в очереди и доделывает свои записи после зависшей.
+ * Перехват остаётся и на отключённом отправителе, пока принятые им замены не завершились для вызывающего: так сохраняется их порядок.
+ * Подключённый отправитель, исключённый балансировщиком (isExcludedSender), отключается, как только его замена завершится для вызывающего.
  */
 export class TrackReplacer {
   private attached?: TInterception;
 
   private readonly interceptions = new WeakMap<RTCRtpSender, TInterception>();
 
-  // у отправителя не больше одной идущей замены: очередь выполняет их по одной
+  // у отправителя не больше одной подготовки: её создаёт только задача очереди, а очередь выполняет их по одной
   private readonly preparations = new WeakMap<RTCRtpSender, TPreparation>();
 
   private readonly taskQueue: ITaskQueue;
@@ -129,6 +241,7 @@ export class TrackReplacer {
       // Сохраним оригинальный replaceTrack, чтобы вернуть его отправителю
       originalReplaceTrack: sender.replaceTrack.bind(sender),
       unfinishedReplacements: 0,
+      lastSettled: Promise.resolve(),
     };
 
     this.interceptions.set(sender, interception);
@@ -137,10 +250,20 @@ export class TrackReplacer {
     sender.replaceTrack = async (newTrack: MediaStreamTrack | null) => {
       interception.unfinishedReplacements += 1;
 
+      const replacement = createReplacement(
+        interception.originalReplaceTrack,
+        newTrack,
+        interception.lastSettled,
+      );
+
+      interception.lastSettled = replacement.settled;
+
       try {
-        await this.taskQueue.add(sender, async () => {
-          return this.replaceSenderTrack(sender, newTrack, interception.originalReplaceTrack);
+        const task = this.taskQueue.add(sender, async () => {
+          return this.replaceSenderTrack(sender, replacement);
         });
+
+        await awaitReplacement(replacement, task);
       } finally {
         interception.unfinishedReplacements -= 1;
 
@@ -174,13 +297,11 @@ export class TrackReplacer {
     this.interceptions.delete(sender);
   }
 
-  private async replaceSenderTrack(
-    sender: RTCRtpSender,
-    newTrack: MediaStreamTrack | null,
-    originalReplaceTrack: RTCRtpSender['replaceTrack'],
-  ): Promise<void> {
+  private async replaceSenderTrack(sender: RTCRtpSender, replacement: TReplacement): Promise<void> {
+    const { newTrack } = replacement;
+    // оригинал, уже вызванный по таймауту ожидания, готовить поздно
     const preparation =
-      newTrack === null || newTrack === sender.track
+      replacement.isCalled() || newTrack === null || newTrack === sender.track
         ? undefined
         : { newTrack, isPrepared: false, chain: Promise.resolve() };
 
@@ -192,7 +313,7 @@ export class TrackReplacer {
     await settlePreparation(preparation);
 
     try {
-      await originalReplaceTrack(newTrack);
+      await replacement.callOriginal();
     } catch (error: unknown) {
       await this.finishPreparation(sender);
 

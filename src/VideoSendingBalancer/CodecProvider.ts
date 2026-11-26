@@ -1,8 +1,7 @@
 import { cancelableDelayPromise } from '@krivega/timeout-requester';
 
 import getCodecFromSender from '@/utils/peerConnection/getCodecFromSender';
-
-const STATS_TIMEOUT_MS = 1000;
+import { BROWSER_RESPONSE_TIMEOUT_MS } from './constants';
 
 // обёртка даёт запросу идентичность, по которой сверяется актуальность ответа; isJoinable — принимает ли запрос новых ждущих
 type TCodecRequest = { readonly codec: Promise<string | undefined>; isJoinable: boolean };
@@ -10,7 +9,7 @@ type TCodecRequest = { readonly codec: Promise<string | undefined>; isJoinable: 
 /**
  * Реализация провайдера кодеков: запрашивает кодек отправителя из статистики и помнит последний полученный.
  * Вызов присоединяется к последнему запущенному запросу, пока тот принимает новых ждущих (isJoinable), иначе запускает новый.
- * Ответ ждётся не дольше STATS_TIMEOUT_MS: по таймауту ожидания и по завершении запрос перестаёт принимать новых ждущих,
+ * Ответ ждётся не дольше BROWSER_RESPONSE_TIMEOUT_MS: по таймауту ожидания и по завершении запрос перестаёт принимать новых ждущих,
  * поэтому при зависшем getStats отправителю уходит не больше одного нового запроса за таймаут. Сам запрос не отменяется.
  * Актуален исход только последнего запущенного запроса: ответ и ошибка устаревшего превращаются в undefined,
  * ошибка последнего уходит ждущим, а поздний ответ последнего тоже обновляет известный кодек.
@@ -24,7 +23,7 @@ export class CodecProvider {
   public async getCodecFromSender(sender: RTCRtpSender): Promise<string | undefined> {
     const lastRequest = this.lastRequests.get(sender);
     const request = lastRequest?.isJoinable === true ? lastRequest : this.startRequest(sender);
-    const timeout = cancelableDelayPromise(STATS_TIMEOUT_MS);
+    const timeout = cancelableDelayPromise(BROWSER_RESPONSE_TIMEOUT_MS);
 
     try {
       return await Promise.race([
