@@ -203,15 +203,15 @@ describe('VideoSendingBalancerManager: команда main-cam-control', () => {
       expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_BY_TRACK);
     });
 
-    it('остаётся активной после неудачного старта по таймеру и применяет следующую команду сразу', async () => {
+    it('остаётся неактивной после неудачного старта по таймеру без connection и применяет следующую команду только при запуске после нового peerconnection:confirmed', async () => {
       setConnection(undefined);
       confirmCall();
       sendMainCamInfo(HEADERS_PAUSE);
       await jest.advanceTimersByTimeAsync(BALANCING_START_DELAY);
       await settle();
 
-      expect(startedHandler).toHaveBeenCalledTimes(1);
-      expect(manager.isBalancingActive).toBe(true);
+      expect(startedHandler).not.toHaveBeenCalled();
+      expect(manager.isBalancingActive).toBe(false);
       expect(manager.isBalancingScheduled).toBe(false);
       expect(observed.log).toEqual([]);
 
@@ -219,10 +219,15 @@ describe('VideoSendingBalancerManager: команда main-cam-control', () => {
       sendMainCamInfo(HEADERS_MAX_720P);
       await settle();
 
+      expect(observed.log).toEqual([]);
+
+      await confirmCallAndWaitBalancingStart();
+
+      expect(startedHandler).toHaveBeenCalledTimes(1);
       expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_LIMITED_TO_720P);
     });
 
-    it('применяет запомненную в прогреве PAUSE_MAIN_CAM без новой команды, если старт по таймеру не удался без connection, а connection появился позже', async () => {
+    it('применяет запомненную в прогреве PAUSE_MAIN_CAM без новой команды при запуске после нового peerconnection:confirmed, если старт по таймеру не удался без connection', async () => {
       setConnection(undefined);
       confirmCall();
       sendMainCamInfo(HEADERS_PAUSE);
@@ -230,6 +235,10 @@ describe('VideoSendingBalancerManager: команда main-cam-control', () => {
       await settle();
       setConnection(connection as RTCPeerConnection);
       await jest.advanceTimersByTimeAsync(TRACK_SIZE_POLLING_WINDOW);
+
+      expect(observed.log).toEqual([]);
+
+      await confirmCallAndWaitBalancingStart();
 
       expect(observed.getAppliedEncoding()).toEqual(ENCODING_PAUSED);
     });
@@ -391,13 +400,17 @@ describe('VideoSendingBalancerManager: команда main-cam-control', () => {
       },
     );
 
-    it('применяет команду, когда connection появился после неудачного старта', async () => {
+    it('применяет команду, полученную после неудачного старта без connection, при повторном startBalancing, когда connection появился', async () => {
       manager.stopBalancing();
       await settle();
       setConnection(undefined);
       await confirmCallAndWaitBalancingStart();
+
+      expect(manager.isBalancingActive).toBe(false);
+
       setConnection(connection as RTCPeerConnection);
       sendMainCamInfo(HEADERS_MAX_720P);
+      await manager.startBalancing();
       await settle();
 
       expect(manager.isBalancingActive).toBe(true);

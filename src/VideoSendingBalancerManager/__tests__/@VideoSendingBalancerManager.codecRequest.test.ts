@@ -21,8 +21,10 @@ import {
   rejectGetStats,
   sendMainCamInfo,
   setConnection,
+  POLL_INTERVAL,
   setSenderCodec,
   settle,
+  STATS_TIMEOUT,
   TRACK_SIZE_POLLING_WINDOW,
 } from '../__fixtures__';
 
@@ -117,6 +119,10 @@ describe('VideoSendingBalancerManager: запрос кодека при бала
         { type: 'replaceTrack', appliedScaleResolutionDownBy: 3 },
       ]);
       expect(observed.sender.track).toBe(track4K);
+
+      // после таймаута ожидания зависшего запроса ближайший тик сверки запрашивает статистику заново и выставляет битрейт
+      await jest.advanceTimersByTimeAsync(STATS_TIMEOUT + POLL_INTERVAL);
+
       expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_LIMITED_TO_720P);
     });
 
@@ -128,7 +134,8 @@ describe('VideoSendingBalancerManager: запрос кодека при бала
       sendMainCamInfo(callManager, HEADERS_PAUSE);
       await settle();
       sendMainCamInfo(callManager, HEADERS_MAX_720P);
-      await settle();
+      // балансировка команды ждёт идущий запрос предыдущей, но не дольше таймаута
+      await jest.advanceTimersByTimeAsync(STATS_TIMEOUT);
 
       expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_LIMITED_TO_720P);
     });

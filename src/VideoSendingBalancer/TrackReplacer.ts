@@ -42,6 +42,7 @@ const settlePreparation = async (preparation?: TPreparation): Promise<void> => {
  * Звенья и шаг 4 выполняются, только если на момент их выполнения балансировка запущена, а отправитель подключён (attach).
  * Иначе перехват только ставит замену в очередь отправителя: порядок сохраняется, параметры не меняются.
  * Перехват остаётся и на отключённом отправителе, пока не завершены принятые им замены: так сохраняется их порядок.
+ * Подключённый отправитель, исключённый балансировщиком (isExcludedSender), отключается, как только завершится его замена.
  */
 export class TrackReplacer {
   private attached?: TInterception;
@@ -55,6 +56,8 @@ export class TrackReplacer {
 
   private readonly isBalancing: (sender: RTCRtpSender) => boolean;
 
+  private readonly isExcludedSender: (sender: RTCRtpSender) => boolean;
+
   private readonly applyParameters: TApplyParameters;
 
   private readonly requestBalance: () => void;
@@ -62,16 +65,19 @@ export class TrackReplacer {
   public constructor({
     taskQueue,
     isBalancing,
+    isExcludedSender,
     applyParameters,
     requestBalance,
   }: {
     taskQueue: ITaskQueue;
     isBalancing: (sender: RTCRtpSender) => boolean;
+    isExcludedSender: (sender: RTCRtpSender) => boolean;
     applyParameters: TApplyParameters;
     requestBalance: () => void;
   }) {
     this.taskQueue = taskQueue;
     this.isBalancing = isBalancing;
+    this.isExcludedSender = isExcludedSender;
     this.applyParameters = applyParameters;
     this.requestBalance = requestBalance;
   }
@@ -137,7 +143,13 @@ export class TrackReplacer {
         });
       } finally {
         interception.unfinishedReplacements -= 1;
-        this.restoreUnusedReplaceTrack(interception);
+
+        // иначе следующие замены исключённого отправителя (например, демонстрации) ждали бы в очереди до ближайшей балансировки
+        if (this.isAttachedTo(sender) && this.isExcludedSender(sender)) {
+          this.detach();
+        } else {
+          this.restoreUnusedReplaceTrack(interception);
+        }
       }
 
       // без трека балансировать нечего

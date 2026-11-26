@@ -33,6 +33,12 @@ const DEFAULT_SCALE_RESOLUTION_DOWN_BY = 1;
 // дольше максимального интервала опроса размера трека (16 начальных интервалов)
 const POLLING_WINDOW_MS = 2 * 16 * POLL_INTERVAL_MS;
 
+// разумное время, за которое балансировка обходится без зависшего запроса статистики: без привязки к таймауту
+const HUNG_STATS_WAIT_MS = 30_000;
+
+// не дольше этого балансировка ждёт ответа на запрос статистики
+const STATS_TIMEOUT_MS = 1000;
+
 const MAX_RESOLUTION_360P = { width: 640, height: 360 };
 
 const HEADERS_PAUSE: IMainCamHeaders = { mainCam: EContentMainCAM.PAUSE_MAIN_CAM };
@@ -260,7 +266,8 @@ describe('VideoSendingBalancer', () => {
       hangNextGetStats(sender);
       balancer.balance().catch(() => {});
       balancer.handleServerHeaders(HEADERS_PAUSE);
-      await flushQueue();
+      // следующая балансировка ждёт идущий запрос, но не дольше таймаута
+      await jest.advanceTimersByTimeAsync(STATS_TIMEOUT_MS);
 
       expect(getEncoding()).toEqual(ENCODING_PAUSED);
     });
@@ -342,6 +349,102 @@ describe('VideoSendingBalancer', () => {
       await startWithServerHeaders(HEADERS_PAUSE);
 
       expect(setParameters).not.toHaveBeenCalled();
+    });
+
+    it('должен перепроверять кодек по тику после статистики без кодека и выставить битрейт по кодеку, появившемуся при неизменном треке', async () => {
+      setSenderCodec(sender, 'video/VP8');
+      await balancer.start();
+      setSenderStatsWithoutCodec(sender);
+      await balancer.balance();
+      setSenderCodec(sender, 'video/AV1');
+      await jest.advanceTimersByTimeAsync(POLLING_WINDOW_MS);
+
+      expect(getEncoding()).toEqual({
+        scaleResolutionDownBy: 1,
+        maxBitrate: calcMaxBitrateByWidthAndCodec(1280, 'video/AV1'),
+      });
+    });
+
+    it('должен применить по тику команду, полученную при статистике без кодека, когда статистика покажет не исключённый ignoreForCodec кодек', async () => {
+      sender = new RTCRtpSenderMock({ track: track4K });
+      connection.senders = [sender];
+      balancer = createBalancer(createBalancerOptions({ ignoreForCodec: 'h264' }));
+      setSenderCodec(sender, 'video/H264');
+      await balancer.start();
+      setSenderStatsWithoutCodec(sender);
+      balancer.handleServerHeaders(HEADERS_MAX_720P);
+      await flushQueue();
+      setSenderCodec(sender, 'video/VP8');
+      await jest.advanceTimersByTimeAsync(POLLING_WINDOW_MS);
+
+      expect(getEncoding()).toEqual({
+        scaleResolutionDownBy: 3,
+        maxBitrate: calcMaxBitrateByWidthAndCodec(1280, 'video/VP8'),
+      });
+    });
+
+    it('должен завершить балансировку и применить параметры по последнему известному кодеку, если запрос статистики не отвечает', async () => {
+      const onBalanced = jest.fn();
+
+      balancer = createBalancer(createBalancerOptions({ ignoreForCodec: 'h264' }));
+      setSenderCodec(sender, 'video/VP8');
+      await startWithServerHeaders(HEADERS_MAX_720P);
+      hangGetStats(sender);
+      resizeTrack(track720, 3840, 2160);
+      balancer.balance().then(onBalanced, () => {});
+      await jest.advanceTimersByTimeAsync(HUNG_STATS_WAIT_MS);
+
+      expect(onBalanced).toHaveBeenCalledTimes(1);
+      expect(getEncoding()).toEqual({
+        scaleResolutionDownBy: 3,
+        maxBitrate: calcMaxBitrateByWidthAndCodec(1280, 'video/VP8'),
+      });
+    });
+
+    it('не должен запрашивать статистику отправителя снова до таймаута ожидания зависшего запроса и должен запросить её после таймаута', async () => {
+      await balancer.start();
+      hangGetStats(sender);
+
+      const getStats = jest.spyOn(sender, 'getStats');
+
+      balancer.handleServerHeaders(HEADERS_PAUSE);
+      await jest.advanceTimersByTimeAsync(STATS_TIMEOUT_MS / 2);
+      balancer.handleServerHeaders(HEADERS_MAX_720P);
+      await jest.advanceTimersByTimeAsync(STATS_TIMEOUT_MS / 2 - 1);
+
+      expect(getStats).toHaveBeenCalledTimes(1);
+
+      await jest.advanceTimersByTimeAsync(1);
+      balancer.handleServerHeaders(HEADERS_PAUSE);
+      await flushQueue();
+
+      expect(getStats).toHaveBeenCalledTimes(2);
+    });
+
+    it('должен балансировать по ответу идущего запроса статистики, если балансировка начата до его ответа, и запросить статистику снова после ответа', async () => {
+      await balancer.start();
+      setSenderCodec(sender, 'video/AV1');
+
+      const getStats = jest.spyOn(sender, 'getStats');
+      const releaseStats = deferNextGetStats(sender, 'video/VP8');
+      const balancings = [balancer.balance(), balancer.balance()];
+
+      releaseStats();
+      await Promise.all(balancings);
+
+      expect(getStats).toHaveBeenCalledTimes(1);
+      expect(getEncoding()).toEqual({
+        scaleResolutionDownBy: 1,
+        maxBitrate: calcMaxBitrateByWidthAndCodec(1280, 'video/VP8'),
+      });
+
+      await balancer.balance();
+
+      expect(getStats).toHaveBeenCalledTimes(2);
+      expect(getEncoding()).toEqual({
+        scaleResolutionDownBy: 1,
+        maxBitrate: calcMaxBitrateByWidthAndCodec(1280, 'video/AV1'),
+      });
     });
 
     it('должен рассчитать параметры по треку, установленному отправителю за время запроса кодека', async () => {
@@ -568,6 +671,19 @@ describe('VideoSendingBalancer', () => {
       await jest.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
 
       expect(getEncoding()).toEqual(ENCODING_4K_LIMITED_TO_720P);
+    });
+
+    it('должен применить команду новому видео-отправителю, если запрос статистики прежнего отправителя при сверке не отвечает', async () => {
+      const otherSender = new RTCRtpSenderMock({ track: track4K });
+
+      await startWithServerHeaders(HEADERS_MAX_720P);
+      hangGetStats(sender);
+      resizeTrack(track720, 1920, 1080);
+      await jest.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+      connection.senders = [otherSender];
+      await jest.advanceTimersByTimeAsync(HUNG_STATS_WAIT_MS);
+
+      expect(getEncoding(otherSender).scaleResolutionDownBy).toBe(3);
     });
 
     it('не должен запрашивать кодек и менять параметры, пока отправитель, его трек и размер трека не менялись', async () => {
@@ -921,6 +1037,203 @@ describe('VideoSendingBalancer', () => {
       await jest.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
 
       expect(getEncoding()).toEqual(ENCODING_PAUSED);
+    });
+
+    describe('подключённый отправитель становится исключённым', () => {
+      let isExcluded: boolean;
+
+      const isExcludedSender = (target: RTCRtpSender) => {
+        return isExcluded && target === sender;
+      };
+
+      beforeEach(() => {
+        isExcluded = false;
+        balancer = createBalancer(createBalancerOptions({ isExcludedSender }));
+      });
+
+      it('не должен записывать параметры при его следующей замене трека', async () => {
+        await startWithServerHeaders(HEADERS_MAX_720P);
+        isExcluded = true;
+        setParameters.mockClear();
+        await sender.replaceTrack(track4K);
+        await flushQueue();
+
+        expect(sender.track).toBe(track4K);
+        expect(setParameters).not.toHaveBeenCalled();
+      });
+
+      it('не должен записывать в него команду, полученную во время замены его трека', async () => {
+        const originalReplacement = deferOriginalReplaceTrack();
+
+        await balancer.start();
+        isExcluded = true;
+        setParameters.mockClear();
+
+        const replacing = sender.replaceTrack(createVideoTrack(1280, 720));
+
+        await flushQueue();
+        balancer.handleServerHeaders(HEADERS_PAUSE);
+        await flushQueue();
+        originalReplacement.resolve(undefined);
+        await replacing;
+        await flushQueue();
+
+        expect(setParameters).not.toHaveBeenCalled();
+      });
+
+      it('не должен сбрасывать его параметры при stop()', async () => {
+        await startWithServerHeaders(HEADERS_PAUSE);
+        isExcluded = true;
+        setParameters.mockClear();
+        balancer.stop();
+        await flushQueue();
+
+        expect(setParameters).not.toHaveBeenCalled();
+        expect(getEncoding()).toEqual(ENCODING_PAUSED);
+      });
+
+      it('не должен сбрасывать его параметры сбросом stop(), поставленным в очередь до его исключения', async () => {
+        const originalReplacement = deferOriginalReplaceTrack();
+
+        balancer = createBalancer(
+          createBalancerOptions({ isExcludedSender, maxResolution: MAX_RESOLUTION_360P }),
+        );
+        await startWithServerHeaders(HEADERS_PAUSE);
+
+        const replacing = sender.replaceTrack(track4K);
+
+        await flushQueue();
+        balancer.stop();
+        isExcluded = true;
+        setParameters.mockClear();
+        originalReplacement.resolve(undefined);
+        await replacing;
+        await flushQueue();
+
+        expect(sender.track).toBe(track4K);
+        expect(setParameters).not.toHaveBeenCalled();
+        expect(getEncoding()).toEqual(ENCODING_PAUSED);
+      });
+
+      it('должен сбросить при stop() параметры другого, не исключённого видео-отправителя вместо него', async () => {
+        const otherSender = new RTCRtpSenderMock({ track: createVideoTrack(1280, 720) });
+
+        balancer = createBalancer(
+          createBalancerOptions({ isExcludedSender, maxResolution: MAX_RESOLUTION_360P }),
+        );
+        await startWithServerHeaders(HEADERS_PAUSE);
+        connection.senders = [sender, otherSender];
+        isExcluded = true;
+        setParameters.mockClear();
+        balancer.stop();
+        await flushQueue();
+
+        expect(setParameters).not.toHaveBeenCalled();
+        // кодек другого отправителя не запрашивался: без него сброс меняет только масштаб
+        expect(getEncoding(otherSender).scaleResolutionDownBy).toBe(2);
+      });
+
+      it('должен вернуть ему оригинальный replaceTrack при балансировке без других видео-отправителей', async () => {
+        const originalReplaceTrack = jest.spyOn(sender, 'replaceTrack');
+
+        await startWithServerHeaders(HEADERS_MAX_720P);
+        isExcluded = true;
+        await balancer.balance();
+        originalReplaceTrack.mockClear();
+        // перехват вызывает оригинал только из очереди, асинхронно; оригинал вызывается сразу
+        sender.replaceTrack(track4K).catch(() => {});
+
+        expect(originalReplaceTrack).toHaveBeenCalledWith(track4K);
+      });
+
+      it('должен вернуть ему оригинальный replaceTrack сразу после завершения его замены трека при запущенной балансировке', async () => {
+        const originalReplaceTrack = jest.spyOn(sender, 'replaceTrack');
+
+        await startWithServerHeaders(HEADERS_MAX_720P);
+        isExcluded = true;
+        await sender.replaceTrack(track4K);
+        originalReplaceTrack.mockClear();
+        // без balance() и тиков сверки; через перехват следующая замена ждала бы в очереди отправителя конца зависшей
+        originalReplaceTrack.mockImplementationOnce(async () => {
+          return new Promise<void>(() => {});
+        });
+        sender.replaceTrack(track720).catch(() => {});
+        sender.replaceTrack(track4K).catch(() => {});
+        await flushQueue();
+
+        expect(originalReplaceTrack.mock.calls).toEqual([[track720], [track4K]]);
+      });
+
+      it('должен вернуть ему оригинальный replaceTrack сразу после завершения его замены трека во время прогрева', async () => {
+        const originalReplaceTrack = jest.spyOn(sender, 'replaceTrack');
+
+        balancer.warmUp();
+        isExcluded = true;
+        await sender.replaceTrack(track4K);
+        originalReplaceTrack.mockClear();
+        // без balance() и тиков сверки; через перехват следующая замена ждала бы в очереди отправителя конца зависшей
+        originalReplaceTrack.mockImplementationOnce(async () => {
+          return new Promise<void>(() => {});
+        });
+        sender.replaceTrack(track720).catch(() => {});
+        sender.replaceTrack(track4K).catch(() => {});
+        await flushQueue();
+
+        expect(originalReplaceTrack.mock.calls).toEqual([[track720], [track4K]]);
+      });
+
+      it('должен снова применить команду и перехватывать замену трека, когда исключение снято, даже если отправитель, трек и размер трека не менялись, а за время исключения владелец записал свои параметры', async () => {
+        // так параметры пишет владелец исключённого отправителя, например демонстрация
+        const writeOwnerEncoding = async () => {
+          const parameters = sender.getParameters();
+
+          parameters.encodings = [
+            {
+              ...parameters.encodings[0],
+              scaleResolutionDownBy: 1,
+              maxBitrate: getMaximumBitrate(),
+            },
+          ];
+          await sender.setParameters(parameters);
+        };
+
+        await startWithServerHeaders(HEADERS_PAUSE);
+        isExcluded = true;
+        // других видео-отправителей нет: сверка снимает перехват с исключённого
+        await jest.advanceTimersByTimeAsync(POLLING_WINDOW_MS);
+        await writeOwnerEncoding();
+        isExcluded = false;
+        await jest.advanceTimersByTimeAsync(POLLING_WINDOW_MS);
+
+        expect(getEncoding()).toEqual(ENCODING_PAUSED);
+
+        // перехват применяет команду при замене трека сам, без тиков сверки
+        await writeOwnerEncoding();
+        await sender.replaceTrack(track4K);
+
+        expect(getEncoding()).toEqual(ENCODING_PAUSED);
+      });
+
+      it('должен сохранить перехват замены трека у другого видео-отправителя, подключённого, пока у исключённого шла замена трека', async () => {
+        const otherSender = new RTCRtpSenderMock({ track: createVideoTrack(1280, 720) });
+        const originalReplacement = deferOriginalReplaceTrack();
+
+        await startWithServerHeaders(HEADERS_MAX_720P);
+
+        const replacing = sender.replaceTrack(createVideoTrack(1920, 1080));
+
+        await flushQueue();
+        isExcluded = true;
+        connection.senders = [sender, otherSender];
+        // подключает другой отправитель; перехват исключённого держится до конца его замены
+        await balancer.balance();
+        originalReplacement.resolve(undefined);
+        await replacing;
+        // без тиков сверки параметры нового трека при замене применяет только перехват
+        await otherSender.replaceTrack(track4K);
+
+        expect(getEncoding(otherSender)).toEqual(ENCODING_4K_LIMITED_TO_720P);
+      });
     });
   });
 

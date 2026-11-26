@@ -1,10 +1,16 @@
 import delayPromise from '@/__fixtures__/delayPromise';
 import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
+import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
 import { EContentMainCAM } from '@/ApiManager';
 import { doMockSipConnector } from '@/doMock';
 import resolveDebug from '@/logger';
-import { NO_MAX_RESOLUTION_BALANCER_OPTIONS } from '@/VideoSendingBalancer/__fixtures__';
+import {
+  createVideoTrack,
+  NO_MAX_RESOLUTION_BALANCER_OPTIONS,
+  rejectGetStats,
+} from '@/VideoSendingBalancer/__fixtures__';
 import VideoSendingBalancerManager from '../@VideoSendingBalancerManager';
+import { setConnection } from '../__fixtures__';
 
 import type { ApiManager } from '@/ApiManager';
 import type { CallManager } from '@/CallManager';
@@ -87,7 +93,9 @@ describe('VideoSendingBalancerManager error handling', () => {
   });
 
   it('throws error when trying to start balancing without connection', async () => {
-    await expect(videoSendingBalancerManager.startBalancing()).resolves.toBeUndefined();
+    await expect(videoSendingBalancerManager.startBalancing()).rejects.toThrow(
+      'connection is not exist',
+    );
   });
 
   it('does not try to start on main-cam-control while balancing is scheduled', async () => {
@@ -103,18 +111,27 @@ describe('VideoSendingBalancerManager error handling', () => {
     videoSendingBalancerManager.stopBalancing();
   });
 
-  it('stays active and does not trigger balancing-started when the initial balance fails', async () => {
+  it('stays active and triggers balancing-started when the initial balance fails', async () => {
     const handler = jest.fn();
+    const connection = new RTCPeerConnectionMock(undefined, []);
+    const sender = new RTCRtpSenderMock({ track: createVideoTrack(1280, 720) });
 
+    rejectGetStats(sender);
+    connection.senders = [sender];
+    setConnection(callManager, connection as RTCPeerConnection);
     videoSendingBalancerManager.on('balancing-started', handler);
 
     await expect(videoSendingBalancerManager.startBalancing()).resolves.toBeUndefined();
     expect(handler).toHaveBeenCalledTimes(1);
     expect(videoSendingBalancerManager.isBalancingActive).toBe(true);
+
+    videoSendingBalancerManager.stopBalancing();
   });
 
   it('logs error when balance on main-cam-control rejects during active balancing', async () => {
+    setConnection(callManager, new RTCPeerConnectionMock(undefined, []) as RTCPeerConnection);
     await expect(videoSendingBalancerManager.startBalancing()).resolves.toBeUndefined();
+    setConnection(callManager, undefined);
 
     apiManager.events.trigger('main-cam-control', { mainCam: EContentMainCAM.PAUSE_MAIN_CAM });
     await delayPromise(0);

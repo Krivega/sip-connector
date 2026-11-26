@@ -3,6 +3,7 @@ export {
   BALANCING_START_DELAY,
   CODEC,
   POLL_INTERVAL,
+  STATS_TIMEOUT,
   TRACK_SIZE_POLLING_WINDOW,
 } from './constants';
 export { default as createObservedSender } from './createObservedSender';

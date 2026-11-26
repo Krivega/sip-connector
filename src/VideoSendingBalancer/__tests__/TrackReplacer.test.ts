@@ -37,6 +37,7 @@ describe('TrackReplacer', () => {
   >;
   let requestBalance: jest.Mock;
   let isStarted: boolean;
+  let isExcluded: boolean;
   let taskQueue: TaskQueue;
   let trackReplacer: TrackReplacer;
 
@@ -76,11 +77,15 @@ describe('TrackReplacer', () => {
     applyParameters = jest.fn(applyLoggedParameters);
     requestBalance = jest.fn();
     isStarted = true;
+    isExcluded = false;
     taskQueue = new TaskQueue();
     trackReplacer = new TrackReplacer({
       taskQueue,
       isBalancing: (target) => {
         return isStarted && trackReplacer.attachedSender === target;
+      },
+      isExcludedSender: () => {
+        return isExcluded;
       },
       applyParameters,
       requestBalance,
@@ -421,6 +426,53 @@ describe('TrackReplacer', () => {
 
         expect(applyParameters.mock.calls).toEqual([[sender]]);
         expect(requestBalance).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    describe('отправитель исключён к завершению замены', () => {
+      // замена через перехват после этого не завершится, вызов оригинального replaceTrack — завершится
+      const hangSenderQueue = () => {
+        taskQueue
+          .add(sender, async () => {
+            return new Promise<undefined>(() => {});
+          })
+          .catch(() => {});
+      };
+
+      beforeEach(() => {
+        isExcluded = true;
+      });
+
+      it.each([
+        ['при запущенной балансировке', true],
+        ['во время прогрева', false],
+      ])(
+        'должен отключить отправителя после успешной замены %s и вернуть ему оригинальный replaceTrack',
+        async (_name, isStartedValue) => {
+          isStarted = isStartedValue;
+          await sender.replaceTrack(track4K);
+          hangSenderQueue();
+          sender.replaceTrack(track720).catch(() => {});
+          await settleQueue();
+
+          expect(trackReplacer.attachedSender).toBeUndefined();
+          expect(sender.track).toBe(track720);
+        },
+      );
+
+      it('должен отключить отправителя после замены, отклонённой ошибкой оригинального replaceTrack, и вернуть ему оригинальный replaceTrack', async () => {
+        const error = new Error('replaceTrack failed');
+
+        originalReplaceTrack.mockRejectedValueOnce(error);
+
+        await expect(sender.replaceTrack(track4K)).rejects.toBe(error);
+
+        hangSenderQueue();
+        sender.replaceTrack(track4K).catch(() => {});
+        await settleQueue();
+
+        expect(trackReplacer.attachedSender).toBeUndefined();
+        expect(sender.track).toBe(track4K);
       });
     });
 

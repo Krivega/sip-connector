@@ -101,6 +101,7 @@ class VideoSendingBalancer {
     this.trackReplacer = new TrackReplacer({
       taskQueue: this.taskQueue,
       isBalancing: this.isBalancing,
+      isExcludedSender: this.isExcludedSender,
       applyParameters: async (sender, upcomingTrack) => {
         try {
           return await this.applyParameters(sender, { upcomingTrack });
@@ -232,10 +233,15 @@ class VideoSendingBalancer {
         state.kind === 'started' ? this.attachVideoSender(senders) : this.findVideoSender(senders);
 
       if (!sender) {
+        // вернувшийся отправитель с прежними треком и размером иначе совпал бы с применёнными входами, и сверка его бы пропустила
+        if (state.kind === 'started') {
+          state.appliedInputs = undefined;
+        }
+
         return RESULT_NO_CHANGED;
       }
 
-      // shortcut: таймаута нет — при зависшем getStats эта балансировка не завершится; очередь и замена трека от него не зависят
+      // кодек запрашивается до очереди: ожидание статистики не держит очередь и замену трека
       const codec = await this.codecProvider.getCodecFromSender(sender);
 
       return await this.taskQueue.add(sender, async () => {
@@ -249,7 +255,7 @@ class VideoSendingBalancer {
         const result = await this.applyParameters(sender, { codec });
 
         if (state.kind === 'started') {
-          // без кодека применено не всё: сверка повторит балансировку, пока кодек не станет известен
+          // без свежего кодека из статистики применено не всё: сверка повторит балансировку, пока статистика его не покажет
           state.appliedInputs = codec === undefined ? undefined : inputs;
         }
 
@@ -298,7 +304,7 @@ class VideoSendingBalancer {
     return this.findVideoSender(this.getConnection()?.getSenders() ?? []);
   }
 
-  // исключённого отправителя (например, демонстрации) балансировщик не выбирает и не трогает
+  // исключённого отправителя (например, демонстрации) балансировщик не выбирает и не трогает, даже подключённого раньше
   private findVideoSender(senders: RTCRtpSender[]): RTCRtpSender | undefined {
     return findVideoSender(
       senders.filter((sender) => {
@@ -336,18 +342,18 @@ class VideoSendingBalancer {
     return sender;
   }
 
-  // подключённый отправитель, оставшийся в соединении без трека, сохраняет перехват: он нужен, чтобы ограничить его следующую замену
+  // подключённый и не исключённый отправитель, оставшийся в соединении без трека, сохраняет перехват: он нужен, чтобы ограничить его следующую замену
   private hasAttachedSender(senders: RTCRtpSender[]): boolean {
-    const { attachedSender } = this.trackReplacer;
+    const { ownSender } = this;
 
-    return attachedSender !== undefined && senders.includes(attachedSender);
+    return ownSender !== undefined && senders.includes(ownSender);
   }
 
   private resolveResetSender(): RTCRtpSender | undefined {
     const connection = this.getConnection();
 
     return connection
-      ? (this.trackReplacer.attachedSender ?? this.findVideoSender(connection.getSenders()))
+      ? (this.ownSender ?? this.findVideoSender(connection.getSenders()))
       : undefined;
   }
 
@@ -359,6 +365,11 @@ class VideoSendingBalancer {
       upcomingTrack,
     }: { codec?: string; upcomingTrack?: MediaStreamTrack } = {},
   ): Promise<TResultSetParametersToSender> {
+    // исключённому отправителю не пишется ничего, в том числе задачами, поставленными до его исключения
+    if (this.isExcludedSender(sender)) {
+      return RESULT_NO_CHANGED;
+    }
+
     return this.senderBalancer.apply(sender, {
       codec,
       upcomingTrack,
@@ -368,9 +379,18 @@ class VideoSendingBalancer {
     });
   }
 
-  // «с командой»: балансировка запущена, а отправитель подключён; отправителю прошлого звонка команда нового чужая
+  // подключённый отправитель принадлежит балансировщику, пока его не исключили (например, отдали демонстрации)
+  private get ownSender(): RTCRtpSender | undefined {
+    const { attachedSender } = this.trackReplacer;
+
+    return attachedSender === undefined || this.isExcludedSender(attachedSender)
+      ? undefined
+      : attachedSender;
+  }
+
+  // «с командой»: балансировка запущена, а отправитель подключён и не исключён; отправителю прошлого звонка команда нового чужая
   private readonly isBalancing = (sender: RTCRtpSender): boolean => {
-    return this.state.kind === 'started' && this.trackReplacer.attachedSender === sender;
+    return this.state.kind === 'started' && this.ownSender === sender;
   };
 
   private readonly balanceAfterReplacement = () => {

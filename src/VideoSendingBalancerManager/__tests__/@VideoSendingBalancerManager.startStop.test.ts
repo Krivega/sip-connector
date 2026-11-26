@@ -147,6 +147,55 @@ describe('VideoSendingBalancerManager: остановка во время зап
     });
   });
 
+  describe('запуск без соединения', () => {
+    const startBalancingWithoutConnection = async () => {
+      setConnection(callManager, undefined);
+      await Promise.allSettled([manager.startBalancing()]);
+      setConnection(callManager, connection as RTCPeerConnection);
+    };
+
+    it('оставляет балансировку неактивной и не отправляет balancing-started, если startBalancing вызван без соединения', async () => {
+      const startedHandler = jest.fn();
+
+      createManager();
+      manager.on('balancing-started', startedHandler);
+      await startBalancingWithoutConnection();
+
+      expect(manager.isBalancingActive).toBe(false);
+      expect(startedHandler).not.toHaveBeenCalled();
+    });
+
+    it('не балансирует по тику отправителя соединения, появившегося после startBalancing без соединения', async () => {
+      createManager(createBalancerOptions({ maxResolution: { width: 640, height: 360 } }));
+      await startBalancingWithoutConnection();
+      await jest.advanceTimersByTimeAsync(TRACK_SIZE_POLLING_WINDOW);
+
+      expect(observed.log).toEqual([]);
+    });
+
+    it('не ужесточает параметры 1920x1080 по MAX 1280x720 до конца прогрева после peerconnection:confirmed, если перед ним startBalancing вызван без соединения, и применяет её после прогрева', async () => {
+      observed = createObservedSender(createVideoTrack(1920, 1080));
+      connection.senders = [observed.sender];
+      createManager();
+      await startBalancingWithoutConnection();
+      confirmCall(callManager, connection);
+      sendMainCamInfo(callManager, HEADERS_MAX_720P);
+      await jest.advanceTimersByTimeAsync(BALANCING_START_DELAY - 1);
+
+      expect(
+        observed.log.filter((entry) => {
+          return entry.type === 'setParameters' && entry.scaleResolutionDownBy !== 1;
+        }),
+      ).toEqual([]);
+
+      await jest.advanceTimersByTimeAsync(1);
+      await settle();
+
+      expect(manager.isBalancingActive).toBe(true);
+      expect(observed.getAppliedEncoding().scaleResolutionDownBy).toBe(1.5);
+    });
+  });
+
   describe('момент отправки balancing-started', () => {
     it('отправляет balancing-started после применения запомненной в прогреве MAX 1280x720 к 4K-треку', async () => {
       const encodingsOnBalancingStarted: RTCRtpEncodingParameters[] = [];
@@ -195,9 +244,12 @@ describe('VideoSendingBalancerManager: остановка во время зап
 
       await settle();
       manager.stopBalancing();
-      await manager.startBalancing();
+
+      // новый запуск ждёт тот же запрос статистики, что и прерванный
+      const restarting = manager.startBalancing();
+
       releaseStats();
-      await interruptedStarting;
+      await Promise.all([interruptedStarting, restarting]);
       await settle();
 
       expect(startedHandler).toHaveBeenCalledTimes(1);

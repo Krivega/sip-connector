@@ -70,6 +70,11 @@ class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
       return; // Уже запущена
     }
 
+    // до сброса таймера: отклонённый запуск не отменяет запланированный и не меняет состояние
+    if (!this.callManager.connection) {
+      throw new Error('connection is not exist');
+    }
+
     this.clearStartTimer();
 
     this.isBalancingActive = true;
