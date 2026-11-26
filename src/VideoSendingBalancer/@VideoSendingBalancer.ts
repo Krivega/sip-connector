@@ -1,5 +1,5 @@
 import resolveDebug from '@/logger';
-import { setEncodingsToSender } from '@/tools';
+import { setParametersToSender } from '@/tools';
 import findVideoSender from '@/utils/peerConnection/findVideoSender';
 import { CodecProvider } from './CodecProvider';
 import { hasValidResolutionMainCam } from './resolveEncodingParameters';
@@ -85,15 +85,26 @@ class VideoSendingBalancer {
     this.senderBalancer = new SenderBalancer(
       {
         parametersSetter: {
-          setEncodingsToSender: async (sender, parameters) => {
-            return setEncodingsToSender(sender, parameters, (appliedParameters) => {
+          // все записи балансировщика идут здесь: балансировка, сверка, замена трека, откат и сброс
+          setEncodingsToSender: async (sender, { scaleResolutionDownBy, maxBitrate }) => {
+            // Текущий degradationPreference: иначе запись сбрасывала бы значение, заданное потребителем,
+            // и уходила в sender даже при совпадающих encodings
+            const { degradationPreference } = sender.getParameters();
+            const result = await setParametersToSender(sender, {
+              encodings: [{ scaleResolutionDownBy, maxBitrate }],
+              degradationPreference,
+            });
+
+            if (result.isChanged) {
               // параметры уже применены: исключение подписчика не должно отклонять операцию
               try {
-                onSetParameters?.(appliedParameters);
+                onSetParameters?.(result.parameters);
               } catch (error: unknown) {
                 debug('onSetParameters: error', error);
               }
-            });
+            }
+
+            return result;
           },
         },
       },

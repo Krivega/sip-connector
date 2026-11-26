@@ -1,6 +1,11 @@
 import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
 import { DEFAULT_SCALE_RESOLUTION_DOWN_BY } from './constants';
 
+export type TSetParametersMatcher = (
+  encoding: RTCRtpEncodingParameters,
+  parameters: RTCRtpSendParameters,
+) => boolean;
+
 export type TSenderLogEntry =
   | { type: 'setParameters'; scaleResolutionDownBy?: number }
   | { type: 'replaceTrack'; appliedScaleResolutionDownBy?: number };
@@ -13,10 +18,9 @@ export type TObservedSender = {
   // меняет параметры отправителя так, как это делает другой модуль: мимо балансировщика
   applyForeignEncoding: (encoding: RTCRtpEncodingParameters) => Promise<void>;
   rejectNextSetParameters: (error: Error) => void;
-  // откладывает применение ближайшей записи, для которой matches вернёт true (без условия — ближайшей записи)
-  deferNextSetParameters: (
-    matches?: (encoding: RTCRtpEncodingParameters) => boolean,
-  ) => PromiseWithResolvers<undefined>;
+  // откладывает применение ближайшей записи, для которой matches вернёт true (без условия — ближайшей записи);
+  // matches получает первый encoding записи и её параметры целиком, например чтобы узнать запись по degradationPreference
+  deferNextSetParameters: (matches?: TSetParametersMatcher) => PromiseWithResolvers<undefined>;
   // следующий setParameters не завершается никогда
   hangNextSetParameters: () => void;
   rejectNextReplaceTrack: (error: Error) => void;
@@ -26,7 +30,7 @@ export type TObservedSender = {
 };
 
 type TSetParametersGate = {
-  matches: (encoding: RTCRtpEncodingParameters) => boolean;
+  matches: TSetParametersMatcher;
   wait: () => Promise<void>;
 };
 
@@ -49,6 +53,8 @@ const normalizeEncoding = (encoding: RTCRtpEncodingParameters): RTCRtpEncodingPa
  * Отправитель с журналом: replaceTrack здесь — «оригинальный» метод отправителя,
  * который был на нём до подключения балансировщика.
  * getParameters отдаёт снимок encodings, поэтому отклонённый setParameters не меняет параметры отправителя.
+ * degradationPreference хранится как в браузере: getParameters отдаёт значение последней применённой записи,
+ * а запись с degradationPreference undefined его стирает.
  * setParameters — как в спецификации W3C: параметры сверяются с последним getParameters при вызове, гейт задерживает
  * только применение, записи применяются в порядке вызовов, а пока запись не применена, getParameters отдаёт прежние
  * параметры. Chromium отдаёт новые параметры сразу после вызова, поэтому фикстура строже него
@@ -72,7 +78,7 @@ const createObservedSender = (track: MediaStreamVideoTrack): TObservedSender => 
     parameters: RTCRtpSendParameters,
   ): (() => Promise<void>) | undefined => {
     const index = setParametersGates.findIndex((gate) => {
-      return gate.matches(parameters.encodings[0]);
+      return gate.matches(parameters.encodings[0], parameters);
     });
 
     return index === -1 ? undefined : setParametersGates.splice(index, 1)[0].wait;

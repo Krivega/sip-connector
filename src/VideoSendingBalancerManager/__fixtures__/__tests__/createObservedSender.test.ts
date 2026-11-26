@@ -16,6 +16,21 @@ const getScale = (observed: TObservedSender) => {
   return observed.sender.getParameters().encodings[0].scaleResolutionDownBy;
 };
 
+const callSetDegradationPreference = async (
+  observed: TObservedSender,
+  degradationPreference: RTCDegradationPreference | undefined,
+) => {
+  const parameters = observed.sender.getParameters();
+
+  parameters.degradationPreference = degradationPreference;
+
+  return observed.sender.setParameters(parameters);
+};
+
+const getDegradationPreference = (observed: TObservedSender) => {
+  return observed.sender.getParameters().degradationPreference;
+};
+
 describe('createObservedSender: setParameters как в спецификации W3C', () => {
   let observed: TObservedSender;
 
@@ -103,6 +118,42 @@ describe('createObservedSender: setParameters как в спецификации
     );
     expect(observed.log).toEqual([{ type: 'setParameters', scaleResolutionDownBy: 2 }]);
     expect(getScale(observed)).toBe(2);
+  });
+
+  it('отдаёт из getParameters degradationPreference последней применённой записи: запись другого поля его сохраняет, а запись с undefined стирает', async () => {
+    await callSetDegradationPreference(observed, 'maintain-resolution');
+
+    expect(getDegradationPreference(observed)).toBe('maintain-resolution');
+
+    await callSetScale(observed, 3);
+
+    expect(getDegradationPreference(observed)).toBe('maintain-resolution');
+
+    await callSetDegradationPreference(observed, undefined);
+
+    expect(getDegradationPreference(observed)).toBeUndefined();
+  });
+
+  it('откладывает по условию на параметры записи только запись с подходящим degradationPreference, а записи перед ней применяет сразу', async () => {
+    const write = observed.deferNextSetParameters((_encoding, { degradationPreference }) => {
+      return degradationPreference === 'maintain-resolution';
+    });
+
+    await callSetScale(observed, 2);
+
+    const writing = callSetDegradationPreference(observed, 'maintain-resolution');
+
+    expect(observed.log).toEqual([{ type: 'setParameters', scaleResolutionDownBy: 2 }]);
+    expect(getDegradationPreference(observed)).toBeUndefined();
+
+    write.resolve(undefined);
+    await writing;
+
+    expect(observed.log).toEqual([
+      { type: 'setParameters', scaleResolutionDownBy: 2 },
+      { type: 'setParameters', scaleResolutionDownBy: 2 },
+    ]);
+    expect(getDegradationPreference(observed)).toBe('maintain-resolution');
   });
 
   it('откладывает по условию только подходящую запись, а записи перед ней применяет сразу', async () => {
