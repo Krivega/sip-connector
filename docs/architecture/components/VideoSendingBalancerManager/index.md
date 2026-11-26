@@ -42,8 +42,8 @@ new VideoSendingBalancerManager(callManager, apiManager, {
 Менеджер переводит `VideoSendingBalancer` между состояниями `idle`, `warmup` и `started`:
 
 1. `peerconnection:confirmed` / `recv-session-ended` → планирование запуска через
-   `balancingStartDelay`, состояние `warmup`: параметры не ужесточаются, замены трека уже идут через
-   балансировщик
+   `balancingStartDelay`, состояние `warmup`: параметры не ужесточаются (кроме ручного `balance()`),
+   замены трека уже идут через балансировщик
 2. По таймеру → `startBalancing()`, состояние `started`: первая балансировка с последней запомненной
    командой сервера, затем `balancing-started`
 3. События `main-cam-control` передаются балансировщику: в `started` — перебалансировка, в `warmup`
@@ -62,7 +62,7 @@ new VideoSendingBalancerManager(callManager, apiManager, {
 | ------------------ | --------------------------------------------------------- |
 | `startBalancing()` | Принудительный запуск балансировки                        |
 | `stopBalancing()`  | Остановка, сброс команды сервера и параметров отправителя |
-| `balance()`        | Ручная балансировка; во время прогрева ничего не меняет   |
+| `balance()`        | Ручная балансировка; в прогреве — по треку, без команды   |
 
 ## Связанные компоненты
 

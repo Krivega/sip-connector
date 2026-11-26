@@ -219,14 +219,23 @@ describe('VideoSendingBalancer', () => {
       expect(mcuDebugLogger).toHaveBeenCalledWith('onSetParameters: error', error);
     });
 
-    it('должен вернуть RESULT_NO_CHANGED во время прогрева, не запрашивая кодек и не требуя connection', async () => {
-      const getStats = jest.spyOn(sender, 'getStats');
+    it('должен во время прогрева установить параметры по треку отправителя и maxResolution без запомненной команды и вернуть результат установки', async () => {
+      balancer = createBalancer(createBalancerOptions({ maxResolution: MAX_RESOLUTION_360P }));
+      balancer.warmUp();
+      balancer.handleServerHeaders(HEADERS_PAUSE);
 
+      const result = await balancer.balance();
+
+      expect(result.isChanged).toBe(true);
+      expect(result.parameters.encodings).toEqual([ENCODING_720P_LIMITED_TO_360P]);
+      expect(getEncoding()).toEqual(ENCODING_720P_LIMITED_TO_360P);
+    });
+
+    it('должен во время прогрева отклониться ошибкой, если нет connection', async () => {
       balancer.warmUp();
       currentConnection = undefined;
 
-      await expect(balancer.balance()).resolves.toBe(RESULT_NO_CHANGED);
-      expect(getStats).not.toHaveBeenCalled();
+      await expect(balancer.balance()).rejects.toThrow('connection is not exist');
     });
 
     it('должен вернуть RESULT_NO_CHANGED и не менять параметры, если за время запроса кодека начат прогрев', async () => {
@@ -557,14 +566,14 @@ describe('VideoSendingBalancer', () => {
       expect(getEncoding()).toEqual(ENCODING_PAUSED);
     });
 
-    it('должен залогировать ошибку балансировки по команде', async () => {
+    it('должен залогировать ошибку балансировки по команде как handleMainCamControl: error', async () => {
       await balancer.start();
       currentConnection = undefined;
       balancer.handleServerHeaders(HEADERS_PAUSE);
       await flushQueue();
 
       expect(mcuDebugLogger).toHaveBeenCalledWith(
-        'balance on main-cam-control: error',
+        'handleMainCamControl: error',
         new Error('connection is not exist'),
       );
     });

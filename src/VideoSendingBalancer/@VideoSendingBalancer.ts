@@ -147,13 +147,13 @@ class VideoSendingBalancer {
       // идущей замене команда нужна до конца оригинального replaceTrack, а не после него
       this.trackReplacer.prepareOngoingReplacement();
       this.balance().catch((error: unknown) => {
-        debug('balance on main-cam-control: error', error);
+        debug('handleMainCamControl: error', error);
       });
     }
   }
 
   /**
-   * Начинает прогрев перед запуском: параметры не ужесточаются,
+   * Начинает прогрев перед запуском: параметры не ужесточаются, кроме ручного balance(),
    * перехват замены трека включается сразу, чтобы замены прогрева не потерялись для запуска.
    * Запущенную балансировку не затрагивает
    */
@@ -210,15 +210,12 @@ class VideoSendingBalancer {
   }
 
   /**
-   * Выполняет балансировку на основе текущего состояния: во время прогрева ничего не делает
+   * Выполняет балансировку на основе текущего состояния; во время прогрева, как и в idle,
+   * один раз применяет параметры по треку без команды сервера и не ограничивается ослаблением
    * @returns Promise с результатом балансировки
    */
   public async balance(): Promise<TResultSetParametersToSender> {
     const { state } = this;
-
-    if (state.kind === 'warmup') {
-      return RESULT_NO_CHANGED;
-    }
 
     try {
       const connection = this.getConnection();
@@ -252,7 +249,7 @@ class VideoSendingBalancer {
 
         // входы читаются до применения: изменившееся за его время должно остаться расхождением для сверки
         const inputs = resolveInputs(sender);
-        const result = await this.applyParameters(sender, { codec });
+        const result = await this.applyParameters(sender, { codec, isLooseningOnly: false });
 
         if (state.kind === 'started') {
           // без свежего кодека из статистики применено не всё: сверка повторит балансировку, пока статистика его не покажет
@@ -363,7 +360,9 @@ class VideoSendingBalancer {
     {
       codec = this.codecProvider.getKnownCodec(sender),
       upcomingTrack,
-    }: { codec?: string; upcomingTrack?: MediaStreamTrack } = {},
+      // пока отправка прогревается, скалирование применять нельзя; ручной balance() в прогреве это правило не ограничивает
+      isLooseningOnly = this.state.kind === 'warmup',
+    }: { codec?: string; upcomingTrack?: MediaStreamTrack; isLooseningOnly?: boolean } = {},
   ): Promise<TResultSetParametersToSender> {
     // исключённому отправителю не пишется ничего, в том числе задачами, поставленными до его исключения
     if (this.isExcludedSender(sender)) {
@@ -374,8 +373,7 @@ class VideoSendingBalancer {
       codec,
       upcomingTrack,
       serverHeaders: this.isBalancing(sender) ? this.serverHeaders : undefined,
-      // пока отправка прогревается, скалирование применять нельзя
-      isLooseningOnly: this.state.kind === 'warmup',
+      isLooseningOnly,
     });
   }
 

@@ -146,7 +146,7 @@ describe('VideoSendingBalancerManager error handling', () => {
     videoSendingBalancerManager.stopBalancing();
   });
 
-  it('logs error when balance on main-cam-control rejects during active balancing', async () => {
+  it('logs handleMainCamControl: error when balance on main-cam-control rejects during active balancing', async () => {
     setConnection(callManager, new RTCPeerConnectionMock(undefined, []) as RTCPeerConnection);
     await expect(videoSendingBalancerManager.startBalancing()).resolves.toBeUndefined();
     setConnection(callManager, undefined);
@@ -155,9 +155,6 @@ describe('VideoSendingBalancerManager error handling', () => {
     await delayPromise(0);
 
     expect(videoSendingBalancerManager.isBalancingActive).toBe(true);
-    expect(mcuDebugLogger).toHaveBeenCalledWith(
-      'balance on main-cam-control: error',
-      expect.any(Error),
-    );
+    expect(mcuDebugLogger).toHaveBeenCalledWith('handleMainCamControl: error', expect.any(Error));
   });
 });

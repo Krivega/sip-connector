@@ -106,25 +106,116 @@ describe('VideoSendingBalancerManager: ручной balance()', () => {
   });
 
   describe('во время прогрева', () => {
-    it('возвращает результат без изменения параметров', async () => {
-      createManager();
-      confirmCall(callManager, connection);
+    const MAX_RESOLUTION_1080P = { width: 1920, height: 1080 };
 
-      await expect(manager.balance()).resolves.toMatchObject({ isChanged: false });
+    // способы оказаться в прогреве: ожидание старта по таймеру и прогрев, оставшийся после неудачного старта без connection
+    const WARMUP_ENTRIES: [string, () => Promise<void>][] = [
+      [
+        'после peerconnection:confirmed',
+        async () => {
+          confirmCall(callManager, connection);
+        },
+      ],
+      [
+        'после recv-session-ended',
+        async () => {
+          callManager.events.trigger('recv-session-ended', undefined as never);
+        },
+      ],
+      [
+        'после неудачного старта по таймеру без connection',
+        async () => {
+          setConnection(callManager, undefined);
+          confirmCall(callManager, connection);
+          await jest.advanceTimersByTimeAsync(BALANCING_START_DELAY);
+          await settle();
+          setConnection(callManager, connection as RTCPeerConnection);
+        },
+      ],
+    ];
+
+    it.each(WARMUP_ENTRIES)(
+      'применяет параметры по треку и maxAvailableResolution без запомненной команды и возвращает isChanged true, если прогрев начат %s',
+      async (_name, enterWarmup) => {
+        observed = createObservedSender(track4K);
+        connection.senders = [observed.sender];
+        createManager(createBalancerOptions({ maxResolution: MAX_RESOLUTION_1080P }));
+        await enterWarmup();
+        sendMainCamInfo(callManager, HEADERS_MAX_720P);
+        await settle();
+
+        const result = await manager.balance();
+
+        await settle();
+
+        expect(result.isChanged).toBe(true);
+        expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_LIMITED_TO_1080P);
+        expect(manager.isBalancingActive).toBe(false);
+      },
+    );
+
+    it('отклоняется ошибкой без connection и не отменяет запланированный старт: после появления connection старт по таймеру применяет запомненную команду', async () => {
+      observed = createObservedSender(track4K);
+      connection.senders = [observed.sender];
+      createManager();
+      setConnection(callManager, undefined);
+      confirmCall(callManager, connection);
+      sendMainCamInfo(callManager, HEADERS_MAX_720P);
+
+      await expect(manager.balance()).rejects.toThrow('connection is not exist');
+      expect(manager.isBalancingScheduled).toBe(true);
+      expect(manager.isBalancingActive).toBe(false);
+
+      setConnection(callManager, connection as RTCPeerConnection);
+      await jest.advanceTimersByTimeAsync(BALANCING_START_DELAY);
+      await settle();
+
+      expect(manager.isBalancingActive).toBe(true);
+      expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_LIMITED_TO_720P);
     });
 
-    it('не меняет параметры, не включает слежение за отправителем и не отменяет запланированный старт с запомненной командой', async () => {
+    it('ужесточает параметры 4K-трека до scaleResolutionDownBy 2 при maxAvailableResolution 1920x1080: правило «в прогреве только ослабление» на ручной balance() не распространяется', async () => {
+      observed = createObservedSender(track4K);
+      connection.senders = [observed.sender];
+      createManager(createBalancerOptions({ maxResolution: MAX_RESOLUTION_1080P }));
+      confirmCall(callManager, connection);
+      await manager.balance();
+      await settle();
+
+      expect(observed.log).toEqual([{ type: 'setParameters', scaleResolutionDownBy: 2 }]);
+      expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_LIMITED_TO_1080P);
+      expect(manager.isBalancingScheduled).toBe(true);
+    });
+
+    it('применяет параметры один раз и не включает сверку по тику: изменение размера трека до старта по таймеру не меняет параметры', async () => {
+      observed = createObservedSender(track4K);
+      connection.senders = [observed.sender];
+      createManager(createBalancerOptions({ maxResolution: MAX_RESOLUTION_1080P }));
+      confirmCall(callManager, connection);
+      await manager.balance();
+      await settle();
+      jest.spyOn(track4K, 'getSettings').mockReturnValue({ width: 1280, height: 720 });
+      await jest.advanceTimersByTimeAsync(BALANCING_START_DELAY - 1);
+
+      expect(manager.isBalancingActive).toBe(false);
+      expect(observed.log).toEqual([{ type: 'setParameters', scaleResolutionDownBy: 2 }]);
+    });
+
+    it('не включает слежение за отправителем и не отменяет запланированный старт: после старта по таймеру применяется запомненная команда', async () => {
       createManager();
       confirmCall(callManager, connection);
       sendMainCamInfo(callManager, HEADERS_MAX_720P);
-      await Promise.allSettled([manager.balance()]);
+      await manager.balance();
       await settle();
       await observed.sender.replaceTrack(track4K);
       await jest.advanceTimersByTimeAsync(BALANCING_START_DELAY / 2);
 
       expect(manager.isBalancingActive).toBe(false);
       expect(manager.isBalancingScheduled).toBe(true);
-      expect(observed.log).toEqual([{ type: 'replaceTrack', appliedScaleResolutionDownBy: 1 }]);
+      expect(observed.log).toEqual([
+        { type: 'setParameters', scaleResolutionDownBy: 1 },
+        { type: 'replaceTrack', appliedScaleResolutionDownBy: 1 },
+      ]);
 
       await jest.advanceTimersByTimeAsync(BALANCING_START_DELAY / 2);
       await settle();
