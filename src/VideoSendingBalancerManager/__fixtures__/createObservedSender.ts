@@ -49,8 +49,9 @@ const normalizeEncoding = (encoding: RTCRtpEncodingParameters): RTCRtpEncodingPa
  * Отправитель с журналом: replaceTrack здесь — «оригинальный» метод отправителя,
  * который был на нём до подключения балансировщика.
  * getParameters отдаёт снимок encodings, поэтому отклонённый setParameters не меняет параметры отправителя.
- * setParameters — как в Chrome: параметры сверяются с последним getParameters при вызове, гейт задерживает только применение,
- * записи применяются в порядке вызовов, а пока запись не применена, getParameters отдаёт прежние параметры
+ * setParameters — как в спецификации W3C: параметры сверяются с последним getParameters при вызове, гейт задерживает
+ * только применение, записи применяются в порядке вызовов, а пока запись не применена, getParameters отдаёт прежние
+ * параметры. Chromium отдаёт новые параметры сразу после вызова, поэтому фикстура строже него
  */
 const createObservedSender = (track: MediaStreamVideoTrack): TObservedSender => {
   const senderMock = new RTCRtpSenderMock({ track });

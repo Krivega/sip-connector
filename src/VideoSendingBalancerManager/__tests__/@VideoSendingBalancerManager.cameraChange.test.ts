@@ -228,6 +228,94 @@ describe('VideoSendingBalancerManager: смена камеры вызывающ�
 
       await expectCommandScaleHeldForPollingWindow();
     });
+
+    it('выставляет 4K-треку scaleResolutionDownBy 6 к первому тику сверки после второй смены камеры и держит его окно опроса, если при MAX 640x360 вторая смена 4K на 4K с sendEncodings масштаба 3 завершилась, пока балансировка первого тика после смены 720p на 4K ждала getStats, а запись вызывающего завершилась после этой балансировки', async () => {
+      await startWithMaxResolution360p();
+      await changeCamera(track4K);
+      await settle();
+
+      const getStats = jest.spyOn(observed.sender, 'getStats');
+      const releaseFirstTickStats = deferNextGetStats(observed.sender);
+
+      await advanceToFirstTickAfterReplacement();
+
+      // первый тик после смены камеры балансирует и ждёт ответа getStats
+      expect(getStats).toHaveBeenCalledTimes(1);
+
+      // вторая замена завершается во время балансировки первого тика: её отметка должна пережить этот тик
+      const secondTrack4K = createVideoTrack(3840, 2160);
+      const logLengthBeforeSecondChange = observed.log.length;
+      const callerWrite = observed.deferNextSetParameters(isCallerEncoding);
+      const changingCamera = changeCamera(secondTrack4K);
+
+      await settle();
+
+      // вторая замена завершилась, пока балансировка первого тика ждёт кодек
+      expect(observed.sender.track).toBe(secondTrack4K);
+
+      releaseFirstTickStats();
+      await settle();
+
+      // балансировка первого тика и балансировка после второй замены отработали, а запись вызывающего ещё не применена
+      expect(await getSettledResult(changingCamera)).toEqual({ status: 'pending' });
+      expect(getCallerWrites(logLengthBeforeSecondChange)).toEqual([]);
+
+      callerWrite.resolve(undefined);
+      await changingCamera;
+
+      expect(getCallerWrites(logLengthBeforeSecondChange)).toEqual([
+        { type: 'setParameters', scaleResolutionDownBy: CALLER_SCALE_RESOLUTION_DOWN_BY },
+      ]);
+
+      await advanceToFirstTickAfterReplacement();
+
+      expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_LIMITED_TO_360P);
+
+      await expectCommandScaleHeldForPollingWindow();
+    });
+
+    it('выставляет 4K-треку scaleResolutionDownBy 6 к первому тику сверки и держит его окно опроса, если при смене камеры 720p на 4K с sendEncodings масштаба 3 повторная MAX 640x360 пришла во время оригинального replaceTrack, а балансировка после замены прочитала параметры до завершения записи вызывающего', async () => {
+      await startWithMaxResolution360p();
+
+      const logLengthBeforeChange = observed.log.length;
+      const originalReplacement = observed.deferNextReplaceTrack();
+      const changingCamera = changeCamera(track4K);
+
+      await settle();
+      // балансировка команды стоит в очереди за заменой и учитывает 4K-трек до балансировки после замены:
+      // к первому тику входы не меняются, сверить параметры его заставляет только сама замена
+      sendMainCamInfo(callManager, HEADERS_MAX_360P);
+      await settle();
+
+      // оригинальный replaceTrack ещё не завершён
+      expect(observed.sender.track).not.toBe(track4K);
+
+      const releaseStats = deferNextGetStats(observed.sender);
+      const callerWrite = observed.deferNextSetParameters(isCallerEncoding);
+
+      originalReplacement.resolve(undefined);
+      await settle();
+      releaseStats();
+      await settle();
+
+      // замена, балансировка команды и балансировка после замены отработали, а запись вызывающего ещё не применена
+      expect(observed.sender.track).toBe(track4K);
+      expect(await getSettledResult(changingCamera)).toEqual({ status: 'pending' });
+      expect(getCallerWrites(logLengthBeforeChange)).toEqual([]);
+
+      callerWrite.resolve(undefined);
+      await changingCamera;
+
+      expect(getCallerWrites(logLengthBeforeChange)).toEqual([
+        { type: 'setParameters', scaleResolutionDownBy: CALLER_SCALE_RESOLUTION_DOWN_BY },
+      ]);
+
+      await advanceToFirstTickAfterReplacement();
+
+      expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_LIMITED_TO_360P);
+
+      await expectCommandScaleHeldForPollingWindow();
+    });
   });
 
   describe('запись вызывающего завершилась до чтения параметров балансировкой', () => {

@@ -16,7 +16,7 @@ const getScale = (observed: TObservedSender) => {
   return observed.sender.getParameters().encodings[0].scaleResolutionDownBy;
 };
 
-describe('createObservedSender: setParameters как в Chrome', () => {
+describe('createObservedSender: setParameters как в спецификации W3C', () => {
   let observed: TObservedSender;
 
   beforeEach(() => {
