@@ -41,4 +41,6 @@ export interface IParametersSetter {
 // Интерфейс для очереди задач
 export interface ITaskQueue {
   add: <T>(key: object, task: () => Promise<T>) => Promise<T>;
+  // завершение, успехом или ошибкой, очередной задачи ключа после вызова
+  nextSettled: (key: object) => Promise<void>;
 }

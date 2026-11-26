@@ -1220,7 +1220,7 @@ describe('VideoSendingBalancer', () => {
         isExcluded = true;
         await sender.replaceTrack(track4K);
         originalReplaceTrack.mockClear();
-        // без balance() и тиков сверки; через перехват следующая замена завершилась бы не раньше таймаута ожидания записи
+        // без balance() и тиков сверки; через перехват следующая замена ждала бы конца зависшего оригинала
         originalReplaceTrack.mockImplementationOnce(async () => {
           return new Promise<void>(() => {});
         });
@@ -1238,7 +1238,7 @@ describe('VideoSendingBalancer', () => {
         isExcluded = true;
         await sender.replaceTrack(track4K);
         originalReplaceTrack.mockClear();
-        // без balance() и тиков сверки; через перехват следующая замена завершилась бы не раньше таймаута ожидания записи
+        // без balance() и тиков сверки; через перехват следующая замена ждала бы конца зависшего оригинала
         originalReplaceTrack.mockImplementationOnce(async () => {
           return new Promise<void>(() => {});
         });

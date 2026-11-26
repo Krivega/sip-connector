@@ -2,6 +2,7 @@ import { cancelableDelayPromise } from '@krivega/timeout-requester';
 
 import resolveDebug from '@/logger';
 import { BROWSER_RESPONSE_TIMEOUT_MS } from './constants';
+import { KeyedSignal, createSignal } from './KeyedSignal';
 
 import type { ITaskQueue } from './types';
 
@@ -41,30 +42,24 @@ const createReplacement = (
   previous: Promise<void>,
 ): TReplacement => {
   let original: Promise<void> | undefined;
-  let markCalled = () => {};
-  let markSettled = () => {};
-  const called = new Promise<void>((resolve) => {
-    markCalled = resolve;
-  });
-  const settled = new Promise<void>((resolve) => {
-    markSettled = resolve;
-  });
+  const called = createSignal();
+  const settled = createSignal();
 
   const startOriginal = async () => {
-    markCalled();
+    called.resolve();
 
     try {
       await originalReplaceTrack(newTrack);
     } finally {
-      markSettled();
+      settled.resolve();
     }
   };
 
   return {
     newTrack,
     previous,
-    called,
-    settled,
+    called: called.promise,
+    settled: settled.promise,
     isCalled: () => {
       return original !== undefined;
     },
@@ -76,22 +71,29 @@ const createReplacement = (
   };
 };
 
-// true — промис завершился за ms; таймер снимается в любом случае
-const settlesWithin = async (promise: Promise<unknown>, ms: number): Promise<boolean> => {
-  const timeout = cancelableDelayPromise(ms);
+// завершение очередной записи в отправитель: задачи его очереди или записи замены внутри задачи
+type TNextWriteSettled = () => Promise<void>;
+
+type TWaitOutcome = 'target' | 'write' | 'timeout';
+
+// что раньше: цель завершилась, завершилась запись в отправитель или прошёл BROWSER_RESPONSE_TIMEOUT_MS; таймер снимается в любом случае
+const raceWithWrites = async (
+  target: Promise<unknown>,
+  nextWriteSettled: TNextWriteSettled,
+): Promise<TWaitOutcome> => {
+  const timeout = cancelableDelayPromise(BROWSER_RESPONSE_TIMEOUT_MS);
+  const resolveTarget = (): TWaitOutcome => {
+    return 'target';
+  };
 
   try {
     return await Promise.race([
-      promise.then(
-        () => {
-          return true;
-        },
-        () => {
-          return true;
-        },
-      ),
-      timeout.then(() => {
-        return false;
+      target.then(resolveTarget, resolveTarget),
+      nextWriteSettled().then((): TWaitOutcome => {
+        return 'write';
+      }),
+      timeout.then((): TWaitOutcome => {
+        return 'timeout';
       }),
     ]);
   } finally {
@@ -99,16 +101,33 @@ const settlesWithin = async (promise: Promise<unknown>, ms: number): Promise<boo
   }
 };
 
+// true — цель завершилась; false — BROWSER_RESPONSE_TIMEOUT_MS подряд не завершилась ни одна запись в отправитель: каждая завершённая запись начинает отсчёт заново
+const settlesWhileWritesProgress = async (
+  target: Promise<unknown>,
+  nextWriteSettled: TNextWriteSettled,
+): Promise<boolean> => {
+  const outcome = await raceWithWrites(target, nextWriteSettled);
+
+  return outcome === 'write'
+    ? settlesWhileWritesProgress(target, nextWriteSettled)
+    : outcome === 'target';
+};
+
 /**
- * Ожидание замены вызывающим: зависшие записи параметров он ждёт не дольше BROWSER_RESPONSE_TIMEOUT_MS
- * до оригинального replaceTrack и столько же после него, а сам оригинал — сколько отвечает браузер.
+ * Ожидание замены вызывающим: записи параметров до оригинального replaceTrack и после него он ждёт, пока они завершаются, —
+ * отпускается, только если BROWSER_RESPONSE_TIMEOUT_MS подряд не завершилась ни одна запись в отправитель
+ * (задача его очереди или запись замены); сам оригинал — сколько отвечает браузер.
  * Вызывающий получает исход оригинала; задача замены остаётся в очереди и доделывает свои записи после зависшей
  */
-const awaitReplacement = async (replacement: TReplacement, task: Promise<void>): Promise<void> => {
+const awaitReplacement = async (
+  replacement: TReplacement,
+  task: Promise<void>,
+  nextWriteSettled: TNextWriteSettled,
+): Promise<void> => {
   // отсчёт — от завершения оригинала предыдущей замены, а не от вызова: иначе при медленном браузере подготовка терялась бы и без зависших записей
   await replacement.previous;
 
-  const isCalledInTime = await settlesWithin(replacement.called, BROWSER_RESPONSE_TIMEOUT_MS);
+  const isCalledInTime = await settlesWhileWritesProgress(replacement.called, nextWriteSettled);
 
   if (!isCalledInTime) {
     // исход задачи больше никто не ждёт, а без обработчика её отказ остался бы необработанным
@@ -120,7 +139,7 @@ const awaitReplacement = async (replacement: TReplacement, task: Promise<void>):
 
   await replacement.settled;
 
-  const isFinishedInTime = await settlesWithin(task, BROWSER_RESPONSE_TIMEOUT_MS);
+  const isFinishedInTime = await settlesWhileWritesProgress(task, nextWriteSettled);
 
   // не уложившиеся записи после оригинала задача доделает сама
   return isFinishedInTime ? task : replacement.callOriginal();
@@ -150,8 +169,10 @@ const settlePreparation = async (preparation?: TPreparation): Promise<void> => {
  *
  * Звенья и шаг 4 выполняются, только если на момент их выполнения балансировка запущена, а отправитель подключён (attach).
  * Иначе перехват только ставит замену в очередь отправителя: порядок сохраняется, параметры не меняются.
- * Зависшие записи до оригинала и после него вызывающий ждёт не дольше BROWSER_RESPONSE_TIMEOUT_MS (awaitReplacement):
- * не дождался до оригинала — вызывает его мимо очереди, без подготовки. Оригинал вызывается один раз и по порядку замен,
+ * Записи до оригинала и после него вызывающий ждёт, пока они завершаются (awaitReplacement): его отпускают,
+ * если BROWSER_RESPONSE_TIMEOUT_MS подряд не завершилась ни одна запись отправителя — задача его очереди, звено подготовки,
+ * применение или откат после замены. Отпущенный до оригинала вызывает его мимо очереди, без подготовки.
+ * Оригинал вызывается один раз и по порядку замен,
  * а задача замены остаётся в очереди и доделывает свои записи после зависшей.
  * Перехват остаётся и на отключённом отправителе, пока принятые им замены не завершились для вызывающего: так сохраняется их порядок.
  * Подключённый отправитель, исключённый балансировщиком (isExcludedSender), отключается, как только его замена завершится для вызывающего.
@@ -163,6 +184,9 @@ export class TrackReplacer {
 
   // у отправителя не больше одной подготовки: её создаёт только задача очереди, а очередь выполняет их по одной
   private readonly preparations = new WeakMap<RTCRtpSender, TPreparation>();
+
+  // завершение записи замены в отправитель — звена подготовки, применения или отката после замены
+  private readonly replacementWriteSettled = new KeyedSignal();
 
   private readonly taskQueue: ITaskQueue;
 
@@ -263,7 +287,9 @@ export class TrackReplacer {
           return this.replaceSenderTrack(sender, replacement);
         });
 
-        await awaitReplacement(replacement, task);
+        await awaitReplacement(replacement, task, async () => {
+          return this.nextWriteSettled(sender);
+        });
       } finally {
         interception.unfinishedReplacements -= 1;
 
@@ -295,6 +321,14 @@ export class TrackReplacer {
     // shortcut: замена, вызванная после этого, идёт мимо очереди и не упорядочена с её задачами; такие замены сериализует потребитель
     sender.replaceTrack = originalReplaceTrack;
     this.interceptions.delete(sender);
+  }
+
+  // записи в отправитель — задачи его очереди, а внутри задачи замены ещё и её записи; очереди других отправителей сюда не входят
+  private async nextWriteSettled(sender: RTCRtpSender): Promise<void> {
+    return Promise.race([
+      this.taskQueue.nextSettled(sender),
+      this.replacementWriteSettled.next(sender),
+    ]);
   }
 
   private async replaceSenderTrack(sender: RTCRtpSender, replacement: TReplacement): Promise<void> {
@@ -359,6 +393,8 @@ export class TrackReplacer {
       } catch (error: unknown) {
         // подготовка не должна срывать замену: подключённому отправителю параметры нового трека применятся после неё
         debug('applyParameters before replaceTrack: error', error);
+      } finally {
+        this.replacementWriteSettled.notify(sender);
       }
     });
   }
@@ -368,6 +404,8 @@ export class TrackReplacer {
       await this.applyParameters(sender);
     } catch (error: unknown) {
       debug('applyParameters after replaceTrack: error', error);
+    } finally {
+      this.replacementWriteSettled.notify(sender);
     }
   }
 }

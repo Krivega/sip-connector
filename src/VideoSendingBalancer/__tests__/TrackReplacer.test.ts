@@ -871,6 +871,36 @@ describe('TrackReplacer', () => {
           expect(jest.getTimerCount()).toBe(0);
         });
 
+        it('должен отклонить замену ошибкой оригинального replaceTrack, вызванного через таймаут ожидания, и не применять параметры ни до, ни после зависшей записи', async () => {
+          const error = new Error('replaceTrack failed');
+          const write = startHungWrite();
+
+          originalReplaceTrack.mockRejectedValueOnce(error);
+
+          const replacement = observeSettlement(sender.replaceTrack(track4K));
+
+          await advanceTo(WRITE_WAIT_TIMEOUT_MS - 1);
+
+          expect(originalReplaceTrack).not.toHaveBeenCalled();
+
+          await advanceTo(WRITE_WAIT_TIMEOUT_MS);
+
+          expect(originalReplaceTrack.mock.calls).toEqual([[track4K]]);
+          expect(replacement.result).toEqual({ status: 'rejected', reason: error });
+          expect(requestBalance).not.toHaveBeenCalled();
+
+          write.resolve(undefined);
+          // здесь задача замены завершается той же ошибкой: необработанный отказ Jest засчитал бы этому тесту
+          await flush();
+
+          expect(log).toEqual([WRITE_START, WRITE_END]);
+          expect(applyParameters).not.toHaveBeenCalled();
+          expect(originalReplaceTrack).toHaveBeenCalledTimes(1);
+          expect(requestBalance).not.toHaveBeenCalled();
+          expect(sender.track).toBe(track720);
+          expect(jest.getTimerCount()).toBe(0);
+        });
+
         it('должен вызывать оригинальные replaceTrack ждущих замен по порядку и отсчитывать таймаут следующей от завершения оригинала предыдущей', async () => {
           const write = startHungWrite();
           const firstReplacement = observeSettlement(sender.replaceTrack(track4K));
@@ -1219,6 +1249,371 @@ describe('TrackReplacer', () => {
           expect(applyParameters.mock.calls).toEqual([[sender, track4K], [sender]]);
           expect(sender.track).toBe(track720);
           expect(jest.getTimerCount()).toBe(0);
+        });
+      });
+
+      describe('записи отправителя идут друг за другом дольше таймаута ожидания, но каждая быстрее него', () => {
+        // столько длится каждая независшая запись: две подряд дольше таймаута ожидания
+        const WRITE_DURATION_MS = 600;
+        const REPLACED = 'replaced';
+
+        // запись в очереди отправителя, которая длится WRITE_DURATION_MS
+        const startTimedWrite = () => {
+          taskQueue
+            .add(sender, async () => {
+              return writeWithLog('write', delayPromise(WRITE_DURATION_MS));
+            })
+            .catch(() => {});
+        };
+
+        // следующее применение параметров длится durationMs
+        const delayNextApplyParameters = (durationMs: number) => {
+          applyParameters.mockImplementationOnce(async (_sender, upcomingTrack) => {
+            await writeWithLog(resolveApplyStep(upcomingTrack), delayPromise(durationMs));
+
+            return { isChanged: true };
+          });
+        };
+
+        // в журнал попадает и момент, когда замена завершилась для вызывающего
+        const replaceTrackWithLog = (track: MediaStreamTrack) => {
+          return observeSettlement(
+            sender.replaceTrack(track).then(() => {
+              log.push(REPLACED);
+            }),
+          );
+        };
+
+        describe('до оригинального replaceTrack', () => {
+          it('должен выполнить замену обычным порядком после двух записей в очереди', async () => {
+            const expectedLog = [
+              WRITE_START,
+              WRITE_END,
+              WRITE_START,
+              WRITE_END,
+              ...TRACK_REPLACEMENT_LOG,
+              REPLACED,
+            ];
+
+            startTimedWrite();
+            startTimedWrite();
+
+            const replacement = replaceTrackWithLog(track4K);
+
+            await advanceTo(2 * WRITE_DURATION_MS - 1);
+
+            expect(originalReplaceTrack).not.toHaveBeenCalled();
+            expect(log).toEqual([WRITE_START, WRITE_END, WRITE_START]);
+            expect(replacement.result).toEqual(PENDING);
+
+            await advanceTo(2 * WRITE_DURATION_MS);
+
+            expect(log).toEqual(expectedLog);
+            expect(replacement.result).toEqual(FULFILLED);
+            expect(applyParameters.mock.calls).toEqual([[sender, track4K], [sender]]);
+            expect(requestBalance).toHaveBeenCalledTimes(1);
+            expect(sender.track).toBe(track4K);
+
+            await advanceTo(2 * WRITE_DURATION_MS + 3 * WRITE_WAIT_TIMEOUT_MS);
+
+            expect(log).toEqual(expectedLog);
+            expect(originalReplaceTrack.mock.calls).toEqual([[track4K]]);
+            expect(maxWritesInFlight).toBe(1);
+            expect(jest.getTimerCount()).toBe(0);
+          });
+
+          it('должен вызвать оригинальный replaceTrack только после подготовки, если она идёт за записью в очереди', async () => {
+            startTimedWrite();
+            delayNextApplyParameters(WRITE_DURATION_MS);
+
+            const replacement = replaceTrackWithLog(track4K);
+
+            await advanceTo(2 * WRITE_DURATION_MS - 1);
+
+            expect(originalReplaceTrack).not.toHaveBeenCalled();
+            expect(log).toEqual([WRITE_START, WRITE_END, APPLY_UPCOMING_TRACK_PARAMETERS_START]);
+            expect(replacement.result).toEqual(PENDING);
+
+            await advanceTo(2 * WRITE_DURATION_MS);
+
+            expect(log).toEqual([WRITE_START, WRITE_END, ...TRACK_REPLACEMENT_LOG, REPLACED]);
+            expect(replacement.result).toEqual(FULFILLED);
+            expect(applyParameters.mock.calls).toEqual([[sender, track4K], [sender]]);
+            expect(originalReplaceTrack.mock.calls).toEqual([[track4K]]);
+            expect(requestBalance).toHaveBeenCalledTimes(1);
+            expect(maxWritesInFlight).toBe(1);
+            expect(jest.getTimerCount()).toBe(0);
+          });
+
+          it('должен вызвать оригинальный replaceTrack только после звена, добавленного во время подготовки, если подготовка идёт за записью в очереди', async () => {
+            startTimedWrite();
+            applyParameters.mockImplementationOnce(async (_sender, upcomingTrack) => {
+              trackReplacer.prepareOngoingReplacement();
+              await writeWithLog(resolveApplyStep(upcomingTrack), delayPromise(WRITE_DURATION_MS));
+
+              return { isChanged: true };
+            });
+            delayNextApplyParameters(WRITE_DURATION_MS);
+
+            const replacement = replaceTrackWithLog(track4K);
+
+            await advanceTo(3 * WRITE_DURATION_MS - 1);
+
+            expect(originalReplaceTrack).not.toHaveBeenCalled();
+            expect(log).toEqual([
+              WRITE_START,
+              WRITE_END,
+              ...APPLY_UPCOMING_TRACK_PARAMETERS_LOG,
+              APPLY_UPCOMING_TRACK_PARAMETERS_START,
+            ]);
+            expect(replacement.result).toEqual(PENDING);
+
+            await advanceTo(3 * WRITE_DURATION_MS);
+
+            expect(log).toEqual([
+              WRITE_START,
+              WRITE_END,
+              ...APPLY_UPCOMING_TRACK_PARAMETERS_LOG,
+              ...TRACK_REPLACEMENT_LOG,
+              REPLACED,
+            ]);
+            expect(replacement.result).toEqual(FULFILLED);
+            expect(applyParameters.mock.calls).toEqual([
+              [sender, track4K],
+              [sender, track4K],
+              [sender],
+            ]);
+            expect(originalReplaceTrack.mock.calls).toEqual([[track4K]]);
+            expect(maxWritesInFlight).toBe(1);
+            expect(jest.getTimerCount()).toBe(0);
+          });
+
+          it('должен вызвать оригинальный replaceTrack без подготовки через таймаут ожидания после конца последней завершённой записи, если следующая запись в очереди зависла', async () => {
+            startTimedWrite();
+
+            const write = startHungWrite();
+            const replacement = replaceTrackWithLog(track4K);
+
+            await advanceTo(WRITE_DURATION_MS + WRITE_WAIT_TIMEOUT_MS - 1);
+
+            expect(originalReplaceTrack).not.toHaveBeenCalled();
+            expect(log).toEqual([WRITE_START, WRITE_END, WRITE_START]);
+            expect(replacement.result).toEqual(PENDING);
+
+            await advanceTo(WRITE_DURATION_MS + WRITE_WAIT_TIMEOUT_MS);
+
+            expect(log).toEqual([
+              WRITE_START,
+              WRITE_END,
+              WRITE_START,
+              ...REPLACE_TRACK_LOG,
+              REPLACED,
+            ]);
+            expect(replacement.result).toEqual(FULFILLED);
+            expect(sender.track).toBe(track4K);
+            expect(applyParameters).not.toHaveBeenCalled();
+            expect(requestBalance).toHaveBeenCalledTimes(1);
+
+            write.resolve(undefined);
+            await flush();
+
+            expect(log).toEqual([
+              WRITE_START,
+              WRITE_END,
+              WRITE_START,
+              ...REPLACE_TRACK_LOG,
+              REPLACED,
+              WRITE_END,
+              ...APPLY_ACTUAL_TRACK_PARAMETERS_LOG,
+            ]);
+            expect(applyParameters.mock.calls).toEqual([[sender]]);
+            expect(originalReplaceTrack).toHaveBeenCalledTimes(1);
+            expect(maxWritesInFlight).toBe(1);
+            expect(jest.getTimerCount()).toBe(0);
+          });
+
+          it('не должен продлевать таймаут ожидания зависшей записи записями в очереди другого отправителя', async () => {
+            const otherWriteDurationMs = 500;
+            const otherWritesCount = 4;
+            const otherSender = new RTCRtpSenderMock({ track: track1080 });
+            let otherWritesDone = 0;
+
+            const write = startHungWrite();
+
+            Array.from({ length: otherWritesCount }).forEach(() => {
+              taskQueue
+                .add(otherSender, async () => {
+                  await delayPromise(otherWriteDurationMs);
+                  otherWritesDone += 1;
+                })
+                .catch(() => {});
+            });
+
+            const replacement = replaceTrackWithLog(track4K);
+
+            await advanceTo(WRITE_WAIT_TIMEOUT_MS - 1);
+
+            expect(otherWritesDone).toBe(1);
+            expect(originalReplaceTrack).not.toHaveBeenCalled();
+
+            await advanceTo(WRITE_WAIT_TIMEOUT_MS);
+
+            expect(log).toEqual([WRITE_START, ...REPLACE_TRACK_LOG, REPLACED]);
+            expect(replacement.result).toEqual(FULFILLED);
+            expect(applyParameters).not.toHaveBeenCalled();
+
+            write.resolve(undefined);
+            await advanceTo(otherWritesCount * otherWriteDurationMs);
+
+            expect(otherWritesDone).toBe(otherWritesCount);
+            expect(log).toEqual([
+              WRITE_START,
+              ...REPLACE_TRACK_LOG,
+              REPLACED,
+              WRITE_END,
+              ...APPLY_ACTUAL_TRACK_PARAMETERS_LOG,
+            ]);
+            expect(applyParameters.mock.calls).toEqual([[sender]]);
+            expect(originalReplaceTrack).toHaveBeenCalledTimes(1);
+            expect(jest.getTimerCount()).toBe(0);
+          });
+        });
+
+        describe('после оригинального replaceTrack', () => {
+          // звено, добавленное во время оригинального replaceTrack, завершается через WRITE_DURATION_MS после его конца
+          const ADDED_STEP_END_TIME = ORIGINAL_REPLACE_TRACK_DURATION_MS + WRITE_DURATION_MS;
+          const LOG_UNTIL_ACTUAL_TRACK_PARAMETERS_END = [
+            ...APPLY_UPCOMING_TRACK_PARAMETERS_LOG,
+            REPLACE_TRACK_LOG[0],
+            APPLY_UPCOMING_TRACK_PARAMETERS_START,
+            REPLACE_TRACK_LOG[1],
+            APPLY_UPCOMING_TRACK_PARAMETERS_END,
+            APPLY_ACTUAL_TRACK_PARAMETERS_START,
+          ];
+
+          let originalReplacement: PromiseWithResolvers<undefined>;
+
+          // замена до конца оригинального replaceTrack; звено добавлено во время него
+          const startReplacementWithAddedStep = async () => {
+            const replacement = replaceTrackWithLog(track4K);
+
+            await flush();
+            delayNextApplyParameters(ADDED_STEP_END_TIME);
+            trackReplacer.prepareOngoingReplacement();
+
+            return replacement;
+          };
+
+          beforeEach(() => {
+            originalReplacement = Promise.withResolvers<undefined>();
+            originalReplaceTrackGate = originalReplacement.promise;
+          });
+
+          it('должен завершить замену после применения параметров фактического трека, если оно идёт за звеном, добавленным во время оригинального replaceTrack', async () => {
+            const replacement = await startReplacementWithAddedStep();
+
+            delayNextApplyParameters(WRITE_DURATION_MS);
+            await advanceTo(ORIGINAL_REPLACE_TRACK_DURATION_MS);
+            originalReplacement.resolve(undefined);
+            await advanceTo(ORIGINAL_REPLACE_TRACK_DURATION_MS + WRITE_WAIT_TIMEOUT_MS);
+
+            expect(replacement.result).toEqual(PENDING);
+            expect(log).toEqual(LOG_UNTIL_ACTUAL_TRACK_PARAMETERS_END);
+
+            await advanceTo(ADDED_STEP_END_TIME + WRITE_DURATION_MS - 1);
+
+            expect(replacement.result).toEqual(PENDING);
+
+            await advanceTo(ADDED_STEP_END_TIME + WRITE_DURATION_MS);
+
+            expect(log).toEqual([
+              ...LOG_UNTIL_ACTUAL_TRACK_PARAMETERS_END,
+              APPLY_ACTUAL_TRACK_PARAMETERS_LOG[1],
+              REPLACED,
+            ]);
+            expect(replacement.result).toEqual(FULFILLED);
+            expect(applyParameters.mock.calls).toEqual([
+              [sender, track4K],
+              [sender, track4K],
+              [sender],
+            ]);
+            expect(originalReplaceTrack).toHaveBeenCalledTimes(1);
+            expect(requestBalance).toHaveBeenCalledTimes(1);
+            expect(maxWritesInFlight).toBe(1);
+            expect(jest.getTimerCount()).toBe(0);
+          });
+
+          it('должен отклонить замену ошибкой оригинального replaceTrack после возврата параметров оставшегося трека, если возврат идёт за звеном, добавленным во время оригинального replaceTrack', async () => {
+            const error = new Error('replaceTrack failed');
+            const logUntilRollbackEnd = [
+              ...APPLY_UPCOMING_TRACK_PARAMETERS_LOG,
+              REPLACE_TRACK_LOG[0],
+              ...APPLY_UPCOMING_TRACK_PARAMETERS_LOG,
+              APPLY_ACTUAL_TRACK_PARAMETERS_START,
+            ];
+            const replacement = await startReplacementWithAddedStep();
+
+            delayNextApplyParameters(WRITE_DURATION_MS);
+            await advanceTo(ORIGINAL_REPLACE_TRACK_DURATION_MS);
+            originalReplacement.reject(error);
+            await advanceTo(ORIGINAL_REPLACE_TRACK_DURATION_MS + WRITE_WAIT_TIMEOUT_MS);
+
+            expect(replacement.result).toEqual(PENDING);
+            expect(log).toEqual(logUntilRollbackEnd);
+
+            await advanceTo(ADDED_STEP_END_TIME + WRITE_DURATION_MS - 1);
+
+            expect(replacement.result).toEqual(PENDING);
+
+            await advanceTo(ADDED_STEP_END_TIME + WRITE_DURATION_MS);
+
+            expect(replacement.result).toEqual({ status: 'rejected', reason: error });
+            expect(log).toEqual([...logUntilRollbackEnd, APPLY_ACTUAL_TRACK_PARAMETERS_LOG[1]]);
+            expect(applyParameters.mock.calls).toEqual([
+              [sender, track4K],
+              [sender, track4K],
+              [sender],
+            ]);
+            expect(originalReplaceTrack).toHaveBeenCalledTimes(1);
+            expect(requestBalance).not.toHaveBeenCalled();
+            expect(sender.track).toBe(track720);
+            expect(maxWritesInFlight).toBe(1);
+            expect(jest.getTimerCount()).toBe(0);
+          });
+
+          it('должен завершить замену через таймаут ожидания после конца звена, добавленного во время оригинального replaceTrack, если зависло следующее за ним применение параметров фактического трека', async () => {
+            const replacement = await startReplacementWithAddedStep();
+            const actualTrackParameters = deferNextApplyParameters();
+
+            await advanceTo(ORIGINAL_REPLACE_TRACK_DURATION_MS);
+            originalReplacement.resolve(undefined);
+            await advanceTo(ADDED_STEP_END_TIME + WRITE_WAIT_TIMEOUT_MS - 1);
+
+            expect(replacement.result).toEqual(PENDING);
+            expect(log).toEqual(LOG_UNTIL_ACTUAL_TRACK_PARAMETERS_END);
+
+            await advanceTo(ADDED_STEP_END_TIME + WRITE_WAIT_TIMEOUT_MS);
+
+            expect(replacement.result).toEqual(FULFILLED);
+            expect(requestBalance).toHaveBeenCalledTimes(1);
+
+            actualTrackParameters.resolve(undefined);
+            await flush();
+
+            expect(log).toEqual([
+              ...LOG_UNTIL_ACTUAL_TRACK_PARAMETERS_END,
+              REPLACED,
+              APPLY_ACTUAL_TRACK_PARAMETERS_LOG[1],
+            ]);
+            expect(applyParameters.mock.calls).toEqual([
+              [sender, track4K],
+              [sender, track4K],
+              [sender],
+            ]);
+            expect(originalReplaceTrack).toHaveBeenCalledTimes(1);
+            expect(maxWritesInFlight).toBe(1);
+            expect(jest.getTimerCount()).toBe(0);
+          });
         });
       });
 
