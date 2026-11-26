@@ -199,6 +199,26 @@ describe('VideoSendingBalancer', () => {
       expect(onSetParameters).toHaveBeenCalledWith(parameters);
     });
 
+    // фиксирует текущее поведение: решение по нему ещё не принято
+    it('должен вернуть результат установки и залогировать ошибку, если onSetParameters бросает исключение (текущее поведение)', async () => {
+      const error = new Error('onSetParameters failed');
+
+      balancer = createBalancer(
+        createBalancerOptions({
+          onSetParameters: () => {
+            throw error;
+          },
+          maxResolution: MAX_RESOLUTION_360P,
+        }),
+      );
+
+      const result = await balancer.balance();
+
+      expect(result.isChanged).toBe(true);
+      expect(getEncoding()).toEqual(ENCODING_720P_LIMITED_TO_360P);
+      expect(mcuDebugLogger).toHaveBeenCalledWith('onSetParameters: error', error);
+    });
+
     it('должен вернуть RESULT_NO_CHANGED во время прогрева, не запрашивая кодек и не требуя connection', async () => {
       const getStats = jest.spyOn(sender, 'getStats');
 
@@ -506,6 +526,10 @@ describe('VideoSendingBalancer', () => {
       await flushQueue();
 
       expect(setParameters).not.toHaveBeenCalled();
+
+      await balancer.start();
+
+      expect(getEncoding()).toEqual(ENCODING_PAUSED);
     });
 
     it('должен применить команду, полученную при запущенной балансировке', async () => {
@@ -698,6 +722,19 @@ describe('VideoSendingBalancer', () => {
       expect(setParameters).not.toHaveBeenCalled();
     });
 
+    it('должен увеличивать интервал сверки, пока балансировка по тику повторяется из-за статистики без кодека и не меняет параметры', async () => {
+      setSenderStatsWithoutCodec(sender);
+      await balancer.start();
+
+      const getStats = jest.spyOn(sender, 'getStats');
+
+      getStats.mockClear();
+      await jest.advanceTimersByTimeAsync(POLLING_WINDOW_MS);
+
+      // тики через 1, 2, 4, 8 и 16 начальных интервалов, а не каждый начальный интервал
+      expect(getStats).toHaveBeenCalledTimes(5);
+    });
+
     it('должен повторить балансировку, если запрос кодека завершился ошибкой', async () => {
       await balancer.start();
       jest.spyOn(sender, 'getStats').mockRejectedValueOnce(new Error('getStats failed'));
@@ -884,7 +921,13 @@ describe('VideoSendingBalancer', () => {
     it('должен снять перехват замены трека с прежнего отправителя после балансировки', async () => {
       await balancer.balance();
       setParameters.mockClear();
-      await sender.replaceTrack(track4K);
+
+      const replacing = sender.replaceTrack(track4K);
+
+      // перехват вызывает оригинальный replaceTrack только из очереди отправителя, асинхронно
+      expect(sender.track).toBe(track4K);
+
+      await replacing;
       await flushQueue();
 
       expect(setParameters).not.toHaveBeenCalled();
@@ -900,6 +943,15 @@ describe('VideoSendingBalancer', () => {
 
       expect(getEncoding(otherSender)).toEqual(ENCODING_360P_BY_TRACK);
     });
+
+    it('должен применить параметры по тику новому отправителю с тем же треком того же размера', async () => {
+      const sameTrackSender = new RTCRtpSenderMock({ track: track720 });
+
+      connection.senders = [sameTrackSender];
+      await jest.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+
+      expect(getEncoding(sameTrackSender)).toEqual(ENCODING_720P_LIMITED_TO_360P);
+    });
   });
 
   describe('пропажа видео-отправителя', () => {
@@ -912,7 +964,13 @@ describe('VideoSendingBalancer', () => {
     it('должен снять перехват замены трека при балансировке без видео-отправителя', async () => {
       await balancer.balance();
       setParameters.mockClear();
-      await sender.replaceTrack(track4K);
+
+      const replacing = sender.replaceTrack(track4K);
+
+      // перехват вызывает оригинальный replaceTrack только из очереди отправителя, асинхронно
+      expect(sender.track).toBe(track4K);
+
+      await replacing;
       await flushQueue();
 
       expect(setParameters).not.toHaveBeenCalled();
@@ -1255,13 +1313,31 @@ describe('VideoSendingBalancer', () => {
       expect(getEncoding()).toEqual(ENCODING_720P_BY_TRACK);
     });
 
-    it('должен снять ограничение с подключённого отправителя, оставшегося без трека', async () => {
+    // фиксирует текущее поведение: решение по нему ещё не принято
+    it('должен снять ограничение с подключённого отправителя, оставшегося без трека, даже если запись параметров после замены на пустой трек отклонена (текущее поведение)', async () => {
       await startWithServerHeaders(HEADERS_PAUSE);
+      setParameters.mockRejectedValueOnce(new Error('setParameters failed'));
       await sender.replaceTrack(NO_TRACK);
+
+      // ограничение снимает только сброс остановки
+      expect(getEncoding()).toEqual(ENCODING_PAUSED);
+
       balancer.stop();
       await flushQueue();
 
       expect(getEncoding()).toEqual({ scaleResolutionDownBy: 1, maxBitrate: getMaximumBitrate() });
+    });
+
+    it('должен вернуть отправителю оригинальный replaceTrack', async () => {
+      const originalReplaceTrack = jest.spyOn(sender, 'replaceTrack');
+
+      await startWithServerHeaders(HEADERS_MAX_720P);
+      balancer.stop();
+      originalReplaceTrack.mockClear();
+      // перехват вызывает оригинал только из очереди, асинхронно; оригинал вызывается сразу
+      sender.replaceTrack(track4K).catch(() => {});
+
+      expect(originalReplaceTrack).toHaveBeenCalledWith(track4K);
     });
 
     it('должен стереть команду сервера', async () => {
@@ -1295,11 +1371,14 @@ describe('VideoSendingBalancer', () => {
     });
 
     it('не должен восстанавливать параметры отправителя, если нет connection', async () => {
-      await balancer.start();
+      await startWithServerHeaders(HEADERS_PAUSE);
       currentConnection = undefined;
+      setParameters.mockClear();
       balancer.stop();
       await flushQueue();
 
+      expect(setParameters).not.toHaveBeenCalled();
+      expect(getEncoding()).toEqual(ENCODING_PAUSED);
       expect(mcuDebugLogger).not.toHaveBeenCalled();
     });
 

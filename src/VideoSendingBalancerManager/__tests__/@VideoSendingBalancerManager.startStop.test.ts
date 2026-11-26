@@ -15,6 +15,7 @@ import {
   ENCODING_4K_BY_TRACK,
   ENCODING_4K_LIMITED_TO_720P,
   ENCODING_PAUSED,
+  getSettledResult,
   HEADERS_MAX_720P,
   HEADERS_PAUSE,
   sendMainCamInfo,
@@ -165,6 +166,25 @@ describe('VideoSendingBalancerManager: остановка во время зап
       expect(startedHandler).not.toHaveBeenCalled();
     });
 
+    // фиксирует текущее поведение: решение по нему ещё не принято
+    it('не снимает запланированный старт по таймеру, если startBalancing вызван без соединения во время прогрева (текущее поведение)', async () => {
+      const startedHandler = jest.fn();
+
+      createManager();
+      manager.on('balancing-started', startedHandler);
+      confirmCall(callManager, connection);
+      await startBalancingWithoutConnection();
+
+      expect(manager.isBalancingScheduled).toBe(true);
+      expect(manager.isBalancingActive).toBe(false);
+
+      await jest.advanceTimersByTimeAsync(BALANCING_START_DELAY);
+      await settle();
+
+      expect(manager.isBalancingActive).toBe(true);
+      expect(startedHandler).toHaveBeenCalledTimes(1);
+    });
+
     it('не балансирует по тику отправителя соединения, появившегося после startBalancing без соединения', async () => {
       createManager(createBalancerOptions({ maxResolution: { width: 640, height: 360 } }));
       await startBalancingWithoutConnection();
@@ -250,6 +270,34 @@ describe('VideoSendingBalancerManager: остановка во время зап
 
       releaseStats();
       await Promise.all([interruptedStarting, restarting]);
+      await settle();
+
+      expect(startedHandler).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('повторный startBalancing во время запуска', () => {
+    // фиксирует текущее поведение: решение по нему ещё не принято
+    it('завершает второй startBalancing сразу, не запуская балансировку повторно, и отправляет balancing-started один раз, если второй вызов пришёл, пока первая балансировка старта ждёт кодек (текущее поведение)', async () => {
+      const startedHandler = jest.fn();
+      const releaseStats = deferNextGetStats(observed.sender);
+
+      createManager();
+      manager.on('balancing-started', startedHandler);
+
+      const starting = manager.startBalancing();
+
+      await settle();
+
+      expect(manager.isBalancingActive).toBe(true);
+      expect(await getSettledResult(manager.startBalancing())).toEqual({
+        status: 'fulfilled',
+        value: undefined,
+      });
+      expect(startedHandler).not.toHaveBeenCalled();
+
+      releaseStats();
+      await starting;
       await settle();
 
       expect(startedHandler).toHaveBeenCalledTimes(1);

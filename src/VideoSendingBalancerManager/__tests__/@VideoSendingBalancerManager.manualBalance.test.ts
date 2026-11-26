@@ -13,6 +13,7 @@ import {
   deferNextGetStats,
   ENCODING_4K_LIMITED_TO_1080P,
   ENCODING_4K_LIMITED_TO_720P,
+  getSettledResult,
   HEADERS_MAX_720P,
   sendMainCamInfo,
   setConnection,
@@ -188,5 +189,22 @@ describe('VideoSendingBalancerManager: ручной balance()', () => {
         expect(observed.getAppliedEncoding()).toEqual(ENCODING_4K_LIMITED_TO_1080P);
       },
     );
+
+    // фиксирует текущее поведение: решение по нему ещё не принято
+    it('не задерживает замену трека до завершения setParameters ручного balance(), если балансировка не запускалась (текущее поведение)', async () => {
+      observed = createObservedSender(track4K);
+      connection.senders = [observed.sender];
+      createManager(createBalancerOptions({ maxResolution: { width: 1920, height: 1080 } }));
+      observed.hangNextSetParameters();
+
+      const balancing = manager.balance();
+
+      expect(await getSettledResult(balancing)).toEqual({ status: 'pending' });
+      expect(await getSettledResult(observed.sender.replaceTrack(track720))).toEqual({
+        status: 'fulfilled',
+        value: undefined,
+      });
+      expect(observed.sender.track).toBe(track720);
+    });
   });
 });

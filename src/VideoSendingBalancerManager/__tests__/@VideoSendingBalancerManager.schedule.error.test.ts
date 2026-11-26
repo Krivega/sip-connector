@@ -128,6 +128,24 @@ describe('VideoSendingBalancerManager error handling', () => {
     videoSendingBalancerManager.stopBalancing();
   });
 
+  // фиксирует текущее поведение: решение по нему ещё не принято
+  it('logs startBalancing: error when the initial balance fails (current behavior)', async () => {
+    const statsError = new Error('getStats failed');
+    const connection = new RTCPeerConnectionMock(undefined, []);
+    const sender = new RTCRtpSenderMock({ track: createVideoTrack(1280, 720) });
+
+    rejectGetStats(sender, statsError);
+    connection.senders = [sender];
+    setConnection(callManager, connection as RTCPeerConnection);
+    mcuDebugLogger.mockClear();
+
+    await videoSendingBalancerManager.startBalancing();
+
+    expect(mcuDebugLogger).toHaveBeenCalledWith('startBalancing: error', statsError);
+
+    videoSendingBalancerManager.stopBalancing();
+  });
+
   it('logs error when balance on main-cam-control rejects during active balancing', async () => {
     setConnection(callManager, new RTCPeerConnectionMock(undefined, []) as RTCPeerConnection);
     await expect(videoSendingBalancerManager.startBalancing()).resolves.toBeUndefined();

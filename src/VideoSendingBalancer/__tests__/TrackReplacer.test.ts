@@ -67,6 +67,15 @@ describe('TrackReplacer', () => {
     await delayPromise(0);
   };
 
+  // замена через перехват после этого не завершится, вызов оригинального replaceTrack — завершится
+  const hangSenderQueue = () => {
+    taskQueue
+      .add(sender, async () => {
+        return new Promise<undefined>(() => {});
+      })
+      .catch(() => {});
+  };
+
   beforeEach(() => {
     log = [];
     originalReplaceTrackGate = undefined;
@@ -101,7 +110,13 @@ describe('TrackReplacer', () => {
 
     it('не должен повторно подключаться к уже подключённому отправителю', async () => {
       trackReplacer.attach(sender);
+
+      const interceptedReplaceTrack = sender.replaceTrack;
+
       trackReplacer.attach(sender);
+
+      expect(sender.replaceTrack).toBe(interceptedReplaceTrack);
+
       trackReplacer.detach();
       await sender.replaceTrack(track4K);
 
@@ -129,7 +144,16 @@ describe('TrackReplacer', () => {
     it('должен вернуть отправителю оригинальный replaceTrack', async () => {
       trackReplacer.attach(sender);
       trackReplacer.detach();
-      await sender.replaceTrack(track4K);
+      hangSenderQueue();
+
+      const replacing = sender.replaceTrack(track4K);
+
+      await settleQueue();
+
+      // через перехват замена ждала бы в очереди отправителя конца зависшей задачи
+      expect(sender.track).toBe(track4K);
+
+      await replacing;
 
       expect(trackReplacer.attachedSender).toBeUndefined();
       expect(originalReplaceTrack).toHaveBeenCalledWith(track4K);
@@ -283,6 +307,41 @@ describe('TrackReplacer', () => {
           [sender],
         ]);
       });
+
+      it('должен вернуть параметры оставшегося трека только после звена, добавленного во время оригинального replaceTrack, если оригинал отклонён', async () => {
+        const error = new Error('replaceTrack failed');
+        const originalReplacement = Promise.withResolvers<undefined>();
+        const addedStep = Promise.withResolvers<undefined>();
+
+        originalReplaceTrackGate = originalReplacement.promise;
+
+        const replacing = Promise.allSettled([sender.replaceTrack(track4K)]);
+
+        await settleQueue();
+        applyParameters.mockImplementationOnce(async () => {
+          await addedStep.promise;
+
+          return { isChanged: true };
+        });
+        trackReplacer.prepareOngoingReplacement();
+        originalReplacement.reject(error);
+        await settleQueue();
+
+        expect(applyParameters.mock.calls).toEqual([
+          [sender, track4K],
+          [sender, track4K],
+        ]);
+
+        addedStep.resolve(undefined);
+
+        expect(await replacing).toEqual([{ status: 'rejected', reason: error }]);
+        expect(applyParameters.mock.calls).toEqual([
+          [sender, track4K],
+          [sender, track4K],
+          [sender],
+        ]);
+        expect(sender.track).toBe(track720);
+      });
     });
 
     describe('ошибки', () => {
@@ -430,15 +489,6 @@ describe('TrackReplacer', () => {
     });
 
     describe('отправитель исключён к завершению замены', () => {
-      // замена через перехват после этого не завершится, вызов оригинального replaceTrack — завершится
-      const hangSenderQueue = () => {
-        taskQueue
-          .add(sender, async () => {
-            return new Promise<undefined>(() => {});
-          })
-          .catch(() => {});
-      };
-
       beforeEach(() => {
         isExcluded = true;
       });
@@ -511,15 +561,6 @@ describe('TrackReplacer', () => {
     describe('отключение во время оригинального replaceTrack', () => {
       let originalReplacement: PromiseWithResolvers<undefined>;
       let replacing: Promise<void>;
-
-      // замена через перехват после этого не завершится, вызов оригинального replaceTrack — завершится
-      const hangSenderQueue = () => {
-        taskQueue
-          .add(sender, async () => {
-            return new Promise<undefined>(() => {});
-          })
-          .catch(() => {});
-      };
 
       beforeEach(async () => {
         originalReplacement = Promise.withResolvers<undefined>();

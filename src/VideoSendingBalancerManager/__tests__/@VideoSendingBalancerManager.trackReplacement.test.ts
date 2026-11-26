@@ -689,5 +689,21 @@ describe('VideoSendingBalancerManager: замена трека при гонка
 
       expect(observed.sender.track).toBe(track4K);
     });
+
+    it('вызывает оригинальный replaceTrack каждой из трёх замен, если первая задержана, вторая ждёт в очереди, а третья вызвана после stopBalancing', async () => {
+      manager.stopBalancing();
+      await settle();
+      replacements.push(observed.sender.replaceTrack(track4K));
+      await settle();
+      firstOriginalReplacement.resolve(undefined);
+      await Promise.allSettled(replacements);
+      await settle();
+
+      expect(getReplaceTrackEntries(0)).toEqual([
+        { type: 'replaceTrack', appliedScaleResolutionDownBy: 1 },
+        { type: 'replaceTrack', appliedScaleResolutionDownBy: 1 },
+        { type: 'replaceTrack', appliedScaleResolutionDownBy: 1 },
+      ]);
+    });
   });
 });
