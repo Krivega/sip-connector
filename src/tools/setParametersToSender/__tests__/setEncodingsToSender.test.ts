@@ -89,6 +89,32 @@ describe('setEncodingsToSender', () => {
     );
   });
 
+  it('calls onSetParameters with applied parameters when changed', async () => {
+    expect.assertions(2);
+
+    const onSetParameters = jest.fn();
+
+    const { parameters } = await setEncodingsToSender(
+      sender,
+      { scaleResolutionDownBy: 2 },
+      onSetParameters,
+    );
+
+    expect(onSetParameters).toHaveBeenCalledTimes(1);
+    expect(onSetParameters).toHaveBeenCalledWith(parameters);
+  });
+
+  it('does not call onSetParameters when not changed', async () => {
+    expect.assertions(1);
+
+    const onSetParameters = jest.fn();
+
+    await setEncodingsToSender(sender, { scaleResolutionDownBy: 2 });
+    await setEncodingsToSender(sender, { scaleResolutionDownBy: 2 }, onSetParameters);
+
+    expect(onSetParameters).not.toHaveBeenCalled();
+  });
+
   it('by scaleResolutionDownBy less then 1 after 2', async () => {
     expect.assertions(2);
 
