@@ -1,8 +1,7 @@
-import { cancelableDelayPromise } from '@krivega/timeout-requester';
-
 import resolveDebug from '@/logger';
 import { BROWSER_RESPONSE_TIMEOUT_MS } from './constants';
 import { KeyedSignal, createSignal } from './KeyedSignal';
+import { raceWithTimeout } from './raceWithTimeout';
 
 import type { ITaskQueue } from './types';
 
@@ -76,37 +75,28 @@ type TNextWriteSettled = () => Promise<void>;
 
 type TWaitOutcome = 'target' | 'write' | 'timeout';
 
-// что раньше: цель завершилась, завершилась запись в отправитель или прошёл BROWSER_RESPONSE_TIMEOUT_MS; таймер снимается в любом случае
-const raceWithWrites = async (
-  target: Promise<unknown>,
-  nextWriteSettled: TNextWriteSettled,
-): Promise<TWaitOutcome> => {
-  const timeout = cancelableDelayPromise(BROWSER_RESPONSE_TIMEOUT_MS);
-  const resolveTarget = (): TWaitOutcome => {
-    return 'target';
-  };
-
-  try {
-    return await Promise.race([
-      target.then(resolveTarget, resolveTarget),
-      nextWriteSettled().then((): TWaitOutcome => {
-        return 'write';
-      }),
-      timeout.then((): TWaitOutcome => {
-        return 'timeout';
-      }),
-    ]);
-  } finally {
-    timeout.cancel();
-  }
-};
-
 // true — цель завершилась; false — BROWSER_RESPONSE_TIMEOUT_MS подряд не завершилась ни одна запись в отправитель: каждая завершённая запись начинает отсчёт заново
 const settlesWhileWritesProgress = async (
   target: Promise<unknown>,
   nextWriteSettled: TNextWriteSettled,
 ): Promise<boolean> => {
-  const outcome = await raceWithWrites(target, nextWriteSettled);
+  const resolveTarget = (): TWaitOutcome => {
+    return 'target';
+  };
+
+  // что раньше: цель завершилась (отказ — тоже завершение), завершилась запись в отправитель или прошёл BROWSER_RESPONSE_TIMEOUT_MS
+  const outcome = await raceWithTimeout<TWaitOutcome>(
+    [
+      target.then(resolveTarget, resolveTarget),
+      nextWriteSettled().then((): TWaitOutcome => {
+        return 'write';
+      }),
+    ],
+    BROWSER_RESPONSE_TIMEOUT_MS,
+    () => {
+      return 'timeout';
+    },
+  );
 
   return outcome === 'write'
     ? settlesWhileWritesProgress(target, nextWriteSettled)

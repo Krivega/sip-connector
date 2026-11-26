@@ -1,7 +1,6 @@
-import { cancelableDelayPromise } from '@krivega/timeout-requester';
-
 import getCodecFromSender from '@/utils/peerConnection/getCodecFromSender';
 import { BROWSER_RESPONSE_TIMEOUT_MS } from './constants';
+import { raceWithTimeout } from './raceWithTimeout';
 
 // обёртка даёт запросу идентичность, по которой сверяется актуальность ответа; isJoinable — принимает ли запрос новых ждущих
 type TCodecRequest = { readonly codec: Promise<string | undefined>; isJoinable: boolean };
@@ -23,20 +22,12 @@ export class CodecProvider {
   public async getCodecFromSender(sender: RTCRtpSender): Promise<string | undefined> {
     const lastRequest = this.lastRequests.get(sender);
     const request = lastRequest?.isJoinable === true ? lastRequest : this.startRequest(sender);
-    const timeout = cancelableDelayPromise(BROWSER_RESPONSE_TIMEOUT_MS);
 
-    try {
-      return await Promise.race([
-        request.codec,
-        timeout.then(() => {
-          request.isJoinable = false;
+    return raceWithTimeout([request.codec], BROWSER_RESPONSE_TIMEOUT_MS, () => {
+      request.isJoinable = false;
 
-          return undefined;
-        }),
-      ]);
-    } finally {
-      timeout.cancel();
-    }
+      return undefined;
+    });
   }
 
   // shortcut: кодек — от последнего ответа статистики и может устареть до следующего
