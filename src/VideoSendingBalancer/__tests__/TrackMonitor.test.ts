@@ -1,209 +1,222 @@
-import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
-import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
-import { createMockTrack } from '../__fixtures__';
 import { TrackMonitor } from '../TrackMonitor';
 
+const POLL_INTERVAL_MS = 100;
+const DEFAULT_POLL_INTERVAL_MS = 1000;
+const DEFAULT_MAX_POLL_INTERVAL_MS = 16 * POLL_INTERVAL_MS;
+
+// дольше максимального интервала опроса по умолчанию
+const POLLING_WINDOW_MS = 2 * DEFAULT_MAX_POLL_INTERVAL_MS;
+
 describe('TrackMonitor', () => {
+  let monitor: TrackMonitor;
+  let check: jest.Mock<Promise<boolean>, []>;
+
   beforeEach(() => {
     jest.useFakeTimers();
+
+    monitor = new TrackMonitor({ pollIntervalMs: POLL_INTERVAL_MS });
+    check = jest.fn<Promise<boolean>, []>().mockResolvedValue(false);
   });
 
   afterEach(() => {
-    jest.clearAllTimers();
+    monitor.unsubscribe();
     jest.useRealTimers();
   });
 
-  it('calls callback on size change via polling', () => {
-    const { track, setWidth } = createMockTrack(640); // no resize event support
+  describe('интервал опроса', () => {
+    it('должен вызвать проверку по истечении начального интервала', async () => {
+      monitor.subscribe(check);
+      await jest.advanceTimersByTimeAsync(POLL_INTERVAL_MS - 1);
 
-    const sender = new RTCRtpSenderMock({ track });
-    const connection = new RTCPeerConnectionMock(undefined, [track]);
+      expect(check).not.toHaveBeenCalled();
 
-    Object.defineProperty(connection, 'getSenders', {
-      value: () => {
-        return [sender];
-      },
+      await jest.advanceTimersByTimeAsync(1);
+
+      expect(check).toHaveBeenCalledTimes(1);
     });
 
-    const callback = jest.fn();
-    const monitor = new TrackMonitor({ pollIntervalMs: 500 });
+    it('должен вызывать проверку раз в секунду по умолчанию', async () => {
+      monitor = new TrackMonitor({});
+      monitor.subscribe(check);
+      await jest.advanceTimersByTimeAsync(DEFAULT_POLL_INTERVAL_MS - 1);
 
-    monitor.subscribe(sender, callback);
-    expect(callback).not.toHaveBeenCalled();
+      expect(check).not.toHaveBeenCalled();
 
-    setWidth(320);
-    jest.advanceTimersByTime(500);
+      await jest.advanceTimersByTimeAsync(1);
 
-    expect(callback).toHaveBeenCalledTimes(1);
-  });
-
-  it('calls callback after replaceTrack and monitors new track', async () => {
-    const original = createMockTrack(640);
-    const newTrackMock = createMockTrack(800);
-
-    const sender = new RTCRtpSenderMock({ track: original.track });
-
-    const connection = new RTCPeerConnectionMock(undefined, [original.track]);
-
-    Object.defineProperty(connection, 'getSenders', {
-      value: () => {
-        return [sender];
-      },
+      expect(check).toHaveBeenCalledTimes(1);
     });
 
-    const callback = jest.fn();
-    const monitor = new TrackMonitor({ pollIntervalMs: 500 });
+    it('должен удваивать интервал опроса, пока проверка не сообщает об изменениях', async () => {
+      monitor.subscribe(check);
+      await jest.advanceTimersByTimeAsync(POLL_INTERVAL_MS + 2 * POLL_INTERVAL_MS - 1);
 
-    monitor.subscribe(sender, callback);
+      expect(check).toHaveBeenCalledTimes(1);
 
-    // Replace track (the monitor patched replaceTrack internally)
-    await (sender as RTCRtpSender).replaceTrack(newTrackMock.track);
+      await jest.advanceTimersByTimeAsync(1);
 
-    // Callback should be called once for replaceTrack
-    expect(callback).toHaveBeenCalledTimes(1);
+      expect(check).toHaveBeenCalledTimes(2);
 
-    // Теперь меняем размеры нового трека и прокручиваем таймеры — колбэк должен сработать второй раз
-    newTrackMock.setWidth(640);
-    jest.advanceTimersByTime(1000);
+      await jest.advanceTimersByTimeAsync(4 * POLL_INTERVAL_MS - 1);
 
-    expect(callback).toHaveBeenCalledTimes(2);
-  });
+      expect(check).toHaveBeenCalledTimes(2);
 
-  it('calls callback on size change via polling (Safari fallback)', () => {
-    const { track, setWidth } = createMockTrack(640); // no resize event support
+      await jest.advanceTimersByTimeAsync(1);
 
-    const sender = new RTCRtpSenderMock({ track });
-    const connection = new RTCPeerConnectionMock(undefined, [track]);
-
-    Object.defineProperty(connection, 'getSenders', {
-      value: () => {
-        return [sender];
-      },
+      expect(check).toHaveBeenCalledTimes(3);
     });
 
-    const callback = jest.fn();
-    const monitor = new TrackMonitor({ pollIntervalMs: 500 });
+    it('должен вернуть начальный интервал опроса после того, как проверка сообщила об изменениях', async () => {
+      check.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+      monitor.subscribe(check);
+      await jest.advanceTimersByTimeAsync(POLL_INTERVAL_MS + 2 * POLL_INTERVAL_MS);
 
-    monitor.subscribe(sender, callback);
-    expect(callback).not.toHaveBeenCalled();
+      expect(check).toHaveBeenCalledTimes(2);
 
-    setWidth(320);
-    jest.advanceTimersByTime(500);
+      await jest.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
 
-    expect(callback).toHaveBeenCalledTimes(1);
-  });
-
-  it('does nothing when connection is undefined', () => {
-    const callback = jest.fn();
-    const monitor = new TrackMonitor({ pollIntervalMs: 500 });
-
-    expect(() => {
-      monitor.subscribe(undefined, callback);
-    }).not.toThrow();
-
-    expect(callback).not.toHaveBeenCalled();
-  });
-
-  it('does nothing when getSenders returns no video sender', () => {
-    const connection = new RTCPeerConnectionMock(undefined, []);
-
-    Object.defineProperty(connection, 'getSenders', {
-      value: () => {
-        return [];
-      },
+      expect(check).toHaveBeenCalledTimes(3);
     });
 
-    const callback = jest.fn();
-    const monitor = new TrackMonitor({ pollIntervalMs: 500 });
+    it('должен удвоить интервал опроса после ошибки проверки', async () => {
+      check.mockRejectedValueOnce(new Error('check failed'));
+      monitor.subscribe(check);
+      await jest.advanceTimersByTimeAsync(POLL_INTERVAL_MS + 2 * POLL_INTERVAL_MS - 1);
 
-    monitor.subscribe(undefined, callback);
+      expect(check).toHaveBeenCalledTimes(1);
 
-    expect(callback).not.toHaveBeenCalled();
-  });
+      await jest.advanceTimersByTimeAsync(1);
 
-  it('handles replaceTrack(null) and does not start polling for undefined track', async () => {
-    const original = createMockTrack(640);
-
-    const sender = new RTCRtpSenderMock({ track: original.track });
-    const connection = new RTCPeerConnectionMock(undefined, [original.track]);
-
-    Object.defineProperty(connection, 'getSenders', {
-      value: () => {
-        return [sender];
-      },
+      expect(check).toHaveBeenCalledTimes(2);
     });
 
-    const callback = jest.fn();
-    const monitor = new TrackMonitor({ pollIntervalMs: 500 });
+    it('не должен увеличивать интервал опроса больше maxPollIntervalMs', async () => {
+      const maxPollIntervalMs = 3 * POLL_INTERVAL_MS;
 
-    monitor.subscribe(sender, callback);
-    await sender.replaceTrack(null);
+      monitor = new TrackMonitor({ pollIntervalMs: POLL_INTERVAL_MS, maxPollIntervalMs });
+      monitor.subscribe(check);
+      await jest.advanceTimersByTimeAsync(
+        POLL_INTERVAL_MS + 2 * POLL_INTERVAL_MS + maxPollIntervalMs,
+      );
+      check.mockClear();
+      await jest.advanceTimersByTimeAsync(maxPollIntervalMs - 1);
 
-    // callback должен вызваться (handleTrackResize), но polling не запускается
-    expect(callback).toHaveBeenCalledTimes(1);
-  });
+      expect(check).not.toHaveBeenCalled();
 
-  describe('adaptive polling', () => {
-    it('doubles interval when no size changes detected', () => {
-      const { track } = createMockTrack(640);
+      await jest.advanceTimersByTimeAsync(1);
 
-      const sender = new RTCRtpSenderMock({ track });
-
-      const callback = jest.fn();
-
-      const monitor = new TrackMonitor({ pollIntervalMs: 100 });
-
-      const setTimeoutSpy = jest.spyOn(global, 'setTimeout');
-
-      monitor.subscribe(sender, callback);
-
-      // Первый вызов setTimeout должен быть с базовым интервалом 100мс
-      expect(setTimeoutSpy).toHaveBeenCalledTimes(1);
-      expect(setTimeoutSpy.mock.calls[0][1]).toBe(100);
-
-      // Прокручиваем первый интервал — изменений нет
-      jest.advanceTimersByTime(100);
-
-      // Должен быть запланирован второй таймаут с удвоенным интервалом (200мс)
-      expect(setTimeoutSpy).toHaveBeenCalledTimes(2);
-      expect(setTimeoutSpy.mock.calls[1][1]).toBe(200);
-
-      // Колбэк не должен вызываться, так как размер не менялся
-      expect(callback).not.toHaveBeenCalled();
-
-      setTimeoutSpy.mockRestore();
+      expect(check).toHaveBeenCalledTimes(1);
     });
 
-    it('interval сбрасывается после изменения размера', () => {
-      const { track, setWidth } = createMockTrack(640);
+    it('не должен увеличивать интервал опроса больше 16 начальных интервалов по умолчанию', async () => {
+      monitor.subscribe(check);
+      await jest.advanceTimersByTimeAsync((1 + 2 + 4 + 8 + 16) * POLL_INTERVAL_MS);
+      check.mockClear();
+      await jest.advanceTimersByTimeAsync(DEFAULT_MAX_POLL_INTERVAL_MS - 1);
 
-      const sender = new RTCRtpSenderMock({ track });
-      const callback = jest.fn();
+      expect(check).not.toHaveBeenCalled();
 
-      const monitor = new TrackMonitor({ pollIntervalMs: 100 });
+      await jest.advanceTimersByTimeAsync(1);
 
-      const setTimeoutSpy = jest.spyOn(global, 'setTimeout');
+      expect(check).toHaveBeenCalledTimes(1);
+    });
 
-      monitor.subscribe(sender, callback);
+    it('должен запланировать следующий опрос только после завершения проверки', async () => {
+      const checking = Promise.withResolvers<boolean>();
 
-      // Первый цикл – без изменений
-      jest.advanceTimersByTime(100);
+      check.mockReturnValueOnce(checking.promise);
+      monitor.subscribe(check);
+      await jest.advanceTimersByTimeAsync(POLLING_WINDOW_MS);
 
-      // Изменяем размер, но колбэк пока не должен вызваться, так как проверка будет во втором цикле
-      setWidth(320);
+      expect(check).toHaveBeenCalledTimes(1);
 
-      jest.advanceTimersByTime(200); // ждём второй опрос (200мс)
+      checking.resolve(true);
+      await jest.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
 
-      // Колбэк должен быть вызван один раз после обнаружения изменения
-      expect(callback).toHaveBeenCalledTimes(1);
+      expect(check).toHaveBeenCalledTimes(2);
+    });
+  });
 
-      // После изменения интервал должен сброситься до базового 100мс
-      const lastCallArgs = setTimeoutSpy.mock.calls.at(-1);
+  describe('unsubscribe', () => {
+    it('должен прекратить опрос', async () => {
+      monitor.subscribe(check);
+      monitor.unsubscribe();
+      await jest.advanceTimersByTimeAsync(POLLING_WINDOW_MS);
 
-      // @ts-expect-error
-      expect(lastCallArgs[1]).toBe(100);
+      expect(check).not.toHaveBeenCalled();
+      expect(jest.getTimerCount()).toBe(0);
+    });
 
-      setTimeoutSpy.mockRestore();
+    it('должен прекратить опрос, если вызван, пока идёт проверка', async () => {
+      const checking = Promise.withResolvers<boolean>();
+
+      check.mockReturnValueOnce(checking.promise);
+      monitor.subscribe(check);
+      await jest.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+      monitor.unsubscribe();
+      checking.resolve(true);
+      await jest.advanceTimersByTimeAsync(POLLING_WINDOW_MS);
+
+      expect(check).toHaveBeenCalledTimes(1);
+      expect(jest.getTimerCount()).toBe(0);
+    });
+  });
+
+  describe('повторная подписка', () => {
+    let nextCheck: jest.Mock<Promise<boolean>, []>;
+
+    beforeEach(() => {
+      nextCheck = jest.fn<Promise<boolean>, []>().mockResolvedValue(false);
+    });
+
+    it('должен вызывать только новую проверку', async () => {
+      monitor.subscribe(check);
+      monitor.subscribe(nextCheck);
+      await jest.advanceTimersByTimeAsync(POLLING_WINDOW_MS);
+
+      expect(check).not.toHaveBeenCalled();
+      expect(nextCheck).toHaveBeenCalled();
+    });
+
+    it('должен вызвать новую проверку через начальный интервал', async () => {
+      monitor.subscribe(check);
+      await jest.advanceTimersByTimeAsync(POLL_INTERVAL_MS + 2 * POLL_INTERVAL_MS);
+      monitor.subscribe(nextCheck);
+      await jest.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+
+      expect(nextCheck).toHaveBeenCalledTimes(1);
+    });
+
+    it('не должен продолжать опрос прежней проверки, завершившейся после повторной подписки', async () => {
+      const checking = Promise.withResolvers<boolean>();
+
+      check.mockReturnValueOnce(checking.promise);
+      monitor.subscribe(check);
+      await jest.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+      monitor.subscribe(nextCheck);
+      checking.resolve(true);
+      await jest.advanceTimersByTimeAsync(POLLING_WINDOW_MS);
+
+      expect(check).toHaveBeenCalledTimes(1);
+      expect(jest.getTimerCount()).toBe(1);
+    });
+  });
+
+  describe('resetInterval', () => {
+    it('должен вернуть опрос к начальному интервалу', async () => {
+      monitor.subscribe(check);
+      await jest.advanceTimersByTimeAsync(POLL_INTERVAL_MS + 2 * POLL_INTERVAL_MS);
+      check.mockClear();
+      monitor.resetInterval();
+      await jest.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+
+      expect(check).toHaveBeenCalledTimes(1);
+    });
+
+    it('не должен начинать опрос без подписки', () => {
+      monitor.resetInterval();
+
+      expect(jest.getTimerCount()).toBe(0);
     });
   });
 });

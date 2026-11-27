@@ -6,7 +6,7 @@ import { createEvents } from './events';
 
 import type { ApiManager } from '@/ApiManager';
 import type { CallManager } from '@/CallManager';
-import type { IBalancerOptions } from '@/VideoSendingBalancer/types';
+import type { IBalancerOptions, IMainCamHeaders } from '@/VideoSendingBalancer/types';
 import type { TEventMap } from './events';
 
 type TOptions = IBalancerOptions & {
@@ -17,12 +17,15 @@ const debug = resolveDebug('VideoSendingBalancerManager');
 
 /**
  * Менеджер для управления VideoSendingBalancer
- * Автоматически запускает балансировку через 10 секунд после начала звонка
+ * Автоматически запускает балансировку через 10 секунд после начала звонка:
+ * пока браузер прогревает отправку (постепенно наращивает разрешение), скалирование применять нельзя
  */
 class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
   public isBalancingActive = false;
 
   private readonly callManager: CallManager;
+
+  private readonly apiManager: ApiManager;
 
   private readonly balancingStartDelay: number;
 
@@ -34,9 +37,9 @@ class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
     super(createEvents());
 
     this.callManager = callManager;
+    this.apiManager = apiManager;
     this.balancingStartDelay = balancerOptions.balancingStartDelay ?? 10_000;
     this.videoSendingBalancer = new VideoSendingBalancer(
-      apiManager,
       () => {
         return callManager.connection;
       },
@@ -67,13 +70,29 @@ class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
       return; // Уже запущена
     }
 
+    // до сброса таймера: отклонённый запуск не отменяет запланированный и не меняет состояние
+    if (!this.callManager.connection) {
+      throw new Error('connection is not exist');
+    }
+
     this.clearStartTimer();
 
-    await this.videoSendingBalancer.balance();
-    this.videoSendingBalancer.subscribe();
     this.isBalancingActive = true;
 
-    this.events.trigger('balancing-started', { delay: this.balancingStartDelay });
+    const starting = this.videoSendingBalancer.start();
+    const { runToken } = this.videoSendingBalancer;
+
+    // запуск включает режим, а первая балансировка — только первая попытка: неудавшуюся повторит сверка по тику
+    try {
+      await starting;
+    } catch (error: unknown) {
+      debug('startBalancing: error', error);
+    }
+
+    // за время первой балансировки запуск могли остановить или начать заново: сверка прямо перед событием
+    if (this.videoSendingBalancer.runToken === runToken) {
+      this.events.trigger('balancing-started', { delay: this.balancingStartDelay });
+    }
   }
 
   /**
@@ -82,7 +101,7 @@ class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
   public stopBalancing(): void {
     this.clearStartTimer();
 
-    this.videoSendingBalancer.unsubscribe();
+    this.videoSendingBalancer.stop();
     this.isBalancingActive = false;
     this.events.trigger('balancing-stopped', {});
   }
@@ -104,6 +123,8 @@ class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
     // Подписываемся на окончание звонка
     this.callManager.on('ended', this.handleCallEnded);
     this.callManager.on('failed', this.handleCallEnded);
+
+    this.apiManager.on('main-cam-control', this.handleMainCamControl);
   }
 
   private readonly handleCallStarted = (): void => {
@@ -126,9 +147,15 @@ class VideoSendingBalancerManager extends EventEmitterProxy<TEventMap> {
     this.stopBalancing();
   };
 
+  private readonly handleMainCamControl = (headers: IMainCamHeaders): void => {
+    this.videoSendingBalancer.handleServerHeaders(headers);
+  };
+
   private scheduleBalancingStart(): void {
     // Очищаем предыдущий таймер, если есть
     this.clearStartTimer();
+
+    this.videoSendingBalancer.warmUp();
 
     // Запланируем запуск балансировки через настраиваемое время
     this.startBalancingTimer = setTimeout(() => {

@@ -1,5 +1,5 @@
 class RTCRtpSenderMock implements RTCRtpSender {
-  public stats: RTCStatsReport = new Map().set('codec', { mimeType: 'video/h264' });
+  public stats: RTCStatsReport = new Map().set('codec', { type: 'codec', mimeType: 'video/h264' });
 
   public dtmf: RTCDTMFSender | null = null;
 
@@ -32,12 +32,21 @@ class RTCRtpSenderMock implements RTCRtpSender {
   }
 
   public async setParameters(parameters: RTCRtpSendParameters): Promise<void> {
+    this.checkParameters(parameters);
+    this.applyParameters(parameters);
+  }
+
+  // Как в браузере: setParameters принимает только параметры последнего getParameters и сверяет их при вызове
+  public checkParameters(parameters: RTCRtpSendParameters): void {
     if (parameters !== this.parametersGets) {
       throw new Error(
         "Failed to execute 'setParameters' on 'RTCRtpSender': Read-only field modified in setParameters().",
       );
     }
+  }
 
+  // Применение принятых параметров: отделено от сверки, чтобы фикстура могла его отложить, как в браузере
+  public applyParameters(parameters: RTCRtpSendParameters): void {
     const { transactionId } = this.parameters;
 
     this.parameters = {

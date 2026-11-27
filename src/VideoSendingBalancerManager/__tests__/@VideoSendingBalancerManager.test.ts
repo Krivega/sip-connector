@@ -2,13 +2,13 @@ import { createVideoMediaStreamTrackMock } from 'webrtc-mock';
 
 import RTCPeerConnectionMock from '@/__fixtures__/RTCPeerConnectionMock';
 import RTCRtpSenderMock from '@/__fixtures__/RTCRtpSenderMock';
+import { EContentMainCAM } from '@/ApiManager';
 import { doMockSipConnector } from '@/doMock';
 import { NO_MAX_RESOLUTION_BALANCER_OPTIONS } from '@/VideoSendingBalancer/__fixtures__';
 import VideoSendingBalancerManager from '../@VideoSendingBalancerManager';
 
 import type { CallManager } from '@/CallManager';
 import type SipConnector from '@/SipConnector/@SipConnector';
-import type VideoSendingBalancer from '@/VideoSendingBalancer/@VideoSendingBalancer';
 
 describe('VideoSendingBalancerManager', () => {
   let sipConnector: SipConnector;
@@ -234,6 +234,30 @@ describe('VideoSendingBalancerManager', () => {
       expect(videoSendingBalancerManager.isBalancingActive).toBe(false);
     });
 
+    it('should keep balancing scheduled on main-cam-control while balancing is scheduled', async () => {
+      const startedHandler = jest.fn();
+
+      videoSendingBalancerManager.on('balancing-started', startedHandler);
+      callManager.events.trigger('peerconnection:confirmed', mockConnection);
+      sipConnector.apiManager.events.trigger('main-cam-control', {
+        mainCam: EContentMainCAM.PAUSE_MAIN_CAM,
+      });
+      await Promise.resolve();
+
+      expect(startedHandler).not.toHaveBeenCalled();
+      expect(mockSender.setParameters).not.toHaveBeenCalled();
+      expect(videoSendingBalancerManager.isBalancingActive).toBe(false);
+      expect(videoSendingBalancerManager.isBalancingScheduled).toBe(true);
+    });
+
+    it('should not start balancing on main-cam-control when balancing is not scheduled', () => {
+      sipConnector.apiManager.events.trigger('main-cam-control', {
+        mainCam: EContentMainCAM.PAUSE_MAIN_CAM,
+      });
+
+      expect(videoSendingBalancerManager.isBalancingActive).toBe(false);
+    });
+
     it('should schedule balancing when recv-session-ended (exit viewer mode)', async () => {
       callManager.events.trigger('peerconnection:confirmed', mockConnection);
       expect(videoSendingBalancerManager.isBalancingScheduled).toBe(true);
@@ -247,24 +271,19 @@ describe('VideoSendingBalancerManager', () => {
     });
   });
 
-  it('should not call balance again if balancing already active', async () => {
-    // Достаём приватный videoSendingBalancer, сохраняя типизацию через двойное приведение
-    const balancer = (
-      videoSendingBalancerManager as unknown as {
-        videoSendingBalancer: VideoSendingBalancer;
-      }
-    ).videoSendingBalancer;
+  it('should not trigger balancing-started or set parameters again if balancing already active', async () => {
+    const startedHandler = jest.fn();
+    const setParameters = jest.spyOn(mockSender, 'setParameters');
 
-    const balanceSpy = jest.spyOn(balancer, 'balance');
-
-    // Первый запуск
+    videoSendingBalancerManager.on('balancing-started', startedHandler);
     await videoSendingBalancerManager.startBalancing();
+
+    const setParametersCallsAfterStart = setParameters.mock.calls.length;
+
+    await videoSendingBalancerManager.startBalancing();
+
     expect(videoSendingBalancerManager.isBalancingActive).toBe(true);
-    expect(balanceSpy).toHaveBeenCalledTimes(1);
-
-    // Повторный запуск не должен вызвать balance второй раз
-    await videoSendingBalancerManager.startBalancing();
-
-    expect(balanceSpy).toHaveBeenCalledTimes(1);
+    expect(startedHandler).toHaveBeenCalledTimes(1);
+    expect(setParameters).toHaveBeenCalledTimes(setParametersCallsAfterStart);
   });
 });

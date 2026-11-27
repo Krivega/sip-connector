@@ -568,6 +568,81 @@ describe('presentation: предел кадра H.264-энкодера', () => {
       );
     });
 
+    describe('повторный старт демонстрации на отправителе, подключённом балансировщиком', () => {
+      // Звонок без камеры: после остановки демонстрации балансировщик подключает её бывший отправитель
+      const attachBalancerToStoppedPresentationSender = async (
+        track: MediaStreamVideoTrack,
+      ): Promise<RTCRtpSender> => {
+        const balancingStarted = jest.fn();
+
+        await startCallUnderFakeTimers(createAudioStream());
+        sipConnector.on('video-balancer:balancing-started', balancingStarted);
+        await sipConnector.startPresentation(track);
+
+        const sender = getSenderProtected(track);
+
+        await sipConnector.stopPresentation();
+        await jest.advanceTimersByTimeAsync(BALANCING_START_PERIOD_MS);
+
+        expect(balancingStarted).toHaveBeenCalled();
+
+        return sender;
+      };
+
+      it('PAUSE_MAIN_CAM, полученная во время замены трека повторного старта, не попадает в отправитель демонстрации', async () => {
+        const { track } = createPresentationTrack(SIZE_FHD);
+        const { track: nextTrack } = createPresentationTrack(SIZE_FHD);
+        const mainCamControl = jest.fn();
+        const sender = await attachBalancerToStoppedPresentationSender(track);
+        const replaceTrack = sender.replaceTrack.bind(sender);
+        const setParametersSpy = jest.spyOn(sender, 'setParameters');
+        let finishReplaceTrackWait: () => void = () => {};
+        const replaceTrackSpy = jest
+          .spyOn(sender, 'replaceTrack')
+          .mockImplementationOnce(async (senderTrack) => {
+            await new Promise<void>((resolve) => {
+              finishReplaceTrackWait = resolve;
+            });
+            await replaceTrack(senderTrack);
+          });
+
+        sipConnector.on('api:main-cam-control', mainCamControl);
+
+        const restarting = sipConnector.startPresentation(nextTrack);
+
+        await flushUntil(() => {
+          return replaceTrackSpy.mock.calls.length > 0;
+        });
+        JsSIP.triggerNewInfo(getRtcSession(), headersPauseMainCam);
+        await flushUntil(() => {
+          return mainCamControl.mock.calls.length > 0;
+        });
+        await flushPromises();
+        finishReplaceTrackWait();
+        await restarting;
+        await jest.advanceTimersByTimeAsync(FRAME_CHECK_PERIOD_MS);
+
+        expect(sender.track).toBe(nextTrack);
+        expect(
+          setParametersSpy.mock.calls.filter(([parameters]) => {
+            return parameters.encodings[0]?.scaleResolutionDownBy === PAUSED_MAIN_CAM_SCALE;
+          }),
+        ).toEqual([]);
+      });
+
+      it('stopBalancing во время повторно запущенной демонстрации не меняет её maxBitrate', async () => {
+        const { track } = createPresentationTrack(SIZE_FHD);
+        const { track: nextTrack } = createPresentationTrack(SIZE_FHD);
+
+        await attachBalancerToStoppedPresentationSender(track);
+        await sipConnector.startPresentation(nextTrack);
+        sipConnector.videoSendingBalancerManager.stopBalancing();
+        await jest.advanceTimersByTimeAsync(FRAME_CHECK_PERIOD_MS);
+
+        expect(getEncoding(nextTrack)?.maxBitrate).toBe(PRESENTATION_MAX_BITRATE);
+      });
+    });
+
     it('команда MainCAM во время updatePresentation не трогает отправитель, на котором ещё старый трек демонстрации', async () => {
       await startCallUnderFakeTimers(createAudioStream());
 

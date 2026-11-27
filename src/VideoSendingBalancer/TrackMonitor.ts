@@ -1,22 +1,15 @@
 import { SetTimeoutRequest } from '@krivega/timeout-requester';
 
+type TCheck = () => Promise<boolean>;
+
+type TSubscription = { readonly check: TCheck };
+
 /**
- * TrackMonitor следит за изменением MediaStreamTrack, который отправляется
- * локальным RTCRtpSender-ом.
- *
- * 1. Обнаруживает смену sender или его track (replaceTrack).
- * 2. При изменении разрешения (resize-event или polling) вызывает callback.
- * 3. При replaceTrack вызывает callback сразу после замены и перенастраивает слежение.
+ * TrackMonitor — тикер сверки: вызывает проверку с адаптивным интервалом.
+ * Проверка сообщает, изменились ли параметры отправителя; следующий опрос планируется после её завершения,
+ * поэтому при зависшей проверке опросы не копятся.
  */
 export class TrackMonitor {
-  private currentSender?: RTCRtpSender;
-
-  private originalReplaceTrack?: RTCRtpSender['replaceTrack'];
-
-  private lastWidth?: number;
-
-  private lastHeight?: number;
-
   private readonly maxPollIntervalMs: number;
 
   private currentPollIntervalMs: number;
@@ -24,6 +17,9 @@ export class TrackMonitor {
   private readonly pollIntervalMs: number;
 
   private readonly setTimeoutRequest: SetTimeoutRequest;
+
+  // новый объект на каждую подписку: проверка, завершившаяся после её снятия или смены, опрос не продолжает
+  private subscription?: TSubscription;
 
   public constructor({
     pollIntervalMs = 1000,
@@ -40,112 +36,53 @@ export class TrackMonitor {
   }
 
   /**
-   * Проверяет актуальный video-sender и (при необходимости) перенастраивает наблюдение.
+   * Запускает опрос проверки с начального интервала.
    */
-  public subscribe(sender: RTCRtpSender | undefined, callback: () => void): void {
-    if (!sender) {
-      this.detachSender();
+  public subscribe(check: TCheck): void {
+    this.unsubscribe();
 
-      return;
-    }
+    const subscription = { check };
 
-    if (this.currentSender === sender) {
-      // sender не изменился — track может быть тем же, либо уже заменён через replaceTrack,
-      // но обёртка replaceTrack сама вызовет attachTrack при замене, поэтому нечего делать.
-      return;
-    }
-
-    // sender изменился (например, renegotiation) — перенастраиваем.
-    this.detachSender();
-    this.attachSender(sender, callback);
+    this.subscription = subscription;
+    this.currentPollIntervalMs = this.pollIntervalMs;
+    this.schedulePoll(subscription);
   }
 
   /** Останавливает всю активность мониторинга */
   public unsubscribe(): void {
-    this.detachSender();
+    this.setTimeoutRequest.cancelRequest();
+    this.subscription = undefined;
   }
 
-  private attachSender(sender: RTCRtpSender, callback: () => void): void {
-    this.currentSender = sender;
-
-    // Сохраним оригинальный replaceTrack, чтобы вернуть при детаче
-    const originalReplaceTrack = sender.replaceTrack.bind(sender);
-
-    this.originalReplaceTrack = originalReplaceTrack;
-    // переопределяем существующий метод только внутри мониторинга
-    // eslint-disable-next-line no-param-reassign
-    sender.replaceTrack = async (newTrack: MediaStreamTrack | null) => {
-      await originalReplaceTrack(newTrack);
-
-      // После успешной замены трека – обновляем слежение и уведомляем
-      this.attachTrack(callback, newTrack ?? undefined);
-      callback();
-    };
-
-    this.attachTrack(callback, sender.track as MediaStreamTrack | undefined);
-  }
-
-  private detachSender(): void {
-    // Вернём оригинальный replaceTrack если он был патчен
-    if (this.currentSender && this.originalReplaceTrack) {
-      // восстановление оригинального метода
-      this.currentSender.replaceTrack = this.originalReplaceTrack;
+  /** Возвращает опрос к начальному интервалу; без подписки ничего не делает */
+  public resetInterval(): void {
+    if (this.subscription) {
+      this.subscribe(this.subscription.check);
     }
-
-    this.originalReplaceTrack = undefined;
-    this.currentSender = undefined;
-
-    this.detachTrack();
-  }
-
-  private attachTrack(callback: () => void, track?: MediaStreamTrack): void {
-    this.detachTrack();
-
-    if (!track) {
-      return;
-    }
-
-    const { width, height } = track.getSettings();
-
-    this.lastWidth = width;
-    this.lastHeight = height;
-    // запускаем адаптивный опрос
-    this.currentPollIntervalMs = this.pollIntervalMs;
-    this.schedulePoll(track, callback);
   }
 
   /**
-   * Периодически опрашивает track с экспоненциальной адаптацией частоты.
-   * При отсутствии изменений интервал удваивается до maxPollIntervalMs,
-   * при обнаружении изменений сбрасывается до начального.
+   * Планирует опрос с экспоненциальной адаптацией частоты.
+   * Пока проверка не сообщает об изменениях, интервал удваивается до maxPollIntervalMs,
+   * при изменениях сбрасывается до начального.
    */
-  private schedulePoll(track: MediaStreamTrack, callback: () => void): void {
-    const poll = () => {
-      const { width: w, height: h } = track.getSettings();
-
-      if (w === this.lastWidth && h === this.lastHeight) {
-        // нет изменений — увеличиваем интервал, но не превышаем максимум
-        this.currentPollIntervalMs = Math.min(
-          this.currentPollIntervalMs * 2,
-          this.maxPollIntervalMs,
-        );
-      } else {
-        this.lastWidth = w;
-        this.lastHeight = h;
-        this.currentPollIntervalMs = this.pollIntervalMs; // сброс при изменениях
-        callback();
+  private schedulePoll(subscription: TSubscription): void {
+    const scheduleNextPoll = (isChanged: boolean) => {
+      if (this.subscription !== subscription) {
+        return;
       }
 
-      this.setTimeoutRequest.request(poll, this.currentPollIntervalMs);
+      this.currentPollIntervalMs = isChanged
+        ? this.pollIntervalMs
+        : Math.min(this.currentPollIntervalMs * 2, this.maxPollIntervalMs);
+      this.schedulePoll(subscription);
     };
 
-    this.setTimeoutRequest.request(poll, this.currentPollIntervalMs);
-  }
-
-  private detachTrack(): void {
-    this.setTimeoutRequest.cancelRequest();
-
-    this.lastWidth = undefined;
-    this.lastHeight = undefined;
+    this.setTimeoutRequest.request(() => {
+      // ошибка проверки отодвигает следующий опрос так же, как отсутствие изменений
+      subscription.check().then(scheduleNextPoll, () => {
+        scheduleNextPoll(false);
+      });
+    }, this.currentPollIntervalMs);
   }
 }

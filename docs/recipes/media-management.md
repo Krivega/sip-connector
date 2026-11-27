@@ -27,6 +27,10 @@ await facade.replaceMediaStream(newMediaStream);
 Утилита рассчитывает `scaleResolutionDownBy` по фактическому разрешению трека. Более строгое значение
 из уже переданных `sendEncodings` сохраняется (`Math.max` по `scaleResolutionDownBy`).
 
+Пока балансировщик основной камеры запущен, `sendEncodings` из `replaceMediaStream` действуют не
+дольше первого опроса после замены, если их запись завершилась к нему: балансировщик пересчитывает
+параметры сам. Подробнее: [Управление видеобалансировщиком](./video-balancing.md).
+
 ## Ограничение разрешения презентации
 
 При `startPresentation()` и `updatePresentation()` `SipConnector` передаёт в `PresentationManager`
