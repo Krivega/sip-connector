@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [31.5.1](https://github.com/Krivega/sip-connector/compare/v31.5.0...v31.5.1) (2026-11-27)
+
+### Bug Fixes
+
+- main cam limit before balancing ([#85](https://github.com/Krivega/sip-connector/issues/85)) ([22d9c52](https://github.com/Krivega/sip-connector/commit/22d9c52f891d62ab3b753dd82b478b9979908dd9))
+
 ## [31.5.0](https://github.com/Krivega/sip-connector/compare/v31.4.2...v31.5.0) (2026-11-25)
 
 ### Features
